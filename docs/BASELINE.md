@@ -71,3 +71,9 @@ On 2026-08-18, Jonathan created the private repository `jonathanbeaulne123-blip/
 - A staged credential-pattern scan found no private keys, Google API keys, GitHub tokens, or live development Script ID.
 
 The first push created only remote branch `main`. A fresh authenticated clone matched local commit `61a396e`, contained one commit and 31 tracked code/documentation files, and contained zero forbidden local-only artifacts. GitHub is now the canonical editable remote; the pre-GitHub branch and bundle are recovery/audit artifacts and must never be pushed.
+
+## v0.0.26 development source checkpoint
+
+On 2026-08-18, Jonathan approved a development-only push of the Issue #8 duplicate-scaling candidate at commit `84241fe`. Before the push, an isolated `clasp clone` reported v0.0.25 and all seven remote Apps Script files matched private-GitHub `main` after line-ending normalization. The ignored development ODS recovery snapshot preserved 35 existing `Potential_Duplicate_Flag` formulas, all in the expected Transactions column.
+
+`clasp push` then sent only the seven tracked Apps Script files to the locally linked development project. A second isolated clone reported v0.0.26; every remote source/dialog/manifest file matched commit `84241fe`, and the manifest remained `America/Toronto`. Production was not targeted or changed. Live development-Sheet verification of the formula-to-value transition remains pending, so draft PR #11 and Issue #8 must remain open.
