@@ -7,6 +7,7 @@
 - Apps Script ID: connected locally in ignored `.clasp.json`; intentionally excluded from Git
 - Source status: remote development source matches commit `7b43666` across all seven tracked Apps Script files and reports `v0.0.28`
 - Runtime status: v0.0.28 diagnostics and layout checks pass; invalid whole-cent/positive-amount requests were rejected without writes; two known valid development entries produced exactly two Raw/Transaction pairs and two manual-batch increments; pre/post Data Health Checks report no issues
+- Next candidate: local/GitHub-only v0.0.29 on `issue-6-transaction-atomicity`; no Apps Script push or live runtime verification yet
 - Spreadsheet and Apps Script timezones: `America/Toronto`
 - Git branch: feature branches or local worktrees, merged into `main` after verification
 - Allowed: reversible test data, refactors, diagnostics, visual experiments, and automated checks
