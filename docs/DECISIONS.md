@@ -24,6 +24,9 @@ This file records current product and architecture decisions. Historical convers
 | D-018 | Accepted | Exclude live Sheets, ODS exports, `Project Context.txt`, credentials, and other household data from hosted Git history. | Git history is persistent, workbook binaries do not review well, and data exposure adds risk without improving code management. |
 | D-019 | Accepted | Retain the pre-GitHub repository history in a local-only archive and publish a clean hosted baseline from verified v0.0.25. | Preserves recovery evidence without uploading historical workbook contents. |
 | D-020 | Open | Enable two-factor authentication on Jonathan's GitHub account. | Jonathan deferred 2FA during initial setup; the account now controls the canonical project remote, so recovery and takeover risk remain higher until it is enabled. |
+| D-021 | Accepted | CAD is the authoritative currency for all current household accounts and transactions. | Jonathan confirmed that values currently labeled `USD` are actually CAD; the code and development data require a guarded label/configuration correction without converting amounts. |
+| D-022 | Accepted | Keep the manual account selector hidden while only one account is active, but make the transaction backend account-explicit and require a selector before multiple accounts can be active. | Avoid unnecessary current UI while preventing first-active-account behavior from becoming a hidden scalability defect. |
+| D-023 | Accepted | Defer non-code long-range product and interface work. Current architecture work should prioritize scalability, security, reliability, and portability while Sheets remains the working interface. | Keeps effort on a dependable core without allowing today's Sheets implementation to block later technical evolution. |
 
 ## Change format
 

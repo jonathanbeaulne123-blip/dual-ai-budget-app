@@ -37,8 +37,8 @@ The review is risk based. Financial-record integrity and the stated load of appr
 - The UI reports success even if the summary refresh fails because `refreshBudgetSummarySilently_()` suppresses the error. The transaction itself may be valid, but the user should receive a nonblocking “saved, dashboard refresh pending” warning.
 - The form marks a manually entered row `Is_Duplicate = No` before its duplicate formula is evaluated. A second deliberate submission can therefore affect totals until reviewed. A pre-write warning with an explicit “add anyway” path would be safer.
 - The browser supplies the default date from the device clock, while the server interprets it in Toronto time. The server-generated Toronto date should be rendered into the form to avoid a near-midnight/device-timezone mismatch.
-- The dialog has a fixed 420 × 480 size. Its usability and availability must be tested on the exact mobile route Jonathan and Bianca intend to use; passing desktop-browser tests is not sufficient.
-- The source currently writes `USD`, and the current development workbook is internally consistent with that choice. Because the household timezone is Toronto, the intended operating currency must be confirmed before the field becomes configurable or defaults change.
+- The dialog has a fixed 420 × 480 size. Mobile/interface expansion is now deferred, so this is a known constraint rather than a current release gate; backend transaction services must still remain independent of this modal implementation.
+- The source and current development workbook consistently label values `USD`, but Jonathan confirmed on 2026-08-18 that every current account and transaction is actually CAD. Correct the labels/configuration without converting amounts through [#10 Make CAD the authoritative transaction currency](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/issues/10), kept separate from the transaction-safety work.
 
 ## Missing automated coverage
 
@@ -54,14 +54,14 @@ Run these only on the development spreadsheet with a recorded baseline of the re
 4. Submit the same transaction twice and verify the warning/review behavior and that totals follow the chosen duplicate policy.
 5. Submit from two open sessions at nearly the same time and verify unique IDs, two complete row pairs, correct formulas, and an exact batch count.
 6. Force or simulate a failure after each write boundary and verify that no partial record remains.
-7. Test the exact phone workflow Jonathan and Bianca will use, including opening the tool, category selection, keyboard behavior, submit feedback, and time-to-entry.
+7. Verify the retained Sheets dialog workflow for accurate submission and feedback; mobile/interface expansion remains deferred.
 
 ## Recommended implementation order
 
 1. TXN-01 and TXN-02 together: preflight validation, document lock, guarded commit, and recovery.
 2. TXN-04: pure server validation/normalization plus automated tests.
 3. TXN-03: remove the row-5,000 limit in both Transaction Input and Add Shift.
-4. Resolve currency, account-selection, duplicate-policy, and mobile-route decisions.
-5. Improve feedback and responsive usability, then execute the complete live matrix.
+4. Apply the accepted CAD and account-selection decisions through separately reviewed work; keep non-code interface expansion deferred.
+5. Execute the retained development-sheet integrity matrix; defer responsive/interface design.
 
 No production deployment should occur until the high-priority findings pass automated and development-sheet verification.
