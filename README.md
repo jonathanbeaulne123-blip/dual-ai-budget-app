@@ -4,8 +4,8 @@ This private GitHub repository is the canonical editable home for the household 
 
 ## Current baseline
 
-- Development Apps Script: `v0.0.25` (commit `77fab39`, deployed, source-verified, and migration-verified with a clean Data Health Check)
-- Current code candidate: `v0.0.26` for Issue #8 duplicate-review scaling; pushed to development, source-verified, and live-Sheet verified, with independent review pending
+- Development Apps Script: `v0.0.26` (commit `84241fe`, deployed, source-verified, and live-Sheet verified with clean pre/post Data Health Checks)
+- Current code candidate: `v0.0.27` for the Issue #8 concurrency follow-up; local/GitHub review only until a separate development-push approval
 - GitHub import baseline: `61a396e` (private `main`, verified by a clean clone with no local-only artifacts)
 - Development workbook snapshot: `Budget_App__v 0.23  -dev- Copy.ods`
 - Production workbook snapshot: `Budget_App__v 0.23.ods`
@@ -40,6 +40,7 @@ A functional Sheets test build is targeted for September 1, 2026. Non-code long-
 - [Live verification findings](docs/LIVE_VERIFICATION_2026-08-18.md)
 - [v0.0.25 legacy income-ID release](docs/V0.0.25_LEGACY_INCOME_RELEASE.md)
 - [v0.0.26 duplicate-scaling release candidate](docs/V0.0.26_DUPLICATE_SCALING_RELEASE.md)
+- [v0.0.27 duplicate-recalculation concurrency candidate](docs/V0.0.27_DUPLICATE_CONCURRENCY_RELEASE.md)
 - [GitHub workflow and beginner guide](docs/GITHUB_WORKFLOW.md)
 - [Active September 1 milestone](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/milestone/1)
 
@@ -53,4 +54,4 @@ After dependencies are installed:
 pnpm test
 ```
 
-The checks parse every `.gs` file, detect duplicate top-level function declarations, confirm the source/package/release-history versions agree, parse the JavaScript embedded in all four dialogs, and simulate both guarded migrations. They also exercise the duplicate-review engine beyond row 5,000 and at 12,000 rows, proving one batched key read/write and unchanged migration safety behavior.
+The checks parse every `.gs` file, detect duplicate top-level function declarations, confirm the source/package/release-history versions agree, parse the JavaScript embedded in all four dialogs, and simulate both guarded migrations. They also exercise the duplicate-review engine beyond row 5,000 and at 12,000 rows, proving one batched key read/write plus document-lock acquisition, timeout, and release behavior without changing migration safety.

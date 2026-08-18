@@ -40,21 +40,28 @@ function plain(value) {
   let readCalls = 0;
   let writeCalls = 0;
   let flushCalls = 0;
+  let releaseCalls = 0;
+  const adapterEvents = [];
 
   const sheet = {
-    getLastRow: () => rowCount + 4,
+    getLastRow: () => {
+      adapterEvents.push("get-last-row");
+      return rowCount + 4;
+    },
     getRange(row, column, rows, columns) {
       assert.equal(row, 5);
       assert.equal(rows, rowCount);
       assert.equal(columns, 1);
       if (column === 25) {
         readCalls += 1;
+        adapterEvents.push("read-keys");
         return { getValues: () => keys.map((key) => [key]) };
       }
       if (column === 26) {
         return {
           setValues(values) {
             writeCalls += 1;
+            adapterEvents.push("write-flags");
             writtenValues = values;
           },
         };
@@ -63,9 +70,30 @@ function plain(value) {
     },
   };
 
-  context.SpreadsheetApp = { flush: () => { flushCalls += 1; } };
+  context.LockService = {
+    getDocumentLock() {
+      adapterEvents.push("get-lock");
+      return {
+        tryLock(timeoutMs) {
+          adapterEvents.push(`try-lock-${timeoutMs}`);
+          return true;
+        },
+        releaseLock() {
+          releaseCalls += 1;
+          adapterEvents.push("release-lock");
+        },
+      };
+    },
+  };
+  context.SpreadsheetApp = {
+    flush: () => {
+      flushCalls += 1;
+      adapterEvents.push("flush");
+    },
+  };
   context.sheet_ = (name) => {
     assert.equal(name, "Transactions");
+    adapterEvents.push("get-sheet");
     return sheet;
   };
   context.col_ = (sheetName, headerName) => {
@@ -80,6 +108,7 @@ function plain(value) {
   const elapsedMs = performance.now() - start;
 
   assert.equal(flushCalls, 1);
+  assert.equal(releaseCalls, 1, "an acquired document lock must be released after success");
   assert.equal(readCalls, 1, "scale must use one Duplicate_Key column read");
   assert.equal(writeCalls, 1, "scale must use one Potential_Duplicate_Flag column write");
   assert.equal(writtenValues.length, rowCount);
@@ -90,8 +119,78 @@ function plain(value) {
     duplicateKeyCount: 1,
     duplicateRowCount: 2,
   });
+  assert.deepEqual(adapterEvents, [
+    "get-lock",
+    "try-lock-10000",
+    "get-sheet",
+    "get-last-row",
+    "flush",
+    "read-keys",
+    "write-flags",
+    "release-lock",
+  ], "the document lock must cover the complete extent-read/write window");
   assert.ok(elapsedMs < 2_000, `12,000-row compute and adapter simulation took ${elapsedMs.toFixed(1)} ms`);
   console.log(`Duplicate scale fixture: ${rowCount.toLocaleString()} rows in ${elapsedMs.toFixed(1)} ms, one read and one write.`);
+}
+
+{
+  let releaseCalls = 0;
+  let sheetCalls = 0;
+  context.LockService = {
+    getDocumentLock: () => ({
+      tryLock(timeoutMs) {
+        assert.equal(timeoutMs, 10_000);
+        return false;
+      },
+      releaseLock() { releaseCalls += 1; },
+    }),
+  };
+  context.sheet_ = () => {
+    sheetCalls += 1;
+    throw new Error("sheet must not be read when the lock times out");
+  };
+
+  assert.throws(
+    () => context.recomputePotentialDuplicateFlags_(),
+    /Could not obtain the duplicate-review lock within 10 seconds/,
+  );
+  assert.equal(sheetCalls, 0, "a lock timeout must fail before any Sheet read");
+  assert.equal(releaseCalls, 0, "an unacquired lock must not be released");
+}
+
+{
+  let releaseCalls = 0;
+  context.LockService = {
+    getDocumentLock: () => ({
+      tryLock: () => true,
+      releaseLock() { releaseCalls += 1; },
+    }),
+  };
+  context.sheet_ = () => { throw new Error("simulated Sheet failure"); };
+
+  assert.throws(() => context.recomputePotentialDuplicateFlags_(), /simulated Sheet failure/);
+  assert.equal(releaseCalls, 1, "the document lock must be released when Sheet I/O throws");
+}
+
+{
+  let releaseCalls = 0;
+  let flushCalls = 0;
+  context.LockService = {
+    getDocumentLock: () => ({
+      tryLock: () => true,
+      releaseLock() { releaseCalls += 1; },
+    }),
+  };
+  context.sheet_ = () => ({ getLastRow: () => 4 });
+  context.SpreadsheetApp = { flush: () => { flushCalls += 1; } };
+
+  assert.deepEqual(plain(context.recomputePotentialDuplicateFlags_()), {
+    scannedRows: 0,
+    duplicateKeyCount: 0,
+    duplicateRowCount: 0,
+  });
+  assert.equal(flushCalls, 0, "an empty ledger must not flush or write");
+  assert.equal(releaseCalls, 1, "the document lock must be released on the empty-ledger return path");
 }
 
 {
@@ -141,4 +240,4 @@ assert.match(
   "Add Shift must refresh the full-ledger flags once after posting both transactions",
 );
 
-console.log("Duplicate flag tests passed: exact matching, beyond-row-5,000 coverage, full-ledger wiring, and 12,000-row linear batch behavior.");
+console.log("Duplicate flag tests passed: exact matching, beyond-row-5,000 coverage, document-lock safety, full-ledger wiring, and 12,000-row linear batch behavior.");

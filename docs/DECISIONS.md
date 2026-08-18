@@ -27,6 +27,7 @@ This file records current product and architecture decisions. Historical convers
 | D-021 | Accepted | CAD is the authoritative currency for all current household accounts and transactions. | Jonathan confirmed that values currently labeled `USD` are actually CAD; the code and development data require a guarded label/configuration correction without converting amounts. |
 | D-022 | Accepted | Keep the manual account selector hidden while only one account is active, but make the transaction backend account-explicit and require a selector before multiple accounts can be active. | Avoid unnecessary current UI while preventing first-active-account behavior from becoming a hidden scalability defect. |
 | D-023 | Accepted | Defer non-code long-range product and interface work. Current architecture work should prioritize scalability, security, reliability, and portability while Sheets remains the working interface. | Keeps effort on a dependable core without allowing today's Sheets implementation to block later technical evolution. |
+| D-024 | Accepted | Guard a derived-state read/compute/write adapter when overlapping executions could stale-overwrite the same output; apply this now to duplicate flags while tracking complete multi-sheet transaction atomicity separately. | Prevents the verified recalculation race without pretending a narrow lock solves every writer or blocks human Sheet edits. |
 
 ## Change format
 

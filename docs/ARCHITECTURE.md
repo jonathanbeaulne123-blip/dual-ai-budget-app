@@ -50,6 +50,7 @@ The repository root will eventually link only to the development Apps Script pro
 - `Is_Duplicate` is the separately reviewed financial control. Only this field determines whether Budget, Dashboard, and Income History calculations exclude a transaction.
 - Add Transaction, Add Shift, and direct edits to duplicate-key inputs refresh potential flags. A manual refresh provides recovery after bulk or external operations.
 - Duplicate matching is exact and case-insensitive after `Duplicate_Key` generation; it does not use spreadsheet wildcard criteria.
+- From v0.0.27, the full-column flag adapter holds a document-scoped lock from before the ledger extent read through the batched flag write. This serializes cooperating Apps Script recalculations; it does not lock the Google Sheets UI or replace the broader transaction-atomicity work tracked separately.
 
 ## Goals and privacy
 

@@ -494,6 +494,8 @@ function getTopLevelCategoriesList_() {
     .map(function (c) { return { id: c.Category_ID, name: c.Category_Name, transactionType: c.Transaction_Type }; });
 }
 // ==================== DUPLICATE REVIEW ENGINE =========================
+var DUPLICATE_FLAG_LOCK_TIMEOUT_MS_ = 10000;
+
 // Potential_Duplicate_Flag is a review aid, not the financial control:
 // only the separately-reviewed Is_Duplicate column affects Budget,
 // Dashboard, and Income History totals. Before v0.0.26 every transaction
@@ -532,25 +534,36 @@ function calcPotentialDuplicateFlags_(duplicateKeys) {
 }
 
 // Thin Sheet I/O wrapper: one column read and one column write, regardless
-// of ledger length. SpreadsheetApp.flush() makes sure a newly-written
+// of ledger length. A document lock serializes overlapping recalculations
+// so an older full-column result cannot overwrite a newer one. The lock is
+// deliberately acquired before the ledger extent is read and always
+// released in finally. SpreadsheetApp.flush() makes sure a newly-written
 // Duplicate_Key formula has recalculated before its value is counted.
 function recomputePotentialDuplicateFlags_() {
-  var sh = sheet_('Transactions');
-  var lastRow = sh.getLastRow();
-  if (lastRow < 5) {
-    return { scannedRows: 0, duplicateKeyCount: 0, duplicateRowCount: 0 };
+  var lock = LockService.getDocumentLock();
+  if (!lock || !lock.tryLock(DUPLICATE_FLAG_LOCK_TIMEOUT_MS_)) {
+    throw new Error('Could not obtain the duplicate-review lock within 10 seconds. No duplicate flags were changed; try again.');
   }
-  SpreadsheetApp.flush();
-  var rowCount = lastRow - 4;
-  var keyValues = sh.getRange(5, col_('Transactions', 'Duplicate_Key'), rowCount, 1).getValues();
-  var result = calcPotentialDuplicateFlags_(keyValues.map(function (row) { return row[0]; }));
-  sh.getRange(5, col_('Transactions', 'Potential_Duplicate_Flag'), rowCount, 1)
-    .setValues(result.flags.map(function (flag) { return [flag]; }));
-  return {
-    scannedRows: rowCount,
-    duplicateKeyCount: result.duplicateKeyCount,
-    duplicateRowCount: result.duplicateRowCount
-  };
+  try {
+    var sh = sheet_('Transactions');
+    var lastRow = sh.getLastRow();
+    if (lastRow < 5) {
+      return { scannedRows: 0, duplicateKeyCount: 0, duplicateRowCount: 0 };
+    }
+    SpreadsheetApp.flush();
+    var rowCount = lastRow - 4;
+    var keyValues = sh.getRange(5, col_('Transactions', 'Duplicate_Key'), rowCount, 1).getValues();
+    var result = calcPotentialDuplicateFlags_(keyValues.map(function (row) { return row[0]; }));
+    sh.getRange(5, col_('Transactions', 'Potential_Duplicate_Flag'), rowCount, 1)
+      .setValues(result.flags.map(function (flag) { return [flag]; }));
+    return {
+      scannedRows: rowCount,
+      duplicateKeyCount: result.duplicateKeyCount,
+      duplicateRowCount: result.duplicateRowCount
+    };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 // Manual recovery/control for bulk imports or diagnostics. This only
@@ -2861,7 +2874,7 @@ function viewDataDictionary() {
 // becomes a one-glance check instead of a guess, and the Release Notes
 // sheet (see syncReleaseNotes_() below) picks up the new entry
 // automatically the next time anything runs.
-var APP_VERSION = 'v0.0.26';
+var APP_VERSION = 'v0.0.27';
 // ==================== RELEASE NOTES =====================================
 // The full version history — one entry per shipped feature or fix,
 // oldest first. This array is the single source of truth: add one entry
@@ -2895,7 +2908,8 @@ var RELEASE_HISTORY_ = [
   { version: 'v0.0.23', date: '2026-08-18', summary: 'Four additions, all confirmed by Jonathan right after the v0.0.22 delivery. (1) Pure compute layer: the Budget/Dashboard/Income History math (calcBudgetSummary_(), calcIncomeHistory_(), groupAmountsByKey_(), groupIncomeTxByMonth_()) is now split out from the sheet I/O (recomputeBudgetSummaryMetrics_(), recomputeIncomeHistory_()) — the compute functions take plain JS data in and return plain JS data out, with zero SpreadsheetApp calls inside, so this logic can port almost unchanged into a real app backend later; the I/O functions are now thin read-compute-write wrappers around them. Same numbers, same cells, purely a reorganization — verified via simulation to produce identical output to pre-refactor v0.0.22. (2) Freshness indicator: a one-cell, color-coded status badge (updateFreshnessIndicator_()) written to Budget!E2 and Dashboard!F2 every time the summary recomputes — green "✓ Refreshed Xm ago" or red "⚠ Stale"/"⚠ Never refreshed," visible right on the sheets Jonathan and Bianca are already looking at, not just inside Show Version & Diagnostics. Cell placement (Budget!E2, Dashboard!F2) was chosen by inspecting the real workbook\'s merged-cell ranges to find the first free, unmerged cell near each title. (3) Data Health Check (runDataHealthCheck_(), new "Data Health Check" menu item): a read-only scan for the orphaned-foreign-key and duplicate/drifted-name bug class this project has hit before (the CAT-INCOME/INCOME dangling reference from v0.0.19; the "2 Cat Litter subcategories" duplicate flagged in the roadmap) — checks orphaned Parent_Category_ID on Subcategory rows, duplicate active Category_IDs, duplicate/drifted category names, orphaned Effective_Subcategory_ID and Member_ID on Transactions, orphaned Subcategory_ID on Budget Plan rows, blank/orphaned Subcategory_ID on Budget/Dashboard, and Budget-vs-Dashboard category-set mismatches. Same read-only, never-calls-setValue contract as showDiagnostics(). (4) Data Dictionary (new visible "Data Dictionary" sheet, DATA_DICTIONARY_ + getOrCreateDataDictionarySheet_() + syncDataDictionary_(), new "View Data Dictionary" menu item): a self-generating reference sheet mapping every real sheet to its ID column, ID scheme, foreign-key relationships, and hidden/behind-the-scenes columns — same source-of-truth-array pattern as Release Notes, but a full rewrite each sync (not an append) and left visible by default rather than hidden, since it\'s meant to be opened and read.' },
   { version: 'v0.0.24', date: '2026-08-18', summary: 'Prepared a guarded development-only data-integrity migration for the verified v0.0.23 findings. A read-only preview locates rows by their stable IDs and real row-4 headers, validates exactly 13 expected cell corrections plus the America/Los_Angeles → America/Toronto spreadsheet-timezone correction, and refuses unexpected or duplicate targets. Apply requires an exact confirmation phrase, rechecks under a document lock, verifies every final value, and rolls back its own writes on failure before refreshing summaries and rerunning Data Health Check. The health check now also detects orphaned Transactions Manual_Category_ID and Effective_Category_ID values, and diagnostics now correctly treats a spreadsheet/project timezone mismatch as actionable rather than harmless.' },
   { version: 'v0.0.25', date: '2026-08-18', summary: 'Added a second guarded development-only migration for 14 legacy Add Shift transaction rows that still referenced the invalid top-level Category_ID "CAT-INCOME". The preview locates TXN-SHIFT-000006 through TXN-SHIFT-000019 by stable ID, validates their Manual_Category_ID cells, and proves each Effective_Category_ID remains a live formula connected to the same-row manual cell. Apply changes only the 14 direct Manual_Category_ID values to the authoritative Income ID "INCOME", preserves and verifies all 14 formulas after recalculation, supports repeat-safe no-op runs and rollback on failure, then refreshes summaries and reruns Data Health Check.' },
-  { version: 'v0.0.26', date: '2026-08-18', summary: 'Removed the Potential_Duplicate_Flag formula ceiling at Transactions row 5,000. A pure calcPotentialDuplicateFlags_() engine now counts exact case-insensitive Duplicate_Key values in one O(n) pass, and a thin recomputePotentialDuplicateFlags_() adapter performs one real-extent column read and write. Add Transaction and Add Shift refresh the flags automatically; direct edits to duplicate-key inputs trigger the same recompute; a manual Refresh Duplicate Flags control provides recovery after bulk operations; and Data Health Check reports derived-flag drift. Duplicate_Key formulas and the separately reviewed Is_Duplicate field that controls financial totals are never changed.' }
+  { version: 'v0.0.26', date: '2026-08-18', summary: 'Removed the Potential_Duplicate_Flag formula ceiling at Transactions row 5,000. A pure calcPotentialDuplicateFlags_() engine now counts exact case-insensitive Duplicate_Key values in one O(n) pass, and a thin recomputePotentialDuplicateFlags_() adapter performs one real-extent column read and write. Add Transaction and Add Shift refresh the flags automatically; direct edits to duplicate-key inputs trigger the same recompute; a manual Refresh Duplicate Flags control provides recovery after bulk operations; and Data Health Check reports derived-flag drift. Duplicate_Key formulas and the separately reviewed Is_Duplicate field that controls financial totals are never changed.' },
+  { version: 'v0.0.27', date: '2026-08-18', summary: 'Closed the concurrency gap found in Gemini\'s independent review of v0.0.26. recomputePotentialDuplicateFlags_() now acquires a document-scoped lock before reading the Transactions extent and holds it through the single batched Potential_Duplicate_Flag write, preventing overlapping script recalculations from allowing an older full-column result to overwrite a newer one. A 10-second timeout fails explicitly without writing, and finally always releases an acquired lock. The lock protects only this derived review column; Duplicate_Key, Is_Duplicate, transactions, and financial totals remain outside its write surface.' }
 ];
 var RELEASE_NOTES_SHEET_NAME = 'Release Notes';
 // Creates the Release Notes sheet (header row, hidden) the first time
