@@ -4,8 +4,8 @@ This private GitHub repository is the canonical editable home for the household 
 
 ## Current baseline
 
-- Development Apps Script: `v0.0.26` (commit `84241fe`, deployed, source-verified, and live-Sheet verified with clean pre/post Data Health Checks)
-- Current code candidate: `v0.0.27` for the Issue #8 concurrency follow-up; local/GitHub review only until a separate development-push approval
+- Development Apps Script source: `v0.0.27` (commit `c367637`, development-only push and fresh-clone source verification complete; live-Sheet verification pending)
+- Current code candidate: `v0.0.27` for the Issue #8 concurrency follow-up; draft until development diagnostics and duplicate-health checks pass
 - GitHub import baseline: `61a396e` (private `main`, verified by a clean clone with no local-only artifacts)
 - Development workbook snapshot: `Budget_App__v 0.23  -dev- Copy.ods`
 - Production workbook snapshot: `Budget_App__v 0.23.ods`
