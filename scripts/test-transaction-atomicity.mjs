@@ -240,6 +240,36 @@ function commitState(overrides = {}) {
   );
   assert.deepEqual(plain({ tables, lastRows }), stableAfterFirst, "the real adapter must undo a raw append that wrote before throwing");
 
+  const driftPlan = context.planManualTransactionCommit_(
+    { ...normalizedInput, amount: 6.4, amountCents: 640 },
+    "TORONTO_DATE_3",
+    commitState({
+      transactionIds: ["TXN-MANUAL-000037", "TXN-MANUAL-000038"],
+      rawRecordIds: ["RAW-MANUAL-000037", "RAW-MANUAL-000038"],
+      importBatches: [{ _row: 6, Import_Batch_ID: "BATCH-MANUAL-ENTRY", Account_ID: "ACC-CHEQUING", Record_Count: 14 }],
+      nextTransactionRow: 43,
+      nextRawRow: 43,
+    }),
+  );
+  const driftAdapter = context.createManualTransactionSheetAdapter_(driftPlan);
+  tables["Raw Transactions"].push({
+    _row: 43,
+    Raw_Record_ID: "RAW-EXTERNAL-000001",
+    Import_Batch_ID: "BATCH-EXTERNAL",
+  });
+  lastRows["Raw Transactions"] = 43;
+  const stableWithExternalRow = plain({ tables, lastRows });
+  failAfterRawAppend = false;
+  assert.throws(
+    () => context.executeManualTransactionCommit_(driftPlan, driftAdapter),
+    /Transaction was not saved.*Raw Transactions changed.*Expected row 43 but found 44/,
+  );
+  assert.deepEqual(
+    plain({ tables, lastRows }),
+    stableWithExternalRow,
+    "row-extent drift must restore the batch count and preserve the unrelated row that caused the abort",
+  );
+
   tables["Import Batches"].length = 0;
   tables["Raw Transactions"].length = 0;
   tables.Transactions.length = 0;

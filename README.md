@@ -5,7 +5,7 @@ This private GitHub repository is the canonical editable home for the household 
 ## Current baseline
 
 - Development Apps Script: `v0.0.28` (commit `7b43666`, approved development-only push, isolated source verification, rejected-request checks, controlled valid writes, and clean pre/post Data Health Checks complete)
-- Current code candidate: `v0.0.29` on `issue-6-transaction-atomicity`; Add Transaction atomicity/recovery is implemented and locally tested, but no v0.0.29 source has been pushed to Apps Script
+- Current code candidate: `v0.0.29` on draft PR #13 (`issue-6-transaction-atomicity`); Gemini approved the runtime implementation with non-blocking notes, the accepted row-drift test is included, and no v0.0.29 source has been pushed to Apps Script
 - Merged code baseline: `v0.0.28`; authoritative Transaction Input validation is merged through PR #12, Issue #7 is closed, and development verification is complete
 - GitHub import baseline: `61a396e` (private `main`, verified by a clean clone with no local-only artifacts)
 - Development workbook snapshot: `Budget_App__v 0.23  -dev- Copy.ods`
