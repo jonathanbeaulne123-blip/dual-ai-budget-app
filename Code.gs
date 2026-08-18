@@ -616,7 +616,7 @@ function validateAndNormalizeTransactionInput_(form, referenceData) {
   if (!form || typeof form !== 'object' || Array.isArray(form)) {
     throw new Error('Transaction details are required.');
   }
-  if (!referenceData || typeof referenceData !== 'object') {
+  if (!referenceData || typeof referenceData !== 'object' || Array.isArray(referenceData)) {
     throw new Error('Transaction reference data is unavailable — please reopen the form.');
   }
 

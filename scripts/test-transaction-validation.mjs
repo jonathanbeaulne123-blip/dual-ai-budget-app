@@ -55,6 +55,22 @@ function validExpense(overrides = {}) {
   };
 }
 
+for (const form of [null, undefined, [], "not-an-object", 7]) {
+  assert.throws(
+    () => context.validateAndNormalizeTransactionInput_(form, referenceData),
+    /Transaction details are required/,
+    `malformed root form ${JSON.stringify(form)} must be rejected`,
+  );
+}
+
+for (const refs of [null, undefined, [], "not-an-object", 7]) {
+  assert.throws(
+    () => context.validateAndNormalizeTransactionInput_(validExpense(), refs),
+    /Transaction reference data is unavailable/,
+    `malformed root reference data ${JSON.stringify(refs)} must be rejected`,
+  );
+}
+
 {
   const originalReferences = JSON.stringify(referenceData);
   assert.deepEqual(validate(validExpense()), {
@@ -165,6 +181,7 @@ assert.throws(
 {
   let writeCapableCalls = 0;
   let parseCalls = 0;
+  let formatCalls = 0;
   context.getCategoriesList_ = () => categories;
   context.getHouseholdMembersList_ = () => members;
   context.getActiveAccountId_ = () => "ACC-CHEQUING";
@@ -173,6 +190,10 @@ assert.throws(
     parseDate() {
       parseCalls += 1;
       throw new Error("date parser should not run for an invalid request");
+    },
+    formatDate() {
+      formatCalls += 1;
+      throw new Error("date formatter should not run for an invalid request");
     },
   };
   context.getOrCreateManualBatch_ = () => { writeCapableCalls += 1; };
@@ -190,6 +211,7 @@ assert.throws(
     assert.throws(() => context.addTransaction(form));
   }
   assert.equal(parseCalls, 0, "pure request rejection must happen before date parsing");
+  assert.equal(formatCalls, 0, "pure request rejection must happen before date formatting");
   assert.equal(writeCapableCalls, 0, "invalid requests must make zero Sheet or batch changes");
 
   context.Utilities.parseDate = () => {
@@ -198,7 +220,26 @@ assert.throws(
   };
   assert.throws(() => context.addTransaction(validExpense()), /simulated Toronto date parser failure/);
   assert.equal(parseCalls, 1);
+  assert.equal(formatCalls, 0, "formatting must not run when parsing fails");
   assert.equal(writeCapableCalls, 0, "date parsing must complete before the first write-capable helper");
+
+  const validContextDate = vm.runInContext('new Date("2026-08-18T04:00:00.000Z")', context);
+  context.Utilities.parseDate = () => {
+    parseCalls += 1;
+    return validContextDate;
+  };
+  context.Utilities.formatDate = () => {
+    formatCalls += 1;
+    return "2026-08-18";
+  };
+  context.getOrCreateManualBatch_ = () => {
+    writeCapableCalls += 1;
+    throw new Error("first write boundary reached");
+  };
+  assert.throws(() => context.addTransaction(validExpense()), /first write boundary reached/);
+  assert.equal(parseCalls, 2, "valid input must reach the Toronto date parser exactly once");
+  assert.equal(formatCalls, 1, "valid input must round-trip through the Toronto date formatter exactly once");
+  assert.equal(writeCapableCalls, 1, "a valid request may reach the first write boundary only after parsing and formatting");
 }
 
 assert.match(
