@@ -28,6 +28,7 @@ This file records current product and architecture decisions. Historical convers
 | D-022 | Accepted | Keep the manual account selector hidden while only one account is active, but make the transaction backend account-explicit and require a selector before multiple accounts can be active. | Avoid unnecessary current UI while preventing first-active-account behavior from becoming a hidden scalability defect. |
 | D-023 | Accepted | Defer non-code long-range product and interface work. Current architecture work should prioritize scalability, security, reliability, and portability while Sheets remains the working interface. | Keeps effort on a dependable core without allowing today's Sheets implementation to block later technical evolution. |
 | D-024 | Accepted | Guard a derived-state read/compute/write adapter when overlapping executions could stale-overwrite the same output; apply this now to duplicate flags while tracking complete multi-sheet transaction atomicity separately. | Prevents the verified recalculation race without pretending a narrow lock solves every writer or blocks human Sheet edits. |
+| D-025 | Accepted | Treat Transaction Input browser validation as a usability aid and enforce the authoritative request contract in a pure server-side validator before any write-capable helper runs. | Stale or altered dialogs must not bypass financial-record validation, and the same plain-data contract can move to a future backend. |
 
 ## Change format
 
