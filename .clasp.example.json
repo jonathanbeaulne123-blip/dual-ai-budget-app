@@ -1,0 +1,5 @@
+{
+  "scriptId": "PASTE_DEVELOPMENT_APPS_SCRIPT_ID_HERE",
+  "rootDir": ".",
+  "scriptExtensions": [".gs", ".js"]
+}

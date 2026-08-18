@@ -1,0 +1,18 @@
+node_modules/
+.pnpm-store/
+__pycache__/
+.env
+.env.*
+.clasprc.json
+.clasp.json
+*.log
+*.tmp
+*.bak
+~$*
+.DS_Store
+Thumbs.db
+
+# Local-only household data and recovery artifacts. Never host these in GitHub.
+/Budget_App__v*.ods
+/Project Context.txt
+/local-backups/
