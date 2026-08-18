@@ -607,6 +607,134 @@ function onEdit(e) {
   if (touchesDuplicateInput) recomputePotentialDuplicateFlags_();
 }
 // ======================= ADD TRANSACTION =============================
+// Browser-side controls are a convenience only. This pure function is the
+// authoritative boundary for every Add Transaction request: it accepts plain
+// form/reference data, makes no SpreadsheetApp calls, and returns normalized
+// plain data that the Sheet adapter can safely consume. Issue #6 will add the
+// separate lock/rollback boundary for the later writes.
+function validateAndNormalizeTransactionInput_(form, referenceData) {
+  if (!form || typeof form !== 'object' || Array.isArray(form)) {
+    throw new Error('Transaction details are required.');
+  }
+  if (!referenceData || typeof referenceData !== 'object' || Array.isArray(referenceData)) {
+    throw new Error('Transaction reference data is unavailable — please reopen the form.');
+  }
+
+  if (typeof form.type !== 'string') {
+    throw new Error('Transaction type must be Income or Expense.');
+  }
+  var type = form.type.trim();
+  if (['Income', 'Expense'].indexOf(type) === -1) {
+    throw new Error('Transaction type must be Income or Expense.');
+  }
+
+  if (typeof form.date !== 'string') {
+    throw new Error('Date must be a valid Toronto calendar date in YYYY-MM-DD format.');
+  }
+  var dateKey = form.date.trim();
+  var dateParts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey);
+  if (!dateParts) {
+    throw new Error('Date must be a valid Toronto calendar date in YYYY-MM-DD format.');
+  }
+  var year = Number(dateParts[1]);
+  var month = Number(dateParts[2]);
+  var day = Number(dateParts[3]);
+  var leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  var monthLengths = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (year < 1000 || month < 1 || month > 12 || day < 1 || day > monthLengths[month - 1]) {
+    throw new Error('Date must be a valid Toronto calendar date in YYYY-MM-DD format.');
+  }
+
+  var timeZone = String(referenceData.timeZone || '').trim();
+  if (timeZone !== EXPECTED_TIMEZONE_) {
+    throw new Error('Spreadsheet timezone must be ' + EXPECTED_TIMEZONE_ + ' before adding transactions.');
+  }
+
+  if (form.amount === '' || form.amount === null || typeof form.amount === 'undefined') {
+    throw new Error('Amount is required.');
+  }
+  if (typeof form.amount !== 'string' && typeof form.amount !== 'number') {
+    throw new Error('Amount must be a positive number.');
+  }
+  var amountText = typeof form.amount === 'string' ? form.amount.trim() : '';
+  if (typeof form.amount === 'string' && !/^(?:\d+(?:\.\d{1,2})?|\.\d{1,2})$/.test(amountText)) {
+    throw new Error('Amount must be a positive decimal with no more than two decimal places.');
+  }
+  var amount = Number(typeof form.amount === 'string' ? amountText : form.amount);
+  if (!isFinite(amount) || amount <= 0) {
+    throw new Error('Amount must be a positive number.');
+  }
+  var rawCents = amount * 100;
+  var amountCents = Math.round(rawCents);
+  if (Math.abs(rawCents - amountCents) > 0.0000001) {
+    throw new Error('Amount must use no more than two decimal places.');
+  }
+  if (Math.abs(amountCents) > 9007199254740991) {
+    throw new Error('Amount is too large to represent safely in cents.');
+  }
+  amount = amountCents / 100;
+
+  if (typeof form.subId !== 'string') throw new Error('Category is required.');
+  var subId = form.subId.trim();
+  if (!subId) throw new Error('Category is required.');
+  var categories = Array.isArray(referenceData.categories) ? referenceData.categories : [];
+  var category = categories.filter(function (candidate) {
+    return candidate && candidate.subId === subId;
+  })[0];
+  if (!category) {
+    throw new Error('Category is no longer active — please reopen the form.');
+  }
+  if (category.transactionType !== type) {
+    throw new Error('Selected category does not match the transaction type — please choose again.');
+  }
+  if (!category.parentId || !category.subName) {
+    throw new Error('Category configuration is incomplete — run Data Health Check before trying again.');
+  }
+
+  if (form.memberId !== null && typeof form.memberId !== 'undefined' && typeof form.memberId !== 'string') {
+    throw new Error('Household member selection is invalid — please reopen the form.');
+  }
+  var memberId = String(form.memberId || '').trim();
+  var members = Array.isArray(referenceData.members) ? referenceData.members : [];
+  if (memberId) {
+    var memberIsActive = members.some(function (member) {
+      return member && member.id === memberId;
+    });
+    if (!memberIsActive) {
+      throw new Error('Household member is no longer active — please reopen the form.');
+    }
+  }
+
+  var accountId = String(referenceData.accountId || '').trim();
+  if (!accountId) {
+    throw new Error('No active account is available for this transaction.');
+  }
+
+  if (form.note !== null && typeof form.note !== 'undefined' && typeof form.note !== 'string') {
+    throw new Error('Note must be text.');
+  }
+
+  return {
+    dateKey: dateKey,
+    timeZone: timeZone,
+    type: type,
+    amount: amount,
+    amountCents: amountCents,
+    subId: subId,
+    memberId: memberId,
+    note: String(form.note || '').trim(),
+    accountId: accountId,
+    category: {
+      subId: category.subId,
+      subName: category.subName,
+      parentId: category.parentId,
+      transactionType: category.transactionType,
+      essentialDefault: category.essentialDefault || '',
+      incomeStabilityDefault: category.incomeStabilityDefault || ''
+    }
+  };
+}
+
 function showAddTransactionDialog() {
   var template = HtmlService.createTemplateFromFile('AddTransactionDialog');
   template.members = getHouseholdMembersList_();
@@ -619,19 +747,12 @@ function showAddTransactionDialog() {
  * form = { date, type, amount, subId, memberId, note }
  */
 function addTransaction(form) {
-  if (!form.date || !form.type || !form.amount || !form.subId) {
-    throw new Error('Please fill in date, type, amount, and category.');
-  }
-  var amount = Number(form.amount);
-  if (!isFinite(amount) || amount <= 0) throw new Error('Amount must be a positive number.');
-  var cat = getCategoriesList_().filter(function (c) { return c.subId === form.subId; })[0];
-  if (!cat) throw new Error('Category not found — please reopen the form.');
-  var accountId = getActiveAccountId_();
-  var batchId = getOrCreateManualBatch_(accountId);
-  var txnSeq = nextSequence_('Transactions', 'Transaction_ID');
-  var rawSeq = nextSequence_('Raw Transactions', 'Raw_Record_ID');
-  var txnId = 'TXN-MANUAL-' + pad_(txnSeq, 6);
-  var rawId = 'RAW-MANUAL-' + pad_(rawSeq, 6);
+  var input = validateAndNormalizeTransactionInput_(form, {
+    categories: getCategoriesList_(),
+    members: getHouseholdMembersList_(),
+    accountId: getActiveAccountId_(),
+    timeZone: getTz_()
+  });
   // Parsed explicitly in the SPREADSHEET's own timezone (getTz_()),
   // not the Apps Script runtime's implicit one — the same class of fix
   // as getTz_()/monthKey_()/monthStartFromKey_() above. Previously this
@@ -640,8 +761,21 @@ function addTransaction(form) {
   // spreadsheet's, a date entered near midnight could be saved and
   // later displayed one day off from what was actually typed. (Fixed
   // 2026-08-17, v0.0.17.)
-  var date = Utilities.parseDate(form.date, getTz_(), 'yyyy-MM-dd');
-  var note = form.note || '';
+  var date = Utilities.parseDate(input.dateKey, input.timeZone, 'yyyy-MM-dd');
+  if (!(date instanceof Date) || isNaN(date.getTime()) || Utilities.formatDate(date, input.timeZone, 'yyyy-MM-dd') !== input.dateKey) {
+    throw new Error('Date could not be represented safely in ' + input.timeZone + '.');
+  }
+  // Everything above is read-only validation/parsing. Issue #6 will place
+  // the write section below under one lock with rollback; until then, keeping
+  // every validation failure above this line guarantees zero Sheet changes.
+  var batchId = getOrCreateManualBatch_(input.accountId);
+  var txnSeq = nextSequence_('Transactions', 'Transaction_ID');
+  var rawSeq = nextSequence_('Raw Transactions', 'Raw_Record_ID');
+  var txnId = 'TXN-MANUAL-' + pad_(txnSeq, 6);
+  var rawId = 'RAW-MANUAL-' + pad_(rawSeq, 6);
+  var amount = input.amount;
+  var cat = input.category;
+  var note = input.note;
   var now = new Date();
   // Raw Transactions — every value placed by header name (see
   // rowFromHeaders_ above), so this still lands in the right columns
@@ -651,10 +785,10 @@ function addTransaction(form) {
     Raw_Record_ID: rawId,
     Import_Batch_ID: batchId,
     Source_System: 'Manual entry (Add Transaction tool)',
-    Account_ID: accountId,
+    Account_ID: input.accountId,
     Imported_At: now,
     Raw_Transaction_Date: date,
-    Raw_Type: form.type,
+    Raw_Type: input.type,
     Raw_Category: cat.subName,
     Raw_Description: note,
     Raw_Amount: amount,
@@ -672,14 +806,14 @@ function addTransaction(form) {
     Transaction_ID: txnId,
     Raw_Record_ID: rawId,
     Import_Batch_ID: batchId,
-    Account_ID: accountId,
-    Member_ID: form.memberId || '', // blank = Joint/Shared
+    Account_ID: input.accountId,
+    Member_ID: input.memberId, // blank = Joint/Shared
     Transaction_Date: date,
-    Transaction_Type: form.type,
+    Transaction_Type: input.type,
     Amount: amount,
     Currency: 'USD',
     Original_Description: note,
-    Income_Stability: form.type === 'Income' ? (cat.incomeStabilityDefault || '') : '',
+    Income_Stability: input.type === 'Income' ? (cat.incomeStabilityDefault || '') : '',
     Manual_Category_ID: cat.parentId,
     Manual_Subcategory_ID: cat.subId,
     Reviewed_Flag: 'Yes',
@@ -712,9 +846,9 @@ function addTransaction(form) {
     txAcctCol + newRow + '&"|"&' + txTypeCol + newRow + '&"|"&TRIM(' + txDescCol + newRow + ')))'
   );
   recomputePotentialDuplicateFlags_();
-  logChange_('Add Transaction', txnId + ': ' + form.type + ' $' + amount.toFixed(2) + ' (' + cat.subName + ') on ' + Utilities.formatDate(date, getTz_(), 'yyyy-MM-dd'));
+  logChange_('Add Transaction', txnId + ': ' + input.type + ' $' + amount.toFixed(2) + ' (' + cat.subName + ') on ' + input.dateKey);
   refreshBudgetSummarySilently_(); // this transaction may change NET / Household Safety Number / Dashboard Fixed & Variable Income
-  return { ok: true, message: 'Added ' + form.type.toLowerCase() + ' of $' + amount.toFixed(2) + ' (' + cat.subName + ').' };
+  return { ok: true, message: 'Added ' + input.type.toLowerCase() + ' of $' + amount.toFixed(2) + ' (' + cat.subName + ').' };
 }
 // ========================= ADD CATEGORY ==============================
 function showAddCategoryDialog() {
@@ -2874,7 +3008,7 @@ function viewDataDictionary() {
 // becomes a one-glance check instead of a guess, and the Release Notes
 // sheet (see syncReleaseNotes_() below) picks up the new entry
 // automatically the next time anything runs.
-var APP_VERSION = 'v0.0.27';
+var APP_VERSION = 'v0.0.28';
 // ==================== RELEASE NOTES =====================================
 // The full version history — one entry per shipped feature or fix,
 // oldest first. This array is the single source of truth: add one entry
@@ -2909,7 +3043,8 @@ var RELEASE_HISTORY_ = [
   { version: 'v0.0.24', date: '2026-08-18', summary: 'Prepared a guarded development-only data-integrity migration for the verified v0.0.23 findings. A read-only preview locates rows by their stable IDs and real row-4 headers, validates exactly 13 expected cell corrections plus the America/Los_Angeles → America/Toronto spreadsheet-timezone correction, and refuses unexpected or duplicate targets. Apply requires an exact confirmation phrase, rechecks under a document lock, verifies every final value, and rolls back its own writes on failure before refreshing summaries and rerunning Data Health Check. The health check now also detects orphaned Transactions Manual_Category_ID and Effective_Category_ID values, and diagnostics now correctly treats a spreadsheet/project timezone mismatch as actionable rather than harmless.' },
   { version: 'v0.0.25', date: '2026-08-18', summary: 'Added a second guarded development-only migration for 14 legacy Add Shift transaction rows that still referenced the invalid top-level Category_ID "CAT-INCOME". The preview locates TXN-SHIFT-000006 through TXN-SHIFT-000019 by stable ID, validates their Manual_Category_ID cells, and proves each Effective_Category_ID remains a live formula connected to the same-row manual cell. Apply changes only the 14 direct Manual_Category_ID values to the authoritative Income ID "INCOME", preserves and verifies all 14 formulas after recalculation, supports repeat-safe no-op runs and rollback on failure, then refreshes summaries and reruns Data Health Check.' },
   { version: 'v0.0.26', date: '2026-08-18', summary: 'Removed the Potential_Duplicate_Flag formula ceiling at Transactions row 5,000. A pure calcPotentialDuplicateFlags_() engine now counts exact case-insensitive Duplicate_Key values in one O(n) pass, and a thin recomputePotentialDuplicateFlags_() adapter performs one real-extent column read and write. Add Transaction and Add Shift refresh the flags automatically; direct edits to duplicate-key inputs trigger the same recompute; a manual Refresh Duplicate Flags control provides recovery after bulk operations; and Data Health Check reports derived-flag drift. Duplicate_Key formulas and the separately reviewed Is_Duplicate field that controls financial totals are never changed.' },
-  { version: 'v0.0.27', date: '2026-08-18', summary: 'Closed the concurrency gap found in Gemini\'s independent review of v0.0.26. recomputePotentialDuplicateFlags_() now acquires a document-scoped lock before reading the Transactions extent and holds it through the single batched Potential_Duplicate_Flag write, preventing overlapping script recalculations from allowing an older full-column result to overwrite a newer one. A 10-second timeout fails explicitly without writing, and finally always releases an acquired lock. The lock protects only this derived review column; Duplicate_Key, Is_Duplicate, transactions, and financial totals remain outside its write surface.' }
+  { version: 'v0.0.27', date: '2026-08-18', summary: 'Closed the concurrency gap found in Gemini\'s independent review of v0.0.26. recomputePotentialDuplicateFlags_() now acquires a document-scoped lock before reading the Transactions extent and holds it through the single batched Potential_Duplicate_Flag write, preventing overlapping script recalculations from allowing an older full-column result to overwrite a newer one. A 10-second timeout fails explicitly without writing, and finally always releases an acquired lock. The lock protects only this derived review column; Duplicate_Key, Is_Duplicate, transactions, and financial totals remain outside its write surface.' },
+  { version: 'v0.0.28', date: '2026-08-18', summary: 'Added authoritative server validation for Add Transaction. A pure validateAndNormalizeTransactionInput_() boundary now accepts only Income/Expense, validates real YYYY-MM-DD calendar dates under the America/Toronto standard, normalizes positive whole-cent amounts, verifies the selected active subcategory belongs to the submitted type, verifies any nonblank member is active, and returns normalized plain data. addTransaction() completes all reference reads and date parsing before getOrCreateManualBatch_() or any other write-capable helper runs, so invalid, stale, or tampered requests make zero Sheet or batch changes. Write locking and rollback remain separately scoped to Issue #6.' }
 ];
 var RELEASE_NOTES_SHEET_NAME = 'Release Notes';
 // Creates the Release Notes sheet (header row, hidden) the first time

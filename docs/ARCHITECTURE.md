@@ -52,6 +52,13 @@ The repository root will eventually link only to the development Apps Script pro
 - Duplicate matching is exact and case-insensitive after `Duplicate_Key` generation; it does not use spreadsheet wildcard criteria.
 - From v0.0.27, the full-column flag adapter holds a document-scoped lock from before the ledger extent read through the batched flag write. This serializes cooperating Apps Script recalculations; it does not lock the Google Sheets UI or replace the broader transaction-atomicity work tracked separately.
 
+## Transaction Input trust boundary
+
+- Browser controls and dropdown filtering improve usability but are not authoritative. `addTransaction()` treats every submitted field as untrusted.
+- From v0.0.28, `validateAndNormalizeTransactionInput_()` is a pure plain-data boundary for type, Toronto calendar date, whole-cent amount, active subcategory/type agreement, active member, active account, and normalized note data.
+- The Sheet adapter completes authoritative reference reads, pure validation, and Toronto date parsing before calling the first write-capable helper. Invalid, stale, or tampered requests therefore make zero Sheet or batch changes.
+- This boundary does not make a valid multi-sheet submission atomic. Document locking, ID allocation, write planning, and rollback remain Issue #6; account-derived CAD metadata remains Issue #10.
+
 ## Goals and privacy
 
 Shared goals may appear on both dashboards. A hidden tab is not a security boundary: any editor can unhide or inspect it. If personal goals must be genuinely private, they require separate access-controlled storage or the future application's authorization layer.
