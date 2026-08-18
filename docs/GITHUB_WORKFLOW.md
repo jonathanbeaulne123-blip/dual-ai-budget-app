@@ -66,3 +66,10 @@ Low-risk documentation corrections may commit directly to `main` while Jonathan 
 ## Local pre-GitHub archive
 
 The repository migration retains a local-only Git bundle and archive branch containing the original history. They exist only for recovery/audit and must never be pushed. The hosted `main` branch starts from the verified v0.0.25 project state without workbook binaries or the historical context export.
+
+Migration completed on 2026-08-18:
+
+- Local-only archive branch: `local/full-history-pre-github`
+- Verified local bundle: `local-backups/dual-ai-budget-app-full-history-pre-github-2026-08-18.bundle`
+- Clean GitHub root commit: `61a396e`
+- Remote verification: only `origin/main`; fresh clone matched the local commit and contained 31 allowed files with no forbidden artifacts

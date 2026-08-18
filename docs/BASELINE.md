@@ -59,3 +59,15 @@ That maintenance function did not apply its intended corrections because it look
 The historical baseline above remains the recovery reference. Later on 2026-08-18, commit `003ae3c` replaced the ineffective remote maintenance file with the guarded v0.0.24 migration. That source was pushed to development only and verified against a fresh remote clone. Jonathan previewed and applied the migration successfully: 13 exact cells were corrected and the spreadsheet timezone changed to `America/Toronto`.
 
 The post-migration health check exposed 14 legacy Add Shift rows whose direct `Manual_Category_ID` was `CAT-INCOME`; their `Effective_Category_ID` cells were same-row formulas and therefore reported the same invalid value. The separate, guarded v0.0.25 follow-up was committed as `77fab39`, pushed to development only, and source-verified against a fresh remote clone. Jonathan's live preview matched the exact plan, and Apply changed only those 14 direct cells to the authoritative ID `INCOME`, preserved/recalculated the 14 formulas, refreshed the budget summary, and finished with no Data Health Check findings.
+
+## Private GitHub migration
+
+On 2026-08-18, Jonathan created the private repository `jonathanbeaulne123-blip/dual-ai-budget-app`. Before the first push:
+
+- The original repository history was committed through `5cce612` and preserved on local-only branch `local/full-history-pre-github`.
+- A complete bundle was created at `local-backups/dual-ai-budget-app-full-history-pre-github-2026-08-18.bundle` and passed `git bundle verify`.
+- The hosted `main` history was restarted at clean root commit `61a396e` from the verified v0.0.25 working state.
+- Three ODS workbooks, `Project Context.txt`, `.clasp.json`, and the recovery bundle were excluded and confirmed ignored.
+- A staged credential-pattern scan found no private keys, Google API keys, GitHub tokens, or live development Script ID.
+
+The first push created only remote branch `main`. A fresh authenticated clone matched local commit `61a396e`, contained one commit and 31 tracked code/documentation files, and contained zero forbidden local-only artifacts. GitHub is now the canonical editable remote; the pre-GitHub branch and bundle are recovery/audit artifacts and must never be pushed.

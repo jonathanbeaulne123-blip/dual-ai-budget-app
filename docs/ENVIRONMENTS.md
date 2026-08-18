@@ -31,6 +31,8 @@ The live development Sheet should display a conspicuous `DEVELOPMENT` marker and
 - Hosted content: code, tests, current documentation, issue/PR history, and releases
 - Excluded content: Sheet exports, ODS workbooks, historical chats, credentials, `.clasp.json`, and household data
 - Canonical branch: `main`
+- Clean hosted baseline: `61a396e` (`Establish private GitHub project baseline`)
+- Verification: fresh private clone matched local `main`; one hosted branch, one baseline commit, 31 tracked files, zero forbidden artifacts
 - Local-only recovery: the full pre-GitHub Git history and workbook files; never push the archive branch or Git bundle
 
 ## Environment verification
