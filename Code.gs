@@ -102,7 +102,12 @@
  *                             category-set mismatches — see
  *                             runDataHealthCheck_() below (v0.0.23/v0.0.24).
  *                             Read-only — never writes anything.
- *  13. View Data Dictionary – jumps to a new, visible "Data Dictionary"
+ *  13. Refresh Duplicate Flags – recomputes Potential_Duplicate_Flag for
+ *                             the real Transactions data extent in one
+ *                             linear-time pass. Duplicate_Key and the
+ *                             reviewed Is_Duplicate financial control are
+ *                             never changed.
+ *  14. View Data Dictionary – jumps to a new, visible "Data Dictionary"
  *                             sheet mapping every real sheet to its ID
  *                             column, ID scheme, foreign-key relationships
  *                             to other sheets, and any hidden/behind-the-
@@ -110,7 +115,7 @@
  *                             by syncDataDictionary_() (see
  *                             DATA_DICTIONARY_ below, v0.0.23), the same
  *                             self-generating pattern as Release Notes.
- *  14. Preview / Apply v0.0.24 Data Corrections – development-only menu
+ *  15. Preview / Apply v0.0.24 Data Corrections – development-only menu
  *                             controls defined in Maintenance.gs. Preview
  *                             is read-only; Apply is confirmation-gated,
  *                             validates exact IDs/current values, verifies
@@ -185,6 +190,7 @@ function onOpen() {
     .addSeparator()
     .addItem('Show Version & Diagnostics', 'showDiagnostics')
     .addItem('Data Health Check', 'dataHealthCheck')
+    .addItem('Refresh Duplicate Flags', 'refreshPotentialDuplicateFlags')
     .addItem('View Data Dictionary', 'viewDataDictionary');
   // The migration controls never appear in production. typeof keeps onOpen
   // resilient if an incomplete paste omitted Maintenance.gs.
@@ -269,7 +275,7 @@ function col_(sheetName, headerName) {
   return c;
 }
 // A1-style column letter for `headerName` on `sheetName` — for building
-// formula strings that need a real cell reference (e.g. "$F$5:$F$5000").
+// formula strings that need a real cell reference (e.g. "$F5").
 function colLetter_(sheetName, headerName) {
   return columnToLetter_(col_(sheetName, headerName));
 }
@@ -487,6 +493,106 @@ function getTopLevelCategoriesList_() {
     .filter(function (c) { return c.Record_Type === 'Category' && c.Active_Flag === 'Yes'; })
     .map(function (c) { return { id: c.Category_ID, name: c.Category_Name, transactionType: c.Transaction_Type }; });
 }
+// ==================== DUPLICATE REVIEW ENGINE =========================
+// Potential_Duplicate_Flag is a review aid, not the financial control:
+// only the separately-reviewed Is_Duplicate column affects Budget,
+// Dashboard, and Income History totals. Before v0.0.26 every transaction
+// carried its own COUNTIF formula capped at row 5,000. That both missed
+// later rows and made scaling the range increasingly expensive. This pure
+// function counts exact, case-insensitive Duplicate_Key values in O(n),
+// then returns the same "flag every occurrence when a key repeats" policy.
+// Duplicate_Key itself is deliberately left unchanged.
+function calcPotentialDuplicateFlags_(duplicateKeys) {
+  var canonicalKeys = duplicateKeys.map(function (value) {
+    if (value === '' || value === null || typeof value === 'undefined') return '';
+    return String(value).toLowerCase();
+  });
+  var counts = {};
+  canonicalKeys.forEach(function (key) {
+    if (!key) return;
+    var token = '$' + key; // prefix avoids special object keys such as __proto__
+    counts[token] = (counts[token] || 0) + 1;
+  });
+  var duplicateKeyCount = 0;
+  Object.keys(counts).forEach(function (token) {
+    if (counts[token] > 1) duplicateKeyCount++;
+  });
+  var duplicateRowCount = 0;
+  var flags = canonicalKeys.map(function (key) {
+    if (!key) return '';
+    var flag = counts['$' + key] > 1 ? 'Yes' : 'No';
+    if (flag === 'Yes') duplicateRowCount++;
+    return flag;
+  });
+  return {
+    flags: flags,
+    duplicateKeyCount: duplicateKeyCount,
+    duplicateRowCount: duplicateRowCount
+  };
+}
+
+// Thin Sheet I/O wrapper: one column read and one column write, regardless
+// of ledger length. SpreadsheetApp.flush() makes sure a newly-written
+// Duplicate_Key formula has recalculated before its value is counted.
+function recomputePotentialDuplicateFlags_() {
+  var sh = sheet_('Transactions');
+  var lastRow = sh.getLastRow();
+  if (lastRow < 5) {
+    return { scannedRows: 0, duplicateKeyCount: 0, duplicateRowCount: 0 };
+  }
+  SpreadsheetApp.flush();
+  var rowCount = lastRow - 4;
+  var keyValues = sh.getRange(5, col_('Transactions', 'Duplicate_Key'), rowCount, 1).getValues();
+  var result = calcPotentialDuplicateFlags_(keyValues.map(function (row) { return row[0]; }));
+  sh.getRange(5, col_('Transactions', 'Potential_Duplicate_Flag'), rowCount, 1)
+    .setValues(result.flags.map(function (flag) { return [flag]; }));
+  return {
+    scannedRows: rowCount,
+    duplicateKeyCount: result.duplicateKeyCount,
+    duplicateRowCount: result.duplicateRowCount
+  };
+}
+
+// Manual recovery/control for bulk imports or diagnostics. This only
+// rewrites the derived Potential_Duplicate_Flag column.
+function refreshPotentialDuplicateFlags() {
+  var result = recomputePotentialDuplicateFlags_();
+  logChange_('Refresh Duplicate Flags', 'Scanned ' + result.scannedRows + ' transaction row(s); ' +
+    result.duplicateRowCount + ' row(s) across ' + result.duplicateKeyCount + ' repeated key(s) flagged.');
+  SpreadsheetApp.getUi().alert(
+    'Budget Tools — Duplicate Review',
+    '✓ Duplicate review flags refreshed across ' + result.scannedRows + ' transaction row(s).\n\n' +
+    result.duplicateRowCount + ' row(s) share ' + result.duplicateKeyCount + ' repeated key(s).\n' +
+    'Duplicate_Key and Is_Duplicate were not changed.',
+    SpreadsheetApp.getUi().ButtonSet.OK
+  );
+}
+
+// Preserve the old formula-driven instant-update behavior for direct edits
+// to the fields that make up Duplicate_Key. Script writes do not fire this
+// simple trigger; Add Transaction and Add Shift call the recompute directly.
+function onEdit(e) {
+  if (!e || !e.range) return;
+  var editedSheet = e.range.getSheet();
+  if (editedSheet.getName() !== 'Transactions') return;
+  var lastEditedRow = e.range.getRow() + e.range.getNumRows() - 1;
+  if (lastEditedRow < 5) return;
+  var firstEditedCol = e.range.getColumn();
+  var lastEditedCol = firstEditedCol + e.range.getNumColumns() - 1;
+  var watchedColumns = [
+    col_('Transactions', 'Transaction_Date'),
+    col_('Transactions', 'Amount'),
+    col_('Transactions', 'Account_ID'),
+    col_('Transactions', 'Transaction_Type'),
+    col_('Transactions', 'Original_Description'),
+    col_('Transactions', 'Duplicate_Key'),
+    col_('Transactions', 'Potential_Duplicate_Flag')
+  ];
+  var touchesDuplicateInput = watchedColumns.some(function (column) {
+    return column >= firstEditedCol && column <= lastEditedCol;
+  });
+  if (touchesDuplicateInput) recomputePotentialDuplicateFlags_();
+}
 // ======================= ADD TRANSACTION =============================
 function showAddTransactionDialog() {
   var template = HtmlService.createTemplateFromFile('AddTransactionDialog');
@@ -543,10 +649,10 @@ function addTransaction(form) {
     Raw_Notes: note,
     Normalization_Status: 'Normalized'
   }));
-  // Transactions — same header-name approach. Effective_Category_ID /
-  // Effective_Subcategory_ID / Duplicate_Key / Potential_Duplicate_Flag
-  // are formula columns, set separately below once the row exists (so
-  // the formula text can reference this exact row number).
+  // Transactions — same header-name approach. Effective_Category_ID,
+  // Effective_Subcategory_ID, and Duplicate_Key are formula columns, set
+  // separately below once the row exists. Potential_Duplicate_Flag is
+  // then derived for the full ledger by recomputePotentialDuplicateFlags_().
   var txSheet = sheet_('Transactions');
   var newRow = txSheet.getLastRow() + 1;
   var txRow = rowFromHeaders_('Transactions', {
@@ -581,7 +687,6 @@ function addTransaction(form) {
   var autoCatCol = colLetter_('Transactions', 'Auto_Category_ID');
   var autoSubCol = colLetter_('Transactions', 'Auto_Subcategory_ID');
   var dupKeyCol = colLetter_('Transactions', 'Duplicate_Key');
-  var potDupCol = colLetter_('Transactions', 'Potential_Duplicate_Flag');
   var txDateCol = colLetter_('Transactions', 'Transaction_Date');
   var txAmountCol = colLetter_('Transactions', 'Amount');
   var txAcctCol = colLetter_('Transactions', 'Account_ID');
@@ -593,9 +698,7 @@ function addTransaction(form) {
     '=IF(' + txDateCol + newRow + '="","",LOWER(TEXT(' + txDateCol + newRow + ',"yyyymmdd")&"|"&TEXT(' + txAmountCol + newRow + ',"0.00")&"|"&' +
     txAcctCol + newRow + '&"|"&' + txTypeCol + newRow + '&"|"&TRIM(' + txDescCol + newRow + ')))'
   );
-  txSheet.getRange(potDupCol + newRow).setFormula(
-    '=IF(' + dupKeyCol + newRow + '="","",IF(COUNTIF($' + dupKeyCol + '$5:$' + dupKeyCol + '$5000,' + dupKeyCol + newRow + ')>1,"Yes","No"))'
-  );
+  recomputePotentialDuplicateFlags_();
   logChange_('Add Transaction', txnId + ': ' + form.type + ' $' + amount.toFixed(2) + ' (' + cat.subName + ') on ' + Utilities.formatDate(date, getTz_(), 'yyyy-MM-dd'));
   refreshBudgetSummarySilently_(); // this transaction may change NET / Household Safety Number / Dashboard Fixed & Variable Income
   return { ok: true, message: 'Added ' + form.type.toLowerCase() + ' of $' + amount.toFixed(2) + ' (' + cat.subName + ').' };
@@ -1679,7 +1782,6 @@ function postShiftTransaction_(date, amount, subId, subName, memberId, note, bat
   var autoCatCol = colLetter_('Transactions', 'Auto_Category_ID');
   var autoSubCol = colLetter_('Transactions', 'Auto_Subcategory_ID');
   var dupKeyCol = colLetter_('Transactions', 'Duplicate_Key');
-  var potDupCol = colLetter_('Transactions', 'Potential_Duplicate_Flag');
   var txDateCol = colLetter_('Transactions', 'Transaction_Date');
   var txAmountCol = colLetter_('Transactions', 'Amount');
   var txAcctCol = colLetter_('Transactions', 'Account_ID');
@@ -1691,9 +1793,6 @@ function postShiftTransaction_(date, amount, subId, subName, memberId, note, bat
   txSheet.getRange(dupKeyCol + newRow).setFormula(
     '=IF(' + txDateCol + newRow + '="","",LOWER(TEXT(' + txDateCol + newRow + ',"yyyymmdd")&"|"&TEXT(' + txAmountCol + newRow + ',"0.00")&"|"&' +
     txAcctCol + newRow + '&"|"&' + txTypeCol + newRow + '&"|"&TRIM(' + txDescCol + newRow + ')))'
-  );
-  txSheet.getRange(potDupCol + newRow).setFormula(
-    '=IF(' + dupKeyCol + newRow + '="","",IF(COUNTIF($' + dupKeyCol + '$5:$' + dupKeyCol + '$5000,' + dupKeyCol + newRow + ')>1,"Yes","No"))'
   );
 
   return txnId;
@@ -1760,6 +1859,7 @@ function addShift(form) {
   var dateLabel = Utilities.formatDate(date, tz, 'MMM d, yyyy');
   var wageTxnId = postShiftTransaction_(date, wages, wagesSubId, 'Wages', form.memberId, 'Shift ' + dateLabel + ' — ' + hours + ' hrs', batchId, accountId);
   var tipsTxnId = postShiftTransaction_(date, netTips, tipsSubId, 'Tips', form.memberId, 'Shift ' + dateLabel + ' — net tips after tip-out', batchId, accountId);
+  recomputePotentialDuplicateFlags_();
 
   logChange_('Add Shift', dateLabel + ': ' + wageTxnId + ' Wages $' + wages.toFixed(2) + ', ' + tipsTxnId + ' Tips $' + netTips.toFixed(2) +
     ' (Sales $' + sales.toFixed(2) + ', tip-out: floor $' + floorTipOut.toFixed(2) + ' + bar $' + barTipOut.toFixed(2) + ' + CC $' + ccTipOut.toFixed(2) + ')');
@@ -2563,6 +2663,24 @@ function runDataHealthCheck_() {
     flag('Orphaned transaction links', orphanMemberCount + ' Transactions row(s) have a Member_ID that doesn\'t match any active Household Member.');
   }
 
+  // Check 4b: Potential_Duplicate_Flag is derived from Duplicate_Key by the
+  // linear-time v0.0.26 engine. Any mismatch means a failed/interrupted
+  // refresh or an unsupported direct edit; Is_Duplicate is intentionally
+  // not part of this check because it is the separate reviewed decision.
+  var expectedDuplicateFlags = calcPotentialDuplicateFlags_(transactions.map(function (t) { return t.Duplicate_Key; })).flags;
+  var driftedDuplicateFlagTxIds = [];
+  transactions.forEach(function (t, index) {
+    var actualFlag = String(t.Potential_Duplicate_Flag || '');
+    if (actualFlag !== expectedDuplicateFlags[index]) {
+      driftedDuplicateFlagTxIds.push(String(t.Transaction_ID || 'row ' + t._row).trim());
+    }
+  });
+  if (driftedDuplicateFlagTxIds.length) {
+    flag('Duplicate flag drift', driftedDuplicateFlagTxIds.length +
+      ' Transactions row(s) have a Potential_Duplicate_Flag that does not match the full ledger: ' +
+      summarizeTransactionIds(driftedDuplicateFlagTxIds) + '. Run Refresh Duplicate Flags.');
+  }
+
   // Check 5: orphaned Subcategory_ID on active Budget Plan rows.
   var budgetPlan = readTable_('Budget Plan');
   var orphanPlanCount = 0;
@@ -2670,7 +2788,7 @@ var DATA_DICTIONARY_ = [
   { sheet: 'Accounts', idColumn: 'Account_ID', idScheme: 'ACC-<LABEL>, e.g. ACC-LEGACY-001.', foreignKeys: 'Owner_Member_ID → Household Members.Member_ID. Referenced by Raw Transactions.Account_ID and Import Batches.Account_ID.', notes: 'No hidden columns.' },
   { sheet: 'Import Batches', idColumn: 'Import_Batch_ID', idScheme: 'One row per import run.', foreignKeys: 'Account_ID → Accounts.Account_ID. Referenced by Raw Transactions.Import_Batch_ID.', notes: 'No hidden columns.' },
   { sheet: 'Raw Transactions', idColumn: 'Raw_Record_ID', idScheme: 'One row per imported bank line, before normalization.', foreignKeys: 'Import_Batch_ID → Import Batches.Import_Batch_ID. Account_ID → Accounts.Account_ID.', notes: 'Transactions rows are built from these; Raw_Payload holds the original source data verbatim.' },
-  { sheet: 'Transactions', idColumn: 'Transaction_ID', idScheme: 'TXN-... — one per posted transaction.', foreignKeys: 'Member_ID → Household Members.Member_ID. Manual_Category_ID / Auto_Category_ID / Effective_Category_ID → Categories.Category_ID (Record_Type=Category). Manual_Subcategory_ID / Auto_Subcategory_ID / Effective_Subcategory_ID → Categories.Category_ID (Record_Type=Subcategory).', notes: 'Hidden/behind-the-scenes columns: Duplicate_Key (computed dedupe fingerprint), Potential_Duplicate_Flag, Is_Duplicate — Refresh Budget Summary and Income History only count rows where Is_Duplicate = "No". Effective_* resolves Manual_* first, falling back to Auto_* (see addTransaction() in Code.gs).' },
+  { sheet: 'Transactions', idColumn: 'Transaction_ID', idScheme: 'TXN-... — one per posted transaction.', foreignKeys: 'Member_ID → Household Members.Member_ID. Manual_Category_ID / Auto_Category_ID / Effective_Category_ID → Categories.Category_ID (Record_Type=Category). Manual_Subcategory_ID / Auto_Subcategory_ID / Effective_Subcategory_ID → Categories.Category_ID (Record_Type=Subcategory).', notes: 'Hidden/behind-the-scenes columns: Duplicate_Key (computed dedupe fingerprint), Potential_Duplicate_Flag (linear-time full-ledger review aid), Is_Duplicate (reviewed financial control) — Refresh Budget Summary and Income History only count rows where Is_Duplicate = "No". Effective_* resolves Manual_* first, falling back to Auto_* (see addTransaction() in Code.gs).' },
   { sheet: 'Budget Plan', idColumn: 'Budget_ID', idScheme: 'One row per category per month.', foreignKeys: 'Member_ID → Household Members.Member_ID. Account_ID → Accounts.Account_ID. Subcategory_ID → Categories.Category_ID (Record_Type=Subcategory).', notes: 'Active_Flag governs whether a row counts toward Budget/Dashboard\'s Budgeted figures — see groupAmountsByKey_() in Code.gs.' },
   { sheet: 'Budget', idColumn: 'n/a — presentation sheet, not a data table', idScheme: 'n/a', foreignKeys: 'Column E, on the income and expense line-item rows, holds that row\'s Subcategory_ID → Categories.Category_ID — the hidden join key recomputeBudgetSummaryMetrics_() in Code.gs uses to match rows by ID instead of position.', notes: 'E2 holds the freshness indicator (v0.0.23, updateFreshnessIndicator_() in Code.gs) — green when the numbers below were refreshed within 24 hours, red otherwise.' },
   { sheet: 'Dashboard', idColumn: 'n/a — presentation sheet, not a data table', idScheme: 'n/a', foreignKeys: 'Column G, on the category-mirror rows (6–40), holds that row\'s Subcategory_ID → Categories.Category_ID — same hidden join key as Budget!E.', notes: 'F2 holds the freshness indicator (v0.0.23) — same as Budget!E2.' },
@@ -2743,7 +2861,7 @@ function viewDataDictionary() {
 // becomes a one-glance check instead of a guess, and the Release Notes
 // sheet (see syncReleaseNotes_() below) picks up the new entry
 // automatically the next time anything runs.
-var APP_VERSION = 'v0.0.25';
+var APP_VERSION = 'v0.0.26';
 // ==================== RELEASE NOTES =====================================
 // The full version history — one entry per shipped feature or fix,
 // oldest first. This array is the single source of truth: add one entry
@@ -2776,7 +2894,8 @@ var RELEASE_HISTORY_ = [
   { version: 'v0.0.22', date: '2026-08-18', summary: 'Full script-driven migration, per Jonathan\'s direction: "no more hardcoding into excel, all logic through the script." A 2026-08-18 full-formula audit found that v0.0.20\'s date-match fix and v0.0.21\'s metrics migration both only ever apply going forward — neither can reach back and repair a formula already sitting in a cell — which left two CRITICAL, currently-live gaps: Budget!C6/C7/C10 (Income Budgeted) still running the pre-fix exact-date-match SUMIFS, and every category present since the original migration (plus Income History\'s entire 361-formula surface) reading Transactions through a range hardcoded to rows 5:33, about 6 real transactions from silently freezing. Rather than patch those two spots again, recomputeBudgetSummaryMetrics_() now owns the ENTIRE Budget/Dashboard/Income History numeric surface — every category\'s Budgeted and Actual (Budget!C6:D10, C16:D33), the Income/Expense/Essential totals, NET, the Income vs Expenses recap, the Household Safety Number, Dashboard\'s per-category Budgeted/Actual/Remaining mirror (matched by Subcategory_ID, not row position), Dashboard\'s Total Income/Expenses (Actual)/Net/Savings Rate (previously a formula chain reading through cells this function already wrote — one less place for the two to disagree, closing audit Finding 5a), Budget\'s "suggested variable income estimate," and — via a new recomputeIncomeHistory_() — every month on Income History except the November 2025 row explicitly marked "Preserved from original workbook" in its Notes column (that one predates the transaction ledger and has nothing to derive it from; every other row already said "Derived from Transactions," which is exactly what this now does, in the script instead of a range-capped formula). Budget Plan and Transactions are read once per run via the existing getLastRow()-based readTable_() (no hardcoded row cap of any kind) and grouped into lookup maps, so every category/month is an O(1) lookup instead of a fresh table scan — the efficient script-side equivalent of what used to be dozens of separate SUMIFS. insertBudgetRow_()/addDashboardRow_() no longer write any Budgeted/Actual/Remaining formula text at all — those cells are left blank at insert time and filled in by the recompute that already runs immediately after, in every caller. Deliberately NOT converted: Transactions\' own row-level helper formulas (Effective_Category_ID/Subcategory_ID, Duplicate_Key, Potential_Duplicate_Flag) and the Categories-lookup name formulas (Budget!A, Dashboard!B) — both reference only their own row or an already-generously-capped lookup range, neither is the hardcoded-range-silently-drops-data failure class this migration exists to close, and converting them would trade an instant update (e.g. re-categorizing a transaction by hand takes effect immediately today) for a staleness window, for no bug-safety benefit. validateBudgetSummaryAnchors_() extended to cover the new anchors (Budget!"Category", Dashboard!"Total Income (Actual)"/"Total Expenses (Actual)"/"Net (Actual)"/"Savings Rate"). Verified via simulation against Jonathan\'s uploaded workbook plus a genuine pyuno recalculation before delivery — see the "Budgeting App" Claude project\'s full-formula-audit-2026-08-18.md for the audit this responds to.' },
   { version: 'v0.0.23', date: '2026-08-18', summary: 'Four additions, all confirmed by Jonathan right after the v0.0.22 delivery. (1) Pure compute layer: the Budget/Dashboard/Income History math (calcBudgetSummary_(), calcIncomeHistory_(), groupAmountsByKey_(), groupIncomeTxByMonth_()) is now split out from the sheet I/O (recomputeBudgetSummaryMetrics_(), recomputeIncomeHistory_()) — the compute functions take plain JS data in and return plain JS data out, with zero SpreadsheetApp calls inside, so this logic can port almost unchanged into a real app backend later; the I/O functions are now thin read-compute-write wrappers around them. Same numbers, same cells, purely a reorganization — verified via simulation to produce identical output to pre-refactor v0.0.22. (2) Freshness indicator: a one-cell, color-coded status badge (updateFreshnessIndicator_()) written to Budget!E2 and Dashboard!F2 every time the summary recomputes — green "✓ Refreshed Xm ago" or red "⚠ Stale"/"⚠ Never refreshed," visible right on the sheets Jonathan and Bianca are already looking at, not just inside Show Version & Diagnostics. Cell placement (Budget!E2, Dashboard!F2) was chosen by inspecting the real workbook\'s merged-cell ranges to find the first free, unmerged cell near each title. (3) Data Health Check (runDataHealthCheck_(), new "Data Health Check" menu item): a read-only scan for the orphaned-foreign-key and duplicate/drifted-name bug class this project has hit before (the CAT-INCOME/INCOME dangling reference from v0.0.19; the "2 Cat Litter subcategories" duplicate flagged in the roadmap) — checks orphaned Parent_Category_ID on Subcategory rows, duplicate active Category_IDs, duplicate/drifted category names, orphaned Effective_Subcategory_ID and Member_ID on Transactions, orphaned Subcategory_ID on Budget Plan rows, blank/orphaned Subcategory_ID on Budget/Dashboard, and Budget-vs-Dashboard category-set mismatches. Same read-only, never-calls-setValue contract as showDiagnostics(). (4) Data Dictionary (new visible "Data Dictionary" sheet, DATA_DICTIONARY_ + getOrCreateDataDictionarySheet_() + syncDataDictionary_(), new "View Data Dictionary" menu item): a self-generating reference sheet mapping every real sheet to its ID column, ID scheme, foreign-key relationships, and hidden/behind-the-scenes columns — same source-of-truth-array pattern as Release Notes, but a full rewrite each sync (not an append) and left visible by default rather than hidden, since it\'s meant to be opened and read.' },
   { version: 'v0.0.24', date: '2026-08-18', summary: 'Prepared a guarded development-only data-integrity migration for the verified v0.0.23 findings. A read-only preview locates rows by their stable IDs and real row-4 headers, validates exactly 13 expected cell corrections plus the America/Los_Angeles → America/Toronto spreadsheet-timezone correction, and refuses unexpected or duplicate targets. Apply requires an exact confirmation phrase, rechecks under a document lock, verifies every final value, and rolls back its own writes on failure before refreshing summaries and rerunning Data Health Check. The health check now also detects orphaned Transactions Manual_Category_ID and Effective_Category_ID values, and diagnostics now correctly treats a spreadsheet/project timezone mismatch as actionable rather than harmless.' },
-  { version: 'v0.0.25', date: '2026-08-18', summary: 'Added a second guarded development-only migration for 14 legacy Add Shift transaction rows that still referenced the invalid top-level Category_ID "CAT-INCOME". The preview locates TXN-SHIFT-000006 through TXN-SHIFT-000019 by stable ID, validates their Manual_Category_ID cells, and proves each Effective_Category_ID remains a live formula connected to the same-row manual cell. Apply changes only the 14 direct Manual_Category_ID values to the authoritative Income ID "INCOME", preserves and verifies all 14 formulas after recalculation, supports repeat-safe no-op runs and rollback on failure, then refreshes summaries and reruns Data Health Check.' }
+  { version: 'v0.0.25', date: '2026-08-18', summary: 'Added a second guarded development-only migration for 14 legacy Add Shift transaction rows that still referenced the invalid top-level Category_ID "CAT-INCOME". The preview locates TXN-SHIFT-000006 through TXN-SHIFT-000019 by stable ID, validates their Manual_Category_ID cells, and proves each Effective_Category_ID remains a live formula connected to the same-row manual cell. Apply changes only the 14 direct Manual_Category_ID values to the authoritative Income ID "INCOME", preserves and verifies all 14 formulas after recalculation, supports repeat-safe no-op runs and rollback on failure, then refreshes summaries and reruns Data Health Check.' },
+  { version: 'v0.0.26', date: '2026-08-18', summary: 'Removed the Potential_Duplicate_Flag formula ceiling at Transactions row 5,000. A pure calcPotentialDuplicateFlags_() engine now counts exact case-insensitive Duplicate_Key values in one O(n) pass, and a thin recomputePotentialDuplicateFlags_() adapter performs one real-extent column read and write. Add Transaction and Add Shift refresh the flags automatically; direct edits to duplicate-key inputs trigger the same recompute; a manual Refresh Duplicate Flags control provides recovery after bulk operations; and Data Health Check reports derived-flag drift. Duplicate_Key formulas and the separately reviewed Is_Duplicate field that controls financial totals are never changed.' }
 ];
 var RELEASE_NOTES_SHEET_NAME = 'Release Notes';
 // Creates the Release Notes sheet (header row, hidden) the first time

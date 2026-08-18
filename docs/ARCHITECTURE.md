@@ -43,6 +43,14 @@ The repository root will eventually link only to the development Apps Script pro
 - Keep recurring definitions separate from posted transactions.
 - Record all dates and month keys using the spreadsheet time zone `America/Toronto`.
 
+## Duplicate review boundary
+
+- `Duplicate_Key` is the deterministic transaction fingerprint and remains independent of duplicate-review decisions.
+- `Potential_Duplicate_Flag` is a derived review aid. From v0.0.26 onward it is recomputed from the real ledger extent by a pure O(n) grouping function plus one batched column read/write; it is not a per-row range formula.
+- `Is_Duplicate` is the separately reviewed financial control. Only this field determines whether Budget, Dashboard, and Income History calculations exclude a transaction.
+- Add Transaction, Add Shift, and direct edits to duplicate-key inputs refresh potential flags. A manual refresh provides recovery after bulk or external operations.
+- Duplicate matching is exact and case-insensitive after `Duplicate_Key` generation; it does not use spreadsheet wildcard criteria.
+
 ## Goals and privacy
 
 Shared goals may appear on both dashboards. A hidden tab is not a security boundary: any editor can unhide or inspect it. If personal goals must be genuinely private, they require separate access-controlled storage or the future application's authorization layer.
@@ -67,4 +75,3 @@ Preserve Raw Transactions, Import Batches, Accounts, categorization rules, and d
 ## Future application migration
 
 The database migration should occur only after Jonathan and Bianca have stress-tested the Sheets version and are satisfied with its features, insights, and usefulness. Pure calculation functions and stable data contracts should be portable to the future backend.
-

@@ -5,6 +5,7 @@ This private GitHub repository is the canonical editable home for the household 
 ## Current baseline
 
 - Development Apps Script: `v0.0.25` (commit `77fab39`, deployed, source-verified, and migration-verified with a clean Data Health Check)
+- Current code candidate: `v0.0.26` for Issue #8 duplicate-review scaling; not yet deployed
 - GitHub import baseline: `61a396e` (private `main`, verified by a clean clone with no local-only artifacts)
 - Development workbook snapshot: `Budget_App__v 0.23  -dev- Copy.ods`
 - Production workbook snapshot: `Budget_App__v 0.23.ods`
@@ -17,13 +18,13 @@ The two `v0.23` ODS files were byte-identical when this repository was establish
 
 ## Product direction
 
-The immediate goal is a reliable tri-AI development ecosystem and a complete functionality/visual review. The first user-facing release targets are:
+The immediate goal is a reliable tri-AI development ecosystem and a code-focused reliability review. The first functional release targets are:
 
 1. Transaction Input
 2. Tip Tracking
 3. Dashboard
 
-A functional Sheets test build is targeted for September 1, 2026, and a Bianca-ready Sheets release for October 1, 2026. A mobile-friendly application remains the longer-term destination.
+A functional Sheets test build is targeted for September 1, 2026. Non-code long-range product and interface work is deferred; current architecture effort prioritizes scalability, security, reliability, and portability.
 
 ## Start here
 
@@ -38,6 +39,7 @@ A functional Sheets test build is targeted for September 1, 2026, and a Bianca-r
 - [Clasp setup](docs/CLASP_SETUP.md)
 - [Live verification findings](docs/LIVE_VERIFICATION_2026-08-18.md)
 - [v0.0.25 legacy income-ID release](docs/V0.0.25_LEGACY_INCOME_RELEASE.md)
+- [v0.0.26 duplicate-scaling release candidate](docs/V0.0.26_DUPLICATE_SCALING_RELEASE.md)
 - [GitHub workflow and beginner guide](docs/GITHUB_WORKFLOW.md)
 - [Active September 1 milestone](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/milestone/1)
 
@@ -51,4 +53,4 @@ After dependencies are installed:
 pnpm test
 ```
 
-The checks parse every `.gs` file, detect duplicate top-level function declarations, confirm the source/package/release-history versions agree, parse the JavaScript embedded in all four dialogs, and simulate both guarded migrations. The v0.0.25 tests prove the exact 14-cell target set, formula preservation/recalculation, repeat-safe no-op behavior, rollback, and fail-fast aborts.
+The checks parse every `.gs` file, detect duplicate top-level function declarations, confirm the source/package/release-history versions agree, parse the JavaScript embedded in all four dialogs, and simulate both guarded migrations. They also exercise the duplicate-review engine beyond row 5,000 and at 12,000 rows, proving one batched key read/write and unchanged migration safety behavior.
