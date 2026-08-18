@@ -39,6 +39,7 @@ A functional Sheets test build is targeted for September 1, 2026, and a Bianca-r
 - [Live verification findings](docs/LIVE_VERIFICATION_2026-08-18.md)
 - [v0.0.25 legacy income-ID release](docs/V0.0.25_LEGACY_INCOME_RELEASE.md)
 - [GitHub workflow and beginner guide](docs/GITHUB_WORKFLOW.md)
+- [Active September 1 milestone](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/milestone/1)
 
 Workbook exports and `Project Context.txt` are retained locally only and intentionally excluded from GitHub. They are recovery/reference artifacts, not current project instructions or hosted source files.
 

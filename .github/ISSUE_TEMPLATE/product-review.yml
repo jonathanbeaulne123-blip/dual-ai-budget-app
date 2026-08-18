@@ -1,0 +1,64 @@
+name: Product review
+description: Review one workflow, screen, calculation, or cross-feature behavior.
+title: "[Review] "
+labels:
+  - review
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use evidence from the current Git commit and development Sheet. Do not assume repository and live behavior are synchronized.
+  - type: input
+    id: goal
+    attributes:
+      label: User outcome
+      description: What should Jonathan or Bianca be able to accomplish?
+      placeholder: Enter a transaction accurately from a phone in under 30 seconds.
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Current behavior and evidence
+      description: Include version, Sheet/dialog, reproducible steps, and observed result.
+    validations:
+      required: true
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk level
+      options:
+        - Low
+        - Medium — code
+        - Medium — Sheet or UX
+        - High — financial logic, migration, permissions, or release
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: In scope
+      description: Name the functions, dialogs, sheets, ranges, or user flows to review.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: List observable pass/fail outcomes, including mobile and data-integrity expectations where relevant.
+      placeholder: |
+        - [ ] Required fields reject invalid input without posting rows.
+        - [ ] A successful submission creates exactly one ledger transaction.
+        - [ ] Development health checks remain clean.
+    validations:
+      required: true
+  - type: textarea
+    id: exclusions
+    attributes:
+      label: Explicitly out of scope
+      description: What should not change during this task?
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification and handoff
+      description: Tests, live evidence, reviewer, and decision still needed.

@@ -1,0 +1,52 @@
+name: Bug report
+description: Record reproducible incorrect behavior without prescribing an unverified fix.
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Version and environment
+      placeholder: v0.0.25, development Sheet
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Open...
+        2. Enter...
+        3. Click...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and evidence
+    validations:
+      required: true
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impact
+      options:
+        - Cosmetic or wording only
+        - Workflow inconvenience
+        - Incorrect or stale summary
+        - Incorrect ledger or financial result
+        - Data loss, privacy, or production risk
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety notes
+      description: State whether the bug is development-only, whether data was written, and how to recover.

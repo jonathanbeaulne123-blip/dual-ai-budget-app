@@ -4,6 +4,8 @@
 
 Target: August 18–20, 2026
 
+Status: Completed August 18, 2026. GitHub is private/canonical, development is on verified v0.0.25, and Data Health Check is clean.
+
 - Initialize Git and canonical documentation.
 - Install and prepare `clasp` without linking production.
 - Connect the development Apps Script project.
@@ -16,15 +18,26 @@ Target: August 18–20, 2026
 
 Target: August 21–24, 2026
 
+Status: Active. Operational work is tracked in the [September 1 Functional Test Build milestone](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/milestone/1).
+
 - Inventory every sheet, menu action, dialog, calculation, and dormant table.
 - Review financial meaning and data integrity.
 - Review mobile usability and visual consistency.
 - Reconcile all open `v0.0.23` findings against current development data.
 - Produce a prioritized change backlog with acceptance tests.
 
+Active review workstreams:
+
+- [#1 Transaction Input end-to-end](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/issues/1)
+- [#2 Tip Tracking and Add Shift end-to-end](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/issues/2)
+- [#3 Dashboard usefulness, freshness, and mobile layout](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/issues/3)
+- [#4 Cross-feature reliability and scale audit](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/issues/4)
+
 ## Phase 2 — Core test release
 
 Target: August 25–September 1, 2026
+
+Release gate: [#5 September 1 functional test build](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/issues/5).
 
 - Stabilize Transaction Input.
 - Stabilize Tip Tracking.
@@ -71,4 +84,3 @@ Target: September 24–October 1, 2026
 - Web/mobile notifications
 - Database-backed mobile-friendly application
 - Optional family/friend distribution
-
