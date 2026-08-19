@@ -194,7 +194,11 @@ function onOpen() {
     .addItem('View Data Dictionary', 'viewDataDictionary');
   // The migration controls never appear in production. typeof keeps onOpen
   // resilient if an incomplete paste omitted Maintenance.gs.
-  if (typeof isLegacyIncomeV0025DevSpreadsheet_ === 'function' && isLegacyIncomeV0025DevSpreadsheet_()) {
+  if (typeof isCadCurrencyV0030DevSpreadsheet_ === 'function' && isCadCurrencyV0030DevSpreadsheet_()) {
+    menu.addSeparator()
+      .addItem('Preview v0.0.30 CAD Corrections', 'previewCadCurrencyCorrections')
+      .addItem('Apply v0.0.30 CAD Corrections…', 'applyCadCurrencyCorrections');
+  } else if (typeof isLegacyIncomeV0025DevSpreadsheet_ === 'function' && isLegacyIncomeV0025DevSpreadsheet_()) {
     menu.addSeparator()
       .addItem('Preview v0.0.25 Income-ID Corrections', 'previewLegacyIncomeCorrections')
       .addItem('Apply v0.0.25 Income-ID Corrections…', 'applyLegacyIncomeCorrections');
@@ -445,11 +449,36 @@ function shiftMonthKey_(monthKey, delta) {
   var newMonthIdx = ((total % 12) + 12) % 12;
   return newYear + '-' + pad_(newMonthIdx + 1, 2);
 }
-function getActiveAccountId_() {
+var AUTHORITATIVE_CURRENCY_ = 'CAD';
+
+function normalizeCurrencyCode_(value) {
+  return String(value === null || value === undefined ? '' : value).trim().toUpperCase();
+}
+
+function requireAuthoritativeCurrency_(value, contextLabel) {
+  var currency = normalizeCurrencyCode_(value);
+  if (currency !== AUTHORITATIVE_CURRENCY_) {
+    throw new Error((contextLabel || 'Account') + ' must use the authoritative currency ' +
+      AUTHORITATIVE_CURRENCY_ + '; found "' + (currency || '(blank)') +
+      '". Run the v0.0.30 CAD correction preview before adding new records.');
+  }
+  return currency;
+}
+
+function getActiveAccount_() {
   var accounts = readTable_('Accounts').filter(function (a) { return a.Active_Flag === 'Yes'; });
   if (!accounts.length) throw new Error('No active account found in the Accounts sheet.');
-  return accounts[0].Account_ID; // only one account exists today; first active one wins
+  if (accounts.length > 1) {
+    throw new Error('More than one active account exists. Add an explicit account selector before adding new records.');
+  }
+  var accountId = String(accounts[0].Account_ID || '').trim();
+  if (!accountId) throw new Error('The active account has no Account_ID.');
+  return {
+    id: accountId,
+    currency: requireAuthoritativeCurrency_(accounts[0].Currency, 'Active account ' + accountId)
+  };
 }
+
 function getHouseholdMembersList_() {
   return readTable_('Household Members')
     .filter(function (m) { return m.Active_Flag === 'Yes'; })
@@ -690,6 +719,7 @@ function validateAndNormalizeTransactionInput_(form, referenceData) {
   if (!accountId) {
     throw new Error('No active account is available for this transaction.');
   }
+  var currency = requireAuthoritativeCurrency_(referenceData.accountCurrency, 'Active account ' + accountId);
 
   if (form.note !== null && typeof form.note !== 'undefined' && typeof form.note !== 'string') {
     throw new Error('Note must be text.');
@@ -705,6 +735,7 @@ function validateAndNormalizeTransactionInput_(form, referenceData) {
     memberId: memberId,
     note: String(form.note || '').trim(),
     accountId: accountId,
+    currency: currency,
     category: {
       subId: category.subId,
       subName: category.subName,
@@ -720,10 +751,12 @@ var MANUAL_TRANSACTION_LOCK_TIMEOUT_MS_ = 10000;
 var MANUAL_TRANSACTION_BATCH_ID_ = 'BATCH-MANUAL-ENTRY';
 
 function getTransactionReferenceData_() {
+  var account = getActiveAccount_();
   return {
     categories: getCategoriesList_(),
     members: getHouseholdMembersList_(),
-    accountId: getActiveAccountId_(),
+    accountId: account.id,
+    accountCurrency: account.currency,
     timeZone: getTz_()
   };
 }
@@ -824,7 +857,7 @@ function planManualTransactionCommit_(input, transactionDate, state) {
     Raw_Category: category.subName,
     Raw_Description: input.note,
     Raw_Amount: input.amount,
-    Raw_Currency: 'USD',
+    Raw_Currency: input.currency,
     Raw_Notes: input.note,
     Normalization_Status: 'Normalized'
   };
@@ -837,7 +870,7 @@ function planManualTransactionCommit_(input, transactionDate, state) {
     Transaction_Date: transactionDate,
     Transaction_Type: input.type,
     Amount: input.amount,
-    Currency: 'USD',
+    Currency: input.currency,
     Original_Description: input.note,
     Income_Stability: input.type === 'Income' ? (category.incomeStabilityDefault || '') : '',
     Manual_Category_ID: category.parentId,
@@ -2150,7 +2183,8 @@ function getOrCreateShiftBatch_(accountId) {
 // addTransaction()'s own writes, just parameterized instead of reading
 // straight from a form, since Add Shift posts two of these per shift
 // (Wages, Tips) instead of one.
-function postShiftTransaction_(date, amount, subId, subName, memberId, note, batchId, accountId) {
+function postShiftTransaction_(date, amount, subId, subName, memberId, note, batchId, accountId, currency) {
+  currency = requireAuthoritativeCurrency_(currency, 'Shift account ' + accountId);
   var txnSeq = nextSequence_('Transactions', 'Transaction_ID');
   var rawSeq = nextSequence_('Raw Transactions', 'Raw_Record_ID');
   var txnId = 'TXN-SHIFT-' + pad_(txnSeq, 6);
@@ -2168,7 +2202,7 @@ function postShiftTransaction_(date, amount, subId, subName, memberId, note, bat
     Raw_Category: subName,
     Raw_Description: note,
     Raw_Amount: amount,
-    Raw_Currency: 'USD',
+    Raw_Currency: currency,
     Raw_Notes: note,
     Normalization_Status: 'Normalized'
   }));
@@ -2184,7 +2218,7 @@ function postShiftTransaction_(date, amount, subId, subName, memberId, note, bat
     Transaction_Date: date,
     Transaction_Type: 'Income',
     Amount: amount,
-    Currency: 'USD',
+    Currency: currency,
     Original_Description: note,
     Income_Stability: 'Variable',
     Manual_Category_ID: 'INCOME',
@@ -2243,6 +2277,11 @@ function addShift(form) {
   var tz = getTz_();
   var date = Utilities.parseDate(form.date, tz, 'yyyy-MM-dd');
   var dateKey = Utilities.formatDate(date, tz, 'yyyy-MM-dd');
+  // Validate the authoritative account/currency before the first helper that
+  // can create or write the Tip Tracker sheet. A stale USD account must not
+  // leave a partial shift-log row while the v0.0.30 migration is pending.
+  var account = getActiveAccount_();
+  var accountId = account.id;
 
   var sh = getOrCreateTipTrackerSheet_();
   var lastRow = sh.getLastRow();
@@ -2274,14 +2313,13 @@ function addShift(form) {
     floorTipOut, barTipOut, ccTipOut, netTips, wages, new Date()
   ]]);
 
-  var accountId = getActiveAccountId_();
   var batchId = getOrCreateShiftBatch_(accountId);
   var wagesSubId = ensureIncomeSubcategory_('Wages');
   var tipsSubId = ensureIncomeSubcategory_('Tips');
 
   var dateLabel = Utilities.formatDate(date, tz, 'MMM d, yyyy');
-  var wageTxnId = postShiftTransaction_(date, wages, wagesSubId, 'Wages', form.memberId, 'Shift ' + dateLabel + ' — ' + hours + ' hrs', batchId, accountId);
-  var tipsTxnId = postShiftTransaction_(date, netTips, tipsSubId, 'Tips', form.memberId, 'Shift ' + dateLabel + ' — net tips after tip-out', batchId, accountId);
+  var wageTxnId = postShiftTransaction_(date, wages, wagesSubId, 'Wages', form.memberId, 'Shift ' + dateLabel + ' — ' + hours + ' hrs', batchId, accountId, account.currency);
+  var tipsTxnId = postShiftTransaction_(date, netTips, tipsSubId, 'Tips', form.memberId, 'Shift ' + dateLabel + ' — net tips after tip-out', batchId, accountId, account.currency);
   recomputePotentialDuplicateFlags_();
 
   logChange_('Add Shift', dateLabel + ': ' + wageTxnId + ' Wages $' + wages.toFixed(2) + ', ' + tipsTxnId + ' Tips $' + netTips.toFixed(2) +
@@ -2960,6 +2998,85 @@ function monthlyBudgetSitDown() {
   }
   refreshBudgetSummarySilently_(); // new Budget Plan rows (and possibly a new Budget!B2) both affect these figures, regardless of which branch above ran
 }
+// Pure currency-integrity scan shared by Data Health Check and deterministic
+// tests. Account.Currency is authoritative; every Raw Transactions and
+// Transactions row must match its referenced account and the current
+// single-currency policy (CAD).
+function calcCurrencyHealthFindings_(accounts, rawTransactions, transactions) {
+  accounts = Array.isArray(accounts) ? accounts : [];
+  rawTransactions = Array.isArray(rawTransactions) ? rawTransactions : [];
+  transactions = Array.isArray(transactions) ? transactions : [];
+  var findings = [];
+
+  function summarize(ids) {
+    var shown = ids.slice(0, 10);
+    return shown.join(', ') + (ids.length > shown.length ? ' (plus ' + (ids.length - shown.length) + ' more)' : '');
+  }
+
+  var accountCurrencies = {};
+  var accountCounts = {};
+  var blankAccountRows = [];
+  var unsupportedAccountIds = [];
+  accounts.forEach(function (account) {
+    var accountId = String(account.Account_ID || '').trim();
+    if (!accountId) {
+      blankAccountRows.push('row ' + (account._row || '?'));
+      return;
+    }
+    accountCounts[accountId] = (accountCounts[accountId] || 0) + 1;
+    var currency = normalizeCurrencyCode_(account.Currency);
+    accountCurrencies[accountId] = currency;
+    if (currency !== AUTHORITATIVE_CURRENCY_) unsupportedAccountIds.push(accountId);
+  });
+  var duplicateAccountIds = Object.keys(accountCounts).filter(function (id) { return accountCounts[id] > 1; });
+  if (blankAccountRows.length) {
+    findings.push({ section: 'Currency configuration', msg: blankAccountRows.length +
+      ' Accounts row(s) have no Account_ID: ' + summarize(blankAccountRows) + '.' });
+  }
+  if (duplicateAccountIds.length) {
+    findings.push({ section: 'Currency configuration', msg: 'Duplicate Account_ID value(s) prevent an authoritative currency lookup: ' +
+      summarize(duplicateAccountIds) + '.' });
+  }
+  if (unsupportedAccountIds.length) {
+    findings.push({ section: 'Currency configuration', msg: unsupportedAccountIds.length +
+      ' account(s) do not use authoritative currency ' + AUTHORITATIVE_CURRENCY_ + ': ' +
+      summarize(unsupportedAccountIds) + '.' });
+  }
+
+  function scanRecords(rows, label, idHeader, currencyHeader) {
+    var orphanIds = [];
+    var unsupportedIds = [];
+    var mismatchIds = [];
+    rows.forEach(function (row) {
+      var id = String(row[idHeader] || ('row ' + (row._row || '?'))).trim();
+      var accountId = String(row.Account_ID || '').trim();
+      var currency = normalizeCurrencyCode_(row[currencyHeader]);
+      if (!accountId || !Object.prototype.hasOwnProperty.call(accountCurrencies, accountId) || accountCounts[accountId] !== 1) {
+        orphanIds.push(id);
+        return;
+      }
+      if (currency !== AUTHORITATIVE_CURRENCY_) unsupportedIds.push(id);
+      if (currency !== accountCurrencies[accountId]) mismatchIds.push(id);
+    });
+    if (orphanIds.length) {
+      findings.push({ section: 'Currency metadata', msg: orphanIds.length + ' ' + label +
+        ' row(s) cannot resolve one authoritative account: ' + summarize(orphanIds) + '.' });
+    }
+    if (unsupportedIds.length) {
+      findings.push({ section: 'Currency metadata', msg: unsupportedIds.length + ' ' + label +
+        ' row(s) do not use ' + AUTHORITATIVE_CURRENCY_ + ': ' + summarize(unsupportedIds) + '.' });
+    }
+    if (mismatchIds.length) {
+      findings.push({ section: 'Currency metadata', msg: mismatchIds.length + ' ' + label +
+        ' row(s) do not match their referenced account currency: ' + summarize(mismatchIds) + '.' });
+    }
+  }
+
+  scanRecords(rawTransactions, 'Raw Transactions', 'Raw_Record_ID', 'Raw_Currency');
+  scanRecords(transactions, 'Transactions', 'Transaction_ID', 'Currency');
+  return findings;
+}
+
 // =================== DATA HEALTH CHECK (v0.0.23) ========================
 // A read-only diagnostic scan for the exact bug class that has bitten this
 // project before: orphaned foreign keys and name-mismatch drift. Two real
@@ -3051,6 +3168,11 @@ function runDataHealthCheck_() {
     if (m.Active_Flag === 'Yes') activeMemberIds[String(m.Member_ID || '').trim()] = true;
   });
   var transactions = readTable_('Transactions');
+  var accounts = readTable_('Accounts');
+  var rawTransactions = readTable_('Raw Transactions');
+  calcCurrencyHealthFindings_(accounts, rawTransactions, transactions).forEach(function (finding) {
+    flag(finding.section, finding.msg);
+  });
   var orphanManualCategoryTxIds = [];
   var orphanEffectiveCategoryTxIds = [];
   var orphanSubIdCount = 0, orphanMemberCount = 0;
@@ -3173,7 +3295,7 @@ function dataHealthCheck() {
     var findings = runDataHealthCheck_();
     var lines = [];
     if (!findings.length) {
-      lines.push('✓ No issues found. Categories, Household Members, Budget Plan, Transactions, Budget, and Dashboard all cross-reference cleanly.');
+      lines.push('✓ No issues found. Accounts, Raw Transactions, Transactions, Categories, Household Members, Budget Plan, Budget, and Dashboard all cross-reference cleanly.');
     } else {
       lines.push('⚠ ' + findings.length + ' issue(s) found:');
       lines.push('');
@@ -3208,10 +3330,10 @@ function dataHealthCheck() {
 var DATA_DICTIONARY_ = [
   { sheet: 'Categories', idColumn: 'Category_ID', idScheme: 'Top-level Category rows: CAT-<NAME> (e.g. CAT-HOUSING) — except Income, whose ID is the bare string "INCOME" (a documented, intentional exception; see v0.0.19 in Release Notes). Subcategory rows: SUB-<CATEGORY>-<NAME> (e.g. SUB-HOUSING-RENT).', foreignKeys: 'Parent_Category_ID → this sheet\'s own Category_ID, but only on Subcategory rows (must point to an active Category row).', notes: 'Record_Type ("Category" vs "Subcategory") distinguishes the two levels living in this one sheet/column. No hidden columns.' },
   { sheet: 'Household Members', idColumn: 'Member_ID', idScheme: 'MEM-0xx, e.g. MEM-001 = Bianca, MEM-002 = Jonathan.', foreignKeys: 'Referenced by Transactions.Member_ID, Budget Plan.Member_ID, Accounts.Owner_Member_ID.', notes: 'No hidden columns.' },
-  { sheet: 'Accounts', idColumn: 'Account_ID', idScheme: 'ACC-<LABEL>, e.g. ACC-LEGACY-001.', foreignKeys: 'Owner_Member_ID → Household Members.Member_ID. Referenced by Raw Transactions.Account_ID and Import Batches.Account_ID.', notes: 'No hidden columns.' },
+  { sheet: 'Accounts', idColumn: 'Account_ID', idScheme: 'ACC-<LABEL>, e.g. ACC-LEGACY-001.', foreignKeys: 'Owner_Member_ID → Household Members.Member_ID. Referenced by Raw Transactions.Account_ID, Transactions.Account_ID, and Import Batches.Account_ID.', notes: 'Currency is authoritative for linked Raw Transactions and Transactions rows; the current supported currency is CAD. No hidden columns.' },
   { sheet: 'Import Batches', idColumn: 'Import_Batch_ID', idScheme: 'One row per import run.', foreignKeys: 'Account_ID → Accounts.Account_ID. Referenced by Raw Transactions.Import_Batch_ID.', notes: 'No hidden columns.' },
-  { sheet: 'Raw Transactions', idColumn: 'Raw_Record_ID', idScheme: 'One row per imported bank line, before normalization.', foreignKeys: 'Import_Batch_ID → Import Batches.Import_Batch_ID. Account_ID → Accounts.Account_ID.', notes: 'Transactions rows are built from these; Raw_Payload holds the original source data verbatim.' },
-  { sheet: 'Transactions', idColumn: 'Transaction_ID', idScheme: 'TXN-... — one per posted transaction.', foreignKeys: 'Member_ID → Household Members.Member_ID. Manual_Category_ID / Auto_Category_ID / Effective_Category_ID → Categories.Category_ID (Record_Type=Category). Manual_Subcategory_ID / Auto_Subcategory_ID / Effective_Subcategory_ID → Categories.Category_ID (Record_Type=Subcategory).', notes: 'Hidden/behind-the-scenes columns: Duplicate_Key (computed dedupe fingerprint), Potential_Duplicate_Flag (linear-time full-ledger review aid), Is_Duplicate (reviewed financial control) — Refresh Budget Summary and Income History only count rows where Is_Duplicate = "No". Effective_* resolves Manual_* first, falling back to Auto_* (see addTransaction() in Code.gs).' },
+  { sheet: 'Raw Transactions', idColumn: 'Raw_Record_ID', idScheme: 'One row per imported bank line, before normalization.', foreignKeys: 'Import_Batch_ID → Import Batches.Import_Batch_ID. Account_ID → Accounts.Account_ID.', notes: 'Raw_Currency must match the referenced Accounts.Currency. Transactions rows are built from these; Raw_Payload holds the original source data verbatim.' },
+  { sheet: 'Transactions', idColumn: 'Transaction_ID', idScheme: 'TXN-... — one per posted transaction.', foreignKeys: 'Account_ID → Accounts.Account_ID. Member_ID → Household Members.Member_ID. Manual_Category_ID / Auto_Category_ID / Effective_Category_ID → Categories.Category_ID (Record_Type=Category). Manual_Subcategory_ID / Auto_Subcategory_ID / Effective_Subcategory_ID → Categories.Category_ID (Record_Type=Subcategory).', notes: 'Currency must match the referenced Accounts.Currency. Hidden/behind-the-scenes columns: Duplicate_Key (computed dedupe fingerprint), Potential_Duplicate_Flag (linear-time full-ledger review aid), Is_Duplicate (reviewed financial control) — Refresh Budget Summary and Income History only count rows where Is_Duplicate = "No". Effective_* resolves Manual_* first, falling back to Auto_* (see addTransaction() in Code.gs).' },
   { sheet: 'Budget Plan', idColumn: 'Budget_ID', idScheme: 'One row per category per month.', foreignKeys: 'Member_ID → Household Members.Member_ID. Account_ID → Accounts.Account_ID. Subcategory_ID → Categories.Category_ID (Record_Type=Subcategory).', notes: 'Active_Flag governs whether a row counts toward Budget/Dashboard\'s Budgeted figures — see groupAmountsByKey_() in Code.gs.' },
   { sheet: 'Budget', idColumn: 'n/a — presentation sheet, not a data table', idScheme: 'n/a', foreignKeys: 'Column E, on the income and expense line-item rows, holds that row\'s Subcategory_ID → Categories.Category_ID — the hidden join key recomputeBudgetSummaryMetrics_() in Code.gs uses to match rows by ID instead of position.', notes: 'E2 holds the freshness indicator (v0.0.23, updateFreshnessIndicator_() in Code.gs) — green when the numbers below were refreshed within 24 hours, red otherwise.' },
   { sheet: 'Dashboard', idColumn: 'n/a — presentation sheet, not a data table', idScheme: 'n/a', foreignKeys: 'Column G, on the category-mirror rows (6–40), holds that row\'s Subcategory_ID → Categories.Category_ID — same hidden join key as Budget!E.', notes: 'F2 holds the freshness indicator (v0.0.23) — same as Budget!E2.' },
@@ -3284,7 +3406,7 @@ function viewDataDictionary() {
 // becomes a one-glance check instead of a guess, and the Release Notes
 // sheet (see syncReleaseNotes_() below) picks up the new entry
 // automatically the next time anything runs.
-var APP_VERSION = 'v0.0.29';
+var APP_VERSION = 'v0.0.30';
 // ==================== RELEASE NOTES =====================================
 // The full version history — one entry per shipped feature or fix,
 // oldest first. This array is the single source of truth: add one entry
@@ -3321,7 +3443,8 @@ var RELEASE_HISTORY_ = [
   { version: 'v0.0.26', date: '2026-08-18', summary: 'Removed the Potential_Duplicate_Flag formula ceiling at Transactions row 5,000. A pure calcPotentialDuplicateFlags_() engine now counts exact case-insensitive Duplicate_Key values in one O(n) pass, and a thin recomputePotentialDuplicateFlags_() adapter performs one real-extent column read and write. Add Transaction and Add Shift refresh the flags automatically; direct edits to duplicate-key inputs trigger the same recompute; a manual Refresh Duplicate Flags control provides recovery after bulk operations; and Data Health Check reports derived-flag drift. Duplicate_Key formulas and the separately reviewed Is_Duplicate field that controls financial totals are never changed.' },
   { version: 'v0.0.27', date: '2026-08-18', summary: 'Closed the concurrency gap found in Gemini\'s independent review of v0.0.26. recomputePotentialDuplicateFlags_() now acquires a document-scoped lock before reading the Transactions extent and holds it through the single batched Potential_Duplicate_Flag write, preventing overlapping script recalculations from allowing an older full-column result to overwrite a newer one. A 10-second timeout fails explicitly without writing, and finally always releases an acquired lock. The lock protects only this derived review column; Duplicate_Key, Is_Duplicate, transactions, and financial totals remain outside its write surface.' },
   { version: 'v0.0.28', date: '2026-08-18', summary: 'Added authoritative server validation for Add Transaction. A pure validateAndNormalizeTransactionInput_() boundary now accepts only Income/Expense, validates real YYYY-MM-DD calendar dates under the America/Toronto standard, normalizes positive whole-cent amounts, verifies the selected active subcategory belongs to the submitted type, verifies any nonblank member is active, and returns normalized plain data. addTransaction() completes all reference reads and date parsing before getOrCreateManualBatch_() or any other write-capable helper runs, so invalid, stale, or tampered requests make zero Sheet or batch changes. Write locking and rollback remain separately scoped to Issue #6.' },
-  { version: 'v0.0.29', date: '2026-08-18', summary: 'Made Add Transaction concurrency-safe and recoverable. A fast read-only preflight is followed by an authoritative reference re-read, validation/date recheck, ID allocation, batch planning, and the complete batch/Raw Transactions/Transactions commit under one 10-second document lock. A pure planner produces stable IDs and prior/new batch state; a guarded three-stage executor verifies the complete linked pair and reverses the transaction row, raw row, and batch mutation if any write or verification fails, including write-then-throw failures. All three helper formulas now travel in the single Transactions row write. Duplicate-flag and summary refreshes run only after the durable commit and lock release, so a follow-up refresh failure reports saved-with-warning rather than encouraging a duplicate resubmission.' }
+  { version: 'v0.0.29', date: '2026-08-18', summary: 'Made Add Transaction concurrency-safe and recoverable. A fast read-only preflight is followed by an authoritative reference re-read, validation/date recheck, ID allocation, batch planning, and the complete batch/Raw Transactions/Transactions commit under one 10-second document lock. A pure planner produces stable IDs and prior/new batch state; a guarded three-stage executor verifies the complete linked pair and reverses the transaction row, raw row, and batch mutation if any write or verification fails, including write-then-throw failures. All three helper formulas now travel in the single Transactions row write. Duplicate-flag and summary refreshes run only after the durable commit and lock release, so a follow-up refresh failure reports saved-with-warning rather than encouraging a duplicate resubmission.' },
+  { version: 'v0.0.30', date: '2026-08-18', summary: 'Made CAD authoritative from Accounts.Currency for Add Transaction and Add Shift, removing every USD hardcode. New writes require exactly one active account with supported CAD metadata and carry that account-derived currency into the linked Raw Transactions and Transactions rows. Added a guarded development-only USD-label-to-CAD migration that discovers current Accounts/Raw/Transactions rows by stable IDs and headers, previews every currency cell, changes no amounts or financial meaning, rechecks under a document lock, verifies protected row data, supports repeat-safe no-op runs, and rolls back its own writes on failure. Data Health Check now reports unsupported, orphaned, duplicate-account, and account/record currency mismatches.' }
 ];
 var RELEASE_NOTES_SHEET_NAME = 'Release Notes';
 // Creates the Release Notes sheet (header row, hidden) the first time
@@ -3373,17 +3496,17 @@ function syncReleaseNotes_() {
 // but enough to catch a renamed or missing column before it causes a
 // confusing failure somewhere else.
 var DIAGNOSTIC_EXPECTED_HEADERS_ = {
-  'Transactions': ['Transaction_ID', 'Transaction_Date', 'Transaction_Type', 'Amount', 'Member_ID',
+  'Transactions': ['Transaction_ID', 'Transaction_Date', 'Transaction_Type', 'Amount', 'Currency', 'Member_ID',
     'Original_Description', 'Manual_Category_ID', 'Manual_Subcategory_ID', 'Auto_Category_ID', 'Auto_Subcategory_ID',
     'Effective_Category_ID', 'Effective_Subcategory_ID', 'Reviewed_Flag', 'Duplicate_Key', 'Potential_Duplicate_Flag', 'Is_Duplicate'],
-  'Raw Transactions': ['Raw_Record_ID', 'Import_Batch_ID', 'Account_ID', 'Raw_Transaction_Date', 'Raw_Type', 'Raw_Category'],
+  'Raw Transactions': ['Raw_Record_ID', 'Import_Batch_ID', 'Account_ID', 'Raw_Transaction_Date', 'Raw_Type', 'Raw_Category', 'Raw_Currency'],
   'Import Batches': ['Import_Batch_ID', 'Record_Count'],
   'Categories': ['Category_ID', 'Parent_Category_ID', 'Record_Type', 'Category_Name', 'Transaction_Type',
     'Essential_Default', 'Income_Stability_Default', 'Active_Flag', 'Legacy_Budget_Label', 'Sort_Order'],
   'Budget Plan': ['Budget_ID', 'Month_Start', 'Member_ID', 'Account_ID', 'Transaction_Type', 'Subcategory_ID',
     'Budgeted_Amount', 'Essential_Flag', 'Income_Stability', 'Active_Flag'],
   'Household Members': ['Member_ID', 'Display_Name', 'Active_Flag'],
-  'Accounts': ['Account_ID', 'Active_Flag']
+  'Accounts': ['Account_ID', 'Currency', 'Active_Flag']
 };
 function showDiagnostics() {
   syncReleaseNotes_(); // make sure the Release Notes sheet is current before reading it below

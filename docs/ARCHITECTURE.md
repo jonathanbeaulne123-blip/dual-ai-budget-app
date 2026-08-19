@@ -61,7 +61,15 @@ The repository root will eventually link only to the development Apps Script pro
 - `executeManualTransactionCommit_()` journals the batch, Raw Transactions, and Transactions stages before calling an injected Sheet adapter. Any write or verification failure rolls back the linked transaction row, raw row, and batch mutation in reverse order, then re-reads all three targets to prove the original state was restored. A rollback ambiguity or failed recovery verification fails loudly and instructs the user not to retry until the development ledger is inspected.
 - The three row-level helper formulas are part of the single Transactions row append. Verification requires exactly one linked raw/transaction pair, the intended batch count, and all three formulas before the lock is released.
 - Duplicate-review, Change Log, and summary follow-ups occur only after the durable commit. A duplicate-refresh failure reports that the transaction was saved and requests manual recovery; it does not return a normal submission failure that could cause a duplicate retry.
-- The lock serializes cooperating Apps Script writers; it cannot block a person directly editing sheet cells. Add Shift retains its separate posting path and remains outside Issue #6. Account-derived CAD metadata remains Issue #10.
+- The lock serializes cooperating Apps Script writers; it cannot block a person directly editing sheet cells. Add Shift retains its separate posting path and remains outside Issue #6.
+
+## Currency authority boundary
+
+- `Accounts.Currency` is the authoritative currency configuration. The currently supported household currency is `CAD`.
+- Add Transaction and Add Shift resolve the single active account before writing and copy that account's currency into `Raw Transactions.Raw_Currency` and `Transactions.Currency`; neither writer contains a currency literal.
+- A missing account, more than one active account, or a non-CAD active account is a blocking configuration error. Before multiple accounts can be active, the user interface must provide an explicit account selector as required by D-022.
+- Currency is metadata in the current single-currency model. Correcting the known `USD` labels to `CAD` must never recalculate or convert an amount.
+- Data Health Check validates account currency, record-to-account links, and record currency agreement so manual edits or future writers cannot silently reintroduce drift.
 
 ## Goals and privacy
 

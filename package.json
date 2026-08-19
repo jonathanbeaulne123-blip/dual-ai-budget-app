@@ -1,6 +1,6 @@
 {
   "name": "dual-ai-budget-app",
-  "version": "0.0.29",
+  "version": "0.0.30",
   "private": true,
   "description": "Local source, checks, and project documentation for the household budgeting Google Sheet and Apps Script.",
   "engines": {

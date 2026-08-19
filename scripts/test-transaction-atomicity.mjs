@@ -24,6 +24,7 @@ const normalizedInput = {
   memberId: "MEM-JONATHAN",
   note: "weekly groceries",
   accountId: "ACC-CHEQUING",
+  currency: "CAD",
   category: {
     subId: "SUB-FOOD-GROCERIES",
     subName: "Groceries",
@@ -81,9 +82,11 @@ function commitState(overrides = {}) {
   assert.equal(plan.raw.row, 42);
   assert.equal(plan.raw.values.Raw_Record_ID, "RAW-MANUAL-000038");
   assert.equal(plan.raw.values.Raw_Transaction_Date, "TORONTO_DATE");
+  assert.equal(plan.raw.values.Raw_Currency, "CAD");
   assert.equal(plan.transaction.row, 42);
   assert.equal(plan.transaction.values.Transaction_ID, "TXN-MANUAL-000038");
   assert.equal(plan.transaction.values.Raw_Record_ID, "RAW-MANUAL-000038");
+  assert.equal(plan.transaction.values.Currency, "CAD");
   assert.equal(JSON.stringify(normalizedInput), originalInput, "planning must not mutate normalized input");
   assert.equal(JSON.stringify(originalState), originalCommitState, "planning must not mutate current state");
 

@@ -10,7 +10,7 @@ The repository root must link only to development. Production must never be conn
 
 ## Current state
 
-- Local Apps Script source is present and verified as `v0.0.29`.
+- The checked-out feature source is the local-only `v0.0.30` candidate; the linked development Apps Script project remains the source- and live-verified `v0.0.29` runtime.
 - Development workbook exists.
 - Development Apps Script ID is stored locally in ignored `.clasp.json`.
 - Google authorization completed successfully on 2026-08-18.
