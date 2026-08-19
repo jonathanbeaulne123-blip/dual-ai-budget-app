@@ -4,8 +4,8 @@ This private GitHub repository is the canonical editable home for the household 
 
 ## Current baseline
 
-- Development Apps Script source: `v0.0.30` (the guarded 79-cell CAD correction, zero-pending rerun, controlled Add Transaction/Add Shift propagation, duplicate review, and final health check all pass at 42 Transactions / 42 Raw Transactions)
-- Current code candidate: `v0.0.31` on draft PR #16 (`issue-2-add-shift-e2e`); Gemini approved with non-blocking notes, Claude review was explicitly waived, Codex incorporated both useful follow-ups, and the complete repository suite passes. Development-only source approval and live-Sheet verification remain pending
+- Development Apps Script source: `v0.0.31` at approved commit `0f18df3`; a fresh isolated pull matched all eight source files and the Toronto manifest after the 10:31:13 PM development-only push. Live v0.0.31 Sheet verification remains pending
+- Current code candidate: `v0.0.31` on draft PR #16 (`issue-2-add-shift-e2e`); Gemini approved with non-blocking notes, Claude review was explicitly waived, Codex incorporated both useful follow-ups, the complete repository suite passes, and the development source is deployed. Live-Sheet verification remains pending
 - Merged code baseline: `v0.0.30` at squash commit `de9a2b9`; authoritative CAD is merged through PR #15, Issue #10 is closed, and development verification is complete
 - GitHub import baseline: `61a396e` (private `main`, verified by a clean clone with no local-only artifacts)
 - Development workbook snapshot: `Budget_App__v 0.23  -dev- Copy.ods`

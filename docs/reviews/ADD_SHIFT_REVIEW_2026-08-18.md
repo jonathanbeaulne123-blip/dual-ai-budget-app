@@ -7,7 +7,7 @@
 - **Gemini verdict:** APPROVE WITH NON-BLOCKING NOTES.
 - **Claude review:** Explicitly waived by Jonathan for Issue #2 on 2026-08-18.
 - **Codex reconciliation:** Both useful Gemini notes were accepted and implemented. No disagreement requires Jonathan to arbitrate.
-- **Development status:** Repository gates pass. A development-only source push still requires Jonathan's separate explicit approval.
+- **Development status:** Repository gates pass. Jonathan subsequently approved the development-only source push; a fresh isolated pull matched all eight files at commit `0f18df3`. Live development-Sheet verification remains pending.
 
 ## Confirmed strengths
 
@@ -43,4 +43,4 @@ Gemini did not have a live backend connection during the review. Its approval th
 
 The complete repository suite passes after reconciliation, including syntax/version checks, migrations, duplicate scaling and locking, Transaction Input validation and atomicity, plus the Add Shift calculation, setup, validation, rollback, drift, duplicate, mobile-wiring, and health checks.
 
-The remaining pre-deployment control is Jonathan's exact development-only approval. Production remains out of scope.
+Jonathan supplied the exact development-only approval after this review. The source push and isolated source comparison pass; the documented live development-Sheet controls remain required before merge. Production remains out of scope.
