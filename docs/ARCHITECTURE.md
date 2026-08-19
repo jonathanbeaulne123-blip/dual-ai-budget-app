@@ -65,6 +65,7 @@ The repository root will eventually link only to the development Apps Script pro
 
 ## Add Shift trust and commit boundary
 
+- First-use Tip Tracker and Wages/Tips category provisioning is serialized under one document lock. This prevents two simultaneous fresh-deployment dialog opens from both creating the same infrastructure before normal preview or posting begins.
 - The Add Shift dialog never calculates financial values locally. `getShiftPreview()` and `addShift()` both call `calcShiftAmounts_()` with named-range settings read from Tip Tracker.
 - The preview carries a settings fingerprint. If percentages, bar rounding, or hourly rate change before posting, the server returns a fresh preview and requires another explicit submission.
 - `validateAndNormalizeShiftInput_()` treats the browser payload as untrusted: it enforces a real Toronto date, an active member, a single active CAD account, active Wages/Tips categories, nonnegative whole-cent sales/tips, and positive hours no greater than 24.

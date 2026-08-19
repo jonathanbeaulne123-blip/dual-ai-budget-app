@@ -516,6 +516,34 @@ for (const [failureStage, timing] of [
 {
   const context = freshContext();
   const events = [];
+  context.getOrCreateTipTrackerSheet_ = () => { events.push("tip-tracker"); };
+  context.ensureIncomeSubcategory_ = (name) => { events.push(`category-${name}`); };
+  context.LockService = { getDocumentLock: () => ({
+    tryLock(timeout) { events.push(`lock-${timeout}`); return true; },
+    releaseLock() { events.push("release"); },
+  }) };
+  context.ensureShiftInfrastructure_();
+  assert.deepEqual(events, [
+    "lock-10000", "tip-tracker", "category-Wages", "category-Tips", "release",
+  ], "first-use Tip Tracker and category provisioning must share one document lock");
+}
+
+{
+  const context = freshContext();
+  let setupCalls = 0;
+  context.getOrCreateTipTrackerSheet_ = () => { setupCalls += 1; };
+  context.ensureIncomeSubcategory_ = () => { setupCalls += 1; };
+  context.LockService = { getDocumentLock: () => ({
+    tryLock: () => false,
+    releaseLock: () => { throw new Error("must not release an unacquired lock"); },
+  }) };
+  assert.throws(() => context.ensureShiftInfrastructure_(), /setup is still finishing/);
+  assert.equal(setupCalls, 0, "lock contention must not begin first-use setup");
+}
+
+{
+  const context = freshContext();
+  const events = [];
   const input = normalizedShiftInput(context);
   const plan = {
     shiftId: "SHIFT-000002", transactionIds: ["TXN-1", "TXN-2"], rawRecordIds: ["RAW-1", "RAW-2"], input,
@@ -577,6 +605,42 @@ for (const [failureStage, timing] of [
   assert.equal(result.settingsChanged, true);
   assert.equal(result.preview.calculation.wages, 72);
   assert.deepEqual(events, ["release"], "settings drift must release the lock without reading state or writing");
+}
+
+{
+  const context = freshContext();
+  const changedSettings = { ...settings, hourlyRate: 18 };
+  let activeSettings = settings;
+  let lockCount = 0;
+  let stateReads = 0;
+  context.getTipTrackerSettings_ = () => activeSettings;
+  context.getShiftReferenceData_ = () => referenceData;
+  context.Utilities = {
+    parseDate: () => vm.runInContext('new Date("2026-08-19T04:00:00.000Z")', context),
+    formatDate: () => "2026-08-19",
+  };
+  context.readShiftCommitState_ = () => {
+    stateReads += 1;
+    return {
+      ...commitState(),
+      tipTrackerRows: [{ Date: vm.runInContext('new Date("2026-08-19T04:00:00.000Z")', context), Member: "MEM-JONATHAN" }],
+    };
+  };
+  context.LockService = { getDocumentLock: () => ({
+    tryLock: () => { lockCount += 1; return true; },
+    releaseLock: () => {},
+  }) };
+
+  const duplicateResult = plain(context.addShift(validForm(context)));
+  assert.equal(duplicateResult.duplicate, true);
+
+  activeSettings = changedSettings;
+  const changedResult = plain(context.addShift(validForm(context, { confirmed: true })));
+  assert.equal(changedResult.settingsChanged, true,
+    "changed settings must take priority when confirming a previously warned duplicate");
+  assert.equal(changedResult.preview.calculation.wages, 72);
+  assert.equal(lockCount, 1, "the stale confirmed resubmission must stop before acquiring the commit lock");
+  assert.equal(stateReads, 1, "the stale confirmed resubmission must not reread duplicate state or write");
 }
 
 {
@@ -647,6 +711,8 @@ assert.match(dialogSource, /settingsFingerprint/);
 assert.doesNotMatch(dialogSource, /sales\s*\*\s*SETTINGS|floorPct\s*\/\s*100|Math\.ceil\(barRaw/,
   "the browser must display server-calculated values rather than duplicate financial rules");
 assert.doesNotMatch(shiftSource, /function postShiftTransaction_|function getOrCreateShiftBatch_/);
+assert.match(shiftSource, /function ensureShiftInfrastructure_\(\)[\s\S]*?tryLock\(SHIFT_LOCK_TIMEOUT_MS_\)[\s\S]*?getOrCreateTipTrackerSheet_\(\)[\s\S]*?ensureIncomeSubcategory_\('Wages'\)[\s\S]*?ensureIncomeSubcategory_\('Tips'\)[\s\S]*?releaseLock\(\)/);
+assert.match(shiftSource, /function showAddShiftDialog\(\)\s*\{\s*ensureShiftInfrastructure_\(\);/);
 assert.match(shiftSource, /function addShift\(form\)[\s\S]*?tryLock\(SHIFT_LOCK_TIMEOUT_MS_\)[\s\S]*?readShiftCommitState_\(\)[\s\S]*?executeShiftCommit_\([\s\S]*?releaseLock\(\)[\s\S]*?recomputePotentialDuplicateFlags_/);
 
-console.log("Shift workflow tests passed: shared settings-driven math, strict validation, stable linked IDs, four-stage rollback, drift/duplicate guards, mobile UI wiring, and health checks.");
+console.log("Shift workflow tests passed: locked setup, shared settings-driven math, strict validation, stable linked IDs, four-stage rollback, intersecting drift/duplicate guards, mobile UI wiring, and health checks.");

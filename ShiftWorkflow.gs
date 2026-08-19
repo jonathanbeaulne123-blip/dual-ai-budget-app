@@ -2,8 +2,9 @@
 // One shift is a recoverable unit: one Tip Tracker source row, one batch
 // count increment, two Raw Transactions rows, and two Transactions rows.
 // Browser input is untrusted. Preview and posting both call the same pure
-// calculation function; the authoritative commit revalidates under one
-// document lock and reverses every attempted write on failure.
+// calculation function; first-use setup is serialized, and the authoritative
+// commit revalidates under one document lock and reverses every attempted
+// write on failure.
 
 var TIP_TRACKER_SHEET_NAME = 'Tip Tracker';
 var TIP_TRACKER_HEADER_ROW = 9;
@@ -115,6 +116,23 @@ function getOrCreateTipTrackerSheet_() {
   sh.setColumnWidth(1, 100);
   sh.autoResizeColumns(2, 13);
   return sh;
+}
+
+function ensureShiftInfrastructure_() {
+  // First-use setup can create shared Sheet structure and Income categories.
+  // Serialize the complete check/create sequence so two simultaneous dialog
+  // opens cannot both provision the same Wages or Tips subcategory.
+  var lock = LockService.getDocumentLock();
+  if (!lock.tryLock(SHIFT_LOCK_TIMEOUT_MS_)) {
+    throw new Error('Another Add Shift setup is still finishing. Wait a moment, then open Add Shift again.');
+  }
+  try {
+    getOrCreateTipTrackerSheet_();
+    ensureIncomeSubcategory_('Wages');
+    ensureIncomeSubcategory_('Tips');
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function roundShiftMoney_(value) {
@@ -339,9 +357,7 @@ function getShiftPreview(form) {
 }
 
 function showAddShiftDialog() {
-  getOrCreateTipTrackerSheet_();
-  ensureIncomeSubcategory_('Wages');
-  ensureIncomeSubcategory_('Tips');
+  ensureShiftInfrastructure_();
   var template = HtmlService.createTemplateFromFile('AddShiftDialog');
   template.members = getHouseholdMembersList_();
   template.today = todayStr_();
