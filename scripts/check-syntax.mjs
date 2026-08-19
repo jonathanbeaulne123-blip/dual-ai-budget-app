@@ -50,6 +50,18 @@ if (`v${packageJson.version}` !== versionMatch[1]) {
   throw new Error(`package.json ${packageJson.version} does not match APP_VERSION ${versionMatch[1]}.`);
 }
 
+const claspWhitelist = new Set(
+  readFileSync(".claspignore", "utf8")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean),
+);
+const expectedClaspFiles = ["appsscript.json", ...serverFiles, ...htmlFiles];
+const omittedClaspFiles = expectedClaspFiles.filter((file) => !claspWhitelist.has(`!${file}`));
+if (omittedClaspFiles.length) {
+  throw new Error(`Apps Script source omitted by .claspignore: ${omittedClaspFiles.join(", ")}`);
+}
+
 for (const htmlFile of htmlFiles) {
   const html = readFileSync(htmlFile, "utf8");
   const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)];
