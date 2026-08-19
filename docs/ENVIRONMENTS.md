@@ -6,8 +6,8 @@
 - Google Sheet: `devCopy of Budget_App__v 0.23`
 - Apps Script ID: connected locally in ignored `.clasp.json`; intentionally excluded from Git
 - Source status: remote development source reports `v0.0.30` and matches approved commit `edb3d25` across all seven tracked Apps Script files after the 9:13:42 PM source-only push; the manifest remains `America/Toronto`
-- Runtime status: live diagnostics report v0.0.30, `America/Toronto`, all expected table layouts, and a valid budget-summary surface. The pre-migration Data Health Check reports exactly the expected one USD account, 39 USD Raw Transactions, and 39 USD Transactions. The read-only correction preview validates exactly 79 pending cells with resolved stable IDs/account links and no unsupported values. Apply and post-migration writer behavior remain pending
-- Current candidate: `v0.0.30` on draft PR #15 (`issue-10-cad-currency`); repository, Gemini review, development-source, diagnostics, and preview gates pass, Jonathan explicitly waived Claude review, and the guarded Apply/post-migration behavior gates remain pending
+- Runtime status: live diagnostics report v0.0.30 and `America/Toronto`. The guarded correction changed exactly one Accounts cell, 39 Raw Transactions cells, and 39 Transactions cells to CAD; it verified that protected financial data did not change and its built-in post-migration Data Health Check was clean. A repeat preview validates all 79 cells as CAD with zero pending writes. Controlled Add Transaction/Add Shift behavior and the final standalone health check remain pending
+- Current candidate: `v0.0.30` on draft PR #15 (`issue-10-cad-currency`); repository, Gemini review, development-source, diagnostics, migration, idempotence, and post-migration health gates pass, Jonathan explicitly waived Claude review, and controlled new-record behavior/final health verification remain pending
 - Spreadsheet and Apps Script timezones: `America/Toronto`
 - Git branch: feature branches or local worktrees, merged into `main` after verification
 - Allowed: reversible test data, refactors, diagnostics, visual experiments, and automated checks
