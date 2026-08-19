@@ -36,6 +36,7 @@ const referenceData = {
   categories,
   members,
   accountId: "ACC-CHEQUING",
+  accountCurrency: "CAD",
   timeZone: "America/Toronto",
 };
 
@@ -83,6 +84,7 @@ for (const refs of [null, undefined, [], "not-an-object", 7]) {
     memberId: "MEM-JONATHAN",
     note: "weekly groceries",
     accountId: "ACC-CHEQUING",
+    currency: "CAD",
     category: categories[0],
   });
   assert.equal(JSON.stringify(referenceData), originalReferences, "pure validation must not mutate reference data");
@@ -173,6 +175,13 @@ assert.throws(
   () => validate(validExpense(), { ...referenceData, accountId: "" }),
   /No active account/,
 );
+for (const accountCurrency of ["", "USD", "EUR"]) {
+  assert.throws(
+    () => validate(validExpense(), { ...referenceData, accountCurrency }),
+    /authoritative currency CAD/,
+    `unsupported account currency ${JSON.stringify(accountCurrency)} must be rejected`,
+  );
+}
 assert.throws(
   () => validate(validExpense(), { ...referenceData, timeZone: "America/Los_Angeles" }),
   /Spreadsheet timezone must be America\/Toronto/,
@@ -184,7 +193,7 @@ assert.throws(
   let formatCalls = 0;
   context.getCategoriesList_ = () => categories;
   context.getHouseholdMembersList_ = () => members;
-  context.getActiveAccountId_ = () => "ACC-CHEQUING";
+  context.getActiveAccount_ = () => ({ id: "ACC-CHEQUING", currency: "CAD" });
   context.getTz_ = () => "America/Toronto";
   context.Utilities = {
     parseDate() {

@@ -633,3 +633,333 @@ function applyLegacyIncomeCorrections() {
     }
   }
 }
+
+// =================== v0.0.30 CAD CURRENCY MIGRATION ===================
+// Development-only correction for Issue #10. Jonathan confirmed that every
+// current account and ledger amount is already denominated in CAD; only the
+// USD metadata labels are wrong. The preview discovers all current rows by
+// stable ID and header name. Apply changes only Accounts.Currency,
+// Raw Transactions.Raw_Currency, and Transactions.Currency.
+
+var CAD_CURRENCY_V0030_VERSION_ = 'v0.0.30';
+var CAD_CURRENCY_V0030_DEV_SHEET_NAME_ = 'devCopy of Budget_App__v 0.23';
+var CAD_CURRENCY_V0030_OLD_CURRENCY_ = 'USD';
+var CAD_CURRENCY_V0030_NEW_CURRENCY_ = 'CAD';
+var CAD_CURRENCY_V0030_CONFIRMATION_ = 'APPLY V0.0.30 CAD TO DEV';
+var CAD_CURRENCY_V0030_TABLES_ = [
+  { sheet: 'Accounts', idHeader: 'Account_ID', accountHeader: 'Account_ID', currencyHeader: 'Currency' },
+  { sheet: 'Raw Transactions', idHeader: 'Raw_Record_ID', accountHeader: 'Account_ID', currencyHeader: 'Raw_Currency' },
+  { sheet: 'Transactions', idHeader: 'Transaction_ID', accountHeader: 'Account_ID', currencyHeader: 'Currency' }
+];
+
+function isCadCurrencyV0030DevSpreadsheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  return APP_VERSION === CAD_CURRENCY_V0030_VERSION_ &&
+    !!ss && ss.getName() === CAD_CURRENCY_V0030_DEV_SHEET_NAME_;
+}
+
+function assertCadCurrencyV0030Environment_() {
+  if (APP_VERSION !== CAD_CURRENCY_V0030_VERSION_) {
+    throw new Error('Safety abort: expected Apps Script ' + CAD_CURRENCY_V0030_VERSION_ +
+      ', but this project reports ' + APP_VERSION + '.');
+  }
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss || ss.getName() !== CAD_CURRENCY_V0030_DEV_SHEET_NAME_) {
+    throw new Error('Safety abort: this migration may run only in the development spreadsheet named "' +
+      CAD_CURRENCY_V0030_DEV_SHEET_NAME_ + '". Active spreadsheet: "' +
+      (ss ? ss.getName() : '(none)') + '".');
+  }
+  if (ss.getSpreadsheetTimeZone() !== 'America/Toronto') {
+    throw new Error('Safety abort: spreadsheet timezone must be America/Toronto before v0.0.30; found "' +
+      ss.getSpreadsheetTimeZone() + '".');
+  }
+  if (CAD_CURRENCY_V0030_TABLES_.length !== 3) {
+    throw new Error('Safety abort: the v0.0.30 currency migration must target exactly three tables.');
+  }
+  return ss;
+}
+
+function cadCurrencyV0030Value_(value) {
+  return String(value === null || value === undefined ? '' : value).trim().toUpperCase();
+}
+
+function cadCurrencyV0030ProtectedRowFingerprint_(row, currencyHeader) {
+  var protectedValues = {};
+  Object.keys(row).filter(function (key) {
+    return key !== '_row' && key !== currencyHeader;
+  }).sort().forEach(function (key) {
+    var value = row[key];
+    protectedValues[key] = value instanceof Date ? value.toISOString() : value;
+  });
+  return JSON.stringify(protectedValues);
+}
+
+function buildCadCurrencyV0030Plan_() {
+  var ss = assertCadCurrencyV0030Environment_();
+  var changes = [];
+  var accountIds = {};
+  var accountRows = readTable_('Accounts');
+  if (!accountRows.length) throw new Error('Safety abort: Accounts has no data rows.');
+
+  function validateStableIds(rows, spec) {
+    var counts = {};
+    rows.forEach(function (row) {
+      var id = String(row[spec.idHeader] || '').trim();
+      if (!id) {
+        throw new Error('Safety abort: ' + spec.sheet + ' row ' + row._row + ' has no ' + spec.idHeader + '.');
+      }
+      counts[id] = (counts[id] || 0) + 1;
+    });
+    Object.keys(counts).forEach(function (id) {
+      if (counts[id] !== 1) {
+        throw new Error('Safety abort: ' + spec.sheet + ' contains ' + counts[id] +
+          ' rows where ' + spec.idHeader + ' = "' + id + '". Stable IDs must be unique.');
+      }
+    });
+  }
+
+  function addChange(spec, row) {
+    var id = String(row[spec.idHeader] || '').trim();
+    var accountId = String(row[spec.accountHeader] || '').trim();
+    var current = cadCurrencyV0030Value_(row[spec.currencyHeader]);
+    if (current !== CAD_CURRENCY_V0030_OLD_CURRENCY_ && current !== CAD_CURRENCY_V0030_NEW_CURRENCY_) {
+      throw new Error('Safety abort: ' + spec.sheet + ' row ' + row._row + ' (' + id +
+        ') has unsupported ' + spec.currencyHeader + ' "' + (current || '(blank)') +
+        '"; expected only USD or CAD.');
+    }
+    var targetCol = col_(spec.sheet, spec.currencyHeader);
+    changes.push({
+      sheet: spec.sheet,
+      row: row._row,
+      a1: sheet_(spec.sheet).getRange(row._row, targetCol).getA1Notation(),
+      idHeader: spec.idHeader,
+      id: id,
+      accountId: accountId,
+      currencyHeader: spec.currencyHeader,
+      oldValue: CAD_CURRENCY_V0030_OLD_CURRENCY_,
+      newValue: CAD_CURRENCY_V0030_NEW_CURRENCY_,
+      currentValue: current,
+      state: current === CAD_CURRENCY_V0030_OLD_CURRENCY_ ? 'pending' : 'already-applied',
+      protectedFingerprint: cadCurrencyV0030ProtectedRowFingerprint_(row, spec.currencyHeader)
+    });
+  }
+
+  var accountSpec = CAD_CURRENCY_V0030_TABLES_[0];
+  col_('Accounts', accountSpec.idHeader);
+  col_('Accounts', accountSpec.currencyHeader);
+  validateStableIds(accountRows, accountSpec);
+  accountRows.forEach(function (row) {
+    var accountId = String(row.Account_ID || '').trim();
+    accountIds[accountId] = true;
+    addChange(accountSpec, row);
+  });
+
+  CAD_CURRENCY_V0030_TABLES_.slice(1).forEach(function (spec) {
+    col_(spec.sheet, spec.idHeader);
+    col_(spec.sheet, spec.accountHeader);
+    col_(spec.sheet, spec.currencyHeader);
+    var rows = readTable_(spec.sheet);
+    validateStableIds(rows, spec);
+    rows.forEach(function (row) {
+      var id = String(row[spec.idHeader] || '').trim();
+      var accountId = String(row[spec.accountHeader] || '').trim();
+      if (!accountId || !accountIds[accountId]) {
+        throw new Error('Safety abort: ' + spec.sheet + ' row ' + row._row + ' (' + id +
+          ') references unknown Account_ID "' + (accountId || '(blank)') + '".');
+      }
+      addChange(spec, row);
+    });
+  });
+
+  return {
+    version: CAD_CURRENCY_V0030_VERSION_,
+    spreadsheetName: ss.getName(),
+    timezone: ss.getSpreadsheetTimeZone(),
+    changes: changes
+  };
+}
+
+function formatCadCurrencyV0030Plan_(plan) {
+  var pending = plan.changes.filter(function (change) { return change.state === 'pending'; }).length;
+  var lines = [
+    plan.version + ' CAD metadata correction preview',
+    'Spreadsheet: ' + plan.spreadsheetName,
+    'Time zone: ' + plan.timezone,
+    '',
+    'Authoritative currency: ' + CAD_CURRENCY_V0030_NEW_CURRENCY_,
+    'Validated currency cells (' + plan.changes.length + '):'
+  ];
+  var lastSheet = '';
+  plan.changes.forEach(function (change) {
+    if (change.sheet !== lastSheet) {
+      lines.push('');
+      lines.push(change.sheet + ':');
+      lastSheet = change.sheet;
+    }
+    lines.push('  ' + (change.state === 'pending' ? 'CHANGE' : 'OK') + ' ' + change.sheet + '!' + change.a1 +
+      ' [' + change.idHeader + '=' + change.id + '; Account_ID=' + change.accountId + ']: ' +
+      change.currentValue + ' → ' + change.newValue);
+  });
+  lines.push('');
+  lines.push('Pending: ' + pending + ' currency-label cell change(s).');
+  lines.push('No amounts, dates, categories, owners, tips, wages, formulas, duplicate decisions, or financial calculations will change.');
+  return lines.join('\n');
+}
+
+function cadCurrencyV0030Fingerprint_(plan) {
+  return plan.spreadsheetName + '|' + plan.timezone + '|' + plan.changes.map(function (change) {
+    return change.sheet + '!' + change.a1 + '|' + change.id + '|' + change.accountId + '|' +
+      change.currentValue + '|' + change.protectedFingerprint;
+  }).join('|');
+}
+
+function cadCurrencyV0030ProtectedFingerprint_(plan) {
+  return plan.changes.map(function (change) {
+    return change.sheet + '|' + change.id + '|' + change.accountId + '|' + change.protectedFingerprint;
+  }).join('|');
+}
+
+function applyCadCurrencyV0030Plan_(plan) {
+  assertCadCurrencyV0030Environment_();
+  var pending = plan.changes.filter(function (change) { return change.state === 'pending'; });
+  var written = [];
+  try {
+    pending.forEach(function (change) {
+      var range = sheet_(change.sheet).getRange(change.a1);
+      var current = cadCurrencyV0030Value_(range.getValue());
+      if (current !== change.oldValue) {
+        throw new Error(change.sheet + '!' + change.a1 + ' changed after preview; found "' + current +
+          '" instead of "' + change.oldValue + '".');
+      }
+      written.push({ range: range, oldValue: change.oldValue, label: change.sheet + '!' + change.a1 });
+      range.setValue(change.newValue);
+    });
+
+    SpreadsheetApp.flush();
+    plan.changes.forEach(function (change) {
+      var finalValue = cadCurrencyV0030Value_(sheet_(change.sheet).getRange(change.a1).getValue());
+      if (finalValue !== change.newValue) {
+        throw new Error('Verification failed for ' + change.sheet + '!' + change.a1 + ': found "' +
+          finalValue + '" after writing "' + change.newValue + '".');
+      }
+    });
+    var finalPlan = buildCadCurrencyV0030Plan_();
+    if (cadCurrencyV0030ProtectedFingerprint_(finalPlan) !== cadCurrencyV0030ProtectedFingerprint_(plan)) {
+      throw new Error('Protected account or ledger data changed during the currency correction.');
+    }
+    if (finalPlan.changes.some(function (change) { return change.state !== 'already-applied'; })) {
+      throw new Error('Verification found at least one currency cell that is not CAD.');
+    }
+  } catch (error) {
+    var rollbackErrors = [];
+    for (var i = written.length - 1; i >= 0; i--) {
+      try { written[i].range.setValue(written[i].oldValue); }
+      catch (rollbackError) { rollbackErrors.push(written[i].label + ': ' + rollbackError.message); }
+    }
+    try { SpreadsheetApp.flush(); }
+    catch (flushError) { rollbackErrors.push('rollback flush: ' + flushError.message); }
+    written.forEach(function (entry) {
+      try {
+        var restored = cadCurrencyV0030Value_(entry.range.getValue());
+        if (restored !== entry.oldValue) rollbackErrors.push(entry.label + ' restored as "' + restored + '".');
+      } catch (verifyError) {
+        rollbackErrors.push(entry.label + ' rollback verification: ' + verifyError.message);
+      }
+    });
+    if (rollbackErrors.length) {
+      throw new Error('CRITICAL: v0.0.30 currency correction failed: ' + error.message +
+        ' Recovery could not be proven: ' + rollbackErrors.join(' | ') +
+        '. Do not retry until development data is inspected.');
+    }
+    throw new Error('v0.0.30 currency correction failed: ' + error.message +
+      ' All currency writes from this attempt were rolled back.');
+  }
+
+  var counts = {};
+  pending.forEach(function (change) { counts[change.sheet] = (counts[change.sheet] || 0) + 1; });
+  return { changedCells: pending.length, changedBySheet: counts, verifiedCells: plan.changes.length };
+}
+
+function previewCadCurrencyCorrections() {
+  var ui = SpreadsheetApp.getUi();
+  try {
+    var plan = buildCadCurrencyV0030Plan_();
+    ui.alert('Budget Tools — v0.0.30 CAD Correction Preview', formatCadCurrencyV0030Plan_(plan), ui.ButtonSet.OK);
+    return plan;
+  } catch (error) {
+    ui.alert('v0.0.30 CAD correction preview failed: ' + error.message);
+    return null;
+  }
+}
+
+function applyCadCurrencyCorrections() {
+  var ui = SpreadsheetApp.getUi();
+  var lock;
+  try {
+    var previewPlan = buildCadCurrencyV0030Plan_();
+    var pendingCells = previewPlan.changes.filter(function (change) { return change.state === 'pending'; }).length;
+    if (!pendingCells) {
+      ui.alert('v0.0.30 CAD corrections are already fully applied and verified. No writes were made.');
+      return;
+    }
+
+    var response = ui.prompt(
+      'Apply v0.0.30 Development CAD Corrections',
+      formatCadCurrencyV0030Plan_(previewPlan) + '\n\nType exactly: ' + CAD_CURRENCY_V0030_CONFIRMATION_,
+      ui.ButtonSet.OK_CANCEL
+    );
+    if (response.getSelectedButton() !== ui.Button.OK) return;
+    if (String(response.getResponseText() || '').trim() !== CAD_CURRENCY_V0030_CONFIRMATION_) {
+      ui.alert('Safety abort: confirmation text did not match. No writes were made.');
+      return;
+    }
+
+    lock = LockService.getDocumentLock();
+    if (!lock.tryLock(30000)) {
+      throw new Error('Could not obtain the development spreadsheet lock within 30 seconds. No writes were made.');
+    }
+    var lockedPlan = buildCadCurrencyV0030Plan_();
+    if (cadCurrencyV0030Fingerprint_(lockedPlan) !== cadCurrencyV0030Fingerprint_(previewPlan)) {
+      throw new Error('Spreadsheet state changed after the confirmation preview. No writes were made; run Preview again.');
+    }
+
+    var result = applyCadCurrencyV0030Plan_(lockedPlan);
+    var findings = null;
+    var healthError = '';
+    try { findings = runDataHealthCheck_(); }
+    catch (error) { healthError = error.message; }
+
+    var details = 'Changed ' + result.changedCells + ' verified currency metadata cell(s) to CAD: ' +
+      (result.changedBySheet.Accounts || 0) + ' Accounts, ' +
+      (result.changedBySheet['Raw Transactions'] || 0) + ' Raw Transactions, and ' +
+      (result.changedBySheet.Transactions || 0) + ' Transactions. No amounts or calculations changed.';
+    if (healthError) details += ' Health-check warning: ' + healthError;
+    else details += ' Post-migration Data Health Check found ' + findings.length + ' remaining issue(s).';
+    logChange_('Apply v0.0.30 CAD Currency Corrections', details);
+
+    var lines = [
+      '✓ v0.0.30 development CAD corrections applied and verified.',
+      result.changedCells + ' currency metadata cell(s) written:',
+      '• Accounts: ' + (result.changedBySheet.Accounts || 0),
+      '• Raw Transactions: ' + (result.changedBySheet['Raw Transactions'] || 0),
+      '• Transactions: ' + (result.changedBySheet.Transactions || 0),
+      '✓ No amounts, dates, categories, owners, tips, wages, formulas, duplicate decisions, or financial calculations changed.'
+    ];
+    if (healthError) lines.push('⚠ Data Health Check failed to run: ' + healthError);
+    else if (findings.length) lines.push('⚠ Data Health Check still reports ' + findings.length + ' issue(s). Run it from the menu for details.');
+    else lines.push('✓ Data Health Check reports no issues.');
+
+    var finalFlushError = '';
+    try { SpreadsheetApp.flush(); } catch (error) { finalFlushError = error.message; }
+    if (finalFlushError) lines.push('⚠ Final spreadsheet flush warning: ' + finalFlushError);
+    try { lock.releaseLock(); lock = null; }
+    catch (error) { lines.push('⚠ Document-lock release warning: ' + error.message); }
+    ui.alert('Budget Tools — v0.0.30 CAD Correction Result', lines.join('\n'), ui.ButtonSet.OK);
+  } catch (error) {
+    ui.alert('v0.0.30 CAD correction aborted: ' + error.message);
+  } finally {
+    if (lock) {
+      try { lock.releaseLock(); } catch (ignored) { /* best-effort */ }
+    }
+  }
+}

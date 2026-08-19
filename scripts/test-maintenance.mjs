@@ -49,6 +49,13 @@ class MockRange {
       throw new Error(`Injected write failure at ${this.sheet.name}!${a1}`);
     }
     this.sheet.setValueAt(this.row, this.column, value);
+    if (typeof this.sheet.afterSet === "function") {
+      this.sheet.afterSet({ a1, row: this.row, column: this.column, value });
+    }
+    if (this.sheet.failAfterSet === a1) {
+      this.sheet.failAfterSet = "";
+      throw new Error(`Injected post-write failure at ${this.sheet.name}!${a1}`);
+    }
     return this;
   }
 
@@ -64,6 +71,8 @@ class MockSheet {
     this.name = name;
     this.headers = [...headers];
     this.failOnSet = "";
+    this.failAfterSet = "";
+    this.afterSet = null;
     this.rows = Array.from({ length: 80 }, () => Array(headers.length).fill(""));
     this.formulas = Array.from({ length: 80 }, () => Array(headers.length).fill(""));
     this.rows[3] = [...headers];
@@ -352,4 +361,227 @@ const expectedLegacyIncomeDerivedCells = Array.from({ length: 14 }, (_, index) =
   );
 }
 
-console.log("Maintenance tests passed: v0.0.24 exact migration plus v0.0.25 exact 14-cell plan, formula preservation, idempotence, rollback, and safety aborts.");
+function buildCurrencyFixture() {
+  const accounts = new MockSheet("Accounts", [
+    "Account_ID", "Account_Name", "Institution", "Account_Type", "Owner_Member_ID", "Currency",
+    "External_Account_ID", "Last_Four", "Active_Flag", "Opened_Date", "Closed_Date", "Notes",
+  ], [{
+    row: 5,
+    values: {
+      Account_ID: "ACC-LEGACY-001",
+      Account_Name: "Legacy / Unassigned Account",
+      Account_Type: "Other",
+      Currency: "USD",
+      Active_Flag: "Yes",
+      Notes: "fixture account",
+    },
+  }]);
+  const raw = new MockSheet("Raw Transactions", [
+    "Raw_Record_ID", "Import_Batch_ID", "Source_System", "Source_File", "Source_Row_Number", "Account_ID",
+    "Imported_At", "Source_Transaction_ID", "Raw_Transaction_Date", "Raw_Posted_Date", "Raw_Type",
+    "Raw_Category", "Raw_Description", "Raw_Merchant", "Raw_Amount", "Raw_Currency", "Raw_Debit_Credit",
+    "Raw_Notes", "Raw_Payload", "Normalization_Status",
+  ], [
+    { row: 5, values: { Raw_Record_ID: "RAW-MANUAL-000001", Account_ID: "ACC-LEGACY-001", Raw_Transaction_Date: "2026-08-18", Raw_Amount: 12.3, Raw_Currency: "USD" } },
+    { row: 6, values: { Raw_Record_ID: "RAW-MANUAL-000002", Account_ID: "ACC-LEGACY-001", Raw_Transaction_Date: "2026-08-19", Raw_Amount: 4.56, Raw_Currency: "CAD" } },
+  ]);
+  const transactions = new MockSheet("Transactions", [
+    "Transaction_ID", "Raw_Record_ID", "Import_Batch_ID", "Account_ID", "Member_ID", "Transaction_Date",
+    "Posted_Date", "Transaction_Type", "Amount", "Currency", "Original_Description", "Normalized_Merchant",
+    "Income_Stability", "Auto_Category_ID", "Auto_Subcategory_ID", "Auto_Category_Confidence",
+    "Manual_Category_ID", "Manual_Subcategory_ID", "Effective_Category_ID", "Effective_Subcategory_ID",
+    "Reviewed_Flag", "Review_Status", "Duplicate_Key", "Potential_Duplicate_Flag", "Is_Duplicate",
+    "Duplicate_Of_Transaction_ID", "Recurring_Transaction_ID", "Source_Transaction_ID", "User_Notes",
+    "Created_At", "Updated_At",
+  ], [
+    { row: 5, values: { Transaction_ID: "TXN-MANUAL-000001", Raw_Record_ID: "RAW-MANUAL-000001", Account_ID: "ACC-LEGACY-001", Transaction_Date: "2026-08-18", Transaction_Type: "Expense", Amount: 12.3, Currency: "USD" } },
+    { row: 6, values: { Transaction_ID: "TXN-MANUAL-000002", Raw_Record_ID: "RAW-MANUAL-000002", Account_ID: "ACC-LEGACY-001", Transaction_Date: "2026-08-19", Transaction_Type: "Expense", Amount: 4.56, Currency: "CAD" } },
+  ]);
+  return { Accounts: accounts, "Raw Transactions": raw, Transactions: transactions };
+}
+
+function createCurrencyHarness({ timezone = "America/Toronto", spreadsheetName = "devCopy of Budget_App__v 0.23" } = {}) {
+  const sheets = buildCurrencyFixture();
+  const spreadsheet = {
+    name: spreadsheetName,
+    timezone,
+    getName() { return this.name; },
+    getSpreadsheetTimeZone() { return this.timezone; },
+    getSheetByName(name) { return sheets[name] ?? null; },
+  };
+  const context = vm.createContext({
+    console,
+    SpreadsheetApp: {
+      getActiveSpreadsheet: () => spreadsheet,
+      flush: () => {},
+    },
+    Session: { getScriptTimeZone: () => "America/Toronto" },
+  });
+  vm.runInContext(codeSource, context, { filename: "Code.gs" });
+  vm.runInContext(maintenanceSource, context, { filename: "Maintenance.gs" });
+  context.APP_VERSION = "v0.0.30";
+  return { context, spreadsheet, sheets };
+}
+
+{
+  const { context, sheets } = createCurrencyHarness();
+  assert.equal(context.isCadCurrencyV0030DevSpreadsheet_(), true);
+  assert.throws(() => context.getActiveAccount_(), /authoritative currency CAD/);
+  const plan = context.buildCadCurrencyV0030Plan_();
+  assert.equal(plan.changes.length, 5);
+  assert.equal(plan.changes.filter((change) => change.state === "pending").length, 3);
+  assert.deepEqual(
+    Array.from(plan.changes, (change) => `${change.sheet}!${change.a1}`),
+    ["Accounts!F5", "Raw Transactions!P5", "Raw Transactions!P6", "Transactions!J5", "Transactions!J6"],
+  );
+  const preview = context.formatCadCurrencyV0030Plan_(plan);
+  assert.match(preview, /Raw_Record_ID=RAW-MANUAL-000001/);
+  assert.match(preview, /Transaction_ID=TXN-MANUAL-000002/);
+  assert.match(preview, /No amounts, dates, categories, owners, tips, wages, formulas, duplicate decisions, or financial calculations will change/);
+
+  const protectedBefore = {
+    raw1Amount: sheets["Raw Transactions"].getRange(5, 15).getValue(),
+    raw2Date: sheets["Raw Transactions"].getRange(6, 9).getValue(),
+    tx1Amount: sheets.Transactions.getRange(5, 9).getValue(),
+    tx2Date: sheets.Transactions.getRange(6, 6).getValue(),
+  };
+  const applyResult = context.applyCadCurrencyV0030Plan_(plan);
+  assert.deepEqual(
+    { ...applyResult, changedBySheet: { ...applyResult.changedBySheet } },
+    { changedCells: 3, changedBySheet: { Accounts: 1, "Raw Transactions": 1, Transactions: 1 }, verifiedCells: 5 },
+  );
+  assert.equal(sheets.Accounts.getRange("F5").getValue(), "CAD");
+  assert.equal(sheets["Raw Transactions"].getRange("P5").getValue(), "CAD");
+  assert.equal(sheets["Raw Transactions"].getRange("P6").getValue(), "CAD");
+  assert.equal(sheets.Transactions.getRange("J5").getValue(), "CAD");
+  assert.equal(sheets.Transactions.getRange("J6").getValue(), "CAD");
+  assert.deepEqual({
+    raw1Amount: sheets["Raw Transactions"].getRange(5, 15).getValue(),
+    raw2Date: sheets["Raw Transactions"].getRange(6, 9).getValue(),
+    tx1Amount: sheets.Transactions.getRange(5, 9).getValue(),
+    tx2Date: sheets.Transactions.getRange(6, 6).getValue(),
+  }, protectedBefore);
+  assert.deepEqual({ ...context.getActiveAccount_() }, { id: "ACC-LEGACY-001", currency: "CAD" });
+  const finalPlan = context.buildCadCurrencyV0030Plan_();
+  assert.equal(finalPlan.changes.every((change) => change.state === "already-applied"), true);
+  assert.deepEqual(
+    { ...context.applyCadCurrencyV0030Plan_(finalPlan), changedBySheet: {} },
+    { changedCells: 0, changedBySheet: {}, verifiedCells: 5 },
+  );
+}
+
+{
+  const { context, sheets } = createCurrencyHarness();
+  const plan = context.buildCadCurrencyV0030Plan_();
+  sheets.Transactions.failAfterSet = "J5";
+  assert.throws(
+    () => context.applyCadCurrencyV0030Plan_(plan),
+    /Injected post-write failure at Transactions!J5.*All currency writes from this attempt were rolled back/,
+  );
+  assert.equal(sheets.Accounts.getRange("F5").getValue(), "USD");
+  assert.equal(sheets["Raw Transactions"].getRange("P5").getValue(), "USD");
+  assert.equal(sheets.Transactions.getRange("J5").getValue(), "USD");
+}
+
+{
+  const { context, sheets } = createCurrencyHarness();
+  const plan = context.buildCadCurrencyV0030Plan_();
+  sheets["Raw Transactions"].afterSet = ({ a1 }) => {
+    if (a1 === "P5") sheets.Transactions.setValueAt(5, 9, 999);
+  };
+  assert.throws(
+    () => context.applyCadCurrencyV0030Plan_(plan),
+    /Protected account or ledger data changed.*All currency writes from this attempt were rolled back/,
+  );
+  assert.equal(sheets.Accounts.getRange("F5").getValue(), "USD");
+  assert.equal(sheets["Raw Transactions"].getRange("P5").getValue(), "USD");
+  assert.equal(sheets.Transactions.getRange("J5").getValue(), "USD");
+}
+
+{
+  const { context, sheets } = createCurrencyHarness();
+  const plan = context.buildCadCurrencyV0030Plan_();
+  let firstTransactionWrite = true;
+  sheets.Transactions.afterSet = ({ a1 }) => {
+    if (a1 === "J5" && firstTransactionWrite) {
+      firstTransactionWrite = false;
+      sheets.Transactions.failOnSet = "J5";
+      throw new Error("Injected write-then-recovery failure");
+    }
+  };
+  assert.throws(
+    () => context.applyCadCurrencyV0030Plan_(plan),
+    /CRITICAL: v0\.0\.30 currency correction failed.*Recovery could not be proven.*Do not retry/,
+  );
+}
+
+{
+  const { context, sheets } = createCurrencyHarness();
+  sheets.Accounts.getRange("F5").setValue("EUR");
+  assert.throws(() => context.buildCadCurrencyV0030Plan_(), /unsupported Currency "EUR"/);
+}
+
+{
+  const { context, sheets } = createCurrencyHarness();
+  sheets["Raw Transactions"].getRange("F5").setValue("ACC-UNKNOWN");
+  assert.throws(() => context.buildCadCurrencyV0030Plan_(), /references unknown Account_ID "ACC-UNKNOWN"/);
+}
+
+{
+  const { context, sheets } = createCurrencyHarness();
+  sheets["Raw Transactions"].getRange("A6").setValue("RAW-MANUAL-000001");
+  assert.throws(() => context.buildCadCurrencyV0030Plan_(), /Stable IDs must be unique/);
+}
+
+{
+  const { context } = createCurrencyHarness({ timezone: "America/Los_Angeles" });
+  assert.throws(() => context.buildCadCurrencyV0030Plan_(), /timezone must be America\/Toronto/);
+}
+
+{
+  const { context } = createCurrencyHarness({ spreadsheetName: "Budget_App__v 0.23" });
+  assert.equal(context.isCadCurrencyV0030DevSpreadsheet_(), false);
+  assert.throws(() => context.buildCadCurrencyV0030Plan_(), /only in the development spreadsheet/);
+}
+
+{
+  const context = createCurrencyHarness().context;
+  const clean = JSON.parse(JSON.stringify(context.calcCurrencyHealthFindings_(
+    [{ Account_ID: "ACC-1", Currency: "CAD" }],
+    [{ Raw_Record_ID: "RAW-1", Account_ID: "ACC-1", Raw_Currency: "CAD" }],
+    [{ Transaction_ID: "TXN-1", Account_ID: "ACC-1", Currency: "CAD" }],
+  )));
+  assert.deepEqual(clean, []);
+  const findings = JSON.parse(JSON.stringify(context.calcCurrencyHealthFindings_(
+    [{ Account_ID: "ACC-1", Currency: "CAD" }],
+    [{ Raw_Record_ID: "RAW-USD", Account_ID: "ACC-1", Raw_Currency: "USD" }],
+    [{ Transaction_ID: "TXN-EUR", Account_ID: "ACC-1", Currency: "EUR" }],
+  )));
+  assert.equal(findings.length, 4);
+  assert.match(findings.map((finding) => finding.msg).join("\n"), /RAW-USD/);
+  assert.match(findings.map((finding) => finding.msg).join("\n"), /TXN-EUR/);
+}
+
+{
+  const { context, sheets } = createCurrencyHarness();
+  sheets.Accounts.getRange("F5").setValue("CAD");
+  sheets.Accounts.setValueAt(6, 1, "ACC-SECOND");
+  sheets.Accounts.setValueAt(6, 6, "CAD");
+  sheets.Accounts.setValueAt(6, 9, "Yes");
+  assert.throws(() => context.getActiveAccount_(), /More than one active account/);
+}
+
+assert.doesNotMatch(codeSource, /Raw_Currency\s*:\s*['"]USD['"]/);
+assert.doesNotMatch(codeSource, /\bCurrency\s*:\s*['"]USD['"]/);
+assert.match(
+  codeSource,
+  /function addShift\(form\)[\s\S]*?getActiveAccount_\(\)[\s\S]*?getOrCreateTipTrackerSheet_\(\)/,
+  "Add Shift must validate account-derived currency before any Tip Tracker creation/write helper",
+);
+assert.match(
+  codeSource,
+  /function postShiftTransaction_\([^)]*currency\)[\s\S]*?requireAuthoritativeCurrency_\(currency[\s\S]*?Raw_Currency:\s*currency[\s\S]*?Currency:\s*currency/,
+  "Add Shift must validate and write the same account-derived CAD metadata to both record layers",
+);
+
+console.log("Maintenance tests passed: v0.0.24/v0.0.25 exact corrections plus v0.0.30 account-derived CAD migration, idempotence, protected-data verification, rollback, and safety aborts.");
