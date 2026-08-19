@@ -7,7 +7,7 @@
 - Apps Script ID: connected locally in ignored `.clasp.json`; intentionally excluded from Git
 - Source status: remote development source reports `v0.0.29` and matches commit `4a4c01d` across all seven tracked Apps Script files after the approved 7:59:52 PM push
 - Runtime status: v0.0.29 live verification is complete. Two overlapping controlled Groceries expenses produced complete unique transaction/raw pairs, moved the counts from 37 / 37 / 2 / 13 to 39 / 39 / 2 / 15, preserved all six helper formulas across the two Transactions rows, left duplicate review at five rows across two repeated keys, and finished with a clean Data Health Check
-- Current candidate: `v0.0.30` on draft PR #15 (`issue-10-cad-currency`); repository checks pass, and development Apps Script remains v0.0.29 until the high-risk review and explicit development-only push gates pass
+- Current candidate: `v0.0.30` on draft PR #15 (`issue-10-cad-currency`); repository checks and Gemini review pass, Jonathan explicitly waived Claude review, and development Apps Script remains v0.0.29 until the explicit development-only push gate passes
 - Spreadsheet and Apps Script timezones: `America/Toronto`
 - Git branch: feature branches or local worktrees, merged into `main` after verification
 - Allowed: reversible test data, refactors, diagnostics, visual experiments, and automated checks
