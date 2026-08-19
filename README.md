@@ -4,9 +4,9 @@ This private GitHub repository is the canonical editable home for the household 
 
 ## Current baseline
 
-- Development Apps Script source: `v0.0.30` (approved seven-file source-only push at 9:13:42 PM; a fresh isolated post-push clone matches commit `edb3d25`; the guarded 79-cell CAD correction, zero-pending rerun, controlled Add Transaction/Add Shift propagation, duplicate review, and final health check all pass at 42 Transactions / 42 Raw Transactions)
-- Current code candidate: `v0.0.30` on draft PR #15 (`issue-10-cad-currency`); every repository, review, source, migration, idempotence, live-writer, duplicate, and health gate passes, Jonathan explicitly waived Claude review for this issue, and only his explicit merge approval remains
-- Merged code baseline: `v0.0.29`; Transaction Input validation and atomicity are merged through PRs #12 and #13, Issues #7 and #6 are closed, and development verification is complete
+- Development Apps Script source: `v0.0.30` (the guarded 79-cell CAD correction, zero-pending rerun, controlled Add Transaction/Add Shift propagation, duplicate review, and final health check all pass at 42 Transactions / 42 Raw Transactions)
+- Current code candidate: `v0.0.31` on `issue-2-add-shift-e2e`; the repository suite passes, but the high-risk independent reviews, development-only source approval, and live-Sheet verification remain pending
+- Merged code baseline: `v0.0.30` at squash commit `de9a2b9`; authoritative CAD is merged through PR #15, Issue #10 is closed, and development verification is complete
 - GitHub import baseline: `61a396e` (private `main`, verified by a clean clone with no local-only artifacts)
 - Development workbook snapshot: `Budget_App__v 0.23  -dev- Copy.ods`
 - Production workbook snapshot: `Budget_App__v 0.23.ods`
@@ -45,6 +45,7 @@ A functional Sheets test build is targeted for September 1, 2026. Non-code long-
 - [v0.0.28 Transaction Input validation candidate](docs/V0.0.28_TRANSACTION_VALIDATION_RELEASE.md)
 - [v0.0.29 Transaction Input atomicity candidate](docs/V0.0.29_TRANSACTION_ATOMICITY_RELEASE.md)
 - [v0.0.30 authoritative CAD release candidate](docs/V0.0.30_CAD_CURRENCY_RELEASE.md)
+- [v0.0.31 Add Shift end-to-end candidate](docs/V0.0.31_ADD_SHIFT_RELEASE.md)
 - [GitHub workflow and beginner guide](docs/GITHUB_WORKFLOW.md)
 - [Active September 1 milestone](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/milestone/1)
 
@@ -58,4 +59,4 @@ After dependencies are installed:
 pnpm test
 ```
 
-The checks parse every `.gs` file, detect duplicate top-level function declarations, confirm the source/package/release-history versions agree, parse the JavaScript embedded in all four dialogs, and simulate the guarded migrations. They exercise the duplicate-review engine beyond row 5,000 and at 12,000 rows, prove its document-lock lifecycle, verify that malformed/stale Transaction Input requests reach zero write-capable helpers, simulate deterministic ID planning plus rollback before and after every atomic transaction write boundary, and prove that the CAD migration changes only currency labels while rejecting ambiguous account state.
+The checks parse every `.gs` file, detect duplicate top-level function declarations, confirm the source/package/release-history versions agree, parse the JavaScript embedded in all four dialogs, and simulate the guarded migrations. They exercise the duplicate-review engine beyond row 5,000 and at 12,000 rows, prove its document-lock lifecycle, verify that malformed or stale Transaction Input and Add Shift requests reach zero write boundaries, simulate deterministic ID planning plus rollback before and after every atomic transaction and shift write stage, prove the shift preview and posting path share one settings-driven calculation, and prove that the CAD migration changes only currency labels while rejecting ambiguous account state.

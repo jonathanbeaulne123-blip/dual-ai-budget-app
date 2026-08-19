@@ -1993,346 +1993,10 @@ function syncCategoryNames() {
   ui.alert(msg);
 }
 // =================== ADD SHIFT (TIP TRACKER) ============================
-// A tipped-employee income manager: logs one row per shift (Sales, Cash
-// Tips, Credit Card Tips, Hours) to a self-provisioning "Tip Tracker"
-// sheet, automatically computes tip-out (money paid out to floor/bar
-// staff, plus the card-processing deduction on credit card tips only),
-// and posts two linked Transactions rows per shift — "Wages" (Hours ×
-// the hourly rate) and "Tips" (net, after tip-out) — so shift income
-// flows into Income History/Budget/Dashboard the same as any other
-// transaction, with no manual double-entry.
-//
-// Tip-out formula (all four settings plus the hourly rate live in named
-// ranges on the Tip Tracker sheet itself — see
-// getOrCreateTipTrackerSheet_ below — so Bianca or Jonathan can change
-// any of them any time without touching Code.gs):
-//   Floor tip-out = Sales × Floor Tip-Out %
-//   Bar tip-out   = CEILING(Sales × Bar Tip-Out %, Bar Tip-Out Rounding)
-//                   — i.e. rounded UP to the nearest multiple of the
-//                   rounding setting (default $5)
-//   CC tip-out    = Credit Card Tips × CC Tip-Out % (cash tips are never
-//                   subject to this — there's no card-processing fee on
-//                   cash)
-//   Net tips      = Cash Tips + Credit Card Tips − Floor tip-out
-//                   − Bar tip-out − CC tip-out
-//   Wages         = Hours × Hourly Wage Rate
-//
-// Deliberately NOT sharing addTransaction()'s row-writing code — this
-// posts its own Raw Transactions / Transactions rows via a dedicated
-// postShiftTransaction_ helper below, kept intentionally separate so
-// nothing about this new feature can regress the already-working Add
-// Transaction tool. (Worth revisiting as a shared helper in a future
-// cleanup pass — see the idea backlog.)
-
-var TIP_TRACKER_SHEET_NAME = 'Tip Tracker';
-// Row numbers are only used to BUILD the sheet's initial layout; every
-// read after that goes through the named ranges (TT_...) below, not
-// these row numbers, so the settings stay correct even if someone
-// inserts a row above the settings block later.
-var TIP_TRACKER_HEADER_ROW = 9;       // shift-log header row
-var TIP_TRACKER_DATA_START_ROW = 10;  // first shift-log data row
-
-// Creates the Tip Tracker sheet (settings block + shift-log header +
-// named ranges) the first time Add Shift is used. Safe to call every
-// time — a no-op if the sheet already exists, so it never overwrites
-// settings someone has already customized.
-function getOrCreateTipTrackerSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName(TIP_TRACKER_SHEET_NAME);
-  if (sh) return sh;
-
-  sh = ss.insertSheet(TIP_TRACKER_SHEET_NAME);
-  sh.getRange('A1').setValue('TIP TRACKER — SETTINGS (edit the values in column B any time; Add Shift reads them automatically)').setFontWeight('bold');
-  sh.getRange('A2:C2').setValues([['Setting', 'Value', 'Notes']]).setFontWeight('bold');
-  var settingsRows = [
-    ['Floor Tip-Out %', 6, '% of Sales paid out to floor staff'],
-    ['Bar Tip-Out %', 1, '% of Sales paid out to bar staff, before rounding'],
-    ['Bar Tip-Out Rounding ($)', 5, 'Bar tip-out is rounded UP to the nearest multiple of this'],
-    ['CC Tip-Out %', 2, '% deducted from Credit Card Tips only — cash tips are never charged this'],
-    ['Hourly Wage Rate ($)', 17.6, 'Wages = Hours × this rate']
-  ];
-  sh.getRange(3, 1, settingsRows.length, 3).setValues(settingsRows);
-  sh.getRange(3, 2, settingsRows.length, 1).setBackground('#fff2cc'); // yellow = user-editable, matches Budget's own convention
-
-  ss.setNamedRange('TT_FLOOR_PCT', sh.getRange('B3'));
-  ss.setNamedRange('TT_BAR_PCT', sh.getRange('B4'));
-  ss.setNamedRange('TT_BAR_ROUND', sh.getRange('B5'));
-  ss.setNamedRange('TT_CC_PCT', sh.getRange('B6'));
-  ss.setNamedRange('TT_HOURLY_RATE', sh.getRange('B7'));
-
-  sh.getRange(TIP_TRACKER_HEADER_ROW, 1, 1, 12).setValues([[
-    'Date', 'Member', 'Sales', 'Cash Tips', 'CC Tips', 'Hours',
-    'Floor Tip-Out', 'Bar Tip-Out', 'CC Tip-Out', 'Net Tips', 'Wages', 'Logged At'
-  ]]).setFontWeight('bold');
-
-  sh.setColumnWidth(1, 100);
-  sh.autoResizeColumns(2, 11);
-  return sh;
-}
-
-// Reads the four tip-out settings + hourly rate via their named ranges
-// (not hardcoded row numbers) so this stays correct even if someone
-// inserts a row above the settings block. Throws a clear error rather
-// than silently falling back to a default, since a wrong tip-out % or
-// hourly rate here means a wrong dollar figure on someone's income
-// record.
-function getTipTrackerSettings_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  function readNamed_(name) {
-    var range = ss.getRangeByName(name);
-    if (!range) {
-      throw new Error('Missing named range "' + name + '" — the Tip Tracker sheet\'s settings block may have been altered. Delete the Tip Tracker sheet and re-run Add Shift to have it rebuilt, or recreate the named range manually.');
-    }
-    var v = range.getValue();
-    if (typeof v !== 'number' || !isFinite(v)) {
-      throw new Error('The value for "' + name + '" on the Tip Tracker sheet isn\'t a valid number — please fix it there before adding a shift.');
-    }
-    return v;
-  }
-  return {
-    floorPct: readNamed_('TT_FLOOR_PCT'),
-    barPct: readNamed_('TT_BAR_PCT'),
-    barRound: readNamed_('TT_BAR_ROUND'),
-    ccPct: readNamed_('TT_CC_PCT'),
-    hourlyRate: readNamed_('TT_HOURLY_RATE')
-  };
-}
-
-// Called from AddShiftDialog.html on load, to power the live tip-out/
-// wage preview as the user types. Creates the Tip Tracker sheet on
-// first-ever use (same lazy creation the real submit path uses below)
-// so the preview works correctly even before any shift has been logged.
-function getTipTrackerSettingsForPreview_() {
-  getOrCreateTipTrackerSheet_();
-  return getTipTrackerSettings_();
-}
-
-function showAddShiftDialog() {
-  var template = HtmlService.createTemplateFromFile('AddShiftDialog');
-  template.members = getHouseholdMembersList_();
-  var html = template.evaluate().setWidth(420).setHeight(600);
-  SpreadsheetApp.getUi().showModalDialog(html, 'Add a shift');
-}
-
-// Finds (or creates, live-linked into Budget the same way Add Category
-// does) the income subcategory with this exact name under the real
-// top-level Income category, whose Category_ID is the bare string
-// "INCOME" (not "CAT-INCOME" — see the note in addCategory() above).
-// Shared by addShift() below for both "Wages" and "Tips" so re-running
-// Add Shift never creates duplicate categories.
-function ensureIncomeSubcategory_(name) {
-  var existing = readTable_('Categories');
-  var match = existing.filter(function (c) {
-    return c.Record_Type === 'Subcategory' && c.Parent_Category_ID === 'INCOME' &&
-      String(c.Category_Name || '').trim().toLowerCase() === name.toLowerCase();
-  })[0];
-  if (match) return match.Category_ID;
-
-  var catSheet = sheet_('Categories');
-  var existingIds = existing.map(function (c) { return c.Category_ID; });
-  var maxSort = existing.reduce(function (m, c) { return Math.max(m, Number(c.Sort_Order) || 0); }, 0);
-  var subId = uniqueId_('SUB-INCOME-' + slug_(name), existingIds);
-
-  catSheet.appendRow(rowFromHeaders_('Categories', {
-    Category_ID: subId,
-    Parent_Category_ID: 'INCOME',
-    Record_Type: 'Subcategory',
-    Category_Name: name,
-    Transaction_Type: 'Income',
-    Essential_Default: 'N',
-    Income_Stability_Default: 'Variable', // shift income varies shift to shift, same treatment as Partner 2's variable income
-    Active_Flag: 'Yes',
-    Legacy_Budget_Label: name,
-    Sort_Order: maxSort + 1
-  }));
-
-  // Live-link it onto the Budget page too, same as Add Category does for
-  // every new category — so "Wages"/"Tips" show up as real budget lines
-  // immediately instead of only existing in Categories.
-  insertBudgetRow_('Income', name, '', 'Variable', subId);
-
-  logChange_('Add Category', subId + ' "' + name + '" (Income) — auto-created by Add Shift');
-  return subId;
-}
-
-// Returns (creating if needed) the shared "shift entry" import batch,
-// kept separate from Add Transaction's BATCH-MANUAL-ENTRY so shift-
-// sourced income can be filtered/reported on distinctly later.
-function getOrCreateShiftBatch_(accountId) {
-  var sh = sheet_('Import Batches');
-  var rows = readTable_('Import Batches');
-  var existing = rows.filter(function (r) { return r.Import_Batch_ID === 'BATCH-SHIFT-ENTRY'; })[0];
-  if (existing) {
-    sh.getRange(existing._row, col_('Import Batches', 'Record_Count')).setValue((existing.Record_Count || 0) + 1);
-    return 'BATCH-SHIFT-ENTRY';
-  }
-  sh.appendRow(rowFromHeaders_('Import Batches', {
-    Import_Batch_ID: 'BATCH-SHIFT-ENTRY',
-    Imported_At: new Date(),
-    Source_System: 'Manual entry (Add Shift tool)',
-    Source_File: '',
-    Account_ID: accountId,
-    Record_Count: 1,
-    Status: 'Completed',
-    Notes: 'Auto-created by the Add Shift tool; reused for every shift-sourced Wages/Tips transaction.'
-  }));
-  return 'BATCH-SHIFT-ENTRY';
-}
-
-// Posts one Raw Transactions + Transactions row pair — same shape as
-// addTransaction()'s own writes, just parameterized instead of reading
-// straight from a form, since Add Shift posts two of these per shift
-// (Wages, Tips) instead of one.
-function postShiftTransaction_(date, amount, subId, subName, memberId, note, batchId, accountId, currency) {
-  currency = requireAuthoritativeCurrency_(currency, 'Shift account ' + accountId);
-  var txnSeq = nextSequence_('Transactions', 'Transaction_ID');
-  var rawSeq = nextSequence_('Raw Transactions', 'Raw_Record_ID');
-  var txnId = 'TXN-SHIFT-' + pad_(txnSeq, 6);
-  var rawId = 'RAW-SHIFT-' + pad_(rawSeq, 6);
-  var now = new Date();
-
-  sheet_('Raw Transactions').appendRow(rowFromHeaders_('Raw Transactions', {
-    Raw_Record_ID: rawId,
-    Import_Batch_ID: batchId,
-    Source_System: 'Manual entry (Add Shift tool)',
-    Account_ID: accountId,
-    Imported_At: now,
-    Raw_Transaction_Date: date,
-    Raw_Type: 'Income',
-    Raw_Category: subName,
-    Raw_Description: note,
-    Raw_Amount: amount,
-    Raw_Currency: currency,
-    Raw_Notes: note,
-    Normalization_Status: 'Normalized'
-  }));
-
-  var txSheet = sheet_('Transactions');
-  var newRow = txSheet.getLastRow() + 1;
-  var txRow = rowFromHeaders_('Transactions', {
-    Transaction_ID: txnId,
-    Raw_Record_ID: rawId,
-    Import_Batch_ID: batchId,
-    Account_ID: accountId,
-    Member_ID: memberId || '',
-    Transaction_Date: date,
-    Transaction_Type: 'Income',
-    Amount: amount,
-    Currency: currency,
-    Original_Description: note,
-    Income_Stability: 'Variable',
-    Manual_Category_ID: 'INCOME',
-    Manual_Subcategory_ID: subId,
-    Reviewed_Flag: 'Yes',
-    Review_Status: 'Confirmed',
-    Is_Duplicate: 'No',
-    User_Notes: note,
-    Created_At: now,
-    Updated_At: now
-  });
-  txSheet.getRange(newRow, 1, 1, txRow.length).setValues([txRow]);
-
-  var effCatCol = colLetter_('Transactions', 'Effective_Category_ID');
-  var effSubCol = colLetter_('Transactions', 'Effective_Subcategory_ID');
-  var manCatCol = colLetter_('Transactions', 'Manual_Category_ID');
-  var manSubCol = colLetter_('Transactions', 'Manual_Subcategory_ID');
-  var autoCatCol = colLetter_('Transactions', 'Auto_Category_ID');
-  var autoSubCol = colLetter_('Transactions', 'Auto_Subcategory_ID');
-  var dupKeyCol = colLetter_('Transactions', 'Duplicate_Key');
-  var txDateCol = colLetter_('Transactions', 'Transaction_Date');
-  var txAmountCol = colLetter_('Transactions', 'Amount');
-  var txAcctCol = colLetter_('Transactions', 'Account_ID');
-  var txTypeCol = colLetter_('Transactions', 'Transaction_Type');
-  var txDescCol = colLetter_('Transactions', 'Original_Description');
-
-  txSheet.getRange(effCatCol + newRow).setFormula('=IF(' + manCatCol + newRow + '<>"",' + manCatCol + newRow + ',' + autoCatCol + newRow + ')');
-  txSheet.getRange(effSubCol + newRow).setFormula('=IF(' + manSubCol + newRow + '<>"",' + manSubCol + newRow + ',' + autoSubCol + newRow + ')');
-  txSheet.getRange(dupKeyCol + newRow).setFormula(
-    '=IF(' + txDateCol + newRow + '="","",LOWER(TEXT(' + txDateCol + newRow + ',"yyyymmdd")&"|"&TEXT(' + txAmountCol + newRow + ',"0.00")&"|"&' +
-    txAcctCol + newRow + '&"|"&' + txTypeCol + newRow + '&"|"&TRIM(' + txDescCol + newRow + ')))'
-  );
-
-  return txnId;
-}
-
-/**
- * Called from AddShiftDialog.html via google.script.run.
- * form = { date, memberId, sales, cashTips, ccTips, hours, confirmed }
- * Two-phase: if a shift already exists for the same date and
- * form.confirmed isn't true, returns { duplicate: true, message } instead
- * of writing anything — the dialog shows a confirm prompt and resubmits
- * with confirmed = true to actually log a second shift that day. This is
- * a warn-and-confirm guard, not a hard block, since legitimate double
- * shifts do happen.
- */
-function addShift(form) {
-  if (!form.date) throw new Error('Please choose a date.');
-  var hours = Number(form.hours);
-  if (!isFinite(hours) || hours <= 0) throw new Error('Hours worked must be a positive number.');
-  var sales = Number(form.sales) || 0;
-  var cashTips = Number(form.cashTips) || 0;
-  var ccTips = Number(form.ccTips) || 0;
-  if (sales < 0 || cashTips < 0 || ccTips < 0) throw new Error('Sales and tips can\'t be negative.');
-
-  var tz = getTz_();
-  var date = Utilities.parseDate(form.date, tz, 'yyyy-MM-dd');
-  var dateKey = Utilities.formatDate(date, tz, 'yyyy-MM-dd');
-  // Validate the authoritative account/currency before the first helper that
-  // can create or write the Tip Tracker sheet. A stale USD account must not
-  // leave a partial shift-log row while the v0.0.30 migration is pending.
-  var account = getActiveAccount_();
-  var accountId = account.id;
-
-  var sh = getOrCreateTipTrackerSheet_();
-  var lastRow = sh.getLastRow();
-
-  if (!form.confirmed && lastRow >= TIP_TRACKER_DATA_START_ROW) {
-    var n = lastRow - TIP_TRACKER_DATA_START_ROW + 1;
-    var existingDates = sh.getRange(TIP_TRACKER_DATA_START_ROW, 1, n, 1).getValues();
-    for (var i = 0; i < existingDates.length; i++) {
-      var d = existingDates[i][0];
-      if (d instanceof Date && Utilities.formatDate(d, tz, 'yyyy-MM-dd') === dateKey) {
-        return {
-          duplicate: true,
-          message: 'A shift is already logged for ' + Utilities.formatDate(date, tz, 'MMM d, yyyy') + '. Log this as an additional shift for the same day?'
-        };
-      }
-    }
-  }
-
-  var settings = getTipTrackerSettings_();
-  var floorTipOut = sales * settings.floorPct / 100;
-  var barTipOutRaw = sales * settings.barPct / 100;
-  var barTipOut = settings.barRound > 0 ? Math.ceil(barTipOutRaw / settings.barRound) * settings.barRound : barTipOutRaw;
-  var ccTipOut = ccTips * settings.ccPct / 100;
-  var netTips = cashTips + ccTips - floorTipOut - barTipOut - ccTipOut;
-  var wages = hours * settings.hourlyRate;
-
-  sh.getRange(sh.getLastRow() + 1, 1, 1, 12).setValues([[
-    date, form.memberId || '', sales, cashTips, ccTips, hours,
-    floorTipOut, barTipOut, ccTipOut, netTips, wages, new Date()
-  ]]);
-
-  var batchId = getOrCreateShiftBatch_(accountId);
-  var wagesSubId = ensureIncomeSubcategory_('Wages');
-  var tipsSubId = ensureIncomeSubcategory_('Tips');
-
-  var dateLabel = Utilities.formatDate(date, tz, 'MMM d, yyyy');
-  var wageTxnId = postShiftTransaction_(date, wages, wagesSubId, 'Wages', form.memberId, 'Shift ' + dateLabel + ' — ' + hours + ' hrs', batchId, accountId, account.currency);
-  var tipsTxnId = postShiftTransaction_(date, netTips, tipsSubId, 'Tips', form.memberId, 'Shift ' + dateLabel + ' — net tips after tip-out', batchId, accountId, account.currency);
-  recomputePotentialDuplicateFlags_();
-
-  logChange_('Add Shift', dateLabel + ': ' + wageTxnId + ' Wages $' + wages.toFixed(2) + ', ' + tipsTxnId + ' Tips $' + netTips.toFixed(2) +
-    ' (Sales $' + sales.toFixed(2) + ', tip-out: floor $' + floorTipOut.toFixed(2) + ' + bar $' + barTipOut.toFixed(2) + ' + CC $' + ccTipOut.toFixed(2) + ')');
-  refreshBudgetSummarySilently_(); // Wages/Tips are Variable income — this shift's actuals should count immediately
-
-  var message = 'Logged ' + dateLabel + ': $' + wages.toFixed(2) + ' wages (' + hours + ' hrs), $' + netTips.toFixed(2) + ' net tips ' +
-    '(after $' + floorTipOut.toFixed(2) + ' floor + $' + barTipOut.toFixed(2) + ' bar + $' + ccTipOut.toFixed(2) + ' CC tip-out).';
-  if (netTips < 0) {
-    message += ' ⚠ Net tips came out negative — double check the amounts entered.';
-  }
-  return { ok: true, message: message };
-}
+// The complete v0.0.31 Add Shift workflow lives in ShiftWorkflow.gs.
+// Keeping calculation, validation, planning, and Sheet I/O in a dedicated
+// module prevents this high-risk multi-record workflow from being tangled
+// back into the general menu, ledger, and summary code in this file.
 // =================== VIEW CATEGORY SPENDING ===========================
 // Read-only chart tool: pick one category, see what was actually spent
 // (or received, for Income categories) per week, visually grouped by
@@ -3173,6 +2837,15 @@ function runDataHealthCheck_() {
   calcCurrencyHealthFindings_(accounts, rawTransactions, transactions).forEach(function (finding) {
     flag(finding.section, finding.msg);
   });
+  var tipTrackerSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(TIP_TRACKER_SHEET_NAME);
+  if (tipTrackerSheet) {
+    try {
+      calcShiftLinkHealthFindings_(readTipTrackerRows_(), rawTransactions, transactions, categories)
+        .forEach(function (finding) { flag(finding.section, finding.msg); });
+    } catch (shiftHealthError) {
+      flag('Shift linkage', 'Tip Tracker could not be validated: ' + shiftHealthError.message);
+    }
+  }
   var orphanManualCategoryTxIds = [];
   var orphanEffectiveCategoryTxIds = [];
   var orphanSubIdCount = 0, orphanMemberCount = 0;
@@ -3295,7 +2968,7 @@ function dataHealthCheck() {
     var findings = runDataHealthCheck_();
     var lines = [];
     if (!findings.length) {
-      lines.push('✓ No issues found. Accounts, Raw Transactions, Transactions, Categories, Household Members, Budget Plan, Budget, and Dashboard all cross-reference cleanly.');
+      lines.push('✓ No issues found. Accounts, Raw Transactions, Transactions, Tip Tracker, Categories, Household Members, Budget Plan, Budget, and Dashboard all cross-reference cleanly.');
     } else {
       lines.push('⚠ ' + findings.length + ' issue(s) found:');
       lines.push('');
@@ -3340,7 +3013,7 @@ var DATA_DICTIONARY_ = [
   { sheet: 'Income History', idColumn: 'n/a — one row per month (Month column is the key)', idScheme: 'n/a', foreignKeys: 'No stored foreign key, but Fixed/Variable Income (Actual) are derived from Transactions (Transaction_Type=Income, grouped by month) — see recomputeIncomeHistory_() in Code.gs.', notes: 'Rows whose Notes column contains "Preserved" predate the transaction ledger and are left untouched by the recompute — there\'s nothing to derive them from.' },
   { sheet: 'Change Log', idColumn: 'n/a — append-only', idScheme: 'One row per write action, oldest first.', foreignKeys: 'None.', notes: 'Hidden sheet. Written by logChange_() in Code.gs — every write-capable tool appends one row here.' },
   { sheet: 'Release Notes', idColumn: 'Version', idScheme: 'vX.Y.Z, matches APP_VERSION history.', foreignKeys: 'None.', notes: 'Hidden sheet, kept in sync with RELEASE_HISTORY_ in Code.gs by syncReleaseNotes_().' },
-  { sheet: 'Tip Tracker', idColumn: 'n/a — one row per shift', idScheme: 'Date-based.', foreignKeys: 'Each shift posts two linked rows to Transactions (Wages, Tips) — see postShiftTransaction_() in Code.gs.', notes: 'Tip-out % and hourly rate live in named ranges on this sheet, not hardcoded — see getTipTrackerSettings_() in Code.gs.' },
+  { sheet: 'Tip Tracker', idColumn: 'Shift ID', idScheme: 'SHIFT-000001 and upward for shifts posted from v0.0.31; historical rows remain valid with a blank Shift ID.', foreignKeys: 'Shift ID → Raw Transactions.Source_Transaction_ID and Transactions.Source_Transaction_ID. Each source shift owns exactly one Wages and one Tips row in each ledger layer.', notes: 'Tip-out percentages, bar rounding, and hourly rate live in named ranges on this sheet. Calculation Settings stores the exact rules snapshot used for each new shift.' },
   { sheet: 'Categorization Rules', idColumn: 'Rule_ID', idScheme: 'Schema exists, not currently used.', foreignKeys: 'Account_ID → Accounts.Account_ID. Suggested_Category_ID / Suggested_Subcategory_ID → Categories.Category_ID.', notes: '⚠ Not referenced anywhere in Code.gs — not wired into any tool yet.' },
   { sheet: 'Recurring Transactions', idColumn: 'Recurring_ID', idScheme: 'Schema exists, not currently used.', foreignKeys: 'Account_ID → Accounts.Account_ID. Member_ID → Household Members.Member_ID. Category_ID / Subcategory_ID → Categories.Category_ID.', notes: '⚠ Not referenced anywhere in Code.gs — not wired into any tool yet.' }
 ];
@@ -3406,7 +3079,7 @@ function viewDataDictionary() {
 // becomes a one-glance check instead of a guess, and the Release Notes
 // sheet (see syncReleaseNotes_() below) picks up the new entry
 // automatically the next time anything runs.
-var APP_VERSION = 'v0.0.30';
+var APP_VERSION = 'v0.0.31';
 // ==================== RELEASE NOTES =====================================
 // The full version history — one entry per shipped feature or fix,
 // oldest first. This array is the single source of truth: add one entry
@@ -3444,7 +3117,8 @@ var RELEASE_HISTORY_ = [
   { version: 'v0.0.27', date: '2026-08-18', summary: 'Closed the concurrency gap found in Gemini\'s independent review of v0.0.26. recomputePotentialDuplicateFlags_() now acquires a document-scoped lock before reading the Transactions extent and holds it through the single batched Potential_Duplicate_Flag write, preventing overlapping script recalculations from allowing an older full-column result to overwrite a newer one. A 10-second timeout fails explicitly without writing, and finally always releases an acquired lock. The lock protects only this derived review column; Duplicate_Key, Is_Duplicate, transactions, and financial totals remain outside its write surface.' },
   { version: 'v0.0.28', date: '2026-08-18', summary: 'Added authoritative server validation for Add Transaction. A pure validateAndNormalizeTransactionInput_() boundary now accepts only Income/Expense, validates real YYYY-MM-DD calendar dates under the America/Toronto standard, normalizes positive whole-cent amounts, verifies the selected active subcategory belongs to the submitted type, verifies any nonblank member is active, and returns normalized plain data. addTransaction() completes all reference reads and date parsing before getOrCreateManualBatch_() or any other write-capable helper runs, so invalid, stale, or tampered requests make zero Sheet or batch changes. Write locking and rollback remain separately scoped to Issue #6.' },
   { version: 'v0.0.29', date: '2026-08-18', summary: 'Made Add Transaction concurrency-safe and recoverable. A fast read-only preflight is followed by an authoritative reference re-read, validation/date recheck, ID allocation, batch planning, and the complete batch/Raw Transactions/Transactions commit under one 10-second document lock. A pure planner produces stable IDs and prior/new batch state; a guarded three-stage executor verifies the complete linked pair and reverses the transaction row, raw row, and batch mutation if any write or verification fails, including write-then-throw failures. All three helper formulas now travel in the single Transactions row write. Duplicate-flag and summary refreshes run only after the durable commit and lock release, so a follow-up refresh failure reports saved-with-warning rather than encouraging a duplicate resubmission.' },
-  { version: 'v0.0.30', date: '2026-08-18', summary: 'Made CAD authoritative from Accounts.Currency for Add Transaction and Add Shift, removing every USD hardcode. New writes require exactly one active account with supported CAD metadata and carry that account-derived currency into the linked Raw Transactions and Transactions rows. Added a guarded development-only USD-label-to-CAD migration that discovers current Accounts/Raw/Transactions rows by stable IDs and headers, previews every currency cell, changes no amounts or financial meaning, rechecks under a document lock, verifies protected row data, supports repeat-safe no-op runs, and rolls back its own writes on failure. Data Health Check now reports unsupported, orphaned, duplicate-account, and account/record currency mismatches.' }
+  { version: 'v0.0.30', date: '2026-08-18', summary: 'Made CAD authoritative from Accounts.Currency for Add Transaction and Add Shift, removing every USD hardcode. New writes require exactly one active account with supported CAD metadata and carry that account-derived currency into the linked Raw Transactions and Transactions rows. Added a guarded development-only USD-label-to-CAD migration that discovers current Accounts/Raw/Transactions rows by stable IDs and headers, previews every currency cell, changes no amounts or financial meaning, rechecks under a document lock, verifies protected row data, supports repeat-safe no-op runs, and rolls back its own writes on failure. Data Health Check now reports unsupported, orphaned, duplicate-account, and account/record currency mismatches.' },
+  { version: 'v0.0.31', date: '2026-08-18', summary: 'Rebuilt Add Shift as a validated, settings-driven, recoverable workflow. The mobile-friendly dialog now gets every preview from the same pure cent-rounded calculation used for posting and requires a fresh review if Tip Tracker settings change. Each new shift receives a stable SHIFT ID and atomically commits one Tip Tracker source row, one shift-batch count increment, two Raw Transactions rows, and exactly one Wages plus one Tips Transactions row under a document lock; verification checks financial fields, links, and helper formulas, while any failed stage rolls back in reverse and proves recovery. Same-member same-date shifts warn but remain confirmable, post-commit refresh/log failures report saved-with-warning, diagnostics expose stable/historical shift counts, and Data Health Check validates the new source-to-ledger links without rewriting historical blank-ID rows.' }
 ];
 var RELEASE_NOTES_SHEET_NAME = 'Release Notes';
 // Creates the Release Notes sheet (header row, hidden) the first time
@@ -3569,8 +3243,13 @@ function showDiagnostics() {
   } else {
     try {
       var ttSettings = getTipTrackerSettings_();
+      var ttRows = readTipTrackerRows_();
+      var stableShiftCount = ttRows.filter(function (row) { return row['Shift ID']; }).length;
+      var historicalShiftCount = ttRows.length - stableShiftCount;
       lines.push('Tip Tracker: ✓ set up. Floor ' + ttSettings.floorPct + '%, Bar ' + ttSettings.barPct +
-        '% (round up to $' + ttSettings.barRound + '), CC ' + ttSettings.ccPct + '%, Hourly rate $' + ttSettings.hourlyRate.toFixed(2) + '.');
+        '% (round up to $' + ttSettings.barRound + '), CC ' + ttSettings.ccPct + '%, Hourly rate $' +
+        ttSettings.hourlyRate.toFixed(2) + '. Stable shift IDs: ' + stableShiftCount +
+        '; preserved historical rows without IDs: ' + historicalShiftCount + '.');
     } catch (e) {
       lines.push('Tip Tracker: ⚠ ' + e.message);
     }

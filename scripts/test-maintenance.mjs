@@ -4,6 +4,8 @@ import vm from "node:vm";
 
 const codeSource = readFileSync("Code.gs", "utf8");
 const maintenanceSource = readFileSync("Maintenance.gs", "utf8");
+const shiftSource = readFileSync("ShiftWorkflow.gs", "utf8");
+const appSource = `${codeSource}\n${shiftSource}`;
 
 function columnName(column) {
   let result = "";
@@ -571,16 +573,16 @@ function createCurrencyHarness({ timezone = "America/Toronto", spreadsheetName =
   assert.throws(() => context.getActiveAccount_(), /More than one active account/);
 }
 
-assert.doesNotMatch(codeSource, /Raw_Currency\s*:\s*['"]USD['"]/);
-assert.doesNotMatch(codeSource, /\bCurrency\s*:\s*['"]USD['"]/);
+assert.doesNotMatch(appSource, /Raw_Currency\s*:\s*['"]USD['"]/);
+assert.doesNotMatch(appSource, /\bCurrency\s*:\s*['"]USD['"]/);
 assert.match(
-  codeSource,
-  /function addShift\(form\)[\s\S]*?getActiveAccount_\(\)[\s\S]*?getOrCreateTipTrackerSheet_\(\)/,
-  "Add Shift must validate account-derived currency before any Tip Tracker creation/write helper",
+  shiftSource,
+  /function getShiftReferenceData_\(\)[\s\S]*?getActiveAccount_\(\)/,
+  "Add Shift must resolve its account and currency from the authoritative Accounts table",
 );
 assert.match(
-  codeSource,
-  /function postShiftTransaction_\([^)]*currency\)[\s\S]*?requireAuthoritativeCurrency_\(currency[\s\S]*?Raw_Currency:\s*currency[\s\S]*?Currency:\s*currency/,
+  shiftSource,
+  /function validateAndNormalizeShiftInput_[\s\S]*?requireAuthoritativeCurrency_[\s\S]*?function planShiftCommit_[\s\S]*?Raw_Currency:\s*input\.currency[\s\S]*?Currency:\s*input\.currency/,
   "Add Shift must validate and write the same account-derived CAD metadata to both record layers",
 );
 
