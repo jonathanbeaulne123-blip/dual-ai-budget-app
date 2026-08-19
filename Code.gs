@@ -370,9 +370,14 @@ function nextSequence_(sheetName, headerName) {
   if (lastRow < 5) return 1;
   var columnLetter = colLetter_(sheetName, headerName);
   var col = sh.getRange(columnLetter + '5:' + columnLetter + lastRow).getValues();
+  return nextSequenceFromIds_(col.map(function (r) { return r[0]; }));
+}
+// Pure counterpart used by atomic write planning: find the next trailing
+// numeric suffix without reading a Sheet or mutating the provided array.
+function nextSequenceFromIds_(ids) {
   var max = 0;
-  col.forEach(function (r) {
-    var v = String(r[0] || '');
+  (ids || []).forEach(function (id) {
+    var v = String(id || '');
     var m = v.match(/(\d+)\s*$/);
     if (m) max = Math.max(max, parseInt(m[1], 10));
   });
@@ -439,29 +444,6 @@ function shiftMonthKey_(monthKey, delta) {
   var newYear = Math.floor(total / 12);
   var newMonthIdx = ((total % 12) + 12) % 12;
   return newYear + '-' + pad_(newMonthIdx + 1, 2);
-}
-// Returns (creating if needed) the single shared "manual entry" import
-// batch used for everything added through these two tools, and bumps
-// its Record_Count.
-function getOrCreateManualBatch_(accountId) {
-  var sh = sheet_('Import Batches');
-  var rows = readTable_('Import Batches');
-  var existing = rows.filter(function (r) { return r.Import_Batch_ID === 'BATCH-MANUAL-ENTRY'; })[0];
-  if (existing) {
-    sh.getRange(existing._row, col_('Import Batches', 'Record_Count')).setValue((existing.Record_Count || 0) + 1);
-    return 'BATCH-MANUAL-ENTRY';
-  }
-  sh.appendRow(rowFromHeaders_('Import Batches', {
-    Import_Batch_ID: 'BATCH-MANUAL-ENTRY',
-    Imported_At: new Date(),
-    Source_System: 'Manual entry (Add Transaction tool)',
-    Source_File: '',
-    Account_ID: accountId,
-    Record_Count: 1,
-    Status: 'Completed',
-    Notes: 'Auto-created by the Add Transaction tool; reused for every manual entry.'
-  }));
-  return 'BATCH-MANUAL-ENTRY';
 }
 function getActiveAccountId_() {
   var accounts = readTable_('Accounts').filter(function (a) { return a.Active_Flag === 'Yes'; });
@@ -610,8 +592,7 @@ function onEdit(e) {
 // Browser-side controls are a convenience only. This pure function is the
 // authoritative boundary for every Add Transaction request: it accepts plain
 // form/reference data, makes no SpreadsheetApp calls, and returns normalized
-// plain data that the Sheet adapter can safely consume. Issue #6 will add the
-// separate lock/rollback boundary for the later writes.
+// plain data that the atomic v0.0.29 planner/Sheet adapter can safely consume.
 function validateAndNormalizeTransactionInput_(form, referenceData) {
   if (!form || typeof form !== 'object' || Array.isArray(form)) {
     throw new Error('Transaction details are required.');
@@ -735,6 +716,363 @@ function validateAndNormalizeTransactionInput_(form, referenceData) {
   };
 }
 
+var MANUAL_TRANSACTION_LOCK_TIMEOUT_MS_ = 10000;
+var MANUAL_TRANSACTION_BATCH_ID_ = 'BATCH-MANUAL-ENTRY';
+
+function getTransactionReferenceData_() {
+  return {
+    categories: getCategoriesList_(),
+    members: getHouseholdMembersList_(),
+    accountId: getActiveAccountId_(),
+    timeZone: getTz_()
+  };
+}
+
+// Date parsing is a separate read-only boundary so both the fast preflight
+// and the authoritative under-lock recheck use the exact same Toronto
+// parse/format round trip.
+function parseTransactionDate_(input) {
+  var date = Utilities.parseDate(input.dateKey, input.timeZone, 'yyyy-MM-dd');
+  if (!(date instanceof Date) || isNaN(date.getTime()) ||
+      Utilities.formatDate(date, input.timeZone, 'yyyy-MM-dd') !== input.dateKey) {
+    throw new Error('Date could not be represented safely in ' + input.timeZone + '.');
+  }
+  return date;
+}
+
+// Reads the exact state needed to plan one manual transaction. Call only
+// after the document lock is held: IDs, target extents, and the shared batch
+// count must all come from the same serialized snapshot.
+function readManualTransactionCommitState_() {
+  var transactionSheet = sheet_('Transactions');
+  var rawSheet = sheet_('Raw Transactions');
+  var batchSheet = sheet_('Import Batches');
+  var transactions = readTable_('Transactions');
+  var rawTransactions = readTable_('Raw Transactions');
+  return {
+    transactionIds: transactions.map(function (row) { return row.Transaction_ID; }),
+    rawRecordIds: rawTransactions.map(function (row) { return row.Raw_Record_ID; }),
+    importBatches: readTable_('Import Batches'),
+    nextTransactionRow: transactionSheet.getLastRow() + 1,
+    nextRawRow: rawSheet.getLastRow() + 1,
+    nextBatchRow: batchSheet.getLastRow() + 1,
+    now: new Date()
+  };
+}
+
+// Pure deterministic commit planner. It accepts the already-authoritative
+// normalized request plus plain current state and returns every ID, target
+// row, prior batch value, and direct record value needed by the Sheet
+// adapter. No Spreadsheet services are available or required here.
+function planManualTransactionCommit_(input, transactionDate, state) {
+  if (!input || !state || !Array.isArray(state.transactionIds) ||
+      !Array.isArray(state.rawRecordIds) || !Array.isArray(state.importBatches)) {
+    throw new Error('Transaction commit state is incomplete. No changes were made.');
+  }
+  ['nextTransactionRow', 'nextRawRow', 'nextBatchRow'].forEach(function (field) {
+    var value = Number(state[field]);
+    if (!isFinite(value) || value < 5 || Math.floor(value) !== value) {
+      throw new Error('Transaction commit state has an invalid ' + field + '. No changes were made.');
+    }
+  });
+
+  var manualBatches = state.importBatches.filter(function (row) {
+    return row.Import_Batch_ID === MANUAL_TRANSACTION_BATCH_ID_;
+  });
+  if (manualBatches.length > 1) {
+    throw new Error('More than one ' + MANUAL_TRANSACTION_BATCH_ID_ + ' row exists. Run Data Health Check before retrying.');
+  }
+
+  var existingBatch = manualBatches[0] || null;
+  var previousRecordCount = 0;
+  if (existingBatch) {
+    previousRecordCount = Number(existingBatch.Record_Count);
+    if (!isFinite(previousRecordCount) || previousRecordCount < 0 || Math.floor(previousRecordCount) !== previousRecordCount) {
+      throw new Error(MANUAL_TRANSACTION_BATCH_ID_ + ' has an invalid Record_Count. No changes were made.');
+    }
+    if (existingBatch.Account_ID && existingBatch.Account_ID !== input.accountId) {
+      throw new Error(MANUAL_TRANSACTION_BATCH_ID_ + ' belongs to a different account. No changes were made.');
+    }
+  }
+
+  var transactionId = 'TXN-MANUAL-' + pad_(nextSequenceFromIds_(state.transactionIds), 6);
+  var rawRecordId = 'RAW-MANUAL-' + pad_(nextSequenceFromIds_(state.rawRecordIds), 6);
+  if (state.transactionIds.indexOf(transactionId) !== -1 || state.rawRecordIds.indexOf(rawRecordId) !== -1) {
+    throw new Error('Could not allocate unique transaction IDs. No changes were made.');
+  }
+
+  var now = state.now;
+  var category = input.category;
+  var batchValues = {
+    Import_Batch_ID: MANUAL_TRANSACTION_BATCH_ID_,
+    Imported_At: now,
+    Source_System: 'Manual entry (Add Transaction tool)',
+    Source_File: '',
+    Account_ID: input.accountId,
+    Record_Count: previousRecordCount + 1,
+    Status: 'Completed',
+    Notes: 'Auto-created by the Add Transaction tool; reused for every manual entry.'
+  };
+  var rawValues = {
+    Raw_Record_ID: rawRecordId,
+    Import_Batch_ID: MANUAL_TRANSACTION_BATCH_ID_,
+    Source_System: 'Manual entry (Add Transaction tool)',
+    Account_ID: input.accountId,
+    Imported_At: now,
+    Raw_Transaction_Date: transactionDate,
+    Raw_Type: input.type,
+    Raw_Category: category.subName,
+    Raw_Description: input.note,
+    Raw_Amount: input.amount,
+    Raw_Currency: 'USD',
+    Raw_Notes: input.note,
+    Normalization_Status: 'Normalized'
+  };
+  var transactionValues = {
+    Transaction_ID: transactionId,
+    Raw_Record_ID: rawRecordId,
+    Import_Batch_ID: MANUAL_TRANSACTION_BATCH_ID_,
+    Account_ID: input.accountId,
+    Member_ID: input.memberId,
+    Transaction_Date: transactionDate,
+    Transaction_Type: input.type,
+    Amount: input.amount,
+    Currency: 'USD',
+    Original_Description: input.note,
+    Income_Stability: input.type === 'Income' ? (category.incomeStabilityDefault || '') : '',
+    Manual_Category_ID: category.parentId,
+    Manual_Subcategory_ID: category.subId,
+    Reviewed_Flag: 'Yes',
+    Review_Status: 'Confirmed',
+    Is_Duplicate: 'No',
+    User_Notes: input.note,
+    Created_At: now,
+    Updated_At: now
+  };
+
+  return {
+    transactionId: transactionId,
+    rawRecordId: rawRecordId,
+    input: input,
+    batch: {
+      id: MANUAL_TRANSACTION_BATCH_ID_,
+      existed: !!existingBatch,
+      row: existingBatch ? existingBatch._row : state.nextBatchRow,
+      previousRecordCount: previousRecordCount,
+      nextRecordCount: previousRecordCount + 1,
+      values: batchValues
+    },
+    raw: { row: state.nextRawRow, values: rawValues },
+    transaction: { row: state.nextTransactionRow, values: transactionValues }
+  };
+}
+
+// Build the three same-row formulas before the first mutation. Strings that
+// begin with '=' are interpreted as formulas by Range.setValues/appendRow,
+// allowing the complete Transactions row to be one recoverable write.
+function addManualTransactionFormulaValues_(values, rowNumber) {
+  var result = {};
+  Object.keys(values).forEach(function (key) { result[key] = values[key]; });
+  var manCatCol = colLetter_('Transactions', 'Manual_Category_ID');
+  var manSubCol = colLetter_('Transactions', 'Manual_Subcategory_ID');
+  var autoCatCol = colLetter_('Transactions', 'Auto_Category_ID');
+  var autoSubCol = colLetter_('Transactions', 'Auto_Subcategory_ID');
+  var txDateCol = colLetter_('Transactions', 'Transaction_Date');
+  var txAmountCol = colLetter_('Transactions', 'Amount');
+  var txAcctCol = colLetter_('Transactions', 'Account_ID');
+  var txTypeCol = colLetter_('Transactions', 'Transaction_Type');
+  var txDescCol = colLetter_('Transactions', 'Original_Description');
+  result.Effective_Category_ID = '=IF(' + manCatCol + rowNumber + '<>"",' + manCatCol + rowNumber + ',' + autoCatCol + rowNumber + ')';
+  result.Effective_Subcategory_ID = '=IF(' + manSubCol + rowNumber + '<>"",' + manSubCol + rowNumber + ',' + autoSubCol + rowNumber + ')';
+  result.Duplicate_Key = '=IF(' + txDateCol + rowNumber + '="","",LOWER(TEXT(' + txDateCol + rowNumber + ',"yyyymmdd")&"|"&TEXT(' +
+    txAmountCol + rowNumber + ',"0.00")&"|"&' + txAcctCol + rowNumber + '&"|"&' + txTypeCol + rowNumber + '&"|"&TRIM(' + txDescCol + rowNumber + ')))';
+  return result;
+}
+
+function findRowsByStableId_(sheetName, idHeader, id) {
+  return readTable_(sheetName).filter(function (row) { return row[idHeader] === id; });
+}
+
+// Apps Script adapter for the pure plan. Every precondition and row array is
+// prepared before executeManualTransactionCommit_() reaches its first write.
+// Rollback locates only the stable IDs allocated by this attempt and refuses
+// to delete or overwrite an ambiguous/unrelated row.
+function createManualTransactionSheetAdapter_(plan) {
+  var batchSheet = sheet_('Import Batches');
+  var rawSheet = sheet_('Raw Transactions');
+  var transactionSheet = sheet_('Transactions');
+  var batchRecordCountCol = col_('Import Batches', 'Record_Count');
+  var batchRowValues = plan.batch.existed ? null : rowFromHeaders_('Import Batches', plan.batch.values);
+  var rawRowValues = rowFromHeaders_('Raw Transactions', plan.raw.values);
+  var transactionValues = addManualTransactionFormulaValues_(plan.transaction.values, plan.transaction.row);
+  var transactionRowValues = rowFromHeaders_('Transactions', transactionValues);
+
+  function requireOne_(sheetName, idHeader, id, purpose) {
+    var matches = findRowsByStableId_(sheetName, idHeader, id);
+    if (matches.length !== 1) {
+      throw new Error(purpose + ' expected exactly one ' + id + ' row but found ' + matches.length + '.');
+    }
+    return matches[0];
+  }
+
+  function appendPlannedRow_(sheet, sheetName, idHeader, id, plannedRow, rowValues) {
+    if (findRowsByStableId_(sheetName, idHeader, id).length) {
+      throw new Error(id + ' already exists. No row was appended.');
+    }
+    var nextRow = sheet.getLastRow() + 1;
+    if (nextRow !== plannedRow) {
+      throw new Error(sheetName + ' changed while the transaction was being prepared. Expected row ' + plannedRow + ' but found ' + nextRow + '.');
+    }
+    sheet.appendRow(rowValues);
+  }
+
+  function removeInsertedRow_(sheet, sheetName, idHeader, id, expectedLinks) {
+    var matches = findRowsByStableId_(sheetName, idHeader, id);
+    if (!matches.length) return;
+    if (matches.length !== 1) {
+      throw new Error('Refused to remove ' + id + ' because ' + matches.length + ' matching rows exist.');
+    }
+    var row = matches[0];
+    Object.keys(expectedLinks).forEach(function (header) {
+      if (row[header] !== expectedLinks[header]) {
+        throw new Error('Refused to remove ' + id + ' because its ' + header + ' no longer matches this attempt.');
+      }
+    });
+    sheet.deleteRow(row._row);
+  }
+
+  return {
+    applyBatch: function () {
+      var matches = findRowsByStableId_('Import Batches', 'Import_Batch_ID', plan.batch.id);
+      if (plan.batch.existed) {
+        if (matches.length !== 1) throw new Error('The manual import batch changed before its count could be updated.');
+        var currentCount = Number(matches[0].Record_Count);
+        if (currentCount !== plan.batch.previousRecordCount) {
+          throw new Error('The manual import batch count changed before commit. No transaction rows were written.');
+        }
+        batchSheet.getRange(matches[0]._row, batchRecordCountCol).setValue(plan.batch.nextRecordCount);
+      } else {
+        if (matches.length) throw new Error('The manual import batch appeared before commit. No transaction rows were written.');
+        appendPlannedRow_(batchSheet, 'Import Batches', 'Import_Batch_ID', plan.batch.id, plan.batch.row, batchRowValues);
+      }
+    },
+    writeRaw: function () {
+      appendPlannedRow_(rawSheet, 'Raw Transactions', 'Raw_Record_ID', plan.rawRecordId, plan.raw.row, rawRowValues);
+    },
+    writeTransaction: function () {
+      appendPlannedRow_(transactionSheet, 'Transactions', 'Transaction_ID', plan.transactionId, plan.transaction.row, transactionRowValues);
+    },
+    verify: function () {
+      SpreadsheetApp.flush();
+      var batch = requireOne_('Import Batches', 'Import_Batch_ID', plan.batch.id, 'Commit verification');
+      if (Number(batch.Record_Count) !== plan.batch.nextRecordCount) {
+        throw new Error('Commit verification found an incorrect manual batch count.');
+      }
+      var raw = requireOne_('Raw Transactions', 'Raw_Record_ID', plan.rawRecordId, 'Commit verification');
+      if (raw.Import_Batch_ID !== plan.batch.id) throw new Error('Commit verification found an incorrect Raw Transactions batch link.');
+      var transaction = requireOne_('Transactions', 'Transaction_ID', plan.transactionId, 'Commit verification');
+      if (transaction.Raw_Record_ID !== plan.rawRecordId || transaction.Import_Batch_ID !== plan.batch.id) {
+        throw new Error('Commit verification found an incomplete Raw/Transactions row pair.');
+      }
+      ['Effective_Category_ID', 'Effective_Subcategory_ID', 'Duplicate_Key'].forEach(function (header) {
+        var formula = transactionSheet.getRange(transaction._row, col_('Transactions', header)).getFormula();
+        if (!formula || formula.charAt(0) !== '=') {
+          throw new Error('Commit verification found a missing ' + header + ' formula.');
+        }
+      });
+    },
+    rollbackTransaction: function () {
+      removeInsertedRow_(transactionSheet, 'Transactions', 'Transaction_ID', plan.transactionId, {
+        Raw_Record_ID: plan.rawRecordId,
+        Import_Batch_ID: plan.batch.id
+      });
+    },
+    rollbackRaw: function () {
+      removeInsertedRow_(rawSheet, 'Raw Transactions', 'Raw_Record_ID', plan.rawRecordId, {
+        Import_Batch_ID: plan.batch.id
+      });
+    },
+    rollbackBatch: function () {
+      var matches = findRowsByStableId_('Import Batches', 'Import_Batch_ID', plan.batch.id);
+      if (plan.batch.existed) {
+        if (matches.length !== 1) throw new Error('Could not locate the original manual batch during rollback.');
+        var currentCount = Number(matches[0].Record_Count);
+        if (currentCount === plan.batch.previousRecordCount) return;
+        if (currentCount !== plan.batch.nextRecordCount) {
+          throw new Error('Refused to restore the manual batch because its count no longer matches this attempt.');
+        }
+        batchSheet.getRange(matches[0]._row, batchRecordCountCol).setValue(plan.batch.previousRecordCount);
+        return;
+      }
+      if (!matches.length) return;
+      if (matches.length !== 1 || Number(matches[0].Record_Count) !== 1 || matches[0].Account_ID !== plan.input.accountId) {
+        throw new Error('Refused to remove the new manual batch because it no longer matches this attempt.');
+      }
+      batchSheet.deleteRow(matches[0]._row);
+    },
+    verifyRollback: function () {
+      SpreadsheetApp.flush();
+      if (findRowsByStableId_('Transactions', 'Transaction_ID', plan.transactionId).length) {
+        throw new Error('Recovery verification still found transaction ' + plan.transactionId + '.');
+      }
+      if (findRowsByStableId_('Raw Transactions', 'Raw_Record_ID', plan.rawRecordId).length) {
+        throw new Error('Recovery verification still found raw record ' + plan.rawRecordId + '.');
+      }
+      var batches = findRowsByStableId_('Import Batches', 'Import_Batch_ID', plan.batch.id);
+      if (plan.batch.existed) {
+        if (batches.length !== 1 || Number(batches[0].Record_Count) !== plan.batch.previousRecordCount) {
+          throw new Error('Recovery verification found an incorrect original manual batch count.');
+        }
+      } else if (batches.length) {
+        throw new Error('Recovery verification still found the batch created by the failed attempt.');
+      }
+    }
+  };
+}
+
+function manualTransactionErrorMessage_(error) {
+  return error && error.message ? error.message : String(error);
+}
+
+// Pure orchestration over an injected adapter. Each stage is journaled before
+// it runs so even a "write succeeded, then the adapter threw" failure is
+// recoverable. All attempted mutations are reversed, not just the last one.
+function executeManualTransactionCommit_(plan, adapter) {
+  var attempted = { batch: false, raw: false, transaction: false };
+  try {
+    attempted.batch = true;
+    adapter.applyBatch(plan);
+    attempted.raw = true;
+    adapter.writeRaw(plan);
+    attempted.transaction = true;
+    adapter.writeTransaction(plan);
+    adapter.verify(plan);
+    return plan;
+  } catch (error) {
+    var rollbackErrors = [];
+    if (attempted.transaction) {
+      try { adapter.rollbackTransaction(plan); }
+      catch (rollbackTransactionError) { rollbackErrors.push('Transactions: ' + manualTransactionErrorMessage_(rollbackTransactionError)); }
+    }
+    if (attempted.raw) {
+      try { adapter.rollbackRaw(plan); }
+      catch (rollbackRawError) { rollbackErrors.push('Raw Transactions: ' + manualTransactionErrorMessage_(rollbackRawError)); }
+    }
+    if (attempted.batch) {
+      try { adapter.rollbackBatch(plan); }
+      catch (rollbackBatchError) { rollbackErrors.push('Import Batches: ' + manualTransactionErrorMessage_(rollbackBatchError)); }
+    }
+    try { adapter.verifyRollback(plan); }
+    catch (rollbackVerificationError) { rollbackErrors.push('Recovery verification: ' + manualTransactionErrorMessage_(rollbackVerificationError)); }
+    if (rollbackErrors.length) {
+      throw new Error('CRITICAL: Add Transaction failed and automatic recovery was incomplete. Original error: ' +
+        manualTransactionErrorMessage_(error) + ' Recovery errors: ' + rollbackErrors.join(' | ') +
+        '. Do not retry until development data is inspected.');
+    }
+    throw new Error('Transaction was not saved. Any partial changes were rolled back. Original error: ' + manualTransactionErrorMessage_(error));
+  }
+}
+
 function showAddTransactionDialog() {
   var template = HtmlService.createTemplateFromFile('AddTransactionDialog');
   template.members = getHouseholdMembersList_();
@@ -747,108 +1085,46 @@ function showAddTransactionDialog() {
  * form = { date, type, amount, subId, memberId, note }
  */
 function addTransaction(form) {
-  var input = validateAndNormalizeTransactionInput_(form, {
-    categories: getCategoriesList_(),
-    members: getHouseholdMembersList_(),
-    accountId: getActiveAccountId_(),
-    timeZone: getTz_()
-  });
-  // Parsed explicitly in the SPREADSHEET's own timezone (getTz_()),
-  // not the Apps Script runtime's implicit one — the same class of fix
-  // as getTz_()/monthKey_()/monthStartFromKey_() above. Previously this
-  // was `new Date(form.date + 'T00:00:00')`, which is interpreted in
-  // the runtime's own timezone; if that ever differs from the
-  // spreadsheet's, a date entered near midnight could be saved and
-  // later displayed one day off from what was actually typed. (Fixed
-  // 2026-08-17, v0.0.17.)
-  var date = Utilities.parseDate(input.dateKey, input.timeZone, 'yyyy-MM-dd');
-  if (!(date instanceof Date) || isNaN(date.getTime()) || Utilities.formatDate(date, input.timeZone, 'yyyy-MM-dd') !== input.dateKey) {
-    throw new Error('Date could not be represented safely in ' + input.timeZone + '.');
+  // Fast read-only preflight rejects ordinary form errors without waiting for
+  // a writer. The same request is re-read and revalidated under the lock;
+  // only that second result is allowed to reach the commit plan.
+  var preflightInput = validateAndNormalizeTransactionInput_(form, getTransactionReferenceData_());
+  parseTransactionDate_(preflightInput);
+
+  var lock = LockService.getDocumentLock();
+  if (!lock || !lock.tryLock(MANUAL_TRANSACTION_LOCK_TIMEOUT_MS_)) {
+    throw new Error('Could not obtain the Add Transaction lock within 10 seconds. Nothing was saved; try again.');
   }
-  // Everything above is read-only validation/parsing. Issue #6 will place
-  // the write section below under one lock with rollback; until then, keeping
-  // every validation failure above this line guarantees zero Sheet changes.
-  var batchId = getOrCreateManualBatch_(input.accountId);
-  var txnSeq = nextSequence_('Transactions', 'Transaction_ID');
-  var rawSeq = nextSequence_('Raw Transactions', 'Raw_Record_ID');
-  var txnId = 'TXN-MANUAL-' + pad_(txnSeq, 6);
-  var rawId = 'RAW-MANUAL-' + pad_(rawSeq, 6);
-  var amount = input.amount;
-  var cat = input.category;
-  var note = input.note;
-  var now = new Date();
-  // Raw Transactions — every value placed by header name (see
-  // rowFromHeaders_ above), so this still lands in the right columns
-  // even if Raw Transactions' layout ever changes.
-  var rawSheet = sheet_('Raw Transactions');
-  rawSheet.appendRow(rowFromHeaders_('Raw Transactions', {
-    Raw_Record_ID: rawId,
-    Import_Batch_ID: batchId,
-    Source_System: 'Manual entry (Add Transaction tool)',
-    Account_ID: input.accountId,
-    Imported_At: now,
-    Raw_Transaction_Date: date,
-    Raw_Type: input.type,
-    Raw_Category: cat.subName,
-    Raw_Description: note,
-    Raw_Amount: amount,
-    Raw_Currency: 'USD',
-    Raw_Notes: note,
-    Normalization_Status: 'Normalized'
-  }));
-  // Transactions — same header-name approach. Effective_Category_ID,
-  // Effective_Subcategory_ID, and Duplicate_Key are formula columns, set
-  // separately below once the row exists. Potential_Duplicate_Flag is
-  // then derived for the full ledger by recomputePotentialDuplicateFlags_().
-  var txSheet = sheet_('Transactions');
-  var newRow = txSheet.getLastRow() + 1;
-  var txRow = rowFromHeaders_('Transactions', {
-    Transaction_ID: txnId,
-    Raw_Record_ID: rawId,
-    Import_Batch_ID: batchId,
-    Account_ID: input.accountId,
-    Member_ID: input.memberId, // blank = Joint/Shared
-    Transaction_Date: date,
-    Transaction_Type: input.type,
-    Amount: amount,
-    Currency: 'USD',
-    Original_Description: note,
-    Income_Stability: input.type === 'Income' ? (cat.incomeStabilityDefault || '') : '',
-    Manual_Category_ID: cat.parentId,
-    Manual_Subcategory_ID: cat.subId,
-    Reviewed_Flag: 'Yes',
-    Review_Status: 'Confirmed',
-    Is_Duplicate: 'No', // reviewed manually as it's typed, not imported
-    User_Notes: note,
-    Created_At: now,
-    Updated_At: now
-  });
-  txSheet.getRange(newRow, 1, 1, txRow.length).setValues([txRow]);
-  // Calculated columns — same formulas used throughout the sheet,
-  // written to whichever columns are CURRENTLY labeled for them (via
-  // colLetter_) rather than hardcoded letters.
-  var effCatCol = colLetter_('Transactions', 'Effective_Category_ID');
-  var effSubCol = colLetter_('Transactions', 'Effective_Subcategory_ID');
-  var manCatCol = colLetter_('Transactions', 'Manual_Category_ID');
-  var manSubCol = colLetter_('Transactions', 'Manual_Subcategory_ID');
-  var autoCatCol = colLetter_('Transactions', 'Auto_Category_ID');
-  var autoSubCol = colLetter_('Transactions', 'Auto_Subcategory_ID');
-  var dupKeyCol = colLetter_('Transactions', 'Duplicate_Key');
-  var txDateCol = colLetter_('Transactions', 'Transaction_Date');
-  var txAmountCol = colLetter_('Transactions', 'Amount');
-  var txAcctCol = colLetter_('Transactions', 'Account_ID');
-  var txTypeCol = colLetter_('Transactions', 'Transaction_Type');
-  var txDescCol = colLetter_('Transactions', 'Original_Description');
-  txSheet.getRange(effCatCol + newRow).setFormula('=IF(' + manCatCol + newRow + '<>"",' + manCatCol + newRow + ',' + autoCatCol + newRow + ')');
-  txSheet.getRange(effSubCol + newRow).setFormula('=IF(' + manSubCol + newRow + '<>"",' + manSubCol + newRow + ',' + autoSubCol + newRow + ')');
-  txSheet.getRange(dupKeyCol + newRow).setFormula(
-    '=IF(' + txDateCol + newRow + '="","",LOWER(TEXT(' + txDateCol + newRow + ',"yyyymmdd")&"|"&TEXT(' + txAmountCol + newRow + ',"0.00")&"|"&' +
-    txAcctCol + newRow + '&"|"&' + txTypeCol + newRow + '&"|"&TRIM(' + txDescCol + newRow + ')))'
-  );
-  recomputePotentialDuplicateFlags_();
-  logChange_('Add Transaction', txnId + ': ' + input.type + ' $' + amount.toFixed(2) + ' (' + cat.subName + ') on ' + input.dateKey);
+
+  var plan;
+  var releaseWarning = '';
+  try {
+    var input = validateAndNormalizeTransactionInput_(form, getTransactionReferenceData_());
+    var date = parseTransactionDate_(input);
+    var state = readManualTransactionCommitState_();
+    plan = planManualTransactionCommit_(input, date, state);
+    var adapter = createManualTransactionSheetAdapter_(plan);
+    executeManualTransactionCommit_(plan, adapter);
+  } finally {
+    try { lock.releaseLock(); }
+    catch (releaseError) { releaseWarning = manualTransactionErrorMessage_(releaseError); }
+  }
+
+  // The durable row pair is complete before these derived/best-effort hooks.
+  // They intentionally run after releasing the document lock because the
+  // duplicate engine acquires that same non-reentrant lock. A follow-up
+  // failure must not tell the user the transaction failed and invite a retry.
+  var warnings = [];
+  if (releaseWarning) warnings.push('the document lock reported a release warning');
+  try { recomputePotentialDuplicateFlags_(); }
+  catch (duplicateError) { warnings.push('duplicate-review flags need a manual refresh'); }
+  var amount = plan.input.amount;
+  var category = plan.input.category;
+  logChange_('Add Transaction', plan.transactionId + ': ' + plan.input.type + ' $' + amount.toFixed(2) + ' (' + category.subName + ') on ' + plan.input.dateKey);
   refreshBudgetSummarySilently_(); // this transaction may change NET / Household Safety Number / Dashboard Fixed & Variable Income
-  return { ok: true, message: 'Added ' + input.type.toLowerCase() + ' of $' + amount.toFixed(2) + ' (' + cat.subName + ').' };
+  var message = 'Added ' + plan.input.type.toLowerCase() + ' of $' + amount.toFixed(2) + ' (' + category.subName + ').';
+  if (warnings.length) message += ' Saved successfully; ' + warnings.join(' and ') + '.';
+  return { ok: true, message: message, warning: warnings.join(' | ') };
 }
 // ========================= ADD CATEGORY ==============================
 function showAddCategoryDialog() {
@@ -3008,7 +3284,7 @@ function viewDataDictionary() {
 // becomes a one-glance check instead of a guess, and the Release Notes
 // sheet (see syncReleaseNotes_() below) picks up the new entry
 // automatically the next time anything runs.
-var APP_VERSION = 'v0.0.28';
+var APP_VERSION = 'v0.0.29';
 // ==================== RELEASE NOTES =====================================
 // The full version history — one entry per shipped feature or fix,
 // oldest first. This array is the single source of truth: add one entry
@@ -3044,7 +3320,8 @@ var RELEASE_HISTORY_ = [
   { version: 'v0.0.25', date: '2026-08-18', summary: 'Added a second guarded development-only migration for 14 legacy Add Shift transaction rows that still referenced the invalid top-level Category_ID "CAT-INCOME". The preview locates TXN-SHIFT-000006 through TXN-SHIFT-000019 by stable ID, validates their Manual_Category_ID cells, and proves each Effective_Category_ID remains a live formula connected to the same-row manual cell. Apply changes only the 14 direct Manual_Category_ID values to the authoritative Income ID "INCOME", preserves and verifies all 14 formulas after recalculation, supports repeat-safe no-op runs and rollback on failure, then refreshes summaries and reruns Data Health Check.' },
   { version: 'v0.0.26', date: '2026-08-18', summary: 'Removed the Potential_Duplicate_Flag formula ceiling at Transactions row 5,000. A pure calcPotentialDuplicateFlags_() engine now counts exact case-insensitive Duplicate_Key values in one O(n) pass, and a thin recomputePotentialDuplicateFlags_() adapter performs one real-extent column read and write. Add Transaction and Add Shift refresh the flags automatically; direct edits to duplicate-key inputs trigger the same recompute; a manual Refresh Duplicate Flags control provides recovery after bulk operations; and Data Health Check reports derived-flag drift. Duplicate_Key formulas and the separately reviewed Is_Duplicate field that controls financial totals are never changed.' },
   { version: 'v0.0.27', date: '2026-08-18', summary: 'Closed the concurrency gap found in Gemini\'s independent review of v0.0.26. recomputePotentialDuplicateFlags_() now acquires a document-scoped lock before reading the Transactions extent and holds it through the single batched Potential_Duplicate_Flag write, preventing overlapping script recalculations from allowing an older full-column result to overwrite a newer one. A 10-second timeout fails explicitly without writing, and finally always releases an acquired lock. The lock protects only this derived review column; Duplicate_Key, Is_Duplicate, transactions, and financial totals remain outside its write surface.' },
-  { version: 'v0.0.28', date: '2026-08-18', summary: 'Added authoritative server validation for Add Transaction. A pure validateAndNormalizeTransactionInput_() boundary now accepts only Income/Expense, validates real YYYY-MM-DD calendar dates under the America/Toronto standard, normalizes positive whole-cent amounts, verifies the selected active subcategory belongs to the submitted type, verifies any nonblank member is active, and returns normalized plain data. addTransaction() completes all reference reads and date parsing before getOrCreateManualBatch_() or any other write-capable helper runs, so invalid, stale, or tampered requests make zero Sheet or batch changes. Write locking and rollback remain separately scoped to Issue #6.' }
+  { version: 'v0.0.28', date: '2026-08-18', summary: 'Added authoritative server validation for Add Transaction. A pure validateAndNormalizeTransactionInput_() boundary now accepts only Income/Expense, validates real YYYY-MM-DD calendar dates under the America/Toronto standard, normalizes positive whole-cent amounts, verifies the selected active subcategory belongs to the submitted type, verifies any nonblank member is active, and returns normalized plain data. addTransaction() completes all reference reads and date parsing before getOrCreateManualBatch_() or any other write-capable helper runs, so invalid, stale, or tampered requests make zero Sheet or batch changes. Write locking and rollback remain separately scoped to Issue #6.' },
+  { version: 'v0.0.29', date: '2026-08-18', summary: 'Made Add Transaction concurrency-safe and recoverable. A fast read-only preflight is followed by an authoritative reference re-read, validation/date recheck, ID allocation, batch planning, and the complete batch/Raw Transactions/Transactions commit under one 10-second document lock. A pure planner produces stable IDs and prior/new batch state; a guarded three-stage executor verifies the complete linked pair and reverses the transaction row, raw row, and batch mutation if any write or verification fails, including write-then-throw failures. All three helper formulas now travel in the single Transactions row write. Duplicate-flag and summary refreshes run only after the durable commit and lock release, so a follow-up refresh failure reports saved-with-warning rather than encouraging a duplicate resubmission.' }
 ];
 var RELEASE_NOTES_SHEET_NAME = 'Release Notes';
 // Creates the Release Notes sheet (header row, hidden) the first time

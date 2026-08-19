@@ -5,8 +5,9 @@
 - Local snapshot: retained outside hosted Git as `Budget_App__v 0.23  -dev- Copy.ods`
 - Google Sheet: `devCopy of Budget_App__v 0.23`
 - Apps Script ID: connected locally in ignored `.clasp.json`; intentionally excluded from Git
-- Source status: remote development source matches commit `7b43666` across all seven tracked Apps Script files and reports `v0.0.28`
-- Runtime status: v0.0.28 diagnostics and layout checks pass; invalid whole-cent/positive-amount requests were rejected without writes; two known valid development entries produced exactly two Raw/Transaction pairs and two manual-batch increments; pre/post Data Health Checks report no issues
+- Source status: remote development source reports `v0.0.29` and matches commit `4a4c01d` across all seven tracked Apps Script files after the approved 7:59:52 PM push
+- Runtime status: v0.0.29 live verification is complete. Two overlapping controlled Groceries expenses produced complete unique transaction/raw pairs, moved the counts from 37 / 37 / 2 / 13 to 39 / 39 / 2 / 15, preserved all six helper formulas across the two Transactions rows, left duplicate review at five rows across two repeated keys, and finished with a clean Data Health Check
+- Current candidate: draft PR #13 on `issue-6-transaction-atomicity`; repository, independent-review, source, and live-development gates pass, and only Jonathan's explicit merge approval remains
 - Spreadsheet and Apps Script timezones: `America/Toronto`
 - Git branch: feature branches or local worktrees, merged into `main` after verification
 - Allowed: reversible test data, refactors, diagnostics, visual experiments, and automated checks

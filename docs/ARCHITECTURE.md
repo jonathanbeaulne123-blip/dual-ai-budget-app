@@ -50,14 +50,18 @@ The repository root will eventually link only to the development Apps Script pro
 - `Is_Duplicate` is the separately reviewed financial control. Only this field determines whether Budget, Dashboard, and Income History calculations exclude a transaction.
 - Add Transaction, Add Shift, and direct edits to duplicate-key inputs refresh potential flags. A manual refresh provides recovery after bulk or external operations.
 - Duplicate matching is exact and case-insensitive after `Duplicate_Key` generation; it does not use spreadsheet wildcard criteria.
-- From v0.0.27, the full-column flag adapter holds a document-scoped lock from before the ledger extent read through the batched flag write. This serializes cooperating Apps Script recalculations; it does not lock the Google Sheets UI or replace the broader transaction-atomicity work tracked separately.
+- From v0.0.27, the full-column flag adapter holds a document-scoped lock from before the ledger extent read through the batched flag write. This serializes cooperating Apps Script recalculations; it does not lock the Google Sheets UI. Add Transaction's broader write transaction uses the same document-lock class in v0.0.29, but the duplicate refresh deliberately runs after that lock is released because Apps Script document locks are not treated as re-entrant.
 
 ## Transaction Input trust boundary
 
 - Browser controls and dropdown filtering improve usability but are not authoritative. `addTransaction()` treats every submitted field as untrusted.
 - From v0.0.28, `validateAndNormalizeTransactionInput_()` is a pure plain-data boundary for type, Toronto calendar date, whole-cent amount, active subcategory/type agreement, active member, active account, and normalized note data.
-- The Sheet adapter completes authoritative reference reads, pure validation, and Toronto date parsing before calling the first write-capable helper. Invalid, stale, or tampered requests therefore make zero Sheet or batch changes.
-- This boundary does not make a valid multi-sheet submission atomic. Document locking, ID allocation, write planning, and rollback remain Issue #6; account-derived CAD metadata remains Issue #10.
+- From v0.0.29, Add Transaction performs a fast read-only preflight, then acquires one document lock and repeats the authoritative reference reads, validation, and Toronto date parsing before it reads commit state or writes.
+- `planManualTransactionCommit_()` is the pure deterministic write planner. It allocates both stable IDs and captures target extents plus the manual batch's prior/new count from one serialized snapshot.
+- `executeManualTransactionCommit_()` journals the batch, Raw Transactions, and Transactions stages before calling an injected Sheet adapter. Any write or verification failure rolls back the linked transaction row, raw row, and batch mutation in reverse order, then re-reads all three targets to prove the original state was restored. A rollback ambiguity or failed recovery verification fails loudly and instructs the user not to retry until the development ledger is inspected.
+- The three row-level helper formulas are part of the single Transactions row append. Verification requires exactly one linked raw/transaction pair, the intended batch count, and all three formulas before the lock is released.
+- Duplicate-review, Change Log, and summary follow-ups occur only after the durable commit. A duplicate-refresh failure reports that the transaction was saved and requests manual recovery; it does not return a normal submission failure that could cause a duplicate retry.
+- The lock serializes cooperating Apps Script writers; it cannot block a person directly editing sheet cells. Add Shift retains its separate posting path and remains outside Issue #6. Account-derived CAD metadata remains Issue #10.
 
 ## Goals and privacy
 

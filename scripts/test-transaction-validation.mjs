@@ -196,8 +196,6 @@ assert.throws(
       throw new Error("date formatter should not run for an invalid request");
     },
   };
-  context.getOrCreateManualBatch_ = () => { writeCapableCalls += 1; };
-  context.nextSequence_ = () => { writeCapableCalls += 1; };
   context.sheet_ = () => { writeCapableCalls += 1; };
 
   for (const form of [
@@ -232,25 +230,38 @@ assert.throws(
     formatCalls += 1;
     return "2026-08-18";
   };
-  context.getOrCreateManualBatch_ = () => {
+  context.LockService = {
+    getDocumentLock: () => ({ tryLock: () => true, releaseLock: () => {} }),
+  };
+  context.readManualTransactionCommitState_ = () => ({
+    transactionIds: [],
+    rawRecordIds: [],
+    importBatches: [],
+    nextTransactionRow: 5,
+    nextRawRow: 5,
+    nextBatchRow: 5,
+    now: new Date("2026-08-18T12:00:00.000Z"),
+  });
+  context.createManualTransactionSheetAdapter_ = () => ({});
+  context.executeManualTransactionCommit_ = () => {
     writeCapableCalls += 1;
     throw new Error("first write boundary reached");
   };
   assert.throws(() => context.addTransaction(validExpense()), /first write boundary reached/);
-  assert.equal(parseCalls, 2, "valid input must reach the Toronto date parser exactly once");
-  assert.equal(formatCalls, 1, "valid input must round-trip through the Toronto date formatter exactly once");
-  assert.equal(writeCapableCalls, 1, "a valid request may reach the first write boundary only after parsing and formatting");
+  assert.equal(parseCalls, 3, "valid input must parse once in preflight and once under the document lock");
+  assert.equal(formatCalls, 2, "valid input must round-trip once in preflight and once under the document lock");
+  assert.equal(writeCapableCalls, 1, "a valid request may reach the atomic executor only after both validation passes");
 }
 
 assert.match(
   codeSource,
-  /function addTransaction\(form\)[\s\S]*?validateAndNormalizeTransactionInput_\([\s\S]*?Utilities\.parseDate\([\s\S]*?getOrCreateManualBatch_\(/,
-  "addTransaction must validate and parse before updating the manual batch",
+  /function addTransaction\(form\)[\s\S]*?validateAndNormalizeTransactionInput_\([\s\S]*?parseTransactionDate_\([\s\S]*?tryLock\([\s\S]*?validateAndNormalizeTransactionInput_\([\s\S]*?parseTransactionDate_\([\s\S]*?executeManualTransactionCommit_\(/,
+  "addTransaction must validate and parse before locking, then revalidate and reparse before the atomic executor",
 );
 
 {
   const validatorMatch = codeSource.match(
-    /function validateAndNormalizeTransactionInput_\(form, referenceData\) \{[\s\S]*?\n\}\n\nfunction showAddTransactionDialog/,
+    /function validateAndNormalizeTransactionInput_\(form, referenceData\) \{[\s\S]*?\n\}\n\nvar MANUAL_TRANSACTION_LOCK_TIMEOUT_MS_/,
   );
   assert.ok(validatorMatch, "the pure Transaction Input validator must be discoverable");
   assert.doesNotMatch(
