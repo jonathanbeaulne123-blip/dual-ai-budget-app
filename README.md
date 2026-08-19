@@ -4,8 +4,8 @@ This private GitHub repository is the canonical editable home for the household 
 
 ## Current baseline
 
-- Development Apps Script source: `v0.0.29` (approved seven-file push at 7:59:52 PM, isolated post-push pull matches commit `4a4c01d`, and live concurrent-entry verification is complete at 39 Transactions / 39 Raw Transactions / 2 Import Batches / manual Record_Count 15)
-- Current code candidate: `v0.0.30` on draft PR #15 (`issue-10-cad-currency`); repository checks and Gemini's independent review pass, Jonathan explicitly waived Claude review for this issue, and every live-development gate remains pending
+- Development Apps Script source: `v0.0.30` (approved seven-file source-only push at 9:13:42 PM; a fresh isolated post-push clone matches commit `edb3d25` and retains `America/Toronto`; the CAD migration and live verification remain pending)
+- Current code candidate: `v0.0.30` on draft PR #15 (`issue-10-cad-currency`); repository, Gemini review, and development-source gates pass, Jonathan explicitly waived Claude review for this issue, and the live migration/behavior gates remain pending
 - Merged code baseline: `v0.0.29`; Transaction Input validation and atomicity are merged through PRs #12 and #13, Issues #7 and #6 are closed, and development verification is complete
 - GitHub import baseline: `61a396e` (private `main`, verified by a clean clone with no local-only artifacts)
 - Development workbook snapshot: `Budget_App__v 0.23  -dev- Copy.ods`

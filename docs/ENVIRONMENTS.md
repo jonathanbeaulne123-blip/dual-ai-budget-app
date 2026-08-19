@@ -5,9 +5,9 @@
 - Local snapshot: retained outside hosted Git as `Budget_App__v 0.23  -dev- Copy.ods`
 - Google Sheet: `devCopy of Budget_App__v 0.23`
 - Apps Script ID: connected locally in ignored `.clasp.json`; intentionally excluded from Git
-- Source status: remote development source reports `v0.0.29` and matches commit `4a4c01d` across all seven tracked Apps Script files after the approved 7:59:52 PM push
-- Runtime status: v0.0.29 live verification is complete. Two overlapping controlled Groceries expenses produced complete unique transaction/raw pairs, moved the counts from 37 / 37 / 2 / 13 to 39 / 39 / 2 / 15, preserved all six helper formulas across the two Transactions rows, left duplicate review at five rows across two repeated keys, and finished with a clean Data Health Check
-- Current candidate: `v0.0.30` on draft PR #15 (`issue-10-cad-currency`); repository checks and Gemini review pass, Jonathan explicitly waived Claude review, and development Apps Script remains v0.0.29 until the explicit development-only push gate passes
+- Source status: remote development source reports `v0.0.30` and matches approved commit `edb3d25` across all seven tracked Apps Script files after the 9:13:42 PM source-only push; the manifest remains `America/Toronto`
+- Runtime status: the prior v0.0.29 live verification remains the latest completed behavior baseline at 39 Transactions / 39 Raw Transactions / 2 Import Batches / manual Record_Count 15. The v0.0.30 CAD correction has not yet run, so currency health and post-migration writer behavior are still pending verification
+- Current candidate: `v0.0.30` on draft PR #15 (`issue-10-cad-currency`); repository, Gemini review, and development-source gates pass, Jonathan explicitly waived Claude review, and the live migration/behavior gates remain pending
 - Spreadsheet and Apps Script timezones: `America/Toronto`
 - Git branch: feature branches or local worktrees, merged into `main` after verification
 - Allowed: reversible test data, refactors, diagnostics, visual experiments, and automated checks

@@ -10,13 +10,13 @@ The repository root must link only to development. Production must never be conn
 
 ## Current state
 
-- The checked-out feature source is the local-only `v0.0.30` candidate; the linked development Apps Script project remains the source- and live-verified `v0.0.29` runtime.
+- The checked-out feature source and linked development Apps Script source both report `v0.0.30`. The approved source-only push completed at 9:13:42 PM on 2026-08-18, and a fresh isolated clone matched commit `edb3d25` across all seven tracked files after line-ending normalization.
 - Development workbook exists.
 - Development Apps Script ID is stored locally in ignored `.clasp.json`.
 - Google authorization completed successfully on 2026-08-18.
 - Before the v0.0.29 push, an isolated pull reported v0.0.28 and matched `main` across all seven files. After the approved v0.0.29 development-only push, a second isolated pull matched commit `4a4c01d` exactly after line-ending normalization.
 - The remote `appsscript.json` manifest is tracked in Git.
-- The latest development source push completed at 7:59:52 PM on 2026-08-18. Production was not linked, targeted, or changed.
+- The latest development source push completed at 9:13:42 PM on 2026-08-18. It changed source only; the v0.0.30 CAD migration has not yet run. Production was not linked, targeted, or changed.
 
 ## Reconnecting on a new computer
 
