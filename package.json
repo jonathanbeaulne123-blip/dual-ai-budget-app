@@ -1,6 +1,6 @@
 {
   "name": "dual-ai-budget-app",
-  "version": "0.0.30",
+  "version": "0.0.31",
   "private": true,
   "description": "Local source, checks, and project documentation for the household budgeting Google Sheet and Apps Script.",
   "engines": {
@@ -8,7 +8,7 @@
   },
   "scripts": {
     "check": "node scripts/check-syntax.mjs",
-    "test": "node scripts/check-syntax.mjs && node scripts/test-maintenance.mjs && node scripts/test-duplicate-flags.mjs && node scripts/test-transaction-validation.mjs && node scripts/test-transaction-atomicity.mjs",
+    "test": "node scripts/check-syntax.mjs && node scripts/test-maintenance.mjs && node scripts/test-duplicate-flags.mjs && node scripts/test-transaction-validation.mjs && node scripts/test-transaction-atomicity.mjs && node scripts/test-shift-workflow.mjs",
     "clasp:login": "clasp login",
     "clasp:version": "clasp --version",
     "clasp:status": "clasp status"

@@ -61,7 +61,20 @@ The repository root will eventually link only to the development Apps Script pro
 - `executeManualTransactionCommit_()` journals the batch, Raw Transactions, and Transactions stages before calling an injected Sheet adapter. Any write or verification failure rolls back the linked transaction row, raw row, and batch mutation in reverse order, then re-reads all three targets to prove the original state was restored. A rollback ambiguity or failed recovery verification fails loudly and instructs the user not to retry until the development ledger is inspected.
 - The three row-level helper formulas are part of the single Transactions row append. Verification requires exactly one linked raw/transaction pair, the intended batch count, and all three formulas before the lock is released.
 - Duplicate-review, Change Log, and summary follow-ups occur only after the durable commit. A duplicate-refresh failure reports that the transaction was saved and requests manual recovery; it does not return a normal submission failure that could cause a duplicate retry.
-- The lock serializes cooperating Apps Script writers; it cannot block a person directly editing sheet cells. Add Shift retains its separate posting path and remains outside Issue #6.
+- The lock serializes cooperating Apps Script writers; it cannot block a person directly editing sheet cells. Add Shift uses its own equivalent source-plus-four-row commit boundary from v0.0.31 because its data shape differs from Add Transaction.
+
+## Add Shift trust and commit boundary
+
+- First-use Tip Tracker and Wages/Tips category provisioning is serialized under one document lock. This prevents two simultaneous fresh-deployment dialog opens from both creating the same infrastructure before normal preview or posting begins.
+- The Add Shift dialog never calculates financial values locally. `getShiftPreview()` and `addShift()` both call `calcShiftAmounts_()` with named-range settings read from Tip Tracker.
+- The preview carries a settings fingerprint. If percentages, bar rounding, or hourly rate change before posting, the server returns a fresh preview and requires another explicit submission.
+- `validateAndNormalizeShiftInput_()` treats the browser payload as untrusted: it enforces a real Toronto date, an active member, a single active CAD account, active Wages/Tips categories, nonnegative whole-cent sales/tips, and positive hours no greater than 24.
+- `planShiftCommit_()` assigns one stable `SHIFT-000001`-style source ID plus two Raw and two Transaction IDs from one serialized state snapshot. Historical Tip Tracker rows remain valid with blank Shift IDs and are not rewritten.
+- `executeShiftCommit_()` journals four stages: shift-batch count, Tip Tracker source row, Raw Transactions pair, and Transactions pair. Verification checks the exact financial fields and links plus all three helper formulas. Any failed or write-then-throw stage rolls back in reverse and re-reads the original state.
+- `Import Batches.Record_Count` for `BATCH-SHIFT-ENTRY` intentionally counts submitted source shifts, not its two derived ledger rows. The batch notes make this semantic explicit.
+- Same-member same-date entries warn and require confirmation; they are not blocked because double shifts are legitimate. The separately reviewed `Is_Duplicate` financial control remains untouched.
+- Duplicate flags, Budget/Dashboard/Income History, and Change Log run only after the durable commit and lock release. A follow-up failure returns saved-with-warning so the user is not encouraged to resubmit the shift.
+- Data Health Check validates every v0.0.31 stable Shift ID across Tip Tracker, Raw Transactions, and Transactions, including Wages/Tips cardinality, amounts, member, account, currency, type, and subcategory. Historical blank-ID rows are deliberately outside this new linkage rule.
 
 ## Currency authority boundary
 

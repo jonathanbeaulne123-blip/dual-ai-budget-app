@@ -4,6 +4,7 @@ import { performance } from "node:perf_hooks";
 import vm from "node:vm";
 
 const codeSource = readFileSync("Code.gs", "utf8");
+const shiftSource = readFileSync("ShiftWorkflow.gs", "utf8");
 const context = vm.createContext({ console });
 vm.runInContext(codeSource, context, { filename: "Code.gs" });
 
@@ -235,8 +236,8 @@ assert.match(
   "Add Transaction must refresh the full-ledger flags",
 );
 assert.match(
-  codeSource,
-  /function addShift\(form\)[\s\S]*?recomputePotentialDuplicateFlags_\(\);[\s\S]*?return \{ ok: true/,
+  shiftSource,
+  /function addShift\(form\)[\s\S]*?executeShiftCommit_\([\s\S]*?recomputePotentialDuplicateFlags_\(\)[\s\S]*?ok:\s*true/,
   "Add Shift must refresh the full-ledger flags once after posting both transactions",
 );
 
