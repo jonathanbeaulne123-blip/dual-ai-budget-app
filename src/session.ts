@@ -1,0 +1,31 @@
+import type { Environment, LedgerView } from "./core/types.ts";
+
+const PREFIX = "hearth:session:v1:";
+
+export type Session = {
+  memberId: string;
+  view: LedgerView;
+};
+
+export function loadSession(environment: Environment): Session | null {
+  try {
+    const raw = localStorage.getItem(PREFIX + environment);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Session;
+    if (!parsed.memberId) return null;
+    return {
+      memberId: parsed.memberId,
+      view: parsed.view === "personal" ? "personal" : "household",
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function saveSession(environment: Environment, session: Session): void {
+  localStorage.setItem(PREFIX + environment, JSON.stringify(session));
+}
+
+export function clearSession(environment: Environment): void {
+  localStorage.removeItem(PREFIX + environment);
+}

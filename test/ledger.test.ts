@@ -1,0 +1,189 @@
+import { describe, expect, it } from "vitest";
+import { catalogHousehold } from "../src/core/seed.ts";
+import {
+  addCategory,
+  markDuplicate,
+  postEntry,
+  postShift,
+  postTransfer,
+  undo,
+} from "../src/core/commands.ts";
+import { NeedsConfirmationError, ValidationError } from "../src/core/types.ts";
+import { monthSummary } from "../src/core/budget.ts";
+import { runHealthCheck } from "../src/core/health.ts";
+import { calcShiftAmounts, shiftSettingsFingerprint } from "../src/core/shift.ts";
+
+describe("ledger commits", () => {
+  it("rejects bad money, dates, and type/category mismatches with zero writes", () => {
+    const household = catalogHousehold();
+    const snapshot = structuredClone(household);
+    expect(() => postEntry(household, {
+      date: "2026-08-18",
+      type: "expense",
+      amount: "1.001",
+      accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+    })).toThrow(ValidationError);
+    expect(() => postEntry(household, {
+      date: "2026-02-29",
+      type: "expense",
+      amount: "1.00",
+      accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+    })).toThrow(/Toronto calendar date/);
+    expect(() => postEntry(household, {
+      date: "2026-08-18",
+      type: "expense",
+      amount: "12.00",
+      accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-INCOME-WAGES",
+    })).toThrow(/does not match/);
+    expect(household).toEqual(snapshot);
+  });
+
+  it("posts an expense atomically and warns on a confirmed duplicate", () => {
+    const first = postEntry(catalogHousehold(), {
+      date: "2026-08-18",
+      type: "expense",
+      amount: "12.34",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "No Frills",
+    });
+    expect(first.household.transactions).toHaveLength(1);
+    expect(first.household.transactions[0]?.amountCents).toBe(1234);
+    expect(first.household.transactions[0]?.currency).toBe("CAD");
+    expect(() => postEntry(first.household, {
+      date: "2026-08-18",
+      type: "expense",
+      amount: "12.34",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "No Frills",
+    })).toThrow(NeedsConfirmationError);
+    const second = postEntry(first.household, {
+      date: "2026-08-18",
+      type: "expense",
+      amount: "12.34",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "No Frills",
+      confirmDuplicate: true,
+    });
+    expect(second.household.transactions).toHaveLength(2);
+    expect(second.household.transactions.every((tx) => tx.potentialDuplicate)).toBe(true);
+    expect(second.warnings.length).toBeGreaterThan(0);
+    const excluded = markDuplicate(second.household, second.postedIds[0]!, true);
+    expect(monthSummary(excluded.household, "2026-08").expenseActualCents).toBe(1234);
+  });
+
+  it("catches a same-amount grocery five days later before writing", () => {
+    const first = postEntry(catalogHousehold(), {
+      date: "2026-08-13",
+      type: "expense",
+      amount: "47.23",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "No Frills",
+      place: "Kingston Rd",
+    });
+    expect(() => postEntry(first.household, {
+      date: "2026-08-18",
+      type: "expense",
+      amount: "47.23",
+      accountId: "ACC-CASH",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "no frills run",
+    })).toThrow(/5 days later/);
+    expect(first.household.transactions).toHaveLength(1);
+  });
+
+  it("posts a 60/40 split that still sums to the amount", () => {
+    const result = postEntry(catalogHousehold(), {
+      date: "2026-08-18",
+      type: "expense",
+      amount: "100.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      splits: [
+        { party: "MEM-001", amountCents: 6000 },
+        { party: "MEM-002", amountCents: 4000 },
+      ],
+    });
+    expect(result.household.transactions[0]?.splits).toEqual([
+      { party: "MEM-001", amountCents: 6000 },
+      { party: "MEM-002", amountCents: 4000 },
+    ]);
+  });
+
+  it("excludes transfers from income and expense", () => {
+    const result = postTransfer(catalogHousehold(), {
+      date: "2026-08-18",
+      amount: "200.00",
+      fromAccountId: "ACC-CHEQUING",
+      toAccountId: "ACC-VISA",
+      note: "Visa payment",
+    });
+    expect(result.household.transactions).toHaveLength(2);
+    expect(result.household.transactions.every((tx) => tx.transferPairId)).toBe(true);
+    const month = monthSummary(result.household, "2026-08");
+    expect(month.expenseActualCents).toBe(0);
+    expect(month.incomeActualCents).toBe(0);
+    expect(runHealthCheck(result.household)).toEqual([]);
+  });
+
+  it("posts a shift with the preview calculation and rolls back via undo", () => {
+    const preview = calcShiftAmounts(
+      { salesCents: 100000, cashTipsCents: 5000, ccTipsCents: 10000, hours: 4 },
+      catalogHousehold().shiftSettings,
+    );
+    const posted = postShift(catalogHousehold(), {
+      date: "2026-08-18",
+      memberId: "MEM-002",
+      accountId: "ACC-CASH",
+      sales: "1000.00",
+      cashTips: "50.00",
+      ccTips: "100.00",
+      hours: "4.00",
+      settingsFingerprint: shiftSettingsFingerprint(catalogHousehold().shiftSettings),
+    });
+    expect(posted.household.shifts).toHaveLength(1);
+    expect(posted.household.transactions).toHaveLength(2);
+    const wages = posted.household.transactions.find((tx) => tx.note.startsWith("Wages"));
+    const tips = posted.household.transactions.find((tx) => tx.note.startsWith("Tips"));
+    expect(wages?.amountCents).toBe(preview.wagesCents);
+    expect(tips?.amountCents).toBe(preview.netTipsCents);
+    expect(runHealthCheck(posted.household)).toEqual([]);
+    const restored = undo(posted.household, posted.undo);
+    expect(restored.shifts).toHaveLength(0);
+    expect(restored.transactions).toHaveLength(0);
+  });
+
+  it("refuses a stale shift preview after settings change", () => {
+    const household = catalogHousehold();
+    const fingerprint = shiftSettingsFingerprint(household.shiftSettings);
+    household.shiftSettings = { ...household.shiftSettings, hourlyRateCents: 2000 };
+    expect(() => postShift(household, {
+      date: "2026-08-18",
+      memberId: "MEM-002",
+      accountId: "ACC-CASH",
+      sales: "100.00",
+      hours: "4.00",
+      settingsFingerprint: fingerprint,
+    })).toThrow(/Tip rules changed/);
+    expect(household.shifts).toHaveLength(0);
+  });
+
+  it("adds a category and optional budget in one commit", () => {
+    const result = addCategory(catalogHousehold(), {
+      name: "Cat litter",
+      type: "expense",
+      parentId: "CAT-LIFE",
+      monthlyBudget: "50",
+      monthKey: "2026-08",
+    });
+    expect(result.household.categories.some((category) => category.name === "Cat litter")).toBe(true);
+    expect(result.household.budgetPlans).toHaveLength(1);
+    expect(runHealthCheck(result.household)).toEqual([]);
+  });
+});

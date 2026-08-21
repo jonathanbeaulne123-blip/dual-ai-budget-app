@@ -1,0 +1,127 @@
+import { describe, expect, it } from "vitest";
+import { calcPotentialDuplicateFlags, duplicateKey, findSimilarTransactions, refreshDuplicateFlags } from "../src/core/duplicate.ts";
+import { equalSplits, percentSplits } from "../src/core/splits.ts";
+import { JOINT, type Transaction } from "../src/core/types.ts";
+import { partitionLedger } from "../src/core/ledgerView.ts";
+
+function tx(overrides: Partial<Transaction>): Transaction {
+  return {
+    id: "TXN",
+    date: "2026-08-18",
+    type: "expense",
+    amountCents: 4723,
+    currency: "CAD",
+    accountId: "ACC-VISA",
+    categoryId: "CAT-FOOD",
+    subcategoryId: "SUB-FOOD-GROCERIES",
+    note: "No Frills",
+    place: "Kingston Rd",
+    splits: [{ party: JOINT, amountCents: 4723 }],
+    source: "manual",
+    duplicateKey: "k",
+    potentialDuplicate: false,
+    isDuplicate: false,
+    reviewed: true,
+    createdBy: "MEM-001",
+    visibility: "household",
+    createdAt: "2026-08-18T00:00:00.000Z",
+    updatedAt: "2026-08-18T00:00:00.000Z",
+    ...overrides,
+  };
+}
+
+describe("duplicates and splits", () => {
+  it("flags every row that shares a key, in linear time", () => {
+    const keys = ["a", "b", "a", "c", "b", "d"];
+    const result = calcPotentialDuplicateFlags(keys);
+    expect(result.flags).toEqual([true, true, true, false, true, false]);
+    expect(result.duplicateKeyCount).toBe(2);
+    expect(result.duplicateRowCount).toBe(4);
+  });
+
+  it("fingerprints amount, account, type, note, and place", () => {
+    expect(duplicateKey({
+      date: "2026-08-18",
+      amountCents: 123,
+      accountId: "ACC-CHEQUING",
+      type: "expense",
+      note: "  No Frills ",
+      place: "Kingston Rd",
+    })).toBe("20260818|1.23|acc-chequing|expense|no frills|kingston rd");
+  });
+
+  it("matches the same amount five days later when notes or place overlap", () => {
+    const existing = [tx({ id: "OLD", date: "2026-08-13", note: "No Frills", place: "" })];
+    const matches = findSimilarTransactions(existing, {
+      date: "2026-08-18",
+      amountCents: 4723,
+      accountId: "ACC-CASH",
+      type: "expense",
+      note: "no frills run",
+      place: "",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+    });
+    expect(matches).toHaveLength(1);
+    expect(matches[0]?.reasons.join(" ")).toMatch(/5 days later/);
+    expect(matches[0]?.reasons.join(" ")).toMatch(/notes/);
+  });
+
+  it("does not match a bare amount in a different category with no shared context", () => {
+    const existing = [tx({
+      id: "COFFEE",
+      date: "2026-08-13",
+      note: "",
+      place: "",
+      subcategoryId: "SUB-FOOD-COFFEE",
+      accountId: "ACC-CASH",
+    })];
+    expect(findSimilarTransactions(existing, {
+      date: "2026-08-18",
+      amountCents: 4723,
+      accountId: "ACC-VISA",
+      type: "expense",
+      note: "",
+      place: "",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+    })).toEqual([]);
+  });
+
+  it("flags similar rows even when the exact fingerprint differs", () => {
+    const rows = refreshDuplicateFlags([
+      tx({ id: "A", date: "2026-08-13", duplicateKey: "one" }),
+      tx({ id: "B", date: "2026-08-18", note: "No Frills extra", duplicateKey: "two" }),
+    ]);
+    expect(rows.every((row) => row.potentialDuplicate)).toBe(true);
+  });
+
+  it("splits equally and by percent without losing a cent", () => {
+    expect(equalSplits(["MEM-001", "MEM-002"], 185001)).toEqual([
+      { party: "MEM-001", amountCents: 92500 },
+      { party: "MEM-002", amountCents: 92501 },
+    ]);
+    expect(percentSplits([
+      { party: "MEM-001", percent: 60 },
+      { party: "MEM-002", percent: 40 },
+    ], 100)).toEqual([
+      { party: "MEM-001", amountCents: 60 },
+      { party: "MEM-002", amountCents: 40 },
+    ]);
+    expect(percentSplits([
+      { party: JOINT, percent: 33.33 },
+      { party: "MEM-001", percent: 33.33 },
+      { party: "MEM-002", percent: 33.34 },
+    ], 100).reduce((sum, split) => sum + split.amountCents, 0)).toBe(100);
+  });
+
+  it("partitions the ledger into income, expenses, and other", () => {
+    const grouped = partitionLedger([
+      tx({ id: "E", type: "expense" }),
+      tx({ id: "I", type: "income", subcategoryId: "SUB-INCOME-WAGES" }),
+      tx({ id: "T", type: "transfer", subcategoryId: null }),
+      tx({ id: "R", type: "refund" }),
+    ]);
+    expect(grouped.expenses.map((row) => row.id)).toEqual(["E"]);
+    expect(grouped.income.map((row) => row.id)).toEqual(["I"]);
+    expect(grouped.other.map((row) => row.id).sort()).toEqual(["R", "T"]);
+  });
+});

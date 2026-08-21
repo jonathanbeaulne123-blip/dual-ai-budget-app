@@ -1,0 +1,56 @@
+import { JOINT, type PartyId, type Split } from "./types.ts";
+import { ValidationError } from "./types.ts";
+import { sumCents } from "./money.ts";
+
+export function assertSplits(splits: Split[], amountCents: number): Split[] {
+  if (!Array.isArray(splits) || splits.length === 0) {
+    throw new ValidationError("Every transaction needs at least one owner split.");
+  }
+  const cleaned = splits.map((split) => {
+    if (!split || typeof split !== "object") throw new ValidationError("Ownership split is invalid.");
+    if (!split.party || typeof split.party !== "string") throw new ValidationError("Each split needs an owner.");
+    if (!Number.isInteger(split.amountCents)) throw new ValidationError("Split amounts must be whole cents.");
+    return { party: split.party, amountCents: split.amountCents };
+  });
+  const parties = new Set(cleaned.map((split) => split.party));
+  if (parties.size !== cleaned.length) throw new ValidationError("The same person cannot appear twice in a split.");
+  const total = sumCents(cleaned.map((split) => split.amountCents));
+  if (total !== amountCents) {
+    throw new ValidationError("Ownership splits must add up to the transaction amount exactly.");
+  }
+  return cleaned;
+}
+
+export function equalSplits(parties: PartyId[], amountCents: number): Split[] {
+  if (parties.length === 0) throw new ValidationError("Choose who this belongs to.");
+  const base = Math.floor(amountCents / parties.length);
+  const remainder = amountCents - base * parties.length;
+  return parties.map((party, index) => ({
+    party,
+    amountCents: base + (index === parties.length - 1 ? remainder : 0),
+  }));
+}
+
+export function percentSplits(parts: { party: PartyId; percent: number }[], amountCents: number): Split[] {
+  if (parts.length === 0) throw new ValidationError("Choose who this belongs to.");
+  const percentTotal = parts.reduce((sum, part) => sum + part.percent, 0);
+  if (Math.abs(percentTotal - 100) > 0.0001) throw new ValidationError("Percentages must add to 100.");
+  const allocated = parts.slice(0, -1).map((part) => ({
+    party: part.party,
+    amountCents: Math.round((amountCents * part.percent) / 100),
+  }));
+  const used = sumCents(allocated.map((split) => split.amountCents));
+  const last = parts[parts.length - 1]!;
+  const result = [...allocated, { party: last.party, amountCents: amountCents - used }];
+  const kept = result.filter((split) => split.amountCents !== 0);
+  if (!kept.length) throw new ValidationError("Ownership splits must add up to the transaction amount exactly.");
+  return kept;
+}
+
+export function jointSplit(amountCents: number): Split[] {
+  return [{ party: JOINT, amountCents }];
+}
+
+export function singleOwner(party: PartyId, amountCents: number): Split[] {
+  return [{ party, amountCents }];
+}

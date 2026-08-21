@@ -1,45 +1,33 @@
 # Decision Log
 
-This file records current product and architecture decisions. Historical conversation does not override an accepted entry unless Jonathan changes it explicitly.
+Living product and architecture decisions for **Hearth**.
+
+Older Sheets-era rows, including superseded ones such as “stay on Sheets until the feature set is stress-tested,” live in [reference/sheets-era/DECISIONS.md](reference/sheets-era/DECISIONS.md). That file is history. Jonathan’s latest instruction and the rows below win.
 
 | ID | Status | Decision | Reason |
 |---|---|---|---|
-| D-001 | Accepted | Git is the canonical source for code, tests, architecture, prompts, and release preparation. | Prevent full-file drift and duplicate work. |
-| D-002 | Accepted | Maintain separate development and production Sheets/Apps Script projects. | Reversible testing without risking household data. |
-| D-003 | Accepted | Codex is the default integrator, Claude the independent design/review specialist, and Gemini the live-Sheet specialist. Roles are flexible defaults. | Use each interface's strengths without limiting better solutions. |
-| D-004 | Accepted | Review depth is risk-based. | Conserve model usage while protecting financial correctness. |
-| D-005 | Accepted | Jonathan is product owner, production approver, and tie-breaker. | Product tradeoffs belong to the user, not an AI vote. |
-| D-006 | Accepted | Continue in Sheets until the feature set is stress-tested and useful. | Avoid premature platform migration. |
-| D-007 | Accepted | Use calendar months and the `America/Toronto` time zone. | Match the household planning model and handle daylight saving time. |
-| D-008 | Accepted | Transfers are neither income nor expense. | Prevent double counting. |
-| D-009 | Accepted | Ownership must be explicit and support variable percentages or amounts. | Fixed owner columns will not scale. |
-| D-010 | Accepted | Forecasting supports multiple horizons and multiple scenarios using configurable assumptions. | Preserve user flexibility without backend rewrites. |
-| D-011 | Accepted | Defer bank integrations while preserving import-ready architecture. | Avoid slowing core reliability work. |
-| D-012 | Accepted | Remain on a personal Google account for the current prototype. | Current scale does not justify Workspace administration or cost. |
-| D-013 | Accepted | Real project data may be used by all three models. | Jonathan approved access; minimize copying to relevant scope. |
-| D-014 | Accepted | Approximately 500 transactions per month is the current design load. | Sets realistic stress-test fixtures. |
-| D-015 | Open | Decide whether personal goals require genuine privacy or only dashboard filtering. | Hidden Sheet content is visible to editors. |
-| D-016 | Open | Define the exact semantics of the proposed zero-sum activity. | Transfers, refunds, reimbursements, and card payments behave differently. |
-| D-017 | Accepted | Use the private GitHub repository `jonathanbeaulne123-blip/dual-ai-budget-app` as the canonical editable remote for code, tests, documentation, issues, and release preparation. | Gives Jonathan and Codex a shared, versioned collaboration surface and supports future automation. |
-| D-018 | Accepted | Exclude live Sheets, ODS exports, `Project Context.txt`, credentials, and other household data from hosted Git history. | Git history is persistent, workbook binaries do not review well, and data exposure adds risk without improving code management. |
-| D-019 | Accepted | Retain the pre-GitHub repository history in a local-only archive and publish a clean hosted baseline from verified v0.0.25. | Preserves recovery evidence without uploading historical workbook contents. |
-| D-020 | Open | Enable two-factor authentication on Jonathan's GitHub account. | Jonathan deferred 2FA during initial setup; the account now controls the canonical project remote, so recovery and takeover risk remain higher until it is enabled. |
-| D-021 | Accepted | CAD is the authoritative currency for all current household accounts and transactions. | Jonathan confirmed that values currently labeled `USD` are actually CAD; the code and development data require a guarded label/configuration correction without converting amounts. |
-| D-022 | Accepted | Keep the manual account selector hidden while only one account is active, but make the transaction backend account-explicit and require a selector before multiple accounts can be active. | Avoid unnecessary current UI while preventing first-active-account behavior from becoming a hidden scalability defect. |
-| D-023 | Accepted | Defer non-code long-range product and interface work. Current architecture work should prioritize scalability, security, reliability, and portability while Sheets remains the working interface. | Keeps effort on a dependable core without allowing today's Sheets implementation to block later technical evolution. |
-| D-024 | Accepted | Guard a derived-state read/compute/write adapter when overlapping executions could stale-overwrite the same output; apply this now to duplicate flags while tracking complete multi-sheet transaction atomicity separately. | Prevents the verified recalculation race without pretending a narrow lock solves every writer or blocks human Sheet edits. |
-| D-025 | Accepted | Treat Transaction Input browser validation as a usability aid and enforce the authoritative request contract in a pure server-side validator before any write-capable helper runs. | Stale or altered dialogs must not bypass financial-record validation, and the same plain-data contract can move to a future backend. |
-| D-026 | Accepted | Treat one Add Transaction submission as a recoverable three-stage commit under one document lock: revalidate and plan under the lock, update the batch, append Raw Transactions, append the complete Transactions row, verify, and reverse attempted mutations on failure. Run derived refreshes only after lock release. | Serializes concurrent submissions, prevents partial row pairs and incorrect batch counts, keeps planning/recovery deterministic, avoids nested lock acquisition, and prevents a post-commit refresh error from encouraging a duplicate retry. |
-| D-027 | Accepted | Make `Accounts.Currency` authoritative for `Raw Transactions.Raw_Currency` and `Transactions.Currency`, support CAD only for now, and refuse writers when the active-account state is missing, ambiguous, or unsupported. | Eliminates duplicated currency literals and drift without converting amounts, while preserving D-022's requirement for an explicit selector before multiple active accounts are allowed. |
-| D-028 | Accepted | Treat one Add Shift submission as one recoverable source event: use the same pure settings-driven, cent-rounded calculation for preview and posting; assign a stable Shift ID; and commit one Tip Tracker row, one shift-batch increment, two Raw Transactions rows, and exactly one Wages plus one Tips transaction under one document lock with verified rollback. | Prevents preview/post disagreement, partial financial records, concurrent ID collisions, and ambiguous source linkage while keeping named-range settings configurable and the calculation portable to a future backend. |
-
-## Change format
-
-When adding or changing a decision, record:
-
-- Date
-- Decision owner
-- What changed
-- Why
-- Affected code, data, or user behavior
-- Whether migration is required
+| D-001 | Accepted | Git is the canonical source for code, tests, architecture, and release preparation. | Prevent full-file drift. |
+| D-002 | Accepted | Keep separate development and production ledgers. | Reversible testing without risking household history. |
+| D-005 | Accepted | Jonathan is product owner, production approver, and tie-breaker. | Product tradeoffs belong to the user. |
+| D-007 | Accepted | Use calendar months and `America/Toronto`. Week bounds use the civil date, never local midnight. | Match the household and handle DST. |
+| D-008 | Accepted | Transfers are neither income nor expense. They are a paired movement between accounts. | Prevent double counting. |
+| D-009 | Accepted | Ownership is a splits array that must sum to the amount. Joint is explicit. | Blank member columns will not scale. |
+| D-011 | Accepted | Defer bank integrations; keep an import-shaped command path. | Core reliability first. |
+| D-015 | Accepted for now | Personal goals and personal ledger rows are a visibility filter, not privacy. Hidden UI is not a security boundary. | Two household editors can share a phone; genuine privacy needs auth. Each person should use their own phone. |
+| D-016 | Accepted | Expense leaves purchasing power; income enters; transfer moves between household accounts; refund reduces category spend. Credit-card payments are transfers, not expenses. | Stops the four meanings collapsing into one catch-all. |
+| D-018 | Accepted | Exclude live Sheets, ODS exports, `Project Context.txt`, credentials, and other household data from hosted Git history. | Git history is persistent; data exposure adds risk without improving code review. |
+| D-020 | Open | Enable two-factor authentication on Jonathan's GitHub account. | The canonical remote still needs it. |
+| D-021 | Accepted | CAD is the only currency. Account currency is authoritative. Writers refuse non-CAD active accounts. | No silent USD labels, no amount conversion. |
+| D-022 | Accepted | Show an account selector whenever more than one account exists. Seed data includes chequing, Visa, and cash. | Prevent first-active-account from becoming a hidden defect. |
+| D-023 | Accepted | Rebuild the working interface as a phone-first web app while keeping the domain portable. | Sheets was the prototype; it is no longer the product. |
+| D-025 | Accepted | Browser validation is a usability aid. Commands are the trust boundary. | Stale or altered UI must not write bad money. |
+| D-026 | Accepted | One command is one snapshot replace with an undo snapshot. Derived flags refresh after the durable replace. The SQL journal is rebuilt from that snapshot inside a database transaction so the books cannot drift mid-write. | Partial writes cannot exist in this runtime. |
+| D-028 | Accepted | One shift is one settings-driven calculation, one source row, one wages income, one tips income. Negative net tips remain allowed. | Preview/post disagreement is a financial bug. |
+| D-029 | Accepted | Add Category uses the same commit/undo path as money. | Partial category+budget rows were how CAT-INCOME returned. |
+| D-030 | Accepted | Every money row has visibility `household`, `personal`, or `both`, plus `createdBy`. Household view shows household+both. Personal view shows that member's personal+both. | Jonathan and Bianca asked for a shared household database and a personal one each. |
+| D-032 | Accepted | Household pairing is a three-word kitchen phrase, a tap-to-join URL, and a Hearth Pass file. A typed six-character blob key is a fallback, not the product. Cloud publish is optional. | Six characters were the wrong object to put in Bianca’s hands. |
+| D-033 | Accepted | The books are a double-entry PostgreSQL ledger. Commands still validate and commit an in-memory snapshot; after each commit that snapshot is posted into balanced journal lines. PGlite (Postgres 18) is the in-app engine. The same schema is what you load on hosted Postgres. | JSON blobs cannot enforce debit = credit and cannot produce a trial balance. |
+| D-034 | Accepted | Hosted books are the Jonathan/Bianca Supabase Postgres project (`tykhocwacaxwquhynkok`, us-east-1). Schema is live in that project as of 2026-08-21. The app uses the publishable key and PostgREST. The API secret cannot CREATE TABLE. Direct `db.*.supabase.co` is IPv6-only. The publishable key is not a privacy boundary until Auth exists. | Publishable key can read/write tables once they exist; it cannot DDL. |
+| D-035 | Accepted | The website is Cloudflare Workers + Assets (`hearth-books`). The books stay on Supabase. SPA join URLs use Wrangler `not_found_handling`, not a catch-all `_redirects` file (Workers API 100324). Builds wipe `dist/` so a cached leftover cannot be uploaded. | Netlify was only serving files and is no longer in the working tree. |
+| D-036 | Accepted | Household writes are queued one at a time. Undo tokens carry posted ids so a stale screen still tombstones. Money rows can be removed through the same command/undo path. Reset, the Development/Production pill, reload-demo, and remove ask for confirm. Undo history on this phone is last-in first-out (More → Recent changes). | QA found undo racing the cloud push, an 8-second toast as the only rollback, and one-tap Reset/env switches. |
+| D-037 | Accepted | GitHub’s working tree is Hearth. Sheets-era roadmaps, READMEs, decisions, and project context stay under `docs/reference/` and are marked reference-only. Apps Script source is recovered from git tag `sheets-v0.0.31`, not from the default tree. | Jonathan asked to drop outdated code while keeping history as a map, not a bible. |

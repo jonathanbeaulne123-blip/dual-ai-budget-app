@@ -1,5 +1,8 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Project roadmap
-    url: https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/main/docs/ROADMAP.md
-    about: Review current phases and priorities before opening a new task.
+  - name: Current roadmap
+    url: https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/cursor/hearth-rebuild-cfde/docs/ROADMAP.md
+    about: Living Hearth plan. Sheets-era roadmaps are docs/reference/, not current law.
+  - name: Reference material
+    url: https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/cursor/hearth-rebuild-cfde/docs/reference/README.md
+    about: Historical READMEs, decisions, and Sheets-era context.

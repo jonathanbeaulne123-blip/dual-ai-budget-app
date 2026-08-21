@@ -1,0 +1,38 @@
+name: Cloudflare Workers
+
+on:
+  push:
+    branches: [main, cursor/hearth-rebuild-cfde]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pages:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Deploy
+        if: github.event_name != 'pull_request'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "No Cloudflare API secrets on this repo."
+            echo "Workers Builds is connected as hearth-books."
+            echo "Until Hearth is on main, production branch is cursor/hearth-rebuild-cfde."
+            echo "Dashboard deploy command: rm -f dist/_redirects && npx wrangler versions upload --assets=./dist"
+            exit 0
+          fi
+          rm -f dist/_redirects
+          npx wrangler deploy --assets=./dist
