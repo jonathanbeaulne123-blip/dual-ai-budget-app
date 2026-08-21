@@ -23,7 +23,7 @@ The in-memory model is still the source of truth while a command runs: clone the
 2. **Commands** — `postEntry`, `postTransfer`, `postShift`, `addCategory`, budget, goals, recurrences. Each clones state, writes, refreshes duplicate flags, appends activity, and returns an undo snapshot.
 3. **Books** — `compileHousehold` turns each money document into balanced debit/credit lines. PGlite stores them. Health Check refuses a household whose trial balance or accounting equation is off.
 4. **Projections** — `monthSummary`, `weekSummary`, `buildDashboard`, `runHealthCheck`, `sitDownPreview`, `trialBalance`.
-5. **UI** — Home, Add, Plan, Books (register / journal / trial balance / accounts / SQL), More.
+5. **UI** — Home, Add, Plan, Books (register / journal / trial balance / accounts / SQL), More (health, recent undo, invite).
 
 ## Data-model rules
 
@@ -43,11 +43,11 @@ The in-memory model is still the source of truth while a command runs: clone the
 
 ## Trust and failure
 
-Browser controls are usability. Commands throw `ValidationError` before mutating. Duplicate/settings/double-shift cases throw `NeedsConfirmationError` with zero writes. Undo restores the previous snapshot. A UI mutex prevents overlapping saves. Health Check is a projection, not a hidden sheet.
+Browser controls are usability. Commands throw `ValidationError` before mutating. Duplicate/settings/double-shift cases throw `NeedsConfirmationError` with zero writes. Undo restores the previous snapshot and tombstones posted ids so a deleted row cannot return from the other phone. A write queue prevents overlapping saves and undos. Health Check is a projection, not a hidden sheet.
 
 ## Environments
 
-Development is the default local ledger. Production is a second named snapshot on the same device. They cannot be confused by workbook title; the pill in the top bar is the environment.
+Development is the default local ledger. Production is a second named snapshot on the same device. They cannot be confused by workbook title; the pill in the top bar is the environment and asks before switching.
 
 A linked household on Netlify is a leftover pairing envelope, not the books. Development/production on a phone remain local keys. The books are PostgreSQL in the app (PGlite) and the same schema on the household Supabase project. The website is Cloudflare Workers.
 

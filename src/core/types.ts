@@ -226,6 +226,7 @@ export type UndoToken = {
   id: string;
   label: string;
   snapshot: Household;
+  postedIds: string[];
 };
 
 export type CommitResult = {

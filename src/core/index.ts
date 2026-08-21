@@ -17,5 +17,5 @@ export * from "./sync.ts";
 export * from "./invite.ts";
 export * from "./pass.ts";
 export * from "./journal.ts";
-export { cloneHousehold } from "./household.ts";
+export { createWriteQueue } from "./writeQueue.ts";
 export { formatInviteCode, normalizeInviteCode, randomHouseholdId, randomInviteCode } from "./ids.ts";

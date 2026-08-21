@@ -29,12 +29,14 @@ export function BooksPage({
   view,
   booksStatus,
   onChange,
+  onRemove,
 }: {
   household: Household;
   memberId: string;
   view: LedgerView;
   booksStatus: BooksStatus | null;
   onChange: (household: Household, undo?: UndoToken) => void;
+  onRemove: (transaction: Household["transactions"][number]) => void;
 }) {
   const [pane, setPane] = useState<Pane>("register");
   const books = useMemo(() => compileHousehold(household), [household]);
@@ -81,7 +83,7 @@ export function BooksPage({
         ))}
       </div>
       {pane === "register" && (
-        <LedgerPage household={household} memberId={memberId} view={view} onChange={onChange} />
+        <LedgerPage household={household} memberId={memberId} view={view} onChange={onChange} onRemove={onRemove} />
       )}
       {pane === "journal" && (
         <section className="card">

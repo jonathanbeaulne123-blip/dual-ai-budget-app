@@ -2,7 +2,7 @@
 
 ## Development
 
-Default local snapshot `hearth:v1:development`. The top-bar pill reads Development. Demo data is fictional CAD.
+Default local snapshot `hearth:v1:development`. The top-bar pill reads Development. Demo data is fictional CAD. Switching the pill asks first; it does not delete Development.
 
 ## Production
 

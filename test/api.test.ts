@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { apiUrl, hostingHint } from "../src/api.ts";
+import { apiUrl, hostingHint, UNPUBLISHED_PHRASE } from "../src/api.ts";
 
 describe("Cloudflare static host pairing", () => {
   it("does not default pairing to a Netlify function", () => {
@@ -11,6 +11,7 @@ describe("Cloudflare static host pairing", () => {
   it("describes Supabase as the shared books", () => {
     expect(hostingHint(true)).toMatch(/Supabase/);
     expect(hostingHint(false)).not.toMatch(/Netlify/i);
+    expect(UNPUBLISHED_PHRASE).not.toMatch(/phrase is right/i);
   });
 
   it("points Wrangler at dist/ so versions upload has an assets directory", () => {

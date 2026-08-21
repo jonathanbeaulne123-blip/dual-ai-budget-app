@@ -24,6 +24,7 @@ This rebuild exists to be compared, not merged blindly. `main` remains the live-
 | Personal vs household entries | Hidden sheet / filter only | Shared, Personal, or Both on every add; two views |
 | Docs drift | README/AGENTS lagged PR #16 | Docs generated with this runtime |
 | Goals / recurring | Schema, unwired | Working, small, reversible |
+| Undo / delete | Toast only; easy to lose | Queued persist, remove on the register, LIFO undo on More |
 | Bank import | Intentionally deferred | Still deferred; JSON export exists |
 
 Keep `main` until Jonathan is sure. This branch is the alternative, not a clasp push.

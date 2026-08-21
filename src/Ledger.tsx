@@ -28,11 +28,13 @@ export function LedgerPage({
   memberId,
   view,
   onChange,
+  onRemove,
 }: {
   household: Household;
   memberId: string;
   view: LedgerView;
   onChange: (household: Household, undo?: UndoToken) => void;
+  onRemove: (transaction: Transaction) => void;
 }) {
   const [section, setSection] = useState<LedgerSection>("expenses");
   const [query, setQuery] = useState("");
@@ -85,6 +87,7 @@ export function LedgerPage({
               const result = markDuplicate(household, tx.id, !tx.isDuplicate);
               onChange(result.household, result.undo);
             }}
+            onRemove={() => onRemove(tx)}
           />
         ))}
       </section>
@@ -96,10 +99,12 @@ function LedgerRow({
   household,
   transaction,
   onToggleDuplicate,
+  onRemove,
 }: {
   household: Household;
   transaction: Transaction;
   onToggleDuplicate: () => void;
+  onRemove: () => void;
 }) {
   const pair = transaction.transferPairId
     ? household.transactions.find((item) => item.id === transaction.transferPairId)
@@ -129,6 +134,7 @@ function LedgerRow({
         {transaction.potentialDuplicate && (
           <button className="chip" onClick={onToggleDuplicate}>{transaction.isDuplicate ? "Include" : "Exclude"}</button>
         )}
+        <button className="chip" onClick={onRemove}>Remove</button>
       </div>
     </div>
   );

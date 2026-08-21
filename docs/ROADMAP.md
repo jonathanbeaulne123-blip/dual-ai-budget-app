@@ -9,6 +9,7 @@
 - Development vs production local snapshots
 - Shared / personal / both visibility, household vs personal views
 - Phrase / join link / Hearth Pass pairing
+- Remove a ledger row (with confirm) and undo the latest change from the toast or More → Recent changes
 - Shared books on the household Supabase Postgres (same schema as PGlite)
 - Website on Cloudflare Workers + Assets (`hearth-books`); Netlify is rollback only
 

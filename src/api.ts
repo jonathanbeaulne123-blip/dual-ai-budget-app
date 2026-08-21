@@ -60,6 +60,9 @@ export async function createSharedHousehold(household: Household, memberId: stri
   }
 }
 
+export const UNPUBLISHED_PHRASE =
+  "No household is published with that phrase. Check the three words, or on the other phone open Invite and tap Publish to the cloud.";
+
 export async function joinSharedHousehold(inviteCode: string, memberId?: string): Promise<Household> {
   const token = inviteFromText(inviteCode);
   if (!isValidInviteToken(token)) {
@@ -69,7 +72,7 @@ export async function joinSharedHousehold(inviteCode: string, memberId?: string)
   if (fromSupabase) return fromSupabase;
   const hosted = await probeSupabase();
   if (hosted.schema) {
-    throw new Error("That phrase is right, but no household has been published to Supabase yet. On the other phone open Invite and wait until it says the shared books are live.");
+    throw new Error(UNPUBLISHED_PHRASE);
   }
   if (hosted.reachable && !hosted.schema) {
     throw new Error("Supabase is on, but the books tables are not in the API yet. Re-run supabase/migrations/001_hearth_books.sql in the SQL Editor.");
@@ -85,7 +88,7 @@ export async function pullSharedHousehold(inviteCode: string, memberId: string):
   const fromSupabase = await pullSupabaseHousehold(inviteFromText(inviteCode));
   if (fromSupabase) return fromSupabase;
   if (!apiUrl()) {
-    throw new Error("That phrase is right, but no household has been published to Supabase yet. On the other phone open Invite and wait until it says the shared books are live.");
+    throw new Error(UNPUBLISHED_PHRASE);
   }
   return post({ action: "pull", inviteCode: inviteFromText(inviteCode), memberId });
 }

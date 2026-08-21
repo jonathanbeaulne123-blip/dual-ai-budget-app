@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   JOINT,
   NeedsConfirmationError,
@@ -10,6 +10,7 @@ import {
   calcShiftAmounts,
   catalogHousehold,
   contributeToGoal,
+  createWriteQueue,
   defaultVisibilityForView,
   formatCad,
   formatDateLabel,
@@ -28,6 +29,7 @@ import {
   sitDownPreview,
   todayKey,
   undo,
+  voidPostedMoney,
   type CommitResult,
   type Environment,
   type Household,
@@ -42,10 +44,16 @@ import { joinSharedHousehold, pushSharedHousehold, reconcileHousehold } from "./
 import { inviteFromLocation } from "./core/invite.ts";
 import { PairingCard, WelcomeJoin } from "./Pairing.tsx";
 import { BooksPage } from "./Books.tsx";
+import { ConfirmSheet } from "./Confirm.tsx";
 import { syncHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
 
 type Tab = "home" | "plan" | "ledger" | "more";
 type AddMode = "expense" | "income" | "shift" | "transfer";
+type Guard =
+  | { kind: "reset" }
+  | { kind: "environment"; next: Environment }
+  | { kind: "demo" }
+  | { kind: "remove"; transactionId: string; summary: string };
 
 const emptyForm = {
   date: todayKey(),
@@ -77,6 +85,8 @@ export function App() {
   const [error, setError] = useState("");
   const [confirm, setConfirm] = useState<NeedsConfirmationError | null>(null);
   const [toast, setToast] = useState<UndoToken | null>(null);
+  const [history, setHistory] = useState<UndoToken[]>([]);
+  const [guard, setGuard] = useState<Guard | null>(null);
   const [commandOpen, setCommandOpen] = useState(false);
   const [splitPercents, setSplitPercents] = useState<Record<string, number>>({ "MEM-001": 50, "MEM-002": 50 });
   const [now] = useState(() => new Date());
@@ -85,6 +95,11 @@ export function App() {
   const [inviteInput, setInviteInput] = useState("");
   const [welcomeMode, setWelcomeMode] = useState<"home" | "join">("home");
   const [booksStatus, setBooksStatus] = useState<BooksStatus | null>(null);
+  const enqueueWrite = useMemo(() => createWriteQueue(), []);
+  const householdRef = useRef<Household | null>(household);
+  householdRef.current = household;
+  const historyRef = useRef(history);
+  historyRef.current = history;
 
   useEffect(() => {
     const token = inviteFromLocation(window.location.href);
@@ -163,58 +178,83 @@ export function App() {
     saveSession(environment, next);
   }
 
-  async function persist(next: Household, token?: UndoToken, actorId?: string) {
-    await saveHousehold(next);
-    setHousehold(next);
-    if (token) {
-      setToast(token);
-      window.setTimeout(() => setToast((current) => (current?.id === token.id ? null : current)), 8000);
-    }
-    const who = actorId || session?.memberId;
-    let stored = next;
-    if (next.linked && who) {
-      setSyncState("syncing");
-      try {
-        stored = await pushSharedHousehold(next, who);
-        await saveHousehold(stored);
-        setHousehold(stored);
-        setSyncState("synced");
-      } catch (caught) {
-        setSyncState("error");
-        setError(caught instanceof Error ? caught.message : "Saved on this phone. Shared sync can retry from More.");
-      }
-    }
-    try {
-      setBooksStatus((await syncHouseholdBooks(stored)).status);
-    } catch (caught) {
-      setBooksStatus({
-        ok: false,
-        engine: "pglite",
-        entryCount: 0,
-        inBalance: false,
-        equationHolds: false,
-        error: caught instanceof Error ? caught.message : String(caught),
-      });
-    }
-  }
-
-  async function run(fn: () => CommitResult) {
-    if (!household || busy) return;
+  async function commitHousehold(next: Household, token?: UndoToken, actorId?: string) {
     setBusy(true);
-    setError("");
     try {
-      const result = fn();
-      await persist(result.household, result.undo);
-      setConfirm(null);
-      setAdding(false);
-      setForm({ ...emptyForm, date: today, visibility: defaultVisibilityForView(view) });
-      if (result.warnings.length) setError(result.warnings.join(" "));
-    } catch (caught) {
-      if (caught instanceof NeedsConfirmationError) setConfirm(caught);
-      else setError(caught instanceof Error ? caught.message : String(caught));
+      await saveHousehold(next);
+      setHousehold(next);
+      if (token) {
+        setToast(token);
+        setHistory((current) => [...current, token].slice(-20));
+        window.setTimeout(() => setToast((item) => (item?.id === token.id ? null : item)), 8000);
+      }
+      const who = actorId || session?.memberId;
+      let stored = next;
+      if (next.linked && who) {
+        setSyncState("syncing");
+        try {
+          stored = await pushSharedHousehold(next, who);
+          await saveHousehold(stored);
+          setHousehold(stored);
+          setSyncState("synced");
+        } catch (caught) {
+          setSyncState("error");
+          setError(caught instanceof Error ? caught.message : "Saved on this phone. Shared sync can retry from More.");
+        }
+      }
+      try {
+        setBooksStatus((await syncHouseholdBooks(stored)).status);
+      } catch (caught) {
+        setBooksStatus({
+          ok: false,
+          engine: "pglite",
+          entryCount: 0,
+          inBalance: false,
+          equationHolds: false,
+          error: caught instanceof Error ? caught.message : String(caught),
+        });
+      }
     } finally {
       setBusy(false);
     }
+  }
+
+  function persist(next: Household, token?: UndoToken, actorId?: string) {
+    return enqueueWrite(() => commitHousehold(next, token, actorId));
+  }
+
+  function applyUndo(token: UndoToken) {
+    return enqueueWrite(async () => {
+      const current = householdRef.current;
+      if (!current) return;
+      const latest = historyRef.current[historyRef.current.length - 1];
+      if (latest && latest.id !== token.id) {
+        setError("Undo the latest change first so the books stay in order.");
+        return;
+      }
+      await commitHousehold(undo(current, token));
+      setHistory((items) => items.filter((item) => item.id !== token.id));
+      setToast((item) => (item?.id === token.id ? null : item));
+    });
+  }
+
+  function run(fn: (current: Household) => CommitResult) {
+    return enqueueWrite(async () => {
+      const current = householdRef.current;
+      if (!current) return;
+      setError("");
+      try {
+        const result = fn(current);
+        await commitHousehold(result.household, result.undo);
+        setConfirm(null);
+        setAdding(false);
+        setForm({ ...emptyForm, date: today, visibility: defaultVisibilityForView(view) });
+        if (result.warnings.length) setError(result.warnings.join(" "));
+      } catch (caught) {
+        if (caught instanceof NeedsConfirmationError) setConfirm(caught);
+        else setError(caught instanceof Error ? caught.message : String(caught));
+      }
+    });
   }
 
   if (booting) {
@@ -314,8 +354,8 @@ export function App() {
     hours: Number(form.hours || 0) || 0,
   }, ledger.shiftSettings);
 
-  function splitsFor(amountCents: number): Split[] {
-    const members = ledger.members.filter((member) => member.active);
+  function splitsFor(amountCents: number, from: Household): Split[] {
+    const members = from.members.filter((member) => member.active);
     if (form.who === "split") {
       return percentSplits(members.map((member) => ({
         party: member.id,
@@ -339,48 +379,48 @@ export function App() {
   }
 
   function submit(confirmDuplicate = false) {
-    if (mode === "transfer") {
-      run(() => postTransfer(ledger, {
+    run((current) => {
+      if (mode === "transfer") {
+        return postTransfer(current, {
+          date: form.date,
+          amount: form.amount,
+          fromAccountId: form.fromAccountId,
+          toAccountId: form.toAccountId,
+          note: form.note,
+          confirmDuplicate,
+          createdBy: actorId,
+          visibility: form.visibility,
+        });
+      }
+      if (mode === "shift") {
+        return postShift(current, {
+          date: form.date,
+          memberId: form.memberId,
+          accountId: form.accountId,
+          sales: form.sales,
+          cashTips: form.cashTips,
+          ccTips: form.ccTips,
+          hours: form.hours,
+          settingsFingerprint: shiftSettingsFingerprint(current.shiftSettings),
+          confirmDuplicate,
+          createdBy: actorId,
+          visibility: form.visibility,
+        });
+      }
+      return postEntry(current, {
         date: form.date,
+        type: mode,
         amount: form.amount,
-        fromAccountId: form.fromAccountId,
-        toAccountId: form.toAccountId,
-        note: form.note,
-        confirmDuplicate,
-        createdBy: actorId,
-        visibility: form.visibility,
-      }));
-      return;
-    }
-    if (mode === "shift") {
-      run(() => postShift(ledger, {
-        date: form.date,
-        memberId: form.memberId,
         accountId: form.accountId,
-        sales: form.sales,
-        cashTips: form.cashTips,
-        ccTips: form.ccTips,
-        hours: form.hours,
-        settingsFingerprint: shiftSettingsFingerprint(ledger.shiftSettings),
+        subcategoryId: form.subcategoryId,
+        note: form.note,
+        place: form.place,
+        splits: splitsFor(parseAmount(form.amount), current),
         confirmDuplicate,
         createdBy: actorId,
         visibility: form.visibility,
-      }));
-      return;
-    }
-    run(() => postEntry(ledger, {
-      date: form.date,
-      type: mode,
-      amount: form.amount,
-      accountId: form.accountId,
-      subcategoryId: form.subcategoryId,
-      note: form.note,
-      place: form.place,
-      splits: splitsFor(parseAmount(form.amount)),
-      confirmDuplicate,
-      createdBy: actorId,
-      visibility: form.visibility,
-    }));
+      });
+    });
   }
 
   return (
@@ -399,7 +439,10 @@ export function App() {
             </p>
           </div>
         </div>
-        <button className={`pill ${environment === "development" ? "dev" : "prod"}`} onClick={() => setEnvironment(environment === "development" ? "production" : "development")}>
+        <button className={`pill ${environment === "development" ? "dev" : "prod"}`} onClick={() => setGuard({
+          kind: "environment",
+          next: environment === "development" ? "production" : "development",
+        })}>
           {environment === "development" ? "Development" : "Production"}
         </button>
       </header>
@@ -501,6 +544,15 @@ export function App() {
           view={view}
           booksStatus={booksStatus}
           onChange={(next, token) => { void persist(next, token); }}
+          onRemove={(transaction) => {
+            const dollars = formatCad(transaction.amountCents);
+            const summary = transaction.source === "shift"
+              ? `This removes the whole shift (${dollars} wages and tips) from the books.`
+              : transaction.type === "transfer"
+                ? `This removes both sides of the ${dollars} transfer.`
+                : `This removes ${dollars}${transaction.note ? ` (${transaction.note})` : ""} from the books.`;
+            setGuard({ kind: "remove", transactionId: transaction.id, summary });
+          }}
         />
       )}
 
@@ -510,6 +562,26 @@ export function App() {
             <header><h2>Health</h2><span className={`pill ${findings.length ? "warn" : "good"}`}>{findings.length ? `${findings.length} findings` : "Clean"}</span></header>
             {findings.length === 0 ? <p className="muted">Ledger, splits, transfers, shifts, flags, and the books agree.</p> : (
               <ul className="health">{findings.map((finding) => <li key={finding.section + finding.message}><strong>{finding.section}.</strong> {finding.message}</li>)}</ul>
+            )}
+          </section>
+          <section className="card">
+            <header>
+              <h2>Recent changes</h2>
+              <span className="muted">{history.length ? `${history.length} on this phone` : "None"}</span>
+            </header>
+            {history.length === 0 ? (
+              <p className="muted">Saves, removes, and reviews can be undone here. Only the latest change undoes, so the books stay in order.</p>
+            ) : (
+              [...history].reverse().map((item, index) => (
+                <div className="row" key={item.id}>
+                  <span>{item.label}</span>
+                  {index === 0 ? (
+                    <button className="chip" disabled={busy} onClick={() => void applyUndo(item)}>Undo</button>
+                  ) : (
+                    <span className="muted">later</span>
+                  )}
+                </div>
+              ))
             )}
           </section>
           <PairingCard
@@ -554,20 +626,11 @@ export function App() {
               Personal rows are a filter, not a lock.
             </p>
             <button className="primary" onClick={() => downloadJson(household)}>Export JSON snapshot</button>
-            <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => persist(seedDemoHousehold({ today, environment }))}>Reload demo data</button>
+            <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setGuard({ kind: "demo" })}>Reload demo data</button>
             <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => {
-              try {
-                const result = postDueRecurrences(household, today);
-                void persist(result.household, result.undo);
-              } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
+              void run((current) => postDueRecurrences(current, today));
             }}>Post due recurring</button>
-            <button className="danger" onClick={() => {
-              void clearHousehold(environment).then(() => {
-                clearSession(environment);
-                setSession(null);
-                setHousehold(null);
-              });
-            }}>Reset this environment</button>
+            <button className="danger" onClick={() => setGuard({ kind: "reset" })}>Reset this environment</button>
           </section>
           <AddCategoryForm household={household} onSave={(next, token) => persist(next, token)} />
         </>
@@ -729,13 +792,82 @@ export function App() {
         </div>
       )}
 
+      {guard?.kind === "reset" && (
+        <ConfirmSheet
+          title="Reset this ledger?"
+          body={`This deletes the ${environment} ledger on this phone only. Bianca’s phone and the cloud copy stay until someone publishes over them. This cannot be undone here.`}
+          confirmLabel="Reset this phone"
+          danger
+          busy={busy}
+          onCancel={() => setGuard(null)}
+          onConfirm={() => {
+            void clearHousehold(environment).then(() => {
+              clearSession(environment);
+              setSession(null);
+              setHousehold(null);
+              setHistory([]);
+              setToast(null);
+              setGuard(null);
+            });
+          }}
+        />
+      )}
+      {guard?.kind === "environment" && (
+        <ConfirmSheet
+          title={`Switch to ${guard.next}?`}
+          body={`${environment} stays saved on this phone. ${guard.next === "production" ? "Production starts empty until you open or join a household there." : "Development is the usual working ledger."} This is not a cloud switch.`}
+          confirmLabel={`Open ${guard.next}`}
+          busy={busy}
+          onCancel={() => setGuard(null)}
+          onConfirm={() => {
+            setEnvironment(guard.next);
+            setHistory([]);
+            setToast(null);
+            setGuard(null);
+          }}
+        />
+      )}
+      {guard?.kind === "demo" && (
+        <ConfirmSheet
+          title="Reload demo data?"
+          body={`This replaces the ${environment} ledger on this phone with fictional CAD. If you then tap Sync to the cloud, that demo can overwrite the shared household.`}
+          confirmLabel="Load demo data"
+          danger
+          busy={busy}
+          onCancel={() => setGuard(null)}
+          onConfirm={() => {
+            setGuard(null);
+            void persist(seedDemoHousehold({ today, environment }));
+          }}
+        />
+      )}
+      {guard?.kind === "remove" && (
+        <ConfirmSheet
+          title="Remove from the books?"
+          body={`${guard.summary} You can undo from the toast or from More → Recent changes.`}
+          confirmLabel="Remove"
+          danger
+          busy={busy}
+          onCancel={() => setGuard(null)}
+          onConfirm={() => {
+            const id = guard.transactionId;
+            const current = householdRef.current;
+            setGuard(null);
+            if (!current) return;
+            try {
+              const result = voidPostedMoney(current, id);
+              void persist(result.household, result.undo);
+            } catch (caught) {
+              setError(caught instanceof Error ? caught.message : String(caught));
+            }
+          }}
+        />
+      )}
+
       {toast && (
         <div className="toast">
-          <span>Saved. You can undo this.</span>
-          <button className="ghost" style={{ color: "var(--paper)" }} onClick={() => {
-            persist(undo(household, toast));
-            setToast(null);
-          }}>Undo</button>
+          <span>Saved. You can undo this, or find it later under More.</span>
+          <button className="ghost" style={{ color: "var(--paper)" }} onClick={() => void applyUndo(toast)}>Undo</button>
         </div>
       )}
 

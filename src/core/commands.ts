@@ -62,7 +62,7 @@ function commit(previous: Household, next: Household, action: string, summary: s
     household: next,
     warnings,
     postedIds,
-    undo: { id: activity.id, label: summary, snapshot: previous },
+    undo: { id: activity.id, label: summary, snapshot: previous, postedIds: [...postedIds] },
   };
 }
 
@@ -588,14 +588,44 @@ export function updateShiftSettings(household: Household, settings: Household["s
   return commit(previous, next, "Shift Settings", "Updated tip-out and wage rules", []);
 }
 
+export function voidPostedMoney(household: Household, transactionId: string): CommitResult {
+  const tx = household.transactions.find((item) => item.id === transactionId);
+  if (!tx) throw new ValidationError("That row is already gone.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const ids = new Set<string>([tx.id]);
+  if (tx.transferPairId) ids.add(tx.transferPairId);
+  const shift = tx.source === "shift" && tx.sourceId
+    ? next.shifts.find((item) => item.id === tx.sourceId)
+    : undefined;
+  if (shift) {
+    ids.add(shift.id);
+    ids.add(shift.wagesTransactionId);
+    ids.add(shift.tipsTransactionId);
+  }
+  const at = nowIso();
+  next.transactions = next.transactions.filter((item) => !ids.has(item.id));
+  next.shifts = next.shifts.filter((item) => !ids.has(item.id));
+  next.tombstones = mergeTombstones(next.tombstones, [...ids].map((id) => ({ id, deletedAt: at })));
+  const dollars = `$${(tx.amountCents / 100).toFixed(2)}`;
+  const label = shift
+    ? `Removed ${tx.date} shift ${dollars}`
+    : tx.type === "transfer"
+      ? `Removed ${tx.date} transfer ${dollars}`
+      : `Removed ${tx.date} ${tx.type} ${dollars}`;
+  return commit(previous, next, "Remove", label, [...ids]);
+}
+
 export function undo(current: Household, token: UndoToken): Household {
   if (!token?.snapshot) throw new ValidationError("Nothing to undo.");
   const restored = cloneHousehold(token.snapshot);
   const removedTx = current.transactions.filter((tx) => !restored.transactions.some((row) => row.id === tx.id));
   const removedShifts = current.shifts.filter((shift) => !restored.shifts.some((row) => row.id === shift.id));
+  const posted = token.postedIds ?? [];
   restored.tombstones = mergeTombstones(restored.tombstones ?? [], [
     ...removedTx.map((tx) => ({ id: tx.id, deletedAt: nowIso() })),
     ...removedShifts.map((shift) => ({ id: shift.id, deletedAt: nowIso() })),
+    ...posted.map((id) => ({ id, deletedAt: nowIso() })),
   ]);
   restored.householdId = restored.householdId || current.householdId;
   restored.inviteCode = restored.inviteCode || current.inviteCode;
