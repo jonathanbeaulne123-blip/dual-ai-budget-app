@@ -14,4 +14,4 @@ The Google development Sheet and production Sheet remain on `main`. This branch 
 
 ## Hosted household
 
-A linked household uses a six-character invite code. Shared rows live in one Netlify blob; each member's personal-only rows live in a second blob. Development and production on a phone can each link to a different code. Default experiments to development.
+The books are PostgreSQL (PGlite on the phone; Neon or Supabase when Jonathan creates a project). A linked household may still use a Netlify blob as a pairing envelope. That blob is not the ledger. Development and production on a phone can each hold a different household. Default experiments to development.

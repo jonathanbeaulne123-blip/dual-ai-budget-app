@@ -36,12 +36,13 @@ import {
   type UndoToken,
   type Visibility,
 } from "./core/index.ts";
-import { LedgerPage } from "./Ledger.tsx";
 import { STORAGE_EXPLAINER, clearHousehold, downloadJson, loadHousehold, saveHousehold } from "./storage.ts";
 import { clearSession, loadSession, saveSession, type Session } from "./session.ts";
 import { joinSharedHousehold, pushSharedHousehold, reconcileHousehold } from "./api.ts";
 import { inviteFromLocation } from "./core/invite.ts";
 import { PairingCard, WelcomeJoin } from "./Pairing.tsx";
+import { BooksPage } from "./Books.tsx";
+import { syncHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
 
 type Tab = "home" | "plan" | "ledger" | "more";
 type AddMode = "expense" | "income" | "shift" | "transfer";
@@ -83,6 +84,7 @@ export function App() {
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "synced" | "error">("idle");
   const [inviteInput, setInviteInput] = useState("");
   const [welcomeMode, setWelcomeMode] = useState<"home" | "join">("home");
+  const [booksStatus, setBooksStatus] = useState<BooksStatus | null>(null);
 
   useEffect(() => {
     const token = inviteFromLocation(window.location.href);
@@ -102,18 +104,32 @@ export function App() {
     setSession(loadedSession);
     loadHousehold(environment).then(async (loaded) => {
       if (!live) return;
+      let current = loaded;
       if (loaded?.linked && loadedSession?.memberId) {
         try {
           const reconciled = await reconcileHousehold(loaded, loadedSession.memberId);
           if (!live) return;
           await saveHousehold(reconciled);
-          setHousehold(reconciled);
+          current = reconciled;
         } catch {
           if (!live) return;
-          setHousehold(loaded);
         }
-      } else {
-        setHousehold(loaded);
+      }
+      setHousehold(current);
+      if (current) {
+        void syncHouseholdBooks(current)
+          .then(({ status }) => { if (live) setBooksStatus(status); })
+          .catch((caught) => {
+            if (!live) return;
+            setBooksStatus({
+              ok: false,
+              engine: "pglite",
+              entryCount: 0,
+              inBalance: false,
+              equationHolds: false,
+              error: caught instanceof Error ? caught.message : String(caught),
+            });
+          });
       }
       setBooting(false);
     });
@@ -155,17 +171,30 @@ export function App() {
       window.setTimeout(() => setToast((current) => (current?.id === token.id ? null : current)), 8000);
     }
     const who = actorId || session?.memberId;
+    let stored = next;
     if (next.linked && who) {
       setSyncState("syncing");
       try {
-        const merged = await pushSharedHousehold(next, who);
-        await saveHousehold(merged);
-        setHousehold(merged);
+        stored = await pushSharedHousehold(next, who);
+        await saveHousehold(stored);
+        setHousehold(stored);
         setSyncState("synced");
       } catch (caught) {
         setSyncState("error");
         setError(caught instanceof Error ? caught.message : "Saved on this phone. Shared sync can retry from More.");
       }
+    }
+    try {
+      setBooksStatus((await syncHouseholdBooks(stored)).status);
+    } catch (caught) {
+      setBooksStatus({
+        ok: false,
+        engine: "pglite",
+        entryCount: 0,
+        inBalance: false,
+        equationHolds: false,
+        error: caught instanceof Error ? caught.message : String(caught),
+      });
     }
   }
 
@@ -208,8 +237,8 @@ export function App() {
           <h1>Hearth</h1>
           <p>
             Jonathan and Bianca each get a household ledger and a personal ledger.
-            Every entry can be shared, personal, or both. Invite the other person
-            with a three-word phrase, a join link, or a Hearth Pass — not a typed code.
+            Every entry can be shared, personal, or both. The books are a double-entry
+            PostgreSQL journal on this phone — not a blob of JSON pretending to be a database.
           </p>
           {welcomeMode === "join" ? (
             <WelcomeJoin
@@ -466,14 +495,20 @@ export function App() {
       )}
 
       {tab === "ledger" && (
-        <LedgerPage household={household} memberId={session.memberId} view={view} onChange={(next, token) => { void persist(next, token); }} />
+        <BooksPage
+          household={household}
+          memberId={session.memberId}
+          view={view}
+          booksStatus={booksStatus}
+          onChange={(next, token) => { void persist(next, token); }}
+        />
       )}
 
       {tab === "more" && (
         <>
           <section className="card">
             <header><h2>Health</h2><span className={`pill ${findings.length ? "warn" : "good"}`}>{findings.length ? `${findings.length} findings` : "Clean"}</span></header>
-            {findings.length === 0 ? <p className="muted">Ledger, splits, transfers, shifts, and flags agree.</p> : (
+            {findings.length === 0 ? <p className="muted">Ledger, splits, transfers, shifts, flags, and the books agree.</p> : (
               <ul className="health">{findings.map((finding) => <li key={finding.section + finding.message}><strong>{finding.section}.</strong> {finding.message}</li>)}</ul>
             )}
           </section>
@@ -510,15 +545,15 @@ export function App() {
             </div>
           </section>
           <section className="card storage">
-            <header><h2>Where the ledger lives</h2></header>
+            <header><h2>Where the books live</h2></header>
             <p>
-              This phone keeps a full working copy in IndexedDB (<code>{STORAGE_EXPLAINER.database}</code>, store <code>{STORAGE_EXPLAINER.store}</code>)
-              with a {STORAGE_EXPLAINER.backup} fallback. Invite with a phrase, join link, or Hearth Pass.
-              When the cloud is on, household and “both” rows go to the shared database; your personal-only rows stay in your personal database.
-              Development and Production are two keys on this device. Export JSON is the file backup.
-              Personal rows are a filter, not a lock — use two phones for a real split.
+              Commands still validate a household snapshot. After each save, that snapshot is posted into a
+              double-entry PostgreSQL journal in PGlite (<code>{STORAGE_EXPLAINER.books}</code>) — trial balance,
+              general journal, and SQL views. The snapshot also stays in IndexedDB (<code>{STORAGE_EXPLAINER.database}</code>)
+              with a {STORAGE_EXPLAINER.backup} fallback. Download SQL from Books to load the same schema on Neon or Supabase.
+              Personal rows are a filter, not a lock.
             </p>
-            <button className="primary" onClick={() => downloadJson(household)}>Export JSON</button>
+            <button className="primary" onClick={() => downloadJson(household)}>Export JSON snapshot</button>
             <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => persist(seedDemoHousehold({ today, environment }))}>Reload demo data</button>
             <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => {
               try {
@@ -645,7 +680,7 @@ export function App() {
                 <select value={form.toAccountId} onChange={(event) => setForm({ ...form, toAccountId: event.target.value })}>
                   {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}
                 </select>
-                <p className="muted">A transfer is two paired ledger rows. It never counts as income or expense.</p>
+                <p className="muted">A transfer is one balanced journal entry: debit the destination, credit the source. It never counts as income or expense.</p>
               </>
             )}
             {mode === "shift" && (
@@ -714,7 +749,7 @@ export function App() {
               { label: "Add expense", run: () => { setMode("expense"); setAdding(true); } },
               { label: "Add shift", run: () => { setMode("shift"); setAdding(true); } },
               { label: "Move money", run: () => { setMode("transfer"); setAdding(true); } },
-              { label: "Ledger", run: () => setTab("ledger") },
+              { label: "Books", run: () => setTab("ledger") },
               { label: "Health", run: () => setTab("more") },
               { label: "Export", run: () => downloadJson(household) },
             ].map((item) => (
@@ -733,7 +768,7 @@ export function App() {
           setConfirm(null);
           setForm({ ...emptyForm, date: today, visibility: defaultVisibilityForView(view), memberId: session.memberId });
         }}>+</button>
-        <button className={tab === "ledger" ? "active" : ""} onClick={() => { setTab("ledger"); setAdding(false); }}>Ledger</button>
+        <button className={tab === "ledger" ? "active" : ""} onClick={() => { setTab("ledger"); setAdding(false); }}>Books</button>
         <button className={tab === "more" ? "active" : ""} onClick={() => { setTab("more"); setAdding(false); }}>More</button>
       </nav>
     </div>

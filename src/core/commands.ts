@@ -255,6 +255,10 @@ export function postTransfer(household: Household, input: {
   inDraft.id = nextId("TXN-TR-", [...next.transactions.map((tx) => tx.id), outDraft.id]);
   outDraft.transferPairId = inDraft.id;
   inDraft.transferPairId = outDraft.id;
+  outDraft.transferFromAccountId = input.fromAccountId;
+  outDraft.transferToAccountId = input.toAccountId;
+  inDraft.transferFromAccountId = input.fromAccountId;
+  inDraft.transferToAccountId = input.toAccountId;
   next.transactions.push(outDraft, inDraft);
   return commit(previous, next, "Transfer", `Moved $${(amountCents / 100).toFixed(2)} on ${date}`, [outDraft.id, inDraft.id]);
 }

@@ -16,5 +16,6 @@ export * from "./visibility.ts";
 export * from "./sync.ts";
 export * from "./invite.ts";
 export * from "./pass.ts";
+export * from "./journal.ts";
 export { cloneHousehold } from "./household.ts";
 export { formatInviteCode, normalizeInviteCode, randomHouseholdId, randomInviteCode } from "./ids.ts";

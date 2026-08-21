@@ -18,7 +18,9 @@ This rebuild exists to be compared, not merged blindly. `main` remains the live-
 | Tests | Writers and migrations; not budget math | Calendar, shift, splits, ledger, health, 12×200 load |
 | God file | 3,333-line `Code.gs` | `src/core/*` plus one UI app |
 | Dev vs prod | Two Google projects | Two named local snapshots, labeled in the chrome |
-| Shared household | One Sheet both edit | Phrase + join link + Hearth Pass; optional cloud envelopes |
+| Shared household | One Sheet both edit | Phrase + join link + Hearth Pass; Postgres books on the phone; optional cloud envelopes |
+| Books | Spreadsheet cells | Double-entry journal, trial balance, account register, read-only SQL |
+| Hosting | Google | PGlite in-app; Neon/Supabase for hosted Postgres; Netlify is a static host, not a ledger |
 | Personal vs household entries | Hidden sheet / filter only | Shared, Personal, or Both on every add; two views |
 | Docs drift | README/AGENTS lagged PR #16 | Docs generated with this runtime |
 | Goals / recurring | Schema, unwired | Working, small, reversible |

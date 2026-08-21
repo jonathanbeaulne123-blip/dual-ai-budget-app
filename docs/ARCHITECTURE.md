@@ -4,12 +4,12 @@
 
 Hearth is a TypeScript household ledger with a React interface. The domain lives in `src/core` and does not import React, DOM, or storage. The UI in `src/App.tsx` is an untrusted client: it may format, filter, and preview, but every write goes through a command that validates plain data and returns a new household snapshot.
 
-Persistence is IndexedDB database `hearth-ledger`, object store `households`, one snapshot per environment (`development` or `production`). `localStorage` holds a fallback copy of the same JSON. Export JSON is the file backup.
+Persistence is two layers:
 
-When a household is **linked**, Netlify Functions plus Netlify Blobs hold two envelopes for the same invite token:
+1. **Command snapshot** — IndexedDB `hearth-ledger` / store `households`, plus a `localStorage` fallback. This is what commands clone, validate, and undo.
+2. **Books** — a double-entry PostgreSQL database in PGlite (`idb://hearth-books`). After every save the snapshot is posted as balanced `journal_entries` / `journal_lines`. Views expose trial balance, income statement, net worth, and an unbalanced-entry alarm.
 
-1. **Shared** — catalog, plus rows whose visibility is `household` or `both`.
-2. **Personal** — that member's `personal`-only rows.
+Netlify Functions plus Blobs remain an optional pairing envelope. They are not the books. Download SQL from the Books tab to load the same schema on Neon or Supabase.
 
 Pairing does not depend on that function being live. Every household has a three-word phrase. **Share phrase and link** sends `/?join=cedar-lantern-kite`. **Hearth Pass** is a JSON file of the shared envelope only; the other phone imports it and merge-by-id still applies. Cloud publish is an accelerator, not the only door.
 
@@ -21,12 +21,13 @@ The in-memory model is still the source of truth while a command runs: clone the
 
 1. **Catalog** — members, accounts, categories, shift settings.
 2. **Commands** — `postEntry`, `postTransfer`, `postShift`, `addCategory`, budget, goals, recurrences. Each clones state, writes, refreshes duplicate flags, appends activity, and returns an undo snapshot.
-3. **Projections** — `monthSummary`, `weekSummary`, `buildDashboard`, `runHealthCheck`, `sitDownPreview`.
-4. **UI** — Home, Add, Plan, Ledger, More. Four tabs plus one add sheet.
+3. **Books** — `compileHousehold` turns each money document into balanced debit/credit lines. PGlite stores them. Health Check refuses a household whose trial balance or accounting equation is off.
+4. **Projections** — `monthSummary`, `weekSummary`, `buildDashboard`, `runHealthCheck`, `sitDownPreview`, `trialBalance`.
+5. **UI** — Home, Add, Plan, Books (register / journal / trial balance / accounts / SQL), More.
 
 ## Data-model rules
 
-- One canonical `transactions` array.
+- One canonical `transactions` array is the command document. The books compile each document into balanced `journal_entries` / `journal_lines`. A Visa payment is one journal entry: debit the card, credit chequing.
 - Amounts are integer cents. Currency is CAD copied from the account.
 - Dates are `YYYY-MM-DD` civil keys in `America/Toronto`. Week bounds are computed from that civil date, never from `Date#setHours(0,0,0,0)` in the runtime zone.
 - `expense` and `income` affect totals. `transfer` is a paired movement between accounts and is excluded from both. `refund` subtracts from category spend.
@@ -48,8 +49,8 @@ Browser controls are usability. Commands throw `ValidationError` before mutating
 
 Development is the default local ledger. Production is a second named snapshot on the same device. They cannot be confused by workbook title; the pill in the top bar is the environment.
 
-A linked household on Netlify is a third surface: both phones open the same invite code. Development/production on a phone remain local keys and can each link to a different household.
+A linked household on Netlify is a pairing envelope, not the books. Development/production on a phone remain local keys. The books are PostgreSQL in the app (PGlite) and the SQL dump is what you load into Neon or Supabase when Jonathan creates a project.
 
 ## Scale
 
-Duplicate flags are O(n). Month and week summaries are single passes. The fixture generator builds 12 months of load for tests. Commands currently clone the snapshot per write, which is honest and simple at household scale and the thing to replace with an event log if this later becomes a multi-user server.
+Commands currently clone the snapshot per write, which is honest and simple at household scale. The SQL journal is the queryable, constraint-backed record of those writes. Replace the snapshot clone with an event log only if household scale stops being household scale.

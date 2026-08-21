@@ -2,12 +2,13 @@
 
 ## Now — Hearth on this branch
 
-- Phone-first Home, Add, Plan, Review, More
+- Phone-first Home, Add, Plan, Books, More
 - Trustworthy commands for spend, income, shift, transfer, category, budget, goals, recurrences
+- Double-entry PostgreSQL books (PGlite) with trial balance, journal, registers, and read-only SQL
 - Demo household and 12-month fixtures
 - Development vs production local snapshots
 - Shared / personal / both visibility, household vs personal views
-- Hosted household sync (Netlify Functions + Blobs) behind an invite code
+- Phrase / join link / Hearth Pass pairing; Netlify blobs optional and not the ledger
 
 ## Next, only after Jonathan uses it for real weeks
 
@@ -20,7 +21,8 @@
 
 - Canadian bank adapters
 - Multi-currency
-- A real auth layer if personal goals must be private
+- A real auth layer if personal rows must be private
+- Neon or Supabase as the shared Postgres (same schema as PGlite)
 - Event-sourced server if household scale stops being household scale
 
 There are no September 2 goal-engine calendar dates. Features follow use, not a six-week product fantasy.

@@ -324,6 +324,33 @@ input, select, textarea {
 .cmdk button { width: 100%; text-align: left; border: 0; background: transparent; padding: 12px 14px; }
 .cmdk button:hover, .cmdk button.active { background: var(--paper-2); }
 
+.books-scroll {
+  overflow-x: auto;
+  margin: 0 -4px;
+}
+.books-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.books-table th, .books-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+.books-table .num { text-align: right; white-space: nowrap; }
+.books-table tfoot td { font-weight: 600; border-bottom: 0; }
+.books-table .journal-head td { border-bottom: 0; padding-top: 14px; font-weight: 600; font-family: var(--font); }
+.sql-input {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 12px;
+  min-height: 120px;
+  resize: vertical;
+}
+
 @media (max-width: 520px) {
   .grid { grid-template-columns: 1fr; }
   .app { padding-left: 14px; padding-right: 14px; }

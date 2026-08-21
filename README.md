@@ -14,7 +14,9 @@ pnpm dev
 
 Then visit `http://localhost:5173`. Choose **Open the demo kitchen table** to load a fictional six-month household. Nothing here is live production data.
 
-A Netlify site is configured in `netlify.toml`. Shared household sync uses `/.netlify/functions/hearth` plus Netlify Blobs. Connecting this GitHub repo to Netlify (or claiming a drop deploy) is what makes the shared database live across two phones. Until that function is on the host, each phone still has Household and Personal views on-device.
+A Netlify site can still host the static app. It is not the database. The books are PostgreSQL: PGlite inside the app (Postgres 18), with a SQL dump that loads onto Neon or Supabase. Open **Books** for the journal, trial balance, account registers, and a read-only SQL console.
+
+Until that hosted Postgres project exists, each phone still has a complete, balanced ledger on-device.
 
 ## Why this exists
 
@@ -31,8 +33,9 @@ The Sheets app became a trustworthy write kernel trapped in a 3,300-line `Code.g
 - Run a monthly sit-down that copies last month and trims overspent categories
 - Keep development and production as two named local ledgers, not two lookalike workbooks
 - Choose **Shared**, **Personal**, or **Both** on every add; switch Household vs Personal at the top
-- Create or join a household with a six-character code so both phones share one database
-- Export JSON; run Health and get a clean bill or a specific finding
+- Open **Books** for a general journal, trial balance, account register, and read-only SQL
+- Invite the other person with a three-word phrase, a join link, or a Hearth Pass
+- Export JSON or a PostgreSQL dump; run Health and get a clean bill or a specific finding
 
 Transfers never count as income or expense. Refunds reverse category spend. Shift tip math is the verified cent-rounded household rules, including negative net tips.
 
@@ -56,13 +59,13 @@ There is no Google login, no Sheet, no formula range that can freeze at row 33. 
 
 Jonathan and Bianca each pick who they are on the phone. **Household** shows shared rows and rows marked **Both**. **Personal** shows that person's personal rows and **Both**. The other person's personal rows stay in their personal database.
 
-Invite the other person with a **three-word phrase**, a **join link**, or a **Hearth Pass** (the shared ledger, no personal rows). A six-character code is no longer the product. Cloud sync is optional when the host has the Hearth function.
+Invite the other person with a **three-word phrase**, a **join link**, or a **Hearth Pass** (the shared ledger, no personal rows). The money itself lives in a **double-entry PostgreSQL journal** on the phone. A six-character code is no longer the product. Netlify is a static host, not the books.
 
 Personal is a filter, not a lock. Use two phones if you want that split to hold.
 
 ## Tests
 
-`pnpm test` covers Toronto week bounds, shift math against the original vectors, duplicate flags, exact splits, atomic posts, transfer exclusion, shift undo, category commits, a health-clean demo household, and a 12 × 200 transaction fixture.
+`pnpm test` covers Toronto week bounds, shift math against the original vectors, duplicate flags, exact splits, atomic posts, transfer exclusion, shift undo, category commits, a health-clean demo household, a 12 × 200 transaction fixture, double-entry balance, and PGlite ingest against Postgres 18.
 
 ## Compare with `main`
 

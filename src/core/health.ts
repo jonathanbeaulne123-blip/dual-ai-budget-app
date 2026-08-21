@@ -1,4 +1,5 @@
 import { duplicateKey, refreshDuplicateFlags } from "./duplicate.ts";
+import { booksFindings } from "./journal.ts";
 import type { Household } from "./types.ts";
 
 export type Finding = { section: string; message: string; id?: string };
@@ -82,6 +83,14 @@ export function runHealthCheck(household: Household): Finding[] {
         if (!pair || pair.transferPairId !== tx.id) flag("Transfers", `${tx.id} is not paired symmetrically.`, tx.id);
         if (pair && pair.amountCents !== tx.amountCents) flag("Transfers", `${tx.id} pair amounts disagree.`, tx.id);
         if (pair && pair.accountId === tx.accountId) flag("Transfers", `${tx.id} moves money inside the same account.`, tx.id);
+        const fromId = tx.transferFromAccountId || pair?.transferFromAccountId;
+        const toId = tx.transferToAccountId || pair?.transferToAccountId;
+        if (fromId && toId) {
+          const legs = new Set([tx.accountId, pair?.accountId]);
+          if (!legs.has(fromId) || !legs.has(toId) || fromId === toId) {
+            flag("Transfers", `${tx.id} from/to accounts do not match the paired legs.`, tx.id);
+          }
+        }
       }
     }
     if (tx.refundOfId && !txIds.has(tx.refundOfId)) flag("Refunds", `${tx.id} points at a missing original expense.`, tx.id);
@@ -126,6 +135,10 @@ export function runHealthCheck(household: Household): Finding[] {
   for (const recurrence of household.recurrences) {
     if (!accountIds.has(recurrence.accountId)) flag("Recurring", `${recurrence.id} points at a missing account.`, recurrence.id);
     if (!categoryIds.has(recurrence.subcategoryId)) flag("Recurring", `${recurrence.id} points at a missing category.`, recurrence.id);
+  }
+
+  for (const finding of booksFindings(household)) {
+    flag(finding.section, finding.message, finding.id);
   }
 
   return findings;

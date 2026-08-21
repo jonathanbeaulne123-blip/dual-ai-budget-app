@@ -56,6 +56,8 @@ export type Transaction = {
   place: string;
   splits: Split[];
   transferPairId?: string;
+  transferFromAccountId?: string;
+  transferToAccountId?: string;
   refundOfId?: string;
   source: "manual" | "shift" | "recurring" | "import";
   sourceId?: string;
