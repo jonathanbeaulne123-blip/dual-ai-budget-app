@@ -15,8 +15,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "books:apply": "node --env-file=.env scripts/apply-supabase-schema.mjs",
-    "cf:deploy": "pnpm build && wrangler deploy",
-    "cf:preview": "pnpm build && wrangler versions upload"
+    "cf:deploy": "pnpm build && wrangler deploy --assets=./dist",
+    "cf:preview": "pnpm build && wrangler versions upload --assets=./dist"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
