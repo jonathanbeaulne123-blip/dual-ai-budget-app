@@ -287,6 +287,7 @@ export function App() {
   }
 
   const ledger = household;
+  const actorId = session.memberId;
   const categories = ledger.categories.filter((category) => category.recordType === "category" && category.active && category.transactionType === (mode === "income" ? "income" : "expense"));
   const shiftPreview = calcShiftAmounts({
     salesCents: Math.round(Number(form.sales || 0) * 100) || 0,
@@ -328,7 +329,7 @@ export function App() {
         toAccountId: form.toAccountId,
         note: form.note,
         confirmDuplicate,
-        createdBy: session.memberId,
+        createdBy: actorId,
         visibility: form.visibility,
       }));
       return;
@@ -344,7 +345,7 @@ export function App() {
         hours: form.hours,
         settingsFingerprint: shiftSettingsFingerprint(ledger.shiftSettings),
         confirmDuplicate,
-        createdBy: session.memberId,
+        createdBy: actorId,
         visibility: form.visibility,
       }));
       return;
@@ -359,7 +360,7 @@ export function App() {
       place: form.place,
       splits: splitsFor(parseAmount(form.amount)),
       confirmDuplicate,
-      createdBy: session.memberId,
+      createdBy: actorId,
       visibility: form.visibility,
     }));
   }

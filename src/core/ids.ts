@@ -10,9 +10,14 @@ export function nextSequence(existingIds: string[]): number {
 }
 
 export function nextId(prefix: string, existingIds: string[], width = 6): string {
-  const id = `${prefix}${pad(nextSequence(existingIds), width)}`;
-  if (existingIds.includes(id)) throw new Error(`Could not allocate a unique id for ${prefix}.`);
-  return id;
+  void width;
+  const bytes = new Uint8Array(5);
+  for (let attempt = 0; attempt < 32; attempt += 1) {
+    globalThis.crypto.getRandomValues(bytes);
+    const id = `${prefix}${Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+    if (!existingIds.includes(id)) return id;
+  }
+  throw new Error(`Could not allocate a unique id for ${prefix}.`);
 }
 
 export function slug(text: string): string {
