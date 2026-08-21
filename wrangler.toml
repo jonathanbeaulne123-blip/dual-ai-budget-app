@@ -1,12 +1,13 @@
 # Hearth website on Cloudflare Workers + Assets. Supabase remains the books.
 # Production branch: cursor/hearth-rebuild-cfde until Hearth is on main.
+# Dashboard deploy command should be `npx wrangler deploy` (production)
+# or `npx wrangler versions upload` (preview). Do not use wrangler pages.
 name = "hearth-books"
+main = "workers/site.js"
 compatibility_date = "2026-08-21"
 workers_dev = true
 
 [assets]
 directory = "./dist"
+binding = "ASSETS"
 not_found_handling = "single-page-application"
-
-[build]
-command = "pnpm build"

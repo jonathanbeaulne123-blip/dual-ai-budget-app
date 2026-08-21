@@ -16,14 +16,14 @@ The Google development Sheet and production Sheet remain on `main`. This branch 
 
 The phone app is a static Vite build on Cloudflare Workers + Assets, project `hearth-books`. The GitHub check is **Workers Builds: hearth-books**. The live URL is the `*.workers.dev` link on that deployment (not the old Netlify URL). Join links use that origin (`/?join=cedar-lantern-maple`).
 
-`main` is still the Sheets app, so the Workers production branch is `cursor/hearth-rebuild-cfde` until Hearth is on `main`. `wrangler.toml` serves `./dist` as a single-page app. It is not a Pages `pages_build_output_dir` project.
+`main` is still the Sheets app, so the Workers production branch is `cursor/hearth-rebuild-cfde` until Hearth is on `main`. `wrangler.toml` is an assets Worker (`workers/site.js` plus `./dist`). It is not a Pages project.
 
 This agent cannot log into Cloudflare. If a build already exists:
 
 1. Open the [hearth-books Worker](https://dash.cloudflare.com/7dfdfbba3053d8b857cbc359e0761c00/workers/services/view/hearth-books).
-2. Settings → Build → Production branch → `cursor/hearth-rebuild-cfde`.
-3. Build command `pnpm build` (also in `wrangler.toml`). Node `22` if the dashboard lets you pin it.
-4. Retry deployment. A good log installs `vite`, `react`, and `@electric-sql/pglite`, then uploads `dist/`.
+2. Settings → Build → **Production branch** → `cursor/hearth-rebuild-cfde`. If this stays `main`, Hearth builds run as previews and the deploy command is `npx wrangler versions upload`.
+3. Build command `pnpm build`. Deploy command `npx wrangler deploy`. Node `22`.
+4. Retry deployment. A good log installs `vite` / `@electric-sql/pglite`, finishes `vite build`, then Wrangler uploads. If Wrangler starts and immediately errors about Pages, the Worker still has an old Pages-shaped config — this branch’s `wrangler.toml` must be the one cloned.
 5. Open the `*.workers.dev` URL → More → Invite → **Publish to the cloud**.
 
 If the build log only installs `@google/clasp` and then says `Command "build" not found`, Cloudflare cloned **`main`**. That branch is the Sheets app and has no `pnpm build`.

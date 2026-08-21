@@ -33,4 +33,4 @@ jobs:
             echo "wrangler.toml serves dist/ as a static SPA. Do not clone main (that is Sheets)."
             exit 0
           fi
-          npx --yes wrangler@4 deploy
+          npx wrangler deploy
