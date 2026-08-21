@@ -1,0 +1,474 @@
+import { useEffect, useMemo, useState } from "react";
+import {
+  WEEKDAY_SHORT,
+  adoptRhythm,
+  buildHouseholdIcs,
+  buildMonthBoard,
+  describeClash,
+  dismissRhythm,
+  formatCad,
+  formatDayLabel,
+  icsFilename,
+  monthKeyFromDateKey,
+  pauseRecurrence,
+  setRecurrenceGoogleSync,
+  shiftMonthKey,
+  skipOccurrence,
+  type CommitResult,
+  type DateKey,
+  type Environment,
+  type Household,
+  type Recurrence,
+} from "./core/index.ts";
+import type { OverlayEvent } from "./core/board.ts";
+import {
+  clearGoogleAccount,
+  connectGoogleAccount,
+  googleConfigured,
+  loadGoogleAccounts,
+  listGoogleOverlays,
+  upsertHearthReminders,
+  type GoogleAccount,
+} from "./calendar/google.ts";
+
+type Pane = "board" | "bills" | "google";
+
+function kindLabel(kind: string): string {
+  if (kind === "paycheck") return "Pay";
+  if (kind === "subscription") return "Sub";
+  if (kind === "detected") return "New";
+  if (kind === "shift") return "Shift";
+  if (kind === "google") return "GCal";
+  return "Bill";
+}
+
+function downloadIcs(household: Household, today: DateKey) {
+  const blob = new Blob([buildHouseholdIcs(household, today)], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = icsFilename(household);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+export function CalendarPage(props: {
+  household: Household;
+  today: DateKey;
+  environment: Environment;
+  memberId: string;
+  busy: boolean;
+  onCommand: (fn: (current: Household) => CommitResult) => void;
+  onAskPost: (recurrenceId: string, summary: string) => void;
+  onAskPostDue: (count: number, summary: string) => void;
+  onOpenPlan: () => void;
+}) {
+  const { household, today, environment } = props;
+  const [monthKey, setMonthKey] = useState(() => monthKeyFromDateKey(today));
+  const [selected, setSelected] = useState<DateKey>(today);
+  const [pane, setPane] = useState<Pane>("board");
+  const [accounts, setAccounts] = useState<GoogleAccount[]>([]);
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const [googleError, setGoogleError] = useState("");
+  const [overlays, setOverlays] = useState<OverlayEvent[]>([]);
+
+  const board = useMemo(
+    () => buildMonthBoard(household, monthKey, today, overlays),
+    [household, monthKey, today, overlays],
+  );
+  const selectedDay = board.days.find((day) => day.date === selected) ?? board.days.find((day) => day.isToday);
+  const due = household.recurrences.filter((item) => item.active && item.nextDate <= today);
+  const suggested = board.rhythms.filter((item) => item.status === "suggested");
+  const configured = googleConfigured();
+
+  function refreshAccounts() {
+    setAccounts(loadGoogleAccounts(environment, household.members.filter((member) => member.active).map((member) => member.id)));
+  }
+
+  useEffect(() => {
+    refreshAccounts();
+  }, [environment, household.members]);
+
+  useEffect(() => {
+    let live = true;
+    if (!accounts.length) {
+      setOverlays([]);
+      return;
+    }
+    const from = board.days[0]?.date;
+    const to = board.days[board.days.length - 1]?.date;
+    if (!from || !to) return;
+    setGoogleBusy(true);
+    void listGoogleOverlays({
+      environment,
+      accounts,
+      memberColor: (memberId) => household.members.find((member) => member.id === memberId)?.color ?? "#2f6b4f",
+      from,
+      to,
+    }).then((items) => {
+      if (live) {
+        setOverlays(items);
+        setGoogleError("");
+      }
+    }).catch((caught) => {
+      if (live) setGoogleError(caught instanceof Error ? caught.message : String(caught));
+    }).finally(() => {
+      if (live) setGoogleBusy(false);
+    });
+    return () => { live = false; };
+  }, [accounts, environment, monthKey, household.members]);
+
+  async function connectMember(memberId: string) {
+    setGoogleBusy(true);
+    setGoogleError("");
+    try {
+      await connectGoogleAccount({ memberId, environment });
+      refreshAccounts();
+    } catch (caught) {
+      setGoogleError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setGoogleBusy(false);
+    }
+  }
+
+  async function remindOnGoogle() {
+    if (!accounts.length) {
+      setPane("google");
+      setGoogleError("Connect a Google account first, or download the .ics file.");
+      return;
+    }
+    setGoogleBusy(true);
+    setGoogleError("");
+    try {
+      const patches: { recurrenceId: string; memberId: string; calendarId: string; eventId: string }[] = [];
+      for (const account of accounts) {
+        const written = await upsertHearthReminders({
+          environment,
+          account,
+          recurrences: household.recurrences,
+          titleFor: (item) => item.note.trim() || household.categories.find((row) => row.id === item.subcategoryId)?.name || "Bill",
+        });
+        patches.push(...written);
+      }
+      if (patches.length) {
+        props.onCommand((current) => setRecurrenceGoogleSync(current, patches));
+      }
+    } catch (caught) {
+      setGoogleError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setGoogleBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <section className="hero calendar-hero">
+        <div className="label">Money dates · {board.monthLabel}</div>
+        <div className={`money ${board.weekPressure && board.weekPressure.outCents > board.weekPressure.inCents ? "negative" : ""}`}>
+          {board.weekPressure ? formatCad(board.weekPressure.inCents - board.weekPressure.outCents) : formatCad(0)}
+        </div>
+        <div className="sub">
+          This week on the board
+          {due.length ? ` · ${due.length} due` : ""}
+          {suggested.length ? ` · ${suggested.length} spotted in the ledger` : ""}
+        </div>
+        <div className="calendar-hero-actions">
+          <button className="ghost" onClick={props.onOpenPlan}>Open plan</button>
+          {due.length > 0 && (
+            <button className="ghost" onClick={() => props.onAskPostDue(due.length, `This posts ${due.length} due repeating ${due.length === 1 ? "item" : "items"} into the books.`)}>
+              Mark due paid
+            </button>
+          )}
+        </div>
+      </section>
+
+      {board.clashes[0] && (
+        <article className="pulse-banner warn">{describeClash(board.clashes[0])}</article>
+      )}
+
+      <div className="tabs">
+        {([
+          ["board", "Month"],
+          ["bills", "Bills"],
+          ["google", "Google"],
+        ] as const).map(([id, label]) => (
+          <button key={id} className={pane === id ? "active" : ""} onClick={() => setPane(id)}>{label}</button>
+        ))}
+      </div>
+
+      {pane === "board" && (
+        <>
+          <section className="card calendar-card">
+            <header>
+              <button className="chip" onClick={() => setMonthKey(shiftMonthKey(monthKey, -1))} aria-label="Previous month">‹</button>
+              <h2>{board.monthLabel}</h2>
+              <button className="chip" onClick={() => setMonthKey(shiftMonthKey(monthKey, 1))} aria-label="Next month">›</button>
+            </header>
+            <div className="cal-weekdays">
+              {WEEKDAY_SHORT.map((label) => <span key={label}>{label}</span>)}
+            </div>
+            <div className="cal-grid">
+              {board.days.map((day) => (
+                <button
+                  key={day.date}
+                  className={[
+                    "cal-day",
+                    day.inMonth ? "" : "outside",
+                    day.isToday ? "today" : "",
+                    selected === day.date ? "selected" : "",
+                    day.heat > 0.55 ? "hot" : "",
+                  ].join(" ")}
+                  onClick={() => setSelected(day.date)}
+                  style={day.heat ? { background: `rgba(196, 92, 38, ${0.06 + day.heat * 0.22})` } : undefined}
+                >
+                  <span className="num">{Number(day.date.slice(8))}</span>
+                  <span className="dots">
+                    {day.items.slice(0, 3).map((item) => (
+                      <i
+                        key={item.id}
+                        className={item.direction}
+                        style={item.memberColor ? { background: item.memberColor } : undefined}
+                      />
+                    ))}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {selectedDay && (
+            <section className="card">
+              <header>
+                <h2>{formatDayLabel(selectedDay.date)}</h2>
+                <span className="muted">
+                  {selectedDay.inCents ? `${formatCad(selectedDay.inCents)} in` : ""}
+                  {selectedDay.inCents && selectedDay.outCents ? " · " : ""}
+                  {selectedDay.outCents ? `${formatCad(selectedDay.outCents)} out` : selectedDay.items.length ? "on the board" : "quiet"}
+                </span>
+              </header>
+              {selectedDay.items.length === 0 ? (
+                <p className="muted">Nothing repeating lands on this day. Shifts and Google events will show here when they exist.</p>
+              ) : selectedDay.items.map((item) => (
+                <DayRow
+                  key={item.id}
+                  title={item.title}
+                  amountCents={item.amountCents}
+                  kind={item.kind}
+                  due={item.due && item.source === "recurrence"}
+                  recurrenceId={item.recurrenceId}
+                  rhythmKey={item.rhythmKey}
+                  today={today}
+                  household={household}
+                  busy={props.busy}
+                  onAdopt={(key) => props.onCommand((current) => adoptRhythm(current, key, today))}
+                  onAskPost={props.onAskPost}
+                />
+              ))}
+            </section>
+          )}
+
+          <section className="card">
+            <header>
+              <h2>Coming up</h2>
+              <span className="muted">21 days</span>
+            </header>
+            {board.upcoming.length === 0 ? (
+              <p className="muted">No bills or pay on the next three weeks. Adopt a detected rhythm or add a recurrence from More.</p>
+            ) : board.upcoming.map((item) => (
+              <div className="row" key={item.id}>
+                <span>
+                  <span className={`kind-pill ${item.kind}`}>{kindLabel(item.kind)}</span>
+                  {" "}{formatDayLabel(item.date)} · {item.title}
+                </span>
+                <span className={item.direction === "out" ? "right" : "muted"}>{formatCad(item.amountCents)}</span>
+              </div>
+            ))}
+          </section>
+        </>
+      )}
+
+      {pane === "bills" && (
+        <>
+          {suggested.length > 0 && (
+            <section className="card">
+              <header>
+                <h2>Spotted in the ledger</h2>
+                <span className="muted">Not money yet</span>
+              </header>
+              <p className="muted">Hearth grouped repeating spend and pay. Adopting creates a recurrence. It never posts until you mark it paid.</p>
+              {suggested.map((rhythm) => (
+                <article className="rhythm-card" key={rhythm.key}>
+                  <div className="row">
+                    <span>
+                      <span className={`kind-pill ${rhythm.kind}`}>{kindLabel(rhythm.kind)}</span> {rhythm.note}
+                    </span>
+                    <span>{formatCad(rhythm.amountCents)}</span>
+                  </div>
+                  <p className="muted">
+                    {rhythm.cadence} · {rhythm.count} times · next {formatDayLabel(rhythm.nextDate)} · {Math.round(rhythm.confidence * 100)}% match
+                  </p>
+                  <div className="chips">
+                    <button className="chip selected" disabled={props.busy} onClick={() => props.onCommand((current) => adoptRhythm(current, rhythm.key, today))}>
+                      Adopt
+                    </button>
+                    <button className="chip" disabled={props.busy} onClick={() => props.onCommand((current) => dismissRhythm(current, rhythm.key))}>
+                      Not a bill
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </section>
+          )}
+
+          <section className="card">
+            <header>
+              <h2>Repeating</h2>
+              <span className="muted">{household.recurrences.length ? `${household.recurrences.filter((item) => item.active).length} active` : "None yet"}</span>
+            </header>
+            {household.recurrences.length === 0 ? (
+              <p className="muted">When you adopt a spotted bill, it lives here. Mark paid uses the same post path as Add.</p>
+            ) : household.recurrences.map((item) => (
+              <RecurrenceCard
+                key={item.id}
+                item={item}
+                today={today}
+                busy={props.busy}
+                onPause={() => props.onCommand((current) => pauseRecurrence(current, item.id))}
+                onSkip={() => props.onCommand((current) => skipOccurrence(current, item.id))}
+                onAskPost={props.onAskPost}
+              />
+            ))}
+          </section>
+        </>
+      )}
+
+      {pane === "google" && (
+        <section className="card">
+          <header>
+            <h2>Google calendars</h2>
+            <span className={`pill ${accounts.length ? "good" : ""}`}>{accounts.length ? `${accounts.length} connected` : "Optional"}</span>
+          </header>
+          <p className="muted">
+            Connect Jonathan’s and Bianca’s Google accounts on this phone. Hearth reads the month overlay and can write bill reminders at 9:00 Toronto, 24 hours ahead and the morning of. Google never posts money. No client ID in this build still leaves the month board and an .ics file with alarms.
+          </p>
+          {household.members.filter((member) => member.active).sort((left, right) => {
+            if (left.id === props.memberId) return -1;
+            if (right.id === props.memberId) return 1;
+            return left.name.localeCompare(right.name);
+          }).map((member) => {
+            const account = accounts.find((item) => item.memberId === member.id);
+            return (
+              <div className="row" key={member.id}>
+                <span>
+                  <i className="swatch" style={{ background: member.color }} /> {member.name}
+                  <span className="muted"> {account ? account.email : "not connected"}</span>
+                </span>
+                {account ? (
+                  <button className="chip" onClick={() => { clearGoogleAccount(environment, member.id); refreshAccounts(); setOverlays((items) => items.filter((item) => item.memberId !== member.id)); }}>
+                    Disconnect
+                  </button>
+                ) : (
+                  <button className="chip selected" disabled={googleBusy || !configured} onClick={() => void connectMember(member.id)}>
+                    Connect
+                  </button>
+                )}
+              </div>
+            );
+          })}
+          {!configured && (
+            <p className="muted">Add <code>VITE_GOOGLE_CLIENT_ID</code> to this build (Google Cloud web client, this site as an authorized origin). Until then, download the calendar file.</p>
+          )}
+          {googleError && <p className="danger" style={{ marginTop: 12 }}>{googleError}</p>}
+          <button className="primary" disabled={googleBusy || !household.recurrences.some((item) => item.active)} onClick={() => void remindOnGoogle()}>
+            {googleBusy ? "Talking to Google…" : "Write reminders to Google"}
+          </button>
+          <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => downloadIcs(household, today)}>
+            Download .ics with alarms
+          </button>
+        </section>
+      )}
+    </>
+  );
+}
+
+function DayRow(props: {
+  title: string;
+  amountCents: number;
+  kind: string;
+  due: boolean;
+  recurrenceId?: string;
+  rhythmKey?: string;
+  today: DateKey;
+  household: Household;
+  busy: boolean;
+  onAdopt: (key: string) => void;
+  onAskPost: (recurrenceId: string, summary: string) => void;
+}) {
+  const rec = props.recurrenceId ? props.household.recurrences.find((item) => item.id === props.recurrenceId) : undefined;
+  return (
+    <div className="row">
+      <span>
+        <span className={`kind-pill ${props.kind}`}>{kindLabel(props.kind)}</span> {props.title}
+        {props.due ? " · due" : ""}
+      </span>
+      <span>
+        {props.amountCents ? formatCad(props.amountCents) : ""}
+        {props.rhythmKey && (
+          <button className="chip" disabled={props.busy} onClick={() => props.onAdopt(props.rhythmKey!)}>Adopt</button>
+        )}
+        {rec && rec.nextDate <= props.today && (
+          <button
+            className="chip"
+            disabled={props.busy}
+            onClick={() => props.onAskPost(rec.id, `This posts ${formatCad(rec.amountCents)} ${rec.note || "recurring"} on ${rec.nextDate} into the books.`)}
+          >
+            Paid
+          </button>
+        )}
+      </span>
+    </div>
+  );
+}
+
+function RecurrenceCard(props: {
+  item: Recurrence;
+  today: DateKey;
+  busy: boolean;
+  onPause: () => void;
+  onSkip: () => void;
+  onAskPost: (recurrenceId: string, summary: string) => void;
+}) {
+  const { item } = props;
+  const due = item.active && item.nextDate <= props.today;
+  return (
+    <article className="rhythm-card">
+      <div className="row">
+        <span>
+          <span className={`kind-pill ${item.kind}`}>{kindLabel(item.kind)}</span> {item.note || "Recurring"}
+          {!item.active ? " · paused" : due ? " · due" : ""}
+        </span>
+        <span>{formatCad(item.amountCents)}</span>
+      </div>
+      <p className="muted">
+        {item.cadence} · next {formatDayLabel(item.nextDate)}
+        {item.origin === "detected" ? " · spotted in the ledger" : ""}
+        {Object.keys(item.googleSync).length ? " · on Google" : ""}
+      </p>
+      <div className="chips">
+        {due && (
+          <button
+            className="chip selected"
+            disabled={props.busy}
+            onClick={() => props.onAskPost(item.id, `This posts ${formatCad(item.amountCents)} ${item.note || "recurring"} on ${item.nextDate} into the books.`)}
+          >
+            Mark paid
+          </button>
+        )}
+        <button className="chip" disabled={props.busy} onClick={props.onSkip}>Skip once</button>
+        <button className="chip" disabled={props.busy} onClick={props.onPause}>{item.active ? "Pause" : "Resume"}</button>
+      </div>
+    </article>
+  );
+}

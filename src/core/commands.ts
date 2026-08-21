@@ -1,4 +1,6 @@
 import { TIMEZONE, todayKey, type DateKey, type MonthKey } from "./calendar.ts";
+import { advanceCadence, DEFAULT_REMINDER_HOURS_BEFORE, EMPTY_CALENDAR, inferRecurrenceKind } from "./recurrence.ts";
+import { detectRhythms } from "./rhythm.ts";
 import { CURRENCY } from "./money.ts";
 import { nextId, nowIso, randomHouseholdId, randomInviteCode, slug, uniquePrefixedId } from "./ids.ts";
 import { cloneHousehold } from "./household.ts";
@@ -26,6 +28,8 @@ import type {
   CommitResult,
   Household,
   Recurrence,
+  RecurrenceKind,
+  RecurrenceOrigin,
   Split,
   Transaction,
   UndoToken,
@@ -511,14 +515,19 @@ export function addRecurrence(household: Household, input: {
   subcategoryId: string;
   note?: string;
   splits?: Split[];
+  kind?: RecurrenceKind;
+  origin?: RecurrenceOrigin;
+  reminderHoursBefore?: number;
 }): CommitResult {
   const amountCents = parseAmount(input.amount);
   requireAccount(household, input.accountId);
-  requireSubcategory(household, input.subcategoryId, input.type);
+  const subcategory = requireSubcategory(household, input.subcategoryId, input.type);
   const splits = catalogValidateOwned(input.splits ?? jointSplit(amountCents), amountCents, household);
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const id = nextId("REC-", next.recurrences.map((item) => item.id), 3);
+  const at = nowIso();
+  const note = input.note ?? "";
   next.recurrences.push({
     id,
     cadence: input.cadence,
@@ -527,12 +536,123 @@ export function addRecurrence(household: Household, input: {
     amountCents,
     accountId: input.accountId,
     subcategoryId: input.subcategoryId,
-    note: input.note ?? "",
+    note,
     splits,
     active: true,
     autoPost: false,
+    kind: input.kind ?? inferRecurrenceKind({ type: input.type, note, subcategoryName: subcategory.name }),
+    origin: input.origin ?? "manual",
+    reminderHoursBefore: input.reminderHoursBefore ?? DEFAULT_REMINDER_HOURS_BEFORE,
+    googleSync: {},
+    createdAt: at,
+    updatedAt: at,
   });
-  return commit(previous, next, "Add Recurring", `${input.note || "Recurring"} ${input.cadence}`, [id]);
+  return commit(previous, next, "Add Recurring", `${note || "Recurring"} ${input.cadence}`, [id]);
+}
+
+export function adoptRhythm(household: Household, key: string, today: DateKey): CommitResult {
+  const rhythm = detectRhythms(household, today).find((item) => item.key === key);
+  if (!rhythm || rhythm.status === "tracked") {
+    throw new ValidationError("That repeating bill is no longer waiting to be adopted.");
+  }
+  const result = addRecurrence(household, {
+    cadence: rhythm.cadence,
+    nextDate: rhythm.nextDate,
+    type: rhythm.type,
+    amount: rhythm.amountCents / 100,
+    accountId: rhythm.accountId,
+    subcategoryId: rhythm.subcategoryId,
+    note: rhythm.note,
+    splits: rhythm.splits,
+    kind: rhythm.kind,
+    origin: "detected",
+  });
+  result.undo.label = `Adopted ${rhythm.note}`;
+  result.household.calendar = {
+    dismissedRhythmKeys: (result.household.calendar?.dismissedRhythmKeys ?? []).filter((item) => item !== key),
+  };
+  return result;
+}
+
+export function dismissRhythm(household: Household, key: string): CommitResult {
+  if (!key.trim()) throw new ValidationError("Nothing to dismiss.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.calendar = {
+    dismissedRhythmKeys: [...new Set([...(next.calendar?.dismissedRhythmKeys ?? []), key])].sort(),
+  };
+  return commit(previous, next, "Calendar", "Hid a detected repeating bill", []);
+}
+
+export function pauseRecurrence(household: Household, recurrenceId: string): CommitResult {
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const item = next.recurrences.find((row) => row.id === recurrenceId);
+  if (!item) throw new ValidationError("That repeating item no longer exists.");
+  item.active = !item.active;
+  item.updatedAt = nowIso();
+  return commit(previous, next, "Calendar", `${item.active ? "Resumed" : "Paused"} ${item.note || "recurring"}`, [item.id]);
+}
+
+export function skipOccurrence(household: Household, recurrenceId: string): CommitResult {
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const item = next.recurrences.find((row) => row.id === recurrenceId);
+  if (!item) throw new ValidationError("That repeating item no longer exists.");
+  item.nextDate = advanceCadence(item.nextDate, item.cadence);
+  item.updatedAt = nowIso();
+  return commit(previous, next, "Calendar", `Skipped ${item.note || "recurring"} · next ${item.nextDate}`, [item.id]);
+}
+
+export function postOneRecurrence(household: Household, recurrenceId: string, today: DateKey): CommitResult {
+  const item = household.recurrences.find((row) => row.id === recurrenceId && row.active);
+  if (!item) throw new ValidationError("That repeating item is not active.");
+  if (item.nextDate > today) throw new ValidationError("That item is not due yet.");
+  const previous = cloneHousehold(household);
+  const posted = postEntry(household, {
+    date: item.nextDate,
+    type: item.type,
+    amount: item.amountCents / 100,
+    accountId: item.accountId,
+    subcategoryId: item.subcategoryId,
+    note: item.note,
+    splits: item.splits,
+    confirmDuplicate: true,
+    source: "recurring",
+    sourceId: item.id,
+  });
+  const next = posted.household;
+  const current = next.recurrences.find((row) => row.id === item.id);
+  if (current) {
+    current.nextDate = advanceCadence(item.nextDate, item.cadence);
+    current.updatedAt = nowIso();
+  }
+  return commit(previous, next, "Post Recurring", `Posted ${item.note || "recurring"}`, posted.postedIds);
+}
+
+export function setRecurrenceGoogleSync(
+  household: Household,
+  patches: { recurrenceId: string; memberId: string; calendarId: string; eventId: string }[],
+): CommitResult {
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nowIso();
+  for (const patch of patches) {
+    const item = next.recurrences.find((row) => row.id === patch.recurrenceId);
+    if (!item) continue;
+    item.googleSync = {
+      ...item.googleSync,
+      [patch.memberId]: { calendarId: patch.calendarId, eventId: patch.eventId },
+    };
+    item.updatedAt = at;
+  }
+  return commit(
+    previous,
+    next,
+    "Calendar",
+    patches.length ? `Linked ${patches.length} Google reminder${patches.length === 1 ? "" : "s"}` : "Google calendar unchanged",
+    [],
+  );
 }
 
 export function postDueRecurrences(household: Household, today: DateKey): CommitResult {
@@ -557,17 +677,12 @@ export function postDueRecurrences(household: Household, today: DateKey): Commit
     next = result.household;
     postedIds.push(...result.postedIds);
     const current = next.recurrences.find((row) => row.id === item.id);
-    if (current) current.nextDate = advance(item.nextDate, item.cadence);
+    if (current) {
+      current.nextDate = advanceCadence(item.nextDate, item.cadence);
+      current.updatedAt = nowIso();
+    }
   }
   return commit(previous, next, "Post Recurring", `Posted ${due.length} recurring ${due.length === 1 ? "item" : "items"}`, postedIds);
-}
-
-function advance(date: DateKey, cadence: Recurrence["cadence"]): DateKey {
-  const [year, month, day] = date.split("-").map(Number) as [number, number, number];
-  if (cadence === "weekly") return new Date(Date.UTC(year, month - 1, day + 7)).toISOString().slice(0, 10);
-  if (cadence === "biweekly") return new Date(Date.UTC(year, month - 1, day + 14)).toISOString().slice(0, 10);
-  const next = new Date(Date.UTC(year, month, day));
-  return next.toISOString().slice(0, 10);
 }
 
 export function markDuplicate(household: Household, transactionId: string, isDuplicate: boolean): CommitResult {
@@ -663,6 +778,7 @@ export function emptyHousehold(environment: Household["environment"] = "developm
     transactions: [],
     shifts: [],
     recurrences: [],
+    calendar: { ...EMPTY_CALENDAR },
     goals: [],
     budgetPlans: [],
     activity: [],

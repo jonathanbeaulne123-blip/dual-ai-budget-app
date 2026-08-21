@@ -4,8 +4,10 @@ This is the living near-term plan. The investor / family-office vision — inclu
 
 ## Now
 
-- Phone-first Home, Add, Plan, Books, More
+- Phone-first Home, Calendar, Add, Plan, Books, More
 - Trustworthy commands for spend, income, shift, transfer, category, budget, goals, recurrences
+- Calendar board that reads repeating ledger rows, due recurrences, and shifts; optional Google overlay for both people
+- `.ics` export with America/Toronto alarms; Google reminder writes never post money
 - Double-entry PostgreSQL books (PGlite) with trial balance, journal, registers, and read-only SQL
 - Demo household and 12-month fixtures
 - Development vs production local snapshots
@@ -24,6 +26,7 @@ Gates, not a pitch-deck month. Details in [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.m
 - PGlite database per Development / Production pill
 - Sit-down shows dollars; goals are real contributions, not +$50
 - Recurring preview on open, then the existing `postEntry` path
+- Calendar Google client ID in the Cloudflare build (`VITE_GOOGLE_CLIENT_ID`) so both people can connect from the kitchen site
 - JSON import of a sanitized Sheets export through the same commands
 
 ## Then — Chapter 1 (frictionless truth)

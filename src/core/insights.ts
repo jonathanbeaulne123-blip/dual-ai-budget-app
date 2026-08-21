@@ -1,6 +1,8 @@
-import { formatMonthLabel, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
+import { addDays, calendarDaysBetween, formatMonthLabel, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { formatCad } from "./money.ts";
 import { monthSummary, weekSummary, freshnessHours, type MonthSummary, type WeekSummary } from "./budget.ts";
+import { buildMonthBoard, type BoardItem } from "./board.ts";
+import type { Rhythm } from "./rhythm.ts";
 import type { Goal, Household, Shift } from "./types.ts";
 
 export type Pulse = {
@@ -29,6 +31,8 @@ export type Dashboard = {
   dueRecurrences: number;
   healthFindings: number;
   recent: Household["activity"];
+  upcoming: BoardItem[];
+  detectedBills: number;
 };
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -54,7 +58,7 @@ export function tipWeather(household: Household, today: DateKey): TipWeather {
   };
 }
 
-export function buildPulses(household: Household, today: DateKey, month: MonthSummary, week: WeekSummary, weather: TipWeather): Pulse[] {
+export function buildPulses(household: Household, today: DateKey, month: MonthSummary, week: WeekSummary, weather: TipWeather, rhythms: Rhythm[] = []): Pulse[] {
   const pulses: Pulse[] = [];
   const groceries = month.categories.find((row) => row.name.toLowerCase() === "groceries");
   if (groceries && groceries.budgetedCents > 0) {
@@ -120,7 +124,27 @@ export function buildPulses(household: Household, today: DateKey, month: MonthSu
     });
   }
 
-  return pulses.slice(0, 4);
+  const dueSoon = household.recurrences
+    .filter((item) => item.active && item.nextDate >= today && item.nextDate <= addDays(today, 7) && item.type === "expense")
+    .sort((left, right) => left.nextDate.localeCompare(right.nextDate));
+  if (dueSoon[0]) {
+    const days = calendarDaysBetween(today, dueSoon[0].nextDate);
+    const when = days === 0 ? "today" : days === 1 ? "tomorrow" : `in ${days} days`;
+    pulses.unshift({
+      sentence: `${dueSoon[0].note || "A bill"} (${formatCad(dueSoon[0].amountCents)}) is due ${when}.`,
+      tone: days <= 2 ? "warn" : "neutral",
+    });
+  }
+
+  const waiting = rhythms.filter((item) => item.status === "suggested");
+  if (waiting[0]) {
+    pulses.push({
+      sentence: `Calendar spotted ${waiting.length === 1 ? waiting[0].note : `${waiting.length} repeating bills`} in the ledger.`,
+      tone: "neutral",
+    });
+  }
+
+  return pulses.slice(0, 5);
 }
 
 export function buildDashboard(household: Household, today: DateKey, now = new Date(), healthFindingCount = 0): Dashboard {
@@ -129,6 +153,7 @@ export function buildDashboard(household: Household, today: DateKey, now = new D
   const week = weekSummary(household, today);
   const weather = tipWeather(household, today);
   const hours = freshnessHours(household, now);
+  const board = buildMonthBoard(household, monthKey, today);
   return {
     today,
     monthKey,
@@ -137,14 +162,16 @@ export function buildDashboard(household: Household, today: DateKey, now = new D
     stale: hours === null || hours > 24,
     month,
     week,
-    pulses: buildPulses(household, today, month, week, weather),
+    pulses: buildPulses(household, today, month, week, weather, board.rhythms),
     goals: household.goals
       .filter((goal) => goal.shared || true)
       .map((goal) => ({ goal, progress: goal.targetCents ? Math.min(1, goal.savedCents / goal.targetCents) : 0 })),
     tipWeather: weather,
-    dueRecurrences: household.recurrences.filter((item) => item.active && item.nextDate <= today).length,
+    dueRecurrences: board.dueCount,
     healthFindings: healthFindingCount,
     recent: household.activity.slice(-8).reverse(),
+    upcoming: board.upcoming,
+    detectedBills: board.rhythms.filter((item) => item.status === "suggested").length,
   };
 }
 

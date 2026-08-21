@@ -21,6 +21,7 @@ import {
   percentSplits,
   postDueRecurrences,
   postEntry,
+  postOneRecurrence,
   postShift,
   postTransfer,
   runHealthCheck,
@@ -45,15 +46,18 @@ import { inviteFromLocation } from "./core/invite.ts";
 import { PairingCard, WelcomeJoin } from "./Pairing.tsx";
 import { BooksPage } from "./Books.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
+import { CalendarPage } from "./Calendar.tsx";
 import { syncHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
 
-type Tab = "home" | "plan" | "ledger" | "more";
+type Tab = "home" | "plan" | "calendar" | "ledger" | "more";
 type AddMode = "expense" | "income" | "shift" | "transfer";
 type Guard =
   | { kind: "reset" }
   | { kind: "environment"; next: Environment }
   | { kind: "demo" }
-  | { kind: "remove"; transactionId: string; summary: string };
+  | { kind: "remove"; transactionId: string; summary: string }
+  | { kind: "postRecurrence"; recurrenceId: string; summary: string }
+  | { kind: "postDueAll"; summary: string };
 
 const emptyForm = {
   date: todayKey(),
@@ -498,6 +502,21 @@ export function App() {
               </div>
             ))}
           </section>
+          {dashboard.upcoming.length > 0 && (
+            <section className="card" role="button" tabIndex={0} onClick={() => setTab("calendar")} onKeyDown={(event) => { if (event.key === "Enter") setTab("calendar"); }}>
+              <header>
+                <h2>Money dates</h2>
+                <span className="muted">{dashboard.detectedBills ? `${dashboard.detectedBills} spotted` : "Calendar"}</span>
+              </header>
+              {dashboard.upcoming.slice(0, 4).map((item) => (
+                <div className="row" key={item.id}>
+                  <span>{formatDateLabel(item.date)} · {item.title}</span>
+                  <span className={item.direction === "out" ? "" : "muted"}>{formatCad(item.amountCents)}</span>
+                </div>
+              ))}
+              <p className="muted">Open Calendar for the month, Google overlays, and bill reminders.</p>
+            </section>
+          )}
           <section className="card">
             <header><h2>Goals</h2><span className="muted">{view === "personal" ? "personal" : "shared sit on Home"}</span></header>
             {dashboard.goals.map((item) => (
@@ -535,6 +554,20 @@ export function App() {
           <SitDown household={household} onApply={(next, token) => persist(next, token)} hidden={view === "personal"} />
           <Goals household={household} goals={visible?.goals ?? household.goals} onChange={(next, token) => persist(next, token)} />
         </>
+      )}
+
+      {tab === "calendar" && (
+        <CalendarPage
+          household={household}
+          today={today}
+          environment={environment}
+          memberId={session.memberId}
+          busy={busy}
+          onCommand={(fn) => { void run(fn); }}
+          onAskPost={(recurrenceId, summary) => setGuard({ kind: "postRecurrence", recurrenceId, summary })}
+          onAskPostDue={(_count, summary) => setGuard({ kind: "postDueAll", summary })}
+          onOpenPlan={() => setTab("plan")}
+        />
       )}
 
       {tab === "ledger" && (
@@ -628,7 +661,13 @@ export function App() {
             <button className="primary" onClick={() => downloadJson(household)}>Export JSON snapshot</button>
             <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setGuard({ kind: "demo" })}>Reload demo data</button>
             <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => {
-              void run((current) => postDueRecurrences(current, today));
+              const due = household.recurrences.filter((item) => item.active && item.nextDate <= today).length;
+              setGuard({
+                kind: "postDueAll",
+                summary: due
+                  ? `This posts ${due} due repeating ${due === 1 ? "item" : "items"} into the books.`
+                  : "Nothing is due today. Open Calendar to see what is coming.",
+              });
             }}>Post due recurring</button>
             <button className="danger" onClick={() => setGuard({ kind: "reset" })}>Reset this environment</button>
           </section>
@@ -863,6 +902,33 @@ export function App() {
           }}
         />
       )}
+      {guard?.kind === "postRecurrence" && (
+        <ConfirmSheet
+          title="Post this bill?"
+          body={`${guard.summary} Calendar reminders are not a ledger write. This is. You can undo from the toast.`}
+          confirmLabel="Post to the books"
+          busy={busy}
+          onCancel={() => setGuard(null)}
+          onConfirm={() => {
+            const id = guard.recurrenceId;
+            setGuard(null);
+            void run((current) => postOneRecurrence(current, id, today));
+          }}
+        />
+      )}
+      {guard?.kind === "postDueAll" && (
+        <ConfirmSheet
+          title="Post every due repeating item?"
+          body={`${guard.summary} Nothing posts until you confirm.`}
+          confirmLabel="Post due items"
+          busy={busy}
+          onCancel={() => setGuard(null)}
+          onConfirm={() => {
+            setGuard(null);
+            void run((current) => postDueRecurrences(current, today));
+          }}
+        />
+      )}
 
       {toast && (
         <div className="toast">
@@ -881,6 +947,8 @@ export function App() {
               { label: "Add expense", run: () => { setMode("expense"); setAdding(true); } },
               { label: "Add shift", run: () => { setMode("shift"); setAdding(true); } },
               { label: "Move money", run: () => { setMode("transfer"); setAdding(true); } },
+              { label: "Calendar", run: () => setTab("calendar") },
+              { label: "Plan", run: () => setTab("plan") },
               { label: "Books", run: () => setTab("ledger") },
               { label: "Health", run: () => setTab("more") },
               { label: "Export", run: () => downloadJson(household) },
@@ -893,13 +961,14 @@ export function App() {
 
       <nav className="nav">
         <button className={tab === "home" && !adding ? "active" : ""} onClick={() => { setTab("home"); setAdding(false); }}>Home</button>
-        <button className={tab === "plan" ? "active" : ""} onClick={() => { setTab("plan"); setAdding(false); }}>Plan</button>
+        <button className={tab === "calendar" ? "active" : ""} onClick={() => { setTab("calendar"); setAdding(false); }}>Calendar</button>
         <button className="fab" onClick={() => {
           setAdding(true);
           setError("");
           setConfirm(null);
           setForm({ ...emptyForm, date: today, visibility: defaultVisibilityForView(view), memberId: session.memberId });
         }}>+</button>
+        <button className={tab === "plan" ? "active" : ""} onClick={() => { setTab("plan"); setAdding(false); }}>Plan</button>
         <button className={tab === "ledger" ? "active" : ""} onClick={() => { setTab("ledger"); setAdding(false); }}>Books</button>
         <button className={tab === "more" ? "active" : ""} onClick={() => { setTab("more"); setAdding(false); }}>More</button>
       </nav>

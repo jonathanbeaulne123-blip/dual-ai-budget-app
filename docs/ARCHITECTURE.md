@@ -20,10 +20,10 @@ The in-memory model is still the source of truth while a command runs: clone the
 ## Layers
 
 1. **Catalog** — members, accounts, categories, shift settings.
-2. **Commands** — `postEntry`, `postTransfer`, `postShift`, `addCategory`, budget, goals, recurrences. Each clones state, writes, refreshes duplicate flags, appends activity, and returns an undo snapshot.
+2. **Commands** — `postEntry`, `postTransfer`, `postShift`, `addCategory`, budget, goals, recurrences (`addRecurrence`, `adoptRhythm`, `postOneRecurrence`, `postDueRecurrences`). Each clones state, writes, refreshes duplicate flags, appends activity, and returns an undo snapshot.
 3. **Books** — `compileHousehold` turns each money document into balanced debit/credit lines. PGlite stores them. Health Check refuses a household whose trial balance or accounting equation is off.
-4. **Projections** — `monthSummary`, `weekSummary`, `buildDashboard`, `runHealthCheck`, `sitDownPreview`, `trialBalance`.
-5. **UI** — Home, Add, Plan, Books (register / journal / trial balance / accounts / SQL), More (health, recent undo, invite).
+4. **Projections** — `monthSummary`, `weekSummary`, `buildDashboard`, `runHealthCheck`, `sitDownPreview`, `trialBalance`, `detectRhythms`, `buildMonthBoard`.
+5. **UI** — Home, Calendar (month, spotted bills, Google), Add, Plan, Books (register / journal / trial balance / accounts / SQL), More (health, recent undo, invite).
 
 ## Data-model rules
 
@@ -34,7 +34,7 @@ The in-memory model is still the source of truth while a command runs: clone the
 - Ownership is a `splits` array that must sum to the amount. Joint is explicit. A split can be any percentage; the leftover cents go to the last person so the total is exact.
 - Every transaction and shift has `createdBy` and `visibility` (`household` | `personal` | `both`). Home, Plan, and Ledger filter that view. Health Check still runs on the full snapshot.
 - `duplicateKey` is an exact fingerprint. Posting also scores similar rows: same type, same amount, within five Toronto calendar days, plus shared notes, place, category, or source. Partner personal rows are not part of that scan. `potentialDuplicate` is derived from that. `isDuplicate` remains the reviewed financial control.
-- Recurring definitions stay separate from posted rows. Posting due items uses the same `postEntry` path.
+- Recurring definitions stay separate from posted rows. The Calendar tab projects them onto a Toronto month, spots repeating ledger rows (`detectRhythms`), and can write reminders to Google or an `.ics` file. Posting due items still uses the same `postEntry` path after confirm. Google and ICS never write the books.
 - Goals are data. Shared goals appear on Home. Personal goals are a filter only — not a privacy boundary.
 
 ## Shift boundary

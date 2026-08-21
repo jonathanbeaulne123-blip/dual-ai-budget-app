@@ -1,5 +1,6 @@
 import { cloneHousehold } from "./household.ts";
 import { formatInviteCode, normalizeInviteCode, randomHouseholdId, randomInviteCode } from "./ids.ts";
+import { mergeCalendars, shapeCalendar, shapeRecurrence } from "./recurrence.ts";
 import type { Household, PersonalEnvelope, SharedEnvelope, Shift, Tombstone, Transaction } from "./types.ts";
 import { belongsToSharedLedger, isPersonalOnly, parseVisibility } from "./visibility.ts";
 
@@ -50,6 +51,7 @@ function laterEnvelope<T extends { lastCommittedAt: string | null }>(server: T, 
 
 export function ensureHouseholdShape(household: Household): Household {
   const fallback = household.members.find((member) => member.active)?.id ?? household.members[0]?.id ?? "";
+  const fallbackIso = household.lastCommittedAt || new Date().toISOString();
   return {
     ...household,
     householdId: household.householdId || randomHouseholdId(),
@@ -57,6 +59,8 @@ export function ensureHouseholdShape(household: Household): Household {
     linked: Boolean(household.linked),
     revision: household.revision ?? 0,
     tombstones: household.tombstones ?? [],
+    recurrences: (household.recurrences ?? []).map((item) => shapeRecurrence(item, fallbackIso)),
+    calendar: shapeCalendar(household.calendar),
     transactions: household.transactions.map((tx) => ({
       ...tx,
       place: tx.place ?? "",
@@ -103,6 +107,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     accounts: shaped.accounts,
     categories: shaped.categories,
     recurrences: shaped.recurrences,
+    calendar: shaped.calendar,
     goals: shaped.goals,
     budgetPlans: shaped.budgetPlans,
     activity: shaped.activity,
@@ -153,6 +158,7 @@ export function assembleHousehold(shared: SharedEnvelope, personal: PersonalEnve
     accounts: shared.accounts,
     categories: shared.categories,
     recurrences: shared.recurrences,
+    calendar: shared.calendar,
     goals: shared.goals,
     budgetPlans: shared.budgetPlans,
     activity: shared.activity,
@@ -179,6 +185,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     accounts: mergeRecords(server.accounts, client.accounts, []),
     categories: mergeRecords(server.categories, client.categories, []),
     recurrences: mergeRecords(server.recurrences, client.recurrences, tombstones),
+    calendar: mergeCalendars(server.calendar, client.calendar),
     goals: mergeRecords(server.goals, client.goals, tombstones),
     budgetPlans: mergeRecords(server.budgetPlans, client.budgetPlans, tombstones),
     activity: mergeRecords(server.activity, client.activity, []).sort((left, right) => left.at.localeCompare(right.at)).slice(-200),
