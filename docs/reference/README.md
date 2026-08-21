@@ -10,8 +10,10 @@ Use this folder to see **where the project has been** — the Sheets prototype, 
 
 | Path | What it is |
 |---|---|
-| [sheets-era/](sheets-era/) | Snapshot of the Google Sheets / Apps Script project at `v0.0.31` (git tag `sheets-v0.0.31`). README, AGENTS, charter, architecture, decisions, roadmap, release notes, reviews. |
+| [sheets-era/](sheets-era/) | Snapshot of the Google Sheets / Apps Script project at `v0.0.31` (git tag `sheets-v0.0.31`). README, AGENTS, charter, architecture, decisions, roadmap, release notes, reviews, **old AI prompts**. |
 | [rebuild-vs-sheets.md](rebuild-vs-sheets.md) | How the TypeScript rebuild mapped onto the Sheets review findings. |
+
+Living AI documents (send these, not the folder above): [AI_SESSION.md](../AI_SESSION.md), [AI_AGENT_PROMPTS.md](../AI_AGENT_PROMPTS.md), [AI_QA.md](../AI_QA.md), [AI_HANDOFF.md](../AI_HANDOFF.md).
 
 ## What does not live here
 

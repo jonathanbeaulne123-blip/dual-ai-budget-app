@@ -40,10 +40,10 @@ Help Jonathan and Bianca run a dependable household budget. **Hearth** (this rep
 
 ## Workflow
 
-1. Read `docs/README.md`, `docs/ARCHITECTURE.md`, and `docs/DECISIONS.md`.
+1. Read `docs/AI_SESSION.md`, `docs/ARCHITECTURE.md`, and `docs/DECISIONS.md`.
 2. Inspect current code rather than trusting a summary or a reference-folder file.
-3. Assign a risk level using `docs/AI_HANDOFF.md`.
+3. Assign a risk level using `docs/AI_HANDOFF.md`. Quality-assure the running app with `docs/AI_QA.md`.
 4. Make the smallest coherent change that preserves financial meaning.
 5. Run `pnpm test`.
 6. Update the living decision log when behavior or architecture changes.
-7. Return a structured handoff with verification, uncertainty, and the next recommended action.
+7. Return a structured handoff. Name app/website, tab/page, and steps — not vague “dashboard” or “PR page” labels.

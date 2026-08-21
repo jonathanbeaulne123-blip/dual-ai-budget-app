@@ -20,7 +20,7 @@ Join links use that origin (`/?join=cedar-lantern-maple`). SPA routing uses Wran
 
 Dashboard: [hearth-books Worker](https://dash.cloudflare.com/7dfdfbba3053d8b857cbc359e0761c00/workers/services/view/hearth-books).
 
-Until this branch is merged to `main`, the Workers production branch is `cursor/hearth-rebuild-cfde`. After merge, point Cloudflare’s production branch at `main`.
+GitHub `main` is Hearth (merged 2026-08-21). Cloudflare’s production branch for Worker `hearth-books` should be `main`.
 
 Optional GitHub Actions deploy uses repo secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Never put the Supabase secret key or database password in Cloudflare or in `VITE_` vars. The publishable key is already a client fallback in the app.
 

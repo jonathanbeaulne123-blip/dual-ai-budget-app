@@ -10,7 +10,10 @@ Hearth is the product. These files are current. Anything under [reference/](refe
 | [ROADMAP.md](ROADMAP.md) | What is in, what is next |
 | [ENVIRONMENTS.md](ENVIRONMENTS.md) | Development vs production snapshots, website, hosted books |
 | [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md) | How this private repo is used |
-| [AI_HANDOFF.md](AI_HANDOFF.md) | Risk routing and handoff shape |
-| [reference/](reference/) | Old roadmaps, READMEs, decisions, Sheets-era context |
+| [AI_SESSION.md](AI_SESSION.md) | Which files to send a new AI |
+| [AI_AGENT_PROMPTS.md](AI_AGENT_PROMPTS.md) | Shared charter and Codex / Claude / Gemini overlays |
+| [AI_QA.md](AI_QA.md) | Screen-by-screen quality assurance |
+| [AI_HANDOFF.md](AI_HANDOFF.md) | Task packet and return format |
+| [reference/](reference/) | Old roadmaps, READMEs, decisions, Sheets-era prompts — history, not a bible |
 
 Start from the repository [README](../README.md) to run the app.
