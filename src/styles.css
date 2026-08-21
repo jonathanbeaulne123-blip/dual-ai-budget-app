@@ -264,11 +264,18 @@ input, select, textarea {
   border-color: var(--ink);
 }
 .invite-code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 28px;
-  letter-spacing: 0.18em;
+  font-family: var(--display);
+  font-size: clamp(22px, 6vw, 32px);
+  letter-spacing: 0.04em;
   text-align: center;
   padding: 12px 0 4px;
+  line-height: 1.25;
+}
+.join-url {
+  font-size: 12px;
+  color: var(--muted);
+  word-break: break-all;
+  text-align: center;
 }
 .kicker { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--copper); font-weight: 700; }
 

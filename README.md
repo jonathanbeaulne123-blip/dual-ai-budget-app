@@ -56,7 +56,7 @@ There is no Google login, no Sheet, no formula range that can freeze at row 33. 
 
 Jonathan and Bianca each pick who they are on the phone. **Household** shows shared rows and rows marked **Both**. **Personal** shows that person's personal rows and **Both**. The other person's personal rows stay in their personal database.
 
-On the hosted app, **Create shared household** stores the shared ledger plus your personal ledger. Give the six-character code to the other person and they tap **Join with a code**. Each save merges by id so two phones adding groceries at the same time keep both rows.
+Invite the other person with a **three-word phrase**, a **join link**, or a **Hearth Pass** (the shared ledger, no personal rows). A six-character code is no longer the product. Cloud sync is optional when the host has the Hearth function.
 
 Personal is a filter, not a lock. Use two phones if you want that split to hold.
 

@@ -18,7 +18,7 @@ This rebuild exists to be compared, not merged blindly. `main` remains the live-
 | Tests | Writers and migrations; not budget math | Calendar, shift, splits, ledger, health, 12×200 load |
 | God file | 3,333-line `Code.gs` | `src/core/*` plus one UI app |
 | Dev vs prod | Two Google projects | Two named local snapshots, labeled in the chrome |
-| Shared household | One Sheet both edit | Invite code; shared envelope + per-person personal envelope |
+| Shared household | One Sheet both edit | Phrase + join link + Hearth Pass; optional cloud envelopes |
 | Personal vs household entries | Hidden sheet / filter only | Shared, Personal, or Both on every add; two views |
 | Docs drift | README/AGENTS lagged PR #16 | Docs generated with this runtime |
 | Goals / recurring | Schema, unwired | Working, small, reversible |

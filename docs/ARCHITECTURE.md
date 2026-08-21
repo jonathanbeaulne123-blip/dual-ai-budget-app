@@ -6,10 +6,12 @@ Hearth is a TypeScript household ledger with a React interface. The domain lives
 
 Persistence is IndexedDB database `hearth-ledger`, object store `households`, one snapshot per environment (`development` or `production`). `localStorage` holds a fallback copy of the same JSON. Export JSON is the file backup.
 
-When a household is **linked**, Netlify Functions plus Netlify Blobs hold two envelopes for the same invite code:
+When a household is **linked**, Netlify Functions plus Netlify Blobs hold two envelopes for the same invite token:
 
 1. **Shared** — catalog, plus rows whose visibility is `household` or `both`.
 2. **Personal** — that member's `personal`-only rows.
+
+Pairing does not depend on that function being live. Every household has a three-word phrase. **Share phrase and link** sends `/?join=cedar-lantern-kite`. **Hearth Pass** is a JSON file of the shared envelope only; the other phone imports it and merge-by-id still applies. Cloud publish is an accelerator, not the only door.
 
 Each phone keeps a working copy, then merges by id on pull/push so concurrent adds do not wipe each other. Undo writes tombstones so a deleted row cannot come back from the other phone. The UI never saves the filtered view as the canonical snapshot.
 

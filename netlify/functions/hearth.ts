@@ -7,7 +7,8 @@ import {
   mergeShared,
   splitForSync,
 } from "../../src/core/sync.ts";
-import { isValidInviteCode, normalizeInviteCode, randomHouseholdId, randomInviteCode } from "../../src/core/ids.ts";
+import { inviteFromText, isValidInviteToken } from "../../src/core/invite.ts";
+import { isValidInviteCode, randomHouseholdId, randomInviteCode } from "../../src/core/ids.ts";
 import type { Household, PersonalEnvelope, SharedEnvelope } from "../../src/core/types.ts";
 
 const CORS = {
@@ -83,13 +84,14 @@ export const handler = async (event: { httpMethod?: string; body?: string | null
 
   const action = payload.action;
   const memberId = String(payload.memberId ?? "").trim();
-  const inviteCode = normalizeInviteCode(payload.inviteCode ?? payload.household?.inviteCode);
+  const inviteCode = inviteFromText(payload.inviteCode ?? payload.household?.inviteCode);
+  const validInvite = isValidInviteToken(inviteCode) || isValidInviteCode(inviteCode);
 
   try {
     if (action === "create") {
       if (!payload.household) return json(400, { error: "A household snapshot is required to create a shared ledger." });
       if (!memberId) return json(400, { error: "Choose who you are before creating a shared household." });
-      let code = isValidInviteCode(inviteCode) ? inviteCode : randomInviteCode();
+      let code = validInvite ? inviteCode : randomInviteCode();
       for (let attempt = 0; attempt < 8; attempt += 1) {
         const existing = await readJson(store, sharedKey(code));
         if (!existing) break;
@@ -111,9 +113,11 @@ export const handler = async (event: { httpMethod?: string; body?: string | null
     }
 
     if (action === "join" || action === "pull") {
-      if (!isValidInviteCode(inviteCode)) return json(400, { error: "That household code does not look right." });
+      if (!isValidInviteToken(inviteCode) && !isValidInviteCode(inviteCode)) {
+        return json(400, { error: "Use the three-word phrase or a join link." });
+      }
       const shared = await readJson<SharedEnvelope>(store, sharedKey(inviteCode));
-      if (!shared) return json(404, { error: "No household uses that code. Check the six characters and try again." });
+      if (!shared) return json(404, { error: "No household uses that phrase yet. Import a Hearth Pass if you were sent a file." });
       const personal = memberId
         ? await readJson<PersonalEnvelope>(store, personalKey(inviteCode, memberId))
         : null;
@@ -126,7 +130,9 @@ export const handler = async (event: { httpMethod?: string; body?: string | null
     if (action === "push") {
       if (!payload.household) return json(400, { error: "A household snapshot is required to sync." });
       if (!memberId) return json(400, { error: "Choose who you are before syncing." });
-      if (!isValidInviteCode(inviteCode)) return json(400, { error: "That household code does not look right." });
+      if (!isValidInviteToken(inviteCode) && !isValidInviteCode(inviteCode)) {
+        return json(400, { error: "Use the three-word phrase or a join link." });
+      }
       const client = splitForSync({ ...payload.household, inviteCode, linked: true }, memberId);
       let shared = await readJson<SharedEnvelope>(store, sharedKey(inviteCode));
       if (!shared) return json(404, { error: "No household uses that code. Create or join it first." });

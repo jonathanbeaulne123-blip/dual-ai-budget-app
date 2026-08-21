@@ -13,7 +13,6 @@ import {
   defaultVisibilityForView,
   formatCad,
   formatDateLabel,
-  formatInviteCode,
   householdForView,
   jointSplit,
   monthKeyFromDateKey,
@@ -40,7 +39,9 @@ import {
 import { LedgerPage } from "./Ledger.tsx";
 import { STORAGE_EXPLAINER, clearHousehold, downloadJson, loadHousehold, saveHousehold } from "./storage.ts";
 import { clearSession, loadSession, saveSession, type Session } from "./session.ts";
-import { createSharedHousehold, hostingHint, joinSharedHousehold, reconcileHousehold, pushSharedHousehold } from "./api.ts";
+import { joinSharedHousehold, pushSharedHousehold, reconcileHousehold } from "./api.ts";
+import { inviteFromLocation } from "./core/invite.ts";
+import { PairingCard, WelcomeJoin } from "./Pairing.tsx";
 
 type Tab = "home" | "plan" | "ledger" | "more";
 type AddMode = "expense" | "income" | "shift" | "transfer";
@@ -82,6 +83,17 @@ export function App() {
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "synced" | "error">("idle");
   const [inviteInput, setInviteInput] = useState("");
   const [welcomeMode, setWelcomeMode] = useState<"home" | "join">("home");
+
+  useEffect(() => {
+    const token = inviteFromLocation(window.location.href);
+    if (!token) return;
+    setInviteInput(token);
+    setWelcomeMode("join");
+    const url = new URL(window.location.href);
+    url.searchParams.delete("join");
+    const next = url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : "") + url.hash;
+    window.history.replaceState({}, "", next);
+  }, []);
 
   useEffect(() => {
     let live = true;
@@ -196,43 +208,20 @@ export function App() {
           <h1>Hearth</h1>
           <p>
             Jonathan and Bianca each get a household ledger and a personal ledger.
-            Every entry can be shared, personal, or both. Shared rows live in one
-            database you both open with a household code.
+            Every entry can be shared, personal, or both. Invite the other person
+            with a three-word phrase, a join link, or a Hearth Pass — not a typed code.
           </p>
           {welcomeMode === "join" ? (
-            <>
-              <label>Household code</label>
-              <input
-                value={inviteInput}
-                onChange={(event) => setInviteInput(event.target.value)}
-                placeholder="ABC-123"
-                autoCapitalize="characters"
-              />
-              <p className="muted">{hostingHint()}</p>
-              {error && <p className="danger">{error}</p>}
-              <button
-                className="primary"
-                disabled={busy}
-                onClick={async () => {
-                  setBusy(true);
-                  setError("");
-                  try {
-                    const joined = await joinSharedHousehold(inviteInput);
-                    await persist(joined);
-                    setWelcomeMode("home");
-                  } catch (caught) {
-                    setError(caught instanceof Error ? caught.message : String(caught));
-                  } finally {
-                    setBusy(false);
-                  }
-                }}
-              >
-                Join household
-              </button>
-              <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => { setWelcomeMode("home"); setError(""); }}>
-                Back
-              </button>
-            </>
+            <WelcomeJoin
+              error={error}
+              busy={busy}
+              inviteInput={inviteInput}
+              onInviteInput={setInviteInput}
+              onError={setError}
+              onBusy={setBusy}
+              onJoined={(next) => persist(next)}
+              onBack={() => { setWelcomeMode("home"); setError(""); }}
+            />
           ) : (
             <>
               <button className="primary" onClick={() => persist(seedDemoHousehold({ today, environment }))}>
@@ -242,7 +231,7 @@ export function App() {
                 Start our household
               </button>
               <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setWelcomeMode("join")}>
-                Join with a code
+                Join with a phrase or pass
               </button>
             </>
           )}
@@ -488,15 +477,24 @@ export function App() {
               <ul className="health">{findings.map((finding) => <li key={finding.section + finding.message}><strong>{finding.section}.</strong> {finding.message}</li>)}</ul>
             )}
           </section>
+          <PairingCard
+            household={household}
+            memberId={session.memberId}
+            error={error}
+            busy={busy}
+            syncState={syncState}
+            inviteInput={inviteInput}
+            onInviteInput={setInviteInput}
+            onHousehold={(next) => persist(next)}
+            onError={setError}
+            onBusy={setBusy}
+            onSyncState={setSyncState}
+          />
           <section className="card">
-            <header>
-              <h2>Household</h2>
-              <span className={`pill ${household.linked ? "good" : ""}`}>{household.linked ? "Shared" : "This phone"}</span>
-            </header>
-            <p>
+            <header><h2>This phone</h2></header>
+            <p className="muted">
               You are {household.members.find((member) => member.id === session.memberId)?.name}.
               Household view shows shared and “both” rows. Personal view shows your personal and “both” rows.
-              The other person’s personal rows stay in their personal database.
             </p>
             <label>This phone is</label>
             <div className="chips">
@@ -510,75 +508,13 @@ export function App() {
                 </button>
               ))}
             </div>
-            <div className="invite-code">{formatInviteCode(household.inviteCode)}</div>
-            <p className="muted">Give Bianca or Jonathan this code to join the same household. {hostingHint()}</p>
-            {syncState === "syncing" && <p className="muted">Syncing the shared household…</p>}
-            {syncState === "synced" && <p className="muted">Shared household is up to date.</p>}
-            {syncState === "error" && <p className="danger">Last sync did not reach the shared database. Rows are still saved here.</p>}
-            <button className="ghost" style={{ width: "100%" }} onClick={() => {
-              void navigator.clipboard?.writeText(formatInviteCode(household.inviteCode));
-            }}>Copy household code</button>
-            {!household.linked && (
-              <button className="primary" disabled={busy} onClick={() => {
-                void (async () => {
-                  setBusy(true);
-                  setError("");
-                  try {
-                    const created = await createSharedHousehold(household, session.memberId);
-                    await persist(created);
-                    setSyncState("synced");
-                  } catch (caught) {
-                    setError(caught instanceof Error ? caught.message : String(caught));
-                    setSyncState("error");
-                  } finally {
-                    setBusy(false);
-                  }
-                })();
-              }}>Create shared household</button>
-            )}
-            {household.linked && (
-              <button className="primary" disabled={busy} onClick={() => {
-                void (async () => {
-                  setBusy(true);
-                  setError("");
-                  try {
-                    const merged = await reconcileHousehold(household, session.memberId);
-                    const pushed = await pushSharedHousehold(merged, session.memberId);
-                    await persist(pushed);
-                    setSyncState("synced");
-                  } catch (caught) {
-                    setError(caught instanceof Error ? caught.message : String(caught));
-                    setSyncState("error");
-                  } finally {
-                    setBusy(false);
-                  }
-                })();
-              }}>Sync now</button>
-            )}
-            <label>Join a different household</label>
-            <input value={inviteInput} onChange={(event) => setInviteInput(event.target.value)} placeholder="ABC-123" autoCapitalize="characters" />
-            <button className="ghost" style={{ width: "100%", marginTop: 8 }} disabled={busy} onClick={() => {
-              void (async () => {
-                setBusy(true);
-                setError("");
-                try {
-                  const joined = await joinSharedHousehold(inviteInput, session.memberId);
-                  await persist(joined);
-                  setSyncState("synced");
-                } catch (caught) {
-                  setError(caught instanceof Error ? caught.message : String(caught));
-                } finally {
-                  setBusy(false);
-                }
-              })();
-            }}>Join with this code</button>
           </section>
           <section className="card storage">
             <header><h2>Where the ledger lives</h2></header>
             <p>
               This phone keeps a full working copy in IndexedDB (<code>{STORAGE_EXPLAINER.database}</code>, store <code>{STORAGE_EXPLAINER.store}</code>)
-              with a {STORAGE_EXPLAINER.backup} fallback. When the household is shared, household and “both”
-              rows go to the shared database; your personal-only rows go to your personal database.
+              with a {STORAGE_EXPLAINER.backup} fallback. Invite with a phrase, join link, or Hearth Pass.
+              When the cloud is on, household and “both” rows go to the shared database; your personal-only rows stay in your personal database.
               Development and Production are two keys on this device. Export JSON is the file backup.
               Personal rows are a filter, not a lock — use two phones for a real split.
             </p>
