@@ -23,9 +23,9 @@ This agent cannot log into Cloudflare. Paste these build settings — do not cli
 1. Open the [hearth-books Worker](https://dash.cloudflare.com/7dfdfbba3053d8b857cbc359e0761c00/workers/services/view/hearth-books).
 2. Settings → Build → **Production branch** → `cursor/hearth-rebuild-cfde`.
 3. Build command: `pnpm build`
-4. Deploy command (this is the one that failed): `npx wrangler versions upload --assets=./dist`
-5. Save, then **Retry** a build of the latest commit (the install list must include `wrangler`). A 190-package install with no `wrangler` line is an old SHA.
-6. Open the `*.workers.dev` URL → More → Invite → **Publish to the cloud**.
+4. Deploy command: `npx wrangler versions upload --assets=./dist`
+5. Join links (`/?join=…`) use Workers `not_found_handling = single-page-application`. Do not add `/* /index.html 200` in `_redirects` — Workers rejects that as an infinite loop.
+6. Save, then deploy the latest commit. Open the `*.workers.dev` URL → More → Invite → **Publish to the cloud**.
 
 If the build log only installs `@google/clasp` and then says `Command "build" not found`, Cloudflare cloned **`main`**. That branch is the Sheets app and has no `pnpm build`.
 
