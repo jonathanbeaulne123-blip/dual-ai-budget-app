@@ -1,0 +1,8 @@
+SOURCE: workers/site.js
+Hearth living tree. docs/reference/ is history, not a bible.
+-----
+export default {
+  async fetch(request, env) {
+    return env.ASSETS.fetch(request);
+  },
+};

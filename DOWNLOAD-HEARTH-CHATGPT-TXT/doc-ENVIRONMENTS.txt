@@ -1,0 +1,40 @@
+SOURCE: docs/ENVIRONMENTS.md
+Hearth living tree. docs/reference/ is history, not a bible.
+-----
+# Environments
+
+## Development
+
+Default local snapshot `hearth:v1:development`. The top-bar pill reads Development. Demo data is fictional CAD. Switching the pill asks first; it does not delete Development.
+
+## Production
+
+Second local snapshot `hearth:v1:production`. Empty until Jonathan starts it. The pill reads Production.
+
+These pills are **not** Cloudflare production vs preview. They are two ledgers on the same phone. Stay on Development until daily use moves to Production.
+
+## Website (Cloudflare Workers)
+
+The phone app is a static Vite build on Cloudflare Workers + Assets, project `hearth-books`.
+
+Live URL: [https://hearth-books.jonathan-beaulne123.workers.dev/](https://hearth-books.jonathan-beaulne123.workers.dev/)
+
+Join links use that origin (`/?join=cedar-lantern-maple`). SPA routing uses Wrangler `not_found_handling = single-page-application`. Do not add `/* /index.html 200` in `_redirects` — Workers rejects that as an infinite loop (API code 100324). `pnpm build` wipes `dist/` so a leftover `_redirects` cannot be uploaded.
+
+Dashboard: [hearth-books Worker](https://dash.cloudflare.com/7dfdfbba3053d8b857cbc359e0761c00/workers/services/view/hearth-books).
+
+GitHub `main` is Hearth (merged 2026-08-21). Cloudflare’s production branch for Worker `hearth-books` should be `main`.
+
+Optional GitHub Actions deploy uses repo secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Never put the Supabase secret key or database password in Cloudflare or in `VITE_` vars. The publishable key is already a client fallback in the app.
+
+## Hosted household (Supabase)
+
+The books are PostgreSQL. On the phone that is PGlite. The shared copy is the Supabase project `tykhocwacaxwquhynkok` (`https://tykhocwacaxwquhynkok.supabase.co`, region us-east-1). Phrase-join reads `household_snapshots` by invite phrase.
+
+The books tables are live: `households`, `household_snapshots`, journal tables, and trial-balance views answer on the publishable key. The API secret still cannot `CREATE TABLE`. RLS is still open (`USING (true)`) until Auth exists.
+
+Connect notes: database name is `postgres` (dashboard URIs that end in `/postgresz` are a typo). `db.tykhocwacaxwquhynkok.supabase.co` is IPv6-only. Schema apply uses the session pooler `aws-0-us-east-1.pooler.supabase.com:5432` as `postgres.tykhocwacaxwquhynkok`. The phone app never receives that password.
+
+## Sheets
+
+Google Sheets is no longer the working tree. The last Apps Script snapshot is git tag `sheets-v0.0.31`. Docs from that era: [reference/sheets-era/](reference/sheets-era/).

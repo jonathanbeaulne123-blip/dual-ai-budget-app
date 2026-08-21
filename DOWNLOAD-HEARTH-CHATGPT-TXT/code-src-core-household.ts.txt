@@ -1,0 +1,8 @@
+SOURCE: src/core/household.ts
+Hearth living tree. docs/reference/ is history, not a bible.
+-----
+import type { Household } from "./types.ts";
+
+export function cloneHousehold(household: Household): Household {
+  return structuredClone(household);
+}

@@ -1,0 +1,101 @@
+HEARTH AI TXT PACKET
+77 files. Living Hearth only. docs/reference is NOT included. That folder is history, not a bible.
+
+HOW TO ATTACH
+App/website: ChatGPT
+Tab/page: New chat → paperclip (attach files)
+Instructions:
+1. Attach prompt-chatgpt.txt first, or paste it as the first message.
+2. Attach doc-AI_QA.txt, doc-AI_HANDOFF.txt, doc-ARCHITECTURE.txt, doc-DECISIONS.txt.
+3. Attach every code-*.txt file for a full review, or only the files for the screen you care about.
+4. Send. Do not attach .env, workbooks, or docs/reference.
+
+App/website: Gemini
+Tab/page: New chat → attach files
+Instructions: attach prompt-gemini.txt + doc-AI_QA.txt. Add code files only if you want a code review.
+
+App/website: Claude
+Tab/page: New chat → attach files
+Instructions: attach prompt-claude.txt + doc-ARCHITECTURE.txt + doc-DECISIONS.txt + the code-*.txt files to review.
+
+PROMPTS
+  prompt-chatgpt.txt
+  prompt-claude.txt
+  prompt-gemini.txt
+
+DOCS
+  doc-AGENTS.txt
+  doc-AI_AGENT_PROMPTS.txt
+  doc-AI_HANDOFF.txt
+  doc-AI_QA.txt
+  doc-AI_SESSION.txt
+  doc-ARCHITECTURE.txt
+  doc-DECISIONS.txt
+  doc-ENVIRONMENTS.txt
+  doc-GITHUB_WORKFLOW.txt
+  doc-PROJECT_CHARTER.txt
+  doc-README.txt
+  doc-ROADMAP.txt
+
+CODE (61 files)
+  code-index.html.txt
+  code-package.json.txt
+  code-src-App.tsx.txt
+  code-src-Books.tsx.txt
+  code-src-Confirm.tsx.txt
+  code-src-Ledger.tsx.txt
+  code-src-Pairing.tsx.txt
+  code-src-api.ts.txt
+  code-src-core-budget.ts.txt
+  code-src-core-calendar.ts.txt
+  code-src-core-catalog.ts.txt
+  code-src-core-commands.ts.txt
+  code-src-core-duplicate.ts.txt
+  code-src-core-fixtures.ts.txt
+  code-src-core-health.ts.txt
+  code-src-core-household.ts.txt
+  code-src-core-ids.ts.txt
+  code-src-core-index.ts.txt
+  code-src-core-insights.ts.txt
+  code-src-core-invite.ts.txt
+  code-src-core-journal.ts.txt
+  code-src-core-ledgerView.ts.txt
+  code-src-core-money.ts.txt
+  code-src-core-pass.ts.txt
+  code-src-core-seed.ts.txt
+  code-src-core-shift.ts.txt
+  code-src-core-splits.ts.txt
+  code-src-core-sync.ts.txt
+  code-src-core-types.ts.txt
+  code-src-core-visibility.ts.txt
+  code-src-core-writeQueue.ts.txt
+  code-src-ledger-engine.ts.txt
+  code-src-ledger-export.ts.txt
+  code-src-ledger-hosts.ts.txt
+  code-src-ledger-index.ts.txt
+  code-src-ledger-queryGuard.ts.txt
+  code-src-ledger-schema.ts.txt
+  code-src-ledger-supabase.ts.txt
+  code-src-main.tsx.txt
+  code-src-session.ts.txt
+  code-src-storage.ts.txt
+  code-src-styles.css.txt
+  code-src-vite-env.d.ts.txt
+  code-supabase-migrations-001_hearth_books.sql.txt
+  code-test-api.test.ts.txt
+  code-test-books.test.ts.txt
+  code-test-calendar.test.ts.txt
+  code-test-duplicate-splits.test.ts.txt
+  code-test-invite.test.ts.txt
+  code-test-ledger.test.ts.txt
+  code-test-scale.test.ts.txt
+  code-test-shift.test.ts.txt
+  code-test-sql-hosts.test.ts.txt
+  code-test-supabase-connection.test.ts.txt
+  code-test-supabase.test.ts.txt
+  code-test-visibility.test.ts.txt
+  code-test-write-safety.test.ts.txt
+  code-tsconfig.json.txt
+  code-vite.config.ts.txt
+  code-workers-site.js.txt
+  code-wrangler.jsonc.txt

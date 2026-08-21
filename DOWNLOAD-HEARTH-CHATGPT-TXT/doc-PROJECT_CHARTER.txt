@@ -1,0 +1,22 @@
+SOURCE: docs/PROJECT_CHARTER.md
+Hearth living tree. docs/reference/ is history, not a bible.
+-----
+# Project Charter
+
+## Purpose
+
+A household budget Jonathan and Bianca can open on a phone: enter money, understand tips, plan a month, and see whether they are alright — without editing code for ordinary customization.
+
+## Users
+
+Jonathan and Bianca. Toronto. CAD. About 500 transactions per month over time.
+
+## Success
+
+Bianca can add a grocery trip and a shift without a 15-item menu. Health stays clean. Undo exists. The two of them can share one household from two phones.
+
+## Out of scope until the core is boring
+
+Bank connections, multi-currency, public distribution, cryptographic personal-row privacy.
+
+The Sheets-era charter is in [reference/sheets-era/PROJECT_CHARTER.md](reference/sheets-era/PROJECT_CHARTER.md).

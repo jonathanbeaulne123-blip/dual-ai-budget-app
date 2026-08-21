@@ -1,0 +1,194 @@
+SOURCE: src/core/insights.ts
+Hearth living tree. docs/reference/ is history, not a bible.
+-----
+import { formatMonthLabel, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
+import { formatCad } from "./money.ts";
+import { monthSummary, weekSummary, freshnessHours, type MonthSummary, type WeekSummary } from "./budget.ts";
+import type { Goal, Household, Shift } from "./types.ts";
+
+export type Pulse = {
+  sentence: string;
+  tone: "good" | "warn" | "neutral";
+};
+
+export type TipWeather = {
+  fourWeekTipsCents: number;
+  fourWeekHours: number;
+  tipsPerHourCents: number;
+  byWeekday: { weekday: string; tipsCents: number; hours: number }[];
+};
+
+export type Dashboard = {
+  today: DateKey;
+  monthKey: MonthKey;
+  monthLabel: string;
+  freshnessHours: number | null;
+  stale: boolean;
+  month: MonthSummary;
+  week: WeekSummary;
+  pulses: Pulse[];
+  goals: { goal: Goal; progress: number }[];
+  tipWeather: TipWeather;
+  dueRecurrences: number;
+  healthFindings: number;
+  recent: Household["activity"];
+};
+
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+export function tipWeather(household: Household, today: DateKey): TipWeather {
+  const start = offset(today, -27);
+  const shifts = household.shifts.filter((shift) => shift.date >= start && shift.date <= today);
+  const byWeekday = WEEKDAYS.map((weekday, index) => {
+    const subset = shifts.filter((shift) => weekdayIndex(shift.date) === index);
+    return {
+      weekday,
+      tipsCents: subset.reduce((sum, shift) => sum + shift.netTipsCents, 0),
+      hours: subset.reduce((sum, shift) => sum + shift.hours, 0),
+    };
+  });
+  const fourWeekTipsCents = shifts.reduce((sum, shift) => sum + shift.netTipsCents, 0);
+  const fourWeekHours = shifts.reduce((sum, shift) => sum + shift.hours, 0);
+  return {
+    fourWeekTipsCents,
+    fourWeekHours,
+    tipsPerHourCents: fourWeekHours ? Math.round(fourWeekTipsCents / fourWeekHours) : 0,
+    byWeekday,
+  };
+}
+
+export function buildPulses(household: Household, today: DateKey, month: MonthSummary, week: WeekSummary, weather: TipWeather): Pulse[] {
+  const pulses: Pulse[] = [];
+  const groceries = month.categories.find((row) => row.name.toLowerCase() === "groceries");
+  if (groceries && groceries.budgetedCents > 0) {
+    const remaining = groceries.budgetedCents - groceries.actualCents;
+    const daysLeft = Number(month.monthKey.slice(5, 7) ? daysLeftInMonth(today) : 0);
+    if (remaining >= 0) {
+      pulses.push({
+        sentence: `${groceries.name} has ${formatCad(remaining)} left with ${daysLeft} day${daysLeft === 1 ? "" : "s"} in ${formatMonthLabel(month.monthKey)}.`,
+        tone: remaining < groceries.budgetedCents * 0.1 ? "warn" : "good",
+      });
+    } else {
+      pulses.push({
+        sentence: `${groceries.name} is ${formatCad(-remaining)} over plan this month.`,
+        tone: "warn",
+      });
+    }
+  }
+
+  const over = month.categories.filter((row) => row.type === "expense" && row.budgetedCents > 0 && row.actualCents > row.budgetedCents);
+  if (over[0]) {
+    pulses.push({
+      sentence: `${over[0].name} is already ${formatCad(over[0].actualCents - over[0].budgetedCents)} over its ${formatCad(over[0].budgetedCents)} plan.`,
+      tone: "warn",
+    });
+  }
+
+  if (week.lastWeekExpenseCents > 0) {
+    const delta = week.expenseCents - week.lastWeekExpenseCents;
+    pulses.push({
+      sentence: delta >= 0
+        ? `This week’s spending is ${formatCad(delta)} above last week.`
+        : `This week’s spending is ${formatCad(-delta)} below last week.`,
+      tone: delta > week.lastWeekExpenseCents * 0.2 ? "warn" : "good",
+    });
+  }
+
+  const jonathan = household.members.find((member) => member.name.toLowerCase() === "jonathan");
+  if (jonathan && weather.tipsPerHourCents > 0) {
+    const weekShifts = household.shifts.filter((shift) => shift.memberId === jonathan.id && shift.date >= week.start && shift.date <= week.end);
+    const weekTips = weekShifts.reduce((sum: number, shift: Shift) => sum + shift.netTipsCents, 0);
+    const weekHours = weekShifts.reduce((sum: number, shift: Shift) => sum + shift.hours, 0);
+    if (weekHours > 0) {
+      const weekRate = Math.round(weekTips / weekHours);
+      const delta = weekRate - weather.tipsPerHourCents;
+      pulses.push({
+        sentence: delta >= 0
+          ? `Jonathan’s tips this week are ${formatCad(delta)}/hr above the 4-week average.`
+          : `Jonathan’s tips this week are ${formatCad(-delta)}/hr below the 4-week average.`,
+        tone: "neutral",
+      });
+    }
+  }
+
+  if (month.householdCoverageGapCents < 0) {
+    pulses.push({
+      sentence: `Fixed income is ${formatCad(-month.householdCoverageGapCents)} short of essential spend this month.`,
+      tone: "warn",
+    });
+  } else if (month.incomeActualCents > 0) {
+    pulses.push({
+      sentence: `Essentials are covered, with ${formatCad(month.householdCoverageGapCents)} of fixed income still free.`,
+      tone: "good",
+    });
+  }
+
+  return pulses.slice(0, 4);
+}
+
+export function buildDashboard(household: Household, today: DateKey, now = new Date(), healthFindingCount = 0): Dashboard {
+  const monthKey = monthKeyFromDateKey(today);
+  const month = monthSummary(household, monthKey);
+  const week = weekSummary(household, today);
+  const weather = tipWeather(household, today);
+  const hours = freshnessHours(household, now);
+  return {
+    today,
+    monthKey,
+    monthLabel: formatMonthLabel(monthKey),
+    freshnessHours: hours,
+    stale: hours === null || hours > 24,
+    month,
+    week,
+    pulses: buildPulses(household, today, month, week, weather),
+    goals: household.goals
+      .filter((goal) => goal.shared || true)
+      .map((goal) => ({ goal, progress: goal.targetCents ? Math.min(1, goal.savedCents / goal.targetCents) : 0 })),
+    tipWeather: weather,
+    dueRecurrences: household.recurrences.filter((item) => item.active && item.nextDate <= today).length,
+    healthFindings: healthFindingCount,
+    recent: household.activity.slice(-8).reverse(),
+  };
+}
+
+export function sitDownPreview(household: Household, sourceMonth: MonthKey) {
+  const source = monthSummary(household, sourceMonth);
+  const targetMonth = shiftMonthKey(sourceMonth, 1);
+  const existing = new Set(
+    household.budgetPlans.filter((plan) => plan.monthKey === targetMonth).map((plan) => plan.subcategoryId),
+  );
+  return {
+    sourceMonth,
+    targetMonth,
+    rows: source.categories.map((row) => {
+      const over = row.budgetedCents > 0 && row.actualCents > row.budgetedCents;
+      const suggested = over ? Math.round((row.actualCents + row.budgetedCents) / 2) : row.budgetedCents || row.actualCents;
+      return {
+        subcategoryId: row.subcategoryId,
+        name: row.name,
+        type: row.type,
+        lastBudgetedCents: row.budgetedCents,
+        lastActualCents: row.actualCents,
+        suggestedCents: suggested,
+        alreadyPlanned: existing.has(row.subcategoryId),
+        trimSuggested: over,
+      };
+    }),
+  };
+}
+
+function weekdayIndex(dateKey: DateKey): number {
+  const [year, month, day] = dateKey.split("-").map(Number) as [number, number, number];
+  return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+}
+
+function offset(dateKey: DateKey, days: number): DateKey {
+  const [year, month, day] = dateKey.split("-").map(Number) as [number, number, number];
+  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
+}
+
+function daysLeftInMonth(today: DateKey): number {
+  const [year, month, day] = today.split("-").map(Number) as [number, number, number];
+  const last = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return last - day;
+}

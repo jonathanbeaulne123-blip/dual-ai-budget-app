@@ -1,0 +1,43 @@
+SOURCE: test/scale.test.ts
+Hearth living tree. docs/reference/ is history, not a bible.
+-----
+import { describe, expect, it } from "vitest";
+import { seedDemoHousehold } from "../src/core/seed.ts";
+import { buildScaleFixture } from "../src/core/fixtures.ts";
+import { runHealthCheck } from "../src/core/health.ts";
+import { monthSummary, weekSummary } from "../src/core/budget.ts";
+import { buildDashboard } from "../src/core/insights.ts";
+import { applySitDown } from "../src/core/commands.ts";
+
+describe("demo household and scale", () => {
+  it("seeds a fictional six-month household that stays health-clean", () => {
+    const household = seedDemoHousehold({ today: "2026-08-21" });
+    expect(household.transactions.length).toBeGreaterThan(80);
+    expect(household.shifts.length).toBeGreaterThan(15);
+    expect(runHealthCheck(household)).toEqual([]);
+    const month = monthSummary(household, "2026-08");
+    expect(month.incomeActualCents).toBeGreaterThan(0);
+    expect(month.expenseActualCents).toBeGreaterThan(0);
+    const week = weekSummary(household, "2026-08-21");
+    expect(week.start).toBe("2026-08-16");
+    expect(week.end).toBe("2026-08-22");
+    const dashboard = buildDashboard(household, "2026-08-21", new Date("2026-08-21T16:00:00Z"), 0);
+    expect(dashboard.pulses.length).toBeGreaterThan(0);
+    expect(dashboard.stale).toBe(false);
+  });
+
+  it("plans next month from last month without duplicating existing rows", () => {
+    const household = seedDemoHousehold({ today: "2026-08-21" });
+    const result = applySitDown(household, "2026-08", {});
+    expect(result.household.budgetPlans.some((plan) => plan.monthKey === "2026-09")).toBe(true);
+    expect(runHealthCheck(result.household)).toEqual([]);
+  });
+
+  it("keeps duplicate flags and month math correct at 12 months × 200 transactions", () => {
+    const household = buildScaleFixture({ months: 12, transactionsPerMonth: 200, endMonth: "2026-08" });
+    expect(household.transactions.length).toBe(12 * 200);
+    expect(runHealthCheck(household)).toEqual([]);
+    const august = monthSummary(household, "2026-08");
+    expect(august.expenseActualCents).toBeGreaterThan(185000);
+  }, 60_000);
+});

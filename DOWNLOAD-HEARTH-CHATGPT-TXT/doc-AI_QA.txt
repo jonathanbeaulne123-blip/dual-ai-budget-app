@@ -1,0 +1,156 @@
+SOURCE: docs/AI_QA.md
+Hearth living tree. docs/reference/ is history, not a bible.
+-----
+# Hearth quality assurance
+
+How an AI (especially Gemini) checks that Hearth still does what Jonathan and Bianca need. Sheets-era live-Sheet checklists are in [reference/sheets-era/](reference/sheets-era/) — history, not a bible.
+
+Always say **which app**, **which screen**, and **what you tapped**. Do not say “the PR page” or “the dashboard” without naming the product.
+
+## Standing rules
+
+- Stay on the **Development** pill unless Jonathan asked for Production.
+- Demo kitchen data is fictional. The real household, if present, is not for destructive tests.
+- Confirm dialogs must appear before Reset, Reload demo data, switching Development/Production, and Remove.
+- Health on More should stay **Clean** after a successful path, or name the finding.
+- `pnpm test` is the code gate. A green test run does not replace a phone pass for UX.
+- Do not treat `docs/reference/` as the spec.
+
+## Where Hearth lives
+
+| App/website | What it is | Use for QA |
+|---|---|---|
+| https://hearth-books.jonathan-beaulne123.workers.dev/ | Kitchen Hearth (Cloudflare Worker `hearth-books`) | Default live pass |
+| `http://localhost:5173` after `pnpm dev` | Local Vite app | Code you have not deployed yet |
+| GitHub `main` | Canonical source | Read code and docs; do not QA by reading Sheets-era files |
+| Supabase project `tykhocwacaxwquhynkok` | Hosted books | Phrase join and Publish — Development snapshot only |
+| Google Sheets | Prototype | Out of scope unless Jonathan asks for history |
+
+The top-bar **Development / Production** pills are two ledgers **on that phone**. They are not Cloudflare production vs preview.
+
+## Smoke pass (every review)
+
+### 1. Open the kitchen
+
+**App/website:** Hearth — https://hearth-books.jonathan-beaulne123.workers.dev/  
+**Tab/page:** first screen (welcome / “On this device”)  
+**Instructions:**
+1. Confirm the page is Hearth, not a Cloudflare “Hello world”.
+2. If the ledger is empty, tap **Open the demo kitchen table** only on a throwaway Development snapshot — never on Production, never on the real household.
+3. Confirm the top pill says **Development**.
+
+### 2. Home reads as money, not a spreadsheet
+
+**App/website:** Hearth  
+**Tab/page:** bottom nav → **Home**  
+**Instructions:**
+1. Confirm one net number, a pulse sentence, this week vs last week, and shared goals.
+2. Switch **Household** vs **Personal** at the top. Personal must not show the other person’s personal-only rows.
+3. Fail if Home looks like a rebuilt Sheet or a 15-item menu.
+
+### 3. Add spend with a split
+
+**App/website:** Hearth  
+**Tab/page:** bottom nav → **+** → tab **expense**  
+**Instructions:**
+1. Date = today (Toronto). Amount = a small test value you will remove.
+2. **Save to** = Shared.
+3. Pick Groceries (or equivalent). **Who** = Split %. Set Bianca to 60%; Jonathan must fill to 100% and cents must add to the amount.
+4. Save. Confirm the toast offers Undo.
+5. Fail if cents do not add, or if the write happens before validation.
+
+### 4. Duplicate stop
+
+**App/website:** Hearth  
+**Tab/page:** bottom nav → **+** → **expense**  
+**Instructions:**
+1. Enter the same amount, same category, within five days, with overlapping notes or place.
+2. Save. Confirm you are stopped and asked to confirm, with **zero** extra rows until you confirm.
+3. Cancel. Confirm the second row was not posted.
+
+### 5. Shift preview equals post
+
+**App/website:** Hearth  
+**Tab/page:** bottom nav → **+** → tab **shift**  
+**Instructions:**
+1. Enter hours and tips. Read the preview (wages, tips, net).
+2. Save. Open **Books** → **Register** (or Income) and confirm wages + tips match the preview, including negative net tips if you used that case.
+3. Fail if preview and posted amounts disagree.
+
+### 6. Transfer is not income
+
+**App/website:** Hearth  
+**Tab/page:** bottom nav → **+** → tab **transfer**  
+**Instructions:**
+1. Move a small amount Visa → Chequing (or the seeded accounts).
+2. Save. **Home** totals must not treat it as spend or income.
+3. **Books** → **Register** → **Other** (or the transfer row) shows both sides. Remove with confirm when done.
+
+### 7. Remove and undo
+
+**App/website:** Hearth  
+**Tab/page:** bottom nav → **Books** → **Register** → a test row → **Remove**  
+**Instructions:**
+1. Confirm the sheet asks before deleting.
+2. Confirm the row is gone and Health stays clean (or name the finding).
+3. **More** → **Recent changes** → **Undo** on the latest item. Confirm the row returns once, and a second device cannot resurrect a tombstoned row after a clean sync.
+
+### 8. Books balance
+
+**App/website:** Hearth  
+**Tab/page:** bottom nav → **Books** → **Trial balance**  
+**Instructions:**
+1. Debits equal credits.
+2. Open **Journal** and **SQL**. SQL is read-only; a write statement must be refused.
+3. Fail if trial balance is off or Health reports unbalanced books.
+
+### 9. Invite without a six-character code
+
+**App/website:** Hearth  
+**Tab/page:** bottom nav → **More** → **Invite the other person**  
+**Instructions:**
+1. Confirm a three-word phrase, a `/?join=…` link on this origin, and **Download Hearth Pass**.
+2. Confirm there is no product requirement to type a six-character blob key.
+3. **Publish to the cloud** only for the Development snapshot. If the phrase is unpublished, the error must not say the phrase is “right.”
+
+### 10. Dangerous actions ask first
+
+**App/website:** Hearth  
+**Tab/page:** **More** → **This phone** / **Where the books live**, and the **Development** pill in the top bar  
+**Instructions:**
+1. Tap **Reset this environment** — a confirm sheet must appear. Cancel. Confirm data is still there.
+2. Tap the environment pill — a confirm sheet must appear. Cancel. Confirm you are still on Development.
+3. Tap **Reload demo data** — confirm appears. Cancel unless you are on a disposable demo.
+
+## Pairing / two-phone pass (when asked)
+
+**App/website:** Hearth on phone A and phone B  
+**Tab/page:** More → Invite  
+**Instructions:**
+1. Phone A: Development, Publish to the cloud.
+2. Phone B: welcome → paste the three-word phrase or open the join link.
+3. Add a unique $0.01 note on A, Sync, confirm it on B.
+4. Remove it on A (confirm), Sync, confirm B does not bring it back.
+5. Do not Sync a phone that still shows a row you already tombstoned in the cloud.
+
+## Code pass (when the task changed TypeScript)
+
+From a terminal in the repo on the branch under review:
+
+```text
+pnpm test
+```
+
+Every current test file must pass. Also confirm no `.env`, workbook, or secret is in the diff.
+
+## Known gaps (do not file as new product bugs)
+
+- Hosted RLS is still `USING (true)` until Auth exists. Personal is a filter.
+- Phrase-join currently matches phrase, not Development vs Production, on the cloud snapshot.
+- PGlite database name is shared on the device; snapshots are still separate in IndexedDB / localStorage.
+- Sit-down dollar preview and hardcoded Goals +$50 are unfinished polish.
+- GitHub 2FA on Jonathan’s account is still open (D-020).
+
+## Return format
+
+Use [AI_HANDOFF.md](AI_HANDOFF.md). For each finding include: app/website, tab/page, steps, expected, actual, whether Development was used, whether money was written, how to undo.
