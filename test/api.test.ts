@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { apiUrl, hostingHint } from "../src/api.ts";
 
@@ -23,6 +24,6 @@ describe("Cloudflare static host pairing", () => {
   });
 
   it("does not ship a catch-all _redirects file that Cloudflare Workers rejects", () => {
-    expect(existsSync(new URL("../public/_redirects", import.meta.url))).toBe(false);
+    expect(existsSync(fileURLToPath(new URL("../public/_redirects", import.meta.url)))).toBe(false);
   });
 });
