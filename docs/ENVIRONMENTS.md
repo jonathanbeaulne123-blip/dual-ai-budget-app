@@ -27,6 +27,8 @@ This agent cannot log into Cloudflare. One dashboard step creates the live site:
 5. Deploy. Hard-refresh the phone on `https://hearth-books.pages.dev`.
 6. More → Invite → **Publish to the cloud**. Bianca uses the phrase or the new join link.
 
+If the build log only installs `@google/clasp` and then says `Command "build" not found`, Cloudflare cloned **`main`**. That branch is the Sheets app and has no `pnpm build`. Fix: project → Settings → Builds & deployments → Production branch → `cursor/hearth-rebuild-cfde` → Retry deployment. The Hearth log should install `vite`, `react`, and `@electric-sql/pglite`, then write `dist/`.
+
 Optional GitHub Actions deploy uses repo secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Without those secrets the workflow builds and prints these same steps. Never put the Supabase secret key or database password in Cloudflare or in `VITE_` vars. The publishable key is already a client fallback in the app.
 
 The old Netlify site is rollback only. Leave it up until Bianca has joined once on Pages.
