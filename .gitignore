@@ -20,6 +20,3 @@ Thumbs.db
 /Budget_App__v*.ods
 /Project Context.txt
 /local-backups/
-
-# Generated ChatGPT/Gemini attach packet. Source of truth is src/ and docs/.
-ai-packets/
