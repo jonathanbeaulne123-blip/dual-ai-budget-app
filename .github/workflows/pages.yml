@@ -30,7 +30,8 @@ jobs:
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
             echo "No Cloudflare API secrets on this repo."
             echo "Workers Builds is connected as hearth-books. Production branch must be cursor/hearth-rebuild-cfde."
-            echo "wrangler.toml serves dist/ as a static SPA. Do not clone main (that is Sheets)."
+            echo "Dashboard deploy command: npx wrangler deploy. Preview/non-production: npx wrangler versions upload."
+            echo "Do not clone main (that is Sheets)."
             exit 0
           fi
           npx wrangler deploy
