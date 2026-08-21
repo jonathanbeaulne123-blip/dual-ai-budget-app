@@ -38,3 +38,13 @@ Help Jonathan and Bianca run a dependable household budget. Hearth (this branch)
 3. Make the smallest coherent change that preserves financial meaning.
 4. Run `pnpm test`.
 5. Update the decision log when behavior changes.
+
+## Cursor Cloud specific instructions
+
+This branch (`cursor/hearth-rebuild-cfde`) is the Hearth rebuild: a Vite 7 + React 19 + TypeScript SPA. The books are PostgreSQL running as in-browser PGlite (WASM), so there is no separate database process to start locally. Standard commands live in `package.json` (`dev`, `build`, `test`); the quickstart is in `README.md`.
+
+- Run the app in dev with `pnpm dev` (Vite on port `5173`). It is a browser SPA — "running" means opening `http://localhost:5173/` and clicking **Open the demo kitchen table** to load a fictional household. No login, no server, no external DB is required for the core flow.
+- `pnpm install` prints `Ignored build scripts: esbuild` (pnpm 10 blocks postinstall scripts by default). This is harmless: Vite/Vitest/build/dev all work because esbuild ships prebuilt platform binaries via optional dependencies. Do not add `pnpm approve-builds` to setup — it is interactive.
+- `pnpm build` emits benign warnings from PGlite (`__vite-browser-external` re-exports, `eval` usage, chunks >500 kB). These are expected for the PGlite WASM bundle and do not indicate a broken build.
+- `pnpm test` (Vitest) is the full suite; it is CPU/time heavy (~20s) because `test/scale.test.ts` runs a 12×200 transaction fixture and several tests spin up PGlite/`node:sqlite`. There is no linter configured on this branch — CI only runs `pnpm test`.
+- Supabase (`pnpm books:apply`) and Netlify functions are OPTIONAL cloud extras (hosted household copy + pairing). They need `.env` secrets (see `.env.example`) and are not required to develop or test the local app; tests mock `fetch`.
