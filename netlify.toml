@@ -5,7 +5,7 @@
 
 [build.environment]
   NODE_VERSION = "20"
-  PNPM_VERSION = "10"
+  PNPM_VERSION = "10.14.0"
 
 [functions]
   node_bundler = "esbuild"
