@@ -56,6 +56,7 @@ Invite the other person with a **three-word phrase**, a **join link**, or a **He
 ## Docs
 
 - Current: [docs/README.md](docs/README.md)
+- Vision: [docs/PRODUCT_ROADMAP.md](docs/PRODUCT_ROADMAP.md)
 - History (not a bible): [docs/reference/](docs/reference/)
 
 The Google Sheets / Apps Script prototype is archived as reference under `docs/reference/sheets-era/` and as git tag `sheets-v0.0.31`. It is not the working tree.

@@ -1,6 +1,6 @@
 # Roadmap
 
-This is the living plan. Dated Sheets-era phases (September 1 test build, clasp, dashboard-as-spreadsheet) are in [reference/sheets-era/ROADMAP.md](reference/sheets-era/ROADMAP.md). They are history.
+This is the living near-term plan. The investor / family-office vision — including how Open Banking, Interac, tax lockboxes, issued cards, and BaaS actually attach to this kernel — is [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md). Sheets-era calendars are [reference/sheets-era/ROADMAP.md](reference/sheets-era/ROADMAP.md). History, not a bible.
 
 ## Now
 
@@ -15,18 +15,26 @@ This is the living plan. Dated Sheets-era phases (September 1 test build, clasp,
 - Shared books on the household Supabase Postgres (same schema as PGlite)
 - Website on Cloudflare Workers + Assets (`hearth-books`)
 
-## Next, only after Jonathan uses it for real weeks
+## Next — Chapter 0 (kitchen-table trust)
 
-- JSON import of a sanitized development export from the Sheets app, mapped through the same commands
-- Recurring auto-post on open, with a preview of the next three dates
-- CSV bank import into the same `postEntry` path
-- A real auth layer if personal rows must be private
-- Hosted RLS that is not `USING (true)`
+Gates, not a pitch-deck month. Details in [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md).
 
-## Later
+- GitHub 2FA (D-020)
+- Auth + RLS (stop `USING (true)`); phrase-join also filters environment
+- PGlite database per Development / Production pill
+- Sit-down shows dollars; goals are real contributions, not +$50
+- Recurring preview on open, then the existing `postEntry` path
+- JSON import of a sanitized Sheets export through the same commands
 
-- Canadian bank adapters
-- Multi-currency
-- Event-sourced server if household scale stops being household scale
+## Then — Chapter 1 (frictionless truth)
 
-Features follow use, not a six-week product fantasy.
+- IOU object + Interac Request Money deep link (API only with a sponsor)
+- CSV inbox → confirm → `postEntry` (import-shaped path from D-011)
+- Flinks sandbox after Auth; on-device categorization never auto-posts
+- Shift forecast on Home after ≥8 weeks of posted shifts — forecast is not money
+
+## Later — Chapters 2–4
+
+- Tax lockbox after each shift; safe-to-spend / runway; sweep as `postTransfer`
+- Issued cards only with a BIN sponsor; FX as explicit journal lines
+- Hearth Protocol / BaaS after other households run Chapter 0–1 without a Health incident
