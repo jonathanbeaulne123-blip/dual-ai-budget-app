@@ -50,7 +50,7 @@ export async function probeHostedDatabases(): Promise<HostProbe[]> {
     },
     {
       id: "cloudflare-pages",
-      name: "Cloudflare Pages",
+      name: "Cloudflare Workers",
       reachable: true,
       detail: "Static host for the phone app and join links. Not a ledger.",
       ledgerFit: "static-host",

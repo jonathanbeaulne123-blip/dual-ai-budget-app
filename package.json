@@ -15,7 +15,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "books:apply": "node --env-file=.env scripts/apply-supabase-schema.mjs",
-    "pages:deploy": "pnpm build && npx --yes wrangler@4 pages deploy dist --project-name=hearth-books"
+    "cf:deploy": "pnpm build && npx --yes wrangler@4 deploy"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.5",

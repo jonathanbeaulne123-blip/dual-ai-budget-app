@@ -1,4 +1,4 @@
-name: Cloudflare Pages
+name: Cloudflare Workers
 
 on:
   push:
@@ -29,9 +29,8 @@ jobs:
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
             echo "No Cloudflare API secrets on this repo."
-            echo "Connect GitHub in Cloudflare: Workers & Pages → Create → Pages → Connect to Git."
-            echo "Repo jonathanbeaulne123-blip/dual-ai-budget-app. Production branch: cursor/hearth-rebuild-cfde."
-            echo "Build command: pnpm build. Output directory: dist. Node: 22."
+            echo "Workers Builds is connected as hearth-books. Production branch must be cursor/hearth-rebuild-cfde."
+            echo "wrangler.toml serves dist/ as a static SPA. Do not clone main (that is Sheets)."
             exit 0
           fi
-          npx --yes wrangler@4 pages deploy dist --project-name=hearth-books --branch="${GITHUB_REF_NAME}" --commit-dirty=true
+          npx --yes wrangler@4 deploy

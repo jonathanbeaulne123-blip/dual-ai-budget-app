@@ -9,7 +9,7 @@ Persistence is two layers:
 1. **Command snapshot** — IndexedDB `hearth-ledger` / store `households`, plus a `localStorage` fallback. This is what commands clone, validate, and undo.
 2. **Books** — a double-entry PostgreSQL database in PGlite (`idb://hearth-books`). After every save the snapshot is posted as balanced `journal_entries` / `journal_lines`. Views expose trial balance, income statement, net worth, and an unbalanced-entry alarm.
 
-Netlify Functions plus Blobs are a rollback envelope only. They are not the books. The website is Cloudflare Pages. Hosted books are the household Supabase Postgres project. Download SQL from the Books tab still loads the same schema elsewhere.
+Netlify Functions plus Blobs are a rollback envelope only. They are not the books. The website is Cloudflare Workers + Assets. Hosted books are the household Supabase Postgres project. Download SQL from the Books tab still loads the same schema elsewhere.
 
 Pairing does not depend on that function being live. Every household has a three-word phrase. **Share phrase and link** sends `/?join=cedar-lantern-kite`. **Hearth Pass** is a JSON file of the shared envelope only; the other phone imports it and merge-by-id still applies. Cloud publish is an accelerator, not the only door.
 
@@ -49,7 +49,7 @@ Browser controls are usability. Commands throw `ValidationError` before mutating
 
 Development is the default local ledger. Production is a second named snapshot on the same device. They cannot be confused by workbook title; the pill in the top bar is the environment.
 
-A linked household on Netlify is a leftover pairing envelope, not the books. Development/production on a phone remain local keys. The books are PostgreSQL in the app (PGlite) and the same schema on the household Supabase project. The website is Cloudflare Pages.
+A linked household on Netlify is a leftover pairing envelope, not the books. Development/production on a phone remain local keys. The books are PostgreSQL in the app (PGlite) and the same schema on the household Supabase project. The website is Cloudflare Workers.
 
 ## Scale
 

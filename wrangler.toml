@@ -1,6 +1,12 @@
-# Hearth website. Supabase remains the books.
+# Hearth website on Cloudflare Workers + Assets. Supabase remains the books.
 # Production branch: cursor/hearth-rebuild-cfde until Hearth is on main.
-# Dashboard: Create → Pages → Connect to Git → this repo → pnpm build → dist → Node 22.
 name = "hearth-books"
 compatibility_date = "2026-08-21"
-pages_build_output_dir = "dist"
+workers_dev = true
+
+[assets]
+directory = "./dist"
+not_found_handling = "single-page-application"
+
+[build]
+command = "pnpm build"

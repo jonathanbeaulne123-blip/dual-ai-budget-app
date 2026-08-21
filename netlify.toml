@@ -1,4 +1,4 @@
-# Rollback static host only. Cloudflare Pages is the website. Supabase is the books.
+# Rollback static host only. Cloudflare Workers is the website. Supabase is the books.
 # Do not use Blobs as the ledger.
 [build]
   command = "pnpm build"
