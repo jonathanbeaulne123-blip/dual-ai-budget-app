@@ -20,7 +20,7 @@ This rebuild exists to be compared, not merged blindly. `main` remains the live-
 | Dev vs prod | Two Google projects | Two named local snapshots, labeled in the chrome |
 | Shared household | One Sheet both edit | Phrase + join link + Hearth Pass; Postgres books on the phone; optional cloud envelopes |
 | Books | Spreadsheet cells | Double-entry journal, trial balance, account register, read-only SQL |
-| Hosting | Google | PGlite in-app; Neon/Supabase for hosted Postgres; Netlify is a static host, not a ledger |
+| Hosting | Google | PGlite in-app; Supabase for hosted Postgres; Cloudflare Pages for the website; Netlify is rollback only |
 | Personal vs household entries | Hidden sheet / filter only | Shared, Personal, or Both on every add; two views |
 | Docs drift | README/AGENTS lagged PR #16 | Docs generated with this runtime |
 | Goals / recurring | Schema, unwired | Working, small, reversible |

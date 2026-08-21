@@ -1,0 +1,37 @@
+name: Cloudflare Pages
+
+on:
+  push:
+    branches: [cursor/hearth-rebuild-cfde]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pages:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Deploy
+        if: github.event_name != 'pull_request'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "No Cloudflare API secrets on this repo."
+            echo "Connect GitHub in Cloudflare: Workers & Pages → Create → Pages → Connect to Git."
+            echo "Repo jonathanbeaulne123-blip/dual-ai-budget-app. Production branch: cursor/hearth-rebuild-cfde."
+            echo "Build command: pnpm build. Output directory: dist. Node: 22."
+            exit 0
+          fi
+          npx --yes wrangler@4 pages deploy dist --project-name=hearth-books --branch="${GITHUB_REF_NAME}" --commit-dirty=true

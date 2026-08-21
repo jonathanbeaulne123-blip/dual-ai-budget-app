@@ -33,6 +33,7 @@ describe("household invite phrases", () => {
 
   it("reads a join token from the page location", () => {
     expect(inviteFromLocation("https://zesty-jelly-4a4d77.netlify.app/?join=cedar-lantern-maple")).toBe("cedar-lantern-maple");
+    expect(inviteFromLocation("https://hearth-books.pages.dev/?join=cedar-lantern-maple")).toBe("cedar-lantern-maple");
     expect(joinUrlFor("cedar lantern maple", "https://hearth.example")).toBe("https://hearth.example/?join=cedar-lantern-maple");
   });
 });

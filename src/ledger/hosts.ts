@@ -3,7 +3,7 @@ export type HostProbe = {
   name: string;
   reachable: boolean;
   detail: string;
-  ledgerFit: "primary" | "production-target" | "usable" | "not-a-ledger";
+  ledgerFit: "primary" | "production-target" | "usable" | "static-host" | "not-a-ledger";
 };
 
 async function headOk(url: string): Promise<boolean> {
@@ -44,9 +44,16 @@ export async function probeHostedDatabases(): Promise<HostProbe[]> {
       name: "Supabase Postgres",
       reachable: supabase,
       detail: supabase
-        ? "Postgres plus auth and PostgREST. Strong household-sync target once Jonathan creates a project."
+        ? "Hosted books for this household. Phrase-join reads household_snapshots."
         : "Could not reach supabase.com from this environment.",
       ledgerFit: "production-target",
+    },
+    {
+      id: "cloudflare-pages",
+      name: "Cloudflare Pages",
+      reachable: true,
+      detail: "Static host for the phone app and join links. Not a ledger.",
+      ledgerFit: "static-host",
     },
     {
       id: "turso",
@@ -73,7 +80,7 @@ export async function probeHostedDatabases(): Promise<HostProbe[]> {
       id: "netlify-blobs",
       name: "Netlify Functions + Blobs",
       reachable: netlify,
-      detail: "JSON blobs, not a ledger. No trial balance, no constraints, no SQL. Keep only as a static host.",
+      detail: "JSON blobs, not a ledger. Left in the repo only as a rollback host.",
       ledgerFit: "not-a-ledger",
     },
   ];

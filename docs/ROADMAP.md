@@ -8,8 +8,9 @@
 - Demo household and 12-month fixtures
 - Development vs production local snapshots
 - Shared / personal / both visibility, household vs personal views
-- Phrase / join link / Hearth Pass pairing; Netlify blobs optional and not the ledger
+- Phrase / join link / Hearth Pass pairing
 - Shared books on the household Supabase Postgres (same schema as PGlite)
+- Website on Cloudflare Pages (`hearth-books`); Netlify is rollback only
 
 ## Next, only after Jonathan uses it for real weeks
 

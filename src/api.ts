@@ -10,14 +10,16 @@ import type { Household } from "./core/types.ts";
 import { probeSupabase, pullSupabaseHousehold, pushSupabaseHousehold } from "./ledger/supabase.ts";
 
 export function apiUrl(): string {
-  return import.meta.env.VITE_HEARTH_API || "/.netlify/functions/hearth";
+  return String(import.meta.env.VITE_HEARTH_API || "").trim().replace(/\/$/, "");
 }
 
 export async function probeHearthApi(): Promise<boolean> {
   const hosted = await probeSupabase();
   if (hosted.schema) return true;
+  const legacy = apiUrl();
+  if (!legacy) return false;
   try {
-    const response = await fetch(apiUrl(), { method: "GET" });
+    const response = await fetch(legacy, { method: "GET" });
     if (!response.ok) return false;
     const data = await response.json() as { ok?: boolean; service?: string };
     return data.ok === true && data.service === "hearth";
@@ -27,7 +29,11 @@ export async function probeHearthApi(): Promise<boolean> {
 }
 
 async function post(body: unknown): Promise<Household> {
-  const response = await fetch(apiUrl(), {
+  const legacy = apiUrl();
+  if (!legacy) {
+    throw new Error("Shared books are on Supabase. On the other phone tap Publish to the cloud, or send a Hearth Pass.");
+  }
+  const response = await fetch(legacy, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -76,6 +82,11 @@ export async function joinSharedHousehold(inviteCode: string, memberId?: string)
 }
 
 export async function pullSharedHousehold(inviteCode: string, memberId: string): Promise<Household> {
+  const fromSupabase = await pullSupabaseHousehold(inviteFromText(inviteCode));
+  if (fromSupabase) return fromSupabase;
+  if (!apiUrl()) {
+    throw new Error("That phrase is right, but no household has been published to Supabase yet. On the other phone open Invite and wait until it says the shared books are live.");
+  }
   return post({ action: "pull", inviteCode: inviteFromText(inviteCode), memberId });
 }
 

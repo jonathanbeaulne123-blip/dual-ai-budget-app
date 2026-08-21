@@ -1,0 +1,6 @@
+# Hearth website. Supabase remains the books.
+# Production branch: cursor/hearth-rebuild-cfde until Hearth is on main.
+# Dashboard: Create → Pages → Connect to Git → this repo → pnpm build → dist → Node 22.
+name = "hearth-books"
+compatibility_date = "2026-08-21"
+pages_build_output_dir = "dist"

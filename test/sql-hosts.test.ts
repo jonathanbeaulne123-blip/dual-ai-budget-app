@@ -58,8 +58,10 @@ describe("ledger host bakeoff", () => {
     const netlify = hosts.find((host) => host.id === "netlify-blobs");
     const neon = hosts.find((host) => host.id === "neon");
     const supabase = hosts.find((host) => host.id === "supabase");
+    const cloudflare = hosts.find((host) => host.id === "cloudflare-pages");
     expect(pglite?.ledgerFit).toBe("primary");
     expect(netlify?.ledgerFit).toBe("not-a-ledger");
+    expect(cloudflare?.ledgerFit).toBe("static-host");
     expect(neon?.ledgerFit).toBe("production-target");
     expect(supabase?.ledgerFit).toBe("production-target");
   });
