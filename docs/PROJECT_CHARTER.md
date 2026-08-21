@@ -14,4 +14,4 @@ Jonathan can compare this rebuild with the Sheets app and prefer it for daily us
 
 ## Out of scope until the core is boring
 
-Bank connections, multi-currency, public distribution, hosted sync, cryptographic personal-goal privacy.
+Bank connections, multi-currency, public distribution, cryptographic personal-row privacy.

@@ -128,6 +128,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
 .row:last-child { border-bottom: 0; }
 .muted { color: var(--muted); }
 .right { text-align: right; }
+.health { padding-left: 18px; color: var(--muted); line-height: 1.45; }
 
 .bar { height: 8px; background: var(--paper-2); border-radius: 99px; overflow: hidden; margin-top: 6px; }
 .bar > i { display: block; height: 100%; background: var(--pine); border-radius: inherit; }
@@ -244,6 +245,31 @@ input, select, textarea {
 }
 .welcome-card img { width: 72px; height: 72px; border-radius: 20px; }
 .welcome-card p { color: var(--muted); line-height: 1.5; }
+.view-switch {
+  display: flex;
+  gap: 6px;
+  margin: -6px 0 16px;
+}
+.view-switch button {
+  flex: 1;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  padding: 10px 12px;
+  font-weight: 600;
+}
+.view-switch button.active {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.invite-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 28px;
+  letter-spacing: 0.18em;
+  text-align: center;
+  padding: 12px 0 4px;
+}
 .kicker { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--copper); font-weight: 700; }
 
 .ledger-row {

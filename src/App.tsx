@@ -10,8 +10,11 @@ import {
   calcShiftAmounts,
   catalogHousehold,
   contributeToGoal,
+  defaultVisibilityForView,
   formatCad,
   formatDateLabel,
+  formatInviteCode,
+  householdForView,
   jointSplit,
   monthKeyFromDateKey,
   parseAmount,
@@ -29,11 +32,15 @@ import {
   type CommitResult,
   type Environment,
   type Household,
+  type LedgerView,
   type Split,
   type UndoToken,
+  type Visibility,
 } from "./core/index.ts";
 import { LedgerPage } from "./Ledger.tsx";
 import { STORAGE_EXPLAINER, clearHousehold, downloadJson, loadHousehold, saveHousehold } from "./storage.ts";
+import { clearSession, loadSession, saveSession, type Session } from "./session.ts";
+import { createSharedHousehold, hostingHint, joinSharedHousehold, reconcileHousehold, pushSharedHousehold } from "./api.ts";
 
 type Tab = "home" | "plan" | "ledger" | "more";
 type AddMode = "expense" | "income" | "shift" | "transfer";
@@ -53,6 +60,7 @@ const emptyForm = {
   cashTips: "0",
   ccTips: "0",
   hours: "4",
+  visibility: "household" as Visibility,
 };
 
 export function App() {
@@ -70,13 +78,31 @@ export function App() {
   const [commandOpen, setCommandOpen] = useState(false);
   const [splitPercents, setSplitPercents] = useState<Record<string, number>>({ "MEM-001": 50, "MEM-002": 50 });
   const [now] = useState(() => new Date());
+  const [session, setSession] = useState<Session | null>(null);
+  const [syncState, setSyncState] = useState<"idle" | "syncing" | "synced" | "error">("idle");
+  const [inviteInput, setInviteInput] = useState("");
+  const [welcomeMode, setWelcomeMode] = useState<"home" | "join">("home");
 
   useEffect(() => {
     let live = true;
     setBooting(true);
-    loadHousehold(environment).then((loaded) => {
+    const loadedSession = loadSession(environment);
+    setSession(loadedSession);
+    loadHousehold(environment).then(async (loaded) => {
       if (!live) return;
-      setHousehold(loaded);
+      if (loaded?.linked && loadedSession?.memberId) {
+        try {
+          const reconciled = await reconcileHousehold(loaded, loadedSession.memberId);
+          if (!live) return;
+          await saveHousehold(reconciled);
+          setHousehold(reconciled);
+        } catch {
+          if (!live) return;
+          setHousehold(loaded);
+        }
+      } else {
+        setHousehold(loaded);
+      }
       setBooting(false);
     });
     return () => { live = false; };
@@ -95,18 +121,39 @@ export function App() {
   }, []);
 
   const today = todayKey(now);
+  const memberId = session?.memberId ?? household?.members.find((member) => member.active)?.id ?? "";
+  const view: LedgerView = session?.view ?? "household";
+  const visible = household && memberId ? householdForView(household, memberId, view) : household;
   const findings = useMemo(() => (household ? runHealthCheck(household) : []), [household]);
   const dashboard = useMemo(
-    () => (household ? buildDashboard(household, today, now, findings.length) : null),
-    [household, today, now, findings.length],
+    () => (visible ? buildDashboard(visible, today, now, findings.length) : null),
+    [visible, today, now, findings.length],
   );
 
-  async function persist(next: Household, token?: UndoToken) {
+  function rememberSession(next: Session) {
+    setSession(next);
+    saveSession(environment, next);
+  }
+
+  async function persist(next: Household, token?: UndoToken, actorId?: string) {
     await saveHousehold(next);
     setHousehold(next);
     if (token) {
       setToast(token);
       window.setTimeout(() => setToast((current) => (current?.id === token.id ? null : current)), 8000);
+    }
+    const who = actorId || session?.memberId;
+    if (next.linked && who) {
+      setSyncState("syncing");
+      try {
+        const merged = await pushSharedHousehold(next, who);
+        await saveHousehold(merged);
+        setHousehold(merged);
+        setSyncState("synced");
+      } catch (caught) {
+        setSyncState("error");
+        setError(caught instanceof Error ? caught.message : "Saved on this phone. Shared sync can retry from More.");
+      }
     }
   }
 
@@ -119,7 +166,7 @@ export function App() {
       await persist(result.household, result.undo);
       setConfirm(null);
       setAdding(false);
-      setForm({ ...emptyForm, date: today });
+      setForm({ ...emptyForm, date: today, visibility: defaultVisibilityForView(view) });
       if (result.warnings.length) setError(result.warnings.join(" "));
     } catch (caught) {
       if (caught instanceof NeedsConfirmationError) setConfirm(caught);
@@ -148,16 +195,92 @@ export function App() {
           <img src="/icon.png" alt="" />
           <h1>Hearth</h1>
           <p>
-            A household ledger that treats every add as a recoverable commit.
-            Transfers are not spend. Splits always add up. The numbers on Home
-            are the same functions the tests run.
+            Jonathan and Bianca each get a household ledger and a personal ledger.
+            Every entry can be shared, personal, or both. Shared rows live in one
+            database you both open with a household code.
           </p>
-          <button className="primary" onClick={() => persist(seedDemoHousehold({ today, environment }))}>
-            Open the demo kitchen table
-          </button>
-          <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => persist(catalogHousehold(environment))}>
-            Start empty
-          </button>
+          {welcomeMode === "join" ? (
+            <>
+              <label>Household code</label>
+              <input
+                value={inviteInput}
+                onChange={(event) => setInviteInput(event.target.value)}
+                placeholder="ABC-123"
+                autoCapitalize="characters"
+              />
+              <p className="muted">{hostingHint()}</p>
+              {error && <p className="danger">{error}</p>}
+              <button
+                className="primary"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  setError("");
+                  try {
+                    const joined = await joinSharedHousehold(inviteInput);
+                    await persist(joined);
+                    setWelcomeMode("home");
+                  } catch (caught) {
+                    setError(caught instanceof Error ? caught.message : String(caught));
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                Join household
+              </button>
+              <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => { setWelcomeMode("home"); setError(""); }}>
+                Back
+              </button>
+            </>
+          ) : (
+            <>
+              <button className="primary" onClick={() => persist(seedDemoHousehold({ today, environment }))}>
+                Open the demo kitchen table
+              </button>
+              <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => persist(catalogHousehold(environment))}>
+                Start our household
+              </button>
+              <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setWelcomeMode("join")}>
+                Join with a code
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="welcome">
+        <div className="welcome-card">
+          <p className="kicker">Who is using this phone?</p>
+          <h1>Choose yourself</h1>
+          <p>Household numbers are shared. Personal rows stay on your ledger. Use your own phone if you want that split to hold.</p>
+          {household.members.filter((member) => member.active).map((member) => (
+            <button
+              key={member.id}
+              className="primary"
+              style={{ marginTop: 8 }}
+              onClick={() => {
+                const next = { memberId: member.id, view: "household" as const };
+                rememberSession(next);
+                if (household.linked) {
+                  void (async () => {
+                    try {
+                      const pulled = await joinSharedHousehold(household.inviteCode, member.id);
+                      await persist(pulled, undefined, member.id);
+                    } catch {
+                      // Catalog is enough to start; Sync now can retry.
+                    }
+                  })();
+                }
+              }}
+            >
+              I am {member.name}
+            </button>
+          ))}
         </div>
       </div>
     );
@@ -205,6 +328,8 @@ export function App() {
         toAccountId: form.toAccountId,
         note: form.note,
         confirmDuplicate,
+        createdBy: session.memberId,
+        visibility: form.visibility,
       }));
       return;
     }
@@ -219,6 +344,8 @@ export function App() {
         hours: form.hours,
         settingsFingerprint: shiftSettingsFingerprint(ledger.shiftSettings),
         confirmDuplicate,
+        createdBy: session.memberId,
+        visibility: form.visibility,
       }));
       return;
     }
@@ -232,6 +359,8 @@ export function App() {
       place: form.place,
       splits: splitsFor(parseAmount(form.amount)),
       confirmDuplicate,
+      createdBy: session.memberId,
+      visibility: form.visibility,
     }));
   }
 
@@ -242,18 +371,35 @@ export function App() {
           <img src="/icon.png" alt="" />
           <div>
             <h1>Hearth</h1>
-            <p>{household.name} · {today}</p>
+            <p>
+              {household.members.find((member) => member.id === session.memberId)?.name}
+              {" · "}
+              {view === "personal" ? "personal" : "household"}
+              {" · "}
+              {today}
+            </p>
           </div>
         </div>
         <button className={`pill ${environment === "development" ? "dev" : "prod"}`} onClick={() => setEnvironment(environment === "development" ? "production" : "development")}>
           {environment === "development" ? "Development" : "Production"}
         </button>
       </header>
+      <div className="view-switch" role="tablist" aria-label="Ledger view">
+        {(["household", "personal"] as LedgerView[]).map((item) => (
+          <button
+            key={item}
+            className={view === item ? "active" : ""}
+            onClick={() => rememberSession({ memberId: session.memberId, view: item })}
+          >
+            {item === "household" ? "Household" : "Personal"}
+          </button>
+        ))}
+      </div>
 
       {tab === "home" && dashboard && (
         <>
           <section className="hero">
-            <div className="label">{dashboard.monthLabel}</div>
+            <div className="label">{view === "personal" ? "Personal" : "Household"} · {dashboard.monthLabel}</div>
             <div className={`money ${dashboard.month.netActualCents < 0 ? "negative" : ""}`}>{formatCad(dashboard.month.netActualCents)}</div>
             <div className="sub">
               {formatCad(dashboard.month.incomeActualCents)} in · {formatCad(dashboard.month.expenseActualCents)} out
@@ -291,8 +437,8 @@ export function App() {
             ))}
           </section>
           <section className="card">
-            <header><h2>Goals</h2><span className="muted">shared sit on Home</span></header>
-            {dashboard.goals.filter((item) => item.goal.shared).map((item) => (
+            <header><h2>Goals</h2><span className="muted">{view === "personal" ? "personal" : "shared sit on Home"}</span></header>
+            {dashboard.goals.map((item) => (
               <div key={item.goal.id}>
                 <div className="row"><span>{item.goal.name}</span><span>{Math.round(item.progress * 100)}%</span></div>
                 <div className="bar"><i style={{ width: `${item.progress * 100}%` }} /></div>
@@ -324,13 +470,13 @@ export function App() {
               );
             })}
           </section>
-          <SitDown household={household} onApply={(next, token) => persist(next, token)} />
-          <Goals household={household} onChange={(next, token) => persist(next, token)} />
+          <SitDown household={household} onApply={(next, token) => persist(next, token)} hidden={view === "personal"} />
+          <Goals household={household} goals={visible?.goals ?? household.goals} onChange={(next, token) => persist(next, token)} />
         </>
       )}
 
       {tab === "ledger" && (
-        <LedgerPage household={household} onChange={(next, token) => { void persist(next, token); }} />
+        <LedgerPage household={household} memberId={session.memberId} view={view} onChange={(next, token) => { void persist(next, token); }} />
       )}
 
       {tab === "more" && (
@@ -341,14 +487,99 @@ export function App() {
               <ul className="health">{findings.map((finding) => <li key={finding.section + finding.message}><strong>{finding.section}.</strong> {finding.message}</li>)}</ul>
             )}
           </section>
+          <section className="card">
+            <header>
+              <h2>Household</h2>
+              <span className={`pill ${household.linked ? "good" : ""}`}>{household.linked ? "Shared" : "This phone"}</span>
+            </header>
+            <p>
+              You are {household.members.find((member) => member.id === session.memberId)?.name}.
+              Household view shows shared and “both” rows. Personal view shows your personal and “both” rows.
+              The other person’s personal rows stay in their personal database.
+            </p>
+            <label>This phone is</label>
+            <div className="chips">
+              {household.members.filter((member) => member.active).map((member) => (
+                <button
+                  key={member.id}
+                  className={`chip ${session.memberId === member.id ? "selected" : ""}`}
+                  onClick={() => rememberSession({ memberId: member.id, view })}
+                >
+                  {member.name}
+                </button>
+              ))}
+            </div>
+            <div className="invite-code">{formatInviteCode(household.inviteCode)}</div>
+            <p className="muted">Give Bianca or Jonathan this code to join the same household. {hostingHint()}</p>
+            {syncState === "syncing" && <p className="muted">Syncing the shared household…</p>}
+            {syncState === "synced" && <p className="muted">Shared household is up to date.</p>}
+            {syncState === "error" && <p className="danger">Last sync did not reach the shared database. Rows are still saved here.</p>}
+            <button className="ghost" style={{ width: "100%" }} onClick={() => {
+              void navigator.clipboard?.writeText(formatInviteCode(household.inviteCode));
+            }}>Copy household code</button>
+            {!household.linked && (
+              <button className="primary" disabled={busy} onClick={() => {
+                void (async () => {
+                  setBusy(true);
+                  setError("");
+                  try {
+                    const created = await createSharedHousehold(household, session.memberId);
+                    await persist(created);
+                    setSyncState("synced");
+                  } catch (caught) {
+                    setError(caught instanceof Error ? caught.message : String(caught));
+                    setSyncState("error");
+                  } finally {
+                    setBusy(false);
+                  }
+                })();
+              }}>Create shared household</button>
+            )}
+            {household.linked && (
+              <button className="primary" disabled={busy} onClick={() => {
+                void (async () => {
+                  setBusy(true);
+                  setError("");
+                  try {
+                    const merged = await reconcileHousehold(household, session.memberId);
+                    const pushed = await pushSharedHousehold(merged, session.memberId);
+                    await persist(pushed);
+                    setSyncState("synced");
+                  } catch (caught) {
+                    setError(caught instanceof Error ? caught.message : String(caught));
+                    setSyncState("error");
+                  } finally {
+                    setBusy(false);
+                  }
+                })();
+              }}>Sync now</button>
+            )}
+            <label>Join a different household</label>
+            <input value={inviteInput} onChange={(event) => setInviteInput(event.target.value)} placeholder="ABC-123" autoCapitalize="characters" />
+            <button className="ghost" style={{ width: "100%", marginTop: 8 }} disabled={busy} onClick={() => {
+              void (async () => {
+                setBusy(true);
+                setError("");
+                try {
+                  const joined = await joinSharedHousehold(inviteInput, session.memberId);
+                  await persist(joined);
+                  setSyncState("synced");
+                } catch (caught) {
+                  setError(caught instanceof Error ? caught.message : String(caught));
+                } finally {
+                  setBusy(false);
+                }
+              })();
+            }}>Join with this code</button>
+          </section>
           <section className="card storage">
             <header><h2>Where the ledger lives</h2></header>
             <p>
-              There is no Google Sheet and no server database. Hearth keeps one household snapshot
-              on this device in IndexedDB (<code>{STORAGE_EXPLAINER.database}</code>, store <code>{STORAGE_EXPLAINER.store}</code>).
-              A copy also sits in {STORAGE_EXPLAINER.backup} so a blocked database still has a fallback.
-              Development and Production are two keys in that same database, not two workbooks.
-              Export JSON is the file backup you can keep.
+              This phone keeps a full working copy in IndexedDB (<code>{STORAGE_EXPLAINER.database}</code>, store <code>{STORAGE_EXPLAINER.store}</code>)
+              with a {STORAGE_EXPLAINER.backup} fallback. When the household is shared, household and “both”
+              rows go to the shared database; your personal-only rows go to your personal database.
+              Development and Production are two keys on this device. Export JSON is the file backup.
+              Personal rows are a filter, not a lock — use two phones for a real split.
             </p>
             <button className="primary" onClick={() => downloadJson(household)}>Export JSON</button>
             <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => persist(seedDemoHousehold({ today, environment }))}>Reload demo data</button>
@@ -358,7 +589,13 @@ export function App() {
                 void persist(result.household, result.undo);
               } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
             }}>Post due recurring</button>
-            <button className="danger" onClick={() => { void clearHousehold(environment).then(() => setHousehold(null)); }}>Reset this environment</button>
+            <button className="danger" onClick={() => {
+              void clearHousehold(environment).then(() => {
+                clearSession(environment);
+                setSession(null);
+                setHousehold(null);
+              });
+            }}>Reset this environment</button>
           </section>
           <AddCategoryForm household={household} onSave={(next, token) => persist(next, token)} />
         </>
@@ -378,6 +615,25 @@ export function App() {
             </div>
             <label>Date</label>
             <input type="date" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} />
+            <label>Save to</label>
+            <div className="chips">
+              {([
+                { id: "household" as Visibility, name: "Shared" },
+                { id: "personal" as Visibility, name: "Personal" },
+                { id: "both" as Visibility, name: "Both" },
+              ]).map((item) => (
+                <button
+                  key={item.id}
+                  className={`chip ${form.visibility === item.id ? "selected" : ""}`}
+                  onClick={() => setForm({ ...form, visibility: item.id })}
+                >
+                  {item.name}
+                </button>
+              ))}
+            </div>
+            <p className="muted">
+              Shared is the household database. Personal stays on your ledger. Both writes one row that appears in each.
+            </p>
             {mode !== "shift" && mode !== "transfer" && (
               <>
                 <label>Amount</label>
@@ -534,7 +790,12 @@ export function App() {
       <nav className="nav">
         <button className={tab === "home" && !adding ? "active" : ""} onClick={() => { setTab("home"); setAdding(false); }}>Home</button>
         <button className={tab === "plan" ? "active" : ""} onClick={() => { setTab("plan"); setAdding(false); }}>Plan</button>
-        <button className="fab" onClick={() => { setAdding(true); setError(""); setConfirm(null); }}>+</button>
+        <button className="fab" onClick={() => {
+          setAdding(true);
+          setError("");
+          setConfirm(null);
+          setForm({ ...emptyForm, date: today, visibility: defaultVisibilityForView(view), memberId: session.memberId });
+        }}>+</button>
         <button className={tab === "ledger" ? "active" : ""} onClick={() => { setTab("ledger"); setAdding(false); }}>Ledger</button>
         <button className={tab === "more" ? "active" : ""} onClick={() => { setTab("more"); setAdding(false); }}>More</button>
       </nav>
@@ -542,7 +803,15 @@ export function App() {
   );
 }
 
-function SitDown({ household, onApply }: { household: Household; onApply: (household: Household, undo?: UndoToken) => void }) {
+function SitDown({ household, onApply, hidden }: { household: Household; onApply: (household: Household, undo?: UndoToken) => void; hidden?: boolean }) {
+  if (hidden) {
+    return (
+      <section className="card">
+        <header><h2>Sit-down</h2></header>
+        <p className="muted">Monthly budgets live on the household view so both of you plan from the same numbers.</p>
+      </section>
+    );
+  }
   const monthKey = monthKeyFromDateKey(todayKey());
   const preview = sitDownPreview(household, monthKey);
   return (
@@ -557,13 +826,13 @@ function SitDown({ household, onApply }: { household: Household; onApply: (house
   );
 }
 
-function Goals({ household, onChange }: { household: Household; onChange: (household: Household, undo?: UndoToken) => void }) {
+function Goals({ household, goals, onChange }: { household: Household; goals: Household["goals"]; onChange: (household: Household, undo?: UndoToken) => void }) {
   const [name, setName] = useState("New goal");
   const [target, setTarget] = useState("500");
   return (
     <section className="card">
-      <header><h2>All goals</h2></header>
-      {household.goals.map((goal) => (
+      <header><h2>Goals in this view</h2></header>
+      {goals.map((goal) => (
         <div className="row" key={goal.id}>
           <div>
             <strong>{goal.name}</strong>

@@ -22,7 +22,10 @@ function tx(overrides: Partial<Transaction>): Transaction {
     potentialDuplicate: false,
     isDuplicate: false,
     reviewed: true,
+    createdBy: "MEM-001",
+    visibility: "household",
     createdAt: "2026-08-18T00:00:00.000Z",
+    updatedAt: "2026-08-18T00:00:00.000Z",
     ...overrides,
   };
 }

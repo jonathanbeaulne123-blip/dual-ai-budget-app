@@ -87,6 +87,12 @@ export function runHealthCheck(household: Household): Finding[] {
     if (tx.refundOfId && !txIds.has(tx.refundOfId)) flag("Refunds", `${tx.id} points at a missing original expense.`, tx.id);
     const expectedKey = duplicateKey(tx);
     if (tx.duplicateKey !== expectedKey) flag("Duplicates", `${tx.id} fingerprint is stale.`, tx.id);
+    if (tx.visibility !== "household" && tx.visibility !== "personal" && tx.visibility !== "both") {
+      flag("Visibility", `${tx.id} is missing a shared/personal choice.`, tx.id);
+    }
+    if (!tx.createdBy || !memberIds.has(tx.createdBy)) {
+      flag("Visibility", `${tx.id} was created by a missing member.`, tx.id);
+    }
   }
 
   const expectedFlags = refreshDuplicateFlags(household.transactions);
@@ -107,7 +113,10 @@ export function runHealthCheck(household: Household): Finding[] {
     if (tips.amountCents !== shift.netTipsCents) flag("Shifts", `${shift.id} tips amount drifted.`, shift.id);
     if (wages.sourceId !== shift.id || tips.sourceId !== shift.id) flag("Shifts", `${shift.id} source links drifted.`, shift.id);
     if (wages.date !== shift.date || tips.date !== shift.date) flag("Shifts", `${shift.id} dates drifted.`, shift.id);
+    if (wages.createdBy !== shift.createdBy || tips.createdBy !== shift.createdBy) flag("Shifts", `${shift.id} creator drifted.`, shift.id);
+    if (wages.visibility !== shift.visibility || tips.visibility !== shift.visibility) flag("Shifts", `${shift.id} visibility drifted.`, shift.id);
     if (!activeMembers.has(shift.memberId)) flag("Shifts", `${shift.id} member is inactive.`, shift.id);
+    if (shift.createdBy && !memberIds.has(shift.createdBy)) flag("Shifts", `${shift.id} was created by a missing member.`, shift.id);
   }
 
   for (const plan of household.budgetPlans) {

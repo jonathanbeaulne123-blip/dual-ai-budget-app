@@ -1,6 +1,6 @@
 import { TIMEZONE, todayKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { CURRENCY } from "./money.ts";
-import { nextId, nowIso, slug, uniquePrefixedId } from "./ids.ts";
+import { nextId, nowIso, randomHouseholdId, randomInviteCode, slug, uniquePrefixedId } from "./ids.ts";
 import { cloneHousehold } from "./household.ts";
 import { duplicateKey, describeSimilarMatches, findSimilarTransactions, refreshDuplicateFlags } from "./duplicate.ts";
 import { jointSplit } from "./splits.ts";
@@ -17,6 +17,8 @@ import {
   validateOwnedAmount as catalogValidateOwned,
 } from "./catalog.ts";
 import { sitDownPreview } from "./insights.ts";
+import { mergeTombstones } from "./sync.ts";
+import { parseVisibility, visibleForDuplicateScan } from "./visibility.ts";
 import type {
   Activity,
   BudgetPlan,
@@ -27,8 +29,22 @@ import type {
   Split,
   Transaction,
   UndoToken,
+  Visibility,
 } from "./types.ts";
 import { NeedsConfirmationError, ValidationError } from "./types.ts";
+
+export type ActorInput = {
+  createdBy?: string;
+  visibility?: Visibility;
+};
+
+function resolveActor(household: Household, input?: ActorInput, fallbackMemberId?: string): { createdBy: string; visibility: Visibility } {
+  const visibility = parseVisibility(input?.visibility);
+  const createdBy = input?.createdBy || fallbackMemberId || household.members.find((member) => member.active)?.id;
+  if (!createdBy) throw new ValidationError("Add a household member before posting.");
+  requireMember(household, createdBy);
+  return { createdBy, visibility };
+}
 
 function commit(previous: Household, next: Household, action: string, summary: string, postedIds: string[], warnings: string[] = []): CommitResult {
   requireTimezone(next);
@@ -65,6 +81,8 @@ function baseTx(household: Household, input: {
   transferPairId?: string;
   refundOfId?: string;
   createdAt: string;
+  createdBy: string;
+  visibility: Visibility;
 }): Transaction {
   const account = requireAccount(household, input.accountId);
   return {
@@ -94,7 +112,10 @@ function baseTx(household: Household, input: {
     potentialDuplicate: false,
     isDuplicate: false,
     reviewed: true,
+    createdBy: input.createdBy,
+    visibility: input.visibility,
     createdAt: input.createdAt,
+    updatedAt: input.createdAt,
   };
 }
 
@@ -111,10 +132,13 @@ export function postEntry(household: Household, input: {
   refundOfId?: string;
   source?: Transaction["source"];
   sourceId?: string;
+  createdBy?: string;
+  visibility?: Visibility;
 }): CommitResult {
   requireTimezone(household);
   const date = parseDate(input.date);
   const amountCents = parseAmount(input.amount);
+  const actor = resolveActor(household, input);
   const subcategory = requireSubcategory(
     household,
     input.subcategoryId,
@@ -143,8 +167,10 @@ export function postEntry(household: Household, input: {
     sourceId: input.sourceId,
     refundOfId: input.refundOfId,
     createdAt,
+    createdBy: actor.createdBy,
+    visibility: actor.visibility,
   });
-  const matches = findSimilarTransactions(next.transactions, {
+  const matches = findSimilarTransactions(next.transactions.filter((tx) => visibleForDuplicateScan(tx, actor.createdBy)), {
     date: draft.date,
     amountCents: draft.amountCents,
     accountId: draft.accountId,
@@ -171,10 +197,13 @@ export function postTransfer(household: Household, input: {
   toAccountId: string;
   note?: string;
   confirmDuplicate?: boolean;
+  createdBy?: string;
+  visibility?: Visibility;
 }): CommitResult {
   requireTimezone(household);
   const date = parseDate(input.date);
   const amountCents = parseAmount(input.amount);
+  const actor = resolveActor(household, input);
   if (input.fromAccountId === input.toAccountId) throw new ValidationError("Choose two different accounts to move money.");
   requireAccount(household, input.fromAccountId);
   requireAccount(household, input.toAccountId);
@@ -193,6 +222,8 @@ export function postTransfer(household: Household, input: {
     splits: jointSplit(amountCents),
     source: "manual",
     createdAt,
+    createdBy: actor.createdBy,
+    visibility: actor.visibility,
   });
   const inDraft = baseTx(next, {
     date,
@@ -205,8 +236,10 @@ export function postTransfer(household: Household, input: {
     splits: jointSplit(amountCents),
     source: "manual",
     createdAt,
+    createdBy: actor.createdBy,
+    visibility: actor.visibility,
   });
-  const matches = findSimilarTransactions(next.transactions, {
+  const matches = findSimilarTransactions(next.transactions.filter((tx) => visibleForDuplicateScan(tx, actor.createdBy)), {
     date: outDraft.date,
     amountCents: outDraft.amountCents,
     accountId: outDraft.accountId,
@@ -236,10 +269,13 @@ export function postShift(household: Household, input: {
   hours: string | number;
   settingsFingerprint?: string;
   confirmDuplicate?: boolean;
+  createdBy?: string;
+  visibility?: Visibility;
 }): CommitResult {
   requireTimezone(household);
   const parsed = parseShiftInput({ ...input, timeZone: household.timezone });
   const member = requireMember(household, input.memberId);
+  const actor = resolveActor(household, input, member.id);
   const account = requireAccount(household, input.accountId);
   const wagesCat = incomeSubcategory(household, "Wages");
   const tipsCat = incomeSubcategory(household, "Tips");
@@ -272,6 +308,8 @@ export function postShift(household: Household, input: {
     source: "shift",
     sourceId: shiftId,
     createdAt,
+    createdBy: actor.createdBy,
+    visibility: actor.visibility,
   });
   const tipsTx = baseTx(next, {
     date: parsed.date,
@@ -285,6 +323,8 @@ export function postShift(household: Household, input: {
     source: "shift",
     sourceId: shiftId,
     createdAt,
+    createdBy: actor.createdBy,
+    visibility: actor.visibility,
   });
   wagesTx.id = nextId("TXN-IN-", next.transactions.map((tx) => tx.id));
   tipsTx.id = nextId("TXN-IN-", [...next.transactions.map((tx) => tx.id), wagesTx.id]);
@@ -303,7 +343,10 @@ export function postShift(household: Household, input: {
     settingsFingerprint: fingerprint,
     wagesTransactionId: wagesTx.id,
     tipsTransactionId: tipsTx.id,
+    createdBy: actor.createdBy,
+    visibility: actor.visibility,
     createdAt,
+    updatedAt: createdAt,
   });
   const warnings = [];
   if (amounts.netTipsCents < 0) warnings.push("Net tips are negative after tip-out. The shift was still saved.");
@@ -529,6 +572,7 @@ export function markDuplicate(household: Household, transactionId: string, isDup
   const tx = next.transactions.find((item) => item.id === transactionId);
   if (!tx) throw new ValidationError("That transaction no longer exists.");
   tx.isDuplicate = isDuplicate;
+  tx.updatedAt = nowIso();
   return commit(previous, next, "Duplicate Review", `${tx.id} ${isDuplicate ? "excluded from totals" : "included in totals"}`, [tx.id]);
 }
 
@@ -540,9 +584,19 @@ export function updateShiftSettings(household: Household, settings: Household["s
   return commit(previous, next, "Shift Settings", "Updated tip-out and wage rules", []);
 }
 
-export function undo(_current: Household, token: UndoToken): Household {
+export function undo(current: Household, token: UndoToken): Household {
   if (!token?.snapshot) throw new ValidationError("Nothing to undo.");
   const restored = cloneHousehold(token.snapshot);
+  const removedTx = current.transactions.filter((tx) => !restored.transactions.some((row) => row.id === tx.id));
+  const removedShifts = current.shifts.filter((shift) => !restored.shifts.some((row) => row.id === shift.id));
+  restored.tombstones = mergeTombstones(restored.tombstones ?? [], [
+    ...removedTx.map((tx) => ({ id: tx.id, deletedAt: nowIso() })),
+    ...removedShifts.map((shift) => ({ id: shift.id, deletedAt: nowIso() })),
+  ]);
+  restored.householdId = restored.householdId || current.householdId;
+  restored.inviteCode = restored.inviteCode || current.inviteCode;
+  restored.linked = restored.linked ?? current.linked;
+  restored.revision = current.revision;
   restored.activity = [
     ...restored.activity,
     {
@@ -560,6 +614,11 @@ export function undo(_current: Household, token: UndoToken): Household {
 export function emptyHousehold(environment: Household["environment"] = "development"): Household {
   return {
     version: 1,
+    householdId: randomHouseholdId(),
+    inviteCode: randomInviteCode(),
+    linked: false,
+    revision: 0,
+    tombstones: [],
     name: "Jonathan & Bianca",
     timezone: TIMEZONE,
     currency: CURRENCY,

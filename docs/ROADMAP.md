@@ -6,13 +6,15 @@
 - Trustworthy commands for spend, income, shift, transfer, category, budget, goals, recurrences
 - Demo household and 12-month fixtures
 - Development vs production local snapshots
+- Shared / personal / both visibility, household vs personal views
+- Hosted household sync (Netlify Functions + Blobs) behind an invite code
 
 ## Next, only after Jonathan uses it for real weeks
 
 - JSON import of a sanitized development export from the Sheets app, mapped through the same commands
 - Recurring auto-post on open, with a preview of the next three dates
 - CSV bank import into the same `postEntry` path
-- Hosted sync if two phones need one ledger
+- A real auth layer if personal rows must be private
 
 ## Later
 

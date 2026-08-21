@@ -28,6 +28,8 @@ The Sheets app became a trustworthy write kernel trapped in a 3,300-line `Code.g
 - Read Home as one net number, a pulse sentence, this week versus last week, and shared goals
 - Run a monthly sit-down that copies last month and trims overspent categories
 - Keep development and production as two named local ledgers, not two lookalike workbooks
+- Choose **Shared**, **Personal**, or **Both** on every add; switch Household vs Personal at the top
+- Create or join a household with a six-character code so both phones share one database
 - Export JSON; run Health and get a clean bill or a specific finding
 
 Transfers never count as income or expense. Refunds reverse category spend. Shift tip math is the verified cent-rounded household rules, including negative net tips.
@@ -48,6 +50,14 @@ Household snapshot (JSON)
 
 There is no Google login, no Sheet, no formula range that can freeze at row 33. A failed command throws before the snapshot is replaced, so there is nothing to roll back except Undo, which restores the previous snapshot.
 
+## Household vs personal
+
+Jonathan and Bianca each pick who they are on the phone. **Household** shows shared rows and rows marked **Both**. **Personal** shows that person's personal rows and **Both**. The other person's personal rows stay in their personal database.
+
+On the hosted app, **Create shared household** stores the shared ledger plus your personal ledger. Give the six-character code to the other person and they tap **Join with a code**. Each save merges by id so two phones adding groceries at the same time keep both rows.
+
+Personal is a filter, not a lock. Use two phones if you want that split to hold.
+
 ## Tests
 
 `pnpm test` covers Toronto week bounds, shift math against the original vectors, duplicate flags, exact splits, atomic posts, transfer exclusion, shift undo, category commits, a health-clean demo household, and a 12 × 200 transaction fixture.
@@ -62,7 +72,6 @@ git diff main --stat
 
 ## Out of scope here
 
-- Live Google Sheets writes
+- Real privacy for personal rows (a hidden screen is still visible on a shared phone; personal is a filter)
 - Bank import adapters
-- Real privacy for personal goals (a hidden screen is still visible; personal goals are a Home filter only)
-- Hosted sync — this version lives on the device, with JSON export as the backup
+- Live Google Sheets writes

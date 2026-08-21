@@ -4,7 +4,14 @@
 
 Hearth is a TypeScript household ledger with a React interface. The domain lives in `src/core` and does not import React, DOM, or storage. The UI in `src/App.tsx` is an untrusted client: it may format, filter, and preview, but every write goes through a command that validates plain data and returns a new household snapshot.
 
-Persistence is IndexedDB database `hearth-ledger`, object store `households`, one snapshot per environment (`development` or `production`). `localStorage` holds a fallback copy of the same JSON. Export JSON is the file backup. There is no server, no Postgres, and no Google Sheet on this branch.
+Persistence is IndexedDB database `hearth-ledger`, object store `households`, one snapshot per environment (`development` or `production`). `localStorage` holds a fallback copy of the same JSON. Export JSON is the file backup.
+
+When a household is **linked**, Netlify Functions plus Netlify Blobs hold two envelopes for the same invite code:
+
+1. **Shared** — catalog, plus rows whose visibility is `household` or `both`.
+2. **Personal** — that member's `personal`-only rows.
+
+Each phone keeps a working copy, then merges by id on pull/push so concurrent adds do not wipe each other. Undo writes tombstones so a deleted row cannot come back from the other phone. The UI never saves the filtered view as the canonical snapshot.
 
 The in-memory model is still the source of truth while a command runs: clone the household, validate, replace the snapshot, then write both stores. Undo restores the previous snapshot.
 
@@ -22,7 +29,8 @@ The in-memory model is still the source of truth while a command runs: clone the
 - Dates are `YYYY-MM-DD` civil keys in `America/Toronto`. Week bounds are computed from that civil date, never from `Date#setHours(0,0,0,0)` in the runtime zone.
 - `expense` and `income` affect totals. `transfer` is a paired movement between accounts and is excluded from both. `refund` subtracts from category spend.
 - Ownership is a `splits` array that must sum to the amount. Joint is explicit. A split can be any percentage; the leftover cents go to the last person so the total is exact.
-- `duplicateKey` is an exact fingerprint. Posting also scores similar rows: same type, same amount, within five Toronto calendar days, plus shared notes, place, category, or source. `potentialDuplicate` is derived from that. `isDuplicate` remains the reviewed financial control.
+- Every transaction and shift has `createdBy` and `visibility` (`household` | `personal` | `both`). Home, Plan, and Ledger filter that view. Health Check still runs on the full snapshot.
+- `duplicateKey` is an exact fingerprint. Posting also scores similar rows: same type, same amount, within five Toronto calendar days, plus shared notes, place, category, or source. Partner personal rows are not part of that scan. `potentialDuplicate` is derived from that. `isDuplicate` remains the reviewed financial control.
 - Recurring definitions stay separate from posted rows. Posting due items uses the same `postEntry` path.
 - Goals are data. Shared goals appear on Home. Personal goals are a filter only — not a privacy boundary.
 
@@ -37,6 +45,8 @@ Browser controls are usability. Commands throw `ValidationError` before mutating
 ## Environments
 
 Development is the default local ledger. Production is a second named snapshot on the same device. They cannot be confused by workbook title; the pill in the top bar is the environment.
+
+A linked household on Netlify is a third surface: both phones open the same invite code. Development/production on a phone remain local keys and can each link to a different household.
 
 ## Scale
 

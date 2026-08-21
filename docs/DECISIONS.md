@@ -11,7 +11,9 @@ Current product and architecture decisions for Hearth. Historical Sheets convers
 | D-008 | Accepted | Transfers are neither income nor expense. They are a paired movement between accounts. | Prevent double counting. |
 | D-009 | Accepted | Ownership is a splits array that must sum to the amount. Joint is explicit. | Blank member columns will not scale. |
 | D-011 | Accepted | Defer bank integrations; keep an import-shaped command path. | Core reliability first. |
-| D-015 | Accepted for now | Personal goals are a Home visibility filter, not privacy. Hidden UI is not a security boundary. | Two household editors share one device ledger; genuine privacy needs a future auth layer. |
+| D-015 | Accepted for now | Personal goals and personal ledger rows are a visibility filter, not privacy. Hidden UI is not a security boundary. | Two household editors can share a phone; genuine privacy needs auth. Each person should use their own phone. |
+| D-030 | Accepted | Every money row has visibility `household`, `personal`, or `both`, plus `createdBy`. Household view shows household+both. Personal view shows that member's personal+both. | Jonathan and Bianca asked for a shared household database and a personal one each. |
+| D-031 | Accepted | Hosted sync stores a shared envelope and a per-member personal envelope. Merge is union-by-id with tombstones. Never push a filtered snapshot as if it were the whole household. | A naive last-write of one phone's view would delete the partner's personal rows. |
 | D-016 | Accepted | Expense leaves purchasing power; income enters; transfer moves between household accounts; refund reduces category spend. Credit-card payments are transfers, not expenses. | Stops the four meanings collapsing into one catch-all. |
 | D-021 | Accepted | CAD is the only currency. Account currency is authoritative. Writers refuse non-CAD active accounts. | No silent USD labels, no amount conversion. |
 | D-022 | Accepted | Show an account selector whenever more than one account exists. Seed data includes chequing, Visa, and cash. | Prevent first-active-account from becoming a hidden defect. |

@@ -6,6 +6,9 @@ export type TransactionType = "expense" | "income" | "transfer" | "refund";
 export type IncomeStability = "fixed" | "variable";
 export type PartyId = string; // member id or "joint"
 export const JOINT = "joint" as const;
+export type Visibility = "household" | "personal" | "both";
+export type LedgerView = "household" | "personal";
+export type Tombstone = { id: string; deletedAt: string };
 
 export type Member = {
   id: string;
@@ -60,7 +63,10 @@ export type Transaction = {
   potentialDuplicate: boolean;
   isDuplicate: boolean;
   reviewed: boolean;
+  createdBy: string;
+  visibility: Visibility;
   createdAt: string;
+  updatedAt: string;
 };
 
 export type ShiftSettings = {
@@ -89,7 +95,10 @@ export type Shift = {
   settingsFingerprint: string;
   wagesTransactionId: string;
   tipsTransactionId: string;
+  createdBy: string;
+  visibility: Visibility;
   createdAt: string;
+  updatedAt: string;
 };
 
 export type Recurrence = {
@@ -136,6 +145,11 @@ export type Activity = {
 
 export type Household = {
   version: 1;
+  householdId: string;
+  inviteCode: string;
+  linked: boolean;
+  revision: number;
+  tombstones: Tombstone[];
   name: string;
   timezone: "America/Toronto";
   currency: Currency;
@@ -151,6 +165,38 @@ export type Household = {
   activity: Activity[];
   shiftSettings: ShiftSettings;
   lastCommittedAt: string | null;
+};
+
+export type SharedEnvelope = {
+  kind: "shared";
+  revision: number;
+  householdId: string;
+  inviteCode: string;
+  name: string;
+  timezone: Household["timezone"];
+  currency: Currency;
+  environment: Environment;
+  members: Member[];
+  accounts: Account[];
+  categories: Category[];
+  recurrences: Recurrence[];
+  goals: Goal[];
+  budgetPlans: BudgetPlan[];
+  activity: Activity[];
+  shiftSettings: ShiftSettings;
+  lastCommittedAt: string | null;
+  transactions: Transaction[];
+  shifts: Shift[];
+  tombstones: Tombstone[];
+};
+
+export type PersonalEnvelope = {
+  kind: "personal";
+  memberId: string;
+  lastCommittedAt: string | null;
+  transactions: Transaction[];
+  shifts: Shift[];
+  tombstones: Tombstone[];
 };
 
 export class ValidationError extends Error {

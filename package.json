@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.14.0",
   "description": "A dependable household budget for Jonathan and Bianca — portable ledger, Toronto time, CAD, Bianca-first interface.",
   "engines": {
     "node": ">=20"
@@ -15,6 +16,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@netlify/blobs": "^11.0.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },

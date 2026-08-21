@@ -8,8 +8,11 @@ import {
   categoryName,
   splitSummary,
   transactionTypeLabel,
+  visibilityLabel,
+  isVisibleInView,
   type Household,
   type LedgerSection,
+  type LedgerView,
   type Transaction,
   type UndoToken,
 } from "./core/index.ts";
@@ -22,15 +25,23 @@ const SECTIONS: { id: LedgerSection; label: string }[] = [
 
 export function LedgerPage({
   household,
+  memberId,
+  view,
   onChange,
 }: {
   household: Household;
+  memberId: string;
+  view: LedgerView;
   onChange: (household: Household, undo?: UndoToken) => void;
 }) {
   const [section, setSection] = useState<LedgerSection>("expenses");
   const [query, setQuery] = useState("");
-  const grouped = useMemo(() => partitionLedger(household.transactions), [household.transactions]);
-  const flagged = household.transactions.filter((tx) => tx.potentialDuplicate && !tx.isDuplicate).length;
+  const visible = useMemo(
+    () => household.transactions.filter((tx) => isVisibleInView(tx, memberId, view)),
+    [household.transactions, memberId, view],
+  );
+  const grouped = useMemo(() => partitionLedger(visible), [visible]);
+  const flagged = visible.filter((tx) => tx.potentialDuplicate && !tx.isDuplicate).length;
 
   const rows = grouped[section].filter((tx) => {
     if (!query.trim()) return true;
@@ -41,7 +52,7 @@ export function LedgerPage({
   return (
     <>
       <section className="hero">
-        <div className="label">Ledger</div>
+        <div className="label">{view === "personal" ? "Personal ledger" : "Household ledger"}</div>
         <div className="money" style={{ fontSize: 36 }}>{rows.length}</div>
         <div className="sub">
           {grouped.expenses.length} expenses · {grouped.income.length} income · {grouped.other.length} transfers/refunds
@@ -104,6 +115,8 @@ function LedgerRow({
           {transaction.type === "transfer"
             ? `${accountName(household, transaction.accountId)}${pair ? ` ↔ ${accountName(household, pair.accountId)}` : ""}`
             : categoryName(household, transaction.subcategoryId)}
+          {" · "}
+          {visibilityLabel(transaction.visibility)}
           {" · "}
           {splitSummary(household, transaction)}
         </div>

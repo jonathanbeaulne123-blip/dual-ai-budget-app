@@ -268,5 +268,45 @@ export function seedDemoHousehold(options?: { today?: DateKey; environment?: Hou
     splits: [{ party: "MEM-001", amountCents: 210000 }],
   }).household;
 
+  household = postEntry(household, {
+    date: today,
+    type: "expense",
+    amount: 42,
+    accountId: "ACC-VISA",
+    subcategoryId: "SUB-LIFE-FUN",
+    note: "Haircut",
+    place: "Personal",
+    splits: [{ party: "MEM-001", amountCents: 4200 }],
+    createdBy: "MEM-001",
+    visibility: "personal",
+    confirmDuplicate: true,
+  }).household;
+  household = postEntry(household, {
+    date: today,
+    type: "expense",
+    amount: 28.5,
+    accountId: "ACC-VISA",
+    subcategoryId: "SUB-LIFE-FUN",
+    note: "Gym drop-in",
+    place: "Personal",
+    splits: [{ party: "MEM-002", amountCents: 2850 }],
+    createdBy: "MEM-002",
+    visibility: "personal",
+    confirmDuplicate: true,
+  }).household;
+  household = postEntry(household, {
+    date: today,
+    type: "expense",
+    amount: 18,
+    accountId: "ACC-VISA",
+    subcategoryId: "SUB-FOOD-COFFEE",
+    note: "Saturday coffee",
+    place: "Both ledgers",
+    splits: [{ party: "MEM-001", amountCents: 1800 }],
+    createdBy: "MEM-001",
+    visibility: "both",
+    confirmDuplicate: true,
+  }).household;
+
   return household;
 }

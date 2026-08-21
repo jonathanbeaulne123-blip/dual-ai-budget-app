@@ -1,4 +1,5 @@
 import type { Environment, Household } from "./core/types.ts";
+import { ensureHouseholdShape } from "./core/sync.ts";
 
 const PREFIX = "hearth:v1:";
 const DB_NAME = "hearth-ledger";
@@ -58,13 +59,7 @@ async function idbDelete(environment: Environment): Promise<void> {
 }
 
 function migrate(household: Household): Household {
-  return {
-    ...household,
-    transactions: household.transactions.map((tx) => ({
-      ...tx,
-      place: tx.place ?? "",
-    })),
-  };
+  return ensureHouseholdShape(household);
 }
 
 export async function loadHousehold(environment: Environment): Promise<Household | null> {
