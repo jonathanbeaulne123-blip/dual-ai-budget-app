@@ -21,9 +21,9 @@ The Sheets app became a trustworthy write kernel trapped in a 3,300-line `Code.g
 ## What you can do today
 
 - Add spend, income, a shift, or a transfer from one `+` button
-- Split a purchase joint / one person / 50–50, with cents that always add up
-- See a shift receipt before it posts — floor, bar, CC tip-out, wages — using the same function the tests use
-- Get stopped on a duplicate, then add anyway if it was a real second coffee
+- Open **Ledger** to see every row under Income, Expenses, or Other (refunds and transfers)
+- Split a purchase by any percentage — Bianca’s share is typed, Jonathan’s fills to 100%, cents still add up
+- Get stopped on a likely duplicate: same amount within five days, plus matching notes, place, category, or source
 - Undo the last save for a few seconds
 - Read Home as one net number, a pulse sentence, this week versus last week, and shared goals
 - Run a monthly sit-down that copies last month and trims overspent categories

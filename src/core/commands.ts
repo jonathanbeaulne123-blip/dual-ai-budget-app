@@ -2,7 +2,7 @@ import { TIMEZONE, todayKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { CURRENCY } from "./money.ts";
 import { nextId, nowIso, slug, uniquePrefixedId } from "./ids.ts";
 import { cloneHousehold } from "./household.ts";
-import { duplicateKey, findDuplicateMatches, refreshDuplicateFlags } from "./duplicate.ts";
+import { duplicateKey, describeSimilarMatches, findSimilarTransactions, refreshDuplicateFlags } from "./duplicate.ts";
 import { jointSplit } from "./splits.ts";
 import { calcShiftAmounts, parseShiftInput, shiftSettingsFingerprint, DEFAULT_SHIFT_SETTINGS } from "./shift.ts";
 import {
@@ -58,6 +58,7 @@ function baseTx(household: Household, input: {
   categoryId: string | null;
   subcategoryId: string | null;
   note: string;
+  place?: string;
   splits: Split[];
   source: Transaction["source"];
   sourceId?: string;
@@ -76,6 +77,7 @@ function baseTx(household: Household, input: {
     categoryId: input.categoryId,
     subcategoryId: input.subcategoryId,
     note: input.note.trim(),
+    place: (input.place ?? "").trim(),
     splits: input.splits,
     transferPairId: input.transferPairId,
     refundOfId: input.refundOfId,
@@ -87,6 +89,7 @@ function baseTx(household: Household, input: {
       accountId: account.id,
       type: input.type,
       note: input.note,
+      place: input.place,
     }),
     potentialDuplicate: false,
     isDuplicate: false,
@@ -102,6 +105,7 @@ export function postEntry(household: Household, input: {
   accountId: string;
   subcategoryId: string;
   note?: string;
+  place?: string;
   splits?: Split[];
   confirmDuplicate?: boolean;
   refundOfId?: string;
@@ -133,19 +137,26 @@ export function postEntry(household: Household, input: {
     categoryId: subcategory.parentId,
     subcategoryId: subcategory.id,
     note: input.note ?? "",
+    place: input.place ?? "",
     splits,
     source: input.source ?? "manual",
     sourceId: input.sourceId,
     refundOfId: input.refundOfId,
     createdAt,
   });
-  const matches = findDuplicateMatches(next.transactions, draft.duplicateKey);
+  const matches = findSimilarTransactions(next.transactions, {
+    date: draft.date,
+    amountCents: draft.amountCents,
+    accountId: draft.accountId,
+    type: draft.type,
+    note: draft.note,
+    place: draft.place,
+    subcategoryId: draft.subcategoryId,
+    source: draft.source,
+    sourceId: draft.sourceId,
+  });
   if (matches.length && !input.confirmDuplicate) {
-    throw new NeedsConfirmationError(
-      "duplicate",
-      `This looks like ${matches.length === 1 ? "an existing" : `${matches.length} existing`} ${input.type}${matches.length === 1 ? "" : "s"} of ${(amountCents / 100).toFixed(2)} on ${date}. Add anyway?`,
-      matches,
-    );
+    throw new NeedsConfirmationError("duplicate", describeSimilarMatches(matches), matches.map((match) => match.transaction));
   }
   draft.id = nextId(input.type === "income" ? "TXN-IN-" : input.type === "refund" ? "TXN-RF-" : "TXN-EX-", next.transactions.map((tx) => tx.id));
   next.transactions.push(draft);
@@ -195,9 +206,17 @@ export function postTransfer(household: Household, input: {
     source: "manual",
     createdAt,
   });
-  const matches = findDuplicateMatches(next.transactions, outDraft.duplicateKey);
+  const matches = findSimilarTransactions(next.transactions, {
+    date: outDraft.date,
+    amountCents: outDraft.amountCents,
+    accountId: outDraft.accountId,
+    type: "transfer",
+    note: outDraft.note,
+    place: outDraft.place,
+    source: "manual",
+  });
   if (matches.length && !input.confirmDuplicate) {
-    throw new NeedsConfirmationError("duplicate", `A transfer of $${(amountCents / 100).toFixed(2)} on ${date} already exists. Add anyway?`, matches);
+    throw new NeedsConfirmationError("duplicate", describeSimilarMatches(matches), matches.map((match) => match.transaction));
   }
   outDraft.id = nextId("TXN-TR-", next.transactions.map((tx) => tx.id));
   inDraft.id = nextId("TXN-TR-", [...next.transactions.map((tx) => tx.id), outDraft.id]);

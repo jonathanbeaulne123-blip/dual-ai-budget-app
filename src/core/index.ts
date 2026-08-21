@@ -11,4 +11,5 @@ export * from "./insights.ts";
 export * from "./commands.ts";
 export * from "./seed.ts";
 export * from "./fixtures.ts";
+export * from "./ledgerView.ts";
 export { cloneHousehold } from "./household.ts";

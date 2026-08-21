@@ -10,13 +10,12 @@ import {
   calcShiftAmounts,
   catalogHousehold,
   contributeToGoal,
-  equalSplits,
   formatCad,
   formatDateLabel,
   jointSplit,
-  markDuplicate,
   monthKeyFromDateKey,
   parseAmount,
+  percentSplits,
   postDueRecurrences,
   postEntry,
   postShift,
@@ -33,9 +32,10 @@ import {
   type Split,
   type UndoToken,
 } from "./core/index.ts";
-import { downloadJson, loadHousehold, saveHousehold } from "./storage.ts";
+import { LedgerPage } from "./Ledger.tsx";
+import { STORAGE_EXPLAINER, clearHousehold, downloadJson, loadHousehold, saveHousehold } from "./storage.ts";
 
-type Tab = "home" | "plan" | "review" | "more";
+type Tab = "home" | "plan" | "ledger" | "more";
 type AddMode = "expense" | "income" | "shift" | "transfer";
 
 const emptyForm = {
@@ -44,6 +44,7 @@ const emptyForm = {
   accountId: "ACC-VISA",
   subcategoryId: "SUB-FOOD-GROCERIES",
   note: "",
+  place: "",
   who: JOINT as string,
   fromAccountId: "ACC-CHEQUING",
   toAccountId: "ACC-VISA",
@@ -56,7 +57,8 @@ const emptyForm = {
 
 export function App() {
   const [environment, setEnvironment] = useState<Environment>("development");
-  const [household, setHousehold] = useState<Household | null>(() => loadHousehold("development"));
+  const [household, setHousehold] = useState<Household | null>(null);
+  const [booting, setBooting] = useState(true);
   const [tab, setTab] = useState<Tab>("home");
   const [adding, setAdding] = useState(false);
   const [mode, setMode] = useState<AddMode>("expense");
@@ -66,11 +68,18 @@ export function App() {
   const [confirm, setConfirm] = useState<NeedsConfirmationError | null>(null);
   const [toast, setToast] = useState<UndoToken | null>(null);
   const [commandOpen, setCommandOpen] = useState(false);
+  const [splitPercents, setSplitPercents] = useState<Record<string, number>>({ "MEM-001": 50, "MEM-002": 50 });
   const [now] = useState(() => new Date());
 
   useEffect(() => {
-    const loaded = loadHousehold(environment);
-    setHousehold(loaded);
+    let live = true;
+    setBooting(true);
+    loadHousehold(environment).then((loaded) => {
+      if (!live) return;
+      setHousehold(loaded);
+      setBooting(false);
+    });
+    return () => { live = false; };
   }, [environment]);
 
   useEffect(() => {
@@ -92,8 +101,8 @@ export function App() {
     [household, today, now, findings.length],
   );
 
-  function persist(next: Household, token?: UndoToken) {
-    saveHousehold(next);
+  async function persist(next: Household, token?: UndoToken) {
+    await saveHousehold(next);
     setHousehold(next);
     if (token) {
       setToast(token);
@@ -101,13 +110,13 @@ export function App() {
     }
   }
 
-  function run(fn: () => CommitResult) {
+  async function run(fn: () => CommitResult) {
     if (!household || busy) return;
     setBusy(true);
     setError("");
     try {
       const result = fn();
-      persist(result.household, result.undo);
+      await persist(result.household, result.undo);
       setConfirm(null);
       setAdding(false);
       setForm({ ...emptyForm, date: today });
@@ -118,6 +127,17 @@ export function App() {
     } finally {
       setBusy(false);
     }
+  }
+
+  if (booting) {
+    return (
+      <div className="welcome">
+        <div className="welcome-card">
+          <p className="kicker">On this device</p>
+          <h1>Opening the ledger…</h1>
+        </div>
+      </div>
+    );
   }
 
   if (!household) {
@@ -153,9 +173,27 @@ export function App() {
   }, ledger.shiftSettings);
 
   function splitsFor(amountCents: number): Split[] {
-    if (form.who === "split") return equalSplits(["MEM-001", "MEM-002"], amountCents);
+    const members = ledger.members.filter((member) => member.active);
+    if (form.who === "split") {
+      return percentSplits(members.map((member) => ({
+        party: member.id,
+        percent: Number(splitPercents[member.id] ?? 0),
+      })), amountCents);
+    }
     if (form.who === JOINT) return jointSplit(amountCents);
     return [{ party: form.who, amountCents }];
+  }
+
+  function setMemberPercent(memberId: string, percent: number) {
+    const members = ledger.members.filter((member) => member.active);
+    const clamped = Math.max(0, Math.min(100, percent));
+    if (members.length === 2) {
+      const other = members.find((member) => member.id !== memberId);
+      if (!other) return;
+      setSplitPercents({ [memberId]: clamped, [other.id]: Math.round((100 - clamped) * 100) / 100 });
+      return;
+    }
+    setSplitPercents({ ...splitPercents, [memberId]: clamped });
   }
 
   function submit(confirmDuplicate = false) {
@@ -191,6 +229,7 @@ export function App() {
       accountId: form.accountId,
       subcategoryId: form.subcategoryId,
       note: form.note,
+      place: form.place,
       splits: splitsFor(parseAmount(form.amount)),
       confirmDuplicate,
     }));
@@ -290,33 +329,8 @@ export function App() {
         </>
       )}
 
-      {tab === "review" && (
-        <section className="card">
-          <header>
-            <h2>Needs a look</h2>
-            <span className="muted">{household.transactions.filter((tx) => tx.potentialDuplicate && !tx.isDuplicate).length} possible duplicates</span>
-          </header>
-          {household.transactions.filter((tx) => tx.potentialDuplicate).slice().reverse().map((tx) => (
-            <div className="row" key={tx.id}>
-              <div>
-                <strong>{tx.note || tx.type}</strong>
-                <div className="muted">{tx.date} · {formatCad(tx.amountCents)}</div>
-              </div>
-              <button className="chip" onClick={() => {
-                const result = markDuplicate(household, tx.id, !tx.isDuplicate);
-                persist(result.household, result.undo);
-              }}>
-                {tx.isDuplicate ? "Include" : "Exclude"}
-              </button>
-            </div>
-          ))}
-          <button className="primary" onClick={() => {
-            try {
-              const result = postDueRecurrences(household, today);
-              persist(result.household, result.undo);
-            } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
-          }}>Post due recurring</button>
-        </section>
+      {tab === "ledger" && (
+        <LedgerPage household={household} onChange={(next, token) => { void persist(next, token); }} />
       )}
 
       {tab === "more" && (
@@ -327,14 +341,24 @@ export function App() {
               <ul className="health">{findings.map((finding) => <li key={finding.section + finding.message}><strong>{finding.section}.</strong> {finding.message}</li>)}</ul>
             )}
           </section>
-          <section className="card">
-            <header><h2>Household</h2></header>
-            <p className="muted">{household.members.filter((m) => m.active).map((m) => m.name).join(" · ")}</p>
-            <p className="muted">{household.accounts.filter((a) => a.active).map((a) => a.name).join(" · ")}</p>
-            <p className="muted">{household.transactions.length} transactions · {household.shifts.length} shifts</p>
+          <section className="card storage">
+            <header><h2>Where the ledger lives</h2></header>
+            <p>
+              There is no Google Sheet and no server database. Hearth keeps one household snapshot
+              on this device in IndexedDB (<code>{STORAGE_EXPLAINER.database}</code>, store <code>{STORAGE_EXPLAINER.store}</code>).
+              A copy also sits in {STORAGE_EXPLAINER.backup} so a blocked database still has a fallback.
+              Development and Production are two keys in that same database, not two workbooks.
+              Export JSON is the file backup you can keep.
+            </p>
             <button className="primary" onClick={() => downloadJson(household)}>Export JSON</button>
             <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => persist(seedDemoHousehold({ today, environment }))}>Reload demo data</button>
-            <button className="danger" onClick={() => { localStorage.removeItem(`hearth:v1:${environment}`); setHousehold(null); }}>Reset this environment</button>
+            <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => {
+              try {
+                const result = postDueRecurrences(household, today);
+                void persist(result.household, result.undo);
+              } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
+            }}>Post due recurring</button>
+            <button className="danger" onClick={() => { void clearHousehold(environment).then(() => setHousehold(null)); }}>Reset this environment</button>
           </section>
           <AddCategoryForm household={household} onSave={(next, token) => persist(next, token)} />
         </>
@@ -371,17 +395,49 @@ export function App() {
                   {[
                     { id: JOINT, name: "Joint" },
                     ...household.members.filter((m) => m.active).map((m) => ({ id: m.id, name: m.name })),
-                    { id: "split", name: "50 / 50" },
+                    { id: "split", name: "Split %" },
                   ].map((who) => (
                     <button key={who.id} className={`chip ${form.who === who.id ? "selected" : ""}`} onClick={() => setForm({ ...form, who: who.id })}>{who.name}</button>
                   ))}
                 </div>
+                {form.who === "split" && (
+                  <div className="split-card">
+                    <p className="muted">Bianca can set any split. The other person’s share fills in so the cents add to 100%.</p>
+                    {household.members.filter((member) => member.active).map((member) => {
+                      const percent = splitPercents[member.id] ?? 0;
+                      let share = "";
+                      try {
+                        if (form.amount) share = formatCad(Math.round(parseAmount(form.amount) * percent / 100));
+                      } catch {
+                        share = "";
+                      }
+                      return (
+                        <div className="row" key={member.id}>
+                          <span>{member.name}</span>
+                          <span>
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              step={1}
+                              value={percent}
+                              onChange={(event) => setMemberPercent(member.id, Number(event.target.value))}
+                            /> %
+                            <span className="muted"> {share}</span>
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 <label>Account</label>
                 <select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })}>
                   {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}
                 </select>
+                <label>Place / location</label>
+                <input value={form.place} onChange={(event) => setForm({ ...form, place: event.target.value })} placeholder="No Frills, Union Station, home…" />
                 <label>Note</label>
-                <input value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} placeholder="No Frills, rent, coffee…" />
+                <input value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} placeholder="Groceries, rent, coffee…" />
               </>
             )}
             {mode === "transfer" && (
@@ -431,6 +487,12 @@ export function App() {
             {confirm && (
               <div className="preview warn">
                 <p>{confirm.message}</p>
+                {confirm.matches.map((tx) => (
+                  <div className="row" key={tx.id}>
+                    <span>{tx.date} · {tx.place || tx.note || tx.type}</span>
+                    <span>{formatCad(tx.amountCents)}</span>
+                  </div>
+                ))}
                 <button className="primary" onClick={() => submit(true)}>Add anyway</button>
               </div>
             )}
@@ -459,7 +521,7 @@ export function App() {
               { label: "Add expense", run: () => { setMode("expense"); setAdding(true); } },
               { label: "Add shift", run: () => { setMode("shift"); setAdding(true); } },
               { label: "Move money", run: () => { setMode("transfer"); setAdding(true); } },
-              { label: "Plan", run: () => setTab("plan") },
+              { label: "Ledger", run: () => setTab("ledger") },
               { label: "Health", run: () => setTab("more") },
               { label: "Export", run: () => downloadJson(household) },
             ].map((item) => (
@@ -473,7 +535,7 @@ export function App() {
         <button className={tab === "home" && !adding ? "active" : ""} onClick={() => { setTab("home"); setAdding(false); }}>Home</button>
         <button className={tab === "plan" ? "active" : ""} onClick={() => { setTab("plan"); setAdding(false); }}>Plan</button>
         <button className="fab" onClick={() => { setAdding(true); setError(""); setConfirm(null); }}>+</button>
-        <button className={tab === "review" ? "active" : ""} onClick={() => { setTab("review"); setAdding(false); }}>Review</button>
+        <button className={tab === "ledger" ? "active" : ""} onClick={() => { setTab("ledger"); setAdding(false); }}>Ledger</button>
         <button className={tab === "more" ? "active" : ""} onClick={() => { setTab("more"); setAdding(false); }}>More</button>
       </nav>
     </div>

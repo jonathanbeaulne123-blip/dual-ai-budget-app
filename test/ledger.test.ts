@@ -77,6 +77,45 @@ describe("ledger commits", () => {
     expect(monthSummary(excluded.household, "2026-08").expenseActualCents).toBe(1234);
   });
 
+  it("catches a same-amount grocery five days later before writing", () => {
+    const first = postEntry(catalogHousehold(), {
+      date: "2026-08-13",
+      type: "expense",
+      amount: "47.23",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "No Frills",
+      place: "Kingston Rd",
+    });
+    expect(() => postEntry(first.household, {
+      date: "2026-08-18",
+      type: "expense",
+      amount: "47.23",
+      accountId: "ACC-CASH",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "no frills run",
+    })).toThrow(/5 days later/);
+    expect(first.household.transactions).toHaveLength(1);
+  });
+
+  it("posts a 60/40 split that still sums to the amount", () => {
+    const result = postEntry(catalogHousehold(), {
+      date: "2026-08-18",
+      type: "expense",
+      amount: "100.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      splits: [
+        { party: "MEM-001", amountCents: 6000 },
+        { party: "MEM-002", amountCents: 4000 },
+      ],
+    });
+    expect(result.household.transactions[0]?.splits).toEqual([
+      { party: "MEM-001", amountCents: 6000 },
+      { party: "MEM-002", amountCents: 4000 },
+    ]);
+  });
+
   it("excludes transfers from income and expense", () => {
     const result = postTransfer(catalogHousehold(), {
       date: "2026-08-18",

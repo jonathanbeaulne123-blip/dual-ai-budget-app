@@ -50,6 +50,7 @@ export type Transaction = {
   categoryId: string | null;
   subcategoryId: string | null;
   note: string;
+  place: string;
   splits: Split[];
   transferPairId?: string;
   refundOfId?: string;

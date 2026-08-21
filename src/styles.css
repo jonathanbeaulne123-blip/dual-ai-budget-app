@@ -246,7 +246,31 @@ input, select, textarea {
 .welcome-card p { color: var(--muted); line-height: 1.5; }
 .kicker { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--copper); font-weight: 700; }
 
-.health li { margin: 8px 0; }
+.ledger-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+.ledger-row:last-child { border-bottom: 0; }
+.split-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px;
+  margin-top: 8px;
+}
+.split-card .row { align-items: center; }
+.split-card input[type="number"] { width: 88px; padding: 8px; }
+.storage pre {
+  white-space: pre-wrap;
+  font-size: 12px;
+  background: var(--paper);
+  padding: 12px;
+  border-radius: 12px;
+}
 .cmdk {
   position: fixed;
   inset: 0;

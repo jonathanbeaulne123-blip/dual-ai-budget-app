@@ -41,7 +41,10 @@ export function percentSplits(parts: { party: PartyId; percent: number }[], amou
   }));
   const used = sumCents(allocated.map((split) => split.amountCents));
   const last = parts[parts.length - 1]!;
-  return [...allocated, { party: last.party, amountCents: amountCents - used }];
+  const result = [...allocated, { party: last.party, amountCents: amountCents - used }];
+  const kept = result.filter((split) => split.amountCents !== 0);
+  if (!kept.length) throw new ValidationError("Ownership splits must add up to the transaction amount exactly.");
+  return kept;
 }
 
 export function jointSplit(amountCents: number): Split[] {

@@ -111,6 +111,14 @@ export function compareDateKeys(a: DateKey, b: DateKey): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
+/** Signed civil-day distance from `from` to `to`. 2026-08-18 vs 2026-08-13 is +5. */
+export function calendarDaysBetween(from: DateKey, to: DateKey): number {
+  const start = parseDateKey(from);
+  const end = parseDateKey(to);
+  const ms = Date.UTC(end.year, end.month - 1, end.day) - Date.UTC(start.year, start.month - 1, start.day);
+  return Math.round(ms / 86400000);
+}
+
 export function inInclusiveRange(dateKey: DateKey, start: DateKey, end: DateKey): boolean {
   return dateKey >= start && dateKey <= end;
 }
