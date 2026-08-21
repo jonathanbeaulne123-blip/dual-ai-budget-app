@@ -66,6 +66,13 @@ export function BooksPage({
             : booksStatus.error || "The SQL books did not verify. The snapshot on this phone is still saved."}
         </p>
       )}
+      {booksStatus?.hosted && (
+        <p className="muted">
+          {booksStatus.hosted.schema
+            ? `Shared books are on Supabase (${booksStatus.hosted.project}).`
+            : booksStatus.hosted.error || "Supabase is configured but the books tables are not created yet."}
+        </p>
+      )}
       <div className="tabs">
         {PANES.map((item) => (
           <button key={item.id} className={pane === item.id ? "active" : ""} onClick={() => setPane(item.id)}>

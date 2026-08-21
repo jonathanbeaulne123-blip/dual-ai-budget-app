@@ -14,9 +14,7 @@ pnpm dev
 
 Then visit `http://localhost:5173`. Choose **Open the demo kitchen table** to load a fictional six-month household. Nothing here is live production data.
 
-A Netlify site can still host the static app. It is not the database. The books are PostgreSQL: PGlite inside the app (Postgres 18), with a SQL dump that loads onto Neon or Supabase. Open **Books** for the journal, trial balance, account registers, and a read-only SQL console.
-
-Until that hosted Postgres project exists, each phone still has a complete, balanced ledger on-device.
+A Netlify site can still host the static app. It is not the database. The books are PostgreSQL: PGlite inside the app, and the shared copy is the Supabase project `tykhocwacaxwquhynkok`. Open **Books** for the journal, trial balance, account registers, and a read-only SQL console.
 
 ## Why this exists
 

@@ -8,15 +8,23 @@ import {
 import type { Household } from "../core/types.ts";
 import { assertReadOnlySelect } from "./queryGuard.ts";
 import { BOOKS_SCHEMA, BOOKS_SCHEMA_VERSION } from "./schema.ts";
+import { pushSupabaseHousehold } from "./supabase.ts";
 
 export type BooksStatus = {
   ok: boolean;
-  engine: "pglite";
+  engine: "pglite" | "pglite+supabase";
   postgresVersion?: string;
   entryCount: number;
   inBalance: boolean;
   equationHolds: boolean;
   error?: string;
+  hosted?: {
+    provider: "supabase";
+    reachable: boolean;
+    schema: boolean;
+    project?: string;
+    error?: string;
+  };
 };
 
 type Queryable = {
@@ -161,6 +169,12 @@ async function writeBooks(db: Queryable, household: Household, compiled: Compile
     );
   }
 
+  await db.query(
+    `INSERT INTO household_snapshots (household_id, invite_phrase, environment, payload, updated_at)
+     VALUES ($1,$2,$3,$4,$5)`,
+    [compiled.householdId, compiled.invitePhrase, compiled.environment, JSON.stringify(household), new Date().toISOString()],
+  );
+
   const unbalanced = await db.query<{ entry_id: string }>("SELECT entry_id FROM v_unbalanced_entries WHERE household_id = $1", [compiled.householdId]);
   const version = await db.query<{ v: string }>("SELECT current_setting('server_version') AS v");
   const sqlEquation = await db.query<{
@@ -202,7 +216,36 @@ export async function syncHouseholdBooks(household: Household): Promise<{ compil
   const compiled = compileHousehold(household);
   const db = await getBrowserBooks();
   const status = await ingestBooks(db, household, compiled);
-  return { compiled, status };
+  try {
+    const hosted = await pushSupabaseHousehold({ ...household, linked: true });
+    return {
+      compiled,
+      status: {
+        ...status,
+        engine: hosted.schema ? "pglite+supabase" : status.engine,
+        hosted: {
+          provider: "supabase",
+          reachable: hosted.reachable,
+          schema: hosted.schema,
+          project: hosted.project,
+          error: hosted.error,
+        },
+      },
+    };
+  } catch (caught) {
+    return {
+      compiled,
+      status: {
+        ...status,
+        hosted: {
+          provider: "supabase",
+          reachable: true,
+          schema: false,
+          error: caught instanceof Error ? caught.message : String(caught),
+        },
+      },
+    };
+  }
 }
 
 export async function queryBooks(sql: string): Promise<{ columns: string[]; rows: Record<string, unknown>[] }> {

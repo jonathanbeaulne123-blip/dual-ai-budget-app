@@ -1,6 +1,6 @@
-export const BOOKS_SCHEMA_VERSION = 1;
+-- Hearth double-entry books. Toronto / CAD.
+BEGIN;
 
-export const BOOKS_SCHEMA = `
 CREATE TABLE IF NOT EXISTS schema_migrations (
   id INTEGER PRIMARY KEY,
   applied_at TEXT NOT NULL
@@ -276,4 +276,32 @@ UNION ALL
 SELECT 'chart', id, household_id, name FROM chart_accounts
 UNION ALL
 SELECT 'category', id, household_id, name FROM categories;
-`;
+
+-- Hearth books on Supabase. Publishable key uses the anon role.
+-- Personal rows remain a filter, not a lock (D-015). Add Auth before this is a public site.
+
+DO $$
+DECLARE t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY[
+    'households','members','categories','chart_accounts','journal_entries','journal_lines',
+    'source_transactions','shifts','goals','budget_plans','recurrences','activity',
+    'audit_revisions','household_snapshots'
+  ]
+  LOOP
+    EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
+    EXECUTE format('DROP POLICY IF EXISTS hearth_anon_all ON %I', t);
+    EXECUTE format('CREATE POLICY hearth_anon_all ON %I FOR ALL TO anon, authenticated USING (true) WITH CHECK (true)', t);
+    EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE %I TO anon, authenticated', t);
+  END LOOP;
+END $$;
+
+GRANT SELECT ON v_unbalanced_entries, v_journal, v_trial_balance, v_income_statement, v_net_worth, v_catalog TO anon, authenticated;
+ALTER VIEW v_unbalanced_entries SET (security_invoker = true);
+ALTER VIEW v_journal SET (security_invoker = true);
+ALTER VIEW v_trial_balance SET (security_invoker = true);
+ALTER VIEW v_income_statement SET (security_invoker = true);
+ALTER VIEW v_net_worth SET (security_invoker = true);
+ALTER VIEW v_catalog SET (security_invoker = true);
+
+COMMIT;

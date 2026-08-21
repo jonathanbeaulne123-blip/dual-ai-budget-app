@@ -2,6 +2,9 @@
 
 interface ImportMetaEnv {
   readonly VITE_HEARTH_API?: string;
+  readonly VITE_SUPABASE_URL?: string;
+  readonly VITE_SUPABASE_PUBLISHABLE_KEY?: string;
+  readonly VITE_SUPABASE_LIVE?: string;
 }
 
 interface ImportMeta {
@@ -15,12 +18,4 @@ declare module "node:sqlite" {
     prepare(sql: string): { get: () => unknown };
     close(): void;
   }
-}
-
-interface ImportMetaEnv {
-  readonly VITE_HEARTH_API?: string;
-}
-
-interface ImportMeta {
-  readonly env: ImportMetaEnv;
 }

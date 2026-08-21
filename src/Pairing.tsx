@@ -78,12 +78,9 @@ export function WelcomeJoin({
         await onJoined(joinFromPastedSecret(raw, null));
         return;
       }
-      if (live && isValidInviteToken(raw)) {
+      if (isValidInviteToken(raw)) {
         await onJoined(await joinSharedHousehold(raw));
         return;
-      }
-      if (isValidInviteToken(raw) && !live) {
-        throw new Error("That phrase is right, but this host has no shared database yet. Import the Hearth Pass file you were sent.");
       }
       throw new Error("Paste the join link, the three-word phrase, or a Hearth Pass.");
     } catch (caught) {
@@ -169,17 +166,11 @@ export function PairingCard({
     onBusy(true);
     onError("");
     try {
-      const live = await probeHearthApi();
-      setCloudLive(live);
-      if (!live) {
-        downloadPass(household);
-        onError("Cloud is not on this host. A Hearth Pass downloaded instead — send that file to Bianca or Jonathan.");
-        onSyncState("error");
-        return;
-      }
       const created = household.linked
         ? await pushSharedHousehold(household, memberId)
         : await createSharedHousehold(household, memberId);
+      const live = await probeHearthApi();
+      setCloudLive(live || created.linked);
       await onHousehold(created);
       onSyncState("synced");
     } catch (caught) {
@@ -236,12 +227,8 @@ export function PairingCard({
               }
               const live = await probeHearthApi();
               setCloudLive(live);
-              if (live) {
-                await onHousehold(await joinSharedHousehold(raw, memberId));
-                onSyncState("synced");
-                return;
-              }
-              throw new Error("No cloud on this host. Import a Hearth Pass file instead.");
+              await onHousehold(await joinSharedHousehold(raw, memberId));
+              onSyncState("synced");
             } catch (caught) {
               onError(caught instanceof Error ? caught.message : String(caught));
             } finally {
