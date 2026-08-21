@@ -10,11 +10,11 @@ import {
 } from "./core/index.ts";
 import { applyHearthPass, parseHearthPass } from "./core/pass.ts";
 import {
+  cloudBooksLive,
   createSharedHousehold,
   hostingHint,
   joinFromPastedSecret,
   joinSharedHousehold,
-  probeHearthApi,
   pushSharedHousehold,
   reconcileHousehold,
 } from "./api.ts";
@@ -71,7 +71,7 @@ export function WelcomeJoin({
     onBusy(true);
     onError("");
     try {
-      const live = cloud ?? await probeHearthApi();
+      const live = cloud ?? await cloudBooksLive();
       setCloud(live);
       const raw = inviteInput.trim();
       if (raw.startsWith("{")) {
@@ -169,7 +169,7 @@ export function PairingCard({
       const created = household.linked
         ? await pushSharedHousehold(household, memberId)
         : await createSharedHousehold(household, memberId);
-      const live = await probeHearthApi();
+      const live = await cloudBooksLive();
       setCloudLive(live || created.linked);
       await onHousehold(created);
       onSyncState("synced");
@@ -225,7 +225,7 @@ export function PairingCard({
                 await onHousehold(joinFromPastedSecret(raw, household, memberId));
                 return;
               }
-              const live = await probeHearthApi();
+              const live = await cloudBooksLive();
               setCloudLive(live);
               await onHousehold(await joinSharedHousehold(raw, memberId));
               onSyncState("synced");

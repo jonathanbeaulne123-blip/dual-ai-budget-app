@@ -10,8 +10,10 @@ Jonathan and Bianca. Toronto. CAD. About 500 transactions per month over time.
 
 ## Success
 
-Jonathan can compare this rebuild with the Sheets app and prefer it for daily use. Bianca can add a grocery trip and a shift without a 15-item menu. Health stays clean. Undo exists.
+Bianca can add a grocery trip and a shift without a 15-item menu. Health stays clean. Undo exists. The two of them can share one household from two phones.
 
 ## Out of scope until the core is boring
 
 Bank connections, multi-currency, public distribution, cryptographic personal-row privacy.
+
+The Sheets-era charter is in [reference/sheets-era/PROJECT_CHARTER.md](reference/sheets-era/PROJECT_CHARTER.md).

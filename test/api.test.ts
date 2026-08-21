@@ -1,13 +1,9 @@
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { apiUrl, hostingHint, UNPUBLISHED_PHRASE } from "../src/api.ts";
+import { hostingHint, UNPUBLISHED_PHRASE } from "../src/api.ts";
 
 describe("Cloudflare static host pairing", () => {
-  it("does not default pairing to a Netlify function", () => {
-    expect(apiUrl()).toBe("");
-  });
-
   it("describes Supabase as the shared books", () => {
     expect(hostingHint(true)).toMatch(/Supabase/);
     expect(hostingHint(false)).not.toMatch(/Netlify/i);
@@ -33,5 +29,12 @@ describe("Cloudflare static host pairing", () => {
     expect(pkg).toContain("test ! -e dist/_redirects");
     const vite = readFileSync(new URL("../vite.config.ts", import.meta.url), "utf8");
     expect(vite).toContain("emptyOutDir: true");
+  });
+
+  it("does not keep a Netlify function or blob host in the working tree", () => {
+    expect(existsSync(fileURLToPath(new URL("../netlify.toml", import.meta.url)))).toBe(false);
+    expect(existsSync(fileURLToPath(new URL("../netlify/functions/hearth.ts", import.meta.url)))).toBe(false);
+    const pkg = readFileSync(new URL("../package.json", import.meta.url), "utf8");
+    expect(pkg).not.toContain("@netlify/blobs");
   });
 });

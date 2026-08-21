@@ -9,61 +9,26 @@ import { inviteFromText, isValidInviteToken } from "./core/invite.ts";
 import type { Household } from "./core/types.ts";
 import { probeSupabase, pullSupabaseHousehold, pushSupabaseHousehold } from "./ledger/supabase.ts";
 
-export function apiUrl(): string {
-  return String(import.meta.env.VITE_HEARTH_API || "").trim().replace(/\/$/, "");
-}
-
-export async function probeHearthApi(): Promise<boolean> {
-  const hosted = await probeSupabase();
-  if (hosted.schema) return true;
-  const legacy = apiUrl();
-  if (!legacy) return false;
-  try {
-    const response = await fetch(legacy, { method: "GET" });
-    if (!response.ok) return false;
-    const data = await response.json() as { ok?: boolean; service?: string };
-    return data.ok === true && data.service === "hearth";
-  } catch {
-    return false;
-  }
-}
-
-async function post(body: unknown): Promise<Household> {
-  const legacy = apiUrl();
-  if (!legacy) {
-    throw new Error("Shared books are on Supabase. On the other phone tap Publish to the cloud, or send a Hearth Pass.");
-  }
-  const response = await fetch(legacy, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  let data: { error?: string; household?: Household } = {};
-  try {
-    data = await response.json() as { error?: string; household?: Household };
-  } catch {
-    throw new Error("The shared household server is not on this host yet. Send a Hearth Pass instead.");
-  }
-  if (!response.ok || !data.household) {
-    throw new Error(data.error || "Could not reach the shared household.");
-  }
-  return data.household;
-}
-
-export async function createSharedHousehold(household: Household, memberId: string): Promise<Household> {
-  const hosted = await pushSupabaseHousehold(household);
-  if (hosted.schema) return { ...household, linked: true };
-  try {
-    return await post({ action: "create", household, memberId, inviteCode: inviteFromText(household.inviteCode) });
-  } catch {
-    throw new Error(hosted.error || "Could not publish the shared household.");
-  }
-}
-
 export const UNPUBLISHED_PHRASE =
   "No household is published with that phrase. Check the three words, or on the other phone open Invite and tap Publish to the cloud.";
 
-export async function joinSharedHousehold(inviteCode: string, memberId?: string): Promise<Household> {
+export async function cloudBooksLive(): Promise<boolean> {
+  const hosted = await probeSupabase();
+  return hosted.schema;
+}
+
+function publishError(hosted: { schema: boolean; error?: string }): Error {
+  if (hosted.error) return new Error(hosted.error);
+  return new Error("Could not publish the shared household.");
+}
+
+export async function createSharedHousehold(household: Household, _memberId: string): Promise<Household> {
+  const hosted = await pushSupabaseHousehold(household);
+  if (hosted.schema) return { ...household, linked: true };
+  throw publishError(hosted);
+}
+
+export async function joinSharedHousehold(inviteCode: string, _memberId?: string): Promise<Household> {
   const token = inviteFromText(inviteCode);
   if (!isValidInviteToken(token)) {
     throw new Error("Use the three-word phrase, the join link, or a Hearth Pass file.");
@@ -77,36 +42,19 @@ export async function joinSharedHousehold(inviteCode: string, memberId?: string)
   if (hosted.reachable && !hosted.schema) {
     throw new Error("Supabase is on, but the books tables are not in the API yet. Re-run supabase/migrations/001_hearth_books.sql in the SQL Editor.");
   }
-  try {
-    return await post({ action: "join", inviteCode: token, memberId });
-  } catch (caught) {
-    throw caught instanceof Error ? caught : new Error(String(caught));
-  }
+  throw new Error(hosted.error || UNPUBLISHED_PHRASE);
 }
 
-export async function pullSharedHousehold(inviteCode: string, memberId: string): Promise<Household> {
+export async function pullSharedHousehold(inviteCode: string, _memberId: string): Promise<Household> {
   const fromSupabase = await pullSupabaseHousehold(inviteFromText(inviteCode));
   if (fromSupabase) return fromSupabase;
-  if (!apiUrl()) {
-    throw new Error(UNPUBLISHED_PHRASE);
-  }
-  return post({ action: "pull", inviteCode: inviteFromText(inviteCode), memberId });
+  throw new Error(UNPUBLISHED_PHRASE);
 }
 
-export async function pushSharedHousehold(household: Household, memberId: string): Promise<Household> {
+export async function pushSharedHousehold(household: Household, _memberId: string): Promise<Household> {
   const hosted = await pushSupabaseHousehold(household);
-  const next = { ...household, linked: hosted.schema || household.linked };
-  try {
-    return await post({
-      action: "push",
-      inviteCode: inviteFromText(household.inviteCode),
-      memberId,
-      household: next,
-    });
-  } catch {
-    if (hosted.schema) return next;
-    throw new Error(hosted.error || "Could not publish the shared household.");
-  }
+  if (hosted.schema) return { ...household, linked: true };
+  throw publishError(hosted);
 }
 
 export async function reconcileHousehold(local: Household, memberId: string): Promise<Household> {

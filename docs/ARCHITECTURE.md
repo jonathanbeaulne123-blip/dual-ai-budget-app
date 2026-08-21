@@ -9,9 +9,9 @@ Persistence is two layers:
 1. **Command snapshot** — IndexedDB `hearth-ledger` / store `households`, plus a `localStorage` fallback. This is what commands clone, validate, and undo.
 2. **Books** — a double-entry PostgreSQL database in PGlite (`idb://hearth-books`). After every save the snapshot is posted as balanced `journal_entries` / `journal_lines`. Views expose trial balance, income statement, net worth, and an unbalanced-entry alarm.
 
-Netlify Functions plus Blobs are a rollback envelope only. They are not the books. The website is Cloudflare Workers + Assets. Hosted books are the household Supabase Postgres project. Download SQL from the Books tab still loads the same schema elsewhere.
+The website is Cloudflare Workers + Assets (`hearth-books`). Hosted books are the household Supabase Postgres project. Download SQL from the Books tab still loads the same schema elsewhere.
 
-Pairing does not depend on that function being live. Every household has a three-word phrase. **Share phrase and link** sends `/?join=cedar-lantern-kite`. **Hearth Pass** is a JSON file of the shared envelope only; the other phone imports it and merge-by-id still applies. Cloud publish is an accelerator, not the only door.
+Pairing: every household has a three-word phrase. **Share phrase and link** sends `/?join=cedar-lantern-kite`. **Hearth Pass** is a JSON file of the shared envelope only. Cloud publish is an accelerator, not the only door.
 
 Each phone keeps a working copy, then merges by id on pull/push so concurrent adds do not wipe each other. Undo writes tombstones so a deleted row cannot come back from the other phone. The UI never saves the filtered view as the canonical snapshot.
 
@@ -39,7 +39,7 @@ The in-memory model is still the source of truth while a command runs: clone the
 
 ## Shift boundary
 
-`calcShiftAmounts` is the only tip/wage math. The add-shift UI previews it; `postShift` calls it again after validating the Toronto date, member, CAD account, hours, and settings fingerprint. A stale fingerprint refuses the write. Same-member same-date is a confirmable warning. Historical blank Shift IDs from the Sheets app are not migrated here; this is a new ledger.
+`calcShiftAmounts` is the only tip/wage math. The add-shift UI previews it; `postShift` calls it again after validating the Toronto date, member, CAD account, hours, and settings fingerprint. A stale fingerprint refuses the write. Same-member same-date is a confirmable warning.
 
 ## Trust and failure
 
@@ -49,8 +49,10 @@ Browser controls are usability. Commands throw `ValidationError` before mutating
 
 Development is the default local ledger. Production is a second named snapshot on the same device. They cannot be confused by workbook title; the pill in the top bar is the environment and asks before switching.
 
-A linked household on Netlify is a leftover pairing envelope, not the books. Development/production on a phone remain local keys. The books are PostgreSQL in the app (PGlite) and the same schema on the household Supabase project. The website is Cloudflare Workers.
+Development/production on a phone remain local keys. The books are PostgreSQL in the app (PGlite) and the same schema on the household Supabase project. The website is Cloudflare Workers.
 
 ## Scale
 
 Commands currently clone the snapshot per write, which is honest and simple at household scale. The SQL journal is the queryable, constraint-backed record of those writes. Replace the snapshot clone with an event log only if household scale stops being household scale.
+
+Sheets-era architecture: [reference/sheets-era/ARCHITECTURE.md](reference/sheets-era/ARCHITECTURE.md).

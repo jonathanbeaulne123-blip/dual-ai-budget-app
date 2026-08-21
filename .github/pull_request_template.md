@@ -13,3 +13,4 @@ Describe the household outcome, not just the files changed.
 - [ ] `pnpm test` passes
 - [ ] Diff reviewed for unintended or sensitive files
 - [ ] Financial meaning unchanged unless Jonathan approved it
+- [ ] Living docs updated if behavior changed; `docs/reference/` left as history

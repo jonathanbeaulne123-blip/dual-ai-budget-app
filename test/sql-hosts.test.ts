@@ -52,17 +52,14 @@ describe("ledger host bakeoff", () => {
     }
   }, 30_000);
 
-  it("treats Netlify Blobs as not a ledger and prefers Postgres", async () => {
+  it("treats Cloudflare as a static host and prefers Postgres", async () => {
     const hosts = await probeHostedDatabases();
     const pglite = hosts.find((host) => host.id === "pglite");
-    const netlify = hosts.find((host) => host.id === "netlify-blobs");
-    const neon = hosts.find((host) => host.id === "neon");
     const supabase = hosts.find((host) => host.id === "supabase");
-    const cloudflare = hosts.find((host) => host.id === "cloudflare-pages");
+    const cloudflare = hosts.find((host) => host.id === "cloudflare-workers");
     expect(pglite?.ledgerFit).toBe("primary");
-    expect(netlify?.ledgerFit).toBe("not-a-ledger");
     expect(cloudflare?.ledgerFit).toBe("static-host");
-    expect(neon?.ledgerFit).toBe("production-target");
     expect(supabase?.ledgerFit).toBe("production-target");
+    expect(hosts.some((host) => host.id === "netlify-blobs")).toBe(false);
   });
 });

@@ -1,8 +1,10 @@
-# Comparison with the Sheets app on `main`
+> **Reference only — not a bible.** This table records how Hearth left the Sheets prototype. It is not an instruction to keep Apps Script on `main` or to clasp-push.
 
-This rebuild exists to be compared, not merged blindly. `main` remains the live-verified Apps Script project.
+# How Hearth left the Sheets app
 
-| Review finding | Sheets `main` | Hearth on this branch |
+The TypeScript app kept the money rules that were already right and replaced the spreadsheet runtime.
+
+| Review finding | Sheets `v0.0.31` | Hearth |
 |---|---|---|
 | Add Transaction trust boundary | Pure validator + locked three-stage Sheet commit | Same validator ideas; one snapshot replace, nothing partial |
 | Add Shift preview = post | `calcShiftAmounts_` shared | Same math, same test vectors, receipt UI |
@@ -18,13 +20,12 @@ This rebuild exists to be compared, not merged blindly. `main` remains the live-
 | Tests | Writers and migrations; not budget math | Calendar, shift, splits, ledger, health, 12×200 load |
 | God file | 3,333-line `Code.gs` | `src/core/*` plus one UI app |
 | Dev vs prod | Two Google projects | Two named local snapshots, labeled in the chrome |
-| Shared household | One Sheet both edit | Phrase + join link + Hearth Pass; Postgres books on the phone; optional cloud envelopes |
+| Shared household | One Sheet both edit | Phrase + join link + Hearth Pass; Postgres books on the phone |
 | Books | Spreadsheet cells | Double-entry journal, trial balance, account register, read-only SQL |
-| Hosting | Google | PGlite in-app; Supabase for hosted Postgres; Cloudflare Workers for the website; Netlify is rollback only |
+| Hosting | Google | PGlite in-app; Supabase for hosted Postgres; Cloudflare Workers for the website |
 | Personal vs household entries | Hidden sheet / filter only | Shared, Personal, or Both on every add; two views |
-| Docs drift | README/AGENTS lagged PR #16 | Docs generated with this runtime |
 | Goals / recurring | Schema, unwired | Working, small, reversible |
 | Undo / delete | Toast only; easy to lose | Queued persist, remove on the register, LIFO undo on More |
 | Bank import | Intentionally deferred | Still deferred; JSON export exists |
 
-Keep `main` until Jonathan is sure. This branch is the alternative, not a clasp push.
+Sheets-era documents: [sheets-era/](sheets-era/). Apps Script source: git tag `sheets-v0.0.31`.

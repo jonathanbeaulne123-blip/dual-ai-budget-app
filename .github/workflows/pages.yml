@@ -2,7 +2,7 @@ name: Cloudflare Workers
 
 on:
   push:
-    branches: [cursor/hearth-rebuild-cfde]
+    branches: [main, cursor/hearth-rebuild-cfde]
   pull_request:
   workflow_dispatch:
 
@@ -29,9 +29,9 @@ jobs:
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
             echo "No Cloudflare API secrets on this repo."
-            echo "Workers Builds is connected as hearth-books. Production branch must be cursor/hearth-rebuild-cfde."
+            echo "Workers Builds is connected as hearth-books."
+            echo "Until Hearth is on main, production branch is cursor/hearth-rebuild-cfde."
             echo "Dashboard deploy command: rm -f dist/_redirects && npx wrangler versions upload --assets=./dist"
-            echo "Do not clone main (that is Sheets)."
             exit 0
           fi
           rm -f dist/_redirects
