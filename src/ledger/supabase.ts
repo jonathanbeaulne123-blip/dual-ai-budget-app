@@ -16,11 +16,12 @@ export type SupabaseProbe = {
 };
 
 const DEFAULT_URL = "https://tykhocwacaxwquhynkok.supabase.co";
+const DEFAULT_PUBLISHABLE_KEY = "sb_publishable_8UAlkucmkTyh36yQGhnUbw_Orl9GkuS";
 
 export function readSupabaseConfig(): SupabaseConfig | null {
   if (import.meta.env.VITEST && import.meta.env.VITE_SUPABASE_LIVE !== "1") return null;
   const url = String(import.meta.env.VITE_SUPABASE_URL || DEFAULT_URL).replace(/\/$/, "");
-  const key = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "");
+  const key = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || DEFAULT_PUBLISHABLE_KEY);
   if (!url || !key) return null;
   return { url, key };
 }
@@ -90,7 +91,7 @@ export async function probeSupabase(config = readSupabaseConfig()): Promise<Supa
         reachable: true,
         schema: false,
         project,
-        error: "Project is live. Paste supabase/migrations/001_hearth_books.sql into the SQL Editor, or send the real Postgres password (not [YOUR-PASSWORD]).",
+        error: "Project is live, but public.households is not in the API yet. Re-run supabase/migrations/001_hearth_books.sql in the SQL Editor.",
       };
     }
     if (result.status === 401 || result.status === 403) {
