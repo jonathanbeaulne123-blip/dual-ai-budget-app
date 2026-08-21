@@ -66,7 +66,7 @@ export async function joinSharedHousehold(inviteCode: string, memberId?: string)
     throw new Error("That phrase is right, but no household has been published to Supabase yet. On the other phone open Invite and wait until it says the shared books are live.");
   }
   if (hosted.reachable && !hosted.schema) {
-    throw new Error("Supabase is on, but the books tables are not created yet. Send the secret API key (sb_secret_…) so the schema can be applied. Do not send the database password.");
+    throw new Error("Supabase is on, but the books tables are not created yet. The secret API key cannot CREATE TABLE. Send the Postgres password from Connect → Direct connection (the part after postgres:), or the full postgresql:// URL. It never goes in the phone app.");
   }
   try {
     return await post({ action: "join", inviteCode: token, memberId });
