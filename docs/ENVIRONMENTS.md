@@ -20,7 +20,7 @@ Join links use that origin (`/?join=cedar-lantern-maple`). SPA routing uses Wran
 
 Dashboard: [hearth-books Worker](https://dash.cloudflare.com/7dfdfbba3053d8b857cbc359e0761c00/workers/services/view/hearth-books).
 
-The kitchen URL publishes from GitHub **`main`**. Cloudflare Workers Builds production branch must be `main`. Merging a PR does not update the phone until that Worker rebuilds.
+The kitchen URL publishes from GitHub **`main`**. Cloudflare Workers Builds production branch must be `main`. Merging a PR does not update the phone until that Worker rebuilds. HTML documents are served `Cache-Control: no-store` so an old Worker or Hello-world shell cannot sit in the phone browser.
 
 GitHub Actions can also publish when repo secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` exist. If they are missing, the Cloudflare workflow still builds, skips Deploy, and warns. A green check is not proof the live URL moved. Never put the Supabase secret key or database password in Cloudflare or in `VITE_` vars. The publishable key is already a client fallback in the app.
 
