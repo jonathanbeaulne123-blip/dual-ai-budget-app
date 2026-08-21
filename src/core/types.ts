@@ -103,9 +103,14 @@ export type Shift = {
   updatedAt: string;
 };
 
+export type RecurrenceCadence = "weekly" | "biweekly" | "monthly";
+export type RecurrenceKind = "bill" | "subscription" | "paycheck" | "other";
+export type RecurrenceOrigin = "manual" | "detected";
+export type RecurrenceGoogleSync = Record<string, { calendarId: string; eventId: string }>;
+
 export type Recurrence = {
   id: string;
-  cadence: "weekly" | "biweekly" | "monthly";
+  cadence: RecurrenceCadence;
   nextDate: DateKey;
   type: "expense" | "income";
   amountCents: number;
@@ -115,6 +120,16 @@ export type Recurrence = {
   splits: Split[];
   active: boolean;
   autoPost: boolean;
+  kind: RecurrenceKind;
+  origin: RecurrenceOrigin;
+  reminderHoursBefore: number;
+  googleSync: RecurrenceGoogleSync;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type HouseholdCalendar = {
+  dismissedRhythmKeys: string[];
 };
 
 export type Goal = {
@@ -162,6 +177,7 @@ export type Household = {
   transactions: Transaction[];
   shifts: Shift[];
   recurrences: Recurrence[];
+  calendar: HouseholdCalendar;
   goals: Goal[];
   budgetPlans: BudgetPlan[];
   activity: Activity[];
@@ -182,6 +198,7 @@ export type SharedEnvelope = {
   accounts: Account[];
   categories: Category[];
   recurrences: Recurrence[];
+  calendar: HouseholdCalendar;
   goals: Goal[];
   budgetPlans: BudgetPlan[];
   activity: Activity[];

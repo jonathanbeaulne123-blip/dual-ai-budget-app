@@ -138,6 +138,16 @@ export function seedDemoHousehold(options?: { today?: DateKey; environment?: Hou
       splits: equalSplits(["MEM-001", "MEM-002"], 9500),
       confirmDuplicate: true,
     }).household;
+    household = postEntry(household, {
+      date: `${monthKey}-05`,
+      type: "expense",
+      amount: 12.99,
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-LIFE-FUN",
+      note: "Spotify",
+      splits: [{ party: "MEM-002", amountCents: 1299 }],
+      confirmDuplicate: true,
+    }).household;
 
     for (let week = 0; week < 4; week += 1) {
       const groceryDay = addDays(start, 3 + week * 7);

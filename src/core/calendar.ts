@@ -135,6 +135,15 @@ export function formatMonthLabel(monthKey: MonthKey): string {
   return new Intl.DateTimeFormat("en-CA", { month: "long", year: "numeric" }).format(new Date(Date.UTC(year, month - 1, 1)));
 }
 
+export function formatDayLabel(dateKey: DateKey): string {
+  const { year, month, day } = parseDateKey(dateKey);
+  return new Intl.DateTimeFormat("en-CA", { month: "short", day: "numeric" }).format(
+    new Date(Date.UTC(year, month - 1, day)),
+  );
+}
+
+export const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+
 export function relativeTimeAgo(iso: string, now = new Date()): string {
   const then = new Date(iso).getTime();
   const mins = Math.round((now.getTime() - then) / 60000);

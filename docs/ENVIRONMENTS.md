@@ -32,6 +32,14 @@ The books tables are live: `households`, `household_snapshots`, journal tables, 
 
 Connect notes: database name is `postgres` (dashboard URIs that end in `/postgresz` are a typo). `db.tykhocwacaxwquhynkok.supabase.co` is IPv6-only. Schema apply uses the session pooler `aws-0-us-east-1.pooler.supabase.com:5432` as `postgres.tykhocwacaxwquhynkok`. The phone app never receives that password.
 
+## Google Calendar (optional)
+
+OAuth client IDs are public. Put a Google Cloud **Web** client ID in `VITE_GOOGLE_CLIENT_ID` (see `.env.example`). Authorized JavaScript origins must include `http://localhost:5173` and the Cloudflare Workers URL.
+
+Do not put a Google client secret in `VITE_` vars, Cloudflare, or the repo. Hearth uses Google Identity Services in the browser and stores access tokens only in `localStorage` under `hearth:v1:<environment>:gcal:<memberId>`. Development and production tokens stay separate. Disconnecting a person deletes that token on this phone.
+
+Without a client ID, Calendar still works: the month board, ledger-spotted bills, and **Download .ics with alarms** (America/Toronto, 24-hour and morning-of VALARM). Google never posts money.
+
 ## Sheets
 
 Google Sheets is no longer the working tree. The last Apps Script snapshot is git tag `sheets-v0.0.31`. Docs from that era: [reference/sheets-era/](reference/sheets-era/).
