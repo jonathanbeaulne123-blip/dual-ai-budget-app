@@ -10,13 +10,13 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "rm -rf dist && tsc --noEmit && vite build && test ! -e dist/_redirects",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
     "books:apply": "node --env-file=.env scripts/apply-supabase-schema.mjs",
-    "cf:deploy": "pnpm build && wrangler deploy --assets=./dist",
-    "cf:preview": "pnpm build && wrangler versions upload --assets=./dist"
+    "cf:deploy": "pnpm build && rm -f dist/_redirects && wrangler deploy --assets=./dist",
+    "cf:preview": "pnpm build && rm -f dist/_redirects && wrangler versions upload --assets=./dist"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

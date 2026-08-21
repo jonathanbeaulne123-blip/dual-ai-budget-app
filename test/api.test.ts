@@ -25,5 +25,12 @@ describe("Cloudflare static host pairing", () => {
 
   it("does not ship a catch-all _redirects file that Cloudflare Workers rejects", () => {
     expect(existsSync(fileURLToPath(new URL("../public/_redirects", import.meta.url)))).toBe(false);
+    const ignore = readFileSync(new URL("../public/.assetsignore", import.meta.url), "utf8");
+    expect(ignore).toMatch(/^_redirects$/m);
+    const pkg = readFileSync(new URL("../package.json", import.meta.url), "utf8");
+    expect(pkg).toContain("rm -rf dist");
+    expect(pkg).toContain("test ! -e dist/_redirects");
+    const vite = readFileSync(new URL("../vite.config.ts", import.meta.url), "utf8");
+    expect(vite).toContain("emptyOutDir: true");
   });
 });

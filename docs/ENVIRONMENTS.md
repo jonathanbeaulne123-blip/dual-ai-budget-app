@@ -18,16 +18,18 @@ The phone app is a static Vite build on Cloudflare Workers + Assets, project `he
 
 `main` is still the Sheets app, so the Workers production branch is `cursor/hearth-rebuild-cfde` until Hearth is on `main`. `wrangler.jsonc` is an assets Worker (`workers/site.js` plus `./dist`).
 
-This agent cannot log into Cloudflare. Paste these build settings — do not click Retry on an old failed log:
+This agent cannot log into Cloudflare. Paste these build settings — do not click Retry on an old failed log (the 2026-08-21 11:30 UTC log reused a cached `dist/_redirects` and failed with error 100324):
 
 1. Open the [hearth-books Worker](https://dash.cloudflare.com/7dfdfbba3053d8b857cbc359e0761c00/workers/services/view/hearth-books).
 2. Settings → Build → **Production branch** → `cursor/hearth-rebuild-cfde`.
-3. Build command: `pnpm build`
-4. Deploy command: `npx wrangler versions upload --assets=./dist`
-5. Join links (`/?join=…`) use Workers `not_found_handling = single-page-application`. Do not add `/* /index.html 200` in `_redirects` — Workers rejects that as an infinite loop.
-6. Save, then deploy the latest commit. Open the `*.workers.dev` URL → More → Invite → **Publish to the cloud**.
+3. Build command: `pnpm build` (this deletes `dist/` first and fails if `dist/_redirects` comes back).
+4. Deploy command: `rm -f dist/_redirects && npx wrangler versions upload --assets=./dist`
+5. Join links (`/?join=…`) use Workers `not_found_handling = single-page-application`. Do not add `/* /index.html 200` in `_redirects` — Workers rejects that as an infinite loop (API code 100324). Wrangler reads `dist/_redirects` even when `.assetsignore` lists it.
+6. Save, then wait for a **new commit SHA**. A green log installs `wrangler`, and the asset list does not include `_redirects`. Open the `*.workers.dev` URL → More → Invite → **Publish to the cloud**.
 
 If the build log only installs `@google/clasp` and then says `Command "build" not found`, Cloudflare cloned **`main`**. That branch is the Sheets app and has no `pnpm build`.
+
+If the log says `Restoring from build output cache`, then `Read 14 files`, then `No updated asset files to upload`, then 100324, the cached `dist/_redirects` was still present. Do not Retry that log.
 
 Optional GitHub Actions deploy uses repo secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Without those secrets the workflow builds and prints these same steps. Never put the Supabase secret key or database password in Cloudflare or in `VITE_` vars. The publishable key is already a client fallback in the app.
 

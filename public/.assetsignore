@@ -1,0 +1,4 @@
+# Leftover Netlify `_redirects` must not be uploaded. Wrangler still
+# *parses* dist/_redirects if the file exists (error 100324), so the
+# build also deletes dist/ before Vite runs. This ignore is a backup.
+_redirects
