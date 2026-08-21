@@ -14,6 +14,8 @@ pnpm dev
 
 Then visit `http://localhost:5173`. Choose **Open the demo kitchen table** to load a fictional six-month household. Nothing here is live production data.
 
+A Netlify site is configured in `netlify.toml`. Shared household sync uses `/.netlify/functions/hearth` plus Netlify Blobs. Connecting this GitHub repo to Netlify (or claiming a drop deploy) is what makes the shared database live across two phones. Until that function is on the host, each phone still has Household and Personal views on-device.
+
 ## Why this exists
 
 The Sheets app became a trustworthy write kernel trapped in a 3,300-line `Code.gs`, a 15-item operator menu, and a dashboard that was a rebuilt spreadsheet. Bianca cannot live there. This rebuild is the comparison: same household, same money rules, a product she can open on a phone.
