@@ -9,6 +9,7 @@
 - Development vs production local snapshots
 - Shared / personal / both visibility, household vs personal views
 - Phrase / join link / Hearth Pass pairing; Netlify blobs optional and not the ledger
+- Shared books on the household Supabase Postgres (same schema as PGlite)
 
 ## Next, only after Jonathan uses it for real weeks
 
@@ -22,7 +23,6 @@
 - Canadian bank adapters
 - Multi-currency
 - A real auth layer if personal rows must be private
-- Neon or Supabase as the shared Postgres (same schema as PGlite)
 - Event-sourced server if household scale stops being household scale
 
 There are no September 2 goal-engine calendar dates. Features follow use, not a six-week product fantasy.

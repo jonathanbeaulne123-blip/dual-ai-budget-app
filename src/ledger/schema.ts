@@ -185,6 +185,16 @@ CREATE TABLE IF NOT EXISTS household_snapshots (
 CREATE INDEX IF NOT EXISTS journal_entries_household_date ON journal_entries (household_id, date_key);
 CREATE INDEX IF NOT EXISTS journal_lines_account ON journal_lines (household_id, account_id);
 CREATE INDEX IF NOT EXISTS journal_lines_entry ON journal_lines (entry_id);
+CREATE INDEX IF NOT EXISTS journal_lines_account_fk ON journal_lines (account_id);
+CREATE INDEX IF NOT EXISTS members_household ON members (household_id);
+CREATE INDEX IF NOT EXISTS categories_household ON categories (household_id);
+CREATE INDEX IF NOT EXISTS source_transactions_household_date ON source_transactions (household_id, date_key);
+CREATE INDEX IF NOT EXISTS shifts_household_date ON shifts (household_id, date_key);
+CREATE INDEX IF NOT EXISTS goals_household ON goals (household_id);
+CREATE INDEX IF NOT EXISTS budget_plans_household_month ON budget_plans (household_id, month_key);
+CREATE INDEX IF NOT EXISTS recurrences_household ON recurrences (household_id);
+CREATE INDEX IF NOT EXISTS activity_household ON activity (household_id);
+CREATE INDEX IF NOT EXISTS audit_revisions_household ON audit_revisions (household_id);
 CREATE UNIQUE INDEX IF NOT EXISTS household_snapshots_invite ON household_snapshots (invite_phrase, environment);
 
 CREATE OR REPLACE VIEW v_unbalanced_entries AS

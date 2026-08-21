@@ -1,24 +1,29 @@
-import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import postgres from "postgres";
+import { PROJECT_REF, SQL_EDITOR, resolveApplyUrl } from "./supabase-connection.mjs";
 
-const REF = "tykhocwacaxwquhynkok";
-const POOLER = "aws-0-us-east-1.pooler.supabase.com";
-const REST = `https://${REF}.supabase.co/rest/v1/households?select=id&limit=1`;
+const REST = `https://${PROJECT_REF}.supabase.co/rest/v1/households?select=id&limit=1`;
+const migrationPath = fileURLToPath(new URL("../supabase/migrations/001_hearth_books.sql", import.meta.url));
 
-function connectionUrl() {
-  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
-  const password = process.env.SUPABASE_DB_PASSWORD;
-  if (!password) {
-    throw new Error("Set SUPABASE_DB_PASSWORD or DATABASE_URL. That is the Postgres password from Connect → Direct connection, not the API secret.");
-  }
-  return `postgresql://postgres.${REF}:${encodeURIComponent(password)}@${POOLER}:6543/postgres`;
+let url;
+try {
+  url = resolveApplyUrl(process.env);
+} catch (caught) {
+  console.error(caught instanceof Error ? caught.message : String(caught));
+  process.exitCode = 1;
+  process.exit();
 }
 
-const sql = postgres(connectionUrl(), { ssl: "require", max: 1, idle_timeout: 5 });
-const migration = readFileSync(new URL("../supabase/migrations/001_hearth_books.sql", import.meta.url), "utf8");
+const sql = postgres(url, {
+  ssl: "require",
+  max: 1,
+  idle_timeout: 5,
+  connect_timeout: 20,
+  connection: { application_name: "hearth-books-apply" },
+});
 
 try {
-  await sql.unsafe(migration);
+  await sql.file(migrationPath);
   const tables = await sql`
     select table_name
     from information_schema.tables
@@ -26,9 +31,16 @@ try {
     order by table_name
   `;
   console.log("applied", tables.map((row) => row.table_name).join(", "));
+} catch (caught) {
+  const message = caught instanceof Error ? caught.message : String(caught);
+  console.error("Could not apply the books schema:", message);
+  console.error(`If this is still a password error, paste the file into ${SQL_EDITOR} and Run.`);
+  process.exitCode = 1;
 } finally {
   await sql.end({ timeout: 2 });
 }
+
+if (process.exitCode) process.exit(process.exitCode);
 
 const publishable = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 if (publishable) {

@@ -90,7 +90,7 @@ export async function probeSupabase(config = readSupabaseConfig()): Promise<Supa
         reachable: true,
         schema: false,
         project,
-        error: "Project is live. The Hearth books tables are not in this database yet.",
+        error: "Project is live. Paste supabase/migrations/001_hearth_books.sql into the SQL Editor, or send the real Postgres password (not [YOUR-PASSWORD]).",
       };
     }
     if (result.status === 401 || result.status === 403) {
