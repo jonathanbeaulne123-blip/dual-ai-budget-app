@@ -1,110 +1,41 @@
 # Architecture
 
-## Current system
+## Runtime
 
-The product currently consists of:
+Hearth is a TypeScript household ledger with a React interface. The domain lives in `src/core` and does not import React, DOM, or storage. The UI in `src/App.tsx` is an untrusted client: it may format, filter, and preview, but every write goes through a command that validates plain data and returns a new household snapshot.
 
-- A Google Sheets workbook containing the canonical transaction ledger, configuration tables, calculated views, and dashboards.
-- A bound Google Apps Script project containing menu tools, dialogs, data entry, recomputation, diagnostics, release notes, and data-health logic.
-- Local ODS exports used as recovery and offline inspection snapshots.
-- This Git repository containing the canonical source code, tests, architecture, decisions, prompts, and release preparation.
+Persistence is a named local snapshot (`hearth:v1:development` or `hearth:v1:production`). Export is JSON. A future backend can accept the same commands and store the same snapshot.
 
-## Environment flow
+## Layers
 
-```text
-Git feature work
-      |
-      v
-Development Apps Script + Development Sheet
-      |
-      | verified release candidate + Jonathan approval
-      v
-Production Apps Script + Production Sheet
-```
-
-The repository root will eventually link only to the development Apps Script project. Production deployment must be a separate, explicit release operation.
-
-## Application layers
-
-1. **Ledger and configuration data** — Transactions, Categories, Members, Accounts, Budget Plan, recurring definitions, categorization rules, and future goal/scenario tables.
-2. **Pure calculations** — Budget, dashboard, income-history, forecasting, goal progress, and insight calculations using plain inputs and outputs.
-3. **Sheet adapters** — Read and write Sheets in batches and map headers/IDs to application data.
-4. **User interfaces** — Apps Script dialogs and Sheet dashboards now; mobile-friendly web views later.
-5. **Diagnostics and release controls** — Health checks, data dictionary, freshness, tests, release notes, and environment/version markers.
+1. **Catalog** — members, accounts, categories, shift settings.
+2. **Commands** — `postEntry`, `postTransfer`, `postShift`, `addCategory`, budget, goals, recurrences. Each clones state, writes, refreshes duplicate flags, appends activity, and returns an undo snapshot.
+3. **Projections** — `monthSummary`, `weekSummary`, `buildDashboard`, `runHealthCheck`, `sitDownPreview`.
+4. **UI** — Home, Add, Plan, Review, More. Four tabs plus one add sheet, not a 15-item menu.
 
 ## Data-model rules
 
-- Keep one canonical Transactions ledger.
-- Represent transfers with an explicit transaction type and exclude them from both income and expense totals.
-- Represent variable ownership with a Transaction Splits child table rather than a fixed number of owner columns.
-- Represent forecast assumptions and scenarios as data tables rather than hardcoded branches.
-- Keep stable IDs independent of display names.
-- Resolve refunds, reimbursements, credit-card payments, and other proposed zero-sum activity through explicit transaction semantics rather than a catch-all category.
-- Keep recurring definitions separate from posted transactions.
-- Record all dates and month keys using the spreadsheet time zone `America/Toronto`.
+- One canonical `transactions` array.
+- Amounts are integer cents. Currency is CAD copied from the account.
+- Dates are `YYYY-MM-DD` civil keys in `America/Toronto`. Week bounds are computed from that civil date, never from `Date#setHours(0,0,0,0)` in the runtime zone.
+- `expense` and `income` affect totals. `transfer` is a paired movement between accounts and is excluded from both. `refund` subtracts from category spend.
+- Ownership is a `splits` array that must sum to the amount. Joint is an explicit party, not a blank member id.
+- `duplicateKey` is a fingerprint. `potentialDuplicate` is derived. `isDuplicate` is the reviewed financial control.
+- Recurring definitions stay separate from posted rows. Posting due items uses the same `postEntry` path.
+- Goals are data. Shared goals appear on Home. Personal goals are a filter only — not a privacy boundary.
 
-## Duplicate review boundary
+## Shift boundary
 
-- `Duplicate_Key` is the deterministic transaction fingerprint and remains independent of duplicate-review decisions.
-- `Potential_Duplicate_Flag` is a derived review aid. From v0.0.26 onward it is recomputed from the real ledger extent by a pure O(n) grouping function plus one batched column read/write; it is not a per-row range formula.
-- `Is_Duplicate` is the separately reviewed financial control. Only this field determines whether Budget, Dashboard, and Income History calculations exclude a transaction.
-- Add Transaction, Add Shift, and direct edits to duplicate-key inputs refresh potential flags. A manual refresh provides recovery after bulk or external operations.
-- Duplicate matching is exact and case-insensitive after `Duplicate_Key` generation; it does not use spreadsheet wildcard criteria.
-- From v0.0.27, the full-column flag adapter holds a document-scoped lock from before the ledger extent read through the batched flag write. This serializes cooperating Apps Script recalculations; it does not lock the Google Sheets UI. Add Transaction's broader write transaction uses the same document-lock class in v0.0.29, but the duplicate refresh deliberately runs after that lock is released because Apps Script document locks are not treated as re-entrant.
+`calcShiftAmounts` is the only tip/wage math. The add-shift UI previews it; `postShift` calls it again after validating the Toronto date, member, CAD account, hours, and settings fingerprint. A stale fingerprint refuses the write. Same-member same-date is a confirmable warning. Historical blank Shift IDs from the Sheets app are not migrated here; this is a new ledger.
 
-## Transaction Input trust boundary
+## Trust and failure
 
-- Browser controls and dropdown filtering improve usability but are not authoritative. `addTransaction()` treats every submitted field as untrusted.
-- From v0.0.28, `validateAndNormalizeTransactionInput_()` is a pure plain-data boundary for type, Toronto calendar date, whole-cent amount, active subcategory/type agreement, active member, active account, and normalized note data.
-- From v0.0.29, Add Transaction performs a fast read-only preflight, then acquires one document lock and repeats the authoritative reference reads, validation, and Toronto date parsing before it reads commit state or writes.
-- `planManualTransactionCommit_()` is the pure deterministic write planner. It allocates both stable IDs and captures target extents plus the manual batch's prior/new count from one serialized snapshot.
-- `executeManualTransactionCommit_()` journals the batch, Raw Transactions, and Transactions stages before calling an injected Sheet adapter. Any write or verification failure rolls back the linked transaction row, raw row, and batch mutation in reverse order, then re-reads all three targets to prove the original state was restored. A rollback ambiguity or failed recovery verification fails loudly and instructs the user not to retry until the development ledger is inspected.
-- The three row-level helper formulas are part of the single Transactions row append. Verification requires exactly one linked raw/transaction pair, the intended batch count, and all three formulas before the lock is released.
-- Duplicate-review, Change Log, and summary follow-ups occur only after the durable commit. A duplicate-refresh failure reports that the transaction was saved and requests manual recovery; it does not return a normal submission failure that could cause a duplicate retry.
-- The lock serializes cooperating Apps Script writers; it cannot block a person directly editing sheet cells. Add Shift uses its own equivalent source-plus-four-row commit boundary from v0.0.31 because its data shape differs from Add Transaction.
+Browser controls are usability. Commands throw `ValidationError` before mutating. Duplicate/settings/double-shift cases throw `NeedsConfirmationError` with zero writes. Undo restores the previous snapshot. A UI mutex prevents overlapping saves. Health Check is a projection, not a hidden sheet.
 
-## Add Shift trust and commit boundary
+## Environments
 
-- First-use Tip Tracker and Wages/Tips category provisioning is serialized under one document lock. This prevents two simultaneous fresh-deployment dialog opens from both creating the same infrastructure before normal preview or posting begins.
-- The Add Shift dialog never calculates financial values locally. `getShiftPreview()` and `addShift()` both call `calcShiftAmounts_()` with named-range settings read from Tip Tracker.
-- The preview carries a settings fingerprint. If percentages, bar rounding, or hourly rate change before posting, the server returns a fresh preview and requires another explicit submission.
-- `validateAndNormalizeShiftInput_()` treats the browser payload as untrusted: it enforces a real Toronto date, an active member, a single active CAD account, active Wages/Tips categories, nonnegative whole-cent sales/tips, and positive hours no greater than 24.
-- `planShiftCommit_()` assigns one stable `SHIFT-000001`-style source ID plus two Raw and two Transaction IDs from one serialized state snapshot. Historical Tip Tracker rows remain valid with blank Shift IDs and are not rewritten.
-- `executeShiftCommit_()` journals four stages: shift-batch count, Tip Tracker source row, Raw Transactions pair, and Transactions pair. Verification checks the exact financial fields and links plus all three helper formulas. Any failed or write-then-throw stage rolls back in reverse and re-reads the original state.
-- `Import Batches.Record_Count` for `BATCH-SHIFT-ENTRY` intentionally counts submitted source shifts, not its two derived ledger rows. The batch notes make this semantic explicit.
-- Same-member same-date entries warn and require confirmation; they are not blocked because double shifts are legitimate. The separately reviewed `Is_Duplicate` financial control remains untouched.
-- Duplicate flags, Budget/Dashboard/Income History, and Change Log run only after the durable commit and lock release. A follow-up failure returns saved-with-warning so the user is not encouraged to resubmit the shift.
-- Data Health Check validates every v0.0.31 stable Shift ID across Tip Tracker, Raw Transactions, and Transactions, including Wages/Tips cardinality, amounts, member, account, currency, type, and subcategory. Historical blank-ID rows are deliberately outside this new linkage rule.
+Development is the default local ledger. Production is a second named snapshot on the same device. They cannot be confused by workbook title; the pill in the top bar is the environment.
 
-## Currency authority boundary
+## Scale
 
-- `Accounts.Currency` is the authoritative currency configuration. The currently supported household currency is `CAD`.
-- Add Transaction and Add Shift resolve the single active account before writing and copy that account's currency into `Raw Transactions.Raw_Currency` and `Transactions.Currency`; neither writer contains a currency literal.
-- A missing account, more than one active account, or a non-CAD active account is a blocking configuration error. Before multiple accounts can be active, the user interface must provide an explicit account selector as required by D-022.
-- Currency is metadata in the current single-currency model. Correcting the known `USD` labels to `CAD` must never recalculate or convert an amount.
-- Data Health Check validates account currency, record-to-account links, and record currency agreement so manual edits or future writers cannot silently reintroduce drift.
-
-## Goals and privacy
-
-Shared goals may appear on both dashboards. A hidden tab is not a security boundary: any editor can unhide or inspect it. If personal goals must be genuinely private, they require separate access-controlled storage or the future application's authorization layer.
-
-## Forecasting direction
-
-Forecasting should support multiple horizons and named scenarios. Inputs may include:
-
-- Trailing averages
-- Same period from the prior year
-- Recurring transactions
-- Fixed and variable income assumptions
-- User overrides
-- Confidence or data-quality indicators
-
-The initial implementation should remain deterministic and explainable.
-
-## Bank import boundary
-
-Preserve Raw Transactions, Import Batches, Accounts, categorization rules, and deduplication concepts so later Canadian-bank CSV/API adapters can feed the same normalization path. Do not build six bank integrations before core entry, calculation, and reconciliation flows are stable.
-
-## Future application migration
-
-The database migration should occur only after Jonathan and Bianca have stress-tested the Sheets version and are satisfied with its features, insights, and usefulness. Pure calculation functions and stable data contracts should be portable to the future backend.
+Duplicate flags are O(n). Month and week summaries are single passes. The fixture generator builds 12 months of load for tests. Commands currently clone the snapshot per write, which is honest and simple at household scale and the thing to replace with an event log if this later becomes a multi-user server.
