@@ -18,12 +18,15 @@ describe("Cloudflare static host pairing", () => {
       account_id: string;
       main: string;
       assets: { directory: string; not_found_handling: string; run_worker_first?: unknown };
+      vars?: { OPENAI_MODEL?: string; ANTHROPIC_MODEL?: string };
     };
     expect(config.account_id).toBe("7dfdfbba3053d8b857cbc359e0761c00");
     expect(config.main).toBe("workers/site.js");
     expect(config.assets.directory).toBe("./dist");
     expect(config.assets.not_found_handling).toBe("single-page-application");
     expect(config.assets.run_worker_first).toBe(true);
+    expect(config.vars?.OPENAI_MODEL).toBe("gpt-4o-mini");
+    expect(config.vars?.ANTHROPIC_MODEL).toBe("claude-haiku-4-5");
   });
 
   it("does not ship a catch-all _redirects file that Cloudflare Workers rejects", () => {
@@ -50,6 +53,18 @@ describe("Cloudflare static host pairing", () => {
     expect(worker).toContain("no-store");
     expect(worker).toContain("env.ASSETS.fetch");
     expect(worker).toMatch(/text\/html/);
+    expect(worker).toContain("api.openai.com");
+    expect(worker).toContain("api.anthropic.com");
+    expect(worker).toContain("env.OPENAI_API_KEY");
+    expect(worker).toContain("env.ANTHROPIC_API_KEY");
+    expect(worker).toContain("LEDGER MEMORY LABELS");
+    expect(worker).not.toMatch(/history\.slice/);
+    expect(worker).not.toContain("VITE_OPENAI");
+    expect(worker).not.toContain("VITE_ANTHROPIC");
+    const envExample = readFileSync(new URL("../.env.example", import.meta.url), "utf8");
+    expect(envExample).toMatch(/third-party keys are allowed/i);
+    expect(envExample).toContain("wrangler secret put OPENAI_API_KEY");
+    expect(envExample).not.toMatch(/VITE_OPENAI|VITE_ANTHROPIC/);
   });
 
   it("publishes hearth-books from main with wrangler deploy, not a preview upload", () => {

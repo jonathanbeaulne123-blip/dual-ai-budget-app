@@ -20,7 +20,7 @@ Help Jonathan and Bianca run a dependable household budget **and** a companion k
 - Currency: CAD, integer cents.
 - Development and production are two named local snapshots on the same device. Default experiments to Development.
 - Website: Cloudflare Workers + Assets, worker `hearth-books`. Publishes from GitHub `main` via `wrangler deploy` (D-041). Preview uploads are not the kitchen URL.
-- Hercules (Maine Coon) is the product face (D-044, D-045, D-046). Cosmetics never post money. Workers AI may talk; it cannot write the books. The Audit Office is how we show the ledger. Accounts Floor is how we touch it (D-047).
+- Hercules (Maine Coon) is the product face (D-044, D-045, D-046, D-049). Cosmetics and Hercules chat/memories never post money. Journal questions are answered on-device. Third-party OpenAI/Anthropic keys are allowed as Worker secrets (`wrangler secret put`), never `VITE_`. The Audit Office is how we show the ledger. Accounts Floor is how we touch it (D-047).
 - Hosted books: household Supabase Postgres. PGlite is the on-phone journal. Hosted RLS is still `USING (true)` until Auth exists (D-039).
 - Workbook exports, historical chats, credentials, and household data are local-only and must never be committed.
 
@@ -39,6 +39,7 @@ Help Jonathan and Bianca run a dependable household budget **and** a companion k
 - A hidden UI screen is not a privacy boundary.
 - Before any GitHub push, confirm no local-only workbook, chat, credential, or `.env` secret is tracked.
 - Never put the Supabase secret key or database password in `VITE_` variables or Cloudflare.
+- Third-party model keys are allowed as Cloudflare Worker secrets. Never `VITE_OPENAI_API_KEY` / `VITE_ANTHROPIC_API_KEY`. Never a key in the household snapshot.
 - Do not build bank feeds, Interac APIs, or issued cards until Auth + RLS exist.
 
 ## Workflow

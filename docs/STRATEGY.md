@@ -62,7 +62,7 @@ These are **important features**. Dual Course does not rewrite them. Smaller sur
 | Dates are Toronto civil keys. | D-007 |
 | Development and Production never mix. | D-002 |
 | Double-entry books. Health refuses imbalance. Journal wins if a statement disagrees. | D-033, D-046 |
-| Hercules, chalkboard, wardrobe, visit sparks, rec, close, marks, Google never post money. | D-042, D-043, D-044, D-045, D-046, D-047 |
+| Hercules, chalkboard, wardrobe, visit sparks, rec, close, marks, Google, Hercules desk never post money. | D-042, D-043, D-044, D-045, D-046, D-047, D-049 |
 | Hercules never names who spent more. No fake fees. No pay-to-keep-alive. No hunger-meter death. | D-044 |
 | Bank feeds, Interac APIs, issued cards: blocked until Auth + RLS. Jonathan approves production money movement. | D-011, D-039 |
 | Accounts are financial accounts (chequing, savings, credit, investment, other), not categories. | D-047 |
@@ -82,7 +82,7 @@ Do not re-litigate these as “Chapter 0” or “Ring 1.” They are the kitche
 - Calendar board, rhythms, `.ics`, optional Google overlay; Google never posts
 - Phrase / join / Hearth Pass; Shared / Personal / Both
 - Development vs Production pills; PGlite per pill
-- Home chalkboard; Hercules the Maine Coon (wander, loaf on Add, `talkHercules`, Workers AI chat); visit spark
+- Home chalkboard; Hercules the Maine Coon (wander, loaf on Add, journal-first talk; OpenAI/Anthropic Worker secrets allowed, then Workers AI); chat and memories in `kitchen.hercules` (D-049); visit spark
 - Audit Office: opinion, statements, equity roll, working capital, notes, rec, close pack
 - Accounts Floor: wallet tiles, account rooms, expandable cards, investment marks, interest/rewards as explicit posts
 - Kitchen site `hearth-books` from GitHub `main`
@@ -163,6 +163,7 @@ A kitchen that could sit beside a small family office without lying:
 A creature and a kitchen that teach the books by living on them:
 
 - Hercules as auditor-teacher: opinion, working capital, “what’s on the Visa,” “why was that a transfer?”
+- Chat and memories in `kitchen.hercules` (D-049). The notebook is the snapshot. The model gets labels, not the milk.
 - Pokémon Sleep analog: the day’s posts **are** the research. His idle day is compiled from the journal, not a second sim.
 - Tamagotchi analog: post / rec / sit-down are the three buttons. Everything else is a look.
 - Wardrobe earned from facts (already shipping). New cosmetics must map to a new honest fact — never a shop.
@@ -180,6 +181,7 @@ A creature and a kitchen that teach the books by living on them:
 
 | Invention | Budget delta (5) | Engagement delta (3) | Gate |
 |---|---|---|---|
+| **Hercules ledger desk** | Money questions answered from the journal. Chat/memories as protected as the books. | A cat who remembers payday without a vendor memory store. | **Shipping (D-049).** Third-party keys allowed as Worker secrets (D-045). Workers AI if none set. |
 | **Lock the hosted door** | Auth + RLS. Personal can become privacy. Opinion about *access* can go unmodified. | Hercules can tell the truth: “the door latched.” No more qualified opinion pretending math is the only issue. | **Next engineering dollar.** Do not apply [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) while `USING (true)`. |
 | **GitHub 2FA** | The canon remote stops being a single-factor door (D-020). | None required — Course A wins. | Open |
 | **Due-on-open preview** | Recurring literacy before `postEntry`. | Kettle whistle that matches a real due row. | Confirm still posts |

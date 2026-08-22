@@ -545,5 +545,20 @@ export function askHercules(household: Household, question: string, today: DateK
   if (/\b(shift|tips?|tip-out|wages|hours this week)\b/.test(q) && !/\b(grocer|bill|forecast)\b/.test(q)) {
     return shiftAnswer(household, today);
   }
+  if (/\b(what did i (tell|ask)|what do you remember|your (notes|memories)|did i (say|tell you))\b/.test(q)) {
+    const mems = household.kitchen.hercules?.memories ?? [];
+    if (!mems.length) {
+      return {
+        kind: "answer",
+        sentence: "Empty notebook. Say remember in my bubble and I keep it in the kitchen ledger.",
+        rows: [],
+      };
+    }
+    return {
+      kind: "answer",
+      sentence: `I kept ${mems.length} note${mems.length === 1 ? "" : "s"} next to the books: ${mems.map((row) => row.label).slice(-4).join("; ")}.`,
+      rows: mems.slice(-6).map((row) => ({ label: row.kind, value: row.label })),
+    };
+  }
   return voice(name, askBooks(household, question, today));
 }
