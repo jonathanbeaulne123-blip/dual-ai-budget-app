@@ -12,6 +12,7 @@ export const INSTRUMENT_IDS = [
   "blotter",
   "wallet",
   "mail",
+  "claims",
   "timesheet",
   "chalkboard",
   "postcard",
@@ -261,9 +262,10 @@ export function perchTarget(
 export function attackTarget(furniture: Furniture[]): Furniture | null {
   const rank = (id: string) => {
     if (id === "mail") return 0;
-    if (id === "timesheet") return 1;
-    if (id === "wallet") return 2;
-    if (id === "lamp") return 3;
+    if (id === "claims") return 1;
+    if (id === "timesheet") return 2;
+    if (id === "wallet") return 3;
+    if (id === "lamp") return 4;
     return 9;
   };
   const warns = furniture.filter((item) => item.warn).sort((left, right) => rank(left.id) - rank(right.id));
@@ -315,6 +317,7 @@ export const INSTRUMENT_KIND: Record<InstrumentId, FurnitureKind> = {
   blotter: "card",
   wallet: "tray",
   mail: "envelope",
+  claims: "tray",
   timesheet: "clock",
   chalkboard: "board",
   postcard: "card",

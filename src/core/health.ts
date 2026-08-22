@@ -153,6 +153,39 @@ export function runHealthCheck(household: Household): Finding[] {
     if (!categoryIds.has(recurrence.subcategoryId)) flag("Recurring", `${recurrence.id} points at a missing category.`, recurrence.id);
   }
 
+  for (const appointment of household.appointments ?? []) {
+    if (!accountIds.has(appointment.accountId)) flag("Appointments", `${appointment.title} points at a missing account.`, appointment.id);
+    if (!categoryIds.has(appointment.subcategoryId)) flag("Appointments", `${appointment.title} points at a missing category.`, appointment.id);
+    if (appointment.memberId !== "joint" && appointment.memberId !== "companion" && !memberIds.has(appointment.memberId)) {
+      flag("Appointments", `${appointment.title} points at a missing household member.`, appointment.id);
+    }
+    if (appointment.typicalRecoveryCents > appointment.typicalCostCents) {
+      flag("Appointments", `${appointment.title} expected recovery exceeds the visit cost.`, appointment.id);
+    }
+  }
+
+  for (const claim of household.claims ?? []) {
+    if (!accountIds.has(claim.receivableAccountId)) flag("Claims", `${claim.label} points at a missing receivable account.`, claim.id);
+    const receivable = household.accounts.find((account) => account.id === claim.receivableAccountId);
+    if (receivable && receivable.kind !== "receivable") {
+      flag("Claims", `${claim.label} is parked on ${receivable.name}, which is not an Owed-to-us account.`, claim.id);
+    }
+    if (!txIds.has(claim.expenseTransactionId)) flag("Claims", `${claim.label} is missing its visit expense.`, claim.id);
+    if (claim.recoveryTransactionId && !txIds.has(claim.recoveryTransactionId)) {
+      flag("Claims", `${claim.label} is missing its expected-recovery refund.`, claim.id);
+    }
+    if (claim.receivedCents + claim.writtenOffCents > claim.expectedCents) {
+      flag("Claims", `${claim.label} received plus written off exceeds expected.`, claim.id);
+    }
+    if (claim.lines.length) {
+      const sum = claim.lines.reduce((acc, line) => acc + line.amountCents, 0);
+      const expense = household.transactions.find((tx) => tx.id === claim.expenseTransactionId);
+      if (expense && sum !== expense.amountCents) {
+        flag("Claims", `${claim.label} itemized lines do not match the posted visit.`, claim.id);
+      }
+    }
+  }
+
   for (const finding of booksFindings(household)) {
     flag(finding.section, finding.message, finding.id);
   }

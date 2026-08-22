@@ -3,6 +3,7 @@ import { formatCad } from "./money.ts";
 import { monthSummary, weekSummary, freshnessHours, type MonthSummary, type WeekSummary } from "./budget.ts";
 import { buildMonthBoard, type BoardItem } from "./board.ts";
 import { householdWallet } from "./accounts.ts";
+import { claimsTraySentence, outstandingClaims, upcomingVisitProposals } from "./appointments.ts";
 import type { Rhythm } from "./rhythm.ts";
 import type { Goal, Household, Shift } from "./types.ts";
 
@@ -161,6 +162,22 @@ export function buildPulses(household: Household, today: DateKey, month: MonthSu
     pulses.push({
       sentence: `${hot.account.name} will accrue about ${formatCad(hot.estimatedInterestCents)} if the statement isn't paid in full. I don't post it.`,
       tone: "warn",
+    });
+  }
+
+  const owing = outstandingClaims(household);
+  if (owing[0]) {
+    pulses.unshift({
+      sentence: claimsTraySentence(household, today),
+      tone: owing.some((claim) => claim.submittedAt) ? "neutral" : "warn",
+    });
+  }
+
+  const saveFor = upcomingVisitProposals(household, today)[0];
+  if (saveFor) {
+    pulses.push({
+      sentence: saveFor.hercules,
+      tone: saveFor.nextDate <= today ? "warn" : "neutral",
     });
   }
 

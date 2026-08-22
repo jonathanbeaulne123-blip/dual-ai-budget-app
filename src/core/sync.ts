@@ -4,6 +4,7 @@ import { mergeGoogle, shapeGoogle } from "./google.ts";
 import { mergeKitchen, shapeKitchen } from "./kitchen.ts";
 import { mergeCalendars, shapeCalendar, shapeRecurrence } from "./recurrence.ts";
 import { applyGoalSavings, shapeGoalProgress } from "./goals.ts";
+import { shapeAppointments, shapeClaims } from "./appointments.ts";
 import { shapeAccounts } from "./accountKinds.ts";
 import type {
   Activity,
@@ -115,6 +116,8 @@ export function ensureHouseholdShape(household: Household): Household {
     revision: household.revision ?? 0,
     tombstones: household.tombstones ?? [],
     recurrences: (household.recurrences ?? []).map((item) => shapeRecurrence(item, fallbackIso)),
+    appointments: shapeAppointments(household.appointments, fallbackIso),
+    claims: shapeClaims(household.claims, fallbackIso),
     calendar: shapeCalendar(household.calendar),
     kitchen: shapeKitchen(household.kitchen),
     google: shapeGoogle(household.google),
@@ -171,6 +174,8 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     accounts: shaped.accounts,
     categories: shaped.categories,
     recurrences: shaped.recurrences,
+    appointments: shaped.appointments,
+    claims: shaped.claims,
     calendar: shaped.calendar,
     kitchen: shaped.kitchen,
     google: shaped.google,
@@ -225,6 +230,8 @@ export function assembleHousehold(shared: SharedEnvelope, personal: PersonalEnve
     accounts: shared.accounts,
     categories: shared.categories,
     recurrences: shared.recurrences,
+    appointments: shared.appointments ?? [],
+    claims: shared.claims ?? [],
     calendar: shared.calendar,
     kitchen: shared.kitchen,
     google: shared.google,
@@ -257,6 +264,8 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     accounts: mergeRecords(server.accounts, client.accounts, []),
     categories: mergeRecords(server.categories, client.categories, []),
     recurrences: mergeRecords(server.recurrences, client.recurrences, tombstones),
+    appointments: mergeRecords(server.appointments ?? [], client.appointments ?? [], tombstones),
+    claims: mergeRecords(server.claims ?? [], client.claims ?? [], tombstones),
     calendar: mergeCalendars(server.calendar, client.calendar),
     kitchen: mergeKitchen(server.kitchen, client.kitchen, tombstones),
     google: mergeGoogle(server.google, client.google, tombstones),

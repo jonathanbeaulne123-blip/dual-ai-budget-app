@@ -2,7 +2,7 @@ import type { DateKey } from "./calendar.ts";
 import { CURRENCY } from "./money.ts";
 import { JOINT, type Account, type AccountKind, type CreditCardDesk, type CreditRewardRule, type InvestmentDesk, type InvestmentVehicle, type SavingsDesk } from "./types.ts";
 
-export const ACCOUNT_KINDS: AccountKind[] = ["chequing", "savings", "credit", "investment", "other"];
+export const ACCOUNT_KINDS: AccountKind[] = ["chequing", "savings", "credit", "investment", "other", "receivable"];
 
 export const ACCOUNT_KIND_LABEL: Record<AccountKind, string> = {
   chequing: "Chequing",
@@ -10,6 +10,7 @@ export const ACCOUNT_KIND_LABEL: Record<AccountKind, string> = {
   credit: "Credit cards",
   investment: "Investments",
   other: "Other",
+  receivable: "Owed to us",
 };
 
 export const ACCOUNT_KIND_HINT: Record<AccountKind, string> = {
@@ -18,6 +19,7 @@ export const ACCOUNT_KIND_HINT: Record<AccountKind, string> = {
   credit: "What you owe. Paydown is a transfer. Interest and cashback never auto-post",
   investment: "Cost basis from transfers in. Market value is a typed mark, not a feed",
   other: "Cash, tip envelopes, the jar on the counter",
+  receivable: "Money owed to this household that has not arrived. Settlement is a transfer, never income",
 };
 
 export const INVESTMENT_VEHICLES: { id: InvestmentVehicle; label: string }[] = [
@@ -37,6 +39,10 @@ export function isCashLikeKind(kind: AccountKind): boolean {
   return kind === "chequing" || kind === "savings" || kind === "other";
 }
 
+export function isReceivableKind(kind: AccountKind): boolean {
+  return kind === "receivable";
+}
+
 export function isInvestmentKind(kind: AccountKind): boolean {
   return kind === "investment";
 }
@@ -52,6 +58,7 @@ export function normalizeAccountKind(raw: unknown): AccountKind {
   if (value === "savings" || value === "hisa") return "savings";
   if (value === "credit" || value === "card" || value === "visa" || value === "mastercard") return "credit";
   if (value === "investment" || value === "tfsa" || value === "rrsp" || value === "brokerage") return "investment";
+  if (value === "receivable" || value === "ar" || value === "a/r" || value === "claims" || value === "owing") return "receivable";
   if (value === "other") return "other";
   return "other";
 }

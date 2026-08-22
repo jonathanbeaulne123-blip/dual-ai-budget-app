@@ -12,10 +12,11 @@ import {
   type MonthKey,
 } from "./calendar.ts";
 import { projectCadence } from "./recurrence.ts";
+import { appointmentPublicTitle, projectAppointmentDates } from "./appointments.ts";
 import { detectRhythms, type Rhythm } from "./rhythm.ts";
 import type { Household, Recurrence, RecurrenceKind } from "./types.ts";
 
-export type BoardKind = RecurrenceKind | "shift" | "google" | "detected";
+export type BoardKind = RecurrenceKind | "shift" | "google" | "detected" | "visit";
 
 export type OverlayEvent = {
   id: string;
@@ -33,8 +34,9 @@ export type BoardItem = {
   amountCents: number;
   direction: "in" | "out" | "work" | "busy";
   kind: BoardKind;
-  source: "recurrence" | "rhythm" | "shift" | "google";
+  source: "recurrence" | "rhythm" | "shift" | "google" | "appointment";
   recurrenceId?: string;
+  appointmentId?: string;
   rhythmKey?: string;
   memberId?: string;
   memberColor?: string;
@@ -178,6 +180,27 @@ export function buildMonthBoard(
     });
   }
 
+  for (const appointment of (household.appointments ?? []).filter((row) => row.active)) {
+    const netCents = Math.max(0, appointment.typicalCostCents - appointment.typicalRecoveryCents);
+    const dates = projectAppointmentDates(appointment.nextDate, appointment.cadence, gridStart, gridEnd);
+    if (appointment.nextDate < today && inInclusiveRange(today, gridStart, gridEnd) && !dates.includes(today)) {
+      dates.push(today);
+    }
+    for (const date of dates) {
+      items.push({
+        id: `${appointment.id}:${date}`,
+        date,
+        title: appointmentPublicTitle(appointment, "card"),
+        amountCents: netCents || appointment.typicalCostCents,
+        direction: "out",
+        kind: "visit",
+        source: "appointment",
+        appointmentId: appointment.id,
+        due: date <= today,
+      });
+    }
+  }
+
   const byDate = new Map<DateKey, BoardItem[]>();
   for (const item of items) {
     const list = byDate.get(item.date) ?? [];
@@ -243,7 +266,8 @@ export function buildMonthBoard(
     upcoming,
     clashes: payWeeks.filter((week) => week.clash),
     payWeeks,
-    dueCount: household.recurrences.filter((item) => item.active && item.nextDate <= today).length,
+    dueCount: household.recurrences.filter((item) => item.active && item.nextDate <= today).length
+      + (household.appointments ?? []).filter((item) => item.active && item.nextDate <= today).length,
     weekPressure: payWeeks.find((week) => week.current) ?? null,
     rhythms,
   };

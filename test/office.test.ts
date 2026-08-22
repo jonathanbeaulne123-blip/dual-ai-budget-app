@@ -18,6 +18,7 @@ import {
   formatCad,
   glassFromOpenMeteo,
   JARS_EMPTY,
+  CLAIMS_EMPTY,
   lampIsDark,
   loadOfficeLayout,
   loadOfficeRings,
@@ -271,6 +272,7 @@ describe("office projections stay honest", () => {
     expect(POSTCARD_EMPTY).toMatch(/Next sit-down/);
     expect(COOK_EMPTY).toMatch(/Nothing cooked, nothing bought/);
     expect(JARS_EMPTY).toMatch(/No jars on the shelf yet/);
+    expect(CLAIMS_EMPTY).toMatch(/Nothing owed to this household/);
     expect(BOARD_EMPTY).toMatch(/Nothing on the board/);
   });
 

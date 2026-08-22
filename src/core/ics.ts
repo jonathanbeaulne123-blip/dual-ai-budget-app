@@ -2,6 +2,7 @@ import { TIMEZONE, type DateKey } from "./calendar.ts";
 import { formatCad } from "./money.ts";
 import { googleRrule, HEARTH_REMINDER_HOUR } from "./recurrence.ts";
 import { detectRhythms } from "./rhythm.ts";
+import { appointmentPublicTitle, formatAppointmentCadence } from "./appointments.ts";
 import type { Household, Recurrence } from "./types.ts";
 
 function fold(line: string): string {
@@ -112,6 +113,21 @@ export function buildHouseholdIcs(household: Household, today: DateKey): string 
         description: "Hearth reminder. This is not a posted ledger row. Open Hearth and mark it paid to write the books.",
         cadence: item.cadence,
         hoursBefore: item.reminderHoursBefore || 24,
+      }),
+    );
+  }
+
+  for (const appointment of (household.appointments ?? []).filter((row) => row.active)) {
+    const title = appointmentPublicTitle(appointment, "card");
+    const netCents = Math.max(0, appointment.typicalCostCents - appointment.typicalRecoveryCents);
+    lines.push(
+      ...vevent({
+        uid: `hearth-${household.householdId}-${appointment.id}@hearth.local`,
+        stamp: stampNow,
+        date: appointment.nextDate < today ? today : appointment.nextDate,
+        title: netCents ? `${title} · ${formatCad(netCents)} out of pocket` : title,
+        description: `Hearth visit (${formatAppointmentCadence(appointment.cadence)}). Reminder only — open Hearth and post the visit to write the books. Appointment notes travel with the household snapshot until Auth.`,
+        hoursBefore: 24,
       }),
     );
   }

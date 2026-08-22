@@ -18,7 +18,7 @@ import {
   requireTimezone,
   validateOwnedAmount as catalogValidateOwned,
 } from "./catalog.ts";
-import { shapeAccount, normalizeAccountKind, emptyCreditDesk } from "./accountKinds.ts";
+import { shapeAccount, normalizeAccountKind, emptyCreditDesk, isReceivableKind } from "./accountKinds.ts";
 import { creditCardView, savingsView } from "./accounts.ts";
 import { sitDownPreview } from "./insights.ts";
 import { bookBalanceAsOf, isMonthClosed } from "./statements.ts";
@@ -36,11 +36,33 @@ import {
 import { mergeTombstones } from "./sync.ts";
 import { parseVisibility, visibleForDuplicateScan } from "./visibility.ts";
 import { savedCentsFromContributions } from "./goals.ts";
+import {
+  advanceAppointmentCadence,
+  assertLinesSum,
+  DEFAULT_RECEIVABLE_ID,
+  defaultClaimKind,
+  defaultCraEligible,
+  defaultReceivableAccountId,
+  deriveClaimStatus,
+  estimateRecoveryCents,
+  proposeVisitGoal,
+  shapeAppointment,
+  shapeBillLines,
+  shapeCadence,
+  claimRemainingCents,
+} from "./appointments.ts";
 import type {
   AccountKind,
   Activity,
+  Appointment,
+  AppointmentCadence,
+  AppointmentKind,
+  AppointmentMemberId,
+  AppointmentSensitivity,
   BudgetPlan,
   Category,
+  Claim,
+  ClaimKind,
   CommitResult,
   CreditRewardRule,
   Household,
@@ -55,7 +77,7 @@ import type {
   UndoToken,
   Visibility,
 } from "./types.ts";
-import { NeedsConfirmationError, ValidationError } from "./types.ts";
+import { COMPANION, JOINT, NeedsConfirmationError, ValidationError } from "./types.ts";
 
 export type ActorInput = {
   createdBy?: string;
@@ -508,13 +530,21 @@ function parseBps(value: string | number | undefined, label: string, fallback = 
   return Math.round(n * 100);
 }
 
-function parseLimitCents(value: string | number | undefined, label: string): number {
-  if (value === undefined || value === null || value === "") return 0;
+function parseMoneyCents(
+  value: string | number,
+  label: string,
+  options: { allowZero?: boolean; allowNegative?: boolean } = {},
+): number {
   try {
-    return parseWholeCents(value, label, { allowZero: true });
+    return parseWholeCents(value, label, options);
   } catch (error) {
     throw new ValidationError(error instanceof Error ? error.message : String(error));
   }
+}
+
+function parseLimitCents(value: string | number | undefined, label: string): number {
+  if (value === undefined || value === null || value === "") return 0;
+  return parseMoneyCents(value, label, { allowZero: true });
 }
 
 function requireIncomeNamed(household: Household, name: string): { household: Household; subcategoryId: string } {
@@ -1457,6 +1487,587 @@ export function setGoogleServices(household: Household, services: Iterable<strin
   return commit(previous, next, "Google", `Google services: ${labels}`, []);
 }
 
+function requireAppointmentParty(household: Household, memberId: AppointmentMemberId): void {
+  if (memberId === JOINT || memberId === COMPANION) return;
+  requireMember(household, memberId);
+}
+
+function ensureReceivableAccount(next: Household, at: string): string {
+  try {
+    return defaultReceivableAccountId(next);
+  } catch {
+    const taken = next.accounts.map((account) => account.id);
+    const id = taken.includes(DEFAULT_RECEIVABLE_ID)
+      ? uniquePrefixedId("ACC-CLAIMS", taken)
+      : DEFAULT_RECEIVABLE_ID;
+    const sortOrder = (next.accounts.reduce((max, account) => Math.max(max, account.sortOrder), 0) || 0) + 10;
+    next.accounts = [...next.accounts, shapeAccount({
+      id,
+      name: "Benefits owing",
+      kind: "receivable",
+      currency: CURRENCY,
+      active: true,
+      ownerMemberId: JOINT,
+      institution: "",
+      last4: "",
+      sortOrder,
+      createdAt: at,
+      updatedAt: at,
+    }, next.accounts.length, at)];
+    return id;
+  }
+}
+
+function scanDuplicate(
+  household: Household,
+  actorCreatedBy: string,
+  draft: Pick<Transaction, "date" | "amountCents" | "accountId" | "type" | "note" | "place" | "subcategoryId" | "source" | "sourceId">,
+  confirmDuplicate?: boolean,
+): void {
+  const matches = findSimilarTransactions(household.transactions.filter((tx) => visibleForDuplicateScan(tx, actorCreatedBy)), draft);
+  if (matches.length && !confirmDuplicate) {
+    throw new NeedsConfirmationError("duplicate", describeSimilarMatches(matches), matches.map((match) => match.transaction));
+  }
+}
+
+function assignTxId(next: Household, type: Transaction["type"]): string {
+  const prefix = type === "income" ? "TXN-IN-" : type === "refund" ? "TXN-RF-" : type === "transfer" ? "TXN-TR-" : "TXN-EX-";
+  return nextId(prefix, next.transactions.map((tx) => tx.id));
+}
+
+export function addAppointment(household: Household, input: {
+  title: string;
+  kind?: AppointmentKind;
+  memberId?: AppointmentMemberId;
+  place?: string;
+  practitioner?: string;
+  sensitivity?: AppointmentSensitivity;
+  coverage?: Appointment["coverage"];
+  nextDate: string;
+  cadence?: AppointmentCadence | AppointmentCadence["kind"];
+  typicalCost?: string | number;
+  typicalRecovery?: string | number;
+  subcategoryId: string;
+  accountId: string;
+}): CommitResult {
+  requireTimezone(household);
+  const title = input.title.trim();
+  if (title.length < 2) throw new ValidationError("Name the visit.");
+  const memberId = input.memberId ?? JOINT;
+  requireAppointmentParty(household, memberId);
+  requireAccount(household, input.accountId);
+  requireSubcategory(household, input.subcategoryId, "expense");
+  const typicalCostCents = input.typicalCost == null || input.typicalCost === ""
+    ? 0
+    : parseMoneyCents(input.typicalCost, "Typical cost", { allowZero: true });
+  const typicalRecoveryCents = input.typicalRecovery == null || input.typicalRecovery === ""
+    ? 0
+    : parseMoneyCents(input.typicalRecovery, "Typical recovery", { allowZero: true });
+  if (typicalRecoveryCents > typicalCostCents) throw new ValidationError("Expected recovery cannot exceed the visit cost.");
+  const cadence = typeof input.cadence === "string" ? shapeCadence({ kind: input.cadence }) : shapeCadence(input.cadence);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nowIso();
+  const id = nextId("APT-", next.appointments.map((item) => item.id), 3);
+  const appointment = shapeAppointment({
+    id,
+    title,
+    kind: input.kind ?? "other",
+    memberId,
+    place: input.place ?? "",
+    practitioner: input.practitioner ?? "",
+    sensitivity: input.sensitivity ?? "household",
+    coverage: input.coverage ?? "private",
+    nextDate: parseDate(input.nextDate),
+    cadence,
+    typicalCostCents,
+    typicalRecoveryCents,
+    subcategoryId: input.subcategoryId,
+    accountId: input.accountId,
+    lastVisitDate: null,
+    lastPostedTransactionId: null,
+    savingGoalId: null,
+    active: true,
+    createdAt: at,
+    updatedAt: at,
+  }, at);
+  next.appointments = [...next.appointments, appointment];
+  return commit(previous, next, "Appointment", appointment.title, [id]);
+}
+
+export function updateAppointment(household: Household, input: {
+  appointmentId: string;
+  title?: string;
+  nextDate?: string;
+  cadence?: AppointmentCadence;
+  typicalCost?: string | number;
+  typicalRecovery?: string | number;
+  sensitivity?: AppointmentSensitivity;
+  practitioner?: string;
+  place?: string;
+  active?: boolean;
+  accountId?: string;
+  subcategoryId?: string;
+}): CommitResult {
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const appointment = next.appointments.find((item) => item.id === input.appointmentId);
+  if (!appointment) throw new ValidationError("That visit is gone.");
+  if (input.accountId) requireAccount(next, input.accountId);
+  if (input.subcategoryId) requireSubcategory(next, input.subcategoryId, "expense");
+  if (input.title != null) {
+    const title = input.title.trim();
+    if (title.length < 2) throw new ValidationError("Name the visit.");
+    appointment.title = title;
+  }
+  if (input.nextDate) appointment.nextDate = parseDate(input.nextDate);
+  if (input.cadence) appointment.cadence = shapeCadence(input.cadence);
+  if (input.typicalCost != null) appointment.typicalCostCents = parseMoneyCents(input.typicalCost, "Typical cost", { allowZero: true });
+  if (input.typicalRecovery != null) appointment.typicalRecoveryCents = parseMoneyCents(input.typicalRecovery, "Typical recovery", { allowZero: true });
+  if (appointment.typicalRecoveryCents > appointment.typicalCostCents) {
+    throw new ValidationError("Expected recovery cannot exceed the visit cost.");
+  }
+  if (input.sensitivity) appointment.sensitivity = input.sensitivity;
+  if (input.practitioner != null) appointment.practitioner = input.practitioner.trim().slice(0, 80);
+  if (input.place != null) appointment.place = input.place.trim().slice(0, 80);
+  if (input.active != null) appointment.active = input.active;
+  if (input.accountId) appointment.accountId = input.accountId;
+  if (input.subcategoryId) appointment.subcategoryId = input.subcategoryId;
+  appointment.updatedAt = nowIso();
+  return commit(previous, next, "Appointment", appointment.title, []);
+}
+
+export function postVisit(household: Household, input: {
+  date: string;
+  amount: string | number;
+  accountId?: string;
+  subcategoryId?: string;
+  appointmentId?: string | null;
+  expectedRecovery?: string | number;
+  receivableAccountId?: string;
+  claimKind?: ClaimKind;
+  claimLabel?: string;
+  craEligible?: boolean;
+  lines?: Array<{ code?: string; description?: string; amountCents?: number; amount?: string | number }>;
+  note?: string;
+  place?: string;
+  splits?: Split[];
+  confirmDuplicate?: boolean;
+  confirmClosedMonth?: boolean;
+  createdBy?: string;
+  visibility?: Visibility;
+}): CommitResult {
+  requireTimezone(household);
+  const date = parseDate(input.date);
+  const amountCents = parseAmount(input.amount);
+  const actor = resolveActor(household, input);
+  requireOpenPeriod(household, date, input.confirmClosedMonth);
+  const appointment = input.appointmentId
+    ? household.appointments.find((item) => item.id === input.appointmentId)
+    : undefined;
+  if (input.appointmentId && !appointment) throw new ValidationError("That visit is gone.");
+  const accountId = input.accountId || appointment?.accountId;
+  if (!accountId) throw new ValidationError("Choose the account that paid.");
+  requireAccount(household, accountId);
+  const subcategoryId = input.subcategoryId || appointment?.subcategoryId;
+  if (!subcategoryId) throw new ValidationError("Choose a category for the visit.");
+  const subcategory = requireSubcategory(household, subcategoryId, "expense");
+  const expectedRecoveryCents = input.expectedRecovery == null || input.expectedRecovery === ""
+    ? (appointment ? estimateRecoveryCents(household, appointment) : 0)
+    : parseMoneyCents(input.expectedRecovery, "Expected recovery", { allowZero: true });
+  if (expectedRecoveryCents < 0 || expectedRecoveryCents > amountCents) {
+    throw new ValidationError("Expected recovery must sit between $0 and the visit total.");
+  }
+  const lines = shapeBillLines((input.lines ?? []).map((line, index) => ({
+    id: `LINE-${index + 1}`,
+    code: line.code ?? "",
+    description: line.description ?? "Item",
+    amountCents: line.amountCents ?? (line.amount != null && line.amount !== "" ? parseAmount(line.amount, "Line") : 0),
+  })));
+  assertLinesSum(lines, amountCents);
+  const splits = catalogValidateOwned(input.splits ?? jointSplit(amountCents), amountCents, household);
+  const note = input.note ?? appointment?.title ?? "Visit";
+  const place = input.place ?? appointment?.place ?? "";
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const createdAt = nowIso();
+  const expense = baseTx(next, {
+    date,
+    type: "expense",
+    amountCents,
+    accountId,
+    categoryId: subcategory.parentId,
+    subcategoryId: subcategory.id,
+    note,
+    place,
+    splits,
+    source: "visit",
+    createdAt,
+    createdBy: actor.createdBy,
+    visibility: actor.visibility,
+  });
+  scanDuplicate(next, actor.createdBy, expense, input.confirmDuplicate);
+  expense.id = assignTxId(next, "expense");
+  next.transactions.push(expense);
+  const postedIds = [expense.id];
+  let claim: Claim | null = null;
+  if (expectedRecoveryCents > 0) {
+    const receivableAccountId = input.receivableAccountId || ensureReceivableAccount(next, createdAt);
+    const receivable = requireAccount(next, receivableAccountId);
+    if (!isReceivableKind(receivable.kind)) {
+      throw new ValidationError("Expected recovery posts to an Owed-to-us account, not a jar.");
+    }
+    const recoverySplits = catalogValidateOwned(jointSplit(expectedRecoveryCents), expectedRecoveryCents, next);
+    const refund = baseTx(next, {
+      date,
+      type: "refund",
+      amountCents: expectedRecoveryCents,
+      accountId: receivable.id,
+      categoryId: subcategory.parentId,
+      subcategoryId: subcategory.id,
+      note: `Expected recovery · ${note}`,
+      place,
+      splits: recoverySplits,
+      source: "visit",
+      refundOfId: expense.id,
+      createdAt,
+      createdBy: actor.createdBy,
+      visibility: actor.visibility,
+    });
+    refund.id = assignTxId(next, "refund");
+    next.transactions.push(refund);
+    postedIds.push(refund.id);
+    const claimId = nextId("CLM-", next.claims.map((item) => item.id), 3);
+    refund.sourceId = claimId;
+    expense.sourceId = claimId;
+    const kind = input.claimKind ?? (appointment ? defaultClaimKind(appointment.kind) : "insurance");
+    claim = {
+      id: claimId,
+      kind,
+      label: input.claimLabel?.trim() || appointment?.title || note,
+      appointmentId: appointment?.id ?? null,
+      expenseTransactionId: expense.id,
+      recoveryTransactionId: refund.id,
+      settleTransferIds: [],
+      writeOffTransactionId: null,
+      expectedCents: expectedRecoveryCents,
+      receivedCents: 0,
+      writtenOffCents: 0,
+      receivableAccountId: receivable.id,
+      status: "pending",
+      submittedAt: null,
+      settledAt: null,
+      craEligible: input.craEligible ?? (appointment ? defaultCraEligible(appointment.kind) : false),
+      lines,
+      createdAt,
+      updatedAt: createdAt,
+    };
+    claim.status = deriveClaimStatus(claim);
+    next.claims = [...next.claims, claim];
+    postedIds.push(claim.id);
+  } else {
+    expense.sourceId = appointment?.id;
+  }
+  if (appointment) {
+    const row = next.appointments.find((item) => item.id === appointment.id);
+    if (row) {
+      row.lastVisitDate = date;
+      row.lastPostedTransactionId = expense.id;
+      row.typicalCostCents = amountCents;
+      if (expectedRecoveryCents) row.typicalRecoveryCents = expectedRecoveryCents;
+      if (row.cadence.kind === "once") {
+        row.nextDate = date;
+      } else {
+        row.nextDate = advanceAppointmentCadence(date, row.cadence);
+      }
+      row.updatedAt = createdAt;
+    }
+  }
+  const summary = claim
+    ? `${note} ${formatVisitAmount(amountCents)} · ${formatVisitAmount(claim.expectedCents)} owing`
+    : `${note} ${formatVisitAmount(amountCents)}`;
+  return commit(previous, next, "Visit", summary, postedIds);
+}
+
+function formatVisitAmount(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+export function openClaim(household: Household, input: {
+  expenseTransactionId: string;
+  expectedRecovery: string | number;
+  receivableAccountId?: string;
+  claimKind?: ClaimKind;
+  claimLabel?: string;
+  craEligible?: boolean;
+  appointmentId?: string | null;
+  confirmClosedMonth?: boolean;
+  createdBy?: string;
+  visibility?: Visibility;
+}): CommitResult {
+  requireTimezone(household);
+  const expense = household.transactions.find((tx) => tx.id === input.expenseTransactionId);
+  if (!expense || expense.type !== "expense") throw new ValidationError("Open a claim against a posted expense.");
+  if (household.claims.some((claim) => claim.expenseTransactionId === expense.id)) {
+    throw new ValidationError("That expense already has a claim.");
+  }
+  const expectedCents = parseAmount(input.expectedRecovery, "Expected recovery");
+  if (expectedCents <= 0 || expectedCents > expense.amountCents) {
+    throw new ValidationError("Expected recovery must sit between $0.01 and the expense total.");
+  }
+  if (!expense.subcategoryId) throw new ValidationError("That expense has no category to recover.");
+  const actor = resolveActor(household, input, expense.createdBy);
+  requireOpenPeriod(household, expense.date, input.confirmClosedMonth);
+  const subcategory = requireSubcategory(household, expense.subcategoryId, "expense");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const createdAt = nowIso();
+  const receivable = requireAccount(next, input.receivableAccountId || ensureReceivableAccount(next, createdAt));
+  if (!isReceivableKind(receivable.kind)) throw new ValidationError("Expected recovery posts to an Owed-to-us account, not a jar.");
+  const refund = baseTx(next, {
+    date: expense.date,
+    type: "refund",
+    amountCents: expectedCents,
+    accountId: receivable.id,
+    categoryId: subcategory.parentId,
+    subcategoryId: subcategory.id,
+    note: `Expected recovery · ${expense.note || "expense"}`,
+    place: expense.place,
+    splits: jointSplit(expectedCents),
+    source: "visit",
+    refundOfId: expense.id,
+    createdAt,
+    createdBy: actor.createdBy,
+    visibility: actor.visibility,
+  });
+  refund.id = assignTxId(next, "refund");
+  next.transactions.push(refund);
+  const claimId = nextId("CLM-", next.claims.map((item) => item.id), 3);
+  refund.sourceId = claimId;
+  const claim: Claim = {
+    id: claimId,
+    kind: input.claimKind ?? "other",
+    label: input.claimLabel?.trim() || expense.note || "Claim",
+    appointmentId: input.appointmentId ?? null,
+    expenseTransactionId: expense.id,
+    recoveryTransactionId: refund.id,
+    settleTransferIds: [],
+    writeOffTransactionId: null,
+    expectedCents,
+    receivedCents: 0,
+    writtenOffCents: 0,
+    receivableAccountId: receivable.id,
+    status: "pending",
+    submittedAt: null,
+    settledAt: null,
+    craEligible: input.craEligible === true,
+    lines: [],
+    createdAt,
+    updatedAt: createdAt,
+  };
+  claim.status = deriveClaimStatus(claim);
+  next.claims = [...next.claims, claim];
+  return commit(previous, next, "Claim", `${claim.label} ${formatVisitAmount(expectedCents)} owing`, [refund.id, claim.id]);
+}
+
+export function submitClaim(household: Household, claimId: string): CommitResult {
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const claim = next.claims.find((item) => item.id === claimId);
+  if (!claim) throw new ValidationError("That claim is gone.");
+  if (claimRemainingCents(claim) <= 0) throw new ValidationError("Nothing left to submit.");
+  const at = nowIso();
+  claim.submittedAt = at;
+  claim.updatedAt = at;
+  claim.status = deriveClaimStatus(claim);
+  return commit(previous, next, "Claim", `Submitted ${claim.label}`, []);
+}
+
+export function settleClaim(household: Household, input: {
+  claimId: string;
+  amount?: string | number;
+  toAccountId: string;
+  date?: string;
+  confirmDuplicate?: boolean;
+  confirmClosedMonth?: boolean;
+  createdBy?: string;
+  visibility?: Visibility;
+}): CommitResult {
+  requireTimezone(household);
+  const claim = household.claims.find((item) => item.id === input.claimId);
+  if (!claim) throw new ValidationError("That claim is gone.");
+  const remaining = claimRemainingCents(claim);
+  if (remaining <= 0) throw new ValidationError("That claim is already closed.");
+  const receivedCents = input.amount == null || input.amount === "" ? remaining : parseAmount(input.amount, "Amount received");
+  if (receivedCents <= 0) throw new ValidationError("Received amount must be more than zero.");
+  const date = parseDate(input.date || todayKey());
+  const actor = resolveActor(household, input);
+  requireOpenPeriod(household, date, input.confirmClosedMonth);
+  requireAccount(household, claim.receivableAccountId);
+  requireAccount(household, input.toAccountId);
+  if (input.toAccountId === claim.receivableAccountId) {
+    throw new ValidationError("Settle into the account that received the money, not the claim itself.");
+  }
+  const toAccount = requireAccount(household, input.toAccountId);
+  if (isReceivableKind(toAccount.kind)) throw new ValidationError("Settlement lands in cash, savings, or a card — not another claim.");
+  const applyCents = Math.min(receivedCents, remaining);
+  const extraCents = receivedCents - applyCents;
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const createdAt = nowIso();
+  const postedIds: string[] = [];
+  const note = `Claim landed · ${claim.label}`;
+  const outDraft = baseTx(next, {
+    date,
+    type: "transfer",
+    amountCents: applyCents,
+    accountId: claim.receivableAccountId,
+    categoryId: null,
+    subcategoryId: null,
+    note,
+    splits: jointSplit(applyCents),
+    source: "manual",
+    createdAt,
+    createdBy: actor.createdBy,
+    visibility: actor.visibility,
+  });
+  const inDraft = baseTx(next, {
+    date,
+    type: "transfer",
+    amountCents: applyCents,
+    accountId: input.toAccountId,
+    categoryId: null,
+    subcategoryId: null,
+    note,
+    splits: jointSplit(applyCents),
+    source: "manual",
+    createdAt,
+    createdBy: actor.createdBy,
+    visibility: actor.visibility,
+  });
+  scanDuplicate(next, actor.createdBy, outDraft, input.confirmDuplicate);
+  outDraft.id = assignTxId(next, "transfer");
+  inDraft.id = assignTxId({ ...next, transactions: [...next.transactions, outDraft] }, "transfer");
+  outDraft.transferPairId = inDraft.id;
+  inDraft.transferPairId = outDraft.id;
+  outDraft.transferFromAccountId = claim.receivableAccountId;
+  outDraft.transferToAccountId = input.toAccountId;
+  inDraft.transferFromAccountId = claim.receivableAccountId;
+  inDraft.transferToAccountId = input.toAccountId;
+  next.transactions.push(outDraft, inDraft);
+  postedIds.push(outDraft.id, inDraft.id);
+  const row = next.claims.find((item) => item.id === claim.id)!;
+  row.receivedCents += applyCents;
+  row.settleTransferIds = [...row.settleTransferIds, outDraft.id, inDraft.id];
+  if (extraCents > 0) {
+    const expense = next.transactions.find((tx) => tx.id === row.expenseTransactionId);
+    if (!expense?.subcategoryId) throw new ValidationError("Cannot post extra recovery without the original expense.");
+    const subcategory = requireSubcategory(next, expense.subcategoryId, "expense");
+    const refund = baseTx(next, {
+      date,
+      type: "refund",
+      amountCents: extraCents,
+      accountId: input.toAccountId,
+      categoryId: subcategory.parentId,
+      subcategoryId: subcategory.id,
+      note: `Extra recovery · ${claim.label}`,
+      place: expense.place,
+      splits: jointSplit(extraCents),
+      source: "visit",
+      sourceId: row.id,
+      refundOfId: expense.id,
+      createdAt,
+      createdBy: actor.createdBy,
+      visibility: actor.visibility,
+    });
+    refund.id = assignTxId(next, "refund");
+    next.transactions.push(refund);
+    postedIds.push(refund.id);
+  }
+  row.updatedAt = createdAt;
+  if (claimRemainingCents(row) <= 0) row.settledAt = createdAt;
+  row.status = deriveClaimStatus(row);
+  return commit(previous, next, "Claim", `${claim.label} landed ${formatVisitAmount(receivedCents)}`, postedIds);
+}
+
+export function writeOffClaim(household: Household, input: {
+  claimId: string;
+  amount?: string | number;
+  denied?: boolean;
+  date?: string;
+  confirmClosedMonth?: boolean;
+  createdBy?: string;
+  visibility?: Visibility;
+}): CommitResult {
+  requireTimezone(household);
+  const claim = household.claims.find((item) => item.id === input.claimId);
+  if (!claim) throw new ValidationError("That claim is gone.");
+  const remaining = claimRemainingCents(claim);
+  if (remaining <= 0) throw new ValidationError("That claim is already closed.");
+  const writeOffCents = input.amount == null || input.amount === "" ? remaining : parseAmount(input.amount, "Write-off");
+  if (writeOffCents <= 0 || writeOffCents > remaining) {
+    throw new ValidationError("Write-off must sit between $0.01 and the amount still owing.");
+  }
+  const expense = household.transactions.find((tx) => tx.id === claim.expenseTransactionId);
+  if (!expense?.subcategoryId) throw new ValidationError("The original visit expense is gone.");
+  const date = parseDate(input.date || todayKey());
+  const actor = resolveActor(household, input);
+  requireOpenPeriod(household, date, input.confirmClosedMonth);
+  const subcategory = requireSubcategory(household, expense.subcategoryId, "expense");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const createdAt = nowIso();
+  const writeOff = baseTx(next, {
+    date,
+    type: "expense",
+    amountCents: writeOffCents,
+    accountId: claim.receivableAccountId,
+    categoryId: subcategory.parentId,
+    subcategoryId: subcategory.id,
+    note: input.denied ? `Claim denied · ${claim.label}` : `Claim shortfall · ${claim.label}`,
+    place: expense.place,
+    splits: jointSplit(writeOffCents),
+    source: "visit",
+    sourceId: claim.id,
+    createdAt,
+    createdBy: actor.createdBy,
+    visibility: actor.visibility,
+  });
+  writeOff.id = assignTxId(next, "expense");
+  next.transactions.push(writeOff);
+  const row = next.claims.find((item) => item.id === claim.id)!;
+  row.writtenOffCents += writeOffCents;
+  row.writeOffTransactionId = writeOff.id;
+  row.updatedAt = createdAt;
+  if (input.denied) row.status = "denied";
+  if (claimRemainingCents(row) <= 0) row.settledAt = createdAt;
+  if (row.status !== "denied") row.status = deriveClaimStatus(row);
+  return commit(previous, next, "Claim", `${claim.label} ${input.denied ? "denied" : "short"} ${formatVisitAmount(writeOffCents)}`, [writeOff.id]);
+}
+
+export function acceptVisitGoal(household: Household, appointmentId: string, createdBy?: string): CommitResult {
+  void createdBy;
+  const today = todayKey();
+  const proposal = proposeVisitGoal(household, appointmentId, today);
+  if (!proposal) throw new ValidationError("Nothing to save toward. Set a typical cost, or the jar already exists.");
+  const appointment = household.appointments.find((item) => item.id === appointmentId);
+  if (!appointment) throw new ValidationError("That visit is gone.");
+  const named = addGoal(household, {
+    name: proposal.title,
+    target: proposal.targetCents / 100,
+    deadline: proposal.nextDate,
+    shared: true,
+    subcategoryId: appointment.subcategoryId,
+  });
+  const next = cloneHousehold(named.household);
+  const row = next.appointments.find((item) => item.id === appointmentId);
+  if (row) {
+    row.savingGoalId = named.postedIds[0] ?? next.goals.at(-1)?.id ?? null;
+    row.updatedAt = nowIso();
+  }
+  return { ...named, household: next };
+}
+
 export function emptyHousehold(environment: Household["environment"] = "development"): Household {
   return {
     version: 1,
@@ -1475,6 +2086,8 @@ export function emptyHousehold(environment: Household["environment"] = "developm
     transactions: [],
     shifts: [],
     recurrences: [],
+    appointments: [],
+    claims: [],
     calendar: { ...EMPTY_CALENDAR },
     kitchen: shapeKitchen(EMPTY_KITCHEN),
     google: shapeGoogle(EMPTY_GOOGLE),

@@ -65,7 +65,7 @@ These are **important features**. Dual Course does not rewrite them. Smaller sur
 | Hercules, chalkboard, wardrobe, visit sparks, rec, close, marks, Google, Hercules desk, office widgets and weather never post money. | D-042, D-043, D-044, D-045, D-046, D-047, D-049, D-050, D-051 |
 | Hercules never names who spent more. No fake fees. No pay-to-keep-alive. No hunger-meter death. | D-044 |
 | Bank feeds, Interac APIs, issued cards: blocked until Auth + RLS. Jonathan approves production money movement. | D-011, D-039 |
-| Accounts are financial accounts (chequing, savings, credit, investment, other), not categories. | D-047 |
+| Accounts are financial accounts (chequing, savings, credit, investment, other), not categories. Receivable is D-053. | D-047, D-053 |
 | Phrase / join link / Hearth Pass join a phone. Google is a bridge, not a bank. | D-032, D-043 |
 | Personal rows are a filter until Auth. A hidden tab is not privacy. | D-015 |
 | Hosted `USING (true)` is an open door. The publishable key is not a lock. | D-034 |
@@ -88,6 +88,7 @@ Do not re-litigate these as “Chapter 0” or “Ring 1.” They are the kitche
 - September Office (D-051, **direction**): Home as a lived-in Toronto desk — weather window, movable widgets, Hercules on the furniture. Spec in [CLAUDE_OFFICE_UX.md](CLAUDE_OFFICE_UX.md). Not shipped until implemented.
 - Audit Office: opinion, statements, equity roll, working capital, notes, rec, close pack
 - Accounts Floor: wallet tiles, account rooms, expandable cards, investment marks, interest/rewards as explicit posts
+- Appointments, claims tray, receivable kind, quiet labels, Hercules propose-to-save (D-053 / D-054 / D-055). Spec: [APPOINTMENTS.md](APPOINTMENTS.md)
 - Kitchen site `hearth-books` from GitHub `main`
 
 How to run the app: repository [README](../README.md). How the layers fit: [ARCHITECTURE.md](ARCHITECTURE.md).

@@ -318,6 +318,7 @@ export function herculesPageBrief(
 
 export const HERCULES_CHIPS = [
   "We good?",
+  "What's owed?",
   "Opinion?",
   "Working capital?",
   "What's on the Visa?",

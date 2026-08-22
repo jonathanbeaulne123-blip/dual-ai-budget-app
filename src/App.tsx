@@ -33,6 +33,11 @@ import {
   postOneRecurrence,
   postShift,
   postTransfer,
+  postVisit,
+  settleClaim,
+  writeOffClaim,
+  acceptVisitGoal,
+  upcomingVisitProposals,
   readClinkOn,
   runHealthCheck,
   seedDemoHousehold,
@@ -82,7 +87,11 @@ type Guard =
   | { kind: "demo" }
   | { kind: "remove"; transactionId: string; summary: string }
   | { kind: "postRecurrence"; recurrenceId: string; summary: string }
-  | { kind: "postDueAll"; summary: string };
+  | { kind: "postDueAll"; summary: string }
+  | { kind: "postVisit"; appointmentId: string; summary: string }
+  | { kind: "settleClaim"; claimId: string; summary: string }
+  | { kind: "writeOffClaim"; claimId: string; summary: string }
+  | { kind: "acceptVisitGoal"; appointmentId: string; summary: string };
 
 const SHIFT_PAD: { id: "sales" | "hours" | "cashTips" | "ccTips"; label: string; unit: "cad" | "hours" }[] = [
   { id: "sales", label: "Sales", unit: "cad" },
@@ -723,6 +732,7 @@ export function App() {
           }}
           onKitchen={(fn) => { void runKitchen(fn); }}
           onMarkPaid={(recurrenceId, summary) => setGuard({ kind: "postRecurrence", recurrenceId, summary })}
+          onAskSettle={(claimId, summary) => setGuard({ kind: "settleClaim", claimId, summary })}
           onSitDown={(next, token) => persist(next, token)}
           onGo={(next) => {
             if (next === "add") {
@@ -758,7 +768,13 @@ export function App() {
             })}
           </section>
           <SitDownGuide household={household} onApply={(next, token) => persist(next, token)} hidden={view === "personal"} />
-          <Goals household={household} createdBy={memberId} goals={visible?.goals ?? household.goals} onChange={(next, token) => persist(next, token)} />
+          <Goals
+            household={household}
+            createdBy={memberId}
+            goals={visible?.goals ?? household.goals}
+            onChange={(next, token) => persist(next, token)}
+            onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
+          />
         </>
       )}
 
@@ -772,6 +788,10 @@ export function App() {
           onCommand={(fn) => { void run(fn); }}
           onAskPost={(recurrenceId, summary) => setGuard({ kind: "postRecurrence", recurrenceId, summary })}
           onAskPostDue={(_count, summary) => setGuard({ kind: "postDueAll", summary })}
+          onAskVisit={(appointmentId, summary) => setGuard({ kind: "postVisit", appointmentId, summary })}
+          onAskSettle={(claimId, summary) => setGuard({ kind: "settleClaim", claimId, summary })}
+          onAskWriteOff={(claimId, summary) => setGuard({ kind: "writeOffClaim", claimId, summary })}
+          onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
           onOpenPlan={() => setTab("plan")}
         />
       )}
@@ -1236,6 +1256,84 @@ export function App() {
           }}
         />
       )}
+      {guard?.kind === "postVisit" && (
+        <ConfirmSheet
+          title="Post this visit?"
+          body={`${guard.summary} The full cost posts today. Expected insurance is money owed to us, not income.`}
+          confirmLabel="Post visit"
+          busy={busy}
+          onCancel={() => setGuard(null)}
+          onConfirm={() => {
+            const id = guard.appointmentId;
+            setGuard(null);
+            void run((current) => {
+              const appointment = current.appointments.find((item) => item.id === id);
+              if (!appointment) throw new ValidationError("That visit is gone.");
+              return postVisit(current, {
+                date: today,
+                amount: appointment.typicalCostCents / 100,
+                appointmentId: id,
+                accountId: appointment.accountId,
+                expectedRecovery: appointment.typicalRecoveryCents / 100,
+                createdBy: session.memberId,
+                confirmDuplicate: true,
+              });
+            });
+          }}
+        />
+      )}
+      {guard?.kind === "settleClaim" && (
+        <ConfirmSheet
+          title="Did the money land?"
+          body={`${guard.summary}`}
+          confirmLabel="Record the transfer"
+          busy={busy}
+          onCancel={() => setGuard(null)}
+          onConfirm={() => {
+            const id = guard.claimId;
+            setGuard(null);
+            void run((current) => {
+              const chequing = current.accounts.find((account) => account.kind === "chequing" && account.active);
+              if (!chequing) throw new ValidationError("Open a chequing account to receive the settlement.");
+              return settleClaim(current, {
+                claimId: id,
+                toAccountId: chequing.id,
+                date: today,
+                createdBy: session.memberId,
+                confirmDuplicate: true,
+              });
+            });
+          }}
+        />
+      )}
+      {guard?.kind === "writeOffClaim" && (
+        <ConfirmSheet
+          title="Write this claim off?"
+          body={`${guard.summary} The remainder posts as expense against Owed-to-us. The category climbs back to true out-of-pocket. Never income.`}
+          confirmLabel="Denied"
+          busy={busy}
+          onCancel={() => setGuard(null)}
+          onConfirm={() => {
+            const id = guard.claimId;
+            setGuard(null);
+            void run((current) => writeOffClaim(current, { claimId: id, denied: true, createdBy: session.memberId }));
+          }}
+        />
+      )}
+      {guard?.kind === "acceptVisitGoal" && (
+        <ConfirmSheet
+          title="Start this jar?"
+          body={`${guard.summary} Hercules proposed it. This write is yours.`}
+          confirmLabel="Start this jar"
+          busy={busy}
+          onCancel={() => setGuard(null)}
+          onConfirm={() => {
+            const id = guard.appointmentId;
+            setGuard(null);
+            void run((current) => acceptVisitGoal(current, id, session.memberId));
+          }}
+        />
+      )}
 
       {toast && (
         <div className="toast">
@@ -1322,13 +1420,29 @@ export function App() {
   );
 }
 
-function Goals({ household, createdBy, goals, onChange }: { household: Household; createdBy: string; goals: Household["goals"]; onChange: (household: Household, undo?: UndoToken) => void }) {
+function Goals({ household, createdBy, goals, onChange, onAskStartJar }: {
+  household: Household;
+  createdBy: string;
+  goals: Household["goals"];
+  onChange: (household: Household, undo?: UndoToken) => void;
+  onAskStartJar: (appointmentId: string, summary: string) => void;
+}) {
   const [name, setName] = useState("New goal");
   const [target, setTarget] = useState("500");
   const [amount, setAmount] = useState("25");
+  const proposals = upcomingVisitProposals(household, todayKey());
   return (
     <section className="card">
       <header><h2>Goals in this view</h2></header>
+      {proposals.map((proposal) => (
+        <div className="row" key={proposal.appointmentId}>
+          <div>
+            <strong>{proposal.title}</strong>
+            <div className="muted">{proposal.hercules}</div>
+          </div>
+          <button className="chip selected" onClick={() => onAskStartJar(proposal.appointmentId, `${proposal.hercules} This creates a shared jar. Hercules does not write it.`)}>Start this jar</button>
+        </div>
+      ))}
       {goals.map((goal) => (
         <div className="row" key={goal.id}>
           <div>

@@ -105,6 +105,7 @@ const KIND_BASE: Record<Account["kind"], number> = {
   chequing: 1100,
   savings: 1200,
   other: 1300,
+  receivable: 1320,
   investment: 1400,
   credit: 2100,
 };
@@ -123,7 +124,7 @@ function takeCode(used: Set<string>, preferred: number): string {
 export function buildChart(household: Household): ChartAccount[] {
   const used = new Set<string>();
   const chart: ChartAccount[] = [];
-  const kindCount: Record<Account["kind"], number> = { chequing: 0, savings: 0, other: 0, investment: 0, credit: 0 };
+  const kindCount: Record<Account["kind"], number> = { chequing: 0, savings: 0, other: 0, receivable: 0, investment: 0, credit: 0 };
 
   for (const account of household.accounts) {
     const kind = normalizeAccountKind(account.kind);

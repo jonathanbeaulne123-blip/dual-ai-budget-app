@@ -21,7 +21,7 @@ export * from "./pass.ts";
 export * from "./journal.ts";
 export * from "./accounts.ts";
 export * from "./statements.ts";
-export * from "./recurrence.ts";
+export * from "./appointments.ts";
 export * from "./rhythm.ts";
 export * from "./board.ts";
 export * from "./ics.ts";

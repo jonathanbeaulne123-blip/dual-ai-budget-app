@@ -19,6 +19,7 @@ describe("ICS export", () => {
     expect(ics).toContain("TRIGGER:-PT24H");
     expect(ics).toContain("TRIGGER:PT0S");
     expect(ics).toMatch(/SUMMARY:.*Rent/);
+    expect(ics).toMatch(/Hygienist/);
     expect(ics).toContain("STATUS:TENTATIVE");
     expect(ics).toContain("detected");
     expect(household.transactions).toHaveLength(before);

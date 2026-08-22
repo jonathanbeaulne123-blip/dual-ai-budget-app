@@ -13,6 +13,7 @@ Laws: [DECISIONS.md](DECISIONS.md) D-016 / D-022 / D-047. Strategy: [STRATEGY.md
 | Chequing | asset 11xx | Everyday cash |
 | Savings | asset 12xx | Cash-like. APY is a look |
 | Other | asset 13xx | Jar / tips (old `cash` on load) |
+| Receivable | asset 132x | Money owed to us. Settlement is a transfer, never income (D-053) |
 | Investment | asset 14xx | Cost basis from posts. Mark is not a post |
 | Credit | liability 21xx | What you owe. Paydown = transfer |
 
@@ -36,3 +37,4 @@ A new account kind or look must stay a projection until an explicit command post
    5. **Post estimated interest** / **Post cashback to card** only when the statement actually charged or credited you.
    6. Open **TFSA**. Cost basis is transfers in. **Mark value** types a market number. It does not post.
    7. **Open an account** adds another card, a HISA, or another vehicle. Archive needs at least one CAD account left.
+   8. Demo wallet group **Owed to us** is Benefits owing — a receivable, not the jar. Settlement is a transfer.

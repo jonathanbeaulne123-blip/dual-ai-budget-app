@@ -13,6 +13,7 @@ export const TIMESHEET_EMPTY = "No shifts posted yet.";
 export const POSTCARD_EMPTY = "Next sit-down after the month turns.";
 export const COOK_EMPTY = "Nothing cooked, nothing bought.";
 export const JARS_EMPTY = "No jars on the shelf yet.";
+export const CLAIMS_EMPTY = "Nothing owed to this household right now.";
 export const BOARD_EMPTY = "Nothing on the board.";
 
 export function blotterFacts(dashboard: Dashboard, opinion: AuditOpinion, findings: number) {
@@ -43,6 +44,10 @@ export function walletWarn(wallet: HouseholdWallet): boolean {
 
 export function mailOverdue(dashboard: Dashboard, today: DateKey): boolean {
   return dashboard.upcoming.some((item) => item.due || item.date < today);
+}
+
+export function claimsOverdue(household: { claims?: { expectedCents: number; receivedCents: number; writtenOffCents: number }[] }): boolean {
+  return (household.claims ?? []).some((claim) => claim.expectedCents - claim.receivedCents - claim.writtenOffCents > 0);
 }
 
 export function timesheetEmpty(streak: ShiftStreak): boolean {

@@ -28,6 +28,7 @@ export const COSMETICS: CosmeticItem[] = [
   { id: "clip", slot: "collar", name: "Card clip", hint: "Open a second credit card" },
   { id: "yarn", slot: "collar", name: "Yarn collar", hint: "Scribble three chalkboard notes" },
   { id: "fish", slot: "collar", name: "Fish treat", hint: "Post a shift" },
+  { id: "tooth", slot: "collar", name: "Tooth charm", hint: "Post a visit to the books" },
   { id: "ink", slot: "collar", name: "Green-ink stamp", hint: "Close a month — the control environment, not a tattoo" },
 ];
 
@@ -84,6 +85,7 @@ export function isCosmeticUnlocked(household: Household, item: CosmeticItem, tod
   if (item.id === "clip") return household.accounts.filter((account) => account.active && account.kind === "credit").length >= 2;
   if (item.id === "yarn") return household.activity.filter((row) => row.action === "Chalkboard").length >= 3;
   if (item.id === "fish") return household.shifts.length > 0;
+  if (item.id === "tooth") return household.transactions.some((tx) => tx.source === "visit" && tx.type === "expense" && !tx.isDuplicate);
   return false;
 }
 
