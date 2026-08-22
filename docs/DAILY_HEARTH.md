@@ -41,7 +41,7 @@ Status: **shipping in the working tree (The Hercules Update).** Home grows a kit
 | Piece | What it is | What it is not |
 |---|---|---|
 | Chalkboard | Shared one-off notes, 80 characters, 12 deep, wipeable, silly prompts | A ledger, a chat, a bill |
-| Hercules | Computed mood + earned wardrobe; **wanders** every page in a compact bubble; `talkHercules` | Chat `postedIds` empty; no full-screen sheet |
+| Hercules | Computed mood + earned wardrobe; **wanders** every page; compact following chat with purrsonality (`talkHercules` + optional Workers AI) | Chat never posts; no full-screen Clippy sheet |
 | Visit spark | `localStorage` mornings-in-a-row per Development/Production pill | Synced state (Sync must not spam it) |
 | Ask the books | Plain-language conversation with the journal | A model that writes SQL the household did not mean |
 | Sit-down dollars | Last actual and suggested next, in CAD | Jargon-only preview |
@@ -140,7 +140,7 @@ Gamification does not pause accounting. This list only grows.
 | Double-entry PGlite + trial balance | Shipped | D-033 |
 | Calendar / rhythms / ICS / optional Google | Shipped | D-040 |
 | Google household bridge | This ring | D-043. Tokens on-phone; `withGoogle` on demand |
-| Hercules (Maine Coon) | This ring | D-044. Follows every page. `askHercules` never posts |
+| Hercules (Maine Coon) | This ring | D-044 / D-045. Follows every page. Talk never posts. Workers AI may rephrase; CAD comes from the journal |
 | PGlite database per environment pill | This ring | Snapshots were already split; the journal name was not |
 | Phrase-join filters environment | This ring | Unique index already `(invite_phrase, environment)` |
 | Sit-down shows CAD | This ring | |
@@ -159,7 +159,7 @@ Gamification does not pause accounting. This list only grows.
 2. Hosted Postgres: publishable key is not privacy. Secret and DB password never in `VITE_` or Cloudflare.
 3. Development vs Production never mix — snapshot key, PGlite name, and join filter.
 4. Personal rows are a filter, not a lock, until Auth.
-5. Read-only SQL cannot `INSERT`/`UPDATE`/`DELETE`. Conversational Ask uses projections first.
+5. Read-only SQL cannot `INSERT`/`UPDATE`/`DELETE`. Conversational Ask uses projections first. Workers AI may talk as Hercules; it cannot write; dollar facts come from `talkHercules`.
 6. Cosmetics and chalkboard tombstone like any other shared row so a wipe on one phone stays dead on the other.
 7. No dark patterns: no fake overdue fees, no “pay to keep Hercules alive,” no streak that breaks if you do not open the app on vacation. Posting streaks are derived from the ledger.
 8. Google tokens never leave this phone. Hosted snapshots may list who is linked. Google never posts money.

@@ -1,7 +1,9 @@
 import { useEffect, useId, useMemo, useRef, useState, type PointerEvent } from "react";
 import {
+  chatHercules,
   describeCompanion,
   groceryHighFive,
+  herculesBriefing,
   herculesIdle,
   herculesMutters,
   herculesNeedsCheck,
@@ -9,6 +11,7 @@ import {
   talkHercules,
   type CompanionMood,
   type HearthTab,
+  type HerculesChatTurn,
   type HerculesPose,
   type HerculesTalk,
   type Household,
@@ -179,9 +182,13 @@ export function HerculesPresence({
   const [question, setQuestion] = useState("");
   const [topic, setTopic] = useState("idle");
   const [purr, setPurr] = useState(false);
+  const [turns, setTurns] = useState<HerculesChatTurn[]>([]);
+  const [busy, setBusy] = useState(false);
   const drag = useRef<{ x: number; y: number; px: number; py: number; moved: boolean } | null>(null);
   const idleAt = useRef(0);
   const mutterAt = useRef(0);
+  const chatGen = useRef(0);
+  const logRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const { innerWidth: w, innerHeight: h } = window;
@@ -249,39 +256,91 @@ export function HerculesPresence({
     return () => window.clearInterval(id);
   }, [adding, open, mutters, household, tab, today]);
 
-  function speak(raw: string) {
-    const text = raw.trim();
-    if (!text) return;
-    if (/^milk$|^post milk$/i.test(text)) {
-      setOpen(false);
-      setTalk(null);
-      onOpenAdd("Milk");
-      return;
-    }
-    if (/^calendar$|^which bill/i.test(text)) {
-      setOpen(false);
-      setTalk(null);
-      onGo("calendar");
-      return;
-    }
-    if (/^health$|^what broke/i.test(text)) {
-      setOpen(false);
-      setTalk(null);
-      onGo("more");
-      return;
-    }
-    if (/^sit-down/i.test(text)) {
-      setOpen(false);
-      setTalk(null);
-      onGo("plan");
-      return;
-    }
-    const next = talkHercules(household, text, today, adding ? "add" : tab, topic);
+  useEffect(() => {
+    logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
+  }, [turns, busy]);
+
+  function closeChat() {
+    chatGen.current += 1;
+    setOpen(false);
+    setTalk(null);
+    setTurns([]);
+    setBusy(false);
+    setQuestion("");
+  }
+
+  function applyTalk(next: HerculesTalk, userText?: string) {
     setTalk(next);
     setTopic(next.topic);
-    setMotion(next.pose);
+    setMotion(next.pose === "sleep" ? "loaf" : next.pose);
     setQuestion("");
     setOpen(true);
+    setTurns((prev) => {
+      if (!userText && !prev.some((turn) => turn.role === "user")) {
+        return [{ role: "hercules", text: next.spoken }];
+      }
+      const add: HerculesChatTurn[] = [];
+      if (userText) add.push({ role: "user", text: userText });
+      add.push({ role: "hercules", text: next.spoken });
+      return [...prev, ...add].slice(-12);
+    });
+  }
+
+  function goShortcut(raw: string): boolean {
+    const text = raw.trim();
+    if (/^milk$|^post milk$/i.test(text)) {
+      closeChat();
+      onOpenAdd("Milk");
+      return true;
+    }
+    if (/^calendar$|^which bill/i.test(text)) {
+      closeChat();
+      onGo("calendar");
+      return true;
+    }
+    if (/^health$|^what broke/i.test(text)) {
+      closeChat();
+      onGo("more");
+      return true;
+    }
+    if (/^sit-down/i.test(text)) {
+      closeChat();
+      onGo("plan");
+      return true;
+    }
+    return false;
+  }
+
+  function speak(raw: string) {
+    const text = raw.trim();
+    if (!text || busy) return;
+    if (goShortcut(text)) return;
+    applyTalk(talkHercules(household, text, today, adding ? "add" : tab, topic), text);
+  }
+
+  async function sendChat(raw: string) {
+    const message = raw.trim();
+    if (!message || busy) return;
+    if (goShortcut(message)) return;
+    const page = adding ? "add" : tab;
+    const grounded = talkHercules(household, message, today, page, topic);
+    const briefing = herculesBriefing(household, page, today);
+    const gen = chatGen.current + 1;
+    chatGen.current = gen;
+    const history = turns;
+    setTurns((prev) => [...prev, { role: "user", text: message }].slice(-12));
+    setQuestion("");
+    setBusy(true);
+    setOpen(true);
+    setTalk(grounded);
+    setTopic(grounded.topic);
+    setMotion("pounce");
+    const result = await chatHercules({ message, briefing, grounded, history });
+    if (chatGen.current !== gen) return;
+    setTalk({ ...grounded, spoken: result.text });
+    setTurns((prev) => [...prev, { role: "hercules", text: result.text }].slice(-12));
+    setMotion(grounded.pose === "sleep" ? "loaf" : grounded.pose);
+    setBusy(false);
   }
 
   function onPointerDown(event: PointerEvent<HTMLButtonElement>) {
@@ -313,11 +372,11 @@ export function HerculesPresence({
     if (!start) return;
     if (!start.moved) {
       setPurr(true);
-      const next = talkHercules(household, open ? "scratch" : "", today, adding ? "add" : tab, topic);
-      setTalk(next);
-      setTopic(next.topic);
-      setMotion(next.pose === "sleep" ? "loaf" : next.pose);
-      setOpen(true);
+      if (open && turns.some((turn) => turn.role === "user")) {
+        setMotion("loaf");
+        return;
+      }
+      applyTalk(talkHercules(household, open ? "scratch" : "", today, adding ? "add" : tab, topic));
     } else {
       setMotion(look.view.mood === "restless" ? "pace" : "loaf");
     }
@@ -331,7 +390,7 @@ export function HerculesPresence({
     <div className="hercules-world" aria-live="polite">
       {(open || talk) && !adding && talk && (
         <div
-          className={`hercules-bubble ${bubbleLeft ? "left" : "right"}`}
+          className={`hercules-bubble ${bubbleLeft ? "left" : "right"} ${open ? "chat" : ""}`}
           style={{
             left: bubbleLeft ? undefined : pos.x + size - 8,
             right: bubbleLeft ? window.innerWidth - pos.x - 8 : undefined,
@@ -339,34 +398,53 @@ export function HerculesPresence({
             transform: bubbleLeft ? "translate(-100%, -90%)" : "translate(0, -90%)",
           }}
         >
-          <p className="hercules-spoken">{talk.spoken}</p>
-          {talk.lesson && <p className="hercules-lesson">{talk.lesson}</p>}
-          {talk.fact && (
+          {open && turns.length > 0 ? (
+            <div className="hercules-chat-log" ref={logRef}>
+              {turns.slice(-6).map((turn, index) => (
+                <p key={`${turn.role}-${index}-${turn.text.slice(0, 12)}`} className={`hercules-turn ${turn.role === "user" ? "you" : "cat"}`}>
+                  {turn.text}
+                </p>
+              ))}
+              {busy && <p className="hercules-typing">mrrp…</p>}
+            </div>
+          ) : (
+            <p className="hercules-spoken">{talk.spoken}</p>
+          )}
+          {!busy && talk.lesson && <p className="hercules-lesson">{talk.lesson}</p>}
+          {!busy && talk.fact && (
             <p className="hercules-fact"><span>{talk.fact.label}</span> {talk.fact.value}</p>
           )}
           {open && (
             <>
-              <div className="hercules-replies">
-                {talk.replies.map((item) => (
-                  <button key={item} type="button" onClick={() => speak(item)}>{item}</button>
-                ))}
-              </div>
-              <input
-                aria-label={`Talk to ${look.view.name}`}
-                value={question}
-                placeholder="ask or scratch…"
-                onChange={(event) => setQuestion(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    speak(question);
-                  }
-                  if (event.key === "Escape") setOpen(false);
+              {!busy && (
+                <div className="hercules-replies">
+                  {talk.replies.map((item) => (
+                    <button key={item} type="button" onClick={() => speak(item)}>{item}</button>
+                  ))}
+                </div>
+              )}
+              <form
+                className="hercules-chat-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void sendChat(question);
                 }}
-              />
+              >
+                <input
+                  aria-label={`Ask ${look.view.name}`}
+                  value={question}
+                  placeholder={busy ? "mrrp…" : "ask Hercules…"}
+                  disabled={busy}
+                  onChange={(event) => setQuestion(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") closeChat();
+                  }}
+                />
+                <button type="submit" disabled={busy || !question.trim()}>send</button>
+              </form>
             </>
           )}
-          <button className="hercules-dismiss" type="button" onClick={() => { setOpen(false); setTalk(null); }}>
+          <button className="hercules-dismiss" type="button" onClick={closeChat}>
             ok
           </button>
         </div>

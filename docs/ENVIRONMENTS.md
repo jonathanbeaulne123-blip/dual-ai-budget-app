@@ -26,7 +26,7 @@ GitHub Actions needs repo secret `CLOUDFLARE_API_TOKEN`. The account id is alrea
 
 Put the public Google web client ID in a GitHub Actions **variable** named `VITE_GOOGLE_CLIENT_ID` (and in Cloudflare **Build** variables if Workers Builds stays on). Vite bakes `VITE_*` at `pnpm build`. Runtime Worker bindings are too late. Never put a Google client secret, the Supabase secret key, or a database password in `VITE_` vars, Cloudflare, or GitHub.
 
-HTML documents are `Cache-Control: no-store`. The Worker runs first so an old shell cannot sit on the phone.
+HTML documents are `Cache-Control: no-store`. The Worker runs first so an old shell cannot sit on the phone. `POST /hercules/chat` is the Hercules talk endpoint (Cloudflare Workers AI; no OpenAI key). It is talk-only. Local `pnpm dev` proxies that path to the kitchen URL and falls back to the on-device purrsonality if the Worker is quiet.
 
 If Cloudflare Workers Builds is still connected, production branch is `main` and the deploy command must be:
 

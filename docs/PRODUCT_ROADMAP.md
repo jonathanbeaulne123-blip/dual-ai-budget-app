@@ -68,7 +68,7 @@ Still unfinished, and **named so investors cannot be surprised**:
 
 - Hosted RLS is `USING (true)` until Auth exists (D-015, D-034). Phrase-join now also filters environment; that is not a lock.
 - GitHub 2FA is still open (D-020).
-- Daily kitchen (Hercules, chalkboard, Ask) is cosmetics on a command kernel (D-042, D-044). It does not close the hosted door.
+- Daily kitchen (Hercules, chalkboard, Ask) is cosmetics on a command kernel (D-042, D-044, D-045). It does not close the hosted door.
 
 We do not tell a room the sync is flawless. We tell them the **command kernel** is trustworthy, the **hosted door is not yet a lock**, and the next money we spend is to close that door before we invite a bank.
 

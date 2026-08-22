@@ -9,7 +9,16 @@ export default defineConfig({
   worker: {
     format: "es",
   },
-  server: { host: true, port: 5173 },
+  server: {
+    host: true,
+    port: 5173,
+    proxy: {
+      "/hercules/chat": {
+        target: "https://hearth-books.jonathan-beaulne123.workers.dev",
+        changeOrigin: true,
+      },
+    },
+  },
   preview: { host: true, port: 4173 },
   build: {
     emptyOutDir: true,

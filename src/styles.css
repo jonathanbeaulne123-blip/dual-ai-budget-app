@@ -596,12 +596,30 @@ input, select, textarea {
 }
 .hercules-bubble.left { border-bottom-right-radius: 6px; }
 .hercules-bubble.right { border-bottom-left-radius: 6px; }
+.hercules-bubble.chat { width: min(280px, 78vw); }
 .hercules-spoken { margin: 0 0 4px; font-weight: 650; }
+.hercules-chat-log {
+  max-height: 168px;
+  overflow-y: auto;
+  display: grid;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+.hercules-turn { margin: 0; }
+.hercules-turn.you {
+  text-align: right;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.hercules-turn.cat { font-weight: 650; }
+.hercules-typing { margin: 0; font-style: italic; color: var(--muted); }
 .hercules-lesson { margin: 0 0 6px; color: var(--muted); font-size: 12px; }
 .hercules-fact { margin: 0 0 8px; display: flex; justify-content: space-between; gap: 8px; font-size: 12px; }
 .hercules-replies { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
 .hercules-replies button,
-.hercules-dismiss {
+.hercules-dismiss,
+.hercules-chat-form button {
   border: 1px solid var(--line);
   background: var(--paper-2);
   border-radius: 999px;
@@ -616,6 +634,13 @@ input, select, textarea {
   font-size: 13px;
   margin: 0;
 }
+.hercules-chat-form {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.hercules-chat-form input { flex: 1; }
+.hercules-chat-form button { padding: 6px 10px; }
 .hercules-dismiss {
   display: block;
   margin: 6px 0 0 auto;
@@ -711,5 +736,6 @@ input, select, textarea {
 
 @media (max-width: 520px) {
   .hercules-bubble { width: min(210px, 78vw); }
+  .hercules-bubble.chat { width: min(260px, 84vw); }
 }
 

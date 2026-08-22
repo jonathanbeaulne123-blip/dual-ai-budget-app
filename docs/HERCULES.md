@@ -4,7 +4,7 @@
 
 This is the product face. The ledger is still the company. We did **not** rebuild the command kernel. Ember was the flame prototype.
 
-Related: [DAILY_HEARTH.md](DAILY_HEARTH.md), [DECISIONS.md](DECISIONS.md) D-042 / D-044, [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md) Chapter 0.4.
+Related: [DAILY_HEARTH.md](DAILY_HEARTH.md), [DECISIONS.md](DECISIONS.md) D-042 / D-044 / D-045, [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md) Chapter 0.4.
 
 ---
 
@@ -13,7 +13,7 @@ Related: [DAILY_HEARTH.md](DAILY_HEARTH.md), [DECISIONS.md](DECISIONS.md) D-042 
 | Companion | What they got right | What we refuse | What Hercules does |
 |---|---|---|---|
 | **Neko / oneko** (desktop cat, 1980s–now) | No chrome. Walks, sits, washes, sleeps. You drag him. He is *on* the screen, not in a widget. | Chasing the cursor across the Add sheet | Borderless wander, idle sequencer (walk → loaf → wash → stretch → sleep), drag to move, right-click to pin |
-| **Animal Crossing villagers** | One or two sentences, then they walk away. Personality, not a FAQ. | Paragraphs, 11 chips, chat logs | Compact bubble that follows him. Two or three replies. The line *replaces*, it does not stack |
+| **Animal Crossing villagers** | One or two sentences, then they walk away. Personality, not a FAQ. | Paragraphs, 11 chips, a help-desk transcript | Compact bubble that follows him. Two or three replies. Typed chat keeps the last few breaths, not a ticket log |
 | **Finch** (self-care bird) | Pet health = *your* real habits. Glanceable. Care without a lecture. | Paywalls to keep the pet alive; hunger meters | Orange ping when Health is dirty, a bill is due, or nobody posted groceries. Petting purrs. It does **not** fake-fix the books |
 | **Duolingo Duo** | Reactive poses: idle, celebrate, sad. The mascot *is* the feedback. | Guilt-streak death; the owl at your door | Jump on a paid bill and grocery high-five. Sleep when the week is kind. Pace when a bill stares |
 | **Cleo** (money chat) | Short, human, coaching. People open it because of tone. | Roast-shame; chat as the whole app | Cat voice: “Milk. Ordinary. That’s the whole sport.” Numbers live on Home. He points. He does not replace the net |
@@ -51,7 +51,7 @@ Research that actually exists:
 - **Tap** = one bubble, attached to him. **Drag** = move. **Hold still** = purr. **Right-click / long-press pin** = stay.
 - **Idle (Neko):** walk, loaf, wash, stretch, sleep. Restless = pace. Hiding = under the furniture. Paid bill / high-five = jump.
 - **Attention ping** when he needs you (dirty Health, due bill, no grocery today). He does not die.
-- **Talk** is `talkHercules`: short spoken line, one optional lesson, one optional fact, two or three replies. He never posts.
+- **Talk** is `talkHercules` for taps and chips (journal-true, instant). **Typed chat** is Workers AI with a Hercules purrsonality (`POST /hercules/chat`). The model only sees aggregates + a grounded journal line. Local fallback uses the same voice. He never posts.
 - **Home** keeps the real numbers. Chalkboard stays. Wardrobe tucks under “Hercules’s things.” Cook-off, forecast, and Sunday recap live in his mouth, not in extra cards.
 
 ---
@@ -60,7 +60,7 @@ Research that actually exists:
 
 - Pay to keep Hercules alive
 - Fake overdue fees
-- An LLM that writes SQL the household did not mean
+- An LLM that writes SQL the household did not mean — talk-only Workers AI is allowed (D-045); it still cannot post
 - A 10MB game-engine cat on top of PGlite
 - Rebuilding the ledger so the cat *is* the database
 - A cook-off that names who spent more
@@ -72,6 +72,24 @@ Research that actually exists:
 
 1. Development. Demo kitchen table.
 2. Watch him wander. Drag him off a number if he’s sitting on it.
-3. Tap him. Ask “we good?” or “what now?” Type if you want. Hit **ok**.
+3. Tap him. Ask “we good?” or “what now?” Type in the bubble for the AI chat (kitchen site). Hit **send**. Local `pnpm dev` still talks if the Worker is quiet.
 4. Tap **+** — he loafs in the corner. Confirm still posts.
 5. If a bill is due he paces and may mutter. Calendar, then confirm.
+
+---
+
+## Purrsonality (D-045)
+
+Hercules talks like a smug-kind Maine Coon on a Toronto kitchen counter: first person, short sentences, occasional mrrp, milk → bills → treats. He will not name who spent more. He will not claim he posted.
+
+| Path | What it is |
+|---|---|
+| Tap / chips | `talkHercules` / `askHercules` — projections over the books |
+| Typed chat | `POST /hercules/chat` on `hearth-books` (Cloudflare Workers AI). No OpenAI key. System prompt stays on the Worker |
+| Briefing | Month in/out/net, mood, health finding count, bill *notes* due soon, grocery-today yes/no. Not a ledger dump |
+| Grounding | The model must quote `talkHercules` CAD, not invent amounts |
+| Sanitize | Strip SQL, write-claims, name-shame, “as an AI” |
+| History | Last few turns in the bubble this session. Not saved in the household snapshot |
+| Local | `localHerculesChat` if the Worker is unbound, slow, or returns HTML |
+
+Kill criterion is unchanged: if the chat box blocks a grocery, shrink it. He still loafs on Add.
