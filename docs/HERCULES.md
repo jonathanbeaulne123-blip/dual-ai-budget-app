@@ -4,7 +4,7 @@
 
 The ledger is still the company (Dual Course weight 5). He is Course B (weight 3) **and** a serious tool: money questions are answered on-device from the books. Care is posted household facts, not a hunger meter. Ember was the flame prototype and is fully historical.
 
-Laws: [DECISIONS.md](DECISIONS.md) D-042 / D-044 / D-045 / D-046 / D-047 / D-049 / D-050. Strategy: [STRATEGY.md](STRATEGY.md). Museum essay: [nostalgia/HERCULES.md](nostalgia/HERCULES.md).
+Laws: [DECISIONS.md](DECISIONS.md) D-042 / D-044 / D-045 / D-046 / D-047 / D-049 / D-050 / D-051. Strategy: [STRATEGY.md](STRATEGY.md). Museum essay: [nostalgia/HERCULES.md](nostalgia/HERCULES.md).
 
 ## Laws
 
@@ -15,6 +15,7 @@ Laws: [DECISIONS.md](DECISIONS.md) D-042 / D-044 / D-045 / D-046 / D-047 / D-049
 - Mood from Health, bills, goals, week-over-week spend. Punishment is a face and a sentence, never a fake fee.
 - Unlocks come from posted facts, a tied rec, or a closed month — never a shop, never pay-to-keep-alive, never pet death.
 - Shift-posting streak (D-050) is consecutive **posted shift dates** from the latest shift. Vacation does not kill him. “Log shift” opens Add. Confirm still posts.
+- **September Office (D-051):** he will perch, bump, lick, and pounce on desk widgets. He still never posts. Kill criterion unchanged.
 - **Kill criterion:** if Bianca will not add a grocery because he is in the way, shrink him. Drag him. Pin him.
 
 ## Dual Course
