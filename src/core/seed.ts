@@ -394,6 +394,27 @@ export function seedDemoHousehold(options?: { today?: DateKey; environment?: Hou
     markedAt: today,
   }).household;
 
+  const timOffsets = [2, 3, 2, 4, 2, 3, 2, 3];
+  let timDay = today;
+  const timDates: DateKey[] = [];
+  for (const skip of timOffsets) {
+    timDay = addDays(timDay, -skip);
+    if (timDay <= today) timDates.push(timDay);
+  }
+  for (const day of [...timDates].reverse()) {
+    household = postEntry(household, {
+      date: day,
+      type: "expense",
+      amount: 2.25,
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-COFFEE",
+      note: "Tim Hortons",
+      place: "Queen and Bathurst",
+      confirmDuplicate: true,
+      createdBy: "MEM-002",
+    }).household;
+  }
+
   household = addGoal(household, {
     name: "Emergency buffer",
     target: 5000,

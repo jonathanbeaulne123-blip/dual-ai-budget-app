@@ -1,6 +1,6 @@
 import { TIMEZONE, todayKey, monthKeyFromDateKey, type DateKey, type MonthKey } from "./calendar.ts";
-import { advanceCadence, DEFAULT_REMINDER_HOURS_BEFORE, EMPTY_CALENDAR, inferRecurrenceKind } from "./recurrence.ts";
-import { detectRhythms } from "./rhythm.ts";
+import { advanceCadence, DEFAULT_REMINDER_HOURS_BEFORE, EMPTY_CALENDAR, inferRecurrenceKind, shapeCalendar } from "./recurrence.ts";
+import { detectHabits, detectRhythms } from "./rhythm.ts";
 import { CURRENCY, parseWholeCents } from "./money.ts";
 import { nextId, nowIso, randomHouseholdId, randomInviteCode, slug, uniquePrefixedId } from "./ids.ts";
 import { cloneHousehold } from "./household.ts";
@@ -50,6 +50,7 @@ import {
   shapeBillLines,
   shapeCadence,
   claimRemainingCents,
+  visitPostedDefaults,
 } from "./appointments.ts";
 import type {
   AccountKind,
@@ -69,6 +70,8 @@ import type {
   HerculesMemoryKind,
   HerculesTalkSource,
   InvestmentVehicle,
+  Preset,
+  PresetOrigin,
   Recurrence,
   RecurrenceKind,
   RecurrenceOrigin,
@@ -976,6 +979,7 @@ export function adoptRhythm(household: Household, key: string, today: DateKey): 
   });
   result.undo.label = `Adopted ${rhythm.note}`;
   result.household.calendar = {
+    ...shapeCalendar(result.household.calendar),
     dismissedRhythmKeys: (result.household.calendar?.dismissedRhythmKeys ?? []).filter((item) => item !== key),
   };
   return result;
@@ -986,6 +990,7 @@ export function dismissRhythm(household: Household, key: string): CommitResult {
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   next.calendar = {
+    ...shapeCalendar(next.calendar),
     dismissedRhythmKeys: [...new Set([...(next.calendar?.dismissedRhythmKeys ?? []), key])].sort(),
   };
   return commit(previous, next, "Calendar", "Hid a detected repeating bill", []);
@@ -1693,8 +1698,13 @@ export function postVisit(household: Household, input: {
   })));
   assertLinesSum(lines, amountCents);
   const splits = catalogValidateOwned(input.splits ?? jointSplit(amountCents), amountCents, household);
-  const note = input.note ?? appointment?.title ?? "Visit";
-  const place = input.place ?? appointment?.place ?? "";
+  const posted = visitPostedDefaults(appointment, {
+    note: input.note,
+    place: input.place,
+    claimLabel: input.claimLabel,
+  });
+  const note = posted.note;
+  const place = posted.place;
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const createdAt = nowIso();
@@ -1751,7 +1761,7 @@ export function postVisit(household: Household, input: {
     claim = {
       id: claimId,
       kind,
-      label: input.claimLabel?.trim() || appointment?.title || note,
+      label: posted.claimLabel,
       appointmentId: appointment?.id ?? null,
       expenseTransactionId: expense.id,
       recoveryTransactionId: refund.id,
@@ -1785,7 +1795,7 @@ export function postVisit(household: Household, input: {
       claim = {
         id: claimId,
         kind: input.claimKind ?? (appointment ? defaultClaimKind(appointment.kind) : "other"),
-        label: input.claimLabel?.trim() || appointment?.title || note,
+        label: posted.claimLabel,
         appointmentId: appointment?.id ?? null,
         expenseTransactionId: expense.id,
         recoveryTransactionId: null,
@@ -2108,6 +2118,109 @@ export function acceptVisitGoal(household: Household, appointmentId: string, cre
   return { ...named, household: next };
 }
 
+export function activePresets(household: Household): Preset[] {
+  return (household.presets ?? [])
+    .filter((item) => item.active)
+    .sort((left, right) => left.sortOrder - right.sortOrder || left.note.localeCompare(right.note));
+}
+
+export function addPreset(household: Household, input: {
+  type: "expense" | "income";
+  amount?: string | number;
+  accountId: string;
+  subcategoryId: string;
+  note?: string;
+  place?: string;
+  splits?: Split[];
+  visibility?: Visibility;
+  origin?: PresetOrigin;
+  detectionKey?: string | null;
+}): CommitResult {
+  requireAccount(household, input.accountId);
+  const subcategory = requireSubcategory(household, input.subcategoryId, input.type);
+  const amountCents = input.amount == null || input.amount === ""
+    ? 0
+    : parseMoneyCents(input.amount, "Preset amount", { allowZero: true });
+  const splits = amountCents > 0
+    ? catalogValidateOwned(input.splits ?? jointSplit(amountCents), amountCents, household)
+    : [];
+  const note = (input.note ?? "").trim() || subcategory.name;
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.presets = [...(next.presets ?? [])];
+  const id = nextId("PRE-", next.presets.map((item) => item.id), 3);
+  const at = nowIso();
+  const sortOrder = next.presets.reduce((max, item) => Math.max(max, item.sortOrder), 0) + 1;
+  next.presets.push({
+    id,
+    type: input.type,
+    amountCents,
+    accountId: input.accountId,
+    subcategoryId: subcategory.id,
+    note,
+    place: input.place ?? "",
+    splits,
+    visibility: parseVisibility(input.visibility),
+    sortOrder,
+    origin: input.origin ?? "manual",
+    detectionKey: input.detectionKey ?? null,
+    active: true,
+    createdAt: at,
+    updatedAt: at,
+  });
+  return commit(previous, next, "Preset", `Saved ${note} as a preset`, [id]);
+}
+
+export function archivePreset(household: Household, presetId: string): CommitResult {
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.presets = [...(next.presets ?? [])];
+  const row = next.presets.find((item) => item.id === presetId);
+  if (!row) throw new ValidationError("That preset is gone.");
+  row.active = false;
+  row.updatedAt = nowIso();
+  return commit(previous, next, "Preset", `Forgot ${row.note}`, [row.id]);
+}
+
+export function acceptPresetNotice(household: Household, key: string): CommitResult {
+  if (!key.trim()) throw new ValidationError("Nothing to save.");
+  const today = todayKey();
+  const habit = detectHabits(household, today).find((item) => item.key === key);
+  if (!habit) throw new ValidationError("That habit is no longer waiting to be saved.");
+  if ((household.presets ?? []).some((preset) => preset.active && (preset.detectionKey === key
+    || (preset.type === habit.type && preset.subcategoryId === habit.subcategoryId
+      && preset.amountCents === habit.amountCents && preset.note.trim().toLowerCase() === habit.note.trim().toLowerCase())))) {
+    throw new ValidationError("That preset is already on Add.");
+  }
+  const result = addPreset(household, {
+    type: habit.type,
+    amount: habit.amountCents / 100,
+    accountId: habit.accountId,
+    subcategoryId: habit.subcategoryId,
+    note: habit.note,
+    splits: habit.splits.length ? habit.splits : undefined,
+    origin: "detected",
+    detectionKey: habit.key,
+  });
+  result.undo.label = `Saved ${habit.note} as a preset`;
+  result.household.calendar = {
+    ...shapeCalendar(result.household.calendar),
+    dismissedNoticeKeys: (result.household.calendar?.dismissedNoticeKeys ?? []).filter((item) => item !== key),
+  };
+  return result;
+}
+
+export function dismissNotice(household: Household, key: string): CommitResult {
+  if (!key.trim()) throw new ValidationError("Nothing to dismiss.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.calendar = {
+    ...shapeCalendar(next.calendar),
+    dismissedNoticeKeys: [...new Set([...(next.calendar?.dismissedNoticeKeys ?? []), key])].sort(),
+  };
+  return commit(previous, next, "Hercules", "Hid a notice", []);
+}
+
 export function emptyHousehold(environment: Household["environment"] = "development"): Household {
   return {
     version: 1,
@@ -2128,6 +2241,7 @@ export function emptyHousehold(environment: Household["environment"] = "developm
     recurrences: [],
     appointments: [],
     claims: [],
+    presets: [],
     calendar: { ...EMPTY_CALENDAR },
     kitchen: shapeKitchen(EMPTY_KITCHEN),
     google: shapeGoogle(EMPTY_GOOGLE),

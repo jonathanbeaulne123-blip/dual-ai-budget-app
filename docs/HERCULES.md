@@ -4,14 +4,15 @@
 
 The ledger is still the company (Dual Course weight 5). He is Course B (weight 3) **and** a serious tool: money questions are answered on-device from the books. Care is posted household facts, not a hunger meter. Ember was the flame prototype and is fully historical.
 
-Laws: [DECISIONS.md](DECISIONS.md) D-042 / D-044 / D-045 / D-046 / D-047 / D-049 / D-050 / D-051. Strategy: [STRATEGY.md](STRATEGY.md). Museum essay: [nostalgia/HERCULES.md](nostalgia/HERCULES.md).
+Laws: [DECISIONS.md](DECISIONS.md) D-042 / D-044 / D-045 / D-046 / D-047 / D-049 / D-050 / D-051 / D-057–D-060. Science spec: [HERCULES_AI.md](HERCULES_AI.md). Strategy: [STRATEGY.md](STRATEGY.md). Museum essay: [nostalgia/HERCULES.md](nostalgia/HERCULES.md).
 
 ## Laws
 
 - No dock card. No full-screen Clippy sheet. He loafs in the corner while Add is open.
 - Tap / chips = `talkHercules` / `askHercules` (journal-true). Typed money questions stay on-device. Unmatched talk may use `POST /hercules/chat`. **Third-party keys are allowed** as Worker secrets (`wrangler secret put OPENAI_API_KEY` / `ANTHROPIC_API_KEY`); Workers AI is the fallback. Never `VITE_`. The model cannot post, emit SQL, invent a write, or name who spent more.
-- Chat and memories live in `kitchen.hercules` (D-049). Same merge, tombstones, Hearth Pass, and hosted door as the books. The model does **not** receive chat history or a transaction dump — only briefing, grounded CAD, and memory labels.
-- Safe writes: keep a talk, keep a note, forget a note, wipe chat. A “add milk” line opens Add. **Confirm still posts.** Hercules never calls `postEntry`.
+- Chat and memories live in `kitchen.hercules` (D-049). Same merge, tombstones, Hearth Pass, and hosted door as the books. Journal questions stay on-device. The model may receive a **redacted retrieval** (recent rows, month rollup, notices, figures) — never chat history, never a quiet appointment title (D-059 / D-060). Memory labels still strip amounts.
+- **Science (D-057 / D-058):** he notices repeated merchants on-device and may offer **one** Save-as-preset card. Confirm still posts. Duplicate confirm still fires. He never `postEntry` and never auto-creates presets.
+- Safe writes: keep a talk, keep a note, forget a note, wipe chat, save/forget a preset, dismiss a notice. A “add milk” line opens Add. **Confirm still posts.** Hercules never calls `postEntry`.
 - Mood from Health, bills, goals, week-over-week spend. Punishment is a face and a sentence, never a fake fee.
 - Unlocks come from posted facts, a tied rec, or a closed month — never a shop, never pay-to-keep-alive, never pet death.
 - Shift-posting streak (D-050) is consecutive **posted shift dates** from the latest shift. Vacation does not kill him. “Log shift” opens Add. Confirm still posts.
@@ -35,6 +36,7 @@ Every new line in his mouth must point at a budget primitive (wallet, rec, sit-d
    5. Type `add milk`. Add opens. Confirm still posts.
    6. Ask **What’s owed?** after a visit with insurance. Settlement is a transfer. Ask **Medical log** — pending claims stay out of the METC number; Hercules’s vet is never on it.
    7. Dismiss the bubble. Reopen him: prior chat is still there. Wipe it from Hercules’s things if you want it gone on both phones.
+   8. Watch him notice `$2.25 · Tim Hortons` and offer Save as preset. Confirm does not post money. The chip on Add still goes through Confirm; duplicate confirm should fire. Full script: [HERCULES_AI.md](HERCULES_AI.md).
 
 ## Purrsonality
 

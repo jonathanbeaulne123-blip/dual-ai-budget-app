@@ -1,7 +1,9 @@
 import { useEffect, useId, useMemo, useRef, useState, type PointerEvent } from "react";
 import {
   attackTarget,
+  bubbleNotice,
   chatHercules,
+  composeHerculesChatRequest,
   describeCompanion,
   emitOfficeIntent,
   groceryHighFive,
@@ -14,7 +16,6 @@ import {
   kitchenSeason,
   ledgerChats,
   listFurniture,
-  memoryLabelsForModel,
   perchTarget,
   planHerculesTurn,
   recordHerculesTalk,
@@ -195,6 +196,8 @@ export function HerculesPresence({
   onLedger,
   onDraft,
   onPayCard,
+  onAcceptPreset,
+  onDismissNotice,
 }: {
   household: Household;
   today: string;
@@ -208,11 +211,14 @@ export function HerculesPresence({
   onLedger: (fn: (current: Household) => CommitResult) => void;
   onDraft?: (draft: HerculesDraft) => void;
   onPayCard?: () => void;
+  onAcceptPreset?: (key: string, summary: string) => void;
+  onDismissNotice?: (key: string) => void;
 }) {
   const look = useMemo(() => dressedLook(household, today, Boolean(visorPop)), [household, today, visorPop]);
   const five = useMemo(() => groceryHighFive(household, today), [household, today]);
   const attention = useMemo(() => herculesNeedsCheck(household, today), [household, today]);
   const mutters = useMemo(() => herculesMutters(household, today), [household, today]);
+  const proposal = useMemo(() => bubbleNotice(household, today), [household, today]);
   const [pos, setPos] = useState({ x: 12, y: 120 });
   const [flip, setFlip] = useState(false);
   const [pinned, setPinned] = useState(false);
@@ -348,7 +354,7 @@ export function HerculesPresence({
   }, [pinned, adding, open, look.view.mood, today]);
 
   useEffect(() => {
-    if (adding || open || !mutters) return;
+    if (adding || open || !mutters || proposal) return;
     const id = window.setInterval(() => {
       const now = Date.now();
       if (now - mutterAt.current < 45000) return;
@@ -360,7 +366,7 @@ export function HerculesPresence({
       window.setTimeout(() => setTalk((current) => (current === idle ? null : current)), 5000);
     }, 16000);
     return () => window.clearInterval(id);
-  }, [adding, open, mutters, household, tab, today]);
+  }, [adding, open, mutters, household, tab, today, proposal]);
 
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
@@ -408,6 +414,20 @@ export function HerculesPresence({
 
   function goShortcut(raw: string): boolean {
     const text = raw.trim();
+    if (/^save as preset$/i.test(text)) {
+      if (proposal?.habitKey) {
+        onAcceptPreset?.(proposal.habitKey, proposal.spoken);
+        closeChat();
+        return true;
+      }
+    }
+    if (/^not now$/i.test(text)) {
+      if (proposal?.key) {
+        onDismissNotice?.(proposal.key);
+        closeChat();
+        return true;
+      }
+    }
     if (/^milk$|^post milk$/i.test(text)) {
       closeChat();
       onOpenAdd("Milk");
@@ -484,12 +504,9 @@ export function HerculesPresence({
     setTalk(grounded);
     setTopic(grounded.topic);
     setMotion("pounce");
-    const result = await chatHercules({
-      message,
-      briefing,
-      grounded,
-      memories: memoryLabelsForModel(household),
-    });
+    const result = await chatHercules(
+      composeHerculesChatRequest(household, message, briefing, grounded, today),
+    );
     if (chatGen.current !== gen) return;
     setTalk({ ...grounded, spoken: result.text });
     setTurns((prev) => [...prev, { role: "hercules" as const, text: result.text }].slice(-12));
@@ -543,7 +560,32 @@ export function HerculesPresence({
 
   return (
     <div className="hercules-world" aria-live="polite">
-      {(open || talk) && !adding && talk && (
+      {proposal && !adding && !open && (
+        <div
+          className={`hercules-bubble hercules-proposal ${bubbleLeft ? "left" : "right"}`}
+          style={{
+            left: bubbleLeft ? undefined : pos.x + size - 8,
+            right: bubbleLeft ? window.innerWidth - pos.x - 8 : undefined,
+            top: Math.max(8, pos.y - 8),
+            transform: bubbleLeft ? "translate(-100%, -90%)" : "translate(0, -90%)",
+          }}
+        >
+          <p className="hercules-spoken">{proposal.spoken}</p>
+          <p className="hercules-lesson">{proposal.lesson}</p>
+          <div className="hercules-replies">
+            {proposal.habitKey && (
+              <button
+                type="button"
+                onClick={() => onAcceptPreset?.(proposal.habitKey!, proposal.spoken)}
+              >
+                Save as preset
+              </button>
+            )}
+            <button type="button" onClick={() => onDismissNotice?.(proposal.key)}>Not now</button>
+          </div>
+        </div>
+      )}
+      {(open || talk) && !adding && talk && !(proposal && !open) && (
         <div
           className={`hercules-bubble ${bubbleLeft ? "left" : "right"} ${open ? "chat" : ""}`}
           style={{

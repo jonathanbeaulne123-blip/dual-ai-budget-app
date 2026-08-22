@@ -15,6 +15,7 @@ import type { BooksAsk } from "./askBooks.ts";
 import type { Household } from "./types.ts";
 import { householdWallet } from "./accounts.ts";
 import { claimsTraySentence, outstandingClaims, upcomingVisitProposals } from "./appointments.ts";
+import { bubbleNotice, deskNotices } from "./notices.ts";
 import { shiftPostingStreak } from "./shiftStreak.ts";
 
 export type HerculesPose =
@@ -78,6 +79,7 @@ function repliesFor(mood: CompanionMood, tab: HearthTab, topic: string): string[
   if (topic === "shift") return ["Log shift", "We good?"];
   if (topic === "claims") return ["What's owed?", "Start this jar"];
   if (topic === "visit") return ["Start this jar", "Calendar"];
+  if (topic === "notice") return ["Save as preset", "What now?"];
   if (mood === "hiding") return ["Health", "What broke?"];
   if (mood === "restless") return ["Which bill?", "What now?"];
   if (tab === "calendar") return ["Which bill?", "We good?"];
@@ -271,6 +273,25 @@ export function talkHercules(
       pose: "pounce",
       topic: "cook",
       attention: false,
+    };
+  }
+
+  if (/\b(what did you notice|noticed that|your notices|presets?)\b/.test(q) || /\btim hortons\b/.test(q)) {
+    const bubble = bubbleNotice(household, today);
+    const desk = deskNotices(household, today);
+    const spoken = bubble
+      ? clip(bubble.spoken)
+      : desk[0]
+        ? clip(desk[0].spoken)
+        : "Nothing new. Post milk. I'll watch.";
+    return {
+      spoken,
+      lesson: bubble?.lesson ?? "I notice on this phone. A tap saves a preset. I never post.",
+      fact: bubble?.cad ? { label: bubble.kind, value: bubble.cad } : null,
+      replies: bubble ? ["Save as preset", "Not now"] : ["We good?", "Milk"],
+      pose: "perch",
+      topic: "notice",
+      attention: Boolean(bubble),
     };
   }
 

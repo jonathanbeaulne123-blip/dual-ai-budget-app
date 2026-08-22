@@ -334,7 +334,7 @@ describe("The Hercules Update", () => {
     expect(unmatched.memory).toBeNull();
   });
 
-  it("does not send chat history or transaction dumps to a model", async () => {
+  it("does not send chat history or a shame dump to a model", async () => {
     const household = seedDemoHousehold({ today, environment: "development" });
     const grounded = talkHercules(household, "we good?", today, "home");
     const briefing = herculesBriefing(household, "home", today);

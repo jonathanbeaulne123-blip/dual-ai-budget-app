@@ -5,6 +5,7 @@ import {
   type HerculesBriefing,
   type HerculesGrounded,
 } from "./herculesPersonality.ts";
+import type { HerculesLedgerExcerpt, HerculesNoticeView } from "./herculesPrivacy.ts";
 
 export type HerculesChatTurn = {
   role: "user" | "hercules";
@@ -15,8 +16,11 @@ export type HerculesChatRequest = {
   message: string;
   briefing: HerculesBriefing;
   grounded: HerculesGrounded;
-  /** Labels only. Never a transaction dump, never full CAD chat history. */
+  /** Labels only. Never full CAD chat history. */
   memories?: string[];
+  notices?: HerculesNoticeView[];
+  ledger?: HerculesLedgerExcerpt;
+  figures?: string[];
 };
 
 export type HerculesChatResult = {
@@ -57,12 +61,21 @@ export function herculesModelPayload(req: HerculesChatRequest): string {
       lesson: req.grounded.lesson ? String(req.grounded.lesson).slice(0, 180) : null,
       fact: req.grounded.fact
         ? {
-            label: String(req.grounded.fact.label).slice(0, 40),
-            value: String(req.grounded.fact.value).slice(0, 40),
+            label: String(req.grounded.fact.label).slice(0, 80),
+            value: String(req.grounded.fact.value).slice(0, 48),
           }
         : null,
     },
     memories: (req.memories ?? []).slice(-12).map((label) => String(label).slice(0, 48)),
+    notices: (req.notices ?? []).slice(0, 8).map((item) => ({
+      key: String(item.key).slice(0, 120),
+      kind: String(item.kind).slice(0, 32),
+      spoken: String(item.spoken).slice(0, 220),
+      cad: item.cad ? String(item.cad).slice(0, 16) : null,
+      action: item.action,
+    })),
+    ledger: req.ledger ?? null,
+    figures: (req.figures ?? []).slice(0, 80),
   });
 }
 
@@ -93,7 +106,7 @@ export async function chatHercules(
       clearTimeout(timer);
       const reply = await readAiReply(res);
       if (reply) {
-        return { text: sanitizeHerculesReply(reply, req.grounded.spoken), source: "ai" };
+        return { text: sanitizeHerculesReply(reply, req.grounded.spoken, req.figures ?? []), source: "ai" };
       }
     } catch {
       continue;

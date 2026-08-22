@@ -646,6 +646,8 @@ input, select, textarea {
 .hercules-bubble.left { border-bottom-right-radius: 6px; }
 .hercules-bubble.right { border-bottom-left-radius: 6px; }
 .hercules-bubble.chat { width: min(280px, 78vw); }
+.hercules-proposal { width: min(248px, 72vw); }
+.hercules-proposal .hercules-replies { margin-top: 6px; }
 .hercules-spoken { margin: 0 0 4px; font-weight: 650; }
 .hercules-chat-log {
   max-height: 168px;
