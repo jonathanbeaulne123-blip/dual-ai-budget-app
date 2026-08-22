@@ -25,7 +25,11 @@ export type HerculesPose =
   | "hide"
   | "pace"
   | "celebrate"
-  | "pounce";
+  | "pounce"
+  | "perch"
+  | "lick"
+  | "bump"
+  | "attack";
 
 export type HerculesTalk = {
   spoken: string;

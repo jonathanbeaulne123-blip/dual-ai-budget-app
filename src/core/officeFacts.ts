@@ -1,0 +1,58 @@
+import { formatCad } from "./money.ts";
+import type { Dashboard } from "./insights.ts";
+import type { AuditOpinion } from "./statements.ts";
+import type { Finding } from "./health.ts";
+import type { CookOffScore, SitDownPostcard } from "./hercules.ts";
+import type { ShiftStreak } from "./shiftStreak.ts";
+import type { HouseholdWallet } from "./accounts.ts";
+import type { DateKey } from "./calendar.ts";
+
+export const BLOTTER_EMPTY = "Nothing posted this month yet.";
+export const MAIL_EMPTY = "No money dates in the next while.";
+export const TIMESHEET_EMPTY = "No shifts posted yet.";
+export const POSTCARD_EMPTY = "Next sit-down after the month turns.";
+export const COOK_EMPTY = "Nothing cooked, nothing bought.";
+export const JARS_EMPTY = "No jars on the shelf yet.";
+export const BOARD_EMPTY = "Nothing on the board.";
+
+export function blotterFacts(dashboard: Dashboard, opinion: AuditOpinion, findings: number) {
+  const empty = dashboard.month.incomeActualCents === 0 && dashboard.month.expenseActualCents === 0;
+  return {
+    netCents: dashboard.month.netActualCents,
+    incomeCents: dashboard.month.incomeActualCents,
+    expenseCents: dashboard.month.expenseActualCents,
+    stamp: opinion.kind,
+    /** Unmodified is the clean stamp. Spec said "clean"; the books use unmodified. */
+    warn: opinion.kind !== "unmodified",
+    lampDot: findings > 0,
+    empty,
+    glance: empty ? BLOTTER_EMPTY : formatCad(dashboard.month.netActualCents),
+  };
+}
+
+export function lampIsDark(findings: Finding[]): boolean {
+  return findings.length === 0;
+}
+
+export function walletWarn(wallet: HouseholdWallet): boolean {
+  const card = wallet.hottestCard;
+  if (!card) return false;
+  if (card.daysUntilDue < 0) return true;
+  return card.utilization != null && card.utilization >= 0.8;
+}
+
+export function mailOverdue(dashboard: Dashboard, today: DateKey): boolean {
+  return dashboard.upcoming.some((item) => item.due || item.date < today);
+}
+
+export function timesheetEmpty(streak: ShiftStreak): boolean {
+  return streak.count === 0 && streak.lastDate == null;
+}
+
+export function cookOffEmpty(score: CookOffScore): boolean {
+  return score.groceryCents === 0 && score.coffeeCents === 0;
+}
+
+export function postcardEmpty(card: SitDownPostcard): boolean {
+  return !card.ready;
+}
