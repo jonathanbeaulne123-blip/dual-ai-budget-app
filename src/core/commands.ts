@@ -1,7 +1,7 @@
-import { TIMEZONE, todayKey, type DateKey, type MonthKey } from "./calendar.ts";
+import { TIMEZONE, todayKey, monthKeyFromDateKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { advanceCadence, DEFAULT_REMINDER_HOURS_BEFORE, EMPTY_CALENDAR, inferRecurrenceKind } from "./recurrence.ts";
 import { detectRhythms } from "./rhythm.ts";
-import { CURRENCY } from "./money.ts";
+import { CURRENCY, parseWholeCents } from "./money.ts";
 import { nextId, nowIso, randomHouseholdId, randomInviteCode, slug, uniquePrefixedId } from "./ids.ts";
 import { cloneHousehold } from "./household.ts";
 import { duplicateKey, describeSimilarMatches, findSimilarTransactions, refreshDuplicateFlags } from "./duplicate.ts";
@@ -19,8 +19,9 @@ import {
   validateOwnedAmount as catalogValidateOwned,
 } from "./catalog.ts";
 import { sitDownPreview } from "./insights.ts";
+import { bookBalanceAsOf, isMonthClosed } from "./statements.ts";
 import { COSMETIC_BY_ID, isCosmeticUnlocked } from "./companion.ts";
-import { EMPTY_KITCHEN, MAX_CHALK_CHARS, MAX_CHALK_NOTES, MAX_COMPANION_NAME, isCosmeticSlot, shapeKitchen } from "./kitchen.ts";
+import { EMPTY_KITCHEN, MAX_CHALK_CHARS, MAX_CHALK_NOTES, MAX_COMPANION_NAME, closedPeriodId, isCosmeticSlot, shapeKitchen } from "./kitchen.ts";
 import {
   EMPTY_GOOGLE,
   findActiveGoogleLink,
@@ -52,6 +53,16 @@ export type ActorInput = {
   createdBy?: string;
   visibility?: Visibility;
 };
+
+function requireOpenPeriod(household: Household, date: DateKey, confirmed?: boolean): void {
+  const monthKey = monthKeyFromDateKey(date);
+  if (!isMonthClosed(household, monthKey)) return;
+  if (confirmed) return;
+  throw new NeedsConfirmationError(
+    "closedMonth",
+    `${monthKey} is closed. Posting into a closed month restates the period. Confirm if you mean it.`,
+  );
+}
 
 function resolveActor(household: Household, input?: ActorInput, fallbackMemberId?: string): { createdBy: string; visibility: Visibility } {
   const visibility = parseVisibility(input?.visibility);
@@ -144,6 +155,7 @@ export function postEntry(household: Household, input: {
   place?: string;
   splits?: Split[];
   confirmDuplicate?: boolean;
+  confirmClosedMonth?: boolean;
   refundOfId?: string;
   source?: Transaction["source"];
   sourceId?: string;
@@ -154,6 +166,7 @@ export function postEntry(household: Household, input: {
   const date = parseDate(input.date);
   const amountCents = parseAmount(input.amount);
   const actor = resolveActor(household, input);
+  requireOpenPeriod(household, date, input.confirmClosedMonth);
   const subcategory = requireSubcategory(
     household,
     input.subcategoryId,
@@ -212,6 +225,7 @@ export function postTransfer(household: Household, input: {
   toAccountId: string;
   note?: string;
   confirmDuplicate?: boolean;
+  confirmClosedMonth?: boolean;
   createdBy?: string;
   visibility?: Visibility;
 }): CommitResult {
@@ -219,6 +233,7 @@ export function postTransfer(household: Household, input: {
   const date = parseDate(input.date);
   const amountCents = parseAmount(input.amount);
   const actor = resolveActor(household, input);
+  requireOpenPeriod(household, date, input.confirmClosedMonth);
   if (input.fromAccountId === input.toAccountId) throw new ValidationError("Choose two different accounts to move money.");
   requireAccount(household, input.fromAccountId);
   requireAccount(household, input.toAccountId);
@@ -288,6 +303,7 @@ export function postShift(household: Household, input: {
   hours: string | number;
   settingsFingerprint?: string;
   confirmDuplicate?: boolean;
+  confirmClosedMonth?: boolean;
   createdBy?: string;
   visibility?: Visibility;
 }): CommitResult {
@@ -295,6 +311,7 @@ export function postShift(household: Household, input: {
   const parsed = parseShiftInput({ ...input, timeZone: household.timezone });
   const member = requireMember(household, input.memberId);
   const actor = resolveActor(household, input, member.id);
+  requireOpenPeriod(household, parsed.date, input.confirmClosedMonth);
   const account = requireAccount(household, input.accountId);
   const wagesCat = incomeSubcategory(household, "Wages");
   const tipsCat = incomeSubcategory(household, "Tips");
@@ -629,6 +646,7 @@ export function postOneRecurrence(household: Household, recurrenceId: string, to
     note: item.note,
     splits: item.splits,
     confirmDuplicate: true,
+    confirmClosedMonth: true,
     source: "recurring",
     sourceId: item.id,
   });
@@ -682,6 +700,7 @@ export function postDueRecurrences(household: Household, today: DateKey): Commit
       note: item.note,
       splits: item.splits,
       confirmDuplicate: true,
+      confirmClosedMonth: true,
       source: "recurring",
       sourceId: item.id,
     });
@@ -797,6 +816,82 @@ export function wipeChalk(household: Household, id: string): CommitResult {
   next.kitchen.chalkboard = next.kitchen.chalkboard.filter((item) => item.id !== id);
   next.tombstones = mergeTombstones(next.tombstones, [{ id, deletedAt: nowIso() }]);
   return commit(previous, next, "Chalkboard", "Wiped a chalkboard note", []);
+}
+
+export function recordReconciliation(household: Household, input: {
+  accountId: string;
+  statementDate: string;
+  statementAmount: string | number;
+  createdBy?: string;
+}): CommitResult {
+  requireTimezone(household);
+  const statementDate = parseDate(input.statementDate);
+  let statementCents: number;
+  try {
+    statementCents = parseWholeCents(input.statementAmount, "Statement balance", { allowZero: true, allowNegative: true });
+  } catch (error) {
+    throw new ValidationError(error instanceof Error ? error.message : String(error));
+  }
+  const account = requireAccount(household, input.accountId);
+  const actor = resolveActor(household, input);
+  const bookCents = bookBalanceAsOf(household, account.id, statementDate);
+  const differenceCents = statementCents - bookCents;
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const id = nextId("REC-", next.kitchen.books.reconciliations.map((row) => row.id), 4);
+  next.kitchen.books.reconciliations = [
+    ...next.kitchen.books.reconciliations,
+    {
+      id,
+      accountId: account.id,
+      statementDate,
+      statementCents,
+      bookCents,
+      differenceCents,
+      status: differenceCents === 0 ? "tied" as const : "open" as const,
+      createdAt: nowIso(),
+      createdBy: actor.createdBy,
+    },
+  ].slice(-24);
+  return commit(
+    previous,
+    next,
+    "Bank rec",
+    differenceCents === 0
+      ? `${account.name} tied at ${statementDate}`
+      : `${account.name} off by $${(Math.abs(differenceCents) / 100).toFixed(2)} at ${statementDate}`,
+    [],
+  );
+}
+
+export function closeBooksMonth(household: Household, input: { monthKey: MonthKey; createdBy?: string }): CommitResult {
+  requireTimezone(household);
+  if (!/^\d{4}-\d{2}$/.test(input.monthKey)) throw new ValidationError("Close a Toronto month (YYYY-MM).");
+  if (isMonthClosed(household, input.monthKey)) {
+    throw new ValidationError(`${input.monthKey} is already closed.`);
+  }
+  const actor = resolveActor(household, input);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  next.kitchen.books.closedMonths = [
+    ...next.kitchen.books.closedMonths,
+    { id: closedPeriodId(input.monthKey), monthKey: input.monthKey, closedAt: nowIso(), closedBy: actor.createdBy },
+  ];
+  return commit(previous, next, "Close month", `Closed ${input.monthKey}. Posting in still needs a second look.`, []);
+}
+
+export function reopenBooksMonth(household: Household, monthKey: MonthKey): CommitResult {
+  requireTimezone(household);
+  if (!isMonthClosed(household, monthKey)) throw new ValidationError(`${monthKey} is not closed.`);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const row = next.kitchen.books.closedMonths.find((item) => item.monthKey === monthKey);
+  next.kitchen.books.closedMonths = next.kitchen.books.closedMonths.filter((item) => item.monthKey !== monthKey);
+  next.tombstones = mergeTombstones(next.tombstones, [{ id: row?.id || closedPeriodId(monthKey), deletedAt: nowIso() }]);
+  return commit(previous, next, "Reopen month", `Reopened ${monthKey}`, []);
 }
 
 export function renameCompanion(household: Household, name: string): CommitResult {

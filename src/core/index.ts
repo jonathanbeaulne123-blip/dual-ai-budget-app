@@ -18,6 +18,7 @@ export * from "./sync.ts";
 export * from "./invite.ts";
 export * from "./pass.ts";
 export * from "./journal.ts";
+export * from "./statements.ts";
 export * from "./recurrence.ts";
 export * from "./rhythm.ts";
 export * from "./board.ts";

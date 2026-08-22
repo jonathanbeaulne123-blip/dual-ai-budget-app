@@ -20,7 +20,7 @@ Help Jonathan and Bianca run a dependable household budget. **Hearth** (this rep
 - Currency: CAD, integer cents.
 - Development and production are two named local snapshots on the same device. Default experiments to Development.
 - Website: Cloudflare Workers + Assets, worker `hearth-books`. Publishes from GitHub `main` via `wrangler deploy` (D-041). Preview uploads are not the kitchen URL.
-- Hercules (Maine Coon) is the product face (D-044, D-045). Cosmetics never post money. Workers AI may talk; it cannot write the books.
+- Hercules (Maine Coon) is the product face (D-044, D-045, D-046). Cosmetics never post money. Workers AI may talk; it cannot write the books. The Audit Office is how we show the ledger.
 - Hosted books: household Supabase Postgres. PGlite is the on-phone journal.
 - Workbook exports, historical chats, credentials, and household data are local-only and must never be committed.
 

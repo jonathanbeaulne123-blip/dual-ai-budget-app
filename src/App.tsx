@@ -6,6 +6,7 @@ import {
   addCategory,
   addGoal,
   applySitDown,
+  auditOpinion,
   buildDashboard,
   calcShiftAmounts,
   catalogHousehold,
@@ -202,6 +203,7 @@ export function App() {
     () => (visible ? buildDashboard(visible, today, now, findings.length) : null),
     [visible, today, now, findings.length],
   );
+  const opinion = useMemo(() => (household ? auditOpinion(household) : null), [household]);
 
   function rememberSession(next: Session) {
     setSession(next);
@@ -482,7 +484,7 @@ export function App() {
     setSplitPercents({ ...splitPercents, [memberId]: clamped });
   }
 
-  function submit(confirmDuplicate = false) {
+  function submit(flags: { confirmDuplicate?: boolean; confirmClosedMonth?: boolean } = {}) {
     run((current) => {
       if (mode === "transfer") {
         return postTransfer(current, {
@@ -491,7 +493,8 @@ export function App() {
           fromAccountId: form.fromAccountId,
           toAccountId: form.toAccountId,
           note: form.note,
-          confirmDuplicate,
+          confirmDuplicate: flags.confirmDuplicate,
+          confirmClosedMonth: flags.confirmClosedMonth,
           createdBy: actorId,
           visibility: form.visibility,
         });
@@ -506,7 +509,8 @@ export function App() {
           ccTips: form.ccTips,
           hours: form.hours,
           settingsFingerprint: shiftSettingsFingerprint(current.shiftSettings),
-          confirmDuplicate,
+          confirmDuplicate: flags.confirmDuplicate,
+          confirmClosedMonth: flags.confirmClosedMonth,
           createdBy: actorId,
           visibility: form.visibility,
         });
@@ -520,7 +524,8 @@ export function App() {
         note: form.note,
         place: form.place,
         splits: splitsFor(parseAmount(form.amount), current),
-        confirmDuplicate,
+        confirmDuplicate: flags.confirmDuplicate,
+        confirmClosedMonth: flags.confirmClosedMonth,
         createdBy: actorId,
         visibility: form.visibility,
       });
@@ -595,6 +600,7 @@ export function App() {
               {formatCad(dashboard.month.incomeActualCents)} in · {formatCad(dashboard.month.expenseActualCents)} out
               {" · "}
               {dashboard.stale ? "numbers need a look" : "fresh"}
+              {opinion ? ` · ${opinion.kind} opinion` : ""}
             </div>
           </section>
           <div className="pulse">
@@ -956,10 +962,15 @@ export function App() {
                     <span>{formatCad(tx.amountCents)}</span>
                   </div>
                 ))}
-                <button className="primary" onClick={() => submit(true)}>Add anyway</button>
+                <button className="primary" onClick={() => {
+                  if (confirm.code === "closedMonth") submit({ confirmClosedMonth: true });
+                  else submit({ confirmDuplicate: true, confirmClosedMonth: true });
+                }}>
+                  {confirm.code === "closedMonth" ? "Post into closed month" : "Add anyway"}
+                </button>
               </div>
             )}
-            <button className="primary" disabled={busy} onClick={() => submit(false)}>Save</button>
+            <button className="primary" disabled={busy} onClick={() => submit()}>Save</button>
           </div>
         </div>
       )}
@@ -1192,7 +1203,7 @@ function SitDown({ household, onApply, hidden }: { household: Household; onApply
   return (
     <section className="card">
       <header><h2>Sit-down</h2><span className="muted">Copy {preview.sourceMonth} into {preview.targetMonth}</span></header>
-      <p className="muted">Overspent categories get a midpoint suggestion. Nothing is written until you apply.</p>
+      <p className="muted">Overspent categories get a midpoint suggestion. Nothing is written until you apply. Close pack on Books locks last month with a second look.</p>
       {rows.slice(0, 14).map((row) => (
         <div className="row sitdown-row" key={row.subcategoryId}>
           <span>{row.name}{row.trimSuggested ? " · trim" : ""}</span>

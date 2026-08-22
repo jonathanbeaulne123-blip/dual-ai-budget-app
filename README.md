@@ -20,12 +20,12 @@ Open `http://localhost:5173`. **Open the demo kitchen table** loads a fictional 
 - Get stopped on a likely duplicate: same amount within five days, plus matching notes, place, category, or source
 - Open **Calendar** for a Toronto month of bills, pay, and shifts; adopt repeating ledger rows; download an `.ics` with alarms; optionally overlay both Google accounts
 - Remove a row (with confirm) and undo from the toast or **More → Recent changes**
-- Read Home as chalkboard, one net number, a pulse sentence, this week versus last week, upcoming money dates, and shared goals. Hercules wanders the screen; tap him, then type in the bubble to chat
-- Ask Hercules in plain language from the cat or Books → Ask; Power SQL stays read-only. The cat never posts
+- Read Home as chalkboard, one net number, a pulse sentence, this week versus last week, upcoming money dates, and shared goals. Hercules wanders the screen; tap him, then type in the bubble to chat. Home shows his audit opinion next to the net
+- Open **Books** for a general journal, trial balance, balance sheet, P&L, cash flow, equity roll, working capital, notes, bank rec, close pack, and read-only SQL
+- Ask Hercules in plain language from the cat or Books → Ask (**Opinion?**, **Working capital?**, trial balance, statements); Power SQL stays read-only. The cat never posts
 - Run a monthly sit-down that copies last month in CAD and trims overspent categories
 - Keep **Development** and **Production** as two named local ledgers on the same phone
 - Choose **Shared**, **Personal**, or **Both** on every add; switch Household vs Personal at the top
-- Open **Books** for a general journal, trial balance, account register, and read-only SQL
 - Invite the other person with a three-word phrase, a join link, or a Hearth Pass
 - Link Google on More → Google household bridge so both phones know who is who; Calendar can overlay both calendars
 - Export JSON or a PostgreSQL dump; run Health and get a clean bill or a specific finding
@@ -61,6 +61,7 @@ Invite the other person with a **three-word phrase**, a **join link**, or a **He
 - Current: [docs/README.md](docs/README.md)
 - Daily habit map: [docs/DAILY_HEARTH.md](docs/DAILY_HEARTH.md)
 - The Hercules Update: [docs/HERCULES.md](docs/HERCULES.md)
+- The Audit Office: [docs/AUDIT_OFFICE.md](docs/AUDIT_OFFICE.md)
 - Google household bridge: [docs/GOOGLE.md](docs/GOOGLE.md)
 - Vision: [docs/PRODUCT_ROADMAP.md](docs/PRODUCT_ROADMAP.md)
 - History (not a bible): [docs/reference/](docs/reference/)

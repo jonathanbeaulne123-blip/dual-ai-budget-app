@@ -4,7 +4,7 @@
 
 This is the product face. The ledger is still the company. We did **not** rebuild the command kernel. Ember was the flame prototype.
 
-Related: [DAILY_HEARTH.md](DAILY_HEARTH.md), [DECISIONS.md](DECISIONS.md) D-042 / D-044 / D-045, [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md) Chapter 0.4.
+Related: [DAILY_HEARTH.md](DAILY_HEARTH.md), [DECISIONS.md](DECISIONS.md) D-042 / D-044 / D-045 / D-046, [AUDIT_OFFICE.md](AUDIT_OFFICE.md), [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md) Chapter 0.4.
 
 ---
 
@@ -72,21 +72,22 @@ Research that actually exists:
 
 1. Development. Demo kitchen table.
 2. Watch him wander. Drag him off a number if he’s sitting on it.
-3. Tap him. Ask “we good?” or “what now?” Type in the bubble for the AI chat (kitchen site). Hit **send**. Local `pnpm dev` still talks if the Worker is quiet.
+3. Tap him. Ask **Opinion?** or **Working capital?** or “we good?” Type in the bubble. Hit **send**.
 4. Tap **+** — he loafs in the corner. Confirm still posts.
 5. If a bill is due he paces and may mutter. Calendar, then confirm.
+6. Tie a bank rec on Books to unlock **audit spectacles**. Close a month to unlock the **green-ink stamp**. On Books he stretches for fieldwork.
 
 ---
 
-## Purrsonality (D-045)
+## Purrsonality (D-045 / D-046)
 
-Hercules talks like a smug-kind Maine Coon on a Toronto kitchen counter: first person, short sentences, occasional mrrp, milk → bills → treats. He will not name who spent more. He will not claim he posted.
+Hercules talks like a smug-kind Maine Coon on a Toronto kitchen counter: first person, short sentences, occasional mrrp, milk → bills → treats. He is also the household auditor: unmodified / qualified / adverse, working-capital watch, equity rolls. He will not name who spent more. He will not claim he posted.
 
 | Path | What it is |
 |---|---|
 | Tap / chips | `talkHercules` / `askHercules` — projections over the books |
 | Typed chat | `POST /hercules/chat` on `hearth-books` (Cloudflare Workers AI). No OpenAI key. System prompt stays on the Worker |
-| Briefing | Month in/out/net, mood, health finding count, bill *notes* due soon, grocery-today yes/no. Not a ledger dump |
+| Briefing | Month in/out/net, mood, health, bills, grocery-today, **opinion / trial / equation / going-concern / working capital**. Not a ledger dump |
 | Grounding | The model must quote `talkHercules` CAD, not invent amounts |
 | Sanitize | Strip SQL, write-claims, name-shame, “as an AI” |
 | History | Last few turns in the bubble this session. Not saved in the household snapshot |

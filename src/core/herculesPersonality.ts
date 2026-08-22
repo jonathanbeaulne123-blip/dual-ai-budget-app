@@ -2,7 +2,7 @@ import { addDays, hourInToronto, monthKeyFromDateKey, type DateKey } from "./cal
 import { monthSummary } from "./budget.ts";
 import { companionMood, type CompanionMood } from "./companion.ts";
 import { cookOffScore, type HearthTab } from "./hercules.ts";
-import { runHealthCheck } from "./health.ts";
+import { auditOpinion, liquidityWatch } from "./statements.ts";
 import { formatCad } from "./money.ts";
 import type { Household } from "./types.ts";
 
@@ -32,6 +32,11 @@ export type HerculesBriefing = {
   groceryToday: boolean;
   cookOff: "kitchen" | "takeout" | "tie";
   torontoHour: number;
+  opinion: string;
+  trialInBalance: boolean;
+  equationHolds: boolean;
+  goingConcern: string;
+  workingCapitalCad: string;
 };
 
 export type HerculesGrounded = {
@@ -68,6 +73,8 @@ export function herculesBriefing(
   const name = household.kitchen.companion.name || "Hercules";
   const { mood } = companionMood(household, today, name);
   const month = monthSummary(household, monthKeyFromDateKey(today));
+  const opinion = auditOpinion(household);
+  const liq = liquidityWatch(household, today);
   return {
     name,
     page,
@@ -75,11 +82,16 @@ export function herculesBriefing(
     netCad: formatCad(month.netActualCents),
     monthInCad: formatCad(month.incomeActualCents),
     monthOutCad: formatCad(month.expenseActualCents),
-    healthFindings: runHealthCheck(household).length,
+    healthFindings: opinion.healthFindings,
     billsDueSoon: billsDueSoon(household, today),
     groceryToday: groceryPostedToday(household, today),
     cookOff: cookOffScore(household, today).winner,
     torontoHour: hourInToronto(now),
+    opinion: opinion.kind,
+    trialInBalance: opinion.trialInBalance,
+    equationHolds: opinion.equationHolds,
+    goingConcern: liq.goingConcern,
+    workingCapitalCad: formatCad(liq.workingCapital.workingCapitalCents),
   };
 }
 
@@ -98,6 +110,11 @@ export function formatHerculesBriefing(briefing: HerculesBriefing): string {
     `grocery posted today: ${briefing.groceryToday ? "yes" : "no"}`,
     `cook-off: ${briefing.cookOff}`,
     `hour: ${briefing.torontoHour}`,
+    `opinion: ${briefing.opinion}`,
+    `trial in balance: ${briefing.trialInBalance ? "yes" : "no"}`,
+    `equation A=L+E: ${briefing.equationHolds ? "yes" : "no"}`,
+    `going-concern watch: ${briefing.goingConcern}`,
+    `working capital: ${briefing.workingCapitalCad}`,
   ].join("\n");
 }
 

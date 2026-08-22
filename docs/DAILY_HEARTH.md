@@ -41,7 +41,7 @@ Status: **shipping in the working tree (The Hercules Update).** Home grows a kit
 | Piece | What it is | What it is not |
 |---|---|---|
 | Chalkboard | Shared one-off notes, 80 characters, 12 deep, wipeable, silly prompts | A ledger, a chat, a bill |
-| Hercules | Computed mood + earned wardrobe; **wanders** every page; compact following chat with purrsonality (`talkHercules` + optional Workers AI) | Chat never posts; no full-screen Clippy sheet |
+| Hercules | Computed mood + earned wardrobe; **wanders** every page; compact following chat with purrsonality (`talkHercules` + optional Workers AI); auditor opinion | Chat never posts; no full-screen Clippy sheet |
 | Visit spark | `localStorage` mornings-in-a-row per Development/Production pill | Synced state (Sync must not spam it) |
 | Ask the books | Plain-language conversation with the journal | A model that writes SQL the household did not mean |
 | Sit-down dollars | Last actual and suggested next, in CAD | Jargon-only preview |
@@ -64,6 +64,8 @@ Status: **shipping in the working tree (The Hercules Update).** Home grows a kit
 | Collar bell | A transfer posted (pay the Visa) |
 | Yarn collar | Three chalkboard scribbles |
 | Fish treat | A posted shift |
+| Audit spectacles | A bank rec that ties (statement = books) |
+| Green-ink stamp | A month closed on Books → Close pack |
 | July patio | Toronto June–August, or any spend in those months |
 | Winter ruff | Toronto November–March, or any spend in those months |
 
@@ -71,7 +73,7 @@ Mood: **glowing** / **content** / **restless** / **hiding**. Hiding is for Healt
 
 ### Ask the books
 
-Books → **Ask**. Chips for groceries, bills, who spent more, this week vs last, chequing, “are we alright”, goals, coffee. Typed SQL still runs read-only through `assertReadOnlySelect`. Power SQL is behind a fold.
+Books → **Ask**. Chips for opinion, balance sheet, working capital, groceries, bills, this week vs last, chequing, “are we alright”, goals, coffee. Typed SQL still runs read-only through `assertReadOnlySelect`. Power SQL is behind a fold.
 
 ---
 
@@ -140,7 +142,8 @@ Gamification does not pause accounting. This list only grows.
 | Double-entry PGlite + trial balance | Shipped | D-033 |
 | Calendar / rhythms / ICS / optional Google | Shipped | D-040 |
 | Google household bridge | This ring | D-043. Tokens on-phone; `withGoogle` on demand |
-| Hercules (Maine Coon) | This ring | D-044 / D-045. Follows every page. Talk never posts. Workers AI may rephrase; CAD comes from the journal |
+| Hercules (Maine Coon) | This ring | D-044 / D-045 / D-046. Follows every page. Talk never posts. Opinion from the journal |
+| Audit Office | This ring | D-046. Statements, equity roll, working capital, notes, rec, close pack. Not a second ledger |
 | PGlite database per environment pill | This ring | Snapshots were already split; the journal name was not |
 | Phrase-join filters environment | This ring | Unique index already `(invite_phrase, environment)` |
 | Sit-down shows CAD | This ring | |
