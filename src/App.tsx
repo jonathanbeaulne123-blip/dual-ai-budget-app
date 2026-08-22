@@ -6,15 +6,16 @@ import {
   addCategory,
   addFormDefaults,
   addGoal,
-  applySitDown,
   auditOpinion,
   buildDashboard,
   calcShiftAmounts,
   catalogHousehold,
+  centsDigitsFromDollars,
   contributeToGoal,
   createWriteQueue,
   creditCardView,
   defaultVisibilityForView,
+  dollarsFromCentsDigits,
   findActiveGoogleLinkByEmail,
   findActiveGoogleLinkBySubject,
   formatCad,
@@ -23,7 +24,7 @@ import {
   accountOptionLabel,
   jointSplit,
   memberNeedsGoogleStepUp,
-  monthKeyFromDateKey,
+  padToDollars,
   parseAmount,
   percentSplits,
   postDueRecurrences,
@@ -35,7 +36,6 @@ import {
   runHealthCheck,
   seedDemoHousehold,
   shiftSettingsFingerprint,
-  sitDownPreview,
   todayKey,
   touchGoogleConfirmation,
   touchVisitSpark,
@@ -61,6 +61,8 @@ import { CalendarPage } from "./Calendar.tsx";
 import { DailyHearth } from "./DailyHearth.tsx";
 import { HerculesPresence } from "./Hercules.tsx";
 import { WalletStrip } from "./Accounts.tsx";
+import { CadPad } from "./CadPad.tsx";
+import { SitDownGuide } from "./SitDownGuide.tsx";
 import { playClink } from "./clink.ts";
 import { GoogleBridgeCard } from "./GoogleBridge.tsx";
 import {
@@ -81,6 +83,13 @@ type Guard =
   | { kind: "remove"; transactionId: string; summary: string }
   | { kind: "postRecurrence"; recurrenceId: string; summary: string }
   | { kind: "postDueAll"; summary: string };
+
+const SHIFT_PAD: { id: "sales" | "hours" | "cashTips" | "ccTips"; label: string; unit: "cad" | "hours" }[] = [
+  { id: "sales", label: "Sales", unit: "cad" },
+  { id: "hours", label: "Hours", unit: "hours" },
+  { id: "cashTips", label: "Cash", unit: "cad" },
+  { id: "ccTips", label: "CC", unit: "cad" },
+];
 
 const emptyForm = {
   date: todayKey(),
@@ -126,6 +135,8 @@ export function App() {
   const [spark, setSpark] = useState(false);
   const [visorPop, setVisorPop] = useState(false);
   const [clinkOn, setClinkOn] = useState(false);
+  const [addDetails, setAddDetails] = useState(false);
+  const [shiftField, setShiftField] = useState<"sales" | "hours" | "cashTips" | "ccTips">("sales");
   const enqueueWrite = useMemo(() => createWriteQueue(), []);
   const householdRef = useRef<Household | null>(household);
   householdRef.current = household;
@@ -357,9 +368,7 @@ export function App() {
           <img src="/icon.png" alt="" />
           <h1>Hearth</h1>
           <p>
-            Jonathan and Bianca each get a household ledger and a personal ledger.
-            Every entry can be shared, personal, or both. The books are a double-entry
-            PostgreSQL journal on this phone — not a blob of JSON pretending to be a database.
+            Two phones. One journal. CAD. Toronto. Hercules loafs while you post milk.
           </p>
           {welcomeMode === "join" ? (
             <WelcomeJoin
@@ -397,7 +406,7 @@ export function App() {
         <div className="welcome-card">
           <p className="kicker">Who is using this phone?</p>
           <h1>Choose yourself</h1>
-          <p>Household numbers are shared. Personal rows stay on your ledger. Use your own phone if you want that split to hold.</p>
+          <p>Shared numbers. Personal stays yours.</p>
           {googleConfigured() && (
             <button
               className="ghost"
@@ -504,6 +513,8 @@ export function App() {
     setFocusedAccountId(id);
     setMode(nextMode ?? defaults.suggestedMode);
     setAdding(true);
+    setAddDetails(false);
+    setShiftField("sales");
     setError("");
     setConfirm(null);
     setForm(formForAccount(id));
@@ -516,6 +527,7 @@ export function App() {
     setFocusedAccountId(account.id);
     setMode("transfer");
     setAdding(true);
+    setAddDetails(false);
     setError("");
     setConfirm(null);
     setForm(formForAccount(account.id, {
@@ -602,6 +614,17 @@ export function App() {
     });
   }
 
+  function addPostLabel(): string {
+    if (mode === "shift") return "Post shift";
+    const digits = centsDigitsFromDollars(form.amount);
+    const money = digits ? formatCad(Number(digits)) : "";
+    if (mode === "transfer") return money ? `Move ${money}` : "Move money";
+    const note = form.note.trim().toLowerCase();
+    if (note === "milk") return money ? `Post milk ${money}` : "Post milk";
+    if (note === "coffee") return money ? `Post coffee ${money}` : "Post coffee";
+    return money ? `Post ${money}` : "Post";
+  }
+
   return (
     <div className="app">
       <header className="topbar">
@@ -649,18 +672,12 @@ export function App() {
             onClinkOn={setClinkOn}
             onCommand={(fn) => { void run(fn); }}
             onBuyNote={(text) => {
-              setMode("expense");
-              setAdding(true);
-              setError("");
-              setConfirm(null);
-              setForm({
-                ...formForAccount(focusedAccountId),
-                date: today,
+              openAddFor(null, "expense");
+              setForm((current) => ({
+                ...current,
                 note: text.slice(0, 80),
                 subcategoryId: "SUB-FOOD-GROCERIES",
-                visibility: defaultVisibilityForView(view),
-                memberId: session.memberId,
-              });
+              }));
             }}
           />
           <section className="hero">
@@ -668,11 +685,28 @@ export function App() {
             <div className={`money ${dashboard.month.netActualCents < 0 ? "negative" : ""}`}>{formatCad(dashboard.month.netActualCents)}</div>
             <div className="sub">
               {formatCad(dashboard.month.incomeActualCents)} in · {formatCad(dashboard.month.expenseActualCents)} out
-              {" · "}
-              {dashboard.stale ? "numbers need a look" : "fresh"}
-              {opinion ? ` · ${opinion.kind} opinion` : ""}
+              {opinion ? ` · ${opinion.kind}` : ""}
             </div>
           </section>
+          <div className="quick-acts">
+            <button type="button" className="quick-act" onClick={() => {
+              openAddFor(null, "expense");
+              setForm((current) => ({ ...current, note: "Milk", subcategoryId: "SUB-FOOD-GROCERIES" }));
+            }}>Milk</button>
+            <button type="button" className="quick-act" onClick={() => openAddFor(null, "shift")}>Shift</button>
+            {ledger.accounts.some((account) => account.active && account.kind === "credit") && (
+              <button
+                type="button"
+                className="quick-act"
+                onClick={() => {
+                  const card = ledger.accounts.find((account) => account.active && account.kind === "credit");
+                  if (card) openPayCard(card);
+                }}
+              >
+                Pay card
+              </button>
+            )}
+          </div>
           <WalletStrip
             household={household}
             today={today}
@@ -680,31 +714,30 @@ export function App() {
             onOpen={openWallet}
           />
           <div className="pulse">
-            {dashboard.pulses.map((pulse) => (
-              <article key={pulse.sentence} className={pulse.tone}>{pulse.sentence}</article>
+            {dashboard.pulses.slice(0, 2).map((pulse) => (
+              <button
+                key={pulse.sentence}
+                type="button"
+                className={`pulse-hit ${pulse.tone}`}
+                onClick={() => setTab(pulse.tone === "warn" ? "calendar" : "home")}
+              >
+                {pulse.sentence}
+              </button>
             ))}
           </div>
           <div className="grid">
             <div className="stat"><span>This week</span><strong>{formatCad(dashboard.week.expenseCents)}</strong></div>
-            <div className="stat"><span>vs last week</span><strong>{formatCad(dashboard.week.expenseCents - dashboard.week.lastWeekExpenseCents)}</strong></div>
-            <div className="stat"><span>Safety gap</span><strong>{formatCad(dashboard.month.householdCoverageGapCents)}</strong></div>
-            <div className="stat"><span>Tips / hour</span><strong>{formatCad(dashboard.tipWeather.tipsPerHourCents)}</strong></div>
+            <div className="stat"><span>vs last</span><strong>{formatCad(dashboard.week.expenseCents - dashboard.week.lastWeekExpenseCents)}</strong></div>
           </div>
           <section className="card">
             <header>
               <h2>This week</h2>
               <span className="muted">{formatDateLabel(dashboard.week.start)} – {formatDateLabel(dashboard.week.end)}</span>
             </header>
-            {dashboard.week.movers.map((mover) => (
+            {dashboard.week.movers.slice(0, 4).map((mover) => (
               <div className="row" key={mover.name}>
                 <span>{mover.name}{mover.hot ? " · hot" : ""}</span>
                 <span className="right">{formatCad(mover.actualCents)}</span>
-              </div>
-            ))}
-            {dashboard.week.byParty.map((party) => (
-              <div className="row" key={party.party}>
-                <span className="muted">{party.name}</span>
-                <span className="muted">{formatCad(party.amountCents)}</span>
               </div>
             ))}
           </section>
@@ -712,19 +745,18 @@ export function App() {
             <section className="card" role="button" tabIndex={0} onClick={() => setTab("calendar")} onKeyDown={(event) => { if (event.key === "Enter") setTab("calendar"); }}>
               <header>
                 <h2>Money dates</h2>
-                <span className="muted">{dashboard.detectedBills ? `${dashboard.detectedBills} spotted` : "Calendar"}</span>
+                <span className="muted">Calendar</span>
               </header>
-              {dashboard.upcoming.slice(0, 4).map((item) => (
+              {dashboard.upcoming.slice(0, 3).map((item) => (
                 <div className="row" key={item.id}>
                   <span>{formatDateLabel(item.date)} · {item.title}</span>
                   <span className={item.direction === "out" ? "" : "muted"}>{formatCad(item.amountCents)}</span>
                 </div>
               ))}
-              <p className="muted">Open Calendar for the month, Google overlays, and bill reminders. Link Google in More so both phones know who is who.</p>
             </section>
           )}
           <section className="card">
-            <header><h2>Goals</h2><span className="muted">{view === "personal" ? "personal" : "shared sit on Home"}</span></header>
+            <header><h2>Goals</h2></header>
             {dashboard.goals.map((item) => (
               <div key={item.goal.id}>
                 <div className="row"><span>{item.goal.name}</span><span>{Math.round(item.progress * 100)}%</span></div>
@@ -757,7 +789,7 @@ export function App() {
               );
             })}
           </section>
-          <SitDown household={household} onApply={(next, token) => persist(next, token)} hidden={view === "personal"} />
+          <SitDownGuide household={household} onApply={(next, token) => persist(next, token)} hidden={view === "personal"} />
           <Goals household={household} goals={visible?.goals ?? household.goals} onChange={(next, token) => persist(next, token)} />
         </>
       )}
@@ -853,7 +885,7 @@ export function App() {
             <header><h2>This phone</h2></header>
             <p className="muted">
               You are {household.members.find((member) => member.id === session.memberId)?.name}.
-              Household view shows shared and “both” rows. Personal view shows your personal and “both” rows.
+              Household vs personal is a filter, not a lock.
             </p>
             <label>This phone is</label>
             <div className="chips">
@@ -870,12 +902,9 @@ export function App() {
           </section>
           <section className="card storage">
             <header><h2>Where the books live</h2></header>
-            <p>
-              Commands still validate a household snapshot. After each save, that snapshot is posted into a
-              double-entry PostgreSQL journal in PGlite (<code>{STORAGE_EXPLAINER.books}</code>) — trial balance,
-              general journal, and SQL views. The snapshot also stays in IndexedDB (<code>{STORAGE_EXPLAINER.database}</code>)
-              with a {STORAGE_EXPLAINER.backup} fallback. Download SQL from Books to load the same schema on Neon or Supabase.
-              Personal rows are a filter, not a lock.
+            <p className="muted">
+              Commands write PGlite books (<code>{STORAGE_EXPLAINER.books}</code>) and keep a snapshot in IndexedDB.
+              Personal rows are a filter. Export JSON for a copy.
             </p>
             <button className="primary" onClick={() => downloadJson(household)}>Export JSON snapshot</button>
             <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setGuard({ kind: "demo" })}>Reload demo data</button>
@@ -903,34 +932,34 @@ export function App() {
             </div>
             <div className="tabs">
               {(["expense", "income", "shift", "transfer"] as AddMode[]).map((item) => (
-                <button key={item} className={mode === item ? "active" : ""} onClick={() => setMode(item)}>{item}</button>
+                <button key={item} className={mode === item ? "active" : ""} onClick={() => { setMode(item); setShiftField("sales"); }}>{item}</button>
               ))}
             </div>
-            <label>Date</label>
-            <input type="date" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} />
-            <label>Save to</label>
-            <div className="chips">
-              {([
-                { id: "household" as Visibility, name: "Shared" },
-                { id: "personal" as Visibility, name: "Personal" },
-                { id: "both" as Visibility, name: "Both" },
-              ]).map((item) => (
-                <button
-                  key={item.id}
-                  className={`chip ${form.visibility === item.id ? "selected" : ""}`}
-                  onClick={() => setForm({ ...form, visibility: item.id })}
-                >
-                  {item.name}
-                </button>
-              ))}
-            </div>
-            <p className="muted">
-              Shared is the household database. Personal stays on your ledger. Both writes one row that appears in each.
-            </p>
             {mode !== "shift" && mode !== "transfer" && (
               <>
-                <label>Amount</label>
-                <input className="amount" inputMode="decimal" placeholder="$0.00" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} />
+                <CadPad
+                  digits={centsDigitsFromDollars(form.amount)}
+                  onDigits={(digits) => setForm({ ...form, amount: padToDollars(digits) })}
+                  label="Amount"
+                />
+                {mode === "expense" && (
+                  <div className="chips">
+                    <button
+                      type="button"
+                      className={`chip ${form.note === "Milk" ? "selected" : ""}`}
+                      onClick={() => setForm({ ...form, note: "Milk", subcategoryId: "SUB-FOOD-GROCERIES" })}
+                    >
+                      Milk
+                    </button>
+                    <button
+                      type="button"
+                      className={`chip ${form.note === "Coffee" ? "selected" : ""}`}
+                      onClick={() => setForm({ ...form, note: "Coffee", subcategoryId: "SUB-FOOD-COFFEE" })}
+                    >
+                      Coffee
+                    </button>
+                  </div>
+                )}
                 <label>Category</label>
                 <div className="chips">
                   {categories.map((category) => (
@@ -951,7 +980,7 @@ export function App() {
                 </div>
                 {form.who === "split" && (
                   <div className="split-card">
-                    <p className="muted">Bianca can set any split. The other person’s share fills in so the cents add to 100%.</p>
+                    <p className="muted">Shares fill to 100%.</p>
                     {household.members.filter((member) => member.active).map((member) => {
                       const percent = splitPercents[member.id] ?? 0;
                       let share = "";
@@ -983,16 +1012,17 @@ export function App() {
                 <select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })}>
                   {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
                 </select>
-                <label>Place / location</label>
-                <input value={form.place} onChange={(event) => setForm({ ...form, place: event.target.value })} placeholder="No Frills, Union Station, home…" />
                 <label>Note</label>
-                <input value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} placeholder="Groceries, rent, coffee…" />
+                <input value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} placeholder="Milk, rent…" />
               </>
             )}
             {mode === "transfer" && (
               <>
-                <label>Amount</label>
-                <input className="amount" inputMode="decimal" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} />
+                <CadPad
+                  digits={centsDigitsFromDollars(form.amount)}
+                  onDigits={(digits) => setForm({ ...form, amount: padToDollars(digits) })}
+                  label="Move"
+                />
                 <label>From</label>
                 <select value={form.fromAccountId} onChange={(event) => setForm({ ...form, fromAccountId: event.target.value })}>
                   {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
@@ -1001,7 +1031,7 @@ export function App() {
                 <select value={form.toAccountId} onChange={(event) => setForm({ ...form, toAccountId: event.target.value })}>
                   {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
                 </select>
-                <p className="muted">A transfer is one balanced journal entry: debit the destination, credit the source. It never counts as income or expense.</p>
+                <p className="muted">Not income. Not spend.</p>
               </>
             )}
             {mode === "shift" && (
@@ -1014,22 +1044,72 @@ export function App() {
                 <select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })}>
                   {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
                 </select>
-                <label>Sales</label>
-                <input inputMode="decimal" value={form.sales} onChange={(event) => setForm({ ...form, sales: event.target.value })} />
-                <label>Hours</label>
-                <input inputMode="decimal" value={form.hours} onChange={(event) => setForm({ ...form, hours: event.target.value })} />
-                <label>Cash tips</label>
-                <input inputMode="decimal" value={form.cashTips} onChange={(event) => setForm({ ...form, cashTips: event.target.value })} />
-                <label>Credit-card tips</label>
-                <input inputMode="decimal" value={form.ccTips} onChange={(event) => setForm({ ...form, ccTips: event.target.value })} />
+                <div className="chips">
+                  {SHIFT_PAD.map((field) => (
+                    <button
+                      key={field.id}
+                      type="button"
+                      className={`chip ${shiftField === field.id ? "selected" : ""}`}
+                      onClick={() => setShiftField(field.id)}
+                    >
+                      {field.label}
+                    </button>
+                  ))}
+                </div>
+                {SHIFT_PAD.filter((field) => field.id === shiftField).map((field) => (
+                  <CadPad
+                    key={field.id}
+                    digits={centsDigitsFromDollars(form[field.id])}
+                    onDigits={(digits) => setForm({ ...form, [field.id]: dollarsFromCentsDigits(digits) })}
+                    label={field.label}
+                    unit={field.unit}
+                  />
+                ))}
                 <div className={`preview ${shiftPreview.netTipsCents < 0 ? "warn" : ""}`}>
                   <div className="row"><span>Floor tip-out</span><span>{formatCad(shiftPreview.floorTipOutCents)}</span></div>
                   <div className="row"><span>Bar tip-out</span><span>{formatCad(shiftPreview.barTipOutCents)}</span></div>
                   <div className="row"><span>CC tip-out</span><span>{formatCad(shiftPreview.ccTipOutCents)}</span></div>
                   <div className="row"><strong>Net tips</strong><strong>{formatCad(shiftPreview.netTipsCents)}</strong></div>
                   <div className="row"><strong>Wages</strong><strong>{formatCad(shiftPreview.wagesCents)}</strong></div>
-                  <p className="muted">This preview is the same function that posts the two income rows.</p>
+                  <p className="muted">Same math that posts.</p>
                 </div>
+              </>
+            )}
+            <button type="button" className="chip" onClick={() => setAddDetails((open) => !open)}>
+              {addDetails ? "Hide details" : "Date & place"}
+            </button>
+            {addDetails && (
+              <>
+                <label>Date</label>
+                <input type="date" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} />
+                <label>Save to</label>
+                <div className="chips">
+                  {([
+                    { id: "household" as Visibility, name: "Shared" },
+                    { id: "personal" as Visibility, name: "Personal" },
+                    { id: "both" as Visibility, name: "Both" },
+                  ]).map((item) => (
+                    <button
+                      key={item.id}
+                      className={`chip ${form.visibility === item.id ? "selected" : ""}`}
+                      onClick={() => setForm({ ...form, visibility: item.id })}
+                    >
+                      {item.name}
+                    </button>
+                  ))}
+                </div>
+                {mode !== "shift" && mode !== "transfer" && (
+                  <>
+                    <label>Place</label>
+                    <input value={form.place} onChange={(event) => setForm({ ...form, place: event.target.value })} placeholder="No Frills…" />
+                  </>
+                )}
+                {mode === "transfer" && (
+                  <>
+                    <label>Note</label>
+                    <input value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} />
+                  </>
+                )}
               </>
             )}
             {error && <p className="danger" style={{ marginTop: 12 }}>{error}</p>}
@@ -1050,7 +1130,7 @@ export function App() {
                 </button>
               </div>
             )}
-            <button className="primary" disabled={busy} onClick={() => submit()}>Save</button>
+            <button className="primary post-big" disabled={busy} onClick={() => submit()}>{addPostLabel()}</button>
           </div>
         </div>
       )}
@@ -1267,36 +1347,6 @@ export function App() {
         <button className={tab === "more" ? "active" : ""} onClick={() => { setTab("more"); setAdding(false); }}>More</button>
       </nav>
     </div>
-  );
-}
-
-function SitDown({ household, onApply, hidden }: { household: Household; onApply: (household: Household, undo?: UndoToken) => void; hidden?: boolean }) {
-  if (hidden) {
-    return (
-      <section className="card">
-        <header><h2>Sit-down</h2></header>
-        <p className="muted">Monthly budgets live on the household view so both of you plan from the same numbers.</p>
-      </section>
-    );
-  }
-  const monthKey = monthKeyFromDateKey(todayKey());
-  const preview = sitDownPreview(household, monthKey);
-  const rows = preview.rows.filter((row) => row.lastActualCents || row.lastBudgetedCents || row.suggestedCents);
-  return (
-    <section className="card">
-      <header><h2>Sit-down</h2><span className="muted">Copy {preview.sourceMonth} into {preview.targetMonth}</span></header>
-      <p className="muted">Overspent categories get a midpoint suggestion. Nothing is written until you apply. Close pack on Books locks last month with a second look.</p>
-      {rows.slice(0, 14).map((row) => (
-        <div className="row sitdown-row" key={row.subcategoryId}>
-          <span>{row.name}{row.trimSuggested ? " · trim" : ""}</span>
-          <span className="muted">{formatCad(row.lastActualCents)} last · {formatCad(row.suggestedCents)} next</span>
-        </div>
-      ))}
-      <button className="primary" onClick={() => {
-        const result = applySitDown(household, preview.sourceMonth, {});
-        onApply(result.household, result.undo);
-      }}>Apply next month’s plan</button>
-    </section>
   );
 }
 
