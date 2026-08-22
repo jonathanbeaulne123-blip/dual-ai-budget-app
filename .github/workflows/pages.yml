@@ -17,9 +17,9 @@ jobs:
       contents: read
       deployments: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: pnpm
@@ -40,8 +40,9 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           . scripts/sanitize-cloudflare-env.sh
-          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
-            echo "::error::CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID is empty. Merge did not publish https://hearth-books.jonathan-beaulne123.workers.dev/"
+          echo "token_chars=${#CLOUDFLARE_API_TOKEN} account_chars=${#CLOUDFLARE_ACCOUNT_ID}"
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN had no header-safe characters after cleaning. Re-paste the Cloudflare API token in GitHub → Settings → Secrets with no quotes."
             exit 1
           fi
           rm -f dist/_redirects
