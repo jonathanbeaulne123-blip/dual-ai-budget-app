@@ -16,22 +16,15 @@ import {
   setRecurrenceGoogleSync,
   shiftMonthKey,
   skipOccurrence,
+  typicalVisitDraft,
   unlinkGoogleIdentity,
+  visitPostSummary,
   type CommitResult,
   type DateKey,
   type Environment,
   type Household,
   type Recurrence,
-  HOSTED_DISCLOSURE,
-  addAppointment,
-  APPOINTMENT_KINDS,
-  appointmentPublicTitle,
-  claimRemainingCents,
-  claimPublicLabel,
-  formatAppointmentCadence,
-  proposeVisitGoal,
-  submitClaim,
-  upcomingVisitProposals,
+  type VisitPostDraft,
 } from "./core/index.ts";
 import type { OverlayEvent } from "./core/board.ts";
 import {
@@ -43,34 +36,9 @@ import {
   type GoogleAccount,
 } from "./calendar/google.ts";
 import { connectGoogle } from "./google/index.ts";
+import { AppointmentsPage } from "./Appointments.tsx";
 
 type Pane = "board" | "visits" | "bills" | "google";
-
-function pickVisitSubcategory(household: Household, kind: string, fallback: string): string {
-  const preferredId = kind === "vet" ? "SUB-HEALTH-VET" : kind === "therapy" ? "SUB-HEALTH-THERAPY" : kind === "dentist" ? "SUB-HEALTH-DENTAL" : "";
-  if (preferredId && household.categories.some((item) => item.id === preferredId && item.active)) return preferredId;
-  const needle = kind === "vet" ? "vet" : kind === "therapy" ? "therapy" : kind === "dentist" ? "dental" : "";
-  if (needle) {
-    const named = household.categories.find((item) => (
-      item.recordType === "category"
-      && item.transactionType === "expense"
-      && item.active
-      && item.name.toLowerCase().includes(needle)
-    ));
-    if (named) return named.id;
-  }
-  return fallback;
-}
-
-function pickVisitMember(household: Household, kind: string, actorId: string): string {
-  if (kind === "vet") return "companion";
-  if (kind === "therapy") {
-    const bianca = household.members.find((member) => member.active && member.id === "MEM-001")
-      ?? household.members.find((member) => member.active && /bianca/i.test(member.name));
-    return bianca?.id ?? actorId;
-  }
-  return "joint";
-}
 
 function kindLabel(kind: string): string {
   if (kind === "paycheck") return "Pay";
@@ -103,7 +71,7 @@ export function CalendarPage(props: {
   onCommand: (fn: (current: Household) => CommitResult) => void;
   onAskPost: (recurrenceId: string, summary: string) => void;
   onAskPostDue: (count: number, summary: string) => void;
-  onAskVisit: (appointmentId: string, summary: string) => void;
+  onAskVisit: (draft: VisitPostDraft, summary: string) => void;
   onAskSettle: (claimId: string, summary: string) => void;
   onAskWriteOff: (claimId: string, summary: string) => void;
   onAskStartJar: (appointmentId: string, summary: string) => void;
@@ -223,34 +191,36 @@ export function CalendarPage(props: {
 
   return (
     <>
-      <section className="hero calendar-hero">
-        <div className="label">Money dates · {board.monthLabel}</div>
-        <div className={`money ${board.weekPressure && board.weekPressure.outCents > board.weekPressure.inCents ? "negative" : ""}`}>
-          {board.weekPressure ? formatCad(board.weekPressure.inCents - board.weekPressure.outCents) : formatCad(0)}
-        </div>
-        <div className="sub">
-          This week on the board
-          {due.length ? ` · ${due.length} due` : ""}
-          {suggested.length ? ` · ${suggested.length} spotted in the ledger` : ""}
-        </div>
-        <div className="calendar-hero-actions">
-          <button className="ghost" onClick={props.onOpenPlan}>Open plan</button>
-          {due.length > 0 && (
-            <button className="ghost" onClick={() => props.onAskPostDue(due.length, `This posts ${due.length} due repeating ${due.length === 1 ? "item" : "items"} into the books.`)}>
-              Mark due paid
-            </button>
-          )}
-        </div>
-      </section>
+      {pane !== "visits" && (
+        <section className="hero calendar-hero">
+          <div className="label">Money dates · {board.monthLabel}</div>
+          <div className={`money ${board.weekPressure && board.weekPressure.outCents > board.weekPressure.inCents ? "negative" : ""}`}>
+            {board.weekPressure ? formatCad(board.weekPressure.inCents - board.weekPressure.outCents) : formatCad(0)}
+          </div>
+          <div className="sub">
+            This week on the board
+            {due.length ? ` · ${due.length} due` : ""}
+            {suggested.length ? ` · ${suggested.length} spotted in the ledger` : ""}
+          </div>
+          <div className="calendar-hero-actions">
+            <button className="ghost" onClick={props.onOpenPlan}>Open plan</button>
+            {due.length > 0 && (
+              <button className="ghost" onClick={() => props.onAskPostDue(due.length, `This posts ${due.length} due repeating ${due.length === 1 ? "item" : "items"} into the books.`)}>
+                Mark due paid
+              </button>
+            )}
+          </div>
+        </section>
+      )}
 
-      {board.clashes[0] && (
+      {pane !== "visits" && board.clashes[0] && (
         <article className="pulse-banner warn">{describeClash(board.clashes[0])}</article>
       )}
 
       <div className="tabs">
         {([
           ["board", "Month"],
-          ["visits", "Visits"],
+          ["visits", "Appointments"],
           ["bills", "Bills"],
           ["google", "Google"],
         ] as const).map(([id, label]) => (
@@ -325,6 +295,7 @@ export function CalendarPage(props: {
                   busy={props.busy}
                   onAdopt={(key) => props.onCommand((current) => adoptRhythm(current, key, today))}
                   onAskPost={props.onAskPost}
+                  date={selectedDay.date}
                   onAskVisit={props.onAskVisit}
                 />
               ))}
@@ -352,7 +323,7 @@ export function CalendarPage(props: {
       )}
 
       {pane === "visits" && (
-        <VisitsPane
+        <AppointmentsPage
           household={household}
           today={today}
           memberId={props.memberId}
@@ -489,12 +460,13 @@ function DayRow(props: {
   recurrenceId?: string;
   appointmentId?: string;
   rhythmKey?: string;
+  date: DateKey;
   today: DateKey;
   household: Household;
   busy: boolean;
   onAdopt: (key: string) => void;
   onAskPost: (recurrenceId: string, summary: string) => void;
-  onAskVisit: (appointmentId: string, summary: string) => void;
+  onAskVisit: (draft: VisitPostDraft, summary: string) => void;
 }) {
   const rec = props.recurrenceId ? props.household.recurrences.find((item) => item.id === props.recurrenceId) : undefined;
   const visit = props.appointmentId ? props.household.appointments.find((item) => item.id === props.appointmentId) : undefined;
@@ -522,7 +494,10 @@ function DayRow(props: {
           <button
             className="chip"
             disabled={props.busy}
-            onClick={() => props.onAskVisit(visit.id, `This posts ${formatCad(visit.typicalCostCents)} for ${appointmentPublicTitle(visit, "card")} and parks ${formatCad(visit.typicalRecoveryCents)} as money owed. Confirm still writes.`)}
+            onClick={() => {
+              const draft = typicalVisitDraft(visit, props.date, props.household);
+              props.onAskVisit(draft, visitPostSummary(visit, draft));
+            }}
           >
             Post
           </button>
@@ -570,176 +545,5 @@ function RecurrenceCard(props: {
         <button className="chip" disabled={props.busy} onClick={props.onPause}>{item.active ? "Pause" : "Resume"}</button>
       </div>
     </article>
-  );
-}
-
-function VisitsPane(props: {
-  household: Household;
-  today: DateKey;
-  memberId: string;
-  busy: boolean;
-  onCommand: (fn: (current: Household) => CommitResult) => void;
-  onAskVisit: (appointmentId: string, summary: string) => void;
-  onAskSettle: (claimId: string, summary: string) => void;
-  onAskWriteOff: (claimId: string, summary: string) => void;
-  onAskStartJar: (appointmentId: string, summary: string) => void;
-}) {
-  const { household, today } = props;
-  const [title, setTitle] = useState("Hygienist");
-  const [kind, setKind] = useState<(typeof APPOINTMENT_KINDS)[number]["id"]>("dentist");
-  const [nextDate, setNextDate] = useState(today);
-  const [cost, setCost] = useState("248");
-  const [recovery, setRecovery] = useState("180");
-  const proposals = upcomingVisitProposals(household, today);
-  const owing = (household.claims ?? []).filter((claim) => claimRemainingCents(claim) > 0);
-  const healthCats = household.categories.filter((item) => item.parentId === "CAT-HEALTH" && item.recordType === "category");
-  const subcategoryId = healthCats[0]?.id ?? household.categories.find((item) => item.recordType === "category" && item.transactionType === "expense")?.id ?? "";
-  const accountId = household.accounts.find((item) => item.id === "ACC-VISA")?.id ?? household.accounts.find((item) => item.active)?.id ?? "";
-
-  return (
-    <>
-      <section className="card">
-        <header>
-          <h2>Appointments</h2>
-          <span className="muted">{(household.appointments ?? []).filter((item) => item.active).length} active</span>
-        </header>
-        <p className="muted">{HOSTED_DISCLOSURE}</p>
-        {!(household.appointments ?? []).length ? (
-          <p className="muted">Dentist, therapy, vet, spa. Quiet labels hide the title from Hercules, not from this ledger.</p>
-        ) : (household.appointments ?? []).map((item) => {
-          const proposal = proposeVisitGoal(household, item.id, today);
-          return (
-            <article className="rhythm-card" key={item.id}>
-              <div className="row">
-                <span>
-                  <span className="kind-pill visit">Visit</span> {appointmentPublicTitle(item, "card")}
-                  {item.sensitivity === "quiet" ? " · quiet" : ""}
-                  {item.nextDate <= today ? " · due" : ""}
-                </span>
-                <span>{item.typicalCostCents ? formatCad(item.typicalCostCents) : ""}</span>
-              </div>
-              <p className="muted">
-                {formatAppointmentCadence(item.cadence)} · next {formatDayLabel(item.nextDate)}
-                {item.practitioner ? ` · ${item.practitioner}` : ""}
-                {item.typicalRecoveryCents ? ` · ${formatCad(item.typicalRecoveryCents)} expected back` : ""}
-              </p>
-              <div className="chips">
-                <button
-                  className="chip selected"
-                  disabled={props.busy || !item.typicalCostCents}
-                  onClick={() => props.onAskVisit(item.id, `This posts ${formatCad(item.typicalCostCents)} for ${appointmentPublicTitle(item, "card")} and parks ${formatCad(item.typicalRecoveryCents)} as money owed to us.`)}
-                >
-                  Post visit
-                </button>
-                {proposal && (
-                  <button
-                    className="chip"
-                    disabled={props.busy}
-                    onClick={() => props.onAskStartJar(item.id, `${proposal.hercules} This creates a shared jar. Hercules does not write it.`)}
-                  >
-                    Start this jar
-                  </button>
-                )}
-              </div>
-            </article>
-          );
-        })}
-      </section>
-
-      {proposals[0] && (
-        <section className="card">
-          <header>
-            <h2>Hercules noticed</h2>
-            <span className="muted">Propose, don&apos;t post</span>
-          </header>
-          {proposals.map((proposal) => (
-            <div className="row" key={proposal.appointmentId}>
-              <span>{proposal.hercules}</span>
-              <button className="chip selected" disabled={props.busy} onClick={() => props.onAskStartJar(proposal.appointmentId, `${proposal.title} · ${formatCad(proposal.weeklyCents)}/wk until ${proposal.nextDate}`)}>
-                Start this jar
-              </button>
-            </div>
-          ))}
-        </section>
-      )}
-
-      <section className="card">
-        <header>
-          <h2>Owed to us</h2>
-          <span className="muted">{owing.length ? `${owing.length} open` : "Clear"}</span>
-        </header>
-        <p className="muted">Insurance, a workplace claim, a friend, a tax refund. Settlement is a transfer into the account that received the money.</p>
-        {owing.length === 0 ? (
-          <p className="muted">Nothing outstanding.</p>
-        ) : owing.map((claim) => (
-          <article className="rhythm-card" key={claim.id}>
-            <div className="row">
-              <span>{claimPublicLabel(household, claim, "card")} · {claim.status}</span>
-              <span>{formatCad(claimRemainingCents(claim))}</span>
-            </div>
-            <div className="chips">
-              {!claim.submittedAt && (
-                <button className="chip" disabled={props.busy} onClick={() => props.onCommand((current) => submitClaim(current, claim.id))}>
-                  Mark submitted
-                </button>
-              )}
-              <button
-                className="chip selected"
-                disabled={props.busy}
-                onClick={() => props.onAskSettle(claim.id, `This transfers ${formatCad(claimRemainingCents(claim))} from Benefits owing into chequing. Never income.`)}
-              >
-                Landed
-              </button>
-              <button
-                className="chip"
-                disabled={props.busy}
-                onClick={() => props.onAskWriteOff(claim.id, `This writes ${formatCad(claimRemainingCents(claim))} back to the visit category because the claim was denied.`)}
-              >
-                Denied
-              </button>
-            </div>
-          </article>
-        ))}
-      </section>
-
-      <section className="card">
-        <header>
-          <h2>Add a visit</h2>
-          <span className="muted">Reminder, not a post</span>
-        </header>
-        <label>Title</label>
-        <input value={title} onChange={(event) => setTitle(event.target.value)} />
-        <label>Kind</label>
-        <select value={kind} onChange={(event) => setKind(event.target.value as typeof kind)}>
-          {APPOINTMENT_KINDS.map((item) => (
-            <option key={item.id} value={item.id}>{item.label}</option>
-          ))}
-        </select>
-        <label>Next date</label>
-        <input value={nextDate} onChange={(event) => setNextDate(event.target.value)} />
-        <label>Typical cost</label>
-        <input value={cost} onChange={(event) => setCost(event.target.value)} inputMode="decimal" />
-        <label>Typical recovery</label>
-        <input value={recovery} onChange={(event) => setRecovery(event.target.value)} inputMode="decimal" />
-        <button
-          className="primary"
-          disabled={props.busy}
-          onClick={() => props.onCommand((current) => addAppointment(current, {
-            title,
-            kind,
-            memberId: pickVisitMember(current, kind, props.memberId),
-            sensitivity: kind === "therapy" ? "quiet" : "household",
-            nextDate,
-            cadence: kind === "therapy" ? { kind: "weekly", interval: 2 } : kind === "dentist" ? { kind: "monthly", interval: 6 } : { kind: "once" },
-            typicalCost: cost,
-            typicalRecovery: recovery || 0,
-            subcategoryId: pickVisitSubcategory(current, kind, subcategoryId),
-            accountId,
-          }))}
-        >
-          Save visit
-        </button>
-      </section>
-    </>
   );
 }

@@ -1598,11 +1598,14 @@ export function addAppointment(household: Household, input: {
 export function updateAppointment(household: Household, input: {
   appointmentId: string;
   title?: string;
+  kind?: AppointmentKind;
+  memberId?: AppointmentMemberId;
   nextDate?: string;
   cadence?: AppointmentCadence;
   typicalCost?: string | number;
   typicalRecovery?: string | number;
   sensitivity?: AppointmentSensitivity;
+  coverage?: Appointment["coverage"];
   practitioner?: string;
   place?: string;
   active?: boolean;
@@ -1615,11 +1618,14 @@ export function updateAppointment(household: Household, input: {
   if (!appointment) throw new ValidationError("That visit is gone.");
   if (input.accountId) requireAccount(next, input.accountId);
   if (input.subcategoryId) requireSubcategory(next, input.subcategoryId, "expense");
+  if (input.memberId) requireAppointmentParty(next, input.memberId);
   if (input.title != null) {
     const title = input.title.trim();
     if (title.length < 2) throw new ValidationError("Name the visit.");
     appointment.title = title;
   }
+  if (input.kind) appointment.kind = input.kind;
+  if (input.memberId) appointment.memberId = input.memberId;
   if (input.nextDate) appointment.nextDate = parseDate(input.nextDate);
   if (input.cadence) appointment.cadence = shapeCadence(input.cadence);
   if (input.typicalCost != null) appointment.typicalCostCents = parseMoneyCents(input.typicalCost, "Typical cost", { allowZero: true });
@@ -1628,6 +1634,7 @@ export function updateAppointment(household: Household, input: {
     throw new ValidationError("Expected recovery cannot exceed the visit cost.");
   }
   if (input.sensitivity) appointment.sensitivity = input.sensitivity;
+  if (input.coverage) appointment.coverage = input.coverage;
   if (input.practitioner != null) appointment.practitioner = input.practitioner.trim().slice(0, 80);
   if (input.place != null) appointment.place = input.place.trim().slice(0, 80);
   if (input.active != null) appointment.active = input.active;
@@ -1767,6 +1774,39 @@ export function postVisit(household: Household, input: {
     postedIds.push(claim.id);
   } else {
     expense.sourceId = appointment?.id;
+    if (lines.length) {
+      const receivableAccountId = input.receivableAccountId || ensureReceivableAccount(next, createdAt);
+      const receivable = requireAccount(next, receivableAccountId);
+      if (!isReceivableKind(receivable.kind)) {
+        throw new ValidationError("Itemized visits still need an Owed-to-us account, even with $0 expected back.");
+      }
+      const claimId = nextId("CLM-", next.claims.map((item) => item.id), 3);
+      expense.sourceId = claimId;
+      claim = {
+        id: claimId,
+        kind: input.claimKind ?? (appointment ? defaultClaimKind(appointment.kind) : "other"),
+        label: input.claimLabel?.trim() || appointment?.title || note,
+        appointmentId: appointment?.id ?? null,
+        expenseTransactionId: expense.id,
+        recoveryTransactionId: null,
+        settleTransferIds: [],
+        writeOffTransactionId: null,
+        expectedCents: 0,
+        receivedCents: 0,
+        writtenOffCents: 0,
+        receivableAccountId: receivable.id,
+        status: "pending",
+        submittedAt: null,
+        settledAt: createdAt,
+        craEligible: input.craEligible ?? (appointment ? defaultCraEligible(appointment.kind) : false),
+        lines,
+        createdAt,
+        updatedAt: createdAt,
+      };
+      claim.status = deriveClaimStatus(claim);
+      next.claims = [...next.claims, claim];
+      postedIds.push(claim.id);
+    }
   }
   if (appointment) {
     const row = next.appointments.find((item) => item.id === appointment.id);

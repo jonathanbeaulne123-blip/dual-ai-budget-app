@@ -282,7 +282,7 @@ The single most important instrument. This is Milk.
 ### B6b. Claims tray — money owed to us (D-053)
 
 - **Glance:** outstanding receivable CAD, or "clear."
-- **Expand:** oldest open claims, honest copy (settlement is a transfer, never income). **Landed** uses Confirm + `settleClaim`. Cabinet handle → Calendar → Visits.
+- **Expand:** oldest open claims, honest copy (settlement is a transfer, never income). **Landed** uses Confirm + `settleClaim`. Cabinet handle → Calendar → Appointments.
 - **Write:** none from the widget directly. Confirm still posts.
 - **Hercules:** `perch` when something is outstanding; `attack` ranks after overdue mail.
 - **Empty:** "Nothing owed to this household right now."

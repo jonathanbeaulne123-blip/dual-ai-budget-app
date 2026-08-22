@@ -1,4 +1,4 @@
-import { formatCad, CLAIMS_EMPTY, claimsTraySentence, claimPublicLabel, claimRemainingCents } from "../core/index.ts";
+import { formatCad, CLAIMS_EMPTY, claimsTraySentence, claimPublicLabel, claimRemainingCents, formatClaimStatus } from "../core/index.ts";
 import type { Household } from "../core/types.ts";
 import type { DateKey } from "../core/calendar.ts";
 
@@ -28,7 +28,7 @@ export function ClaimsBody({
     return (
       <>
         <p className="muted">{CLAIMS_EMPTY}</p>
-        <button type="button" className="cabinet-handle" onClick={onCalendar}>Calendar</button>
+        <button type="button" className="cabinet-handle" onClick={onCalendar}>Appointments</button>
       </>
     );
   }
@@ -37,7 +37,7 @@ export function ClaimsBody({
       <p className="muted">{claimsTraySentence(household, today)} Transfer when it lands. Never income.</p>
       {rows.slice(0, 4).map((claim) => (
         <div className="row" key={claim.id}>
-          <span>{claimPublicLabel(household, claim, "card")}</span>
+          <span>{claimPublicLabel(household, claim, "card")} · {formatClaimStatus(claim.status)}</span>
           <span>{formatCad(claimRemainingCents(claim))}</span>
         </div>
       ))}
@@ -52,7 +52,7 @@ export function ClaimsBody({
           Landed
         </button>
       ))}
-      <button type="button" className="cabinet-handle" onClick={onCalendar}>Calendar</button>
+      <button type="button" className="cabinet-handle" onClick={onCalendar}>Appointments</button>
     </>
   );
 }
