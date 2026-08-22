@@ -388,7 +388,7 @@ export function agedReceivables(household: Household, today: DateKey): AgedRecei
     const expense = household.transactions.find((tx) => tx.id === claim.expenseTransactionId);
     const start = expense?.date ?? claim.createdAt.slice(0, 10);
     const daysOutstanding = Math.max(0, calendarDaysBetween(start, today));
-    const bucket = daysOutstanding <= 0 ? "current" : daysOutstanding <= 7 ? "1-7" : daysOutstanding <= 30 ? "8-30" : "31+";
+    const bucket: AgedReceivable["bucket"] = daysOutstanding <= 0 ? "current" : daysOutstanding <= 7 ? "1-7" : daysOutstanding <= 30 ? "8-30" : "31+";
     return { claim, remainingCents: claimRemainingCents(claim), daysOutstanding, bucket };
   }).sort((left, right) => right.daysOutstanding - left.daysOutstanding);
 }

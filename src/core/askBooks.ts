@@ -6,6 +6,7 @@ import { accountRegister, compileHousehold } from "./journal.ts";
 import { categoryName } from "./ledgerView.ts";
 import { creditCardView, householdWallet } from "./accounts.ts";
 import { claimPublicLabel, claimsTraySentence, craMedicalLog, outstandingClaims, upcomingVisitProposals } from "./appointments.ts";
+import { describeGoalContributors } from "./goals.ts";
 import type { Household } from "./types.ts";
 
 export type BooksAskRow = { label: string; value: string };
