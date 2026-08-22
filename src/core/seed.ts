@@ -1,6 +1,7 @@
 import { addDays, monthKeyFromDateKey, shiftMonthKey, todayKey, type DateKey } from "./calendar.ts";
 import { DEFAULT_SHIFT_SETTINGS } from "./shift.ts";
-import { emptyHousehold, postEntry, postShift, postTransfer, addGoal, addRecurrence, setBudget, contributeToGoal, scribbleChalk } from "./commands.ts";
+import { emptyHousehold, postEntry, postShift, postTransfer, addGoal, addRecurrence, setBudget, contributeToGoal, scribbleChalk, markInvestmentValue } from "./commands.ts";
+import { emptyCreditDesk, shapeAccounts } from "./accountKinds.ts";
 import { JOINT, type Household } from "./types.ts";
 import { jointSplit, equalSplits } from "./splits.ts";
 
@@ -19,11 +20,6 @@ export function catalogHousehold(environment: Household["environment"] = "develo
     { id: "MEM-001", name: "Bianca", color: "#c45c26", active: true },
     { id: "MEM-002", name: "Jonathan", color: "#2f6b4f", active: true },
   ];
-  household.accounts = [
-    { id: "ACC-CHEQUING", name: "Everyday chequing", kind: "chequing", currency: "CAD", active: true, ownerMemberId: JOINT },
-    { id: "ACC-VISA", name: "Visa", kind: "credit", currency: "CAD", active: true, ownerMemberId: JOINT },
-    { id: "ACC-CASH", name: "Cash / tips", kind: "cash", currency: "CAD", active: true, ownerMemberId: "MEM-002" },
-  ];
   const groups: Household["categories"] = [
     { id: "INCOME", parentId: null, recordType: "group", name: "Income", transactionType: "income", essential: false, incomeStability: null, active: true, sortOrder: 10 },
     { id: "CAT-HOUSING", parentId: null, recordType: "group", name: "Housing", transactionType: "expense", essential: true, incomeStability: null, active: true, sortOrder: 20 },
@@ -36,6 +32,8 @@ export function catalogHousehold(environment: Household["environment"] = "develo
     { id: "SUB-INCOME-WAGES", parentId: "INCOME", recordType: "category", name: "Wages", transactionType: "income", essential: false, incomeStability: "variable", active: true, sortOrder: 11 },
     { id: "SUB-INCOME-TIPS", parentId: "INCOME", recordType: "category", name: "Tips", transactionType: "income", essential: false, incomeStability: "variable", active: true, sortOrder: 12 },
     { id: "SUB-INCOME-BIANCA", parentId: "INCOME", recordType: "category", name: "Bianca pay", transactionType: "income", essential: false, incomeStability: "fixed", active: true, sortOrder: 13 },
+    { id: "SUB-INCOME-INTEREST", parentId: "INCOME", recordType: "category", name: "Interest", transactionType: "income", essential: false, incomeStability: "variable", active: true, sortOrder: 14 },
+    { id: "SUB-INCOME-REWARDS", parentId: "INCOME", recordType: "category", name: "Rewards", transactionType: "income", essential: false, incomeStability: "variable", active: true, sortOrder: 15 },
     { id: "SUB-HOUSING-RENT", parentId: "CAT-HOUSING", recordType: "category", name: "Rent", transactionType: "expense", essential: true, incomeStability: "fixed", active: true, sortOrder: 21 },
     { id: "SUB-HOUSING-ELECTRIC", parentId: "CAT-HOUSING", recordType: "category", name: "Electric", transactionType: "expense", essential: true, incomeStability: "variable", active: true, sortOrder: 22 },
     { id: "SUB-HOUSING-GAS", parentId: "CAT-HOUSING", recordType: "category", name: "Household gas", transactionType: "expense", essential: true, incomeStability: "variable", active: true, sortOrder: 23 },
@@ -46,8 +44,98 @@ export function catalogHousehold(environment: Household["environment"] = "develo
     { id: "SUB-LIFE-PHONE", parentId: "CAT-LIFE", recordType: "category", name: "Phone", transactionType: "expense", essential: true, incomeStability: "fixed", active: true, sortOrder: 51 },
     { id: "SUB-LIFE-FUN", parentId: "CAT-LIFE", recordType: "category", name: "Fun", transactionType: "expense", essential: false, incomeStability: "variable", active: true, sortOrder: 52 },
     { id: "SUB-DEBT-VISA", parentId: "CAT-DEBT", recordType: "category", name: "Card payment", transactionType: "expense", essential: true, incomeStability: "fixed", active: true, sortOrder: 61 },
+    { id: "SUB-DEBT-INTEREST", parentId: "CAT-DEBT", recordType: "category", name: "Card interest", transactionType: "expense", essential: true, incomeStability: "variable", active: true, sortOrder: 62 },
   ];
   household.categories = [...groups, ...categories];
+  household.accounts = shapeAccounts([
+    {
+      id: "ACC-CHEQUING",
+      name: "Everyday chequing",
+      kind: "chequing",
+      currency: "CAD",
+      active: true,
+      ownerMemberId: JOINT,
+      institution: "TD",
+      last4: "4821",
+      sortOrder: 10,
+    },
+    {
+      id: "ACC-SAVINGS",
+      name: "High-interest savings",
+      kind: "savings",
+      currency: "CAD",
+      active: true,
+      ownerMemberId: JOINT,
+      institution: "EQ Bank",
+      last4: "1190",
+      sortOrder: 20,
+      savings: { apyBps: 425 },
+    },
+    {
+      id: "ACC-VISA",
+      name: "Visa",
+      kind: "credit",
+      currency: "CAD",
+      active: true,
+      ownerMemberId: JOINT,
+      institution: "TD",
+      last4: "4412",
+      sortOrder: 30,
+      credit: {
+        ...emptyCreditDesk(),
+        creditLimitCents: 500000,
+        aprBps: 1999,
+        statementDay: 21,
+        dueDaysAfterStatement: 21,
+        defaultCashbackBps: 100,
+        rewardsName: "Cashback",
+        rules: [{ id: "RULE-GROCERIES", label: "Groceries", subcategoryId: "SUB-FOOD-GROCERIES", bps: 300 }],
+      },
+    },
+    {
+      id: "ACC-MC",
+      name: "Mastercard",
+      kind: "credit",
+      currency: "CAD",
+      active: true,
+      ownerMemberId: JOINT,
+      institution: "RBC",
+      last4: "7788",
+      sortOrder: 40,
+      credit: {
+        ...emptyCreditDesk(),
+        creditLimitCents: 250000,
+        aprBps: 2099,
+        statementDay: 14,
+        dueDaysAfterStatement: 21,
+        defaultCashbackBps: 50,
+        rewardsName: "Points",
+      },
+    },
+    {
+      id: "ACC-CASH",
+      name: "Cash / tips",
+      kind: "other",
+      currency: "CAD",
+      active: true,
+      ownerMemberId: "MEM-002",
+      institution: "",
+      last4: "",
+      sortOrder: 50,
+    },
+    {
+      id: "ACC-TFSA",
+      name: "TFSA",
+      kind: "investment",
+      currency: "CAD",
+      active: true,
+      ownerMemberId: JOINT,
+      institution: "Wealthsimple",
+      last4: "",
+      sortOrder: 60,
+      investment: { vehicle: "tfsa", markedValueCents: null, markedAt: null },
+    },
+  ]);
   household.shiftSettings = { ...DEFAULT_SHIFT_SETTINGS };
   return household;
 }
@@ -239,7 +327,51 @@ export function seedDemoHousehold(options?: { today?: DateKey; environment?: Hou
         confirmDuplicate: true,
       }).household;
     }
+
+    const savingsDay = addDays(start, 16);
+    if (savingsDay <= today && monthKeyFromDateKey(savingsDay) === monthKey) {
+      household = postTransfer(household, {
+        date: savingsDay,
+        amount: 250,
+        fromAccountId: "ACC-CHEQUING",
+        toAccountId: "ACC-SAVINGS",
+        note: "To savings",
+        confirmDuplicate: true,
+      }).household;
+    }
+
+    const tfsaDay = addDays(start, 17);
+    if (tfsaDay <= today && monthKeyFromDateKey(tfsaDay) === monthKey) {
+      household = postTransfer(household, {
+        date: tfsaDay,
+        amount: 100,
+        fromAccountId: "ACC-CHEQUING",
+        toAccountId: "ACC-TFSA",
+        note: "TFSA contribution",
+        confirmDuplicate: true,
+      }).household;
+    }
+
+    const mcDay = addDays(start, 9);
+    if (mcDay <= today && monthKeyFromDateKey(mcDay) === monthKey) {
+      const amount = +(22 + random() * 40).toFixed(2);
+      household = postEntry(household, {
+        date: mcDay,
+        type: "expense",
+        amount,
+        accountId: "ACC-MC",
+        subcategoryId: "SUB-LIFE-FUN",
+        note: random() > 0.5 ? "Streaming" : "Pharmacy",
+        confirmDuplicate: true,
+      }).household;
+    }
   }
+
+  household = markInvestmentValue(household, {
+    accountId: "ACC-TFSA",
+    markedValue: 680,
+    markedAt: today,
+  }).household;
 
   household = addGoal(household, {
     name: "Emergency buffer",

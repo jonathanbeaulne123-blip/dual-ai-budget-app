@@ -190,6 +190,21 @@ Investor interest in Hercules created a legitimacy question. The ledger was alre
 
 Far-future expansions live in [AUDIT_OFFICE.md](AUDIT_OFFICE.md). None of them skip 0.1.
 
+### 0.6 The Accounts Floor (bank-book interaction)
+
+Mint and YNAB made **categories** the product. Bank apps made **accounts** the product. Hearth already had a journal that knew a Visa payment is a transfer. This chapter is the object model a family office actually settles: chequing, savings, expandable cards, investments, other.
+
+| Work | How | Proof |
+|---|---|---|
+| Account kinds | `chequing` / `savings` / `credit` / `investment` / `other` (old `cash` migrates). Expandable via `addAccount`. | Demo catalog; `shapeAccounts` on load |
+| Card desk | Limit, APR, statement cycle, min pay, cashback rules. Utilization is a look. | `creditCardView`; Health does **not** flag utilization |
+| Post looks | `postCardInterest` / `postCardRewards` / `postSavingsInterest` / `markInvestmentValue` | Estimates never auto-post; mark `postedIds` empty |
+| Cash flow | Investing in/out vs debt paydown | Visa paydown test still `netCashCents === 6000`; TFSA contribution is investing out |
+| UX | Home wallet tiles → Books → Wallet account room. Add follows the focused account. | Phone: tap Visa, pay is a transfer |
+| Hercules | *What’s on the Visa?*, *Utilization?*, briefing chequing/cards/hottest utilization | Does not invent APR; does not name who spent |
+
+Bank feeds still wait on 0.1. Detail: [ACCOUNTS.md](ACCOUNTS.md). D-047.
+
 ---
 
 ## Chapter 1 — Frictionless truth

@@ -2,6 +2,7 @@ import { addDays, calendarDaysBetween, formatMonthLabel, monthKeyFromDateKey, sh
 import { formatCad } from "./money.ts";
 import { monthSummary, weekSummary, freshnessHours, type MonthSummary, type WeekSummary } from "./budget.ts";
 import { buildMonthBoard, type BoardItem } from "./board.ts";
+import { householdWallet } from "./accounts.ts";
 import type { Rhythm } from "./rhythm.ts";
 import type { Goal, Household, Shift } from "./types.ts";
 
@@ -141,6 +142,25 @@ export function buildPulses(household: Household, today: DateKey, month: MonthSu
     pulses.push({
       sentence: `Calendar spotted ${waiting.length === 1 ? waiting[0].note : `${waiting.length} repeating bills`} in the ledger.`,
       tone: "neutral",
+    });
+  }
+
+  const wallet = householdWallet(household, today);
+  const hot = wallet.hottestCard;
+  if (hot && hot.utilization != null && hot.utilization >= 0.8) {
+    pulses.unshift({
+      sentence: `${hot.account.name} is at ${Math.round(hot.utilization * 100)}% utilization. Paydown is a transfer.`,
+      tone: "warn",
+    });
+  } else if (hot && hot.owedCents > 0 && hot.daysUntilDue <= 5) {
+    pulses.unshift({
+      sentence: `${hot.account.name} is due ${hot.dueDate} · minimum ${formatCad(hot.minPaymentCents)}. That's a look.`,
+      tone: hot.daysUntilDue <= 2 ? "warn" : "neutral",
+    });
+  } else if (hot && hot.estimatedInterestCents > 0 && !hot.paidInFull) {
+    pulses.push({
+      sentence: `${hot.account.name} will accrue about ${formatCad(hot.estimatedInterestCents)} if the statement isn't paid in full. I don't post it.`,
+      tone: "warn",
     });
   }
 

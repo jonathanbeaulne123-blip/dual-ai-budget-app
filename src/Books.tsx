@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ASK_SUGGESTIONS,
+  accountOptionLabel,
   accountRegister,
   agedPayables,
   askHercules,
@@ -28,20 +29,23 @@ import {
   type Household,
   type LedgerView,
   type UndoToken,
+  type Account,
 } from "./core/index.ts";
 import { LedgerPage } from "./Ledger.tsx";
+import { WalletPane } from "./Accounts.tsx";
 import { booksFilename, booksJournalCsv, booksSqlDump, downloadText } from "./ledger/export.ts";
 import { queryBooks, type BooksStatus } from "./ledger/engine.ts";
 import { assertReadOnlySelect } from "./ledger/queryGuard.ts";
 
 const PANES = [
-  { id: "register", label: "Register" },
+  { id: "wallet", label: "Wallet" },
+  { id: "register", label: "All activity" },
   { id: "journal", label: "Journal" },
   { id: "trial", label: "Trial balance" },
   { id: "statements", label: "Statements" },
   { id: "rec", label: "Reconcile" },
   { id: "close", label: "Close pack" },
-  { id: "accounts", label: "Accounts" },
+  { id: "accounts", label: "Chart" },
   { id: "query", label: "Ask" },
 ] as const;
 
@@ -52,17 +56,25 @@ export function BooksPage({
   memberId,
   view,
   booksStatus,
+  focusedAccountId,
+  onFocusAccount,
   onChange,
   onRemove,
+  onPayAccount,
+  onAddToAccount,
 }: {
   household: Household;
   memberId: string;
   view: LedgerView;
   booksStatus: BooksStatus | null;
+  focusedAccountId: string | null;
+  onFocusAccount: (accountId: string) => void;
   onChange: (household: Household, undo?: UndoToken) => void;
   onRemove: (transaction: Household["transactions"][number]) => void;
+  onPayAccount: (account: Account) => void;
+  onAddToAccount: (account: Account) => void;
 }) {
-  const [pane, setPane] = useState<Pane>("register");
+  const [pane, setPane] = useState<Pane>("wallet");
   const books = useMemo(() => compileHousehold(household), [household]);
   const trial = useMemo(() => trialBalance(books, { recognizedOnly: true }), [books]);
   const equation = useMemo(() => booksEquation(books), [books]);
@@ -70,12 +82,18 @@ export function BooksPage({
   const today = todayKey();
   const monthKey = monthKeyFromDateKey(today);
   const packMonth = closedMonthKeys(household).at(-1) ?? monthKey;
-  const [accountId, setAccountId] = useState(household.accounts[0]?.id ?? books.chart[0]?.id ?? "");
+  const [accountId, setAccountId] = useState(focusedAccountId || household.accounts[0]?.id ?? books.chart[0]?.id ?? "");
   const register = useMemo(() => accountRegister(books, accountId), [books, accountId]);
   const [recDate, setRecDate] = useState(today);
   const [recAmount, setRecAmount] = useState("");
   const [recError, setRecError] = useState("");
   const [closeError, setCloseError] = useState("");
+
+  useEffect(() => {
+    if (!focusedAccountId) return;
+    setAccountId(focusedAccountId);
+    setPane("wallet");
+  }, [focusedAccountId]);
 
   return (
     <>
@@ -117,6 +135,21 @@ export function BooksPage({
           </button>
         ))}
       </div>
+      {pane === "wallet" && (
+        <WalletPane
+          household={household}
+          today={today}
+          memberId={memberId}
+          focusedId={focusedAccountId || accountId}
+          onFocus={(id) => {
+            setAccountId(id);
+            onFocusAccount(id);
+          }}
+          onChange={onChange}
+          onPay={onPayAccount}
+          onAdd={onAddToAccount}
+        />
+      )}
       {pane === "register" && (
         <LedgerPage household={household} memberId={memberId} view={view} onChange={onChange} onRemove={onRemove} />
       )}
@@ -213,7 +246,7 @@ export function BooksPage({
           <label>Account</label>
           <select value={accountId} onChange={(event) => setAccountId(event.target.value)}>
             {household.accounts.filter((account) => account.active).map((account) => (
-              <option key={account.id} value={account.id}>{account.name}</option>
+              <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>
             ))}
           </select>
           <label>Statement date</label>
@@ -440,6 +473,8 @@ function StatementsPane({
         <div className="row"><span>Operating out</span><span>{formatCad(cash.operatingOutCents)}</span></div>
         <div className="row"><span>Card spend (non-cash)</span><span>{formatCad(cash.cardSpendCents)}</span></div>
         <div className="row"><span>Debt paydown</span><span>{formatCad(cash.debtPaydownCents)}</span></div>
+        <div className="row"><span>Investing in</span><span>{formatCad(cash.investingInCents)}</span></div>
+        <div className="row"><span>Investing out</span><span>{formatCad(cash.investingOutCents)}</span></div>
         <div className="row"><strong>Net cash</strong><strong>{formatCad(cash.netCashCents)}</strong></div>
       </section>
       <section className="card">

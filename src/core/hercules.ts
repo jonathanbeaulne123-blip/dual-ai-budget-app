@@ -320,6 +320,7 @@ export const HERCULES_CHIPS = [
   "We good?",
   "Opinion?",
   "Working capital?",
+  "What's on the Visa?",
   "What now?",
 ];
 
@@ -450,10 +451,13 @@ export function askHercules(household: Household, question: string, today: DateK
     const cash = cashFlowStatement(household, monthKeyFromDateKey(today));
     return {
       kind: "answer",
-      sentence: `Cash in ${formatCad(cash.operatingInCents)}, cash out ${formatCad(cash.operatingOutCents)}, card spend ${formatCad(cash.cardSpendCents)} (not cash until you pay the Visa).`,
+      sentence: `Cash in ${formatCad(cash.operatingInCents)}, cash out ${formatCad(cash.operatingOutCents)}, card spend ${formatCad(cash.cardSpendCents)} (not cash until you pay the card). Investing out ${formatCad(cash.investingOutCents)}.`,
       rows: [
         { label: "Operating in", value: formatCad(cash.operatingInCents) },
         { label: "Operating out", value: formatCad(cash.operatingOutCents) },
+        { label: "Card spend", value: formatCad(cash.cardSpendCents) },
+        { label: "Paydown", value: formatCad(cash.debtPaydownCents) },
+        { label: "Investing out", value: formatCad(cash.investingOutCents) },
         { label: "Net cash", value: formatCad(cash.netCashCents) },
       ],
     };
@@ -497,6 +501,9 @@ export function askHercules(household: Household, question: string, today: DateK
       sentence: `Close pack is on Books. Opinion: ${opinion.kind}. Download it. I don't email a CPA.`,
       rows: [{ label: "Opinion", value: opinion.kind }],
     };
+  }
+  if (/\b(what.?s on the visa|pay the card|utilization|cashback|rewards|savings account|tfsa)\b/.test(q)) {
+    return voice(name, askBooks(household, question, today));
   }
   if (/\b(what should i do|coach|advise|next move|what now)\b/.test(q)) {
     return coachAnswer(household, today, name);

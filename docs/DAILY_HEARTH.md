@@ -44,6 +44,7 @@ Status: **shipping in the working tree (The Hercules Update).** Home grows a kit
 | Hercules | Computed mood + earned wardrobe; **wanders** every page; compact following chat with purrsonality (`talkHercules` + optional Workers AI); auditor opinion | Chat never posts; no full-screen Clippy sheet |
 | Visit spark | `localStorage` mornings-in-a-row per Development/Production pill | Synced state (Sync must not spam it) |
 | Ask the books | Plain-language conversation with the journal | A model that writes SQL the household did not mean |
+| Wallet tiles | Home + Books → Wallet; tap an account like a bank app (D-047) | A bank feed; interest that posts itself |
 | Sit-down dollars | Last actual and suggested next, in CAD | Jargon-only preview |
 | Goal add | Typed contribution through `contributeToGoal` | Hardcoded +$50 |
 | PGlite per env | `idb://hearth-books-development` vs `-production` | One IndexedDB journal for both pills |
@@ -62,6 +63,7 @@ Status: **shipping in the working tree (The Hercules Update).** Home grows a kit
 | Cottage | Health check clean |
 | Townhouse | Cottage, no overdue bills, and at least one active recurrence |
 | Collar bell | A transfer posted (pay the Visa) |
+| Card clip | A second active credit card |
 | Yarn collar | Three chalkboard scribbles |
 | Fish treat | A posted shift |
 | Audit spectacles | A bank rec that ties (statement = books) |
@@ -73,7 +75,7 @@ Mood: **glowing** / **content** / **restless** / **hiding**. Hiding is for Healt
 
 ### Ask the books
 
-Books → **Ask**. Chips for opinion, balance sheet, working capital, groceries, bills, this week vs last, chequing, “are we alright”, goals, coffee. Typed SQL still runs read-only through `assertReadOnlySelect`. Power SQL is behind a fold.
+Books → **Ask**. Chips for opinion, balance sheet, working capital, What’s on the Visa, utilization, groceries, bills, this week vs last, chequing, “are we alright”, goals, coffee. Typed SQL still runs read-only through `assertReadOnlySelect`. Power SQL is behind a fold.
 
 ---
 

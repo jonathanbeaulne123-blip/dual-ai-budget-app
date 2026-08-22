@@ -25,6 +25,7 @@ export const COSMETICS: CosmeticItem[] = [
   { id: "patio", slot: "house", name: "July patio", hint: "Toronto summer, or any spend in June–August" },
   { id: "ruff", slot: "hat", name: "Winter ruff", hint: "Toronto winter, or any spend in November–March" },
   { id: "bell", slot: "collar", name: "Collar bell", hint: "Post a transfer (pay the Visa)" },
+  { id: "clip", slot: "collar", name: "Card clip", hint: "Open a second credit card" },
   { id: "yarn", slot: "collar", name: "Yarn collar", hint: "Scribble three chalkboard notes" },
   { id: "fish", slot: "collar", name: "Fish treat", hint: "Post a shift" },
   { id: "ink", slot: "collar", name: "Green-ink stamp", hint: "Close a month — the control environment, not a tattoo" },
@@ -80,6 +81,7 @@ export function isCosmeticUnlocked(household: Household, item: CosmeticItem, tod
     return kitchenSeason(today) === "ruff" || household.transactions.some((tx) => !tx.isDuplicate && [11, 12, 1, 2, 3].includes(parseDateKey(tx.date).month));
   }
   if (item.id === "bell") return household.transactions.some((tx) => tx.type === "transfer" && !tx.isDuplicate);
+  if (item.id === "clip") return household.accounts.filter((account) => account.active && account.kind === "credit").length >= 2;
   if (item.id === "yarn") return household.activity.filter((row) => row.action === "Chalkboard").length >= 3;
   if (item.id === "fish") return household.shifts.length > 0;
   return false;

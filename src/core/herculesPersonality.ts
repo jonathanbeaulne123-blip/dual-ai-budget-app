@@ -3,6 +3,7 @@ import { monthSummary } from "./budget.ts";
 import { companionMood, type CompanionMood } from "./companion.ts";
 import { cookOffScore, type HearthTab } from "./hercules.ts";
 import { auditOpinion, liquidityWatch } from "./statements.ts";
+import { householdWallet } from "./accounts.ts";
 import { formatCad } from "./money.ts";
 import type { Household } from "./types.ts";
 
@@ -37,6 +38,9 @@ export type HerculesBriefing = {
   equationHolds: boolean;
   goingConcern: string;
   workingCapitalCad: string;
+  chequingCad: string;
+  cardsOwedCad: string;
+  hottestUtilizationPct: number | null;
 };
 
 export type HerculesGrounded = {
@@ -75,6 +79,8 @@ export function herculesBriefing(
   const month = monthSummary(household, monthKeyFromDateKey(today));
   const opinion = auditOpinion(household);
   const liq = liquidityWatch(household, today);
+  const wallet = householdWallet(household, today);
+  const chequing = wallet.tiles.find((tile) => tile.kind === "chequing");
   return {
     name,
     page,
@@ -92,6 +98,9 @@ export function herculesBriefing(
     equationHolds: opinion.equationHolds,
     goingConcern: liq.goingConcern,
     workingCapitalCad: formatCad(liq.workingCapital.workingCapitalCents),
+    chequingCad: formatCad(chequing?.balanceCents ?? wallet.cashCents),
+    cardsOwedCad: formatCad(wallet.owedCents),
+    hottestUtilizationPct: wallet.hottestCard?.utilization == null ? null : Math.round(wallet.hottestCard.utilization * 100),
   };
 }
 
@@ -115,6 +124,9 @@ export function formatHerculesBriefing(briefing: HerculesBriefing): string {
     `equation A=L+E: ${briefing.equationHolds ? "yes" : "no"}`,
     `going-concern watch: ${briefing.goingConcern}`,
     `working capital: ${briefing.workingCapitalCad}`,
+    `chequing: ${briefing.chequingCad}`,
+    `cards owed: ${briefing.cardsOwedCad}`,
+    `hottest utilization: ${briefing.hottestUtilizationPct == null ? "n/a" : `${briefing.hottestUtilizationPct}%`}`,
   ].join("\n");
 }
 

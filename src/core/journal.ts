@@ -1,5 +1,6 @@
 import { expenseEffect, incomeEffect } from "./budget.ts";
 import { sumCents } from "./money.ts";
+import { isLiabilityKind, normalizeAccountKind } from "./accountKinds.ts";
 import { JOINT, ValidationError, type Account, type Environment, type Household, type Member, type Transaction, type Visibility } from "./types.ts";
 
 export type AccountType = "asset" | "liability" | "equity" | "income" | "expense";
@@ -103,7 +104,8 @@ export type RegisterRow = {
 const KIND_BASE: Record<Account["kind"], number> = {
   chequing: 1100,
   savings: 1200,
-  cash: 1300,
+  other: 1300,
+  investment: 1400,
   credit: 2100,
 };
 
@@ -121,15 +123,16 @@ function takeCode(used: Set<string>, preferred: number): string {
 export function buildChart(household: Household): ChartAccount[] {
   const used = new Set<string>();
   const chart: ChartAccount[] = [];
-  const kindCount: Record<Account["kind"], number> = { chequing: 0, savings: 0, cash: 0, credit: 0 };
+  const kindCount: Record<Account["kind"], number> = { chequing: 0, savings: 0, other: 0, investment: 0, credit: 0 };
 
   for (const account of household.accounts) {
-    const offset = kindCount[account.kind];
-    kindCount[account.kind] += 1;
-    const accountType: AccountType = account.kind === "credit" ? "liability" : "asset";
+    const kind = normalizeAccountKind(account.kind);
+    const offset = kindCount[kind];
+    kindCount[kind] += 1;
+    const accountType: AccountType = isLiabilityKind(kind) ? "liability" : "asset";
     chart.push({
       id: account.id,
-      code: takeCode(used, KIND_BASE[account.kind] + offset * 10),
+      code: takeCode(used, KIND_BASE[kind] + offset * 10),
       name: account.name,
       accountType,
       normalBalance: accountType === "asset" ? "debit" : "credit",

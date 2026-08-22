@@ -12,6 +12,7 @@ import {
 } from "./hercules.ts";
 import type { BooksAsk } from "./askBooks.ts";
 import type { Household } from "./types.ts";
+import { householdWallet } from "./accounts.ts";
 
 export type HerculesPose =
   | "loaf"
@@ -62,6 +63,7 @@ function repliesFor(mood: CompanionMood, tab: HearthTab, topic: string): string[
   if (topic === "identity") return ["Opinion?", "Scratch"];
   if (topic === "opinion") return ["Working capital?", "Balance sheet"];
   if (topic === "fieldwork") return ["Opinion?", "Policies?"];
+  if (topic === "wallet") return ["Pay the card?", "What's on the Visa?"];
   if (topic === "cook") return ["Why?", "Milk"];
   if (topic === "bills") return ["Calendar", "What now?"];
   if (topic === "health") return ["Health", "What now?"];
@@ -155,11 +157,35 @@ export function herculesIdle(
     lesson = "I walk the journal. I don't write it.";
     topic = "fieldwork";
     pose = "stretch";
-  } else if (sunday && tab === "home") {
-    const recap = weekRecap(household, today);
-    spoken = clip(recap.rows[0] ? `Sunday. Out ${recap.rows[0].value} this week.` : "Sunday. Tap me for the week.");
-    lesson = "One breath. Then go live your life.";
-    topic = "recap";
+  } else if (tab === "home") {
+    const hot = householdWallet(household, today).hottestCard;
+    if (hot?.utilization != null && hot.utilization >= 0.8) {
+      spoken = clip(hot.hercules);
+      lesson = "Paydown is a transfer. I don't invent APR.";
+      topic = "wallet";
+      pose = "pace";
+    } else if (sunday) {
+      const recap = weekRecap(household, today);
+      spoken = clip(recap.rows[0] ? `Sunday. Out ${recap.rows[0].value} this week.` : "Sunday. Tap me for the week.");
+      lesson = "One breath. Then go live your life.";
+      topic = "recap";
+    } else if (phase === "morning") {
+      spoken = "Mrrp. Morning. Coffee counts. Groceries count more.";
+      lesson = "The ordinary grocery is how households stay friends.";
+      topic = "morning";
+      pose = "stretch";
+    } else if (phase === "after-shift") {
+      spoken = "If you worked, post the shift. I'll do the math with you.";
+      lesson = "Tips are income. Guessing is not.";
+      topic = "shift";
+    } else if (view.mood === "glowing") {
+      spoken = "Unmodified. Sunbeam. Don't jinx it.";
+      lesson = "An unmodified opinion means the journal balances and Health is clean.";
+      topic = "opinion";
+      pose = "loaf";
+    } else {
+      spoken = "I'm here. Scratch me or ask a number.";
+    }
   } else if (phase === "morning") {
     spoken = "Mrrp. Morning. Coffee counts. Groceries count more.";
     lesson = "The ordinary grocery is how households stay friends.";
@@ -258,6 +284,9 @@ export function talkHercules(
     topic = "forecast";
     const forecast = shiftForecastDisplay(household);
     lesson = forecast.unlocked ? "A pulse is a guess with homework. I won't post it." : "Eight real weeks. Then I'll talk tips.";
+  } else if (/visa|pay the card|utilization|cashback|rewards|savings|tfsa/.test(q)) {
+    topic = "wallet";
+    lesson = "Paydown is a transfer. Interest is a look until you post it.";
   } else if (/alright|we good|health/.test(q)) {
     topic = "health";
     lesson = "If I'm hiding, start at Health. If I'm loafing, you're fine.";

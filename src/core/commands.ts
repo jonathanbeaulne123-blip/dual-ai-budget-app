@@ -18,6 +18,8 @@ import {
   requireTimezone,
   validateOwnedAmount as catalogValidateOwned,
 } from "./catalog.ts";
+import { shapeAccount, normalizeAccountKind, emptyCreditDesk } from "./accountKinds.ts";
+import { creditCardView, savingsView } from "./accounts.ts";
 import { sitDownPreview } from "./insights.ts";
 import { bookBalanceAsOf, isMonthClosed } from "./statements.ts";
 import { COSMETIC_BY_ID, isCosmeticUnlocked } from "./companion.ts";
@@ -34,11 +36,14 @@ import {
 import { mergeTombstones } from "./sync.ts";
 import { parseVisibility, visibleForDuplicateScan } from "./visibility.ts";
 import type {
+  AccountKind,
   Activity,
   BudgetPlan,
   Category,
   CommitResult,
+  CreditRewardRule,
   Household,
+  InvestmentVehicle,
   Recurrence,
   RecurrenceKind,
   RecurrenceOrigin,
@@ -479,6 +484,310 @@ export function setBudget(household: Household, input: { monthKey: MonthKey; sub
   if (existing) existing.amountCents = amountCents;
   else next.budgetPlans.push(seedBudgetPlan(next, input.monthKey, category, amountCents));
   return commit(previous, next, "Set Budget", `${category.name} ${input.monthKey} → $${(amountCents / 100).toFixed(2)}`, []);
+}
+
+function parseBps(value: string | number | undefined, label: string, fallback = 0): number {
+  if (value === undefined || value === null || value === "") return fallback;
+  const n = typeof value === "number" ? value : Number(String(value).trim());
+  if (!Number.isFinite(n) || n < 0 || n > 80) throw new ValidationError(`${label} must be a rate between 0 and 80%.`);
+  return Math.round(n * 100);
+}
+
+function parseLimitCents(value: string | number | undefined, label: string): number {
+  if (value === undefined || value === null || value === "") return 0;
+  try {
+    return parseWholeCents(value, label, { allowZero: true });
+  } catch (error) {
+    throw new ValidationError(error instanceof Error ? error.message : String(error));
+  }
+}
+
+function requireIncomeNamed(household: Household, name: string): { household: Household; subcategoryId: string } {
+  const found = household.categories.find((category) => (
+    category.active
+    && category.recordType === "category"
+    && category.transactionType === "income"
+    && category.name.toLowerCase() === name.toLowerCase()
+  ));
+  if (found) return { household, subcategoryId: found.id };
+  const added = addCategory(household, { name, type: "income", incomeStability: "variable" });
+  const created = added.household.categories.find((category) => category.id === added.postedIds[0]);
+  if (!created) throw new ValidationError(`Could not add the ${name} income category.`);
+  return { household: added.household, subcategoryId: created.id };
+}
+
+function requireExpenseNamed(household: Household, name: string, groupName = "Debt"): { household: Household; subcategoryId: string } {
+  const found = household.categories.find((category) => (
+    category.active
+    && category.recordType === "category"
+    && category.transactionType === "expense"
+    && category.name.toLowerCase() === name.toLowerCase()
+  ));
+  if (found) return { household, subcategoryId: found.id };
+  const group = household.categories.find((category) => (
+    category.recordType === "group" && category.transactionType === "expense" && category.name.toLowerCase() === groupName.toLowerCase()
+  ));
+  const added = addCategory(household, {
+    name,
+    type: "expense",
+    parentId: group?.id,
+    newGroupName: group ? undefined : groupName,
+    essential: true,
+    incomeStability: "variable",
+  });
+  const created = added.household.categories.find((category) => category.id === added.postedIds[0]);
+  if (!created) throw new ValidationError(`Could not add the ${name} category.`);
+  return { household: added.household, subcategoryId: created.id };
+}
+
+export function addAccount(household: Household, input: {
+  name: string;
+  kind: AccountKind | string;
+  ownerMemberId?: string;
+  institution?: string;
+  last4?: string;
+  creditLimit?: string | number;
+  aprPercent?: string | number;
+  statementDay?: number;
+  dueDaysAfterStatement?: number;
+  cashbackPercent?: string | number;
+  groceryCashbackPercent?: string | number;
+  apyPercent?: string | number;
+  vehicle?: InvestmentVehicle;
+}): CommitResult {
+  requireTimezone(household);
+  const name = input.name.trim();
+  if (name.length < 2) throw new ValidationError("Give the account a name with at least two letters.");
+  const kind = normalizeAccountKind(input.kind);
+  if (input.ownerMemberId && input.ownerMemberId !== "joint") requireMember(household, input.ownerMemberId);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const id = uniquePrefixedId(`ACC-${slug(name)}`, next.accounts.map((account) => account.id));
+  const grocery = household.categories.find((category) => category.id === "SUB-FOOD-GROCERIES");
+  const rules: CreditRewardRule[] = [];
+  if (kind === "credit" && input.groceryCashbackPercent !== undefined && grocery) {
+    rules.push({
+      id: "RULE-GROCERIES",
+      label: "Groceries",
+      subcategoryId: grocery.id,
+      bps: parseBps(input.groceryCashbackPercent, "Grocery cashback"),
+    });
+  }
+  const draft = shapeAccount({
+    id,
+    name,
+    kind,
+    currency: CURRENCY,
+    active: true,
+    ownerMemberId: input.ownerMemberId || "joint",
+    institution: input.institution ?? "",
+    last4: input.last4 ?? "",
+    sortOrder: (next.accounts.reduce((max, account) => Math.max(max, account.sortOrder), 0) || 0) + 10,
+    credit: kind === "credit"
+      ? {
+        ...emptyCreditDesk(),
+        creditLimitCents: parseLimitCents(input.creditLimit, "Credit limit"),
+        aprBps: parseBps(input.aprPercent, "APR", 1999),
+        statementDay: Math.min(28, Math.max(1, Math.round(Number(input.statementDay || 21)))),
+        dueDaysAfterStatement: Math.min(30, Math.max(1, Math.round(Number(input.dueDaysAfterStatement || 21)))),
+        defaultCashbackBps: parseBps(input.cashbackPercent, "Cashback", 100),
+        rules,
+      }
+      : null,
+    savings: kind === "savings" ? { apyBps: parseBps(input.apyPercent, "APY") } : null,
+    investment: kind === "investment" ? { vehicle: input.vehicle ?? "tfsa", markedValueCents: null, markedAt: null } : null,
+  }, next.accounts.length);
+  next.accounts = [...next.accounts, draft];
+  return commit(previous, next, "Add Account", `Opened ${draft.name}`, [id]);
+}
+
+export function updateAccount(household: Household, input: {
+  accountId: string;
+  name?: string;
+  institution?: string;
+  last4?: string;
+  creditLimit?: string | number;
+  aprPercent?: string | number;
+  statementDay?: number;
+  dueDaysAfterStatement?: number;
+  cashbackPercent?: string | number;
+  apyPercent?: string | number;
+  vehicle?: InvestmentVehicle;
+}): CommitResult {
+  requireTimezone(household);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const account = next.accounts.find((row) => row.id === input.accountId);
+  if (!account) throw new ValidationError("That account is gone.");
+  if (input.name?.trim()) account.name = input.name.trim().slice(0, 40);
+  if (input.institution !== undefined) account.institution = input.institution.trim().slice(0, 32);
+  if (input.last4 !== undefined) account.last4 = input.last4.replace(/\D/g, "").slice(-4);
+  if (account.kind === "credit") {
+    const credit = account.credit ?? emptyCreditDesk();
+    account.credit = {
+      ...credit,
+      creditLimitCents: input.creditLimit !== undefined ? parseLimitCents(input.creditLimit, "Credit limit") : credit.creditLimitCents,
+      aprBps: input.aprPercent !== undefined ? parseBps(input.aprPercent, "APR", credit.aprBps) : credit.aprBps,
+      statementDay: input.statementDay !== undefined ? Math.min(28, Math.max(1, Math.round(input.statementDay))) : credit.statementDay,
+      dueDaysAfterStatement: input.dueDaysAfterStatement !== undefined
+        ? Math.min(30, Math.max(1, Math.round(input.dueDaysAfterStatement)))
+        : credit.dueDaysAfterStatement,
+      defaultCashbackBps: input.cashbackPercent !== undefined
+        ? parseBps(input.cashbackPercent, "Cashback", credit.defaultCashbackBps)
+        : credit.defaultCashbackBps,
+    };
+  }
+  if (account.kind === "savings" && input.apyPercent !== undefined) {
+    account.savings = { apyBps: parseBps(input.apyPercent, "APY") };
+  }
+  if (account.kind === "investment" && input.vehicle) {
+    account.investment = { ...(account.investment ?? { vehicle: input.vehicle, markedValueCents: null, markedAt: null }), vehicle: input.vehicle };
+  }
+  next.accounts = next.accounts.map((row) => row.id === account.id ? shapeAccount(account) : row);
+  return commit(previous, next, "Account", `Updated ${account.name}`, []);
+}
+
+export function archiveAccount(household: Household, accountId: string): CommitResult {
+  requireTimezone(household);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const account = next.accounts.find((row) => row.id === accountId);
+  if (!account) throw new ValidationError("That account is gone.");
+  const remaining = next.accounts.filter((row) => row.active && row.id !== accountId);
+  if (remaining.length === 0) throw new ValidationError("Keep at least one active CAD account.");
+  account.active = false;
+  return commit(previous, next, "Account", `Archived ${account.name}`, []);
+}
+
+export function markInvestmentValue(household: Household, input: {
+  accountId: string;
+  markedValue: string | number;
+  markedAt?: string;
+}): CommitResult {
+  requireTimezone(household);
+  const account = household.accounts.find((row) => row.id === input.accountId && row.active);
+  if (!account || account.kind !== "investment") throw new ValidationError("Mark a value on an investment account.");
+  let markedValueCents: number;
+  try {
+    markedValueCents = parseWholeCents(input.markedValue, "Market value", { allowZero: true });
+  } catch (error) {
+    throw new ValidationError(error instanceof Error ? error.message : String(error));
+  }
+  const markedAt = parseDate(input.markedAt || todayKey());
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.accounts = next.accounts.map((row) => (
+    row.id === account.id
+      ? shapeAccount({
+        ...row,
+        investment: { vehicle: row.investment?.vehicle ?? "tfsa", markedValueCents, markedAt },
+      })
+      : row
+  ));
+  return commit(previous, next, "Investment mark", `${account.name} marked at $${(markedValueCents / 100).toFixed(2)}`, []);
+}
+
+export function postCardInterest(household: Household, input: {
+  accountId: string;
+  date?: string;
+  createdBy?: string;
+  confirmDuplicate?: boolean;
+  confirmClosedMonth?: boolean;
+}): CommitResult {
+  const account = requireAccount(household, input.accountId);
+  if (account.kind !== "credit") throw new ValidationError("Interest posts on a credit card.");
+  const date = parseDate(input.date || todayKey());
+  const view = creditCardView(household, account, date);
+  if (view.estimatedInterestCents <= 0) {
+    throw new ValidationError("No estimated interest to post. Pay in full, or the card has no APR/balance.");
+  }
+  const named = requireExpenseNamed(household, "Card interest");
+  return postEntry(named.household, {
+    date,
+    type: "expense",
+    amount: view.estimatedInterestCents / 100,
+    accountId: account.id,
+    subcategoryId: named.subcategoryId,
+    note: `Estimated interest · ${account.name}`,
+    confirmDuplicate: input.confirmDuplicate,
+    confirmClosedMonth: input.confirmClosedMonth,
+    createdBy: input.createdBy,
+  });
+}
+
+export function postCardRewards(household: Household, input: {
+  accountId: string;
+  date?: string;
+  as?: "statement-credit" | "deposit";
+  depositAccountId?: string;
+  createdBy?: string;
+  confirmDuplicate?: boolean;
+  confirmClosedMonth?: boolean;
+}): CommitResult {
+  const account = requireAccount(household, input.accountId);
+  if (account.kind !== "credit") throw new ValidationError("Rewards post from a credit card.");
+  const date = parseDate(input.date || todayKey());
+  const view = creditCardView(household, account, date);
+  if (view.cashbackCycleCents <= 0) {
+    throw new ValidationError("No cashback accrued this cycle to post.");
+  }
+  const as = input.as ?? "statement-credit";
+  if (as === "deposit") {
+    const depositId = input.depositAccountId || household.accounts.find((row) => row.kind === "chequing" && row.active)?.id;
+    if (!depositId) throw new ValidationError("Pick a chequing account to deposit cashback.");
+    const named = requireIncomeNamed(household, "Rewards");
+    return postEntry(named.household, {
+      date,
+      type: "income",
+      amount: view.cashbackCycleCents / 100,
+      accountId: depositId,
+      subcategoryId: named.subcategoryId,
+      note: `${view.rewardsName} · ${account.name}`,
+      confirmDuplicate: input.confirmDuplicate,
+      confirmClosedMonth: input.confirmClosedMonth,
+      createdBy: input.createdBy,
+    });
+  }
+  const named = requireIncomeNamed(household, "Rewards");
+  return postEntry(named.household, {
+    date,
+    type: "income",
+    amount: view.cashbackCycleCents / 100,
+    accountId: account.id,
+    subcategoryId: named.subcategoryId,
+    note: `${view.rewardsName} · ${account.name}`,
+    confirmDuplicate: input.confirmDuplicate,
+    confirmClosedMonth: input.confirmClosedMonth,
+    createdBy: input.createdBy,
+  });
+}
+
+export function postSavingsInterest(household: Household, input: {
+  accountId: string;
+  date?: string;
+  createdBy?: string;
+  confirmDuplicate?: boolean;
+  confirmClosedMonth?: boolean;
+}): CommitResult {
+  const account = requireAccount(household, input.accountId);
+  if (account.kind !== "savings") throw new ValidationError("Savings interest posts on a savings account.");
+  const date = parseDate(input.date || todayKey());
+  const view = savingsView(household, account, date);
+  if (view.estimatedMonthlyInterestCents <= 0) {
+    throw new ValidationError("No estimated savings interest to post. Set an APY and a balance first.");
+  }
+  const named = requireIncomeNamed(household, "Interest");
+  return postEntry(named.household, {
+    date,
+    type: "income",
+    amount: view.estimatedMonthlyInterestCents / 100,
+    accountId: account.id,
+    subcategoryId: named.subcategoryId,
+    note: `Estimated interest · ${account.name}`,
+    confirmDuplicate: input.confirmDuplicate,
+    confirmClosedMonth: input.confirmClosedMonth,
+    createdBy: input.createdBy,
+  });
 }
 
 export function applySitDown(household: Household, sourceMonth: MonthKey, amounts: Record<string, number>): CommitResult {
