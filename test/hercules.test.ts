@@ -7,6 +7,7 @@ import {
   describeCompanion,
   equipCosmetic,
   groceryHighFive,
+  herculesNeedsCheck,
   herculesPageBrief,
   hourInToronto,
   isCosmeticUnlocked,
@@ -17,6 +18,7 @@ import {
   shapeKitchen,
   shiftForecastDisplay,
   sitDownPostcard,
+  talkHercules,
   weekRecap,
 } from "../src/core/index.ts";
 import { COSMETIC_BY_ID } from "../src/core/companion.ts";
@@ -49,7 +51,7 @@ describe("The Hercules Update", () => {
     const asked = askHercules(household, "who are you", today);
     expect(asked.kind).toBe("answer");
     expect(asked.sentence).toMatch(/Kettle/);
-    expect(asked.sentence).toMatch(/do not write/);
+    expect(asked.sentence).toMatch(/don['’]?t write/);
     expect(household.transactions).toHaveLength(0);
   });
 
@@ -119,7 +121,7 @@ describe("The Hercules Update", () => {
     expect(tips.kind).toBe("answer");
     const skip = askHercules(household, "safe to skip", today);
     expect(skip.kind).toBe("answer");
-    expect(herculesPageBrief(household, "calendar", today)).toMatch(/Calendar|remind/i);
+    expect(herculesPageBrief(household, "calendar", today)).toMatch(/remind|paid/i);
     expect(describeCompanion(household, today).name).toBe("Hercules");
   });
 
@@ -192,5 +194,19 @@ describe("The Hercules Update", () => {
     const recap = weekRecap(household, "2026-08-23");
     expect(recap.isSunday).toBe(true);
     expect(recap.rows.length).toBeGreaterThan(2);
+  });
+
+  it("talks in a short line with two or three replies, never a lecture", () => {
+    const household = seedDemoHousehold({ today, environment: "development" });
+    const talk = talkHercules(household, "who are you", today, "home");
+    expect(talk.spoken.length).toBeLessThanOrEqual(120);
+    expect(talk.replies.length).toBeGreaterThan(0);
+    expect(talk.replies.length).toBeLessThanOrEqual(3);
+    expect(talk.spoken).toMatch(/don't write/i);
+    const idle = talkHercules(household, "", today, "home");
+    expect(idle.spoken.length).toBeGreaterThan(4);
+    expect(idle.spoken.length).toBeLessThanOrEqual(120);
+    const empty = catalogHousehold();
+    expect(herculesNeedsCheck(empty, today)).toBe(true);
   });
 });

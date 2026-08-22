@@ -41,7 +41,7 @@ Status: **shipping in the working tree (The Hercules Update).** Home grows a kit
 | Piece | What it is | What it is not |
 |---|---|---|
 | Chalkboard | Shared one-off notes, 80 characters, 12 deep, wipeable, silly prompts | A ledger, a chat, a bill |
-| Hercules | Computed mood + earned hats / chains / collars / houses; follows every page; Ask is the same journal brain | A writable score, a fine, a nag bot, an LLM that posts |
+| Hercules | Computed mood + earned wardrobe; **wanders** every page in a compact bubble; `talkHercules` | Chat `postedIds` empty; no full-screen sheet |
 | Visit spark | `localStorage` mornings-in-a-row per Development/Production pill | Synced state (Sync must not spam it) |
 | Ask the books | Plain-language conversation with the journal | A model that writes SQL the household did not mean |
 | Sit-down dollars | Last actual and suggested next, in CAD | Jargon-only preview |
@@ -85,7 +85,7 @@ Make the ordinary week feel designed. Still no bank.
 - **Sit-down as a close** — **shipping:** Plan → Sit-down copies last month. Home shows a “we closed …” postcard; pin to chalkboard is optional. The postcard is not money.
 - **Weekly cook-off** — **shipping:** dining-out (coffee & lunches) vs groceries as a kitchen game. Household totals only. Never “Bianca spent more.”
 - **Grocery list that is not a post** — **shipping:** chalkboard **bought** opens Add with the note filled. Confirm still posts. Hercules hides while Add is open.
-- **Sunday envelope** — **shipping:** 20-second screenshot recap. Auto once on Sunday per phone; Home can open it any day.
+- **Sunday envelope** — **shipping in his bubble:** Sunday idle line + “Sunday recap” if you ask. No full-screen timer.
 - **Optional clink** — **shipping:** off by default, `localStorage` per pill.
 
 ---

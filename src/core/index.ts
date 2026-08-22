@@ -27,5 +27,6 @@ export * from "./google.ts";
 export * from "./companion.ts";
 export * from "./askBooks.ts";
 export * from "./hercules.ts";
+export * from "./herculesTalk.ts";
 export { createWriteQueue } from "./writeQueue.ts";
 export { formatInviteCode, normalizeInviteCode, randomHouseholdId, randomInviteCode } from "./ids.ts";

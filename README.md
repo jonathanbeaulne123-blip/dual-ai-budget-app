@@ -20,7 +20,7 @@ Open `http://localhost:5173`. **Open the demo kitchen table** loads a fictional 
 - Get stopped on a likely duplicate: same amount within five days, plus matching notes, place, category, or source
 - Open **Calendar** for a Toronto month of bills, pay, and shifts; adopt repeating ledger rows; download an `.ics` with alarms; optionally overlay both Google accounts
 - Remove a row (with confirm) and undo from the toast or **More → Recent changes**
-- Read Home as Hercules (Maine Coon), a chalkboard, weekly cook-off, optional shift pulse, one net number, a pulse sentence, this week versus last week, upcoming money dates, and shared goals
+- Read Home as chalkboard, one net number, a pulse sentence, this week versus last week, upcoming money dates, and shared goals. Hercules wanders the screen; tap him for a compact lesson
 - Ask Hercules in plain language from the cat dock or Books → Ask; Power SQL stays read-only
 - Run a monthly sit-down that copies last month in CAD and trims overspent categories
 - Keep **Development** and **Production** as two named local ledgers on the same phone
