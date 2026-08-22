@@ -27,6 +27,16 @@ The in-memory model is still the source of truth while a command runs: clone the
 6. **Kitchen Worker** — Cloudflare Workers + Assets (`hearth-books`). HTML is `Cache-Control: no-store`. `POST /hercules/chat` binds Workers AI so Hercules can talk (D-045). The model cannot post money. Local Vite falls back to `localHerculesChat`.
 7. **UI** — Home (chalkboard, wallet tiles, net, pulse, opinion), Calendar, Add (defaults to the focused account), Plan, Books (Wallet first, then statements, rec, close pack), More. Hercules wanders as a borderless cat with a compact following chat. He loafs during Add. Spectacles are earned from a tied rec. Green ink from a closed month. Fieldwork stretch on Books.
 
+## Dual Course coupling
+
+Family-office accounting (weight **5**) and Hercules / interactables (weight **3**) share this kernel. There is no second ledger for the cat.
+
+- Course A writes through commands, then `compileHousehold` into PGlite. Health, statements, wallet, rec, and close are projections.
+- Course B **reads** those projections (`describeCompanion`, `herculesBriefing`, `auditOpinion`, `householdWallet`, `talkHercules`). Cosmetics (`scribbleChalk`, `equipCosmetic`) clone the snapshot and never put ids in `postedIds`.
+- A new accounting surface must expose at least one companion line, unlock, chalkboard, wallet tile, or ceremony.
+- A new companion behavior must be grounded in a posted fact or a Health / rec / close / wallet projection.
+- If they conflict, Course A wins. Product law: [STRATEGY.md](STRATEGY.md), D-048.
+
 ## Data-model rules
 
 - One canonical `transactions` array is the command document. The books compile each document into balanced `journal_entries` / `journal_lines`. A Visa payment is one journal entry: debit the card, credit chequing. A TFSA contribution is debit investment, credit chequing (cash-flow investing out).
@@ -59,4 +69,4 @@ Development/production on a phone remain local keys. The books are PostgreSQL in
 
 Commands currently clone the snapshot per write, which is honest and simple at household scale. The SQL journal is the queryable, constraint-backed record of those writes. Replace the snapshot clone with an event log only if household scale stops being household scale.
 
-Sheets-era architecture: [reference/sheets-era/ARCHITECTURE.md](reference/sheets-era/ARCHITECTURE.md).
+Sheets-era architecture (museum): [reference/sheets-era/ARCHITECTURE.md](reference/sheets-era/ARCHITECTURE.md). Retired Cursor roadmaps: [nostalgia/](nostalgia/).

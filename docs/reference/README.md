@@ -1,10 +1,10 @@
 # Reference material
 
-These files are **history**, not current product law.
+These files are **history**, not current product law. **Do not use them to plan future work.**
 
-Hearth is the household budget. The TypeScript app in this repository, the living files in `docs/` (this folder excluded), and Jonathan’s latest explicit instruction are what to follow.
+Hearth is Dual Course ([../STRATEGY.md](../STRATEGY.md)). The TypeScript app, the living files in `docs/` (this folder and [../nostalgia/](../nostalgia/) excluded), and Jonathan’s latest instruction are what to follow.
 
-Use this folder to see **where the project has been** — the Sheets prototype, the early rebuild-versus-Sheets comparison, old roadmaps, decision logs, and release notes. Do not treat a dated README, a Phase 2 calendar, or a clasp setup guide as a command.
+This folder is the **Sheets-era** museum. Cursor-era Chapter / Ring maps live in [../nostalgia/](../nostalgia/). Do not treat a dated README, a Phase 2 calendar, or a clasp setup guide as a command.
 
 ## What lives here
 

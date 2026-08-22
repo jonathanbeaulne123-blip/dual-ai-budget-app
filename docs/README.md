@@ -1,21 +1,23 @@
 # Current docs
 
-Hearth is the product. These files are current. Anything under [reference/](reference/) is labeled history — useful, not binding.
+Hearth is the product. **Living canon** is this folder except [nostalgia/](nostalgia/) and [reference/](reference/). Those two are history — useful, not binding, **not a build plan**.
 
 | File | Use |
 |---|---|
+| [STRATEGY.md](STRATEGY.md) | Dual Course: family-office books (weight 5) and companion/interactables (weight 3). Vision and backlog. |
 | [PROJECT_CHARTER.md](PROJECT_CHARTER.md) | Who it is for and what success looks like |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | How the ledger, books, and UI fit together |
-| [DECISIONS.md](DECISIONS.md) | Living decision log |
-| [ROADMAP.md](ROADMAP.md) | What is in, what is next (Chapter 0) |
-| [DAILY_HEARTH.md](DAILY_HEARTH.md) | Ever-expanding daily-habit + ledger-spine map |
-| [AUDIT_OFFICE.md](AUDIT_OFFICE.md) | Investor-visible accounting: opinion, statements, rec, close pack |
-| [ACCOUNTS.md](ACCOUNTS.md) | Accounts Floor: bank-book tiles, cards, investments |
-| [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md) | Kitchen ledger → household family office (how and when) |
-| [ENVIRONMENTS.md](ENVIRONMENTS.md) | Development vs production snapshots, website, hosted books |
-| [GOOGLE.md](GOOGLE.md) | Google household bridge: link, confirm, calendar, optional suite |
-| [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md) | How this private repo is used, and the one-click kitchen publish |
-| [AI_HANDOFF.md](AI_HANDOFF.md) | Risk routing and handoff shape |
-| [reference/](reference/) | Old roadmaps, READMEs, decisions, Sheets-era context |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Ledger, books, UI, and how the two courses couple |
+| [DECISIONS.md](DECISIONS.md) | Living decision log (D-048 Dual Course) |
+| [HERCULES.md](HERCULES.md) | Companion how-to and laws |
+| [AUDIT_OFFICE.md](AUDIT_OFFICE.md) | Statements, rec, close — how to try |
+| [ACCOUNTS.md](ACCOUNTS.md) | Wallet, cards, investments — how to try |
+| [ENVIRONMENTS.md](ENVIRONMENTS.md) | Development vs production, website, hosted books |
+| [GOOGLE.md](GOOGLE.md) | Google household bridge |
+| [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md) | Private repo and one-click kitchen publish |
+| [AI_HANDOFF.md](AI_HANDOFF.md) | Risk routing; Dual Course deltas |
+| [nostalgia/](nostalgia/) | Retired roadmaps and launch essays. Do not cite for future work. |
+| [reference/](reference/) | Sheets-era snapshot. Do not cite for future work. |
 
 Start from the repository [README](../README.md) to run the app.
+
+Old filenames (`ROADMAP.md`, `PRODUCT_ROADMAP.md`, `DAILY_HEARTH.md`) are stubs that point here and at nostalgia.

@@ -4,7 +4,7 @@ Google is how Jonathan and Bianca prove who they are on Hearth and how Hearth ta
 
 Tokens stay on **this phone**. The shared household only remembers who is linked (name, email, Google id). Development and Production keep separate tokens.
 
-Related: [DECISIONS.md](DECISIONS.md) D-032, D-040, D-043. [ENVIRONMENTS.md](ENVIRONMENTS.md).
+Related: [DECISIONS.md](DECISIONS.md) D-032, D-040, D-043. [ENVIRONMENTS.md](ENVIRONMENTS.md). [STRATEGY.md](STRATEGY.md).
 
 ---
 
