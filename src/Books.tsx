@@ -82,7 +82,7 @@ export function BooksPage({
   const today = todayKey();
   const monthKey = monthKeyFromDateKey(today);
   const packMonth = closedMonthKeys(household).at(-1) ?? monthKey;
-  const [accountId, setAccountId] = useState(focusedAccountId || household.accounts[0]?.id ?? books.chart[0]?.id ?? "");
+  const [accountId, setAccountId] = useState(focusedAccountId ?? household.accounts[0]?.id ?? books.chart[0]?.id ?? "");
   const register = useMemo(() => accountRegister(books, accountId), [books, accountId]);
   const [recDate, setRecDate] = useState(today);
   const [recAmount, setRecAmount] = useState("");
