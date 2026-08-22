@@ -14,7 +14,7 @@ This is the living near-term plan. The investor / family-office vision — inclu
 - Development vs production local snapshots
 - Shared / personal / both visibility, household vs personal views
 - Phrase / join link / Hearth Pass pairing
-- Home chalkboard, Ember companion, and a visit spark (cosmetics, not money)
+- Home chalkboard, Hercules the Maine Coon (follows every page, Ask is the journal), and a visit spark (cosmetics, not money)
 - Books → Ask: plain-language conversation with the journal; Power SQL stays read-only
 - Remove a ledger row (with confirm) and undo the latest change from the toast or More → Recent changes
 - Shared books on the household Supabase Postgres (same schema as PGlite)
@@ -29,14 +29,15 @@ Gates, not a pitch-deck month. Details in [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.m
 - Recurring preview on open, then the existing `postEntry` path
 - Calendar Google client ID in the GitHub Actions **variable** `VITE_GOOGLE_CLIENT_ID` (and Cloudflare **Build** variables if Workers Builds stays on) so both people can connect from the kitchen site ([GOOGLE.md](GOOGLE.md))
 - JSON import of a sanitized Sheets export through the same commands
-- Ring 1 rituals in DAILY_HEARTH (kettle whistle, high-five, grocery list that opens Add)
+- Ring 1–2 kitchen rituals (cook-off, sit-down postcard, Sunday envelope, seasonal Hercules, trailing-average shift pulse)
+- Google kitchen Link remains parked ([GOOGLE.md](GOOGLE.md)) until the public client ID is baked
 
 ## Then — Chapter 1 (frictionless truth)
 
 - IOU object + Interac Request Money deep link (API only with a sponsor)
 - CSV inbox → confirm → `postEntry` (import-shaped path from D-011)
 - Flinks sandbox after Auth; on-device categorization never auto-posts
-- Shift forecast on Home after ≥8 weeks of posted shifts — forecast is not money
+- Shift forecast *model* after Auth (Chapter 1.3). Trailing-average pulse already shows after ≥8 posted-shift weeks — still not money
 
 ## Later — Chapters 2–4
 

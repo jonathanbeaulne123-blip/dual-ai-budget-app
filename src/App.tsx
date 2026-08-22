@@ -27,6 +27,8 @@ import {
   postOneRecurrence,
   postShift,
   postTransfer,
+  readClinkOn,
+  recapSeen,
   runHealthCheck,
   seedDemoHousehold,
   shiftSettingsFingerprint,
@@ -36,6 +38,7 @@ import {
   touchVisitSpark,
   undo,
   voidPostedMoney,
+  weekdaySunday0,
   type CommitResult,
   type Environment,
   type Household,
@@ -54,6 +57,8 @@ import { BooksPage } from "./Books.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
 import { CalendarPage } from "./Calendar.tsx";
 import { DailyHearth } from "./DailyHearth.tsx";
+import { HerculesDock, SundayRecapSheet } from "./Hercules.tsx";
+import { playClink } from "./clink.ts";
 import { GoogleBridgeCard } from "./GoogleBridge.tsx";
 import {
   adoptGoogleSession,
@@ -115,6 +120,9 @@ export function App() {
   const [welcomeMode, setWelcomeMode] = useState<"home" | "join">("home");
   const [booksStatus, setBooksStatus] = useState<BooksStatus | null>(null);
   const [spark, setSpark] = useState(false);
+  const [visorPop, setVisorPop] = useState(false);
+  const [clinkOn, setClinkOn] = useState(false);
+  const [recapOpen, setRecapOpen] = useState(false);
   const [visit, setVisit] = useState<VisitSpark>({ days: 0, lastYmd: null, justCheckedIn: false });
   const enqueueWrite = useMemo(() => createWriteQueue(), []);
   const householdRef = useRef<Household | null>(household);
@@ -187,6 +195,7 @@ export function App() {
   useEffect(() => {
     if (!household) return;
     setVisit(touchVisitSpark(environment, todayKey()));
+    setClinkOn(readClinkOn(environment));
   }, [environment, household?.householdId]);
 
   const today = todayKey(now);
@@ -198,6 +207,13 @@ export function App() {
     () => (visible ? buildDashboard(visible, today, now, findings.length) : null),
     [visible, today, now, findings.length],
   );
+
+  useEffect(() => {
+    if (!household) return;
+    if (weekdaySunday0(today) !== 0) return;
+    if (recapSeen(environment, today)) return;
+    setRecapOpen(true);
+  }, [household?.householdId, environment, today]);
 
   function rememberSession(next: Session) {
     setSession(next);
@@ -295,6 +311,11 @@ export function App() {
         if (result.postedIds.some((id) => /^(TXN|SHF)/.test(id))) {
           setSpark(true);
           window.setTimeout(() => setSpark(false), 900);
+          if (readClinkOn(environment)) playClink();
+        }
+        if (result.household.activity.at(-1)?.action === "Post Recurring") {
+          setVisorPop(true);
+          window.setTimeout(() => setVisorPop(false), 700);
         }
       } catch (caught) {
         if (caught instanceof NeedsConfirmationError) setConfirm(caught);
@@ -562,7 +583,25 @@ export function App() {
             spark={spark}
             visit={visit}
             busy={busy}
+            environment={environment}
+            clinkOn={clinkOn}
+            onClinkOn={setClinkOn}
             onCommand={(fn) => { void run(fn); }}
+            onBuyNote={(text) => {
+              setMode("expense");
+              setAdding(true);
+              setError("");
+              setConfirm(null);
+              setForm({
+                ...emptyForm,
+                date: today,
+                note: text.slice(0, 80),
+                subcategoryId: "SUB-FOOD-GROCERIES",
+                visibility: defaultVisibilityForView(view),
+                memberId: session.memberId,
+              });
+            }}
+            onOpenRecap={() => setRecapOpen(true)}
           />
           <section className="hero">
             <div className="label">{view === "personal" ? "Personal" : "Household"} · {dashboard.monthLabel}</div>
@@ -1096,12 +1135,44 @@ export function App() {
               { label: "Books", run: () => setTab("ledger") },
               { label: "Health", run: () => setTab("more") },
               { label: "Google household bridge", run: () => setTab("more") },
+              { label: "Ask Hercules", run: () => setTab("home") },
               { label: "Export", run: () => downloadJson(household) },
             ].map((item) => (
               <button key={item.label} onClick={() => { item.run(); setCommandOpen(false); }}>{item.label}</button>
             ))}
           </div>
         </div>
+      )}
+
+      <HerculesDock
+        household={household}
+        today={today}
+        tab={tab}
+        adding={adding}
+        visorPop={visorPop}
+        onOpenAdd={(note) => {
+          setMode("expense");
+          setAdding(true);
+          setError("");
+          setConfirm(null);
+          setForm({
+            ...emptyForm,
+            date: today,
+            note: note ?? "",
+            subcategoryId: "SUB-FOOD-GROCERIES",
+            visibility: defaultVisibilityForView(view),
+            memberId: session.memberId,
+          });
+        }}
+      />
+
+      {recapOpen && (
+        <SundayRecapSheet
+          household={household}
+          today={today}
+          environment={environment}
+          onClose={() => setRecapOpen(false)}
+        />
       )}
 
       <nav className="nav">

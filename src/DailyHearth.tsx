@@ -1,19 +1,34 @@
 import { useMemo, useState } from "react";
+import { HerculesPortrait } from "./Hercules.tsx";
 import {
   COSMETICS,
   chalkboardPrompts,
+  cookOffScore,
   dailyDare,
   describeCompanion,
   equipCosmetic,
+  formatCad,
+  groceryHighFive,
+  kitchenSeason,
   postingStreakDays,
   renameCompanion,
   scribbleChalk,
+  shiftForecastDisplay,
+  sitDownPostcard,
   wipeChalk,
+  writeClinkOn,
   type CommitResult,
-  type CompanionMood,
+  type Environment,
   type Household,
   type VisitSpark,
 } from "./core/index.ts";
+
+const SLOTS = [
+  { id: "hat" as const, label: "Hats" },
+  { id: "chain" as const, label: "Chains" },
+  { id: "collar" as const, label: "Collars" },
+  { id: "house" as const, label: "Houses" },
+];
 
 export function DailyHearth({
   household,
@@ -22,7 +37,12 @@ export function DailyHearth({
   spark,
   visit,
   busy,
+  environment,
+  clinkOn,
+  onClinkOn,
   onCommand,
+  onBuyNote,
+  onOpenRecap,
 }: {
   household: Household;
   memberId: string;
@@ -30,52 +50,122 @@ export function DailyHearth({
   spark: boolean;
   visit: VisitSpark;
   busy: boolean;
+  environment: Environment;
+  clinkOn: boolean;
+  onClinkOn: (on: boolean) => void;
   onCommand: (fn: (current: Household) => CommitResult) => void;
+  onBuyNote: (text: string) => void;
+  onOpenRecap: () => void;
 }) {
   const view = useMemo(() => describeCompanion(household, today), [household, today]);
   const posting = postingStreakDays(household, today);
   const prompts = chalkboardPrompts(today);
+  const highFive = useMemo(() => groceryHighFive(household, today), [household, today]);
+  const season = kitchenSeason(today);
+  const cook = useMemo(() => cookOffScore(household, today), [household, today]);
+  const postcard = useMemo(() => sitDownPostcard(household), [household]);
+  const forecast = useMemo(() => shiftForecastDisplay(household), [household]);
+  const hat = view.equipped.hat || (season === "ruff" ? "ruff" : null);
+  const house = view.equipped.house || (season === "patio" ? "patio" : null);
   const [draft, setDraft] = useState("");
   const [petName, setPetName] = useState(view.name);
   const memberName = household.members.find((member) => member.id === memberId)?.name ?? "You";
 
   return (
     <section className="daily-hearth">
-      <article className={`companion-card mood-${view.mood} ${spark ? "spark" : ""}`}>
-        <EmberPortrait mood={view.mood} hat={view.equipped.hat} chain={view.equipped.chain} house={view.equipped.house} />
+      <article className={`companion-card mood-${view.mood} ${spark || highFive.yes ? "spark" : ""}`}>
+        <HerculesPortrait
+          mood={view.mood}
+          hat={hat}
+          chain={view.equipped.chain}
+          house={house}
+          collar={view.equipped.collar}
+        />
         <div className="companion-copy">
-          <p className="kicker">Kitchen companion</p>
+          <p className="kicker">The Hercules Update · Maine Coon · {season === "none" ? "shoulder season" : season}</p>
           <h2>{view.name}</h2>
           <p>{view.line}</p>
           <p className="muted">{view.reason}</p>
           <div className="chips">
             {visit.days > 0 && <span className="chip quiet">{visit.days === 1 ? "First look today" : `${visit.days} mornings in a row`}</span>}
             {posting > 0 && <span className="chip quiet">{posting === 1 ? "Posted today" : `${posting} posting days`}</span>}
+            {highFive.yes && <span className="chip selected">{highFive.names.join(" + ")} grocery high-five</span>}
+            <button className="chip quiet" type="button" onClick={onOpenRecap}>Screenshot recap</button>
           </div>
         </div>
       </article>
 
+      <article className={`cook-off winner-${cook.winner}`}>
+        <header>
+          <h2>Weekly cook-off</h2>
+          <span>Household totals. Nobody is named.</span>
+        </header>
+        <div className="row">
+          <span>Groceries</span>
+          <strong>{formatCad(cook.groceryCents)}</strong>
+        </div>
+        <div className="row">
+          <span>Coffee & lunches</span>
+          <strong>{formatCad(cook.coffeeCents)}</strong>
+        </div>
+        <p className="muted">{cook.sentence}</p>
+      </article>
+
+      {forecast.unlocked ? (
+        <article className="forecast-card">
+          <header>
+            <h2>Shift pulse</h2>
+            <span>Display only</span>
+          </header>
+          <p>{forecast.sentence}</p>
+          <div className="row"><span>Avg tips / week</span><strong>{formatCad(forecast.avgTipsCents)}</strong></div>
+          <div className="row"><span>Avg wages / week</span><strong>{formatCad(forecast.avgWagesCents)}</strong></div>
+          <div className="row"><span>Range</span><span>{formatCad(forecast.lowCents)}–{formatCad(forecast.highCents)}</span></div>
+        </article>
+      ) : (
+        <p className="muted forecast-lock">{forecast.sentence}</p>
+      )}
+
+      {postcard.ready && (
+        <article className="postcard">
+          <header>
+            <h2>Sit-down postcard</h2>
+            <span>{postcard.targetMonth}</span>
+          </header>
+          <p className="postcard-line">{postcard.text}</p>
+          <p className="muted">{postcard.sentence}</p>
+          <button
+            className="chip"
+            type="button"
+            disabled={busy}
+            onClick={() => onCommand((current) => scribbleChalk(current, { text: postcard.text, author: memberId }))}
+          >
+            Pin to chalkboard
+          </button>
+        </article>
+      )}
+
       <div className="wardrobe">
-        {(["hat", "chain", "house"] as const).map((slot) => (
-          <div key={slot} className="wardrobe-slot">
-            <span className="muted">{slot === "hat" ? "Hats" : slot === "chain" ? "Chains" : "Houses"}</span>
+        {SLOTS.map((slot) => (
+          <div key={slot.id} className="wardrobe-slot">
+            <span className="muted">{slot.label}</span>
             <div className="chips">
               <button
-                className={`chip ${view.equipped[slot] == null ? "selected" : ""}`}
+                className={`chip ${view.equipped[slot.id] == null ? "selected" : ""}`}
                 disabled={busy}
-                onClick={() => onCommand((current) => equipCosmetic(current, { slot, itemId: null, today }))}
+                onClick={() => onCommand((current) => equipCosmetic(current, { slot: slot.id, itemId: null, today }))}
               >
                 None
               </button>
-              {COSMETICS.filter((item) => item.slot === slot).map((item) => {
+              {COSMETICS.filter((item) => item.slot === slot.id).map((item) => {
                 const unlocked = view.unlocked.some((row) => row.id === item.id);
                 return (
                   <button
                     key={item.id}
-                    className={`chip ${view.equipped[slot] === item.id ? "selected" : ""} ${unlocked ? "" : "locked"}`}
+                    className={`chip ${view.equipped[slot.id] === item.id ? "selected" : ""} ${unlocked ? "" : "locked"}`}
                     disabled={busy}
                     title={unlocked ? item.name : item.hint}
-                    onClick={() => onCommand((current) => equipCosmetic(current, { slot, itemId: item.id, today }))}
+                    onClick={() => onCommand((current) => equipCosmetic(current, { slot: slot.id, itemId: item.id, today }))}
                   >
                     {item.name}{unlocked ? "" : " · locked"}
                   </button>
@@ -91,6 +181,17 @@ export function DailyHearth({
             Save
           </button>
         </div>
+        <label className="clink-row">
+          <input
+            type="checkbox"
+            checked={clinkOn}
+            onChange={(event) => {
+              writeClinkOn(environment, event.target.checked);
+              onClinkOn(event.target.checked);
+            }}
+          />
+          Tiny clink on save (off unless you tick this)
+        </label>
       </div>
 
       <article className="chalkboard">
@@ -104,9 +205,12 @@ export function DailyHearth({
           household.kitchen.chalkboard.map((note) => (
             <div className="chalk-note" key={note.id}>
               <p>{note.text}</p>
-              <button type="button" disabled={busy} onClick={() => onCommand((current) => wipeChalk(current, note.id))} aria-label="Wipe this note">
-                wipe
-              </button>
+              <div className="chalk-actions">
+                <button type="button" disabled={busy} onClick={() => onBuyNote(note.text)}>bought</button>
+                <button type="button" disabled={busy} onClick={() => onCommand((current) => wipeChalk(current, note.id))} aria-label="Wipe this note">
+                  wipe
+                </button>
+              </div>
             </div>
           ))
         )}
@@ -114,6 +218,11 @@ export function DailyHearth({
           {prompts.map((prompt) => (
             <button key={prompt} className="chip quiet" type="button" onClick={() => setDraft(prompt)}>{prompt}</button>
           ))}
+          {highFive.yes && (
+            <button className="chip quiet" type="button" onClick={() => onCommand((current) => scribbleChalk(current, { text: "nice.", author: memberId }))}>
+              nice.
+            </button>
+          )}
         </div>
         <label className="sr-only" htmlFor="chalk-input">Write on the chalkboard</label>
         <textarea
@@ -138,46 +247,5 @@ export function DailyHearth({
         </button>
       </article>
     </section>
-  );
-}
-
-function EmberPortrait({
-  mood,
-  hat,
-  chain,
-  house,
-}: {
-  mood: CompanionMood;
-  hat: string | null;
-  chain: string | null;
-  house: string | null;
-}) {
-  const glow = mood === "glowing" ? "#c9a227" : mood === "hiding" ? "#6b6258" : mood === "restless" ? "#c45c26" : "#2c6a4e";
-  return (
-    <div className={`ember-stage house-${house || "none"}`} aria-hidden="true">
-      {house && <span className="ember-house">{house === "townhouse" ? "⌂⌂" : "⌂"}</span>}
-      <svg viewBox="0 0 120 140" className="ember-svg">
-        <defs>
-          <radialGradient id="emberBody" cx="50%" cy="40%">
-            <stop offset="0%" stopColor="#f4d7a8" />
-            <stop offset="70%" stopColor={glow} />
-            <stop offset="100%" stopColor="#1b1712" />
-          </radialGradient>
-        </defs>
-        <ellipse cx="60" cy="118" rx="28" ry="8" fill="rgba(27,23,18,0.18)" />
-        <path d="M60 18 C86 38 96 72 60 118 C24 72 34 38 60 18 Z" fill="url(#emberBody)" />
-        <circle cx="48" cy="64" r={mood === "hiding" ? 2 : 5} fill="#1b1712" />
-        <circle cx="72" cy="64" r={mood === "hiding" ? 2 : 5} fill="#1b1712" />
-        {mood === "glowing" && <path d="M50 82 Q60 92 70 82" fill="none" stroke="#1b1712" strokeWidth="3" />}
-        {mood === "restless" && <path d="M50 86 Q60 78 70 86" fill="none" stroke="#1b1712" strokeWidth="3" />}
-        {mood === "content" && <path d="M50 84 L70 84" stroke="#1b1712" strokeWidth="3" />}
-        {hat === "toque" && <path d="M38 44 Q60 8 82 44 Q60 32 38 44 Z" fill="#f3eee4" stroke="#1b1712" strokeWidth="2" />}
-        {hat === "visor" && <g><rect x="34" y="40" width="52" height="10" rx="4" fill="#1b1712" /><rect x="70" y="42" width="28" height="6" rx="3" fill="#c45c26" /></g>}
-        {hat === "chef" && <g><ellipse cx="60" cy="28" rx="22" ry="14" fill="#fffaf2" stroke="#1b1712" strokeWidth="2" /><rect x="50" y="38" width="20" height="10" fill="#fffaf2" stroke="#1b1712" /></g>}
-        {chain === "copper" && <ellipse cx="60" cy="96" rx="16" ry="8" fill="none" stroke="#c45c26" strokeWidth="3" />}
-        {chain === "gold" && <ellipse cx="60" cy="96" rx="16" ry="8" fill="none" stroke="#c9a227" strokeWidth="4" />}
-      </svg>
-      <span className="ember-mood">{mood}</span>
-    </div>
   );
 }

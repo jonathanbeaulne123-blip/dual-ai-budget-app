@@ -132,7 +132,7 @@ export type HouseholdCalendar = {
   dismissedRhythmKeys: string[];
 };
 
-export type CosmeticSlot = "hat" | "chain" | "house";
+export type CosmeticSlot = "hat" | "chain" | "house" | "collar";
 
 export type ChalkNote = {
   id: string;
@@ -146,11 +146,14 @@ export type CompanionCosmetics = {
   hat: string | null;
   chain: string | null;
   house: string | null;
+  collar: string | null;
 };
+
+export type CompanionSpecies = "maine-coon" | "ember";
 
 export type HouseholdCompanion = {
   name: string;
-  species: "ember";
+  species: CompanionSpecies;
   equipped: CompanionCosmetics;
   updatedAt: string;
 };

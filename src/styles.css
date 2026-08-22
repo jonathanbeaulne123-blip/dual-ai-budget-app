@@ -491,12 +491,27 @@ input, select, textarea {
 }
 .companion-copy h2 { font-size: 26px; }
 .companion-copy p { margin: 4px 0; }
-.ember-stage { position: relative; text-align: center; }
-.ember-svg { width: 110px; height: 128px; display: block; margin: 0 auto; }
-.companion-card.mood-hiding .ember-svg { opacity: 0.55; filter: grayscale(0.4); }
-.companion-card.mood-glowing .ember-svg { filter: drop-shadow(0 0 10px rgba(201, 162, 39, 0.45)); }
-.ember-house { position: absolute; left: 8px; top: 0; font-size: 22px; color: var(--muted); }
-.ember-mood {
+.hercules-stage { position: relative; text-align: center; perspective: 640px; }
+.hercules-rig {
+  transform-style: preserve-3d;
+  transition: transform 0.12s ease-out;
+}
+.hercules-svg { width: 118px; height: 132px; display: block; margin: 0 auto; overflow: visible; }
+.hercules-stage.size-dock .hercules-svg { width: 72px; height: 80px; }
+.companion-card.mood-hiding .hercules-svg,
+.hercules-dock.mood-hiding .hercules-svg { opacity: 0.62; filter: grayscale(0.35); }
+.companion-card.mood-glowing .hercules-svg,
+.hercules-dock.mood-glowing .hercules-svg { filter: drop-shadow(0 0 12px rgba(201, 162, 39, 0.5)); }
+.hercules-svg.tail-restless .hercules-tail {
+  transform-origin: 120px 110px;
+  animation: hercules-wag 0.55s ease-in-out infinite;
+}
+@keyframes hercules-wag {
+  0%, 100% { transform: rotate(-6deg); }
+  50% { transform: rotate(10deg); }
+}
+.hercules-house { position: absolute; left: 8px; top: 0; font-size: 22px; color: var(--muted); }
+.hercules-mood {
   display: inline-block;
   margin-top: 2px;
   font-size: 11px;
@@ -505,6 +520,100 @@ input, select, textarea {
   text-transform: uppercase;
   color: var(--muted);
 }
+.hercules-dock {
+  position: fixed;
+  left: 10px;
+  bottom: calc(var(--nav) + 10px);
+  z-index: 20;
+  width: 84px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 28px;
+  padding: 6px 4px 4px;
+  box-shadow: var(--shadow);
+}
+.hercules-dock.purr { animation: hearth-pop 0.45s ease; }
+.hercules-dock.high-five { box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.45); }
+.hercules-dock.visor-pop { box-shadow: 0 0 0 4px rgba(196, 92, 38, 0.55); }
+html.hercules-open { overflow: hidden; }
+.hercules-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(27, 23, 18, 0.42);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px 12px calc(var(--nav) + 12px);
+}
+.hercules-sheet-card {
+  width: min(520px, 100%);
+  max-height: min(78dvh, 720px);
+  overflow: auto;
+  background: var(--card);
+  border-radius: 28px 28px 18px 18px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+.hercules-sheet-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+.hercules-sheet-who { display: flex; gap: 10px; align-items: center; }
+.hercules-log { max-height: 280px; overflow: auto; }
+.recap-card { background: #f7f1e4; }
+.recap-bar {
+  height: 6px;
+  background: var(--paper-2);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 12px;
+}
+.recap-bar span {
+  display: block;
+  height: 100%;
+  background: #c45c26;
+  border-radius: 99px;
+}
+.cook-off, .forecast-card, .postcard {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
+.cook-off header, .forecast-card header, .postcard header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.cook-off header span, .forecast-card header span, .postcard header span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.cook-off.winner-kitchen { box-shadow: 0 0 0 2px rgba(44, 106, 78, 0.25), var(--shadow); }
+.cook-off.winner-takeout { box-shadow: 0 0 0 2px rgba(196, 92, 38, 0.22), var(--shadow); }
+.postcard-line {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 22px;
+  margin: 8px 0;
+}
+.forecast-lock { margin: 0 4px 12px; }
+.clink-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+  font-size: 13px;
+}
+.clink-row input { width: auto; }
+.chalk-actions { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
 .wardrobe {
   background: var(--card);
   border: 1px solid var(--line);

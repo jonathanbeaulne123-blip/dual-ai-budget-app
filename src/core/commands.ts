@@ -801,7 +801,7 @@ export function wipeChalk(household: Household, id: string): CommitResult {
 
 export function renameCompanion(household: Household, name: string): CommitResult {
   const trimmed = name.trim();
-  if (trimmed.length < 2) throw new ValidationError("Give Ember a name with at least two letters.");
+  if (trimmed.length < 2) throw new ValidationError("Give Hercules a name with at least two letters.");
   if (trimmed.length > MAX_COMPANION_NAME) throw new ValidationError("Keep the name short enough to shout across the kitchen.");
   if (!/^[A-Za-z0-9][A-Za-z0-9 '\-]*$/.test(trimmed)) {
     throw new ValidationError("Use letters, numbers, spaces, or hyphens.");
@@ -818,7 +818,7 @@ export function equipCosmetic(household: Household, input: {
   itemId: string | null;
   today: DateKey;
 }): CommitResult {
-  if (!isCosmeticSlot(input.slot)) throw new ValidationError("Hats, chains, or houses only.");
+  if (!isCosmeticSlot(input.slot)) throw new ValidationError("Hats, chains, houses, or collars only.");
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   next.kitchen = shapeKitchen(next.kitchen);
