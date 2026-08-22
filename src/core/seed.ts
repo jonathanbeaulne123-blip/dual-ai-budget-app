@@ -319,7 +319,7 @@ export function seedDemoHousehold(options?: { today?: DateKey; environment?: Hou
   }).household;
 
   household = scribbleChalk(household, { text: "Leftover chili — do not order in", author: "MEM-001" }).household;
-  household = scribbleChalk(household, { text: "Ember gets a hat if rent is on time", author: "MEM-002" }).household;
+  household = scribbleChalk(household, { text: "Hercules gets a hat if rent is on time", author: "MEM-002" }).household;
 
   return household;
 }

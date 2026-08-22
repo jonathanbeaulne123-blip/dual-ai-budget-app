@@ -68,7 +68,7 @@ Still unfinished, and **named so investors cannot be surprised**:
 
 - Hosted RLS is `USING (true)` until Auth exists (D-015, D-034). Phrase-join now also filters environment; that is not a lock.
 - GitHub 2FA is still open (D-020).
-- Daily kitchen (Ember, chalkboard, Ask) is cosmetics on a command kernel (D-042). It does not close the hosted door.
+- Daily kitchen (Hercules, chalkboard, Ask) is cosmetics on a command kernel (D-042, D-044). It does not close the hosted door.
 
 We do not tell a room the sync is flawless. We tell them the **command kernel** is trustworthy, the **hosted door is not yet a lock**, and the next money we spend is to close that door before we invite a bank.
 
@@ -162,12 +162,13 @@ The household will not become a family office if the app is only opened in guilt
 | Work | How | Proof |
 |---|---|---|
 | Chalkboard | `scribbleChalk` / `wipeChalk`; shared; tombstoned; never `postEntry` | Chalk does not change `transactions` |
-| Ember | Mood computed; hats/chains/houses unlock from posted facts | Equipping a locked cosmetic throws |
-| Visit spark | `localStorage` per pill | Not in the snapshot, not in Sync |
+| Hercules | Mood computed; hats/chains/collars/houses (incl. patio / ruff) unlock from posted facts + Toronto season; dock hides on Add; `askHercules` | Equipping a locked cosmetic throws; chat `postedIds` empty |
+| Visit spark / clink / Sunday envelope | `localStorage` per pill | Not in the snapshot, not in Sync |
 | Ask the books | `askBooks` projections; SQL still `assertReadOnlySelect` | Groceries / balance / due answers without SQL |
 | Phrase + environment | `pullSupabaseHousehold` filters both | Join URL contains `environment=eq.` |
 | PGlite per env | `idb://hearth-books-development` vs `-production` | `booksIdbName` |
-| Sit-down CAD / goal add | Plan tab shows last/next dollars; typed contribution | No `+"50"` in the UI |
+| Sit-down CAD / goal add | Plan tab shows last/next dollars; typed contribution; postcard on Home | No `+"50"` in the UI |
+| Cook-off / shift pulse | Household groceries vs coffee; trailing 8-week shift average | Never names a person; forecast never `postShift` |
 
 Bank, Interac, and cards still wait on 0.1. Cosmetics do not wait — they must not write money.
 
@@ -211,7 +212,7 @@ Do not forecast into the journal.
 | UI | Home pulse: “If Thursday looks like last six Thursdays, tips land near $X before you clock in.” |
 | Liquidity | Forecast income **minus** due recurrences **minus** unpaid IOUs. That number is a projection, like trial balance, not a row. |
 
-**Entry gate:** ≥8 weeks of real posted shifts for Jonathan, Health clean. Until then, show trailing averages from `weekSummary` — already in the app.
+**Entry gate:** ≥8 weeks of real posted shifts for Jonathan, Health clean. Until a trained model exists, Home shows a trailing-average **shift pulse** from posted `postShift` weeks (`shiftForecastDisplay`) — already in the app after the Hercules Update. That pulse is a projection. It never calls `postShift`.
 
 **Kill criteria:** If forecast is ever posted as wages without `postShift`, that is a P0.
 

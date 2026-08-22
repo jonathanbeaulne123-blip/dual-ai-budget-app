@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import {
   ASK_SUGGESTIONS,
   accountRegister,
-  askBooks,
+  askHercules,
   booksEquation,
   compileHousehold,
   formatCad,
@@ -284,7 +284,7 @@ function AskBooks({ household }: { household: Household }) {
         setLog((current) => [...current, { you: text, sentence: `Ran a read-only query. ${result.rows.length} row${result.rows.length === 1 ? "" : "s"}.`, rows: [] }].slice(-8));
         return;
       }
-      const answer = askBooks(household, text, todayKey());
+      const answer = askHercules(household, text, todayKey());
       setLog((current) => [...current, { you: text, sentence: answer.sentence, rows: answer.rows, sql: answer.sql }].slice(-8));
       setColumns([]);
       setSqlRows([]);
@@ -314,10 +314,10 @@ function AskBooks({ household }: { household: Household }) {
   return (
     <section className="card">
       <header>
-        <h2>Ask the books</h2>
-        <span className="muted">Plain language. SQL is optional.</span>
+        <h2>Ask Hercules</h2>
+        <span className="muted">Maine Coon · reads the journal</span>
       </header>
-      <p className="muted">You should not need to know code. Ask about groceries, bills, chequing, or whether you are alright.</p>
+      <p className="muted">Hercules answers in plain language from the books. He never posts. SQL is still optional and read-only.</p>
       <div className="chips">
         {ASK_SUGGESTIONS.map((item) => (
           <button key={item} className="chip" type="button" disabled={busy} onClick={() => void ask(item)}>{item}</button>

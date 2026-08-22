@@ -1,4 +1,4 @@
-import { addDays, type DateKey } from "./calendar.ts";
+import { addDays, kitchenSeason, parseDateKey, type DateKey } from "./calendar.ts";
 import { weekSummary } from "./budget.ts";
 import { runHealthCheck } from "./health.ts";
 import { formatCad } from "./money.ts";
@@ -21,6 +21,11 @@ export const COSMETICS: CosmeticItem[] = [
   { id: "gold", slot: "chain", name: "Gold chain", hint: "Hit a savings goal" },
   { id: "cottage", slot: "house", name: "Cottage", hint: "Health check is clean" },
   { id: "townhouse", slot: "house", name: "Townhouse", hint: "Health clean and no overdue bills" },
+  { id: "patio", slot: "house", name: "July patio", hint: "Toronto summer, or any spend in June–August" },
+  { id: "ruff", slot: "hat", name: "Winter ruff", hint: "Toronto winter, or any spend in November–March" },
+  { id: "bell", slot: "collar", name: "Collar bell", hint: "Post a transfer (pay the Visa)" },
+  { id: "yarn", slot: "collar", name: "Yarn collar", hint: "Scribble three chalkboard notes" },
+  { id: "fish", slot: "collar", name: "Fish treat", hint: "Post a shift" },
 ];
 
 export const COSMETIC_BY_ID = new Map(COSMETICS.map((item) => [item.id, item]));
@@ -64,6 +69,15 @@ export function isCosmeticUnlocked(household: Household, item: CosmeticItem, tod
   if (item.id === "townhouse") {
     return healthClean && overdueBills(household, today).length === 0 && household.recurrences.some((item) => item.active);
   }
+  if (item.id === "patio") {
+    return kitchenSeason(today) === "patio" || household.transactions.some((tx) => !tx.isDuplicate && [6, 7, 8].includes(parseDateKey(tx.date).month));
+  }
+  if (item.id === "ruff") {
+    return kitchenSeason(today) === "ruff" || household.transactions.some((tx) => !tx.isDuplicate && [11, 12, 1, 2, 3].includes(parseDateKey(tx.date).month));
+  }
+  if (item.id === "bell") return household.transactions.some((tx) => tx.type === "transfer" && !tx.isDuplicate);
+  if (item.id === "yarn") return household.activity.filter((row) => row.action === "Chalkboard").length >= 3;
+  if (item.id === "fish") return household.shifts.length > 0;
   return false;
 }
 
@@ -71,18 +85,18 @@ export function unlockedCosmetics(household: Household, today: DateKey): Cosmeti
   return COSMETICS.filter((item) => isCosmeticUnlocked(household, item, today));
 }
 
-export function companionMood(household: Household, today: DateKey): { mood: CompanionMood; reason: string } {
+export function companionMood(household: Household, today: DateKey, name = "Hercules"): { mood: CompanionMood; reason: string } {
   const findings = runHealthCheck(household).length;
   const overdue = overdueBills(household, today);
   const week = weekSummary(household, today);
   if (findings > 0) {
-    return { mood: "hiding", reason: "The books need a look. Ember is behind the kettle until Health is clean." };
+    return { mood: "hiding", reason: `The books need a look. ${name} is under the table until Health is clean.` };
   }
   if (overdue.length) {
     const first = overdue[0]!;
     return {
       mood: "restless",
-      reason: `${first.note || "A bill"} was due ${first.nextDate}. Ember will not fake a fee. Pay it, then post it.`,
+      reason: `${first.note || "A bill"} was due ${first.nextDate}. ${name} will not fake a fee. Pay it, then post it.`,
     };
   }
   const nextBill = household.recurrences
@@ -107,16 +121,16 @@ export function companionMood(household: Household, today: DateKey): { mood: Com
 }
 
 const LINES: Record<CompanionMood, (name: string) => string> = {
-  glowing: (name) => `${name} is humming on the stove. Come say hi.`,
+  glowing: (name) => `${name} is loafing in a sunbeam. The books look kind.`,
   content: (name) => `${name} is on the counter, waiting for the next grocery.`,
   restless: (name) => `${name} is pacing. A bill or a hot week wants a look.`,
-  hiding: (name) => `${name} is hiding behind the kettle. No fake fees. Fix Health, then come back.`,
+  hiding: (name) => `${name} is under the table. No fake fees. Fix Health, then come back.`,
 };
 
 export function describeCompanion(household: Household, today: DateKey): CompanionView {
   const kitchen = household.kitchen;
-  const name = kitchen?.companion.name || "Ember";
-  const { mood, reason } = companionMood(household, today);
+  const name = kitchen?.companion.name || "Hercules";
+  const { mood, reason } = companionMood(household, today, name);
   const unlocked = unlockedCosmetics(household, today);
   const unlockedIds = new Set(unlocked.map((item) => item.id));
   return {
@@ -124,7 +138,7 @@ export function describeCompanion(household: Household, today: DateKey): Compani
     mood,
     line: LINES[mood](name),
     reason,
-    equipped: kitchen?.companion.equipped ?? { hat: null, chain: null, house: null },
+    equipped: kitchen?.companion.equipped ?? { hat: null, chain: null, house: null, collar: null },
     unlocked,
     locked: COSMETICS.filter((item) => !unlockedIds.has(item.id)),
   };

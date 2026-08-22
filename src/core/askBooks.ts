@@ -25,6 +25,9 @@ export const ASK_SUGGESTIONS = [
   "Are we alright",
   "Goals",
   "Coffee this week",
+  "Tips this week",
+  "What should I do",
+  "Safe to skip",
 ];
 
 function normalize(question: string): string {

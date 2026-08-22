@@ -90,7 +90,7 @@ describe("daily kitchen cosmetics", () => {
     expect(isCosmeticUnlocked(household, COSMETIC_BY_ID.get("visor")!, today)).toBe(true);
   });
 
-  it("renames Ember and computes hiding when Health is dirty", () => {
+  it("renames Hercules and computes hiding when Health is dirty", () => {
     const named = renameCompanion(catalogHousehold(), "Kettle");
     expect(named.household.kitchen.companion.name).toBe("Kettle");
     const view = describeCompanion(named.household, today);

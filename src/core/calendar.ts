@@ -62,6 +62,27 @@ export function todayKey(now = new Date(), timeZone = TIMEZONE): DateKey {
   return dateKeyInZone(now, timeZone);
 }
 
+export type KitchenSeason = "patio" | "ruff" | "none";
+
+/** Toronto civil season for Hercules wardrobe. June–August patio, November–March ruff. Not money. */
+export function kitchenSeason(today: DateKey): KitchenSeason {
+  const month = parseDateKey(today).month;
+  if (month >= 6 && month <= 8) return "patio";
+  if (month === 11 || month === 12 || month <= 3) return "ruff";
+  return "none";
+}
+
+/** 0–23 in America/Toronto. Used for Hercules greetings, never for posting money. */
+export function hourInToronto(now = new Date(), timeZone = TIMEZONE): number {
+  const part = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    hour: "numeric",
+    hourCycle: "h23",
+  }).formatToParts(now).find((item) => item.type === "hour")?.value;
+  const hour = Number(part);
+  return Number.isFinite(hour) ? hour : 12;
+}
+
 export function monthKeyFromDateKey(dateKey: DateKey): MonthKey {
   parseDateKey(dateKey);
   return dateKey.slice(0, 7);

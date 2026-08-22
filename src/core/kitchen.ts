@@ -13,15 +13,15 @@ export const MAX_CHALK_CHARS = 80;
 export const MAX_COMPANION_NAME = 24;
 
 export const EMPTY_COMPANION: HouseholdCompanion = {
-  name: "Ember",
-  species: "ember",
-  equipped: { hat: null, chain: null, house: null },
+  name: "Hercules",
+  species: "maine-coon",
+  equipped: { hat: null, chain: null, house: null, collar: null },
   updatedAt: "",
 };
 
 export const EMPTY_KITCHEN: HouseholdKitchen = {
   chalkboard: [],
-  companion: { ...EMPTY_COMPANION, equipped: { hat: null, chain: null, house: null } },
+  companion: { ...EMPTY_COMPANION },
 };
 
 const CHALK_PROMPTS = [
@@ -62,15 +62,19 @@ export function shapeKitchen(input?: Partial<HouseholdKitchen> | null): Househol
     })).slice(-MAX_CHALK_NOTES)
     : [];
   const equipped = input?.companion?.equipped;
+  const rawName = (input?.companion?.name || "").trim().slice(0, MAX_COMPANION_NAME);
+  const fromFlame = !input?.companion?.species || input.companion.species === "ember";
+  const name = !rawName || (rawName === "Ember" && fromFlame) ? "Hercules" : rawName;
   return {
     chalkboard,
     companion: {
-      name: (input?.companion?.name || "Ember").trim().slice(0, MAX_COMPANION_NAME) || "Ember",
-      species: "ember",
+      name,
+      species: "maine-coon",
       equipped: {
         hat: asSlotValue(equipped?.hat),
         chain: asSlotValue(equipped?.chain),
         house: asSlotValue(equipped?.house),
+        collar: asSlotValue(equipped?.collar),
       },
       updatedAt: input?.companion?.updatedAt || "",
     },
@@ -156,6 +160,27 @@ export function touchVisitSpark(environment: Environment, today: DateKey): Visit
   return next;
 }
 
+function prefKey(environment: Environment, name: string): string {
+  return `hearth:v1:${name}:${environment}`;
+}
+
+/** Optional save clink. Off by default. Phone-local, never a household row. */
+export function readClinkOn(environment: Environment): boolean {
+  return memory()?.getItem(prefKey(environment, "clink")) === "on";
+}
+
+export function writeClinkOn(environment: Environment, on: boolean): void {
+  memory()?.setItem(prefKey(environment, "clink"), on ? "on" : "off");
+}
+
+export function recapSeen(environment: Environment, sunday: DateKey): boolean {
+  return memory()?.getItem(prefKey(environment, `recap:${sunday}`)) === "1";
+}
+
+export function markRecapSeen(environment: Environment, sunday: DateKey): void {
+  memory()?.setItem(prefKey(environment, `recap:${sunday}`), "1");
+}
+
 export function isCosmeticSlot(value: string): value is CosmeticSlot {
-  return value === "hat" || value === "chain" || value === "house";
+  return value === "hat" || value === "chain" || value === "house" || value === "collar";
 }
