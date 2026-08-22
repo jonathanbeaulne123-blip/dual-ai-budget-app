@@ -1,0 +1,34 @@
+-- FUTURE ONLY. Do not paste this into the live Supabase SQL editor until
+-- Supabase Auth exists for Jonathan and Bianca and Jonathan has approved it.
+--
+-- Today the hosted books use USING (true) (see 001_hearth_books.sql).
+-- That is an open door: the publishable key can read every snapshot.
+-- Replacing it with membership policies while nobody is authenticated
+-- would lock the kitchen out. D-034, D-039, D-015.
+--
+-- Target shape, for the day Auth is live:
+--   * auth.uid() maps to a household member
+--   * household_snapshots are visible only to that household
+--   * environment is part of the policy, not a hope
+--   * anon cannot SELECT payload
+--
+-- Proof when this is applied: joining copper-thyme-zephyr from the
+-- Production pill cannot overwrite Development; anonymous PostgREST
+-- cannot dump household_snapshots.
+
+-- Example (do not run yet):
+--
+-- ALTER TABLE household_snapshots ENABLE ROW LEVEL SECURITY;
+-- DROP POLICY IF EXISTS hearth_anon_all ON household_snapshots;
+-- CREATE POLICY hearth_snapshot_member ON household_snapshots
+--   FOR ALL TO authenticated
+--   USING (
+--     household_id IN (
+--       SELECT household_id FROM members WHERE auth_user_id = auth.uid()
+--     )
+--   )
+--   WITH CHECK (
+--     household_id IN (
+--       SELECT household_id FROM members WHERE auth_user_id = auth.uid()
+--     )
+--   );

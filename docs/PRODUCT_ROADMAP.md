@@ -65,11 +65,9 @@ Shipped and verified in tests (`pnpm test`, 63 passing as of the rebuild):
 
 Still unfinished, and **named so investors cannot be surprised**:
 
-- Hosted RLS is `USING (true)` until Auth exists (D-015, D-034).
-- Phrase-join matches phrase, not Development vs Production.
-- One PGlite database name on the device; snapshots are still separate in IndexedDB.
-- Sit-down dollar preview and Goals +$50 are polish gaps.
+- Hosted RLS is `USING (true)` until Auth exists (D-015, D-034). Phrase-join now also filters environment; that is not a lock.
 - GitHub 2FA is still open (D-020).
+- Daily kitchen (Ember, chalkboard, Ask) is cosmetics on a command kernel (D-042). It does not close the hosted door.
 
 We do not tell a room the sync is flawless. We tell them the **command kernel** is trustworthy, the **hosted door is not yet a lock**, and the next money we spend is to close that door before we invite a bank.
 
@@ -155,6 +153,22 @@ The rival jumped to lock-screen widgets. The household already has a **monthly s
 This is the operating cadence of a family office: close the books, then decide. Widgets come after the close is trustworthy.
 
 **Kill criteria:** If Bianca will not open Hearth for ordinary groceries after two weeks of Development use, we do not spend on Flinks. We spend on the Add sheet.
+
+### 0.4 Daily kitchen (habit without a second ledger)
+
+The household will not become a family office if the app is only opened in guilt. Daily Hearth is the ever-expanding map: [DAILY_HEARTH.md](DAILY_HEARTH.md). D-042.
+
+| Work | How | Proof |
+|---|---|---|
+| Chalkboard | `scribbleChalk` / `wipeChalk`; shared; tombstoned; never `postEntry` | Chalk does not change `transactions` |
+| Ember | Mood computed; hats/chains/houses unlock from posted facts | Equipping a locked cosmetic throws |
+| Visit spark | `localStorage` per pill | Not in the snapshot, not in Sync |
+| Ask the books | `askBooks` projections; SQL still `assertReadOnlySelect` | Groceries / balance / due answers without SQL |
+| Phrase + environment | `pullSupabaseHousehold` filters both | Join URL contains `environment=eq.` |
+| PGlite per env | `idb://hearth-books-development` vs `-production` | `booksIdbName` |
+| Sit-down CAD / goal add | Plan tab shows last/next dollars; typed contribution | No `+"50"` in the UI |
+
+Bank, Interac, and cards still wait on 0.1. Cosmetics do not wait — they must not write money.
 
 ---
 

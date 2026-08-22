@@ -26,9 +26,11 @@ Optional GitHub Actions deploy uses repo secrets `CLOUDFLARE_API_TOKEN` and `CLO
 
 ## Hosted household (Supabase)
 
-The books are PostgreSQL. On the phone that is PGlite. The shared copy is the Supabase project `tykhocwacaxwquhynkok` (`https://tykhocwacaxwquhynkok.supabase.co`, region us-east-1). Phrase-join reads `household_snapshots` by invite phrase.
+The books are PostgreSQL. On the phone that is PGlite. The shared copy is the Supabase project `tykhocwacaxwquhynkok` (`https://tykhocwacaxwquhynkok.supabase.co`, region us-east-1). Phrase-join reads `household_snapshots` by invite phrase **and** environment. The unique index is `(invite_phrase, environment)`. Joining the Development household from the Production pill must not load the other snapshot.
 
-The books tables are live: `households`, `household_snapshots`, journal tables, and trial-balance views answer on the publishable key. The API secret still cannot `CREATE TABLE`. RLS is still open (`USING (true)`) until Auth exists.
+The books tables are live: `households`, `household_snapshots`, journal tables, and trial-balance views answer on the publishable key. The API secret still cannot `CREATE TABLE`. RLS is still open (`USING (true)`) until Auth exists. The future membership policy is documented in [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) and must not be applied before Auth.
+
+On the phone, PGlite uses `idb://hearth-books-development` or `idb://hearth-books-production`. The household snapshot in IndexedDB was already split by pill.
 
 Connect notes: database name is `postgres` (dashboard URIs that end in `/postgresz` are a typo). `db.tykhocwacaxwquhynkok.supabase.co` is IPv6-only. Schema apply uses the session pooler `aws-0-us-east-1.pooler.supabase.com:5432` as `postgres.tykhocwacaxwquhynkok`. The phone app never receives that password.
 

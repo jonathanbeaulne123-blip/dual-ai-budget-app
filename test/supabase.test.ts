@@ -27,9 +27,10 @@ describe("Supabase hosted books", () => {
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       expect(url).toContain("invite_phrase=eq.cedar-lantern-maple");
+      expect(url).toContain("environment=eq.development");
       return new Response(JSON.stringify([{ payload: JSON.stringify(household) }]), { status: 200 });
     }));
-    const pulled = await pullSupabaseHousehold("Cedar Lantern Maple", config);
+    const pulled = await pullSupabaseHousehold("Cedar Lantern Maple", config, "development");
     expect(pulled?.inviteCode).toBe("cedar-lantern-maple");
     expect(pulled?.linked).toBe(true);
   });

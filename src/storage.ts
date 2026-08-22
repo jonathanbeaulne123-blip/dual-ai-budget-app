@@ -110,6 +110,6 @@ export function downloadJson(household: Household): string {
 export const STORAGE_EXPLAINER = {
   database: DB_NAME,
   store: STORE,
-  books: "idb://hearth-books",
+  books: "idb://hearth-books-development (or -production)",
   backup: "localStorage " + PREFIX,
 };

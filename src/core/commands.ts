@@ -19,6 +19,8 @@ import {
   validateOwnedAmount as catalogValidateOwned,
 } from "./catalog.ts";
 import { sitDownPreview } from "./insights.ts";
+import { COSMETIC_BY_ID, isCosmeticUnlocked } from "./companion.ts";
+import { EMPTY_KITCHEN, MAX_CHALK_CHARS, MAX_CHALK_NOTES, MAX_COMPANION_NAME, isCosmeticSlot, shapeKitchen } from "./kitchen.ts";
 import { mergeTombstones } from "./sync.ts";
 import { parseVisibility, visibleForDuplicateScan } from "./visibility.ts";
 import type {
@@ -760,6 +762,74 @@ export function undo(current: Household, token: UndoToken): Household {
   return restored;
 }
 
+export function scribbleChalk(household: Household, input: { text: string; author: string }): CommitResult {
+  const text = input.text.trim();
+  if (!text) throw new ValidationError("Write something first.");
+  if (text.length > MAX_CHALK_CHARS) throw new ValidationError(`Keep it to ${MAX_CHALK_CHARS} characters. Silly, not a novel.`);
+  requireMember(household, input.author);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const at = nowIso();
+  const id = nextId("CHALK-", next.kitchen.chalkboard.map((note) => note.id), 4);
+  next.kitchen.chalkboard = [
+    ...next.kitchen.chalkboard,
+    { id, text, author: input.author, createdAt: at, updatedAt: at },
+  ].slice(-MAX_CHALK_NOTES);
+  return commit(previous, next, "Chalkboard", "Scribbled on the chalkboard", []);
+}
+
+export function wipeChalk(household: Household, id: string): CommitResult {
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const note = next.kitchen.chalkboard.find((item) => item.id === id);
+  if (!note) throw new ValidationError("That scribble is already gone.");
+  next.kitchen.chalkboard = next.kitchen.chalkboard.filter((item) => item.id !== id);
+  next.tombstones = mergeTombstones(next.tombstones, [{ id, deletedAt: nowIso() }]);
+  return commit(previous, next, "Chalkboard", "Wiped a chalkboard note", []);
+}
+
+export function renameCompanion(household: Household, name: string): CommitResult {
+  const trimmed = name.trim();
+  if (trimmed.length < 2) throw new ValidationError("Give Ember a name with at least two letters.");
+  if (trimmed.length > MAX_COMPANION_NAME) throw new ValidationError("Keep the name short enough to shout across the kitchen.");
+  if (!/^[A-Za-z0-9][A-Za-z0-9 '\-]*$/.test(trimmed)) {
+    throw new ValidationError("Use letters, numbers, spaces, or hyphens.");
+  }
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  next.kitchen.companion = { ...next.kitchen.companion, name: trimmed, updatedAt: nowIso() };
+  return commit(previous, next, "Companion", `Named the companion ${trimmed}`, []);
+}
+
+export function equipCosmetic(household: Household, input: {
+  slot: string;
+  itemId: string | null;
+  today: DateKey;
+}): CommitResult {
+  if (!isCosmeticSlot(input.slot)) throw new ValidationError("Hats, chains, or houses only.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const itemId = input.itemId?.trim() && input.itemId !== "none" ? input.itemId.trim() : null;
+  if (itemId) {
+    const item = COSMETIC_BY_ID.get(itemId);
+    if (!item || item.slot !== input.slot) throw new ValidationError("That upgrade does not exist.");
+    if (!isCosmeticUnlocked(next, item, input.today)) {
+      throw new ValidationError(`${item.name} is still locked. ${item.hint}.`);
+    }
+  }
+  next.kitchen.companion = {
+    ...next.kitchen.companion,
+    equipped: { ...next.kitchen.companion.equipped, [input.slot]: itemId },
+    updatedAt: nowIso(),
+  };
+  const label = itemId ? COSMETIC_BY_ID.get(itemId)?.name || itemId : `no ${input.slot}`;
+  return commit(previous, next, "Companion", `Equipped ${label}`, []);
+}
+
 export function emptyHousehold(environment: Household["environment"] = "development"): Household {
   return {
     version: 1,
@@ -779,6 +849,7 @@ export function emptyHousehold(environment: Household["environment"] = "developm
     shifts: [],
     recurrences: [],
     calendar: { ...EMPTY_CALENDAR },
+    kitchen: shapeKitchen(EMPTY_KITCHEN),
     goals: [],
     budgetPlans: [],
     activity: [],

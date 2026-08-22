@@ -1,6 +1,6 @@
 import { addDays, monthKeyFromDateKey, shiftMonthKey, todayKey, type DateKey } from "./calendar.ts";
 import { DEFAULT_SHIFT_SETTINGS } from "./shift.ts";
-import { emptyHousehold, postEntry, postShift, postTransfer, addGoal, addRecurrence, setBudget, contributeToGoal } from "./commands.ts";
+import { emptyHousehold, postEntry, postShift, postTransfer, addGoal, addRecurrence, setBudget, contributeToGoal, scribbleChalk } from "./commands.ts";
 import { JOINT, type Household } from "./types.ts";
 import { jointSplit, equalSplits } from "./splits.ts";
 
@@ -317,6 +317,9 @@ export function seedDemoHousehold(options?: { today?: DateKey; environment?: Hou
     visibility: "both",
     confirmDuplicate: true,
   }).household;
+
+  household = scribbleChalk(household, { text: "Leftover chili — do not order in", author: "MEM-001" }).household;
+  household = scribbleChalk(household, { text: "Ember gets a hat if rent is on time", author: "MEM-002" }).household;
 
   return household;
 }

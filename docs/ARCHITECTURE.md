@@ -7,7 +7,7 @@ Hearth is a TypeScript household ledger with a React interface. The domain lives
 Persistence is two layers:
 
 1. **Command snapshot** — IndexedDB `hearth-ledger` / store `households`, plus a `localStorage` fallback. This is what commands clone, validate, and undo.
-2. **Books** — a double-entry PostgreSQL database in PGlite (`idb://hearth-books`). After every save the snapshot is posted as balanced `journal_entries` / `journal_lines`. Views expose trial balance, income statement, net worth, and an unbalanced-entry alarm.
+2. **Books** — a double-entry PostgreSQL database in PGlite (`idb://hearth-books-development` or `idb://hearth-books-production`). After every save the snapshot is posted as balanced `journal_entries` / `journal_lines`. Views expose trial balance, income statement, net worth, and an unbalanced-entry alarm.
 
 The website is Cloudflare Workers + Assets (`hearth-books`). Hosted books are the household Supabase Postgres project. Download SQL from the Books tab still loads the same schema elsewhere.
 
@@ -20,10 +20,10 @@ The in-memory model is still the source of truth while a command runs: clone the
 ## Layers
 
 1. **Catalog** — members, accounts, categories, shift settings.
-2. **Commands** — `postEntry`, `postTransfer`, `postShift`, `addCategory`, budget, goals, recurrences (`addRecurrence`, `adoptRhythm`, `postOneRecurrence`, `postDueRecurrences`). Each clones state, writes, refreshes duplicate flags, appends activity, and returns an undo snapshot.
+2. **Commands** — `postEntry`, `postTransfer`, `postShift`, `addCategory`, budget, goals, recurrences (`addRecurrence`, `adoptRhythm`, `postOneRecurrence`, `postDueRecurrences`), plus cosmetic `scribbleChalk` / `equipCosmetic` (D-042). Each clones state, writes, refreshes duplicate flags, appends activity, and returns an undo snapshot. Cosmetics never post money.
 3. **Books** — `compileHousehold` turns each money document into balanced debit/credit lines. PGlite stores them. Health Check refuses a household whose trial balance or accounting equation is off.
-4. **Projections** — `monthSummary`, `weekSummary`, `buildDashboard`, `runHealthCheck`, `sitDownPreview`, `trialBalance`, `detectRhythms`, `buildMonthBoard`.
-5. **UI** — Home, Calendar (month, spotted bills, Google), Add, Plan, Books (register / journal / trial balance / accounts / SQL), More (health, recent undo, invite).
+4. **Projections** — `monthSummary`, `weekSummary`, `buildDashboard`, `runHealthCheck`, `sitDownPreview`, `trialBalance`, `detectRhythms`, `buildMonthBoard`, `askBooks`, `describeCompanion`.
+5. **UI** — Home (Ember, chalkboard, net, pulse), Calendar, Add, Plan, Books (register / journal / trial balance / accounts / Ask), More (health, recent undo, invite).
 
 ## Data-model rules
 
@@ -36,6 +36,7 @@ The in-memory model is still the source of truth while a command runs: clone the
 - `duplicateKey` is an exact fingerprint. Posting also scores similar rows: same type, same amount, within five Toronto calendar days, plus shared notes, place, category, or source. Partner personal rows are not part of that scan. `potentialDuplicate` is derived from that. `isDuplicate` remains the reviewed financial control.
 - Recurring definitions stay separate from posted rows. The Calendar tab projects them onto a Toronto month, spots repeating ledger rows (`detectRhythms`), and can write reminders to Google or an `.ics` file. Posting due items still uses the same `postEntry` path after confirm. Google and ICS never write the books.
 - Goals are data. Shared goals appear on Home. Personal goals are a filter only — not a privacy boundary.
+- Kitchen cosmetics (`kitchen.chalkboard`, Ember) are shared household data. They merge and tombstone like recurrences. They are not journal lines.
 
 ## Shift boundary
 

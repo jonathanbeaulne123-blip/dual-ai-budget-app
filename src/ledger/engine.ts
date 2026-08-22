@@ -5,7 +5,7 @@ import {
   trialBalance,
   type CompiledBooks,
 } from "../core/journal.ts";
-import type { Household } from "../core/types.ts";
+import type { Household, Environment } from "../core/types.ts";
 import { assertReadOnlySelect } from "./queryGuard.ts";
 import { BOOKS_SCHEMA, BOOKS_SCHEMA_VERSION } from "./schema.ts";
 import { pushSupabaseHousehold } from "./supabase.ts";
@@ -32,7 +32,11 @@ type Queryable = {
   exec: PGlite["exec"];
 };
 
-let browserDb: PGlite | null = null;
+let browserDbs = new Map<string, PGlite>();
+
+export function booksIdbName(environment: Environment): string {
+  return `idb://hearth-books-${environment}`;
+}
 
 async function migrate(db: Queryable): Promise<void> {
   await db.exec(BOOKS_SCHEMA);
@@ -49,13 +53,15 @@ export async function openMemoryBooks(): Promise<PGlite> {
   return db;
 }
 
-export async function getBrowserBooks(): Promise<PGlite> {
-  if (browserDb) return browserDb;
+export async function getBrowserBooks(environment: Environment = "development"): Promise<PGlite> {
+  const existing = browserDbs.get(environment);
+  if (existing) return existing;
   const { PGlite } = await import("@electric-sql/pglite");
   const persist = typeof indexedDB !== "undefined";
-  browserDb = persist ? await PGlite.create("idb://hearth-books") : await PGlite.create();
-  await migrate(browserDb);
-  return browserDb;
+  const db = persist ? await PGlite.create(booksIdbName(environment)) : await PGlite.create();
+  await migrate(db);
+  browserDbs.set(environment, db);
+  return db;
 }
 
 async function hashSnapshot(household: Household): Promise<string> {
@@ -214,7 +220,7 @@ async function writeBooks(db: Queryable, household: Household, compiled: Compile
 
 export async function syncHouseholdBooks(household: Household): Promise<{ compiled: CompiledBooks; status: BooksStatus }> {
   const compiled = compileHousehold(household);
-  const db = await getBrowserBooks();
+  const db = await getBrowserBooks(household.environment);
   const status = await ingestBooks(db, household, compiled);
   try {
     const hosted = await pushSupabaseHousehold({ ...household, linked: true });
@@ -248,17 +254,17 @@ export async function syncHouseholdBooks(household: Household): Promise<{ compil
   }
 }
 
-export async function queryBooks(sql: string): Promise<{ columns: string[]; rows: Record<string, unknown>[] }> {
+export async function queryBooks(sql: string, environment: Environment = "development"): Promise<{ columns: string[]; rows: Record<string, unknown>[] }> {
   const safe = assertReadOnlySelect(sql);
-  const db = await getBrowserBooks();
+  const db = await getBrowserBooks(environment);
   const result = await db.query<Record<string, unknown>>(safe);
   const rows = result.rows.slice(0, 500);
   const columns = result.fields?.map((field) => field.name) ?? (rows[0] ? Object.keys(rows[0]) : []);
   return { columns, rows };
 }
 
-export async function sqlTrialBalance(householdId: string) {
-  const db = await getBrowserBooks();
+export async function sqlTrialBalance(householdId: string, environment: Environment = "development") {
+  const db = await getBrowserBooks(environment);
   return db.query(
     `SELECT code, name, account_type, debit_cents, credit_cents, net_cents
      FROM v_trial_balance
