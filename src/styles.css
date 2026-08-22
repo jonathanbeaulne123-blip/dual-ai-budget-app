@@ -15,6 +15,22 @@
   --nav: 76px;
   --font: "Figtree", sans-serif;
   --display: "Fraunces", Georgia, serif;
+  --sill: #b9a68a;
+  --glass: #cfd8dc;
+  --glass-rain: #9fb0b5;
+  --glass-night: #26303a;
+  --glass-snow: #e6ecef;
+  --rain: rgba(255, 255, 255, 0.35);
+  --desk: var(--paper-2);
+  --felt: #7b5e3b;
+  --brass: #b08d57;
+  --lamp-on: #f0c96b;
+  --lamp-off: #6b6258;
+  --lift-0: 0 1px 0 rgba(60, 42, 20, 0.10);
+  --lift-1: 0 6px 14px rgba(60, 42, 20, 0.12);
+  --lift-2: 0 18px 40px rgba(60, 42, 20, 0.18);
+  --room-dim: 0;
+  --room-cool: 0;
 }
 
 * { box-sizing: border-box; }
@@ -167,6 +183,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
 
 .nav {
   position: fixed;
+  z-index: 15;
   left: 0; right: 0; bottom: 0;
   height: var(--nav);
   background: rgba(243, 238, 228, 0.92);

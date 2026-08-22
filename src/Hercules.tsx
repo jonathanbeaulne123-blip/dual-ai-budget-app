@@ -1,18 +1,28 @@
 import { useEffect, useId, useMemo, useRef, useState, type PointerEvent } from "react";
 import {
+  attackTarget,
   chatHercules,
   describeCompanion,
+  emitOfficeIntent,
   groceryHighFive,
   herculesBriefing,
   herculesIdle,
   herculesMutters,
   herculesNeedsCheck,
+  hourInToronto,
+  kettlePhase,
   kitchenSeason,
   ledgerChats,
+  listFurniture,
   memoryLabelsForModel,
+  perchTarget,
   planHerculesTurn,
   recordHerculesTalk,
+  subscribeFurniture,
   talkHercules,
+  walkPath,
+  CAT,
+  NAV,
   type CommitResult,
   type CompanionMood,
   type HearthTab,
@@ -22,9 +32,6 @@ import {
   type HerculesTalk,
   type Household,
 } from "./core/index.ts";
-
-const CAT = 96;
-const NAV = 76;
 
 function dressedLook(household: Household, today: string, visorPop: boolean) {
   const view = describeCompanion(household, today);
@@ -38,18 +45,22 @@ function dressedLook(household: Household, today: string, visorPop: boolean) {
   };
 }
 
-function safePerch(adding: boolean, mood: CompanionMood, w: number, h: number): { x: number; y: number } {
-  const pad = 6;
-  const maxX = Math.max(pad, w - CAT - pad);
-  const maxY = Math.max(pad, h - CAT - NAV - pad);
-  const minY = adding ? pad : 52;
-  if (adding) return { x: pad, y: pad };
-  if (mood === "hiding") return { x: Math.random() > 0.5 ? pad : maxX, y: maxY };
-  let x = pad + Math.random() * Math.max(8, maxX - pad);
-  let y = minY + Math.random() * Math.max(8, maxY - minY);
-  const fab = w / 2;
-  if (y > h - NAV - 130 && Math.abs(x + CAT / 2 - fab) < 56) x = pad;
-  return { x, y };
+function reducedMotion(): boolean {
+  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function furnitureLand(adding: boolean, mood: CompanionMood, today: string) {
+  const furniture = listFurniture();
+  const post = furniture.find((item) => item.id === "calculator-post");
+  const phase = kettlePhase(today, hourInToronto());
+  return perchTarget(
+    furniture,
+    mood,
+    phase,
+    adding,
+    { w: window.innerWidth, h: window.innerHeight },
+    post?.rect ?? null,
+  );
 }
 
 export function HerculesPortrait({
@@ -183,6 +194,7 @@ export function HerculesPresence({
   onGo,
   onLedger,
   onDraft,
+  onPayCard,
 }: {
   household: Household;
   today: string;
@@ -195,6 +207,7 @@ export function HerculesPresence({
   onGo: (tab: HearthTab) => void;
   onLedger: (fn: (current: Household) => CommitResult) => void;
   onDraft?: (draft: HerculesDraft) => void;
+  onPayCard?: () => void;
 }) {
   const look = useMemo(() => dressedLook(household, today, Boolean(visorPop)), [household, today, visorPop]);
   const five = useMemo(() => groceryHighFive(household, today), [household, today]);
@@ -218,17 +231,23 @@ export function HerculesPresence({
   const mutterAt = useRef(0);
   const chatGen = useRef(0);
   const logRef = useRef<HTMLDivElement | null>(null);
+  const perchedOn = useRef<string | null>(null);
+  const lastAttack = useRef(0);
 
   useEffect(() => {
-    const { innerWidth: w, innerHeight: h } = window;
-    const next = safePerch(adding, look.view.mood, w, h);
+    const next = furnitureLand(adding, look.view.mood, today);
+    perchedOn.current = next.on;
     setFlip(next.x < pos.x);
-    setPos(next);
-    setMotion(adding ? "sleep" : five.yes || spark ? "jump" : "walk");
-    const land = window.setTimeout(() => setMotion(five.yes || spark ? "celebrate" : look.view.mood === "hiding" ? "hide" : look.view.mood === "restless" ? "pace" : "loaf"), 900);
+    setPos({ x: next.x, y: next.y });
+    setMotion(adding ? "loaf" : five.yes || spark ? "jump" : next.pose === "loaf" ? "walk" : next.pose);
+    if (reducedMotion()) {
+      setMotion(adding ? "loaf" : five.yes || spark ? "celebrate" : next.pose);
+      return;
+    }
+    const land = window.setTimeout(() => setMotion(five.yes || spark ? "celebrate" : look.view.mood === "hiding" ? "hide" : look.view.mood === "restless" ? "pace" : next.pose), 900);
     return () => window.clearTimeout(land);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- hop on room change, not every pos tick
-  }, [tab, adding, look.view.mood, five.yes, spark]);
+  }, [tab, adding, look.view.mood, five.yes, spark, today]);
 
   useEffect(() => {
     if (visorPop) {
@@ -245,30 +264,88 @@ export function HerculesPresence({
       const phase = idleAt.current % 6;
       if (look.view.mood === "restless") {
         setMotion("pace");
-        const { innerWidth: w, innerHeight: h } = window;
-        const next = safePerch(false, look.view.mood, w, h);
+        const next = furnitureLand(false, look.view.mood, today);
+        perchedOn.current = next.on;
         setFlip(next.x < pos.x);
-        setPos(next);
+        setPos({ x: next.x, y: next.y });
         return;
       }
       if (look.view.mood === "hiding") {
+        const prey = attackTarget(listFurniture());
+        if (prey?.id === "lamp" && Date.now() - lastAttack.current > 90_000) {
+          lastAttack.current = Date.now();
+          perchedOn.current = prey.id;
+          const land = furnitureLand(false, look.view.mood, today);
+          setMotion("attack");
+          setPos({ x: land.x, y: land.y });
+          if (!open) {
+            setTalk({ spoken: "mrrp", lesson: null, fact: null, replies: [], pose: "attack", topic: "attack", attention: false });
+            window.setTimeout(() => setTalk((current) => (current?.topic === "attack" ? null : current)), 1800);
+          }
+          return;
+        }
         setMotion("hide");
+        return;
+      }
+      const prey = attackTarget(listFurniture());
+      if (prey && prey.id !== "lamp" && Date.now() - lastAttack.current > 90_000) {
+        lastAttack.current = Date.now();
+        perchedOn.current = prey.id;
+        const land = furnitureLand(false, look.view.mood, today);
+        setMotion("attack");
+        setPos({ x: land.x, y: land.y });
+        if (!open) {
+          setTalk({ spoken: "mrrp", lesson: null, fact: null, replies: [], pose: "attack", topic: "attack", attention: false });
+          window.setTimeout(() => setTalk((current) => (current?.topic === "attack" ? null : current)), 1800);
+        }
         return;
       }
       if (phase === 0 || phase === 3) {
         setMotion("walk");
-        const { innerWidth: w, innerHeight: h } = window;
-        const next = safePerch(false, look.view.mood, w, h);
+        const next = furnitureLand(false, look.view.mood, today);
+        const path = walkPath(pos, { x: next.x, y: next.y }, listFurniture());
+        if (path.length > 2) {
+          const hit = listFurniture().find((item) => item.id !== "window" && item.kind !== "sill");
+          if (hit) emitOfficeIntent({ type: "bump", id: hit.id });
+        }
+        perchedOn.current = next.on;
         setFlip(next.x < pos.x);
-        setPos(next);
-        window.setTimeout(() => setMotion(look.view.mood === "glowing" ? "loaf" : "stretch"), 950);
-      } else if (phase === 1) setMotion("wash");
+        setPos({ x: next.x, y: next.y });
+        const landing = look.view.mood === "glowing" || look.view.mood === "content"
+          ? (next.on === "chalkboard" || next.on === "wallet" ? "lick" : next.pose)
+          : next.pose;
+        if (reducedMotion()) {
+          setMotion(landing);
+        } else {
+          window.setTimeout(() => setMotion(landing), 950);
+        }
+      } else if (phase === 1) setMotion(look.view.mood === "glowing" || look.view.mood === "content" ? "lick" : "wash");
       else if (phase === 2) setMotion("stretch");
       else if (phase >= 4 && look.view.mood === "glowing") setMotion("sleep");
-      else setMotion("loaf");
+      else setMotion("perch");
     }, 9000);
     return () => window.clearInterval(id);
-  }, [open, pinned, adding, look.view.mood, pos.x]);
+  }, [open, pinned, adding, look.view.mood, pos.x, pos.y, today]);
+
+  useEffect(() => {
+    return subscribeFurniture(() => {
+      if (pinned || adding || open || drag.current) return;
+      const on = perchedOn.current;
+      if (!on) return;
+      const item = listFurniture().find((row) => row.id === on);
+      if (!item) {
+        const next = furnitureLand(false, look.view.mood, today);
+        perchedOn.current = next.on;
+        setPos({ x: next.x, y: next.y });
+        setMotion(next.pose);
+        return;
+      }
+      setPos((current) => ({
+        x: current.x,
+        y: Math.max(6, item.rect.y - CAT + 12),
+      }));
+    });
+  }, [pinned, adding, open, look.view.mood, today]);
 
   useEffect(() => {
     if (adding || open || !mutters) return;
@@ -346,10 +423,20 @@ export function HerculesPresence({
       onGo("more");
       return true;
     }
-    if (/^sit-down/i.test(text)) {
+    if (/^sit-down|^sit down/i.test(text)) {
+      emitOfficeIntent({ type: "expand", id: "postcard" });
       closeChat();
-      onGo("plan");
       return true;
+    }
+    if (/pay the card/i.test(text)) {
+      emitOfficeIntent({ type: "expand", id: "wallet" });
+      onPayCard?.();
+      closeChat();
+      return true;
+    }
+    if (/what.?s on the visa/i.test(text)) {
+      emitOfficeIntent({ type: "expand", id: "wallet" });
+      return false;
     }
     return false;
   }
@@ -530,8 +617,9 @@ export function HerculesPresence({
           purr ? "purr" : "",
           five.yes ? "high-five" : "",
           attention ? "needs-you" : "",
-          adding ? "loafing" : "",
+          adding ? "loafing is-adding" : "",
           pinned ? "pinned" : "",
+          reducedMotion() ? "cut-motion" : "",
         ].join(" ")}
         style={{ left: pos.x, top: pos.y, width: size, height: size }}
         aria-label={attention ? `${look.view.name} wants a check-in` : `Talk to ${look.view.name}`}

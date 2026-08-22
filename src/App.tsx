@@ -6,7 +6,6 @@ import {
   addCategory,
   addFormDefaults,
   addGoal,
-  auditOpinion,
   buildDashboard,
   calcShiftAmounts,
   catalogHousehold,
@@ -16,11 +15,12 @@ import {
   creditCardView,
   defaultVisibilityForView,
   dollarsFromCentsDigits,
+  emitOfficeIntent,
   findActiveGoogleLinkByEmail,
   findActiveGoogleLinkBySubject,
   formatCad,
-  formatDateLabel,
   householdForView,
+  householdWallet,
   accountOptionLabel,
   jointSplit,
   memberNeedsGoogleStepUp,
@@ -58,9 +58,8 @@ import { PairingCard, WelcomeJoin } from "./Pairing.tsx";
 import { BooksPage } from "./Books.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
 import { CalendarPage } from "./Calendar.tsx";
-import { DailyHearth } from "./DailyHearth.tsx";
+import { Office } from "./Office.tsx";
 import { HerculesPresence } from "./Hercules.tsx";
-import { WalletStrip } from "./Accounts.tsx";
 import { CadPad } from "./CadPad.tsx";
 import { SitDownGuide } from "./SitDownGuide.tsx";
 import { playClink } from "./clink.ts";
@@ -220,7 +219,6 @@ export function App() {
     () => (visible ? buildDashboard(visible, today, now, findings.length) : null),
     [visible, today, now, findings.length],
   );
-  const opinion = useMemo(() => (household ? auditOpinion(household) : null), [household]);
 
   function rememberSession(next: Session) {
     setSession(next);
@@ -323,15 +321,22 @@ export function App() {
         if (result.postedIds.some((id) => /^(TXN|SHF)/.test(id))) {
           setSpark(true);
           window.setTimeout(() => setSpark(false), 900);
-          if (readClinkOn(environment)) playClink();
+          if (readClinkOn(environment)) {
+            playClink();
+            if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+              navigator.vibrate(10);
+            }
+          }
         }
         if (result.household.activity.at(-1)?.action === "Post Recurring") {
           setVisorPop(true);
           window.setTimeout(() => setVisorPop(false), 700);
         }
       } catch (caught) {
-        if (caught instanceof NeedsConfirmationError) setConfirm(caught);
-        else setError(caught instanceof Error ? caught.message : String(caught));
+        if (caught instanceof NeedsConfirmationError) {
+          setConfirm(caught);
+          setAdding(true);
+        } else setError(caught instanceof Error ? caught.message : String(caught));
       }
     });
   }
@@ -661,110 +666,66 @@ export function App() {
       </div>
 
       {tab === "home" && dashboard && (
-        <>
-          <DailyHearth
-            household={household}
-            memberId={session.memberId}
-            today={today}
-            busy={busy}
-            environment={environment}
-            clinkOn={clinkOn}
-            onClinkOn={setClinkOn}
-            onCommand={(fn) => { void run(fn); }}
-            onBuyNote={(text) => {
-              openAddFor(null, "expense");
-              setForm((current) => ({
-                ...current,
-                note: text.slice(0, 80),
-                subcategoryId: "SUB-FOOD-GROCERIES",
-              }));
-            }}
-          />
-          <section className="hero">
-            <div className="label">{view === "personal" ? "Personal" : "Household"} · {dashboard.monthLabel}</div>
-            <div className={`money ${dashboard.month.netActualCents < 0 ? "negative" : ""}`}>{formatCad(dashboard.month.netActualCents)}</div>
-            <div className="sub">
-              {formatCad(dashboard.month.incomeActualCents)} in · {formatCad(dashboard.month.expenseActualCents)} out
-              {opinion ? ` · ${opinion.kind}` : ""}
-            </div>
-          </section>
-          <div className="quick-acts">
-            <button type="button" className="quick-act" onClick={() => {
-              openAddFor(null, "expense");
-              setForm((current) => ({ ...current, note: "Milk", subcategoryId: "SUB-FOOD-GROCERIES" }));
-            }}>Milk</button>
-            <button type="button" className="quick-act" onClick={() => openAddFor(null, "shift")}>Shift</button>
-            {ledger.accounts.some((account) => account.active && account.kind === "credit") && (
-              <button
-                type="button"
-                className="quick-act"
-                onClick={() => {
-                  const card = ledger.accounts.find((account) => account.active && account.kind === "credit");
-                  if (card) openPayCard(card);
-                }}
-              >
-                Pay card
-              </button>
-            )}
-          </div>
-          <WalletStrip
-            household={household}
-            today={today}
-            focusedId={focusedAccountId}
-            onOpen={openWallet}
-          />
-          <div className="pulse">
-            {dashboard.pulses.slice(0, 2).map((pulse) => (
-              <button
-                key={pulse.sentence}
-                type="button"
-                className={`pulse-hit ${pulse.tone}`}
-                onClick={() => setTab(pulse.tone === "warn" ? "calendar" : "home")}
-              >
-                {pulse.sentence}
-              </button>
-            ))}
-          </div>
-          <div className="grid">
-            <div className="stat"><span>This week</span><strong>{formatCad(dashboard.week.expenseCents)}</strong></div>
-            <div className="stat"><span>vs last</span><strong>{formatCad(dashboard.week.expenseCents - dashboard.week.lastWeekExpenseCents)}</strong></div>
-          </div>
-          <section className="card">
-            <header>
-              <h2>This week</h2>
-              <span className="muted">{formatDateLabel(dashboard.week.start)} – {formatDateLabel(dashboard.week.end)}</span>
-            </header>
-            {dashboard.week.movers.slice(0, 4).map((mover) => (
-              <div className="row" key={mover.name}>
-                <span>{mover.name}{mover.hot ? " · hot" : ""}</span>
-                <span className="right">{formatCad(mover.actualCents)}</span>
-              </div>
-            ))}
-          </section>
-          {dashboard.upcoming.length > 0 && (
-            <section className="card" role="button" tabIndex={0} onClick={() => setTab("calendar")} onKeyDown={(event) => { if (event.key === "Enter") setTab("calendar"); }}>
-              <header>
-                <h2>Money dates</h2>
-                <span className="muted">Calendar</span>
-              </header>
-              {dashboard.upcoming.slice(0, 3).map((item) => (
-                <div className="row" key={item.id}>
-                  <span>{formatDateLabel(item.date)} · {item.title}</span>
-                  <span className={item.direction === "out" ? "" : "muted"}>{formatCad(item.amountCents)}</span>
-                </div>
-              ))}
-            </section>
-          )}
-          <section className="card">
-            <header><h2>Goals</h2></header>
-            {dashboard.goals.map((item) => (
-              <div key={item.goal.id}>
-                <div className="row"><span>{item.goal.name}</span><span>{Math.round(item.progress * 100)}%</span></div>
-                <div className="bar"><i style={{ width: `${item.progress * 100}%` }} /></div>
-              </div>
-            ))}
-          </section>
-        </>
+        <Office
+          household={household}
+          dashboard={dashboard}
+          today={today}
+          environment={environment}
+          memberId={session.memberId}
+          view={view}
+          busy={busy}
+          clinkOn={clinkOn}
+          adding={adding}
+          form={form}
+          mode={mode}
+          error={error}
+          categories={categories}
+          shiftPreview={shiftPreview}
+          postLabel={addPostLabel()}
+          onClinkOn={setClinkOn}
+          onForm={setForm}
+          onPost={() => submit()}
+          onMore={() => {
+            setAdding(true);
+            setAddDetails(true);
+          }}
+          onMilk={() => {
+            setMode("expense");
+            setForm((current) => ({ ...current, note: "Milk", subcategoryId: "SUB-FOOD-GROCERIES" }));
+            emitOfficeIntent({ type: "expand", id: "calculator" });
+          }}
+          onCoffee={() => {
+            setMode("expense");
+            setForm((current) => ({ ...current, note: "Coffee", subcategoryId: "SUB-FOOD-COFFEE" }));
+            emitOfficeIntent({ type: "expand", id: "calculator" });
+          }}
+          onShift={() => {
+            setMode("shift");
+            emitOfficeIntent({ type: "expand", id: "calculator" });
+          }}
+          onLogShift={() => openAddFor(null, "shift")}
+          onPayCard={openPayCard}
+          onOpenAccount={openWallet}
+          onBuyNote={(text) => {
+            openAddFor(null, "expense");
+            setForm((current) => ({
+              ...current,
+              note: text.slice(0, 80),
+              subcategoryId: "SUB-FOOD-GROCERIES",
+            }));
+          }}
+          onKitchen={(fn) => { void runKitchen(fn); }}
+          onMarkPaid={(recurrenceId, summary) => setGuard({ kind: "postRecurrence", recurrenceId, summary })}
+          onSitDown={(next, token) => persist(next, token)}
+          onGo={(next) => {
+            if (next === "add") {
+              openAddFor(null);
+              return;
+            }
+            setTab(next);
+            setAdding(false);
+          }}
+        />
       )}
 
       {tab === "plan" && dashboard && (
@@ -1323,6 +1284,10 @@ export function App() {
             note: note ?? "",
             subcategoryId: "SUB-FOOD-GROCERIES",
           }));
+        }}
+        onPayCard={() => {
+          const card = householdWallet(household, today).hottestCard;
+          if (card) openPayCard(card.account);
         }}
         onLedger={(fn) => { void runKitchen(fn); }}
         onDraft={(draft) => {
