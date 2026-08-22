@@ -1,134 +1,23 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type PointerEvent } from "react";
 import {
-  HERCULES_CHIPS,
-  askHercules,
   describeCompanion,
   groceryHighFive,
-  herculesPageBrief,
+  herculesIdle,
+  herculesMutters,
+  herculesNeedsCheck,
   kitchenSeason,
-  markRecapSeen,
-  weekRecap,
+  talkHercules,
   type CompanionMood,
-  type Environment,
   type HearthTab,
+  type HerculesPose,
+  type HerculesTalk,
   type Household,
 } from "./core/index.ts";
 
-export function HerculesPortrait({
-  mood,
-  hat,
-  chain,
-  house,
-  collar,
-  size = "stage",
-}: {
-  mood: CompanionMood;
-  hat: string | null;
-  chain: string | null;
-  house: string | null;
-  collar: string | null;
-  size?: "stage" | "dock";
-}) {
-  const stage = useRef<HTMLDivElement>(null);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+const CAT = 96;
+const NAV = 76;
 
-  function onMove(event: PointerEvent<HTMLDivElement>) {
-    const box = stage.current?.getBoundingClientRect();
-    if (!box) return;
-    const px = (event.clientX - box.left) / box.width - 0.5;
-    const py = (event.clientY - box.top) / box.height - 0.5;
-    setTilt({ x: -(py * 10), y: px * 14 });
-  }
-
-  return (
-    <div
-      ref={stage}
-      className={`hercules-stage house-${house || "none"} size-${size} mood-${mood}`}
-      aria-hidden="true"
-      onPointerMove={onMove}
-      onPointerLeave={() => setTilt({ x: 0, y: 0 })}
-    >
-      {house && (
-        <span className="hercules-house">
-          {house === "townhouse" ? "⌂⌂" : house === "patio" ? "☀" : "⌂"}
-        </span>
-      )}
-      <div className="hercules-rig" style={{ transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)` }}>
-        <svg viewBox="0 0 160 170" className={`hercules-svg tail-${mood}`}>
-          <defs>
-            <linearGradient id="fur" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#c4a574" />
-              <stop offset="45%" stopColor="#8b5a2b" />
-              <stop offset="100%" stopColor="#3c2412" />
-            </linearGradient>
-            <linearGradient id="ruffGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#f0e0c4" />
-              <stop offset="100%" stopColor="#c4a574" />
-            </linearGradient>
-          </defs>
-          {house === "patio" && (
-            <g>
-              <ellipse cx="80" cy="22" rx="28" ry="8" fill="#c45c26" opacity="0.85" />
-              <path d="M80 22 L80 48" stroke="#1b1712" strokeWidth="2" />
-            </g>
-          )}
-          <ellipse cx="78" cy="158" rx="36" ry="8" fill="rgba(27,23,18,0.16)" />
-          <path className="hercules-tail" d="M118 108 C148 92 156 128 132 148 C150 130 142 96 118 108 Z" fill="url(#fur)" />
-          <ellipse cx="80" cy="118" rx="42" ry="32" fill="url(#fur)" />
-          <ellipse cx="80" cy="112" rx="28" ry="22" fill="url(#ruffGrad)" />
-          {hat === "ruff" && <ellipse cx="80" cy="104" rx="38" ry="18" fill="url(#ruffGrad)" opacity="0.95" />}
-          <path d="M48 52 L38 18 L62 44 Z" fill="url(#fur)" />
-          <path d="M112 52 L122 18 L98 44 Z" fill="url(#fur)" />
-          <path d="M42 22 L38 8 L52 20" stroke="#3c2412" strokeWidth="3" fill="none" />
-          <path d="M118 22 L122 8 L108 20" stroke="#3c2412" strokeWidth="3" fill="none" />
-          <ellipse cx="80" cy="72" rx="34" ry="30" fill="url(#fur)" />
-          <path d="M80 78 L72 92 L88 92 Z" fill="#5c3a22" />
-          <circle cx="66" cy="68" r={mood === "hiding" ? 3 : 6} fill="#1b1712" />
-          <circle cx="94" cy="68" r={mood === "hiding" ? 3 : 6} fill="#1b1712" />
-          {mood !== "hiding" && <circle cx="64" cy="66" r="1.6" fill="#f3eee4" />}
-          {mood !== "hiding" && <circle cx="92" cy="66" r="1.6" fill="#f3eee4" />}
-          {mood === "glowing" && <path d="M68 98 Q80 110 92 98" fill="none" stroke="#1b1712" strokeWidth="3" />}
-          {mood === "restless" && <path d="M68 102 Q80 92 92 102" fill="none" stroke="#1b1712" strokeWidth="3" />}
-          {mood === "content" && <path d="M70 100 L90 100" stroke="#1b1712" strokeWidth="3" />}
-          {mood === "hiding" && <path d="M70 96 L90 96" stroke="#1b1712" strokeWidth="2" />}
-          <path d="M58 88 L48 90" stroke="#1b1712" strokeWidth="1.5" />
-          <path d="M102 88 L112 90" stroke="#1b1712" strokeWidth="1.5" />
-          {hat === "toque" && <path d="M52 48 Q80 8 108 48 Q80 34 52 48 Z" fill="#f3eee4" stroke="#1b1712" strokeWidth="2" />}
-          {hat === "visor" && (
-            <g>
-              <rect x="48" y="44" width="64" height="12" rx="4" fill="#1b1712" />
-              <rect x="92" y="46" width="32" height="8" rx="3" fill="#c45c26" />
-            </g>
-          )}
-          {hat === "chef" && (
-            <g>
-              <ellipse cx="80" cy="32" rx="26" ry="16" fill="#fffaf2" stroke="#1b1712" strokeWidth="2" />
-              <rect x="68" y="42" width="24" height="12" fill="#fffaf2" stroke="#1b1712" />
-            </g>
-          )}
-          {hat === "ruff" && <path d="M44 58 Q80 78 116 58" fill="none" stroke="#f0e0c4" strokeWidth="10" strokeLinecap="round" />}
-          {chain === "copper" && <ellipse cx="80" cy="128" rx="18" ry="8" fill="none" stroke="#c45c26" strokeWidth="3" />}
-          {chain === "gold" && <ellipse cx="80" cy="128" rx="18" ry="8" fill="none" stroke="#c9a227" strokeWidth="4" />}
-          {collar === "bell" && (
-            <g>
-              <path d="M58 118 H102" stroke="#c9a227" strokeWidth="4" />
-              <circle cx="80" cy="128" r="7" fill="#c9a227" stroke="#1b1712" />
-            </g>
-          )}
-          {collar === "yarn" && <path d="M56 116 Q80 132 104 116" fill="none" stroke="#c45c26" strokeWidth="5" strokeLinecap="round" />}
-          {collar === "fish" && <ellipse cx="118" cy="102" rx="12" ry="6" fill="#2c6a4e" />}
-        </svg>
-      </div>
-      {size === "stage" && <span className="hercules-mood">{mood}</span>}
-    </div>
-  );
-}
-
-function dressedLook(
-  household: Household,
-  today: string,
-  visorPop: boolean,
-) {
+function dressedLook(household: Household, today: string, visorPop: boolean) {
   const view = describeCompanion(household, today);
   const season = kitchenSeason(today);
   return {
@@ -137,52 +26,375 @@ function dressedLook(
     house: view.equipped.house || (season === "patio" ? "patio" : null),
     chain: view.equipped.chain,
     collar: view.equipped.collar,
-    season,
   };
 }
 
-export function HerculesDock({
+function safePerch(adding: boolean, mood: CompanionMood, w: number, h: number): { x: number; y: number } {
+  const pad = 6;
+  const maxX = Math.max(pad, w - CAT - pad);
+  const maxY = Math.max(pad, h - CAT - NAV - pad);
+  const minY = adding ? pad : 52;
+  if (adding) return { x: pad, y: pad };
+  if (mood === "hiding") return { x: Math.random() > 0.5 ? pad : maxX, y: maxY };
+  let x = pad + Math.random() * Math.max(8, maxX - pad);
+  let y = minY + Math.random() * Math.max(8, maxY - minY);
+  const fab = w / 2;
+  if (y > h - NAV - 130 && Math.abs(x + CAT / 2 - fab) < 56) x = pad;
+  return { x, y };
+}
+
+export function HerculesPortrait({
+  mood,
+  hat,
+  chain,
+  house,
+  collar,
+  pose = "loaf",
+  size = "live",
+}: {
+  mood: CompanionMood;
+  hat: string | null;
+  chain: string | null;
+  house: string | null;
+  collar: string | null;
+  pose?: HerculesPose;
+  size?: "stage" | "live";
+}) {
+  const uid = useId().replace(/:/g, "");
+  const fur = `fur-${uid}`;
+  const ruff = `ruff-${uid}`;
+
+  return (
+    <div className={`hercules-stage size-${size} mood-${mood} pose-${pose}`} aria-hidden="true">
+      <svg viewBox="0 0 160 170" className={`hercules-svg tail-${mood}`}>
+        <defs>
+          <linearGradient id={fur} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#c4a574" />
+            <stop offset="45%" stopColor="#8b5a2b" />
+            <stop offset="100%" stopColor="#3c2412" />
+          </linearGradient>
+          <linearGradient id={ruff} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#f0e0c4" />
+            <stop offset="100%" stopColor="#c4a574" />
+          </linearGradient>
+        </defs>
+        {house === "patio" && (
+          <g>
+            <ellipse cx="80" cy="22" rx="28" ry="8" fill="#c45c26" opacity="0.85" />
+            <path d="M80 22 L80 48" stroke="#1b1712" strokeWidth="2" />
+          </g>
+        )}
+        <ellipse className="hercules-shadow" cx="78" cy="158" rx="36" ry="8" fill="rgba(27,23,18,0.18)" />
+        <g className="hercules-body">
+          <path className="hercules-tail" d="M118 108 C148 92 156 128 132 148 C150 130 142 96 118 108 Z" fill={`url(#${fur})`} />
+          <ellipse cx="80" cy="118" rx="42" ry="32" fill={`url(#${fur})`} />
+          <ellipse cx="80" cy="112" rx="28" ry="22" fill={`url(#${ruff})`} />
+          {hat === "ruff" && <ellipse cx="80" cy="104" rx="38" ry="18" fill={`url(#${ruff})`} opacity="0.95" />}
+          <path d="M48 52 L38 18 L62 44 Z" fill={`url(#${fur})`} />
+          <path d="M112 52 L122 18 L98 44 Z" fill={`url(#${fur})`} />
+          <path className="hercules-tuft" d="M42 22 L38 8 L52 20" stroke="#3c2412" strokeWidth="3" fill="none" />
+          <path className="hercules-tuft" d="M118 22 L122 8 L108 20" stroke="#3c2412" strokeWidth="3" fill="none" />
+          <ellipse cx="80" cy="72" rx="34" ry="30" fill={`url(#${fur})`} />
+          <path d="M80 78 L72 92 L88 92 Z" fill="#5c3a22" />
+          <circle cx="66" cy="68" r={mood === "hiding" || pose === "sleep" ? 3 : 6} fill="#1b1712" />
+          <circle cx="94" cy="68" r={mood === "hiding" || pose === "sleep" ? 3 : 6} fill="#1b1712" />
+          {mood !== "hiding" && pose !== "sleep" && <circle cx="64" cy="66" r="1.6" fill="#f3eee4" />}
+          {mood !== "hiding" && pose !== "sleep" && <circle cx="92" cy="66" r="1.6" fill="#f3eee4" />}
+          {(mood === "glowing" || pose === "loaf") && pose !== "sleep" && (
+            <path d="M68 98 Q80 110 92 98" fill="none" stroke="#1b1712" strokeWidth="3" />
+          )}
+          {(mood === "restless" || pose === "pace") && (
+            <path d="M68 102 Q80 92 92 102" fill="none" stroke="#1b1712" strokeWidth="3" />
+          )}
+          {pose === "sleep" && <path d="M70 96 L90 96" stroke="#1b1712" strokeWidth="2" />}
+          {mood === "content" && pose !== "sleep" && pose !== "pace" && (
+            <path d="M70 100 L90 100" stroke="#1b1712" strokeWidth="3" />
+          )}
+          <path d="M58 88 L48 90" stroke="#1b1712" strokeWidth="1.5" />
+          <path d="M102 88 L112 90" stroke="#1b1712" strokeWidth="1.5" />
+          <g className="hercules-paw">
+            <ellipse cx="52" cy="142" rx="10" ry="7" fill={`url(#${fur})`} />
+            <ellipse cx="108" cy="142" rx="10" ry="7" fill={`url(#${fur})`} />
+          </g>
+        </g>
+        {hat === "toque" && <path d="M52 48 Q80 8 108 48 Q80 34 52 48 Z" fill="#f3eee4" stroke="#1b1712" strokeWidth="2" />}
+        {hat === "visor" && (
+          <g>
+            <rect x="48" y="44" width="64" height="12" rx="4" fill="#1b1712" />
+            <rect x="92" y="46" width="32" height="8" rx="3" fill="#c45c26" />
+          </g>
+        )}
+        {hat === "chef" && (
+          <g>
+            <ellipse cx="80" cy="32" rx="26" ry="16" fill="#fffaf2" stroke="#1b1712" strokeWidth="2" />
+            <rect x="68" y="42" width="24" height="12" fill="#fffaf2" stroke="#1b1712" />
+          </g>
+        )}
+        {hat === "ruff" && <path d="M44 58 Q80 78 116 58" fill="none" stroke="#f0e0c4" strokeWidth="10" strokeLinecap="round" />}
+        {chain === "copper" && <ellipse cx="80" cy="128" rx="18" ry="8" fill="none" stroke="#c45c26" strokeWidth="3" />}
+        {chain === "gold" && <ellipse cx="80" cy="128" rx="18" ry="8" fill="none" stroke="#c9a227" strokeWidth="4" />}
+        {collar === "bell" && (
+          <g>
+            <path d="M58 118 H102" stroke="#c9a227" strokeWidth="4" />
+            <circle cx="80" cy="128" r="7" fill="#c9a227" stroke="#1b1712" />
+          </g>
+        )}
+        {collar === "yarn" && <path d="M56 116 Q80 132 104 116" fill="none" stroke="#c45c26" strokeWidth="5" strokeLinecap="round" />}
+        {collar === "fish" && <ellipse cx="118" cy="102" rx="12" ry="6" fill="#2c6a4e" />}
+      </svg>
+      {pose === "sleep" && <span className="hercules-zzz">z</span>}
+    </div>
+  );
+}
+
+export function HerculesPresence({
   household,
   today,
   tab,
   adding,
   visorPop,
+  spark,
   onOpenAdd,
+  onGo,
 }: {
   household: Household;
   today: string;
   tab: HearthTab;
   adding: boolean;
   visorPop?: boolean;
+  spark?: boolean;
   onOpenAdd: (note?: string) => void;
+  onGo: (tab: HearthTab) => void;
 }) {
   const look = useMemo(() => dressedLook(household, today, Boolean(visorPop)), [household, today, visorPop]);
-  const brief = useMemo(
-    () => herculesPageBrief(household, adding ? "add" : tab, today),
-    [household, adding, tab, today],
-  );
-  const highFive = useMemo(() => groceryHighFive(household, today), [household, today]);
+  const five = useMemo(() => groceryHighFive(household, today), [household, today]);
+  const attention = useMemo(() => herculesNeedsCheck(household, today), [household, today]);
+  const mutters = useMemo(() => herculesMutters(household, today), [household, today]);
+  const [pos, setPos] = useState({ x: 12, y: 120 });
+  const [flip, setFlip] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const [motion, setMotion] = useState<HerculesPose>("loaf");
+  const [talk, setTalk] = useState<HerculesTalk | null>(null);
   const [open, setOpen] = useState(false);
+  const [question, setQuestion] = useState("");
+  const [topic, setTopic] = useState("idle");
   const [purr, setPurr] = useState(false);
+  const drag = useRef<{ x: number; y: number; px: number; py: number; moved: boolean } | null>(null);
+  const idleAt = useRef(0);
+  const mutterAt = useRef(0);
 
   useEffect(() => {
-    document.documentElement.classList.toggle("hercules-open", open);
-    return () => document.documentElement.classList.remove("hercules-open");
-  }, [open]);
+    const { innerWidth: w, innerHeight: h } = window;
+    const next = safePerch(adding, look.view.mood, w, h);
+    setFlip(next.x < pos.x);
+    setPos(next);
+    setMotion(adding ? "sleep" : five.yes || spark ? "jump" : "walk");
+    const land = window.setTimeout(() => setMotion(five.yes || spark ? "celebrate" : look.view.mood === "hiding" ? "hide" : look.view.mood === "restless" ? "pace" : "loaf"), 900);
+    return () => window.clearTimeout(land);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- hop on room change, not every pos tick
+  }, [tab, adding, look.view.mood, five.yes, spark]);
 
-  if (adding) return null;
+  useEffect(() => {
+    if (visorPop) {
+      setMotion("jump");
+      const id = window.setTimeout(() => setMotion("celebrate"), 700);
+      return () => window.clearTimeout(id);
+    }
+  }, [visorPop]);
+
+  useEffect(() => {
+    if (open || pinned || adding || drag.current) return;
+    const id = window.setInterval(() => {
+      idleAt.current += 1;
+      const phase = idleAt.current % 6;
+      if (look.view.mood === "restless") {
+        setMotion("pace");
+        const { innerWidth: w, innerHeight: h } = window;
+        const next = safePerch(false, look.view.mood, w, h);
+        setFlip(next.x < pos.x);
+        setPos(next);
+        return;
+      }
+      if (look.view.mood === "hiding") {
+        setMotion("hide");
+        return;
+      }
+      if (phase === 0 || phase === 3) {
+        setMotion("walk");
+        const { innerWidth: w, innerHeight: h } = window;
+        const next = safePerch(false, look.view.mood, w, h);
+        setFlip(next.x < pos.x);
+        setPos(next);
+        window.setTimeout(() => setMotion(look.view.mood === "glowing" ? "loaf" : "stretch"), 950);
+      } else if (phase === 1) setMotion("wash");
+      else if (phase === 2) setMotion("stretch");
+      else if (phase >= 4 && look.view.mood === "glowing") setMotion("sleep");
+      else setMotion("loaf");
+    }, 9000);
+    return () => window.clearInterval(id);
+  }, [open, pinned, adding, look.view.mood, pos.x]);
+
+  useEffect(() => {
+    if (adding || open || !mutters) return;
+    const id = window.setInterval(() => {
+      const now = Date.now();
+      if (now - mutterAt.current < 45000) return;
+      mutterAt.current = now;
+      const idle = herculesIdle(household, tab, today);
+      setTalk(idle);
+      setTopic(idle.topic);
+      setMotion(idle.pose);
+      window.setTimeout(() => setTalk((current) => (current === idle ? null : current)), 5000);
+    }, 16000);
+    return () => window.clearInterval(id);
+  }, [adding, open, mutters, household, tab, today]);
+
+  function speak(raw: string) {
+    const text = raw.trim();
+    if (!text) return;
+    if (/^milk$|^post milk$/i.test(text)) {
+      setOpen(false);
+      setTalk(null);
+      onOpenAdd("Milk");
+      return;
+    }
+    if (/^calendar$|^which bill/i.test(text)) {
+      setOpen(false);
+      setTalk(null);
+      onGo("calendar");
+      return;
+    }
+    if (/^health$|^what broke/i.test(text)) {
+      setOpen(false);
+      setTalk(null);
+      onGo("more");
+      return;
+    }
+    if (/^sit-down/i.test(text)) {
+      setOpen(false);
+      setTalk(null);
+      onGo("plan");
+      return;
+    }
+    const next = talkHercules(household, text, today, adding ? "add" : tab, topic);
+    setTalk(next);
+    setTopic(next.topic);
+    setMotion(next.pose);
+    setQuestion("");
+    setOpen(true);
+  }
+
+  function onPointerDown(event: PointerEvent<HTMLButtonElement>) {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    drag.current = { x: pos.x, y: pos.y, px: event.clientX, py: event.clientY, moved: false };
+  }
+
+  function onPointerMove(event: PointerEvent<HTMLButtonElement>) {
+    const start = drag.current;
+    if (!start) return;
+    const dx = event.clientX - start.px;
+    const dy = event.clientY - start.py;
+    if (Math.abs(dx) + Math.abs(dy) > 8) start.moved = true;
+    if (!start.moved) return;
+    setPinned(true);
+    setMotion("walk");
+    setFlip(dx < 0);
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    setPos({
+      x: Math.min(w - CAT - 4, Math.max(4, start.x + dx)),
+      y: Math.min(h - CAT - NAV, Math.max(4, start.y + dy)),
+    });
+  }
+
+  function onPointerUp() {
+    const start = drag.current;
+    drag.current = null;
+    if (!start) return;
+    if (!start.moved) {
+      setPurr(true);
+      const next = talkHercules(household, open ? "scratch" : "", today, adding ? "add" : tab, topic);
+      setTalk(next);
+      setTopic(next.topic);
+      setMotion(next.pose === "sleep" ? "loaf" : next.pose);
+      setOpen(true);
+    } else {
+      setMotion(look.view.mood === "restless" ? "pace" : "loaf");
+    }
+  }
+
+  const pose = visorPop ? "jump" : motion;
+  const bubbleLeft = pos.x > window.innerWidth / 2;
+  const size = adding ? 72 : CAT;
 
   return (
-    <>
+    <div className="hercules-world" aria-live="polite">
+      {(open || talk) && !adding && talk && (
+        <div
+          className={`hercules-bubble ${bubbleLeft ? "left" : "right"}`}
+          style={{
+            left: bubbleLeft ? undefined : pos.x + size - 8,
+            right: bubbleLeft ? window.innerWidth - pos.x - 8 : undefined,
+            top: Math.max(8, pos.y - 8),
+            transform: bubbleLeft ? "translate(-100%, -90%)" : "translate(0, -90%)",
+          }}
+        >
+          <p className="hercules-spoken">{talk.spoken}</p>
+          {talk.lesson && <p className="hercules-lesson">{talk.lesson}</p>}
+          {talk.fact && (
+            <p className="hercules-fact"><span>{talk.fact.label}</span> {talk.fact.value}</p>
+          )}
+          {open && (
+            <>
+              <div className="hercules-replies">
+                {talk.replies.map((item) => (
+                  <button key={item} type="button" onClick={() => speak(item)}>{item}</button>
+                ))}
+              </div>
+              <input
+                aria-label={`Talk to ${look.view.name}`}
+                value={question}
+                placeholder="ask or scratch…"
+                onChange={(event) => setQuestion(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    speak(question);
+                  }
+                  if (event.key === "Escape") setOpen(false);
+                }}
+              />
+            </>
+          )}
+          <button className="hercules-dismiss" type="button" onClick={() => { setOpen(false); setTalk(null); }}>
+            ok
+          </button>
+        </div>
+      )}
       <button
         type="button"
-        className={`hercules-dock mood-${look.view.mood} ${purr || visorPop ? "purr" : ""} ${highFive.yes ? "high-five" : ""} ${visorPop ? "visor-pop" : ""}`}
-        aria-label={`Talk to ${look.view.name}`}
-        onClick={() => {
-          setPurr(true);
-          setOpen(true);
-        }}
+        className={[
+          "hercules-live",
+          `mood-${look.view.mood}`,
+          `pose-${pose}`,
+          flip ? "flip" : "",
+          purr ? "purr" : "",
+          five.yes ? "high-five" : "",
+          attention ? "needs-you" : "",
+          adding ? "loafing" : "",
+          pinned ? "pinned" : "",
+        ].join(" ")}
+        style={{ left: pos.x, top: pos.y, width: size, height: size }}
+        aria-label={attention ? `${look.view.name} wants a check-in` : `Talk to ${look.view.name}`}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={() => { drag.current = null; }}
         onAnimationEnd={() => setPurr(false)}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          setPinned((value) => !value);
+        }}
       >
         <HerculesPortrait
           mood={look.view.mood}
@@ -190,193 +402,14 @@ export function HerculesDock({
           chain={look.chain}
           house={look.house}
           collar={look.collar}
-          size="dock"
+          pose={pose}
         />
       </button>
-      {open && (
-        <HerculesChat
-          household={household}
-          today={today}
-          tab={tab}
-          brief={brief}
-          hat={look.hat}
-          chain={look.chain}
-          house={look.house}
-          collar={look.collar}
-          onClose={() => setOpen(false)}
-          onOpenAdd={(note) => {
-            setOpen(false);
-            onOpenAdd(note);
-          }}
-        />
-      )}
-    </>
-  );
-}
-
-function HerculesChat({
-  household,
-  today,
-  tab,
-  brief,
-  hat,
-  chain,
-  house,
-  collar,
-  onClose,
-  onOpenAdd,
-}: {
-  household: Household;
-  today: string;
-  tab: HearthTab;
-  brief: string;
-  hat: string | null;
-  chain: string | null;
-  house: string | null;
-  collar: string | null;
-  onClose: () => void;
-  onOpenAdd: (note?: string) => void;
-}) {
-  const view = describeCompanion(household, today);
-  const [question, setQuestion] = useState("");
-  const [log, setLog] = useState<{ you: string; sentence: string; rows: { label: string; value: string }[] }[]>(() => [
-    { you: "", sentence: brief, rows: [] },
-  ]);
-
-  function ask(raw: string) {
-    const text = raw.trim();
-    if (!text) return;
-    const answer = askHercules(household, text, today);
-    setLog((current) => [...current, { you: text, sentence: answer.sentence, rows: answer.rows }].slice(-10));
-    setQuestion("");
-  }
-
-  return (
-    <div className="hercules-sheet" role="dialog" aria-label={`${view.name} chat`}>
-      <div className="hercules-sheet-card">
-        <header>
-          <div className="hercules-sheet-who">
-            <HerculesPortrait
-              mood={view.mood}
-              hat={hat}
-              chain={chain}
-              house={house}
-              collar={collar}
-              size="dock"
-            />
-            <div>
-              <p className="kicker">Maine Coon · data scientist</p>
-              <h2>{view.name}</h2>
-              <p className="muted">{view.reason}</p>
-            </div>
-          </div>
-          <button className="chip" type="button" onClick={onClose}>Close</button>
-        </header>
-        <p className="muted">He follows every page. He never posts money. Tab: {tab}.</p>
-        <div className="chips">
-          {HERCULES_CHIPS.map((item) => (
-            <button key={item} className="chip" type="button" onClick={() => ask(item)}>{item}</button>
-          ))}
-          <button className="chip selected" type="button" onClick={() => onOpenAdd("Milk")}>Post milk</button>
-        </div>
-        <div className="ask-log hercules-log">
-          {log.map((item, index) => (
-            <div key={`${item.you}-${index}`}>
-              {item.you ? <div className="ask-bubble you">{item.you}</div> : null}
-              <div className="ask-bubble">
-                <p style={{ margin: 0 }}>{item.sentence}</p>
-                {item.rows.map((row) => (
-                  <div className="row" key={row.label}><span>{row.label}</span><span>{row.value}</span></div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-        <label htmlFor="hercules-ask">Ask {view.name}</label>
-        <input
-          id="hercules-ask"
-          value={question}
-          placeholder="Groceries, bills, tips, or are we alright?"
-          onChange={(event) => setQuestion(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              ask(question);
-            }
-          }}
-        />
-        <button className="primary" type="button" disabled={!question.trim()} onClick={() => ask(question)}>Ask</button>
-      </div>
     </div>
   );
 }
 
-export function SundayRecapSheet({
-  household,
-  today,
-  environment,
-  onClose,
-}: {
-  household: Household;
-  today: string;
-  environment: Environment;
-  onClose: () => void;
-}) {
-  const recap = useMemo(() => weekRecap(household, today), [household, today]);
-  const view = useMemo(() => describeCompanion(household, today), [household, today]);
-  const look = useMemo(() => dressedLook(household, today, false), [household, today]);
-  const [seconds, setSeconds] = useState(20);
-  const [paused, setPaused] = useState(false);
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
-
-  useEffect(() => {
-    if (paused) return;
-    if (seconds <= 0) {
-      markRecapSeen(environment, today);
-      closeRef.current();
-      return;
-    }
-    const id = window.setTimeout(() => setSeconds((n) => n - 1), 1000);
-    return () => window.clearTimeout(id);
-  }, [seconds, paused, environment, today]);
-
-  return (
-    <div className="hercules-sheet recap-sheet" role="dialog" aria-label="Sunday envelope">
-      <div className="hercules-sheet-card recap-card" onPointerDown={() => setPaused(true)}>
-        <header>
-          <div className="hercules-sheet-who">
-            <HerculesPortrait
-              mood={view.mood}
-              hat={look.hat}
-              chain={look.chain}
-              house={look.house}
-              collar={look.collar}
-              size="dock"
-            />
-            <div>
-              <p className="kicker">Sunday envelope · {seconds}s</p>
-              <h2>Screenshot this</h2>
-            </div>
-          </div>
-          <button
-            className="chip"
-            type="button"
-            onClick={() => {
-              markRecapSeen(environment, today);
-              onClose();
-            }}
-          >
-            Done
-          </button>
-        </header>
-        <p>{recap.sentence}</p>
-        {recap.rows.map((row) => (
-          <div className="row" key={row.label}><span>{row.label}</span><strong>{row.value}</strong></div>
-        ))}
-        <p className="muted">Tap the card to pause the timer. This is not money.</p>
-        <div className="recap-bar" aria-hidden="true"><span style={{ width: `${(seconds / 20) * 100}%` }} /></div>
-      </div>
-    </div>
-  );
+/** @deprecated presence is the product; kept so Home wardrobe can still show a still */
+export function HerculesDock(props: Parameters<typeof HerculesPresence>[0]) {
+  return <HerculesPresence {...props} />;
 }

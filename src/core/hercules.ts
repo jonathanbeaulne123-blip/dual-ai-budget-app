@@ -1,4 +1,4 @@
-import { addDays, hourInToronto, kitchenSeason, monthKeyFromDateKey, weekBounds, weekdaySunday0, type DateKey } from "./calendar.ts";
+import { addDays, hourInToronto, monthKeyFromDateKey, weekBounds, weekdaySunday0, type DateKey } from "./calendar.ts";
 import { monthSummary, weekSummary } from "./budget.ts";
 import { askBooks, type BooksAsk } from "./askBooks.ts";
 import { companionMood, describeCompanion } from "./companion.ts";
@@ -206,7 +206,7 @@ function voice(name: string, ask: BooksAsk): BooksAsk {
   if (ask.kind === "help") {
     return {
       ...ask,
-      sentence: `${name} only reads the journal. ${ask.sentence} He never posts money.`,
+      sentence: `${name} reads. He doesn't write. Ask a number.`,
     };
   }
   return ask;
@@ -214,15 +214,10 @@ function voice(name: string, ask: BooksAsk): BooksAsk {
 
 function identityAnswer(household: Household, today: DateKey): BooksAsk {
   const view = describeCompanion(household, today);
-  const season = kitchenSeason(today);
   return {
     kind: "answer",
-    sentence: `I am ${view.name}, a Maine Coon on this kitchen table. I read the books. I do not write them. Ask groceries, bills, tips, or “are we alright.”`,
-    rows: [
-      { label: "Mood", value: view.mood },
-      { label: "Species", value: "Maine Coon" },
-      { label: "Season", value: season === "none" ? "shoulder" : season },
-    ],
+    sentence: `I'm ${view.name}. I read the books. I don't write them.`,
+    rows: [{ label: "Mood", value: view.mood }],
   };
 }
 
@@ -231,21 +226,21 @@ function coachAnswer(household: Household, today: DateKey, name: string): BooksA
   if (mood === "hiding") {
     return {
       kind: "answer",
-      sentence: `Open More → Health first. ${reason}`,
+      sentence: `Health first. ${reason}`,
       rows: [{ label: "Next", value: "Health" }],
     };
   }
   if (mood === "restless") {
     return {
       kind: "answer",
-      sentence: `${reason} Calendar still does not post. Mark paid, then confirm.`,
-      rows: [{ label: "Next", value: "Calendar or Add" }],
+      sentence: `${reason} Mark paid, then confirm.`,
+      rows: [{ label: "Next", value: "Calendar" }],
     };
   }
   return {
     kind: "answer",
-    sentence: `The ordinary grocery is the winning move. ${reason}`,
-    rows: [{ label: "Next", value: "Tap + and post milk" }],
+    sentence: `Milk. Ordinary. That's the whole sport. ${reason}`,
+    rows: [{ label: "Next", value: "Post milk" }],
   };
 }
 
@@ -269,7 +264,7 @@ function skipAnswer(household: Household, today: DateKey): BooksAsk {
   }
   return {
     kind: "answer",
-    sentence: `${rows[0]!.label} still has room versus the sit-down plan. ${household.kitchen.companion.name} looks smug. This is a projection, not permission.`,
+    sentence: `${rows[0]!.label} still has room. Not a dare. Just a shrug.`,
     rows,
   };
 }
@@ -302,36 +297,23 @@ export function herculesPageBrief(
   const name = household.kitchen.companion.name || DEFAULT_COMPANION_NAME;
   const phase = kettlePhase(today, hourInToronto(now));
   const highFive = groceryHighFive(household, today);
-  const greet = phase === "morning"
-    ? `${name} stretched. Toronto morning.`
-    : phase === "after-shift"
-      ? `${name} is waiting for tip-out math, not vibes.`
-      : phase === "sunday"
-        ? `${name} wants a sit-down, not a lecture.`
-        : `${name} is still on the counter.`;
-  if (highFive.yes) {
-    return `${highFive.names.join(" and ")} both posted groceries today. ${name} offers a high-five. Not a leaderboard.`;
-  }
-  if (tab === "add") return `${name} will wait. Confirm still posts. He will not.`;
-  if (tab === "calendar") return `${greet} Dates are reminders. Mark paid is the write.`;
-  if (tab === "plan") return `${greet} Sit-down copies last month in CAD.`;
-  if (tab === "ledger") return `${greet} Ask me in English. Power SQL stays read-only.`;
-  if (tab === "more") return `${greet} Health is the adult screen. I hide when it is dirty.`;
-  return `${greet} ${describeCompanion(household, today).reason}`;
+  if (highFive.yes) return `${highFive.names.join(" and ")} both bought food. High-five.`;
+  if (tab === "add") return `${name} will loaf. You confirm.`;
+  if (tab === "calendar") return "Dates remind. Mark paid writes.";
+  if (tab === "plan") return "Sit-down copies last month. In dollars.";
+  if (tab === "ledger") return "Ask in English. I don't write SQL you didn't mean.";
+  if (tab === "more") return "Health is the adult screen. I hide when it's dirty.";
+  if (phase === "morning") return `${name} stretched. Milk whenever.`;
+  if (phase === "after-shift") return `${name} wants tip math, not vibes.`;
+  if (phase === "sunday") return `${name} wants a sit-down, not a lecture.`;
+  return describeCompanion(household, today).reason;
 }
 
 export const HERCULES_CHIPS = [
-  "Are we alright",
-  "What should I do",
-  "Safe to skip",
-  "Groceries this month",
-  "Bills due",
-  "Tips this week",
-  "Cook-off",
-  "Sunday recap",
-  "Forecast",
-  "This week vs last week",
-  "Who are you",
+  "We good?",
+  "What now?",
+  "Which bill?",
+  "Milk",
 ];
 
 export function askHercules(household: Household, question: string, today: DateKey): BooksAsk {
@@ -347,6 +329,9 @@ export function askHercules(household: Household, question: string, today: DateK
   }
   if (/\b(who are you|what are you|your name|maine coon|you a cat|hercules|ember)\b/.test(q) && !/\b(spent|bill|goal)\b/.test(q)) {
     return identityAnswer(household, today);
+  }
+  if (/\b(we good|you good|hey cat)\b/.test(q)) {
+    return askHercules(household, "are we alright", today);
   }
   if (/\b(what should i do|coach|advise|next move|what now)\b/.test(q)) {
     return coachAnswer(household, today, name);

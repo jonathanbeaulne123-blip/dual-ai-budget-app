@@ -24,7 +24,7 @@ The in-memory model is still the source of truth while a command runs: clone the
 3. **Books** — `compileHousehold` turns each money document into balanced debit/credit lines. PGlite stores them. Health Check refuses a household whose trial balance or accounting equation is off.
 4. **Projections** — `monthSummary`, `weekSummary`, `buildDashboard`, `runHealthCheck`, `sitDownPreview`, `trialBalance`, `detectRhythms`, `buildMonthBoard`, `askBooks` / `askHercules`, `describeCompanion`.
 5. **Google engine** — `withGoogle` is a call-when-needed bridge (identity, Calendar, optional suite). Tokens stay on the phone. The shared snapshot only stores who is linked. Sensitive household actions can step-up through Google after a member is linked.
-6. **UI** — Home (Hercules, chalkboard, cook-off, shift pulse, sit-down postcard, net, pulse), Calendar, Add, Plan, Books (register / journal / trial balance / accounts / Ask Hercules), More (health, recent undo, invite, Google household bridge). Hercules docks on every tab except Add.
+6. **UI** — Home (chalkboard, net, pulse), Calendar, Add, Plan, Books, More. Hercules wanders as a borderless cat with a compact bubble. He loafs during Add.
 
 ## Data-model rules
 
