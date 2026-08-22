@@ -103,6 +103,15 @@ export function HerculesPortrait({
           <circle cx="94" cy="68" r={mood === "hiding" || pose === "sleep" ? 3 : 6} fill="#1b1712" />
           {mood !== "hiding" && pose !== "sleep" && <circle cx="64" cy="66" r="1.6" fill="#f3eee4" />}
           {mood !== "hiding" && pose !== "sleep" && <circle cx="92" cy="66" r="1.6" fill="#f3eee4" />}
+          {hat === "specs" && mood !== "hiding" && pose !== "sleep" && (
+            <g className="hercules-specs">
+              <circle cx="66" cy="68" r="9" fill="#9fd4c8" fillOpacity="0.35" stroke="#1b1712" strokeWidth="2" />
+              <circle cx="94" cy="68" r="9" fill="#9fd4c8" fillOpacity="0.35" stroke="#1b1712" strokeWidth="2" />
+              <path d="M75 68 H85" stroke="#1b1712" strokeWidth="2" />
+              <path d="M57 68 H48" stroke="#1b1712" strokeWidth="2" />
+              <path d="M103 68 H112" stroke="#1b1712" strokeWidth="2" />
+            </g>
+          )}
           {(mood === "glowing" || pose === "loaf") && pose !== "sleep" && (
             <path d="M68 98 Q80 110 92 98" fill="none" stroke="#1b1712" strokeWidth="3" />
           )}
@@ -144,6 +153,12 @@ export function HerculesPortrait({
         )}
         {collar === "yarn" && <path d="M56 116 Q80 132 104 116" fill="none" stroke="#c45c26" strokeWidth="5" strokeLinecap="round" />}
         {collar === "fish" && <ellipse cx="118" cy="102" rx="12" ry="6" fill="#2c6a4e" />}
+        {collar === "ink" && (
+          <g className="hercules-ink">
+            <circle cx="118" cy="124" r="11" fill="#2c6a4e" stroke="#1b1712" strokeWidth="2" />
+            <path d="M113 124 L117 128 L124 118" fill="none" stroke="#f3eee4" strokeWidth="2" />
+          </g>
+        )}
       </svg>
       {pose === "sleep" && <span className="hercules-zzz">z</span>}
     </div>

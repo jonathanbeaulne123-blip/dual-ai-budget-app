@@ -82,6 +82,37 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
 }
 .hero .money.negative { color: var(--copper); }
 .hero .sub { color: var(--muted); }
+.opinion-banner {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.opinion-banner.unmodified { color: var(--pine-2); }
+.opinion-banner.qualified,
+.opinion-banner.adverse { color: var(--copper); }
+.close-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+}
+.close-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+.statement-note {
+  margin-top: 10px;
+}
+.statement-note strong {
+  display: block;
+  font-size: 13px;
+}
+.hercules-specs {
+  pointer-events: none;
+}
 
 .pulse {
   display: grid;

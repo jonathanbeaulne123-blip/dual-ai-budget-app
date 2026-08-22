@@ -158,9 +158,34 @@ export type HouseholdCompanion = {
   updatedAt: string;
 };
 
+export type AccountReconciliation = {
+  id: string;
+  accountId: string;
+  statementDate: DateKey;
+  statementCents: number;
+  bookCents: number;
+  differenceCents: number;
+  status: "tied" | "open";
+  createdAt: string;
+  createdBy: string;
+};
+
+export type ClosedPeriod = {
+  id: string;
+  monthKey: MonthKey;
+  closedAt: string;
+  closedBy: string;
+};
+
+export type HouseholdBooksDesk = {
+  reconciliations: AccountReconciliation[];
+  closedMonths: ClosedPeriod[];
+};
+
 export type HouseholdKitchen = {
   chalkboard: ChalkNote[];
   companion: HouseholdCompanion;
+  books: HouseholdBooksDesk;
 };
 
 export type GoogleService = "identity" | "calendar" | "drive" | "contacts" | "gmail" | "sheets";
@@ -281,11 +306,11 @@ export class ValidationError extends Error {
 }
 
 export class NeedsConfirmationError extends Error {
-  readonly code: "duplicate" | "sameShiftDay" | "settingsChanged";
+  readonly code: "duplicate" | "sameShiftDay" | "settingsChanged" | "closedMonth";
   readonly matches: Transaction[];
   readonly preview?: unknown;
 
-  constructor(code: "duplicate" | "sameShiftDay" | "settingsChanged", message: string, matches: Transaction[] = [], preview?: unknown) {
+  constructor(code: "duplicate" | "sameShiftDay" | "settingsChanged" | "closedMonth", message: string, matches: Transaction[] = [], preview?: unknown) {
     super(message);
     this.name = "NeedsConfirmationError";
     this.code = code;

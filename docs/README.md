@@ -9,7 +9,7 @@ Hearth is the product. These files are current. Anything under [reference/](refe
 | [DECISIONS.md](DECISIONS.md) | Living decision log |
 | [ROADMAP.md](ROADMAP.md) | What is in, what is next (Chapter 0) |
 | [DAILY_HEARTH.md](DAILY_HEARTH.md) | Ever-expanding daily-habit + ledger-spine map |
-| [HERCULES.md](HERCULES.md) | The Hercules Update: pitch, waves, kill criterion |
+| [AUDIT_OFFICE.md](AUDIT_OFFICE.md) | Investor-visible accounting: opinion, statements, rec, close pack |
 | [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md) | Kitchen ledger → household family office (how and when) |
 | [ENVIRONMENTS.md](ENVIRONMENTS.md) | Development vs production snapshots, website, hosted books |
 | [GOOGLE.md](GOOGLE.md) | Google household bridge: link, confirm, calendar, optional suite |

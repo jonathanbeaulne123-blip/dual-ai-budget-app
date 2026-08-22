@@ -17,12 +17,15 @@ export type BooksAsk = {
 };
 
 export const ASK_SUGGESTIONS = [
+  "Are we alright",
+  "Opinion",
+  "Balance sheet",
+  "Working capital",
+  "Accounting policies",
   "Groceries this month",
   "Bills due",
-  "Who spent more this week",
-  "This week vs last week",
   "How much is in chequing",
-  "Are we alright",
+  "This week vs last week",
   "Goals",
   "Coffee this week",
   "Tips this week",

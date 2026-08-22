@@ -224,7 +224,10 @@ describe("The Hercules Update", () => {
     const emptyBlob = formatHerculesBriefing(herculesBriefing(empty, "home", today, new Date("2026-08-21T16:00:00Z")));
     expect(emptyBlob).toMatch(/Hercules/);
     expect(emptyBlob).toMatch(/CAD/);
-    expect(emptyBlob).toMatch(/mood:/);
+    expect(emptyBlob).toMatch(/opinion:/);
+    expect(emptyBlob).toMatch(/trial in balance:/);
+    expect(emptyBlob).toMatch(/going-concern watch:/);
+    expect(emptyBlob).toMatch(/working capital:/);
     expect(emptyBlob).not.toMatch(/Bianca|Jonathan/);
     expect(emptyBlob).not.toMatch(/INSERT|SELECT/i);
 

@@ -3,6 +3,8 @@ import { monthSummary, weekSummary } from "./budget.ts";
 import { askBooks, type BooksAsk } from "./askBooks.ts";
 import { companionMood, describeCompanion } from "./companion.ts";
 import { formatCad } from "./money.ts";
+import { auditOpinion, agedPayables, balanceSheet, cashFlowStatement, comparativeIncome, incomeStatement, liquidityWatch, notesToFinancialStatements, statementOfChangesInEquity, subsequentEvents } from "./statements.ts";
+import { booksEquation, compileHousehold, trialBalance } from "./journal.ts";
 import type { Household } from "./types.ts";
 
 export const DEFAULT_COMPANION_NAME = "Hercules";
@@ -214,10 +216,15 @@ function voice(name: string, ask: BooksAsk): BooksAsk {
 
 function identityAnswer(household: Household, today: DateKey): BooksAsk {
   const view = describeCompanion(household, today);
+  const opinion = auditOpinion(household);
   return {
     kind: "answer",
-    sentence: `I'm ${view.name}. I read the books. I don't write them.`,
-    rows: [{ label: "Mood", value: view.mood }],
+    sentence: `I'm ${view.name}. Auditor on the counter. I read the books. I don't write them.`,
+    rows: [
+      { label: "Mood", value: view.mood },
+      { label: "Opinion", value: opinion.kind },
+      { label: "Role", value: "auditor on the counter" },
+    ],
   };
 }
 
@@ -301,7 +308,7 @@ export function herculesPageBrief(
   if (tab === "add") return `${name} will loaf. You confirm.`;
   if (tab === "calendar") return "Dates remind. Mark paid writes.";
   if (tab === "plan") return "Sit-down copies last month. In dollars.";
-  if (tab === "ledger") return "Ask in English. I don't write SQL you didn't mean.";
+  if (tab === "ledger") return "Fieldwork. I walk the journal. I don't write it.";
   if (tab === "more") return "Health is the adult screen. I hide when it's dirty.";
   if (phase === "morning") return `${name} stretched. Milk whenever.`;
   if (phase === "after-shift") return `${name} wants tip math, not vibes.`;
@@ -311,9 +318,9 @@ export function herculesPageBrief(
 
 export const HERCULES_CHIPS = [
   "We good?",
+  "Opinion?",
+  "Working capital?",
   "What now?",
-  "Which bill?",
-  "Milk",
 ];
 
 export function askHercules(household: Household, question: string, today: DateKey): BooksAsk {
@@ -332,6 +339,164 @@ export function askHercules(household: Household, question: string, today: DateK
   }
   if (/\b(we good|you good|hey cat)\b/.test(q)) {
     return askHercules(household, "are we alright", today);
+  }
+  if (/\b(opinion|unmodified|qualified|adverse|audit|are the books clean|trial balance|in balance)\b/.test(q) && !/\b(spent|grocery)\b/.test(q)) {
+    const opinion = auditOpinion(household);
+    const books = compileHousehold(household);
+    const trial = trialBalance(books, { recognizedOnly: true });
+    const equation = booksEquation(books);
+    return {
+      kind: "answer",
+      sentence: opinion.hercules,
+      rows: [
+        { label: "Opinion", value: opinion.kind },
+        { label: "Trial", value: trial.inBalance ? `${formatCad(trial.totalDebitCents)} dr = cr` : "off" },
+        { label: "Equation", value: equation.holds ? "A = L + E" : "off" },
+        { label: "Health", value: opinion.healthFindings ? `${opinion.healthFindings} findings` : "clean" },
+      ],
+    };
+  }
+  if (/\b(balance sheet|statement of financial|assets? =|net worth)\b/.test(q)) {
+    const sheet = balanceSheet(household);
+    return {
+      kind: "answer",
+      sentence: sheet.holds
+        ? `Assets ${formatCad(sheet.assetCents)} equal liabilities ${formatCad(sheet.liabilityCents)} plus equity ${formatCad(sheet.equityCents)}. That's a balance sheet, not a vibe.`
+        : `The balance sheet does not hold. Assets ${formatCad(sheet.assetCents)} vs L+E ${formatCad(sheet.liabilityCents + sheet.equityCents)}. Health.`,
+      rows: [
+        { label: "Assets", value: formatCad(sheet.assetCents) },
+        { label: "Liabilities", value: formatCad(sheet.liabilityCents) },
+        { label: "Equity", value: formatCad(sheet.equityCents) },
+      ],
+    };
+  }
+  if (/\b(working capital|current ratio|liquidity|going concern|are we solvent)\b/.test(q)) {
+    const liq = liquidityWatch(household, today);
+    const wc = liq.workingCapital;
+    return {
+      kind: "answer",
+      sentence: `${liq.hercules} Working capital ${formatCad(wc.workingCapitalCents)}.`,
+      rows: [
+        { label: "Working capital", value: formatCad(wc.workingCapitalCents) },
+        { label: "Current ratio", value: wc.currentRatio == null ? "n/a" : wc.currentRatio.toFixed(2) },
+        { label: "Cash-like", value: formatCad(liq.cashCents) },
+        { label: "Bills · 30d", value: formatCad(liq.billsNext30Cents) },
+        { label: "Watch", value: liq.goingConcern },
+      ],
+    };
+  }
+  if (/\b(changes in equity|retained earnings|opening balance|equity roll)\b/.test(q)) {
+    const equity = statementOfChangesInEquity(household, monthKeyFromDateKey(today));
+    return {
+      kind: "answer",
+      sentence: equity.rolls
+        ? `Opening ${formatCad(equity.openingCents)} plus net ${formatCad(equity.netIncomeCents)} equals closing ${formatCad(equity.closingCents)}. That's an equity roll, not a vibe.`
+        : `The equity roll does not land. Opening ${formatCad(equity.openingCents)} + net ${formatCad(equity.netIncomeCents)} vs closing ${formatCad(equity.closingCents)}. Health.`,
+      rows: [
+        { label: "Opening", value: formatCad(equity.openingCents) },
+        { label: "Net income", value: formatCad(equity.netIncomeCents) },
+        { label: "Closing", value: formatCad(equity.closingCents) },
+      ],
+    };
+  }
+  if (/\b(compar(e|ative)|last month vs|this vs last|month over month|prior period)\b/.test(q) && !/\bweek\b/.test(q)) {
+    const comparative = comparativeIncome(household, monthKeyFromDateKey(today));
+    return {
+      kind: "answer",
+      sentence: `${comparative.monthKey} vs ${comparative.priorKey}: net Δ ${formatCad(comparative.netDeltaCents)}. Comparative, not a roast.`,
+      rows: [
+        { label: `${comparative.monthKey} net`, value: formatCad(comparative.current.netCents) },
+        { label: `${comparative.priorKey} net`, value: formatCad(comparative.prior.netCents) },
+        { label: "Income Δ", value: formatCad(comparative.incomeDeltaCents) },
+        { label: "Expense Δ", value: formatCad(comparative.expenseDeltaCents) },
+      ],
+    };
+  }
+  if (/\b(subsequent events?|after the close|post.?balance sheet)\b/.test(q)) {
+    const events = subsequentEvents(household, monthKeyFromDateKey(today), today);
+    return {
+      kind: "answer",
+      sentence: events.hercules,
+      rows: [
+        { label: "Rows after period", value: String(events.count) },
+        { label: "Income after", value: formatCad(events.incomeCents) },
+        { label: "Expenses after", value: formatCad(events.expenseCents) },
+      ],
+    };
+  }
+  if (/\b(accounting policies|notes to the|basis of presentation|control environment)\b/.test(q)) {
+    const notes = notesToFinancialStatements(household, monthKeyFromDateKey(today), today);
+    const first = notes[0]!;
+    return {
+      kind: "answer",
+      sentence: `${first.title}: ${first.body}`,
+      rows: notes.slice(0, 4).map((note) => ({ label: note.title, value: note.body.slice(0, 80) })),
+    };
+  }
+  if (/\b(p&l|pnl|income statement|profit and loss)\b/.test(q)) {
+    const monthKey = monthKeyFromDateKey(today);
+    const income = incomeStatement(household, monthKey);
+    return {
+      kind: "answer",
+      sentence: `${monthKey} P&L: in ${formatCad(income.incomeCents)}, out ${formatCad(income.expenseCents)}, net ${formatCad(income.netCents)}. I don't write it.`,
+      rows: [
+        { label: "Income", value: formatCad(income.incomeCents) },
+        { label: "Expenses", value: formatCad(income.expenseCents) },
+        { label: "Net", value: formatCad(income.netCents) },
+      ],
+    };
+  }
+  if (/\b(cash flow|statement of cash)\b/.test(q)) {
+    const cash = cashFlowStatement(household, monthKeyFromDateKey(today));
+    return {
+      kind: "answer",
+      sentence: `Cash in ${formatCad(cash.operatingInCents)}, cash out ${formatCad(cash.operatingOutCents)}, card spend ${formatCad(cash.cardSpendCents)} (not cash until you pay the Visa).`,
+      rows: [
+        { label: "Operating in", value: formatCad(cash.operatingInCents) },
+        { label: "Operating out", value: formatCad(cash.operatingOutCents) },
+        { label: "Net cash", value: formatCad(cash.netCashCents) },
+      ],
+    };
+  }
+  if (/\b(reconcil|bank rec|tied the books|statement balance)\b/.test(q)) {
+    const latest = household.kitchen.books?.reconciliations?.at(-1);
+    return {
+      kind: "answer",
+      sentence: latest
+        ? latest.status === "tied"
+          ? `Last rec tied on ${latest.statementDate}. Spectacles earned. Still not a bank feed.`
+          : `Last rec is open by ${formatCad(Math.abs(latest.differenceCents))}. Find the missing row, then rec again.`
+        : "No rec yet. Books → Reconcile. Type the statement. I compare. I don't import the bank.",
+      rows: latest
+        ? [
+          { label: "Statement", value: formatCad(latest.statementCents) },
+          { label: "Books", value: formatCad(latest.bookCents) },
+          { label: "Δ", value: formatCad(latest.differenceCents) },
+        ]
+        : [],
+    };
+  }
+  if (/\b(aged|aging|overdue bills|ap aging)\b/.test(q)) {
+    const aging = agedPayables(household, today).filter((item) => item.daysOverdue > 0);
+    if (!aging.length) {
+      return { kind: "answer", sentence: "No overdue bills on the aging. Dates remind. Mark paid writes.", rows: [] };
+    }
+    return {
+      kind: "answer",
+      sentence: `${aging.length} overdue ${aging.length === 1 ? "bill sits" : "bills sit"} on the aging. I will not fake a fee.`,
+      rows: aging.slice(0, 5).map((item) => ({
+        label: `${item.note} · ${item.bucket}`,
+        value: formatCad(item.amountCents),
+      })),
+    };
+  }
+  if (/\b(close pack|close package|audit pack)\b/.test(q)) {
+    const opinion = auditOpinion(household);
+    return {
+      kind: "answer",
+      sentence: `Close pack is on Books. Opinion: ${opinion.kind}. Download it. I don't email a CPA.`,
+      rows: [{ label: "Opinion", value: opinion.kind }],
+    };
   }
   if (/\b(what should i do|coach|advise|next move|what now)\b/.test(q)) {
     return coachAnswer(household, today, name);

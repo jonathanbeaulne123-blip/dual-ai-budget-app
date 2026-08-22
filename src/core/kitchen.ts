@@ -1,4 +1,4 @@
-import { addDays, type DateKey } from "./calendar.ts";
+import { addDays, isValidDateKey, type DateKey } from "./calendar.ts";
 import type {
   ChalkNote,
   CosmeticSlot,
@@ -6,6 +6,8 @@ import type {
   HouseholdCompanion,
   HouseholdKitchen,
   Tombstone,
+  AccountReconciliation,
+  ClosedPeriod,
 } from "./types.ts";
 
 export const MAX_CHALK_NOTES = 12;
@@ -22,7 +24,12 @@ export const EMPTY_COMPANION: HouseholdCompanion = {
 export const EMPTY_KITCHEN: HouseholdKitchen = {
   chalkboard: [],
   companion: { ...EMPTY_COMPANION },
+  books: { reconciliations: [], closedMonths: [] },
 };
+
+export function closedPeriodId(monthKey: string): string {
+  return `CLOSE-${monthKey}`;
+}
 
 const CHALK_PROMPTS = [
   "Leftover chili — do not order in",
@@ -51,6 +58,24 @@ function isChalkNote(value: unknown): value is ChalkNote {
   return Boolean(note.id && typeof note.text === "string" && typeof note.author === "string");
 }
 
+function isReconciliation(value: unknown): value is AccountReconciliation {
+  if (!value || typeof value !== "object") return false;
+  const row = value as AccountReconciliation;
+  return Boolean(
+    row.id &&
+    row.accountId &&
+    isValidDateKey(String(row.statementDate || "")) &&
+    Number.isFinite(row.statementCents) &&
+    Number.isFinite(row.bookCents),
+  );
+}
+
+function isClosedPeriod(value: unknown): value is ClosedPeriod {
+  if (!value || typeof value !== "object") return false;
+  const row = value as ClosedPeriod;
+  return Boolean(row.monthKey && /^\d{4}-\d{2}$/.test(row.monthKey) && row.closedAt);
+}
+
 export function shapeKitchen(input?: Partial<HouseholdKitchen> | null): HouseholdKitchen {
   const chalkboard = Array.isArray(input?.chalkboard)
     ? input.chalkboard.filter(isChalkNote).map((note) => ({
@@ -65,6 +90,30 @@ export function shapeKitchen(input?: Partial<HouseholdKitchen> | null): Househol
   const rawName = (input?.companion?.name || "").trim().slice(0, MAX_COMPANION_NAME);
   const fromFlame = !input?.companion?.species || input.companion.species === "ember";
   const name = !rawName || (rawName === "Ember" && fromFlame) ? "Hercules" : rawName;
+  const reconciliations = Array.isArray(input?.books?.reconciliations)
+    ? input.books.reconciliations.filter(isReconciliation).map((row) => ({
+      id: row.id,
+      accountId: row.accountId,
+      statementDate: row.statementDate,
+      statementCents: Math.round(row.statementCents),
+      bookCents: Math.round(row.bookCents),
+      differenceCents: Math.round(row.differenceCents),
+      status: row.status === "tied" ? "tied" as const : "open" as const,
+      createdAt: row.createdAt || "",
+      createdBy: row.createdBy || "",
+    })).slice(-24)
+    : [];
+  const closedMap = new Map<string, ClosedPeriod>();
+  if (Array.isArray(input?.books?.closedMonths)) {
+    for (const row of input.books.closedMonths.filter(isClosedPeriod)) {
+      closedMap.set(row.monthKey, {
+        id: row.id || closedPeriodId(row.monthKey),
+        monthKey: row.monthKey,
+        closedAt: row.closedAt,
+        closedBy: row.closedBy || "",
+      });
+    }
+  }
   return {
     chalkboard,
     companion: {
@@ -77,6 +126,10 @@ export function shapeKitchen(input?: Partial<HouseholdKitchen> | null): Househol
         collar: asSlotValue(equipped?.collar),
       },
       updatedAt: input?.companion?.updatedAt || "",
+    },
+    books: {
+      reconciliations,
+      closedMonths: [...closedMap.values()].sort((left, right) => left.monthKey.localeCompare(right.monthKey)),
     },
   };
 }
@@ -101,7 +154,26 @@ export function mergeKitchen(
   const companion = (right.companion.updatedAt || "") >= (left.companion.updatedAt || "")
     ? right.companion
     : left.companion;
-  return { chalkboard, companion };
+  const recMap = new Map<string, AccountReconciliation>();
+  for (const row of [...left.books.reconciliations, ...right.books.reconciliations]) {
+    if (dead.has(row.id)) continue;
+    const existing = recMap.get(row.id);
+    if (!existing || row.createdAt >= existing.createdAt) recMap.set(row.id, row);
+  }
+  const closedMap = new Map<string, ClosedPeriod>();
+  for (const row of [...left.books.closedMonths, ...right.books.closedMonths]) {
+    if (dead.has(row.id) || dead.has(closedPeriodId(row.monthKey))) continue;
+    const existing = closedMap.get(row.monthKey);
+    if (!existing || row.closedAt >= existing.closedAt) closedMap.set(row.monthKey, row);
+  }
+  return {
+    chalkboard,
+    companion,
+    books: {
+      reconciliations: [...recMap.values()].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).slice(-24),
+      closedMonths: [...closedMap.values()].sort((a, b) => a.monthKey.localeCompare(b.monthKey)),
+    },
+  };
 }
 
 export function chalkboardPrompts(today: DateKey): string[] {

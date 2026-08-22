@@ -20,12 +20,12 @@ The in-memory model is still the source of truth while a command runs: clone the
 ## Layers
 
 1. **Catalog** — members, accounts, categories, shift settings.
-2. **Commands** — `postEntry`, `postTransfer`, `postShift`, `addCategory`, budget, goals, recurrences (`addRecurrence`, `adoptRhythm`, `postOneRecurrence`, `postDueRecurrences`), cosmetic `scribbleChalk` / `equipCosmetic` (D-042, D-044), and Google-bridge `linkGoogleIdentity` / `setGoogleServices` (D-043). Each clones state, writes, refreshes duplicate flags, appends activity, and returns an undo snapshot. Cosmetics and Google never post money.
+2. **Commands** — `postEntry`, `postTransfer`, `postShift`, `addCategory`, budget, goals, recurrences (`addRecurrence`, `adoptRhythm`, `postOneRecurrence`, `postDueRecurrences`), cosmetic `scribbleChalk` / `equipCosmetic` (D-042, D-044), Audit Office `recordReconciliation` / `closeBooksMonth` / `reopenBooksMonth` (D-046; never post money), and Google-bridge `linkGoogleIdentity` / `setGoogleServices` (D-043). Each clones state, writes, refreshes duplicate flags, appends activity, and returns an undo snapshot. Cosmetics, rec, close, and Google never post money.
 3. **Books** — `compileHousehold` turns each money document into balanced debit/credit lines. PGlite stores them. Health Check refuses a household whose trial balance or accounting equation is off.
-4. **Projections** — `monthSummary`, `weekSummary`, `buildDashboard`, `runHealthCheck`, `sitDownPreview`, `trialBalance`, `detectRhythms`, `buildMonthBoard`, `askBooks` / `askHercules`, `describeCompanion`, `herculesBriefing`.
+4. **Projections** — `monthSummary`, `weekSummary`, `buildDashboard`, `runHealthCheck`, `sitDownPreview`, `trialBalance`, `detectRhythms`, `buildMonthBoard`, `askBooks` / `askHercules`, `describeCompanion`, `herculesBriefing`, `auditOpinion`, `balanceSheet`, `incomeStatement`, `cashFlowStatement`, `statementOfChangesInEquity`, `liquidityWatch`, `notesToFinancialStatements`.
 5. **Google engine** — `withGoogle` is a call-when-needed bridge (identity, Calendar, optional suite). Tokens stay on the phone. The shared snapshot only stores who is linked. Sensitive household actions can step-up through Google after a member is linked.
 6. **Kitchen Worker** — Cloudflare Workers + Assets (`hearth-books`). HTML is `Cache-Control: no-store`. `POST /hercules/chat` binds Workers AI so Hercules can talk (D-045). The model cannot post money. Local Vite falls back to `localHerculesChat`.
-7. **UI** — Home (chalkboard, net, pulse), Calendar, Add, Plan, Books, More. Hercules wanders as a borderless cat with a compact following chat. He loafs during Add.
+7. **UI** — Home (chalkboard, net, pulse, opinion), Calendar, Add, Plan, Books (statements, rec, close pack), More. Hercules wanders as a borderless cat with a compact following chat. He loafs during Add. Spectacles are earned from a tied rec. Green ink from a closed month. Fieldwork stretch on Books.
 
 ## Data-model rules
 
@@ -38,7 +38,7 @@ The in-memory model is still the source of truth while a command runs: clone the
 - `duplicateKey` is an exact fingerprint. Posting also scores similar rows: same type, same amount, within five Toronto calendar days, plus shared notes, place, category, or source. Partner personal rows are not part of that scan. `potentialDuplicate` is derived from that. `isDuplicate` remains the reviewed financial control.
 - Recurring definitions stay separate from posted rows. The Calendar tab projects them onto a Toronto month, spots repeating ledger rows (`detectRhythms`), and can write reminders to Google or an `.ics` file. Posting due items still uses the same `postEntry` path after confirm. Google and ICS never write the books.
 - Goals are data. Shared goals appear on Home. Personal goals are a filter only — not a privacy boundary.
-- Kitchen cosmetics (`kitchen.chalkboard`, Hercules) are shared household data. They merge and tombstone like recurrences. They are not journal lines.
+- Kitchen cosmetics (`kitchen.chalkboard`, Hercules) are shared household data. They merge and tombstone like recurrences. They are not journal lines. `kitchen.books` (recs and closed months) is the Audit Office desk: also shared, also never journal lines. Reopen tombstones `CLOSE-YYYY-MM`.
 - Google links (`google.links`) are shared household data: who is signed in, not the token. Tokens live in `localStorage` per environment and member. Extra Google services are household-wide opt-ins.
 
 ## Shift boundary

@@ -55,7 +55,7 @@ The old roadmap’s Phases 0–5 (ecosystem, review, September 1 test build, pla
 
 Hearth is the working tree on GitHub `main`. Cloudflare Worker `hearth-books` is the website. Supabase Postgres `tykhocwacaxwquhynkok` holds hosted snapshots. PGlite is the on-phone journal.
 
-Shipped and verified in tests (`pnpm test`, 63 passing as of the rebuild):
+Shipped and verified in tests (`pnpm test`):
 
 - Home / Plan / **+** / Books / More
 - Spend, income, shift, transfer, refund, category, budget, goals, recurrences
@@ -69,6 +69,7 @@ Still unfinished, and **named so investors cannot be surprised**:
 - Hosted RLS is `USING (true)` until Auth exists (D-015, D-034). Phrase-join now also filters environment; that is not a lock.
 - GitHub 2FA is still open (D-020).
 - Daily kitchen (Hercules, chalkboard, Ask) is cosmetics on a command kernel (D-042, D-044, D-045). It does not close the hosted door.
+- The Audit Office (D-046) is how we show the kernel: opinions and statements, not a second ledger.
 
 We do not tell a room the sync is flawless. We tell them the **command kernel** is trustworthy, the **hosted door is not yet a lock**, and the next money we spend is to close that door before we invite a bank.
 
@@ -171,6 +172,23 @@ The household will not become a family office if the app is only opened in guilt
 | Cook-off / shift pulse | Household groceries vs coffee; trailing 8-week shift average | Never names a person; forecast never `postShift` |
 
 Bank, Interac, and cards still wait on 0.1. Cosmetics do not wait — they must not write money.
+
+### 0.5 Audit Office (prove the books to a room that met the cat)
+
+Investor interest in Hercules created a legitimacy question. The ledger was already double-entry. This chapter is **disclosure**.
+
+| Work | How | Proof |
+|---|---|---|
+| Opinion | `auditOpinion`: unmodified / qualified / adverse from trial + equation + Health | Demo pack prints an opinion; Hercules chip **Opinion?** |
+| Statements | Balance sheet A=L+E, month P&L, cash flow (card spend ≠ cash), equity roll, comparative, variance, aged bills | `pnpm test` statements; Books → Statements |
+| Liquidity | Working capital, current ratio, 30-day bills vs cash-like, going-concern *watch* (not a prophecy) | Hercules **Working capital?**; pack section |
+| Notes | Eight notes: basis, recognition, cards, related parties, materiality, liquidity, subsequent events, controls | Close pack; Books → Statements |
+| Bank rec | `recordReconciliation` vs register as-of; tied / open | `postedIds` empty; spectacles unlock on tied |
+| Period close | `closeBooksMonth`; `postEntry` into that month throws `closedMonth` unless confirmed; reopen tombstones `CLOSE-YYYY-MM` | Add anyway / Calendar mark-paid is the second look |
+| Close pack | Downloadable text for a CPA backpack | Contains opinion + trial + notes; no SQL writes |
+| Hercules auditor | Spectacles, green-ink stamp, fieldwork on Books, opinion briefing, Worker prompt | Chat still cannot post |
+
+Far-future expansions live in [AUDIT_OFFICE.md](AUDIT_OFFICE.md). None of them skip 0.1.
 
 ---
 
@@ -345,6 +363,8 @@ Not “the budget app.” The **Hearth Protocol**:
 
 BaaS customers (other startups, credit unions, union benefit apps, restaurant-staff cooperatives) pay for the **sync + books + split kernel**, and skin their own UI. Cloudflare + Supabase is one reference host, not the product.
 
+The Audit Office (D-046) travels with the protocol: every tenant gets an opinion on *their* journal. Hercules is optional skin. The opinion is not.
+
 ### Regulatory track (the rival left this out)
 
 | If we… | We need… |
@@ -359,6 +379,52 @@ Fort Knox is the **command kernel**. The cloud is not Fort Knox until Chapter 0.
 
 ---
 
+## Chapter 5 — Continuous family office (nothing here is impossible)
+
+Every current file is a seed. Detail of the investor-visible close: [AUDIT_OFFICE.md](AUDIT_OFFICE.md). Daily habit map: [DAILY_HEARTH.md](DAILY_HEARTH.md). Companion face: [HERCULES.md](HERCULES.md).
+
+Nothing here posts without a command. Nothing here skips Chapter 0.1.
+
+### 5.1 Expand every living doc
+
+| Seed today | Far-future expansion (not a ceiling) |
+|---|---|
+| Command kernel + undo + confirm | Hash-chained command log; maker-checker on Production; dual-control reopen; external-auditor Hearth Pass (read-only) |
+| PGlite trial + equation | Merkle proofs of the journal; third-party attestation; continuous-audit Worker that never auto-posts |
+| Audit opinion + close pack | CPA-letter PDF; ISA 240 memo; XBRL/iXBRL; signed close; advisor portal; green-ink that is a *control stamp*, still a collar |
+| Balance sheet / P&L / cash / equity | Classified BS; comparative years; 13-week cash; IAS 7 full; statement of changes once opening balances exist; MD&A chalkboard Hercules narrates |
+| Working capital / going-concern watch | Covenant dashboard *after* we have a lender; never a fake overdraft fee |
+| Manual rec | Rules matching (amount + 2 days); partial rec; three-way match (note, receipt image after Auth, bank inbox after Flinks). Rec still never posts |
+| Closed month second look | SOX-lite freeze that *refuses* after a CPA mandate; subsequent-events workpaper; tax-year lock |
+| Calendar / rhythms / ICS | Positive pay; bill-pay rail after Interac sponsor; still confirm → `postEntry` |
+| Sit-down copy last month | Family-office quarterly pack; trustee meeting mode; still dollars, still Apply |
+| Chalkboard | MD&A; board minutes; never journal lines |
+| Hercules | Licensed CPA overlay (opt-in, billed, **never** a substitute for a human accountant); fieldwork poses; spectacles that fog when the trial is off; stamp when unmodified close prints |
+| Cook-off / high-five | Household games that still refuse to name who spent |
+| Shift pulse / forecast | Tip model after eight posted weeks; T2125 / WSIB packs from shift + lockbox; forecast still not money |
+| Splits | IOU object; Interac Request Money; later the rail. Joint stays explicit |
+| Visibility | Real privacy after Auth; not a hidden tab |
+| Google bridge | Identity step-up on close/reopen; Drive receipt folder after Auth; never posts |
+| Phrase / Pass / join | Tenant-aware pairing; environment stays a first-class key |
+| Environments | Dev/prod remain two ledgers; hosted RLS is the door lock |
+| Health | Consumer word for unmodified; maps to the opinion we already print |
+| Hearth Protocol / BaaS | White-label Audit Office; credit unions skin the cat, keep the opinion; SOC 2; no `USING (true)` |
+| CAD only (D-021) | FX as explicit journal lines when a cottage or trip needs them — not silent conversion |
+| Toronto civil dates | Multi-jurisdiction books with one reporting TZ per entity, still civil keys |
+| Demo kitchen table | Sandbox tenants; never a production clone in git |
+
+### 5.2 Competitors we watch without copying
+
+QuickBooks / Xero / Wave (statements), YNAB (envelopes as *tags on a GL*, never instead of one), Actual (local-first), Copilot/Monarch (feeds as inbox), Cleo/Finch (companion), Bloomberg/Addepar (family office), CaseWare/MindBridge (audit analytics), Animal Crossing / Neko (presence). Steal the feeling. Keep the kernel.
+
+### 5.3 Things we will not become
+
+A bank. A feed that posts. A cat that writes. A hidden sheet that is “privacy.” A pitch-deck month number that assumes Flinks is an npm package.
+
+Entry gate remains Chapter 0.1. A beautiful close pack on a world-readable table is still a leak.
+
+---
+
 ## What the rival memo missed (and we will sell)
 
 1. **Bianca’s grocery time-to-post** as the north-star metric, not “autonomous engine” slideware.
@@ -370,7 +436,8 @@ Fort Knox is the **command kernel**. The cloud is not Fort Knox until Chapter 0.
 7. **Visa payment as transfer** — already shipped; card issuing is a sequel, not a rewrite.
 8. **Negative net tips** — a tipped household that cannot book a bad night is not production-ready; we already can.
 9. **Health as an audit opinion** — “Clean” is the consumer word for an unmodified opinion on the books.
-10. **Canadian stack by name:** Flinks, Interac Request Money, EQ Bank / Wealthsimple Cash for sweep destinations, CRA lockbox, Toronto civil time.
+10. **Notes you can download** — basis of presentation, recognition, cards, related parties, materiality, liquidity, subsequent events, controls. The cat can point at them. He cannot invent them.
+11. **An opinion you can download** — Health was already the consumer word for unmodified. The Audit Office prints it.
 
 ---
 
@@ -378,7 +445,7 @@ Fort Knox is the **command kernel**. The cloud is not Fort Knox until Chapter 0.
 
 | Chapter | Household proof | Technical proof | Partner |
 |---|---|---|---|
-| 0 | Bianca posts a split grocery unaided; sit-down closes a month | Auth, RLS, env-aware join, Health clean on real Development data | None |
+| 0 | Bianca posts a split grocery unaided; sit-down closes a month; close pack prints an opinion | Auth, RLS, env-aware join, Health clean, trial in balance | None |
 | 1 | CSV/Flinks inbox confirmed to journal; IOUs clear; shift forecast on Home | All writers still commands; duplicates still five-day scorer | Flinks sandbox |
 | 2 | Tax lockbox moves after shifts; runway widget matches books; goal nudges | Sweeps are `postTransfer`; undo works | Optional HYSA destination |
 | 3 | A swipe splits 70/30 without a spreadsheet | Auth webhook → split → two pulls or decline | BIN sponsor |
@@ -395,7 +462,7 @@ Do this in order. Skip nothing to chase a demo.
 2. Sheets JSON import through commands.
 3. IOU + “I sent Interac” + deep link.
 4. CSV import inbox + confirm.
-5. Trailing-average shift pulse (forecast v0).
+5. Audit Office follow-ons: opening balances, rec matching rules (no feed).
 6. Tax lockbox mandate after `postShift`.
 7. Safe-to-spend / runway on Home.
 8. Flinks sandbox, still confirm-to-post.

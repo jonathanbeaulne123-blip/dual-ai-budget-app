@@ -17,6 +17,7 @@ export const COSMETICS: CosmeticItem[] = [
   { id: "toque", slot: "hat", name: "Kitchen toque", hint: "Post any spend" },
   { id: "visor", slot: "hat", name: "Bill visor", hint: "Mark a repeating bill paid" },
   { id: "chef", slot: "hat", name: "Sit-down chef hat", hint: "Finish a monthly sit-down" },
+  { id: "specs", slot: "hat", name: "Audit spectacles", hint: "Tie a bank rec — statement matches the books" },
   { id: "copper", slot: "chain", name: "Copper chain", hint: "Post money on 3 different days" },
   { id: "gold", slot: "chain", name: "Gold chain", hint: "Hit a savings goal" },
   { id: "cottage", slot: "house", name: "Cottage", hint: "Health check is clean" },
@@ -26,6 +27,7 @@ export const COSMETICS: CosmeticItem[] = [
   { id: "bell", slot: "collar", name: "Collar bell", hint: "Post a transfer (pay the Visa)" },
   { id: "yarn", slot: "collar", name: "Yarn collar", hint: "Scribble three chalkboard notes" },
   { id: "fish", slot: "collar", name: "Fish treat", hint: "Post a shift" },
+  { id: "ink", slot: "collar", name: "Green-ink stamp", hint: "Close a month — the control environment, not a tattoo" },
 ];
 
 export const COSMETIC_BY_ID = new Map(COSMETICS.map((item) => [item.id, item]));
@@ -61,6 +63,8 @@ export function isCosmeticUnlocked(household: Household, item: CosmeticItem, tod
   if (item.id === "toque") return household.transactions.some((tx) => tx.type === "expense" && !tx.isDuplicate);
   if (item.id === "visor") return paidRecurringCount(household) > 0;
   if (item.id === "chef") return household.activity.some((row) => row.action === "Monthly Sit-Down");
+  if (item.id === "specs") return household.kitchen.books?.reconciliations?.some((row) => row.status === "tied") ?? false;
+  if (item.id === "ink") return (household.kitchen.books?.closedMonths?.length ?? 0) > 0;
   if (item.id === "copper") return postingDates(household).length >= 3;
   if (item.id === "gold") {
     return household.goals.some((goal) => goal.targetCents > 0 && goal.savedCents >= goal.targetCents);

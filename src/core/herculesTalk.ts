@@ -59,7 +59,9 @@ function poseFromMood(mood: CompanionMood, celebrating: boolean): HerculesPose {
 }
 
 function repliesFor(mood: CompanionMood, tab: HearthTab, topic: string): string[] {
-  if (topic === "identity") return ["We good?", "Scratch"];
+  if (topic === "identity") return ["Opinion?", "Scratch"];
+  if (topic === "opinion") return ["Working capital?", "Balance sheet"];
+  if (topic === "fieldwork") return ["Opinion?", "Policies?"];
   if (topic === "cook") return ["Why?", "Milk"];
   if (topic === "bills") return ["Calendar", "What now?"];
   if (topic === "health") return ["Health", "What now?"];
@@ -67,6 +69,7 @@ function repliesFor(mood: CompanionMood, tab: HearthTab, topic: string): string[
   if (mood === "hiding") return ["Health", "What broke?"];
   if (mood === "restless") return ["Which bill?", "What now?"];
   if (tab === "calendar") return ["Which bill?", "We good?"];
+  if (tab === "ledger") return ["Opinion?", "Working capital?"];
   if (tab === "plan") return ["Sit-down?", "We good?"];
   return ["We good?", "What now?", "Milk"];
 }
@@ -143,6 +146,15 @@ export function herculesIdle(
     lesson = "Dates remind. Mark paid writes. I won't fake a fee.";
     topic = "bills";
     pose = "pace";
+  } else if (tab === "add") {
+    spoken = "I'll loaf. You confirm. I don't write.";
+    topic = "add";
+    pose = "sleep";
+  } else if (tab === "ledger") {
+    spoken = "Fieldwork. Trial first. Then the rec. Then I loaf.";
+    lesson = "I walk the journal. I don't write it.";
+    topic = "fieldwork";
+    pose = "stretch";
   } else if (sunday && tab === "home") {
     const recap = weekRecap(household, today);
     spoken = clip(recap.rows[0] ? `Sunday. Out ${recap.rows[0].value} this week.` : "Sunday. Tap me for the week.");
@@ -157,12 +169,10 @@ export function herculesIdle(
     spoken = "If you worked, post the shift. I'll do the math with you.";
     lesson = "Tips are income. Guessing is not.";
     topic = "shift";
-  } else if (tab === "add") {
-    spoken = "I'll loaf. You confirm. I don't write.";
-    topic = "add";
-    pose = "sleep";
   } else if (view.mood === "glowing") {
-    spoken = "Sunbeam. Quiet week. Don't jinx it.";
+    spoken = "Unmodified. Sunbeam. Don't jinx it.";
+    lesson = "An unmodified opinion means the journal balances and Health is clean.";
+    topic = "opinion";
     pose = "loaf";
   } else {
     spoken = "I'm here. Scratch me or ask a number.";
@@ -228,7 +238,10 @@ export function talkHercules(
   let lesson: string | null = "I read. You write. That's how we stay friends.";
   if (/who are you|maine coon|hercules|ember|your name/.test(q)) {
     topic = "identity";
-    lesson = "Big cat. Small advice. Tap a number when you want school.";
+    lesson = "Auditor on the counter. Big cat. Small advice.";
+  } else if (/opinion|trial balance|balance sheet|p&l|cash flow|reconcil|aged|close pack|working capital|equity roll|subsequent|policies|going concern/.test(q)) {
+    topic = "opinion";
+    lesson = "Statements are projections. Confirm still writes. I never post.";
   } else if (/what should|what now|coach|advise/.test(q)) {
     topic = view.mood === "hiding" ? "health" : view.mood === "restless" ? "bills" : "coach";
     lesson = view.mood === "content" || view.mood === "glowing"
@@ -260,7 +273,7 @@ export function talkHercules(
   const talk = talkFromAsk(household, ask, today, tab, topic);
   talk.lesson = lesson;
   if (topic === "identity") {
-    talk.spoken = clip(`I'm ${name}. I read the books. I don't write them.`);
+    talk.spoken = clip(`I'm ${name}. Auditor on the counter. I don't write the books.`);
     talk.pose = "pounce";
   }
   return talk;

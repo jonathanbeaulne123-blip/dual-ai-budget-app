@@ -2,10 +2,28 @@ import { useMemo, useState } from "react";
 import {
   ASK_SUGGESTIONS,
   accountRegister,
+  agedPayables,
   askHercules,
+  auditOpinion,
+  balanceSheet,
   booksEquation,
+  budgetVariance,
+  cashFlowStatement,
+  closeBooksMonth,
+  closePackageText,
+  closedMonthKeys,
+  comparativeIncome,
   compileHousehold,
   formatCad,
+  incomeStatement,
+  liquidityWatch,
+  monthKeyFromDateKey,
+  notesToFinancialStatements,
+  recordReconciliation,
+  reopenBooksMonth,
+  shiftMonthKey,
+  statementOfChangesInEquity,
+  todayKey,
   trialBalance,
   type Household,
   type LedgerView,
@@ -15,12 +33,14 @@ import { LedgerPage } from "./Ledger.tsx";
 import { booksFilename, booksJournalCsv, booksSqlDump, downloadText } from "./ledger/export.ts";
 import { queryBooks, type BooksStatus } from "./ledger/engine.ts";
 import { assertReadOnlySelect } from "./ledger/queryGuard.ts";
-import { todayKey } from "./core/calendar.ts";
 
 const PANES = [
   { id: "register", label: "Register" },
   { id: "journal", label: "Journal" },
   { id: "trial", label: "Trial balance" },
+  { id: "statements", label: "Statements" },
+  { id: "rec", label: "Reconcile" },
+  { id: "close", label: "Close pack" },
   { id: "accounts", label: "Accounts" },
   { id: "query", label: "Ask" },
 ] as const;
@@ -46,18 +66,29 @@ export function BooksPage({
   const books = useMemo(() => compileHousehold(household), [household]);
   const trial = useMemo(() => trialBalance(books, { recognizedOnly: true }), [books]);
   const equation = useMemo(() => booksEquation(books), [books]);
+  const opinion = useMemo(() => auditOpinion(household), [household]);
+  const today = todayKey();
+  const monthKey = monthKeyFromDateKey(today);
+  const packMonth = closedMonthKeys(household).at(-1) ?? monthKey;
   const [accountId, setAccountId] = useState(household.accounts[0]?.id ?? books.chart[0]?.id ?? "");
   const register = useMemo(() => accountRegister(books, accountId), [books, accountId]);
+  const [recDate, setRecDate] = useState(today);
+  const [recAmount, setRecAmount] = useState("");
+  const [recError, setRecError] = useState("");
+  const [closeError, setCloseError] = useState("");
 
   return (
     <>
       <section className="hero">
-        <div className="label">Books · double-entry · CAD</div>
+        <div className="label">Books · double-entry · CAD · America/Toronto</div>
         <div className={`money ${equation.netWorthCents < 0 ? "negative" : ""}`}>{formatCad(equation.netWorthCents)}</div>
         <div className="sub">
           Net worth {equation.holds ? "equals" : "does not equal"} retained income {formatCad(equation.netIncomeCents)}
           {trial.inBalance ? " · trial balance in balance" : " · trial balance is off"}
         </div>
+        <p className={`opinion-banner ${opinion.kind}`}>
+          Hercules’s opinion: <strong>{opinion.kind}</strong> — {opinion.hercules}
+        </p>
       </section>
       <div className="grid">
         <div className="stat"><span>Assets</span><strong>{formatCad(equation.assetCents)}</strong></div>
@@ -169,6 +200,135 @@ export function BooksPage({
           </div>
         </section>
       )}
+      {pane === "statements" && (
+        <StatementsPane household={household} monthKey={monthKey} today={today} />
+      )}
+      {pane === "rec" && (
+        <section className="card">
+          <header>
+            <h2>Bank rec</h2>
+            <span className="muted">Statement vs books. Not a feed.</span>
+          </header>
+          <p className="muted">Type the ending balance from the paper or PDF. Hercules compares it to the register. Tied recs unlock his audit spectacles. Nothing posts.</p>
+          <label>Account</label>
+          <select value={accountId} onChange={(event) => setAccountId(event.target.value)}>
+            {household.accounts.filter((account) => account.active).map((account) => (
+              <option key={account.id} value={account.id}>{account.name}</option>
+            ))}
+          </select>
+          <label>Statement date</label>
+          <input type="date" value={recDate} onChange={(event) => setRecDate(event.target.value)} />
+          <label>Statement balance (CAD)</label>
+          <input inputMode="decimal" value={recAmount} placeholder="0.00" onChange={(event) => setRecAmount(event.target.value)} />
+          {recError && <p className="danger">{recError}</p>}
+          <button
+            className="primary"
+            type="button"
+            onClick={() => {
+              try {
+                const result = recordReconciliation(household, {
+                  accountId,
+                  statementDate: recDate,
+                  statementAmount: recAmount,
+                  createdBy: memberId,
+                });
+                setRecError("");
+                setRecAmount("");
+                onChange(result.household, result.undo);
+              } catch (caught) {
+                setRecError(caught instanceof Error ? caught.message : String(caught));
+              }
+            }}
+          >
+            Record rec
+          </button>
+          <div className="books-scroll" style={{ marginTop: 12 }}>
+            <table className="books-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Account</th>
+                  <th className="num">Statement</th>
+                  <th className="num">Books</th>
+                  <th className="num">Δ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {household.kitchen.books.reconciliations.length === 0 ? (
+                  <tr><td colSpan={5} className="muted">No recs yet.</td></tr>
+                ) : [...household.kitchen.books.reconciliations].reverse().map((row) => (
+                  <tr key={row.id}>
+                    <td>{row.statementDate}</td>
+                    <td>{household.accounts.find((account) => account.id === row.accountId)?.name ?? row.accountId}</td>
+                    <td className="num">{formatCad(row.statementCents)}</td>
+                    <td className="num">{formatCad(row.bookCents)}</td>
+                    <td className="num">{row.status === "tied" ? "tied" : formatCad(row.differenceCents)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+      {pane === "close" && (
+        <section className="card">
+          <header>
+            <h2>Close package</h2>
+            <span className={`pill ${opinion.kind === "unmodified" ? "good" : "warn"}`}>{opinion.kind}</span>
+          </header>
+          <p className="muted">{opinion.cpa}</p>
+          <p className="muted">Closing a month does not freeze the snapshot. It asks for a second look before anyone posts into that period. Mark paid on Calendar still counts as that look.</p>
+          {closeError && <p className="danger">{closeError}</p>}
+          <div className="chips">
+            <button
+              className="chip"
+              type="button"
+              onClick={() => {
+                try {
+                  const result = closeBooksMonth(household, { monthKey: shiftMonthKey(monthKey, -1), createdBy: memberId });
+                  setCloseError("");
+                  onChange(result.household, result.undo);
+                } catch (caught) {
+                  setCloseError(caught instanceof Error ? caught.message : String(caught));
+                }
+              }}
+            >
+              Close {shiftMonthKey(monthKey, -1)}
+            </button>
+            <button
+              className="chip"
+              type="button"
+              onClick={() => downloadText(booksFilename(books, "txt"), closePackageText(household, packMonth, today))}
+            >
+              Download close pack
+            </button>
+          </div>
+          {household.kitchen.books.closedMonths.length > 0 && (
+            <ul className="close-list">
+              {household.kitchen.books.closedMonths.map((row) => (
+                <li key={row.monthKey}>
+                  <span>{row.monthKey} closed</span>
+                  <button
+                    className="ghost"
+                    type="button"
+                    onClick={() => {
+                      try {
+                        const result = reopenBooksMonth(household, row.monthKey);
+                        setCloseError("");
+                        onChange(result.household, result.undo);
+                      } catch (caught) {
+                        setCloseError(caught instanceof Error ? caught.message : String(caught));
+                      }
+                    }}
+                  >
+                    Reopen
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
       {pane === "accounts" && (
         <section className="card">
           <header><h2>Account register</h2></header>
@@ -214,8 +374,153 @@ export function BooksPage({
         <button className="chip" onClick={() => downloadText(booksFilename(books, "csv"), booksJournalCsv(books, trial), "text/csv")}>
           Download journal CSV
         </button>
+        <button className="chip" onClick={() => downloadText(booksFilename(books, "txt"), closePackageText(household, packMonth, today))}>
+          Download close pack
+        </button>
       </div>
     </>
+  );
+}
+
+function StatementsPane({
+  household,
+  monthKey,
+  today,
+}: {
+  household: Household;
+  monthKey: string;
+  today: string;
+}) {
+  const sheet = useMemo(() => balanceSheet(household), [household]);
+  const income = useMemo(() => incomeStatement(household, monthKey), [household, monthKey]);
+  const cash = useMemo(() => cashFlowStatement(household, monthKey), [household, monthKey]);
+  const equity = useMemo(() => statementOfChangesInEquity(household, monthKey), [household, monthKey]);
+  const comparative = useMemo(() => comparativeIncome(household, monthKey), [household, monthKey]);
+  const liq = useMemo(() => liquidityWatch(household, today), [household, today]);
+  const notes = useMemo(() => notesToFinancialStatements(household, monthKey, today), [household, monthKey, today]);
+  const variance = useMemo(() => budgetVariance(household, monthKey).slice(0, 8), [household, monthKey]);
+  const aging = useMemo(() => agedPayables(household, today), [household, today]);
+  const ratio = liq.workingCapital.currentRatio;
+
+  return (
+    <>
+      <section className="card">
+        <header>
+          <h2>Balance sheet</h2>
+          <span className={`pill ${sheet.holds ? "good" : "warn"}`}>{sheet.holds ? "A = L + E" : "Off"}</span>
+        </header>
+        <p className="muted">{sheet.asOf ? `As of ${sheet.asOf}` : "No journal yet."} Assets {formatCad(sheet.assetCents)} · liabilities {formatCad(sheet.liabilityCents)} · equity {formatCad(sheet.equityCents)}.</p>
+        <StatementTable title="Assets" rows={sheet.assets} total={sheet.assetCents} />
+        <StatementTable title="Liabilities" rows={sheet.liabilities} total={sheet.liabilityCents} />
+        <StatementTable title="Equity" rows={sheet.equity} total={sheet.equityCents} />
+      </section>
+      <section className="card">
+        <header>
+          <h2>Changes in equity</h2>
+          <span className={`pill ${equity.rolls ? "good" : "warn"}`}>{equity.rolls ? "Rolls" : "Off"}</span>
+        </header>
+        <p className="muted">Opening retained earnings plus this month's net should equal closing. Household equity as of last posting {formatCad(equity.householdEquityCents)}.</p>
+        <div className="row"><span>Opening {monthKey}</span><span>{formatCad(equity.openingCents)}</span></div>
+        <div className="row"><span>Net income</span><span>{formatCad(equity.netIncomeCents)}</span></div>
+        <div className="row"><strong>Closing</strong><strong>{formatCad(equity.closingCents)}</strong></div>
+      </section>
+      <section className="card">
+        <header>
+          <h2>Income statement</h2>
+          <span className="muted">{monthKey}</span>
+        </header>
+        <p className="muted">Net {formatCad(income.netCents)} vs budgeted {formatCad(income.budgetedNetCents)}. vs {comparative.priorKey}: net Δ {formatCad(comparative.netDeltaCents)}.</p>
+        <StatementTable title="Income" rows={income.income} total={income.incomeCents} />
+        <StatementTable title="Expenses" rows={income.expenses} total={income.expenseCents} />
+      </section>
+      <section className="card">
+        <header><h2>Cash flow</h2></header>
+        <p className="muted">Card spend is not cash until the Visa is paid. That payment is a transfer.</p>
+        <div className="row"><span>Operating in</span><span>{formatCad(cash.operatingInCents)}</span></div>
+        <div className="row"><span>Operating out</span><span>{formatCad(cash.operatingOutCents)}</span></div>
+        <div className="row"><span>Card spend (non-cash)</span><span>{formatCad(cash.cardSpendCents)}</span></div>
+        <div className="row"><span>Debt paydown</span><span>{formatCad(cash.debtPaydownCents)}</span></div>
+        <div className="row"><strong>Net cash</strong><strong>{formatCad(cash.netCashCents)}</strong></div>
+      </section>
+      <section className="card">
+        <header>
+          <h2>Working capital</h2>
+          <span className={`pill ${liq.goingConcern === "comfortable" ? "good" : "warn"}`}>{liq.goingConcern}</span>
+        </header>
+        <p className="muted">{liq.hercules}</p>
+        <div className="row"><span>Working capital</span><span>{formatCad(liq.workingCapital.workingCapitalCents)}</span></div>
+        <div className="row"><span>Current ratio</span><span>{ratio == null ? "n/a" : ratio.toFixed(2)}</span></div>
+        <div className="row"><span>Cash-like</span><span>{formatCad(liq.cashCents)}</span></div>
+        <div className="row"><span>Bills next 30 days</span><span>{formatCad(liq.billsNext30Cents)}</span></div>
+        <p className="muted">{liq.workingCapital.classified}</p>
+      </section>
+      <section className="card">
+        <header><h2>Budget variance</h2></header>
+        {variance.length === 0 ? <p className="muted">No expense actuals this month yet.</p> : variance.map((row) => (
+          <div className="row" key={row.id}>
+            <span>{row.name}{row.essential ? " · essential" : ""}</span>
+            <span className={row.varianceCents < 0 ? "danger" : "muted"}>{formatCad(row.actualCents)} / {formatCad(row.budgetedCents)}</span>
+          </div>
+        ))}
+      </section>
+      <section className="card">
+        <header><h2>Aged bills</h2></header>
+        {aging.length === 0 ? <p className="muted">No repeating bills.</p> : aging.slice(0, 12).map((row) => (
+          <div className="row" key={row.id}>
+            <span>{row.note} · {row.bucket}</span>
+            <span>{formatCad(row.amountCents)}</span>
+          </div>
+        ))}
+      </section>
+      <section className="card">
+        <header><h2>Notes to the financial statements</h2></header>
+        {notes.map((note) => (
+          <div className="statement-note" key={note.id}>
+            <strong>{note.title}</strong>
+            <p className="muted">{note.body}</p>
+          </div>
+        ))}
+      </section>
+    </>
+  );
+}
+
+function StatementTable({
+  title,
+  rows,
+  total,
+}: {
+  title: string;
+  rows: { id: string; code: string; name: string; cents: number }[];
+  total: number;
+}) {
+  return (
+    <div className="books-scroll">
+      <table className="books-table">
+        <thead>
+          <tr>
+            <th>{title}</th>
+            <th className="num">CAD</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 ? (
+            <tr><td colSpan={2} className="muted">None</td></tr>
+          ) : rows.map((row) => (
+            <tr key={row.id}>
+              <td>{row.code ? `${row.code} · ${row.name}` : row.name}</td>
+              <td className="num">{formatCad(row.cents)}</td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td>Total</td>
+            <td className="num">{formatCad(total)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
   );
 }
 
