@@ -44,8 +44,8 @@ Pure commands (validate → clone → commit → refresh flags)
    v
 Household snapshot (JSON)
    |
-   +-- PGlite books (balanced journal on the phone)
-   +-- optional publish to Supabase
+   +-- PGlite books (balanced journal on the phone — the books engine)
+   +-- optional JSON snapshot on Supabase (open door until Auth)
    +-- Home / Plan / Health are projections
 ```
 

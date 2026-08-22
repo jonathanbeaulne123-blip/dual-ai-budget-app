@@ -136,9 +136,10 @@ function shapeInvestment(input: unknown): InvestmentDesk {
   return { vehicle, markedValueCents, markedAt };
 }
 
-export function shapeAccount(input: Partial<Account> & { id: string; name: string }, index = 0): Account {
+export function shapeAccount(input: Partial<Account> & { id: string; name: string }, index = 0, fallbackIso = ""): Account {
   const kind = normalizeAccountKind(input.kind);
   const owner = input.ownerMemberId || JOINT;
+  const createdAt = input.createdAt || fallbackIso;
   return {
     id: input.id,
     name: String(input.name || "Account").trim().slice(0, 40) || "Account",
@@ -152,14 +153,16 @@ export function shapeAccount(input: Partial<Account> & { id: string; name: strin
     credit: kind === "credit" ? shapeCredit(input.credit) : null,
     savings: kind === "savings" ? shapeSavings(input.savings) : null,
     investment: kind === "investment" ? shapeInvestment(input.investment) : null,
+    createdAt,
+    updatedAt: input.updatedAt || createdAt,
   };
 }
 
-export function shapeAccounts(list: Array<Partial<Account> & { id: string; name?: string }> | undefined | null): Account[] {
+export function shapeAccounts(list: Array<Partial<Account> & { id: string; name?: string }> | undefined | null, fallbackIso = ""): Account[] {
   if (!Array.isArray(list)) return [];
   return list
     .filter((row) => row && typeof row.id === "string" && row.id)
-    .map((row, index) => shapeAccount({ ...row, name: row.name || "Account", id: row.id }, index))
+    .map((row, index) => shapeAccount({ ...row, name: row.name || "Account", id: row.id }, index, fallbackIso))
     .sort((left, right) => left.sortOrder - right.sortOrder || left.name.localeCompare(right.name));
 }
 

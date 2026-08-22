@@ -3,13 +3,28 @@ import { formatInviteCode, normalizeInviteCode, randomHouseholdId, randomInviteC
 import { mergeGoogle, shapeGoogle } from "./google.ts";
 import { mergeKitchen, shapeKitchen } from "./kitchen.ts";
 import { mergeCalendars, shapeCalendar, shapeRecurrence } from "./recurrence.ts";
+import { applyGoalSavings, shapeGoalProgress } from "./goals.ts";
 import { shapeAccounts } from "./accountKinds.ts";
-import type { Household, PersonalEnvelope, SharedEnvelope, Shift, Tombstone, Transaction } from "./types.ts";
+import type {
+  Activity,
+  BudgetPlan,
+  Category,
+  Household,
+  Member,
+  PersonalEnvelope,
+  SharedEnvelope,
+  Shift,
+  Tombstone,
+  Transaction,
+} from "./types.ts";
 import { belongsToSharedLedger, isPersonalOnly, parseVisibility } from "./visibility.ts";
 
 export type { PersonalEnvelope, SharedEnvelope };
 
-export function recency(item: { updatedAt?: string; createdAt?: string }): string {
+/** Missing catalog timestamps must be stable across two split() calls, not `new Date()`. */
+const MISSING_ISO = "1970-01-01T00:00:00.000Z";
+
+export function recency(item: { updatedAt: string; createdAt?: string }): string {
   return item.updatedAt || item.createdAt || "";
 }
 
@@ -22,7 +37,7 @@ export function mergeTombstones(left: Tombstone[] = [], right: Tombstone[] = [])
   return [...map.values()];
 }
 
-export function mergeRecords<T extends { id: string; updatedAt?: string; createdAt?: string }>(
+export function mergeRecords<T extends { id: string; updatedAt: string }>(
   server: T[],
   client: T[],
   tombstones: Tombstone[],
@@ -52,9 +67,46 @@ function laterEnvelope<T extends { lastCommittedAt: string | null }>(server: T, 
   return client.lastCommittedAt >= server.lastCommittedAt ? client : server;
 }
 
+function shapeMembers(list: Member[] | undefined, fallbackIso: string): Member[] {
+  return (list ?? []).map((member) => ({
+    ...member,
+    updatedAt: member.updatedAt || fallbackIso,
+  }));
+}
+
+function shapeCategories(list: Category[] | undefined, fallbackIso: string): Category[] {
+  return (list ?? []).map((category) => {
+    const createdAt = category.createdAt || fallbackIso;
+    return {
+      ...category,
+      createdAt,
+      updatedAt: category.updatedAt || createdAt,
+    };
+  });
+}
+
+function shapeBudgetPlans(list: BudgetPlan[] | undefined, fallbackIso: string): BudgetPlan[] {
+  return (list ?? []).map((plan) => {
+    const createdAt = plan.createdAt || fallbackIso;
+    return {
+      ...plan,
+      createdAt,
+      updatedAt: plan.updatedAt || createdAt,
+    };
+  });
+}
+
+function shapeActivity(list: Activity[] | undefined): Activity[] {
+  return (list ?? []).map((item) => ({
+    ...item,
+    updatedAt: item.updatedAt || item.at,
+  }));
+}
+
 export function ensureHouseholdShape(household: Household): Household {
   const fallback = household.members.find((member) => member.active)?.id ?? household.members[0]?.id ?? "";
-  const fallbackIso = household.lastCommittedAt || new Date().toISOString();
+  const fallbackIso = household.lastCommittedAt || MISSING_ISO;
+  const progress = shapeGoalProgress(household.goals, household.goalContributions, fallbackIso, fallback);
   return {
     ...household,
     householdId: household.householdId || randomHouseholdId(),
@@ -66,7 +118,13 @@ export function ensureHouseholdShape(household: Household): Household {
     calendar: shapeCalendar(household.calendar),
     kitchen: shapeKitchen(household.kitchen),
     google: shapeGoogle(household.google),
-    accounts: shapeAccounts(household.accounts),
+    members: shapeMembers(household.members, fallbackIso),
+    accounts: shapeAccounts(household.accounts, fallbackIso),
+    categories: shapeCategories(household.categories, fallbackIso),
+    budgetPlans: shapeBudgetPlans(household.budgetPlans, fallbackIso),
+    activity: shapeActivity(household.activity),
+    goals: progress.goals,
+    goalContributions: progress.goalContributions,
     transactions: household.transactions.map((tx) => ({
       ...tx,
       place: tx.place ?? "",
@@ -97,9 +155,9 @@ export function emptyPersonal(memberId: string): PersonalEnvelope {
 export function splitForSync(household: Household, memberId: string): { shared: SharedEnvelope; personal: PersonalEnvelope } {
   const shaped = ensureHouseholdShape(household);
   const sharedTx = shaped.transactions.filter((tx) => belongsToSharedLedger(tx));
-  const personalTx = shaped.transactions.filter((tx) => isPersonalOnly(tx) && tx.createdBy === memberId);
+  const personalTx = shaped.transactions.filter((tx) => isPersonalOnly(tx));
   const sharedShifts = shaped.shifts.filter((shift) => belongsToSharedLedger(shift));
-  const personalShifts = shaped.shifts.filter((shift) => isPersonalOnly(shift) && shift.createdBy === memberId);
+  const personalShifts = shaped.shifts.filter((shift) => isPersonalOnly(shift));
   const shared: SharedEnvelope = {
     kind: "shared",
     revision: shaped.revision,
@@ -117,6 +175,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     kitchen: shaped.kitchen,
     google: shaped.google,
     goals: shaped.goals,
+    goalContributions: shaped.goalContributions,
     budgetPlans: shaped.budgetPlans,
     activity: shaped.activity,
     shiftSettings: shaped.shiftSettings,
@@ -170,6 +229,7 @@ export function assembleHousehold(shared: SharedEnvelope, personal: PersonalEnve
     kitchen: shared.kitchen,
     google: shared.google,
     goals: shared.goals,
+    goalContributions: shared.goalContributions ?? [],
     budgetPlans: shared.budgetPlans,
     activity: shared.activity,
     shiftSettings: shared.shiftSettings,
@@ -182,6 +242,8 @@ export function assembleHousehold(shared: SharedEnvelope, personal: PersonalEnve
 export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): SharedEnvelope {
   const tombstones = mergeTombstones(server.tombstones, client.tombstones);
   const newer = laterEnvelope(server, client);
+  const goalContributions = mergeRecords(server.goalContributions ?? [], client.goalContributions ?? [], tombstones);
+  const goals = applyGoalSavings(mergeRecords(server.goals, client.goals, tombstones), goalContributions);
   return {
     kind: "shared",
     revision: Math.max(server.revision ?? 0, client.revision ?? 0) + 1,
@@ -198,7 +260,8 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     calendar: mergeCalendars(server.calendar, client.calendar),
     kitchen: mergeKitchen(server.kitchen, client.kitchen, tombstones),
     google: mergeGoogle(server.google, client.google, tombstones),
-    goals: mergeRecords(server.goals, client.goals, tombstones),
+    goals,
+    goalContributions,
     budgetPlans: mergeRecords(server.budgetPlans, client.budgetPlans, tombstones),
     activity: mergeRecords(server.activity, client.activity, []).sort((left, right) => left.at.localeCompare(right.at)).slice(-200),
     shiftSettings: newer.shiftSettings,

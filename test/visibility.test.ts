@@ -51,11 +51,12 @@ describe("household and personal visibility", () => {
     const { shared, personal } = splitForSync(household, "MEM-002");
     expect(shared.transactions.every((tx) => tx.visibility !== "personal")).toBe(true);
     expect(shared.transactions.map((tx) => tx.note)).toEqual(["Groceries"]);
-    expect(personal.transactions.map((tx) => tx.note)).toEqual(["Jonathan only"]);
+    expect(personal.transactions.map((tx) => tx.note).sort()).toEqual(["Bianca only", "Jonathan only"]);
 
     const assembled = assembleHousehold(shared, personal);
-    expect(assembled.transactions.some((tx) => tx.note === "Bianca only")).toBe(false);
-    expect(assembled.transactions.map((tx) => tx.note).sort()).toEqual(["Groceries", "Jonathan only"]);
+    expect(assembled.transactions.map((tx) => tx.note).sort()).toEqual(["Bianca only", "Groceries", "Jonathan only"]);
+    expect(householdForView(assembled, "MEM-002", "personal").transactions.map((tx) => tx.note)).toEqual(["Jonathan only"]);
+    expect(householdForView(assembled, "MEM-001", "personal").transactions.map((tx) => tx.note)).toEqual(["Bianca only"]);
   });
 
   it("merges concurrent household adds without dropping either person's row", () => {

@@ -15,6 +15,7 @@ import {
   createWriteQueue,
   creditCardView,
   defaultVisibilityForView,
+  describeGoalContributors,
   dollarsFromCentsDigits,
   findActiveGoogleLinkByEmail,
   findActiveGoogleLinkBySubject,
@@ -242,7 +243,13 @@ export function App() {
       if (next.linked && who) {
         setSyncState("syncing");
         try {
-          stored = await pushSharedHousehold(next, who);
+          let outgoing = next;
+          try {
+            outgoing = await reconcileHousehold(next, who);
+          } catch {
+            // Offline or unpublished: still try to publish this phone's copy.
+          }
+          stored = await pushSharedHousehold(outgoing, who);
           await saveHousehold(stored);
           setHousehold(stored);
           setSyncState("synced");
@@ -790,7 +797,7 @@ export function App() {
             })}
           </section>
           <SitDownGuide household={household} onApply={(next, token) => persist(next, token)} hidden={view === "personal"} />
-          <Goals household={household} goals={visible?.goals ?? household.goals} onChange={(next, token) => persist(next, token)} />
+          <Goals household={household} createdBy={memberId} goals={visible?.goals ?? household.goals} onChange={(next, token) => persist(next, token)} />
         </>
       )}
 
@@ -1350,7 +1357,7 @@ export function App() {
   );
 }
 
-function Goals({ household, goals, onChange }: { household: Household; goals: Household["goals"]; onChange: (household: Household, undo?: UndoToken) => void }) {
+function Goals({ household, createdBy, goals, onChange }: { household: Household; createdBy: string; goals: Household["goals"]; onChange: (household: Household, undo?: UndoToken) => void }) {
   const [name, setName] = useState("New goal");
   const [target, setTarget] = useState("500");
   const [amount, setAmount] = useState("25");
@@ -1361,7 +1368,7 @@ function Goals({ household, goals, onChange }: { household: Household; goals: Ho
         <div className="row" key={goal.id}>
           <div>
             <strong>{goal.name}</strong>
-            <div className="muted">{goal.shared ? "Shared" : "Personal filter only"} · {formatCad(goal.savedCents)} / {formatCad(goal.targetCents)}</div>
+            <div className="muted">{goal.shared ? "Shared" : "Personal filter only"} · {formatCad(goal.savedCents)} / {formatCad(goal.targetCents)}{describeGoalContributors(household, goal.id) ? ` · ${describeGoalContributors(household, goal.id)}` : ""}</div>
           </div>
           <div className="goal-add">
             <input
@@ -1371,7 +1378,7 @@ function Goals({ household, goals, onChange }: { household: Household; goals: Ho
               onChange={(event) => setAmount(event.target.value)}
             />
             <button className="chip" onClick={() => {
-              const result = contributeToGoal(household, goal.id, amount);
+              const result = contributeToGoal(household, goal.id, amount, { createdBy });
               onChange(result.household, result.undo);
             }}>+ add</button>
           </div>

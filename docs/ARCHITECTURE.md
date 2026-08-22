@@ -4,16 +4,17 @@
 
 Hearth is a TypeScript household ledger with a React interface. The domain lives in `src/core` and does not import React, DOM, or storage. The UI in `src/App.tsx` is an untrusted client: it may format, filter, and preview, but every write goes through a command that validates plain data and returns a new household snapshot.
 
-Persistence is two layers:
+Persistence is two layers on the phone, plus optional snapshot transport:
 
 1. **Command snapshot** — IndexedDB `hearth-ledger` / store `households`, plus a `localStorage` fallback. This is what commands clone, validate, and undo.
-2. **Books** — a double-entry PostgreSQL database in PGlite (`idb://hearth-books-development` or `idb://hearth-books-production`). After every save the snapshot is posted as balanced `journal_entries` / `journal_lines`. Views expose trial balance, income statement, net worth, and an unbalanced-entry alarm.
+2. **Books** — a double-entry PostgreSQL database in PGlite (`idb://hearth-books-development` or `idb://hearth-books-production`). After every save the snapshot is posted as balanced `journal_entries` / `journal_lines`. Views expose trial balance, income statement, net worth, and an unbalanced-entry alarm. **PGlite is the books engine.**
+3. **Hosted snapshot transport** — optional publish to the household Supabase project. The app upserts `households` and `household_snapshots` (JSON payload keyed by invite phrase + environment). It does **not** fill the hosted normalized journal tables. Those tables exist in the migration so the same schema can load elsewhere; they are empty in the live project until a later writer exists. RLS is still `USING (true) WITH CHECK (true)` for ALL, including DELETE. The bundled publishable key can read and write every hosted row. Treat hosted contents as disclosed until Auth (D-034, D-052).
 
-The website is Cloudflare Workers + Assets (`hearth-books`). Hosted books are the household Supabase Postgres project. Download SQL from the Books tab still loads the same schema elsewhere.
+The website is Cloudflare Workers + Assets (`hearth-books`). Download SQL from the Books tab still loads the PGlite schema elsewhere.
 
-Pairing: every household has a three-word phrase. **Share phrase and link** sends `/?join=cedar-lantern-kite`. **Hearth Pass** is a JSON file of the shared envelope only. Cloud publish is an accelerator, not the only door.
+Pairing: every household has a three-word phrase. **Share phrase and link** sends `/?join=cedar-lantern-kite`. **Hearth Pass** is a JSON file of the shared envelope only (no personal-only transactions or shifts). Cloud publish is an accelerator, not the only door.
 
-Each phone keeps a working copy, then merges by id on pull/push so concurrent adds do not wipe each other. Undo writes tombstones so a deleted row cannot come back from the other phone. The UI never saves the filtered view as the canonical snapshot.
+Each phone keeps a working copy, then merges by id on pull/push so concurrent adds do not wipe each other. Catalog rows (`Account`, `Category`, `Goal`, `BudgetPlan`, `Member`, `Activity`) last-write-win on required `updatedAt`. Goal progress is append-only `goalContributions`; `savedCents` is the sum, so two phones adding to Japan both keep their CAD. Undo writes tombstones so a deleted row cannot come back from the other phone. Personal-only rows stay on the canonical snapshot for every member; the UI filter hides the other person's personal ledger. The UI never saves the filtered view as the canonical snapshot. A linked save reconciles with the hosted snapshot before upserting, and the upsert does not DELETE the household first. Audit `snapshot_hash` is a digest of books facts (transaction amounts, dates, splits, shift figures, goal contribution rows), not only transaction ids.
 
 The in-memory model is still the source of truth while a command runs: clone the household, validate, replace the snapshot, then write both stores. Undo restores the previous snapshot.
 
@@ -47,7 +48,7 @@ Family-office accounting (weight **5**) and Hercules / interactables (weight **3
 - Every transaction and shift has `createdBy` and `visibility` (`household` | `personal` | `both`). Home, Plan, and Ledger filter that view. Health Check still runs on the full snapshot.
 - `duplicateKey` is an exact fingerprint. Posting also scores similar rows: same type, same amount, within five Toronto calendar days, plus shared notes, place, category, or source. Partner personal rows are not part of that scan. `potentialDuplicate` is derived from that. `isDuplicate` remains the reviewed financial control.
 - Recurring definitions stay separate from posted rows. The Calendar tab projects them onto a Toronto month, spots repeating ledger rows (`detectRhythms`), and can write reminders to Google or an `.ics` file. Posting due items still uses the same `postEntry` path after confirm. Google and ICS never write the books.
-- Goals are data. Shared goals appear on Home. Personal goals are a filter only — not a privacy boundary.
+- Goals are data. Shared goals appear on Home. Personal goals are a filter only — not a privacy boundary. Progress is append-only contribution rows; `savedCents` is derived. Ask and Plan can name who put money in.
 - Kitchen cosmetics (`kitchen.chalkboard`, Hercules companion + `kitchen.hercules` chat/memories) are shared household data. They merge and tombstone like recurrences. They are not journal lines. `kitchen.books` (recs and closed months) is the Audit Office desk: also shared, also never journal lines. Reopen tombstones `CLOSE-YYYY-MM`.
 - Google links (`google.links`) are shared household data: who is signed in, not the token. Tokens live in `localStorage` per environment and member. Extra Google services are household-wide opt-ins.
 
@@ -63,7 +64,7 @@ Browser controls are usability. Commands throw `ValidationError` before mutating
 
 Development is the default local ledger. Production is a second named snapshot on the same device. They cannot be confused by workbook title; the pill in the top bar is the environment and asks before switching.
 
-Development/production on a phone remain local keys. The books are PostgreSQL in the app (PGlite) and the same schema on the household Supabase project. The website is Cloudflare Workers.
+Development/production on a phone remain local keys. The books engine is PostgreSQL in the app (PGlite). Hosted Supabase holds the shared JSON snapshot, not the live journal. The website is Cloudflare Workers.
 
 ## Scale
 
