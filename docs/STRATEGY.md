@@ -62,7 +62,7 @@ These are **important features**. Dual Course does not rewrite them. Smaller sur
 | Dates are Toronto civil keys. | D-007 |
 | Development and Production never mix. | D-002 |
 | Double-entry books. Health refuses imbalance. Journal wins if a statement disagrees. | D-033, D-046 |
-| Hercules, chalkboard, wardrobe, visit sparks, rec, close, marks, Google, Hercules desk never post money. | D-042, D-043, D-044, D-045, D-046, D-047, D-049, D-050 |
+| Hercules, chalkboard, wardrobe, visit sparks, rec, close, marks, Google, Hercules desk, office widgets and weather never post money. | D-042, D-043, D-044, D-045, D-046, D-047, D-049, D-050, D-051 |
 | Hercules never names who spent more. No fake fees. No pay-to-keep-alive. No hunger-meter death. | D-044 |
 | Bank feeds, Interac APIs, issued cards: blocked until Auth + RLS. Jonathan approves production money movement. | D-011, D-039 |
 | Accounts are financial accounts (chequing, savings, credit, investment, other), not categories. | D-047 |
@@ -84,6 +84,7 @@ Do not re-litigate these as “Chapter 0” or “Ring 1.” They are the kitche
 - Development vs Production pills; PGlite per pill
 - Home chalkboard; Hercules the Maine Coon (wander, loaf on Add, journal-first talk; OpenAI/Anthropic Worker secrets allowed, then Workers AI); chat and memories in `kitchen.hercules` (D-049); visit spark
 - Kitchen habit (D-050): CAD cents pad, Home Milk/Shift/Pay card, guided sit-down, Hercules shift-posting streak from posted shifts
+- September Office (D-051, **direction**): Home as a lived-in Toronto desk — weather window, movable widgets, Hercules on the furniture. Spec in [CLAUDE_OFFICE_UX.md](CLAUDE_OFFICE_UX.md). Not shipped until implemented.
 - Audit Office: opinion, statements, equity roll, working capital, notes, rec, close pack
 - Accounts Floor: wallet tiles, account rooms, expandable cards, investment marks, interest/rewards as explicit posts
 - Kitchen site `hearth-books` from GitHub `main`
@@ -186,6 +187,7 @@ A creature and a kitchen that teach the books by living on them:
 |---|---|---|---|
 | **Hercules ledger desk** | Money questions answered from the journal. Chat/memories as protected as the books. | A cat who remembers payday without a vendor memory store. | **Shipping (D-049).** Third-party keys allowed as Worker secrets (D-045). Workers AI if none set. |
 | **Kitchen habit** | Fewer taps to post milk/shift. Sit-down is three confirms, same `applySitDown`. | Hercules jumps on posted shift streaks. Never streak-death. | **Shipping (D-050).** |
+| **September Office** | Posting, wallet, sit-down, bills, Health reachable without leaving Home unless you dive. | Rainy window, movable instruments, Hercules perches/bumps/licks/pounces. | **Direction (D-051).** Claude specs; Grok implements. Widgets never post. |
 | **Lock the hosted door** | Auth + RLS. Personal can become privacy. Opinion about *access* can go unmodified. | Hercules can tell the truth: “the door latched.” No more qualified opinion pretending math is the only issue. | **Next engineering dollar.** Do not apply [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) while `USING (true)`. |
 | **GitHub 2FA** | The canon remote stops being a single-factor door (D-020). | None required — Course A wins. | Open |
 | **Due-on-open preview** | Recurring literacy before `postEntry`. | Kettle whistle that matches a real due row. | Confirm still posts |
@@ -209,14 +211,15 @@ Nothing in that table posts without a command. Nothing that talks to a bank, Int
 
 Order is **weight and risk**, not nostalgia chapter numbers.
 
-1. **Auth + RLS** on hosted books. Phrase-join already filters environment; PGlite is already per pill. This is the Course A door. Pair it with an honest Hercules line about access.
-2. **GitHub 2FA** (D-020).
-3. **Google client ID** baked for the kitchen site so both people can link ([GOOGLE.md](GOOGLE.md)).
-4. **Recurring preview on open**, then the existing `postEntry` path.
-5. **JSON/CSV import** of a sanitized history through commands (D-011).
-6. Every subsequent feature as a Dual Course pair from the table above. Prefer pairs that raise posting rate, rec rate, sit-down completion, or account literacy.
+1. **September Office (D-051).** Claude designs the lived-in Home; Cursor Grok implements Dual Course slices. This is the **testing face**. Auth is still the door.
+2. **Auth + RLS** on hosted books. Phrase-join already filters environment; PGlite is already per pill. This is the Course A door. Pair it with an honest Hercules line about access.
+3. **GitHub 2FA** (D-020).
+4. **Google client ID** baked for the kitchen site so both people can link ([GOOGLE.md](GOOGLE.md)).
+5. **Recurring preview on open**, then the existing `postEntry` path.
+6. **JSON/CSV import** of a sanitized history through commands (D-011).
+7. Every subsequent feature as a Dual Course pair from the table above. Prefer pairs that raise posting rate, rec rate, sit-down completion, or account literacy.
 
-Do not open Flinks, Interac APIs, issued cards, receipt images in Postgres, or amount-bearing push on a shared device until (1) is true.
+Do not open Flinks, Interac APIs, issued cards, receipt images in Postgres, or amount-bearing push on a shared device until Auth + RLS is true.
 
 ---
 
