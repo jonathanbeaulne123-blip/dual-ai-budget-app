@@ -13,6 +13,7 @@ import {
 import type { BooksAsk } from "./askBooks.ts";
 import type { Household } from "./types.ts";
 import { householdWallet } from "./accounts.ts";
+import { shiftPostingStreak } from "./shiftStreak.ts";
 
 export type HerculesPose =
   | "loaf"
@@ -68,6 +69,7 @@ function repliesFor(mood: CompanionMood, tab: HearthTab, topic: string): string[
   if (topic === "bills") return ["Calendar", "What now?"];
   if (topic === "health") return ["Health", "What now?"];
   if (topic === "forecast") return ["Tips this week", "We good?"];
+  if (topic === "shift") return ["Log shift", "We good?"];
   if (mood === "hiding") return ["Health", "What broke?"];
   if (mood === "restless") return ["Which bill?", "What now?"];
   if (tab === "calendar") return ["Which bill?", "We good?"];
@@ -83,10 +85,12 @@ export function herculesNeedsCheck(household: Household, today: DateKey): boolea
   return !household.transactions.some((tx) => !tx.isDuplicate && tx.date === today && tx.subcategoryId === "SUB-FOOD-GROCERIES");
 }
 
-export function herculesMutters(household: Household, today: DateKey): boolean {
+export function herculesMutters(household: Household, today: DateKey, now = new Date()): boolean {
   const name = household.kitchen.companion.name || "Hercules";
   const { mood } = companionMood(household, today, name);
-  return mood === "hiding" || mood === "restless";
+  if (mood === "hiding" || mood === "restless") return true;
+  const streak = shiftPostingStreak(household, today);
+  return streak.waiting && kettlePhase(today, hourInToronto(now)) === "after-shift";
 }
 
 export function talkFromAsk(
@@ -175,9 +179,11 @@ export function herculesIdle(
       topic = "morning";
       pose = "stretch";
     } else if (phase === "after-shift") {
-      spoken = "If you worked, post the shift. I'll do the math with you.";
-      lesson = "Tips are income. Guessing is not.";
+      const streak = shiftPostingStreak(household, today);
+      spoken = clip(streak.spoken);
+      lesson = streak.lesson;
       topic = "shift";
+      pose = streak.fresh && streak.count >= 2 ? "celebrate" : streak.waiting ? "pounce" : "loaf";
     } else if (view.mood === "glowing") {
       spoken = "Unmodified. Sunbeam. Don't jinx it.";
       lesson = "An unmodified opinion means the journal balances and Health is clean.";
@@ -192,9 +198,11 @@ export function herculesIdle(
     topic = "morning";
     pose = "stretch";
   } else if (phase === "after-shift") {
-    spoken = "If you worked, post the shift. I'll do the math with you.";
-    lesson = "Tips are income. Guessing is not.";
+    const streak = shiftPostingStreak(household, today);
+    spoken = clip(streak.spoken);
+    lesson = streak.lesson;
     topic = "shift";
+    pose = streak.fresh && streak.count >= 2 ? "celebrate" : streak.waiting ? "pounce" : "loaf";
   } else if (view.mood === "glowing") {
     spoken = "Unmodified. Sunbeam. Don't jinx it.";
     lesson = "An unmodified opinion means the journal balances and Health is clean.";

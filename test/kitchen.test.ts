@@ -165,8 +165,10 @@ describe("daily kitchen cosmetics", () => {
 
   it("does not hardcode a $50 goal contribution in the Plan tab", () => {
     const src = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
+    const sit = readFileSync(new URL("../src/SitDownGuide.tsx", import.meta.url), "utf8");
     expect(src).not.toMatch(/contributeToGoal\([^)]*["']50["']/);
     expect(src).toMatch(/contributeToGoal\(household, goal\.id, amount\)/);
-    expect(src).toMatch(/formatCad\(row\.lastActualCents\)/);
+    expect(sit).toMatch(/formatCad\(row\.lastActualCents\)/);
+    expect(sit).toMatch(/applySitDown\(household, preview\.sourceMonth, \{\}\)/);
   });
 });

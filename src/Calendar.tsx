@@ -267,7 +267,7 @@ export function CalendarPage(props: {
                 </span>
               </header>
               {selectedDay.items.length === 0 ? (
-                <p className="muted">Nothing repeating lands on this day. Shifts and Google events will show here when they exist.</p>
+                <p className="muted">Nothing on this day.</p>
               ) : selectedDay.items.map((item) => (
                 <DayRow
                   key={item.id}
@@ -293,7 +293,7 @@ export function CalendarPage(props: {
               <span className="muted">21 days</span>
             </header>
             {board.upcoming.length === 0 ? (
-              <p className="muted">No bills or pay on the next three weeks. Adopt a detected rhythm or add a recurrence from More.</p>
+              <p className="muted">Quiet three weeks.</p>
             ) : board.upcoming.map((item) => (
               <div className="row" key={item.id}>
                 <span>
@@ -315,7 +315,7 @@ export function CalendarPage(props: {
                 <h2>Spotted in the ledger</h2>
                 <span className="muted">Not money yet</span>
               </header>
-              <p className="muted">Hearth grouped repeating spend and pay. Adopting creates a recurrence. It never posts until you mark it paid.</p>
+              <p className="muted">Adopt is a reminder. Mark paid posts.</p>
               {suggested.map((rhythm) => (
                 <article className="rhythm-card" key={rhythm.key}>
                   <div className="row">
@@ -346,7 +346,7 @@ export function CalendarPage(props: {
               <span className="muted">{household.recurrences.length ? `${household.recurrences.filter((item) => item.active).length} active` : "None yet"}</span>
             </header>
             {household.recurrences.length === 0 ? (
-              <p className="muted">When you adopt a spotted bill, it lives here. Mark paid uses the same post path as Add.</p>
+              <p className="muted">Adopted bills live here. Mark paid posts.</p>
             ) : household.recurrences.map((item) => (
               <RecurrenceCard
                 key={item.id}
@@ -369,7 +369,7 @@ export function CalendarPage(props: {
             <span className={`pill ${accounts.length ? "good" : ""}`}>{accounts.length ? `${accounts.length} connected` : "Optional"}</span>
           </header>
           <p className="muted">
-            Connect Jonathan’s and Bianca’s Google calendars on this phone. Linking writes who is signed in to the shared household (More → Google household bridge). Hearth reads the month overlay and can write bill reminders at 9:00 Toronto. Google never posts money. No client ID still leaves the month board and an .ics file.
+            Google never posts. Overlay and 9:00 Toronto reminders. Link in More.
           </p>
           {household.members.filter((member) => member.active).sort((left, right) => {
             if (left.id === props.memberId) return -1;

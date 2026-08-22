@@ -242,7 +242,7 @@ export function BooksPage({
             <h2>Bank rec</h2>
             <span className="muted">Statement vs books. Not a feed.</span>
           </header>
-          <p className="muted">Type the ending balance from the paper or PDF. Hercules compares it to the register. Tied recs unlock his audit spectacles. Nothing posts.</p>
+          <p className="muted">Ending balance from the statement. Nothing posts.</p>
           <label>Account</label>
           <select value={accountId} onChange={(event) => setAccountId(event.target.value)}>
             {household.accounts.filter((account) => account.active).map((account) => (
@@ -310,7 +310,7 @@ export function BooksPage({
             <span className={`pill ${opinion.kind === "unmodified" ? "good" : "warn"}`}>{opinion.kind}</span>
           </header>
           <p className="muted">{opinion.cpa}</p>
-          <p className="muted">Closing a month does not freeze the snapshot. It asks for a second look before anyone posts into that period. Mark paid on Calendar still counts as that look.</p>
+          <p className="muted">Second look before posting into that month. Mark paid on Calendar still counts.</p>
           {closeError && <p className="danger">{closeError}</p>}
           <div className="chips">
             <button

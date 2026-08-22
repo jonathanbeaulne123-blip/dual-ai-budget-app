@@ -33,5 +33,7 @@ export * from "./herculesTalk.ts";
 export * from "./herculesPersonality.ts";
 export * from "./herculesChat.ts";
 export * from "./herculesLedger.ts";
+export * from "./cadPad.ts";
+export * from "./shiftStreak.ts";
 export { createWriteQueue } from "./writeQueue.ts";
 export { formatInviteCode, normalizeInviteCode, randomHouseholdId, randomInviteCode } from "./ids.ts";

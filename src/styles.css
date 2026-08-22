@@ -859,3 +859,77 @@ input, select, textarea {
   font-size: 13px;
 }
 
+.quick-acts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 0 0 14px;
+}
+.quick-act {
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 16px;
+  padding: 14px 8px;
+  font-weight: 700;
+  box-shadow: var(--shadow);
+}
+.pulse-hit {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--card);
+  border-radius: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  font-size: 14px;
+  line-height: 1.4;
+}
+.pulse-hit.warn { border-color: #e4b4a4; }
+.pulse-hit.good { border-color: #b9d2c4; }
+
+.cad-pad {
+  margin: 8px 0 16px;
+  touch-action: manipulation;
+}
+.cad-pad-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.cad-pad-display {
+  font-family: var(--display);
+  font-size: clamp(44px, 12vw, 64px);
+  line-height: 1;
+  margin: 6px 0 14px;
+}
+.cad-pad-keys {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.cad-pad-keys button {
+  min-height: 56px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 16px;
+  font-size: 22px;
+  font-weight: 700;
+}
+.cad-pad-keys .cad-pad-back { font-size: 20px; }
+
+.post-big {
+  font-size: 20px;
+  padding: 18px;
+  margin-top: 16px;
+  border-radius: 18px;
+}
+
+.sit-q {
+  font-family: var(--display);
+  font-size: 22px;
+  line-height: 1.25;
+  margin: 8px 0 12px;
+}
+.sit-guide .chips { margin-top: 8px; }
+
