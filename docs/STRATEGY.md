@@ -78,7 +78,8 @@ Do not re-litigate these as “Chapter 0” or “Ring 1.” They are the kitche
 
 - Phone-first Home, Calendar, Add, Plan, Books, More
 - Command kernel: spend, income, shift, transfer, category, budget, goals, recurrences, undo, confirm, duplicates
-- PGlite journal + optional Supabase publish; trial balance; read-only SQL
+- PGlite journal + optional Supabase **snapshot** publish; trial balance; read-only SQL
+- Sync integrity (D-052): append-only goal contributions, timestamped catalog merge, personal rows kept on the snapshot, upsert without DELETE
 - Calendar board, rhythms, `.ics`, optional Google overlay; Google never posts
 - Phrase / join / Hearth Pass; Shared / Personal / Both
 - Development vs Production pills; PGlite per pill

@@ -658,6 +658,6 @@ Everything else in this spec is Course B chrome over existing projections and ne
 
 Home **is** the office. Slices 1–5 are in the tree: window + rail/canvas, twelve instruments, desk calculator posting through the existing command path, furniture perch, this-phone layout keys.
 
-**Gated:** Jars have no Contribute button until two-phone goal merges are honest. Plan still contributes.
+**Gated:** Jars on the desk still have no Contribute button. D-052 is on this branch (Plan Contribute is append-only). Desk Contribute can follow after the ten-second milk pass.
 
 **Not this slice:** Auth + RLS, bank ticker, rain audio, widget store, layout in the shared snapshot.

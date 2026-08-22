@@ -35,7 +35,7 @@ describe("Supabase hosted books", () => {
     expect(pulled?.linked).toBe(true);
   });
 
-  it("replaces the household then writes a snapshot", async () => {
+  it("upserts the household and snapshot without deleting first", async () => {
     const household = catalogHousehold();
     const calls: string[] = [];
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -48,7 +48,8 @@ describe("Supabase hosted books", () => {
     }));
     const result = await pushSupabaseHousehold(household, config);
     expect(result.schema).toBe(true);
-    expect(calls.some((call) => call.startsWith("DELETE households"))).toBe(true);
-    expect(calls.some((call) => call.startsWith("POST household_snapshots"))).toBe(true);
+    expect(calls.some((call) => call.startsWith("DELETE"))).toBe(false);
+    expect(calls.some((call) => call.startsWith("POST households?on_conflict=id"))).toBe(true);
+    expect(calls.some((call) => call.startsWith("POST household_snapshots?on_conflict=household_id"))).toBe(true);
   });
 });

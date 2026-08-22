@@ -15,6 +15,7 @@ export type Member = {
   name: string;
   color: string;
   active: boolean;
+  updatedAt: string;
 };
 
 export type AccountKind = "chequing" | "savings" | "credit" | "investment" | "other";
@@ -62,6 +63,8 @@ export type Account = {
   credit: CreditCardDesk | null;
   savings: SavingsDesk | null;
   investment: InvestmentDesk | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type Category = {
@@ -74,6 +77,8 @@ export type Category = {
   incomeStability: IncomeStability | null;
   active: boolean;
   sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type Split = {
@@ -285,6 +290,18 @@ export type Goal = {
   shared: boolean;
   ownerMemberId: string | null;
   subcategoryId: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type GoalContribution = {
+  id: string;
+  goalId: string;
+  memberId: string;
+  amountCents: number;
+  date: DateKey;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type BudgetPlan = {
@@ -295,6 +312,8 @@ export type BudgetPlan = {
   essential: boolean;
   incomeStability: IncomeStability | null;
   active: boolean;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type Activity = {
@@ -302,6 +321,7 @@ export type Activity = {
   at: string;
   action: string;
   summary: string;
+  updatedAt: string;
 };
 
 export type Household = {
@@ -325,6 +345,7 @@ export type Household = {
   kitchen: HouseholdKitchen;
   google: HouseholdGoogle;
   goals: Goal[];
+  goalContributions: GoalContribution[];
   budgetPlans: BudgetPlan[];
   activity: Activity[];
   shiftSettings: ShiftSettings;
@@ -348,6 +369,7 @@ export type SharedEnvelope = {
   kitchen: HouseholdKitchen;
   google: HouseholdGoogle;
   goals: Goal[];
+  goalContributions: GoalContribution[];
   budgetPlans: BudgetPlan[];
   activity: Activity[];
   shiftSettings: ShiftSettings;

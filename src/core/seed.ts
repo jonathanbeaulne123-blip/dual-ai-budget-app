@@ -2,7 +2,7 @@ import { addDays, monthKeyFromDateKey, shiftMonthKey, todayKey, type DateKey } f
 import { DEFAULT_SHIFT_SETTINGS } from "./shift.ts";
 import { emptyHousehold, postEntry, postShift, postTransfer, addGoal, addRecurrence, setBudget, contributeToGoal, scribbleChalk, markInvestmentValue } from "./commands.ts";
 import { emptyCreditDesk, shapeAccounts } from "./accountKinds.ts";
-import { JOINT, type Household } from "./types.ts";
+import { JOINT, type Category, type Household } from "./types.ts";
 import { jointSplit, equalSplits } from "./splits.ts";
 
 function mulberry32(seed: number) {
@@ -16,11 +16,12 @@ function mulberry32(seed: number) {
 
 export function catalogHousehold(environment: Household["environment"] = "development"): Household {
   const household = emptyHousehold(environment);
+  const seededAt = "2026-01-01T00:00:00.000Z";
   household.members = [
-    { id: "MEM-001", name: "Bianca", color: "#c45c26", active: true },
-    { id: "MEM-002", name: "Jonathan", color: "#2f6b4f", active: true },
+    { id: "MEM-001", name: "Bianca", color: "#c45c26", active: true, updatedAt: seededAt },
+    { id: "MEM-002", name: "Jonathan", color: "#2f6b4f", active: true, updatedAt: seededAt },
   ];
-  const groups: Household["categories"] = [
+  const groups = [
     { id: "INCOME", parentId: null, recordType: "group", name: "Income", transactionType: "income", essential: false, incomeStability: null, active: true, sortOrder: 10 },
     { id: "CAT-HOUSING", parentId: null, recordType: "group", name: "Housing", transactionType: "expense", essential: true, incomeStability: null, active: true, sortOrder: 20 },
     { id: "CAT-FOOD", parentId: null, recordType: "group", name: "Food", transactionType: "expense", essential: true, incomeStability: null, active: true, sortOrder: 30 },
@@ -28,7 +29,7 @@ export function catalogHousehold(environment: Household["environment"] = "develo
     { id: "CAT-LIFE", parentId: null, recordType: "group", name: "Life", transactionType: "expense", essential: false, incomeStability: null, active: true, sortOrder: 50 },
     { id: "CAT-DEBT", parentId: null, recordType: "group", name: "Debt", transactionType: "expense", essential: true, incomeStability: null, active: true, sortOrder: 60 },
   ];
-  const categories: Household["categories"] = [
+  const categories = [
     { id: "SUB-INCOME-WAGES", parentId: "INCOME", recordType: "category", name: "Wages", transactionType: "income", essential: false, incomeStability: "variable", active: true, sortOrder: 11 },
     { id: "SUB-INCOME-TIPS", parentId: "INCOME", recordType: "category", name: "Tips", transactionType: "income", essential: false, incomeStability: "variable", active: true, sortOrder: 12 },
     { id: "SUB-INCOME-BIANCA", parentId: "INCOME", recordType: "category", name: "Bianca pay", transactionType: "income", essential: false, incomeStability: "fixed", active: true, sortOrder: 13 },
@@ -46,7 +47,11 @@ export function catalogHousehold(environment: Household["environment"] = "develo
     { id: "SUB-DEBT-VISA", parentId: "CAT-DEBT", recordType: "category", name: "Card payment", transactionType: "expense", essential: true, incomeStability: "fixed", active: true, sortOrder: 61 },
     { id: "SUB-DEBT-INTEREST", parentId: "CAT-DEBT", recordType: "category", name: "Card interest", transactionType: "expense", essential: true, incomeStability: "variable", active: true, sortOrder: 62 },
   ];
-  household.categories = [...groups, ...categories];
+  household.categories = [...groups, ...categories].map((row) => ({
+    ...row,
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  })) as Category[];
   household.accounts = shapeAccounts([
     {
       id: "ACC-CHEQUING",
@@ -135,7 +140,7 @@ export function catalogHousehold(environment: Household["environment"] = "develo
       sortOrder: 60,
       investment: { vehicle: "tfsa", markedValueCents: null, markedAt: null },
     },
-  ]);
+  ], seededAt);
   household.shiftSettings = { ...DEFAULT_SHIFT_SETTINGS };
   return household;
 }

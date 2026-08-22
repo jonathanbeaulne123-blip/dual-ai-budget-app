@@ -8,7 +8,7 @@ import {
 import type { Household, Environment } from "../core/types.ts";
 import { assertReadOnlySelect } from "./queryGuard.ts";
 import { BOOKS_SCHEMA, BOOKS_SCHEMA_VERSION } from "./schema.ts";
-import { pushSupabaseHousehold } from "./supabase.ts";
+import { pushSupabaseHousehold, probeSupabase } from "./supabase.ts";
 
 export type BooksStatus = {
   ok: boolean;
@@ -64,16 +64,77 @@ export async function getBrowserBooks(environment: Environment = "development"):
   return db;
 }
 
-async function hashSnapshot(household: Household): Promise<string> {
-  const payload = JSON.stringify({
-    id: household.householdId,
+function byId<T extends { id: string }>(rows: T[]): T[] {
+  return [...rows].sort((left, right) => left.id.localeCompare(right.id));
+}
+
+export function booksIntegrityFacts(household: Household) {
+  return {
+    householdId: household.householdId,
     revision: household.revision,
     lastCommittedAt: household.lastCommittedAt,
-    tx: household.transactions.map((tx) => tx.id),
-  });
-  const bytes = new TextEncoder().encode(payload);
+    transactions: byId(household.transactions).map((tx) => ({
+      id: tx.id,
+      date: tx.date,
+      type: tx.type,
+      amountCents: tx.amountCents,
+      accountId: tx.accountId,
+      categoryId: tx.categoryId,
+      subcategoryId: tx.subcategoryId,
+      splits: [...tx.splits].sort((left, right) => left.party.localeCompare(right.party) || left.amountCents - right.amountCents),
+      visibility: tx.visibility,
+      createdBy: tx.createdBy,
+      isDuplicate: tx.isDuplicate,
+    })),
+    shifts: byId(household.shifts).map((shift) => ({
+      id: shift.id,
+      date: shift.date,
+      memberId: shift.memberId,
+      salesCents: shift.salesCents,
+      cashTipsCents: shift.cashTipsCents,
+      ccTipsCents: shift.ccTipsCents,
+      hours: shift.hours,
+      netTipsCents: shift.netTipsCents,
+      wagesCents: shift.wagesCents,
+    })),
+    goals: byId(household.goals).map((goal) => ({
+      id: goal.id,
+      targetCents: goal.targetCents,
+      savedCents: goal.savedCents,
+    })),
+    goalContributions: byId(household.goalContributions ?? []).map((row) => ({
+      id: row.id,
+      goalId: row.goalId,
+      memberId: row.memberId,
+      amountCents: row.amountCents,
+      date: row.date,
+    })),
+    accounts: byId(household.accounts).map((account) => ({
+      id: account.id,
+      name: account.name,
+      kind: account.kind,
+      active: account.active,
+    })),
+  };
+}
+
+export async function hashBooksSnapshot(household: Household): Promise<string> {
+  const bytes = new TextEncoder().encode(JSON.stringify(booksIntegrityFacts(household)));
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export function hostedFailureStatus(
+  error: unknown,
+  probe: { reachable: boolean; project?: string },
+): NonNullable<BooksStatus["hosted"]> {
+  return {
+    provider: "supabase",
+    reachable: probe.reachable,
+    schema: false,
+    project: probe.project,
+    error: error instanceof Error ? error.message : String(error),
+  };
 }
 
 export async function ingestBooks(db: PGlite, household: Household, compiled = compileHousehold(household)): Promise<BooksStatus> {
@@ -200,7 +261,7 @@ async function writeBooks(db: Queryable, household: Household, compiled: Compile
       compiled.householdId,
       compiled.revision,
       new Date().toISOString(),
-      await hashSnapshot(household),
+      await hashBooksSnapshot(household),
       compiled.entries.length,
       tb.totalDebitCents,
       tb.totalCreditCents,
@@ -239,16 +300,12 @@ export async function syncHouseholdBooks(household: Household): Promise<{ compil
       },
     };
   } catch (caught) {
+    const hosted = await probeSupabase();
     return {
       compiled,
       status: {
         ...status,
-        hosted: {
-          provider: "supabase",
-          reachable: true,
-          schema: false,
-          error: caught instanceof Error ? caught.message : String(caught),
-        },
+        hosted: hostedFailureStatus(caught, hosted),
       },
     };
   }

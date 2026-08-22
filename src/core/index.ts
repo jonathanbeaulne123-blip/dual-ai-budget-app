@@ -9,6 +9,7 @@ export * from "./catalog.ts";
 export * from "./health.ts";
 export * from "./budget.ts";
 export * from "./insights.ts";
+export * from "./goals.ts";
 export * from "./commands.ts";
 export * from "./seed.ts";
 export * from "./fixtures.ts";

@@ -139,25 +139,26 @@ export async function pushSupabaseHousehold(household: Household, config = readS
   const probe = await probeSupabase(config);
   if (!config || !probe.schema) return probe;
   const snapshot = ensureHouseholdShape({ ...household, linked: true });
-  const del = await rest(config, `households?id=eq.${encodeURIComponent(snapshot.householdId)}`, { method: "DELETE" });
-  if (!del.ok && !isMissingTable(del.body)) throw new Error(messageOf(del.body));
-  const house = await rest(config, "households", {
+  const houseBody = {
+    id: snapshot.householdId,
+    name: snapshot.name,
+    timezone: snapshot.timezone,
+    currency: snapshot.currency,
+    environment: snapshot.environment,
+    invite_phrase: snapshot.inviteCode,
+    linked: true,
+    revision: snapshot.revision,
+    last_committed_at: snapshot.lastCommittedAt,
+  };
+  const house = await rest(config, "households?on_conflict=id", {
     method: "POST",
-    body: JSON.stringify({
-      id: snapshot.householdId,
-      name: snapshot.name,
-      timezone: snapshot.timezone,
-      currency: snapshot.currency,
-      environment: snapshot.environment,
-      invite_phrase: snapshot.inviteCode,
-      linked: true,
-      revision: snapshot.revision,
-      last_committed_at: snapshot.lastCommittedAt,
-    }),
+    headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify(houseBody),
   });
   if (!house.ok) throw new Error(messageOf(house.body));
-  const snap = await rest(config, "household_snapshots", {
+  const snap = await rest(config, "household_snapshots?on_conflict=household_id", {
     method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
     body: JSON.stringify({
       household_id: snapshot.householdId,
       invite_phrase: snapshot.inviteCode,

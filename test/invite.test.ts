@@ -74,4 +74,45 @@ describe("Hearth Pass", () => {
     expect(joined.transactions.some((tx) => tx.note === "Jonathan only")).toBe(false);
     expect(joined.members.map((member) => member.name).sort()).toEqual(["Bianca", "Jonathan"]);
   });
+
+  it("keeps both people's local personal rows when a Hearth Pass updates the shared envelope", () => {
+    let household = catalogHousehold();
+    household = postEntry(household, {
+      date: "2026-08-18",
+      type: "expense",
+      amount: "12.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Shared milk",
+      createdBy: "MEM-002",
+      visibility: "household",
+      confirmDuplicate: true,
+    }).household;
+    household = postEntry(household, {
+      date: "2026-08-18",
+      type: "expense",
+      amount: "9.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-LIFE-FUN",
+      note: "Jonathan only",
+      createdBy: "MEM-002",
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+    household = postEntry(household, {
+      date: "2026-08-18",
+      type: "expense",
+      amount: "14.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-LIFE-FUN",
+      note: "Bianca only",
+      createdBy: "MEM-001",
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+    const pass = makeHearthPass(household);
+    expect(pass.shared.transactions.some((tx) => tx.visibility === "personal")).toBe(false);
+    const joined = applyHearthPass(household, pass, "MEM-002");
+    expect(joined.transactions.map((tx) => tx.note).sort()).toEqual(["Bianca only", "Jonathan only", "Shared milk"]);
+  });
 });
