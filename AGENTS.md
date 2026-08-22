@@ -19,7 +19,7 @@ Help Jonathan and Bianca run a dependable household budget. **Hearth** (this rep
 - Time zone: `America/Toronto`.
 - Currency: CAD, integer cents.
 - Development and production are two named local snapshots on the same device. Default experiments to Development.
-- Website: Cloudflare Workers + Assets, worker `hearth-books`.
+- Website: Cloudflare Workers + Assets, worker `hearth-books`. Publishes from GitHub `main` via `wrangler deploy` (D-041). Preview uploads are not the kitchen URL.
 - Hosted books: household Supabase Postgres. PGlite is the on-phone journal.
 - Workbook exports, historical chats, credentials, and household data are local-only and must never be committed.
 
