@@ -22,9 +22,10 @@ The in-memory model is still the source of truth while a command runs: clone the
 1. **Catalog** — members, accounts, categories, shift settings.
 2. **Commands** — `postEntry`, `postTransfer`, `postShift`, `addCategory`, budget, goals, recurrences (`addRecurrence`, `adoptRhythm`, `postOneRecurrence`, `postDueRecurrences`), cosmetic `scribbleChalk` / `equipCosmetic` (D-042, D-044), and Google-bridge `linkGoogleIdentity` / `setGoogleServices` (D-043). Each clones state, writes, refreshes duplicate flags, appends activity, and returns an undo snapshot. Cosmetics and Google never post money.
 3. **Books** — `compileHousehold` turns each money document into balanced debit/credit lines. PGlite stores them. Health Check refuses a household whose trial balance or accounting equation is off.
-4. **Projections** — `monthSummary`, `weekSummary`, `buildDashboard`, `runHealthCheck`, `sitDownPreview`, `trialBalance`, `detectRhythms`, `buildMonthBoard`, `askBooks` / `askHercules`, `describeCompanion`.
+4. **Projections** — `monthSummary`, `weekSummary`, `buildDashboard`, `runHealthCheck`, `sitDownPreview`, `trialBalance`, `detectRhythms`, `buildMonthBoard`, `askBooks` / `askHercules`, `describeCompanion`, `herculesBriefing`.
 5. **Google engine** — `withGoogle` is a call-when-needed bridge (identity, Calendar, optional suite). Tokens stay on the phone. The shared snapshot only stores who is linked. Sensitive household actions can step-up through Google after a member is linked.
-6. **UI** — Home (chalkboard, net, pulse), Calendar, Add, Plan, Books, More. Hercules wanders as a borderless cat with a compact bubble. He loafs during Add.
+6. **Kitchen Worker** — Cloudflare Workers + Assets (`hearth-books`). HTML is `Cache-Control: no-store`. `POST /hercules/chat` binds Workers AI so Hercules can talk (D-045). The model cannot post money. Local Vite falls back to `localHerculesChat`.
+7. **UI** — Home (chalkboard, net, pulse), Calendar, Add, Plan, Books, More. Hercules wanders as a borderless cat with a compact following chat. He loafs during Add.
 
 ## Data-model rules
 

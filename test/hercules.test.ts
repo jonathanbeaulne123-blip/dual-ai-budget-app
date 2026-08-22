@@ -2,17 +2,22 @@ import { describe, expect, it } from "vitest";
 import {
   applySitDown,
   askHercules,
+  chatHercules,
   catalogHousehold,
   cookOffScore,
   describeCompanion,
   equipCosmetic,
+  formatHerculesBriefing,
   groceryHighFive,
+  herculesBriefing,
   herculesNeedsCheck,
   herculesPageBrief,
   hourInToronto,
   isCosmeticUnlocked,
+  localHerculesChat,
   postEntry,
   postTransfer,
+  sanitizeHerculesReply,
   scribbleChalk,
   seedDemoHousehold,
   shapeKitchen,
@@ -20,6 +25,9 @@ import {
   sitDownPostcard,
   talkHercules,
   weekRecap,
+  HERCULES_REFUSE_SQL,
+  HERCULES_REFUSE_WRITE,
+  HERCULES_REFUSE_SHAME,
 } from "../src/core/index.ts";
 import { COSMETIC_BY_ID } from "../src/core/companion.ts";
 
@@ -208,5 +216,85 @@ describe("The Hercules Update", () => {
     expect(idle.spoken.length).toBeLessThanOrEqual(120);
     const empty = catalogHousehold();
     expect(herculesNeedsCheck(empty, today)).toBe(true);
+  });
+
+  it("keeps a compact purrsonality briefing without a transaction dump or a who-spent board", () => {
+    const empty = catalogHousehold();
+    const demo = seedDemoHousehold({ today, environment: "development" });
+    const emptyBlob = formatHerculesBriefing(herculesBriefing(empty, "home", today, new Date("2026-08-21T16:00:00Z")));
+    expect(emptyBlob).toMatch(/Hercules/);
+    expect(emptyBlob).toMatch(/CAD/);
+    expect(emptyBlob).toMatch(/mood:/);
+    expect(emptyBlob).not.toMatch(/Bianca|Jonathan/);
+    expect(emptyBlob).not.toMatch(/INSERT|SELECT/i);
+
+    const demoBrief = herculesBriefing(demo, "home", today, new Date("2026-08-21T16:00:00Z"));
+    const demoBlob = formatHerculesBriefing(demoBrief);
+    expect(demoBlob).toMatch(/net this month:/);
+    expect(demoBlob).not.toMatch(/No Frills|Farm Boy|Visa payment/);
+    expect(demoBlob).not.toMatch(/who spent/i);
+    expect(demoBrief.healthFindings).toBeGreaterThanOrEqual(0);
+    expect(["kitchen", "takeout", "tie"]).toContain(demoBrief.cookOff);
+  });
+
+  it("sanitizes writes, SQL, and name-shame before a line can leave Hercules's mouth", () => {
+    expect(sanitizeHerculesReply("INSERT INTO journal_lines VALUES (1)")).toBe(HERCULES_REFUSE_SQL);
+    expect(sanitizeHerculesReply("Sure — ```sql\nDELETE FROM transactions```")).toBe(HERCULES_REFUSE_SQL);
+    expect(sanitizeHerculesReply("I posted $40.00 to groceries.")).toBe(HERCULES_REFUSE_WRITE);
+    expect(sanitizeHerculesReply("I posted $40.00 to groceries.", "Groceries this month $40.00.")).toMatch(/don't post/i);
+    expect(sanitizeHerculesReply("Bianca spent more this week.")).toBe(HERCULES_REFUSE_SHAME);
+    expect(sanitizeHerculesReply("As an AI, I think you should skip rent.")).toMatch(/I'm a cat/i);
+    expect(sanitizeHerculesReply("")).toMatch(/don't write/i);
+  });
+
+  it("falls back to local purrsonality and never claims a chat write", () => {
+    const household = seedDemoHousehold({ today, environment: "development" });
+    const grounded = talkHercules(household, "we good?", today, "home");
+    const briefing = herculesBriefing(household, "home", today);
+    const local = localHerculesChat("post this $40 grocery for me", briefing, grounded);
+    expect(local).toBe(HERCULES_REFUSE_WRITE);
+    expect(localHerculesChat("who spent more", briefing, grounded)).toBe(HERCULES_REFUSE_SHAME);
+    const flavored = localHerculesChat("we good?", briefing, grounded);
+    expect(flavored.length).toBeGreaterThan(8);
+    expect(flavored).not.toMatch(/I posted|INSERT/i);
+    expect(household.transactions.length).toBe(seedDemoHousehold({ today, environment: "development" }).transactions.length);
+  });
+
+  it("uses a journal-safe worker reply and falls back when the kitchen AI is quiet", async () => {
+    const household = seedDemoHousehold({ today, environment: "development" });
+    const grounded = talkHercules(household, "we good?", today, "home");
+    const briefing = herculesBriefing(household, "home", today);
+    const ai = await chatHercules(
+      { message: "we good?", briefing, grounded, history: [] },
+      {
+        fetch: async () =>
+          new Response(JSON.stringify({ ok: true, reply: "mrrp. The books look honest." }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+      },
+    );
+    expect(ai.source).toBe("ai");
+    expect(ai.text).toMatch(/books look honest/i);
+
+    const posted = await chatHercules(
+      { message: "log milk", briefing, grounded, history: [] },
+      {
+        fetch: async () =>
+          new Response(JSON.stringify({ ok: true, reply: "I posted $8.00 to groceries." }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+      },
+    );
+    expect(posted.source).toBe("ai");
+    expect(posted.text).toMatch(/don't post/i);
+
+    const quiet = await chatHercules(
+      { message: "we good?", briefing, grounded, history: [] },
+      { fetch: async () => { throw new Error("offline"); } },
+    );
+    expect(quiet.source).toBe("local");
+    expect(quiet.text.length).toBeGreaterThan(4);
   });
 });

@@ -1,0 +1,106 @@
+import {
+  formatHerculesBriefing,
+  localHerculesChat,
+  sanitizeHerculesReply,
+  type HerculesBriefing,
+  type HerculesGrounded,
+} from "./herculesPersonality.ts";
+
+export type HerculesChatTurn = {
+  role: "user" | "hercules";
+  text: string;
+};
+
+export type HerculesChatRequest = {
+  message: string;
+  briefing: HerculesBriefing;
+  grounded: HerculesGrounded;
+  history: HerculesChatTurn[];
+};
+
+export type HerculesChatResult = {
+  text: string;
+  source: "ai" | "local";
+};
+
+export const HERCULES_CHAT_PATH = "/hercules/chat";
+export const HERCULES_KITCHEN_CHAT =
+  "https://hearth-books.jonathan-beaulne123.workers.dev/hercules/chat";
+
+type ChatFetch = (input: string, init?: RequestInit) => Promise<Response>;
+
+function chatUrls(): string[] {
+  const urls = [HERCULES_CHAT_PATH];
+  if (typeof location !== "undefined") {
+    const host = location.hostname;
+    if (host === "localhost" || host === "127.0.0.1") urls.push(HERCULES_KITCHEN_CHAT);
+  }
+  return urls;
+}
+
+async function readAiReply(res: Response): Promise<string | null> {
+  const type = res.headers.get("content-type") || "";
+  if (!res.ok || !type.includes("json")) return null;
+  const data = (await res.json()) as { ok?: boolean; reply?: unknown };
+  if (!data?.ok || typeof data.reply !== "string") return null;
+  const reply = data.reply.trim();
+  return reply || null;
+}
+
+function payload(req: HerculesChatRequest): string {
+  return JSON.stringify({
+    message: req.message.trim().slice(0, 400),
+    briefing: formatHerculesBriefing(req.briefing).slice(0, 800),
+    grounded: {
+      spoken: String(req.grounded.spoken || "").slice(0, 220),
+      lesson: req.grounded.lesson ? String(req.grounded.lesson).slice(0, 180) : null,
+      fact: req.grounded.fact
+        ? {
+            label: String(req.grounded.fact.label).slice(0, 40),
+            value: String(req.grounded.fact.value).slice(0, 40),
+          }
+        : null,
+    },
+    history: req.history.slice(-8).map((turn) => ({
+      role: turn.role === "hercules" ? "hercules" : "user",
+      text: turn.text.slice(0, 240),
+    })),
+  });
+}
+
+export async function chatHercules(
+  req: HerculesChatRequest,
+  deps?: { fetch?: ChatFetch; timeoutMs?: number },
+): Promise<HerculesChatResult> {
+  const local = (): HerculesChatResult => ({
+    text: localHerculesChat(req.message, req.briefing, req.grounded),
+    source: "local",
+  });
+  const fetchFn = deps?.fetch ?? (typeof fetch === "function" ? fetch : undefined);
+  if (!fetchFn || !req.message.trim()) return local();
+
+  const timeoutMs = deps?.timeoutMs ?? 9000;
+  const body = payload(req);
+
+  for (const url of chatUrls()) {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+      const res = await fetchFn(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+        signal: ctrl.signal,
+      });
+      clearTimeout(timer);
+      const reply = await readAiReply(res);
+      if (reply) {
+        return { text: sanitizeHerculesReply(reply, req.grounded.spoken), source: "ai" };
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return local();
+}
