@@ -30,7 +30,7 @@ That is accounting. It was just living behind a Books tab that looked like a dev
 | **Balance sheet** | Assets = liabilities + retained earnings | “That’s a balance sheet, not a vibe.” |
 | **Changes in equity** | Opening RE + net income = closing RE | “That’s an equity roll, not a vibe.” |
 | **Income statement** | Month P&L vs budgeted net and vs prior month | Points at in / out / net. Does not write. |
-| **Cash flow** | Cash operating vs card spend vs Visa paydown (transfer) | “Card spend is not cash until you pay the Visa.” |
+| **Cash flow** | Cash operating vs card spend vs Visa paydown (transfer) vs investing in/out | “Card spend is not cash until you pay the Visa.” |
 | **Working capital** | Current A − L, current ratio, 30-day bills vs cash | “Liquidity is ordinary.” or a watch, never a prophecy |
 | **Trial balance** | Debits = credits, already in PGlite | Chip: **Opinion?** / **Trial balance** |
 | **Bank rec** | Statement ending vs register as-of; tied / open. Not a feed | Tied rec unlocks **audit spectacles** |

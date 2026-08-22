@@ -3,6 +3,7 @@ import { formatInviteCode, normalizeInviteCode, randomHouseholdId, randomInviteC
 import { mergeGoogle, shapeGoogle } from "./google.ts";
 import { mergeKitchen, shapeKitchen } from "./kitchen.ts";
 import { mergeCalendars, shapeCalendar, shapeRecurrence } from "./recurrence.ts";
+import { shapeAccounts } from "./accountKinds.ts";
 import type { Household, PersonalEnvelope, SharedEnvelope, Shift, Tombstone, Transaction } from "./types.ts";
 import { belongsToSharedLedger, isPersonalOnly, parseVisibility } from "./visibility.ts";
 
@@ -65,6 +66,7 @@ export function ensureHouseholdShape(household: Household): Household {
     calendar: shapeCalendar(household.calendar),
     kitchen: shapeKitchen(household.kitchen),
     google: shapeGoogle(household.google),
+    accounts: shapeAccounts(household.accounts),
     transactions: household.transactions.map((tx) => ({
       ...tx,
       place: tx.place ?? "",

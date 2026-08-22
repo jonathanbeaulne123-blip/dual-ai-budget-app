@@ -1,5 +1,6 @@
-import { addDays, calendarDaysBetween, monthEndKey, monthStartKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
+import { calendarDaysBetween, monthEndKey, monthStartKey, shiftMonthKey, addDays, type DateKey, type MonthKey } from "./calendar.ts";
 import { expenseEffect, incomeEffect, monthSummary, type CategoryActual } from "./budget.ts";
+import { isCashLikeKind, isCreditKind, isInvestmentKind } from "./accountKinds.ts";
 import { runHealthCheck } from "./health.ts";
 import {
   accountRegister,
@@ -58,6 +59,8 @@ export type CashFlowStatement = {
   operatingOutCents: number;
   cardSpendCents: number;
   debtPaydownCents: number;
+  investingInCents: number;
+  investingOutCents: number;
   netCashCents: number;
 };
 
@@ -144,7 +147,7 @@ function lastEntryDate(books: CompiledBooks): DateKey | null {
 }
 
 function cashLike(kind: Household["accounts"][number]["kind"]): boolean {
-  return kind !== "credit";
+  return isCashLikeKind(kind);
 }
 
 export function auditOpinion(household: Household): AuditOpinion {
@@ -249,6 +252,8 @@ export function cashFlowStatement(household: Household, monthKey: MonthKey): Cas
   let operatingOutCents = 0;
   let cardSpendCents = 0;
   let debtPaydownCents = 0;
+  let investingInCents = 0;
+  let investingOutCents = 0;
   const seen = new Set<string>();
 
   for (const tx of household.transactions) {
@@ -257,17 +262,17 @@ export function cashFlowStatement(household: Household, monthKey: MonthKey): Cas
     const account = byId.get(tx.accountId);
     if (!account) continue;
     if (tx.type === "income") {
-      if (cashLike(account.kind)) operatingInCents += tx.amountCents;
+      if (isCashLikeKind(account.kind)) operatingInCents += tx.amountCents;
       continue;
     }
     if (tx.type === "expense") {
-      if (cashLike(account.kind)) operatingOutCents += tx.amountCents;
-      else cardSpendCents += tx.amountCents;
+      if (isCashLikeKind(account.kind)) operatingOutCents += tx.amountCents;
+      else if (isCreditKind(account.kind)) cardSpendCents += tx.amountCents;
       continue;
     }
     if (tx.type === "refund") {
-      if (cashLike(account.kind)) operatingInCents += tx.amountCents;
-      else cardSpendCents -= tx.amountCents;
+      if (isCashLikeKind(account.kind)) operatingInCents += tx.amountCents;
+      else if (isCreditKind(account.kind)) cardSpendCents -= tx.amountCents;
       continue;
     }
     if (tx.type === "transfer") {
@@ -277,8 +282,12 @@ export function cashFlowStatement(household: Household, monthKey: MonthKey): Cas
       if (tx.transferPairId) seen.add(tx.transferPairId);
       const from = byId.get(tx.transferFromAccountId || tx.accountId);
       const to = byId.get(tx.transferToAccountId || "");
-      if (from && to && cashLike(from.kind) && to.kind === "credit") {
+      if (from && to && isCashLikeKind(from.kind) && isCreditKind(to.kind)) {
         debtPaydownCents += tx.amountCents;
+      } else if (from && to && isCashLikeKind(from.kind) && isInvestmentKind(to.kind)) {
+        investingOutCents += tx.amountCents;
+      } else if (from && to && isInvestmentKind(from.kind) && isCashLikeKind(to.kind)) {
+        investingInCents += tx.amountCents;
       }
     }
   }
@@ -289,7 +298,9 @@ export function cashFlowStatement(household: Household, monthKey: MonthKey): Cas
     operatingOutCents,
     cardSpendCents,
     debtPaydownCents,
-    netCashCents: operatingInCents - operatingOutCents - debtPaydownCents,
+    investingInCents,
+    investingOutCents,
+    netCashCents: operatingInCents - operatingOutCents - debtPaydownCents - investingOutCents + investingInCents,
   };
 }
 
@@ -377,7 +388,7 @@ export function workingCapital(household: Household): WorkingCapital {
     currentLiabilityCents: sheet.liabilityCents,
     workingCapitalCents: sheet.assetCents - sheet.liabilityCents,
     currentRatio: sheet.liabilityCents === 0 ? null : sheet.assetCents / sheet.liabilityCents,
-    classified: "All household accounts on this chart are current. Non-current items do not exist yet — when a mortgage or locked GIC arrives it will classify here, not in YNAB envelopes.",
+    classified: "Cash-like, credit cards, and investments on this chart are treated as current household items. A mortgage or locked GIC will classify here when it exists — not as a YNAB envelope.",
   };
 }
 
@@ -455,7 +466,7 @@ export function notesToFinancialStatements(household: Household, monthKey: Month
     {
       id: "cards",
       title: "3. Credit cards and cash",
-      body: "Visa is a liability. Card spend is not cash. Paying the card is a transfer (debit liability, credit chequing), never an expense. Cash-flow distinguishes operating cash, non-cash card spend, and debt paydown.",
+      body: "Credit cards are liabilities. Card spend is not cash. Paying a card is a transfer (debit liability, credit chequing), never an expense. Interest and cashback are looks until a command posts them. Cash-flow distinguishes operating cash, non-cash card spend, debt paydown, and investing in/out (chequing ↔ TFSA).",
     },
     {
       id: "related",
@@ -561,6 +572,8 @@ export function closePackageText(household: Household, monthKey: MonthKey, today
     `Operating out ${formatCad(cash.operatingOutCents)}`,
     `Card spend (non-cash) ${formatCad(cash.cardSpendCents)}`,
     `Visa / debt paydown ${formatCad(cash.debtPaydownCents)}`,
+    `Investing in ${formatCad(cash.investingInCents)}`,
+    `Investing out ${formatCad(cash.investingOutCents)}`,
     `Net cash ${formatCad(cash.netCashCents)}`,
     ``,
     `WORKING CAPITAL / LIQUIDITY`,

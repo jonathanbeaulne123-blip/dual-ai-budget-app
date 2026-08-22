@@ -33,6 +33,22 @@ export function runHealthCheck(household: Household): Finding[] {
     if (account.ownerMemberId !== "joint" && !memberIds.has(account.ownerMemberId)) {
       flag("Accounts", `${account.name} points at a missing owner.`, account.id);
     }
+    if (account.kind === "credit") {
+      const desk = account.credit;
+      if (!desk) {
+        flag("Accounts", `${account.name} is a credit card without terms.`, account.id);
+      } else {
+        if (desk.aprBps < 0 || desk.aprBps > 8000) flag("Accounts", `${account.name} APR is out of range.`, account.id);
+        if (desk.statementDay < 1 || desk.statementDay > 28) flag("Accounts", `${account.name} statement day must be 1–28.`, account.id);
+        if (desk.creditLimitCents < 0) flag("Accounts", `${account.name} credit limit cannot be negative.`, account.id);
+      }
+    }
+    if (account.kind === "savings" && account.savings && (account.savings.apyBps < 0 || account.savings.apyBps > 3000)) {
+      flag("Accounts", `${account.name} APY is out of range.`, account.id);
+    }
+    if (account.kind === "investment" && account.investment && account.investment.markedValueCents != null && account.investment.markedValueCents < 0) {
+      flag("Accounts", `${account.name} marked value cannot be negative.`, account.id);
+    }
   }
   if (!household.accounts.some((account) => account.active)) flag("Accounts", "No active account exists.");
 

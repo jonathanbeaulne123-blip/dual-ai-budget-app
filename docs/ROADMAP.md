@@ -16,6 +16,7 @@ This is the living near-term plan. The investor / family-office vision — inclu
 - Phrase / join link / Hearth Pass pairing
 - Home chalkboard, Hercules the Maine Coon (follows every page, Ask is the journal), and a visit spark (cosmetics, not money)
 - Audit Office: opinion, balance sheet, P&L, cash flow, equity roll, working capital, notes, bank rec, aged bills, close pack (projections; rec/close never post)
+- **Accounts Floor:** chequing, savings, expandable cards (interest/cashback looks), investments, other; Home wallet tiles; Books → Wallet; Add follows the focused account
 - Books → Ask: plain-language conversation with the journal; Power SQL stays read-only
 - Remove a ledger row (with confirm) and undo the latest change from the toast or More → Recent changes
 - Shared books on the household Supabase Postgres (same schema as PGlite)

@@ -4,7 +4,7 @@
 
 This is the product face. The ledger is still the company. We did **not** rebuild the command kernel. Ember was the flame prototype.
 
-Related: [DAILY_HEARTH.md](DAILY_HEARTH.md), [DECISIONS.md](DECISIONS.md) D-042 / D-044 / D-045 / D-046, [AUDIT_OFFICE.md](AUDIT_OFFICE.md), [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md) Chapter 0.4.
+Related: [DAILY_HEARTH.md](DAILY_HEARTH.md), [DECISIONS.md](DECISIONS.md) D-042 / D-044 / D-045 / D-046 / D-047, [AUDIT_OFFICE.md](AUDIT_OFFICE.md), [ACCOUNTS.md](ACCOUNTS.md), [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md) Chapter 0.4.
 
 ---
 
@@ -52,7 +52,7 @@ Research that actually exists:
 - **Idle (Neko):** walk, loaf, wash, stretch, sleep. Restless = pace. Hiding = under the furniture. Paid bill / high-five = jump.
 - **Attention ping** when he needs you (dirty Health, due bill, no grocery today). He does not die.
 - **Talk** is `talkHercules` for taps and chips (journal-true, instant). **Typed chat** is Workers AI with a Hercules purrsonality (`POST /hercules/chat`). The model only sees aggregates + a grounded journal line. Local fallback uses the same voice. He never posts.
-- **Home** keeps the real numbers. Chalkboard stays. Wardrobe tucks under “Hercules’s things.” Cook-off, forecast, and Sunday recap live in his mouth, not in extra cards.
+- **Home** keeps the real numbers, including wallet tiles. Chalkboard stays. Wardrobe tucks under “Hercules’s things.” Cook-off, forecast, Sunday recap, and card utilization live in his mouth, not in extra cards.
 
 ---
 
@@ -72,7 +72,7 @@ Research that actually exists:
 
 1. Development. Demo kitchen table.
 2. Watch him wander. Drag him off a number if he’s sitting on it.
-3. Tap him. Ask **Opinion?** or **Working capital?** or “we good?” Type in the bubble. Hit **send**.
+3. Tap him. Ask **Opinion?** or **Working capital?** or **What’s on the Visa?** or “we good?” Type in the bubble. Hit **send**.
 4. Tap **+** — he loafs in the corner. Confirm still posts.
 5. If a bill is due he paces and may mutter. Calendar, then confirm.
 6. Tie a bank rec on Books to unlock **audit spectacles**. Close a month to unlock the **green-ink stamp**. On Books he stretches for fieldwork.

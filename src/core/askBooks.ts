@@ -4,6 +4,7 @@ import { runHealthCheck } from "./health.ts";
 import { formatCad } from "./money.ts";
 import { accountRegister, compileHousehold } from "./journal.ts";
 import { categoryName } from "./ledgerView.ts";
+import { creditCardView, householdWallet } from "./accounts.ts";
 import type { Household } from "./types.ts";
 
 export type BooksAskRow = { label: string; value: string };
@@ -21,6 +22,8 @@ export const ASK_SUGGESTIONS = [
   "Opinion",
   "Balance sheet",
   "Working capital",
+  "What's on the Visa",
+  "Utilization",
   "Accounting policies",
   "Groceries this month",
   "Bills due",
@@ -169,16 +172,71 @@ export function askBooks(household: Household, question: string, today: DateKey)
     };
   }
 
-  if (/\b(chequing|checking|visa|cash|balance|how much (do we|is) (in|left)|envelope|net worth)\b/.test(q)) {
-    const wantVisa = /\bvisa|card\b/.test(q);
-    const wantCash = /\bcash|tips\b/.test(q);
+  if (/\b(utilization|utili[sz]ation|how maxed|credit limit)\b/.test(q)) {
+    const wallet = householdWallet(household, today);
+    const cards = wallet.tiles.filter((tile) => tile.credit);
+    if (!cards.length) return { kind: "answer", sentence: "No credit cards on the books yet.", rows: [] };
+    return {
+      kind: "answer",
+      sentence: wallet.hottestCard?.utilization != null
+        ? `${wallet.hottestCard.account.name} is at ${Math.round(wallet.hottestCard.utilization * 100)}% utilization. Paydown is a transfer. I don't levy a fee.`
+        : "Credit cards are on the books. Set a limit to see utilization.",
+      rows: cards.map((tile) => ({
+        label: tile.account.name,
+        value: tile.credit?.utilization == null ? "no limit" : `${Math.round(tile.credit.utilization * 100)}% · owed ${formatCad(tile.credit.owedCents)}`,
+      })),
+    };
+  }
+
+  if (/\b(cashback|rewards|points this cycle)\b/.test(q)) {
+    const wallet = householdWallet(household, today);
+    const cards = wallet.tiles.filter((tile) => tile.credit);
+    if (!cards.length) return { kind: "answer", sentence: "No cards to accrue rewards on.", rows: [] };
+    return {
+      kind: "answer",
+      sentence: "Cashback this cycle is a look. Post it from the card room when the statement credit or deposit actually lands.",
+      rows: cards.map((tile) => ({
+        label: `${tile.account.name} · ${tile.credit?.rewardsName ?? "rewards"}`,
+        value: formatCad(tile.credit?.cashbackCycleCents ?? 0),
+      })),
+    };
+  }
+
+  if (/\b(what.?s on the visa|pay the (visa|card)|visa balance)\b/.test(q)) {
+    const visa = household.accounts.find((account) => account.active && (account.id === "ACC-VISA" || /visa/i.test(account.name)));
+    if (!visa) return { kind: "answer", sentence: "No Visa on the books.", rows: [] };
+    const view = creditCardView(household, visa, today);
+    return {
+      kind: "answer",
+      sentence: view.hercules,
+      rows: [
+        { label: "Owed", value: formatCad(view.owedCents) },
+        { label: "Available", value: view.limitCents ? formatCad(view.availableCents) : "no limit" },
+        { label: "Due", value: view.dueDate },
+        { label: "Min pay", value: formatCad(view.minPaymentCents) },
+      ],
+    };
+  }
+
+  if (/\b(chequing|checking|visa|mastercard|cash|tips|savings|tfsa|rrsp|fhsa|investment|balance|how much (do we|is) (in|left)|envelope|net worth)\b/.test(q)) {
+    const wantVisa = /\bvisa\b/.test(q);
+    const wantMc = /\bmastercard|master card\b/.test(q);
+    const wantCash = /\bcash|tips|jar\b/.test(q);
+    const wantSavings = /\bsavings|hisa\b/.test(q);
+    const wantInvest = /\btfsa|rrsp|fhsa|investment|brokerage|crypto\b/.test(q);
+    const wantChequing = /\bchequ|check/.test(q);
+    const wantCard = /\bcard\b/.test(q) && !wantVisa && !wantMc;
     const accounts = household.accounts.filter((account) => {
-      if (wantVisa) return account.kind === "credit";
-      if (wantCash) return account.kind === "cash";
-      if (/\bchequ|check/.test(q)) return account.kind === "chequing";
+      if (wantVisa) return /visa/i.test(account.name) || account.id === "ACC-VISA";
+      if (wantMc) return /master/i.test(account.name) || account.id === "ACC-MC";
+      if (wantCard) return account.kind === "credit";
+      if (wantCash) return account.kind === "other";
+      if (wantSavings) return account.kind === "savings";
+      if (wantInvest) return account.kind === "investment";
+      if (wantChequing) return account.kind === "chequing";
       return true;
     });
-    const targets = wantVisa || wantCash || /\bchequ|check/.test(q)
+    const targets = wantVisa || wantMc || wantCard || wantCash || wantSavings || wantInvest || wantChequing
       ? accounts
       : household.accounts.filter((account) => account.active);
     const rows = targets.map((account) => ({
@@ -189,7 +247,7 @@ export function askBooks(household: Household, question: string, today: DateKey)
       kind: "answer",
       sentence: rows.length === 1
         ? `${rows[0]!.label} is ${rows[0]!.value} on the books.`
-        : "Here are the household accounts on the books. Credit is what you still owe.",
+        : "Here are the household accounts on the books. Credit is what you still owe. Investments show cost basis until you mark a value.",
       rows,
       sql: "SELECT code, name, account_type, debit_cents, credit_cents FROM v_trial_balance ORDER BY code",
     };

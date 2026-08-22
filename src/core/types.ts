@@ -17,13 +17,51 @@ export type Member = {
   active: boolean;
 };
 
+export type AccountKind = "chequing" | "savings" | "credit" | "investment" | "other";
+export type InvestmentVehicle = "tfsa" | "rrsp" | "fhsa" | "non-registered" | "crypto" | "other";
+
+export type CreditRewardRule = {
+  id: string;
+  label: string;
+  subcategoryId: string | null;
+  bps: number;
+};
+
+export type CreditCardDesk = {
+  creditLimitCents: number;
+  aprBps: number;
+  statementDay: number;
+  dueDaysAfterStatement: number;
+  minPaymentBps: number;
+  minPaymentFloorCents: number;
+  rewardsName: string;
+  defaultCashbackBps: number;
+  rules: CreditRewardRule[];
+};
+
+export type SavingsDesk = {
+  apyBps: number;
+};
+
+export type InvestmentDesk = {
+  vehicle: InvestmentVehicle;
+  markedValueCents: number | null;
+  markedAt: DateKey | null;
+};
+
 export type Account = {
   id: string;
   name: string;
-  kind: "chequing" | "savings" | "credit" | "cash";
+  kind: AccountKind;
   currency: Currency;
   active: boolean;
   ownerMemberId: string | typeof JOINT;
+  institution: string;
+  last4: string;
+  sortOrder: number;
+  credit: CreditCardDesk | null;
+  savings: SavingsDesk | null;
+  investment: InvestmentDesk | null;
 };
 
 export type Category = {

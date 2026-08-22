@@ -4,6 +4,7 @@ import {
   NeedsConfirmationError,
   ValidationError,
   addCategory,
+  addFormDefaults,
   addGoal,
   applySitDown,
   auditOpinion,
@@ -12,12 +13,14 @@ import {
   catalogHousehold,
   contributeToGoal,
   createWriteQueue,
+  creditCardView,
   defaultVisibilityForView,
   findActiveGoogleLinkByEmail,
   findActiveGoogleLinkBySubject,
   formatCad,
   formatDateLabel,
   householdForView,
+  accountOptionLabel,
   jointSplit,
   memberNeedsGoogleStepUp,
   monthKeyFromDateKey,
@@ -45,6 +48,7 @@ import {
   type Split,
   type UndoToken,
   type Visibility,
+  type Account,
 } from "./core/index.ts";
 import { STORAGE_EXPLAINER, clearHousehold, downloadJson, loadHousehold, saveHousehold } from "./storage.ts";
 import { clearSession, loadSession, saveSession, type Session } from "./session.ts";
@@ -56,6 +60,7 @@ import { ConfirmSheet } from "./Confirm.tsx";
 import { CalendarPage } from "./Calendar.tsx";
 import { DailyHearth } from "./DailyHearth.tsx";
 import { HerculesPresence } from "./Hercules.tsx";
+import { WalletStrip } from "./Accounts.tsx";
 import { playClink } from "./clink.ts";
 import { GoogleBridgeCard } from "./GoogleBridge.tsx";
 import {
@@ -103,6 +108,7 @@ export function App() {
   const [adding, setAdding] = useState(false);
   const [mode, setMode] = useState<AddMode>("expense");
   const [form, setForm] = useState(emptyForm);
+  const [focusedAccountId, setFocusedAccountId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [confirm, setConfirm] = useState<NeedsConfirmationError | null>(null);
@@ -296,7 +302,12 @@ export function App() {
         await commitHousehold(result.household, result.undo);
         setConfirm(null);
         setAdding(false);
-        setForm({ ...emptyForm, date: today, visibility: defaultVisibilityForView(view) });
+        setForm({
+          ...emptyForm,
+          date: today,
+          visibility: defaultVisibilityForView(view),
+          ...addFormDefaults(result.household, focusedAccountId),
+        });
         if (result.warnings.length) setError(result.warnings.join(" "));
         if (result.postedIds.some((id) => /^(TXN|SHF)/.test(id))) {
           setSpark(true);
@@ -460,6 +471,52 @@ export function App() {
     hours: Number(form.hours || 0) || 0,
   }, ledger.shiftSettings);
 
+  const formForAccount = (accountId: string | null, extra: Partial<typeof emptyForm> = {}) => {
+    const defaults = addFormDefaults(ledger, accountId);
+    return {
+      ...emptyForm,
+      date: today,
+      visibility: defaultVisibilityForView(view),
+      memberId: actorId,
+      accountId: defaults.accountId,
+      fromAccountId: defaults.fromAccountId,
+      toAccountId: defaults.toAccountId,
+      ...extra,
+    };
+  };
+
+  const openAddFor = (account: Account | null, nextMode?: AddMode) => {
+    const id = account?.id ?? focusedAccountId;
+    const defaults = addFormDefaults(ledger, id);
+    setFocusedAccountId(id);
+    setMode(nextMode ?? defaults.suggestedMode);
+    setAdding(true);
+    setError("");
+    setConfirm(null);
+    setForm(formForAccount(id));
+  };
+
+  const openPayCard = (account: Account) => {
+    const card = creditCardView(ledger, account, today);
+    const remaining = Math.max(0, card.statementBalanceCents - card.paidSinceStatementCents);
+    const amount = remaining > 0 ? remaining : card.minPaymentCents;
+    setFocusedAccountId(account.id);
+    setMode("transfer");
+    setAdding(true);
+    setError("");
+    setConfirm(null);
+    setForm(formForAccount(account.id, {
+      amount: amount ? (amount / 100).toFixed(2) : "",
+      note: `${account.name} payment`,
+    }));
+  };
+
+  const openWallet = (accountId: string) => {
+    setFocusedAccountId(accountId);
+    setTab("ledger");
+    setAdding(false);
+  };
+
   function splitsFor(amountCents: number, from: Household): Split[] {
     const members = from.members.filter((member) => member.active);
     if (form.who === "split") {
@@ -584,7 +641,7 @@ export function App() {
               setError("");
               setConfirm(null);
               setForm({
-                ...emptyForm,
+                ...formForAccount(focusedAccountId),
                 date: today,
                 note: text.slice(0, 80),
                 subcategoryId: "SUB-FOOD-GROCERIES",
@@ -603,6 +660,12 @@ export function App() {
               {opinion ? ` · ${opinion.kind} opinion` : ""}
             </div>
           </section>
+          <WalletStrip
+            household={household}
+            today={today}
+            focusedId={focusedAccountId}
+            onOpen={openWallet}
+          />
           <div className="pulse">
             {dashboard.pulses.map((pulse) => (
               <article key={pulse.sentence} className={pulse.tone}>{pulse.sentence}</article>
@@ -706,7 +769,11 @@ export function App() {
           memberId={session.memberId}
           view={view}
           booksStatus={booksStatus}
+          focusedAccountId={focusedAccountId}
+          onFocusAccount={setFocusedAccountId}
           onChange={(next, token) => { void persist(next, token); }}
+          onPayAccount={openPayCard}
+          onAddToAccount={(account) => openAddFor(account)}
           onRemove={(transaction) => {
             const dollars = formatCad(transaction.amountCents);
             const summary = transaction.source === "shift"
@@ -901,7 +968,7 @@ export function App() {
                 )}
                 <label>Account</label>
                 <select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })}>
-                  {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}
+                  {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
                 </select>
                 <label>Place / location</label>
                 <input value={form.place} onChange={(event) => setForm({ ...form, place: event.target.value })} placeholder="No Frills, Union Station, home…" />
@@ -915,11 +982,11 @@ export function App() {
                 <input className="amount" inputMode="decimal" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} />
                 <label>From</label>
                 <select value={form.fromAccountId} onChange={(event) => setForm({ ...form, fromAccountId: event.target.value })}>
-                  {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}
+                  {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
                 </select>
                 <label>To</label>
                 <select value={form.toAccountId} onChange={(event) => setForm({ ...form, toAccountId: event.target.value })}>
-                  {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}
+                  {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
                 </select>
                 <p className="muted">A transfer is one balanced journal entry: debit the destination, credit the source. It never counts as income or expense.</p>
               </>
@@ -932,7 +999,7 @@ export function App() {
                 </select>
                 <label>Account</label>
                 <select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })}>
-                  {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}
+                  {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
                 </select>
                 <label>Sales</label>
                 <input inputMode="decimal" value={form.sales} onChange={(event) => setForm({ ...form, sales: event.target.value })} />
@@ -1123,9 +1190,9 @@ export function App() {
               if (event.key === "Enter") setCommandOpen(false);
             }} />
             {[
-              { label: "Add expense", run: () => { setMode("expense"); setAdding(true); } },
-              { label: "Add shift", run: () => { setMode("shift"); setAdding(true); } },
-              { label: "Move money", run: () => { setMode("transfer"); setAdding(true); } },
+              { label: "Add expense", run: () => openAddFor(null, "expense") },
+              { label: "Add shift", run: () => openAddFor(null, "shift") },
+              { label: "Move money", run: () => openAddFor(null, "transfer") },
               { label: "Calendar", run: () => setTab("calendar") },
               { label: "Plan", run: () => setTab("plan") },
               { label: "Books", run: () => setTab("ledger") },
@@ -1149,37 +1216,26 @@ export function App() {
         spark={spark}
         onGo={(next) => {
           if (next === "add") {
-            setAdding(true);
+            openAddFor(null);
             return;
           }
           setTab(next);
           setAdding(false);
         }}
         onOpenAdd={(note) => {
-          setMode("expense");
-          setAdding(true);
-          setError("");
-          setConfirm(null);
-          setForm({
-            ...emptyForm,
-            date: today,
+          openAddFor(null, "expense");
+          setForm((current) => ({
+            ...current,
             note: note ?? "",
             subcategoryId: "SUB-FOOD-GROCERIES",
-            visibility: defaultVisibilityForView(view),
-            memberId: session.memberId,
-          });
+          }));
         }}
       />
 
       <nav className="nav">
         <button className={tab === "home" && !adding ? "active" : ""} onClick={() => { setTab("home"); setAdding(false); }}>Home</button>
         <button className={tab === "calendar" ? "active" : ""} onClick={() => { setTab("calendar"); setAdding(false); }}>Calendar</button>
-        <button className="fab" onClick={() => {
-          setAdding(true);
-          setError("");
-          setConfirm(null);
-          setForm({ ...emptyForm, date: today, visibility: defaultVisibilityForView(view), memberId: session.memberId });
-        }}>+</button>
+        <button className="fab" onClick={() => openAddFor(null)}>+</button>
         <button className={tab === "plan" ? "active" : ""} onClick={() => { setTab("plan"); setAdding(false); }}>Plan</button>
         <button className={tab === "ledger" ? "active" : ""} onClick={() => { setTab("ledger"); setAdding(false); }}>Books</button>
         <button className={tab === "more" ? "active" : ""} onClick={() => { setTab("more"); setAdding(false); }}>More</button>
