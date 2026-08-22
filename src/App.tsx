@@ -38,6 +38,11 @@ import {
   writeOffClaim,
   acceptVisitGoal,
   upcomingVisitProposals,
+  acceptPresetNotice,
+  addPreset,
+  archivePreset,
+  activePresets,
+  dismissNotice,
   readClinkOn,
   runHealthCheck,
   seedDemoHousehold,
@@ -92,7 +97,9 @@ type Guard =
   | { kind: "postVisit"; draft: VisitPostDraft; summary: string }
   | { kind: "settleClaim"; claimId: string; summary: string }
   | { kind: "writeOffClaim"; claimId: string; summary: string }
-  | { kind: "acceptVisitGoal"; appointmentId: string; summary: string };
+  | { kind: "acceptVisitGoal"; appointmentId: string; summary: string }
+  | { kind: "acceptPreset"; key: string; summary: string }
+  | { kind: "addPreset"; summary: string };
 
 const SHIFT_PAD: { id: "sales" | "hours" | "cashTips" | "ccTips"; label: string; unit: "cad" | "hours" }[] = [
   { id: "sales", label: "Sales", unit: "cad" },
@@ -147,6 +154,7 @@ export function App() {
   const [clinkOn, setClinkOn] = useState(false);
   const [addDetails, setAddDetails] = useState(false);
   const [shiftField, setShiftField] = useState<"sales" | "hours" | "cashTips" | "ccTips">("sales");
+  const [presetId, setPresetId] = useState<string | null>(null);
   const enqueueWrite = useMemo(() => createWriteQueue(), []);
   const householdRef = useRef<Household | null>(household);
   householdRef.current = household;
@@ -933,20 +941,79 @@ export function App() {
                 />
                 {mode === "expense" && (
                   <div className="chips">
+                    {activePresets(household).map((preset) => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        className={`chip ${presetId === preset.id ? "selected" : ""}`}
+                        onClick={() => {
+                          setPresetId(preset.id);
+                          setForm({
+                            ...form,
+                            note: preset.note,
+                            place: preset.place,
+                            subcategoryId: preset.subcategoryId,
+                            accountId: preset.accountId,
+                            amount: preset.amountCents > 0 ? (preset.amountCents / 100).toFixed(2) : form.amount,
+                            visibility: preset.visibility,
+                          });
+                        }}
+                      >
+                        {preset.note || "Preset"}
+                      </button>
+                    ))}
                     <button
                       type="button"
-                      className={`chip ${form.note === "Milk" ? "selected" : ""}`}
-                      onClick={() => setForm({ ...form, note: "Milk", subcategoryId: "SUB-FOOD-GROCERIES" })}
+                      className={`chip ${form.note === "Milk" && presetId == null ? "selected" : ""}`}
+                      onClick={() => {
+                        setPresetId(null);
+                        setForm({ ...form, note: "Milk", subcategoryId: "SUB-FOOD-GROCERIES" });
+                      }}
                     >
                       Milk
                     </button>
                     <button
                       type="button"
-                      className={`chip ${form.note === "Coffee" ? "selected" : ""}`}
-                      onClick={() => setForm({ ...form, note: "Coffee", subcategoryId: "SUB-FOOD-COFFEE" })}
+                      className={`chip ${form.note === "Coffee" && presetId == null ? "selected" : ""}`}
+                      onClick={() => {
+                        setPresetId(null);
+                        setForm({ ...form, note: "Coffee", subcategoryId: "SUB-FOOD-COFFEE" });
+                      }}
                     >
                       Coffee
                     </button>
+                    <button
+                      type="button"
+                      className="chip"
+                      onClick={() => {
+                        if (!form.note.trim() && !form.subcategoryId) return;
+                        let amountBit = "Amount stays on the pad";
+                        try {
+                          if (form.amount) amountBit = formatCad(parseAmount(form.amount));
+                        } catch {
+                          amountBit = "Amount stays on the pad";
+                        }
+                        setGuard({
+                          kind: "addPreset",
+                          summary: `Save ${form.note.trim() || "this line"} as a preset (${amountBit}). It does not post money.`,
+                        });
+                      }}
+                    >
+                      Save as preset
+                    </button>
+                    {presetId && (
+                      <button
+                        type="button"
+                        className="chip"
+                        onClick={() => {
+                          const id = presetId;
+                          setPresetId(null);
+                          void run((current) => archivePreset(current, id));
+                        }}
+                      >
+                        Forget preset
+                      </button>
+                    )}
                   </div>
                 )}
                 <label>Category</label>
@@ -1342,6 +1409,42 @@ export function App() {
           }}
         />
       )}
+      {guard?.kind === "acceptPreset" && (
+        <ConfirmSheet
+          title="Save as preset?"
+          body={`${guard.summary} Hercules noticed it. This write is yours. It does not post money. Confirm still posts the coffee.`}
+          confirmLabel="Save as preset"
+          busy={busy}
+          onCancel={() => setGuard(null)}
+          onConfirm={() => {
+            const key = guard.key;
+            setGuard(null);
+            void run((current) => acceptPresetNotice(current, key));
+          }}
+        />
+      )}
+      {guard?.kind === "addPreset" && (
+        <ConfirmSheet
+          title="Save as preset?"
+          body={`${guard.summary} Confirm still posts when you tap Post.`}
+          confirmLabel="Save preset"
+          busy={busy}
+          onCancel={() => setGuard(null)}
+          onConfirm={() => {
+            setGuard(null);
+            void run((current) => addPreset(current, {
+              type: mode === "income" ? "income" : "expense",
+              amount: form.amount,
+              accountId: form.accountId,
+              subcategoryId: form.subcategoryId,
+              note: form.note,
+              place: form.place,
+              visibility: form.visibility,
+              origin: "manual",
+            }));
+          }}
+        />
+      )}
 
       {toast && (
         <div className="toast">
@@ -1403,6 +1506,8 @@ export function App() {
           if (card) openPayCard(card.account);
         }}
         onLedger={(fn) => { void runKitchen(fn); }}
+        onAcceptPreset={(key, summary) => setGuard({ kind: "acceptPreset", key, summary })}
+        onDismissNotice={(key) => { void run((current) => dismissNotice(current, key)); }}
         onDraft={(draft) => {
           const nextMode = draft.kind === "shift" || draft.kind === "transfer" || draft.kind === "income"
             ? draft.kind

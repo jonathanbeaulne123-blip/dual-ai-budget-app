@@ -175,6 +175,30 @@ export type Recurrence = {
 
 export type HouseholdCalendar = {
   dismissedRhythmKeys: string[];
+  /** On-device Hercules notices the household hid. Union-merged like rhythms (D-057). */
+  dismissedNoticeKeys: string[];
+};
+
+export type PresetOrigin = "manual" | "detected";
+
+/** Frozen Add template. Shared catalog row. Never posts money by itself (D-058). */
+export type Preset = {
+  id: string;
+  type: "expense" | "income";
+  /** 0 means the CAD pad still fills the amount. */
+  amountCents: number;
+  accountId: string;
+  subcategoryId: string;
+  note: string;
+  place: string;
+  splits: Split[];
+  visibility: Visibility;
+  sortOrder: number;
+  origin: PresetOrigin;
+  detectionKey: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type AppointmentKind = "dentist" | "doctor" | "therapy" | "optometrist" | "physio" | "vet" | "spa" | "other";
@@ -412,6 +436,7 @@ export type Household = {
   recurrences: Recurrence[];
   appointments: Appointment[];
   claims: Claim[];
+  presets: Preset[];
   calendar: HouseholdCalendar;
   kitchen: HouseholdKitchen;
   google: HouseholdGoogle;
@@ -438,6 +463,7 @@ export type SharedEnvelope = {
   recurrences: Recurrence[];
   appointments: Appointment[];
   claims: Claim[];
+  presets: Preset[];
   calendar: HouseholdCalendar;
   kitchen: HouseholdKitchen;
   google: HouseholdGoogle;

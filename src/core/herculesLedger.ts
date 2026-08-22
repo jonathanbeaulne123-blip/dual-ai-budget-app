@@ -35,6 +35,7 @@ const JOURNAL_TOPICS = new Set([
   "high-five",
   "coach",
   "why",
+  "notice",
 ]);
 
 export type HerculesDraft = {

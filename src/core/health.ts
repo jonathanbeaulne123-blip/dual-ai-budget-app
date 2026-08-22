@@ -153,6 +153,18 @@ export function runHealthCheck(household: Household): Finding[] {
     if (!categoryIds.has(recurrence.subcategoryId)) flag("Recurring", `${recurrence.id} points at a missing category.`, recurrence.id);
   }
 
+  for (const preset of household.presets ?? []) {
+    if (!accountIds.has(preset.accountId)) flag("Presets", `${preset.note || preset.id} points at a missing account.`, preset.id);
+    if (!categoryIds.has(preset.subcategoryId)) flag("Presets", `${preset.note || preset.id} points at a missing category.`, preset.id);
+    if (preset.amountCents < 0) flag("Presets", `${preset.note || preset.id} amount cannot be negative.`, preset.id);
+    if (preset.amountCents > 0) {
+      const splitTotal = preset.splits.reduce((sum, split) => sum + split.amountCents, 0);
+      if (preset.splits.length && splitTotal !== preset.amountCents) {
+        flag("Presets", `${preset.note || preset.id} ownership splits do not add up.`, preset.id);
+      }
+    }
+  }
+
   for (const appointment of household.appointments ?? []) {
     if (!accountIds.has(appointment.accountId)) flag("Appointments", `${appointment.title} points at a missing account.`, appointment.id);
     if (!categoryIds.has(appointment.subcategoryId)) flag("Appointments", `${appointment.title} points at a missing category.`, appointment.id);

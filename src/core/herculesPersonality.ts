@@ -138,7 +138,7 @@ function clipReply(text: string, max = 360): string {
   return `${cut.slice(0, space > 80 ? space : max - 1).replace(/[,:;.–-]$/, "")}…`;
 }
 
-export function sanitizeHerculesReply(text: string, groundedSpeak = ""): string {
+export function sanitizeHerculesReply(text: string, groundedSpeak = "", allowedFigures: string[] = []): string {
   let reply = String(text || "").replace(/\s+/g, " ").trim();
   if (!reply) {
     return clipReply(groundedSpeak) || "mrrp. Ask a number. I don't write.";
@@ -156,6 +156,13 @@ export function sanitizeHerculesReply(text: string, groundedSpeak = ""): string 
   }
   reply = reply.replace(MODEL_LEAK, "I'm a cat");
   reply = reply.replace(/\bI(?:'ll| will) (post|log|save|record|write) (it|that|this|them)\b/gi, "I don't write");
+  if (allowedFigures.length) {
+    const allowed = new Set(allowedFigures);
+    const found = [...reply.matchAll(/\$\d[\d,]*(?:\.\d{2})?/g)].map((match) => match[0]);
+    if (found.some((figure) => !allowed.has(figure))) {
+      return clipReply(groundedSpeak) || "mrrp. I only quote the books.";
+    }
+  }
   return clipReply(reply);
 }
 

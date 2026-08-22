@@ -301,6 +301,29 @@ export function appointmentPublicTitle(appointment: Appointment, surface: "card"
   return `the ${weekdayWord(appointment.nextDate)} visit`;
 }
 
+/** Storage defaults for visit rows. Quiet titles stay off the journal note (D-060). */
+export function visitPostedDefaults(
+  appointment: Appointment | undefined,
+  input: { note?: string; place?: string; claimLabel?: string },
+): { note: string; place: string; claimLabel: string } {
+  const note = input.note?.trim()
+    ? input.note.trim()
+    : appointment?.sensitivity === "quiet"
+      ? appointmentPublicTitle(appointment, "hercules")
+      : (appointment?.title?.trim() || "Visit");
+  const place = input.place != null
+    ? input.place
+    : appointment?.sensitivity === "quiet"
+      ? ""
+      : (appointment?.place ?? "");
+  const claimLabel = input.claimLabel?.trim()
+    ? input.claimLabel.trim()
+    : appointment?.sensitivity === "quiet"
+      ? appointmentPublicTitle(appointment, "hercules")
+      : (appointment?.title?.trim() || note);
+  return { note, place, claimLabel };
+}
+
 export function claimPublicLabel(household: Household, claim: Claim, surface: "card" | "hercules"): string {
   if (claim.appointmentId) {
     const appointment = household.appointments.find((item) => item.id === claim.appointmentId);

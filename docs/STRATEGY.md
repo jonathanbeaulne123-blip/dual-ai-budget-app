@@ -169,7 +169,7 @@ A kitchen that could sit beside a small family office without lying:
 A creature and a kitchen that teach the books by living on them:
 
 - Hercules as auditor-teacher: opinion, working capital, “what’s on the Visa,” “why was that a transfer?”
-- Chat and memories in `kitchen.hercules` (D-049). The notebook is the snapshot. The model gets labels, not the milk.
+- Chat and memories in `kitchen.hercules` (D-049). The notebook is the snapshot. The model may receive a redacted retrieval (D-059), never chat history, never a quiet title.
 - Pokémon Sleep analog: the day’s posts **are** the research. His idle day is compiled from the journal, not a second sim.
 - Tamagotchi analog: post / rec / sit-down are the three buttons. Everything else is a look.
 - Wardrobe earned from facts (already shipping). New cosmetics must map to a new honest fact — never a shop.
@@ -187,7 +187,8 @@ A creature and a kitchen that teach the books by living on them:
 
 | Invention | Budget delta (5) | Engagement delta (3) | Gate |
 |---|---|---|---|
-| **Hercules ledger desk** | Money questions answered from the journal. Chat/memories as protected as the books. | A cat who remembers payday without a vendor memory store. | **Shipping (D-049).** Third-party keys allowed as Worker secrets (D-045). Workers AI if none set. |
+| **Hercules ledger desk** | Money questions answered from the journal. Chat/memories as protected as the books. | A cat who remembers payday without a vendor memory store. | **Shipping (D-049).** Third-party keys allowed as Worker secrets (D-045). Workers AI if none set. Payload lift: D-059. |
+| **Hercules science** | One-tap posting of repeated merchants. Quiet titles never leak. Figures in his mouth trace to posted rows. | He notices without being asked. One cat-voiced proposal. Save is a tap. | **Shipping (D-057–D-060).** On-device notices; presets; retrieved model payload. No bank feed. |
 | **Kitchen habit** | Fewer taps to post milk/shift. Sit-down is three confirms, same `applySitDown`. | Hercules jumps on posted shift streaks. Never streak-death. | **Shipping (D-050).** |
 | **September Office** | Posting, wallet, sit-down, bills, Health reachable without leaving Home unless you dive. | Rainy window, movable instruments, Hercules perches/bumps/licks/pounces. | **Direction (D-051).** Claude specs; Grok implements. Widgets never post. |
 | **Lock the hosted door** | Auth + RLS. Personal can become privacy. Opinion about *access* can go unmodified. | Hercules can tell the truth: “the door latched.” No more qualified opinion pretending math is the only issue. | **Next engineering dollar.** Do not apply [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) while `USING (true)`. |

@@ -3,7 +3,7 @@ import type { HouseholdCalendar, Recurrence, RecurrenceCadence, RecurrenceKind }
 
 export const DEFAULT_REMINDER_HOURS_BEFORE = 24;
 export const HEARTH_REMINDER_HOUR = 9;
-export const EMPTY_CALENDAR: HouseholdCalendar = { dismissedRhythmKeys: [] };
+export const EMPTY_CALENDAR: HouseholdCalendar = { dismissedRhythmKeys: [], dismissedNoticeKeys: [] };
 
 const WEEKDAY_ICAL = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"] as const;
 
@@ -77,11 +77,13 @@ export function shapeRecurrence(item: Recurrence, fallbackIso: string): Recurren
 export function shapeCalendar(calendar: HouseholdCalendar | undefined): HouseholdCalendar {
   return {
     dismissedRhythmKeys: [...new Set(calendar?.dismissedRhythmKeys ?? [])].sort(),
+    dismissedNoticeKeys: [...new Set(calendar?.dismissedNoticeKeys ?? [])].sort(),
   };
 }
 
 export function mergeCalendars(left?: HouseholdCalendar, right?: HouseholdCalendar): HouseholdCalendar {
   return shapeCalendar({
     dismissedRhythmKeys: [...(left?.dismissedRhythmKeys ?? []), ...(right?.dismissedRhythmKeys ?? [])],
+    dismissedNoticeKeys: [...(left?.dismissedNoticeKeys ?? []), ...(right?.dismissedNoticeKeys ?? [])],
   });
 }

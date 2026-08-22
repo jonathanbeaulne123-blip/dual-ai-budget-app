@@ -13,6 +13,7 @@ import type {
   Household,
   Member,
   PersonalEnvelope,
+  Preset,
   SharedEnvelope,
   Shift,
   Tombstone,
@@ -104,6 +105,25 @@ function shapeActivity(list: Activity[] | undefined): Activity[] {
   }));
 }
 
+function shapePresets(list: Preset[] | undefined, fallbackIso: string): Preset[] {
+  return (list ?? []).map((item) => {
+    const createdAt = item.createdAt || fallbackIso;
+    return {
+      ...item,
+      place: item.place ?? "",
+      splits: item.splits ?? [],
+      visibility: parseVisibility(item.visibility),
+      sortOrder: item.sortOrder ?? 0,
+      origin: item.origin === "detected" ? "detected" : "manual",
+      detectionKey: item.detectionKey ?? null,
+      active: item.active !== false,
+      amountCents: item.amountCents ?? 0,
+      createdAt,
+      updatedAt: item.updatedAt || createdAt,
+    };
+  });
+}
+
 export function ensureHouseholdShape(household: Household): Household {
   const fallback = household.members.find((member) => member.active)?.id ?? household.members[0]?.id ?? "";
   const fallbackIso = household.lastCommittedAt || MISSING_ISO;
@@ -118,6 +138,7 @@ export function ensureHouseholdShape(household: Household): Household {
     recurrences: (household.recurrences ?? []).map((item) => shapeRecurrence(item, fallbackIso)),
     appointments: shapeAppointments(household.appointments, fallbackIso),
     claims: shapeClaims(household.claims, fallbackIso),
+    presets: shapePresets(household.presets, fallbackIso),
     calendar: shapeCalendar(household.calendar),
     kitchen: shapeKitchen(household.kitchen),
     google: shapeGoogle(household.google),
@@ -176,6 +197,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     recurrences: shaped.recurrences,
     appointments: shaped.appointments,
     claims: shaped.claims,
+    presets: shaped.presets,
     calendar: shaped.calendar,
     kitchen: shaped.kitchen,
     google: shaped.google,
@@ -232,6 +254,7 @@ export function assembleHousehold(shared: SharedEnvelope, personal: PersonalEnve
     recurrences: shared.recurrences,
     appointments: shared.appointments ?? [],
     claims: shared.claims ?? [],
+    presets: shared.presets ?? [],
     calendar: shared.calendar,
     kitchen: shared.kitchen,
     google: shared.google,
@@ -266,6 +289,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     recurrences: mergeRecords(server.recurrences, client.recurrences, tombstones),
     appointments: mergeRecords(server.appointments ?? [], client.appointments ?? [], tombstones),
     claims: mergeRecords(server.claims ?? [], client.claims ?? [], tombstones),
+    presets: mergeRecords(server.presets ?? [], client.presets ?? [], tombstones),
     calendar: mergeCalendars(server.calendar, client.calendar),
     kitchen: mergeKitchen(server.kitchen, client.kitchen, tombstones),
     google: mergeGoogle(server.google, client.google, tombstones),

@@ -117,6 +117,13 @@ export function booksIntegrityFacts(household: Household) {
       expenseTransactionId: row.expenseTransactionId,
       status: row.status,
     })),
+    presets: byId(household.presets ?? []).map((row) => ({
+      id: row.id,
+      amountCents: row.amountCents,
+      accountId: row.accountId,
+      subcategoryId: row.subcategoryId,
+      active: row.active,
+    })),
     accounts: byId(household.accounts).map((account) => ({
       id: account.id,
       name: account.name,

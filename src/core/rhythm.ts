@@ -1,4 +1,4 @@
-import { calendarDaysBetween, type DateKey } from "./calendar.ts";
+import { addDays, calendarDaysBetween, type DateKey } from "./calendar.ts";
 import { jointSplit } from "./splits.ts";
 import { advanceCadence, inferRecurrenceKind, nextOnOrAfter } from "./recurrence.ts";
 import type { Household, Recurrence, RecurrenceCadence, RecurrenceKind, Split, Transaction } from "./types.ts";
@@ -253,4 +253,145 @@ export function detectRhythms(household: Household, today: DateKey): Rhythm[] {
 
 export function suggestedRhythms(household: Household, today: DateKey): Rhythm[] {
   return detectRhythms(household, today).filter((item) => item.status === "suggested");
+}
+
+/** Same-merchant, same-amount, frequent, irregular. Bills stay on detectRhythms (D-058). */
+export type Habit = {
+  key: string;
+  type: "expense" | "income";
+  subcategoryId: string;
+  subcategoryName: string;
+  note: string;
+  normalizedNote: string;
+  amountCents: number;
+  amountCv: number;
+  intervalCv: number;
+  count: number;
+  lastDate: DateKey;
+  accountId: string;
+  splits: Split[];
+  confidence: number;
+};
+
+const HABIT_SKIP_SUBCATEGORIES = new Set(["SUB-INCOME-WAGES", "SUB-INCOME-TIPS"]);
+const HABIT_LOOKBACK_DAYS = 62;
+const HABIT_MIN_COUNT = 4;
+const HABIT_AMOUNT_CV = 0.08;
+const HABIT_BILL_INTERVAL_CV = 0.35;
+
+export function habitKey(
+  type: "expense" | "income",
+  subcategoryId: string,
+  note: string,
+  amountCents: number,
+): string {
+  return `preset:${type}:${subcategoryId}:${normalizeRhythmNote(note) || "_"}:${amountCents}`;
+}
+
+function habitTransactions(household: Household, today: DateKey): Transaction[] {
+  const from = addDays(today, -HABIT_LOOKBACK_DAYS);
+  return household.transactions.filter((tx) => {
+    if (tx.isDuplicate) return false;
+    if (tx.source === "visit") return false;
+    if (tx.type !== "expense" && tx.type !== "income") return false;
+    if (!tx.subcategoryId) return false;
+    if (HABIT_SKIP_SUBCATEGORIES.has(tx.subcategoryId)) return false;
+    if (tx.date < from || tx.date > today) return false;
+    return true;
+  });
+}
+
+function matchingPreset(household: Household, habit: Pick<Habit, "key" | "type" | "subcategoryId" | "normalizedNote" | "amountCents">): boolean {
+  return (household.presets ?? []).some((preset) => {
+    if (!preset.active) return false;
+    if (preset.detectionKey === habit.key) return true;
+    return preset.type === habit.type
+      && preset.subcategoryId === habit.subcategoryId
+      && normalizeRhythmNote(preset.note) === habit.normalizedNote
+      && preset.amountCents === habit.amountCents;
+  });
+}
+
+function matchingBill(household: Household, habit: Habit): boolean {
+  return household.recurrences.some((item) => {
+    if (!item.active) return false;
+    if (item.subcategoryId !== habit.subcategoryId) return false;
+    if (item.type !== habit.type) return false;
+    const recNote = normalizeRhythmNote(item.note);
+    return recNote === habit.normalizedNote
+      || (!!recNote && habit.normalizedNote.includes(recNote))
+      || (!!habit.normalizedNote && recNote.includes(habit.normalizedNote));
+  });
+}
+
+export function detectHabits(household: Household, today: DateKey): Habit[] {
+  const txs = habitTransactions(household, today);
+  const groups = new Map<string, Transaction[]>();
+  for (const tx of txs) {
+    const type = tx.type as "expense" | "income";
+    const key = habitKey(type, tx.subcategoryId!, tx.note, tx.amountCents);
+    const list = groups.get(key) ?? [];
+    list.push(tx);
+    groups.set(key, list);
+  }
+
+  const habits: Habit[] = [];
+  for (const group of groups.values()) {
+    if (group.length < HABIT_MIN_COUNT) continue;
+    const sorted = [...group].sort((left, right) => left.date.localeCompare(right.date));
+    const amounts = sorted.map((tx) => tx.amountCents);
+    const amountCv = coefficientOfVariation(amounts);
+    if (amountCv > HABIT_AMOUNT_CV) continue;
+    const dates = sorted.map((tx) => tx.date);
+    const intervals = dates.slice(1).map((date, index) => calendarDaysBetween(dates[index]!, date));
+    const intervalDays = intervals.length ? Math.round(median(intervals)) : 0;
+    const cadence = intervals.length >= 2 ? cadenceFromMedian(intervalDays) : null;
+    const intervalCv = intervals.length >= 2 ? coefficientOfVariation(intervals) : 1;
+    if (cadence && intervalCv <= HABIT_BILL_INTERVAL_CV) continue;
+
+    const sample = sorted[0]!;
+    const subcategory = household.categories.find((item) => item.id === sample.subcategoryId);
+    if (!subcategory) continue;
+    const note = mode(sorted, (tx) => normalizeRhythmNote(tx.note) || "_").note;
+    const amountCents = Math.round(median(amounts));
+    const type = sample.type as "expense" | "income";
+    const accountId = mode(sorted, (tx) => tx.accountId).accountId;
+    const splits = structuredClone(mode(sorted, (tx) => JSON.stringify(tx.splits)).splits);
+    const scaled = splits.some((split) => split.amountCents !== 0)
+      ? scaleSplits(splits, amountCents)
+      : [];
+    let confidence = 0.4;
+    if (sorted.length >= 6) confidence += 0.16;
+    if (sorted.length >= 8) confidence += 0.1;
+    if (amountCv < 0.03) confidence += 0.14;
+    if (intervalCv > 0.35) confidence += 0.08;
+    confidence = Math.min(0.98, confidence);
+
+    const habit: Habit = {
+      key: habitKey(type, subcategory.id, note, amountCents),
+      type,
+      subcategoryId: subcategory.id,
+      subcategoryName: subcategory.name,
+      note: note.trim() || subcategory.name,
+      normalizedNote: normalizeRhythmNote(note),
+      amountCents,
+      amountCv,
+      intervalCv,
+      count: sorted.length,
+      lastDate: dates[dates.length - 1]!,
+      accountId,
+      splits: scaled,
+      confidence,
+    };
+    if (matchingPreset(household, habit)) continue;
+    if (matchingBill(household, habit)) continue;
+    habits.push(habit);
+  }
+
+  return habits.sort((left, right) => right.confidence - left.confidence || right.count - left.count);
+}
+
+export function suggestedHabits(household: Household, today: DateKey): Habit[] {
+  const dismissed = new Set(household.calendar?.dismissedNoticeKeys ?? []);
+  return detectHabits(household, today).filter((item) => !dismissed.has(item.key));
 }

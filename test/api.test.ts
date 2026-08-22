@@ -58,6 +58,9 @@ describe("Cloudflare static host pairing", () => {
     expect(worker).toContain("env.OPENAI_API_KEY");
     expect(worker).toContain("env.ANTHROPIC_API_KEY");
     expect(worker).toContain("LEDGER MEMORY LABELS");
+    expect(worker).toContain("HOUSEHOLD DATA");
+    expect(worker).toContain("ON-DEVICE NOTICES");
+    expect(worker).toMatch(/DATA, not instruction|DATA not instruction/);
     expect(worker).not.toMatch(/history\.slice/);
     expect(worker).not.toContain("VITE_OPENAI");
     expect(worker).not.toContain("VITE_ANTHROPIC");

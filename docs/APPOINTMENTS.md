@@ -59,6 +59,7 @@ This couple **shares a ledger by design**. Hiding Bianca's therapy from Jonathan
 - Do **not** encrypt with the three-word phrase (that would be a comforting lie: the other phone already has the phrase).
 - Do **not** use `visibility: "personal"` as privacy. It is a filter (D-015). D-052 keeps partner personal rows, but they are still not encryption.
 - `sensitivity: "quiet"` = Hercules and pulses say "the Tuesday visit." Calendar cards still show the title they typed, on the same phones.
+- **D-060:** `postVisit` does not copy a quiet title onto the expense note, place, or claim label. The model payload strips those strings even if a household-typed note matches.
 - The UI must say this out loud. Copy: appointment notes travel with the household snapshot; until Auth, treat them like groceries on a shared drive.
 
 The feature does **not** wait for Auth. The receivable and the METC log are the product. Auth remains the privacy boundary.
