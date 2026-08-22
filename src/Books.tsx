@@ -315,11 +315,11 @@ function AskBooks({ household }: { household: Household }) {
     <section className="card">
       <header>
         <h2>Ask Hercules</h2>
-        <span className="muted">Maine Coon · reads the journal</span>
+        <span className="muted">He reads. He doesn’t write.</span>
       </header>
-      <p className="muted">Hercules answers in plain language from the books. He never posts. SQL is still optional and read-only.</p>
+      <p className="muted">Or tap the cat. This pane is for longer questions and read-only SQL.</p>
       <div className="chips">
-        {ASK_SUGGESTIONS.map((item) => (
+        {ASK_SUGGESTIONS.slice(0, 6).map((item) => (
           <button key={item} className="chip" type="button" disabled={busy} onClick={() => void ask(item)}>{item}</button>
         ))}
       </div>

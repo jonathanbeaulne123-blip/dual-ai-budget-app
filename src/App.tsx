@@ -28,7 +28,6 @@ import {
   postShift,
   postTransfer,
   readClinkOn,
-  recapSeen,
   runHealthCheck,
   seedDemoHousehold,
   shiftSettingsFingerprint,
@@ -38,7 +37,6 @@ import {
   touchVisitSpark,
   undo,
   voidPostedMoney,
-  weekdaySunday0,
   type CommitResult,
   type Environment,
   type Household,
@@ -46,7 +44,6 @@ import {
   type Split,
   type UndoToken,
   type Visibility,
-  type VisitSpark,
 } from "./core/index.ts";
 import { STORAGE_EXPLAINER, clearHousehold, downloadJson, loadHousehold, saveHousehold } from "./storage.ts";
 import { clearSession, loadSession, saveSession, type Session } from "./session.ts";
@@ -57,7 +54,7 @@ import { BooksPage } from "./Books.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
 import { CalendarPage } from "./Calendar.tsx";
 import { DailyHearth } from "./DailyHearth.tsx";
-import { HerculesDock, SundayRecapSheet } from "./Hercules.tsx";
+import { HerculesPresence } from "./Hercules.tsx";
 import { playClink } from "./clink.ts";
 import { GoogleBridgeCard } from "./GoogleBridge.tsx";
 import {
@@ -122,8 +119,6 @@ export function App() {
   const [spark, setSpark] = useState(false);
   const [visorPop, setVisorPop] = useState(false);
   const [clinkOn, setClinkOn] = useState(false);
-  const [recapOpen, setRecapOpen] = useState(false);
-  const [visit, setVisit] = useState<VisitSpark>({ days: 0, lastYmd: null, justCheckedIn: false });
   const enqueueWrite = useMemo(() => createWriteQueue(), []);
   const householdRef = useRef<Household | null>(household);
   householdRef.current = household;
@@ -194,7 +189,7 @@ export function App() {
 
   useEffect(() => {
     if (!household) return;
-    setVisit(touchVisitSpark(environment, todayKey()));
+    touchVisitSpark(environment, todayKey());
     setClinkOn(readClinkOn(environment));
   }, [environment, household?.householdId]);
 
@@ -207,13 +202,6 @@ export function App() {
     () => (visible ? buildDashboard(visible, today, now, findings.length) : null),
     [visible, today, now, findings.length],
   );
-
-  useEffect(() => {
-    if (!household) return;
-    if (weekdaySunday0(today) !== 0) return;
-    if (recapSeen(environment, today)) return;
-    setRecapOpen(true);
-  }, [household?.householdId, environment, today]);
 
   function rememberSession(next: Session) {
     setSession(next);
@@ -580,8 +568,6 @@ export function App() {
             household={household}
             memberId={session.memberId}
             today={today}
-            spark={spark}
-            visit={visit}
             busy={busy}
             environment={environment}
             clinkOn={clinkOn}
@@ -601,7 +587,6 @@ export function App() {
                 memberId: session.memberId,
               });
             }}
-            onOpenRecap={() => setRecapOpen(true)}
           />
           <section className="hero">
             <div className="label">{view === "personal" ? "Personal" : "Household"} · {dashboard.monthLabel}</div>
@@ -1144,12 +1129,21 @@ export function App() {
         </div>
       )}
 
-      <HerculesDock
+      <HerculesPresence
         household={household}
         today={today}
         tab={tab}
         adding={adding}
         visorPop={visorPop}
+        spark={spark}
+        onGo={(next) => {
+          if (next === "add") {
+            setAdding(true);
+            return;
+          }
+          setTab(next);
+          setAdding(false);
+        }}
         onOpenAdd={(note) => {
           setMode("expense");
           setAdding(true);
@@ -1165,15 +1159,6 @@ export function App() {
           });
         }}
       />
-
-      {recapOpen && (
-        <SundayRecapSheet
-          household={household}
-          today={today}
-          environment={environment}
-          onClose={() => setRecapOpen(false)}
-        />
-      )}
 
       <nav className="nav">
         <button className={tab === "home" && !adding ? "active" : ""} onClick={() => { setTab("home"); setAdding(false); }}>Home</button>
