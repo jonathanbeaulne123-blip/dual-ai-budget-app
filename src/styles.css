@@ -951,3 +951,101 @@ input, select, textarea {
 }
 .sit-guide .chips { margin-top: 8px; }
 
+.visit-world { margin-top: 4px; }
+.visit-hero {
+  background:
+    linear-gradient(180deg, #f6eef8 0%, var(--card) 70%);
+  border-color: #d9c3e2;
+}
+.visit-disclosure {
+  margin: 0 0 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid #c9b07a;
+  background: #fbf3d8;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 600;
+}
+.visit-card {
+  border-top: 1px solid #e4d5ee;
+  padding: 12px 0 8px;
+}
+.visit-card:first-of-type { border-top: 0; }
+.visit-card-hit {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+.visit-card-hit .row { border-bottom: 0; padding-bottom: 0; }
+.visit-drift {
+  margin: 10px 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f3eaf7;
+  border: 1px solid #d9c3e2;
+  font-family: var(--display);
+  font-size: 18px;
+  line-height: 1.35;
+}
+.visit-lines {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 12px;
+}
+.visit-lines li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  color: var(--muted);
+}
+.visit-lines-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 14px;
+}
+.visit-lines-head h3,
+.visit-owed-group h3,
+.visit-log h3 {
+  font-size: 15px;
+  margin: 12px 0 6px;
+}
+.bill-line-row {
+  display: grid;
+  grid-template-columns: 72px 1fr 84px auto;
+  gap: 6px;
+  margin: 8px 0;
+  align-items: center;
+}
+.bill-line-row input { padding: 8px; border-radius: 10px; }
+.visit-cadence-nth {
+  display: grid;
+  gap: 4px;
+}
+.visit-link {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.visit-back { margin: 4px 0 8px; }
+.visit-form .primary,
+.visit-post .primary { margin-top: 16px; }
+.visit-log-table { margin-top: 8px; }
+
+@media (max-width: 520px) {
+  .bill-line-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .bill-line-row button { grid-column: 1 / -1; }
+}
+

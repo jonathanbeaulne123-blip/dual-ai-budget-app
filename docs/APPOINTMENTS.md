@@ -1,6 +1,6 @@
 # Appointments, claims, and money owed to us
 
-Living spec for recurring visits, itemized bills, insurance as a **receivable**, the claims tray, quiet labels, and Hercules proposing sinking-fund jars. Laws: [DECISIONS.md](DECISIONS.md) **D-053 / D-054 / D-055**. Dual Course: [STRATEGY.md](STRATEGY.md).
+Living spec for recurring visits, itemized bills, insurance as a **receivable**, the claims tray, quiet labels, and Hercules proposing sinking-fund jars. Laws: [DECISIONS.md](DECISIONS.md) **D-053 / D-054 / D-055 / D-056**. Dual Course: [STRATEGY.md](STRATEGY.md).
 
 This is not a slice packet. The receivable model is fixed (Jonathan). Privacy and Hercules autonomy are the designs below. Reversals need a new D-number, not a hidden rewrite.
 
@@ -79,11 +79,27 @@ Quiet appointments use the coded title in his mouth.
 
 ## Surfaces
 
-- **Calendar → Visits** — appointments, claims tray, honest disclosure, Start this jar, Post visit (Confirm).
+Calendar → **Appointments** is the destination (D-056). Month-board visit pills and the Office claims tray stay satellites.
+
+```text
+Calendar → Appointments
+├── Upcoming      next 90 days from projectAppointmentDates, overdue first,
+│                 cost + expected-back per row. METC hero is the front door.
+├── Each visit ▸  detail: claimed vs learned cadence, history, itemized bill,
+│                 jar if one exists, practitioner / place / coverage,
+│                 Post visit → Confirm (draft can carry BillLine[]).
+├── Owed to us    agedReceivables grouped by status, itemization,
+│                 Submitted / Landed / Denied through Confirm.
+├── Medical log   craMedicalLog year view: eligible net of reimbursements
+│                 and still-expected recovery, vet excluded, $2,890 named.
+└── Add / Edit    all five cadences, coverage, practitioner, place, sensitivity.
+                  HOSTED_DISCLOSURE is the weighted sentence, not filler.
+```
+
 - **Office claims tray** — glance of outstanding CAD; Landed goes through Confirm; never `postEntry` from the widget itself.
 - **Wallet** — Owed-to-us tiles. Net worth includes receivable. Cash-flow treats A/R → chequing as operating in.
 - **Ask / Hercules** — "What's owed?", "Medical log", "Start this jar" (he tells you to tap Start; he does not write).
-- **CRA log** — `craMedicalLog`: eligible cents net of reimbursements received **and** still expected (pending claims do not inflate METC). Cap $2,890 (2026) named, not computed as a refund. Vet stays off.
+- **CRA log** — `craMedicalLog`: eligible cents net of reimbursements received **and** still expected (pending claims do not inflate METC). Cap $2,890 (2026) named, not computed as a refund. Vet stays off. Itemized lines on a row make the year defensible.
 
 ---
 
@@ -91,10 +107,11 @@ Quiet appointments use the coded title in his mouth.
 
 1. Open Hearth on Development. Reload demo data if the kitchen is empty.
 2. Home: claims tray should show Sun Life cleaning still owing (~$180). Hercules may mention it. Wallet group **Owed to us** is not a jar.
-3. Calendar → Visits. Read the disclosure. Therapy is listed by the title Bianca typed; Hercules should call it "the Tuesday visit" if you ask him.
-4. Tap **Landed** on the dental claim. Confirm. Books: transfer Benefits owing → Everyday chequing. Not income. Category stays out-of-pocket.
-5. Hercules checkup: **Start this jar**. Confirm. Plan shows **Hercules · vet**. He did not post a cent.
-6. Post visit on Therapy (or Hygienist). Confirm. Full expense + receivable. Optional: Denied writes the remainder back to the category.
-7. Ask Hercules **What's owed?** and **Medical log**. Vet is not in the METC sentence.
+3. Calendar → Appointments. The hero is this year's eligible medical, net of what is still coming back. Read the disclosure — it is the privacy sentence, not filler. Therapy is listed by the title Bianca typed; Hercules should call it "the Tuesday visit" if you ask him.
+4. Open Hygienist. History shows the exam / debridement / fluoride lines. The drift sentence waits for a second posted visit. Post visit can add lines; Confirm still writes.
+5. Owed to us: Sun Life cleaning, aging, **Submitted** then **Landed**. Confirm. Books: transfer Benefits owing → Everyday chequing. Not income. Category stays out-of-pocket.
+6. Medical log: $68 eligible after the pending $180 stays out. Cap $2,890 named. Vet is off the list.
+7. Hercules checkup: **Start this jar**. Confirm. Plan shows **Hercules · vet**. He did not post a cent.
+8. Add a spa every 8 weeks, or a 3rd Tuesday, from the cadence picker — kind no longer freezes cadence.
 
 Undo from the toast still works. Two phones merge claims by id (D-052).

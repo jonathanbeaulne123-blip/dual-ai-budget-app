@@ -11,14 +11,18 @@ import {
   craMedicalLog,
   emptyHousehold,
   expenseEffect,
+  formatClaimStatus,
+  groupUpcomingVisits,
   householdWallet,
   isCashLikeKind,
   isLiabilityKind,
   isReceivableKind,
+  learnedVisitIntervalDays,
   mergeShared,
   normalizeAccountKind,
   openClaim,
   postEntry,
+  postedVisitsFor,
   postVisit,
   projectAppointmentDates,
   proposeVisitGoal,
@@ -27,7 +31,12 @@ import {
   settleClaim,
   splitForSync,
   submitClaim,
+  suggestedAppointmentCadence,
   trialBalance,
+  upcomingVisitBoard,
+  updateAppointment,
+  visitCadenceCompare,
+  visitDriftSentence,
   writeOffClaim,
 } from "../src/core/index.ts";
 import { cashFlowStatement } from "../src/core/statements.ts";
@@ -343,5 +352,139 @@ describe("empty household still shapes", () => {
     const empty = emptyHousehold();
     expect(empty.appointments).toEqual([]);
     expect(empty.claims).toEqual([]);
+  });
+});
+
+describe("appointment tracker projections", () => {
+  it("surfaces history, itemized lines, upcoming dates, and spouse-readable claim status", () => {
+    const demo = seedDemoHousehold({ today });
+    const dentist = demo.appointments.find((item) => item.kind === "dentist")!;
+    const history = postedVisitsFor(demo, dentist.id);
+    expect(history).toHaveLength(1);
+    expect(history[0]!.lines.map((line) => line.code)).toEqual(["01204", "11101", "12111"]);
+    expect(history[0]!.remainingCents).toBe(18000);
+    const board = upcomingVisitBoard(demo, today);
+    expect(board.some((row) => row.title === "Therapy" && !row.overdue)).toBe(true);
+    expect(board.some((row) => row.kind === "vet")).toBe(false);
+    const groups = groupUpcomingVisits(board);
+    expect(groups[0]?.monthKey).not.toBe("overdue");
+    expect(formatClaimStatus("pending")).toBe("Waiting");
+    expect(formatClaimStatus("settled")).toBe("Landed");
+    expect(suggestedAppointmentCadence("spa")).toEqual({ kind: "weekly", interval: 8 });
+    const log = craMedicalLog(demo, today);
+    expect(log.rows).toHaveLength(1);
+    expect(log.rows[0]!.eligibleCents).toBe(6800);
+    expect(log.rows[0]!.lines).toHaveLength(3);
+    expect(log.omitted).toEqual([]);
+  });
+
+  it("teaches claimed vs learned cadence when the dentist slips", () => {
+    let household = catalog();
+    household = addAppointment(household, {
+      title: "Hygienist",
+      kind: "dentist",
+      nextDate: "2026-01-12",
+      cadence: { kind: "monthly", interval: 6 },
+      typicalCost: 248,
+      typicalRecovery: 180,
+      subcategoryId: "SUB-HEALTH-DENTAL",
+      accountId: "ACC-VISA",
+    }).household;
+    const id = household.appointments[0]!.id;
+    household = postVisit(household, {
+      date: "2026-01-12",
+      amount: 248,
+      appointmentId: id,
+      expectedRecovery: 180,
+      confirmDuplicate: true,
+      createdBy: "MEM-002",
+    }).household;
+    household = postVisit(household, {
+      date: "2026-09-12",
+      amount: 248,
+      appointmentId: id,
+      expectedRecovery: 180,
+      confirmDuplicate: true,
+      createdBy: "MEM-002",
+    }).household;
+    const appointment = household.appointments[0]!;
+    expect(learnedVisitIntervalDays(household, appointment)).toBeGreaterThan(200);
+    expect(visitDriftSentence(household, appointment)).toMatch(/every 6 months/i);
+    expect(visitCadenceCompare(household, appointment).sentence).toMatch(/books say about every/i);
+  });
+
+  it("lists overdue visits before the next ninety days", () => {
+    const household = addAppointment(catalog(), {
+      title: "Called-in cleaning",
+      kind: "dentist",
+      nextDate: "2026-07-01",
+      cadence: { kind: "once" },
+      typicalCost: 80,
+      subcategoryId: "SUB-HEALTH-DENTAL",
+      accountId: "ACC-VISA",
+    }).household;
+    const groups = groupUpcomingVisits(upcomingVisitBoard(household, today));
+    expect(groups[0]?.monthKey).toBe("overdue");
+    expect(groups[0]?.rows[0]?.title).toBe("Called-in cleaning");
+  });
+
+  it("keeps itemized lines on a $0-recovery visit without posting a refund", () => {
+    let household = catalog();
+    household = addAppointment(household, {
+      title: "Physio",
+      kind: "physio",
+      nextDate: today,
+      cadence: { kind: "weekly", interval: 1 },
+      typicalCost: 90,
+      subcategoryId: "SUB-HEALTH-CARE",
+      accountId: "ACC-VISA",
+    }).household;
+    household = postVisit(household, {
+      date: today,
+      amount: 90,
+      appointmentId: household.appointments[0]!.id,
+      expectedRecovery: 0,
+      lines: [
+        { code: "A", description: "Assessment", amount: 50 },
+        { code: "B", description: "Treatment", amount: 40 },
+      ],
+      confirmDuplicate: true,
+      createdBy: "MEM-002",
+    }).household;
+    expect(household.transactions.some((tx) => tx.type === "refund")).toBe(false);
+    const visit = postedVisitsFor(household, household.appointments[0]!.id)[0]!;
+    expect(visit.lines).toHaveLength(2);
+    expect(visit.claim?.status).toBe("settled");
+    expect(visit.remainingCents).toBe(0);
+    const log = craMedicalLog(household, today);
+    expect(log.eligibleCents).toBe(9000);
+    expect(log.rows[0]!.lines).toHaveLength(2);
+  });
+
+  it("lets edit change coverage, kind, and member without touching the books", () => {
+    let household = addAppointment(catalog(), {
+      title: "Spa",
+      kind: "spa",
+      nextDate: "2026-09-01",
+      cadence: { kind: "weekly", interval: 8 },
+      typicalCost: 85,
+      coverage: "none",
+      subcategoryId: "SUB-HEALTH-CARE",
+      accountId: "ACC-VISA",
+    }).household;
+    const before = household.transactions.length;
+    household = updateAppointment(household, {
+      appointmentId: household.appointments[0]!.id,
+      kind: "other",
+      coverage: "private",
+      memberId: "MEM-001",
+      practitioner: "Ada",
+      place: "Queen",
+    }).household;
+    expect(household.appointments[0]!.kind).toBe("other");
+    expect(household.appointments[0]!.coverage).toBe("private");
+    expect(household.appointments[0]!.memberId).toBe("MEM-001");
+    expect(household.appointments[0]!.practitioner).toBe("Ada");
+    expect(household.transactions).toHaveLength(before);
   });
 });

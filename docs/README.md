@@ -13,7 +13,7 @@ Hearth is the product. **Living canon** is this folder except [nostalgia/](nosta
 | [CLAUDE_OFFICE_UX.md](CLAUDE_OFFICE_UX.md) | Prompt for Claude to spec the office; Grok implements |
 | [AUDIT_OFFICE.md](AUDIT_OFFICE.md) | Statements, rec, close — how to try |
 | [ACCOUNTS.md](ACCOUNTS.md) | Wallet, cards, investments — how to try |
-| [APPOINTMENTS.md](APPOINTMENTS.md) | Visits, claims tray, receivables, quiet labels, Hercules jars (D-053–055) |
+| [APPOINTMENTS.md](APPOINTMENTS.md) | Visits, claims tray, receivables, quiet labels, Hercules jars, Appointments destination (D-053–056) |
 | [ENVIRONMENTS.md](ENVIRONMENTS.md) | Development vs production, website, hosted books |
 | [GOOGLE.md](GOOGLE.md) | Google household bridge |
 | [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md) | Private repo and one-click kitchen publish |

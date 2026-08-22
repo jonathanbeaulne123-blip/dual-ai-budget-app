@@ -1,6 +1,6 @@
-import { addDays, calendarDaysBetween, daysInMonth, parseDateKey, weekdaySunday0, type DateKey } from "./calendar.ts";
-import { formatCad } from "./money.ts";
-import { COMPANION, JOINT, ValidationError, type Appointment, type AppointmentCadence, type AppointmentKind, type AppointmentSensitivity, type BillLine, type Claim, type ClaimKind, type ClaimStatus, type Household } from "./types.ts";
+import { addDays, calendarDaysBetween, daysInMonth, formatMonthLabel, parseDateKey, weekdaySunday0, type DateKey } from "./calendar.ts";
+import { formatCad, roundToCents } from "./money.ts";
+import { COMPANION, JOINT, ValidationError, type Appointment, type AppointmentCadence, type AppointmentCoverage, type AppointmentKind, type AppointmentSensitivity, type BillLine, type Claim, type ClaimKind, type ClaimStatus, type Household } from "./types.ts";
 
 export const DEFAULT_RECEIVABLE_ID = "ACC-CLAIMS";
 export const HEALTH_GROUP_ID = "CAT-HEALTH";
@@ -66,6 +66,74 @@ export function formatAppointmentCadence(cadence: AppointmentCadence): string {
   const nth = cadence.nth === -1 ? "last" : cadence.nth === 1 ? "1st" : cadence.nth === 2 ? "2nd" : cadence.nth === 3 ? "3rd" : "4th";
   const every = cadence.intervalMonths === 1 ? "" : ` every ${cadence.intervalMonths} months`;
   return `${nth} ${weeks[cadence.weekday]}${every}`;
+}
+
+export function suggestedAppointmentCadence(kind: AppointmentKind): AppointmentCadence {
+  if (kind === "therapy") return { kind: "weekly", interval: 2 };
+  if (kind === "dentist") return { kind: "monthly", interval: 6 };
+  if (kind === "physio") return { kind: "weekly", interval: 1 };
+  if (kind === "spa") return { kind: "weekly", interval: 8 };
+  if (kind === "optometrist" || kind === "vet") return { kind: "monthly", interval: 12 };
+  return { kind: "once" };
+}
+
+export function suggestedAppointmentSensitivity(kind: AppointmentKind): AppointmentSensitivity {
+  return kind === "therapy" ? "quiet" : "household";
+}
+
+export function formatCoverage(coverage: AppointmentCoverage): string {
+  if (coverage === "ohip") return "OHIP";
+  if (coverage === "none") return "No coverage";
+  return "Private plan";
+}
+
+export function formatClaimStatus(status: ClaimStatus): string {
+  if (status === "pending") return "Waiting";
+  if (status === "submitted") return "Submitted";
+  if (status === "settled") return "Landed";
+  if (status === "short") return "Paid short";
+  return "Denied";
+}
+
+export type AgingBucket = "current" | "1-7" | "8-30" | "31+";
+
+export function formatAgingBucket(bucket: AgingBucket): string {
+  if (bucket === "current") return "Today";
+  if (bucket === "1-7") return "1–7 days";
+  if (bucket === "8-30") return "8–30 days";
+  return "31+ days";
+}
+
+export function pickVisitSubcategory(household: Household, kind: string, fallback: string): string {
+  const preferredId = kind === "vet" ? "SUB-HEALTH-VET" : kind === "therapy" ? "SUB-HEALTH-THERAPY" : kind === "dentist" ? "SUB-HEALTH-DENTAL" : "";
+  if (preferredId && household.categories.some((item) => item.id === preferredId && item.active)) return preferredId;
+  const needle = kind === "vet" ? "vet" : kind === "therapy" ? "therapy" : kind === "dentist" ? "dental" : "";
+  if (needle) {
+    const named = household.categories.find((item) => (
+      item.recordType === "category"
+      && item.transactionType === "expense"
+      && item.active
+      && item.name.toLowerCase().includes(needle)
+    ));
+    if (named) return named.id;
+  }
+  return fallback;
+}
+
+export function pickVisitMember(household: Household, kind: string, actorId: string): string {
+  if (kind === "vet") return COMPANION;
+  if (kind === "therapy") {
+    const bianca = household.members.find((member) => member.active && member.id === "MEM-001")
+      ?? household.members.find((member) => member.active && /bianca/i.test(member.name));
+    return bianca?.id ?? actorId;
+  }
+  return JOINT;
+}
+
+export function pickVisitAccountId(household: Household): string {
+  return household.accounts.find((item) => item.id === "ACC-VISA" && item.active)?.id
+    ?? household.accounts.find((item) => item.active && item.kind !== "receivable")?.id
+    ?? "";
 }
 
 function nthWeekdayInMonth(year: number, month: number, weekday: number, nth: number): DateKey {
@@ -260,10 +328,7 @@ export function estimateRecoveryCents(household: Household, appointment: Appoint
 }
 
 export function learnedVisitIntervalDays(household: Household, appointment: Appointment): number | null {
-  const dates = (household.claims ?? [])
-    .filter((claim) => claim.appointmentId === appointment.id)
-    .map((claim) => household.transactions.find((tx) => tx.id === claim.expenseTransactionId)?.date)
-    .filter((date): date is DateKey => Boolean(date));
+  const dates = postedVisitsFor(household, appointment.id).map((visit) => visit.date);
   if (appointment.lastVisitDate) dates.push(appointment.lastVisitDate);
   const unique = [...new Set(dates)].sort();
   if (unique.length < 2) return null;
@@ -272,6 +337,38 @@ export function learnedVisitIntervalDays(household: Household, appointment: Appo
   const sorted = [...gaps].sort((left, right) => left - right);
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 ? sorted[mid]! : Math.round((sorted[mid - 1]! + sorted[mid]!) / 2);
+}
+
+export function visitDriftSentence(household: Household, appointment: Appointment): string | null {
+  const learned = learnedVisitIntervalDays(household, appointment);
+  const claimed = claimedIntervalDays(appointment.cadence);
+  if (learned && claimed && Math.abs(learned - claimed) / claimed > 0.3) {
+    return `You call it ${formatAppointmentCadence(appointment.cadence)}. The books say about every ${learned} days.`;
+  }
+  return null;
+}
+
+export function visitCadenceCompare(household: Household, appointment: Appointment): {
+  claimed: string;
+  learnedDays: number | null;
+  sentence: string;
+} {
+  const claimed = formatAppointmentCadence(appointment.cadence);
+  const learnedDays = learnedVisitIntervalDays(household, appointment);
+  const drift = visitDriftSentence(household, appointment);
+  if (drift) return { claimed, learnedDays, sentence: drift };
+  if (learnedDays) {
+    return {
+      claimed,
+      learnedDays,
+      sentence: `You call it ${claimed}. The books say about every ${learnedDays} days.`,
+    };
+  }
+  return {
+    claimed,
+    learnedDays: null,
+    sentence: `You call it ${claimed}. Two posted visits and the books can check the drift.`,
+  };
 }
 
 export function claimedIntervalDays(cadence: AppointmentCadence): number | null {
@@ -307,12 +404,7 @@ export function proposeVisitGoal(household: Household, appointmentId: string, to
   const days = Math.max(1, calendarDaysBetween(today, nextDate));
   const weeks = Math.max(1, Math.ceil(days / 7));
   const weeklyCents = Math.ceil(netCents / weeks);
-  const learned = learnedVisitIntervalDays(household, appointment);
-  const claimed = claimedIntervalDays(appointment.cadence);
-  let drift: string | null = null;
-  if (learned && claimed && Math.abs(learned - claimed) / claimed > 0.3) {
-    drift = `You call it ${formatAppointmentCadence(appointment.cadence)}. The books say about every ${learned} days.`;
-  }
+  const drift = visitDriftSentence(household, appointment);
   const publicTitle = appointmentPublicTitle(appointment, "hercules");
   const hercules = appointment.memberId === COMPANION
     ? `I have a date ${nextDate >= today ? `on ${nextDate}` : "that's overdue"}. ${formatCad(weeklyCents)} a week and I do not feel it.`
@@ -338,6 +430,25 @@ export function upcomingVisitProposals(household: Household, today: DateKey): Vi
     .sort((left, right) => left.nextDate.localeCompare(right.nextDate));
 }
 
+export type CraMedicalLogRow = {
+  date: DateKey;
+  label: string;
+  expenseCents: number;
+  receivedCents: number;
+  remainingCents: number;
+  eligibleCents: number;
+  lines: BillLine[];
+  claimId: string | null;
+  appointmentId: string | null;
+};
+
+export type CraOmittedRow = {
+  date: DateKey;
+  label: string;
+  expenseCents: number;
+  reason: string;
+};
+
 export type CraMedicalLog = {
   year: number;
   eligibleCents: number;
@@ -345,6 +456,8 @@ export type CraMedicalLog = {
   outstandingCents: number;
   capCents: number;
   hercules: string;
+  rows: CraMedicalLogRow[];
+  omitted: CraOmittedRow[];
 };
 
 export function craMedicalLog(household: Household, asOf: DateKey): CraMedicalLog {
@@ -354,22 +467,83 @@ export function craMedicalLog(household: Household, asOf: DateKey): CraMedicalLo
   let eligibleCents = 0;
   let reimbursedCents = 0;
   let outstandingCents = 0;
+  const rows: CraMedicalLogRow[] = [];
+  const omitted: CraOmittedRow[] = [];
+  const seenExpenseIds = new Set<string>();
   for (const claim of household.claims ?? []) {
-    if (!claim.craEligible) continue;
     const expense = household.transactions.find((tx) => tx.id === claim.expenseTransactionId);
     if (!expense || expense.date < start || expense.date > end) continue;
+    seenExpenseIds.add(expense.id);
+    const appointment = claim.appointmentId
+      ? household.appointments.find((item) => item.id === claim.appointmentId)
+      : undefined;
+    if (!claim.craEligible) {
+      if (appointment?.kind === "vet") {
+        omitted.push({
+          date: expense.date,
+          label: claimPublicLabel(household, claim, "card"),
+          expenseCents: expense.amountCents,
+          reason: "Vet bills are not METC.",
+        });
+      }
+      continue;
+    }
     const remaining = claimRemainingCents(claim);
     // Net of reimbursements received *and* still expected — do not count a pending Sun Life cheque as METC.
-    eligibleCents += Math.max(0, expense.amountCents - claim.receivedCents - remaining);
+    const eligible = Math.max(0, expense.amountCents - claim.receivedCents - remaining);
+    eligibleCents += eligible;
     reimbursedCents += claim.receivedCents;
     outstandingCents += remaining;
+    rows.push({
+      date: expense.date,
+      label: claimPublicLabel(household, claim, "card"),
+      expenseCents: expense.amountCents,
+      receivedCents: claim.receivedCents,
+      remainingCents: remaining,
+      eligibleCents: eligible,
+      lines: claim.lines,
+      claimId: claim.id,
+      appointmentId: claim.appointmentId,
+    });
   }
+  for (const tx of household.transactions) {
+    if (tx.type !== "expense" || tx.source !== "visit") continue;
+    if (tx.date < start || tx.date > end) continue;
+    if (seenExpenseIds.has(tx.id)) continue;
+    const appointment = household.appointments.find((item) => item.id === tx.sourceId);
+    if (appointment?.kind === "vet") {
+      omitted.push({
+        date: tx.date,
+        label: appointmentPublicTitle(appointment, "card"),
+        expenseCents: tx.amountCents,
+        reason: "Vet bills are not METC.",
+      });
+      continue;
+    }
+    if (!appointment || !defaultCraEligible(appointment.kind)) continue;
+    eligibleCents += tx.amountCents;
+    rows.push({
+      date: tx.date,
+      label: appointmentPublicTitle(appointment, "card"),
+      expenseCents: tx.amountCents,
+      receivedCents: 0,
+      remainingCents: 0,
+      eligibleCents: tx.amountCents,
+      lines: [],
+      claimId: null,
+      appointmentId: appointment.id,
+    });
+  }
+  rows.sort((left, right) => left.date.localeCompare(right.date) || left.label.localeCompare(right.label));
+  omitted.sort((left, right) => left.date.localeCompare(right.date));
   return {
     year,
     eligibleCents,
     reimbursedCents,
     outstandingCents,
     capCents: CRA_METC_CAP_CENTS_2026,
+    rows,
+    omitted,
     hercules: eligibleCents
       ? `${year} medical after reimbursements: ${formatCad(eligibleCents)}. CRA keeps the lesser of 3% of net income or ${formatCad(CRA_METC_CAP_CENTS_2026)}. Pending claims stay out of that number. I don't file taxes.`
       : `No CRA-eligible medical in ${year} yet. Vet bills stay off this list.`,
@@ -380,7 +554,7 @@ export type AgedReceivable = {
   claim: Claim;
   remainingCents: number;
   daysOutstanding: number;
-  bucket: "current" | "1-7" | "8-30" | "31+";
+  bucket: AgingBucket;
 };
 
 export function agedReceivables(household: Household, today: DateKey): AgedReceivable[] {
@@ -400,4 +574,195 @@ export function claimsTraySentence(household: Household, today: DateKey): string
   const oldest = aged[0]!;
   const label = claimPublicLabel(household, oldest.claim, "hercules");
   return `${formatCad(total)} outstanding. Oldest: ${label} · ${oldest.daysOutstanding}d.`;
+}
+
+export function groupAgedReceivables(rows: AgedReceivable[]): { status: ClaimStatus; label: string; rows: AgedReceivable[] }[] {
+  const order: ClaimStatus[] = ["pending", "submitted", "short", "denied", "settled"];
+  return order
+    .map((status) => ({
+      status,
+      label: formatClaimStatus(status),
+      rows: rows.filter((row) => row.claim.status === status),
+    }))
+    .filter((group) => group.rows.length);
+}
+
+export type PostedVisit = {
+  date: DateKey;
+  expenseId: string;
+  amountCents: number;
+  expectedCents: number;
+  receivedCents: number;
+  writtenOffCents: number;
+  remainingCents: number;
+  lines: BillLine[];
+  claim: Claim | null;
+  place: string;
+  note: string;
+};
+
+export function postedVisitsFor(household: Household, appointmentId: string): PostedVisit[] {
+  const seen = new Set<string>();
+  const visits: PostedVisit[] = [];
+  for (const claim of household.claims ?? []) {
+    if (claim.appointmentId !== appointmentId) continue;
+    const expense = household.transactions.find((tx) => tx.id === claim.expenseTransactionId);
+    if (!expense) continue;
+    seen.add(expense.id);
+    visits.push({
+      date: expense.date,
+      expenseId: expense.id,
+      amountCents: expense.amountCents,
+      expectedCents: claim.expectedCents,
+      receivedCents: claim.receivedCents,
+      writtenOffCents: claim.writtenOffCents,
+      remainingCents: claimRemainingCents(claim),
+      lines: claim.lines,
+      claim,
+      place: expense.place,
+      note: expense.note,
+    });
+  }
+  for (const tx of household.transactions) {
+    if (tx.type !== "expense" || tx.source !== "visit") continue;
+    if (seen.has(tx.id)) continue;
+    if (tx.sourceId !== appointmentId) continue;
+    visits.push({
+      date: tx.date,
+      expenseId: tx.id,
+      amountCents: tx.amountCents,
+      expectedCents: 0,
+      receivedCents: 0,
+      writtenOffCents: 0,
+      remainingCents: 0,
+      lines: [],
+      claim: null,
+      place: tx.place,
+      note: tx.note,
+    });
+  }
+  return visits.sort((left, right) => right.date.localeCompare(left.date) || right.expenseId.localeCompare(left.expenseId));
+}
+
+export type UpcomingVisitRow = {
+  appointmentId: string;
+  date: DateKey;
+  overdue: boolean;
+  title: string;
+  kind: AppointmentKind;
+  typicalCostCents: number;
+  typicalRecoveryCents: number;
+  estimatedRecoveryCents: number;
+  monthKey: string;
+};
+
+export function upcomingVisitBoard(household: Household, today: DateKey, horizonDays = 90): UpcomingVisitRow[] {
+  const horizon = addDays(today, horizonDays);
+  const rows: UpcomingVisitRow[] = [];
+  for (const appointment of household.appointments ?? []) {
+    if (!appointment.active) continue;
+    const recovery = estimateRecoveryCents(household, appointment);
+    const push = (date: DateKey, overdue: boolean) => {
+      rows.push({
+        appointmentId: appointment.id,
+        date,
+        overdue,
+        title: appointmentPublicTitle(appointment, "card"),
+        kind: appointment.kind,
+        typicalCostCents: appointment.typicalCostCents,
+        typicalRecoveryCents: appointment.typicalRecoveryCents,
+        estimatedRecoveryCents: recovery,
+        monthKey: date.slice(0, 7),
+      });
+    };
+    if (appointment.nextDate < today) {
+      push(appointment.nextDate, true);
+      if (appointment.cadence.kind !== "once") {
+        const resumed = advanceAppointmentCadence(appointment.nextDate, appointment.cadence);
+        for (const date of projectAppointmentDates(resumed, appointment.cadence, today, horizon)) {
+          push(date, false);
+        }
+      }
+    } else {
+      for (const date of projectAppointmentDates(appointment.nextDate, appointment.cadence, today, horizon)) {
+        push(date, false);
+      }
+    }
+  }
+  return rows.sort((left, right) => {
+    if (left.overdue !== right.overdue) return left.overdue ? -1 : 1;
+    return left.date.localeCompare(right.date) || left.title.localeCompare(right.title);
+  });
+}
+
+export type UpcomingVisitGroup = {
+  monthKey: string;
+  monthLabel: string;
+  rows: UpcomingVisitRow[];
+};
+
+export function groupUpcomingVisits(rows: UpcomingVisitRow[]): UpcomingVisitGroup[] {
+  const groups: UpcomingVisitGroup[] = [];
+  const overdue = rows.filter((row) => row.overdue);
+  if (overdue.length) groups.push({ monthKey: "overdue", monthLabel: "Overdue", rows: overdue });
+  const rest = rows.filter((row) => !row.overdue);
+  const byMonth = new Map<string, UpcomingVisitRow[]>();
+  for (const row of rest) {
+    const list = byMonth.get(row.monthKey) ?? [];
+    list.push(row);
+    byMonth.set(row.monthKey, list);
+  }
+  for (const monthKey of [...byMonth.keys()].sort()) {
+    groups.push({
+      monthKey,
+      monthLabel: formatMonthLabel(monthKey),
+      rows: byMonth.get(monthKey)!,
+    });
+  }
+  return groups;
+}
+
+export type VisitDraftLine = {
+  code: string;
+  description: string;
+  amount: string;
+};
+
+export type VisitPostDraft = {
+  appointmentId: string;
+  date: string;
+  amount: string;
+  expectedRecovery: string;
+  lines: VisitDraftLine[];
+};
+
+export function typicalVisitDraft(appointment: Appointment, date: DateKey, household?: Household): VisitPostDraft {
+  const recovery = household ? estimateRecoveryCents(household, appointment) : appointment.typicalRecoveryCents;
+  return {
+    appointmentId: appointment.id,
+    date,
+    amount: appointment.typicalCostCents ? (appointment.typicalCostCents / 100).toFixed(2) : "",
+    expectedRecovery: recovery ? (recovery / 100).toFixed(2) : "0",
+    lines: [],
+  };
+}
+
+export function sumDraftLineCents(lines: VisitDraftLine[]): number {
+  return lines.reduce((sum, line) => {
+    const raw = String(line.amount ?? "").replace(/[$,]/g, "").trim();
+    if (!raw) return sum;
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n <= 0) return sum;
+    return sum + roundToCents(n);
+  }, 0);
+}
+
+export function visitPostSummary(appointment: Appointment, draft: VisitPostDraft): string {
+  const lineCount = draft.lines.filter((line) => String(line.amount ?? "").trim()).length;
+  const itemized = lineCount ? ` ${lineCount} itemized ${lineCount === 1 ? "line" : "lines"}.` : "";
+  const back = Number(draft.expectedRecovery);
+  const backBit = Number.isFinite(back) && back > 0
+    ? ` Expected recovery ${formatCad(roundToCents(back))} parks as money owed to us.`
+    : " No expected recovery.";
+  return `This posts ${draft.amount ? formatCad(roundToCents(Number(draft.amount) || 0)) : "the visit"} for ${appointmentPublicTitle(appointment, "card")} on ${draft.date}.${backBit}${itemized}`;
 }

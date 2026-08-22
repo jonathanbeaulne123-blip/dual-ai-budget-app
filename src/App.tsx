@@ -55,6 +55,7 @@ import {
   type UndoToken,
   type Visibility,
   type Account,
+  type VisitPostDraft,
 } from "./core/index.ts";
 import { STORAGE_EXPLAINER, clearHousehold, downloadJson, loadHousehold, saveHousehold } from "./storage.ts";
 import { clearSession, loadSession, saveSession, type Session } from "./session.ts";
@@ -88,7 +89,7 @@ type Guard =
   | { kind: "remove"; transactionId: string; summary: string }
   | { kind: "postRecurrence"; recurrenceId: string; summary: string }
   | { kind: "postDueAll"; summary: string }
-  | { kind: "postVisit"; appointmentId: string; summary: string }
+  | { kind: "postVisit"; draft: VisitPostDraft; summary: string }
   | { kind: "settleClaim"; claimId: string; summary: string }
   | { kind: "writeOffClaim"; claimId: string; summary: string }
   | { kind: "acceptVisitGoal"; appointmentId: string; summary: string };
@@ -788,7 +789,7 @@ export function App() {
           onCommand={(fn) => { void run(fn); }}
           onAskPost={(recurrenceId, summary) => setGuard({ kind: "postRecurrence", recurrenceId, summary })}
           onAskPostDue={(_count, summary) => setGuard({ kind: "postDueAll", summary })}
-          onAskVisit={(appointmentId, summary) => setGuard({ kind: "postVisit", appointmentId, summary })}
+          onAskVisit={(draft, summary) => setGuard({ kind: "postVisit", draft, summary })}
           onAskSettle={(claimId, summary) => setGuard({ kind: "settleClaim", claimId, summary })}
           onAskWriteOff={(claimId, summary) => setGuard({ kind: "writeOffClaim", claimId, summary })}
           onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
@@ -1264,17 +1265,24 @@ export function App() {
           busy={busy}
           onCancel={() => setGuard(null)}
           onConfirm={() => {
-            const id = guard.appointmentId;
+            const draft = guard.draft;
             setGuard(null);
             void run((current) => {
-              const appointment = current.appointments.find((item) => item.id === id);
+              const appointment = current.appointments.find((item) => item.id === draft.appointmentId);
               if (!appointment) throw new ValidationError("That visit is gone.");
               return postVisit(current, {
-                date: today,
-                amount: appointment.typicalCostCents / 100,
-                appointmentId: id,
+                date: draft.date,
+                amount: draft.amount,
+                appointmentId: draft.appointmentId,
                 accountId: appointment.accountId,
-                expectedRecovery: appointment.typicalRecoveryCents / 100,
+                expectedRecovery: draft.expectedRecovery,
+                lines: draft.lines
+                  .filter((line) => String(line.amount ?? "").trim())
+                  .map((line) => ({
+                    code: line.code,
+                    description: line.description || "Item",
+                    amount: line.amount,
+                  })),
                 createdBy: session.memberId,
                 confirmDuplicate: true,
               });

@@ -278,7 +278,7 @@ export function talkHercules(
     const proposal = upcomingVisitProposals(household, today)[0];
     return {
       spoken: proposal
-        ? clip(`${proposal.hercules} Calendar → Visits. You tap Start. I don't write.`)
+        ? clip(`${proposal.hercules} Calendar → Appointments. You tap Start. I don't write.`)
         : "No jar to start. A typical cost on a visit comes first.",
       lesson: "Creating a goal is a household write. I propose. A human confirms.",
       fact: proposal ? { label: proposal.title, value: `${formatCad(proposal.weeklyCents)}/wk` } : null,

@@ -88,7 +88,7 @@ Do not re-litigate these as “Chapter 0” or “Ring 1.” They are the kitche
 - September Office (D-051, **direction**): Home as a lived-in Toronto desk — weather window, movable widgets, Hercules on the furniture. Spec in [CLAUDE_OFFICE_UX.md](CLAUDE_OFFICE_UX.md). Not shipped until implemented.
 - Audit Office: opinion, statements, equity roll, working capital, notes, rec, close pack
 - Accounts Floor: wallet tiles, account rooms, expandable cards, investment marks, interest/rewards as explicit posts
-- Appointments, claims tray, receivable kind, quiet labels, Hercules propose-to-save (D-053 / D-054 / D-055). Spec: [APPOINTMENTS.md](APPOINTMENTS.md)
+- Appointments destination, claims tray, receivable kind, quiet labels, Hercules propose-to-save, METC log on the page (D-053 / D-054 / D-055 / D-056). Spec: [APPOINTMENTS.md](APPOINTMENTS.md)
 - Kitchen site `hearth-books` from GitHub `main`
 
 How to run the app: repository [README](../README.md). How the layers fit: [ARCHITECTURE.md](ARCHITECTURE.md).
