@@ -328,7 +328,7 @@ export function HerculesPresence({
     const gen = chatGen.current + 1;
     chatGen.current = gen;
     const history = turns;
-    setTurns((prev) => [...prev, { role: "user", text: message }].slice(-12));
+    setTurns((prev) => [...prev, { role: "user" as const, text: message }].slice(-12));
     setQuestion("");
     setBusy(true);
     setOpen(true);
@@ -338,7 +338,7 @@ export function HerculesPresence({
     const result = await chatHercules({ message, briefing, grounded, history });
     if (chatGen.current !== gen) return;
     setTalk({ ...grounded, spoken: result.text });
-    setTurns((prev) => [...prev, { role: "hercules", text: result.text }].slice(-12));
+    setTurns((prev) => [...prev, { role: "hercules" as const, text: result.text }].slice(-12));
     setMotion(grounded.pose === "sleep" ? "loaf" : grounded.pose);
     setBusy(false);
   }
