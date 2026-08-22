@@ -15,6 +15,9 @@
 -- Proof when this is applied: joining copper-thyme-zephyr from the
 -- Production pill cannot overwrite Development; anonymous PostgREST
 -- cannot dump household_snapshots.
+--
+-- Dual Course (D-048): this is Course A, weight 5. Pair it with an honest
+-- Hercules line about access. Do not treat docs/nostalgia/ as the plan.
 
 -- Example (do not run yet):
 --

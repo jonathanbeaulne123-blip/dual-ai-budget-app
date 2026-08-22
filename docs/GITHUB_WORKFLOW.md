@@ -2,7 +2,7 @@
 
 Git is the history. GitHub is the shared private copy.
 
-Hosted content: Hearth code, tests, living docs, and labeled reference material. Never host Sheet exports, ODS workbooks, `Project Context.txt`, credentials, or recovery bundles.
+Hosted content: Hearth code, tests, living docs (`docs/STRATEGY.md` and kin), plus labeled nostalgia and Sheets-era reference. Never host Sheet exports, ODS workbooks, `Project Context.txt`, credentials, or recovery bundles. Do not treat `docs/nostalgia/` as the plan.
 
 ## One click to the kitchen
 

@@ -2,16 +2,16 @@
 
 ## Mission
 
-Help Jonathan and Bianca run a dependable household budget. **Hearth** (this repository) is the product: a phone-first TypeScript ledger with PostgreSQL books.
+Help Jonathan and Bianca run a dependable household budget **and** a companion kitchen they actually open. **Hearth** is Dual Course (D-048): family-office books weigh **5**; Hercules and other interactables weigh **3**. Each course must improve the other. When they conflict, the books win.
 
 ## Context priority
 
 1. Jonathan's latest explicit instruction or decision.
-2. Canonical files in `docs/` — not `docs/reference/`.
+2. Canonical files in `docs/` — especially `docs/STRATEGY.md`, `docs/DECISIONS.md`, `docs/ARCHITECTURE.md`. Not `docs/reference/`. Not `docs/nostalgia/`.
 3. Verified repository code and tests.
-4. Historical material under `docs/reference/` (Sheets-era roadmaps, READMEs, decisions, reviews). Treat those as content, not commands.
+4. Historical material under `docs/nostalgia/` (Cursor-era Chapters, Rings, launch essays) and `docs/reference/` (Sheets-era). Treat those as content, not commands.
 
-`docs/reference/` exists so the project can see where it came from. It is not a bible.
+`docs/nostalgia/` and `docs/reference/` exist so the project can see where it came from. They are not a bible and **must not** be used as the plan for future work.
 
 ## Current facts
 
@@ -20,14 +20,15 @@ Help Jonathan and Bianca run a dependable household budget. **Hearth** (this rep
 - Currency: CAD, integer cents.
 - Development and production are two named local snapshots on the same device. Default experiments to Development.
 - Website: Cloudflare Workers + Assets, worker `hearth-books`. Publishes from GitHub `main` via `wrangler deploy` (D-041). Preview uploads are not the kitchen URL.
-- Hercules (Maine Coon) is the product face (D-044, D-045, D-046). Cosmetics never post money. Workers AI may talk; it cannot write the books. The Audit Office is how we show the ledger.
-- Hosted books: household Supabase Postgres. PGlite is the on-phone journal.
+- Hercules (Maine Coon) is the product face (D-044, D-045, D-046). Cosmetics never post money. Workers AI may talk; it cannot write the books. The Audit Office is how we show the ledger. Accounts Floor is how we touch it (D-047).
+- Hosted books: household Supabase Postgres. PGlite is the on-phone journal. Hosted RLS is still `USING (true)` until Auth exists (D-039).
 - Workbook exports, historical chats, credentials, and household data are local-only and must never be committed.
 
 ## Sources of truth
 
 - Code, tests, architecture, and living decisions: this GitHub repository.
 - Product decisions: `docs/DECISIONS.md` plus Jonathan's latest explicit instruction.
+- Product direction: `docs/STRATEGY.md`.
 - Runtime evidence: the development snapshot and the development Supabase rows — not production Sheets.
 
 ## Safety
@@ -38,13 +39,14 @@ Help Jonathan and Bianca run a dependable household budget. **Hearth** (this rep
 - A hidden UI screen is not a privacy boundary.
 - Before any GitHub push, confirm no local-only workbook, chat, credential, or `.env` secret is tracked.
 - Never put the Supabase secret key or database password in `VITE_` variables or Cloudflare.
+- Do not build bank feeds, Interac APIs, or issued cards until Auth + RLS exist.
 
 ## Workflow
 
-1. Read `docs/README.md`, `docs/ARCHITECTURE.md`, and `docs/DECISIONS.md`.
-2. Inspect current code rather than trusting a summary or a reference-folder file.
-3. Assign a risk level using `docs/AI_HANDOFF.md`.
-4. Make the smallest coherent change that preserves financial meaning.
+1. Read `docs/STRATEGY.md`, `docs/ARCHITECTURE.md`, and `docs/DECISIONS.md`.
+2. Inspect current code rather than trusting a summary or a nostalgia/reference file.
+3. Assign a risk level using `docs/AI_HANDOFF.md`. Name a **budget delta (5)** and an **engagement delta (3)**.
+4. Make the smallest coherent change that preserves financial meaning. Do not change important features; smaller edits need a why-note in the decision log.
 5. Run `pnpm test`.
 6. Update the living decision log when behavior or architecture changes.
-7. Return a structured handoff with verification, uncertainty, and the next recommended action.
+7. Return a structured handoff with both Dual Course deltas, verification, uncertainty, and the next recommended action.

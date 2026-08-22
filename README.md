@@ -1,6 +1,6 @@
 # Hearth
 
-A household budget for Jonathan and Bianca. Toronto time. CAD. Phone-first.
+A household budget and companion kitchen for Jonathan and Bianca. Toronto time. CAD. Phone-first. Dual Course: books weigh 5, Hercules weighs 3.
 
 The live kitchen site is [hearth-books.jonathan-beaulne123.workers.dev](https://hearth-books.jonathan-beaulne123.workers.dev/). Merge to `main` publishes it. Shared books are the household Supabase Postgres. This repository is the product.
 
@@ -57,21 +57,29 @@ Jonathan and Bianca each pick who they are on the phone. **Household** shows sha
 
 Invite the other person with a **three-word phrase**, a **join link**, or a **Hearth Pass** (the shared ledger, no personal rows). Personal is a filter, not a lock. Use two phones if you want that split to hold. Google is the household bridge after that: each person links their own account; tokens stay on that phone.
 
+## Dual Course
+
+Family-office books weigh **5**. Hercules and other interactables weigh **3**. Each update should improve the other course. If they conflict, the books win. Living law: [docs/STRATEGY.md](docs/STRATEGY.md).
+
 ## Docs
 
-- Current: [docs/README.md](docs/README.md)
-- Daily habit map: [docs/DAILY_HEARTH.md](docs/DAILY_HEARTH.md)
-- The Hercules Update: [docs/HERCULES.md](docs/HERCULES.md)
-- The Audit Office: [docs/AUDIT_OFFICE.md](docs/AUDIT_OFFICE.md)
-- Google household bridge: [docs/GOOGLE.md](docs/GOOGLE.md)
-- Vision: [docs/PRODUCT_ROADMAP.md](docs/PRODUCT_ROADMAP.md)
+- Index: [docs/README.md](docs/README.md)
+- Dual Course strategy: [docs/STRATEGY.md](docs/STRATEGY.md)
+- Hercules: [docs/HERCULES.md](docs/HERCULES.md)
+- Audit Office: [docs/AUDIT_OFFICE.md](docs/AUDIT_OFFICE.md)
 - Accounts Floor: [docs/ACCOUNTS.md](docs/ACCOUNTS.md)
-- History (not a bible): [docs/reference/](docs/reference/)
+- Google household bridge: [docs/GOOGLE.md](docs/GOOGLE.md)
+- Nostalgia (do not build from): [docs/nostalgia/](docs/nostalgia/)
+- Sheets-era history: [docs/reference/](docs/reference/)
 
 The Google Sheets / Apps Script prototype is archived as reference under `docs/reference/sheets-era/` and as git tag `sheets-v0.0.31`. It is not the working tree.
 
-## Out of scope until the core is boring
+## Gated until Auth + RLS (not “unthinkable”)
+
+Vision is unbounded under Dual Course. These remain **blocked as builds** until the hosted door locks (D-039):
 
 - Real privacy for personal rows (a hidden screen is still visible on a shared phone)
-- Bank import adapters
-- Live Google Sheets writes
+- Bank import adapters that write, Open Banking, Interac APIs, issued cards
+- Hosted receipt images and amount-bearing push on a shared device
+
+Live Google Sheets writes are gone with the prototype; Google is a household bridge and never posts money.

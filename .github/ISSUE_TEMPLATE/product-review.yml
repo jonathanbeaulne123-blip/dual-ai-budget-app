@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Use evidence from the current Git commit and the running Hearth app. Sheets-era docs under `docs/reference/` are history, not acceptance criteria.
+        Use evidence from the current Git commit and the running Hearth app. `docs/nostalgia/` and `docs/reference/` are history, not acceptance criteria. Dual Course: name a budget delta (weight 5) and an engagement delta (weight 3).
   - type: input
     id: goal
     attributes:

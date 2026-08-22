@@ -2,6 +2,12 @@
 
 Describe the household outcome, not just the files changed.
 
+## Dual Course
+
+- Budget delta (weight 5):
+- Engagement delta (weight 3):
+- If they conflict, the books win. Say which you cut.
+
 ## Scope
 
 - Risk level:
@@ -13,4 +19,4 @@ Describe the household outcome, not just the files changed.
 - [ ] `pnpm test` passes
 - [ ] Diff reviewed for unintended or sensitive files
 - [ ] Financial meaning unchanged unless Jonathan approved it
-- [ ] Living docs updated if behavior changed; `docs/reference/` left as history
+- [ ] Living docs updated if behavior changed; `docs/nostalgia/` and `docs/reference/` left as history

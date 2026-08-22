@@ -5,12 +5,23 @@
 | Risk | Examples | Default routing |
 |---|---|---|
 | Low | Copy, styling, docs | One implementer |
-| Medium | Dialog, pure calculation | Implementer plus a targeted review |
-| High | Financial math, migrations, splits | Implementer plus independent review |
+| Medium | Dialog, pure calculation, cosmetics that cannot post | Implementer plus a targeted review |
+| High | Financial math, migrations, splits, account kinds, statement figures | Implementer plus independent review |
 | Release | Switching daily use, hosted schema, auth/RLS | All reviewers, Jonathan approves |
+
+Dual Course (D-048): if Course A (books, weight 5) and Course B (engagement, weight 3) disagree, the books win. A companion change that can touch CAD meaning is High, not Medium.
 
 ## Required handoff
 
 Status, what was examined, verified findings, changes, verification, remaining uncertainty, decision needed.
 
-Sheets-era handoff notes: [reference/sheets-era/AI_HANDOFF.md](reference/sheets-era/AI_HANDOFF.md).
+Also name:
+
+- **Budget delta (5)** — which posting, rec, sit-down, account-literacy, split-honesty, Health, or statement primitive moved.
+- **Engagement delta (3)** — which Hercules line, unlock, chalkboard, wallet tile, ceremony, or Ask chip moved.
+
+If either delta is “none,” say why Dual Course still holds (for example GitHub 2FA is Course A with no mascot on purpose).
+
+Do not cite [nostalgia/](nostalgia/) or [reference/](reference/) as the plan.
+
+Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](reference/sheets-era/AI_HANDOFF.md).
