@@ -2,7 +2,7 @@
 
 A household budget for Jonathan and Bianca. Toronto time. CAD. Phone-first.
 
-The live kitchen site is [hearth-books.jonathan-beaulne123.workers.dev](https://hearth-books.jonathan-beaulne123.workers.dev/). Shared books are the household Supabase Postgres. This repository is the product.
+The live kitchen site is [hearth-books.jonathan-beaulne123.workers.dev](https://hearth-books.jonathan-beaulne123.workers.dev/). Merge to `main` publishes it. Shared books are the household Supabase Postgres. This repository is the product.
 
 ```text
 pnpm install

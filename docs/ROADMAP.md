@@ -27,7 +27,7 @@ Gates, not a pitch-deck month. Details in [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.m
 - GitHub 2FA (D-020)
 - Auth + RLS (stop `USING (true)`). Phrase-join already filters environment; PGlite is already per pill
 - Recurring preview on open, then the existing `postEntry` path
-- Calendar Google client ID in the Cloudflare build (`VITE_GOOGLE_CLIENT_ID`) so both people can connect from the kitchen site ([GOOGLE.md](GOOGLE.md))
+- Calendar Google client ID in the GitHub Actions **variable** `VITE_GOOGLE_CLIENT_ID` (and Cloudflare **Build** variables if Workers Builds stays on) so both people can connect from the kitchen site ([GOOGLE.md](GOOGLE.md))
 - JSON import of a sanitized Sheets export through the same commands
 - Ring 1 rituals in DAILY_HEARTH (kettle whistle, high-five, grocery list that opens Add)
 

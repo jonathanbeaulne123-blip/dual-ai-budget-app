@@ -20,9 +20,23 @@ Join links use that origin (`/?join=cedar-lantern-maple`). SPA routing uses Wran
 
 Dashboard: [hearth-books Worker](https://dash.cloudflare.com/7dfdfbba3053d8b857cbc359e0761c00/workers/services/view/hearth-books).
 
-Until this branch is merged to `main`, the Workers production branch is `cursor/hearth-rebuild-cfde`. After merge, point Cloudflare’s production branch at `main`.
+The kitchen URL publishes from GitHub **`main`** in one click: merge the pull request, or GitHub → Actions → **Cloudflare Workers** → **Run workflow**. That job runs `wrangler deploy`, which is production. `wrangler versions upload` only creates a preview hostname (`https://<version>-hearth-books.…workers.dev`) and does **not** move the live URL.
 
-Optional GitHub Actions deploy uses repo secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Never put the Supabase secret key or database password in Cloudflare or in `VITE_` vars. The publishable key is already a client fallback in the app.
+GitHub Actions needs repo secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Paste the 32-character account id `7dfdfbba3053d8b857cbc359e0761c00` and the API token with **no wrapping quotes**. The workflow strips quotes, whitespace, and a leading `Bearer ` if they sneak in; Wrangler otherwise fails with Authorization header 6111 and the kitchen stays stale. Missing secrets fail the job. A green check on a pull request is only a Vite build, not a live publish.
+
+Put the public Google web client ID in a GitHub Actions **variable** named `VITE_GOOGLE_CLIENT_ID` (and in Cloudflare **Build** variables if Workers Builds stays on). Vite bakes `VITE_*` at `pnpm build`. Runtime Worker bindings are too late. Never put a Google client secret, the Supabase secret key, or a database password in `VITE_` vars, Cloudflare, or GitHub.
+
+HTML documents are `Cache-Control: no-store`. The Worker runs first so an old shell cannot sit on the phone.
+
+If Cloudflare Workers Builds is still connected, production branch is `main` and the deploy command must be:
+
+```text
+rm -f dist/_redirects && npx wrangler deploy --assets=./dist
+```
+
+Not `wrangler versions upload`. Preview versions can exist; they are not the kitchen.
+
+Account id for this Worker: `7dfdfbba3053d8b857cbc359e0761c00`.
 
 ## Hosted household (Supabase)
 
@@ -36,7 +50,7 @@ Connect notes: database name is `postgres` (dashboard URIs that end in `/postgre
 
 ## Google household bridge (optional)
 
-OAuth client IDs are public. Put a Google Cloud **Web** client ID in `VITE_GOOGLE_CLIENT_ID` (see `.env.example` and [GOOGLE.md](GOOGLE.md)). Authorized JavaScript origins must include `http://localhost:5173` and the Cloudflare Workers URL.
+OAuth client IDs are public. Put a Google Cloud **Web** client ID in `VITE_GOOGLE_CLIENT_ID` (see `.env.example` and [GOOGLE.md](GOOGLE.md)). On the kitchen site that means a GitHub Actions **variable** of the same name so merge-time `pnpm build` bakes it. Authorized JavaScript origins must include `http://localhost:5173` and the Cloudflare Workers URL.
 
 Do not put a Google client secret in `VITE_` vars, Cloudflare, or the repo. Hearth uses Google Identity Services in the browser. Access tokens stay on this phone under `hearth:v1:<environment>:google:<memberId>` (older Calendar tokens under `:gcal:` are migrated once). Development and production tokens stay separate. Disconnecting deletes that token on this phone.
 

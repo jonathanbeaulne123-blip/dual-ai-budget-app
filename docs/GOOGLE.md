@@ -85,7 +85,10 @@ The client ID is public. Never put a client secret in `.env`, Cloudflare, GitHub
    - `https://hearth-books.jonathan-beaulne123.workers.dev`
 6. Copy the client ID into `.env` as `VITE_GOOGLE_CLIENT_ID=....apps.googleusercontent.com`.
 7. OAuth consent screen: add the scopes Hearth requests (openid, email, profile, Calendar, and any extras you enable). Add Jonathan and Bianca as **test users** while the app is in testing. Gmail and Contacts are sensitive; Google will error until those users are listed or the app is verified.
-8. For the live Worker, put the same `VITE_GOOGLE_CLIENT_ID` in the Cloudflare build variables (not a secret). Rebuild so the kitchen site receives it.
+8. For the live Worker, put the same `VITE_GOOGLE_CLIENT_ID` in **two** places (public client ID, never a client secret):
+   - GitHub → Settings → Secrets and variables → Actions → **Variables** (this is what `pnpm build` on merge sees)
+   - Cloudflare hearth-books → **Build** variables (only if Workers Builds is still connected; runtime Bindings / Variables are too late for Vite)
+9. Merge to `main` (or Actions → Cloudflare Workers → Run workflow). Vite bakes the id at build time. A phone hard-refresh if an old shell is still sitting there.
 
 Without a client ID, Calendar still works: month board, spotted bills, `.ics` with Toronto alarms.
 
