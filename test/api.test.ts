@@ -13,11 +13,12 @@ describe("Cloudflare static host pairing", () => {
   it("points Wrangler at dist/ so versions upload has an assets directory", () => {
     const config = JSON.parse(readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8")) as {
       main: string;
-      assets: { directory: string; not_found_handling: string };
+      assets: { directory: string; not_found_handling: string; run_worker_first?: string[] };
     };
     expect(config.main).toBe("workers/site.js");
     expect(config.assets.directory).toBe("./dist");
     expect(config.assets.not_found_handling).toBe("single-page-application");
+    expect(config.assets.run_worker_first).toEqual(["/", "/index.html"]);
   });
 
   it("does not ship a catch-all _redirects file that Cloudflare Workers rejects", () => {
@@ -36,5 +37,19 @@ describe("Cloudflare static host pairing", () => {
     expect(existsSync(fileURLToPath(new URL("../netlify/functions/hearth.ts", import.meta.url)))).toBe(false);
     const pkg = readFileSync(new URL("../package.json", import.meta.url), "utf8");
     expect(pkg).not.toContain("@netlify/blobs");
+  });
+
+  it("serves HTML with no-store so an old Worker shell cannot stick on the phone", () => {
+    const worker = readFileSync(new URL("../workers/site.js", import.meta.url), "utf8");
+    expect(worker).toContain("Cache-Control");
+    expect(worker).toContain("no-store");
+    expect(worker).toContain("env.ASSETS.fetch");
+  });
+
+  it("strips quotes from the Cloudflare account id before wrangler deploy", () => {
+    const workflow = readFileSync(new URL("../.github/workflows/pages.yml", import.meta.url), "utf8");
+    expect(workflow).toContain("tr -d");
+    expect(workflow).toContain("wrangler deploy");
+    expect(workflow).toMatch(/branches:\s*\[main\]/);
   });
 });
