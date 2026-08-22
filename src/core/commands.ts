@@ -35,6 +35,7 @@ import {
 } from "./google.ts";
 import { mergeTombstones } from "./sync.ts";
 import { parseVisibility, visibleForDuplicateScan } from "./visibility.ts";
+import { savedCentsFromContributions } from "./goals.ts";
 import type {
   AccountKind,
   Activity,
@@ -89,6 +90,7 @@ function commit(previous: Household, next: Household, action: string, summary: s
     at: next.lastCommittedAt,
     action,
     summary,
+    updatedAt: next.lastCommittedAt,
   };
   next.activity = [...next.activity, activity].slice(-200);
   return {
@@ -423,6 +425,7 @@ export function addCategory(household: Household, input: {
     if (!groupName) throw new ValidationError("Please name the new category group.");
     sortOrder += 10;
     const groupId = uniquePrefixedId(`CAT-${slug(groupName)}`, existingIds);
+    const at = nowIso();
     next.categories.push({
       id: groupId,
       parentId: null,
@@ -433,6 +436,8 @@ export function addCategory(household: Household, input: {
       incomeStability: null,
       active: true,
       sortOrder,
+      createdAt: at,
+      updatedAt: at,
     });
     existingIds.push(groupId);
     parentId = groupId;
@@ -441,6 +446,7 @@ export function addCategory(household: Household, input: {
   if (!parent) throw new ValidationError("Please choose a category group.");
   if (parent.transactionType !== input.type) throw new ValidationError("That group does not match Income/Expense.");
   const subId = uniquePrefixedId(`SUB-${slug(parent.name)}-${slug(name)}`, [...existingIds, parentId]);
+  const at = nowIso();
   const category: Category = {
     id: subId,
     parentId,
@@ -451,6 +457,8 @@ export function addCategory(household: Household, input: {
     incomeStability: input.type === "income" ? input.incomeStability ?? "fixed" : input.type === "expense" ? input.incomeStability ?? "variable" : null,
     active: true,
     sortOrder: sortOrder + 1,
+    createdAt: at,
+    updatedAt: at,
   };
   next.categories.push(category);
   const posted = [subId];
@@ -465,6 +473,7 @@ export function addCategory(household: Household, input: {
 }
 
 function seedBudgetPlan(household: Household, monthKey: MonthKey, category: Category, amountCents: number): BudgetPlan {
+  const at = nowIso();
   return {
     id: nextId(`BUD-${monthKey.replace("-", "")}-`, household.budgetPlans.map((plan) => plan.id), 3),
     monthKey,
@@ -473,6 +482,8 @@ function seedBudgetPlan(household: Household, monthKey: MonthKey, category: Cate
     essential: category.essential,
     incomeStability: category.incomeStability,
     active: true,
+    createdAt: at,
+    updatedAt: at,
   };
 }
 
@@ -483,8 +494,10 @@ export function setBudget(household: Household, input: { monthKey: MonthKey; sub
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const existing = next.budgetPlans.find((plan) => plan.monthKey === input.monthKey && plan.subcategoryId === input.subcategoryId && plan.active);
-  if (existing) existing.amountCents = amountCents;
-  else next.budgetPlans.push(seedBudgetPlan(next, input.monthKey, category, amountCents));
+  if (existing) {
+    existing.amountCents = amountCents;
+    existing.updatedAt = nowIso();
+  } else next.budgetPlans.push(seedBudgetPlan(next, input.monthKey, category, amountCents));
   return commit(previous, next, "Set Budget", `${category.name} ${input.monthKey} → $${(amountCents / 100).toFixed(2)}`, []);
 }
 
@@ -575,6 +588,7 @@ export function addAccount(household: Household, input: {
       bps: parseBps(input.groceryCashbackPercent, "Grocery cashback"),
     });
   }
+  const at = nowIso();
   const draft = shapeAccount({
     id,
     name,
@@ -598,6 +612,8 @@ export function addAccount(household: Household, input: {
       : null,
     savings: kind === "savings" ? { apyBps: parseBps(input.apyPercent, "APY") } : null,
     investment: kind === "investment" ? { vehicle: input.vehicle ?? "tfsa", markedValueCents: null, markedAt: null } : null,
+    createdAt: at,
+    updatedAt: at,
   }, next.accounts.length);
   next.accounts = [...next.accounts, draft];
   return commit(previous, next, "Add Account", `Opened ${draft.name}`, [id]);
@@ -645,6 +661,7 @@ export function updateAccount(household: Household, input: {
   if (account.kind === "investment" && input.vehicle) {
     account.investment = { ...(account.investment ?? { vehicle: input.vehicle, markedValueCents: null, markedAt: null }), vehicle: input.vehicle };
   }
+  account.updatedAt = nowIso();
   next.accounts = next.accounts.map((row) => row.id === account.id ? shapeAccount(account) : row);
   return commit(previous, next, "Account", `Updated ${account.name}`, []);
 }
@@ -658,6 +675,7 @@ export function archiveAccount(household: Household, accountId: string): CommitR
   const remaining = next.accounts.filter((row) => row.active && row.id !== accountId);
   if (remaining.length === 0) throw new ValidationError("Keep at least one active CAD account.");
   account.active = false;
+  account.updatedAt = nowIso();
   return commit(previous, next, "Account", `Archived ${account.name}`, []);
 }
 
@@ -682,6 +700,7 @@ export function markInvestmentValue(household: Household, input: {
     row.id === account.id
       ? shapeAccount({
         ...row,
+        updatedAt: nowIso(),
         investment: { vehicle: row.investment?.vehicle ?? "tfsa", markedValueCents, markedAt },
       })
       : row
@@ -822,6 +841,8 @@ export function addGoal(household: Household, input: {
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const id = nextId("GOAL-", next.goals.map((goal) => goal.id), 3);
+  const at = nowIso();
+  next.goalContributions = [...(next.goalContributions ?? [])];
   next.goals.push({
     id,
     name: input.name.trim(),
@@ -831,18 +852,35 @@ export function addGoal(household: Household, input: {
     shared: input.shared !== false,
     ownerMemberId: input.ownerMemberId ?? null,
     subcategoryId: input.subcategoryId ?? null,
+    createdAt: at,
+    updatedAt: at,
   });
   return commit(previous, next, "Add Goal", input.name.trim(), [id]);
 }
 
-export function contributeToGoal(household: Household, goalId: string, amount: string | number): CommitResult {
+export function contributeToGoal(household: Household, goalId: string, amount: string | number, input: ActorInput & { date?: string } = {}): CommitResult {
   const amountCents = parseAmount(amount, "Contribution");
+  const actor = resolveActor(household, input);
+  const date = input.date ? parseDate(input.date) : todayKey();
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const goal = next.goals.find((item) => item.id === goalId);
   if (!goal) throw new ValidationError("That goal no longer exists.");
-  goal.savedCents += amountCents;
-  return commit(previous, next, "Goal Progress", `${goal.name} +$${(amountCents / 100).toFixed(2)}`, [goalId]);
+  const at = nowIso();
+  next.goalContributions = [...(next.goalContributions ?? [])];
+  const id = nextId("GCON-", next.goalContributions.map((row) => row.id), 4);
+  next.goalContributions.push({
+    id,
+    goalId,
+    memberId: actor.createdBy,
+    amountCents,
+    date,
+    createdAt: at,
+    updatedAt: at,
+  });
+  goal.savedCents = savedCentsFromContributions(next.goalContributions, goal.id);
+  goal.updatedAt = at;
+  return commit(previous, next, "Goal Progress", `${goal.name} +$${(amountCents / 100).toFixed(2)}`, [id]);
 }
 
 export function addRecurrence(household: Household, input: {
@@ -1094,6 +1132,7 @@ export function undo(current: Household, token: UndoToken): Household {
       at: nowIso(),
       action: "Undo",
       summary: `Undid: ${token.label}`,
+      updatedAt: nowIso(),
     },
   ];
   restored.lastCommittedAt = nowIso();
@@ -1440,6 +1479,7 @@ export function emptyHousehold(environment: Household["environment"] = "developm
     kitchen: shapeKitchen(EMPTY_KITCHEN),
     google: shapeGoogle(EMPTY_GOOGLE),
     goals: [],
+    goalContributions: [],
     budgetPlans: [],
     activity: [],
     shiftSettings: DEFAULT_SHIFT_SETTINGS,

@@ -87,7 +87,7 @@ export function joinFromPastedSecret(raw: string, local: Household | null, membe
 
 export function hostingHint(cloudLive: boolean): string {
   if (cloudLive) {
-    return "Supabase Postgres is on. The three-word phrase opens the shared books.";
+    return "Supabase Postgres is on. The three-word phrase opens the shared snapshot. Treat hosted rows as disclosed until Auth.";
   }
   return "This phone keeps local Postgres books. Shared join needs the Supabase tables; a Hearth Pass still works as a backup.";
 }

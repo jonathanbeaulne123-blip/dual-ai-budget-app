@@ -40,9 +40,11 @@ Account id for this Worker: `7dfdfbba3053d8b857cbc359e0761c00`.
 
 ## Hosted household (Supabase)
 
-The books are PostgreSQL. On the phone that is PGlite. The shared copy is the Supabase project `tykhocwacaxwquhynkok` (`https://tykhocwacaxwquhynkok.supabase.co`, region us-east-1). Phrase-join reads `household_snapshots` by invite phrase **and** environment. The unique index is `(invite_phrase, environment)`. Joining the Development household from the Production pill must not load the other snapshot.
+The books engine is PostgreSQL in PGlite on the phone. The shared copy is a JSON snapshot in the Supabase project `tykhocwacaxwquhynkok` (`https://tykhocwacaxwquhynkok.supabase.co`, region us-east-1). Phrase-join reads `household_snapshots` by invite phrase **and** environment. The unique index is `(invite_phrase, environment)`. Joining the Development household from the Production pill must not load the other snapshot.
 
-The books tables are live: `households`, `household_snapshots`, journal tables, and trial-balance views answer on the publishable key. The API secret still cannot `CREATE TABLE`. RLS is still open (`USING (true)`) until Auth exists. The future membership policy is documented in [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) and must not be applied before Auth.
+The migration also creates journal tables and trial-balance views. The app does **not** write those hosted journal tables. It upserts `households` and `household_snapshots` only. Hosted views over journal tables would read zeroes. Treat hosted Postgres as snapshot transport until a later writer exists (D-052).
+
+RLS is still open (`USING (true) WITH CHECK (true)` for ALL, including DELETE) until Auth exists. The bundled publishable key can `GET`/`POST`/`PATCH`/`DELETE` every row; the three-word phrase is a filter in our client, not a control on the API. Treat anything published there as disclosed. The future membership policy is documented in [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) and must not be applied before Auth. The API secret still cannot `CREATE TABLE`.
 
 On the phone, PGlite uses `idb://hearth-books-development` or `idb://hearth-books-production`. The household snapshot in IndexedDB was already split by pill.
 

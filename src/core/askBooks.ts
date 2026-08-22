@@ -5,6 +5,7 @@ import { formatCad } from "./money.ts";
 import { accountRegister, compileHousehold } from "./journal.ts";
 import { categoryName } from "./ledgerView.ts";
 import { creditCardView, householdWallet } from "./accounts.ts";
+import { describeGoalContributors } from "./goals.ts";
 import type { Household } from "./types.ts";
 
 export type BooksAskRow = { label: string; value: string };
@@ -135,7 +136,9 @@ export function askBooks(household: Household, question: string, today: DateKey)
       kind: "answer",
       sentence: household.goals.map((goal) => {
         const pct = goal.targetCents ? Math.round((goal.savedCents / goal.targetCents) * 100) : 0;
-        return `${goal.name} is ${pct}% (${formatCad(goal.savedCents)} of ${formatCad(goal.targetCents)}).`;
+        const who = describeGoalContributors(household, goal.id);
+        const progress = `${goal.name} is ${pct}% (${formatCad(goal.savedCents)} of ${formatCad(goal.targetCents)})`;
+        return who ? `${progress}. ${who}.` : `${progress}.`;
       }).join(" "),
       rows: household.goals.map((goal) => ({
         label: goal.name,
