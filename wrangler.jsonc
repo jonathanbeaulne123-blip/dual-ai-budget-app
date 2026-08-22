@@ -1,6 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "hearth-books",
+  "account_id": "7dfdfbba3053d8b857cbc359e0761c00",
   "main": "workers/site.js",
   "compatibility_date": "2026-08-21",
   "workers_dev": true,

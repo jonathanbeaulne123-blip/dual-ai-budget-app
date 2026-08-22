@@ -15,9 +15,11 @@ describe("Cloudflare static host pairing", () => {
 
   it("points Wrangler at dist/ and runs the Worker before HTML assets", () => {
     const config = JSON.parse(readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8")) as {
+      account_id: string;
       main: string;
       assets: { directory: string; not_found_handling: string; run_worker_first?: unknown };
     };
+    expect(config.account_id).toBe("7dfdfbba3053d8b857cbc359e0761c00");
     expect(config.main).toBe("workers/site.js");
     expect(config.assets.directory).toBe("./dist");
     expect(config.assets.not_found_handling).toBe("single-page-application");
@@ -60,27 +62,45 @@ describe("Cloudflare static host pairing", () => {
     expect(workflow).toContain("VITE_GOOGLE_CLIENT_ID");
     expect(workflow).toContain("::error::");
     expect(workflow).toContain("workflow_dispatch");
+    expect(workflow).toContain("actions/checkout@v5");
+    expect(workflow).toContain("pnpm/action-setup@v6");
+    expect(workflow).toContain("actions/setup-node@v5");
     expect(workflow).not.toMatch(/No Cloudflare API secrets[\s\S]*exit 0/);
+    const ci = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+    expect(ci).toContain("actions/checkout@v5");
+    expect(ci).toContain("pnpm/action-setup@v6");
+    expect(ci).toContain("actions/setup-node@v5");
   });
 
-  it("strips wrapping quotes and Bearer from Cloudflare secrets before Wrangler", () => {
-    const out = execFileSync(
-      "bash",
-      [
-        "-c",
-        '. scripts/sanitize-cloudflare-env.sh && printf %s "$CLOUDFLARE_API_TOKEN|$CLOUDFLARE_ACCOUNT_ID|$VITE_GOOGLE_CLIENT_ID"',
-      ],
-      {
-        cwd: root,
-        encoding: "utf8",
-        env: {
-          ...process.env,
-          CLOUDFLARE_API_TOKEN: '"Bearer abc_Token-123"',
-          CLOUDFLARE_ACCOUNT_ID: "'7dfdfbba3053d8b857cbc359e0761c00'",
-          VITE_GOOGLE_CLIENT_ID: '  "123.apps.googleusercontent.com"  ',
+  it("strips wrapping quotes, Bearer, BOM, and newlines so Wrangler can authenticate", () => {
+    const run = (env: Record<string, string>) =>
+      execFileSync(
+        "bash",
+        [
+          "-c",
+          '. scripts/sanitize-cloudflare-env.sh && printf %s "$CLOUDFLARE_API_TOKEN|$CLOUDFLARE_ACCOUNT_ID|$VITE_GOOGLE_CLIENT_ID"',
+        ],
+        {
+          cwd: root,
+          encoding: "utf8",
+          env: { ...process.env, ...env },
         },
-      },
-    );
-    expect(out).toBe("abc_Token-123|7dfdfbba3053d8b857cbc359e0761c00|123.apps.googleusercontent.com");
+      );
+
+    expect(
+      run({
+        CLOUDFLARE_API_TOKEN: '"Bearer abc_Token-123"',
+        CLOUDFLARE_ACCOUNT_ID: "'7dfdfbba3053d8b857cbc359e0761c00'",
+        VITE_GOOGLE_CLIENT_ID: '  "123.apps.googleusercontent.com"  ',
+      }),
+    ).toBe("abc_Token-123|7dfdfbba3053d8b857cbc359e0761c00|123.apps.googleusercontent.com");
+
+    expect(
+      run({
+        CLOUDFLARE_API_TOKEN: '\ufeff“\nBearer cfut_abc-123\n”',
+        CLOUDFLARE_ACCOUNT_ID: "&quot;7dfdfbba3053d8b857cbc359e0761c00&quot;",
+        VITE_GOOGLE_CLIENT_ID: "",
+      }),
+    ).toBe("cfut_abc-123|7dfdfbba3053d8b857cbc359e0761c00|");
   });
 });

@@ -17,7 +17,7 @@ Do not treat a preview hostname or a green pull-request build as the live site. 
 
 Once (dashboard, not git):
 
-- GitHub → Settings → Secrets: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` with **no wrapping quotes**.
+- GitHub → Settings → Secrets: `CLOUDFLARE_API_TOKEN` with **no wrapping quotes** (the account id is in `wrangler.jsonc`).
 - GitHub → Settings → Variables: `VITE_GOOGLE_CLIENT_ID` = the public Google web client ID (never a client secret).
 - Optional: Cloudflare hearth-books Settings → deploy command `rm -f dist/_redirects && npx wrangler deploy --assets=./dist` if Workers Builds stays connected.
 
