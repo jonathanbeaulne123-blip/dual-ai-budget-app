@@ -20,10 +20,11 @@ The in-memory model is still the source of truth while a command runs: clone the
 ## Layers
 
 1. **Catalog** — members, accounts, categories, shift settings.
-2. **Commands** — `postEntry`, `postTransfer`, `postShift`, `addCategory`, budget, goals, recurrences (`addRecurrence`, `adoptRhythm`, `postOneRecurrence`, `postDueRecurrences`), plus cosmetic `scribbleChalk` / `equipCosmetic` (D-042). Each clones state, writes, refreshes duplicate flags, appends activity, and returns an undo snapshot. Cosmetics never post money.
+2. **Commands** — `postEntry`, `postTransfer`, `postShift`, `addCategory`, budget, goals, recurrences (`addRecurrence`, `adoptRhythm`, `postOneRecurrence`, `postDueRecurrences`), cosmetic `scribbleChalk` / `equipCosmetic` (D-042), and Google-bridge `linkGoogleIdentity` / `setGoogleServices` (D-043). Each clones state, writes, refreshes duplicate flags, appends activity, and returns an undo snapshot. Cosmetics and Google never post money.
 3. **Books** — `compileHousehold` turns each money document into balanced debit/credit lines. PGlite stores them. Health Check refuses a household whose trial balance or accounting equation is off.
 4. **Projections** — `monthSummary`, `weekSummary`, `buildDashboard`, `runHealthCheck`, `sitDownPreview`, `trialBalance`, `detectRhythms`, `buildMonthBoard`, `askBooks`, `describeCompanion`.
-5. **UI** — Home (Ember, chalkboard, net, pulse), Calendar, Add, Plan, Books (register / journal / trial balance / accounts / Ask), More (health, recent undo, invite).
+5. **Google engine** — `withGoogle` is a call-when-needed bridge (identity, Calendar, optional suite). Tokens stay on the phone. The shared snapshot only stores who is linked. Sensitive household actions can step-up through Google after a member is linked.
+6. **UI** — Home (Ember, chalkboard, net, pulse), Calendar, Add, Plan, Books (register / journal / trial balance / accounts / Ask), More (health, recent undo, invite, Google household bridge).
 
 ## Data-model rules
 
@@ -37,6 +38,7 @@ The in-memory model is still the source of truth while a command runs: clone the
 - Recurring definitions stay separate from posted rows. The Calendar tab projects them onto a Toronto month, spots repeating ledger rows (`detectRhythms`), and can write reminders to Google or an `.ics` file. Posting due items still uses the same `postEntry` path after confirm. Google and ICS never write the books.
 - Goals are data. Shared goals appear on Home. Personal goals are a filter only — not a privacy boundary.
 - Kitchen cosmetics (`kitchen.chalkboard`, Ember) are shared household data. They merge and tombstone like recurrences. They are not journal lines.
+- Google links (`google.links`) are shared household data: who is signed in, not the token. Tokens live in `localStorage` per environment and member. Extra Google services are household-wide opt-ins.
 
 ## Shift boundary
 

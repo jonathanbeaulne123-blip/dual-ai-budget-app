@@ -34,13 +34,15 @@ On the phone, PGlite uses `idb://hearth-books-development` or `idb://hearth-book
 
 Connect notes: database name is `postgres` (dashboard URIs that end in `/postgresz` are a typo). `db.tykhocwacaxwquhynkok.supabase.co` is IPv6-only. Schema apply uses the session pooler `aws-0-us-east-1.pooler.supabase.com:5432` as `postgres.tykhocwacaxwquhynkok`. The phone app never receives that password.
 
-## Google Calendar (optional)
+## Google household bridge (optional)
 
-OAuth client IDs are public. Put a Google Cloud **Web** client ID in `VITE_GOOGLE_CLIENT_ID` (see `.env.example`). Authorized JavaScript origins must include `http://localhost:5173` and the Cloudflare Workers URL.
+OAuth client IDs are public. Put a Google Cloud **Web** client ID in `VITE_GOOGLE_CLIENT_ID` (see `.env.example` and [GOOGLE.md](GOOGLE.md)). Authorized JavaScript origins must include `http://localhost:5173` and the Cloudflare Workers URL.
 
-Do not put a Google client secret in `VITE_` vars, Cloudflare, or the repo. Hearth uses Google Identity Services in the browser and stores access tokens only in `localStorage` under `hearth:v1:<environment>:gcal:<memberId>`. Development and production tokens stay separate. Disconnecting a person deletes that token on this phone.
+Do not put a Google client secret in `VITE_` vars, Cloudflare, or the repo. Hearth uses Google Identity Services in the browser. Access tokens stay on this phone under `hearth:v1:<environment>:google:<memberId>` (older Calendar tokens under `:gcal:` are migrated once). Development and production tokens stay separate. Disconnecting deletes that token on this phone.
 
-Without a client ID, Calendar still works: the month board, ledger-spotted bills, and **Download .ics with alarms** (America/Toronto, 24-hour and morning-of VALARM). Google never posts money.
+The shared household snapshot stores **who is linked** (email, Google subject, granted scopes), not the token. Default Google services are sign-in and Calendar. Extra suite access is opt-in on More → Google household bridge.
+
+Without a client ID, Calendar still works: the month board, ledger-spotted bills, and **Download .ics with alarms** (America/Toronto, 24-hour and morning-of VALARM). Google never posts money. The three-word phrase still joins a phone.
 
 ## Sheets
 

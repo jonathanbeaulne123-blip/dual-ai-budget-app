@@ -160,6 +160,26 @@ export type HouseholdKitchen = {
   companion: HouseholdCompanion;
 };
 
+export type GoogleService = "identity" | "calendar" | "drive" | "contacts" | "gmail" | "sheets";
+
+export type GoogleBridgeLink = {
+  memberId: string;
+  email: string;
+  subject: string;
+  displayName: string;
+  linkedAt: string;
+  lastConfirmedAt: string;
+  grantedScopes: string[];
+  updatedAt: string;
+  active: boolean;
+};
+
+export type HouseholdGoogle = {
+  links: GoogleBridgeLink[];
+  enabledServices: GoogleService[];
+  updatedAt: string;
+};
+
 export type Goal = {
   id: string;
   name: string;
@@ -207,6 +227,7 @@ export type Household = {
   recurrences: Recurrence[];
   calendar: HouseholdCalendar;
   kitchen: HouseholdKitchen;
+  google: HouseholdGoogle;
   goals: Goal[];
   budgetPlans: BudgetPlan[];
   activity: Activity[];
@@ -229,6 +250,7 @@ export type SharedEnvelope = {
   recurrences: Recurrence[];
   calendar: HouseholdCalendar;
   kitchen: HouseholdKitchen;
+  google: HouseholdGoogle;
   goals: Goal[];
   budgetPlans: BudgetPlan[];
   activity: Activity[];

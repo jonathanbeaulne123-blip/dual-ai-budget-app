@@ -12,10 +12,13 @@ import {
   contributeToGoal,
   createWriteQueue,
   defaultVisibilityForView,
+  findActiveGoogleLinkByEmail,
+  findActiveGoogleLinkBySubject,
   formatCad,
   formatDateLabel,
   householdForView,
   jointSplit,
+  memberNeedsGoogleStepUp,
   monthKeyFromDateKey,
   parseAmount,
   percentSplits,
@@ -29,6 +32,7 @@ import {
   shiftSettingsFingerprint,
   sitDownPreview,
   todayKey,
+  touchGoogleConfirmation,
   touchVisitSpark,
   undo,
   voidPostedMoney,
@@ -50,6 +54,14 @@ import { BooksPage } from "./Books.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
 import { CalendarPage } from "./Calendar.tsx";
 import { DailyHearth } from "./DailyHearth.tsx";
+import { GoogleBridgeCard } from "./GoogleBridge.tsx";
+import {
+  adoptGoogleSession,
+  confirmWithGoogleIfLinked,
+  connectGoogle,
+  disconnectGoogle,
+  googleConfigured,
+} from "./google/index.ts";
 import { syncHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
 
 type Tab = "home" | "plan" | "calendar" | "ledger" | "more";
@@ -237,6 +249,22 @@ export function App() {
     return enqueueWrite(() => commitHousehold(next, token, actorId));
   }
 
+  async function gateWithGoogle(options?: { record?: boolean }) {
+    const current = householdRef.current;
+    const who = session?.memberId;
+    if (!current || !who) return;
+    const result = await confirmWithGoogleIfLinked({
+      household: current,
+      environment,
+      memberId: who,
+    });
+    if (result.kind === "confirmed" && options?.record !== false) {
+      const latest = householdRef.current ?? current;
+      const touched = touchGoogleConfirmation(latest, who);
+      await commitHousehold(touched.household, touched.undo);
+    }
+  }
+
   function applyUndo(token: UndoToken) {
     return enqueueWrite(async () => {
       const current = householdRef.current;
@@ -335,6 +363,51 @@ export function App() {
           <p className="kicker">Who is using this phone?</p>
           <h1>Choose yourself</h1>
           <p>Household numbers are shared. Personal rows stay on your ledger. Use your own phone if you want that split to hold.</p>
+          {googleConfigured() && (
+            <button
+              className="ghost"
+              style={{ width: "100%", marginBottom: 8 }}
+              disabled={busy}
+              onClick={() => {
+                void (async () => {
+                  setBusy(true);
+                  setError("");
+                  try {
+                    const session = await connectGoogle({
+                      environment,
+                      memberId: "__welcome__",
+                      services: ["identity"],
+                      selectAccount: true,
+                    });
+                    const link = findActiveGoogleLinkByEmail(household, session.identity.email)
+                      || findActiveGoogleLinkBySubject(household, session.identity.subject);
+                    if (!link) {
+                      disconnectGoogle(environment, "__welcome__");
+                      setError("That Google account is not linked to anyone here yet. Choose yourself, then connect in More → Google household bridge.");
+                      return;
+                    }
+                    adoptGoogleSession(environment, "__welcome__", link.memberId);
+                    rememberSession({ memberId: link.memberId, view: "household" });
+                    if (household.linked) {
+                      try {
+                        const pulled = await joinSharedHousehold(household.inviteCode, link.memberId, household.environment);
+                        await persist(pulled, undefined, link.memberId);
+                      } catch {
+                        // Catalog is enough to start; Sync now can retry.
+                      }
+                    }
+                  } catch (caught) {
+                    setError(caught instanceof Error ? caught.message : String(caught));
+                  } finally {
+                    setBusy(false);
+                  }
+                })();
+              }}
+            >
+              Continue with Google
+            </button>
+          )}
+          {error && <p className="danger">{error}</p>}
           {household.members.filter((member) => member.active).map((member) => (
             <button
               key={member.id}
@@ -365,6 +438,9 @@ export function App() {
 
   const ledger = household;
   const actorId = session.memberId;
+  const googleStepUpExtra = googleConfigured() && memberNeedsGoogleStepUp(household, session.memberId)
+    ? "Because your Google account is linked, Google will ask you to confirm it is you first."
+    : undefined;
   const categories = ledger.categories.filter((category) => category.recordType === "category" && category.active && category.transactionType === (mode === "income" ? "income" : "expense"));
   const shiftPreview = calcShiftAmounts({
     salesCents: Math.round(Number(form.sales || 0) * 100) || 0,
@@ -538,7 +614,7 @@ export function App() {
                   <span className={item.direction === "out" ? "" : "muted"}>{formatCad(item.amountCents)}</span>
                 </div>
               ))}
-              <p className="muted">Open Calendar for the month, Google overlays, and bill reminders.</p>
+              <p className="muted">Open Calendar for the month, Google overlays, and bill reminders. Link Google in More so both phones know who is who.</p>
             </section>
           )}
           <section className="card">
@@ -653,6 +729,15 @@ export function App() {
             onError={setError}
             onBusy={setBusy}
             onSyncState={setSyncState}
+            onBeforeSensitive={() => gateWithGoogle({ record: true })}
+          />
+          <GoogleBridgeCard
+            household={household}
+            environment={environment}
+            memberId={session.memberId}
+            busy={busy}
+            onCommand={(fn) => { void run(fn); }}
+            onError={setError}
           />
           <section className="card">
             <header><h2>This phone</h2></header>
@@ -859,19 +944,31 @@ export function App() {
         <ConfirmSheet
           title="Reset this ledger?"
           body={`This deletes the ${environment} ledger on this phone only. Bianca’s phone and the cloud copy stay until someone publishes over them. This cannot be undone here.`}
+          extra={googleStepUpExtra}
           confirmLabel="Reset this phone"
           danger
           busy={busy}
           onCancel={() => setGuard(null)}
           onConfirm={() => {
-            void clearHousehold(environment).then(() => {
-              clearSession(environment);
-              setSession(null);
-              setHousehold(null);
-              setHistory([]);
-              setToast(null);
-              setGuard(null);
-            });
+            void (async () => {
+              setBusy(true);
+              try {
+                await gateWithGoogle({ record: false });
+                household.members.forEach((member) => disconnectGoogle(environment, member.id));
+                disconnectGoogle(environment, "__welcome__");
+                await clearHousehold(environment);
+                clearSession(environment);
+                setSession(null);
+                setHousehold(null);
+                setHistory([]);
+                setToast(null);
+                setGuard(null);
+              } catch (caught) {
+                setError(caught instanceof Error ? caught.message : String(caught));
+              } finally {
+                setBusy(false);
+              }
+            })();
           }}
         />
       )}
@@ -879,14 +976,26 @@ export function App() {
         <ConfirmSheet
           title={`Switch to ${guard.next}?`}
           body={`${environment} stays saved on this phone. ${guard.next === "production" ? "Production starts empty until you open or join a household there." : "Development is the usual working ledger."} This is not a cloud switch.`}
+          extra={googleStepUpExtra}
           confirmLabel={`Open ${guard.next}`}
           busy={busy}
           onCancel={() => setGuard(null)}
           onConfirm={() => {
-            setEnvironment(guard.next);
-            setHistory([]);
-            setToast(null);
-            setGuard(null);
+            const next = guard.next;
+            void (async () => {
+              setBusy(true);
+              try {
+                await gateWithGoogle({ record: false });
+                setEnvironment(next);
+                setHistory([]);
+                setToast(null);
+                setGuard(null);
+              } catch (caught) {
+                setError(caught instanceof Error ? caught.message : String(caught));
+              } finally {
+                setBusy(false);
+              }
+            })();
           }}
         />
       )}
@@ -894,13 +1003,24 @@ export function App() {
         <ConfirmSheet
           title="Reload demo data?"
           body={`This replaces the ${environment} ledger on this phone with fictional CAD. If you then tap Sync to the cloud, that demo can overwrite the shared household.`}
+          extra={googleStepUpExtra}
           confirmLabel="Load demo data"
           danger
           busy={busy}
           onCancel={() => setGuard(null)}
           onConfirm={() => {
-            setGuard(null);
-            void persist(seedDemoHousehold({ today, environment }));
+            void (async () => {
+              setBusy(true);
+              try {
+                await gateWithGoogle({ record: false });
+                setGuard(null);
+                await persist(seedDemoHousehold({ today, environment }));
+              } catch (caught) {
+                setError(caught instanceof Error ? caught.message : String(caught));
+              } finally {
+                setBusy(false);
+              }
+            })();
           }}
         />
       )}
@@ -975,6 +1095,7 @@ export function App() {
               { label: "Plan", run: () => setTab("plan") },
               { label: "Books", run: () => setTab("ledger") },
               { label: "Health", run: () => setTab("more") },
+              { label: "Google household bridge", run: () => setTab("more") },
               { label: "Export", run: () => downloadJson(household) },
             ].map((item) => (
               <button key={item.label} onClick={() => { item.run(); setCommandOpen(false); }}>{item.label}</button>

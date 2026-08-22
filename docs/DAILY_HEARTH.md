@@ -16,6 +16,8 @@ Customers are screaming for a household budget that covers all bases: **safe, re
 
 **Law:** Commands remain the money trust boundary. Chalkboard scribbles, Ember the companion, visit sparks, and wardrobe unlocks never call `postEntry`. Mood is computed from household facts. “Punishment” is a face and a sentence, never a fake fee, never a locked wallet, never public shame. Bianca is the buyer.
 
+**Law:** Google is the household bridge, not a second ledger. Tokens stay on this phone. The shared snapshot only stores who is linked. Google never posts money.
+
 **Law:** We do not seek banking approval in this chapter. We make the code and the data door impeccable so that when a bank, Interac, or a card BIN asks, the answer is already yes.
 
 ---
@@ -46,6 +48,7 @@ Status: **shipping in the working tree.** Home grows a kitchen; it is not a seve
 | Goal add | Typed contribution through `contributeToGoal` | Hardcoded +$50 |
 | PGlite per env | `idb://hearth-books-development` vs `-production` | One IndexedDB journal for both pills |
 | Phrase + environment | Join reads `invite_phrase` **and** `environment` | Same phrase, two clouds, last-write-wins |
+| Google household bridge | Link / confirm / Calendar; extra suite is opt-in | A bank, a daemon, a token in Supabase |
 
 ### Ember’s wardrobe (earned, not bought)
 
@@ -129,6 +132,7 @@ Gamification does not pause accounting. This list only grows.
 | Command kernel, undo, confirm | Shipped | D-025, D-026, D-036 |
 | Double-entry PGlite + trial balance | Shipped | D-033 |
 | Calendar / rhythms / ICS / optional Google | Shipped | D-040 |
+| Google household bridge | This ring | D-043. Tokens on-phone; `withGoogle` on demand |
 | PGlite database per environment pill | This ring | Snapshots were already split; the journal name was not |
 | Phrase-join filters environment | This ring | Unique index already `(invite_phrase, environment)` |
 | Sit-down shows CAD | This ring | |
@@ -150,6 +154,7 @@ Gamification does not pause accounting. This list only grows.
 5. Read-only SQL cannot `INSERT`/`UPDATE`/`DELETE`. Conversational Ask uses projections first.
 6. Cosmetics and chalkboard tombstone like any other shared row so a wipe on one phone stays dead on the other.
 7. No dark patterns: no fake overdue fees, no “pay to keep Ember alive,” no streak that breaks if you do not open the app on vacation. Posting streaks are derived from the ledger.
+8. Google tokens never leave this phone. Hosted snapshots may list who is linked. Google never posts money.
 
 ---
 

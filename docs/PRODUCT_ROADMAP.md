@@ -26,6 +26,7 @@ What we already own, that those apps fake:
 | Tips | `calcShiftAmounts` is the only math; preview = post (D-028) | Variable income is not a memo field |
 | Books | PGlite Postgres 18 journal; trial balance; Health refuses imbalance (D-033) | Debit = credit is a constraint, not a chart |
 | Two phones | Phrase + join link + Hearth Pass; merge-by-id; tombstones (D-032, D-036) | Concurrent adds do not wipe; deletes stay dead |
+| Google bridge | `withGoogle` on demand; shared links; tokens on-phone (D-043) | Identity and calendars without a bank feed |
 | Time | `America/Toronto` civil dates; Sunday weeks (D-007) | DST does not invent a week |
 
 The rival memo skipped the buyer. **Bianca** is the buyer. If she will not add a grocery split from a phone, there is no family office. Jonathan’s shifts are the hard income problem. The books are the hard trust problem. All three have to stay true as we scale.
@@ -138,7 +139,7 @@ Until 0.1 is true, **no bank, no Interac, no issued card.** That is the adult se
 | Sit-down dollars | `sitDownPreview` shows CAD, not jargon. Copy last month, trim overspend, commit through existing sit-down command. | Plan tab: numbers a human would say out loud |
 | Goals | Kill hardcoded +$50. `contributeToGoal` is already a command. Home shows real progress. | Seed $340 / $1600 remains data, not a constant |
 | Recurring auto-post | Calendar shows due items and spotted bills. Mark paid / Post due recurring confirm, then `postOneRecurrence` / `postDueRecurrences` → `postEntry`. | Calendar and More never surprise-write |
-| Calendar reminders | Optional Google overlay for both members; `.ics` always. Tokens on-device. D-040. | Google event exists; ledger row does not until confirm |
+| Calendar reminders | Optional Google overlay for both members; `.ics` always. Tokens on-device. D-040, D-043. | Google event exists; ledger row does not until confirm |
 | Sheets inheritance | Sanitized JSON export from the prototype mapped through `postEntry` / `postShift` / `postTransfer`. Historical blank Shift IDs stay unmigrated (already decided). | Health clean after import; duplicates flagged, not auto-merged |
 | Confirm + undo | Already shipped (D-036). Keep it as law for every new writer. | AI_QA.md smoke pass stays green |
 

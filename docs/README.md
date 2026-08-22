@@ -11,6 +11,7 @@ Hearth is the product. These files are current. Anything under [reference/](refe
 | [DAILY_HEARTH.md](DAILY_HEARTH.md) | Ever-expanding daily-habit + ledger-spine map |
 | [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md) | Kitchen ledger → household family office (how and when) |
 | [ENVIRONMENTS.md](ENVIRONMENTS.md) | Development vs production snapshots, website, hosted books |
+| [GOOGLE.md](GOOGLE.md) | Google household bridge: link, confirm, calendar, optional suite |
 | [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md) | How this private repo is used |
 | [AI_HANDOFF.md](AI_HANDOFF.md) | Risk routing and handoff shape |
 | [reference/](reference/) | Old roadmaps, READMEs, decisions, Sheets-era context |

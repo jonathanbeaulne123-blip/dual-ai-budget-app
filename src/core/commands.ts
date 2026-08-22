@@ -21,6 +21,15 @@ import {
 import { sitDownPreview } from "./insights.ts";
 import { COSMETIC_BY_ID, isCosmeticUnlocked } from "./companion.ts";
 import { EMPTY_KITCHEN, MAX_CHALK_CHARS, MAX_CHALK_NOTES, MAX_COMPANION_NAME, isCosmeticSlot, shapeKitchen } from "./kitchen.ts";
+import {
+  EMPTY_GOOGLE,
+  findActiveGoogleLink,
+  findActiveGoogleLinkByEmail,
+  findActiveGoogleLinkBySubject,
+  googleLinkTombstoneId,
+  shapeGoogle,
+  uniqueGoogleServices,
+} from "./google.ts";
 import { mergeTombstones } from "./sync.ts";
 import { parseVisibility, visibleForDuplicateScan } from "./visibility.ts";
 import type {
@@ -830,6 +839,96 @@ export function equipCosmetic(household: Household, input: {
   return commit(previous, next, "Companion", `Equipped ${label}`, []);
 }
 
+export function linkGoogleIdentity(household: Household, input: {
+  memberId: string;
+  email: string;
+  subject: string;
+  displayName?: string;
+  grantedScopes?: string[];
+}): CommitResult {
+  requireMember(household, input.memberId);
+  const email = (input.email ?? "").trim().toLowerCase();
+  if (!email || !email.includes("@")) throw new ValidationError("Google did not share an email.");
+  const subject = (input.subject ?? "").trim();
+  const claimedEmail = findActiveGoogleLinkByEmail(household, email);
+  if (claimedEmail && claimedEmail.memberId !== input.memberId) {
+    throw new ValidationError("That Google account is already linked to another person in this household.");
+  }
+  if (subject) {
+    const claimedSubject = findActiveGoogleLinkBySubject(household, subject);
+    if (claimedSubject && claimedSubject.memberId !== input.memberId) {
+      throw new ValidationError("That Google account is already linked to another person in this household.");
+    }
+  }
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.google = shapeGoogle(next.google);
+  const existing = findActiveGoogleLink(next, input.memberId) ?? next.google.links.find((link) => link.memberId === input.memberId);
+  const at = nowIso();
+  const link = {
+    memberId: input.memberId,
+    email,
+    subject: subject || existing?.subject || "",
+    displayName: (input.displayName ?? existing?.displayName ?? "").trim(),
+    linkedAt: existing?.active ? existing.linkedAt : at,
+    lastConfirmedAt: at,
+    grantedScopes: input.grantedScopes ?? existing?.grantedScopes ?? [],
+    updatedAt: at,
+    active: true,
+  };
+  next.google = shapeGoogle({
+    ...next.google,
+    links: [...next.google.links.filter((item) => item.memberId !== input.memberId), link],
+  });
+  next.tombstones = next.tombstones.filter((tombstone) => tombstone.id !== googleLinkTombstoneId(input.memberId));
+  const member = requireMember(next, input.memberId);
+  return commit(previous, next, "Google", `Linked ${member.name} to ${email}`, []);
+}
+
+export function unlinkGoogleIdentity(household: Household, memberId: string): CommitResult {
+  requireMember(household, memberId);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.google = shapeGoogle(next.google);
+  const link = findActiveGoogleLink(next, memberId);
+  if (!link) throw new ValidationError("That person is not linked to Google.");
+  const at = nowIso();
+  next.google = shapeGoogle({
+    ...next.google,
+    links: next.google.links.filter((item) => item.memberId !== memberId),
+  });
+  next.tombstones = mergeTombstones(next.tombstones, [{ id: googleLinkTombstoneId(memberId), deletedAt: at }]);
+  const member = requireMember(next, memberId);
+  return commit(previous, next, "Google", `Unlinked ${member.name} from Google`, []);
+}
+
+export function touchGoogleConfirmation(household: Household, memberId: string): CommitResult {
+  requireMember(household, memberId);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.google = shapeGoogle(next.google);
+  const link = next.google.links.find((item) => item.memberId === memberId && item.active);
+  if (!link) throw new ValidationError("Link Google before asking it to confirm.");
+  const at = nowIso();
+  link.lastConfirmedAt = at;
+  link.updatedAt = at;
+  next.google = shapeGoogle(next.google);
+  return commit(previous, next, "Google", "Confirmed with Google", []);
+}
+
+export function setGoogleServices(household: Household, services: Iterable<string>): CommitResult {
+  const enabled = uniqueGoogleServices(services);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.google = shapeGoogle({
+    ...next.google,
+    enabledServices: enabled,
+    updatedAt: nowIso(),
+  });
+  const labels = enabled.filter((service) => service !== "identity").join(", ") || "sign-in only";
+  return commit(previous, next, "Google", `Google services: ${labels}`, []);
+}
+
 export function emptyHousehold(environment: Household["environment"] = "development"): Household {
   return {
     version: 1,
@@ -850,6 +949,7 @@ export function emptyHousehold(environment: Household["environment"] = "developm
     recurrences: [],
     calendar: { ...EMPTY_CALENDAR },
     kitchen: shapeKitchen(EMPTY_KITCHEN),
+    google: shapeGoogle(EMPTY_GOOGLE),
     goals: [],
     budgetPlans: [],
     activity: [],

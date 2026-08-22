@@ -146,6 +146,7 @@ export function PairingCard({
   onError,
   onBusy,
   onSyncState,
+  onBeforeSensitive,
 }: {
   household: Household;
   memberId: string;
@@ -158,6 +159,7 @@ export function PairingCard({
   onError: (value: string) => void;
   onBusy: (value: boolean) => void;
   onSyncState: (value: "idle" | "syncing" | "synced" | "error") => void;
+  onBeforeSensitive?: () => Promise<void>;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [cloudLive, setCloudLive] = useState(false);
@@ -168,6 +170,7 @@ export function PairingCard({
     onBusy(true);
     onError("");
     try {
+      await onBeforeSensitive?.();
       const created = household.linked
         ? await pushSharedHousehold(household, memberId)
         : await createSharedHousehold(household, memberId);
@@ -222,6 +225,7 @@ export function PairingCard({
             onBusy(true);
             onError("");
             try {
+              await onBeforeSensitive?.();
               const raw = inviteInput.trim();
               if (raw.startsWith("{")) {
                 await onHousehold(joinFromPastedSecret(raw, household, memberId));
@@ -256,6 +260,7 @@ export function PairingCard({
             onBusy(true);
             onError("");
             try {
+              await onBeforeSensitive?.();
               await onHousehold(applyHearthPass(household, parseHearthPass(text), memberId));
             } catch (caught) {
               onError(caught instanceof Error ? caught.message : String(caught));
@@ -275,6 +280,7 @@ export function PairingCard({
               onBusy(true);
               onError("");
               try {
+                await onBeforeSensitive?.();
                 const merged = await reconcileHousehold(household, memberId);
                 const pushed = await pushSharedHousehold(merged, memberId);
                 await onHousehold(pushed);
