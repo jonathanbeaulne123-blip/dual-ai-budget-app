@@ -220,10 +220,40 @@ export type HouseholdBooksDesk = {
   closedMonths: ClosedPeriod[];
 };
 
+export type HerculesChatRole = "user" | "hercules";
+export type HerculesTalkSource = "journal" | "memory" | "local" | "ai";
+export type HerculesMemoryKind = "note" | "payday" | "bill" | "habit" | "preference";
+
+export type HerculesLedgerTurn = {
+  id: string;
+  role: HerculesChatRole;
+  text: string;
+  source: HerculesTalkSource;
+  createdAt: string;
+  createdBy: string;
+};
+
+export type HerculesMemory = {
+  id: string;
+  kind: HerculesMemoryKind;
+  text: string;
+  label: string;
+  sourceTurnId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+};
+
+export type HerculesDesk = {
+  chats: HerculesLedgerTurn[];
+  memories: HerculesMemory[];
+};
+
 export type HouseholdKitchen = {
   chalkboard: ChalkNote[];
   companion: HouseholdCompanion;
   books: HouseholdBooksDesk;
+  hercules: HerculesDesk;
 };
 
 export type GoogleService = "identity" | "calendar" | "drive" | "contacts" | "gmail" | "sheets";

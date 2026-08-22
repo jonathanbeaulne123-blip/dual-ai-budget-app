@@ -19,6 +19,7 @@ Once (dashboard, not git):
 
 - GitHub → Settings → Secrets: `CLOUDFLARE_API_TOKEN` with **no wrapping quotes** (the account id is in `wrangler.jsonc`).
 - GitHub → Settings → Variables: `VITE_GOOGLE_CLIENT_ID` = the public Google web client ID (never a client secret).
+- Hercules talk (allowed, D-045): Cloudflare Worker secrets `OPENAI_API_KEY` and/or `ANTHROPIC_API_KEY` (`wrangler secret put …` or the Worker dashboard). Never `VITE_`. Never a GitHub Actions secret that Vite would bake into the SPA.
 - Optional: Cloudflare hearth-books Settings → deploy command `rm -f dist/_redirects && npx wrangler deploy --assets=./dist` if Workers Builds stays connected.
 
 Details: [ENVIRONMENTS.md](ENVIRONMENTS.md), [GOOGLE.md](GOOGLE.md), D-041.

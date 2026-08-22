@@ -3,6 +3,11 @@ import type {
   ChalkNote,
   CosmeticSlot,
   Environment,
+  HerculesDesk,
+  HerculesLedgerTurn,
+  HerculesMemory,
+  HerculesMemoryKind,
+  HerculesTalkSource,
   HouseholdCompanion,
   HouseholdKitchen,
   Tombstone,
@@ -13,6 +18,16 @@ import type {
 export const MAX_CHALK_NOTES = 12;
 export const MAX_CHALK_CHARS = 80;
 export const MAX_COMPANION_NAME = 24;
+export const MAX_HERCULES_CHATS = 80;
+export const MAX_HERCULES_CHAT_CHARS = 400;
+export const MAX_HERCULES_MEMORIES = 24;
+export const MAX_HERCULES_MEMORY_CHARS = 160;
+export const MAX_HERCULES_MEMORY_LABEL = 48;
+
+export const EMPTY_HERCULES: HerculesDesk = {
+  chats: [],
+  memories: [],
+};
 
 export const EMPTY_COMPANION: HouseholdCompanion = {
   name: "Hercules",
@@ -25,6 +40,7 @@ export const EMPTY_KITCHEN: HouseholdKitchen = {
   chalkboard: [],
   companion: { ...EMPTY_COMPANION },
   books: { reconciliations: [], closedMonths: [] },
+  hercules: { ...EMPTY_HERCULES, chats: [], memories: [] },
 };
 
 export function closedPeriodId(monthKey: string): string {
@@ -74,6 +90,52 @@ function isClosedPeriod(value: unknown): value is ClosedPeriod {
   if (!value || typeof value !== "object") return false;
   const row = value as ClosedPeriod;
   return Boolean(row.monthKey && /^\d{4}-\d{2}$/.test(row.monthKey) && row.closedAt);
+}
+
+function isTalkSource(value: unknown): value is HerculesTalkSource {
+  return value === "journal" || value === "memory" || value === "local" || value === "ai";
+}
+
+function isMemoryKind(value: unknown): value is HerculesMemoryKind {
+  return value === "note" || value === "payday" || value === "bill" || value === "habit" || value === "preference";
+}
+
+function isHerculesTurn(value: unknown): value is HerculesLedgerTurn {
+  if (!value || typeof value !== "object") return false;
+  const row = value as HerculesLedgerTurn;
+  return Boolean(row.id && (row.role === "user" || row.role === "hercules") && typeof row.text === "string");
+}
+
+function isHerculesMemory(value: unknown): value is HerculesMemory {
+  if (!value || typeof value !== "object") return false;
+  const row = value as HerculesMemory;
+  return Boolean(row.id && typeof row.text === "string" && typeof row.label === "string" && isMemoryKind(row.kind));
+}
+
+function shapeHerculesDesk(input?: Partial<HerculesDesk> | null): HerculesDesk {
+  const chats = Array.isArray(input?.chats)
+    ? input.chats.filter(isHerculesTurn).map((row) => ({
+      id: row.id,
+      role: row.role === "user" ? "user" as const : "hercules" as const,
+      text: String(row.text).slice(0, MAX_HERCULES_CHAT_CHARS),
+      source: isTalkSource(row.source) ? row.source : "local" as const,
+      createdAt: row.createdAt || "",
+      createdBy: row.createdBy || "",
+    })).slice(-MAX_HERCULES_CHATS)
+    : [];
+  const memories = Array.isArray(input?.memories)
+    ? input.memories.filter(isHerculesMemory).map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      text: String(row.text).slice(0, MAX_HERCULES_MEMORY_CHARS),
+      label: String(row.label).slice(0, MAX_HERCULES_MEMORY_LABEL),
+      sourceTurnId: row.sourceTurnId || null,
+      createdAt: row.createdAt || row.updatedAt || "",
+      updatedAt: row.updatedAt || row.createdAt || "",
+      createdBy: row.createdBy || "",
+    })).slice(-MAX_HERCULES_MEMORIES)
+    : [];
+  return { chats, memories };
 }
 
 export function shapeKitchen(input?: Partial<HouseholdKitchen> | null): HouseholdKitchen {
@@ -131,6 +193,7 @@ export function shapeKitchen(input?: Partial<HouseholdKitchen> | null): Househol
       reconciliations,
       closedMonths: [...closedMap.values()].sort((left, right) => left.monthKey.localeCompare(right.monthKey)),
     },
+    hercules: shapeHerculesDesk(input?.hercules),
   };
 }
 
@@ -166,12 +229,28 @@ export function mergeKitchen(
     const existing = closedMap.get(row.monthKey);
     if (!existing || row.closedAt >= existing.closedAt) closedMap.set(row.monthKey, row);
   }
+  const chatMap = new Map<string, HerculesLedgerTurn>();
+  for (const row of [...left.hercules.chats, ...right.hercules.chats]) {
+    if (dead.has(row.id)) continue;
+    const existing = chatMap.get(row.id);
+    if (!existing || row.createdAt >= existing.createdAt) chatMap.set(row.id, row);
+  }
+  const memoMap = new Map<string, HerculesMemory>();
+  for (const row of [...left.hercules.memories, ...right.hercules.memories]) {
+    if (dead.has(row.id)) continue;
+    const existing = memoMap.get(row.id);
+    if (!existing || row.updatedAt >= existing.updatedAt) memoMap.set(row.id, row);
+  }
   return {
     chalkboard,
     companion,
     books: {
       reconciliations: [...recMap.values()].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).slice(-24),
       closedMonths: [...closedMap.values()].sort((a, b) => a.monthKey.localeCompare(b.monthKey)),
+    },
+    hercules: {
+      chats: [...chatMap.values()].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).slice(-MAX_HERCULES_CHATS),
+      memories: [...memoMap.values()].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).slice(-MAX_HERCULES_MEMORIES),
     },
   };
 }

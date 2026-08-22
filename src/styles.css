@@ -646,6 +646,8 @@ input, select, textarea {
 .hercules-turn.cat { font-weight: 650; }
 .hercules-typing { margin: 0; font-style: italic; color: var(--muted); }
 .hercules-lesson { margin: 0 0 6px; color: var(--muted); font-size: 12px; }
+.hercules-source { margin: 0 0 6px; color: var(--muted); font-size: 11px; }
+.hercules-notes { margin: 12px 0; display: grid; gap: 8px; }
 .hercules-fact { margin: 0 0 8px; display: flex; justify-content: space-between; gap: 8px; font-size: 12px; }
 .hercules-replies { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
 .hercules-replies button,

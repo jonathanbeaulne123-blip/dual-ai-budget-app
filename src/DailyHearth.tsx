@@ -5,10 +5,12 @@ import {
   dailyDare,
   describeCompanion,
   equipCosmetic,
+  forgetHerculesMemory,
   groceryHighFive,
   renameCompanion,
   scribbleChalk,
   wipeChalk,
+  wipeHerculesChat,
   writeClinkOn,
   type CommitResult,
   type Environment,
@@ -141,6 +143,33 @@ export function DailyHearth({
           <button className="chip" disabled={busy || petName.trim() === view.name} onClick={() => onCommand((current) => renameCompanion(current, petName))}>
             Save
           </button>
+        </div>
+        <div className="hercules-notes">
+          <span className="muted">Kitchen ledger notes</span>
+          {(household.kitchen.hercules?.memories ?? []).length === 0 ? (
+            <p className="muted">Say “remember …” to Hercules. Notes stay in this snapshot — same door as the milk.</p>
+          ) : (
+            (household.kitchen.hercules?.memories ?? []).map((row) => (
+              <div className="chalk-note" key={row.id}>
+                <p>{row.label}</p>
+                <div className="chalk-actions">
+                  <button type="button" disabled={busy} onClick={() => onCommand((current) => forgetHerculesMemory(current, row.id))}>
+                    forget
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+          {(household.kitchen.hercules?.chats ?? []).length > 0 && (
+            <button
+              className="chip quiet"
+              type="button"
+              disabled={busy}
+              onClick={() => onCommand((current) => wipeHerculesChat(current))}
+            >
+              Wipe chat ({household.kitchen.hercules.chats.length})
+            </button>
+          )}
         </div>
         <label className="clink-row">
           <input

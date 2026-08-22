@@ -15,7 +15,8 @@ export type HerculesChatRequest = {
   message: string;
   briefing: HerculesBriefing;
   grounded: HerculesGrounded;
-  history: HerculesChatTurn[];
+  /** Labels only. Never a transaction dump, never full CAD chat history. */
+  memories?: string[];
 };
 
 export type HerculesChatResult = {
@@ -47,7 +48,7 @@ async function readAiReply(res: Response): Promise<string | null> {
   return reply || null;
 }
 
-function payload(req: HerculesChatRequest): string {
+export function herculesModelPayload(req: HerculesChatRequest): string {
   return JSON.stringify({
     message: req.message.trim().slice(0, 400),
     briefing: formatHerculesBriefing(req.briefing).slice(0, 800),
@@ -61,10 +62,7 @@ function payload(req: HerculesChatRequest): string {
           }
         : null,
     },
-    history: req.history.slice(-8).map((turn) => ({
-      role: turn.role === "hercules" ? "hercules" : "user",
-      text: turn.text.slice(0, 240),
-    })),
+    memories: (req.memories ?? []).slice(-12).map((label) => String(label).slice(0, 48)),
   });
 }
 
@@ -80,7 +78,7 @@ export async function chatHercules(
   if (!fetchFn || !req.message.trim()) return local();
 
   const timeoutMs = deps?.timeoutMs ?? 9000;
-  const body = payload(req);
+  const body = herculesModelPayload(req);
 
   for (const url of chatUrls()) {
     try {

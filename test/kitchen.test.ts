@@ -5,19 +5,23 @@ import {
   addRecurrence,
   applySitDown,
   catalogHousehold,
+  compileHousehold,
   contributeToGoal,
   describeCompanion,
   equipCosmetic,
+  forgetHerculesMemory,
   isCosmeticUnlocked,
   makeHearthPass,
   mergeShared,
   postEntry,
   postOneRecurrence,
+  recordHerculesTalk,
   renameCompanion,
   scribbleChalk,
   seedDemoHousehold,
   splitForSync,
   wipeChalk,
+  wipeHerculesChat,
 } from "../src/core/index.ts";
 import { COSMETIC_BY_ID } from "../src/core/companion.ts";
 import { ValidationError } from "../src/core/types.ts";
@@ -110,6 +114,44 @@ describe("daily kitchen cosmetics", () => {
     right.householdId = left.householdId;
     const merged = mergeShared(splitForSync(left, "MEM-001").shared, splitForSync(right, "MEM-002").shared);
     expect(merged.kitchen.chalkboard.map((note) => note.text).sort()).toEqual(["Bianca was here", "Jonathan was here"]);
+  });
+
+  it("keeps Hercules chat and memories in the kitchen ledger without posting money", () => {
+    const household = catalogHousehold();
+    const before = compileHousehold(household).entries.length;
+    const talked = recordHerculesTalk(household, {
+      author: "MEM-001",
+      userText: "remember hydro is due Friday",
+      herculesText: "Kept in the kitchen ledger.",
+      source: "memory",
+      memory: { kind: "bill", text: "hydro is due Friday", label: "hydro is due Friday" },
+    });
+    expect(talked.postedIds).toEqual([]);
+    expect(talked.household.transactions).toHaveLength(0);
+    expect(compileHousehold(talked.household).entries.length).toBe(before);
+    expect(talked.household.kitchen.hercules.chats).toHaveLength(2);
+    expect(talked.household.kitchen.hercules.memories[0]?.kind).toBe("bill");
+
+    const pass = makeHearthPass(talked.household);
+    expect(pass.shared.kitchen.hercules.memories.map((row) => row.label)).toEqual(["hydro is due Friday"]);
+
+    const other = recordHerculesTalk(catalogHousehold(), {
+      author: "MEM-002",
+      herculesText: "Unmodified. I loaf.",
+      source: "journal",
+    }).household;
+    other.inviteCode = household.inviteCode;
+    other.householdId = household.householdId;
+    const merged = mergeShared(splitForSync(talked.household, "MEM-001").shared, splitForSync(other, "MEM-002").shared);
+    expect(merged.kitchen.hercules.chats.length).toBeGreaterThanOrEqual(3);
+
+    const forgotten = forgetHerculesMemory(talked.household, talked.household.kitchen.hercules.memories[0]!.id);
+    expect(forgotten.household.kitchen.hercules.memories).toHaveLength(0);
+    expect(forgotten.household.tombstones.some((row) => row.id.startsWith("MEMO-"))).toBe(true);
+
+    const wiped = wipeHerculesChat(forgotten.household);
+    expect(wiped.household.kitchen.hercules.chats).toHaveLength(0);
+    expect(wiped.household.tombstones.some((row) => row.id.startsWith("CHAT-"))).toBe(true);
   });
 
   it("sit-down still writes budgets and chef hat unlocks from that activity", () => {

@@ -23,7 +23,7 @@ import { creditCardView, savingsView } from "./accounts.ts";
 import { sitDownPreview } from "./insights.ts";
 import { bookBalanceAsOf, isMonthClosed } from "./statements.ts";
 import { COSMETIC_BY_ID, isCosmeticUnlocked } from "./companion.ts";
-import { EMPTY_KITCHEN, MAX_CHALK_CHARS, MAX_CHALK_NOTES, MAX_COMPANION_NAME, closedPeriodId, isCosmeticSlot, shapeKitchen } from "./kitchen.ts";
+import { EMPTY_KITCHEN, MAX_CHALK_CHARS, MAX_CHALK_NOTES, MAX_COMPANION_NAME, MAX_HERCULES_CHAT_CHARS, MAX_HERCULES_CHATS, MAX_HERCULES_MEMORIES, MAX_HERCULES_MEMORY_CHARS, closedPeriodId, isCosmeticSlot, shapeKitchen } from "./kitchen.ts";
 import {
   EMPTY_GOOGLE,
   findActiveGoogleLink,
@@ -43,6 +43,8 @@ import type {
   CommitResult,
   CreditRewardRule,
   Household,
+  HerculesMemoryKind,
+  HerculesTalkSource,
   InvestmentVehicle,
   Recurrence,
   RecurrenceKind,
@@ -1241,6 +1243,89 @@ export function equipCosmetic(household: Household, input: {
   };
   const label = itemId ? COSMETIC_BY_ID.get(itemId)?.name || itemId : `no ${input.slot}`;
   return commit(previous, next, "Companion", `Equipped ${label}`, []);
+}
+
+export function recordHerculesTalk(household: Household, input: {
+  author: string;
+  userText?: string;
+  herculesText: string;
+  source: HerculesTalkSource;
+  memory?: { kind: HerculesMemoryKind; text: string; label: string } | null;
+}): CommitResult {
+  requireMember(household, input.author);
+  const herculesText = input.herculesText.trim().slice(0, MAX_HERCULES_CHAT_CHARS);
+  if (!herculesText) throw new ValidationError("Hercules needs a line to keep.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const at = nowIso();
+  const chats = [...next.kitchen.hercules.chats];
+  const userText = input.userText?.trim().slice(0, MAX_HERCULES_CHAT_CHARS) || "";
+  let sourceTurnId: string | null = null;
+  if (userText) {
+    const userId = nextId("CHAT-", chats.map((row) => row.id), 4);
+    sourceTurnId = userId;
+    chats.push({
+      id: userId,
+      role: "user",
+      text: userText,
+      source: input.source,
+      createdAt: at,
+      createdBy: input.author,
+    });
+  }
+  const herculesId = nextId("CHAT-", chats.map((row) => row.id), 4);
+  chats.push({
+    id: herculesId,
+    role: "hercules",
+    text: herculesText,
+    source: input.source,
+    createdAt: at,
+    createdBy: input.author,
+  });
+  next.kitchen.hercules.chats = chats.slice(-MAX_HERCULES_CHATS);
+  if (input.memory?.text.trim()) {
+    const memoId = nextId("MEMO-", next.kitchen.hercules.memories.map((row) => row.id), 4);
+    next.kitchen.hercules.memories = [
+      ...next.kitchen.hercules.memories,
+      {
+        id: memoId,
+        kind: input.memory.kind,
+        text: input.memory.text.trim().slice(0, MAX_HERCULES_MEMORY_CHARS),
+        label: input.memory.label.trim().slice(0, 48) || input.memory.text.trim().slice(0, 48),
+        sourceTurnId,
+        createdAt: at,
+        updatedAt: at,
+        createdBy: input.author,
+      },
+    ].slice(-MAX_HERCULES_MEMORIES);
+  }
+  const summary = input.memory
+    ? "Hercules kept a note in the kitchen ledger"
+    : "Hercules talked; the books kept the chat";
+  return commit(previous, next, "Hercules", summary, []);
+}
+
+export function forgetHerculesMemory(household: Household, id: string): CommitResult {
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const row = next.kitchen.hercules.memories.find((item) => item.id === id);
+  if (!row) throw new ValidationError("That note is already gone.");
+  next.kitchen.hercules.memories = next.kitchen.hercules.memories.filter((item) => item.id !== id);
+  next.tombstones = mergeTombstones(next.tombstones, [{ id, deletedAt: nowIso() }]);
+  return commit(previous, next, "Hercules", "Forgot a Hercules note", []);
+}
+
+export function wipeHerculesChat(household: Household): CommitResult {
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const ids = next.kitchen.hercules.chats.map((row) => row.id);
+  if (!ids.length) throw new ValidationError("No chat to wipe.");
+  next.kitchen.hercules.chats = [];
+  next.tombstones = mergeTombstones(next.tombstones, ids.map((id) => ({ id, deletedAt: nowIso() })));
+  return commit(previous, next, "Hercules", "Wiped Hercules chat from the kitchen ledger", []);
 }
 
 export function linkGoogleIdentity(household: Household, input: {

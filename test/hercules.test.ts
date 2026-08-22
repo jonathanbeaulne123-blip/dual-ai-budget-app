@@ -15,8 +15,12 @@ import {
   hourInToronto,
   isCosmeticUnlocked,
   localHerculesChat,
+  memoryLabelForModel,
+  memoryLabelsForModel,
+  planHerculesTurn,
   postEntry,
   postTransfer,
+  recordHerculesTalk,
   sanitizeHerculesReply,
   scribbleChalk,
   seedDemoHousehold,
@@ -51,6 +55,8 @@ describe("The Hercules Update", () => {
     });
     expect(migrated.companion.name).toBe("Hercules");
     expect(migrated.companion.species).toBe("maine-coon");
+    expect(migrated.hercules.chats).toEqual([]);
+    expect(migrated.hercules.memories).toEqual([]);
   });
 
   it("keeps a custom name and never posts from chat", () => {
@@ -268,7 +274,7 @@ describe("The Hercules Update", () => {
     const grounded = talkHercules(household, "we good?", today, "home");
     const briefing = herculesBriefing(household, "home", today);
     const ai = await chatHercules(
-      { message: "we good?", briefing, grounded, history: [] },
+      { message: "we good?", briefing, grounded, memories: [] },
       {
         fetch: async () =>
           new Response(JSON.stringify({ ok: true, reply: "mrrp. The books look honest." }), {
@@ -281,7 +287,7 @@ describe("The Hercules Update", () => {
     expect(ai.text).toMatch(/books look honest/i);
 
     const posted = await chatHercules(
-      { message: "log milk", briefing, grounded, history: [] },
+      { message: "log milk", briefing, grounded, memories: [] },
       {
         fetch: async () =>
           new Response(JSON.stringify({ ok: true, reply: "I posted $8.00 to groceries." }), {
@@ -294,10 +300,74 @@ describe("The Hercules Update", () => {
     expect(posted.text).toMatch(/don't post/i);
 
     const quiet = await chatHercules(
-      { message: "we good?", briefing, grounded, history: [] },
+      { message: "we good?", briefing, grounded, memories: [] },
       { fetch: async () => { throw new Error("offline"); } },
     );
     expect(quiet.source).toBe("local");
     expect(quiet.text.length).toBeGreaterThan(4);
+  });
+
+  it("answers money from the journal and keeps chat in the kitchen ledger", () => {
+    const household = seedDemoHousehold({ today, environment: "development" });
+    const plan = planHerculesTurn(household, "what's on the Visa?", today, "home");
+    expect(plan.skipModel).toBe(true);
+    expect(plan.source).toBe("journal");
+    expect(plan.talk.spoken).toMatch(/\$|CAD|Visa|owed|paydown/i);
+
+    const remembered = planHerculesTurn(household, "remember payday is Thursday", today, "home");
+    expect(remembered.skipModel).toBe(true);
+    expect(remembered.memory?.label).toMatch(/payday/i);
+    expect(remembered.memory?.label).not.toMatch(/\$\d/);
+
+    const shame = planHerculesTurn(household, "who spent more", today, "home");
+    expect(shame.skipModel).toBe(true);
+    expect(shame.talk.spoken).toBe(HERCULES_REFUSE_SHAME);
+
+    const draft = planHerculesTurn(household, "add milk", today, "home");
+    expect(draft.draft?.note).toBe("Milk");
+    expect(draft.draft?.subcategoryId).toBe("SUB-FOOD-GROCERIES");
+    expect(draft.talk.spoken).toBe(HERCULES_REFUSE_WRITE);
+
+    const unmatched = planHerculesTurn(household, "tell me a kitchen joke", today, "home");
+    expect(unmatched.skipModel).toBe(false);
+    expect(unmatched.draft).toBeNull();
+    expect(unmatched.memory).toBeNull();
+  });
+
+  it("does not send chat history or transaction dumps to a model", async () => {
+    const household = seedDemoHousehold({ today, environment: "development" });
+    const grounded = talkHercules(household, "we good?", today, "home");
+    const briefing = herculesBriefing(household, "home", today);
+    const kept = recordHerculesTalk(household, {
+      author: "MEM-001",
+      userText: "No Frills was eighty four dollars and Bianca spent more",
+      herculesText: "Not a scoreboard.",
+      source: "local",
+      memory: { kind: "note", text: "No Frills was $84.12", label: memoryLabelForModel("No Frills was $84.12") },
+    });
+    expect(kept.postedIds).toEqual([]);
+    expect(kept.household.transactions.length).toBe(household.transactions.length);
+    const labels = memoryLabelsForModel(kept.household);
+    expect(labels.join(" ")).toMatch(/CAD/);
+    expect(labels.join(" ")).not.toMatch(/84\.12/);
+
+    let body = "";
+    await chatHercules(
+      { message: "we good?", briefing, grounded, memories: labels },
+      {
+        fetch: async (_url, init) => {
+          body = String(init?.body || "");
+          return new Response(JSON.stringify({ ok: true, reply: "mrrp." }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        },
+      },
+    );
+    expect(body).not.toMatch(/84\.12/);
+    expect(body).not.toMatch(/history/);
+    expect(body).not.toMatch(/Bianca spent more/);
+    expect(body).toMatch(/memories/);
+    expect(body).toMatch(/CAD/);
   });
 });

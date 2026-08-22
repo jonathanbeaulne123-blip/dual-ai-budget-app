@@ -1,3 +1,5 @@
+// Third-party keys are allowed (D-045): OPENAI_API_KEY / ANTHROPIC_API_KEY via
+// `wrangler secret put`. Never VITE_. Workers AI is the fallback when no vendor secret answers.
 const HTML_PATH = /(?:^\/$|\.html(?:$|\?))/i;
 
 const CORS = {
@@ -17,6 +19,8 @@ Voice:
 - You are also the household auditor. Unmodified / qualified / adverse come from the briefing. Debits on the left.
 - Working capital, going-concern watch, and trial/equation flags also come from the briefing. Do not invent a clean bill or a crisis.
 - Wallet facts also come from the briefing: chequing CAD, cards owed, hottest utilization. Do not invent APR. Paydown is a transfer. Interest and cashback are looks until a command posts.
+- LEDGER MEMORIES are labels stored in the household snapshot. They are not a second set of dollar facts. Quote GROUNDED JOURNAL for CAD.
+- You do not receive prior chat. History lives in the kitchen ledger on the phone.
 - Warm and a little smug. Never mean.
 - Off-topic: answer as a cat on a kitchen counter, then steer back to the books.
 
@@ -97,20 +101,8 @@ function clip(value, max) {
   return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
 }
 
-async function herculesChat(request, env) {
-  if (!allowedOrigin(request)) return json({ ok: false, error: "origin" }, 403);
-  if (!env.AI) return json({ ok: false, error: "ai unbound" }, 503);
-
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return json({ ok: false, error: "bad json" }, 400);
-  }
-
+function buildPrompt(body) {
   const message = clip(body?.message, 400);
-  if (!message) return json({ ok: false, error: "empty" }, 400);
-
   const briefing = clip(body?.briefing, 800);
   const grounded = body?.grounded && typeof body.grounded === "object" ? body.grounded : {};
   const groundedSpeak = clip(grounded.spoken, 220);
@@ -121,24 +113,76 @@ async function herculesChat(request, env) {
   ]
     .filter(Boolean)
     .join("\n");
+  const memories = Array.isArray(body?.memories)
+    ? body.memories.map((item) => clip(item, 48)).filter(Boolean).slice(-12)
+    : [];
+  const memoryBlock = memories.length ? memories.join("; ") : "(none)";
+  return {
+    message,
+    groundedSpeak,
+    openai: [
+      { role: "system", content: HERCULES_SYSTEM },
+      { role: "system", content: `HOUSEHOLD BRIEFING\n${briefing || "(none)"}` },
+      { role: "system", content: `GROUNDED JOURNAL (dollar facts; win over you)\n${groundedBlock || "(none)"}` },
+      { role: "system", content: `LEDGER MEMORY LABELS (no CAD except what GROUNDED already said)\n${memoryBlock}` },
+      { role: "user", content: message },
+    ],
+  };
+}
 
-  const history = Array.isArray(body?.history) ? body.history.slice(-8) : [];
-  const messages = [
-    { role: "system", content: HERCULES_SYSTEM },
-    { role: "system", content: `HOUSEHOLD BRIEFING\n${briefing || "(none)"}` },
-    { role: "system", content: `GROUNDED JOURNAL (dollar facts; win over you)\n${groundedBlock || "(none)"}` },
-  ];
-  for (const turn of history) {
-    const text = clip(turn?.text, 240);
-    if (!text) continue;
-    messages.push({
-      role: turn.role === "hercules" || turn.role === "assistant" ? "assistant" : "user",
-      content: text,
-    });
-  }
-  messages.push({ role: "user", content: message });
+async function chatOpenAI(env, messages) {
+  const key = String(env.OPENAI_API_KEY || "").trim();
+  if (!key) return "";
+  const model = String(env.OPENAI_MODEL || "gpt-4o-mini").trim() || "gpt-4o-mini";
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 160,
+      temperature: 0.55,
+      messages,
+    }),
+  });
+  if (!res.ok) return "";
+  const data = await res.json();
+  return String(data?.choices?.[0]?.message?.content || "").trim();
+}
 
-  let reply = "";
+async function chatAnthropic(env, messages) {
+  const key = String(env.ANTHROPIC_API_KEY || "").trim();
+  if (!key) return "";
+  const model = String(env.ANTHROPIC_MODEL || "claude-haiku-4-5").trim() || "claude-haiku-4-5";
+  const system = messages.filter((row) => row.role === "system").map((row) => row.content).join("\n\n");
+  const chat = messages
+    .filter((row) => row.role === "user" || row.role === "assistant")
+    .map((row) => ({ role: row.role, content: row.content }));
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": key,
+      "anthropic-version": "2023-06-01",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 160,
+      temperature: 0.55,
+      system,
+      messages: chat.length ? chat : [{ role: "user", content: "mrrp" }],
+    }),
+  });
+  if (!res.ok) return "";
+  const data = await res.json();
+  const block = Array.isArray(data?.content) ? data.content.find((item) => item?.type === "text") : null;
+  return String(block?.text || "").trim();
+}
+
+async function chatWorkersAi(env, messages) {
+  if (!env.AI) return "";
   for (const model of MODELS) {
     try {
       const out = await env.AI.run(model, {
@@ -152,17 +196,54 @@ async function herculesChat(request, env) {
           : typeof out?.result?.response === "string"
             ? out.result.response
             : "";
-      if (text.trim()) {
-        reply = text;
-        break;
-      }
+      if (text.trim()) return text.trim();
     } catch {
       continue;
     }
   }
+  return "";
+}
+
+async function herculesChat(request, env) {
+  if (!allowedOrigin(request)) return json({ ok: false, error: "origin" }, 403);
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ ok: false, error: "bad json" }, 400);
+  }
+
+  const prompt = buildPrompt(body);
+  if (!prompt.message) return json({ ok: false, error: "empty" }, 400);
+
+  let reply = "";
+  let provider = "";
+  try {
+    reply = await chatOpenAI(env, prompt.openai);
+    if (reply) provider = "openai";
+  } catch {
+    reply = "";
+  }
+  if (!reply) {
+    try {
+      reply = await chatAnthropic(env, prompt.openai);
+      if (reply) provider = "anthropic";
+    } catch {
+      reply = "";
+    }
+  }
+  if (!reply) {
+    reply = await chatWorkersAi(env, prompt.openai);
+    if (reply) provider = "workers-ai";
+  }
 
   if (!reply) return json({ ok: false, error: "ai quiet" }, 503);
-  return json({ ok: true, reply: sanitizeHerculesReply(reply, groundedSpeak) });
+  return json({
+    ok: true,
+    provider,
+    reply: sanitizeHerculesReply(reply, prompt.groundedSpeak),
+  });
 }
 
 export default {

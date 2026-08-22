@@ -8,10 +8,16 @@ import {
   herculesMutters,
   herculesNeedsCheck,
   kitchenSeason,
+  ledgerChats,
+  memoryLabelsForModel,
+  planHerculesTurn,
+  recordHerculesTalk,
   talkHercules,
+  type CommitResult,
   type CompanionMood,
   type HearthTab,
   type HerculesChatTurn,
+  type HerculesDraft,
   type HerculesPose,
   type HerculesTalk,
   type Household,
@@ -172,8 +178,11 @@ export function HerculesPresence({
   adding,
   visorPop,
   spark,
+  memberId,
   onOpenAdd,
   onGo,
+  onLedger,
+  onDraft,
 }: {
   household: Household;
   today: string;
@@ -181,8 +190,11 @@ export function HerculesPresence({
   adding: boolean;
   visorPop?: boolean;
   spark?: boolean;
+  memberId: string;
   onOpenAdd: (note?: string) => void;
   onGo: (tab: HearthTab) => void;
+  onLedger: (fn: (current: Household) => CommitResult) => void;
+  onDraft?: (draft: HerculesDraft) => void;
 }) {
   const look = useMemo(() => dressedLook(household, today, Boolean(visorPop)), [household, today, visorPop]);
   const five = useMemo(() => groceryHighFive(household, today), [household, today]);
@@ -197,7 +209,9 @@ export function HerculesPresence({
   const [question, setQuestion] = useState("");
   const [topic, setTopic] = useState("idle");
   const [purr, setPurr] = useState(false);
-  const [turns, setTurns] = useState<HerculesChatTurn[]>([]);
+  const [turns, setTurns] = useState<HerculesChatTurn[]>(() =>
+    ledgerChats(household).slice(-12).map((row) => ({ role: row.role, text: row.text })),
+  );
   const [busy, setBusy] = useState(false);
   const drag = useRef<{ x: number; y: number; px: number; py: number; moved: boolean } | null>(null);
   const idleAt = useRef(0);
@@ -275,11 +289,25 @@ export function HerculesPresence({
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
   }, [turns, busy]);
 
+  useEffect(() => {
+    if (busy) return;
+    setTurns(ledgerChats(household).slice(-12).map((row) => ({ role: row.role, text: row.text })));
+  }, [household, busy]);
+
+  function keepTalk(userText: string | undefined, herculesText: string, source: "journal" | "memory" | "local" | "ai", memory?: { kind: "note" | "payday" | "bill" | "habit" | "preference"; text: string; label: string } | null) {
+    onLedger((current) => recordHerculesTalk(current, {
+      author: memberId,
+      userText,
+      herculesText,
+      source,
+      memory: memory ?? null,
+    }));
+  }
+
   function closeChat() {
     chatGen.current += 1;
     setOpen(false);
     setTalk(null);
-    setTurns([]);
     setBusy(false);
     setQuestion("");
   }
@@ -330,7 +358,15 @@ export function HerculesPresence({
     const text = raw.trim();
     if (!text || busy) return;
     if (goShortcut(text)) return;
-    applyTalk(talkHercules(household, text, today, adding ? "add" : tab, topic), text);
+    const plan = planHerculesTurn(household, text, today, adding ? "add" : tab, topic);
+    if (plan.draft) {
+      onDraft?.(plan.draft);
+      keepTalk(text, plan.talk.spoken, "journal");
+      closeChat();
+      return;
+    }
+    applyTalk(plan.talk, text);
+    keepTalk(text, plan.talk.spoken, plan.source, plan.memory);
   }
 
   async function sendChat(raw: string) {
@@ -338,11 +374,22 @@ export function HerculesPresence({
     if (!message || busy) return;
     if (goShortcut(message)) return;
     const page = adding ? "add" : tab;
-    const grounded = talkHercules(household, message, today, page, topic);
+    const plan = planHerculesTurn(household, message, today, page, topic);
+    if (plan.draft) {
+      onDraft?.(plan.draft);
+      keepTalk(message, plan.talk.spoken, "journal");
+      closeChat();
+      return;
+    }
+    if (plan.skipModel) {
+      applyTalk(plan.talk, message);
+      keepTalk(message, plan.talk.spoken, plan.source, plan.memory);
+      return;
+    }
+    const grounded = plan.talk;
     const briefing = herculesBriefing(household, page, today);
     const gen = chatGen.current + 1;
     chatGen.current = gen;
-    const history = turns;
     setTurns((prev) => [...prev, { role: "user" as const, text: message }].slice(-12));
     setQuestion("");
     setBusy(true);
@@ -350,12 +397,18 @@ export function HerculesPresence({
     setTalk(grounded);
     setTopic(grounded.topic);
     setMotion("pounce");
-    const result = await chatHercules({ message, briefing, grounded, history });
+    const result = await chatHercules({
+      message,
+      briefing,
+      grounded,
+      memories: memoryLabelsForModel(household),
+    });
     if (chatGen.current !== gen) return;
     setTalk({ ...grounded, spoken: result.text });
     setTurns((prev) => [...prev, { role: "hercules" as const, text: result.text }].slice(-12));
     setMotion(grounded.pose === "sleep" ? "loaf" : grounded.pose);
     setBusy(false);
+    keepTalk(message, result.text, result.source === "ai" ? "ai" : "local");
   }
 
   function onPointerDown(event: PointerEvent<HTMLButtonElement>) {
@@ -426,6 +479,9 @@ export function HerculesPresence({
             <p className="hercules-spoken">{talk.spoken}</p>
           )}
           {!busy && talk.lesson && <p className="hercules-lesson">{talk.lesson}</p>}
+          {open && !busy && (
+            <p className="hercules-source">Kept in the kitchen ledger. Same door as the books.</p>
+          )}
           {!busy && talk.fact && (
             <p className="hercules-fact"><span>{talk.fact.label}</span> {talk.fact.value}</p>
           )}

@@ -325,6 +325,19 @@ export function App() {
     });
   }
 
+  function runKitchen(fn: (current: Household) => CommitResult) {
+    return enqueueWrite(async () => {
+      const current = householdRef.current;
+      if (!current) return;
+      try {
+        const result = fn(current);
+        await commitHousehold(result.household, result.undo);
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : String(caught));
+      }
+    });
+  }
+
   if (booting) {
     return (
       <div className="welcome">
@@ -1214,6 +1227,7 @@ export function App() {
         adding={adding}
         visorPop={visorPop}
         spark={spark}
+        memberId={session.memberId}
         onGo={(next) => {
           if (next === "add") {
             openAddFor(null);
@@ -1228,6 +1242,18 @@ export function App() {
             ...current,
             note: note ?? "",
             subcategoryId: "SUB-FOOD-GROCERIES",
+          }));
+        }}
+        onLedger={(fn) => { void runKitchen(fn); }}
+        onDraft={(draft) => {
+          const nextMode = draft.kind === "shift" || draft.kind === "transfer" || draft.kind === "income"
+            ? draft.kind
+            : "expense";
+          openAddFor(null, nextMode);
+          setForm((current) => ({
+            ...current,
+            note: draft.note || current.note,
+            subcategoryId: draft.subcategoryId ?? current.subcategoryId,
           }));
         }}
       />
