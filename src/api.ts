@@ -6,7 +6,7 @@ import {
 } from "./core/sync.ts";
 import { applyHearthPass, isHearthPass, parseHearthPass } from "./core/pass.ts";
 import { inviteFromText, isValidInviteToken } from "./core/invite.ts";
-import type { Household } from "./core/types.ts";
+import type { Environment, Household } from "./core/types.ts";
 import { probeSupabase, pullSupabaseHousehold, pushSupabaseHousehold } from "./ledger/supabase.ts";
 
 export const UNPUBLISHED_PHRASE =
@@ -28,12 +28,16 @@ export async function createSharedHousehold(household: Household, _memberId: str
   throw publishError(hosted);
 }
 
-export async function joinSharedHousehold(inviteCode: string, _memberId?: string): Promise<Household> {
+export async function joinSharedHousehold(
+  inviteCode: string,
+  _memberId?: string,
+  environment: Environment = "development",
+): Promise<Household> {
   const token = inviteFromText(inviteCode);
   if (!isValidInviteToken(token)) {
     throw new Error("Use the three-word phrase, the join link, or a Hearth Pass file.");
   }
-  const fromSupabase = await pullSupabaseHousehold(token);
+  const fromSupabase = await pullSupabaseHousehold(token, undefined, environment);
   if (fromSupabase) return fromSupabase;
   const hosted = await probeSupabase();
   if (hosted.schema) {
@@ -45,8 +49,12 @@ export async function joinSharedHousehold(inviteCode: string, _memberId?: string
   throw new Error(hosted.error || UNPUBLISHED_PHRASE);
 }
 
-export async function pullSharedHousehold(inviteCode: string, _memberId: string): Promise<Household> {
-  const fromSupabase = await pullSupabaseHousehold(inviteFromText(inviteCode));
+export async function pullSharedHousehold(
+  inviteCode: string,
+  _memberId: string,
+  environment: Environment = "development",
+): Promise<Household> {
+  const fromSupabase = await pullSupabaseHousehold(inviteFromText(inviteCode), undefined, environment);
   if (fromSupabase) return fromSupabase;
   throw new Error(UNPUBLISHED_PHRASE);
 }
@@ -58,7 +66,7 @@ export async function pushSharedHousehold(household: Household, _memberId: strin
 }
 
 export async function reconcileHousehold(local: Household, memberId: string): Promise<Household> {
-  const remote = await pullSharedHousehold(local.inviteCode, memberId);
+  const remote = await pullSharedHousehold(local.inviteCode, memberId, local.environment);
   const localParts = splitForSync(local, memberId);
   const remoteParts = splitForSync(remote, memberId);
   return assembleHousehold(

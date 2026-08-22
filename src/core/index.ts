@@ -22,5 +22,8 @@ export * from "./recurrence.ts";
 export * from "./rhythm.ts";
 export * from "./board.ts";
 export * from "./ics.ts";
+export * from "./kitchen.ts";
+export * from "./companion.ts";
+export * from "./askBooks.ts";
 export { createWriteQueue } from "./writeQueue.ts";
 export { formatInviteCode, normalizeInviteCode, randomHouseholdId, randomInviteCode } from "./ids.ts";

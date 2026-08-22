@@ -1,5 +1,6 @@
 import { cloneHousehold } from "./household.ts";
 import { formatInviteCode, normalizeInviteCode, randomHouseholdId, randomInviteCode } from "./ids.ts";
+import { mergeKitchen, shapeKitchen } from "./kitchen.ts";
 import { mergeCalendars, shapeCalendar, shapeRecurrence } from "./recurrence.ts";
 import type { Household, PersonalEnvelope, SharedEnvelope, Shift, Tombstone, Transaction } from "./types.ts";
 import { belongsToSharedLedger, isPersonalOnly, parseVisibility } from "./visibility.ts";
@@ -61,6 +62,7 @@ export function ensureHouseholdShape(household: Household): Household {
     tombstones: household.tombstones ?? [],
     recurrences: (household.recurrences ?? []).map((item) => shapeRecurrence(item, fallbackIso)),
     calendar: shapeCalendar(household.calendar),
+    kitchen: shapeKitchen(household.kitchen),
     transactions: household.transactions.map((tx) => ({
       ...tx,
       place: tx.place ?? "",
@@ -108,6 +110,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     categories: shaped.categories,
     recurrences: shaped.recurrences,
     calendar: shaped.calendar,
+    kitchen: shaped.kitchen,
     goals: shaped.goals,
     budgetPlans: shaped.budgetPlans,
     activity: shaped.activity,
@@ -159,6 +162,7 @@ export function assembleHousehold(shared: SharedEnvelope, personal: PersonalEnve
     categories: shared.categories,
     recurrences: shared.recurrences,
     calendar: shared.calendar,
+    kitchen: shared.kitchen,
     goals: shared.goals,
     budgetPlans: shared.budgetPlans,
     activity: shared.activity,
@@ -186,6 +190,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     categories: mergeRecords(server.categories, client.categories, []),
     recurrences: mergeRecords(server.recurrences, client.recurrences, tombstones),
     calendar: mergeCalendars(server.calendar, client.calendar),
+    kitchen: mergeKitchen(server.kitchen, client.kitchen, tombstones),
     goals: mergeRecords(server.goals, client.goals, tombstones),
     budgetPlans: mergeRecords(server.budgetPlans, client.budgetPlans, tombstones),
     activity: mergeRecords(server.activity, client.activity, []).sort((left, right) => left.at.localeCompare(right.at)).slice(-200),

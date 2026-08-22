@@ -29,6 +29,7 @@ import {
   shiftSettingsFingerprint,
   sitDownPreview,
   todayKey,
+  touchVisitSpark,
   undo,
   voidPostedMoney,
   type CommitResult,
@@ -38,6 +39,7 @@ import {
   type Split,
   type UndoToken,
   type Visibility,
+  type VisitSpark,
 } from "./core/index.ts";
 import { STORAGE_EXPLAINER, clearHousehold, downloadJson, loadHousehold, saveHousehold } from "./storage.ts";
 import { clearSession, loadSession, saveSession, type Session } from "./session.ts";
@@ -47,6 +49,7 @@ import { PairingCard, WelcomeJoin } from "./Pairing.tsx";
 import { BooksPage } from "./Books.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
 import { CalendarPage } from "./Calendar.tsx";
+import { DailyHearth } from "./DailyHearth.tsx";
 import { syncHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
 
 type Tab = "home" | "plan" | "calendar" | "ledger" | "more";
@@ -99,6 +102,8 @@ export function App() {
   const [inviteInput, setInviteInput] = useState("");
   const [welcomeMode, setWelcomeMode] = useState<"home" | "join">("home");
   const [booksStatus, setBooksStatus] = useState<BooksStatus | null>(null);
+  const [spark, setSpark] = useState(false);
+  const [visit, setVisit] = useState<VisitSpark>({ days: 0, lastYmd: null, justCheckedIn: false });
   const enqueueWrite = useMemo(() => createWriteQueue(), []);
   const householdRef = useRef<Household | null>(household);
   householdRef.current = household;
@@ -166,6 +171,11 @@ export function App() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  useEffect(() => {
+    if (!household) return;
+    setVisit(touchVisitSpark(environment, todayKey()));
+  }, [environment, household?.householdId]);
 
   const today = todayKey(now);
   const memberId = session?.memberId ?? household?.members.find((member) => member.active)?.id ?? "";
@@ -254,6 +264,10 @@ export function App() {
         setAdding(false);
         setForm({ ...emptyForm, date: today, visibility: defaultVisibilityForView(view) });
         if (result.warnings.length) setError(result.warnings.join(" "));
+        if (result.postedIds.some((id) => /^(TXN|SHF)/.test(id))) {
+          setSpark(true);
+          window.setTimeout(() => setSpark(false), 900);
+        }
       } catch (caught) {
         if (caught instanceof NeedsConfirmationError) setConfirm(caught);
         else setError(caught instanceof Error ? caught.message : String(caught));
@@ -288,6 +302,7 @@ export function App() {
             <WelcomeJoin
               error={error}
               busy={busy}
+              environment={environment}
               inviteInput={inviteInput}
               onInviteInput={setInviteInput}
               onError={setError}
@@ -331,7 +346,7 @@ export function App() {
                 if (household.linked) {
                   void (async () => {
                     try {
-                      const pulled = await joinSharedHousehold(household.inviteCode, member.id);
+                      const pulled = await joinSharedHousehold(household.inviteCode, member.id, household.environment);
                       await persist(pulled, undefined, member.id);
                     } catch {
                       // Catalog is enough to start; Sync now can retry.
@@ -464,6 +479,15 @@ export function App() {
 
       {tab === "home" && dashboard && (
         <>
+          <DailyHearth
+            household={household}
+            memberId={session.memberId}
+            today={today}
+            spark={spark}
+            visit={visit}
+            busy={busy}
+            onCommand={(fn) => { void run(fn); }}
+          />
           <section className="hero">
             <div className="label">{view === "personal" ? "Personal" : "Household"} · {dashboard.monthLabel}</div>
             <div className={`money ${dashboard.month.netActualCents < 0 ? "negative" : ""}`}>{formatCad(dashboard.month.netActualCents)}</div>
@@ -987,10 +1011,17 @@ function SitDown({ household, onApply, hidden }: { household: Household; onApply
   }
   const monthKey = monthKeyFromDateKey(todayKey());
   const preview = sitDownPreview(household, monthKey);
+  const rows = preview.rows.filter((row) => row.lastActualCents || row.lastBudgetedCents || row.suggestedCents);
   return (
     <section className="card">
       <header><h2>Sit-down</h2><span className="muted">Copy {preview.sourceMonth} into {preview.targetMonth}</span></header>
       <p className="muted">Overspent categories get a midpoint suggestion. Nothing is written until you apply.</p>
+      {rows.slice(0, 14).map((row) => (
+        <div className="row sitdown-row" key={row.subcategoryId}>
+          <span>{row.name}{row.trimSuggested ? " · trim" : ""}</span>
+          <span className="muted">{formatCad(row.lastActualCents)} last · {formatCad(row.suggestedCents)} next</span>
+        </div>
+      ))}
       <button className="primary" onClick={() => {
         const result = applySitDown(household, preview.sourceMonth, {});
         onApply(result.household, result.undo);
@@ -1002,6 +1033,7 @@ function SitDown({ household, onApply, hidden }: { household: Household; onApply
 function Goals({ household, goals, onChange }: { household: Household; goals: Household["goals"]; onChange: (household: Household, undo?: UndoToken) => void }) {
   const [name, setName] = useState("New goal");
   const [target, setTarget] = useState("500");
+  const [amount, setAmount] = useState("25");
   return (
     <section className="card">
       <header><h2>Goals in this view</h2></header>
@@ -1011,10 +1043,18 @@ function Goals({ household, goals, onChange }: { household: Household; goals: Ho
             <strong>{goal.name}</strong>
             <div className="muted">{goal.shared ? "Shared" : "Personal filter only"} · {formatCad(goal.savedCents)} / {formatCad(goal.targetCents)}</div>
           </div>
-          <button className="chip" onClick={() => {
-            const result = contributeToGoal(household, goal.id, "50");
-            onChange(result.household, result.undo);
-          }}>+ $50</button>
+          <div className="goal-add">
+            <input
+              inputMode="decimal"
+              aria-label={`Contribution for ${goal.name}`}
+              value={amount}
+              onChange={(event) => setAmount(event.target.value)}
+            />
+            <button className="chip" onClick={() => {
+              const result = contributeToGoal(household, goal.id, amount);
+              onChange(result.household, result.undo);
+            }}>+ add</button>
+          </div>
         </div>
       ))}
       <label>New goal</label>

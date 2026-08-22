@@ -8,6 +8,7 @@ Hearth is the product. These files are current. Anything under [reference/](refe
 | [ARCHITECTURE.md](ARCHITECTURE.md) | How the ledger, books, and UI fit together |
 | [DECISIONS.md](DECISIONS.md) | Living decision log |
 | [ROADMAP.md](ROADMAP.md) | What is in, what is next (Chapter 0) |
+| [DAILY_HEARTH.md](DAILY_HEARTH.md) | Ever-expanding daily-habit + ledger-spine map |
 | [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md) | Kitchen ledger → household family office (how and when) |
 | [ENVIRONMENTS.md](ENVIRONMENTS.md) | Development vs production snapshots, website, hosted books |
 | [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md) | How this private repo is used |

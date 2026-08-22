@@ -1,6 +1,6 @@
 import { ensureHouseholdShape } from "../core/sync.ts";
 import { inviteFromText } from "../core/invite.ts";
-import type { Household } from "../core/types.ts";
+import type { Environment, Household } from "../core/types.ts";
 
 export type SupabaseConfig = {
   url: string;
@@ -112,12 +112,16 @@ export async function probeSupabase(config = readSupabaseConfig()): Promise<Supa
   }
 }
 
-export async function pullSupabaseHousehold(invite: string, config = readSupabaseConfig()): Promise<Household | null> {
+export async function pullSupabaseHousehold(
+  invite: string,
+  config = readSupabaseConfig(),
+  environment: Environment = "development",
+): Promise<Household | null> {
   if (!config) return null;
   const phrase = inviteFromText(invite);
   const result = await rest(
     config,
-    `household_snapshots?invite_phrase=eq.${encodeURIComponent(phrase)}&select=payload&limit=1`,
+    `household_snapshots?invite_phrase=eq.${encodeURIComponent(phrase)}&environment=eq.${encodeURIComponent(environment)}&select=payload&order=updated_at.desc&limit=1`,
     { method: "GET", headers: { Prefer: "return=representation" } },
   );
   if (!result.ok) {

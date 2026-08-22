@@ -48,6 +48,7 @@ async function shareInvite(household: Household) {
 export function WelcomeJoin({
   error,
   busy,
+  environment,
   inviteInput,
   onInviteInput,
   onError,
@@ -57,6 +58,7 @@ export function WelcomeJoin({
 }: {
   error: string;
   busy: boolean;
+  environment: "development" | "production";
   inviteInput: string;
   onInviteInput: (value: string) => void;
   onError: (value: string) => void;
@@ -79,7 +81,7 @@ export function WelcomeJoin({
         return;
       }
       if (isValidInviteToken(raw)) {
-        await onJoined(await joinSharedHousehold(raw));
+        await onJoined(await joinSharedHousehold(raw, undefined, environment));
         return;
       }
       throw new Error("Paste the join link, the three-word phrase, or a Hearth Pass.");
@@ -227,7 +229,7 @@ export function PairingCard({
               }
               const live = await cloudBooksLive();
               setCloudLive(live);
-              await onHousehold(await joinSharedHousehold(raw, memberId));
+              await onHousehold(await joinSharedHousehold(raw, memberId, household.environment));
               onSyncState("synced");
             } catch (caught) {
               onError(caught instanceof Error ? caught.message : String(caught));

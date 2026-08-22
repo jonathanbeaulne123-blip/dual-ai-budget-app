@@ -132,6 +132,34 @@ export type HouseholdCalendar = {
   dismissedRhythmKeys: string[];
 };
 
+export type CosmeticSlot = "hat" | "chain" | "house";
+
+export type ChalkNote = {
+  id: string;
+  text: string;
+  author: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CompanionCosmetics = {
+  hat: string | null;
+  chain: string | null;
+  house: string | null;
+};
+
+export type HouseholdCompanion = {
+  name: string;
+  species: "ember";
+  equipped: CompanionCosmetics;
+  updatedAt: string;
+};
+
+export type HouseholdKitchen = {
+  chalkboard: ChalkNote[];
+  companion: HouseholdCompanion;
+};
+
 export type Goal = {
   id: string;
   name: string;
@@ -178,6 +206,7 @@ export type Household = {
   shifts: Shift[];
   recurrences: Recurrence[];
   calendar: HouseholdCalendar;
+  kitchen: HouseholdKitchen;
   goals: Goal[];
   budgetPlans: BudgetPlan[];
   activity: Activity[];
@@ -199,6 +228,7 @@ export type SharedEnvelope = {
   categories: Category[];
   recurrences: Recurrence[];
   calendar: HouseholdCalendar;
+  kitchen: HouseholdKitchen;
   goals: Goal[];
   budgetPlans: BudgetPlan[];
   activity: Activity[];

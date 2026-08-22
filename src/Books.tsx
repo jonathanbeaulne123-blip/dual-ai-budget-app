@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import {
+  ASK_SUGGESTIONS,
   accountRegister,
+  askBooks,
   booksEquation,
   compileHousehold,
   formatCad,
@@ -12,13 +14,15 @@ import {
 import { LedgerPage } from "./Ledger.tsx";
 import { booksFilename, booksJournalCsv, booksSqlDump, downloadText } from "./ledger/export.ts";
 import { queryBooks, type BooksStatus } from "./ledger/engine.ts";
+import { assertReadOnlySelect } from "./ledger/queryGuard.ts";
+import { todayKey } from "./core/calendar.ts";
 
 const PANES = [
   { id: "register", label: "Register" },
   { id: "journal", label: "Journal" },
   { id: "trial", label: "Trial balance" },
   { id: "accounts", label: "Accounts" },
-  { id: "query", label: "SQL" },
+  { id: "query", label: "Ask" },
 ] as const;
 
 type Pane = (typeof PANES)[number]["id"];
@@ -202,7 +206,7 @@ export function BooksPage({
           </div>
         </section>
       )}
-      {pane === "query" && <SqlConsole />}
+      {pane === "query" && <AskBooks household={household} />}
       <div className="chips" style={{ marginTop: 8 }}>
         <button className="chip" onClick={() => downloadText(booksFilename(books, "sql"), booksSqlDump(books), "application/sql")}>
           Download SQL
@@ -247,24 +251,61 @@ function JournalBlock({
   );
 }
 
-function SqlConsole() {
-  const [sql, setSql] = useState("SELECT code, name, account_type, debit_cents, credit_cents FROM v_trial_balance ORDER BY code;");
-  const [error, setError] = useState("");
-  const [columns, setColumns] = useState<string[]>([]);
-  const [rows, setRows] = useState<Record<string, unknown>[]>([]);
-  const [busy, setBusy] = useState(false);
+function looksLikeSql(text: string): boolean {
+  try {
+    assertReadOnlySelect(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
-  async function run() {
+function AskBooks({ household }: { household: Household }) {
+  const [question, setQuestion] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [columns, setColumns] = useState<string[]>([]);
+  const [sqlRows, setSqlRows] = useState<Record<string, unknown>[]>([]);
+  const [log, setLog] = useState<{ you: string; sentence: string; rows: { label: string; value: string }[]; sql?: string }[]>([]);
+  const [showPower, setShowPower] = useState(false);
+  const [sql, setSql] = useState("SELECT code, name, account_type, debit_cents, credit_cents FROM v_trial_balance ORDER BY code;");
+
+  async function ask(raw: string) {
+    const text = raw.trim();
+    if (!text) return;
+    setBusy(true);
+    setError("");
+    setQuestion("");
+    try {
+      if (looksLikeSql(text)) {
+        const result = await queryBooks(text, household.environment);
+        setColumns(result.columns);
+        setSqlRows(result.rows);
+        setLog((current) => [...current, { you: text, sentence: `Ran a read-only query. ${result.rows.length} row${result.rows.length === 1 ? "" : "s"}.`, rows: [] }].slice(-8));
+        return;
+      }
+      const answer = askBooks(household, text, todayKey());
+      setLog((current) => [...current, { you: text, sentence: answer.sentence, rows: answer.rows, sql: answer.sql }].slice(-8));
+      setColumns([]);
+      setSqlRows([]);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runPower() {
     setBusy(true);
     setError("");
     try {
-      const result = await queryBooks(sql);
+      const result = await queryBooks(sql, household.environment);
       setColumns(result.columns);
-      setRows(result.rows);
+      setSqlRows(result.rows);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
       setColumns([]);
-      setRows([]);
+      setSqlRows([]);
     } finally {
       setBusy(false);
     }
@@ -273,15 +314,43 @@ function SqlConsole() {
   return (
     <section className="card">
       <header>
-        <h2>Read-only SQL</h2>
-        <span className="muted">SELECT against this phone’s Postgres</span>
+        <h2>Ask the books</h2>
+        <span className="muted">Plain language. SQL is optional.</span>
       </header>
-      <p className="muted">
-        Try <code>SELECT * FROM v_journal LIMIT 20</code>, <code>v_income_statement</code>, <code>v_net_worth</code>, or <code>v_unbalanced_entries</code>.
-      </p>
-      <textarea className="sql-input" value={sql} onChange={(event) => setSql(event.target.value)} rows={5} spellCheck={false} />
+      <p className="muted">You should not need to know code. Ask about groceries, bills, chequing, or whether you are alright.</p>
+      <div className="chips">
+        {ASK_SUGGESTIONS.map((item) => (
+          <button key={item} className="chip" type="button" disabled={busy} onClick={() => void ask(item)}>{item}</button>
+        ))}
+      </div>
+      <label>Question</label>
+      <input
+        value={question}
+        placeholder="How much did we spend on groceries this month?"
+        onChange={(event) => setQuestion(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            void ask(question);
+          }
+        }}
+      />
+      <button className="primary" disabled={busy || !question.trim()} onClick={() => void ask(question)}>Ask</button>
       {error && <p className="danger">{error}</p>}
-      <button className="primary" disabled={busy} onClick={() => void run()}>Run query</button>
+      <div className="ask-log">
+        {log.map((item, index) => (
+          <div key={`${item.you}-${index}`}>
+            <div className="ask-bubble you">{item.you}</div>
+            <div className="ask-bubble">
+              <p style={{ margin: 0 }}>{item.sentence}</p>
+              {item.rows.map((row) => (
+                <div className="row" key={row.label}><span>{row.label}</span><span>{row.value}</span></div>
+              ))}
+              {item.sql && <p className="muted" style={{ marginBottom: 0 }}>Matching SQL: <code>{item.sql}</code></p>}
+            </div>
+          </div>
+        ))}
+      </div>
       {columns.length > 0 && (
         <div className="books-scroll">
           <table className="books-table">
@@ -289,13 +358,23 @@ function SqlConsole() {
               <tr>{columns.map((column) => <th key={column}>{column}</th>)}</tr>
             </thead>
             <tbody>
-              {rows.map((row, index) => (
+              {sqlRows.map((row, index) => (
                 <tr key={index}>
                   {columns.map((column) => <td key={column}>{formatCell(row[column])}</td>)}
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      <button className="ghost" type="button" onClick={() => setShowPower((value) => !value)}>
+        {showPower ? "Hide power SQL" : "Power SQL"}
+      </button>
+      {showPower && (
+        <div className="power-sql">
+          <p className="muted">Read-only SELECT against this phone’s Postgres. Writes are refused.</p>
+          <textarea className="sql-input" value={sql} onChange={(event) => setSql(event.target.value)} rows={5} spellCheck={false} />
+          <button className="primary" disabled={busy} onClick={() => void runPower()}>Run query</button>
         </div>
       )}
     </section>

@@ -13,21 +13,22 @@ This is the living near-term plan. The investor / family-office vision — inclu
 - Development vs production local snapshots
 - Shared / personal / both visibility, household vs personal views
 - Phrase / join link / Hearth Pass pairing
+- Home chalkboard, Ember companion, and a visit spark (cosmetics, not money)
+- Books → Ask: plain-language conversation with the journal; Power SQL stays read-only
 - Remove a ledger row (with confirm) and undo the latest change from the toast or More → Recent changes
 - Shared books on the household Supabase Postgres (same schema as PGlite)
 - Website on Cloudflare Workers + Assets (`hearth-books`)
 
 ## Next — Chapter 0 (kitchen-table trust)
 
-Gates, not a pitch-deck month. Details in [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md).
+Gates, not a pitch-deck month. Details in [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md). Daily habit map: [DAILY_HEARTH.md](DAILY_HEARTH.md).
 
 - GitHub 2FA (D-020)
-- Auth + RLS (stop `USING (true)`); phrase-join also filters environment
-- PGlite database per Development / Production pill
-- Sit-down shows dollars; goals are real contributions, not +$50
+- Auth + RLS (stop `USING (true)`). Phrase-join already filters environment; PGlite is already per pill
 - Recurring preview on open, then the existing `postEntry` path
 - Calendar Google client ID in the Cloudflare build (`VITE_GOOGLE_CLIENT_ID`) so both people can connect from the kitchen site
 - JSON import of a sanitized Sheets export through the same commands
+- Ring 1 rituals in DAILY_HEARTH (kettle whistle, high-five, grocery list that opens Add)
 
 ## Then — Chapter 1 (frictionless truth)
 
