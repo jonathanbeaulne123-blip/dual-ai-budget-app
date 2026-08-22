@@ -364,9 +364,10 @@ describe("The Hercules Update", () => {
         },
       },
     );
-    expect(body).not.toMatch(/No Frills/);
+    expect(body).not.toMatch(/84\.12/);
     expect(body).not.toMatch(/history/);
     expect(body).not.toMatch(/Bianca spent more/);
     expect(body).toMatch(/memories/);
+    expect(body).toMatch(/CAD/);
   });
 });
