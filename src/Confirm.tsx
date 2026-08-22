@@ -1,6 +1,7 @@
 export function ConfirmSheet({
   title,
   body,
+  extra,
   confirmLabel,
   danger,
   busy,
@@ -9,6 +10,7 @@ export function ConfirmSheet({
 }: {
   title: string;
   body: string;
+  extra?: string;
   confirmLabel: string;
   danger?: boolean;
   busy?: boolean;
@@ -23,6 +25,7 @@ export function ConfirmSheet({
           <button className="ghost" onClick={onCancel} disabled={busy}>Cancel</button>
         </div>
         <p>{body}</p>
+        {extra && <p className="muted">{extra}</p>}
         <button
           className={danger ? "danger" : "primary"}
           style={{ width: "100%", marginTop: 12 }}

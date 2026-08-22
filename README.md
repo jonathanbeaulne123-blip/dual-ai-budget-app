@@ -27,6 +27,7 @@ Open `http://localhost:5173`. **Open the demo kitchen table** loads a fictional 
 - Choose **Shared**, **Personal**, or **Both** on every add; switch Household vs Personal at the top
 - Open **Books** for a general journal, trial balance, account register, and read-only SQL
 - Invite the other person with a three-word phrase, a join link, or a Hearth Pass
+- Link Google on More → Google household bridge so both phones know who is who; Calendar can overlay both calendars
 - Export JSON or a PostgreSQL dump; run Health and get a clean bill or a specific finding
 
 Transfers never count as income or expense. Refunds reverse category spend. Shift tip math is the verified cent-rounded household rules, including negative net tips.
@@ -47,18 +48,19 @@ Household snapshot (JSON)
    +-- Home / Plan / Health are projections
 ```
 
-There is no Google login, no Sheet, and no formula range that can freeze. A failed command throws before the snapshot is replaced. Undo restores the previous snapshot and tombstones posted ids.
+There is no Google Sheet, and no formula range that can freeze. Google sign-in is optional: it identifies Jonathan and Bianca and syncs Calendar (and other Google apps you turn on). It never posts money. A failed command throws before the snapshot is replaced. Undo restores the previous snapshot and tombstones posted ids.
 
 ## Household vs personal
 
 Jonathan and Bianca each pick who they are on the phone. **Household** shows shared rows and rows marked **Both**. **Personal** shows that person's personal rows and **Both**.
 
-Invite the other person with a **three-word phrase**, a **join link**, or a **Hearth Pass** (the shared ledger, no personal rows). Personal is a filter, not a lock. Use two phones if you want that split to hold.
+Invite the other person with a **three-word phrase**, a **join link**, or a **Hearth Pass** (the shared ledger, no personal rows). Personal is a filter, not a lock. Use two phones if you want that split to hold. Google is the household bridge after that: each person links their own account; tokens stay on that phone.
 
 ## Docs
 
 - Current: [docs/README.md](docs/README.md)
 - Daily habit map: [docs/DAILY_HEARTH.md](docs/DAILY_HEARTH.md)
+- Google household bridge: [docs/GOOGLE.md](docs/GOOGLE.md)
 - Vision: [docs/PRODUCT_ROADMAP.md](docs/PRODUCT_ROADMAP.md)
 - History (not a bible): [docs/reference/](docs/reference/)
 

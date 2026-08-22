@@ -6,14 +6,17 @@ import {
   buildMonthBoard,
   describeClash,
   dismissRhythm,
+  findActiveGoogleLink,
   formatCad,
   formatDayLabel,
   icsFilename,
+  linkGoogleIdentity,
   monthKeyFromDateKey,
   pauseRecurrence,
   setRecurrenceGoogleSync,
   shiftMonthKey,
   skipOccurrence,
+  unlinkGoogleIdentity,
   type CommitResult,
   type DateKey,
   type Environment,
@@ -22,14 +25,14 @@ import {
 } from "./core/index.ts";
 import type { OverlayEvent } from "./core/board.ts";
 import {
-  clearGoogleAccount,
-  connectGoogleAccount,
+  disconnectGoogleAccount,
   googleConfigured,
   loadGoogleAccounts,
   listGoogleOverlays,
   upsertHearthReminders,
   type GoogleAccount,
 } from "./calendar/google.ts";
+import { connectGoogle } from "./google/index.ts";
 
 type Pane = "board" | "bills" | "google";
 
@@ -82,6 +85,7 @@ export function CalendarPage(props: {
   const due = household.recurrences.filter((item) => item.active && item.nextDate <= today);
   const suggested = board.rhythms.filter((item) => item.status === "suggested");
   const configured = googleConfigured();
+  const calendarGoogleOn = household.google.enabledServices.includes("calendar");
 
   function refreshAccounts() {
     setAccounts(loadGoogleAccounts(environment, household.members.filter((member) => member.active).map((member) => member.id)));
@@ -93,7 +97,7 @@ export function CalendarPage(props: {
 
   useEffect(() => {
     let live = true;
-    if (!accounts.length) {
+    if (!calendarGoogleOn || !accounts.length) {
       setOverlays([]);
       return;
     }
@@ -107,6 +111,7 @@ export function CalendarPage(props: {
       memberColor: (memberId) => household.members.find((member) => member.id === memberId)?.color ?? "#2f6b4f",
       from,
       to,
+      enabledServices: household.google.enabledServices,
     }).then((items) => {
       if (live) {
         setOverlays(items);
@@ -118,13 +123,25 @@ export function CalendarPage(props: {
       if (live) setGoogleBusy(false);
     });
     return () => { live = false; };
-  }, [accounts, environment, monthKey, household.members]);
+  }, [accounts, environment, monthKey, household.members, calendarGoogleOn, household.google.enabledServices]);
 
   async function connectMember(memberId: string) {
     setGoogleBusy(true);
     setGoogleError("");
     try {
-      await connectGoogleAccount({ memberId, environment });
+      const session = await connectGoogle({
+        memberId,
+        environment,
+        services: ["identity", "calendar"],
+        enabledServices: household.google.enabledServices,
+      });
+      props.onCommand((current) => linkGoogleIdentity(current, {
+        memberId,
+        email: session.identity.email,
+        subject: session.identity.subject,
+        displayName: session.identity.displayName,
+        grantedScopes: session.grantedScopes,
+      }));
       refreshAccounts();
     } catch (caught) {
       setGoogleError(caught instanceof Error ? caught.message : String(caught));
@@ -149,6 +166,7 @@ export function CalendarPage(props: {
           account,
           recurrences: household.recurrences,
           titleFor: (item) => item.note.trim() || household.categories.find((row) => row.id === item.subcategoryId)?.name || "Bill",
+          enabledServices: household.google.enabledServices,
         });
         patches.push(...written);
       }
@@ -351,7 +369,7 @@ export function CalendarPage(props: {
             <span className={`pill ${accounts.length ? "good" : ""}`}>{accounts.length ? `${accounts.length} connected` : "Optional"}</span>
           </header>
           <p className="muted">
-            Connect Jonathan’s and Bianca’s Google accounts on this phone. Hearth reads the month overlay and can write bill reminders at 9:00 Toronto, 24 hours ahead and the morning of. Google never posts money. No client ID in this build still leaves the month board and an .ics file with alarms.
+            Connect Jonathan’s and Bianca’s Google calendars on this phone. Linking writes who is signed in to the shared household (More → Google household bridge). Hearth reads the month overlay and can write bill reminders at 9:00 Toronto. Google never posts money. No client ID still leaves the month board and an .ics file.
           </p>
           {household.members.filter((member) => member.active).sort((left, right) => {
             if (left.id === props.memberId) return -1;
@@ -359,29 +377,41 @@ export function CalendarPage(props: {
             return left.name.localeCompare(right.name);
           }).map((member) => {
             const account = accounts.find((item) => item.memberId === member.id);
+            const link = findActiveGoogleLink(household, member.id);
+            const label = account?.email || link?.email || "not connected";
             return (
               <div className="row" key={member.id}>
                 <span>
                   <i className="swatch" style={{ background: member.color }} /> {member.name}
-                  <span className="muted"> {account ? account.email : "not connected"}</span>
+                  <span className="muted"> {label}{link && !account ? " · connect on this phone" : ""}</span>
                 </span>
                 {account ? (
-                  <button className="chip" onClick={() => { clearGoogleAccount(environment, member.id); refreshAccounts(); setOverlays((items) => items.filter((item) => item.memberId !== member.id)); }}>
+                  <button className="chip" onClick={() => {
+                    disconnectGoogleAccount(environment, member.id);
+                    if (findActiveGoogleLink(household, member.id)) {
+                      props.onCommand((current) => unlinkGoogleIdentity(current, member.id));
+                    }
+                    refreshAccounts();
+                    setOverlays((items) => items.filter((item) => item.memberId !== member.id));
+                  }}>
                     Disconnect
                   </button>
                 ) : (
-                  <button className="chip selected" disabled={googleBusy || !configured} onClick={() => void connectMember(member.id)}>
+                  <button className="chip selected" disabled={googleBusy || !configured || !calendarGoogleOn} onClick={() => void connectMember(member.id)}>
                     Connect
                   </button>
                 )}
               </div>
             );
           })}
+          {!calendarGoogleOn && (
+            <p className="muted">Calendar Google is off. Turn it on in More → Google household bridge.</p>
+          )}
           {!configured && (
             <p className="muted">Add <code>VITE_GOOGLE_CLIENT_ID</code> to this build (Google Cloud web client, this site as an authorized origin). Until then, download the calendar file.</p>
           )}
           {googleError && <p className="danger" style={{ marginTop: 12 }}>{googleError}</p>}
-          <button className="primary" disabled={googleBusy || !household.recurrences.some((item) => item.active)} onClick={() => void remindOnGoogle()}>
+          <button className="primary" disabled={googleBusy || !calendarGoogleOn || !household.recurrences.some((item) => item.active)} onClick={() => void remindOnGoogle()}>
             {googleBusy ? "Talking to Google…" : "Write reminders to Google"}
           </button>
           <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => downloadIcs(household, today)}>
