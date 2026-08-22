@@ -1,5 +1,5 @@
 import { addDays, calendarDaysBetween, daysInMonthKey, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
-import { ACCOUNT_KIND_LABEL, isCashLikeKind, isCreditKind, isInvestmentKind, isLiabilityKind } from "./accountKinds.ts";
+import { ACCOUNT_KIND_LABEL, isCashLikeKind, isCreditKind, isInvestmentKind, isLiabilityKind, isReceivableKind } from "./accountKinds.ts";
 import { accountRegister, compileHousehold } from "./journal.ts";
 import { formatCad, sumCents } from "./money.ts";
 import type { Account, AccountKind, Household, Transaction } from "./types.ts";
@@ -237,6 +237,7 @@ export type HouseholdWallet = {
   groups: { kind: AccountKind; label: string; tiles: WalletTile[] }[];
   cashCents: number;
   owedCents: number;
+  receivableCents: number;
   investedCostCents: number;
   investedMarkedCents: number | null;
   netWorthCents: number;
@@ -273,6 +274,13 @@ function tileSub(household: Household, account: Account, today: DateKey): { sub:
       investment,
     };
   }
+  if (isReceivableKind(account.kind)) {
+    const balanceCents = accountBookBalance(household, account.id, today);
+    return {
+      sub: balanceCents ? `Outstanding ${formatCad(balanceCents)}` : "Nothing outstanding",
+      tone: balanceCents > 0 ? "warn" : "good",
+    };
+  }
   return { sub: account.institution || ACCOUNT_KIND_LABEL[account.kind], tone: "neutral" };
 }
 
@@ -291,7 +299,7 @@ export function householdWallet(household: Household, today: DateKey): Household
         ...extra,
       };
     });
-  const groups = (["chequing", "savings", "credit", "investment", "other"] as AccountKind[])
+  const groups = (["chequing", "savings", "credit", "investment", "receivable", "other"] as AccountKind[])
     .map((kind) => ({
       kind,
       label: ACCOUNT_KIND_LABEL[kind],
@@ -300,6 +308,7 @@ export function householdWallet(household: Household, today: DateKey): Household
     .filter((group) => group.tiles.length);
   const cashCents = sumCents(tiles.filter((tile) => isCashLikeKind(tile.kind)).map((tile) => tile.balanceCents));
   const owedCents = sumCents(tiles.filter((tile) => isCreditKind(tile.kind)).map((tile) => Math.max(0, tile.balanceCents)));
+  const receivableCents = sumCents(tiles.filter((tile) => isReceivableKind(tile.kind)).map((tile) => tile.balanceCents));
   const investedCostCents = sumCents(tiles.filter((tile) => isInvestmentKind(tile.kind)).map((tile) => tile.balanceCents));
   const markedValues = tiles
     .filter((tile) => tile.investment?.markedValueCents != null)
@@ -314,9 +323,10 @@ export function householdWallet(household: Household, today: DateKey): Household
     groups,
     cashCents,
     owedCents,
+    receivableCents,
     investedCostCents,
     investedMarkedCents,
-    netWorthCents: cashCents + investedCostCents - owedCents,
+    netWorthCents: cashCents + investedCostCents + receivableCents - owedCents,
     hottestCard,
   };
 }
@@ -372,6 +382,14 @@ export function addFormDefaults(household: Household, focusedId?: string | null)
       suggestedMode: "shift",
     };
   }
+  if (focused.kind === "receivable") {
+    return {
+      accountId: focused.id,
+      fromAccountId: focused.id,
+      toAccountId: chequing?.id ?? focused.id,
+      suggestedMode: "transfer",
+    };
+  }
   return {
     accountId: focused.id,
     fromAccountId: focused.id,
@@ -384,4 +402,4 @@ export function formatApr(bps: number): string {
   return `${(bps / 100).toFixed(2)}%`;
 }
 
-export { ACCOUNT_KIND_LABEL, ACCOUNT_KINDS, ACCOUNT_KIND_HINT, INVESTMENT_VEHICLES, accountLabel, accountOptionLabel, isCashLikeKind, isCreditKind, isInvestmentKind, isLiabilityKind, normalizeAccountKind, shapeAccount, shapeAccounts } from "./accountKinds.ts";
+export { ACCOUNT_KIND_LABEL, ACCOUNT_KINDS, ACCOUNT_KIND_HINT, INVESTMENT_VEHICLES, accountLabel, accountOptionLabel, isCashLikeKind, isCreditKind, isInvestmentKind, isLiabilityKind, isReceivableKind, normalizeAccountKind, shapeAccount, shapeAccounts } from "./accountKinds.ts";

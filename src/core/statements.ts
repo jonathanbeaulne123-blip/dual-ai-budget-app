@@ -1,6 +1,6 @@
 import { calendarDaysBetween, monthEndKey, monthStartKey, shiftMonthKey, addDays, type DateKey, type MonthKey } from "./calendar.ts";
 import { expenseEffect, incomeEffect, monthSummary, type CategoryActual } from "./budget.ts";
-import { isCashLikeKind, isCreditKind, isInvestmentKind } from "./accountKinds.ts";
+import { isCashLikeKind, isCreditKind, isInvestmentKind, isReceivableKind } from "./accountKinds.ts";
 import { runHealthCheck } from "./health.ts";
 import {
   accountRegister,
@@ -288,6 +288,10 @@ export function cashFlowStatement(household: Household, monthKey: MonthKey): Cas
         investingOutCents += tx.amountCents;
       } else if (from && to && isInvestmentKind(from.kind) && isCashLikeKind(to.kind)) {
         investingInCents += tx.amountCents;
+      } else if (from && to && isReceivableKind(from.kind) && isCashLikeKind(to.kind)) {
+        operatingInCents += tx.amountCents;
+      } else if (from && to && isCashLikeKind(from.kind) && isReceivableKind(to.kind)) {
+        operatingOutCents += tx.amountCents;
       }
     }
   }
@@ -492,6 +496,11 @@ export function notesToFinancialStatements(household: Household, monthKey: Month
       id: "controls",
       title: "8. Control environment",
       body: "Every money write is a command. Cosmetics never post. Bank rec never posts. Hercules never posts. Health refuses an unbalanced journal. Bank feeds, Interac, and issued cards wait on Auth + RLS.",
+    },
+    {
+      id: "claims",
+      title: "9. Receivables",
+      body: "Money owed to this household is a receivable asset, not a jar. On visit day the full cost posts as an expense and expected recovery posts as a refund onto Owed-to-us, so the category shows out-of-pocket. When the money lands it is a transfer into the account that received it, never income. A shortfall writes the remainder back to the expense. Quiet visit labels hide the title from Hercules; they do not encrypt the snapshot. Hosted copies remain disclosed until Auth.",
     },
   ];
 }

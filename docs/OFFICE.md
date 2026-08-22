@@ -279,6 +279,15 @@ The single most important instrument. This is Milk.
 - **Deltas:** budget **+4** (bills get seen and marked, rec stays honest) · engagement **+2**.
 - **Taps:** 3 — tap envelope, read three dates, tap Calendar handle.
 
+### B6b. Claims tray — money owed to us (D-053)
+
+- **Glance:** outstanding receivable CAD, or "clear."
+- **Expand:** oldest open claims, honest copy (settlement is a transfer, never income). **Landed** uses Confirm + `settleClaim`. Cabinet handle → Calendar → Visits.
+- **Write:** none from the widget directly. Confirm still posts.
+- **Hercules:** `perch` when something is outstanding; `attack` ranks after overdue mail.
+- **Empty:** "Nothing owed to this household right now."
+- **Deltas:** budget **+5** (A/R is a real asset) · engagement **+2** (the cat notices what you're owed).
+
 ### B7. Timesheet — punch clock
 
 - **Glance:** `shiftPostingStreak(household, today).count` + `.spoken`.

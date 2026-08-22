@@ -45,6 +45,7 @@ export function WalletStrip({
         <h2>Wallet</h2>
         <span className="muted">
           Cash {formatCad(wallet.cashCents)}
+          {wallet.receivableCents ? ` · owed ${formatCad(wallet.receivableCents)}` : ""}
           {wallet.owedCents ? ` · cards ${formatCad(wallet.owedCents)}` : ""}
           {wallet.investedCostCents ? ` · invested ${formatCad(wallet.investedMarkedCents ?? wallet.investedCostCents)}` : ""}
         </span>
@@ -305,7 +306,7 @@ export function AddAccountForm({
         <h2>Open an account</h2>
         <span className="muted">Expandable. Not a feed.</span>
       </header>
-      <p className="muted">Chequing, savings, as many cards as you hold, investments, or the jar. Interest and cashback never auto-post.</p>
+      <p className="muted">Chequing, savings, as many cards as you hold, investments, money owed to us, or the jar. Interest and cashback never auto-post.</p>
       <label>Kind</label>
       <div className="chips">
         {ACCOUNT_KINDS.map((item) => (

@@ -10,9 +10,11 @@ import {
   weekRecap,
   type HearthTab,
 } from "./hercules.ts";
+import { formatCad } from "./money.ts";
 import type { BooksAsk } from "./askBooks.ts";
 import type { Household } from "./types.ts";
 import { householdWallet } from "./accounts.ts";
+import { claimsTraySentence, outstandingClaims, upcomingVisitProposals } from "./appointments.ts";
 import { shiftPostingStreak } from "./shiftStreak.ts";
 
 export type HerculesPose =
@@ -74,6 +76,8 @@ function repliesFor(mood: CompanionMood, tab: HearthTab, topic: string): string[
   if (topic === "health") return ["Health", "What now?"];
   if (topic === "forecast") return ["Tips this week", "We good?"];
   if (topic === "shift") return ["Log shift", "We good?"];
+  if (topic === "claims") return ["What's owed?", "Start this jar"];
+  if (topic === "visit") return ["Start this jar", "Calendar"];
   if (mood === "hiding") return ["Health", "What broke?"];
   if (mood === "restless") return ["Which bill?", "What now?"];
   if (tab === "calendar") return ["Which bill?", "We good?"];
@@ -172,6 +176,19 @@ export function herculesIdle(
       lesson = "Paydown is a transfer. I don't invent APR.";
       topic = "wallet";
       pose = "pace";
+    } else if (outstandingClaims(household)[0]) {
+      spoken = clip(claimsTraySentence(household, today));
+      lesson = "That is a transfer when it lands. Never income.";
+      topic = "claims";
+      pose = "perch";
+    } else if (upcomingVisitProposals(household, today)[0]) {
+      const proposal = upcomingVisitProposals(household, today)[0]!;
+      spoken = clip(proposal.hercules);
+      lesson = "I propose the jar. You tap Start. I don't write.";
+      topic = "visit";
+      pose = proposal.appointmentId && household.appointments.find((item) => item.id === proposal.appointmentId)?.memberId === "companion"
+        ? "celebrate"
+        : "loaf";
     } else if (sunday) {
       const recap = weekRecap(household, today);
       spoken = clip(recap.rows[0] ? `Sunday. Out ${recap.rows[0].value} this week.` : "Sunday. Tap me for the week.");
@@ -254,6 +271,21 @@ export function talkHercules(
       pose: "pounce",
       topic: "cook",
       attention: false,
+    };
+  }
+
+  if (/\b(start this jar|start the jar)\b/.test(q)) {
+    const proposal = upcomingVisitProposals(household, today)[0];
+    return {
+      spoken: proposal
+        ? clip(`${proposal.hercules} Calendar → Visits. You tap Start. I don't write.`)
+        : "No jar to start. A typical cost on a visit comes first.",
+      lesson: "Creating a goal is a household write. I propose. A human confirms.",
+      fact: proposal ? { label: proposal.title, value: `${formatCad(proposal.weeklyCents)}/wk` } : null,
+      replies: ["What's owed?", "Calendar"],
+      pose: "loaf",
+      topic: "visit",
+      attention: herculesNeedsCheck(household, today),
     };
   }
 

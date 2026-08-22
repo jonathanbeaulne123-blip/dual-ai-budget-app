@@ -16,6 +16,7 @@ Laws: [DECISIONS.md](DECISIONS.md) D-042 / D-044 / D-045 / D-046 / D-047 / D-049
 - Unlocks come from posted facts, a tied rec, or a closed month — never a shop, never pay-to-keep-alive, never pet death.
 - Shift-posting streak (D-050) is consecutive **posted shift dates** from the latest shift. Vacation does not kill him. “Log shift” opens Add. Confirm still posts.
 - **September Office (D-051):** he will perch, bump, lick, and pounce on desk widgets. He still never posts. Kill criterion unchanged.
+- **Appointments (D-055):** he may notice a visit and propose a jar. `proposeVisitGoal` does not write. **Start this jar** is a human tap. Quiet visits are "the Tuesday visit" in his mouth (D-054). He has vet bills (`memberId: "companion"`).
 - **Kill criterion:** if Bianca will not add a grocery because he is in the way, shrink him. Drag him. Pin him.
 
 ## Dual Course
@@ -32,7 +33,8 @@ Every new line in his mouth must point at a budget primitive (wallet, rec, sit-d
    3. Type `remember payday is Thursday`. Send. The note lands in the kitchen ledger (wardrobe → Kitchen ledger notes).
    4. Type `what do you remember?` He reads the snapshot, not a vendor memory store.
    5. Type `add milk`. Add opens. Confirm still posts.
-   6. Dismiss the bubble. Reopen him: prior chat is still there. Wipe it from Hercules’s things if you want it gone on both phones.
+   6. Ask **What’s owed?** after a visit with insurance. Settlement is a transfer. Ask **Medical log** — pending claims stay out of the METC number; Hercules’s vet is never on it.
+   7. Dismiss the bubble. Reopen him: prior chat is still there. Wipe it from Hercules’s things if you want it gone on both phones.
 
 ## Purrsonality
 

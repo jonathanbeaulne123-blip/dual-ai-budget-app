@@ -1,8 +1,8 @@
 import { addDays, monthKeyFromDateKey, shiftMonthKey, todayKey, type DateKey } from "./calendar.ts";
 import { DEFAULT_SHIFT_SETTINGS } from "./shift.ts";
-import { emptyHousehold, postEntry, postShift, postTransfer, addGoal, addRecurrence, setBudget, contributeToGoal, scribbleChalk, markInvestmentValue } from "./commands.ts";
+import { emptyHousehold, postEntry, postShift, postTransfer, addGoal, addRecurrence, setBudget, contributeToGoal, scribbleChalk, markInvestmentValue, addAppointment, postVisit } from "./commands.ts";
 import { emptyCreditDesk, shapeAccounts } from "./accountKinds.ts";
-import { JOINT, type Category, type Household } from "./types.ts";
+import { COMPANION, JOINT, type Category, type Household } from "./types.ts";
 import { jointSplit, equalSplits } from "./splits.ts";
 
 function mulberry32(seed: number) {
@@ -27,6 +27,7 @@ export function catalogHousehold(environment: Household["environment"] = "develo
     { id: "CAT-FOOD", parentId: null, recordType: "group", name: "Food", transactionType: "expense", essential: true, incomeStability: null, active: true, sortOrder: 30 },
     { id: "CAT-TRANSPORT", parentId: null, recordType: "group", name: "Transport", transactionType: "expense", essential: true, incomeStability: null, active: true, sortOrder: 40 },
     { id: "CAT-LIFE", parentId: null, recordType: "group", name: "Life", transactionType: "expense", essential: false, incomeStability: null, active: true, sortOrder: 50 },
+    { id: "CAT-HEALTH", parentId: null, recordType: "group", name: "Health", transactionType: "expense", essential: true, incomeStability: null, active: true, sortOrder: 55 },
     { id: "CAT-DEBT", parentId: null, recordType: "group", name: "Debt", transactionType: "expense", essential: true, incomeStability: null, active: true, sortOrder: 60 },
   ];
   const categories = [
@@ -44,6 +45,10 @@ export function catalogHousehold(environment: Household["environment"] = "develo
     { id: "SUB-TRANSPORT-TRANSIT", parentId: "CAT-TRANSPORT", recordType: "category", name: "Transit", transactionType: "expense", essential: true, incomeStability: "variable", active: true, sortOrder: 42 },
     { id: "SUB-LIFE-PHONE", parentId: "CAT-LIFE", recordType: "category", name: "Phone", transactionType: "expense", essential: true, incomeStability: "fixed", active: true, sortOrder: 51 },
     { id: "SUB-LIFE-FUN", parentId: "CAT-LIFE", recordType: "category", name: "Fun", transactionType: "expense", essential: false, incomeStability: "variable", active: true, sortOrder: 52 },
+    { id: "SUB-HEALTH-DENTAL", parentId: "CAT-HEALTH", recordType: "category", name: "Dental", transactionType: "expense", essential: true, incomeStability: "variable", active: true, sortOrder: 56 },
+    { id: "SUB-HEALTH-THERAPY", parentId: "CAT-HEALTH", recordType: "category", name: "Therapy", transactionType: "expense", essential: true, incomeStability: "fixed", active: true, sortOrder: 57 },
+    { id: "SUB-HEALTH-VET", parentId: "CAT-HEALTH", recordType: "category", name: "Vet", transactionType: "expense", essential: true, incomeStability: "variable", active: true, sortOrder: 58 },
+    { id: "SUB-HEALTH-CARE", parentId: "CAT-HEALTH", recordType: "category", name: "Care", transactionType: "expense", essential: true, incomeStability: "variable", active: true, sortOrder: 59 },
     { id: "SUB-DEBT-VISA", parentId: "CAT-DEBT", recordType: "category", name: "Card payment", transactionType: "expense", essential: true, incomeStability: "fixed", active: true, sortOrder: 61 },
     { id: "SUB-DEBT-INTEREST", parentId: "CAT-DEBT", recordType: "category", name: "Card interest", transactionType: "expense", essential: true, incomeStability: "variable", active: true, sortOrder: 62 },
   ];
@@ -139,6 +144,17 @@ export function catalogHousehold(environment: Household["environment"] = "develo
       last4: "",
       sortOrder: 60,
       investment: { vehicle: "tfsa", markedValueCents: null, markedAt: null },
+    },
+    {
+      id: "ACC-CLAIMS",
+      name: "Benefits owing",
+      kind: "receivable",
+      currency: "CAD",
+      active: true,
+      ownerMemberId: JOINT,
+      institution: "",
+      last4: "",
+      sortOrder: 70,
     },
   ], seededAt);
   household.shiftSettings = { ...DEFAULT_SHIFT_SETTINGS };
@@ -457,6 +473,70 @@ export function seedDemoHousehold(options?: { today?: DateKey; environment?: Hou
 
   household = scribbleChalk(household, { text: "Leftover chili — do not order in", author: "MEM-001" }).household;
   household = scribbleChalk(household, { text: "Hercules gets a hat if rent is on time", author: "MEM-002" }).household;
+
+  household = addAppointment(household, {
+    title: "Hygienist",
+    kind: "dentist",
+    memberId: JOINT,
+    place: "Queen West Dental",
+    practitioner: "Dr. Patel",
+    nextDate: `${shiftMonthKey(monthKeyFromDateKey(today), 1)}-12`,
+    cadence: { kind: "monthly", interval: 6 },
+    typicalCost: 248,
+    typicalRecovery: 180,
+    subcategoryId: "SUB-HEALTH-DENTAL",
+    accountId: "ACC-VISA",
+  }).household;
+  household = addAppointment(household, {
+    title: "Therapy",
+    kind: "therapy",
+    memberId: "MEM-001",
+    place: "The Annex",
+    practitioner: "Dr. Chen",
+    sensitivity: "quiet",
+    nextDate: addDays(today, 4),
+    cadence: { kind: "weekly", interval: 2 },
+    typicalCost: 160,
+    typicalRecovery: 80,
+    subcategoryId: "SUB-HEALTH-THERAPY",
+    accountId: "ACC-VISA",
+  }).household;
+  household = addAppointment(household, {
+    title: "Hercules — checkup",
+    kind: "vet",
+    memberId: COMPANION,
+    place: "Annex Cat Clinic",
+    practitioner: "Dr. Ng",
+    nextDate: `${shiftMonthKey(monthKeyFromDateKey(today), 7)}-03`,
+    cadence: { kind: "monthly", interval: 12 },
+    typicalCost: 186,
+    typicalRecovery: 0,
+    subcategoryId: "SUB-HEALTH-VET",
+    accountId: "ACC-VISA",
+  }).household;
+
+  const lastClean = addDays(today, -40);
+  if (lastClean < today) {
+    const dentist = household.appointments.find((item) => item.kind === "dentist");
+    if (dentist) {
+      household = postVisit(household, {
+        date: lastClean,
+        amount: 248,
+        appointmentId: dentist.id,
+        accountId: "ACC-VISA",
+        expectedRecovery: 180,
+        claimLabel: "Sun Life · cleaning",
+        craEligible: true,
+        lines: [
+          { code: "01204", description: "Exam", amount: 72 },
+          { code: "11101", description: "Debridement", amount: 128 },
+          { code: "12111", description: "Fluoride", amount: 48 },
+        ],
+        confirmDuplicate: true,
+        createdBy: "MEM-002",
+      }).household;
+    }
+  }
 
   return household;
 }

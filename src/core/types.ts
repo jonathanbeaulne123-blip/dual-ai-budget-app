@@ -6,6 +6,8 @@ export type TransactionType = "expense" | "income" | "transfer" | "refund";
 export type IncomeStability = "fixed" | "variable";
 export type PartyId = string; // member id or "joint"
 export const JOINT = "joint" as const;
+/** Recurring companion costs (vet) sit on the household ledger, not a person. */
+export const COMPANION = "companion" as const;
 export type Visibility = "household" | "personal" | "both";
 export type LedgerView = "household" | "personal";
 export type Tombstone = { id: string; deletedAt: string };
@@ -18,7 +20,7 @@ export type Member = {
   updatedAt: string;
 };
 
-export type AccountKind = "chequing" | "savings" | "credit" | "investment" | "other";
+export type AccountKind = "chequing" | "savings" | "credit" | "investment" | "other" | "receivable";
 export type InvestmentVehicle = "tfsa" | "rrsp" | "fhsa" | "non-registered" | "crypto" | "other";
 
 export type CreditRewardRule = {
@@ -102,7 +104,7 @@ export type Transaction = {
   transferFromAccountId?: string;
   transferToAccountId?: string;
   refundOfId?: string;
-  source: "manual" | "shift" | "recurring" | "import";
+  source: "manual" | "shift" | "recurring" | "import" | "visit";
   sourceId?: string;
   duplicateKey: string;
   potentialDuplicate: boolean;
@@ -173,6 +175,73 @@ export type Recurrence = {
 
 export type HouseholdCalendar = {
   dismissedRhythmKeys: string[];
+};
+
+export type AppointmentKind = "dentist" | "doctor" | "therapy" | "optometrist" | "physio" | "vet" | "spa" | "other";
+export type AppointmentSensitivity = "household" | "quiet";
+export type AppointmentCoverage = "ohip" | "private" | "none";
+export type AppointmentMemberId = string | typeof JOINT | typeof COMPANION;
+
+export type AppointmentCadence =
+  | { kind: "weekly"; interval: number }
+  | { kind: "monthly"; interval: number }
+  | { kind: "days"; interval: number }
+  | { kind: "nthWeekday"; weekday: number; nth: number; intervalMonths: number }
+  | { kind: "once" };
+
+export type BillLine = {
+  id: string;
+  code: string;
+  description: string;
+  amountCents: number;
+};
+
+export type Appointment = {
+  id: string;
+  title: string;
+  kind: AppointmentKind;
+  memberId: AppointmentMemberId;
+  place: string;
+  practitioner: string;
+  sensitivity: AppointmentSensitivity;
+  coverage: AppointmentCoverage;
+  nextDate: DateKey;
+  cadence: AppointmentCadence;
+  typicalCostCents: number;
+  typicalRecoveryCents: number;
+  subcategoryId: string;
+  accountId: string;
+  lastVisitDate: DateKey | null;
+  lastPostedTransactionId: string | null;
+  savingGoalId: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ClaimKind = "insurance" | "employer" | "person" | "tax" | "other";
+export type ClaimStatus = "pending" | "submitted" | "settled" | "short" | "denied";
+
+export type Claim = {
+  id: string;
+  kind: ClaimKind;
+  label: string;
+  appointmentId: string | null;
+  expenseTransactionId: string;
+  recoveryTransactionId: string | null;
+  settleTransferIds: string[];
+  writeOffTransactionId: string | null;
+  expectedCents: number;
+  receivedCents: number;
+  writtenOffCents: number;
+  receivableAccountId: string;
+  status: ClaimStatus;
+  submittedAt: string | null;
+  settledAt: string | null;
+  craEligible: boolean;
+  lines: BillLine[];
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type CosmeticSlot = "hat" | "chain" | "house" | "collar";
@@ -341,6 +410,8 @@ export type Household = {
   transactions: Transaction[];
   shifts: Shift[];
   recurrences: Recurrence[];
+  appointments: Appointment[];
+  claims: Claim[];
   calendar: HouseholdCalendar;
   kitchen: HouseholdKitchen;
   google: HouseholdGoogle;
@@ -365,6 +436,8 @@ export type SharedEnvelope = {
   accounts: Account[];
   categories: Category[];
   recurrences: Recurrence[];
+  appointments: Appointment[];
+  claims: Claim[];
   calendar: HouseholdCalendar;
   kitchen: HouseholdKitchen;
   google: HouseholdGoogle;

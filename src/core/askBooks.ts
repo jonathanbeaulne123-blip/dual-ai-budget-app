@@ -5,6 +5,7 @@ import { formatCad } from "./money.ts";
 import { accountRegister, compileHousehold } from "./journal.ts";
 import { categoryName } from "./ledgerView.ts";
 import { creditCardView, householdWallet } from "./accounts.ts";
+import { claimPublicLabel, claimsTraySentence, craMedicalLog, outstandingClaims, upcomingVisitProposals } from "./appointments.ts";
 import { describeGoalContributors } from "./goals.ts";
 import type { Household } from "./types.ts";
 
@@ -28,6 +29,8 @@ export const ASK_SUGGESTIONS = [
   "Accounting policies",
   "Groceries this month",
   "Bills due",
+  "What's owed",
+  "Medical log",
   "How much is in chequing",
   "This week vs last week",
   "Goals",
@@ -112,7 +115,7 @@ export function askBooks(household: Household, question: string, today: DateKey)
     };
   }
 
-  if (/\b(bill|due|upcoming|rent|hydro|phone)\b/.test(q) && !/\b(spent|spend|grocer)\b/.test(q)) {
+  if (/\b(bill|due|upcoming|rent|hydro|phone)\b/.test(q) && !/\b(spent|spend|grocer|owed|claim)\b/.test(q)) {
     const horizon = addDays(today, 14);
     const due = household.recurrences
       .filter((item) => item.active && item.nextDate <= horizon)
@@ -127,6 +130,37 @@ export function askBooks(household: Household, question: string, today: DateKey)
         label: `${item.nextDate} · ${item.note || "Recurring"}`,
         value: formatCad(item.amountCents),
       })),
+    };
+  }
+
+  if (/\b(owed|owing|claim|receivable|co-?pay|insurance landed|what.?s owed)\b/.test(q)) {
+    const owing = outstandingClaims(household);
+    if (!owing.length) {
+      return { kind: "answer", sentence: "Nothing is outstanding. The tray is empty.", rows: [] };
+    }
+    return {
+      kind: "answer",
+      sentence: `${claimsTraySentence(household, today)} Settlement is a transfer, never income.`,
+      rows: owing.map((claim) => ({
+        label: claimPublicLabel(household, claim, "hercules"),
+        value: formatCad(claim.expectedCents - claim.receivedCents - claim.writtenOffCents),
+      })),
+    };
+  }
+
+  if (/\b(medical|metc|cra|tax credit|dentist|therapy|vet)\b/.test(q) && !/\b(spent this)\b/.test(q)) {
+    const log = craMedicalLog(household, today);
+    const saveFor = upcomingVisitProposals(household, today)[0];
+    return {
+      kind: "answer",
+      sentence: log.hercules,
+      rows: [
+        { label: `${log.year} eligible`, value: formatCad(log.eligibleCents) },
+        { label: "Reimbursed", value: formatCad(log.reimbursedCents) },
+        { label: "Still owing", value: formatCad(log.outstandingCents) },
+        { label: "CRA cap", value: formatCad(log.capCents) },
+        ...(saveFor ? [{ label: "Next jar", value: `${saveFor.title} · ${formatCad(saveFor.weeklyCents)}/wk` }] : []),
+      ],
     };
   }
 

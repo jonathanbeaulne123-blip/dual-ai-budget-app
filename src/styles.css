@@ -493,6 +493,7 @@ input, select, textarea {
 .kind-pill.paycheck { background: #efe4c8; color: #6b4e12; }
 .kind-pill.shift { background: #ebe4d6; }
 .kind-pill.google { background: #dce4f4; color: #243c6b; }
+.kind-pill.visit { background: #e8d5ef; color: #5a2d6b; }
 .rhythm-card {
   border-top: 1px solid var(--line);
   padding: 10px 0 4px;

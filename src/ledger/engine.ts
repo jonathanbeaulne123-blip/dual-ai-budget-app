@@ -109,6 +109,14 @@ export function booksIntegrityFacts(household: Household) {
       amountCents: row.amountCents,
       date: row.date,
     })),
+    claims: byId(household.claims ?? []).map((row) => ({
+      id: row.id,
+      expectedCents: row.expectedCents,
+      receivedCents: row.receivedCents,
+      writtenOffCents: row.writtenOffCents,
+      expenseTransactionId: row.expenseTransactionId,
+      status: row.status,
+    })),
     accounts: byId(household.accounts).map((account) => ({
       id: account.id,
       name: account.name,

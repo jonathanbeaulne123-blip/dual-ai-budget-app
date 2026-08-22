@@ -14,6 +14,8 @@ import {
   loadOfficeLayout,
   loadOfficeRings,
   mailOverdue,
+  claimsOverdue,
+  claimsTraySentence,
   promoteRail,
   railRows,
   readTorontoWeather,
@@ -44,6 +46,7 @@ import { WalletBody, WalletGlance } from "./widgets/WalletTray.tsx";
 import { CalculatorBody, CalculatorGlance } from "./widgets/CalculatorPad.tsx";
 import { ChalkboardBody, chalkboardGlance } from "./widgets/ChalkboardDesk.tsx";
 import { MailBody, MailGlance } from "./widgets/Mail.tsx";
+import { ClaimsBody, ClaimsGlance } from "./widgets/ClaimsTray.tsx";
 import { TimesheetBody, TimesheetGlance } from "./widgets/Timesheet.tsx";
 import { PostcardBody, PostcardGlance } from "./widgets/Postcard.tsx";
 import { CookOffBody, CookOffGlance } from "./widgets/CookOffKettle.tsx";
@@ -95,6 +98,7 @@ export function Office({
   onBuyNote,
   onKitchen,
   onMarkPaid,
+  onAskSettle,
   onSitDown,
   onGo,
 }: {
@@ -126,6 +130,7 @@ export function Office({
   onBuyNote: (text: string) => void;
   onKitchen: (fn: (current: Household) => CommitResult) => void;
   onMarkPaid: (recurrenceId: string, summary: string) => void;
+  onAskSettle: (claimId: string, summary: string) => void;
   onSitDown: (next: Household, token?: UndoToken) => void;
   onGo: (tab: HearthTab) => void;
 }) {
@@ -366,6 +371,7 @@ export function Office({
   }
 
   const mailWarn = mailOverdue(dashboard, today);
+  const claimsWarn = claimsOverdue(household);
   const walletIsWarn = walletWarn(wallet);
 
   const renderers: Record<InstrumentId, (index: number, pair?: boolean) => ReactNode> = {
@@ -434,6 +440,20 @@ export function Office({
       `Mail. ${dashboard.upcoming[0] ? dashboard.upcoming[0].title : "No money dates in the next while."}`,
       <MailBody dashboard={dashboard} today={today} onMarkPaid={onMarkPaid} onCalendar={() => onGo("calendar")} />,
       { index, pair, warn: mailWarn, extraClass: mailWarn ? "is-overdue" : undefined },
+    ),
+    claims: (index, pair) => frame(
+      "claims",
+      "Claims",
+      <ClaimsGlance household={household} today={today} />,
+      `Claims tray. ${claimsTraySentence(household, today)}`,
+      <ClaimsBody
+        household={household}
+        today={today}
+        busy={busy}
+        onAskSettle={onAskSettle}
+        onCalendar={() => onGo("calendar")}
+      />,
+      { index, pair, warn: claimsWarn, extraClass: claimsWarn ? "is-overdue" : undefined },
     ),
     timesheet: (index, pair) => frame(
       "timesheet",

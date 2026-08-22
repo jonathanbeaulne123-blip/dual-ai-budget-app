@@ -159,7 +159,7 @@ describe("The Accounts Floor", () => {
   it("groups the wallet and still balances the demo journal", () => {
     const household = seedDemoHousehold({ today, environment: "development" });
     const wallet = householdWallet(household, today);
-    expect(wallet.groups.map((group) => group.kind)).toEqual(["chequing", "savings", "credit", "investment", "other"]);
+    expect(wallet.groups.map((group) => group.kind)).toEqual(["chequing", "savings", "credit", "investment", "receivable", "other"]);
     expect(wallet.tiles.some((tile) => tile.account.id === "ACC-MC")).toBe(true);
     const books = compileHousehold(household);
     expect(trialBalance(books).inBalance).toBe(true);

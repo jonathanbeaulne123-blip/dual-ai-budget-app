@@ -85,6 +85,7 @@ function mode<T>(items: T[], keyFn: (item: T) => string): T {
 function usableTransactions(household: Household): Transaction[] {
   return household.transactions.filter((tx) => {
     if (tx.isDuplicate) return false;
+    if (tx.source === "visit") return false;
     if (tx.type !== "expense" && tx.type !== "income") return false;
     if (!tx.subcategoryId) return false;
     return true;
