@@ -69,7 +69,7 @@ function kindLabel(kind: string): string {
 
 function partyLabel(household: Household, memberId: string): string {
   if (memberId === "joint") return "Both of you";
-  if (memberId === "companion") return household.companion?.name || "Hercules";
+  if (memberId === "companion") return household.kitchen.companion.name || "Hercules";
   return household.members.find((member) => member.id === memberId)?.name ?? memberId;
 }
 
@@ -214,7 +214,7 @@ function AppointmentForm(props: {
       <label htmlFor="visit-who">Who</label>
       <select id="visit-who" value={memberId} onChange={(event) => setMemberId(event.target.value)}>
         <option value="joint">Both of you</option>
-        <option value="companion">{props.household.companion?.name || "Hercules"}</option>
+        <option value="companion">{props.household.kitchen.companion.name || "Hercules"}</option>
         {props.household.members.filter((member) => member.active).map((member) => (
           <option key={member.id} value={member.id}>{member.name}</option>
         ))}
