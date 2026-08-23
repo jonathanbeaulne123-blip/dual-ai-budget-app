@@ -1,5 +1,7 @@
 # AI Task and Handoff Standard
 
+After a long thread, start from [WORKING_MEMORY.md](WORKING_MEMORY.md) (last five shipped updates). Do not treat unfinished chat as `main`.
+
 ## Risk routing
 
 | Risk | Examples | Default routing |

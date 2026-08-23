@@ -4,6 +4,7 @@ Hearth is the product. **Living canon** is this folder except [nostalgia/](nosta
 
 | File | Use |
 |---|---|
+| [WORKING_MEMORY.md](WORKING_MEMORY.md) | **Start a new chat here.** Recap of the last five shipped updates (#48–#53). Older threads are discarded. |
 | [STRATEGY.md](STRATEGY.md) | Dual Course: family-office books (weight 5) and companion/interactables (weight 3). Vision and backlog, including live Google pairs (D-078). |
 | [PROJECT_CHARTER.md](PROJECT_CHARTER.md) | Who it is for and what success looks like |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Ledger, books, UI, and how the two courses couple |
