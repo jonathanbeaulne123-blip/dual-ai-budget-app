@@ -85,7 +85,7 @@ Do not re-litigate these as “Chapter 0” or “Ring 1.” They are the kitche
 - Development vs Production pills; PGlite per pill
 - Home chalkboard; Hercules the Maine Coon (wander, loaf on Add, journal-first talk; OpenAI/Anthropic Worker secrets allowed, then Workers AI); chat and memories in `kitchen.hercules` (D-049); visit spark
 - Kitchen habit (D-050): CAD cents pad, Home Milk/Shift/Pay card, guided sit-down, Hercules shift-posting streak from posted shifts
-- September Office (D-051, **direction**): Home as a lived-in Toronto desk. The first ship produced a seventeen-row settings list; Claude is rebuilding the board as pixels (Tracker / Household / Ledger). Cursor Grok wires projections and layout. Spec history: [CLAUDE_OFFICE_UX.md](CLAUDE_OFFICE_UX.md), [OFFICE.md](OFFICE.md).
+- September Office (D-051 / **D-079**): one kernel, two UI branches. **Mobile** (`< 720px`) is glance + one-tap. **Desktop/wide** is the current canvas (customize later, do not strip). Claude’s live assignment: [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md). History spec: [CLAUDE_OFFICE_UX.md](CLAUDE_OFFICE_UX.md), [OFFICE.md](OFFICE.md).
 - Audit Office: opinion, statements, equity roll, working capital, notes, rec, close pack
 - Accounts Floor: wallet tiles, account rooms, expandable cards, investment marks, interest/rewards as explicit posts
 - Appointments destination, claims tray, receivable kind, quiet labels, Hercules propose-to-save, METC log on the page (D-053 / D-054 / D-055 / D-056). Spec: [APPOINTMENTS.md](APPOINTMENTS.md)
@@ -191,7 +191,7 @@ A creature and a kitchen that teach the books by living on them:
 | **Hercules ledger desk** | Money questions answered from the journal. Chat/memories as protected as the books. | A cat who remembers payday without a vendor memory store. | **Shipping (D-049).** Third-party keys allowed as Worker secrets (D-045). Workers AI if none set. Payload lift: D-059. |
 | **Hercules science** | One-tap posting of repeated merchants. Quiet titles never leak. Figures in his mouth trace to posted rows. | He notices without being asked. One cat-voiced proposal. Save is a tap. | **Shipping (D-057–D-060).** On-device notices; presets; retrieved model payload. No bank feed. |
 | **Kitchen habit** | Fewer taps to post milk/shift. Sit-down is three confirms, same `applySitDown`. | Hercules jumps on posted shift streaks. Never streak-death. | **Shipping (D-050).** |
-| **September Office** | Posting, wallet, sit-down, bills, Health reachable without leaving Home unless you dive. | A desk that is five objects, not seventeen rows. | **Direction (D-051).** Claude builds the board as pixels (Tracker / Household / Ledger). Grok wires. Widgets never post. |
+| **September Office** | Posting, wallet, sit-down, bills, Health reachable without leaving Home unless you dive. | Mobile: five objects, not seventeen rows. Desktop: the full desk Jonathan already likes. | **Direction (D-051), split (D-079).** Claude builds **mobile only**. Wide stays. Widgets never post. |
 | **Google Dual Course** | Dates, mail, and close-pack files next to the books — still confirmed. | Calendar chips, visit reminders, “there’s a statement.” | **In scope (D-078).** Engine ships. Features below. Not a Home widget. |
 | **Lock the hosted door** | Auth + RLS. Personal can become privacy. Opinion about *access* can go unmodified. | Hercules can tell the truth: “the door latched.” No more qualified opinion pretending math is the only issue. | **Next engineering dollar.** Do not apply [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) while `USING (true)`. |
 | **GitHub 2FA** | The canon remote stops being a single-factor door (D-020). | None required — Course A wins. | Open |
@@ -259,15 +259,16 @@ Each row is a whole feature. Call `withGoogle` on demand. No background daemon. 
 
 ## Next work (the actual backlog)
 
-Order is **weight and risk**, not nostalgia chapter numbers. Claude owns Home pixels in parallel; do not collide with that board.
+Order is **weight and risk**, not nostalgia chapter numbers. Claude owns **mobile** Home pixels in parallel; do not restyle wide.
 
-1. **Home board subtraction (D-051).** Claude builds Tracker / Household / Ledger as working UI. Cursor Grok wires projections, layout `v: 2`, and the hide hatch. Five objects on the desk, not seventeen. Google is **not** in that default five.
-2. **Google Dual Course (D-078).** Visit/claim reminders first (Calendar already on). Then Gmail inbox on this phone, Drive close pack, Contacts match, Sheets import — each opt-in, each `withGoogle`, none post. How-to: [GOOGLE.md](GOOGLE.md).
-3. **Auth + RLS** on hosted books. Phrase-join already filters environment; PGlite is already per pill. This is the Course A door. Pair it with an honest Hercules line about access. Required before any Google payload is stored hosted, and before bank parsers.
-4. **GitHub 2FA** (D-020).
-5. **Recurring preview on open**, then the existing `postEntry` path.
-6. **JSON/CSV import** of a sanitized history through commands (D-011) — same kernel as Sheets import.
-7. Every subsequent feature as a Dual Course pair from the table above. Prefer pairs that raise posting rate, rec rate, sit-down completion, or account literacy.
+1. **Mobile Home (D-079).** Claude builds the phone shell (`< 720px`): glance, one-tap, five or fewer objects. Desktop/wide stays the current office. Prompt: [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md). Cursor Grok wires persistence if needed and guards `.desk-wide`. Google is **not** an 18th mobile widget.
+2. **Desktop office tweaks (later, same decision).** Heavy customization, dynamic window, full widget set — everything that was cumbersome on the phone. Do not start this until mobile milk is ten seconds.
+3. **Google Dual Course (D-078).** Visit/claim reminders first (Calendar already on). Then Gmail inbox on this phone, Drive close pack, Contacts match, Sheets import — each opt-in, each `withGoogle`, none post. How-to: [GOOGLE.md](GOOGLE.md).
+4. **Auth + RLS** on hosted books. Phrase-join already filters environment; PGlite is already per pill. This is the Course A door. Pair it with an honest Hercules line about access. Required before any Google payload is stored hosted, and before bank parsers.
+5. **GitHub 2FA** (D-020).
+6. **Recurring preview on open**, then the existing `postEntry` path.
+7. **JSON/CSV import** of a sanitized history through commands (D-011) — same kernel as Sheets import.
+8. Every subsequent feature as a Dual Course pair from the table above. Prefer pairs that raise posting rate, rec rate, sit-down completion, or account literacy.
 
 Do not open Flinks, Interac APIs, issued cards, receipt images in Postgres, or amount-bearing push on a shared device until Auth + RLS is true.
 

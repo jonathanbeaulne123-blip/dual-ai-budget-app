@@ -1,10 +1,12 @@
 # The September Office
 
+**Two UI branches (D-079):** Mobile (`< 720px`) is glance + one-tap. Desktop/wide (`≥ 720px`) is this office as it already feels — heavy customization later, **do not strip it to five tiles this pass.** Claude’s current build prompt: [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md).
+
 **The product face for September testing:** Home is a lived-in Toronto office. Rain on the glass. A desk of true instruments. Hercules on the furniture. Deep Books and Calendar still exist for people who want to dive.
 
-This is Course B chrome on Course A facts (D-048 / **D-051**). Widgets **project** the journal. They never `postEntry`. Confirm still posts. Layout is this-phone cosmetics. Weather is atmosphere, never CAD.
+This is Course B chrome on Course A facts (D-048 / **D-051** / **D-079**). Widgets **project** the journal. They never `postEntry`. Confirm still posts. Layout is this-phone cosmetics. Weather is atmosphere, never CAD.
 
-Claude designed this as the final UX going into September testing. Cursor Grok implements from the packets below. Assignment prompt: [CLAUDE_OFFICE_UX.md](CLAUDE_OFFICE_UX.md).
+The original “Claude specs, Grok implements” pass produced a 17-row **phone rail**. Wide canvas is what Jonathan wants to keep. Assignment history: [CLAUDE_OFFICE_UX.md](CLAUDE_OFFICE_UX.md) (superseded for the mobile rebuild).
 
 Laws: [DECISIONS.md](DECISIONS.md) D-044 / D-047 / D-049 / D-050 / D-051. Strategy: [STRATEGY.md](STRATEGY.md). Companion: [HERCULES.md](HERCULES.md).
 
@@ -529,16 +531,21 @@ New CSS lives in **`src/office.css`**, imported alongside `styles.css`. Existing
 
 ### D5. Phone vs wide
 
+**D-079:** these are two UI branches. Shared theme and commands. Different density and customization.
+
 | | Phone (< 720px) | Wide (≥ 720px) |
 |---|---|---|
-| Layout | rail, reorder by long-press | free move, 8px snap |
-| Window | full width, `clamp(96px,22vh,168px)` | full width, taller (max 220px) |
-| Instruments | 1 col, occasional 2-up | 2–3 cols, overlap allowed |
-| Expand | pushes neighbours down | lifts to `z:10`, desk dims 8% |
-| Cat | 96px, corner-yields to Post | 96px, more perch choice |
-| Nav | fixed bottom, `--nav: 76px` | unchanged (keep the phone shape; this is a phone product) |
+| Layout | **This pass:** glance rail, five or fewer, one-tap common acts | **Frozen this pass:** free move, 8px snap, full instrument set |
+| Window | Keep if it still earns height; no CAD on glass | Current weather glass — do not “simplify” |
+| Instruments | Hierarchy: one number dominates | Current canvas, overlap allowed |
+| Expand | One at a time; common acts should not need a hunt | Current lift / dim |
+| Cat | Yields to Post; must not eat the five | Current perch |
+| Nav | Bottom bar; do not duplicate cabinet gold buttons | Current |
+| Customization | Escape hatch (hide/restore) | Later: sizes, stocks, stacks, Edit Desk, all widgets |
 
-The existing `.app { max-width: 760px }` stays. The office does not become a desktop app at 1400px — it becomes a centred desk with margins, which is correct for a household product used on two phones.
+`.app { max-width: 760px }` is the current desktop column. Changing that cap is a **desktop-branch** tweak later, not a reason to restyle wide into a phone.
+
+The old line “the office does not become a desktop app at 1400px” is **withdrawn** as product law. Desktop may later use more of the glass. This pass still does not restyle it.
 
 ---
 
