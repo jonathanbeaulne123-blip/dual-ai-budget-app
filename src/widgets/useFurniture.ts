@@ -1,16 +1,17 @@
 import { useEffect, useRef, type RefObject } from "react";
-import { publishFurniture, unpublishFurniture, type FurnitureKind } from "../core/officeLayout.ts";
+import { publishFurniture, unpublishFurniture, type FurnitureKind, type FurnitureSeat } from "../core/officeLayout.ts";
 
 export function useFurniture(
   id: string,
   kind: FurnitureKind,
   perchable: boolean,
   warn: boolean,
-  extra?: { enabled?: boolean; live?: boolean },
+  extra?: { enabled?: boolean; live?: boolean; seat?: FurnitureSeat },
 ): RefObject<HTMLDivElement | null> {
   const ref = useRef<HTMLDivElement | null>(null);
   const enabled = extra?.enabled !== false;
   const live = Boolean(extra?.live);
+  const seat = extra?.seat;
   useEffect(() => {
     if (!enabled) {
       unpublishFurniture(id);
@@ -25,6 +26,7 @@ export function useFurniture(
         kind,
         perchable,
         warn,
+        seat,
         rect: { x: rect.left, y: rect.top, w: rect.width, h: rect.height },
       });
     };
@@ -46,6 +48,6 @@ export function useFurniture(
       if (raf) window.cancelAnimationFrame(raf);
       unpublishFurniture(id);
     };
-  }, [id, kind, perchable, warn, enabled, live]);
+  }, [id, kind, perchable, warn, enabled, live, seat]);
   return ref;
 }

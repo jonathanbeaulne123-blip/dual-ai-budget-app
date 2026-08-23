@@ -4,7 +4,7 @@
     The Hearth mark. Front-facing Maine Coon in the same hand as the figure.
     Authored for 16px first: the silhouette (two tufted ears + a wide fluffy
     head) carries it, and every detail below is allowed to disappear.
-    currentColor so it inherits --ink and survives a dark tab strip.
+    currentColor so it inherits the ink token and survives a dark tab strip.
   -->
   <g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
     <!-- head + ruff, one continuous fur contour -->

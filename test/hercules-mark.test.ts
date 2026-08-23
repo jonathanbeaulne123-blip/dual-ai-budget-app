@@ -49,6 +49,10 @@ describe("Hercules mark and figure", () => {
     expect(favicon).not.toMatch(/M32 44 C31 47/);
     expect(mark).toMatch(/currentColor/);
     expect(mark.length + favicon.length).toBeLessThan(8_000);
+    const comments = mark.match(/<!--[\s\S]*?-->/g) ?? [];
+    for (const comment of comments) {
+      expect(comment.slice(4, -3)).not.toMatch(/--/);
+    }
   });
 
   it("keeps the 3D source out of the Worker assets directory", () => {

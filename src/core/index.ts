@@ -40,6 +40,7 @@ export * from "./cadPad.ts";
 export * from "./shiftStreak.ts";
 export * from "./weather.ts";
 export * from "./officeLayout.ts";
+export * from "./officePhone.ts";
 export * from "./officeRoom.ts";
 export * from "./officeFacts.ts";
 export * from "./shiftClock.ts";

@@ -290,6 +290,9 @@ describe("office projections stay honest", () => {
     const opinion = auditOpinion(catalog);
     const facts = blotterFacts(dash, opinion, 0);
     expect(facts.netCents).toBe(dash.month.netActualCents);
+    expect(facts.stamp).toBe(opinion.kind === "unmodified" ? "clean" : opinion.kind);
+    expect(blotterFacts(dash, { ...opinion, kind: "unmodified" }, 0).stamp).toBe("clean");
+    expect(blotterFacts(dash, { ...opinion, kind: "qualified" }, 0).stamp).toBe("qualified");
     expect(facts.glance === BLOTTER_EMPTY || facts.glance === formatCad(dash.month.netActualCents)).toBe(true);
     expect(emptyDash.month.netActualCents).toBe(0);
     expect(blotterFacts(emptyDash, auditOpinion(empty), runHealthCheck(empty).length).empty).toBe(true);

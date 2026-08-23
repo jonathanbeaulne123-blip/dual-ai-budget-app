@@ -1,6 +1,6 @@
 # The September Office
 
-**Two UI branches (D-079):** Mobile (`< 720px`) is glance + one-tap. Desktop/wide (`≥ 720px`) is this office as it already feels — heavy customization later, **do not strip it to five tiles this pass.** Claude’s current build prompt: [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md).
+**Two UI branches (D-079):** Mobile (`< 720px`) is glance + one-tap via `OfficePhone`. Desktop/wide (`≥ 720px`) is this office as it already feels — heavy customization later, **do not strip it to five tiles this pass.** Assignment record: [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md).
 
 **The product face for September testing:** Home is a lived-in Toronto office. Rain on the glass. A desk of true instruments. Hercules on the furniture. Deep Books and Calendar still exist for people who want to dive.
 

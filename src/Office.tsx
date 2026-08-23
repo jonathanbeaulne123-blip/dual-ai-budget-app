@@ -18,7 +18,6 @@ import {
   claimsOverdue,
   claimsTraySentence,
   promoteRail,
-  railRows,
   readTorontoWeather,
   resolveRoom,
   runHealthCheck,
@@ -45,6 +44,7 @@ import {
 import type { Dashboard } from "./core/insights.ts";
 import type { HearthTab } from "./core/hercules.ts";
 import type { Account, Category, CommitResult, UndoToken } from "./core/index.ts";
+import { OfficePhone } from "./OfficePhone.tsx";
 import { WindowBand } from "./widgets/WindowBand.tsx";
 import { DeskItem } from "./widgets/DeskItem.tsx";
 import { BlotterBody, BlotterGlance } from "./widgets/Blotter.tsx";
@@ -618,7 +618,24 @@ export function Office({
     ),
   };
 
-  const rows = breakpoint === "phone" ? railRows(order) : order.map((id) => id);
+  /* Mobile shell (< 720px). Wide falls through to the desk canvas below,
+     unchanged — see docs/CLAUDE_MOBILE_SHELL.md §1. */
+  if (breakpoint === "phone") {
+    return (
+      <OfficePhone
+        household={household} dashboard={dashboard} sill={sill}
+        weatherLabel={reading.celsius == null ? reading.glass : `${reading.glass} · ${Math.round(reading.celsius)}\u00b0`}
+        layout={layout} onLayout={setLayout}
+        today={today} memberId={memberId} busy={busy} adding={adding}
+        form={form} mode={mode} error={error} categories={categories} postLabel={postLabel}
+        onForm={onForm} onPost={onPost} onMore={onMore} onMilk={onMilk} onCoffee={onCoffee}
+        onClockIn={onClockIn} onAbandonShift={onAbandonShift} onSignOut={onSignOut}
+        onFinishedShift={onFinishedShift} onPayCard={onPayCard} onOpenAccount={onOpenAccount}
+        onBuyNote={onBuyNote} onKitchen={onKitchen} onMarkPaid={onMarkPaid} onGo={onGo}
+      />
+    );
+  }
+
 
   return (
     <div
@@ -633,23 +650,11 @@ export function Office({
         onToggle={cycleWindow}
       />
       <SillOverviewPlate overview={sill} compact={layout.windowMinimized} />
-      <div className={`desk-canvas ${breakpoint === "wide" ? "desk-wide" : "desk-rail"} ${dragging && breakpoint === "wide" ? "is-grid" : ""}`}>
-        {breakpoint === "wide" && rings.map((ring) => (
+      <div className={`desk-canvas desk-wide ${dragging ? "is-grid" : ""}`}>
+        {rings.map((ring) => (
           <div key={`${ring.id}-${ring.at}`} className="desk-ring" style={{ left: ring.x, top: ring.y }} />
         ))}
-        {breakpoint === "phone"
-          ? rows.map((row, index) => {
-              if (Array.isArray(row)) {
-                return (
-                  <div className="desk-row pair" key={`${row[0]}-${row[1]}`}>
-                    {renderers[row[0]](index, true)}
-                    {renderers[row[1]](index, true)}
-                  </div>
-                );
-              }
-              return <div className="desk-row" key={row}>{renderers[row](index)}</div>;
-            })
-          : order.map((id, index) => renderers[id](index))}
+        {order.map((id, index) => renderers[id](index))}
       </div>
       <Cabinets onGo={onGo} layout={layout} onLayout={setLayout} />
     </div>
