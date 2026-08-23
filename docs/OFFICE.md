@@ -90,7 +90,23 @@ GET https://api.open-meteo.com/v1/forecast
 
 **Sill plate (D-064):** a paper strip *under* the glass, weather-tinted ≤6%, `--ink` on `--paper`. Month net, hottest card, next bill, next visit (quiet title), groceries remaining, and a YNAB-style “what needs me.” Tapping a figure expands that instrument. CAD never renders on the glass.
 
-Leaving Home or opening Add **collapses** expanded instruments. Wide drag snaps to a 16px grid and auto-levels. Cabinets → **Straighten** restores default positions (wide) or rail order (phone). Calendar and Appointments are instruments; Mail remains bills; Claims remain A/R.
+Leaving Home or opening Add **collapses** expanded instruments. Wide drag snaps to a 16px grid and auto-levels. Cabinets → **Straighten** restores default positions (wide) or rail order (phone). Cabinets → **Desk** hides or shows instruments (calculator stays). Calendar and Appointments are instruments; Mail remains **outflow** bills (never Bianca pay); Claims remain A/R; Accounts is the Mint/YNAB tile strip; Accessories is Hercules’s wardrobe; tic-tac-toe and hangman are kitchen games (inert during Add).
+
+### A2b. Widget environment (D-066–D-077)
+
+Each instrument is a product, not a glance:
+
+| Instrument | What it is |
+|---|---|
+| Calendar | Day / week / month. Past and upcoming **shifts with income**, visits, bills/subscriptions, paychecks, owed-to-us landing. Never posts. |
+| Timesheet | Analog Toronto clock. Start shift underneath. Live start-vs-now while punched. Posted same-day shift stays on the gold arc. New day = plain clock. |
+| Calculator | Milk / Coffee / expense Confirm. Shift is **preview-only** tip math (`calcShiftAmounts`). Never `postShift`. |
+| Accounts | Current balances, utilization, days until due, last post, recent journal rows. Pay card is still a transfer. |
+| Jars | Hercules-coat piggy banks that fill with `savedCents / targetCents`. Contribute stays on Plan. |
+| Accessories | Hats, chains, collars, houses, rename, kitchen notes, clink. Chalkboard is drawing only. |
+| Games | Two-phone tic-tac-toe and hangman. Household words. Last-write-wins kitchen rows. Empty `postedIds`. |
+
+Opening any instrument makes Hercules speak sample queries for **that** object (`herculesInstrumentSurface`). Civil date labels format UTC so Toronto does not see yesterday.
 
 ### A3. The desk canvas
 

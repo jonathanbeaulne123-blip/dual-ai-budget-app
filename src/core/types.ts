@@ -372,12 +372,40 @@ export type HerculesDesk = {
   memories: HerculesMemory[];
 };
 
+export type TicTacToeMark = "x" | "o" | "";
+export type TicTacToeWinner = "x" | "o" | "draw" | null;
+
+export type TicTacToeGame = {
+  cells: TicTacToeMark[];
+  turn: "x" | "o";
+  winner: TicTacToeWinner;
+  lastMemberId: string;
+  updatedAt: string;
+  updatedBy: string;
+};
+
+export type HangmanGame = {
+  word: string;
+  guessed: string[];
+  turnMemberId: string;
+  winnerMemberId: string | null;
+  lost: boolean;
+  updatedAt: string;
+  updatedBy: string;
+};
+
+export type HouseholdGames = {
+  tictactoe: TicTacToeGame;
+  hangman: HangmanGame;
+};
+
 export type HouseholdKitchen = {
   chalkboard: ChalkNote[];
   companion: HouseholdCompanion;
   books: HouseholdBooksDesk;
   hercules: HerculesDesk;
   openShift: OpenShift | null;
+  games: HouseholdGames;
 };
 
 export type GoogleService = "identity" | "calendar" | "drive" | "contacts" | "gmail" | "sheets";

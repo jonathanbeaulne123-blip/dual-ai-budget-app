@@ -6,6 +6,7 @@ import { appointmentPublicTitle, upcomingVisitBoard } from "./appointments.ts";
 import { shiftPostingStreak } from "./shiftStreak.ts";
 import { activeOpenShift, previewHoursLabel } from "./shiftClock.ts";
 import type { Household } from "./types.ts";
+import { isOutgoingBill } from "./board.ts";
 import type { InstrumentId } from "./officeLayout.ts";
 
 export type SillFigure = {
@@ -29,7 +30,7 @@ export function sillOverview(household: Household, dashboard: Dashboard, today: 
   const groceryLeft = groceries && groceries.budgetedCents > 0
     ? groceries.budgetedCents - groceries.actualCents
     : null;
-  const nextBill = dashboard.upcoming.find((item) => item.kind !== "visit" && item.kind !== "google" && item.kind !== "shift");
+  const nextBill = dashboard.upcoming.find(isOutgoingBill);
   const nextVisit = upcomingVisitBoard(household, today)[0];
   const visitAppointment = nextVisit
     ? household.appointments.find((row) => row.id === nextVisit.appointmentId)
@@ -41,7 +42,7 @@ export function sillOverview(household: Household, dashboard: Dashboard, today: 
       : null;
   const punch = activeOpenShift(household.kitchen);
   const streak = shiftPostingStreak(household, today);
-  const overdueBill = dashboard.upcoming.find((item) => item.due || item.date < today);
+  const overdueBill = dashboard.upcoming.find((item) => isOutgoingBill(item) && (item.due || item.date < today));
 
   let needsMe = "Quiet desk. Milk whenever.";
   if (punch) needsMe = `On the clock · ${previewHoursLabel(punch.startedAt, nowMs)}`;

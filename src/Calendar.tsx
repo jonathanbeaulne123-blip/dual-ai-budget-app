@@ -47,7 +47,7 @@ function kindLabel(kind: string): string {
   if (kind === "detected") return "New";
   if (kind === "shift") return "Shift";
   if (kind === "google") return "GCal";
-  if (kind === "visit") return "Visit";
+  if (kind === "claim") return "Owed";
   return "Bill";
 }
 

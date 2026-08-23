@@ -14,6 +14,7 @@ import {
   herculesMutters,
   herculesNeedsCheck,
   herculesPageSurface,
+  herculesInstrumentSurface,
   hourInToronto,
   kettlePhase,
   kitchenSeason,
@@ -23,6 +24,7 @@ import {
   planHerculesTurn,
   recordHerculesTalk,
   subscribeFurniture,
+  subscribeOfficeIntent,
   talkHercules,
   walkHits,
   walkPath,
@@ -189,6 +191,23 @@ export function HerculesPresence({
     const id = window.setInterval(hop, 2800);
     return () => window.clearInterval(id);
   }, [adding, tab]);
+
+  useEffect(() => {
+    return subscribeOfficeIntent((intent) => {
+      if (intent.type !== "expand" || adding) return;
+      const surface = herculesInstrumentSurface(intent.id, household, today);
+      applyTalk({
+        spoken: surface.spoken,
+        lesson: surface.lesson,
+        fact: null,
+        replies: surface.chips,
+        pose: surface.pose,
+        topic: intent.id,
+        attention: false,
+      });
+      setMotion(surface.pose);
+    });
+  }, [household, today, adding]);
 
   useEffect(() => {
     if (visorPop) {

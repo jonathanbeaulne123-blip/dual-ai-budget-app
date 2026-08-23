@@ -1,4 +1,4 @@
-export { TIMEZONE, todayKey, hourInToronto, kitchenSeason, weekBounds, lastWeekBounds, isValidDateKey, dateKeyInZone, monthKeyFromDateKey, shiftMonthKey, addDays, formatDateLabel, formatMonthLabel, formatDayLabel, daysInMonthKey, weekdaySunday0, WEEKDAY_SHORT } from "./calendar.ts";
+export { TIMEZONE, todayKey, hourInToronto, kitchenSeason, weekBounds, lastWeekBounds, isValidDateKey, dateKeyInZone, monthKeyFromDateKey, shiftMonthKey, addDays, formatDateLabel, formatMonthLabel, formatDayLabel, formatTorontoTime, daysInMonthKey, weekdaySunday0, WEEKDAY_SHORT } from "./calendar.ts";
 export type { DateKey, MonthKey, KitchenSeason } from "./calendar.ts";
 export { CURRENCY, formatCad, parseWholeCents, centsToDollars, dollarsToCents } from "./money.ts";
 export * from "./types.ts";
@@ -47,5 +47,8 @@ export * from "./chalkLetters.ts";
 export * from "./herculesPage.ts";
 export * from "./sillOverview.ts";
 export * from "./calendarIntent.ts";
+export * from "./analogClock.ts";
+export * from "./presetIcons.ts";
+export * from "./deskGames.ts";
 export { createWriteQueue } from "./writeQueue.ts";
 export { formatInviteCode, normalizeInviteCode, randomHouseholdId, randomInviteCode } from "./ids.ts";

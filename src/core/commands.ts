@@ -23,6 +23,7 @@ import { creditCardView, savingsView } from "./accounts.ts";
 import { sitDownPreview } from "./insights.ts";
 import { bookBalanceAsOf, isMonthClosed } from "./statements.ts";
 import { COSMETIC_BY_ID, isCosmeticUnlocked } from "./companion.ts";
+import { EMPTY_TICTACTOE, emptyHangman, hangmanMisses, hangmanWon, MAX_HANGMAN_MISSES, pickHangmanWord, shapeGames, tttWinner } from "./deskGames.ts";
 import { EMPTY_KITCHEN, MAX_CHALK_CHARS, MAX_CHALK_NOTES, MAX_COMPANION_NAME, MAX_HERCULES_CHAT_CHARS, MAX_HERCULES_CHATS, MAX_HERCULES_MEMORIES, MAX_HERCULES_MEMORY_CHARS, closedPeriodId, isCosmeticSlot, shapeKitchen } from "./kitchen.ts";
 import { detectChalkLetters, hasChalkInk, organizeNeatText, shapeChalkInk } from "./chalkLetters.ts";
 import { activeOpenShift } from "./shiftClock.ts";
@@ -2198,7 +2199,7 @@ export function addPreset(household: Household, input: {
   const splits = amountCents > 0
     ? catalogValidateOwned(input.splits ?? jointSplit(amountCents), amountCents, household)
     : [];
-  const note = (input.note ?? "").trim() || subcategory.name;
+  const note = (input.note ?? "").trim() || "Preset";
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   next.presets = [...(next.presets ?? [])];
@@ -2273,6 +2274,101 @@ export function dismissNotice(household: Household, key: string): CommitResult {
     dismissedNoticeKeys: [...new Set([...(next.calendar?.dismissedNoticeKeys ?? []), key])].sort(),
   };
   return commit(previous, next, "Hercules", "Hid a notice", []);
+}
+
+function gamesMemberCount(household: Household): number {
+  return household.members.filter((member) => member.active).length;
+}
+
+function assertGameTurn(household: Household, lastMemberId: string, memberId: string, hasStarted: boolean): void {
+  requireMember(household, memberId);
+  if (hasStarted && lastMemberId === memberId && gamesMemberCount(household) > 1) {
+    throw new ValidationError("Wait for the other person. Two phones, one turn.");
+  }
+}
+
+export function resetTicTacToe(household: Household, memberId: string): CommitResult {
+  requireMember(household, memberId);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const at = nowIso();
+  next.kitchen.games = shapeGames(next.kitchen.games);
+  next.kitchen.games.tictactoe = {
+    ...EMPTY_TICTACTOE,
+    updatedAt: at,
+    updatedBy: memberId,
+  };
+  return commit(previous, next, "Desk game", "New tic-tac-toe", []);
+}
+
+export function playTicTacToe(household: Household, input: { memberId: string; index: number }): CommitResult {
+  const member = requireMember(household, input.memberId);
+  const index = Math.round(input.index);
+  if (!Number.isInteger(index) || index < 0 || index > 8) throw new ValidationError("That square is off the board.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const game = next.kitchen.games.tictactoe;
+  if (game.winner) throw new ValidationError("That game is over. Start a new one.");
+  if (game.cells[index]) throw new ValidationError("That square is taken.");
+  const started = game.cells.some(Boolean);
+  assertGameTurn(household, game.lastMemberId, member.id, started);
+  const mark = game.turn;
+  game.cells[index] = mark;
+  game.turn = mark === "x" ? "o" : "x";
+  game.winner = tttWinner(game.cells);
+  game.lastMemberId = member.id;
+  game.updatedAt = nowIso();
+  game.updatedBy = member.id;
+  const summary = game.winner === "draw"
+    ? "Cat's game."
+    : game.winner
+      ? `${member.name} wins tic-tac-toe.`
+      : `${member.name} played ${mark.toUpperCase()}.`;
+  return commit(previous, next, "Desk game", summary, []);
+}
+
+export function resetHangman(household: Household, memberId: string): CommitResult {
+  requireMember(household, memberId);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const at = nowIso();
+  next.kitchen.games = shapeGames(next.kitchen.games);
+  next.kitchen.games.hangman = {
+    ...emptyHangman(at),
+    word: pickHangmanWord(at.replace(/\D/g, "")),
+    updatedAt: at,
+    updatedBy: memberId,
+  };
+  return commit(previous, next, "Desk game", "New hangman", []);
+}
+
+export function guessHangman(household: Household, input: { memberId: string; letter: string }): CommitResult {
+  const member = requireMember(household, input.memberId);
+  const letter = input.letter.trim().toLowerCase();
+  if (!/^[a-z]$/.test(letter)) throw new ValidationError("Guess one letter.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const game = next.kitchen.games.hangman;
+  if (game.lost || game.winnerMemberId) throw new ValidationError("That word is done. Start a new one.");
+  if (game.guessed.includes(letter)) throw new ValidationError("Already guessed.");
+  const started = game.guessed.length > 0;
+  assertGameTurn(household, game.updatedBy, member.id, started);
+  game.guessed = [...game.guessed, letter];
+  game.turnMemberId = member.id;
+  game.updatedAt = nowIso();
+  game.updatedBy = member.id;
+  if (hangmanWon(game)) game.winnerMemberId = member.id;
+  if (hangmanMisses(game) >= MAX_HANGMAN_MISSES) game.lost = true;
+  const summary = game.winnerMemberId
+    ? `${member.name} got the word.`
+    : game.lost
+      ? "Hung. New word when you're ready."
+      : `${member.name} guessed ${letter.toUpperCase()}.`;
+  return commit(previous, next, "Desk game", summary, []);
 }
 
 export function emptyHousehold(environment: Household["environment"] = "development"): Household {

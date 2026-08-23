@@ -28,11 +28,13 @@ import {
   sitDownPostcard,
   snapGrid,
   subscribeOfficeIntent,
+  emitOfficeIntent,
   tidyOfficeLayout,
   visibleInstruments,
   walletWarn,
   requestCalendarPane,
   sillOverview,
+  formatCad,
   type DeskRing,
   type Environment,
   type Household,
@@ -60,6 +62,9 @@ import { Cabinets } from "./widgets/Cabinets.tsx";
 import { CalendarBody, CalendarGlance } from "./widgets/CalendarDesk.tsx";
 import { AppointmentsBody, AppointmentsGlance } from "./widgets/AppointmentsDesk.tsx";
 import { SillOverviewPlate } from "./widgets/SillOverview.tsx";
+import { AccountsBody, AccountsGlance } from "./widgets/AccountsDesk.tsx";
+import { WardrobeBody, wardrobeGlance } from "./widgets/WardrobeDesk.tsx";
+import { HangmanBody, HangmanGlance, TicTacToeBody, TicTacToeGlance } from "./widgets/GamesDesk.tsx";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
 
 const WIDE = 720;
@@ -97,7 +102,6 @@ export function Office({
   onMore,
   onMilk,
   onCoffee,
-  onShift,
   onClockIn,
   onAbandonShift,
   onSignOut,
@@ -132,7 +136,6 @@ export function Office({
   onMore: () => void;
   onMilk: () => void;
   onCoffee: () => void;
-  onShift: () => void;
   onClockIn: () => void;
   onAbandonShift: () => void;
   onSignOut: () => void;
@@ -230,10 +233,11 @@ export function Office({
   const inert = adding;
 
   function toggle(id: InstrumentId) {
-    setLayout((current) => ({
-      ...current,
-      expanded: current.expanded === id ? null : id,
-    }));
+    setLayout((current) => {
+      const opening = current.expanded !== id;
+      if (opening) queueMicrotask(() => emitOfficeIntent({ type: "expand", id }));
+      return { ...current, expanded: opening ? id : null };
+    });
   }
 
   function cycleWindow() {
@@ -416,6 +420,7 @@ export function Office({
         form={form}
         setForm={onForm}
         mode={mode}
+        household={household}
         accounts={household.accounts}
         categories={categories}
         postLabel={postLabel}
@@ -425,7 +430,6 @@ export function Office({
         onMore={onMore}
         onMilk={onMilk}
         onCoffee={onCoffee}
-        onShift={onShift}
       />,
       { index, pair, perchable: true },
     ),
@@ -455,9 +459,6 @@ export function Office({
         memberId={memberId}
         today={today}
         busy={busy}
-        environment={environment}
-        clinkOn={clinkOn}
-        onClinkOn={onClinkOn}
         onCommand={onKitchen}
         onBuyNote={onBuyNote}
       />,
@@ -497,6 +498,7 @@ export function Office({
         household={household}
         streak={streak}
         memberName={household.members.find((member) => member.id === memberId)?.name ?? "You"}
+        today={today}
         busy={busy}
         onClockIn={onClockIn}
         onAbandon={onAbandonShift}
@@ -569,6 +571,51 @@ export function Office({
       <LampBody findings={findings} onMore={() => onGo("more")} />,
       { index, pair, warn: lampLit, extraClass: lampLit ? "is-lit" : undefined },
     ),
+    accounts: (index, pair) => frame(
+      "accounts",
+      "Accounts",
+      <AccountsGlance household={household} today={today} />,
+      `Accounts. ${formatCad(wallet.netWorthCents)} on the books.`,
+      <AccountsBody
+        household={household}
+        today={today}
+        onPayCard={onPayCard}
+        onOpenAccount={onOpenAccount}
+      />,
+      { index, pair, warn: walletIsWarn },
+    ),
+    wardrobe: (index, pair) => frame(
+      "wardrobe",
+      "Accessories",
+      <span>{wardrobeGlance(household, today)}</span>,
+      `Hercules accessories. ${wardrobeGlance(household, today)}`,
+      <WardrobeBody
+        household={household}
+        today={today}
+        busy={busy}
+        environment={environment}
+        clinkOn={clinkOn}
+        onClinkOn={onClinkOn}
+        onCommand={onKitchen}
+      />,
+      { index, pair },
+    ),
+    tictactoe: (index, pair) => frame(
+      "tictactoe",
+      "Tic-tac-toe",
+      <TicTacToeGlance household={household} />,
+      "Tic-tac-toe. Two phones. No CAD.",
+      <TicTacToeBody household={household} memberId={memberId} busy={busy} onCommand={onKitchen} />,
+      { index, pair, extraClass: "instrument-game" },
+    ),
+    hangman: (index, pair) => frame(
+      "hangman",
+      "Hangman",
+      <HangmanGlance household={household} />,
+      "Hangman. Household words. Never a quiet visit title.",
+      <HangmanBody household={household} memberId={memberId} busy={busy} onCommand={onKitchen} />,
+      { index, pair, extraClass: "instrument-game" },
+    ),
   };
 
   const rows = breakpoint === "phone" ? railRows(order) : order.map((id) => id);
@@ -604,7 +651,7 @@ export function Office({
             })
           : order.map((id, index) => renderers[id](index))}
       </div>
-      <Cabinets onGo={onGo} />
+      <Cabinets onGo={onGo} layout={layout} onLayout={setLayout} />
     </div>
   );
 }
