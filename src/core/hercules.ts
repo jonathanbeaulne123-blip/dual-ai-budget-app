@@ -77,12 +77,25 @@ export type SitDownPostcard = {
 };
 
 export function sitDownPostcard(household: Household): SitDownPostcard {
-  const row = [...household.activity].reverse().find((item) => item.action === "Monthly Sit-Down");
+  const session = [...(household.sitDownSessions ?? [])].reverse().find((item) => item.status === "moved" || item.status === "closed");
+  if (session) {
+    const text = session.status === "moved"
+      ? `We moved leftover from ${session.monthKey}.`
+      : `We closed ${session.monthKey}.`;
+    return {
+      ready: true,
+      text: text.slice(0, 80),
+      sentence: `${session.monthKey} leftover ${formatCad(session.leftoverCents)}. Plan first; Confirm still moves. Hercules never posts.`,
+      sourceMonth: session.monthKey,
+      targetMonth: session.targetMonth,
+    };
+  }
+  const row = [...household.activity].reverse().find((item) => item.action === "Monthly Sit-Down" || item.action === "Sit-down move");
   if (!row) {
     return {
       ready: false,
       text: "",
-      sentence: "No sit-down yet. Plan → Apply next month’s plan is the close. The postcard is not money.",
+      sentence: "No sit-down yet. Plan → three acts. Confirm still writes. The postcard is not money.",
       sourceMonth: "",
       targetMonth: "",
     };
@@ -92,7 +105,7 @@ export function sitDownPostcard(household: Household): SitDownPostcard {
   const sourceMonth = match?.[2] ?? "";
   const text = sourceMonth && targetMonth
     ? `We closed ${sourceMonth} → ${targetMonth}.`
-    : "We closed the sit-down.";
+    : "We sat down.";
   return {
     ready: true,
     text: text.slice(0, 80),
@@ -307,7 +320,7 @@ export function herculesPageBrief(
   if (highFive.yes) return `${highFive.names.join(" and ")} both bought food. High-five.`;
   if (tab === "add") return `${name} will loaf. You confirm.`;
   if (tab === "calendar") return "Dates remind. Mark paid writes.";
-  if (tab === "plan") return "Sit-down copies last month. In dollars.";
+  if (tab === "plan") return "Sit-down is three acts. Confirm still moves leftover.";
   if (tab === "ledger") return "Fieldwork. I walk the journal. I don't write it.";
   if (tab === "more") return "Health is the adult screen. I hide when it's dirty.";
   if (phase === "morning") return `${name} stretched. Milk whenever.`;
@@ -523,7 +536,7 @@ export function askHercules(household: Household, question: string, today: DateK
     const recap = weekRecap(household, today);
     return { kind: "answer", sentence: recap.sentence, rows: recap.rows };
   }
-  if (/\b(postcard|sit-?down close|we closed)\b/.test(q)) {
+  if (/\b(postcard|sit-?down close|we closed)\b/.test(q) && !/\bleftover\b/.test(q)) {
     const card = sitDownPostcard(household);
     return { kind: "answer", sentence: card.sentence, rows: card.ready
       ? [{ label: "Chalk line", value: card.text }]

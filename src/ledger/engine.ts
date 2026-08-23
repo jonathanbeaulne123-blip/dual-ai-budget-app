@@ -85,6 +85,7 @@ export function booksIntegrityFacts(household: Household) {
       visibility: tx.visibility,
       createdBy: tx.createdBy,
       isDuplicate: tx.isDuplicate,
+      reversalOfId: tx.reversalOfId ?? null,
     })),
     shifts: byId(household.shifts).map((shift) => ({
       id: shift.id,
@@ -129,6 +130,18 @@ export function booksIntegrityFacts(household: Household) {
       name: account.name,
       kind: account.kind,
       active: account.active,
+    })),
+    sitDownSessions: byId(household.sitDownSessions ?? []).map((row) => ({
+      id: row.id,
+      monthKey: row.monthKey,
+      leftoverCents: row.leftoverCents,
+      status: row.status,
+      transferIds: [...row.transferIds].sort(),
+      contributionIds: [...row.contributionIds].sort(),
+    })),
+    tombstones: byId(household.tombstones ?? []).map((row) => ({
+      id: row.id,
+      deletedAt: row.deletedAt,
     })),
   };
 }

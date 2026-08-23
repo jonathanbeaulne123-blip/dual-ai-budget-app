@@ -15,7 +15,6 @@ import {
   isMonthClosed,
   liquidityWatch,
   mergeKitchen,
-  NeedsConfirmationError,
   notesToFinancialStatements,
   postEntry,
   postTransfer,
@@ -25,6 +24,7 @@ import {
   statementOfChangesInEquity,
   subsequentEvents,
   talkHercules,
+  ValidationError,
 } from "../src/core/index.ts";
 import { COSMETIC_BY_ID } from "../src/core/companion.ts";
 
@@ -124,7 +124,7 @@ describe("Audit Office", () => {
     expect(isCosmeticUnlocked(rec.household, specs, today)).toBe(true);
   });
 
-  it("asks for a second look before posting into a closed month and still never lets Hercules write", () => {
+  it("refuses posting into a closed month until you reopen, and still never lets Hercules write", () => {
     let household = catalogHousehold();
     household = closeBooksMonth(household, { monthKey: "2026-07", createdBy: "MEM-001" }).household;
     expect(isMonthClosed(household, "2026-07")).toBe(true);
@@ -135,32 +135,38 @@ describe("Audit Office", () => {
       amount: "8",
       accountId: "ACC-VISA",
       subcategoryId: "SUB-FOOD-GROCERIES",
-    })).toThrow(NeedsConfirmationError);
-    const posted = postEntry(household, {
+    })).toThrow(ValidationError);
+    expect(() => postEntry(household, {
       date: "2026-07-15",
       type: "expense",
       amount: "8",
       accountId: "ACC-VISA",
       subcategoryId: "SUB-FOOD-GROCERIES",
+      confirmDuplicate: true,
+      // @ts-expect-error the confirmClosedMonth bypass is gone
       confirmClosedMonth: true,
+    })).toThrow(ValidationError);
+
+    const asked = askHercules(household, "opinion", today);
+    expect(asked.sentence).toMatch(/Unmodified|Qualified|Adverse/);
+    const talk = talkHercules(household, "who are you", today, "ledger");
+    expect(talk.spoken).toMatch(/auditor|don't write/i);
+
+    const ink = COSMETIC_BY_ID.get("ink")!;
+    expect(isCosmeticUnlocked(household, ink, today)).toBe(true);
+    const reopened = reopenBooksMonth(household, "2026-07");
+    expect(reopened.household.tombstones.some((row) => row.id === closedPeriodId("2026-07"))).toBe(true);
+    const merged = mergeKitchen(household.kitchen, reopened.household.kitchen, reopened.household.tombstones);
+    expect(merged.books.closedMonths).toHaveLength(0);
+    const posted = postEntry(reopened.household, {
+      date: "2026-07-15",
+      type: "expense",
+      amount: "8",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
       confirmDuplicate: true,
     });
     expect(posted.household.transactions).toHaveLength(1);
-    household = reopenBooksMonth(posted.household, "2026-07").household;
-    expect(isMonthClosed(household, "2026-07")).toBe(false);
-
-    const asked = askHercules(posted.household, "opinion", today);
-    expect(asked.sentence).toMatch(/Unmodified|Qualified|Adverse/);
-    const talk = talkHercules(posted.household, "who are you", today, "ledger");
-    expect(talk.spoken).toMatch(/auditor|don't write/i);
-    expect(posted.postedIds.length).toBe(1);
-
-    const ink = COSMETIC_BY_ID.get("ink")!;
-    expect(isCosmeticUnlocked(posted.household, ink, today)).toBe(true);
-    const reopened = reopenBooksMonth(posted.household, "2026-07");
-    expect(reopened.household.tombstones.some((row) => row.id === closedPeriodId("2026-07"))).toBe(true);
-    const merged = mergeKitchen(posted.household.kitchen, reopened.household.kitchen, reopened.household.tombstones);
-    expect(merged.books.closedMonths).toHaveLength(0);
   });
 
   it("ages repeating bills without naming who spent", () => {

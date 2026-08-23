@@ -1,4 +1,4 @@
-import { TIMEZONE, todayKey, monthKeyFromDateKey, type DateKey, type MonthKey } from "./calendar.ts";
+import { TIMEZONE, todayKey, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { advanceCadence, DEFAULT_REMINDER_HOURS_BEFORE, EMPTY_CALENDAR, inferRecurrenceKind, shapeCalendar } from "./recurrence.ts";
 import { detectHabits, detectRhythms } from "./rhythm.ts";
 import { CURRENCY, parseWholeCents } from "./money.ts";
@@ -21,6 +21,8 @@ import {
 import { shapeAccount, normalizeAccountKind, emptyCreditDesk, isReceivableKind } from "./accountKinds.ts";
 import { creditCardView, savingsView } from "./accounts.ts";
 import { sitDownPreview } from "./insights.ts";
+import { leftoverProjection, leftoverSourceAccountId, jarParkingAccountId, plannedAllocation, shapeSitDownSessions, openSitDownSession } from "./sitDown.ts";
+import type { AllocationSlice } from "./allocate.ts";
 import { bookBalanceAsOf, isMonthClosed } from "./statements.ts";
 import { COSMETIC_BY_ID, isCosmeticUnlocked } from "./companion.ts";
 import { EMPTY_TICTACTOE, emptyHangman, hangmanMisses, hangmanWon, MAX_HANGMAN_MISSES, pickHangmanWord, shapeGames, tttWinner } from "./deskGames.ts";
@@ -79,6 +81,7 @@ import type {
   Recurrence,
   RecurrenceKind,
   RecurrenceOrigin,
+  SitDownSession,
   Split,
   Transaction,
   UndoToken,
@@ -91,13 +94,11 @@ export type ActorInput = {
   visibility?: Visibility;
 };
 
-function requireOpenPeriod(household: Household, date: DateKey, confirmed?: boolean): void {
+function requireOpenPeriod(household: Household, date: DateKey): void {
   const monthKey = monthKeyFromDateKey(date);
   if (!isMonthClosed(household, monthKey)) return;
-  if (confirmed) return;
-  throw new NeedsConfirmationError(
-    "closedMonth",
-    `${monthKey} is closed. Posting into a closed month restates the period. Confirm if you mean it.`,
+  throw new ValidationError(
+    `${monthKey} is closed. Reopen that month from Books, or post a prior-period adjustment dated in an open month.`,
   );
 }
 
@@ -144,6 +145,7 @@ function baseTx(household: Household, input: {
   sourceId?: string;
   transferPairId?: string;
   refundOfId?: string;
+  reversalOfId?: string;
   createdAt: string;
   createdBy: string;
   visibility: Visibility;
@@ -163,6 +165,7 @@ function baseTx(household: Household, input: {
     splits: input.splits,
     transferPairId: input.transferPairId,
     refundOfId: input.refundOfId,
+    reversalOfId: input.reversalOfId,
     source: input.source,
     sourceId: input.sourceId,
     duplicateKey: duplicateKey({
@@ -193,8 +196,8 @@ export function postEntry(household: Household, input: {
   place?: string;
   splits?: Split[];
   confirmDuplicate?: boolean;
-  confirmClosedMonth?: boolean;
   refundOfId?: string;
+  reversalOfId?: string;
   source?: Transaction["source"];
   sourceId?: string;
   createdBy?: string;
@@ -204,7 +207,7 @@ export function postEntry(household: Household, input: {
   const date = parseDate(input.date);
   const amountCents = parseAmount(input.amount);
   const actor = resolveActor(household, input);
-  requireOpenPeriod(household, date, input.confirmClosedMonth);
+  requireOpenPeriod(household, date);
   const subcategory = requireSubcategory(
     household,
     input.subcategoryId,
@@ -229,9 +232,10 @@ export function postEntry(household: Household, input: {
     note: input.note ?? "",
     place: input.place ?? "",
     splits,
-    source: input.source ?? "manual",
+    source: input.source ?? (input.reversalOfId ? "reversal" : "manual"),
     sourceId: input.sourceId,
     refundOfId: input.refundOfId,
+    reversalOfId: input.reversalOfId,
     createdAt,
     createdBy: actor.createdBy,
     visibility: actor.visibility,
@@ -263,7 +267,7 @@ export function postTransfer(household: Household, input: {
   toAccountId: string;
   note?: string;
   confirmDuplicate?: boolean;
-  confirmClosedMonth?: boolean;
+  reversalOfId?: string;
   createdBy?: string;
   visibility?: Visibility;
 }): CommitResult {
@@ -271,7 +275,7 @@ export function postTransfer(household: Household, input: {
   const date = parseDate(input.date);
   const amountCents = parseAmount(input.amount);
   const actor = resolveActor(household, input);
-  requireOpenPeriod(household, date, input.confirmClosedMonth);
+  requireOpenPeriod(household, date);
   if (input.fromAccountId === input.toAccountId) throw new ValidationError("Choose two different accounts to move money.");
   requireAccount(household, input.fromAccountId);
   requireAccount(household, input.toAccountId);
@@ -288,7 +292,8 @@ export function postTransfer(household: Household, input: {
     subcategoryId: null,
     note,
     splits: jointSplit(amountCents),
-    source: "manual",
+    source: input.reversalOfId ? "reversal" : "manual",
+    reversalOfId: input.reversalOfId,
     createdAt,
     createdBy: actor.createdBy,
     visibility: actor.visibility,
@@ -302,7 +307,8 @@ export function postTransfer(household: Household, input: {
     subcategoryId: null,
     note,
     splits: jointSplit(amountCents),
-    source: "manual",
+    source: input.reversalOfId ? "reversal" : "manual",
+    reversalOfId: input.reversalOfId,
     createdAt,
     createdBy: actor.createdBy,
     visibility: actor.visibility,
@@ -341,7 +347,6 @@ export function postShift(household: Household, input: {
   hours: string | number;
   settingsFingerprint?: string;
   confirmDuplicate?: boolean;
-  confirmClosedMonth?: boolean;
   createdBy?: string;
   visibility?: Visibility;
 }): CommitResult {
@@ -349,7 +354,7 @@ export function postShift(household: Household, input: {
   const parsed = parseShiftInput({ ...input, timeZone: household.timezone });
   const member = requireMember(household, input.memberId);
   const actor = resolveActor(household, input, member.id);
-  requireOpenPeriod(household, parsed.date, input.confirmClosedMonth);
+  requireOpenPeriod(household, parsed.date);
   const account = requireAccount(household, input.accountId);
   const wagesCat = incomeSubcategory(household, "Wages");
   const tipsCat = incomeSubcategory(household, "Tips");
@@ -785,7 +790,6 @@ export function postCardInterest(household: Household, input: {
   date?: string;
   createdBy?: string;
   confirmDuplicate?: boolean;
-  confirmClosedMonth?: boolean;
 }): CommitResult {
   const account = requireAccount(household, input.accountId);
   if (account.kind !== "credit") throw new ValidationError("Interest posts on a credit card.");
@@ -803,7 +807,6 @@ export function postCardInterest(household: Household, input: {
     subcategoryId: named.subcategoryId,
     note: `Estimated interest · ${account.name}`,
     confirmDuplicate: input.confirmDuplicate,
-    confirmClosedMonth: input.confirmClosedMonth,
     createdBy: input.createdBy,
   });
 }
@@ -815,7 +818,6 @@ export function postCardRewards(household: Household, input: {
   depositAccountId?: string;
   createdBy?: string;
   confirmDuplicate?: boolean;
-  confirmClosedMonth?: boolean;
 }): CommitResult {
   const account = requireAccount(household, input.accountId);
   if (account.kind !== "credit") throw new ValidationError("Rewards post from a credit card.");
@@ -837,7 +839,6 @@ export function postCardRewards(household: Household, input: {
       subcategoryId: named.subcategoryId,
       note: `${view.rewardsName} · ${account.name}`,
       confirmDuplicate: input.confirmDuplicate,
-      confirmClosedMonth: input.confirmClosedMonth,
       createdBy: input.createdBy,
     });
   }
@@ -850,7 +851,6 @@ export function postCardRewards(household: Household, input: {
     subcategoryId: named.subcategoryId,
     note: `${view.rewardsName} · ${account.name}`,
     confirmDuplicate: input.confirmDuplicate,
-    confirmClosedMonth: input.confirmClosedMonth,
     createdBy: input.createdBy,
   });
 }
@@ -860,7 +860,6 @@ export function postSavingsInterest(household: Household, input: {
   date?: string;
   createdBy?: string;
   confirmDuplicate?: boolean;
-  confirmClosedMonth?: boolean;
 }): CommitResult {
   const account = requireAccount(household, input.accountId);
   if (account.kind !== "savings") throw new ValidationError("Savings interest posts on a savings account.");
@@ -878,7 +877,6 @@ export function postSavingsInterest(household: Household, input: {
     subcategoryId: named.subcategoryId,
     note: `Estimated interest · ${account.name}`,
     confirmDuplicate: input.confirmDuplicate,
-    confirmClosedMonth: input.confirmClosedMonth,
     createdBy: input.createdBy,
   });
 }
@@ -894,7 +892,158 @@ export function applySitDown(household: Household, sourceMonth: MonthKey, amount
     const category = requireSubcategory(next, row.subcategoryId);
     next.budgetPlans.push(seedBudgetPlan(next, preview.targetMonth, category, amountCents));
   }
+  next.sitDownSessions = shapeSitDownSessions(next.sitDownSessions);
+  const session = next.sitDownSessions.find((row) => row.monthKey === sourceMonth && row.status !== "closed");
+  if (session) {
+    session.budgetPosted = true;
+    session.updatedAt = nowIso();
+  }
   return commit(previous, next, "Monthly Sit-Down", `Planned ${preview.targetMonth} from ${sourceMonth}`, []);
+}
+
+function upsertSitDownSession(household: Household, patch: Partial<SitDownSession> & { monthKey: MonthKey; createdBy: string }): SitDownSession {
+  const leftover = leftoverProjection(household, todayKey());
+  const existing = openSitDownSession(household, patch.monthKey);
+  const at = nowIso();
+  const row: SitDownSession = {
+    id: existing?.id || nextId("SIT-", (household.sitDownSessions ?? []).map((item) => item.id), 4),
+    monthKey: patch.monthKey,
+    targetMonth: patch.targetMonth || existing?.targetMonth || shiftMonthKey(patch.monthKey, 1),
+    act: patch.act ?? existing?.act ?? 1,
+    leftoverCents: patch.leftoverCents ?? leftover.leftoverCents,
+    cashLikeCents: leftover.cashLikeCents,
+    billsNext30Cents: leftover.billsNext30Cents,
+    minPaymentsCents: leftover.minPaymentsCents,
+    slices: patch.slices ?? existing?.slices ?? [],
+    transferIds: patch.transferIds ?? existing?.transferIds ?? [],
+    contributionIds: patch.contributionIds ?? existing?.contributionIds ?? [],
+    budgetPosted: patch.budgetPosted ?? existing?.budgetPosted ?? false,
+    closedMonth: patch.closedMonth ?? existing?.closedMonth ?? false,
+    driveFileId: patch.driveFileId === undefined ? existing?.driveFileId ?? null : patch.driveFileId,
+    status: patch.status ?? existing?.status ?? "open",
+    createdBy: existing?.createdBy || patch.createdBy,
+    createdAt: existing?.createdAt || at,
+    updatedAt: at,
+  };
+  const rest = (household.sitDownSessions ?? []).filter((item) => item.id !== row.id);
+  household.sitDownSessions = shapeSitDownSessions([...rest, row]);
+  return row;
+}
+
+export function saveSitDownSession(household: Household, input: {
+  monthKey: MonthKey;
+  act?: 1 | 2 | 3;
+  slices?: AllocationSlice[];
+  createdBy?: string;
+}): CommitResult {
+  const actor = resolveActor(household, input);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.sitDownSessions = shapeSitDownSessions(next.sitDownSessions);
+  upsertSitDownSession(next, {
+    monthKey: input.monthKey,
+    act: input.act,
+    slices: input.slices,
+    createdBy: actor.createdBy,
+  });
+  return commit(previous, next, "Sit-down", `Saved the ${input.monthKey} sit-down`, []);
+}
+
+export function executeSitDownMoves(household: Household, input: {
+  monthKey: MonthKey;
+  slices: AllocationSlice[];
+  createdBy?: string;
+}): CommitResult {
+  const actor = resolveActor(household, input);
+  const date = todayKey();
+  requireOpenPeriod(household, date);
+  const leftover = leftoverProjection(household, date);
+  const plan = plannedAllocation(leftover.leftoverCents, input.slices);
+  if (!plan.ok) throw new ValidationError(plan.reason);
+  if (plan.allocatedCents <= 0) {
+    throw new ValidationError(leftover.leftoverCents
+      ? "Nothing in the plan moves leftover. Add a jar, a paydown, or a savings line."
+      : leftover.formula);
+  }
+  const sourceId = leftoverSourceAccountId(household, plan.allocatedCents, date);
+  if (!sourceId) throw new ValidationError("No cash-like account holds leftover.");
+  const sourceBalance = bookBalanceAsOf(household, sourceId, date);
+  if (sourceBalance < plan.allocatedCents) {
+    throw new ValidationError(`Chequing/cash-like only holds $${(sourceBalance / 100).toFixed(2)}. Shrink the plan.`);
+  }
+  const parkingId = jarParkingAccountId(household);
+  const previous = cloneHousehold(household);
+  let next = cloneHousehold(household);
+  const transferIds: string[] = [];
+  const contributionIds: string[] = [];
+  const warnings: string[] = [];
+  for (const line of plan.lines) {
+    if (line.cents <= 0) continue;
+    if (line.kind === "account") {
+      if (line.targetId === sourceId) throw new ValidationError("Pick a destination that is not the leftover source.");
+      const moved = postTransfer(next, {
+        date,
+        amount: line.cents / 100,
+        fromAccountId: sourceId,
+        toAccountId: line.targetId,
+        note: `Sit-down · ${line.label}`,
+        confirmDuplicate: true,
+        createdBy: actor.createdBy,
+      });
+      next = moved.household;
+      transferIds.push(...moved.postedIds);
+      continue;
+    }
+    const goal = next.goals.find((item) => item.id === line.targetId);
+    if (!goal) throw new ValidationError(`The ${line.label} jar is gone.`);
+    if (parkingId && parkingId !== sourceId) {
+      const moved = postTransfer(next, {
+        date,
+        amount: line.cents / 100,
+        fromAccountId: sourceId,
+        toAccountId: parkingId,
+        note: `Sit-down jar · ${goal.name}`,
+        confirmDuplicate: true,
+        createdBy: actor.createdBy,
+      });
+      next = moved.household;
+      transferIds.push(...moved.postedIds);
+    } else if (!parkingId) {
+      warnings.push(`${goal.name} is tracked on the jar. Cash stayed in the leftover source because there is no separate savings account.`);
+    }
+    const contributed = contributeToGoal(next, goal.id, line.cents / 100, { createdBy: actor.createdBy, date });
+    next = contributed.household;
+    contributionIds.push(...contributed.postedIds);
+  }
+  upsertSitDownSession(next, {
+    monthKey: input.monthKey,
+    slices: input.slices,
+    transferIds,
+    contributionIds,
+    status: "moved",
+    act: 3,
+    leftoverCents: leftover.leftoverCents,
+    createdBy: actor.createdBy,
+  });
+  return commit(
+    previous,
+    next,
+    "Sit-down move",
+    `Moved $${(plan.allocatedCents / 100).toFixed(2)} from the ${input.monthKey} sit-down`,
+    [...transferIds, ...contributionIds],
+    warnings,
+  );
+}
+
+export function recordSitDownDrive(household: Household, sessionId: string, driveFileId: string | null): CommitResult {
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.sitDownSessions = shapeSitDownSessions(next.sitDownSessions);
+  const session = next.sitDownSessions.find((row) => row.id === sessionId);
+  if (!session) throw new ValidationError("That sit-down is gone.");
+  session.driveFileId = driveFileId;
+  session.updatedAt = nowIso();
+  return commit(previous, next, "Sit-down", "Remembered a Drive file id (not the file)", []);
 }
 
 export function addGoal(household: Household, input: {
@@ -1069,7 +1218,6 @@ export function postOneRecurrence(household: Household, recurrenceId: string, to
     note: item.note,
     splits: item.splits,
     confirmDuplicate: true,
-    confirmClosedMonth: true,
     source: "recurring",
     sourceId: item.id,
   });
@@ -1123,7 +1271,6 @@ export function postDueRecurrences(household: Household, today: DateKey): Commit
       note: item.note,
       splits: item.splits,
       confirmDuplicate: true,
-      confirmClosedMonth: true,
       source: "recurring",
       sourceId: item.id,
     });
@@ -1156,32 +1303,79 @@ export function updateShiftSettings(household: Household, settings: Household["s
   return commit(previous, next, "Shift Settings", "Updated tip-out and wage rules", []);
 }
 
-export function voidPostedMoney(household: Household, transactionId: string): CommitResult {
+export function reversePostedMoney(household: Household, transactionId: string, input: ActorInput = {}): CommitResult {
   const tx = household.transactions.find((item) => item.id === transactionId);
   if (!tx) throw new ValidationError("That row is already gone.");
-  const previous = cloneHousehold(household);
-  const next = cloneHousehold(household);
-  const ids = new Set<string>([tx.id]);
-  if (tx.transferPairId) ids.add(tx.transferPairId);
-  const shift = tx.source === "shift" && tx.sourceId
-    ? next.shifts.find((item) => item.id === tx.sourceId)
+  const pair = tx.transferPairId
+    ? household.transactions.find((item) => item.id === tx.transferPairId)
     : undefined;
-  if (shift) {
-    ids.add(shift.id);
-    ids.add(shift.wagesTransactionId);
-    ids.add(shift.tipsTransactionId);
+  const shift = tx.source === "shift" && tx.sourceId
+    ? household.shifts.find((item) => item.id === tx.sourceId)
+    : undefined;
+  const watched = [tx.id, pair?.id, shift?.wagesTransactionId, shift?.tipsTransactionId].filter((id): id is string => Boolean(id));
+  if (household.transactions.some((item) => item.reversalOfId && watched.includes(item.reversalOfId))) {
+    throw new ValidationError("Already reversed. Reverse the reversing entry if you meant to reinstate.");
   }
-  const at = nowIso();
-  next.transactions = next.transactions.filter((item) => !ids.has(item.id));
-  next.shifts = next.shifts.filter((item) => !ids.has(item.id));
-  next.tombstones = mergeTombstones(next.tombstones, [...ids].map((id) => ({ id, deletedAt: at })));
+  const date = todayKey();
+  requireOpenPeriod(household, date);
+  const actor = resolveActor(household, input, tx.createdBy);
+  const previous = cloneHousehold(household);
+  let next = cloneHousehold(household);
+  const postedIds: string[] = [];
   const dollars = `$${(tx.amountCents / 100).toFixed(2)}`;
-  const label = shift
-    ? `Removed ${tx.date} shift ${dollars}`
+
+  const targets = shift
+    ? next.transactions.filter((item) => item.id === shift.wagesTransactionId || item.id === shift.tipsTransactionId)
     : tx.type === "transfer"
-      ? `Removed ${tx.date} transfer ${dollars}`
-      : `Removed ${tx.date} ${tx.type} ${dollars}`;
-  return commit(previous, next, "Remove", label, [...ids]);
+      ? []
+      : [tx];
+
+  if (tx.type === "transfer") {
+    const fromId = tx.transferFromAccountId || tx.accountId;
+    const toId = tx.transferToAccountId || pair?.accountId;
+    if (!fromId || !toId) throw new ValidationError("That transfer is missing two accounts.");
+    const moved = postTransfer(next, {
+      date,
+      amount: tx.amountCents / 100,
+      fromAccountId: toId,
+      toAccountId: fromId,
+      note: `Reversal of ${tx.id}`,
+      confirmDuplicate: true,
+      reversalOfId: tx.id,
+      createdBy: actor.createdBy,
+      visibility: actor.visibility,
+    });
+    next = moved.household;
+    postedIds.push(...moved.postedIds);
+  } else {
+    for (const original of targets) {
+      if (!original.subcategoryId) throw new ValidationError("That row has no category to reverse.");
+      const posted = postEntry(next, {
+        date,
+        type: original.type === "income" ? "income" : original.type === "refund" ? "refund" : "expense",
+        amount: original.amountCents / 100,
+        accountId: original.accountId,
+        subcategoryId: original.subcategoryId,
+        note: `Reversal of ${original.id}`,
+        place: original.place,
+        splits: original.splits,
+        confirmDuplicate: true,
+        reversalOfId: original.id,
+        source: "reversal",
+        createdBy: actor.createdBy,
+        visibility: actor.visibility,
+      });
+      next = posted.household;
+      postedIds.push(...posted.postedIds);
+    }
+  }
+
+  const label = shift
+    ? `Reversed ${tx.date} shift ${dollars}`
+    : tx.type === "transfer"
+      ? `Reversed ${tx.date} transfer ${dollars}`
+      : `Reversed ${tx.date} ${tx.type} ${dollars}`;
+  return commit(previous, next, "Reverse", label, postedIds);
 }
 
 export function undo(current: Household, token: UndoToken): Household {
@@ -1319,7 +1513,7 @@ export function closeBooksMonth(household: Household, input: { monthKey: MonthKe
     ...next.kitchen.books.closedMonths,
     { id: closedPeriodId(input.monthKey), monthKey: input.monthKey, closedAt: nowIso(), closedBy: actor.createdBy },
   ];
-  return commit(previous, next, "Close month", `Closed ${input.monthKey}. Posting in still needs a second look.`, []);
+  return commit(previous, next, "Close month", `Closed ${input.monthKey}. That month accepts no new posts until you reopen it.`, []);
 }
 
 export function reopenBooksMonth(household: Household, monthKey: MonthKey): CommitResult {
@@ -1720,7 +1914,6 @@ export function postVisit(household: Household, input: {
   place?: string;
   splits?: Split[];
   confirmDuplicate?: boolean;
-  confirmClosedMonth?: boolean;
   createdBy?: string;
   visibility?: Visibility;
 }): CommitResult {
@@ -1728,7 +1921,7 @@ export function postVisit(household: Household, input: {
   const date = parseDate(input.date);
   const amountCents = parseAmount(input.amount);
   const actor = resolveActor(household, input);
-  requireOpenPeriod(household, date, input.confirmClosedMonth);
+  requireOpenPeriod(household, date);
   const appointment = input.appointmentId
     ? household.appointments.find((item) => item.id === input.appointmentId)
     : undefined;
@@ -1906,7 +2099,6 @@ export function openClaim(household: Household, input: {
   claimLabel?: string;
   craEligible?: boolean;
   appointmentId?: string | null;
-  confirmClosedMonth?: boolean;
   createdBy?: string;
   visibility?: Visibility;
 }): CommitResult {
@@ -1922,7 +2114,7 @@ export function openClaim(household: Household, input: {
   }
   if (!expense.subcategoryId) throw new ValidationError("That expense has no category to recover.");
   const actor = resolveActor(household, input, expense.createdBy);
-  requireOpenPeriod(household, expense.date, input.confirmClosedMonth);
+  requireOpenPeriod(household, expense.date);
   const subcategory = requireSubcategory(household, expense.subcategoryId, "expense");
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
@@ -1994,7 +2186,6 @@ export function settleClaim(household: Household, input: {
   toAccountId: string;
   date?: string;
   confirmDuplicate?: boolean;
-  confirmClosedMonth?: boolean;
   createdBy?: string;
   visibility?: Visibility;
 }): CommitResult {
@@ -2007,7 +2198,7 @@ export function settleClaim(household: Household, input: {
   if (receivedCents <= 0) throw new ValidationError("Received amount must be more than zero.");
   const date = parseDate(input.date || todayKey());
   const actor = resolveActor(household, input);
-  requireOpenPeriod(household, date, input.confirmClosedMonth);
+  requireOpenPeriod(household, date);
   requireAccount(household, claim.receivableAccountId);
   requireAccount(household, input.toAccountId);
   if (input.toAccountId === claim.receivableAccountId) {
@@ -2100,7 +2291,6 @@ export function writeOffClaim(household: Household, input: {
   amount?: string | number;
   denied?: boolean;
   date?: string;
-  confirmClosedMonth?: boolean;
   createdBy?: string;
   visibility?: Visibility;
 }): CommitResult {
@@ -2117,7 +2307,7 @@ export function writeOffClaim(household: Household, input: {
   if (!expense?.subcategoryId) throw new ValidationError("The original visit expense is gone.");
   const date = parseDate(input.date || todayKey());
   const actor = resolveActor(household, input);
-  requireOpenPeriod(household, date, input.confirmClosedMonth);
+  requireOpenPeriod(household, date);
   const subcategory = requireSubcategory(household, expense.subcategoryId, "expense");
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
@@ -2398,6 +2588,7 @@ export function emptyHousehold(environment: Household["environment"] = "developm
     goals: [],
     goalContributions: [],
     budgetPlans: [],
+    sitDownSessions: [],
     activity: [],
     shiftSettings: DEFAULT_SHIFT_SETTINGS,
     lastCommittedAt: null,

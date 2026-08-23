@@ -51,7 +51,10 @@ import {
   touchGoogleConfirmation,
   touchVisitSpark,
   undo,
-  voidPostedMoney,
+  reversePostedMoney,
+  suggestCategory,
+  shouldPrefillCategory,
+  suggestSplit,
   clockInShift,
   abandonOpenShift,
   activeOpenShift,
@@ -164,6 +167,8 @@ export function App() {
   const [shiftTick, setShiftTick] = useState(0);
   const [hoursDirty, setHoursDirty] = useState(false);
   const [presetId, setPresetId] = useState<string | null>(null);
+  const [categoryTouched, setCategoryTouched] = useState(false);
+  const [codingHint, setCodingHint] = useState("");
   const enqueueWrite = useMemo(() => createWriteQueue(), []);
   const householdRef = useRef<Household | null>(household);
   householdRef.current = household;
@@ -573,6 +578,8 @@ export function App() {
     setAddDetails(false);
     setError("");
     setConfirm(null);
+    setCategoryTouched(false);
+    setCodingHint("");
     if ((nextMode ?? defaults.suggestedMode) === "shift") {
       const punch = activeOpenShift(ledger.kitchen);
       setShiftGate(punch ? "clocked" : "choose");
@@ -685,7 +692,7 @@ export function App() {
     setSplitPercents({ ...splitPercents, [memberId]: clamped });
   }
 
-  function submit(flags: { confirmDuplicate?: boolean; confirmClosedMonth?: boolean } = {}) {
+  function submit(flags: { confirmDuplicate?: boolean } = {}) {
     run((current) => {
       if (mode === "transfer") {
         return postTransfer(current, {
@@ -695,7 +702,6 @@ export function App() {
           toAccountId: form.toAccountId,
           note: form.note,
           confirmDuplicate: flags.confirmDuplicate,
-          confirmClosedMonth: flags.confirmClosedMonth,
           createdBy: actorId,
           visibility: form.visibility,
         });
@@ -711,7 +717,6 @@ export function App() {
           hours: form.hours,
           settingsFingerprint: shiftSettingsFingerprint(current.shiftSettings),
           confirmDuplicate: flags.confirmDuplicate,
-          confirmClosedMonth: flags.confirmClosedMonth,
           createdBy: actorId,
           visibility: form.visibility,
         });
@@ -726,7 +731,6 @@ export function App() {
         place: form.place,
         splits: splitsFor(parseAmount(form.amount), current),
         confirmDuplicate: flags.confirmDuplicate,
-        confirmClosedMonth: flags.confirmClosedMonth,
         createdBy: actorId,
         visibility: form.visibility,
       });
@@ -866,7 +870,7 @@ export function App() {
               );
             })}
           </section>
-          <SitDownGuide household={household} onApply={(next, token) => persist(next, token)} hidden={view === "personal"} />
+          <SitDownGuide household={household} memberId={actorId} onApply={(next, token) => persist(next, token)} hidden={view === "personal"} />
           <Goals
             household={household}
             createdBy={memberId}
@@ -909,10 +913,10 @@ export function App() {
           onRemove={(transaction) => {
             const dollars = formatCad(transaction.amountCents);
             const summary = transaction.source === "shift"
-              ? `This removes the whole shift (${dollars} wages and tips) from the books.`
+              ? `This posts reversing income for the whole shift (${dollars} wages and tips). The shift row stays.`
               : transaction.type === "transfer"
-                ? `This removes both sides of the ${dollars} transfer.`
-                : `This removes ${dollars}${transaction.note ? ` (${transaction.note})` : ""} from the books.`;
+                ? `This posts a reversing transfer for ${dollars}. Both original legs stay.`
+                : `This posts a reversing entry for ${dollars}${transaction.note ? ` (${transaction.note})` : ""}. The original row stays.`;
             setGuard({ kind: "remove", transactionId: transaction.id, summary });
           }}
         />
@@ -1070,6 +1074,7 @@ export function App() {
                       className={`chip ${form.note === "Milk" && presetId == null ? "selected" : ""}`}
                       onClick={() => {
                         setPresetId(null);
+                        setCategoryTouched(true);
                         setForm({ ...form, note: "Milk", subcategoryId: "SUB-FOOD-GROCERIES" });
                       }}
                     >
@@ -1080,6 +1085,7 @@ export function App() {
                       className={`chip ${form.note === "Coffee" && presetId == null ? "selected" : ""}`}
                       onClick={() => {
                         setPresetId(null);
+                        setCategoryTouched(true);
                         setForm({ ...form, note: "Coffee", subcategoryId: "SUB-FOOD-COFFEE" });
                       }}
                     >
@@ -1122,7 +1128,7 @@ export function App() {
                 <label>Category</label>
                 <div className="chips">
                   {categories.map((category) => (
-                    <button key={category.id} className={`chip ${form.subcategoryId === category.id ? "selected" : ""}`} onClick={() => setForm({ ...form, subcategoryId: category.id })}>
+                    <button key={category.id} className={`chip ${form.subcategoryId === category.id ? "selected" : ""}`} onClick={() => { setCategoryTouched(true); setForm({ ...form, subcategoryId: category.id }); }}>
                       {category.name}
                     </button>
                   ))}
@@ -1172,7 +1178,32 @@ export function App() {
                   {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
                 </select>
                 <label>Note</label>
-                <input value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} placeholder="Milk, rent…" />
+                <input
+                  value={form.note}
+                  onChange={(event) => {
+                    const note = event.target.value;
+                    const next = { ...form, note };
+                    if (!categoryTouched && (mode === "expense" || mode === "income")) {
+                      const guess = suggestCategory(household, note, form.place);
+                      if (shouldPrefillCategory(guess) && guess) {
+                        next.subcategoryId = guess.subcategoryId;
+                        let hint = `Guessed ${guess.name}. Confirm still writes.`;
+                        try {
+                          if (form.amount) {
+                            const split = suggestSplit(household, note, form.place, parseAmount(form.amount));
+                            if (split && split.confidence >= 0.55) hint += ` Usually ${split.label}.`;
+                          }
+                        } catch {
+                          // Pad empty until they type an amount.
+                        }
+                        setCodingHint(hint);
+                      }
+                    }
+                    setForm(next);
+                  }}
+                  placeholder="Milk, rent…"
+                />
+                {codingHint && <p className="muted">{codingHint}</p>}
               </>
             )}
             {mode === "transfer" && (
@@ -1310,7 +1341,22 @@ export function App() {
                 {mode !== "shift" && mode !== "transfer" && (
                   <>
                     <label>Place</label>
-                    <input value={form.place} onChange={(event) => setForm({ ...form, place: event.target.value })} placeholder="No Frills…" />
+                    <input
+                      value={form.place}
+                      onChange={(event) => {
+                        const place = event.target.value;
+                        const next = { ...form, place };
+                        if (!categoryTouched && (mode === "expense" || mode === "income")) {
+                          const guess = suggestCategory(household, form.note, place);
+                          if (shouldPrefillCategory(guess) && guess) {
+                            next.subcategoryId = guess.subcategoryId;
+                            setCodingHint(`Guessed ${guess.name}. Confirm still writes.`);
+                          }
+                        }
+                        setForm(next);
+                      }}
+                      placeholder="No Frills…"
+                    />
                   </>
                 )}
                 {mode === "transfer" && (
@@ -1331,11 +1377,8 @@ export function App() {
                     <span>{formatCad(tx.amountCents)}</span>
                   </div>
                 ))}
-                <button className="primary" onClick={() => {
-                  if (confirm.code === "closedMonth") submit({ confirmClosedMonth: true });
-                  else submit({ confirmDuplicate: true, confirmClosedMonth: true });
-                }}>
-                  {confirm.code === "closedMonth" ? "Post into closed month" : "Add anyway"}
+                <button className="primary" onClick={() => submit({ confirmDuplicate: true })}>
+                  Add anyway
                 </button>
               </div>
             )}
@@ -1438,9 +1481,9 @@ export function App() {
       )}
       {guard?.kind === "remove" && (
         <ConfirmSheet
-          title="Remove from the books?"
-          body={`${guard.summary} You can undo from the toast or from More → Recent changes.`}
-          confirmLabel="Remove"
+          title="Reverse this row?"
+          body={`${guard.summary} Both the original and the reversing entry stay. Undo from the toast or More → Recent changes.`}
+          confirmLabel="Reverse"
           danger
           busy={busy}
           onCancel={() => setGuard(null)}
@@ -1450,7 +1493,7 @@ export function App() {
             setGuard(null);
             if (!current) return;
             try {
-              const result = voidPostedMoney(current, id);
+              const result = reversePostedMoney(current, id, { createdBy: actorId });
               void persist(result.household, result.undo);
             } catch (caught) {
               setError(caught instanceof Error ? caught.message : String(caught));

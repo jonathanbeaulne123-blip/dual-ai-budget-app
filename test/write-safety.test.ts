@@ -5,7 +5,7 @@ import {
   postShift,
   postTransfer,
   undo,
-  voidPostedMoney,
+  reversePostedMoney,
 } from "../src/core/commands.ts";
 import { createWriteQueue } from "../src/core/writeQueue.ts";
 import { shiftSettingsFingerprint } from "../src/core/shift.ts";
@@ -33,8 +33,8 @@ describe("write queue", () => {
   });
 });
 
-describe("void and undo tombstones", () => {
-  it("removes an expense and can restore it", () => {
+describe("reverse and undo", () => {
+  it("reverses an expense and can undo the reversing entry", () => {
     const posted = postEntry(catalogHousehold(), {
       date: "2026-08-21",
       type: "expense",
@@ -45,15 +45,16 @@ describe("void and undo tombstones", () => {
       createdBy: "MEM-001",
       confirmDuplicate: true,
     });
-    const removed = voidPostedMoney(posted.household, posted.postedIds[0]!);
-    expect(removed.household.transactions).toHaveLength(0);
-    expect(removed.household.tombstones.map((item) => item.id)).toContain(posted.postedIds[0]);
-    const restored = undo(removed.household, removed.undo);
+    const reversed = reversePostedMoney(posted.household, posted.postedIds[0]!);
+    expect(reversed.household.transactions).toHaveLength(2);
+    expect(reversed.household.transactions.some((tx) => tx.note === "QA milk")).toBe(true);
+    expect(reversed.household.transactions.some((tx) => tx.reversalOfId === posted.postedIds[0])).toBe(true);
+    const restored = undo(reversed.household, reversed.undo);
     expect(restored.transactions).toHaveLength(1);
     expect(restored.transactions[0]?.note).toBe("QA milk");
   });
 
-  it("removes both sides of a transfer", () => {
+  it("reverses both sides of a transfer without deleting the original pair", () => {
     const posted = postTransfer(catalogHousehold(), {
       date: "2026-08-21",
       amount: "40.00",
@@ -63,12 +64,12 @@ describe("void and undo tombstones", () => {
       confirmDuplicate: true,
     });
     expect(posted.household.transactions).toHaveLength(2);
-    const removed = voidPostedMoney(posted.household, posted.postedIds[0]!);
-    expect(removed.household.transactions).toHaveLength(0);
-    expect(removed.postedIds).toHaveLength(2);
+    const reversed = reversePostedMoney(posted.household, posted.postedIds[0]!);
+    expect(reversed.household.transactions).toHaveLength(4);
+    expect(reversed.postedIds).toHaveLength(2);
   });
 
-  it("removes a whole shift from either income row", () => {
+  it("reverses shift income and keeps the shift row", () => {
     const posted = postShift(catalogHousehold(), {
       date: "2026-08-21",
       memberId: "MEM-002",
@@ -84,9 +85,9 @@ describe("void and undo tombstones", () => {
     expect(posted.household.shifts).toHaveLength(1);
     expect(posted.household.transactions).toHaveLength(2);
     const wages = posted.household.transactions.find((tx) => tx.note.startsWith("Wages"));
-    const removed = voidPostedMoney(posted.household, wages!.id);
-    expect(removed.household.shifts).toHaveLength(0);
-    expect(removed.household.transactions).toHaveLength(0);
+    const reversed = reversePostedMoney(posted.household, wages!.id);
+    expect(reversed.household.shifts).toHaveLength(1);
+    expect(reversed.household.transactions.length).toBeGreaterThanOrEqual(4);
   });
 
   it("tombstones posted ids even when undo gets a stale current snapshot", () => {

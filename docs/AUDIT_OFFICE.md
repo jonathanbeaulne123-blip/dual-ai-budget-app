@@ -8,7 +8,7 @@ Laws: [DECISIONS.md](DECISIONS.md) D-033 / D-046. Strategy: [STRATEGY.md](STRATE
 
 ## What you can open
 
-Opinion (unmodified / qualified / adverse), balance sheet, income statement, cash flow (card spend vs paydown vs investing), equity roll, working capital watch, trial balance, manual bank rec, aged bills, notes, downloadable close pack, period close with a second look, reopen that tombstones.
+Opinion (unmodified / qualified / adverse), balance sheet, income statement, cash flow (card spend vs paydown vs investing), equity roll, working capital watch, trial balance, manual bank rec, aged bills, notes, downloadable close pack, period close that **refuses** posts until you reopen, reversing entries instead of delete.
 
 Tied rec unlocks Hercules’s **audit spectacles**. A closed month unlocks the **green-ink stamp**.
 
@@ -28,4 +28,4 @@ A new statement or control must give Hercules one grounded sentence (Course B) a
    3. Books → **Statements**. Assets should equal liabilities + equity. Equity should roll.
    4. Books → **Reconcile**. Type a statement balance. Tied unlocks spectacles under Hercules’s things.
    5. Books → **Close pack**. Close last month. Download the pack. Green-ink stamp unlocks. Tap Hercules: **Opinion?** or **Working capital?**
-   6. Try posting into that closed month from Add. Confirm is the restatement. Reopen tombstones the close so the other phone cannot bring it back.
+   6. Try posting into that closed month from Add. It must refuse until you Reopen. Reopen tombstones the close so the other phone cannot bring it back. Reverse an open-month row instead of deleting it.

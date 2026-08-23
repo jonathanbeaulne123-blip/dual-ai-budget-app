@@ -4,7 +4,7 @@
 
 The ledger is still the company (Dual Course weight 5). He is Course B (weight 3) **and** a serious tool: money questions are answered on-device from the books. Care is posted household facts, not a hunger meter. Ember was the flame prototype and is fully historical.
 
-Laws: [DECISIONS.md](DECISIONS.md) D-042 / D-044 / D-045 / D-046 / D-047 / D-049 / D-050 / D-051 / D-057–D-077. Science spec: [HERCULES_AI.md](HERCULES_AI.md). Mark: [HERCULES_MARK.md](HERCULES_MARK.md). Strategy: [STRATEGY.md](STRATEGY.md). Museum essay: [nostalgia/HERCULES.md](nostalgia/HERCULES.md).
+Laws: [DECISIONS.md](DECISIONS.md) D-042 / D-044 / D-045 / D-046 / D-047 / D-049 / D-050 / D-051 / D-057–D-077 / D-083–D-086. Science spec: [HERCULES_AI.md](HERCULES_AI.md). Sit-down: [SITDOWN.md](SITDOWN.md). Mark: [HERCULES_MARK.md](HERCULES_MARK.md). Strategy: [STRATEGY.md](STRATEGY.md). Museum essay: [nostalgia/HERCULES.md](nostalgia/HERCULES.md).
 
 ## Laws
 
@@ -21,6 +21,7 @@ Laws: [DECISIONS.md](DECISIONS.md) D-042 / D-044 / D-045 / D-046 / D-047 / D-049
 - **Mark (D-061):** the live cat is ink-on-paper SVG (white coat, ruff under the head). The 3D GLB is source, not the 96px runtime. Laws and weaknesses: [HERCULES_MARK.md](HERCULES_MARK.md).
 - **Appointments (D-055 / D-056):** he may notice a visit and propose a jar. `proposeVisitGoal` does not write. **Start this jar** is a human tap from Calendar → Appointments or Plan. Quiet visits are "the Tuesday visit" in his mouth (D-054). He has vet bills (`memberId: "companion"`). The METC log is a page, not only an Ask answer.
 - **Kill criterion:** if Bianca will not add a grocery because he is in the way, shrink him. Drag him. Pin him.
+- **Sit-down (D-083):** on Plan he can read leftover and the positives. Confirm still moves leftover. He never `postTransfer`.
 
 ## Dual Course
 
@@ -37,8 +38,9 @@ Every new line in his mouth must point at a budget primitive (wallet, rec, sit-d
    4. Type `what do you remember?` He reads the snapshot, not a vendor memory store.
    5. Type `add milk`. Add opens. Confirm still posts.
    6. Ask **What’s owed?** after a visit with insurance. Settlement is a transfer. Ask **Medical log** — pending claims stay out of the METC number; Hercules’s vet is never on it.
-   7. Dismiss the bubble. Reopen him: prior chat is still there. Wipe it from Hercules’s things if you want it gone on both phones.
-   8. Watch him notice `$2.25 · Tim Hortons` and offer Save as preset. Confirm does not post money. The chip on Add still goes through Confirm; duplicate confirm should fire. Full script: [HERCULES_AI.md](HERCULES_AI.md).
+   7. On Plan, ask **Leftover?** The arithmetic is cash-like minus 30-day bills minus card mins. He will not move it.
+   8. Dismiss the bubble. Reopen him: prior chat is still there. Wipe it from Hercules’s things if you want it gone on both phones.
+   9. Watch him notice `$2.25 · Tim Hortons` and offer Save as preset. Confirm does not post money. The chip on Add still goes through Confirm; duplicate confirm should fire. Full script: [HERCULES_AI.md](HERCULES_AI.md).
 
 ## Purrsonality
 

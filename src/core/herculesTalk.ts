@@ -89,7 +89,7 @@ function repliesFor(mood: CompanionMood, tab: HearthTab, topic: string): string[
   if (mood === "restless") return ["Which bill?", "What now?"];
   if (tab === "calendar") return ["Which bill?", "What's owed?", "Start this jar"];
   if (tab === "ledger") return ["Opinion?", "Working capital?"];
-  if (tab === "plan") return ["Sit-down?", "Groceries left?", "We good?"];
+  if (tab === "plan") return ["Sit-down?", "Leftover?", "We good?"];
   if (tab === "more") return ["Health", "What broke?", "We good?"];
   return ["We good?", "What now?", "Milk"];
 }

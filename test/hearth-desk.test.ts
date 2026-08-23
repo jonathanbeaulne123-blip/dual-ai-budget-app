@@ -29,6 +29,7 @@ describe("page-true Hercules", () => {
     expect(books.chips.join(" ")).toMatch(/Opinion|Working capital/i);
     expect(calendar.chips.join(" ")).toMatch(/bill|owed|jar/i);
     expect(plan.placeholder).toMatch(/plan/i);
+    expect(plan.chips.join(" ")).toMatch(/Leftover/i);
     expect(herculesIdle(household, "ledger", today).spoken).toMatch(/fieldwork|journal/i);
     expect(herculesIdle(household, "plan", today).replies.join(" ")).toMatch(/Sit-down|Groceries/i);
   });
