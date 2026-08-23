@@ -10,7 +10,9 @@ import {
   phoneDrawerIds,
   phoneDueBill,
   phoneRailOrder,
+  instrumentIsOpen,
   revealPhoneInstrument,
+  toggleInstrumentPin,
   runHealthCheck,
   shiftPostingStreak,
   walletWarn,
@@ -205,7 +207,7 @@ export function OfficePhone({
       name: "Jars",
       glance: <JarsGlance dashboard={dashboard} />,
       aria: "Jars.",
-      body: <JarsBody dashboard={dashboard} today={today} onPlan={() => onGo("plan")} />,
+      body: <JarsBody dashboard={dashboard} household={household} today={today} busy={busy} onPlan={() => onGo("plan")} onCommand={onKitchen} />,
     },
     lamp: {
       name: "Health",
@@ -266,9 +268,11 @@ export function OfficePhone({
               key={id}
               id={id}
               spec={spec}
-              open={expanded === id}
+              open={instrumentIsOpen(layout, id)}
               adding={adding}
+              pinned={(layout.pinned ?? []).includes(id)}
               onToggle={() => setExpanded(id)}
+              onPin={() => onLayout(toggleInstrumentPin(layout, id))}
             />
           );
         })}
@@ -297,13 +301,15 @@ export function OfficePhone({
 
 /** One object on the phone desk. Publishes a corner seat so Hercules does not sit on the glance. */
 function PhoneInstrument({
-  id, spec, open, adding, onToggle,
+  id, spec, open, adding, pinned, onToggle, onPin,
 }: {
   id: InstrumentId;
   spec: Spec;
   open: boolean;
   adding: boolean;
+  pinned: boolean;
   onToggle: () => void;
+  onPin: () => void;
 }) {
   const ref = useFurniture(id, INSTRUMENT_KIND[id], true, Boolean(spec.warn), {
     enabled: !adding,
@@ -320,6 +326,9 @@ function PhoneInstrument({
       <button type="button" className="ph-head" onClick={onToggle} aria-expanded={open}>
         <span className="ph-name">{spec.name}</span>
         <span className="ph-value">{spec.glance}</span>
+      </button>
+      <button type="button" className={`ph-pin ${pinned ? "is-on" : ""}`} onClick={onPin} aria-label={pinned ? `Unpin ${spec.name}` : `Pin ${spec.name} open`}>
+        {pinned ? "pinned" : "pin"}
       </button>
       {open && <div className="ph-body">{spec.body}</div>}
     </section>

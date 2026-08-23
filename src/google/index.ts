@@ -31,6 +31,7 @@ export {
   type GoogleTokenRequester,
 } from "./engine.ts";
 export { uploadSitDownWorkbook, type DriveUploadResult } from "./drive.ts";
+export { pushDeskAppearance, pullDeskAppearance, type DeskSyncResult } from "./desk.ts";
 export {
   adoptGoogleSession,
   clearGoogleSession,

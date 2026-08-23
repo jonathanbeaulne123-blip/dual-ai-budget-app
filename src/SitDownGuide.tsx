@@ -278,6 +278,7 @@ function LeftoverMath({ leftover }: { leftover: ReturnType<typeof leftoverProjec
       <div className="row"><span>− Bills next 30 days</span><span>{formatCad(leftover.billsNext30Cents)}</span></div>
       <div className="row"><span>− Card minimums</span><span>{formatCad(leftover.minPaymentsCents)}</span></div>
       <div className="row"><strong>Leftover</strong><strong>{formatCad(leftover.leftoverCents)}</strong></div>
+      <p className="muted">If leftover is positive, Confirm parks jar cash in the Goals vault — not month net, not everyday HIS. Pigs are envelopes on that vault.</p>
       {leftover.shortfallCents > 0 && (
         <p className="muted">Shortfall {formatCad(leftover.shortfallCents)}. Do not invent CAD to fill it.</p>
       )}

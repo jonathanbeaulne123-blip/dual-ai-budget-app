@@ -42,8 +42,12 @@ export type CreditCardDesk = {
   rules: CreditRewardRule[];
 };
 
+export type SavingsPurpose = "general" | "goals";
+
 export type SavingsDesk = {
   apyBps: number;
+  /** `goals` is the household sinking-fund vault. Pigs are envelopes on it, not extra bank accounts. */
+  purpose: SavingsPurpose;
 };
 
 export type InvestmentDesk = {
@@ -461,6 +465,8 @@ export type HouseholdGoogle = {
   updatedAt: string;
 };
 
+export type GoalStatus = "open" | "retired";
+
 export type Goal = {
   id: string;
   name: string;
@@ -470,6 +476,9 @@ export type Goal = {
   shared: boolean;
   ownerMemberId: string | null;
   subcategoryId: string | null;
+  status: GoalStatus;
+  retiredAt: string | null;
+  purchaseId: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -479,6 +488,25 @@ export type GoalContribution = {
   goalId: string;
   memberId: string;
   amountCents: number;
+  date: DateKey;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type GoalPurchaseLine = {
+  note: string;
+  amountCents: number;
+};
+
+/** Itemized receipt when a full jar is actually bought. Rows stay forever (D-085). */
+export type GoalPurchase = {
+  id: string;
+  goalId: string;
+  spentCents: number;
+  vaultAccountId: string;
+  transactionIds: string[];
+  lines: GoalPurchaseLine[];
+  memberId: string;
   date: DateKey;
   createdAt: string;
   updatedAt: string;
@@ -529,6 +557,7 @@ export type Household = {
   google: HouseholdGoogle;
   goals: Goal[];
   goalContributions: GoalContribution[];
+  goalPurchases: GoalPurchase[];
   budgetPlans: BudgetPlan[];
   sitDownSessions: SitDownSession[];
   activity: Activity[];
@@ -557,6 +586,7 @@ export type SharedEnvelope = {
   google: HouseholdGoogle;
   goals: Goal[];
   goalContributions: GoalContribution[];
+  goalPurchases: GoalPurchase[];
   budgetPlans: BudgetPlan[];
   sitDownSessions: SitDownSession[];
   activity: Activity[];

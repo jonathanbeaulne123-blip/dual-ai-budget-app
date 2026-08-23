@@ -11,6 +11,8 @@ import { outstandingClaims, appointmentPublicTitle, claimPublicLabel } from "./a
 import { quietSecrets, scrubQuietText } from "./herculesPrivacy.ts";
 import { allocateLeftover, type AllocationResult, type AllocationSlice } from "./allocate.ts";
 import { sitDownAnomalies, sitDownForecast, likelyMiscoded } from "./autoCode.ts";
+import { goalsVaultAccount } from "./goalVault.ts";
+import { goalStatus } from "./goals.ts";
 import type { Household, SitDownSession, SitDownSessionStatus } from "./types.ts";
 
 export type LeftoverBillHint = {
@@ -100,6 +102,8 @@ export function leftoverSourceAccountId(household: Household, leftoverCents: num
 }
 
 export function jarParkingAccountId(household: Household): string | null {
+  const vault = goalsVaultAccount(household);
+  if (vault) return vault.id;
   const savings = household.accounts.find((account) => account.active && account.kind === "savings");
   if (savings) return savings.id;
   const other = household.accounts.find((account) => account.active && isCashLikeKind(account.kind));
@@ -120,7 +124,7 @@ export function proposeAllocation(household: Household, asOf: DateKey): Allocati
       value: 3,
     });
   }
-  for (const goal of household.goals.filter((item) => item.shared !== false)) {
+  for (const goal of household.goals.filter((item) => item.shared !== false && goalStatus(item) === "open")) {
     const remaining = Math.max(0, goal.targetCents - goal.savedCents);
     if (remaining <= 0) continue;
     slices.push({

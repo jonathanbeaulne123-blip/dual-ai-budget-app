@@ -100,7 +100,7 @@ export function askBooks(household: Household, question: string, today: DateKey)
     return {
       kind: "answer",
       sentence: leftover.leftoverCents
-        ? `Sit-down leftover is ${formatCad(leftover.leftoverCents)}. ${leftover.formula} Month net is not leftover. Three acts on Plan. Confirm still moves it. Hercules never does.`
+        ? `Sit-down leftover is ${formatCad(leftover.leftoverCents)}. ${leftover.formula} Month net is not leftover. Confirm parks jar cash in the Goals vault. Hercules never does.`
         : leftover.shortfallCents
           ? `Nothing to move. ${leftover.formula} Sit-down still runs. It does not invent CAD.`
           : leftover.formula,
@@ -109,6 +109,7 @@ export function askBooks(household: Household, question: string, today: DateKey)
         { label: "Bills next 30 days", value: formatCad(leftover.billsNext30Cents) },
         { label: "Card minimums", value: formatCad(leftover.minPaymentsCents) },
         { label: "Leftover", value: formatCad(leftover.leftoverCents) },
+        { label: "Parks in", value: "Goals vault" },
       ],
     };
   }

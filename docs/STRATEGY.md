@@ -192,7 +192,8 @@ A creature and a kitchen that teach the books by living on them:
 | **Hercules ledger desk** | Money questions answered from the journal. Chat/memories as protected as the books. | A cat who remembers payday without a vendor memory store. | **Shipping (D-049).** Third-party keys allowed as Worker secrets (D-045). Workers AI if none set. Payload lift: D-059. |
 | **Hercules science** | One-tap posting of repeated merchants. Quiet titles never leak. Figures in his mouth trace to posted rows. | He notices without being asked. One cat-voiced proposal. Save is a tap. | **Shipping (D-057–D-060).** On-device notices; presets; retrieved model payload. No bank feed. |
 | **Kitchen habit** | Fewer taps to post milk/shift. Sit-down *planning* still `applySitDown`. | Hercules jumps on posted shift streaks. Never streak-death. | **Shipping (D-050).** Sit-down *product* is D-083. |
-| **Monthly sit-down** | Leftover arithmetic, plan-then-transfer, hard month lock, reverse instead of delete, on-device auto-code. | Three-act kitchen-table ceremony. Hercules reads act 1. He never moves a dollar. | **Shipping (D-083–D-087).** Spec: [SITDOWN.md](SITDOWN.md). Postcard is a glance, not an 18th Home stamp. |
+| **Monthly sit-down** | Leftover arithmetic, plan-then-transfer into the Goals vault, hard month lock, reverse instead of delete, on-device auto-code. | Three-act kitchen-table ceremony. Pigs fill. Purchased? retires a jar. Hercules reads act 1. He never moves a dollar. | **Shipping (D-083–D-089).** Spec: [SITDOWN.md](SITDOWN.md), [GOALS.md](GOALS.md). Postcard is a glance, not an 18th Home stamp. |
+| **Almost-there office** | Leftover parking destination, purchase expense, vault receipt. | No-zoom phone, pin-open, chalk on glass, How can I help, perch-on-expand, click-to-close. | **Shipping (D-088–D-094).** |
 | **September Office** | Posting, wallet, sit-down, bills, Health reachable without leaving Home unless you dive. | Mobile: five objects, not seventeen rows. Desktop: unique office, sizes, personalities, CPA density. | **Direction (D-051), split (D-079), desktop packet (D-080).** Mobile Home is `OfficePhone`. Claude builds wide. Widgets never post. |
 | **Google Dual Course** | Dates, mail, and close-pack files next to the books — still confirmed. | Calendar chips, visit reminders, “there’s a statement.” | **In scope (D-078).** Engine ships. Features below. Not a Home widget. |
 | **Lock the hosted door** | Auth + RLS. Personal can become privacy. Opinion about *access* can go unmodified. | Hercules can tell the truth: “the door latched.” No more qualified opinion pretending math is the only issue. | **Next engineering dollar.** Do not apply [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) while `USING (true)`. |
@@ -231,6 +232,7 @@ How-to: [GOOGLE.md](GOOGLE.md). Laws that do not move: tokens on this phone; sna
 | `.ics` | Fallback when this build has no client ID. |
 | Suite ping | Opt-in Drive / Contacts / Gmail / Sheets prove the token. Not the product yet. |
 | Sit-down Drive workbook | Create a Sheet with `drive.file`. Never edit an existing file. Local download always works. `driveFileId` only on the snapshot (D-087). |
+| Desk appearance | `Hearth desk.json` on this Google account. Look + layout. Pull on a fresh household. File id only in localStorage (D-092). |
 
 ### Proposed next (in scope)
 

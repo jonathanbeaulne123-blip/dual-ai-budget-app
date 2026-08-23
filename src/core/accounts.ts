@@ -184,9 +184,11 @@ export function savingsView(household: Household, account: Account, today: DateK
     balanceCents,
     apyBps,
     estimatedMonthlyInterestCents,
-    hercules: estimatedMonthlyInterestCents
-      ? `${account.name} would earn about ${formatCad(estimatedMonthlyInterestCents)} this month at ${(apyBps / 100).toFixed(2)}% APY. I don't post it.`
-      : `${account.name} is ${formatCad(balanceCents)} on the books.`,
+    hercules: account.savings?.purpose === "goals"
+      ? `${account.name} is the sinking-fund vault. Pigs are envelopes on it. Leftover parks here after sit-down Confirm. I don't post it.`
+      : estimatedMonthlyInterestCents
+        ? `${account.name} would earn about ${formatCad(estimatedMonthlyInterestCents)} this month at ${(apyBps / 100).toFixed(2)}% APY. I don't post it.`
+        : `${account.name} is ${formatCad(balanceCents)} on the books.`,
   };
 }
 
@@ -258,8 +260,13 @@ function tileSub(household: Household, account: Account, today: DateKey): { sub:
   }
   if (account.kind === "savings") {
     const savings = savingsView(household, account, today);
+    const vault = account.savings?.purpose === "goals" ? "Goals vault · " : "";
     return {
-      sub: savings.apyBps ? `${(savings.apyBps / 100).toFixed(2)}% APY · est. ${formatCad(savings.estimatedMonthlyInterestCents)}/mo` : "Savings",
+      sub: savings.apyBps
+        ? `${vault}${(savings.apyBps / 100).toFixed(2)}% APY · est. ${formatCad(savings.estimatedMonthlyInterestCents)}/mo`
+        : vault
+          ? `${vault}pigs live here`
+          : "Savings",
       tone: "good",
       savings,
     };

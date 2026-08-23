@@ -22,6 +22,8 @@ import { shapeAccount, normalizeAccountKind, emptyCreditDesk, isReceivableKind }
 import { creditCardView, savingsView } from "./accounts.ts";
 import { sitDownPreview } from "./insights.ts";
 import { leftoverProjection, leftoverSourceAccountId, jarParkingAccountId, plannedAllocation, shapeSitDownSessions, openSitDownSession } from "./sitDown.ts";
+import { goalsVaultAccount, vaultSpendableCents } from "./goalVault.ts";
+import { savedCentsFromContributions, goalStatus } from "./goals.ts";
 import type { AllocationSlice } from "./allocate.ts";
 import { bookBalanceAsOf, isMonthClosed } from "./statements.ts";
 import { COSMETIC_BY_ID, isCosmeticUnlocked } from "./companion.ts";
@@ -40,7 +42,6 @@ import {
 } from "./google.ts";
 import { mergeTombstones } from "./sync.ts";
 import { parseVisibility, visibleForDuplicateScan } from "./visibility.ts";
-import { savedCentsFromContributions } from "./goals.ts";
 import {
   advanceAppointmentCadence,
   assertLinesSum,
@@ -81,6 +82,7 @@ import type {
   Recurrence,
   RecurrenceKind,
   RecurrenceOrigin,
+  SavingsPurpose,
   SitDownSession,
   Split,
   Transaction,
@@ -646,6 +648,7 @@ export function addAccount(household: Household, input: {
   groceryCashbackPercent?: string | number;
   apyPercent?: string | number;
   vehicle?: InvestmentVehicle;
+  purpose?: SavingsPurpose;
 }): CommitResult {
   requireTimezone(household);
   const name = input.name.trim();
@@ -687,7 +690,9 @@ export function addAccount(household: Household, input: {
         rules,
       }
       : null,
-    savings: kind === "savings" ? { apyBps: parseBps(input.apyPercent, "APY") } : null,
+    savings: kind === "savings"
+      ? { apyBps: parseBps(input.apyPercent, "APY"), purpose: input.purpose === "goals" ? "goals" : "general" }
+      : null,
     investment: kind === "investment" ? { vehicle: input.vehicle ?? "tfsa", markedValueCents: null, markedAt: null } : null,
     createdAt: at,
     updatedAt: at,
@@ -707,6 +712,7 @@ export function updateAccount(household: Household, input: {
   dueDaysAfterStatement?: number;
   cashbackPercent?: string | number;
   apyPercent?: string | number;
+  purpose?: SavingsPurpose;
   vehicle?: InvestmentVehicle;
 }): CommitResult {
   requireTimezone(household);
@@ -732,8 +738,15 @@ export function updateAccount(household: Household, input: {
         : credit.defaultCashbackBps,
     };
   }
-  if (account.kind === "savings" && input.apyPercent !== undefined) {
-    account.savings = { apyBps: parseBps(input.apyPercent, "APY") };
+  if (account.kind === "savings" && (input.apyPercent !== undefined || input.purpose)) {
+    account.savings = {
+      apyBps: input.apyPercent !== undefined
+        ? parseBps(input.apyPercent, "APY")
+        : (account.savings?.apyBps ?? 0),
+      purpose: input.purpose === "goals" || (input.purpose !== "general" && account.savings?.purpose === "goals")
+        ? "goals"
+        : "general",
+    };
   }
   if (account.kind === "investment" && input.vehicle) {
     account.investment = { ...(account.investment ?? { vehicle: input.vehicle, markedValueCents: null, markedAt: null }), vehicle: input.vehicle };
@@ -957,7 +970,9 @@ export function executeSitDownMoves(household: Household, input: {
   const actor = resolveActor(household, input);
   const date = todayKey();
   requireOpenPeriod(household, date);
-  const leftover = leftoverProjection(household, date);
+  const withVault = ensureGoalsVault(household);
+  const working = withVault.household;
+  const leftover = leftoverProjection(working, date);
   const plan = plannedAllocation(leftover.leftoverCents, input.slices);
   if (!plan.ok) throw new ValidationError(plan.reason);
   if (plan.allocatedCents <= 0) {
@@ -965,18 +980,18 @@ export function executeSitDownMoves(household: Household, input: {
       ? "Nothing in the plan moves leftover. Add a jar, a paydown, or a savings line."
       : leftover.formula);
   }
-  const sourceId = leftoverSourceAccountId(household, plan.allocatedCents, date);
+  const sourceId = leftoverSourceAccountId(working, plan.allocatedCents, date);
   if (!sourceId) throw new ValidationError("No cash-like account holds leftover.");
-  const sourceBalance = bookBalanceAsOf(household, sourceId, date);
+  const sourceBalance = bookBalanceAsOf(working, sourceId, date);
   if (sourceBalance < plan.allocatedCents) {
     throw new ValidationError(`Chequing/cash-like only holds $${(sourceBalance / 100).toFixed(2)}. Shrink the plan.`);
   }
-  const parkingId = jarParkingAccountId(household);
+  const parkingId = jarParkingAccountId(working);
   const previous = cloneHousehold(household);
-  let next = cloneHousehold(household);
+  let next = cloneHousehold(working);
   const transferIds: string[] = [];
   const contributionIds: string[] = [];
-  const warnings: string[] = [];
+  const warnings: string[] = [...withVault.warnings];
   for (const line of plan.lines) {
     if (line.cents <= 0) continue;
     if (line.kind === "account") {
@@ -1073,6 +1088,9 @@ export function addGoal(household: Household, input: {
     shared: input.shared !== false,
     ownerMemberId: input.ownerMemberId ?? null,
     subcategoryId: input.subcategoryId ?? null,
+    status: "open",
+    retiredAt: null,
+    purchaseId: null,
     createdAt: at,
     updatedAt: at,
   });
@@ -1087,6 +1105,9 @@ export function contributeToGoal(household: Household, goalId: string, amount: s
   const next = cloneHousehold(household);
   const goal = next.goals.find((item) => item.id === goalId);
   if (!goal) throw new ValidationError("That goal no longer exists.");
+  if (goalStatus(goal) === "retired") {
+    throw new ValidationError("That jar already lives in the retirement home. Start a new one if you are saving again.");
+  }
   const at = nowIso();
   next.goalContributions = [...(next.goalContributions ?? [])];
   const id = nextId("GCON-", next.goalContributions.map((row) => row.id), 4);
@@ -1102,6 +1123,114 @@ export function contributeToGoal(household: Household, goalId: string, amount: s
   goal.savedCents = savedCentsFromContributions(next.goalContributions, goal.id);
   goal.updatedAt = at;
   return commit(previous, next, "Goal Progress", `${goal.name} +$${(amountCents / 100).toFixed(2)}`, [id]);
+}
+
+export function ensureGoalsVault(household: Household): CommitResult {
+  if (goalsVaultAccount(household)) {
+    return {
+      household,
+      warnings: [],
+      postedIds: [],
+      undo: { id: "vault-present", label: "Goals vault already open", snapshot: household, postedIds: [] },
+    };
+  }
+  return addAccount(household, {
+    name: "Goals vault",
+    kind: "savings",
+    purpose: "goals",
+    institution: "EQ Bank",
+    apyPercent: 0,
+  });
+}
+
+export function purchaseGoal(household: Household, input: {
+  goalId: string;
+  amount: string | number;
+  lines?: { note: string; amount: string | number }[];
+  date?: string;
+  subcategoryId?: string;
+} & ActorInput): CommitResult {
+  const actor = resolveActor(household, input);
+  const date = input.date ? parseDate(input.date) : todayKey();
+  requireOpenPeriod(household, date);
+  const spentCents = parseAmount(input.amount, "Purchase");
+  const goal = household.goals.find((item) => item.id === input.goalId);
+  if (!goal) throw new ValidationError("That goal no longer exists.");
+  if (goalStatus(goal) === "retired") {
+    throw new ValidationError("That jar already lives in the retirement home.");
+  }
+  if (goal.savedCents < goal.targetCents) {
+    throw new ValidationError("Fill the jar before you buy it. Contribute stays on Plan.");
+  }
+  const vault = goalsVaultAccount(household);
+  if (!vault) throw new ValidationError("Open a Goals vault first. Sit-down Confirm can create one.");
+  const spendable = vaultSpendableCents(household, goal.id, date);
+  if (spentCents > spendable) {
+    throw new ValidationError(
+      `The Goals vault can spare $${(spendable / 100).toFixed(2)} without raiding other jars. Transfer extra in, or spend less.`,
+    );
+  }
+  const lines = (input.lines ?? []).map((row) => ({
+    note: String(row.note ?? "").trim().slice(0, 80),
+    amountCents: parseAmount(row.amount, "Purchase line"),
+  })).filter((row) => row.amountCents > 0);
+  const lineSum = lines.reduce((sum, row) => sum + row.amountCents, 0);
+  if (lines.length && lineSum !== spentCents) {
+    throw new ValidationError(`Itemized lines add to $${(lineSum / 100).toFixed(2)}, not $${(spentCents / 100).toFixed(2)}.`);
+  }
+  const posting = lines.length ? lines : [{ note: `Purchased ${goal.name}`, amountCents: spentCents }];
+  const subcategoryId = input.subcategoryId ?? goal.subcategoryId ?? "SUB-LIFE-FUN";
+  requireSubcategory(household, subcategoryId, "expense");
+  const previous = cloneHousehold(household);
+  let next = cloneHousehold(household);
+  next.goalPurchases = [...(next.goalPurchases ?? [])];
+  const purchaseId = nextId("GPUR-", next.goalPurchases.map((row) => row.id), 4);
+  const transactionIds: string[] = [];
+  for (const line of posting) {
+    const posted = postEntry(next, {
+      date,
+      type: "expense",
+      amount: line.amountCents / 100,
+      accountId: vault.id,
+      subcategoryId,
+      note: line.note || `Purchased ${goal.name}`,
+      confirmDuplicate: true,
+      createdBy: actor.createdBy,
+      source: "manual",
+      sourceId: purchaseId,
+    });
+    next = posted.household;
+    transactionIds.push(...posted.postedIds);
+  }
+  const at = nowIso();
+  next.goalPurchases = [...(next.goalPurchases ?? [])];
+  next.goalPurchases.push({
+    id: purchaseId,
+    goalId: goal.id,
+    spentCents,
+    vaultAccountId: vault.id,
+    transactionIds,
+    lines: posting,
+    memberId: actor.createdBy,
+    date,
+    createdAt: at,
+    updatedAt: at,
+  });
+  const live = next.goals.find((item) => item.id === goal.id);
+  if (live) {
+    live.status = "retired";
+    live.retiredAt = at;
+    live.purchaseId = purchaseId;
+    live.updatedAt = at;
+    live.savedCents = savedCentsFromContributions(next.goalContributions, live.id);
+  }
+  return commit(
+    previous,
+    next,
+    "Goal purchased",
+    `${goal.name} · spent $${(spentCents / 100).toFixed(2)}`,
+    [purchaseId, ...transactionIds],
+  );
 }
 
 export function addRecurrence(household: Household, input: {
@@ -2587,6 +2716,7 @@ export function emptyHousehold(environment: Household["environment"] = "developm
     google: shapeGoogle(EMPTY_GOOGLE),
     goals: [],
     goalContributions: [],
+    goalPurchases: [],
     budgetPlans: [],
     sitDownSessions: [],
     activity: [],

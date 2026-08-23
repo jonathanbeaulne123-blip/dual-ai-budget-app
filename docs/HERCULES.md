@@ -4,7 +4,7 @@
 
 The ledger is still the company (Dual Course weight 5). He is Course B (weight 3) **and** a serious tool: money questions are answered on-device from the books. Care is posted household facts, not a hunger meter. Ember was the flame prototype and is fully historical.
 
-Laws: [DECISIONS.md](DECISIONS.md) D-042 / D-044 / D-045 / D-046 / D-047 / D-049 / D-050 / D-051 / D-057–D-077 / D-083–D-086. Science spec: [HERCULES_AI.md](HERCULES_AI.md). Sit-down: [SITDOWN.md](SITDOWN.md). Mark: [HERCULES_MARK.md](HERCULES_MARK.md). Strategy: [STRATEGY.md](STRATEGY.md). Museum essay: [nostalgia/HERCULES.md](nostalgia/HERCULES.md).
+Laws: [DECISIONS.md](DECISIONS.md) D-042 / D-044 / D-045 / D-046 / D-047 / D-049 / D-050 / D-051 / D-057–D-077 / D-083–D-094. Science spec: [HERCULES_AI.md](HERCULES_AI.md). Sit-down: [SITDOWN.md](SITDOWN.md). Goals: [GOALS.md](GOALS.md). Mark: [HERCULES_MARK.md](HERCULES_MARK.md). Strategy: [STRATEGY.md](STRATEGY.md). Museum essay: [nostalgia/HERCULES.md](nostalgia/HERCULES.md).
 
 ## Laws
 
@@ -16,7 +16,7 @@ Laws: [DECISIONS.md](DECISIONS.md) D-042 / D-044 / D-045 / D-046 / D-047 / D-049
 - Mood from Health, bills, goals, week-over-week spend. Punishment is a face and a sentence, never a fake fee.
 - Unlocks come from posted facts, a tied rec, or a closed month — never a shop, never pay-to-keep-alive, never pet death.
 - Shift-posting streak (D-050) is consecutive **posted shift dates** from the latest shift. Vacation does not kill him. Clock-in is not a post. Sign-out Confirm still posts (D-062).
-- **Page-true talk (D-063 / D-074):** sample questions and the first line follow the tab **and** the open instrument (`herculesInstrumentSurface`). Mood still from Health.
+- **Page-true talk (D-063 / D-074 / D-093):** sample questions follow the tab **and** the open instrument. **How can I help** is visible when chat opens and reads leftover, calendar, notices, and jars. Event talk on wide desk opens Calendar. Click him again to close. He perches on an opened widget; the hop cancels if another widget or tab opens. Chat stays off the examined rect.
 - **September Office (D-051 / D-064):** he will perch, bump, lick, and pounce on desk widgets. Expanded instruments close when you leave Home. He still never posts. Kill criterion unchanged.
 - **Mark (D-061):** the live cat is ink-on-paper SVG (white coat, ruff under the head). The 3D GLB is source, not the 96px runtime. Laws and weaknesses: [HERCULES_MARK.md](HERCULES_MARK.md).
 - **Appointments (D-055 / D-056):** he may notice a visit and propose a jar. `proposeVisitGoal` does not write. **Start this jar** is a human tap from Calendar → Appointments or Plan. Quiet visits are "the Tuesday visit" in his mouth (D-054). He has vet bills (`memberId: "companion"`). The METC log is a page, not only an Ask answer.

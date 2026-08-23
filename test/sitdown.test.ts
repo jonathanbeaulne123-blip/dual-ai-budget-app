@@ -214,6 +214,8 @@ describe("sit-down moves", () => {
     expect(sit.every((tx) => incomeEffect(tx) === 0)).toBe(true);
     expect(moved.household.goals[0]?.savedCents).toBeGreaterThan(goal.savedCents);
     expect(moved.warnings.join(" ")).not.toMatch(/no separate savings/i);
+    expect(moved.household.transactions.some((tx) => tx.type === "transfer" && tx.accountId === "ACC-GOALS")).toBe(true);
+    expect(moved.household.transactions.some((tx) => tx.type === "transfer" && tx.note.startsWith("Sit-down") && tx.accountId === "ACC-SAVINGS")).toBe(false);
   });
 });
 

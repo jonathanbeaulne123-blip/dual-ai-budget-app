@@ -23,7 +23,7 @@ Laws: [DECISIONS.md](DECISIONS.md) D-044 / D-047 / D-049 / D-050 / D-051. Strate
 
 ## The feeling
 
-You sit down and the room is already warm. Rain is on the glass to your left — real streaks, a wet sill, the light gone grey-green the way it does over Toronto in August when the humidity finally breaks — and it stays *over there*, on the window, because the desk in front of you is dry paper and you can read every number on it. The desk is used. A blotter with the month's net pressed into it, a wallet tray with the Visa face-up because it is the one that needs you, a calculator sitting slightly askew where someone last pushed it, a chalkboard with "milk" still on it in yesterday's hand. Default packing (D-082) stops one card clipping another; it is not a Bloomberg grid. Names stay Fraunces. Papers stay cream. A later drag still leaves a coffee ring. There is a copper lamp that is dark, which is how you know Health is clean. And there is a very large Maine Coon asleep on top of the wallet tray, tail hanging over the edge of it, who will get up and walk across the desk if you leave him alone long enough, and who will sit down directly on the envelope you have been ignoring. You can add milk in ten seconds without disturbing any of it. Brass handles are Edit desk / Desks / Look / Drawer / Straighten. Calendar, Plan, Books, and More live in the footer nav — not a second row of the same doors.
+You sit down and the room is already warm. Rain is on the glass to your left — real streaks, a wet sill, the light gone grey-green the way it does over Toronto in August when the humidity finally breaks — and it stays *over there*, on the window, because the desk in front of you is dry paper and you can read every number on it. A used desk. A blotter with the month's net pressed into it, a wallet tray with the Visa face-up because it is the one that needs you, a calculator sitting slightly askew where someone last pushed it, chalk notes in yesterday's hand **on the weather glass** (wide). Phone still keeps a chalkboard card. Default packing (D-082) stops one card clipping another; it is not a Bloomberg grid. Names stay Fraunces. Papers stay cream. You can **pin** up to four widgets open; leaving Home still collapses the unpinned one. And there is a very large Maine Coon who hops onto whatever you just opened, then loafs if you tap him again.
 
 ---
 
@@ -147,7 +147,7 @@ Consequences, stated so Grok does not have to infer them: **instruments never co
 | Instrument **data** | household snapshot, via existing projections | The Visa balance is the Visa balance on both phones |
 | Hercules pin, cosmetics, chat/memories | `kitchen.hercules` (D-049), unchanged | Already merges |
 
-**Layout must never enter the shared snapshot.** Two reasons, and the second one is not in the brief: (1) it is cosmetics, per D-051; (2) `mergeRecords` in `core/sync.ts` resolves records with no `updatedAt` by "whichever side is the client argument," so layout in the snapshot would ping-pong between phones forever. See the handoff footer.
+**Layout must never enter the shared snapshot.** Look and layout may copy to a Hearth-owned Drive `Hearth desk.json` keyed to this Google account (D-092). The snapshot still must not grow a layout blob.
 
 Layout schema is versioned (`{ v: 1, items: [...] }`) and **fails soft**: unknown widget id → dropped; missing widget id → appended at its default rank; corrupt JSON → reset to default desk, no error surfaced. A layout bug must never cost someone their ability to post.
 
@@ -275,8 +275,9 @@ The single most important instrument. This is Milk.
 
 ### B5. Chalkboard
 
-- **Glance:** the last 1–2 notes in chalk.
-- **Expand:** the note list; each note has a **"bought"** action that opens Add with the note text pre-filled as `note` and `SUB-FOOD-GROCERIES` (the existing `onBuyNote` path from `DailyHearth`). Wipe. Scribble.
+- **Glance (wide):** typeset notes on the weather glass, transparent, Fraunces, cozy cream (D-094). Phone keeps the card.
+- **Expand:** Chalk button on the glass, or pin the chalkboard. Draw / neaten / bought still never post.
+- **Pin:** user pin-open (D-091) is not calculator cannot-hide.
 - **Minimize:** the board frame, chalk dust.
 - **Move:** ✓.
 - **Data:** `household.kitchen` (existing `DailyHearth` props).

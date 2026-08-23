@@ -66,6 +66,8 @@ export type OfficeLayout = {
   expanded: InstrumentId | "window" | null;
   minimized: InstrumentId[];
   windowMinimized: boolean;
+  /** User pin-open. Distinct from PINNED_INSTRUMENTS (calculator cannot hide). */
+  pinned: InstrumentId[];
 };
 
 export const INSTRUMENT_LABEL: Record<InstrumentId, string> = {
@@ -89,6 +91,9 @@ export const INSTRUMENT_LABEL: Record<InstrumentId, string> = {
 };
 
 export const PINNED_INSTRUMENTS: InstrumentId[] = ["calculator"];
+
+/** Max widgets a person can pin open. Calculator cannot-hide is separate. */
+export const MAX_USER_PINS = 4;
 
 export const DEFAULT_ORDER: InstrumentId[] = [...INSTRUMENT_IDS];
 
@@ -164,8 +169,10 @@ export const STOCK_LABEL: Record<PaperStock, string> = {
 export type OfficeLook = { stock: PaperStock; density: "names" | "glance" };
 export const DEFAULT_LOOK: OfficeLook = { stock: "cream", density: "names" };
 
-export function officeLookKey(environment: Environment): string {
-  return `hearth.office.look.${environment}`;
+export function officeLookKey(environment: Environment, memberId?: string): string {
+  return memberId
+    ? `hearth.office.look.${environment}.${memberId}`
+    : `hearth.office.look.${environment}`;
 }
 
 export function parseOfficeLook(raw: unknown): OfficeLook {
@@ -176,6 +183,36 @@ export function parseOfficeLook(raw: unknown): OfficeLook {
     : DEFAULT_LOOK.stock;
   const density = record.density === "glance" ? "glance" : "names";
   return { stock, density };
+}
+
+export function loadOfficeLook(
+  environment: Environment,
+  storage?: { getItem(key: string): string | null },
+  memberId?: string,
+): OfficeLook {
+  if (!storage) return DEFAULT_LOOK;
+  try {
+    const memberRaw = memberId ? storage.getItem(officeLookKey(environment, memberId)) : null;
+    const raw = memberRaw || storage.getItem(officeLookKey(environment));
+    if (!raw) return DEFAULT_LOOK;
+    return parseOfficeLook(JSON.parse(raw));
+  } catch {
+    return DEFAULT_LOOK;
+  }
+}
+
+export function saveOfficeLook(
+  environment: Environment,
+  look: OfficeLook,
+  storage?: { setItem(key: string, value: string): void },
+  memberId?: string,
+): void {
+  if (!storage) return;
+  try {
+    storage.setItem(officeLookKey(environment, memberId), JSON.stringify(look));
+  } catch {
+    /* private mode */
+  }
 }
 
 /** Apply a personality: listed instruments visible at their size, the rest parked. Pad stays. */
@@ -195,7 +232,7 @@ export function applyPersonality(layout: OfficeLayout, key: Exclude<DeskPersonal
     if (seen.has(id)) continue;
     ordered.push({ id, hidden: !PINNED_INSTRUMENTS.includes(id) });
   }
-  return { ...layout, items: ordered, expanded: null };
+  return { ...layout, items: ordered, expanded: null, pinned: [] };
 }
 
 export function cycleInstrumentSize(id: InstrumentId, current: InstrumentSize): InstrumentSize {
@@ -203,8 +240,10 @@ export function cycleInstrumentSize(id: InstrumentId, current: InstrumentSize): 
   return current === "s" ? "m" : current === "m" ? "l" : "s";
 }
 
-export function officeLayoutKey(environment: Environment, breakpoint: OfficeBreakpoint): string {
-  return `hearth.office.${environment}.${breakpoint}`;
+export function officeLayoutKey(environment: Environment, breakpoint: OfficeBreakpoint, memberId?: string): string {
+  return memberId
+    ? `hearth.office.${environment}.${breakpoint}.${memberId}`
+    : `hearth.office.${environment}.${breakpoint}`;
 }
 
 export function officeRingsKey(environment: Environment): string {
@@ -218,6 +257,7 @@ export function defaultLayout(): OfficeLayout {
     expanded: null,
     minimized: [],
     windowMinimized: false,
+    pinned: [],
   };
 }
 
@@ -260,12 +300,16 @@ export function parseOfficeLayout(raw: unknown): OfficeLayout {
   const minimized = Array.isArray(record.minimized)
     ? record.minimized.filter(isInstrumentId)
     : [];
+  const pinned = Array.isArray(record.pinned)
+    ? [...new Set(record.pinned.filter(isInstrumentId))].slice(0, MAX_USER_PINS)
+    : [];
   return {
     v: 1,
     items,
     expanded,
     minimized,
     windowMinimized: Boolean(record.windowMinimized),
+    pinned,
   };
 }
 
@@ -273,10 +317,12 @@ export function loadOfficeLayout(
   environment: Environment,
   breakpoint: OfficeBreakpoint,
   storage?: { getItem(key: string): string | null },
+  memberId?: string,
 ): OfficeLayout {
   if (!storage) return defaultLayout();
   try {
-    const raw = storage.getItem(officeLayoutKey(environment, breakpoint));
+    const memberRaw = memberId ? storage.getItem(officeLayoutKey(environment, breakpoint, memberId)) : null;
+    const raw = memberRaw || storage.getItem(officeLayoutKey(environment, breakpoint));
     if (!raw) return defaultLayout();
     return parseOfficeLayout(JSON.parse(raw));
   } catch {
@@ -289,10 +335,11 @@ export function saveOfficeLayout(
   breakpoint: OfficeBreakpoint,
   layout: OfficeLayout,
   storage?: { setItem(key: string, value: string): void },
+  memberId?: string,
 ): void {
   if (!storage) return;
   try {
-    storage.setItem(officeLayoutKey(environment, breakpoint), JSON.stringify(layout));
+    storage.setItem(officeLayoutKey(environment, breakpoint, memberId), JSON.stringify(layout));
   } catch {
     /* private mode */
   }
@@ -323,6 +370,7 @@ export function setInstrumentHidden(layout: OfficeLayout, id: InstrumentId, hidd
     items,
     expanded: hidden && layout.expanded === id ? null : layout.expanded,
     minimized: hidden ? layout.minimized.filter((row) => row !== id) : layout.minimized,
+    pinned: hidden ? (layout.pinned ?? []).filter((row) => row !== id) : layout.pinned,
   };
 }
 
@@ -374,6 +422,7 @@ export function herculesBubbleBox(input: {
   viewW: number;
   viewH: number;
   pad?: number;
+  avoid?: Furniture["rect"] | null;
 }): { left: number; top: number; side: "left" | "right" } {
   const pad = input.pad ?? 8;
   const preferLeft = input.catX + input.catSize / 2 > input.viewW / 2;
@@ -385,6 +434,24 @@ export function herculesBubbleBox(input: {
   left = maxLeft < pad ? pad : clamp(left, pad, maxLeft);
   const maxTop = input.viewH - NAV - pad - input.bubbleH;
   top = maxTop < pad ? pad : clamp(top, pad, maxTop);
+  const avoid = input.avoid;
+  if (avoid && avoid.w > 0 && avoid.h > 0) {
+    const overlaps = (l: number, t: number) => (
+      l < avoid.x + avoid.w && l + input.bubbleW > avoid.x
+      && t < avoid.y + avoid.h && t + input.bubbleH > avoid.y
+    );
+    if (overlaps(left, top)) {
+      const leftSide = avoid.x - input.bubbleW - pad;
+      const rightSide = avoid.x + avoid.w + pad;
+      if (preferLeft && leftSide >= pad) left = leftSide;
+      else if (rightSide + input.bubbleW <= input.viewW - pad) left = rightSide;
+      else if (leftSide >= pad) left = leftSide;
+      const above = avoid.y - input.bubbleH - pad;
+      if (overlaps(left, top) && above >= pad) top = above;
+      left = maxLeft < pad ? pad : clamp(left, pad, maxLeft);
+      top = maxTop < pad ? pad : clamp(top, pad, maxTop);
+    }
+  }
   const catMid = input.catX + input.catSize / 2;
   const side: "left" | "right" = left + input.bubbleW / 2 <= catMid ? "left" : "right";
   return { left, top, side };
@@ -478,6 +545,20 @@ export function perchTarget(
     land = tryLand(chosen);
   }
   return { x: pad, y: pad, on: null, pose: "loaf", faceRight: false };
+}
+
+/** Sit him on the top of an opened instrument. Silly hop is CSS on the live cat. */
+export function perchOnFurniture(
+  item: Furniture,
+  viewport: { w: number; h: number },
+): PerchLand {
+  const pad = 6;
+  const maxX = Math.max(pad, viewport.w - CAT - pad);
+  const maxY = Math.max(pad, viewport.h - CAT - NAV - pad);
+  const seed = item.id.split("").reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  const x = clamp(item.rect.x + item.rect.w / 2 - CAT / 2 + jitter(seed), pad, maxX);
+  const y = clamp(item.rect.y - CAT + 18, pad, maxY);
+  return { x, y, on: item.id, pose: "perch", faceRight: jitter(seed + 7) >= 0 };
 }
 
 export function attackStand(
@@ -743,6 +824,23 @@ const intentListeners = new Set<(intent: OfficeIntent) => void>();
 export function collapseOfficeLayout(layout: OfficeLayout): OfficeLayout {
   if (layout.expanded == null) return layout;
   return { ...layout, expanded: null };
+}
+
+export function instrumentIsOpen(layout: OfficeLayout, id: InstrumentId | "window"): boolean {
+  if (layout.expanded === id) return true;
+  if (id !== "window" && (layout.pinned ?? []).includes(id)) return true;
+  return false;
+}
+
+export function toggleInstrumentPin(layout: OfficeLayout, id: InstrumentId): OfficeLayout {
+  const pinned = layout.pinned ?? [];
+  if (pinned.includes(id)) {
+    return { ...layout, pinned: pinned.filter((row) => row !== id) };
+  }
+  if (pinned.length >= MAX_USER_PINS) return layout;
+  const hidden = layout.items.find((item) => item.id === id)?.hidden;
+  if (hidden) return layout;
+  return { ...layout, pinned: [...pinned, id] };
 }
 
 export function collapseSavedOffice(
