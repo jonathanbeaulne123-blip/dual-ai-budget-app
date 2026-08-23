@@ -12,6 +12,7 @@ import {
   lampIsDark,
   levelLayoutItems,
   loadOfficeLayout,
+  loadOfficeLook,
   loadOfficeRings,
   mailOverdue,
   claimsOverdue,
@@ -21,6 +22,7 @@ import {
   resolveRoom,
   runHealthCheck,
   saveOfficeLayout,
+  saveOfficeLook,
   saveOfficeRings,
   shiftPostingStreak,
   sitDownPostcard,
@@ -34,12 +36,13 @@ import {
   sillOverview,
   formatCad,
   applyPersonality,
+  buildDeskSyncPayload,
   cycleInstrumentSize,
-  officeLookKey,
+  instrumentIsOpen,
+  toggleInstrumentPin,
+  MAX_USER_PINS,
   packWide,
-  parseOfficeLook,
   sizeOf,
-  DEFAULT_LOOK,
   INSTRUMENT_LABEL,
   PERSONALITY_BLURB,
   PERSONALITY_DESK,
@@ -66,7 +69,7 @@ import { DeskItem } from "./widgets/DeskItem.tsx";
 import { BlotterBody, BlotterGlance } from "./widgets/Blotter.tsx";
 import { WalletBody, WalletGlance } from "./widgets/WalletTray.tsx";
 import { CalculatorBody, CalculatorGlance } from "./widgets/CalculatorPad.tsx";
-import { ChalkboardBody, chalkboardGlance } from "./widgets/ChalkboardDesk.tsx";
+import { ChalkboardBody, chalkboardGlance, ChalkGlassNotes } from "./widgets/ChalkboardDesk.tsx";
 import { MailBody, MailGlance } from "./widgets/Mail.tsx";
 import { ClaimsBody, ClaimsGlance } from "./widgets/ClaimsTray.tsx";
 import { TimesheetBody, TimesheetGlance } from "./widgets/Timesheet.tsx";
@@ -81,6 +84,7 @@ import { SillOverviewPlate } from "./widgets/SillOverview.tsx";
 import { AccountsBody, AccountsGlance } from "./widgets/AccountsDesk.tsx";
 import { WardrobeBody, wardrobeGlance } from "./widgets/WardrobeDesk.tsx";
 import { HangmanBody, HangmanGlance, TicTacToeBody, TicTacToeGlance } from "./widgets/GamesDesk.tsx";
+import { pullDeskAppearance, pushDeskAppearance } from "./google/index.ts";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
 
 const WIDE = 720;
@@ -167,23 +171,18 @@ export function Office({
   onGo: (tab: HearthTab) => void;
 }) {
   const breakpoint = useBreakpoint();
-  const [layout, setLayout] = useState<OfficeLayout>(() => loadOfficeLayout(environment, breakpoint, localStorage));
+  const [layout, setLayout] = useState<OfficeLayout>(() => loadOfficeLayout(environment, breakpoint, localStorage, memberId));
   const [rings, setRings] = useState<DeskRing[]>(() => loadOfficeRings(environment, localStorage));
   const [weather] = useState(() => fallbackWeather(today));
   const [reading, setReading] = useState(weather);
   const [bumpId, setBumpId] = useState<string | null>(null);
   const [dragging, setDragging] = useState<InstrumentId | null>(null);
   const [lifted, setLifted] = useState<InstrumentId | null>(null);
-  const [look, setLook] = useState<OfficeLook>(() => {
-    try {
-      return parseOfficeLook(JSON.parse(localStorage.getItem(officeLookKey(environment)) || "null"));
-    } catch {
-      return DEFAULT_LOOK;
-    }
-  });
+  const [look, setLook] = useState<OfficeLook>(() => loadOfficeLook(environment, localStorage, memberId));
   const [editing, setEditing] = useState(false);
   const [sheet, setSheet] = useState<DeskSheet>(null);
   const [deskWidth, setDeskWidth] = useState(900);
+  const [deskNote, setDeskNote] = useState("");
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const drag = useRef<{
     id: InstrumentId;
@@ -198,18 +197,18 @@ export function Office({
   layoutRef.current = layout;
 
   useEffect(() => {
-    setLayout(loadOfficeLayout(environment, breakpoint, localStorage));
-  }, [environment, breakpoint]);
+    setLayout(loadOfficeLayout(environment, breakpoint, localStorage, memberId));
+  }, [environment, breakpoint, memberId]);
 
   useEffect(() => {
-    saveOfficeLayout(environment, breakpoint, layout, localStorage);
-  }, [environment, breakpoint, layout]);
+    saveOfficeLayout(environment, breakpoint, layout, localStorage, memberId);
+  }, [environment, breakpoint, layout, memberId]);
 
   useEffect(() => {
     return () => {
-      saveOfficeLayout(environment, breakpoint, { ...layoutRef.current, expanded: null }, localStorage);
+      saveOfficeLayout(environment, breakpoint, { ...layoutRef.current, expanded: null }, localStorage, memberId);
     };
-  }, [environment, breakpoint]);
+  }, [environment, breakpoint, memberId]);
 
   useEffect(() => {
     setRings(loadOfficeRings(environment, localStorage));
@@ -228,12 +227,8 @@ export function Office({
   }, [environment, today]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(officeLookKey(environment), JSON.stringify(look));
-    } catch {
-      /* private mode */
-    }
-  }, [environment, look]);
+    saveOfficeLook(environment, look, localStorage, memberId);
+  }, [environment, look, memberId]);
 
   useEffect(() => {
     const measure = () => setDeskWidth(canvasRef.current?.clientWidth ?? 900);
@@ -261,12 +256,26 @@ export function Office({
   }, [breakpoint, deskWidth]);
 
   useEffect(() => {
-    try {
-      setLook(parseOfficeLook(JSON.parse(localStorage.getItem(officeLookKey(environment)) || "null")));
-    } catch {
-      setLook(DEFAULT_LOOK);
-    }
-  }, [environment]);
+    if (!household.google.enabledServices.includes("drive")) return;
+    const timer = window.setTimeout(() => {
+      const phone = breakpoint === "phone" ? layout : loadOfficeLayout(environment, "phone", localStorage, memberId);
+      const wide = breakpoint === "wide" ? layout : loadOfficeLayout(environment, "wide", localStorage, memberId);
+      void pushDeskAppearance({
+        environment,
+        memberId,
+        enabledServices: household.google.enabledServices,
+        payload: buildDeskSyncPayload({ look, phone, wide }),
+        storage: localStorage,
+      }).then((result) => {
+        if (!result.ok) setDeskNote(result.detail);
+      });
+    }, 2500);
+    return () => window.clearTimeout(timer);
+  }, [look, layout.items, layout.pinned, layout.minimized, layout.windowMinimized, environment, memberId, breakpoint, household.google.enabledServices]);
+
+  useEffect(() => {
+    setLook(loadOfficeLook(environment, localStorage, memberId));
+  }, [environment, memberId]);
 
   const findings = useMemo(() => runHealthCheck(household), [household]);
   const opinion = useMemo(() => auditOpinion(household), [household]);
@@ -283,7 +292,10 @@ export function Office({
   const inert = adding;
   const parked = layout.items.filter((item) => item.hidden).map((item) => item.id);
   const packed = useMemo(
-    () => packWide(order.map((id) => ({ id, size: layout.items.find((item) => item.id === id)?.size })), deskWidth),
+    () => packWide(
+      order.filter((id) => id !== "chalkboard").map((id) => ({ id, size: layout.items.find((item) => item.id === id)?.size })),
+      deskWidth,
+    ),
     [order, layout.items, deskWidth],
   );
 
@@ -304,6 +316,7 @@ export function Office({
       ...current,
       items: current.items.map((item) => (item.id === id ? { ...item, hidden: true } : item)),
       expanded: current.expanded === id ? null : current.expanded,
+      pinned: (current.pinned ?? []).filter((row) => row !== id),
     }));
   }
 
@@ -459,17 +472,20 @@ export function Office({
       ? { x: item?.x ?? fallback.x, y: item?.y ?? fallback.y }
       : { x: 8, y: 8 };
     const size: InstrumentSize = sizeOf({ id, size: item?.size });
-    const chips = editing ? (
+    const userPinned = (layout.pinned ?? []).includes(id);
+    const chips = (
       <div className="desk-chips">
-        <button
-          type="button"
-          className="desk-chip"
-          onClick={(event) => { event.stopPropagation(); cycleSize(id); }}
-          aria-label={`${name} size, currently ${size.toUpperCase()}`}
-        >
-          {size.toUpperCase()}
-        </button>
-        {PINNED_INSTRUMENTS.includes(id) ? null : (
+        {editing && (
+          <button
+            type="button"
+            className="desk-chip"
+            onClick={(event) => { event.stopPropagation(); cycleSize(id); }}
+            aria-label={`${name} size, currently ${size.toUpperCase()}`}
+          >
+            {size.toUpperCase()}
+          </button>
+        )}
+        {editing && !PINNED_INSTRUMENTS.includes(id) && (
           <button
             type="button"
             className="desk-chip remove"
@@ -479,8 +495,20 @@ export function Office({
             ×
           </button>
         )}
+        <button
+          type="button"
+          className={`desk-chip ${userPinned ? "is-on" : ""}`}
+          onClick={(event) => {
+            event.stopPropagation();
+            setLayout((current) => toggleInstrumentPin(current, id));
+          }}
+          aria-label={userPinned ? `Unpin ${name}` : `Pin ${name} open`}
+          disabled={!userPinned && (layout.pinned ?? []).length >= MAX_USER_PINS}
+        >
+          {userPinned ? "pinned" : "pin"}
+        </button>
       </div>
-    ) : undefined;
+    );
     return (
       <DeskItem
         key={id}
@@ -491,7 +519,7 @@ export function Office({
         name={name}
         glance={glance}
         aria={aria}
-        expanded={layout.expanded === id}
+        expanded={instrumentIsOpen(layout, id)}
         minimized={layout.minimized.includes(id)}
         rotation={instrumentRotation(id)}
         bump={bumpId === id}
@@ -674,7 +702,14 @@ export function Office({
       "Jars",
       <JarsGlance dashboard={dashboard} />,
       `Jars. ${dashboard.goals[0]?.goal.name ?? "No jars on the shelf yet."}`,
-      <JarsBody dashboard={dashboard} today={today} onPlan={() => onGo("plan")} />,
+      <JarsBody
+        dashboard={dashboard}
+        household={household}
+        today={today}
+        busy={busy}
+        onPlan={() => onGo("plan")}
+        onCommand={onKitchen}
+      />,
       { index, pair },
     ),
     lamp: (index, pair) => frame(
@@ -764,13 +799,34 @@ export function Office({
         minimized={layout.windowMinimized}
         stale={dashboard.stale}
         onToggle={cycleWindow}
+        chalk={!layout.items.find((item) => item.id === "chalkboard")?.hidden ? <ChalkGlassNotes household={household} /> : null}
+        chalkboardOpen={instrumentIsOpen(layout, "chalkboard")}
+        chalkboardBody={
+          instrumentIsOpen(layout, "chalkboard") && !layout.items.find((item) => item.id === "chalkboard")?.hidden
+            ? (
+              <ChalkboardBody
+                household={household}
+                memberId={memberId}
+                today={today}
+                busy={busy}
+                onCommand={onKitchen}
+                onBuyNote={onBuyNote}
+              />
+            )
+            : null
+        }
+        onChalk={() => {
+          const opening = layout.expanded !== "chalkboard";
+          setLayout((current) => ({ ...current, expanded: opening ? "chalkboard" : null, windowMinimized: false }));
+          if (opening) queueMicrotask(() => emitOfficeIntent({ type: "expand", id: "chalkboard" }));
+        }}
       />
       <SillOverviewPlate overview={sill} compact={layout.windowMinimized} />
       <div ref={canvasRef} className={`desk-canvas desk-wide ${dragging ? "is-grid" : ""}`}>
         {rings.map((ring) => (
           <div key={`${ring.id}-${ring.at}`} className="desk-ring" style={{ left: ring.x, top: ring.y }} />
         ))}
-        {order.map((id, index) => renderers[id](index))}
+        {order.filter((id) => id !== "chalkboard").map((id, index) => renderers[id](index))}
       </div>
       <Cabinets
         editing={editing}
@@ -825,7 +881,49 @@ export function Office({
               Glance only
             </button>
           </div>
-          <p className="muted">Stock tints the blotter, not the whole house. Window weather stays weather.</p>
+          <p className="muted">Stock tints the blotter, not the whole house. Window weather stays weather. Look and layout follow this Google account — pull them into a fresh household.</p>
+          <div className="desk-stock-row">
+            <button
+              type="button"
+              className="desk-stock"
+              onClick={() => {
+                const phone = loadOfficeLayout(environment, "phone", localStorage, memberId);
+                const wide = layout;
+                void pushDeskAppearance({
+                  environment,
+                  memberId,
+                  enabledServices: household.google.enabledServices,
+                  payload: buildDeskSyncPayload({ look, phone, wide }),
+                  storage: localStorage,
+                }).then((result) => setDeskNote(result.detail));
+              }}
+            >
+              Save desk
+            </button>
+            <button
+              type="button"
+              className="desk-stock"
+              onClick={() => {
+                void pullDeskAppearance({
+                  environment,
+                  memberId,
+                  enabledServices: household.google.enabledServices,
+                  storage: localStorage,
+                }).then((result) => {
+                  setDeskNote(result.detail);
+                  if (!result.ok || !result.payload) return;
+                  setLook(result.payload.look);
+                  saveOfficeLook(environment, result.payload.look, localStorage, memberId);
+                  saveOfficeLayout(environment, "phone", result.payload.phone, localStorage, memberId);
+                  saveOfficeLayout(environment, "wide", result.payload.wide, localStorage, memberId);
+                  setLayout(breakpoint === "wide" ? result.payload.wide : result.payload.phone);
+                });
+              }}
+            >
+              Pull previous desk
+            </button>
+          </div>
+          {deskNote && <p className="muted">{deskNote}</p>}
         </div>
       )}
       {sheet === "drawer" && (

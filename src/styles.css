@@ -35,6 +35,18 @@
 
 * { box-sizing: border-box; }
 html, body, #root { min-height: 100%; }
+html, body {
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  overflow-x: hidden;
+}
+@media (max-width: 719px) {
+  html, body, #root, .app {
+    max-width: 100vw;
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+  }
+}
 body {
   margin: 0;
   font-family: var(--font);
@@ -555,6 +567,37 @@ input, select, textarea {
 }
 .hercules-live:active { cursor: grabbing; }
 .hercules-live.loafing { opacity: 0.85; }
+.hercules-live.perch-play {
+  animation: herc-perch-play 1.1s cubic-bezier(.34, 1.6, .64, 1) infinite;
+}
+.hercules-live.perch-play.perch-wiggle {
+  animation-name: herc-perch-wiggle;
+  animation-duration: 0.9s;
+}
+.hercules-live.perch-play.perch-hang {
+  animation-name: herc-perch-hang;
+  animation-duration: 1.4s;
+}
+@keyframes herc-perch-play {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  40% { transform: translateY(-10px) rotate(4deg); }
+  70% { transform: translateY(-2px) rotate(-5deg); }
+}
+@keyframes herc-perch-wiggle {
+  0%, 100% { transform: rotate(-9deg) translateX(0); }
+  50% { transform: rotate(9deg) translateX(3px) translateY(-4px); }
+}
+@keyframes herc-perch-hang {
+  0%, 100% { transform: translateY(0) rotate(10deg); }
+  50% { transform: translateY(7px) rotate(16deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hercules-live.perch-play { animation: none; }
+}
+.hercules-help {
+  font-weight: 600;
+  border-color: var(--pine) !important;
+}
 .hercules-stage { position: relative; text-align: center; width: 100%; height: 100%; }
 .hercules-stage .herc-root,
 .hercules-stage .herc-flip-wrap { width: 100%; height: 100%; }
@@ -631,6 +674,7 @@ input, select, textarea {
 .hercules-fact { margin: 0 0 8px; display: flex; justify-content: space-between; gap: 8px; font-size: 12px; }
 .hercules-replies { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
 .hercules-replies button,
+.hercules-help,
 .hercules-dismiss,
 .hercules-chat-form button {
   border: 1px solid var(--line);
@@ -640,6 +684,12 @@ input, select, textarea {
   font-size: 11px;
   font-weight: 700;
   width: auto;
+}
+.hercules-bubble > .hercules-help {
+  display: block;
+  width: 100%;
+  margin: 0 0 8px;
+  text-align: center;
 }
 .hercules-bubble input {
   width: 100%;

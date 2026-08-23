@@ -20,6 +20,10 @@ import {
   findActiveGoogleLinkByEmail,
   findActiveGoogleLinkBySubject,
   formatCad,
+  goalIsFull,
+  openGoals,
+  retiredGoals,
+  vaultReceiptBlurb,
   householdForView,
   householdWallet,
   accountOptionLabel,
@@ -90,6 +94,7 @@ import { HerculesPresence } from "./Hercules.tsx";
 import { CadPad } from "./CadPad.tsx";
 import { PresetChip } from "./widgets/PresetChip.tsx";
 import { SitDownGuide } from "./SitDownGuide.tsx";
+import { PurchaseGoalSheet } from "./widgets/Jars.tsx";
 import { playClink } from "./clink.ts";
 import { GoogleBridgeCard } from "./GoogleBridge.tsx";
 import {
@@ -1746,10 +1751,15 @@ function Goals({ household, createdBy, goals, onChange, onAskStartJar }: {
   const [name, setName] = useState("New goal");
   const [target, setTarget] = useState("500");
   const [amount, setAmount] = useState("25");
+  const [buying, setBuying] = useState<string | null>(null);
   const proposals = upcomingVisitProposals(household, todayKey());
+  const live = openGoals({ goals });
+  const retired = retiredGoals({ goals });
+  const today = todayKey();
   return (
     <section className="card">
       <header><h2>Goals in this view</h2></header>
+      <p className="muted">{vaultReceiptBlurb(household, today)}</p>
       {proposals.map((proposal) => (
         <div className="row" key={proposal.appointmentId}>
           <div>
@@ -1759,11 +1769,23 @@ function Goals({ household, createdBy, goals, onChange, onAskStartJar }: {
           <button className="chip selected" onClick={() => onAskStartJar(proposal.appointmentId, `${proposal.hercules} This creates a shared jar. Hercules does not write it.`)}>Start this jar</button>
         </div>
       ))}
-      {goals.map((goal) => (
+      {live.map((goal) => (
         <div className="row" key={goal.id}>
           <div>
             <strong>{goal.name}</strong>
             <div className="muted">{goal.shared ? "Shared" : "Personal filter only"} · {formatCad(goal.savedCents)} / {formatCad(goal.targetCents)}{describeGoalContributors(household, goal.id) ? ` · ${describeGoalContributors(household, goal.id)}` : ""}</div>
+            {goalIsFull(goal) && buying === goal.id && (
+              <PurchaseGoalSheet
+                household={household}
+                goalId={goal.id}
+                busy={false}
+                onCommand={(fn) => {
+                  const result = fn(household);
+                  onChange(result.household, result.undo);
+                }}
+                onClose={() => setBuying(null)}
+              />
+            )}
           </div>
           <div className="goal-add">
             <input
@@ -1776,9 +1798,26 @@ function Goals({ household, createdBy, goals, onChange, onAskStartJar }: {
               const result = contributeToGoal(household, goal.id, amount, { createdBy });
               onChange(result.household, result.undo);
             }}>+ add</button>
+            {goalIsFull(goal) && (
+              <button className="primary" onClick={() => setBuying(goal.id)}>Purchased?</button>
+            )}
           </div>
         </div>
       ))}
+      {retired.length > 0 && (
+        <div className="retirement-home">
+          <h3>Retirement home</h3>
+          <p className="muted">Jars you bought. The contribution rows and the purchase expense stay on the books.</p>
+          {retired.map((goal) => (
+            <div className="row" key={goal.id}>
+              <div>
+                <strong>{goal.name}</strong>
+                <div className="muted">Accomplished · saved {formatCad(goal.savedCents)}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       <label>New goal</label>
       <input value={name} onChange={(event) => setName(event.target.value)} />
       <input value={target} onChange={(event) => setTarget(event.target.value)} />

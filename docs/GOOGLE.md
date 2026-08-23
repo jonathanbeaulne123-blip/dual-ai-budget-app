@@ -110,7 +110,7 @@ Living pairs and refused list: [STRATEGY.md](STRATEGY.md) § Google Dual Course.
 
 ### Shipping now
 
-Identity, Calendar overlay, bill reminders, Continue with Google, step-up on sensitive household actions, opt-in suite **ping**, **sit-down Drive workbook** (create a Sheet with `drive.file`, never edit an existing file; local download always works; D-087).
+Identity, Calendar overlay, bill reminders, Continue with Google, step-up on sensitive household actions, opt-in suite **ping**, **sit-down Drive workbook** (create a Sheet with `drive.file`, never edit an existing file; local download always works; D-087), **desk appearance** (`Hearth desk.json` for this Google identity; D-092).
 
 ### Proposed next (in scope)
 

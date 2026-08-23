@@ -2,7 +2,7 @@
 
 This is the monthly conversation the app was started for. Plan tab, both shells. The postcard is a glance, not a fourth stamp on the phone. Hercules reads act 1 out loud and **never posts**.
 
-Laws: [DECISIONS.md](DECISIONS.md) D-083–D-087. Dual Course: leftover, lock, reverse, and transfers are Course A (weight 5). The three-act ceremony and Hercules lines are Course B (weight 3).
+Laws: [DECISIONS.md](DECISIONS.md) D-083–D-089. Dual Course: leftover, lock, reverse, and transfers are Course A (weight 5). The three-act ceremony and Hercules lines are Course B (weight 3).
 
 ## Research taken
 
@@ -39,7 +39,7 @@ If leftover is zero, sit-down still runs. Act 3 says why. It does not invent CAD
 2. **Act 2 — information.** Leftover arithmetic, trial tick, category movement, forecast, anomalies (hydro 40% over its own history). CPA and kid, same view.
 3. **Act 3 — leftover jobs.** Weights, percents, and fixed amounts, mixable. Last-party remainder is the same rule as `percentSplits`. Mixing percent with weight treats the percent number as a weight and labels it “% as weight.” Over-allocation is obvious and refuses to move. Confirm runs transfers. Copy jobs still seeds `budgetPlans` (`applySitDown`). Lock last month is optional. Download always works; Drive is create-only.
 
-Jar line: transfer leftover source → savings **and** `contributeToGoal` so the pig matches the parking lot. If there is no separate savings account, the jar tracks and cash stays put — the warning says so.
+Jar line: transfer leftover source → **Goals vault** (`purpose: "goals"`) **and** `contributeToGoal` so the pig matches the parking lot. Everyday HIS is not the jar destination. If there is no savings account at all, the jar tracks and cash stays put — the warning says so. Spec: [GOALS.md](GOALS.md).
 
 ## Spouse script (Development demo)
 

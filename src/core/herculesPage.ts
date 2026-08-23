@@ -51,7 +51,7 @@ export function herculesPageSurface(
     return {
       tab,
       spoken,
-      lesson: "I'll loaf. Confirm still writes. I don't.",
+      lesson: "Confirm still writes.",
       chips: [],
       placeholder: "loafing…",
       fact: punch ? { label: "On the clock", value: previewHoursLabel(punch.startedAt, now.getTime()) } : null,
@@ -62,7 +62,7 @@ export function herculesPageSurface(
     return {
       tab,
       spoken,
-      lesson: "Sit-down is positives, then the books, then leftover. Confirm still writes. I never move a dollar.",
+      lesson: "Leftover is cash-like minus bills and card mins. Confirm parks jars in the Goals vault.",
       chips: ["Sit-down?", "Leftover?", "We good?"],
       placeholder: "ask about the plan…",
       fact: { label: "Leftover", value: formatCad(leftover.leftoverCents) },
@@ -73,7 +73,7 @@ export function herculesPageSurface(
     return {
       tab,
       spoken,
-      lesson: "Dates remind. Mark paid writes. Visits stay quiet in my mouth.",
+      lesson: "Dates remind. Mark paid writes.",
       chips: ["Which bill?", "What's owed?", "Start this jar"],
       placeholder: "ask about a date…",
       fact: visitFact(household, today) ?? billFact(household, today),
@@ -84,7 +84,7 @@ export function herculesPageSurface(
     return {
       tab,
       spoken,
-      lesson: "Fieldwork. I walk the journal. I don't write it.",
+      lesson: "Fieldwork. The journal is the source.",
       chips: ["Opinion?", "Working capital?", "Balance sheet"],
       placeholder: "ask the books…",
       fact: { label: "Month net", value: formatCad(month.netActualCents) },
@@ -95,7 +95,7 @@ export function herculesPageSurface(
     return {
       tab,
       spoken,
-      lesson: "Health is the adult screen. I hide when it's dirty.",
+      lesson: "Health is the adult screen.",
       chips: ["Health", "What broke?", "We good?"],
       placeholder: "ask Health…",
       fact: owing ? { label: "Owed to us", value: formatCad(owing.expectedCents - owing.receivedCents - owing.writtenOffCents) } : {
@@ -243,8 +243,8 @@ export function herculesInstrumentSurface(
     },
     jars: {
       id: "jars",
-      spoken: "Pigs fill from posted contributions. Contribute stays on Plan.",
-      lesson: "Two phones cannot erase each other's CAD.",
+      spoken: "Pigs fill from posted contributions. Cash lives in the Goals vault.",
+      lesson: "Contribute on Plan. Purchased? posts an expense from the vault.",
       chips: ["Start this jar", "Sit-down?", "Leftover?"],
       pose: "loaf",
     },

@@ -11,7 +11,7 @@ Laws: [DECISIONS.md](DECISIONS.md) D-016 / D-022 / D-047. Strategy: [STRATEGY.md
 | Kind | Chart | Money meaning |
 |---|---|---|
 | Chequing | asset 11xx | Everyday cash |
-| Savings | asset 12xx | Cash-like. APY is a look |
+| Savings | asset 12xx | Cash-like. APY is a look. `purpose: "goals"` is the Goals vault (D-088); general HIS stays everyday parking. |
 | Other | asset 13xx | Jar / tips (old `cash` on load) |
 | Receivable | asset 132x | Money owed to us. Settlement is a transfer, never income (D-053) |
 | Investment | asset 14xx | Cost basis from posts. Mark is not a post |

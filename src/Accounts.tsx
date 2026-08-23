@@ -23,6 +23,7 @@ import {
   type CommitResult,
   type Household,
   type InvestmentVehicle,
+  type SavingsPurpose,
   type UndoToken,
   type WalletTile,
 } from "./core/index.ts";
@@ -218,6 +219,27 @@ export function AccountRoom({
           <div className="row"><span>Est. monthly interest</span><span>{formatCad(savings.estimatedMonthlyInterestCents)}</span></div>
           <p className="muted">{savings.hercules}</p>
           <div className="chips">
+            <button
+              className={`chip ${account.savings?.purpose === "general" ? "selected" : ""}`}
+              type="button"
+              onClick={() => run((current) => updateAccount(current, { accountId: account.id, purpose: "general" }))}
+            >
+              Everyday HIS
+            </button>
+            <button
+              className={`chip ${account.savings?.purpose === "goals" ? "selected" : ""}`}
+              type="button"
+              onClick={() => run((current) => updateAccount(current, { accountId: account.id, purpose: "goals" }))}
+            >
+              Goals vault
+            </button>
+          </div>
+          <p className="muted">
+            {account.savings?.purpose === "goals"
+              ? "Leftover jar cash parks here. Pigs are envelopes on this account, not extra bank logins."
+              : "Everyday high-interest parking. Sit-down leftover for jars goes to a Goals vault instead."}
+          </p>
+          <div className="chips">
             <button className="chip" type="button" onClick={() => onAdd(account)}>Move in</button>
             <button className="chip" type="button" onClick={() => run((current) => postSavingsInterest(current, { accountId: account.id, createdBy: memberId }))}>
               Post estimated interest
@@ -297,6 +319,7 @@ export function AddAccountForm({
   const [cashback, setCashback] = useState("1");
   const [grocery, setGrocery] = useState("3");
   const [apy, setApy] = useState("4.25");
+  const [purpose, setPurpose] = useState<SavingsPurpose>("general");
   const [vehicle, setVehicle] = useState<InvestmentVehicle>("tfsa");
   const [error, setError] = useState("");
 
@@ -338,6 +361,20 @@ export function AddAccountForm({
         <>
           <label>APY %</label>
           <input inputMode="decimal" value={apy} onChange={(event) => setApy(event.target.value)} />
+          <label>Purpose</label>
+          <div className="chips">
+            <button className={`chip ${purpose === "general" ? "selected" : ""}`} type="button" onClick={() => setPurpose("general")}>
+              Everyday HIS
+            </button>
+            <button className={`chip ${purpose === "goals" ? "selected" : ""}`} type="button" onClick={() => setPurpose("goals")}>
+              Goals vault
+            </button>
+          </div>
+          <p className="muted">
+            {purpose === "goals"
+              ? "One sinking-fund account. Pigs fill as envelopes. Sit-down leftover parks here."
+              : "Everyday savings. Jar leftover still prefers a Goals vault if one exists."}
+          </p>
         </>
       )}
       {kind === "investment" && (
@@ -366,6 +403,7 @@ export function AddAccountForm({
               cashbackPercent: kind === "credit" ? cashback : undefined,
               groceryCashbackPercent: kind === "credit" ? grocery : undefined,
               apyPercent: kind === "savings" ? apy : undefined,
+              purpose: kind === "savings" ? purpose : undefined,
               vehicle: kind === "investment" ? vehicle : undefined,
             });
             setError("");

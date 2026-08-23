@@ -23,6 +23,19 @@ export function chalkboardGlance(household: Household): string {
   return notes.slice(0, 2).map((note) => note.text || "drawing").join(" · ");
 }
 
+/** Transparent typeset notes on the weather glass. Same Fraunces hand, cozy cream. */
+export function ChalkGlassNotes({ household }: { household: Household }) {
+  const notes = organizeChalkNotes(household.kitchen.chalkboard).slice(0, 3);
+  if (!notes.length) return null;
+  return (
+    <div className="chalk-glass" aria-hidden="true">
+      {notes.map((note) => (
+        <p key={note.id} className="chalk-glass-line">{note.text || "unreadable hand"}</p>
+      ))}
+    </div>
+  );
+}
+
 function paintInk(canvas: HTMLCanvasElement, ink: ChalkInk, color = "#f4f1e6") {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;

@@ -4,7 +4,7 @@ import { mergeGoogle, shapeGoogle } from "./google.ts";
 import { mergeKitchen, shapeKitchen } from "./kitchen.ts";
 import { shapeSitDownSessions } from "./sitDown.ts";
 import { mergeCalendars, shapeCalendar, shapeRecurrence } from "./recurrence.ts";
-import { applyGoalSavings, shapeGoalProgress } from "./goals.ts";
+import { applyGoalSavings, shapeGoalProgress, shapeGoalPurchases } from "./goals.ts";
 import { shapeAppointments, shapeClaims } from "./appointments.ts";
 import { shapeAccounts } from "./accountKinds.ts";
 import type {
@@ -151,6 +151,7 @@ export function ensureHouseholdShape(household: Household): Household {
     activity: shapeActivity(household.activity),
     goals: progress.goals,
     goalContributions: progress.goalContributions,
+    goalPurchases: shapeGoalPurchases(household.goalPurchases, fallbackIso, fallback),
     transactions: household.transactions.map((tx) => ({
       ...tx,
       place: tx.place ?? "",
@@ -205,6 +206,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     google: shaped.google,
     goals: shaped.goals,
     goalContributions: shaped.goalContributions,
+    goalPurchases: shaped.goalPurchases,
     budgetPlans: shaped.budgetPlans,
     sitDownSessions: shaped.sitDownSessions,
     activity: shaped.activity,
@@ -263,6 +265,7 @@ export function assembleHousehold(shared: SharedEnvelope, personal: PersonalEnve
     google: shared.google,
     goals: shared.goals,
     goalContributions: shared.goalContributions ?? [],
+    goalPurchases: shared.goalPurchases ?? [],
     budgetPlans: shared.budgetPlans,
     sitDownSessions: shared.sitDownSessions ?? [],
     activity: shared.activity,
@@ -277,6 +280,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
   const tombstones = mergeTombstones(server.tombstones, client.tombstones);
   const newer = laterEnvelope(server, client);
   const goalContributions = mergeRecords(server.goalContributions ?? [], client.goalContributions ?? [], tombstones);
+  const goalPurchases = mergeRecords(server.goalPurchases ?? [], client.goalPurchases ?? [], tombstones);
   const goals = applyGoalSavings(mergeRecords(server.goals, client.goals, tombstones), goalContributions);
   return {
     kind: "shared",
@@ -299,6 +303,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     google: mergeGoogle(server.google, client.google, tombstones),
     goals,
     goalContributions,
+    goalPurchases,
     budgetPlans: mergeRecords(server.budgetPlans, client.budgetPlans, tombstones),
     sitDownSessions: mergeRecords(shapeSitDownSessions(server.sitDownSessions), shapeSitDownSessions(client.sitDownSessions), tombstones),
     activity: mergeRecords(server.activity, client.activity, []).sort((left, right) => left.at.localeCompare(right.at)).slice(-200),

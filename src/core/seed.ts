@@ -79,7 +79,19 @@ export function catalogHousehold(environment: Household["environment"] = "develo
       institution: "EQ Bank",
       last4: "1190",
       sortOrder: 20,
-      savings: { apyBps: 425 },
+      savings: { apyBps: 425, purpose: "general" },
+    },
+    {
+      id: "ACC-GOALS",
+      name: "Goals vault",
+      kind: "savings",
+      currency: "CAD",
+      active: true,
+      ownerMemberId: JOINT,
+      institution: "EQ Bank",
+      last4: "2201",
+      sortOrder: 25,
+      savings: { apyBps: 425, purpose: "goals" },
     },
     {
       id: "ACC-VISA",
@@ -422,6 +434,14 @@ export function seedDemoHousehold(options?: { today?: DateKey; environment?: Hou
     deadline: `${shiftMonthKey(monthKeyFromDateKey(today), 6)}-01`,
   }).household;
   household = contributeToGoal(household, household.goals[0]!.id, 1600).household;
+  household = postTransfer(household, {
+    date: today,
+    amount: 1600,
+    fromAccountId: "ACC-CHEQUING",
+    toAccountId: "ACC-GOALS",
+    note: "Sit-down jar · Emergency buffer",
+    confirmDuplicate: true,
+  }).household;
   household = addGoal(household, {
     name: "Bianca trip fund",
     target: 1200,
@@ -430,6 +450,14 @@ export function seedDemoHousehold(options?: { today?: DateKey; environment?: Hou
     deadline: `${shiftMonthKey(monthKeyFromDateKey(today), 4)}-01`,
   }).household;
   household = contributeToGoal(household, household.goals[1]!.id, 340).household;
+  household = postTransfer(household, {
+    date: today,
+    amount: 340,
+    fromAccountId: "ACC-CHEQUING",
+    toAccountId: "ACC-GOALS",
+    note: "Sit-down jar · Bianca trip fund",
+    confirmDuplicate: true,
+  }).household;
 
   household = addRecurrence(household, {
     cadence: "monthly",

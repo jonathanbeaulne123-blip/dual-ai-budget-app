@@ -201,7 +201,7 @@ export function buildDashboard(household: Household, today: DateKey, now = new D
     week,
     pulses: buildPulses(household, today, month, week, weather, board.rhythms),
     goals: household.goals
-      .filter((goal) => goal.shared || true)
+      .filter((goal) => goal.status !== "retired" && !goal.retiredAt)
       .map((goal) => ({ goal, progress: goal.targetCents ? Math.min(1, goal.savedCents / goal.targetCents) : 0 })),
     tipWeather: weather,
     dueRecurrences: board.dueCount,

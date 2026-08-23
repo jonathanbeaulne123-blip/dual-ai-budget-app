@@ -102,6 +102,8 @@ export function booksIntegrityFacts(household: Household) {
       id: goal.id,
       targetCents: goal.targetCents,
       savedCents: goal.savedCents,
+      status: goal.status ?? "open",
+      purchaseId: goal.purchaseId ?? null,
     })),
     goalContributions: byId(household.goalContributions ?? []).map((row) => ({
       id: row.id,
@@ -109,6 +111,13 @@ export function booksIntegrityFacts(household: Household) {
       memberId: row.memberId,
       amountCents: row.amountCents,
       date: row.date,
+    })),
+    goalPurchases: byId(household.goalPurchases ?? []).map((row) => ({
+      id: row.id,
+      goalId: row.goalId,
+      spentCents: row.spentCents,
+      vaultAccountId: row.vaultAccountId,
+      transactionIds: [...row.transactionIds].sort(),
     })),
     claims: byId(household.claims ?? []).map((row) => ({
       id: row.id,
@@ -130,6 +139,7 @@ export function booksIntegrityFacts(household: Household) {
       name: account.name,
       kind: account.kind,
       active: account.active,
+      savingsPurpose: account.savings?.purpose ?? null,
     })),
     sitDownSessions: byId(household.sitDownSessions ?? []).map((row) => ({
       id: row.id,

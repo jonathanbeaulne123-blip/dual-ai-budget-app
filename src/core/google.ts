@@ -20,7 +20,7 @@ export const GOOGLE_SERVICE_COPY: Record<GoogleService, { label: string; summary
   },
   drive: {
     label: "Drive (Hearth files only)",
-    summary: "Only files Hearth creates. Not your whole Drive.",
+    summary: "Hearth-owned files only: sit-down workbook and desk look. Not your whole Drive.",
     sensitive: true,
   },
   contacts: {

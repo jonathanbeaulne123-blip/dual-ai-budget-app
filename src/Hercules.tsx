@@ -21,16 +21,23 @@ import {
   kitchenSeason,
   ledgerChats,
   listFurniture,
+  perchOnFurniture,
   perchTarget,
   planHerculesTurn,
   recordHerculesTalk,
+  requestCalendarPane,
   subscribeFurniture,
   subscribeOfficeIntent,
-  talkHercules,
   walkHits,
   walkPath,
+  calendarEventIntent,
+  helpCommands,
+  matchHelpCommand,
+  openHelpState,
+  isInstrumentId,
   CAT,
   NAV,
+  WIDE_BREAKPOINT,
   type CommitResult,
   type CompanionMood,
   type HearthTab,
@@ -39,6 +46,7 @@ import {
   type HerculesPose,
   type HerculesTalk,
   type Household,
+  type InstrumentId,
 } from "./core/index.ts";
 import { HerculesDress } from "./HerculesDress.tsx";
 import { HerculesFigure } from "./HerculesFigure.tsx";
@@ -158,6 +166,8 @@ export function HerculesPresence({
   );
   const [busy, setBusy] = useState(false);
   const [fly, setFly] = useState<{ x: number; y: number } | null>(null);
+  const [perchPlay, setPerchPlay] = useState(false);
+  const perchPlayFor = useRef<string | null>(null);
   const drag = useRef<{ x: number; y: number; px: number; py: number; moved: boolean } | null>(null);
   const idleAt = useRef(0);
   const mutterAt = useRef(0);
@@ -186,6 +196,8 @@ export function HerculesPresence({
     setFlip(next.faceRight);
     setPos({ x: next.x, y: next.y });
     setMotion(adding ? "loaf" : five.yes || spark ? "jump" : next.pose === "loaf" ? "walk" : next.pose);
+    setPerchPlay(false);
+    perchPlayFor.current = null;
     if (reducedMotion()) {
       setMotion(adding ? "loaf" : five.yes || spark ? "celebrate" : next.pose);
       return;
@@ -208,20 +220,42 @@ export function HerculesPresence({
 
   useEffect(() => {
     return subscribeOfficeIntent((intent) => {
+      if (intent.type === "collapse") {
+        setPerchPlay(false);
+        perchPlayFor.current = null;
+        return;
+      }
       if (intent.type !== "expand" || adding) return;
+      if (perchPlayFor.current && perchPlayFor.current !== intent.id) {
+        setPerchPlay(false);
+      }
+      const furniture = listFurniture();
+      const item = furniture.find((row) => row.id === intent.id)
+        ?? (intent.id === "chalkboard" ? furniture.find((row) => row.id === "window") : null);
+      if (item) {
+        const land = perchOnFurniture(item, { w: window.innerWidth, h: window.innerHeight });
+        perchedOn.current = land.on;
+        setFlip(land.faceRight);
+        setPos({ x: land.x, y: land.y });
+        setPerchPlay(!reducedMotion());
+        perchPlayFor.current = intent.id;
+      }
       const surface = herculesInstrumentSurface(intent.id, household, today);
+      const page = adding ? "add" : tab;
+      const instrument = intent.id;
+      const help = openHelpState({ tab: page, instrument, household, today });
       applyTalk({
-        spoken: surface.spoken,
-        lesson: surface.lesson,
-        fact: null,
-        replies: surface.chips,
+        spoken: help.spoken,
+        lesson: null,
+        fact: herculesPageSurface(page, household, today).fact,
+        replies: help.replies,
         pose: surface.pose,
         topic: intent.id,
         attention: false,
       });
       setMotion(surface.pose);
     });
-  }, [household, today, adding]);
+  }, [household, today, adding, tab]);
 
   useEffect(() => {
     if (visorPop) {
@@ -366,6 +400,33 @@ export function HerculesPresence({
     }));
   }
 
+  function isWideDesk(): boolean {
+    return typeof window !== "undefined" && window.innerWidth >= WIDE_BREAKPOINT;
+  }
+
+  function directToCalendar(): void {
+    if (isWideDesk()) {
+      requestCalendarPane("board", localStorage);
+      emitOfficeIntent({ type: "expand", id: "calendar" });
+    }
+    onGo("calendar");
+  }
+
+  function currentInstrument(): InstrumentId | "window" | null {
+    if (isInstrumentId(topic) || topic === "window") return topic;
+    if (perchPlayFor.current && (isInstrumentId(perchPlayFor.current) || perchPlayFor.current === "window")) {
+      return perchPlayFor.current;
+    }
+    return null;
+  }
+
+  function applyHelpNav(command: ReturnType<typeof matchHelpCommand>): void {
+    if (!command) return;
+    if (command.expand) emitOfficeIntent({ type: "expand", id: command.expand });
+    if (command.go === "calendar") directToCalendar();
+    else if (command.go) onGo(command.go);
+  }
+
   function closeChat() {
     chatGen.current += 1;
     setOpen(false);
@@ -414,7 +475,7 @@ export function HerculesPresence({
     }
     if (/^calendar$|^which bill/i.test(text)) {
       closeChat();
-      onGo("calendar");
+      directToCalendar();
       return true;
     }
     if (/^health$|^what broke/i.test(text)) {
@@ -443,8 +504,14 @@ export function HerculesPresence({
   function speak(raw: string) {
     const text = raw.trim();
     if (!text || busy) return;
-    if (goShortcut(text)) return;
-    const plan = planHerculesTurn(household, text, today, adding ? "add" : tab, topic);
+    const helpCmd = matchHelpCommand(
+      helpCommands({ tab: adding ? "add" : tab, instrument: currentInstrument(), household, today }),
+      text,
+    );
+    if (helpCmd) applyHelpNav(helpCmd);
+    if (goShortcut(helpCmd?.prompt ?? text)) return;
+    if (calendarEventIntent(text)) directToCalendar();
+    const plan = planHerculesTurn(household, helpCmd?.prompt ?? text, today, adding ? "add" : tab, topic);
     if (plan.draft) {
       onDraft?.(plan.draft);
       keepTalk(text, plan.talk.spoken, "journal");
@@ -458,9 +525,16 @@ export function HerculesPresence({
   async function sendChat(raw: string) {
     const message = raw.trim();
     if (!message || busy) return;
-    if (goShortcut(message)) return;
+    const helpCmd = matchHelpCommand(
+      helpCommands({ tab: adding ? "add" : tab, instrument: currentInstrument(), household, today }),
+      message,
+    );
+    if (helpCmd) applyHelpNav(helpCmd);
+    const text = helpCmd?.prompt ?? message;
+    if (goShortcut(text)) return;
+    if (calendarEventIntent(message) || calendarEventIntent(text)) directToCalendar();
     const page = adding ? "add" : tab;
-    const plan = planHerculesTurn(household, message, today, page, topic);
+    const plan = planHerculesTurn(household, text, today, page, topic);
     if (plan.draft) {
       onDraft?.(plan.draft);
       keepTalk(message, plan.talk.spoken, "journal");
@@ -530,18 +604,52 @@ export function HerculesPresence({
     if (!start) return;
     if (!start.moved) {
       setPurr(true);
-      if (open && turns.some((turn) => turn.role === "user")) {
+      if (open) {
+        closeChat();
         setMotion("loaf");
         return;
       }
-      applyTalk(talkHercules(household, open ? "scratch" : "", today, adding ? "add" : tab, topic));
+      applyTalk((() => {
+        const page = adding ? "add" : tab;
+        const instrument = currentInstrument();
+        const help = openHelpState({ tab: page, instrument, household, today });
+        return {
+          spoken: help.spoken,
+          lesson: null,
+          fact: surface.fact,
+          replies: help.replies,
+          pose: "perch" as const,
+          topic: instrument ?? topic,
+          attention: false,
+        };
+      })());
     } else {
       setMotion(look.view.mood === "restless" ? "pace" : "loaf");
     }
   }
 
+  const perchMove = perchPlayFor.current
+    ? (["hop", "wiggle", "hang"] as const)[Math.abs(perchPlayFor.current.length * 13 + perchPlayFor.current.charCodeAt(0)) % 3]
+    : "hop";
   const pose = visorPop ? "jump" : motion;
   const size = adding ? 72 : CAT;
+  const openInstrument = listFurniture().find((item) => item.id === perchPlayFor.current)
+    ?? listFurniture().find((item) => item.id === topic);
+  const avoid = open && openInstrument
+    ? {
+      x: openInstrument.rect.x,
+      y: openInstrument.rect.y + 52,
+      w: openInstrument.rect.w,
+      h: Math.max(40, openInstrument.rect.h - 52),
+    }
+    : open && tab !== "home"
+      ? {
+        x: 12,
+        y: 64,
+        w: (typeof window === "undefined" ? 390 : window.innerWidth) - 24,
+        h: Math.min((typeof window === "undefined" ? 844 : window.innerHeight) * 0.4, 360),
+      }
+      : null;
   const bubble = herculesBubbleBox({
     catX: pos.x,
     catY: pos.y,
@@ -550,6 +658,7 @@ export function HerculesPresence({
     bubbleH: bubbleSize.h,
     viewW: typeof window === "undefined" ? 390 : window.innerWidth,
     viewH: typeof window === "undefined" ? 844 : window.innerHeight,
+    avoid,
   });
   const bubbleStyle = { left: bubble.left, top: bubble.top };
   const bubbleSide = bubble.side === "left" ? "left" : "right";
@@ -584,6 +693,28 @@ export function HerculesPresence({
           className={`hercules-bubble ${bubbleSide} ${open ? "chat" : ""}`}
           style={bubbleStyle}
         >
+          {open && (
+            <button
+              type="button"
+              className="hercules-help"
+              onClick={() => {
+                const page = adding ? "add" : tab;
+                const instrument = currentInstrument();
+                const help = openHelpState({ tab: page, instrument, household, today });
+                applyTalk({
+                  spoken: help.spoken,
+                  lesson: null,
+                  fact: surface.fact,
+                  replies: help.replies,
+                  pose: "perch",
+                  topic: instrument ?? topic,
+                  attention: false,
+                });
+              }}
+            >
+              How can I help
+            </button>
+          )}
           {open && turns.length > 0 ? (
             <div className="hercules-chat-log" ref={logRef}>
               {turns.slice(-6).map((turn, index) => (
@@ -597,7 +728,7 @@ export function HerculesPresence({
             <p className="hercules-spoken">{talk.spoken}</p>
           )}
           {!busy && talk.lesson && <p className="hercules-lesson">{talk.lesson}</p>}
-          {open && !busy && (
+          {open && !busy && turns.some((turn) => turn.role === "user") && (
             <p className="hercules-source">Kept in the kitchen ledger. Same door as the books.</p>
           )}
           {!busy && talk.fact && (
@@ -644,6 +775,7 @@ export function HerculesPresence({
           "hercules-live",
           `mood-${look.view.mood}`,
           `pose-${pose}`,
+          perchPlay ? `perch-play perch-${perchMove}` : "",
           purr ? "purr" : "",
           five.yes ? "high-five" : "",
           attention ? "needs-you" : "",
