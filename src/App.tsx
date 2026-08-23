@@ -10,7 +10,6 @@ import {
   calcShiftAmounts,
   catalogHousehold,
   centsDigitsFromDollars,
-  contributeToGoal,
   fundGoal,
   createWriteQueue,
   creditCardView,

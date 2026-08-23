@@ -104,6 +104,7 @@ export function shapeGoalProgress(
       memberId: goal.ownerMemberId || fallbackMemberId,
       amountCents: leftover,
       date: createdAt.slice(0, 10),
+      transferId: null,
       createdAt,
       updatedAt: stampIso(goal.updatedAt, createdAt),
     });
