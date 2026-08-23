@@ -6,6 +6,7 @@ import {
   type HerculesGrounded,
 } from "./herculesPersonality.ts";
 import type { HerculesLedgerExcerpt, HerculesNoticeView } from "./herculesPrivacy.ts";
+import type { HerculesMemoryView } from "./herculesLedger.ts";
 
 export type HerculesChatTurn = {
   role: "user" | "hercules";
@@ -18,8 +19,8 @@ export type HerculesChatRequest = {
   grounded: HerculesGrounded;
   /** Rate-limit key for the kitchen Worker. Never a secret. */
   householdId?: string;
-  /** Labels only. Never full CAD chat history. */
-  memories?: string[];
+  /** Labels only. Amounts stripped to CAD. Kind tells the model what the note is for. */
+  memories?: HerculesMemoryView[];
   notices?: HerculesNoticeView[];
   ledger?: HerculesLedgerExcerpt;
   /** Pre-trimmed line excerpt; Worker prefers this over JSON blob. */
@@ -60,7 +61,7 @@ export function herculesModelPayload(req: HerculesChatRequest): string {
   return JSON.stringify({
     householdId: req.householdId ? String(req.householdId).slice(0, 64) : undefined,
     message: req.message.trim().slice(0, 400),
-    briefing: formatHerculesBriefing(req.briefing).slice(0, 800),
+    briefing: formatHerculesBriefing(req.briefing, req.memories ?? []).slice(0, 800),
     grounded: {
       spoken: String(req.grounded.spoken || "").slice(0, 220),
       lesson: req.grounded.lesson ? String(req.grounded.lesson).slice(0, 180) : null,
@@ -71,7 +72,10 @@ export function herculesModelPayload(req: HerculesChatRequest): string {
           }
         : null,
     },
-    memories: (req.memories ?? []).slice(-12).map((label) => String(label).slice(0, 48)),
+    memories: (req.memories ?? []).slice(-12).map((row) => ({
+      kind: String(row.kind).slice(0, 16),
+      label: String(row.label).slice(0, 48),
+    })),
     notices: (req.notices ?? []).slice(0, 8).map((item) => ({
       key: String(item.key).slice(0, 120),
       kind: String(item.kind).slice(0, 32),

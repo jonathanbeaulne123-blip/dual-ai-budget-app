@@ -8,6 +8,7 @@ import {
 import { composeNotices, type HerculesNotice } from "./notices.ts";
 import type { HerculesBriefing, HerculesGrounded } from "./herculesPersonality.ts";
 import { formatHerculesBriefing } from "./herculesPersonality.ts";
+import { memoriesForModel, type HerculesMemoryView } from "./herculesLedger.ts";
 import type { Appointment, Claim, Household, Transaction } from "./types.ts";
 import { visibleForDuplicateScan } from "./visibility.ts";
 
@@ -227,7 +228,7 @@ export function composeHerculesChatRequest(
   briefing: HerculesBriefing;
   grounded: HerculesGrounded;
   householdId: string;
-  memories: string[];
+  memories: HerculesMemoryView[];
   notices: HerculesNoticeView[];
   ledger: HerculesLedgerExcerpt;
   ledgerLines: string;
@@ -263,11 +264,12 @@ export function composeHerculesChatRequest(
           }
         : grounded.fact,
     },
-    memories: (household.kitchen.hercules?.memories ?? [])
-      .map((row) => row.label)
-      .filter(Boolean)
-      .slice(-12)
-      .map((label) => scrubQuietText(label, secrets) || label),
+    memories: memoriesForModel(household)
+      .map((row) => ({
+        ...row,
+        label: scrubQuietText(row.label, secrets) || row.label,
+      }))
+      .filter((row) => row.label),
     notices,
     ledger,
     ledgerLines: formatLedgerExcerptForModel(ledger),
