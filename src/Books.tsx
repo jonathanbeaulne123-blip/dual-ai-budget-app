@@ -18,11 +18,14 @@ import {
   formatCad,
   incomeStatement,
   liquidityWatch,
+  likelyMiscoded,
+  categoryName,
   monthKeyFromDateKey,
   notesToFinancialStatements,
   recordReconciliation,
   reopenBooksMonth,
   shiftMonthKey,
+  sitDownExportText,
   statementOfChangesInEquity,
   todayKey,
   trialBalance,
@@ -310,7 +313,7 @@ export function BooksPage({
             <span className={`pill ${opinion.kind === "unmodified" ? "good" : "warn"}`}>{opinion.kind}</span>
           </header>
           <p className="muted">{opinion.cpa}</p>
-          <p className="muted">Second look before posting into that month. Mark paid on Calendar still counts.</p>
+          <p className="muted">A closed month accepts no posts. Reopen if a receipt was forgotten. Reverse a row instead of deleting it. Mark paid on Calendar still Confirm-writes.</p>
           {closeError && <p className="danger">{closeError}</p>}
           <div className="chips">
             <button
@@ -334,6 +337,30 @@ export function BooksPage({
               onClick={() => downloadText(booksFilename(books, "txt"), closePackageText(household, packMonth, today))}
             >
               Download close pack
+            </button>
+          </div>
+          {likelyMiscoded(household, monthKey).length > 0 && (
+            <div>
+              <p className="muted">Likely miscoded — guessed from merchant tokens. Confirm still recodes. Nothing auto-posts.</p>
+              {likelyMiscoded(household, monthKey).map((row) => {
+                const tx = household.transactions.find((item) => item.id === row.transactionId);
+                if (!tx) return null;
+                return (
+                  <div className="row" key={row.transactionId}>
+                    <span>{tx.note || tx.place} · {categoryName(household, tx.subcategoryId)}</span>
+                    <span className="muted">guess {row.guessed.name}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <div className="chips">
+            <button
+              className="chip"
+              type="button"
+              onClick={() => downloadText(`hearth-sitdown-${packMonth}.txt`, sitDownExportText(household, packMonth, today))}
+            >
+              Download sit-down workbook
             </button>
           </div>
           {household.kitchen.books.closedMonths.length > 0 && (

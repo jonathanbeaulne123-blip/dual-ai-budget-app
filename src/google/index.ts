@@ -30,6 +30,7 @@ export {
   type GoogleSuitePing,
   type GoogleTokenRequester,
 } from "./engine.ts";
+export { uploadSitDownWorkbook, type DriveUploadResult } from "./drive.ts";
 export {
   adoptGoogleSession,
   clearGoogleSession,

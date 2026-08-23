@@ -490,7 +490,7 @@ export function notesToFinancialStatements(household: Household, monthKey: Month
     {
       id: "close",
       title: "7. Subsequent events and closed periods",
-      body: `${events.hercules} Closed months: ${closed.join(", ") || "none"}. A close is a second look, not a SOX freeze. Opinion on these statements: ${opinion.kind}.`,
+      body: `${events.hercules} Closed months: ${closed.join(", ") || "none"}. A close is a hard lock: posting into that month is refused until you reopen it. Reverse a row instead of deleting it. Opinion on these statements: ${opinion.kind}.`,
     },
     {
       id: "controls",

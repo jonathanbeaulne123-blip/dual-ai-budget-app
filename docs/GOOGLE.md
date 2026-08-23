@@ -110,7 +110,7 @@ Living pairs and refused list: [STRATEGY.md](STRATEGY.md) § Google Dual Course.
 
 ### Shipping now
 
-Identity, Calendar overlay, bill reminders, Continue with Google, step-up on sensitive household actions, opt-in suite **ping**.
+Identity, Calendar overlay, bill reminders, Continue with Google, step-up on sensitive household actions, opt-in suite **ping**, **sit-down Drive workbook** (create a Sheet with `drive.file`, never edit an existing file; local download always works; D-087).
 
 ### Proposed next (in scope)
 
@@ -120,9 +120,8 @@ Do these as Dual Course features that call `withGoogle`. Do **not** add a Google
 2. **Punch-clock busy** — optional timed block while `openShift` is live; wipe on abandon; never `postShift`.
 3. **Gmail statement inbox** — read-only, on this phone, suggest a recurrence or Add draft; Confirm still posts. Mail bodies never enter the household snapshot. Bank PDF parsers still wait on Auth.
 4. **Sheets import** — pick a spreadsheet, read a range, sanitize, same D-011 path as CSV. Read-only. Not the old budget workbook. No Sheets write-back.
-5. **Drive close pack** — upload the generated pack as a Hearth-created file (`drive.file` only). Never crawl their Drive. Never posts.
-6. **Contacts match** — suggest a member or practitioner. Not a phone backup.
-7. **Hercules calendar chips** — overlay + month board, on-device. No Gmail in the model payload.
+5. **Contacts match** — suggest a member or practitioner. Not a phone backup.
+6. **Hercules calendar chips** — overlay + month board, on-device. No Gmail in the model payload.
 
 ### Still not Google’s job
 

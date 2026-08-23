@@ -104,7 +104,8 @@ export type Transaction = {
   transferFromAccountId?: string;
   transferToAccountId?: string;
   refundOfId?: string;
-  source: "manual" | "shift" | "recurring" | "import" | "visit";
+  reversalOfId?: string;
+  source: "manual" | "shift" | "recurring" | "import" | "visit" | "reversal";
   sourceId?: string;
   duplicateKey: string;
   potentialDuplicate: boolean;
@@ -343,6 +344,38 @@ export type HouseholdBooksDesk = {
   closedMonths: ClosedPeriod[];
 };
 
+export type SitDownSessionStatus = "open" | "moved" | "closed";
+
+export type SitDownAllocationSlice = {
+  id: string;
+  label: string;
+  kind: "account" | "goal";
+  targetId: string;
+  mode: "weight" | "percent" | "fixed";
+  value: number;
+};
+
+export type SitDownSession = {
+  id: string;
+  monthKey: MonthKey;
+  targetMonth: MonthKey;
+  act: 1 | 2 | 3;
+  leftoverCents: number;
+  cashLikeCents: number;
+  billsNext30Cents: number;
+  minPaymentsCents: number;
+  slices: SitDownAllocationSlice[];
+  transferIds: string[];
+  contributionIds: string[];
+  budgetPosted: boolean;
+  closedMonth: boolean;
+  driveFileId: string | null;
+  status: SitDownSessionStatus;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type HerculesChatRole = "user" | "hercules";
 export type HerculesTalkSource = "journal" | "memory" | "local" | "ai";
 export type HerculesMemoryKind = "note" | "payday" | "bill" | "habit" | "preference";
@@ -497,6 +530,7 @@ export type Household = {
   goals: Goal[];
   goalContributions: GoalContribution[];
   budgetPlans: BudgetPlan[];
+  sitDownSessions: SitDownSession[];
   activity: Activity[];
   shiftSettings: ShiftSettings;
   lastCommittedAt: string | null;
@@ -524,6 +558,7 @@ export type SharedEnvelope = {
   goals: Goal[];
   goalContributions: GoalContribution[];
   budgetPlans: BudgetPlan[];
+  sitDownSessions: SitDownSession[];
   activity: Activity[];
   shiftSettings: ShiftSettings;
   lastCommittedAt: string | null;

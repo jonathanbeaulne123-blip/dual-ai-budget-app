@@ -19,7 +19,7 @@ Hearth is the product. **Living canon** is this folder except [nostalgia/](nosta
 | [ACCOUNTS.md](ACCOUNTS.md) | Wallet, cards, investments — how to try |
 | [APPOINTMENTS.md](APPOINTMENTS.md) | Visits, claims tray, receivables, quiet labels, Hercules jars, Appointments destination (D-053–056) |
 | [ENVIRONMENTS.md](ENVIRONMENTS.md) | Development vs production, website, hosted books |
-| [GOOGLE.md](GOOGLE.md) | Google household bridge — how-to, shipping surfaces, proposed Dual Course pairs (D-078) |
+| [SITDOWN.md](SITDOWN.md) | Monthly sit-down, leftover, lock, reverse, Drive export (D-083–087) |
 | [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md) | Private repo and one-click kitchen publish |
 | [AI_HANDOFF.md](AI_HANDOFF.md) | Risk routing; Dual Course deltas |
 | [nostalgia/](nostalgia/) | Retired roadmaps and launch essays. Do not cite for future work. |

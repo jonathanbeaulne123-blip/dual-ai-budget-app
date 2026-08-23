@@ -218,7 +218,7 @@ function compileTransfer(household: Household, tx: Transaction, pair: Transactio
     date: tx.date,
     memo: tx.note || `Transfer · ${accountName(household, fromId)} → ${accountName(household, toId)}`,
     place: tx.place,
-    source: tx.source,
+    source: tx.reversalOfId ? "reversal" : tx.source,
     sourceId: tx.sourceId,
     originTransactionIds: origin,
     visibility: tx.visibility,
@@ -243,6 +243,10 @@ function compileDocument(tx: Transaction): JournalEntry | null {
   } else {
     throw new ValidationError(`${tx.id} cannot post to the books.`);
   }
+  if (tx.reversalOfId) {
+    plSign *= -1;
+    bankSign *= -1;
+  }
   const splits = tx.splits.length ? tx.splits : [{ party: JOINT, amountCents: tx.amountCents }];
   const lines: Omit<JournalLine, "id" | "lineNo">[] = [];
   for (const split of splits) {
@@ -254,7 +258,7 @@ function compileDocument(tx: Transaction): JournalEntry | null {
     date: tx.date,
     memo: tx.note || tx.type,
     place: tx.place,
-    source: tx.source,
+    source: tx.reversalOfId ? "reversal" : tx.source,
     sourceId: tx.sourceId,
     originTransactionIds: [tx.id],
     visibility: tx.visibility,

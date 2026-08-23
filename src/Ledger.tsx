@@ -134,7 +134,7 @@ function LedgerRow({
         {transaction.potentialDuplicate && (
           <button className="chip" onClick={onToggleDuplicate}>{transaction.isDuplicate ? "Include" : "Exclude"}</button>
         )}
-        <button className="chip" onClick={onRemove}>Remove</button>
+        <button className="chip" onClick={onRemove}>Reverse</button>
       </div>
     </div>
   );

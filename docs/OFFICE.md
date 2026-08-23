@@ -333,16 +333,16 @@ Drawable slate. Ink stores with the note. **Neaten** is on-device 5×7 letter de
 ### B8. Postcard — the sit-down
 
 - **Glance:** `sitDownPostcard(household).sentence`.
-- **Expand:** the three-step guide — **Look → trims → Apply** — rendered as postcard faces you turn over. Apply calls the existing `applySitDown` with `postedIds: []`.
+- **Expand:** the three-act Plan guide (`SitDownGuide`) — positives, books, leftover jobs. Copy jobs still calls `applySitDown` with `postedIds: []`. Confirm moves calls `executeSitDownMoves`.
 - **Minimize:** a stamped postcard edge.
 - **Move:** ✓. Auto-promoted to rail position 1 when `kettlePhase === "sunday"` and `ready === true`.
-- **Data:** `sitDownPostcard(household)` (`ready`, `text`, `sentence`, `sourceMonth`, `targetMonth`), `sitDownPreview(household, sourceMonth)`.
-- **Write:** `applySitDown` only, through the existing guide. **The widget never applies without the three steps** — no "quick apply" shortcut. A sit-down that can be done in one tap is not a sit-down.
-- **Hercules:** `perch` on the postcard, `wash` during Sunday. No attack.
+- **Data:** `sitDownPostcard(household)`, `leftoverProjection`, `sitDownFacts`, `sitDownPreview`.
+- **Write:** leftover jobs through `executeSitDownMoves` (transfers). Copy jobs through `applySitDown`. **The widget never one-taps leftover** — no "quick apply" shortcut. A sit-down that can be done in one tap is not a sit-down. Phone stays five objects; Plan remains the long session.
+- **Hercules:** `perch` on the postcard, `wash` during Sunday. He may read act 1. He never posts.
 - **Empty:** `ready === false` → "Next sit-down after the month turns." Card face-down.
 - **Warn:** none.
-- **Deltas:** budget **+5** (the sit-down is the planning ritual) · engagement **+2**.
-- **Taps:** 4 — tap postcard, Look, trims, Apply.
+- **Deltas:** budget **+5** (leftover jobs and lock) · engagement **+3** (three-act ceremony).
+- **Taps:** glance, then the three acts on Plan / the expanded postcard.
 
 ### B9. Cook-off — kettle
 

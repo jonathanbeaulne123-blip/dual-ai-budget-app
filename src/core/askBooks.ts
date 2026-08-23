@@ -7,6 +7,7 @@ import { categoryName } from "./ledgerView.ts";
 import { creditCardView, householdWallet } from "./accounts.ts";
 import { claimPublicLabel, claimsTraySentence, craMedicalLog, outstandingClaims, upcomingVisitProposals } from "./appointments.ts";
 import { describeGoalContributors } from "./goals.ts";
+import { leftoverProjection } from "./sitDown.ts";
 import type { Household } from "./types.ts";
 
 export type BooksAskRow = { label: string; value: string };
@@ -37,6 +38,7 @@ export const ASK_SUGGESTIONS = [
   "Coffee this week",
   "Tips this week",
   "What should I do",
+  "Sit-down leftover",
   "Safe to skip",
 ];
 
@@ -92,6 +94,24 @@ export function askBooks(household: Household, question: string, today: DateKey)
   const rangeLabel = looksLikeWeek(q) ? "this week" : "this month";
 
   if (/\b(help|what can i ask|examples)\b/.test(q)) return help();
+
+  if (/\b(leftover|sit-?down|safe to assign|what can we move)\b/.test(q)) {
+    const leftover = leftoverProjection(household, today);
+    return {
+      kind: "answer",
+      sentence: leftover.leftoverCents
+        ? `Sit-down leftover is ${formatCad(leftover.leftoverCents)}. ${leftover.formula} Month net is not leftover. Three acts on Plan. Confirm still moves it. Hercules never does.`
+        : leftover.shortfallCents
+          ? `Nothing to move. ${leftover.formula} Sit-down still runs. It does not invent CAD.`
+          : leftover.formula,
+      rows: [
+        { label: "Cash-like", value: formatCad(leftover.cashLikeCents) },
+        { label: "Bills next 30 days", value: formatCad(leftover.billsNext30Cents) },
+        { label: "Card minimums", value: formatCad(leftover.minPaymentsCents) },
+        { label: "Leftover", value: formatCad(leftover.leftoverCents) },
+      ],
+    };
+  }
 
   if (/\b(health|alright|all right|okay|ok\b|in balance|trial)\b/.test(q) || q === "are we alright") {
     const findings = runHealthCheck(household);

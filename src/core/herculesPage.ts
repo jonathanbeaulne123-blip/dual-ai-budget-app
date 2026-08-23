@@ -6,6 +6,7 @@ import { appointmentPublicTitle, outstandingClaims, upcomingVisitBoard } from ".
 import { buildMonthBoard, isOutgoingBill } from "./board.ts";
 import { activeOpenShift, previewHoursLabel } from "./shiftClock.ts";
 import { herculesPageBrief, kettlePhase, type HearthTab } from "./hercules.ts";
+import { leftoverProjection } from "./sitDown.ts";
 import type { Household } from "./types.ts";
 import type { InstrumentId } from "./officeLayout.ts";
 
@@ -42,10 +43,7 @@ export function herculesPageSurface(
   const spoken = herculesPageBrief(household, tab, today, now);
   const month = monthSummary(household, monthKeyFromDateKey(today));
   const wallet = householdWallet(household, today);
-  const groceries = month.categories.find((row) => row.name.toLowerCase() === "groceries");
-  const groceryLeft = groceries && groceries.budgetedCents > 0
-    ? groceries.budgetedCents - groceries.actualCents
-    : null;
+  const leftover = leftoverProjection(household, today);
   const owing = outstandingClaims(household)[0];
   const punch = activeOpenShift(household.kitchen);
 
@@ -64,13 +62,10 @@ export function herculesPageSurface(
     return {
       tab,
       spoken,
-      lesson: "Sit-down copies last month. In dollars. Apply writes the plan, not the milk.",
-      chips: ["Sit-down?", "Groceries left?", "We good?"],
+      lesson: "Sit-down is positives, then the books, then leftover. Confirm still writes. I never move a dollar.",
+      chips: ["Sit-down?", "Leftover?", "We good?"],
       placeholder: "ask about the plan…",
-      fact: groceryLeft == null ? { label: "Budgeted net", value: formatCad(month.netBudgetedCents) } : {
-        label: "Groceries left",
-        value: formatCad(groceryLeft),
-      },
+      fact: { label: "Leftover", value: formatCad(leftover.leftoverCents) },
     };
   }
 
@@ -234,9 +229,9 @@ export function herculesInstrumentSurface(
     },
     postcard: {
       id: "postcard",
-      spoken: "Sit-down copies last month. Apply writes the plan, not the milk.",
+      spoken: "Sit-down is three acts. Confirm still moves leftover. I clap.",
       lesson: "Plan is dollars. I just clap.",
-      chips: ["Sit-down?", "Groceries left?", "We good?"],
+      chips: ["Sit-down?", "Leftover?", "We good?"],
       pose: "perch",
     },
     cookoff: {
@@ -250,7 +245,7 @@ export function herculesInstrumentSurface(
       id: "jars",
       spoken: "Pigs fill from posted contributions. Contribute stays on Plan.",
       lesson: "Two phones cannot erase each other's CAD.",
-      chips: ["Start this jar", "Sit-down?", "We good?"],
+      chips: ["Start this jar", "Sit-down?", "Leftover?"],
       pose: "loaf",
     },
     lamp: {

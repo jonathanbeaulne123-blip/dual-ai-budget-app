@@ -2,6 +2,7 @@ import { cloneHousehold } from "./household.ts";
 import { formatInviteCode, normalizeInviteCode, randomHouseholdId, randomInviteCode } from "./ids.ts";
 import { mergeGoogle, shapeGoogle } from "./google.ts";
 import { mergeKitchen, shapeKitchen } from "./kitchen.ts";
+import { shapeSitDownSessions } from "./sitDown.ts";
 import { mergeCalendars, shapeCalendar, shapeRecurrence } from "./recurrence.ts";
 import { applyGoalSavings, shapeGoalProgress } from "./goals.ts";
 import { shapeAppointments, shapeClaims } from "./appointments.ts";
@@ -146,6 +147,7 @@ export function ensureHouseholdShape(household: Household): Household {
     accounts: shapeAccounts(household.accounts, fallbackIso),
     categories: shapeCategories(household.categories, fallbackIso),
     budgetPlans: shapeBudgetPlans(household.budgetPlans, fallbackIso),
+    sitDownSessions: shapeSitDownSessions(household.sitDownSessions),
     activity: shapeActivity(household.activity),
     goals: progress.goals,
     goalContributions: progress.goalContributions,
@@ -204,6 +206,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     goals: shaped.goals,
     goalContributions: shaped.goalContributions,
     budgetPlans: shaped.budgetPlans,
+    sitDownSessions: shaped.sitDownSessions,
     activity: shaped.activity,
     shiftSettings: shaped.shiftSettings,
     lastCommittedAt: shaped.lastCommittedAt,
@@ -261,6 +264,7 @@ export function assembleHousehold(shared: SharedEnvelope, personal: PersonalEnve
     goals: shared.goals,
     goalContributions: shared.goalContributions ?? [],
     budgetPlans: shared.budgetPlans,
+    sitDownSessions: shared.sitDownSessions ?? [],
     activity: shared.activity,
     shiftSettings: shared.shiftSettings,
     lastCommittedAt: laterIso(shared.lastCommittedAt, personal?.lastCommittedAt ?? null),
@@ -296,6 +300,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     goals,
     goalContributions,
     budgetPlans: mergeRecords(server.budgetPlans, client.budgetPlans, tombstones),
+    sitDownSessions: mergeRecords(shapeSitDownSessions(server.sitDownSessions), shapeSitDownSessions(client.sitDownSessions), tombstones),
     activity: mergeRecords(server.activity, client.activity, []).sort((left, right) => left.at.localeCompare(right.at)).slice(-200),
     shiftSettings: newer.shiftSettings,
     lastCommittedAt: newer.lastCommittedAt,
