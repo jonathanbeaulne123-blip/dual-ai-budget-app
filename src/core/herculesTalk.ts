@@ -18,6 +18,7 @@ import { claimsTraySentence, outstandingClaims, upcomingVisitProposals } from ".
 import { bubbleNotice, deskNotices } from "./notices.ts";
 import { shiftPostingStreak } from "./shiftStreak.ts";
 import { herculesPageSurface } from "./herculesPage.ts";
+import { memoryFactForTopic, topicUsesKitchenMemories } from "./herculesLedger.ts";
 
 export type HerculesPose =
   | "loaf"
@@ -367,6 +368,10 @@ export function talkHercules(
 
   const talk = talkFromAsk(household, ask, today, tab, topic);
   talk.lesson = lesson;
+  const memoryFact = memoryFactForTopic(household, topic);
+  if (memoryFact && (topicUsesKitchenMemories(topic) || !talk.fact)) {
+    talk.fact = memoryFact;
+  }
   if (topic === "identity") {
     talk.spoken = clip(`I'm ${name}. Auditor on the counter. I don't write the books.`);
     talk.pose = "pounce";

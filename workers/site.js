@@ -120,9 +120,17 @@ function buildPrompt(body) {
     .filter(Boolean)
     .join("\n");
   const memories = Array.isArray(body?.memories)
-    ? body.memories.map((item) => clip(item, 48)).filter(Boolean).slice(-12)
+    ? body.memories
+        .map((item) => {
+          if (item && typeof item === "object" && item.kind) {
+            return clip(`${item.kind}: ${item.label}`, 56);
+          }
+          return clip(item, 48);
+        })
+        .filter(Boolean)
+        .slice(-12)
     : [];
-  const memoryBlock = memories.length ? memories.join("; ") : "(none)";
+  const memoryBlock = memories.length ? memories.join("\n") : "(none)";
   const notices = Array.isArray(body?.notices)
     ? body.notices.slice(0, 8).map((item) => clip(JSON.stringify({
       key: item?.key,
