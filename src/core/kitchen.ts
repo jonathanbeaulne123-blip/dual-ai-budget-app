@@ -14,9 +14,11 @@ import type {
   AccountReconciliation,
   ClosedPeriod,
 } from "./types.ts";
+import { hasChalkInk, shapeChalkInk } from "./chalkLetters.ts";
+import { mergeOpenShift, shapeOpenShift } from "./shiftClock.ts";
 
 export const MAX_CHALK_NOTES = 12;
-export const MAX_CHALK_CHARS = 80;
+export const MAX_CHALK_CHARS = 160;
 export const MAX_COMPANION_NAME = 24;
 export const MAX_HERCULES_CHATS = 80;
 export const MAX_HERCULES_CHAT_CHARS = 400;
@@ -41,6 +43,7 @@ export const EMPTY_KITCHEN: HouseholdKitchen = {
   companion: { ...EMPTY_COMPANION },
   books: { reconciliations: [], closedMonths: [] },
   hercules: { ...EMPTY_HERCULES, chats: [], memories: [] },
+  openShift: null,
 };
 
 export function closedPeriodId(monthKey: string): string {
@@ -71,7 +74,9 @@ function asSlotValue(value: unknown): string | null {
 function isChalkNote(value: unknown): value is ChalkNote {
   if (!value || typeof value !== "object") return false;
   const note = value as ChalkNote;
-  return Boolean(note.id && typeof note.text === "string" && typeof note.author === "string");
+  if (!note.id || typeof note.author !== "string") return false;
+  if (typeof note.text !== "string") return false;
+  return note.text.length > 0 || hasChalkInk(shapeChalkInk(note.ink));
 }
 
 function isReconciliation(value: unknown): value is AccountReconciliation {
@@ -146,6 +151,7 @@ export function shapeKitchen(input?: Partial<HouseholdKitchen> | null): Househol
       author: note.author,
       createdAt: note.createdAt || note.updatedAt || "",
       updatedAt: note.updatedAt || note.createdAt || "",
+      ink: shapeChalkInk(note.ink),
     })).slice(-MAX_CHALK_NOTES)
     : [];
   const equipped = input?.companion?.equipped;
@@ -194,6 +200,7 @@ export function shapeKitchen(input?: Partial<HouseholdKitchen> | null): Househol
       closedMonths: [...closedMap.values()].sort((left, right) => left.monthKey.localeCompare(right.monthKey)),
     },
     hercules: shapeHerculesDesk(input?.hercules),
+    openShift: shapeOpenShift(input?.openShift),
   };
 }
 
@@ -252,6 +259,7 @@ export function mergeKitchen(
       chats: [...chatMap.values()].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).slice(-MAX_HERCULES_CHATS),
       memories: [...memoMap.values()].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).slice(-MAX_HERCULES_MEMORIES),
     },
+    openShift: mergeOpenShift(left.openShift, right.openShift),
   };
 }
 

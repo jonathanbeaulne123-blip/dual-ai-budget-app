@@ -17,6 +17,7 @@ import { householdWallet } from "./accounts.ts";
 import { claimsTraySentence, outstandingClaims, upcomingVisitProposals } from "./appointments.ts";
 import { bubbleNotice, deskNotices } from "./notices.ts";
 import { shiftPostingStreak } from "./shiftStreak.ts";
+import { herculesPageSurface } from "./herculesPage.ts";
 
 export type HerculesPose =
   | "loaf"
@@ -82,9 +83,10 @@ function repliesFor(mood: CompanionMood, tab: HearthTab, topic: string): string[
   if (topic === "notice") return ["Save as preset", "What now?"];
   if (mood === "hiding") return ["Health", "What broke?"];
   if (mood === "restless") return ["Which bill?", "What now?"];
-  if (tab === "calendar") return ["Which bill?", "We good?"];
+  if (tab === "calendar") return ["Which bill?", "What's owed?", "Start this jar"];
   if (tab === "ledger") return ["Opinion?", "Working capital?"];
-  if (tab === "plan") return ["Sit-down?", "We good?"];
+  if (tab === "plan") return ["Sit-down?", "Groceries left?", "We good?"];
+  if (tab === "more") return ["Health", "What broke?", "We good?"];
   return ["We good?", "What now?", "Milk"];
 }
 
@@ -215,31 +217,23 @@ export function herculesIdle(
     } else {
       spoken = "I'm here. Scratch me or ask a number.";
     }
-  } else if (phase === "morning") {
-    spoken = "Mrrp. Morning. Coffee counts. Groceries count more.";
-    lesson = "The ordinary grocery is how households stay friends.";
-    topic = "morning";
-    pose = "stretch";
-  } else if (phase === "after-shift") {
-    const streak = shiftPostingStreak(household, today);
-    spoken = clip(streak.spoken);
-    lesson = streak.lesson;
-    topic = "shift";
-    pose = streak.fresh && streak.count >= 2 ? "celebrate" : streak.waiting ? "pounce" : "loaf";
-  } else if (view.mood === "glowing") {
-    spoken = "Unmodified. Sunbeam. Don't jinx it.";
-    lesson = "An unmodified opinion means the journal balances and Health is clean.";
-    topic = "opinion";
-    pose = "loaf";
   } else {
-    spoken = "I'm here. Scratch me or ask a number.";
+    const surface = herculesPageSurface(tab, household, today, now);
+    spoken = clip(surface.spoken);
+    lesson = surface.lesson;
+    topic = tab;
   }
 
+  const surface = herculesPageSurface(tab, household, today, now);
+  const topicReplies = topic !== "idle" && topic !== "morning" && topic !== "recap" && topic !== "high-five";
   return {
     spoken,
     lesson,
-    fact: null,
-    replies: repliesFor(view.mood, tab, topic).slice(0, 3),
+    fact: surface.fact,
+    replies: (topicReplies || five.yes || view.mood === "hiding" || view.mood === "restless" || !surface.chips.length
+      ? repliesFor(view.mood, tab, topic)
+      : surface.chips
+    ).slice(0, 3),
     pose,
     topic,
     attention: herculesNeedsCheck(household, today),

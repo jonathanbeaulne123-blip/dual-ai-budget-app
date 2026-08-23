@@ -37,8 +37,9 @@ import {
 } from "./calendar/google.ts";
 import { connectGoogle } from "./google/index.ts";
 import { AppointmentsPage } from "./Appointments.tsx";
+import { takeCalendarPane, type CalendarPane } from "./core/calendarIntent.ts";
 
-type Pane = "board" | "visits" | "bills" | "google";
+type Pane = CalendarPane;
 
 function kindLabel(kind: string): string {
   if (kind === "paycheck") return "Pay";
@@ -103,6 +104,11 @@ export function CalendarPage(props: {
   useEffect(() => {
     refreshAccounts();
   }, [environment, household.members]);
+
+  useEffect(() => {
+    const next = takeCalendarPane(localStorage);
+    if (next) setPane(next);
+  }, []);
 
   useEffect(() => {
     let live = true;

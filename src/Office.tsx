@@ -11,6 +11,7 @@ import {
   instrumentRotation,
   kettlePhase,
   lampIsDark,
+  levelLayoutItems,
   loadOfficeLayout,
   loadOfficeRings,
   mailOverdue,
@@ -27,8 +28,11 @@ import {
   sitDownPostcard,
   snapGrid,
   subscribeOfficeIntent,
+  tidyOfficeLayout,
   visibleInstruments,
   walletWarn,
+  requestCalendarPane,
+  sillOverview,
   type DeskRing,
   type Environment,
   type Household,
@@ -53,6 +57,9 @@ import { CookOffBody, CookOffGlance } from "./widgets/CookOffKettle.tsx";
 import { JarsBody, JarsGlance } from "./widgets/Jars.tsx";
 import { LampBody, LampGlance, lampAria } from "./widgets/Lamp.tsx";
 import { Cabinets } from "./widgets/Cabinets.tsx";
+import { CalendarBody, CalendarGlance } from "./widgets/CalendarDesk.tsx";
+import { AppointmentsBody, AppointmentsGlance } from "./widgets/AppointmentsDesk.tsx";
+import { SillOverviewPlate } from "./widgets/SillOverview.tsx";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
 
 const WIDE = 720;
@@ -83,7 +90,6 @@ export function Office({
   mode,
   error,
   categories,
-  shiftPreview,
   postLabel,
   onClinkOn,
   onForm,
@@ -92,13 +98,17 @@ export function Office({
   onMilk,
   onCoffee,
   onShift,
-  onLogShift,
+  onClockIn,
+  onAbandonShift,
+  onSignOut,
+  onFinishedShift,
   onPayCard,
   onOpenAccount,
   onBuyNote,
   onKitchen,
   onMarkPaid,
   onAskSettle,
+  onAskStartJar,
   onSitDown,
   onGo,
 }: {
@@ -115,7 +125,6 @@ export function Office({
   mode: DeskMode;
   error: string;
   categories: Category[];
-  shiftPreview: { floorTipOutCents: number; barTipOutCents: number; ccTipOutCents: number; netTipsCents: number; wagesCents: number };
   postLabel: string;
   onClinkOn: (on: boolean) => void;
   onForm: (next: DeskForm) => void;
@@ -124,13 +133,17 @@ export function Office({
   onMilk: () => void;
   onCoffee: () => void;
   onShift: () => void;
-  onLogShift: () => void;
+  onClockIn: () => void;
+  onAbandonShift: () => void;
+  onSignOut: () => void;
+  onFinishedShift: () => void;
   onPayCard: (account: Account) => void;
   onOpenAccount: (accountId: string) => void;
   onBuyNote: (text: string) => void;
   onKitchen: (fn: (current: Household) => CommitResult) => void;
   onMarkPaid: (recurrenceId: string, summary: string) => void;
   onAskSettle: (claimId: string, summary: string) => void;
+  onAskStartJar: (appointmentId: string, summary: string) => void;
   onSitDown: (next: Household, token?: UndoToken) => void;
   onGo: (tab: HearthTab) => void;
 }) {
@@ -151,6 +164,8 @@ export function Office({
     moved: boolean;
     timer: number | null;
   } | null>(null);
+  const layoutRef = useRef(layout);
+  layoutRef.current = layout;
 
   useEffect(() => {
     setLayout(loadOfficeLayout(environment, breakpoint, localStorage));
@@ -159,6 +174,12 @@ export function Office({
   useEffect(() => {
     saveOfficeLayout(environment, breakpoint, layout, localStorage);
   }, [environment, breakpoint, layout]);
+
+  useEffect(() => {
+    return () => {
+      saveOfficeLayout(environment, breakpoint, { ...layoutRef.current, expanded: null }, localStorage);
+    };
+  }, [environment, breakpoint]);
 
   useEffect(() => {
     setRings(loadOfficeRings(environment, localStorage));
@@ -181,12 +202,18 @@ export function Office({
       if (intent.type === "expand") {
         setLayout((current) => ({ ...current, expanded: intent.id, windowMinimized: false }));
       }
+      if (intent.type === "collapse") {
+        setLayout((current) => ({ ...current, expanded: null }));
+      }
+      if (intent.type === "tidy") {
+        setLayout((current) => tidyOfficeLayout(current, breakpoint));
+      }
       if (intent.type === "bump") {
         setBumpId(intent.id);
         window.setTimeout(() => setBumpId((id) => (id === intent.id ? null : id)), 220);
       }
     });
-  }, []);
+  }, [breakpoint]);
 
   const findings = useMemo(() => runHealthCheck(household), [household]);
   const opinion = useMemo(() => auditOpinion(household), [household]);
@@ -198,6 +225,7 @@ export function Office({
   const room = resolveRoom(phase, reading.glass);
   const lampLit = !lampIsDark(findings);
   const blotter = blotterFacts(dashboard, opinion, findings.length);
+  const sill = useMemo(() => sillOverview(household, dashboard, today), [household, dashboard, today]);
   const order = promoteRail(visibleInstruments(layout), room.promoted, lampLit);
   const inert = adding;
 
@@ -291,6 +319,10 @@ export function Office({
       }
     }
     if (breakpoint === "wide" && start?.moved) {
+      setLayout((current) => ({
+        ...current,
+        items: levelLayoutItems(current.items),
+      }));
       const item = layout.items.find((row) => row.id === id);
       setRings((current) => [{ id, x: start.x, y: start.y, at: Date.now() }, ...current.filter((row) => row.id !== id)].slice(0, 8));
       if (item && (item.x == null || item.y == null)) {
@@ -386,8 +418,6 @@ export function Office({
         mode={mode}
         accounts={household.accounts}
         categories={categories}
-        members={household.members}
-        shiftPreview={shiftPreview}
         postLabel={postLabel}
         error={error}
         busy={busy}
@@ -451,17 +481,61 @@ export function Office({
         today={today}
         busy={busy}
         onAskSettle={onAskSettle}
-        onCalendar={() => onGo("calendar")}
+        onCalendar={() => {
+          requestCalendarPane("visits", localStorage);
+          onGo("calendar");
+        }}
       />,
       { index, pair, warn: claimsWarn, extraClass: claimsWarn ? "is-overdue" : undefined },
     ),
     timesheet: (index, pair) => frame(
       "timesheet",
       "Timesheet",
-      <TimesheetGlance streak={streak} />,
+      <TimesheetGlance household={household} streak={streak} />,
       `Timesheet. ${streak.spoken}`,
-      <TimesheetBody streak={streak} onLogShift={onLogShift} />,
+      <TimesheetBody
+        household={household}
+        streak={streak}
+        memberName={household.members.find((member) => member.id === memberId)?.name ?? "You"}
+        busy={busy}
+        onClockIn={onClockIn}
+        onAbandon={onAbandonShift}
+        onSignOut={onSignOut}
+        onFinished={onFinishedShift}
+      />,
       { index, pair, warn: streak.waiting, extraClass: streak.waiting ? "clock-droop" : undefined },
+    ),
+    calendar: (index, pair) => frame(
+      "calendar",
+      "Calendar",
+      <CalendarGlance household={household} today={today} />,
+      "Calendar. Upcoming dates.",
+      <CalendarBody
+        household={household}
+        today={today}
+        onCalendar={() => {
+          requestCalendarPane("board", localStorage);
+          onGo("calendar");
+        }}
+      />,
+      { index, pair },
+    ),
+    appointments: (index, pair) => frame(
+      "appointments",
+      "Appointments",
+      <AppointmentsGlance household={household} today={today} />,
+      "Appointments. Upcoming visits.",
+      <AppointmentsBody
+        household={household}
+        today={today}
+        busy={busy}
+        onStartJar={onAskStartJar}
+        onAppointments={() => {
+          requestCalendarPane("visits", localStorage);
+          onGo("calendar");
+        }}
+      />,
+      { index, pair },
     ),
     postcard: (index, pair) => frame(
       "postcard",
@@ -511,7 +585,8 @@ export function Office({
         stale={dashboard.stale}
         onToggle={cycleWindow}
       />
-      <div className={`desk-canvas ${breakpoint === "wide" ? "desk-wide" : "desk-rail"}`}>
+      <SillOverviewPlate overview={sill} compact={layout.windowMinimized} />
+      <div className={`desk-canvas ${breakpoint === "wide" ? "desk-wide" : "desk-rail"} ${dragging && breakpoint === "wide" ? "is-grid" : ""}`}>
         {breakpoint === "wide" && rings.map((ring) => (
           <div key={`${ring.id}-${ring.at}`} className="desk-ring" style={{ left: ring.x, top: ring.y }} />
         ))}

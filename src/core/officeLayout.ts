@@ -7,10 +7,14 @@ export const CAT = 96;
 export const NAV = 76;
 export const WIDE_BREAKPOINT = 720;
 
+export const DESK_GRID = 16;
+
 export const INSTRUMENT_IDS = [
   "calculator",
   "blotter",
   "wallet",
+  "calendar",
+  "appointments",
   "mail",
   "claims",
   "timesheet",
@@ -367,6 +371,8 @@ export const INSTRUMENT_KIND: Record<InstrumentId, FurnitureKind> = {
   calculator: "pad",
   blotter: "card",
   wallet: "tray",
+  calendar: "card",
+  appointments: "card",
   mail: "envelope",
   claims: "tray",
   timesheet: "clock",
@@ -377,17 +383,24 @@ export const INSTRUMENT_KIND: Record<InstrumentId, FurnitureKind> = {
   lamp: "lamp",
 };
 
-export function snapGrid(value: number, grid = 8): number {
+export function snapGrid(value: number, grid = DESK_GRID): number {
   return Math.round(value / grid) * grid;
 }
 
 export function defaultWidePosition(index: number): Point {
   const col = index % 2;
   const row = Math.floor(index / 2);
-  return { x: 8 + col * 188, y: 8 + row * 92 };
+  return { x: 16 + col * 192, y: 16 + row * 96 };
 }
 
-const PAIR_WITH = new Set(["mail|lamp", "lamp|mail", "cookoff|jars", "jars|cookoff"]);
+const PAIR_WITH = new Set([
+  "mail|lamp",
+  "lamp|mail",
+  "cookoff|jars",
+  "jars|cookoff",
+  "calendar|appointments",
+  "appointments|calendar",
+]);
 
 export function railRows(order: InstrumentId[]): Array<InstrumentId | [InstrumentId, InstrumentId]> {
   const rows: Array<InstrumentId | [InstrumentId, InstrumentId]> = [];
@@ -453,9 +466,76 @@ export function saveOfficeRings(
 
 export type OfficeIntent =
   | { type: "expand"; id: InstrumentId | "window" }
-  | { type: "bump"; id: string };
+  | { type: "bump"; id: string }
+  | { type: "collapse" }
+  | { type: "tidy" };
 
 const intentListeners = new Set<(intent: OfficeIntent) => void>();
+
+export function collapseOfficeLayout(layout: OfficeLayout): OfficeLayout {
+  if (layout.expanded == null) return layout;
+  return { ...layout, expanded: null };
+}
+
+export function collapseSavedOffice(
+  environment: Environment,
+  storage?: {
+    getItem(key: string): string | null;
+    setItem(key: string, value: string): void;
+  },
+): void {
+  if (!storage) return;
+  for (const breakpoint of ["phone", "wide"] as const) {
+    const current = loadOfficeLayout(environment, breakpoint, storage);
+    saveOfficeLayout(environment, breakpoint, collapseOfficeLayout(current), storage);
+  }
+}
+
+export function levelLayoutItems(items: LayoutItem[]): LayoutItem[] {
+  const placed = items.map((item) => ({
+    ...item,
+    x: item.x == null ? item.x : snapGrid(item.x),
+    y: item.y == null ? item.y : snapGrid(item.y),
+  }));
+  for (let i = 0; i < placed.length; i += 1) {
+    const y = placed[i]!.y;
+    if (y == null) continue;
+    for (let j = 0; j < i; j += 1) {
+      const other = placed[j]!.y;
+      if (other == null) continue;
+      if (Math.abs(y - other) <= DESK_GRID) {
+        placed[i] = { ...placed[i]!, y: other };
+        break;
+      }
+    }
+  }
+  return placed;
+}
+
+export function tidyOfficeLayout(layout: OfficeLayout, breakpoint: OfficeBreakpoint): OfficeLayout {
+  const hidden = layout.items.filter((item) => item.hidden);
+  const hiddenIds = new Set(hidden.map((item) => item.id));
+  if (breakpoint === "phone") {
+    const order = DEFAULT_ORDER.filter((id) => !hiddenIds.has(id));
+    return {
+      ...layout,
+      items: [...order.map((id) => ({ id })), ...hidden.map((item) => ({ id: item.id, hidden: true as const }))],
+      expanded: null,
+    };
+  }
+  const visible = layout.items.filter((item) => !item.hidden);
+  return {
+    ...layout,
+    items: [
+      ...visible.map((item, index) => {
+        const pos = defaultWidePosition(index);
+        return { ...item, x: pos.x, y: pos.y, hidden: undefined };
+      }),
+      ...hidden.map((item) => ({ id: item.id, hidden: true as const })),
+    ],
+    expanded: null,
+  };
+}
 
 export function emitOfficeIntent(intent: OfficeIntent): void {
   for (const listener of intentListeners) listener(intent);

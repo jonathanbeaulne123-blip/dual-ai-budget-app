@@ -13,6 +13,7 @@ import {
   herculesIdle,
   herculesMutters,
   herculesNeedsCheck,
+  herculesPageSurface,
   hourInToronto,
   kettlePhase,
   kitchenSeason,
@@ -136,6 +137,10 @@ export function HerculesPresence({
   const attention = useMemo(() => herculesNeedsCheck(household, today), [household, today]);
   const mutters = useMemo(() => herculesMutters(household, today), [household, today]);
   const proposal = useMemo(() => bubbleNotice(household, today), [household, today]);
+  const surface = useMemo(
+    () => herculesPageSurface(adding ? "add" : tab, household, today),
+    [adding, tab, household, today],
+  );
   const [pos, setPos] = useState({ x: 12, y: 120 });
   const [flip, setFlip] = useState(false);
   const [pinned, setPinned] = useState(false);
@@ -582,7 +587,7 @@ export function HerculesPresence({
                 <input
                   aria-label={`Ask ${look.view.name}`}
                   value={question}
-                  placeholder={busy ? "mrrp…" : "ask Hercules…"}
+                  placeholder={busy ? "mrrp…" : surface.placeholder}
                   disabled={busy}
                   onChange={(event) => setQuestion(event.target.value)}
                   onKeyDown={(event) => {
