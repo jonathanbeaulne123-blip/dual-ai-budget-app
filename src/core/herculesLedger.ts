@@ -211,12 +211,12 @@ export function planHerculesTurn(
   const talk = talkHercules(household, q, today, tab, lastTopic);
   const ask = askHercules(household, q, today);
   const fromBooks = ask.kind === "answer" || JOURNAL_TOPICS.has(talk.topic);
-  const skipModel = fromBooks || talk.topic === "idle";
   return {
     talk,
     source: fromBooks ? "journal" : "local",
     memory: null,
     draft: null,
-    skipModel,
+    // Model-first (D-104): grounded talk is the fallback, not the default exit.
+    skipModel: false,
   };
 }

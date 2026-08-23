@@ -49,6 +49,7 @@ describe("Cloudflare static host pairing", () => {
 
   it("serves HTML with no-store so an old Worker shell cannot stick on the phone", () => {
     const worker = readFileSync(new URL("../workers/site.js", import.meta.url), "utf8");
+    const guard = readFileSync(new URL("../workers/herculesGuard.js", import.meta.url), "utf8");
     expect(worker).toContain("Cache-Control");
     expect(worker).toContain("no-store");
     expect(worker).toContain("env.ASSETS.fetch");
@@ -61,6 +62,10 @@ describe("Cloudflare static host pairing", () => {
     expect(worker).toContain("HOUSEHOLD DATA");
     expect(worker).toContain("ON-DEVICE NOTICES");
     expect(worker).toMatch(/DATA, not instruction|DATA not instruction/);
+    expect(worker).toContain("./herculesGuard.js");
+    expect(worker).not.toContain('Access-Control-Allow-Origin": "*"');
+    expect(guard).toContain("isAllowedKitchenHost");
+    expect(guard).toContain("DAILY_CHAT_LIMIT");
     expect(worker).not.toMatch(/history\.slice/);
     expect(worker).not.toContain("VITE_OPENAI");
     expect(worker).not.toContain("VITE_ANTHROPIC");

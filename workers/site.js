@@ -1,12 +1,12 @@
 // Third-party keys are allowed (D-045): OPENAI_API_KEY / ANTHROPIC_API_KEY via
 // `wrangler secret put`. Never VITE_. Workers AI is the fallback when no vendor secret answers.
-const HTML_PATH = /(?:^\/$|\.html(?:$|\?))/i;
+import {
+  checkChatRateLimit,
+  corsHeaders,
+  resolveChatOrigin,
+} from "./herculesGuard.js";
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
+const HTML_PATH = /(?:^\/$|\.html(?:$|\?))/i;
 
 // Keep in sync with src/core/herculesPersonality.ts laws. The prompt stays on the Worker.
 const HERCULES_SYSTEM = `You are Hercules, a smug-kind Maine Coon who lives in Jonathan and Bianca's Toronto kitchen budget app, Hearth.
@@ -59,22 +59,14 @@ function isHtml(request, response) {
   return type.includes("text/html");
 }
 
-function json(data, status = 200) {
+function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { "Content-Type": "application/json; charset=utf-8", ...CORS },
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      ...extraHeaders,
+    },
   });
-}
-
-function allowedOrigin(request) {
-  const origin = request.headers.get("Origin");
-  if (!origin) return true;
-  try {
-    const host = new URL(origin).hostname;
-    return host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev");
-  } catch {
-    return false;
-  }
 }
 
 function clipReply(text, max = 360) {
@@ -141,9 +133,12 @@ function buildPrompt(body) {
     }), 280)).filter(Boolean)
     : [];
   const noticeBlock = notices.length ? notices.join("\n") : "(none)";
-  const ledger = body?.ledger && typeof body.ledger === "object"
-    ? clip(JSON.stringify(body.ledger), 4500)
-    : "(none)";
+  const ledger =
+    typeof body?.ledgerLines === "string" && body.ledgerLines.trim()
+      ? clip(body.ledgerLines, 4500)
+      : body?.ledger && typeof body.ledger === "object"
+        ? clip(JSON.stringify(body.ledger), 4500)
+        : "(none)";
   const figures = Array.isArray(body?.figures)
     ? body.figures.map((item) => clip(item, 16)).filter(Boolean).slice(0, 80)
     : [];
@@ -240,17 +235,22 @@ async function chatWorkersAi(env, messages) {
 }
 
 async function herculesChat(request, env) {
-  if (!allowedOrigin(request)) return json({ ok: false, error: "origin" }, 403);
+  const { allowed, origin } = resolveChatOrigin(request);
+  const cors = corsHeaders(origin);
+  if (!allowed) return json({ ok: false, error: "origin" }, 403, cors);
 
   let body;
   try {
     body = await request.json();
   } catch {
-    return json({ ok: false, error: "bad json" }, 400);
+    return json({ ok: false, error: "bad json" }, 400, cors);
   }
 
   const prompt = buildPrompt(body);
-  if (!prompt.message) return json({ ok: false, error: "empty" }, 400);
+  if (!prompt.message) return json({ ok: false, error: "empty" }, 400, cors);
+
+  const rate = await checkChatRateLimit(env, body?.householdId);
+  if (!rate.ok) return json({ ok: false, error: "rate limit" }, 429, cors);
 
   let reply = "";
   let provider = "";
@@ -273,23 +273,26 @@ async function herculesChat(request, env) {
     if (reply) provider = "workers-ai";
   }
 
-  if (!reply) return json({ ok: false, error: "ai quiet" }, 503);
+  if (!reply) return json({ ok: false, error: "ai quiet" }, 503, cors);
   return json({
     ok: true,
     provider,
     reply: sanitizeHerculesReply(reply, prompt.groundedSpeak, prompt.figures),
-  });
+  }, 200, cors);
 }
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname === "/hercules/chat") {
+      const { allowed, origin } = resolveChatOrigin(request);
+      const cors = corsHeaders(origin);
       if (request.method === "OPTIONS") {
-        return new Response(null, { status: 204, headers: CORS });
+        if (!allowed) return new Response(null, { status: 403 });
+        return new Response(null, { status: 204, headers: cors });
       }
       if (request.method === "POST") return herculesChat(request, env);
-      return json({ ok: false, error: "method" }, 405);
+      return json({ ok: false, error: "method" }, 405, cors);
     }
 
     const response = await env.ASSETS.fetch(request);

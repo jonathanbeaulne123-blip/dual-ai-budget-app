@@ -9,8 +9,9 @@ import { composeNotices, type HerculesNotice } from "./notices.ts";
 import type { HerculesBriefing, HerculesGrounded } from "./herculesPersonality.ts";
 import { formatHerculesBriefing } from "./herculesPersonality.ts";
 import type { Appointment, Claim, Household, Transaction } from "./types.ts";
+import { visibleForDuplicateScan } from "./visibility.ts";
 
-const RECENT_TX_LIMIT = 36;
+const RECENT_TX_LIMIT = 18;
 const CATEGORY_LIMIT = 12;
 const CLAIM_LIMIT = 8;
 const VISIT_LIMIT = 6;
@@ -118,10 +119,11 @@ function redactedNote(household: Household, tx: Transaction, secrets: QuietSecre
   return scrubQuietText(tx.note, secrets) || tx.type;
 }
 
-export function buildLedgerExcerpt(household: Household, today: DateKey): HerculesLedgerExcerpt {
+export function buildLedgerExcerpt(household: Household, today: DateKey, memberId: string): HerculesLedgerExcerpt {
   const secrets = quietSecrets(household);
   const recent = [...household.transactions]
     .filter((tx) => !tx.isDuplicate)
+    .filter((tx) => visibleForDuplicateScan(tx, memberId))
     .sort((left, right) => right.date.localeCompare(left.date) || right.createdAt.localeCompare(left.createdAt))
     .slice(0, RECENT_TX_LIMIT)
     .map((tx) => ({
@@ -171,6 +173,36 @@ export function buildLedgerExcerpt(household: Household, today: DateKey): Hercul
   return { recent, monthByCategory, claims, visits };
 }
 
+export function formatLedgerExcerptForModel(ledger: HerculesLedgerExcerpt): string {
+  const lines: string[] = [];
+  if (ledger.recent.length) {
+    lines.push("Recent transactions:");
+    for (const row of ledger.recent) {
+      const place = row.place ? ` @ ${row.place}` : "";
+      lines.push(`${row.date} ${row.type} ${row.amount} ${row.note}${place} (${row.category})`);
+    }
+  }
+  if (ledger.monthByCategory.length) {
+    lines.push("Month by category:");
+    for (const row of ledger.monthByCategory) {
+      lines.push(`${row.name} ${row.amount} ${row.type}`);
+    }
+  }
+  if (ledger.claims.length) {
+    lines.push("Open claims:");
+    for (const row of ledger.claims) {
+      lines.push(`${row.label} ${row.status} expected ${row.expected} (${row.ageDays}d)`);
+    }
+  }
+  if (ledger.visits.length) {
+    lines.push("Upcoming visits:");
+    for (const row of ledger.visits) {
+      lines.push(`${row.title} ${row.nextDate} typical ${row.typical}`);
+    }
+  }
+  return lines.length ? lines.join("\n") : "(none)";
+}
+
 export function noticeViews(household: Household, today: DateKey): HerculesNoticeView[] {
   return composeNotices(household, today)
     .slice(0, NOTICE_LIMIT)
@@ -189,17 +221,20 @@ export function composeHerculesChatRequest(
   briefing: HerculesBriefing,
   grounded: HerculesGrounded,
   today: DateKey,
+  memberId: string,
 ): {
   message: string;
   briefing: HerculesBriefing;
   grounded: HerculesGrounded;
+  householdId: string;
   memories: string[];
   notices: HerculesNoticeView[];
   ledger: HerculesLedgerExcerpt;
+  ledgerLines: string;
   figures: string[];
 } {
   const secrets = quietSecrets(household);
-  const ledger = buildLedgerExcerpt(household, today);
+  const ledger = buildLedgerExcerpt(household, today, memberId);
   const notices = noticeViews(household, today);
   const briefingText = formatHerculesBriefing(briefing);
   const figures = collectAllowedFigures(
@@ -216,6 +251,7 @@ export function composeHerculesChatRequest(
   );
   return {
     message: scrubQuietText(message, secrets) || message.trim(),
+    householdId: household.householdId,
     briefing,
     grounded: {
       spoken: scrubQuietText(grounded.spoken, secrets) || grounded.spoken,
@@ -234,6 +270,7 @@ export function composeHerculesChatRequest(
       .map((label) => scrubQuietText(label, secrets) || label),
     notices,
     ledger,
+    ledgerLines: formatLedgerExcerptForModel(ledger),
     figures,
   };
 }
