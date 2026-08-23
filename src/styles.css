@@ -56,6 +56,11 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
   padding: 18px 18px calc(var(--nav) + 28px);
 }
 
+@media (min-width: 720px) {
+  /* Desk, not a hotel lobby. 900px fits L+M without the 1280 empty-wall look. */
+  .app { max-width: min(900px, 100%); }
+}
+
 .topbar {
   display: flex;
   align-items: center;

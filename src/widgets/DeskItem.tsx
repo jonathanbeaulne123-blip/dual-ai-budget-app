@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { useFurniture } from "./useFurniture.ts";
 import { Instrument } from "./Instrument.tsx";
-import type { FurnitureKind, InstrumentId, OfficeBreakpoint } from "../core/officeLayout.ts";
+import type { FurnitureKind, InstrumentId, InstrumentSize, OfficeBreakpoint } from "../core/officeLayout.ts";
+import { SIZE_WIDTH, sizeOf } from "../core/officeLayout.ts";
 import type { KeyboardEvent, PointerEvent } from "react";
 
 export function DeskItem({
@@ -30,6 +31,8 @@ export function DeskItem({
   onHeaderKeyDown,
   pair,
   extraClass,
+  size,
+  chips,
 }: {
   id: InstrumentId;
   kind: FurnitureKind;
@@ -56,14 +59,17 @@ export function DeskItem({
   onHeaderPointerCancel?: (event: PointerEvent<HTMLButtonElement>) => void;
   onHeaderKeyDown?: (event: KeyboardEvent<HTMLButtonElement>) => void;
   extraClass?: string;
+  size?: InstrumentSize;
+  chips?: ReactNode;
 }) {
   const ref = useFurniture(id, kind, perchable, warn, { live: Boolean(dragging) });
   const wide = breakpoint === "wide";
+  const resolved = sizeOf({ id, size });
   return (
     <div
       ref={ref}
       className={`desk-item ${pair ? "pair-cell" : ""} ${extraClass ?? ""}`.trim()}
-      style={wide ? { position: "absolute", left: x ?? 8, top: y ?? 8, width: "min(280px, 46%)" } : undefined}
+      style={wide ? { position: "absolute", left: x ?? 8, top: y ?? 8, width: SIZE_WIDTH[resolved] } : undefined}
     >
       <Instrument
         id={id}
@@ -78,6 +84,8 @@ export function DeskItem({
         inert={inert}
         dragging={dragging}
         extraClass={extraClass}
+        size={resolved}
+        chips={chips}
         onHeaderPointerDown={onHeaderPointerDown}
         onHeaderPointerMove={onHeaderPointerMove}
         onHeaderPointerUp={onHeaderPointerUp}

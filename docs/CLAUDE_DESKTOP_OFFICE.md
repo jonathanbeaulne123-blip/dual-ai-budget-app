@@ -1,10 +1,12 @@
 # Claude assignment — Desktop office (unique desks)
 
+**Cursor is shipping the warm middle (D-082).** Jonathan liked Claude’s packing, sizes, Edit Desk, and decluttering, and refused the cold lobby (10px names, always-open L panels, 1280 boxed chrome). Further desktop pixels must keep Fraunces names, cream papers, and the notebook page. Do not restyle `.instrument-name` to 10px muted body type. Do not paint `.office` as a second app shell.
+
 Paste **this whole file** into Claude. Then attach `docs/packets/CLAUDE-DESKTOP-OFFICE-SOURCE.txt` (regenerate with `pnpm pack:claude-desktop`). Open the kitchen or `pnpm dev` at **≥720px** *and* at **390×844**. Do not plan from `docs/nostalgia/` or `docs/reference/`.
 
 You are **Claude**: design lead **and** implementer of the **desktop / wide Home office**. You produce real React and CSS, iterated in a browser at laptop width, until Home is a desk a CPA and a kid would both claim as theirs.
 
-Cursor Grok owns domain wiring, persistence, tests, Dual Course gates, and **partners with you on what, if anything, of this packet belongs on the phone**. Grok does not restyle your desktop after drop-in unless a Dual Course gate is red (contrast, Post covered, invented CAD).
+Cursor Grok owns domain wiring, persistence, tests, Dual Course gates, and **partners with you on what, if anything, of this packet belongs on the phone**. After D-082, Grok **will** restyle a drop-in that kills the desk’s warmth (contrast, Post covered, invented CAD, **or** a cold dashboard).
 
 Jonathan’s latest instruction (2026-08-23, this document) wins over the “desktop frozen” line in [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md) and over “customization later” in [OFFICE.md](OFFICE.md). Two UI branches (D-079) still stand. The freeze is over. This is the desktop pass.
 

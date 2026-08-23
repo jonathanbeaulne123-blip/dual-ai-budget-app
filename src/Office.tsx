@@ -4,7 +4,6 @@ import {
   auditOpinion,
   blotterFacts,
   cookOffScore,
-  defaultWidePosition,
   fallbackWeather,
   hourInToronto,
   householdWallet,
@@ -34,12 +33,29 @@ import {
   requestCalendarPane,
   sillOverview,
   formatCad,
+  applyPersonality,
+  cycleInstrumentSize,
+  officeLookKey,
+  packWide,
+  parseOfficeLook,
+  sizeOf,
+  DEFAULT_LOOK,
+  INSTRUMENT_LABEL,
+  PERSONALITY_BLURB,
+  PERSONALITY_DESK,
+  PERSONALITY_LABEL,
+  PINNED_INSTRUMENTS,
+  STOCK_LABEL,
   type DeskRing,
+  type DeskPersonality,
   type Environment,
   type Household,
   type InstrumentId,
+  type InstrumentSize,
   type OfficeBreakpoint,
   type OfficeLayout,
+  type OfficeLook,
+  type PaperStock,
 } from "./core/index.ts";
 import type { Dashboard } from "./core/insights.ts";
 import type { HearthTab } from "./core/hercules.ts";
@@ -58,7 +74,7 @@ import { PostcardBody, PostcardGlance } from "./widgets/Postcard.tsx";
 import { CookOffBody, CookOffGlance } from "./widgets/CookOffKettle.tsx";
 import { JarsBody, JarsGlance } from "./widgets/Jars.tsx";
 import { LampBody, LampGlance, lampAria } from "./widgets/Lamp.tsx";
-import { Cabinets } from "./widgets/Cabinets.tsx";
+import { Cabinets, type DeskSheet } from "./widgets/Cabinets.tsx";
 import { CalendarBody, CalendarGlance } from "./widgets/CalendarDesk.tsx";
 import { AppointmentsBody, AppointmentsGlance } from "./widgets/AppointmentsDesk.tsx";
 import { SillOverviewPlate } from "./widgets/SillOverview.tsx";
@@ -158,6 +174,17 @@ export function Office({
   const [bumpId, setBumpId] = useState<string | null>(null);
   const [dragging, setDragging] = useState<InstrumentId | null>(null);
   const [lifted, setLifted] = useState<InstrumentId | null>(null);
+  const [look, setLook] = useState<OfficeLook>(() => {
+    try {
+      return parseOfficeLook(JSON.parse(localStorage.getItem(officeLookKey(environment)) || "null"));
+    } catch {
+      return DEFAULT_LOOK;
+    }
+  });
+  const [editing, setEditing] = useState(false);
+  const [sheet, setSheet] = useState<DeskSheet>(null);
+  const [deskWidth, setDeskWidth] = useState(900);
+  const canvasRef = useRef<HTMLDivElement | null>(null);
   const drag = useRef<{
     id: InstrumentId;
     px: number;
@@ -201,6 +228,21 @@ export function Office({
   }, [environment, today]);
 
   useEffect(() => {
+    try {
+      localStorage.setItem(officeLookKey(environment), JSON.stringify(look));
+    } catch {
+      /* private mode */
+    }
+  }, [environment, look]);
+
+  useEffect(() => {
+    const measure = () => setDeskWidth(canvasRef.current?.clientWidth ?? 900);
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  useEffect(() => {
     return subscribeOfficeIntent((intent) => {
       if (intent.type === "expand") {
         setLayout((current) => ({ ...current, expanded: intent.id, windowMinimized: false }));
@@ -209,14 +251,22 @@ export function Office({
         setLayout((current) => ({ ...current, expanded: null }));
       }
       if (intent.type === "tidy") {
-        setLayout((current) => tidyOfficeLayout(current, breakpoint));
+        setLayout((current) => tidyOfficeLayout(current, breakpoint, deskWidth));
       }
       if (intent.type === "bump") {
         setBumpId(intent.id);
         window.setTimeout(() => setBumpId((id) => (id === intent.id ? null : id)), 220);
       }
     });
-  }, [breakpoint]);
+  }, [breakpoint, deskWidth]);
+
+  useEffect(() => {
+    try {
+      setLook(parseOfficeLook(JSON.parse(localStorage.getItem(officeLookKey(environment)) || "null")));
+    } catch {
+      setLook(DEFAULT_LOOK);
+    }
+  }, [environment]);
 
   const findings = useMemo(() => runHealthCheck(household), [household]);
   const opinion = useMemo(() => auditOpinion(household), [household]);
@@ -231,6 +281,44 @@ export function Office({
   const sill = useMemo(() => sillOverview(household, dashboard, today), [household, dashboard, today]);
   const order = promoteRail(visibleInstruments(layout), room.promoted, lampLit);
   const inert = adding;
+  const parked = layout.items.filter((item) => item.hidden).map((item) => item.id);
+  const packed = useMemo(
+    () => packWide(order.map((id) => ({ id, size: layout.items.find((item) => item.id === id)?.size })), deskWidth),
+    [order, layout.items, deskWidth],
+  );
+
+  function cycleSize(id: InstrumentId) {
+    setLayout((current) => ({
+      ...current,
+      items: current.items.map((item) => {
+        if (item.id !== id) return item;
+        const next = cycleInstrumentSize(id, sizeOf(item));
+        return { ...item, size: next, x: undefined, y: undefined };
+      }),
+    }));
+  }
+
+  function park(id: InstrumentId) {
+    if (PINNED_INSTRUMENTS.includes(id)) return;
+    setLayout((current) => ({
+      ...current,
+      items: current.items.map((item) => (item.id === id ? { ...item, hidden: true } : item)),
+      expanded: current.expanded === id ? null : current.expanded,
+    }));
+  }
+
+  function restore(id: InstrumentId) {
+    setLayout((current) => ({
+      ...current,
+      items: current.items.map((item) => (item.id === id ? { ...item, hidden: false, x: undefined, y: undefined } : item)),
+    }));
+  }
+
+  function pickDesk(key: Exclude<DeskPersonality, "custom">) {
+    setLayout((current) => applyPersonality(current, key));
+    setSheet(null);
+    setEditing(false);
+  }
 
   function toggle(id: InstrumentId) {
     setLayout((current) => {
@@ -272,8 +360,8 @@ export function Office({
       id,
       px: event.clientX,
       py: event.clientY,
-      x: item?.x ?? 0,
-      y: item?.y ?? 0,
+      x: item?.x ?? packed[id]?.x ?? 0,
+      y: item?.y ?? packed[id]?.y ?? 0,
       moved: false,
       timer: breakpoint === "phone"
         ? window.setTimeout(() => {
@@ -366,9 +454,33 @@ export function Office({
     extra?: { warn?: boolean; extraClass?: string; perchable?: boolean; pair?: boolean; index: number },
   ) {
     const item = layout.items.find((row) => row.id === id);
+    const fallback = packed[id] ?? { x: 16, y: 16 };
     const pos = extra
-      ? { x: item?.x ?? defaultWidePosition(extra.index).x, y: item?.y ?? defaultWidePosition(extra.index).y }
+      ? { x: item?.x ?? fallback.x, y: item?.y ?? fallback.y }
       : { x: 8, y: 8 };
+    const size: InstrumentSize = sizeOf({ id, size: item?.size });
+    const chips = editing ? (
+      <div className="desk-chips">
+        <button
+          type="button"
+          className="desk-chip"
+          onClick={(event) => { event.stopPropagation(); cycleSize(id); }}
+          aria-label={`${name} size, currently ${size.toUpperCase()}`}
+        >
+          {size.toUpperCase()}
+        </button>
+        {PINNED_INSTRUMENTS.includes(id) ? null : (
+          <button
+            type="button"
+            className="desk-chip remove"
+            onClick={(event) => { event.stopPropagation(); park(id); }}
+            aria-label={`Put ${name} in the drawer`}
+          >
+            ×
+          </button>
+        )}
+      </div>
+    ) : undefined;
     return (
       <DeskItem
         key={id}
@@ -388,6 +500,8 @@ export function Office({
         breakpoint={breakpoint}
         x={pos.x}
         y={pos.y}
+        size={size}
+        chips={chips}
         pair={extra?.pair}
         extraClass={extra?.extraClass}
         onToggle={() => toggle(id)}
@@ -639,7 +753,9 @@ export function Office({
 
   return (
     <div
-      className={`office glass-${reading.glass} ${adding ? "is-adding" : ""} ${breakpoint === "wide" && layout.expanded && layout.expanded !== "window" ? "is-wide-dim" : ""}`}
+      className={`office glass-${reading.glass} ${adding ? "is-adding" : ""} ${editing ? "is-editing" : ""} ${layout.expanded && layout.expanded !== "window" ? "is-wide-dim" : ""}`}
+      data-stock={look.stock}
+      data-density={look.density}
       style={{ ["--room-dim" as string]: String(room.roomDim), ["--room-cool" as string]: String(room.roomCool) }}
     >
       <WindowBand
@@ -650,13 +766,84 @@ export function Office({
         onToggle={cycleWindow}
       />
       <SillOverviewPlate overview={sill} compact={layout.windowMinimized} />
-      <div className={`desk-canvas desk-wide ${dragging ? "is-grid" : ""}`}>
+      <div ref={canvasRef} className={`desk-canvas desk-wide ${dragging ? "is-grid" : ""}`}>
         {rings.map((ring) => (
           <div key={`${ring.id}-${ring.at}`} className="desk-ring" style={{ left: ring.x, top: ring.y }} />
         ))}
         {order.map((id, index) => renderers[id](index))}
       </div>
-      <Cabinets onGo={onGo} layout={layout} onLayout={setLayout} />
+      <Cabinets
+        editing={editing}
+        sheet={sheet}
+        parkedCount={parked.length}
+        onToggleEdit={() => { setEditing((on) => !on); setSheet(null); }}
+        onSheet={setSheet}
+      />
+      {sheet === "desks" && (
+        <div className="desk-sheet">
+          <h3>Desks — a starting point, not a cage</h3>
+          <div className="desk-grid-opts">
+            {(Object.keys(PERSONALITY_DESK) as Exclude<DeskPersonality, "custom">[]).map((key) => (
+              <button key={key} type="button" className="desk-card" onClick={() => pickDesk(key)}>
+                <b>{PERSONALITY_LABEL[key]}</b>
+                <span>{PERSONALITY_BLURB[key]}</span>
+                <span> · {PERSONALITY_DESK[key].length} instruments</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {sheet === "look" && (
+        <div className="desk-sheet">
+          <h3>Paper stock</h3>
+          <div className="desk-stock-row">
+            {(Object.keys(STOCK_LABEL) as PaperStock[]).map((stock) => (
+              <button
+                key={stock}
+                type="button"
+                className={`desk-stock ${look.stock === stock ? "is-on" : ""}`}
+                onClick={() => setLook({ ...look, stock })}
+              >
+                {STOCK_LABEL[stock]}
+              </button>
+            ))}
+          </div>
+          <h3>Names</h3>
+          <div className="desk-stock-row">
+            <button
+              type="button"
+              className={`desk-stock ${look.density === "names" ? "is-on" : ""}`}
+              onClick={() => setLook({ ...look, density: "names" })}
+            >
+              Names on
+            </button>
+            <button
+              type="button"
+              className={`desk-stock ${look.density === "glance" ? "is-on" : ""}`}
+              onClick={() => setLook({ ...look, density: "glance" })}
+            >
+              Glance only
+            </button>
+          </div>
+          <p className="muted">Stock tints the blotter, not the whole house. Window weather stays weather.</p>
+        </div>
+      )}
+      {sheet === "drawer" && (
+        <div className="desk-sheet">
+          <h3>Drawer — parked instruments, one tap back onto the desk</h3>
+          {parked.length === 0 ? (
+            <p className="muted">Nothing parked. The desk has it all.</p>
+          ) : (
+            <div className="desk-drawer-grid">
+              {parked.map((id) => (
+                <button key={id} type="button" className="desk-stamp" onClick={() => restore(id)}>
+                  {INSTRUMENT_LABEL[id]}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -49,9 +49,13 @@ export type Point = { x: number; y: number };
 
 export type OfficeBreakpoint = "phone" | "wide";
 
+/** Desk sizes. S is a tile; L is a wider card. Opening still takes a tap. */
+export type InstrumentSize = "s" | "m" | "l";
+
 export type LayoutItem = {
   id: InstrumentId;
   hidden?: boolean;
+  size?: InstrumentSize;
   x?: number;
   y?: number;
 };
@@ -87,6 +91,117 @@ export const INSTRUMENT_LABEL: Record<InstrumentId, string> = {
 export const PINNED_INSTRUMENTS: InstrumentId[] = ["calculator"];
 
 export const DEFAULT_ORDER: InstrumentId[] = [...INSTRUMENT_IDS];
+
+/** Size an instrument wants when nobody has said otherwise. */
+export const DEFAULT_SIZE: Partial<Record<InstrumentId, InstrumentSize>> = {
+  blotter: "l",
+  calculator: "m",
+  wallet: "m",
+  accounts: "m",
+  calendar: "m",
+  appointments: "m",
+  mail: "s",
+  claims: "m",
+  timesheet: "m",
+  chalkboard: "m",
+  jars: "m",
+  lamp: "s",
+  postcard: "s",
+  cookoff: "s",
+  wardrobe: "s",
+  tictactoe: "s",
+  hangman: "s",
+};
+
+/**
+ * Desk personalities seed the wide board. They never touch a command.
+ * Rearranging or hiding after a tap leaves the household on "custom".
+ */
+export type DeskPersonality = "tracker" | "household" | "cpa" | "play" | "custom";
+
+export const PERSONALITY_LABEL: Record<Exclude<DeskPersonality, "custom">, string> = {
+  tracker: "Tracker",
+  household: "Household",
+  cpa: "CPA",
+  play: "Play",
+};
+
+export const PERSONALITY_BLURB: Record<Exclude<DeskPersonality, "custom">, string> = {
+  tracker: "Capture it and move on.",
+  household: "Budget, habits, the week ahead.",
+  cpa: "Opinion, accounts, what is owed.",
+  play: "Jars, shifts, and the cat.",
+};
+
+export const PERSONALITY_DESK: Record<Exclude<DeskPersonality, "custom">, [InstrumentId, InstrumentSize][]> = {
+  tracker: [
+    ["calculator", "l"], ["blotter", "m"], ["wallet", "m"],
+    ["mail", "s"], ["claims", "s"], ["lamp", "s"],
+  ],
+  household: [
+    ["blotter", "l"], ["calculator", "m"], ["calendar", "m"],
+    ["timesheet", "m"], ["chalkboard", "m"], ["jars", "s"], ["mail", "s"], ["lamp", "s"],
+  ],
+  cpa: [
+    ["blotter", "l"], ["accounts", "l"], ["claims", "m"], ["mail", "m"],
+    ["calculator", "m"], ["lamp", "s"], ["postcard", "s"], ["appointments", "s"],
+  ],
+  play: [
+    ["jars", "l"], ["chalkboard", "m"], ["timesheet", "m"], ["calculator", "m"],
+    ["cookoff", "s"], ["wardrobe", "s"], ["tictactoe", "s"],
+  ],
+};
+
+/** Paper stock — tokens on the desk, never a second brand or a boxed app chrome. */
+export type PaperStock = "cream" | "graph" | "night" | "cork";
+export const STOCK_LABEL: Record<PaperStock, string> = {
+  cream: "Kitchen cream",
+  graph: "CPA graph",
+  night: "Night blotter",
+  cork: "Play cork",
+};
+
+export type OfficeLook = { stock: PaperStock; density: "names" | "glance" };
+export const DEFAULT_LOOK: OfficeLook = { stock: "cream", density: "names" };
+
+export function officeLookKey(environment: Environment): string {
+  return `hearth.office.look.${environment}`;
+}
+
+export function parseOfficeLook(raw: unknown): OfficeLook {
+  if (!raw || typeof raw !== "object") return DEFAULT_LOOK;
+  const record = raw as Record<string, unknown>;
+  const stock = record.stock === "graph" || record.stock === "night" || record.stock === "cork" || record.stock === "cream"
+    ? record.stock
+    : DEFAULT_LOOK.stock;
+  const density = record.density === "glance" ? "glance" : "names";
+  return { stock, density };
+}
+
+/** Apply a personality: listed instruments visible at their size, the rest parked. Pad stays. */
+export function applyPersonality(layout: OfficeLayout, key: Exclude<DeskPersonality, "custom">): OfficeLayout {
+  const listed = PERSONALITY_DESK[key];
+  const ordered: LayoutItem[] = [];
+  const seen = new Set<InstrumentId>();
+  if (!listed.some(([id]) => id === "calculator")) {
+    ordered.push({ id: "calculator", size: "m", hidden: false });
+    seen.add("calculator");
+  }
+  for (const [id, size] of listed) {
+    ordered.push({ id, size, hidden: false });
+    seen.add(id);
+  }
+  for (const id of DEFAULT_ORDER) {
+    if (seen.has(id)) continue;
+    ordered.push({ id, hidden: !PINNED_INSTRUMENTS.includes(id) });
+  }
+  return { ...layout, items: ordered, expanded: null };
+}
+
+export function cycleInstrumentSize(id: InstrumentId, current: InstrumentSize): InstrumentSize {
+  if (id === "calculator") return current === "m" ? "l" : "m";
+  return current === "s" ? "m" : current === "m" ? "l" : "s";
+}
 
 export function officeLayoutKey(environment: Environment, breakpoint: OfficeBreakpoint): string {
   return `hearth.office.${environment}.${breakpoint}`;
@@ -126,9 +241,13 @@ export function parseOfficeLayout(raw: unknown): OfficeLayout {
       const hidden = Boolean((row as LayoutItem).hidden) && !PINNED_INSTRUMENTS.includes(id);
       const x = Number((row as LayoutItem).x);
       const y = Number((row as LayoutItem).y);
+      const rawSize = (row as LayoutItem).size;
+      const size: InstrumentSize | undefined =
+        rawSize === "s" || rawSize === "m" || rawSize === "l" ? rawSize : undefined;
       items.push({
         id,
         hidden,
+        size,
         x: Number.isFinite(x) ? x : undefined,
         y: Number.isFinite(y) ? y : undefined,
       });
@@ -472,6 +591,64 @@ export function snapGrid(value: number, grid = DESK_GRID): number {
   return Math.round(value / grid) * grid;
 }
 
+export const DESK_GUTTER = 16;
+
+/**
+ * Card widths by size, snapped to the desk grid.
+ * Slightly tighter than a 1280 dashboard so two papers still feel like a desk.
+ */
+export const SIZE_WIDTH: Record<InstrumentSize, number> = { s: 208, m: 288, l: 432 };
+/** Header-only heights. L is a wider glance, not an always-open panel. */
+export const SIZE_HEIGHT: Record<InstrumentSize, number> = { s: 72, m: 88, l: 104 };
+
+export function sizeOf(item: Pick<LayoutItem, "id" | "size">): InstrumentSize {
+  if (item.size) return item.size;
+  return DEFAULT_SIZE[item.id] ?? "m";
+}
+
+export type PackedRect = Point & { id: InstrumentId; w: number; h: number };
+
+/**
+ * Shelf-pack so default positions know how wide a card is.
+ * Straighten uses this; a later drag still stores x/y on the item.
+ */
+export function packWide(
+  items: { id: InstrumentId; size?: InstrumentSize }[],
+  canvasWidth: number,
+): Record<string, Point> {
+  const width = Math.max(320, canvasWidth);
+  const out: Record<string, Point> = {};
+  let x = DESK_GUTTER;
+  let y = DESK_GUTTER;
+  let rowHeight = 0;
+  for (const item of items) {
+    const size = sizeOf(item);
+    const w = SIZE_WIDTH[size];
+    const h = SIZE_HEIGHT[size];
+    if (x > DESK_GUTTER && x + w + DESK_GUTTER > width) {
+      x = DESK_GUTTER;
+      y += rowHeight + DESK_GUTTER;
+      rowHeight = 0;
+    }
+    out[item.id] = { x: snapGrid(x), y: snapGrid(y) };
+    x += w + DESK_GUTTER;
+    rowHeight = Math.max(rowHeight, h);
+  }
+  return out;
+}
+
+export function packRects(
+  items: { id: InstrumentId; size?: InstrumentSize }[],
+  canvasWidth: number,
+): PackedRect[] {
+  const packed = packWide(items, canvasWidth);
+  return items.map((item) => {
+    const size = sizeOf(item);
+    const pos = packed[item.id] ?? { x: DESK_GUTTER, y: DESK_GUTTER };
+    return { id: item.id, x: pos.x, y: pos.y, w: SIZE_WIDTH[size], h: SIZE_HEIGHT[size] };
+  });
+}
+
 export function defaultWidePosition(index: number): Point {
   const col = index % 2;
   const row = Math.floor(index / 2);
@@ -603,7 +780,11 @@ export function levelLayoutItems(items: LayoutItem[]): LayoutItem[] {
   return placed;
 }
 
-export function tidyOfficeLayout(layout: OfficeLayout, breakpoint: OfficeBreakpoint): OfficeLayout {
+export function tidyOfficeLayout(
+  layout: OfficeLayout,
+  breakpoint: OfficeBreakpoint,
+  canvasWidth = 900,
+): OfficeLayout {
   const hidden = layout.items.filter((item) => item.hidden);
   const hiddenIds = new Set(hidden.map((item) => item.id));
   if (breakpoint === "phone") {
@@ -615,14 +796,15 @@ export function tidyOfficeLayout(layout: OfficeLayout, breakpoint: OfficeBreakpo
     };
   }
   const visible = layout.items.filter((item) => !item.hidden);
+  const packed = packWide(visible, canvasWidth);
   return {
     ...layout,
     items: [
-      ...visible.map((item, index) => {
-        const pos = defaultWidePosition(index);
+      ...visible.map((item) => {
+        const pos = packed[item.id] ?? { x: DESK_GUTTER, y: DESK_GUTTER };
         return { ...item, x: pos.x, y: pos.y, hidden: undefined };
       }),
-      ...hidden.map((item) => ({ id: item.id, hidden: true as const })),
+      ...hidden.map((item) => ({ ...item, hidden: true as const })),
     ],
     expanded: null,
   };
