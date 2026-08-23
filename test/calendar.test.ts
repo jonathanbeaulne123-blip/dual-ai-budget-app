@@ -26,6 +26,7 @@ describe("Toronto calendar", () => {
 
   it("labels a civil day without using the runtime zone", () => {
     expect(formatDayLabel("2026-08-21")).toBe("Aug 21");
+    expect(formatDayLabel("2026-08-23")).toBe("Aug 23");
   });
 });
 

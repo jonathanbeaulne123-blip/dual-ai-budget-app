@@ -266,6 +266,12 @@ input, select, textarea {
 }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip.selected { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.preset-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.preset-chip svg { flex: 0 0 auto; }
 
 .preview {
   background: #f3f8f4;
@@ -495,6 +501,7 @@ input, select, textarea {
 .kind-pill.shift { background: #ebe4d6; }
 .kind-pill.google { background: #dce4f4; color: #243c6b; }
 .kind-pill.visit { background: #e8d5ef; color: #5a2d6b; }
+.kind-pill.claim { background: #d7ebe4; color: #1d4a3a; }
 .rhythm-card {
   border-top: 1px solid var(--line);
   padding: 10px 0 4px;

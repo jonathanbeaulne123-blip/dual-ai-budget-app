@@ -1,8 +1,8 @@
-import { formatCad, formatDateLabel, MAIL_EMPTY } from "../core/index.ts";
+import { formatCad, formatDateLabel, isOutgoingBill, MAIL_EMPTY } from "../core/index.ts";
 import type { Dashboard } from "../core/insights.ts";
 
 export function MailGlance({ dashboard, today }: { dashboard: Dashboard; today: string }) {
-  const next = dashboard.upcoming[0];
+  const next = dashboard.upcoming.find(isOutgoingBill);
   if (!next) return <span>closed</span>;
   const late = next.due || next.date < today;
   return <span>{formatDateLabel(next.date)} · {next.title}{late ? " ·" : ""}</span>;
@@ -19,7 +19,7 @@ export function MailBody({
   onMarkPaid: (recurrenceId: string, summary: string) => void;
   onCalendar: () => void;
 }) {
-  const rows = dashboard.upcoming.slice(0, 3);
+  const rows = dashboard.upcoming.filter(isOutgoingBill).slice(0, 3);
   if (!rows.length) return <p className="muted">{MAIL_EMPTY}</p>;
   return (
     <>

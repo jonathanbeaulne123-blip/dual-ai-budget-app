@@ -144,23 +144,39 @@ export function inInclusiveRange(dateKey: DateKey, start: DateKey, end: DateKey)
   return dateKey >= start && dateKey <= end;
 }
 
+/** Civil YYYY-MM-DD as UTC midnight. Formatters must use `timeZone: "UTC"` so Toronto is not yesterday. */
+function utcCivilDate(year: number, month: number, day: number): Date {
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
 export function formatDateLabel(dateKey: DateKey): string {
   const { year, month, day } = parseDateKey(dateKey);
-  return new Intl.DateTimeFormat("en-CA", { month: "short", day: "numeric", year: "numeric" }).format(
-    new Date(Date.UTC(year, month - 1, day)),
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "UTC", month: "short", day: "numeric", year: "numeric" }).format(
+    utcCivilDate(year, month, day),
   );
 }
 
 export function formatMonthLabel(monthKey: MonthKey): string {
   const { year, month } = parseMonthKey(monthKey);
-  return new Intl.DateTimeFormat("en-CA", { month: "long", year: "numeric" }).format(new Date(Date.UTC(year, month - 1, 1)));
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "UTC", month: "long", year: "numeric" }).format(utcCivilDate(year, month, 1));
 }
 
 export function formatDayLabel(dateKey: DateKey): string {
   const { year, month, day } = parseDateKey(dateKey);
-  return new Intl.DateTimeFormat("en-CA", { month: "short", day: "numeric" }).format(
-    new Date(Date.UTC(year, month - 1, day)),
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "UTC", month: "short", day: "numeric" }).format(
+    utcCivilDate(year, month, day),
   );
+}
+
+/** Wall-clock time in America/Toronto. Never used to pick a posting date. */
+export function formatTorontoTime(value: string | Date, timeZone = TIMEZONE): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
 }
 
 export const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;

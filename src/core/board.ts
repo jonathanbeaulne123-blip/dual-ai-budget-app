@@ -12,11 +12,11 @@ import {
   type MonthKey,
 } from "./calendar.ts";
 import { projectCadence } from "./recurrence.ts";
-import { appointmentPublicTitle, projectAppointmentDates } from "./appointments.ts";
+import { appointmentPublicTitle, claimExpectedLandingDate, claimRemainingCents, outstandingClaims, projectAppointmentDates } from "./appointments.ts";
 import { detectRhythms, type Rhythm } from "./rhythm.ts";
 import type { Household, Recurrence, RecurrenceKind } from "./types.ts";
 
-export type BoardKind = RecurrenceKind | "shift" | "google" | "detected" | "visit";
+export type BoardKind = RecurrenceKind | "shift" | "google" | "detected" | "visit" | "claim";
 
 export type OverlayEvent = {
   id: string;
@@ -34,7 +34,7 @@ export type BoardItem = {
   amountCents: number;
   direction: "in" | "out" | "work" | "busy";
   kind: BoardKind;
-  source: "recurrence" | "rhythm" | "shift" | "google" | "appointment";
+  source: "recurrence" | "rhythm" | "shift" | "google" | "appointment" | "claim";
   recurrenceId?: string;
   appointmentId?: string;
   rhythmKey?: string;
@@ -89,6 +89,12 @@ export function upcomingFromHousehold(household: Household, today: DateKey, hori
     const last = addDays(today, horizonDays);
     return item.date >= today && item.date <= last;
   });
+}
+
+/** Bills and subscriptions leaving the house. Never paychecks, never Bianca pay, never visits. */
+export function isOutgoingBill(item: Pick<BoardItem, "kind" | "direction">): boolean {
+  if (item.direction !== "out") return false;
+  return item.kind === "bill" || item.kind === "subscription" || item.kind === "detected" || item.kind === "other";
 }
 
 export function buildMonthBoard(
@@ -177,6 +183,21 @@ export function buildMonthBoard(
       memberId: overlay.memberId,
       memberColor: overlay.memberColor,
       due: false,
+    });
+  }
+
+  for (const claim of outstandingClaims(household)) {
+    const date = claimExpectedLandingDate(claim);
+    if (!date || !inInclusiveRange(date, gridStart, gridEnd)) continue;
+    items.push({
+      id: `claim:${claim.id}:${date}`,
+      date,
+      title: `Owed · ${claim.label}`,
+      amountCents: claimRemainingCents(claim),
+      direction: "in",
+      kind: "claim",
+      source: "claim",
+      due: date <= today,
     });
   }
 

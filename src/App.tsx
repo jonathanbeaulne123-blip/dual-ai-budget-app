@@ -85,6 +85,7 @@ import { CalendarPage } from "./Calendar.tsx";
 import { Office } from "./Office.tsx";
 import { HerculesPresence } from "./Hercules.tsx";
 import { CadPad } from "./CadPad.tsx";
+import { PresetChip } from "./widgets/PresetChip.tsx";
 import { SitDownGuide } from "./SitDownGuide.tsx";
 import { playClink } from "./clink.ts";
 import { GoogleBridgeCard } from "./GoogleBridge.tsx";
@@ -161,6 +162,7 @@ export function App() {
   const [shiftGate, setShiftGate] = useState<ShiftGate>("choose");
   const [shiftStep, setShiftStep] = useState(0);
   const [shiftTick, setShiftTick] = useState(0);
+  const [hoursDirty, setHoursDirty] = useState(false);
   const [presetId, setPresetId] = useState<string | null>(null);
   const enqueueWrite = useMemo(() => createWriteQueue(), []);
   const householdRef = useRef<Household | null>(household);
@@ -181,10 +183,20 @@ export function App() {
 
   useEffect(() => {
     const punch = household ? activeOpenShift(household.kitchen) : null;
-    if (!punch) return;
-    const id = window.setInterval(() => setShiftTick((n) => n + 1), 15_000);
+    const watching = Boolean(punch) && (shiftGate === "clocked" || (shiftGate === "signOut" && shiftStep === 0));
+    if (!watching) return;
+    const id = window.setInterval(() => setShiftTick((n) => n + 1), 1_000);
     return () => window.clearInterval(id);
-  }, [household]);
+  }, [household, shiftGate, shiftStep]);
+
+  useEffect(() => {
+    const punch = household ? activeOpenShift(household.kitchen) : null;
+    if (!punch) return;
+    if (hoursDirty) return;
+    if (shiftGate !== "clocked" && !(shiftGate === "signOut" && shiftStep === 0)) return;
+    const hours = formatPreviewHours(previewHoursQuarter(punch.startedAt));
+    setForm((current) => (current.hours === hours ? current : { ...current, hours }));
+  }, [household, shiftGate, shiftStep, shiftTick, hoursDirty]);
 
   useEffect(() => {
     let live = true;
@@ -572,6 +584,7 @@ export function App() {
         ccTips: "0",
         memberId: punch?.memberId ?? actorId,
       }));
+      setHoursDirty(false);
       return;
     }
     setForm(formForAccount(id));
@@ -597,6 +610,7 @@ export function App() {
     setConfirm(null);
     setShiftGate("signOut");
     setShiftStep(0);
+    setHoursDirty(false);
     setForm(formForAccount(null, {
       hours: punch ? formatPreviewHours(previewHoursQuarter(punch.startedAt)) : "",
       sales: "0",
@@ -801,7 +815,6 @@ export function App() {
             setForm((current) => ({ ...current, note: "Coffee", subcategoryId: "SUB-FOOD-COFFEE" }));
             emitOfficeIntent({ type: "expand", id: "calculator" });
           }}
-          onShift={() => emitOfficeIntent({ type: "expand", id: "timesheet" })}
           onClockIn={() => { void runKitchen((current) => clockInShift(current, { memberId: actorId })); }}
           onAbandonShift={() => { void runKitchen((current) => abandonOpenShift(current)); }}
           onSignOut={beginSignOut}
@@ -1032,10 +1045,12 @@ export function App() {
                 {mode === "expense" && (
                   <div className="chips">
                     {activePresets(household).map((preset) => (
-                      <button
+                      <PresetChip
                         key={preset.id}
-                        type="button"
-                        className={`chip ${presetId === preset.id ? "selected" : ""}`}
+                        note={preset.note}
+                        subcategoryId={preset.subcategoryId}
+                        categories={household.categories}
+                        selected={presetId === preset.id}
                         onClick={() => {
                           setPresetId(preset.id);
                           setForm({
@@ -1048,9 +1063,7 @@ export function App() {
                             visibility: preset.visibility,
                           });
                         }}
-                      >
-                        {preset.note || "Preset"}
-                      </button>
+                      />
                     ))}
                     <button
                       type="button"
@@ -1246,10 +1259,13 @@ export function App() {
                       </select>
                       <CadPad
                         digits={centsDigitsFromDollars(form[field])}
-                        onDigits={(digits) => setForm({
-                          ...form,
-                          [field]: field === "hours" ? dollarsFromCentsDigits(digits) : dollarsFromCentsDigits(digits),
-                        })}
+                        onDigits={(digits) => {
+                          if (field === "hours") setHoursDirty(true);
+                          setForm({
+                            ...form,
+                            [field]: dollarsFromCentsDigits(digits),
+                          });
+                        }}
                         label={shiftFieldLabel(field)}
                         unit={field === "hours" ? "hours" : "cad"}
                       />

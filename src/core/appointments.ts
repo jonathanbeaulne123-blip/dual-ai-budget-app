@@ -1,4 +1,4 @@
-import { addDays, calendarDaysBetween, daysInMonth, formatMonthLabel, parseDateKey, weekdaySunday0, type DateKey } from "./calendar.ts";
+import { addDays, calendarDaysBetween, dateKeyInZone, daysInMonth, formatMonthLabel, parseDateKey, weekdaySunday0, type DateKey } from "./calendar.ts";
 import { formatCad, roundToCents } from "./money.ts";
 import { COMPANION, JOINT, ValidationError, type Appointment, type AppointmentCadence, type AppointmentCoverage, type AppointmentKind, type AppointmentSensitivity, type BillLine, type Claim, type ClaimKind, type ClaimStatus, type Household } from "./types.ts";
 
@@ -289,6 +289,22 @@ export function claimRemainingCents(claim: Claim): number {
 
 export function outstandingClaims(household: Household): Claim[] {
   return (household.claims ?? []).filter((claim) => claimRemainingCents(claim) > 0);
+}
+
+/**
+ * Projection of when owed-to-us should land. Never a post.
+ * Submitted insurance ~14 days; employer ~7; others ~10 from created/submitted.
+ */
+export function claimExpectedLandingDate(claim: Claim): DateKey | null {
+  if (claimRemainingCents(claim) <= 0) return null;
+  if (claim.status === "settled" || claim.status === "denied") return null;
+  const iso = claim.submittedAt || claim.createdAt;
+  if (!iso) return null;
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const start = dateKeyInZone(parsed);
+  const lag = claim.kind === "insurance" ? 14 : claim.kind === "employer" ? 7 : 10;
+  return addDays(start, lag);
 }
 
 export function weekdayWord(date: DateKey): string {

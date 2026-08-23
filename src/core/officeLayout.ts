@@ -13,21 +13,25 @@ export const INSTRUMENT_IDS = [
   "calculator",
   "blotter",
   "wallet",
+  "accounts",
   "calendar",
   "appointments",
   "mail",
   "claims",
   "timesheet",
   "chalkboard",
+  "wardrobe",
   "postcard",
   "cookoff",
   "jars",
   "lamp",
+  "tictactoe",
+  "hangman",
 ] as const;
 
 export type InstrumentId = (typeof INSTRUMENT_IDS)[number];
 
-export type FurnitureKind = "sill" | "tray" | "board" | "envelope" | "clock" | "lamp" | "card" | "pad" | "jar" | "kettle";
+export type FurnitureKind = "sill" | "tray" | "board" | "envelope" | "clock" | "lamp" | "card" | "pad" | "jar" | "kettle" | "game";
 
 export type Furniture = {
   id: string;
@@ -55,6 +59,28 @@ export type OfficeLayout = {
   minimized: InstrumentId[];
   windowMinimized: boolean;
 };
+
+export const INSTRUMENT_LABEL: Record<InstrumentId, string> = {
+  calculator: "Calculator",
+  blotter: "Blotter",
+  wallet: "Wallet",
+  accounts: "Accounts",
+  calendar: "Calendar",
+  appointments: "Appointments",
+  mail: "Mail",
+  claims: "Claims",
+  timesheet: "Timesheet",
+  chalkboard: "Chalkboard",
+  wardrobe: "Accessories",
+  postcard: "Postcard",
+  cookoff: "Cook-off",
+  jars: "Jars",
+  lamp: "Lamp",
+  tictactoe: "Tic-tac-toe",
+  hangman: "Hangman",
+};
+
+export const PINNED_INSTRUMENTS: InstrumentId[] = ["calculator"];
 
 export const DEFAULT_ORDER: InstrumentId[] = [...INSTRUMENT_IDS];
 
@@ -93,7 +119,7 @@ export function parseOfficeLayout(raw: unknown): OfficeLayout {
       const id = (row as LayoutItem).id;
       if (!isInstrumentId(id) || seen.has(id)) continue;
       seen.add(id);
-      const hidden = Boolean((row as LayoutItem).hidden) && id !== "calculator";
+      const hidden = Boolean((row as LayoutItem).hidden) && !PINNED_INSTRUMENTS.includes(id);
       const x = Number((row as LayoutItem).x);
       const y = Number((row as LayoutItem).y);
       items.push({
@@ -158,6 +184,23 @@ export function instrumentRotation(id: string): number {
 
 export function visibleInstruments(layout: OfficeLayout): InstrumentId[] {
   return layout.items.filter((item) => !item.hidden).map((item) => item.id);
+}
+
+export function hiddenInstruments(layout: OfficeLayout): InstrumentId[] {
+  return layout.items.filter((item) => item.hidden).map((item) => item.id);
+}
+
+export function setInstrumentHidden(layout: OfficeLayout, id: InstrumentId, hidden: boolean): OfficeLayout {
+  if (PINNED_INSTRUMENTS.includes(id) && hidden) return layout;
+  const items = layout.items.map((item) => (
+    item.id === id ? { ...item, hidden: hidden || undefined } : item
+  ));
+  return {
+    ...layout,
+    items,
+    expanded: hidden && layout.expanded === id ? null : layout.expanded,
+    minimized: hidden ? layout.minimized.filter((row) => row !== id) : layout.minimized,
+  };
 }
 
 export function promoteRail(order: InstrumentId[], promoted: InstrumentId, lampLit: boolean): InstrumentId[] {
@@ -371,16 +414,20 @@ export const INSTRUMENT_KIND: Record<InstrumentId, FurnitureKind> = {
   calculator: "pad",
   blotter: "card",
   wallet: "tray",
+  accounts: "tray",
   calendar: "card",
   appointments: "card",
   mail: "envelope",
   claims: "tray",
   timesheet: "clock",
   chalkboard: "board",
+  wardrobe: "card",
   postcard: "card",
   cookoff: "kettle",
   jars: "jar",
   lamp: "lamp",
+  tictactoe: "game",
+  hangman: "game",
 };
 
 export function snapGrid(value: number, grid = DESK_GRID): number {
@@ -400,6 +447,12 @@ const PAIR_WITH = new Set([
   "jars|cookoff",
   "calendar|appointments",
   "appointments|calendar",
+  "wallet|accounts",
+  "accounts|wallet",
+  "chalkboard|wardrobe",
+  "wardrobe|chalkboard",
+  "tictactoe|hangman",
+  "hangman|tictactoe",
 ]);
 
 export function railRows(order: InstrumentId[]): Array<InstrumentId | [InstrumentId, InstrumentId]> {

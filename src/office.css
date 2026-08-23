@@ -471,7 +471,7 @@
 
 .cabinet-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
   gap: 8px;
   margin-top: 18px;
   z-index: 2;
@@ -491,6 +491,117 @@
   transition: none;
 }
 .hercules-live.is-adding { pointer-events: none; }
+
+.analog-clock { width: min(180px, 70%); margin: 4px auto 8px; }
+.analog-clock svg { display: block; width: 100%; }
+.analog-bezel { fill: #e8dcc8; stroke: #1b1712; stroke-width: 1.4; }
+.analog-face { fill: #fdfbf6; }
+.analog-tick { stroke: #1b1712; stroke-width: 1.1; }
+.analog-tick.major { stroke-width: 1.8; }
+.analog-hour, .analog-minute { stroke: #1b1712; stroke-linecap: round; }
+.analog-hour { stroke-width: 3.2; }
+.analog-minute { stroke-width: 2; }
+.analog-cap { fill: #1b1712; }
+.analog-arc { fill: none; stroke: #c9a884; stroke-width: 5; stroke-linecap: round; opacity: 0.85; }
+.analog-arc.live { stroke: #2f6b4f; }
+.analog-start { fill: #c45c26; }
+
+.piggy-shelf { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+.piggy { width: 88px; height: 72px; display: block; margin: 0 auto 6px; }
+.piggy.is-late { transform: rotate(-6deg); }
+.piggy-card .muted { margin: 0; }
+
+.cal-desk-views { margin-bottom: 8px; }
+.cal-desk-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.cal-desk-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin: 8px 0;
+  font-size: 10px;
+  text-align: center;
+}
+.cal-desk-cell {
+  min-height: 28px;
+  border: 0;
+  background: transparent;
+  border-radius: 6px;
+  position: relative;
+}
+.cal-desk-cell.today { font-weight: 700; background: rgba(47, 107, 79, 0.12); }
+.cal-desk-cell.selected { box-shadow: inset 0 0 0 1px var(--ink); }
+.cal-desk-cell.outside { opacity: 0.35; }
+.cal-desk-cell i {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 99px;
+  background: var(--copper);
+  margin: 0 auto;
+}
+
+.account-tile {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 8px 0;
+}
+
+.ttt-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin: 8px 0;
+}
+.ttt-cell {
+  min-height: 48px;
+  border: 1px solid var(--line);
+  background: #fdfbf6;
+  font-family: var(--display);
+  font-size: 22px;
+}
+.hangman-word {
+  font-family: var(--display);
+  letter-spacing: 0.18em;
+  font-size: 18px;
+}
+.hangman-letters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 8px 0;
+}
+.instrument-game { background: #f4ece0; }
+.instrument-accounts { background: #f3eee4; }
+.instrument-wardrobe { background: #efe6d8; }
+
+.desk-customize {
+  grid-column: 1 / -1;
+  border: 1px solid var(--brass);
+  background: linear-gradient(#e6d3aa, var(--brass));
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+.desk-customize summary { font-weight: 700; cursor: pointer; }
+.desk-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+}
+
+.shift-preview input {
+  width: 100%;
+  margin-bottom: 6px;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .rain-a, .rain-b, .snow-drift, .cloud-drift, .instrument, .instrument.is-bumped, .hercules-live {

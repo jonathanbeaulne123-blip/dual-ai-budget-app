@@ -4,11 +4,12 @@ import type { AuditOpinion } from "./statements.ts";
 import type { Finding } from "./health.ts";
 import type { CookOffScore, SitDownPostcard } from "./hercules.ts";
 import type { ShiftStreak } from "./shiftStreak.ts";
-import type { HouseholdWallet } from "./accounts.ts";
-import { monthKeyFromDateKey, type DateKey } from "./calendar.ts";
-import { buildMonthBoard } from "./board.ts";
+import { monthKeyFromDateKey, weekBounds, type DateKey } from "./calendar.ts";
+import { buildMonthBoard, isOutgoingBill } from "./board.ts";
 import { appointmentPublicTitle, upcomingVisitBoard, upcomingVisitProposals } from "./appointments.ts";
-import type { Household } from "./types.ts";
+import type { HouseholdWallet } from "./accounts.ts";
+import { accountActivity, householdWallet } from "./accounts.ts";
+import type { Household, Transaction } from "./types.ts";
 import { activeOpenShift } from "./shiftClock.ts";
 
 export const BLOTTER_EMPTY = "Nothing posted this month yet.";
@@ -21,6 +22,10 @@ export const CLAIMS_EMPTY = "Nothing owed to this household right now.";
 export const BOARD_EMPTY = "Nothing on the board.";
 export const CALENDAR_EMPTY = "Nothing on the month yet.";
 export const APPOINTMENTS_EMPTY = "No visits on the horizon.";
+export const ACCOUNTS_EMPTY = "No accounts on the tray yet.";
+export const GAMES_EMPTY = "Your move.";
+
+export type CalendarDeskView = "day" | "week" | "month";
 
 export function blotterFacts(dashboard: Dashboard, opinion: AuditOpinion, findings: number) {
   const empty = dashboard.month.incomeActualCents === 0 && dashboard.month.expenseActualCents === 0;
@@ -49,7 +54,7 @@ export function walletWarn(wallet: HouseholdWallet): boolean {
 }
 
 export function mailOverdue(dashboard: Dashboard, today: DateKey): boolean {
-  return dashboard.upcoming.some((item) => item.due || item.date < today);
+  return dashboard.upcoming.some((item) => isOutgoingBill(item) && (item.due || item.date < today));
 }
 
 export function claimsOverdue(household: { claims?: { expectedCents: number; receivedCents: number; writtenOffCents: number }[] }): boolean {
@@ -69,12 +74,58 @@ export function postcardEmpty(card: SitDownPostcard): boolean {
   return !card.ready;
 }
 
-export function calendarDeskFacts(household: Household, today: DateKey) {
-  const items = buildMonthBoard(household, monthKeyFromDateKey(today), today).upcoming.slice(0, 5);
+export function calendarDeskModel(household: Household, today: DateKey, view: CalendarDeskView, focus: DateKey) {
+  const board = buildMonthBoard(household, monthKeyFromDateKey(focus), today);
+  const week = weekBounds(focus);
+  const days = view === "day"
+    ? board.days.filter((day) => day.date === focus)
+    : view === "week"
+      ? board.days.filter((day) => day.date >= week.start && day.date <= week.end)
+      : board.days;
+  const items = days.flatMap((day) => day.items);
   return {
-    empty: items.length === 0,
-    next: items[0] ?? null,
+    view,
+    focus,
+    board,
+    days,
     items,
+    empty: items.length === 0,
+    next: items.filter((item) => item.date >= today).sort((left, right) => left.date.localeCompare(right.date))[0]
+      ?? items[0]
+      ?? null,
+  };
+}
+
+export function calendarDeskFacts(household: Household, today: DateKey) {
+  const model = calendarDeskModel(household, today, "month", today);
+  const upcoming = model.items
+    .filter((item) => item.date >= today)
+    .sort((left, right) => left.date.localeCompare(right.date) || left.title.localeCompare(right.title));
+  return {
+    empty: upcoming.length === 0 && model.items.length === 0,
+    next: upcoming[0] ?? model.next,
+    items: upcoming.slice(0, 6),
+  };
+}
+
+export function accountsDeskFacts(household: Household, today: DateKey) {
+  const wallet = householdWallet(household, today);
+  const recent: Transaction[] = [...household.transactions]
+    .filter((row) => !row.isDuplicate)
+    .sort((left, right) => right.date.localeCompare(left.date) || right.createdAt.localeCompare(left.createdAt))
+    .slice(0, 8);
+  const lastByAccount = wallet.tiles.map((tile) => ({
+    tile,
+    last: accountActivity(household, tile.account.id)[0] ?? null,
+  }));
+  return {
+    wallet,
+    recent,
+    lastByAccount,
+    empty: wallet.tiles.length === 0,
+    glance: wallet.hottestCard
+      ? `${wallet.hottestCard.account.name} · ${formatCad(wallet.hottestCard.owedCents)}`
+      : formatCad(wallet.netWorthCents),
   };
 }
 
