@@ -1088,3 +1088,66 @@ input, select, textarea {
   .bill-line-row button { grid-column: 1 / -1; }
 }
 
+
+/* Companion office update */
+.hercules-useful {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  display: grid;
+  place-items: center;
+  font: 700 12px/1 Fraunces, Georgia, serif;
+  color: #fdfbf6;
+  pointer-events: none;
+}
+.hercules-useful.useful-green { background: #2f6b4f; }
+.hercules-useful.useful-yellow { background: #b8892d; }
+.hercules-useful.useful-red { background: #a33b2b; }
+.hercules-live.useful-green { filter: saturate(1.05); }
+.hercules-live.is-begging { animation: herc-beg-pulse calc(1.6s - (var(--herc-useful, 0.3) * 0.8s)) ease-in-out infinite; }
+@keyframes herc-beg-pulse {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.books-story-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+}
+.books-story-tile {
+  text-align: left;
+  border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
+  background: color-mix(in srgb, var(--paper) 88%, #c9a884);
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+.books-story-tile strong { display: block; margin-top: 4px; font-size: 1.05rem; }
+.books-pane-blurb { margin: 8px 0 12px; }
+.duplicate-contrast .contrast-pair {
+  display: grid;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+}
+.duplicate-contrast .confidence {
+  width: fit-content;
+  padding: 2px 8px;
+  border-radius: 6px;
+  color: #fdfbf6;
+  font-weight: 700;
+}
+.duplicate-contrast .confidence.useful-green { background: #2f6b4f; }
+.duplicate-contrast .confidence.useful-yellow { background: #b8892d; }
+.duplicate-contrast .confidence.useful-red { background: #a33b2b; }
+.contrast-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.contrast-side { display: grid; gap: 2px; }
+.device-list ul { list-style: none; padding: 0; margin: 8px 0 0; }
+.device-list li { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 0; border-bottom: 1px solid color-mix(in srgb, var(--ink) 10%, transparent); }
+.piggy-card.is-unfunded { opacity: 0.88; outline: 1px dashed color-mix(in srgb, #a33b2b 45%, transparent); }

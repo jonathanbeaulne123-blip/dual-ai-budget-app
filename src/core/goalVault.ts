@@ -16,7 +16,10 @@ export function goalsVaultAccount(household: Pick<Household, "accounts">): Accou
 }
 
 export function openGoals(household: Pick<Household, "goals">): Goal[] {
-  return household.goals.filter((goal) => goalStatus(goal) === "open");
+  return household.goals.filter((goal) => {
+    const status = goalStatus(goal);
+    return status === "open" || status === "unfunded";
+  });
 }
 
 export function retiredGoals(household: Pick<Household, "goals">): Goal[] {

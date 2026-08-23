@@ -162,9 +162,13 @@ export type Recurrence = {
   id: string;
   cadence: RecurrenceCadence;
   nextDate: DateKey;
-  type: "expense" | "income";
+  type: "expense" | "income" | "transfer";
   amountCents: number;
   accountId: string;
+  /** Destination for transfer standing orders (chequing → savings / Goals vault). */
+  transferToAccountId: string | null;
+  /** When set, posting the transfer also funds this jar envelope. */
+  goalId: string | null;
   subcategoryId: string;
   note: string;
   splits: Split[];
@@ -465,7 +469,7 @@ export type HouseholdGoogle = {
   updatedAt: string;
 };
 
-export type GoalStatus = "open" | "retired";
+export type GoalStatus = "open" | "retired" | "unfunded";
 
 export type Goal = {
   id: string;
@@ -473,10 +477,14 @@ export type Goal = {
   targetCents: number;
   savedCents: number;
   deadline: DateKey | null;
+  /** When the household hopes to arrive at the target. Percentage says where you are; the date says whether you'll make it. */
+  arrivalDate: DateKey | null;
   shared: boolean;
   ownerMemberId: string | null;
   subcategoryId: string | null;
   status: GoalStatus;
+  /** True once a real vault transfer backed the envelope (D-096). Legacy envelope-only jars stay unfunded. */
+  funded: boolean;
   retiredAt: string | null;
   purchaseId: string | null;
   createdAt: string;
@@ -489,8 +497,21 @@ export type GoalContribution = {
   memberId: string;
   amountCents: number;
   date: DateKey;
+  /** Transfer id that moved cash into the Goals vault for this contribution, when present. */
+  transferId: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+/** Soft presence of a kitchen phone that has touched the shared snapshot. Not Auth. */
+export type HouseholdDevice = {
+  id: string;
+  label: string;
+  memberId: string | null;
+  environment: Environment;
+  seenAt: string;
+  updatedAt: string;
+  active: boolean;
 };
 
 export type GoalPurchaseLine = {
@@ -561,6 +582,7 @@ export type Household = {
   budgetPlans: BudgetPlan[];
   sitDownSessions: SitDownSession[];
   activity: Activity[];
+  devices: HouseholdDevice[];
   shiftSettings: ShiftSettings;
   lastCommittedAt: string | null;
 };
@@ -590,6 +612,7 @@ export type SharedEnvelope = {
   budgetPlans: BudgetPlan[];
   sitDownSessions: SitDownSession[];
   activity: Activity[];
+  devices: HouseholdDevice[];
   shiftSettings: ShiftSettings;
   lastCommittedAt: string | null;
   transactions: Transaction[];

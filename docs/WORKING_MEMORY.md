@@ -90,17 +90,18 @@ Open PRs and museum folders are **still project context**. Read them. Do not pre
 
 ## Asked in this chat after #53 (ideas, not `main`)
 
-If Jonathan wants these, start a **new** branch off current `main`. Do not resurrect the reverted `cursor/sit-attention-cfde` half-patch.
+Shipped on branch `cursor/companion-office-update-2a5b` as D-096–D-102:
 
 1. Double-click sit + cardboard-bag play.
 2. First tap: ears back, beg, red/yellow/green usefulness light — **do not** open chat. Second tap opens help.
-3. Expand physics: square / circle / list; expander stays put; others bump; close resets.
+3. Expand physics: square / circle / list; expander stays put; others bump; close resets. Layout v: 2.
 4. Books story order + pane rundown; Goals vault first among savings tiles.
-5. Duplicate **contrast** UI (confidence 0–100). Do not loosen post-time `scoreSimilarity`.
+5. Duplicate **contrast** UI (confidence 0–100). Scorer frozen.
 6. Synced-device list on the kitchen snapshot.
+7. Funded jars (`fundGoal`), unfunded migration, arrival dates; sit-down standing orders; Large density; first-run lessons.
 
 ---
 
 ## Next recommended action
 
-Open a **new** Cursor chat. Attach this recap **and** [DECISIONS.md](DECISIONS.md). Read GitHub history when you need the full why. Pick one Dual Course slice. Default experiments to Development. Do not clasp. Do not touch production. Do not delete docs, nostalgia, reference, or PR history.
+Review the companion-office PR. Default experiments to Development. Do not clasp. Do not touch production.

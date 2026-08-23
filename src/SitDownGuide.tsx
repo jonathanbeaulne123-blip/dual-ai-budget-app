@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   applySitDown,
+  adoptSitDownStandingOrders,
   closeBooksMonth,
   executeSitDownMoves,
   formatCad,
@@ -215,6 +216,30 @@ export function SitDownGuide({
               }}
             >
               Confirm moves
+            </button>
+            <button
+              className="ghost"
+              type="button"
+              disabled={!slices.length}
+              onClick={() => {
+                try {
+                  const result = adoptSitDownStandingOrders(household, {
+                    monthKey,
+                    slices,
+                    createdBy: memberId,
+                  });
+                  onApply(result.household, result.undo);
+                  setDriveNote(
+                    result.warnings.length
+                      ? `Standing orders saved. ${result.warnings.join(" ")}`
+                      : "Standing orders saved for next month. Confirm still posts each transfer.",
+                  );
+                } catch (caught) {
+                  setDriveNote(caught instanceof Error ? caught.message : String(caught));
+                }
+              }}
+            >
+              Remember as standing orders
             </button>
           </div>
           <div className="chips">

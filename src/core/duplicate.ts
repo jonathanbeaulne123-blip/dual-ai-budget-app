@@ -193,3 +193,49 @@ export function describeSimilarMatches(matches: SimilarityMatch[]): string {
   const extra = matches.length > 1 ? ` and ${matches.length - 1} more` : "";
   return `This looks like ${top.transaction.note || top.transaction.type} on ${top.transaction.date} (${top.reasons.join("; ")})${extra}. Add anyway?`;
 }
+
+/**
+ * Map the additive similarity score to a 0–100 confidence for UI.
+ * Does not change post-time `scoreSimilarity` thresholds.
+ * Observed score floor ≈ 3 (amount+day + weak context), ceiling ≈ 15.
+ */
+export function confidenceFromScore(score: number): number {
+  if (!Number.isFinite(score) || score <= 0) return 0;
+  const pct = Math.round(((score - 1) / 14) * 100);
+  return Math.max(1, Math.min(100, pct));
+}
+
+export type DuplicateContrastPair = {
+  left: Transaction;
+  right: Transaction;
+  score: number;
+  confidence: number;
+  reasons: string[];
+};
+
+/** Side-by-side candidate pairs for the duplicate contrast tracker. Scorer stays frozen. */
+export function duplicateContrastPairs(transactions: Transaction[]): DuplicateContrastPair[] {
+  const pairs: DuplicateContrastPair[] = [];
+  const seen = new Set<string>();
+  for (let i = 0; i < transactions.length; i += 1) {
+    const left = transactions[i]!;
+    if (!left.potentialDuplicate || left.isDuplicate) continue;
+    const matches = findSimilarTransactions(transactions, left, left.id);
+    for (const match of matches) {
+      if (match.transaction.isDuplicate) continue;
+      const a = left.id;
+      const b = match.transaction.id;
+      const key = a < b ? `${a}|${b}` : `${b}|${a}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      pairs.push({
+        left,
+        right: match.transaction,
+        score: match.score,
+        confidence: confidenceFromScore(match.score),
+        reasons: match.reasons,
+      });
+    }
+  }
+  return pairs.sort((a, b) => b.confidence - a.confidence || b.score - a.score);
+}

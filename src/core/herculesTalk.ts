@@ -33,7 +33,10 @@ export type HerculesPose =
   | "perch"
   | "lick"
   | "bump"
-  | "attack";
+  | "attack"
+  | "sit"
+  | "beg"
+  | "bag";
 
 export type HerculesTalk = {
   spoken: string;

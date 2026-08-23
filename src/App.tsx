@@ -11,6 +11,7 @@ import {
   catalogHousehold,
   centsDigitsFromDollars,
   contributeToGoal,
+  fundGoal,
   createWriteQueue,
   creditCardView,
   defaultVisibilityForView,
@@ -20,7 +21,11 @@ import {
   findActiveGoogleLinkByEmail,
   findActiveGoogleLinkBySubject,
   formatCad,
+  describeDeviceLabel,
+  localDeviceId,
+  touchHouseholdDevice,
   goalIsFull,
+  goalStatus,
   openGoals,
   retiredGoals,
   vaultReceiptBlurb,
@@ -263,6 +268,21 @@ export function App() {
     if (!household) return;
     touchVisitSpark(environment, todayKey());
     setClinkOn(readClinkOn(environment));
+    const stampKey = `hearth.device.touched.${environment}.${household.householdId}`;
+    const deviceId = localDeviceId();
+    const already = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(stampKey) : null;
+    if (already === deviceId) return;
+    try {
+      const touched = touchHouseholdDevice(household, {
+        deviceId,
+        label: describeDeviceLabel(),
+        memberId: session?.memberId ?? household.members.find((member) => member.active)?.id ?? null,
+      });
+      if (typeof sessionStorage !== "undefined") sessionStorage.setItem(stampKey, deviceId);
+      void saveHousehold(touched.household).then(() => setHousehold(touched.household));
+    } catch {
+      /* soft presence only */
+    }
   }, [environment, household?.householdId]);
 
   const today = todayKey(now);
@@ -1795,9 +1815,17 @@ function Goals({ household, createdBy, goals, onChange, onAskStartJar }: {
               onChange={(event) => setAmount(event.target.value)}
             />
             <button className="chip" onClick={() => {
-              const result = contributeToGoal(household, goal.id, amount, { createdBy });
+              const fromAccountId = household.accounts.find((account) => account.active && account.kind === "chequing")?.id
+                ?? household.accounts.find((account) => account.active)?.id;
+              if (!fromAccountId) return;
+              const result = fundGoal(household, {
+                goalId: goal.id,
+                amount,
+                fromAccountId,
+                createdBy,
+              });
               onChange(result.household, result.undo);
-            }}>+ add</button>
+            }}>{goalStatus(goal) === "unfunded" ? "Fund jar" : "+ add"}</button>
             {goalIsFull(goal) && (
               <button className="primary" onClick={() => setBuying(goal.id)}>Purchased?</button>
             )}

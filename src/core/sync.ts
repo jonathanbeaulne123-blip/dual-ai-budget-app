@@ -7,6 +7,7 @@ import { mergeCalendars, shapeCalendar, shapeRecurrence } from "./recurrence.ts"
 import { applyGoalSavings, shapeGoalProgress, shapeGoalPurchases } from "./goals.ts";
 import { shapeAppointments, shapeClaims } from "./appointments.ts";
 import { shapeAccounts } from "./accountKinds.ts";
+import { mergeDevices, shapeDevices } from "./devices.ts";
 import type {
   Activity,
   BudgetPlan,
@@ -149,6 +150,7 @@ export function ensureHouseholdShape(household: Household): Household {
     budgetPlans: shapeBudgetPlans(household.budgetPlans, fallbackIso),
     sitDownSessions: shapeSitDownSessions(household.sitDownSessions),
     activity: shapeActivity(household.activity),
+    devices: shapeDevices(household.devices, fallbackIso),
     goals: progress.goals,
     goalContributions: progress.goalContributions,
     goalPurchases: shapeGoalPurchases(household.goalPurchases, fallbackIso, fallback),
@@ -210,6 +212,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     budgetPlans: shaped.budgetPlans,
     sitDownSessions: shaped.sitDownSessions,
     activity: shaped.activity,
+    devices: shaped.devices,
     shiftSettings: shaped.shiftSettings,
     lastCommittedAt: shaped.lastCommittedAt,
     transactions: sharedTx,
@@ -269,6 +272,7 @@ export function assembleHousehold(shared: SharedEnvelope, personal: PersonalEnve
     budgetPlans: shared.budgetPlans,
     sitDownSessions: shared.sitDownSessions ?? [],
     activity: shared.activity,
+    devices: shared.devices ?? [],
     shiftSettings: shared.shiftSettings,
     lastCommittedAt: laterIso(shared.lastCommittedAt, personal?.lastCommittedAt ?? null),
     transactions: [...txById.values()],
@@ -307,6 +311,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     budgetPlans: mergeRecords(server.budgetPlans, client.budgetPlans, tombstones),
     sitDownSessions: mergeRecords(shapeSitDownSessions(server.sitDownSessions), shapeSitDownSessions(client.sitDownSessions), tombstones),
     activity: mergeRecords(server.activity, client.activity, []).sort((left, right) => left.at.localeCompare(right.at)).slice(-200),
+    devices: mergeDevices(server.devices ?? [], client.devices ?? []),
     shiftSettings: newer.shiftSettings,
     lastCommittedAt: newer.lastCommittedAt,
     transactions: mergeRecords(server.transactions, client.transactions, tombstones),

@@ -76,7 +76,7 @@ describe("goals vault leftover parking", () => {
       note: "Sit-down jar · Rug",
       confirmDuplicate: true,
     }).household;
-    household = contributeToGoal(household, goal.id, 50, { createdBy: "MEM-001", date: today }).household;
+    household = contributeToGoal(household, goal.id, 50, { createdBy: "MEM-001", date: today, markFunded: true }).household;
     expect(household.goals[0]?.savedCents).toBe(5000);
     const bought = purchaseGoal(household, {
       goalId: goal.id,
@@ -119,7 +119,7 @@ describe("goals vault leftover parking", () => {
       note: "Sit-down jar · Vacation",
       confirmDuplicate: true,
     }).household;
-    household = contributeToGoal(household, goal.id, 40, { createdBy: "MEM-001", date: today }).household;
+    household = contributeToGoal(household, goal.id, 40, { createdBy: "MEM-001", date: today, markFunded: true }).household;
     expect(() => purchaseGoal(household, {
       goalId: goal.id,
       amount: "80",

@@ -202,6 +202,26 @@
 .herc-pose-hide .herc-tail { transform: rotate(20deg) translateX(-16px); animation: none; }
 .herc-pose-hide .herc-whiskers { opacity: .25; }
 
+.herc-pose-sit .herc-legs { transform: translateY(6px) scaleY(.55); transform-origin: 76px 178px; }
+.herc-pose-sit .herc-body { transform: translateY(2px); }
+.herc-pose-sit .herc-tail { animation: herc-tail-idle 4.2s ease-in-out infinite; }
+
+.herc-pose-beg .herc-head { transform: translateY(-4px) rotate(-6deg); }
+.herc-pose-beg .herc-ears { transform: rotate(-22deg) scaleY(.68); }
+.herc-pose-beg .herc-legs { transform: translateY(-8px); }
+.herc-pose-beg .herc-leg-front { transform: rotate(-18deg) translateY(-6px); transform-origin: 66px 150px; }
+.herc-pose-beg .herc-leg-back { transform: rotate(12deg) translateY(-4px); transform-origin: 84px 150px; }
+.herc-pose-beg .herc-whiskers { opacity: .7; }
+
+.herc-pose-bag .herc-bag { opacity: 1; animation: herc-bag-play 1.1s ease-in-out infinite; transform-origin: 146px 140px; }
+.herc-pose-bag .herc-head { transform: translate(10px, 4px) rotate(8deg); }
+.herc-pose-bag .herc-paw-hint,
+.herc-pose-bag .herc-leg-front { transform: translate(18px, -4px) rotate(12deg); transform-origin: 66px 150px; }
+@keyframes herc-bag-play {
+  0%, 100% { transform: rotate(-4deg) translateY(0); }
+  50% { transform: rotate(8deg) translateY(-3px); }
+}
+
 .herc-mood-glowing  .herc-tail { animation-duration: 2.6s; }
 .herc-mood-restless .herc-tail { animation-duration: 1.5s; }
 .herc-mood-hiding   .herc-ears { transform: rotate(-12deg) scaleY(.8); }
