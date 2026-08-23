@@ -219,15 +219,6 @@ export function App() {
   }, [household, shiftGate, shiftStep, shiftTick, hoursDirty]);
 
   useEffect(() => {
-    if (booting || !household || adding || guard || duePreviewOffered.current) return;
-    if (duePreviewDismissed(environment, today)) return;
-    const rows = dueRecurrencePreview(household, today);
-    if (!rows.length) return;
-    duePreviewOffered.current = true;
-    setGuard({ kind: "duePreview", rows });
-  }, [booting, household, adding, guard, environment, today]);
-
-  useEffect(() => {
     let live = true;
     setBooting(true);
     const loadedSession = loadSession(environment);
@@ -308,6 +299,15 @@ export function App() {
     () => (visible ? buildDashboard(visible, today, now, findings.length) : null),
     [visible, today, now, findings.length],
   );
+
+  useEffect(() => {
+    if (booting || !household || adding || guard || duePreviewOffered.current) return;
+    if (duePreviewDismissed(environment, today)) return;
+    const rows = dueRecurrencePreview(household, today);
+    if (!rows.length) return;
+    duePreviewOffered.current = true;
+    setGuard({ kind: "duePreview", rows });
+  }, [booting, household, adding, guard, environment, today]);
 
   function rememberSession(next: Session) {
     setSession(next);
