@@ -61,8 +61,14 @@ export function inferRecurrenceKind(input: {
 
 export function shapeRecurrence(item: Recurrence, fallbackIso: string): Recurrence {
   const createdAt = item.createdAt || fallbackIso;
+  const type = item.type === "income" || item.type === "transfer" ? item.type : "expense";
   return {
     ...item,
+    type,
+    transferToAccountId: typeof item.transferToAccountId === "string" && item.transferToAccountId
+      ? item.transferToAccountId
+      : null,
+    goalId: typeof item.goalId === "string" && item.goalId ? item.goalId : null,
     kind: item.kind ?? inferRecurrenceKind(item),
     origin: item.origin ?? "manual",
     reminderHoursBefore: item.reminderHoursBefore ?? DEFAULT_REMINDER_HOURS_BEFORE,

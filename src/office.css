@@ -898,3 +898,30 @@
 @media (prefers-reduced-motion: reduce) {
   .office.is-editing .instrument { animation: none; }
 }
+
+
+.instrument[data-shell="square"].is-expanded {
+  border-radius: 18px;
+  aspect-ratio: 1 / 1;
+}
+.instrument[data-shell="circle"].is-expanded {
+  border-radius: 999px;
+}
+.instrument[data-shell="list"].is-expanded {
+  border-radius: 14px;
+  min-height: 280px;
+}
+.instrument[data-shell="card"].is-expanded {
+  border-radius: 16px;
+}
+.office[data-density="large"] .instrument-header,
+.office[data-density="large"] .instrument-name,
+.office[data-density="large"] .instrument-glance {
+  font-size: 1.12em;
+}
+.office[data-density="large"] .desk-chip,
+.office[data-density="large"] .cabinet-handle,
+.office[data-density="large"] button.primary {
+  min-height: 44px;
+  font-size: 1.05em;
+}

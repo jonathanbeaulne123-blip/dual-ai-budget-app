@@ -24,6 +24,7 @@ import { sitDownPreview } from "./insights.ts";
 import { leftoverProjection, leftoverSourceAccountId, jarParkingAccountId, plannedAllocation, shapeSitDownSessions, openSitDownSession } from "./sitDown.ts";
 import { goalsVaultAccount, vaultSpendableCents } from "./goalVault.ts";
 import { savedCentsFromContributions, goalStatus } from "./goals.ts";
+import { touchDevicePresence } from "./devices.ts";
 import type { AllocationSlice } from "./allocate.ts";
 import { bookBalanceAsOf, isMonthClosed } from "./statements.ts";
 import { COSMETIC_BY_ID, isCosmeticUnlocked } from "./companion.ts";
@@ -1023,12 +1024,28 @@ export function executeSitDownMoves(household: Household, input: {
       });
       next = moved.household;
       transferIds.push(...moved.postedIds);
+      const contributed = contributeToGoal(next, goal.id, line.cents / 100, {
+        createdBy: actor.createdBy,
+        date,
+        transferId: moved.postedIds[0] ?? null,
+        markFunded: true,
+      });
+      next = contributed.household;
+      contributionIds.push(...contributed.postedIds);
     } else if (!parkingId) {
       warnings.push(`${goal.name} is tracked on the jar. Cash stayed in the leftover source because there is no separate savings account.`);
+      const contributed = contributeToGoal(next, goal.id, line.cents / 100, { createdBy: actor.createdBy, date });
+      next = contributed.household;
+      contributionIds.push(...contributed.postedIds);
+    } else {
+      const contributed = contributeToGoal(next, goal.id, line.cents / 100, {
+        createdBy: actor.createdBy,
+        date,
+        markFunded: true,
+      });
+      next = contributed.household;
+      contributionIds.push(...contributed.postedIds);
     }
-    const contributed = contributeToGoal(next, goal.id, line.cents / 100, { createdBy: actor.createdBy, date });
-    next = contributed.household;
-    contributionIds.push(...contributed.postedIds);
   }
   upsertSitDownSession(next, {
     monthKey: input.monthKey,
@@ -1061,10 +1078,99 @@ export function recordSitDownDrive(household: Household, sessionId: string, driv
   return commit(previous, next, "Sit-down", "Remembered a Drive file id (not the file)", []);
 }
 
+/**
+ * Turn this month's sit-down weights into monthly transfer standing orders for next month.
+ * Confirm still posts each due transfer. Never auto-posts.
+ */
+export function adoptSitDownStandingOrders(household: Household, input: {
+  monthKey: MonthKey;
+  slices?: AllocationSlice[];
+} & ActorInput): CommitResult {
+  const actor = resolveActor(household, input);
+  const date = todayKey();
+  const leftover = leftoverProjection(household, date);
+  const session = openSitDownSession(household, input.monthKey);
+  const slices = input.slices?.length ? input.slices : session?.slices ?? [];
+  if (!slices.length) throw new ValidationError("Save a sit-down plan before remembering standing orders.");
+  const cents = Math.max(leftover.leftoverCents, 100); // weights need a positive pool; amounts are proportional
+  const plan = plannedAllocation(cents, slices);
+  if (!plan.ok) throw new ValidationError(plan.reason);
+  const nextMonth = shiftMonthKey(input.monthKey, 1);
+  const nextDate = `${nextMonth}-01`;
+  let working = ensureGoalsVault(household).household;
+  const sourceId = leftoverSourceAccountId(working, cents, date)
+    ?? working.accounts.find((a) => a.active && a.kind === "chequing")?.id;
+  if (!sourceId) throw new ValidationError("Need a cash-like account for standing orders.");
+  const parkingId = jarParkingAccountId(working);
+  const postedIds: string[] = [];
+  const warnings: string[] = [];
+  for (const line of plan.lines) {
+    if (line.cents <= 0) continue;
+    if (line.kind === "goal") {
+      if (!parkingId) {
+        warnings.push(`Skipped ${line.label} — no Goals vault.`);
+        continue;
+      }
+      const goal = working.goals.find((g) => g.id === line.targetId);
+      const result = addRecurrence(working, {
+        cadence: "monthly",
+        nextDate,
+        type: "transfer",
+        amount: line.cents / 100,
+        accountId: sourceId,
+        transferToAccountId: parkingId,
+        goalId: line.targetId,
+        note: `Standing · jar · ${goal?.name ?? line.label}`,
+        kind: "other",
+        origin: "manual",
+      });
+      working = result.household;
+      postedIds.push(...result.postedIds);
+      continue;
+    }
+    if (line.targetId === sourceId) continue;
+    const result = addRecurrence(working, {
+      cadence: "monthly",
+      nextDate,
+      type: "transfer",
+      amount: line.cents / 100,
+      accountId: sourceId,
+      transferToAccountId: line.targetId,
+      note: `Standing · ${line.label}`,
+      kind: "other",
+      origin: "manual",
+    });
+    working = result.household;
+    postedIds.push(...result.postedIds);
+  }
+  if (!postedIds.length) {
+    throw new ValidationError(warnings[0] ?? "Nothing in the sit-down plan became a standing order.");
+  }
+  // Also seed next month's sit-down with the same weights so the ceremony opens configured.
+  working = saveSitDownSession(working, {
+    monthKey: nextMonth,
+    act: 3,
+    slices,
+    createdBy: actor.createdBy,
+  }).household;
+  return {
+    household: working,
+    warnings,
+    postedIds,
+    undo: {
+      id: `sit-orders-${input.monthKey}`,
+      label: "Sit-down standing orders",
+      snapshot: household,
+      postedIds,
+    },
+  };
+}
+
 export function addGoal(household: Household, input: {
   name: string;
   target: string | number;
   deadline?: string | null;
+  arrivalDate?: string | null;
   shared?: boolean;
   ownerMemberId?: string | null;
   subcategoryId?: string | null;
@@ -1078,17 +1184,24 @@ export function addGoal(household: Household, input: {
   const next = cloneHousehold(household);
   const id = nextId("GOAL-", next.goals.map((goal) => goal.id), 3);
   const at = nowIso();
+  const arrival = input.arrivalDate
+    ? parseDate(input.arrivalDate)
+    : input.deadline
+      ? parseDate(input.deadline)
+      : null;
   next.goalContributions = [...(next.goalContributions ?? [])];
   next.goals.push({
     id,
     name: input.name.trim(),
     targetCents,
     savedCents: 0,
-    deadline: input.deadline ? parseDate(input.deadline) : null,
+    deadline: input.deadline ? parseDate(input.deadline) : arrival,
+    arrivalDate: arrival,
     shared: input.shared !== false,
     ownerMemberId: input.ownerMemberId ?? null,
     subcategoryId: input.subcategoryId ?? null,
-    status: "open",
+    status: "unfunded",
+    funded: false,
     retiredAt: null,
     purchaseId: null,
     createdAt: at,
@@ -1097,7 +1210,11 @@ export function addGoal(household: Household, input: {
   return commit(previous, next, "Add Goal", input.name.trim(), [id]);
 }
 
-export function contributeToGoal(household: Household, goalId: string, amount: string | number, input: ActorInput & { date?: string } = {}): CommitResult {
+export function contributeToGoal(household: Household, goalId: string, amount: string | number, input: ActorInput & {
+  date?: string;
+  transferId?: string | null;
+  markFunded?: boolean;
+} = {}): CommitResult {
   const amountCents = parseAmount(amount, "Contribution");
   const actor = resolveActor(household, input);
   const date = input.date ? parseDate(input.date) : todayKey();
@@ -1117,12 +1234,73 @@ export function contributeToGoal(household: Household, goalId: string, amount: s
     memberId: actor.createdBy,
     amountCents,
     date,
+    transferId: input.transferId ?? null,
     createdAt: at,
     updatedAt: at,
   });
   goal.savedCents = savedCentsFromContributions(next.goalContributions, goal.id);
+  if (input.markFunded || input.transferId) {
+    goal.funded = true;
+    if (goal.status !== "retired") goal.status = "open";
+  }
   goal.updatedAt = at;
   return commit(previous, next, "Goal Progress", `${goal.name} +$${(amountCents / 100).toFixed(2)}`, [id]);
+}
+
+/**
+ * Move cash into the Goals vault, then append the envelope contribution.
+ * Confirm still writes. Hercules never calls this.
+ */
+export function fundGoal(household: Household, input: {
+  goalId: string;
+  amount: string | number;
+  fromAccountId: string;
+  date?: string;
+} & ActorInput): CommitResult {
+  const actor = resolveActor(household, input);
+  const date = input.date ? parseDate(input.date) : todayKey();
+  const amountCents = parseAmount(input.amount, "Contribution");
+  const goal = household.goals.find((item) => item.id === input.goalId);
+  if (!goal) throw new ValidationError("That goal no longer exists.");
+  if (goalStatus(goal) === "retired") {
+    throw new ValidationError("That jar already lives in the retirement home.");
+  }
+  let working = household;
+  const withVault = ensureGoalsVault(working);
+  working = withVault.household;
+  const vault = goalsVaultAccount(working);
+  if (!vault) throw new ValidationError("Open a Goals vault first.");
+  if (input.fromAccountId === vault.id) {
+    throw new ValidationError("Pick a source account that is not the Goals vault.");
+  }
+  requireOpenPeriod(working, date);
+  const moved = postTransfer(working, {
+    date,
+    amount: amountCents / 100,
+    fromAccountId: input.fromAccountId,
+    toAccountId: vault.id,
+    note: `Fund jar · ${goal.name}`,
+    confirmDuplicate: true,
+    createdBy: actor.createdBy,
+  });
+  const transferId = moved.postedIds[0] ?? null;
+  const contributed = contributeToGoal(moved.household, goal.id, amountCents / 100, {
+    createdBy: actor.createdBy,
+    date,
+    transferId,
+    markFunded: true,
+  });
+  return {
+    household: contributed.household,
+    warnings: [...withVault.warnings, ...moved.warnings, ...contributed.warnings],
+    postedIds: [...withVault.postedIds, ...moved.postedIds, ...contributed.postedIds],
+    undo: {
+      id: contributed.undo.id,
+      label: `Fund ${goal.name}`,
+      snapshot: household,
+      postedIds: [...withVault.postedIds, ...moved.postedIds, ...contributed.postedIds],
+    },
+  };
 }
 
 export function ensureGoalsVault(household: Household): CommitResult {
@@ -1158,6 +1336,9 @@ export function purchaseGoal(household: Household, input: {
   if (!goal) throw new ValidationError("That goal no longer exists.");
   if (goalStatus(goal) === "retired") {
     throw new ValidationError("That jar already lives in the retirement home.");
+  }
+  if (!goal.funded) {
+    throw new ValidationError("Fund this jar with a real transfer into the Goals vault first. Envelope-only progress is unfunded.");
   }
   if (goal.savedCents < goal.targetCents) {
     throw new ValidationError("Fill the jar before you buy it. Contribute stays on Plan.");
@@ -1236,10 +1417,12 @@ export function purchaseGoal(household: Household, input: {
 export function addRecurrence(household: Household, input: {
   cadence: Recurrence["cadence"];
   nextDate: string;
-  type: "expense" | "income";
+  type: "expense" | "income" | "transfer";
   amount: string | number;
   accountId: string;
-  subcategoryId: string;
+  transferToAccountId?: string | null;
+  goalId?: string | null;
+  subcategoryId?: string;
   note?: string;
   splits?: Split[];
   kind?: RecurrenceKind;
@@ -1248,7 +1431,19 @@ export function addRecurrence(household: Household, input: {
 }): CommitResult {
   const amountCents = parseAmount(input.amount);
   requireAccount(household, input.accountId);
-  const subcategory = requireSubcategory(household, input.subcategoryId, input.type);
+  if (input.type === "transfer") {
+    if (!input.transferToAccountId) throw new ValidationError("A transfer standing order needs a destination account.");
+    requireAccount(household, input.transferToAccountId);
+    if (input.transferToAccountId === input.accountId) {
+      throw new ValidationError("Choose two different accounts for a transfer standing order.");
+    }
+  } else {
+    if (!input.subcategoryId) throw new ValidationError("Pick a category.");
+    requireSubcategory(household, input.subcategoryId, input.type);
+  }
+  const subcategory = input.type === "transfer" || !input.subcategoryId
+    ? null
+    : requireSubcategory(household, input.subcategoryId, input.type);
   const splits = catalogValidateOwned(input.splits ?? jointSplit(amountCents), amountCents, household);
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
@@ -1262,12 +1457,18 @@ export function addRecurrence(household: Household, input: {
     type: input.type,
     amountCents,
     accountId: input.accountId,
-    subcategoryId: input.subcategoryId,
+    transferToAccountId: input.type === "transfer" ? (input.transferToAccountId ?? null) : null,
+    goalId: input.goalId ?? null,
+    subcategoryId: input.subcategoryId || "SUB-LIFE-FUN",
     note,
     splits,
     active: true,
     autoPost: false,
-    kind: input.kind ?? inferRecurrenceKind({ type: input.type, note, subcategoryName: subcategory.name }),
+    kind: input.kind ?? inferRecurrenceKind({
+      type: input.type === "transfer" ? "expense" : input.type,
+      note,
+      subcategoryName: subcategory?.name ?? note,
+    }),
     origin: input.origin ?? "manual",
     reminderHoursBefore: input.reminderHoursBefore ?? DEFAULT_REMINDER_HOURS_BEFORE,
     googleSync: {},
@@ -1338,25 +1539,52 @@ export function postOneRecurrence(household: Household, recurrenceId: string, to
   if (!item) throw new ValidationError("That repeating item is not active.");
   if (item.nextDate > today) throw new ValidationError("That item is not due yet.");
   const previous = cloneHousehold(household);
-  const posted = postEntry(household, {
-    date: item.nextDate,
-    type: item.type,
-    amount: item.amountCents / 100,
-    accountId: item.accountId,
-    subcategoryId: item.subcategoryId,
-    note: item.note,
-    splits: item.splits,
-    confirmDuplicate: true,
-    source: "recurring",
-    sourceId: item.id,
-  });
-  const next = posted.household;
+  let working = household;
+  const postedIds: string[] = [];
+  if (item.type === "transfer") {
+    if (!item.transferToAccountId) throw new ValidationError("That standing order is missing a destination account.");
+    const moved = postTransfer(working, {
+      date: item.nextDate,
+      amount: item.amountCents / 100,
+      fromAccountId: item.accountId,
+      toAccountId: item.transferToAccountId,
+      note: item.note || "Standing transfer",
+      confirmDuplicate: true,
+    });
+    working = moved.household;
+    postedIds.push(...moved.postedIds);
+    if (item.goalId) {
+      const contributed = contributeToGoal(working, item.goalId, item.amountCents / 100, {
+        date: item.nextDate,
+        transferId: moved.postedIds[0] ?? null,
+        markFunded: true,
+      });
+      working = contributed.household;
+      postedIds.push(...contributed.postedIds);
+    }
+  } else {
+    const posted = postEntry(working, {
+      date: item.nextDate,
+      type: item.type,
+      amount: item.amountCents / 100,
+      accountId: item.accountId,
+      subcategoryId: item.subcategoryId,
+      note: item.note,
+      splits: item.splits,
+      confirmDuplicate: true,
+      source: "recurring",
+      sourceId: item.id,
+    });
+    working = posted.household;
+    postedIds.push(...posted.postedIds);
+  }
+  const next = cloneHousehold(working);
   const current = next.recurrences.find((row) => row.id === item.id);
   if (current) {
     current.nextDate = advanceCadence(item.nextDate, item.cadence);
     current.updatedAt = nowIso();
   }
-  return commit(previous, next, "Post Recurring", `Posted ${item.note || "recurring"}`, posted.postedIds);
+  return commit(previous, next, "Post Recurring", `Posted ${item.note || "recurring"}`, postedIds);
 }
 
 export function setRecurrenceGoogleSync(
@@ -1391,25 +1619,9 @@ export function postDueRecurrences(household: Household, today: DateKey): Commit
   const due = next.recurrences.filter((item) => item.active && item.nextDate <= today);
   if (!due.length) throw new ValidationError("Nothing is due today.");
   for (const item of due) {
-    const result = postEntry(next, {
-      date: item.nextDate,
-      type: item.type,
-      amount: item.amountCents / 100,
-      accountId: item.accountId,
-      subcategoryId: item.subcategoryId,
-      note: item.note,
-      splits: item.splits,
-      confirmDuplicate: true,
-      source: "recurring",
-      sourceId: item.id,
-    });
+    const result = postOneRecurrence(next, item.id, today);
     next = result.household;
     postedIds.push(...result.postedIds);
-    const current = next.recurrences.find((row) => row.id === item.id);
-    if (current) {
-      current.nextDate = advanceCadence(item.nextDate, item.cadence);
-      current.updatedAt = nowIso();
-    }
   }
   return commit(previous, next, "Post Recurring", `Posted ${due.length} recurring ${due.length === 1 ? "item" : "items"}`, postedIds);
 }
@@ -2690,6 +2902,23 @@ export function guessHangman(household: Household, input: { memberId: string; le
   return commit(previous, next, "Desk game", summary, []);
 }
 
+export function touchHouseholdDevice(household: Household, input: {
+  deviceId: string;
+  label: string;
+  memberId?: string | null;
+}): CommitResult {
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.devices = touchDevicePresence({
+    devices: next.devices ?? [],
+    deviceId: input.deviceId,
+    label: input.label,
+    memberId: input.memberId ?? null,
+    environment: next.environment,
+  });
+  return commit(previous, next, "Devices", `Saw ${input.label}`, []);
+}
+
 export function emptyHousehold(environment: Household["environment"] = "development"): Household {
   return {
     version: 1,
@@ -2720,6 +2949,7 @@ export function emptyHousehold(environment: Household["environment"] = "developm
     budgetPlans: [],
     sitDownSessions: [],
     activity: [],
+    devices: [],
     shiftSettings: DEFAULT_SHIFT_SETTINGS,
     lastCommittedAt: null,
   };

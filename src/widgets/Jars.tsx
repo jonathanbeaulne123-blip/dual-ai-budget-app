@@ -3,6 +3,8 @@ import {
   formatCad,
   formatDateLabel,
   goalLedger,
+  goalPaceBlurb,
+  goalStatus,
   goalsVaultAccount,
   JARS_EMPTY,
   purchaseGoal,
@@ -159,8 +161,10 @@ export function JarsBody({
         {dashboard.goals.map((item) => {
           const late = Boolean(item.goal.deadline && item.goal.deadline < today && item.progress < 1);
           const full = item.progress >= 1;
+          const status = goalStatus(item.goal);
+          const pace = goalPaceBlurb(item.goal, today);
           return (
-            <div key={item.goal.id} className="piggy-card">
+            <div key={item.goal.id} className={`piggy-card ${status === "unfunded" ? "is-unfunded" : ""}`}>
               <Piggy fill={item.progress} late={late} clipId={item.goal.id} />
               <div className="piggy-meter" aria-hidden="true">
                 <i style={{ width: `${Math.round(item.progress * 100)}%` }} />
@@ -171,9 +175,12 @@ export function JarsBody({
               </div>
               <p className="muted">
                 {formatCad(item.goal.savedCents)} / {formatCad(item.goal.targetCents)}
-                {item.goal.deadline ? ` · ${formatDateLabel(item.goal.deadline)}` : ""}
+                {pace ? ` · ${pace}` : item.goal.deadline ? ` · ${formatDateLabel(item.goal.deadline)}` : ""}
               </p>
-              {full && onCommand && (
+              {status === "unfunded" && (
+                <p className="muted">Unfunded envelope — cash still sits in chequing until you Fund jar or sit-down Confirm.</p>
+              )}
+              {full && status !== "unfunded" && onCommand && (
                 buying === item.goal.id ? (
                   <PurchaseGoalSheet
                     household={household}

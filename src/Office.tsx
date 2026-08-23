@@ -43,6 +43,9 @@ import {
   MAX_USER_PINS,
   packWide,
   sizeOf,
+  bumpLayoutForExpand,
+  collapseExpandedLayout,
+  expandShellFor,
   INSTRUMENT_LABEL,
   PERSONALITY_BLURB,
   PERSONALITY_DESK,
@@ -336,8 +339,12 @@ export function Office({
   function toggle(id: InstrumentId) {
     setLayout((current) => {
       const opening = current.expanded !== id;
-      if (opening) queueMicrotask(() => emitOfficeIntent({ type: "expand", id }));
-      return { ...current, expanded: opening ? id : null };
+      if (opening) {
+        queueMicrotask(() => emitOfficeIntent({ type: "expand", id }));
+        return bumpLayoutForExpand(current, id, deskWidth);
+      }
+      queueMicrotask(() => emitOfficeIntent({ type: "collapse" }));
+      return collapseExpandedLayout(current);
     });
   }
 
@@ -880,7 +887,15 @@ export function Office({
             >
               Glance only
             </button>
+            <button
+              type="button"
+              className={`desk-stock ${look.density === "large" ? "is-on" : ""}`}
+              onClick={() => setLook({ ...look, density: "large" })}
+            >
+              Large
+            </button>
           </div>
+          <p className="muted">Large density is the WCAG-friendly alternative to pinch-zoom on the locked phone viewport.</p>
           <p className="muted">Stock tints the blotter, not the whole house. Window weather stays weather. Look and layout follow this Google account — pull them into a fresh household.</p>
           <div className="desk-stock-row">
             <button

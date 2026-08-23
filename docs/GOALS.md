@@ -4,7 +4,9 @@ Leftover is still **cash-like − outgoing bills next 30 days − credit minimum
 
 When leftover is positive and sit-down Confirm moves jar lines, cash transfers into a dedicated **Goals vault** savings account (`purpose: "goals"`, seed `ACC-GOALS`). Everyday high-interest savings stays general HIS. Pigs on the desk are envelopes on that vault — YNAB sinking funds in one account, not twenty-four bank logins.
 
-Laws: [DECISIONS.md](DECISIONS.md) D-016 / D-052 / D-055 / D-073 / D-083 / D-085 / D-088 / D-089.
+Plan **Fund jar** / `fundGoal` also moves cash (transfer + contribution). New and legacy envelope-only jars are **`unfunded`** until a real vault transfer backs them — history is never fabricated. Each jar shows **arrival date** beside the percentage.
+
+Laws: [DECISIONS.md](DECISIONS.md) D-016 / D-052 / D-055 / D-073 / D-083 / D-085 / D-088 / D-089 / D-096.
 
 ## Research taken
 

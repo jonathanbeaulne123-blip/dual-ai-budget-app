@@ -16,6 +16,7 @@ import {
   comparativeIncome,
   compileHousehold,
   formatCad,
+  householdWallet,
   incomeStatement,
   liquidityWatch,
   likelyMiscoded,
@@ -41,15 +42,15 @@ import { queryBooks, type BooksStatus } from "./ledger/engine.ts";
 import { assertReadOnlySelect } from "./ledger/queryGuard.ts";
 
 const PANES = [
-  { id: "wallet", label: "Wallet" },
-  { id: "register", label: "All activity" },
-  { id: "journal", label: "Journal" },
-  { id: "trial", label: "Trial balance" },
-  { id: "statements", label: "Statements" },
-  { id: "rec", label: "Reconcile" },
-  { id: "close", label: "Close pack" },
-  { id: "accounts", label: "Chart" },
-  { id: "query", label: "Ask" },
+  { id: "wallet", label: "Wallet", blurb: "Net worth story: chequing → Goals vault → cards → investments. Touch a tile to open the room." },
+  { id: "register", label: "All activity", blurb: "Every posted row you can see in this view. Duplicate contrast lives here." },
+  { id: "journal", label: "Journal", blurb: "Debit and credit lines compiled from the snapshot. The books engine." },
+  { id: "trial", label: "Trial balance", blurb: "Account totals that must balance. Health refuses a lie." },
+  { id: "statements", label: "Statements", blurb: "Balance sheet, P&L, cash flow, equity, working capital, notes." },
+  { id: "rec", label: "Reconcile", blurb: "Tie a statement figure to the books. Never posts money by itself." },
+  { id: "close", label: "Close pack", blurb: "Hard month lock. Reopen is explicit. Milk in the open month still posts." },
+  { id: "accounts", label: "Chart", blurb: "Every account on the chart of accounts." },
+  { id: "query", label: "Ask", blurb: "Read-only SQL and Ask the books. Hercules answers from the journal." },
 ] as const;
 
 type Pane = (typeof PANES)[number]["id"];
@@ -82,6 +83,7 @@ export function BooksPage({
   const trial = useMemo(() => trialBalance(books, { recognizedOnly: true }), [books]);
   const equation = useMemo(() => booksEquation(books), [books]);
   const opinion = useMemo(() => auditOpinion(household), [household]);
+  const wallet = useMemo(() => householdWallet(household, todayKey()), [household]);
   const today = todayKey();
   const monthKey = monthKeyFromDateKey(today);
   const packMonth = closedMonthKeys(household).at(-1) ?? monthKey;
@@ -111,6 +113,36 @@ export function BooksPage({
           Hercules’s opinion: <strong>{opinion.kind}</strong> — {opinion.hercules}
         </p>
       </section>
+      <section className="card books-story">
+        <header>
+          <h2>Story</h2>
+          <span className="muted">Net worth → chequing → goal savings → cards → investments</span>
+        </header>
+        <div className="books-story-row">
+          <button type="button" className="books-story-tile" onClick={() => setPane("wallet")}>
+            <span>Net worth</span>
+            <strong className={equation.netWorthCents < 0 ? "negative" : ""}>{formatCad(equation.netWorthCents)}</strong>
+          </button>
+          {wallet.story.map((group) => (
+            <button
+              key={group.kind}
+              type="button"
+              className="books-story-tile"
+              onClick={() => {
+                setPane("wallet");
+                const first = group.tiles[0]?.account.id;
+                if (first) {
+                  setAccountId(first);
+                  onFocusAccount(first);
+                }
+              }}
+            >
+              <span>{group.kind === "savings" ? "Goal savings" : group.label}</span>
+              <strong>{formatCad(group.tiles.reduce((sum, tile) => sum + tile.displayCents, 0))}</strong>
+            </button>
+          ))}
+        </div>
+      </section>
       <div className="grid">
         <div className="stat"><span>Assets</span><strong>{formatCad(equation.assetCents)}</strong></div>
         <div className="stat"><span>Liabilities</span><strong>{formatCad(equation.liabilityCents)}</strong></div>
@@ -138,6 +170,7 @@ export function BooksPage({
           </button>
         ))}
       </div>
+      <p className="muted books-pane-blurb">{PANES.find((item) => item.id === pane)?.blurb}</p>
       {pane === "wallet" && (
         <WalletPane
           household={household}

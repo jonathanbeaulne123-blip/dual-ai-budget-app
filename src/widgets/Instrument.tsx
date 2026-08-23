@@ -23,6 +23,7 @@ export function Instrument({
   extraClass,
   size,
   chips,
+  shell,
 }: {
   id: string;
   name: string;
@@ -46,6 +47,7 @@ export function Instrument({
   extraClass?: string;
   size?: string;
   chips?: ReactNode;
+  shell?: "square" | "circle" | "list" | "card";
 }) {
   function onKey(event: KeyboardEvent<HTMLButtonElement>) {
     onHeaderKeyDown?.(event);
@@ -58,9 +60,9 @@ export function Instrument({
   return (
     <section
       className={`instrument instrument-${id} ${expanded ? "is-expanded" : ""} ${minimized ? "is-minimized" : ""} ${bump ? "is-bumped" : ""} ${inert ? "is-inert" : ""} ${dragging ? "is-dragging" : ""} ${extraClass ?? ""}`}
-      style={{ ["--rot" as string]: `${rotation}deg` }}
       data-size={size}
-      aria-label={aria}
+      data-shell={expanded ? (shell ?? "card") : undefined}
+      style={{ ["--tilt" as string]: `${rotation}deg` }}
     >
       {chips}
       <button
@@ -68,20 +70,18 @@ export function Instrument({
         className="instrument-header"
         ref={headerRef}
         aria-expanded={expanded}
-        aria-grabbed={dragging || undefined}
-        onClick={() => { if (!dragging) onHeader(); }}
-        onKeyDown={onKey}
+        aria-label={aria}
+        onClick={onHeader}
         onPointerDown={onHeaderPointerDown}
         onPointerMove={onHeaderPointerMove}
         onPointerUp={onHeaderPointerUp}
         onPointerCancel={onHeaderPointerCancel}
+        onKeyDown={onKey}
       >
         <span className="instrument-name">{name}</span>
         <span className="instrument-glance">{glance}</span>
       </button>
-      {!minimized && expanded && (body || children) ? (
-        <div className="instrument-body">{body || children}</div>
-      ) : null}
+      {expanded && <div className="instrument-body">{body ?? children}</div>}
     </section>
   );
 }

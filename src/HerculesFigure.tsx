@@ -21,7 +21,8 @@ import { useId, type ReactNode } from "react";
 
 export type HerculesFigurePose =
   | "loaf" | "walk" | "jump" | "stretch" | "wash" | "sleep" | "hide"
-  | "pace" | "celebrate" | "pounce" | "perch" | "lick" | "bump" | "attack";
+  | "pace" | "celebrate" | "pounce" | "perch" | "lick" | "bump" | "attack"
+  | "sit" | "beg" | "bag";
 
 export type HerculesFigureMood = "glowing" | "content" | "restless" | "hiding";
 
@@ -162,6 +163,17 @@ export function HerculesFigure({
               <path d="M80 142 C77 154 76 166 78 175 C79 180 89 181 92 177 C94 165 94 152 92 142 Z" fill="var(--herc-coat, #fdfbf6)" />
               <path d="M78 175 c4 4 10 4 13 1" strokeWidth="1.3" opacity="0.65" />
             </g>
+          </g>
+
+          <g className="herc-bag" opacity="0">
+            <path
+              d="M118 128 L168 118 L174 168 L122 176 Z"
+              fill="#c4a574"
+              stroke="var(--herc-ink, #1b1712)"
+              strokeWidth="2"
+            />
+            <path d="M128 126 L134 98 L158 94 L162 120" fill="none" stroke="var(--herc-ink, #1b1712)" strokeWidth="1.6" />
+            <path d="M140 130 L148 162" strokeWidth="1.2" opacity="0.45" />
           </g>
 
           <path className="herc-ground" d="M28 184 L178 184" strokeWidth="1.3" opacity="0.18" />

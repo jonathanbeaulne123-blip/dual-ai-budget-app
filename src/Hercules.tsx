@@ -16,6 +16,8 @@ import {
   herculesNeedsCheck,
   herculesPageSurface,
   herculesInstrumentSurface,
+  herculesUsefulness,
+  firstRunLesson,
   hourInToronto,
   kettlePhase,
   kitchenSeason,
@@ -146,6 +148,7 @@ export function HerculesPresence({
   const look = useMemo(() => dressedLook(household, today, Boolean(visorPop)), [household, today, visorPop]);
   const five = useMemo(() => groceryHighFive(household, today), [household, today]);
   const attention = useMemo(() => herculesNeedsCheck(household, today), [household, today]);
+  const usefulness = useMemo(() => herculesUsefulness(household, today), [household, today]);
   const mutters = useMemo(() => herculesMutters(household, today), [household, today]);
   const proposal = useMemo(() => bubbleNotice(household, today), [household, today]);
   const surface = useMemo(
@@ -158,6 +161,8 @@ export function HerculesPresence({
   const [motion, setMotion] = useState<HerculesPose>("loaf");
   const [talk, setTalk] = useState<HerculesTalk | null>(null);
   const [open, setOpen] = useState(false);
+  const [begging, setBegging] = useState(false);
+  const [bagPlay, setBagPlay] = useState(false);
   const [question, setQuestion] = useState("");
   const [topic, setTopic] = useState("idle");
   const [purr, setPurr] = useState(false);
@@ -169,6 +174,8 @@ export function HerculesPresence({
   const [perchPlay, setPerchPlay] = useState(false);
   const perchPlayFor = useRef<string | null>(null);
   const drag = useRef<{ x: number; y: number; px: number; py: number; moved: boolean } | null>(null);
+  const clickAt = useRef(0);
+  const sitTimer = useRef<number | null>(null);
   const idleAt = useRef(0);
   const mutterAt = useRef(0);
   const chatGen = useRef(0);
@@ -178,8 +185,8 @@ export function HerculesPresence({
   const lastBump = useRef<{ id: string; at: number } | null>(null);
   const bubbleRef = useRef<HTMLDivElement | null>(null);
   const [bubbleSize, setBubbleSize] = useState({ w: 228, h: 96 });
-  const showProposal = Boolean(proposal && !adding && !open);
-  const showTalk = Boolean((open || talk) && !adding && talk && !(proposal && !open));
+  const showProposal = Boolean(proposal && !adding && !open && !begging);
+  const showTalk = Boolean((open || talk || begging) && !adding && talk && !(proposal && !open && !begging));
 
   useLayoutEffect(() => {
     const node = bubbleRef.current;
@@ -244,9 +251,10 @@ export function HerculesPresence({
       const page = adding ? "add" : tab;
       const instrument = intent.id;
       const help = openHelpState({ tab: page, instrument, household, today });
+      const lesson = firstRunLesson(`instrument:${intent.id}`, surface.lesson);
       applyTalk({
         spoken: help.spoken,
-        lesson: null,
+        lesson,
         fact: herculesPageSurface(page, household, today).fact,
         replies: help.replies,
         pose: surface.pose,
@@ -254,6 +262,7 @@ export function HerculesPresence({
         attention: false,
       });
       setMotion(surface.pose);
+      setBegging(false);
     });
   }, [household, today, adding, tab]);
 
@@ -433,6 +442,57 @@ export function HerculesPresence({
     setTalk(null);
     setBusy(false);
     setQuestion("");
+    setBegging(false);
+  }
+
+  function sitWithBag() {
+    setPinned(true);
+    setBegging(false);
+    setOpen(false);
+    setTalk(null);
+    setBagPlay(true);
+    setMotion("bag");
+    if (!reducedMotion()) {
+      window.setTimeout(() => {
+        setBagPlay(false);
+        setMotion("sit");
+      }, 2200);
+    } else {
+      setBagPlay(false);
+      setMotion("sit");
+    }
+  }
+
+  function beginBeg() {
+    setBegging(true);
+    setOpen(false);
+    setMotion(usefulness.animation > 0.55 ? "beg" : usefulness.animation > 0.25 ? "beg" : "sit");
+    setTalk({
+      spoken: usefulness.spoken,
+      lesson: null,
+      fact: usefulness.reasons[0] ? { label: "Useful?", value: usefulness.reasons[0] } : null,
+      replies: [],
+      pose: "beg",
+      topic: "beg",
+      attention: true,
+    });
+  }
+
+  function openChatFromBeg() {
+    setBegging(false);
+    const page = adding ? "add" : tab;
+    const instrument = currentInstrument();
+    const help = openHelpState({ tab: page, instrument, household, today });
+    const lesson = firstRunLesson(`page:${page}`, surface.lesson);
+    applyTalk({
+      spoken: help.spoken,
+      lesson,
+      fact: surface.fact,
+      replies: help.replies,
+      pose: usefulness.light === "green" ? "celebrate" : "perch",
+      topic: instrument ?? topic,
+      attention: false,
+    });
   }
 
   function applyTalk(next: HerculesTalk, userText?: string) {
@@ -604,27 +664,34 @@ export function HerculesPresence({
     if (!start) return;
     if (!start.moved) {
       setPurr(true);
-      if (open) {
-        closeChat();
-        setMotion("loaf");
+      const now = Date.now();
+      const doubleSit = now - clickAt.current < 420;
+      clickAt.current = now;
+      if (doubleSit) {
+        if (sitTimer.current) {
+          window.clearTimeout(sitTimer.current);
+          sitTimer.current = null;
+        }
+        sitWithBag();
         return;
       }
-      applyTalk((() => {
-        const page = adding ? "add" : tab;
-        const instrument = currentInstrument();
-        const help = openHelpState({ tab: page, instrument, household, today });
-        return {
-          spoken: help.spoken,
-          lesson: null,
-          fact: surface.fact,
-          replies: help.replies,
-          pose: "perch" as const,
-          topic: instrument ?? topic,
-          attention: false,
-        };
-      })());
+      if (open) {
+        closeChat();
+        setMotion(pinned ? "sit" : "loaf");
+        return;
+      }
+      if (begging) {
+        openChatFromBeg();
+        return;
+      }
+      // Delay beg so a second immediate click can become sit instead.
+      if (sitTimer.current) window.clearTimeout(sitTimer.current);
+      sitTimer.current = window.setTimeout(() => {
+        sitTimer.current = null;
+        beginBeg();
+      }, 280);
     } else {
-      setMotion(look.view.mood === "restless" ? "pace" : "loaf");
+      setMotion(look.view.mood === "restless" ? "pace" : pinned ? "sit" : "loaf");
     }
   }
 
@@ -693,7 +760,7 @@ export function HerculesPresence({
           className={`hercules-bubble ${bubbleSide} ${open ? "chat" : ""}`}
           style={bubbleStyle}
         >
-          {open && (
+          {open && !begging && (
             <button
               type="button"
               className="hercules-help"
@@ -715,7 +782,7 @@ export function HerculesPresence({
               How can I help
             </button>
           )}
-          {open && turns.length > 0 ? (
+          {open && !begging && turns.length > 0 ? (
             <div className="hercules-chat-log" ref={logRef}>
               {turns.slice(-6).map((turn, index) => (
                 <p key={`${turn.role}-${index}-${turn.text.slice(0, 12)}`} className={`hercules-turn ${turn.role === "user" ? "you" : "cat"}`}>
@@ -734,7 +801,7 @@ export function HerculesPresence({
           {!busy && talk.fact && (
             <p className="hercules-fact"><span>{talk.fact.label}</span> {talk.fact.value}</p>
           )}
-          {open && (
+          {open && !begging && (
             <>
               {!busy && (
                 <div className="hercules-replies">
@@ -778,13 +845,16 @@ export function HerculesPresence({
           perchPlay ? `perch-play perch-${perchMove}` : "",
           purr ? "purr" : "",
           five.yes ? "high-five" : "",
-          attention ? "needs-you" : "",
+          attention || begging ? "needs-you" : "",
+          begging ? "is-begging" : "",
+          bagPlay ? "is-bag" : "",
+          `useful-${usefulness.light}`,
           adding ? "loafing is-adding" : "",
           pinned ? "pinned" : "",
           reducedMotion() ? "cut-motion" : "",
         ].join(" ")}
-        style={{ left: pos.x, top: pos.y, width: size, height: size }}
-        aria-label={attention ? `${look.view.name} wants a check-in` : `Talk to ${look.view.name}`}
+        style={{ left: pos.x, top: pos.y, width: size, height: size, ["--herc-useful" as string]: String(usefulness.animation) }}
+        aria-label={begging ? `${look.view.name} is begging — tap again for help` : attention ? `${look.view.name} wants a check-in` : `Talk to ${look.view.name}. Double-tap to sit.`}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -801,10 +871,11 @@ export function HerculesPresence({
           chain={look.chain}
           house={look.house}
           collar={look.collar}
-          pose={pose}
+          pose={bagPlay ? "bag" : begging ? "beg" : pose}
           size={size}
           flip={flip}
         />
+        <span className={`hercules-useful useful-${usefulness.light}`} aria-hidden="true">!</span>
       </button>
     </div>
   );

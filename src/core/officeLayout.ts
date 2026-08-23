@@ -61,13 +61,15 @@ export type LayoutItem = {
 };
 
 export type OfficeLayout = {
-  v: 1;
+  v: 2;
   items: LayoutItem[];
   expanded: InstrumentId | "window" | null;
   minimized: InstrumentId[];
   windowMinimized: boolean;
   /** User pin-open. Distinct from PINNED_INSTRUMENTS (calculator cannot hide). */
   pinned: InstrumentId[];
+  /** Snapshot of x/y before expand-bump so close can reset. */
+  restPositions: Partial<Record<InstrumentId, Point>>;
 };
 
 export const INSTRUMENT_LABEL: Record<InstrumentId, string> = {
@@ -166,7 +168,7 @@ export const STOCK_LABEL: Record<PaperStock, string> = {
   cork: "Play cork",
 };
 
-export type OfficeLook = { stock: PaperStock; density: "names" | "glance" };
+export type OfficeLook = { stock: PaperStock; density: "names" | "glance" | "large" };
 export const DEFAULT_LOOK: OfficeLook = { stock: "cream", density: "names" };
 
 export function officeLookKey(environment: Environment, memberId?: string): string {
@@ -181,7 +183,7 @@ export function parseOfficeLook(raw: unknown): OfficeLook {
   const stock = record.stock === "graph" || record.stock === "night" || record.stock === "cork" || record.stock === "cream"
     ? record.stock
     : DEFAULT_LOOK.stock;
-  const density = record.density === "glance" ? "glance" : "names";
+  const density = record.density === "glance" ? "glance" : record.density === "large" ? "large" : "names";
   return { stock, density };
 }
 
@@ -232,7 +234,7 @@ export function applyPersonality(layout: OfficeLayout, key: Exclude<DeskPersonal
     if (seen.has(id)) continue;
     ordered.push({ id, hidden: !PINNED_INSTRUMENTS.includes(id) });
   }
-  return { ...layout, items: ordered, expanded: null, pinned: [] };
+  return { ...layout, v: 2, items: ordered, expanded: null, pinned: [], restPositions: {} };
 }
 
 export function cycleInstrumentSize(id: InstrumentId, current: InstrumentSize): InstrumentSize {
@@ -252,12 +254,13 @@ export function officeRingsKey(environment: Environment): string {
 
 export function defaultLayout(): OfficeLayout {
   return {
-    v: 1,
+    v: 2,
     items: DEFAULT_ORDER.map((id) => ({ id })),
     expanded: null,
     minimized: [],
     windowMinimized: false,
     pinned: [],
+    restPositions: {},
   };
 }
 
@@ -269,7 +272,7 @@ export function parseOfficeLayout(raw: unknown): OfficeLayout {
   const fallback = defaultLayout();
   if (!raw || typeof raw !== "object") return fallback;
   const record = raw as Record<string, unknown>;
-  if (record.v !== 1) return fallback;
+  if (record.v !== 1 && record.v !== 2) return fallback;
   const seen = new Set<InstrumentId>();
   const items: LayoutItem[] = [];
   if (Array.isArray(record.items)) {
@@ -303,13 +306,24 @@ export function parseOfficeLayout(raw: unknown): OfficeLayout {
   const pinned = Array.isArray(record.pinned)
     ? [...new Set(record.pinned.filter(isInstrumentId))].slice(0, MAX_USER_PINS)
     : [];
+  const restPositions: Partial<Record<InstrumentId, Point>> = {};
+  if (record.restPositions && typeof record.restPositions === "object") {
+    for (const [id, point] of Object.entries(record.restPositions as Record<string, unknown>)) {
+      if (!isInstrumentId(id) || !point || typeof point !== "object") continue;
+      const x = Number((point as Point).x);
+      const y = Number((point as Point).y);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+      restPositions[id] = { x, y };
+    }
+  }
   return {
-    v: 1,
+    v: 2,
     items,
     expanded,
     minimized,
     windowMinimized: Boolean(record.windowMinimized),
     pinned,
+    restPositions,
   };
 }
 
@@ -822,8 +836,8 @@ export type OfficeIntent =
 const intentListeners = new Set<(intent: OfficeIntent) => void>();
 
 export function collapseOfficeLayout(layout: OfficeLayout): OfficeLayout {
-  if (layout.expanded == null) return layout;
-  return { ...layout, expanded: null };
+  if (layout.expanded == null && !Object.keys(layout.restPositions ?? {}).length) return layout;
+  return collapseExpandedLayout({ ...layout, expanded: layout.expanded });
 }
 
 export function instrumentIsOpen(layout: OfficeLayout, id: InstrumentId | "window"): boolean {
@@ -915,4 +929,106 @@ export function emitOfficeIntent(intent: OfficeIntent): void {
 export function subscribeOfficeIntent(listener: (intent: OfficeIntent) => void): () => void {
   intentListeners.add(listener);
   return () => { intentListeners.delete(listener); };
+}
+
+
+/** How an instrument wants to expand — calendar square, clock circle, accounts list. */
+export type ExpandShell = "square" | "circle" | "list" | "card";
+
+export function expandShellFor(id: InstrumentId | "window"): ExpandShell {
+  if (id === "calendar" || id === "appointments") return "square";
+  if (id === "timesheet" || id === "lamp") return "circle";
+  if (id === "accounts" || id === "wallet" || id === "mail" || id === "claims") return "list";
+  return "card";
+}
+
+export const EXPAND_SIZE: Record<ExpandShell, { w: number; h: number }> = {
+  square: { w: 320, h: 320 },
+  circle: { w: 280, h: 280 },
+  list: { w: 360, h: 420 },
+  card: { w: 340, h: 360 },
+};
+
+function overlaps(a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }): boolean {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+/**
+ * Keep the expanding widget fixed; shove overlapping neighbors away.
+ * Returns new item x/y plus a restPositions snapshot for close-reset.
+ */
+export function bumpLayoutForExpand(
+  layout: OfficeLayout,
+  id: InstrumentId,
+  canvasWidth: number,
+): OfficeLayout {
+  const visible = layout.items.filter((item) => !item.hidden);
+  const packed = packWide(visible.map((item) => ({ id: item.id, size: item.size })), canvasWidth);
+  const restPositions: Partial<Record<InstrumentId, Point>> = { ...(layout.restPositions ?? {}) };
+  const positions: Record<string, Point> = {};
+  for (const item of visible) {
+    const pos = {
+      x: item.x ?? packed[item.id]?.x ?? DESK_GUTTER,
+      y: item.y ?? packed[item.id]?.y ?? DESK_GUTTER,
+    };
+    positions[item.id] = pos;
+    if (!restPositions[item.id]) restPositions[item.id] = { ...pos };
+  }
+  const expander = positions[id];
+  if (!expander) {
+    return { ...layout, v: 2, expanded: id, restPositions };
+  }
+  const shell = expandShellFor(id);
+  const size = EXPAND_SIZE[shell];
+  const fixed = { x: expander.x, y: expander.y, w: size.w, h: size.h };
+  for (const item of visible) {
+    if (item.id === id) continue;
+    const pos = positions[item.id]!;
+    const otherSize = sizeOf(item);
+    const rect = { x: pos.x, y: pos.y, w: SIZE_WIDTH[otherSize], h: SIZE_HEIGHT[otherSize] };
+    if (!overlaps(fixed, rect)) continue;
+    const pushRight = fixed.x + fixed.w + DESK_GUTTER - rect.x;
+    const pushDown = fixed.y + fixed.h + DESK_GUTTER - rect.y;
+    const pushLeft = rect.x + rect.w + DESK_GUTTER - fixed.x;
+    const pushUp = rect.y + rect.h + DESK_GUTTER - fixed.y;
+    const options = [
+      { x: pos.x + pushRight, y: pos.y, cost: pushRight },
+      { x: pos.x, y: pos.y + pushDown, cost: pushDown },
+      { x: pos.x - pushLeft, y: pos.y, cost: pushLeft },
+      { x: pos.x, y: pos.y - pushUp, cost: pushUp },
+    ].filter((row) => row.cost > 0);
+    options.sort((a, b) => a.cost - b.cost);
+    const best = options[0] ?? { x: pos.x + pushRight, y: pos.y };
+    positions[item.id] = {
+      x: snapGrid(Math.max(DESK_GUTTER, best.x)),
+      y: snapGrid(Math.max(DESK_GUTTER, best.y)),
+    };
+  }
+  return {
+    ...layout,
+    v: 2,
+    expanded: id,
+    restPositions,
+    items: layout.items.map((item) => {
+      const pos = positions[item.id];
+      if (!pos) return item;
+      return { ...item, x: pos.x, y: pos.y };
+    }),
+  };
+}
+
+/** Close the expander and restore pre-bump positions. */
+export function collapseExpandedLayout(layout: OfficeLayout): OfficeLayout {
+  const rest = layout.restPositions ?? {};
+  return {
+    ...layout,
+    v: 2,
+    expanded: null,
+    restPositions: {},
+    items: layout.items.map((item) => {
+      const pos = rest[item.id];
+      if (!pos) return item;
+      return { ...item, x: pos.x, y: pos.y };
+    }),
+  };
 }

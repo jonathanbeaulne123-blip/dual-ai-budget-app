@@ -26,9 +26,24 @@ export function applyGoalSavings(goals: Goal[], contributions: GoalContribution[
   }));
 }
 
-export function goalStatus(goal: Pick<Goal, "status" | "retiredAt">): GoalStatus {
+export function goalStatus(goal: Pick<Goal, "status" | "retiredAt" | "funded">): GoalStatus {
   if (goal.status === "retired" || goal.retiredAt) return "retired";
+  if (goal.status === "unfunded" || goal.funded === false) return "unfunded";
   return "open";
+}
+
+export function goalArrivalDate(goal: Pick<Goal, "arrivalDate" | "deadline">): string | null {
+  return goal.arrivalDate || goal.deadline || null;
+}
+
+export function goalPaceBlurb(goal: Pick<Goal, "savedCents" | "targetCents" | "arrivalDate" | "deadline">, today: string): string | null {
+  const arrival = goalArrivalDate(goal);
+  if (!arrival || goal.targetCents <= 0) return null;
+  const progress = Math.max(0, Math.min(1, goal.savedCents / goal.targetCents));
+  const pct = Math.round(progress * 100);
+  if (arrival < today && progress < 1) return `${pct}% · arrival ${arrival} was the plan — still short`;
+  if (progress >= 1) return `${pct}% · arrived`;
+  return `${pct}% · arrive ${arrival}`;
 }
 
 export function goalIsFull(goal: Pick<Goal, "savedCents" | "targetCents">): boolean {
@@ -47,12 +62,20 @@ export function shapeGoalProgress(
 ): { goals: Goal[]; goalContributions: GoalContribution[] } {
   const nextGoals: Goal[] = (goals ?? []).map((goal) => {
     const createdAt = stampIso(goal.createdAt, fallbackIso);
-    const status = goalStatus(goal);
+    const retired = goal.status === "retired" || Boolean(goal.retiredAt);
+    const funded = goal.funded === true;
+    const status: GoalStatus = retired ? "retired" : funded ? "open" : "unfunded";
+    const arrivalDate =
+      typeof goal.arrivalDate === "string" && goal.arrivalDate
+        ? goal.arrivalDate
+        : goal.deadline ?? null;
     return {
       ...goal,
       savedCents: goal.savedCents ?? 0,
+      arrivalDate,
+      funded,
       status,
-      retiredAt: status === "retired" ? stampIso(goal.retiredAt ?? undefined, createdAt) : null,
+      retiredAt: retired ? stampIso(goal.retiredAt ?? undefined, createdAt) : null,
       purchaseId: typeof goal.purchaseId === "string" && goal.purchaseId ? goal.purchaseId : null,
       createdAt,
       updatedAt: stampIso(goal.updatedAt, createdAt),
@@ -62,6 +85,7 @@ export function shapeGoalProgress(
     const createdAt = stampIso(row.createdAt, fallbackIso);
     return {
       ...row,
+      transferId: typeof row.transferId === "string" && row.transferId ? row.transferId : null,
       createdAt,
       updatedAt: stampIso(row.updatedAt, createdAt),
     };

@@ -124,7 +124,7 @@ export function proposeAllocation(household: Household, asOf: DateKey): Allocati
       value: 3,
     });
   }
-  for (const goal of household.goals.filter((item) => item.shared !== false && goalStatus(item) === "open")) {
+  for (const goal of household.goals.filter((item) => item.shared !== false && goalStatus(item) !== "retired")) {
     const remaining = Math.max(0, goal.targetCents - goal.savedCents);
     if (remaining <= 0) continue;
     slices.push({

@@ -237,6 +237,8 @@ export type WalletTile = {
 export type HouseholdWallet = {
   tiles: WalletTile[];
   groups: { kind: AccountKind; label: string; tiles: WalletTile[] }[];
+  /** Books story strip: chequing → Goals vault/savings → cards → investments. */
+  story: { kind: AccountKind; label: string; tiles: WalletTile[] }[];
   cashCents: number;
   owedCents: number;
   receivableCents: number;
@@ -310,9 +312,22 @@ export function householdWallet(household: Household, today: DateKey): Household
     .map((kind) => ({
       kind,
       label: ACCOUNT_KIND_LABEL[kind],
-      tiles: tiles.filter((tile) => tile.kind === kind),
+      tiles: tiles
+        .filter((tile) => tile.kind === kind)
+        .sort((left, right) => {
+          if (kind !== "savings") return 0;
+          const leftVault = left.account.savings?.purpose === "goals" ? 0 : 1;
+          const rightVault = right.account.savings?.purpose === "goals" ? 0 : 1;
+          return leftVault - rightVault;
+        }),
     }))
     .filter((group) => group.tiles.length);
+
+  /** Story order for Books: net worth strip → chequing → goal savings → credit → investments. */
+  const storyOrder: AccountKind[] = ["chequing", "savings", "credit", "investment"];
+  const story = storyOrder
+    .map((kind) => groups.find((group) => group.kind === kind))
+    .filter((group): group is NonNullable<typeof group> => Boolean(group));
   const cashCents = sumCents(tiles.filter((tile) => isCashLikeKind(tile.kind)).map((tile) => tile.balanceCents));
   const owedCents = sumCents(tiles.filter((tile) => isCreditKind(tile.kind)).map((tile) => Math.max(0, tile.balanceCents)));
   const receivableCents = sumCents(tiles.filter((tile) => isReceivableKind(tile.kind)).map((tile) => tile.balanceCents));
@@ -328,6 +343,7 @@ export function householdWallet(household: Household, today: DateKey): Household
   return {
     tiles,
     groups,
+    story,
     cashCents,
     owedCents,
     receivableCents,

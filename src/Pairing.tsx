@@ -6,6 +6,8 @@ import {
   makeHearthPass,
   passFilename,
   spokenInviteHint,
+  describeDeviceLabel,
+  localDeviceId,
   type Household,
 } from "./core/index.ts";
 import { applyHearthPass, parseHearthPass } from "./core/pass.ts";
@@ -203,6 +205,23 @@ export function PairingCard({
       <p className="muted">{hostingHint(cloudLive || household.linked)}</p>
       {syncState === "syncing" && <p className="muted">Syncing the shared household…</p>}
       {syncState === "synced" && <p className="muted">Shared household is up to date.</p>}
+      <div className="device-list">
+        <h3>Devices on this household</h3>
+        <p className="muted">Soft presence from phones that touched the shared snapshot. Not Auth. This device: {describeDeviceLabel()} · {localDeviceId()}</p>
+        {(household.devices ?? []).length === 0 ? (
+          <p className="muted">No devices recorded yet. Sync or open the kitchen and one will appear.</p>
+        ) : (
+          <ul>
+            {(household.devices ?? []).map((device) => (
+              <li key={device.id}>
+                <strong>{device.label}</strong>
+                <span className="muted"> · {device.environment} · seen {device.seenAt.slice(0, 16).replace("T", " ")}</span>
+                {device.id === localDeviceId() ? <span className="pill good">this phone</span> : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
       {error && <p className="danger">{error}</p>}
       <button className="primary" onClick={() => void shareInvite(household)}>Share phrase and link</button>
       <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => downloadPass(household)}>Download Hearth Pass</button>

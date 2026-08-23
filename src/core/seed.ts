@@ -433,7 +433,7 @@ export function seedDemoHousehold(options?: { today?: DateKey; environment?: Hou
     shared: true,
     deadline: `${shiftMonthKey(monthKeyFromDateKey(today), 6)}-01`,
   }).household;
-  household = contributeToGoal(household, household.goals[0]!.id, 1600).household;
+  household = contributeToGoal(household, household.goals[0]!.id, 1600, { markFunded: true }).household;
   household = postTransfer(household, {
     date: today,
     amount: 1600,
@@ -449,7 +449,7 @@ export function seedDemoHousehold(options?: { today?: DateKey; environment?: Hou
     ownerMemberId: "MEM-001",
     deadline: `${shiftMonthKey(monthKeyFromDateKey(today), 4)}-01`,
   }).household;
-  household = contributeToGoal(household, household.goals[1]!.id, 340).household;
+  household = contributeToGoal(household, household.goals[1]!.id, 340, { markFunded: true }).household;
   household = postTransfer(household, {
     date: today,
     amount: 340,
