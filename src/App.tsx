@@ -52,6 +52,18 @@ import {
   touchVisitSpark,
   undo,
   voidPostedMoney,
+  clockInShift,
+  abandonOpenShift,
+  activeOpenShift,
+  ceremonyFields,
+  ceremonyCopy,
+  collapseSavedOffice,
+  formatPreviewHours,
+  isLastCeremonyStep,
+  previewHoursLabel,
+  previewHoursQuarter,
+  shiftFieldLabel,
+  type ShiftGate,
   type CommitResult,
   type Environment,
   type Household,
@@ -101,13 +113,6 @@ type Guard =
   | { kind: "acceptPreset"; key: string; summary: string }
   | { kind: "addPreset"; summary: string };
 
-const SHIFT_PAD: { id: "sales" | "hours" | "cashTips" | "ccTips"; label: string; unit: "cad" | "hours" }[] = [
-  { id: "sales", label: "Sales", unit: "cad" },
-  { id: "hours", label: "Hours", unit: "hours" },
-  { id: "cashTips", label: "Cash", unit: "cad" },
-  { id: "ccTips", label: "CC", unit: "cad" },
-];
-
 const emptyForm = {
   date: todayKey(),
   amount: "",
@@ -122,7 +127,7 @@ const emptyForm = {
   sales: "0",
   cashTips: "0",
   ccTips: "0",
-  hours: "4",
+  hours: "",
   visibility: "household" as Visibility,
 };
 
@@ -153,7 +158,9 @@ export function App() {
   const [visorPop, setVisorPop] = useState(false);
   const [clinkOn, setClinkOn] = useState(false);
   const [addDetails, setAddDetails] = useState(false);
-  const [shiftField, setShiftField] = useState<"sales" | "hours" | "cashTips" | "ccTips">("sales");
+  const [shiftGate, setShiftGate] = useState<ShiftGate>("choose");
+  const [shiftStep, setShiftStep] = useState(0);
+  const [shiftTick, setShiftTick] = useState(0);
   const [presetId, setPresetId] = useState<string | null>(null);
   const enqueueWrite = useMemo(() => createWriteQueue(), []);
   const householdRef = useRef<Household | null>(household);
@@ -171,6 +178,13 @@ export function App() {
     const next = url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : "") + url.hash;
     window.history.replaceState({}, "", next);
   }, []);
+
+  useEffect(() => {
+    const punch = household ? activeOpenShift(household.kitchen) : null;
+    if (!punch) return;
+    const id = window.setInterval(() => setShiftTick((n) => n + 1), 15_000);
+    return () => window.clearInterval(id);
+  }, [household]);
 
   useEffect(() => {
     let live = true;
@@ -538,17 +552,79 @@ export function App() {
   };
 
   const openAddFor = (account: Account | null, nextMode?: AddMode) => {
+    leaveDesk();
     const id = account?.id ?? focusedAccountId;
     const defaults = addFormDefaults(ledger, id);
     setFocusedAccountId(id);
     setMode(nextMode ?? defaults.suggestedMode);
     setAdding(true);
     setAddDetails(false);
-    setShiftField("sales");
     setError("");
     setConfirm(null);
+    if ((nextMode ?? defaults.suggestedMode) === "shift") {
+      const punch = activeOpenShift(ledger.kitchen);
+      setShiftGate(punch ? "clocked" : "choose");
+      setShiftStep(0);
+      setForm(formForAccount(id, {
+        hours: punch ? formatPreviewHours(previewHoursQuarter(punch.startedAt)) : "",
+        sales: "0",
+        cashTips: "0",
+        ccTips: "0",
+        memberId: punch?.memberId ?? actorId,
+      }));
+      return;
+    }
     setForm(formForAccount(id));
   };
+
+  function leaveDesk() {
+    emitOfficeIntent({ type: "collapse" });
+    collapseSavedOffice(environment, localStorage);
+  }
+
+  function goTab(next: Tab) {
+    leaveDesk();
+    setTab(next);
+    setAdding(false);
+  }
+
+  function beginSignOut() {
+    const punch = activeOpenShift(ledger.kitchen);
+    setMode("shift");
+    setAdding(true);
+    setAddDetails(false);
+    setError("");
+    setConfirm(null);
+    setShiftGate("signOut");
+    setShiftStep(0);
+    setForm(formForAccount(null, {
+      hours: punch ? formatPreviewHours(previewHoursQuarter(punch.startedAt)) : "",
+      sales: "0",
+      cashTips: "0",
+      ccTips: "0",
+      memberId: punch?.memberId ?? actorId,
+    }));
+  }
+
+  function beginFinishedShift() {
+    setMode("shift");
+    setAdding(true);
+    setAddDetails(false);
+    setError("");
+    setConfirm(null);
+    setShiftGate("finished");
+    setShiftStep(0);
+    setForm(formForAccount(null, { hours: "", sales: "0", cashTips: "0", ccTips: "0" }));
+  }
+
+  function shiftAdvance() {
+    const fields = ceremonyFields(shiftGate);
+    if (!isLastCeremonyStep(shiftGate, shiftStep)) {
+      setShiftStep((step) => Math.min(step + 1, Math.max(0, fields.length - 1)));
+      return;
+    }
+    submit();
+  }
 
   const openPayCard = (account: Account) => {
     const card = creditCardView(ledger, account, today);
@@ -568,8 +644,7 @@ export function App() {
 
   const openWallet = (accountId: string) => {
     setFocusedAccountId(accountId);
-    setTab("ledger");
-    setAdding(false);
+    goTab("ledger");
   };
 
   function splitsFor(amountCents: number, from: Household): Split[] {
@@ -645,7 +720,10 @@ export function App() {
   }
 
   function addPostLabel(): string {
-    if (mode === "shift") return "Post shift";
+    if (mode === "shift") {
+      if (shiftGate === "choose" || shiftGate === "clocked") return "Clock in";
+      return isLastCeremonyStep(shiftGate, shiftStep) ? "Post shift" : "Next";
+    }
     const digits = centsDigitsFromDollars(form.amount);
     const money = digits ? formatCad(Number(digits)) : "";
     if (mode === "transfer") return money ? `Move ${money}` : "Move money";
@@ -705,7 +783,6 @@ export function App() {
           mode={mode}
           error={error}
           categories={categories}
-          shiftPreview={shiftPreview}
           postLabel={addPostLabel()}
           onClinkOn={setClinkOn}
           onForm={setForm}
@@ -724,11 +801,11 @@ export function App() {
             setForm((current) => ({ ...current, note: "Coffee", subcategoryId: "SUB-FOOD-COFFEE" }));
             emitOfficeIntent({ type: "expand", id: "calculator" });
           }}
-          onShift={() => {
-            setMode("shift");
-            emitOfficeIntent({ type: "expand", id: "calculator" });
-          }}
-          onLogShift={() => openAddFor(null, "shift")}
+          onShift={() => emitOfficeIntent({ type: "expand", id: "timesheet" })}
+          onClockIn={() => { void runKitchen((current) => clockInShift(current, { memberId: actorId })); }}
+          onAbandonShift={() => { void runKitchen((current) => abandonOpenShift(current)); }}
+          onSignOut={beginSignOut}
+          onFinishedShift={beginFinishedShift}
           onPayCard={openPayCard}
           onOpenAccount={openWallet}
           onBuyNote={(text) => {
@@ -742,14 +819,14 @@ export function App() {
           onKitchen={(fn) => { void runKitchen(fn); }}
           onMarkPaid={(recurrenceId, summary) => setGuard({ kind: "postRecurrence", recurrenceId, summary })}
           onAskSettle={(claimId, summary) => setGuard({ kind: "settleClaim", claimId, summary })}
+          onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
           onSitDown={(next, token) => persist(next, token)}
           onGo={(next) => {
             if (next === "add") {
               openAddFor(null);
               return;
             }
-            setTab(next);
-            setAdding(false);
+            goTab(next);
           }}
         />
       )}
@@ -801,7 +878,7 @@ export function App() {
           onAskSettle={(claimId, summary) => setGuard({ kind: "settleClaim", claimId, summary })}
           onAskWriteOff={(claimId, summary) => setGuard({ kind: "writeOffClaim", claimId, summary })}
           onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
-          onOpenPlan={() => setTab("plan")}
+          onOpenPlan={() => goTab("plan")}
         />
       )}
 
@@ -929,7 +1006,20 @@ export function App() {
             </div>
             <div className="tabs">
               {(["expense", "income", "shift", "transfer"] as AddMode[]).map((item) => (
-                <button key={item} className={mode === item ? "active" : ""} onClick={() => { setMode(item); setShiftField("sales"); }}>{item}</button>
+                <button
+                  key={item}
+                  className={mode === item ? "active" : ""}
+                  onClick={() => {
+                    setMode(item);
+                    if (item === "shift") {
+                      const punch = activeOpenShift(household.kitchen);
+                      setShiftGate(punch ? "clocked" : "choose");
+                      setShiftStep(0);
+                    }
+                  }}
+                >
+                  {item}
+                </button>
               ))}
             </div>
             {mode !== "shift" && mode !== "transfer" && (
@@ -1092,43 +1182,90 @@ export function App() {
             )}
             {mode === "shift" && (
               <>
-                <label>Who worked</label>
-                <select value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value })}>
-                  {household.members.filter((m) => m.active).map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
-                </select>
-                <label>Account</label>
-                <select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })}>
-                  {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
-                </select>
-                <div className="chips">
-                  {SHIFT_PAD.map((field) => (
+                {shiftGate === "choose" && (
+                  <>
+                    <p className="muted">{ceremonyCopy("choose").hint}</p>
+                    <label>Who is working</label>
+                    <select value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value })}>
+                      {household.members.filter((m) => m.active).map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
+                    </select>
                     <button
-                      key={field.id}
                       type="button"
-                      className={`chip ${shiftField === field.id ? "selected" : ""}`}
-                      onClick={() => setShiftField(field.id)}
+                      className="primary post-big"
+                      disabled={busy}
+                      onClick={() => {
+                        void runKitchen((current) => clockInShift(current, { memberId: form.memberId }));
+                        setAdding(false);
+                      }}
                     >
-                      {field.label}
+                      Clock in
                     </button>
-                  ))}
-                </div>
-                {SHIFT_PAD.filter((field) => field.id === shiftField).map((field) => (
-                  <CadPad
-                    key={field.id}
-                    digits={centsDigitsFromDollars(form[field.id])}
-                    onDigits={(digits) => setForm({ ...form, [field.id]: dollarsFromCentsDigits(digits) })}
-                    label={field.label}
-                    unit={field.unit}
-                  />
-                ))}
-                <div className={`preview ${shiftPreview.netTipsCents < 0 ? "warn" : ""}`}>
-                  <div className="row"><span>Floor tip-out</span><span>{formatCad(shiftPreview.floorTipOutCents)}</span></div>
-                  <div className="row"><span>Bar tip-out</span><span>{formatCad(shiftPreview.barTipOutCents)}</span></div>
-                  <div className="row"><span>CC tip-out</span><span>{formatCad(shiftPreview.ccTipOutCents)}</span></div>
-                  <div className="row"><strong>Net tips</strong><strong>{formatCad(shiftPreview.netTipsCents)}</strong></div>
-                  <div className="row"><strong>Wages</strong><strong>{formatCad(shiftPreview.wagesCents)}</strong></div>
-                  <p className="muted">Same math that posts.</p>
-                </div>
+                    <button type="button" className="chip" onClick={beginFinishedShift}>Already off? Post a finished shift</button>
+                  </>
+                )}
+                {shiftGate === "clocked" && (() => {
+                  const punch = activeOpenShift(household.kitchen);
+                  return (
+                    <>
+                      <p>{ceremonyCopy("clocked").title}</p>
+                      <p className="muted">{punch ? previewHoursLabel(punch.startedAt) : ceremonyCopy("clocked").hint}{shiftTick ? "" : ""}</p>
+                      <button type="button" className="primary post-big" onClick={beginSignOut}>Sign out</button>
+                      <button
+                        type="button"
+                        className="chip"
+                        disabled={busy}
+                        onClick={() => {
+                          void runKitchen((current) => abandonOpenShift(current));
+                          setAdding(false);
+                        }}
+                      >
+                        Never mind
+                      </button>
+                    </>
+                  );
+                })()}
+                {(shiftGate === "signOut" || shiftGate === "finished") && (() => {
+                  const fields = ceremonyFields(shiftGate);
+                  const field = fields[shiftStep] ?? "hours";
+                  const copy = ceremonyCopy(shiftGate, field);
+                  const punch = activeOpenShift(household.kitchen);
+                  return (
+                    <>
+                      <p>{copy.title}</p>
+                      <p className="muted">{copy.hint}</p>
+                      {shiftGate === "signOut" && field === "hours" && punch && (
+                        <p className="muted">Live preview: {previewHoursLabel(punch.startedAt)}</p>
+                      )}
+                      <label>Who worked</label>
+                      <select value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value })}>
+                        {household.members.filter((m) => m.active).map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
+                      </select>
+                      <label>Account</label>
+                      <select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })}>
+                        {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
+                      </select>
+                      <CadPad
+                        digits={centsDigitsFromDollars(form[field])}
+                        onDigits={(digits) => setForm({
+                          ...form,
+                          [field]: field === "hours" ? dollarsFromCentsDigits(digits) : dollarsFromCentsDigits(digits),
+                        })}
+                        label={shiftFieldLabel(field)}
+                        unit={field === "hours" ? "hours" : "cad"}
+                      />
+                      {field !== "hours" && (
+                        <div className={`preview ${shiftPreview.netTipsCents < 0 ? "warn" : ""}`}>
+                          <div className="row"><span>Net tips</span><span>{formatCad(shiftPreview.netTipsCents)}</span></div>
+                          <div className="row"><span>Wages</span><span>{Number(form.hours) > 0 ? formatCad(shiftPreview.wagesCents) : "wait for hours"}</span></div>
+                          <p className="muted">Same math that posts. Hours are a preview until Confirm.</p>
+                        </div>
+                      )}
+                      {shiftStep > 0 && (
+                        <button type="button" className="chip" onClick={() => setShiftStep((step) => Math.max(0, step - 1))}>Back</button>
+                      )}
+                    </>
+                  );
+                })()}
               </>
             )}
             <button type="button" className="chip" onClick={() => setAddDetails((open) => !open)}>
@@ -1186,7 +1323,15 @@ export function App() {
                 </button>
               </div>
             )}
-            <button className="primary post-big" disabled={busy} onClick={() => submit()}>{addPostLabel()}</button>
+            {!(mode === "shift" && (shiftGate === "choose" || shiftGate === "clocked")) && (
+              <button
+                className="primary post-big"
+                disabled={busy}
+                onClick={() => (mode === "shift" ? shiftAdvance() : submit())}
+              >
+                {addPostLabel()}
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -1463,12 +1608,12 @@ export function App() {
               { label: "Add expense", run: () => openAddFor(null, "expense") },
               { label: "Add shift", run: () => openAddFor(null, "shift") },
               { label: "Move money", run: () => openAddFor(null, "transfer") },
-              { label: "Calendar", run: () => setTab("calendar") },
-              { label: "Plan", run: () => setTab("plan") },
-              { label: "Books", run: () => setTab("ledger") },
-              { label: "Health", run: () => setTab("more") },
-              { label: "Google household bridge", run: () => setTab("more") },
-              { label: "Ask Hercules", run: () => setTab("home") },
+              { label: "Calendar", run: () => goTab("calendar") },
+              { label: "Plan", run: () => goTab("plan") },
+              { label: "Books", run: () => goTab("ledger") },
+              { label: "Health", run: () => goTab("more") },
+              { label: "Google household bridge", run: () => goTab("more") },
+              { label: "Ask Hercules", run: () => goTab("home") },
               { label: "Export", run: () => downloadJson(household) },
             ].map((item) => (
               <button key={item.label} onClick={() => { item.run(); setCommandOpen(false); }}>{item.label}</button>
@@ -1490,8 +1635,7 @@ export function App() {
             openAddFor(null);
             return;
           }
-          setTab(next);
-          setAdding(false);
+          goTab(next);
         }}
         onOpenAdd={(note) => {
           openAddFor(null, "expense");
@@ -1522,12 +1666,12 @@ export function App() {
       />
 
       <nav className="nav">
-        <button className={tab === "home" && !adding ? "active" : ""} onClick={() => { setTab("home"); setAdding(false); }}>Home</button>
-        <button className={tab === "calendar" ? "active" : ""} onClick={() => { setTab("calendar"); setAdding(false); }}>Calendar</button>
+        <button className={tab === "home" && !adding ? "active" : ""} onClick={() => goTab("home")}>Home</button>
+        <button className={tab === "calendar" ? "active" : ""} onClick={() => goTab("calendar")}>Calendar</button>
         <button className="fab" onClick={() => openAddFor(null)}>+</button>
-        <button className={tab === "plan" ? "active" : ""} onClick={() => { setTab("plan"); setAdding(false); }}>Plan</button>
-        <button className={tab === "ledger" ? "active" : ""} onClick={() => { setTab("ledger"); setAdding(false); }}>Books</button>
-        <button className={tab === "more" ? "active" : ""} onClick={() => { setTab("more"); setAdding(false); }}>More</button>
+        <button className={tab === "plan" ? "active" : ""} onClick={() => goTab("plan")}>Plan</button>
+        <button className={tab === "ledger" ? "active" : ""} onClick={() => goTab("ledger")}>Books</button>
+        <button className={tab === "more" ? "active" : ""} onClick={() => goTab("more")}>More</button>
       </nav>
     </div>
   );

@@ -29,7 +29,7 @@ You sit down and the room is already warm. Rain is on the glass to your left —
 
 ### A1. Information architecture
 
-Home stops being a scroll of cards and becomes **the office**: one desk, twelve instruments, three depths.
+Home stops being a scroll of cards and becomes **the office**: one desk, fourteen instruments plus a fixed sill plate, three depths.
 
 ```text
                        ┌─────────────────────────────────┐
@@ -87,6 +87,10 @@ GET https://api.open-meteo.com/v1/forecast
 - `prefers-reduced-motion`: all drift/streak animation off; rain becomes a static wet-glass texture and a darker sill. The state still reads.
 
 **Expanded** (tap the glass): one forecast sentence — "Rain easing by four. 19°." — plus the season word. Nothing else. **Minimized:** sill only, 14px, still atmospheric.
+
+**Sill plate (D-064):** a paper strip *under* the glass, weather-tinted ≤6%, `--ink` on `--paper`. Month net, hottest card, next bill, next visit (quiet title), groceries remaining, and a YNAB-style “what needs me.” Tapping a figure expands that instrument. CAD never renders on the glass.
+
+Leaving Home or opening Add **collapses** expanded instruments. Wide drag snaps to a 16px grid and auto-levels. Cabinets → **Straighten** restores default positions (wide) or rail order (phone). Calendar and Appointments are instruments; Mail remains bills; Claims remain A/R.
 
 ### A3. The desk canvas
 
@@ -290,17 +294,23 @@ The single most important instrument. This is Milk.
 
 ### B7. Timesheet — punch clock
 
-- **Glance:** `shiftPostingStreak(household, today).count` + `.spoken`.
-- **Expand:** the streak, `.lesson` ("A streak is posted shifts, not opening the app"), last shift date, and **Log shift** → opens Add in shift mode.
+Clock-in is kitchen cosmetic (`openShift`). Hours are a live preview until sign-out Confirm runs `postShift`. Already-off is a finished-shift ceremony with hours last. Never mind wipes the punch. Streak still reads posted dates.
+
+- **Glance:** live preview hours when on the clock, otherwise `shiftPostingStreak(household, today).count` + `.spoken`.
+- **Expand:** Clock in (kitchen `openShift`, no post), Sign out (hours first, then sales/tips, then `postShift`), Already off (hours last), Never mind (wipe). Streak lesson unchanged.
 - **Minimize:** a punch clock face.
 - **Move:** ✓.
-- **Data:** `shiftPostingStreak(household, today)`, `calcShiftAmounts` for the preview inside Add.
-- **Write:** none directly; Log shift opens Add. `postShift` unchanged.
+- **Data:** `activeOpenShift`, `shiftPostingStreak`, `calcShiftAmounts` inside Add after hours are known.
+- **Write:** none directly. Clock-in `postedIds: []`. Confirm still `postShift`.
 - **Hercules:** `jump` then `celebrate` when `fresh === true`; `pounce` the punch clock when `waiting === true`. **Never** "you broke your streak." A day off does not kill him (D-050).
-- **Empty:** no shifts ever → "No shifts posted yet." and a still clock. Not a zero streak.
-- **Warn:** `waiting === true` → clock hand droops, "Log shift" chip appears. Prompt, never punish.
+- **Empty:** no shifts ever → "No shifts posted yet." and Clock in. Not a zero streak.
+- **Warn:** `waiting === true` → clock hand droops. Prompt, never punish.
 - **Deltas:** budget **+4** (shift posting is the household's largest variable income) · engagement **+3**.
-- **Taps:** 3 — tap clock, tap Log shift, Post.
+- **Taps:** Clock in on the desk; Sign out Confirm still writes.
+
+### B7b. Chalkboard
+
+Drawable slate. Ink stores with the note. **Neaten** is on-device 5×7 letter detection. Typeset fallback remains for accessibility. Never posts.
 
 ### B8. Postcard — the sit-down
 

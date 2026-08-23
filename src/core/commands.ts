@@ -24,6 +24,8 @@ import { sitDownPreview } from "./insights.ts";
 import { bookBalanceAsOf, isMonthClosed } from "./statements.ts";
 import { COSMETIC_BY_ID, isCosmeticUnlocked } from "./companion.ts";
 import { EMPTY_KITCHEN, MAX_CHALK_CHARS, MAX_CHALK_NOTES, MAX_COMPANION_NAME, MAX_HERCULES_CHAT_CHARS, MAX_HERCULES_CHATS, MAX_HERCULES_MEMORIES, MAX_HERCULES_MEMORY_CHARS, closedPeriodId, isCosmeticSlot, shapeKitchen } from "./kitchen.ts";
+import { detectChalkLetters, hasChalkInk, organizeNeatText, shapeChalkInk } from "./chalkLetters.ts";
+import { activeOpenShift } from "./shiftClock.ts";
 import {
   EMPTY_GOOGLE,
   findActiveGoogleLink,
@@ -65,6 +67,7 @@ import type {
   Claim,
   ClaimKind,
   CommitResult,
+  ChalkInk,
   CreditRewardRule,
   Household,
   HerculesMemoryKind,
@@ -420,7 +423,42 @@ export function postShift(household: Household, input: {
   });
   const warnings = [];
   if (amounts.netTipsCents < 0) warnings.push("Net tips are negative after tip-out. The shift was still saved.");
+  next.kitchen = shapeKitchen(next.kitchen);
+  const punch = activeOpenShift(next.kitchen);
+  if (punch && punch.memberId === member.id) {
+    next.kitchen.openShift = { ...punch, status: "cleared", updatedAt: createdAt };
+  }
   return commit(previous, next, "Add Shift", `${shiftId}: ${member.name} on ${parsed.date}`, [shiftId, wagesTx.id, tipsTx.id], warnings);
+}
+
+export function clockInShift(household: Household, input: { memberId: string }): CommitResult {
+  const member = requireMember(household, input.memberId);
+  const already = activeOpenShift(household.kitchen);
+  if (already?.memberId === member.id) {
+    throw new ValidationError("Already on the clock. Sign out when you know the hours.");
+  }
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const at = nowIso();
+  next.kitchen.openShift = {
+    memberId: member.id,
+    startedAt: at,
+    updatedAt: at,
+    status: "open",
+  };
+  const replaced = already ? ` Replaced ${already.memberId}'s punch.` : "";
+  return commit(previous, next, "Clock in", `${member.name} punched in.${replaced}`, []);
+}
+
+export function abandonOpenShift(household: Household): CommitResult {
+  const punch = activeOpenShift(household.kitchen);
+  if (!punch) throw new ValidationError("Nobody is on the clock.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  next.kitchen.openShift = { ...punch, status: "cleared", updatedAt: nowIso() };
+  return commit(previous, next, "Clock out", "Wiped an open punch. Not a reverse.", []);
 }
 
 export function addCategory(household: Household, input: {
@@ -1175,9 +1213,11 @@ export function undo(current: Household, token: UndoToken): Household {
   return restored;
 }
 
-export function scribbleChalk(household: Household, input: { text: string; author: string }): CommitResult {
-  const text = input.text.trim();
-  if (!text) throw new ValidationError("Write something first.");
+export function scribbleChalk(household: Household, input: { text?: string; author: string; ink?: ChalkInk | null }): CommitResult {
+  const ink = shapeChalkInk(input.ink ?? null);
+  let text = (input.text ?? "").trim();
+  if (!text && ink) text = detectChalkLetters(ink);
+  if (!text && !hasChalkInk(ink)) throw new ValidationError("Write something first.");
   if (text.length > MAX_CHALK_CHARS) throw new ValidationError(`Keep it to ${MAX_CHALK_CHARS} characters. Silly, not a novel.`);
   requireMember(household, input.author);
   const previous = cloneHousehold(household);
@@ -1187,9 +1227,23 @@ export function scribbleChalk(household: Household, input: { text: string; autho
   const id = nextId("CHALK-", next.kitchen.chalkboard.map((note) => note.id), 4);
   next.kitchen.chalkboard = [
     ...next.kitchen.chalkboard,
-    { id, text, author: input.author, createdAt: at, updatedAt: at },
+    { id, text, author: input.author, createdAt: at, updatedAt: at, ink },
   ].slice(-MAX_CHALK_NOTES);
-  return commit(previous, next, "Chalkboard", "Scribbled on the chalkboard", []);
+  return commit(previous, next, "Chalkboard", ink ? "Drew on the chalkboard" : "Scribbled on the chalkboard", []);
+}
+
+export function neatenChalk(household: Household, id: string): CommitResult {
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const note = next.kitchen.chalkboard.find((item) => item.id === id);
+  if (!note) throw new ValidationError("That scribble is already gone.");
+  if (!hasChalkInk(note.ink)) throw new ValidationError("Nothing to neaten. Draw first.");
+  const neat = organizeNeatText(detectChalkLetters(note.ink) || note.text);
+  if (!neat) throw new ValidationError("I couldn't read that hand. Keep the drawing, or type it.");
+  note.text = neat.slice(0, MAX_CHALK_CHARS);
+  note.updatedAt = nowIso();
+  return commit(previous, next, "Chalkboard", "Neatened a chalkboard note", []);
 }
 
 export function wipeChalk(household: Household, id: string): CommitResult {

@@ -1,3 +1,4 @@
+import { emitOfficeIntent } from "../core/officeLayout.ts";
 import { useFurniture } from "./useFurniture.ts";
 import type { HearthTab } from "../core/hercules.ts";
 
@@ -13,6 +14,7 @@ export function Cabinets({
       <button type="button" onClick={() => onGo("calendar")}>Calendar</button>
       <button type="button" onClick={() => onGo("plan")}>Plan</button>
       <button type="button" onClick={() => onGo("more")}>More</button>
+      <button type="button" onClick={() => emitOfficeIntent({ type: "tidy" })}>Straighten</button>
     </div>
   );
 }

@@ -270,12 +270,37 @@ export type Claim = {
 
 export type CosmeticSlot = "hat" | "chain" | "house" | "collar";
 
+export type ChalkPoint = {
+  x: number;
+  y: number;
+};
+
+export type ChalkStroke = {
+  points: ChalkPoint[];
+};
+
+export type ChalkInk = {
+  w: number;
+  h: number;
+  strokes: ChalkStroke[];
+};
+
 export type ChalkNote = {
   id: string;
   text: string;
   author: string;
   createdAt: string;
   updatedAt: string;
+  ink?: ChalkInk | null;
+};
+
+export type OpenShiftStatus = "open" | "cleared";
+
+export type OpenShift = {
+  memberId: string;
+  startedAt: string;
+  updatedAt: string;
+  status: OpenShiftStatus;
 };
 
 export type CompanionCosmetics = {
@@ -352,6 +377,7 @@ export type HouseholdKitchen = {
   companion: HouseholdCompanion;
   books: HouseholdBooksDesk;
   hercules: HerculesDesk;
+  openShift: OpenShift | null;
 };
 
 export type GoogleService = "identity" | "calendar" | "drive" | "contacts" | "gmail" | "sheets";
