@@ -2,7 +2,7 @@
 
 This is the living product law for **Hearth**, the household company Jonathan and Bianca run from a Toronto kitchen: family-office books, and a companion who makes those books a habit.
 
-Do not plan from [nostalgia/](nostalgia/). Those files are a museum. This file, [DECISIONS.md](DECISIONS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and Jonathan’s latest instruction are what to build from.
+Do not *plan* from [nostalgia/](nostalgia/). Those files stay on GitHub as a museum (D-095) — read them to understand past maps. This file, [DECISIONS.md](DECISIONS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and Jonathan’s latest instruction are what to build from.
 
 ---
 
@@ -86,6 +86,7 @@ Do not re-litigate these as “Chapter 0” or “Ring 1.” They are the kitche
 - Home chalkboard; Hercules the Maine Coon (wander, loaf on Add, journal-first talk; OpenAI/Anthropic Worker secrets allowed, then Workers AI); chat and memories in `kitchen.hercules` (D-049); visit spark
 - Kitchen habit (D-050): CAD cents pad, Home Milk/Shift/Pay card, guided sit-down, Hercules shift-posting streak from posted shifts
 - **Monthly sit-down (D-083–D-087):** three acts on Plan, leftover arithmetic, plan-then-transfer, hard month lock, reversing entries, on-device auto-coding, Drive create-only workbook. Spec: [SITDOWN.md](SITDOWN.md)
+- **Almost-there office (D-088–D-094):** Goals vault + Purchased? expense, no-zoom phone, pin-open, desk JSON on this Google identity, How can I help / perch / click-to-close, chalk on the weather glass. Spec: [GOALS.md](GOALS.md). Recap: [WORKING_MEMORY.md](WORKING_MEMORY.md).
 - September Office (D-051 / **D-079** / **D-080** / **D-082**): one kernel, two UI branches. **Mobile** (`< 720px`) is `OfficePhone` (glance + one-tap). **Desktop/wide** takes unique offices, sizes, appearance, and default desks. Live assignment: [CLAUDE_DESKTOP_OFFICE.md](CLAUDE_DESKTOP_OFFICE.md). Phone record: [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md). History spec: [CLAUDE_OFFICE_UX.md](CLAUDE_OFFICE_UX.md), [OFFICE.md](OFFICE.md).
 - Audit Office: opinion, statements, equity roll, working capital, notes, rec, close pack
 - Accounts Floor: wallet tiles, account rooms, expandable cards, investment marks, interest/rewards as explicit posts

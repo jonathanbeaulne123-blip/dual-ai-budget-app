@@ -4,6 +4,7 @@ Hearth is the product. **Living canon** is this folder except [nostalgia/](nosta
 
 | File | Use |
 |---|---|
+| [WORKING_MEMORY.md](WORKING_MEMORY.md) | Chat-thread recap of the last five shipped updates (#48–#53). **Not** a delete of GitHub history (D-095). |
 | [STRATEGY.md](STRATEGY.md) | Dual Course: family-office books (weight 5) and companion/interactables (weight 3). Vision and backlog, including live Google pairs (D-078). |
 | [PROJECT_CHARTER.md](PROJECT_CHARTER.md) | Who it is for and what success looks like |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Ledger, books, UI, and how the two courses couple |
@@ -23,8 +24,8 @@ Hearth is the product. **Living canon** is this folder except [nostalgia/](nosta
 | [GOALS.md](GOALS.md) | Goals vault, leftover parking, Purchased?, retirement home (D-088 / D-089) |
 | [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md) | Private repo and one-click kitchen publish |
 | [AI_HANDOFF.md](AI_HANDOFF.md) | Risk routing; Dual Course deltas |
-| [nostalgia/](nostalgia/) | Retired roadmaps and launch essays. Do not cite for future work. |
-| [reference/](reference/) | Sheets-era snapshot. Do not cite for future work. |
+| [nostalgia/](nostalgia/) | Cursor-era maps we outgrew. **Read to understand past decisions.** Do not cite as the next build plan. |
+| [reference/](reference/) | Sheets-era snapshot. **Read to understand how we got here.** Do not cite as the next build plan. |
 
 Start from the repository [README](../README.md) to run the app.
 

@@ -1,6 +1,6 @@
 # Nostalgia — do not build from here
 
-**These files are a museum.** They are not product law, not a backlog, and not a source of “next.”
+**These files are a museum.** Keep them on GitHub (D-095). Other AIs should read them to understand past maps. They are not product law, not a backlog, and not a source of “next.”
 
 Future development uses:
 
