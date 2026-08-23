@@ -70,7 +70,9 @@ export function shapeRecurrence(item: Recurrence, fallbackIso: string): Recurren
       ? item.transferToAccountId
       : null,
     goalId: typeof item.goalId === "string" && item.goalId ? item.goalId : null,
-    kind: item.kind ?? inferRecurrenceKind(item),
+    kind: item.kind ?? (type === "transfer"
+      ? "other"
+      : inferRecurrenceKind({ type, note: item.note })),
     origin: item.origin ?? "manual",
     reminderHoursBefore: item.reminderHoursBefore ?? DEFAULT_REMINDER_HOURS_BEFORE,
     googleSync: item.googleSync ?? {},
