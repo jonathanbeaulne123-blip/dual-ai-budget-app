@@ -627,7 +627,7 @@ export function HerculesPresence({
     setTopic(grounded.topic);
     setMotion("pounce");
     const result = await chatHercules(
-      composeHerculesChatRequest(household, message, briefing, grounded, today),
+      composeHerculesChatRequest(household, message, briefing, grounded, today, memberId),
     );
     if (chatGen.current !== gen) return;
     setTalk({ ...grounded, spoken: result.text });

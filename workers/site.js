@@ -133,9 +133,12 @@ function buildPrompt(body) {
     }), 280)).filter(Boolean)
     : [];
   const noticeBlock = notices.length ? notices.join("\n") : "(none)";
-  const ledger = body?.ledger && typeof body.ledger === "object"
-    ? clip(JSON.stringify(body.ledger), 4500)
-    : "(none)";
+  const ledger =
+    typeof body?.ledgerLines === "string" && body.ledgerLines.trim()
+      ? clip(body.ledgerLines, 4500)
+      : body?.ledger && typeof body.ledger === "object"
+        ? clip(JSON.stringify(body.ledger), 4500)
+        : "(none)";
   const figures = Array.isArray(body?.figures)
     ? body.figures.map((item) => clip(item, 16)).filter(Boolean).slice(0, 80)
     : [];

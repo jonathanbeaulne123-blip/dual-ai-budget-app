@@ -33,6 +33,7 @@ import {
   HERCULES_REFUSE_WRITE,
   HERCULES_REFUSE_SHAME,
 } from "../src/core/index.ts";
+import { herculesModelPayload } from "../src/core/herculesChat.ts";
 import { composeHerculesChatRequest } from "../src/core/herculesPrivacy.ts";
 import { COSMETIC_BY_ID } from "../src/core/companion.ts";
 
@@ -318,7 +319,7 @@ describe("The Hercules Update", () => {
     const grounded = plan.talk;
     const briefing = herculesBriefing(household, "home", today);
     const ai = await chatHercules(
-      composeHerculesChatRequest(household, "what's on the Visa?", briefing, grounded, today),
+      composeHerculesChatRequest(household, "what's on the Visa?", briefing, grounded, today, "MEM-001"),
       {
         fetch: async () =>
           new Response(JSON.stringify({ ok: true, reply: "The Visa still owes what the briefing says." }), {
@@ -347,6 +348,25 @@ describe("The Hercules Update", () => {
     expect(unmatched.skipModel).toBe(false);
     expect(unmatched.draft).toBeNull();
     expect(unmatched.memory).toBeNull();
+  });
+
+  it("excludes partner personal rows from the model ledger excerpt", () => {
+    const household = seedDemoHousehold({ today, environment: "development" });
+    const briefing = herculesBriefing(household, "home", today);
+    const grounded = talkHercules(household, "what did I spend", today, "home");
+
+    const asMem001 = composeHerculesChatRequest(household, "what did I spend", briefing, grounded, today, "MEM-001");
+    expect(asMem001.ledger.recent.some((row) => /gym drop-in/i.test(row.note))).toBe(false);
+    expect(asMem001.ledger.recent.some((row) => /haircut/i.test(row.note))).toBe(true);
+    const payload001 = herculesModelPayload(asMem001);
+    expect(payload001).not.toMatch(/gym drop-in/i);
+    expect(payload001).toMatch(/haircut/i);
+    expect(payload001).toMatch(/ledgerLines/);
+    expect(payload001).toMatch(/Recent transactions:/);
+
+    const asMem002 = composeHerculesChatRequest(household, "what did I spend", briefing, grounded, today, "MEM-002");
+    expect(asMem002.ledger.recent.some((row) => /haircut/i.test(row.note))).toBe(false);
+    expect(asMem002.ledger.recent.some((row) => /gym drop-in/i.test(row.note))).toBe(true);
   });
 
   it("does not send chat history or a shame dump to a model", async () => {

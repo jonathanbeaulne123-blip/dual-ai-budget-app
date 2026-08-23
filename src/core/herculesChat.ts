@@ -22,6 +22,8 @@ export type HerculesChatRequest = {
   memories?: string[];
   notices?: HerculesNoticeView[];
   ledger?: HerculesLedgerExcerpt;
+  /** Pre-trimmed line excerpt; Worker prefers this over JSON blob. */
+  ledgerLines?: string;
   figures?: string[];
 };
 
@@ -78,6 +80,7 @@ export function herculesModelPayload(req: HerculesChatRequest): string {
       action: item.action,
     })),
     ledger: req.ledger ?? null,
+    ledgerLines: req.ledgerLines ? String(req.ledgerLines).slice(0, 4500) : undefined,
     figures: (req.figures ?? []).slice(0, 80),
   });
 }
