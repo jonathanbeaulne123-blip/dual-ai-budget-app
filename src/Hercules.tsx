@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import {
   attackStand,
   attackTarget,
@@ -10,6 +10,7 @@ import {
   furnitureUnderCat,
   groceryHighFive,
   herculesBriefing,
+  herculesBubbleBox,
   herculesIdle,
   herculesMutters,
   herculesNeedsCheck,
@@ -165,6 +166,19 @@ export function HerculesPresence({
   const perchedOn = useRef<string | null>(null);
   const lastAttack = useRef(0);
   const lastBump = useRef<{ id: string; at: number } | null>(null);
+  const bubbleRef = useRef<HTMLDivElement | null>(null);
+  const [bubbleSize, setBubbleSize] = useState({ w: 228, h: 96 });
+  const showProposal = Boolean(proposal && !adding && !open);
+  const showTalk = Boolean((open || talk) && !adding && talk && !(proposal && !open));
+
+  useLayoutEffect(() => {
+    const node = bubbleRef.current;
+    if (!node) return;
+    const next = { w: Math.ceil(node.offsetWidth), h: Math.ceil(node.offsetHeight) };
+    setBubbleSize((prev) => (
+      Math.abs(prev.w - next.w) < 2 && Math.abs(prev.h - next.h) < 2 ? prev : next
+    ));
+  }, [showProposal, showTalk, talk?.spoken, proposal?.spoken, open, turns.length, busy]);
 
   useEffect(() => {
     const next = furnitureLand(adding, look.view.mood, today);
@@ -527,21 +541,27 @@ export function HerculesPresence({
   }
 
   const pose = visorPop ? "jump" : motion;
-  const bubbleLeft = pos.x > window.innerWidth / 2;
   const size = adding ? 72 : CAT;
+  const bubble = herculesBubbleBox({
+    catX: pos.x,
+    catY: pos.y,
+    catSize: size,
+    bubbleW: bubbleSize.w,
+    bubbleH: bubbleSize.h,
+    viewW: typeof window === "undefined" ? 390 : window.innerWidth,
+    viewH: typeof window === "undefined" ? 844 : window.innerHeight,
+  });
+  const bubbleStyle = { left: bubble.left, top: bubble.top };
+  const bubbleSide = bubble.side === "left" ? "left" : "right";
 
   return (
     <div className="hercules-world" aria-live="polite">
       <HerculesFly x={fly?.x ?? 0} y={fly?.y ?? 0} hidden={!fly || adding} />
-      {proposal && !adding && !open && (
+      {showProposal && proposal && (
         <div
-          className={`hercules-bubble hercules-proposal ${bubbleLeft ? "left" : "right"}`}
-          style={{
-            left: bubbleLeft ? undefined : pos.x + size - 8,
-            right: bubbleLeft ? window.innerWidth - pos.x - 8 : undefined,
-            top: Math.max(8, pos.y - 8),
-            transform: bubbleLeft ? "translate(-100%, -90%)" : "translate(0, -90%)",
-          }}
+          ref={bubbleRef}
+          className={`hercules-bubble hercules-proposal ${bubbleSide}`}
+          style={bubbleStyle}
         >
           <p className="hercules-spoken">{proposal.spoken}</p>
           <p className="hercules-lesson">{proposal.lesson}</p>
@@ -558,15 +578,11 @@ export function HerculesPresence({
           </div>
         </div>
       )}
-      {(open || talk) && !adding && talk && !(proposal && !open) && (
+      {showTalk && talk && (
         <div
-          className={`hercules-bubble ${bubbleLeft ? "left" : "right"} ${open ? "chat" : ""}`}
-          style={{
-            left: bubbleLeft ? undefined : pos.x + size - 8,
-            right: bubbleLeft ? window.innerWidth - pos.x - 8 : undefined,
-            top: Math.max(8, pos.y - 8),
-            transform: bubbleLeft ? "translate(-100%, -90%)" : "translate(0, -90%)",
-          }}
+          ref={bubbleRef}
+          className={`hercules-bubble ${bubbleSide} ${open ? "chat" : ""}`}
+          style={bubbleStyle}
         >
           {open && turns.length > 0 ? (
             <div className="hercules-chat-log" ref={logRef}>

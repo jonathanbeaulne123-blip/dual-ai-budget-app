@@ -33,12 +33,16 @@ export type InstrumentId = (typeof INSTRUMENT_IDS)[number];
 
 export type FurnitureKind = "sill" | "tray" | "board" | "envelope" | "clock" | "lamp" | "card" | "pad" | "jar" | "kettle" | "game";
 
+export type FurnitureSeat = "corner" | "ledge";
+
 export type Furniture = {
   id: string;
   rect: { x: number; y: number; w: number; h: number };
   perchable: boolean;
   warn: boolean;
   kind: FurnitureKind;
+  /** Phone cards sit him on the top-right corner so the glance number stays readable. Wide furniture omits this. */
+  seat?: FurnitureSeat;
 };
 
 export type Point = { x: number; y: number };
@@ -238,6 +242,35 @@ export function catRectAt(point: Point): Furniture["rect"] {
   return { x: point.x, y: point.y, w: CAT, h: CAT };
 }
 
+/**
+ * Keep Hercules's spoken bubble on-screen, above the nav, without a global
+ * `body .hercules-bubble { right: 12px }` rule that would restyle the wide desk.
+ */
+export function herculesBubbleBox(input: {
+  catX: number;
+  catY: number;
+  catSize: number;
+  bubbleW: number;
+  bubbleH: number;
+  viewW: number;
+  viewH: number;
+  pad?: number;
+}): { left: number; top: number; side: "left" | "right" } {
+  const pad = input.pad ?? 8;
+  const preferLeft = input.catX + input.catSize / 2 > input.viewW / 2;
+  let left = preferLeft
+    ? input.catX + 8 - input.bubbleW
+    : input.catX + input.catSize - 8;
+  let top = input.catY - input.bubbleH + 16;
+  const maxLeft = input.viewW - pad - input.bubbleW;
+  left = maxLeft < pad ? pad : clamp(left, pad, maxLeft);
+  const maxTop = input.viewH - NAV - pad - input.bubbleH;
+  top = maxTop < pad ? pad : clamp(top, pad, maxTop);
+  const catMid = input.catX + input.catSize / 2;
+  const side: "left" | "right" = left + input.bubbleW / 2 <= catMid ? "left" : "right";
+  return { left, top, side };
+}
+
 export type PerchLand = {
   x: number;
   y: number;
@@ -300,11 +333,16 @@ export function perchTarget(
     }
     const seed = item.id.split("").reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
     // Sill perch is profile along the ledge — there is no "looking out the window" drawing.
-    if (item.kind === "sill") {
+    if (item.kind === "sill" || item.seat === "ledge") {
       const left = jitter(seed) >= 0;
       const x = clamp(left ? item.rect.x + 8 : item.rect.x + item.rect.w - CAT - 8, pad, maxX);
       const y = clamp(item.rect.y - CAT + 16 + jitter(seed + 3), pad, maxY);
       return { x, y, on: item.id, faceRight: left };
+    }
+    if (item.seat === "corner") {
+      const x = clamp(item.rect.x + item.rect.w - CAT + 8 + jitter(seed) * 0.25, pad, maxX);
+      const y = clamp(item.rect.y - CAT + 20 + jitter(seed + 3) * 0.2, pad, maxY);
+      return { x, y, on: item.id, faceRight: false };
     }
     const x = clamp(item.rect.x + item.rect.w / 2 - CAT / 2 + jitter(seed), pad, maxX);
     const y = clamp(item.rect.y - CAT + 12 + jitter(seed + 3), pad, maxY);

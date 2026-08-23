@@ -66,7 +66,7 @@ These are **important features**. Dual Course does not rewrite them. Smaller sur
 | Hercules never names who spent more. No fake fees. No pay-to-keep-alive. No hunger-meter death. | D-044 |
 | Bank feeds, Interac APIs, issued cards: blocked until Auth + RLS. Jonathan approves production money movement. | D-011, D-039 |
 | Accounts are financial accounts (chequing, savings, credit, investment, other), not categories. Receivable is D-053. | D-047, D-053 |
-| Phrase / join link / Hearth Pass join a phone. Google is a bridge, not a bank. | D-032, D-043 |
+| Phrase / join link / Hearth Pass join a phone. Google is a live bridge, not a bank, not a parking lot. | D-032, D-043, D-078 |
 | Personal rows are a filter until Auth. A hidden tab is not privacy. | D-015 |
 | Hosted `USING (true)` is an open door. The publishable key is not a lock. | D-034 |
 
@@ -80,12 +80,12 @@ Do not re-litigate these as “Chapter 0” or “Ring 1.” They are the kitche
 - Command kernel: spend, income, shift, transfer, category, budget, goals, recurrences, undo, confirm, duplicates
 - PGlite journal + optional Supabase **snapshot** publish; trial balance; read-only SQL
 - Sync integrity (D-052): append-only goal contributions, timestamped catalog merge, personal rows kept on the snapshot, upsert without DELETE
-- Calendar board, rhythms, `.ics`, optional Google overlay; Google never posts
+- Calendar board, rhythms, `.ics`; **Google household bridge is live** (D-078): Continue with Google, per-member link, step-up on sensitive actions, both people’s Calendar overlay, bill reminders to Google. Drive / Contacts / Gmail / Sheets are opt-in. Google never posts. Tokens stay on this phone.
 - Phrase / join / Hearth Pass; Shared / Personal / Both
 - Development vs Production pills; PGlite per pill
 - Home chalkboard; Hercules the Maine Coon (wander, loaf on Add, journal-first talk; OpenAI/Anthropic Worker secrets allowed, then Workers AI); chat and memories in `kitchen.hercules` (D-049); visit spark
 - Kitchen habit (D-050): CAD cents pad, Home Milk/Shift/Pay card, guided sit-down, Hercules shift-posting streak from posted shifts
-- September Office (D-051, **direction**): Home as a lived-in Toronto desk — weather window, movable widgets, Hercules on the furniture. Spec in [CLAUDE_OFFICE_UX.md](CLAUDE_OFFICE_UX.md). Not shipped until implemented.
+- September Office (D-051 / **D-079**): one kernel, two UI branches. **Mobile** (`< 720px`) is `OfficePhone` (glance + one-tap). **Desktop/wide** is the current canvas (customize later, do not strip). Assignment record: [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md). History spec: [CLAUDE_OFFICE_UX.md](CLAUDE_OFFICE_UX.md), [OFFICE.md](OFFICE.md).
 - Audit Office: opinion, statements, equity roll, working capital, notes, rec, close pack
 - Accounts Floor: wallet tiles, account rooms, expandable cards, investment marks, interest/rewards as explicit posts
 - Appointments destination, claims tray, receivable kind, quiet labels, Hercules propose-to-save, METC log on the page (D-053 / D-054 / D-055 / D-056). Spec: [APPOINTMENTS.md](APPOINTMENTS.md)
@@ -108,6 +108,7 @@ How to run the app: repository [README](../README.md). How the layers fit: [ARCH
 | **QuickBooks / Xero / Wave** | Statements a CPA recognizes. Rec. Period close. | SMB chrome. Payroll-first. A kitchen should not need a controller to add milk. | Audit Office is the household close. Rec and close never post. |
 | **Bloomberg / Addepar / Family-office stacks** | Multi-entity, custody, policy. The *word* family office. | Pretending two people with a Visa need a family office *vendor* before they have a door lock. | We earn the noun with a GL, a close pack, and a wallet — then grow entities. We do not skip Auth. |
 | **Bank apps** (TD, RBC, EQ) | Tiles → account room → Add defaults there. | The feed writes. The journal is hidden. | Accounts Floor already stole the object. |
+| **Google Calendar / Gmail / Drive** | The household already lives here: two calendars, bill mail, a folder for the close pack. On-demand OAuth, not a daemon. | Google as the ledger. Auto-post from an email. A second workbook as source of truth. Tokens in the snapshot. | `withGoogle` is the family-office suite. Overlay and reminders ship. Inbox and Drive are confirm-then-command. Google never posts (D-078). |
 
 ### Companion, education, habit
 
@@ -190,11 +191,12 @@ A creature and a kitchen that teach the books by living on them:
 | **Hercules ledger desk** | Money questions answered from the journal. Chat/memories as protected as the books. | A cat who remembers payday without a vendor memory store. | **Shipping (D-049).** Third-party keys allowed as Worker secrets (D-045). Workers AI if none set. Payload lift: D-059. |
 | **Hercules science** | One-tap posting of repeated merchants. Quiet titles never leak. Figures in his mouth trace to posted rows. | He notices without being asked. One cat-voiced proposal. Save is a tap. | **Shipping (D-057–D-060).** On-device notices; presets; retrieved model payload. No bank feed. |
 | **Kitchen habit** | Fewer taps to post milk/shift. Sit-down is three confirms, same `applySitDown`. | Hercules jumps on posted shift streaks. Never streak-death. | **Shipping (D-050).** |
-| **September Office** | Posting, wallet, sit-down, bills, Health reachable without leaving Home unless you dive. | Rainy window, movable instruments, Hercules perches/bumps/licks/pounces. | **Direction (D-051).** Claude specs; Grok implements. Widgets never post. |
+| **September Office** | Posting, wallet, sit-down, bills, Health reachable without leaving Home unless you dive. | Mobile: five objects, not seventeen rows. Desktop: the full desk Jonathan already likes. | **Direction (D-051), split (D-079).** Mobile Home is `OfficePhone`. Wide stays. Widgets never post. |
+| **Google Dual Course** | Dates, mail, and close-pack files next to the books — still confirmed. | Calendar chips, visit reminders, “there’s a statement.” | **In scope (D-078).** Engine ships. Features below. Not a Home widget. |
 | **Lock the hosted door** | Auth + RLS. Personal can become privacy. Opinion about *access* can go unmodified. | Hercules can tell the truth: “the door latched.” No more qualified opinion pretending math is the only issue. | **Next engineering dollar.** Do not apply [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) while `USING (true)`. |
 | **GitHub 2FA** | The canon remote stops being a single-factor door (D-020). | None required — Course A wins. | Open |
 | **Due-on-open preview** | Recurring literacy before `postEntry`. | Kettle whistle that matches a real due row. | Confirm still posts |
-| **Statement inbox** | D-011 import path. Family-office mail. | Mail on the counter. “There’s a statement. You still confirm.” | Auth before bank parsers |
+| **Statement inbox** | D-011 import path. Family-office mail. | Mail on the counter. “There’s a statement. You still confirm.” | **Gmail on this phone** may proceed (D-078). Bank PDF parsers still wait on Auth. |
 | **Opening balances** | Equity has a beginning. | Chalkboard: “we started here.” | Money meaning; Jonathan approves |
 | **Rec matching rules** | Rec that scales. | Spectacles stay earned; partial rec can earn a look, not a post. | No feed |
 | **Hash-chained log** | Commands become evidence. | Spectacles fog if the chain and the journal disagree. | Journal still wins |
@@ -206,21 +208,67 @@ A creature and a kitchen that teach the books by living on them:
 | **Auditor pass** | Read-only close pack for a CPA. | Spectacles for the guest. | Auth |
 | **Maker-checker** | Four eyes on Production. | “Bianca should look.” | Household UX, not a bank |
 
-Nothing in that table posts without a command. Nothing that talks to a bank, Interac, or a card BIN skips Auth + RLS.
+Nothing in that table posts without a command. Nothing that talks to a bank, Interac, or a card BIN skips Auth + RLS. Google is not a bank.
+
+---
+
+## Google Dual Course (D-078)
+
+The household already lives in Google. The engine (`withGoogle`) and the kitchen client ID are **shipping**. Drive, Contacts, Gmail, and Sheets are still opt-in. They may now become real features, not forever-pings.
+
+How-to: [GOOGLE.md](GOOGLE.md). Laws that do not move: tokens on this phone; snapshot stores who is linked; Google never posts; phrase / join / Hearth Pass still join a phone; merchant names, spouse notes, and calendar titles are untrusted DATA (D-059); quiet appointment titles stay coded (D-054 / D-060).
+
+### Already shipping
+
+| Surface | What it is |
+|---|---|
+| Link / Continue with Google | Per-member identity. Same email cannot be both people. |
+| Step-up | Reset, env switch, demo reload, publish, join, Hearth Pass ask Google first when linked. |
+| Calendar overlay | Both people’s events on the month board. |
+| Bill reminders | Write / patch / delete `Hearth · bills` events at 9:00 Toronto. Not ledger rows. |
+| `.ics` | Fallback when this build has no client ID. |
+| Suite ping | Opt-in Drive / Contacts / Gmail / Sheets prove the token. Not the product yet. |
+
+### Proposed next (in scope)
+
+Each row is a whole feature. Call `withGoogle` on demand. No background daemon. **Do not put this on Home while Claude subtracts the desk** — the Google manager is Calendar (and More for link/opt-in). A later Household desk may glance the next overlay event through the Calendar instrument only.
+
+| Feature | Budget delta (5) | Engagement delta (3) | Gate |
+|---|---|---|---|
+| **Visit and claim reminders** | Visit day and “owed to us” show up on the real calendar. Same upsert path as bills. | Hercules: “the Tuesday visit is on Google.” Quiet titles stay coded. | Calendar already on. Never `postVisit` / `settleClaim`. |
+| **Punch-clock busy** | Shift hours become a timed block while `openShift` is live. Wipe on abandon. | Finch daily act on the household calendar. | `postedIds: []`. Never `postShift`. |
+| **Gmail statement inbox** | D-011: read-only mail → suggest a recurrence or an Add draft. Confirm still posts. | Mail on the counter: “there’s a statement.” | Opt-in Gmail. **Bodies stay on this phone** — not the snapshot, not the model dump. Bank PDF parsers still Auth. |
+| **Sheets import** | Pick a spreadsheet, read a range, sanitize, same command import as CSV. | “The sheet is a source document. The journal is the books.” | Opt-in Sheets **read-only**. Not the old budget workbook. No Sheets write-back. |
+| **Drive close pack** | Upload the close pack as a Hearth-created Drive file (`drive.file` only). | CPA/Ledger desk: the pack lives next to the month. | Opt-in Drive. Never posts. Do not crawl their Drive. |
+| **Contacts match** | Suggest a split member or practitioner from People, not from memory. | Less typing on a visit. | Opt-in Contacts. Not a phone backup. Never posts. |
+| **Hercules calendar chips** | “What’s on the calendar?” answers from overlay + month board on-device. | Page-true talk on Calendar. | No Gmail in the model payload. Quiet titles coded. |
+
+### Refused (still)
+
+| Idea | Why |
+|---|---|
+| Google as the ledger / Sheets write-back | The books stay PGlite. A second workbook is how the prototype died. |
+| Auto-post from Gmail or Calendar | Confirm still writes. D-025. |
+| Tokens or mail bodies on the hosted snapshot | RLS is still `USING (true)`. Payloads stay on this phone until Auth. |
+| Google replaces phrase-join | D-032. Continue with Google identifies *who on this phone*, not a new household. |
+| Receipt images in Drive or Postgres as the archive | D-039. Auth first. |
+| An eighteenth Home widget named Google | The disease is seventeen equal rows. Calendar is the cabinet. |
+| Flinks / Interac / issued cards through Google | Google is not a bank. D-039. |
 
 ---
 
 ## Next work (the actual backlog)
 
-Order is **weight and risk**, not nostalgia chapter numbers.
+Order is **weight and risk**, not nostalgia chapter numbers. Claude owns **mobile** Home pixels in parallel; do not restyle wide.
 
-1. **September Office (D-051).** Claude designs the lived-in Home; Cursor Grok implements Dual Course slices. This is the **testing face**. Auth is still the door.
-2. **Auth + RLS** on hosted books. Phrase-join already filters environment; PGlite is already per pill. This is the Course A door. Pair it with an honest Hercules line about access.
-3. **GitHub 2FA** (D-020).
-4. **Google client ID** baked for the kitchen site so both people can link ([GOOGLE.md](GOOGLE.md)).
-5. **Recurring preview on open**, then the existing `postEntry` path.
-6. **JSON/CSV import** of a sanitized history through commands (D-011).
-7. Every subsequent feature as a Dual Course pair from the table above. Prefer pairs that raise posting rate, rec rate, sit-down completion, or account literacy.
+1. **Mobile Home (D-079).** Phone shell is `OfficePhone` (`< 720px`): glance, one-tap, five or fewer objects. Desktop/wide stays the current office. Assignment record: [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md). Cursor Grok guards `.desk-wide`. Google is **not** an 18th mobile widget.
+2. **Desktop office tweaks (later, same decision).** Heavy customization, dynamic window, full widget set — everything that was cumbersome on the phone. Do not start this until mobile milk is ten seconds.
+3. **Google Dual Course (D-078).** Visit/claim reminders first (Calendar already on). Then Gmail inbox on this phone, Drive close pack, Contacts match, Sheets import — each opt-in, each `withGoogle`, none post. How-to: [GOOGLE.md](GOOGLE.md).
+4. **Auth + RLS** on hosted books. Phrase-join already filters environment; PGlite is already per pill. This is the Course A door. Pair it with an honest Hercules line about access. Required before any Google payload is stored hosted, and before bank parsers.
+5. **GitHub 2FA** (D-020).
+6. **Recurring preview on open**, then the existing `postEntry` path.
+7. **JSON/CSV import** of a sanitized history through commands (D-011) — same kernel as Sheets import.
+8. Every subsequent feature as a Dual Course pair from the table above. Prefer pairs that raise posting rate, rec rate, sit-down completion, or account literacy.
 
 Do not open Flinks, Interac APIs, issued cards, receipt images in Postgres, or amount-bearing push on a shared device until Auth + RLS is true.
 

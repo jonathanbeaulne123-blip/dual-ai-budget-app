@@ -1,0 +1,250 @@
+/* ============================================================
+   Hearth — mobile Home board (< 720px only)
+
+   Scoped entirely under .office-phone, which Office.tsx renders
+   only at the phone breakpoint. Nothing here can reach the wide
+   desk: no .desk-wide, no .instrument, no .office rules touched.
+
+   Tokens are the house tokens. Mobile uses fewer objects; it does
+   not look like a different company.
+   ============================================================ */
+
+.office-phone {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 8px;
+}
+
+/* ── sill: one line. Weather left, what-needs-me right.
+      The old figure strip wrapped "the Wednesday visit" onto three
+      lines and orphaned GROCERIES; one sentence cannot do that. ── */
+.office-phone .ph-sill {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 0 2px;
+  min-height: 20px;
+}
+.office-phone .ph-weather {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 10.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--copper);
+  white-space: nowrap;
+}
+.office-phone .ph-needs {
+  font-size: 12.5px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ── stamps: the controller.
+      Pending presses hard in copper and carries a real figure.
+      Settled ghosts to an em-dash. Nothing shouts, nothing is green. ── */
+.office-phone .ph-stamps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.office-phone .ph-stamp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-height: 62px;
+  padding: 8px 6px;
+  background: none;
+  border: 2px solid var(--line);
+  border-radius: 9px;
+  font-family: inherit;
+  color: var(--muted);
+  cursor: pointer;
+  transition: transform .18s cubic-bezier(.34, 1.4, .64, 1);
+}
+.office-phone .ph-stamp.is-clear {
+  opacity: .72;
+  transform: rotate(.5deg);
+}
+.office-phone .ph-stamp.is-pending {
+  border-color: var(--copper);
+  color: var(--copper);
+  transform: rotate(-1.1deg);
+  box-shadow: inset 0 0 0 3px rgba(196, 92, 38, .07);
+}
+.office-phone .ph-lbl {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 9px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  opacity: .75;
+}
+.office-phone .ph-val {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -.02em;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.office-phone .ph-stamp.is-clear .ph-val { font-size: 16px; }
+.office-phone .ph-sub {
+  font-size: 9.5px;
+  color: var(--muted);
+  line-height: 1.15;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.office-phone .ph-stamp:active { transform: scale(.97); }
+.office-phone .ph-stamp:focus-visible { outline: 2px solid var(--pine); outline-offset: 3px; }
+
+/* ── objects on paper. The VALUE is the loud thing; the name is a
+      whisper. This is the inversion that made seventeen rows read
+      as seventeen rows. ── */
+.office-phone .ph-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  align-items: flex-start;
+}
+.office-phone .ph-inst {
+  flex: 1 1 calc(50% - 5px);
+  min-width: 0;
+  max-width: 100%;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  box-shadow: 0 5px 12px rgba(60, 42, 20, .11), 0 1px 0 rgba(60, 42, 20, .06);
+  transform: rotate(var(--rot, 0deg));
+  transition: transform .2s, box-shadow .2s;
+  overflow: hidden;
+}
+.office-phone .ph-inst.is-wide { flex: 1 1 100%; }
+.office-phone .ph-inst.is-open {
+  flex: 1 1 100%;
+  transform: rotate(0deg);
+  box-shadow: 0 16px 34px rgba(60, 42, 20, .18);
+}
+.office-phone .ph-inst.is-inert { pointer-events: none; opacity: .5; }
+.office-phone .ph-inst.is-warn { border-color: var(--copper); }
+
+.office-phone .ph-head {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  background: none;
+  border: 0;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.office-phone .ph-head:focus-visible { outline: 2px solid var(--pine); outline-offset: -3px; }
+.office-phone .ph-name {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--muted);
+  line-height: 1;
+}
+.office-phone .ph-value {
+  font-family: var(--display);
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -.025em;
+  line-height: 1.08;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+}
+.office-phone .ph-inst.is-wide .ph-value { font-size: 28px; }
+.office-phone .ph-body {
+  padding: 0 12px 12px;
+  border-top: 1px solid var(--line);
+  margin-top: 2px;
+  padding-top: 10px;
+  font-size: 13px;
+}
+
+/* ── drawer: everything Hearth has, one tap from the desk ── */
+.office-phone .ph-drawer {
+  margin-top: 2px;
+  font-size: 12px;
+}
+.office-phone .ph-drawer > summary {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 8px 2px;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+}
+.office-phone .ph-drawer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 7px;
+  padding: 4px 0 2px;
+}
+.office-phone .ph-chip {
+  min-height: 44px;
+  padding: 10px 8px;
+  background: var(--paper-2, var(--paper));
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 11.5px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.office-phone .ph-chip b { font-weight: 600; }
+.office-phone .ph-chip:focus-visible { outline: 2px solid var(--pine); outline-offset: 2px; }
+
+/* During Add nothing on the desk competes with Post. */
+.office-phone.is-adding .ph-rail,
+.office-phone.is-adding .ph-stamps { pointer-events: none; opacity: .45; }
+
+@media (prefers-reduced-motion: reduce) {
+  .office-phone * { animation: none !important; transition: none !important; }
+}
+
+/* ── Glance clamping.
+   Several glance components return a sentence, not a figure ("Shifts live in
+   the journal when you post them"). At 21px display type that wrapped to four
+   lines and made a five-object desk as tall as the seventeen-row rail.
+   Two lines, then ellipsis. Sentences drop to body type; figures keep the
+   display face, because the number is still the loud thing. ── */
+.office-phone .ph-value {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.office-phone .ph-inst[data-kind="text"] .ph-value {
+  font-family: var(--font);
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+.office-phone .ph-inst[data-kind="text"].is-open .ph-value { -webkit-line-clamp: 3; line-clamp: 3; }

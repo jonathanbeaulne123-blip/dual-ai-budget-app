@@ -1,5 +1,7 @@
 # Claude assignment — September Office UX
 
+> **Superseded for the current build.** Jonathan split mobile vs desktop (D-079). Paste [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md) instead. This file is the historical spec that produced the phone settings list. Desktop/wide should keep the office this document described — do not strip it in the mobile pass.
+
 Paste this file into Claude first. Then attach `docs/packets/CLAUDE-OFFICE-UX-SOURCE.txt` (regenerate with `node scripts/pack-claude-ux.mjs` from `main`). Do not plan from `docs/nostalgia/` or `docs/reference/`. Those folders are history, not this brief.
 
 You are **Claude**: independent architect and design lead for this update. You are **not** the implementer. Cursor Grok implements in the private GitHub repo after you spec.

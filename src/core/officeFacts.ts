@@ -33,8 +33,9 @@ export function blotterFacts(dashboard: Dashboard, opinion: AuditOpinion, findin
     netCents: dashboard.month.netActualCents,
     incomeCents: dashboard.month.incomeActualCents,
     expenseCents: dashboard.month.expenseActualCents,
-    stamp: opinion.kind,
-    /** Unmodified is the clean stamp. Spec said "clean"; the books use unmodified. */
+    /** Household words on the wax. The audit enum stays in Books, where a
+     *  CPA is reading an opinion — not on Home, where a kid is reading a net. */
+    stamp: opinion.kind === "unmodified" ? "clean" : opinion.kind,
     warn: opinion.kind !== "unmodified",
     lampDot: findings > 0,
     empty,

@@ -15,6 +15,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "pack:claude-ux": "node scripts/pack-claude-ux.mjs",
+    "pack:claude-mobile": "node scripts/pack-claude-mobile.mjs",
     "books:apply": "node --env-file=.env scripts/apply-supabase-schema.mjs",
     "cf:deploy": "pnpm build && rm -f dist/_redirects && wrangler deploy --assets=./dist",
     "cf:preview": "pnpm build && rm -f dist/_redirects && wrangler versions upload --assets=./dist"
