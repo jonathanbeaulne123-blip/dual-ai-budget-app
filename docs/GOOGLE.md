@@ -99,3 +99,31 @@ Without a client ID, Calendar still works: month board, spotted bills, `.ics` wi
 Call `withGoogle({ environment, memberId, services, stepUp?, fn })` whenever a feature needs Google. It is not a background daemon. It refreshes the token on this phone, asks Google again when `stepUp` is true, then runs `fn`. `syncGoogleSuite` pings each household-enabled service.
 
 Commands `linkGoogleIdentity`, `unlinkGoogleIdentity`, `touchGoogleConfirmation`, and `setGoogleServices` update the shared snapshot. They never call `postEntry`.
+
+---
+
+## Status (D-078)
+
+Google is **live product**, not a parking lot. Jonathan confirmed the kitchen integration works. Baking `VITE_GOOGLE_CLIENT_ID` is no longer the backlog item. A local Vite build without the variable still gets the month board and `.ics`.
+
+Living pairs and refused list: [STRATEGY.md](STRATEGY.md) § Google Dual Course.
+
+### Shipping now
+
+Identity, Calendar overlay, bill reminders, Continue with Google, step-up on sensitive household actions, opt-in suite **ping**.
+
+### Proposed next (in scope)
+
+Do these as Dual Course features that call `withGoogle`. Do **not** add a Google widget to Home while the desk is being subtracted. Calendar is the Google manager. More remains link / opt-in / confirm.
+
+1. **Visit and claim reminders** — same upsert as bills; quiet titles stay coded; never `postVisit`.
+2. **Punch-clock busy** — optional timed block while `openShift` is live; wipe on abandon; never `postShift`.
+3. **Gmail statement inbox** — read-only, on this phone, suggest a recurrence or Add draft; Confirm still posts. Mail bodies never enter the household snapshot. Bank PDF parsers still wait on Auth.
+4. **Sheets import** — pick a spreadsheet, read a range, sanitize, same D-011 path as CSV. Read-only. Not the old budget workbook. No Sheets write-back.
+5. **Drive close pack** — upload the generated pack as a Hearth-created file (`drive.file` only). Never crawl their Drive. Never posts.
+6. **Contacts match** — suggest a member or practitioner. Not a phone backup.
+7. **Hercules calendar chips** — overlay + month board, on-device. No Gmail in the model payload.
+
+### Still not Google’s job
+
+Google is not a bank. Tokens and mail/Drive/Contacts bodies stay off the hosted snapshot until Auth. Phrase / join / Hearth Pass still join a phone. Google never posts money.

@@ -50,7 +50,9 @@ On the phone, PGlite uses `idb://hearth-books-development` or `idb://hearth-book
 
 Connect notes: database name is `postgres` (dashboard URIs that end in `/postgresz` are a typo). `db.tykhocwacaxwquhynkok.supabase.co` is IPv6-only. Schema apply uses the session pooler `aws-0-us-east-1.pooler.supabase.com:5432` as `postgres.tykhocwacaxwquhynkok`. The phone app never receives that password.
 
-## Google household bridge (optional)
+## Google household bridge (live on the kitchen)
+
+The suite is in product scope (D-078). Opt-in extras (Drive, Contacts, Gmail, Sheets) still start as a ping until their Dual Course feature ships. See [GOOGLE.md](GOOGLE.md) and [STRATEGY.md](STRATEGY.md).
 
 OAuth client IDs are public. Put a Google Cloud **Web** client ID in `VITE_GOOGLE_CLIENT_ID` (see `.env.example` and [GOOGLE.md](GOOGLE.md)). On the kitchen site that means a GitHub Actions **variable** of the same name so merge-time `pnpm build` bakes it. Authorized JavaScript origins must include `http://localhost:5173` and the Cloudflare Workers URL.
 

@@ -20,7 +20,7 @@ Jonathan and Bianca. Toronto. CAD. About 500 transactions per month over time. B
 
 ## Important features (do not quietly change)
 
-Command kernel; D-016 meanings; CAD; `America/Toronto`; splits that sum; PGlite journal; Health refuses imbalance; Hercules never posts and never names who spent more; no fake fees; no pet-death hunger meter; Auth + RLS before bank / Interac / issued cards; Accounts Floor kinds; card paydown is a transfer; Audit Office is a projection; Development ≠ Production; phrase / join / Hearth Pass.
+Command kernel; D-016 meanings; CAD; `America/Toronto`; splits that sum; PGlite journal; Health refuses imbalance; Hercules never posts and never names who spent more; no fake fees; no pet-death hunger meter; Auth + RLS before bank / Interac / issued cards; Accounts Floor kinds; card paydown is a transfer; Audit Office is a projection; Development ≠ Production; phrase / join / Hearth Pass; Google household bridge (live suite, never posts, D-078).
 
 ## Engineering gates (not “out of vision”)
 
