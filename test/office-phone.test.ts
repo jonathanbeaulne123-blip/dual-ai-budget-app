@@ -152,7 +152,7 @@ describe("phone Hercules perch and bubble", () => {
 
 describe("phone CSS fence", () => {
   it("does not restyle desktop bubbles or invent --body", () => {
-    const css = readFileSync("src/office-phone.css", "utf8");
+    const css = readFileSync("src/office-phone.css", "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
     expect(css).not.toMatch(/body\s+\.hercules-bubble/);
     expect(css).not.toMatch(/\.desk-wide/);
     expect(css).not.toMatch(/var\(--body\)/);
