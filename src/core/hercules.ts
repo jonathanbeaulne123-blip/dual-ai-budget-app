@@ -5,6 +5,7 @@ import { companionMood, describeCompanion } from "./companion.ts";
 import { formatCad } from "./money.ts";
 import { auditOpinion, agedPayables, balanceSheet, cashFlowStatement, comparativeIncome, incomeStatement, liquidityWatch, notesToFinancialStatements, statementOfChangesInEquity, subsequentEvents } from "./statements.ts";
 import { booksEquation, compileHousehold, trialBalance } from "./journal.ts";
+import { householdSettle } from "./splitSettle.ts";
 import type { Household } from "./types.ts";
 
 export const DEFAULT_COMPANION_NAME = "Hercules";
@@ -319,6 +320,7 @@ export function herculesPageBrief(
 export const HERCULES_CHIPS = [
   "We good?",
   "What's owed?",
+  "Who owes whom?",
   "Opinion?",
   "Working capital?",
   "What's on the Visa?",
@@ -341,6 +343,25 @@ export function askHercules(household: Household, question: string, today: DateK
   }
   if (/\b(we good|you good|hey cat)\b/.test(q)) {
     return askHercules(household, "are we alright", today);
+  }
+  if (/\b(who owes|owes whom|between (us|you)|settle up|spouse iou)\b/.test(q)) {
+    const settle = householdSettle(household);
+    const rows = settle.positions.map((row) => ({
+      label: row.name,
+      value: row.netCents === 0
+        ? "even"
+        : row.netCents > 0
+          ? `owed ${formatCad(row.netCents)}`
+          : `owes ${formatCad(-row.netCents)}`,
+    }));
+    if (!settle.suggested) {
+      return {
+        kind: "answer",
+        sentence: "You're even on personal-account splits. Joint-paid rows stay with the house. Settle is a transfer. Confirm still writes.",
+        rows,
+      };
+    }
+    return { kind: "answer", sentence: settle.suggested.spoken, rows };
   }
   if (/\b(opinion|unmodified|qualified|adverse|audit|are the books clean|trial balance|in balance)\b/.test(q) && !/\b(spent|grocery)\b/.test(q)) {
     const opinion = auditOpinion(household);

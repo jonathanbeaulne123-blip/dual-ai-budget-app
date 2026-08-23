@@ -374,6 +374,9 @@ export function booksEquation(books: CompiledBooks): BooksEquation {
     expenseCents,
     netWorthCents,
     netIncomeCents,
+    /** Closing check, not the accounting equation. A = L + E. This holds
+     *  when net worth equals retained net income because the household
+     *  opened at zero and has no draws. */
     holds: netWorthCents === netIncomeCents,
   };
 }

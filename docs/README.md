@@ -16,6 +16,7 @@ Hearth is the product. **Living canon** is this folder except [nostalgia/](nosta
 | [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md) | Shipped phone Home (`OfficePhone`) |
 | [CLAUDE_OFFICE_UX.md](CLAUDE_OFFICE_UX.md) | Historical office spec (settings-list pass) |
 | [AUDIT_OFFICE.md](AUDIT_OFFICE.md) | Statements, rec, close — how to try |
+| [CPA.md](CPA.md) | CPA sequencing (D-081) — Remove, hash, FX, who-owes-whom |
 | [ACCOUNTS.md](ACCOUNTS.md) | Wallet, cards, investments — how to try |
 | [APPOINTMENTS.md](APPOINTMENTS.md) | Visits, claims tray, receivables, quiet labels, Hercules jars, Appointments destination (D-053–056) |
 | [ENVIRONMENTS.md](ENVIRONMENTS.md) | Development vs production, website, hosted books |

@@ -265,10 +265,11 @@ Order is **weight and risk**, not nostalgia chapter numbers. Claude owns **deskt
 2. **Mobile Home (D-079, shipped).** `OfficePhone` (`< 720px`): glance, one-tap, five or fewer objects. Record: [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md). Further phone customization is a joint Claude+Cursor review, not a dump of the desktop packet.
 3. **Google Dual Course (D-078).** Visit/claim reminders first (Calendar already on). Then Gmail inbox on this phone, Drive close pack, Contacts match, Sheets import — each opt-in, each `withGoogle`, none post. How-to: [GOOGLE.md](GOOGLE.md). A desktop Household personality may feature Calendar; Google is still not a bank.
 4. **Auth + RLS** on hosted books. Phrase-join already filters environment; PGlite is already per pill. This is the Course A door. Pair it with an honest Hercules line about access. Required before any Google payload is stored hosted, and before bank parsers.
-5. **GitHub 2FA** (D-020).
-6. **Recurring preview on open**, then the existing `postEntry` path.
-7. **JSON/CSV import** of a sanitized history through commands (D-011) — same kernel as Sheets import.
-8. Every subsequent feature as a Dual Course pair from the table above. Prefer pairs that raise posting rate, rec rate, sit-down completion, or account literacy.
+5. **CPA integrity (D-081).** Jonathan decides whether Remove becomes a reversing entry. Until then: auto-coding prefill, AP/accrual, CSV/OFX rec, honest line `createdBy`, tip-tax with a visible rate. Not FX. Not Plaid. Pair: [CPA.md](CPA.md).
+6. **GitHub 2FA** (D-020).
+7. **Recurring preview on open**, then the existing `postEntry` path.
+8. **JSON/CSV import** of a sanitized history through commands (D-011) — same kernel as Sheets import.
+9. Every subsequent feature as a Dual Course pair from the table above. Prefer pairs that raise posting rate, rec rate, sit-down completion, or account literacy.
 
 Do not open Flinks, Interac APIs, issued cards, receipt images in Postgres, or amount-bearing push on a shared device until Auth + RLS is true.
 

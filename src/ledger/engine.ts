@@ -130,6 +130,9 @@ export function booksIntegrityFacts(household: Household) {
       kind: account.kind,
       active: account.active,
     })),
+    tombstones: [...(household.tombstones ?? [])]
+      .sort((left, right) => left.id.localeCompare(right.id) || left.deletedAt.localeCompare(right.deletedAt))
+      .map((row) => ({ id: row.id, deletedAt: row.deletedAt })),
   };
 }
 

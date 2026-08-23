@@ -30,6 +30,7 @@ export const ASK_SUGGESTIONS = [
   "Groceries this month",
   "Bills due",
   "What's owed",
+  "Who owes whom",
   "Medical log",
   "How much is in chequing",
   "This week vs last week",

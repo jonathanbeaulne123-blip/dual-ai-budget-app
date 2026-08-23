@@ -1,0 +1,500 @@
+<!--
+  Parked sketch (D-080 / D-081). Claude's 390×844 phone-frame of desktop office tools
+  (widget sizes, paper stocks, Edit Desk, Tracker / Kitchen / CPA / Play desks).
+  Not a replacement for OfficePhone. Do not apply this CSS to the phone Home.
+-->
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hearth — Office v2 prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* ═══════════════════════════════════════════════════════════
+   HEARTH OFFICE v2 — tokens
+   The house palette, unchanged. Paper stock is ONE overlay,
+   never a second theme engine.
+   ═══════════════════════════════════════════════════════════ */
+:root{
+  --paper:#f3eee4; --paper-2:#ebe4d6; --card:#fffaf2;
+  --ink:#1b1712; --muted:#6b6258; --line:#d8cfc0;
+  --pine:#2c6a4e; --copper:#c45c26; --gold:#c9a227; --danger:#9b2c2c;
+  --rule:rgba(27,23,18,.045); --margin:rgba(196,92,38,.20);
+  --nav:76px;
+  --display:"Fraunces",Georgia,serif;
+  --body:"Figtree",system-ui,-apple-system,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+  --lift-0:0 1px 0 rgba(60,42,20,.10);
+  --lift-1:0 5px 12px rgba(60,42,20,.11), 0 1px 0 rgba(60,42,20,.06);
+  --lift-2:0 16px 34px rgba(60,42,20,.18);
+  --r:13px;
+}
+/* ── paper stocks: one overlay, four grounds ── */
+[data-stock="cream"]{}
+[data-stock="graph"]{
+  --paper:#eef0ec; --paper-2:#e4e8e3; --card:#fbfcfa; --line:#ccd4cc;
+  --rule:rgba(27,40,30,.05); --margin:rgba(44,106,78,.22);
+}
+[data-stock="night"]{
+  --paper:#1a1c1f; --paper-2:#222529; --card:#24282c;
+  --ink:#ece5d8; --muted:#9a938a; --line:#363b41;
+  --pine:#6fae8c; --copper:#e08a55; --gold:#d9b84a; --danger:#e07a72;
+  --rule:rgba(236,229,216,.045); --margin:rgba(224,138,85,.24);
+  --lift-1:0 5px 14px rgba(0,0,0,.4); --lift-2:0 16px 34px rgba(0,0,0,.55);
+}
+[data-stock="cork"]{
+  --paper:#e8dcc6; --paper-2:#ded0b6; --card:#fbf4e6; --line:#cbb995;
+  --rule:rgba(90,62,28,.06); --margin:rgba(196,92,38,.26);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--body);font-size:16px;line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+  display:flex;align-items:center;justify-content:center;gap:48px;
+  min-height:100dvh;padding:40px 24px;flex-wrap:wrap;
+}
+/* legend — desktop only. On a phone the prototype is the whole page. */
+.legend{max-width:390px;font-size:14px}
+.legend .eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--copper);margin:0 0 8px}
+.legend h1{font-family:var(--display);font-size:36px;font-weight:600;letter-spacing:-.03em;
+  line-height:1.05;margin:0 0 12px;text-wrap:balance}
+.legend p{color:var(--muted);margin:0 0 14px}
+.legend p b{color:var(--ink);font-weight:600}
+.legend h2{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted);margin:22px 0 8px;font-weight:500}
+.legend ol{margin:0;padding-left:18px;color:var(--muted)}
+.legend ol li{margin-bottom:7px}
+.legend ol b{color:var(--ink);font-weight:600}
+.legend .rule{height:1px;background:var(--line);margin:22px 0}
+@media (max-width:900px){ body{padding:0;gap:0} .legend{display:none} }
+/* ═══ phone frame (prototype chrome only — not part of the design) ═══ */
+.frame{
+  width:390px;height:844px;position:relative;overflow:hidden;
+  background:var(--paper);
+  box-shadow:0 30px 80px rgba(60,42,20,.28),0 0 0 1px rgba(60,42,20,.12);
+  border-radius:26px;
+}
+@media (max-width:430px){ .frame{width:100vw;height:100dvh;border-radius:0;box-shadow:none} }
+
+/* ═══ the desk surface — ruled ledger paper ═══ */
+.desk{
+  position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;
+  padding:14px 14px calc(var(--nav) + 18px);
+  background-image:
+    linear-gradient(90deg,transparent 33px,var(--margin) 33px,var(--margin) 34px,transparent 34px),
+    repeating-linear-gradient(var(--paper),var(--paper) 27px,var(--rule) 28px);
+  scroll-behavior:smooth;
+}
+[data-stock="graph"] .desk{
+  background-image:
+    linear-gradient(90deg,transparent 33px,var(--margin) 33px,var(--margin) 34px,transparent 34px),
+    repeating-linear-gradient(90deg,transparent,transparent 13px,var(--rule) 14px),
+    repeating-linear-gradient(transparent,transparent 13px,var(--rule) 14px);
+}
+[data-stock="cork"] .desk{
+  background-image:
+    linear-gradient(90deg,transparent 33px,var(--margin) 33px,var(--margin) 34px,transparent 34px),
+    radial-gradient(circle at 2px 2px,var(--rule) 1px,transparent 1.6px);
+  background-size:auto,11px 11px;
+}
+
+/* ═══ top bar ═══ */
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:2px 0 12px 24px}
+.top h1{font-family:var(--display);font-size:19px;font-weight:600;letter-spacing:-.02em;margin:0}
+.top .who{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.env{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--copper);border:1px solid var(--margin);border-radius:999px;padding:2px 7px}
+
+/* ═══════════════════════════════════════════════════════════
+   THE STAMPS — the controller.
+   Three impressions on the blotter: Post · Due · Close.
+   Pending = crisp ink, a real number, slightly askew.
+   Settled = ghosted outline, an em-dash. Nothing shouts.
+   ═══════════════════════════════════════════════════════════ */
+.stamps{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:0 0 14px 24px}
+.stamp{
+  position:relative;background:none;border:2px solid var(--ink);border-radius:9px;
+  padding:9px 6px 8px;text-align:center;cursor:pointer;color:var(--ink);
+  font-family:inherit;display:flex;flex-direction:column;gap:1px;align-items:center;
+  transition:transform .18s cubic-bezier(.34,1.4,.64,1),opacity .2s;
+  min-height:64px;justify-content:center;
+}
+.stamp .lbl{font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;opacity:.75}
+.stamp .val{font-family:var(--display);font-size:19px;font-weight:600;letter-spacing:-.02em;line-height:1.05;
+  font-variant-numeric:tabular-nums}
+.stamp .sub{font-size:9.5px;color:var(--muted);line-height:1.15;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* pending: pressed hard, ink bled, off-square */
+.stamp.due{border-color:var(--copper);color:var(--copper);transform:rotate(-1.1deg);
+  box-shadow:inset 0 0 0 3px rgba(196,92,38,.07)}
+.stamp.due .val{color:var(--copper)}
+.stamp.due::after{content:"";position:absolute;inset:-3px;border-radius:11px;
+  border:1px solid var(--copper);opacity:.18}
+/* settled: barely pressed */
+.stamp.clear{border-color:var(--line);color:var(--muted);opacity:.72;transform:rotate(.5deg)}
+.stamp.clear .val{color:var(--muted);font-size:17px}
+.stamp:active{transform:scale(.97)}
+.stamp:focus-visible{outline:2px solid var(--pine);outline-offset:3px}
+
+/* ═══════════════════════════════════════════════════════════
+   INSTRUMENTS — objects on paper, not rows in a list.
+   The VALUE is the loud thing. The name is a whisper.
+   ═══════════════════════════════════════════════════════════ */
+.rail{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start}
+.inst{
+  position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--lift-1);padding:10px 12px;cursor:pointer;
+  transform:rotate(var(--rot,0deg));transition:transform .2s,box-shadow .2s;
+  display:flex;flex-direction:column;gap:2px;text-align:left;color:inherit;font-family:inherit;
+  width:100%;overflow:hidden;
+}
+.inst:focus-visible{outline:2px solid var(--pine);outline-offset:3px}
+.inst .name{font-family:var(--body);font-size:9.5px;font-weight:600;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--muted);line-height:1}
+.inst .value{font-family:var(--display);font-weight:600;letter-spacing:-.025em;line-height:1.06;
+  font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inst .meta{font-size:11.5px;color:var(--muted);line-height:1.25;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* sizes — S glance, M card, L body */
+.inst.s{flex:0 1 calc(33.333% - 7px);width:auto;min-width:0;padding:8px 9px}
+.inst.s .value{font-size:15px}
+.inst.s .meta{display:none}
+.inst.m{flex:1 1 calc(50% - 5px);width:auto;min-width:0;max-width:100%}
+.inst.m .value{font-size:21px}
+.inst.l{flex:1 1 100%}
+.inst.l .value{font-size:29px}
+.inst.l .body{display:block}
+.inst .body{display:none;margin-top:8px;padding-top:9px;border-top:1px solid var(--line);
+  font-size:12.5px;color:var(--muted);white-space:normal}
+.inst.open .body{display:block}
+.inst.open{box-shadow:var(--lift-2);transform:rotate(0deg)}
+.inst .body b{color:var(--ink);font-weight:600}
+.inst .body .line{display:flex;justify-content:space-between;gap:10px;padding:3px 0}
+.inst .body .line span:last-child{font-variant-numeric:tabular-nums;color:var(--ink)}
+
+/* the pinned pad reads as an instrument you can hit with a thumb */
+.inst.pad{background:linear-gradient(var(--card),var(--paper-2));border-color:var(--line)}
+.inst.pad .value{font-family:var(--mono);font-weight:500;letter-spacing:-.01em}
+
+/* warn state — one copper hairline, never a red banner */
+.inst.warn{border-color:var(--copper)}
+.inst.warn .name{color:var(--copper)}
+
+/* ═══ edit mode — iOS jiggle, not a settings dump ═══ */
+.editing .inst{animation:jiggle .34s ease-in-out infinite alternate;cursor:grab}
+.editing .inst:nth-child(even){animation-delay:.17s}
+@keyframes jiggle{from{transform:rotate(calc(var(--rot,0deg) - .7deg))}to{transform:rotate(calc(var(--rot,0deg) + .7deg))}}
+.chipset{position:absolute;top:5px;right:5px;display:none;gap:4px;z-index:3}
+.editing .chipset{display:flex}
+.mini{border:1px solid var(--line);background:var(--paper);color:var(--ink);
+  border-radius:7px;width:24px;height:24px;font-family:var(--mono);font-size:10px;
+  display:grid;place-items:center;cursor:pointer;box-shadow:var(--lift-0);padding:0}
+.mini.x{color:var(--danger);font-size:13px;line-height:1}
+.editing .inst .value,.editing .inst .meta{opacity:.45}
+
+/* ═══ bottom bar + sheets ═══ */
+.nav{position:absolute;left:0;right:0;bottom:0;height:var(--nav);display:flex;
+  align-items:center;justify-content:space-around;background:var(--card);
+  border-top:1px solid var(--line);z-index:20;padding-bottom:6px}
+.nav button{background:none;border:0;font-family:inherit;font-size:11px;color:var(--muted);
+  display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 10px}
+.nav button.on{color:var(--ink);font-weight:600}
+.nav .plus{width:46px;height:46px;border-radius:50%;background:var(--ink);color:var(--card);
+  font-size:24px;display:grid;place-items:center;margin-top:-14px;box-shadow:var(--lift-1);font-weight:400}
+[data-stock="night"] .nav .plus{background:var(--gold);color:#1a1c1f}
+
+.deskbar{display:flex;gap:7px;margin:16px 0 4px 24px;flex-wrap:wrap}
+.tbtn{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  background:none;border:1px solid var(--line);border-radius:999px;padding:6px 11px;
+  color:var(--muted);cursor:pointer}
+.tbtn.on{border-color:var(--ink);color:var(--ink);background:var(--card)}
+
+.sheet{position:absolute;left:0;right:0;bottom:0;top:auto;max-height:80%;overflow-y:auto;
+  background:var(--card);border-top:1px solid var(--line);border-radius:18px 18px 0 0;
+  box-shadow:0 -18px 40px rgba(60,42,20,.2);z-index:40;padding:14px 16px calc(var(--nav) + 18px);
+  transform:translateY(101%);transition:transform .3s cubic-bezier(.3,1,.4,1)}
+.sheet.up{transform:translateY(0)}
+.sheet h2{font-family:var(--display);font-size:18px;font-weight:600;margin:0 0 3px;letter-spacing:-.02em}
+.sheet p.hint{font-size:12.5px;color:var(--muted);margin:0 0 14px}
+.sheet h3{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted);margin:16px 0 8px;font-weight:500}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}
+.stampbtn{background:var(--paper);border:1px dashed var(--line);border-radius:10px;padding:10px 8px;
+  cursor:pointer;font-family:inherit;color:var(--ink);text-align:center;font-size:11px;line-height:1.25}
+.stampbtn b{display:block;font-family:var(--body);font-size:9px;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.opts{display:flex;gap:7px;flex-wrap:wrap}
+.done{position:sticky;bottom:0;width:100%;margin-top:16px;background:var(--ink);color:var(--card);
+  border:0;border-radius:11px;padding:13px;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer}
+[data-stock="night"] .done{background:var(--gold);color:#1a1c1f}
+.scrim{position:absolute;inset:0;background:rgba(27,23,18,.3);z-index:30;opacity:0;
+  pointer-events:none;transition:opacity .3s}
+.scrim.up{opacity:1;pointer-events:auto}
+
+.cat{position:absolute;right:8px;bottom:calc(var(--nav) + 4px);width:var(--catsize,72px);
+  z-index:25;pointer-events:none;opacity:.96}
+.editing .cat{opacity:.3}
+
+/* rings — where something used to sit. The cheapest lived-in cue there is. */
+.rings{position:relative;height:150px;margin-left:24px;pointer-events:none}
+.rings i{position:absolute;border:1px solid var(--ink);border-radius:50%;opacity:.055}
+.rings i:nth-child(1){width:86px;height:22px;left:6px;top:26px;transform:rotate(-3deg)}
+.rings i:nth-child(2){width:54px;height:16px;left:118px;top:64px;transform:rotate(4deg)}
+.rings i:nth-child(3){width:40px;height:40px;left:32px;top:78px;opacity:.04}
+.rings i:nth-child(4){width:112px;height:20px;left:74px;top:8px;opacity:.035;transform:rotate(1.5deg)}
+.foot{margin:0 0 0 24px;font-size:10.5px;color:var(--muted);font-family:var(--mono);opacity:.7}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style></head>
+<body data-stock="cream">
+<div class="legend">
+  <p class="eyebrow">Hearth · Office v2 · working prototype</p>
+  <h1>A desk, not a catalog</h1>
+  <p>Home today is <b>seventeen equal rows and 1,391px of scroll</b>. This is the same app with
+  five things on the desk, the number louder than the label, and everything else one tap away
+  in a drawer. <b>Nothing was deleted.</b></p>
+  <p>Three stamps carry the navigation: <b>Post · Due · Close</b>. Pending presses hard in copper
+  and carries a real figure. Settled ghosts out to an em-dash. The desk underneath is then free
+  to be short, because it has stopped doing the wayfinding.</p>
+  <h2>Try it</h2>
+  <ol>
+    <li>Tap <b>Due</b> — the bill instrument comes to the desk and opens.</li>
+    <li>Tap any instrument to expand it in place. One at a time.</li>
+    <li><b>Edit desk</b> — jiggle mode. Cycle a size chip S→M→L, or × to send it to the drawer.
+    The calculator has no ×; it can never leave.</li>
+    <li><b>Drawer</b> — every instrument Hearth has, live values, one tap to bring back.</li>
+    <li><b>Look</b> — four paper stocks, density, cat size. One overlay, never a second theme.</li>
+    <li><b>Desks</b> — Tracker · Kitchen · CPA · Play. A starting point, not a cage.</li>
+    <li><b>More</b> — where the parked features live. All still working.</li>
+  </ol>
+  <div class="rule"></div>
+  <p style="font-size:12.5px">Fixture data is the demo kitchen, read from the live build.
+  Real-size phone frame: 390&times;844.</p>
+</div>
+<div class="frame" id="frame">
+  <div class="desk" id="desk"></div>
+  <div class="scrim" id="scrim"></div>
+  <div class="sheet" id="sheet"></div>
+  <nav class="nav">
+    <button class="on">Home</button><button>Calendar</button>
+    <button class="plus">+</button>
+    <button>Plan</button><button>Books</button>
+    <button id="moreBtn">More</button>
+  </nav>
+  <svg class="cat" viewBox="0 0 200 200" aria-hidden="true"><g fill="none" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M138 158C176 170 198 142 193 106 189 80 172 66 158 72c16 12 24 38 16 60-8 20-24 26-38 24Z" fill="var(--card)"/>
+    <path d="M84 92c28-18 64 0 81 30 15 26 9 48-9 55l-52 2c-18-5-30-47-20-87Z" fill="var(--card)"/>
+    <path d="M46 62C34 74 26 88 30 100c-6 6-5 16 1 20-5 6-4 15 2 18-4 6-1 14 5 15-2 7 3 13 10 12 7 6 17 5 23-1 10 3 21-4 25-15 5-17 5-49 1-75Z" fill="var(--card)"/>
+    <path d="M38 25 58 47c8-6 19-8 29-4L98 23l10 28c12 13 14 33 0 45-16 14-50 14-66 0C28 84 30 60 38 25Z" fill="var(--card)"/>
+    <path d="M38 26c-2-4-3-6-4-9M98 24c2-4 3-6 4-9" stroke-width="2"/>
+    <path d="M40 63c6-7 19-7 24 0-6 7-18 7-24 0Z" fill="#fff" stroke-width="2"/>
+    <circle cx="52" cy="63" r="3.8" fill="var(--ink)" stroke="none"/>
+    <path d="M28 83c5 4 13 4 17 0" stroke-width="1.4" opacity=".5"/>
+    <path d="m26 79 7-2-3 5Z" fill="var(--ink)" stroke-width="1"/>
+    <path d="M30 81 12 73M30 85l-19-1M32 89l-16 8" stroke-width="1" opacity=".45"/>
+  </g></svg>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   STATE — mirrors the proposed OfficeLayout v2 exactly.
+   Everything here maps 1:1 to what Cursor will persist.
+   ═══════════════════════════════════════════════════════════════ */
+const FIXTURE = {
+  net:"$2,555.63", inMonth:"$4,912.00", outMonth:"$2,356.37",
+  card:"$217.23", cardLimit:"$10,268.14", cardDays:"13d", util:"2%",
+  nextBill:"Rent", nextBillOn:"Sep 1", nextBillAmt:"$1,850.00",
+  visit:"the Wednesday visit", visitOn:"Aug 26",
+  groceries:"$313.13", claims:"$180.00", claimWho:"Sun Life · 12d",
+  jar:"Emergency buffer", jarPct:32, jarAmt:"$1,600 / $5,000",
+  shift:"Yesterday", shiftStreak:"1 shift", tips:"$142.50",
+  chalk:["Leftover chili — do not order in","Hercules gets a hat if rent is on time"],
+  health:0, cook:"kitchen", week:"$313.13", lastWeek:"$402.10"
+};
+
+/* every instrument that exists. NOTHING is deleted — the desk just
+   stops being the place they all live. */
+const INST = {
+  calculator:{n:"Calculator", v:"Post milk", m:"CAD pad · 1-2-5-0 → $12.50", pad:1,
+    body:'<div class="line"><span>Tap a digit pair</span><span>cents first</span></div><div class="line"><span>Milk · Coffee · Shift</span><span>presets</span></div><div class="line"><b>Confirm still writes.</b><span></span></div>'},
+  blotter:{n:"Month net", v:FIXTURE.net, m:"August · clean opinion",
+    body:`<div class="line"><span>In</span><span>${FIXTURE.inMonth}</span></div><div class="line"><span>Out</span><span>${FIXTURE.outMonth}</span></div><div class="line"><span>Opinion</span><span>Clean</span></div>`},
+  wallet:{n:"Wallet", v:FIXTURE.card, m:`Mastercard · ${FIXTURE.cardDays} to due`,
+    body:`<div class="line"><span>Owing</span><span>${FIXTURE.card}</span></div><div class="line"><span>Limit</span><span>${FIXTURE.cardLimit}</span></div><div class="line"><span>Used</span><span>${FIXTURE.util}</span></div><div class="line"><b>Pay card is a transfer.</b><span></span></div>`},
+  accounts:{n:"Accounts", v:FIXTURE.card, m:"Chequing · savings · card · TFSA",
+    body:'<div class="line"><span>Everyday chequing</span><span>$4,120.88</span></div><div class="line"><span>Savings</span><span>$8,400.00</span></div><div class="line"><span>Mastercard</span><span>−$217.23</span></div><div class="line"><span>TFSA</span><span>$12,900.00</span></div>'},
+  mail:{n:"Next bill", v:FIXTURE.nextBill, m:`${FIXTURE.nextBillOn} · ${FIXTURE.nextBillAmt}`,
+    body:`<div class="line"><span>${FIXTURE.nextBillOn} · Rent</span><span>${FIXTURE.nextBillAmt}</span></div><div class="line"><span>Sep 3 · Hydro</span><span>$88.40</span></div><div class="line"><span>Sep 8 · Spotify</span><span>$11.99</span></div><div class="line"><b>Income never lands here.</b><span></span></div>`},
+  claims:{n:"Owed to us", v:FIXTURE.claims, m:FIXTURE.claimWho, warn:1,
+    body:`<div class="line"><span>Sun Life · cleaning</span><span>${FIXTURE.claims}</span></div><div class="line"><span>Submitted</span><span>12 days ago</span></div><div class="line"><b>Settling is a transfer, not income.</b><span></span></div>`},
+  calendar:{n:"Calendar", v:"Aug 22", m:"Bianca pay · today",
+    body:'<div class="line"><span>Today</span><span>Bianca pay</span></div><div class="line"><span>Aug 26</span><span>the Wednesday visit</span></div><div class="line"><span>Sep 1</span><span>Rent</span></div>'},
+  appointments:{n:"Next visit", v:FIXTURE.visitOn, m:FIXTURE.visit,
+    body:`<div class="line"><span>${FIXTURE.visitOn}</span><span>${FIXTURE.visit}</span></div><div class="line"><span>Typical cost</span><span>$248.00</span></div><div class="line"><span>Expected back</span><span>$180.00</span></div>`},
+  timesheet:{n:"Shifts", v:FIXTURE.shiftStreak, m:`${FIXTURE.shift} · ${FIXTURE.tips} tips`,
+    body:`<div class="line"><span>Last shift</span><span>${FIXTURE.shift}</span></div><div class="line"><span>Net tips</span><span>${FIXTURE.tips}</span></div><div class="line"><b>A streak is posted shifts, not opens.</b><span></span></div>`},
+  jars:{n:"Jars", v:FIXTURE.jarPct+"%", m:`${FIXTURE.jar} · ${FIXTURE.jarAmt}`,
+    body:`<div class="line"><span>${FIXTURE.jar}</span><span>${FIXTURE.jarAmt}</span></div><div class="line"><span>Japan</span><span>$400 / $5,000</span></div><div class="line"><span>Hercules · vet</span><span>$60 / $300</span></div>`},
+  chalkboard:{n:"Chalkboard", v:"2 notes", m:FIXTURE.chalk[0],
+    body:`<div class="line"><span>${FIXTURE.chalk[0]}</span><span>bought</span></div><div class="line"><span>${FIXTURE.chalk[1]}</span><span>bought</span></div>`},
+  lamp:{n:"Health", v:"Clean", m:"The books agree with themselves",
+    body:'<div class="line"><span>Trial balance</span><span>in balance</span></div><div class="line"><span>Findings</span><span>none</span></div>'},
+  postcard:{n:"Sit-down", v:"Sunday", m:"Copy August into September",
+    body:'<div class="line"><span>Look → trims → Apply</span><span>3 steps</span></div>'},
+  cookoff:{n:"Cook-off", v:"Kitchen", m:"Groceries beat takeout this week",
+    body:`<div class="line"><span>Groceries</span><span>${FIXTURE.groceries}</span></div><div class="line"><span>Coffee &amp; lunches</span><span>$96.40</span></div>`},
+  activity:{n:"Recent", v:"3 posts", m:"Tim Hortons · Loblaws · transfer",
+    body:'<div class="line"><span>Tim Hortons</span><span>$2.25</span></div><div class="line"><span>Loblaws</span><span>$84.10</span></div><div class="line"><span>To Mastercard</span><span>transfer</span></div>'},
+  wardrobe:{n:"Accessories", v:"Bare", m:"Unlocked by posted facts",
+    body:'<div class="line"><span>Specs</span><span>locked</span></div><div class="line"><span>Patio hat</span><span>unlocked</span></div>'},
+  tictactoe:{n:"Tic-tac-toe", v:"Your turn", m:"Two players, turn by turn",
+    body:'<div class="line"><span>Bianca played centre</span><span>your move</span></div>'},
+  hangman:{n:"Hangman", v:"_ _ _ _ _", m:"Two players, turn by turn",
+    body:'<div class="line"><span>5 letters</span><span>3 guesses left</span></div>'}
+};
+
+/* Four desks. Each obeys the controller law: calculator + at most four. */
+const DESKS = {
+  tracker:{label:"Tracker", blurb:"Post it, see it, move on.",
+    items:[["calculator","l"],["blotter","m"],["wallet","m"],["activity","s"],["mail","s"]]},
+  kitchen:{label:"Kitchen", blurb:"Budget, habits, the household rhythm.",
+    items:[["calculator","m"],["blotter","m"],["timesheet","m"],["chalkboard","m"],["jars","s"]]},
+  cpa:{label:"CPA", blurb:"Opinion, accounts, what is owed.",
+    items:[["blotter","l"],["accounts","m"],["claims","m"],["mail","s"],["lamp","s"],["calculator","s"]]},
+  play:{label:"Play", blurb:"Jars, shifts, the cat.",
+    items:[["jars","l"],["calculator","m"],["timesheet","m"],["chalkboard","s"],["cookoff","s"]]}
+};
+
+let S = { desk:"kitchen", stock:"cream", items:[], open:null, editing:false, density:"names", cat:72 };
+function loadDesk(k){ S.desk=k; S.items = DESKS[k].items.map(([id,size])=>({id,size})); S.open=null; render(); }
+
+/* stable per-instrument rotation, so the same object is always askew the same way */
+const rot = id => (([...id].reduce((a,c)=>a+c.charCodeAt(0),0)%9)-4)/5.5;
+
+function stampState(){
+  const postedToday=false, dueSoon=true, closeClear=(FIXTURE.health===0);
+  return [
+    {k:"post", lbl:"Post", ok:postedToday, val:postedToday?"—":"Milk", sub:postedToday?"posted today":"nothing yet today", go:"calculator"},
+    {k:"due",  lbl:"Due",  ok:!dueSoon,   val:FIXTURE.nextBillAmt, sub:`${FIXTURE.nextBill} · ${FIXTURE.nextBillOn}`, go:"mail"},
+    {k:"close",lbl:"Close",ok:closeClear, val:closeClear?"—":"1", sub:closeClear?"books agree":"needs you", go:"lamp"}
+  ];
+}
+
+function render(){
+  document.body.dataset.stock = S.stock;
+  document.getElementById("frame").style.setProperty("--catsize", S.cat+"px");
+  const d = document.getElementById("desk");
+  d.className = "desk" + (S.editing?" editing":"");
+  const st = stampState();
+
+  d.innerHTML = `
+    <div class="top">
+      <div><h1>Hearth</h1><div class="who">Jonathan · household · Aug 22</div></div>
+      <span class="env">Development</span>
+    </div>
+    <div class="stamps">
+      ${st.map(s=>`<button class="stamp ${s.ok?"clear":"due"}" data-go="${s.go}">
+        <span class="lbl">${s.lbl}</span><span class="val">${s.val}</span><span class="sub">${s.sub}</span></button>`).join("")}
+    </div>
+    <div class="rail">
+      ${S.items.map(it=>{
+        const I=INST[it.id]; if(!I) return "";
+        return `<button class="inst ${it.size} ${I.pad?"pad":""} ${I.warn?"warn":""} ${S.open===it.id?"open":""}"
+          style="--rot:${rot(it.id)}deg" data-id="${it.id}">
+          <div class="chipset">
+            <span class="mini" data-size="${it.id}">${it.size.toUpperCase()}</span>
+            ${it.id==="calculator"?"":`<span class="mini x" data-hide="${it.id}">×</span>`}
+          </div>
+          ${S.density==="names"?`<span class="name">${I.n}</span>`:""}
+          <span class="value">${I.v}</span>
+          <span class="meta">${I.m}</span>
+          <div class="body">${I.body||""}</div>
+        </button>`}).join("")}
+    </div>
+    <div class="deskbar">
+      <button class="tbtn" id="editBtn">${S.editing?"Done":"Edit desk"}</button>
+      <button class="tbtn" id="drawerBtn">Drawer</button>
+      <button class="tbtn" id="looksBtn">Look</button>
+      <button class="tbtn" id="desksBtn">Desks</button>
+    </div>
+    <div class="rings"><i></i><i></i><i></i><i></i></div>
+    <div class="foot">${S.items.length} on the desk · ${Object.keys(INST).length - S.items.length} in the drawer</div>`;
+
+  d.querySelectorAll(".stamp").forEach(b=>b.onclick=()=>{
+    const id=b.dataset.go; if(!S.items.some(i=>i.id===id)) S.items.unshift({id,size:"m"});
+    S.open=id; render();
+  });
+  d.querySelectorAll(".inst").forEach(b=>b.onclick=e=>{
+    if(e.target.closest(".mini")) return;
+    if(S.editing) return;
+    S.open = S.open===b.dataset.id ? null : b.dataset.id; render();
+  });
+  d.querySelectorAll("[data-size]").forEach(el=>el.onclick=e=>{
+    e.stopPropagation(); const it=S.items.find(i=>i.id===el.dataset.size);
+    it.size = it.size==="s"?"m":it.size==="m"?"l":"s"; render();
+  });
+  d.querySelectorAll("[data-hide]").forEach(el=>el.onclick=e=>{
+    e.stopPropagation(); S.items=S.items.filter(i=>i.id!==el.dataset.hide); render();
+  });
+  document.getElementById("editBtn").onclick=()=>{S.editing=!S.editing;S.open=null;render()};
+  document.getElementById("drawerBtn").onclick=drawer;
+  document.getElementById("looksBtn").onclick=looks;
+  document.getElementById("desksBtn").onclick=desks;
+}
+
+/* ── sheets ── */
+const sheet=document.getElementById("sheet"), scrim=document.getElementById("scrim");
+function openSheet(html){ sheet.innerHTML=html; sheet.classList.add("up"); scrim.classList.add("up"); }
+function closeSheet(){ sheet.classList.remove("up"); scrim.classList.remove("up"); }
+scrim.onclick=closeSheet;
+
+function drawer(){
+  const hidden=Object.keys(INST).filter(id=>!S.items.some(i=>i.id===id));
+  openSheet(`<h2>Drawer</h2><p class="hint">Everything Hearth can do still lives here. Tap to put it on the desk at S.</p>
+    <div class="grid">${hidden.map(id=>`<button class="stampbtn" data-add="${id}"><b>${INST[id].n}</b>${INST[id].v}</button>`).join("")||'<p class="hint">The drawer is empty — everything is out.</p>'}</div>
+    <button class="done" id="dn">Done</button>`);
+  sheet.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{S.items.push({id:b.dataset.add,size:"s"});render();drawer()});
+  sheet.querySelector("#dn").onclick=closeSheet;
+}
+function looks(){
+  const stocks=[["cream","Kitchen cream"],["graph","CPA graph"],["night","Night blotter"],["cork","Play cork"]];
+  openSheet(`<h2>Look</h2><p class="hint">One overlay on the desk. Never a second theme, never a photo behind a number.</p>
+    <h3>Paper stock</h3><div class="opts">${stocks.map(([k,l])=>`<button class="tbtn ${S.stock===k?"on":""}" data-stock="${k}">${l}</button>`).join("")}</div>
+    <h3>Density</h3><div class="opts">
+      <button class="tbtn ${S.density==="names"?"on":""}" data-den="names">Names on</button>
+      <button class="tbtn ${S.density==="glance"?"on":""}" data-den="glance">Glance only</button></div>
+    <h3>Hercules</h3><div class="opts">${[72,96,120].map(n=>`<button class="tbtn ${S.cat===n?"on":""}" data-cat="${n}">${n}px</button>`).join("")}</div>
+    <button class="done" id="dn">Done</button>`);
+  sheet.querySelectorAll("[data-stock]").forEach(b=>b.onclick=()=>{S.stock=b.dataset.stock;render();looks()});
+  sheet.querySelectorAll("[data-den]").forEach(b=>b.onclick=()=>{S.density=b.dataset.den;render();looks()});
+  sheet.querySelectorAll("[data-cat]").forEach(b=>b.onclick=()=>{S.cat=+b.dataset.cat;render();looks()});
+  sheet.querySelector("#dn").onclick=closeSheet;
+}
+function desks(){
+  openSheet(`<h2>Desks</h2><p class="hint">A starting point, not a cage. Rearrange after and you are on Custom.</p>
+    <div class="grid" style="grid-template-columns:1fr 1fr">
+      ${Object.entries(DESKS).map(([k,v])=>`<button class="stampbtn" data-desk="${k}" style="text-align:left;padding:12px">
+        <b>${v.label}</b>${v.blurb}<br><span style="color:var(--muted);font-size:10px">${v.items.length} instruments</span></button>`).join("")}
+    </div><button class="done" id="dn">Done</button>`);
+  sheet.querySelectorAll("[data-desk]").forEach(b=>b.onclick=()=>{loadDesk(b.dataset.desk);closeSheet()});
+  sheet.querySelector("#dn").onclick=closeSheet;
+}
+document.getElementById("moreBtn").onclick=()=>openSheet(
+  `<h2>More</h2><p class="hint">Everything the desk does not carry. All of it still works.</p>
+   <h3>Cabinets</h3><div class="opts"><button class="tbtn">Books</button><button class="tbtn">Calendar</button><button class="tbtn">Plan</button><button class="tbtn">Appointments</button></div>
+   <h3>Parked — working, not on the desk</h3><div class="opts">
+     <button class="tbtn">Smart stacks</button><button class="tbtn">Envelopes</button>
+     <button class="tbtn">Google strip</button><button class="tbtn">Auto-promote</button>
+     <button class="tbtn">Tic-tac-toe</button><button class="tbtn">Hangman</button></div>
+   <h3>Household</h3><div class="opts"><button class="tbtn">Health</button><button class="tbtn">Pairing</button><button class="tbtn">Storage</button><button class="tbtn">Undo</button></div>
+   <button class="done" id="dn">Done</button>`);
+sheet.addEventListener("click",e=>{ if(e.target.id==="dn") closeSheet(); });
+
+loadDesk("kitchen");
+</script>
+</body></html>

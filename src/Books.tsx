@@ -16,6 +16,7 @@ import {
   comparativeIncome,
   compileHousehold,
   formatCad,
+  householdSettle,
   incomeStatement,
   liquidityWatch,
   monthKeyFromDateKey,
@@ -88,6 +89,7 @@ export function BooksPage({
   const [recAmount, setRecAmount] = useState("");
   const [recError, setRecError] = useState("");
   const [closeError, setCloseError] = useState("");
+  const settle = useMemo(() => householdSettle(household), [household]);
 
   useEffect(() => {
     if (!focusedAccountId) return;
@@ -102,6 +104,7 @@ export function BooksPage({
         <div className={`money ${equation.netWorthCents < 0 ? "negative" : ""}`}>{formatCad(equation.netWorthCents)}</div>
         <div className="sub">
           Net worth {equation.holds ? "equals" : "does not equal"} retained income {formatCad(equation.netIncomeCents)}
+          {" "}(A = L + E; this check holds because the household opened at zero)
           {trial.inBalance ? " · trial balance in balance" : " · trial balance is off"}
         </div>
         <p className={`opinion-banner ${opinion.kind}`}>
@@ -234,7 +237,26 @@ export function BooksPage({
         </section>
       )}
       {pane === "statements" && (
-        <StatementsPane household={household} monthKey={monthKey} today={today} />
+        <>
+          {settle.suggested && (
+            <section className="card">
+              <header>
+                <h2>Between you</h2>
+                <span className="muted">Splits, not Interac</span>
+              </header>
+              <p>{settle.suggested.spoken}</p>
+              <ul className="muted">
+                {settle.positions.map((row) => (
+                  <li key={row.memberId}>
+                    {row.name}: paid {formatCad(row.paidCents)} · owns {formatCad(row.ownedCents)} ·
+                    {" "}{row.netCents === 0 ? "even" : row.netCents > 0 ? `owed ${formatCad(row.netCents)}` : `owes ${formatCad(-row.netCents)}`}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          <StatementsPane household={household} monthKey={monthKey} today={today} />
+        </>
       )}
       {pane === "rec" && (
         <section className="card">

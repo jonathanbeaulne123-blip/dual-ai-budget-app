@@ -4,6 +4,7 @@ export { CURRENCY, formatCad, parseWholeCents, centsToDollars, dollarsToCents } 
 export * from "./types.ts";
 export * from "./duplicate.ts";
 export * from "./splits.ts";
+export * from "./splitSettle.ts";
 export * from "./shift.ts";
 export * from "./catalog.ts";
 export * from "./health.ts";
