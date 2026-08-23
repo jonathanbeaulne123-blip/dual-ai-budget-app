@@ -98,6 +98,7 @@ Older Sheets-era rows, including superseded ones such as “stay on Sheets until
 | D-104 | Accepted | **Model-first Hercules chat (H-26).** `planHerculesTurn` no longer skips the model for journal matches or chips. Safety-only paths still skip: remember/recall, SQL/shame refusal, Add drafts. Grounded `talk.spoken` is the fallback via `chatHercules`; bubble shows quiet `ai` vs `on-device`. Chips route through `sendChat`. | Regex bot → understood answer; requires D-103 before production scale-up. |
 | D-105 | Accepted | **Ledger excerpt for the model (H-27, H-30).** `buildLedgerExcerpt` caps at **18** recent rows and filters partner `personal` rows via `visibleForDuplicateScan` before the AI payload. `composeHerculesChatRequest` takes `memberId`. Worker prefers `ledgerLines` (line-oriented excerpt) over a JSON blob so clips do not break mid-token. | Model-first chat needs bounded, privacy-aware context; complements D-059 quiet redaction. |
 | D-106 | Accepted | **Memory kinds get consumers (H-28).** `memoriesForModel` sends `{ kind, label }` to the Worker (not flat strings). Briefing includes typed `kitchen memories`. `memoryFactForTopic` surfaces the best on-device memory for bills/forecast/shift/cook talk. Amounts still strip to `CAD`. | Remembered payday/bill/habit notes should shape answers, not just sit in the wardrobe list. |
+| D-107 | Accepted | **Due-on-open preview.** On kitchen open, when repeating rows are due (`nextDate <= today`), show a dismissible sheet listing them. Per-item **Mark paid** and **Post all** still route through existing confirm guards. `dismissDuePreview` is phone-local per Toronto day. Nothing auto-posts. | STRATEGY #6 recurring literacy before `postEntry`; kettle whistle tied to real due rows. |
 
 **Why-notes (docs rebuild, 2026-08-22)**
 
@@ -127,3 +128,4 @@ Older Sheets-era rows, including superseded ones such as “stay on Sheets until
 - **D-104** (2026-08-23): Model-first chat — journal answers and chips call `chatHercules`; safety paths still skip. Bubble shows `ai` / `on-device`.
 - **D-105** (2026-08-23): Ledger excerpt — 18-row cap, partner personal rows filtered by viewer `memberId`, `ledgerLines` line format for Worker.
 - **D-106** (2026-08-23): Memory kinds — structured `{ kind, label }` in model payload; briefing + `memoryFactForTopic` consumers on-device.
+- **D-107** (2026-08-23): Due-on-open preview — dismissible sheet for due recurrences; confirm still posts; phone-local dismiss per day.

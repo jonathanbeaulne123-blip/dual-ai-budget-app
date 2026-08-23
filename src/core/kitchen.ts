@@ -344,6 +344,14 @@ export function markRecapSeen(environment: Environment, sunday: DateKey): void {
   memory()?.setItem(prefKey(environment, `recap:${sunday}`), "1");
 }
 
+export function duePreviewDismissed(environment: Environment, today: DateKey): boolean {
+  return memory()?.getItem(prefKey(environment, `duePreview:${today}`)) === "1";
+}
+
+export function dismissDuePreview(environment: Environment, today: DateKey): void {
+  memory()?.setItem(prefKey(environment, `duePreview:${today}`), "1");
+}
+
 export function isCosmeticSlot(value: string): value is CosmeticSlot {
   return value === "hat" || value === "chain" || value === "house" || value === "collar";
 }

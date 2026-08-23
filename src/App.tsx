@@ -69,6 +69,9 @@ import {
   ceremonyFields,
   ceremonyCopy,
   collapseSavedOffice,
+  dismissDuePreview,
+  duePreviewDismissed,
+  dueRecurrencePreview,
   formatPreviewHours,
   isLastCeremonyStep,
   previewHoursLabel,
@@ -92,6 +95,7 @@ import { inviteFromLocation } from "./core/invite.ts";
 import { PairingCard, WelcomeJoin } from "./Pairing.tsx";
 import { BooksPage } from "./Books.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
+import { DuePreviewSheet } from "./DuePreviewSheet.tsx";
 import { CalendarPage } from "./Calendar.tsx";
 import { Office } from "./Office.tsx";
 import { HerculesPresence } from "./Hercules.tsx";
@@ -124,7 +128,8 @@ type Guard =
   | { kind: "writeOffClaim"; claimId: string; summary: string }
   | { kind: "acceptVisitGoal"; appointmentId: string; summary: string }
   | { kind: "acceptPreset"; key: string; summary: string }
-  | { kind: "addPreset"; summary: string };
+  | { kind: "addPreset"; summary: string }
+  | { kind: "duePreview"; rows: ReturnType<typeof dueRecurrencePreview> };
 
 const emptyForm = {
   date: todayKey(),
@@ -179,6 +184,7 @@ export function App() {
   const [categoryTouched, setCategoryTouched] = useState(false);
   const [codingHint, setCodingHint] = useState("");
   const enqueueWrite = useMemo(() => createWriteQueue(), []);
+  const duePreviewOffered = useRef(false);
   const householdRef = useRef<Household | null>(household);
   householdRef.current = household;
   const historyRef = useRef(history);
@@ -211,6 +217,15 @@ export function App() {
     const hours = formatPreviewHours(previewHoursQuarter(punch.startedAt));
     setForm((current) => (current.hours === hours ? current : { ...current, hours }));
   }, [household, shiftGate, shiftStep, shiftTick, hoursDirty]);
+
+  useEffect(() => {
+    if (booting || !household || adding || guard || duePreviewOffered.current) return;
+    if (duePreviewDismissed(environment, today)) return;
+    const rows = dueRecurrencePreview(household, today);
+    if (!rows.length) return;
+    duePreviewOffered.current = true;
+    setGuard({ kind: "duePreview", rows });
+  }, [booting, household, adding, guard, environment, today]);
 
   useEffect(() => {
     let live = true;
@@ -1549,6 +1564,25 @@ export function App() {
           onConfirm={() => {
             setGuard(null);
             void run((current) => postDueRecurrences(current, today));
+          }}
+        />
+      )}
+      {guard?.kind === "duePreview" && (
+        <DuePreviewSheet
+          rows={guard.rows}
+          today={today}
+          busy={busy}
+          onDismiss={() => {
+            dismissDuePreview(environment, today);
+            setGuard(null);
+          }}
+          onMarkPaid={(recurrenceId, summary) => {
+            dismissDuePreview(environment, today);
+            setGuard({ kind: "postRecurrence", recurrenceId, summary });
+          }}
+          onPostAll={(summary) => {
+            dismissDuePreview(environment, today);
+            setGuard({ kind: "postDueAll", summary });
           }}
         />
       )}
