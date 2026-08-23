@@ -25,6 +25,7 @@ import {
   notesToFinancialStatements,
   recordReconciliation,
   reopenBooksMonth,
+  setBudget,
   shiftMonthKey,
   sitDownExportText,
   statementOfChangesInEquity,
@@ -270,7 +271,7 @@ export function BooksPage({
         </section>
       )}
       {pane === "statements" && (
-        <StatementsPane household={household} monthKey={monthKey} today={today} />
+        <StatementsPane household={household} monthKey={monthKey} today={today} onChange={onChange} />
       )}
       {pane === "rec" && (
         <section className="card">
@@ -479,11 +480,16 @@ function StatementsPane({
   household,
   monthKey,
   today,
+  onChange,
 }: {
   household: Household;
   monthKey: string;
   today: string;
+  onChange: (household: Household, undo?: UndoToken) => void;
 }) {
+  const [editId, setEditId] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const [budgetError, setBudgetError] = useState("");
   const sheet = useMemo(() => balanceSheet(household), [household]);
   const income = useMemo(() => incomeStatement(household, monthKey), [household, monthKey]);
   const cash = useMemo(() => cashFlowStatement(household, monthKey), [household, monthKey]);
@@ -551,10 +557,57 @@ function StatementsPane({
       </section>
       <section className="card">
         <header><h2>Budget variance</h2></header>
+        <p className="muted">Tap a budget to edit this month&apos;s plan. Actuals still come from posted rows.</p>
+        {budgetError && <p className="danger">{budgetError}</p>}
         {variance.length === 0 ? <p className="muted">No expense actuals this month yet.</p> : variance.map((row) => (
           <div className="row" key={row.id}>
             <span>{row.name}{row.essential ? " · essential" : ""}</span>
-            <span className={row.varianceCents < 0 ? "danger" : "muted"}>{formatCad(row.actualCents)} / {formatCad(row.budgetedCents)}</span>
+            {editId === row.id ? (
+              <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <span className="muted">{formatCad(row.actualCents)} /</span>
+                <input
+                  inputMode="decimal"
+                  value={draft}
+                  autoFocus
+                  style={{ width: 72 }}
+                  onChange={(event) => setDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      setEditId(null);
+                      setBudgetError("");
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  className="chip"
+                  onClick={() => {
+                    try {
+                      const result = setBudget(household, { monthKey, subcategoryId: row.id, amount: draft });
+                      onChange(result.household, result.undo);
+                      setEditId(null);
+                      setBudgetError("");
+                    } catch (caught) {
+                      setBudgetError(caught instanceof Error ? caught.message : String(caught));
+                    }
+                  }}
+                >
+                  Save
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                className={`ghost ${row.varianceCents < 0 ? "danger" : ""}`}
+                onClick={() => {
+                  setEditId(row.id);
+                  setDraft(row.budgetedCents ? (row.budgetedCents / 100).toFixed(2) : "");
+                  setBudgetError("");
+                }}
+              >
+                {formatCad(row.actualCents)} / {formatCad(row.budgetedCents)}
+              </button>
+            )}
           </div>
         ))}
       </section>
