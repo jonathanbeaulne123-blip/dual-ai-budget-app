@@ -17,6 +17,7 @@ import {
   localHerculesChat,
   memoryLabelForModel,
   memoryLabelsForModel,
+  memoriesForModel,
   planHerculesTurn,
   postEntry,
   postTransfer,
@@ -388,7 +389,7 @@ describe("The Hercules Update", () => {
 
     let body = "";
     await chatHercules(
-      { message: "we good?", briefing, grounded, memories: labels },
+      { message: "we good?", briefing, grounded, memories: memoriesForModel(kept.household) },
       {
         fetch: async (_url, init) => {
           body = String(init?.body || "");
@@ -404,5 +405,32 @@ describe("The Hercules Update", () => {
     expect(body).not.toMatch(/Bianca spent more/);
     expect(body).toMatch(/memories/);
     expect(body).toMatch(/CAD/);
+  });
+
+  it("sends memory kinds to the model and surfaces bill memories on bills talk", async () => {
+    let household = seedDemoHousehold({ today, environment: "development" });
+    const remembered = planHerculesTurn(household, "remember hydro is due Friday", today, "home");
+    expect(remembered.memory?.kind).toBe("bill");
+    household = recordHerculesTalk(household, {
+      author: "MEM-001",
+      userText: "remember hydro is due Friday",
+      herculesText: remembered.talk.spoken,
+      source: "memory",
+      memory: remembered.memory,
+    }).household;
+
+    const briefing = herculesBriefing(household, "home", today);
+    const grounded = talkHercules(household, "which bill is due", today, "home");
+    const req = composeHerculesChatRequest(household, "which bill is due", briefing, grounded, today, "MEM-001");
+    expect(req.memories.some((row) => row.kind === "bill" && /hydro/i.test(row.label))).toBe(true);
+
+    const payload = herculesModelPayload(req);
+    expect(payload).toMatch(/"kind":"bill"/);
+    expect(payload).toMatch(/hydro is due Friday/i);
+    expect(formatHerculesBriefing(briefing, req.memories)).toMatch(/kitchen memories: bill:/);
+
+    const billsTalk = talkHercules(household, "which bill is due", today, "home");
+    expect(billsTalk.fact?.label).toBe("bill");
+    expect(billsTalk.fact?.value).toMatch(/hydro/i);
   });
 });

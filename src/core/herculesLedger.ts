@@ -50,6 +50,11 @@ export type ExtractedMemory = {
   label: string;
 };
 
+export type HerculesMemoryView = {
+  kind: HerculesMemoryKind;
+  label: string;
+};
+
 export type HerculesPlan = {
   talk: HerculesTalk;
   source: HerculesTalkSource;
@@ -77,7 +82,48 @@ export function memoryLabelForModel(text: string): string {
 }
 
 export function memoryLabelsForModel(household: Household): string[] {
-  return ledgerMemories(household).map((row) => row.label).filter(Boolean).slice(-12);
+  return memoriesForModel(household).map((row) => row.label);
+}
+
+export function memoriesForModel(household: Household): HerculesMemoryView[] {
+  return ledgerMemories(household)
+    .slice(-12)
+    .map((row) => ({ kind: row.kind, label: row.label }))
+    .filter((row) => row.label);
+}
+
+export function formatMemoriesForModel(memories: HerculesMemoryView[]): string {
+  if (!memories.length) return "(none)";
+  return memories.map((row) => `${row.kind}: ${row.label}`).join("\n");
+}
+
+const MEMORY_KIND_BY_TOPIC: Record<string, HerculesMemoryKind[]> = {
+  bills: ["bill", "payday", "habit", "preference", "note"],
+  calendar: ["bill", "payday", "habit", "preference", "note"],
+  mail: ["bill", "payday", "habit", "preference", "note"],
+  forecast: ["payday", "habit", "bill", "preference", "note"],
+  shift: ["payday", "habit", "bill", "preference", "note"],
+  cook: ["habit", "preference", "note", "payday", "bill"],
+  morning: ["habit", "preference", "note", "payday", "bill"],
+};
+
+/** On-device consumer: surface the most relevant kitchen memory for a talk topic. */
+export function topicUsesKitchenMemories(topic: string): boolean {
+  return topic in MEMORY_KIND_BY_TOPIC;
+}
+
+export function memoryFactForTopic(
+  household: Household,
+  topic: string,
+): { label: string; value: string } | null {
+  const mems = ledgerMemories(household);
+  if (!mems.length) return null;
+  const kindOrder = MEMORY_KIND_BY_TOPIC[topic] ?? ["note", "payday", "bill", "habit", "preference"];
+  for (const kind of kindOrder) {
+    const row = [...mems].reverse().find((item) => item.kind === kind);
+    if (row) return { label: row.kind, value: row.label };
+  }
+  return null;
 }
 
 export function extractHerculesMemory(message: string): ExtractedMemory | null {

@@ -105,9 +105,9 @@ export function herculesBriefing(
 }
 
 /** Compact aggregates for the model. No transaction dump, no tokens, no who-spent. */
-export function formatHerculesBriefing(briefing: HerculesBriefing): string {
+export function formatHerculesBriefing(briefing: HerculesBriefing, memories: Array<{ kind: string; label: string }> = []): string {
   const bills = briefing.billsDueSoon.length ? briefing.billsDueSoon.join(", ") : "none";
-  return [
+  const lines = [
     `${briefing.name}. Toronto kitchen. CAD. America/Toronto.`,
     `page: ${briefing.page}`,
     `mood: ${briefing.mood}`,
@@ -127,7 +127,11 @@ export function formatHerculesBriefing(briefing: HerculesBriefing): string {
     `chequing: ${briefing.chequingCad}`,
     `cards owed: ${briefing.cardsOwedCad}`,
     `hottest utilization: ${briefing.hottestUtilizationPct == null ? "n/a" : `${briefing.hottestUtilizationPct}%`}`,
-  ].join("\n");
+  ];
+  if (memories.length) {
+    lines.push(`kitchen memories: ${memories.map((row) => `${row.kind}: ${row.label}`).join("; ")}`);
+  }
+  return lines.join("\n");
 }
 
 function clipReply(text: string, max = 360): string {
