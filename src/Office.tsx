@@ -45,7 +45,6 @@ import {
   sizeOf,
   bumpLayoutForExpand,
   collapseExpandedLayout,
-  expandShellFor,
   INSTRUMENT_LABEL,
   PERSONALITY_BLURB,
   PERSONALITY_DESK,

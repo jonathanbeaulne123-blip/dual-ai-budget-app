@@ -44,11 +44,12 @@ export function googleRrule(nextDate: DateKey, cadence: RecurrenceCadence): stri
 }
 
 export function inferRecurrenceKind(input: {
-  type: "expense" | "income";
+  type: "expense" | "income" | "transfer";
   note: string;
   subcategoryName?: string;
 }): RecurrenceKind {
   if (input.type === "income") return "paycheck";
+  if (input.type === "transfer") return "other";
   const hay = `${input.note} ${input.subcategoryName ?? ""}`.toLowerCase();
   if (/\b(netflix|spotify|disney|prime|apple|phone|phones|gym|membership|subscription|icloud|crave)\b/.test(hay)) {
     return "subscription";
