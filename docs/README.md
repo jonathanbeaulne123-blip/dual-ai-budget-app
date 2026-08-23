@@ -11,7 +11,7 @@ Hearth is the product. **Living canon** is this folder except [nostalgia/](nosta
 | [HERCULES.md](HERCULES.md) | Companion how-to and laws |
 | [HERCULES_MARK.md](HERCULES_MARK.md) | Ink figure, favicon, 3D source vs 96px runtime (D-061) |
 | [HERCULES_AI.md](HERCULES_AI.md) | Resident data scientist: notices, presets, model payload, quiet redaction (D-057–D-060) |
-| [OFFICE.md](OFFICE.md) | September Office direction (D-051) — two UI branches (D-079), desktop packet (D-080) |
+| [OFFICE.md](OFFICE.md) | September Office direction (D-051) — two UI branches (D-079), desktop packet (D-080 / D-082) |
 | [CLAUDE_DESKTOP_OFFICE.md](CLAUDE_DESKTOP_OFFICE.md) | **Current Claude prompt:** unique desktop offices; mobile subset is a joint review |
 | [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md) | Shipped phone Home (`OfficePhone`) |
 | [CLAUDE_OFFICE_UX.md](CLAUDE_OFFICE_UX.md) | Historical office spec (settings-list pass) |

@@ -21,6 +21,8 @@ export function Instrument({
   onHeaderPointerCancel,
   onHeaderKeyDown,
   extraClass,
+  size,
+  chips,
 }: {
   id: string;
   name: string;
@@ -42,6 +44,8 @@ export function Instrument({
   onHeaderPointerCancel?: (event: PointerEvent<HTMLButtonElement>) => void;
   onHeaderKeyDown?: (event: KeyboardEvent<HTMLButtonElement>) => void;
   extraClass?: string;
+  size?: string;
+  chips?: ReactNode;
 }) {
   function onKey(event: KeyboardEvent<HTMLButtonElement>) {
     onHeaderKeyDown?.(event);
@@ -55,8 +59,10 @@ export function Instrument({
     <section
       className={`instrument instrument-${id} ${expanded ? "is-expanded" : ""} ${minimized ? "is-minimized" : ""} ${bump ? "is-bumped" : ""} ${inert ? "is-inert" : ""} ${dragging ? "is-dragging" : ""} ${extraClass ?? ""}`}
       style={{ ["--rot" as string]: `${rotation}deg` }}
+      data-size={size}
       aria-label={aria}
     >
+      {chips}
       <button
         type="button"
         className="instrument-header"
