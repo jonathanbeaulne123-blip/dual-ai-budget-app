@@ -9,6 +9,7 @@ Hearth is the product. **Living canon** is this folder except [nostalgia/](nosta
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Ledger, books, UI, and how the two courses couple |
 | [DECISIONS.md](DECISIONS.md) | Living decision log (D-048 Dual Course) |
 | [HERCULES.md](HERCULES.md) | Companion how-to and laws |
+| [HERCULES_MARK.md](HERCULES_MARK.md) | Ink figure, favicon, 3D source vs 96px runtime (D-061) |
 | [HERCULES_AI.md](HERCULES_AI.md) | Resident data scientist: notices, presets, model payload, quiet redaction (D-057–D-060) |
 | [OFFICE.md](OFFICE.md) | September Office direction (D-051) |
 | [CLAUDE_OFFICE_UX.md](CLAUDE_OFFICE_UX.md) | Prompt for Claude to spec the office; Grok implements |

@@ -403,13 +403,6 @@
   font-weight: 700;
 }
 
-.pose-perch .hercules-body { transform: scale(1.04, 0.9) translateY(6px); }
-.pose-lick .hercules-paw {
-  animation: hercules-wash 0.5s ease-in-out infinite;
-  transform-origin: 52px 142px;
-}
-.pose-bump .hercules-body { animation: hercules-trot 0.38s ease-in-out infinite; }
-.pose-attack .hercules-body { animation: hercules-pounce 0.45s ease-out; }
 .hercules-live.cut-motion,
 .hercules-live.cut-motion.hercules-live {
   transition: none;

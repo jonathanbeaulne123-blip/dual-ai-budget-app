@@ -398,18 +398,19 @@ export function attackTarget(furniture: Furniture[]): Furniture | null;   // war
 export function walkPath(from: Point, to: Point, furniture: Furniture[]): Point[];  // ≤ 3 waypoints
 ```
 
-Each widget publishes its rect on mount, resize, drag-end, and expand/collapse (`ResizeObserver` + `getBoundingClientRect`), throttled to ~10Hz. `Hercules.tsx` consumes the registry. **`src/core/` still imports no React** — the registry is a plain store with a subscribe function; the React binding lives in `src/widgets/useFurniture.ts`.
+Each widget publishes its rect on mount, resize, drag-end, and expand/collapse (`ResizeObserver` + `getBoundingClientRect`). While a widget is being dragged, publish is rAF-throttled. **Do not poll on a 100ms interval.** `Hercules.tsx` consumes the registry. **`src/core/` still imports no React** — the registry is a plain store with a subscribe function; the React binding lives in `src/widgets/useFurniture.ts`.
 
 ### C2. Targeting rules
 
 | Verb | Chooses | Pose | Constraint |
 |---|---|---|---|
-| **perch** | `perchable` furniture, weighted: sill 3×, tray 2×, board 2×, others 1×; phase promotes its instrument (§A6) 2× | `loaf` → `sleep` (evening) / `stretch` (morning) | Lands on the **top edge**: `y = rect.y - CAT + 12` so his paws overlap the object by 12px. That overlap is what sells "on the furniture." |
-| **bump** | any furniture whose rect the walk path crosses | `walk` | Widget nudges 3px and settles (200ms spring). One line max if chat closed ("mrrp"). **Never moves a number, never re-orders the desk.** |
-| **lick** | board or tray, mood `content`/`glowing` | `wash` | Idle only. No modal, no chat open. |
-| **pounce/attack** | `attackTarget()` — **only** `warn === true`: overdue Mail, waiting Timesheet, lit Lamp while `hiding` | `pounce` | Never on the user. Never on Add. Never on the Calculator. Never on a person's name. Max once per 90s. |
+| **perch** | `perchable` furniture, weighted: sill 3×, tray 2×, board 2×, others 1×; phase promotes its instrument (§A6) 2× | `loaf` → `sleep` (evening) / `stretch` (morning) | Lands on the **top edge**: `y = rect.y - CAT + 12` so his paws overlap the object by 12px. Sill is **profile along the ledge** (left or right), never a looking-out-the-window drawing. |
+| **bump** | any furniture whose rect the walk path or a drag crosses | `bump` | Widget nudges 3px and settles (200ms spring). **Never moves a number, never re-orders the desk. No clink.** |
+| **lick** | board or tray, mood `content`/`glowing` | `lick` | Idle only. No modal, no chat open. |
+| **pounce** | the decorative fly | `pounce` | Butt wiggle, then launch. The fly never carries CAD. Reduced motion hides the fly. |
+| **attack** | `attackTarget()` — **only** `warn === true`: overdue Mail, waiting Timesheet, lit Lamp while `hiding` | `attack` | Stands beside the object, facing it, raised paw. Never on the user. Never on Add. Never on the Calculator. Never on a person's name. Max once per 90s. |
 | **hide** | corner, mood `hiding` | `hide` | Unchanged. |
-| **drag / pin** | user | — | Unchanged. Pinned = he stays; instruments may still move under him, and he does not re-perch until unpinned. |
+| **drag / pin** | user | — | Unchanged. Dragging across an instrument emits `bump`. Pinned = he stays; instruments may still move under him, and he does not re-perch until unpinned. |
 
 **What stays random:** which of several equally-weighted perchables he picks, the idle phase cycle (the existing 6-step interval), micro-jitter of the landing point (±4px), and whether an idle tick produces a `wash` or nothing. Randomness gives life; targeting gives place. Keep both.
 

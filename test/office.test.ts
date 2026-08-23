@@ -27,6 +27,10 @@ import {
   parseOfficeLayout,
   parseOfficeRings,
   perchTarget,
+  attackStand,
+  furnitureUnderCat,
+  walkHits,
+  walkPath,
   postcardEmpty,
   POSTCARD_EMPTY,
   promoteRail,
@@ -43,7 +47,6 @@ import {
   TIMESHEET_EMPTY,
   timesheetEmpty,
   WEATHER_TTL_MS,
-  walkPath,
   blotterFacts,
   type Furniture,
 } from "../src/core/index.ts";
@@ -229,7 +232,45 @@ describe("Hercules furniture physics", () => {
 
   it("forces the corner loaf while adding", () => {
     const land = perchTarget(desk, "restless", "morning", true, { w: 390, h: 800 });
-    expect(land).toMatchObject({ x: 6, y: 6, on: null, pose: "loaf" });
+    expect(land).toMatchObject({ x: 6, y: 6, on: null, pose: "loaf", faceRight: false });
+  });
+
+  it("perches the sill in profile, not as if he were looking out the glass", () => {
+    const land = perchTarget(
+      [desk[0]!],
+      "content",
+      "morning",
+      false,
+      { w: 390, h: 800 },
+      null,
+      () => 0.2,
+    );
+    expect(land.on).toBe("window");
+    expect(land.faceRight === true || land.faceRight === false).toBe(true);
+    const center = desk[0]!.rect.x + desk[0]!.rect.w / 2;
+    expect(Math.abs(land.x + 48 - center)).toBeGreaterThan(40);
+  });
+
+  it("stands beside a warning instrument to attack, facing it", () => {
+    const mail = desk[2]!;
+    const left = attackStand(mail, { x: 10, y: 200 }, { w: 390, h: 800 });
+    expect(left.faceRight).toBe(true);
+    expect(left.x).toBeLessThan(mail.rect.x + mail.rect.w / 2);
+    const right = attackStand(mail, { x: 320, y: 200 }, { w: 390, h: 800 });
+    expect(right.faceRight).toBe(false);
+  });
+
+  it("names the furniture a walk actually crosses", () => {
+    const hits = walkHits({ x: 0, y: 180 }, { x: 300, y: 220 }, desk);
+    expect(hits.some((item) => item.id === "wallet" || item.id === "mail")).toBe(true);
+    expect(hits.some((item) => item.kind === "sill")).toBe(false);
+  });
+
+  it("ignores the Post button when the cat is hauled across the desk", () => {
+    const post = { id: "calculator-post", rect: { x: 40, y: 520, w: 310, h: 56 }, perchable: false, warn: false, kind: "pad" as const };
+    const wallet = desk[1]!;
+    expect(furnitureUnderCat({ x: 50, y: 510 }, [post, wallet])?.id).not.toBe("calculator-post");
+    expect(furnitureUnderCat({ x: 30, y: 190 }, [post, wallet])?.id).toBe("wallet");
   });
 
   it("walks around furniture in at most three points", () => {

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <title>Hercules</title>
+  <!--
+    The Hearth mark. Front-facing Maine Coon in the same hand as the figure.
+    Authored for 16px first: the silhouette (two tufted ears + a wide fluffy
+    head) carries it, and every detail below is allowed to disappear.
+    currentColor so it inherits --ink and survives a dark tab strip.
+  -->
+  <g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <!-- head + ruff, one continuous fur contour -->
+    <path d="M16 15
+             C14 22 13 28 14 33
+             C10 35 11 40 15 41
+             C13 46 17 50 22 49
+             C23 54 29 56 32 53
+             C35 56 41 54 42 49
+             C47 50 51 46 49 41
+             C53 40 54 35 50 33
+             C51 28 50 22 48 15
+             L40 24 C35 21 29 21 24 24 Z"
+          fill="var(--herc-coat, #fdfbf6)"/>
+    <!-- lynx tufts -->
+    <path d="M16 15 C15 11 14 9 13 7" stroke-width="2.2"/>
+    <path d="M48 15 C49 11 50 9 51 7" stroke-width="2.2"/>
+    <!-- ear interiors -->
+    <path d="M19 20 C22 23 24 25 26 26" stroke-width="1.6" opacity="0.55"/>
+    <path d="M45 20 C42 23 40 25 38 26" stroke-width="1.6" opacity="0.55"/>
+    <!-- eyes -->
+    <path d="M21 34 C23 30 28 30 30 34 C28 38 23 38 21 34 Z" fill="#ffffff" stroke-width="2"/>
+    <path d="M34 34 C36 30 41 30 43 34 C41 38 36 38 34 34 Z" fill="#ffffff" stroke-width="2"/>
+    <circle cx="25.5" cy="34" r="1.9" fill="currentColor" stroke="none"/>
+    <circle cx="38.5" cy="34" r="1.9" fill="currentColor" stroke="none"/>
+    <!-- nose + muzzle -->
+    <path d="M30 41 L34 41 L32 44 Z" fill="currentColor" stroke-width="1"/>
+    <path d="M32 44 C31 47 28 47 27 45 M32 44 C33 47 36 47 37 45" stroke-width="1.5"/>
+  </g>
+</svg>

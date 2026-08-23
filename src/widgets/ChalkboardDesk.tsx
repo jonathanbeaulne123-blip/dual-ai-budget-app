@@ -1,3 +1,4 @@
+import { HerculesPortrait } from "../Hercules.tsx";
 import { useState } from "react";
 import {
   BOARD_EMPTY,
@@ -110,6 +111,17 @@ export function ChalkboardBody({
       </button>
       <details className="wardrobe">
         <summary>Hercules’s things</summary>
+        <div className="wardrobe-still" aria-hidden="true">
+          <HerculesPortrait
+            mood={view.mood}
+            hat={view.equipped.hat}
+            chain={view.equipped.chain}
+            house={view.equipped.house}
+            collar={view.equipped.collar}
+            pose="loaf"
+            size="stage"
+          />
+        </div>
         {SLOTS.map((slot) => (
           <div key={slot.id} className="wardrobe-slot">
             <span className="muted">{slot.label}</span>

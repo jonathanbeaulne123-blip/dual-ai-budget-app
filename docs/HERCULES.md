@@ -4,7 +4,7 @@
 
 The ledger is still the company (Dual Course weight 5). He is Course B (weight 3) **and** a serious tool: money questions are answered on-device from the books. Care is posted household facts, not a hunger meter. Ember was the flame prototype and is fully historical.
 
-Laws: [DECISIONS.md](DECISIONS.md) D-042 / D-044 / D-045 / D-046 / D-047 / D-049 / D-050 / D-051 / D-057–D-060. Science spec: [HERCULES_AI.md](HERCULES_AI.md). Strategy: [STRATEGY.md](STRATEGY.md). Museum essay: [nostalgia/HERCULES.md](nostalgia/HERCULES.md).
+Laws: [DECISIONS.md](DECISIONS.md) D-042 / D-044 / D-045 / D-046 / D-047 / D-049 / D-050 / D-051 / D-057–D-061. Science spec: [HERCULES_AI.md](HERCULES_AI.md). Mark: [HERCULES_MARK.md](HERCULES_MARK.md). Strategy: [STRATEGY.md](STRATEGY.md). Museum essay: [nostalgia/HERCULES.md](nostalgia/HERCULES.md).
 
 ## Laws
 
@@ -17,6 +17,7 @@ Laws: [DECISIONS.md](DECISIONS.md) D-042 / D-044 / D-045 / D-046 / D-047 / D-049
 - Unlocks come from posted facts, a tied rec, or a closed month — never a shop, never pay-to-keep-alive, never pet death.
 - Shift-posting streak (D-050) is consecutive **posted shift dates** from the latest shift. Vacation does not kill him. “Log shift” opens Add. Confirm still posts.
 - **September Office (D-051):** he will perch, bump, lick, and pounce on desk widgets. He still never posts. Kill criterion unchanged.
+- **Mark (D-061):** the live cat is ink-on-paper SVG (white coat, ruff under the head). The 3D GLB is source, not the 96px runtime. Laws and weaknesses: [HERCULES_MARK.md](HERCULES_MARK.md).
 - **Appointments (D-055 / D-056):** he may notice a visit and propose a jar. `proposeVisitGoal` does not write. **Start this jar** is a human tap from Calendar → Appointments or Plan. Quiet visits are "the Tuesday visit" in his mouth (D-054). He has vet bills (`memberId: "companion"`). The METC log is a page, not only an Ask answer.
 - **Kill criterion:** if Bianca will not add a grocery because he is in the way, shrink him. Drag him. Pin him.
 

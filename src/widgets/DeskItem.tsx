@@ -57,7 +57,7 @@ export function DeskItem({
   onHeaderKeyDown?: (event: KeyboardEvent<HTMLButtonElement>) => void;
   extraClass?: string;
 }) {
-  const ref = useFurniture(id, kind, perchable, warn);
+  const ref = useFurniture(id, kind, perchable, warn, { live: Boolean(dragging) });
   const wide = breakpoint === "wide";
   return (
     <div

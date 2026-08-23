@@ -1,11 +1,13 @@
-import { useEffect, useId, useMemo, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import {
+  attackStand,
   attackTarget,
   bubbleNotice,
   chatHercules,
   composeHerculesChatRequest,
   describeCompanion,
   emitOfficeIntent,
+  furnitureUnderCat,
   groceryHighFive,
   herculesBriefing,
   herculesIdle,
@@ -21,6 +23,7 @@ import {
   recordHerculesTalk,
   subscribeFurniture,
   talkHercules,
+  walkHits,
   walkPath,
   CAT,
   NAV,
@@ -33,6 +36,9 @@ import {
   type HerculesTalk,
   type Household,
 } from "./core/index.ts";
+import { HerculesDress } from "./HerculesDress.tsx";
+import { HerculesFigure } from "./HerculesFigure.tsx";
+import { HerculesFly, wanderFly } from "./HerculesFly.tsx";
 
 function dressedLook(household: Household, today: string, visorPop: boolean) {
   const view = describeCompanion(household, today);
@@ -72,6 +78,7 @@ export function HerculesPortrait({
   collar,
   pose = "loaf",
   size = "live",
+  flip = false,
 }: {
   mood: CompanionMood;
   hat: string | null;
@@ -79,105 +86,15 @@ export function HerculesPortrait({
   house: string | null;
   collar: string | null;
   pose?: HerculesPose;
-  size?: "stage" | "live";
+  size?: "stage" | "live" | number;
+  flip?: boolean;
 }) {
-  const uid = useId().replace(/:/g, "");
-  const fur = `fur-${uid}`;
-  const ruff = `ruff-${uid}`;
-
+  const px = typeof size === "number" ? size : size === "stage" ? 120 : 96;
   return (
-    <div className={`hercules-stage size-${size} mood-${mood} pose-${pose}`} aria-hidden="true">
-      <svg viewBox="0 0 160 170" className={`hercules-svg tail-${mood}`}>
-        <defs>
-          <linearGradient id={fur} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#c4a574" />
-            <stop offset="45%" stopColor="#8b5a2b" />
-            <stop offset="100%" stopColor="#3c2412" />
-          </linearGradient>
-          <linearGradient id={ruff} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#f0e0c4" />
-            <stop offset="100%" stopColor="#c4a574" />
-          </linearGradient>
-        </defs>
-        {house === "patio" && (
-          <g>
-            <ellipse cx="80" cy="22" rx="28" ry="8" fill="#c45c26" opacity="0.85" />
-            <path d="M80 22 L80 48" stroke="#1b1712" strokeWidth="2" />
-          </g>
-        )}
-        <ellipse className="hercules-shadow" cx="78" cy="158" rx="36" ry="8" fill="rgba(27,23,18,0.18)" />
-        <g className="hercules-body">
-          <path className="hercules-tail" d="M118 108 C148 92 156 128 132 148 C150 130 142 96 118 108 Z" fill={`url(#${fur})`} />
-          <ellipse cx="80" cy="118" rx="42" ry="32" fill={`url(#${fur})`} />
-          <ellipse cx="80" cy="112" rx="28" ry="22" fill={`url(#${ruff})`} />
-          {hat === "ruff" && <ellipse cx="80" cy="104" rx="38" ry="18" fill={`url(#${ruff})`} opacity="0.95" />}
-          <path d="M48 52 L38 18 L62 44 Z" fill={`url(#${fur})`} />
-          <path d="M112 52 L122 18 L98 44 Z" fill={`url(#${fur})`} />
-          <path className="hercules-tuft" d="M42 22 L38 8 L52 20" stroke="#3c2412" strokeWidth="3" fill="none" />
-          <path className="hercules-tuft" d="M118 22 L122 8 L108 20" stroke="#3c2412" strokeWidth="3" fill="none" />
-          <ellipse cx="80" cy="72" rx="34" ry="30" fill={`url(#${fur})`} />
-          <path d="M80 78 L72 92 L88 92 Z" fill="#5c3a22" />
-          <circle cx="66" cy="68" r={mood === "hiding" || pose === "sleep" ? 3 : 6} fill="#1b1712" />
-          <circle cx="94" cy="68" r={mood === "hiding" || pose === "sleep" ? 3 : 6} fill="#1b1712" />
-          {mood !== "hiding" && pose !== "sleep" && <circle cx="64" cy="66" r="1.6" fill="#f3eee4" />}
-          {mood !== "hiding" && pose !== "sleep" && <circle cx="92" cy="66" r="1.6" fill="#f3eee4" />}
-          {hat === "specs" && mood !== "hiding" && pose !== "sleep" && (
-            <g className="hercules-specs">
-              <circle cx="66" cy="68" r="9" fill="#9fd4c8" fillOpacity="0.35" stroke="#1b1712" strokeWidth="2" />
-              <circle cx="94" cy="68" r="9" fill="#9fd4c8" fillOpacity="0.35" stroke="#1b1712" strokeWidth="2" />
-              <path d="M75 68 H85" stroke="#1b1712" strokeWidth="2" />
-              <path d="M57 68 H48" stroke="#1b1712" strokeWidth="2" />
-              <path d="M103 68 H112" stroke="#1b1712" strokeWidth="2" />
-            </g>
-          )}
-          {(mood === "glowing" || pose === "loaf") && pose !== "sleep" && (
-            <path d="M68 98 Q80 110 92 98" fill="none" stroke="#1b1712" strokeWidth="3" />
-          )}
-          {(mood === "restless" || pose === "pace") && (
-            <path d="M68 102 Q80 92 92 102" fill="none" stroke="#1b1712" strokeWidth="3" />
-          )}
-          {pose === "sleep" && <path d="M70 96 L90 96" stroke="#1b1712" strokeWidth="2" />}
-          {mood === "content" && pose !== "sleep" && pose !== "pace" && (
-            <path d="M70 100 L90 100" stroke="#1b1712" strokeWidth="3" />
-          )}
-          <path d="M58 88 L48 90" stroke="#1b1712" strokeWidth="1.5" />
-          <path d="M102 88 L112 90" stroke="#1b1712" strokeWidth="1.5" />
-          <g className="hercules-paw">
-            <ellipse cx="52" cy="142" rx="10" ry="7" fill={`url(#${fur})`} />
-            <ellipse cx="108" cy="142" rx="10" ry="7" fill={`url(#${fur})`} />
-          </g>
-        </g>
-        {hat === "toque" && <path d="M52 48 Q80 8 108 48 Q80 34 52 48 Z" fill="#f3eee4" stroke="#1b1712" strokeWidth="2" />}
-        {hat === "visor" && (
-          <g>
-            <rect x="48" y="44" width="64" height="12" rx="4" fill="#1b1712" />
-            <rect x="92" y="46" width="32" height="8" rx="3" fill="#c45c26" />
-          </g>
-        )}
-        {hat === "chef" && (
-          <g>
-            <ellipse cx="80" cy="32" rx="26" ry="16" fill="#fffaf2" stroke="#1b1712" strokeWidth="2" />
-            <rect x="68" y="42" width="24" height="12" fill="#fffaf2" stroke="#1b1712" />
-          </g>
-        )}
-        {hat === "ruff" && <path d="M44 58 Q80 78 116 58" fill="none" stroke="#f0e0c4" strokeWidth="10" strokeLinecap="round" />}
-        {chain === "copper" && <ellipse cx="80" cy="128" rx="18" ry="8" fill="none" stroke="#c45c26" strokeWidth="3" />}
-        {chain === "gold" && <ellipse cx="80" cy="128" rx="18" ry="8" fill="none" stroke="#c9a227" strokeWidth="4" />}
-        {collar === "bell" && (
-          <g>
-            <path d="M58 118 H102" stroke="#c9a227" strokeWidth="4" />
-            <circle cx="80" cy="128" r="7" fill="#c9a227" stroke="#1b1712" />
-          </g>
-        )}
-        {collar === "yarn" && <path d="M56 116 Q80 132 104 116" fill="none" stroke="#c45c26" strokeWidth="5" strokeLinecap="round" />}
-        {collar === "fish" && <ellipse cx="118" cy="102" rx="12" ry="6" fill="#2c6a4e" />}
-        {collar === "ink" && (
-          <g className="hercules-ink">
-            <circle cx="118" cy="124" r="11" fill="#2c6a4e" stroke="#1b1712" strokeWidth="2" />
-            <path d="M113 124 L117 128 L124 118" fill="none" stroke="#f3eee4" strokeWidth="2" />
-          </g>
-        )}
-      </svg>
+    <div className={`hercules-stage size-${size} mood-${mood}`} aria-hidden="true">
+      <HerculesFigure pose={pose} mood={mood} size={px} flip={flip}>
+        <HerculesDress hat={hat} chain={chain} house={house} collar={collar} />
+      </HerculesFigure>
       {pose === "sleep" && <span className="hercules-zzz">z</span>}
     </div>
   );
@@ -232,6 +149,7 @@ export function HerculesPresence({
     ledgerChats(household).slice(-12).map((row) => ({ role: row.role, text: row.text })),
   );
   const [busy, setBusy] = useState(false);
+  const [fly, setFly] = useState<{ x: number; y: number } | null>(null);
   const drag = useRef<{ x: number; y: number; px: number; py: number; moved: boolean } | null>(null);
   const idleAt = useRef(0);
   const mutterAt = useRef(0);
@@ -239,11 +157,12 @@ export function HerculesPresence({
   const logRef = useRef<HTMLDivElement | null>(null);
   const perchedOn = useRef<string | null>(null);
   const lastAttack = useRef(0);
+  const lastBump = useRef<{ id: string; at: number } | null>(null);
 
   useEffect(() => {
     const next = furnitureLand(adding, look.view.mood, today);
     perchedOn.current = next.on;
-    setFlip(next.x < pos.x);
+    setFlip(next.faceRight);
     setPos({ x: next.x, y: next.y });
     setMotion(adding ? "loaf" : five.yes || spark ? "jump" : next.pose === "loaf" ? "walk" : next.pose);
     if (reducedMotion()) {
@@ -254,6 +173,17 @@ export function HerculesPresence({
     return () => window.clearTimeout(land);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- hop on room change, not every pos tick
   }, [tab, adding, look.view.mood, five.yes, spark, today]);
+
+  useEffect(() => {
+    if (adding || reducedMotion()) {
+      setFly(null);
+      return;
+    }
+    const hop = () => setFly(wanderFly({ w: window.innerWidth, h: window.innerHeight }, NAV));
+    hop();
+    const id = window.setInterval(hop, 2800);
+    return () => window.clearInterval(id);
+  }, [adding, tab]);
 
   useEffect(() => {
     if (visorPop) {
@@ -268,11 +198,12 @@ export function HerculesPresence({
     const id = window.setInterval(() => {
       idleAt.current += 1;
       const phase = idleAt.current % 6;
+      const here = pos;
       if (look.view.mood === "restless") {
         setMotion("pace");
         const next = furnitureLand(false, look.view.mood, today);
         perchedOn.current = next.on;
-        setFlip(next.x < pos.x);
+        setFlip(next.x === here.x ? next.faceRight : next.x > here.x);
         setPos({ x: next.x, y: next.y });
         return;
       }
@@ -281,9 +212,10 @@ export function HerculesPresence({
         if (prey?.id === "lamp" && Date.now() - lastAttack.current > 90_000) {
           lastAttack.current = Date.now();
           perchedOn.current = prey.id;
-          const land = furnitureLand(false, look.view.mood, today);
+          const stand = attackStand(prey, here, { w: window.innerWidth, h: window.innerHeight });
           setMotion("attack");
-          setPos({ x: land.x, y: land.y });
+          setFlip(stand.faceRight);
+          setPos({ x: stand.x, y: stand.y });
           if (!open) {
             setTalk({ spoken: "mrrp", lesson: null, fact: null, replies: [], pose: "attack", topic: "attack", attention: false });
             window.setTimeout(() => setTalk((current) => (current?.topic === "attack" ? null : current)), 1800);
@@ -297,25 +229,34 @@ export function HerculesPresence({
       if (prey && prey.id !== "lamp" && Date.now() - lastAttack.current > 90_000) {
         lastAttack.current = Date.now();
         perchedOn.current = prey.id;
-        const land = furnitureLand(false, look.view.mood, today);
+        const stand = attackStand(prey, here, { w: window.innerWidth, h: window.innerHeight });
         setMotion("attack");
-        setPos({ x: land.x, y: land.y });
+        setFlip(stand.faceRight);
+        setPos({ x: stand.x, y: stand.y });
         if (!open) {
           setTalk({ spoken: "mrrp", lesson: null, fact: null, replies: [], pose: "attack", topic: "attack", attention: false });
           window.setTimeout(() => setTalk((current) => (current?.topic === "attack" ? null : current)), 1800);
         }
         return;
       }
+      if (fly && !reducedMotion() && (phase === 0 || phase === 3) && Date.now() - lastAttack.current > 45_000) {
+        lastAttack.current = Date.now();
+        setMotion("pounce");
+        setFlip(fly.x > here.x);
+        setPos({
+          x: Math.max(4, Math.min(window.innerWidth - CAT - 4, fly.x - 36)),
+          y: Math.max(4, Math.min(window.innerHeight - CAT - NAV, fly.y - 28)),
+        });
+        return;
+      }
       if (phase === 0 || phase === 3) {
         setMotion("walk");
         const next = furnitureLand(false, look.view.mood, today);
-        const path = walkPath(pos, { x: next.x, y: next.y }, listFurniture());
-        if (path.length > 2) {
-          const hit = listFurniture().find((item) => item.id !== "window" && item.kind !== "sill");
-          if (hit) emitOfficeIntent({ type: "bump", id: hit.id });
-        }
+        const path = walkPath(here, { x: next.x, y: next.y }, listFurniture());
+        const hit = walkHits(here, { x: next.x, y: next.y }, listFurniture())[0];
+        if (path.length > 2 && hit) emitOfficeIntent({ type: "bump", id: hit.id });
         perchedOn.current = next.on;
-        setFlip(next.x < pos.x);
+        setFlip(next.x === here.x ? next.faceRight : next.x > here.x);
         setPos({ x: next.x, y: next.y });
         const landing = look.view.mood === "glowing" || look.view.mood === "content"
           ? (next.on === "chalkboard" || next.on === "wallet" ? "lick" : next.pose)
@@ -331,7 +272,7 @@ export function HerculesPresence({
       else setMotion("perch");
     }, 9000);
     return () => window.clearInterval(id);
-  }, [open, pinned, adding, look.view.mood, pos.x, pos.y, today]);
+  }, [open, pinned, adding, look.view.mood, pos.x, pos.y, today, fly]);
 
   useEffect(() => {
     return subscribeFurniture(() => {
@@ -529,13 +470,20 @@ export function HerculesPresence({
     if (!start.moved) return;
     setPinned(true);
     setMotion("walk");
-    setFlip(dx < 0);
+    setFlip(dx > 0);
     const w = window.innerWidth;
     const h = window.innerHeight;
-    setPos({
+    const next = {
       x: Math.min(w - CAT - 4, Math.max(4, start.x + dx)),
       y: Math.min(h - CAT - NAV, Math.max(4, start.y + dy)),
-    });
+    };
+    setPos(next);
+    const hit = furnitureUnderCat(next, listFurniture());
+    if (hit && (lastBump.current?.id !== hit.id || Date.now() - lastBump.current.at > 480)) {
+      lastBump.current = { id: hit.id, at: Date.now() };
+      emitOfficeIntent({ type: "bump", id: hit.id });
+      setMotion("bump");
+    }
   }
 
   function onPointerUp() {
@@ -560,6 +508,7 @@ export function HerculesPresence({
 
   return (
     <div className="hercules-world" aria-live="polite">
+      <HerculesFly x={fly?.x ?? 0} y={fly?.y ?? 0} hidden={!fly || adding} />
       {proposal && !adding && !open && (
         <div
           className={`hercules-bubble hercules-proposal ${bubbleLeft ? "left" : "right"}`}
@@ -655,7 +604,6 @@ export function HerculesPresence({
           "hercules-live",
           `mood-${look.view.mood}`,
           `pose-${pose}`,
-          flip ? "flip" : "",
           purr ? "purr" : "",
           five.yes ? "high-five" : "",
           attention ? "needs-you" : "",
@@ -682,6 +630,8 @@ export function HerculesPresence({
           house={look.house}
           collar={look.collar}
           pose={pose}
+          size={size}
+          flip={flip}
         />
       </button>
     </div>

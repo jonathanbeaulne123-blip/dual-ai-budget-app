@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Hearth favicon. Simplified from hercules-mark.svg for 16px: the muzzle
+       lines are dropped and the line is heavier, because at tab size only the
+       tufted silhouette and two eyes survive. Theme-aware so the mark keeps
+       contrast on a dark tab strip instead of becoming a pale smudge. -->
+  <style>
+    svg { --i: #1b1712; --c: #fdfbf6; }
+    @media (prefers-color-scheme: dark) { svg { --i: #f3eee4; --c: #232a31; } }
+  </style>
+  <g fill="none" stroke="var(--i)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M16 15 C14 22 13 28 14 33 C10 35 11 40 15 41 C13 46 17 50 22 49
+             C23 54 29 56 32 53 C35 56 41 54 42 49 C47 50 51 46 49 41
+             C53 40 54 35 50 33 C51 28 50 22 48 15
+             L40 24 C35 21 29 21 24 24 Z" fill="var(--c)"/>
+    <path d="M16 15 C15 11 14 9 13 7"/>
+    <path d="M48 15 C49 11 50 9 51 7"/>
+    <path d="M21.5 34 C23.5 30.5 28 30.5 30 34 C28 37.5 23.5 37.5 21.5 34 Z" fill="#fff" stroke-width="2.4"/>
+    <path d="M34 34 C36 30.5 40.5 30.5 42.5 34 C40.5 37.5 36 37.5 34 34 Z" fill="#fff" stroke-width="2.4"/>
+    <circle cx="25.7" cy="34" r="2.2" fill="var(--i)" stroke="none"/>
+    <circle cx="38.3" cy="34" r="2.2" fill="var(--i)" stroke="none"/>
+    <path d="M30 41.5 L34 41.5 L32 44.5 Z" fill="var(--i)" stroke-width="1"/>
+  </g>
+</svg>
