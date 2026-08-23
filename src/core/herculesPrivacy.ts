@@ -193,6 +193,7 @@ export function composeHerculesChatRequest(
   message: string;
   briefing: HerculesBriefing;
   grounded: HerculesGrounded;
+  householdId: string;
   memories: string[];
   notices: HerculesNoticeView[];
   ledger: HerculesLedgerExcerpt;
@@ -216,6 +217,7 @@ export function composeHerculesChatRequest(
   );
   return {
     message: scrubQuietText(message, secrets) || message.trim(),
+    householdId: household.householdId,
     briefing,
     grounded: {
       spoken: scrubQuietText(grounded.spoken, secrets) || grounded.spoken,

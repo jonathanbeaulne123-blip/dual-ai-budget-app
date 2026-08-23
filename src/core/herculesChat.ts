@@ -16,6 +16,8 @@ export type HerculesChatRequest = {
   message: string;
   briefing: HerculesBriefing;
   grounded: HerculesGrounded;
+  /** Rate-limit key for the kitchen Worker. Never a secret. */
+  householdId?: string;
   /** Labels only. Never full CAD chat history. */
   memories?: string[];
   notices?: HerculesNoticeView[];
@@ -54,6 +56,7 @@ async function readAiReply(res: Response): Promise<string | null> {
 
 export function herculesModelPayload(req: HerculesChatRequest): string {
   return JSON.stringify({
+    householdId: req.householdId ? String(req.householdId).slice(0, 64) : undefined,
     message: req.message.trim().slice(0, 400),
     briefing: formatHerculesBriefing(req.briefing).slice(0, 800),
     grounded: {
