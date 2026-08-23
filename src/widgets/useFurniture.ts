@@ -6,10 +6,11 @@ export function useFurniture(
   kind: FurnitureKind,
   perchable: boolean,
   warn: boolean,
-  extra?: { enabled?: boolean },
+  extra?: { enabled?: boolean; live?: boolean },
 ): RefObject<HTMLDivElement | null> {
   const ref = useRef<HTMLDivElement | null>(null);
   const enabled = extra?.enabled !== false;
+  const live = Boolean(extra?.live);
   useEffect(() => {
     if (!enabled) {
       unpublishFurniture(id);
@@ -32,14 +33,19 @@ export function useFurniture(
     observer.observe(node);
     window.addEventListener("scroll", publish, true);
     window.addEventListener("resize", publish);
-    const timer = window.setInterval(publish, 100);
+    let raf = 0;
+    const tick = () => {
+      publish();
+      raf = window.requestAnimationFrame(tick);
+    };
+    if (live) raf = window.requestAnimationFrame(tick);
     return () => {
       observer.disconnect();
       window.removeEventListener("scroll", publish, true);
       window.removeEventListener("resize", publish);
-      window.clearInterval(timer);
+      if (raf) window.cancelAnimationFrame(raf);
       unpublishFurniture(id);
     };
-  }, [id, kind, perchable, warn, enabled]);
+  }, [id, kind, perchable, warn, enabled, live]);
   return ref;
 }

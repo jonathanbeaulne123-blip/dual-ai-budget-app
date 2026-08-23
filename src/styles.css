@@ -65,6 +65,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
 }
 .brand { display: flex; align-items: center; gap: 10px; }
 .brand img { width: 36px; height: 36px; border-radius: 10px; }
+.welcome-card img { width: 72px; height: 72px; }
 .brand h1 { font-size: 22px; }
 .brand p { margin: 0; color: var(--muted); font-size: 12px; }
 
@@ -541,65 +542,12 @@ input, select, textarea {
   transition: left 0.95s cubic-bezier(0.22, 1, 0.36, 1), top 0.95s cubic-bezier(0.22, 1, 0.36, 1), width 0.3s ease, height 0.3s ease;
 }
 .hercules-live:active { cursor: grabbing; }
-.hercules-live.flip .hercules-svg { transform: scaleX(-1); }
 .hercules-live.loafing { opacity: 0.85; }
 .hercules-stage { position: relative; text-align: center; width: 100%; height: 100%; }
-.hercules-svg { width: 100%; height: 100%; display: block; overflow: visible; }
-.hercules-live.mood-hiding .hercules-svg { opacity: 0.72; filter: grayscale(0.3); }
-.hercules-live.mood-glowing .hercules-svg { filter: drop-shadow(0 0 10px rgba(201, 162, 39, 0.45)); }
-.hercules-svg.tail-restless .hercules-tail,
-.pose-pace .hercules-tail {
-  transform-origin: 120px 110px;
-  animation: hercules-wag 0.45s ease-in-out infinite;
-}
-@keyframes hercules-wag {
-  0%, 100% { transform: rotate(-8deg); }
-  50% { transform: rotate(12deg); }
-}
-.pose-walk .hercules-body { animation: hercules-trot 0.38s ease-in-out infinite; }
-@keyframes hercules-trot {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
-.pose-jump .hercules-body { animation: hercules-jump 0.7s cubic-bezier(0.2, 1.4, 0.3, 1); }
-.hercules-live.purr .hercules-body,
-.pose-celebrate .hercules-body { animation: hercules-jump 0.55s cubic-bezier(0.2, 1.4, 0.3, 1) 2; }
-@keyframes hercules-jump {
-  0% { transform: translateY(0) scale(1, 1); }
-  28% { transform: translateY(-28px) scale(0.92, 1.08); }
-  55% { transform: translateY(-4px) scale(1.08, 0.9); }
-  100% { transform: translateY(0) scale(1, 1); }
-}
-.pose-stretch .hercules-body { animation: hercules-stretch 1.1s ease-in-out; }
-@keyframes hercules-stretch {
-  0%, 100% { transform: scale(1, 1); }
-  40% { transform: scale(1.18, 0.86) translateY(6px); }
-}
-.pose-wash .hercules-paw { animation: hercules-wash 0.5s ease-in-out infinite; transform-origin: 52px 142px; }
-@keyframes hercules-wash {
-  0%, 100% { transform: rotate(0); }
-  50% { transform: rotate(-28deg) translate(-4px, -10px); }
-}
-.pose-loaf .hercules-body { transform: scale(1.04, 0.9) translateY(6px); }
-.pose-sleep .hercules-body { transform: scale(1.06, 0.86) translateY(10px); }
-.pose-hide .hercules-body { transform: translateY(18px) scale(0.92); }
-.pose-pace .hercules-body { animation: hercules-pace 1.1s ease-in-out infinite; }
-@keyframes hercules-pace {
-  0%, 100% { transform: translateX(-8px); }
-  50% { transform: translateX(10px); }
-}
-.pose-pounce .hercules-body { animation: hercules-pounce 0.45s ease-out; }
-@keyframes hercules-pounce {
-  0% { transform: scale(1); }
-  40% { transform: scale(1.12) translateY(-8px); }
-  100% { transform: scale(1); }
-}
-.hercules-tuft { transform-origin: 80px 40px; }
-.pose-stretch .hercules-tuft { animation: hercules-ear 0.8s ease-in-out; }
-@keyframes hercules-ear {
-  0%, 100% { transform: rotate(0); }
-  50% { transform: rotate(-8deg); }
-}
+.hercules-stage .herc-root,
+.hercules-stage .herc-flip-wrap { width: 100%; height: 100%; }
+.hercules-live.mood-hiding { opacity: 0.78; filter: grayscale(0.25); }
+.hercules-live.mood-glowing { filter: drop-shadow(0 0 10px rgba(201, 162, 39, 0.45)); }
 .hercules-zzz {
   position: absolute;
   right: 8px;
@@ -711,7 +659,11 @@ input, select, textarea {
   font-weight: 700;
   padding: 4px 0 8px;
 }
-.wardrobe-slot { margin-bottom: 10px; }
+.wardrobe-still {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 10px;
+}
 .chip.quiet { background: var(--paper-2); font-weight: 600; }
 .chip.locked { opacity: 0.55; }
 .rename-row { display: flex; gap: 8px; align-items: center; }

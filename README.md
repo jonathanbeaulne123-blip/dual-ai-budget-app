@@ -66,6 +66,7 @@ Family-office books weigh **5**. Hercules and other interactables weigh **3**. E
 - Index: [docs/README.md](docs/README.md)
 - Dual Course strategy: [docs/STRATEGY.md](docs/STRATEGY.md)
 - Hercules: [docs/HERCULES.md](docs/HERCULES.md)
+- Hercules mark: [docs/HERCULES_MARK.md](docs/HERCULES_MARK.md)
 - Audit Office: [docs/AUDIT_OFFICE.md](docs/AUDIT_OFFICE.md)
 - Accounts Floor: [docs/ACCOUNTS.md](docs/ACCOUNTS.md)
 - Google household bridge: [docs/GOOGLE.md](docs/GOOGLE.md)

@@ -191,6 +191,15 @@ export function catRectAt(point: Point): Furniture["rect"] {
   return { x: point.x, y: point.y, w: CAT, h: CAT };
 }
 
+export type PerchLand = {
+  x: number;
+  y: number;
+  on: string | null;
+  pose: HerculesPose;
+  /** true = face right. Authored drawing faces left. */
+  faceRight: boolean;
+};
+
 export function perchTarget(
   furniture: Furniture[],
   mood: CompanionMood,
@@ -199,15 +208,16 @@ export function perchTarget(
   viewport: { w: number; h: number },
   postRect?: Furniture["rect"] | null,
   random = Math.random,
-): { x: number; y: number; on: string | null; pose: HerculesPose } {
+): PerchLand {
   const pad = 6;
   const maxX = Math.max(pad, viewport.w - CAT - pad);
   const maxY = Math.max(pad, viewport.h - CAT - NAV - pad);
   if (adding) {
-    return { x: pad, y: pad, on: null, pose: "loaf" };
+    return { x: pad, y: pad, on: null, pose: "loaf", faceRight: false };
   }
   if (mood === "hiding") {
-    return { x: random() > 0.5 ? pad : maxX, y: maxY, on: null, pose: "hide" };
+    const right = random() > 0.5;
+    return { x: right ? maxX : pad, y: maxY, on: null, pose: "hide", faceRight: right };
   }
   const perchable = furniture.filter((item) => item.perchable && item.rect.w > 0 && item.rect.h > 0);
   const weights = perchable.map((item) => {
@@ -237,14 +247,21 @@ export function perchTarget(
         ? "perch"
         : "loaf";
 
-  const tryLand = (item: Furniture | null): { x: number; y: number; on: string | null } => {
+  const tryLand = (item: Furniture | null): { x: number; y: number; on: string | null; faceRight: boolean } => {
     if (!item) {
-      return { x: pad, y: Math.min(52, maxY), on: null };
+      return { x: pad, y: Math.min(52, maxY), on: null, faceRight: false };
     }
     const seed = item.id.split("").reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+    // Sill perch is profile along the ledge — there is no "looking out the window" drawing.
+    if (item.kind === "sill") {
+      const left = jitter(seed) >= 0;
+      const x = clamp(left ? item.rect.x + 8 : item.rect.x + item.rect.w - CAT - 8, pad, maxX);
+      const y = clamp(item.rect.y - CAT + 16 + jitter(seed + 3), pad, maxY);
+      return { x, y, on: item.id, faceRight: left };
+    }
     const x = clamp(item.rect.x + item.rect.w / 2 - CAT / 2 + jitter(seed), pad, maxX);
     const y = clamp(item.rect.y - CAT + 12 + jitter(seed + 3), pad, maxY);
-    return { x, y, on: item.id };
+    return { x, y, on: item.id, faceRight: jitter(seed + 7) >= 0 };
   };
 
   let chosen = pick(perchable, weights);
@@ -256,7 +273,41 @@ export function perchTarget(
     chosen = pick(perchable, weights);
     land = tryLand(chosen);
   }
-  return { x: pad, y: pad, on: null, pose: "loaf" };
+  return { x: pad, y: pad, on: null, pose: "loaf", faceRight: false };
+}
+
+export function attackStand(
+  prey: Furniture,
+  from: Point,
+  viewport: { w: number; h: number },
+): { x: number; y: number; faceRight: boolean } {
+  const pad = 6;
+  const maxX = Math.max(pad, viewport.w - CAT - pad);
+  const maxY = Math.max(pad, viewport.h - CAT - NAV - pad);
+  const preyCx = prey.rect.x + prey.rect.w / 2;
+  const fromLeft = from.x + CAT / 2 <= preyCx;
+  const x = clamp(fromLeft ? prey.rect.x - CAT + 18 : prey.rect.x + prey.rect.w - 18, pad, maxX);
+  const y = clamp(prey.rect.y + prey.rect.h / 2 - CAT / 2, pad, maxY);
+  return { x, y, faceRight: fromLeft };
+}
+
+export function furnitureUnderCat(point: Point, furniture: Furniture[], ignore: string[] = []): Furniture | null {
+  const cat = catRectAt(point);
+  for (const item of furniture) {
+    if (ignore.includes(item.id) || item.id === "calculator-post") continue;
+    if (rectsOverlap(cat, item.rect)) return item;
+  }
+  return null;
+}
+
+export function walkHits(from: Point, to: Point, furniture: Furniture[]): Furniture[] {
+  const samples: Point[] = [from, { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 }, to];
+  const hits: Furniture[] = [];
+  for (const item of furniture) {
+    if (item.kind === "sill" || item.id === "calculator-post") continue;
+    if (samples.some((point) => rectsOverlap(catRectAt(point), item.rect))) hits.push(item);
+  }
+  return hits;
 }
 
 export function attackTarget(furniture: Furniture[]): Furniture | null {

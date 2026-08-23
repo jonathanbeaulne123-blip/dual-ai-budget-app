@@ -395,7 +395,7 @@ export function App() {
       <div className="welcome">
         <div className="welcome-card">
           <p className="kicker">Toronto · CAD · two people</p>
-          <img src="/icon.png" alt="" />
+          <img src="/hercules-mark.svg" alt="" />
           <h1>Hearth</h1>
           <p>
             Two phones. One journal. CAD. Toronto. Hercules loafs while you post milk.
@@ -659,7 +659,7 @@ export function App() {
     <div className="app">
       <header className="topbar">
         <div className="brand">
-          <img src="/icon.png" alt="" />
+          <img src="/hercules-mark.svg" alt="" />
           <div>
             <h1>Hearth</h1>
             <p>

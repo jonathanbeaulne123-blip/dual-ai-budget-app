@@ -1,0 +1,43 @@
+# Exported by three-d-stage
+newmtl furWhite
+Kd 0.8879 0.8388 0.7529
+Ks 0.2000 0.2000 0.2000
+Ns 20
+d 1.0000
+
+newmtl furTan
+Kd 0.5841 0.3613 0.1746
+Ks 0.2000 0.2000 0.2000
+Ns 20
+d 1.0000
+
+newmtl nosePink
+Kd 0.6795 0.3231 0.2874
+Ks 0.2000 0.2000 0.2000
+Ns 80
+d 1.0000
+
+newmtl whisker
+Kd 0.8070 0.7529 0.6445
+Ks 0.2000 0.2000 0.2000
+Ns 100
+d 1.0000
+
+newmtl eyeGold
+Kd 0.3372 0.3231 0.0685
+Ks 0.2000 0.2000 0.2000
+Ns 130
+d 1.0000
+
+newmtl pupilInk
+Kd 0.0116 0.0103 0.0080
+Ks 0.2000 0.2000 0.2000
+Ns 120
+d 1.0000
+
+newmtl earInner
+Kd 0.7157 0.4735 0.4233
+Ks 0.2000 0.2000 0.2000
+Ns 30
+d 1.0000
+
