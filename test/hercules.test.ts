@@ -33,6 +33,7 @@ import {
   HERCULES_REFUSE_WRITE,
   HERCULES_REFUSE_SHAME,
 } from "../src/core/index.ts";
+import { composeHerculesChatRequest } from "../src/core/herculesPrivacy.ts";
 import { COSMETIC_BY_ID } from "../src/core/companion.ts";
 
 const today = "2026-08-21";
@@ -307,12 +308,26 @@ describe("The Hercules Update", () => {
     expect(quiet.text.length).toBeGreaterThan(4);
   });
 
-  it("answers money from the journal and keeps chat in the kitchen ledger", () => {
+  it("answers money from the journal and keeps chat in the kitchen ledger", async () => {
     const household = seedDemoHousehold({ today, environment: "development" });
     const plan = planHerculesTurn(household, "what's on the Visa?", today, "home");
-    expect(plan.skipModel).toBe(true);
+    expect(plan.skipModel).toBe(false);
     expect(plan.source).toBe("journal");
     expect(plan.talk.spoken).toMatch(/\$|CAD|Visa|owed|paydown/i);
+
+    const grounded = plan.talk;
+    const briefing = herculesBriefing(household, "home", today);
+    const ai = await chatHercules(
+      composeHerculesChatRequest(household, "what's on the Visa?", briefing, grounded, today),
+      {
+        fetch: async () =>
+          new Response(JSON.stringify({ ok: true, reply: "The Visa still owes what the briefing says." }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+      },
+    );
+    expect(ai.source).toBe("ai");
 
     const remembered = planHerculesTurn(household, "remember payday is Thursday", today, "home");
     expect(remembered.skipModel).toBe(true);

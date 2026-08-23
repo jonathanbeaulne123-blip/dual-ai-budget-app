@@ -170,6 +170,7 @@ export function HerculesPresence({
     ledgerChats(household).slice(-12).map((row) => ({ role: row.role, text: row.text })),
   );
   const [busy, setBusy] = useState(false);
+  const [replySource, setReplySource] = useState<"ai" | "local" | null>(null);
   const [fly, setFly] = useState<{ x: number; y: number } | null>(null);
   const [perchPlay, setPerchPlay] = useState(false);
   const perchPlayFor = useRef<string | null>(null);
@@ -443,6 +444,7 @@ export function HerculesPresence({
     setBusy(false);
     setQuestion("");
     setBegging(false);
+    setReplySource(null);
   }
 
   function sitWithBag() {
@@ -578,8 +580,13 @@ export function HerculesPresence({
       closeChat();
       return;
     }
-    applyTalk(plan.talk, text);
-    keepTalk(text, plan.talk.spoken, plan.source, plan.memory);
+    if (plan.skipModel) {
+      applyTalk(plan.talk, text);
+      keepTalk(text, plan.talk.spoken, plan.source, plan.memory);
+      setReplySource(null);
+      return;
+    }
+    void sendChat(helpCmd?.prompt ?? text);
   }
 
   async function sendChat(raw: string) {
@@ -604,8 +611,10 @@ export function HerculesPresence({
     if (plan.skipModel) {
       applyTalk(plan.talk, message);
       keepTalk(message, plan.talk.spoken, plan.source, plan.memory);
+      setReplySource(null);
       return;
     }
+    setReplySource(null);
     const grounded = plan.talk;
     const briefing = herculesBriefing(household, page, today);
     const gen = chatGen.current + 1;
@@ -625,6 +634,7 @@ export function HerculesPresence({
     setTurns((prev) => [...prev, { role: "hercules" as const, text: result.text }].slice(-12));
     setMotion(grounded.pose === "sleep" ? "loaf" : grounded.pose);
     setBusy(false);
+    setReplySource(result.source);
     keepTalk(message, result.text, result.source === "ai" ? "ai" : "local");
   }
 
@@ -795,7 +805,10 @@ export function HerculesPresence({
             <p className="hercules-spoken">{talk.spoken}</p>
           )}
           {!busy && talk.lesson && <p className="hercules-lesson">{talk.lesson}</p>}
-          {open && !busy && turns.some((turn) => turn.role === "user") && (
+          {open && !busy && replySource && (
+            <p className="hercules-source">{replySource === "ai" ? "ai" : "on-device"}</p>
+          )}
+          {open && !busy && !replySource && turns.some((turn) => turn.role === "user") && (
             <p className="hercules-source">Kept in the kitchen ledger. Same door as the books.</p>
           )}
           {!busy && talk.fact && (
