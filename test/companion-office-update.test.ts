@@ -182,6 +182,8 @@ describe("devices and sit-down standing orders", () => {
 
   it("turns sit-down weights into transfer standing orders for next month", () => {
     let household = catalogHousehold();
+    household = addGoal(household, { name: "Emergency", target: 500, shared: true }).household;
+    const goalId = household.goals[0]!.id;
     household = saveSitDownSession(household, {
       monthKey: "2026-07",
       act: 3,
@@ -190,7 +192,7 @@ describe("devices and sit-down standing orders", () => {
           id: "SLICE-1",
           label: "Emergency",
           kind: "goal",
-          targetId: household.goals[0]!.id,
+          targetId: goalId,
           mode: "weight",
           value: 2,
         },
