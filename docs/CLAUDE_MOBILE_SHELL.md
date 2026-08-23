@@ -1,6 +1,8 @@
 # Claude assignment — Mobile shell only (desktop frozen)
 
-> **Shipped.** Mobile Home is `src/OfficePhone.tsx`. This file stays as the assignment record. Do not restyle `.desk-wide` from it. Cursor owns the desktop fence, persistence, and Hercules perch/bubble clamp.
+> **Shipped.** Mobile Home is `src/OfficePhone.tsx`. This file stays as the assignment record.
+>
+> **Current Claude prompt:** paste [CLAUDE_DESKTOP_OFFICE.md](CLAUDE_DESKTOP_OFFICE.md). D-080 lifted the desktop freeze. Do not turn this phone board back into seventeen rows.
 
 Paste **this whole file** into Claude. Then open the kitchen (or `pnpm dev`) at **390×844** *and* at **≥720px**. Do not plan from `docs/nostalgia/` or `docs/reference/`.
 

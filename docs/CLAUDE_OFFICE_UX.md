@@ -1,6 +1,6 @@
 # Claude assignment — September Office UX
 
-> **Superseded for the current build.** Jonathan split mobile vs desktop (D-079). Paste [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md) instead. This file is the historical spec that produced the phone settings list. Desktop/wide should keep the office this document described — do not strip it in the mobile pass.
+> **Superseded for the current build.** Paste [CLAUDE_DESKTOP_OFFICE.md](CLAUDE_DESKTOP_OFFICE.md). Mobile Home shipped as `OfficePhone` ([CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md)). This file is the historical spec that produced the phone settings list. Keep its *feeling* on desktop; do not re-apply it as seventeen phone rows.
 
 Paste this file into Claude first. Then attach `docs/packets/CLAUDE-OFFICE-UX-SOURCE.txt` (regenerate with `node scripts/pack-claude-ux.mjs` from `main`). Do not plan from `docs/nostalgia/` or `docs/reference/`. Those folders are history, not this brief.
 

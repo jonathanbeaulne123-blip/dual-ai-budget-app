@@ -1,12 +1,12 @@
 # The September Office
 
-**Two UI branches (D-079):** Mobile (`< 720px`) is glance + one-tap via `OfficePhone`. Desktop/wide (`≥ 720px`) is this office as it already feels — heavy customization later, **do not strip it to five tiles this pass.** Assignment record: [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md).
+**Two UI branches (D-079 / D-080):** Mobile (`< 720px`) is glance + one-tap via `OfficePhone`. Desktop/wide (`≥ 720px`) is this office — **now** the surface for unique desks, sizes, appearance, and personalities. Current Claude prompt: [CLAUDE_DESKTOP_OFFICE.md](CLAUDE_DESKTOP_OFFICE.md). Mobile record: [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md).
 
 **The product face for September testing:** Home is a lived-in Toronto office. Rain on the glass. A desk of true instruments. Hercules on the furniture. Deep Books and Calendar still exist for people who want to dive.
 
 This is Course B chrome on Course A facts (D-048 / **D-051** / **D-079**). Widgets **project** the journal. They never `postEntry`. Confirm still posts. Layout is this-phone cosmetics. Weather is atmosphere, never CAD.
 
-The original “Claude specs, Grok implements” pass produced a 17-row **phone rail**. Wide canvas is what Jonathan wants to keep. Assignment history: [CLAUDE_OFFICE_UX.md](CLAUDE_OFFICE_UX.md) (superseded for the mobile rebuild).
+The original “Claude specs, Grok implements” pass produced a 17-row **phone rail**. Wide canvas is what Jonathan wants to **finish**. Assignment history: [CLAUDE_OFFICE_UX.md](CLAUDE_OFFICE_UX.md) (historical feeling), [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md) (shipped phone).
 
 Laws: [DECISIONS.md](DECISIONS.md) D-044 / D-047 / D-049 / D-050 / D-051. Strategy: [STRATEGY.md](STRATEGY.md). Companion: [HERCULES.md](HERCULES.md).
 
@@ -531,21 +531,21 @@ New CSS lives in **`src/office.css`**, imported alongside `styles.css`. Existing
 
 ### D5. Phone vs wide
 
-**D-079:** these are two UI branches. Shared theme and commands. Different density and customization.
+**D-079 / D-080:** these are two UI branches. Shared theme and commands. Different density and customization. Desktop now takes the original QoL packet.
 
 | | Phone (< 720px) | Wide (≥ 720px) |
 |---|---|---|
-| Layout | **This pass:** glance rail, five or fewer, one-tap common acts | **Frozen this pass:** free move, 8px snap, full instrument set |
-| Window | Keep if it still earns height; no CAD on glass | Current weather glass — do not “simplify” |
-| Instruments | Hierarchy: one number dominates | Current canvas, overlap allowed |
-| Expand | One at a time; common acts should not need a hunt | Current lift / dim |
-| Cat | Yields to Post; must not eat the five | Current perch |
-| Nav | Bottom bar; do not duplicate cabinet gold buttons | Current |
-| Customization | Escape hatch (hide/restore) | Later: sizes, stocks, stacks, Edit Desk, all widgets |
+| Layout | Shipped: glance rail, five or fewer, one-tap common acts (`OfficePhone`) | **This pass:** free move, sizes, stacks, Edit Desk, personalities, appearance |
+| Window | Sill line; no CAD on glass | Weather glass — may earn more height; still no CAD |
+| Instruments | Hierarchy: one number dominates | Full set, overlap allowed, sizes real |
+| Expand | One at a time; stamps open instruments | Lift / dim; CPA density allowed |
+| Cat | Corner seat; yields to Post | Perch on furniture; loaf on Add |
+| Nav | Bottom bar; do not duplicate cabinet gold buttons | Current; cabinets launch the spaceship |
+| Customization | Joint subset only (escape hatch today: hide/restore) | Appearance, sizes, dashboard faces, default desks, full rearrange |
 
-`.app { max-width: 760px }` is the current desktop column. Changing that cap is a **desktop-branch** tweak later, not a reason to restyle wide into a phone.
+`.app { max-width: 760px }` is a **desktop-branch** decision (D-080). Claude may use more of the glass if the office needs it.
 
-The old line “the office does not become a desktop app at 1400px” is **withdrawn** as product law. Desktop may later use more of the glass. This pass still does not restyle it.
+The old line “the office does not become a desktop app at 1400px” is **withdrawn** as product law.
 
 ---
 
