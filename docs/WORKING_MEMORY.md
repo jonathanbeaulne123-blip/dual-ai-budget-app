@@ -1,35 +1,39 @@
 # Working memory — last five updates
 
-This file replaces the long Cursor thread. Use it as the start of a new chat. Do not resume that thread, and do not treat unfinished sixth-pass notes as shipped product.
+This file is a **chat-thread recap**, not a second canon and not a license to skip GitHub.
 
-Canon for money and UX is still [DECISIONS.md](DECISIONS.md), [STRATEGY.md](STRATEGY.md), and the specs linked below. This page is only the recap.
+**GitHub is the durable project context (D-095).** Any other AI should read the repo — especially [DECISIONS.md](DECISIONS.md), merged pull requests, living specs, [nostalgia/](nostalgia/), and [reference/](reference/) — and be able to reconstruct every decision and update. Those folders stay on the remote. Do not delete them. Do not tell another model to ignore them.
+
+What this file *does* drop: **this Cursor agent’s own ramble** after #53 (unshipped sit / beg / bump / Books rundown / duplicate contrast / device list). That was chat context, not a GitHub delete.
+
+Living *build plan* is still Jonathan’s latest instruction, this log’s accepted rows, and [STRATEGY.md](STRATEGY.md). Nostalgia and reference are history to **read**, not the next ticket to **cite**.
 
 `main` HEAD when this was written: **#53** (`1055d56`). Kitchen: Development. No clasp. No production Sheet. Hosted RLS is still `USING (true)`. Dual Course: books **5**, engagement **3**, books win.
 
+Household-only files (`Project Context.txt`, ODS, credentials) stay **local** (D-018). That is not the same as GitHub project context.
+
 ---
 
-## Keep (the last five shipped updates)
+## Orientation (last five shipped updates)
 
-These five merged PRs are the live product. Older office / Hercules / appointments work is underneath them; do not re-litigate it.
+These five merged PRs are the current kitchen. Everything before them is still on GitHub (PRs #34–#45, D-001–D-078, nostalgia, Sheets-era reference). Read that history when you need *why*. Use this list when you need *what just shipped*.
 
 ### 1. Five-object phone Home — #48 · D-079
 
 - **Ship:** `src/OfficePhone.tsx` at `< 720px`. Five objects + three stamps. Milk is still one Confirm.
 - **Law:** two UI branches, one kernel. Phone is glance and one-tap. Do not turn it back into seventeen rows.
-- **Keep this brief:** [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md) (assignment record, already shipped).
-- **Kill criterion:** if Bianca cannot add milk, shrink furniture.
+- **Brief (still on GitHub):** [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md).
 
 ### 2. Desktop office brief — #49 · D-080
 
 - **Ship:** docs only. Claude’s next paste is unique desks, sizes, appearance, Edit Desk, default layouts (Tracker / Household+Google / CPA). Catalog may be reshaped, not silently dropped.
-- **Keep this brief:** [CLAUDE_DESKTOP_OFFICE.md](CLAUDE_DESKTOP_OFFICE.md) + [packets/CLAUDE-DESKTOP-OFFICE-SOURCE.txt](packets/CLAUDE-DESKTOP-OFFICE-SOURCE.txt).
-- **Out:** restyling the phone into a CPA dashboard.
+- **Brief (still on GitHub):** [CLAUDE_DESKTOP_OFFICE.md](CLAUDE_DESKTOP_OFFICE.md) + [packets/CLAUDE-DESKTOP-OFFICE-SOURCE.txt](packets/CLAUDE-DESKTOP-OFFICE-SOURCE.txt).
 
 ### 3. Warm packing, not a cold lobby — #51 · D-082
 
 - **Ship:** collision-free `packWide`, S/M/L, Edit Desk, four personalities, paper stock *under* the papers. App column `min(900px, 100%)`. Duplicate Books/Calendar/Plan/More handles off the desk (footer nav already exists).
-- **Refused:** 10px Bloomberg names, always-open L panels, 1280 boxed `.office`, a second theme engine.
-- **Keep:** notebook page, Fraunces names, cream papers, window as weather. Spec: [OFFICE.md](OFFICE.md).
+- **Refused in that PR:** 10px Bloomberg names, always-open L panels, 1280 boxed `.office`, a second theme engine.
+- **Spec (still on GitHub):** [OFFICE.md](OFFICE.md). Earlier office brief: [CLAUDE_OFFICE_UX.md](CLAUDE_OFFICE_UX.md) (historical; feeling kept on desktop).
 
 ### 4. Kitchen-table sit-down — #52 · D-083–D-087
 
@@ -39,7 +43,7 @@ These five merged PRs are the live product. Older office / Hercules / appointmen
 - **Reverse, don’t delete:** `reversePostedMoney` + `reversalOfId`. Both rows stay forever.
 - **Auto-code:** on-device merchant GROUP BY. Confirm still writes. Not an LLM. Not a bank feed.
 - **Drive:** create-only Sheet with existing `drive.file` scope. Local download always works.
-- **Keep this spec:** [SITDOWN.md](SITDOWN.md). Phone stays five objects; sit-down lives on Plan.
+- **Spec (still on GitHub):** [SITDOWN.md](SITDOWN.md).
 
 ### 5. Almost-there office — #53 · D-088–D-094
 
@@ -50,31 +54,28 @@ These five merged PRs are the live product. Older office / Hercules / appointmen
 - **Desk JSON** on this Google identity (`Hearth desk.json`, `drive.file`). Layout is still not `splitForSync`.
 - **How can I help** when chat opens; click Hercules again to close; perch-on-expand (hop cancels if another widget/tab opens).
 - **Wide chalkboard** on the weather glass. Drawing still never posts.
-- **Keep this spec:** [GOALS.md](GOALS.md), [HERCULES.md](HERCULES.md), [OFFICE.md](OFFICE.md).
+- **Specs (still on GitHub):** [GOALS.md](GOALS.md), [HERCULES.md](HERCULES.md), [OFFICE.md](OFFICE.md).
+
+Kill criteria still in force: milk one Confirm; phone five objects; leftover is not month net; Hercules never posts.
 
 ---
 
-## Discard (old chats — do not keep as the plan)
+## This Cursor thread only (not a GitHub delete)
 
-Treat these as closed. Specs that remain on disk are museum or superseded briefs, not the next ticket.
+Drop **this agent’s chat ramble** after #53. Do **not** remove the matching GitHub files, PRs, or decision rows.
 
-| Chat / artifact | Why it is out |
+| What to drop from *this chat* | What stays on GitHub |
 |---|---|
-| This mega Cursor thread after #53, including “sit / beg / bump / Books rundown / duplicate contrast / device list” | **Not shipped.** Working tree was restored to `main`. Do not resume half-patches. |
-| [CLAUDE_OFFICE_UX.md](CLAUDE_OFFICE_UX.md) + [packets/CLAUDE-OFFICE-UX-SOURCE.txt](packets/CLAUDE-OFFICE-UX-SOURCE.txt) | Produced the seventeen-row phone. Feeling kept on desktop; do not re-apply to `OfficePhone`. |
-| Claude CPA memo PR **#50** (still open) | Adjacent, not one of the last five merges. Who-owes-whom projection only; reversing entries already landed in #52 (D-085). Do not mix into leftover math. |
-| Open PRs **#46** (Google roadmap) and **#47** (two shells) | Stacked into **#48**. D-078 / D-079 already on `main`. |
-| Open PRs **#19, #18, #22, #24** | Env / QA pack / Cloudflare token / kitchen URL. Not last-five product. Do not open a second Cloudflare-token PR. |
-| Cloud agents: env setup, “QA Hearth live app”, calendar retest, kitchen UI test, leftover QA, demo video, add spend, open demo, analyze product, find setup scripts | One-off QA or setup. Not product canon. |
-| Sheets-era chats, ODS, `Project Context.txt`, `ai-packets/` | Local-only. Never commit. |
-| [nostalgia/](nostalgia/) and [reference/](reference/) | History. Do not cite as the plan. |
-| Cursor-era Chapters / Rings / launch essays | Same. Dual Course is [STRATEGY.md](STRATEGY.md). |
+| Unshipped sit / beg / bump / Books rundown / duplicate contrast / device-list *patches* | Ideas may be re-asked later; they are not `main` until a new PR lands |
+| Treating unfinished chat as shipped product | D-001–D-095, PR history #34–#53, living specs |
+| Re-litigating Dual Course from a 40-PR thread | [STRATEGY.md](STRATEGY.md), this log, [nostalgia/](nostalgia/) (why the old maps retired), [reference/](reference/) (Sheets-era why) |
+| Open-PR *confusion* in this thread | PRs stay open until Jonathan closes them: #50 CPA memo, #46/#47 stacked into #48, #19/#18/#22/#24 ops |
 
-I cannot archive Cursor Cloud agent rows from this environment. Close or ignore those dashboard chats yourself; this file is the keep-list.
+Open PRs and museum folders are **still project context**. Read them. Do not pretend they were deleted.
 
 ---
 
-## Still true (so the next chat does not re-argue them)
+## Still true
 
 - Hercules never `postEntry`. Confirm still posts.
 - Leftover definition does not move (D-083). Vault is a *destination*, not a new formula.
@@ -87,9 +88,9 @@ I cannot archive Cursor Cloud agent rows from this environment. Close or ignore 
 
 ---
 
-## Not shipped (named so nobody “continues” them from memory)
+## Asked in this chat after #53 (ideas, not `main`)
 
-These were asked in the old thread **after** #53. They are ideas, not `main`:
+If Jonathan wants these, start a **new** branch off current `main`. Do not resurrect the reverted `cursor/sit-attention-cfde` half-patch.
 
 1. Double-click sit + cardboard-bag play.
 2. First tap: ears back, beg, red/yellow/green usefulness light — **do not** open chat. Second tap opens help.
@@ -98,10 +99,8 @@ These were asked in the old thread **after** #53. They are ideas, not `main`:
 5. Duplicate **contrast** UI (confidence 0–100). Do not loosen post-time `scoreSimilarity`.
 6. Synced-device list on the kitchen snapshot.
 
-If Jonathan wants them, start a **new** branch off current `main` and implement as complete modules with tests. Do not resurrect the reverted `cursor/sit-attention-cfde` patch.
-
 ---
 
 ## Next recommended action
 
-Open a **new** Cursor chat. Attach this file plus [DECISIONS.md](DECISIONS.md). Pick one Dual Course slice. Default experiments to Development. Do not clasp. Do not touch production.
+Open a **new** Cursor chat. Attach this recap **and** [DECISIONS.md](DECISIONS.md). Read GitHub history when you need the full why. Pick one Dual Course slice. Default experiments to Development. Do not clasp. Do not touch production. Do not delete docs, nostalgia, reference, or PR history.

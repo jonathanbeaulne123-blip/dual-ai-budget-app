@@ -1,6 +1,6 @@
 # Reference material
 
-These files are **history**, not current product law. **Do not use them to plan future work.**
+These files are **history**, not current product law. Keep them on GitHub (D-095) so other AIs can see how the kitchen started. **Do not use them to plan future work.**
 
 Hearth is Dual Course ([../STRATEGY.md](../STRATEGY.md)). The TypeScript app, the living files in `docs/` (this folder and [../nostalgia/](../nostalgia/) excluded), and Jonathan’s latest instruction are what to follow.
 

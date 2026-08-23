@@ -2,7 +2,7 @@
 
 This is the living product law for **Hearth**, the household company Jonathan and Bianca run from a Toronto kitchen: family-office books, and a companion who makes those books a habit.
 
-Do not plan from [nostalgia/](nostalgia/). Those files are a museum. This file, [DECISIONS.md](DECISIONS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and Jonathan’s latest instruction are what to build from.
+Do not *plan* from [nostalgia/](nostalgia/). Those files stay on GitHub as a museum (D-095) — read them to understand past maps. This file, [DECISIONS.md](DECISIONS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and Jonathan’s latest instruction are what to build from.
 
 ---
 

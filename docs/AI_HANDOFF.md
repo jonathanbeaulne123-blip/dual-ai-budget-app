@@ -1,6 +1,6 @@
 # AI Task and Handoff Standard
 
-After a long thread, start from [WORKING_MEMORY.md](WORKING_MEMORY.md) (last five shipped updates). Do not treat unfinished chat as `main`.
+After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. GitHub remains the full project context (D-095): [DECISIONS.md](DECISIONS.md), merged PRs, living specs, [nostalgia/](nostalgia/), [reference/](reference/). Do not treat unfinished chat as `main`. Do not skip GitHub history.
 
 ## Risk routing
 
@@ -24,6 +24,6 @@ Also name:
 
 If either delta is “none,” say why Dual Course still holds (for example GitHub 2FA is Course A with no mascot on purpose).
 
-Do not cite [nostalgia/](nostalgia/) or [reference/](reference/) as the plan.
+Read [nostalgia/](nostalgia/) and [reference/](reference/) to understand past decisions. Do not cite them as the next build plan.
 
 Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](reference/sheets-era/AI_HANDOFF.md).
