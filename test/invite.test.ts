@@ -116,4 +116,39 @@ describe("Hearth Pass", () => {
     const joined = applyHearthPass(household, pass, "MEM-002");
     expect(joined.transactions.map((tx) => tx.note).sort()).toEqual(["Bianca only", "Jonathan only", "Shared milk"]);
   });
+
+  it("refuses to last-write-wins a different shared journal", () => {
+    let household = catalogHousehold();
+    household = postEntry(household, {
+      date: "2026-08-18",
+      type: "expense",
+      amount: "12.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Shared milk",
+      createdBy: "MEM-002",
+      visibility: "household",
+      confirmDuplicate: true,
+    }).household;
+    const pass = makeHearthPass(household);
+    const other = postEntry(household, {
+      date: "2026-08-18",
+      type: "expense",
+      amount: "8.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Shared bread",
+      createdBy: "MEM-002",
+      visibility: "household",
+      confirmDuplicate: true,
+    }).household;
+    expect(() => applyHearthPass(other, pass, "MEM-001")).toThrow(/different journal facts/);
+    expect(other.transactions.some((row) => row.note === "Shared bread")).toBe(true);
+  });
+
+  it("refuses a Pass from another environment", () => {
+    const household = catalogHousehold();
+    const pass = makeHearthPass({ ...household, environment: "development" });
+    expect(() => applyHearthPass(null, pass, "MEM-001", "production")).toThrow(/different environment/);
+  });
 });

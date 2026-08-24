@@ -152,21 +152,22 @@ export function BooksPage({
       {booksStatus && (
         <p className={`muted ${booksStatus.ok ? "" : "danger"}`}>
           {booksStatus.ok
-            ? `Postgres ${booksStatus.postgresVersion ?? "PGlite"} is holding ${booksStatus.entryCount} journal entries.`
-            : booksStatus.error || "The SQL books did not verify. The snapshot on this phone is still saved."}
+            ? `Postgres ${booksStatus.postgresVersion ?? "PGlite"} is holding ${booksStatus.entryCount} journal entries on this phone.`
+            : booksStatus.error || "The SQL books did not verify. The last valid snapshot on this phone is still saved."}
         </p>
       )}
-      {booksStatus?.hosted?.mode === "local" && (
-        <p className="muted">Local books only. Invite → Publish to the cloud is the only hosted write. Treat anything already hosted as disclosed.</p>
-      )}
-      {booksStatus?.hosted?.mode === "opted-in" && (
-        <p className="muted">This household is opted in to shared snapshot transport. Treat hosted rows as disclosed until Auth.</p>
-      )}
-      {booksStatus?.hosted?.mode === "published" && booksStatus.hosted.schema && (
-        <p className="muted">Shared snapshot updated on Supabase ({booksStatus.hosted.project}). Treat hosted rows as disclosed.</p>
-      )}
-      {booksStatus?.hosted?.mode === "failed" && (
-        <p className="muted">{booksStatus.hosted.error || "Shared snapshot transport did not complete."}</p>
+      {household.linked ? (
+        booksStatus?.hosted ? (
+          <p className="muted">
+            {booksStatus.hosted.schema
+              ? `The shared snapshot is on Supabase (${booksStatus.hosted.project}). Phrase join is not encryption.`
+              : booksStatus.hosted.error || "This household is linked, but the hosted tables are not in the API yet."}
+          </p>
+        ) : (
+          <p className="muted">This household is linked. Sharing uses the reviewed transport path after a local accept.</p>
+        )
+      ) : (
+        <p className="muted">This household stays on this phone. Publishing is an explicit Confirm on Invite. A Hearth Pass does not upload.</p>
       )}
       <div className="tabs">
         {PANES.map((item) => (

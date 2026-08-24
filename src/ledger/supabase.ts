@@ -1,5 +1,6 @@
 import { ensureHouseholdShape } from "../core/sync.ts";
 import { inviteFromText } from "../core/invite.ts";
+import { hostedTransportAllowed } from "../core/sharing.ts";
 import type { Environment, Household } from "../core/types.ts";
 
 export type SupabaseConfig = {
@@ -15,24 +16,29 @@ export type SupabaseProbe = {
   error?: string;
 };
 
-export const BUNDLED_SUPABASE_URL = "https://tykhocwacaxwquhynkok.supabase.co";
-export const BUNDLED_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_8UAlkucmkTyh36yQGhnUbw_Orl9GkuS";
+export type PushHouseholdResult = SupabaseProbe & {
+  skipped?: boolean;
+  conflict?: boolean;
+  remote?: Household;
+};
 
+const DEFAULT_URL = "https://tykhocwacaxwquhynkok.supabase.co";
+const DEFAULT_PUBLISHABLE_KEY = "sb_publishable_8UAlkucmkTyh36yQGhnUbw_Orl9GkuS";
+
+/** Live bundled defaults, including under Vitest. Use this when proving zero-network skip. */
 export function bundledSupabaseConfig(): SupabaseConfig {
-  return { url: BUNDLED_SUPABASE_URL, key: BUNDLED_SUPABASE_PUBLISHABLE_KEY };
-}
-
-export function hostedTransportAllowed(household: { linked: boolean }): boolean {
-  return household.linked === true;
+  return { url: DEFAULT_URL, key: DEFAULT_PUBLISHABLE_KEY };
 }
 
 export function readSupabaseConfig(): SupabaseConfig | null {
   if (import.meta.env.VITEST && import.meta.env.VITE_SUPABASE_LIVE !== "1") return null;
-  const url = String(import.meta.env.VITE_SUPABASE_URL || BUNDLED_SUPABASE_URL).replace(/\/$/, "");
-  const key = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || BUNDLED_SUPABASE_PUBLISHABLE_KEY);
+  const url = String(import.meta.env.VITE_SUPABASE_URL || DEFAULT_URL).replace(/\/$/, "");
+  const key = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || DEFAULT_PUBLISHABLE_KEY);
   if (!url || !key) return null;
   return { url, key };
 }
+
+export { hostedTransportAllowed };
 
 function projectRef(url: string): string {
   try {
@@ -88,6 +94,12 @@ export function isMissingTable(body: unknown): boolean {
   );
 }
 
+function snapshotFromRow(row: { payload?: string | Household } | undefined): Household | null {
+  if (!row?.payload) return null;
+  const payload = typeof row.payload === "string" ? JSON.parse(row.payload) as Household : row.payload;
+  return ensureHouseholdShape({ ...payload, linked: true });
+}
+
 export async function probeSupabase(config = readSupabaseConfig()): Promise<SupabaseProbe> {
   if (!config) return { configured: false, reachable: false, schema: false };
   const project = projectRef(config.url);
@@ -137,24 +149,65 @@ export async function pullSupabaseHousehold(
     throw new Error(messageOf(result.body));
   }
   const rows = Array.isArray(result.body) ? result.body as { payload: string | Household }[] : [];
-  const row = rows[0];
-  if (!row) return null;
-  const payload = typeof row.payload === "string" ? JSON.parse(row.payload) as Household : row.payload;
-  return ensureHouseholdShape({ ...payload, linked: true });
+  const pulled = snapshotFromRow(rows[0]);
+  if (!pulled) return null;
+  if (pulled.environment !== environment) {
+    throw new Error("That shared snapshot belongs to a different Development/Production pill.");
+  }
+  return { ...pulled, linked: true, baseRevision: pulled.revision };
 }
 
-export async function pushSupabaseHousehold(household: Household, config = readSupabaseConfig()): Promise<SupabaseProbe> {
+async function readRemoteSnapshot(
+  config: SupabaseConfig,
+  householdId: string,
+): Promise<Household | null> {
+  const result = await rest(
+    config,
+    `household_snapshots?household_id=eq.${encodeURIComponent(householdId)}&select=payload&limit=1`,
+    { method: "GET", headers: { Prefer: "return=representation" } },
+  );
+  if (!result.ok) {
+    if (isMissingTable(result.body)) return null;
+    throw new Error(messageOf(result.body));
+  }
+  const rows = Array.isArray(result.body) ? result.body as { payload: string | Household }[] : [];
+  return snapshotFromRow(rows[0]);
+}
+
+export async function pushSupabaseHousehold(
+  household: Household,
+  config = readSupabaseConfig(),
+  options?: { expectedRevision?: number },
+): Promise<PushHouseholdResult> {
   if (!hostedTransportAllowed(household)) {
-    return {
-      configured: Boolean(config),
-      reachable: false,
-      schema: false,
-      error: "Hosted snapshot transport skipped: household is not linked.",
-    };
+    return { configured: Boolean(config), reachable: false, schema: false, skipped: true };
   }
   const probe = await probeSupabase(config);
-  if (!config || !probe.schema) return probe;
+  if (!config || !probe.schema) return { ...probe, skipped: false };
   const snapshot = ensureHouseholdShape(household);
+  if (!snapshot.linked) {
+    return { ...probe, skipped: true };
+  }
+  const remote = await readRemoteSnapshot(config, snapshot.householdId);
+  const expectedRevision = options?.expectedRevision ?? snapshot.baseRevision ?? 0;
+  if (remote && remote.environment !== snapshot.environment) {
+    return {
+      ...probe,
+      schema: true,
+      conflict: true,
+      remote,
+      error: "That hosted snapshot is a different environment. Nothing was overwritten.",
+    };
+  }
+  if (remote && remote.revision !== expectedRevision) {
+    return {
+      ...probe,
+      schema: true,
+      conflict: true,
+      remote,
+      error: "Another phone posted a newer household snapshot. Nothing was overwritten.",
+    };
+  }
   const houseBody = {
     id: snapshot.householdId,
     name: snapshot.name,
@@ -184,5 +237,5 @@ export async function pushSupabaseHousehold(household: Household, config = readS
     }),
   });
   if (!snap.ok) throw new Error(messageOf(snap.body));
-  return { ...probe, schema: true, error: undefined };
+  return { ...probe, schema: true, error: undefined, skipped: false, conflict: false };
 }

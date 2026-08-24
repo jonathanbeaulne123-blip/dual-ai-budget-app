@@ -62,3 +62,49 @@ export * from "./autoCode.ts";
 export * from "./sitDown.ts";
 export { createWriteQueue } from "./writeQueue.ts";
 export { formatInviteCode, normalizeInviteCode, randomHouseholdId, randomInviteCode } from "./ids.ts";
+export {
+  acceptHouseholdWrite,
+  assertAcceptableBooks,
+  type AcceptWriteInput,
+  type WriteAdapters,
+} from "./commandRuntime.ts";
+export {
+  BooksRejectedError,
+  classifyCommandError,
+  outcome,
+  type CommandErrorClass,
+  type CommandOutcome,
+  type CommandUiKind,
+} from "./commandOutcome.ts";
+export {
+  commandIdentityHash,
+  financialAuditHash,
+  financialAuditFacts,
+  findReceipt,
+  newConfirmationId,
+  rememberReceipt,
+} from "./commandIdentity.ts";
+export {
+  deriveSharing,
+  hostedTransportAllowed,
+  markInviteDraft,
+  markLinked,
+  markPendingTransport,
+  markPublishConfirming,
+  markSynchronized,
+  unlinkHousehold,
+  shapeSharing,
+} from "./sharing.ts";
+export { canAutoMergeConflict, moneyFactsChanged, recordConflict, unresolvedConflicts } from "./conflict.ts";
+export {
+  makeHouseholdExport,
+  parseHouseholdExport,
+  redactedDiagnostics,
+  validateHouseholdImport,
+  makeConflictBundle,
+  parseConflictBundle,
+  booksRecoveryAdvice,
+  HOUSEHOLD_EXPORT_KIND,
+  CONFLICT_BUNDLE_KIND,
+} from "./recovery.ts";
+

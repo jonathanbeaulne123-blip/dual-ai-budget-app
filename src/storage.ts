@@ -19,6 +19,11 @@ function localSet(household: Household): void {
   localStorage.setItem(PREFIX + household.environment, JSON.stringify(household));
 }
 
+function localRestore(environment: Environment, previous: string | null): void {
+  if (previous == null) localStorage.removeItem(PREFIX + environment);
+  else localStorage.setItem(PREFIX + environment, previous);
+}
+
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, 1);
@@ -65,13 +70,25 @@ function migrate(household: Household): Household {
 export async function loadHousehold(environment: Environment): Promise<Household | null> {
   try {
     const fromDb = await idbGet(environment);
-    if (fromDb) return migrate(fromDb);
+    const fromLocal = localGet(environment);
+    if (fromDb && fromLocal) {
+      const db = migrate(fromDb);
+      const local = migrate(fromLocal);
+      if (local.environment !== environment) return db.environment === environment ? db : null;
+      if (db.environment !== environment) return local;
+      return (local.revision ?? 0) >= (db.revision ?? 0) ? local : db;
+    }
+    if (fromDb) {
+      const migrated = migrate(fromDb);
+      return migrated.environment === environment ? migrated : null;
+    }
   } catch {
     // Private browsing or blocked IndexedDB still has localStorage.
   }
   const fromLocal = localGet(environment);
   if (fromLocal) {
     const migrated = migrate(fromLocal);
+    if (migrated.environment !== environment) return null;
     try { await idbSet(migrated); } catch { /* keep the localStorage copy */ }
     return migrated;
   }
@@ -79,11 +96,21 @@ export async function loadHousehold(environment: Environment): Promise<Household
 }
 
 export async function saveHousehold(household: Household): Promise<void> {
-  localSet(household);
+  const previousLocal = typeof localStorage !== "undefined" ? localStorage.getItem(PREFIX + household.environment) : null;
+  try {
+    localSet(household);
+  } catch (caught) {
+    throw new Error("The last valid household is still here. This phone could not save the new snapshot.");
+  }
   try {
     await idbSet(household);
   } catch {
-    // localStorage remains the fallback snapshot.
+    try {
+      await idbDelete(household.environment);
+    } catch {
+      localRestore(household.environment, previousLocal);
+      throw new Error("The last valid household is still here. This phone could not save the new snapshot.");
+    }
   }
 }
 

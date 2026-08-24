@@ -12,11 +12,11 @@ Persistence is two layers on the phone, plus optional snapshot transport:
 
 The website is Cloudflare Workers + Assets (`hearth-books`). Download SQL from the Books tab still loads the PGlite schema elsewhere.
 
-Pairing: every household has a three-word phrase. **Share phrase and link** sends `/?join=cedar-lantern-kite`. **Hearth Pass** is a JSON file of the shared envelope only (no personal-only transactions or shifts). Cloud publish is an accelerator, not the only door.
+Pairing: every household has a three-word phrase. **Share phrase and link** sends `/?join=cedar-lantern-kite`. **Hearth Pass** is a JSON file of the shared envelope only (no personal-only transactions or shifts). Cloud publish is an accelerator, not the only door. The phrase is routing, not encryption.
 
-Each phone keeps a working copy, then merges by id on pull/push so concurrent adds do not wipe each other. Catalog rows (`Account`, `Category`, `Goal`, `BudgetPlan`, `Member`, `Activity`, `Preset`) last-write-win on required `updatedAt`. Goal progress is append-only `goalContributions`; `savedCents` is the sum, so two phones adding to Japan both keep their CAD. Undo writes tombstones so a deleted row cannot come back from the other phone. Personal-only rows stay on the canonical snapshot for every member; the UI filter hides the other person's personal ledger. The UI never saves the filtered view as the canonical snapshot. A linked save reconciles with the hosted snapshot, then performs **one** upsert; local PGlite ingest does not push again. The upsert does not DELETE the household first. Audit `snapshot_hash` is a digest of books facts (transaction amounts, dates, splits, reversal ids, shift figures, goal contribution rows, claim expected/received/written-off cents, preset ids/amounts, sit-down leftover/transfer ids, tombstones), not only transaction ids.
+The in-memory command clones JSON. **It is not accepted books** until `acceptHouseholdWrite` validates cents and double-entry, ingests PGlite inside a transaction, persists the snapshot, and only then may transport a linked household. Failure at any step keeps the previous valid household readable and unpublished. Undo still restores a whole snapshot (not yet a reversal receipt). Concurrent catalog adds still merge by id on pull/push. A linked save reconciles with the hosted snapshot, then performs **one** upsert; local PGlite ingest does not push again.
 
-The in-memory model is still the source of truth while a command runs: clone the household, validate, replace the snapshot, then write both stores. Undo restores the previous snapshot.
+Catalog rows (`Account`, `Category`, `Goal`, `BudgetPlan`, `Member`, `Activity`, `Preset`) last-write-win on required `updatedAt`. Goal progress is append-only `goalContributions`; `savedCents` is the sum. **Journal facts are not auto-merged.** A linked write states the `baseRevision` it extends; a stale hosted revision becomes a visible conflict bundle (`conflicts[]`) and does not disappear after refresh. Client CAS is GET-then-compare-then-POST until Jonathan applies `supabase/migrations/002_snapshot_cas.sql`. Audit hashes cover financial meaning, not timestamps. Unlinked / demo / empty / Hearth Pass households make zero household REST calls (D-110). Claude consumes `src/claude/commandContract.ts` rather than inferring success from toasts.
 
 ## Layers
 
@@ -65,7 +65,7 @@ Browser controls are usability. Commands throw `ValidationError` before mutating
 
 Development is the default local ledger. Production is a second named snapshot on the same device. They cannot be confused by workbook title; the pill in the top bar is the environment and asks before switching.
 
-Development/production on a phone remain local keys. The books engine is PostgreSQL in the app (PGlite). Hosted Supabase holds the shared JSON snapshot, not the live journal. The website is Cloudflare Workers.
+Hosted Supabase is optional snapshot transport for **linked** households only. Unlinked, demo, empty, and Hearth Pass households make zero household REST calls. Opening the kitchen does not publish. A linked write after local accept uses client compare-and-swap on revision; stale writes become visible conflicts. `supabase/migrations/002_snapshot_cas.sql` and `docs/sql/rls_auth_ready.sql` are readiness packets. **Do not apply them. Do not contact the household project.** Auth + RLS is not complete because SQL exists. Treat hosted rows as disclosed until Auth (D-034, D-052, D-110, D-111).
 
 ## Scale
 

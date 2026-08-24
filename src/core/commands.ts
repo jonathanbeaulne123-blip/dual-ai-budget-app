@@ -126,6 +126,11 @@ function commit(previous: Household, next: Household, action: string, summary: s
     updatedAt: next.lastCommittedAt,
   };
   next.activity = [...next.activity, activity].slice(-200);
+  next.sharing = next.sharing ?? { mode: next.linked ? "linked" : "local", linked: next.linked, lastTransportAt: null, lastError: null, pending: false };
+  next.commandReceipts = next.commandReceipts ?? [];
+  next.conflicts = next.conflicts ?? [];
+  next.baseRevision = next.baseRevision ?? 0;
+  next.booksAcceptedHash = next.booksAcceptedHash ?? null;
   return {
     household: next,
     warnings,
@@ -2916,7 +2921,12 @@ export function touchHouseholdDevice(household: Household, input: {
     memberId: input.memberId ?? null,
     environment: next.environment,
   });
-  return commit(previous, next, "Devices", `Saw ${input.label}`, []);
+  return {
+    household: next,
+    warnings: [],
+    postedIds: [],
+    undo: { id: `presence-${input.deviceId}`, label: `Saw ${input.label}`, snapshot: previous, postedIds: [] },
+  };
 }
 
 export function emptyHousehold(environment: Household["environment"] = "development"): Household {
@@ -2926,6 +2936,8 @@ export function emptyHousehold(environment: Household["environment"] = "developm
     inviteCode: randomInviteCode(),
     linked: false,
     revision: 0,
+    baseRevision: 0,
+    booksAcceptedHash: null,
     tombstones: [],
     name: "Jonathan & Bianca",
     timezone: TIMEZONE,
@@ -2952,6 +2964,15 @@ export function emptyHousehold(environment: Household["environment"] = "developm
     devices: [],
     shiftSettings: DEFAULT_SHIFT_SETTINGS,
     lastCommittedAt: null,
+    commandReceipts: [],
+    sharing: {
+      mode: "local",
+      linked: false,
+      lastTransportAt: null,
+      lastError: null,
+      pending: false,
+    },
+    conflicts: [],
   };
 }
 

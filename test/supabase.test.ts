@@ -1,5 +1,11 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
-import { isMissingTable, probeSupabase, pullSupabaseHousehold, pushSupabaseHousehold } from "../src/ledger/supabase.ts";
+import {
+  isMissingTable,
+  probeSupabase,
+  pullSupabaseHousehold,
+  pushSupabaseHousehold,
+  bundledSupabaseConfig,
+} from "../src/ledger/supabase.ts";
 import { catalogHousehold } from "../src/core/index.ts";
 
 const config = { url: "https://tykhocwacaxwquhynkok.supabase.co", key: "sb_publishable_test" };
@@ -35,13 +41,23 @@ describe("Supabase hosted books", () => {
     expect(pulled?.linked).toBe(true);
   });
 
-  it("upserts the household and snapshot without deleting first", async () => {
+  it("skips unlinked households with zero fetch, even when the live bundled config is injected", async () => {
+    const household = catalogHousehold();
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    const result = await pushSupabaseHousehold(household, bundledSupabaseConfig());
+    expect(household.linked).toBe(false);
+    expect(result.skipped).toBe(true);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("upserts a linked household and snapshot without deleting first", async () => {
     const household = { ...catalogHousehold(), linked: true };
     const calls: string[] = [];
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       calls.push(`${init?.method || "GET"} ${url.replace("https://tykhocwacaxwquhynkok.supabase.co/rest/v1/", "")}`);
-      if (url.includes("households?select=id")) {
+      if (url.includes("households?select=id") || url.includes("household_snapshots?")) {
         return new Response(JSON.stringify([]), { status: 200 });
       }
       return new Response(null, { status: 201 });

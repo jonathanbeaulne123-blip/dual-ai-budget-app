@@ -28,7 +28,10 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [ACCOUNTS.md](ACCOUNTS.md) | Wallet, cards, and investments guidance |
 | [APPOINTMENTS.md](APPOINTMENTS.md) | Visits, claims, receivables, and Appointments guidance |
 | [ENVIRONMENTS.md](ENVIRONMENTS.md) | Development versus production, website, and hosted books |
-| [HOSTED_ROW_INVENTORY.md](HOSTED_ROW_INVENTORY.md) | Runbook for leftover hosted rows. Metadata only. Do not delete without Jonathan. |
+| [CURRENT_PATH.md](CURRENT_PATH.md) | Frozen command path as inspected on main before this trust rewrite |
+| [claude/COMMAND_CONTRACT.md](claude/COMMAND_CONTRACT.md) | Typed write-surface states for Claude (no toast-inferred posting) |
+| [HOSTED_ROW_INVENTORY.md](HOSTED_ROW_INVENTORY.md) | Leftover hosted-row runbook. Metadata only. Do not delete without Jonathan. |
+| [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) | Auth/RLS readiness packet — do not apply |
 | [SITDOWN.md](SITDOWN.md) | Monthly sitdown, leftover, lock, reverse, and export guidance |
 | [GOALS.md](GOALS.md) | Goals vault and leftover parking |
 | [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md) | Private repository and publish workflow |

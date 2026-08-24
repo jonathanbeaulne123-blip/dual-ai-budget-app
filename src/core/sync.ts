@@ -1,5 +1,6 @@
 import { cloneHousehold } from "./household.ts";
 import { formatInviteCode, normalizeInviteCode, randomHouseholdId, randomInviteCode } from "./ids.ts";
+import { shapeSharing } from "./sharing.ts";
 import { mergeGoogle, shapeGoogle } from "./google.ts";
 import { mergeKitchen, shapeKitchen } from "./kitchen.ts";
 import { shapeSitDownSessions } from "./sitDown.ts";
@@ -136,6 +137,8 @@ export function ensureHouseholdShape(household: Household): Household {
     inviteCode: normalizeInviteCode(household.inviteCode) || randomInviteCode(),
     linked: Boolean(household.linked),
     revision: household.revision ?? 0,
+    baseRevision: household.baseRevision ?? 0,
+    booksAcceptedHash: household.booksAcceptedHash ?? null,
     tombstones: household.tombstones ?? [],
     recurrences: (household.recurrences ?? []).map((item) => shapeRecurrence(item, fallbackIso)),
     appointments: shapeAppointments(household.appointments, fallbackIso),
@@ -167,6 +170,9 @@ export function ensureHouseholdShape(household: Household): Household {
       createdBy: shift.createdBy || shift.memberId || fallback,
       updatedAt: shift.updatedAt ?? shift.createdAt,
     })),
+    commandReceipts: household.commandReceipts ?? [],
+    sharing: shapeSharing(household),
+    conflicts: household.conflicts ?? [],
   };
 }
 
@@ -255,6 +261,11 @@ export function assembleHousehold(
     inviteCode: shared.inviteCode,
     linked: options?.linked === true,
     revision: shared.revision,
+    baseRevision: shared.revision,
+    booksAcceptedHash: null,
+    commandReceipts: [],
+    sharing: shapeSharing({ linked: options?.linked === true }),
+    conflicts: [],
     tombstones: mergeTombstones(shared.tombstones, personal?.tombstones ?? []),
     name: shared.name,
     timezone: shared.timezone,

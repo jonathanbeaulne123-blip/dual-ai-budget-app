@@ -1,22 +1,35 @@
 # Hosted row inventory (do not delete)
 
-The old client could upload demo, empty, and unlinked households because `syncHouseholdBooks` always called `pushSupabaseHousehold({ ...household, linked: true })` on boot and after every commit.
+The household Supabase project is off-limits to AI access. This file is an inventory of *possible* leftover hosted rows from the old implicit upload path (`syncHouseholdBooks` forced `linked: true` on boot, including demo / empty / unlinked households).
 
-**This file is a runbook, not a cleanup.** Do not delete, overwrite, or inspect hosted row *contents* without Jonathan's explicit approval and a recovery record (D-018 / D-110).
+**This is a runbook, not a cleanup.** Do not delete, overwrite, or inspect hosted row *contents* without Jonathan's explicit approval and a recovery record (D-018 / D-110).
 
-## What may already exist
+## What may exist
 
-The bundled project is `tykhocwacaxwquhynkok` (`https://tykhocwacaxwquhynkok.supabase.co`). RLS is still `USING (true)`. Possible leftover kinds:
-
-- Demo kitchen tables opened from **Open the demo kitchen table**
-- Empty Development/Production starts that never tapped Publish
+- Demo `catalogHousehold` snapshots uploaded because boot always published.
+- Empty development households uploaded on first open.
+- Unlinked kitchen copies that were rewritten to `linked: true` by transport.
+- Duplicate snapshots for the same invite phrase if a phone published after a silent boot upload.
 - Hearth Pass joins that were then saved (they used to be marked `linked: true` on assemble)
 
 Do not assume a row is junk from `id` or `name` alone. A real household can share those labels.
 
+## What this file does not do
+
+- It does not read the household project from an AI session.
+- It does not delete rows.
+- It does not apply SQL.
+
+## Jonathan decisions required
+
+1. Inventory live `households` / `household_snapshots` on the household project (human or approved operator, not an AI session).
+2. Keep or delete leftover demo/unlinked rows **only** after a recovery record exists.
+3. Apply `supabase/migrations/002_snapshot_cas.sql` only after reviewing residual last-writer race.
+4. Do not apply Auth/RLS until Auth users exist (see `docs/sql/rls_auth_ready.sql`).
+
 ## How to list metadata only (Jonathan)
 
-In the Supabase SQL editor, metadata without payload:
+The bundled project is `tykhocwacaxwquhynkok` (`https://tykhocwacaxwquhynkok.supabase.co`). RLS is still `USING (true)`. In the Supabase SQL editor, metadata without payload:
 
 ```sql
 SELECT
@@ -38,4 +51,4 @@ Do **not** `SELECT payload`. Do **not** `DELETE`. Copy the result into a recover
 
 ## After D-110
 
-Local, demo, and unlinked phones make **zero** household REST calls. Invite → **Publish to the cloud** is the only client path that opts a household in. Existing hosted rows stay until Jonathan decides otherwise.
+Local, demo, unlinked, and Hearth Pass phones make **zero** household REST calls. Invite → **Publish to the cloud** is the only client path that opts a household in. Existing hosted rows stay until Jonathan decides otherwise.
