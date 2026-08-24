@@ -61,7 +61,10 @@ import {
   undo,
   reversePostedMoney,
   recordConflict,
+  resolveConflictChoice,
+  unresolvedConflicts,
   markSynchronized,
+  makeConflictBundle,
   suggestCategory,
   shouldPrefillCategory,
   suggestSplit,
@@ -109,6 +112,7 @@ import {
   continuityMemberId,
   discoverContinuityMemberships,
   flushContinuityOutbox,
+  listContinuityOutbox,
   transportHouseholdWithOutbox,
   type ContinuityIdentity,
 } from "./continuity.ts";
@@ -116,6 +120,13 @@ import { inviteFromLocation } from "./core/invite.ts";
 import { PairingCard, WelcomeJoin } from "./Pairing.tsx";
 import { BooksPage } from "./Books.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
+import { ConflictResolution } from "./ConflictResolution.tsx";
+import {
+  renderCommandSurface,
+  type CommandChromeResult,
+} from "./commandSurface.tsx";
+import { loadSyncAnchor, saveSyncAnchor } from "./syncAnchor.ts";
+import { useDialog } from "./useDialog.ts";
 import { CalendarPage } from "./Calendar.tsx";
 import { Office } from "./Office.tsx";
 import { HerculesPresence } from "./Hercules.tsx";
@@ -175,6 +186,16 @@ export function App() {
   const [booting, setBooting] = useState(true);
   const [tab, setTab] = useState<Tab>("home");
   const [adding, setAdding] = useState(false);
+  const confirmPanelRef = useRef<HTMLDivElement | null>(null);
+  const lastAmountLabelRef = useRef<string | null>(null);
+
+  const closeAdd = () => {
+    setAdding(false);
+    setConfirm(null);
+    setError("");
+  };
+  const addSheetRef = useDialog(adding, closeAdd);
+
   const [mode, setMode] = useState<AddMode>("expense");
   const [form, setForm] = useState(emptyForm);
   const [focusedAccountId, setFocusedAccountId] = useState<string | null>(null);
@@ -191,6 +212,9 @@ export function App() {
   const [replicas, setReplicas] = useState<HouseholdReplicaSummary[]>([]);
   const [personalReplica, setPersonalReplica] = useState<PersonalEnvelope | null>(null);
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "synced" | "error">("idle");
+  const [commandChrome, setCommandChrome] = useState<CommandChromeResult | null>(null);
+  const [showConflictSheet, setShowConflictSheet] = useState(false);
+  const [offline, setOffline] = useState(() => typeof navigator !== "undefined" && !navigator.onLine);
   const [discoveredLedgers, setDiscoveredLedgers] = useState<DiscoveredHousehold[]>([]);
   const [inviteInput, setInviteInput] = useState("");
   const [welcomeMode, setWelcomeMode] = useState<"home" | "join">("home");
@@ -213,6 +237,24 @@ export function App() {
   historyRef.current = history;
   const confirmationRef = useRef<string | null>(null);
   const postingRef = useRef(false);
+
+  useEffect(() => {
+    const onOnline = () => setOffline(false);
+    const onOffline = () => setOffline(true);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!confirm) return;
+    setToast(null);
+    confirmPanelRef.current?.focus();
+    confirmPanelRef.current?.scrollIntoView({ block: "center" });
+  }, [confirm]);
 
   useEffect(() => {
     const token = inviteFromLocation(window.location.href);
@@ -649,6 +691,7 @@ export function App() {
       session?.memberId &&
       continuityMemberId(next, continuityIdentity) === session.memberId,
     );
+    const transportRequested = environment === "development" && (automaticContinuity || hostedTransportAllowed(next));
     try {
       const outcome = await acceptHouseholdWrite({
         previous,
@@ -656,7 +699,7 @@ export function App() {
         confirmationId,
         commandKind: token?.label ?? "commit",
         postedIds: token?.postedIds ?? [],
-        transportRequested: automaticContinuity,
+        transportRequested,
         adapters: {
           persist: (household) => saveHousehold(household, { memberId: session?.memberId }),
           ingest: async (household) => {
@@ -670,14 +713,14 @@ export function App() {
           restoreIngest: async (household) => {
             await restoreHouseholdBooks(household);
           },
-          transport: automaticContinuity && continuityIdentity
+          transport: transportRequested && automaticContinuity && continuityIdentity
             ? async (household, expectedRevision) => transportHouseholdWithOutbox({
                 household,
                 identity: continuityIdentity,
                 expectedRevision,
                 confirmationId,
               })
-            : hostedTransportAllowed(next)
+            : transportRequested && hostedTransportAllowed(next)
               ? async (household, expectedRevision) => {
                 const pushed = await pushSupabaseHousehold(household, undefined, { expectedRevision });
                 if (pushed.skipped) return { ok: true };
@@ -705,19 +748,43 @@ export function App() {
         confirmationRef.current = null;
       }
       setHousehold(outcome.household);
-      if (outcome.ok && token && outcome.kind !== "conflict-needs-attention") {
+      const pendingCount = listContinuityOutbox(environment).filter((item) => item.householdId === outcome.household.householdId).length;
+      const autoMerged = outcome.kind === "accepted-local"
+        && (outcome.household.conflicts ?? []).some((row) => row.autoMerged && row.resolved);
+      const chrome = renderCommandSurface(outcome, {
+        offline,
+        pendingCount,
+        lastError: outcome.household.sharing?.lastError ?? null,
+        amountLabel: lastAmountLabelRef.current,
+        ledgerName: outcome.household.name,
+        autoMerged,
+      });
+      setCommandChrome(chrome);
+      if (outcome.kind === "synchronized") {
+        saveSyncAnchor(environment, outcome.household);
+        if (automaticContinuity && continuityIdentity) {
+          void flushContinuityOutbox({ environment, identity: continuityIdentity }).catch(() => undefined);
+        }
+      }
+      if (outcome.kind === "conflict-needs-attention" || unresolvedConflicts(outcome.household).length > 0) {
+        setShowConflictSheet(true);
+      }
+      if (outcome.ok && token && chrome.toast?.showUndo !== false && outcome.kind !== "conflict-needs-attention") {
         setToast(token);
         setHistory((current) => [...current, token].slice(-20));
         window.setTimeout(() => setToast((item) => (item?.id === token.id ? null : item)), 8000);
+      } else if (!outcome.ok || outcome.kind === "conflict-needs-attention") {
+        setToast(null);
       }
-      if (outcome.kind === "conflict-needs-attention" || outcome.kind === "pending-transport") {
-        setSyncState("error");
-        if (outcome.userMessage) setError(outcome.userMessage);
-      } else if (!outcome.ok) {
-        setError(outcome.userMessage || "That change did not post.");
-      } else if (outcome.kind === "synchronized") {
-        setSyncState("synced");
+      if (!outcome.ok && outcome.userMessage) {
+        setError(outcome.userMessage);
+      } else if (outcome.ok && outcome.kind !== "conflict-needs-attention") {
+        setError("");
       }
+      if (outcome.kind === "synchronized") setSyncState("synced");
+      else if (outcome.kind === "pending-transport") setSyncState("syncing");
+      else if (outcome.kind === "conflict-needs-attention") setSyncState("error");
+      else if (outcome.ok) setSyncState("idle");
       if (outcome.ok) {
         setBooksStatus({
           ok: true,
@@ -771,6 +838,17 @@ export function App() {
     return enqueueWrite(async () => {
       const current = householdRef.current;
       if (!current) return;
+      if (environment === "development") {
+        const anchor = loadSyncAnchor(environment, current.householdId);
+        if (anchor) {
+          lastAmountLabelRef.current = null;
+          const outcome = await commitHousehold(anchor, token);
+          if (!outcome || !outcome.postedExactlyOnce || outcome.kind === "conflict-needs-attention") return;
+          setHistory((items) => items.filter((item) => item.id !== token.id));
+          setToast(null);
+          return;
+        }
+      }
       const latest = historyRef.current[historyRef.current.length - 1];
       if (latest && latest.id !== token.id) {
         setError("Undo the latest change first so the books stay in order.");
@@ -781,6 +859,35 @@ export function App() {
       setHistory((items) => items.filter((item) => item.id !== token.id));
       setToast((item) => (item?.id === token.id ? null : item));
     });
+  }
+
+  async function revertToLastSync(label: string) {
+    const current = householdRef.current;
+    if (!current || environment !== "development") return;
+    const anchor = loadSyncAnchor(environment, current.householdId);
+    if (!anchor) {
+      setError("No cloud-acknowledged copy yet. Post and sync first, or use Ledger when a sync exists.");
+      return;
+    }
+    lastAmountLabelRef.current = null;
+    await commitHousehold(anchor, { id: label, label, snapshot: anchor, postedIds: [] });
+  }
+
+  async function resolveConflictSide(side: "local" | "remote") {
+    const current = householdRef.current;
+    if (!current) return;
+    const open = unresolvedConflicts(current)[0];
+    if (!open) {
+      setShowConflictSheet(false);
+      return;
+    }
+    try {
+      const next = resolveConflictChoice(current, open.id, side);
+      await commitHousehold(next);
+      setShowConflictSheet(false);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
   }
 
   function run(fn: (current: Household) => CommitResult) {
@@ -795,6 +902,13 @@ export function App() {
       setError("");
       try {
         const result = fn(current);
+        if (result.postedIds.length && form.amount) {
+          try {
+            lastAmountLabelRef.current = formatCad(parseAmount(form.amount));
+          } catch {
+            lastAmountLabelRef.current = null;
+          }
+        }
         const outcome = await commitHousehold(result.household, result.undo);
         const accepted =
           outcome?.postedExactlyOnce === true &&
@@ -1213,13 +1327,41 @@ export function App() {
             </p>
           </div>
         </div>
-        <button className={`pill ${environment === "development" ? "dev" : "prod"}`} onClick={() => setGuard({
-          kind: "environment",
-          next: environment === "development" ? "production" : "development",
-        })}>
-          {environment === "development" ? "Development" : "Production"}
-        </button>
+        <span className="pill dev" aria-label="Development environment">Development</span>
       </header>
+      {commandChrome?.chip && (
+        <div
+          className={`command-chip command-chip--${commandChrome.chip.tone}`}
+          role="status"
+        >
+          <span>{commandChrome.chip.primary}</span>
+          {commandChrome.chip.secondary && <span className="muted">{commandChrome.chip.secondary}</span>}
+        </div>
+      )}
+      {commandChrome?.banner && (
+        <div
+          className={`command-banner command-banner--${commandChrome.banner.tone}`}
+          role={commandChrome.banner.blocking ? "alert" : "status"}
+        >
+          <div>
+            <strong>{commandChrome.banner.primary}</strong>
+            {commandChrome.banner.secondary && <p className="muted">{commandChrome.banner.secondary}</p>}
+          </div>
+          {commandChrome.banner.actionLabel && (
+            <button
+              type="button"
+              className="ghost command-banner__action"
+              onClick={() => {
+                if (commandChrome.banner?.actionLabel === "Review conflict") setShowConflictSheet(true);
+                else if (commandChrome.banner?.actionLabel === "Review pending") setTab("more");
+                else if (commandChrome.banner?.actionLabel === "Open recovery") setTab("more");
+              }}
+            >
+              {commandChrome.banner.actionLabel}
+            </button>
+          )}
+        </div>
+      )}
       {replicas.length > 1 && (
         <label className="ledger-switcher">
           <span>Open ledger</span>
@@ -1478,11 +1620,17 @@ export function App() {
       )}
 
       {adding && (
-        <div className="sheet">
+        <div
+          className="sheet"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="add-sheet-title"
+          ref={addSheetRef}
+        >
           <div className="sheet-inner">
             <div className="topbar">
-              <h1>Add</h1>
-              <button className="ghost" onClick={() => { setAdding(false); setConfirm(null); setError(""); }}>Close</button>
+              <h1 id="add-sheet-title">Add</h1>
+              <button className="ghost" type="button" data-autofocus onClick={closeAdd}>Close</button>
             </div>
             <div className="tabs">
               {(["expense", "income", "shift", "transfer"] as AddMode[]).map((item) => (
@@ -1832,7 +1980,7 @@ export function App() {
             )}
             {error && <p className="danger" style={{ marginTop: 12 }}>{error}</p>}
             {confirm && (
-              <div className="preview warn">
+              <div className="preview warn" role="alert" tabIndex={-1} ref={confirmPanelRef}>
                 <p>{confirm.message}</p>
                 {confirm.matches.map((tx) => (
                   <div className="row" key={tx.id}>
@@ -1946,16 +2094,22 @@ export function App() {
       )}
       {guard?.kind === "remove" && (
         <ConfirmSheet
-          title="Reverse this row?"
-          body={`${guard.summary} Both the original and the reversing entry stay. Undo from the toast or More → Recent changes.`}
-          confirmLabel="Reverse"
+          title={environment === "development" ? "Revert to last sync?" : "Reverse this row?"}
+          body={environment === "development"
+            ? `${guard.summary} This restores the last cloud-acknowledged copy on this phone. Changes since that sync go away — not a second journal row.`
+            : `${guard.summary} Both the original and the reversing entry stay. Undo from the toast or More → Recent changes.`}
+          confirmLabel={environment === "development" ? "Revert to last sync" : "Reverse"}
           danger
           busy={busy}
           onCancel={() => setGuard(null)}
           onConfirm={() => {
             const id = guard.transactionId;
-            const current = householdRef.current;
             setGuard(null);
+            if (environment === "development") {
+              void revertToLastSync(`revert-${id}`);
+              return;
+            }
+            const current = householdRef.current;
             if (!current) return;
             try {
               const result = reversePostedMoney(current, id, { createdBy: actorId });
@@ -2115,11 +2269,51 @@ export function App() {
         />
       )}
 
-      {toast && (
+      <p className="sr-only" role="status" aria-live="polite">
+        {commandChrome?.liveAnnouncement ?? ""}
+      </p>
+
+      {toast && commandChrome?.toast && (
         <div className="toast">
-          <span>Saved. You can undo this, or find it later under More.</span>
-          <button className="ghost" style={{ color: "var(--paper)" }} onClick={() => void applyUndo(toast)}>Undo</button>
+          <span>
+            {commandChrome.toast.primary}
+            {commandChrome.toast.secondary ? `. ${commandChrome.toast.secondary}` : ""}
+            {commandChrome.toast.showUndo !== false ? " You can undo to last sync, or find it later under More." : ""}
+          </span>
+          {commandChrome.toast.showUndo !== false && (
+            <button
+              className="ghost"
+              style={{ color: "var(--paper)" }}
+              type="button"
+              onClick={() => void applyUndo(toast)}
+            >
+              {environment === "development" ? "Undo to last sync" : "Undo"}
+            </button>
+          )}
         </div>
+      )}
+
+      {showConflictSheet && unresolvedConflicts(household).length > 0 && (
+        <ConflictResolution
+          household={household}
+          busy={busy}
+          onChoose={(side) => void resolveConflictSide(side)}
+          onExport={() => {
+            try {
+              const bundle = makeConflictBundle(household);
+              const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement("a");
+              link.href = url;
+              link.download = `hearth-conflict-${household.householdId}.json`;
+              link.click();
+              URL.revokeObjectURL(url);
+            } catch (caught) {
+              setError(caught instanceof Error ? caught.message : String(caught));
+            }
+          }}
+          onDismiss={() => setShowConflictSheet(false)}
+        />
       )}
 
       {commandOpen && (
@@ -2189,13 +2383,43 @@ export function App() {
         }}
       />
 
-      <nav className="nav">
-        <button className={tab === "home" && !adding ? "active" : ""} onClick={() => goTab("home")}>Home</button>
-        <button className={tab === "calendar" ? "active" : ""} onClick={() => goTab("calendar")}>Calendar</button>
-        <button className="fab" onClick={() => openAddFor(null)}>+</button>
-        <button className={tab === "plan" ? "active" : ""} onClick={() => goTab("plan")}>Plan</button>
-        <button className={tab === "ledger" ? "active" : ""} onClick={() => goTab("ledger")}>Books</button>
-        <button className={tab === "more" ? "active" : ""} onClick={() => goTab("more")}>More</button>
+      <nav className="nav" aria-label="Hearth">
+        <button
+          className={tab === "home" && !adding ? "active" : ""}
+          aria-current={tab === "home" && !adding ? "page" : undefined}
+          onClick={() => goTab("home")}
+        >
+          Home
+        </button>
+        <button
+          className={tab === "calendar" ? "active" : ""}
+          aria-current={tab === "calendar" ? "page" : undefined}
+          onClick={() => goTab("calendar")}
+        >
+          Calendar
+        </button>
+        <button className="fab" type="button" aria-label="Add money" onClick={() => openAddFor(null)}>+</button>
+        <button
+          className={tab === "plan" ? "active" : ""}
+          aria-current={tab === "plan" ? "page" : undefined}
+          onClick={() => goTab("plan")}
+        >
+          Plan
+        </button>
+        <button
+          className={tab === "ledger" ? "active" : ""}
+          aria-current={tab === "ledger" ? "page" : undefined}
+          onClick={() => goTab("ledger")}
+        >
+          Books
+        </button>
+        <button
+          className={tab === "more" ? "active" : ""}
+          aria-current={tab === "more" ? "page" : undefined}
+          onClick={() => goTab("more")}
+        >
+          More
+        </button>
       </nav>
     </div>
   );

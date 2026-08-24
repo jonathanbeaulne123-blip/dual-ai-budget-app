@@ -1,10 +1,27 @@
-# Command-state product questions — detailed, for implementation
+# Command-state product questions — Jonathan decisions (2026-08-24)
 
-> **Status:** design decisions for Cursor. Jonathan still owns money-semantic choices.  
-> **Baseline:** `main@ac6a8b6e0d1b5b9cfe47dfc49c5407cac25e1fd4`  
-> **Related:** `docs/CLAUDE_COMMAND_STATES_UX.md` §10, household workspace epic Phase 6, Phase 1 patch.
+Implementation defaults for Cursor. Supersedes the open-question table in `docs/CLAUDE_COMMAND_STATES_UX.md` §10.
 
-This file explains each open question against **current code**, what the epic assumed, and a **safe implementation default** that does not invent a second books merge, a second write path, or a second state machine.
+| # | Question | **Jonathan decision** | Implementation |
+|---|---|---|---|
+| 1 | Conflict: export vs in-app choose | **Choose in app** | `ConflictResolution.tsx` — Keep this phone / Keep cloud; `resolveConflictChoice` + `acceptHouseholdWrite` |
+| 2 | Pending banner | **Default** | Chip always; banner offline / failed retry / blocked only |
+| 3 | Undo / sync | **Sync on write; undo reverts to last sync anchor** | `saveSyncAnchor` on `synchronized`; `applyUndo` restores anchor (Development) |
+| 4 | Auto-merge toast | **Yes to messaging** | `AUTO_MERGE_MESSAGE` when goal union merges |
+| 5 | Personal in conflict UI | **Default (shared-only on screen)** | `countDifferingSharedTransactionIds`; full bundle on export only |
+| 6 | Reverse / repost | **Revert to last sync (Development)** — not reversal journal pair | `revertToLastSync` replaces `reversePostedMoney` in Development |
+| 7 | Multi-ledger picker | **Default (remember last)** | Unchanged — `session.householdId` |
+| 8 | Production pill | **Ignore for now — Development only** | Static Development label; no environment switch in UI |
+
+## Sync model (Development)
+
+- `transportRequested` on every Development write when Google continuity or `linked` legacy transport applies.
+- After `synchronized`, persist `lastSyncAnchor` and flush continuity outbox.
+- Undo and “Revert to last sync” restore the anchor snapshot through `commitHousehold` (not a second state machine).
+
+## Epic merge
+
+Apply Slice A+B on `CommandUiKind`. Do **not** apply `claude-ux-epic-phase1` `WriteTruth` patch wholesale.
 
 ---
 
