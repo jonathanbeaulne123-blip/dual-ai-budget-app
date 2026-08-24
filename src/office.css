@@ -925,3 +925,63 @@
   min-height: 44px;
   font-size: 1.05em;
 }
+
+/* ---------------------------------------------------------------------------
+   Claude — household workspace epic. Accessibility and paint-order corrections.
+   No new theme system: every value below derives from existing house tokens.
+   --------------------------------------------------------------------------- */
+
+/* F12 — OFFICE A5 requires >= 44x44. The pin/park chips were 30x17 on phone and
+   31x28 on wide. Keep the printed chip the same size visually, and grow the hit
+   area around it so the target is honest without redrawing the desk. */
+.desk-chip {
+  position: relative;
+  min-width: 44px;
+  min-height: 44px;
+  height: auto;
+  border-color: transparent;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  isolation: isolate;
+}
+/* Keep the printed brass pill its original size; the button around it is the
+   honest 44x44 target. */
+.desk-chip::before {
+  content: "";
+  position: absolute;
+  inset: 8px 3px;
+  border: 1px solid var(--brass);
+  background: linear-gradient(#f6efe4, #e6d3aa);
+  border-radius: 8px;
+  z-index: -1;
+}
+.desk-chip.is-on::before {
+  background: linear-gradient(#e8f0e4, #cfe0c6);
+  border-color: var(--pine);
+}
+
+/* F12 — the chalk affordance on the weather glass was a 51x25 target. */
+.chalk-glass-open {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* F13 — the chips sit absolutely in the instrument's top-right corner and were
+   painting over the instrument's own value ("CLEAN" rendered as "CLE"). Reserve
+   the corner so content is laid out clear of it instead of under it. */
+.instrument { --desk-chip-gutter: 104px; }
+.instrument > *:not(.desk-chips) {
+  padding-right: var(--desk-chip-gutter);
+}
+.instrument .desk-chips { pointer-events: auto; }
+
+/* F15 — Hercules is inert during Add (correct, D-051) but he was still painted
+   over the bottom nav and over the Pad. The nav is z-index 15; keep the cat and
+   his furniture strictly beneath it so no tab label is ever obscured. */
+.hercules-world,
+.hercules-live,
+.hercules-stage {
+  z-index: 14 !important;
+}

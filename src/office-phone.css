@@ -268,3 +268,40 @@
   color: var(--muted);
 }
 .office-phone .ph-inst[data-kind="text"].is-open .ph-value { -webkit-line-clamp: 3; line-clamp: 3; }
+
+/* F12 — the phone pin was a 30x17 target. OFFICE A5 requires 44x44. Keep the
+   printed pill small so the instrument still reads as paper, and make the
+   button itself an honest target around it. */
+.office-phone .ph-pin {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-color: transparent;
+  background: transparent;
+  top: 0;
+  right: 0;
+}
+.office-phone .ph-pin > span,
+.office-phone .ph-pin {
+  line-height: 1;
+}
+.office-phone .ph-pin::before {
+  content: "";
+  position: absolute;
+  inset: 10px 6px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  border-radius: 999px;
+  z-index: -1;
+}
+.office-phone .ph-pin.is-on::before {
+  border-color: var(--pine);
+}
+
+/* F13/F14 — reserve the pin corner so an instrument's own value is never
+   painted under its pin. */
+.office-phone .ph-inst > *:not(.ph-pin) {
+  padding-right: 46px;
+}

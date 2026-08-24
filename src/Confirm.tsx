@@ -17,19 +17,28 @@ export function ConfirmSheet({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const describedBy = extra ? "guard-body guard-extra" : "guard-body";
+
   return (
-    <div className="sheet guard" role="dialog" aria-modal="true" aria-labelledby="guard-title">
+    <div
+      className="sheet guard"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="guard-title"
+      aria-describedby={describedBy}
+    >
       <div className="sheet-inner">
         <div className="topbar">
           <h1 id="guard-title">{title}</h1>
           <button className="ghost" onClick={onCancel} disabled={busy}>Cancel</button>
         </div>
-        <p>{body}</p>
-        {extra && <p className="muted">{extra}</p>}
+        <p id="guard-body">{body}</p>
+        {extra && <p id="guard-extra" className="muted">{extra}</p>}
         <button
           className={danger ? "danger" : "primary"}
           style={{ width: "100%", marginTop: 12 }}
           disabled={busy}
+          aria-busy={busy || undefined}
           onClick={onConfirm}
         >
           {confirmLabel}
