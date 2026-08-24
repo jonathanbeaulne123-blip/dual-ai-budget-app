@@ -310,7 +310,7 @@ The Phase 1 patch and §10 `TruthState` / `WriteTruth` types are a **second stat
 | Patch `persist()` → `saveHousehold` then `syncHouseholdBooks` | `commitHousehold` already uses `acceptHouseholdWrite` |
 | §8.4 “no CAS” | Client revision check + conflict records exist; hosted atomic CAS still unapplied |
 | Optional-publish as the model | D-112 / D-113 Google continuity |
-| Decisions through D-106 / `main@75574e4` | Baseline is `ac6a8b6` with D-111–D-114 |
+| Decisions through D-119 / `main@462063c` | Baseline merged with D-114 cloud continuity, D-117 membership, D-118 ledger naming, D-119 last-sync undo |
 
 ### How to merge the Phase 1 patch
 

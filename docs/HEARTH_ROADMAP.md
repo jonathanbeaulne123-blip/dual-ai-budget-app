@@ -1,7 +1,7 @@
 # Hearth living roadmap
 
 > **Product:** Hearth — Jonathan and Bianca's household budget and family office  
-> **Roadmap baseline:** `main@c9a60b41d3c26190b089cc8fe080071399cfca5e`, audited 2026-08-24 (Toronto)  
+> **Roadmap baseline:** `main@462063c` (command states + ledger naming merged), audited 2026-08-24 (Toronto)  
 > **Canonical order:** latest explicit instruction → `docs/CLOUD_CONTINUITY.md` → `docs/DECISIONS.md` → `docs/STRATEGY.md` → `docs/ARCHITECTURE.md` → this roadmap  
 > **Purpose:** one maintained view of what shipped, what is true now, what comes next, what remains gated, and how every major choice serves the Dual Course.
 
@@ -63,7 +63,9 @@ Only the currently open or just-closed worksession belongs here. Durable history
 
 | Worksession | State | Scope | Output |
 |---|---|---|---|
-| [2026-08-24 Google continuity slice 2](worksessions/2026-08-24-continuity-slice-2.md) | **CLOSED; PR #72 updated, not merged** | Development Google discovery, durable outbox, automatic replay/pull, conflict stop | `codex/cloud-continuity-correctness`; 45 files / 335 tests pass; personal scope, hosted memberships, atomic authority, and multi-household storage remain |
+| [2026-08-24 Command states Slice A+B](worksessions/2026-08-24-command-states-slice-ab.md) | **CLOSED; PR #76 merged** | Command chrome, sync anchor, conflict choose, Add a11y (Development) | Claude UX spec; Cursor Cloud Agent (GPT) implementation; 51 files / 373 tests on merged `main` |
+| [2026-08-24 Ledger naming](worksessions/2026-08-24-ledger-naming.md) | **CLOSED; PR #77 merged** | Name household, shared, and Personal ledgers at setup | Codex; D-118 |
+| [2026-08-24 Continuity slice 4](worksessions/2026-08-24-continuity-slice-4.md) | **CLOSED; PR #74–#75 merged** | Hosted membership + Personal scope; migration 003 applied | Codex; D-117 |
 
 ## 1.5 Updates — major shipped chapters
 
@@ -139,9 +141,17 @@ Major updates keep a durable blurb: what shipped, why it mattered, Dual Course e
 - **Why:** Jonathan and Bianca must never depend on one phone staying online to read or write the household.
 - **Development window:** data through 2026-09-30 is disposable and may remain openly readable/writable to accelerate this work. Security remains a mandatory late-September cutover before meaningful October data.
 - **Implemented in D-114/D-117/D-118:** exact Development Google membership discovery, PGlite acceptance, compacting durable outbox, launch/focus/reconnect replay, stale-revision conflict stop, applied hosted membership plus Personal scope, and first-run household/shared/Personal ledger naming that follows the snapshot. Production discovery remains off.
-- **Still open:** dedicated personal scope, server-side membership rows, multi-household local replicas, atomic hosted command/journal authority, backoff/acknowledgement, and two-browser E2E proof.
+- **Still open:** atomic hosted command/journal authority, backoff/acknowledgement, two-browser E2E proof, and explicit conflict resolution proof beyond the PR #76 in-app choose UI.
 - **Evidence required:** [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md) acceptance tests, including fresh-device discovery, old-device-off read/write, offline outbox convergence, and pulled-snapshot accounting validation.
 - **Kill/rollback:** preserve accepted commands in a recoverable outbox and report the block; never retreat to a one-device host or claim open Development data is secure.
+
+### U-10 — Command states chrome (Development) — SHIPPED
+
+- **What shipped:** command chip/banner/toast derived from `CommandOutcome`; Development sync-on-write with `lastSyncAnchor`; in-app conflict choose; Add sheet dialog a11y; D-119 last-sync undo/reverse in Development.
+- **Why:** Bianca must never see “saved” when PGlite rejected, and corrections should not leave posted + correction journal pairs during disposable Development work.
+- **Dual Course:** Course A `+2`; Course B `+1`.
+- **Evidence:** [PR #76](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/76), [`docs/CLAUDE_COMMAND_STATES_UX.md`](CLAUDE_COMMAND_STATES_UX.md), [`worksessions/2026-08-24-command-states-slice-ab.md`](worksessions/2026-08-24-command-states-slice-ab.md).
+- **Kill/rollback:** remove any UI path that celebrates success when `postedExactlyOnce` is false or merges conflicts without an explicit human choice.
 
 ## 1.6 Updates — compact shipped work
 
@@ -149,6 +159,9 @@ Small updates remain compact and link to evidence; promote one to a major blurb 
 
 | Update | Why it matters | Evidence |
 |---|---|---|
+| Command states chrome (Development) | Honest command UI on the real shell; sync anchor undo; in-app conflict choose. | [PR #76](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/76) |
+| Ledger naming at setup | First-run household/shared/Personal labels without exposing member ids. | [PR #77](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/77) |
+| Hosted membership + Personal scope | D-117 discovery/transport; migration 003 applied with exact grants. | [PR #74](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/74), [PR #75](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/75) |
 | Cloudflare deploy hardening | Keeps the model edge reproducible and narrows accidental deploy drift. | `edc7844`, `a00db22`, `ccf1185` in repository history |
 | TypeScript/build repair | Keeps static checks available as a merge gate. | `0644621` |
 | Cloud agent environment | Makes remote implementation more reproducible without granting production authority. | `2d2c46d` |

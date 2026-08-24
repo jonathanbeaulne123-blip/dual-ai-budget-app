@@ -4,7 +4,7 @@ Claude owns presentation. This file is the typed write-surface contract. Do not 
 
 Adapter: `src/claude/commandContract.ts`. Fixtures: `COMMAND_SURFACE_FIXTURES`. Do not edit OfficePhone, Hercules drawing, or widget chrome to consume this; wire later from App outcome fields.
 
-**UX spec (2026-08-24):** [`docs/CLAUDE_COMMAND_STATES_UX.md`](../CLAUDE_COMMAND_STATES_UX.md) — state/copy matrix, flows, viewport annotations, a11y, Cursor checklist. Visual mockup: [`command-states-mockup.html`](command-states-mockup.html).
+**UX spec (2026-08-24, merged PR #76):** [`docs/CLAUDE_COMMAND_STATES_UX.md`](../CLAUDE_COMMAND_STATES_UX.md) — state/copy matrix, flows, viewport annotations, a11y, Cursor checklist. Claude authored; Cursor Cloud Agent (GPT) implemented. Visual mockup: [`command-states-mockup.html`](command-states-mockup.html).
 
 ## States
 

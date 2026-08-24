@@ -1,5 +1,16 @@
 # Slice A+B integration contract
 
+**Status:** Merged to `main` as [PR #76](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/76). Worksessions: [`2026-08-24-command-states-slice-ab.md`](../worksessions/2026-08-24-command-states-slice-ab.md).
+
+## AI roles
+
+| Role | Owner |
+|---|---|
+| Product decisions | Jonathan (2026-08-24) |
+| UX / copy / a11y spec | Claude |
+| Parallel implementation + App integration | Cursor Cloud Agent (GPT) |
+| Coordination packet | GPT / Codex lineage |
+
 Jonathan decisions (2026-08-24):
 1. In-app conflict choose (local vs cloud)
 2. Pending: chip always; banner offline/failed/blocked only
