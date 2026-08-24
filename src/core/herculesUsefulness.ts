@@ -24,9 +24,22 @@ export type HerculesUsefulness = {
   /** 0–1 animation intensity. More useful → more animated beg. */
   animation: number;
   spoken: string;
-  /** Claude: first tap may open How can I help when this is true (D-097 amendment). */
+  /** First tap opens How can I help when the desk scores 80+ (D-097 / D-113). */
   openHelpOnTap: boolean;
 };
+
+export type HerculesTapIntent = "open-help" | "beg" | "close";
+
+/** Pure tap policy so 80 usefulness is one tap, not beg-then-chat. */
+export function herculesTapIntent(input: {
+  openHelpOnTap: boolean;
+  chatOpen: boolean;
+  begging: boolean;
+}): HerculesTapIntent {
+  if (input.chatOpen) return "close";
+  if (input.begging || input.openHelpOnTap) return "open-help";
+  return "beg";
+}
 
 function lightFromScore(score: number): UsefulnessLight {
   if (score >= 55) return "green";

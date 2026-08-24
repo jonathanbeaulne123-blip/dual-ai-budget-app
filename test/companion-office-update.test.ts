@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import {
   addGoal,
   adoptSitDownStandingOrders,
@@ -12,6 +13,7 @@ import {
   expandShellFor,
   firstRunLesson,
   fundGoal,
+  herculesTapIntent,
   herculesUsefulness,
   householdWallet,
   loadSeenLessons,
@@ -49,6 +51,22 @@ describe("hercules usefulness and lessons", () => {
     expect(useful.openHelpOnTap).toBe(true);
     expect(useful.reasons.join(" ")).toMatch(/Leftover|claim|preset|jar|statement/i);
     expect(useful.reasons.join(" ")).not.toMatch(/grocery/i);
+  });
+
+  it("opens How can I help on first tap only when the desk is at 80", () => {
+    expect(herculesTapIntent({ openHelpOnTap: true, chatOpen: false, begging: false })).toBe("open-help");
+    expect(herculesTapIntent({ openHelpOnTap: false, chatOpen: false, begging: false })).toBe("beg");
+    expect(herculesTapIntent({ openHelpOnTap: false, chatOpen: false, begging: true })).toBe("open-help");
+    expect(herculesTapIntent({ openHelpOnTap: true, chatOpen: true, begging: false })).toBe("close");
+  });
+
+  it("wires the 80 tap and keeps leftover on the Sit-down chip", () => {
+    const src = readFileSync("src/Hercules.tsx", "utf8");
+    expect(src).toMatch(/herculesTapIntent/);
+    expect(src).toMatch(/if \(next === "open-help"\) openChatFromBeg\(\)/);
+    expect(src).toMatch(/\^sit-down\|\^sit down\|\^leftover/);
+    expect(src).toMatch(/emitOfficeIntent\(\{ type: "expand", id: "postcard" \}\);\n\s*return false;/);
+    expect(src).toMatch(/adding \? "loafing is-adding"/);
   });
 
   it("shows instrument lessons only on first run", () => {

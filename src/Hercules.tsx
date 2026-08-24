@@ -16,6 +16,7 @@ import {
   herculesNeedsCheck,
   herculesPageSurface,
   herculesInstrumentSurface,
+  herculesTapIntent,
   herculesUsefulness,
   firstRunLesson,
   hourInToronto,
@@ -545,10 +546,9 @@ export function HerculesPresence({
       onGo("more");
       return true;
     }
-    if (/^sit-down|^sit down/i.test(text)) {
+    if (/^sit-down|^sit down|^leftover/i.test(text)) {
       emitOfficeIntent({ type: "expand", id: "postcard" });
-      closeChat();
-      return true;
+      return false;
     }
     if (/pay the card/i.test(text)) {
       emitOfficeIntent({ type: "expand", id: "wallet" });
@@ -685,20 +685,31 @@ export function HerculesPresence({
         sitWithBag();
         return;
       }
-      if (open) {
+      const intent = herculesTapIntent({
+        openHelpOnTap: usefulness.openHelpOnTap,
+        chatOpen: open,
+        begging,
+      });
+      if (intent === "close") {
         closeChat();
         setMotion(pinned ? "sit" : "loaf");
         return;
       }
-      if (begging) {
+      if (intent === "open-help" && begging) {
         openChatFromBeg();
         return;
       }
-      // Delay beg so a second immediate click can become sit instead.
+      // Delay first tap so a second immediate click can become sit instead.
       if (sitTimer.current) window.clearTimeout(sitTimer.current);
       sitTimer.current = window.setTimeout(() => {
         sitTimer.current = null;
-        beginBeg();
+        const next = herculesTapIntent({
+          openHelpOnTap: usefulness.openHelpOnTap,
+          chatOpen: false,
+          begging: false,
+        });
+        if (next === "open-help") openChatFromBeg();
+        else beginBeg();
       }, 280);
     } else {
       setMotion(look.view.mood === "restless" ? "pace" : pinned ? "sit" : "loaf");
@@ -710,9 +721,15 @@ export function HerculesPresence({
     : "hop";
   const pose = visorPop ? "jump" : motion;
   const size = adding ? 72 : CAT;
-  const openInstrument = listFurniture().find((item) => item.id === perchPlayFor.current)
-    ?? listFurniture().find((item) => item.id === topic);
-  const avoid = open && openInstrument
+  const furnitureNow = listFurniture();
+  const openInstrument = furnitureNow.find((item) => item.id === perchPlayFor.current)
+    ?? furnitureNow.find((item) => item.id === topic);
+  const moneyAvoid = (showProposal || open)
+    ? furnitureNow
+      .filter((item) => item.id === "wallet" || item.id === "blotter" || item.id === "accounts")
+      .map((item) => item.rect)
+    : [];
+  const examinedAvoid = open && openInstrument
     ? {
       x: openInstrument.rect.x,
       y: openInstrument.rect.y + 52,
@@ -727,6 +744,7 @@ export function HerculesPresence({
         h: Math.min((typeof window === "undefined" ? 844 : window.innerHeight) * 0.4, 360),
       }
       : null;
+  const avoid = examinedAvoid ? [...moneyAvoid, examinedAvoid] : moneyAvoid.length ? moneyAvoid : null;
   const bubble = herculesBubbleBox({
     catX: pos.x,
     catY: pos.y,
@@ -867,7 +885,15 @@ export function HerculesPresence({
           reducedMotion() ? "cut-motion" : "",
         ].join(" ")}
         style={{ left: pos.x, top: pos.y, width: size, height: size, ["--herc-useful" as string]: String(usefulness.animation) }}
-        aria-label={begging ? `${look.view.name} is begging — tap again for help` : attention ? `${look.view.name} wants a check-in` : `Talk to ${look.view.name}. Double-tap to sit.`}
+        aria-label={
+          begging
+            ? `${look.view.name} is begging — tap again for help`
+            : usefulness.openHelpOnTap
+              ? `Talk to ${look.view.name}. Tap for How can I help. Double-tap to sit.`
+              : attention
+                ? `${look.view.name} wants a check-in`
+                : `Talk to ${look.view.name}. Double-tap to sit.`
+        }
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}

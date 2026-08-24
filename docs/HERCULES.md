@@ -16,7 +16,7 @@ Laws: [DECISIONS.md](DECISIONS.md) D-042 / D-044 / D-045 / D-046 / D-047 / D-049
 - Mood from Health, bills, goals, week-over-week spend. Punishment is a face and a sentence, never a fake fee.
 - Unlocks come from posted facts, a tied rec, or a closed month — never a shop, never pay-to-keep-alive, never pet death.
 - Shift-posting streak (D-050) is consecutive **posted shift dates** from the latest shift. Vacation does not kill him. Clock-in is not a post. Sign-out Confirm still posts (D-062).
-- **Page-true talk (D-063 / D-074 / D-093):** sample questions follow the tab **and** the open instrument. **How can I help** is visible when chat opens and reads leftover, calendar, notices, and jars. Event talk on wide desk opens Calendar. Click him again to close. He perches on an opened widget; the hop cancels if another widget or tab opens. Chat stays off the examined rect.
+- **Page-true talk (D-063 / D-074 / D-093 / D-097):** sample questions follow the tab **and** the open instrument. **How can I help** is visible when chat opens and reads leftover, calendar, notices, and jars. On a loaded desk (usefulness 80+) first tap opens that help; below 80 first tap begs. Event talk on wide desk opens Calendar. Click him again to close. He perches on an opened widget; the hop cancels if another widget or tab opens. Chat stays off wallet, blotter, accounts, and the examined rect. Sit-down / leftover chips expand the postcard and leave the leftover sentence.
 - **September Office (D-051 / D-064):** he will perch, bump, lick, and pounce on desk widgets. Expanded instruments close when you leave Home. He still never posts. Kill criterion unchanged.
 - **Mark (D-061):** the live cat is ink-on-paper SVG (white coat, ruff under the head). The 3D GLB is source, not the 96px runtime. Laws and weaknesses: [HERCULES_MARK.md](HERCULES_MARK.md).
 - **Appointments (D-055 / D-056):** he may notice a visit and propose a jar. `proposeVisitGoal` does not write. **Start this jar** is a human tap from Calendar → Appointments or Plan. Quiet visits are "the Tuesday visit" in his mouth (D-054). He has vet bills (`memberId: "companion"`). The METC log is a page, not only an Ask answer.
@@ -33,7 +33,7 @@ Every new line in his mouth must point at a budget primitive (wallet, rec, sit-d
 2. **Tab/page:** any page — he wanders. Home for the net and opinion. Add to see him loaf. Home → Accessories for hats and ledger notes.
 3. **Instructions:**
    1. Open the demo kitchen table (Development).
-   2. Tap him. Ask **What’s on the Visa?** or **Opinion?** — that answer comes from the journal, not a model.
+   2. Tap him. On the seeded demo the first tap opens **How can I help**. Ask **What’s on the Visa?** — tray vs statement, not Mastercard CAD.
    3. Type `remember payday is Thursday`. Send. The note lands in the kitchen ledger (wardrobe → Kitchen ledger notes).
    4. Type `what do you remember?` He reads the snapshot, not a vendor memory store.
    5. Type `add milk`. Add opens. Confirm still posts.
