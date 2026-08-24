@@ -15,13 +15,13 @@ Prepend this section, or link it explicitly, when handing any individual packet 
 1. **Books win.** Use the Dual Course weighting: budget/books integrity **5**, Hercules and interactables **3**. Report both deltas in the PR. When they conflict, keep the books true and say what was cut.
 2. **Commands are the money trust boundary.** UI, Hercules, weather, imports, reminders, games, and widgets never post money. They may explain, stage, or preview. An explicit **Confirm** invokes an existing or newly reviewed command.
 3. **Accounting law is invariant.** CAD integer cents, Toronto civil dates (`America/Toronto`), balanced double-entry, immutable posted history except through explicit reversing entries, and Development is not Production.
-4. **PGlite is the real books engine.** The household JSON snapshot is an application envelope; Supabase is snapshot transport, not the ledger or an alternate author of money.
-5. **Network and disclosure must be literal.** A local, demo, or unlinked household produces zero hosted household traffic. A mode label must describe actual behavior. Model-bound data must be explicitly disclosed, minimized, member-scoped, and tested at the final serialized request.
-6. **Private hosted capability stays gated.** Auth + household membership + closed RLS gate bank feeds, Interac, issued cards, hosted private documents, and other amount-bearing push beyond the currently accepted narrow model flow. A three-word household phrase is routing, not authentication.
+4. **Cloud continuity is core.** Google sign-in reveals the person's personal ledger and household memberships on any device. The cloud is durable continuity; PGlite is each device's validated accounting/offline replica. No peer device is the host.
+5. **Network and disclosure must be literal.** After sign-in, synchronization is automatic and its state must be truthful. Model-bound data must be explicitly disclosed and tested at the final serialized request. Through 2026-09-30 hosted rows are disposable/open Development data, not private data.
+6. **Security has a dated cutover.** Google Auth, durable personal/household membership, and closed RLS must ship before meaningful October data and still gate bank feeds, Interac, issued cards, and private hosted documents. A three-word phrase is invitation/routing, not normal authentication or storage authority.
 7. **Development and Production are separate books.** Never infer safety from a UI pill alone. Enforce the environment at every ingress, persistence key, merge, publish, server predicate, and audit row.
 8. **No quiet deletion.** Corrections to posted money use reversals. Tombstones and conflict resolution must preserve audit history. Never restore an old whole-household snapshot over newer partner work.
 9. **No obsolete backend revival.** Do not revive Google Sheets, Apps Script, or `clasp` as Hearth storage, sync, accounting, import, or deployment infrastructure. Do not reopen Sheets-era issues as roadmap authority.
-10. **No museum planning.** Do not read or use `docs/nostalgia/` or `docs/reference/` for current implementation decisions. Current authority is Jonathan's latest instruction, `docs/STRATEGY.md`, `docs/DECISIONS.md`, `docs/ARCHITECTURE.md`, current code/tests, and an explicit new decision where needed.
+10. **No museum planning.** Do not read or use `docs/nostalgia/` or `docs/reference/` for current implementation decisions. Current authority is Jonathan's latest instruction, `docs/CLOUD_CONTINUITY.md`, `docs/STRATEGY.md`, `docs/DECISIONS.md`, `docs/ARCHITECTURE.md`, current code/tests, and an explicit new decision where needed.
 11. **No unapproved production mutation.** Do not run `pnpm books:apply`, apply or alter a Supabase production schema, clean up hosted rows, migrate production data, bind production resources, change production secrets, or deploy the app/Worker without Jonathan's explicit approval. A migration proposal, disposable Development rehearsal, and rollback proof are not production approval.
 12. **Do not narrow the product accidentally.** Preserve shipped behavior unless a packet explicitly changes it for truth or safety. If inspection reveals an adjacent blocker, include it when required for correctness and document why; otherwise hand it off visibly.
 
@@ -117,35 +117,35 @@ Hand off a base/head map, clean PR links, decision-number map, dropped/retained 
 
 ---
 
-## Packet 2 — P0 stop-ship: make network and mode truth literal
+## Packet 2 — P0 stop-ship: Google-account cloud continuity
 
 ### Goal
 
-Separate local PGlite ingestion from hosted Supabase transport so local, demo, and unlinked households make **zero** household network requests. A linked or explicit publish flow must perform exactly one controlled sync and must never force `linked: true` as a side effect of compiling books.
+Make Google sign-in discover the person's personal ledger and household memberships, then synchronize accepted commands automatically. No device is the host. Keep PGlite ingestion and hosted transport as separate failure domains, but do not require `linked`, a phrase, Pass file, or explicit publish for ordinary access.
 
 ### Why now / evidence
 
-`syncHouseholdBooks` in `src/ledger/engine.ts:320-349` always pushes the snapshot with `linked: true`. App boot (`src/App.tsx:220-248`) and every commit (`:332-343`) call it. A linked commit can also push earlier at `:314-330`. The UI and architecture describe hosted publishing as optional, but current behavior uploads all local households through the bundled endpoint in `src/ledger/supabase.ts:18-25`.
+The audited client couples local ingestion and hosted upload, while later D-110 work moved toward explicit opt-in publishing. Both models miss the clarified product: a new Google-signed-in device must work without the old device online, and both personal and household scopes must follow the identity. Current boot reconciliation also needs accounting/hash acceptance rather than trusting entry-count equality.
 
 ### Allowed scope
 
-Refactor engine/API/App orchestration, naming, status types, and tests. Split “compile/write local books” from “reconcile/publish hosted envelope.” Make the chosen household mode an explicit input to transport, not something inferred or mutated deep in the engine. Clarify UI copy and diagnostics so “local books healthy” and “hosted sync healthy” are independent truths. Cursor may introduce a small coordinator or state machine if that gives a provable single path.
+Refactor identity/membership discovery, engine/API/App orchestration, naming, status types, and tests. Split “compile/accept local books” from “synchronize hosted continuity,” add a durable outbox, and make personal versus household scope explicit. Clarify UI so local acceptance, pending continuity, conflict, and synchronized are independent truths.
 
 Do not delete already uploaded rows, rotate production credentials, alter the live schema, or deploy. Produce a separate cleanup inventory/runbook if orphan/demo rows may exist; execution requires Jonathan.
 
 ### Acceptance / proof
 
-- With transport/config injected—or with production defaults deliberately enabled under test—fetch-spy tests prove **no attempted calls at all** on empty/start/demo/local/unlinked boot, money commit, non-money commit, refresh, and PGlite health check. A Vitest config that returns null is not proof.
-- Explicit link/publish uses a visible confirmation and performs exactly one intended pull/merge/push sequence. A linked command produces one serialized hosted write path, not two.
-- No engine or storage helper writes `linked: true` to make transport work. Local ingestion preserves the caller's mode.
-- Offline/cloud failure cannot relabel a household as hosted or claim a successful publish. Local books status remains accurate and hosted failure is actionable.
-- Existing linked households remain recoverable; a migration or compatibility path is tested without sending data during unit tests.
-- Search/diff proof shows no default boot path can reach `pushSupabaseHousehold` without an explicit linked/publish guard.
+- A fresh device signs into Google and discovers the correct personal and household ledgers while the original device is offline.
+- An accepted command synchronizes once through a durable idempotent outbox; offline/cloud failure preserves local acceptance without claiming synchronized.
+- Personal and household scopes are distinct and selected by identity/membership, not a client-only visibility filter.
+- Pulled snapshots with the same entry count but changed financial content are rejected or reconciled before persistence/display.
+- Phrase, Pass, and legacy `linked` households migrate without becoming the normal access gate.
+- Tests use disposable Development fixtures and label the temporary open hosted boundary honestly.
 - Run shared verification and focused API/Supabase/books tests, including injected fetch failures.
 
 ### Risk / gate
 
-This is data-disclosure and trust risk, even if Supabase currently uses a publishable key. Preserve local books while removing implicit transport. Do not “fix” the issue by hiding the status or by making network errors silent. Any hosted-row cleanup, key change, or live configuration change requires Jonathan's explicit approval.
+This is continuity and money-integrity work. Temporary open read/write access is accepted through 2026-09-30, but schema application, hosted-row cleanup, key changes, Production, and deployment still require Jonathan's explicit approval.
 
 ### Handoff
 
@@ -198,7 +198,7 @@ Provide an ingress invariant matrix, synthetic canary test results, before/after
 
 ### Goal
 
-A money command becomes durable and visible only after the proposed household compiles into valid, balanced PGlite books. A compile, transaction, validation, persistence, or crash failure must leave one clearly recoverable authoritative prior state; hosted sync happens only after local acceptance and only in the explicit linked mode from Packet 2.
+A money command becomes visible only after the proposed household compiles into valid, balanced PGlite books. A compile, transaction, validation, persistence, or crash failure must leave one recoverable state; automatic hosted continuity happens only after local acceptance through Packet 2's outbox.
 
 ### Why now / evidence
 
@@ -215,7 +215,7 @@ Refactor storage/engine/App status and recovery UI as needed. Do not make Supaba
 - Fault-injection tests fail at command validation, compile, PGlite begin/write/validate/commit, JSON/IDB persistence, UI handoff, refresh during each phase, and hosted transport. At every point, recovery yields either the complete prior state or the complete accepted next state—never a half state.
 - An imbalanced trial balance or failed accounting equation throws inside the books transaction and cannot update React, JSON, IDB, audit hash, outbox, or cloud.
 - A PGlite-unavailable device cannot post, reverse, transfer, receive, shift, or execute another money command. The UI explains how to recover without implying the write happened.
-- A cloud outage after a valid local linked commit does not roll back the books; it creates the explicit sync state/outbox defined for later CAS work, without lying about hosted success.
+- A cloud outage after a valid local commit does not roll back the books; it creates the explicit continuity/outbox state without lying about synchronization.
 - Existing balanced command and statement tests remain green. Add restart/recovery and idempotent replay coverage.
 - Run shared verification plus books/ledger/write-safety/storage tests and document the durable state machine.
 
@@ -301,11 +301,11 @@ Deliver the command classification, receipt schema, stale-token behavior, revers
 
 ---
 
-## Packet 7 — P1 convergence: atomic two-phone CAS and a durable idempotent outbox
+## Packet 7 — P1 convergence: atomic multi-device CAS and a durable idempotent outbox
 
 ### Goal
 
-Make two phones converge without last-writer loss. A hosted write must atomically compare the expected household/environment revision and hash, accept exactly once or return a conflict, then pull/merge/validate/retry through a durable ordered outbox. Household and snapshot/audit changes must not be two independently successful REST requests.
+Make every signed-in device converge without last-writer loss or peer-device dependency. A hosted write must atomically compare the expected ledger/environment revision and hash, accept exactly once or return a conflict, then pull/merge/validate/retry through a durable ordered outbox. Personal-ledger and household-ledger writes need explicit scopes.
 
 ### Why now / evidence
 
@@ -313,16 +313,16 @@ Current reconcile pulls once (`src/api.ts:68-75`), pure-merges in `src/core/sync
 
 ### Allowed scope
 
-Design a v2 transport contract around `(household_id, environment, expected_revision, expected_hash, idempotency_key)`. Use a server-side RPC, Worker/edge boundary, or database transaction capable of atomic CAS; never expose a service-role credential to the browser. Add a durable outbox with explicit states, bounded conflict loop, pull/merge/PGlite-validate/CAS retry, backoff, and actionable dead-letter state. Make personal rows, tombstones, goal contributions, correction receipts, and First Numbers part of deterministic merge proof.
+Design a v2 contract around `(ledger_scope, ledger_id, environment, actor_id, expected_revision, expected_hash, idempotency_key)`. Use a server-side RPC, Worker/edge boundary, or database transaction capable of atomic CAS; never expose a service-role credential to the browser. Add a durable outbox with explicit states, bounded conflict loop, pull/merge/PGlite-validate/CAS retry, backoff, and actionable dead-letter state.
 
-Co-design with Packet 8 Auth/RLS. Redesign any normalized hosted table identity before it is ever populated; PGlite remains the books engine and Supabase remains transport. Code, migrations, and disposable Development rehearsal are allowed; applying live schema or data changes is not.
+Co-design identity/membership with Packet 8. PGlite remains each device's books engine/offline replica and the hosted service supplies durable continuity. Code and disposable Development read/write rehearsal are allowed; Production schema/data changes are not.
 
 ### Acceptance / proof
 
 - A deterministic two-client harness exercises: simultaneous new transactions, same-record edits, deletes/tombstones, reversal vs edit, personal rows, goal contributions, opening entries, offline replay, duplicate delivery, reordered delivery, process restart, and network failure between each server step.
 - Server CAS accepts one expected revision/hash atomically; the loser receives conflict, pulls, pure-merges, validates in PGlite, and retries. Final state contains all non-conflicting work and the documented winner for true conflicts.
 - Each command/idempotency key has one audit outcome under retries. Household/snapshot/audit cannot partially commit.
-- Outbox survives reload, preserves environment and actor, never publishes unlinked/demo data, exposes stuck state, and cannot bypass Confirm or the command boundary.
+- Outbox survives reload, preserves ledger scope, environment, actor, and Google-account mapping, exposes stuck state, and cannot bypass Confirm or the command boundary.
 - Composite environment identity is enforced in app and server contract. Cross-household/environment writes fail before merge.
 - Property tests demonstrate convergence, associativity/idempotency where claimed, and tombstone non-resurrection. An integration test uses a disposable Development database or faithful transactional harness.
 - Provide migration, backfill, verification, rollback, and row-count/checksum plans without executing Production changes.
@@ -337,11 +337,11 @@ Deliver the protocol spec, state machine, database/RPC proposal, interleaving te
 
 ---
 
-## Packet 8 — P1 security gate: Supabase Auth, household membership, and deny-by-default RLS
+## Packet 8 — dated late-September security cutover: Google Auth, ledger membership, and deny-by-default RLS
 
 ### Goal
 
-Replace phrase-as-authority and open RLS with real user identity, explicit household/environment membership, controlled invitation redemption, and deny-by-default row policies. Anonymous and cross-household access must be impossible by test, while Jonathan and Bianca can still pair and recover access deliberately.
+Before 2026-10-01, replace temporary open Development access with Google-authenticated identity, durable personal-ledger and household/environment membership, controlled invitation redemption, and deny-by-default row policies. Jonathan and Bianca must retain seamless new-device recovery.
 
 ### Why now / evidence
 
@@ -349,7 +349,7 @@ Replace phrase-as-authority and open RLS with real user identity, explicit house
 
 ### Allowed scope
 
-Write a fresh Auth/RLS v2 design: identity provider/session flow, member-to-auth mapping, household/environment membership, invitation issue/redeem/revoke/expire, owner/member recovery, audit attribution, least-privilege RLS, and integration with the CAS boundary. Preserve the three-word phrase only as a non-secret human routing aid if useful; require a real one-time capability or authenticated approval for membership.
+Write a fresh Auth/RLS v2 design: Google identity/session flow, user-to-personal-ledger mapping, household/environment membership, invitation issue/redeem/revoke/expire, owner/member recovery, audit attribution, least-privilege RLS, and integration with the CAS boundary. Preserve the three-word phrase only as a non-secret invitation aid if useful.
 
 Build migrations and tests for a disposable Development project, plus backup/export/restore and rollback plans. Update UI/onboarding and living decisions. Do not apply `docs/sql/rls_auth_ready.sql`, do not expose service-role secrets, and do not enable gated bank/card/private-document features merely because Auth code exists.
 
@@ -359,13 +359,13 @@ Build migrations and tests for a disposable Development project, plus backup/exp
 - Invite tests cover one-time use, expiry, replay, wrong household/environment, revocation, collision, recovery, and two existing phones.
 - CAS/outbox writes are attributed to an authenticated member and remain idempotent. No browser request can enumerate all households or overwrite another household by changing an ID.
 - Development migration starts from the real v1 schema, passes checksums/counts, can roll back or restore, and has a rehearsed cutover plan for existing household rows.
-- Session expiry/offline behavior is understandable and does not strand accepted local books. Local-only mode remains possible with zero hosted traffic.
+- Session expiry/offline behavior is understandable and does not strand accepted local books; after re-authentication, continuity resumes without requiring another device.
 - Security documentation accurately states what Auth/RLS protects and what AI vendors still receive under disclosed model use.
 - Run shared verification, Supabase policy/integration tests, secret scanning, and a manual two-user Development walkthrough.
 
 ### Risk / gate
 
-Critical access-control and migration risk. Jonathan chooses identity/recovery UX, resolves D-020 operationally, approves any Supabase project/config change, and separately authorizes Production migration. Bank feeds, Interac, cards, receipt clouds, and broad amount-bearing push remain gated until policy tests and Production cutover are explicitly accepted.
+Critical dated access-control and migration work. Temporary openness may accelerate disposable Development testing through 2026-09-30, but meaningful October data is blocked until the policy tests and reviewed cutover pass. Jonathan separately authorizes Production migration. Bank feeds, Interac, cards, and private hosted sources remain gated.
 
 ### Handoff
 
@@ -451,11 +451,11 @@ The safest default is:
 
 1. Packet 1 creates a clean, uniquely numbered base.
 2. Packet 9 begins in parallel: require verified PR checks and stop unchecked Production delivery first; mature preview, provenance, and rollback guards alongside the architecture packets.
-3. Packet 2 removes the active silent-upload path.
+3. Packet 2 establishes Google-account cloud continuity and removes `linked`/explicit-publish as the normal access model.
 4. Packets 3 and 4 close disclosure/environment and local-books acceptance gaps before new money primitives.
 5. Packet 5 adds First Numbers on the fail-closed path.
 6. Packet 6 replaces unsafe snapshot undo with explicit correction semantics.
-7. Packets 7 and 8 should be co-designed; CAS can be prototyped in a disposable Development harness while Auth/RLS policy is defined, but neither is Production-ready alone.
+7. Packets 7 and 8 should be co-designed; CAS and continuity can use disposable open Development rows now, while the Auth/RLS cutover must complete before meaningful October data.
 8. Packet 10 builds import on top of commands, fail-closed books, durable receipts, and safe sync.
 
 Parallel work is welcome when branches have crisp contracts: UI copy/fixtures can proceed alongside protocol design; Auth policy tests can proceed alongside CAS harnesses; CI can add non-deploy checks early. Do not parallelize two edits to the same decision IDs, migration chain, or write coordinator without an integration owner.

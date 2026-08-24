@@ -1,9 +1,8 @@
 # Hearth living roadmap
 
 > **Product:** Hearth — Jonathan and Bianca's household budget and family office  
-> **Roadmap baseline:** `main@75574e4cad7a7346fdda8e97616fcf0efe09541b`, audited 2026-08-23 (Toronto)  
-> **Canonical order:** latest explicit instruction → `AGENTS.md` → `docs/DECISIONS.md` → `docs/STRATEGY.md` → `docs/ARCHITECTURE.md` → this roadmap  
-> **Visible from:** repository [README](../README.md), [docs/README.md](README.md), and `AGENTS.md` so GitHub visitors and Cloud Agents load this plan.  
+> **Roadmap baseline:** `main@c9a60b41d3c26190b089cc8fe080071399cfca5e`, audited 2026-08-24 (Toronto)  
+> **Canonical order:** latest explicit instruction → `docs/CLOUD_CONTINUITY.md` → `docs/DECISIONS.md` → `docs/STRATEGY.md` → `docs/ARCHITECTURE.md` → this roadmap  
 > **Purpose:** one maintained view of what shipped, what is true now, what comes next, what remains gated, and how every major choice serves the Dual Course.
 
 This is a living planning document, not an authority to deploy, mutate production data, relax a financial invariant, or bypass a gate. Code and UI are untrusted until deterministic books and tests prove them.
@@ -21,15 +20,17 @@ This is a living planning document, not an authority to deploy, mutate productio
 - Only a visible user **Confirm** may post a command. Reversal/repost corrects mistakes; financial history is not silently rewritten.
 - CAD is stored as integer cents. Toronto is the household time zone. Posted activity must remain double-entry and auditable.
 - Development is not production. Production writes, deployments, migrations, and record cleanup require Jonathan's explicit approval.
-- Bank feeds, Interac, card issuing, and other money rails remain on the roadmap but cannot cross their implementation gate before Auth + RLS and their own legal/security gates.
-- The phone-first stack remains React + TypeScript, PGlite for the local books engine, Supabase as snapshot transport, and a Cloudflare Worker for the model boundary.
+- Google sign-in is the seamless entry and recovery identity. A signed-in person must be able to open their personal ledger and every household ledger they belong to from any device without another device remaining online.
+- The cloud is the durable cross-device continuity layer. PGlite is each device's accounting engine and offline replica/cache; it cannot be the only copy required for a different device to operate.
+- Through 2026-09-30, hosted data is disposable development data and may remain openly readable/writable. Security is a late-September milestone that must ship before meaningful October data, not a reason to postpone cloud continuity.
+- Bank feeds, Interac, card issuing, and other money rails remain on the roadmap and still require the late-September Auth/RLS foundation plus their own legal/security gates.
 - Do not revive Google Sheets or clasp. Existing Google integrations may supply read-only context or draft proposals; Sheets is neither runtime, ledger, canon, nor sync transport.
 
 ## 1.2 Status language
 
 | Status | Meaning |
 |---|---|
-| **STOP-SHIP** | A current behavior can violate privacy, money truth, environment isolation, or deploy safety. Contain and prove first. |
+| **STOP-SHIP** | A current behavior can violate money truth, environment isolation, device-independent continuity, or deploy safety. During the disposable-data window, disclosed weak privacy alone is scheduled security work rather than a continuity blocker. |
 | **SHIPPED** | Present on audited `main`; still subject to monitoring and kill criteria. |
 | **ACTIVE** | In an open branch/PR or the current worksession; not shipped. |
 | **NEXT** | Ready to brief after higher gates are satisfied. |
@@ -44,15 +45,15 @@ Checkboxes show work state, not product value: `[x]` is shipped on the named bas
 
 | Area | Audited truth | Decision now | Proof needed to change status |
 |---|---|---|---|
-| Local books | PGlite exists and commands are the intended boundary, but app JSON/UI persistence can happen before PGlite ingest; ingest can return `ok:false` without failing the commit. | **STOP-SHIP:** make books validation fail closed before further money features. | A rejected ingest leaves UI, JSON, local storage, hosted snapshot, and audit state unchanged; property and integration tests prove atomicity. |
-| Optional cloud link | `syncHouseholdBooks()` currently forces `linked: true`; boot and post-commit paths can upload a local/demo household to the bundled Supabase endpoint. | **STOP-SHIP:** separate local ingest from hosted transport; zero network for demo/unlinked. | Fetch-spy tests cover boot, demo, unlinked commands, relaunch, and failures; an approved inventory plan identifies any orphan/demo rows without deleting them. |
-| Supabase boundary | The current migration grants broad `anon` access with permissive policies; the publishable key can reach every snapshot. Auth-ready SQL references a membership field not present in the current schema. | **STOP-SHIP:** do not describe Supabase snapshots as private. Contain transport, then implement Auth + membership-bound RLS locally. | pgTAP proves cross-household and cross-environment denial for select/insert/update/delete; anonymous access cannot enumerate or mutate snapshots. |
+| Local books | `main` has `acceptHouseholdWrite` and fail-closed Confirm, but boot reconciliation can still save a pulled snapshot before PGlite acceptance, count-only inspection can miss changed facts, and conflict/UI success ordering has residual holes. | **ACTIVE:** close and prove those remaining acceptance paths before identity/outbox work. | Boot, conflict, failure, and same-count/different-facts tests prove PGlite acceptance precedes persistence/display and failures do not celebrate. |
+| Google-account cloud continuity | Current sharing still depends on household phrases, `linked`, explicit publish language, and a snapshot transport model that does not make personal and household ledgers automatically available after Google sign-in. | **STOP-SHIP product gap:** make Google identity discover personal/household scopes and synchronize automatically; no device is the host. | A fresh signed-in device reads/writes both scopes while the old device is off; offline/outbox and two-device tests prove convergence. |
+| Temporary hosted openness | The current migration grants broad `anon` access with permissive policies; the publishable key can reach every snapshot. | Accepted only for disposable data through 2026-09-30. Label it truthfully and complete the security cutover before meaningful October data. | Late-September Auth, membership RLS, negative access tests, migration/rollback rehearsal, and an approved disposable-row decision. |
 | Environment isolation | Join/pass payloads and pulled snapshot payloads are not consistently verified against the selected environment, household, or invite context. | **STOP-SHIP:** bind every import/pull/persist path to an asserted environment and identity tuple. | Adversarial tests reject mismatched environment/household/invite payloads without persistence or network side effects. |
 | AI disclosure | The recent-row filter excludes partner-personal rows, but monthly aggregates/briefing/notices can still be derived from the full household. | **STOP-SHIP for broader AI rollout:** create one member-scoped disclosure projection. | Canary fixtures prove every outbound field excludes other-member personal amounts and identifiers; Worker receives only the projection. |
 | Two phones | Pull-merge followed by unconditional two-table upsert has no compare-and-swap or authoritative RPC; simultaneous devices can still overwrite a merged snapshot. | Treat “no lost update” as unproven. | Deterministic interleaving/fault tests on two clients, monotonic revision/CAS, retryable outbox, and post-reconcile equality. |
 | Rate limiting | Worker KV is not bound on live; current fallback permits requests. PR #63 adds an alias and limiter, but an isolate-memory/KV get+put counter is not a durable hard cap. | Keep #63 active; correct the claim/implementation before merge. | Bound production namespace plus a limiter with explicit failure semantics, concurrent-request tests, telemetry, and documented rollback. |
 | Delivery controls | `main` is unprotected, required checks are off, and direct commits can reach the deploy workflow. | Add branch/ruleset and production-environment approvals before higher-risk merges. | Required build/test/security checks block merge; deploy requires reviewed `main` state and environment approval. |
-| First-number utility | Mobile/Office, Accounts, Audit, appointments, sitdown/vault, Hercules, and budget foundations have shipped, but first-use budget/bill/shift editing and mistake correction remain incomplete on `main`. | After stop-ship containment, finish the smallest complete Bianca-ready monthly loop. | Phone E2E: start → enter opening truth → budget → add bill/expense → confirm → correct → reconcile → both members see the same result. |
+| First-number utility | Mobile/Office, Accounts, Audit, appointments, sitdown/vault, Hercules, and budget foundations have shipped, but first-use budget/bill/shift editing and mistake correction remain incomplete on `main`. | After money-integrity and continuity containment, finish the smallest complete Bianca-ready monthly loop. | Phone E2E: start → enter opening truth → budget → add bill/expense → confirm → correct → reconcile → both members see the same result from independent signed-in devices. |
 | Active PR topology | [#63](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/63) targets `main`; draft [#61](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/61) targets a stale feature branch and includes merged [#62](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/62). #61 and #63 both allocate D-107. | Rebase/restack deliberately and reconcile the decision ledger before merging either chain. | Each PR has one current base, unique decision IDs, truthful test count, a reviewable diff, and no hidden loss of #62 work. |
 | Tracker hygiene | Seven older PRs and the five open issues are legacy/stale; the issues are Sheets-era. | Archive or rewrite after inspecting unique code/history; do not let them drive priority. | Every closure links to its replacement, retained commit, or explicit “superseded” reason. |
 
@@ -62,7 +63,7 @@ Only the currently open or just-closed worksession belongs here. Durable history
 
 | Worksession | State | Scope | Output |
 |---|---|---|---|
-| [2026-08-23/24 roadmap mastermind](worksessions/2026-08-23-roadmap.md) | **CLOSED; [PR #64](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/64) open for review** | Read-only canon/live/PR audit; living roadmap; Claude visual replacement brief; Cursor execution packets | `codex/hearth-roadmap-2026-08-23`; docs-only, no production mutation |
+| [2026-08-24 cloud continuity correctness hotfix](worksessions/2026-08-24-cloud-continuity-hotfix.md) | **CLOSED; branch pushed, not merged** | Correctness foundation and D-112 canon for eventual account-based continuity | `codex/cloud-continuity-correctness`; 44 files / 328 tests pass; identity, membership, hosted journal, and outbox remain |
 
 ## 1.5 Updates — major shipped chapters
 
@@ -76,13 +77,13 @@ Major updates keep a durable blurb: what shipped, why it mattered, Dual Course e
 - **Evidence:** [Hearth rebuild](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/commit/ece849016fa61cd1923cd3f3ad4536a962289933), [command/mobile follow-through](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/commit/c64ee992cb2cff29cbf908932277aae029b30057).
 - **Kill/rollback:** remove any shortcut that mutates money outside a typed command or hides the final posting summary.
 
-### U-02 — Two-person household, PGlite books, and snapshot transport — SHIPPED, trust work ACTIVE
+### U-02 — Two-person household, PGlite books, and snapshot transport — SHIPPED, continuity replacement ACTIVE
 
-- **What shipped:** household phrase/join, two-person state, undo foundations, PGlite/Postgres books, and optional Supabase snapshot transport.
-- **Why:** establish household identity, portable local truth, and a path to two phones.
+- **What shipped:** household phrase/join, two-person state, undo foundations, PGlite/Postgres books, and Supabase snapshot transport.
+- **Why:** establish household identity and a first path to two devices. The optional-publish model is now superseded by Google-account cloud continuity.
 - **Dual Course:** Course A `+2`; Course B `+1` because shared presence becomes real only when both people see the same books.
 - **Evidence:** [household foundation](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/commit/47b52f427231abad692fb6461796645e7abcaa94), [join/phrase](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/commit/0818f83ab627d3aa0df07c3f35702712ac629452), [undo](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/commit/1b8337c6ead80fb418c51ccbb9d1079cd671f054), [PGlite](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/commit/458d5285e0fbb77f6532441e4e6b7822afbab194), [snapshot transport](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/commit/63489a73e2e06a06926b5f3516593701f0fe2d9f).
-- **Kill/rollback:** hosted sync is disabled or reduced to explicit export until zero-network local mode, fail-closed ingest, identity binding, RLS, and no-lost-update proofs hold.
+- **Kill/rollback:** never make another device depend on this phone. If synchronization is unhealthy, preserve local/offline work in an outbox and show recovery state; do not silently fall back to device-hosted truth.
 
 ### U-03 — Calendar, appointments, Accounts, Audit, and tax surfaces — SHIPPED
 
@@ -132,6 +133,14 @@ Major updates keep a durable blurb: what shipped, why it mattered, Dual Course e
 - **Evidence:** [AI Phase 1a–d](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/commit/28ecd7472af8017cd658fb407613f674bbf95e26), [current model-first/memory baseline](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/commit/75574e4cad7a7346fdda8e97616fcf0efe09541b).
 - **Kill/rollback:** use deterministic fallback or disable outbound model calls if consent, origin, rate, redaction, environment, or member-scoped disclosure proofs fail. Model output never posts.
 
+### U-09 — Google-account cloud continuity direction — ACCEPTED, implementation ACTIVE
+
+- **What changed:** optional hosted publishing is no longer the target product. Google sign-in must reveal the person's personal ledger and household memberships on any device; the cloud supplies durable continuity and PGlite remains each device's validated accounting/offline replica.
+- **Why:** Jonathan and Bianca must never depend on one phone staying online to read or write the household.
+- **Development window:** data through 2026-09-30 is disposable and may remain openly readable/writable to accelerate this work. Security remains a mandatory late-September cutover before meaningful October data.
+- **Evidence required:** [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md) acceptance tests, including fresh-device discovery, old-device-off read/write, offline outbox convergence, and pulled-snapshot accounting validation.
+- **Kill/rollback:** preserve accepted commands in a recoverable outbox and report the block; never retreat to a one-device host or claim open Development data is secure.
+
 ## 1.6 Updates — compact shipped work
 
 Small updates remain compact and link to evidence; promote one to a major blurb only if it changes household behavior, financial semantics, or a gate.
@@ -147,15 +156,17 @@ Small updates remain compact and link to evidence; promote one to a major blurb 
 
 Phases are dependency-ordered, not date-boxed. A later phase can be researched or prototyped with synthetic data, but it cannot ship through an unmet earlier gate.
 
-### Phase 0 — Contain trust leaks and reconcile the delivery surface — STOP-SHIP / ACTIVE
+### Phase 0 — Protect money truth and establish cloud continuity — STOP-SHIP / ACTIVE
 
-**Exit condition:** opening an unlinked/demo household creates no network traffic; rejected books never persist; external payloads cannot cross environment or member boundaries; risky code cannot deploy without checks.
+**Exit condition:** rejected books never persist; a Google-signed-in person can discover the correct personal and household scopes; a pulled snapshot cannot bypass accounting validation; risky code cannot deploy without checks.
 
-- [x] Split local PGlite ingest from hosted snapshot transport. Preserve `linked: false`; eliminate implicit boot/demo upload and duplicate linked pushes.
-- [x] Make command application atomic and fail closed across PGlite, JSON/UI state, IndexedDB/local storage, hosted snapshot, and audit trail.
-- [x] Validate environment + household + invite/member tuple on every join/pass/pull/persist boundary.
+- [ ] Replace optional-publish/`linked` transport semantics with automatic Google-account continuity for personal and household ledgers.
+- [ ] Keep local PGlite ingest and hosted transport as separate failure domains, but synchronize accepted commands automatically after sign-in rather than requiring **Publish to the cloud**.
+- [ ] Make command application atomic and fail closed across PGlite, JSON/UI state, IndexedDB/local storage, hosted snapshot, and audit trail.
+- [ ] Validate environment + Google identity + personal/household membership tuple on every discovery/join/pass/pull/persist boundary.
+- [ ] Validate pulled and merged financial content against PGlite/canonical hashes before persistence or display; entry-count equality is not acceptance.
 - [ ] Centralize a member-scoped AI disclosure projection; canary-test every outbound field, aggregate, notice, and memory.
-- [x] Inventory possible demo/orphan hosted rows. **Do not delete or modify them without Jonathan's explicit approval and a recovery record.** See `docs/HOSTED_ROW_INVENTORY.md`.
+- [ ] Inventory possible demo/orphan hosted rows. **Do not delete or modify them without Jonathan's explicit approval and a recovery record.**
 - [ ] Rework #63's rate-limit claim and implementation; bind the intended live KV/stronger authority and define fail-open/fail-closed behavior.
 - [ ] Rebase/restack #61/#62 deliberately, resolve the D-107 collision, and preserve unique work without merging hidden branch ancestry.
 - [ ] Enable GitHub branch/ruleset protection, required checks, and production environment approval.
@@ -163,11 +174,11 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 - [ ] Archive or supersede stale Sheets-era issues and PRs only after recording retained evidence.
 - [ ] Reconcile current canon drift: model-first vs stale on-device language, 18-row context, shipped Office/mobile work, snapshot-transport wording, and current working memory.
 
-**Risk/gate:** privacy, money truth, environment isolation, deploy safety.  
-**Proof:** fetch-spy zero-network suite; atomic failure tests; payload-fuzz suite; outbound disclosure canaries; protected-branch check; reviewed PR topology.  
-**Kill criterion:** if the containment patch cannot prove zero unintended upload quickly, disable hosted transport in the client until the proof exists.
+**Risk/gate:** money truth, continuity, environment isolation, deploy safety. Temporary hosted openness is accepted only for disposable pre-October data.  
+**Proof:** fresh-device Google sign-in, old-device-off read/write, offline/outbox recovery, atomic failure tests, payload-fuzz/hash mismatch tests, protected-branch check, and reviewed PR topology.  
+**Kill criterion:** if continuity cannot prove safe accounting acceptance, keep writes recoverable in a local outbox and show the block; never make another device wait for the originating device.
 
-### Phase 1 — Complete the Bianca-ready local monthly loop — NEXT after Phase 0
+### Phase 1 — Complete the Bianca-ready monthly loop — NEXT after Phase 0
 
 **Exit condition:** Bianca can create the first useful month, understand it, make an error, correct it, and see a trustworthy result on a phone without developer help.
 
@@ -186,39 +197,39 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 **Proof:** phone E2E and fresh-profile usability pass; reversal journal inspection; property tests for cents/dates/balancing; Jonathan/Bianca acceptance.  
 **Kill criterion:** cut decorative or secondary surfaces before weakening correction, clarity, or books proofs.
 
-### Phase 2 — Make two phones boring and lossless — NEXT after local loop
+### Phase 2 — Make every signed-in device boring and lossless — NEXT after the monthly loop
 
-**Exit condition:** two devices can work offline/online, interleave edits, relaunch, and converge without losing a valid command or leaking personal rows.
+**Exit condition:** any signed-in device can work online or offline, interleave edits, relaunch, and converge without losing a valid command; no peer device must remain online.
 
 - [ ] Replace unconditional snapshot upsert with monotonic revision/CAS or an authoritative merge RPC.
 - [ ] Define per-member/per-device identity, clocks, and actor attribution; `openShift` is not one global mutable slot.
 - [ ] Add an idempotent outbox, acknowledgement, retry/backoff, and explicit “not yet shared” state.
-- [ ] Pull on launch/focus/reconnect without erasing a safe local result when pull fails.
+- [ ] Discover personal and household ledger memberships after Google sign-in, then pull on launch/focus/reconnect without erasing a safe local result when pull fails.
 - [ ] Define tombstone/reversal retention and bounded compaction without destroying audit evidence.
 - [ ] Make join semantics additive and recoverable; a second phone never replaces an existing household silently.
 - [ ] Test every meaningful interleaving with two fresh clients, including clock skew, duplicate delivery, stale write, partial failure, and long offline periods.
 - [ ] Show actor, source, freshness, and sync state in Audit without exposing another member's personal detail.
 
-**Risk/gate:** lost updates, duplicate posts, privacy, false “synced” status.  
+**Risk/gate:** lost updates, duplicate posts, wrong ledger scope, and false “synced” status.  
 **Proof:** deterministic fault harness plus Playwright/WebKit two-context scenarios; post-reconcile journal equality and stable hashes.  
-**Kill criterion:** fall back to explicit one-writer/export mode if convergence cannot be proved.
+**Kill criterion:** queue writes and surface recovery if convergence cannot be proved; do not fall back to a one-device host.
 
-### Phase 3 — Auth + RLS and explicit cloud consent — GATED security foundation
+### Phase 3 — Late-September Google Auth + membership RLS cutover — DATE-GATED security foundation
 
-**Exit condition:** an authenticated member can reach only the intended household/environment records, an outsider cannot enumerate them, and cloud sharing is an explicit reversible choice.
+**Deadline and exit condition:** before 2026-10-01 and before meaningful household data, an authenticated Google identity can reach only its personal ledger and intended household/environment records, and an outsider cannot enumerate them.
 
-- [ ] Design Supabase Auth identity mapping and a real `members.auth_user_id`/membership relationship before writing policies around it.
+- [ ] Design Google-to-hosted-auth identity mapping and durable personal-ledger/household membership relationships before writing policies around them.
 - [ ] Replace permissive anon policies with membership- and environment-bound RLS for select/insert/update/delete.
 - [ ] Rotate, expire, scope, and rate-limit join invitations; record issuer, acceptor, environment, and audit evidence.
 - [ ] Add device/session revoke and household leave/recovery semantics.
-- [ ] Make “Publish/share this household” an explicit Confirm with destination, data scope, and rollback/export explanation.
+- [ ] Replace phrase-as-authority and `linked` publishing with automatic authenticated discovery/synchronization; invitations only establish membership.
 - [ ] Build and test migrations locally; backfill/production cutover is a separate Jonathan-approved plan.
 - [ ] Add pgTAP negative tests and a permission matrix to required CI.
 - [ ] Complete concurrency/outbox work before claiming authenticated two-phone safety.
 
-**Risk/gate:** Phase 0/2 proofs; privacy review; recovery design; production migration approval.  
+**Risk/gate:** temporary open development access must not survive the September cutover; Phase 0/2 proofs, recovery design, and production migration approval.  
 **Proof:** local Supabase tests for every role/action/environment; red-team attempt with publishable key; reviewed cutover and rollback rehearsal.  
-**Kill criterion:** keep cloud sharing disabled if any cross-household read/write/delete path exists.
+**Kill criterion:** do not enter meaningful October data or call Hearth secure if any cross-personal/cross-household read/write/delete path exists.
 
 ### Phase 4 — Reconciliation and safe intake — GATED by Auth + RLS for hosted sources
 
@@ -313,14 +324,14 @@ These are ranked starting points, not limits on Cursor's inspection or solution 
 | Rank | Packet | Outcome | Required before |
 |---:|---|---|---|
 | 0 | Branch/canon reconciliation | Repair #63/#61/#62 topology, unique decision IDs, truthful baselines, and required checks without losing work. | Any feature merge |
-| 1 | Zero-network local/demo + explicit transport | No boot/demo/unlinked upload, no forced `linked:true`, no duplicate push; approval-only orphan inventory. | Any hosted-data work |
+| 1 | Google-account cloud continuity | New-device discovery of personal/household ledgers, automatic sync, offline outbox, no peer-device dependency. | Daily multi-device use |
 | 2 | Atomic fail-closed books | A failed PGlite command cannot leave JSON/UI/storage/transport ahead of the journal. | New money commands |
 | 3 | Environment and AI disclosure boundary | Reject mismatched passes/snapshots and emit only member-scoped model context. | More join/sync/AI rollout |
 | 4 | Delivery and rate-limit guardrails | Protected `main`, required checks, production approval, truthful/bound limiter. | High-risk deploys |
 | 5 | First Numbers | Complete budget, bill, shift, due-preview, opening truth, and phone accessibility loop. | Broader office/companion work |
 | 6 | Corrections that survive | Reversal/repost, durable undo semantics, local validation placement, duplicate explanation. | Trusting daily use |
-| 7 | Two-phone no-loss protocol | CAS/revision, actor/device clocks, outbox, interleaving/fault tests, truthful sync UI. | Authenticated sharing claim |
-| 8 | Auth + RLS | Membership schema, negative RLS tests, invite/session recovery, explicit publish consent. | Bank/Interac/cards/hosted intake |
+| 7 | Multi-device no-loss protocol | CAS/revision, actor/device clocks, outbox, interleaving/fault tests, truthful sync UI. | Seamless continuity claim |
+| 8 | Late-September Auth + RLS | Google identity, personal/household membership schema, negative RLS tests, invite/session recovery. | Meaningful October data; bank/Interac/cards/hosted intake |
 | 9 | Reconciliation/import inbox | JSON/CSV and later approved sources as provenance-rich proposals; no Sheets runtime. | External-data expansion |
 
 ---
@@ -447,14 +458,14 @@ For roadmap comparison, each item gets a raw delta from `-2` (material harm) to 
 
 | Major item | Course A raw ×5 | Course B raw ×3 | Weighted signal | Roadmap decision / conflict resolution | Kill or gate proof |
 |---|---:|---:|---:|---|---|
-| Zero-network local/demo + explicit transport | `+2 × 5 = +10` | `+1 × 3 = +3` | **+13** | First. Restores honest local use and consent; enables safe delight later. | Fetch spy; no forced link; approval-only row inventory. |
+| Google-account cloud continuity | `+2 × 5 = +10` | `+2 × 3 = +6` | **+16** | First. Personal and household books follow the signed-in person; no device is the host. | Fresh-device and old-device-off read/write; offline/outbox convergence. |
 | Atomic fail-closed PGlite books | `+2 × 5 = +10` | `0 × 3 = 0` | **+10** | First. UI convenience loses to journal truth. | Rejected command leaves every store unchanged. |
 | Environment + AI disclosure boundary | `+2 × 5 = +10` | `+1 × 3 = +3` | **+13** | First. Personalized Hercules is retained only behind member-scoped disclosure. | Adversarial payload tests; outbound canaries. |
 | Protected main, required checks, deploy approval | `+2 × 5 = +10` | `0 × 3 = 0` | **+10** | First. Slower direct publishing is an acceptable trade for household safety. | Ruleset and blocked-failure demonstration. |
 | First Numbers monthly loop | `+2 × 5 = +10` | `+1 × 3 = +3` | **+13** | Highest product slice after containment. Calm phone interaction supports the books. | Fresh-profile Bianca-ready E2E. |
 | Reversal/repost + durable undo | `+2 × 5 = +10` | `+1 × 3 = +3` | **+13** | Trust and willingness to use Hearth reinforce each other. | Original journal remains; relaunch/sync recovery. |
-| Two-phone CAS/outbox/convergence | `+2 × 5 = +10` | `+2 × 3 = +6` | **+16** | Strongest shared-product multiplier, but cannot outrank stop-ship containment. | Two-client interleaving/fault suite. |
-| Auth + membership RLS | `+2 × 5 = +10` | `+1 × 3 = +3` | **+13** | Security foundation; do not hide it behind engagement work. | Cross-household/environment negative pgTAP. |
+| Multi-device CAS/outbox/convergence | `+2 × 5 = +10` | `+2 × 3 = +6` | **+16** | Strongest shared-product multiplier and part of the core household promise. | Two-client interleaving/fault suite with either peer offline. |
+| Late-September Auth + membership RLS | `+2 × 5 = +10` | `+1 × 3 = +3` | **+13** | Mandatory before meaningful October data; temporary openness may accelerate Development but cannot slip past the date. | Cross-personal/household/environment negative pgTAP. |
 | Reconciliation + JSON/CSV inbox | `+2 × 5 = +10` | `+1 × 3 = +3` | **+13** | Major utility. Proposals remain visibly separate until Confirm. | Provenance, idempotency, closing balance. |
 | Family-office controls | `+2 × 5 = +10` | `+1 × 3 = +3` | **+13** | Grow after the household loop, not instead of it. | Deterministic rebuild and reviewer scenario pack. |
 | Contextual learning simulations | `+1 × 5 = +5` | `+2 × 3 = +6` | **+11** | Worth doing after real workflow wins; simulations stay isolated. | Human review and zero-post/network mutation. |

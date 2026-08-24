@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   acceptHouseholdWrite,
+  addGoal,
   canAutoMergeConflict,
   catalogHousehold,
   compileHousehold,
+  contributeToGoal,
   postEntry,
   type Household,
   type WriteAdapters,
@@ -214,14 +216,21 @@ describe("atomic household writes", () => {
   });
 
   it("keeps a conflict visible when auto-merge ingest fails", async () => {
-    const previous = { ...catalogHousehold(), linked: true, revision: 3, baseRevision: 3 };
-    const posted = postEntry(previous, grocery("Toast"));
+    const previous = {
+      ...addGoal(catalogHousehold(), { name: "Trip", target: "100.00" }).household,
+      linked: true,
+      revision: 3,
+      baseRevision: 3,
+    };
+    const goalId = previous.goals[0]!.id;
+    const posted = contributeToGoal(previous, goalId, "3.00", { createdBy: "MEM-001", date: "2026-08-24" });
+    const remote = contributeToGoal(previous, goalId, "2.00", { createdBy: "MEM-002", date: "2026-08-24" }).household;
     let ingestCount = 0;
     const store = memoryAdapters({
       transport: async () => ({
         ok: false,
         errorClass: "conflict-detected",
-        remote: previous,
+        remote: { ...remote, linked: true, revision: 4, baseRevision: 3 },
         message: "Another phone posted a newer household snapshot. Nothing was overwritten.",
       }),
     });
@@ -240,6 +249,44 @@ describe("atomic household writes", () => {
     expect(outcome.kind).toBe("conflict-needs-attention");
     expect(outcome.postedExactlyOnce).toBe(true);
     expect(outcome.household.conflicts.some((row) => !row.resolved)).toBe(true);
+  });
+
+  it("ingests an automatic contribution merge before persisting it", async () => {
+    const previous = {
+      ...addGoal(catalogHousehold(), { name: "Trip", target: "100.00" }).household,
+      linked: true,
+      revision: 3,
+      baseRevision: 3,
+    };
+    const goalId = previous.goals[0]!.id;
+    const local = contributeToGoal(previous, goalId, "3.00", { createdBy: "MEM-001", date: "2026-08-24" });
+    const remote = contributeToGoal(previous, goalId, "2.00", { createdBy: "MEM-002", date: "2026-08-24" }).household;
+    const events: string[] = [];
+    let ingestCount = 0;
+    let persistCount = 0;
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: { ...local.household, linked: true },
+      confirmationId: "confirm-contribution-merge",
+      postedIds: local.postedIds,
+      adapters: {
+        ingest: async () => {
+          events.push(`ingest-${++ingestCount}`);
+          return { ok: true };
+        },
+        persist: async () => {
+          events.push(`persist-${++persistCount}`);
+        },
+        transport: async () => ({
+          ok: false,
+          errorClass: "conflict-detected",
+          remote: { ...remote, linked: true, revision: 4, baseRevision: 3 },
+          message: "stale",
+        }),
+      },
+    });
+    expect(outcome.kind).toBe("accepted-local");
+    expect(events).toEqual(["ingest-1", "persist-1", "ingest-2", "persist-2"]);
   });
 
   it("returns pending-transport after local accept when share fails", async () => {
@@ -365,5 +412,71 @@ describe("atomic household writes", () => {
       ],
     };
     expect(canAutoMergeConflict(local, remote)).toBe(false);
+  });
+
+  it("does not auto-merge changed transaction, shift, goal-purchase, or tombstone facts", () => {
+    const base = addGoal(catalogHousehold(), { name: "Trip", target: "100.00" }).household;
+    const posted = postEntry(base, grocery("Complete comparison"));
+    const tx = posted.household.transactions.at(-1)!;
+    expect(
+      canAutoMergeConflict(posted.household, {
+        ...posted.household,
+        transactions: posted.household.transactions.map((row) =>
+          row.id === tx.id ? { ...row, categoryId: "CAT-CHANGED" } : row,
+        ),
+      }),
+    ).toBe(false);
+
+    const shift = {
+      id: "SHF-COMPARE",
+      date: "2026-08-24" as const,
+      memberId: "MEM-001",
+      accountId: "ACC-CHEQUING",
+      salesCents: 10000,
+      cashTipsCents: 1000,
+      ccTipsCents: 500,
+      hours: 4,
+      floorTipOutCents: 100,
+      barTipOutCents: 100,
+      ccTipOutCents: 10,
+      netTipsCents: 1290,
+      wagesCents: 6800,
+      settings: { floorPct: 1, barPct: 1, barRoundCents: 100, ccPct: 2, hourlyRateCents: 1700 },
+      settingsFingerprint: "settings",
+      wagesTransactionId: "TX-WAGES",
+      tipsTransactionId: "TX-TIPS",
+      createdBy: "MEM-001",
+      visibility: "household" as const,
+      createdAt: "2026-08-24T00:00:00.000Z",
+      updatedAt: "2026-08-24T00:00:00.000Z",
+    };
+    const withShift = { ...base, shifts: [shift] };
+    expect(canAutoMergeConflict(withShift, { ...withShift, shifts: [{ ...shift, salesCents: 10001 }] })).toBe(false);
+
+    const purchase = {
+      id: "GPUR-COMPARE",
+      goalId: base.goals[0]!.id,
+      spentCents: 5000,
+      vaultAccountId: "ACC-SAVINGS",
+      transactionIds: ["TX-PURCHASE"],
+      lines: [{ note: "Item", amountCents: 5000 }],
+      memberId: "MEM-001",
+      date: "2026-08-24" as const,
+      createdAt: "2026-08-24T00:00:00.000Z",
+      updatedAt: "2026-08-24T00:00:00.000Z",
+    };
+    const withPurchase = { ...base, goalPurchases: [purchase] };
+    expect(
+      canAutoMergeConflict(withPurchase, {
+        ...withPurchase,
+        goalPurchases: [{ ...purchase, spentCents: 5001 }],
+      }),
+    ).toBe(false);
+    expect(
+      canAutoMergeConflict(base, {
+        ...base,
+        tombstones: [{ id: tx.id, deletedAt: "2026-08-24T00:00:00.000Z" }],
+      }),
+    ).toBe(false);
   });
 });

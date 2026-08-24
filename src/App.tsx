@@ -76,6 +76,7 @@ import {
   shiftFieldLabel,
   type ShiftGate,
   type CommitResult,
+  type CommandOutcome,
   type Environment,
   type Household,
   type LedgerView,
@@ -228,8 +229,28 @@ export function App() {
         try {
           const reconciled = await reconcileHousehold(loaded, loadedSession.memberId);
           if (!live) return;
-          await saveHousehold(reconciled);
-          current = reconciled;
+          const accepted = await acceptHouseholdWrite({
+            previous: loaded,
+            candidate: reconciled,
+            confirmationId: `reconcile-${loaded.householdId}-${reconciled.revision}`,
+            commandKind: "boot-reconcile",
+            postedIds: [],
+            adapters: {
+              persist: saveHousehold,
+              ingest: async (household) => {
+                try {
+                  const { status } = await ingestHouseholdBooks(household);
+                  return { ok: status.ok, error: status.error };
+                } catch (error) {
+                  return { ok: false, error: error instanceof Error ? error.message : String(error) };
+                }
+              },
+              restoreIngest: restoreHouseholdBooks,
+            },
+          });
+          if (!live) return;
+          current = accepted.household;
+          if (!accepted.ok && accepted.userMessage) setError(accepted.userMessage);
         } catch {
           if (!live) return;
         }
@@ -344,7 +365,11 @@ export function App() {
     saveSession(environment, next);
   }
 
-  async function commitHousehold(next: Household, token?: UndoToken, _actorId?: string) {
+  async function commitHousehold(
+    next: Household,
+    token?: UndoToken,
+    _actorId?: string,
+  ): Promise<CommandOutcome | null> {
     setBusy(true);
     const previous = householdRef.current;
     const confirmationId = confirmationRef.current ?? newConfirmationId();
@@ -429,9 +454,11 @@ export function App() {
           error: outcome.userMessage ?? undefined,
         });
       }
+      return outcome;
     } catch (caught) {
       if (caught instanceof NeedsConfirmationError) throw caught;
       setError(classifyCommandError(caught).userMessage);
+      return null;
     } finally {
       setBusy(false);
     }
@@ -466,7 +493,8 @@ export function App() {
         setError("Undo the latest change first so the books stay in order.");
         return;
       }
-      await commitHousehold(undo(current, token));
+      const outcome = await commitHousehold(undo(current, token));
+      if (!outcome || !outcome.postedExactlyOnce || outcome.kind === "conflict-needs-attention") return;
       setHistory((items) => items.filter((item) => item.id !== token.id));
       setToast((item) => (item?.id === token.id ? null : item));
     });
@@ -477,11 +505,18 @@ export function App() {
     postingRef.current = true;
     return enqueueWrite(async () => {
       const current = householdRef.current;
-      if (!current) return;
+      if (!current) {
+        postingRef.current = false;
+        return;
+      }
       setError("");
       try {
         const result = fn(current);
-        await commitHousehold(result.household, result.undo);
+        const outcome = await commitHousehold(result.household, result.undo);
+        const accepted =
+          outcome?.postedExactlyOnce === true &&
+          (outcome.kind === "accepted-local" || outcome.kind === "pending-transport" || outcome.kind === "synchronized");
+        if (!accepted) return;
         setConfirm(null);
         setAdding(false);
         setForm({
@@ -559,7 +594,7 @@ export function App() {
               onInviteInput={setInviteInput}
               onError={setError}
               onBusy={setBusy}
-              onJoined={(next) => persist(next)}
+              onJoined={async (next) => { await persist(next); }}
               onBack={() => { setWelcomeMode("home"); setError(""); }}
             />
           ) : (
@@ -1077,7 +1112,7 @@ export function App() {
             syncState={syncState}
             inviteInput={inviteInput}
             onInviteInput={setInviteInput}
-            onHousehold={(next) => persist(next)}
+            onHousehold={async (next) => { await persist(next); }}
             onError={setError}
             onBusy={setBusy}
             onSyncState={setSyncState}

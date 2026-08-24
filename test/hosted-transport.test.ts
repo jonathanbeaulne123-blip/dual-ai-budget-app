@@ -6,6 +6,7 @@ import {
   emptyHousehold,
   applyHearthPass,
   makeHearthPass,
+  postEntry,
   seedDemoHousehold,
 } from "../src/core/index.ts";
 import {
@@ -13,7 +14,11 @@ import {
   pushSupabaseHousehold,
   hostedTransportAllowed,
 } from "../src/ledger/supabase.ts";
-import { ingestHouseholdBooks, resetBrowserBooksForTests } from "../src/ledger/engine.ts";
+import {
+  ingestHouseholdBooks,
+  inspectBrowserBooks,
+  resetBrowserBooksForTests,
+} from "../src/ledger/engine.ts";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -60,11 +65,48 @@ describe("D-110 local-first sharing", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  it("detects different financial facts even when the journal entry count matches", async () => {
+    await resetBrowserBooksForTests();
+    const posted = postEntry(catalogHousehold(), {
+      date: "2026-08-24",
+      type: "expense",
+      amount: "4.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Milk",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    }).household;
+    await ingestHouseholdBooks(posted);
+    expect((await inspectBrowserBooks(posted)).ok).toBe(true);
+    const transaction = posted.transactions.at(-1)!;
+    const changed = {
+      ...posted,
+      transactions: posted.transactions.map((row) =>
+        row.id === transaction.id
+          ? {
+              ...row,
+              amountCents: transaction.amountCents + 1,
+              splits: row.splits.map((split, index) =>
+                index === row.splits.length - 1 ? { ...split, amountCents: split.amountCents + 1 } : split,
+              ),
+            }
+          : row,
+      ),
+    };
+    const inspection = await inspectBrowserBooks(changed);
+    expect(inspection.ok).toBe(false);
+    expect(inspection.issue, inspection.message).toBe("projection-mismatch");
+    expect(inspection.entryCount).toBe(posted.transactions.length);
+  });
+
   it("keeps boot on inspect/ingest, not the deprecated combined sync", () => {
     const app = readFileSync(fileURLToPath(new URL("../src/App.tsx", import.meta.url)), "utf8");
     const engine = readFileSync(fileURLToPath(new URL("../src/ledger/engine.ts", import.meta.url)), "utf8");
     expect(app).toContain("inspectBrowserBooks");
     expect(app).toContain("ingestHouseholdBooks");
+    expect(app).toContain("commandKind: \"boot-reconcile\"");
+    expect(app).not.toContain("saveHousehold(reconciled)");
     expect(app).not.toContain("syncHouseholdBooks");
     expect(engine).not.toMatch(/pushSupabaseHousehold\(\{\s*\.\.\.household,\s*linked:\s*true\s*\}\)/);
     expect(engine).toContain("if (!hostedTransportAllowed(household))");

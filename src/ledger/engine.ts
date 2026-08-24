@@ -275,6 +275,22 @@ export async function inspectBrowserBooks(household: Household): Promise<{
         entryCount,
       };
     }
+    const acceptedRevision = await db.query<{ snapshot_hash: string }>(
+      `SELECT snapshot_hash
+       FROM audit_revisions
+       WHERE household_id = $1 AND revision = $2
+       ORDER BY at DESC
+       LIMIT 1`,
+      [household.householdId, household.revision],
+    );
+    if (existing.rows.length > 0 && acceptedRevision.rows.length === 0) {
+      return {
+        ok: false,
+        issue: "interrupted-transaction",
+        message: "PGlite has no acceptance receipt for this snapshot revision. Nothing was discarded.",
+        entryCount,
+      };
+    }
     const unbalanced = await db.query<{ entry_id: string }>(
       "SELECT entry_id FROM v_unbalanced_entries WHERE household_id = $1",
       [household.householdId],
@@ -292,6 +308,15 @@ export async function inspectBrowserBooks(household: Household): Promise<{
         ok: false,
         issue: "projection-mismatch",
         message: "The snapshot and the accepted PGlite journal do not agree. Recovery is available.",
+        entryCount,
+      };
+    }
+    const acceptedHash = acceptedRevision.rows[0]?.snapshot_hash;
+    if (acceptedHash && acceptedHash !== (await hashBooksSnapshot(household))) {
+      return {
+        ok: false,
+        issue: "projection-mismatch",
+        message: "The snapshot and the accepted PGlite journal contain different financial facts. Recovery is available.",
         entryCount,
       };
     }

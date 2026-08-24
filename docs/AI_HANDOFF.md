@@ -2,6 +2,8 @@
 
 After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. GitHub remains the full project context (D-095): [DECISIONS.md](DECISIONS.md), merged PRs, living specs, [nostalgia/](nostalgia/), [reference/](reference/). Do not treat unfinished chat as `main`. Do not skip GitHub history.
 
+Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
+
 ## Risk routing
 
 | Risk | Examples | Default routing |
@@ -15,7 +17,7 @@ Dual Course (D-048): if Course A (books, weight 5) and Course B (engagement, wei
 
 ## Required handoff
 
-Status, what was examined, verified findings, changes, verification, remaining uncertainty, decision needed.
+Status, what was examined, verified findings, changes, verification, remaining uncertainty, decision needed. For continuity work also state the Google identity and ledger scopes, whether any peer device must remain online, offline/outbox behavior, hosted mutations, environment, schema, and whether data was disposable Development data.
 
 Also name:
 

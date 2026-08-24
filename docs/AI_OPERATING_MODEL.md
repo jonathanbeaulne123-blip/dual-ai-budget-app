@@ -19,7 +19,7 @@ All AIs must start from `AGENTS.md`, the docs index (`docs/README.md`), the livi
 Precedence is:
 
 1. Jonathan's latest explicit decision.
-2. `AGENTS.md` and current living canon.
+2. `AGENTS.md`, `docs/CLOUD_CONTINUITY.md`, and current living canon.
 3. Verified code and tests.
 4. Historical material only when Jonathan explicitly asks for historical research.
 
@@ -60,7 +60,8 @@ Use a subagent for a bounded, independent, read-heavy audit. Keep one writer per
 - Branch edits and draft PRs are allowed only when the task asks for implementation or integration.
 - Merging, deploying, applying hosted schema, changing secrets, using Production, or changing household data always requires Jonathan's explicit approval.
 - Committed Supabase MCP connections are documentation-only. A future database MCP must use a separate synthetic Development project, read-only mode, narrow feature groups, and manual approval.
-- Never send real household exports, partner-personal rows, credentials, `.env` contents, or private chat history to an AI or MCP server.
+- Disposable Development read/write testing is allowed only when the task explicitly scopes it. State the environment, identity/ledger scopes, and hosted mutations. This does not authorize schema application, destructive cleanup, secrets, Production, or deployment.
+- Never send meaningful household exports, credentials, service-role keys, database passwords, `.env` contents, unrelated personal-account data, or private chat history to an AI or MCP server.
 
 ## Model allocation
 

@@ -42,20 +42,20 @@ UI (React, untrusted)
 Pure commands (validate → clone → commit → refresh flags)
    |
    v
-Household snapshot (JSON)
+Accepted device replica + durable outbox
    |
-   +-- PGlite books (balanced journal on the phone — the books engine)
-   +-- optional JSON snapshot on Supabase (open door until Auth)
+   +-- PGlite books (balanced journal and offline engine on this device)
+   +-- cloud continuity (personal + household scopes discovered by Google identity)
    +-- Home / Plan / Health are projections
 ```
 
-There is no Google Sheet, and no formula range that can freeze. Google sign-in is optional: it identifies Jonathan and Bianca and syncs Calendar (and other Google apps you turn on). It never posts money. A failed command throws before the snapshot is replaced. Undo restores the previous snapshot and tombstones posted ids.
+There is no Google Sheet, and no formula range that can freeze. The accepted D-112 target is Google sign-in on any device → discover the person's personal ledger and household memberships → synchronize automatically. No phone is the host. PGlite validates each device's books and supports offline work; the cloud is durable continuity. Current `linked`/phrase snapshot transport is transitional. Google never posts money. See [docs/CLOUD_CONTINUITY.md](docs/CLOUD_CONTINUITY.md).
 
 ## Household vs personal
 
-Jonathan and Bianca each pick who they are on the phone. **Household** shows shared rows and rows marked **Both**. **Personal** shows that person's personal rows and **Both**.
+Jonathan and Bianca each sign in as themselves. **Household** opens a household-ledger membership. **Personal** opens that person's personal-ledger scope. The current UI filter is transitional; the continuity design keeps these as distinct cloud scopes.
 
-Invite the other person with a **three-word phrase**, a **join link**, or a **Hearth Pass** (the shared ledger, no personal rows). Personal is a filter, not a lock. Use two phones if you want that split to hold. Google is the household bridge after that: each person links their own account; tokens stay on that phone.
+Invite/bootstrap/recover with a **three-word phrase**, a **join link**, or a **Hearth Pass** when useful. Those tools are not the durable storage or authentication model. A new signed-in device must work while every old device is offline.
 
 ## Dual Course
 
@@ -67,6 +67,7 @@ Start here:
 
 - Agent constitution: [AGENTS.md](AGENTS.md) ([CLAUDE.md](CLAUDE.md) includes it for Claude)
 - Living roadmap: [docs/HEARTH_ROADMAP.md](docs/HEARTH_ROADMAP.md) (`docs/ROADMAP.md` and `docs/PRODUCT_ROADMAP.md` are pointers)
+- Cloud continuity: [docs/CLOUD_CONTINUITY.md](docs/CLOUD_CONTINUITY.md)
 - Docs index: [docs/README.md](docs/README.md)
 - Dual Course strategy: [docs/STRATEGY.md](docs/STRATEGY.md)
 - AI operating model: [docs/AI_OPERATING_MODEL.md](docs/AI_OPERATING_MODEL.md)
@@ -83,12 +84,14 @@ History (read, do not build from): [docs/nostalgia/](docs/nostalgia/) · [docs/r
 
 The Google Sheets / Apps Script prototype is archived as reference under `docs/reference/sheets-era/` and as git tag `sheets-v0.0.31`. It is not the working tree.
 
-## Gated until Auth + RLS (not “unthinkable”)
+## Disposable Development now; security cutover before October
 
-Vision is unbounded under Dual Course. These remain **blocked as builds** until the hosted door locks (D-039):
+Through 2026-09-30, hosted rows are disposable Development data and may remain openly readable/writable while cloud continuity is built. Do not call them private. Google Auth, durable personal/household membership, and deny-by-default RLS must ship before meaningful October data.
+
+These still remain blocked until that security foundation and their own gates are complete:
 
 - Real privacy for personal rows (a hidden screen is still visible on a shared phone)
 - Bank import adapters that write, Open Banking, Interac APIs, issued cards
-- Hosted receipt images and amount-bearing push on a shared device
+- Hosted private documents and other sensitive sources
 
 Live Google Sheets writes are gone with the prototype; Google is a household bridge and never posts money.
