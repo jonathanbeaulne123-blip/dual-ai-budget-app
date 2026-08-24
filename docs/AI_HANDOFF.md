@@ -68,7 +68,7 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 **Engagement delta (3):** `+1` — Hercules model-first chat can keep growing without partner-personal disclosure.
 
-**Still required:** D-116 delayed-reply invalidation when environment, household, or member changes while a model call is in flight. The phone remains the only payload composer.
+**D-116 complete in code:** each in-flight model reply is bound to its request id, environment, household id, and member id. A context switch clears the old busy state and reloads the active ledger's chat; the delayed answer is neither displayed nor recorded. Newer requests also supersede older responses. Proof: `test/hercules-reply-context.test.ts`. The phone remains the only payload composer.
 
 ## Hosted snapshot CAS + outbox ack (D-122)
 

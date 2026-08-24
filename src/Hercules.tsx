@@ -21,6 +21,7 @@ import {
   herculesUsefulness,
   firstRunLesson,
   hourInToronto,
+  isCurrentHerculesReply,
   kettlePhase,
   kitchenSeason,
   ledgerChats,
@@ -48,6 +49,7 @@ import {
   type HerculesChatTurn,
   type HerculesDraft,
   type HerculesPose,
+  type HerculesReplyContext,
   type HerculesTalk,
   type Household,
   type InstrumentId,
@@ -188,6 +190,18 @@ export function HerculesPresence({
   const idleAt = useRef(0);
   const mutterAt = useRef(0);
   const chatGen = useRef(0);
+  const chatScope = `${household.environment}\u001f${household.householdId}\u001f${memberId}`;
+  const previousChatScope = useRef(chatScope);
+  const activeChatIdentity = useRef<Omit<HerculesReplyContext, "requestId">>({
+    environment: household.environment,
+    householdId: household.householdId,
+    memberId,
+  });
+  activeChatIdentity.current = {
+    environment: household.environment,
+    householdId: household.householdId,
+    memberId,
+  };
   const logRef = useRef<HTMLDivElement | null>(null);
   const perchedOn = useRef<string | null>(null);
   const lastAttack = useRef(0);
@@ -400,6 +414,20 @@ export function HerculesPresence({
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
   }, [turns, busy]);
+
+  useEffect(() => {
+    if (previousChatScope.current === chatScope) return;
+    previousChatScope.current = chatScope;
+    chatGen.current += 1;
+    setBusy(false);
+    setReplySource(null);
+    setQuestion("");
+    setTalk(null);
+    setTurns(ledgerChats(household).slice(-12).map((row) => ({ role: row.role, text: row.text })));
+    setSnippets(focusedWidget
+      ? [{ role: "hercules", text: HERCULES_WIDGET_PLACEHOLDER, placeholder: true }]
+      : []);
+  }, [chatScope, focusedWidget, household]);
 
   useEffect(() => {
     if (busy) return;
@@ -645,6 +673,10 @@ export function HerculesPresence({
     const briefing = herculesBriefing(household, page, today);
     const gen = chatGen.current + 1;
     chatGen.current = gen;
+    const replyContext: HerculesReplyContext = {
+      ...activeChatIdentity.current,
+      requestId: gen,
+    };
     setTurns((prev) => [...prev, { role: "user" as const, text: message }].slice(-12));
     if (focusedWidget && tab === "home") pushSnippet(message, "mrrp…");
     setQuestion("");
@@ -656,7 +688,10 @@ export function HerculesPresence({
     const result = await chatHercules(
       composeHerculesChatRequest(household, message, briefing, today, memberId, topic),
     );
-    if (chatGen.current !== gen) return;
+    if (!isCurrentHerculesReply(replyContext, {
+      ...activeChatIdentity.current,
+      requestId: chatGen.current,
+    })) return;
     setTalk({ ...grounded, spoken: result.text });
     setTurns((prev) => [...prev, { role: "hercules" as const, text: result.text }].slice(-12));
     if (focusedWidget && tab === "home") {

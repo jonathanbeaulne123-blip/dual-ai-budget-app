@@ -37,6 +37,8 @@ The model does language: framing as a cat, which of several true notices is wort
 
 **Grounding.** Every `$` in a model reply must appear in GROUNDED JOURNAL (spoken / lesson / fact). Briefing totals, notices, and the ledger excerpt are language context, not an interchangeable FIGURES allowlist (D-112). Unknown figures fall back to the grounded line. Prompt echoes (`GROUNDED JOURNAL`, `FIGURES …`, spoken:/lesson:/fact: labels) also fall back. A Visa question answered with only a Mastercard figure falls back. `sanitizeHerculesReply` is the outbound seam on the phone and on the Worker.
 
+**Delayed replies.** The phone binds each model call to a local request id plus environment, household id, and member id (D-116). If any value changes before the answer returns, the old answer is discarded and is not written to `kitchen.hercules`. The newly active ledger's own chat replaces the old busy state.
+
 **Name collision.** `health.ts` already exports `Finding`. This layer uses `HerculesNotice`.
 
 ## Quiet appointments (D-060)
