@@ -27,3 +27,13 @@ If either delta is “none,” say why Dual Course still holds (for example GitH
 Read [nostalgia/](nostalgia/) and [reference/](reference/) to understand past decisions. Do not cite them as the next build plan.
 
 Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](reference/sheets-era/AI_HANDOFF.md).
+
+## Trust-foundation worksession (2026-08-24, local branch)
+
+**Status:** Implementation on `cursor/trust-foundation-a483`. Not pushed. Not applied to hosted schema.
+
+**Budget delta (5):** Money Confirm now goes through `acceptHouseholdWrite`: validate → balanced journal → PGlite ingest → persist → optional linked transport. Failures restore the previous household. Linked writes compare revision; stale writes keep both sides. Unlinked/demo/empty/Pass households make zero household REST calls.
+
+**Engagement delta (3):** none by design. Claude gets `src/claude/commandContract.ts` adapters/fixtures; OfficePhone/Hercules chrome were not edited.
+
+**Do not:** push, open a PR, deploy, apply `002_snapshot_cas.sql` or Auth/RLS, contact the household project, or delete hosted rows.

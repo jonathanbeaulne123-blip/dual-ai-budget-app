@@ -151,11 +151,11 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 
 **Exit condition:** opening an unlinked/demo household creates no network traffic; rejected books never persist; external payloads cannot cross environment or member boundaries; risky code cannot deploy without checks.
 
-- [ ] Split local PGlite ingest from hosted snapshot transport. Preserve `linked: false`; eliminate implicit boot/demo upload and duplicate linked pushes.
-- [ ] Make command application atomic and fail closed across PGlite, JSON/UI state, IndexedDB/local storage, hosted snapshot, and audit trail.
-- [ ] Validate environment + household + invite/member tuple on every join/pass/pull/persist boundary.
+- [x] Split local PGlite ingest from hosted snapshot transport. Preserve `linked: false`; eliminate implicit boot/demo upload and duplicate linked pushes.
+- [x] Make command application atomic and fail closed across PGlite, JSON/UI state, IndexedDB/local storage, hosted snapshot, and audit trail.
+- [x] Validate environment + household + invite/member tuple on every join/pass/pull/persist boundary.
 - [ ] Centralize a member-scoped AI disclosure projection; canary-test every outbound field, aggregate, notice, and memory.
-- [ ] Inventory possible demo/orphan hosted rows. **Do not delete or modify them without Jonathan's explicit approval and a recovery record.**
+- [x] Inventory possible demo/orphan hosted rows. **Do not delete or modify them without Jonathan's explicit approval and a recovery record.** See `docs/HOSTED_ROW_INVENTORY.md`.
 - [ ] Rework #63's rate-limit claim and implementation; bind the intended live KV/stronger authority and define fail-open/fail-closed behavior.
 - [ ] Rebase/restack #61/#62 deliberately, resolve the D-107 collision, and preserve unique work without merging hidden branch ancestry.
 - [ ] Enable GitHub branch/ruleset protection, required checks, and production environment approval.
