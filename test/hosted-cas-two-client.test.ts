@@ -15,6 +15,7 @@ import {
   applyPublishHouseholdSnapshotCas,
   createMemoryHostedCas,
   type SnapshotCasRequest,
+  type SnapshotCasStore,
 } from "../src/ledger/snapshotCas.ts";
 import { pushSupabaseHousehold } from "../src/ledger/supabase.ts";
 
@@ -66,7 +67,7 @@ async function casRequest(household: Household, expectedRevision: number): Promi
     currency: household.currency,
     invitePhrase: household.inviteCode,
     linked: true,
-    lastCommittedAt: household.lastCommittedAt,
+    lastCommittedAt: household.lastCommittedAt ?? "",
     payload: JSON.stringify(household),
     snapshotHash: await financialAuditHash(household),
   };
@@ -138,7 +139,7 @@ afterEach(() => {
 
 describe("publish_household_snapshot CAS contract", () => {
   it("accepts the first write, rejects a simultaneous stale writer, and acks duplicates", async () => {
-    let store = { household: null, snapshot: null };
+    let store: SnapshotCasStore = { household: null, snapshot: null };
     const a = { ...expense(googleHousehold("A"), "Milk A", "4.00"), revision: 1, baseRevision: 0, linked: true };
     const b = { ...expense(googleHousehold("B"), "Milk B", "5.00"), revision: 1, baseRevision: 0, linked: true };
     const reqA = await casRequest(a, 0);
