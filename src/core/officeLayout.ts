@@ -436,7 +436,7 @@ export function herculesBubbleBox(input: {
   viewW: number;
   viewH: number;
   pad?: number;
-  avoid?: Furniture["rect"] | null;
+  avoid?: Furniture["rect"] | Furniture["rect"][] | null;
 }): { left: number; top: number; side: "left" | "right" } {
   const pad = input.pad ?? 8;
   const preferLeft = input.catX + input.catSize / 2 > input.viewW / 2;
@@ -448,23 +448,23 @@ export function herculesBubbleBox(input: {
   left = maxLeft < pad ? pad : clamp(left, pad, maxLeft);
   const maxTop = input.viewH - NAV - pad - input.bubbleH;
   top = maxTop < pad ? pad : clamp(top, pad, maxTop);
-  const avoid = input.avoid;
-  if (avoid && avoid.w > 0 && avoid.h > 0) {
-    const overlaps = (l: number, t: number) => (
-      l < avoid.x + avoid.w && l + input.bubbleW > avoid.x
-      && t < avoid.y + avoid.h && t + input.bubbleH > avoid.y
-    );
-    if (overlaps(left, top)) {
-      const leftSide = avoid.x - input.bubbleW - pad;
-      const rightSide = avoid.x + avoid.w + pad;
-      if (preferLeft && leftSide >= pad) left = leftSide;
-      else if (rightSide + input.bubbleW <= input.viewW - pad) left = rightSide;
-      else if (leftSide >= pad) left = leftSide;
-      const above = avoid.y - input.bubbleH - pad;
-      if (overlaps(left, top) && above >= pad) top = above;
-      left = maxLeft < pad ? pad : clamp(left, pad, maxLeft);
-      top = maxTop < pad ? pad : clamp(top, pad, maxTop);
-    }
+  const avoids = (Array.isArray(input.avoid) ? input.avoid : input.avoid ? [input.avoid] : [])
+    .filter((rect) => rect.w > 0 && rect.h > 0);
+  const overlaps = (l: number, t: number, avoid: Furniture["rect"]) => (
+    l < avoid.x + avoid.w && l + input.bubbleW > avoid.x
+    && t < avoid.y + avoid.h && t + input.bubbleH > avoid.y
+  );
+  for (const avoid of avoids) {
+    if (!overlaps(left, top, avoid)) continue;
+    const leftSide = avoid.x - input.bubbleW - pad;
+    const rightSide = avoid.x + avoid.w + pad;
+    if (preferLeft && leftSide >= pad) left = leftSide;
+    else if (rightSide + input.bubbleW <= input.viewW - pad) left = rightSide;
+    else if (leftSide >= pad) left = leftSide;
+    const above = avoid.y - input.bubbleH - pad;
+    if (overlaps(left, top, avoid) && above >= pad) top = above;
+    left = maxLeft < pad ? pad : clamp(left, pad, maxLeft);
+    top = maxTop < pad ? pad : clamp(top, pad, maxTop);
   }
   const catMid = input.catX + input.catSize / 2;
   const side: "left" | "right" = left + input.bubbleW / 2 <= catMid ? "left" : "right";

@@ -182,6 +182,26 @@ describe("Hercules help desk and calendar intent", () => {
     expect(overlaps).toBe(false);
   });
 
+  it("parks a proposal bubble off wallet and blotter at once", () => {
+    const box = herculesBubbleBox({
+      catX: 80,
+      catY: 220,
+      catSize: 96,
+      bubbleW: 228,
+      bubbleH: 140,
+      viewW: 900,
+      viewH: 700,
+      avoid: [
+        { x: 40, y: 180, w: 280, h: 160 },
+        { x: 360, y: 180, w: 280, h: 160 },
+      ],
+    });
+    const hitsWallet = box.left < 320 && box.left + 228 > 40 && box.top < 340 && box.top + 140 > 180;
+    const hitsBlotter = box.left < 640 && box.left + 228 > 360 && box.top < 340 && box.top + 140 > 180;
+    expect(hitsWallet).toBe(false);
+    expect(hitsBlotter).toBe(false);
+  });
+
   it("perches on the top of an opened instrument", () => {
     const land = perchOnFurniture(
       { id: "calendar", rect: { x: 80, y: 120, w: 288, h: 88 }, perchable: true, warn: false, kind: "card" },

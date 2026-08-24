@@ -7,7 +7,6 @@ import {
 } from "./appointments.ts";
 import { composeNotices, type HerculesNotice } from "./notices.ts";
 import type { HerculesBriefing, HerculesGrounded } from "./herculesPersonality.ts";
-import { formatHerculesBriefing } from "./herculesPersonality.ts";
 import { memoriesForModel, type HerculesMemoryView } from "./herculesLedger.ts";
 import type { Appointment, Claim, Household, Transaction } from "./types.ts";
 import { visibleForDuplicateScan } from "./visibility.ts";
@@ -237,18 +236,10 @@ export function composeHerculesChatRequest(
   const secrets = quietSecrets(household);
   const ledger = buildLedgerExcerpt(household, today, memberId);
   const notices = noticeViews(household, today);
-  const briefingText = formatHerculesBriefing(briefing);
   const figures = collectAllowedFigures(
-    briefingText,
     grounded.spoken,
     grounded.lesson,
     grounded.fact?.value,
-    ...notices.map((item) => item.cad),
-    ...notices.map((item) => item.spoken),
-    ...ledger.recent.map((row) => row.amount),
-    ...ledger.monthByCategory.map((row) => row.amount),
-    ...ledger.claims.map((row) => row.expected),
-    ...ledger.visits.map((row) => row.typical),
   );
   return {
     message: scrubQuietText(message, secrets) || message.trim(),

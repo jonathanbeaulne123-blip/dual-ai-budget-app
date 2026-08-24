@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   DAILY_CHAT_LIMIT,
@@ -68,5 +69,13 @@ describe("Hercules kitchen Worker guard", () => {
   it("skips rate limiting when KV is not configured", async () => {
     const result = await checkChatRateLimit({}, "hh-local");
     expect(result.ok).toBe(true);
+  });
+
+  it("tells the model not to echo prompt labels or quote briefing card totals", () => {
+    const worker = readFileSync("workers/site.js", "utf8");
+    expect(worker).toMatch(/Never echo section labels/);
+    expect(worker).toMatch(/PROMPT_ECHO/);
+    expect(worker).toMatch(/quote GROUNDED JOURNAL tray vs statement/);
+    expect(worker).not.toMatch(/quote owed \/ utilization from the briefing/);
   });
 });

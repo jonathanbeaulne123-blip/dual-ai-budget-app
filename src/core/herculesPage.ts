@@ -10,6 +10,10 @@ import { leftoverProjection } from "./sitDown.ts";
 import type { Household } from "./types.ts";
 import type { InstrumentId } from "./officeLayout.ts";
 
+function cardChip(name: string | null | undefined): string {
+  return name ? `What's on the ${name}?` : "What's on the Visa?";
+}
+
 export type HerculesPageSurface = {
   tab: HearthTab;
   spoken: string;
@@ -112,12 +116,14 @@ export function herculesPageSurface(
     lesson: punch
       ? "Hours are a preview until sign-out Confirm."
       : "The desk projects the books. Confirm still posts.",
-    chips: punch ? ["Log shift", "What's on the Visa?", "We good?"] : ["We good?", "What's on the Visa?", "What now?"],
+    chips: punch
+      ? ["Log shift", cardChip(hot?.account.name), "We good?"]
+      : ["We good?", cardChip(hot?.account.name), "What now?"],
     placeholder: "ask Hercules…",
     fact: punch
       ? { label: "On the clock", value: previewHoursLabel(punch.startedAt, now.getTime()) }
       : hot
-        ? { label: hot.account.name, value: formatCad(hot.statementBalanceCents) }
+        ? { label: hot.account.name, value: formatCad(hot.owedCents) }
         : { label: "Month net", value: formatCad(month.netActualCents) },
   };
 }
@@ -167,15 +173,15 @@ export function herculesInstrumentSurface(
     wallet: {
       id: "wallet",
       spoken: hot ? `What's on the ${hot.account.name}? Paydown is a transfer.` : "Cash on the tray. Paydown is a transfer.",
-      lesson: "Card paydown is never an expense.",
-      chips: ["What's on the Visa?", "Pay the card?", "We good?"],
+      lesson: "The tray is the running books. Statement owed is the cycle. Paydown is never an expense.",
+      chips: [cardChip(hot?.account.name), "Pay the card?", "We good?"],
       pose: "perch",
     },
     accounts: {
       id: "accounts",
       spoken: "Balances and last posts. Bank apps taught tiles. We still have no bank feed.",
       lesson: "Mint overview, YNAB envelope facts. Confirm still posts from Add.",
-      chips: ["What's on the Visa?", "Working capital?", "We good?"],
+      chips: [cardChip(hot?.account.name), "Working capital?", "We good?"],
       pose: "perch",
     },
     calendar: {
