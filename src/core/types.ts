@@ -469,6 +469,11 @@ export type HouseholdGoogle = {
   updatedAt: string;
 };
 
+export type HouseholdLedgerNames = {
+  shared: string;
+  personal: Record<string, string>;
+};
+
 export type GoalStatus = "open" | "retired" | "unfunded";
 
 export type Goal = {
@@ -606,6 +611,7 @@ export type Household = {
   booksAcceptedHash: string | null;
   tombstones: Tombstone[];
   name: string;
+  ledgerNames: HouseholdLedgerNames;
   timezone: "America/Toronto";
   currency: Currency;
   environment: Environment;
@@ -641,6 +647,7 @@ export type SharedEnvelope = {
   householdId: string;
   inviteCode: string;
   name: string;
+  ledgerNames: HouseholdLedgerNames;
   timezone: Household["timezone"];
   currency: Currency;
   environment: Environment;
