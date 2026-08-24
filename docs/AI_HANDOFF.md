@@ -62,20 +62,20 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 ## Member-scoped AI disclosure (D-115)
 
-**Status:** Implemented on `cursor/member-ai-disclosure-4ffb`. `householdForAiDisclosure` strips partner personal txs/shifts/goals/memories; `composeHerculesChatRequest` rebuilds briefing, notices, ledger, and memories from that slice. Canaries in `test/ai-disclosure.test.ts`.
+**Status:** Merged in [PR #83](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/83), then independently reviewed. The review reproduced a partner-personal aggregate leak through precomputed grounded P&L copy and allowed figures; the follow-up rebuilds grounded copy and FIGURES from the same member projection at the outbound boundary. Canaries live in `test/ai-disclosure.test.ts`.
 
 **Budget delta (5):** `+1` — partner personal money cannot leak into model aggregates (Course A privacy of the books).
 
 **Engagement delta (3):** `+1` — Hercules model-first chat can keep growing without partner-personal disclosure.
 
-**Still required:** optional independent privacy review; D-116 delayed-write rejection if not already covered elsewhere; confirm live Worker never receives unprojected payloads (phone is the only composer today).
+**Still required:** D-116 delayed-reply invalidation when environment, household, or member changes while a model call is in flight. The phone remains the only payload composer.
 
-## Trust-foundation worksession (2026-08-24, local branch)
+## Trust foundation (D-110 / D-111, PR #71 merged)
 
-**Status:** Implementation on `cursor/trust-foundation-a483`. Independent books/privacy/verifier review ran locally. P0 holes from that review are fixed. Auth/RLS is a do-not-apply packet with local synthetic tests. Conflict bundles export both sides without merging. `pnpm check` and `pnpm ai:verify` exist. Not pushed. Not applied to hosted schema.
+**Status:** Merged through [PR #71](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/71). Independent books/privacy/verifier review ran before merge. Auth/RLS remains a do-not-apply packet with synthetic tests. Conflict bundles export both sides without merging. `pnpm check` and `pnpm ai:verify` exist. No hosted schema was applied by that PR.
 
 **Budget delta (5):** Money Confirm now goes through `acceptHouseholdWrite`: validate → balanced journal → PGlite ingest → persist → optional linked transport. Failures restore the previous household. If persist fails and books restore also fails, the outcome is `recovery-available` with both posting flags false. Linked writes compare revision; stale writes keep both sides. Claims and sit-down money block auto-merge. Hearth Pass overlay refuses a different shared journal. Unlinked/demo/empty/Pass households make zero household REST calls. WelcomeJoin applies a Pass without probing hosted books.
 
 **Engagement delta (3):** none by design. Claude gets `src/claude/commandContract.ts` adapters/fixtures; OfficePhone/Hercules chrome were not edited.
 
-**Do not:** push, open a PR, deploy, apply `002_snapshot_cas.sql` or Auth/RLS, contact the household project, or delete hosted rows.
+**Still required:** atomic hosted CAS/journal authority and an explicit Jonathan migration decision. Do not apply `002_snapshot_cas.sql` or Auth/RLS, deploy, contact the household project, or delete hosted rows without that approval.

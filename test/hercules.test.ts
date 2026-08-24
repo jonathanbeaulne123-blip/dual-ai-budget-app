@@ -13,6 +13,7 @@ import {
   herculesNeedsCheck,
   herculesPageBrief,
   herculesPageSurface,
+  householdForAiDisclosure,
   hourInToronto,
   isCosmeticUnlocked,
   localHerculesChat,
@@ -326,10 +327,9 @@ describe("The Hercules Update", () => {
     expect(plan.source).toBe("journal");
     expect(plan.talk.spoken).toMatch(/\$|CAD|Visa|owed|paydown/i);
 
-    const grounded = plan.talk;
     const briefing = herculesBriefing(household, "home", today);
     const ai = await chatHercules(
-      composeHerculesChatRequest(household, "what's on the Visa?", briefing, grounded, today, "MEM-001"),
+      composeHerculesChatRequest(household, "what's on the Visa?", briefing, today, "MEM-001"),
       {
         fetch: async () =>
           new Response(JSON.stringify({ ok: true, reply: "The Visa still owes what the briefing says." }), {
@@ -370,8 +370,10 @@ describe("The Hercules Update", () => {
     expect(visa.talk.spoken).toMatch(/Visa/i);
     expect(visa.talk.fact?.label).toMatch(/Tray|Statement|Owed/i);
     const briefing = herculesBriefing(household, "home", today);
-    const req = composeHerculesChatRequest(household, "what's on the Visa?", briefing, visa.talk, today, "MEM-001");
-    expect(req.figures.every((figure) => visa.talk.spoken.includes(figure) || visa.talk.fact?.value === figure)).toBe(true);
+    const req = composeHerculesChatRequest(household, "what's on the Visa?", briefing, today, "MEM-001");
+    const disclosed = householdForAiDisclosure(household, "MEM-001");
+    const scopedVisa = planHerculesTurn(disclosed, "what's on the Visa?", today, "home");
+    expect(req.figures.every((figure) => scopedVisa.talk.spoken.includes(figure) || scopedVisa.talk.fact?.value === figure)).toBe(true);
     expect(req.figures).not.toContain(briefing.cardsOwedCad);
 
     const swapped = await chatHercules(req, {
@@ -409,9 +411,7 @@ describe("The Hercules Update", () => {
   it("excludes partner personal rows from the model ledger excerpt", () => {
     const household = seedDemoHousehold({ today, environment: "development" });
     const briefing = herculesBriefing(household, "home", today);
-    const grounded = talkHercules(household, "what did I spend", today, "home");
-
-    const asMem001 = composeHerculesChatRequest(household, "what did I spend", briefing, grounded, today, "MEM-001");
+    const asMem001 = composeHerculesChatRequest(household, "what did I spend", briefing, today, "MEM-001");
     expect(asMem001.ledger.recent.some((row) => /gym drop-in/i.test(row.note))).toBe(false);
     expect(asMem001.ledger.recent.some((row) => /haircut/i.test(row.note))).toBe(true);
     const payload001 = herculesModelPayload(asMem001);
@@ -420,7 +420,7 @@ describe("The Hercules Update", () => {
     expect(payload001).toMatch(/ledgerLines/);
     expect(payload001).toMatch(/Recent transactions:/);
 
-    const asMem002 = composeHerculesChatRequest(household, "what did I spend", briefing, grounded, today, "MEM-002");
+    const asMem002 = composeHerculesChatRequest(household, "what did I spend", briefing, today, "MEM-002");
     expect(asMem002.ledger.recent.some((row) => /haircut/i.test(row.note))).toBe(false);
     expect(asMem002.ledger.recent.some((row) => /gym drop-in/i.test(row.note))).toBe(true);
   });
@@ -475,8 +475,7 @@ describe("The Hercules Update", () => {
     }).household;
 
     const briefing = herculesBriefing(household, "home", today);
-    const grounded = talkHercules(household, "which bill is due", today, "home");
-    const req = composeHerculesChatRequest(household, "which bill is due", briefing, grounded, today, "MEM-001");
+    const req = composeHerculesChatRequest(household, "which bill is due", briefing, today, "MEM-001");
     expect(req.memories.some((row) => row.kind === "bill" && /hydro/i.test(row.label))).toBe(true);
 
     const payload = herculesModelPayload(req);

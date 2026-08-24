@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   aiDisclosurePayloadLeaks,
+  collectAllowedFigures,
   composeHerculesChatRequest,
   formatCad,
   herculesBriefing,
@@ -62,12 +63,10 @@ describe("member-scoped AI disclosure (D-115)", () => {
     }).household;
 
     const fullBriefing = herculesBriefing(household, "home", today);
-    const grounded = talkHercules(household, "what did we spend", today, "home");
     const asMem001 = composeHerculesChatRequest(
       household,
       "what did we spend",
       fullBriefing,
-      grounded,
       today,
       "MEM-001",
     );
@@ -87,8 +86,7 @@ describe("member-scoped AI disclosure (D-115)", () => {
   it("keeps own personal rows and both-visibility rows visible to the viewer", () => {
     const household = seedDemoHousehold({ today, environment: "development" });
     const briefing = herculesBriefing(household, "home", today);
-    const grounded = talkHercules(household, "what did I spend", today, "home");
-    const asMem001 = composeHerculesChatRequest(household, "what did I spend", briefing, grounded, today, "MEM-001");
+    const asMem001 = composeHerculesChatRequest(household, "what did I spend", briefing, today, "MEM-001");
 
     expect(asMem001.ledger.recent.some((row) => /haircut/i.test(row.note))).toBe(true);
     expect(asMem001.ledger.recent.some((row) => /saturday coffee/i.test(row.note))).toBe(true);
@@ -96,5 +94,52 @@ describe("member-scoped AI disclosure (D-115)", () => {
     const payload = herculesModelPayload(asMem001);
     expect(payload).toMatch(/haircut/i);
     expect(aiDisclosurePayloadLeaks(payload, household, "MEM-001")).toEqual([]);
+  });
+
+  it("rebuilds grounded answers and allowed figures from the member projection", () => {
+    let household = seedDemoHousehold({ today, environment: "development" });
+    household = postEntry(household, {
+      date: today,
+      type: "expense",
+      amount: 777.77,
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-LIFE-FUN",
+      note: "Partner-private aggregate canary",
+      place: "Personal",
+      splits: [{ party: "MEM-002", amountCents: 77777 }],
+      createdBy: "MEM-002",
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+
+    const message = "Show me the income statement";
+    const fullGrounded = talkHercules(household, message, today, "home");
+    const disclosed = householdForAiDisclosure(household, "MEM-001");
+    const scopedGrounded = talkHercules(disclosed, message, today, "home");
+    expect(fullGrounded.spoken).not.toBe(scopedGrounded.spoken);
+
+    const request = composeHerculesChatRequest(
+      household,
+      message,
+      herculesBriefing(household, "home", today),
+      today,
+      "MEM-001",
+    );
+
+    expect(request.grounded.spoken).toBe(scopedGrounded.spoken);
+    expect(request.grounded.fact).toEqual(scopedGrounded.fact);
+    const scopedFigures = collectAllowedFigures(
+      scopedGrounded.spoken,
+      scopedGrounded.lesson,
+      scopedGrounded.fact?.value,
+    );
+    const fullOnlyFigures = collectAllowedFigures(
+      fullGrounded.spoken,
+      fullGrounded.lesson,
+      fullGrounded.fact?.value,
+    ).filter((figure) => !scopedFigures.includes(figure));
+    expect(fullOnlyFigures.length).toBeGreaterThan(0);
+    expect(request.figures).toEqual(scopedFigures);
+    expect(request.figures).not.toEqual(expect.arrayContaining(fullOnlyFigures));
   });
 });

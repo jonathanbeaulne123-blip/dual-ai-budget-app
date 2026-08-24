@@ -7,6 +7,7 @@ import {
 } from "./appointments.ts";
 import { composeNotices, type HerculesNotice } from "./notices.ts";
 import { herculesBriefing, type HerculesBriefing, type HerculesGrounded } from "./herculesPersonality.ts";
+import { talkHercules } from "./herculesTalk.ts";
 import { memoriesForModel, type HerculesMemoryView } from "./herculesLedger.ts";
 import type { Appointment, Claim, Household, Transaction } from "./types.ts";
 import { householdForAiDisclosure, visibleForDuplicateScan } from "./visibility.ts";
@@ -219,9 +220,9 @@ export function composeHerculesChatRequest(
   household: Household,
   message: string,
   briefing: HerculesBriefing,
-  grounded: HerculesGrounded,
   today: DateKey,
   memberId: string,
+  lastTopic = "",
 ): {
   message: string;
   briefing: HerculesBriefing;
@@ -238,12 +239,15 @@ export function composeHerculesChatRequest(
   const disclosed = householdForAiDisclosure(household, memberId);
   const secrets = quietSecrets(disclosed);
   const scopedBriefing = herculesBriefing(disclosed, briefing.page, today);
+  // Rebuild every model-bound fact inside this disclosure boundary so a caller
+  // cannot pass full-household aggregates through fallback copy or FIGURES.
+  const scopedGrounded = talkHercules(disclosed, message, today, briefing.page, lastTopic);
   const ledger = buildLedgerExcerpt(disclosed, today, memberId);
   const notices = noticeViews(disclosed, today);
   const figures = collectAllowedFigures(
-    grounded.spoken,
-    grounded.lesson,
-    grounded.fact?.value,
+    scopedGrounded.spoken,
+    scopedGrounded.lesson,
+    scopedGrounded.fact?.value,
   );
   return {
     message: scrubQuietText(message, secrets) || message.trim(),
@@ -251,14 +255,16 @@ export function composeHerculesChatRequest(
     memberId,
     briefing: scopedBriefing,
     grounded: {
-      spoken: scrubQuietText(grounded.spoken, secrets) || grounded.spoken,
-      lesson: grounded.lesson ? scrubQuietText(grounded.lesson, secrets) || grounded.lesson : grounded.lesson,
-      fact: grounded.fact
+      spoken: scrubQuietText(scopedGrounded.spoken, secrets) || scopedGrounded.spoken,
+      lesson: scopedGrounded.lesson
+        ? scrubQuietText(scopedGrounded.lesson, secrets) || scopedGrounded.lesson
+        : scopedGrounded.lesson,
+      fact: scopedGrounded.fact
         ? {
-            label: scrubQuietText(grounded.fact.label, secrets) || grounded.fact.label,
-            value: grounded.fact.value,
+            label: scrubQuietText(scopedGrounded.fact.label, secrets) || scopedGrounded.fact.label,
+            value: scopedGrounded.fact.value,
           }
-        : grounded.fact,
+        : scopedGrounded.fact,
     },
     memories: memoriesForModel(disclosed)
       .map((row) => ({
