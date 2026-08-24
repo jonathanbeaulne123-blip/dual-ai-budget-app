@@ -67,7 +67,7 @@ These are **important features**. Dual Course does not rewrite them. Smaller sur
 | Bank feeds, Interac APIs, issued cards: blocked until Auth + RLS. Jonathan approves production money movement. | D-011, D-039 |
 | Accounts are financial accounts (chequing, savings, credit, investment, other), not categories. Receivable is D-053. | D-047, D-053 |
 | Phrase / join link / Hearth Pass join a phone. Google is a live bridge, not a bank, not a parking lot. | D-032, D-043, D-078 |
-| Google sign-in reveals personal-ledger and household-ledger memberships on any device. No peer device is the host. Cloud is durable continuity; PGlite is the validated offline replica. | D-112 |
+| Google sign-in reveals personal-ledger and household-ledger memberships on any device. No peer device is the host. Cloud is durable continuity; PGlite is the validated offline replica. | D-114 |
 | Personal rows are a filter until Auth. A hidden tab is not privacy. | D-015 |
 | Hosted `USING (true)` is an open door. The publishable key is not a lock. | D-034 |
 
@@ -79,7 +79,7 @@ Do not re-litigate these as “Chapter 0” or “Ring 1.” They are the kitche
 
 - Phone-first Home, Calendar, Add, Plan, Books, More
 - Command kernel: spend, income, shift, transfer, category, budget, goals, recurrences, undo, confirm, duplicates
-- PGlite journal + current legacy Supabase snapshot transport; trial balance; read-only SQL. D-112 cloud continuity supersedes optional publish as the target.
+- PGlite journal + current legacy Supabase snapshot transport; trial balance; read-only SQL. D-114 cloud continuity supersedes optional publish as the target.
 - Sync integrity (D-052): append-only goal contributions, timestamped catalog merge, personal rows kept on the snapshot, upsert without DELETE
 - Calendar board, rhythms, `.ics`; **Google household bridge is live** (D-078 / D-087): Continue with Google, per-member link, step-up on sensitive actions, both people’s Calendar overlay, bill reminders to Google, sit-down Drive workbook (create-only). Drive / Contacts / Gmail / Sheets are opt-in. Google never posts. Tokens stay on this phone.
 - Phrase / join / Hearth Pass; Shared / Personal / Both
@@ -219,7 +219,7 @@ Nothing in that table posts without a command. Nothing that talks to a bank, Int
 
 ## Google Dual Course (D-078)
 
-Identity is amended by D-112: Google is now the normal entry and recovery identity for personal and household ledgers on every device. The suite features below remain opt-in and never post. Google Drive and Sheets are not the ledger or the sync store. See [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md).
+Identity is amended by D-114: Google is now the normal entry and recovery identity for personal and household ledgers on every device. The suite features below remain opt-in and never post. Google Drive and Sheets are not the ledger or the sync store. See [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md).
 
 The household already lives in Google. The engine (`withGoogle`) and the kitchen client ID are **shipping**. Drive, Contacts, Gmail, and Sheets are still opt-in. They may now become real features, not forever-pings.
 
@@ -271,7 +271,7 @@ Order is **weight and risk**, not nostalgia chapter numbers. Claude owns **deskt
 
 1. **Desktop office (D-080 / D-082).** Unique offices, widget sizes, Edit Desk, personalities — packed so cards do not clip, still a warm desk (cream papers, Fraunces names, 900px column). Prompt: [CLAUDE_DESKTOP_OFFICE.md](CLAUDE_DESKTOP_OFFICE.md). Do not restyle into a 1280 dashboard. Do not turn the phone back into seventeen rows.
 2. **Mobile Home (D-079, shipped).** `OfficePhone` (`< 720px`): glance, one-tap, five or fewer objects. Record: [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md). Further phone customization is a joint Claude+Cursor review, not a dump of the desktop packet.
-3. **Google-account cloud continuity (D-112).** Discover personal/household scopes after sign-in, accept pulled facts through PGlite, synchronize through a durable idempotent outbox, and prove old-device-off read/write. Phrase/Pass/`linked` remain migration and recovery aids.
+3. **Google-account cloud continuity (D-114).** Discover personal/household scopes after sign-in, accept pulled facts through PGlite, synchronize through a durable idempotent outbox, and prove old-device-off read/write. Phrase/Pass/`linked` remain migration and recovery aids.
 4. **Late-September Auth + membership RLS.** Disposable hosted Development data may remain open through 2026-09-30, but the door must close before meaningful October data. Pair it with an honest Hercules line about access. Bank parsers and private hosted sources still wait.
 5. **GitHub 2FA** (D-020).
 6. **Recurring preview on open**, then the existing `postEntry` path.

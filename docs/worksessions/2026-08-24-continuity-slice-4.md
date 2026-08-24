@@ -9,7 +9,7 @@
 - Discovery uses server-side membership filtering when migration 003 exists, fetches only matching household snapshots, and overlays the signed-in member's hosted Personal envelope.
 - A populated Google subject remains authoritative. Email fallback accepts only rows with an empty or identical subject.
 - Signed-in transport upserts the current membership and only that member's personal transactions/shifts before advancing the household snapshot.
-- A missing migration 003 is detected through PostgREST's missing-table response and retains the existing D-113 open-snapshot fallback.
+- A missing migration 003 is detected through PostgREST's missing-table response and retains the existing D-114 open-snapshot fallback.
 - Production discovery still makes zero requests.
 
 ## Proof
@@ -23,7 +23,7 @@
 
 ## Honest boundary
 
-Migration 003 is not applied. Until Jonathan approves it, runtime behavior remains D-113. Even after application, the client-supplied Google subject is a Development selector rather than authentication. Atomic hosted CAS/journal authority, acknowledgement/backoff, Supabase Auth, deny-by-default RLS, and two-browser end-to-end proof remain.
+Migration 003 is not applied. Until Jonathan approves it, runtime behavior remains the D-114 open bridge. Even after application, the client-supplied Google subject is a Development selector rather than authentication. Atomic hosted CAS/journal authority, acknowledgement/backoff, Supabase Auth, deny-by-default RLS, and two-browser end-to-end proof remain. D-117 records this prepared hosted-membership slice.
 
 ## Dual Course
 

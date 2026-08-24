@@ -213,6 +213,7 @@ function normalize(question: string): string {
     .toLowerCase()
     .replace(/['’]/g, "")
     .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\bsit\s+down\b/g, "sitdown")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -301,10 +302,10 @@ function shiftAnswer(household: Household, today: DateKey): BooksAsk {
   return {
     kind: "answer",
     sentence: `${shifts.length} shift${shifts.length === 1 ? "" : "s"} this week: ${formatCad(wages)} wages, ${formatCad(tips)} net tips, ${hours} hours.`,
-    rows: shifts.map((shift) => {
-      const who = household.members.find((member) => member.id === shift.memberId)?.name ?? shift.memberId;
-      return { label: `${shift.date} · ${who}`, value: formatCad(shift.netTipsCents + shift.wagesCents) };
-    }),
+    rows: shifts.map((shift) => ({
+      label: shift.date,
+      value: formatCad(shift.netTipsCents + shift.wagesCents),
+    })),
   };
 }
 
@@ -516,7 +517,7 @@ export function askHercules(household: Household, question: string, today: DateK
       rows: [{ label: "Opinion", value: opinion.kind }],
     };
   }
-  if (/\b(what.?s on the visa|pay the card|utilization|cashback|rewards|savings account|tfsa)\b/.test(q)) {
+  if (/\b(what.?s on the visa|what.?s on the mastercard|what.?s on the card|pay the card|utilization|cashback|rewards|savings account|tfsa)\b/.test(q)) {
     return voice(name, askBooks(household, question, today));
   }
   if (/\b(what should i do|coach|advise|next move|what now)\b/.test(q)) {

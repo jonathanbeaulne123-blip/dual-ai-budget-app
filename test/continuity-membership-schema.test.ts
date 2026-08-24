@@ -7,7 +7,7 @@ const sql = readFileSync(
   "utf8",
 );
 
-describe("D-115 hosted continuity schema readiness", () => {
+describe("D-117 hosted continuity schema readiness", () => {
   it("creates household membership and personal snapshot scopes with household-local keys", () => {
     expect(sql).toContain("CREATE TABLE IF NOT EXISTS continuity_memberships");
     expect(sql).toContain("PRIMARY KEY (environment, household_id, member_id)");

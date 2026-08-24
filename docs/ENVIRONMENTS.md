@@ -2,7 +2,7 @@
 
 ## Development
 
-Default Development ledger scope. D-114 stores household replicas at `hearth:household:v2:development:<householdId>`, personal replicas at `hearth:personal:v2:development:<householdId>:<memberId>`, plus a catalog and active pointer. Legacy `hearth:v1:development` migrates automatically. D-112 adds the corresponding cloud-backed personal/household authority discovered after Google sign-in. Demo data is fictional CAD. Switching the pill asks first and never crosses into Production.
+Default Development ledger scope. D-114 stores household replicas at `hearth:household:v2:development:<householdId>`, personal replicas at `hearth:personal:v2:development:<householdId>:<memberId>`, plus a catalog and active pointer. Legacy `hearth:v1:development` migrates automatically. D-114 defines the corresponding cloud-backed personal/household authority discovered after Google sign-in; D-117 prepares explicit hosted membership and Personal-scope rows. Demo data is fictional CAD. Switching the pill asks first and never crosses into Production.
 
 ## Production
 
@@ -40,9 +40,9 @@ Account id for this Worker: `7dfdfbba3053d8b857cbc359e0761c00`.
 
 ## Hosted continuity (Supabase)
 
-PGlite is each device's books engine. Current hosted code stores a household JSON snapshot in Supabase and reads it by invite phrase plus environment. D-112 changes the target: Google identity discovers explicit personal-ledger and household-ledger memberships, and the hosted service supplies durable continuity so another device never depends on this phone.
+PGlite is each device's books engine. Current hosted code stores a household JSON snapshot in Supabase and reads it by invite phrase plus environment. D-114 changes the target: Google identity discovers explicit personal-ledger and household-ledger memberships, and the hosted service supplies durable continuity so another device never depends on this phone.
 
-Boot, demo, empty start, Hearth Pass, and unlinked commits currently make **zero** household REST calls (D-110 containment). Invite → **Publish to the cloud** is still the legacy opt-in implementation, not the target product. D-112 replaces it with automatic post-sign-in sync through a durable outbox. Possible leftover rows from the old implicit uploader: [HOSTED_ROW_INVENTORY.md](HOSTED_ROW_INVENTORY.md). Do not delete them without Jonathan.
+Boot, demo, empty start, Hearth Pass, and unlinked commits currently make **zero** household REST calls (D-110 containment). Invite → **Publish to the cloud** is still the legacy opt-in implementation, not the target product. D-114 replaces it with automatic post-sign-in sync through a durable outbox. Possible leftover rows from the old implicit uploader: [HOSTED_ROW_INVENTORY.md](HOSTED_ROW_INVENTORY.md). Do not delete them without Jonathan.
 
 The migration also creates journal tables and trial-balance views. The app does **not** write those hosted journal tables. It upserts `households` and `household_snapshots` only. Hosted views over journal tables would read zeroes. Treat hosted Postgres as snapshot transport until a later writer exists (D-052).
 
@@ -60,9 +60,9 @@ OAuth client IDs are public. Put a Google Cloud **Web** client ID in `VITE_GOOGL
 
 Do not put a Google client secret in `VITE_` vars, Cloudflare, or the repo. Hearth uses Google Identity Services in the browser. Access tokens stay on this phone under `hearth:v1:<environment>:google:<memberId>` (older Calendar tokens under `:gcal:` are migrated once). Development and production tokens stay separate. Disconnecting deletes that token on this phone.
 
-The current household snapshot stores **who is linked** (email, Google subject, granted scopes), not the token. D-113 temporarily discovers Development membership from those embedded links and keeps Production discovery off. D-112 completion still moves durable identity-to-personal-ledger and identity-to-household membership outside the ledger snapshot. Default suite services are sign-in and Calendar; extra suite access remains opt-in.
+The current household snapshot stores **who is linked** (email, Google subject, granted scopes), not the token. D-114 temporarily discovers Development membership from those embedded links and keeps Production discovery off. D-117 prepares durable identity-to-personal-ledger and identity-to-household membership outside the ledger snapshot; its migration remains unapplied. Default suite services are sign-in and Calendar; extra suite access remains opt-in.
 
-Without a client ID, Calendar still works locally: the month board, ledger-spotted bills, and **Download .ics with alarms**. That fallback does not satisfy D-112 cross-device continuity. Google never posts money; phrases remain invitation/recovery aids.
+Without a client ID, Calendar still works locally: the month board, ledger-spotted bills, and **Download .ics with alarms**. That fallback does not satisfy D-114 cross-device continuity. Google never posts money; phrases remain invitation/recovery aids.
 
 ## Sheets
 

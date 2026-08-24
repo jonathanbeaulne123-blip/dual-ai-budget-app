@@ -30,9 +30,9 @@ Read [nostalgia/](nostalgia/) and [reference/](reference/) to understand past de
 
 Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](reference/sheets-era/AI_HANDOFF.md).
 
-## Development continuity slices (D-113–D-115, PR #72)
+## Development continuity slices (D-114 and D-117, PRs #72 and #74)
 
-**Status:** exact Google-subject Development discovery, PGlite acceptance, a durable compacting local outbox, launch/focus/reconnect replay, multi-household device replicas, an explicit ledger switcher, and member-only personal device replicas are implemented. D-115 adds server-filtered membership discovery and hosted member-personal payloads behind unapplied migration 003; missing tables retain the D-113 fallback. Legacy environment-only storage migrates on read. No hosted schema, deployment, Production data, or secrets were changed.
+**Status:** exact Google-subject Development discovery, PGlite acceptance, a durable compacting local outbox, launch/focus/reconnect replay, multi-household device replicas, an explicit ledger switcher, and member-only personal device replicas are implemented. D-117 adds server-filtered membership discovery and hosted member-personal payloads behind unapplied migration 003; missing tables retain the D-114 fallback. Legacy environment-only storage migrates on read. No hosted schema, deployment, Production data, or secrets were changed.
 
 **Still required:** Jonathan's separate decision to apply migration 003, atomic hosted CAS/journal authority, retry backoff/acknowledgement, two-browser end-to-end proof, Supabase Auth-bound membership, and the late-September deny-by-default RLS cutover.
 

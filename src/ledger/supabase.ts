@@ -360,7 +360,7 @@ export async function pullSupabaseHousehold(
 }
 
 /**
- * Temporary Development discovery for D-112. Hosted rows are deliberately open
+ * Temporary Development discovery for D-114. Hosted rows are deliberately open
  * during the disposable-data window, so the client can scan snapshots and keep
  * only exact Google memberships. Production stays blocked until Auth/RLS can do
  * this filtering on the server.

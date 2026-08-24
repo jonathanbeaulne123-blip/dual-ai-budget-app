@@ -18,6 +18,7 @@ import { claimsTraySentence, outstandingClaims, upcomingVisitProposals } from ".
 import { bubbleNotice, deskNotices } from "./notices.ts";
 import { shiftPostingStreak } from "./shiftStreak.ts";
 import { herculesPageSurface } from "./herculesPage.ts";
+import { herculesUsefulness } from "./herculesUsefulness.ts";
 import { memoryFactForTopic, topicUsesKitchenMemories } from "./herculesLedger.ts";
 
 export type HerculesPose =
@@ -102,7 +103,7 @@ export function herculesNeedsCheck(household: Household, today: DateKey): boolea
   const name = household.kitchen.companion.name || "Hercules";
   const { mood } = companionMood(household, today, name);
   if (mood === "hiding" || mood === "restless") return true;
-  return !household.transactions.some((tx) => !tx.isDuplicate && tx.date === today && tx.subcategoryId === "SUB-FOOD-GROCERIES");
+  return herculesUsefulness(household, today).light === "green";
 }
 
 export function herculesMutters(household: Household, today: DateKey, now = new Date()): boolean {
@@ -351,16 +352,16 @@ export function talkHercules(
     topic = "forecast";
     const forecast = shiftForecastDisplay(household);
     lesson = forecast.unlocked ? "A pulse is a guess with homework. I won't post it." : "Eight real weeks. Then I'll talk tips.";
-  } else if (/visa|pay the card|utilization|cashback|rewards|savings|tfsa/.test(q)) {
+  } else if (/visa|mastercard|pay the card|utilization|cashback|rewards|savings|tfsa/.test(q)) {
     topic = "wallet";
-    lesson = "Paydown is a transfer. Interest is a look until you post it.";
+    lesson = "The tray is the running books. Statement owed is the cycle. Paydown is a transfer.";
   } else if (/alright|we good|health/.test(q)) {
     topic = "health";
     lesson = "If I'm hiding, start at Health. If I'm loafing, you're fine.";
-  } else if (/postcard|sit-?down/.test(q)) {
+  } else if (/postcard|sit-?down|sit down|leftover/.test(q)) {
     topic = "postcard";
     const card = sitDownPostcard(household);
-    lesson = card.ready ? "The close lives on the chalkboard if you pin it." : "Plan → Apply is the close. I just clap.";
+    lesson = card.ready ? "The close lives on the chalkboard if you pin it." : "Leftover is cash-like minus bills and card mins. Confirm still moves.";
   } else if (/recap|envelope/.test(q)) {
     topic = "recap";
     lesson = "Screenshot the bubble. Don't screenshot a lecture.";

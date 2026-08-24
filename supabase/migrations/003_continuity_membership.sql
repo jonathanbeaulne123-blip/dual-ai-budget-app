@@ -1,5 +1,5 @@
 -- DO NOT APPLY WITHOUT JONATHAN'S EXPLICIT SCHEMA APPROVAL.
--- D-115 disposable-Development membership discovery and personal scope.
+-- D-117 disposable-Development membership discovery and personal scope.
 -- This is a continuity bridge, not authentication: the browser still supplies
 -- the Google subject until the late-September Supabase Auth/RLS cutover.
 -- Order: after 001_hearth_books.sql. It does not require unapplied migration 002.

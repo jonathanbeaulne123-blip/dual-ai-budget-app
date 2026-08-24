@@ -12,6 +12,7 @@ import {
   herculesBriefing,
   herculesNeedsCheck,
   herculesPageBrief,
+  herculesPageSurface,
   hourInToronto,
   isCosmeticUnlocked,
   localHerculesChat,
@@ -224,7 +225,8 @@ describe("The Hercules Update", () => {
     expect(idle.spoken.length).toBeGreaterThan(4);
     expect(idle.spoken.length).toBeLessThanOrEqual(120);
     const empty = catalogHousehold();
-    expect(herculesNeedsCheck(empty, today)).toBe(true);
+    expect(herculesNeedsCheck(empty, today)).toBe(false);
+    expect(herculesNeedsCheck(household, today)).toBe(true);
   });
 
   it("keeps a compact purrsonality briefing without a transaction dump or a who-spent board", () => {
@@ -257,6 +259,13 @@ describe("The Hercules Update", () => {
     expect(sanitizeHerculesReply("Bianca spent more this week.")).toBe(HERCULES_REFUSE_SHAME);
     expect(sanitizeHerculesReply("As an AI, I think you should skip rent.")).toMatch(/I'm a cat/i);
     expect(sanitizeHerculesReply("")).toMatch(/don't write/i);
+
+    const visaGrounded = "Visa on the tray is -$886.55. Statement owed $0.00. Paydown is a transfer.";
+    const visaFigures = ["$886.55", "$0.00"];
+    const dump = "Mrrp. GROUNDED JOURNAL (dollar facts; win over you) spoken: Visa on the tray is -$886.55. Statement owed $0.00.";
+    expect(sanitizeHerculesReply(dump, visaGrounded, visaFigures, "what's on the Visa?")).toBe(visaGrounded);
+    expect(sanitizeHerculesReply("FIGURES $0.00", visaGrounded, visaFigures, "what's on the Visa?")).toBe(visaGrounded);
+    expect(sanitizeHerculesReply("Mastercard $242.00", visaGrounded, ["$886.55", "$0.00", "$242.00"], "what's on the Visa?")).toBe(visaGrounded);
   });
 
   it("falls back to local purrsonality and never claims a chat write", () => {
@@ -340,6 +349,10 @@ describe("The Hercules Update", () => {
     expect(shame.skipModel).toBe(true);
     expect(shame.talk.spoken).toBe(HERCULES_REFUSE_SHAME);
 
+    const leaderboard = planHerculesTurn(household, "who spent this week", today, "home");
+    expect(leaderboard.skipModel).toBe(true);
+    expect(leaderboard.talk.spoken).toBe(HERCULES_REFUSE_SHAME);
+
     const draft = planHerculesTurn(household, "add milk", today, "home");
     expect(draft.draft?.note).toBe("Milk");
     expect(draft.draft?.subcategoryId).toBe("SUB-FOOD-GROCERIES");
@@ -349,6 +362,48 @@ describe("The Hercules Update", () => {
     expect(unmatched.skipModel).toBe(false);
     expect(unmatched.draft).toBeNull();
     expect(unmatched.memory).toBeNull();
+  });
+
+  it("pins model CAD to the grounded card and answers leftover from Sit-down?", async () => {
+    const household = seedDemoHousehold({ today, environment: "development" });
+    const visa = planHerculesTurn(household, "what's on the Visa?", today, "home");
+    expect(visa.talk.spoken).toMatch(/Visa/i);
+    expect(visa.talk.fact?.label).toMatch(/Tray|Statement|Owed/i);
+    const briefing = herculesBriefing(household, "home", today);
+    const req = composeHerculesChatRequest(household, "what's on the Visa?", briefing, visa.talk, today, "MEM-001");
+    expect(req.figures.every((figure) => visa.talk.spoken.includes(figure) || visa.talk.fact?.value === figure)).toBe(true);
+    expect(req.figures).not.toContain(briefing.cardsOwedCad);
+
+    const swapped = await chatHercules(req, {
+      fetch: async () =>
+        new Response(JSON.stringify({ ok: true, reply: `FIGURES ${briefing.cardsOwedCad}` }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+    });
+    expect(swapped.source).toBe("ai");
+    expect(swapped.text).not.toBe(`FIGURES ${briefing.cardsOwedCad}`);
+    expect(swapped.text).toMatch(/Visa|tray|owed|paydown/i);
+
+    const echoed = await chatHercules(req, {
+      fetch: async () =>
+        new Response(JSON.stringify({
+          ok: true,
+          reply: "Mrrp. GROUNDED JOURNAL (dollar facts; win over you) spoken: Visa on the tray is -$12.00.",
+        }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+    });
+    expect(echoed.text).not.toMatch(/GROUNDED JOURNAL/);
+    expect(echoed.text).toMatch(/Visa|tray|owed|paydown/i);
+
+    const leftover = planHerculesTurn(household, "Sit-down?", today, "home");
+    expect(leftover.source).toBe("journal");
+    expect(leftover.talk.spoken).toMatch(/\$|leftover|cash-like/i);
+
+    const surface = herculesPageSurface("home", household, today);
+    expect(surface.chips.join(" ")).toMatch(/Mastercard|Visa/);
   });
 
   it("excludes partner personal rows from the model ledger excerpt", () => {

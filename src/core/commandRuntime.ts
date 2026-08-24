@@ -44,7 +44,7 @@ export type AcceptWriteInput = {
   confirmationId?: string;
   commandKind?: string;
   postedIds?: string[];
-  /** Explicit D-112 Google continuity transport; legacy callers still require linked=true. */
+  /** Explicit D-114 Google continuity transport; legacy callers still require linked=true. */
   transportRequested?: boolean;
   adapters: WriteAdapters;
 };
