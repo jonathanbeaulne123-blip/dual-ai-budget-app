@@ -143,3 +143,83 @@ export async function validateHouseholdImport(
     report: redactedDiagnostics(household, { booksHash: hash, ok: true }),
   };
 }
+
+export const CONFLICT_BUNDLE_KIND = "hearth-conflict-bundle" as const;
+
+export type ConflictBundle = {
+  kind: typeof CONFLICT_BUNDLE_KIND;
+  schemaVersion: 1;
+  environment: Environment;
+  conflictId: string;
+  local: Household;
+  remote: Household;
+};
+
+export function makeConflictBundle(household: Household): ConflictBundle {
+  const open = (household.conflicts ?? []).find((row) => !row.resolved);
+  if (!open) {
+    throw new ValidationError("There is no unresolved conflict to export. The live household was left alone.");
+  }
+  return {
+    kind: CONFLICT_BUNDLE_KIND,
+    schemaVersion: 1,
+    environment: household.environment,
+    conflictId: open.id,
+    local: open.localSnapshot,
+    remote: open.remoteSnapshot,
+  };
+}
+
+export function parseConflictBundle(raw: string): ConflictBundle {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new ValidationError("That file is not a Hearth conflict bundle.");
+  }
+  if (!parsed || typeof parsed !== "object") {
+    throw new ValidationError("That conflict bundle is empty.");
+  }
+  const record = parsed as Record<string, unknown>;
+  if (record.kind !== CONFLICT_BUNDLE_KIND || record.schemaVersion !== 1) {
+    throw new ValidationError("That export is not a Hearth conflict bundle. Nothing was merged.");
+  }
+  if (!record.local || !record.remote || typeof record.local !== "object" || typeof record.remote !== "object") {
+    throw new ValidationError("That conflict bundle is missing both sides. Nothing was merged.");
+  }
+  return {
+    kind: CONFLICT_BUNDLE_KIND,
+    schemaVersion: 1,
+    environment: record.environment as Environment,
+    conflictId: String(record.conflictId ?? ""),
+    local: ensureHouseholdShape(record.local as Household),
+    remote: ensureHouseholdShape(record.remote as Household),
+  };
+}
+
+export function booksRecoveryAdvice(
+  issue:
+    | "missing-schema"
+    | "incomplete-migration"
+    | "invalid-stored-data"
+    | "interrupted-transaction"
+    | "projection-mismatch",
+): { retryable: boolean; permanent: boolean; advice: string } {
+  switch (issue) {
+    case "missing-schema":
+    case "incomplete-migration":
+    case "interrupted-transaction":
+      return {
+        retryable: true,
+        permanent: false,
+        advice: "The last valid snapshot is still here. Hearth can rebuild PGlite from it. The ledger was not discarded.",
+      };
+    case "invalid-stored-data":
+    case "projection-mismatch":
+      return {
+        retryable: false,
+        permanent: true,
+        advice: "The snapshot and the books engine disagree. Recovery is available. Hearth will not overwrite either side silently.",
+      };
+  }
+}

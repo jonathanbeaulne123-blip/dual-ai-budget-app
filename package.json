@@ -14,6 +14,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "check": "tsc --noEmit",
+    "ai:verify": "vitest run && tsc --noEmit",
     "pack:claude-ux": "node scripts/pack-claude-ux.mjs",
     "pack:claude-mobile": "node scripts/pack-claude-mobile.mjs",
     "pack:claude-desktop": "node scripts/pack-claude-desktop.mjs",

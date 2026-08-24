@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   catalogHousehold,
+  CONFLICT_BUNDLE_KIND,
+  makeConflictBundle,
   makeHouseholdExport,
+  parseConflictBundle,
   parseHouseholdExport,
   postEntry,
   redactedDiagnostics,
+  booksRecoveryAdvice,
   validateHouseholdImport,
 } from "../src/core/index.ts";
 
@@ -50,5 +54,47 @@ describe("recovery import/export", () => {
     const blob = JSON.stringify(report);
     expect(blob).not.toMatch(/private clinic|sb_secret|password|VITE_/i);
     expect(report).not.toHaveProperty("transactions");
+  });
+
+  it("exports both sides of a conflict without merging money", () => {
+    const local = catalogHousehold();
+    const remote = { ...local, revision: 4 };
+    const conflicted = {
+      ...local,
+      conflicts: [
+        {
+          id: "CONF-1",
+          detectedAt: "2026-08-24T12:00:00.000Z",
+          environment: "development" as const,
+          localRevision: 3,
+          remoteRevision: 4,
+          localHash: "local",
+          remoteHash: "remote",
+          localSnapshot: local,
+          remoteSnapshot: remote,
+          autoMerged: false,
+          resolved: false,
+        },
+      ],
+    };
+    const bundle = makeConflictBundle(conflicted);
+    expect(bundle.kind).toBe(CONFLICT_BUNDLE_KIND);
+    expect(bundle.local.householdId).toBe(local.householdId);
+    expect(bundle.remote.revision).toBe(4);
+    const parsed = parseConflictBundle(JSON.stringify(bundle));
+    expect(parsed.conflictId).toBe("CONF-1");
+    expect(() => parseConflictBundle("{")).toThrow(/conflict bundle/);
+  });
+
+  it("names retryable vs permanent books recovery without discarding the ledger", () => {
+    expect(booksRecoveryAdvice("missing-schema").retryable).toBe(true);
+    expect(booksRecoveryAdvice("projection-mismatch").permanent).toBe(true);
+    expect(booksRecoveryAdvice("invalid-stored-data").advice).toMatch(/will not overwrite|disagree/i);
+  });
+
+  it("refuses a schema-version mismatch without importing", async () => {
+    const file = await makeHouseholdExport(catalogHousehold());
+    const raw = JSON.stringify({ ...file, schemaVersion: 99 });
+    await expect(validateHouseholdImport(raw, "development", { confirm: true })).rejects.toThrow(/schema/);
   });
 });

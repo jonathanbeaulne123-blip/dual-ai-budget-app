@@ -30,7 +30,7 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 ## Trust-foundation worksession (2026-08-24, local branch)
 
-**Status:** Implementation on `cursor/trust-foundation-a483`. Independent books/privacy/verifier review ran locally. P0 holes from that review are fixed on this branch. Not pushed. Not applied to hosted schema.
+**Status:** Implementation on `cursor/trust-foundation-a483`. Independent books/privacy/verifier review ran locally. P0 holes from that review are fixed. Auth/RLS is a do-not-apply packet with local synthetic tests. Conflict bundles export both sides without merging. `pnpm check` and `pnpm ai:verify` exist. Not pushed. Not applied to hosted schema.
 
 **Budget delta (5):** Money Confirm now goes through `acceptHouseholdWrite`: validate → balanced journal → PGlite ingest → persist → optional linked transport. Failures restore the previous household. If persist fails and books restore also fails, the outcome is `recovery-available` with both posting flags false. Linked writes compare revision; stale writes keep both sides. Claims and sit-down money block auto-merge. Hearth Pass overlay refuses a different shared journal. Unlinked/demo/empty/Pass households make zero household REST calls. WelcomeJoin applies a Pass without probing hosted books.
 

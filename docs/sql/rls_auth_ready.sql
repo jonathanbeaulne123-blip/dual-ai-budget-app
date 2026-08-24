@@ -84,9 +84,39 @@
 -- REVOKE DELETE ON households, household_snapshots, members FROM authenticated;
 --
 -- ---------------------------------------------------------------------------
--- 3. Service-role isolation
+-- 3. Invitations, revoke, and cross-household isolation (do not run yet)
+-- ---------------------------------------------------------------------------
+-- CREATE POLICY hearth_invite_owner_select ON household_invitations
+--   FOR SELECT TO authenticated
+--   USING (
+--     household_id IN (SELECT household_id FROM members WHERE auth_user_id = auth.uid() AND role = 'owner')
+--     OR invited_auth_user_id = auth.uid()
+--   );
+-- CREATE POLICY hearth_invite_owner_write ON household_invitations
+--   FOR INSERT TO authenticated
+--   WITH CHECK (household_id IN (SELECT household_id FROM members WHERE auth_user_id = auth.uid() AND role = 'owner'));
+-- CREATE POLICY hearth_invite_owner_update ON household_invitations
+--   FOR UPDATE TO authenticated
+--   USING (household_id IN (SELECT household_id FROM members WHERE auth_user_id = auth.uid() AND role = 'owner'));
+-- REVOKE ALL ON household_invitations FROM anon;
+-- GRANT SELECT, INSERT, UPDATE ON household_invitations TO authenticated;
+-- REVOKE DELETE ON household_invitations FROM authenticated;
+--
+-- Revoked member: members.auth_user_id is set null and role stays 'member' with
+-- a revoked_at timestamp, OR the membership row is deleted. Either way, the
+-- SELECT policies above fail closed because auth.uid() is no longer in members.
+-- Do not keep a dangling policy that allows former members to read snapshots.
+--
+-- Cross-household: every USING/WITH CHECK clause is membership-scoped. There is
+-- no policy that reads households by invite_phrase for anon. Phrase is routing
+-- in the app, not a PostgREST password.
+
+-- ---------------------------------------------------------------------------
+-- 4. Service-role isolation
 -- ---------------------------------------------------------------------------
 -- The service role key never ships in VITE_, Cloudflare Pages/Workers env that Vite bakes,
 -- household snapshots, or Hearth Pass files. Server jobs that need it stay off this app.
+-- GRANT on these tables for service_role stays server-only. Never a VITE_SUPABASE_SERVICE_ROLE.
 
 -- This file is documentation plus a future SQL sketch. It is not live Auth.
+-- Local synthetic proof: test/auth-rls-readiness.test.ts (no household project).

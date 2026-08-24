@@ -101,6 +101,10 @@ export {
   parseHouseholdExport,
   redactedDiagnostics,
   validateHouseholdImport,
+  makeConflictBundle,
+  parseConflictBundle,
+  booksRecoveryAdvice,
   HOUSEHOLD_EXPORT_KIND,
+  CONFLICT_BUNDLE_KIND,
 } from "./recovery.ts";
 

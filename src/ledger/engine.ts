@@ -293,12 +293,15 @@ export async function inspectBrowserBooks(household: Household): Promise<{
     }
     return { ok: true, message: "PGlite agrees with the household snapshot.", entryCount };
   } catch (caught) {
-    return {
-      ok: false,
-      issue: "missing-schema",
-      message: caught instanceof Error ? caught.message : "The books engine could not be inspected.",
-      entryCount: 0,
-    };
+    const message = caught instanceof Error ? caught.message : "The books engine could not be inspected.";
+    const issue: BooksRecoveryIssue = /migration/i.test(message)
+      ? "incomplete-migration"
+      : /unbalanced|invalid/i.test(message)
+        ? "invalid-stored-data"
+        : /transaction|interrupted/i.test(message)
+          ? "interrupted-transaction"
+          : "missing-schema";
+    return { ok: false, issue, message, entryCount: 0 };
   }
 }
 

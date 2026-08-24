@@ -101,18 +101,24 @@ describe("trust-foundation proof matrix", () => {
     expect(invalid.postedNothing).toBe(true);
     expect(invalid.ok).toBe(false);
 
+    const last = posted.household.transactions.at(-1)!;
+    const skewed = {
+      ...posted.household,
+      transactions: posted.household.transactions.map((row) =>
+        row.id === last.id ? { ...row, amountCents: last.amountCents + 1 } : row,
+      ),
+    };
     const unbalancedStore = memoryAdapters();
-    unbalancedStore.adapters.ingest = async () => ({ ok: false, error: "Journal is unbalanced. Nothing was posted." });
     const unbalanced = await acceptHouseholdWrite({
       previous,
-      candidate: posted.household,
+      candidate: skewed,
       confirmationId: "proof-unbalanced",
       postedIds: posted.postedIds,
       adapters: unbalancedStore.adapters,
     });
     expect(unbalanced.postedNothing).toBe(true);
-    expect(unbalanced.errorClass).toBe("unbalanced-journal");
     expect(unbalancedStore.persisted()).toBeNull();
+    expect(unbalancedStore.ingested()).toBeNull();
 
     const ingestFail = memoryAdapters({ ingestOk: false });
     const ingestOutcome = await acceptHouseholdWrite({
