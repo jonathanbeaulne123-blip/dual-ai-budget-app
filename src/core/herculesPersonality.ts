@@ -15,7 +15,7 @@ const WRITE_CLAIM =
   /\b(i(?:'ve| have)?|we)\s+(just\s+)?(posted|logged|saved|recorded|wrote|inserted|updated|deleted|paid)\b/i;
 const SQL_WRITE =
   /\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|GRANT|REVOKE)\b/i;
-const SHAME = /\b(bianca|jonathan)\s+(spent|wasted|blew|overspent)\b/i;
+const SHAME = /\b(who spent|who paid more|bianca vs|jonathan vs|(?:bianca|jonathan)\s+(spent|wasted|blew|overspent))\b/i;
 const MODEL_LEAK =
   /\b(as an ai|language model|i(?:'m| am) (?:an? )?(?:ai|language model|large language|assistant))\b/gi;
 
@@ -166,6 +166,8 @@ export function sanitizeHerculesReply(text: string, groundedSpeak = "", allowedF
     if (found.some((figure) => !allowed.has(figure))) {
       return clipReply(groundedSpeak) || "mrrp. I only quote the books.";
     }
+  } else if (/\$\d/.test(reply)) {
+    return clipReply(groundedSpeak) || "mrrp. I only quote the books.";
   }
   return clipReply(reply);
 }
@@ -185,7 +187,7 @@ export function localHerculesChat(
   if (/\b(post (it|this|that)|log this|write it|insert into|pay it for me|save this (expense|row))\b/.test(q)) {
     return HERCULES_REFUSE_WRITE;
   }
-  if (/\bwho spent (more|less)\b/.test(q) || /\b(bianca|jonathan) (spent|wasted)\b/.test(q)) {
+  if (/\bwho spent\b/.test(q) || /\bwho paid more\b/.test(q) || /\b(bianca|jonathan) (spent|wasted)\b/.test(q)) {
     return HERCULES_REFUSE_SHAME;
   }
   const spoken = grounded.spoken?.trim() || "I'm here. Scratch me or ask a number.";

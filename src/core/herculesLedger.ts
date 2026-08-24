@@ -19,7 +19,7 @@ import type {
 } from "./types.ts";
 
 const SQL_WRITE = /\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|GRANT|REVOKE)\b/i;
-const SHAME = /\b(who spent (more|less)|bianca (spent|wasted)|jonathan (spent|wasted))\b/i;
+const SHAME = /\b(who spent|who paid more|bianca vs|jonathan vs|bianca (spent|wasted)|jonathan (spent|wasted))\b/i;
 /** Topics answered from the books. Default talk topic "ask" is unmatched — that may hit a vendor model. */
 const JOURNAL_TOPICS = new Set([
   "identity",

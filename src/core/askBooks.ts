@@ -47,6 +47,7 @@ function normalize(question: string): string {
     .toLowerCase()
     .replace(/['’]/g, "")
     .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\bsit\s+down\b/g, "sitdown")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -95,7 +96,7 @@ export function askBooks(household: Household, question: string, today: DateKey)
 
   if (/\b(help|what can i ask|examples)\b/.test(q)) return help();
 
-  if (/\b(leftover|sit-?down|safe to assign|what can we move)\b/.test(q)) {
+  if (/\b(leftover|sitdown|sit-?down|safe to assign|what can we move)\b/.test(q)) {
     const leftover = leftoverProjection(household, today);
     return {
       kind: "answer",
@@ -260,15 +261,30 @@ export function askBooks(household: Household, question: string, today: DateKey)
     };
   }
 
-  if (/\b(what.?s on the visa|pay the (visa|card)|visa balance)\b/.test(q)) {
-    const visa = household.accounts.find((account) => account.active && (account.id === "ACC-VISA" || /visa/i.test(account.name)));
-    if (!visa) return { kind: "answer", sentence: "No Visa on the books.", rows: [] };
-    const view = creditCardView(household, visa, today);
+  if (/\b(what.?s on the visa|what.?s on the mastercard|what.?s on the master card|what.?s on the card|pay the (visa|card)|visa balance)\b/.test(q)) {
+    const wantVisa = /\bvisa\b/.test(q);
+    const wantMc = /\bmastercard|master card\b/.test(q);
+    const hottest = householdWallet(household, today).hottestCard?.account;
+    const card = household.accounts.find((account) => {
+      if (!account.active || account.kind !== "credit") return false;
+      if (wantVisa) return account.id === "ACC-VISA" || /visa/i.test(account.name);
+      if (wantMc) return account.id === "ACC-MC" || /master/i.test(account.name);
+      return hottest ? account.id === hottest.id : true;
+    });
+    if (!card) return { kind: "answer", sentence: "No card on the books.", rows: [] };
+    const view = creditCardView(household, card, today);
+    const trayCents = accountBalance(household, card.id);
+    const tray = formatCad(trayCents);
+    const owed = formatCad(view.owedCents);
+    const sentence = trayCents === view.owedCents
+      ? view.hercules
+      : `${card.name} on the tray is ${tray}. Statement owed ${owed}. Paydown is a transfer.`;
     return {
       kind: "answer",
-      sentence: view.hercules,
+      sentence,
       rows: [
-        { label: "Owed", value: formatCad(view.owedCents) },
+        { label: "Tray", value: tray },
+        { label: "Statement owed", value: owed },
         { label: "Available", value: view.limitCents ? formatCad(view.availableCents) : "no limit" },
         { label: "Due", value: view.dueDate },
         { label: "Min pay", value: formatCad(view.minPaymentCents) },

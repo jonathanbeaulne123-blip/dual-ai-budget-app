@@ -22,6 +22,7 @@ import {
   postOneRecurrence,
   refreshDuplicateFlags,
   saveSitDownSession,
+  seedDemoHousehold,
   touchDevicePresence,
   todayKey,
 } from "../src/core/index.ts";
@@ -36,6 +37,18 @@ describe("hercules usefulness and lessons", () => {
     expect(useful.score).toBeGreaterThanOrEqual(0);
     expect(useful.score).toBeLessThanOrEqual(100);
     expect(useful.spoken.length).toBeGreaterThan(8);
+    expect(useful.openHelpOnTap).toBe(false);
+    expect(useful.reasons.join(" ")).not.toMatch(/grocery/i);
+  });
+
+  it("scores a loaded demo kitchen at 80+ without treating missing milk as work", () => {
+    const household = seedDemoHousehold({ today, environment: "development" });
+    const useful = herculesUsefulness(household, today);
+    expect(useful.score).toBeGreaterThanOrEqual(80);
+    expect(useful.light).toBe("green");
+    expect(useful.openHelpOnTap).toBe(true);
+    expect(useful.reasons.join(" ")).toMatch(/Leftover|claim|preset|jar|statement/i);
+    expect(useful.reasons.join(" ")).not.toMatch(/grocery/i);
   });
 
   it("shows instrument lessons only on first run", () => {

@@ -556,7 +556,7 @@ export function HerculesPresence({
       closeChat();
       return true;
     }
-    if (/what.?s on the visa/i.test(text)) {
+    if (/what.?s on the (visa|mastercard|master card|card)/i.test(text)) {
       emitOfficeIntent({ type: "expand", id: "wallet" });
       return false;
     }

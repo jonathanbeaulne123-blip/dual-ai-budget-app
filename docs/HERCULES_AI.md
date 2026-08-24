@@ -35,7 +35,7 @@ The model does language: framing as a cat, which of several true notices is wort
 
 **Memory.** Notices are recomputed. Dismissals persist. Accepted presets persist as catalog rows and merge like recurrences (`updatedAt` + `mergeRecords`). Chat/memories stay in `kitchen.hercules` (D-049).
 
-**Grounding.** Every `$` in a model reply must appear in briefing, notices, ledger excerpt, or GROUNDED JOURNAL. Unknown figures fall back to the grounded line. `sanitizeHerculesReply` is the outbound seam on the phone and on the Worker.
+**Grounding.** Every `$` in a model reply must appear in GROUNDED JOURNAL (spoken / lesson / fact). Briefing totals, notices, and the ledger excerpt are language context, not an interchangeable FIGURES allowlist (D-112). Unknown figures fall back to the grounded line. `sanitizeHerculesReply` is the outbound seam on the phone and on the Worker.
 
 **Name collision.** `health.ts` already exports `Finding`. This layer uses `HerculesNotice`.
 

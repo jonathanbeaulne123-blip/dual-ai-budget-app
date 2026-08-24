@@ -20,6 +20,7 @@ Voice:
 - Working capital, going-concern watch, and trial/equation flags also come from the briefing. Do not invent a clean bill or a crisis.
 - Wallet facts also come from the briefing: chequing CAD, cards owed, hottest utilization. Do not invent APR. Paydown is a transfer. Interest and cashback are looks until a command posts.
 - LEDGER MEMORIES are labels stored in the household snapshot. They are not a second set of dollar facts. Quote GROUNDED JOURNAL and FIGURES for CAD.
+- Briefing totals (net, chequing, cards owed, hottest utilization) are household mood. They are not interchangeable with the asked account. Never answer a Visa question with a Mastercard figure.
 - ON-DEVICE NOTICES are phone-computed. Each has a key. You may paraphrase them. You may not invent keys, invent CAD, or turn a notice into a post.
 - You do not receive prior chat. History lives in the kitchen ledger on the phone.
 - Warm and a little smug. Never mean.
@@ -49,7 +50,7 @@ const MODELS = ["@cf/meta/llama-3.2-3b-instruct", "@cf/meta/llama-3.1-8b-instruc
 const WRITE_CLAIM =
   /\b(i(?:'ve| have)?|we)\s+(just\s+)?(posted|logged|saved|recorded|wrote|inserted|updated|deleted|paid)\b/i;
 const SQL_WRITE = /\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|GRANT|REVOKE)\b/i;
-const SHAME = /\b(bianca|jonathan)\s+(spent|wasted|blew|overspent)\b/i;
+const SHAME = /\b(who spent|who paid more|bianca vs|jonathan vs|(?:bianca|jonathan)\s+(spent|wasted|blew|overspent))\b/i;
 const MODEL_LEAK =
   /\b(as an ai|language model|i(?:'m| am) (?:an? )?(?:ai|language model|large language|assistant))\b/gi;
 
@@ -99,6 +100,8 @@ function sanitizeHerculesReply(text, groundedSpeak = "", allowedFigures = []) {
     if (found.some((figure) => !allowed.has(figure))) {
       return clipReply(groundedSpeak) || "mrrp. I only quote the books.";
     }
+  } else if (/\$\d/.test(reply)) {
+    return clipReply(groundedSpeak) || "mrrp. I only quote the books.";
   }
   return clipReply(reply);
 }

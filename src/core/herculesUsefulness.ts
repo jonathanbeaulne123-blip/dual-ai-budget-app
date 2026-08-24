@@ -5,6 +5,7 @@ import { runHealthCheck } from "./health.ts";
 import { outstandingClaims, upcomingVisitProposals } from "./appointments.ts";
 import { fullOpenGoals } from "./goalVault.ts";
 import { shiftPostingStreak } from "./shiftStreak.ts";
+import { householdWallet } from "./accounts.ts";
 import type { DateKey } from "./calendar.ts";
 import type { Household } from "./types.ts";
 
@@ -12,6 +13,7 @@ import type { Household } from "./types.ts";
  * How much Hercules can actually contribute right now.
  * Read-only projection — never invents CAD, never posts.
  * Green = real books insight; yellow = soft nudge; red = mostly presence.
+ * 80+ means a loaded desk he can name without guessing (D-113).
  */
 export type UsefulnessLight = "red" | "yellow" | "green";
 
@@ -22,6 +24,8 @@ export type HerculesUsefulness = {
   /** 0–1 animation intensity. More useful → more animated beg. */
   animation: number;
   spoken: string;
+  /** Claude: first tap may open How can I help when this is true (D-097 amendment). */
+  openHelpOnTap: boolean;
 };
 
 function lightFromScore(score: number): UsefulnessLight {
@@ -40,23 +44,23 @@ export function herculesUsefulness(household: Household, today: DateKey): Hercul
   const visits = upcomingVisitProposals(household, today);
   const full = fullOpenGoals(household);
   const streak = shiftPostingStreak(household, today);
-  const groceryToday = household.transactions.some(
-    (tx) => !tx.isDuplicate && tx.date === today && tx.subcategoryId === "SUB-FOOD-GROCERIES",
-  );
+  const wallet = householdWallet(household, today);
+  const hot = wallet.hottestCard;
+  const habit = notices.find((item) => item.kind === "habit-preset");
+  const otherNotices = notices.filter((item) => item.kind !== "habit-preset");
 
-  let score = 8;
+  let score = 12;
   const reasons: string[] = [];
 
-  if (findings.length) {
-    score += Math.min(40, 18 + findings.length * 6);
-    reasons.push(findings.length === 1 ? "Health has a finding" : `${findings.length} Health findings`);
-  }
   if (leftover.leftoverCents > 0) {
-    score += 18;
+    score += 24;
     reasons.push("Leftover is ready for sit-down");
+  } else if (leftover.shortfallCents > 0) {
+    score += 8;
+    reasons.push("Sit-down still runs — nothing leftover to move");
   }
   if (claims.length) {
-    score += Math.min(16, 8 + claims.length * 3);
+    score += Math.min(16, 12 + (claims.length - 1) * 2);
     reasons.push(claims.length === 1 ? "A claim is outstanding" : `${claims.length} claims outstanding`);
   }
   if (visits.length) {
@@ -64,39 +68,51 @@ export function herculesUsefulness(household: Household, today: DateKey): Hercul
     reasons.push("A visit jar proposal is waiting");
   }
   if (full.length) {
-    score += 14;
+    score += 12;
     reasons.push(`${full[0]!.name} is full — Purchased?`);
   }
-  if (notices.length) {
-    score += Math.min(12, 6 + notices.length * 2);
+  if (habit) {
+    score += 12;
+    reasons.push("Save a repeated merchant as a preset");
+  }
+  if (otherNotices.length) {
+    score += Math.min(8, 6 + (otherNotices.length - 1) * 2);
     reasons.push("A desk notice is open");
   }
   if (streak.waiting) {
-    score += 8;
+    score += 10;
     reasons.push("Shift still needs Confirm");
   }
-  if (mood === "hiding" || mood === "restless") {
-    score += 10;
-    reasons.push(mood === "hiding" ? "Books need a check-in" : "Something on the desk is restless");
+  if (hot && hot.owedCents > 0) {
+    score += 8;
+    reasons.push(`${hot.account.name} still has a statement balance`);
   }
-  if (!groceryToday) {
-    score += 4;
-    reasons.push("No grocery posted today");
+  if (findings.length) {
+    score += Math.min(20, 12 + findings.length * 4);
+    reasons.push(findings.length === 1 ? "Health has a finding" : `${findings.length} Health findings`);
+  } else if (mood === "restless") {
+    score += 8;
+    reasons.push("Something on the desk is restless");
   }
 
   score = Math.max(0, Math.min(100, score));
   const light = lightFromScore(score);
   const animation = score / 100;
+  const openHelpOnTap = score >= 80;
   const spoken =
-    light === "green"
+    score >= 80
       ? reasons[0]
-        ? `Ears back. ${reasons[0]}. Tap me again and I'll open the prompts.`
-        : "Ears back. I have something useful. Tap again."
-      : light === "yellow"
+        ? `Ears back. ${reasons[0]}. Tap me and I'll open the prompts.`
+        : "Ears back. I have leftover, a card, or a claim. Tap me."
+      : light === "green"
         ? reasons[0]
-          ? `mrrp — ${reasons[0]}. Tap again if you want help.`
-          : "mrrp. I might help. Tap again."
-        : "I'm mostly here for company. Tap again for chat anyway.";
+          ? `Ears back. ${reasons[0]}. Tap me and I'll open the prompts.`
+          : "Ears back. I have something useful. Tap me."
+        : light === "yellow"
+          ? reasons[0]
+            ? `mrrp — ${reasons[0]}. Tap me if you want help.`
+            : "mrrp. I might help. Tap me."
+          : "I'm mostly here for company. Tap me for chat anyway.";
 
-  return { score, light, reasons: reasons.slice(0, 4), animation, spoken };
+  return { score, light, reasons: reasons.slice(0, 4), animation, spoken, openHelpOnTap };
 }
