@@ -95,7 +95,14 @@ export {
   unlinkHousehold,
   shapeSharing,
 } from "./sharing.ts";
-export { canAutoMergeConflict, moneyFactsChanged, recordConflict, unresolvedConflicts } from "./conflict.ts";
+export {
+  canAutoMergeConflict,
+  countDifferingSharedTransactionIds,
+  moneyFactsChanged,
+  recordConflict,
+  resolveConflictChoice,
+  unresolvedConflicts,
+} from "./conflict.ts";
 export {
   makeHouseholdExport,
   parseHouseholdExport,

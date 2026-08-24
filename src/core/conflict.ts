@@ -1,9 +1,10 @@
 import { cloneHousehold } from "./household.ts";
-import { mergeRecords, mergeTombstones } from "./sync.ts";
+import { assembleHousehold, ensureHouseholdShape, mergeRecords, mergeTombstones, splitForSync } from "./sync.ts";
 import { applyGoalSavings } from "./goals.ts";
 import { financialAuditHash } from "./commandIdentity.ts";
 import { nextId } from "./ids.ts";
-import { markConflicted } from "./sharing.ts";
+import { markConflicted, markPendingTransport, markSynchronized } from "./sharing.ts";
+import { belongsToSharedLedger } from "./visibility.ts";
 import type {
   Claim,
   ConflictRecord,
@@ -102,4 +103,75 @@ export async function recordConflict(local: Household, remote: Household, autoMe
 
 export function unresolvedConflicts(household: Household): ConflictRecord[] {
   return (household.conflicts ?? []).filter((row) => !row.resolved);
+}
+
+function activeMemberId(household: Household): string {
+  return household.members.find((member) => member.active)?.id ?? household.members[0]?.id ?? "MEM-001";
+}
+
+function sharedTransactions(household: Household): Transaction[] {
+  return household.transactions.filter((tx) => belongsToSharedLedger(tx));
+}
+
+/** Shared-ledger rows only — partner personal amounts stay off the review screen. */
+export function countDifferingSharedTransactionIds(local: Household, remote: Household): number {
+  const localById = new Map(sharedTransactions(local).map((tx) => [tx.id, tx]));
+  const remoteById = new Map(sharedTransactions(remote).map((tx) => [tx.id, tx]));
+  const ids = new Set([...localById.keys(), ...remoteById.keys()]);
+  let count = 0;
+  for (const id of ids) {
+    const left = localById.get(id);
+    const right = remoteById.get(id);
+    if (!left || !right || JSON.stringify(left) !== JSON.stringify(right)) count += 1;
+  }
+  return count;
+}
+
+function resolveConflictRecord(conflicts: ConflictRecord[], conflictId: string): ConflictRecord[] {
+  return (conflicts ?? []).map((row) => (row.id === conflictId ? { ...row, resolved: true } : row));
+}
+
+function mergeReceipts(local: Household, remote: Household): Household["commandReceipts"] {
+  return [...(local.commandReceipts ?? []), ...(remote.commandReceipts ?? [])].filter(
+    (row, index, rows) => rows.findIndex((item) => item.confirmationId === row.confirmationId) === index,
+  );
+}
+
+/**
+ * Apply an explicit conflict side. Caller must run acceptHouseholdWrite on the result
+ * so journal validation is not skipped.
+ */
+export function resolveConflictChoice(
+  household: Household,
+  conflictId: string,
+  side: "local" | "remote",
+): Household {
+  const open = (household.conflicts ?? []).find((row) => row.id === conflictId && !row.resolved);
+  if (!open) {
+    throw new Error("That conflict is not open on this household.");
+  }
+
+  const memberId = activeMemberId(household);
+  const resolvedConflicts = resolveConflictRecord(household.conflicts ?? [], conflictId);
+
+  if (side === "local") {
+    const chosen = ensureHouseholdShape({
+      ...open.localSnapshot,
+      conflicts: resolvedConflicts,
+      commandReceipts: mergeReceipts(household, open.localSnapshot),
+    });
+    const linked = household.linked === true || chosen.linked === true;
+    const next = linked ? markPendingTransport(chosen) : chosen;
+    return ensureHouseholdShape({
+      ...next,
+      linked,
+    });
+  }
+
+  const remoteParts = splitForSync(open.remoteSnapshot, memberId);
+  const localParts = splitForSync(household, memberId);
+  const assembled = assembleHousehold(remoteParts.shared, localParts.personal, { linked: true });
+  assembled.conflicts = resolvedConflicts;
+  assembled.commandReceipts = mergeReceipts(household, open.remoteSnapshot);
+  return markSynchronized(assembled);
 }
