@@ -1,32 +1,31 @@
 # Current docs
 
-Hearth is the product. **Living canon** is this folder except [nostalgia/](nostalgia/) and [reference/](reference/). Those two are history — useful, not binding, **not a build plan**.
+Hearth is the product. The current planning and build canon is in this folder, led by Jonathan's latest instruction and the files below. The nostalgia and reference folders are Jonathan's personal museum: they are not planning inputs and must not be cited as next work.
 
 | File | Use |
 |---|---|
-| [WORKING_MEMORY.md](WORKING_MEMORY.md) | Chat-thread recap of the last five shipped updates (#48–#53). **Not** a delete of GitHub history (D-095). |
-| [STRATEGY.md](STRATEGY.md) | Dual Course: family-office books (weight 5) and companion/interactables (weight 3). Vision and backlog, including live Google pairs (D-078). |
-| [PROJECT_CHARTER.md](PROJECT_CHARTER.md) | Who it is for and what success looks like |
+| [HEARTH_ROADMAP.md](HEARTH_ROADMAP.md) | Living phased roadmap, Updates history, rival matrix, AI workflow, Dual Course deltas, gates, risks, and proofs |
+| [WORKING_MEMORY.md](WORKING_MEMORY.md) | Chat-thread recap; update when its shipped baseline drifts |
+| [STRATEGY.md](STRATEGY.md) | Dual Course vision: family-office books (weight 5) and companion/interactables (weight 3) |
+| [PROJECT_CHARTER.md](PROJECT_CHARTER.md) | Who Hearth is for and what success looks like |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Ledger, books, UI, and how the two courses couple |
-| [DECISIONS.md](DECISIONS.md) | Living decision log (D-048 Dual Course) |
-| [HERCULES.md](HERCULES.md) | Companion how-to and laws |
-| [HERCULES_MARK.md](HERCULES_MARK.md) | Ink figure, favicon, 3D source vs 96px runtime (D-061) |
-| [HERCULES_AI.md](HERCULES_AI.md) | Resident data scientist: notices, presets, model payload, quiet redaction (D-057–D-060) |
-| [OFFICE.md](OFFICE.md) | September Office direction (D-051) — two UI branches (D-079), desktop packet (D-080 / D-082) |
-| [CLAUDE_DESKTOP_OFFICE.md](CLAUDE_DESKTOP_OFFICE.md) | **Current Claude prompt:** unique desktop offices; mobile subset is a joint review |
-| [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md) | Shipped phone Home (`OfficePhone`) |
-| [CLAUDE_OFFICE_UX.md](CLAUDE_OFFICE_UX.md) | Historical office spec (settings-list pass) |
-| [AUDIT_OFFICE.md](AUDIT_OFFICE.md) | Statements, rec, close — how to try |
-| [ACCOUNTS.md](ACCOUNTS.md) | Wallet, cards, investments — how to try |
-| [APPOINTMENTS.md](APPOINTMENTS.md) | Visits, claims tray, receivables, quiet labels, Hercules jars, Appointments destination (D-053–056) |
-| [ENVIRONMENTS.md](ENVIRONMENTS.md) | Development vs production, website, hosted books |
-| [SITDOWN.md](SITDOWN.md) | Monthly sit-down, leftover, lock, reverse, Drive export (D-083–D-089) |
-| [GOALS.md](GOALS.md) | Goals vault, leftover parking, Purchased?, retirement home (D-088 / D-089) |
-| [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md) | Private repo and one-click kitchen publish |
-| [AI_HANDOFF.md](AI_HANDOFF.md) | Risk routing; Dual Course deltas |
-| [nostalgia/](nostalgia/) | Cursor-era maps we outgrew. **Read to understand past decisions.** Do not cite as the next build plan. |
-| [reference/](reference/) | Sheets-era snapshot. **Read to understand how we got here.** Do not cite as the next build plan. |
+| [DECISIONS.md](DECISIONS.md) | Living decision log |
+| [HERCULES.md](HERCULES.md) | Companion laws and product guidance |
+| [HERCULES_MARK.md](HERCULES_MARK.md) | Mark and runtime asset guidance |
+| [HERCULES_AI.md](HERCULES_AI.md) | Resident data-scientist boundary, payload, notices, and memory guidance; reconcile with current decisions when stale |
+| [OFFICE.md](OFFICE.md) | Office direction; reconcile with shipped Office/mobile state when stale |
+| [CLAUDE_DESKTOP_OFFICE.md](CLAUDE_DESKTOP_OFFICE.md) | Claude desktop-office prompt |
+| [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md) | Shipped phone Home prompt/history |
+| [CLAUDE_OFFICE_UX.md](CLAUDE_OFFICE_UX.md) | Historical Office prompt |
+| [AUDIT_OFFICE.md](AUDIT_OFFICE.md) | Statements, reconciliation, and close guidance |
+| [ACCOUNTS.md](ACCOUNTS.md) | Wallet, cards, and investments guidance |
+| [APPOINTMENTS.md](APPOINTMENTS.md) | Visits, claims, receivables, and Appointments guidance |
+| [ENVIRONMENTS.md](ENVIRONMENTS.md) | Development versus production, website, and hosted books |
+| [SITDOWN.md](SITDOWN.md) | Monthly sitdown, leftover, lock, reverse, and export guidance |
+| [GOALS.md](GOALS.md) | Goals vault and leftover parking |
+| [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md) | Private repository and publish workflow |
+| [AI_HANDOFF.md](AI_HANDOFF.md) | Risk routing and Dual Course handoffs |
+| [briefs/](briefs/) | Paste-ready AI work packets derived from the living roadmap |
+| [worksessions/](worksessions/) | Open/close records for bounded worksessions |
 
-Start from the repository [README](../README.md) to run the app.
-
-Old filenames (`ROADMAP.md`, `PRODUCT_ROADMAP.md`, `DAILY_HEARTH.md`) are stubs that point here and at nostalgia.
+Start from the repository [README](../README.md) to run the app. Compatibility filenames such as `ROADMAP.md` and `PRODUCT_ROADMAP.md` point to the maintained roadmap.
