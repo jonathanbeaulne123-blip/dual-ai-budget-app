@@ -10,6 +10,7 @@ import {
   transactionTypeLabel,
   visibilityLabel,
   isVisibleInView,
+  ledgerNameForView,
   duplicateContrastPairs,
   type Household,
   type LedgerSection,
@@ -57,7 +58,7 @@ export function LedgerPage({
   return (
     <>
       <section className="hero">
-        <div className="label">{view === "personal" ? "Personal ledger" : "Household ledger"}</div>
+        <div className="label">{ledgerNameForView(household, memberId, view)}</div>
         <div className="money" style={{ fontSize: 36 }}>{rows.length}</div>
         <div className="sub">
           {grouped.expenses.length} expenses · {grouped.income.length} income · {grouped.other.length} transfers/refunds

@@ -27,6 +27,8 @@ import {
   retiredGoals,
   vaultReceiptBlurb,
   householdForView,
+  ledgerNameForView,
+  nameHouseholdLedgers,
   assembleHousehold,
   splitForSync,
   householdWallet,
@@ -193,7 +195,13 @@ export function App() {
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "synced" | "error">("idle");
   const [discoveredLedgers, setDiscoveredLedgers] = useState<DiscoveredHousehold[]>([]);
   const [inviteInput, setInviteInput] = useState("");
-  const [welcomeMode, setWelcomeMode] = useState<"home" | "join">("home");
+  const [welcomeMode, setWelcomeMode] = useState<"home" | "join" | "new">("home");
+  const [newHouseholdDraft, setNewHouseholdDraft] = useState({
+    householdName: "Our Household",
+    sharedLedgerName: "Household Ledger",
+    personalLedgerName: "My Personal Ledger",
+    personalMemberId: "MEM-001",
+  });
   const [booksStatus, setBooksStatus] = useState<BooksStatus | null>(null);
   const [spark, setSpark] = useState(false);
   const [visorPop, setVisorPop] = useState(false);
@@ -880,6 +888,59 @@ export function App() {
               onJoined={async (next) => { await persist(next); }}
               onBack={() => { setWelcomeMode("home"); setError(""); }}
             />
+          ) : welcomeMode === "new" ? (
+            <form onSubmit={(event) => {
+              event.preventDefault();
+              try {
+                const next = nameHouseholdLedgers(catalogHousehold(environment), newHouseholdDraft);
+                void persist(next);
+              } catch (caught) {
+                setError(caught instanceof Error ? caught.message : String(caught));
+              }
+            }}>
+              <label htmlFor="new-household-name">Household name</label>
+              <input
+                id="new-household-name"
+                maxLength={80}
+                value={newHouseholdDraft.householdName}
+                onChange={(event) => setNewHouseholdDraft((current) => ({ ...current, householdName: event.target.value }))}
+                placeholder="The Beaulne Household"
+                autoFocus
+              />
+              <label htmlFor="new-shared-ledger-name">Shared ledger name</label>
+              <input
+                id="new-shared-ledger-name"
+                maxLength={80}
+                value={newHouseholdDraft.sharedLedgerName}
+                onChange={(event) => setNewHouseholdDraft((current) => ({ ...current, sharedLedgerName: event.target.value }))}
+                placeholder="Home Books"
+              />
+              <label htmlFor="new-personal-member">This Personal ledger belongs to</label>
+              <select
+                id="new-personal-member"
+                value={newHouseholdDraft.personalMemberId}
+                onChange={(event) => setNewHouseholdDraft((current) => ({ ...current, personalMemberId: event.target.value }))}
+              >
+                {catalogHousehold(environment).members.filter((member) => member.active).map((member) => (
+                  <option key={member.id} value={member.id}>{member.name}</option>
+                ))}
+              </select>
+              <label htmlFor="new-personal-ledger-name">Personal ledger name</label>
+              <input
+                id="new-personal-ledger-name"
+                maxLength={80}
+                value={newHouseholdDraft.personalLedgerName}
+                onChange={(event) => setNewHouseholdDraft((current) => ({ ...current, personalLedgerName: event.target.value }))}
+                placeholder="My Books"
+              />
+              {error && <p className="danger">{error}</p>}
+              <button className="primary" type="submit" disabled={busy} style={{ width: "100%", marginTop: 12 }}>
+                {busy ? "Creating…" : "Create household"}
+              </button>
+              <button className="ghost" type="button" style={{ width: "100%", marginTop: 8 }} onClick={() => { setWelcomeMode("home"); setError(""); }}>
+                Back
+              </button>
+            </form>
           ) : (
             <>
               {googleConfigured() && (
@@ -912,7 +973,7 @@ export function App() {
               <button className="primary" onClick={() => persist(seedDemoHousehold({ today, environment }))}>
                 Open the demo kitchen table
               </button>
-              <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => persist(catalogHousehold(environment))}>
+              <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => { setWelcomeMode("new"); setError(""); }}>
                 Start our household
               </button>
               <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setWelcomeMode("join")}>
@@ -1244,7 +1305,7 @@ export function App() {
             className={view === item ? "active" : ""}
             onClick={() => rememberSession({ memberId: session.memberId, view: item, householdId: household.householdId })}
           >
-            {item === "household" ? "Household" : "Personal"}
+            {ledgerNameForView(household, session.memberId, item)}
           </button>
         ))}
       </div>

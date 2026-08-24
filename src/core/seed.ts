@@ -21,6 +21,13 @@ export function catalogHousehold(environment: Household["environment"] = "develo
     { id: "MEM-001", name: "Bianca", color: "#c45c26", active: true, updatedAt: seededAt },
     { id: "MEM-002", name: "Jonathan", color: "#2f6b4f", active: true, updatedAt: seededAt },
   ];
+  household.ledgerNames = {
+    shared: "Household Ledger",
+    personal: {
+      "MEM-001": "Bianca's Personal Ledger",
+      "MEM-002": "Jonathan's Personal Ledger",
+    },
+  };
   const groups = [
     { id: "INCOME", parentId: null, recordType: "group", name: "Income", transactionType: "income", essential: false, incomeStability: null, active: true, sortOrder: 10 },
     { id: "CAT-HOUSING", parentId: null, recordType: "group", name: "Housing", transactionType: "expense", essential: true, incomeStability: null, active: true, sortOrder: 20 },

@@ -23,6 +23,7 @@ import type {
   Transaction,
 } from "./types.ts";
 import { belongsToSharedLedger, isPersonalOnly, parseVisibility } from "./visibility.ts";
+import { shapeLedgerNames } from "./ledgerNames.ts";
 
 export type { PersonalEnvelope, SharedEnvelope };
 
@@ -140,6 +141,7 @@ export function ensureHouseholdShape(household: Household): Household {
     baseRevision: household.baseRevision ?? 0,
     booksAcceptedHash: household.booksAcceptedHash ?? null,
     tombstones: household.tombstones ?? [],
+    ledgerNames: shapeLedgerNames(household.ledgerNames, household.members),
     recurrences: (household.recurrences ?? []).map((item) => shapeRecurrence(item, fallbackIso)),
     appointments: shapeAppointments(household.appointments, fallbackIso),
     claims: shapeClaims(household.claims, fallbackIso),
@@ -199,6 +201,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     householdId: shaped.householdId,
     inviteCode: shaped.inviteCode,
     name: shaped.name,
+    ledgerNames: shaped.ledgerNames,
     timezone: shaped.timezone,
     currency: shaped.currency,
     environment: shaped.environment,
@@ -277,6 +280,7 @@ export function assembleHousehold(
     conflicts: [],
     tombstones: mergeTombstones(shared.tombstones, personal?.tombstones ?? []),
     name: shared.name,
+    ledgerNames: shapeLedgerNames(shared.ledgerNames, shared.members),
     timezone: shared.timezone,
     currency: shared.currency,
     environment: shared.environment,
@@ -316,6 +320,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     householdId: server.householdId || client.householdId,
     inviteCode: normalizeInviteCode(server.inviteCode) || client.inviteCode,
     name: newer.name,
+    ledgerNames: shapeLedgerNames(newer.ledgerNames, newer.members),
     timezone: newer.timezone,
     currency: newer.currency,
     environment: newer.environment,

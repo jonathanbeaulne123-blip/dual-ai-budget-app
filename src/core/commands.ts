@@ -2940,6 +2940,7 @@ export function emptyHousehold(environment: Household["environment"] = "developm
     booksAcceptedHash: null,
     tombstones: [],
     name: "Jonathan & Bianca",
+    ledgerNames: { shared: "Household Ledger", personal: {} },
     timezone: TIMEZONE,
     currency: CURRENCY,
     environment,
