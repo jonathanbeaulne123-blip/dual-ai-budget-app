@@ -6,10 +6,10 @@ import {
   claimPublicLabel,
 } from "./appointments.ts";
 import { composeNotices, type HerculesNotice } from "./notices.ts";
-import type { HerculesBriefing, HerculesGrounded } from "./herculesPersonality.ts";
+import { herculesBriefing, type HerculesBriefing, type HerculesGrounded } from "./herculesPersonality.ts";
 import { memoriesForModel, type HerculesMemoryView } from "./herculesLedger.ts";
 import type { Appointment, Claim, Household, Transaction } from "./types.ts";
-import { visibleForDuplicateScan } from "./visibility.ts";
+import { householdForAiDisclosure, visibleForDuplicateScan } from "./visibility.ts";
 
 const RECENT_TX_LIMIT = 18;
 const CATEGORY_LIMIT = 12;
@@ -232,10 +232,14 @@ export function composeHerculesChatRequest(
   ledger: HerculesLedgerExcerpt;
   ledgerLines: string;
   figures: string[];
+  /** Viewer used for the disclosure projection. Never a secret. */
+  memberId: string;
 } {
-  const secrets = quietSecrets(household);
-  const ledger = buildLedgerExcerpt(household, today, memberId);
-  const notices = noticeViews(household, today);
+  const disclosed = householdForAiDisclosure(household, memberId);
+  const secrets = quietSecrets(disclosed);
+  const scopedBriefing = herculesBriefing(disclosed, briefing.page, today);
+  const ledger = buildLedgerExcerpt(disclosed, today, memberId);
+  const notices = noticeViews(disclosed, today);
   const figures = collectAllowedFigures(
     grounded.spoken,
     grounded.lesson,
@@ -244,7 +248,8 @@ export function composeHerculesChatRequest(
   return {
     message: scrubQuietText(message, secrets) || message.trim(),
     householdId: household.householdId,
-    briefing,
+    memberId,
+    briefing: scopedBriefing,
     grounded: {
       spoken: scrubQuietText(grounded.spoken, secrets) || grounded.spoken,
       lesson: grounded.lesson ? scrubQuietText(grounded.lesson, secrets) || grounded.lesson : grounded.lesson,
@@ -255,7 +260,7 @@ export function composeHerculesChatRequest(
           }
         : grounded.fact,
     },
-    memories: memoriesForModel(household)
+    memories: memoriesForModel(disclosed)
       .map((row) => ({
         ...row,
         label: scrubQuietText(row.label, secrets) || row.label,
@@ -266,6 +271,39 @@ export function composeHerculesChatRequest(
     ledgerLines: formatLedgerExcerptForModel(ledger),
     figures,
   };
+}
+
+/** Canary: partner-personal notes and CAD must not appear in an outbound model payload string. */
+export function aiDisclosurePayloadLeaks(
+  payload: string,
+  household: Household,
+  memberId: string,
+): string[] {
+  const leaks: string[] = [];
+  const hay = payload.toLowerCase();
+  for (const tx of household.transactions) {
+    if (visibleForDuplicateScan(tx, memberId)) continue;
+    if (parseVisibilityIsPersonal(tx) && tx.createdBy !== memberId) {
+      const note = tx.note.trim();
+      if (note.length >= 3 && hay.includes(note.toLowerCase())) leaks.push(`note:${note}`);
+      const amount = formatCad(tx.amountCents);
+      if (hay.includes(amount.toLowerCase())) leaks.push(`amount:${amount}`);
+    }
+  }
+  for (const memory of household.kitchen.hercules?.memories ?? []) {
+    if (memory.createdBy === memberId) continue;
+    if (memory.label.trim().length >= 3 && hay.includes(memory.label.toLowerCase())) {
+      leaks.push(`memory:${memory.label}`);
+    }
+    if (memory.text.trim().length >= 3 && hay.includes(memory.text.toLowerCase())) {
+      leaks.push(`memoryText:${memory.text}`);
+    }
+  }
+  return leaks;
+}
+
+function parseVisibilityIsPersonal(item: { visibility?: string }): boolean {
+  return item.visibility === "personal";
 }
 
 export function payloadContainsQuietSecret(payload: string, household: Household): boolean {
