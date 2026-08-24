@@ -202,6 +202,23 @@ export function runHealthCheck(household: Household): Finding[] {
     flag(finding.section, finding.message, finding.id);
   }
 
+  const unresolved = (household.conflicts ?? []).filter((row) => !row.resolved);
+  if (unresolved.length) {
+    flag("Sync", "This phone and the shared copy both have new work. Nothing was overwritten.");
+  }
+  if (household.sharing?.mode === "pending-transport" || household.sharing?.pending) {
+    flag("Sync", household.sharing.lastError || "Saved on this phone. Sharing can retry from More.");
+  }
+  if (household.sharing?.mode === "conflicted") {
+    flag("Sync", household.sharing.lastError || "A shared write conflict is waiting. It will not disappear after refresh.");
+  }
+  if (household.sharing?.mode === "transport-error" || household.sharing?.mode === "disconnected") {
+    flag("Sync", household.sharing.lastError || "The shared copy could not be reached. Local books are still here.");
+  }
+  if (household.linked !== true && household.sharing?.mode === "synchronized") {
+    flag("Sync", "Sharing mode says synchronized, but this household is not linked.");
+  }
+
   return findings;
 }
 

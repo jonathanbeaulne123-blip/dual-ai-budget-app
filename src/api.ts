@@ -1,13 +1,13 @@
 import {
   assembleHousehold,
-  mergePersonal,
-  mergeShared,
   splitForSync,
 } from "./core/sync.ts";
 import { applyHearthPass, isHearthPass, parseHearthPass } from "./core/pass.ts";
 import { inviteFromText, isValidInviteToken } from "./core/invite.ts";
+import { markLinked, markSynchronized } from "./core/sharing.ts";
+import { canAutoMergeConflict, recordConflict } from "./core/conflict.ts";
 import type { Environment, Household } from "./core/types.ts";
-import { probeSupabase, pullSupabaseHousehold, pushSupabaseHousehold } from "./ledger/supabase.ts";
+import { probeSupabase, pullSupabaseHousehold } from "./ledger/supabase.ts";
 
 export const UNPUBLISHED_PHRASE =
   "No household is published with that phrase. Check the three words, or on the other phone open Invite and tap Publish to the cloud.";
@@ -17,15 +17,8 @@ export async function cloudBooksLive(): Promise<boolean> {
   return hosted.schema;
 }
 
-function publishError(hosted: { schema: boolean; error?: string }): Error {
-  if (hosted.error) return new Error(hosted.error);
-  return new Error("Could not publish the shared household.");
-}
-
 export async function createSharedHousehold(household: Household, _memberId: string): Promise<Household> {
-  const hosted = await pushSupabaseHousehold(household);
-  if (hosted.schema) return { ...household, linked: true };
-  throw publishError(hosted);
+  return markLinked(household);
 }
 
 export async function joinSharedHousehold(
@@ -60,19 +53,32 @@ export async function pullSharedHousehold(
 }
 
 export async function pushSharedHousehold(household: Household, _memberId: string): Promise<Household> {
-  const hosted = await pushSupabaseHousehold(household);
-  if (hosted.schema) return { ...household, linked: true };
-  throw publishError(hosted);
+  return household.linked ? household : markLinked(household);
 }
 
 export async function reconcileHousehold(local: Household, memberId: string): Promise<Household> {
   const remote = await pullSharedHousehold(local.inviteCode, memberId, local.environment);
-  const localParts = splitForSync(local, memberId);
-  const remoteParts = splitForSync(remote, memberId);
-  return assembleHousehold(
-    mergeShared(remoteParts.shared, localParts.shared),
-    mergePersonal(remoteParts.personal, localParts.personal),
-  );
+  if (local.environment !== remote.environment) {
+    throw new Error("That shared snapshot belongs to a different Development/Production pill.");
+  }
+  const localBase = local.baseRevision ?? 0;
+  const remoteRevision = remote.revision ?? 0;
+  const localRevision = local.revision ?? 0;
+  if (remoteRevision === localBase && localRevision === localBase) {
+    return markSynchronized({ ...local, linked: true });
+  }
+  if (remoteRevision > localBase && localRevision === localBase) {
+    const remoteParts = splitForSync(remote, memberId);
+    const localParts = splitForSync(local, memberId);
+    return markSynchronized(
+      assembleHousehold(remoteParts.shared, localParts.personal, { linked: true }),
+    );
+  }
+  if (remoteRevision === localBase && localRevision > localBase) {
+    return local;
+  }
+  const auto = canAutoMergeConflict(local, remote);
+  return recordConflict(local, remote, auto);
 }
 
 export function joinFromPastedSecret(raw: string, local: Household | null, memberId?: string): Household {
@@ -87,7 +93,7 @@ export function joinFromPastedSecret(raw: string, local: Household | null, membe
 
 export function hostingHint(cloudLive: boolean): string {
   if (cloudLive) {
-    return "Supabase Postgres is on. The three-word phrase opens the shared snapshot. Treat hosted rows as disclosed until Auth.";
+    return "Supabase Postgres is on. Publish is an explicit Confirm. A Hearth Pass or the three-word phrase is not encryption. Treat hosted rows as disclosed until Auth.";
   }
-  return "This phone keeps local Postgres books. Shared join needs the Supabase tables; a Hearth Pass still works as a backup.";
+  return "This phone keeps local Postgres books. Shared join needs the Supabase tables; a Hearth Pass still works as a backup. Opening the kitchen does not publish.";
 }

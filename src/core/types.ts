@@ -553,12 +553,57 @@ export type Activity = {
   updatedAt: string;
 };
 
+export type SharingMode =
+  | "local"
+  | "invite-draft"
+  | "publish-confirming"
+  | "linked"
+  | "pending-transport"
+  | "synchronized"
+  | "conflicted"
+  | "disconnected"
+  | "transport-error";
+
+export type SharingRecord = {
+  mode: SharingMode;
+  linked: boolean;
+  lastTransportAt: string | null;
+  lastError: string | null;
+  pending: boolean;
+};
+
+export type CommandReceipt = {
+  confirmationId: string;
+  identityHash: string;
+  auditHash: string;
+  commandKind: string;
+  postedIds: string[];
+  revision: number;
+  acceptedAt: string;
+};
+
+export type ConflictRecord = {
+  id: string;
+  detectedAt: string;
+  environment: Environment;
+  localRevision: number;
+  remoteRevision: number;
+  localHash: string;
+  remoteHash: string;
+  localSnapshot: Household;
+  remoteSnapshot: Household;
+  autoMerged: boolean;
+  resolved: boolean;
+};
+
 export type Household = {
   version: 1;
   householdId: string;
   inviteCode: string;
   linked: boolean;
   revision: number;
+  baseRevision: number;
+  booksAcceptedHash: string | null;
   tombstones: Tombstone[];
   name: string;
   timezone: "America/Toronto";
@@ -585,6 +630,9 @@ export type Household = {
   devices: HouseholdDevice[];
   shiftSettings: ShiftSettings;
   lastCommittedAt: string | null;
+  commandReceipts: CommandReceipt[];
+  sharing: SharingRecord;
+  conflicts: ConflictRecord[];
 };
 
 export type SharedEnvelope = {

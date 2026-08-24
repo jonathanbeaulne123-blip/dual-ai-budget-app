@@ -48,14 +48,14 @@ export function applyHearthPass(local: Household | null, pass: HearthPass, membe
   const invite = inviteFromText(pass.invite || pass.shared.inviteCode);
   const shared: SharedEnvelope = { ...pass.shared, inviteCode: invite, kind: "shared" };
   if (!local) {
-    return assembleHousehold(shared, emptyPersonal(memberId || "pending"));
+    return assembleHousehold(shared, emptyPersonal(memberId || "pending"), { linked: false });
   }
   const who = memberId || local.members.find((member) => member.active)?.id || "pending";
   if (local.householdId && shared.householdId && local.householdId === shared.householdId) {
     const localParts = splitForSync(local, who);
-    return assembleHousehold(mergeShared(localParts.shared, shared), localParts.personal);
+    return assembleHousehold(mergeShared(localParts.shared, shared), localParts.personal, { linked: local.linked === true });
   }
-  return assembleHousehold(shared, emptyPersonal(who));
+  return assembleHousehold(shared, emptyPersonal(who), { linked: false });
 }
 
 export function passFilename(household: Household): string {

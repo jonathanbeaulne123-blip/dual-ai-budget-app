@@ -8,6 +8,7 @@ import {
 import type { Household, Environment } from "../core/types.ts";
 import { assertReadOnlySelect } from "./queryGuard.ts";
 import { BOOKS_SCHEMA, BOOKS_SCHEMA_VERSION } from "./schema.ts";
+import { hostedTransportAllowed } from "../core/sharing.ts";
 import { pushSupabaseHousehold, probeSupabase } from "./supabase.ts";
 
 export type BooksStatus = {
@@ -175,13 +176,134 @@ export function hostedFailureStatus(
   };
 }
 
+export type BooksRecoveryIssue =
+  | "missing-schema"
+  | "incomplete-migration"
+  | "invalid-stored-data"
+  | "interrupted-transaction"
+  | "projection-mismatch";
+
+export class UnbalancedBooksError extends Error {
+  readonly code = "UNBALANCED_JOURNAL";
+  constructor(message = "The journal is not balanced. Nothing was posted.") {
+    super(message);
+    this.name = "UnbalancedBooksError";
+  }
+}
+
+function assertBalanced(compiled: CompiledBooks, household: Household): {
+  equation: ReturnType<typeof booksEquation>;
+  tb: ReturnType<typeof trialBalance>;
+} {
+  if (household.environment !== compiled.environment) {
+    throw new UnbalancedBooksError("Development and Production stay on separate books. Nothing was posted.");
+  }
+  for (const entry of compiled.entries) {
+    const debit = entry.lines.reduce((sum, line) => sum + line.debitCents, 0);
+    const credit = entry.lines.reduce((sum, line) => sum + line.creditCents, 0);
+    if (debit !== credit) {
+      throw new UnbalancedBooksError(`Journal ${entry.id} is unbalanced. Nothing was posted.`);
+    }
+    if (!Number.isInteger(debit) || !Number.isInteger(credit)) {
+      throw new UnbalancedBooksError("Books only accept integer CAD cents. Nothing was posted.");
+    }
+  }
+  const equation = booksEquation(compiled);
+  const tb = trialBalance(compiled, { recognizedOnly: true });
+  if (!tb.inBalance || !equation.holds) {
+    throw new UnbalancedBooksError("The trial balance does not hold. Nothing was posted.");
+  }
+  return { equation, tb };
+}
+
 export async function ingestBooks(db: PGlite, household: Household, compiled = compileHousehold(household)): Promise<BooksStatus> {
   return db.transaction((tx) => writeBooks(tx, household, compiled));
 }
 
+export async function resetBrowserBooksForTests(): Promise<void> {
+  for (const db of browserDbs.values()) {
+    try {
+      await db.close();
+    } catch {
+      /* test isolation */
+    }
+  }
+  browserDbs = new Map();
+}
+
+export async function inspectBrowserBooks(household: Household): Promise<{
+  ok: boolean;
+  issue?: BooksRecoveryIssue;
+  message: string;
+  entryCount: number;
+}> {
+  try {
+    const db = await getBrowserBooks(household.environment);
+    const version = await db.query<{ id: number }>("SELECT id FROM schema_migrations ORDER BY id");
+    if (version.rows.length === 0) {
+      return {
+        ok: false,
+        issue: "missing-schema",
+        message: "PGlite opened without a books schema. The JSON household was left alone.",
+        entryCount: 0,
+      };
+    }
+    if (!version.rows.some((row) => row.id === BOOKS_SCHEMA_VERSION)) {
+      return {
+        ok: false,
+        issue: "incomplete-migration",
+        message: "PGlite is missing a books migration. The household was not reset.",
+        entryCount: 0,
+      };
+    }
+    const compiled = compileHousehold(household);
+    const existing = await db.query<{ id: string }>("SELECT id FROM households WHERE id = $1", [household.householdId]);
+    const entries = await db.query<{ n: number }>(
+      "SELECT count(*)::int AS n FROM journal_entries WHERE household_id = $1",
+      [household.householdId],
+    );
+    const entryCount = Number(entries.rows[0]?.n ?? 0);
+    if (existing.rows.length === 0 && compiled.entries.length > 0) {
+      return {
+        ok: false,
+        issue: "interrupted-transaction",
+        message: "The snapshot has journal facts that PGlite does not. Nothing was discarded.",
+        entryCount,
+      };
+    }
+    const unbalanced = await db.query<{ entry_id: string }>(
+      "SELECT entry_id FROM v_unbalanced_entries WHERE household_id = $1",
+      [household.householdId],
+    );
+    if (unbalanced.rows.length) {
+      return {
+        ok: false,
+        issue: "invalid-stored-data",
+        message: "PGlite holds an unbalanced journal. The previous valid snapshot is still the UI household.",
+        entryCount,
+      };
+    }
+    if (entryCount !== compiled.entries.length) {
+      return {
+        ok: false,
+        issue: "projection-mismatch",
+        message: "The snapshot and the accepted PGlite journal do not agree. Recovery is available.",
+        entryCount,
+      };
+    }
+    return { ok: true, message: "PGlite agrees with the household snapshot.", entryCount };
+  } catch (caught) {
+    return {
+      ok: false,
+      issue: "missing-schema",
+      message: caught instanceof Error ? caught.message : "The books engine could not be inspected.",
+      entryCount: 0,
+    };
+  }
+}
+
 async function writeBooks(db: Queryable, household: Household, compiled: CompiledBooks): Promise<BooksStatus> {
-  const equation = booksEquation(compiled);
-  const tb = trialBalance(compiled, { recognizedOnly: true });
+  const { equation, tb } = assertBalanced(compiled, household);
   await db.query("DELETE FROM households WHERE id = $1", [household.householdId]);
   await db.query(
     `INSERT INTO households (id, name, timezone, currency, environment, invite_phrase, linked, revision, last_committed_at)
@@ -281,6 +403,9 @@ async function writeBooks(db: Queryable, household: Household, compiled: Compile
   );
 
   const unbalanced = await db.query<{ entry_id: string }>("SELECT entry_id FROM v_unbalanced_entries WHERE household_id = $1", [compiled.householdId]);
+  if (unbalanced.rows.length) {
+    throw new UnbalancedBooksError("PGlite rejected an unbalanced journal. Nothing was posted.");
+  }
   const version = await db.query<{ v: string }>("SELECT current_setting('server_version') AS v");
   const sqlEquation = await db.query<{
     net_worth_cents: number;
@@ -290,63 +415,83 @@ async function writeBooks(db: Queryable, household: Household, compiled: Compile
   const sqlHolds = row
     ? Number(row.net_worth_cents) === Number(row.net_income_cents)
     : equation.holds;
+  if (!tb.inBalance || !equation.holds || !sqlHolds) {
+    throw new UnbalancedBooksError("The accounting equation does not hold after ingest. Nothing was posted.");
+  }
 
   await db.query(
     `INSERT INTO audit_revisions (id, household_id, revision, at, snapshot_hash, entry_count, debit_cents, credit_cents, in_balance)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
     [
-      `REV-${compiled.householdId}-${compiled.revision}-${Date.now()}`,
+      `REV-${compiled.householdId}-${compiled.revision}-${compiled.lastCommittedAt ?? "open"}`,
       compiled.householdId,
       compiled.revision,
-      new Date().toISOString(),
+      compiled.lastCommittedAt ?? new Date().toISOString(),
       await hashBooksSnapshot(household),
       compiled.entries.length,
       tb.totalDebitCents,
       tb.totalCreditCents,
-      unbalanced.rows.length === 0 && tb.inBalance,
+      true,
     ],
   );
 
   return {
-    ok: unbalanced.rows.length === 0 && tb.inBalance && equation.holds && sqlHolds,
+    ok: true,
     engine: "pglite",
     postgresVersion: version.rows[0]?.v,
     entryCount: compiled.entries.length,
-    inBalance: unbalanced.rows.length === 0 && tb.inBalance,
-    equationHolds: equation.holds && sqlHolds,
+    inBalance: true,
+    equationHolds: true,
   };
 }
 
-export async function syncHouseholdBooks(household: Household): Promise<{ compiled: CompiledBooks; status: BooksStatus }> {
+/** Local books only. Never calls hosted REST. */
+export async function ingestHouseholdBooks(household: Household): Promise<{ compiled: CompiledBooks; status: BooksStatus }> {
   const compiled = compileHousehold(household);
   const db = await getBrowserBooks(household.environment);
   const status = await ingestBooks(db, household, compiled);
+  return { compiled, status };
+}
+
+export async function restoreHouseholdBooks(household: Household): Promise<void> {
+  await ingestHouseholdBooks(household);
+}
+
+/** Linked snapshot transport only. Unlinked households skip with zero fetch. */
+export async function publishLinkedHousehold(household: Household): Promise<BooksStatus["hosted"]> {
+  if (!hostedTransportAllowed(household)) {
+    return { provider: "supabase", reachable: false, schema: false, error: undefined };
+  }
   try {
-    const hosted = await pushSupabaseHousehold({ ...household, linked: true });
+    const hosted = await pushSupabaseHousehold(household);
     return {
-      compiled,
-      status: {
-        ...status,
-        engine: hosted.schema ? "pglite+supabase" : status.engine,
-        hosted: {
-          provider: "supabase",
-          reachable: hosted.reachable,
-          schema: hosted.schema,
-          project: hosted.project,
-          error: hosted.error,
-        },
-      },
+      provider: "supabase",
+      reachable: hosted.reachable,
+      schema: hosted.schema,
+      project: hosted.project,
+      error: hosted.error,
     };
   } catch (caught) {
     const hosted = await probeSupabase();
-    return {
-      compiled,
-      status: {
-        ...status,
-        hosted: hostedFailureStatus(caught, hosted),
-      },
-    };
+    return hostedFailureStatus(caught, hosted);
   }
+}
+
+/** @deprecated Prefer ingestHouseholdBooks, then publishLinkedHousehold only when linked. */
+export async function syncHouseholdBooks(household: Household): Promise<{ compiled: CompiledBooks; status: BooksStatus }> {
+  const { compiled, status } = await ingestHouseholdBooks(household);
+  if (!hostedTransportAllowed(household)) {
+    return { compiled, status };
+  }
+  const hosted = await publishLinkedHousehold(household);
+  return {
+    compiled,
+    status: {
+      ...status,
+      engine: hosted?.schema ? "pglite+supabase" : status.engine,
+      hosted,
+    },
+  };
 }
 
 export async function queryBooks(sql: string, environment: Environment = "development"): Promise<{ columns: string[]; rows: Record<string, unknown>[] }> {

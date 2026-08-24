@@ -105,6 +105,7 @@ describe("household and personal visibility", () => {
     const assembled = assembleHousehold(shared, emptyPersonal("MEM-001"));
     expect(assembled.members).toHaveLength(2);
     expect(assembled.transactions).toHaveLength(0);
-    expect(assembled.linked).toBe(true);
+    expect(assembled.linked).toBe(false);
+    expect(assembleHousehold(shared, emptyPersonal("MEM-001"), { linked: true }).linked).toBe(true);
   });
 });

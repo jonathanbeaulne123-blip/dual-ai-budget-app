@@ -87,7 +87,10 @@ import {
 } from "./core/index.ts";
 import { STORAGE_EXPLAINER, clearHousehold, downloadJson, loadHousehold, saveHousehold } from "./storage.ts";
 import { clearSession, loadSession, saveSession, type Session } from "./session.ts";
-import { joinSharedHousehold, pushSharedHousehold, reconcileHousehold } from "./api.ts";
+import { joinSharedHousehold, reconcileHousehold } from "./api.ts";
+import { acceptHouseholdWrite, hostedTransportAllowed, newConfirmationId } from "./core/index.ts";
+import { ingestHouseholdBooks, inspectBrowserBooks, restoreHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
+import { pushSupabaseHousehold } from "./ledger/supabase.ts";
 import { inviteFromLocation } from "./core/invite.ts";
 import { PairingCard, WelcomeJoin } from "./Pairing.tsx";
 import { BooksPage } from "./Books.tsx";
@@ -108,7 +111,6 @@ import {
   disconnectGoogle,
   googleConfigured,
 } from "./google/index.ts";
-import { syncHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
 
 type Tab = "home" | "plan" | "calendar" | "ledger" | "more";
 type AddMode = "expense" | "income" | "shift" | "transfer";
@@ -183,6 +185,8 @@ export function App() {
   householdRef.current = household;
   const historyRef = useRef(history);
   historyRef.current = history;
+  const confirmationRef = useRef<string | null>(null);
+  const postingRef = useRef(false);
 
   useEffect(() => {
     const token = inviteFromLocation(window.location.href);
@@ -232,8 +236,49 @@ export function App() {
       }
       setHousehold(current);
       if (current) {
-        void syncHouseholdBooks(current)
-          .then(({ status }) => { if (live) setBooksStatus(status); })
+        void inspectBrowserBooks(current)
+          .then(async (inspection) => {
+            if (!live) return;
+            if (inspection.ok) {
+              setBooksStatus({
+                ok: true,
+                engine: "pglite",
+                entryCount: inspection.entryCount,
+                inBalance: true,
+                equationHolds: true,
+              });
+              return;
+            }
+            if (
+              inspection.issue === "missing-schema" ||
+              inspection.issue === "incomplete-migration" ||
+              inspection.issue === "interrupted-transaction"
+            ) {
+              try {
+                const { status } = await ingestHouseholdBooks(current);
+                if (live) setBooksStatus(status);
+              } catch (caught) {
+                if (!live) return;
+                setBooksStatus({
+                  ok: false,
+                  engine: "pglite",
+                  entryCount: inspection.entryCount,
+                  inBalance: false,
+                  equationHolds: false,
+                  error: caught instanceof Error ? caught.message : inspection.message,
+                });
+              }
+              return;
+            }
+            setBooksStatus({
+              ok: false,
+              engine: "pglite",
+              entryCount: inspection.entryCount,
+              inBalance: false,
+              equationHolds: false,
+              error: inspection.message,
+            });
+          })
           .catch((caught) => {
             if (!live) return;
             setBooksStatus({
@@ -299,48 +344,92 @@ export function App() {
     saveSession(environment, next);
   }
 
-  async function commitHousehold(next: Household, token?: UndoToken, actorId?: string) {
+  async function commitHousehold(next: Household, token?: UndoToken, _actorId?: string) {
     setBusy(true);
+    const previous = householdRef.current;
+    const confirmationId = confirmationRef.current ?? newConfirmationId();
+    confirmationRef.current = confirmationId;
     try {
-      await saveHousehold(next);
-      setHousehold(next);
-      if (token) {
+      const outcome = await acceptHouseholdWrite({
+        previous,
+        candidate: next,
+        confirmationId,
+        commandKind: token?.label ?? "commit",
+        postedIds: token?.postedIds ?? [],
+        adapters: {
+          persist: saveHousehold,
+          ingest: async (household) => {
+            try {
+              const { status } = await ingestHouseholdBooks(household);
+              return { ok: status.ok, error: status.error };
+            } catch (error) {
+              return { ok: false, error: error instanceof Error ? error.message : String(error) };
+            }
+          },
+          restoreIngest: async (household) => {
+            await restoreHouseholdBooks(household);
+          },
+          transport: hostedTransportAllowed(next)
+            ? async (household, expectedRevision) => {
+                const pushed = await pushSupabaseHousehold(household, undefined, { expectedRevision });
+                if (pushed.skipped) return { ok: true };
+                if (pushed.conflict && pushed.remote) {
+                  return {
+                    ok: false,
+                    errorClass: "conflict-detected" as const,
+                    remote: pushed.remote,
+                    message: pushed.error || "Another phone posted a newer household snapshot. Nothing was overwritten.",
+                  };
+                }
+                if (!pushed.schema) {
+                  return {
+                    ok: false,
+                    errorClass: "pending-transport" as const,
+                    message: pushed.error || "Saved on this phone. Sharing can retry from More.",
+                  };
+                }
+                return { ok: true, remoteRevision: household.revision };
+              }
+            : undefined,
+        },
+      });
+      if (outcome.ok || outcome.postedNothing) confirmationRef.current = null;
+      setHousehold(outcome.household);
+      if (outcome.ok && token) {
         setToast(token);
         setHistory((current) => [...current, token].slice(-20));
         window.setTimeout(() => setToast((item) => (item?.id === token.id ? null : item)), 8000);
       }
-      const who = actorId || session?.memberId;
-      let stored = next;
-      if (next.linked && who) {
-        setSyncState("syncing");
-        try {
-          let outgoing = next;
-          try {
-            outgoing = await reconcileHousehold(next, who);
-          } catch {
-            // Offline or unpublished: still try to publish this phone's copy.
-          }
-          stored = await pushSharedHousehold(outgoing, who);
-          await saveHousehold(stored);
-          setHousehold(stored);
-          setSyncState("synced");
-        } catch (caught) {
-          setSyncState("error");
-          setError(caught instanceof Error ? caught.message : "Saved on this phone. Shared sync can retry from More.");
-        }
+      if (!outcome.ok) {
+        setError(outcome.userMessage || "That change did not post.");
+        if (outcome.kind === "conflict-needs-attention") setSyncState("error");
+      } else if (outcome.kind === "synchronized") {
+        setSyncState("synced");
+      } else if (outcome.kind === "pending-transport") {
+        setSyncState("error");
       }
-      try {
-        setBooksStatus((await syncHouseholdBooks(stored)).status);
-      } catch (caught) {
+      if (outcome.ok) {
+        setBooksStatus({
+          ok: true,
+          engine: outcome.kind === "synchronized" ? "pglite+supabase" : "pglite",
+          entryCount: outcome.household.transactions.length,
+          inBalance: true,
+          equationHolds: true,
+          error: outcome.kind === "pending-transport" ? outcome.userMessage ?? undefined : undefined,
+        });
+      } else {
         setBooksStatus({
           ok: false,
           engine: "pglite",
-          entryCount: 0,
-          inBalance: false,
-          equationHolds: false,
-          error: caught instanceof Error ? caught.message : String(caught),
+          entryCount: previous?.transactions.length ?? 0,
+          inBalance: outcome.errorClass !== "unbalanced-journal",
+          equationHolds: outcome.errorClass !== "unbalanced-journal",
+          error: outcome.userMessage ?? undefined,
         });
       }
+    } catch (caught) {
+      if (caught instanceof NeedsConfirmationError) throw caught;
+      setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
       setBusy(false);
     }
@@ -382,6 +471,8 @@ export function App() {
   }
 
   function run(fn: (current: Household) => CommitResult) {
+    if (postingRef.current) return Promise.resolve();
+    postingRef.current = true;
     return enqueueWrite(async () => {
       const current = householdRef.current;
       if (!current) return;
@@ -417,6 +508,8 @@ export function App() {
           setConfirm(caught);
           setAdding(true);
         } else setError(caught instanceof Error ? caught.message : String(caught));
+      } finally {
+        postingRef.current = false;
       }
     });
   }

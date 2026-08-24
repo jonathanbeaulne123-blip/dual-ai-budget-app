@@ -1,0 +1,329 @@
+import { booksEquation, compileHousehold, trialBalance, type CompiledBooks } from "./journal.ts";
+import { ensureHouseholdShape } from "./sync.ts";
+import {
+  commandIdentityHash,
+  financialAuditHash,
+  findReceipt,
+  newConfirmationId,
+  rememberReceipt,
+} from "./commandIdentity.ts";
+import {
+  BooksRejectedError,
+  classifyCommandError,
+  outcome,
+  type CommandOutcome,
+} from "./commandOutcome.ts";
+import {
+  deriveSharing,
+  hostedTransportAllowed,
+  markConflicted,
+  markPendingTransport,
+  markSynchronized,
+  shapeSharing,
+} from "./sharing.ts";
+import { canAutoMergeConflict, recordConflict } from "./conflict.ts";
+import type { CommandReceipt, Household } from "./types.ts";
+import { NeedsConfirmationError } from "./types.ts";
+
+export type BooksAcceptStatus = { ok: boolean; error?: string };
+
+export type TransportResult =
+  | { ok: true; remoteRevision?: number }
+  | { ok: false; errorClass: "pending-transport" | "conflict-detected" | "disconnected"; remote?: Household; message: string };
+
+export type WriteAdapters = {
+  persist: (household: Household) => Promise<void>;
+  ingest: (household: Household) => Promise<BooksAcceptStatus>;
+  restoreIngest?: (household: Household) => Promise<void>;
+  transport?: (household: Household, expectedRevision: number) => Promise<TransportResult>;
+};
+
+export type AcceptWriteInput = {
+  previous: Household | null;
+  candidate: Household;
+  confirmationId?: string;
+  commandKind?: string;
+  postedIds?: string[];
+  adapters: WriteAdapters;
+};
+
+export function assertAcceptableBooks(household: Household, compiled = compileHousehold(household)): CompiledBooks {
+  for (const entry of compiled.entries) {
+    const debit = entry.lines.reduce((sum, line) => sum + line.debitCents, 0);
+    const credit = entry.lines.reduce((sum, line) => sum + line.creditCents, 0);
+    if (debit !== credit) {
+      throw new BooksRejectedError(
+        `Journal ${entry.id} is unbalanced (${debit} debit / ${credit} credit). Nothing was posted.`,
+        "unbalanced-journal",
+      );
+    }
+    if (!Number.isInteger(debit) || !Number.isInteger(credit)) {
+      throw new BooksRejectedError("Books only accept integer CAD cents. Nothing was posted.", "validation-rejected");
+    }
+  }
+  const tb = trialBalance(compiled);
+  const equation = booksEquation(compiled);
+  if (!tb.inBalance) {
+    throw new BooksRejectedError("The trial balance does not hold. Nothing was posted.", "unbalanced-journal");
+  }
+  if (!equation.holds) {
+    throw new BooksRejectedError("The accounting equation does not hold. Nothing was posted.", "unbalanced-journal");
+  }
+  return compiled;
+}
+
+function failedOutcome(
+  previous: Household | null,
+  confirmationId: string,
+  error: unknown,
+  recoveryAvailable = false,
+): CommandOutcome {
+  const classified = classifyCommandError(error);
+  const household = previous ?? ({ sharing: shapeSharing({ linked: false }), revision: 0 } as Household);
+  return outcome({
+    kind: recoveryAvailable && classified.retryable ? "recovery-available" : classified.kind === "permanent-validation-failure" ? "permanent-validation-failure" : classified.retryable ? "retryable-failure" : "rejected-no-write",
+    household,
+    previous,
+    postedIds: [],
+    confirmationId,
+    identityHash: null,
+    revision: previous?.revision ?? 0,
+    sharingMode: previous ? deriveSharing(previous).mode : "local",
+    errorClass: classified.errorClass,
+    userMessage: classified.userMessage,
+    retryable: classified.retryable,
+    recoveryAvailable,
+    postedExactlyOnce: false,
+    postedNothing: true,
+    ok: false,
+  });
+}
+
+export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<CommandOutcome> {
+  const confirmationId = input.confirmationId || newConfirmationId();
+  const previous = input.previous ? ensureHouseholdShape(input.previous) : null;
+  try {
+    const candidate = ensureHouseholdShape(input.candidate);
+    if (previous && candidate.environment !== previous.environment) {
+      throw new BooksRejectedError("Development and Production stay on separate books. Nothing was posted.", "validation-rejected");
+    }
+    const postedIds = input.postedIds ?? [];
+    const sameHousehold = Boolean(previous && previous.householdId === candidate.householdId);
+    const identityHash = await commandIdentityHash(sameHousehold ? previous : null, candidate, postedIds);
+    const existing = sameHousehold && previous ? findReceipt(previous, confirmationId) : undefined;
+    if (existing && previous) {
+      return outcome({
+        kind: hostedTransportAllowed(previous) && previous.sharing?.pending ? "pending-transport" : previous.sharing?.mode === "synchronized" ? "synchronized" : "accepted-local",
+        household: previous,
+        previous,
+        postedIds: existing.postedIds,
+        confirmationId,
+        identityHash: existing.identityHash,
+        revision: existing.revision,
+        sharingMode: deriveSharing(previous).mode,
+        errorClass: null,
+        userMessage: null,
+        retryable: false,
+        recoveryAvailable: false,
+        duplicateOfReceiptId: existing.confirmationId,
+        postedExactlyOnce: true,
+        postedNothing: false,
+      });
+    }
+
+    assertAcceptableBooks(candidate);
+
+    const revision = (sameHousehold ? previous?.revision ?? 0 : candidate.revision ?? 0) + 1;
+    const acceptedAt = new Date().toISOString();
+    let accepted: Household = {
+      ...candidate,
+      revision,
+      lastCommittedAt: candidate.lastCommittedAt ?? acceptedAt,
+      sharing: shapeSharing(candidate),
+      conflicts: candidate.conflicts ?? previous?.conflicts ?? [],
+    };
+    const receipt: CommandReceipt = {
+      confirmationId,
+      identityHash,
+      auditHash: "",
+      commandKind: input.commandKind ?? "commit",
+      postedIds,
+      revision,
+      acceptedAt,
+    };
+    accepted = rememberReceipt(accepted, receipt);
+    accepted.booksAcceptedHash = await financialAuditHash(accepted);
+    accepted = rememberReceipt(accepted, { ...receipt, auditHash: accepted.booksAcceptedHash });
+
+    try {
+      const status = await input.adapters.ingest(accepted);
+      if (!status.ok) {
+        const message = status.error || "PGlite rejected the journal. Nothing was posted.";
+        const errorClass = /unbalanced|trial balance|accounting equation/i.test(message)
+          ? "unbalanced-journal"
+          : "books-unavailable";
+        throw new BooksRejectedError(message, errorClass);
+      }
+    } catch (error) {
+      if (error instanceof NeedsConfirmationError) throw error;
+      if (error instanceof BooksRejectedError) return failedOutcome(previous, confirmationId, error);
+      return failedOutcome(previous, confirmationId, error);
+    }
+
+    try {
+      await input.adapters.persist(accepted);
+    } catch (error) {
+      const persistError = new BooksRejectedError(
+        "The last valid household is still here. This phone could not save the new snapshot.",
+        "persist-failed",
+      );
+      if (previous && input.adapters.restoreIngest) {
+        try {
+          await input.adapters.restoreIngest(previous);
+        } catch {
+          return failedOutcome(previous, confirmationId, persistError, true);
+        }
+      }
+      return failedOutcome(previous, confirmationId, persistError, Boolean(previous));
+    }
+
+    if (!hostedTransportAllowed(accepted) || !input.adapters.transport) {
+      return outcome({
+        kind: "accepted-local",
+        household: accepted,
+        previous,
+        postedIds,
+        confirmationId,
+        identityHash,
+        revision,
+        sharingMode: deriveSharing(accepted).mode,
+        errorClass: null,
+        userMessage: null,
+        retryable: false,
+        recoveryAvailable: false,
+      });
+    }
+
+    const expectedRevision = sameHousehold
+      ? (previous?.baseRevision ?? Math.max(0, (previous?.revision ?? revision) - 1))
+      : (candidate.baseRevision ?? candidate.revision ?? 0);
+    try {
+      const transported = await input.adapters.transport(accepted, expectedRevision);
+      if (transported.ok) {
+        const synced = markSynchronized(accepted);
+        try {
+          await input.adapters.persist(synced);
+        } catch {
+          return outcome({
+            kind: "pending-transport",
+            household: markPendingTransport(accepted, "Saved locally. Share is still waiting."),
+            previous,
+            postedIds,
+            confirmationId,
+            identityHash,
+            revision,
+            sharingMode: "pending-transport",
+            errorClass: "pending-transport",
+            userMessage: "Saved on this phone. Sharing can retry from More.",
+            retryable: true,
+            recoveryAvailable: false,
+            ok: true,
+            postedExactlyOnce: true,
+            postedNothing: false,
+          });
+        }
+        return outcome({
+          kind: "synchronized",
+          household: synced,
+          previous,
+          postedIds,
+          confirmationId,
+          identityHash,
+          revision,
+          sharingMode: "synchronized",
+          errorClass: null,
+          userMessage: null,
+          retryable: false,
+          recoveryAvailable: false,
+        });
+      }
+      if (transported.errorClass === "conflict-detected" && transported.remote) {
+        const auto = canAutoMergeConflict(accepted, transported.remote);
+        const conflicted = await recordConflict(accepted, transported.remote, auto);
+        try {
+          await input.adapters.persist(conflicted);
+          if (auto) await input.adapters.ingest(conflicted);
+        } catch {
+          /* keep in-memory conflict bundle */
+        }
+        return outcome({
+          kind: auto ? "accepted-local" : "conflict-needs-attention",
+          household: conflicted,
+          previous,
+          postedIds,
+          confirmationId,
+          identityHash,
+          revision,
+          sharingMode: auto ? deriveSharing(conflicted).mode : "conflicted",
+          errorClass: auto ? null : "conflict-detected",
+          userMessage: auto ? null : "This phone and the shared copy both have new work. Nothing was overwritten.",
+          retryable: !auto,
+          recoveryAvailable: !auto,
+          ok: true,
+          postedExactlyOnce: true,
+          postedNothing: false,
+        });
+      }
+      const pending = markPendingTransport(accepted, transported.message);
+      try {
+        await input.adapters.persist(pending);
+      } catch {
+        /* local books already accepted */
+      }
+      return outcome({
+        kind: transported.errorClass === "conflict-detected" ? "conflict-needs-attention" : "pending-transport",
+        household: transported.errorClass === "conflict-detected" ? markConflicted(accepted, transported.message) : pending,
+        previous,
+        postedIds,
+        confirmationId,
+        identityHash,
+        revision,
+        sharingMode: transported.errorClass === "conflict-detected" ? "conflicted" : "pending-transport",
+        errorClass: transported.errorClass,
+        userMessage: transported.message,
+        retryable: true,
+        recoveryAvailable: transported.errorClass === "conflict-detected",
+        ok: true,
+        postedExactlyOnce: true,
+        postedNothing: false,
+      });
+    } catch (error) {
+      const pending = markPendingTransport(accepted, "Saved on this phone. Sharing can retry from More.");
+      try {
+        await input.adapters.persist(pending);
+      } catch {
+        /* already accepted locally */
+      }
+      return outcome({
+        kind: "pending-transport",
+        household: pending,
+        previous,
+        postedIds,
+        confirmationId,
+        identityHash,
+        revision,
+        sharingMode: "pending-transport",
+        errorClass: "pending-transport",
+        userMessage: error instanceof Error ? "Saved on this phone. Sharing can retry from More." : "Saved on this phone. Sharing can retry from More.",
+        retryable: true,
+        recoveryAvailable: false,
+        ok: true,
+        postedExactlyOnce: true,
+        postedNothing: false,
+      });
+    }
+  } catch (error) {
+    if (error instanceof NeedsConfirmationError) throw error;
+    return failedOutcome(previous, confirmationId, error);
+  }
+}

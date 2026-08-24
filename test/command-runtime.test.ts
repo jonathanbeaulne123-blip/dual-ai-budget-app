@@ -1,0 +1,221 @@
+import { describe, expect, it } from "vitest";
+import {
+  acceptHouseholdWrite,
+  catalogHousehold,
+  compileHousehold,
+  postEntry,
+  type Household,
+  type WriteAdapters,
+} from "../src/core/index.ts";
+
+function grocery(note: string, amount = "4.00") {
+  return {
+    date: "2026-08-24" as const,
+    type: "expense" as const,
+    amount,
+    accountId: "ACC-VISA",
+    subcategoryId: "SUB-FOOD-GROCERIES",
+    note,
+    createdBy: "MEM-001",
+    confirmDuplicate: true,
+  };
+}
+
+function memoryAdapters(options?: {
+  ingestOk?: boolean;
+  persistOk?: boolean;
+  transport?: WriteAdapters["transport"];
+}) {
+  let persisted: Household | null = null;
+  let ingested: Household | null = null;
+  const adapters: WriteAdapters = {
+    persist: async (household) => {
+      if (options?.persistOk === false) throw new Error("disk full");
+      persisted = household;
+    },
+    ingest: async (household) => {
+      if (options?.ingestOk === false) return { ok: false, error: "PGlite refused the journal." };
+      ingested = household;
+      return { ok: true };
+    },
+    restoreIngest: async (household) => {
+      ingested = household;
+    },
+    transport: options?.transport,
+  };
+  return {
+    adapters,
+    persisted: () => persisted,
+    ingested: () => ingested,
+  };
+}
+
+describe("atomic household writes", () => {
+  it("commits a balanced command exactly once", async () => {
+    const previous = catalogHousehold();
+    const posted = postEntry(previous, grocery("Milk"));
+    const store = memoryAdapters();
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: posted.household,
+      confirmationId: "confirm-milk",
+      postedIds: posted.postedIds,
+      adapters: store.adapters,
+    });
+    expect(outcome.ok).toBe(true);
+    expect(outcome.postedExactlyOnce).toBe(true);
+    expect(outcome.postedNothing).toBe(false);
+    expect(store.persisted()?.revision).toBe((previous.revision ?? 0) + 1);
+    expect(store.ingested()?.transactions.some((row) => row.note === "Milk")).toBe(true);
+    expect(compileHousehold(outcome.household).entries.length).toBeGreaterThan(0);
+  });
+
+  it("rejects an invalid command without writing JSON, books, or transport", async () => {
+    const previous = catalogHousehold();
+    const store = memoryAdapters();
+    const transports: number[] = [];
+    store.adapters.transport = async () => {
+      transports.push(1);
+      return { ok: true };
+    };
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: { ...previous, environment: "production" },
+      confirmationId: "confirm-env",
+      adapters: store.adapters,
+    });
+    expect(outcome.ok).toBe(false);
+    expect(outcome.postedNothing).toBe(true);
+    expect(store.persisted()).toBeNull();
+    expect(store.ingested()).toBeNull();
+    expect(transports).toEqual([]);
+  });
+
+  it("rejects an unbalanced journal without mutation", async () => {
+    const previous = catalogHousehold();
+    const posted = postEntry(previous, grocery("Unbalanced"));
+    const store = memoryAdapters();
+    store.adapters.ingest = async () => ({ ok: false, error: "Journal is unbalanced. Nothing was posted." });
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: posted.household,
+      confirmationId: "confirm-unbalanced",
+      postedIds: posted.postedIds,
+      adapters: store.adapters,
+    });
+    expect(outcome.ok).toBe(false);
+    expect(outcome.errorClass).toBe("unbalanced-journal");
+    expect(outcome.postedNothing).toBe(true);
+    expect(store.persisted()).toBeNull();
+  });
+
+  it("keeps the previous household when PGlite ingest fails", async () => {
+    const previous = catalogHousehold();
+    const posted = postEntry(previous, grocery("Bread"));
+    const store = memoryAdapters({ ingestOk: false });
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: posted.household,
+      confirmationId: "confirm-ingest",
+      postedIds: posted.postedIds,
+      adapters: store.adapters,
+    });
+    expect(outcome.ok).toBe(false);
+    expect(outcome.postedNothing).toBe(true);
+    expect(outcome.household.revision).toBe(previous.revision);
+    expect(store.persisted()).toBeNull();
+  });
+
+  it("restores books and keeps the previous snapshot when persist fails", async () => {
+    const previous = catalogHousehold();
+    const posted = postEntry(previous, grocery("Eggs"));
+    const store = memoryAdapters({ persistOk: false });
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: posted.household,
+      confirmationId: "confirm-persist",
+      postedIds: posted.postedIds,
+      adapters: store.adapters,
+    });
+    expect(outcome.ok).toBe(false);
+    expect(outcome.postedNothing).toBe(true);
+    expect(store.ingested()?.householdId).toBe(previous.householdId);
+    expect(store.ingested()?.revision).toBe(previous.revision);
+  });
+
+  it("posts once when Confirm is repeated with the same confirmation id", async () => {
+    const previous = catalogHousehold();
+    const posted = postEntry(previous, grocery("Butter"));
+    const store = memoryAdapters();
+    const first = await acceptHouseholdWrite({
+      previous,
+      candidate: posted.household,
+      confirmationId: "confirm-butter",
+      postedIds: posted.postedIds,
+      adapters: store.adapters,
+    });
+    const second = await acceptHouseholdWrite({
+      previous: first.household,
+      candidate: posted.household,
+      confirmationId: "confirm-butter",
+      postedIds: posted.postedIds,
+      adapters: store.adapters,
+    });
+    expect(first.postedExactlyOnce).toBe(true);
+    expect(second.postedExactlyOnce).toBe(true);
+    expect(second.duplicateOfReceiptId).toBe("confirm-butter");
+    expect(second.household.commandReceipts.filter((row) => row.confirmationId === "confirm-butter")).toHaveLength(1);
+  });
+
+  it("does not publish a rejected command", async () => {
+    const previous = { ...catalogHousehold(), linked: true };
+    const posted = postEntry(previous, grocery("Reject me"));
+    const broken = {
+      ...posted.household,
+      linked: true,
+      transactions: posted.household.transactions.map((row, index) =>
+        index === posted.household.transactions.length - 1 ? { ...row, amountCents: 1 } : row,
+      ),
+    };
+    let published = 0;
+    const store = memoryAdapters({
+      transport: async () => {
+        published += 1;
+        return { ok: true };
+      },
+    });
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: broken,
+      confirmationId: "confirm-no-publish",
+      postedIds: posted.postedIds,
+      adapters: store.adapters,
+    });
+    expect(outcome.ok).toBe(false);
+    expect(published).toBe(0);
+  });
+
+  it("keeps both sides when a stale linked write is detected", async () => {
+    const previous = { ...catalogHousehold(), linked: true, revision: 3, baseRevision: 3 };
+    const posted = postEntry(previous, grocery("Coffee"));
+    const remote = { ...previous, revision: 4, lastCommittedAt: "2026-08-24T12:00:00.000Z" };
+    const store = memoryAdapters({
+      transport: async () => ({
+        ok: false,
+        errorClass: "conflict-detected",
+        remote,
+        message: "Another phone posted a newer household snapshot. Nothing was overwritten.",
+      }),
+    });
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: { ...posted.household, linked: true },
+      confirmationId: "confirm-conflict",
+      postedIds: posted.postedIds,
+      adapters: store.adapters,
+    });
+    expect(outcome.ok).toBe(true);
+    expect(outcome.kind === "conflict-needs-attention" || outcome.household.conflicts.length > 0).toBe(true);
+    expect(outcome.household.conflicts.some((row) => !row.resolved) || outcome.kind === "accepted-local").toBe(true);
+  });
+});

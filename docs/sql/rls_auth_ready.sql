@@ -1,37 +1,92 @@
--- FUTURE ONLY. Do not paste this into the live Supabase SQL editor until
--- Supabase Auth exists for Jonathan and Bianca and Jonathan has approved it.
+-- AUTH / RLS READINESS PACKET. DO NOT APPLY.
+-- Do not paste this into the live household Supabase SQL editor.
+-- Do not contact the household project. Do not claim Auth/RLS is complete
+-- because this file exists. Hosted RLS today remains
+-- USING (true) WITH CHECK (true) for ALL, including DELETE (001_hearth_books.sql).
 --
--- Today the hosted books use USING (true) (see 001_hearth_books.sql).
--- That is an open door: the publishable key can read every snapshot.
--- Replacing it with membership policies while nobody is authenticated
--- would lock the kitchen out. D-034, D-039, D-015.
+-- Prerequisites Jonathan must complete first:
+--   1. Supabase Auth for Jonathan and Bianca.
+--   2. Apply 002_snapshot_cas.sql (unapplied CAS RPC) or accept residual GET/POST race.
+--   3. Map auth.uid() onto household membership.
+--   4. Explicit approval to replace the open anon door.
 --
--- Target shape, for the day Auth is live:
---   * auth.uid() maps to a household member
---   * household_snapshots are visible only to that household
---   * environment is part of the policy, not a hope
+-- Order:
+--   001_hearth_books.sql (already applied historically)
+--   002_snapshot_cas.sql (created, not applied)
+--   this packet (not applied)
+-- Rollback: restore 001 open policies; drop membership/invite tables created here.
+--
+-- Synthetic proof (when Auth exists, on a throwaway project, never the household):
+--   * owner can read/write own household_snapshots
+--   * member can read/write own household, cannot DELETE the household row
+--   * other household cannot SELECT payload
+--   * revoked member cannot read
 --   * anon cannot SELECT payload
---
--- Proof when this is applied: joining copper-thyme-zephyr from the
--- Production pill cannot overwrite Development; anonymous PostgREST
--- cannot dump household_snapshots.
---
--- Dual Course (D-048): this is Course A, weight 5. Pair it with an honest
--- Hercules line about access. Do not treat docs/nostalgia/ as the plan.
+--   * service_role stays server-only and is never a VITE_ key
+--   * Development row cannot be written from a Production session
 
--- Example (do not run yet):
+-- ---------------------------------------------------------------------------
+-- 1. Membership and invitations (do not run yet)
+-- ---------------------------------------------------------------------------
+-- ALTER TABLE members ADD COLUMN IF NOT EXISTS auth_user_id UUID UNIQUE;
+-- ALTER TABLE members ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'member'
+--   CHECK (role IN ('owner', 'member'));
 --
--- ALTER TABLE household_snapshots ENABLE ROW LEVEL SECURITY;
+-- CREATE TABLE IF NOT EXISTS household_invitations (
+--   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+--   household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+--   invite_phrase TEXT NOT NULL,
+--   environment TEXT NOT NULL CHECK (environment IN ('development', 'production')),
+--   invited_email TEXT,
+--   invited_auth_user_id UUID,
+--   created_by_auth_user_id UUID NOT NULL,
+--   status TEXT NOT NULL CHECK (status IN ('draft', 'pending', 'accepted', 'revoked', 'expired')),
+--   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+--   accepted_at TIMESTAMPTZ,
+--   revoked_at TIMESTAMPTZ
+-- );
+--
+-- ---------------------------------------------------------------------------
+-- 2. Replace open policies (do not run yet)
+-- ---------------------------------------------------------------------------
+-- DROP POLICY IF EXISTS hearth_anon_all ON households;
 -- DROP POLICY IF EXISTS hearth_anon_all ON household_snapshots;
--- CREATE POLICY hearth_snapshot_member ON household_snapshots
---   FOR ALL TO authenticated
+-- DROP POLICY IF EXISTS hearth_anon_all ON members;
+--
+-- CREATE POLICY hearth_household_member_select ON households
+--   FOR SELECT TO authenticated
+--   USING (id IN (SELECT household_id FROM members WHERE auth_user_id = auth.uid()));
+-- CREATE POLICY hearth_household_owner_write ON households
+--   FOR INSERT TO authenticated
+--   WITH CHECK (id IN (SELECT household_id FROM members WHERE auth_user_id = auth.uid() AND role = 'owner'));
+-- CREATE POLICY hearth_household_owner_update ON households
+--   FOR UPDATE TO authenticated
+--   USING (id IN (SELECT household_id FROM members WHERE auth_user_id = auth.uid() AND role = 'owner'))
+--   WITH CHECK (id IN (SELECT household_id FROM members WHERE auth_user_id = auth.uid() AND role = 'owner'));
+-- -- No DELETE policy for authenticated. Owners close sharing from the phone; they do not empty hosted books from PostgREST.
+--
+-- CREATE POLICY hearth_snapshot_member_select ON household_snapshots
+--   FOR SELECT TO authenticated
 --   USING (
---     household_id IN (
---       SELECT household_id FROM members WHERE auth_user_id = auth.uid()
---     )
---   )
---   WITH CHECK (
---     household_id IN (
---       SELECT household_id FROM members WHERE auth_user_id = auth.uid()
---     )
+--     household_id IN (SELECT household_id FROM members WHERE auth_user_id = auth.uid())
+--     AND environment = current_setting('request.jwt.claims', true)::json->>'hearth_environment'
 --   );
+-- CREATE POLICY hearth_snapshot_member_write ON household_snapshots
+--   FOR INSERT TO authenticated
+--   WITH CHECK (household_id IN (SELECT household_id FROM members WHERE auth_user_id = auth.uid()));
+-- CREATE POLICY hearth_snapshot_member_update ON household_snapshots
+--   FOR UPDATE TO authenticated
+--   USING (household_id IN (SELECT household_id FROM members WHERE auth_user_id = auth.uid()))
+--   WITH CHECK (household_id IN (SELECT household_id FROM members WHERE auth_user_id = auth.uid()));
+--
+-- REVOKE ALL ON households, household_snapshots, members FROM anon;
+-- GRANT SELECT, INSERT, UPDATE ON households, household_snapshots, members TO authenticated;
+-- REVOKE DELETE ON households, household_snapshots, members FROM authenticated;
+--
+-- ---------------------------------------------------------------------------
+-- 3. Service-role isolation
+-- ---------------------------------------------------------------------------
+-- The service role key never ships in VITE_, Cloudflare Pages/Workers env that Vite bakes,
+-- household snapshots, or Hearth Pass files. Server jobs that need it stay off this app.
+
+-- This file is documentation plus a future SQL sketch. It is not live Auth.

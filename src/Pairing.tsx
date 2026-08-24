@@ -11,13 +11,12 @@ import {
   type Household,
 } from "./core/index.ts";
 import { applyHearthPass, parseHearthPass } from "./core/pass.ts";
+import { markLinked, unlinkHousehold } from "./core/sharing.ts";
 import {
   cloudBooksLive,
-  createSharedHousehold,
   hostingHint,
   joinFromPastedSecret,
   joinSharedHousehold,
-  pushSharedHousehold,
   reconcileHousehold,
 } from "./api.ts";
 
@@ -173,13 +172,8 @@ export function PairingCard({
     onError("");
     try {
       await onBeforeSensitive?.();
-      const created = household.linked
-        ? await pushSharedHousehold(household, memberId)
-        : await createSharedHousehold(household, memberId);
-      const live = await cloudBooksLive();
-      setCloudLive(live || created.linked);
-      await onHousehold(created);
-      onSyncState("synced");
+      const next = household.linked ? household : markLinked(household);
+      await onHousehold(next);
     } catch (caught) {
       downloadPass(household);
       onError(caught instanceof Error ? caught.message : String(caught));
@@ -228,6 +222,19 @@ export function PairingCard({
       <button className="ghost" style={{ width: "100%", marginTop: 8 }} disabled={busy} onClick={() => void publish()}>
         {household.linked ? "Sync to the cloud" : "Publish to the cloud"}
       </button>
+      {household.linked && (
+        <button
+          className="ghost"
+          style={{ width: "100%", marginTop: 8 }}
+          disabled={busy}
+          onClick={() => {
+            void onHousehold(unlinkHousehold(household));
+            onSyncState("idle");
+          }}
+        >
+          Stop sharing from this phone
+        </button>
+      )}
       <label>Join a different household</label>
       <input
         value={inviteInput}
@@ -301,9 +308,7 @@ export function PairingCard({
               try {
                 await onBeforeSensitive?.();
                 const merged = await reconcileHousehold(household, memberId);
-                const pushed = await pushSharedHousehold(merged, memberId);
-                await onHousehold(pushed);
-                onSyncState("synced");
+                await onHousehold(merged);
               } catch (caught) {
                 onError(caught instanceof Error ? caught.message : String(caught));
                 onSyncState("error");
