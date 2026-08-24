@@ -50,7 +50,7 @@ Accepted device replica + durable outbox
    +-- Home / Plan / Health are projections
 ```
 
-There is no Google Sheet, and no formula range that can freeze. The D-113 Development slice now discovers exact Google memberships, accepts pulled books through PGlite, and retries a durable compacting outbox on launch/focus/reconnect. No phone is the host. Current open-row scanning, one active household snapshot per environment, GET-then-POST CAS, and `linked`/phrase transport are transitional. Google never posts money. See [docs/CLOUD_CONTINUITY.md](docs/CLOUD_CONTINUITY.md).
+There is no Google Sheet, and no formula range that can freeze. The D-113/D-114 Development slices discover exact Google memberships, accept pulled books through PGlite, retry a durable compacting outbox on launch/focus/reconnect, and keep multiple household plus member-personal device replicas. No phone is the host. Current open-row scanning, GET-then-POST CAS, full hosted snapshots, and `linked`/phrase transport are transitional. Google never posts money. See [docs/CLOUD_CONTINUITY.md](docs/CLOUD_CONTINUITY.md).
 
 ## Household vs personal
 

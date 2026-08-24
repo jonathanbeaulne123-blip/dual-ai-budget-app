@@ -30,13 +30,13 @@ Read [nostalgia/](nostalgia/) and [reference/](reference/) to understand past de
 
 Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](reference/sheets-era/AI_HANDOFF.md).
 
-## Development continuity slice (D-113, PR #72)
+## Development continuity slices (D-113 / D-114, PR #72)
 
-**Status:** exact Google-subject Development discovery, PGlite acceptance, a durable compacting local outbox, and launch/focus/reconnect replay are implemented. No hosted schema, deployment, Production data, or secrets were changed. Open snapshot scanning is an explicitly temporary pre-October bridge, not authentication.
+**Status:** exact Google-subject Development discovery, PGlite acceptance, a durable compacting local outbox, launch/focus/reconnect replay, multi-household device replicas, an explicit ledger switcher, and member-only personal device replicas are implemented. Legacy environment-only storage migrates on read. No hosted schema, deployment, Production data, or secrets were changed. Open snapshot scanning is an explicitly temporary pre-October bridge, not authentication.
 
-**Still required:** dedicated personal-ledger scope, server-side membership records, multi-household local storage, atomic hosted CAS/journal authority, retry backoff/acknowledgement, two-browser end-to-end proof, and the late-September Auth/RLS cutover.
+**Still required:** dedicated hosted personal-ledger authority, server-side membership records, atomic hosted CAS/journal authority, retry backoff/acknowledgement, two-browser end-to-end proof, and the late-September Auth/RLS cutover.
 
-**Budget delta (5):** `+3` — accepted offline commands survive reconnection, pulled snapshots pass PGlite, and stale remote revisions retain both sides.
+**Budget delta (5):** `+4` — accepted offline commands survive reconnection, pulled snapshots pass PGlite, stale remote revisions retain both sides, and locally switching households no longer overwrites a different ledger.
 
 **Engagement delta (3):** `0` — account continuity is trust infrastructure; Hercules and office chrome were intentionally unchanged.
 

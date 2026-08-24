@@ -2,11 +2,11 @@
 
 ## Development
 
-Default Development ledger scope. Today it has a local snapshot `hearth:v1:development`; D-112 adds the corresponding cloud-backed personal/household scope discovered after Google sign-in. Demo data is fictional CAD. Switching the pill asks first and never crosses into Production.
+Default Development ledger scope. D-114 stores household replicas at `hearth:household:v2:development:<householdId>`, personal replicas at `hearth:personal:v2:development:<householdId>:<memberId>`, plus a catalog and active pointer. Legacy `hearth:v1:development` migrates automatically. D-112 adds the corresponding cloud-backed personal/household authority discovered after Google sign-in. Demo data is fictional CAD. Switching the pill asks first and never crosses into Production.
 
 ## Production
 
-Separate Production ledger scope, with current local snapshot `hearth:v1:production`. Empty until Jonathan starts it. Cloud continuity must preserve this environment boundary.
+Separate Production ledger scope with the same v2 replica keys under `production`. Legacy `hearth:v1:production` migrates automatically. Empty until Jonathan starts it. Cloud continuity must preserve this environment boundary.
 
 These pills are **not** Cloudflare production versus preview. They are separate ledger environments on every device. Stay on Development until daily use moves to Production.
 

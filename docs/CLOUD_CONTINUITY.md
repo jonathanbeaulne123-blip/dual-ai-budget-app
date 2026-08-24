@@ -2,7 +2,7 @@
 
 > **Accepted product direction — 2026-08-24.** This file supersedes language that describes hosted sync as optional publishing, a three-word phrase as the normal access model, or one phone as the durable home of the ledger.
 
-## Implementation status — D-113 Development slice
+## Implementation status — D-113 and D-114 Development slices
 
 The first working continuity slice is implemented without applying hosted schema:
 
@@ -13,8 +13,11 @@ The first working continuity slice is implemented without applying hosted schema
 - launch, focus, and reconnect retry the outbox and then pull newer matching snapshots;
 - stale hosted revisions stop automatic replay, keep the queued local snapshot, retain the remote snapshot, and surface a conflict instead of overwriting either side;
 - Production discovery is deliberately disabled until the Auth/RLS cutover.
+- each environment now keeps a catalog of household replicas keyed by household id; opening one ledger no longer overwrites another, and the header switcher changes the active replica explicitly;
+- the active session remembers its household id, legacy `hearth:v1:<environment>` snapshots migrate automatically, and reset removes only the selected ledger;
+- every signed-in member gets a durable member-only personal replica keyed by environment, household, and member. The Personal view reads that replica while the existing full-snapshot sync envelope remains lossless.
 
-This is not completion of D-112. Current limitations are client-side scanning of open Development snapshots, one active local household snapshot per environment, snapshot rather than hosted journal authority, GET-then-POST CAS, localStorage-sized outbox capacity, and no dedicated personal-ledger hosted scope. No peer device must remain online for a snapshot that has reached the cloud.
+This is not completion of D-112. D-114 provides multi-household and member-personal **device replicas**, not hosted personal-ledger authority. Current limitations are client-side scanning of open Development snapshots, snapshot rather than hosted journal authority, GET-then-POST CAS, localStorage-sized outbox capacity, and no dedicated personal-ledger hosted scope. No peer device must remain online for a snapshot that has reached the cloud.
 
 ## Household promise
 

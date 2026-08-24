@@ -330,6 +330,25 @@ input, select, textarea {
   gap: 6px;
   margin: -6px 0 16px;
 }
+.ledger-switcher {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin: -6px 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.ledger-switcher select {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  padding: 9px 12px;
+  color: var(--ink);
+  font: inherit;
+}
 .view-switch button {
   flex: 1;
   border-radius: 999px;

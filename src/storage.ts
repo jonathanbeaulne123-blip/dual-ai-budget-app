@@ -1,27 +1,48 @@
-import type { Environment, Household } from "./core/types.ts";
-import { ensureHouseholdShape } from "./core/sync.ts";
+import type { Environment, Household, PersonalEnvelope } from "./core/types.ts";
+import { ensureHouseholdShape, personalReplicaForMember } from "./core/sync.ts";
 
-const PREFIX = "hearth:v1:";
+const LEGACY_PREFIX = "hearth:v1:";
+const REPLICA_PREFIX = "hearth:household:v2:";
+const PERSONAL_PREFIX = "hearth:personal:v2:";
+const CATALOG_PREFIX = "hearth:households:v2:";
+const ACTIVE_PREFIX = "hearth:active-household:v2:";
 const DB_NAME = "hearth-ledger";
 const STORE = "households";
 
-function localGet(environment: Environment): Household | null {
-  try {
-    const raw = localStorage.getItem(PREFIX + environment);
-    if (!raw) return null;
-    return JSON.parse(raw) as Household;
-  } catch {
-    return null;
-  }
+export type HouseholdReplicaSummary = {
+  householdId: string;
+  name: string;
+  environment: Environment;
+  revision: number;
+  memberIds: string[];
+  updatedAt: string | null;
+};
+
+export type SaveHouseholdOptions = { memberId?: string; activate?: boolean };
+
+function householdKey(environment: Environment, householdId: string): string {
+  return `${REPLICA_PREFIX}${environment}:${encodeURIComponent(householdId)}`;
 }
 
-function localSet(household: Household): void {
-  localStorage.setItem(PREFIX + household.environment, JSON.stringify(household));
+function personalKey(environment: Environment, householdId: string, memberId: string): string {
+  return `${PERSONAL_PREFIX}${environment}:${encodeURIComponent(householdId)}:${encodeURIComponent(memberId)}`;
 }
 
-function localRestore(environment: Environment, previous: string | null): void {
-  if (previous == null) localStorage.removeItem(PREFIX + environment);
-  else localStorage.setItem(PREFIX + environment, previous);
+function activeKey(environment: Environment): string { return ACTIVE_PREFIX + environment; }
+function catalogKey(environment: Environment): string { return CATALOG_PREFIX + environment; }
+
+function parseJson<T>(raw: string | null): T | null {
+  if (!raw) return null;
+  try { return JSON.parse(raw) as T; } catch { return null; }
+}
+
+function localGet<T>(key: string): T | null {
+  try { return parseJson<T>(localStorage.getItem(key)); } catch { return null; }
+}
+
+function restoreLocal(key: string, previous: string | null): void {
+  if (previous == null) localStorage.removeItem(key);
+  else localStorage.setItem(key, previous);
 }
 
 function openDb(): Promise<IDBDatabase> {
@@ -36,92 +57,182 @@ function openDb(): Promise<IDBDatabase> {
   });
 }
 
-async function idbGet(environment: Environment): Promise<Household | null> {
+async function idbGet<T>(key: string): Promise<T | null> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
-    const request = db.transaction(STORE, "readonly").objectStore(STORE).get(environment);
-    request.onsuccess = () => resolve((request.result as Household | undefined) ?? null);
+    const request = db.transaction(STORE, "readonly").objectStore(STORE).get(key);
+    request.onsuccess = () => resolve((request.result as T | undefined) ?? null);
     request.onerror = () => reject(request.error ?? new Error("Could not read the ledger."));
   });
 }
 
-async function idbSet(household: Household): Promise<void> {
+async function idbSet<T>(key: string, value: T): Promise<void> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
-    const request = db.transaction(STORE, "readwrite").objectStore(STORE).put(household, household.environment);
+    const request = db.transaction(STORE, "readwrite").objectStore(STORE).put(value, key);
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error ?? new Error("Could not save the ledger."));
   });
 }
 
-async function idbDelete(environment: Environment): Promise<void> {
+async function idbDelete(key: string): Promise<void> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
-    const request = db.transaction(STORE, "readwrite").objectStore(STORE).delete(environment);
+    const request = db.transaction(STORE, "readwrite").objectStore(STORE).delete(key);
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error ?? new Error("Could not clear the ledger."));
   });
 }
 
-function migrate(household: Household): Household {
-  return ensureHouseholdShape(household);
+function migrate(household: Household): Household { return ensureHouseholdShape(household); }
+
+function newerHousehold(left: Household | null, right: Household | null): Household | null {
+  if (!left) return right;
+  if (!right) return left;
+  return (left.revision ?? 0) >= (right.revision ?? 0) ? left : right;
 }
 
-export async function loadHousehold(environment: Environment): Promise<Household | null> {
+function summary(household: Household): HouseholdReplicaSummary {
+  return {
+    householdId: household.householdId,
+    name: household.name,
+    environment: household.environment,
+    revision: household.revision ?? 0,
+    memberIds: household.members.map((member) => member.id),
+    updatedAt: household.lastCommittedAt,
+  };
+}
+
+function readCatalog(environment: Environment): HouseholdReplicaSummary[] {
+  const parsed = localGet<HouseholdReplicaSummary[]>(catalogKey(environment));
+  if (!Array.isArray(parsed)) return [];
+  return parsed.filter((item) => item?.environment === environment && Boolean(item.householdId));
+}
+
+function writeCatalog(environment: Environment, items: HouseholdReplicaSummary[]): void {
+  localStorage.setItem(catalogKey(environment), JSON.stringify(items));
+}
+
+function upsertCatalog(household: Household): void {
+  const next = readCatalog(household.environment).filter((item) => item.householdId !== household.householdId);
+  next.push(summary(household));
+  next.sort((left, right) => (right.updatedAt ?? "").localeCompare(left.updatedAt ?? "") || left.name.localeCompare(right.name));
+  writeCatalog(household.environment, next);
+}
+
+export function activeHouseholdId(environment: Environment): string | null {
+  try { return localStorage.getItem(activeKey(environment)); } catch { return null; }
+}
+
+export async function listHouseholdReplicas(environment: Environment): Promise<HouseholdReplicaSummary[]> {
+  const catalog = readCatalog(environment);
+  if (catalog.length) return catalog;
+  const legacy = localGet<Household>(LEGACY_PREFIX + environment);
+  if (!legacy) return [];
+  const migrated = migrate(legacy);
+  if (migrated.environment !== environment) return [];
+  await saveHousehold(migrated, { activate: true });
+  return [summary(migrated)];
+}
+
+export async function loadPersonalReplica(environment: Environment, householdId: string, memberId: string): Promise<PersonalEnvelope | null> {
+  const key = personalKey(environment, householdId, memberId);
+  const local = localGet<PersonalEnvelope>(key);
   try {
-    const fromDb = await idbGet(environment);
-    const fromLocal = localGet(environment);
-    if (fromDb && fromLocal) {
-      const db = migrate(fromDb);
-      const local = migrate(fromLocal);
-      if (local.environment !== environment) return db.environment === environment ? db : null;
-      if (db.environment !== environment) return local;
-      return (local.revision ?? 0) >= (db.revision ?? 0) ? local : db;
-    }
-    if (fromDb) {
-      const migrated = migrate(fromDb);
-      return migrated.environment === environment ? migrated : null;
+    const db = await idbGet<PersonalEnvelope>(key);
+    if (!local) return db?.kind === "personal" && db.memberId === memberId ? db : null;
+    if (!db) return local.kind === "personal" && local.memberId === memberId ? local : null;
+    return (local.lastCommittedAt ?? "") >= (db.lastCommittedAt ?? "") ? local : db;
+  } catch {
+    return local?.kind === "personal" && local.memberId === memberId ? local : null;
+  }
+}
+
+export async function loadHousehold(environment: Environment, householdId?: string | null, memberId?: string): Promise<Household | null> {
+  const selectedId = householdId ?? activeHouseholdId(environment);
+  let chosen: Household | null = null;
+  if (selectedId) {
+    const key = householdKey(environment, selectedId);
+    const local = localGet<Household>(key);
+    try { chosen = newerHousehold(local, await idbGet<Household>(key)); } catch { chosen = local; }
+  }
+  if (!chosen) {
+    const legacyKey = LEGACY_PREFIX + environment;
+    const local = localGet<Household>(legacyKey);
+    try { chosen = newerHousehold(local, await idbGet<Household>(environment)); } catch { chosen = local; }
+  }
+  if (!chosen) return null;
+  const migrated = migrate(chosen);
+  if (migrated.environment !== environment) return null;
+  await saveHousehold(migrated, { memberId, activate: true });
+  return migrated;
+}
+
+export async function saveHousehold(household: Household, options: SaveHouseholdOptions = {}): Promise<void> {
+  const shaped = migrate(household);
+  const activate = options.activate !== false;
+  const replicaKey = householdKey(shaped.environment, shaped.householdId);
+  const legacyKey = LEGACY_PREFIX + shaped.environment;
+  const personal = options.memberId ? personalReplicaForMember(shaped, options.memberId) : null;
+  const memberPersonalKey = personal ? personalKey(shaped.environment, shaped.householdId, personal.memberId) : null;
+  const touchedKeys = [replicaKey, catalogKey(shaped.environment)];
+  if (activate) touchedKeys.push(legacyKey, activeKey(shaped.environment));
+  if (memberPersonalKey) touchedKeys.push(memberPersonalKey);
+  const previous = new Map(touchedKeys.map((key) => [key, localStorage.getItem(key)]));
+  try {
+    localStorage.setItem(replicaKey, JSON.stringify(shaped));
+    if (personal && memberPersonalKey) localStorage.setItem(memberPersonalKey, JSON.stringify(personal));
+    upsertCatalog(shaped);
+    if (activate) {
+      localStorage.setItem(legacyKey, JSON.stringify(shaped));
+      localStorage.setItem(activeKey(shaped.environment), shaped.householdId);
     }
   } catch {
-    // Private browsing or blocked IndexedDB still has localStorage.
-  }
-  const fromLocal = localGet(environment);
-  if (fromLocal) {
-    const migrated = migrate(fromLocal);
-    if (migrated.environment !== environment) return null;
-    try { await idbSet(migrated); } catch { /* keep the localStorage copy */ }
-    return migrated;
-  }
-  return null;
-}
-
-export async function saveHousehold(household: Household): Promise<void> {
-  const previousLocal = typeof localStorage !== "undefined" ? localStorage.getItem(PREFIX + household.environment) : null;
-  try {
-    localSet(household);
-  } catch (caught) {
+    for (const [key, value] of previous) restoreLocal(key, value);
     throw new Error("The last valid household is still here. This phone could not save the new snapshot.");
   }
   try {
-    await idbSet(household);
+    await idbSet(replicaKey, shaped);
+    if (personal && memberPersonalKey) await idbSet(memberPersonalKey, personal);
+    if (activate) await idbSet(shaped.environment, shaped);
   } catch {
-    try {
-      await idbDelete(household.environment);
-    } catch {
-      localRestore(household.environment, previousLocal);
-      throw new Error("The last valid household is still here. This phone could not save the new snapshot.");
-    }
+    // localStorage is the durable fallback when IndexedDB is unavailable or blocked.
   }
 }
 
-export async function clearHousehold(environment: Environment): Promise<void> {
-  localStorage.removeItem(PREFIX + environment);
-  try { await idbDelete(environment); } catch { /* ignore */ }
+export async function selectHouseholdReplica(environment: Environment, householdId: string, memberId?: string): Promise<Household> {
+  const household = await loadHousehold(environment, householdId, memberId);
+  if (!household || household.householdId !== householdId) throw new Error("That ledger is not saved on this device.");
+  await saveHousehold(household, { memberId, activate: true });
+  return household;
 }
 
-export function exportHousehold(household: Household): string {
-  return JSON.stringify(household, null, 2);
+export async function clearHousehold(environment: Environment, householdId?: string): Promise<void> {
+  const targetId = householdId ?? activeHouseholdId(environment);
+  const catalog = readCatalog(environment);
+  const target = targetId ? catalog.find((item) => item.householdId === targetId) : null;
+  if (targetId) {
+    const key = householdKey(environment, targetId);
+    localStorage.removeItem(key);
+    for (const memberId of target?.memberIds ?? []) localStorage.removeItem(personalKey(environment, targetId, memberId));
+    try { await idbDelete(key); } catch { /* ignore */ }
+    for (const memberId of target?.memberIds ?? []) {
+      try { await idbDelete(personalKey(environment, targetId, memberId)); } catch { /* ignore */ }
+    }
+  }
+  const remaining = catalog.filter((item) => item.householdId !== targetId);
+  writeCatalog(environment, remaining);
+  localStorage.removeItem(LEGACY_PREFIX + environment);
+  localStorage.removeItem(activeKey(environment));
+  try { await idbDelete(environment); } catch { /* ignore */ }
+  const next = remaining[0];
+  if (next) {
+    const household = await loadHousehold(environment, next.householdId);
+    if (household) await saveHousehold(household, { activate: true });
+  }
 }
+
+export function exportHousehold(household: Household): string { return JSON.stringify(household, null, 2); }
 
 export function downloadJson(household: Household): string {
   const blob = new Blob([exportHousehold(household)], { type: "application/json" });
@@ -131,12 +242,13 @@ export function downloadJson(household: Household): string {
   link.download = `hearth-${household.environment}-${household.lastCommittedAt?.slice(0, 10) ?? "export"}.json`;
   link.click();
   URL.revokeObjectURL(url);
-  return `${DB_NAME}/${STORE}/${household.environment}`;
+  return `${DB_NAME}/${STORE}/${household.environment}/${household.householdId}`;
 }
 
 export const STORAGE_EXPLAINER = {
   database: DB_NAME,
   store: STORE,
   books: "idb://hearth-books-development (or -production)",
-  backup: "localStorage " + PREFIX,
+  backup: `localStorage ${REPLICA_PREFIX}<environment>:<householdId>`,
+  personal: `localStorage ${PERSONAL_PREFIX}<environment>:<householdId>:<memberId>`,
 };

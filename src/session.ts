@@ -5,6 +5,7 @@ const PREFIX = "hearth:session:v1:";
 export type Session = {
   memberId: string;
   view: LedgerView;
+  householdId?: string;
 };
 
 export function loadSession(environment: Environment): Session | null {
@@ -16,6 +17,7 @@ export function loadSession(environment: Environment): Session | null {
     return {
       memberId: parsed.memberId,
       view: parsed.view === "personal" ? "personal" : "household",
+      householdId: typeof parsed.householdId === "string" && parsed.householdId ? parsed.householdId : undefined,
     };
   } catch {
     return null;
