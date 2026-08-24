@@ -17,8 +17,6 @@ import {
   describeGoalContributors,
   dollarsFromCentsDigits,
   emitOfficeIntent,
-  findActiveGoogleLinkByEmail,
-  findActiveGoogleLinkBySubject,
   formatCad,
   describeDeviceLabel,
   localDeviceId,
@@ -29,6 +27,8 @@ import {
   retiredGoals,
   vaultReceiptBlurb,
   householdForView,
+  assembleHousehold,
+  splitForSync,
   householdWallet,
   accountOptionLabel,
   jointSplit,
@@ -60,6 +60,8 @@ import {
   touchVisitSpark,
   undo,
   reversePostedMoney,
+  recordConflict,
+  markSynchronized,
   suggestCategory,
   shouldPrefillCategory,
   suggestSplit,
@@ -76,8 +78,10 @@ import {
   shiftFieldLabel,
   type ShiftGate,
   type CommitResult,
+  type CommandOutcome,
   type Environment,
   type Household,
+  type PersonalEnvelope,
   type LedgerView,
   type Split,
   type UndoToken,
@@ -85,12 +89,29 @@ import {
   type Account,
   type VisitPostDraft,
 } from "./core/index.ts";
-import { STORAGE_EXPLAINER, clearHousehold, downloadJson, loadHousehold, saveHousehold } from "./storage.ts";
+import {
+  STORAGE_EXPLAINER,
+  clearHousehold,
+  downloadJson,
+  listHouseholdReplicas,
+  loadHousehold,
+  loadPersonalReplica,
+  saveHousehold,
+  selectHouseholdReplica,
+  type HouseholdReplicaSummary,
+} from "./storage.ts";
 import { clearSession, loadSession, saveSession, type Session } from "./session.ts";
-import { joinSharedHousehold, reconcileHousehold } from "./api.ts";
+import { joinSharedHousehold, reconcileHousehold, reconcileHouseholdSnapshots } from "./api.ts";
 import { acceptHouseholdWrite, classifyCommandError, hostedTransportAllowed, newConfirmationId } from "./core/index.ts";
 import { ingestHouseholdBooks, inspectBrowserBooks, restoreHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
 import { pushSupabaseHousehold } from "./ledger/supabase.ts";
+import {
+  continuityMemberId,
+  discoverContinuityMemberships,
+  flushContinuityOutbox,
+  transportHouseholdWithOutbox,
+  type ContinuityIdentity,
+} from "./continuity.ts";
 import { inviteFromLocation } from "./core/invite.ts";
 import { PairingCard, WelcomeJoin } from "./Pairing.tsx";
 import { BooksPage } from "./Books.tsx";
@@ -110,7 +131,9 @@ import {
   connectGoogle,
   disconnectGoogle,
   googleConfigured,
+  loadGoogleSession,
 } from "./google/index.ts";
+import type { DiscoveredHousehold } from "./ledger/supabase.ts";
 
 type Tab = "home" | "plan" | "calendar" | "ledger" | "more";
 type AddMode = "expense" | "income" | "shift" | "transfer";
@@ -165,7 +188,10 @@ export function App() {
   const [splitPercents, setSplitPercents] = useState<Record<string, number>>({ "MEM-001": 50, "MEM-002": 50 });
   const [now] = useState(() => new Date());
   const [session, setSession] = useState<Session | null>(null);
+  const [replicas, setReplicas] = useState<HouseholdReplicaSummary[]>([]);
+  const [personalReplica, setPersonalReplica] = useState<PersonalEnvelope | null>(null);
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "synced" | "error">("idle");
+  const [discoveredLedgers, setDiscoveredLedgers] = useState<DiscoveredHousehold[]>([]);
   const [inviteInput, setInviteInput] = useState("");
   const [welcomeMode, setWelcomeMode] = useState<"home" | "join">("home");
   const [booksStatus, setBooksStatus] = useState<BooksStatus | null>(null);
@@ -221,20 +247,41 @@ export function App() {
     setBooting(true);
     const loadedSession = loadSession(environment);
     setSession(loadedSession);
-    loadHousehold(environment).then(async (loaded) => {
+    loadHousehold(environment, loadedSession?.householdId, loadedSession?.memberId).then(async (loaded) => {
       if (!live) return;
       let current = loaded;
       if (loaded?.linked && loadedSession?.memberId) {
         try {
           const reconciled = await reconcileHousehold(loaded, loadedSession.memberId);
           if (!live) return;
-          await saveHousehold(reconciled);
-          current = reconciled;
+          const accepted = await acceptHouseholdWrite({
+            previous: loaded,
+            candidate: reconciled,
+            confirmationId: `reconcile-${loaded.householdId}-${reconciled.revision}`,
+            commandKind: "boot-reconcile",
+            postedIds: [],
+            adapters: {
+              persist: (next) => saveHousehold(next, { memberId: loadedSession.memberId }),
+              ingest: async (household) => {
+                try {
+                  const { status } = await ingestHouseholdBooks(household);
+                  return { ok: status.ok, error: status.error };
+                } catch (error) {
+                  return { ok: false, error: error instanceof Error ? error.message : String(error) };
+                }
+              },
+              restoreIngest: restoreHouseholdBooks,
+            },
+          });
+          if (!live) return;
+          current = accepted.household;
+          if (!accepted.ok && accepted.userMessage) setError(accepted.userMessage);
         } catch {
           if (!live) return;
         }
       }
       setHousehold(current);
+      void listHouseholdReplicas(environment).then((items) => { if (live) setReplicas(items); });
       if (current) {
         void inspectBrowserBooks(current)
           .then(async (inspection) => {
@@ -323,16 +370,156 @@ export function App() {
         memberId: session?.memberId ?? household.members.find((member) => member.active)?.id ?? null,
       });
       if (typeof sessionStorage !== "undefined") sessionStorage.setItem(stampKey, deviceId);
-      void saveHousehold(touched.household).then(() => setHousehold(touched.household));
+      void saveHousehold(touched.household, { memberId: session?.memberId }).then(() => setHousehold(touched.household));
     } catch {
       /* soft presence only */
     }
   }, [environment, household?.householdId]);
 
+  useEffect(() => {
+    const memberId = session?.memberId;
+    if (!memberId) return;
+    const googleSession = loadGoogleSession(environment, memberId);
+    if (!googleSession?.identity.email && !googleSession?.identity.subject) return;
+    const identity: ContinuityIdentity = {
+      email: googleSession.identity.email,
+      subject: googleSession.identity.subject,
+    };
+    let live = true;
+    let running = false;
+
+    const acceptReplayCandidate = async (candidate: Household, confirmationId: string, commandKind: string) => {
+      const previous = householdRef.current;
+      const accepted = await acceptHouseholdWrite({
+        previous,
+        candidate,
+        confirmationId,
+        commandKind,
+        postedIds: [],
+        adapters: {
+          persist: (next) => saveHousehold(next, { memberId }),
+          ingest: async (next) => {
+            try {
+              const { status } = await ingestHouseholdBooks(next);
+              return { ok: status.ok, error: status.error };
+            } catch (caught) {
+              return { ok: false, error: caught instanceof Error ? caught.message : String(caught) };
+            }
+          },
+          restoreIngest: restoreHouseholdBooks,
+        },
+      });
+      if (!live) return accepted;
+      householdRef.current = accepted.household;
+      setHousehold(accepted.household);
+      if (!accepted.ok && accepted.userMessage) setError(accepted.userMessage);
+      return accepted;
+    };
+
+    const replay = async () => {
+      if (running) return;
+      running = true;
+      if (live) setSyncState("syncing");
+      try {
+        const flushed = await flushContinuityOutbox({ environment, identity });
+        if (!live) return;
+        const conflict = flushed.conflicts[0];
+        if (conflict) {
+          const current = householdRef.current;
+          if (current && current.householdId === conflict.item.householdId) {
+            const conflicted = await recordConflict(current, conflict.remote, false);
+            await acceptReplayCandidate(
+              conflicted,
+              `outbox-conflict-${current.householdId}-${conflict.remote.revision}`,
+              "outbox-conflict",
+            );
+          }
+          if (live) {
+            setSyncState("error");
+            setError(conflict.message);
+          }
+          return;
+        }
+        if (flushed.pending > 0) {
+          setSyncState("error");
+          return;
+        }
+
+        let current = householdRef.current;
+        if (flushed.synchronized > 0 && current) {
+          current = markSynchronized(current);
+          await saveHousehold(current, { memberId });
+          if (live) {
+            householdRef.current = current;
+            setHousehold(current);
+          }
+        }
+
+        const memberships = await discoverContinuityMemberships(identity, environment);
+        if (!live) return;
+        current = householdRef.current;
+        const remote = current
+          ? memberships.find((item) => item.household.householdId === current?.householdId)
+          : undefined;
+        if (current && remote && remote.household.revision > (current.baseRevision ?? 0)) {
+          const reconciled = await reconcileHouseholdSnapshots(current, remote.household, memberId);
+          await acceptReplayCandidate(
+            reconciled,
+            `continuity-pull-${current.householdId}-${remote.household.revision}`,
+            "continuity-pull",
+          );
+        }
+        if (live) setSyncState("synced");
+      } catch (caught) {
+        if (!live) return;
+        setSyncState("error");
+        setError(caught instanceof Error ? caught.message : String(caught));
+      } finally {
+        running = false;
+      }
+    };
+
+    const onOnline = () => void replay();
+    const onFocus = () => void replay();
+    window.addEventListener("online", onOnline);
+    window.addEventListener("focus", onFocus);
+    void replay();
+    return () => {
+      live = false;
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [environment, session?.memberId, household?.householdId]);
+
+  useEffect(() => {
+    let live = true;
+    const memberId = session?.memberId;
+    if (!household || !memberId) {
+      setPersonalReplica(null);
+      return () => { live = false; };
+    }
+    void saveHousehold(household, { memberId }).then(async () => {
+      const [personal, items] = await Promise.all([
+        loadPersonalReplica(environment, household.householdId, memberId),
+        listHouseholdReplicas(environment),
+      ]);
+      if (!live) return;
+      setPersonalReplica(personal);
+      setReplicas(items);
+    }).catch((caught) => {
+      if (live) setError(caught instanceof Error ? caught.message : String(caught));
+    });
+    return () => { live = false; };
+  }, [environment, household?.householdId, household?.revision, session?.memberId]);
+
   const today = todayKey(now);
   const memberId = session?.memberId ?? household?.members.find((member) => member.active)?.id ?? "";
   const view: LedgerView = session?.view ?? "household";
-  const visible = household && memberId ? householdForView(household, memberId, view) : household;
+  const personalSource = household && memberId && personalReplica?.memberId === memberId
+    && personalReplica.lastCommittedAt === household.lastCommittedAt
+    ? assembleHousehold(splitForSync(household, memberId).shared, personalReplica, { linked: household.linked })
+    : household;
+  const visible = personalSource && memberId ? householdForView(personalSource, memberId, view) : personalSource;
   const findings = useMemo(() => (household ? runHealthCheck(household) : []), [household]);
   const dashboard = useMemo(
     () => (visible ? buildDashboard(visible, today, now, findings.length) : null),
@@ -340,15 +527,128 @@ export function App() {
   );
 
   function rememberSession(next: Session) {
-    setSession(next);
-    saveSession(environment, next);
+    const remembered = { ...next, householdId: next.householdId ?? householdRef.current?.householdId };
+    setSession(remembered);
+    saveSession(environment, remembered);
   }
 
-  async function commitHousehold(next: Household, token?: UndoToken, _actorId?: string) {
+  async function switchLedger(householdId: string): Promise<void> {
+    if (!householdId || householdId === householdRef.current?.householdId) return;
+    setBusy(true);
+    setError("");
+    try {
+      const candidate = await selectHouseholdReplica(environment, householdId, session?.memberId);
+      const currentGoogle = session?.memberId ? loadGoogleSession(environment, session.memberId) : null;
+      const googleMember = currentGoogle?.identity
+        ? continuityMemberId(candidate, currentGoogle.identity)
+        : null;
+      const nextMemberId = googleMember
+        ?? (candidate.members.some((member) => member.id === session?.memberId && member.active) ? session?.memberId : undefined)
+        ?? candidate.members.find((member) => member.active)?.id;
+      if (!nextMemberId) throw new Error("That ledger has no active household member.");
+      const { status } = await ingestHouseholdBooks(candidate);
+      if (!status.ok) throw new Error(status.error || "Those books could not be opened on this device.");
+      await saveHousehold(candidate, { memberId: nextMemberId, activate: true });
+      householdRef.current = candidate;
+      setHousehold(candidate);
+      rememberSession({ memberId: nextMemberId, view: session?.view ?? "household", householdId });
+      setBooksStatus(status);
+      setHistory([]);
+      setToast(null);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function openDiscoveredLedger(found: DiscoveredHousehold): Promise<void> {
+    const previous = householdRef.current;
+    const candidate = previous?.householdId === found.household.householdId
+      ? await reconcileHouseholdSnapshots(previous, found.household, found.memberId)
+      : found.household;
+    const accepted = await acceptHouseholdWrite({
+      previous,
+      candidate,
+      confirmationId: `discover-${found.household.householdId}-${found.household.revision}`,
+      commandKind: "google-discovery",
+      postedIds: [],
+      adapters: {
+        persist: (next) => saveHousehold(next, { memberId: found.memberId }),
+        ingest: async (candidate) => {
+          try {
+            const { status } = await ingestHouseholdBooks(candidate);
+            return { ok: status.ok, error: status.error };
+          } catch (caught) {
+            return { ok: false, error: caught instanceof Error ? caught.message : String(caught) };
+          }
+        },
+        restoreIngest: restoreHouseholdBooks,
+      },
+    });
+    if (!accepted.ok) throw new Error(accepted.userMessage || "Those cloud books could not be accepted on this device.");
+    const adopted = adoptGoogleSession(environment, "__welcome__", found.memberId);
+    if (!adopted) throw new Error("Google signed in, but this device could not keep the session.");
+    setHousehold(accepted.household);
+    rememberSession({ memberId: found.memberId, view: "household", householdId: accepted.household.householdId });
+    setDiscoveredLedgers([]);
+    setSyncState("synced");
+    setBooksStatus({
+      ok: true,
+      engine: "pglite+supabase",
+      entryCount: accepted.household.transactions.length,
+      inBalance: true,
+      equationHolds: true,
+    });
+  }
+
+  async function continueWithGoogle(): Promise<void> {
+    setBusy(true);
+    setError("");
+    try {
+      const googleSession = await connectGoogle({
+        environment,
+        memberId: "__welcome__",
+        services: ["identity"],
+        selectAccount: true,
+      });
+      const found = await discoverContinuityMemberships(googleSession.identity, environment);
+      if (!found.length) {
+        disconnectGoogle(environment, "__welcome__");
+        throw new Error(
+          environment === "production"
+            ? "Production account discovery waits for the late-September security cutover."
+            : "That Google account is not linked to a Development ledger yet. Open an existing household, choose yourself, and link Google once.",
+        );
+      }
+      const only = found[0];
+      if (found.length === 1 && only) await openDiscoveredLedger(only);
+      else setDiscoveredLedgers(found);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function commitHousehold(
+    next: Household,
+    token?: UndoToken,
+    _actorId?: string,
+  ): Promise<CommandOutcome | null> {
     setBusy(true);
     const previous = householdRef.current;
     const confirmationId = confirmationRef.current ?? newConfirmationId();
     confirmationRef.current = confirmationId;
+    const googleSession = session?.memberId ? loadGoogleSession(environment, session.memberId) : null;
+    const continuityIdentity: ContinuityIdentity | null = googleSession?.identity
+      ? { email: googleSession.identity.email, subject: googleSession.identity.subject }
+      : null;
+    const automaticContinuity = Boolean(
+      continuityIdentity &&
+      session?.memberId &&
+      continuityMemberId(next, continuityIdentity) === session.memberId,
+    );
     try {
       const outcome = await acceptHouseholdWrite({
         previous,
@@ -356,8 +656,9 @@ export function App() {
         confirmationId,
         commandKind: token?.label ?? "commit",
         postedIds: token?.postedIds ?? [],
+        transportRequested: automaticContinuity,
         adapters: {
-          persist: saveHousehold,
+          persist: (household) => saveHousehold(household, { memberId: session?.memberId }),
           ingest: async (household) => {
             try {
               const { status } = await ingestHouseholdBooks(household);
@@ -369,8 +670,15 @@ export function App() {
           restoreIngest: async (household) => {
             await restoreHouseholdBooks(household);
           },
-          transport: hostedTransportAllowed(next)
-            ? async (household, expectedRevision) => {
+          transport: automaticContinuity && continuityIdentity
+            ? async (household, expectedRevision) => transportHouseholdWithOutbox({
+                household,
+                identity: continuityIdentity,
+                expectedRevision,
+                confirmationId,
+              })
+            : hostedTransportAllowed(next)
+              ? async (household, expectedRevision) => {
                 const pushed = await pushSupabaseHousehold(household, undefined, { expectedRevision });
                 if (pushed.skipped) return { ok: true };
                 if (pushed.conflict && pushed.remote) {
@@ -390,7 +698,7 @@ export function App() {
                 }
                 return { ok: true, remoteRevision: household.revision };
               }
-            : undefined,
+              : undefined,
         },
       });
       if (outcome.postedExactlyOnce || (outcome.postedNothing && !outcome.retryable)) {
@@ -429,9 +737,11 @@ export function App() {
           error: outcome.userMessage ?? undefined,
         });
       }
+      return outcome;
     } catch (caught) {
       if (caught instanceof NeedsConfirmationError) throw caught;
       setError(classifyCommandError(caught).userMessage);
+      return null;
     } finally {
       setBusy(false);
     }
@@ -466,7 +776,8 @@ export function App() {
         setError("Undo the latest change first so the books stay in order.");
         return;
       }
-      await commitHousehold(undo(current, token));
+      const outcome = await commitHousehold(undo(current, token));
+      if (!outcome || !outcome.postedExactlyOnce || outcome.kind === "conflict-needs-attention") return;
       setHistory((items) => items.filter((item) => item.id !== token.id));
       setToast((item) => (item?.id === token.id ? null : item));
     });
@@ -477,11 +788,18 @@ export function App() {
     postingRef.current = true;
     return enqueueWrite(async () => {
       const current = householdRef.current;
-      if (!current) return;
+      if (!current) {
+        postingRef.current = false;
+        return;
+      }
       setError("");
       try {
         const result = fn(current);
-        await commitHousehold(result.household, result.undo);
+        const outcome = await commitHousehold(result.household, result.undo);
+        const accepted =
+          outcome?.postedExactlyOnce === true &&
+          (outcome.kind === "accepted-local" || outcome.kind === "pending-transport" || outcome.kind === "synchronized");
+        if (!accepted) return;
         setConfirm(null);
         setAdding(false);
         setForm({
@@ -559,11 +877,38 @@ export function App() {
               onInviteInput={setInviteInput}
               onError={setError}
               onBusy={setBusy}
-              onJoined={(next) => persist(next)}
+              onJoined={async (next) => { await persist(next); }}
               onBack={() => { setWelcomeMode("home"); setError(""); }}
             />
           ) : (
             <>
+              {googleConfigured() && (
+                <button
+                  className="primary"
+                  style={{ width: "100%", marginBottom: 8 }}
+                  disabled={busy}
+                  onClick={() => void continueWithGoogle()}
+                >
+                  {busy ? "Finding your ledgers…" : "Continue with Google"}
+                </button>
+              )}
+              {discoveredLedgers.map((found) => {
+                const member = found.household.members.find((item) => item.id === found.memberId);
+                return (
+                  <button
+                    key={found.household.householdId}
+                    className="ghost"
+                    style={{ width: "100%", marginBottom: 8 }}
+                    disabled={busy}
+                    onClick={() => void openDiscoveredLedger(found).catch((caught) => {
+                      setError(caught instanceof Error ? caught.message : String(caught));
+                    })}
+                  >
+                    Open {found.household.name} as {member?.name ?? "me"}
+                  </button>
+                );
+              })}
+              {error && <p className="danger">{error}</p>}
               <button className="primary" onClick={() => persist(seedDemoHousehold({ today, environment }))}>
                 Open the demo kitchen table
               </button>
@@ -592,45 +937,27 @@ export function App() {
               className="ghost"
               style={{ width: "100%", marginBottom: 8 }}
               disabled={busy}
-              onClick={() => {
-                void (async () => {
-                  setBusy(true);
-                  setError("");
-                  try {
-                    const session = await connectGoogle({
-                      environment,
-                      memberId: "__welcome__",
-                      services: ["identity"],
-                      selectAccount: true,
-                    });
-                    const link = findActiveGoogleLinkByEmail(household, session.identity.email)
-                      || findActiveGoogleLinkBySubject(household, session.identity.subject);
-                    if (!link) {
-                      disconnectGoogle(environment, "__welcome__");
-                      setError("That Google account is not linked to anyone here yet. Choose yourself, then connect in More → Google household bridge.");
-                      return;
-                    }
-                    adoptGoogleSession(environment, "__welcome__", link.memberId);
-                    rememberSession({ memberId: link.memberId, view: "household" });
-                    if (household.linked) {
-                      try {
-                        const pulled = await joinSharedHousehold(household.inviteCode, link.memberId, household.environment);
-                        await persist(pulled, undefined, link.memberId);
-                      } catch {
-                        // Catalog is enough to start; Sync now can retry.
-                      }
-                    }
-                  } catch (caught) {
-                    setError(caught instanceof Error ? caught.message : String(caught));
-                  } finally {
-                    setBusy(false);
-                  }
-                })();
-              }}
+              onClick={() => void continueWithGoogle()}
             >
               Continue with Google
             </button>
           )}
+          {discoveredLedgers.map((found) => {
+            const member = found.household.members.find((item) => item.id === found.memberId);
+            return (
+              <button
+                key={found.household.householdId}
+                className="ghost"
+                style={{ width: "100%", marginBottom: 8 }}
+                disabled={busy}
+                onClick={() => void openDiscoveredLedger(found).catch((caught) => {
+                  setError(caught instanceof Error ? caught.message : String(caught));
+                })}
+              >
+                Open {found.household.name} as {member?.name ?? "me"}
+              </button>
+            );
+          })}
           {error && <p className="danger">{error}</p>}
           {household.members.filter((member) => member.active).map((member) => (
             <button
@@ -893,12 +1220,29 @@ export function App() {
           {environment === "development" ? "Development" : "Production"}
         </button>
       </header>
+      {replicas.length > 1 && (
+        <label className="ledger-switcher">
+          <span>Open ledger</span>
+          <select
+            aria-label="Open another ledger"
+            value={household.householdId}
+            disabled={busy}
+            onChange={(event) => void switchLedger(event.target.value)}
+          >
+            {replicas.map((replica) => (
+              <option key={replica.householdId} value={replica.householdId}>
+                {replica.name} · revision {replica.revision}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <div className="view-switch" role="tablist" aria-label="Ledger view">
         {(["household", "personal"] as LedgerView[]).map((item) => (
           <button
             key={item}
             className={view === item ? "active" : ""}
-            onClick={() => rememberSession({ memberId: session.memberId, view: item })}
+            onClick={() => rememberSession({ memberId: session.memberId, view: item, householdId: household.householdId })}
           >
             {item === "household" ? "Household" : "Personal"}
           </button>
@@ -1077,7 +1421,7 @@ export function App() {
             syncState={syncState}
             inviteInput={inviteInput}
             onInviteInput={setInviteInput}
-            onHousehold={(next) => persist(next)}
+            onHousehold={async (next) => { await persist(next); }}
             onError={setError}
             onBusy={setBusy}
             onSyncState={setSyncState}
@@ -1530,10 +1874,12 @@ export function App() {
                 await gateWithGoogle({ record: false });
                 household.members.forEach((member) => disconnectGoogle(environment, member.id));
                 disconnectGoogle(environment, "__welcome__");
-                await clearHousehold(environment);
+                await clearHousehold(environment, household.householdId);
                 clearSession(environment);
                 setSession(null);
-                setHousehold(null);
+                const remaining = await listHouseholdReplicas(environment);
+                setReplicas(remaining);
+                setHousehold(remaining[0] ? await loadHousehold(environment, remaining[0].householdId) : null);
                 setHistory([]);
                 setToast(null);
                 setGuard(null);

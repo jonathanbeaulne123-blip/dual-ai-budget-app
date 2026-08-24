@@ -58,6 +58,14 @@ export async function pushSharedHousehold(household: Household, _memberId: strin
 
 export async function reconcileHousehold(local: Household, memberId: string): Promise<Household> {
   const remote = await pullSharedHousehold(local.inviteCode, memberId, local.environment);
+  return reconcileHouseholdSnapshots(local, remote, memberId);
+}
+
+export async function reconcileHouseholdSnapshots(
+  local: Household,
+  remote: Household,
+  memberId: string,
+): Promise<Household> {
   if (local.environment !== remote.environment) {
     throw new Error("That shared snapshot belongs to a different Development/Production pill.");
   }

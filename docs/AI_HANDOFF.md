@@ -2,6 +2,8 @@
 
 After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. GitHub remains the full project context (D-095): [DECISIONS.md](DECISIONS.md), merged PRs, living specs, [nostalgia/](nostalgia/), [reference/](reference/). Do not treat unfinished chat as `main`. Do not skip GitHub history.
 
+Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
+
 ## Risk routing
 
 | Risk | Examples | Default routing |
@@ -15,7 +17,7 @@ Dual Course (D-048): if Course A (books, weight 5) and Course B (engagement, wei
 
 ## Required handoff
 
-Status, what was examined, verified findings, changes, verification, remaining uncertainty, decision needed.
+Status, what was examined, verified findings, changes, verification, remaining uncertainty, decision needed. For continuity work also state the Google identity and ledger scopes, whether any peer device must remain online, offline/outbox behavior, hosted mutations, environment, schema, and whether data was disposable Development data.
 
 Also name:
 
@@ -27,6 +29,16 @@ If either delta is “none,” say why Dual Course still holds (for example GitH
 Read [nostalgia/](nostalgia/) and [reference/](reference/) to understand past decisions. Do not cite them as the next build plan.
 
 Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](reference/sheets-era/AI_HANDOFF.md).
+
+## Development continuity slices (D-113 / D-114, PR #72)
+
+**Status:** exact Google-subject Development discovery, PGlite acceptance, a durable compacting local outbox, launch/focus/reconnect replay, multi-household device replicas, an explicit ledger switcher, and member-only personal device replicas are implemented. Legacy environment-only storage migrates on read. No hosted schema, deployment, Production data, or secrets were changed. Open snapshot scanning is an explicitly temporary pre-October bridge, not authentication.
+
+**Still required:** dedicated hosted personal-ledger authority, server-side membership records, atomic hosted CAS/journal authority, retry backoff/acknowledgement, two-browser end-to-end proof, and the late-September Auth/RLS cutover.
+
+**Budget delta (5):** `+4` — accepted offline commands survive reconnection, pulled snapshots pass PGlite, stale remote revisions retain both sides, and locally switching households no longer overwrites a different ledger.
+
+**Engagement delta (3):** `0` — account continuity is trust infrastructure; Hercules and office chrome were intentionally unchanged.
 
 ## Trust-foundation worksession (2026-08-24, local branch)
 

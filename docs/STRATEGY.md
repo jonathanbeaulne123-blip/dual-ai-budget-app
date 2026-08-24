@@ -67,6 +67,7 @@ These are **important features**. Dual Course does not rewrite them. Smaller sur
 | Bank feeds, Interac APIs, issued cards: blocked until Auth + RLS. Jonathan approves production money movement. | D-011, D-039 |
 | Accounts are financial accounts (chequing, savings, credit, investment, other), not categories. Receivable is D-053. | D-047, D-053 |
 | Phrase / join link / Hearth Pass join a phone. Google is a live bridge, not a bank, not a parking lot. | D-032, D-043, D-078 |
+| Google sign-in reveals personal-ledger and household-ledger memberships on any device. No peer device is the host. Cloud is durable continuity; PGlite is the validated offline replica. | D-112 |
 | Personal rows are a filter until Auth. A hidden tab is not privacy. | D-015 |
 | Hosted `USING (true)` is an open door. The publishable key is not a lock. | D-034 |
 
@@ -78,7 +79,7 @@ Do not re-litigate these as “Chapter 0” or “Ring 1.” They are the kitche
 
 - Phone-first Home, Calendar, Add, Plan, Books, More
 - Command kernel: spend, income, shift, transfer, category, budget, goals, recurrences, undo, confirm, duplicates
-- PGlite journal + optional Supabase **snapshot** publish; trial balance; read-only SQL
+- PGlite journal + current legacy Supabase snapshot transport; trial balance; read-only SQL. D-112 cloud continuity supersedes optional publish as the target.
 - Sync integrity (D-052): append-only goal contributions, timestamped catalog merge, personal rows kept on the snapshot, upsert without DELETE
 - Calendar board, rhythms, `.ics`; **Google household bridge is live** (D-078 / D-087): Continue with Google, per-member link, step-up on sensitive actions, both people’s Calendar overlay, bill reminders to Google, sit-down Drive workbook (create-only). Drive / Contacts / Gmail / Sheets are opt-in. Google never posts. Tokens stay on this phone.
 - Phrase / join / Hearth Pass; Shared / Personal / Both
@@ -106,7 +107,7 @@ How to run the app: repository [README](../README.md). How the layers fit: [ARCH
 | **Mint** (died 2024) | Net-worth glance, card utilization, “see it all.” The *object* was the account. | Bank feed as truth. Categories as the product. A monthly guilt chore. Intuit killed the habit and kept the data. | Wallet tiles and utilization as pulse / Hercules line, **not** a Health finding. No feed writes. |
 | **Copilot / Monarch / Rocket Money** | Beautiful rolls, subscription hunting, household sharing. | Auto-import as the ledger. Soft meaning for transfers. | Import-shaped path later: inbox → confirm → `postEntry` (D-011). |
 | **YNAB** | Give every dollar a job. Sit-down as a ritual. Education as a sport. | Visa-as-envelope. Card payment as spend. Budget as a second truth. | Jobs live as categories, goals, and future lockboxes **on the journal**. Pay the card is `postTransfer`. |
-| **Actual / Lunch Money** | Local-first honesty. Envelope *tags* on a real ledger. | Becoming a hobbyist toolkit with no companion, or a cloud blob with no trial balance. | PGlite is already local Fort Knox. Hosted books wait on Auth. |
+| **Actual / Lunch Money** | Local-first honesty. Envelope *tags* on a real ledger. | Becoming a hobbyist toolkit with no companion, or a cloud blob with no trial balance. | PGlite validates every device and keeps offline work; the cloud keeps durable continuity. |
 | **QuickBooks / Xero / Wave** | Statements a CPA recognizes. Rec. Period close. | SMB chrome. Payroll-first. A kitchen should not need a controller to add milk. | Audit Office is the household close. Rec and close never post. |
 | **Bloomberg / Addepar / Family-office stacks** | Multi-entity, custody, policy. The *word* family office. | Pretending two people with a Visa need a family office *vendor* before they have a door lock. | We earn the noun with a GL, a close pack, and a wallet — then grow entities. We do not skip Auth. |
 | **Bank apps** (TD, RBC, EQ) | Tiles → account room → Add defaults there. | The feed writes. The journal is hidden. | Accounts Floor already stole the object. |
@@ -218,6 +219,8 @@ Nothing in that table posts without a command. Nothing that talks to a bank, Int
 
 ## Google Dual Course (D-078)
 
+Identity is amended by D-112: Google is now the normal entry and recovery identity for personal and household ledgers on every device. The suite features below remain opt-in and never post. Google Drive and Sheets are not the ledger or the sync store. See [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md).
+
 The household already lives in Google. The engine (`withGoogle`) and the kitchen client ID are **shipping**. Drive, Contacts, Gmail, and Sheets are still opt-in. They may now become real features, not forever-pings.
 
 How-to: [GOOGLE.md](GOOGLE.md). Laws that do not move: tokens on this phone; snapshot stores who is linked; Google never posts; phrase / join / Hearth Pass still join a phone; merchant names, spouse notes, and calendar titles are untrusted DATA (D-059); quiet appointment titles stay coded (D-054 / D-060).
@@ -268,8 +271,8 @@ Order is **weight and risk**, not nostalgia chapter numbers. Claude owns **deskt
 
 1. **Desktop office (D-080 / D-082).** Unique offices, widget sizes, Edit Desk, personalities — packed so cards do not clip, still a warm desk (cream papers, Fraunces names, 900px column). Prompt: [CLAUDE_DESKTOP_OFFICE.md](CLAUDE_DESKTOP_OFFICE.md). Do not restyle into a 1280 dashboard. Do not turn the phone back into seventeen rows.
 2. **Mobile Home (D-079, shipped).** `OfficePhone` (`< 720px`): glance, one-tap, five or fewer objects. Record: [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md). Further phone customization is a joint Claude+Cursor review, not a dump of the desktop packet.
-3. **Google Dual Course (D-078).** Visit/claim reminders first (Calendar already on). Sit-down Drive workbook already ships (D-087). Then Gmail inbox on this phone, Contacts match, Sheets import — each opt-in, each `withGoogle`, none post. How-to: [GOOGLE.md](GOOGLE.md). A desktop Household personality may feature Calendar; Google is still not a bank.
-4. **Auth + RLS** on hosted books. Phrase-join already filters environment; PGlite is already per pill. This is the Course A door. Pair it with an honest Hercules line about access. Required before any Google payload is stored hosted, and before bank parsers.
+3. **Google-account cloud continuity (D-112).** Discover personal/household scopes after sign-in, accept pulled facts through PGlite, synchronize through a durable idempotent outbox, and prove old-device-off read/write. Phrase/Pass/`linked` remain migration and recovery aids.
+4. **Late-September Auth + membership RLS.** Disposable hosted Development data may remain open through 2026-09-30, but the door must close before meaningful October data. Pair it with an honest Hercules line about access. Bank parsers and private hosted sources still wait.
 5. **GitHub 2FA** (D-020).
 6. **Recurring preview on open**, then the existing `postEntry` path.
 7. **JSON/CSV import** of a sanitized history through commands (D-011) — same kernel as Sheets import.

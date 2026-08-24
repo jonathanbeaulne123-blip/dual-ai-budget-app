@@ -275,6 +275,22 @@ export async function inspectBrowserBooks(household: Household): Promise<{
         entryCount,
       };
     }
+    const acceptedRevision = await db.query<{ snapshot_hash: string }>(
+      `SELECT snapshot_hash
+       FROM audit_revisions
+       WHERE household_id = $1 AND revision = $2
+       ORDER BY at DESC
+       LIMIT 1`,
+      [household.householdId, household.revision],
+    );
+    if (existing.rows.length > 0 && acceptedRevision.rows.length === 0) {
+      return {
+        ok: false,
+        issue: "interrupted-transaction",
+        message: "PGlite has no acceptance receipt for this snapshot revision. Nothing was discarded.",
+        entryCount,
+      };
+    }
     const unbalanced = await db.query<{ entry_id: string }>(
       "SELECT entry_id FROM v_unbalanced_entries WHERE household_id = $1",
       [household.householdId],
@@ -295,6 +311,15 @@ export async function inspectBrowserBooks(household: Household): Promise<{
         entryCount,
       };
     }
+    const acceptedHash = acceptedRevision.rows[0]?.snapshot_hash;
+    if (acceptedHash && acceptedHash !== (await hashBooksSnapshot(household))) {
+      return {
+        ok: false,
+        issue: "projection-mismatch",
+        message: "The snapshot and the accepted PGlite journal contain different financial facts. Recovery is available.",
+        entryCount,
+      };
+    }
     return { ok: true, message: "PGlite agrees with the household snapshot.", entryCount };
   } catch (caught) {
     const message = caught instanceof Error ? caught.message : "The books engine could not be inspected.";
@@ -311,7 +336,13 @@ export async function inspectBrowserBooks(household: Household): Promise<{
 
 async function writeBooks(db: Queryable, household: Household, compiled: CompiledBooks): Promise<BooksStatus> {
   const { equation, tb } = assertBalanced(compiled, household);
-  await db.query("DELETE FROM households WHERE id = $1", [household.householdId]);
+  // One PGlite database represents the active ledger for an environment. Hearth
+  // catalog/member/account ids are household-local (for example MEM-001), while
+  // the SQL schema uses simple primary keys. Clear the previously active books
+  // before compiling another replica so switching households cannot collide.
+  // The durable inactive replicas remain in src/storage.ts and are re-ingested
+  // through this same transaction when selected.
+  await db.query("DELETE FROM households");
   await db.query(
     `INSERT INTO households (id, name, timezone, currency, environment, invite_phrase, linked, revision, last_committed_at)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,

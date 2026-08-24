@@ -9,6 +9,7 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [../AGENTS.md](../AGENTS.md) | Shared agent constitution. Cursor Cloud and repo agents load this file. |
 | [../CLAUDE.md](../CLAUDE.md) | Claude entry: includes `AGENTS.md`, then Claude’s UX/Hercules posture |
 | [HEARTH_ROADMAP.md](HEARTH_ROADMAP.md) | Living phased roadmap, Updates history, rival matrix, AI workflow, Dual Course deltas, gates, risks, and proofs |
+| [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md) | Google-account access from any device, cloud/PGlite roles, the disposable-data window, and the late-September security milestone |
 | [WORKING_MEMORY.md](WORKING_MEMORY.md) | Chat-thread recap; update when its shipped baseline drifts |
 | [STRATEGY.md](STRATEGY.md) | Dual Course vision: family-office books (weight 5) and companion/interactables (weight 3) |
 | [PROJECT_CHARTER.md](PROJECT_CHARTER.md) | Who Hearth is for and what success looks like |
