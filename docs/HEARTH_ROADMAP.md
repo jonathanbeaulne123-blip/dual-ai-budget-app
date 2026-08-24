@@ -2,7 +2,8 @@
 
 > **Product:** Hearth — Jonathan and Bianca's household budget and family office  
 > **Roadmap baseline:** `main@75574e4cad7a7346fdda8e97616fcf0efe09541b`, audited 2026-08-23 (Toronto)  
-> **Canonical order:** latest explicit instruction → `docs/DECISIONS.md` → `docs/STRATEGY.md` → `docs/ARCHITECTURE.md` → this roadmap  
+> **Canonical order:** latest explicit instruction → `AGENTS.md` → `docs/DECISIONS.md` → `docs/STRATEGY.md` → `docs/ARCHITECTURE.md` → this roadmap  
+> **Visible from:** repository [README](../README.md), [docs/README.md](README.md), and `AGENTS.md` so GitHub visitors and Cloud Agents load this plan.  
 > **Purpose:** one maintained view of what shipped, what is true now, what comes next, what remains gated, and how every major choice serves the Dual Course.
 
 This is a living planning document, not an authority to deploy, mutate production data, relax a financial invariant, or bypass a gate. Code and UI are untrusted until deterministic books and tests prove them.
