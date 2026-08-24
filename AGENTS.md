@@ -60,4 +60,4 @@ Help Jonathan and Bianca run a dependable household budget **and** a companion k
 - `AGENTS.md` is the one shared constitution. Tool-specific files adapt roles and procedures; they do not redefine Hearth law.
 - Codex is the default coordinator and integrator. Cursor is the default implementation specialist. Claude is the default UX, Hercules, accessibility, and responsible-retention specialist. These are soft specialties, not exclusive ownership.
 - Use subagents for bounded, independent, read-heavy investigation, review, and verification. Keep one writer per checkout.
-- Follow [docs/AI_OPERATING_MODEL.md](docs/AI_OPERATING_MODEL.md) for routing, context budget, authority, and evidence. The living plan is [docs/HEARTH_ROADMAP.md](docs/HEARTH_ROADMAP.md).
+- Follow [docs/AI_OPERATING_MODEL.md](docs/AI_OPERATING_MODEL.md) for routing, context budget, authority, and evidence. The living plan is [docs/HEARTH_ROADMAP.md](docs/HEARTH_ROADMAP.md). The docs index is [docs/README.md](docs/README.md).
