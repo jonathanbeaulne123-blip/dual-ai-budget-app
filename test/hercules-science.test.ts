@@ -22,7 +22,6 @@ import {
   sanitizeHerculesReply,
   seedDemoHousehold,
   splitForSync,
-  talkHercules,
   visitPostedDefaults,
 } from "../src/core/index.ts";
 
@@ -106,8 +105,7 @@ describe("Hercules science (D-057–D-060)", () => {
     expect(expense?.place).toBe("");
 
     const briefing = herculesBriefing(after, "home", today);
-    const grounded = talkHercules(after, "what did you notice", today, "home");
-    const req = composeHerculesChatRequest(after, "we good?", briefing, grounded, today, "MEM-001");
+    const req = composeHerculesChatRequest(after, "we good?", briefing, today, "MEM-001");
     const payload = herculesModelPayload(req);
     expect(payloadContainsQuietSecret(payload, after)).toBe(false);
     expect(payload).not.toMatch(/Therapy/);
@@ -136,8 +134,7 @@ describe("Hercules science (D-057–D-060)", () => {
     const household = seedDemoHousehold({ today, environment: "development" });
     const bubble = bubbleNotice(household, today)!;
     const briefing = herculesBriefing(household, "home", today);
-    const grounded = talkHercules(household, "what did you notice", today, "home");
-    const req = composeHerculesChatRequest(household, "what did you notice", briefing, grounded, today, "MEM-001");
+    const req = composeHerculesChatRequest(household, "what did you notice", briefing, today, "MEM-001");
     expect(req.notices.some((item) => item.key === bubble.key)).toBe(true);
     expect(req.ledger.recent.some((row) => /tim hortons/i.test(row.note))).toBe(true);
     expect(req.figures).toContain("$2.25");
