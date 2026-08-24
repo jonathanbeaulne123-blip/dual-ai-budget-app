@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en-CA">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hearth — Command state mockups (Development fixtures)</title>
+  <style>
+    :root {
+      --pine: #1a3d32;
+      --paper: #f6f1e8;
+      --ink: #2a2520;
+      --muted: #5c5348;
+      --brass: #b8860b;
+      --wax: #2f6b4f;
+      --danger: #6b1d1d;
+      --warn-bg: #fff8e6;
+      --warn-border: #e6c84a;
+      --conflict-bg: #fdeeee;
+      --conflict-border: #c96a6a;
+      --recovery-bg: #eef3ff;
+      --recovery-border: #6a7ec9;
+      --dev: #3d5a80;
+      --radius: 12px;
+      --font: "Figtree", system-ui, sans-serif;
+      --serif: "Fraunces", Georgia, serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: #ddd8cf;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+    .page-header {
+      background: var(--pine);
+      color: var(--paper);
+      padding: 16px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .page-header h1 { font-family: var(--serif); margin: 0 0 4px; font-size: 1.25rem; }
+    .page-header p { margin: 0; font-size: 0.85rem; opacity: 0.9; }
+    .viewport-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 12px 20px;
+      background: #c9c4bb;
+      flex-wrap: wrap;
+    }
+    .viewport-tabs button {
+      border: 1px solid var(--muted);
+      background: var(--paper);
+      padding: 8px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      font: inherit;
+    }
+    .viewport-tabs button.active {
+      background: var(--pine);
+      color: var(--paper);
+      border-color: var(--pine);
+    }
+    .gallery {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+    }
+    .frame-wrap {
+      background: #bbb6ad;
+      padding: 12px;
+      border-radius: 16px;
+    }
+    .frame-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    .device {
+      background: var(--paper);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      transition: width 0.2s ease;
+    }
+    .device.w320 { width: 320px; }
+    .device.w390 { width: 390px; }
+    .device.w720 { width: 720px; }
+    .device.w1100 { width: 1100px; }
+
+    /* Hearth chrome */
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(26,61,50,0.12);
+    }
+    .brand h2 {
+      font-family: var(--serif);
+      margin: 0;
+      font-size: 1.1rem;
+      color: var(--pine);
+    }
+    .brand p { margin: 2px 0 0; font-size: 0.78rem; color: var(--muted); }
+    .pill {
+      font-size: 0.72rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--dev);
+      color: var(--dev);
+      white-space: nowrap;
+    }
+    .sync-chip {
+      margin: 0 14px 8px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .sync-chip.pending { background: var(--warn-bg); border: 1px solid var(--warn-border); }
+    .sync-chip.synced { background: #e8f5ee; border: 1px solid var(--wax); color: var(--wax); }
+    .sync-chip.conflict { background: var(--conflict-bg); border: 1px solid var(--conflict-border); color: var(--danger); }
+    .sync-chip.local { background: #eee; border: 1px solid #ccc; color: var(--muted); }
+    .sync-chip.recovery { background: var(--recovery-bg); border: 1px solid var(--recovery-border); }
+    .banner {
+      margin: 0 14px 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      font-size: 0.82rem;
+    }
+    .banner.pending { background: var(--warn-bg); border-left: 4px solid var(--warn-border); }
+    .banner.conflict { background: var(--conflict-bg); border-left: 4px solid var(--conflict-border); }
+    .banner.recovery { background: var(--recovery-bg); border-left: 4px solid var(--recovery-border); }
+    .banner.rejected { background: #fdeeee; border-left: 4px solid var(--danger); }
+    .banner strong { display: block; margin-bottom: 4px; }
+    .banner .action {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 8px 14px;
+      background: var(--pine);
+      color: var(--paper);
+      border-radius: 8px;
+      font-size: 0.78rem;
+      min-height: 44px;
+      line-height: 28px;
+    }
+    .view-switch {
+      display: flex;
+      margin: 0 14px 10px;
+      border: 1px solid rgba(26,61,50,0.15);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .view-switch span {
+      flex: 1;
+      text-align: center;
+      padding: 10px;
+      font-size: 0.82rem;
+    }
+    .view-switch span.active { background: var(--pine); color: var(--paper); }
+    .content {
+      padding: 14px;
+      min-height: 120px;
+      background: linear-gradient(180deg, #ebe4d8 0%, var(--paper) 100%);
+    }
+    .content.wide {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 12px;
+      min-height: 200px;
+    }
+    .calculator {
+      background: var(--pine);
+      color: var(--paper);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+    }
+    .calculator .amount { font-size: 2rem; font-family: var(--serif); }
+    .toast {
+      margin: 10px 14px;
+      padding: 10px 12px;
+      background: var(--wax);
+      color: white;
+      border-radius: var(--radius);
+      font-size: 0.82rem;
+    }
+    .toast .sub { opacity: 0.85; font-size: 0.75rem; }
+    .nav {
+      display: flex;
+      border-top: 1px solid rgba(26,61,50,0.12);
+    }
+    .nav span {
+      flex: 1;
+      text-align: center;
+      padding: 12px 4px;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .nav span.active { color: var(--pine); font-weight: 600; }
+    .annotation {
+      margin-top: 8px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      max-width: 100%;
+      padding: 0 4px;
+    }
+    .annotation code { background: rgba(0,0,0,0.06); padding: 1px 4px; border-radius: 4px; }
+    .state-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      width: 100%;
+      max-width: 1200px;
+    }
+    @media (max-width: 719px) {
+      .content.wide { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <h1>Command state mockups</h1>
+    <p>Synthetic Development · fixtures from COMMAND_SURFACE_FIXTURES · baseline ac6a8b6</p>
+  </header>
+
+  <div class="viewport-tabs" role="tablist" aria-label="Viewport width">
+    <button type="button" class="active" data-width="390">390px phone</button>
+    <button type="button" data-width="320">320px narrow</button>
+    <button type="button" data-width="720">720px wide</button>
+    <button type="button" data-width="1100">1100px office</button>
+  </div>
+
+  <main class="gallery">
+    <div class="state-grid" id="states"></div>
+  </main>
+
+  <script>
+    const STATES = [
+      {
+        id: "pending-transport",
+        kind: "pending-transport",
+        chipClass: "pending",
+        chip: "Waiting to share · offline",
+        bannerClass: "pending",
+        bannerTitle: "Saved here. Not shared yet.",
+        bannerBody: "Hearth will retry when you're back online.",
+        bannerAction: "Review pending",
+        toast: "Posted $4.50",
+        toastSub: "Waiting to share.",
+        note: "postedExactlyOnce=true · sharingMode=pending-transport",
+      },
+      {
+        id: "synchronized",
+        kind: "synchronized",
+        chipClass: "synced",
+        chip: "Up to date · Beaulne Demo",
+        bannerClass: null,
+        toast: "Posted $12.50",
+        toastSub: "Up to date.",
+        note: "postedExactlyOnce=true · revision matched",
+      },
+      {
+        id: "conflict-needs-attention",
+        kind: "conflict-needs-attention",
+        chipClass: "conflict",
+        chip: "Needs attention · conflict",
+        bannerClass: "conflict",
+        bannerTitle: "Both copies kept.",
+        bannerBody: "This phone and the cloud each have new work. Nothing was overwritten.",
+        bannerAction: "Review conflict",
+        note: "recoveryAvailable=true · wait-for-human-conflict",
+      },
+      {
+        id: "accepted-local",
+        kind: "accepted-local",
+        chipClass: "local",
+        chip: "This phone",
+        bannerClass: null,
+        toast: "Posted $4.50",
+        toastSub: "On this phone.",
+        note: "Demo/unlinked · zero REST",
+      },
+      {
+        id: "permanent-validation-failure",
+        kind: "permanent-validation-failure",
+        chipClass: "local",
+        chip: "This phone",
+        bannerClass: "rejected",
+        bannerTitle: "Nothing was posted.",
+        bannerBody: "The journal is not balanced.",
+        note: "postedNothing=true · fix command",
+      },
+      {
+        id: "recovery-available",
+        kind: "recovery-available",
+        chipClass: "recovery",
+        chip: "Recovery needed",
+        bannerClass: "recovery",
+        bannerTitle: "Recovery needed.",
+        bannerBody: "Don't Confirm again with a new id. Open recovery.",
+        bannerAction: "Open recovery",
+        note: "postedNothing & postedExactlyOnce may both be false",
+      },
+    ];
+
+    const params = new URLSearchParams(window.location.search);
+    let currentWidth = Number(params.get("w")) || 390;
+    if (![320, 390, 720, 1100].includes(currentWidth)) currentWidth = 390;
+
+    function renderDevice(state) {
+      const wide = currentWidth >= 720;
+      const wClass = `w${currentWidth}`;
+      return `
+        <div class="frame-wrap">
+          <div class="frame-label">${state.kind} · ${currentWidth}px</div>
+          <div class="device ${wClass}" data-state="${state.id}">
+            <div class="topbar">
+              <div class="brand">
+                <h2>Hearth</h2>
+                <p>Alex · household · Aug 24</p>
+              </div>
+              <span class="pill">Development</span>
+            </div>
+            <div class="sync-chip ${state.chipClass}">${state.chip}</div>
+            ${state.bannerClass ? `
+              <div class="banner ${state.bannerClass}">
+                <strong>${state.bannerTitle}</strong>
+                ${state.bannerBody || ""}
+                ${state.bannerAction ? `<span class="action">${state.bannerAction}</span>` : ""}
+              </div>` : ""}
+            <div class="view-switch">
+              <span class="active">Household</span>
+              <span>Personal</span>
+            </div>
+            <div class="content${wide ? " wide" : ""}">
+              <div class="calculator">
+                <div class="amount">$4.50</div>
+                <div>Milk · Groceries</div>
+              </div>
+              ${wide ? `<div style="padding:12px;font-size:0.82rem;color:var(--muted)">Conflict / detail column at ≥720px</div>` : ""}
+            </div>
+            ${state.toast ? `<div class="toast">${state.toast}<div class="sub">${state.toastSub || ""}</div></div>` : ""}
+            <nav class="nav" aria-label="Main">
+              <span class="active">Home</span>
+              <span>Ledger</span>
+              <span>Plan</span>
+              <span>More</span>
+            </nav>
+          </div>
+          <p class="annotation"><code>${state.note}</code></p>
+        </div>
+      `;
+    }
+
+    function renderAll() {
+      document.getElementById("states").innerHTML = STATES.map(renderDevice).join("");
+    }
+
+    document.querySelectorAll(".viewport-tabs button").forEach((btn) => {
+      if (Number(btn.dataset.width) === currentWidth) btn.classList.add("active");
+      else btn.classList.remove("active");
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".viewport-tabs button").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentWidth = Number(btn.dataset.width);
+        renderAll();
+      });
+    });
+
+    renderAll();
+  </script>
+</body>
+</html>
