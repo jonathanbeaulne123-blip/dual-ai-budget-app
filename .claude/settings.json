@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "model": "opusplan",
+  "effortLevel": "high",
+  "outputStyle": "Hearth design lead",
+  "autoMemoryEnabled": false,
+  "permissions": {
+    "defaultMode": "default",
+    "disableBypassPermissionsMode": "disable",
+    "allow": [
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(pnpm ai:verify)",
+      "Bash(pnpm test)",
+      "Bash(pnpm exec tsc --noEmit)",
+      "Bash(pnpm build)",
+      "Bash(pnpm check)",
+      "Bash(pnpm pack:claude-ux)",
+      "Bash(pnpm pack:claude-mobile)",
+      "Bash(pnpm pack:claude-desktop)"
+    ],
+    "ask": [
+      "Bash(git push *)",
+      "Bash(git merge *)",
+      "Bash(git rebase *)",
+      "Bash(gh pr merge *)",
+      "Bash(pnpm books:apply *)",
+      "Bash(pnpm cf:deploy *)",
+      "Bash(pnpm cf:preview *)",
+      "Bash(wrangler deploy *)",
+      "Bash(wrangler versions upload *)",
+      "Bash(wrangler secret put *)",
+      "mcp__supabase__*"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./.dev.vars)",
+      "Read(./**/*.pem)",
+      "Read(./**/*.key)",
+      "Edit(./.env)",
+      "Edit(./.env.*)",
+      "Edit(./.dev.vars)"
+    ]
+  }
+}

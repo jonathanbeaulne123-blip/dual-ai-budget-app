@@ -1,0 +1,31 @@
+{
+  "terminalAllowlist": [
+    "git status",
+    "git diff",
+    "git log",
+    "git show",
+    "git branch --show-current",
+    "git branch --list",
+    "git rev-parse",
+    "rg",
+    "pnpm ai:verify",
+    "pnpm test",
+    "pnpm exec vitest run",
+    "pnpm exec tsc --noEmit",
+    "pnpm build",
+    "pnpm check"
+  ],
+  "mcpAllowlist": [
+    "supabase-docs:search_docs"
+  ],
+  "autoRun": {
+    "allow_instructions": [
+      "Allow read-only repository inspection and the exact local verification commands named in AGENTS.md."
+    ],
+    "block_instructions": [
+      "Ask before pushing, merging, rebasing, deploying, changing secrets, changing hosted data or schema, or applying books.",
+      "Ask before any action that could send household data to a network service or access Production.",
+      "Ask before deleting, overwriting, resetting, cleaning, or restoring files or data."
+    ]
+  }
+}

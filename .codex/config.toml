@@ -1,0 +1,24 @@
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[sandbox_workspace_write]
+network_access = false
+
+[features]
+hooks = true
+multi_agent = true
+
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 3
+default_subagent_model = "gpt-5.6-terra"
+default_subagent_reasoning_effort = "medium"
+
+[mcp_servers.supabase_docs]
+url = "https://mcp.supabase.com/mcp?read_only=true&features=docs"
+enabled = true
+required = false
+enabled_tools = ["search_docs"]
+default_tools_approval_mode = "prompt"
+startup_timeout_sec = 20
+tool_timeout_sec = 60

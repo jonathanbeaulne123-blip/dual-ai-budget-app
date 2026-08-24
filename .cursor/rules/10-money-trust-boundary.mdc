@@ -1,0 +1,14 @@
+---
+description: Hearth money, command, ledger, storage, sync, and schema invariants
+globs: "src/core/**/*.ts,src/ledger/**/*.ts,src/storage.ts,src/api.ts,src/App.tsx,supabase/**/*.sql,sql/**/*.sql,test/**/*.ts"
+alwaysApply: false
+---
+
+- Only Commands may post money, and only after visible explicit Confirm.
+- UI, Hercules, imports, network responses, reminders, widgets, cosmetics, and forecasts may explain, stage, or preview; they never post.
+- Use CAD integer cents, America/Toronto civil dates, balanced double-entry, and immutable posted history.
+- Correct posted money with explicit reversing entries, never deletion or an old whole-snapshot restore.
+- PGlite is the books engine. Supabase is envelope transport, not a second ledger.
+- Development and Production remain distinct at every ingress, key, payload, query, and audit boundary.
+- Money writes fail closed when books validation fails.
+- Add focused tests for every changed invariant.
