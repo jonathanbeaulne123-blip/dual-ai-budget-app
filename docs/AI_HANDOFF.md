@@ -70,7 +70,7 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 **Still required:** D-116 delayed-reply invalidation when environment, household, or member changes while a model call is in flight. The phone remains the only payload composer.
 
-## Hosted snapshot CAS + outbox ack (D-121)
+## Hosted snapshot CAS + outbox ack (D-122)
 
 **Status:** Implemented on `cursor/cloud-cas-outbox-4ffb`. Client prefers `rpc/publish_household_snapshot`; hardened unapplied packet `supabase/migrations/002_snapshot_cas.sql`; outbox ack on success/duplicate, exponential backoff, conflict blocks auto-replay; local books never cleared on failed/stale cloud write. Deterministic proofs in `test/hosted-cas-two-client.test.ts`. **Did not** deploy, apply SQL, mutate hosted rows, touch Production, or merge.
 

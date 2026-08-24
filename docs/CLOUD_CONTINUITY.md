@@ -2,7 +2,7 @@
 
 > **Accepted product direction — 2026-08-24.** This file supersedes language that describes hosted sync as optional publishing, a three-word phrase as the normal access model, or one phone as the durable home of the ledger.
 
-## Implementation status — D-114 continuity, D-117 scopes, D-121 CAS
+## Implementation status — D-114 continuity, D-117 scopes, D-122 CAS
 
 The first working continuity slices are implemented without applying migration 002:
 
@@ -18,7 +18,7 @@ The first working continuity slices are implemented without applying migration 0
 - the active session remembers its household id, legacy `hearth:v1:<environment>` snapshots migrate automatically, and reset removes only the selected ledger;
 - every signed-in member gets a durable member-only personal replica keyed by environment, household, and member. The Personal view reads that replica while the existing full-snapshot sync envelope remains lossless.
 - Migration 003 is applied. D-117 explicit Google membership rows and member-personal snapshots are live in Development: discovery filters by Google subject on the server, fetches only matching households, and overlays that member's hosted Personal scope. Signed-in transport writes the membership and member-only Personal payload after a successful household publish. Inherited broad table privileges were reset and verified as exactly `SELECT`/`INSERT`/`UPDATE` for `anon` and `authenticated`.
-- **D-121 client:** `pushSupabaseHousehold` calls `rpc/publish_household_snapshot` first. The pure CAS contract lives in `src/ledger/snapshotCas.ts` and mirrors the unapplied SQL packet. When PostgREST reports the RPC missing (`PGRST202`), the client falls back to GET-then-compare-then-POST.
+- **D-122 client:** `pushSupabaseHousehold` calls `rpc/publish_household_snapshot` first. The pure CAS contract lives in `src/ledger/snapshotCas.ts` and mirrors the unapplied SQL packet. When PostgREST reports the RPC missing (`PGRST202`), the client falls back to GET-then-compare-then-POST.
 
 Migration 003 was applied to project `tykhocwacaxwquhynkok` on 2026-08-24 with Jonathan's explicit approval. **Migration 002 is still unapplied.** Until Jonathan applies `supabase/migrations/002_snapshot_cas.sql`, live hosted writes still use the legacy racy client path. Membership selectors are not Supabase Auth. No peer device must remain online for a snapshot that has reached the cloud.
 

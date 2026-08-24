@@ -1,5 +1,5 @@
 -- DO NOT APPLY without Jonathan's explicit approval.
--- Trust-foundation compare-and-swap for hosted JSON snapshots (D-121).
+-- Trust-foundation compare-and-swap for hosted JSON snapshots (D-122).
 -- Client prefers POST /rest/v1/rpc/publish_household_snapshot; falls back to
 -- GET-then-compare-then-POST only when this function is missing from the API.
 -- Do not paste into the household Supabase SQL editor from an AI session.
