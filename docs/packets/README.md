@@ -1,6 +1,6 @@
 # Packets
 
-Generated attach files for other models. They are not the plan; living canon is the rest of `docs/`.
+Generated attach files for other models. They are not the plan; living canon is the rest of `docs/`. Embedded optional-Supabase or device-local language predating D-112 is superseded by [Google-account cloud continuity](../CLOUD_CONTINUITY.md); regenerate a packet before using it for continuity work.
 
 | File | For |
 |---|---|

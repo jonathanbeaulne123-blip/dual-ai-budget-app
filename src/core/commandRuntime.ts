@@ -44,6 +44,8 @@ export type AcceptWriteInput = {
   confirmationId?: string;
   commandKind?: string;
   postedIds?: string[];
+  /** Explicit D-112 Google continuity transport; legacy callers still require linked=true. */
+  transportRequested?: boolean;
   adapters: WriteAdapters;
 };
 
@@ -140,7 +142,7 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
     const existing = sameHousehold && previous ? findReceipt(previous, confirmationId) : undefined;
     if (existing && previous) {
       return outcome({
-        kind: hostedTransportAllowed(previous) && previous.sharing?.pending ? "pending-transport" : previous.sharing?.mode === "synchronized" ? "synchronized" : "accepted-local",
+        kind: (hostedTransportAllowed(previous) || input.transportRequested) && previous.sharing?.pending ? "pending-transport" : previous.sharing?.mode === "synchronized" ? "synchronized" : "accepted-local",
         household: previous,
         previous,
         postedIds: existing.postedIds,
@@ -215,7 +217,8 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       return uncertainRecoveryOutcome(previous, confirmationId, persistError);
     }
 
-    if (!hostedTransportAllowed(accepted) || !input.adapters.transport) {
+    const transportAllowed = hostedTransportAllowed(accepted) || input.transportRequested === true;
+    if (!transportAllowed || !input.adapters.transport) {
       return outcome({
         kind: "accepted-local",
         household: accepted,
@@ -278,28 +281,6 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       if (transported.errorClass === "conflict-detected" && transported.remote) {
         const auto = canAutoMergeConflict(accepted, transported.remote);
         let conflicted = await recordConflict(accepted, transported.remote, auto);
-        try {
-          await input.adapters.persist(conflicted);
-        } catch {
-          return outcome({
-            kind: "conflict-needs-attention",
-            household: conflicted,
-            previous,
-            postedIds,
-            confirmationId,
-            identityHash,
-            revision,
-            sharingMode: "conflicted",
-            errorClass: "conflict-detected",
-            userMessage:
-              "This phone and the shared copy both have new work. The conflict is on this phone but the snapshot could not be saved. Recovery is available.",
-            retryable: true,
-            recoveryAvailable: true,
-            ok: true,
-            postedExactlyOnce: true,
-            postedNothing: false,
-          });
-        }
         if (auto) {
           try {
             const status = await input.adapters.ingest(conflicted);
@@ -330,6 +311,62 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
               postedNothing: false,
             });
           }
+          try {
+            await input.adapters.persist(conflicted);
+          } catch {
+            let booksRestored = false;
+            if (input.adapters.restoreIngest) {
+              try {
+                await input.adapters.restoreIngest(accepted);
+                booksRestored = true;
+              } catch {
+                /* recovery stays explicitly uncertain */
+              }
+            }
+            conflicted = await recordConflict(accepted, transported.remote, false);
+            return outcome({
+              kind: "conflict-needs-attention",
+              household: conflicted,
+              previous,
+              postedIds,
+              confirmationId,
+              identityHash,
+              revision: conflicted.revision,
+              sharingMode: "conflicted",
+              errorClass: "conflict-detected",
+              userMessage: booksRestored
+                ? "The local post is safe, but this phone could not save the automatic merge. Both sides are still available."
+                : "The books accepted an automatic merge, but this phone could not save or restore it. Recovery is available; do not Confirm again.",
+              retryable: true,
+              recoveryAvailable: true,
+              ok: true,
+              postedExactlyOnce: true,
+              postedNothing: false,
+            });
+          }
+        } else {
+          try {
+            await input.adapters.persist(conflicted);
+          } catch {
+            return outcome({
+              kind: "conflict-needs-attention",
+              household: conflicted,
+              previous,
+              postedIds,
+              confirmationId,
+              identityHash,
+              revision: conflicted.revision,
+              sharingMode: "conflicted",
+              errorClass: "conflict-detected",
+              userMessage:
+                "This phone and the shared copy both have new work. The conflict is in memory but could not be saved. Recovery is available.",
+              retryable: true,
+              recoveryAvailable: true,
+              ok: true,
+              postedExactlyOnce: true,
+              postedNothing: false,
+            });
+          }
         }
         return outcome({
           kind: auto ? "accepted-local" : "conflict-needs-attention",
@@ -338,7 +375,7 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
           postedIds,
           confirmationId,
           identityHash,
-          revision,
+          revision: conflicted.revision,
           sharingMode: auto ? deriveSharing(conflicted).mode : "conflicted",
           errorClass: auto ? null : "conflict-detected",
           userMessage: auto ? null : "This phone and the shared copy both have new work. Nothing was overwritten.",

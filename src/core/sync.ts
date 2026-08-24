@@ -236,6 +236,15 @@ export function splitForSync(household: Household, memberId: string): { shared: 
   return { shared, personal };
 }
 
+export function personalReplicaForMember(household: Household, memberId: string): PersonalEnvelope {
+  const personal = splitForSync(household, memberId).personal;
+  return {
+    ...personal,
+    transactions: personal.transactions.filter((tx) => tx.createdBy === memberId),
+    shifts: personal.shifts.filter((shift) => shift.createdBy === memberId),
+  };
+}
+
 export function assembleHousehold(
   shared: SharedEnvelope,
   personal: PersonalEnvelope | null,

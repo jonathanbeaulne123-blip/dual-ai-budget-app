@@ -41,7 +41,7 @@ The artifact should make these Hearth laws legible wherever the roadmap invokes 
 - Commands are the money trust boundary. UI, Hercules, weather, cosmetics, and widgets never post money. Confirm still posts.
 - Money uses CAD integer cents, `America/Toronto`, and double-entry accounting.
 - Development is not Production.
-- Auth + RLS gate bank feeds, Interac, issued cards, hosted private payloads, and amount-bearing push.
+- Google-account cloud continuity is core: personal and household ledgers follow the signed-in person to any device, with no peer device online. Disposable hosted data may remain open through 2026-09-30; the late-September Auth + RLS cutover still gates meaningful October data, bank feeds, Interac, issued cards, and private hosted payloads.
 - Gated, speculative, and currently impossible destinations remain visible when the roadmap includes them; their gate, risk, and proof requirements must remain attached.
 - Sheets, clasp, and Apps Script are obsolete product paths when the roadmap says so.
 
@@ -83,7 +83,7 @@ Build all of the following into one coherent artifact. You may introduce additio
 #### 3. Current truth and gates
 
 - A high-signal panel separating verified current truth from active work, proposed direction, dependencies, and gated futures.
-- Surface the money trust boundary, Development/Production distinction, Auth + RLS gates, and any open proof requirements recorded in the roadmap.
+- Surface the money trust boundary, Google-account device continuity, Development/Production distinction, the disposable-data window, the dated Auth + RLS cutover, and open proof requirements recorded in the roadmap.
 - Make `gated` visibly different from `cancelled`, `blocked`, `active`, and `shipped` when those distinctions exist.
 - Never promote an open PR or active branch to shipped status.
 
@@ -217,7 +217,7 @@ Before submitting, verify every item:
 - [ ] Open PRs, branches, experiments, and proposals are not presented as shipped.
 - [ ] The artifact is roadmap-only and contains no working or simulated money action.
 - [ ] Commands/Confirm, double-entry, CAD integer cents, `America/Toronto`, and Development-versus-Production are represented only as source-backed roadmap laws.
-- [ ] Auth + RLS futures remain visible with their gates; gated is not conflated with cancelled or shipped.
+- [ ] Google-account continuity is visible as current core work; Auth + RLS is shown as a mandatory late-September cutover before meaningful October data, not as a prerequisite for disposable Development testing.
 - [ ] The complete phase rail and all roadmap phases, including unbounded future destinations, are represented.
 - [ ] Current truth/gates, phase work, major Updates, small Updates, rival matrix, AI tooling, Dual Course scores/deltas, recent session, and source register are all present.
 - [ ] Major and small Updates retain their source classification.
