@@ -1,5 +1,5 @@
-# Moved
+# Hearth product roadmap
 
-This filename is kept so old links do not 404.
+The maintained product roadmap is [HEARTH_ROADMAP.md](HEARTH_ROADMAP.md). Long-horizon bank, Interac, cards, and currently-impossible destinations remain visible there with explicit gates.
 
-**Do not plan from this stub.** Living vision: [STRATEGY.md](STRATEGY.md). Museum copy of the Chapter 0–5 essay: [nostalgia/PRODUCT_ROADMAP.md](nostalgia/PRODUCT_ROADMAP.md). Bank / Interac / issued cards remain gated by D-039 (Auth + RLS), restated in D-048.
+This filename remains as a compatibility pointer so old links do not break. Do not plan from this stub.
