@@ -1,5 +1,5 @@
 /**
- * Hosted snapshot compare-and-swap contract (D-121).
+ * Hosted snapshot compare-and-swap contract (D-122).
  * Mirrors `supabase/migrations/002_snapshot_cas.sql` so tests can exercise
  * atomic publish semantics without applying SQL or contacting the project.
  */

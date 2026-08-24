@@ -140,7 +140,7 @@ Major updates keep a durable blurb: what shipped, why it mattered, Dual Course e
 - **What changed:** optional hosted publishing is no longer the target product. Google sign-in must reveal the person's personal ledger and household memberships on any device; the cloud supplies durable continuity and PGlite remains each device's validated accounting/offline replica.
 - **Why:** Jonathan and Bianca must never depend on one phone staying online to read or write the household.
 - **Development window:** data through 2026-09-30 is disposable and may remain openly readable/writable to accelerate this work. Security remains a mandatory late-September cutover before meaningful October data.
-- **Implemented in D-114/D-117/D-118/D-121:** exact Development Google membership discovery, PGlite acceptance, compacting durable outbox with ack/backoff, launch/focus/reconnect replay, stale-revision conflict stop, applied hosted membership plus Personal scope, first-run household/shared/Personal ledger naming, and client preference for `publish_household_snapshot` CAS (unapplied SQL). Production discovery remains off.
+- **Implemented in D-114/D-117/D-118/D-122:** exact Development Google membership discovery, PGlite acceptance, compacting durable outbox with ack/backoff, launch/focus/reconnect replay, stale-revision conflict stop, applied hosted membership plus Personal scope, first-run household/shared/Personal ledger naming, and client preference for `publish_household_snapshot` CAS (unapplied SQL). Production discovery remains off.
 - **Still open:** Jonathan apply of migration 002 for live atomic hosted CAS, two-browser E2E proof on disposable Development, Supabase Auth-bound membership, and explicit conflict-resolution proof beyond the in-app choose UI.
 - **Evidence required:** [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md) acceptance tests, including fresh-device discovery, old-device-off read/write, offline outbox convergence, and pulled-snapshot accounting validation. In-repo: `test/hosted-cas-two-client.test.ts`.
 - **Kill/rollback:** preserve accepted commands in a recoverable outbox and report the block; never retreat to a one-device host or claim open Development data is secure.
@@ -218,9 +218,9 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 
 **Exit condition:** any signed-in device can work online or offline, interleave edits, relaunch, and converge without losing a valid command; no peer device must remain online.
 
-- [x] Replace unconditional snapshot upsert with monotonic revision/CAS or an authoritative merge RPC. *(D-121 client + unapplied `002_snapshot_cas.sql`; live RPC waits on Jonathan apply.)*
+- [x] Replace unconditional snapshot upsert with monotonic revision/CAS or an authoritative merge RPC. *(D-122 client + unapplied `002_snapshot_cas.sql`; live RPC waits on Jonathan apply.)*
 - [ ] Define per-member/per-device identity, clocks, and actor attribution; `openShift` is not one global mutable slot.
-- [x] Add an idempotent outbox, acknowledgement, retry/backoff, and explicit “not yet shared” state. *(D-121; conflict remains the explicit not-yet-shared / needs-attention path.)*
+- [x] Add an idempotent outbox, acknowledgement, retry/backoff, and explicit “not yet shared” state. *(D-122; conflict remains the explicit not-yet-shared / needs-attention path.)*
 - [ ] Discover personal and household ledger memberships after Google sign-in, then pull on launch/focus/reconnect without erasing a safe local result when pull fails.
 - [ ] Define tombstone/reversal retention and bounded compaction without destroying audit evidence.
 - [ ] Make join semantics additive and recoverable; a second phone never replaces an existing household silently.
@@ -231,7 +231,7 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 **Proof:** deterministic fault harness plus Playwright/WebKit two-context scenarios; post-reconcile journal equality and stable hashes.  
 **Kill criterion:** queue writes and surface recovery if convergence cannot be proved; do not fall back to a one-device host.
 
-**D-114/D-117/D-121 progress:** Development household discovery, multi-household offline replicas, launch/focus/reconnect replay, hosted Personal scope, client CAS RPC wiring, outbox acknowledgement/backoff, and deterministic two-client CAS proofs are implemented. Migration 003 is applied; migration 002 remains unapplied until Jonathan approves. Two-browser live E2E and Auth/RLS keep this phase open.
+**D-114/D-117/D-122 progress:** Development household discovery, multi-household offline replicas, launch/focus/reconnect replay, hosted Personal scope, client CAS RPC wiring, outbox acknowledgement/backoff, and deterministic two-client CAS proofs are implemented. Migration 003 is applied; migration 002 remains unapplied until Jonathan approves. Two-browser live E2E and Auth/RLS keep this phase open.
 
 ### Phase 3 — Late-September Google Auth + membership RLS cutover — DATE-GATED security foundation
 
