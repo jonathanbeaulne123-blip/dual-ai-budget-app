@@ -1,20 +1,17 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import {
-  BOARD_EMPTY,
-  chalkboardPrompts,
-  dailyDare,
   detectChalkLetters,
-  groceryHighFive,
   hasChalkInk,
-  neatenChalk,
   organizeChalkNotes,
   scribbleChalk,
   wipeChalk,
+  weatherChip,
   type ChalkInk,
   type ChalkNote,
   type ChalkStroke,
   type CommitResult,
   type Household,
+  type WeatherReading,
 } from "../core/index.ts";
 
 export function chalkboardGlance(household: Household): string {
@@ -23,15 +20,13 @@ export function chalkboardGlance(household: Household): string {
   return notes.slice(0, 2).map((note) => note.text || "drawing").join(" · ");
 }
 
-/** Transparent typeset notes on the weather glass. Same Fraunces hand, cozy cream. */
-export function ChalkGlassNotes({ household }: { household: Household }) {
-  const notes = organizeChalkNotes(household.kitchen.chalkboard).slice(0, 3);
-  if (!notes.length) return null;
+export function WeatherBadge({ reading }: { reading: WeatherReading }) {
+  const chip = weatherChip(reading);
   return (
-    <div className="chalk-glass" aria-hidden="true">
-      {notes.map((note) => (
-        <p key={note.id} className="chalk-glass-line">{note.text || "unreadable hand"}</p>
-      ))}
+    <div className="chalk-weather-badge" aria-label={`${chip.word}, ${chip.celsiusLabel}`}>
+      <span className="chalk-weather-emoji" aria-hidden="true">{chip.emoji}</span>
+      <span className="chalk-weather-word">{chip.word}</span>
+      <span className="chalk-weather-temp">{chip.celsiusLabel}</span>
     </div>
   );
 }
@@ -57,13 +52,17 @@ function paintInk(canvas: HTMLCanvasElement, ink: ChalkInk, color = "#f4f1e6") {
 
 function ChalkCanvas({
   disabled,
+  inkSeed,
   onInk,
+  tall,
 }: {
   disabled?: boolean;
+  inkSeed?: ChalkInk | null;
   onInk: (ink: ChalkInk | null) => void;
+  tall?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const committed = useRef<ChalkStroke[]>([]);
+  const committed = useRef<ChalkStroke[]>(inkSeed?.strokes ?? []);
   const live = useRef<{ x: number; y: number }[] | null>(null);
 
   function currentInk(): ChalkInk | null {
@@ -86,13 +85,21 @@ function ChalkCanvas({
   }
 
   useEffect(() => {
+    committed.current = inkSeed?.strokes ?? [];
+    live.current = null;
+    redraw();
+  }, [inkSeed]);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const frame = canvas.parentElement;
     const resize = () => {
       const width = Math.max(160, frame?.clientWidth ?? 240);
+      const height = tall ? Math.max(120, frame?.clientHeight ?? 200) : Math.round(width * 0.55);
       canvas.width = Math.round(width * 2);
-      canvas.height = Math.round(width);
+      canvas.height = Math.round(height * 2);
+      canvas.style.height = `${height}px`;
       redraw();
     };
     resize();
@@ -103,7 +110,7 @@ function ChalkCanvas({
       observer?.disconnect();
       window.removeEventListener("resize", resize);
     };
-  }, []);
+  }, [tall]);
 
   function pointFrom(event: PointerEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current;
@@ -116,151 +123,216 @@ function ChalkCanvas({
   }
 
   return (
-    <div className="chalk-slate">
-      <canvas
-        ref={canvasRef}
-        className="chalk-canvas"
-        aria-label="Draw on the chalkboard"
-        onPointerDown={(event) => {
-          if (disabled) return;
-          event.currentTarget.setPointerCapture(event.pointerId);
-          const point = pointFrom(event);
-          if (!point) return;
-          live.current = [point];
-        }}
-        onPointerMove={(event) => {
-          if (!live.current || disabled) return;
-          const point = pointFrom(event);
-          if (!point) return;
-          live.current = [...live.current, point];
-          redraw();
-        }}
-        onPointerUp={() => {
-          if (live.current && live.current.length >= 2) {
-            committed.current = [...committed.current, { points: live.current }];
-          }
-          live.current = null;
-          redraw();
-          onInk(currentInk());
-        }}
-        onPointerCancel={() => {
-          live.current = null;
-          redraw();
-          onInk(currentInk());
-        }}
-      />
+    <canvas
+      ref={canvasRef}
+      className="chalk-canvas"
+      aria-label="Draw on the chalkboard"
+      onPointerDown={(event) => {
+        if (disabled) return;
+        event.currentTarget.setPointerCapture(event.pointerId);
+        const point = pointFrom(event);
+        if (!point) return;
+        live.current = [point];
+      }}
+      onPointerMove={(event) => {
+        if (!live.current || disabled) return;
+        const point = pointFrom(event);
+        if (!point) return;
+        live.current = [...live.current, point];
+        redraw();
+      }}
+      onPointerUp={() => {
+        if (live.current && live.current.length >= 2) {
+          committed.current = [...committed.current, { points: live.current }];
+        }
+        live.current = null;
+        redraw();
+        onInk(currentInk());
+      }}
+      onPointerCancel={() => {
+        live.current = null;
+        redraw();
+        onInk(currentInk());
+      }}
+    />
+  );
+}
+
+function NoteThumb({
+  note,
+  expanded,
+  busy,
+  onExpand,
+  onSave,
+  onDelete,
+}: {
+  note: ChalkNote;
+  expanded: boolean;
+  busy: boolean;
+  onExpand: () => void;
+  onSave: (text: string, ink: ChalkInk | null) => void;
+  onDelete: () => void;
+}) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  const [editText, setEditText] = useState(note.text);
+  const [editInk, setEditInk] = useState<ChalkInk | null>(note.ink ?? null);
+
+  useEffect(() => {
+    if (!ref.current || !note.ink) return;
+    paintInk(ref.current, note.ink, "#e7f0e4");
+  }, [note.ink]);
+
+  useEffect(() => {
+    if (expanded) {
+      setEditText(note.text);
+      setEditInk(note.ink ?? null);
+    }
+  }, [expanded, note.text, note.ink]);
+
+  if (expanded) {
+    return (
+      <div className="chalk-rail-item is-editing">
+        <div className="chalk-rail-edit">
+          <textarea
+            className="chalk-input"
+            rows={2}
+            maxLength={160}
+            value={editText}
+            onChange={(event) => setEditText(event.target.value)}
+          />
+          <div className="chalk-slate chalk-slate--thumb">
+            <ChalkCanvas disabled={busy} inkSeed={editInk} tall onInk={setEditInk} />
+          </div>
+          <div className="chalk-rail-edit-actions">
+            <button type="button" className="primary" disabled={busy} onClick={() => onSave(editText, editInk)}>Save</button>
+            <button type="button" className="ghost" disabled={busy} onClick={onExpand}>Done</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="chalk-rail-item">
+      <button type="button" className="chalk-rail-thumb" onClick={onExpand} aria-label="Expand chalk note">
+        {hasChalkInk(note.ink) && (
+          <canvas ref={ref} className="chalk-thumb" width={160} height={80} aria-hidden="true" />
+        )}
+        {note.text && <span className="chalk-rail-caption">{note.text}</span>}
+      </button>
       <button
         type="button"
-        className="chip quiet"
-        disabled={disabled}
-        onClick={() => {
-          committed.current = [];
-          live.current = null;
-          redraw();
-          onInk(null);
-        }}
+        className="chalk-rail-delete"
+        disabled={busy}
+        aria-label="Delete note"
+        onClick={onDelete}
       >
-        Erase slate
+        ×
       </button>
     </div>
   );
 }
 
-function NoteThumb({ note }: { note: ChalkNote }) {
-  const ref = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    if (!ref.current || !note.ink) return;
-    paintInk(ref.current, note.ink, "#e7f0e4");
-  }, [note.ink]);
-  if (!hasChalkInk(note.ink)) return null;
-  return <canvas ref={ref} className="chalk-thumb" width={160} height={80} aria-hidden="true" />;
-}
-
 export function ChalkboardBody({
   household,
   memberId,
-  today,
   busy,
   onCommand,
-  onBuyNote,
+  reading,
+  shrinkable = false,
+  shrunk = false,
+  onToggleShrink,
 }: {
   household: Household;
   memberId: string;
-  today: string;
   busy: boolean;
   onCommand: (fn: (current: Household) => CommitResult) => void;
-  onBuyNote: (text: string) => void;
+  reading?: WeatherReading;
+  shrinkable?: boolean;
+  shrunk?: boolean;
+  onToggleShrink?: () => void;
 }) {
-  const prompts = chalkboardPrompts(today);
-  const highFive = groceryHighFive(household, today);
   const [draft, setDraft] = useState("");
   const [ink, setInk] = useState<ChalkInk | null>(null);
   const [slate, setSlate] = useState(0);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const memberName = household.members.find((member) => member.id === memberId)?.name ?? "You";
   const notes = organizeChalkNotes(household.kitchen.chalkboard);
   const preview = ink ? detectChalkLetters(ink) : "";
 
-  return (
-    <div>
-      {notes.length === 0 ? (
-        <p className="muted">{BOARD_EMPTY} Dare: {dailyDare(today)}</p>
-      ) : (
-        notes.map((note) => (
-          <div className="chalk-note" key={note.id}>
-            <NoteThumb note={note} />
-            <p className="chalk-typeset">{note.text || "unreadable hand"}</p>
-            <div className="chalk-actions">
-              {note.text && (
-                <button type="button" disabled={busy} onClick={() => onBuyNote(note.text)}>bought</button>
-              )}
-              {hasChalkInk(note.ink) && (
-                <button type="button" disabled={busy} onClick={() => onCommand((current) => neatenChalk(current, note.id))}>
-                  neaten
-                </button>
-              )}
-              <button type="button" disabled={busy} onClick={() => onCommand((current) => wipeChalk(current, note.id))} aria-label="Wipe this note">
-                wipe
-              </button>
-            </div>
-          </div>
-        ))
-      )}
-      <div className="chips chalk-prompts">
-        {prompts.map((prompt) => (
-          <button key={prompt} className="chip quiet" type="button" onClick={() => setDraft(prompt)}>{prompt}</button>
-        ))}
-        {highFive.yes && (
-          <button className="chip quiet" type="button" onClick={() => onCommand((current) => scribbleChalk(current, { text: "nice.", author: memberId }))}>
-            nice.
-          </button>
-        )}
+  function saveNote(text: string, nextInk: ChalkInk | null) {
+    setDraft("");
+    setInk(null);
+    setSlate((n) => n + 1);
+    onCommand((current) => scribbleChalk(current, { text, author: memberId, ink: nextInk }));
+  }
+
+  function replaceNote(noteId: string, text: string, nextInk: ChalkInk | null) {
+    onCommand((current) => {
+      const wiped = wipeChalk(current, noteId);
+      return scribbleChalk(wiped.household, { text, author: memberId, ink: nextInk });
+    });
+    setExpandedId(null);
+  }
+
+  if (shrinkable && shrunk) {
+    return (
+      <div className="chalkboard-surface is-shrunk">
+        {reading && <WeatherBadge reading={reading} />}
+        <button type="button" className="chalk-shrink-open" onClick={onToggleShrink}>
+          Open chalkboard
+        </button>
       </div>
-      <ChalkCanvas key={slate} disabled={busy} onInk={setInk} />
-      {preview && <p className="muted">Reading: {preview}</p>}
-      <label className="sr-only" htmlFor="office-chalk">Typeset instead</label>
-      <textarea
-        id="office-chalk"
-        className="chalk-input"
-        rows={2}
-        maxLength={160}
-        placeholder={`${memberName} can draw, or type…`}
-        value={draft}
-        onChange={(event) => setDraft(event.target.value)}
-      />
-      <button
-        className="primary chalk-save"
-        disabled={busy || (!draft.trim() && !ink)}
-        onClick={() => {
-          const text = draft;
-          const nextInk = ink;
-          setDraft("");
-          setInk(null);
-          setSlate((n) => n + 1);
-          onCommand((current) => scribbleChalk(current, { text, author: memberId, ink: nextInk }));
-        }}
-      >
-        Keep
-      </button>
+    );
+  }
+
+  return (
+    <div className={`chalkboard-surface ${shrinkable ? "is-shrinkable" : ""}`}>
+      {reading && <WeatherBadge reading={reading} />}
+      {shrinkable && (
+        <button type="button" className="chalk-shrink-toggle" onClick={onToggleShrink} aria-label="Shrink chalkboard">
+          −
+        </button>
+      )}
+      <div className="chalkboard-stage">
+        <div className="chalkboard-draw">
+          <ChalkCanvas key={slate} disabled={busy} onInk={setInk} tall />
+          {preview && <p className="chalk-reading muted">Reading: {preview}</p>}
+        </div>
+        <aside className="chalk-rail" aria-label="Saved chalk notes">
+          {notes.map((note) => (
+            <NoteThumb
+              key={note.id}
+              note={note}
+              expanded={expandedId === note.id}
+              busy={busy}
+              onExpand={() => setExpandedId((id) => (id === note.id ? null : note.id))}
+              onSave={(text, nextInk) => replaceNote(note.id, text, nextInk)}
+              onDelete={() => onCommand((current) => wipeChalk(current, note.id))}
+            />
+          ))}
+        </aside>
+      </div>
+      <footer className="chalk-compose">
+        <label className="sr-only" htmlFor="office-chalk">Typeset instead</label>
+        <textarea
+          id="office-chalk"
+          className="chalk-input"
+          rows={2}
+          maxLength={160}
+          placeholder={`${memberName} can draw, or type…`}
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+        />
+        <button
+          type="button"
+          className="primary chalk-save"
+          disabled={busy}
+          onClick={() => saveNote(draft, ink)}
+        >
+          Save
+        </button>
+      </footer>
     </div>
   );
 }

@@ -50,6 +50,16 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 **Still required:** two-device conflict choose proof; tighten More → Recent changes copy for D-119; Production reversal semantics stay on D-085 until Jonathan approves.
 
+## Office chalkboard / Home themes / Hercules snippets (D-120, PR #80)
+
+**Status:** Implemented on `cursor/desktop-chalkboard-themes-4ffb` as [PR #80](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/80). Jonathan skipped manual UX proof this pass; `pnpm test` 373 green. Desk tool button is **Home theme** (was Look).
+
+**Budget delta (5):** `0` — chalk Save/delete never posts; bought removed from Office chalkboard only.
+
+**Engagement delta (3):** `+2` — weather chip on chalkboard band; Home theme paper stocks (pink/gold/slate; cream unchanged); Hercules widget-anchored snippet stack with placeholder prompts.
+
+**Still required:** Jonathan visual pass at 390/720+; replace Hercules placeholder copy; decide whether DailyHearth `bought` stays.
+
 ## Trust-foundation worksession (2026-08-24, local branch)
 
 **Status:** Implementation on `cursor/trust-foundation-a483`. Independent books/privacy/verifier review ran locally. P0 holes from that review are fixed. Auth/RLS is a do-not-apply packet with local synthetic tests. Conflict bundles export both sides without merging. `pnpm check` and `pnpm ai:verify` exist. Not pushed. Not applied to hosted schema.

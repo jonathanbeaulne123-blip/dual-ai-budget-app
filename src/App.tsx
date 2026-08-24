@@ -1491,14 +1491,6 @@ export function App() {
           onFinishedShift={beginFinishedShift}
           onPayCard={openPayCard}
           onOpenAccount={openWallet}
-          onBuyNote={(text) => {
-            openAddFor(null, "expense");
-            setForm((current) => ({
-              ...current,
-              note: text.slice(0, 80),
-              subcategoryId: "SUB-FOOD-GROCERIES",
-            }));
-          }}
           onKitchen={(fn) => { void runKitchen(fn); }}
           onMarkPaid={(recurrenceId, summary) => setGuard({ kind: "postRecurrence", recurrenceId, summary })}
           onAskSettle={(claimId, summary) => setGuard({ kind: "settleClaim", claimId, summary })}

@@ -26,7 +26,7 @@ export function Cabinets({
         Desks
       </button>
       <button type="button" className={sheet === "look" ? "is-on" : ""} onClick={() => onSheet(sheet === "look" ? null : "look")}>
-        Look
+        Home theme
       </button>
       <button type="button" className={sheet === "drawer" ? "is-on" : ""} onClick={() => onSheet(sheet === "drawer" ? null : "drawer")}>
         Drawer{parkedCount ? ` · ${parkedCount}` : ""}

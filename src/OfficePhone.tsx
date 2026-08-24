@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode, type Ref } from "react";
+import { useMemo, useState, type ReactNode, type Ref } from "react";
 import { useFurniture } from "./widgets/useFurniture.ts";
 import {
   INSTRUMENT_KIND,
@@ -17,7 +17,7 @@ import {
   shiftPostingStreak,
   walletWarn,
 } from "./core/index.ts";
-import type { Household, Account, Category, CommitResult, InstrumentId, OfficeLayout } from "./core/index.ts";
+import type { Household, Account, Category, CommitResult, InstrumentId, OfficeLayout, WeatherReading } from "./core/index.ts";
 import type { Dashboard } from "./core/insights.ts";
 import type { HearthTab } from "./core/hercules.ts";
 import type { SillOverview } from "./core/sillOverview.ts";
@@ -25,7 +25,8 @@ import type { SillOverview } from "./core/sillOverview.ts";
 import { BlotterBody, BlotterGlance } from "./widgets/Blotter.tsx";
 import { CalculatorBody, CalculatorGlance } from "./widgets/CalculatorPad.tsx";
 import { TimesheetBody, TimesheetGlance } from "./widgets/Timesheet.tsx";
-import { ChalkboardBody, chalkboardGlance } from "./widgets/ChalkboardDesk.tsx";
+import { ChalkboardBody } from "./widgets/ChalkboardDesk.tsx";
+import { WindowBand } from "./widgets/WindowBand.tsx";
 import { JarsBody, JarsGlance } from "./widgets/Jars.tsx";
 import { LampBody, LampGlance, lampAria } from "./widgets/Lamp.tsx";
 import { MailBody, MailGlance } from "./widgets/Mail.tsx";
@@ -69,16 +70,16 @@ function tilt(id: string): number {
 }
 
 export function OfficePhone({
-  household, dashboard, sill, weatherLabel, layout, onLayout,
+  household, dashboard, sill, reading, layout, onLayout,
   today, memberId, busy, adding, form, mode, error, categories, postLabel,
   onForm, onPost, onMore, onMilk, onCoffee, onClockIn, onAbandonShift,
-  onSignOut, onFinishedShift, onPayCard, onOpenAccount, onBuyNote,
+  onSignOut, onFinishedShift, onPayCard, onOpenAccount,
   onKitchen, onMarkPaid, onGo,
 }: {
   household: Household;
   dashboard: Dashboard;
   sill: SillOverview;
-  weatherLabel: string;
+  reading: WeatherReading;
   layout: OfficeLayout;
   onLayout: (next: OfficeLayout) => void;
   today: string;
@@ -101,11 +102,11 @@ export function OfficePhone({
   onFinishedShift: () => void;
   onPayCard: (account: Account) => void;
   onOpenAccount: (accountId: string) => void;
-  onBuyNote: (text: string) => void;
   onKitchen: (fn: (current: Household) => CommitResult) => void;
   onMarkPaid: (recurrenceId: string, summary: string) => void;
   onGo: (tab: HearthTab) => void;
 }) {
+  const [chalkShrunk, setChalkShrunk] = useState(false);
   const opinion = useMemo(() => auditOpinion(household), [household]);
   const findings = useMemo(() => runHealthCheck(household), [household]);
   const streak = useMemo(() => shiftPostingStreak(household, today), [household, today]);
@@ -195,13 +196,6 @@ export function OfficePhone({
         />
       ),
     },
-    chalkboard: {
-      kind: "text",
-      name: "Chalkboard",
-      glance: <>{chalkboardGlance(household)}</>,
-      aria: "Chalkboard.",
-      body: <ChalkboardBody household={household} memberId={memberId} today={today} busy={busy} onCommand={onKitchen} onBuyNote={onBuyNote} />,
-    },
     jars: {
       kind: "text",
       name: "Jars",
@@ -234,12 +228,27 @@ export function OfficePhone({
     },
   };
 
-  const drawer = phoneDrawerIds(order);
+  const drawer = phoneDrawerIds(order.filter((id) => id !== "chalkboard"));
 
   return (
     <div className={`office-phone ${adding ? "is-adding" : ""}`} data-desk={deskKey}>
+      <WindowBand
+        reading={reading}
+        chalkboardBody={
+          <ChalkboardBody
+            household={household}
+            memberId={memberId}
+            busy={busy}
+            onCommand={onKitchen}
+            reading={reading}
+            shrinkable
+            shrunk={chalkShrunk}
+            onToggleShrink={() => setChalkShrunk((on) => !on)}
+          />
+        }
+      />
+
       <div className="ph-sill">
-        <span className="ph-weather">{weatherLabel}</span>
         <span className="ph-needs">{sill.needsMe}</span>
       </div>
 
@@ -260,7 +269,7 @@ export function OfficePhone({
       </div>
 
       <div className="ph-rail">
-        {order.map((id) => {
+        {order.filter((id) => id !== "chalkboard").map((id) => {
           const spec = specs[id];
           if (!spec) return null;
           return (

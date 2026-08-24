@@ -713,17 +713,53 @@ input, select, textarea {
 }
 .hercules-live.high-five { filter: drop-shadow(0 0 12px rgba(201, 162, 39, 0.55)); }
 .hercules-bubble {
-  pointer-events: auto;
+  pointer-events: none;
   position: fixed;
   z-index: 29;
   width: min(228px, 68vw);
-  background: var(--paper);
+  background: transparent;
   color: var(--ink);
   border-radius: 18px;
-  padding: 10px 12px 8px;
-  box-shadow: var(--shadow);
+  padding: 0;
+  box-shadow: none;
   font-size: 13px;
   line-height: 1.35;
+}
+.hercules-bubble button,
+.hercules-bubble input,
+.hercules-bubble form {
+  pointer-events: auto;
+}
+.hercules-snippet-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: min(220px, 40vh);
+  overflow-y: auto;
+}
+.hercules-snippet {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: rgba(255, 250, 242, 0.94);
+  box-shadow: var(--shadow);
+  font-size: 12px;
+  line-height: 1.35;
+  max-width: min(240px, 72vw);
+}
+.hercules-snippet.you {
+  align-self: flex-end;
+  background: rgba(235, 228, 214, 0.94);
+  color: var(--muted);
+  font-weight: 600;
+}
+.hercules-snippet.cat {
+  align-self: flex-start;
+  font-weight: 650;
+}
+.hercules-snippet.cat.placeholder {
+  font-style: italic;
+  opacity: 0.88;
 }
 .hercules-bubble.left { border-bottom-right-radius: 6px; }
 .hercules-bubble.right { border-bottom-left-radius: 6px; }

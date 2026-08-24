@@ -11,6 +11,7 @@ import {
   groceryHighFive,
   herculesBriefing,
   herculesBubbleBox,
+  widgetSnippetBubbleBox,
   herculesIdle,
   herculesMutters,
   herculesNeedsCheck,
@@ -54,6 +55,10 @@ import {
 import { HerculesDress } from "./HerculesDress.tsx";
 import { HerculesFigure } from "./HerculesFigure.tsx";
 import { HerculesFly, wanderFly } from "./HerculesFly.tsx";
+
+const HERCULES_WIDGET_PLACEHOLDER = "jonathan is not creative enough to make prompts right now";
+
+type WidgetSnippet = { role: "user" | "hercules"; text: string; placeholder?: boolean };
 
 function dressedLook(household: Household, today: string, visorPop: boolean) {
   const view = describeCompanion(household, today);
@@ -170,6 +175,8 @@ export function HerculesPresence({
   const [turns, setTurns] = useState<HerculesChatTurn[]>(() =>
     ledgerChats(household).slice(-12).map((row) => ({ role: row.role, text: row.text })),
   );
+  const [focusedWidget, setFocusedWidget] = useState<InstrumentId | "window" | null>(null);
+  const [snippets, setSnippets] = useState<WidgetSnippet[]>([]);
   const [busy, setBusy] = useState(false);
   const [replySource, setReplySource] = useState<"ai" | "local" | null>(null);
   const [fly, setFly] = useState<{ x: number; y: number } | null>(null);
@@ -187,8 +194,9 @@ export function HerculesPresence({
   const lastBump = useRef<{ id: string; at: number } | null>(null);
   const bubbleRef = useRef<HTMLDivElement | null>(null);
   const [bubbleSize, setBubbleSize] = useState({ w: 228, h: 96 });
-  const showProposal = Boolean(proposal && !adding && !open && !begging);
-  const showTalk = Boolean((open || talk || begging) && !adding && talk && !(proposal && !open && !begging));
+  const showProposal = Boolean(proposal && !adding && !open && !begging && !(tab === "home" && focusedWidget));
+  const showWidgetSnippets = Boolean(tab === "home" && focusedWidget && !adding);
+  const showTalk = Boolean((open || talk || begging) && !adding && talk && !(proposal && !open && !begging) && !showWidgetSnippets);
 
   useLayoutEffect(() => {
     const node = bubbleRef.current;
@@ -197,7 +205,7 @@ export function HerculesPresence({
     setBubbleSize((prev) => (
       Math.abs(prev.w - next.w) < 2 && Math.abs(prev.h - next.h) < 2 ? prev : next
     ));
-  }, [showProposal, showTalk, talk?.spoken, proposal?.spoken, open, turns.length, busy]);
+  }, [showProposal, showTalk, showWidgetSnippets, talk?.spoken, proposal?.spoken, open, turns.length, snippets.length, busy]);
 
   useEffect(() => {
     const next = furnitureLand(adding, look.view.mood, today);
@@ -232,6 +240,11 @@ export function HerculesPresence({
       if (intent.type === "collapse") {
         setPerchPlay(false);
         perchPlayFor.current = null;
+        setFocusedWidget(null);
+        setSnippets([]);
+        setOpen(false);
+        setTalk(null);
+        setTurns([]);
         return;
       }
       if (intent.type !== "expand" || adding) return;
@@ -249,22 +262,14 @@ export function HerculesPresence({
         setPerchPlay(!reducedMotion());
         perchPlayFor.current = intent.id;
       }
-      const surface = herculesInstrumentSurface(intent.id, household, today);
-      const page = adding ? "add" : tab;
-      const instrument = intent.id;
-      const help = openHelpState({ tab: page, instrument, household, today });
-      const lesson = firstRunLesson(`instrument:${intent.id}`, surface.lesson);
-      applyTalk({
-        spoken: help.spoken,
-        lesson,
-        fact: herculesPageSurface(page, household, today).fact,
-        replies: help.replies,
-        pose: surface.pose,
-        topic: intent.id,
-        attention: false,
-      });
-      setMotion(surface.pose);
+      setFocusedWidget(intent.id);
+      setSnippets([{ role: "hercules", text: HERCULES_WIDGET_PLACEHOLDER, placeholder: true }]);
+      setOpen(false);
+      setTalk(null);
+      setTopic(intent.id);
       setBegging(false);
+      const surface = herculesInstrumentSurface(intent.id, household, today);
+      setMotion(surface.pose);
     });
   }, [household, today, adding, tab]);
 
@@ -378,7 +383,7 @@ export function HerculesPresence({
   }, [pinned, adding, open, look.view.mood, today]);
 
   useEffect(() => {
-    if (adding || open || !mutters || proposal) return;
+    if (adding || open || !mutters || proposal || (tab === "home" && !focusedWidget)) return;
     const id = window.setInterval(() => {
       const now = Date.now();
       if (now - mutterAt.current < 45000) return;
@@ -446,6 +451,23 @@ export function HerculesPresence({
     setQuestion("");
     setBegging(false);
     setReplySource(null);
+    setTurns([]);
+    if (focusedWidget) {
+      setSnippets([{ role: "hercules", text: HERCULES_WIDGET_PLACEHOLDER, placeholder: true }]);
+    } else {
+      setSnippets([]);
+    }
+  }
+
+  function pushSnippet(userText: string | undefined, herculesText: string) {
+    const spoken = herculesText.slice(0, 160);
+    setSnippets((prev) => {
+      const base = prev.filter((row) => !row.placeholder);
+      const add: WidgetSnippet[] = [];
+      if (userText) add.push({ role: "user", text: userText.slice(0, 120) });
+      add.push({ role: "hercules", text: spoken });
+      return [...base, ...add].slice(-8);
+    });
   }
 
   function sitWithBag() {
@@ -504,6 +526,10 @@ export function HerculesPresence({
     setMotion(next.pose === "sleep" ? "loaf" : next.pose);
     setQuestion("");
     setOpen(true);
+    if (focusedWidget && tab === "home") {
+      pushSnippet(userText, next.spoken);
+      return;
+    }
     setTurns((prev) => {
       if (!userText && !prev.some((turn) => turn.role === "user")) {
         return [{ role: "hercules", text: next.spoken }];
@@ -620,6 +646,7 @@ export function HerculesPresence({
     const gen = chatGen.current + 1;
     chatGen.current = gen;
     setTurns((prev) => [...prev, { role: "user" as const, text: message }].slice(-12));
+    if (focusedWidget && tab === "home") pushSnippet(message, "mrrp…");
     setQuestion("");
     setBusy(true);
     setOpen(true);
@@ -632,6 +659,13 @@ export function HerculesPresence({
     if (chatGen.current !== gen) return;
     setTalk({ ...grounded, spoken: result.text });
     setTurns((prev) => [...prev, { role: "hercules" as const, text: result.text }].slice(-12));
+    if (focusedWidget && tab === "home") {
+      setSnippets((prev) => {
+        const trimmed = prev.filter((row) => row.text !== "mrrp…");
+        const next: WidgetSnippet = { role: "hercules", text: result.text.slice(0, 160) };
+        return [...trimmed, next].slice(-8);
+      });
+    }
     setMotion(grounded.pose === "sleep" ? "loaf" : grounded.pose);
     setBusy(false);
     setReplySource(result.source);
@@ -703,6 +737,10 @@ export function HerculesPresence({
       if (sitTimer.current) window.clearTimeout(sitTimer.current);
       sitTimer.current = window.setTimeout(() => {
         sitTimer.current = null;
+        if (focusedWidget && tab === "home") {
+          setOpen(true);
+          return;
+        }
         const next = herculesTapIntent({
           openHelpOnTap: usefulness.openHelpOnTap,
           chatOpen: false,
@@ -745,22 +783,74 @@ export function HerculesPresence({
       }
       : null;
   const avoid = examinedAvoid ? [...moneyAvoid, examinedAvoid] : moneyAvoid.length ? moneyAvoid : null;
-  const bubble = herculesBubbleBox({
-    catX: pos.x,
-    catY: pos.y,
-    catSize: size,
-    bubbleW: bubbleSize.w,
-    bubbleH: bubbleSize.h,
-    viewW: typeof window === "undefined" ? 390 : window.innerWidth,
-    viewH: typeof window === "undefined" ? 844 : window.innerHeight,
-    avoid,
-  });
+  const widgetFurnitureId = focusedWidget === "chalkboard" ? "window" : focusedWidget;
+  const widgetRect = widgetFurnitureId
+    ? furnitureNow.find((item) => item.id === widgetFurnitureId)?.rect ?? null
+    : null;
+  const bubble = showWidgetSnippets && widgetRect
+    ? widgetSnippetBubbleBox({
+      widget: widgetRect,
+      bubbleW: bubbleSize.w,
+      bubbleH: bubbleSize.h,
+      viewW: typeof window === "undefined" ? 390 : window.innerWidth,
+      viewH: typeof window === "undefined" ? 844 : window.innerHeight,
+    })
+    : herculesBubbleBox({
+      catX: pos.x,
+      catY: pos.y,
+      catSize: size,
+      bubbleW: bubbleSize.w,
+      bubbleH: bubbleSize.h,
+      viewW: typeof window === "undefined" ? 390 : window.innerWidth,
+      viewH: typeof window === "undefined" ? 844 : window.innerHeight,
+      avoid,
+    });
   const bubbleStyle = { left: bubble.left, top: bubble.top };
   const bubbleSide = bubble.side === "left" ? "left" : "right";
 
   return (
     <div className="hercules-world" aria-live="polite">
       <HerculesFly x={fly?.x ?? 0} y={fly?.y ?? 0} hidden={!fly || adding} />
+      {showWidgetSnippets && (
+        <div
+          ref={bubbleRef}
+          className={`hercules-bubble hercules-widget-snippet ${bubbleSide}`}
+          style={bubbleStyle}
+        >
+          <div className="hercules-snippet-stack">
+            {snippets.map((row, index) => (
+              <p
+                key={`${row.role}-${index}-${row.text.slice(0, 10)}`}
+                className={`hercules-snippet ${row.role === "user" ? "you" : "cat"} ${row.placeholder ? "placeholder" : ""}`}
+              >
+                {row.text}
+              </p>
+            ))}
+            {busy && <p className="hercules-snippet cat">mrrp…</p>}
+          </div>
+          {open && (
+            <form
+              className="hercules-chat-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void sendChat(question);
+              }}
+            >
+              <input
+                aria-label={`Ask ${look.view.name}`}
+                value={question}
+                placeholder={busy ? "mrrp…" : surface.placeholder}
+                disabled={busy}
+                onChange={(event) => setQuestion(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") closeChat();
+                }}
+              />
+              <button type="submit" disabled={busy || !question.trim()}>send</button>
+            </form>
+          )}
+        </div>
+      )}
       {showProposal && proposal && (
         <div
           ref={bubbleRef}
