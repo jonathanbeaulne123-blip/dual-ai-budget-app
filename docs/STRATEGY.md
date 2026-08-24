@@ -2,7 +2,7 @@
 
 This is the living product law for **Hearth**, the household company Jonathan and Bianca run from a Toronto kitchen: family-office books, and a companion who makes those books a habit.
 
-Do not *plan* from [nostalgia/](nostalgia/). Those files stay on GitHub as a museum (D-095) — read them to understand past maps. This file, [DECISIONS.md](DECISIONS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and Jonathan’s latest instruction are what to build from.
+Do not *plan* from [nostalgia/](nostalgia/). Those files stay on GitHub as a museum (D-095) — read them to understand past maps. This file, [HEARTH_ROADMAP.md](HEARTH_ROADMAP.md), [DECISIONS.md](DECISIONS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and Jonathan’s latest instruction are what to build from. The agent constitution is [AGENTS.md](../AGENTS.md).
 
 ---
 
@@ -281,7 +281,7 @@ Do not open Flinks, Interac APIs, issued cards, receipt images in Postgres, or a
 
 ## How to ship a Dual Course change
 
-1. Read this file, [DECISIONS.md](DECISIONS.md), [ARCHITECTURE.md](ARCHITECTURE.md).
+1. Read this file, [HEARTH_ROADMAP.md](HEARTH_ROADMAP.md), [DECISIONS.md](DECISIONS.md), [ARCHITECTURE.md](ARCHITECTURE.md).
 2. Name both deltas in the PR. If they conflict, cut Course B.
 3. Do not change an important feature in the laws table. Smaller edits need a why-note in the decision log.
 4. Commands remain the trust boundary. Tests: `pnpm test`.

@@ -1,0 +1,6 @@
+---
+description: Load the visible Hearth constitution, docs index, and living roadmap
+alwaysApply: true
+---
+
+At the start of substantial work, read `AGENTS.md`, `docs/README.md`, and `docs/HEARTH_ROADMAP.md`. Those three files are the agent constitution, the docs index, and the living plan. Do not plan from `docs/nostalgia/` or `docs/reference/` unless Jonathan explicitly asks for historical research.
