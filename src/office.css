@@ -334,7 +334,7 @@
 .desk-row.pair { grid-template-columns: 1fr 1fr; gap: 8px; }
 .desk-wide {
   position: relative;
-  min-height: 680px;
+  min-height: calc(100dvh - 260px);
 }
 .desk-wide.is-grid {
   background-image:
@@ -796,6 +796,18 @@
   background: color-mix(in srgb, #3a3228 28%, transparent);
   border-radius: 10px;
 }
+.office[data-stock="pink"] .desk-wide:not(.is-grid) {
+  background: color-mix(in srgb, #f4a8c8 24%, transparent);
+  border-radius: 10px;
+}
+.office[data-stock="gold"] .desk-wide:not(.is-grid) {
+  background: linear-gradient(135deg, color-mix(in srgb, #c9a227 30%, transparent), color-mix(in srgb, #e8d48a 18%, transparent));
+  border-radius: 10px;
+}
+.office[data-stock="slate"] .desk-wide:not(.is-grid) {
+  background: color-mix(in srgb, #4a5568 20%, transparent);
+  border-radius: 10px;
+}
 
 .office.is-editing .instrument {
   animation: desk-jiggle 0.36s ease-in-out infinite alternate;
@@ -984,4 +996,167 @@
 .hercules-live,
 .hercules-stage {
   z-index: 14 !important;
+}
+
+/* ── Chalkboard band (wide + phone via WindowBand) ── */
+.office-chalk-band {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 10px;
+  border-radius: 18px 18px 12px 12px;
+  overflow: hidden;
+  background: #24382c;
+  box-shadow: var(--lift-1);
+  min-height: 140px;
+}
+.office-chalk-band.is-minimized {
+  min-height: 44px;
+}
+.office-chalk-band.glass-clear { background: linear-gradient(180deg, #cfd8dc 0%, #24382c 42%); }
+.office-chalk-band.glass-rain { background: linear-gradient(180deg, #9fb0b5 0%, #24382c 42%); }
+.office-chalk-band.glass-snow { background: linear-gradient(180deg, #e6ecef 0%, #24382c 42%); }
+.office-chalk-band.glass-night { background: linear-gradient(180deg, #26303a 0%, #24382c 42%); }
+.office-chalk-band.glass-humid { background: linear-gradient(180deg, #b8c4a8 0%, #24382c 42%); }
+.office-chalk-minimize {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 3;
+  border: 1px solid rgba(246, 236, 212, 0.35);
+  background: rgba(27, 23, 18, 0.28);
+  color: #f6ecd4;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  min-width: 44px;
+  min-height: 44px;
+}
+.chalkboard-surface {
+  position: relative;
+  color: #e7f0e4;
+  padding: 12px 12px 10px;
+  min-height: 132px;
+}
+.chalkboard-surface.is-shrunk {
+  min-height: 52px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.chalk-shrink-toggle,
+.chalk-shrink-open {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 3;
+  border: 1px solid rgba(231, 240, 228, 0.35);
+  background: rgba(0, 0, 0, 0.2);
+  color: #e7f0e4;
+  border-radius: 999px;
+  min-width: 44px;
+  min-height: 44px;
+  font-size: 18px;
+  line-height: 1;
+}
+.chalk-shrink-open {
+  position: static;
+  font-size: 12px;
+  padding: 6px 12px;
+  width: auto;
+  margin-left: auto;
+}
+.chalk-weather-badge {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  background: transparent;
+  color: #e7f0e4;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+.chalk-weather-emoji { font-size: 13px; line-height: 1; }
+.chalk-weather-word { font-weight: 650; text-transform: lowercase; }
+.chalk-weather-temp { font-variant-numeric: tabular-nums; opacity: 0.92; }
+.chalkboard-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(72px, 108px);
+  gap: 10px;
+  margin-top: 26px;
+}
+.chalkboard-draw { min-height: 110px; }
+.chalk-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: calc(4 * 54px + 3 * 6px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.chalk-rail-item {
+  position: relative;
+  flex: 0 0 auto;
+}
+.chalk-rail-thumb {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 4px;
+  border: 1px solid rgba(231, 240, 228, 0.22);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.12);
+  color: #e7f0e4;
+  text-align: left;
+  min-height: 48px;
+}
+.chalk-rail-caption {
+  font-size: 10px;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chalk-rail-delete {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #e7f0e4;
+  font-size: 14px;
+  line-height: 1;
+}
+.chalk-rail-edit-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+.chalk-compose {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  margin-top: 10px;
+}
+.chalk-compose .chalk-input { flex: 1; margin: 0; }
+.chalk-save { flex: 0 0 auto; }
+@media (max-width: 719px) {
+  .office-phone .office-chalk-band { margin-bottom: 8px; min-height: 120px; }
+  .office-phone .chalkboard-stage { grid-template-columns: 1fr; }
+  .office-phone .chalk-rail {
+    flex-direction: row;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: 100%;
+  }
+  .office-phone .chalk-rail-item { min-width: 72px; max-width: 88px; }
 }

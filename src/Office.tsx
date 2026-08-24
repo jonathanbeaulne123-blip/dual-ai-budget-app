@@ -45,6 +45,10 @@ import {
   sizeOf,
   bumpLayoutForExpand,
   collapseExpandedLayout,
+  expandShellFor,
+  EXPAND_SIZE,
+  SIZE_HEIGHT,
+  DESK_GUTTER,
   INSTRUMENT_LABEL,
   PERSONALITY_BLURB,
   PERSONALITY_DESK,
@@ -71,7 +75,7 @@ import { DeskItem } from "./widgets/DeskItem.tsx";
 import { BlotterBody, BlotterGlance } from "./widgets/Blotter.tsx";
 import { WalletBody, WalletGlance } from "./widgets/WalletTray.tsx";
 import { CalculatorBody, CalculatorGlance } from "./widgets/CalculatorPad.tsx";
-import { ChalkboardBody, chalkboardGlance, ChalkGlassNotes } from "./widgets/ChalkboardDesk.tsx";
+import { ChalkboardBody } from "./widgets/ChalkboardDesk.tsx";
 import { MailBody, MailGlance } from "./widgets/Mail.tsx";
 import { ClaimsBody, ClaimsGlance } from "./widgets/ClaimsTray.tsx";
 import { TimesheetBody, TimesheetGlance } from "./widgets/Timesheet.tsx";
@@ -130,7 +134,6 @@ export function Office({
   onFinishedShift,
   onPayCard,
   onOpenAccount,
-  onBuyNote,
   onKitchen,
   onMarkPaid,
   onAskSettle,
@@ -164,7 +167,6 @@ export function Office({
   onFinishedShift: () => void;
   onPayCard: (account: Account) => void;
   onOpenAccount: (accountId: string) => void;
-  onBuyNote: (text: string) => void;
   onKitchen: (fn: (current: Household) => CommitResult) => void;
   onMarkPaid: (recurrenceId: string, summary: string) => void;
   onAskSettle: (claimId: string, summary: string) => void;
@@ -183,7 +185,9 @@ export function Office({
   const [look, setLook] = useState<OfficeLook>(() => loadOfficeLook(environment, localStorage, memberId));
   const [editing, setEditing] = useState(false);
   const [sheet, setSheet] = useState<DeskSheet>(null);
+  const [chalkShrunk, setChalkShrunk] = useState(false);
   const [deskWidth, setDeskWidth] = useState(900);
+  const [canvasHeight, setCanvasHeight] = useState(720);
   const [deskNote, setDeskNote] = useState("");
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const drag = useRef<{
@@ -300,6 +304,26 @@ export function Office({
     ),
     [order, layout.items, deskWidth],
   );
+
+  useEffect(() => {
+    if (breakpoint !== "wide") return;
+    const ids = order.filter((id) => id !== "chalkboard");
+    let maxBottom = DESK_GUTTER;
+    for (const id of ids) {
+      const item = layout.items.find((row) => row.id === id);
+      const fallback = packed[id] ?? { x: DESK_GUTTER, y: DESK_GUTTER };
+      const y = item?.y ?? fallback.y;
+      const size = sizeOf({ id, size: item?.size });
+      const expanded = layout.expanded === id;
+      const shell = expandShellFor(id);
+      const h = expanded ? EXPAND_SIZE[shell].h : SIZE_HEIGHT[size];
+      maxBottom = Math.max(maxBottom, y + h);
+    }
+    const viewportFloor = typeof window !== "undefined"
+      ? Math.max(680, window.innerHeight - 260)
+      : 680;
+    setCanvasHeight(Math.max(maxBottom + DESK_GUTTER * 2, viewportFloor));
+  }, [breakpoint, order, layout.items, layout.expanded, packed]);
 
   function cycleSize(id: InstrumentId) {
     setLayout((current) => ({
@@ -597,21 +621,6 @@ export function Office({
       <WalletBody wallet={wallet} onPayCard={onPayCard} onOpenAccount={onOpenAccount} />,
       { index, pair, warn: wallet.hottestCard?.daysUntilDue != null && wallet.hottestCard.daysUntilDue < 0, extraClass: walletIsWarn ? "instrument-wallet" : undefined },
     ),
-    chalkboard: (index, pair) => frame(
-      "chalkboard",
-      "Chalkboard",
-      chalkboardGlance(household),
-      `Chalkboard. ${chalkboardGlance(household)}`,
-      <ChalkboardBody
-        household={household}
-        memberId={memberId}
-        today={today}
-        busy={busy}
-        onCommand={onKitchen}
-        onBuyNote={onBuyNote}
-      />,
-      { index, pair },
-    ),
     mail: (index, pair) => frame(
       "mail",
       "Mail",
@@ -779,14 +788,14 @@ export function Office({
     return (
       <OfficePhone
         household={household} dashboard={dashboard} sill={sill}
-        weatherLabel={reading.celsius == null ? reading.glass : `${reading.glass} · ${Math.round(reading.celsius)}\u00b0`}
+        reading={reading}
         layout={layout} onLayout={setLayout}
         today={today} memberId={memberId} busy={busy} adding={adding}
         form={form} mode={mode} error={error} categories={categories} postLabel={postLabel}
         onForm={onForm} onPost={onPost} onMore={onMore} onMilk={onMilk} onCoffee={onCoffee}
         onClockIn={onClockIn} onAbandonShift={onAbandonShift} onSignOut={onSignOut}
         onFinishedShift={onFinishedShift} onPayCard={onPayCard} onOpenAccount={onOpenAccount}
-        onBuyNote={onBuyNote} onKitchen={onKitchen} onMarkPaid={onMarkPaid} onGo={onGo}
+        onKitchen={onKitchen} onMarkPaid={onMarkPaid} onGo={onGo}
       />
     );
   }
@@ -801,34 +810,28 @@ export function Office({
     >
       <WindowBand
         reading={reading}
-        expanded={layout.expanded === "window"}
         minimized={layout.windowMinimized}
-        stale={dashboard.stale}
         onToggle={cycleWindow}
-        chalk={!layout.items.find((item) => item.id === "chalkboard")?.hidden ? <ChalkGlassNotes household={household} /> : null}
-        chalkboardOpen={instrumentIsOpen(layout, "chalkboard")}
         chalkboardBody={
-          instrumentIsOpen(layout, "chalkboard") && !layout.items.find((item) => item.id === "chalkboard")?.hidden
+          !layout.items.find((item) => item.id === "chalkboard")?.hidden
             ? (
               <ChalkboardBody
                 household={household}
                 memberId={memberId}
-                today={today}
                 busy={busy}
                 onCommand={onKitchen}
-                onBuyNote={onBuyNote}
+                reading={reading}
               />
             )
             : null
         }
-        onChalk={() => {
-          const opening = layout.expanded !== "chalkboard";
-          setLayout((current) => ({ ...current, expanded: opening ? "chalkboard" : null, windowMinimized: false }));
-          if (opening) queueMicrotask(() => emitOfficeIntent({ type: "expand", id: "chalkboard" }));
-        }}
       />
       <SillOverviewPlate overview={sill} compact={layout.windowMinimized} />
-      <div ref={canvasRef} className={`desk-canvas desk-wide ${dragging ? "is-grid" : ""}`}>
+      <div
+        ref={canvasRef}
+        className={`desk-canvas desk-wide ${dragging ? "is-grid" : ""}`}
+        style={{ minHeight: `${canvasHeight}px` }}
+      >
         {rings.map((ring) => (
           <div key={`${ring.id}-${ring.at}`} className="desk-ring" style={{ left: ring.x, top: ring.y }} />
         ))}
@@ -857,13 +860,13 @@ export function Office({
       )}
       {sheet === "look" && (
         <div className="desk-sheet">
-          <h3>Paper stock</h3>
+          <h3>Home theme</h3>
           <div className="desk-stock-row">
             {(Object.keys(STOCK_LABEL) as PaperStock[]).map((stock) => (
               <button
                 key={stock}
                 type="button"
-                className={`desk-stock ${look.stock === stock ? "is-on" : ""}`}
+                className={`desk-stock desk-stock--${stock} ${look.stock === stock ? "is-on" : ""}`}
                 onClick={() => setLook({ ...look, stock })}
               >
                 {STOCK_LABEL[stock]}
@@ -895,7 +898,7 @@ export function Office({
             </button>
           </div>
           <p className="muted">Large density is the WCAG-friendly alternative to pinch-zoom on the locked phone viewport.</p>
-          <p className="muted">Stock tints the blotter, not the whole house. Window weather stays weather. Look and layout follow this Google account — pull them into a fresh household.</p>
+          <p className="muted">Kitchen cream stays the house default. Other themes tint the widget board only.</p>
           <div className="desk-stock-row">
             <button
               type="button"

@@ -160,12 +160,15 @@ export const PERSONALITY_DESK: Record<Exclude<DeskPersonality, "custom">, [Instr
 };
 
 /** Paper stock — tokens on the desk, never a second brand or a boxed app chrome. */
-export type PaperStock = "cream" | "graph" | "night" | "cork";
+export type PaperStock = "cream" | "graph" | "night" | "cork" | "pink" | "gold" | "slate";
 export const STOCK_LABEL: Record<PaperStock, string> = {
   cream: "Kitchen cream",
   graph: "CPA graph",
   night: "Night blotter",
   cork: "Play cork",
+  pink: "Barbie pink",
+  gold: "Money gold",
+  slate: "Accountant slate",
 };
 
 export type OfficeLook = { stock: PaperStock; density: "names" | "glance" | "large" };
@@ -180,7 +183,8 @@ export function officeLookKey(environment: Environment, memberId?: string): stri
 export function parseOfficeLook(raw: unknown): OfficeLook {
   if (!raw || typeof raw !== "object") return DEFAULT_LOOK;
   const record = raw as Record<string, unknown>;
-  const stock = record.stock === "graph" || record.stock === "night" || record.stock === "cork" || record.stock === "cream"
+  const stock = record.stock === "graph" || record.stock === "night" || record.stock === "cork"
+    || record.stock === "cream" || record.stock === "pink" || record.stock === "gold" || record.stock === "slate"
     ? record.stock
     : DEFAULT_LOOK.stock;
   const density = record.density === "glance" ? "glance" : record.density === "large" ? "large" : "names";
@@ -468,6 +472,27 @@ export function herculesBubbleBox(input: {
   }
   const catMid = input.catX + input.catSize / 2;
   const side: "left" | "right" = left + input.bubbleW / 2 <= catMid ? "left" : "right";
+  return { left, top, side };
+}
+
+/** Anchor a snippet stack to an expanded widget's top edge. */
+export function widgetSnippetBubbleBox(input: {
+  widget: Furniture["rect"];
+  bubbleW: number;
+  bubbleH: number;
+  viewW: number;
+  viewH: number;
+  pad?: number;
+}): { left: number; top: number; side: "left" | "right" } {
+  const pad = input.pad ?? 8;
+  let left = input.widget.x + 8;
+  let top = input.widget.y - input.bubbleH - pad;
+  if (top < pad) top = input.widget.y + 12;
+  const maxLeft = input.viewW - pad - input.bubbleW;
+  left = maxLeft < pad ? pad : clamp(left, pad, maxLeft);
+  const maxTop = input.viewH - NAV - pad - input.bubbleH;
+  top = maxTop < pad ? pad : clamp(top, pad, maxTop);
+  const side: "left" | "right" = left + input.bubbleW / 2 <= input.widget.x + input.widget.w / 2 ? "left" : "right";
   return { left, top, side };
 }
 

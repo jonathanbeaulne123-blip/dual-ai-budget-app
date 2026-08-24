@@ -6,17 +6,20 @@ export type WeatherGlass = "clear" | "rain" | "snow" | "night" | "humid";
 export type WeatherReading = {
   glass: WeatherGlass;
   celsius: number | null;
+  windKmh: number | null;
   sentence: string;
   season: ReturnType<typeof kitchenSeason>;
   source: "live" | "fallback";
   fetchedAt: string;
 };
 
+export type WeatherChip = { emoji: string; word: string; celsiusLabel: string };
+
 export const WEATHER_TTL_MS = 30 * 60 * 1000;
 export const WEATHER_TIMEOUT_MS = 4000;
 export const TORONTO = { latitude: 43.65, longitude: -79.38 };
 export const OPEN_METEO_URL =
-  `https://api.open-meteo.com/v1/forecast?latitude=${TORONTO.latitude}&longitude=${TORONTO.longitude}&current=temperature_2m,precipitation,weather_code,is_day&timezone=America%2FToronto`;
+  `https://api.open-meteo.com/v1/forecast?latitude=${TORONTO.latitude}&longitude=${TORONTO.longitude}&current=temperature_2m,precipitation,weather_code,is_day,wind_speed_10m&timezone=America%2FToronto`;
 
 export type WeatherStore = {
   getItem(key: string): string | null;
@@ -43,11 +46,26 @@ export function fallbackWeather(today: DateKey, now = new Date()): WeatherReadin
   return {
     glass,
     celsius: null,
+    windKmh: null,
     sentence: fallbackSentence(glass, season, hour),
     season,
     source: "fallback",
     fetchedAt: now.toISOString(),
   };
+}
+
+/** One emoji, one accurate word, and Celsius for the chalkboard overlay. */
+export function weatherChip(reading: WeatherReading): WeatherChip {
+  const celsiusLabel = reading.celsius == null ? "—°C" : `${reading.celsius}°C`;
+  if (reading.windKmh != null && reading.windKmh >= 30) {
+    return { emoji: "💨", word: "windy", celsiusLabel };
+  }
+  if (reading.glass === "rain") return { emoji: "🌧️", word: "raining", celsiusLabel };
+  if (reading.glass === "snow") return { emoji: "❄️", word: "snowy", celsiusLabel };
+  if (reading.glass === "night" || reading.glass === "humid") {
+    return { emoji: "☁️", word: "cloudy", celsiusLabel };
+  }
+  return { emoji: "☀️", word: "sunny", celsiusLabel };
 }
 
 function fallbackSentence(glass: WeatherGlass, season: WeatherReading["season"], hour: number): string {
@@ -63,6 +81,7 @@ export function glassFromOpenMeteo(current: {
   precipitation?: number;
   weather_code?: number;
   is_day?: number;
+  wind_speed_10m?: number;
 }, today: DateKey, now = new Date()): WeatherReading {
   const hour = hourInToronto(now);
   const season = kitchenSeason(today);
@@ -77,6 +96,7 @@ export function glassFromOpenMeteo(current: {
   else if (night) glass = "night";
   else if (season === "patio") glass = "humid";
   const celsius = Number.isFinite(Number(current.temperature_2m)) ? Math.round(Number(current.temperature_2m)) : null;
+  const windKmh = Number.isFinite(Number(current.wind_speed_10m)) ? Math.round(Number(current.wind_speed_10m)) : null;
   const temp = celsius == null ? "" : ` ${celsius}°.`;
   let sentence = `Clear.${temp}`;
   if (glass === "rain") sentence = celsius == null ? "Rain on the glass." : `Rain. ${celsius}°.`;
@@ -87,6 +107,7 @@ export function glassFromOpenMeteo(current: {
   return {
     glass,
     celsius,
+    windKmh,
     sentence: sentence.replace(/\$/g, ""),
     season,
     source: "live",
