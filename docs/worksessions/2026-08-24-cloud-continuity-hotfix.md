@@ -19,7 +19,7 @@ This slice closes correctness gaps that would make later Google-account continui
 - browser-books inspection verifies the exact acceptance receipt and hash instead of trusting entry counts;
 - the living canon now defines Google identity plus cloud-backed personal and household ledgers as the target architecture.
 
-This slice did **not** provide automatic cross-device ledger discovery. Successor D-113 adds the first Development discovery/outbox bridge; the statement here remains the historical boundary of this earlier correctness slice.
+This slice did **not** provide automatic cross-device ledger discovery. Successor D-114 adds the first Development discovery/outbox bridge; the statement here remains the historical boundary of this earlier correctness slice.
 
 ## Verification
 
@@ -32,7 +32,7 @@ The build emitted existing PGlite/Vite externalization, eval, and chunk-size war
 
 ## Decision and risk record
 
-- Decision: D-112 is the active target for continuity. Cloud storage is the durable continuity layer; PGlite remains a per-device validator and offline replica.
+- Decision: D-114 is the active target for continuity. Cloud storage is the durable continuity layer; PGlite remains a per-device validator and offline replica.
 - Development data through 2026-09-30 may be disposable and broadly read/write in Dev. Secrets and credentials are never disposable.
 - Risk: high, because the affected paths govern money acceptance, conflict handling, recovery, and future synchronization.
 - Budget delta: `+2` — better acceptance truth and continuity readiness; no hosted continuity delivered yet.

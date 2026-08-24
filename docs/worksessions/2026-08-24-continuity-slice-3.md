@@ -25,5 +25,5 @@ This slice creates device replica scopes. It does **not** create hosted personal
 
 ## Dual Course
 
-- Budget delta (5): `+1` over D-113 — switching or opening another membership no longer overwrites a different local ledger.
+- Budget delta (5): `+1` over the D-114 open bridge — switching or opening another membership no longer overwrites a different local ledger.
 - Engagement delta (3): `0` — this is continuity infrastructure; Hercules and Office chrome are unchanged apart from the ledger selector.
