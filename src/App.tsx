@@ -108,7 +108,7 @@ import {
   disconnectGoogle,
   googleConfigured,
 } from "./google/index.ts";
-import { syncHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
+import { ingestHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
 
 type Tab = "home" | "plan" | "calendar" | "ledger" | "more";
 type AddMode = "expense" | "income" | "shift" | "transfer";
@@ -232,7 +232,7 @@ export function App() {
       }
       setHousehold(current);
       if (current) {
-        void syncHouseholdBooks(current)
+        void ingestHouseholdBooks(current)
           .then(({ status }) => { if (live) setBooksStatus(status); })
           .catch((caught) => {
             if (!live) return;
@@ -330,7 +330,7 @@ export function App() {
         }
       }
       try {
-        setBooksStatus((await syncHouseholdBooks(stored)).status);
+        setBooksStatus((await ingestHouseholdBooks(stored)).status);
       } catch (caught) {
         setBooksStatus({
           ok: false,

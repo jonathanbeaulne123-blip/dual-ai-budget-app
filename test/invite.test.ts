@@ -73,6 +73,7 @@ describe("Hearth Pass", () => {
     expect(joined.transactions.map((tx) => tx.note)).toEqual(["Shared milk"]);
     expect(joined.transactions.some((tx) => tx.note === "Jonathan only")).toBe(false);
     expect(joined.members.map((member) => member.name).sort()).toEqual(["Bianca", "Jonathan"]);
+    expect(joined.linked).toBe(false);
   });
 
   it("keeps both people's local personal rows when a Hearth Pass updates the shared envelope", () => {

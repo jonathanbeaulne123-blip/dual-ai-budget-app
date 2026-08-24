@@ -8,7 +8,9 @@ import {
 import type { Household, Environment } from "../core/types.ts";
 import { assertReadOnlySelect } from "./queryGuard.ts";
 import { BOOKS_SCHEMA, BOOKS_SCHEMA_VERSION } from "./schema.ts";
-import { pushSupabaseHousehold, probeSupabase } from "./supabase.ts";
+import { hostedTransportAllowed, probeSupabase, pushSupabaseHousehold, type SupabaseConfig, type SupabaseProbe } from "./supabase.ts";
+
+export type HostedBooksMode = "local" | "opted-in" | "published" | "failed";
 
 export type BooksStatus = {
   ok: boolean;
@@ -20,6 +22,7 @@ export type BooksStatus = {
   error?: string;
   hosted?: {
     provider: "supabase";
+    mode: HostedBooksMode;
     reachable: boolean;
     schema: boolean;
     project?: string;
@@ -33,6 +36,10 @@ type Queryable = {
 };
 
 let browserDbs = new Map<string, PGlite>();
+
+export function resetBrowserBooksForTests(): void {
+  browserDbs = new Map();
+}
 
 export function booksIdbName(environment: Environment): string {
   return `idb://hearth-books-${environment}`;
@@ -168,11 +175,60 @@ export function hostedFailureStatus(
 ): NonNullable<BooksStatus["hosted"]> {
   return {
     provider: "supabase",
+    mode: "failed",
     reachable: probe.reachable,
     schema: false,
     project: probe.project,
     error: error instanceof Error ? error.message : String(error),
   };
+}
+
+export function attachHostedMode(
+  status: BooksStatus,
+  household: Household,
+  published?: SupabaseProbe,
+): BooksStatus {
+  if (published) {
+    return {
+      ...status,
+      engine: published.schema ? "pglite+supabase" : status.engine,
+      hosted: {
+        provider: "supabase",
+        mode: published.schema ? "published" : "failed",
+        reachable: published.reachable,
+        schema: published.schema,
+        project: published.project,
+        error: published.error,
+      },
+    };
+  }
+  if (!hostedTransportAllowed(household)) {
+    return {
+      ...status,
+      hosted: {
+        provider: "supabase",
+        mode: "local",
+        reachable: false,
+        schema: false,
+      },
+    };
+  }
+  return {
+    ...status,
+    hosted: {
+      provider: "supabase",
+      mode: "opted-in",
+      reachable: false,
+      schema: false,
+    },
+  };
+}
+
+export async function ingestHouseholdBooks(household: Household): Promise<{ compiled: CompiledBooks; status: BooksStatus }> {
+  const compiled = compileHousehold(household);
+  const db = await getBrowserBooks(household.environment);
+  const status = await ingestBooks(db, household, compiled);
+  return { compiled, status: attachHostedMode(status, household) };
 }
 
 export async function ingestBooks(db: PGlite, household: Household, compiled = compileHousehold(household)): Promise<BooksStatus> {
@@ -317,32 +373,23 @@ async function writeBooks(db: Queryable, household: Household, compiled: Compile
   };
 }
 
-export async function syncHouseholdBooks(household: Household): Promise<{ compiled: CompiledBooks; status: BooksStatus }> {
-  const compiled = compileHousehold(household);
-  const db = await getBrowserBooks(household.environment);
-  const status = await ingestBooks(db, household, compiled);
+export async function syncHouseholdBooks(
+  household: Household,
+  options?: { config?: SupabaseConfig | null },
+): Promise<{ compiled: CompiledBooks; status: BooksStatus }> {
+  const local = await ingestHouseholdBooks(household);
+  if (!hostedTransportAllowed(household)) {
+    return local;
+  }
   try {
-    const hosted = await pushSupabaseHousehold({ ...household, linked: true });
-    return {
-      compiled,
-      status: {
-        ...status,
-        engine: hosted.schema ? "pglite+supabase" : status.engine,
-        hosted: {
-          provider: "supabase",
-          reachable: hosted.reachable,
-          schema: hosted.schema,
-          project: hosted.project,
-          error: hosted.error,
-        },
-      },
-    };
+    const hosted = await pushSupabaseHousehold(household, options?.config);
+    return { compiled: local.compiled, status: attachHostedMode(local.status, household, hosted) };
   } catch (caught) {
-    const hosted = await probeSupabase();
+    const hosted = await probeSupabase(options?.config);
     return {
-      compiled,
+      compiled: local.compiled,
       status: {
-        ...status,
+        ...local.status,
         hosted: hostedFailureStatus(caught, hosted),
       },
     };

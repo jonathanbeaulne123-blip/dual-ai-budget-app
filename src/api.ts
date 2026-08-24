@@ -23,8 +23,9 @@ function publishError(hosted: { schema: boolean; error?: string }): Error {
 }
 
 export async function createSharedHousehold(household: Household, _memberId: string): Promise<Household> {
-  const hosted = await pushSupabaseHousehold(household);
-  if (hosted.schema) return { ...household, linked: true };
+  const outgoing = { ...household, linked: true as const };
+  const hosted = await pushSupabaseHousehold(outgoing);
+  if (hosted.schema) return outgoing;
   throw publishError(hosted);
 }
 
@@ -60,8 +61,9 @@ export async function pullSharedHousehold(
 }
 
 export async function pushSharedHousehold(household: Household, _memberId: string): Promise<Household> {
-  const hosted = await pushSupabaseHousehold(household);
-  if (hosted.schema) return { ...household, linked: true };
+  const outgoing = { ...household, linked: true as const };
+  const hosted = await pushSupabaseHousehold(outgoing);
+  if (hosted.schema) return outgoing;
   throw publishError(hosted);
 }
 
@@ -72,6 +74,7 @@ export async function reconcileHousehold(local: Household, memberId: string): Pr
   return assembleHousehold(
     mergeShared(remoteParts.shared, localParts.shared),
     mergePersonal(remoteParts.personal, localParts.personal),
+    { linked: true },
   );
 }
 
@@ -87,7 +90,7 @@ export function joinFromPastedSecret(raw: string, local: Household | null, membe
 
 export function hostingHint(cloudLive: boolean): string {
   if (cloudLive) {
-    return "Supabase Postgres is on. The three-word phrase opens the shared snapshot. Treat hosted rows as disclosed until Auth.";
+    return "Supabase Postgres is on. Publish is an explicit Invite Confirm. The three-word phrase opens a published snapshot. Treat hosted rows as disclosed until Auth.";
   }
-  return "This phone keeps local Postgres books. Shared join needs the Supabase tables; a Hearth Pass still works as a backup.";
+  return "This phone keeps local Postgres books. Shared join needs the Supabase tables; a Hearth Pass still works as a backup and does not publish.";
 }

@@ -15,13 +15,21 @@ export type SupabaseProbe = {
   error?: string;
 };
 
-const DEFAULT_URL = "https://tykhocwacaxwquhynkok.supabase.co";
-const DEFAULT_PUBLISHABLE_KEY = "sb_publishable_8UAlkucmkTyh36yQGhnUbw_Orl9GkuS";
+export const BUNDLED_SUPABASE_URL = "https://tykhocwacaxwquhynkok.supabase.co";
+export const BUNDLED_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_8UAlkucmkTyh36yQGhnUbw_Orl9GkuS";
+
+export function bundledSupabaseConfig(): SupabaseConfig {
+  return { url: BUNDLED_SUPABASE_URL, key: BUNDLED_SUPABASE_PUBLISHABLE_KEY };
+}
+
+export function hostedTransportAllowed(household: { linked: boolean }): boolean {
+  return household.linked === true;
+}
 
 export function readSupabaseConfig(): SupabaseConfig | null {
   if (import.meta.env.VITEST && import.meta.env.VITE_SUPABASE_LIVE !== "1") return null;
-  const url = String(import.meta.env.VITE_SUPABASE_URL || DEFAULT_URL).replace(/\/$/, "");
-  const key = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || DEFAULT_PUBLISHABLE_KEY);
+  const url = String(import.meta.env.VITE_SUPABASE_URL || BUNDLED_SUPABASE_URL).replace(/\/$/, "");
+  const key = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || BUNDLED_SUPABASE_PUBLISHABLE_KEY);
   if (!url || !key) return null;
   return { url, key };
 }
@@ -136,9 +144,17 @@ export async function pullSupabaseHousehold(
 }
 
 export async function pushSupabaseHousehold(household: Household, config = readSupabaseConfig()): Promise<SupabaseProbe> {
+  if (!hostedTransportAllowed(household)) {
+    return {
+      configured: Boolean(config),
+      reachable: false,
+      schema: false,
+      error: "Hosted snapshot transport skipped: household is not linked.",
+    };
+  }
   const probe = await probeSupabase(config);
   if (!config || !probe.schema) return probe;
-  const snapshot = ensureHouseholdShape({ ...household, linked: true });
+  const snapshot = ensureHouseholdShape(household);
   const houseBody = {
     id: snapshot.householdId,
     name: snapshot.name,
@@ -146,7 +162,7 @@ export async function pushSupabaseHousehold(household: Household, config = readS
     currency: snapshot.currency,
     environment: snapshot.environment,
     invite_phrase: snapshot.inviteCode,
-    linked: true,
+    linked: snapshot.linked,
     revision: snapshot.revision,
     last_committed_at: snapshot.lastCommittedAt,
   };

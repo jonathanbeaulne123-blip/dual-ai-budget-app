@@ -28,10 +28,13 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [ACCOUNTS.md](ACCOUNTS.md) | Wallet, cards, and investments guidance |
 | [APPOINTMENTS.md](APPOINTMENTS.md) | Visits, claims, receivables, and Appointments guidance |
 | [ENVIRONMENTS.md](ENVIRONMENTS.md) | Development versus production, website, and hosted books |
+| [HOSTED_ROW_INVENTORY.md](HOSTED_ROW_INVENTORY.md) | Runbook for leftover hosted rows. Metadata only. Do not delete without Jonathan. |
 | [SITDOWN.md](SITDOWN.md) | Monthly sitdown, leftover, lock, reverse, and export guidance |
 | [GOALS.md](GOALS.md) | Goals vault and leftover parking |
 | [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md) | Private repository and publish workflow |
 | [briefs/](briefs/) | Paste-ready AI work packets derived from the living roadmap |
 | [worksessions/](worksessions/) | Open/close records for bounded worksessions |
+| [nostalgia/](nostalgia/) | Cursor-era maps we outgrew. Read to understand past decisions. Do not cite as the next build plan. |
+| [reference/](reference/) | Sheets-era snapshot. Read to understand how we got here. Do not cite as the next build plan. |
 
 Start from the repository [README](../README.md) to run the app. Compatibility filenames such as `ROADMAP.md` and `PRODUCT_ROADMAP.md` point to the maintained roadmap.
