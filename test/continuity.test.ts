@@ -130,20 +130,26 @@ describe("Google-account continuity", () => {
       methods.push(init?.method ?? "GET");
       const url = String(input);
       if (url.includes("households?select=id")) return response([]);
+      if (url.includes("rpc/publish_household_snapshot")) {
+        return response({
+          code: "PGRST202",
+          message: "Could not find the function public.publish_household_snapshot",
+        }, 404);
+      }
       if (url.includes("household_snapshots?household_id")) return response([]);
       if (url.includes("continuity_memberships?select=household_id")) {
         return response({ code: "PGRST205", message: "continuity_memberships is not in the schema cache" }, 404);
       }
       return response(null, 201);
     }));
-    const replayed = await flushContinuityOutbox({ environment: "development", identity, config });
-    expect(replayed).toEqual({ synchronized: 1, pending: 0, conflicts: [] });
+    const replayed = await flushContinuityOutbox({ environment: "development", identity, config, force: true });
+    expect(replayed).toEqual({ synchronized: 1, pending: 0, deferred: 0, conflicts: [] });
     expect(listContinuityOutbox("development")).toEqual([]);
-    expect(methods.filter((method) => method === "POST")).toHaveLength(2);
+    expect(methods.filter((method) => method === "POST")).toHaveLength(3);
 
-    const again = await flushContinuityOutbox({ environment: "development", identity, config });
-    expect(again).toEqual({ synchronized: 0, pending: 0, conflicts: [] });
-    expect(methods.filter((method) => method === "POST")).toHaveLength(2);
+    const again = await flushContinuityOutbox({ environment: "development", identity, config, force: true });
+    expect(again).toEqual({ synchronized: 0, pending: 0, deferred: 0, conflicts: [] });
+    expect(methods.filter((method) => method === "POST")).toHaveLength(3);
   });
 
   it("blocks automatic replay on a stale revision and keeps both sides available", async () => {
@@ -153,6 +159,12 @@ describe("Google-account continuity", () => {
     const fetch = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
       const url = String(input);
       if (url.includes("households?select=id")) return response([]);
+      if (url.includes("rpc/publish_household_snapshot")) {
+        return response({
+          code: "PGRST202",
+          message: "Could not find the function public.publish_household_snapshot",
+        }, 404);
+      }
       if (url.includes("household_snapshots?household_id")) {
         return response([{ payload: JSON.stringify(remote) }]);
       }
@@ -172,7 +184,10 @@ describe("Google-account continuity", () => {
     expect(result.errorClass).toBe("conflict-detected");
     expect(result.remote?.revision).toBe(5);
     expect(listContinuityOutbox("development")[0]?.blockedByConflict).toBe(true);
-    expect(fetch.mock.calls.every(([, init]) => !init || init.method !== "POST")).toBe(true);
+    const snapshotPosts = fetch.mock.calls.filter(([input, init]) => (
+      init?.method === "POST" && String(input).includes("household_snapshots?on_conflict")
+    ));
+    expect(snapshotPosts).toHaveLength(0);
   });
 
   it("uses server-side membership discovery and overlays the member's hosted personal replica", async () => {
@@ -243,6 +258,12 @@ describe("Google-account continuity", () => {
       const url = String(input);
       calls.push({ url, body: init?.body ? JSON.parse(String(init.body)) : null });
       if (url.includes("households?select=id")) return response([]);
+      if (url.includes("rpc/publish_household_snapshot")) {
+        return response({
+          code: "PGRST202",
+          message: "Could not find the function public.publish_household_snapshot",
+        }, 404);
+      }
       if (url.includes("household_snapshots?household_id")) return response([]);
       if (url.includes("continuity_memberships?select=household_id")) return response([]);
       return response(null, 201);

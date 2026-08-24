@@ -12,6 +12,7 @@ import {
 } from "./ledger/supabase.ts";
 
 const OUTBOX_PREFIX = "hearth:continuity-outbox:v1:";
+const MAX_BACKOFF_MS = 60_000;
 
 export type ContinuityIdentity = GoogleIdentitySelector;
 
@@ -29,6 +30,8 @@ export type ContinuityOutboxItem = {
   attempts: number;
   lastError: string | null;
   blockedByConflict: boolean;
+  /** ISO time when automatic flush may try again. Null when due immediately or blocked. */
+  nextAttemptAt: string | null;
 };
 
 export type ContinuityFlushConflict = {
@@ -40,6 +43,7 @@ export type ContinuityFlushConflict = {
 export type ContinuityFlushResult = {
   synchronized: number;
   pending: number;
+  deferred: number;
   conflicts: ContinuityFlushConflict[];
 };
 
@@ -50,6 +54,7 @@ type ContinuityStore = {
 };
 
 let storeOverride: ContinuityStore | null = null;
+let nowOverride: (() => number) | null = null;
 
 function browserStore(): ContinuityStore | null {
   if (storeOverride) return storeOverride;
@@ -60,8 +65,17 @@ function browserStore(): ContinuityStore | null {
   }
 }
 
+function nowMs(): number {
+  return nowOverride ? nowOverride() : Date.now();
+}
+
 function key(environment: Environment): string {
   return OUTBOX_PREFIX + environment;
+}
+
+export function continuityBackoffMs(attempts: number): number {
+  const capped = Math.max(0, Math.min(attempts, 6));
+  return Math.min(MAX_BACKOFF_MS, 1_000 * (2 ** capped));
 }
 
 function isOutboxItem(value: unknown): value is ContinuityOutboxItem {
@@ -92,6 +106,7 @@ function read(environment: Environment): ContinuityOutboxItem[] {
       attempts: Number.isInteger(item.attempts) ? item.attempts : 0,
       lastError: item.lastError || null,
       blockedByConflict: item.blockedByConflict === true,
+      nextAttemptAt: typeof item.nextAttemptAt === "string" ? item.nextAttemptAt : null,
     }));
   } catch {
     return [];
@@ -114,6 +129,10 @@ function sameIdentity(left: ContinuityIdentity, right: ContinuityIdentity): bool
 
 export function setContinuityStore(store: ContinuityStore | null): void {
   storeOverride = store;
+}
+
+export function setContinuityNow(now: (() => number) | null): void {
+  nowOverride = now;
 }
 
 export function createMemoryContinuityStore(): ContinuityStore & { snapshot(): Record<string, string> } {
@@ -158,7 +177,7 @@ export function enqueueContinuitySnapshot(input: {
   const items = read(snapshot.environment);
   const id = `${snapshot.environment}:${snapshot.householdId}`;
   const existing = items.find((item) => item.id === id);
-  const now = new Date().toISOString();
+  const now = new Date(nowMs()).toISOString();
   const item: ContinuityOutboxItem = {
     id,
     environment: snapshot.environment,
@@ -176,6 +195,7 @@ export function enqueueContinuitySnapshot(input: {
     attempts: existing?.attempts ?? 0,
     lastError: null,
     blockedByConflict: existing?.blockedByConflict ?? false,
+    nextAttemptAt: null,
   };
   write(snapshot.environment, [...items.filter((row) => row.id !== id), item]);
   return item;
@@ -186,27 +206,46 @@ function replaceItem(item: ContinuityOutboxItem): void {
   write(item.environment, [...items.filter((row) => row.id !== item.id), item]);
 }
 
-function removeItem(item: ContinuityOutboxItem): void {
-  write(item.environment, read(item.environment).filter((row) => row.id !== item.id));
+/** Idempotent acknowledgement: drop the queued snapshot after a successful hosted CAS. */
+export function acknowledgeContinuityOutboxItem(item: ContinuityOutboxItem): void {
+  write(
+    item.environment,
+    read(item.environment).filter((row) => row.id !== item.id),
+  );
 }
 
 function pendingItem(item: ContinuityOutboxItem, message: string, blockedByConflict = false): ContinuityOutboxItem {
+  const attempts = item.attempts + 1;
+  const nextAttemptAt = blockedByConflict
+    ? null
+    : new Date(nowMs() + continuityBackoffMs(attempts)).toISOString();
   const next = {
     ...item,
-    attempts: item.attempts + 1,
-    updatedAt: new Date().toISOString(),
+    attempts,
+    updatedAt: new Date(nowMs()).toISOString(),
     lastError: message,
     blockedByConflict,
+    nextAttemptAt,
   };
   replaceItem(next);
   return next;
+}
+
+function isDue(item: ContinuityOutboxItem, force: boolean): boolean {
+  if (force || item.blockedByConflict) return true;
+  if (!item.nextAttemptAt) return true;
+  return Date.parse(item.nextAttemptAt) <= nowMs();
 }
 
 async function flushItem(
   item: ContinuityOutboxItem,
   identity: ContinuityIdentity,
   config?: SupabaseConfig | null,
-): Promise<{ kind: "synchronized" } | { kind: "pending"; message: string } | { kind: "conflict"; remote: Household; message: string }> {
+): Promise<
+  | { kind: "synchronized"; revision: number }
+  | { kind: "pending"; message: string }
+  | { kind: "conflict"; remote: Household; message: string }
+> {
   try {
     const pushed = await pushSupabaseHousehold(item.snapshot, config, {
       expectedRevision: item.expectedRevision,
@@ -222,8 +261,10 @@ async function flushItem(
       pendingItem(item, message);
       return { kind: "pending", message };
     }
-    removeItem(item);
-    return { kind: "synchronized" };
+    // Successful CAS (including idempotent duplicate delivery) acknowledges the outbox entry.
+    // Local books are never cleared here — only the transport queue item.
+    acknowledgeContinuityOutboxItem(item);
+    return { kind: "synchronized", revision: item.snapshot.revision };
   } catch (caught) {
     const message = caught instanceof Error ? caught.message : String(caught);
     pendingItem(item, message);
@@ -252,7 +293,7 @@ export async function transportHouseholdWithOutbox(input: {
     };
   }
   const result = await flushItem(item, input.identity, input.config);
-  if (result.kind === "synchronized") return { ok: true, remoteRevision: input.household.revision };
+  if (result.kind === "synchronized") return { ok: true, remoteRevision: result.revision };
   if (result.kind === "conflict") {
     return {
       ok: false,
@@ -268,11 +309,18 @@ export async function flushContinuityOutbox(input: {
   environment: Environment;
   identity: ContinuityIdentity;
   config?: SupabaseConfig | null;
+  /** Bypass nextAttemptAt backoff (manual retry / tests). Conflicts still stay blocked. */
+  force?: boolean;
 }): Promise<ContinuityFlushResult> {
-  const result: ContinuityFlushResult = { synchronized: 0, pending: 0, conflicts: [] };
+  const result: ContinuityFlushResult = { synchronized: 0, pending: 0, deferred: 0, conflicts: [] };
   const items = read(input.environment).filter((item) => sameIdentity(item.identity, input.identity));
   for (const item of items) {
     if (item.blockedByConflict) {
+      result.pending += 1;
+      continue;
+    }
+    if (!isDue(item, input.force === true)) {
+      result.deferred += 1;
       result.pending += 1;
       continue;
     }
