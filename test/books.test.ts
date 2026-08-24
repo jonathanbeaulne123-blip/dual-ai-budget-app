@@ -193,4 +193,21 @@ describe("Postgres books engine", () => {
       await db.close();
     }
   }, 30_000);
+
+  it("replaces the active PGlite books when two household replicas reuse catalog ids", async () => {
+    const first = { ...catalogHousehold(), householdId: "HH-FIRST", name: "First household" };
+    const second = { ...catalogHousehold(), householdId: "HH-SECOND", name: "Second household" };
+    const db = await openMemoryBooks();
+    try {
+      expect((await ingestBooks(db, first)).ok).toBe(true);
+      expect((await ingestBooks(db, second)).ok).toBe(true);
+      const households = await db.query<{ id: string }>("SELECT id FROM households ORDER BY id");
+      const members = await db.query<{ household_id: string }>("SELECT household_id FROM members");
+      expect(households.rows).toEqual([{ id: "HH-SECOND" }]);
+      expect(members.rows.length).toBe(second.members.length);
+      expect(members.rows.every((row) => row.household_id === "HH-SECOND")).toBe(true);
+    } finally {
+      await db.close();
+    }
+  }, 30_000);
 });

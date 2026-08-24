@@ -11,6 +11,7 @@
 - Reset deletes only the selected household and its known personal replicas, then leaves any other local ledger readable.
 - Every signed-in member gets a durable personal envelope at `environment + householdId + memberId`; it contains only that member's personal transactions and shifts.
 - Personal view reads the member replica. Full-snapshot synchronization intentionally retains its prior lossless envelope semantics so another member's personal facts are not dropped during reconciliation.
+- PGlite holds the active household's compiled books per environment. Switching transactionally replaces the prior active rows, preventing household-local ids such as `MEM-001` from colliding while inactive snapshots remain durable in the replica store.
 
 ## Proof
 

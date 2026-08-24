@@ -336,7 +336,13 @@ export async function inspectBrowserBooks(household: Household): Promise<{
 
 async function writeBooks(db: Queryable, household: Household, compiled: CompiledBooks): Promise<BooksStatus> {
   const { equation, tb } = assertBalanced(compiled, household);
-  await db.query("DELETE FROM households WHERE id = $1", [household.householdId]);
+  // One PGlite database represents the active ledger for an environment. Hearth
+  // catalog/member/account ids are household-local (for example MEM-001), while
+  // the SQL schema uses simple primary keys. Clear the previously active books
+  // before compiling another replica so switching households cannot collide.
+  // The durable inactive replicas remain in src/storage.ts and are re-ingested
+  // through this same transaction when selected.
+  await db.query("DELETE FROM households");
   await db.query(
     `INSERT INTO households (id, name, timezone, currency, environment, invite_phrase, linked, revision, last_committed_at)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
