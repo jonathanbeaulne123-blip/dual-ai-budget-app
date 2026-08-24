@@ -41,4 +41,26 @@ describe("hosted compare-and-swap", () => {
     expect(result.remote?.revision).toBe(4);
     expect(calls.some((call) => call.startsWith("POST household_snapshots"))).toBe(false);
   });
+
+  it("rejects a hosted snapshot from the other environment without posting", async () => {
+    const local = {
+      ...catalogHousehold("development"),
+      linked: true,
+      revision: 2,
+      baseRevision: 2,
+    };
+    const remote = { ...catalogHousehold("production"), linked: true, revision: 2 };
+    const calls: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      calls.push(`${init?.method || "GET"} ${url}`);
+      if (url.includes("household_snapshots?")) {
+        return new Response(JSON.stringify([{ payload: JSON.stringify(remote) }]), { status: 200 });
+      }
+      return new Response(null, { status: 201 });
+    }));
+    const result = await pushSupabaseHousehold(local, bundledSupabaseConfig(), { expectedRevision: 2 });
+    expect(result.conflict).toBe(true);
+    expect(calls.some((call) => /POST/i.test(call) && call.includes("household_snapshots"))).toBe(false);
+  });
 });

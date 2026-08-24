@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   acceptHouseholdWrite,
+  canAutoMergeConflict,
   catalogHousehold,
   compileHousehold,
   postEntry,
@@ -167,6 +168,119 @@ describe("atomic household writes", () => {
     expect(second.household.commandReceipts.filter((row) => row.confirmationId === "confirm-butter")).toHaveLength(1);
   });
 
+  it("does not claim postedNothing when persist fails and books restore fails", async () => {
+    const previous = catalogHousehold();
+    const posted = postEntry(previous, grocery("Jam"));
+    const store = memoryAdapters({ persistOk: false });
+    store.adapters.restoreIngest = async () => {
+      throw new Error("restore exploded");
+    };
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: posted.household,
+      confirmationId: "confirm-uncertain",
+      postedIds: posted.postedIds,
+      adapters: store.adapters,
+    });
+    expect(outcome.ok).toBe(false);
+    expect(outcome.kind).toBe("recovery-available");
+    expect(outcome.postedNothing).toBe(false);
+    expect(outcome.postedExactlyOnce).toBe(false);
+    expect(outcome.recoveryAvailable).toBe(true);
+  });
+
+  it("rejects a structurally unbalanced journal before ingest or persist", async () => {
+    const previous = catalogHousehold();
+    const posted = postEntry(previous, grocery("Skew"));
+    const last = posted.household.transactions.at(-1)!;
+    const broken = {
+      ...posted.household,
+      transactions: posted.household.transactions.map((row) =>
+        row.id === last.id ? { ...row, amountCents: last.amountCents + 1 } : row,
+      ),
+    };
+    const store = memoryAdapters();
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: broken,
+      confirmationId: "confirm-skew",
+      postedIds: posted.postedIds,
+      adapters: store.adapters,
+    });
+    expect(outcome.ok).toBe(false);
+    expect(outcome.postedNothing).toBe(true);
+    expect(store.persisted()).toBeNull();
+    expect(store.ingested()).toBeNull();
+  });
+
+  it("keeps a conflict visible when auto-merge ingest fails", async () => {
+    const previous = { ...catalogHousehold(), linked: true, revision: 3, baseRevision: 3 };
+    const posted = postEntry(previous, grocery("Toast"));
+    let ingestCount = 0;
+    const store = memoryAdapters({
+      transport: async () => ({
+        ok: false,
+        errorClass: "conflict-detected",
+        remote: previous,
+        message: "Another phone posted a newer household snapshot. Nothing was overwritten.",
+      }),
+    });
+    store.adapters.ingest = async () => {
+      ingestCount += 1;
+      if (ingestCount > 1) return { ok: false, error: "auto-merge ingest refused" };
+      return { ok: true };
+    };
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: { ...posted.household, linked: true },
+      confirmationId: "confirm-merge-fail",
+      postedIds: posted.postedIds,
+      adapters: store.adapters,
+    });
+    expect(outcome.kind).toBe("conflict-needs-attention");
+    expect(outcome.postedExactlyOnce).toBe(true);
+    expect(outcome.household.conflicts.some((row) => !row.resolved)).toBe(true);
+  });
+
+  it("returns pending-transport after local accept when share fails", async () => {
+    const previous = { ...catalogHousehold(), linked: true, revision: 1, baseRevision: 1 };
+    const posted = postEntry(previous, grocery("Rice"));
+    const store = memoryAdapters({
+      transport: async () => ({
+        ok: false,
+        errorClass: "pending-transport",
+        message: "Saved on this phone. Sharing can retry from More.",
+      }),
+    });
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: { ...posted.household, linked: true },
+      confirmationId: "confirm-pending",
+      postedIds: posted.postedIds,
+      adapters: store.adapters,
+    });
+    expect(outcome.kind).toBe("pending-transport");
+    expect(outcome.ok).toBe(true);
+    expect(outcome.postedExactlyOnce).toBe(true);
+  });
+
+  it("returns synchronized when linked transport succeeds", async () => {
+    const previous = { ...catalogHousehold(), linked: true, revision: 1, baseRevision: 1 };
+    const posted = postEntry(previous, grocery("Oats"));
+    const store = memoryAdapters({
+      transport: async () => ({ ok: true }),
+    });
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: { ...posted.household, linked: true },
+      confirmationId: "confirm-sync",
+      postedIds: posted.postedIds,
+      adapters: store.adapters,
+    });
+    expect(outcome.kind).toBe("synchronized");
+    expect(outcome.postedExactlyOnce).toBe(true);
+  });
+
   it("does not publish a rejected command", async () => {
     const previous = { ...catalogHousehold(), linked: true };
     const posted = postEntry(previous, grocery("Reject me"));
@@ -215,7 +329,41 @@ describe("atomic household writes", () => {
       adapters: store.adapters,
     });
     expect(outcome.ok).toBe(true);
-    expect(outcome.kind === "conflict-needs-attention" || outcome.household.conflicts.length > 0).toBe(true);
-    expect(outcome.household.conflicts.some((row) => !row.resolved) || outcome.kind === "accepted-local").toBe(true);
+    expect(outcome.kind).toBe("conflict-needs-attention");
+    expect(outcome.household.conflicts.some((row) => !row.resolved)).toBe(true);
+    expect(outcome.household.conflicts[0]?.localSnapshot).toBeTruthy();
+    expect(outcome.household.conflicts[0]?.remoteSnapshot).toBeTruthy();
+  });
+
+  it("does not auto-merge when claims money differs", () => {
+    const local = catalogHousehold();
+    const remote: Household = {
+      ...local,
+      claims: [
+        ...(local.claims ?? []),
+        {
+          id: "CLM-TEST",
+          kind: "insurance",
+          label: "Dental",
+          appointmentId: null,
+          expenseTransactionId: "TX-1",
+          recoveryTransactionId: null,
+          settleTransferIds: [],
+          writeOffTransactionId: null,
+          expectedCents: 12000,
+          receivedCents: 0,
+          writtenOffCents: 0,
+          receivableAccountId: "ACC-RECEIVABLE",
+          status: "pending",
+          submittedAt: null,
+          settledAt: null,
+          craEligible: false,
+          lines: [],
+          createdAt: "2026-08-24T00:00:00.000Z",
+          updatedAt: "2026-08-24T00:00:00.000Z",
+        },
+      ],
+    };
+    expect(canAutoMergeConflict(local, remote)).toBe(false);
   });
 });

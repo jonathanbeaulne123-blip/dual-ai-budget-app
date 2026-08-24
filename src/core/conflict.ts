@@ -4,11 +4,20 @@ import { applyGoalSavings } from "./goals.ts";
 import { financialAuditHash } from "./commandIdentity.ts";
 import { nextId } from "./ids.ts";
 import { markConflicted } from "./sharing.ts";
-import type { ConflictRecord, Household, Transaction } from "./types.ts";
+import type { Claim, ConflictRecord, Household, Shift, SitDownSession, Transaction } from "./types.ts";
 
-function moneyFactsChanged(left: Household, right: Household): boolean {
+type MoneyCollections = {
+  transactions: Transaction[];
+  shifts: Shift[];
+  claims: Claim[];
+  sitDownSessions: SitDownSession[];
+};
+
+export function moneyFactsChanged(left: MoneyCollections, right: MoneyCollections): boolean {
   if (left.transactions.length !== right.transactions.length) return true;
   if (left.shifts.length !== right.shifts.length) return true;
+  if ((left.claims ?? []).length !== (right.claims ?? []).length) return true;
+  if ((left.sitDownSessions ?? []).length !== (right.sitDownSessions ?? []).length) return true;
   const byId = new Map(right.transactions.map((row) => [row.id, row]));
   for (const tx of left.transactions) {
     const other = byId.get(tx.id);
@@ -24,6 +33,39 @@ function moneyFactsChanged(left: Household, right: Household): boolean {
       shift.netTipsCents !== other.netTipsCents ||
       shift.date !== other.date ||
       shift.memberId !== other.memberId
+    ) {
+      return true;
+    }
+  }
+  const claimById = new Map((right.claims ?? []).map((row) => [row.id, row]));
+  for (const claim of left.claims ?? []) {
+    const other = claimById.get(claim.id);
+    if (!other) return true;
+    if (
+      claim.expectedCents !== other.expectedCents ||
+      claim.receivedCents !== other.receivedCents ||
+      claim.writtenOffCents !== other.writtenOffCents ||
+      claim.expenseTransactionId !== other.expenseTransactionId ||
+      claim.recoveryTransactionId !== other.recoveryTransactionId ||
+      claim.writeOffTransactionId !== other.writeOffTransactionId ||
+      claim.status !== other.status ||
+      JSON.stringify(claim.settleTransferIds) !== JSON.stringify(other.settleTransferIds)
+    ) {
+      return true;
+    }
+  }
+  const sitById = new Map((right.sitDownSessions ?? []).map((row) => [row.id, row]));
+  for (const session of left.sitDownSessions ?? []) {
+    const other = sitById.get(session.id);
+    if (!other) return true;
+    if (
+      session.leftoverCents !== other.leftoverCents ||
+      session.cashLikeCents !== other.cashLikeCents ||
+      session.status !== other.status ||
+      session.budgetPosted !== other.budgetPosted ||
+      session.closedMonth !== other.closedMonth ||
+      JSON.stringify(session.transferIds) !== JSON.stringify(other.transferIds) ||
+      JSON.stringify(session.contributionIds) !== JSON.stringify(other.contributionIds)
     ) {
       return true;
     }

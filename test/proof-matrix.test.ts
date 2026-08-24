@@ -237,7 +237,10 @@ describe("trust-foundation proof matrix", () => {
         }),
       }).adapters,
     });
-    expect(outcome.household.conflicts.some((row) => !row.resolved) || outcome.kind === "conflict-needs-attention").toBe(true);
+    expect(outcome.kind).toBe("conflict-needs-attention");
+    expect(outcome.household.conflicts.some((row) => !row.resolved)).toBe(true);
+    expect(outcome.household.conflicts[0]?.localSnapshot).toBeTruthy();
+    expect(outcome.household.conflicts[0]?.remoteSnapshot).toBeTruthy();
   });
 
   it("11-12. Development/Production stay separate and Health/statements follow accepted books", async () => {

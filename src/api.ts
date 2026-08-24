@@ -70,9 +70,14 @@ export async function reconcileHousehold(local: Household, memberId: string): Pr
   if (remoteRevision > localBase && localRevision === localBase) {
     const remoteParts = splitForSync(remote, memberId);
     const localParts = splitForSync(local, memberId);
-    return markSynchronized(
-      assembleHousehold(remoteParts.shared, localParts.personal, { linked: true }),
+    const assembled = assembleHousehold(remoteParts.shared, localParts.personal, { linked: true });
+    assembled.commandReceipts = [...(local.commandReceipts ?? []), ...(remote.commandReceipts ?? [])].filter(
+      (row, index, rows) => rows.findIndex((item) => item.confirmationId === row.confirmationId) === index,
     );
+    assembled.conflicts = [...(local.conflicts ?? []), ...(remote.conflicts ?? [])].filter(
+      (row, index, rows) => rows.findIndex((item) => item.id === row.id) === index,
+    );
+    return markSynchronized(assembled);
   }
   if (remoteRevision === localBase && localRevision > localBase) {
     return local;
@@ -81,12 +86,17 @@ export async function reconcileHousehold(local: Household, memberId: string): Pr
   return recordConflict(local, remote, auto);
 }
 
-export function joinFromPastedSecret(raw: string, local: Household | null, memberId?: string): Household {
+export function joinFromPastedSecret(
+  raw: string,
+  local: Household | null,
+  memberId?: string,
+  operatingEnvironment?: Environment,
+): Household {
   const trimmed = raw.trim();
   if (trimmed.startsWith("{")) {
     const parsed = JSON.parse(trimmed) as unknown;
-    if (isHearthPass(parsed)) return applyHearthPass(local, parsed, memberId);
-    return applyHearthPass(local, parseHearthPass(trimmed), memberId);
+    if (isHearthPass(parsed)) return applyHearthPass(local, parsed, memberId, operatingEnvironment);
+    return applyHearthPass(local, parseHearthPass(trimmed), memberId, operatingEnvironment);
   }
   throw new Error("That paste is not a Hearth Pass.");
 }

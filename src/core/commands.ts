@@ -2921,7 +2921,12 @@ export function touchHouseholdDevice(household: Household, input: {
     memberId: input.memberId ?? null,
     environment: next.environment,
   });
-  return commit(previous, next, "Devices", `Saw ${input.label}`, []);
+  return {
+    household: next,
+    warnings: [],
+    postedIds: [],
+    undo: { id: `presence-${input.deviceId}`, label: `Saw ${input.label}`, snapshot: previous, postedIds: [] },
+  };
 }
 
 export function emptyHousehold(environment: Household["environment"] = "development"): Household {

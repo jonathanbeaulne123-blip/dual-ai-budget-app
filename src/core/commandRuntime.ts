@@ -99,6 +99,33 @@ function failedOutcome(
   });
 }
 
+function uncertainRecoveryOutcome(
+  previous: Household | null,
+  confirmationId: string,
+  error: unknown,
+): CommandOutcome {
+  const classified = classifyCommandError(error);
+  const household = previous ?? ({ sharing: shapeSharing({ linked: false }), revision: 0 } as Household);
+  return outcome({
+    kind: "recovery-available",
+    household,
+    previous,
+    postedIds: [],
+    confirmationId,
+    identityHash: null,
+    revision: previous?.revision ?? 0,
+    sharingMode: previous ? deriveSharing(previous).mode : "local",
+    errorClass: classified.errorClass,
+    userMessage:
+      "The books engine accepted this entry, but this phone could not save the snapshot. Recovery is available. Do not Confirm again with a new id.",
+    retryable: true,
+    recoveryAvailable: true,
+    postedExactlyOnce: false,
+    postedNothing: false,
+    ok: false,
+  });
+}
+
 export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<CommandOutcome> {
   const confirmationId = input.confirmationId || newConfirmationId();
   const previous = input.previous ? ensureHouseholdShape(input.previous) : null;
@@ -172,7 +199,7 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
 
     try {
       await input.adapters.persist(accepted);
-    } catch (error) {
+    } catch {
       const persistError = new BooksRejectedError(
         "The last valid household is still here. This phone could not save the new snapshot.",
         "persist-failed",
@@ -180,11 +207,12 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       if (previous && input.adapters.restoreIngest) {
         try {
           await input.adapters.restoreIngest(previous);
-        } catch {
           return failedOutcome(previous, confirmationId, persistError, true);
+        } catch {
+          return uncertainRecoveryOutcome(previous, confirmationId, persistError);
         }
       }
-      return failedOutcome(previous, confirmationId, persistError, Boolean(previous));
+      return uncertainRecoveryOutcome(previous, confirmationId, persistError);
     }
 
     if (!hostedTransportAllowed(accepted) || !input.adapters.transport) {
@@ -249,12 +277,59 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       }
       if (transported.errorClass === "conflict-detected" && transported.remote) {
         const auto = canAutoMergeConflict(accepted, transported.remote);
-        const conflicted = await recordConflict(accepted, transported.remote, auto);
+        let conflicted = await recordConflict(accepted, transported.remote, auto);
         try {
           await input.adapters.persist(conflicted);
-          if (auto) await input.adapters.ingest(conflicted);
         } catch {
-          /* keep in-memory conflict bundle */
+          return outcome({
+            kind: "conflict-needs-attention",
+            household: conflicted,
+            previous,
+            postedIds,
+            confirmationId,
+            identityHash,
+            revision,
+            sharingMode: "conflicted",
+            errorClass: "conflict-detected",
+            userMessage:
+              "This phone and the shared copy both have new work. The conflict is on this phone but the snapshot could not be saved. Recovery is available.",
+            retryable: true,
+            recoveryAvailable: true,
+            ok: true,
+            postedExactlyOnce: true,
+            postedNothing: false,
+          });
+        }
+        if (auto) {
+          try {
+            const status = await input.adapters.ingest(conflicted);
+            if (!status.ok) throw new Error("auto-merge ingest refused");
+          } catch {
+            conflicted = await recordConflict(accepted, transported.remote, false);
+            try {
+              await input.adapters.persist(conflicted);
+            } catch {
+              /* keep the unresolved bundle in memory */
+            }
+            return outcome({
+              kind: "conflict-needs-attention",
+              household: conflicted,
+              previous,
+              postedIds,
+              confirmationId,
+              identityHash,
+              revision,
+              sharingMode: "conflicted",
+              errorClass: "conflict-detected",
+              userMessage:
+                "This phone and the shared copy both have new work. Auto-merge did not reach the books. Nothing was overwritten.",
+              retryable: true,
+              recoveryAvailable: true,
+              ok: true,
+              postedExactlyOnce: true,
+              postedNothing: false,
+            });
+          }
         }
         return outcome({
           kind: auto ? "accepted-local" : "conflict-needs-attention",

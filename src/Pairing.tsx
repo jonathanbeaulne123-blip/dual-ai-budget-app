@@ -74,13 +74,13 @@ export function WelcomeJoin({
     onBusy(true);
     onError("");
     try {
-      const live = cloud ?? await cloudBooksLive();
-      setCloud(live);
       const raw = inviteInput.trim();
       if (raw.startsWith("{")) {
-        await onJoined(joinFromPastedSecret(raw, null));
+        await onJoined(joinFromPastedSecret(raw, null, undefined, environment));
         return;
       }
+      const live = cloud ?? await cloudBooksLive();
+      setCloud(live);
       if (isValidInviteToken(raw)) {
         await onJoined(await joinSharedHousehold(raw, undefined, environment));
         return;
@@ -121,7 +121,7 @@ export function WelcomeJoin({
             onBusy(true);
             onError("");
             try {
-              await onJoined(applyHearthPass(null, parseHearthPass(text)));
+              await onJoined(applyHearthPass(null, parseHearthPass(text), undefined, environment));
             } catch (caught) {
               onError(caught instanceof Error ? caught.message : String(caught));
             } finally {
@@ -254,7 +254,7 @@ export function PairingCard({
               await onBeforeSensitive?.();
               const raw = inviteInput.trim();
               if (raw.startsWith("{")) {
-                await onHousehold(joinFromPastedSecret(raw, household, memberId));
+                await onHousehold(joinFromPastedSecret(raw, household, memberId, household.environment));
                 return;
               }
               const live = await cloudBooksLive();
@@ -287,7 +287,7 @@ export function PairingCard({
             onError("");
             try {
               await onBeforeSensitive?.();
-              await onHousehold(applyHearthPass(household, parseHearthPass(text), memberId));
+              await onHousehold(applyHearthPass(household, parseHearthPass(text), memberId, household.environment));
             } catch (caught) {
               onError(caught instanceof Error ? caught.message : String(caught));
             } finally {

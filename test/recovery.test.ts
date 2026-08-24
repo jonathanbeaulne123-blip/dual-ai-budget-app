@@ -31,9 +31,24 @@ describe("recovery import/export", () => {
   });
 
   it("redacts diagnostics by omitting partner personal notes and secrets", () => {
-    const report = redactedDiagnostics(catalogHousehold());
+    const posted = postEntry(catalogHousehold(), {
+      date: "2026-08-24",
+      type: "expense",
+      amount: "4.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Bianca's private clinic receipt",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    });
+    const report = redactedDiagnostics({
+      ...posted.household,
+      transactions: posted.household.transactions.map((row) =>
+        row.note.includes("clinic") ? { ...row, visibility: "personal" as const } : row,
+      ),
+    });
     const blob = JSON.stringify(report);
-    expect(blob).not.toMatch(/sb_secret|password|VITE_/i);
+    expect(blob).not.toMatch(/private clinic|sb_secret|password|VITE_/i);
     expect(report).not.toHaveProperty("transactions");
   });
 });

@@ -190,7 +190,16 @@ export async function pushSupabaseHousehold(
   }
   const remote = await readRemoteSnapshot(config, snapshot.householdId);
   const expectedRevision = options?.expectedRevision ?? snapshot.baseRevision ?? 0;
-  if (remote && remote.environment === snapshot.environment && remote.revision !== expectedRevision) {
+  if (remote && remote.environment !== snapshot.environment) {
+    return {
+      ...probe,
+      schema: true,
+      conflict: true,
+      remote,
+      error: "That hosted snapshot is a different environment. Nothing was overwritten.",
+    };
+  }
+  if (remote && remote.revision !== expectedRevision) {
     return {
       ...probe,
       schema: true,

@@ -88,7 +88,7 @@ import {
 import { STORAGE_EXPLAINER, clearHousehold, downloadJson, loadHousehold, saveHousehold } from "./storage.ts";
 import { clearSession, loadSession, saveSession, type Session } from "./session.ts";
 import { joinSharedHousehold, reconcileHousehold } from "./api.ts";
-import { acceptHouseholdWrite, hostedTransportAllowed, newConfirmationId } from "./core/index.ts";
+import { acceptHouseholdWrite, classifyCommandError, hostedTransportAllowed, newConfirmationId } from "./core/index.ts";
 import { ingestHouseholdBooks, inspectBrowserBooks, restoreHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
 import { pushSupabaseHousehold } from "./ledger/supabase.ts";
 import { inviteFromLocation } from "./core/invite.ts";
@@ -393,20 +393,22 @@ export function App() {
             : undefined,
         },
       });
-      if (outcome.ok || outcome.postedNothing) confirmationRef.current = null;
+      if (outcome.postedExactlyOnce || (outcome.postedNothing && !outcome.retryable)) {
+        confirmationRef.current = null;
+      }
       setHousehold(outcome.household);
-      if (outcome.ok && token) {
+      if (outcome.ok && token && outcome.kind !== "conflict-needs-attention") {
         setToast(token);
         setHistory((current) => [...current, token].slice(-20));
         window.setTimeout(() => setToast((item) => (item?.id === token.id ? null : item)), 8000);
       }
-      if (!outcome.ok) {
+      if (outcome.kind === "conflict-needs-attention" || outcome.kind === "pending-transport") {
+        setSyncState("error");
+        if (outcome.userMessage) setError(outcome.userMessage);
+      } else if (!outcome.ok) {
         setError(outcome.userMessage || "That change did not post.");
-        if (outcome.kind === "conflict-needs-attention") setSyncState("error");
       } else if (outcome.kind === "synchronized") {
         setSyncState("synced");
-      } else if (outcome.kind === "pending-transport") {
-        setSyncState("error");
       }
       if (outcome.ok) {
         setBooksStatus({
@@ -429,7 +431,7 @@ export function App() {
       }
     } catch (caught) {
       if (caught instanceof NeedsConfirmationError) throw caught;
-      setError(caught instanceof Error ? caught.message : String(caught));
+      setError(classifyCommandError(caught).userMessage);
     } finally {
       setBusy(false);
     }
