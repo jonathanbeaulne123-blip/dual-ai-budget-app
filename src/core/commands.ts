@@ -561,7 +561,7 @@ function seedBudgetPlan(household: Household, monthKey: MonthKey, category: Cate
 
 export function setBudget(household: Household, input: { monthKey: MonthKey; subcategoryId: string; amount: string | number }): CommitResult {
   requireTimezone(household);
-  const amountCents = parseAmount(input.amount, "Budgeted amount");
+  const amountCents = parseMoneyCents(input.amount, "Budgeted amount", { allowZero: true });
   const category = requireSubcategory(household, input.subcategoryId);
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
@@ -902,7 +902,7 @@ export function applySitDown(household: Household, sourceMonth: MonthKey, amount
   for (const row of preview.rows) {
     if (row.alreadyPlanned) continue;
     const amountCents = amounts[row.subcategoryId] ?? row.suggestedCents;
-    if (amountCents <= 0) continue;
+    if (amountCents < 0) throw new ValidationError(`${row.name || "That job"} cannot be negative.`);
     const category = requireSubcategory(next, row.subcategoryId);
     next.budgetPlans.push(seedBudgetPlan(next, preview.targetMonth, category, amountCents));
   }
@@ -1428,9 +1428,13 @@ export function addRecurrence(household: Household, input: {
   kind?: RecurrenceKind;
   origin?: RecurrenceOrigin;
   reminderHoursBefore?: number;
+  postNow?: boolean;
 }): CommitResult {
   const amountCents = parseAmount(input.amount);
   requireAccount(household, input.accountId);
+  if (input.postNow && parseDate(input.nextDate) > todayKey()) {
+    throw new ValidationError("That bill is not due yet. Save the reminder, then Mark paid when it is due.");
+  }
   if (input.type === "transfer") {
     if (!input.transferToAccountId) throw new ValidationError("A transfer standing order needs a destination account.");
     requireAccount(household, input.transferToAccountId);
@@ -1475,7 +1479,18 @@ export function addRecurrence(household: Household, input: {
     createdAt: at,
     updatedAt: at,
   });
-  return commit(previous, next, "Add Recurring", `${note || "Recurring"} ${input.cadence}`, [id]);
+  if (!input.postNow) {
+    return commit(previous, next, "Add Recurring", `${note || "Recurring"} ${input.cadence}`, [id]);
+  }
+  const posted = postOneRecurrence(next, id, todayKey());
+  return commit(
+    previous,
+    posted.household,
+    "Add Recurring",
+    `Added and posted ${note || "recurring"}`,
+    [id, ...posted.postedIds],
+    posted.warnings,
+  );
 }
 
 export function adoptRhythm(household: Household, key: string, today: DateKey): CommitResult {
@@ -1717,6 +1732,65 @@ export function reversePostedMoney(household: Household, transactionId: string, 
       ? `Reversed ${tx.date} transfer ${dollars}`
       : `Reversed ${tx.date} ${tx.type} ${dollars}`;
   return commit(previous, next, "Reverse", label, postedIds);
+}
+
+function scaleSplits(splits: Split[], oldCents: number, newCents: number): Split[] {
+  if (!splits.length || oldCents <= 0) return jointSplit(newCents);
+  let remaining = newCents;
+  return splits.map((split, index) => {
+    if (index === splits.length - 1) return { ...split, amountCents: remaining };
+    const part = Math.round((split.amountCents / oldCents) * newCents);
+    remaining -= part;
+    return { ...split, amountCents: part };
+  });
+}
+
+export function correctPostedAmount(
+  household: Household,
+  transactionId: string,
+  amount: string | number,
+  input: ActorInput = {},
+): CommitResult {
+  const tx = household.transactions.find((item) => item.id === transactionId);
+  if (!tx) throw new ValidationError("That row is already gone.");
+  if (tx.type === "transfer") {
+    throw new ValidationError("Transfers need Reverse, then a new transfer for the right amount.");
+  }
+  if (tx.source === "shift") {
+    throw new ValidationError("Shift rows: Reverse the shift, then post a new shift with the right hours and tips.");
+  }
+  if (tx.reversalOfId) {
+    throw new ValidationError("This row is already a reversal. Reverse it if you meant to reinstate, then post the right amount.");
+  }
+  if (!tx.subcategoryId) throw new ValidationError("That row has no category to correct.");
+  const amountCents = parseAmount(amount, "Corrected amount");
+  if (amountCents === tx.amountCents) {
+    throw new ValidationError("That is the same amount. Reverse if you meant to cancel it.");
+  }
+  const actor = resolveActor(household, input, tx.createdBy);
+  const splits = scaleSplits(tx.splits, tx.amountCents, amountCents);
+  const reversed = reversePostedMoney(household, transactionId, input);
+  const posted = postEntry(reversed.household, {
+    date: todayKey(),
+    type: tx.type === "income" ? "income" : tx.type === "refund" ? "refund" : "expense",
+    amount: amountCents / 100,
+    accountId: tx.accountId,
+    subcategoryId: tx.subcategoryId,
+    note: tx.note,
+    place: tx.place,
+    splits,
+    confirmDuplicate: true,
+    createdBy: actor.createdBy,
+    visibility: actor.visibility,
+  });
+  return commit(
+    reversed.undo.snapshot,
+    posted.household,
+    "Correct Amount",
+    `Corrected ${tx.date} ${tx.type} to $${(amountCents / 100).toFixed(2)}`,
+    [...reversed.postedIds, ...posted.postedIds],
+    posted.warnings,
+  );
 }
 
 export function undo(current: Household, token: UndoToken): Household {

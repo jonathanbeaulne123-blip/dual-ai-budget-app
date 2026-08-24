@@ -18,6 +18,10 @@ import {
   type UndoToken,
 } from "./core/index.ts";
 
+function canCorrectPostedAmount(tx: Transaction): boolean {
+  return tx.type !== "transfer" && tx.source !== "shift" && !tx.reversalOfId;
+}
+
 const SECTIONS: { id: LedgerSection; label: string }[] = [
   { id: "expenses", label: "Expenses" },
   { id: "income", label: "Income" },
@@ -30,12 +34,14 @@ export function LedgerPage({
   view,
   onChange,
   onRemove,
+  onCorrect,
 }: {
   household: Household;
   memberId: string;
   view: LedgerView;
   onChange: (household: Household, undo?: UndoToken) => void;
   onRemove: (transaction: Transaction) => void;
+  onCorrect: (transaction: Transaction) => void;
 }) {
   const [section, setSection] = useState<LedgerSection>("expenses");
   const [query, setQuery] = useState("");
@@ -139,6 +145,7 @@ export function LedgerPage({
               onChange(result.household, result.undo);
             }}
             onRemove={() => onRemove(tx)}
+            onCorrect={() => onCorrect(tx)}
           />
         ))}
       </section>
@@ -163,11 +170,13 @@ function LedgerRow({
   transaction,
   onToggleDuplicate,
   onRemove,
+  onCorrect,
 }: {
   household: Household;
   transaction: Transaction;
   onToggleDuplicate: () => void;
   onRemove: () => void;
+  onCorrect: () => void;
 }) {
   const pair = transaction.transferPairId
     ? household.transactions.find((item) => item.id === transaction.transferPairId)
@@ -196,6 +205,9 @@ function LedgerRow({
         <div>{formatCad(transaction.amountCents)}</div>
         {transaction.potentialDuplicate && (
           <button className="chip" onClick={onToggleDuplicate}>{transaction.isDuplicate ? "Include" : "Exclude"}</button>
+        )}
+        {canCorrectPostedAmount(transaction) && (
+          <button className="chip" onClick={onCorrect}>Fix amount</button>
         )}
         <button className="chip" onClick={onRemove}>Reverse</button>
       </div>

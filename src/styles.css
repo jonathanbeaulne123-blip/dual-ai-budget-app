@@ -368,6 +368,11 @@ input, select, textarea {
   font-size: 14px;
 }
 .ledger-row:last-child { border-bottom: 0; }
+.budget-editor .budget-row { margin-bottom: 14px; }
+.budget-editor .budget-row label { flex: 1; margin: 0; }
+.budget-editor .budget-row input { width: 7rem; text-align: right; }
+.first-bill label { margin-top: 8px; }
+.first-bill .row { align-items: center; gap: 8px; }
 .split-card {
   background: var(--paper);
   border: 1px solid var(--line);

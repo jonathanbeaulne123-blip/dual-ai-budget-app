@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 export function ConfirmSheet({
   title,
   body,
@@ -5,6 +7,7 @@ export function ConfirmSheet({
   confirmLabel,
   danger,
   busy,
+  children,
   onCancel,
   onConfirm,
 }: {
@@ -14,6 +17,7 @@ export function ConfirmSheet({
   confirmLabel: string;
   danger?: boolean;
   busy?: boolean;
+  children?: ReactNode;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
@@ -26,6 +30,7 @@ export function ConfirmSheet({
         </div>
         <p>{body}</p>
         {extra && <p className="muted">{extra}</p>}
+        {children}
         <button
           className={danger ? "danger" : "primary"}
           style={{ width: "100%", marginTop: 12 }}
