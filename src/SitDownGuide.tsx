@@ -7,6 +7,7 @@ import {
   formatCad,
   formatMonthLabel,
   leftoverProjection,
+  parseWholeCents,
   monthKeyFromDateKey,
   openSitDownSession,
   plannedAllocation,
@@ -50,6 +51,7 @@ export function SitDownGuide({
   const facts = useMemo(() => sitDownFacts(household, monthKey, today), [household, monthKey, today]);
   const plan = useMemo(() => plannedAllocation(leftover.leftoverCents, slices), [leftover.leftoverCents, slices]);
   const jobs = preview.rows.filter((row) => row.suggestedCents > 0 && !row.alreadyPlanned);
+  const [jobDollars, setJobDollars] = useState<Record<string, string>>({});
   const trims = preview.rows.filter((row) => row.trimSuggested);
   const closeKey = shiftMonthKey(monthKey, -1);
   const positives = facts.filter((fact) => fact.act === 1);
@@ -181,6 +183,23 @@ export function SitDownGuide({
               ))}
             </>
           )}
+          {jobs.length > 0 && (
+            <>
+              <p className="muted">Set next month’s jobs. Copy jobs writes these amounts.</p>
+              {jobs.map((row) => (
+                <label className="row" key={row.subcategoryId}>
+                  {row.name}
+                  <input
+                    inputMode="decimal"
+                    aria-label={`${row.name} job`}
+                    value={jobDollars[row.subcategoryId] ?? (row.suggestedCents / 100).toFixed(2)}
+                    onChange={(event) => setJobDollars((current) => ({ ...current, [row.subcategoryId]: event.target.value }))}
+                    style={{ width: "7rem", textAlign: "right" }}
+                  />
+                </label>
+              ))}
+            </>
+          )}
           <div className="chips">
             <button className="chip" type="button" onClick={() => setAct(2)}>Back</button>
             <button
@@ -195,8 +214,18 @@ export function SitDownGuide({
                 className="chip"
                 type="button"
                 onClick={() => {
-                  const result = applySitDown(household, preview.sourceMonth, {});
-                  onApply(result.household, result.undo);
+                  try {
+                    const amounts: Record<string, number> = {};
+                    for (const row of jobs) {
+                      const raw = jobDollars[row.subcategoryId] ?? (row.suggestedCents / 100).toFixed(2);
+                      amounts[row.subcategoryId] = parseWholeCents(raw, `${row.name} job`, { allowZero: true });
+                    }
+                    const result = applySitDown(household, preview.sourceMonth, amounts);
+                    onApply(result.household, result.undo);
+                    setDriveNote("Jobs copied into next month’s plan.");
+                  } catch (caught) {
+                    setDriveNote(caught instanceof Error ? caught.message : String(caught));
+                  }
                 }}
               >
                 Copy jobs

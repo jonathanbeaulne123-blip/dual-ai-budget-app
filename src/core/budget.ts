@@ -7,22 +7,24 @@ export function countable(tx: Transaction): boolean {
 }
 
 export function signedAmount(tx: Transaction): number {
-  if (tx.type === "income") return tx.amountCents;
-  if (tx.type === "expense") return -tx.amountCents;
-  if (tx.type === "refund") return tx.amountCents;
+  const sign = tx.reversalOfId ? -1 : 1;
+  if (tx.type === "income") return sign * tx.amountCents;
+  if (tx.type === "expense") return sign * -tx.amountCents;
+  if (tx.type === "refund") return sign * tx.amountCents;
   return 0;
 }
 
 export function expenseEffect(tx: Transaction): number {
   if (!countable(tx)) return 0;
-  if (tx.type === "expense") return tx.amountCents;
-  if (tx.type === "refund") return -tx.amountCents;
+  const sign = tx.reversalOfId ? -1 : 1;
+  if (tx.type === "expense") return sign * tx.amountCents;
+  if (tx.type === "refund") return sign * -tx.amountCents;
   return 0;
 }
 
 export function incomeEffect(tx: Transaction): number {
   if (!countable(tx) || tx.type !== "income") return 0;
-  return tx.amountCents;
+  return (tx.reversalOfId ? -1 : 1) * tx.amountCents;
 }
 
 export type CategoryActual = {

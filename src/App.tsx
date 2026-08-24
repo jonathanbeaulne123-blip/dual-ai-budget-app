@@ -60,6 +60,7 @@ import {
   touchVisitSpark,
   undo,
   reversePostedMoney,
+  correctPostedAmount,
   suggestCategory,
   shouldPrefillCategory,
   suggestSplit,
@@ -95,6 +96,7 @@ import { ConfirmSheet } from "./Confirm.tsx";
 import { CalendarPage } from "./Calendar.tsx";
 import { Office } from "./Office.tsx";
 import { HerculesPresence } from "./Hercules.tsx";
+import { BudgetEditor } from "./BudgetEditor.tsx";
 import { CadPad } from "./CadPad.tsx";
 import { PresetChip } from "./widgets/PresetChip.tsx";
 import { SitDownGuide } from "./SitDownGuide.tsx";
@@ -117,6 +119,7 @@ type Guard =
   | { kind: "environment"; next: Environment }
   | { kind: "demo" }
   | { kind: "remove"; transactionId: string; summary: string }
+  | { kind: "correct"; transactionId: string; summary: string }
   | { kind: "postRecurrence"; recurrenceId: string; summary: string }
   | { kind: "postDueAll"; summary: string }
   | { kind: "postVisit"; draft: VisitPostDraft; summary: string }
@@ -159,6 +162,7 @@ export function App() {
   const [toast, setToast] = useState<UndoToken | null>(null);
   const [history, setHistory] = useState<UndoToken[]>([]);
   const [guard, setGuard] = useState<Guard | null>(null);
+  const [correctDigits, setCorrectDigits] = useState("");
   const [commandOpen, setCommandOpen] = useState(false);
   const [splitPercents, setSplitPercents] = useState<Record<string, number>>({ "MEM-001": 50, "MEM-002": 50 });
   const [now] = useState(() => new Date());
@@ -879,21 +883,12 @@ export function App() {
             <div className="money">{formatCad(dashboard.month.netBudgetedCents)}</div>
             <div className="sub">Budgeted net for {dashboard.monthLabel}</div>
           </section>
-          <section className="card">
-            <header><h2>Categories</h2></header>
-            {dashboard.month.categories.filter((row) => row.budgetedCents || row.actualCents).map((row) => {
-              const pct = row.budgetedCents ? Math.min(140, (row.actualCents / row.budgetedCents) * 100) : 0;
-              return (
-                <div key={row.subcategoryId} style={{ marginBottom: 10 }}>
-                  <div className="row">
-                    <span>{row.name}</span>
-                    <span>{formatCad(row.actualCents)} / {formatCad(row.budgetedCents)}</span>
-                  </div>
-                  <div className="bar"><i className={pct > 100 ? "over" : ""} style={{ width: `${Math.min(pct, 100)}%` }} /></div>
-                </div>
-              );
-            })}
-          </section>
+          <BudgetEditor
+            household={household}
+            monthKey={dashboard.monthKey}
+            monthLabel={dashboard.monthLabel}
+            onSave={(next, token) => persist(next, token)}
+          />
           <SitDownGuide household={household} memberId={actorId} onApply={(next, token) => persist(next, token)} hidden={view === "personal"} />
           <Goals
             household={household}
@@ -942,6 +937,15 @@ export function App() {
                 ? `This posts a reversing transfer for ${dollars}. Both original legs stay.`
                 : `This posts a reversing entry for ${dollars}${transaction.note ? ` (${transaction.note})` : ""}. The original row stays.`;
             setGuard({ kind: "remove", transactionId: transaction.id, summary });
+          }}
+          onCorrect={(transaction) => {
+            const dollars = formatCad(transaction.amountCents);
+            setCorrectDigits(centsDigitsFromDollars((transaction.amountCents / 100).toFixed(2)));
+            setGuard({
+              kind: "correct",
+              transactionId: transaction.id,
+              summary: `This reverses ${dollars}${transaction.note ? ` (${transaction.note})` : ""} and posts the amount on the pad. Original and reversing rows stay. Dated today.`,
+            });
           }}
         />
       )}
@@ -1525,6 +1529,31 @@ export function App() {
           }}
         />
       )}
+      {guard?.kind === "correct" && (
+        <ConfirmSheet
+          title="Fix this amount?"
+          body={`${guard.summary} Reverse stays. Undo from the toast or More → Recent changes.`}
+          confirmLabel="Post the right CAD"
+          busy={busy}
+          onCancel={() => { setGuard(null); setCorrectDigits(""); }}
+          onConfirm={() => {
+            const id = guard.transactionId;
+            const current = householdRef.current;
+            const amount = padToDollars(correctDigits);
+            setGuard(null);
+            if (!current) return;
+            try {
+              const result = correctPostedAmount(current, id, amount, { createdBy: actorId });
+              void persist(result.household, result.undo);
+              setCorrectDigits("");
+            } catch (caught) {
+              setError(caught instanceof Error ? caught.message : String(caught));
+            }
+          }}
+        >
+          <CadPad digits={correctDigits} onDigits={setCorrectDigits} label="Correct amount" />
+        </ConfirmSheet>
+      )}
       {guard?.kind === "postRecurrence" && (
         <ConfirmSheet
           title="Post this bill?"
@@ -1859,6 +1888,7 @@ function Goals({ household, createdBy, goals, onChange, onAskStartJar }: {
 function AddCategoryForm({ household, onSave }: { household: Household; onSave: (household: Household, undo?: UndoToken) => void }) {
   const [name, setName] = useState("");
   const [parentId, setParentId] = useState("CAT-LIFE");
+  const [monthlyBudget, setMonthlyBudget] = useState("");
   const [error, setError] = useState("");
   return (
     <section className="card">
@@ -1870,12 +1900,27 @@ function AddCategoryForm({ household, onSave }: { household: Household; onSave: 
           <option key={group.id} value={group.id}>{group.name}</option>
         ))}
       </select>
+      <label>
+        This month’s budget (optional)
+        <input
+          inputMode="decimal"
+          placeholder="0.00"
+          value={monthlyBudget}
+          onChange={(event) => setMonthlyBudget(event.target.value)}
+        />
+      </label>
       {error && <p className="muted">{error}</p>}
       <button className="primary" onClick={() => {
         try {
-          const result = addCategory(household, { name, type: "expense", parentId, monthlyBudget: "0" });
+          const result = addCategory(household, {
+            name,
+            type: "expense",
+            parentId,
+            monthlyBudget: monthlyBudget.trim() || undefined,
+          });
           onSave(result.household, result.undo);
           setName("");
+          setMonthlyBudget("");
           setError("");
         } catch (caught) {
           setError(caught instanceof ValidationError ? caught.message : String(caught));

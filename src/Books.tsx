@@ -64,6 +64,7 @@ export function BooksPage({
   onFocusAccount,
   onChange,
   onRemove,
+  onCorrect,
   onPayAccount,
   onAddToAccount,
 }: {
@@ -75,6 +76,7 @@ export function BooksPage({
   onFocusAccount: (accountId: string) => void;
   onChange: (household: Household, undo?: UndoToken) => void;
   onRemove: (transaction: Household["transactions"][number]) => void;
+  onCorrect: (transaction: Household["transactions"][number]) => void;
   onPayAccount: (account: Account) => void;
   onAddToAccount: (account: Account) => void;
 }) {
@@ -187,7 +189,7 @@ export function BooksPage({
         />
       )}
       {pane === "register" && (
-        <LedgerPage household={household} memberId={memberId} view={view} onChange={onChange} onRemove={onRemove} />
+        <LedgerPage household={household} memberId={memberId} view={view} onChange={onChange} onRemove={onRemove} onCorrect={onCorrect} />
       )}
       {pane === "journal" && (
         <section className="card">

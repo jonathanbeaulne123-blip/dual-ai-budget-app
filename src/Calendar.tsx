@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   WEEKDAY_SHORT,
+  addRecurrence,
   adoptRhythm,
   buildHouseholdIcs,
   buildMonthBoard,
@@ -19,6 +20,7 @@ import {
   typicalVisitDraft,
   unlinkGoogleIdentity,
   visitPostSummary,
+  ValidationError,
   type CommitResult,
   type DateKey,
   type Environment,
@@ -375,13 +377,20 @@ export function CalendarPage(props: {
             </section>
           )}
 
+          <FirstBillForm
+            household={household}
+            today={today}
+            busy={props.busy}
+            onCommand={props.onCommand}
+          />
+
           <section className="card">
             <header>
               <h2>Repeating</h2>
               <span className="muted">{household.recurrences.length ? `${household.recurrences.filter((item) => item.active).length} active` : "None yet"}</span>
             </header>
             {household.recurrences.length === 0 ? (
-              <p className="muted">Adopted bills live here. Mark paid posts.</p>
+              <p className="muted">Add a bill that has never posted, or adopt one spotted in the ledger. Mark paid posts.</p>
             ) : household.recurrences.map((item) => (
               <RecurrenceCard
                 key={item.id}
@@ -510,6 +519,107 @@ function DayRow(props: {
         )}
       </span>
     </div>
+  );
+}
+
+function FirstBillForm({
+  household,
+  today,
+  busy,
+  onCommand,
+}: {
+  household: Household;
+  today: DateKey;
+  busy: boolean;
+  onCommand: (fn: (current: Household) => CommitResult) => void;
+}) {
+  const expenseCategories = household.categories.filter((category) => (
+    category.active && category.recordType === "category" && category.transactionType === "expense"
+  ));
+  const accounts = household.accounts.filter((account) => account.active);
+  const [note, setNote] = useState("");
+  const [amount, setAmount] = useState("");
+  const [accountId, setAccountId] = useState(accounts.find((account) => account.id === "ACC-CHEQUING")?.id ?? accounts[0]?.id ?? "");
+  const [subcategoryId, setSubcategoryId] = useState(expenseCategories.find((category) => category.id === "SUB-HOUSING-RENT")?.id ?? expenseCategories[0]?.id ?? "");
+  const [nextDate, setNextDate] = useState(today);
+  const [cadence, setCadence] = useState<Recurrence["cadence"]>("monthly");
+  const [postNow, setPostNow] = useState(false);
+  const [error, setError] = useState("");
+
+  function save() {
+    try {
+      onCommand((current) => addRecurrence(current, {
+        cadence,
+        nextDate,
+        type: "expense",
+        amount,
+        accountId,
+        subcategoryId,
+        note,
+        origin: "manual",
+        kind: "bill",
+        postNow,
+      }));
+      setNote("");
+      setAmount("");
+      setError("");
+    } catch (caught) {
+      setError(caught instanceof ValidationError ? caught.message : String(caught));
+    }
+  }
+
+  return (
+    <section className="card first-bill">
+      <header>
+        <h2>New bill</h2>
+        <span className="muted">Never posted</span>
+      </header>
+      <p className="muted">
+        A first-time bill is a reminder until Mark paid. You do not need a detected rhythm. Post now only if it is due today.
+      </p>
+      <label>
+        Name
+        <input value={note} placeholder="Rent, hydro, phone…" onChange={(event) => setNote(event.target.value)} />
+      </label>
+      <label>
+        Amount (CAD)
+        <input inputMode="decimal" value={amount} placeholder="0.00" onChange={(event) => setAmount(event.target.value)} />
+      </label>
+      <label>
+        Next date
+        <input type="date" value={nextDate} onChange={(event) => setNextDate(event.target.value)} />
+      </label>
+      <label>
+        Cadence
+        <select value={cadence} onChange={(event) => setCadence(event.target.value as Recurrence["cadence"])}>
+          <option value="weekly">Weekly</option>
+          <option value="biweekly">Every two weeks</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </label>
+      <label>
+        Account
+        <select value={accountId} onChange={(event) => setAccountId(event.target.value)}>
+          {accounts.map((account) => (
+            <option key={account.id} value={account.id}>{account.name}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Category
+        <select value={subcategoryId} onChange={(event) => setSubcategoryId(event.target.value)}>
+          {expenseCategories.map((category) => (
+            <option key={category.id} value={category.id}>{category.name}</option>
+          ))}
+        </select>
+      </label>
+      <label className="row">
+        <input type="checkbox" checked={postNow} onChange={(event) => setPostNow(event.target.checked)} />
+        Post now if due today
+      </label>
+      {error && <p className="danger">{error}</p>}
+      <button className="primary" type="button" disabled={busy} onClick={save}>Save bill</button>
+    </section>
   );
 }
 

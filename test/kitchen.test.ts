@@ -169,6 +169,7 @@ describe("daily kitchen cosmetics", () => {
     expect(src).not.toMatch(/contributeToGoal\([^)]*["']50["']/);
       expect(src).toMatch(/fundGoal\(household,/);
     expect(sit).toMatch(/formatCad\(row\.lastActualCents\)/);
-    expect(sit).toMatch(/applySitDown\(household, preview\.sourceMonth, \{\}\)/);
+    expect(sit).toMatch(/parseWholeCents/);
+    expect(sit).toMatch(/applySitDown\(household, preview\.sourceMonth, amounts\)/);
   });
 });

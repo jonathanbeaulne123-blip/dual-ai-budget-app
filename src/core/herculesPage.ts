@@ -62,8 +62,8 @@ export function herculesPageSurface(
     return {
       tab,
       spoken,
-      lesson: "Leftover is cash-like minus bills and card mins. Confirm parks jars in the Goals vault.",
-      chips: ["Sit-down?", "Leftover?", "We good?"],
+      lesson: "Set this month’s job on Plan. Leftover is cash-like minus bills and card mins. Confirm parks jars in the Goals vault.",
+      chips: ["Set this month’s job?", "Leftover?", "Sit-down?"],
       placeholder: "ask about the plan…",
       fact: { label: "Leftover", value: formatCad(leftover.leftoverCents) },
     };
@@ -73,8 +73,8 @@ export function herculesPageSurface(
     return {
       tab,
       spoken,
-      lesson: "Dates remind. Mark paid writes.",
-      chips: ["Which bill?", "What's owed?", "Start this jar"],
+      lesson: "A new bill is a reminder until Mark paid. Dates remind. Mark paid writes.",
+      chips: ["New bill?", "Which bill?", "What's owed?"],
       placeholder: "ask about a date…",
       fact: visitFact(household, today) ?? billFact(household, today),
     };
@@ -84,7 +84,7 @@ export function herculesPageSurface(
     return {
       tab,
       spoken,
-      lesson: "Fieldwork. The journal is the source.",
+      lesson: "Wrong CAD: Reverse, then post the right amount. Fieldwork. The journal is the source.",
       chips: ["Opinion?", "Working capital?", "Balance sheet"],
       placeholder: "ask the books…",
       fact: { label: "Month net", value: formatCad(month.netActualCents) },
