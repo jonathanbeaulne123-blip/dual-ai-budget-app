@@ -1,13 +1,16 @@
--- DO NOT APPLY without Jonathan's explicit approval.
+-- Development apply authorized by Jonathan 2026-08-24 (D-122).
+-- Production: DO NOT APPLY without a separate Jonathan approval.
 -- Trust-foundation compare-and-swap for hosted JSON snapshots (D-122).
 -- Client prefers POST /rest/v1/rpc/publish_household_snapshot; falls back to
 -- GET-then-compare-then-POST only when this function is missing from the API.
--- Do not paste into the household Supabase SQL editor from an AI session.
--- Do not contact the household project. Order: after 001_hearth_books.sql;
--- safe beside applied 003_continuity_membership.sql.
+-- Order: after 001_hearth_books.sql; safe beside applied 003_continuity_membership.sql.
+-- Apply: SUPABASE_DB_PASSWORD=… pnpm books:apply:002
+--    or paste this file into https://supabase.com/dashboard/project/tykhocwacaxwquhynkok/sql/new
+-- Smoke: pnpm books:smoke:cas  (publishable key; disposable Development row)
 -- Rollback: DROP FUNCTION IF EXISTS publish_household_snapshot(text, integer, text, text, text, text, boolean, integer, text, text, text);
 --           ALTER TABLE household_snapshots DROP COLUMN IF EXISTS revision;
 --           ALTER TABLE household_snapshots DROP COLUMN IF EXISTS snapshot_hash;
+--           DELETE FROM schema_migrations WHERE id = 2;
 
 BEGIN;
 
@@ -15,6 +18,13 @@ ALTER TABLE household_snapshots
   ADD COLUMN IF NOT EXISTS revision INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE household_snapshots
   ADD COLUMN IF NOT EXISTS snapshot_hash TEXT;
+
+-- Align snapshot revision with the households row so pre-CAS rows do not look like rev 0.
+UPDATE household_snapshots AS snap
+SET revision = hh.revision
+FROM households AS hh
+WHERE snap.household_id = hh.id
+  AND snap.revision IS DISTINCT FROM hh.revision;
 
 CREATE OR REPLACE FUNCTION publish_household_snapshot(
   p_household_id TEXT,
@@ -155,4 +165,11 @@ $$;
 REVOKE ALL ON FUNCTION publish_household_snapshot(text, integer, text, text, text, text, boolean, integer, text, text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION publish_household_snapshot(text, integer, text, text, text, text, boolean, integer, text, text, text) TO anon, authenticated;
 
+INSERT INTO schema_migrations (id, applied_at)
+VALUES (2, now()::text)
+ON CONFLICT (id) DO UPDATE SET applied_at = EXCLUDED.applied_at;
+
 COMMIT;
+
+-- Ask PostgREST to refresh its schema cache so rpc/publish_household_snapshot appears promptly.
+NOTIFY pgrst, 'reload schema';

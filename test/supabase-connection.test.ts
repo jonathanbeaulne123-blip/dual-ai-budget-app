@@ -42,11 +42,21 @@ describe("Supabase apply URL", () => {
 
 describe("hosted books migration", () => {
   const sql = readFileSync(new URL("../supabase/migrations/001_hearth_books.sql", import.meta.url), "utf8");
+  const cas = readFileSync(new URL("../supabase/migrations/002_snapshot_cas.sql", import.meta.url), "utf8");
 
   it("keeps invoker views, FK indexes, and the SQL Editor path", () => {
     expect(sql).toContain("security_invoker = true");
     expect(sql).toContain("CREATE INDEX IF NOT EXISTS members_household");
     expect(sql).toContain("https://supabase.com/dashboard/project/tykhocwacaxwquhynkok/sql/new");
     expect(sql).toContain("TO anon, authenticated");
+  });
+
+  it("ships CAS RPC with revision backfill and schema_migrations tracking", () => {
+    expect(cas).toMatch(/publish_household_snapshot/);
+    expect(cas).toMatch(/Development apply authorized by Jonathan/);
+    expect(cas).toMatch(/UPDATE household_snapshots/);
+    expect(cas).toMatch(/schema_migrations/);
+    expect(cas).toMatch(/NOTIFY pgrst/);
+    expect(cas).toMatch(/Production: DO NOT APPLY/);
   });
 });

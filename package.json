@@ -20,6 +20,8 @@
     "pack:claude-mobile": "node scripts/pack-claude-mobile.mjs",
     "pack:claude-desktop": "node scripts/pack-claude-desktop.mjs",
     "books:apply": "node --env-file=.env scripts/apply-supabase-schema.mjs",
+    "books:apply:002": "node scripts/apply-supabase-migration.mjs 002",
+    "books:smoke:cas": "node scripts/smoke-snapshot-cas.mjs",
     "cf:deploy": "pnpm build && rm -f dist/_redirects && wrangler deploy --assets=./dist",
     "cf:preview": "pnpm build && rm -f dist/_redirects && wrangler versions upload --assets=./dist"
   },
