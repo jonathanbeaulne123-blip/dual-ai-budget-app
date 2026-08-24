@@ -72,17 +72,17 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 ## Hosted snapshot CAS + outbox ack (D-122)
 
-**Status:** Implemented on `cursor/cloud-cas-outbox-4ffb`. Client prefers `rpc/publish_household_snapshot`; hardened unapplied packet `supabase/migrations/002_snapshot_cas.sql`; outbox ack on success/duplicate, exponential backoff, conflict blocks auto-replay; local books never cleared on failed/stale cloud write. Deterministic proofs in `test/hosted-cas-two-client.test.ts`. **Did not** deploy, apply SQL, mutate hosted rows, touch Production, or merge.
+**Status:** Client work merged via [PR #84](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/84) (id corrected in [#86](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/86)). Jonathan authorized Development apply. **Live apply is blocked in this Cloud Agent on missing `SUPABASE_DB_PASSWORD`** (Supabase MCP `needsAuth`; no `.env`). Tooling on `cursor/cas-002-apply-4ffb`: `pnpm books:apply:002` + `pnpm books:smoke:cas`. Live probe: RPC missing (`PGRST202`); `household_snapshots.revision` missing; `households.revision` already present.
 
-**Budget delta (5):** `+3` — simultaneous/stale cloud writers cannot LWW-erase accepted books; offline replay and duplicate delivery stay idempotent.
+**Budget delta (5):** `+3` in code; live atomic door still closed until apply+smoke.
 
-**Engagement delta (3):** `0` — continuity trust infrastructure; Hercules/office chrome unchanged.
+**Engagement delta (3):** `0`.
 
-**Jonathan migration step (separate approval):** apply `supabase/migrations/002_snapshot_cas.sql` to Development only after review. Until then the client falls back to GET-compare-POST. Do not apply Auth/RLS or Production schema in the same step.
+**Next / Jonathan:** Provide `SUPABASE_DB_PASSWORD` in a follow-up (ephemeral `.env`, never committed), **or** paste `supabase/migrations/002_snapshot_cas.sql` into the [SQL editor](https://supabase.com/dashboard/project/tykhocwacaxwquhynkok/sql/new) and Run, then say “smoke it.” Agent will run smoke and mark D-122 applied.
 
-**Still required:** live RPC apply + smoke on disposable Development; two-browser E2E; Auth/RLS cutover before October.
+**Still required after apply:** two-browser E2E; Auth/RLS cutover before October. Production schema remains separate.
 
-**Risk:** High (hosted write protocol). Independent trust review recommended before applying 002.
+**Risk:** High (hosted write protocol).
 
 ## Trust-foundation worksession (2026-08-24, local branch)
 
