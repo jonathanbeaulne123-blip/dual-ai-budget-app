@@ -59,19 +59,27 @@ Invite the other person with a **three-word phrase**, a **join link**, or a **He
 
 ## Dual Course
 
-Family-office books weigh **5**. Hercules and other interactables weigh **3**. Each update should improve the other course. If they conflict, the books win. Living law: [docs/STRATEGY.md](docs/STRATEGY.md).
+Family-office books weigh **5**. Hercules and other interactables weigh **3**. Each update should improve the other course. If they conflict, the books win. Living law: [docs/STRATEGY.md](docs/STRATEGY.md). Living plan: [docs/HEARTH_ROADMAP.md](docs/HEARTH_ROADMAP.md).
 
 ## Docs
 
-- Index: [docs/README.md](docs/README.md)
+Start here:
+
+- Agent constitution: [AGENTS.md](AGENTS.md) ([CLAUDE.md](CLAUDE.md) includes it for Claude)
+- Living roadmap: [docs/HEARTH_ROADMAP.md](docs/HEARTH_ROADMAP.md) (`docs/ROADMAP.md` and `docs/PRODUCT_ROADMAP.md` are pointers)
+- Docs index: [docs/README.md](docs/README.md)
 - Dual Course strategy: [docs/STRATEGY.md](docs/STRATEGY.md)
+- AI operating model: [docs/AI_OPERATING_MODEL.md](docs/AI_OPERATING_MODEL.md)
+
+Also living:
+
 - Hercules: [docs/HERCULES.md](docs/HERCULES.md)
 - Hercules mark: [docs/HERCULES_MARK.md](docs/HERCULES_MARK.md)
 - Audit Office: [docs/AUDIT_OFFICE.md](docs/AUDIT_OFFICE.md)
 - Accounts Floor: [docs/ACCOUNTS.md](docs/ACCOUNTS.md)
 - Google household bridge: [docs/GOOGLE.md](docs/GOOGLE.md)
-- Nostalgia (do not build from): [docs/nostalgia/](docs/nostalgia/)
-- Sheets-era history: [docs/reference/](docs/reference/)
+
+History (read, do not build from): [docs/nostalgia/](docs/nostalgia/) · [docs/reference/](docs/reference/)
 
 The Google Sheets / Apps Script prototype is archived as reference under `docs/reference/sheets-era/` and as git tag `sheets-v0.0.31`. It is not the working tree.
 
