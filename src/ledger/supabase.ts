@@ -1,8 +1,10 @@
+import { financialAuditHash } from "../core/commandIdentity.ts";
 import { ensureHouseholdShape, personalReplicaForMember } from "../core/sync.ts";
 import { inviteFromText } from "../core/invite.ts";
 import { memberIdForGoogleIdentity, type GoogleIdentitySelector } from "../core/google.ts";
 import { hostedTransportAllowed } from "../core/sharing.ts";
 import type { Environment, Household, PersonalEnvelope } from "../core/types.ts";
+import type { SnapshotCasConflict, SnapshotCasResult } from "./snapshotCas.ts";
 
 export type SupabaseConfig = {
   url: string;
@@ -21,6 +23,10 @@ export type PushHouseholdResult = SupabaseProbe & {
   skipped?: boolean;
   conflict?: boolean;
   remote?: Household;
+  /** True when the hosted CAS RPC acknowledged an already-applied duplicate. */
+  duplicate?: boolean;
+  /** True when the write used publish_household_snapshot; false for legacy GET/POST. */
+  usedCasRpc?: boolean;
 };
 
 export type DiscoveredHousehold = {
@@ -105,6 +111,70 @@ export function isMissingTable(body: unknown): boolean {
     "code" in body &&
     (body as { code: string }).code === "PGRST205",
   );
+}
+
+/** PostgREST: RPC name/signature not in the schema cache (migration 002 not applied). */
+export function isMissingRpc(body: unknown): boolean {
+  if (!body || typeof body !== "object") return false;
+  const code = "code" in body ? String((body as { code: unknown }).code) : "";
+  const message = "message" in body ? String((body as { message: unknown }).message) : "";
+  if (code === "PGRST202" || code === "PGRST203") return true;
+  return /could not find the function|schema cache/i.test(message)
+    && /publish_household_snapshot/i.test(message);
+}
+
+function remoteFromCasPayload(payload: string | null | undefined): Household | null {
+  if (!payload) return null;
+  try {
+    const parsed = JSON.parse(payload) as Household;
+    return ensureHouseholdShape({ ...parsed, linked: true });
+  } catch {
+    return null;
+  }
+}
+
+function parseCasRpcBody(body: unknown): SnapshotCasResult | null {
+  if (!body || typeof body !== "object") return null;
+  const row = body as Record<string, unknown>;
+  if (row.ok === true && row.conflict === false) {
+    return {
+      ok: true,
+      conflict: false,
+      revision: Number(row.revision ?? 0),
+      duplicate: row.duplicate === true,
+    };
+  }
+  if (row.ok === false || row.conflict === true) {
+    const reasonRaw = typeof row.reason === "string" ? row.reason : "stale-revision";
+    const reason: SnapshotCasConflict["reason"] =
+      reasonRaw === "environment-mismatch"
+      || reasonRaw === "revision-hash-mismatch"
+      || reasonRaw === "missing-base"
+      || reasonRaw === "stale-revision"
+        ? reasonRaw
+        : "stale-revision";
+    return {
+      ok: false,
+      conflict: true,
+      remoteRevision: row.remote_revision == null ? null : Number(row.remote_revision),
+      remotePayload: typeof row.remote_payload === "string" ? row.remote_payload : null,
+      reason,
+    };
+  }
+  return null;
+}
+
+function conflictMessage(reason: SnapshotCasConflict["reason"] | undefined): string {
+  switch (reason) {
+    case "environment-mismatch":
+      return "That hosted snapshot is a different environment. Nothing was overwritten.";
+    case "revision-hash-mismatch":
+      return "Hosted books at this revision disagree with this phone. Nothing was overwritten.";
+    case "missing-base":
+      return "Hosted books were missing the expected base revision. Nothing was overwritten.";
+    default:
+      return "Another phone posted a newer household snapshot. Nothing was overwritten.";
+  }
 }
 
 function snapshotFromRow(row: { payload?: string | Household } | undefined): Household | null {
@@ -437,13 +507,85 @@ export async function pushSupabaseHousehold(
   if (!snapshot.linked && !continuityMemberId) {
     return { ...probe, skipped: true };
   }
-  const remote = await readRemoteSnapshot(config, snapshot.householdId);
   const expectedRevision = options?.expectedRevision ?? snapshot.baseRevision ?? 0;
+  const snapshotHash = await financialAuditHash(snapshot);
+  const payload = JSON.stringify(snapshot);
+
+  const rpc = await rest(config, "rpc/publish_household_snapshot", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({
+      p_household_id: snapshot.householdId,
+      p_expected_revision: expectedRevision,
+      p_name: snapshot.name,
+      p_timezone: snapshot.timezone,
+      p_currency: snapshot.currency,
+      p_environment: snapshot.environment,
+      p_invite_phrase: snapshot.inviteCode,
+      p_linked: snapshot.linked || Boolean(continuityMemberId),
+      p_revision: snapshot.revision,
+      p_last_committed_at: snapshot.lastCommittedAt,
+      p_payload: payload,
+      p_snapshot_hash: snapshotHash,
+    }),
+  });
+
+  if (rpc.ok) {
+    const cas = parseCasRpcBody(rpc.body);
+    if (cas?.ok) {
+      if (continuityMemberId && options?.continuityIdentity) {
+        await publishContinuityMemberScope(config, snapshot, continuityMemberId, options.continuityIdentity);
+      }
+      return {
+        ...probe,
+        schema: true,
+        error: undefined,
+        skipped: false,
+        conflict: false,
+        duplicate: cas.duplicate === true,
+        usedCasRpc: true,
+      };
+    }
+    if (cas && !cas.ok) {
+      return {
+        ...probe,
+        schema: true,
+        conflict: true,
+        usedCasRpc: true,
+        remote: remoteFromCasPayload(cas.remotePayload) ?? undefined,
+        error: conflictMessage(cas.reason),
+      };
+    }
+  } else if (!isMissingRpc(rpc.body)) {
+    throw new Error(messageOf(rpc.body));
+  }
+
+  // Migration 002 not applied: keep the legacy client CAS path (still racy under load).
+  return pushSupabaseHouseholdLegacy(
+    config,
+    probe,
+    snapshot,
+    expectedRevision,
+    continuityMemberId,
+    options?.continuityIdentity,
+  );
+}
+
+async function pushSupabaseHouseholdLegacy(
+  config: SupabaseConfig,
+  probe: SupabaseProbe,
+  snapshot: Household,
+  expectedRevision: number,
+  continuityMemberId: string | null,
+  continuityIdentity?: GoogleIdentitySelector,
+): Promise<PushHouseholdResult> {
+  const remote = await readRemoteSnapshot(config, snapshot.householdId);
   if (remote && remote.environment !== snapshot.environment) {
     return {
       ...probe,
       schema: true,
       conflict: true,
+      usedCasRpc: false,
       remote,
       error: "That hosted snapshot is a different environment. Nothing was overwritten.",
     };
@@ -453,9 +595,13 @@ export async function pushSupabaseHousehold(
       ...probe,
       schema: true,
       conflict: true,
+      usedCasRpc: false,
       remote,
       error: "Another phone posted a newer household snapshot. Nothing was overwritten.",
     };
+  }
+  if (continuityMemberId && continuityIdentity) {
+    await publishContinuityMemberScope(config, snapshot, continuityMemberId, continuityIdentity);
   }
   const houseBody = {
     id: snapshot.householdId,
@@ -474,9 +620,6 @@ export async function pushSupabaseHousehold(
     body: JSON.stringify(houseBody),
   });
   if (!house.ok) throw new Error(messageOf(house.body));
-  if (continuityMemberId && options?.continuityIdentity) {
-    await publishContinuityMemberScope(config, snapshot, continuityMemberId, options.continuityIdentity);
-  }
   const snap = await rest(config, "household_snapshots?on_conflict=household_id", {
     method: "POST",
     headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
@@ -486,8 +629,10 @@ export async function pushSupabaseHousehold(
       environment: snapshot.environment,
       payload: JSON.stringify(snapshot),
       updated_at: new Date().toISOString(),
+      revision: snapshot.revision,
+      snapshot_hash: await financialAuditHash(snapshot),
     }),
   });
   if (!snap.ok) throw new Error(messageOf(snap.body));
-  return { ...probe, schema: true, error: undefined, skipped: false, conflict: false };
+  return { ...probe, schema: true, error: undefined, skipped: false, conflict: false, usedCasRpc: false };
 }

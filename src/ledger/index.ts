@@ -26,4 +26,8 @@ export {
   bundledSupabaseConfig,
   hostedTransportAllowed,
 } from "./supabase.ts";
+export {
+  applyPublishHouseholdSnapshotCas,
+  createMemoryHostedCas,
+} from "./snapshotCas.ts";
 export { BOOKS_SCHEMA, BOOKS_SCHEMA_VERSION } from "./schema.ts";

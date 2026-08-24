@@ -1,9 +1,10 @@
--- DO NOT APPLY.
--- Trust-foundation compare-and-swap for hosted JSON snapshots.
--- Client CAS today is GET-then-compare-then-POST. A last-writer race remains
--- until Jonathan applies this RPC and the app is wired to call it.
+-- DO NOT APPLY without Jonathan's explicit approval.
+-- Trust-foundation compare-and-swap for hosted JSON snapshots (D-121).
+-- Client prefers POST /rest/v1/rpc/publish_household_snapshot; falls back to
+-- GET-then-compare-then-POST only when this function is missing from the API.
 -- Do not paste into the household Supabase SQL editor from an AI session.
--- Do not contact the household project. Order: after 001_hearth_books.sql.
+-- Do not contact the household project. Order: after 001_hearth_books.sql;
+-- safe beside applied 003_continuity_membership.sql.
 -- Rollback: DROP FUNCTION IF EXISTS publish_household_snapshot(text, integer, text, text, text, text, boolean, integer, text, text, text);
 --           ALTER TABLE household_snapshots DROP COLUMN IF EXISTS revision;
 --           ALTER TABLE household_snapshots DROP COLUMN IF EXISTS snapshot_hash;
@@ -33,20 +34,82 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
   current_rev INTEGER;
+  current_env TEXT;
   remote_payload TEXT;
+  remote_hash TEXT;
 BEGIN
-  SELECT revision INTO current_rev
+  -- Serialize writers for this household. Client GET-then-POST races end here.
+  SELECT revision, environment INTO current_rev, current_env
   FROM households
   WHERE id = p_household_id
   FOR UPDATE;
 
-  IF FOUND AND current_rev IS DISTINCT FROM p_expected_revision THEN
+  IF FOUND THEN
+    IF current_env IS DISTINCT FROM p_environment THEN
+      SELECT payload INTO remote_payload
+      FROM household_snapshots
+      WHERE household_id = p_household_id;
+      RETURN jsonb_build_object(
+        'ok', false,
+        'conflict', true,
+        'reason', 'environment-mismatch',
+        'remote_revision', current_rev,
+        'remote_payload', remote_payload
+      );
+    END IF;
+
+    -- Idempotent acknowledgement: duplicate delivery of an already-applied write.
+    IF current_rev = p_revision THEN
+      SELECT payload, snapshot_hash INTO remote_payload, remote_hash
+      FROM household_snapshots
+      WHERE household_id = p_household_id;
+      IF remote_hash IS NOT DISTINCT FROM p_snapshot_hash THEN
+        RETURN jsonb_build_object(
+          'ok', true,
+          'conflict', false,
+          'duplicate', true,
+          'revision', p_revision
+        );
+      END IF;
+      RETURN jsonb_build_object(
+        'ok', false,
+        'conflict', true,
+        'reason', 'revision-hash-mismatch',
+        'remote_revision', current_rev,
+        'remote_payload', remote_payload
+      );
+    END IF;
+
+    IF current_rev IS DISTINCT FROM p_expected_revision THEN
+      SELECT payload INTO remote_payload
+      FROM household_snapshots
+      WHERE household_id = p_household_id;
+      RETURN jsonb_build_object(
+        'ok', false,
+        'conflict', true,
+        'reason', 'stale-revision',
+        'remote_revision', current_rev,
+        'remote_payload', remote_payload
+      );
+    END IF;
+  ELSIF p_expected_revision IS DISTINCT FROM 0 THEN
+    RETURN jsonb_build_object(
+      'ok', false,
+      'conflict', true,
+      'reason', 'missing-base',
+      'remote_revision', NULL,
+      'remote_payload', NULL
+    );
+  END IF;
+
+  IF p_revision < p_expected_revision THEN
     SELECT payload INTO remote_payload
     FROM household_snapshots
     WHERE household_id = p_household_id;
     RETURN jsonb_build_object(
       'ok', false,
       'conflict', true,
+      'reason', 'stale-revision',
       'remote_revision', current_rev,
       'remote_payload', remote_payload
     );
@@ -80,7 +143,12 @@ BEGIN
     revision = EXCLUDED.revision,
     snapshot_hash = EXCLUDED.snapshot_hash;
 
-  RETURN jsonb_build_object('ok', true, 'conflict', false, 'revision', p_revision);
+  RETURN jsonb_build_object(
+    'ok', true,
+    'conflict', false,
+    'duplicate', false,
+    'revision', p_revision
+  );
 END;
 $$;
 

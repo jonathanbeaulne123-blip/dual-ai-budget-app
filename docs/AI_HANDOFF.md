@@ -34,7 +34,7 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 **Status:** exact Google-subject Development discovery, PGlite acceptance, a durable compacting local outbox, launch/focus/reconnect replay, multi-household device replicas, an explicit ledger switcher, and member-only personal device replicas are implemented. Migration 003 is applied: D-117 server-filtered membership discovery and hosted member-personal payloads are live in Development; missing tables retain the D-114 fallback. Inherited broad grants were removed and verified as exactly `SELECT`/`INSERT`/`UPDATE` for `anon` and `authenticated`. No hosted rows, deployment, Production data, or secrets were changed.
 
-**Still required:** atomic hosted CAS/journal authority, retry backoff/acknowledgement, two-browser end-to-end proof, Supabase Auth-bound membership, and the late-September deny-by-default RLS cutover.
+**Still required:** atomic hosted CAS live after Jonathan applies migration 002, two-browser end-to-end proof, Supabase Auth-bound membership, and the late-September deny-by-default RLS cutover.
 
 **Budget delta (5):** `+4` — accepted offline commands survive reconnection, pulled snapshots pass PGlite, stale remote revisions retain both sides, and locally switching households no longer overwrites a different ledger.
 
@@ -62,13 +62,27 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 ## Member-scoped AI disclosure (D-115)
 
-**Status:** Implemented on `cursor/member-ai-disclosure-4ffb`. `householdForAiDisclosure` strips partner personal txs/shifts/goals/memories; `composeHerculesChatRequest` rebuilds briefing, notices, ledger, and memories from that slice. Canaries in `test/ai-disclosure.test.ts`.
+**Status:** Merged to `main` via [PR #83](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/83). `householdForAiDisclosure` strips partner personal txs/shifts/goals/memories; `composeHerculesChatRequest` rebuilds briefing, notices, ledger, and memories from that slice. Canaries in `test/ai-disclosure.test.ts`.
 
 **Budget delta (5):** `+1` — partner personal money cannot leak into model aggregates (Course A privacy of the books).
 
 **Engagement delta (3):** `+1` — Hercules model-first chat can keep growing without partner-personal disclosure.
 
 **Still required:** optional independent privacy review; D-116 delayed-write rejection if not already covered elsewhere; confirm live Worker never receives unprojected payloads (phone is the only composer today).
+
+## Hosted snapshot CAS + outbox ack (D-121)
+
+**Status:** Implemented on `cursor/cloud-cas-outbox-4ffb`. Client prefers `rpc/publish_household_snapshot`; hardened unapplied packet `supabase/migrations/002_snapshot_cas.sql`; outbox ack on success/duplicate, exponential backoff, conflict blocks auto-replay; local books never cleared on failed/stale cloud write. Deterministic proofs in `test/hosted-cas-two-client.test.ts`. **Did not** deploy, apply SQL, mutate hosted rows, touch Production, or merge.
+
+**Budget delta (5):** `+3` — simultaneous/stale cloud writers cannot LWW-erase accepted books; offline replay and duplicate delivery stay idempotent.
+
+**Engagement delta (3):** `0` — continuity trust infrastructure; Hercules/office chrome unchanged.
+
+**Jonathan migration step (separate approval):** apply `supabase/migrations/002_snapshot_cas.sql` to Development only after review. Until then the client falls back to GET-compare-POST. Do not apply Auth/RLS or Production schema in the same step.
+
+**Still required:** live RPC apply + smoke on disposable Development; two-browser E2E; Auth/RLS cutover before October.
+
+**Risk:** High (hosted write protocol). Independent trust review recommended before applying 002.
 
 ## Trust-foundation worksession (2026-08-24, local branch)
 
