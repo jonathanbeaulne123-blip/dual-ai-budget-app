@@ -31,6 +31,7 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [ENVIRONMENTS.md](ENVIRONMENTS.md) | Development versus production, website, and hosted books |
 | [CURRENT_PATH.md](CURRENT_PATH.md) | Frozen command path as inspected on main before this trust rewrite |
 | [claude/COMMAND_CONTRACT.md](claude/COMMAND_CONTRACT.md) | Typed write-surface states for Claude (no toast-inferred posting) |
+| [CLAUDE_COMMAND_STATES_UX.md](CLAUDE_COMMAND_STATES_UX.md) | Command/continuity/conflict/recovery UX spec — merged [PR #76](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/76) |
 | [HOSTED_ROW_INVENTORY.md](HOSTED_ROW_INVENTORY.md) | Leftover hosted-row runbook. Metadata only. Do not delete without Jonathan. |
 | [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) | Auth/RLS readiness packet — do not apply |
 | [SITDOWN.md](SITDOWN.md) | Monthly sitdown, leftover, lock, reverse, and export guidance |

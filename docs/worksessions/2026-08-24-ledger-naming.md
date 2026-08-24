@@ -1,6 +1,6 @@
 # New-household ledger naming
 
-**Status:** Implemented for review. No hosted schema, hosted rows, Production data, or secrets changed.
+**Status:** Merged to `main` as [PR #77](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/77). No hosted schema, hosted rows, Production data, or secrets changed.
 
 ## Outcome
 

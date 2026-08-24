@@ -1,10 +1,11 @@
 # Claude UX — Command, continuity, conflict, and recovery states
 
 > **Role:** Claude design lead (UX, accessibility, responsible retention).  
-> **Baseline:** `main@ac6a8b6e0d1b5b9cfe47dfc49c5407cac25e1fd4` (2026-08-24, Toronto).  
+> **Baseline:** `main@462063c` — **SHIPPED** as [PR #76](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/76) (2026-08-24, Toronto).  
+> **Implementation:** Cursor Cloud Agent (GPT), parallel Slice A+B; worksession [`2026-08-24-command-states-slice-ab.md`](worksessions/2026-08-24-command-states-slice-ab.md).  
 > **Contract:** `src/core/commandOutcome.ts`, `src/claude/commandContract.ts`, `docs/claude/COMMAND_CONTRACT.md`.  
-> **Canon:** `docs/CLOUD_CONTINUITY.md`, `docs/HEARTH_ROADMAP.md` Phase 0–2, D-111, D-113, D-114.  
-> **Scope:** design and copy only. No commands, journals, sync, schema, Auth/RLS, hosted rows, credentials, deployment, or Production changes.
+> **Canon:** `docs/CLOUD_CONTINUITY.md`, `docs/HEARTH_ROADMAP.md` Phase 0–2, D-111, D-113, D-114, D-119.  
+> **Scope:** design and copy authored here; implementation merged on `main`. No second state machine.
 
 Jonathan approves product, Production, and money-semantic decisions. Cursor implements from this packet. Codex coordinates and audits.
 
