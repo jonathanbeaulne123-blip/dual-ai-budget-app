@@ -30,11 +30,11 @@ Read [nostalgia/](nostalgia/) and [reference/](reference/) to understand past de
 
 Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](reference/sheets-era/AI_HANDOFF.md).
 
-## Development continuity slices (D-113 / D-114, PR #72)
+## Development continuity slices (D-113–D-115, PR #72)
 
-**Status:** exact Google-subject Development discovery, PGlite acceptance, a durable compacting local outbox, launch/focus/reconnect replay, multi-household device replicas, an explicit ledger switcher, and member-only personal device replicas are implemented. Legacy environment-only storage migrates on read. No hosted schema, deployment, Production data, or secrets were changed. Open snapshot scanning is an explicitly temporary pre-October bridge, not authentication.
+**Status:** exact Google-subject Development discovery, PGlite acceptance, a durable compacting local outbox, launch/focus/reconnect replay, multi-household device replicas, an explicit ledger switcher, and member-only personal device replicas are implemented. D-115 adds server-filtered membership discovery and hosted member-personal payloads behind unapplied migration 003; missing tables retain the D-113 fallback. Legacy environment-only storage migrates on read. No hosted schema, deployment, Production data, or secrets were changed.
 
-**Still required:** dedicated hosted personal-ledger authority, server-side membership records, atomic hosted CAS/journal authority, retry backoff/acknowledgement, two-browser end-to-end proof, and the late-September Auth/RLS cutover.
+**Still required:** Jonathan's separate decision to apply migration 003, atomic hosted CAS/journal authority, retry backoff/acknowledgement, two-browser end-to-end proof, Supabase Auth-bound membership, and the late-September deny-by-default RLS cutover.
 
 **Budget delta (5):** `+4` — accepted offline commands survive reconnection, pulled snapshots pass PGlite, stale remote revisions retain both sides, and locally switching households no longer overwrites a different ledger.
 

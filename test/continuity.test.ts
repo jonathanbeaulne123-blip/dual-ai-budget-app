@@ -8,8 +8,9 @@ import {
   setContinuityStore,
   transportHouseholdWithOutbox,
 } from "../src/continuity.ts";
-import { catalogHousehold, linkGoogleIdentity, postEntry } from "../src/core/index.ts";
+import { catalogHousehold, linkGoogleIdentity, personalReplicaForMember, postEntry } from "../src/core/index.ts";
 import type { Household } from "../src/core/types.ts";
+import { pushSupabaseHousehold } from "../src/ledger/supabase.ts";
 
 const config = { url: "https://continuity.example.supabase.co", key: "sb_publishable_test" };
 const identity = { email: "jonathan@example.com", subject: "google-sub-jonathan" };
@@ -41,12 +42,17 @@ describe("Google-account continuity", () => {
     const first = googleHousehold();
     const second = { ...googleHousehold(), householdId: "HH-SECOND", name: "Second household" };
     const unrelated = googleHousehold("someone-else", "someone@example.com");
-    const fetch = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => response([
-      { payload: JSON.stringify(first), updated_at: "2026-08-24T14:00:00.000Z" },
-      { payload: "{", updated_at: "2026-08-24T13:00:00.000Z" },
-      { payload: JSON.stringify(unrelated), updated_at: "2026-08-24T12:00:00.000Z" },
-      { payload: JSON.stringify(second), updated_at: "2026-08-24T11:00:00.000Z" },
-    ]));
+    const fetch = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
+      if (String(input).includes("continuity_memberships?")) {
+        return response({ code: "PGRST205", message: "continuity_memberships is not in the schema cache" }, 404);
+      }
+      return response([
+        { payload: JSON.stringify(first), updated_at: "2026-08-24T14:00:00.000Z" },
+        { payload: "{", updated_at: "2026-08-24T13:00:00.000Z" },
+        { payload: JSON.stringify(unrelated), updated_at: "2026-08-24T12:00:00.000Z" },
+        { payload: JSON.stringify(second), updated_at: "2026-08-24T11:00:00.000Z" },
+      ]);
+    });
     vi.stubGlobal("fetch", fetch);
 
     const found = await discoverContinuityMemberships(identity, "development", config);
@@ -57,7 +63,9 @@ describe("Google-account continuity", () => {
 
   it("does not let a matching email override a different populated Google subject", async () => {
     const wrongSubject = googleHousehold("different-google-subject", identity.email);
-    const fetch = vi.fn(async () => response([{ payload: JSON.stringify(wrongSubject) }]));
+    const fetch = vi.fn(async (input: RequestInfo | URL) => String(input).includes("continuity_memberships?")
+      ? response({ code: "PGRST205", message: "continuity_memberships is not in the schema cache" }, 404)
+      : response([{ payload: JSON.stringify(wrongSubject) }]));
     vi.stubGlobal("fetch", fetch);
     await expect(discoverContinuityMemberships(identity, "development", config)).resolves.toEqual([]);
   });
@@ -123,6 +131,9 @@ describe("Google-account continuity", () => {
       const url = String(input);
       if (url.includes("households?select=id")) return response([]);
       if (url.includes("household_snapshots?household_id")) return response([]);
+      if (url.includes("continuity_memberships?select=household_id")) {
+        return response({ code: "PGRST205", message: "continuity_memberships is not in the schema cache" }, 404);
+      }
       return response(null, 201);
     }));
     const replayed = await flushContinuityOutbox({ environment: "development", identity, config });
@@ -162,5 +173,95 @@ describe("Google-account continuity", () => {
     expect(result.remote?.revision).toBe(5);
     expect(listContinuityOutbox("development")[0]?.blockedByConflict).toBe(true);
     expect(fetch.mock.calls.every(([, init]) => !init || init.method !== "POST")).toBe(true);
+  });
+
+  it("uses server-side membership discovery and overlays the member's hosted personal replica", async () => {
+    const shared = googleHousehold();
+    const posted = postEntry(shared, {
+      date: "2026-08-24",
+      type: "expense",
+      amount: "4.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Personal cloud milk",
+      createdBy: "MEM-001",
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+    const personal = personalReplicaForMember(posted, "MEM-001");
+    const fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("continuity_memberships?")) {
+        return response([{
+          household_id: posted.householdId,
+          member_id: "MEM-001",
+          google_subject: identity.subject,
+          google_email: identity.email,
+        }]);
+      }
+      if (url.includes("continuity_personal_snapshots?")) {
+        return response([{ payload: JSON.stringify(personal) }]);
+      }
+      if (url.includes("household_snapshots?")) return response([{ payload: JSON.stringify(shared) }]);
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetch);
+
+    const found = await discoverContinuityMemberships(identity, "development", config);
+    expect(found).toHaveLength(1);
+    expect(found[0]?.memberId).toBe("MEM-001");
+    expect(found[0]?.household.transactions.some((item) => item.note === "Personal cloud milk")).toBe(true);
+    expect(fetch.mock.calls.some(([input]) => String(input).includes("select=payload,updated_at"))).toBe(false);
+  });
+
+  it("publishes membership and only the signed-in member's personal scope before the household snapshot", async () => {
+    let household = googleHousehold();
+    household = postEntry(household, {
+      date: "2026-08-24",
+      type: "expense",
+      amount: "4.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Jonathan private",
+      createdBy: "MEM-001",
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+    household = postEntry(household, {
+      date: "2026-08-25",
+      type: "expense",
+      amount: "5.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Partner private",
+      createdBy: "MEM-002",
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+    const calls: Array<{ url: string; body: unknown }> = [];
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      calls.push({ url, body: init?.body ? JSON.parse(String(init.body)) : null });
+      if (url.includes("households?select=id")) return response([]);
+      if (url.includes("household_snapshots?household_id")) return response([]);
+      if (url.includes("continuity_memberships?select=household_id")) return response([]);
+      return response(null, 201);
+    }));
+
+    const pushed = await pushSupabaseHousehold(household, config, {
+      expectedRevision: 0,
+      continuityIdentity: identity,
+    });
+    expect(pushed.schema).toBe(true);
+    const membership = calls.find((item) => item.url.includes("continuity_memberships?on_conflict"));
+    const personalCall = calls.find((item) => item.url.includes("continuity_personal_snapshots?on_conflict"));
+    const snapshotIndex = calls.findIndex((item) => item.url.includes("household_snapshots?on_conflict"));
+    const personalIndex = calls.findIndex((item) => item.url.includes("continuity_personal_snapshots?on_conflict"));
+    expect(membership?.body).toMatchObject({ member_id: "MEM-001", google_subject: identity.subject });
+    const payload = JSON.parse(String((personalCall?.body as { payload?: string })?.payload)) as { transactions: Array<{ note: string }> };
+    expect(payload.transactions.map((item) => item.note)).toContain("Jonathan private");
+    expect(payload.transactions.map((item) => item.note)).not.toContain("Partner private");
+    expect(personalIndex).toBeGreaterThan(-1);
+    expect(snapshotIndex).toBeGreaterThan(personalIndex);
   });
 });
