@@ -11,6 +11,8 @@ import { BOOKS_SCHEMA, BOOKS_SCHEMA_VERSION } from "./schema.ts";
 import { hostedTransportAllowed } from "../core/sharing.ts";
 import { pushSupabaseHousehold, probeSupabase } from "./supabase.ts";
 
+export type HostedBooksMode = "local" | "opted-in" | "published" | "failed";
+
 export type BooksStatus = {
   ok: boolean;
   engine: "pglite" | "pglite+supabase";
@@ -21,6 +23,7 @@ export type BooksStatus = {
   error?: string;
   hosted?: {
     provider: "supabase";
+    mode: HostedBooksMode;
     reachable: boolean;
     schema: boolean;
     project?: string;
@@ -169,6 +172,7 @@ export function hostedFailureStatus(
 ): NonNullable<BooksStatus["hosted"]> {
   return {
     provider: "supabase",
+    mode: "failed",
     reachable: probe.reachable,
     schema: false,
     project: probe.project,
@@ -463,12 +467,13 @@ export async function restoreHouseholdBooks(household: Household): Promise<void>
 /** Linked snapshot transport only. Unlinked households skip with zero fetch. */
 export async function publishLinkedHousehold(household: Household): Promise<BooksStatus["hosted"]> {
   if (!hostedTransportAllowed(household)) {
-    return { provider: "supabase", reachable: false, schema: false, error: undefined };
+    return { provider: "supabase", mode: "local", reachable: false, schema: false, error: undefined };
   }
   try {
     const hosted = await pushSupabaseHousehold(household);
     return {
       provider: "supabase",
+      mode: hosted.schema ? "published" : "failed",
       reachable: hosted.reachable,
       schema: hosted.schema,
       project: hosted.project,

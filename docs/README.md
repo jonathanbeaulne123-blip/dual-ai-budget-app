@@ -30,12 +30,14 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [ENVIRONMENTS.md](ENVIRONMENTS.md) | Development versus production, website, and hosted books |
 | [CURRENT_PATH.md](CURRENT_PATH.md) | Frozen command path as inspected on main before this trust rewrite |
 | [claude/COMMAND_CONTRACT.md](claude/COMMAND_CONTRACT.md) | Typed write-surface states for Claude (no toast-inferred posting) |
-| [HOSTED_ROW_INVENTORY.md](HOSTED_ROW_INVENTORY.md) | Possible leftover hosted rows; do not delete without Jonathan |
+| [HOSTED_ROW_INVENTORY.md](HOSTED_ROW_INVENTORY.md) | Leftover hosted-row runbook. Metadata only. Do not delete without Jonathan. |
 | [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) | Auth/RLS readiness packet — do not apply |
 | [SITDOWN.md](SITDOWN.md) | Monthly sitdown, leftover, lock, reverse, and export guidance |
 | [GOALS.md](GOALS.md) | Goals vault and leftover parking |
 | [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md) | Private repository and publish workflow |
 | [briefs/](briefs/) | Paste-ready AI work packets derived from the living roadmap |
 | [worksessions/](worksessions/) | Open/close records for bounded worksessions |
+| [nostalgia/](nostalgia/) | Cursor-era maps we outgrew. Read to understand past decisions. Do not cite as the next build plan. |
+| [reference/](reference/) | Sheets-era snapshot. Read to understand how we got here. Do not cite as the next build plan. |
 
 Start from the repository [README](../README.md) to run the app. Compatibility filenames such as `ROADMAP.md` and `PRODUCT_ROADMAP.md` point to the maintained roadmap.
