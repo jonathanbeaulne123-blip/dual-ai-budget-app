@@ -1,6 +1,6 @@
 # 2026-08-24 — Continuity slice 4: hosted membership and Personal scope
 
-**Status:** Implemented locally for PR #72. Migration `003_continuity_membership.sql` is created and tested but not applied. No hosted rows, Production deployment, credentials, or secrets were changed.
+**Status:** Implemented and pushed to PR #72. Migration `003_continuity_membership.sql` is created and tested but not applied. No hosted rows, Production deployment, credentials, or secrets were changed.
 
 ## Delivered
 
@@ -19,6 +19,7 @@
 - Personal transport excludes the partner's private rows and precedes the household snapshot write.
 - Missing-table fallback, different-subject denial, Production zero-request, outbox replay, and stale-conflict proofs remain green.
 - The SQL packet proves household-local composite keys, foreign-key scope, Development-only temporary policies, and no `GRANT ALL`.
+- Full serial suite: `47` files, `352` tests passed. TypeScript `--noEmit` and the production Vite bundle passed with the existing PGlite/chunk warnings.
 
 ## Honest boundary
 
