@@ -72,17 +72,25 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 ## Hosted snapshot CAS + outbox ack (D-122)
 
-**Status:** Implemented on `cursor/cloud-cas-outbox-4ffb`. Client prefers `rpc/publish_household_snapshot`; hardened unapplied packet `supabase/migrations/002_snapshot_cas.sql`; outbox ack on success/duplicate, exponential backoff, conflict blocks auto-replay; local books never cleared on failed/stale cloud write. Deterministic proofs in `test/hosted-cas-two-client.test.ts`. **Did not** deploy, apply SQL, mutate hosted rows, touch Production, or merge.
+**Status:** Merged via [PR #84](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/84); decision id corrected in [PR #86](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/86). Client prefers `rpc/publish_household_snapshot`; outbox ack/backoff live in code. **Migration 002 apply/smoke is GPT's runway** after Jonathan's approval.
 
-**Budget delta (5):** `+3` — simultaneous/stale cloud writers cannot LWW-erase accepted books; offline replay and duplicate delivery stay idempotent.
+**Budget delta (5):** `+3` — simultaneous/stale cloud writers cannot LWW-erase accepted books.
 
-**Engagement delta (3):** `0` — continuity trust infrastructure; Hercules/office chrome unchanged.
+**Engagement delta (3):** `0`.
 
-**Jonathan migration step (separate approval):** apply `supabase/migrations/002_snapshot_cas.sql` to Development only after review. Until then the client falls back to GET-compare-POST. Do not apply Auth/RLS or Production schema in the same step.
+**Still required:** live RPC apply + smoke; two-browser E2E; Auth/RLS cutover before October.
 
-**Still required:** live RPC apply + smoke on disposable Development; two-browser E2E; Auth/RLS cutover before October.
+## Auth + membership RLS cutover (proposed D-123)
 
-**Risk:** High (hosted write protocol). Independent trust review recommended before applying 002.
+**Status:** Started on `cursor/auth-rls-packet-4ffb`. Living design: [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md). Stub migration `004_auth_rls_cutover.sql` is a no-op do-not-apply packet until Jonathan answers product questions Q1–Q5. Legacy sketch `docs/sql/rls_auth_ready.sql` marked superseded. **Did not** apply SQL, contact the household project, touch Production, or deploy.
+
+**Budget delta (5):** `0` so far — design/readiness only; no live door change.
+
+**Engagement delta (3):** `0`.
+
+**Blocked on Jonathan:** Q1 Auth mapping, Q2 roles, Q3 join path, Q4 anon after cutover, Q5 Dev rehearsal timing.
+
+**Risk:** Release. Independent trust review before any apply.
 
 ## Trust-foundation worksession (2026-08-24, local branch)
 

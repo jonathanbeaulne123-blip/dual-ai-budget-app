@@ -1,8 +1,15 @@
--- AUTH / RLS READINESS PACKET. DO NOT APPLY.
+-- AUTH / RLS READINESS PACKET (legacy sketch). DO NOT APPLY.
+-- Superseded by docs/AUTH_RLS_CUTOVER.md and
+-- supabase/migrations/004_auth_rls_cutover.sql (also DO NOT APPLY).
 -- Do not paste this into the live household Supabase SQL editor.
 -- Do not contact the household project. Do not claim Auth/RLS is complete
 -- because this file exists. Hosted RLS today remains
 -- USING (true) WITH CHECK (true) for ALL, including DELETE (001_hearth_books.sql).
+--
+-- NOTE: This sketch assumed a hosted `members.auth_user_id` column that the
+-- current SPA schema does not use for continuity. Live membership is
+-- `continuity_memberships` (migration 003 / D-117). The cutover packet extends
+-- that table instead of inventing a parallel door.
 --
 -- Prerequisites Jonathan must complete first:
 --   1. Supabase Auth for Jonathan and Bianca.
