@@ -2,7 +2,7 @@
 
 > **Accepted product direction — 2026-08-24.** This file supersedes language that describes hosted sync as optional publishing, a three-word phrase as the normal access model, or one phone as the durable home of the ledger.
 
-## Implementation status — D-113 and D-114 Development slices
+## Implementation status — D-114 continuity and D-117 hosted scopes
 
 The first working continuity slice is implemented without applying hosted schema:
 
@@ -16,8 +16,9 @@ The first working continuity slice is implemented without applying hosted schema
 - each environment now keeps a catalog of household replicas keyed by household id; opening one ledger no longer overwrites another, and the header switcher changes the active replica explicitly;
 - the active session remembers its household id, legacy `hearth:v1:<environment>` snapshots migrate automatically, and reset removes only the selected ledger;
 - every signed-in member gets a durable member-only personal replica keyed by environment, household, and member. The Personal view reads that replica while the existing full-snapshot sync envelope remains lossless.
+- Migration 003 is applied. D-117 explicit Google membership rows and member-personal snapshots are live in Development: discovery filters by Google subject on the server, fetches only matching households, and overlays that member's hosted Personal scope. Signed-in transport writes the membership and member-only Personal payload before advancing the household snapshot. Inherited broad table privileges were reset and verified as exactly `SELECT`/`INSERT`/`UPDATE` for `anon` and `authenticated`.
 
-This is not completion of D-112. D-114 provides multi-household and member-personal **device replicas**, not hosted personal-ledger authority. Current limitations are client-side scanning of open Development snapshots, snapshot rather than hosted journal authority, GET-then-POST CAS, localStorage-sized outbox capacity, and no dedicated personal-ledger hosted scope. No peer device must remain online for a snapshot that has reached the cloud.
+Migration 003 was applied to project `tykhocwacaxwquhynkok` on 2026-08-24 with Jonathan's explicit approval. This is not completion of D-114: hosted authority remains snapshot-based, CAS remains GET-then-compare-then-POST, the outbox is localStorage-sized, membership selectors are not Supabase Auth, and explicit acknowledgement/backoff remains. No peer device must remain online for a snapshot that has reached the cloud.
 
 ## Household promise
 

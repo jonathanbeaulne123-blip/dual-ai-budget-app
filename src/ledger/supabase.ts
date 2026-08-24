@@ -1,8 +1,8 @@
-import { ensureHouseholdShape } from "../core/sync.ts";
+import { ensureHouseholdShape, personalReplicaForMember } from "../core/sync.ts";
 import { inviteFromText } from "../core/invite.ts";
 import { memberIdForGoogleIdentity, type GoogleIdentitySelector } from "../core/google.ts";
 import { hostedTransportAllowed } from "../core/sharing.ts";
-import type { Environment, Household } from "../core/types.ts";
+import type { Environment, Household, PersonalEnvelope } from "../core/types.ts";
 
 export type SupabaseConfig = {
   url: string;
@@ -26,6 +26,13 @@ export type PushHouseholdResult = SupabaseProbe & {
 export type DiscoveredHousehold = {
   household: Household;
   memberId: string;
+};
+
+type ContinuityMembershipRow = {
+  household_id: string;
+  member_id: string;
+  google_subject: string;
+  google_email: string;
 };
 
 const DEFAULT_URL = "https://tykhocwacaxwquhynkok.supabase.co";
@@ -106,6 +113,195 @@ function snapshotFromRow(row: { payload?: string | Household } | undefined): Hou
   return ensureHouseholdShape({ ...payload, linked: true });
 }
 
+function personalFromRow(row: { payload?: string | PersonalEnvelope } | undefined, memberId: string): PersonalEnvelope | null {
+  if (!row?.payload) return null;
+  try {
+    const payload = typeof row.payload === "string" ? JSON.parse(row.payload) as PersonalEnvelope : row.payload;
+    if (payload.kind !== "personal" || payload.memberId !== memberId) return null;
+    return {
+      ...payload,
+      transactions: Array.isArray(payload.transactions)
+        ? payload.transactions.filter((item) => item.createdBy === memberId && item.visibility === "personal")
+        : [],
+      shifts: Array.isArray(payload.shifts)
+        ? payload.shifts.filter((item) => item.createdBy === memberId && item.visibility === "personal")
+        : [],
+      tombstones: Array.isArray(payload.tombstones) ? payload.tombstones : [],
+    };
+  } catch {
+    return null;
+  }
+}
+
+function overlayPersonalReplica(household: Household, personal: PersonalEnvelope | null, memberId: string): Household {
+  if (!personal) return household;
+  const personalTransactionIds = new Set(personal.transactions.map((item) => item.id));
+  const personalShiftIds = new Set(personal.shifts.map((item) => item.id));
+  const tombstones = new Map(household.tombstones.map((item) => [item.id, item]));
+  for (const item of personal.tombstones) {
+    const existing = tombstones.get(item.id);
+    if (!existing || item.deletedAt >= existing.deletedAt) tombstones.set(item.id, item);
+  }
+  return ensureHouseholdShape({
+    ...household,
+    transactions: [
+      ...household.transactions.filter((item) => !(
+        (item.visibility === "personal" && item.createdBy === memberId) || personalTransactionIds.has(item.id)
+      )),
+      ...personal.transactions,
+    ],
+    shifts: [
+      ...household.shifts.filter((item) => !(
+        (item.visibility === "personal" && item.createdBy === memberId) || personalShiftIds.has(item.id)
+      )),
+      ...personal.shifts,
+    ],
+    tombstones: [...tombstones.values()],
+    lastCommittedAt: (personal.lastCommittedAt ?? "") > (household.lastCommittedAt ?? "")
+      ? personal.lastCommittedAt
+      : household.lastCommittedAt,
+  });
+}
+
+async function continuityMembershipRows(
+  config: SupabaseConfig,
+  identity: GoogleIdentitySelector,
+  environment: Environment,
+): Promise<ContinuityMembershipRow[] | null> {
+  const subject = identity.subject.trim();
+  const email = identity.email.trim().toLowerCase();
+  const select = "select=household_id,member_id,google_subject,google_email&active=eq.true&limit=500";
+  if (subject) {
+    const bySubject = await rest(
+      config,
+      `continuity_memberships?environment=eq.${encodeURIComponent(environment)}&google_subject=eq.${encodeURIComponent(subject)}&${select}`,
+      { method: "GET", headers: { Prefer: "return=representation" } },
+    );
+    if (isMissingTable(bySubject.body)) return null;
+    if (!bySubject.ok) throw new Error(messageOf(bySubject.body));
+    const exact = Array.isArray(bySubject.body)
+      ? (bySubject.body as ContinuityMembershipRow[]).filter((row) => (
+          Boolean(row.household_id) && Boolean(row.member_id) && row.google_subject === subject
+        ))
+      : [];
+    if (exact.length) return exact;
+  }
+  if (!email) return [];
+  const byEmail = await rest(
+    config,
+    `continuity_memberships?environment=eq.${encodeURIComponent(environment)}&google_email=eq.${encodeURIComponent(email)}&${select}`,
+    { method: "GET", headers: { Prefer: "return=representation" } },
+  );
+  if (isMissingTable(byEmail.body)) return null;
+  if (!byEmail.ok) throw new Error(messageOf(byEmail.body));
+  const rows = Array.isArray(byEmail.body) ? byEmail.body as ContinuityMembershipRow[] : [];
+  return rows.filter((row) => (
+    Boolean(row.household_id) &&
+    Boolean(row.member_id) &&
+    row.google_email === email &&
+    (!subject || !row.google_subject || row.google_subject === subject)
+  ));
+}
+
+async function personalSnapshotForMembership(
+  config: SupabaseConfig,
+  row: ContinuityMembershipRow,
+  environment: Environment,
+): Promise<PersonalEnvelope | null> {
+  const result = await rest(
+    config,
+    `continuity_personal_snapshots?environment=eq.${encodeURIComponent(environment)}&household_id=eq.${encodeURIComponent(row.household_id)}&member_id=eq.${encodeURIComponent(row.member_id)}&select=payload&limit=1`,
+    { method: "GET", headers: { Prefer: "return=representation" } },
+  );
+  if (isMissingTable(result.body)) return null;
+  if (!result.ok) throw new Error(messageOf(result.body));
+  const rows = Array.isArray(result.body) ? result.body as { payload?: string | PersonalEnvelope }[] : [];
+  return personalFromRow(rows[0], row.member_id);
+}
+
+async function discoverFromContinuityMemberships(
+  config: SupabaseConfig,
+  identity: GoogleIdentitySelector,
+  environment: Environment,
+): Promise<DiscoveredHousehold[] | null> {
+  const memberships = await continuityMembershipRows(config, identity, environment);
+  if (memberships === null) return null;
+  const found: DiscoveredHousehold[] = [];
+  for (const membership of memberships) {
+    const snapshotResult = await rest(
+      config,
+      `household_snapshots?environment=eq.${encodeURIComponent(environment)}&household_id=eq.${encodeURIComponent(membership.household_id)}&select=payload&limit=1`,
+      { method: "GET", headers: { Prefer: "return=representation" } },
+    );
+    if (!snapshotResult.ok) {
+      if (isMissingTable(snapshotResult.body)) continue;
+      throw new Error(messageOf(snapshotResult.body));
+    }
+    const snapshotRows = Array.isArray(snapshotResult.body)
+      ? snapshotResult.body as { payload?: string | Household }[]
+      : [];
+    const household = snapshotFromRow(snapshotRows[0]);
+    if (!household || household.environment !== environment) continue;
+    const personal = await personalSnapshotForMembership(config, membership, environment);
+    found.push({
+      household: {
+        ...overlayPersonalReplica(household, personal, membership.member_id),
+        baseRevision: household.revision,
+      },
+      memberId: membership.member_id,
+    });
+  }
+  return found;
+}
+
+async function publishContinuityMemberScope(
+  config: SupabaseConfig,
+  snapshot: Household,
+  memberId: string,
+  identity: GoogleIdentitySelector,
+): Promise<void> {
+  const probe = await rest(config, "continuity_memberships?select=household_id&limit=1", {
+    method: "GET",
+    headers: { Prefer: "return=representation" },
+  });
+  if (isMissingTable(probe.body)) return;
+  if (!probe.ok) throw new Error(messageOf(probe.body));
+  const link = snapshot.google.links.find((item) => item.active && item.memberId === memberId);
+  const membership = await rest(config, "continuity_memberships?on_conflict=environment,household_id,member_id", {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({
+      environment: snapshot.environment,
+      household_id: snapshot.householdId,
+      member_id: memberId,
+      google_subject: identity.subject.trim() || link?.subject.trim() || "",
+      google_email: identity.email.trim().toLowerCase() || link?.email.trim().toLowerCase() || "",
+      display_name: link?.displayName || snapshot.members.find((item) => item.id === memberId)?.name || "",
+      active: true,
+      updated_at: new Date().toISOString(),
+    }),
+  });
+  if (!membership.ok) throw new Error(messageOf(membership.body));
+  const personal = personalReplicaForMember(snapshot, memberId);
+  const personalResult = await rest(
+    config,
+    "continuity_personal_snapshots?on_conflict=environment,household_id,member_id",
+    {
+      method: "POST",
+      headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+      body: JSON.stringify({
+        environment: snapshot.environment,
+        household_id: snapshot.householdId,
+        member_id: memberId,
+        revision: snapshot.revision,
+        payload: JSON.stringify(personal),
+        updated_at: new Date().toISOString(),
+      }),
+    },
+  );
+  if (!personalResult.ok) throw new Error(messageOf(personalResult.body));
+}
+
 export async function probeSupabase(config = readSupabaseConfig()): Promise<SupabaseProbe> {
   if (!config) return { configured: false, reachable: false, schema: false };
   const project = projectRef(config.url);
@@ -164,7 +360,7 @@ export async function pullSupabaseHousehold(
 }
 
 /**
- * Temporary Development discovery for D-112. Hosted rows are deliberately open
+ * Temporary Development discovery for D-114. Hosted rows are deliberately open
  * during the disposable-data window, so the client can scan snapshots and keep
  * only exact Google memberships. Production stays blocked until Auth/RLS can do
  * this filtering on the server.
@@ -175,6 +371,8 @@ export async function discoverSupabaseHouseholdsByGoogleIdentity(
   environment: Environment = "development",
 ): Promise<DiscoveredHousehold[]> {
   if (!config || environment !== "development") return [];
+  const fromMemberships = await discoverFromContinuityMemberships(config, identity, environment);
+  if (fromMemberships !== null) return fromMemberships;
   const result = await rest(
     config,
     `household_snapshots?environment=eq.${encodeURIComponent(environment)}&select=payload,updated_at&order=updated_at.desc&limit=500`,
@@ -276,6 +474,9 @@ export async function pushSupabaseHousehold(
     body: JSON.stringify(houseBody),
   });
   if (!house.ok) throw new Error(messageOf(house.body));
+  if (continuityMemberId && options?.continuityIdentity) {
+    await publishContinuityMemberScope(config, snapshot, continuityMemberId, options.continuityIdentity);
+  }
   const snap = await rest(config, "household_snapshots?on_conflict=household_id", {
     method: "POST",
     headers: { Prefer: "resolution=merge-duplicates,return=minimal" },

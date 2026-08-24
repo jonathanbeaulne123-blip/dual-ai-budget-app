@@ -2,9 +2,9 @@
 
 Google is Hearth's account-entry and recovery identity. The accepted target is simple: sign in on any device and see your personal ledger plus every household ledger you belong to, even when the old device is off. Google also connects Calendar and, when enabled, Drive, Contacts, Gmail, and Sheets. It is **not** a bank and **never** posts money.
 
-The D-113 slice now provides automatic Development household discovery and durable outbox replay alongside legacy phrase/`linked` transport. Each device keeps its own token/session. Tokens never enter the ledger snapshot, outbox, or Git, and Development and Production stay separate. Dedicated personal-ledger storage, server-side memberships, atomic CAS, and secured Production remain.
+The D-114 slice provides automatic Development household discovery and durable outbox replay alongside legacy phrase/`linked` transport. Migration 003 is applied, so D-117 dedicated hosted personal-ledger storage and server-side memberships are live in Development. Each device keeps its own token/session. Tokens never enter the ledger snapshot, outbox, or Git, and Development and Production stay separate. Atomic CAS and secured Production remain.
 
-Related: [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md), [DECISIONS.md](DECISIONS.md) D-032, D-040, D-043, D-112, [ENVIRONMENTS.md](ENVIRONMENTS.md), and [STRATEGY.md](STRATEGY.md).
+Related: [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md), [DECISIONS.md](DECISIONS.md) D-032, D-040, D-043, D-114, D-117, [ENVIRONMENTS.md](ENVIRONMENTS.md), and [STRATEGY.md](STRATEGY.md).
 
 ---
 
@@ -106,7 +106,7 @@ Commands `linkGoogleIdentity`, `unlinkGoogleIdentity`, `touchGoogleConfirmation`
 
 ## Status (D-078)
 
-Google is **live product**, not a parking lot. Identity and Calendar work today; D-112 expands identity into cross-device ledger discovery and recovery. Baking `VITE_GOOGLE_CLIENT_ID` is no longer the backlog item. A local Vite build without the variable still gets the month board and `.ics`, but cannot satisfy the signed-in continuity promise.
+Google is **live product**, not a parking lot. Identity and Calendar work today; D-114 expands identity into cross-device ledger discovery and recovery, while D-117 prepares explicit hosted membership and Personal scope. Baking `VITE_GOOGLE_CLIENT_ID` is no longer the backlog item. A local Vite build without the variable still gets the month board and `.ics`, but cannot satisfy the signed-in continuity promise.
 
 Living pairs and refused list: [STRATEGY.md](STRATEGY.md) § Google Dual Course.
 

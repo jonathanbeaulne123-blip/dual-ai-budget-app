@@ -35,6 +35,7 @@ export * from "./askBooks.ts";
 export * from "./hercules.ts";
 export * from "./herculesTalk.ts";
 export * from "./herculesPersonality.ts";
+export * from "./ledgerNames.ts";
 export * from "./herculesChat.ts";
 export * from "./herculesLedger.ts";
 export * from "./herculesPrivacy.ts";
@@ -114,4 +115,3 @@ export {
   HOUSEHOLD_EXPORT_KIND,
   CONFLICT_BUNDLE_KIND,
 } from "./recovery.ts";
-

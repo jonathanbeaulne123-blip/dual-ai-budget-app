@@ -7,7 +7,7 @@
 - Parent commit: `2e1d7902879955583969ffa825d3f7f57e997548`.
 - Environment in scope: disposable Development data only.
 - No Supabase schema, manual/Production Cloudflare deployment, Production data, credentials, or hosted rows were changed from this worksession. The connected Cloudflare bot automatically created a branch preview for the earlier PR commit.
-- D-112 is the product target. D-113 records this temporary migration-free Development bridge.
+- D-114 is the product target and records this temporary migration-free Development bridge. Earlier draft numbering collided with merged Hercules decisions and was reconciled before the hosted-membership slice.
 
 ## Delivered
 

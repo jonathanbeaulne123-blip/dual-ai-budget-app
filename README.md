@@ -50,11 +50,11 @@ Accepted device replica + durable outbox
    +-- Home / Plan / Health are projections
 ```
 
-There is no Google Sheet, and no formula range that can freeze. The D-113/D-114 Development slices discover exact Google memberships, accept pulled books through PGlite, retry a durable compacting outbox on launch/focus/reconnect, and keep multiple household plus member-personal device replicas. No phone is the host. Current open-row scanning, GET-then-POST CAS, full hosted snapshots, and `linked`/phrase transport are transitional. Google never posts money. See [docs/CLOUD_CONTINUITY.md](docs/CLOUD_CONTINUITY.md).
+There is no Google Sheet, and no formula range that can freeze. D-114 cloud continuity discovers exact Google memberships, accepts pulled books through PGlite, retries a durable compacting outbox, and keeps multiple device replicas. Migration 003 is applied, so D-117 server-filtered membership and hosted member-personal scopes are live in Development. No phone is the host. The browser-supplied Google subject is still a selector rather than authentication; GET-then-POST CAS, full hosted household snapshots, and `linked`/phrase transport remain transitional. Google never posts money. See [docs/CLOUD_CONTINUITY.md](docs/CLOUD_CONTINUITY.md).
 
 ## Household vs personal
 
-Jonathan and Bianca each sign in as themselves. **Household** opens a household-ledger membership. **Personal** currently filters that household snapshot for the signed-in member. A dedicated durable personal-ledger cloud scope remains required before D-112 is complete.
+Jonathan and Bianca each sign in as themselves. **Household** opens a household-ledger membership. **Personal** currently filters that household snapshot for the signed-in member. D-117 prepares the dedicated durable personal-ledger cloud scope required to complete D-114.
 
 Invite/bootstrap/recover with a **three-word phrase**, a **join link**, or a **Hearth Pass** when useful. Those tools are not the durable storage or authentication model. A new signed-in device must work while every old device is offline.
 
