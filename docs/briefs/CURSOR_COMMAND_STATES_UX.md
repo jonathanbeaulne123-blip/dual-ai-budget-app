@@ -73,9 +73,19 @@ VoiceOver: conflict + recovery announcements assertive.
 - Budget **+4** if checklist §9 passes with visual evidence
 - Engagement **+1** if Hercules line hooks outcome (optional this packet)
 
+## Epic incorporation (household workspace)
+
+Do **not** `git apply` `claude-ux-epic-phase1_*.patch`. That patch targets the pre-D-111 `saveHousehold` → `syncHouseholdBooks` path and invents `WriteTruth` (`saved-local` / `books-accepted` / `books-rejected`). Current `acceptHouseholdWrite` already fail-closes; “saved but books disagree” is forbidden.
+
+**Do** fold this work into the epic as Phase 6 + Phase 1 a11y, on `CommandUiKind`:
+
+1. Re-implement patch a11y on current `App.tsx`: `useDialog`, Add dialog, names, `aria-current`, 44px pins.
+2. Drive chrome from `toCommandSurface(outcome)` — never a second enum.
+3. Product defaults: [`COMMAND_STATES_PRODUCT_QUESTIONS.md`](COMMAND_STATES_PRODUCT_QUESTIONS.md).
+
 ## Open questions
 
-See CLAUDE_COMMAND_STATES_UX §10 — block in-app conflict merge until Jonathan decides.
+In-app “keep this side” merge stays blocked until Jonathan decides. Other §10 items have UI defaults in the product-questions brief.
 
 ## Handoff back
 

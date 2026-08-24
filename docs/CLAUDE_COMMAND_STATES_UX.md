@@ -515,18 +515,22 @@ Today `App.tsx` sets `syncState` `"error"` for pending-transport — **incorrect
 
 ---
 
-## 10. Unresolved product questions (Jonathan)
+## 10. Product questions — implementation defaults
 
-Do not silently decide these in implementation:
+Full household-language writeup, current-code facts, and epic-rebase notes: [`docs/briefs/COMMAND_STATES_PRODUCT_QUESTIONS.md`](briefs/COMMAND_STATES_PRODUCT_QUESTIONS.md).
 
-1. **Conflict resolution UX:** Is v1 export-bundle-only + manual merge acceptable, or is in-app diff/choose required before October?
-2. **Pending-transport visibility:** Persistent banner always, or only when offline / after failed retry?
-3. **Undo scope label:** D-111 says undo may be session-local — should toast say “Undo (this phone)” when not synchronized?
-4. **Auto-merge messaging:** When goal-contribution auto-merge succeeds, is “Merged compatible changes” sufficient, or silence?
-5. **Personal conflict display:** May conflict review show partner personal row counts/metadata, or shared-only diff until D-105 projection ships?
-6. **Repost after reverse:** Should Add open prefilled with reversal context, or require manual re-entry?
-7. **Multi-ledger picker default:** If Google finds 2+ households, remember last opened per device or always ask?
-8. **Production pill interaction:** Block entirely vs read-only browse until RLS ships?
+Jonathan still owns any **keep-this-side merge**. Cursor may ship the UI defaults below; they do not invent books semantics.
+
+| # | Question | Implementation default | Tag |
+|---|---|---|---|
+| 1 | Conflict: export vs in-app choose | Review + export bundle only. No Keep-this-phone merge button. | **Jonathan** to add choose |
+| 2 | Pending banner always vs quiet | Chip always; banner only offline / failed retry / blocked | **UI default** |
+| 3 | Undo “this phone”? | `Undo (this phone)` unless last outcome was `synchronized` | **UI default** |
+| 4 | Auto-merge toast? | Silence. Optional Audit line: goal jars combined, journals matched | **UI default** |
+| 5 | Personal rows in conflict UI? | Shared-only on screen; full bundle only in local export | **UI default** |
+| 6 | Prefill Add after reverse? | Yes — draft at Review; Confirm still required | **UI default** (epic §5.5) |
+| 7 | Multi-ledger: remember vs ask? | Remember `session.householdId`; picker when unknown | **Already true** |
+| 8 | Production pill: block vs browse? | Keep pill as local switch; no Production discovery/REST | **Already true** |
 
 ---
 
@@ -562,4 +566,4 @@ Do not silently decide these in implementation:
 | Cursor brief | `docs/briefs/CURSOR_COMMAND_STATES_UX.md` |
 | Viewport screenshots | `/opt/cursor/artifacts/command_states_*.png` |
 
-**Next owner:** Cursor — implement `renderCommandSurface` wiring and header/banner/toast chrome per §7–9. Codex — audit PR against checklist §9. Jonathan — resolve §10 questions before conflict UX ships.
+**Next owner:** Cursor — implement `renderCommandSurface` plus salvaged Add/Confirm a11y (not the stale Phase 1 patch). Codex — audit against checklist §9 and `CommandUiKind` only. Jonathan — only needed for in-app conflict *choose* (question 1).
