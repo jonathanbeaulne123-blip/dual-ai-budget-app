@@ -1,4 +1,4 @@
--- DO NOT APPLY WITHOUT JONATHAN'S EXPLICIT SCHEMA APPROVAL.
+-- Applied to project tykhocwacaxwquhynkok on 2026-08-24 with Jonathan's explicit approval.
 -- D-117 disposable-Development membership discovery and personal scope.
 -- This is a continuity bridge, not authentication: the browser still supplies
 -- the Google subject until the late-September Supabase Auth/RLS cutover.
@@ -58,6 +58,11 @@ CREATE POLICY continuity_personal_development_open ON continuity_personal_snapsh
   FOR ALL TO anon, authenticated
   USING (environment = 'development')
   WITH CHECK (environment = 'development');
+
+-- Existing project default privileges may be broader than this migration's
+-- intended bridge. Reset them before granting the exact Development surface.
+REVOKE ALL PRIVILEGES ON TABLE continuity_memberships FROM anon, authenticated;
+REVOKE ALL PRIVILEGES ON TABLE continuity_personal_snapshots FROM anon, authenticated;
 
 GRANT SELECT, INSERT, UPDATE ON continuity_memberships TO anon, authenticated;
 GRANT SELECT, INSERT, UPDATE ON continuity_personal_snapshots TO anon, authenticated;

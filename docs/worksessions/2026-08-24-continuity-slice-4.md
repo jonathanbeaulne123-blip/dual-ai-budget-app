@@ -1,6 +1,6 @@
 # 2026-08-24 — Continuity slice 4: hosted membership and Personal scope
 
-**Status:** Implemented and pushed to PR #72. Migration `003_continuity_membership.sql` is created and tested but not applied. No hosted rows, Production deployment, credentials, or secrets were changed.
+**Status:** Implemented and pushed to PR #74. Migration `003_continuity_membership.sql` was applied to project `tykhocwacaxwquhynkok` with Jonathan's explicit approval. Inherited broad table grants were removed and verified as exactly `SELECT`/`INSERT`/`UPDATE`. No hosted rows, Production deployment, credentials, or secrets were changed.
 
 ## Delivered
 
@@ -23,7 +23,7 @@
 
 ## Honest boundary
 
-Migration 003 is not applied. Until Jonathan approves it, runtime behavior remains the D-114 open bridge. Even after application, the client-supplied Google subject is a Development selector rather than authentication. Atomic hosted CAS/journal authority, acknowledgement/backoff, Supabase Auth, deny-by-default RLS, and two-browser end-to-end proof remain. D-117 records this prepared hosted-membership slice.
+Migration 003 is applied, so runtime behavior uses D-117 hosted membership and Personal scope in Development. The client-supplied Google subject remains a selector rather than authentication. Atomic hosted CAS/journal authority, acknowledgement/backoff, Supabase Auth, deny-by-default RLS, and two-browser end-to-end proof remain.
 
 ## Dual Course
 
