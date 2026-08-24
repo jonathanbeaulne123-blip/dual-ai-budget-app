@@ -7,6 +7,7 @@ import {
 } from "./herculesPersonality.ts";
 import type { HerculesLedgerExcerpt, HerculesNoticeView } from "./herculesPrivacy.ts";
 import type { HerculesMemoryView } from "./herculesLedger.ts";
+import type { Environment } from "./types.ts";
 
 export type HerculesChatTurn = {
   role: "user" | "hercules";
@@ -32,6 +33,28 @@ export type HerculesChatResult = {
   text: string;
   source: "ai" | "local";
 };
+
+export type HerculesReplyContext = {
+  environment: Environment;
+  householdId: string;
+  memberId: string;
+  requestId: number;
+};
+
+/**
+ * A model reply belongs to the exact viewer scope that sent it. A response from
+ * an older request, ledger, member, or environment is stale and must not reach
+ * UI state or the kitchen chat ledger.
+ */
+export function isCurrentHerculesReply(
+  started: HerculesReplyContext,
+  current: HerculesReplyContext,
+): boolean {
+  return started.requestId === current.requestId
+    && started.environment === current.environment
+    && started.householdId === current.householdId
+    && started.memberId === current.memberId;
+}
 
 export const HERCULES_CHAT_PATH = "/hercules/chat";
 export const HERCULES_KITCHEN_CHAT =
