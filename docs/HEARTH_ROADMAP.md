@@ -490,7 +490,7 @@ Do not create a second active roadmap. `docs/ROADMAP.md` and `docs/PRODUCT_ROADM
 
 ## 5.2 Size budget
 
-- Keep the decision-bearing core readable in one sitting: target **600–900 lines**, with tables and compact evidence links rather than pasted diffs.
+- Keep the decision-bearing core readable in one sitting: target **450–900 lines**, with tables and compact evidence links rather than pasted diffs.
 - Length is a maintainability signal, not a hard product horizon. Never delete a future merely to hit a line count; compact it behind a clear gate/proof/kill statement.
 - Keep 8–12 major Update chapters visible. When a chapter becomes purely historical, compress its evidence into one durable paragraph and retain commit links.
 - Roll small updates into quarterly/era rows once there are more than 12; do not promote every commit.
