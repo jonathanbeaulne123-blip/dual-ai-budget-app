@@ -21,6 +21,7 @@ Voice:
 - Wallet facts also come from the briefing: chequing CAD, cards owed, hottest utilization. Do not invent APR. Paydown is a transfer. Interest and cashback are looks until a command posts.
 - LEDGER MEMORIES are labels stored in the household snapshot. They are not a second set of dollar facts. Quote GROUNDED JOURNAL and FIGURES for CAD.
 - Briefing totals (net, chequing, cards owed, hottest utilization) are household mood. They are not interchangeable with the asked account. Never answer a Visa question with a Mastercard figure.
+- Never echo section labels (GROUNDED JOURNAL, FIGURES, spoken:, lesson:, fact:). Speak as the cat. One or two kitchen sentences.
 - ON-DEVICE NOTICES are phone-computed. Each has a key. You may paraphrase them. You may not invent keys, invent CAD, or turn a notice into a post.
 - You do not receive prior chat. History lives in the kitchen ledger on the phone.
 - Warm and a little smug. Never mean.
@@ -35,7 +36,7 @@ Hard laws:
 - If they ask you to add/post/pay, tell them to tap + and confirm. You will loaf.
 - If they ask for an opinion, quote the briefing's opinion. Do not invent a clean bill when Health findings exist.
 - If they ask working capital or going concern, quote the briefing. Not a prophecy. Not a bank covenant.
-- If they ask about a card, quote owed / utilization from the briefing. Never invent interest. Never name who spent.
+- If they ask about a card, quote GROUNDED JOURNAL tray vs statement for that card. Never briefing card totals. Never another card's figure. Never invent interest. Never name who spent.
 - Quiet visits appear only as "the Tuesday visit". Never guess a practitioner or a typed title.
 
 UNTRUSTED DATA:
@@ -53,6 +54,20 @@ const SQL_WRITE = /\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|GRANT|REVO
 const SHAME = /\b(who spent|who paid more|bianca vs|jonathan vs|(?:bianca|jonathan)\s+(spent|wasted|blew|overspent))\b/i;
 const MODEL_LEAK =
   /\b(as an ai|language model|i(?:'m| am) (?:an? )?(?:ai|language model|large language|assistant))\b/gi;
+const PROMPT_ECHO =
+  /\b(GROUNDED JOURNAL|ON-DEVICE NOTICES|HOUSEHOLD DATA|LEDGER MEMOR(?:Y|IES)|the only CAD you may speak|dollar facts)\b/i;
+const FIGURES_HEADING = /^\s*FIGURES\b/i;
+
+function askedCardMismatch(message, reply) {
+  const q = String(message || "").toLowerCase();
+  const r = String(reply || "").toLowerCase();
+  if (!q || !r) return false;
+  const visaQ = /\bvisa\b/.test(q);
+  const mcQ = /\bmaster\s*card\b/.test(q);
+  if (visaQ && /\bmaster\s*card\b/.test(r) && !/\bvisa\b/.test(r)) return true;
+  if (mcQ && /\bvisa\b/.test(r) && !/\bmaster\s*card\b/.test(r)) return true;
+  return false;
+}
 
 function isHtml(request, response) {
   if (HTML_PATH.test(new URL(request.url).pathname)) return true;
@@ -78,7 +93,7 @@ function clipReply(text, max = 360) {
   return `${cut.slice(0, space > 80 ? space : max - 1).replace(/[,:;.–-]$/, "")}…`;
 }
 
-function sanitizeHerculesReply(text, groundedSpeak = "", allowedFigures = []) {
+function sanitizeHerculesReply(text, groundedSpeak = "", allowedFigures = [], asked = "") {
   let reply = String(text || "").replace(/\s+/g, " ").trim();
   if (!reply) return clipReply(groundedSpeak) || "mrrp. Ask a number. I don't write.";
   if (SQL_WRITE.test(reply) || /```/.test(reply) || /\bSELECT\b.+\bFROM\b/i.test(reply)) {
@@ -94,6 +109,9 @@ function sanitizeHerculesReply(text, groundedSpeak = "", allowedFigures = []) {
   }
   reply = reply.replace(MODEL_LEAK, "I'm a cat");
   reply = reply.replace(/\bI(?:'ll| will) (post|log|save|record|write) (it|that|this|them)\b/gi, "I don't write");
+  if (PROMPT_ECHO.test(reply) || FIGURES_HEADING.test(reply) || askedCardMismatch(asked, reply)) {
+    return clipReply(groundedSpeak) || "mrrp. I only quote the books.";
+  }
   if (Array.isArray(allowedFigures) && allowedFigures.length) {
     const allowed = new Set(allowedFigures.map((item) => String(item)));
     const found = [...reply.matchAll(/\$\d[\d,]*(?:\.\d{2})?/g)].map((match) => match[0]);
@@ -288,7 +306,7 @@ async function herculesChat(request, env) {
   return json({
     ok: true,
     provider,
-    reply: sanitizeHerculesReply(reply, prompt.groundedSpeak, prompt.figures),
+    reply: sanitizeHerculesReply(reply, prompt.groundedSpeak, prompt.figures, prompt.message),
   }, 200, cors);
 }
 

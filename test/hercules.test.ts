@@ -259,6 +259,13 @@ describe("The Hercules Update", () => {
     expect(sanitizeHerculesReply("Bianca spent more this week.")).toBe(HERCULES_REFUSE_SHAME);
     expect(sanitizeHerculesReply("As an AI, I think you should skip rent.")).toMatch(/I'm a cat/i);
     expect(sanitizeHerculesReply("")).toMatch(/don't write/i);
+
+    const visaGrounded = "Visa on the tray is -$886.55. Statement owed $0.00. Paydown is a transfer.";
+    const visaFigures = ["$886.55", "$0.00"];
+    const dump = "Mrrp. GROUNDED JOURNAL (dollar facts; win over you) spoken: Visa on the tray is -$886.55. Statement owed $0.00.";
+    expect(sanitizeHerculesReply(dump, visaGrounded, visaFigures, "what's on the Visa?")).toBe(visaGrounded);
+    expect(sanitizeHerculesReply("FIGURES $0.00", visaGrounded, visaFigures, "what's on the Visa?")).toBe(visaGrounded);
+    expect(sanitizeHerculesReply("Mastercard $242.00", visaGrounded, ["$886.55", "$0.00", "$242.00"], "what's on the Visa?")).toBe(visaGrounded);
   });
 
   it("falls back to local purrsonality and never claims a chat write", () => {
@@ -377,6 +384,19 @@ describe("The Hercules Update", () => {
     expect(swapped.source).toBe("ai");
     expect(swapped.text).not.toBe(`FIGURES ${briefing.cardsOwedCad}`);
     expect(swapped.text).toMatch(/Visa|tray|owed|paydown/i);
+
+    const echoed = await chatHercules(req, {
+      fetch: async () =>
+        new Response(JSON.stringify({
+          ok: true,
+          reply: "Mrrp. GROUNDED JOURNAL (dollar facts; win over you) spoken: Visa on the tray is -$12.00.",
+        }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+    });
+    expect(echoed.text).not.toMatch(/GROUNDED JOURNAL/);
+    expect(echoed.text).toMatch(/Visa|tray|owed|paydown/i);
 
     const leftover = planHerculesTurn(household, "Sit-down?", today, "home");
     expect(leftover.source).toBe("journal");

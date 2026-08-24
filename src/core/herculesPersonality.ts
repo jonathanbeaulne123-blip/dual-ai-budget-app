@@ -18,6 +18,21 @@ const SQL_WRITE =
 const SHAME = /\b(who spent|who paid more|bianca vs|jonathan vs|(?:bianca|jonathan)\s+(spent|wasted|blew|overspent))\b/i;
 const MODEL_LEAK =
   /\b(as an ai|language model|i(?:'m| am) (?:an? )?(?:ai|language model|large language|assistant))\b/gi;
+/** Worker prompt labels. If the model echoes them, fall back to grounded speech. */
+const PROMPT_ECHO =
+  /\b(GROUNDED JOURNAL|ON-DEVICE NOTICES|HOUSEHOLD DATA|LEDGER MEMOR(?:Y|IES)|the only CAD you may speak|dollar facts)\b/i;
+const FIGURES_HEADING = /^\s*FIGURES\b/i;
+
+export function askedCardMismatch(message: string, reply: string): boolean {
+  const q = String(message || "").toLowerCase();
+  const r = String(reply || "").toLowerCase();
+  if (!q || !r) return false;
+  const visaQ = /\bvisa\b/.test(q);
+  const mcQ = /\bmaster\s*card\b/.test(q);
+  if (visaQ && /\bmaster\s*card\b/.test(r) && !/\bvisa\b/.test(r)) return true;
+  if (mcQ && /\bvisa\b/.test(r) && !/\bmaster\s*card\b/.test(r)) return true;
+  return false;
+}
 
 const LOCAL_FLAVOR = ["mrrp.", "prrrp.", "from the counter:", "listen.", "tail flick."];
 
@@ -142,7 +157,12 @@ function clipReply(text: string, max = 360): string {
   return `${cut.slice(0, space > 80 ? space : max - 1).replace(/[,:;.–-]$/, "")}…`;
 }
 
-export function sanitizeHerculesReply(text: string, groundedSpeak = "", allowedFigures: string[] = []): string {
+export function sanitizeHerculesReply(
+  text: string,
+  groundedSpeak = "",
+  allowedFigures: string[] = [],
+  asked = "",
+): string {
   let reply = String(text || "").replace(/\s+/g, " ").trim();
   if (!reply) {
     return clipReply(groundedSpeak) || "mrrp. Ask a number. I don't write.";
@@ -160,6 +180,9 @@ export function sanitizeHerculesReply(text: string, groundedSpeak = "", allowedF
   }
   reply = reply.replace(MODEL_LEAK, "I'm a cat");
   reply = reply.replace(/\bI(?:'ll| will) (post|log|save|record|write) (it|that|this|them)\b/gi, "I don't write");
+  if (PROMPT_ECHO.test(reply) || FIGURES_HEADING.test(reply) || askedCardMismatch(asked, reply)) {
+    return clipReply(groundedSpeak) || "mrrp. I only quote the books.";
+  }
   if (allowedFigures.length) {
     const allowed = new Set(allowedFigures);
     const found = [...reply.matchAll(/\$\d[\d,]*(?:\.\d{2})?/g)].map((match) => match[0]);

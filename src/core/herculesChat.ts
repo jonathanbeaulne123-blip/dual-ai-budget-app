@@ -116,7 +116,7 @@ export async function chatHercules(
       clearTimeout(timer);
       const reply = await readAiReply(res);
       if (reply) {
-        return { text: sanitizeHerculesReply(reply, req.grounded.spoken, req.figures ?? []), source: "ai" };
+        return { text: sanitizeHerculesReply(reply, req.grounded.spoken, req.figures ?? [], req.message), source: "ai" };
       }
     } catch {
       continue;

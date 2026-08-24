@@ -7,7 +7,7 @@
 
 ## Already in this Cursor branch
 
-- Grounded-figure clamp (phone + Worker prompt).
+- Grounded-figure clamp (phone + Worker prompt). Prompt echoes (`GROUNDED JOURNAL`, `FIGURES …`) and Visa-answered-as-Mastercard fall back to grounded speech.
 - Usefulness scorer: leftover/claims/jars/presets/card/Health; no grocery nag; `openHelpOnTap` at 80.
 - Tray vs statement owed on card questions.
 - `Sit-down?` / `sit down` matches leftover.
@@ -19,7 +19,7 @@
 
 ## GPT / Codex — coordinate and trust-review
 
-1. Independent CAD/privacy review of D-112. Confirm FIGURES shrinking does not re-open D-105’s partner-personal aggregates (those still ride `ledgerLines` for language; they must not become quoteable dollars).
+1. Independent CAD/privacy review of D-112. Confirm FIGURES shrinking does not re-open D-105’s partner-personal aggregates (those still ride `ledgerLines` for language; they must not become quoteable dollars). Confirm prompt-echo fallback does not hide a real kitchen sentence that happens to mention “figures.”
 2. Keep Phase 0 member-scoped disclosure as the next **trust** packet, not as a blocker for this 80. Canary every outbound field when that packet starts.
 3. D-097 vs D-113 is reconciled in code: `herculesTapIntent` is the one writer. Do not open a second tap rewrite.
 4. Merge order after Claude’s visual packet: this branch → disclosure projection.
