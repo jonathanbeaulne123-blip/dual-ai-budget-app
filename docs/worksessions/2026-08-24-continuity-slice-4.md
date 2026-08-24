@@ -1,6 +1,6 @@
 # 2026-08-24 — Continuity slice 4: hosted membership and Personal scope
 
-**Status:** Implemented and pushed to PR #74. Migration `003_continuity_membership.sql` was applied to project `tykhocwacaxwquhynkok` with Jonathan's explicit approval. Inherited broad table grants were removed and verified as exactly `SELECT`/`INSERT`/`UPDATE`. No hosted rows, Production deployment, credentials, or secrets were changed.
+**Status:** Merged to `main` via [PR #74](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/74) and [PR #75](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/75). Migration `003_continuity_membership.sql` was applied to project `tykhocwacaxwquhynkok` with Jonathan's explicit approval. Inherited broad table grants were removed and verified as exactly `SELECT`/`INSERT`/`UPDATE`. No hosted rows, Production deployment, credentials, or secrets were changed.
 
 ## Delivered
 
