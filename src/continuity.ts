@@ -1,0 +1,295 @@
+import {
+  memberIdForGoogleIdentity,
+  type GoogleIdentitySelector,
+} from "./core/google.ts";
+import { ensureHouseholdShape } from "./core/sync.ts";
+import type { Environment, Household } from "./core/types.ts";
+import {
+  discoverSupabaseHouseholdsByGoogleIdentity,
+  pushSupabaseHousehold,
+  type DiscoveredHousehold,
+  type SupabaseConfig,
+} from "./ledger/supabase.ts";
+
+const OUTBOX_PREFIX = "hearth:continuity-outbox:v1:";
+
+export type ContinuityIdentity = GoogleIdentitySelector;
+
+export type ContinuityOutboxItem = {
+  id: string;
+  environment: Environment;
+  householdId: string;
+  memberId: string;
+  identity: ContinuityIdentity;
+  expectedRevision: number;
+  confirmationIds: string[];
+  snapshot: Household;
+  createdAt: string;
+  updatedAt: string;
+  attempts: number;
+  lastError: string | null;
+  blockedByConflict: boolean;
+};
+
+export type ContinuityFlushConflict = {
+  item: ContinuityOutboxItem;
+  remote: Household;
+  message: string;
+};
+
+export type ContinuityFlushResult = {
+  synchronized: number;
+  pending: number;
+  conflicts: ContinuityFlushConflict[];
+};
+
+type ContinuityStore = {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+};
+
+let storeOverride: ContinuityStore | null = null;
+
+function browserStore(): ContinuityStore | null {
+  if (storeOverride) return storeOverride;
+  try {
+    return typeof localStorage === "undefined" ? null : localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function key(environment: Environment): string {
+  return OUTBOX_PREFIX + environment;
+}
+
+function isOutboxItem(value: unknown): value is ContinuityOutboxItem {
+  if (!value || typeof value !== "object") return false;
+  const item = value as ContinuityOutboxItem;
+  return Boolean(
+    item.id &&
+    item.householdId &&
+    item.memberId &&
+    item.snapshot &&
+    item.identity &&
+    (item.identity.subject || item.identity.email),
+  );
+}
+
+function read(environment: Environment): ContinuityOutboxItem[] {
+  const store = browserStore();
+  if (!store) return [];
+  try {
+    const raw = store.getItem(key(environment));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(isOutboxItem).map((item) => ({
+      ...item,
+      snapshot: ensureHouseholdShape(item.snapshot),
+      confirmationIds: Array.isArray(item.confirmationIds) ? item.confirmationIds.filter(Boolean) : [],
+      attempts: Number.isInteger(item.attempts) ? item.attempts : 0,
+      lastError: item.lastError || null,
+      blockedByConflict: item.blockedByConflict === true,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+function write(environment: Environment, items: ContinuityOutboxItem[]): void {
+  const store = browserStore();
+  if (!store) throw new Error("This device could not open its continuity outbox.");
+  if (items.length) store.setItem(key(environment), JSON.stringify(items));
+  else store.removeItem(key(environment));
+}
+
+function sameIdentity(left: ContinuityIdentity, right: ContinuityIdentity): boolean {
+  const leftSubject = left.subject.trim();
+  const rightSubject = right.subject.trim();
+  if (leftSubject && rightSubject) return leftSubject === rightSubject;
+  return left.email.trim().toLowerCase() === right.email.trim().toLowerCase();
+}
+
+export function setContinuityStore(store: ContinuityStore | null): void {
+  storeOverride = store;
+}
+
+export function createMemoryContinuityStore(): ContinuityStore & { snapshot(): Record<string, string> } {
+  const values = new Map<string, string>();
+  return {
+    getItem(itemKey) {
+      return values.get(itemKey) ?? null;
+    },
+    setItem(itemKey, value) {
+      values.set(itemKey, value);
+    },
+    removeItem(itemKey) {
+      values.delete(itemKey);
+    },
+    snapshot() {
+      return Object.fromEntries(values.entries());
+    },
+  };
+}
+
+export function listContinuityOutbox(environment: Environment): ContinuityOutboxItem[] {
+  return read(environment);
+}
+
+export function continuityMemberId(
+  household: Household,
+  identity: ContinuityIdentity,
+): string | null {
+  if (household.environment !== "development") return null;
+  return memberIdForGoogleIdentity(household, identity);
+}
+
+export function enqueueContinuitySnapshot(input: {
+  household: Household;
+  identity: ContinuityIdentity;
+  expectedRevision: number;
+  confirmationId: string;
+}): ContinuityOutboxItem {
+  const snapshot = ensureHouseholdShape(input.household);
+  const memberId = continuityMemberId(snapshot, input.identity);
+  if (!memberId) throw new Error("This Google account is not a member of that Development household.");
+  const items = read(snapshot.environment);
+  const id = `${snapshot.environment}:${snapshot.householdId}`;
+  const existing = items.find((item) => item.id === id);
+  const now = new Date().toISOString();
+  const item: ContinuityOutboxItem = {
+    id,
+    environment: snapshot.environment,
+    householdId: snapshot.householdId,
+    memberId,
+    identity: {
+      subject: input.identity.subject.trim(),
+      email: input.identity.email.trim().toLowerCase(),
+    },
+    expectedRevision: existing?.expectedRevision ?? input.expectedRevision,
+    confirmationIds: [...new Set([...(existing?.confirmationIds ?? []), input.confirmationId].filter(Boolean))],
+    snapshot,
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+    attempts: existing?.attempts ?? 0,
+    lastError: null,
+    blockedByConflict: existing?.blockedByConflict ?? false,
+  };
+  write(snapshot.environment, [...items.filter((row) => row.id !== id), item]);
+  return item;
+}
+
+function replaceItem(item: ContinuityOutboxItem): void {
+  const items = read(item.environment);
+  write(item.environment, [...items.filter((row) => row.id !== item.id), item]);
+}
+
+function removeItem(item: ContinuityOutboxItem): void {
+  write(item.environment, read(item.environment).filter((row) => row.id !== item.id));
+}
+
+function pendingItem(item: ContinuityOutboxItem, message: string, blockedByConflict = false): ContinuityOutboxItem {
+  const next = {
+    ...item,
+    attempts: item.attempts + 1,
+    updatedAt: new Date().toISOString(),
+    lastError: message,
+    blockedByConflict,
+  };
+  replaceItem(next);
+  return next;
+}
+
+async function flushItem(
+  item: ContinuityOutboxItem,
+  identity: ContinuityIdentity,
+  config?: SupabaseConfig | null,
+): Promise<{ kind: "synchronized" } | { kind: "pending"; message: string } | { kind: "conflict"; remote: Household; message: string }> {
+  try {
+    const pushed = await pushSupabaseHousehold(item.snapshot, config, {
+      expectedRevision: item.expectedRevision,
+      continuityIdentity: identity,
+    });
+    if (pushed.conflict && pushed.remote) {
+      const message = pushed.error || "Another device has newer books. Nothing was overwritten.";
+      pendingItem(item, message, true);
+      return { kind: "conflict", remote: pushed.remote, message };
+    }
+    if (!pushed.schema || pushed.skipped) {
+      const message = pushed.error || "Saved on this device. Cloud continuity will retry automatically.";
+      pendingItem(item, message);
+      return { kind: "pending", message };
+    }
+    removeItem(item);
+    return { kind: "synchronized" };
+  } catch (caught) {
+    const message = caught instanceof Error ? caught.message : String(caught);
+    pendingItem(item, message);
+    return { kind: "pending", message };
+  }
+}
+
+export async function transportHouseholdWithOutbox(input: {
+  household: Household;
+  identity: ContinuityIdentity;
+  expectedRevision: number;
+  confirmationId: string;
+  config?: SupabaseConfig | null;
+}): Promise<
+  | { ok: true; remoteRevision?: number }
+  | { ok: false; errorClass: "pending-transport" | "conflict-detected"; remote?: Household; message: string }
+> {
+  let item: ContinuityOutboxItem;
+  try {
+    item = enqueueContinuitySnapshot(input);
+  } catch (caught) {
+    return {
+      ok: false,
+      errorClass: "pending-transport",
+      message: caught instanceof Error ? caught.message : String(caught),
+    };
+  }
+  const result = await flushItem(item, input.identity, input.config);
+  if (result.kind === "synchronized") return { ok: true, remoteRevision: input.household.revision };
+  if (result.kind === "conflict") {
+    return {
+      ok: false,
+      errorClass: "conflict-detected",
+      remote: result.remote,
+      message: result.message,
+    };
+  }
+  return { ok: false, errorClass: "pending-transport", message: result.message };
+}
+
+export async function flushContinuityOutbox(input: {
+  environment: Environment;
+  identity: ContinuityIdentity;
+  config?: SupabaseConfig | null;
+}): Promise<ContinuityFlushResult> {
+  const result: ContinuityFlushResult = { synchronized: 0, pending: 0, conflicts: [] };
+  const items = read(input.environment).filter((item) => sameIdentity(item.identity, input.identity));
+  for (const item of items) {
+    if (item.blockedByConflict) {
+      result.pending += 1;
+      continue;
+    }
+    const flushed = await flushItem(item, input.identity, input.config);
+    if (flushed.kind === "synchronized") result.synchronized += 1;
+    else if (flushed.kind === "conflict") {
+      result.pending += 1;
+      result.conflicts.push({ item, remote: flushed.remote, message: flushed.message });
+    } else result.pending += 1;
+  }
+  return result;
+}
+
+export async function discoverContinuityMemberships(
+  identity: ContinuityIdentity,
+  environment: Environment,
+  config?: SupabaseConfig | null,
+): Promise<DiscoveredHousehold[]> {
+  return discoverSupabaseHouseholdsByGoogleIdentity(identity, config, environment);
+}

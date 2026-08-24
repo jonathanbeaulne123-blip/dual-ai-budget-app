@@ -1,5 +1,6 @@
 import { ensureHouseholdShape } from "../core/sync.ts";
 import { inviteFromText } from "../core/invite.ts";
+import { memberIdForGoogleIdentity, type GoogleIdentitySelector } from "../core/google.ts";
 import { hostedTransportAllowed } from "../core/sharing.ts";
 import type { Environment, Household } from "../core/types.ts";
 
@@ -20,6 +21,11 @@ export type PushHouseholdResult = SupabaseProbe & {
   skipped?: boolean;
   conflict?: boolean;
   remote?: Household;
+};
+
+export type DiscoveredHousehold = {
+  household: Household;
+  memberId: string;
 };
 
 const DEFAULT_URL = "https://tykhocwacaxwquhynkok.supabase.co";
@@ -157,6 +163,48 @@ export async function pullSupabaseHousehold(
   return { ...pulled, linked: true, baseRevision: pulled.revision };
 }
 
+/**
+ * Temporary Development discovery for D-112. Hosted rows are deliberately open
+ * during the disposable-data window, so the client can scan snapshots and keep
+ * only exact Google memberships. Production stays blocked until Auth/RLS can do
+ * this filtering on the server.
+ */
+export async function discoverSupabaseHouseholdsByGoogleIdentity(
+  identity: GoogleIdentitySelector,
+  config = readSupabaseConfig(),
+  environment: Environment = "development",
+): Promise<DiscoveredHousehold[]> {
+  if (!config || environment !== "development") return [];
+  const result = await rest(
+    config,
+    `household_snapshots?environment=eq.${encodeURIComponent(environment)}&select=payload,updated_at&order=updated_at.desc&limit=500`,
+    { method: "GET", headers: { Prefer: "return=representation" } },
+  );
+  if (!result.ok) {
+    if (isMissingTable(result.body)) return [];
+    throw new Error(messageOf(result.body));
+  }
+  const rows = Array.isArray(result.body)
+    ? result.body as { payload?: string | Household; updated_at?: string }[]
+    : [];
+  const found = new Map<string, DiscoveredHousehold>();
+  for (const row of rows) {
+    try {
+      const household = snapshotFromRow(row);
+      if (!household || household.environment !== environment || found.has(household.householdId)) continue;
+      const memberId = memberIdForGoogleIdentity(household, identity);
+      if (!memberId) continue;
+      found.set(household.householdId, {
+        household: { ...household, baseRevision: household.revision },
+        memberId,
+      });
+    } catch {
+      // One malformed disposable Development row must not hide valid memberships.
+    }
+  }
+  return [...found.values()];
+}
+
 async function readRemoteSnapshot(
   config: SupabaseConfig,
   householdId: string,
@@ -177,15 +225,18 @@ async function readRemoteSnapshot(
 export async function pushSupabaseHousehold(
   household: Household,
   config = readSupabaseConfig(),
-  options?: { expectedRevision?: number },
+  options?: { expectedRevision?: number; continuityIdentity?: GoogleIdentitySelector },
 ): Promise<PushHouseholdResult> {
-  if (!hostedTransportAllowed(household)) {
+  const continuityMemberId = household.environment === "development" && options?.continuityIdentity
+    ? memberIdForGoogleIdentity(household, options.continuityIdentity)
+    : null;
+  if (!hostedTransportAllowed(household) && !continuityMemberId) {
     return { configured: Boolean(config), reachable: false, schema: false, skipped: true };
   }
   const probe = await probeSupabase(config);
   if (!config || !probe.schema) return { ...probe, skipped: false };
   const snapshot = ensureHouseholdShape(household);
-  if (!snapshot.linked) {
+  if (!snapshot.linked && !continuityMemberId) {
     return { ...probe, skipped: true };
   }
   const remote = await readRemoteSnapshot(config, snapshot.householdId);
@@ -215,7 +266,7 @@ export async function pushSupabaseHousehold(
     currency: snapshot.currency,
     environment: snapshot.environment,
     invite_phrase: snapshot.inviteCode,
-    linked: snapshot.linked,
+    linked: snapshot.linked || Boolean(continuityMemberId),
     revision: snapshot.revision,
     last_committed_at: snapshot.lastCommittedAt,
   };

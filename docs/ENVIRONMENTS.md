@@ -60,7 +60,7 @@ OAuth client IDs are public. Put a Google Cloud **Web** client ID in `VITE_GOOGL
 
 Do not put a Google client secret in `VITE_` vars, Cloudflare, or the repo. Hearth uses Google Identity Services in the browser. Access tokens stay on this phone under `hearth:v1:<environment>:google:<memberId>` (older Calendar tokens under `:gcal:` are migrated once). Development and production tokens stay separate. Disconnecting deletes that token on this phone.
 
-The current household snapshot stores **who is linked** (email, Google subject, granted scopes), not the token. D-112 adds durable identity-to-personal-ledger and identity-to-household membership outside the ledger snapshot. Default suite services are sign-in and Calendar; extra suite access remains opt-in.
+The current household snapshot stores **who is linked** (email, Google subject, granted scopes), not the token. D-113 temporarily discovers Development membership from those embedded links and keeps Production discovery off. D-112 completion still moves durable identity-to-personal-ledger and identity-to-household membership outside the ledger snapshot. Default suite services are sign-in and Calendar; extra suite access remains opt-in.
 
 Without a client ID, Calendar still works locally: the month board, ledger-spotted bills, and **Download .ics with alarms**. That fallback does not satisfy D-112 cross-device continuity. Google never posts money; phrases remain invitation/recovery aids.
 

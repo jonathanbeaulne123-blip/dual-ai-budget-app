@@ -44,6 +44,8 @@ export type AcceptWriteInput = {
   confirmationId?: string;
   commandKind?: string;
   postedIds?: string[];
+  /** Explicit D-112 Google continuity transport; legacy callers still require linked=true. */
+  transportRequested?: boolean;
   adapters: WriteAdapters;
 };
 
@@ -140,7 +142,7 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
     const existing = sameHousehold && previous ? findReceipt(previous, confirmationId) : undefined;
     if (existing && previous) {
       return outcome({
-        kind: hostedTransportAllowed(previous) && previous.sharing?.pending ? "pending-transport" : previous.sharing?.mode === "synchronized" ? "synchronized" : "accepted-local",
+        kind: (hostedTransportAllowed(previous) || input.transportRequested) && previous.sharing?.pending ? "pending-transport" : previous.sharing?.mode === "synchronized" ? "synchronized" : "accepted-local",
         household: previous,
         previous,
         postedIds: existing.postedIds,
@@ -215,7 +217,8 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       return uncertainRecoveryOutcome(previous, confirmationId, persistError);
     }
 
-    if (!hostedTransportAllowed(accepted) || !input.adapters.transport) {
+    const transportAllowed = hostedTransportAllowed(accepted) || input.transportRequested === true;
+    if (!transportAllowed || !input.adapters.transport) {
       return outcome({
         kind: "accepted-local",
         household: accepted,

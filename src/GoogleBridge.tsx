@@ -145,12 +145,12 @@ export function GoogleBridgeCard(props: {
     <section className="card">
       <header>
         <h2>Google household bridge</h2>
-        <span className={`pill ${linkedCount ? "good" : ""}`}>{linkedCount ? `${linkedCount} linked` : "Optional"}</span>
+        <span className={`pill ${linkedCount ? "good" : ""}`}>{linkedCount ? `${linkedCount} linked` : "Set up identity"}</span>
       </header>
       <p>
-        Google is how Jonathan and Bianca prove who they are and share calendars on this household.
-        Tokens stay on this phone. The shared snapshot only remembers who is linked — never the password.
-        Google never posts money. The three-word phrase still joins a new phone.
+        Google is how Jonathan and Bianca find their personal and household ledgers on another device.
+        Tokens stay on this device. The shared snapshot only remembers who is linked — never the password.
+        Development sync retries automatically after sign-in or reconnection. Google never posts money.
       </p>
       {household.members.filter((member) => member.active).sort((left, right) => {
         if (left.id === memberId) return -1;

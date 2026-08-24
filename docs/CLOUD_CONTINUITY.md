@@ -2,6 +2,20 @@
 
 > **Accepted product direction — 2026-08-24.** This file supersedes language that describes hosted sync as optional publishing, a three-word phrase as the normal access model, or one phone as the durable home of the ledger.
 
+## Implementation status — D-113 Development slice
+
+The first working continuity slice is implemented without applying hosted schema:
+
+- **Continue with Google** is available even when a fresh device has no local household;
+- Development scans the deliberately open snapshot rows, accepts only exact Google subject membership (email is a legacy fallback only when the stored subject is empty), and offers every matching household;
+- pulled/reconciled snapshots pass the same PGlite/accounting acceptance boundary before display or persistence;
+- signed-in accepted writes enter a durable per-device outbox before transport; later offline writes compact into the latest snapshot while keeping the earliest expected hosted revision and all confirmation ids;
+- launch, focus, and reconnect retry the outbox and then pull newer matching snapshots;
+- stale hosted revisions stop automatic replay, keep the queued local snapshot, retain the remote snapshot, and surface a conflict instead of overwriting either side;
+- Production discovery is deliberately disabled until the Auth/RLS cutover.
+
+This is not completion of D-112. Current limitations are client-side scanning of open Development snapshots, one active local household snapshot per environment, snapshot rather than hosted journal authority, GET-then-POST CAS, localStorage-sized outbox capacity, and no dedicated personal-ledger hosted scope. No peer device must remain online for a snapshot that has reached the cloud.
+
 ## Household promise
 
 A person signs into Hearth with their Google account on any supported device and can immediately open:

@@ -29,6 +29,7 @@ Open `http://localhost:5173`. **Open the demo kitchen table** loads a fictional 
 - Choose **Shared**, **Personal**, or **Both** on every add; switch Household vs Personal at the top
 - Invite the other person with a three-word phrase, a join link, or a Hearth Pass
 - Link Google on More → Google household bridge so both phones know who is who; Calendar can overlay both calendars
+- In Development, choose **Continue with Google** on a fresh device to discover matching household ledgers; accepted offline writes wait in a durable outbox and retry automatically
 - Export JSON or a PostgreSQL dump; run Health and get a clean bill or a specific finding
 
 Transfers never count as income or expense. Refunds reverse category spend. Shift tip math is the verified cent-rounded household rules, including negative net tips.
@@ -49,11 +50,11 @@ Accepted device replica + durable outbox
    +-- Home / Plan / Health are projections
 ```
 
-There is no Google Sheet, and no formula range that can freeze. The accepted D-112 target is Google sign-in on any device → discover the person's personal ledger and household memberships → synchronize automatically. No phone is the host. PGlite validates each device's books and supports offline work; the cloud is durable continuity. Current `linked`/phrase snapshot transport is transitional. Google never posts money. See [docs/CLOUD_CONTINUITY.md](docs/CLOUD_CONTINUITY.md).
+There is no Google Sheet, and no formula range that can freeze. The D-113 Development slice now discovers exact Google memberships, accepts pulled books through PGlite, and retries a durable compacting outbox on launch/focus/reconnect. No phone is the host. Current open-row scanning, one active household snapshot per environment, GET-then-POST CAS, and `linked`/phrase transport are transitional. Google never posts money. See [docs/CLOUD_CONTINUITY.md](docs/CLOUD_CONTINUITY.md).
 
 ## Household vs personal
 
-Jonathan and Bianca each sign in as themselves. **Household** opens a household-ledger membership. **Personal** opens that person's personal-ledger scope. The current UI filter is transitional; the continuity design keeps these as distinct cloud scopes.
+Jonathan and Bianca each sign in as themselves. **Household** opens a household-ledger membership. **Personal** currently filters that household snapshot for the signed-in member. A dedicated durable personal-ledger cloud scope remains required before D-112 is complete.
 
 Invite/bootstrap/recover with a **three-word phrase**, a **join link**, or a **Hearth Pass** when useful. Those tools are not the durable storage or authentication model. A new signed-in device must work while every old device is offline.
 

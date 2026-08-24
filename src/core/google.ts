@@ -156,6 +156,31 @@ export function findActiveGoogleLinkBySubject(household: Household, subject: str
   return shapeGoogle(household.google).links.find((link) => link.active && link.subject === needle);
 }
 
+export type GoogleIdentitySelector = {
+  email: string;
+  subject: string;
+};
+
+/**
+ * Resolve a Google identity to exactly one household member. A populated Google
+ * subject is authoritative. Email is only a legacy fallback when the stored
+ * link has no subject yet; it must never override a different subject.
+ */
+export function memberIdForGoogleIdentity(
+  household: Household,
+  identity: GoogleIdentitySelector,
+): string | null {
+  const subject = identity.subject.trim();
+  if (subject) {
+    const bySubject = findActiveGoogleLinkBySubject(household, subject);
+    if (bySubject) return bySubject.memberId;
+  }
+  const byEmail = findActiveGoogleLinkByEmail(household, identity.email);
+  if (!byEmail) return null;
+  if (subject && byEmail.subject && byEmail.subject !== subject) return null;
+  return byEmail.memberId;
+}
+
 export function memberNeedsGoogleStepUp(household: Household, memberId: string): boolean {
   return Boolean(findActiveGoogleLink(household, memberId));
 }

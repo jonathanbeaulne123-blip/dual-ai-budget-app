@@ -19,7 +19,7 @@ This slice closes correctness gaps that would make later Google-account continui
 - browser-books inspection verifies the exact acceptance receipt and hash instead of trusting entry counts;
 - the living canon now defines Google identity plus cloud-backed personal and household ledgers as the target architecture.
 
-This slice does **not** yet provide automatic cross-device ledger discovery. The current app still uses the legacy explicit `linked` snapshot transport until the identity, membership, cloud journal, and durable outbox work is implemented.
+This slice did **not** provide automatic cross-device ledger discovery. Successor D-113 adds the first Development discovery/outbox bridge; the statement here remains the historical boundary of this earlier correctness slice.
 
 ## Verification
 

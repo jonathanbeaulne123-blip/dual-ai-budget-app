@@ -63,7 +63,7 @@ Only the currently open or just-closed worksession belongs here. Durable history
 
 | Worksession | State | Scope | Output |
 |---|---|---|---|
-| [2026-08-24 cloud continuity correctness hotfix](worksessions/2026-08-24-cloud-continuity-hotfix.md) | **CLOSED; branch pushed, not merged** | Correctness foundation and D-112 canon for eventual account-based continuity | `codex/cloud-continuity-correctness`; 44 files / 328 tests pass; identity, membership, hosted journal, and outbox remain |
+| [2026-08-24 Google continuity slice 2](worksessions/2026-08-24-continuity-slice-2.md) | **CLOSED; PR #72 updated, not merged** | Development Google discovery, durable outbox, automatic replay/pull, conflict stop | `codex/cloud-continuity-correctness`; 45 files / 335 tests pass; personal scope, hosted memberships, atomic authority, and multi-household storage remain |
 
 ## 1.5 Updates — major shipped chapters
 
@@ -138,6 +138,8 @@ Major updates keep a durable blurb: what shipped, why it mattered, Dual Course e
 - **What changed:** optional hosted publishing is no longer the target product. Google sign-in must reveal the person's personal ledger and household memberships on any device; the cloud supplies durable continuity and PGlite remains each device's validated accounting/offline replica.
 - **Why:** Jonathan and Bianca must never depend on one phone staying online to read or write the household.
 - **Development window:** data through 2026-09-30 is disposable and may remain openly readable/writable to accelerate this work. Security remains a mandatory late-September cutover before meaningful October data.
+- **Implemented in D-113:** exact Development Google membership discovery, PGlite acceptance, compacting durable outbox, launch/focus/reconnect replay, and stale-revision conflict stop. Production discovery remains off.
+- **Still open:** dedicated personal scope, server-side membership rows, multi-household local replicas, atomic hosted command/journal authority, backoff/acknowledgement, and two-browser E2E proof.
 - **Evidence required:** [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md) acceptance tests, including fresh-device discovery, old-device-off read/write, offline outbox convergence, and pulled-snapshot accounting validation.
 - **Kill/rollback:** preserve accepted commands in a recoverable outbox and report the block; never retreat to a one-device host or claim open Development data is secure.
 
@@ -178,6 +180,8 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 **Proof:** fresh-device Google sign-in, old-device-off read/write, offline/outbox recovery, atomic failure tests, payload-fuzz/hash mismatch tests, protected-branch check, and reviewed PR topology.  
 **Kill criterion:** if continuity cannot prove safe accounting acceptance, keep writes recoverable in a local outbox and show the block; never make another device wait for the originating device.
 
+**D-113 progress:** the Development household path no longer requires Publish/`linked` for a matching signed-in Google member; the outbox and pulled-snapshot acceptance are implemented. The checkboxes stay open until personal scope, multi-household storage, atomic hosted authority, and end-to-end convergence are complete.
+
 ### Phase 1 — Complete the Bianca-ready monthly loop — NEXT after Phase 0
 
 **Exit condition:** Bianca can create the first useful month, understand it, make an error, correct it, and see a trustworthy result on a phone without developer help.
@@ -213,6 +217,8 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 **Risk/gate:** lost updates, duplicate posts, wrong ledger scope, and false “synced” status.  
 **Proof:** deterministic fault harness plus Playwright/WebKit two-context scenarios; post-reconcile journal equality and stable hashes.  
 **Kill criterion:** queue writes and surface recovery if convergence cannot be proved; do not fall back to a one-device host.
+
+**D-113 progress:** Development household discovery and launch/focus/reconnect replay are implemented with deterministic proofs. Personal-ledger discovery, multi-household offline replicas, acknowledgements/backoff, explicit conflict resolution, and two-browser proof keep this phase open.
 
 ### Phase 3 — Late-September Google Auth + membership RLS cutover — DATE-GATED security foundation
 

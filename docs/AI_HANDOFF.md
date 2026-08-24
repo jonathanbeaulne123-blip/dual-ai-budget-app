@@ -30,6 +30,16 @@ Read [nostalgia/](nostalgia/) and [reference/](reference/) to understand past de
 
 Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](reference/sheets-era/AI_HANDOFF.md).
 
+## Development continuity slice (D-113, PR #72)
+
+**Status:** exact Google-subject Development discovery, PGlite acceptance, a durable compacting local outbox, and launch/focus/reconnect replay are implemented. No hosted schema, deployment, Production data, or secrets were changed. Open snapshot scanning is an explicitly temporary pre-October bridge, not authentication.
+
+**Still required:** dedicated personal-ledger scope, server-side membership records, multi-household local storage, atomic hosted CAS/journal authority, retry backoff/acknowledgement, two-browser end-to-end proof, and the late-September Auth/RLS cutover.
+
+**Budget delta (5):** `+3` — accepted offline commands survive reconnection, pulled snapshots pass PGlite, and stale remote revisions retain both sides.
+
+**Engagement delta (3):** `0` — account continuity is trust infrastructure; Hercules and office chrome were intentionally unchanged.
+
 ## Trust-foundation worksession (2026-08-24, local branch)
 
 **Status:** Implementation on `cursor/trust-foundation-a483`. Independent books/privacy/verifier review ran locally. P0 holes from that review are fixed. Auth/RLS is a do-not-apply packet with local synthetic tests. Conflict bundles export both sides without merging. `pnpm check` and `pnpm ai:verify` exist. Not pushed. Not applied to hosted schema.

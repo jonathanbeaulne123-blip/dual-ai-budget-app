@@ -328,6 +328,38 @@ describe("atomic household writes", () => {
     expect(outcome.postedExactlyOnce).toBe(true);
   });
 
+  it("allows explicit Google continuity transport without reviving implicit unlinked upload", async () => {
+    const previous = catalogHousehold();
+    const posted = postEntry(previous, grocery("Cloud oats"));
+    let transports = 0;
+    const store = memoryAdapters({
+      transport: async () => {
+        transports += 1;
+        return { ok: true };
+      },
+    });
+    const localOnly = await acceptHouseholdWrite({
+      previous,
+      candidate: posted.household,
+      confirmationId: "confirm-local-default",
+      postedIds: posted.postedIds,
+      adapters: store.adapters,
+    });
+    expect(localOnly.kind).toBe("accepted-local");
+    expect(transports).toBe(0);
+
+    const continuity = await acceptHouseholdWrite({
+      previous,
+      candidate: posted.household,
+      confirmationId: "confirm-google-continuity",
+      postedIds: posted.postedIds,
+      transportRequested: true,
+      adapters: store.adapters,
+    });
+    expect(continuity.kind).toBe("synchronized");
+    expect(transports).toBe(1);
+  });
+
   it("does not publish a rejected command", async () => {
     const previous = { ...catalogHousehold(), linked: true };
     const posted = postEntry(previous, grocery("Reject me"));
