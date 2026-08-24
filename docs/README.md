@@ -17,6 +17,7 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [DECISIONS.md](DECISIONS.md) | Living decision log |
 | [AI_OPERATING_MODEL.md](AI_OPERATING_MODEL.md) | Codex, Cursor, and Claude roles, routing, evidence, authority, and context budget |
 | [AI_HANDOFF.md](AI_HANDOFF.md) | Risk routing and Dual Course handoffs |
+| [AI_SETUP_FOR_JONATHAN.md](AI_SETUP_FOR_JONATHAN.md) | Click-by-click activation and verification for the repository AI configuration |
 | [GOOGLE.md](GOOGLE.md) | Household Google bridge: identity, Calendar, opt-in suite; never posts money |
 | [HERCULES.md](HERCULES.md) | Companion laws and product guidance |
 | [HERCULES_MARK.md](HERCULES_MARK.md) | Mark and runtime asset guidance |
@@ -38,7 +39,7 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [GOALS.md](GOALS.md) | Goals vault and leftover parking |
 | [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md) | Private repository and publish workflow |
 | [briefs/](briefs/) | Paste-ready AI work packets derived from the living roadmap |
-| [worksessions/](worksessions/) | Open/close records for bounded worksessions |
+| [worksessions/](worksessions/) | Open/close records for bounded worksessions and the reusable [template](worksessions/TEMPLATE.md) |
 | [nostalgia/](nostalgia/) | Cursor-era maps we outgrew. Read to understand past decisions. Do not cite as the next build plan. |
 | [reference/](reference/) | Sheets-era snapshot. Read to understand how we got here. Do not cite as the next build plan. |
 

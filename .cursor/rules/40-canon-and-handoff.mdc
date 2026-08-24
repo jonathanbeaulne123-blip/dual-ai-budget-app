@@ -1,0 +1,12 @@
+---
+description: Living documentation, assignment artifacts, worksessions, verification, and AI handoffs
+globs: "AGENTS.md,CLAUDE.md,docs/**/*.md,.agents/skills/**/*.md,.codex/**/*,.cursor/**/*,.claude/**/*,.github/**/*.md,.github/workflows/*.yml"
+alwaysApply: false
+---
+
+- Jonathan's latest explicit decision outranks living canon; living canon outranks verified code only as specified in `AGENTS.md`.
+- Assignment artifacts describe a request at a moment in time. Inspect their status banner and current code before using them.
+- Museum folders are historical content, never the next plan.
+- Multi-step or Medium/High/Release work uses a worksession.
+- Handoffs name exact branch/base/head/PR state, both Dual Course deltas, current commands/results, data/environment impact, uncertainty, and next owner.
+- Do not silently rewrite accepted historical decision rows. Add a new living decision when behavior changes.
