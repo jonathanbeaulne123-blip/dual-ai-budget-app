@@ -53,6 +53,9 @@ import {
   archivePreset,
   activePresets,
   dismissNotice,
+  dismissDuePreview,
+  duePreviewDismissed,
+  dueRecurrencePreview,
   readClinkOn,
   runHealthCheck,
   seedDemoHousehold,
@@ -123,6 +126,7 @@ import { PairingCard, WelcomeJoin } from "./Pairing.tsx";
 import { BooksPage } from "./Books.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
 import { ConflictResolution } from "./ConflictResolution.tsx";
+import { DuePreviewSheet } from "./DuePreviewSheet.tsx";
 import {
   renderCommandSurface,
   type CommandChromeResult,
@@ -155,6 +159,7 @@ type Guard =
   | { kind: "environment"; next: Environment }
   | { kind: "demo" }
   | { kind: "remove"; transactionId: string; summary: string }
+  | { kind: "duePreview"; rows: ReturnType<typeof dueRecurrencePreview> }
   | { kind: "postRecurrence"; recurrenceId: string; summary: string }
   | { kind: "postDueAll"; summary: string }
   | { kind: "postVisit"; draft: VisitPostDraft; summary: string }
@@ -245,6 +250,7 @@ export function App() {
   historyRef.current = history;
   const confirmationRef = useRef<string | null>(null);
   const postingRef = useRef(false);
+  const duePreviewOffered = useRef<string | null>(null);
 
   useEffect(() => {
     const onOnline = () => setOffline(false);
@@ -575,6 +581,20 @@ export function App() {
     () => (visible ? buildDashboard(visible, today, now, findings.length) : null),
     [visible, today, now, findings.length],
   );
+
+  useEffect(() => {
+    if (booting || !household || adding || guard || showConflictSheet) return;
+    if (unresolvedConflicts(household).length > 0) return;
+
+    const previewKey = `${environment}:${household.householdId}:${today}`;
+    if (duePreviewOffered.current === previewKey) return;
+    if (duePreviewDismissed(environment, household.householdId, today)) return;
+
+    const rows = dueRecurrencePreview(household, today);
+    if (!rows.length) return;
+    duePreviewOffered.current = previewKey;
+    setGuard({ kind: "duePreview", rows });
+  }, [adding, booting, environment, guard, household, showConflictSheet, today]);
 
   function rememberSession(next: Session) {
     const remembered = { ...next, householdId: next.householdId ?? householdRef.current?.householdId };
@@ -2173,9 +2193,29 @@ export function App() {
           }}
         />
       )}
+      {guard?.kind === "duePreview" && (
+        <DuePreviewSheet
+          rows={guard.rows}
+          onDismiss={() => {
+            dismissDuePreview(environment, household.householdId, today);
+            setGuard(null);
+          }}
+          onReview={(row) => {
+            dismissDuePreview(environment, household.householdId, today);
+            setGuard({ kind: "postRecurrence", recurrenceId: row.recurrenceId, summary: row.summary });
+          }}
+          onReviewAll={(rows) => {
+            dismissDuePreview(environment, household.householdId, today);
+            setGuard({
+              kind: "postDueAll",
+              summary: `This posts ${rows.length} due repeating ${rows.length === 1 ? "item" : "items"} into the books.`,
+            });
+          }}
+        />
+      )}
       {guard?.kind === "postRecurrence" && (
         <ConfirmSheet
-          title="Post this bill?"
+          title="Post this repeating item?"
           body={`${guard.summary} Calendar reminders are not a ledger write. This is. You can undo from the toast.`}
           confirmLabel="Post to the books"
           busy={busy}

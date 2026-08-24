@@ -183,7 +183,7 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 - [ ] Centralize a member-scoped AI disclosure projection; canary-test every outbound field, aggregate, notice, and memory.
 - [ ] Inventory possible demo/orphan hosted rows. **Do not delete or modify them without Jonathan's explicit approval and a recovery record.**
 - [ ] Rework #63's rate-limit claim and implementation; bind the intended live KV/stronger authority and define fail-open/fail-closed behavior.
-- [ ] Rebase/restack #61/#62 deliberately, resolve the D-107 collision, and preserve unique work without merging hidden branch ancestry.
+- [ ] Salvage #62 deliberately and preserve its useful work without hidden branch ancestry. #61 was rebuilt cleanly under D-108.
 - [ ] Enable GitHub branch/ruleset protection, required checks, and production environment approval.
 - [ ] Turn on GitHub 2FA for the owner account (open decision D-020).
 - [ ] Archive or supersede stale Sheets-era issues and PRs only after recording retained evidence.
@@ -203,7 +203,7 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 - [ ] Add a first-class bill/recurrence form for genuinely new entries; calendar/email/OCR may only prefill a draft.
 - [ ] Add shift/income settings with explicit effective date and preview.
 - [ ] Add opening-balance/setup guidance without fabricating history.
-- [ ] Ship due-on-open preview only after its branch/decision ancestry is repaired.
+- [x] Ship due-on-open preview only after its branch/decision ancestry is repaired. Rebuilt from current `main` under D-108; reminders remain read-only until the existing Confirm path.
 - [ ] Make correction reversal/repost a first-class phone flow; never silently rewrite the original journal.
 - [ ] Make undo durable across relaunch and sync, or label its exact local/session scope truthfully.
 - [ ] Keep validation and duplicate warnings beside the field/action that created them; never hide a blocked post in a toast alone.
