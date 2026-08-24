@@ -1,13 +1,13 @@
 # Hearth worksession — PR #66 AI configuration salvage
 
-- **Status:** OPEN
+- **Status:** CLOSED
 - **Opened:** 2026-08-24 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/pr66-ai-config-salvage`
 - **Baseline SHA:** `f51fa717b5fb2f0f59ad1252a450eb9764dcec07`
-- **Head SHA:** pending
+- **Head SHA:** `afccf3770636031d097a201bd21b443604bda16a` (audited implementation commit)
 - **PR or issue:** stale PR #66; clean replacement PR #88
 - **Risk:** Medium
 - **Decision owner:** Jonathan
@@ -51,22 +51,23 @@ Codex, Cursor, and Claude receive focused repository roles, repeatable review sk
 
 ## Acceptance evidence
 
-- [ ] Replacement diff is based on current `main` and contains no PR #66 product-canon rollback.
-- [ ] JSON, TOML, Node hook, MCP, role, and tracked-secret-name checks pass.
-- [ ] Hook deny/ask behavior is exercised with synthetic inputs.
-- [ ] `pnpm check` passes from a frozen install.
-- [ ] New PR targets current `main`; PR #66 closes with a replacement link.
+- [x] Replacement diff is based on current `main` and contains no PR #66 product-canon rollback.
+- [x] JSON, TOML, Node hook, MCP, role, and tracked-secret-name checks pass.
+- [x] Hook deny/ask behavior is exercised with synthetic inputs.
+- [x] `pnpm check` passes in GitHub CI from a frozen pnpm 10 install.
+- [x] PR #88 targets current `main`; PR #66 is closed with a replacement link.
 
 ## Plan
 
 - [x] Audit PR #66 against current `main` and official configuration documentation.
 - [x] Rebuild the useful configuration layer on a clean current-main branch.
-- [ ] Verify locally and review the complete diff.
-- [ ] Publish a replacement PR, refresh roadmap topology, and close PR #66.
+- [x] Verify locally and review the complete diff.
+- [x] Publish replacement PR #88, refresh roadmap topology, and close PR #66.
 
 ## Evidence log
 
 - Initial audit baseline: `e2f24ba80bd9140954dd91387f3eaf583f24e0d0`; rebased replacement baseline after PR #86 merged: `f51fa717b5fb2f0f59ad1252a450eb9764dcec07`.
+- GitHub CI run #324 and the Cloudflare PR workflow passed on the audited implementation commit.
 - No hosted project, rows, schema, secrets, deploy, household data, or Production data were contacted.
 
 ## Decisions
@@ -82,4 +83,4 @@ Codex, Cursor, and Claude receive focused repository roles, repeatable review sk
 
 ## Handoff
 
-Codex owns verification, replacement PR publication, roadmap refresh, and stale PR closure. Jonathan owns merge and later tool activation.
+PR #66 is closed and superseded by mergeable PR #88. Jonathan owns review/merge and later tool activation; PR #87 remains a separate do-not-apply Auth/RLS decision packet.
