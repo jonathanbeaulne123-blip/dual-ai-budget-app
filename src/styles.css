@@ -252,6 +252,17 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
   margin-top: 18vh;
 }
 .sheet-inner { max-width: 640px; margin: 0 auto; }
+.due-preview-list { display: grid; gap: 8px; margin: 16px 0; }
+.due-preview-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px;
+}
+.due-preview-row .ghost { flex: 0 0 auto; }
 .tabs { display: flex; gap: 6px; margin: 12px 0 16px; flex-wrap: wrap; }
 .tabs button, .chip, .primary, .ghost, .danger {
   border-radius: 999px;

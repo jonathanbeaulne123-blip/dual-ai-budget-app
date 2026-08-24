@@ -344,6 +344,15 @@ export function markRecapSeen(environment: Environment, sunday: DateKey): void {
   memory()?.setItem(prefKey(environment, `recap:${sunday}`), "1");
 }
 
+/** Phone-local and scoped to one household/day; switching ledgers must not hide another household's reminder. */
+export function duePreviewDismissed(environment: Environment, householdId: string, today: DateKey): boolean {
+  return memory()?.getItem(prefKey(environment, `duePreview:${householdId}:${today}`)) === "1";
+}
+
+export function dismissDuePreview(environment: Environment, householdId: string, today: DateKey): void {
+  memory()?.setItem(prefKey(environment, `duePreview:${householdId}:${today}`), "1");
+}
+
 export function isCosmeticSlot(value: string): value is CosmeticSlot {
   return value === "hat" || value === "chain" || value === "house" || value === "collar";
 }
