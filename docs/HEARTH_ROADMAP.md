@@ -237,14 +237,17 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 
 **Deadline and exit condition:** before 2026-10-01 and before meaningful household data, an authenticated Google identity can reach only its personal ledger and intended household/environment records, and an outsider cannot enumerate them.
 
-- [ ] Design Google-to-hosted-auth identity mapping and durable personal-ledger/household membership relationships before writing policies around them.
-- [ ] Replace permissive anon policies with membership- and environment-bound RLS for select/insert/update/delete.
-- [ ] Rotate, expire, scope, and rate-limit join invitations; record issuer, acceptor, environment, and audit evidence.
+**D-123 packet progress:** Q1–Q5 locked; executable unapplied migration `004_auth_rls_cutover.sql` + synthetic policy matrix in-repo. Live Development apply, Google Auth config, Welcome email/QR chrome, and Production remain open.
+
+- [x] Design Google-to-hosted-auth identity mapping and durable personal-ledger/household membership relationships before writing policies around them. (D-123: Supabase Auth Google → `auth.uid()`; door = `continuity_memberships` + `household_invitations`)
+- [x] Author deny-by-default RLS + REVOKE anon household REST packet (unapplied until review).
+- [x] Define email and QR invitation channels with owner-only issue/revoke RPCs (synthetic matrix tested; live apply pending).
+- [ ] Apply reviewed `004` to Development; configure Supabase Google provider; smoke Create / email / QR / revoke / anon denial.
 - [ ] Add device/session revoke and household leave/recovery semantics.
 - [ ] Replace phrase-as-authority and `linked` publishing with automatic authenticated discovery/synchronization; invitations only establish membership.
-- [ ] Build and test migrations locally; backfill/production cutover is a separate Jonathan-approved plan.
+- [ ] Build and test migrations on a disposable rehearsal project; Production cutover is a separate Jonathan-approved plan.
 - [ ] Add pgTAP negative tests and a permission matrix to required CI.
-- [ ] Complete concurrency/outbox work before claiming authenticated two-phone safety.
+- [ ] Complete concurrency/outbox work (002 live + member-guard in CAS) before claiming authenticated two-phone safety.
 
 **Risk/gate:** temporary open development access must not survive the September cutover; Phase 0/2 proofs, recovery design, and production migration approval.  
 **Proof:** local Supabase tests for every role/action/environment; red-team attempt with publishable key; reviewed cutover and rollback rehearsal.  

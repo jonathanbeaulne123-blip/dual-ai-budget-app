@@ -34,8 +34,8 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [CLAUDE_COMMAND_STATES_UX.md](CLAUDE_COMMAND_STATES_UX.md) | Command/continuity/conflict/recovery UX spec — merged [PR #76](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/76) |
 | [HOSTED_ROW_INVENTORY.md](HOSTED_ROW_INVENTORY.md) | Leftover hosted-row runbook. Metadata only. Do not delete without Jonathan. |
 | [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) | Legacy Auth/RLS sketch — do not apply; superseded by cutover packet |
-| [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md) | Living Auth/RLS cutover design; open product questions Q1–Q5 |
-| [`../supabase/migrations/004_auth_rls_cutover.sql`](../supabase/migrations/004_auth_rls_cutover.sql) | Unapplied Auth/RLS migration stub — do not apply until Jonathan answers Q1–Q5 and approves |
+| [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md) | Living Auth/RLS cutover design (D-123); Q1–Q5 locked; do not apply until review |
+| [`../supabase/migrations/004_auth_rls_cutover.sql`](../supabase/migrations/004_auth_rls_cutover.sql) | Executable Auth/RLS cutover — **do not apply** until Jonathan reviews (Q5); Production separate |
 | [SITDOWN.md](SITDOWN.md) | Monthly sitdown, leftover, lock, reverse, and export guidance |
 | [GOALS.md](GOALS.md) | Goals vault and leftover parking |
 | [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md) | Private repository and publish workflow |

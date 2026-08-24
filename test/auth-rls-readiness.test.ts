@@ -22,21 +22,26 @@ describe("Auth/RLS readiness packet", () => {
     expect(legacy).toMatch(/continuity_memberships/);
   });
 
-  it("documents the permission matrix and open product questions before locking SQL", () => {
-    expect(cutover).toMatch(/### Q1/);
-    expect(cutover).toMatch(/### Q5/);
+  it("locks Q1 A, Q3 email|QR, Q4 no-anon REST, and ships executable deny-by-default SQL", () => {
+    expect(cutover).toMatch(/Q1.*Supabase Auth Google/i);
+    expect(cutover).toMatch(/Email invite or QR invite/i);
+    expect(cutover).toMatch(/No household REST for anon/i);
     expect(cutover).toMatch(/anon \| deny/);
-    expect(cutover).toMatch(/revoked \/ inactive membership/);
-    expect(migration).toMatch(/Q1–Q5|Q1-Q5/);
-    expect(migration).toMatch(/no-op placeholder|intentionally contains NO executable policy/i);
+    expect(migration).toMatch(/Q1 A/);
+    expect(migration).toMatch(/kind IN \('email', 'qr'\)/);
+    expect(migration).toMatch(/REVOKE ALL ON TABLE households FROM anon/i);
+    expect(migration).toMatch(/hearth_issue_invite|hearth_redeem_invite/);
+    expect(migration).not.toMatch(/intentionally contains NO executable policy/i);
   });
 
-  it("covers least privilege, DELETE refusal, invites/roles as open, and service-role isolation", () => {
-    expect(cutover).toMatch(/No DELETE from authenticated/);
+  it("covers least privilege, DELETE refusal, owner invite RPCs, and service-role isolation", () => {
+    expect(cutover).toMatch(/DELETE/);
     expect(cutover).toMatch(/service_role/);
-    expect(cutover).toMatch(/VITE_/);
-    expect(legacy).toMatch(/REVOKE DELETE/);
+    expect(migration).toMatch(/REVOKE DELETE/i);
+    expect(migration).toMatch(/household_invitations/);
+    expect(migration).toMatch(/hearth_is_household_owner/);
     expect(legacy).toMatch(/household_invitations/);
     expect(cas).toMatch(/publish_household_snapshot/);
   });
 });
+

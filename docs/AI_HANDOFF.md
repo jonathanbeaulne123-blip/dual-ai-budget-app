@@ -80,15 +80,15 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 **Still required:** live RPC apply + smoke; two-browser E2E; Auth/RLS cutover before October.
 
-## Auth + membership RLS cutover (proposed D-123)
+## Auth + membership RLS cutover (D-123)
 
-**Status:** Started on `cursor/auth-rls-packet-4ffb`. Living design: [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md). Stub migration `004_auth_rls_cutover.sql` is a no-op do-not-apply packet until Jonathan answers product questions Q1–Q5. Legacy sketch `docs/sql/rls_auth_ready.sql` marked superseded. **Did not** apply SQL, contact the household project, touch Production, or deploy.
+**Status:** Packet complete on `cursor/auth-rls-packet-4ffb` / draft PR. Product locks: Q1 A (Supabase Auth Google → `auth.uid()`), Q2 owner/member (Create→owner, Join→member), Q3 email or QR invite, Q4 no household REST for anon, Q5 apply 004 to Development after review. Artifacts: [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md), executable `supabase/migrations/004_auth_rls_cutover.sql` (**do not apply**), pure matrix `src/ledger/authRlsPolicy.ts`, session sketch `src/auth/supabaseSession.ts`, proofs `test/auth-rls-policy.test.ts`. Legacy sketch superseded. **Did not** apply SQL, contact the household project, touch Production, deploy, or interfere with GPT's 002 CAS runway.
 
-**Budget delta (5):** `0` so far — design/readiness only; no live door change.
+**Budget delta (5):** `+2` readiness — deny-by-default door + invite RPCs in packet (not live until apply).
 
-**Engagement delta (3):** `0`.
+**Engagement delta (3):** `0` — Welcome email/QR chrome is a follow-up after apply.
 
-**Blocked on Jonathan:** Q1 Auth mapping, Q2 roles, Q3 join path, Q4 anon after cutover, Q5 Dev rehearsal timing.
+**Next owner:** Independent trust review of 004 → Jonathan approve → apply Development only → configure Google Auth → smoke Create / email / QR / revoke / anon denial. Then wire Welcome UI + member-guard inside CAS once 002+004 are live.
 
 **Risk:** Release. Independent trust review before any apply.
 
