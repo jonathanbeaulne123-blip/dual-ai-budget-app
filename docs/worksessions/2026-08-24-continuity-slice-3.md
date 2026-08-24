@@ -1,6 +1,6 @@
 # 2026-08-24 — Continuity slice 3: device replicas
 
-**Status:** Implemented locally for PR #72 on `codex/cloud-continuity-correctness`. No hosted schema, hosted rows, Production deployment, credentials, or secrets were changed.
+**Status:** Implemented and pushed to PR #72 on `codex/cloud-continuity-correctness`. No hosted schema, hosted rows, Production deployment, credentials, or secrets were changed.
 
 ## Delivered
 
@@ -16,6 +16,7 @@
 
 - New storage tests cover legacy migration, two-household persistence and switching, member-personal isolation, selected-ledger reset, and session reload.
 - Existing visibility and sync-integrity proofs remain green, including preservation of a partner's personal rows during full-snapshot reconciliation.
+- Full serial suite: `46` files, `340` tests passed. TypeScript `--noEmit` and the production Vite bundle passed; the bundle retains the existing PGlite browser-external, eval, and chunk-size warnings.
 
 ## Honest boundary
 
