@@ -14,7 +14,7 @@ These pills are **not** Cloudflare production vs preview. They are two ledgers o
 
 The phone app is a static Vite build on Cloudflare Workers + Assets, project `hearth-books`.
 
-Live URL: [https://hearth-books.jonathan-beaulne123.workers.dev/](https://hearth-books.jonathan-beaulne123.workers.dev/)
+Live URL: [https://hearth-books.jonathan-beaulne123.workers.dev/](https://hearth-books.jonathan-beaulne123.workers.dev/). The Git production alias `https://main-hearth-books.jonathan-beaulne123.workers.dev/` is the same Worker; it is an allowed Hercules chat Origin (D-107).
 
 Join links use that origin (`/?join=cedar-lantern-maple`). SPA routing uses Wrangler `not_found_handling = single-page-application`. Do not add `/* /index.html 200` in `_redirects` — Workers rejects that as an infinite loop (API code 100324). `pnpm build` wipes `dist/` so a leftover `_redirects` cannot be uploaded.
 

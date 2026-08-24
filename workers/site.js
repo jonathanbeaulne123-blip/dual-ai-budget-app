@@ -257,7 +257,7 @@ async function herculesChat(request, env) {
   const prompt = buildPrompt(body);
   if (!prompt.message) return json({ ok: false, error: "empty" }, 400, cors);
 
-  const rate = await checkChatRateLimit(env, body?.householdId);
+  const rate = await checkChatRateLimit(env, request);
   if (!rate.ok) return json({ ok: false, error: "rate limit" }, 429, cors);
 
   let reply = "";

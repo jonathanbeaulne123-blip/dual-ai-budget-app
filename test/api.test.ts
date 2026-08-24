@@ -27,6 +27,7 @@ describe("Cloudflare static host pairing", () => {
     expect(config.assets.run_worker_first).toBe(true);
     expect(config.vars?.OPENAI_MODEL).toBe("gpt-4o-mini");
     expect(config.vars?.ANTHROPIC_MODEL).toBe("claude-haiku-4-5");
+    expect(config).not.toHaveProperty("kv_namespaces");
   });
 
   it("does not ship a catch-all _redirects file that Cloudflare Workers rejects", () => {
@@ -66,6 +67,10 @@ describe("Cloudflare static host pairing", () => {
     expect(worker).not.toContain('Access-Control-Allow-Origin": "*"');
     expect(guard).toContain("isAllowedKitchenHost");
     expect(guard).toContain("DAILY_CHAT_LIMIT");
+    expect(guard).toContain("main-hearth-books");
+    expect(guard).toContain("CF-Connecting-IP");
+    expect(worker).toMatch(/checkChatRateLimit\(env,\s*request\)/);
+    expect(worker).not.toContain("body?.householdId");
     expect(worker).not.toMatch(/history\.slice/);
     expect(worker).not.toContain("VITE_OPENAI");
     expect(worker).not.toContain("VITE_ANTHROPIC");
