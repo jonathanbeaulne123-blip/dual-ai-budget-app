@@ -33,7 +33,7 @@ The in-memory model is still the source of truth while a command runs: clone the
 Family-office accounting (weight **5**) and Hercules / interactables (weight **3**) share this kernel. There is no second ledger for the cat.
 
 - Course A writes through commands, then `compileHousehold` into PGlite. Health, statements, wallet, rec, and close are projections.
-- Course B **reads** those projections (`describeCompanion`, `herculesBriefing`, `auditOpinion`, `householdWallet`, `talkHercules`, `planHerculesTurn`, `composeNotices`). Cosmetics and Hercules desk writes (`scribbleChalk`, `equipCosmetic`, `recordHerculesTalk`, `addPreset`, `acceptPresetNotice`) clone the snapshot and never put money ids in `postedIds` except the preset catalog id. Journal questions skip the model.
+- Course B **reads** those projections (`describeCompanion`, `herculesBriefing`, `auditOpinion`, `householdWallet`, `talkHercules`, `planHerculesTurn`, `composeNotices`). Cosmetics and Hercules desk writes (`scribbleChalk`, `equipCosmetic`, `recordHerculesTalk`, `addPreset`, `acceptPresetNotice`) clone the snapshot and never put money ids in `postedIds` except the preset catalog id. Journal matches and chips are model-first through the locked Worker with bounded, visibility-filtered, redacted facts; grounded on-device talk is fallback, while safety-only paths stay local. The model never gains Command authority.
 - A new accounting surface must expose at least one companion line, unlock, chalkboard, wallet tile, or ceremony.
 - A new companion behavior must be grounded in a posted fact or a Health / rec / close / wallet projection.
 - If they conflict, Course A wins. Product law: [STRATEGY.md](STRATEGY.md), D-048.

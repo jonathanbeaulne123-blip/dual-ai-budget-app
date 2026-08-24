@@ -2,15 +2,15 @@
 
 **The product face:** a living Maine Coon who reads the household journal, keeps notes in the same snapshot as the milk, and never posts a cent.
 
-The ledger is still the company (Dual Course weight 5). He is Course B (weight 3) **and** a serious tool: money questions are answered on-device from the books. Care is posted household facts, not a hunger meter. Ember was the flame prototype and is fully historical.
+The ledger is still the company (Dual Course weight 5). He is Course B (weight 3) **and** a serious tool: money answers are grounded in the books; journal matches and chips may be model-first through the locked Worker, with on-device talk as fallback. Care is posted household facts, not a hunger meter. Ember was the flame prototype and is fully historical.
 
 Laws: [DECISIONS.md](DECISIONS.md) D-042 / D-044 / D-045 / D-046 / D-047 / D-049 / D-050 / D-051 / D-057–D-077 / D-083–D-094. Science spec: [HERCULES_AI.md](HERCULES_AI.md). Sit-down: [SITDOWN.md](SITDOWN.md). Goals: [GOALS.md](GOALS.md). Mark: [HERCULES_MARK.md](HERCULES_MARK.md). Strategy: [STRATEGY.md](STRATEGY.md). Museum essay: [nostalgia/HERCULES.md](nostalgia/HERCULES.md).
 
 ## Laws
 
 - No dock card. No full-screen Clippy sheet. He loafs in the corner while Add is open.
-- Tap / chips = `talkHercules` / `askHercules` (journal-true). Typed money questions stay on-device. Unmatched talk may use `POST /hercules/chat`. **Third-party keys are allowed** as Worker secrets (`wrangler secret put OPENAI_API_KEY` / `ANTHROPIC_API_KEY`); Workers AI is the fallback. Never `VITE_`. The model cannot post, emit SQL, invent a write, or name who spent more.
-- Chat and memories live in `kitchen.hercules` (D-049). Same merge, tombstones, Hearth Pass, and hosted door as the books. Journal questions stay on-device. The model may receive a **redacted retrieval** (recent rows, month rollup, notices, figures) — never chat history, never a quiet appointment title (D-059 / D-060). Memory labels still strip amounts.
+- Tap / chips = `talkHercules` / `askHercules` (journal-true). Journal matches and chips are model-first through the D-103 locked `POST /hercules/chat` Worker when available; grounded on-device talk is the fallback. Remember/recall, SQL or shame refusal, and Add drafts stay local. **Third-party keys are allowed** as Worker secrets (`wrangler secret put OPENAI_API_KEY` / `ANTHROPIC_API_KEY`); Workers AI is the fallback. Never `VITE_`. The model cannot post, emit SQL, invent a write, or name who spent more.
+- Chat and memories live in `kitchen.hercules` (D-049). Same merge, tombstones, Hearth Pass, and hosted door as the books. D-105 may give the model a **bounded, visibility-filtered, redacted retrieval** (at most 18 recent rows, month rollup, notices, figures) — never chat history, never a quiet appointment title (D-059 / D-060). Memory labels still strip amounts.
 - **Science (D-057 / D-058):** he notices repeated merchants on-device and may offer **one** Save-as-preset card. Confirm still posts. Duplicate confirm still fires. He never `postEntry` and never auto-creates presets.
 - Safe writes: keep a talk, keep a note, forget a note, wipe chat, save/forget a preset, dismiss a notice. A “add milk” line opens Add. **Confirm still posts.** Hercules never calls `postEntry`.
 - Mood from Health, bills, goals, week-over-week spend. Punishment is a face and a sentence, never a fake fee.
@@ -33,7 +33,7 @@ Every new line in his mouth must point at a budget primitive (wallet, rec, sit-d
 2. **Tab/page:** any page — he wanders. Home for the net and opinion. Add to see him loaf. Home → Accessories for hats and ledger notes.
 3. **Instructions:**
    1. Open the demo kitchen table (Development).
-   2. Tap him. Ask **What’s on the Visa?** or **Opinion?** — that answer comes from the journal, not a model.
+   2. Tap him. Ask **What’s on the Visa?** or **Opinion?** — the answer is grounded in supplied journal facts. The locked Worker may phrase a model-first match; local talk is the fallback.
    3. Type `remember payday is Thursday`. Send. The note lands in the kitchen ledger (wardrobe → Kitchen ledger notes).
    4. Type `what do you remember?` He reads the snapshot, not a vendor memory store.
    5. Type `add milk`. Add opens. Confirm still posts.
@@ -44,6 +44,6 @@ Every new line in his mouth must point at a budget primitive (wallet, rec, sit-d
 
 ## Purrsonality
 
-Smug-kind Maine Coon on a Toronto counter: first person, short sentences, occasional mrrp, milk → bills → treats. He is also the household auditor. Dollar facts come from `talkHercules`, not from the model’s imagination. Third-party keys are allowed; they stay on the Worker (`wrangler secret put OPENAI_API_KEY` or `ANTHROPIC_API_KEY`). Never `VITE_`. Local `pnpm dev` falls back to the same voice if the Worker is quiet.
+Smug-kind Maine Coon on a Toronto counter: first person, short sentences, occasional mrrp, milk → bills → treats. He is also the household auditor. Dollar facts must trace to supplied grounded journal facts, never the model’s imagination. Third-party keys are allowed; they stay on the Worker (`wrangler secret put OPENAI_API_KEY` or `ANTHROPIC_API_KEY`). Never `VITE_`. Local `pnpm dev` falls back to the same voice if the Worker is quiet.
 
 Why this shape (research we used, not dependencies we imported): Finch and Pokémon Sleep make the real act the game; we make **posting and asking the books** the act. GenieClaw / local-first household agents keep memory in SQLite next to the home data — we keep it in the household snapshot. Cloudflare Workers AI function-calling would execute tools **next to the model**, which would require sending the journal off-phone. Tools stay on the phone.

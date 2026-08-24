@@ -457,9 +457,9 @@ Compact bubble, unchanged (`z:29`), 2–3 chips. Chips may now **target instrume
 
 - "Pay the card?" → expands Wallet tray + opens Add as a transfer to that card.
 - "Sit down?" (Sunday) → expands Postcard at step Look.
-- "What's on the Visa?" → expands Wallet, `askHercules` answers on-device.
+- "What's on the Visa?" → expands Wallet; supplied journal facts ground the answer. The locked Worker may phrase a model-first match, with local fallback.
 
-Typed money questions stay `talkHercules` / `askHercules`, answered **on-device** from the journal (D-049). Unmatched talk goes to the Worker. **He still never posts.** A chip that opens Add is the furthest he goes, and Confirm still writes.
+Journal matches and chips are model-first through the D-103 locked Worker using the bounded, visibility-filtered, redacted D-105 excerpt. Grounded `talkHercules` / `askHercules` is the fallback; remember/recall, SQL or shame refusal, and Add drafts stay local. **He still never posts.** A chip that opens Add is the furthest he goes, and Confirm still writes.
 
 ### C5. New poses — each mapped to a fact
 
