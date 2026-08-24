@@ -61,7 +61,7 @@ Only the currently open or just-closed worksession belongs here. Durable history
 
 | Worksession | State | Scope | Output |
 |---|---|---|---|
-| [2026-08-23 roadmap mastermind](worksessions/2026-08-23-roadmap.md) | **OPEN while this branch is in review** | Read-only canon/live/PR audit; living roadmap; Claude visual replacement brief; Cursor execution packets | `codex/hearth-roadmap-2026-08-23`; docs-only, no production mutation |
+| [2026-08-23/24 roadmap mastermind](worksessions/2026-08-23-roadmap.md) | **CLOSED; [PR #64](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/64) open for review** | Read-only canon/live/PR audit; living roadmap; Claude visual replacement brief; Cursor execution packets | `codex/hearth-roadmap-2026-08-23`; docs-only, no production mutation |
 
 ## 1.5 Updates — major shipped chapters
 
