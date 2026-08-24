@@ -221,8 +221,8 @@ export function herculesInstrumentSurface(
     },
     chalkboard: {
       id: "chalkboard",
-      spoken: "Scribble. Neaten stays on this phone. bought opens Add.",
-      lesson: "Chalk never posts. Confirm still writes milk.",
+      spoken: "Draw or type. Save keeps it. Delete only — chalk never posts.",
+      lesson: "Weather sits on the glass. Confirm still writes milk.",
       chips: ["Milk", "Remember payday", "We good?"],
       pose: "loaf",
     },

@@ -62,6 +62,9 @@ describe("wide desk packing", () => {
     expect(parsed.items.find((item) => item.id === "blotter")?.size).toBe("l");
     expect(parseOfficeLook({ stock: "neon", density: "loud", cat: 480 })).toEqual(DEFAULT_LOOK);
     expect(parseOfficeLook({ stock: "graph", density: "glance" })).toEqual({ stock: "graph", density: "glance" });
+    expect(parseOfficeLook({ stock: "pink", density: "names" }).stock).toBe("pink");
+    expect(parseOfficeLook({ stock: "gold", density: "names" }).stock).toBe("gold");
+    expect(parseOfficeLook({ stock: "slate", density: "names" }).stock).toBe("slate");
     const tidied = tidyOfficeLayout(parsed, "wide", 900);
     expect(tidied.items.find((item) => item.id === "blotter")?.x).toBe(16);
     expect(tidied.expanded).toBeNull();
@@ -78,6 +81,8 @@ describe("desktop warmth fence", () => {
     expect(styles).toMatch(/max-width: min\(900px, 100%\)/);
     expect(styles).not.toMatch(/1280px/);
     expect(office).not.toMatch(/always-open panel/);
+    const cabinets = readFileSync("src/widgets/Cabinets.tsx", "utf8");
+    expect(cabinets).toMatch(/Home theme/);
     const instrument = readFileSync("src/widgets/Instrument.tsx", "utf8");
     expect(instrument).not.toMatch(/alwaysBody/);
   });
