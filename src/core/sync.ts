@@ -230,7 +230,11 @@ export function splitForSync(household: Household, memberId: string): { shared: 
   return { shared, personal };
 }
 
-export function assembleHousehold(shared: SharedEnvelope, personal: PersonalEnvelope | null): Household {
+export function assembleHousehold(
+  shared: SharedEnvelope,
+  personal: PersonalEnvelope | null,
+  options?: { linked?: boolean },
+): Household {
   const personalTx = personal?.transactions ?? [];
   const personalShifts = personal?.shifts ?? [];
   const txById = new Map<string, Transaction>();
@@ -249,7 +253,7 @@ export function assembleHousehold(shared: SharedEnvelope, personal: PersonalEnve
     version: 1,
     householdId: shared.householdId,
     inviteCode: shared.inviteCode,
-    linked: true,
+    linked: options?.linked === true,
     revision: shared.revision,
     tombstones: mergeTombstones(shared.tombstones, personal?.tombstones ?? []),
     name: shared.name,

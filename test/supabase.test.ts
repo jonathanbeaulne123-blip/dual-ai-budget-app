@@ -36,7 +36,7 @@ describe("Supabase hosted books", () => {
   });
 
   it("upserts the household and snapshot without deleting first", async () => {
-    const household = catalogHousehold();
+    const household = { ...catalogHousehold(), linked: true };
     const calls: string[] = [];
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);

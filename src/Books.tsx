@@ -156,12 +156,17 @@ export function BooksPage({
             : booksStatus.error || "The SQL books did not verify. The snapshot on this phone is still saved."}
         </p>
       )}
-      {booksStatus?.hosted && (
-        <p className="muted">
-          {booksStatus.hosted.schema
-            ? `Shared books are on Supabase (${booksStatus.hosted.project}).`
-            : booksStatus.hosted.error || "Supabase is configured but the books tables are not created yet."}
-        </p>
+      {booksStatus?.hosted?.mode === "local" && (
+        <p className="muted">Local books only. Invite → Publish to the cloud is the only hosted write. Treat anything already hosted as disclosed.</p>
+      )}
+      {booksStatus?.hosted?.mode === "opted-in" && (
+        <p className="muted">This household is opted in to shared snapshot transport. Treat hosted rows as disclosed until Auth.</p>
+      )}
+      {booksStatus?.hosted?.mode === "published" && booksStatus.hosted.schema && (
+        <p className="muted">Shared snapshot updated on Supabase ({booksStatus.hosted.project}). Treat hosted rows as disclosed.</p>
+      )}
+      {booksStatus?.hosted?.mode === "failed" && (
+        <p className="muted">{booksStatus.hosted.error || "Shared snapshot transport did not complete."}</p>
       )}
       <div className="tabs">
         {PANES.map((item) => (

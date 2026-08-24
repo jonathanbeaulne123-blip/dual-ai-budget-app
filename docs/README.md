@@ -20,6 +20,7 @@ Hearth is the product. **Living canon** is this folder except [nostalgia/](nosta
 | [ACCOUNTS.md](ACCOUNTS.md) | Wallet, cards, investments — how to try |
 | [APPOINTMENTS.md](APPOINTMENTS.md) | Visits, claims tray, receivables, quiet labels, Hercules jars, Appointments destination (D-053–056) |
 | [ENVIRONMENTS.md](ENVIRONMENTS.md) | Development vs production, website, hosted books |
+| [HOSTED_ROW_INVENTORY.md](HOSTED_ROW_INVENTORY.md) | Runbook for leftover hosted rows. Metadata only. Do not delete without Jonathan. |
 | [SITDOWN.md](SITDOWN.md) | Monthly sit-down, leftover, lock, reverse, Drive export (D-083–D-089) |
 | [GOALS.md](GOALS.md) | Goals vault, leftover parking, Purchased?, retirement home (D-088 / D-089) |
 | [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md) | Private repo and one-click kitchen publish |

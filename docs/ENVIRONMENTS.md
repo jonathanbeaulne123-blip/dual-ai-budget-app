@@ -42,6 +42,8 @@ Account id for this Worker: `7dfdfbba3053d8b857cbc359e0761c00`.
 
 The books engine is PostgreSQL in PGlite on the phone. The shared copy is a JSON snapshot in the Supabase project `tykhocwacaxwquhynkok` (`https://tykhocwacaxwquhynkok.supabase.co`, region us-east-1). Phrase-join reads `household_snapshots` by invite phrase **and** environment. The unique index is `(invite_phrase, environment)`. Joining the Development household from the Production pill must not load the other snapshot.
 
+Boot, demo, empty start, Hearth Pass, and unlinked commits make **zero** household REST calls (D-110). Invite → **Publish to the cloud** is the opt-in. Possible leftover rows from the old implicit uploader: [HOSTED_ROW_INVENTORY.md](HOSTED_ROW_INVENTORY.md). Do not delete them without Jonathan.
+
 The migration also creates journal tables and trial-balance views. The app does **not** write those hosted journal tables. It upserts `households` and `household_snapshots` only. Hosted views over journal tables would read zeroes. Treat hosted Postgres as snapshot transport until a later writer exists (D-052).
 
 RLS is still open (`USING (true) WITH CHECK (true)` for ALL, including DELETE) until Auth exists. The bundled publishable key can `GET`/`POST`/`PATCH`/`DELETE` every row; the three-word phrase is a filter in our client, not a control on the API. Treat anything published there as disclosed. The future membership policy is documented in [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) and must not be applied before Auth. The API secret still cannot `CREATE TABLE`.

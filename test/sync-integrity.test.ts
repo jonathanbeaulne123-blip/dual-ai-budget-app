@@ -134,6 +134,7 @@ describe("sync integrity (Claude review 2026-08-22)", () => {
     expect(src).toMatch(/hostedFailureStatus\(caught, hosted\)/);
     expect(hostedFailureStatus(new Error("Failed to fetch"), { reachable: false, project: "tykhocwacaxwquhynkok" })).toEqual({
       provider: "supabase",
+      mode: "failed",
       reachable: false,
       schema: false,
       project: "tykhocwacaxwquhynkok",
