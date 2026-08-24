@@ -52,13 +52,23 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 ## Office chalkboard / Home themes / Hercules snippets (D-120, PR #80)
 
-**Status:** Ready for merge on `cursor/desktop-chalkboard-themes-4ffb` as [PR #80](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/80). CI green (373 tests + `tsc --noEmit` + Workers build). Jonathan skipped manual UX proof this pass. Desk tool button is **Home theme** (was Look).
+**Status:** Merged via [PR #80](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/80) and follow-up [PR #82](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/82). Desk tool button is **Home theme** (was Look).
 
 **Budget delta (5):** `0` — chalk Save/delete never posts; bought removed from Office and legacy `DailyHearth` chalk UI.
 
 **Engagement delta (3):** `+2` — weather chip on chalkboard band; Home theme paper stocks (pink/gold/slate; cream unchanged); Hercules widget-anchored snippet stack with placeholder prompts.
 
 **Still required after merge:** Jonathan visual pass at 390/720+; replace Hercules placeholder copy when ready.
+
+## Member-scoped AI disclosure (D-115)
+
+**Status:** Implemented on `cursor/member-ai-disclosure-4ffb`. `householdForAiDisclosure` strips partner personal txs/shifts/goals/memories; `composeHerculesChatRequest` rebuilds briefing, notices, ledger, and memories from that slice. Canaries in `test/ai-disclosure.test.ts`.
+
+**Budget delta (5):** `+1` — partner personal money cannot leak into model aggregates (Course A privacy of the books).
+
+**Engagement delta (3):** `+1` — Hercules model-first chat can keep growing without partner-personal disclosure.
+
+**Still required:** optional independent privacy review; D-116 delayed-write rejection if not already covered elsewhere; confirm live Worker never receives unprojected payloads (phone is the only composer today).
 
 ## Trust-foundation worksession (2026-08-24, local branch)
 

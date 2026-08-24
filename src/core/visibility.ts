@@ -30,6 +30,37 @@ export function visibleForDuplicateScan(
   return parseVisibility(item.visibility) !== "personal" || item.createdBy === memberId;
 }
 
+/**
+ * Member-scoped household for Hercules model payloads (D-115).
+ * Partner `personal` money, goals, and kitchen memories never enter aggregates,
+ * notices, or the ledger excerpt. Shared accounts, appointments, and Health
+ * still run on the full snapshot outside this projection.
+ */
+export function householdForAiDisclosure(household: Household, memberId: string): Household {
+  const transactions = household.transactions.filter((tx) => visibleForDuplicateScan(tx, memberId));
+  const shifts = household.shifts.filter((shift) => visibleForDuplicateScan(shift, memberId));
+  const goals = household.goals.filter((goal) => goal.shared || goal.ownerMemberId === memberId);
+  const desk = household.kitchen.hercules;
+  const hercules = desk
+    ? {
+        ...desk,
+        memories: desk.memories.filter((row) => row.createdBy === memberId),
+        // Chat history never goes to the model; keep the array empty in the projection.
+        chats: [] as typeof desk.chats,
+      }
+    : desk;
+  return {
+    ...household,
+    transactions,
+    shifts,
+    goals,
+    kitchen: {
+      ...household.kitchen,
+      hercules,
+    },
+  };
+}
+
 export function goalVisibleInView(goal: Goal, memberId: string, view: LedgerView): boolean {
   if (view === "household") return goal.shared;
   return !goal.shared && goal.ownerMemberId === memberId;
