@@ -50,7 +50,7 @@ Accepted device replica + durable outbox
    +-- Home / Plan / Health are projections
 ```
 
-There is no Google Sheet, and no formula range that can freeze. D-114 cloud continuity discovers exact Google memberships, accepts pulled books through PGlite, retries a durable compacting outbox, and keeps multiple device replicas. D-117 prepares server-filtered membership plus hosted member-personal scopes. Migration 003 is not applied, so current Development still uses the compatible open-snapshot fallback. No phone is the host. GET-then-POST CAS, full hosted household snapshots, and `linked`/phrase transport remain transitional. Google never posts money. See [docs/CLOUD_CONTINUITY.md](docs/CLOUD_CONTINUITY.md).
+There is no Google Sheet, and no formula range that can freeze. D-114 cloud continuity discovers exact Google memberships, accepts pulled books through PGlite, retries a durable compacting outbox, and keeps multiple device replicas. Migration 003 is applied, so D-117 server-filtered membership and hosted member-personal scopes are live in Development. No phone is the host. The browser-supplied Google subject is still a selector rather than authentication; GET-then-POST CAS, full hosted household snapshots, and `linked`/phrase transport remain transitional. Google never posts money. See [docs/CLOUD_CONTINUITY.md](docs/CLOUD_CONTINUITY.md).
 
 ## Household vs personal
 

@@ -32,9 +32,9 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 ## Development continuity slices (D-114 and D-117, PRs #72 and #74)
 
-**Status:** exact Google-subject Development discovery, PGlite acceptance, a durable compacting local outbox, launch/focus/reconnect replay, multi-household device replicas, an explicit ledger switcher, and member-only personal device replicas are implemented. D-117 adds server-filtered membership discovery and hosted member-personal payloads behind unapplied migration 003; missing tables retain the D-114 fallback. Legacy environment-only storage migrates on read. No hosted schema, deployment, Production data, or secrets were changed.
+**Status:** exact Google-subject Development discovery, PGlite acceptance, a durable compacting local outbox, launch/focus/reconnect replay, multi-household device replicas, an explicit ledger switcher, and member-only personal device replicas are implemented. Migration 003 is applied: D-117 server-filtered membership discovery and hosted member-personal payloads are live in Development; missing tables retain the D-114 fallback. Inherited broad grants were removed and verified as exactly `SELECT`/`INSERT`/`UPDATE` for `anon` and `authenticated`. No hosted rows, deployment, Production data, or secrets were changed.
 
-**Still required:** Jonathan's separate decision to apply migration 003, atomic hosted CAS/journal authority, retry backoff/acknowledgement, two-browser end-to-end proof, Supabase Auth-bound membership, and the late-September deny-by-default RLS cutover.
+**Still required:** atomic hosted CAS/journal authority, retry backoff/acknowledgement, two-browser end-to-end proof, Supabase Auth-bound membership, and the late-September deny-by-default RLS cutover.
 
 **Budget delta (5):** `+4` — accepted offline commands survive reconnection, pulled snapshots pass PGlite, stale remote revisions retain both sides, and locally switching households no longer overwrites a different ledger.
 
