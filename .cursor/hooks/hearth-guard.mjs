@@ -43,10 +43,16 @@ if (command && approvalCommands.some((pattern) => pattern.test(command))) {
 }
 
 const hostedServer = /supabase|cloudflare|wrangler/i.test(server);
+const hostedTool = /supabase|cloudflare|wrangler/i.test(toolName);
 const mutatingTool =
   /(?:apply_migration|execute_sql|deploy|create_|update_|delete_|merge_|reset_|rebase_|secret|write)/i;
+const unmistakablyHostedMutation =
+  /^(?:apply_migration|execute_sql|deploy_edge_function|create_branch|merge_branch|reset_branch|delete_branch)$/i;
 
-if ((hostedServer || /supabase|cloudflare|wrangler/i.test(toolName)) && mutatingTool.test(toolName)) {
+if (
+  unmistakablyHostedMutation.test(toolName) ||
+  ((hostedServer || hostedTool) && mutatingTool.test(toolName))
+) {
   respond("ask", "Hearth requires Jonathan's approval for this hosted tool action.");
   process.exit(0);
 }

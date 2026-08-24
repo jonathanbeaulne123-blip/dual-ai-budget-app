@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, "cursor/**"]
+    branches: [main, "codex/**", "cursor/**", "claude/**"]
   pull_request:
 
 jobs:
@@ -16,5 +16,6 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm ai:verify
       - run: pnpm test
-      - run: pnpm exec tsc --noEmit
+      - run: pnpm build
