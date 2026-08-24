@@ -1,5 +1,5 @@
-# Moved
+# Hearth roadmap
 
-This filename is kept so old links do not 404.
+The maintained plan is [HEARTH_ROADMAP.md](HEARTH_ROADMAP.md).
 
-**Do not plan from this stub.** Living plan: [STRATEGY.md](STRATEGY.md). Museum copy of the old near-term list: [nostalgia/ROADMAP.md](nostalgia/ROADMAP.md).
+This filename remains as a compatibility pointer so old links do not break. Do not plan from this stub.
