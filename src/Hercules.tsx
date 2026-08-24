@@ -662,7 +662,8 @@ export function HerculesPresence({
     if (focusedWidget && tab === "home") {
       setSnippets((prev) => {
         const trimmed = prev.filter((row) => row.text !== "mrrp…");
-        return [...trimmed, { role: "hercules", text: result.text.slice(0, 160) }].slice(-8);
+        const next: WidgetSnippet = { role: "hercules", text: result.text.slice(0, 160) };
+        return [...trimmed, next].slice(-8);
       });
     }
     setMotion(grounded.pose === "sleep" ? "loaf" : grounded.pose);

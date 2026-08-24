@@ -185,7 +185,6 @@ export function Office({
   const [look, setLook] = useState<OfficeLook>(() => loadOfficeLook(environment, localStorage, memberId));
   const [editing, setEditing] = useState(false);
   const [sheet, setSheet] = useState<DeskSheet>(null);
-  const [chalkShrunk, setChalkShrunk] = useState(false);
   const [deskWidth, setDeskWidth] = useState(900);
   const [canvasHeight, setCanvasHeight] = useState(720);
   const [deskNote, setDeskNote] = useState("");
@@ -582,7 +581,7 @@ export function Office({
   const claimsWarn = claimsOverdue(household);
   const walletIsWarn = walletWarn(wallet);
 
-  const renderers: Record<InstrumentId, (index: number, pair?: boolean) => ReactNode> = {
+  const renderers: Record<Exclude<InstrumentId, "chalkboard">, (index: number, pair?: boolean) => ReactNode> = {
     calculator: (index, pair) => frame(
       "calculator",
       "Calculator",
