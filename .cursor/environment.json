@@ -1,12 +1,12 @@
 {
   "name": "Hearth",
-  "install": "pnpm install",
+  "install": "pnpm install --frozen-lockfile",
   "start": "true",
   "terminals": [
     {
       "name": "vite-dev-server",
       "command": "pnpm dev --host 0.0.0.0",
-      "description": "Vite kitchen dev server on port 5173. Open the demo kitchen table loads fictional Development data."
+      "description": "Vite kitchen dev server on port 5173. Open the demo kitchen table for fictional Development data."
     }
   ],
   "ports": [

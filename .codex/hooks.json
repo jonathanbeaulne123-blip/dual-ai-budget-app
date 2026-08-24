@@ -1,0 +1,18 @@
+{
+  "description": "Hearth safety boundaries for Codex tool calls.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^(Bash|apply_patch|Edit|Write|mcp__.*)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/hearth-policy.mjs\"",
+            "timeout": 5,
+            "statusMessage": "Checking Hearth safety boundaries"
+          }
+        ]
+      }
+    ]
+  }
+}

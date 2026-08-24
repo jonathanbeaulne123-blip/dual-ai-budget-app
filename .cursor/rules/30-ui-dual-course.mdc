@@ -1,0 +1,13 @@
+---
+description: Hearth React UI, phone, wide office, accessibility, Hercules, and Dual Course rules
+globs: "src/**/*.tsx,src/**/*.css,public/**/*.{svg,png,webp}"
+alwaysApply: false
+---
+
+- Books integrity weighs 5; engagement weighs 3. When they conflict, books win.
+- Preserve the Command and visible Confirm boundary in every interaction.
+- Mobile below 720px is glance plus one-tap; wide at or above 720px is the customizable office.
+- Verify 320px, 390px, 720px, and approximately 1100px.
+- Cover keyboard, focus, semantic labels, contrast, reduced motion, loading, empty, error, offline, overflow, long text, and large-number states relevant to the change.
+- Mode, sync, AI, and environment labels describe literal runtime behavior.
+- Responsible retention comes from real household acts, never guilt, pet death, fake fees, or artificial loss.

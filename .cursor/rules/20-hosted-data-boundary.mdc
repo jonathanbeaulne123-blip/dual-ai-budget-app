@@ -1,0 +1,14 @@
+---
+description: Hosted-data, Supabase, synchronization, privacy, model-disclosure, and Production rules
+globs: "src/api.ts,src/ledger/supabase.ts,src/core/herculesPrivacy.ts,src/core/pass.ts,src/Pairing.tsx,src/storage.ts,supabase/**,sql/**,workers/**,test/**/*supabase*.ts,test/**/*sync*.ts,test/**/*hercules*.ts"
+alwaysApply: false
+---
+
+- Local, demo, and unlinked households make zero hosted household requests.
+- Validate household, environment, and member identity at every serialized network boundary.
+- Minimize model payloads and test the final serialized request with partner-personal canaries.
+- A household phrase or publishable key is routing, not authentication.
+- Private hosted capability requires Auth, membership, and closed RLS.
+- Never use Production data, credentials, or schema for an agent experiment.
+- Do not deploy, mutate hosted rows, apply migrations, or change secrets without Jonathan's explicit approval.
+- Fail closed on environment mismatch, corrupt envelopes, ambiguous membership, and privacy-filter failure.
