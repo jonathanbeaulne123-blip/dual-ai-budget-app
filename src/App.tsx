@@ -26,9 +26,7 @@ import {
   openGoals,
   retiredGoals,
   vaultReceiptBlurb,
-  householdForMemberDisclosure,
   householdForView,
-  matchesLedgerReplicaScope,
   ledgerNameForView,
   nameHouseholdLedgers,
   assembleHousehold,
@@ -219,8 +217,6 @@ export function App() {
   const enqueueWrite = useMemo(() => createWriteQueue(), []);
   const householdRef = useRef<Household | null>(household);
   householdRef.current = household;
-  const sessionRef = useRef<Session | null>(session);
-  sessionRef.current = session;
   const historyRef = useRef(history);
   historyRef.current = history;
   const confirmationRef = useRef<string | null>(null);
@@ -532,10 +528,6 @@ export function App() {
     ? assembleHousehold(splitForSync(household, memberId).shared, personalReplica, { linked: household.linked })
     : household;
   const visible = personalSource && memberId ? householdForView(personalSource, memberId, view) : personalSource;
-  const herculesHousehold = useMemo(
-    () => household && memberId ? householdForMemberDisclosure(household, memberId) : household,
-    [household, memberId],
-  );
   const findings = useMemo(() => (household ? runHealthCheck(household) : []), [household]);
   const dashboard = useMemo(
     () => (visible ? buildDashboard(visible, today, now, findings.length) : null),
@@ -850,14 +842,10 @@ export function App() {
     });
   }
 
-  function runKitchen(
-    fn: (current: Household) => CommitResult,
-    expectedScope?: { environment: Environment; householdId: string; memberId: string },
-  ) {
+  function runKitchen(fn: (current: Household) => CommitResult) {
     return enqueueWrite(async () => {
       const current = householdRef.current;
       if (!current) return;
-      if (expectedScope && !matchesLedgerReplicaScope(current, sessionRef.current?.memberId, expectedScope)) return;
       try {
         const result = fn(current);
         await commitHousehold(result.household, result.undo);
@@ -2220,8 +2208,7 @@ export function App() {
       )}
 
       <HerculesPresence
-        key={`${environment}:${household.householdId}:${session.memberId}`}
-        household={herculesHousehold ?? household}
+        household={household}
         today={today}
         tab={tab}
         adding={adding}
@@ -2247,13 +2234,7 @@ export function App() {
           const card = householdWallet(household, today).hottestCard;
           if (card) openPayCard(card.account);
         }}
-        onLedger={(fn) => {
-          void runKitchen(fn, {
-            environment,
-            householdId: household.householdId,
-            memberId: session.memberId,
-          });
-        }}
+        onLedger={(fn) => { void runKitchen(fn); }}
         onAcceptPreset={(key, summary) => setGuard({ kind: "acceptPreset", key, summary })}
         onDismissNotice={(key) => { void run((current) => dismissNotice(current, key)); }}
         onDraft={(draft) => {
