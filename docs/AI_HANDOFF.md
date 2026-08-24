@@ -52,13 +52,13 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 ## Office chalkboard / Home themes / Hercules snippets (D-120, PR #80)
 
-**Status:** Implemented on `cursor/desktop-chalkboard-themes-4ffb` as [PR #80](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/80). Jonathan skipped manual UX proof this pass; `pnpm test` 373 green. Desk tool button is **Home theme** (was Look).
+**Status:** Ready for merge on `cursor/desktop-chalkboard-themes-4ffb` as [PR #80](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/80). CI green (373 tests + `tsc --noEmit` + Workers build). Jonathan skipped manual UX proof this pass. Desk tool button is **Home theme** (was Look).
 
-**Budget delta (5):** `0` — chalk Save/delete never posts; bought removed from Office chalkboard only.
+**Budget delta (5):** `0` — chalk Save/delete never posts; bought removed from Office and legacy `DailyHearth` chalk UI.
 
 **Engagement delta (3):** `+2` — weather chip on chalkboard band; Home theme paper stocks (pink/gold/slate; cream unchanged); Hercules widget-anchored snippet stack with placeholder prompts.
 
-**Still required:** Jonathan visual pass at 390/720+; replace Hercules placeholder copy; decide whether DailyHearth `bought` stays.
+**Still required after merge:** Jonathan visual pass at 390/720+; replace Hercules placeholder copy when ready.
 
 ## Trust-foundation worksession (2026-08-24, local branch)
 

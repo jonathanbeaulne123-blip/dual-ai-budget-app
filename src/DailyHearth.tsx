@@ -33,7 +33,6 @@ export function DailyHearth({
   clinkOn,
   onClinkOn,
   onCommand,
-  onBuyNote,
 }: {
   household: Household;
   memberId: string;
@@ -43,7 +42,6 @@ export function DailyHearth({
   clinkOn: boolean;
   onClinkOn: (on: boolean) => void;
   onCommand: (fn: (current: Household) => CommitResult) => void;
-  onBuyNote: (text: string) => void;
 }) {
   const view = useMemo(() => describeCompanion(household, today), [household, today]);
   const prompts = chalkboardPrompts(today);
@@ -66,9 +64,8 @@ export function DailyHearth({
             <div className="chalk-note" key={note.id}>
               <p>{note.text}</p>
               <div className="chalk-actions">
-                <button type="button" disabled={busy} onClick={() => onBuyNote(note.text)}>bought</button>
-                <button type="button" disabled={busy} onClick={() => onCommand((current) => wipeChalk(current, note.id))} aria-label="Wipe this note">
-                  wipe
+                <button type="button" disabled={busy} onClick={() => onCommand((current) => wipeChalk(current, note.id))} aria-label="Delete this note">
+                  delete
                 </button>
               </div>
             </div>
