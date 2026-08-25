@@ -599,6 +599,27 @@ input, select, textarea {
   word-break: break-all;
   text-align: center;
 }
+.auth-invite {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.auth-invite-issued {
+  margin-top: 12px;
+  text-align: center;
+}
+.auth-invite-qr {
+  margin: 12px auto;
+  background: #fff;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+.auth-invite-qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
 .kicker { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--copper); font-weight: 700; }
 
 .ledger-row {

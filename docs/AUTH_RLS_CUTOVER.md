@@ -87,7 +87,7 @@ Rollback if needed: [`sql/009_rollback_006.sql`](sql/009_rollback_006.sql) on Jo
 
 - Rehearse 006 against a disposable PostgreSQL/Supabase clone; repository tests verify structure and pure behavior but are not a substitute for real RLS semantics.
 - Verify provider redirect configuration and token refresh in two browsers.
-- Visible email/QR invitation chrome is in flight on `cursor/auth-invite-chrome-f375` (RPC client + More/Welcome wiring). Signed-in issue/redeem smoke still needs Jonathan’s Google session.
+- Visible email/QR invitation chrome is on `main` (PR #105). Follow-up: scannable QR + bind-on-discover (`010`) on `cursor/auth-discover-qr-f375`. Signed-in issue/redeem smoke still needs Jonathan’s Google session after 010 paste.
 - Confirm PITR / backups on the shared project before apply.
 ## Secrets
 

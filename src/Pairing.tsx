@@ -33,6 +33,7 @@ import {
   type IssueInviteResult,
 } from "./ledger/householdInvites.ts";
 import { readSupabaseConfig } from "./ledger/supabase.ts";
+import { AuthJoinQr } from "./AuthJoinQr.tsx";
 
 function downloadPass(household: Household) {
   const pass = makeHearthPass(household);
@@ -131,7 +132,8 @@ export function WelcomeJoin({
       />
       {supabaseAuthEnabled() && (
         <p className="muted">
-          Email and QR invites need Continue with Google. A three-word phrase is not Auth.
+          Email and QR invites need Continue with Google. You do not need a household first —
+          scan or open the invite, then sign in. A three-word phrase is not Auth.
         </p>
       )}
       <p className="muted">{hostingHint(Boolean(cloud))}</p>
@@ -269,11 +271,12 @@ function AuthInviteChrome({
       {issued && (
         <div className="auth-invite-issued">
           <p>
-            {issued.kind === "email" ? "Email" : "QR"} invite ready. Show or send this join link once —
-            it cannot be recovered after you leave this screen.
+            {issued.kind === "email" ? "Email" : "QR"} invite ready. Partner opens the camera,
+            scans this code, Continues with Google — no household required beforehand.
           </p>
+          <AuthJoinQr joinUrl={absoluteJoin} />
           <p className="join-url" aria-label="Auth join link">{absoluteJoin}</p>
-          <p className="muted">Expires {issued.expiresAt.slice(0, 16).replace("T", " ")} UTC · path {issued.joinPath}</p>
+          <p className="muted">Expires {issued.expiresAt.slice(0, 16).replace("T", " ")} UTC</p>
           <button className="primary" type="button" onClick={() => void copyJoinLink()}>Copy Auth join link</button>
         </div>
       )}

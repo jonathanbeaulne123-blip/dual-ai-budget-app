@@ -45,11 +45,13 @@ export {
   issueHouseholdInvite,
   redeemHouseholdInvite,
   revokeHouseholdMember,
+  bindGoogleMemberships,
 } from "./householdInvites.ts";
 export type {
   InviteKind,
   IssueInviteResult,
   RedeemInviteResult,
   RevokeMemberResult,
+  BindMembershipsResult,
 } from "./householdInvites.ts";
 export { BOOKS_SCHEMA, BOOKS_SCHEMA_VERSION } from "./schema.ts";

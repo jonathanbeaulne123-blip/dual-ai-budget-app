@@ -2,10 +2,16 @@ import type { Environment } from "./types.ts";
 
 /** Raw token from hearth_issue_invite — two UUID hexes concatenated (64 chars). */
 const AUTH_INVITE_TOKEN = /^[0-9a-f]{64}$/i;
+const PENDING_INVITE_KEY = "hearth:v1:pending-auth-invite";
 
 export type AuthInviteLocation = {
   token: string;
   environment: Environment | null;
+};
+
+export type PendingAuthInvite = {
+  token: string;
+  environment: Environment;
 };
 
 export function isAuthInviteToken(value: string | undefined | null): boolean {
@@ -50,6 +56,38 @@ export function authInviteTokenFromText(value: string | undefined | null): strin
     if (found) return found.token;
   }
   return "";
+}
+
+/** Survive full-page Google OAuth so camera QR / deep-link join still redeems. */
+export function savePendingAuthInvite(invite: PendingAuthInvite): void {
+  try {
+    sessionStorage.setItem(PENDING_INVITE_KEY, JSON.stringify(invite));
+  } catch {
+    // Private mode / blocked storage — caller still keeps React state for same-tab paths.
+  }
+}
+
+export function loadPendingAuthInvite(): PendingAuthInvite | null {
+  try {
+    const raw = sessionStorage.getItem(PENDING_INVITE_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    const row = parsed as Partial<PendingAuthInvite>;
+    if (!isAuthInviteToken(row.token)) return null;
+    if (row.environment !== "development" && row.environment !== "production") return null;
+    return { token: String(row.token).toLowerCase(), environment: row.environment };
+  } catch {
+    return null;
+  }
+}
+
+export function clearPendingAuthInvite(): void {
+  try {
+    sessionStorage.removeItem(PENDING_INVITE_KEY);
+  } catch {
+    // ignore
+  }
 }
 
 function environmentFromParam(value: string | null): Environment | null {

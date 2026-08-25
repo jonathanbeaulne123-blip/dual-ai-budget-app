@@ -156,9 +156,9 @@ import {
   type ContinuityIdentity,
 } from "./continuity.ts";
 import { inviteFromLocation } from "./core/invite.ts";
-import { authInviteFromLocation, isAuthInviteToken } from "./core/authInvite.ts";
+import { authInviteFromLocation, isAuthInviteToken, savePendingAuthInvite, loadPendingAuthInvite, clearPendingAuthInvite } from "./core/authInvite.ts";
 import { PairingCard, WelcomeJoin } from "./Pairing.tsx";
-import { inviteReasonMessage, redeemHouseholdInvite } from "./ledger/householdInvites.ts";
+import { inviteReasonMessage, redeemHouseholdInvite, bindGoogleMemberships } from "./ledger/householdInvites.ts";
 import { BooksPage } from "./Books.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
 import type { RepeatingDraft } from "./RepeatingForm.tsx";
@@ -356,10 +356,19 @@ export function App() {
   }, [supabaseAuthReturned]);
 
   useEffect(() => {
+    const stored = loadPendingAuthInvite();
+    if (stored) {
+      setPendingAuthInvite(stored.token);
+      setInviteInput(stored.token);
+      if (stored.environment !== environment) setEnvironment(stored.environment);
+      setWelcomeMode("join");
+    }
     const authInvite = authInviteFromLocation(window.location.href);
     if (authInvite) {
+      const env = authInvite.environment ?? environment;
       setInviteInput(authInvite.token);
       setPendingAuthInvite(authInvite.token);
+      savePendingAuthInvite({ token: authInvite.token, environment: env });
       if (authInvite.environment && authInvite.environment !== environment) {
         setEnvironment(authInvite.environment);
       }
@@ -791,9 +800,10 @@ export function App() {
     if (!supabaseAuthEnabled()) {
       throw new Error("Auth invites need an Auth-enabled kitchen build.");
     }
+    savePendingAuthInvite({ token, environment });
+    setPendingAuthInvite(token);
     let authSession = await ensureSupabaseSession(environment);
     if (!authSession) {
-      setPendingAuthInvite(token);
       setInviteInput(token);
       setWelcomeMode("join");
       startSupabaseGoogleSignIn(environment);
@@ -821,6 +831,7 @@ export function App() {
       throw new Error("Invite accepted, but this device could not open the household yet. Try Continue with Google.");
     }
     setPendingAuthInvite(null);
+    clearPendingAuthInvite();
     await openDiscoveredLedger(match);
   }
 
@@ -833,12 +844,19 @@ export function App() {
       if (supabaseAuthEnabled()) {
         let authSession = await ensureSupabaseSession(environment);
         if (!authSession) {
+          const pending = pendingAuthInvite
+            || loadPendingAuthInvite()?.token
+            || (isAuthInviteToken(inviteInput.trim()) ? inviteInput.trim().toLowerCase() : "");
+          if (pending) {
+            savePendingAuthInvite({ token: pending, environment });
+          }
           startSupabaseGoogleSignIn(environment);
           return;
         }
         cloudConfig = authenticatedSupabaseConfig(cloudConfig, authSession);
         identity = { email: authSession.email, subject: authSession.googleSubject };
         const inviteToken = pendingAuthInvite
+          || loadPendingAuthInvite()?.token
           || (isAuthInviteToken(inviteInput.trim()) ? inviteInput.trim().toLowerCase() : "");
         if (inviteToken) {
           await redeemAuthInviteToken(inviteToken);
@@ -853,7 +871,17 @@ export function App() {
         });
         identity = googleSession.identity;
       }
-      const found = await discoverContinuityMemberships(identity, environment, cloudConfig);
+      let found = await discoverContinuityMemberships(identity, environment, cloudConfig);
+      if (!found.length && supabaseAuthEnabled() && cloudConfig?.accessToken) {
+        const bound = await bindGoogleMemberships({ environment, config: cloudConfig });
+        if (bound.ok && bound.bound > 0) {
+          found = await discoverContinuityMemberships(identity, environment, cloudConfig);
+        } else if (!bound.ok && bound.reason === "bind-rpc-missing") {
+          throw new Error(
+            "This kitchen needs migration 010 (bind Google memberships) pasted in the Supabase SQL Editor, then Continue with Google again.",
+          );
+        }
+      }
       if (!found.length) {
         if (supabaseAuthEnabled()) clearSupabaseSession(environment);
         else disconnectGoogle(environment, "__welcome__");
@@ -861,10 +889,10 @@ export function App() {
           environment === "production"
             ? (
               productionContinuityEnabled()
-                ? "That Google account is not linked to a Production ledger yet. An owner membership must exist in the cloud before Continue with Google can open it."
+                ? "That Google account is not a member of a Production household yet. An owner must invite you, or seed an owner membership before Continue with Google can open it."
                 : "Production cloud continuity is off on this build. Development remains the usual working ledger until Jonathan enables Production continuity."
             )
-            : "That Google account is not linked to a Development ledger yet. Open an existing household, choose yourself, and link Google once.",
+            : "No Development household is bound to this Google account yet. If you already own one in the cloud, paste migration 010 then try again. Otherwise Start our household, or open a partner invite/QR and Continue with Google — you do not need a household first to accept an invite.",
         );
       }
       const only = found[0];
