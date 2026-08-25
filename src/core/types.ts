@@ -92,6 +92,15 @@ export type Split = {
   amountCents: number;
 };
 
+/** Optional GPS stamp on a posted row (D-126). Never posts money by itself. */
+export type TransactionLocation = {
+  latitude: number;
+  longitude: number;
+  accuracyMeters?: number;
+  capturedAt: string;
+  label?: string;
+};
+
 export type Transaction = {
   id: string;
   date: DateKey;
@@ -103,6 +112,9 @@ export type Transaction = {
   subcategoryId: string | null;
   note: string;
   place: string;
+  /** Wall-clock instant when the member says the spend happened (ISO). Optional. */
+  occurredAt?: string;
+  location?: TransactionLocation;
   splits: Split[];
   transferPairId?: string;
   transferFromAccountId?: string;
@@ -612,7 +624,7 @@ export type Household = {
   tombstones: Tombstone[];
   name: string;
   ledgerNames: HouseholdLedgerNames;
-  timezone: "America/Toronto";
+  timezone: string;
   currency: Currency;
   environment: Environment;
   members: Member[];

@@ -1,13 +1,26 @@
-import { TIMEZONE, isValidDateKey, type DateKey } from "./calendar.ts";
+import { TIMEZONE, isValidDateKey, isValidIanaTimeZone, type DateKey } from "./calendar.ts";
 import { CURRENCY, parseWholeCents } from "./money.ts";
 import type { Category, Household, Member, Account, Split, TransactionType } from "./types.ts";
 import { JOINT, ValidationError } from "./types.ts";
 import { assertSplits } from "./splits.ts";
 
+/** Books civil zone is America/Toronto (D-126 Q2 C). Phone display zones live in phone prefs. */
 export function requireTimezone(household: Household): void {
   if (household.timezone !== TIMEZONE) {
-    throw new ValidationError(`Household timezone must be ${TIMEZONE}.`);
+    throw new ValidationError(`Household books timezone must be ${TIMEZONE} (got ${household.timezone || "empty"}).`);
   }
+}
+
+export function requireIanaTimeZone(timeZone: string): string {
+  const trimmed = timeZone.trim();
+  if (!isValidIanaTimeZone(trimmed)) {
+    throw new ValidationError("Choose a valid IANA timezone.");
+  }
+  return trimmed;
+}
+
+export function householdTimeZone(household: Pick<Household, "timezone"> | null | undefined): string {
+  return household?.timezone === TIMEZONE ? TIMEZONE : TIMEZONE;
 }
 
 export function activeMembers(household: Household): Member[] {

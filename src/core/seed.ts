@@ -1,4 +1,4 @@
-import { addDays, monthKeyFromDateKey, shiftMonthKey, todayKey, type DateKey } from "./calendar.ts";
+import { addDays, monthKeyFromDateKey, shiftMonthKey, todayKey, TIMEZONE, type DateKey } from "./calendar.ts";
 import { DEFAULT_SHIFT_SETTINGS } from "./shift.ts";
 import { emptyHousehold, postEntry, postShift, postTransfer, addGoal, addRecurrence, setBudget, contributeToGoal, scribbleChalk, markInvestmentValue, addAppointment, postVisit } from "./commands.ts";
 import { emptyCreditDesk, shapeAccounts } from "./accountKinds.ts";
@@ -16,6 +16,8 @@ function mulberry32(seed: number) {
 
 export function catalogHousehold(environment: Household["environment"] = "development"): Household {
   const household = emptyHousehold(environment);
+  // Demo/catalog books stay on America/Toronto so fixtures are stable across CI zones.
+  household.timezone = TIMEZONE;
   const seededAt = "2026-01-01T00:00:00.000Z";
   household.members = [
     { id: "MEM-001", name: "Bianca", color: "#c45c26", active: true, updatedAt: seededAt },

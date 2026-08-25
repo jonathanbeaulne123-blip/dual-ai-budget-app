@@ -63,6 +63,16 @@ import {
   seedDemoHousehold,
   shiftSettingsFingerprint,
   todayKey,
+  TIMEZONE,
+  formatZoneDateTime,
+  formatZoneTime,
+  detectDeviceTimeZone,
+  COMMON_TIME_ZONES,
+  formatZoneLabel,
+  loadPhonePlacePrefs,
+  savePhonePlacePrefs,
+  locationLabel,
+  shapeTransactionLocation,
   touchGoogleConfirmation,
   touchVisitSpark,
   undo,
@@ -98,6 +108,7 @@ import {
   type Visibility,
   type Account,
   type VisitPostDraft,
+  type TransactionLocation,
 } from "./core/index.ts";
 import {
   STORAGE_EXPLAINER,
@@ -203,7 +214,17 @@ const emptyForm = {
   ccTips: "0",
   hours: "",
   visibility: "household" as Visibility,
+  occurredAt: "" as string,
 };
+
+function emptyFormForZone(timeZone: string) {
+  const now = new Date();
+  return {
+    ...emptyForm,
+    date: todayKey(now, timeZone),
+    occurredAt: "",
+  };
+}
 
 export function App() {
   const [environment, setEnvironment] = useState<Environment>("development");
@@ -218,6 +239,8 @@ export function App() {
     setAdding(false);
     setConfirm(null);
     setError("");
+    setDraftLocation(undefined);
+    setLocationBusy(false);
   };
   const addSheetRef = useDialog(adding, closeAdd);
 
@@ -260,6 +283,10 @@ export function App() {
   const [shiftStep, setShiftStep] = useState(0);
   const [shiftTick, setShiftTick] = useState(0);
   const [hoursDirty, setHoursDirty] = useState(false);
+  const [draftLocation, setDraftLocation] = useState<TransactionLocation | undefined>(undefined);
+  const [locationBusy, setLocationBusy] = useState(false);
+  const [placePrefs, setPlacePrefs] = useState(() => loadPhonePlacePrefs("development"));
+  const [showLocationPrompt, setShowLocationPrompt] = useState(false);
   const [presetId, setPresetId] = useState<string | null>(null);
   const [categoryTouched, setCategoryTouched] = useState(false);
   const [codingHint, setCodingHint] = useState("");
@@ -607,7 +634,14 @@ export function App() {
     return () => { live = false; };
   }, [environment, household?.householdId, household?.revision, session?.memberId]);
 
-  const today = todayKey(now);
+  useEffect(() => {
+    setPlacePrefs(loadPhonePlacePrefs(environment));
+  }, [environment]);
+
+  // Q2 C: books civil dates stay America/Toronto; this phone may display another zone.
+  const booksZone = TIMEZONE;
+  const displayZone = placePrefs.displayTimeZone || detectDeviceTimeZone();
+  const today = todayKey(now, booksZone);
   const memberId = session?.memberId ?? household?.members.find((member) => member.active)?.id ?? "";
   const view: LedgerView = session?.view ?? "household";
   const personalSource = household && memberId && personalReplica?.memberId === memberId
@@ -1067,11 +1101,11 @@ export function App() {
     return (
       <div className="welcome">
         <div className="welcome-card">
-          <p className="kicker">Toronto · CAD · two people</p>
+          <p className="kicker">CAD · Toronto books · two people</p>
           <img src="/hercules-mark.svg" alt="" />
           <h1>Hearth</h1>
           <p>
-            Two phones. One journal. CAD. Toronto. Hercules loafs while you post milk.
+            Two phones. One journal. CAD. Toronto civil books. Each phone keeps its own clock. Hercules loafs while you post milk.
           </p>
           {welcomeMode === "join" ? (
             <WelcomeJoin
@@ -1261,7 +1295,7 @@ export function App() {
   const formForAccount = (accountId: string | null, extra: Partial<typeof emptyForm> = {}) => {
     const defaults = addFormDefaults(ledger, accountId);
     return {
-      ...emptyForm,
+      ...emptyFormForZone(booksZone),
       date: today,
       visibility: defaultVisibilityForView(view),
       memberId: actorId,
@@ -1270,6 +1304,64 @@ export function App() {
       toAccountId: defaults.toAccountId,
       ...extra,
     };
+  };
+
+  const clearLocationStamp = () => {
+    setDraftLocation(undefined);
+    setForm((current) => ({ ...current, occurredAt: "" }));
+  };
+
+  const stampCurrentTime = () => {
+    const capturedAt = new Date();
+    setForm((current) => ({
+      ...current,
+      date: todayKey(capturedAt, booksZone),
+      occurredAt: capturedAt.toISOString(),
+    }));
+  };
+
+  const stampCurrentCoords = () => {
+    if (!placePrefs.locationAllowed) {
+      setError("Turn on location services in More → Clock & place first.");
+      return;
+    }
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setError("This phone cannot share location.");
+      return;
+    }
+    setLocationBusy(true);
+    setError("");
+    const capturedAt = new Date();
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const stamp = shapeTransactionLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracyMeters: position.coords.accuracy,
+          capturedAt: capturedAt.toISOString(),
+        });
+        setDraftLocation(stamp);
+        setForm((current) => ({
+          ...current,
+          place: current.place.trim()
+            ? current.place
+            : stamp
+              ? locationLabel(stamp)
+              : current.place,
+        }));
+        setLocationBusy(false);
+      },
+      (geoError) => {
+        setLocationBusy(false);
+        setError(geoError.message || "Could not read location.");
+      },
+      { enableHighAccuracy: true, timeout: 12_000, maximumAge: 30_000 },
+    );
+  };
+
+  const applyConfiguredStamps = () => {
+    if (placePrefs.stampTime) stampCurrentTime();
+    if (placePrefs.stampCoords) stampCurrentCoords();
   };
 
   const openAddFor = (account: Account | null, nextMode?: AddMode) => {
@@ -1282,8 +1374,16 @@ export function App() {
     setAddDetails(false);
     setError("");
     setConfirm(null);
+    setDraftLocation(undefined);
     setCategoryTouched(false);
     setCodingHint("");
+    const prefs = loadPhonePlacePrefs(environment);
+    if (!prefs.locationAllowed && !prefs.addPromptSeen) {
+      setShowLocationPrompt(true);
+      setPlacePrefs(savePhonePlacePrefs(environment, { addPromptSeen: true }));
+    } else {
+      setShowLocationPrompt(false);
+    }
     if ((nextMode ?? defaults.suggestedMode) === "shift") {
       const punch = activeOpenShift(ledger.kitchen);
       setShiftGate(punch ? "clocked" : "choose");
@@ -1433,6 +1533,8 @@ export function App() {
         subcategoryId: form.subcategoryId,
         note: form.note,
         place: form.place,
+        occurredAt: form.occurredAt || undefined,
+        location: draftLocation,
         splits: splitsFor(parseAmount(form.amount), current),
         confirmDuplicate: flags.confirmDuplicate,
         createdBy: actorId,
@@ -1739,6 +1841,82 @@ export function App() {
                 </button>
               ))}
             </div>
+          </section>
+          <section className="card">
+            <header><h2>Clock &amp; place</h2></header>
+            <p className="muted">
+              Books civil dates stay America/Toronto. This phone may show another clock zone. Location is optional and off until you enable it here.
+            </p>
+            <label htmlFor="phone-display-timezone">This phone’s clock</label>
+            <select
+              id="phone-display-timezone"
+              value={displayZone}
+              disabled={busy}
+              onChange={(event) => {
+                setPlacePrefs(savePhonePlacePrefs(environment, { displayTimeZone: event.target.value }));
+              }}
+            >
+              {[displayZone, ...COMMON_TIME_ZONES].filter((item, index, all) => all.indexOf(item) === index).map((item) => (
+                <option key={item} value={item}>{formatZoneLabel(item)}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className="ghost"
+              style={{ width: "100%", marginTop: 8 }}
+              disabled={busy}
+              onClick={() => {
+                setPlacePrefs(savePhonePlacePrefs(environment, { displayTimeZone: detectDeviceTimeZone() }));
+              }}
+            >
+              Use this phone’s zone ({detectDeviceTimeZone()})
+            </button>
+            <label style={{ marginTop: 12 }}>
+              <input
+                type="checkbox"
+                checked={placePrefs.locationAllowed}
+                onChange={(event) => {
+                  setPlacePrefs(savePhonePlacePrefs(environment, { locationAllowed: event.target.checked }));
+                }}
+              />
+              {" "}Allow location services on this phone
+            </label>
+            <label style={{ marginTop: 8 }}>
+              <input
+                type="checkbox"
+                checked={placePrefs.stampTime}
+                disabled={!placePrefs.locationAllowed}
+                onChange={(event) => {
+                  setPlacePrefs(savePhonePlacePrefs(environment, { stampTime: event.target.checked }));
+                }}
+              />
+              {" "}Default Add stamp: wall time
+            </label>
+            <label style={{ marginTop: 8 }}>
+              <input
+                type="checkbox"
+                checked={placePrefs.stampCoords}
+                disabled={!placePrefs.locationAllowed}
+                onChange={(event) => {
+                  setPlacePrefs(savePhonePlacePrefs(environment, { stampCoords: event.target.checked }));
+                }}
+              />
+              {" "}Default Add stamp: coordinates
+            </label>
+            <label style={{ marginTop: 8 }}>
+              <input
+                type="checkbox"
+                checked={placePrefs.shareCoordsWithModel}
+                disabled={!placePrefs.locationAllowed}
+                onChange={(event) => {
+                  setPlacePrefs(savePhonePlacePrefs(environment, { shareCoordsWithModel: event.target.checked }));
+                }}
+              />
+              {" "}Share coordinates with Hercules’ model
+            </label>
+            <p className="muted" style={{ marginTop: 8 }}>
+              Hosted open Development still treats published snapshots as disclosed until Auth. Model sharing is off unless you check it.
+            </p>
           </section>
           <section className="card storage">
             <header><h2>Where the books live</h2></header>
@@ -2112,6 +2290,76 @@ export function App() {
                       }}
                       placeholder="No Frills…"
                     />
+                    {showLocationPrompt && !placePrefs.locationAllowed && (
+                      <div className="preview" style={{ marginTop: 8 }} role="dialog" aria-label="Location services">
+                        <p>Allow location on this phone so Add can stamp real time and place?</p>
+                        <div className="chips">
+                          <button
+                            type="button"
+                            className="chip selected"
+                            onClick={() => {
+                              setPlacePrefs(savePhonePlacePrefs(environment, { locationAllowed: true, addPromptSeen: true }));
+                              setShowLocationPrompt(false);
+                            }}
+                          >
+                            Allow
+                          </button>
+                          <button
+                            type="button"
+                            className="chip"
+                            onClick={() => {
+                              setPlacePrefs(savePhonePlacePrefs(environment, { addPromptSeen: true }));
+                              setShowLocationPrompt(false);
+                            }}
+                          >
+                            Not now
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    <div className="chips" style={{ marginTop: 8 }}>
+                      <button
+                        type="button"
+                        className={`chip ${placePrefs.stampTime ? "selected" : ""}`}
+                        disabled={busy || !placePrefs.locationAllowed}
+                        onClick={() => setPlacePrefs(savePhonePlacePrefs(environment, { stampTime: !placePrefs.stampTime }))}
+                      >
+                        Stamp time
+                      </button>
+                      <button
+                        type="button"
+                        className={`chip ${placePrefs.stampCoords ? "selected" : ""}`}
+                        disabled={busy || !placePrefs.locationAllowed}
+                        onClick={() => setPlacePrefs(savePhonePlacePrefs(environment, { stampCoords: !placePrefs.stampCoords }))}
+                      >
+                        Stamp place
+                      </button>
+                      <button
+                        type="button"
+                        className="chip"
+                        disabled={busy || locationBusy || !placePrefs.locationAllowed || (!placePrefs.stampTime && !placePrefs.stampCoords)}
+                        onClick={applyConfiguredStamps}
+                      >
+                        {locationBusy ? "Locating…" : "Use now"}
+                      </button>
+                      {(draftLocation || form.occurredAt) && (
+                        <button type="button" className="chip" disabled={busy || locationBusy} onClick={clearLocationStamp}>
+                          Clear stamp
+                        </button>
+                      )}
+                    </div>
+                    {(form.occurredAt || draftLocation) && (
+                      <p className="muted" style={{ marginTop: 8 }}>
+                        {form.occurredAt ? formatZoneDateTime(form.occurredAt, displayZone) : formatZoneTime(new Date(), displayZone)}
+                        {draftLocation ? ` · ${locationLabel(draftLocation)}` : ""}
+                        {" · Confirm still posts"}
+                      </p>
+                    )}
+                    {!placePrefs.locationAllowed && !showLocationPrompt && (
+                      <p className="muted" style={{ marginTop: 8 }}>
+                        Location is off. Enable it in More → Clock &amp; place.
+                      </p>
+                    )}
                   </>
                 )}
                 {mode === "transfer" && (

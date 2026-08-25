@@ -18,4 +18,5 @@ export type DeskForm = {
   ccTips: string;
   hours: string;
   visibility: Visibility;
+  occurredAt: string;
 };

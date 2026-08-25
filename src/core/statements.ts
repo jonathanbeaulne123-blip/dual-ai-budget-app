@@ -545,7 +545,7 @@ export function closePackageText(household: Household, monthKey: MonthKey, today
     `HEARTH CLOSE PACKAGE`,
     `Household: ${household.name}`,
     `Environment: ${household.environment}`,
-    `Timezone: America/Toronto · Currency: CAD`,
+    `Timezone: ${household.timezone} · Currency: CAD`,
     `Period: ${monthKey} · Printed: ${today}`,
     ``,
     `AUDIT OPINION: ${opinion.kind.toUpperCase()}`,

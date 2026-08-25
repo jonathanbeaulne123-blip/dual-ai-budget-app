@@ -9,7 +9,7 @@ export function runHealthCheck(household: Household): Finding[] {
   const flag = (section: string, message: string, id?: string) => findings.push({ section, message, id });
 
   if (household.timezone !== "America/Toronto") {
-    flag("Timezone", `Household timezone is ${household.timezone}; it must be America/Toronto.`);
+    flag("Timezone", `Household books timezone is ${household.timezone}; civil books must stay America/Toronto.`);
   }
   if (household.currency !== "CAD") flag("Currency", `Household currency is ${household.currency}; CAD is required.`);
 

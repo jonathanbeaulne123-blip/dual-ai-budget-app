@@ -1,6 +1,10 @@
-/** America/Toronto is the only calendar the household uses. Never use the runtime's local midnight. */
+/**
+ * Default household civil zone (D-126). Books use `Household.timezone` (any valid IANA).
+ * Never derive a posting date from the runtime's local midnight without an explicit zone.
+ */
 
 export const TIMEZONE = "America/Toronto" as const;
+export const DEFAULT_TIMEZONE = TIMEZONE;
 
 const MONTH_LENGTHS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
@@ -32,8 +36,20 @@ export function isValidDateKey(value: string): boolean {
 }
 
 export function parseDateKey(value: string): { year: number; month: number; day: number } {
-  if (!isValidDateKey(value)) throw new Error("Date must be a valid Toronto calendar date in YYYY-MM-DD format.");
+  if (!isValidDateKey(value)) throw new Error("Date must be a valid calendar date in YYYY-MM-DD format.");
   return { year: Number(value.slice(0, 4)), month: Number(value.slice(5, 7)), day: Number(value.slice(8, 10)) };
+}
+
+/** True when `timeZone` is a real IANA id the runtime can resolve. */
+export function isValidIanaTimeZone(timeZone: string, now = new Date()): boolean {
+  const trimmed = timeZone.trim();
+  if (!trimmed || trimmed.length > 64) return false;
+  try {
+    Intl.DateTimeFormat("en-CA", { timeZone: trimmed }).format(now);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function parseMonthKey(value: string): { year: number; month: number } {
@@ -45,7 +61,7 @@ export function parseMonthKey(value: string): { year: number; month: number } {
   return { year, month };
 }
 
-export function dateKeyInZone(date: Date, timeZone = TIMEZONE): DateKey {
+export function dateKeyInZone(date: Date, timeZone: string = TIMEZONE): string {
   const formatted = new Intl.DateTimeFormat("en-CA", {
     timeZone,
     year: "numeric",
@@ -53,12 +69,12 @@ export function dateKeyInZone(date: Date, timeZone = TIMEZONE): DateKey {
     day: "2-digit",
   }).format(date);
   if (!isValidDateKey(formatted)) {
-    throw new Error(`Could not derive a Toronto calendar date from ${date.toISOString()}.`);
+    throw new Error(`Could not derive a civil calendar date from ${date.toISOString()} in ${timeZone}.`);
   }
   return formatted;
 }
 
-export function todayKey(now = new Date(), timeZone = TIMEZONE): DateKey {
+export function todayKey(now = new Date(), timeZone: string = TIMEZONE): DateKey {
   return dateKeyInZone(now, timeZone);
 }
 
@@ -72,8 +88,8 @@ export function kitchenSeason(today: DateKey): KitchenSeason {
   return "none";
 }
 
-/** 0–23 in America/Toronto. Used for Hercules greetings, never for posting money. */
-export function hourInToronto(now = new Date(), timeZone = TIMEZONE): number {
+/** 0–23 in the given IANA zone. Used for Hercules greetings, never for posting money. */
+export function hourInZone(now = new Date(), timeZone: string = TIMEZONE): number {
   const part = new Intl.DateTimeFormat("en-CA", {
     timeZone,
     hour: "numeric",
@@ -81,6 +97,11 @@ export function hourInToronto(now = new Date(), timeZone = TIMEZONE): number {
   }).formatToParts(now).find((item) => item.type === "hour")?.value;
   const hour = Number(part);
   return Number.isFinite(hour) ? hour : 12;
+}
+
+/** @deprecated Prefer hourInZone(now, household.timezone). Kept for call-site compatibility. */
+export function hourInToronto(now = new Date(), timeZone: string = TIMEZONE): number {
+  return hourInZone(now, timeZone);
 }
 
 export function monthKeyFromDateKey(dateKey: DateKey): MonthKey {
@@ -144,7 +165,7 @@ export function inInclusiveRange(dateKey: DateKey, start: DateKey, end: DateKey)
   return dateKey >= start && dateKey <= end;
 }
 
-/** Civil YYYY-MM-DD as UTC midnight. Formatters must use `timeZone: "UTC"` so Toronto is not yesterday. */
+/** Civil YYYY-MM-DD as UTC midnight. Formatters must use `timeZone: "UTC"` so a western zone is not yesterday. */
 function utcCivilDate(year: number, month: number, day: number): Date {
   return new Date(Date.UTC(year, month - 1, day));
 }
@@ -168,12 +189,31 @@ export function formatDayLabel(dateKey: DateKey): string {
   );
 }
 
-/** Wall-clock time in America/Toronto. Never used to pick a posting date. */
-export function formatTorontoTime(value: string | Date, timeZone = TIMEZONE): string {
+/** Wall-clock time in an IANA zone. Never used alone to pick a posting date. */
+export function formatZoneTime(value: string | Date, timeZone: string = TIMEZONE): string {
   const date = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(date.getTime())) return "";
   return new Intl.DateTimeFormat("en-CA", {
     timeZone,
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
+/** @deprecated Prefer formatZoneTime. */
+export function formatTorontoTime(value: string | Date, timeZone: string = TIMEZONE): string {
+  return formatZoneTime(value, timeZone);
+}
+
+/** Civil date + wall clock in the household zone, for Add stamps. */
+export function formatZoneDateTime(value: string | Date, timeZone: string = TIMEZONE): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "short",
+    day: "numeric",
     hour: "numeric",
     minute: "2-digit",
   }).format(date);

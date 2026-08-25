@@ -104,7 +104,7 @@ export function BooksPage({
   return (
     <>
       <section className="hero">
-        <div className="label">Books · double-entry · CAD · America/Toronto</div>
+        <div className="label">Books · double-entry · CAD · {household.timezone}</div>
         <div className={`money ${equation.netWorthCents < 0 ? "negative" : ""}`}>{formatCad(equation.netWorthCents)}</div>
         <div className="sub">
           Net worth {equation.holds ? "equals" : "does not equal"} retained income {formatCad(equation.netIncomeCents)}

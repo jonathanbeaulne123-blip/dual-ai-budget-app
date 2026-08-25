@@ -44,9 +44,19 @@ export function booksIdbName(environment: Environment): string {
 
 async function migrate(db: Queryable): Promise<void> {
   await db.exec(BOOKS_SCHEMA);
-  const applied = await db.query<{ id: number }>("SELECT id FROM schema_migrations WHERE id = $1", [BOOKS_SCHEMA_VERSION]);
-  if (applied.rows.length === 0) {
-    await db.query("INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)", [BOOKS_SCHEMA_VERSION, new Date().toISOString()]);
+  const applied = await db.query<{ id: number }>("SELECT id FROM schema_migrations ORDER BY id");
+  const have = new Set(applied.rows.map((row) => row.id));
+  if (!have.has(1)) {
+    await db.query("INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)", [1, new Date().toISOString()]);
+    have.add(1);
+  }
+  if (!have.has(2)) {
+    // D-126: allow any non-empty IANA timezone on local books.
+    await db.exec(`
+      ALTER TABLE households DROP CONSTRAINT IF EXISTS households_timezone_check;
+      ALTER TABLE households ADD CONSTRAINT households_timezone_nonempty CHECK (char_length(timezone) > 0);
+    `);
+    await db.query("INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)", [2, new Date().toISOString()]);
   }
 }
 

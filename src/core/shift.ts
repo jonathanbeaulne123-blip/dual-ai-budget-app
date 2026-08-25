@@ -1,6 +1,5 @@
 import { parseHours, parseWholeCents, roundToCents } from "./money.ts";
-import { isValidDateKey } from "./calendar.ts";
-import { TIMEZONE } from "./calendar.ts";
+import { isValidDateKey, isValidIanaTimeZone } from "./calendar.ts";
 import type { ShiftSettings } from "./types.ts";
 import { ValidationError } from "./types.ts";
 
@@ -77,9 +76,9 @@ export function parseShiftInput(form: {
   hours: string | number;
   timeZone?: string;
 }): { date: string; salesCents: number; cashTipsCents: number; ccTipsCents: number; hours: number } {
-  if (!isValidDateKey(form.date)) throw new ValidationError("Date must be a valid Toronto calendar date in YYYY-MM-DD format.");
-  if (form.timeZone && form.timeZone !== TIMEZONE) {
-    throw new ValidationError(`Timezone must be ${TIMEZONE} before adding a shift.`);
+  if (!isValidDateKey(form.date)) throw new ValidationError("Date must be a valid calendar date in YYYY-MM-DD format.");
+  if (form.timeZone && !isValidIanaTimeZone(form.timeZone)) {
+    throw new ValidationError("Timezone must be a valid IANA zone before adding a shift.");
   }
   return {
     date: form.date.trim(),
