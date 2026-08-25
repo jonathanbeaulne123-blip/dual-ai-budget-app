@@ -203,6 +203,7 @@ import { useDialog } from "./useDialog.ts";
 import { CalendarPage } from "./Calendar.tsx";
 import { Office } from "./Office.tsx";
 import { HerculesPresence } from "./Hercules.tsx";
+import { HerculesProApproval, herculesProAuthorizationRequest } from "./HerculesPro.tsx";
 import { CadPad } from "./CadPad.tsx";
 import { PresetChip } from "./widgets/PresetChip.tsx";
 import { SitDownGuide } from "./SitDownGuide.tsx";
@@ -294,6 +295,7 @@ function emptyFormForZone(timeZone: string) {
 
 export function App() {
   const [environment, setEnvironment] = useState<Environment>("development");
+  const [herculesProRequest] = useState(() => herculesProAuthorizationRequest());
   const [household, setHousehold] = useState<Household | null>(null);
   const [booting, setBooting] = useState(true);
   const [tab, setTab] = useState<Tab>("home");
@@ -1658,12 +1660,15 @@ export function App() {
 
   if (booting) {
     return (
-      <div className="welcome">
-        <div className="welcome-card">
-          <p className="kicker">On this device</p>
-          <h1>Opening the ledger…</h1>
+      <>
+        <div className="welcome">
+          <div className="welcome-card">
+            <p className="kicker">On this device</p>
+            <h1>Opening the ledger…</h1>
+          </div>
         </div>
-      </div>
+        <HerculesProApproval authorizationRequest={herculesProRequest} environment={environment} household={household} session={session} />
+      </>
     );
   }
 
@@ -1840,6 +1845,7 @@ export function App() {
             </>
           )}
         </div>
+        <HerculesProApproval authorizationRequest={herculesProRequest} environment={environment} household={household} session={session} />
       </div>
     );
   }
@@ -1902,6 +1908,7 @@ export function App() {
             </button>
           ))}
         </div>
+        <HerculesProApproval authorizationRequest={herculesProRequest} environment={environment} household={household} session={session} />
       </div>
     );
   }
@@ -3721,6 +3728,13 @@ export function App() {
             subcategoryId: draft.subcategoryId ?? current.subcategoryId,
           }));
         }}
+      />
+
+      <HerculesProApproval
+        authorizationRequest={herculesProRequest}
+        environment={environment}
+        household={household}
+        session={session}
       />
 
       <nav className="nav" aria-label="Hearth">

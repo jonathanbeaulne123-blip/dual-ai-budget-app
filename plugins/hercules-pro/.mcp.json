@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "hearth-hercules-pro": {
+      "type": "http",
+      "url": "https://hearth-books.jonathanbeaulne123.workers.dev/mcp"
+    }
+  }
+}

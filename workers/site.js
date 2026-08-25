@@ -5,6 +5,7 @@ import {
   corsHeaders,
   resolveChatOrigin,
 } from "./herculesGuard.js";
+import { handleHerculesPro } from "./herculesPro.js";
 
 const HTML_PATH = /(?:^\/$|\.html(?:$|\?))/i;
 
@@ -815,6 +816,8 @@ async function scanDocument(request, env) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const herculesPro = await handleHerculesPro(request, env);
+    if (herculesPro) return herculesPro;
     if (url.pathname === "/hercules/chat") {
       const { allowed, origin } = resolveChatOrigin(request);
       const cors = corsHeaders(origin);
