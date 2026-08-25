@@ -40,9 +40,9 @@ Bianca can enter the household with Google, optionally follow Hercules through a
 
 No runtime delta is claimed in Part 1 because no product code or books changed.
 
-## Decision needed
+## Decision locked — D-128
 
-Approve the recommended scenario rule: real stated balances use real commands and Confirm; demonstration transactions/shifts stay in a visibly temporary Practice kitchen unless Bianca explicitly converts one to a real draft.
+Jonathan approved the recommended scenario rule: real stated balances use real commands and Confirm; demonstration transactions/shifts stay in a visibly temporary Practice kitchen and are discarded unless Bianca explicitly copies one into a real draft. Copying never posts—the ordinary review and Confirm boundary still applies. Practice state never enters journals, continuity snapshots, reports, streaks, or accepted-money progress.
 
 ## Verification
 

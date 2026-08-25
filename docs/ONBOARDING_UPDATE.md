@@ -290,15 +290,15 @@ Required seams:
 - Practice state visibly separate from real books. Real writes still use current commands and existing Confirm.
 - A feature can register a future chapter without modifying the tutorial engine.
 
-## 8. One pressing product decision
+## 8. Locked scenario rule — D-128
 
-The tutorial must decide how scenario money works:
+Jonathan approved the recommended real/practice split on 2026-08-25:
 
-**Recommended:** opening balances and any facts Bianca says are real use the real command + Confirm path. Demonstration-only transactions and shifts run in an unmistakable temporary Practice kitchen and are discarded at chapter end. A practice item can be copied into a real draft, but never silently promoted.
+**Rule:** opening balances and any facts Bianca says are real use the real command + Confirm path. Demonstration-only transactions and shifts run in an unmistakable temporary Practice kitchen and are discarded at chapter end. A practice item can be copied into a real draft, but never silently promoted.
 
-The alternative — posting every tutorial scenario into September's real books — is simpler to code but risks leaving invented groceries, hours, wages, or tips in the trial ledger.
+Practice activity must not enter journals, cloud continuity snapshots, reports, streaks, or onboarding progress that claims real money was accepted. Copying practice into a real draft is an explicit user action; the copied draft still passes the ordinary review and Confirm boundary.
 
-Jonathan must approve the real/practice split before Part 2 storyboards lock.
+This decision unlocks Part 2 storyboards. The remaining Part 1 review covers control dispositions, chapter selection, and final Hercules copy—not the scenario safety model.
 
 ## 9. Acceptance gates
 
@@ -307,7 +307,7 @@ Part 1 is complete when Jonathan approves:
 - featured, contextual, excluded, and repair-first control dispositions;
 - the core and optional chapter lists;
 - Hercules tone/scripts;
-- the real-versus-practice scenario rule.
+- ~~the real-versus-practice scenario rule~~ — approved as D-128.
 
 The complete update is not ready until:
 
@@ -319,4 +319,3 @@ The complete update is not ready until:
 - no tutorial code bypasses typed commands or Confirm;
 - keyboard, screen reader, touch, zoom, offline, reconnect, and reduced-motion proofs pass;
 - adding a new chapter is demonstrably isolated to registry/content/target additions.
-

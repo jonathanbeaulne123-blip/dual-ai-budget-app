@@ -63,7 +63,7 @@ Only the currently open or just-closed worksession belongs here. Durable history
 
 | Worksession | State | Scope | Output |
 |---|---|---|---|
-| [2026-08-25 Onboarding Update](worksessions/2026-08-25-onboarding-update.md) | **ACTIVE; Part 1** | Comprehensive control/feature review, Bianca journey, Hercules scripts, research, modular architecture | Codex; no migration overlap; one product decision before Part 2 |
+| [2026-08-25 Onboarding Update](worksessions/2026-08-25-onboarding-update.md) | **ACTIVE; Part 1** | Comprehensive control/feature review, Bianca journey, Hercules scripts, research, modular architecture | Codex; D-128 real/practice rule locked; Part 2 storyboarding unblocked; no migration overlap |
 | [2026-08-25 Shift workflow rebuild](worksessions/2026-08-25-shift-workflow.md) | **PLAYTEST-READY; PR #100** | Job rules, Timesheet, Confirm/history, Calendar settlement/reporting | Codex; D-127; CI + preview green; batch small polish after playtesting |
 | [2026-08-25 Opening truth](worksessions/2026-08-25-opening-truth.md) | **PROPOSED; Onboarding component** | Guided truthful opening balances and debts | Fold into the Onboarding Update; three product locks remain before money-command implementation |
 | [2026-08-24 Command states Slice A+B](worksessions/2026-08-24-command-states-slice-ab.md) | **CLOSED; PR #76 merged** | Command chrome, sync anchor, conflict choose, Add a11y (Development) | Claude UX spec; Cursor Cloud Agent (GPT) implementation; 51 files / 373 tests on merged `main` |
