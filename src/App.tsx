@@ -1925,7 +1925,7 @@ export function App() {
           booksStatus={booksStatus}
           focusedAccountId={focusedAccountId}
           onFocusAccount={setFocusedAccountId}
-          onChange={(next, token) => { void persist(next, token); }}
+          onChange={(next, token) => persist(next, token)}
           onPayAccount={openPayCard}
           onAddToAccount={(account) => openAddFor(account)}
           onRemove={(transaction) => {

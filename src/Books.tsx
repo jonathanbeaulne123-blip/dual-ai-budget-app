@@ -37,6 +37,7 @@ import {
   type Account,
 } from "./core/index.ts";
 import { LedgerPage } from "./Ledger.tsx";
+import { BatchImportCard } from "./BatchImport.tsx";
 import { WalletPane } from "./Accounts.tsx";
 import { booksFilename, booksJournalCsv, booksSqlDump, downloadText } from "./ledger/export.ts";
 import { queryBooks, type BooksStatus } from "./ledger/engine.ts";
@@ -45,6 +46,7 @@ import { assertReadOnlySelect } from "./ledger/queryGuard.ts";
 const PANES = [
   { id: "wallet", label: "Wallet", blurb: "Net worth story: chequing → Goals vault → cards → investments. Touch a tile to open the room." },
   { id: "register", label: "All activity", blurb: "Every posted row you can see in this view. Duplicate contrast lives here." },
+  { id: "import", label: "Import", blurb: "QFX/OFX and selected document photos enter an inbox. Duplicate review and one final Confirm protect the books." },
   { id: "journal", label: "Journal", blurb: "Debit and credit lines compiled from the snapshot. The books engine." },
   { id: "trial", label: "Trial balance", blurb: "Account totals that must balance. Health refuses a lie." },
   { id: "statements", label: "Statements", blurb: "Balance sheet, P&L, cash flow, equity, working capital, notes." },
@@ -74,7 +76,7 @@ export function BooksPage({
   booksStatus: BooksStatus | null;
   focusedAccountId: string | null;
   onFocusAccount: (accountId: string | null) => void;
-  onChange: (household: Household, undo?: UndoToken) => void;
+  onChange: (household: Household, undo?: UndoToken) => unknown | Promise<unknown>;
   onRemove: (transaction: Household["transactions"][number]) => void;
   onPayAccount: (account: Account) => void;
   onAddToAccount: (account: Account) => void;
@@ -195,6 +197,14 @@ export function BooksPage({
       )}
       {pane === "register" && (
         <LedgerPage household={household} memberId={memberId} view={view} onChange={onChange} onRemove={onRemove} />
+      )}
+      {pane === "import" && (
+        <BatchImportCard
+          household={household}
+          memberId={memberId}
+          view={view}
+          onCommit={(next, undo) => onChange(next, undo)}
+        />
       )}
       {pane === "journal" && (
         <section className="card">
