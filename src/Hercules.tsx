@@ -65,6 +65,7 @@ import {
 } from "./core/index.ts";
 import { HerculesDress } from "./HerculesDress.tsx";
 import { HerculesFigure } from "./HerculesFigure.tsx";
+import { launchHerculesPro } from "./HerculesPro.tsx";
 import {
   HerculesFly,
   HerculesLitterBox,
@@ -1119,6 +1120,14 @@ export function HerculesPresence({
           )}
           {open && !begging && (
             <>
+              <button
+                type="button"
+                className="hercules-pro-launch"
+                onClick={launchHerculesPro}
+                title="Optional ChatGPT companion. Free Hercules stays available here."
+              >
+                Use Hercules Pro ↗
+              </button>
               {!busy && (
                 <div className="hercules-replies">
                   {talk.replies.map((item) => (

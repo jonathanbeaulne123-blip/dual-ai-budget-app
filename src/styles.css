@@ -1106,6 +1106,12 @@ input, select, textarea {
   margin: 6px 0 0 auto;
   background: transparent;
 }
+.hercules-pro-launch {
+  width: 100%;
+  margin: 0 0 7px;
+  border-color: color-mix(in srgb, var(--gold) 55%, var(--line));
+  background: color-mix(in srgb, var(--paper-2) 86%, var(--gold));
+}
 .wardrobe {
   background: var(--card);
   border: 1px solid var(--line);

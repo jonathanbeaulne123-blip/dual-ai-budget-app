@@ -1,0 +1,33 @@
+{
+  "name": "hercules-pro",
+  "version": "0.1.0",
+  "description": "A read-only ChatGPT financial teacher grounded in your live Hearth ledgers.",
+  "author": {
+    "name": "Jonathan Beaulne",
+    "url": "https://github.com/jonathanbeaulne123-blip"
+  },
+  "homepage": "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app",
+  "repository": "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app",
+  "keywords": ["hearth", "budget", "ledger", "financial-education", "hercules"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Hercules Pro",
+    "shortDescription": "Ask your Hearth books in ChatGPT",
+    "longDescription": "Hercules Pro uses sixteen read-only Hearth tools to explain personal and shared household ledgers. It can investigate posted facts and teach, but cannot change money.",
+    "developerName": "Hearth",
+    "category": "Finance",
+    "capabilities": ["Read-only ledger tools", "Financial education", "Grounded recommendations"],
+    "websiteURL": "https://hearth-books.jonathanbeaulne123.workers.dev/",
+    "privacyPolicyURL": "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/main/docs/HERCULES_PRO_PRIVACY.md",
+    "termsOfServiceURL": "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/main/docs/HERCULES_PRO_TERMS.md",
+    "defaultPrompt": [
+      "Can I afford groceries this week?",
+      "Explain where our household money went this month.",
+      "Teach me what my card balance means."
+    ],
+    "brandColor": "#6B4A2E",
+    "composerIcon": "./assets/hercules-mark.svg",
+    "logo": "./assets/hercules-mark.svg"
+  }
+}
