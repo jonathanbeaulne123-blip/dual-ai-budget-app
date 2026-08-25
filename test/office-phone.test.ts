@@ -177,5 +177,6 @@ describe("phone CSS fence", () => {
     expect(phone).toMatch(/revealPhoneInstrument/);
     expect(phone).toMatch(/StoryStrip/);
     expect(phone).toMatch(/WaxSeal/);
+    expect(phone).toMatch(/WeatherRibbon/);
   });
 });

@@ -25,7 +25,7 @@ import { BlotterBody, BlotterGlance } from "./widgets/Blotter.tsx";
 import { CalculatorBody, CalculatorGlance } from "./widgets/CalculatorPad.tsx";
 import { TimesheetBody, TimesheetGlance } from "./widgets/Timesheet.tsx";
 import { ChalkboardBody } from "./widgets/ChalkboardDesk.tsx";
-import { WindowBand } from "./widgets/WindowBand.tsx";
+import { WeatherRibbon } from "./widgets/WeatherRibbon.tsx";
 import { JarsBody, JarsGlance } from "./widgets/Jars.tsx";
 import { LampBody, LampGlance, lampAria } from "./widgets/Lamp.tsx";
 import { MailBody, MailGlance } from "./widgets/Mail.tsx";
@@ -87,7 +87,7 @@ export function OfficePhone({
   onMarkPaid: (recurrenceId: string, summary: string) => void;
   onGo: (tab: HearthTab) => void;
 }) {
-  const [chalkShrunk, setChalkShrunk] = useState(false);
+  const [chalkOpen, setChalkOpen] = useState(false);
   const opinion = useMemo(() => auditOpinion(household), [household]);
   const findings = useMemo(() => runHealthCheck(household), [household]);
   const streak = useMemo(() => shiftPostingStreak(household, today), [household, today]);
@@ -214,21 +214,7 @@ export function OfficePhone({
 
   return (
     <div className={`office-phone office-phone-c ${adding ? "is-adding" : ""}`} data-desk={deskKey}>
-      <WindowBand
-        reading={reading}
-        chalkboardBody={
-          <ChalkboardBody
-            household={household}
-            memberId={memberId}
-            busy={busy}
-            onCommand={onKitchen}
-            reading={reading}
-            shrinkable
-            shrunk={chalkShrunk}
-            onToggleShrink={() => setChalkShrunk((on) => !on)}
-          />
-        }
-      />
+      <WeatherRibbon reading={reading} />
 
       {sill.needsMe && (
         <div className="ph-sill">
@@ -324,6 +310,18 @@ export function OfficePhone({
           </div>
         </details>
       )}
+
+      <details className="ph-chalk" open={chalkOpen} onToggle={(event) => setChalkOpen(event.currentTarget.open)}>
+        <summary>Chalkboard</summary>
+        <div className={`ph-chalk-body ${adding ? "is-inert" : ""}`}>
+          <ChalkboardBody
+            household={household}
+            memberId={memberId}
+            busy={busy}
+            onCommand={onKitchen}
+          />
+        </div>
+      </details>
     </div>
   );
 }

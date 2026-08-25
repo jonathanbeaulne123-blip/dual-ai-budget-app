@@ -38,7 +38,7 @@ import {
   type HerculesNumberSource,
 } from "./core/index.ts";
 import { LedgerPage } from "./Ledger.tsx";
-import { PaneSeals } from "./theme/PaperTheme.tsx";
+import { PaneSeals, PaperTile, StoryStrip } from "./theme/PaperTheme.tsx";
 import { BatchImportCard } from "./BatchImport.tsx";
 import { WalletPane } from "./Accounts.tsx";
 import { booksFilename, booksJournalCsv, booksSqlDump, downloadText } from "./ledger/export.ts";
@@ -132,36 +132,36 @@ export function BooksPage({
           Hercules’s opinion: <strong>{opinion.kind}</strong> — {opinion.hercules}
         </p>
       </section>
-      <section className="card books-story">
-        <header>
-          <h2>Story</h2>
-          <span className="muted">Net worth → chequing → goal savings → cards → investments</span>
-        </header>
-        <div className="books-story-row">
-          <button type="button" className="books-story-tile" onClick={() => setPane("wallet")}>
-            <span>Net worth</span>
-            <strong className={equation.netWorthCents < 0 ? "negative" : ""}>{formatCad(equation.netWorthCents)}</strong>
-          </button>
-          {wallet.story.map((group) => (
-            <button
-              key={group.kind}
-              type="button"
-              className="books-story-tile"
-              onClick={() => {
-                setPane("wallet");
-                const first = group.tiles[0]?.account.id;
-                if (first) {
-                  setAccountId(first);
-                  onFocusAccount(first);
-                }
-              }}
-            >
-              <span>{group.kind === "savings" ? "Goal savings" : group.label}</span>
-              <strong>{formatCad(group.tiles.reduce((sum, tile) => sum + tile.displayCents, 0))}</strong>
-            </button>
-          ))}
-        </div>
-      </section>
+      <StoryStrip heading="Story">
+        <PaperTile
+          kind="Books"
+          name="Net worth"
+          value={
+            <strong className={equation.netWorthCents < 0 ? "negative" : ""}>
+              {formatCad(equation.netWorthCents)}
+            </strong>
+          }
+          onClick={() => setPane("wallet")}
+          ariaLabel={`Net worth ${formatCad(equation.netWorthCents)}`}
+        />
+        {wallet.story.map((group) => (
+          <PaperTile
+            key={group.kind}
+            kind="Books"
+            name={group.kind === "savings" ? "Goal savings" : group.label}
+            value={formatCad(group.tiles.reduce((sum, tile) => sum + tile.displayCents, 0))}
+            onClick={() => {
+              setPane("wallet");
+              const first = group.tiles[0]?.account.id;
+              if (first) {
+                setAccountId(first);
+                onFocusAccount(first);
+              }
+            }}
+            ariaLabel={`${group.label} ${formatCad(group.tiles.reduce((sum, tile) => sum + tile.displayCents, 0))}`}
+          />
+        ))}
+      </StoryStrip>
       <div className="grid">
         <div className="stat"><span>Assets</span><strong>{formatCad(equation.assetCents)}</strong></div>
         <div className="stat"><span>Liabilities</span><strong>{formatCad(equation.liabilityCents)}</strong></div>

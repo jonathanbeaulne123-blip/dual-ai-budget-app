@@ -67,10 +67,10 @@ export function WaxSeal({
 }
 
 /** 2×2 story strip grid. */
-export function StoryStrip({ children }: { children: ReactNode }) {
+export function StoryStrip({ children, heading = "Today's stories" }: { children: ReactNode; heading?: string }) {
   return (
-    <section className="hearth-story-strip" aria-label="Today's stories">
-      <h2 className="hearth-story-heading">Today&apos;s stories</h2>
+    <section className="hearth-story-strip" aria-label={heading}>
+      <h2 className="hearth-story-heading">{heading}</h2>
       <div className="hearth-story-grid">{children}</div>
     </section>
   );

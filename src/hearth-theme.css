@@ -3,6 +3,57 @@
    See docs/HEARTH_UI_THEME.md
    ============================================================ */
 
+/* ── weather ribbon (atmosphere only — no CAD) ── */
+.hearth-weather-ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 36px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--paper) 92%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--line) 85%, transparent);
+  font-family: var(--font);
+  font-size: 0.8125rem;
+  color: var(--muted);
+  box-shadow: 0 2px 8px rgba(60, 42, 20, 0.06);
+}
+.hearth-weather-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hearth-weather-emoji { font-size: 0.95rem; line-height: 1; }
+.hearth-weather-temp {
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  color: var(--ink);
+}
+.hearth-weather-dot { opacity: 0.55; }
+.hearth-weather-word { text-transform: lowercase; }
+.hearth-weather-place {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  flex-shrink: 0;
+  opacity: 0.88;
+}
+.hearth-weather-ribbon.glass-rain {
+  background: color-mix(in srgb, var(--paper) 78%, #9fb0b5);
+}
+.hearth-weather-ribbon.glass-night {
+  background: color-mix(in srgb, var(--paper) 70%, #26303a);
+  color: color-mix(in srgb, var(--paper) 88%, white);
+}
+.hearth-weather-ribbon.glass-night .hearth-weather-temp {
+  color: color-mix(in srgb, var(--paper) 95%, white);
+}
+
 /* ── paper tile ── */
 .hearth-paper-tile {
   display: flex;
@@ -12,8 +63,12 @@
   padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
   border-radius: 12px;
-  background: color-mix(in srgb, var(--paper) 88%, #c9a884);
-  box-shadow: 0 4px 10px rgba(60, 42, 20, 0.08);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--card) 92%, #fff) 0%, color-mix(in srgb, var(--paper) 88%, #c9a884) 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 250, 242, 0.7) inset,
+    0 4px 10px rgba(60, 42, 20, 0.08),
+    0 12px 24px rgba(60, 42, 20, 0.04);
   text-align: left;
   font-family: inherit;
   color: var(--ink);
@@ -73,17 +128,18 @@ button.hearth-paper-tile:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 2px;
-  min-height: 68px;
+  min-height: 72px;
   min-width: 44px;
-  padding: 10px 8px;
+  padding: 12px 8px;
   border: 0;
   border-radius: 999px;
   font-family: inherit;
   cursor: pointer;
   color: var(--ink);
   box-shadow:
+    inset 0 2px 4px rgba(255, 250, 242, 0.25),
     inset 0 -3px 6px rgba(60, 42, 20, 0.12),
-    0 3px 8px rgba(60, 42, 20, 0.1);
+    0 4px 12px rgba(60, 42, 20, 0.12);
   transition: transform 0.16s ease;
 }
 .hearth-wax-seal:focus-visible {
@@ -155,7 +211,16 @@ button.hearth-paper-tile:focus-visible {
 .hearth-story-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 10px;
+}
+.hearth-story-grid .hearth-paper-tile:nth-child(odd) {
+  transform: rotate(-0.6deg);
+}
+.hearth-story-grid .hearth-paper-tile:nth-child(even) {
+  transform: rotate(0.5deg);
+}
+.hearth-story-grid .hearth-paper-tile.is-active {
+  transform: rotate(0deg);
 }
 
 /* ── notebook expand ── */
@@ -205,13 +270,25 @@ button.hearth-paper-tile:focus-visible {
     border-radius: 18px;
     padding: 16px;
   }
-  .books-theme-c .books-story-row {
+  .books-theme-c .hearth-story-heading::after {
+    content: "";
+    display: block;
+    width: 72px;
+    height: 2px;
+    margin-top: 4px;
+    background: color-mix(in srgb, var(--copper) 35%, transparent);
+    border-radius: 999px;
+  }
+  .books-theme-c .hearth-story-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .books-theme-c .books-story-tile {
-    border-radius: 12px;
-    background: color-mix(in srgb, var(--paper) 88%, #c9a884);
-    min-height: 72px;
+  .books-theme-c .hearth-story-grid .hearth-tile-value strong {
+    font-family: inherit;
+    font-weight: inherit;
+    color: inherit;
+  }
+  .books-theme-c .hearth-story-grid .hearth-tile-value .negative {
+    color: var(--danger);
   }
   .books-theme-c .tabs {
     display: none;
