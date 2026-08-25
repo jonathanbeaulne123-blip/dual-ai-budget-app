@@ -1,4 +1,5 @@
 import { booksEquation, compileHousehold, trialBalance } from "./journal.ts";
+import { assertEnvironmentMatch } from "./environmentIsolation.ts";
 import { ensureHouseholdShape } from "./sync.ts";
 import { ValidationError, type Environment, type Household } from "./types.ts";
 import { financialAuditHash } from "./commandIdentity.ts";
@@ -170,7 +171,7 @@ export function makeConflictBundle(household: Household): ConflictBundle {
   };
 }
 
-export function parseConflictBundle(raw: string): ConflictBundle {
+export function parseConflictBundle(raw: string, operatingEnvironment?: Environment): ConflictBundle {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -187,7 +188,7 @@ export function parseConflictBundle(raw: string): ConflictBundle {
   if (!record.local || !record.remote || typeof record.local !== "object" || typeof record.remote !== "object") {
     throw new ValidationError("That conflict bundle is missing both sides. Nothing was merged.");
   }
-  return {
+  const bundle: ConflictBundle = {
     kind: CONFLICT_BUNDLE_KIND,
     schemaVersion: 1,
     environment: record.environment as Environment,
@@ -195,6 +196,12 @@ export function parseConflictBundle(raw: string): ConflictBundle {
     local: ensureHouseholdShape(record.local as Household),
     remote: ensureHouseholdShape(record.remote as Household),
   };
+  if (operatingEnvironment) {
+    assertEnvironmentMatch(bundle.environment, { environment: operatingEnvironment }, "import");
+    assertEnvironmentMatch(bundle.local.environment, { environment: operatingEnvironment }, "import");
+    assertEnvironmentMatch(bundle.remote.environment, { environment: operatingEnvironment }, "import");
+  }
+  return bundle;
 }
 
 export function booksRecoveryAdvice(

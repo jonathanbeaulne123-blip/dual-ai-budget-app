@@ -26,6 +26,7 @@ export * from "./visibility.ts";
 export * from "./sync.ts";
 export * from "./invite.ts";
 export * from "./pass.ts";
+export * from "./environmentIsolation.ts";
 export * from "./journal.ts";
 export * from "./accounts.ts";
 export * from "./statements.ts";

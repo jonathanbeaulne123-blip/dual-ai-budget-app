@@ -1,4 +1,9 @@
 import { inviteFromText, isValidInviteToken } from "./invite.ts";
+import {
+  assertEnvironmentMatch,
+  assertPassInviteConsistency,
+  assertSharedEnvelopeBinding,
+} from "./environmentIsolation.ts";
 import { assembleHousehold, emptyPersonal, ensureHouseholdShape, splitForSync } from "./sync.ts";
 import { moneyFactsChanged } from "./conflict.ts";
 import type { Environment, Household, SharedEnvelope } from "./types.ts";
@@ -51,18 +56,25 @@ export function applyHearthPass(
   memberId?: string,
   operatingEnvironment?: Environment,
 ): Household {
+  assertPassInviteConsistency(pass);
   const invite = inviteFromText(pass.invite || pass.shared.inviteCode);
   const shared: SharedEnvelope = { ...pass.shared, inviteCode: invite, kind: "shared" };
-  if (operatingEnvironment && shared.environment && shared.environment !== operatingEnvironment) {
-    throw new ValidationError("That Pass belongs to a different environment. Nothing was imported.");
+  const binding = {
+    environment: operatingEnvironment ?? local?.environment ?? shared.environment,
+    householdId: local?.householdId,
+    inviteCode: invite,
+  };
+  assertSharedEnvelopeBinding(shared, binding, "pass");
+  if (operatingEnvironment) {
+    assertEnvironmentMatch(shared.environment, { environment: operatingEnvironment }, "pass");
+  }
+  if (local) {
+    assertEnvironmentMatch(shared.environment, { environment: local.environment }, "pass");
   }
   if (!local) {
     const assembled = assembleHousehold(shared, emptyPersonal(memberId || "pending"), { linked: false });
     if (operatingEnvironment) assembled.environment = operatingEnvironment;
     return assembled;
-  }
-  if (shared.environment && shared.environment !== local.environment) {
-    throw new ValidationError("That Pass belongs to a different environment. Nothing was imported.");
   }
   const who = memberId || local.members.find((member) => member.active)?.id || "pending";
   if (local.householdId && shared.householdId && local.householdId === shared.householdId) {

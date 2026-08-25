@@ -3,6 +3,7 @@ import {
   type GoogleIdentitySelector,
 } from "./core/google.ts";
 import { ensureHouseholdShape } from "./core/sync.ts";
+import { assertOutboxItemBinding } from "./core/environmentIsolation.ts";
 import type { Environment, Household } from "./core/types.ts";
 import { hostedContinuityAllowed } from "./ledger/continuityPolicy.ts";
 import {
@@ -211,6 +212,7 @@ export function enqueueContinuitySnapshot(input: {
     blockedByConflict: false,
     nextAttemptAt: null,
   };
+  assertOutboxItemBinding(item);
   write(snapshot.environment, [...items.filter((row) => row.id !== id), item]);
   return item;
 }
@@ -304,6 +306,7 @@ async function flushItem(
   | { kind: "conflict"; remote: Household; message: string }
 > {
   try {
+    assertOutboxItemBinding(item);
     const pushed = await pushSupabaseHousehold(item.snapshot, config, {
       expectedRevision: item.expectedRevision,
       continuityIdentity: identity,

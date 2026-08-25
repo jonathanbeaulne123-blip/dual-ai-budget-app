@@ -416,7 +416,7 @@ export function App() {
       }
       if (flushed.synchronized > 0) {
         const synced = markSynchronized(current);
-        await saveHousehold(synced, { memberId: who });
+        await saveHousehold(synced, { operatingEnvironment: environment, memberId: who });
         householdRef.current = synced;
         setHousehold(synced);
         setSyncState("synced");
@@ -537,7 +537,7 @@ export function App() {
             commandKind: "boot-reconcile",
             postedIds: [],
             adapters: {
-              persist: (next) => saveHousehold(next, { memberId: loadedSession.memberId }),
+              persist: (next) => saveHousehold(next, { operatingEnvironment: environment, memberId: loadedSession.memberId }),
               ingest: async (household) => {
                 try {
                   const { status } = await ingestHouseholdBooks(household);
@@ -651,7 +651,7 @@ export function App() {
         memberId: session?.memberId ?? household.members.find((member) => member.active)?.id ?? null,
       });
       if (typeof sessionStorage !== "undefined") sessionStorage.setItem(stampKey, deviceId);
-      void saveHousehold(touched.household, { memberId: session?.memberId }).then(() => setHousehold(touched.household));
+      void saveHousehold(touched.household, { operatingEnvironment: environment, memberId: session?.memberId }).then(() => setHousehold(touched.household));
     } catch {
       /* soft presence only */
     }
@@ -675,7 +675,7 @@ export function App() {
         commandKind,
         postedIds: [],
         adapters: {
-          persist: (next) => saveHousehold(next, { memberId }),
+          persist: (next) => saveHousehold(next, { operatingEnvironment: environment, memberId }),
           ingest: async (next) => {
             try {
               const { status } = await ingestHouseholdBooks(next);
@@ -744,7 +744,7 @@ export function App() {
               if (!live) return;
               if (pushed.ok) {
                 const synced = markSynchronized(ready);
-                await saveHousehold(synced, { memberId });
+                await saveHousehold(synced, { operatingEnvironment: environment, memberId });
                 householdRef.current = synced;
                 setHousehold(synced);
                 setSyncState("synced");
@@ -787,7 +787,7 @@ export function App() {
         let current = householdRef.current;
         if (flushed.synchronized > 0 && current) {
           current = markSynchronized(current);
-          await saveHousehold(current, { memberId });
+          await saveHousehold(current, { operatingEnvironment: environment, memberId });
           if (live) {
             householdRef.current = current;
             setHousehold(current);
@@ -854,7 +854,7 @@ export function App() {
             if (!live) return;
             if (pushed.ok) {
               const synced = markSynchronized(ready);
-              await saveHousehold(synced, { memberId });
+              await saveHousehold(synced, { operatingEnvironment: environment, memberId });
               householdRef.current = synced;
               setHousehold(synced);
             } else if (pushed.errorClass === "conflict-detected" && pushed.remote) {
@@ -923,7 +923,7 @@ export function App() {
       setPersonalReplica(null);
       return () => { live = false; };
     }
-    void saveHousehold(household, { memberId }).then(async () => {
+    void saveHousehold(household, { operatingEnvironment: environment, memberId }).then(async () => {
       const [personal, items] = await Promise.all([
         loadPersonalReplica(environment, household.householdId, memberId),
         listHouseholdReplicas(environment),
@@ -1032,7 +1032,7 @@ export function App() {
       if (!nextMemberId) throw new Error("That ledger has no active household member.");
       const { status } = await ingestHouseholdBooks(candidate);
       if (!status.ok) throw new Error(status.error || "Those books could not be opened on this device.");
-      await saveHousehold(candidate, { memberId: nextMemberId, activate: true });
+      await saveHousehold(candidate, { operatingEnvironment: environment, memberId: nextMemberId, activate: true });
       householdRef.current = candidate;
       setHousehold(candidate);
       rememberSession({ memberId: nextMemberId, view: session?.view ?? "household", householdId });
@@ -1058,7 +1058,7 @@ export function App() {
       commandKind: "google-discovery",
       postedIds: [],
       adapters: {
-        persist: (next) => saveHousehold(next, { memberId: found.memberId }),
+        persist: (next) => saveHousehold(next, { operatingEnvironment: environment, memberId: found.memberId }),
         ingest: async (candidate) => {
           try {
             const { status } = await ingestHouseholdBooks(candidate);
@@ -1260,7 +1260,7 @@ export function App() {
         postedIds: token?.postedIds ?? [],
         transportRequested,
         adapters: {
-          persist: (household) => saveHousehold(household, { memberId }),
+          persist: (household) => saveHousehold(household, { operatingEnvironment: environment, memberId }),
           ingest: async (household) => {
             try {
               const { status } = await ingestHouseholdBooks(household);
@@ -1344,7 +1344,7 @@ export function App() {
               ...withPoint,
               revision: withPoint.revision + 1,
             });
-            await saveHousehold(pending, { memberId: who });
+            await saveHousehold(pending, { operatingEnvironment: environment, memberId: who });
             if (householdRef.current?.householdId === pending.householdId) {
               householdRef.current = pending;
               setHousehold(pending);
@@ -1360,7 +1360,7 @@ export function App() {
               }).then(async (pushed) => {
                 if (!pushed.ok) return;
                 const synced = markSynchronized(pending);
-                await saveHousehold(synced, { memberId: who });
+                await saveHousehold(synced, { operatingEnvironment: environment, memberId: who });
                 if (householdRef.current?.householdId === synced.householdId) {
                   householdRef.current = synced;
                   setHousehold(synced);
@@ -1390,7 +1390,7 @@ export function App() {
                     ...withPoint,
                     revision: withPoint.revision + 1,
                   });
-                  await saveHousehold(pending, { memberId: who });
+                  await saveHousehold(pending, { operatingEnvironment: environment, memberId: who });
                   householdRef.current = pending;
                   setHousehold(pending);
                   const tipPush = await transportHouseholdWithOutbox({
@@ -1413,7 +1413,7 @@ export function App() {
               }
             }
             saveSyncAnchor(environment, synced);
-            await saveHousehold(synced, { memberId: who });
+            await saveHousehold(synced, { operatingEnvironment: environment, memberId: who });
             setHousehold(synced);
             setSyncState("synced");
           })
