@@ -124,9 +124,16 @@ export function applyRestorePoint(
   household: Household,
   point: RestorePoint,
   memberId: string,
+  input: { isOwner: boolean } = { isOwner: true },
 ): Household {
-  const gate = canRestorePoint(household, point, { isOwner: true });
+  const gate = canRestorePoint(household, point, { isOwner: input.isOwner });
   if (!gate.ok) throw new ValidationError(gate.message);
+  if (point.shared.householdId && point.shared.householdId !== household.householdId) {
+    throw new ValidationError("That restore point belongs to a different household.");
+  }
+  if (point.shared.environment && point.shared.environment !== household.environment) {
+    throw new ValidationError("That restore point belongs to a different Development/Production pill.");
+  }
 
   const localParts = splitForSync(household, memberId);
   const pointShared: SharedEnvelope = {

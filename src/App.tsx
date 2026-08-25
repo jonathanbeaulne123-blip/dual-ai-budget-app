@@ -1339,7 +1339,7 @@ export function App() {
     }
     if (!point) return;
     try {
-      const restored = applyRestorePoint(current, point, who);
+      const restored = applyRestorePoint(current, point, who, { isOwner: isHouseholdOwner });
       await commitHousehold(restored, {
         id: `restore-${point.id}`,
         label: `Restored ${point.label}`,

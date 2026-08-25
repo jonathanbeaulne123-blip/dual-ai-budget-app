@@ -46,6 +46,27 @@ describe("confirmation-scoped Undo", () => {
     expect(undone.household.transactions.some((tx) => tx.note === "Partner bread")).toBe(true);
   });
 
+  it("refuses to undo a partner-created row even if listed in postedIds", () => {
+    const partner = postEntry(catalogHousehold(), {
+      date: "2026-08-25",
+      type: "expense",
+      amount: "8.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Partner bread",
+      createdBy: "MEM-002",
+      confirmDuplicate: true,
+    });
+    const forged: UndoToken = {
+      id: "ACT-forged",
+      label: "Forged",
+      snapshot: catalogHousehold(),
+      postedIds: partner.postedIds,
+      actorMemberId: "MEM-001",
+    };
+    expect(() => undoLedgerConfirm(partner.household, forged)).toThrow(/another person's money/i);
+  });
+
   it("enforces LIFO of this member's ledger tokens", () => {
     const older: UndoToken = {
       id: "ACT-older",
@@ -147,7 +168,7 @@ describe("owner Restore points", () => {
       baseRevision: 5,
       linked: true,
     });
-    const restored = applyRestorePoint(ready, point!, "MEM-001");
+    const restored = applyRestorePoint(ready, point!, "MEM-001", { isOwner: true });
     expect(restored.transactions.some((tx) => tx.note === "After tip")).toBe(false);
     expect(restored.transactions.some((tx) => tx.note === "Shared tip snack")).toBe(true);
     expect(restored.transactions.some((tx) => tx.note === "Personal later")).toBe(true);
