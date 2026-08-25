@@ -119,15 +119,13 @@ React: `WaxSeal` in `src/theme/PaperTheme.tsx`
 
 ### 4.3 Story strip
 
-- 2×2 or horizontal scroll of **paper scraps**  
-- Same projection source as Books `.books-story-tile` / `.wallet-tile`  
-- One primary number per scrap; truncate with ellipsis only after layout pass fails
+CSS: `.hearth-story-strip`, `.hearth-story-grid`, `.hearth-story-heading`  
+React: `StoryStrip` in `src/theme/PaperTheme.tsx`
 
 ### 4.4 Notebook expand body
 
-- Spiral or torn-paper **one-at-a-time** expand under strip  
-- `border-top` + uniform padding (Books uses 16px — match)  
-- Collapse on: nav away, Add open, second tile expand
+CSS: `.hearth-notebook`, `.hearth-notebook-body`  
+React: `NotebookBody` in `src/theme/PaperTheme.tsx`
 
 ### 4.5 Desktop instrument
 
