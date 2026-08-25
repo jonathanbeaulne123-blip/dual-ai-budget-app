@@ -10,6 +10,7 @@ import {
   phoneDrawerIds,
   phoneDueBill,
   phoneRailOrder,
+  phoneStoryIds,
   revealPhoneInstrument,
   type Furniture,
   type InstrumentId,
@@ -68,6 +69,13 @@ describe("phone rail", () => {
   it("appends Health only when the lamp is lit", () => {
     expect(phoneRailOrder({ desk: "tracker", hidden: [], lampLit: false })).not.toContain("lamp");
     expect(phoneRailOrder({ desk: "tracker", hidden: [], lampLit: true })).toContain("lamp");
+  });
+
+  it("builds a four-tile story strip without pad or chalk", () => {
+    const rail = phoneRailOrder({ desk: "household", hidden: [], lampLit: false });
+    expect(phoneStoryIds(rail)).toEqual(["blotter", "timesheet", "jars"]);
+    expect(phoneStoryIds(rail)).not.toContain("calculator");
+    expect(phoneStoryIds(rail)).not.toContain("chalkboard");
   });
 
   it("reveals a hidden instrument onto the phone layout without touching other items", () => {
@@ -163,8 +171,11 @@ describe("phone CSS fence", () => {
     const office = readFileSync("src/Office.tsx", "utf8");
     expect(office).toMatch(/if \(breakpoint === "phone"\)/);
     expect(office).toMatch(/desk-canvas desk-wide/);
+    expect(office).toMatch(/is-wide-room/);
     const phone = readFileSync("src/OfficePhone.tsx", "utf8");
     expect(phone).not.toMatch(/desk-wide/);
     expect(phone).toMatch(/revealPhoneInstrument/);
+    expect(phone).toMatch(/StoryStrip/);
+    expect(phone).toMatch(/WaxSeal/);
   });
 });

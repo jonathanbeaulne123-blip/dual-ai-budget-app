@@ -109,27 +109,13 @@ Every new surface should compose from these **instruments**, not invent new card
 
 ### 4.1 Paper tile (Books + mobile story strip)
 
-```text
-┌──────────────────────┐
-│ KIND (10px uppercase)│  ← category whisper
-│ Name (sentence case) │
-│ $12,345.67           │  ← Fraunces display
-│ [optional bar]       │
-└──────────────────────┘
-```
-
-- Border: `1px solid var(--line)` or paper-mix border  
-- Radius: **10–18px** (phone scraps ~12px; wallet tiles ~18px)  
-- Background: `--card` or warm paper mix (`color-mix(in srgb, var(--paper) 88%, #c9a884)`)  
-- Shadow: soft contact shadow, not floating SaaS card  
-- **No** static rotation on phone tiles (desktop may use ≤0.4° decorative skew max; **off** under `prefers-reduced-motion`)
+CSS: `.hearth-paper-tile`, `.hearth-tile-kind`, `.hearth-tile-name`, `.hearth-tile-value`  
+React: `PaperTile` in `src/theme/PaperTheme.tsx`
 
 ### 4.2 Wax seal (mobile controllers)
 
-- Circular or oval **paper/wax** seal — Post / Due / Close (or pane family on Books)  
-- Terracotta / olive / tan — not flat Material chips  
-- Label ≥ **11px** (prefer `rem`), sub-label readable  
-- Seals **open** instruments or sheets; they **never** post money
+CSS: `.hearth-wax-seal`, `.hearth-wax-seals`  
+React: `WaxSeal` in `src/theme/PaperTheme.tsx`
 
 ### 4.3 Story strip
 

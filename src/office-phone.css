@@ -239,8 +239,37 @@
 .office-phone .ph-chip:focus-visible { outline: 2px solid var(--pine); outline-offset: 2px; }
 
 /* During Add nothing on the desk competes with Post. */
+.office-phone.is-adding .ph-seals,
+.office-phone.is-adding .hearth-story-strip,
+.office-phone.is-adding .hearth-notebook,
 .office-phone.is-adding .ph-rail,
 .office-phone.is-adding .ph-stamps { pointer-events: none; opacity: .45; }
+
+/* ── Draft C shell ── */
+.office-phone-c .ph-seals { margin-top: 2px; }
+.office-phone-c .hearth-story-grid .hearth-tile-value {
+  font-family: var(--display);
+  font-size: 1.05rem;
+  line-height: 1.15;
+  white-space: normal;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.office-phone-c .hearth-story-grid .hearth-tile-value * {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+.office-phone-c .ph-notebook-inner { position: relative; }
+.office-phone-c .ph-notebook-inner.is-inert { pointer-events: none; opacity: 0.55; }
+.office-phone-c .ph-notebook-inner .ph-pin {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 2;
+}
+.office-phone-c .ph-drawer > summary { min-height: 44px; }
 
 @media (prefers-reduced-motion: reduce) {
   .office-phone * { animation: none !important; transition: none !important; }

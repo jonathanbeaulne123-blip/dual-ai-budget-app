@@ -38,6 +38,7 @@ import {
   type HerculesNumberSource,
 } from "./core/index.ts";
 import { LedgerPage } from "./Ledger.tsx";
+import { PaneSeals } from "./theme/PaperTheme.tsx";
 import { BatchImportCard } from "./BatchImport.tsx";
 import { WalletPane } from "./Accounts.tsx";
 import { booksFilename, booksJournalCsv, booksSqlDump, downloadText } from "./ledger/export.ts";
@@ -119,7 +120,7 @@ export function BooksPage({
   }, [sourceFocus]);
 
   return (
-    <>
+    <div className="books-theme-c">
       <section className="hero">
         <div className="label">Books · double-entry · CAD · {household.timezone}</div>
         <div className={`money ${equation.netWorthCents < 0 ? "negative" : ""}`}>{formatCad(equation.netWorthCents)}</div>
@@ -187,6 +188,15 @@ export function BooksPage({
       ) : (
         <p className="muted">This household stays on this phone. Publishing is an explicit Confirm on Invite. A Hearth Pass does not upload.</p>
       )}
+      <PaneSeals
+        items={[
+          { id: "wallet", label: "Wallet" },
+          { id: "register", label: "Activity" },
+          { id: "close", label: "Close month" },
+        ]}
+        active={pane}
+        onPick={(id) => setPane(id as Pane)}
+      />
       <div className="tabs">
         {PANES.map((item) => (
           <button key={item.id} className={pane === item.id ? "active" : ""} onClick={() => setPane(item.id)}>
@@ -511,7 +521,7 @@ export function BooksPage({
           Download close pack
         </button>
       </div>
-    </>
+    </div>
   );
 }
 

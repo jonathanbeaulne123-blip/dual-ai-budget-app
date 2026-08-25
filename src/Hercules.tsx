@@ -205,6 +205,8 @@ export function HerculesPresence({
   const [replySource, setReplySource] = useState<"ai" | "local" | null>(null);
   const [fly, setFly] = useState<{ x: number; y: number } | null>(null);
   const [desktopFly, setDesktopFly] = useState(() => typeof window !== "undefined" && window.innerWidth >= WIDE_BREAKPOINT);
+  const [mobileFocus, setMobileFocus] = useState(false);
+  const phoneShell = !desktopFly;
   const [carryingFly, setCarryingFly] = useState(false);
   const [deadFlies, setDeadFlies] = useState(0);
   const [perchPlay, setPerchPlay] = useState(false);
@@ -233,9 +235,11 @@ export function HerculesPresence({
   const lastBump = useRef<{ id: string; at: number } | null>(null);
   const bubbleRef = useRef<HTMLDivElement | null>(null);
   const [bubbleSize, setBubbleSize] = useState({ w: 228, h: 96 });
-  const showProposal = Boolean(proposal && !adding && !open && !begging && !(tab === "home" && focusedWidget));
-  const showWidgetSnippets = Boolean(tab === "home" && focusedWidget && !adding);
+  const showProposal = Boolean(proposal && !adding && !open && !begging && !(tab === "home" && focusedWidget) && !(phoneShell && mobileFocus));
+  const showWidgetSnippets = Boolean(tab === "home" && focusedWidget && !adding && !(phoneShell && mobileFocus));
   const showTalk = Boolean((open || talk || begging) && !adding && talk && !(proposal && !open && !begging) && !showWidgetSnippets);
+  const hideLiveCat = phoneShell && !mobileFocus;
+  const focusShellOpen = phoneShell && mobileFocus && !adding;
 
   function automaticPoint(point: { x: number; y: number }): { x: number; y: number } {
     if (!desktopFly) return point;
@@ -274,6 +278,21 @@ export function HerculesPresence({
     onResize();
     return () => window.removeEventListener("resize", onResize);
   }, []);
+
+  useEffect(() => {
+    if (!desktopFly || adding || pinned || open || mobileFocus || reducedMotion()) return;
+    const hop = () => {
+      const next = furnitureLand(false, look.view.mood, today);
+      perchedOn.current = next.on;
+      setFlip(next.faceRight);
+      setPos(automaticPoint({ x: next.x, y: next.y }));
+      setMotion("walk");
+      window.setTimeout(() => setMotion(next.pose === "loaf" ? "loaf" : next.pose), 900);
+    };
+    hop();
+    const id = window.setInterval(hop, 5400);
+    return () => window.clearInterval(id);
+  }, [desktopFly, adding, pinned, open, mobileFocus, look.view.mood, today]);
 
   useEffect(() => {
     if (adding || reducedMotion() || !desktopFly) {
@@ -524,11 +543,19 @@ export function HerculesPresence({
     setBegging(false);
     setReplySource(null);
     setTurns([]);
+    if (phoneShell) setMobileFocus(false);
     if (focusedWidget) {
       setSnippets([{ role: "hercules", text: HERCULES_WIDGET_PLACEHOLDER, placeholder: true }]);
     } else {
       setSnippets([]);
     }
+  }
+
+  function openMobileFocus() {
+    if (adding || phoneShell === false) return;
+    setMobileFocus(true);
+    if (!open && !talk) openChatFromBeg();
+    else setOpen(true);
   }
 
   function pushSnippet(userText: string | undefined, herculesText: string) {
@@ -924,7 +951,7 @@ export function HerculesPresence({
       : [];
 
   return (
-    <div className="hercules-world" aria-live="polite">
+    <div className={`hercules-world ${hideLiveCat ? "is-phone-compact" : ""} ${focusShellOpen ? "is-focus-open" : ""} ${desktopFly ? "is-desktop-wander" : ""}`} aria-live="polite">
       {desktopFly && !adding && !reducedMotion() && (
         <HerculesLitterBox deadFlies={deadFlies} carrying={carryingFly} onDrop={dropCarriedFly} />
       )}
@@ -969,7 +996,119 @@ export function HerculesPresence({
           )}
         </div>
       )}
-      {showProposal && proposal && (
+      {phoneShell && !adding && !mobileFocus && (
+        <button
+          type="button"
+          className={`hercules-pill ${attention || begging ? "needs-you" : ""} ${showProposal ? "has-note" : ""}`}
+          aria-label={`Talk to ${look.view.name}. Opens focus mode.`}
+          onClick={openMobileFocus}
+        >
+          <HerculesPortrait
+            mood={look.view.mood}
+            hat={look.hat}
+            chain={look.chain}
+            house={look.house}
+            collar={look.collar}
+            pose="loaf"
+            size={40}
+          />
+          <span className="hercules-pill-name">{look.view.name}</span>
+        </button>
+      )}
+      {focusShellOpen && (
+        <div className="hercules-focus-shell" role="dialog" aria-modal="true" aria-label={`${look.view.name} focus`}>
+          <button type="button" className="hercules-focus-close" onClick={closeChat} aria-label="Close focus mode">
+            Close
+          </button>
+          <div className="hercules-focus-hero">
+            <HerculesPortrait
+              mood={look.view.mood}
+              hat={look.hat}
+              chain={look.chain}
+              house={look.house}
+              collar={look.collar}
+              pose={pose}
+              size={120}
+            />
+          </div>
+          <div className="hercules-focus-body">
+            {talk ? (
+              <>
+            {open && turns.length > 0 ? (
+              <div className="hercules-chat-log" ref={logRef}>
+                {turns.slice(-8).map((turn, index) => (
+                  <p key={`${turn.role}-${index}-${turn.text.slice(0, 12)}`} className={`hercules-turn ${turn.role === "user" ? "you" : "cat"}`}>
+                    {turn.text}
+                  </p>
+                ))}
+                {busy && <p className="hercules-typing">mrrp…</p>}
+              </div>
+            ) : (
+              <p className="hercules-spoken">{talk.spoken}</p>
+            )}
+            {!busy && talk.lesson && <p className="hercules-lesson">{talk.lesson}</p>}
+            {!busy && groundedFacts.length > 0 && (
+              <div className="hercules-grounded-facts" aria-label="Numbers pulled from the books">
+                {groundedFacts.slice(0, 5).map((fact) => (
+                  <button
+                    key={fact.id}
+                    type="button"
+                    className="hercules-grounded-fact"
+                    onClick={() => {
+                      closeChat();
+                      onOpenSource(fact.source);
+                    }}
+                  >
+                    <span>{fact.label}</span>
+                    <strong>{fact.value}</strong>
+                  </button>
+                ))}
+              </div>
+            )}
+            {!busy && (
+              <div className="hercules-replies">
+                {talk.replies.map((item) => (
+                  <button key={item} type="button" onClick={() => speak(item)}>{item}</button>
+                ))}
+              </div>
+            )}
+            <form
+              className="hercules-chat-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void sendChat(question);
+              }}
+            >
+              <input
+                aria-label={`Ask ${look.view.name}`}
+                value={question}
+                placeholder={busy ? "mrrp…" : surface.placeholder}
+                disabled={busy}
+                onChange={(event) => setQuestion(event.target.value)}
+              />
+              <button type="submit" disabled={busy || !question.trim()}>send</button>
+            </form>
+              </>
+            ) : (
+              <p className="hercules-spoken">mrrp…</p>
+            )}
+          </div>
+        </div>
+      )}
+      {showProposal && proposal && phoneShell && !mobileFocus && (
+        <div className="hercules-pill-note" role="status">
+          <p>{proposal.spoken}</p>
+          <div className="hercules-replies">
+            {proposal.habitKey && (
+              <button type="button" onClick={() => onAcceptPreset?.(proposal.habitKey!, proposal.spoken)}>
+                Save as preset
+              </button>
+            )}
+            <button type="button" onClick={() => onDismissNotice?.(proposal.key)}>Not now</button>
+          </div>
+        </div>
+      )}
+      {showProposal && proposal && !phoneShell && (
         <div
           ref={bubbleRef}
           className={`hercules-bubble hercules-proposal ${bubbleSide}`}
@@ -990,7 +1129,7 @@ export function HerculesPresence({
           </div>
         </div>
       )}
-      {showTalk && talk && (
+      {showTalk && talk && !focusShellOpen && (
         <div
           ref={bubbleRef}
           className={`hercules-bubble ${bubbleSide} ${open ? "chat" : ""}`}
@@ -1099,6 +1238,7 @@ export function HerculesPresence({
         type="button"
         className={[
           "hercules-live",
+          hideLiveCat ? "is-hidden-phone" : "",
           `mood-${look.view.mood}`,
           `pose-${pose}`,
           perchPlay ? `perch-play perch-${perchMove}` : "",

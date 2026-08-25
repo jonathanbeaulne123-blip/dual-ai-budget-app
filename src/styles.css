@@ -1532,6 +1532,99 @@ input, select, textarea {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-4px); }
 }
+.hercules-live.is-hidden-phone {
+  opacity: 0;
+  pointer-events: none;
+  width: 0 !important;
+  height: 0 !important;
+}
+.hercules-pill {
+  pointer-events: auto;
+  position: fixed;
+  right: 12px;
+  bottom: calc(var(--nav) + 10px);
+  z-index: 29;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 12px 6px 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 92%, var(--paper));
+  box-shadow: var(--lift-1);
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink);
+}
+.hercules-pill:focus-visible { outline: 2px solid var(--pine); outline-offset: 2px; }
+.hercules-pill-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  max-width: 88px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hercules-pill.needs-you { border-color: var(--copper); box-shadow: 0 0 0 3px rgba(196, 92, 38, 0.12); }
+.hercules-pill-note {
+  pointer-events: auto;
+  position: fixed;
+  right: 12px;
+  bottom: calc(var(--nav) + 64px);
+  z-index: 29;
+  width: min(280px, calc(100vw - 24px));
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+  font-size: 0.8125rem;
+}
+.hercules-focus-shell {
+  pointer-events: auto;
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 10px;
+  padding: 12px 14px calc(var(--nav) + 12px);
+  background: color-mix(in srgb, var(--paper) 88%, #1b1712 12%);
+  backdrop-filter: blur(4px);
+  overflow: auto;
+}
+.hercules-focus-close {
+  justify-self: end;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  font: inherit;
+  cursor: pointer;
+}
+.hercules-focus-hero {
+  display: grid;
+  place-items: center;
+  padding: 8px 0 4px;
+}
+.hercules-focus-body {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+.hercules-world.is-focus-open .hercules-bubble { display: none; }
+@media (min-width: 720px) {
+  .hercules-pill,
+  .hercules-pill-note,
+  .hercules-focus-shell { display: none; }
+}
 .books-story-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));

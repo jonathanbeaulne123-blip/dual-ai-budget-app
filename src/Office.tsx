@@ -838,7 +838,7 @@ export function Office({
 
   return (
     <div
-      className={`office glass-${reading.glass} ${adding ? "is-adding" : ""} ${editing ? "is-editing" : ""} ${layout.expanded && layout.expanded !== "window" ? "is-wide-dim" : ""}`}
+      className={`office is-wide-room glass-${reading.glass} ${adding ? "is-adding" : ""} ${editing ? "is-editing" : ""} ${layout.expanded && layout.expanded !== "window" ? "is-wide-dim" : ""}`}
       data-stock={look.stock}
       data-density={look.density}
       style={{ ["--room-dim" as string]: String(room.roomDim), ["--room-cool" as string]: String(room.roomCool) }}
