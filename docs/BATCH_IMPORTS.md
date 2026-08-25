@@ -29,7 +29,8 @@ Excluding an old posted row sets its reviewed duplicate flag. It is never physic
 - Multiple files and long histories are accepted. A single file has a 50 MB safety limit; split a larger export into date ranges and select all parts together.
 - Currency must be CAD before Confirm. Investment-statement trades are not imported.
 - Hearth maps the statement account only on exact last-four match, or when there is exactly one eligible account. It never silently guesses among several accounts.
-- A transfer keeps the statement account plus an editable direction and other-account choice. The other account may be proposed from an exact last-four, an unambiguous Hearth account name, or at least two matching visible-ledger transfer examples. Institution-only and generic account-kind wording stays unresolved when it could mean more than one account.
+- A transfer keeps the statement account plus an editable direction and other-account choice. The other account may be proposed from an exact last-four, an unambiguous Hearth account name, a uniquely matching active account kind, or at least two matching visible-ledger transfer examples. Thus `transfer from chequing` resolves when the known statement account is not chequing and exactly one other active chequing account exists. Institution-only and account-kind wording stays unresolved when it could mean more than one account or merely repeats the statement account's own kind.
+- External e-transfer wording never uses an account-kind shortcut or learned transfer history. Only an exact internal account name or last-four may override that external-rail guard.
 - Context coding runs on the phone. It uses only transactions visible to the signed-in member in the active Household or Personal view; it does not send statement descriptions or ledger rows to Hercules or another model.
 
 ## Camera/document detection

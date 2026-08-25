@@ -77,7 +77,15 @@ function mappedAccount(household: Household, last4: string): string {
   return eligible.length === 1 ? eligible[0]!.id : "";
 }
 
-function accountContextScore(account: Account, note: string, place: string): number {
+const ACCOUNT_KIND_ALIASES: Partial<Record<Account["kind"], string[]>> = {
+  chequing: ["chequing", "checking"],
+  savings: ["savings", "saving"],
+  credit: ["credit card", "creditcard", "card"],
+  investment: ["investment", "investments"],
+  receivable: ["receivable"],
+};
+
+function accountContextScore(account: Account, note: string, place: string, allowKindMatch: boolean): number {
   const haystack = ` ${normalizedWords(`${note} ${place}`)} `;
   if (account.last4 && haystack.includes(` ${account.last4} `)) return 200;
   const name = normalizedWords(account.name);
@@ -85,7 +93,9 @@ function accountContextScore(account: Account, note: string, place: string): num
   if (!name || !nameTokens.length) return 0;
   if (haystack.includes(` ${name} `)) return 100 + nameTokens.length;
   const haystackTokens = contextTokens(note, place);
-  return nameTokens.every((token) => haystackTokens.has(token)) ? nameTokens.length : 0;
+  if (nameTokens.every((token) => haystackTokens.has(token))) return nameTokens.length;
+  if (!allowKindMatch) return 0;
+  return (ACCOUNT_KIND_ALIASES[account.kind] ?? []).some((alias) => haystack.includes(` ${alias} `)) ? 1 : 0;
 }
 
 function directlyNamedOtherAccount(
@@ -93,10 +103,20 @@ function directlyNamedOtherAccount(
   sourceAccountId: string,
   note: string,
   place: string,
+  allowAccountKind: boolean,
 ): string {
+  const sourceAccount = household.accounts.find((account) => account.id === sourceAccountId);
   const matches = household.accounts
     .filter((account) => account.active && account.id !== sourceAccountId)
-    .map((account) => ({ id: account.id, score: accountContextScore(account, note, place) }))
+    .map((account) => ({
+      id: account.id,
+      score: accountContextScore(
+        account,
+        note,
+        place,
+        Boolean(allowAccountKind && sourceAccount && sourceAccount.kind !== account.kind),
+      ),
+    }))
     .filter((match) => match.score > 0)
     .sort((left, right) => right.score - left.score);
   if (!matches.length || (matches[1] && matches[1].score === matches[0]!.score)) return "";
@@ -271,8 +291,15 @@ export function prepareImportRows(input: {
   const output: ImportReviewRow[] = [];
   for (const source of input.rows) {
     const accountId = mappedAccount(input.household, source.accountLast4);
-    const directlyNamedAccountId = directlyNamedOtherAccount(input.household, accountId, source.note, source.place);
-    const otherAccountId = directlyNamedAccountId || (namesExternalTransferRail(source.note, source.place)
+    const externalTransferRail = namesExternalTransferRail(source.note, source.place);
+    const directlyNamedAccountId = directlyNamedOtherAccount(
+      input.household,
+      accountId,
+      source.note,
+      source.place,
+      !externalTransferRail,
+    );
+    const otherAccountId = directlyNamedAccountId || (externalTransferRail
       ? ""
       : historicalOtherAccount(input.household, ledger, accountId, source.note, source.place));
     const type = source.suggestedType === "transfer"
