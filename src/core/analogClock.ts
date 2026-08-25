@@ -28,7 +28,7 @@ function partNumber(parts: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatP
 }
 
 /** Analog hands follow America/Toronto wall time, never the runtime zone. */
-export function torontoClockParts(now = new Date(), timeZone = TIMEZONE): TorontoClockParts {
+export function torontoClockParts(now = new Date(), timeZone: string = TIMEZONE): TorontoClockParts {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone,
     hour: "numeric",
@@ -57,7 +57,7 @@ export function analogAngles(parts: Pick<TorontoClockParts, "hour" | "minute" | 
   return { hour, minute, second };
 }
 
-export function clockAngleFromInstant(iso: string, timeZone = TIMEZONE): number {
+export function clockAngleFromInstant(iso: string, timeZone: string = TIMEZONE): number {
   return analogAngles(torontoClockParts(new Date(iso), timeZone)).hour;
 }
 

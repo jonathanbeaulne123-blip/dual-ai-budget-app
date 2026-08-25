@@ -101,7 +101,7 @@ describe("daily kitchen cosmetics", () => {
     expect(view.mood === "content" || view.mood === "glowing" || view.mood === "restless").toBe(true);
 
     const broken = catalogHousehold();
-    broken.timezone = "America/Vancouver" as typeof broken.timezone;
+    broken.timezone = "Not/AZone";
     expect(describeCompanion(broken, today).mood).toBe("hiding");
   });
 

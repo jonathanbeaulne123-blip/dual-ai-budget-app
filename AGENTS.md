@@ -16,8 +16,7 @@ Help Jonathan and Bianca run a dependable household budget **and** a companion k
 ## Current facts
 
 - Hearth is the working tree. Apps Script (`Code.gs`, clasp, dialog HTML) is not in this tree. Recover it from git tag `sheets-v0.0.31`.
-- Time zone: `America/Toronto`.
-- Currency: CAD, integer cents.
+- Time zone: household-chosen IANA civil zone (D-126); default/detect still favors `America/Toronto` until Jonathan locks Q1. Currency: CAD, integer cents.
 - Development and Production are separate ledger environments. Current code keeps named local snapshots per device; D-114 adds matching cloud scopes without mixing them. Default experiments to Development.
 - Website: Cloudflare Workers + Assets, worker `hearth-books`. Publishes from GitHub `main` via `wrangler deploy` (D-041). Preview uploads are not the kitchen URL.
 - Hercules (Maine Coon) is the product face (D-044, D-045, D-046, D-049, D-050, D-051). Cosmetics, chat/memories, office widgets, and weather never post money. Journal matches and chips are model-first through the D-103 locked Worker with a bounded, visibility-filtered, redacted D-105 excerpt; grounded on-device talk is the fallback. Remember/recall, SQL or shame refusal, and Add drafts stay local. The model never posts money or gains Command authority. Third-party OpenAI/Anthropic keys are allowed as Worker secrets (`wrangler secret put`), never `VITE_`. The Audit Office is how we show the ledger. Accounts Floor is how we touch it (D-047). Kitchen habit is the CAD pad, guided sit-down, and shift-posting streak (D-050). September Office (D-051 / D-079 / D-080) is the testing face: rainy window, movable widgets, cat on the furniture — phone is `OfficePhone`; desktop customization prompt is `docs/CLAUDE_DESKTOP_OFFICE.md`.

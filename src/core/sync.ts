@@ -9,6 +9,8 @@ import { applyGoalSavings, shapeGoalProgress, shapeGoalPurchases } from "./goals
 import { shapeAppointments, shapeClaims } from "./appointments.ts";
 import { shapeAccounts } from "./accountKinds.ts";
 import { mergeDevices, shapeDevices } from "./devices.ts";
+import { shapeTransactionLocation } from "./transactionLocation.ts";
+import { DEFAULT_TIMEZONE, isValidIanaTimeZone } from "./calendar.ts";
 import type {
   Activity,
   BudgetPlan,
@@ -141,6 +143,7 @@ export function ensureHouseholdShape(household: Household): Household {
     baseRevision: household.baseRevision ?? 0,
     booksAcceptedHash: household.booksAcceptedHash ?? null,
     tombstones: household.tombstones ?? [],
+    timezone: isValidIanaTimeZone(household.timezone) ? household.timezone.trim() : DEFAULT_TIMEZONE,
     ledgerNames: shapeLedgerNames(household.ledgerNames, household.members),
     recurrences: (household.recurrences ?? []).map((item) => shapeRecurrence(item, fallbackIso)),
     appointments: shapeAppointments(household.appointments, fallbackIso),
@@ -162,6 +165,11 @@ export function ensureHouseholdShape(household: Household): Household {
     transactions: household.transactions.map((tx) => ({
       ...tx,
       place: tx.place ?? "",
+      location: shapeTransactionLocation(tx.location),
+      occurredAt:
+        typeof tx.occurredAt === "string" && tx.occurredAt.trim() && !Number.isNaN(Date.parse(tx.occurredAt))
+          ? new Date(tx.occurredAt).toISOString()
+          : undefined,
       visibility: parseVisibility(tx.visibility),
       createdBy: tx.createdBy || fallback,
       updatedAt: tx.updatedAt ?? tx.createdAt,

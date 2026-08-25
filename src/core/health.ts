@@ -1,3 +1,4 @@
+import { isValidIanaTimeZone } from "./calendar.ts";
 import { duplicateKey, refreshDuplicateFlags } from "./duplicate.ts";
 import { booksFindings } from "./journal.ts";
 import type { Household } from "./types.ts";
@@ -8,8 +9,8 @@ export function runHealthCheck(household: Household): Finding[] {
   const findings: Finding[] = [];
   const flag = (section: string, message: string, id?: string) => findings.push({ section, message, id });
 
-  if (household.timezone !== "America/Toronto") {
-    flag("Timezone", `Household timezone is ${household.timezone}; it must be America/Toronto.`);
+  if (!isValidIanaTimeZone(household.timezone)) {
+    flag("Timezone", `Household timezone "${household.timezone}" is not a valid IANA zone.`);
   }
   if (household.currency !== "CAD") flag("Currency", `Household currency is ${household.currency}; CAD is required.`);
 

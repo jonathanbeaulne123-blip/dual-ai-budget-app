@@ -1,13 +1,26 @@
-import { TIMEZONE, isValidDateKey, type DateKey } from "./calendar.ts";
+import { DEFAULT_TIMEZONE, isValidDateKey, isValidIanaTimeZone, type DateKey } from "./calendar.ts";
 import { CURRENCY, parseWholeCents } from "./money.ts";
 import type { Category, Household, Member, Account, Split, TransactionType } from "./types.ts";
 import { JOINT, ValidationError } from "./types.ts";
 import { assertSplits } from "./splits.ts";
 
 export function requireTimezone(household: Household): void {
-  if (household.timezone !== TIMEZONE) {
-    throw new ValidationError(`Household timezone must be ${TIMEZONE}.`);
+  if (!isValidIanaTimeZone(household.timezone)) {
+    throw new ValidationError(`Household timezone must be a valid IANA zone (got ${household.timezone || "empty"}).`);
   }
+}
+
+export function requireIanaTimeZone(timeZone: string): string {
+  const trimmed = timeZone.trim();
+  if (!isValidIanaTimeZone(trimmed)) {
+    throw new ValidationError("Choose a valid IANA timezone.");
+  }
+  return trimmed;
+}
+
+export function householdTimeZone(household: Pick<Household, "timezone"> | null | undefined): string {
+  const zone = household?.timezone?.trim();
+  return zone && isValidIanaTimeZone(zone) ? zone : DEFAULT_TIMEZONE;
 }
 
 export function activeMembers(household: Household): Member[] {

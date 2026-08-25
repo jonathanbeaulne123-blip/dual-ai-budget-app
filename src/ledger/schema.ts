@@ -1,4 +1,4 @@
-export const BOOKS_SCHEMA_VERSION = 1;
+export const BOOKS_SCHEMA_VERSION = 2;
 
 export const BOOKS_SCHEMA = `
 CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 CREATE TABLE IF NOT EXISTS households (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
-  timezone TEXT NOT NULL CHECK (timezone = 'America/Toronto'),
+  timezone TEXT NOT NULL CHECK (char_length(timezone) > 0),
   currency TEXT NOT NULL CHECK (currency = 'CAD'),
   environment TEXT NOT NULL CHECK (environment IN ('development', 'production')),
   invite_phrase TEXT NOT NULL,

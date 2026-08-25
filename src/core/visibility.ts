@@ -37,7 +37,13 @@ export function visibleForDuplicateScan(
  * still run on the full snapshot outside this projection.
  */
 export function householdForAiDisclosure(household: Household, memberId: string): Household {
-  const transactions = household.transactions.filter((tx) => visibleForDuplicateScan(tx, memberId));
+  const transactions = household.transactions
+    .filter((tx) => visibleForDuplicateScan(tx, memberId))
+    .map((tx) => {
+      if (!tx.location) return tx;
+      const { location: _coords, ...rest } = tx;
+      return rest;
+    });
   const shifts = household.shifts.filter((shift) => visibleForDuplicateScan(shift, memberId));
   const goals = household.goals.filter((goal) => goal.shared || goal.ownerMemberId === memberId);
   const desk = household.kitchen.hercules;

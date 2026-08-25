@@ -1,4 +1,4 @@
-import { TIMEZONE, todayKey, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
+import { todayKey, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { advanceCadence, DEFAULT_REMINDER_HOURS_BEFORE, EMPTY_CALENDAR, inferRecurrenceKind, normalizeRecurrenceCadence, shapeCalendar } from "./recurrence.ts";
 import { detectHabits, detectRhythms } from "./rhythm.ts";
 import { CURRENCY, parseWholeCents } from "./money.ts";
@@ -13,11 +13,14 @@ import {
   parseDate,
   requireAccount,
   requireCadAccounts,
+  requireIanaTimeZone,
   requireMember,
   requireSubcategory,
   requireTimezone,
   validateOwnedAmount as catalogValidateOwned,
 } from "./catalog.ts";
+import { shapeTransactionLocation } from "./transactionLocation.ts";
+import { detectDeviceTimeZone } from "./timeZones.ts";
 import { shapeAccount, normalizeAccountKind, emptyCreditDesk, isReceivableKind } from "./accountKinds.ts";
 import { creditCardView, savingsView } from "./accounts.ts";
 import { sitDownPreview } from "./insights.ts";
@@ -148,6 +151,8 @@ function baseTx(household: Household, input: {
   subcategoryId: string | null;
   note: string;
   place?: string;
+  occurredAt?: string;
+  location?: Transaction["location"];
   splits: Split[];
   source: Transaction["source"];
   sourceId?: string;
@@ -159,6 +164,11 @@ function baseTx(household: Household, input: {
   visibility: Visibility;
 }): Transaction {
   const account = requireAccount(household, input.accountId);
+  const location = shapeTransactionLocation(input.location);
+  const occurredAt =
+    typeof input.occurredAt === "string" && input.occurredAt.trim() && !Number.isNaN(Date.parse(input.occurredAt))
+      ? new Date(input.occurredAt).toISOString()
+      : undefined;
   return {
     id: "",
     date: input.date,
@@ -170,6 +180,8 @@ function baseTx(household: Household, input: {
     subcategoryId: input.subcategoryId,
     note: input.note.trim(),
     place: (input.place ?? "").trim(),
+    ...(occurredAt ? { occurredAt } : {}),
+    ...(location ? { location } : {}),
     splits: input.splits,
     transferPairId: input.transferPairId,
     refundOfId: input.refundOfId,
@@ -202,6 +214,8 @@ export function postEntry(household: Household, input: {
   subcategoryId: string;
   note?: string;
   place?: string;
+  occurredAt?: string;
+  location?: Transaction["location"];
   splits?: Split[];
   confirmDuplicate?: boolean;
   refundOfId?: string;
@@ -239,6 +253,8 @@ export function postEntry(household: Household, input: {
     subcategoryId: subcategory.id,
     note: input.note ?? "",
     place: input.place ?? "",
+    occurredAt: input.occurredAt,
+    location: input.location,
     splits,
     source: input.source ?? (input.reversalOfId ? "reversal" : "manual"),
     sourceId: input.sourceId,
@@ -266,6 +282,23 @@ export function postEntry(household: Household, input: {
   next.transactions.push(draft);
   const warnings = matches.length ? ["Saved with a duplicate fingerprint. Review it when you have a moment."] : [];
   return commit(previous, next, input.type === "income" ? "Add Income" : input.type === "refund" ? "Add Refund" : "Add Expense", `${draft.id}: ${input.type} $${(amountCents / 100).toFixed(2)} (${subcategory.name}) on ${date}`, [draft.id], warnings);
+}
+
+/** Shared household civil timezone (D-126). Does not rewrite posted dates. */
+export function setHouseholdTimezone(household: Household, timeZone: string): CommitResult {
+  const nextZone = requireIanaTimeZone(timeZone);
+  if (household.timezone === nextZone) {
+    return {
+      household,
+      warnings: [],
+      postedIds: [],
+      undo: { id: `tz-${nextZone}`, label: "Timezone unchanged", snapshot: household, postedIds: [] },
+    };
+  }
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.timezone = nextZone;
+  return commit(previous, next, "Timezone", `Household calendar is ${nextZone}`, []);
 }
 
 export function postTransfer(household: Household, input: {
@@ -3000,7 +3033,7 @@ export function emptyHousehold(environment: Household["environment"] = "developm
     tombstones: [],
     name: "Jonathan & Bianca",
     ledgerNames: { shared: "Household Ledger", personal: {} },
-    timezone: TIMEZONE,
+    timezone: detectDeviceTimeZone(),
     currency: CURRENCY,
     environment,
     members: [],
