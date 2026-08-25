@@ -44,12 +44,12 @@ These steps change a live service. They are intentionally **not** performed by t
    ```
 
 7. Verify these addresses return JSON, not the Hearth page:
-   - `https://hearth-books.jonathanbeaulne123.workers.dev/.well-known/oauth-protected-resource`
-   - `https://hearth-books.jonathanbeaulne123.workers.dev/.well-known/oauth-authorization-server`
+   - `https://hearth-books.jonathan-beaulne123.workers.dev/.well-known/oauth-protected-resource`
+   - `https://hearth-books.jonathan-beaulne123.workers.dev/.well-known/oauth-authorization-server`
 8. In ChatGPT, turn on developer mode and add the remote MCP server URL:
 
    ```text
-   https://hearth-books.jonathanbeaulne123.workers.dev/mcp
+   https://hearth-books.jonathan-beaulne123.workers.dev/mcp
    ```
 
    Follow OpenAI's current [connect-from-ChatGPT instructions](https://developers.openai.com/plugins/deploy/connect-chatgpt). OAuth should show a **Connect** action; if it does not, recheck both metadata URLs and the `WWW-Authenticate` response from `/mcp`.
