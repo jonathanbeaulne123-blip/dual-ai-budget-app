@@ -31,7 +31,7 @@
 
 - Unlinked/demo households still show **This phone · Not shared yet** until Google continuity or legacy `linked` transport applies (D-110 containment).
 - Conflict choose needs live two-device CAS proof in disposable Development.
-- “Recent changes” copy on More still describes generic LIFO undo; tighten to D-119 wording in a follow-up if Jonathan wants.
+- “Recent changes” copy on More tightened to D-119 wording (Development last-sync empty/pill/synced labels; Production interim LIFO empty copy). Dated pickable restore history is **D-124** (accepted, not built).
 
 ## Dual Course
 
