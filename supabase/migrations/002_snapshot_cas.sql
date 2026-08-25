@@ -162,8 +162,9 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION publish_household_snapshot(text, integer, text, text, text, text, boolean, integer, text, text, text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION publish_household_snapshot(text, integer, text, text, text, text, boolean, integer, text, text, text) TO anon, authenticated;
+-- Signature must list all 12 args (invite_phrase text is easy to drop — that 42883'd the first paste).
+REVOKE ALL ON FUNCTION publish_household_snapshot(text, integer, text, text, text, text, text, boolean, integer, text, text, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION publish_household_snapshot(text, integer, text, text, text, text, text, boolean, integer, text, text, text) TO anon, authenticated;
 
 INSERT INTO schema_migrations (id, applied_at)
 VALUES (2, now()::text)

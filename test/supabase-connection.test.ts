@@ -59,4 +59,18 @@ describe("hosted books migration", () => {
     expect(cas).toMatch(/NOTIFY pgrst/);
     expect(cas).toMatch(/Production: DO NOT APPLY/);
   });
+
+  it("keeps REVOKE/GRANT signatures aligned with the 12-arg CREATE", () => {
+    const createArgs = cas.match(
+      /CREATE OR REPLACE FUNCTION publish_household_snapshot\(([\s\S]*?)\)\s*RETURNS/i,
+    )?.[1] ?? "";
+    const createTypes = [...createArgs.matchAll(/\b(TEXT|INTEGER|BOOLEAN)\b/gi)].map((m) => m[1].toLowerCase());
+    expect(createTypes).toEqual([
+      "text", "integer", "text", "text", "text", "text", "text", "boolean", "integer", "text", "text", "text",
+    ]);
+    const revoke = cas.match(
+      /REVOKE ALL ON FUNCTION publish_household_snapshot\(([^)]+)\)/i,
+    )?.[1]?.replace(/\s+/g, "") ?? "";
+    expect(revoke).toBe(createTypes.join(","));
+  });
 });
