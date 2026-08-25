@@ -1,4 +1,8 @@
 import { financialAuditHash } from "../core/commandIdentity.ts";
+import {
+  assertHouseholdBinding,
+  assertPersonalEnvelopeBinding,
+} from "../core/environmentIsolation.ts";
 import { assembleHousehold, ensureHouseholdShape, personalReplicaForMember, splitForSync } from "../core/sync.ts";
 import { inviteFromText } from "../core/invite.ts";
 import { memberIdForGoogleIdentity, type GoogleIdentitySelector } from "../core/google.ts";
@@ -523,10 +527,11 @@ export async function pullSupabaseHousehold(
   const rows = Array.isArray(result.body) ? result.body as { payload: string | Household }[] : [];
   const pulled = snapshotFromRow(rows[0]);
   if (!pulled) return null;
-  if (pulled.environment !== environment) {
-    throw new Error("That shared snapshot belongs to a different Development/Production pill.");
-  }
-  return { ...pulled, linked: true, baseRevision: pulled.revision };
+  return assertHouseholdBinding(
+    { ...pulled, linked: true, baseRevision: pulled.revision },
+    { environment, inviteCode: phrase },
+    "pull",
+  );
 }
 
 /**
@@ -632,13 +637,11 @@ export async function pullHouseholdSnapshotById(
   const rows = Array.isArray(result.body) ? result.body as { payload: string | Household }[] : [];
   const pulled = snapshotFromRow(rows[0]);
   if (!pulled) return null;
-  if (pulled.environment !== environment) {
-    throw new Error("That shared snapshot belongs to a different Development/Production pill.");
-  }
-  if (pulled.householdId !== householdId) {
-    throw new Error("Cloud returned a different household than this phone asked for.");
-  }
-  return { ...pulled, linked: true, baseRevision: pulled.revision };
+  return assertHouseholdBinding(
+    { ...pulled, linked: true, baseRevision: pulled.revision },
+    { environment, householdId },
+    "pull",
+  );
 }
 
 /** Same-member second-device personal tip (Auth JWT). */
@@ -657,7 +660,10 @@ export async function pullPersonalSnapshotById(
   if (isMissingTable(result.body)) return null;
   if (!result.ok) throw new Error(messageOf(result.body));
   const rows = Array.isArray(result.body) ? result.body as { payload?: string | PersonalEnvelope }[] : [];
-  return personalFromRow(rows[0], memberId);
+  const personal = personalFromRow(rows[0], memberId);
+  if (!personal) return null;
+  assertPersonalEnvelopeBinding(personal, { environment, householdId, memberId });
+  return personal;
 }
 
 export async function pushSupabaseHousehold(
