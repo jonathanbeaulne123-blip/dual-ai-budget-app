@@ -1,7 +1,14 @@
 import { shouldPrefillCategory, suggestCategory } from "../autoCode.ts";
-import { confidenceFromScore, duplicateKey, findSimilarTransactions, scoreSimilarity } from "../duplicate.ts";
+import {
+  confidenceFromScore,
+  contextTokens,
+  duplicateKey,
+  findSimilarTransactions,
+  normalizeNote,
+  scoreSimilarity,
+} from "../duplicate.ts";
 import { isVisibleInView } from "../visibility.ts";
-import type { Household, LedgerView, Transaction, TransactionType, Visibility } from "../types.ts";
+import type { Account, Household, LedgerView, Transaction, TransactionType, Visibility } from "../types.ts";
 import type {
   DuplicateTier,
   ImportDuplicateMatch,
@@ -22,10 +29,39 @@ export function defaultImportResolution(confidence: number): ImportResolution {
   return "keep-import";
 }
 
-function activeDefaultCategory(household: Household, type: TransactionType, note: string, place: string): string {
+function normalizedWords(value: string): string {
+  return normalizeNote(value).replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function directlyNamedCategory(household: Household, type: TransactionType, note: string, place: string): string {
   const categoryType = type === "refund" ? "expense" : type;
+  const haystack = ` ${normalizedWords(`${note} ${place}`)} `;
+  const haystackTokens = contextTokens(note, place);
+  const matches = household.categories.flatMap((category) => {
+    if (!category.active || category.recordType !== "category" || category.transactionType !== categoryType) return [];
+    const name = normalizedWords(category.name);
+    const tokens = [...contextTokens(category.name)];
+    if (!name || !tokens.length) return [];
+    const phraseMatch = haystack.includes(` ${name} `);
+    const tokenMatch = tokens.every((token) => haystackTokens.has(token));
+    return phraseMatch || tokenMatch ? [{ id: category.id, score: phraseMatch ? 100 + tokens.length : tokens.length }] : [];
+  }).sort((left, right) => right.score - left.score);
+  if (!matches.length || (matches[1] && matches[1].score === matches[0]!.score)) return "";
+  return matches[0]!.id;
+}
+
+function activeDefaultCategory(
+  household: Household,
+  visibleLedger: Transaction[],
+  type: TransactionType,
+  note: string,
+  place: string,
+): string {
+  const categoryType = type === "refund" ? "expense" : type;
+  const named = directlyNamedCategory(household, type, note, place);
+  if (named) return named;
   if (categoryType === "expense") {
-    const guess = suggestCategory(household, note, place);
+    const guess = suggestCategory({ ...household, transactions: visibleLedger }, note, place);
     if (shouldPrefillCategory(guess)) return guess!.subcategoryId;
   }
   return household.categories.find((category) => (
@@ -39,6 +75,96 @@ function mappedAccount(household: Household, last4: string): string {
   if (exact.length === 1) return exact[0]!.id;
   if (exact.length > 1) return "";
   return eligible.length === 1 ? eligible[0]!.id : "";
+}
+
+function accountContextScore(account: Account, note: string, place: string): number {
+  const haystack = ` ${normalizedWords(`${note} ${place}`)} `;
+  if (account.last4 && haystack.includes(` ${account.last4} `)) return 200;
+  const name = normalizedWords(account.name);
+  const nameTokens = [...contextTokens(account.name)];
+  if (!name || !nameTokens.length) return 0;
+  if (haystack.includes(` ${name} `)) return 100 + nameTokens.length;
+  const haystackTokens = contextTokens(note, place);
+  return nameTokens.every((token) => haystackTokens.has(token)) ? nameTokens.length : 0;
+}
+
+function directlyNamedOtherAccount(
+  household: Household,
+  sourceAccountId: string,
+  note: string,
+  place: string,
+): string {
+  const matches = household.accounts
+    .filter((account) => account.active && account.id !== sourceAccountId)
+    .map((account) => ({ id: account.id, score: accountContextScore(account, note, place) }))
+    .filter((match) => match.score > 0)
+    .sort((left, right) => right.score - left.score);
+  if (!matches.length || (matches[1] && matches[1].score === matches[0]!.score)) return "";
+  return matches[0]!.id;
+}
+
+const GENERIC_TRANSFER_TOKENS = new Set([
+  "automatic",
+  "daily",
+  "monthly",
+  "move",
+  "moving",
+  "online",
+  "paid",
+  "payment",
+  "transfer",
+  "weekly",
+]);
+
+function transferContextTokens(note: string, place: string): Set<string> {
+  return new Set([...contextTokens(note, place)].filter((token) => !GENERIC_TRANSFER_TOKENS.has(token)));
+}
+
+function historicalOtherAccount(
+  household: Household,
+  visibleLedger: Transaction[],
+  sourceAccountId: string,
+  note: string,
+  place: string,
+): string {
+  if (!sourceAccountId) return "";
+  const incomingTokens = transferContextTokens(note, place);
+  const incomingPhrase = normalizedWords(`${note} ${place}`);
+  if (!incomingPhrase) return "";
+  const activeIds = new Set(household.accounts.filter((account) => account.active).map((account) => account.id));
+  const votes = new Map<string, number>();
+  const seenPairs = new Set<string>();
+  for (const transaction of visibleLedger) {
+    if (transaction.isDuplicate || transaction.type !== "transfer") continue;
+    const fromId = transaction.transferFromAccountId;
+    const toId = transaction.transferToAccountId;
+    if (!fromId || !toId || (fromId !== sourceAccountId && toId !== sourceAccountId)) continue;
+    const pairKey = [transaction.id, transaction.transferPairId ?? transaction.id].sort().join("|");
+    if (seenPairs.has(pairKey)) continue;
+    seenPairs.add(pairKey);
+    const priorTokens = transferContextTokens(transaction.note, transaction.place);
+    const hasSpecificOverlap = [...priorTokens].some((token) => incomingTokens.has(token));
+    const sameGenericPhrase = !incomingTokens.size
+      && incomingPhrase === normalizedWords(`${transaction.note} ${transaction.place}`);
+    if (!hasSpecificOverlap && !sameGenericPhrase) continue;
+    const otherId = fromId === sourceAccountId ? toId : fromId;
+    if (!activeIds.has(otherId)) continue;
+    votes.set(otherId, (votes.get(otherId) ?? 0) + 1);
+  }
+  const ranked = [...votes.entries()].sort((left, right) => right[1] - left[1]);
+  if (!ranked.length || ranked[0]![1] < 2 || (ranked[1] && ranked[1][1] === ranked[0]![1])) return "";
+  return ranked[0]![0];
+}
+
+function hasInternalTransferCue(note: string, place: string): boolean {
+  const tokens = contextTokens(note, place);
+  return ["transfer", "payment", "paid", "move", "moving", "contribution"].some((token) => tokens.has(token));
+}
+
+function namesExternalTransferRail(note: string, place: string): boolean {
+  const words = normalizedWords(`${note} ${place}`);
+  const tokens = contextTokens(note, place);
+  return tokens.has("interac") || tokens.has("etransfer") || words.includes("e transfer");
 }
 
 function asSyntheticTransaction(row: ImportReviewRow): Transaction | null {
@@ -144,14 +270,22 @@ export function prepareImportRows(input: {
   const ledger = input.household.transactions.filter((transaction) => isVisibleInView(transaction, input.memberId, input.view));
   const output: ImportReviewRow[] = [];
   for (const source of input.rows) {
-    const type = source.suggestedType;
+    const accountId = mappedAccount(input.household, source.accountLast4);
+    const directlyNamedAccountId = directlyNamedOtherAccount(input.household, accountId, source.note, source.place);
+    const otherAccountId = directlyNamedAccountId || (namesExternalTransferRail(source.note, source.place)
+      ? ""
+      : historicalOtherAccount(input.household, ledger, accountId, source.note, source.place));
+    const type = source.suggestedType === "transfer"
+      || (source.suggestedType !== "refund" && otherAccountId && hasInternalTransferCue(source.note, source.place))
+      ? "transfer"
+      : source.suggestedType;
     const row: ImportReviewRow = {
       ...source,
       type,
-      accountId: mappedAccount(input.household, source.accountLast4),
-      transferAccountId: "",
+      accountId,
+      transferAccountId: type === "transfer" ? otherAccountId : "",
       subcategoryId: type !== "unknown" && type !== "transfer"
-        ? activeDefaultCategory(input.household, type, source.note, source.place)
+        ? activeDefaultCategory(input.household, ledger, type, source.note, source.place)
         : "",
       visibility,
       duplicateConfidence: 0,
