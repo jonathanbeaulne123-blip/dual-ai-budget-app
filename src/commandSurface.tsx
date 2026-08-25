@@ -15,6 +15,8 @@ export type CommandChromeContext = {
   autoMerged?: boolean;
   amountLabel?: string | null;
   ledgerName?: string | null;
+  /** Undo toast only for ledger/money writes (D-119 quiet kitchen). */
+  ledgerWrite?: boolean;
 };
 
 export type CommandChromeChip = {
@@ -52,6 +54,19 @@ export { toCommandSurface };
 
 function postedPrimary(amountLabel?: string | null): string {
   return amountLabel ? `Posted ${amountLabel}` : "Posted";
+}
+
+function undoableToast(
+  primary: string,
+  secondary: string | undefined,
+  ctx: CommandChromeContext,
+): CommandChromeToast | null {
+  if (ctx.ledgerWrite === false) return null;
+  return {
+    primary,
+    secondary,
+    showUndo: true,
+  };
 }
 
 function chipForSharingMode(state: CommandSurfaceState, ctx: CommandChromeContext): CommandChromeChip {
@@ -166,10 +181,7 @@ export function renderCommandChrome(state: CommandSurfaceState, ctx: CommandChro
         tone: "warning",
       },
       toast: posted
-        ? {
-            primary: "Posted on this phone",
-            secondary: "Share is paused until you choose.",
-          }
+        ? undoableToast("Posted on this phone", "Share is paused until you choose.", ctx)
         : null,
       liveAnnouncement: "Conflict. Both copies kept. Review required.",
     };
@@ -190,14 +202,13 @@ export function renderCommandChrome(state: CommandSurfaceState, ctx: CommandChro
           }
         : null,
       toast: posted
-        ? {
-            primary: postedPrimary(ctx.amountLabel),
-            secondary: pendingLine ?? "Waiting to share.",
-          }
+        ? undoableToast(postedPrimary(ctx.amountLabel), pendingLine ?? "Waiting to share.", ctx)
         : null,
-      liveAnnouncement: posted
+      liveAnnouncement: posted && ctx.ledgerWrite !== false
         ? `${postedPrimary(ctx.amountLabel)}. Waiting to share.`
-        : "Waiting to share.",
+        : ctx.ledgerWrite === false
+          ? null
+          : "Waiting to share.",
     };
   }
 
@@ -206,13 +217,15 @@ export function renderCommandChrome(state: CommandSurfaceState, ctx: CommandChro
       chip: chipForSharingMode(state, ctx),
       banner: null,
       toast: posted
-        ? {
-            primary: postedPrimary(ctx.amountLabel),
-            secondary: showAutoMergeMessage ? AUTO_MERGE_MESSAGE : "On this phone.",
-            showUndo: true,
-          }
+        ? undoableToast(
+          postedPrimary(ctx.amountLabel),
+          showAutoMergeMessage ? AUTO_MERGE_MESSAGE : "On this phone.",
+          ctx,
+        )
         : null,
-      liveAnnouncement: posted ? `${postedPrimary(ctx.amountLabel)}. On this phone.` : null,
+      liveAnnouncement: posted && ctx.ledgerWrite !== false
+        ? `${postedPrimary(ctx.amountLabel)}. On this phone.`
+        : null,
       showAutoMergeMessage,
     };
   }
@@ -222,13 +235,11 @@ export function renderCommandChrome(state: CommandSurfaceState, ctx: CommandChro
       chip: chipForSharingMode(state, ctx),
       banner: null,
       toast: posted
-        ? {
-            primary: postedPrimary(ctx.amountLabel),
-            secondary: "Up to date.",
-            showUndo: true,
-          }
+        ? undoableToast(postedPrimary(ctx.amountLabel), "Up to date.", ctx)
         : null,
-      liveAnnouncement: posted ? `${postedPrimary(ctx.amountLabel)}. Up to date.` : null,
+      liveAnnouncement: posted && ctx.ledgerWrite !== false
+        ? `${postedPrimary(ctx.amountLabel)}. Up to date.`
+        : null,
     };
   }
 

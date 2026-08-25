@@ -291,6 +291,12 @@ export async function transportHouseholdWithOutbox(input: {
   expectedRevision: number;
   confirmationId: string;
   config?: SupabaseConfig | null;
+  /**
+   * When false, enqueue only and return pending so the UI can stay responsive.
+   * Launch/focus/reconnect or a follow-up flush pushes the bytes.
+   * Default true: flush immediately after enqueue (ledger writes).
+   */
+  flush?: boolean;
 }): Promise<
   | { ok: true; remoteRevision?: number }
   | { ok: false; errorClass: "pending-transport" | "conflict-detected"; remote?: Household; message: string }
@@ -303,6 +309,13 @@ export async function transportHouseholdWithOutbox(input: {
       ok: false,
       errorClass: "pending-transport",
       message: caught instanceof Error ? caught.message : String(caught),
+    };
+  }
+  if (input.flush === false) {
+    return {
+      ok: false,
+      errorClass: "pending-transport",
+      message: "Saved on this phone. Sharing in the background.",
     };
   }
   const result = await flushItem(item, input.identity, input.config);

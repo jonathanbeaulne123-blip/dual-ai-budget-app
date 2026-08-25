@@ -132,7 +132,7 @@ import {
 } from "./storage.ts";
 import { clearSession, loadSession, saveSession, type Session } from "./session.ts";
 import { joinSharedHousehold, reconcileHousehold, reconcileHouseholdSnapshots } from "./api.ts";
-import { acceptHouseholdWrite, classifyCommandError, hostedTransportAllowed, newConfirmationId } from "./core/index.ts";
+import { acceptHouseholdWrite, classifyCommandError, hostedTransportAllowed, newConfirmationId, isLedgerWrite } from "./core/index.ts";
 import { ingestHouseholdBooks, inspectBrowserBooks, restoreHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
 import { pushSupabaseHousehold, readSupabaseConfig } from "./ledger/supabase.ts";
 import {
@@ -914,6 +914,7 @@ export function App() {
     const previous = householdRef.current;
     const confirmationId = confirmationRef.current ?? newConfirmationId();
     confirmationRef.current = confirmationId;
+    const ledgerWrite = isLedgerWrite(token);
     try {
       const googleSession = session?.memberId ? loadGoogleSession(environment, session.memberId) : null;
       const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
@@ -935,6 +936,8 @@ export function App() {
         automaticContinuity
         || (unprojectedHostedTransportAllowed(environment) && hostedTransportAllowed(next))
       );
+      // Kitchen/UX: enqueue only, flush in background. Ledger: flush immediately (sync-on-write).
+      const flushTransport = ledgerWrite;
       const outcome = await acceptHouseholdWrite({
         previous,
         candidate: next,
@@ -962,9 +965,18 @@ export function App() {
                 expectedRevision,
                 confirmationId,
                 config: cloudConfig,
+                flush: flushTransport,
               })
             : transportRequested && hostedTransportAllowed(next)
               ? async (household, expectedRevision) => {
+                if (!flushTransport) {
+                  void pushSupabaseHousehold(household, cloudConfig, { expectedRevision }).catch(() => undefined);
+                  return {
+                    ok: false,
+                    errorClass: "pending-transport" as const,
+                    message: "Saved on this phone. Sharing in the background.",
+                  };
+                }
                 const pushed = await pushSupabaseHousehold(household, cloudConfig, { expectedRevision });
                 if (pushed.skipped) return { ok: true };
                 if (pushed.conflict && pushed.remote) {
@@ -1001,18 +1013,39 @@ export function App() {
         amountLabel: lastAmountLabelRef.current,
         ledgerName: outcome.household.name,
         autoMerged,
+        ledgerWrite,
       });
       setCommandChrome(chrome);
       if (outcome.kind === "synchronized") {
         saveSyncAnchor(environment, outcome.household);
-        if (automaticContinuity && continuityIdentity) {
-          void flushContinuityOutbox({ environment, identity: continuityIdentity, config: cloudConfig }).catch(() => undefined);
-        }
+      }
+      if (
+        automaticContinuity &&
+        continuityIdentity &&
+        (outcome.kind === "synchronized" || outcome.kind === "pending-transport" || !flushTransport)
+      ) {
+        void flushContinuityOutbox({ environment, identity: continuityIdentity, config: cloudConfig })
+          .then((flushed) => {
+            if (flushed.synchronized <= 0) return;
+            const current = householdRef.current;
+            if (!current || current.householdId !== outcome.household.householdId) return;
+            const synced = markSynchronized(current);
+            saveSyncAnchor(environment, synced);
+            setHousehold(synced);
+            setSyncState("synced");
+          })
+          .catch(() => undefined);
       }
       if (outcome.kind === "conflict-needs-attention" || unresolvedConflicts(outcome.household).length > 0) {
         setShowConflictSheet(true);
       }
-      if (outcome.ok && token && chrome.toast?.showUndo !== false && outcome.kind !== "conflict-needs-attention") {
+      if (
+        outcome.ok &&
+        token &&
+        ledgerWrite &&
+        chrome.toast?.showUndo !== false &&
+        outcome.kind !== "conflict-needs-attention"
+      ) {
         setToast(token);
         setHistory((current) => [...current, token].slice(-20));
         window.setTimeout(() => setToast((item) => (item?.id === token.id ? null : item)), 8000);
