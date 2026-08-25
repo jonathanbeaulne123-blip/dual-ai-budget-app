@@ -15,7 +15,8 @@ This is selected-file intake, not a connected bank feed. No bank credentials or 
    - **Confident:** confidence `> 90`; the imported row starts cancelled.
    - **Not sure:** confidence `50–90`; the person must choose before Confirm.
    - **Probably not a duplicate:** confidence `< 50`; the imported row starts kept and otherwise untouched.
-   Counts for unresolved duplicate choices and missing transaction details are actionable links. Selecting either starts at the first required row and advances focus to the next required row—even if an edit changes that row's confidence tab—until final Confirm is ready.
+   Complete rows at `20%` or below are auto-kept but omitted from the visual review; they still enter only after the final Confirm. A low-score row that lacks a required account, type, category, or transfer destination remains visible for that missing accounting detail.
+   Counts for unresolved duplicate choices and missing transaction details are actionable links. Selecting either centers and focuses the immediate decision or missing field, then advances to the next required issue—even if an edit changes that row's confidence tab—until final Confirm is ready. Choosing **Keep imported / Keep both** also advances this queue.
 5. Each candidate shows the imported row next to the likely existing Hearth row or earlier batch row. The person may cancel the import, keep both, keep the import and exclude the old posted row, or keep one of two batch rows.
 6. One final Confirm posts every kept row through ordinary `postEntry` / `postTransfer`, then through `acceptHouseholdWrite` (PGlite acceptance, local persistence, and eligible continuity transport). Cancel changes nothing.
 

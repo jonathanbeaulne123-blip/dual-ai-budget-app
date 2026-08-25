@@ -26,6 +26,9 @@ const TABS: Array<{ id: DuplicateTier; label: string; hint: string }> = [
 ];
 
 const FINAL_CONFIRM_FOCUS = "__final-confirm__";
+const AUTO_KEEP_HIDDEN_MAX = 20;
+
+type AttentionStep = "duplicate" | "type" | "account" | "currency" | "transfer-account" | "category";
 
 function needsTransactionDetails(row: ImportReviewRow): boolean {
   if (row.resolution === "cancel-import") return false;
@@ -33,8 +36,32 @@ function needsTransactionDetails(row: ImportReviewRow): boolean {
     || (row.type === "transfer" ? !row.transferAccountId || row.transferAccountId === row.accountId : !row.subcategoryId);
 }
 
+function attentionStep(row: ImportReviewRow): AttentionStep | null {
+  if (row.resolution === "undecided") return "duplicate";
+  if (row.resolution === "cancel-import") return null;
+  if (row.type === "unknown") return "type";
+  if (!row.accountId) return "account";
+  if (row.currency !== "CAD") return "currency";
+  if (row.type === "transfer" && (!row.transferAccountId || row.transferAccountId === row.accountId)) return "transfer-account";
+  if (row.type !== "transfer" && !row.subcategoryId) return "category";
+  return null;
+}
+
 function needsHumanAttention(row: ImportReviewRow): boolean {
-  return row.resolution === "undecided" || needsTransactionDetails(row);
+  return attentionStep(row) !== null;
+}
+
+function appearsInReview(row: ImportReviewRow): boolean {
+  return row.duplicateConfidence > AUTO_KEEP_HIDDEN_MAX || needsTransactionDetails(row);
+}
+
+function focusSelector(step: AttentionStep): string | null {
+  if (step === "duplicate") return '[data-import-action="keep"]';
+  if (step === "type") return '[data-import-field="type"]';
+  if (step === "account") return '[data-import-field="account"]';
+  if (step === "transfer-account") return '[data-import-field="transfer-account"]';
+  if (step === "category") return '[data-import-field="category"]';
+  return null;
 }
 
 function nextAttentionId(rows: ImportReviewRow[], afterId: string): string | null {
@@ -82,25 +109,30 @@ export function BatchImportCard({
   const rowRefs = useRef(new Map<string, HTMLElement>());
   const finalConfirmButton = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useDialog(open && !finalConfirm, () => setOpen(false));
-  const visible = useMemo(() => rows.filter((row) => row.duplicateTier === tier), [rows, tier]);
+  const reviewRows = useMemo(() => rows.filter(appearsInReview), [rows]);
+  const visible = useMemo(() => reviewRows.filter((row) => row.duplicateTier === tier), [reviewRows, tier]);
   const unresolved = rows.filter((row) => row.resolution === "undecided").length;
   const kept = rows.filter((row) => row.resolution === "keep-import" || row.resolution === "exclude-ledger").length;
   const cancelled = rows.filter((row) => row.resolution === "cancel-import").length;
+  const autoKept = rows.filter((row) => !appearsInReview(row) && row.resolution === "keep-import").length;
   const incomplete = rows.filter(needsTransactionDetails).length;
   const focusRequestRow = focusRequestId && focusRequestId !== FINAL_CONFIRM_FOCUS
     ? rows.find((row) => row.id === focusRequestId)
     : null;
   const focusRequestTier = focusRequestRow?.duplicateTier ?? null;
-  const focusRequestNeedsAttention = focusRequestRow ? needsHumanAttention(focusRequestRow) : false;
+  const focusRequestStep = focusRequestRow ? attentionStep(focusRequestRow) : null;
 
   useEffect(() => {
     if (!open || !focusRequestId) return;
     if (focusRequestId === FINAL_CONFIRM_FOCUS) {
-      const timeout = window.setTimeout(() => finalConfirmButton.current?.focus(), 0);
+      const timeout = window.setTimeout(() => {
+        finalConfirmButton.current?.scrollIntoView?.({ behavior: "smooth", block: "center", inline: "nearest" });
+        finalConfirmButton.current?.focus({ preventScroll: true });
+      }, 0);
       return () => window.clearTimeout(timeout);
     }
     const target = rows.find((row) => row.id === focusRequestId);
-    if (!target || !focusRequestNeedsAttention) {
+    if (!target || !focusRequestStep) {
       setFocusRequestId(nextAttentionId(rows, focusRequestId) ?? FINAL_CONFIRM_FOCUS);
       return;
     }
@@ -109,12 +141,17 @@ export function BatchImportCard({
       return;
     }
     const timeout = window.setTimeout(() => {
-      const element = rowRefs.current.get(target.id);
-      element?.scrollIntoView?.({ behavior: "smooth", block: "start" });
-      element?.focus();
+      const rowElement = rowRefs.current.get(target.id);
+      const selector = focusSelector(focusRequestStep);
+      const control = selector ? rowElement?.querySelector<HTMLElement>(selector) : rowElement;
+      const reveal = focusRequestStep === "duplicate"
+        ? control?.closest<HTMLElement>(".import-decisions") ?? control
+        : control?.closest<HTMLElement>("label") ?? control;
+      reveal?.scrollIntoView?.({ behavior: "smooth", block: "center", inline: "nearest" });
+      control?.focus({ preventScroll: true });
     }, 0);
     return () => window.clearTimeout(timeout);
-  }, [focusRequestId, focusRequestNeedsAttention, focusRequestNonce, focusRequestTier, open, tier]);
+  }, [focusRequestId, focusRequestNonce, focusRequestStep, focusRequestTier, open, tier]);
 
   function beginAttention(preferred: (row: ImportReviewRow) => boolean) {
     const target = rows.find((row) => preferred(row) && needsHumanAttention(row))
@@ -128,8 +165,9 @@ export function BatchImportCard({
     setRows(prepared);
     setWarnings(nextWarnings.filter(Boolean));
     setFocusRequestId(null);
-    setTier(prepared.some((row) => row.duplicateTier === "confident") ? "confident"
-      : prepared.some((row) => row.duplicateTier === "not-sure") ? "not-sure" : "probably-not");
+    const reviewable = prepared.filter(appearsInReview);
+    setTier(reviewable.some((row) => row.duplicateTier === "confident") ? "confident"
+      : reviewable.some((row) => row.duplicateTier === "not-sure") ? "not-sure" : "probably-not");
     setError("");
     setOpen(true);
   }
@@ -191,6 +229,8 @@ export function BatchImportCard({
   }
 
   function decide(id: string, resolution: ImportReviewRow["resolution"]) {
+    setFocusRequestId(id);
+    setFocusRequestNonce((current) => current + 1);
     setRows((current) => {
       const next = current.map((row) => row.id === id
         ? { ...row, resolution, resolutionTouched: true }
@@ -202,6 +242,8 @@ export function BatchImportCard({
   function keepThisCancelBatchMatch(row: ImportReviewRow) {
     if (row.duplicateMatch?.kind !== "batch") return;
     const matchedRowId = row.duplicateMatch.rowId;
+    setFocusRequestId(row.id);
+    setFocusRequestNonce((current) => current + 1);
     setRows((current) => {
       const next = current.map((candidate) => {
         if (candidate.id === row.id) return { ...candidate, resolution: "keep-import" as const, resolutionTouched: true };
@@ -274,7 +316,7 @@ export function BatchImportCard({
               <button type="button" className="ghost" onClick={() => setOpen(false)} disabled={working}>Close</button>
             </div>
             <p className="import-review-summary">
-              {rows.length} imported row{rows.length === 1 ? "" : "s"} · {kept} kept · {cancelled} cancelled ·{" "}
+              {rows.length} imported row{rows.length === 1 ? "" : "s"} · {autoKept} auto-kept without review · {kept} kept · {cancelled} cancelled ·{" "}
               {unresolved ? (
                 <button type="button" className="import-attention-link" onClick={() => beginAttention((row) => row.resolution === "undecided")}>
                   {unresolved} transaction{unresolved === 1 ? "" : "s"} need{unresolved === 1 ? "s" : ""} a duplicate decision
@@ -289,7 +331,7 @@ export function BatchImportCard({
             </p>
             <div className="tabs import-tabs" role="tablist" aria-label="Duplicate confidence">
               {TABS.map((item) => {
-                const count = rows.filter((row) => row.duplicateTier === item.id).length;
+                const count = reviewRows.filter((row) => row.duplicateTier === item.id).length;
                 return (
                   <button
                     type="button"
@@ -414,12 +456,12 @@ function ImportReviewItem({
             onUpdate({ amountCents, signedAmountCents: row.signedAmountCents < 0 ? -amountCents : amountCents });
           }} /></label>
           <label>Type
-            <select value={row.type} onChange={(event) => onUpdate({ type: event.target.value as ImportReviewRow["type"], subcategoryId: "", transferAccountId: "" })}>
+            <select data-import-field="type" value={row.type} onChange={(event) => onUpdate({ type: event.target.value as ImportReviewRow["type"], subcategoryId: "", transferAccountId: "" })}>
               <option value="unknown">Choose…</option><option value="expense">Expense</option><option value="income">Income</option><option value="refund">Refund</option><option value="transfer">Transfer</option>
             </select>
           </label>
           <label>Account
-            <select value={row.accountId} onChange={(event) => onUpdate({ accountId: event.target.value })}>
+            <select data-import-field="account" value={row.accountId} onChange={(event) => onUpdate({ accountId: event.target.value })}>
               <option value="">Choose…</option>{household.accounts.filter((account) => account.active).map((account) => <option value={account.id} key={account.id}>{account.name}</option>)}
             </select>
           </label>
@@ -435,14 +477,14 @@ function ImportReviewItem({
                 </select>
               </label>
               <label>Other account
-                <select value={row.transferAccountId} onChange={(event) => onUpdate({ transferAccountId: event.target.value })}>
+                <select data-import-field="transfer-account" value={row.transferAccountId} onChange={(event) => onUpdate({ transferAccountId: event.target.value })}>
                   <option value="">Choose…</option>{household.accounts.filter((account) => account.active && account.id !== row.accountId).map((account) => <option value={account.id} key={account.id}>{account.name}</option>)}
                 </select>
               </label>
             </>
           ) : row.type !== "unknown" && (
             <label>Category
-              <select value={row.subcategoryId} onChange={(event) => onUpdate({ subcategoryId: event.target.value })}>
+              <select data-import-field="category" value={row.subcategoryId} onChange={(event) => onUpdate({ subcategoryId: event.target.value })}>
                 <option value="">Choose…</option>{categories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}
               </select>
             </label>
@@ -454,7 +496,7 @@ function ImportReviewItem({
       </div>
       <div className="row-actions import-decisions">
         <button type="button" className="chip" onClick={() => onDecide("cancel-import")}>Cancel imported</button>
-        <button type="button" className="chip" onClick={() => onDecide("keep-import")}>{row.duplicateMatch ? "Keep both" : "Keep imported"}</button>
+        <button type="button" className="chip" data-import-action="keep" onClick={() => onDecide("keep-import")}>{row.duplicateMatch ? "Keep both" : "Keep imported"}</button>
         {ledgerMatch && <button type="button" className="chip" onClick={() => onDecide("exclude-ledger")}>Use import · exclude old</button>}
         {batchMatch && <button type="button" className="chip" onClick={onKeepThisCancelOther}>Use this · cancel other import</button>}
       </div>
