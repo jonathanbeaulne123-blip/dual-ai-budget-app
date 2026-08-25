@@ -313,6 +313,8 @@ export function postTransfer(household: Household, input: {
   fromAccountId: string;
   toAccountId: string;
   note?: string;
+  source?: Transaction["source"];
+  sourceId?: string;
   confirmDuplicate?: boolean;
   reversalOfId?: string;
   createdBy?: string;
@@ -339,7 +341,8 @@ export function postTransfer(household: Household, input: {
     subcategoryId: null,
     note,
     splits: jointSplit(amountCents),
-    source: input.reversalOfId ? "reversal" : "manual",
+    source: input.source ?? (input.reversalOfId ? "reversal" : "manual"),
+    sourceId: input.sourceId,
     reversalOfId: input.reversalOfId,
     createdAt,
     createdBy: actor.createdBy,
@@ -354,7 +357,8 @@ export function postTransfer(household: Household, input: {
     subcategoryId: null,
     note,
     splits: jointSplit(amountCents),
-    source: input.reversalOfId ? "reversal" : "manual",
+    source: input.source ?? (input.reversalOfId ? "reversal" : "manual"),
+    sourceId: input.sourceId,
     reversalOfId: input.reversalOfId,
     createdAt,
     createdBy: actor.createdBy,
@@ -367,7 +371,8 @@ export function postTransfer(household: Household, input: {
     type: "transfer",
     note: outDraft.note,
     place: outDraft.place,
-    source: "manual",
+    source: input.source ?? "manual",
+    sourceId: input.sourceId,
   });
   if (matches.length && !input.confirmDuplicate) {
     throw new NeedsConfirmationError("duplicate", describeSimilarMatches(matches), matches.map((match) => match.transaction));

@@ -201,7 +201,7 @@ A creature and a kitchen that teach the books by living on them:
 | **Lock the hosted door** | Auth + RLS. Personal can become privacy. Opinion about *access* can go unmodified. | Hercules can tell the truth: “the door latched.” No more qualified opinion pretending math is the only issue. | **Next engineering dollar.** Do not apply [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) while `USING (true)`. |
 | **GitHub 2FA** | The canon remote stops being a single-factor door (D-020). | None required — Course A wins. | Open |
 | **Due-on-open preview** | Recurring literacy before `postEntry`. | Kettle whistle that matches a real due row. | Confirm still posts |
-| **Statement inbox** | D-011 import path. Family-office mail. | Mail on the counter. “There’s a statement. You still confirm.” | **Gmail on this phone** may proceed (D-078). Bank PDF parsers still wait on Auth. |
+| **Statement inbox** | D-011/D-130 import path. Family-office mail. | Mail on the counter. “There’s a statement. You still confirm.” | **Selected QFX/OFX and selected document images are active locally (D-130).** Gmail/Drive automation, PDF archives, and connected feeds remain gated. |
 | **Opening balances** | Equity has a beginning. | Chalkboard: “we started here.” | Money meaning; Jonathan approves |
 | **Rec matching rules** | Rec that scales. | Spectacles stay earned; partial rec can earn a look, not a post. | No feed |
 | **Hash-chained log** | Commands become evidence. | Spectacles fog if the chain and the journal disagree. | Journal still wins |
@@ -272,10 +272,10 @@ Order is **weight and risk**, not nostalgia chapter numbers. Claude owns **deskt
 1. **Desktop office (D-080 / D-082).** Unique offices, widget sizes, Edit Desk, personalities — packed so cards do not clip, still a warm desk (cream papers, Fraunces names, 900px column). Prompt: [CLAUDE_DESKTOP_OFFICE.md](CLAUDE_DESKTOP_OFFICE.md). Do not restyle into a 1280 dashboard. Do not turn the phone back into seventeen rows.
 2. **Mobile Home (D-079, shipped).** `OfficePhone` (`< 720px`): glance, one-tap, five or fewer objects. Record: [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md). Further phone customization is a joint Claude+Cursor review, not a dump of the desktop packet.
 3. **Google-account cloud continuity (D-114).** Discover personal/household scopes after sign-in, accept pulled facts through PGlite, synchronize through a durable idempotent outbox, and prove old-device-off read/write. Phrase/Pass/`linked` remain migration and recovery aids.
-4. **Late-September Auth + membership RLS.** Disposable hosted Development data may remain open through 2026-09-30, but the door must close before meaningful October data. Pair it with an honest Hercules line about access. Bank parsers and private hosted sources still wait.
+4. **Late-September Auth + membership RLS.** Disposable hosted Development data may remain open through 2026-09-30, but the door must close before meaningful October data. Pair it with an honest Hercules line about access. D-130 selected files may iterate now; connected feeds, credentials, private archives, and money rails still wait.
 5. **GitHub 2FA** (D-020).
 6. **Recurring preview on open**, then the existing `postEntry` path.
-7. **JSON/CSV import** of a sanitized history through commands (D-011) — same kernel as Sheets import.
+7. **JSON/CSV import** of a sanitized history through the D-130 inbox/command pattern — same kernel principle as selected QFX/OFX, not a second ledger.
 8. Every subsequent feature as a Dual Course pair from the table above. Prefer pairs that raise posting rate, rec rate, sit-down completion, or account literacy.
 
 Do not open Flinks, Interac APIs, issued cards, receipt images in Postgres, or amount-bearing push on a shared device until Auth + RLS is true.

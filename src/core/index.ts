@@ -67,6 +67,7 @@ export * from "./presetIcons.ts";
 export * from "./deskGames.ts";
 export * from "./allocate.ts";
 export * from "./autoCode.ts";
+export * from "./importInbox/index.ts";
 export * from "./sitDown.ts";
 export { createWriteQueue } from "./writeQueue.ts";
 export { formatInviteCode, normalizeInviteCode, randomHouseholdId, randomInviteCode } from "./ids.ts";

@@ -54,6 +54,7 @@ Checkboxes show work state, not product value: `[x]` is shipped on the named bas
 | Rate limiting | PR #79 salvaged the exact Git-main host and a per-IP meter under D-121. Missing KV no longer bypasses the limit, but isolate memory is not a durable or globally consistent hard cap; live KV remains unbound. | Code containment is merged; do not call it a reliable production cap until KV/concurrency proof exists. | Bound production namespace plus concurrent-request tests, telemetry, explicit failure semantics, and documented rollback. |
 | Delivery controls | `main` is unprotected, required checks are off, and direct commits can reach the deploy workflow. | Add branch/ruleset and production-environment approvals before higher-risk merges. | Required build/test/security checks block merge; deploy requires reviewed `main` state and environment approval. |
 | Onboarding / first-number utility | Mobile/Office, Accounts, Audit, appointments, sitdown/vault, Hercules, budget foundations, and D-127 work flow have shipped, but there is no Google-member-scoped guided setup or opening-truth command. Current first-run lessons are device-local and flat. | **PARTS 1–2 PLANNED:** D-128 isolates Practice; D-129 locks Pokémon-rhythm Hercules routes, camera focus, interaction locking, progress, and finale. Cursor foundation prompt is ready without migration overlap. | Automatic/Skip first Google-member entry; D-128 isolation; exact target/route/dialogue proofs; balanced opening truth; replayable member-scoped progress; both members see accepted results from independent devices. D-129's deliberate reduced-motion exception remains named accessibility debt. |
+| Batch intake | QFX/OFX and selected receipt/bill/statement images now have a local staged inbox on `codex/batch-imports`; no bank credentials or feed are involved. | **VERIFIED LOCALLY — D-130:** three exact confidence lanes, side-by-side choice, ordinary commands, one final Confirm. Worker route is not deployed. | 477-test full gate is green; merge, approved Worker deploy, and synthetic Development OFX + image smoke remain. PDF, persistent drafts, completeness/reconciliation, and feeds remain separate. |
 | Active PR topology | #61 was replaced by merged #81; #63 was salvaged through merged #79; #83 is merged and independently reviewed; #86 cleanly renumbered CAS to D-122. #66 is superseded by clean current-main PR #88. #62's budget editor is salvaged onto `main` as D-109; reviewed #87/#89 artifacts are being repaired on a current-main integration branch. | Review the combined repair as code plus staged Development migrations. Do not revive #66. | Every open PR targets current `main`, has unique decision IDs, truthful tests, and one reviewable purpose. |
 | Tracker hygiene | Seven older PRs and the five open issues are legacy/stale; the issues are Sheets-era. | Archive or rewrite after inspecting unique code/history; do not let them drive priority. | Every closure links to its replacement, retained commit, or explicit “superseded” reason. |
 
@@ -64,6 +65,7 @@ Only the currently open or just-closed worksession belongs here. Durable history
 | Worksession | State | Scope | Output |
 |---|---|---|---|
 | [2026-08-25 Onboarding Update](worksessions/2026-08-25-onboarding-update.md) | **ACTIVE; Parts 1–2 planned** | Control/feature review plus exact phone/desktop motion and interaction storyboard | D-128/D-129; Cursor foundation prompt ready; no migration overlap; reduced-motion exception explicit |
+| [2026-08-25 Batch imports](worksessions/2026-08-25-batch-imports.md) | **VERIFIED LOCALLY; deploy pending** | Multi-file QFX/OFX, selected document vision, duplicate triage, one Confirm | D-130; 71 files / 477 tests; no migrations/hosted mutation; Worker not deployed |
 | [2026-08-25 Shift workflow rebuild](worksessions/2026-08-25-shift-workflow.md) | **PLAYTEST-READY; PR #100** | Job rules, Timesheet, Confirm/history, Calendar settlement/reporting | Codex; D-127; CI + preview green; batch small polish after playtesting |
 | [2026-08-25 Opening truth](worksessions/2026-08-25-opening-truth.md) | **READY; Onboarding Slice B** | Guided truthful opening balances and debts | D-129 locks automatic entry, existing-account editor reuse, and current-member shared + Personal scope |
 | [2026-08-24 Command states Slice A+B](worksessions/2026-08-24-command-states-slice-ab.md) | **CLOSED; PR #76 merged** | Command chrome, sync anchor, conflict choose, Add a11y (Development) | Claude UX spec; Cursor Cloud Agent (GPT) implementation; 51 files / 373 tests on merged `main` |
@@ -259,13 +261,14 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 **Proof:** local Supabase tests for every role/action/environment; red-team attempt with publishable key; reviewed cutover and rollback rehearsal.  
 **Kill criterion:** do not enter meaningful October data or call Hearth secure if any cross-personal/cross-household read/write/delete path exists.
 
-### Phase 4 — Reconciliation and safe intake — GATED by Auth + RLS for hosted sources
+### Phase 4 — Reconciliation and safe intake — SELECTED DEVELOPMENT INTAKE ACTIVE; connected sources gated
 
 **Exit condition:** external data becomes a traceable inbox of proposals that a person can match, reject, or Confirm; it never bypasses the books.
 
 - [ ] Add versioned JSON export/import and CSV transaction intake through typed commands, preview, row-level errors, provenance, and idempotency.
+- [ ] Merge and deploy D-130 selected intake: multi-file QFX/OFX plus explicitly selected receipt/bill/statement images, exact confidence lanes, side-by-side choice, and final Confirm. *(Implemented locally on `codex/batch-imports`; Worker deployment pending explicit approval.)*
 - [ ] If old Sheets data must be recovered, treat it as a one-time read-only document import. No clasp, formulas-as-runtime, or bidirectional sync.
-- [ ] Add Gmail/Drive/receipt OCR only as approved-source draft evidence with retention/redaction controls.
+- [ ] Extend Gmail/Drive intake only as approved-source draft evidence. D-130 selected images retain no raw image in Hearth; archive/redaction and PDFs remain unbuilt.
 - [ ] Build reconciliation lanes: unmatched, suggested match, duplicate, resolved; show source/freshness and why a match is proposed.
 - [ ] Add category/rule preview, diff, replay, bounded scope, and audit; no retroactive invisible mutation.
 - [ ] Add statement-level completeness controls and opening/closing balance checks.
