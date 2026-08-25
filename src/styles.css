@@ -276,6 +276,28 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
 .primary:disabled { opacity: 0.5; }
 .ghost { background: transparent; }
 .danger { background: #f4d7d0; color: var(--danger); border-color: #e4b4a4; width: 100%; padding: 12px; }
+.budget-variance-row { align-items: center; gap: 8px; }
+.budget-edit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+.budget-edit input {
+  width: 88px;
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+.budget-edit .chip { width: auto; margin: 0; padding: 8px 12px; }
+.budget-edit-trigger {
+  width: auto;
+  padding: 4px 0;
+  font: inherit;
+  color: var(--muted);
+  text-align: right;
+}
+.budget-edit-trigger.over { color: var(--danger); }
 
 label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin: 12px 0 6px; }
 input, select, textarea {
