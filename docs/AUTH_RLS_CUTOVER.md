@@ -71,19 +71,22 @@ Independent of Auth/RLS: D-126 `007_household_timezone_iana.sql` is **applied** 
 
 **Path B lock (Jonathan 2026-08-25):** full shared-project cutover is approved *in principle* while one Production household remains. Independent trust review the same day: **do not apply 006 yet.** Closing anon REST before a Production hosted write path exists would strand that household. Development-only membership/Personal transport and the empty Production `continuity_memberships` table also fail 006’s remaining preflights.
 
+**Client readiness (branch packet):** Production discovery/transport is implemented behind `VITE_PRODUCTION_CONTINUITY=1` (off by default). Named policy `hostedContinuityAllowed` gates App + transport. Production never bulk-scans snapshots and never mints membership rows from the publishable key. Shared pushes with a continuity identity always publish the Personal-stripped projection (RPC and legacy). Unprojected phrase/`linked` transport stays Development-only. Revert-to-last-sync stays Development-only.
+
 **Mandatory before any paste of 006**
 
 0. Run the read-only packet [`sql/006_preflight_readonly.sql`](sql/006_preflight_readonly.sql) and keep the result set.
-1. Ship Production continuity on the client (member id, `householdCloudProjection`, Personal envelope, App transport not Development-gated) and lift Development-only membership/Personal RLS from migration 003 for Production — separate packet, separate review.
-2. Enable the Google provider; add the kitchen’s exact redirect URLs.
-3. Deploy a Development build with `VITE_SUPABASE_AUTH_ENABLED=1`, the project URL, and the publishable key—never a secret/service-role key.
-4. Have each intended member choose **Continue with Google** once so an `auth.users` identity exists; re-run the 004 Google-subject bind `UPDATE` (it was one-shot at apply time).
-5. Ensure every household (including Production) has exactly one active owner membership row with `auth_user_id` set. Creating a missing Production membership requires a **reviewed privileged migration**, not SQL-editor improvisation.
-6. Strip Personal transactions/shifts/private goals from shared snapshots (export Production first; decide Personal destination). Preflight personal counts must be zero.
-7. Capture `pg_policies` + grants (section 8 of the preflight). Stage and rehearse `008_rollback_006.sql` on a disposable clone.
-8. Revise the Production-count abort in 006 into a named `RAISE NOTICE` with Jonathan’s approved ceiling (do not silently delete the guard). Rehearse 006 on a disposable Postgres/Supabase clone.
-9. Apply 006 only after steps 0–8 are green.
-10. Test two clean browser profiles: Create, email invite, QR invite, revoke, reconnect/offline outbox, own Personal visibility, other-Personal denial, anon denial, wrong-household denial, **and Production** linked reconcile.
+1. Export the Production household JSON locally (never commit it). Decide Personal destinations for each member.
+2. Apply [`../supabase/migrations/008_production_continuity_select.sql`](../supabase/migrations/008_production_continuity_select.sql) only with Jonathan approval — SELECT-only Production continuity policies.
+3. Fill and run the privileged seed/extract template [`sql/008_seed_production_owner_TEMPLATE.sql`](sql/008_seed_production_owner_TEMPLATE.sql) (owner membership + Personal envelopes + Personal-stripped shared payload). Not SQL-editor improvisation.
+4. Enable Google provider; add the kitchen’s exact redirect URLs.
+5. Deploy a build with `VITE_SUPABASE_AUTH_ENABLED=1` and, only after steps 1–3, `VITE_PRODUCTION_CONTINUITY=1`, plus project URL and publishable key—never a secret/service-role key.
+6. Have each intended member choose **Continue with Google** once so an `auth.users` identity exists; re-run the 004 Google-subject bind `UPDATE` (it was one-shot at apply time).
+7. Ensure every household (including Production) has exactly one active owner membership row with `auth_user_id` set.
+8. Capture `pg_policies` + grants (section 8 of the preflight). Stage and rehearse `009_rollback_006.sql` on a disposable clone.
+9. Revise the Production-count abort in 006 into a named `RAISE NOTICE` with Jonathan’s approved ceiling (do not silently delete the guard). Rehearse 006 on a disposable Postgres/Supabase clone.
+10. Apply 006 only after steps 0–9 are green.
+11. Test two clean browser profiles: Create, email invite, QR invite, revoke, reconnect/offline outbox, own Personal visibility, other-Personal denial, anon denial, wrong-household denial, **and Production** linked reconcile.
 
 ## Remaining live rehearsal requirements
 

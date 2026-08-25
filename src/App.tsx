@@ -139,8 +139,11 @@ import {
   continuityMemberId,
   discoverContinuityMemberships,
   flushContinuityOutbox,
+  hostedContinuityAllowed,
   listContinuityOutbox,
+  productionContinuityEnabled,
   transportHouseholdWithOutbox,
+  unprojectedHostedTransportAllowed,
   type ContinuityIdentity,
 } from "./continuity.ts";
 import { inviteFromLocation } from "./core/invite.ts";
@@ -776,7 +779,11 @@ export function App() {
         else disconnectGoogle(environment, "__welcome__");
         throw new Error(
           environment === "production"
-            ? "Production account discovery waits for the late-September security cutover."
+            ? (
+              productionContinuityEnabled()
+                ? "That Google account is not linked to a Production ledger yet. An owner membership must exist in the cloud before Continue with Google can open it."
+                : "Production cloud continuity is off on this build. Development remains the usual working ledger until Jonathan enables Production continuity."
+            )
             : "That Google account is not linked to a Development ledger yet. Open an existing household, choose yourself, and link Google once.",
         );
       }
@@ -816,7 +823,10 @@ export function App() {
           || continuityMemberId(next, continuityIdentity) === session.memberId
         ),
       );
-      const transportRequested = environment === "development" && (automaticContinuity || hostedTransportAllowed(next));
+      const transportRequested = hostedContinuityAllowed(environment) && (
+        automaticContinuity
+        || (unprojectedHostedTransportAllowed(environment) && hostedTransportAllowed(next))
+      );
       const outcome = await acceptHouseholdWrite({
         previous,
         candidate: next,
@@ -2435,7 +2445,15 @@ export function App() {
       {guard?.kind === "environment" && (
         <ConfirmSheet
           title={`Switch to ${guard.next}?`}
-          body={`${environment} stays saved on this phone. ${guard.next === "production" ? "Production starts empty until you open or join a household there." : "Development is the usual working ledger."} This is not a cloud switch.`}
+          body={`${environment} stays as its own ledger pill. ${
+            guard.next === "production"
+              ? (
+                productionContinuityEnabled()
+                  ? "Production can use Google-matched cloud continuity on this build when membership exists."
+                  : "Production stays on this phone until Production cloud continuity is enabled."
+              )
+              : "Development is the usual working ledger and may already sync to the disposable cloud."
+          }`}
           extra={googleStepUpExtra}
           confirmLabel={`Open ${guard.next}`}
           busy={busy}

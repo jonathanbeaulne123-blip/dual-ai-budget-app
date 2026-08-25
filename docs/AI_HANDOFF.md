@@ -94,15 +94,17 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 ## Auth + membership RLS cutover (D-123)
 
-**Status:** Repaired after review. Product locks remain Q1 A (Supabase Auth Google → `auth.uid()`), Q2 owner/member (Create→owner, Join→member), Q3 email or QR invite, and Q4 no household REST for anon. With Jonathan's Development approval, `004_auth_rls_prepare.sql` and `005_snapshot_cas_hardening.sql` were applied on 2026-08-24. With Jonathan's explicit cleanup confirmation, all 30 disposable Development households and cascaded membership/Personal rows were deleted; verification is 0/0/0. The one Production household was untouched. Runtime token storage/refresh and bearer propagation are implemented behind `VITE_SUPABASE_AUTH_ENABLED=1`; shared payload projection excludes Personal transactions, shifts, and private goals. Preflighted deny-by-default `006_auth_rls_cutover.sql` is **not applied** and now refuses to run while a Production household remains because its grants/policies affect the entire shared Supabase project. See [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md).
+**Status:** Path B approved in principle. Product locks remain Q1 A (Supabase Auth Google → `auth.uid()`), Q2 owner/member, Q3 email or QR invite, and Q4 no household REST for anon. Migrations 004/005 applied; 30 Dev households cleaned; one Production household remains. Preflighted `006_auth_rls_cutover.sql` is **not applied**. Production continuity client is implemented behind `VITE_PRODUCTION_CONTINUITY=1` (off by default): membership-scoped discovery, no Production membership mint from the publishable key, projected shared pushes on RPC and legacy, revert-to-last-sync still Development-only. SELECT-only `008_production_continuity_select.sql` and privileged seed template are in-repo and **unapplied**. See [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md).
 
-**Budget delta (5):** `+2` readiness — preparation and CAS hardening are live; deny-by-default door + invite RPCs remain inactive until 006.
+**Budget delta (5):** `+3` readiness — preparation live; Production continuity client ready behind flag; deny-by-default door still inactive until 006.
 
-**Engagement delta (3):** `0` — Welcome email/QR chrome is a follow-up after apply.
+**Engagement delta (3):** `0`
 
-**Next owner:** Jonathan decides whether Development gets a separate Supabase project or whether the shared Production project receives a full cutover approval. Then configure Google Auth, apply 006 in that approved boundary, and smoke Create / email / QR / revoke / anon denial.
+**Next owner:** Jonathan — run `docs/sql/006_preflight_readonly.sql`; export Production; approve apply of 008 + filled seed template; configure Google Auth; revise 006 Production abort to NOTICE; rehearse `009_rollback_006.sql`; then approve 006 apply.
 
-**Risk:** Release. Independent trust review before any apply.
+**Risk:** Release. Independent trust review before any apply. Do not enable `VITE_PRODUCTION_CONTINUITY` until export + privileged Personal extract exist.
+
+**Environment / data disclosure:** No hosted schema applied this packet. No Production row mutation. Fictional fixtures in tests only.
 
 ## Trust-foundation worksession (2026-08-24, local branch)
 

@@ -35,12 +35,14 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [CLAUDE_COMMAND_STATES_UX.md](CLAUDE_COMMAND_STATES_UX.md) | Command/continuity/conflict/recovery UX spec — merged [PR #76](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/76) |
 | [HOSTED_ROW_INVENTORY.md](HOSTED_ROW_INVENTORY.md) | Leftover hosted-row runbook. Metadata only. Do not delete without Jonathan. |
 | [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) | Legacy Auth/RLS sketch — do not apply; superseded by cutover packet |
-| [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md) | Living Auth/RLS cutover design (D-123); 004/005/007 applied; path B approved in principle; **006 blocked** pending Production continuity + preflight |
+| [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md) | Living Auth/RLS cutover design (D-123); 004/005/007 applied; path B approved in principle; **006 blocked**; Production continuity client behind `VITE_PRODUCTION_CONTINUITY` + SELECT-only `008` (unapplied) |
 | [`sql/006_preflight_readonly.sql`](sql/006_preflight_readonly.sql) | Read-only 006 go/no-go queries for the SQL Editor — run before any cutover paste |
+| [`sql/008_seed_production_owner_TEMPLATE.sql`](sql/008_seed_production_owner_TEMPLATE.sql) | Privileged Production owner seed + Personal extract template — fill placeholders; Jonathan approval required |
 | [`../supabase/migrations/004_auth_rls_prepare.sql`](../supabase/migrations/004_auth_rls_prepare.sql) | Additive Auth preparation — applied 2026-08-24 |
 | [`../supabase/migrations/005_snapshot_cas_hardening.sql`](../supabase/migrations/005_snapshot_cas_hardening.sql) | Forward repair for live 002 CAS — applied 2026-08-24 |
 | [`../supabase/migrations/006_auth_rls_cutover.sql`](../supabase/migrations/006_auth_rls_cutover.sql) | Preflighted deny-by-default project-wide cutover — **not applied**; Production/project boundary decision required |
 | [`../supabase/migrations/007_household_timezone_iana.sql`](../supabase/migrations/007_household_timezone_iana.sql) | D-126 hosted IANA timezone CHECK — **applied** 2026-08-25 (schema id 7) |
+| [`../supabase/migrations/008_production_continuity_select.sql`](../supabase/migrations/008_production_continuity_select.sql) | SELECT-only Production continuity bridge — **not applied** (schema id 8) |
 | [SITDOWN.md](SITDOWN.md) | Monthly sitdown, leftover, lock, reverse, and export guidance |
 | [GOALS.md](GOALS.md) | Goals vault and leftover parking |
 | [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md) | Private repository and publish workflow |
