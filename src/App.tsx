@@ -44,6 +44,7 @@ import {
   addRecurrence,
   updateRecurrence,
   postShift,
+  postWorkShift,
   postTransfer,
   postVisit,
   settleClaim,
@@ -62,6 +63,8 @@ import {
   runHealthCheck,
   seedDemoHousehold,
   shiftSettingsFingerprint,
+  archiveWorkJob,
+  upsertWorkJob,
   todayKey,
   TIMEZONE,
   formatZoneDateTime,
@@ -86,6 +89,10 @@ import {
   shouldPrefillCategory,
   suggestSplit,
   clockInShift,
+  chooseOpenShiftTimeline,
+  clockOutShift,
+  startShiftBreak,
+  endShiftBreak,
   abandonOpenShift,
   activeOpenShift,
   ceremonyFields,
@@ -97,6 +104,8 @@ import {
   previewHoursQuarter,
   shiftFieldLabel,
   type ShiftGate,
+  type Shift,
+  type WorkJob,
   type CommitResult,
   type CommandOutcome,
   type Environment,
@@ -148,6 +157,10 @@ import { PairingCard, WelcomeJoin } from "./Pairing.tsx";
 import { BooksPage } from "./Books.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
 import type { RepeatingDraft } from "./RepeatingForm.tsx";
+import { WorkJobsCard } from "./WorkJobs.tsx";
+import { WorkShiftFlow } from "./WorkShiftFlow.tsx";
+import { WorkShiftHistoryCard } from "./WorkShiftHistory.tsx";
+import { WorkReportCard } from "./WorkReport.tsx";
 import { ConflictResolution } from "./ConflictResolution.tsx";
 import { DuePreviewSheet } from "./DuePreviewSheet.tsx";
 import {
@@ -179,6 +192,7 @@ import {
   loadGoogleSession,
 } from "./google/index.ts";
 import type { DiscoveredHousehold } from "./ledger/supabase.ts";
+import type { PostWorkShiftInput } from "./core/index.ts";
 
 type Tab = "home" | "plan" | "calendar" | "ledger" | "more";
 type AddMode = "expense" | "income" | "shift" | "transfer";
@@ -187,9 +201,11 @@ type Guard =
   | { kind: "environment"; next: Environment }
   | { kind: "demo" }
   | { kind: "remove"; transactionId: string; summary: string }
+  | { kind: "correctShift"; shift: Shift; transactionId: string }
   | { kind: "duePreview"; rows: ReturnType<typeof dueRecurrencePreview> }
   | { kind: "postRecurrence"; recurrenceId: string; summary: string }
   | { kind: "saveRepeating"; draft: RepeatingDraft; summary: string }
+  | { kind: "saveWorkJob"; job: WorkJob; summary: string }
   | { kind: "postDueAll"; summary: string }
   | { kind: "postVisit"; draft: VisitPostDraft; summary: string }
   | { kind: "settleClaim"; claimId: string; summary: string }
@@ -297,6 +313,8 @@ export function App() {
   historyRef.current = history;
   const confirmationRef = useRef<string | null>(null);
   const postingRef = useRef(false);
+  const workShiftInputRef = useRef<PostWorkShiftInput | null>(null);
+  const workShiftDateRef = useRef(todayKey());
   const duePreviewOffered = useRef<string | null>(null);
 
   useEffect(() => {
@@ -343,21 +361,21 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    const punch = household ? activeOpenShift(household.kitchen) : null;
+    const punch = household && session ? activeOpenShift(household.kitchen, session.memberId) : null;
     const watching = Boolean(punch) && (shiftGate === "clocked" || (shiftGate === "signOut" && shiftStep === 0));
     if (!watching) return;
     const id = window.setInterval(() => setShiftTick((n) => n + 1), 1_000);
     return () => window.clearInterval(id);
-  }, [household, shiftGate, shiftStep]);
+  }, [household, session?.memberId, shiftGate, shiftStep]);
 
   useEffect(() => {
-    const punch = household ? activeOpenShift(household.kitchen) : null;
+    const punch = household && session ? activeOpenShift(household.kitchen, session.memberId) : null;
     if (!punch) return;
     if (hoursDirty) return;
     if (shiftGate !== "clocked" && !(shiftGate === "signOut" && shiftStep === 0)) return;
     const hours = formatPreviewHours(previewHoursQuarter(punch.startedAt));
     setForm((current) => (current.hours === hours ? current : { ...current, hours }));
-  }, [household, shiftGate, shiftStep, shiftTick, hoursDirty]);
+  }, [household, session?.memberId, shiftGate, shiftStep, shiftTick, hoursDirty]);
 
   useEffect(() => {
     let live = true;
@@ -1291,6 +1309,9 @@ export function App() {
     ccTipsCents: Math.round(Number(form.ccTips || 0) * 100) || 0,
     hours: Number(form.hours || 0) || 0,
   }, ledger.shiftSettings);
+  const guidedWorkShift = mode === "shift"
+    && (shiftGate === "signOut" || shiftGate === "finished")
+    && ledger.workJobs.some((job) => job.active && job.memberId === actorId);
 
   const formForAccount = (accountId: string | null, extra: Partial<typeof emptyForm> = {}) => {
     const defaults = addFormDefaults(ledger, accountId);
@@ -1385,7 +1406,7 @@ export function App() {
       setShowLocationPrompt(false);
     }
     if ((nextMode ?? defaults.suggestedMode) === "shift") {
-      const punch = activeOpenShift(ledger.kitchen);
+      const punch = activeOpenShift(ledger.kitchen, actorId);
       setShiftGate(punch ? "clocked" : "choose");
       setShiftStep(0);
       setForm(formForAccount(id, {
@@ -1413,7 +1434,10 @@ export function App() {
   }
 
   function beginSignOut() {
-    const punch = activeOpenShift(ledger.kitchen);
+    workShiftInputRef.current = null;
+    workShiftDateRef.current = today;
+    const punch = activeOpenShift(ledger.kitchen, actorId);
+    if (punch?.status === "open") void runKitchen((current) => clockOutShift(current, { memberId: actorId }));
     setMode("shift");
     setAdding(true);
     setAddDetails(false);
@@ -1431,7 +1455,9 @@ export function App() {
     }));
   }
 
-  function beginFinishedShift() {
+  function beginFinishedShift(initialDate = today) {
+    workShiftInputRef.current = null;
+    workShiftDateRef.current = initialDate;
     setMode("shift");
     setAdding(true);
     setAddDetails(false);
@@ -1541,6 +1567,11 @@ export function App() {
         visibility: form.visibility,
       });
     });
+  }
+
+  function submitWorkShift(input: PostWorkShiftInput, confirmDuplicate = false) {
+    workShiftInputRef.current = input;
+    run((current) => postWorkShift(current, { ...input, confirmDuplicate }));
   }
 
   function addPostLabel(): string {
@@ -1671,7 +1702,10 @@ export function App() {
             emitOfficeIntent({ type: "expand", id: "calculator" });
           }}
           onClockIn={() => { void runKitchen((current) => clockInShift(current, { memberId: actorId })); }}
-          onAbandonShift={() => { void runKitchen((current) => abandonOpenShift(current)); }}
+          onAbandonShift={() => { void runKitchen((current) => abandonOpenShift(current, { memberId: actorId })); }}
+          onStartBreak={(kind) => { void runKitchen((current) => startShiftBreak(current, { memberId: actorId, kind })); }}
+          onEndBreak={() => { void runKitchen((current) => endShiftBreak(current, { memberId: actorId })); }}
+          onChooseShiftTimeline={(keepId) => { void runKitchen((current) => chooseOpenShiftTimeline(current, { memberId: actorId, keepId })); }}
           onSignOut={beginSignOut}
           onFinishedShift={beginFinishedShift}
           onPayCard={openPayCard}
@@ -1823,6 +1857,21 @@ export function App() {
             onCommand={(fn) => { void run(fn); }}
             onError={setError}
           />
+          <WorkJobsCard
+            household={household}
+            memberId={session.memberId}
+            today={today}
+            busy={busy}
+            onAskSave={(job, summary) => setGuard({ kind: "saveWorkJob", job, summary })}
+            onArchive={(jobId) => { void run((current) => archiveWorkJob(current, jobId)); }}
+          />
+          <WorkShiftHistoryCard
+            household={household}
+            memberId={session.memberId}
+            busy={busy}
+            onCorrect={(shift, transactionId) => setGuard({ kind: "correctShift", shift, transactionId })}
+          />
+          <WorkReportCard household={household} memberId={session.memberId} today={today} />
           <section className="card">
             <header><h2>This phone</h2></header>
             <p className="muted">
@@ -1962,7 +2011,7 @@ export function App() {
                   onClick={() => {
                     setMode(item);
                     if (item === "shift") {
-                      const punch = activeOpenShift(household.kitchen);
+                      const punch = activeOpenShift(household.kitchen, actorId);
                       setShiftGate(punch ? "clocked" : "choose");
                       setShiftStep(0);
                     }
@@ -2177,11 +2226,11 @@ export function App() {
                     >
                       Clock in
                     </button>
-                    <button type="button" className="chip" onClick={beginFinishedShift}>Already off? Post a finished shift</button>
+                    <button type="button" className="chip" onClick={() => beginFinishedShift()}>Already off? Post a finished shift</button>
                   </>
                 )}
                 {shiftGate === "clocked" && (() => {
-                  const punch = activeOpenShift(household.kitchen);
+                  const punch = activeOpenShift(household.kitchen, actorId);
                   return (
                     <>
                       <p>{ceremonyCopy("clocked").title}</p>
@@ -2192,7 +2241,7 @@ export function App() {
                         className="chip"
                         disabled={busy}
                         onClick={() => {
-                          void runKitchen((current) => abandonOpenShift(current));
+                          void runKitchen((current) => abandonOpenShift(current, { memberId: actorId }));
                           setAdding(false);
                         }}
                       >
@@ -2201,11 +2250,21 @@ export function App() {
                     </>
                   );
                 })()}
-                {(shiftGate === "signOut" || shiftGate === "finished") && (() => {
+                {(shiftGate === "signOut" || shiftGate === "finished") && household.workJobs.some((job) => job.active && job.memberId === actorId) && (
+                  <WorkShiftFlow
+                    household={household}
+                    memberId={actorId}
+                    today={workShiftDateRef.current}
+                    punch={activeOpenShift(household.kitchen, actorId)}
+                    busy={busy}
+                    onConfirm={(input) => submitWorkShift(input)}
+                  />
+                )}
+                {(shiftGate === "signOut" || shiftGate === "finished") && !household.workJobs.some((job) => job.active && job.memberId === actorId) && (() => {
                   const fields = ceremonyFields(shiftGate);
                   const field = fields[shiftStep] ?? "hours";
                   const copy = ceremonyCopy(shiftGate, field);
-                  const punch = activeOpenShift(household.kitchen);
+                  const punch = activeOpenShift(household.kitchen, actorId);
                   return (
                     <>
                       <p>{copy.title}</p>
@@ -2248,10 +2307,10 @@ export function App() {
                 })()}
               </>
             )}
-            <button type="button" className="chip" onClick={() => setAddDetails((open) => !open)}>
+            {!guidedWorkShift && <button type="button" className="chip" onClick={() => setAddDetails((open) => !open)}>
               {addDetails ? "Hide details" : "Date & place"}
-            </button>
-            {addDetails && (
+            </button>}
+            {!guidedWorkShift && addDetails && (
               <>
                 <label>Date</label>
                 <input type="date" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} />
@@ -2380,12 +2439,15 @@ export function App() {
                     <span>{formatCad(tx.amountCents)}</span>
                   </div>
                 ))}
-                <button className="primary" onClick={() => submit({ confirmDuplicate: true })}>
+                <button className="primary" onClick={() => {
+                  if (mode === "shift" && workShiftInputRef.current) submitWorkShift(workShiftInputRef.current, true);
+                  else submit({ confirmDuplicate: true });
+                }}>
                   Add anyway
                 </button>
               </div>
             )}
-            {!(mode === "shift" && (shiftGate === "choose" || shiftGate === "clocked")) && (
+            {!(mode === "shift" && (shiftGate === "choose" || shiftGate === "clocked" || ((shiftGate === "signOut" || shiftGate === "finished") && household.workJobs.some((job) => job.active && job.memberId === actorId)))) && (
               <button
                 className="primary post-big"
                 disabled={busy}
@@ -2512,6 +2574,22 @@ export function App() {
           }}
         />
       )}
+      {guard?.kind === "correctShift" && (
+        <ConfirmSheet
+          title="Replace this shift?"
+          body={`Hearth will reverse the ${guard.shift.date} shift in the books, then open a fresh shift form with that date. The old evidence stays balanced underneath and Shifts worked will label it replaced.`}
+          confirmLabel="Reverse & add correction"
+          danger
+          busy={busy}
+          onCancel={() => setGuard(null)}
+          onConfirm={() => {
+            const { shift, transactionId } = guard;
+            setGuard(null);
+            void run((current) => reversePostedMoney(current, transactionId, { createdBy: actorId }))
+              .then(() => beginFinishedShift(shift.date));
+          }}
+        />
+      )}
       {guard?.kind === "duePreview" && (
         <DuePreviewSheet
           rows={guard.rows}
@@ -2589,6 +2667,21 @@ export function App() {
               if (!recurrenceId) return saved;
               return postOneRecurrence(saved.household, recurrenceId, today, { allowNotDue: true });
             });
+          }}
+        />
+      )}
+      {guard?.kind === "saveWorkJob" && (
+        <ConfirmSheet
+          title="Save this job setup?"
+          body={guard.summary}
+          extra="This creates or updates employer rules and owed-to-you accounts. It does not post wages, tips, sales, or a shift. Existing confirmed shifts stay unchanged."
+          confirmLabel="Save job"
+          busy={busy}
+          onCancel={() => setGuard(null)}
+          onConfirm={() => {
+            const job = guard.job;
+            setGuard(null);
+            void run((current) => upsertWorkJob(current, { job }));
           }}
         />
       )}

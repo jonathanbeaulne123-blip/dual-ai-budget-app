@@ -128,6 +128,28 @@ export function runHealthCheck(household: Household): Finding[] {
   });
 
   for (const shift of household.shifts) {
+    if (shift.jobId && shift.transactionIds?.length) {
+      const rows = shift.transactionIds.map((id) => household.transactions.find((tx) => tx.id === id));
+      if (rows.some((tx) => !tx)) {
+        flag("Shifts", `${shift.id} is missing one or more component ledger rows.`, shift.id);
+        continue;
+      }
+      const components = rows.filter((tx): tx is NonNullable<typeof tx> => Boolean(tx));
+      const wagesCents = components
+        .filter((tx) => tx.type === "income" && (tx.subcategoryId === "SUB-INCOME-WAGES" || tx.subcategoryId === "SUB-INCOME-PAID-BREAKS"))
+        .reduce((sum, tx) => sum + tx.amountCents, 0);
+      const tipIncomeCents = components.filter((tx) => tx.type === "income" && tx.subcategoryId === "SUB-INCOME-TIPS").reduce((sum, tx) => sum + tx.amountCents, 0);
+      const tipOutCents = components.filter((tx) => tx.type === "expense" && tx.subcategoryId === "SUB-WORK-TIP-OUTS").reduce((sum, tx) => sum + tx.amountCents, 0);
+      if (wagesCents !== shift.wagesCents) flag("Shifts", `${shift.id} component wages drifted.`, shift.id);
+      if (tipIncomeCents - tipOutCents !== shift.netTipsCents + (shift.deferredTipOutCents ?? 0)) flag("Shifts", `${shift.id} component tips drifted.`, shift.id);
+      if ((shift.deferredTipOutPaidCents ?? 0) > (shift.deferredTipOutCents ?? 0)) flag("Shifts", `${shift.id} deferred tip-out is overpaid.`, shift.id);
+      if (components.some((tx) => tx.sourceId !== shift.id)) flag("Shifts", `${shift.id} source links drifted.`, shift.id);
+      if (components.some((tx) => tx.date !== shift.date)) flag("Shifts", `${shift.id} dates drifted.`, shift.id);
+      if (components.some((tx) => tx.createdBy !== shift.createdBy)) flag("Shifts", `${shift.id} creator drifted.`, shift.id);
+      if (!activeMembers.has(shift.memberId)) flag("Shifts", `${shift.id} member is inactive.`, shift.id);
+      if (shift.createdBy && !memberIds.has(shift.createdBy)) flag("Shifts", `${shift.id} was created by a missing member.`, shift.id);
+      continue;
+    }
     const wages = household.transactions.find((tx) => tx.id === shift.wagesTransactionId);
     const tips = household.transactions.find((tx) => tx.id === shift.tipsTransactionId);
     if (!wages || !tips) {

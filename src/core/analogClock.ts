@@ -82,19 +82,20 @@ export function clockArcPath(startAngle: number, endAngle: number, cx = 50, cy =
  * Live punch always draws. A finished shift draws only when it started that Toronto day.
  * New days with no punch are a plain clock.
  */
-export function todayShiftSpan(household: Household, today: DateKey, nowMs = Date.now()): ShiftClockSpan | null {
-  const punch = activeOpenShift(household.kitchen);
+export function todayShiftSpan(household: Household, today: DateKey, nowMs = Date.now(), memberId?: string): ShiftClockSpan | null {
+  const punch = activeOpenShift(household.kitchen, memberId);
   if (punch) {
+    const endedAt = punch.endedAt || new Date(nowMs).toISOString();
     return {
       startedAt: punch.startedAt,
-      endedAt: new Date(nowMs).toISOString(),
-      live: true,
+      endedAt,
+      live: punch.status === "open",
       startAngle: clockAngleFromInstant(punch.startedAt),
-      endAngle: clockAngleFromInstant(new Date(nowMs).toISOString()),
+      endAngle: clockAngleFromInstant(endedAt),
     };
   }
   const posted = [...household.shifts]
-    .filter((shift) => shift.date === today)
+    .filter((shift) => shift.date === today && (!memberId || shift.memberId === memberId))
     .sort((left, right) => right.createdAt.localeCompare(left.createdAt))[0];
   if (!posted) return null;
   const endedAt = posted.createdAt || new Date(nowMs).toISOString();

@@ -73,7 +73,7 @@ export function OfficePhone({
   household, dashboard, sill, reading, layout, onLayout,
   today, memberId, busy, adding, form, mode, error, categories, postLabel,
   onForm, onPost, onMore, onMilk, onCoffee, onClockIn, onAbandonShift,
-  onSignOut, onFinishedShift, onPayCard, onOpenAccount,
+  onStartBreak, onEndBreak, onChooseShiftTimeline, onSignOut, onFinishedShift, onPayCard, onOpenAccount,
   onKitchen, onMarkPaid, onGo,
 }: {
   household: Household;
@@ -98,6 +98,9 @@ export function OfficePhone({
   onCoffee: () => void;
   onClockIn: () => void;
   onAbandonShift: () => void;
+  onStartBreak: (kind: "paid" | "unpaid" | "custom") => void;
+  onEndBreak: () => void;
+  onChooseShiftTimeline: (openShiftId: string) => void;
   onSignOut: () => void;
   onFinishedShift: () => void;
   onPayCard: (account: Account) => void;
@@ -186,12 +189,14 @@ export function OfficePhone({
       kind: "text",
       name: "Shifts",
       warn: streak.waiting,
-      glance: <TimesheetGlance household={household} streak={streak} />,
+      glance: <TimesheetGlance household={household} streak={streak} memberId={memberId} />,
       aria: "Shifts.",
       body: (
         <TimesheetBody
-          household={household} streak={streak} memberName={memberName} today={today} busy={busy}
+          household={household} streak={streak} memberId={memberId} memberName={memberName} today={today} busy={busy}
           onClockIn={onClockIn} onAbandon={onAbandonShift}
+          onStartBreak={onStartBreak} onEndBreak={onEndBreak}
+          onChooseTimeline={onChooseShiftTimeline}
           onSignOut={onSignOut} onFinished={onFinishedShift}
         />
       ),

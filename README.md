@@ -14,7 +14,7 @@ Open `http://localhost:5173`. **Open the demo kitchen table** loads a fictional 
 
 ## What you can do today
 
-- Add spend, income, a shift, or a transfer from one `+` button
+- Use the member Timesheet as the main work action, or Add shift when already off; each job remembers role/rate, break, sales, tip-out, payday, destination, and visibility rules
 - Open **Ledger** for Income, Expenses, or Other (refunds and transfers)
 - Split a purchase by any percentage — Bianca’s share is typed, Jonathan’s fills to 100%, cents still add up
 - Get stopped on a likely duplicate: same amount within five days, plus matching notes, place, category, or source
@@ -32,7 +32,7 @@ Open `http://localhost:5173`. **Open the demo kitchen table** loads a fictional 
 - In Development, choose **Continue with Google** on a fresh device to discover matching household ledgers; accepted offline writes wait in a durable outbox and retry automatically
 - Export JSON or a PostgreSQL dump; run Health and get a clean bill or a specific finding
 
-Transfers never count as income or expense. Refunds reverse category spend. Shift tip math is the verified cent-rounded household rules, including negative net tips.
+Transfers never count as income or expense. Refunds reverse category spend. D-127 job shifts recognize wages and card tips as owed when earned, cash tips when received, and paycheck/tip-envelope receipts as transfers later so income is never counted twice. Paid breaks and tip-outs remain separately visible.
 
 ## Architecture in one page
 

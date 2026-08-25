@@ -68,12 +68,14 @@ export function autoMergeSafe(local: Household, remote: Household): Household {
   const goalContributions = mergeRecords(remote.goalContributions ?? [], local.goalContributions ?? [], tombstones);
   const goals = applyGoalSavings(local.goals, goalContributions);
   const revision = Math.max(local.revision, remote.revision);
+  const workJobs = mergeRecords(remote.workJobs ?? [], local.workJobs ?? [], tombstones);
   return {
     ...local,
     revision,
     baseRevision: Math.max(local.baseRevision ?? 0, remote.baseRevision ?? 0, remote.revision),
     goals,
     goalContributions,
+    workJobs,
     tombstones,
     activity: mergeRecords(remote.activity ?? [], local.activity ?? [], []).slice(-200),
     devices: mergeRecords(remote.devices ?? [], local.devices ?? [], []),

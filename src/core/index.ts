@@ -8,6 +8,8 @@ export * from "./types.ts";
 export * from "./duplicate.ts";
 export * from "./splits.ts";
 export * from "./shift.ts";
+export * from "./work.ts";
+export * from "./workSettlement.ts";
 export * from "./catalog.ts";
 export * from "./health.ts";
 export * from "./budget.ts";

@@ -111,6 +111,13 @@ export function booksIntegrityFacts(household: Household) {
       hours: shift.hours,
       netTipsCents: shift.netTipsCents,
       wagesCents: shift.wagesCents,
+      jobId: shift.jobId ?? null,
+      roleId: shift.roleId ?? null,
+      grossWagesCents: shift.grossWagesCents ?? null,
+      paidBreakHours: shift.paidBreakHours ?? null,
+      deferredTipOutCents: shift.deferredTipOutCents ?? null,
+      deferredTipOutPaidCents: shift.deferredTipOutPaidCents ?? null,
+      transactionIds: [...(shift.transactionIds ?? [])].sort(),
     })),
     goals: byId(household.goals).map((goal) => ({
       id: goal.id,
