@@ -238,13 +238,14 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 
 **Deadline and exit condition:** before 2026-10-01 and before meaningful household data, an authenticated Google identity can reach only its personal ledger and intended household/environment records, and an outsider cannot enumerate them.
 
-**D-123 packet progress:** Q1–Q5 locked. Additive preparation 004 and forward CAS hardening 005 are applied. The approved legacy cleanup removed all 30 Development households and preserved the one Production household. Preflighted deny-by-default cutover 006 is unapplied and explicitly aborts while Production remains because its grants/policies are project-wide. Feature-flagged Supabase Auth session/refresh/bearer wiring, bounded ownership/invite policy tests, and Personal/shared cloud projection are in-repo. A Development-only rehearsal now requires a separate Supabase project; provider configuration, 006 apply, Welcome email/QR chrome, and Production approval remain open.
+**D-123 packet progress:** Q1–Q5 locked. Path B (shared-project cutover) approved in principle. Additive preparation 004 and forward CAS hardening 005 are applied. Legacy cleanup removed 30 Development households and preserved the one Production household. Preflighted deny-by-default cutover 006 is unapplied and still aborts while Production remains. Production continuity client is in-repo behind `VITE_PRODUCTION_CONTINUITY=1` (off by default); SELECT-only bridge `008` and privileged seed template are unapplied. Provider configuration, privileged Production seed/extract, 006 Production-guard NOTICE revision, rollback rehearsal (`009`), 006 apply, and Welcome email/QR chrome remain open.
 
 - [x] Design Google-to-hosted-auth identity mapping and durable personal-ledger/household membership relationships before writing policies around them. (D-123: Supabase Auth Google → `auth.uid()`; door = `continuity_memberships` + `household_invitations`)
 - [x] Author deny-by-default RLS + REVOKE anon household REST packet (unapplied until review).
 - [x] Define email and QR invitation channels with owner-only issue/revoke RPCs (synthetic matrix tested; live apply pending).
 - [x] Apply reviewed `004` and `005` preparation/hardening with Development approval; remove approved legacy Development rows and verify Production data is untouched.
-- [ ] Choose a separate Development Supabase project or explicitly approve a shared-project cutover; configure Google provider; apply 006; smoke Create / email / QR / revoke / anon denial.
+- [x] Explicit shared-project cutover permission in principle (path B, 2026-08-25); Production continuity client behind build flag.
+- [ ] Run live preflight; export Production; apply SELECT bridge `008` + privileged owner/Personal extract; configure Google provider; revise 006 Production abort; rehearse rollback; apply 006; smoke Create / email / QR / revoke / anon denial / Production.
 - [ ] Add device/session revoke and household leave/recovery semantics.
 - [ ] Replace phrase-as-authority and `linked` publishing with automatic authenticated discovery/synchronization; invitations only establish membership.
 - [ ] Build and test migrations on a disposable rehearsal project; Production cutover is a separate Jonathan-approved plan.

@@ -4,12 +4,19 @@ import {
 } from "./core/google.ts";
 import { ensureHouseholdShape } from "./core/sync.ts";
 import type { Environment, Household } from "./core/types.ts";
+import { hostedContinuityAllowed } from "./ledger/continuityPolicy.ts";
 import {
   discoverSupabaseHouseholdsByGoogleIdentity,
   pushSupabaseHousehold,
   type DiscoveredHousehold,
   type SupabaseConfig,
 } from "./ledger/supabase.ts";
+
+export {
+  hostedContinuityAllowed,
+  productionContinuityEnabled,
+  unprojectedHostedTransportAllowed,
+} from "./ledger/continuityPolicy.ts";
 
 const OUTBOX_PREFIX = "hearth:continuity-outbox:v1:";
 const MAX_BACKOFF_MS = 60_000;
@@ -161,7 +168,7 @@ export function continuityMemberId(
   household: Household,
   identity: ContinuityIdentity,
 ): string | null {
-  if (household.environment !== "development") return null;
+  if (!hostedContinuityAllowed(household.environment)) return null;
   return memberIdForGoogleIdentity(household, identity);
 }
 
@@ -173,7 +180,13 @@ export function enqueueContinuitySnapshot(input: {
 }): ContinuityOutboxItem {
   const snapshot = ensureHouseholdShape(input.household);
   const memberId = continuityMemberId(snapshot, input.identity);
-  if (!memberId) throw new Error("This Google account is not a member of that Development household.");
+  if (!memberId) {
+    throw new Error(
+      snapshot.environment === "production"
+        ? "This Google account is not a member of that Production household."
+        : "This Google account is not a member of that Development household.",
+    );
+  }
   const items = read(snapshot.environment);
   const id = `${snapshot.environment}:${snapshot.householdId}`;
   const existing = items.find((item) => item.id === id);

@@ -35,6 +35,7 @@ function response(body: unknown, status = 200): Response {
 afterEach(() => {
   setContinuityStore(null);
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 describe("Google-account continuity", () => {
@@ -70,9 +71,23 @@ describe("Google-account continuity", () => {
     await expect(discoverContinuityMemberships(identity, "development", config)).resolves.toEqual([]);
   });
 
-  it("does not scan Production before the Auth/RLS cutover", async () => {
+  it("does not bulk-scan Production snapshots; membership miss returns empty", async () => {
+    const fetch = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes("continuity_memberships?")) {
+        return response({ code: "PGRST205", message: "continuity_memberships is not in the schema cache" }, 404);
+      }
+      return response([]);
+    });
+    vi.stubGlobal("fetch", fetch);
+    vi.stubEnv("VITE_PRODUCTION_CONTINUITY", "1");
+    await expect(discoverContinuityMemberships(identity, "production", config)).resolves.toEqual([]);
+    expect(fetch.mock.calls.some(([input]) => String(input).includes("household_snapshots?"))).toBe(false);
+  });
+
+  it("keeps Production discovery off when the continuity flag is unset", async () => {
     const fetch = vi.fn();
     vi.stubGlobal("fetch", fetch);
+    vi.stubEnv("VITE_PRODUCTION_CONTINUITY", "");
     await expect(discoverContinuityMemberships(identity, "production", config)).resolves.toEqual([]);
     expect(fetch).not.toHaveBeenCalled();
   });
