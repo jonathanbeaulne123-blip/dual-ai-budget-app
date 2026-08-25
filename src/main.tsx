@@ -7,7 +7,12 @@ import "./office-phone.css";
 import "./hercules.css";
 
 if (typeof window !== "undefined") {
-  document.documentElement.style.touchAction = "manipulation";
+  const phone = window.matchMedia("(max-width: 719px)");
+  const syncTouchAction = () => {
+    document.documentElement.style.touchAction = phone.matches ? "manipulation" : "";
+  };
+  syncTouchAction();
+  phone.addEventListener("change", syncTouchAction);
   document.addEventListener("gesturestart", (event) => event.preventDefault());
 }
 

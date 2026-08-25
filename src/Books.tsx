@@ -73,7 +73,7 @@ export function BooksPage({
   view: LedgerView;
   booksStatus: BooksStatus | null;
   focusedAccountId: string | null;
-  onFocusAccount: (accountId: string) => void;
+  onFocusAccount: (accountId: string | null) => void;
   onChange: (household: Household, undo?: UndoToken) => void;
   onRemove: (transaction: Household["transactions"][number]) => void;
   onPayAccount: (account: Account) => void;
@@ -183,9 +183,9 @@ export function BooksPage({
           household={household}
           today={today}
           memberId={memberId}
-          focusedId={focusedAccountId || accountId}
+          focusedId={focusedAccountId}
           onFocus={(id) => {
-            setAccountId(id);
+            if (id) setAccountId(id);
             onFocusAccount(id);
           }}
           onChange={onChange}
