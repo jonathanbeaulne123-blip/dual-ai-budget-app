@@ -62,6 +62,8 @@ import {
   readClinkOn,
   runHealthCheck,
   seedDemoHousehold,
+  seedStressHousehold,
+  eraseDevelopmentData,
   shiftSettingsFingerprint,
   archiveWorkJob,
   upsertWorkJob,
@@ -129,7 +131,6 @@ import {
 } from "./core/index.ts";
 import {
   STORAGE_EXPLAINER,
-  clearHousehold,
   downloadJson,
   listHouseholdReplicas,
   loadHousehold,
@@ -138,7 +139,7 @@ import {
   selectHouseholdReplica,
   type HouseholdReplicaSummary,
 } from "./storage.ts";
-import { clearSession, loadSession, saveSession, type Session } from "./session.ts";
+import { loadSession, saveSession, type Session } from "./session.ts";
 import { joinSharedHousehold, reconcileHousehold, reconcileHouseholdSnapshots } from "./api.ts";
 import { acceptHouseholdWrite, classifyCommandError, hostedTransportAllowed, newConfirmationId, isLedgerWrite } from "./core/index.ts";
 import { ingestHouseholdBooks, inspectBrowserBooks, restoreHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
@@ -214,9 +215,10 @@ import type { PostWorkShiftInput } from "./core/index.ts";
 type Tab = "home" | "plan" | "calendar" | "ledger" | "more";
 type AddMode = "expense" | "income" | "shift" | "transfer";
 type Guard =
-  | { kind: "reset" }
   | { kind: "environment"; next: Environment }
-  | { kind: "demo" }
+  | { kind: "stress-random" }
+  | { kind: "stress-pretty" }
+  | { kind: "erase-development" }
   | { kind: "remove"; transactionId: string; summary: string }
   | { kind: "correctShift"; shift: Shift; transactionId: string }
   | { kind: "duePreview"; rows: ReturnType<typeof dueRecurrencePreview> }
@@ -2390,7 +2392,8 @@ export function App() {
               Personal rows are a filter. Export JSON for a copy.
             </p>
             <button className="primary" onClick={() => downloadJson(household)}>Export JSON snapshot</button>
-            <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setGuard({ kind: "demo" })}>Reload demo data</button>
+            <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setGuard({ kind: "stress-random" })}>Reload random data</button>
+            <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setGuard({ kind: "stress-pretty" })}>Display pretty numbers</button>
             <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => {
               const due = household.recurrences.filter((item) => item.active && item.nextDate <= today).length;
               setGuard({
@@ -2400,7 +2403,11 @@ export function App() {
                   : "Nothing is due today. Open Calendar to see what is coming.",
               });
             }}>Post due recurring</button>
-            <button className="danger" onClick={() => setGuard({ kind: "reset" })}>Reset this environment</button>
+            {environment === "development" && (
+              <button className="danger" style={{ width: "100%", marginTop: 8 }} onClick={() => setGuard({ kind: "erase-development" })}>
+                Erase Development data
+              </button>
+            )}
           </section>
           <AddCategoryForm household={household} onSave={(next, token) => persist(next, token)} />
         </>
@@ -2876,12 +2883,12 @@ export function App() {
         </div>
       )}
 
-      {guard?.kind === "reset" && (
+      {guard?.kind === "erase-development" && (
         <ConfirmSheet
-          title="Reset this ledger?"
-          body={`This deletes the ${environment} ledger on this phone only. Bianca’s phone and the cloud copy stay until someone publishes over them. This cannot be undone here.`}
-          extra={googleStepUpExtra}
-          confirmLabel="Reset this phone"
+          title="Erase all Development activity?"
+          body="This removes every Development transaction, shift, bill, import, appointment, claim, jar, budget, note, reconciliation, and command history from this household. It keeps the household identity, members, ledger names, Google connection, accounts, categories, jobs, and shift settings so testing can continue."
+          extra={`This cannot be undone. If this household synchronizes, the empty Development activity can replace the shared Development cloud copy. Production is not touched. ${googleStepUpExtra}`}
+          confirmLabel="Erase all Development activity"
           danger
           busy={busy}
           onCancel={() => setGuard(null)}
@@ -2890,17 +2897,10 @@ export function App() {
               setBusy(true);
               try {
                 await gateWithGoogle({ record: false });
-                household.members.forEach((member) => disconnectGoogle(environment, member.id));
-                disconnectGoogle(environment, "__welcome__");
-                await clearHousehold(environment, household.householdId);
-                clearSession(environment);
-                setSession(null);
-                const remaining = await listHouseholdReplicas(environment);
-                setReplicas(remaining);
-                setHousehold(remaining[0] ? await loadHousehold(environment, remaining[0].householdId) : null);
                 setHistory([]);
                 setToast(null);
                 setGuard(null);
+                await persist(eraseDevelopmentData(household));
               } catch (caught) {
                 setError(caught instanceof Error ? caught.message : String(caught));
               } finally {
@@ -2945,12 +2945,12 @@ export function App() {
           }}
         />
       )}
-      {guard?.kind === "demo" && (
+      {guard?.kind === "stress-random" && (
         <ConfirmSheet
-          title="Reload demo data?"
-          body={`This replaces the ${environment} ledger on this phone with fictional CAD. If you then tap Sync to the cloud, that demo can overwrite the shared household.`}
+          title="Reload randomized stress data?"
+          body={`This replaces the ${environment} ledger with twelve months of fictional CAD covering shifts, wages, tips, expenses, bills, imported rows, transfers, appointments, claims, jars, budgets, presets, card balances, and money owed.`}
           extra={googleStepUpExtra}
-          confirmLabel="Load demo data"
+          confirmLabel="Load random stress data"
           danger
           busy={busy}
           onCancel={() => setGuard(null)}
@@ -2960,7 +2960,32 @@ export function App() {
               try {
                 await gateWithGoogle({ record: false });
                 setGuard(null);
-                await persist(seedDemoHousehold({ today, environment }));
+                await persist(seedStressHousehold({ today, environment, seed: Date.now() & 0xffffffff, numberStyle: "realistic" }));
+              } catch (caught) {
+                setError(caught instanceof Error ? caught.message : String(caught));
+              } finally {
+                setBusy(false);
+              }
+            })();
+          }}
+        />
+      )}
+      {guard?.kind === "stress-pretty" && (
+        <ConfirmSheet
+          title="Display a fresh pretty-number household?"
+          body={`This replaces the ${environment} ledger with a new twelve-month fictional household. Amounts are deliberately rounded into clean, presentation-friendly values while the same shifts, bills, imports, appointments, claims, jars, budgets, and owed balances remain testable.`}
+          extra={googleStepUpExtra}
+          confirmLabel="Load pretty numbers"
+          danger
+          busy={busy}
+          onCancel={() => setGuard(null)}
+          onConfirm={() => {
+            void (async () => {
+              setBusy(true);
+              try {
+                await gateWithGoogle({ record: false });
+                setGuard(null);
+                await persist(seedStressHousehold({ today, environment, seed: Date.now() & 0xffffffff, numberStyle: "pretty" }));
               } catch (caught) {
                 setError(caught instanceof Error ? caught.message : String(caught));
               } finally {
