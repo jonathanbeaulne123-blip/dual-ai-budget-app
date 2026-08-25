@@ -50,7 +50,8 @@ The current batch-review build at commit `fd70869` was deployed to the Developme
 
 - Malformed/empty bank files, invalid dates/amounts, non-CAD rows, unknown transaction types, missing account/category choices, and unresolved Not sure rows fail closed.
 - A failed image provider says detection is unavailable and that the image was not saved.
-- If final book acceptance fails, the review remains open and the previous household stays authoritative.
+- If final book acceptance fails, the review remains open, the previous household stays authoritative, and the review shows the underlying books/storage reason instead of replacing it with a generic rejection.
+- Large combined histories may exceed the browser's small `localStorage` backup quota. The accepted full snapshot can live in IndexedDB; compact Undo history stores confirmation metadata and posted ids rather than duplicating full household snapshots. If both durable device stores fail, nothing changes.
 - Closing the current review discards staged UI state. Re-importing the same source is safe: exact provenance scores 100 and starts cancelled.
 
 ## Proofs

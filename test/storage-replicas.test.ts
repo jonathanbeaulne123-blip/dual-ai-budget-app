@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { personalReplicaForMember, seedDemoHousehold } from "../src/core/index.ts";
 import {
   activeHouseholdId,
@@ -13,6 +13,54 @@ import {
 } from "../src/storage.ts";
 import { loadSession, saveSession } from "../src/session.ts";
 
+const originalIndexedDb = globalThis.indexedDB;
+
+function installMemoryIndexedDb(): void {
+  const values = new Map<IDBValidKey, unknown>();
+  let created = false;
+  const makeRequest = <T>(work: () => T): IDBRequest<T> => {
+    const request = { result: undefined, error: null, onsuccess: null, onerror: null } as unknown as IDBRequest<T>;
+    queueMicrotask(() => {
+      try {
+        Object.defineProperty(request, "result", { configurable: true, value: work() });
+        request.onsuccess?.(new Event("success") as unknown as Event & { target: IDBRequest<T> });
+      } catch (error) {
+        Object.defineProperty(request, "error", { configurable: true, value: error });
+        request.onerror?.(new Event("error") as unknown as Event & { target: IDBRequest<T> });
+      }
+    });
+    return request;
+  };
+  const objectStore = {
+    get: (key: IDBValidKey) => makeRequest(() => values.get(key)),
+    put: (value: unknown, key: IDBValidKey) => {
+      values.set(key, structuredClone(value));
+      return makeRequest(() => key);
+    },
+    delete: (key: IDBValidKey) => makeRequest(() => { values.delete(key); return undefined; }),
+  } as unknown as IDBObjectStore;
+  const db = {
+    objectStoreNames: { contains: () => created },
+    createObjectStore: () => { created = true; return objectStore; },
+    transaction: () => {
+      const transaction = { objectStore: () => objectStore, oncomplete: null, onerror: null, onabort: null, error: null } as unknown as IDBTransaction;
+      queueMicrotask(() => transaction.oncomplete?.(new Event("complete") as unknown as Event & { target: IDBTransaction }));
+      return transaction;
+    },
+  } as unknown as IDBDatabase;
+  const factory = {
+    open: () => {
+      const request = { result: db, error: null, onsuccess: null, onerror: null, onupgradeneeded: null } as unknown as IDBOpenDBRequest;
+      queueMicrotask(() => {
+        if (!created) request.onupgradeneeded?.(new Event("upgradeneeded") as IDBVersionChangeEvent);
+        request.onsuccess?.(new Event("success") as unknown as Event & { target: IDBOpenDBRequest });
+      });
+      return request;
+    },
+  } as unknown as IDBFactory;
+  Object.defineProperty(globalThis, "indexedDB", { configurable: true, value: factory });
+}
+
 function household(id: string, name: string) {
   return {
     ...seedDemoHousehold({ today: "2026-08-24", environment: "development" }),
@@ -24,6 +72,11 @@ function household(id: string, name: string) {
 
 describe("multi-ledger replicas", () => {
   beforeEach(() => localStorage.clear());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    if (originalIndexedDb) Object.defineProperty(globalThis, "indexedDB", { configurable: true, value: originalIndexedDb });
+    else Reflect.deleteProperty(globalThis, "indexedDB");
+  });
 
   it("migrates the legacy environment snapshot without losing it", async () => {
     const legacy = household("HH-LEGACY", "Legacy kitchen");
@@ -78,6 +131,59 @@ describe("multi-ledger replicas", () => {
     await saveHousehold(withPrivateRows, { memberId: "MEM-001" });
     expect((await loadPersonalReplica("development", "HH-PRIVATE", "MEM-001"))?.transactions.map((tx) => tx.id)).toContain("TX-MEM-001");
     expect(await loadPersonalReplica("development", "HH-PRIVATE", "MEM-002")).toBeNull();
+  });
+
+  it("accepts an IndexedDB snapshot when large-ledger localStorage backups exceed quota", async () => {
+    installMemoryIndexedDb();
+    const large = household("HH-LARGE", "Large history");
+    const nativeSetItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(this: Storage, key: string, value: string) {
+      if (/^hearth:(?:household:v2|personal:v2|v1:)/.test(key)) {
+        throw new DOMException("Quota exceeded", "QuotaExceededError");
+      }
+      return nativeSetItem.call(this, key, value);
+    });
+
+    await expect(saveHousehold(large, { memberId: "MEM-001" })).resolves.toBeUndefined();
+    expect(activeHouseholdId("development")).toBe("HH-LARGE");
+    expect((await loadHousehold("development", "HH-LARGE", "MEM-001"))?.name).toBe("Large history");
+    expect((await loadPersonalReplica("development", "HH-LARGE", "MEM-001"))?.memberId).toBe("MEM-001");
+  });
+
+  it("accepts the IndexedDB snapshot when localStorage reads are blocked", async () => {
+    installMemoryIndexedDb();
+    const blocked = household("HH-READ-BLOCKED", "IndexedDB home");
+    const nativeGetItem = Storage.prototype.getItem;
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(function getItem(this: Storage, key: string) {
+      if (/^hearth:(?:household:v2|personal:v2|v1:)/.test(key)) {
+        throw new DOMException("Storage access blocked", "SecurityError");
+      }
+      return nativeGetItem.call(this, key);
+    });
+
+    await expect(saveHousehold(blocked, { memberId: "MEM-001" })).resolves.toBeUndefined();
+    expect(activeHouseholdId("development")).toBe("HH-READ-BLOCKED");
+    expect((await loadHousehold("development", "HH-READ-BLOCKED", "MEM-001"))?.name).toBe("IndexedDB home");
+    expect((await loadPersonalReplica("development", "HH-READ-BLOCKED", "MEM-001"))?.memberId).toBe("MEM-001");
+  });
+
+  it("rejects the new snapshot and retains the last valid local copy when neither store can save", async () => {
+    Reflect.deleteProperty(globalThis, "indexedDB");
+    const valid = household("HH-FAIL-CLOSED", "Last valid home");
+    await saveHousehold(valid, { memberId: "MEM-001" });
+    const replicaKey = "hearth:household:v2:development:HH-FAIL-CLOSED";
+    const priorReplica = localStorage.getItem(replicaKey);
+    const nativeSetItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(this: Storage, key: string, value: string) {
+      if (/^hearth:(?:household:v2|personal:v2|v1:)/.test(key)) {
+        throw new DOMException("Quota exceeded", "QuotaExceededError");
+      }
+      return nativeSetItem.call(this, key, value);
+    });
+
+    await expect(saveHousehold({ ...valid, name: "Rejected replacement", revision: valid.revision + 1 }, { memberId: "MEM-001" }))
+      .rejects.toThrow("The last valid household is still here");
+    expect(localStorage.getItem(replicaKey)).toBe(priorReplica);
   });
 
   it("clears only the selected ledger and keeps the other replica readable", async () => {

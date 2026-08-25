@@ -67,12 +67,15 @@ async function idbGet<T>(key: string): Promise<T | null> {
   });
 }
 
-async function idbSet<T>(key: string, value: T): Promise<void> {
+async function idbSetMany(entries: Array<[string, unknown]>): Promise<void> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
-    const request = db.transaction(STORE, "readwrite").objectStore(STORE).put(value, key);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error ?? new Error("Could not save the ledger."));
+    const transaction = db.transaction(STORE, "readwrite");
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error ?? new Error("Could not save the ledger."));
+    transaction.onabort = () => reject(transaction.error ?? new Error("Could not save the ledger."));
+    const store = transaction.objectStore(STORE);
+    for (const [key, value] of entries) store.put(value, key);
   });
 }
 
@@ -182,25 +185,51 @@ export async function saveHousehold(household: Household, options: SaveHousehold
   const touchedKeys = [replicaKey, catalogKey(shaped.environment)];
   if (activate) touchedKeys.push(legacyKey, activeKey(shaped.environment));
   if (memberPersonalKey) touchedKeys.push(memberPersonalKey);
-  const previous = new Map(touchedKeys.map((key) => [key, localStorage.getItem(key)]));
-  try {
-    localStorage.setItem(replicaKey, JSON.stringify(shaped));
-    if (personal && memberPersonalKey) localStorage.setItem(memberPersonalKey, JSON.stringify(personal));
-    upsertCatalog(shaped);
-    if (activate) {
-      localStorage.setItem(legacyKey, JSON.stringify(shaped));
-      localStorage.setItem(activeKey(shaped.environment), shaped.householdId);
+  const previous = new Map<string, string | null>();
+  let localAccessible = true;
+  for (const key of touchedKeys) {
+    try { previous.set(key, localStorage.getItem(key)); }
+    catch { localAccessible = false; break; }
+  }
+  let localSaved = false;
+  if (localAccessible) {
+    try {
+      localStorage.setItem(replicaKey, JSON.stringify(shaped));
+      if (personal && memberPersonalKey) localStorage.setItem(memberPersonalKey, JSON.stringify(personal));
+      upsertCatalog(shaped);
+      if (activate) {
+        localStorage.setItem(legacyKey, JSON.stringify(shaped));
+        localStorage.setItem(activeKey(shaped.environment), shaped.householdId);
+      }
+      localSaved = true;
+    } catch {
+      for (const [key, value] of previous) {
+        try { restoreLocal(key, value); } catch { /* keep trying IndexedDB */ }
+      }
     }
+  }
+  let indexedDbSaved = false;
+  try {
+    const entries: Array<[string, unknown]> = [[replicaKey, shaped]];
+    if (personal && memberPersonalKey) entries.push([memberPersonalKey, personal]);
+    if (activate) entries.push([shaped.environment, shaped]);
+    await idbSetMany(entries);
+    indexedDbSaved = true;
   } catch {
-    for (const [key, value] of previous) restoreLocal(key, value);
+    // localStorage remains the durable fallback when IndexedDB is unavailable or blocked.
+  }
+  if (!localSaved && !indexedDbSaved) {
     throw new Error("The last valid household is still here. This phone could not save the new snapshot.");
   }
-  try {
-    await idbSet(replicaKey, shaped);
-    if (personal && memberPersonalKey) await idbSet(memberPersonalKey, personal);
-    if (activate) await idbSet(shaped.environment, shaped);
-  } catch {
-    // localStorage is the durable fallback when IndexedDB is unavailable or blocked.
+  if (!localSaved) {
+    // Large ledgers can exceed localStorage's small quota. IndexedDB already has
+    // the full snapshot; retain only the tiny discovery pointers when possible.
+    try {
+      upsertCatalog(shaped);
+      if (activate) localStorage.setItem(activeKey(shaped.environment), shaped.householdId);
+    } catch {
+      /* loadHousehold can still recover the active IndexedDB environment replica */
+    }
   }
 }
 

@@ -262,7 +262,10 @@ export function BatchImportCard({
       const outcome = await onCommit(result.household, result.undo);
       if (outcome === null) throw new Error("The books did not accept this batch. The staged review is still open.");
       if (outcome && typeof outcome === "object" && "ok" in outcome && outcome.ok === false) {
-        throw new Error("The books rejected this batch. The staged review is still open.");
+        const detail = "userMessage" in outcome && typeof outcome.userMessage === "string"
+          ? outcome.userMessage.trim()
+          : "The books rejected this batch.";
+        throw new Error(`${detail} The staged review is still open.`);
       }
       setRows([]);
       setWarnings([]);
