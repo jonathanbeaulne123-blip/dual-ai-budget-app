@@ -67,6 +67,8 @@ Because the checks occur before policy replacement inside one transaction, a fai
 
 ## Next cutover runbook (006 not performed)
 
+Independent of Auth/RLS: Jonathan may still apply D-126 `007_household_timezone_iana.sql` (`pnpm books:apply:007` or SQL editor) whenever he wants hosted CHECK to accept non-Toronto IANA. That packet does not close the anon bridge.
+
 1. Decide the project boundary: move Production to a separate Supabase project for a Development-only rehearsal, or explicitly approve a full shared-project cutover. The current 006 intentionally aborts while a Production household exists.
 2. In the chosen project, enable the Google provider and add the kitchen's exact redirect URLs.
 3. Deploy a Development build with `VITE_SUPABASE_AUTH_ENABLED=1`, the project URL, and the publishable key—never a secret/service-role key.
