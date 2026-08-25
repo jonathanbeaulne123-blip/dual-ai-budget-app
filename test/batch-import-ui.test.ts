@@ -220,6 +220,33 @@ describe("batch import review UI", () => {
     ))).toBe(true);
   });
 
+  it("keeps review open and shows the real acceptance failure", async () => {
+    const onCommit = vi.fn(async () => ({
+      ok: false,
+      userMessage: "The last valid household is still here. This phone could not save the new snapshot.",
+    }));
+    act(() => root.render(createElement(BatchImportCard, {
+      household: catalogHousehold(),
+      memberId: "MEM-002",
+      view: "household",
+      onCommit,
+    })));
+
+    const input = container.querySelector<HTMLInputElement>('input[accept*=".ofx"]')!;
+    const file = new File([OFX_AUTO_KEEP], "large-history.ofx", { type: "application/x-ofx" });
+    Object.defineProperty(file, "arrayBuffer", { value: async () => new TextEncoder().encode(OFX_AUTO_KEEP).buffer });
+    Object.defineProperty(input, "files", { configurable: true, value: { 0: file, length: 1, item: () => file, [Symbol.iterator]: function* () { yield file; } } });
+    act(() => input.dispatchEvent(new Event("change", { bubbles: true })));
+
+    await settleUntil(() => container.textContent?.includes("1 auto-kept without review") === true, "Review did not stage.");
+    act(() => button("Review final Confirm")!.click());
+    await settleUntil(() => container.textContent?.includes("Confirm batch import?") === true, "Final Confirm did not open.");
+    act(() => button("Confirm 1 import")!.click());
+    await settleUntil(() => container.textContent?.includes("This phone could not save the new snapshot") === true, "Real rejection reason was hidden.");
+    expect(container.querySelector(".import-review")).not.toBeNull();
+    expect(container.textContent).toContain("The staged review is still open");
+  });
+
   it("centers the duplicate decision and advances after Keep both", async () => {
     let household = catalogHousehold();
     const categoryId = household.categories.find((category) => (

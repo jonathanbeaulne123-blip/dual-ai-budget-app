@@ -558,7 +558,7 @@ export function App() {
       }
       setHousehold(current);
       if (current && loadedSession?.memberId) {
-        setHistory(loadUndoHistory(environment, current.householdId, loadedSession.memberId));
+        setHistory(loadUndoHistory(environment, current.householdId, loadedSession.memberId, current));
       } else {
         setHistory([]);
       }
@@ -1037,7 +1037,7 @@ export function App() {
       setHousehold(candidate);
       rememberSession({ memberId: nextMemberId, view: session?.view ?? "household", householdId });
       setBooksStatus(status);
-      setHistory(loadUndoHistory(environment, householdId, nextMemberId));
+      setHistory(loadUndoHistory(environment, householdId, nextMemberId, candidate));
       setToast(null);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
