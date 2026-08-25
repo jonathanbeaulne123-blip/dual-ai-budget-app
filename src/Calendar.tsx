@@ -355,6 +355,7 @@ export function CalendarPage(props: {
         <>
           {repeatingDraft ? (
             <RepeatingForm
+              key={repeatingDraft.id ?? "new-repeating"}
               household={household}
               today={today}
               initial={repeatingDraft}
