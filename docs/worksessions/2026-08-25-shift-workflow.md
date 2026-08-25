@@ -1,6 +1,6 @@
 # Hearth worksession — Shift workflow rebuild
 
-- **Status:** CLOSED — implemented locally; review deferred to the comprehensive pre-September audit
+- **Status:** PLAYTEST-READY — PR #100 open; small polish is batched after real use; review deferred to the comprehensive pre-September audit
 - **Opened:** 2026-08-25 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -8,7 +8,7 @@
 - **Branch:** `codex/shift-workflow`
 - **Baseline SHA:** `6c48f64`
 - **Head SHA:** `d1568d8` plus the final Slice 4 closeout commit on this branch
-- **PR or issue:** none
+- **PR:** [#100](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/100) — CI and Cloudflare preview green; merge/deploy not yet authorized
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** none; local code and synthetic fixtures only
@@ -90,6 +90,7 @@ Inferences to prove:
 - Job configuration is the single source for remembered defaults and shift calculation rules.
 - Confirmed corrections appear as replacement shifts to the user but preserve balanced reversal/repost evidence underneath.
 - No separate D-127 review is required now; include it in the single comprehensive review immediately before September.
+- Jonathan likes the current direction; record small tweaks during playtesting and apply them as one coherent polish batch later.
 
 ## Remaining uncertainty
 
@@ -99,4 +100,4 @@ Inferences to prove:
 
 ## Handoff
 
-Local implementation complete. Continue useful Development work without a separate D-127 review; include these money changes in the comprehensive review immediately before September. No PR, push, merge, deployment, schema change, hosted mutation, Production access, or secret change occurred in this worksession.
+PR #100 is pushed, conflict-free, and green. It is intentionally unmerged because merging `main` triggers the live deployment and still needs explicit deployment authorization. Continue useful Development work without a separate D-127 review; batch playtest polish later and include these money changes in the comprehensive review immediately before September.
