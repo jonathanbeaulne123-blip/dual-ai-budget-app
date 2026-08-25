@@ -37,7 +37,11 @@ describe("document detection Worker", () => {
       }), { status: 200, headers: { "Content-Type": "application/json" } });
     });
     vi.stubGlobal("fetch", upstream);
-    const response = await worker.fetch(request(), { OPENAI_API_KEY: "test", ASSETS: { fetch: vi.fn() } });
+    const response = await worker.fetch(request(), {
+      OPENAI_API_KEY: "test",
+      HERCULES_ALLOW_PAID_PROVIDERS: "true",
+      ASSETS: { fetch: vi.fn() },
+    });
     expect(response.status).toBe(200);
     expect(response.headers.get("Access-Control-Allow-Origin")).toBe(origin);
     const body = await response.json() as { ok: boolean; provider: string; result: { accountLast4: string; rows: Array<{ description: string; reference: string }>; warnings: string[] } };
@@ -81,6 +85,7 @@ describe("document detection Worker", () => {
     const response = await worker.fetch(request(), {
       OPENAI_API_KEY: "openai-test",
       ANTHROPIC_API_KEY: "anthropic-test",
+      HERCULES_ALLOW_PAID_PROVIDERS: "true",
       ASSETS: { fetch: vi.fn() },
     });
     expect(response.status).toBe(200);
@@ -110,7 +115,7 @@ describe("document detection Worker", () => {
     const body = await response.json() as { provider: string; result: { rows: Array<{ amountCents: number }> } };
     expect(body.provider).toBe("workers-ai");
     expect(body.result.rows[0]?.amountCents).toBe(903);
-    expect(run).toHaveBeenCalledWith("@cf/meta/llama-3.2-11b-vision-instruct", expect.any(Object));
+    expect(run).toHaveBeenCalledWith("@cf/google/gemma-4-26b-a4b-it", expect.any(Object));
   });
 
   it("fails honestly when no image-capable provider answers and never stores the image", async () => {
@@ -118,5 +123,43 @@ describe("document detection Worker", () => {
     expect(response.status).toBe(503);
     const body = await response.json() as { error: string };
     expect(body.error).toMatch(/not saved/i);
+  });
+
+  it("uses free Workers AI first and does not contact paid providers even when their keys exist", async () => {
+    const upstream = vi.fn();
+    vi.stubGlobal("fetch", upstream);
+    const run = vi.fn(async () => ({ response: JSON.stringify({
+      documentKind: "statement",
+      currency: "CAD",
+      accountLast4: "9988",
+      rows: [{
+        date: "2026-08-25", amountCents: 4200, direction: "debit", typeHint: "expense",
+        merchant: "Fresh Market", description: "Groceries", reference: "FREE-1", confidence: 91,
+      }],
+      warnings: [],
+    }) }));
+    const response = await worker.fetch(request(), {
+      AI: { run },
+      OPENAI_API_KEY: "present-but-disabled",
+      ANTHROPIC_API_KEY: "present-but-disabled",
+      HERCULES_ALLOW_PAID_PROVIDERS: "false",
+      ASSETS: { fetch: vi.fn() },
+    });
+    expect(response.status).toBe(200);
+    expect((await response.json() as { provider: string }).provider).toBe("workers-ai");
+    expect(run).toHaveBeenCalledWith("@cf/google/gemma-4-26b-a4b-it", expect.any(Object));
+    expect(upstream).not.toHaveBeenCalled();
+  });
+
+  it("fails closed instead of spending when only paid provider keys are available", async () => {
+    const upstream = vi.fn();
+    vi.stubGlobal("fetch", upstream);
+    const response = await worker.fetch(request(), {
+      OPENAI_API_KEY: "present-but-disabled",
+      ANTHROPIC_API_KEY: "present-but-disabled",
+      ASSETS: { fetch: vi.fn() },
+    });
+    expect(response.status).toBe(503);
+    expect(upstream).not.toHaveBeenCalled();
   });
 });
