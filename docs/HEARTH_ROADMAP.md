@@ -241,14 +241,15 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 
 **Deadline and exit condition:** before 2026-10-01 and before meaningful household data, an authenticated Google identity can reach only its personal ledger and intended household/environment records, and an outsider cannot enumerate them.
 
-**D-123 packet progress:** Q1–Q5 locked. Path B approved. 004/005/007/008 applied. Empty Production household removed. Google Auth live. Preflighted deny-by-default cutover 006 revised to NOTICE + Production ceiling 1; **006 still not applied**. Rollback packet `009_rollback_006.sql` in-repo. Awaiting Jonathan green preflight re-run + paste approval.
+**D-123 packet progress:** Q1–Q5 locked. Path B. **006 applied** 2026-08-25 (deny-by-default RLS live; `hearth_households_select` proved). 004/005/007/008 also applied. Google Auth live. Empty Production removed. Smoke Create / email / QR / revoke / anon denial still open; Welcome invite chrome follow-up.
 
 - [x] Design Google-to-hosted-auth identity mapping and durable personal-ledger/household membership relationships before writing policies around them. (D-123: Supabase Auth Google → `auth.uid()`; door = `continuity_memberships` + `household_invitations`)
 - [x] Author deny-by-default RLS + REVOKE anon household REST packet (unapplied until review).
 - [x] Define email and QR invitation channels with owner-only issue/revoke RPCs (synthetic matrix tested; live apply pending).
 - [x] Apply reviewed `004` and `005` preparation/hardening with Development approval; remove approved legacy Development rows and verify Production data is untouched.
 - [x] Explicit shared-project cutover permission in principle (path B, 2026-08-25); Production continuity client behind build flag.
-- [ ] Run live preflight; export Production; apply SELECT bridge `008` + privileged owner/Personal extract; configure Google provider; revise 006 Production abort; rehearse rollback; apply 006; smoke Create / email / QR / revoke / anon denial / Production.
+- [x] Apply SELECT bridge `008`; configure Google provider; revise 006 Production abort to NOTICE; apply **006**.
+- [ ] Smoke Create / email / QR / revoke / anon denial / wrong-household denial on Auth-enabled kitchen; invite chrome.
 - [ ] Add device/session revoke and household leave/recovery semantics.
 - [ ] Replace phrase-as-authority and `linked` publishing with automatic authenticated discovery/synchronization; invitations only establish membership.
 - [ ] Build and test migrations on a disposable rehearsal project; Production cutover is a separate Jonathan-approved plan.
