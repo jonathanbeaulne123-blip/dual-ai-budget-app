@@ -6,7 +6,8 @@
 - **Assignee or AI:** Cursor Cloud Agent
 - **Branch:** `cursor/appstore-sync-ux-f375`
 - **Baseline SHA:** `83a1974` (`main`)
-- **Head SHA:** see branch tip
+- **Head SHA:** branch tip (see PR #114)
+- **PR:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/114
 - **Risk:** High (sync recovery UX + auth session chrome; money conflict presentation)
 - **Decision owner:** Jonathan
 - **Environment impact:** Development client; no hosted schema apply

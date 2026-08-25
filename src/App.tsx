@@ -162,6 +162,7 @@ import {
 } from "./auth/supabaseSession.ts";
 import {
   clearContinuityOutboxConflictBlocks,
+  clearContinuityOutboxForHousehold,
   continuityMemberId,
   discoverContinuityMemberships,
   flushContinuityOutbox,
@@ -190,7 +191,7 @@ import {
   renderCommandSurface,
   type CommandChromeResult,
 } from "./commandSurface.tsx";
-import { saveSyncAnchor } from "./syncAnchor.ts";
+import { clearSyncAnchor, saveSyncAnchor } from "./syncAnchor.ts";
 import {
   recentChangesEmptyCopy,
   recentChangesHeaderPill,
@@ -3207,6 +3208,9 @@ export function App() {
                 }
                 clearSupabaseSession(environment);
                 clearSession(environment);
+                clearPendingAuthInvite();
+                clearSyncAnchor(environment, hid);
+                clearContinuityOutboxForHousehold(environment, hid);
                 await clearHousehold(environment, hid);
                 setHistory([]);
                 setToast(null);

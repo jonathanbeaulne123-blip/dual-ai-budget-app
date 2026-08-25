@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createMemoryContinuityStore,
+  clearContinuityOutboxForHousehold,
   discoverContinuityMemberships,
   enqueueContinuitySnapshot,
   flushContinuityOutbox,
@@ -299,5 +300,32 @@ describe("Google-account continuity", () => {
     expect(payload.transactions.map((item) => item.note)).not.toContain("Partner private");
     expect(personalIndex).toBeGreaterThan(-1);
     expect(snapshotIndex).toBeGreaterThan(personalIndex);
+  });
+});
+
+describe("Sign out continuity wipe", () => {
+  it("drops only the cleared household from the outbox", () => {
+    setContinuityStore(createMemoryContinuityStore());
+    const keep = googleHousehold();
+    const drop = { ...googleHousehold(), householdId: "HH-DROP", name: "Drop me" };
+    enqueueContinuitySnapshot({
+      environment: "development",
+      identity,
+      household: keep,
+      expectedRevision: 0,
+      confirmationId: "keep-1",
+    });
+    enqueueContinuitySnapshot({
+      environment: "development",
+      identity,
+      household: drop,
+      expectedRevision: 0,
+      confirmationId: "drop-1",
+    });
+    expect(listContinuityOutbox("development")).toHaveLength(2);
+    expect(clearContinuityOutboxForHousehold("development", "HH-DROP")).toBe(1);
+    const left = listContinuityOutbox("development");
+    expect(left).toHaveLength(1);
+    expect(left[0]?.householdId).toBe(keep.householdId);
   });
 });
