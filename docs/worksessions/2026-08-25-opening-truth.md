@@ -1,6 +1,6 @@
 # Hearth worksession — First Numbers / opening truth
 
-- **Status:** PROPOSED — product locks required before implementation
+- **Status:** READY TO IMPLEMENT inside Onboarding Slice B — product locks accepted by D-129
 - **Opened:** 2026-08-25 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -30,11 +30,11 @@ A new household can tell Hearth what is actually in each bank, cash, savings, in
 3. Add a short phone flow and a denser desktop review: choose date → enter assets/debts → review balanced entry → Confirm. Zero remains skipped. Back/edit is always available before Confirm.
 4. Add Health, statements, sync/hash, reversal/repost, fresh-household, and accessibility proofs. Existing continuity JSON carries the new source; no hosted table or migration is needed.
 
-## Product locks required
+## Product locks accepted — D-129
 
-1. **Entry point:** recommend showing setup automatically while a household has no accepted money, plus a permanent Accounts/More entry for later use.
-2. **Account scope:** recommend using existing accounts in the first slice, with a clear Add account link that returns to setup; do not build a second account editor inside the wizard.
-3. **Personal scope:** recommend one session may enter shared plus the current member’s Personal accounts; another member enters their own Personal opening truth from their account.
+1. **Entry point:** show setup automatically through onboarding while a household has no accepted money, plus a permanent Accounts/More entry for later use.
+2. **Account scope:** use existing accounts with a clear Add account link that returns to setup; do not build a second account editor inside the wizard.
+3. **Personal scope:** one session may enter shared plus the current member’s Personal accounts; another member enters their own Personal opening truth from their identity.
 
 ## Frozen accounting behavior
 
@@ -56,4 +56,4 @@ A new household can tell Hearth what is actually in each bank, cash, savings, in
 
 ## Handoff
 
-Jonathan: lock the three product choices. Codex can then implement this lane without touching Cursor’s migration work.
+Product choices are locked by D-129. Codex owns this as Onboarding Slice B after Cursor's foundation contract is available; it remains isolated from migrations.

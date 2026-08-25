@@ -22,6 +22,9 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [HERCULES.md](HERCULES.md) | Companion laws and product guidance |
 | [HERCULES_MARK.md](HERCULES_MARK.md) | Mark and runtime asset guidance |
 | [HERCULES_AI.md](HERCULES_AI.md) | Resident data-scientist boundary, payload, notices, and memory guidance; reconcile with current decisions when stale |
+| [ONBOARDING_UPDATE.md](ONBOARDING_UPDATE.md) | Four-part Hercules-led onboarding plan, button/feature audit, Bianca journey, scripts, architecture direction, and gates |
+| [ONBOARDING_PART2_STORYBOARD.md](ONBOARDING_PART2_STORYBOARD.md) | Locked phone/desktop routes, focus camera, dialogue, Practice scenarios, failure recovery, implementation slices, and D-129 exception |
+| [briefs/CURSOR_ONBOARDING_FOUNDATION_PROMPT.md](briefs/CURSOR_ONBOARDING_FOUNDATION_PROMPT.md) | Bounded Cursor Slice A foundation prompt with multi-model review and no migration/provider overlap |
 | [OFFICE.md](OFFICE.md) | Office direction; reconcile with shipped Office/mobile state when stale |
 | [CLAUDE_DESKTOP_OFFICE.md](CLAUDE_DESKTOP_OFFICE.md) | Claude desktop-office prompt |
 | [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md) | Shipped phone Home prompt/history |
