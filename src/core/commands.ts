@@ -1,4 +1,4 @@
-import { todayKey, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
+import { TIMEZONE, todayKey, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { advanceCadence, DEFAULT_REMINDER_HOURS_BEFORE, EMPTY_CALENDAR, inferRecurrenceKind, normalizeRecurrenceCadence, shapeCalendar } from "./recurrence.ts";
 import { detectHabits, detectRhythms } from "./rhythm.ts";
 import { CURRENCY, parseWholeCents } from "./money.ts";
@@ -20,7 +20,6 @@ import {
   validateOwnedAmount as catalogValidateOwned,
 } from "./catalog.ts";
 import { shapeTransactionLocation } from "./transactionLocation.ts";
-import { detectDeviceTimeZone } from "./timeZones.ts";
 import { shapeAccount, normalizeAccountKind, emptyCreditDesk, isReceivableKind } from "./accountKinds.ts";
 import { creditCardView, savingsView } from "./accounts.ts";
 import { sitDownPreview } from "./insights.ts";
@@ -284,9 +283,14 @@ export function postEntry(household: Household, input: {
   return commit(previous, next, input.type === "income" ? "Add Income" : input.type === "refund" ? "Add Refund" : "Add Expense", `${draft.id}: ${input.type} $${(amountCents / 100).toFixed(2)} (${subcategory.name}) on ${date}`, [draft.id], warnings);
 }
 
-/** Shared household civil timezone (D-126). Does not rewrite posted dates. */
+/** Books civil timezone is fixed to America/Toronto (D-126 Q2 C). Phone display zones are phone-local. */
 export function setHouseholdTimezone(household: Household, timeZone: string): CommitResult {
   const nextZone = requireIanaTimeZone(timeZone);
+  if (nextZone !== TIMEZONE) {
+    throw new ValidationError(
+      `Books civil dates stay ${TIMEZONE}. Change this phone’s clock in More → Clock & place.`,
+    );
+  }
   if (household.timezone === nextZone) {
     return {
       household,
@@ -3033,7 +3037,7 @@ export function emptyHousehold(environment: Household["environment"] = "developm
     tombstones: [],
     name: "Jonathan & Bianca",
     ledgerNames: { shared: "Household Ledger", personal: {} },
-    timezone: detectDeviceTimeZone(),
+    timezone: TIMEZONE,
     currency: CURRENCY,
     environment,
     members: [],

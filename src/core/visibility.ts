@@ -31,16 +31,22 @@ export function visibleForDuplicateScan(
 }
 
 /**
- * Member-scoped household for Hercules model payloads (D-115).
+ * Member-scoped household for Hercules model payloads (D-115 / D-126 Q6).
  * Partner `personal` money, goals, and kitchen memories never enter aggregates,
  * notices, or the ledger excerpt. Shared accounts, appointments, and Health
  * still run on the full snapshot outside this projection.
+ * Coordinates are stripped unless `shareCoordsWithModel` is true (member opt-in).
  */
-export function householdForAiDisclosure(household: Household, memberId: string): Household {
+export function householdForAiDisclosure(
+  household: Household,
+  memberId: string,
+  options: { shareCoordsWithModel?: boolean } = {},
+): Household {
+  const keepCoords = Boolean(options.shareCoordsWithModel);
   const transactions = household.transactions
     .filter((tx) => visibleForDuplicateScan(tx, memberId))
     .map((tx) => {
-      if (!tx.location) return tx;
+      if (keepCoords || !tx.location) return tx;
       const { location: _coords, ...rest } = tx;
       return rest;
     });

@@ -18,8 +18,12 @@ export type WeatherChip = { emoji: string; word: string; celsiusLabel: string };
 export const WEATHER_TTL_MS = 30 * 60 * 1000;
 export const WEATHER_TIMEOUT_MS = 4000;
 export const TORONTO = { latitude: 43.65, longitude: -79.38 };
-export const OPEN_METEO_URL =
-  `https://api.open-meteo.com/v1/forecast?latitude=${TORONTO.latitude}&longitude=${TORONTO.longitude}&current=temperature_2m,precipitation,weather_code,is_day,wind_speed_10m&timezone=America%2FToronto`;
+
+export function openMeteoUrl(latitude: number, longitude: number, timeZone = "America/Toronto"): string {
+  return `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,precipitation,weather_code,is_day,wind_speed_10m&timezone=${encodeURIComponent(timeZone)}`;
+}
+
+export const OPEN_METEO_URL = openMeteoUrl(TORONTO.latitude, TORONTO.longitude);
 
 export type WeatherStore = {
   getItem(key: string): string | null;
@@ -150,9 +154,16 @@ export async function readTorontoWeather(input: {
   fetchImpl?: typeof fetch;
   storage?: WeatherStore;
   timeoutMs?: number;
+  /** Q7 B: when location is allowed, Office may pass browser coords. */
+  latitude?: number;
+  longitude?: number;
+  timeZone?: string;
 }): Promise<WeatherReading> {
   const now = input.now ?? new Date();
-  const key = weatherCacheKey(input.environment);
+  const latitude = Number.isFinite(input.latitude) ? Number(input.latitude) : TORONTO.latitude;
+  const longitude = Number.isFinite(input.longitude) ? Number(input.longitude) : TORONTO.longitude;
+  const timeZone = input.timeZone?.trim() || "America/Toronto";
+  const key = `${weatherCacheKey(input.environment)}:${latitude.toFixed(2)},${longitude.toFixed(2)}`;
   const cached = readCache(input.storage, key, now.getTime());
   if (cached && cacheIsFresh(cached.storedAt, now.getTime())) {
     return cached.reading;
@@ -173,7 +184,7 @@ export async function readTorontoWeather(input: {
       }, timeoutMs);
     });
     const response = await Promise.race([
-      fetchImpl(OPEN_METEO_URL, { signal: controller.signal }),
+      fetchImpl(openMeteoUrl(latitude, longitude, timeZone), { signal: controller.signal }),
       timed,
     ]);
     if (!response.ok) {

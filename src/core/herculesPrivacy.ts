@@ -223,6 +223,7 @@ export function composeHerculesChatRequest(
   today: DateKey,
   memberId: string,
   lastTopic = "",
+  options: { shareCoordsWithModel?: boolean } = {},
 ): {
   message: string;
   briefing: HerculesBriefing;
@@ -236,7 +237,9 @@ export function composeHerculesChatRequest(
   /** Viewer used for the disclosure projection. Never a secret. */
   memberId: string;
 } {
-  const disclosed = householdForAiDisclosure(household, memberId);
+  const disclosed = householdForAiDisclosure(household, memberId, {
+    shareCoordsWithModel: options.shareCoordsWithModel,
+  });
   const secrets = quietSecrets(disclosed);
   const scopedBriefing = herculesBriefing(disclosed, briefing.page, today);
   // Rebuild every model-bound fact inside this disclosure boundary so a caller

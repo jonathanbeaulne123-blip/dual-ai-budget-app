@@ -19,6 +19,7 @@ import {
   claimsTraySentence,
   promoteRail,
   readTorontoWeather,
+  loadPhonePlacePrefs,
   resolveRoom,
   runHealthCheck,
   saveOfficeLayout,
@@ -225,9 +226,32 @@ export function Office({
 
   useEffect(() => {
     let live = true;
-    void readTorontoWeather({ environment, today, storage: localStorage }).then((next) => {
-      if (live) setReading(next);
-    });
+    const prefs = loadPhonePlacePrefs(environment);
+    const apply = (latitude?: number, longitude?: number) => {
+      void readTorontoWeather({
+        environment,
+        today,
+        storage: localStorage,
+        latitude,
+        longitude,
+        timeZone: prefs.displayTimeZone,
+      }).then((next) => {
+        if (live) setReading(next);
+      });
+    };
+    if (
+      prefs.locationAllowed
+      && typeof navigator !== "undefined"
+      && navigator.geolocation
+    ) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => apply(position.coords.latitude, position.coords.longitude),
+        () => apply(),
+        { enableHighAccuracy: false, timeout: 4000, maximumAge: 15 * 60_000 },
+      );
+    } else {
+      apply();
+    }
     return () => { live = false; };
   }, [environment, today]);
 
