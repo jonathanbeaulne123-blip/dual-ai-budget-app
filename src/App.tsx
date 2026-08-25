@@ -308,6 +308,7 @@ export function App() {
   const [mode, setMode] = useState<AddMode>("expense");
   const [form, setForm] = useState(emptyForm);
   const [focusedAccountId, setFocusedAccountId] = useState<string | null>(null);
+  const [herculesSourceFocus, setHerculesSourceFocus] = useState<HerculesNumberSource | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [confirm, setConfirm] = useState<NeedsConfirmationError | null>(null);
@@ -1224,7 +1225,10 @@ export function App() {
       if (outcome.postedExactlyOnce || (outcome.postedNothing && !outcome.retryable)) {
         confirmationRef.current = null;
       }
-      setHousehold(outcome.household);
+      // A rejected first-household write has no last valid Household to return.
+      // Keep the welcome screen mounted instead of storing CommandOutcome's
+      // minimal no-previous sentinel as if it were readable books.
+      if (outcome.ok || previous) setHousehold(outcome.household);
       const pendingCount = listContinuityOutbox(environment).filter((item) => item.householdId === outcome.household.householdId).length;
       const autoMerged = outcome.kind === "accepted-local"
         && (outcome.household.conflicts ?? []).some((row) => row.autoMerged && row.resolved);
@@ -1570,11 +1574,14 @@ export function App() {
               onBack={() => { setWelcomeMode("home"); setError(""); }}
             />
           ) : welcomeMode === "new" ? (
-            <form onSubmit={(event) => {
+            <form onSubmit={async (event) => {
               event.preventDefault();
+              let adoptedWelcomeSession = false;
+              let adoptedMemberId = "";
               try {
                 if (!welcomeIdentity) throw new Error("Sign in with Google before creating a household.");
                 const memberId = newHouseholdDraft.personalMemberId;
+                adoptedMemberId = memberId;
                 const named = nameHouseholdLedgers(catalogHousehold(environment), newHouseholdDraft);
                 const next = linkGoogleIdentity(named, {
                   memberId,
@@ -1583,13 +1590,20 @@ export function App() {
                   displayName: welcomeIdentity.displayName,
                   grantedScopes: welcomeIdentity.grantedScopes,
                 }).household;
-                adoptGoogleSession(environment, "__welcome__", memberId);
+                adoptedWelcomeSession = Boolean(adoptGoogleSession(environment, "__welcome__", memberId));
+                const outcome = await persist(next, undefined, memberId);
+                if (!outcome?.ok) {
+                  if (adoptedWelcomeSession) adoptGoogleSession(environment, memberId, "__welcome__");
+                  return;
+                }
                 const nextSession = { memberId, view: "household" as const, householdId: next.householdId };
                 setSession(nextSession);
                 saveSession(environment, nextSession);
                 setWelcomeIdentity(null);
-                void persist(next, undefined, memberId);
               } catch (caught) {
+                if (adoptedWelcomeSession && adoptedMemberId) {
+                  adoptGoogleSession(environment, adoptedMemberId, "__welcome__");
+                }
                 setError(caught instanceof Error ? caught.message : String(caught));
               }
             }}>
@@ -2245,7 +2259,9 @@ export function App() {
           view={view}
           booksStatus={booksStatus}
           focusedAccountId={focusedAccountId}
+          sourceFocus={herculesSourceFocus}
           onFocusAccount={setFocusedAccountId}
+          onClearSource={() => setHerculesSourceFocus(null)}
           onChange={(next, token) => persist(next, token)}
           onPayAccount={openPayCard}
           onAddToAccount={(account) => openAddFor(account)}
@@ -3473,6 +3489,7 @@ export function App() {
         onAcceptPreset={(key, summary) => setGuard({ kind: "acceptPreset", key, summary })}
         onDismissNotice={(key) => { void run((current) => dismissNotice(current, key)); }}
         onOpenSource={(source: HerculesNumberSource) => {
+          setHerculesSourceFocus(source);
           rememberSession({ memberId: session.memberId, view: source.view, householdId: household.householdId });
           if (source.accountId) setFocusedAccountId(source.accountId);
           if (source.route === "calendar") requestCalendarPane("board", localStorage);

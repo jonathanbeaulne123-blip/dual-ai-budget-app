@@ -1,6 +1,6 @@
 import type { DateKey } from "./calendar.ts";
 import type { InstrumentId } from "./officeLayout.ts";
-import type { LedgerView } from "./types.ts";
+import type { LedgerView, Transaction } from "./types.ts";
 
 export type HerculesSourceRoute = "home" | "plan" | "calendar" | "ledger" | "more";
 
@@ -36,4 +36,21 @@ export type HerculesGroundedFact = {
 
 export function herculesFactId(label: string, value: string, index: number): string {
   return `${index}:${label}:${value}`;
+}
+
+/** Applies the structured source contract; arbitrary Hercules prose never filters books. */
+export function transactionsForHerculesSource(
+  transactions: Transaction[],
+  source: HerculesNumberSource | null,
+): Transaction[] {
+  if (!source || source.route !== "ledger") return transactions;
+  return transactions.filter((tx) => {
+    if (source.transactionId && tx.id !== source.transactionId) return false;
+    if (source.accountId && tx.accountId !== source.accountId) return false;
+    if (source.categoryId && tx.subcategoryId !== source.categoryId) return false;
+    if (source.memberId && tx.createdBy !== source.memberId) return false;
+    if (source.from && tx.date < source.from) return false;
+    if (source.to && tx.date > source.to) return false;
+    return true;
+  });
 }

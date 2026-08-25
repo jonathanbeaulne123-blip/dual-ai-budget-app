@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.5",
+    "jsqr": "1.4.0",
     "postgres": "^3.4.9",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

@@ -96,7 +96,11 @@ function source(
 }
 
 function memberNamedIn(household: Household, q: string) {
-  return household.members.find((member) => member.name.toLowerCase().split(/\s+/).some((token) => token.length >= 2 && new RegExp(`\\b${token}\\b`).test(q)));
+  return household.members.find((member) => member.name.toLowerCase().split(/\s+/).some((token) => {
+    if (token.length < 2) return false;
+    const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`\\b${escaped}\\b`).test(q);
+  }));
 }
 
 export function askBooks(

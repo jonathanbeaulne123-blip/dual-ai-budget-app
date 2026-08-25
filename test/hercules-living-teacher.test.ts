@@ -9,6 +9,7 @@ import {
   planHerculesTurn,
   postEntry,
   seedDemoHousehold,
+  transactionsForHerculesSource,
 } from "../src/core/index.ts";
 import {
   herculesInLitter,
@@ -133,6 +134,29 @@ describe("Hercules living teacher", () => {
     const ui = readFileSync("src/Hercules.tsx", "utf8");
     expect(ui).toContain("onOpenSource(fact.source)");
     expect(ui).not.toMatch(/matchAll\([^)]*\\d/);
+  });
+
+  it("opens the exact structured ledger rows behind a grounded number", () => {
+    const household = seedDemoHousehold({ today, environment: "development" });
+    const shared = householdForHerculesContext(household, "MEM-001", "household");
+    const target = shared.transactions.find((tx) => tx.createdBy === "MEM-002" && tx.subcategoryId);
+    expect(target).toBeDefined();
+    expect(target?.subcategoryId).toBeTruthy();
+    if (!target?.subcategoryId) return;
+    const targetCategory = target.subcategoryId;
+    const rows = transactionsForHerculesSource(shared.transactions, {
+      route: "ledger",
+      view: "household",
+      label: "Jonathan's shared week",
+      memberId: target.createdBy,
+      categoryId: targetCategory,
+      from: target.date,
+      to: target.date,
+    });
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((tx) => tx.createdBy === target.createdBy)).toBe(true);
+    expect(rows.every((tx) => tx.subcategoryId === targetCategory)).toBe(true);
+    expect(rows.every((tx) => tx.date === target.date)).toBe(true);
   });
 
   it("restores per-turn bubbles and keeps desktop-only fly play outside the litter zone", () => {

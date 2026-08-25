@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import jsQR from "jsqr";
 
 type DetectedBarcode = { rawValue?: string };
 type QrDetector = { detect(source: HTMLVideoElement): Promise<DetectedBarcode[]> };
@@ -45,10 +46,6 @@ export function WelcomeQrScanner({
   async function openCamera() {
     onError("");
     const Detector = detectorConstructor();
-    if (!Detector) {
-      onError("This browser cannot read a QR inside Hearth yet. Open your phone's Camera app, or open the invite link you received.");
-      return;
-    }
     if (!navigator.mediaDevices?.getUserMedia) {
       onError("This browser cannot open the camera. Open your phone's Camera app, or open the invite link you received.");
       return;
@@ -66,14 +63,30 @@ export function WelcomeQrScanner({
       if (!video) throw new Error("The camera preview did not open.");
       video.srcObject = stream;
       await video.play();
-      const detector = new Detector({ formats: ["qr_code"] });
+      const detector = Detector ? new Detector({ formats: ["qr_code"] }) : null;
+      const canvas = detector ? null : document.createElement("canvas");
+      const context = canvas?.getContext("2d", { willReadFrequently: true }) ?? null;
       scanningRef.current = true;
 
       const scan = async () => {
         if (!scanningRef.current || !videoRef.current) return;
         try {
-          const codes = await detector.detect(videoRef.current);
-          const value = codes.find((code) => code.rawValue?.trim())?.rawValue?.trim();
+          let value = "";
+          if (detector) {
+            const codes = await detector.detect(videoRef.current);
+            value = codes.find((code) => code.rawValue?.trim())?.rawValue?.trim() ?? "";
+          } else if (canvas && context && videoRef.current.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+            const sourceWidth = videoRef.current.videoWidth;
+            const sourceHeight = videoRef.current.videoHeight;
+            if (sourceWidth > 0 && sourceHeight > 0) {
+              const scale = Math.min(1, 960 / sourceWidth);
+              canvas.width = Math.max(1, Math.round(sourceWidth * scale));
+              canvas.height = Math.max(1, Math.round(sourceHeight * scale));
+              context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+              const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+              value = jsQR(pixels.data, pixels.width, pixels.height, { inversionAttempts: "attemptBoth" })?.data.trim() ?? "";
+            }
+          }
           if (value) {
             setStatus("Household code found. Opening it…");
             stopCamera();
