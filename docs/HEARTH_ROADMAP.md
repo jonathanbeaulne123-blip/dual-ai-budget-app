@@ -54,7 +54,7 @@ Checkboxes show work state, not product value: `[x]` is shipped on the named bas
 | Rate limiting | PR #79 salvaged the exact Git-main host and a per-IP meter under D-121. Missing KV no longer bypasses the limit, but isolate memory is not a durable or globally consistent hard cap; live KV remains unbound. | Code containment is merged; do not call it a reliable production cap until KV/concurrency proof exists. | Bound production namespace plus concurrent-request tests, telemetry, explicit failure semantics, and documented rollback. |
 | Delivery controls | `main` is unprotected, required checks are off, and direct commits can reach the deploy workflow. | Add branch/ruleset and production-environment approvals before higher-risk merges. | Required build/test/security checks block merge; deploy requires reviewed `main` state and environment approval. |
 | First-number utility | Mobile/Office, Accounts, Audit, appointments, sitdown/vault, Hercules, and budget foundations have shipped, but first-use budget/bill/shift editing and mistake correction remain incomplete on `main`. | After money-integrity and continuity containment, finish the smallest complete Bianca-ready monthly loop. | Phone E2E: start → enter opening truth → budget → add bill/expense → confirm → correct → reconcile → both members see the same result from independent signed-in devices. |
-| Active PR topology | #61 was replaced by merged #81; #63 was salvaged through merged #79; #83 is merged and independently reviewed; #86 cleanly renumbered CAS to D-122. #66 is superseded by clean current-main PR #88. #62's budget editor is salvaged onto `main` as D-109; #87 is an open do-not-apply Auth/RLS design packet. | Review #87 only as a decision packet. Do not revive #66. | Every open PR targets current `main`, has unique decision IDs, truthful tests, and one reviewable purpose. |
+| Active PR topology | #61 was replaced by merged #81; #63 was salvaged through merged #79; #83 is merged and independently reviewed; #86 cleanly renumbered CAS to D-122. #66 is superseded by clean current-main PR #88. #62's budget editor is salvaged onto `main` as D-109; reviewed #87/#89 artifacts are being repaired on a current-main integration branch. | Review the combined repair as code plus staged Development migrations. Do not revive #66. | Every open PR targets current `main`, has unique decision IDs, truthful tests, and one reviewable purpose. |
 | Tracker hygiene | Seven older PRs and the five open issues are legacy/stale; the issues are Sheets-era. | Archive or rewrite after inspecting unique code/history; do not let them drive priority. | Every closure links to its replacement, retained commit, or explicit “superseded” reason. |
 
 ## 1.4 Recent sessions
@@ -140,8 +140,8 @@ Major updates keep a durable blurb: what shipped, why it mattered, Dual Course e
 - **What changed:** optional hosted publishing is no longer the target product. Google sign-in must reveal the person's personal ledger and household memberships on any device; the cloud supplies durable continuity and PGlite remains each device's validated accounting/offline replica.
 - **Why:** Jonathan and Bianca must never depend on one phone staying online to read or write the household.
 - **Development window:** data through 2026-09-30 is disposable and may remain openly readable/writable to accelerate this work. Security remains a mandatory late-September cutover before meaningful October data.
-- **Implemented in D-114/D-117/D-118/D-122:** exact Development Google membership discovery, PGlite acceptance, compacting durable outbox with ack/backoff, launch/focus/reconnect replay, stale-revision conflict stop, applied hosted membership plus Personal scope, first-run household/shared/Personal ledger naming, and client preference for `publish_household_snapshot` CAS (unapplied SQL). Production discovery remains off.
-- **Still open:** Jonathan apply of migration 002 for live atomic hosted CAS, two-browser E2E proof on disposable Development, Supabase Auth-bound membership, and explicit conflict-resolution proof beyond the in-app choose UI.
+- **Implemented in D-114/D-117/D-118/D-122:** exact Development Google membership discovery, PGlite acceptance, compacting durable outbox with ack/backoff, launch/focus/reconnect replay, stale-revision conflict stop, applied hosted membership plus Personal scope, first-run household/shared/Personal ledger naming, and live Development `publish_household_snapshot` CAS (migration 002 applied 2026-08-25). Production discovery remains off.
+- **Still open:** two-browser E2E proof on disposable Development, Supabase Auth-bound membership, and explicit conflict-resolution proof beyond the in-app choose UI.
 - **Evidence required:** [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md) acceptance tests, including fresh-device discovery, old-device-off read/write, offline outbox convergence, and pulled-snapshot accounting validation. In-repo: `test/hosted-cas-two-client.test.ts`.
 - **Kill/rollback:** preserve accepted commands in a recoverable outbox and report the block; never retreat to a one-device host or claim open Development data is secure.
 
@@ -218,7 +218,7 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 
 **Exit condition:** any signed-in device can work online or offline, interleave edits, relaunch, and converge without losing a valid command; no peer device must remain online.
 
-- [x] Replace unconditional snapshot upsert with monotonic revision/CAS or an authoritative merge RPC. *(D-122 client + unapplied `002_snapshot_cas.sql`; live RPC waits on Jonathan apply.)*
+- [x] Replace unconditional snapshot upsert with monotonic revision/CAS or an authoritative merge RPC. *(D-122 client + Development apply of `002_snapshot_cas.sql` on 2026-08-25; smoked create/duplicate/stale/advance.)*
 - [ ] Define per-member/per-device identity, clocks, and actor attribution; `openShift` is not one global mutable slot.
 - [x] Add an idempotent outbox, acknowledgement, retry/backoff, and explicit “not yet shared” state. *(D-122; conflict remains the explicit not-yet-shared / needs-attention path.)*
 - [ ] Discover personal and household ledger memberships after Google sign-in, then pull on launch/focus/reconnect without erasing a safe local result when pull fails.
@@ -231,20 +231,24 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 **Proof:** deterministic fault harness plus Playwright/WebKit two-context scenarios; post-reconcile journal equality and stable hashes.  
 **Kill criterion:** queue writes and surface recovery if convergence cannot be proved; do not fall back to a one-device host.
 
-**D-114/D-117/D-122 progress:** Development household discovery, multi-household offline replicas, launch/focus/reconnect replay, hosted Personal scope, client CAS RPC wiring, outbox acknowledgement/backoff, and deterministic two-client CAS proofs are implemented. Migration 003 is applied; migration 002 remains unapplied until Jonathan approves. Two-browser live E2E and Auth/RLS keep this phase open.
+**D-114/D-117/D-122 progress:** Development household discovery, multi-household offline replicas, launch/focus/reconnect replay, hosted Personal scope, client CAS RPC wiring, outbox acknowledgement/backoff, deterministic two-client CAS proofs, and **live Development `publish_household_snapshot`** (migration 002 applied 2026-08-25) are implemented. Migration 003 is applied. Two-browser live E2E and Auth/RLS keep this phase open.
 
 ### Phase 3 — Late-September Google Auth + membership RLS cutover — DATE-GATED security foundation
 
 **Deadline and exit condition:** before 2026-10-01 and before meaningful household data, an authenticated Google identity can reach only its personal ledger and intended household/environment records, and an outsider cannot enumerate them.
 
-- [ ] Design Google-to-hosted-auth identity mapping and durable personal-ledger/household membership relationships before writing policies around them.
-- [ ] Replace permissive anon policies with membership- and environment-bound RLS for select/insert/update/delete.
-- [ ] Rotate, expire, scope, and rate-limit join invitations; record issuer, acceptor, environment, and audit evidence.
+**D-123 packet progress:** Q1–Q5 locked. Additive preparation 004 and forward CAS hardening 005 are applied. The approved legacy cleanup removed all 30 Development households and preserved the one Production household. Preflighted deny-by-default cutover 006 is unapplied and explicitly aborts while Production remains because its grants/policies are project-wide. Feature-flagged Supabase Auth session/refresh/bearer wiring, bounded ownership/invite policy tests, and Personal/shared cloud projection are in-repo. A Development-only rehearsal now requires a separate Supabase project; provider configuration, 006 apply, Welcome email/QR chrome, and Production approval remain open.
+
+- [x] Design Google-to-hosted-auth identity mapping and durable personal-ledger/household membership relationships before writing policies around them. (D-123: Supabase Auth Google → `auth.uid()`; door = `continuity_memberships` + `household_invitations`)
+- [x] Author deny-by-default RLS + REVOKE anon household REST packet (unapplied until review).
+- [x] Define email and QR invitation channels with owner-only issue/revoke RPCs (synthetic matrix tested; live apply pending).
+- [x] Apply reviewed `004` and `005` preparation/hardening with Development approval; remove approved legacy Development rows and verify Production data is untouched.
+- [ ] Choose a separate Development Supabase project or explicitly approve a shared-project cutover; configure Google provider; apply 006; smoke Create / email / QR / revoke / anon denial.
 - [ ] Add device/session revoke and household leave/recovery semantics.
 - [ ] Replace phrase-as-authority and `linked` publishing with automatic authenticated discovery/synchronization; invitations only establish membership.
-- [ ] Build and test migrations locally; backfill/production cutover is a separate Jonathan-approved plan.
+- [ ] Build and test migrations on a disposable rehearsal project; Production cutover is a separate Jonathan-approved plan.
 - [ ] Add pgTAP negative tests and a permission matrix to required CI.
-- [ ] Complete concurrency/outbox work before claiming authenticated two-phone safety.
+- [ ] Complete concurrency/outbox work (002 live + member-guard in CAS) before claiming authenticated two-phone safety.
 
 **Risk/gate:** temporary open development access must not survive the September cutover; Phase 0/2 proofs, recovery design, and production migration approval.  
 **Proof:** local Supabase tests for every role/action/environment; red-team attempt with publishable key; reviewed cutover and rollback rehearsal.  

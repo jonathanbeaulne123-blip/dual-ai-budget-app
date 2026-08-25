@@ -193,6 +193,9 @@ export function emptyPersonal(memberId: string): PersonalEnvelope {
     lastCommittedAt: null,
     transactions: [],
     shifts: [],
+    goals: [],
+    goalContributions: [],
+    goalPurchases: [],
     tombstones: [],
   };
 }
@@ -203,6 +206,10 @@ export function splitForSync(household: Household, memberId: string): { shared: 
   const personalTx = shaped.transactions.filter((tx) => isPersonalOnly(tx));
   const sharedShifts = shaped.shifts.filter((shift) => belongsToSharedLedger(shift));
   const personalShifts = shaped.shifts.filter((shift) => isPersonalOnly(shift));
+  const sharedGoals = shaped.goals.filter((goal) => goal.shared);
+  const personalGoals = shaped.goals.filter((goal) => !goal.shared && goal.ownerMemberId === memberId);
+  const sharedGoalIds = new Set(sharedGoals.map((goal) => goal.id));
+  const personalGoalIds = new Set(personalGoals.map((goal) => goal.id));
   const shared: SharedEnvelope = {
     kind: "shared",
     revision: shaped.revision,
@@ -223,9 +230,9 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     calendar: shaped.calendar,
     kitchen: shaped.kitchen,
     google: shaped.google,
-    goals: shaped.goals,
-    goalContributions: shaped.goalContributions,
-    goalPurchases: shaped.goalPurchases,
+    goals: sharedGoals,
+    goalContributions: shaped.goalContributions.filter((row) => sharedGoalIds.has(row.goalId)),
+    goalPurchases: shaped.goalPurchases.filter((row) => sharedGoalIds.has(row.goalId)),
     budgetPlans: shaped.budgetPlans,
     sitDownSessions: shaped.sitDownSessions,
     activity: shaped.activity,
@@ -235,6 +242,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     transactions: sharedTx,
     shifts: sharedShifts,
     tombstones: shaped.tombstones,
+    commandReceipts: shaped.commandReceipts,
   };
   const personal: PersonalEnvelope = {
     kind: "personal",
@@ -242,6 +250,9 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     lastCommittedAt: shaped.lastCommittedAt,
     transactions: personalTx,
     shifts: personalShifts,
+    goals: personalGoals,
+    goalContributions: shaped.goalContributions.filter((row) => personalGoalIds.has(row.goalId)),
+    goalPurchases: shaped.goalPurchases.filter((row) => personalGoalIds.has(row.goalId)),
     tombstones: shaped.tombstones,
   };
   return { shared, personal };
@@ -253,6 +264,9 @@ export function personalReplicaForMember(household: Household, memberId: string)
     ...personal,
     transactions: personal.transactions.filter((tx) => tx.createdBy === memberId),
     shifts: personal.shifts.filter((shift) => shift.createdBy === memberId),
+    goals: (personal.goals ?? []).filter((goal) => goal.ownerMemberId === memberId),
+    goalContributions: personal.goalContributions ?? [],
+    goalPurchases: personal.goalPurchases ?? [],
   };
 }
 
@@ -263,6 +277,9 @@ export function assembleHousehold(
 ): Household {
   const personalTx = personal?.transactions ?? [];
   const personalShifts = personal?.shifts ?? [];
+  const personalGoals = personal?.goals ?? [];
+  const personalGoalContributions = personal?.goalContributions ?? [];
+  const personalGoalPurchases = personal?.goalPurchases ?? [];
   const txById = new Map<string, Transaction>();
   const shiftById = new Map<string, Shift>();
   for (const tx of shared.transactions) txById.set(tx.id, tx);
@@ -283,7 +300,7 @@ export function assembleHousehold(
     revision: shared.revision,
     baseRevision: shared.revision,
     booksAcceptedHash: null,
-    commandReceipts: [],
+    commandReceipts: shared.commandReceipts ?? [],
     sharing: shapeSharing({ linked: options?.linked === true }),
     conflicts: [],
     tombstones: mergeTombstones(shared.tombstones, personal?.tombstones ?? []),
@@ -302,9 +319,9 @@ export function assembleHousehold(
     calendar: shared.calendar,
     kitchen: shared.kitchen,
     google: shared.google,
-    goals: shared.goals,
-    goalContributions: shared.goalContributions ?? [],
-    goalPurchases: shared.goalPurchases ?? [],
+    goals: [...shared.goals, ...personalGoals],
+    goalContributions: [...(shared.goalContributions ?? []), ...personalGoalContributions],
+    goalPurchases: [...(shared.goalPurchases ?? []), ...personalGoalPurchases],
     budgetPlans: shared.budgetPlans,
     sitDownSessions: shared.sitDownSessions ?? [],
     activity: shared.activity,
@@ -366,6 +383,9 @@ export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope
     lastCommittedAt: newer.lastCommittedAt,
     transactions: mergeRecords(server.transactions, client.transactions, tombstones),
     shifts: mergeRecords(server.shifts, client.shifts, tombstones),
+    goals: mergeRecords(server.goals ?? [], client.goals ?? [], tombstones),
+    goalContributions: mergeRecords(server.goalContributions ?? [], client.goalContributions ?? [], tombstones),
+    goalPurchases: mergeRecords(server.goalPurchases ?? [], client.goalPurchases ?? [], tombstones),
     tombstones,
   };
 }

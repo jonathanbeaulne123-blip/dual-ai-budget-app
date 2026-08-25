@@ -42,11 +42,49 @@ describe("Supabase apply URL", () => {
 
 describe("hosted books migration", () => {
   const sql = readFileSync(new URL("../supabase/migrations/001_hearth_books.sql", import.meta.url), "utf8");
+  const cas = readFileSync(new URL("../supabase/migrations/002_snapshot_cas.sql", import.meta.url), "utf8");
+  const casHardening = readFileSync(new URL("../supabase/migrations/005_snapshot_cas_hardening.sql", import.meta.url), "utf8");
 
   it("keeps invoker views, FK indexes, and the SQL Editor path", () => {
     expect(sql).toContain("security_invoker = true");
     expect(sql).toContain("CREATE INDEX IF NOT EXISTS members_household");
     expect(sql).toContain("https://supabase.com/dashboard/project/tykhocwacaxwquhynkok/sql/new");
     expect(sql).toContain("TO anon, authenticated");
+  });
+
+  it("ships CAS RPC with revision backfill and schema_migrations tracking", () => {
+    expect(cas).toMatch(/publish_household_snapshot/);
+    expect(cas).toMatch(/Applied to Development.*Jonathan/i);
+    expect(cas).toMatch(/UPDATE household_snapshots/);
+    expect(cas).toMatch(/schema_migrations/);
+    expect(cas).toMatch(/NOTIFY pgrst/);
+    expect(cas).toMatch(/Production: DO NOT APPLY/);
+  });
+
+  it("keeps REVOKE/GRANT signatures aligned with the 12-arg CREATE", () => {
+    const createArgs = cas.match(
+      /CREATE OR REPLACE FUNCTION publish_household_snapshot\(([\s\S]*?)\)\s*RETURNS/i,
+    )?.[1] ?? "";
+    const createTypes = [...createArgs.matchAll(/\b(TEXT|INTEGER|BOOLEAN)\b/gi)].map((match) => {
+      const type = match[1];
+      if (!type) throw new Error("CAS argument type capture was unexpectedly empty");
+      return type.toLowerCase();
+    });
+    expect(createTypes).toEqual([
+      "text", "integer", "text", "text", "text", "text", "text", "boolean", "integer", "text", "text", "text",
+    ]);
+    const revoke = cas.match(
+      /REVOKE ALL ON FUNCTION publish_household_snapshot\(([^)]+)\)/i,
+    )?.[1]?.replace(/\s+/g, "") ?? "";
+    expect(revoke).toBe(createTypes.join(","));
+  });
+
+  it("ships the already-applied 002 repair as a forward migration", () => {
+    expect(casHardening).toMatch(/DO NOT APPLY/i);
+    expect(casHardening).toMatch(/pg_advisory_xact_lock/);
+    expect(casHardening).toMatch(/p_revision <= p_expected_revision/);
+    expect(casHardening).toMatch(/compacted offline/i);
+    expect(casHardening).toMatch(/VALUES \(5,/);
+    expect(casHardening).not.toMatch(/DROP COLUMN|DELETE FROM public\.household_snapshots/i);
   });
 });

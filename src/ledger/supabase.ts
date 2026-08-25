@@ -1,5 +1,5 @@
 import { financialAuditHash } from "../core/commandIdentity.ts";
-import { ensureHouseholdShape, personalReplicaForMember } from "../core/sync.ts";
+import { assembleHousehold, ensureHouseholdShape, personalReplicaForMember, splitForSync } from "../core/sync.ts";
 import { inviteFromText } from "../core/invite.ts";
 import { memberIdForGoogleIdentity, type GoogleIdentitySelector } from "../core/google.ts";
 import { hostedTransportAllowed } from "../core/sharing.ts";
@@ -9,6 +9,10 @@ import type { SnapshotCasConflict, SnapshotCasResult } from "./snapshotCas.ts";
 export type SupabaseConfig = {
   url: string;
   key: string;
+  /** Supabase Auth user JWT; absent means the disclosed Development anon bridge. */
+  accessToken?: string;
+  /** auth.users.id from the same verified session. */
+  authUserId?: string;
 };
 
 export type SupabaseProbe = {
@@ -39,6 +43,7 @@ type ContinuityMembershipRow = {
   member_id: string;
   google_subject: string;
   google_email: string;
+  auth_user_id?: string;
 };
 
 const DEFAULT_URL = "https://tykhocwacaxwquhynkok.supabase.co";
@@ -67,10 +72,10 @@ function projectRef(url: string): string {
   }
 }
 
-function headers(key: string): HeadersInit {
+function headers(config: SupabaseConfig): HeadersInit {
   return {
-    apikey: key,
-    Authorization: `Bearer ${key}`,
+    apikey: config.key,
+    Authorization: `Bearer ${config.accessToken || config.key}`,
     "Content-Type": "application/json",
     Prefer: "return=minimal",
   };
@@ -83,7 +88,7 @@ async function rest(
 ): Promise<{ ok: boolean; status: number; body: unknown }> {
   const response = await fetch(`${config.url}/rest/v1/${path}`, {
     ...init,
-    headers: { ...headers(config.key), ...(init.headers || {}) },
+    headers: { ...headers(config), ...(init.headers || {}) },
   });
   const text = await response.text();
   let body: unknown = null;
@@ -150,6 +155,15 @@ function parseCasRpcBody(body: unknown): SnapshotCasResult | null {
       reasonRaw === "environment-mismatch"
       || reasonRaw === "revision-hash-mismatch"
       || reasonRaw === "missing-base"
+      || reasonRaw === "missing-snapshot"
+      || reasonRaw === "non-advancing-revision"
+      || reasonRaw === "not-member"
+      || reasonRaw === "personal-data-in-shared-payload"
+      || reasonRaw === "invalid-create"
+      || reasonRaw === "payload-identity-mismatch"
+      || reasonRaw === "google-identity-required"
+      || reasonRaw === "household-already-exists"
+      || reasonRaw === "invalid-household"
       || reasonRaw === "stale-revision"
         ? reasonRaw
         : "stale-revision";
@@ -172,6 +186,20 @@ function conflictMessage(reason: SnapshotCasConflict["reason"] | undefined): str
       return "Hosted books at this revision disagree with this phone. Nothing was overwritten.";
     case "missing-base":
       return "Hosted books were missing the expected base revision. Nothing was overwritten.";
+    case "missing-snapshot":
+      return "The cloud household exists but its books snapshot is missing. Nothing was overwritten.";
+    case "non-advancing-revision":
+      return "This upload did not advance beyond its cloud base. Nothing was overwritten.";
+    case "not-member":
+      return "This Google account is not an active member of that household. Nothing was overwritten.";
+    case "personal-data-in-shared-payload":
+      return "Personal ledger rows were refused from the shared cloud snapshot. Nothing was overwritten.";
+    case "google-identity-required":
+      return "Reconnect with Google through Hearth before creating cloud books.";
+    case "payload-identity-mismatch":
+    case "invalid-create":
+    case "invalid-household":
+      return "The cloud snapshot identity was invalid. Nothing was overwritten.";
     default:
       return "Another phone posted a newer household snapshot. Nothing was overwritten.";
   }
@@ -188,6 +216,10 @@ function personalFromRow(row: { payload?: string | PersonalEnvelope } | undefine
   try {
     const payload = typeof row.payload === "string" ? JSON.parse(row.payload) as PersonalEnvelope : row.payload;
     if (payload.kind !== "personal" || payload.memberId !== memberId) return null;
+    const goals = Array.isArray(payload.goals)
+      ? payload.goals.filter((item) => !item.shared && item.ownerMemberId === memberId)
+      : [];
+    const goalIds = new Set(goals.map((item) => item.id));
     return {
       ...payload,
       transactions: Array.isArray(payload.transactions)
@@ -195,6 +227,13 @@ function personalFromRow(row: { payload?: string | PersonalEnvelope } | undefine
         : [],
       shifts: Array.isArray(payload.shifts)
         ? payload.shifts.filter((item) => item.createdBy === memberId && item.visibility === "personal")
+        : [],
+      goals,
+      goalContributions: Array.isArray(payload.goalContributions)
+        ? payload.goalContributions.filter((item) => goalIds.has(item.goalId))
+        : [],
+      goalPurchases: Array.isArray(payload.goalPurchases)
+        ? payload.goalPurchases.filter((item) => goalIds.has(item.goalId))
         : [],
       tombstones: Array.isArray(payload.tombstones) ? payload.tombstones : [],
     };
@@ -207,6 +246,8 @@ function overlayPersonalReplica(household: Household, personal: PersonalEnvelope
   if (!personal) return household;
   const personalTransactionIds = new Set(personal.transactions.map((item) => item.id));
   const personalShiftIds = new Set(personal.shifts.map((item) => item.id));
+  const personalGoals = personal.goals ?? [];
+  const personalGoalIds = new Set(personalGoals.map((item) => item.id));
   const tombstones = new Map(household.tombstones.map((item) => [item.id, item]));
   for (const item of personal.tombstones) {
     const existing = tombstones.get(item.id);
@@ -226,11 +267,37 @@ function overlayPersonalReplica(household: Household, personal: PersonalEnvelope
       )),
       ...personal.shifts,
     ],
+    goals: [
+      ...household.goals.filter((item) => !personalGoalIds.has(item.id) && (item.shared || item.ownerMemberId !== memberId)),
+      ...personalGoals,
+    ],
+    goalContributions: [
+      ...household.goalContributions.filter((item) => !personalGoalIds.has(item.goalId)),
+      ...(personal.goalContributions ?? []),
+    ],
+    goalPurchases: [
+      ...household.goalPurchases.filter((item) => !personalGoalIds.has(item.goalId)),
+      ...(personal.goalPurchases ?? []),
+    ],
     tombstones: [...tombstones.values()],
     lastCommittedAt: (personal.lastCommittedAt ?? "") > (household.lastCommittedAt ?? "")
       ? personal.lastCommittedAt
       : household.lastCommittedAt,
   });
+}
+
+/** Shared cloud payload plus exactly-once receipts; no member-owned Personal rows. */
+export function householdCloudProjection(household: Household, memberId: string): Household {
+  const shaped = ensureHouseholdShape(household);
+  const { shared } = splitForSync(shaped, memberId);
+  return {
+    ...assembleHousehold(shared, null, { linked: true }),
+    linked: shaped.linked,
+    revision: shaped.revision,
+    baseRevision: shaped.baseRevision,
+    lastCommittedAt: shaped.lastCommittedAt,
+    commandReceipts: shaped.commandReceipts,
+  };
 }
 
 async function continuityMembershipRows(
@@ -240,7 +307,21 @@ async function continuityMembershipRows(
 ): Promise<ContinuityMembershipRow[] | null> {
   const subject = identity.subject.trim();
   const email = identity.email.trim().toLowerCase();
-  const select = "select=household_id,member_id,google_subject,google_email&active=eq.true&limit=500";
+  const select = "select=household_id,member_id,google_subject,google_email,auth_user_id&active=eq.true&limit=500";
+  if (config.authUserId) {
+    const byAuthUser = await rest(
+      config,
+      `continuity_memberships?environment=eq.${encodeURIComponent(environment)}&auth_user_id=eq.${encodeURIComponent(config.authUserId)}&${select}`,
+      { method: "GET", headers: { Prefer: "return=representation" } },
+    );
+    if (isMissingTable(byAuthUser.body)) return null;
+    if (!byAuthUser.ok) throw new Error(messageOf(byAuthUser.body));
+    return Array.isArray(byAuthUser.body)
+      ? (byAuthUser.body as ContinuityMembershipRow[]).filter((row) => (
+          row.auth_user_id === config.authUserId && Boolean(row.household_id) && Boolean(row.member_id)
+        ))
+      : [];
+  }
   if (subject) {
     const bySubject = await rest(
       config,
@@ -336,22 +417,24 @@ async function publishContinuityMemberScope(
   });
   if (isMissingTable(probe.body)) return;
   if (!probe.ok) throw new Error(messageOf(probe.body));
-  const link = snapshot.google.links.find((item) => item.active && item.memberId === memberId);
-  const membership = await rest(config, "continuity_memberships?on_conflict=environment,household_id,member_id", {
-    method: "POST",
-    headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
-    body: JSON.stringify({
-      environment: snapshot.environment,
-      household_id: snapshot.householdId,
-      member_id: memberId,
-      google_subject: identity.subject.trim() || link?.subject.trim() || "",
-      google_email: identity.email.trim().toLowerCase() || link?.email.trim().toLowerCase() || "",
-      display_name: link?.displayName || snapshot.members.find((item) => item.id === memberId)?.name || "",
-      active: true,
-      updated_at: new Date().toISOString(),
-    }),
-  });
-  if (!membership.ok) throw new Error(messageOf(membership.body));
+  if (!config.authUserId) {
+    const link = snapshot.google.links.find((item) => item.active && item.memberId === memberId);
+    const membership = await rest(config, "continuity_memberships?on_conflict=environment,household_id,member_id", {
+      method: "POST",
+      headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+      body: JSON.stringify({
+        environment: snapshot.environment,
+        household_id: snapshot.householdId,
+        member_id: memberId,
+        google_subject: identity.subject.trim() || link?.subject.trim() || "",
+        google_email: identity.email.trim().toLowerCase() || link?.email.trim().toLowerCase() || "",
+        display_name: link?.displayName || snapshot.members.find((item) => item.id === memberId)?.name || "",
+        active: true,
+        updated_at: new Date().toISOString(),
+      }),
+    });
+    if (!membership.ok) throw new Error(messageOf(membership.body));
+  }
   const personal = personalReplicaForMember(snapshot, memberId);
   const personalResult = await rest(
     config,
@@ -508,8 +591,61 @@ export async function pushSupabaseHousehold(
     return { ...probe, skipped: true };
   }
   const expectedRevision = options?.expectedRevision ?? snapshot.baseRevision ?? 0;
-  const snapshotHash = await financialAuditHash(snapshot);
-  const payload = JSON.stringify(snapshot);
+  const cloudSnapshot = continuityMemberId
+    ? householdCloudProjection(snapshot, continuityMemberId)
+    : snapshot;
+  const snapshotHash = await financialAuditHash(cloudSnapshot);
+  const payload = JSON.stringify(cloudSnapshot);
+
+  if (config.authUserId && continuityMemberId && options?.continuityIdentity && expectedRevision === 0) {
+    const member = snapshot.members.find((item) => item.id === continuityMemberId);
+    const create = await rest(config, "rpc/hearth_create_household", {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({
+        p_household_id: snapshot.householdId,
+        p_name: snapshot.name,
+        p_timezone: snapshot.timezone,
+        p_currency: snapshot.currency,
+        p_environment: snapshot.environment,
+        p_invite_phrase: snapshot.inviteCode,
+        p_linked: snapshot.linked || Boolean(continuityMemberId),
+        p_revision: snapshot.revision,
+        p_last_committed_at: snapshot.lastCommittedAt,
+        p_payload: payload,
+        p_snapshot_hash: snapshotHash,
+        p_member_id: continuityMemberId,
+        p_display_name: member?.name ?? "",
+      }),
+    });
+    if (create.ok) {
+      const created = parseCasRpcBody(create.body);
+      if (created?.ok) {
+        await publishContinuityMemberScope(config, snapshot, continuityMemberId, options.continuityIdentity);
+        return {
+          ...probe,
+          schema: true,
+          error: undefined,
+          skipped: false,
+          conflict: false,
+          duplicate: created.duplicate === true,
+          usedCasRpc: true,
+        };
+      }
+      if (created && !created.ok && created.reason !== "household-already-exists") {
+        return {
+          ...probe,
+          schema: true,
+          conflict: true,
+          usedCasRpc: true,
+          remote: remoteFromCasPayload(created.remotePayload) ?? undefined,
+          error: conflictMessage(created.reason),
+        };
+      }
+    } else if (!isMissingRpc(create.body)) {
+      throw new Error(messageOf(create.body));
+    }
+  }
 
   const rpc = await rest(config, "rpc/publish_household_snapshot", {
     method: "POST",
