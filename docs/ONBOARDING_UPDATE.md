@@ -1,6 +1,6 @@
 # The Onboarding Update
 
-> **Status:** Part 1 planning and review in progress on `main@44156f9` (PR #100 merged).  
+> **Status:** Parts 1–2 planned; D-128 scenario safety and D-129 motion/interaction direction locked. See [Part 2 storyboard](ONBOARDING_PART2_STORYBOARD.md).
 > **Household outcome:** Bianca signs into the household with Google, meets Hercules, learns Hearth by doing a short set of real or safely simulated household jobs, brings the books to a truthful current starting point, and can replay or skip any lesson.  
 > **Scope boundary:** no hosted migration, Auth/RLS policy, Production mutation, deployment, or real household posting is authorized by this plan.
 
@@ -11,9 +11,9 @@ This is not a splash screen and not a long tooltip carousel. It is a modular, He
 The update has four parts:
 
 1. **Planning and review** — inventory every control family and feature; locate dead, gated, misleading, legacy, and unfinished surfaces; choose the Bianca journey; draft Hercules copy; research strong onboarding patterns.
-2. **Animation and interaction planning** — storyboard phone and desktop movement, focus, callouts, user actions, skip/resume/replay, reduced motion, and failure recovery.
+2. **Animation and interaction planning** — [locked storyboard](ONBOARDING_PART2_STORYBOARD.md) for phone and desktop movement, focus, callouts, user actions, skip/resume/replay, and failure recovery. D-129 deliberately refuses a reduced-motion substitute for onboarding; do not claim that gate as passed.
 3. **Onboarding foundation** — add a member + household + environment-scoped tutorial engine, Google first-entry eligibility, modular chapter registry, safe scenario state, progress persistence, analytics-free event hooks, and accessibility primitives.
-4. **Experience implementation** — build the animations and interactions, wire the approved real scenarios through existing commands, verify phone/desktop/accessibility/offline behavior, and integrate behind an explicit Play / Skip choice.
+4. **Experience implementation** — build the animations and interactions, wire the approved real scenarios through existing commands, verify phone/desktop/accessibility/offline behavior, and automatically begin after the first eligible real Home render with one persistent Skip action.
 
 The architecture must make a later lesson, feature, prompt, interaction, or animation an additive registry entry whenever possible. Tutorial sequencing must not be scattered through page components.
 
@@ -180,18 +180,18 @@ Legend:
 
 ## 4. Recommended Bianca journey
 
-The tutorial should be a **flexible chapter map**, not one unbroken compulsory tour. The first session offers **Play with Hercules** and **Skip for now**. Completed/skipped chapters are replayable from Hercules help and More.
+The first eligible session automatically starts the core guided sequence after real Home renders. One persistent **Skip tutorial** action exits at a safe boundary, and **More → Replay tutorial** starts it again. Optional showcase chapters remain modular content but do not add a chapter picker to first-entry chrome.
 
 ### Core path — approximately 8–12 minutes
 
-1. **Welcome home** — Hercules introduces himself; Bianca taps him, sees him sit, and learns that he explains but never posts.
+1. **Welcome home** — Hercules emerges from his paper bag, introduces himself, and explains that he points but never posts.
 2. **The two books** — show Household versus Bianca's Personal ledger and the Development trial label.
 3. **Bring the books to today** — choose a Toronto as-of date, verify/add real accounts and debts, enter current balances, preview a balanced Opening equity entry, then Confirm once.
 4. **Read the wallet** — Hercules walks from Books story tiles to the account rooms and asks Bianca to verify the result.
-5. **Post one ordinary thing** — use the CAD pad, category, ownership, and account; review and Confirm.
-6. **Correct it safely** — show Recent changes/reversal semantics without pretending history vanished.
+5. **Post one ordinary thing in Practice** — use the CAD pad, category, ownership, and account; finish a realistic Practice review without touching the books.
+6. **Correct it safely in Practice** — show reversal/correction semantics without pretending history vanished or writing a journal row.
 7. **Put September on the board** — add one real repeating bill and show where a paycheck/tip confirmation will appear.
-8. **Set up work** — add Bianca's job, clock a safe short scenario or enter a finished shift, review wages/tips/tip-outs, and Confirm only if it represents real trial data.
+8. **Set up work** — add Bianca's real job settings, simulate a four-hour Practice shift, and review wages/tips/tip-outs without posting it.
 9. **Ask the books** — ask one deterministic question, such as the selected card balance or groceries.
 10. **Finish clean** — open Health, explain sync/continuity, and leave a short “ready for September” checklist.
 
@@ -213,7 +213,7 @@ These are deterministic reviewed lines. The model may not improvise accounting i
 | Moment | Draft line |
 |---|---|
 | Welcome | “Bianca. Finally. I’m Hercules. I read the books, point at useful things, and keep my paws off Confirm.” |
-| Skip choice | “We can tour the kitchen now, or you can shoo me. I’ll keep the tour under Help.” |
+| Skip choice | “I’m showing you the kitchen. If you’ve seen enough of my magnificent route, Skip sends me back under More.” |
 | Navigation | “Six doors. Home is the counter. Calendar is what’s coming. Add is what happened. Plan is the intention. Books are the proof. More is where we inspect the pipes.” |
 | Household vs Personal | “Household is ours. Personal is yours. Same cat, different page. For now that button is a view, not a vault door.” |
 | Opening truth | “No archaeology. Tell me what the accounts hold on this date. The other side is Opening equity — where the story begins, not pretend income.” |
@@ -243,7 +243,7 @@ The recommended Hearth pattern is a hybrid of an optional guided checklist and c
 - [Finch's new-user guide](https://help.finchcare.com/hc/en-us/articles/42149821015693-New-User-Guide) gives a few starter goals and immediately ties the companion to a real first action. Hercules should likewise participate in actual Hearth jobs rather than narrating screenshots.
 - [Actual Budget's starting-fresh guide](https://actualbudget.org/docs/getting-started/starting-fresh/) recommends a recent start date, current balances, and limited history. Hearth should not force historical reconstruction before the September trial.
 - [Duolingo's stated method](https://investors.duolingo.com/static-files/f19d76fb-dee4-4f13-96ae-138ebfd0f2d3) centres interactive, bite-sized learning-by-doing. Hearth should teach one concept per action and return Bianca to the real product quickly.
-- [W3C guidance on animation from interaction](https://www.w3.org/WAI/WCAG21/Understanding/animation-from-interactions.html) requires a way to disable nonessential motion. Existing Hearth motion already observes `prefers-reduced-motion`; every onboarding animation needs an equivalent static focus/copy state.
+- [W3C guidance on animation from interaction](https://www.w3.org/WAI/WCAG21/Understanding/animation-from-interactions.html) recommends a way to disable nonessential motion. Existing Hearth motion observes `prefers-reduced-motion`, but D-129 deliberately requires full onboarding motion without an equivalent static state. Keep this named as accessibility debt; do not falsely claim conformance.
 
 Rejected patterns:
 
@@ -286,7 +286,7 @@ Required seams:
 - Deterministic copy in versioned content modules, not model-only text.
 - Progress keyed by environment + household + Google member, with device-specific completion only for phone/desktop layout lessons.
 - Resume from the last safe step; never resume halfway through a money confirmation.
-- Skip chapter, skip all, replay chapter, restart tour, and reduced-motion controls.
+- One persistent Skip tutorial action, replay in More, safe-step resume, and no extra chapter/settings chrome. D-129 deliberately requires full onboarding motion even when the device requests reduced motion.
 - Practice state visibly separate from real books. Real writes still use current commands and existing Confirm.
 - A feature can register a future chapter without modifying the tutorial engine.
 
@@ -298,11 +298,11 @@ Jonathan approved the recommended real/practice split on 2026-08-25:
 
 Practice activity must not enter journals, cloud continuity snapshots, reports, streaks, or onboarding progress that claims real money was accepted. Copying practice into a real draft is an explicit user action; the copied draft still passes the ordinary review and Confirm boundary.
 
-This decision unlocks Part 2 storyboards. The remaining Part 1 review covers control dispositions, chapter selection, and final Hercules copy—not the scenario safety model.
+This decision unlocked the [Part 2 storyboard](ONBOARDING_PART2_STORYBOARD.md). D-129 now locks its motion and interaction model. The remaining copy remains editable through semantic tone variants rather than hard-wired one-audience jokes.
 
 ## 9. Acceptance gates
 
-Part 1 is complete when Jonathan approves:
+Jonathan approved the Part 1 direction and D-128 safety model. The following remain editable content, not blockers to the Part 2 architecture:
 
 - featured, contextual, excluded, and repair-first control dispositions;
 - the core and optional chapter lists;
@@ -311,11 +311,11 @@ Part 1 is complete when Jonathan approves:
 
 The complete update is not ready until:
 
-- first Google household entry offers Play or Skip;
+- first eligible Google household entry automatically begins after Home renders and keeps Skip visible;
 - skip never blocks the app and replay is easy to find;
 - progress survives device change without treating a new phone as a new person;
 - phone and desktop receive different layouts but the same financial meaning;
 - opening balances compile to balanced books without fake income/expense/cash flow;
 - no tutorial code bypasses typed commands or Confirm;
-- keyboard, screen reader, touch, zoom, offline, reconnect, and reduced-motion proofs pass;
+- keyboard, screen reader, touch, zoom, offline, and reconnect proofs pass; reduced-motion conformance is a documented D-129 exception and therefore remains an explicit accessibility debt;
 - adding a new chapter is demonstrably isolated to registry/content/target additions.

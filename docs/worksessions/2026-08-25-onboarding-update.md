@@ -1,11 +1,11 @@
 # Worksession — The Onboarding Update
 
 - **Opened:** 2026-08-25, America/Toronto
-- **Status:** ACTIVE — Part 1 planning and review
-- **Baseline:** `main@44156f9` (PR #100 merged)
+- **Status:** ACTIVE — Parts 1–2 planned; foundation implementation not started
+- **Baseline:** `main@9f50aae` (PR #101 merged)
 - **Branch:** `codex/onboarding-planning`
 - **Owner:** Codex planning/integration; Jonathan product decisions; Cursor remains on migrations
-- **Risk:** High — future opening balances and guided commands touch financial meaning; this Part 1 change is documentation/review only
+- **Risk:** High — future opening balances and guided commands touch financial meaning; Parts 1–2 are documentation/review only
 - **Environment:** local Development inspection only
 - **Hosted mutations:** none
 - **Schema/migrations/Auth/RLS/Production/deploy:** explicitly out of scope
@@ -44,6 +44,14 @@ No runtime delta is claimed in Part 1 because no product code or books changed.
 
 Jonathan approved the recommended scenario rule: real stated balances use real commands and Confirm; demonstration transactions/shifts stay in a visibly temporary Practice kitchen and are discarded unless Bianca explicitly copies one into a real draft. Copying never posts—the ordinary review and Confirm boundary still applies. Practice state never enters journals, continuity snapshots, reports, streaks, or accepted-money progress.
 
+## Part 2 locked — D-129
+
+The complete phone/desktop motion and interaction contract is in [ONBOARDING_PART2_STORYBOARD.md](../ONBOARDING_PART2_STORYBOARD.md). It locks automatic first-entry start, one persistent Skip action, More replay, full control locking, deliberate Hercules routes, simulated camera focus/background blur, Pokémon-rhythm typed dialogue, Practice transaction/correction/four-hour shift, editable tone variants, silent animation, device-specific location lessons, and the Ready for September finale.
+
+Jonathan explicitly requires full onboarding animation without a reduced-motion substitute. The motion is client-side and consumes no service quota. Record the accessibility exception truthfully; do not weaken the rest of Hearth's existing reduced-motion behavior.
+
+Implementation split: Cursor owns the declarative foundation under the exact [Slice A prompt](../briefs/CURSOR_ONBOARDING_FOUNDATION_PROMPT.md); Codex owns real opening truth, Practice/financial scenario wiring, and approved phone/Office choreography; Cursor returns as an independent multi-model hardening reviewer.
+
 ## Verification
 
 - Local browser inspection at 390 × 844 plus the wide Office surface.
@@ -53,6 +61,6 @@ Jonathan approved the recommended scenario rule: real stated balances use real c
 - The default parallel `pnpm test` run caused existing long PGlite/scale tests to exceed their time limits on this machine; the isolated serial gate completed cleanly.
 - `git diff --check` — clean.
 
-## Next action after approval
+## Next action
 
-Start Part 2 with paired phone/desktop storyboards, animation state diagrams, target/focus behavior, skip/resume/replay flows, and reduced-motion equivalents. Do not implement onboarding runtime or money commands during Part 2.
+Part 2 is complete as planning. Share the D-128/D-129 planning branch, then send Cursor the bounded Slice A foundation prompt. Do not let foundation work absorb opening-truth commands, Practice scenario wiring, migration files, providers, or final Hercules choreography.
