@@ -1,19 +1,30 @@
--- AUTH / RLS READINESS PACKET. DO NOT APPLY.
+-- AUTH / RLS READINESS PACKET (legacy sketch). DO NOT APPLY.
+-- Superseded by docs/AUTH_RLS_CUTOVER.md and
+-- supabase/migrations/004_auth_rls_prepare.sql,
+-- 005_snapshot_cas_hardening.sql, and 006_auth_rls_cutover.sql.
+-- This legacy sketch remains DO NOT APPLY. Migrations 004/005 were applied with
+-- approval on 2026-08-24; project-wide cutover 006 remains DO NOT APPLY.
 -- Do not paste this into the live household Supabase SQL editor.
 -- Do not contact the household project. Do not claim Auth/RLS is complete
 -- because this file exists. Hosted RLS today remains
 -- USING (true) WITH CHECK (true) for ALL, including DELETE (001_hearth_books.sql).
 --
+-- NOTE: This sketch assumed a hosted `members.auth_user_id` column that the
+-- current SPA schema does not use for continuity. Live membership is
+-- `continuity_memberships` (migration 003 / D-117). The cutover packet extends
+-- that table instead of inventing a parallel door.
+--
 -- Prerequisites Jonathan must complete first:
 --   1. Supabase Auth for Jonathan and Bianca.
---   2. Apply 002_snapshot_cas.sql (unapplied CAS RPC) or accept residual GET/POST race.
+--   2. Keep already-live Development migration 002; separately approve forward
+--      repair 005 before the deny-by-default cutover.
 --   3. Map auth.uid() onto household membership.
 --   4. Explicit approval to replace the open anon door.
 --
 -- Order:
 --   001_hearth_books.sql (already applied historically)
---   002_snapshot_cas.sql (created, not applied)
---   this packet (not applied)
+--   002_snapshot_cas.sql (already applied to Development)
+--   004 prepare (applied) -> 005 hardening (applied) -> 006 cutover (not applied)
 -- Rollback: restore 001 open policies; drop membership/invite tables created here.
 --
 -- Synthetic proof (when Auth exists, on a throwaway project, never the household):

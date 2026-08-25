@@ -31,7 +31,7 @@ The same Google email cannot be linked to both people.
 4. Pulled books are validated in PGlite before Hearth opens them.
 5. Work normally. Offline accepted writes retry on launch, focus, and reconnection.
 
-Current limitations: Production discovery waits for Auth/RLS. Development scans open disposable snapshots client-side, keeps one active household snapshot per environment, and still uses snapshot CAS rather than a hosted journal. **Personal** remains a member-filtered view of the household snapshot rather than a dedicated hosted personal ledger.
+Current limitations: Production discovery waits for Auth/RLS. Development keeps an open disposable fallback and still uses snapshot CAS rather than a hosted journal. Applied migration 003 provides hosted member Personal snapshots; the repaired client projects Personal transactions, shifts, and private goals out of the shared cloud snapshot and overlays only the signed-in member's Personal envelope. Supabase Auth bearer wiring exists behind `VITE_SUPABASE_AUTH_ENABLED=1`. Migrations 004/005 are applied, but Google provider configuration and project-wide cutover 006 remain incomplete. Because one Production household shares this Supabase project, a Development-only 006 rehearsal requires a separate project.
 
 ### 3. Extra calendar sync
 

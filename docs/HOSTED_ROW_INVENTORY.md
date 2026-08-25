@@ -1,35 +1,42 @@
-# Hosted row inventory (do not delete)
+# Hosted row inventory and approved cleanup record
 
-The household Supabase project is off-limits to AI access. This file is an inventory of *possible* leftover hosted rows from the old implicit upload path (`syncHouseholdBooks` forced `linked: true` on boot, including demo / empty / unlinked households).
+The old implicit upload path (`syncHouseholdBooks` forced `linked: true` on boot, including demo, empty, and unlinked households) left disposable Development rows in the shared Supabase project.
 
-**This is a runbook, not a cleanup.** Do not delete, overwrite, or inspect hosted row *contents* without Jonathan's explicit approval and a recovery record (D-018 / D-110).
+**Cleanup completed 2026-08-24 with Jonathan's explicit approval and action-time confirmation.** A guarded transaction required exactly 30 Development households and exactly one Production household before deleting only `environment = 'development'`. Verification after commit returned:
 
-## What may exist
+- 0 Development households;
+- 0 continuity memberships;
+- 0 continuity Personal snapshots;
+- 1 Production household, untouched;
+- applied migration ids `[2,4,5]`.
 
-- Demo `catalogHousehold` snapshots uploaded because boot always published.
-- Empty development households uploaded on first open.
-- Unlinked kitchen copies that were rewritten to `linked: true` by transport.
-- Duplicate snapshots for the same invite phrase if a phone published after a silent boot upload.
-- Hearth Pass joins that were then saved (they used to be marked `linked: true` on assemble)
+No payload contents or household identifiers are stored in this document. Do not delete or edit the remaining Production household without a new explicit approval.
 
-Do not assume a row is junk from `id` or `name` alone. A real household can share those labels.
+## What was removed
 
-## What this file does not do
+- Development demo catalog snapshots uploaded by the old boot path.
+- Empty Development households uploaded on first open.
+- Development unlinked copies rewritten to `linked: true` by old transport.
+- Development duplicates and old Hearth Pass joins.
 
-- It does not read the household project from an AI session.
-- It does not delete rows.
-- It does not apply SQL.
+The deletion decision was environment-wide because Jonathan declared legacy Development households disposable; it was not inferred from an id or name.
 
-## Jonathan decisions required
+## What this record does not authorize
 
-1. Inventory live `households` / `household_snapshots` on the household project (human or approved operator, not an AI session).
-2. Keep or delete leftover demo/unlinked rows **only** after a recovery record exists.
-3. Apply `supabase/migrations/002_snapshot_cas.sql` only after reviewing residual last-writer race.
-4. Do not apply Auth/RLS until Auth users exist (see `docs/sql/rls_auth_ready.sql`).
+- Any Production row change.
+- Applying project-wide migration 006.
+- Enabling providers, changing secrets, deploying, or merging.
+- Future blanket cleanup of Development rows created after this event.
 
-## How to list metadata only (Jonathan)
+## Jonathan decisions still required
 
-The bundled project is `tykhocwacaxwquhynkok` (`https://tykhocwacaxwquhynkok.supabase.co`). RLS is still `USING (true)`. In the Supabase SQL editor, metadata without payload:
+1. Choose a separate Development Supabase project or explicitly approve a full shared-project cutover.
+2. Configure the Google provider and prove signed-in Create, Join, invite, revoke, and reconnect behavior.
+3. Apply migration 006 only after that project-boundary decision and a clean preflight.
+
+## Metadata-only verification query
+
+The bundled project is `tykhocwacaxwquhynkok` (`https://tykhocwacaxwquhynkok.supabase.co`). RLS remains open until 006. In the Supabase SQL editor, list metadata without payload:
 
 ```sql
 SELECT
@@ -47,8 +54,8 @@ LEFT JOIN public.household_snapshots s ON s.household_id = h.id
 ORDER BY s.updated_at DESC NULLS LAST;
 ```
 
-Do **not** `SELECT payload`. Do **not** `DELETE`. Copy the result into a recovery note if a cleanup is later approved.
+Do **not** `SELECT payload`. Do **not** delete the remaining Production row.
 
 ## After D-110
 
-Local, demo, unlinked, and Hearth Pass phones make **zero** household REST calls. Invite → **Publish to the cloud** is the only client path that opts a household in. Existing hosted rows stay until Jonathan decides otherwise.
+Local, demo, unlinked, and Hearth Pass phones make **zero** household REST calls. New disposable Development rows may be recreated during testing; this cleanup does not authorize deleting them automatically.

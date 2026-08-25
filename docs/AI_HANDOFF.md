@@ -34,7 +34,7 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 **Status:** exact Google-subject Development discovery, PGlite acceptance, a durable compacting local outbox, launch/focus/reconnect replay, multi-household device replicas, an explicit ledger switcher, and member-only personal device replicas are implemented. Migration 003 is applied: D-117 server-filtered membership discovery and hosted member-personal payloads are live in Development; missing tables retain the D-114 fallback. Inherited broad grants were removed and verified as exactly `SELECT`/`INSERT`/`UPDATE` for `anon` and `authenticated`. No hosted rows, deployment, Production data, or secrets were changed.
 
-**Still required:** atomic hosted CAS live after Jonathan applies migration 002, two-browser end-to-end proof, Supabase Auth-bound membership, and the late-September deny-by-default RLS cutover.
+**Still required:** two-browser end-to-end proof, Supabase Auth-bound membership, and the late-September deny-by-default RLS cutover. Migration 002 is live in Development; its forward concurrency repair is unapplied migration 005.
 
 **Budget delta (5):** `+4` — accepted offline commands survive reconnection, pulled snapshots pass PGlite, stale remote revisions retain both sides, and locally switching households no longer overwrites a different ledger.
 
@@ -82,17 +82,27 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 ## Hosted snapshot CAS + outbox ack (D-122)
 
-**Status:** Implemented on `cursor/cloud-cas-outbox-4ffb`. Client prefers `rpc/publish_household_snapshot`; hardened unapplied packet `supabase/migrations/002_snapshot_cas.sql`; outbox ack on success/duplicate, exponential backoff, conflict blocks auto-replay; local books never cleared on failed/stale cloud write. Deterministic proofs in `test/hosted-cas-two-client.test.ts`. **Did not** deploy, apply SQL, mutate hosted rows, touch Production, or merge.
+**Status:** Applied to Development on 2026-08-25 (Jonathan SQL-editor paste of fixed `002_snapshot_cas.sql`). Live smoke `pnpm books:smoke:cas` **4/4**: first publish, duplicate ack, stale conflict, advance 1→2. Disposable smoke household `HH-cas-smoke-mt7xsikl`. Client + outbox work already on `main` via [PR #84](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/84) / [#86](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/86). Production schema **not** applied.
 
-**Budget delta (5):** `+3` — simultaneous/stale cloud writers cannot LWW-erase accepted books; offline replay and duplicate delivery stay idempotent.
+**Budget delta (5):** `+3` — live atomic hosted CAS is on for Development.
 
-**Engagement delta (3):** `0` — continuity trust infrastructure; Hercules/office chrome unchanged.
+**Engagement delta (3):** `0`.
 
-**Jonathan migration step (separate approval):** apply `supabase/migrations/002_snapshot_cas.sql` to Development only after review. Until then the client falls back to GET-compare-POST. Do not apply Auth/RLS or Production schema in the same step.
+**Still required:** two-browser E2E on real devices; Auth/RLS cutover before October; Production apply is a separate approval.
 
-**Still required:** live RPC apply + smoke on disposable Development; two-browser E2E; Auth/RLS cutover before October.
+**Risk:** High residual until Auth/RLS; open Development RLS unchanged through 2026-09-30.
 
-**Risk:** High (hosted write protocol). Independent trust review recommended before applying 002.
+## Auth + membership RLS cutover (D-123)
+
+**Status:** Repaired after review. Product locks remain Q1 A (Supabase Auth Google → `auth.uid()`), Q2 owner/member (Create→owner, Join→member), Q3 email or QR invite, and Q4 no household REST for anon. With Jonathan's Development approval, `004_auth_rls_prepare.sql` and `005_snapshot_cas_hardening.sql` were applied on 2026-08-24. With Jonathan's explicit cleanup confirmation, all 30 disposable Development households and cascaded membership/Personal rows were deleted; verification is 0/0/0. The one Production household was untouched. Runtime token storage/refresh and bearer propagation are implemented behind `VITE_SUPABASE_AUTH_ENABLED=1`; shared payload projection excludes Personal transactions, shifts, and private goals. Preflighted deny-by-default `006_auth_rls_cutover.sql` is **not applied** and now refuses to run while a Production household remains because its grants/policies affect the entire shared Supabase project. See [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md).
+
+**Budget delta (5):** `+2` readiness — preparation and CAS hardening are live; deny-by-default door + invite RPCs remain inactive until 006.
+
+**Engagement delta (3):** `0` — Welcome email/QR chrome is a follow-up after apply.
+
+**Next owner:** Jonathan decides whether Development gets a separate Supabase project or whether the shared Production project receives a full cutover approval. Then configure Google Auth, apply 006 in that approved boundary, and smoke Create / email / QR / revoke / anon denial.
+
+**Risk:** Release. Independent trust review before any apply.
 
 ## Trust-foundation worksession (2026-08-24, local branch)
 

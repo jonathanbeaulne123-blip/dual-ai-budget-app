@@ -53,7 +53,20 @@ export type SnapshotCasConflict = {
   conflict: true;
   remoteRevision: number | null;
   remotePayload: string | null;
-  reason: "stale-revision" | "environment-mismatch" | "revision-hash-mismatch" | "missing-base";
+  reason:
+    | "stale-revision"
+    | "environment-mismatch"
+    | "revision-hash-mismatch"
+    | "missing-base"
+    | "missing-snapshot"
+    | "non-advancing-revision"
+    | "not-member"
+    | "personal-data-in-shared-payload"
+    | "invalid-create"
+    | "payload-identity-mismatch"
+    | "google-identity-required"
+    | "household-already-exists"
+    | "invalid-household";
 };
 
 export type SnapshotCasResult = SnapshotCasOk | SnapshotCasConflict;
@@ -134,7 +147,9 @@ export function applyPublishHouseholdSnapshotCas(
     };
   }
 
-  if (request.revision < request.expectedRevision) {
+  // One upload may compact several accepted offline commands, so the target may
+  // jump by more than one. It must still advance beyond the remote base.
+  if (request.revision <= request.expectedRevision) {
     return {
       store,
       result: {
@@ -142,7 +157,7 @@ export function applyPublishHouseholdSnapshotCas(
         conflict: true,
         remoteRevision: current?.revision ?? null,
         remotePayload: store.snapshot?.payload ?? null,
-        reason: "stale-revision",
+        reason: "non-advancing-revision",
       },
     };
   }

@@ -673,6 +673,8 @@ export type SharedEnvelope = {
   transactions: Transaction[];
   shifts: Shift[];
   tombstones: Tombstone[];
+  /** Exactly-once receipts are shared financial facts; old envelopes may omit them. */
+  commandReceipts?: CommandReceipt[];
 };
 
 export type PersonalEnvelope = {
@@ -681,6 +683,10 @@ export type PersonalEnvelope = {
   lastCommittedAt: string | null;
   transactions: Transaction[];
   shifts: Shift[];
+  /** Member-owned non-shared goals and their money facts. Optional for old replicas. */
+  goals?: Goal[];
+  goalContributions?: GoalContribution[];
+  goalPurchases?: GoalPurchase[];
   tombstones: Tombstone[];
 };
 
