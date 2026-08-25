@@ -52,6 +52,38 @@ describe("Hercules read-only tool brain", () => {
     expect(run.talk.spoken).toMatch(/spending|repeating|sit-down/i);
   });
 
+  it("answers deeper budget, category, card, wallet, audit, and duplicate questions locally", () => {
+    const household = seedDemoHousehold({ today, environment: "development" });
+    const before = structuredClone(household);
+    const money = executeHerculesReadToolPlan(household, { calls: [
+      { name: "budget_status", args: { period: "current_month" } },
+      { name: "category_breakdown", args: { period: "this_month", type: "expense", limit: 5 } },
+      { name: "credit_card_status", args: { account: "Visa" } },
+      { name: "net_worth", args: {} },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+    const controls = executeHerculesReadToolPlan(household, { calls: [
+      { name: "audit_health", args: {} },
+      { name: "duplicate_review", args: { limit: 4 } },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+
+    expect(household).toEqual(before);
+    expect(money.results.map((result) => result.name)).toEqual([
+      "budget_status", "category_breakdown", "credit_card_status", "net_worth",
+    ]);
+    expect(money.results[0]?.facts.some((fact) => fact.label === "Spending")).toBe(true);
+    expect(money.results[1]?.facts.every((fact) => fact.source.categoryId)).toBe(true);
+    expect(money.results[2]?.facts.some((fact) => fact.source.accountId)).toBe(true);
+    expect(money.results[3]?.sentence).toMatch(/net worth/i);
+    expect(controls.results[0]?.sentence).toMatch(/unmodified|debits|books|balance|audit/i);
+    expect(controls.results[1]?.sentence).toMatch(/duplicate|review/i);
+
+    const personalWallet = executeHerculesReadToolPlan(household, {
+      calls: [{ name: "net_worth", args: {} }, { name: "audit_health", args: {} }],
+    }, today, { memberId: "MEM-001", view: "personal" });
+    expect(personalWallet.results.every((result) => result.facts.length === 0)).toBe(true);
+    expect(personalWallet.talk.spoken).toMatch(/household ledger/i);
+  });
+
   it("never crosses from a personal ledger into the partner's personal rows", () => {
     let household = catalogHousehold("development");
     household = postEntry(household, {
@@ -187,24 +219,33 @@ describe("Hercules read-only tool brain", () => {
       },
       body: JSON.stringify({ message: "compare groceries this month with last month", page: "home", view: "household" }),
     });
+    const upstream = vi.fn();
+    vi.stubGlobal("fetch", upstream);
+    const run = vi.fn(async () => ({ response: JSON.stringify({ calls: [
+      { name: "post_entry", args: { amount: 50 } },
+      { name: "compare_spending", args: { currentPeriod: "this_month", comparisonPeriod: "last_month", category: "groceries", injected: "DROP TABLE" } },
+    ] }) }));
     const response = await worker.fetch(request, {
       AI: {
-        run: async () => ({ response: JSON.stringify({ calls: [
-          { name: "post_entry", args: { amount: 50 } },
-          { name: "compare_spending", args: { currentPeriod: "this_month", comparisonPeriod: "last_month", category: "groceries", injected: "DROP TABLE" } },
-        ] }) }),
+        run,
       },
+      OPENAI_API_KEY: "present-but-disabled",
+      ANTHROPIC_API_KEY: "present-but-disabled",
     });
     expect(response.status).toBe(200);
     const body = await response.json() as { plan: { calls: Array<{ name: string; args: Record<string, unknown> }> } };
     expect(body.plan.calls).toHaveLength(1);
     expect(body.plan.calls[0]?.name).toBe("compare_spending");
     expect(body.plan.calls[0]?.args).not.toHaveProperty("injected");
+    expect(run).toHaveBeenCalledWith("@cf/google/gemma-4-26b-a4b-it", expect.any(Object));
+    expect(upstream).not.toHaveBeenCalled();
 
     const source = readFileSync("workers/site.js", "utf8");
     expect(source).toContain("https://api.openai.com/v1/responses");
     expect(source).toContain("strict: true");
     expect(source).toContain("store: false");
+    expect(source).toContain("HERCULES_ALLOW_PAID_PROVIDERS");
+    expect(source).toContain("@cf/google/gemma-4-26b-a4b-it");
     expect(source).not.toMatch(/name:\s*["']post_entry["']/);
   });
 });

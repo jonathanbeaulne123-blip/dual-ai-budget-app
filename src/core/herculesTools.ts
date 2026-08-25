@@ -7,10 +7,13 @@ import {
   weekBounds,
   type DateKey,
 } from "./calendar.ts";
-import { accountBookBalance } from "./accounts.ts";
+import { accountBookBalance, creditCardView, householdWallet } from "./accounts.ts";
 import { claimPublicLabel, outstandingClaims } from "./appointments.ts";
+import { monthSummary } from "./budget.ts";
+import { duplicateContrastPairs } from "./duplicate.ts";
 import { formatCad } from "./money.ts";
 import { leftoverProjection } from "./sitDown.ts";
+import { auditOpinion } from "./statements.ts";
 import { householdForHerculesContext } from "./visibility.ts";
 import type { HerculesAskContext } from "./askBooks.ts";
 import type { HerculesGroundedFact, HerculesNumberSource } from "./herculesProvenance.ts";
@@ -28,6 +31,12 @@ export const HERCULES_READ_TOOL_NAMES = [
   "goal_progress",
   "money_owed",
   "cash_position",
+  "budget_status",
+  "category_breakdown",
+  "credit_card_status",
+  "net_worth",
+  "audit_health",
+  "duplicate_review",
 ] as const;
 
 export type HerculesReadToolName = (typeof HERCULES_READ_TOOL_NAMES)[number];
@@ -68,6 +77,12 @@ export const HERCULES_READ_TOOL_CATALOG: ReadonlyArray<{ name: HerculesReadToolN
   { name: "goal_progress", description: "Read visible savings-jar progress." },
   { name: "money_owed", description: "Read visible outstanding claims and receivables." },
   { name: "cash_position", description: "Read the household sit-down cash position; household ledger only." },
+  { name: "budget_status", description: "Compare posted income and spending with the monthly plan." },
+  { name: "category_breakdown", description: "Rank visible spending or income categories for a month." },
+  { name: "credit_card_status", description: "Read one visible card's balance, statement, minimum, due date, and utilization." },
+  { name: "net_worth", description: "Read household assets less liabilities; household ledger only." },
+  { name: "audit_health", description: "Read the deterministic books opinion and integrity-finding count." },
+  { name: "duplicate_review", description: "List visible potential-duplicate pairs and confidence; never delete either row." },
 ];
 
 const TOOL_SET = new Set<string>(HERCULES_READ_TOOL_NAMES);
@@ -126,7 +141,17 @@ function cleanArgs(name: HerculesReadToolName, raw: unknown): Record<string, unk
   }
   if (name === "account_balance") return { account: common.account };
   if (name === "goal_progress") return { goal: cleanString(input.goal) };
-  if (name === "money_owed" || name === "cash_position") return {};
+  if (name === "category_breakdown") {
+    return {
+      period: cleanPeriod(input.period),
+      type: input.type === "income" ? "income" : "expense",
+      limit: Math.min(8, Math.max(1, Math.round(Number(input.limit) || 5))),
+    };
+  }
+  if (name === "credit_card_status") return { account: common.account };
+  if (name === "budget_status") return { period: cleanPeriod(input.period) };
+  if (name === "duplicate_review") return { limit: Math.min(4, Math.max(1, Math.round(Number(input.limit) || 3))) };
+  if (name === "money_owed" || name === "cash_position" || name === "net_worth" || name === "audit_health") return {};
   return common;
 }
 
@@ -356,6 +381,108 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const row = leftoverProjection(household, today);
     const source: HerculesNumberSource = { route: "plan", view: context.view, surface: "postcard", label: "Open the sit-down cash calculation" };
     return { callId: call.id, name: call.name, status: "ok", sentence: row.leftoverCents ? `The sit-down calculation leaves ${formatCad(row.leftoverCents)} after bills and minimums.` : `The sit-down calculation leaves no money to move. ${row.formula}`, facts: [fact(call, 0, "Cash-like", formatCad(row.cashLikeCents), source), fact(call, 1, "Bills next 30 days", formatCad(row.billsNext30Cents), source, "projection"), fact(call, 2, "Card minimums", formatCad(row.minPaymentsCents), source, "projection"), fact(call, 3, "Leftover", formatCad(row.leftoverCents), source, "projection")] };
+  }
+
+  if (call.name === "budget_status" || call.name === "category_breakdown") {
+    const requested = cleanPeriod(call.args.period);
+    const monthKey = requested === "last_month"
+      ? shiftMonthKey(monthKeyFromDateKey(today), -1)
+      : monthKeyFromDateKey(today);
+    const summary = monthSummary(household, monthKey);
+    const start = monthStartKey(monthKey);
+    const end = addDays(monthStartKey(shiftMonthKey(monthKey, 1)), -1);
+    if (call.name === "budget_status") {
+      const source: HerculesNumberSource = { route: "plan", view: context.view, surface: "postcard", from: start, to: end, label: `Open the ${monthKey} plan` };
+      const variance = summary.netActualCents - summary.netBudgetedCents;
+      return {
+        callId: call.id,
+        name: call.name,
+        status: "ok",
+        sentence: `${monthKey} has ${formatCad(summary.incomeActualCents)} income and ${formatCad(summary.expenseActualCents)} spending. Net is ${formatCad(summary.netActualCents)}, ${formatCad(Math.abs(variance))} ${variance >= 0 ? "ahead of" : "behind"} plan.`,
+        facts: [
+          fact(call, 0, "Income", formatCad(summary.incomeActualCents), source),
+          fact(call, 1, "Spending", formatCad(summary.expenseActualCents), source),
+          fact(call, 2, "Actual net", formatCad(summary.netActualCents), source),
+          fact(call, 3, "Planned net", formatCad(summary.netBudgetedCents), source, "projection"),
+        ],
+      };
+    }
+    const kind = call.args.type === "income" ? "income" : "expense";
+    const limit = Math.min(8, Math.max(1, Number(call.args.limit) || 5));
+    const rows = summary.categories
+      .filter((row) => row.type === kind && row.actualCents !== 0)
+      .sort((left, right) => Math.abs(right.actualCents) - Math.abs(left.actualCents))
+      .slice(0, limit);
+    if (!rows.length) return empty(call, `No posted ${kind} categories appear in ${monthKey}.`);
+    const facts = rows.map((row, index) => fact(call, index, row.name, formatCad(row.actualCents), toolSource(context, `Open ${row.name} rows`, { categoryId: row.subcategoryId, transactionTypes: kind === "income" ? ["income"] : ["expense", "refund"], from: start, to: end })));
+    return { callId: call.id, name: call.name, status: "ok", sentence: `The largest ${kind} categories in ${monthKey} are ${rows.map((row) => `${row.name} ${formatCad(row.actualCents)}`).join(", ")}.`, facts };
+  }
+
+  if (call.name === "credit_card_status") {
+    const cards = visibleAccounts(household, context).filter((account) => account.kind === "credit");
+    const accountQuery = cleanString(call.args.account);
+    const target = fuzzy(cards, accountQuery, (row) => `${row.name} ${row.institution} ${row.last4}`) ?? (!accountQuery && cards.length === 1 ? cards[0] : undefined);
+    if (!target) return empty(call, accountQuery ? `I cannot match visible card “${accountQuery}” in this ledger.` : "Name the card you want me to inspect.");
+    const card = creditCardView(household, target, today);
+    const source = toolSource(context, `Open ${target.name}`, { accountId: target.id, surface: "accounts", to: today });
+    return {
+      callId: call.id,
+      name: call.name,
+      status: "ok",
+      sentence: card.hercules,
+      facts: [
+        fact(call, 0, "Current balance", formatCad(card.owedCents), source),
+        fact(call, 1, "Statement balance", formatCad(card.statementBalanceCents), source),
+        fact(call, 2, `Minimum · due ${card.dueDate}`, formatCad(card.minPaymentCents), source, "projection"),
+        ...(card.utilization == null ? [] : [fact(call, 3, "Utilization", `${Math.round(card.utilization * 100)}%`, source, "projection")]),
+      ],
+    };
+  }
+
+  if (call.name === "net_worth") {
+    if (context.view !== "household") return { callId: call.id, name: call.name, status: "unavailable", sentence: "The complete book net worth lives in the Household ledger.", facts: [] };
+    const wallet = householdWallet(household, today);
+    const source: HerculesNumberSource = { route: "ledger", view: context.view, label: "Open the household wallet" };
+    return {
+      callId: call.id,
+      name: call.name,
+      status: "ok",
+      sentence: `Book net worth is ${formatCad(wallet.netWorthCents)}: ${formatCad(wallet.cashCents)} cash-like, ${formatCad(wallet.investedCostCents)} invested at book cost, ${formatCad(wallet.receivableCents)} owed to us, less ${formatCad(wallet.owedCents)} on cards.`,
+      facts: [
+        fact(call, 0, "Book net worth", formatCad(wallet.netWorthCents), source),
+        fact(call, 1, "Cash-like", formatCad(wallet.cashCents), source),
+        fact(call, 2, "Investment book cost", formatCad(wallet.investedCostCents), source),
+        fact(call, 3, "Cards owed", formatCad(wallet.owedCents), source),
+      ],
+    };
+  }
+
+  if (call.name === "audit_health") {
+    if (context.view !== "household") return { callId: call.id, name: call.name, status: "unavailable", sentence: "The complete audit opinion lives in the Household ledger.", facts: [] };
+    const opinion = auditOpinion(household);
+    const source: HerculesNumberSource = { route: "ledger", view: context.view, label: "Open the Audit Office" };
+    return {
+      callId: call.id,
+      name: call.name,
+      status: "ok",
+      sentence: opinion.hercules,
+      facts: [
+        fact(call, 0, "Audit opinion", opinion.kind, source),
+        fact(call, 1, "Health findings", String(opinion.healthFindings), source),
+        fact(call, 2, "Trial balance", opinion.trialInBalance ? "balanced" : "not balanced", source),
+      ],
+    };
+  }
+
+  if (call.name === "duplicate_review") {
+    const limit = Math.min(4, Math.max(1, Number(call.args.limit) || 3));
+    const pairs = duplicateContrastPairs(household.transactions).slice(0, limit);
+    if (!pairs.length) return empty(call, "No visible potential-duplicate pairs need review.");
+    const facts = pairs.flatMap((pair, index) => [
+      fact(call, index * 2, `${pair.confidence}% · ${pair.left.date} · ${pair.left.place || pair.left.note || "First row"}`, formatCad(pair.left.amountCents), toolSource(context, "Open the first candidate", { transactionId: pair.left.id, from: pair.left.date, to: pair.left.date })),
+      fact(call, index * 2 + 1, `${pair.confidence}% · ${pair.right.date} · ${pair.right.place || pair.right.note || "Second row"}`, formatCad(pair.right.amountCents), toolSource(context, "Open the second candidate", { transactionId: pair.right.id, from: pair.right.date, to: pair.right.date })),
+    ]);
+    return { callId: call.id, name: call.name, status: "ok", sentence: `${pairs.length} potential-duplicate pair${pairs.length === 1 ? " needs" : "s need"} a human decision. I will not remove either row.`, facts };
   }
 
   return { callId: call.id, name: call.name, status: "unavailable", sentence: "That read-only tool is unavailable.", facts: [] };

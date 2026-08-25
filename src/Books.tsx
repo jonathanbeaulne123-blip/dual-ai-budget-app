@@ -117,10 +117,8 @@ export function BooksPage({
     }
     if (sourceFocus.accountId) {
       setAccountId(sourceFocus.accountId);
-      setPane("wallet");
-      return;
     }
-    setPane("register");
+    setPane("wallet");
   }, [sourceFocus]);
 
   return (

@@ -46,7 +46,22 @@ UNTRUSTED DATA:
 
 Use the briefing for mood, page, and audit opinion. Use GROUNDED JOURNAL and FIGURES as the only source of dollar facts. Use ON-DEVICE NOTICES when they ask what you noticed.`;
 
-const MODELS = ["@cf/meta/llama-3.2-3b-instruct", "@cf/meta/llama-3.1-8b-instruct"];
+// Free-eligible Workers AI models are the default. External vendor keys remain
+// inert unless the deployer explicitly opts into paid providers.
+const FREE_TEXT_MODELS = ["@cf/google/gemma-4-26b-a4b-it", "@cf/meta/llama-3.1-8b-instruct"];
+const FREE_VISION_MODEL = "@cf/google/gemma-4-26b-a4b-it";
+
+function paidProvidersAllowed(env) {
+  return String(env?.HERCULES_ALLOW_PAID_PROVIDERS || "").trim().toLowerCase() === "true";
+}
+
+function workersAiText(output) {
+  if (typeof output?.response === "string") return output.response.trim();
+  if (typeof output?.result?.response === "string") return output.result.response.trim();
+  const content = output?.choices?.[0]?.message?.content;
+  if (typeof content === "string") return content.trim();
+  return "";
+}
 
 const HERCULES_PLAN_SYSTEM = `You plan read-only investigations for Hercules, a household finance coach.
 Return zero to four approved read tools. Never answer the question, calculate money, output SQL, or request a write.
@@ -84,6 +99,12 @@ const HERCULES_READ_TOOLS = [
   { name: "goal_progress", description: "Read visible savings jar progress.", parameters: strictObject({ goal: nullableString() }) },
   { name: "money_owed", description: "Read visible outstanding claims and receivables.", parameters: strictObject({}) },
   { name: "cash_position", description: "Read the household sit-down cash position. Household ledger only.", parameters: strictObject({}) },
+  { name: "budget_status", description: "Compare posted income and spending with this or last month's plan.", parameters: strictObject({ period: nullablePeriod() }) },
+  { name: "category_breakdown", description: "Rank visible spending or income categories for this or last month.", parameters: strictObject({ period: nullablePeriod(), type: { anyOf: [{ type: "string", enum: ["expense", "income"] }, { type: "null" }] }, limit: { anyOf: [{ type: "integer", minimum: 1, maximum: 8 }, { type: "null" }] } }) },
+  { name: "credit_card_status", description: "Read one visible card's balance, statement, minimum, due date, and utilization.", parameters: strictObject({ account: nullableString() }) },
+  { name: "net_worth", description: "Read household assets less liabilities. Household ledger only.", parameters: strictObject({}) },
+  { name: "audit_health", description: "Read the deterministic books opinion and integrity-finding count.", parameters: strictObject({}) },
+  { name: "duplicate_review", description: "List visible potential-duplicate pairs and confidence. Never delete either row.", parameters: strictObject({ limit: { anyOf: [{ type: "integer", minimum: 1, maximum: 4 }, { type: "null" }] } }) },
 ];
 const HERCULES_READ_TOOL_NAMES = new Set(HERCULES_READ_TOOLS.map((tool) => tool.name));
 const TOOL_ARG_KEYS = {
@@ -97,6 +118,12 @@ const TOOL_ARG_KEYS = {
   goal_progress: ["goal"],
   money_owed: [],
   cash_position: [],
+  budget_status: ["period"],
+  category_breakdown: ["period", "type", "limit"],
+  credit_card_status: ["account"],
+  net_worth: [],
+  audit_health: [],
+  duplicate_review: ["limit"],
 };
 
 function parseJsonObject(value) {
@@ -121,7 +148,10 @@ function sanitizeToolArgs(name, value) {
       if (cleaned) output[key] = cleaned;
     } else if (typeof item === "number" && Number.isFinite(item)) {
       const rounded = Math.round(item);
-      if (key === "limit") output[key] = Math.min(10, Math.max(1, rounded));
+      if (key === "limit") {
+        const maximum = name === "duplicate_review" ? 4 : name === "category_breakdown" ? 8 : 10;
+        output[key] = Math.min(maximum, Math.max(1, rounded));
+      }
       else if (key === "horizonDays") output[key] = Math.min(90, Math.max(1, rounded));
       else if (key === "minimumAmountCents" || key === "maximumAmountCents") output[key] = Math.min(1000000000, Math.max(0, rounded));
     }
@@ -149,6 +179,7 @@ function plannerQuestion(body) {
 }
 
 async function planOpenAI(env, input) {
+  if (!paidProvidersAllowed(env)) return { calls: [] };
   const key = String(env.OPENAI_API_KEY || "").trim();
   if (!key) return { calls: [] };
   const model = String(env.OPENAI_MODEL || "gpt-4o-mini").trim() || "gpt-4o-mini";
@@ -174,6 +205,7 @@ async function planOpenAI(env, input) {
 }
 
 async function planAnthropic(env, input) {
+  if (!paidProvidersAllowed(env)) return { calls: [] };
   const key = String(env.ANTHROPIC_API_KEY || "").trim();
   if (!key) return { calls: [] };
   const model = String(env.ANTHROPIC_MODEL || "claude-haiku-4-5").trim() || "claude-haiku-4-5";
@@ -225,6 +257,7 @@ const HERCULES_PLAN_SCHEMA = {
               category: { type: "string" },
               merchant: { type: "string" },
               goal: { type: "string" },
+              type: { type: "string", enum: ["expense", "income"] },
               minimumAmountCents: { type: "integer", minimum: 0, maximum: 1000000000 },
               maximumAmountCents: { type: "integer", minimum: 0, maximum: 1000000000 },
               limit: { type: "integer", minimum: 1, maximum: 10 },
@@ -240,7 +273,7 @@ const HERCULES_PLAN_SCHEMA = {
 async function planWorkersAi(env, input) {
   if (!env.AI) return { calls: [] };
   const catalog = HERCULES_READ_TOOLS.map((tool) => `${tool.name}: ${tool.description}`).join("\n");
-  for (const model of MODELS) {
+  for (const model of FREE_TEXT_MODELS) {
     try {
       const output = await env.AI.run(model, {
         messages: [
@@ -251,7 +284,7 @@ async function planWorkersAi(env, input) {
         max_tokens: 480,
         temperature: 0,
       });
-      const raw = typeof output?.response === "string" ? output.response : output?.result?.response;
+      const raw = workersAiText(output);
       const plan = sanitizeToolPlan(raw);
       if (plan.calls.length) return plan;
     } catch {
@@ -403,6 +436,7 @@ function buildPrompt(body) {
 }
 
 async function chatOpenAI(env, messages) {
+  if (!paidProvidersAllowed(env)) return "";
   const key = String(env.OPENAI_API_KEY || "").trim();
   if (!key) return "";
   const model = String(env.OPENAI_MODEL || "gpt-4o-mini").trim() || "gpt-4o-mini";
@@ -425,6 +459,7 @@ async function chatOpenAI(env, messages) {
 }
 
 async function chatAnthropic(env, messages) {
+  if (!paidProvidersAllowed(env)) return "";
   const key = String(env.ANTHROPIC_API_KEY || "").trim();
   if (!key) return "";
   const model = String(env.ANTHROPIC_MODEL || "claude-haiku-4-5").trim() || "claude-haiku-4-5";
@@ -455,19 +490,14 @@ async function chatAnthropic(env, messages) {
 
 async function chatWorkersAi(env, messages) {
   if (!env.AI) return "";
-  for (const model of MODELS) {
+  for (const model of FREE_TEXT_MODELS) {
     try {
       const out = await env.AI.run(model, {
         messages,
         max_tokens: 160,
         temperature: 0.55,
       }).catch(() => env.AI.run(model, { messages, max_tokens: 160 }));
-      const text =
-        typeof out?.response === "string"
-          ? out.response
-          : typeof out?.result?.response === "string"
-            ? out.result.response
-            : "";
+      const text = workersAiText(out);
       if (text.trim()) return text.trim();
     } catch {
       continue;
@@ -497,10 +527,18 @@ async function herculesChat(request, env) {
   let reply = "";
   let provider = "";
   try {
-    reply = await chatOpenAI(env, prompt.openai);
-    if (reply) provider = "openai";
+    reply = await chatWorkersAi(env, prompt.openai);
+    if (reply) provider = "workers-ai";
   } catch {
     reply = "";
+  }
+  if (!reply) {
+    try {
+      reply = await chatOpenAI(env, prompt.openai);
+      if (reply) provider = "openai";
+    } catch {
+      reply = "";
+    }
   }
   if (!reply) {
     try {
@@ -509,10 +547,6 @@ async function herculesChat(request, env) {
     } catch {
       reply = "";
     }
-  }
-  if (!reply) {
-    reply = await chatWorkersAi(env, prompt.openai);
-    if (reply) provider = "workers-ai";
   }
 
   if (!reply) return json({ ok: false, error: "ai quiet" }, 503, cors);
@@ -548,10 +582,18 @@ async function herculesPlan(request, env) {
   let plan = { calls: [] };
   let provider = "";
   try {
-    plan = await planOpenAI(env, input);
-    if (plan.calls.length) provider = "openai";
+    plan = await planWorkersAi(env, input);
+    if (plan.calls.length) provider = "workers-ai";
   } catch {
     plan = { calls: [] };
+  }
+  if (!plan.calls.length) {
+    try {
+      plan = await planOpenAI(env, input);
+      if (plan.calls.length) provider = "openai";
+    } catch {
+      plan = { calls: [] };
+    }
   }
   if (!plan.calls.length) {
     try {
@@ -560,10 +602,6 @@ async function herculesPlan(request, env) {
     } catch {
       plan = { calls: [] };
     }
-  }
-  if (!plan.calls.length) {
-    plan = await planWorkersAi(env, input);
-    if (plan.calls.length) provider = "workers-ai";
   }
   if (!plan.calls.length) return json({ ok: false, error: "no read plan" }, 503, cors);
   return json({ ok: true, provider, plan: sanitizeToolPlan(plan) }, 200, cors);
@@ -640,7 +678,24 @@ function sanitizeDocumentResult(value) {
   };
 }
 
+async function scanWorkersAi(env, imageDataUrl) {
+  if (!env.AI) return null;
+  const output = await env.AI.run(FREE_VISION_MODEL, {
+    messages: [
+      { role: "system", content: DOCUMENT_SYSTEM },
+      { role: "user", content: "Extract the selected document. Return only the requested JSON schema." },
+    ],
+    image: imageDataUrl,
+    response_format: { type: "json_schema", json_schema: DOCUMENT_SCHEMA },
+    max_completion_tokens: 2800,
+    temperature: 0,
+  });
+  const candidate = output?.response ?? output?.result?.response ?? output?.choices?.[0]?.message?.content;
+  return sanitizeDocumentResult(typeof candidate === "string" ? parseModelJson(candidate) : candidate);
+}
+
 async function scanOpenAI(env, imageDataUrl) {
+  if (!paidProvidersAllowed(env)) return null;
   const key = String(env.OPENAI_API_KEY || "").trim();
   if (!key) return null;
   const model = String(env.OPENAI_MODEL || "gpt-4o-mini").trim() || "gpt-4o-mini";
@@ -673,6 +728,7 @@ async function scanOpenAI(env, imageDataUrl) {
 }
 
 async function scanAnthropic(env, imageDataUrl) {
+  if (!paidProvidersAllowed(env)) return null;
   const key = String(env.ANTHROPIC_API_KEY || "").trim();
   if (!key) return null;
   const match = imageDataUrl.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);
@@ -722,10 +778,18 @@ async function scanDocument(request, env) {
   let result = null;
   let provider = "";
   try {
-    result = await scanOpenAI(env, imageDataUrl);
-    if (result) provider = "openai";
+    result = await scanWorkersAi(env, imageDataUrl);
+    if (result) provider = "workers-ai";
   } catch {
     result = null;
+  }
+  if (!result) {
+    try {
+      result = await scanOpenAI(env, imageDataUrl);
+      if (result) provider = "openai";
+    } catch {
+      result = null;
+    }
   }
   if (!result) {
     try {
