@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   clearUndoHistory,
   loadUndoHistory,
@@ -8,8 +8,23 @@ import {
 import type { UndoToken } from "../src/core/types.ts";
 import { catalogHousehold } from "../src/core/index.ts";
 
+const memory = new Map<string, string>();
+
+beforeEach(() => {
+  memory.clear();
+  Object.defineProperty(globalThis, "localStorage", {
+    configurable: true,
+    value: {
+      getItem: (key: string) => memory.get(key) ?? null,
+      setItem: (key: string, value: string) => { memory.set(key, value); },
+      removeItem: (key: string) => { memory.delete(key); },
+    },
+  });
+});
+
 afterEach(() => {
   clearUndoHistory("development", "HH-test", "MEM-001");
+  clearUndoHistory("development", "HH-test", "MEM-002");
 });
 
 function token(id: string): UndoToken {
@@ -39,6 +54,5 @@ describe("undoHistory persistence", () => {
     clearUndoHistory("development", "HH-test", "MEM-001");
     expect(loadUndoHistory("development", "HH-test", "MEM-001")).toEqual([]);
     expect(loadUndoHistory("development", "HH-test", "MEM-002")).toHaveLength(1);
-    clearUndoHistory("development", "HH-test", "MEM-002");
   });
 });
