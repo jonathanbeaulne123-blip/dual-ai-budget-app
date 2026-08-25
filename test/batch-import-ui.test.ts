@@ -32,6 +32,14 @@ VERSION:102
 <STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20260825<TRNAMT>-987.65<FITID>AUTO-KEEP-1<NAME>Unique Test Merchant<MEMO>Unrelated purchase</STMTTRN>
 </BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>`;
 
+const OFX_AUTO_KEEP_CHEQUING_TRANSFER = `OFXHEADER:100
+DATA:OFXSGML
+VERSION:102
+<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS><CURDEF>CAD
+<BANKACCTFROM><BANKID>623<ACCTID>1190</BANKACCTFROM><BANKTRANLIST>
+<STMTTRN><TRNTYPE>XFER<DTPOSTED>20260825<TRNAMT>123.45<FITID>AUTO-XFER-1<NAME>Transfer from chequing<MEMO>Internal transfer</STMTTRN>
+</BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>`;
+
 const OFX_NOT_SURE = `OFXHEADER:100
 DATA:OFXSGML
 VERSION:102
@@ -178,6 +186,38 @@ describe("batch import review UI", () => {
     act(() => button("Confirm 1 import")!.click());
     await settleUntil(() => onCommit.mock.calls.length === 1, "Auto-kept row did not reach the final batch write.");
     expect(onCommit.mock.calls[0]![0].transactions).toHaveLength(household.transactions.length + 1);
+  });
+
+  it("auto-keeps an obvious transfer from the unique chequing account", async () => {
+    const household = catalogHousehold();
+    const onCommit = vi.fn(async (_next: Household, _undo: UndoToken) => ({ ok: true }));
+    act(() => root.render(createElement(BatchImportCard, {
+      household,
+      memberId: "MEM-002",
+      view: "household",
+      onCommit,
+    })));
+
+    const input = container.querySelector<HTMLInputElement>('input[accept*=".ofx"]')!;
+    const file = new File([OFX_AUTO_KEEP_CHEQUING_TRANSFER], "auto-transfer.ofx", { type: "application/x-ofx" });
+    Object.defineProperty(file, "arrayBuffer", { value: async () => new TextEncoder().encode(OFX_AUTO_KEEP_CHEQUING_TRANSFER).buffer });
+    Object.defineProperty(input, "files", { configurable: true, value: { 0: file, length: 1, item: () => file, [Symbol.iterator]: function* () { yield file; } } });
+    act(() => input.dispatchEvent(new Event("change", { bubbles: true })));
+
+    await settleUntil(() => container.textContent?.includes("1 auto-kept without review") === true, "Obvious chequing transfer was not auto-kept.");
+    expect(container.querySelector(".import-pair")).toBeNull();
+    expect(button("Review final Confirm")!.disabled).toBe(false);
+    act(() => button("Review final Confirm")!.click());
+    await settleUntil(() => container.textContent?.includes("Confirm batch import?") === true, "Final Confirm did not open.");
+    act(() => button("Confirm 1 import")!.click());
+    await settleUntil(() => onCommit.mock.calls.length === 1, "Auto-kept transfer did not reach the final batch write.");
+    const posted = onCommit.mock.calls[0]![0] as Household;
+    expect(posted.transactions).toHaveLength(household.transactions.length + 2);
+    expect(posted.transactions.slice(-2).every((transaction) => (
+      transaction.type === "transfer"
+      && transaction.transferFromAccountId === "ACC-CHEQUING"
+      && transaction.transferToAccountId === "ACC-SAVINGS"
+    ))).toBe(true);
   });
 
   it("centers the duplicate decision and advances after Keep both", async () => {

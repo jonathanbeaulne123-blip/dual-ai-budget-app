@@ -1,6 +1,6 @@
 # Hercules AI
 
-Hercules is the household's resident data scientist who never touches the money. This file is the living spec for that layer (D-057–D-060, D-133–D-134). Companion how-to still lives in [HERCULES.md](HERCULES.md). Laws: [DECISIONS.md](DECISIONS.md).
+Hercules is the household's resident data scientist who never touches the money. This file is the living spec for that layer (D-057–D-060, D-133/D-135). Companion how-to still lives in [HERCULES.md](HERCULES.md). Laws: [DECISIONS.md](DECISIONS.md).
 
 ## Research taken
 
@@ -48,7 +48,7 @@ The boundary is deliberately narrow:
 
 Workers AI is first and uses constrained JSON. OpenAI Responses (`store: false`) and Anthropic remain available only when `HERCULES_ALLOW_PAID_PROVIDERS=true`; the checked-in default is `false`. All provider output is sanitized again on the Worker and again on the phone. This is model-planned retrieval, not model authority: arithmetic and scope remain deterministic on-device.
 
-### Brain v2 free-depth — zero-surprise-spend policy (D-134)
+### Brain v2 free-depth — zero-surprise-spend policy (D-135)
 
 The free route tries Cloudflare's free-plan eligible `@cf/google/gemma-4-26b-a4b-it`, then the smaller `@cf/meta/llama-3.1-8b-instruct`. The same binding now attempts selected receipt/bill/statement vision before any paid vendor. The Worker never calls OpenAI or Anthropic merely because an old secret happens to exist.
 

@@ -196,6 +196,80 @@ describe("import duplicate triage", () => {
     }));
   });
 
+  it("uses a unique account kind for obvious transfers from or to chequing", () => {
+    const [fromChequing, toChequing] = prepareImportRows({
+      household: catalogHousehold(),
+      memberId: "MEM-002",
+      view: "household",
+      rows: [
+        source({
+          id: "FROM-CHEQUING",
+          provenanceId: "from-chequing",
+          accountLast4: "1190",
+          signedAmountCents: 4723,
+          suggestedType: "transfer",
+          bankType: "XFER",
+          note: "Transfer from chequing",
+          place: "",
+        }),
+        source({
+          id: "TO-CHEQUING",
+          provenanceId: "to-chequing",
+          accountLast4: "1190",
+          amountCents: 9321,
+          signedAmountCents: -9321,
+          suggestedType: "transfer",
+          bankType: "XFER",
+          note: "Transfer to chequing",
+          place: "",
+        }),
+      ],
+    });
+
+    expect(fromChequing).toEqual(expect.objectContaining({
+      accountId: "ACC-SAVINGS",
+      transferAccountId: "ACC-CHEQUING",
+      type: "transfer",
+    }));
+    expect(toChequing).toEqual(expect.objectContaining({
+      accountId: "ACC-SAVINGS",
+      transferAccountId: "ACC-CHEQUING",
+      type: "transfer",
+    }));
+  });
+
+  it("keeps account-kind wording unresolved when the other account is ambiguous or the same kind as the statement account", () => {
+    const ambiguous = catalogHousehold();
+    ambiguous.accounts.find((account) => account.id === "ACC-MC")!.kind = "chequing";
+    const duplicateKind = prepareImportRows({
+      household: ambiguous,
+      memberId: "MEM-002",
+      view: "household",
+      rows: [source({
+        accountLast4: "1190",
+        suggestedType: "transfer",
+        bankType: "XFER",
+        note: "Transfer from chequing",
+        place: "",
+      })],
+    })[0]!;
+    const sameKind = prepareImportRows({
+      household: catalogHousehold(),
+      memberId: "MEM-002",
+      view: "household",
+      rows: [source({
+        accountLast4: "1190",
+        suggestedType: "transfer",
+        bankType: "XFER",
+        note: "Transfer to savings",
+        place: "",
+      })],
+    })[0]!;
+
+    expect(duplicateKind.transferAccountId).toBe("");
+    expect(sameKind.transferAccountId).toBe("");
+  });
+
   it("does not turn an external or ambiguous transfer description into an internal transfer", () => {
     let household = catalogHousehold();
     for (const [date, amount] of [["2026-07-01", 75], ["2026-07-15", 90]] as const) {
@@ -230,11 +304,41 @@ describe("import duplicate triage", () => {
           note: "TD PAYMENT",
           place: "",
         }),
+        source({
+          id: "INTERAC-KIND",
+          provenanceId: "interac-kind",
+          accountLast4: "1190",
+          suggestedType: "transfer",
+          bankType: "XFER",
+          note: "INTERAC E-TRANSFER FROM CHEQUING",
+          place: "",
+        }),
+        source({
+          id: "INTERAC-EXACT",
+          provenanceId: "interac-exact",
+          accountLast4: "4821",
+          suggestedType: "unknown",
+          bankType: "XFER",
+          note: "INTERAC E-TRANSFER TO VISA 4412",
+          place: "",
+        }),
       ],
     });
 
     expect(rows[0]).toEqual(expect.objectContaining({ type: "unknown", transferAccountId: "" }));
     expect(rows[1]).toEqual(expect.objectContaining({ type: "unknown", transferAccountId: "" }));
+    expect(rows[2]).toEqual(expect.objectContaining({
+      type: "transfer",
+      accountId: "ACC-SAVINGS",
+      transferAccountId: "",
+      duplicateConfidence: 0,
+      resolution: "keep-import",
+    }));
+    expect(rows[3]).toEqual(expect.objectContaining({
+      type: "transfer",
+      accountId: "ACC-CHEQUING",
+      transferAccountId: "ACC-VISA",
+    }));
   });
 
   it("learns a repeated visible transfer description without exposing Personal history", () => {
