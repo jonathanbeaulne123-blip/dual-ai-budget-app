@@ -62,5 +62,6 @@ Timing carries him. At 96px almost none of the drawing survives.
 - `perchTarget` lands on live widget rects. Sill uses the left or right of the ledge, facing along it.
 - `attackStand` puts him beside the warning instrument, facing it.
 - Dragging the cat across an instrument emits `bump` (existing 3px nudge). No clink. `pointer-events: none` while Add is open.
-- The fly is a 16px mote. It never carries CAD, Health, or a notice. Reduced motion hides it. He may `pounce` it.
+- The fly is a 16px mote. It never carries CAD, Health, or a notice. Reduced motion hides it. Mobile does not render it. On desktop he may `pounce` or be dragged across it to catch it, carry it to the litter box above More, and drop it into an unbounded session-only pile. Dropping spawns a new fly; dragging him over an existing pile without a carried fly clears the pile.
+- The litter pile is not persisted. It is play state, not household state, a streak, a balance, or a care meter. `keepHerculesOutOfLitter` applies to automatic lands, perches, attacks, and pounces; only a person may drag him into that bottom-right zone.
 - `useFurniture` publishes on mount, resize, scroll, and rAF while a widget is being dragged. **No 100ms `setInterval`.**

@@ -61,6 +61,7 @@ import {
   duePreviewDismissed,
   dueRecurrencePreview,
   readClinkOn,
+  requestCalendarPane,
   runHealthCheck,
   seedDemoHousehold,
   seedStressHousehold,
@@ -129,6 +130,7 @@ import {
   type Account,
   type VisitPostDraft,
   type TransactionLocation,
+  type HerculesNumberSource,
 } from "./core/index.ts";
 import {
   STORAGE_EXPLAINER,
@@ -3447,6 +3449,7 @@ export function App() {
         visorPop={visorPop}
         spark={spark}
         memberId={session.memberId}
+        view={view}
         onGo={(next) => {
           if (next === "add") {
             openAddFor(null);
@@ -3469,6 +3472,15 @@ export function App() {
         onLedger={(fn) => { void runKitchen(fn); }}
         onAcceptPreset={(key, summary) => setGuard({ kind: "acceptPreset", key, summary })}
         onDismissNotice={(key) => { void run((current) => dismissNotice(current, key)); }}
+        onOpenSource={(source: HerculesNumberSource) => {
+          rememberSession({ memberId: session.memberId, view: source.view, householdId: household.householdId });
+          if (source.accountId) setFocusedAccountId(source.accountId);
+          if (source.route === "calendar") requestCalendarPane("board", localStorage);
+          goTab(source.route);
+          if (source.surface && source.route === "home") {
+            window.setTimeout(() => emitOfficeIntent({ type: "expand", id: source.surface! }), 0);
+          }
+        }}
         onDraft={(draft) => {
           const nextMode = draft.kind === "shift" || draft.kind === "transfer" || draft.kind === "income"
             ? draft.kind

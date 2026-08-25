@@ -41,6 +41,7 @@ export * from "./companion.ts";
 export * from "./askBooks.ts";
 export * from "./hercules.ts";
 export * from "./herculesTalk.ts";
+export * from "./herculesProvenance.ts";
 export * from "./herculesPersonality.ts";
 export * from "./ledgerNames.ts";
 export * from "./herculesChat.ts";

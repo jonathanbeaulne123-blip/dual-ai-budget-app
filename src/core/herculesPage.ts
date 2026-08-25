@@ -8,6 +8,8 @@ import { activeOpenShift, previewHoursLabel } from "./shiftClock.ts";
 import { herculesPageBrief, kettlePhase, type HearthTab } from "./hercules.ts";
 import { leftoverProjection } from "./sitDown.ts";
 import type { Household } from "./types.ts";
+import type { LedgerView } from "./types.ts";
+import type { HerculesNumberSource } from "./herculesProvenance.ts";
 import type { InstrumentId } from "./officeLayout.ts";
 
 function cardChip(name: string | null | undefined): string {
@@ -20,7 +22,7 @@ export type HerculesPageSurface = {
   lesson: string | null;
   chips: string[];
   placeholder: string;
-  fact: { label: string; value: string } | null;
+  fact: { label: string; value: string; source?: HerculesNumberSource } | null;
 };
 
 function visitFact(household: Household, today: DateKey): { label: string; value: string } | null {
@@ -43,6 +45,7 @@ export function herculesPageSurface(
   household: Household,
   today: DateKey,
   now = new Date(),
+  context: { memberId: string; view: LedgerView } = { memberId: household.members[0]?.id ?? "", view: "household" },
 ): HerculesPageSurface {
   const spoken = herculesPageBrief(household, tab, today, now);
   const month = monthSummary(household, monthKeyFromDateKey(today));
@@ -69,7 +72,7 @@ export function herculesPageSurface(
       lesson: "Leftover is cash-like minus bills and card mins. Confirm parks jars in the Goals vault.",
       chips: ["Sit-down?", "Leftover?", "We good?"],
       placeholder: "ask about the plan…",
-      fact: { label: "Leftover", value: formatCad(leftover.leftoverCents) },
+      fact: { label: "Leftover", value: formatCad(leftover.leftoverCents), source: { route: "plan", view: context.view, surface: "postcard", label: "Open the sit-down calculation" } },
     };
   }
 
@@ -91,7 +94,7 @@ export function herculesPageSurface(
       lesson: "Fieldwork. The journal is the source.",
       chips: ["Opinion?", "Working capital?", "Balance sheet"],
       placeholder: "ask the books…",
-      fact: { label: "Month net", value: formatCad(month.netActualCents) },
+      fact: { label: "Month net", value: formatCad(month.netActualCents), source: { route: "ledger", view: context.view, label: "Open the income statement" } },
     };
   }
 
@@ -102,7 +105,7 @@ export function herculesPageSurface(
       lesson: "Health is the adult screen.",
       chips: ["Health", "What broke?", "We good?"],
       placeholder: "ask Health…",
-      fact: owing ? { label: "Owed to us", value: formatCad(owing.expectedCents - owing.receivedCents - owing.writtenOffCents) } : {
+      fact: owing ? { label: "Owed to us", value: formatCad(owing.expectedCents - owing.receivedCents - owing.writtenOffCents), source: { route: "calendar", view: context.view, surface: "claims", claimId: owing.id, label: "Open the claim" } } : {
         label: "Hour",
         value: `${hourInToronto(now)}h ${kettlePhase(today, hourInToronto(now))}`,
       },
@@ -121,10 +124,10 @@ export function herculesPageSurface(
       : ["We good?", cardChip(hot?.account.name), "What now?"],
     placeholder: "ask Hercules…",
     fact: punch
-      ? { label: "On the clock", value: previewHoursLabel(punch.startedAt, now.getTime()) }
+      ? { label: "On the clock", value: previewHoursLabel(punch.startedAt, now.getTime()), source: { route: "home", view: context.view, surface: "timesheet", memberId: context.memberId, label: "Open the timesheet" } }
       : hot
-        ? { label: hot.account.name, value: formatCad(hot.owedCents) }
-        : { label: "Month net", value: formatCad(month.netActualCents) },
+        ? { label: hot.account.name, value: formatCad(hot.owedCents), source: { route: "ledger", view: context.view, surface: "wallet", accountId: hot.account.id, label: `Open ${hot.account.name}` } }
+        : { label: "Month net", value: formatCad(month.netActualCents), source: { route: "ledger", view: context.view, label: "Open the income statement" } },
   };
 }
 

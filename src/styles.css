@@ -1001,23 +1001,74 @@ input, select, textarea {
 .hercules-chat-log {
   max-height: 168px;
   overflow-y: auto;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 6px;
   margin: 0 0 8px;
+  padding: 2px;
 }
-.hercules-turn { margin: 0; }
+.hercules-turn {
+  margin: 0;
+  max-width: 88%;
+  padding: 8px 10px;
+  border-radius: 15px;
+  background: rgba(255, 250, 242, 0.9);
+  box-shadow: 0 5px 16px rgba(37, 30, 23, 0.12);
+}
 .hercules-turn.you {
+  align-self: flex-end;
   text-align: right;
-  color: var(--muted);
+  color: var(--ink);
+  background: rgba(225, 217, 203, 0.88);
   font-size: 12px;
   font-weight: 600;
+  border-bottom-right-radius: 5px;
 }
-.hercules-turn.cat { font-weight: 650; }
-.hercules-typing { margin: 0; font-style: italic; color: var(--muted); }
+.hercules-turn.cat {
+  align-self: flex-start;
+  font-weight: 650;
+  border-bottom-left-radius: 5px;
+}
+.hercules-typing {
+  align-self: flex-start;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 14px 14px 14px 5px;
+  background: rgba(255, 250, 242, 0.82);
+  box-shadow: 0 4px 12px rgba(37, 30, 23, 0.1);
+  font-style: italic;
+  color: var(--muted);
+}
 .hercules-lesson { margin: 0 0 6px; color: var(--muted); font-size: 12px; }
 .hercules-source { margin: 0 0 6px; color: var(--muted); font-size: 11px; }
 .hercules-notes { margin: 12px 0; display: grid; gap: 8px; }
 .hercules-fact { margin: 0 0 8px; display: flex; justify-content: space-between; gap: 8px; font-size: 12px; }
+.hercules-grounded-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0 0 8px;
+}
+.hercules-grounded-fact {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  padding: 7px 8px;
+  border: 1px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--paper) 78%, transparent);
+  color: var(--ink);
+  text-align: left;
+  box-shadow: 0 4px 12px rgba(37, 30, 23, 0.08);
+}
+.hercules-grounded-fact:hover,
+.hercules-grounded-fact:focus-visible {
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  border-color: color-mix(in srgb, var(--ink) 34%, transparent);
+}
+.hercules-grounded-fact span { overflow: hidden; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.hercules-grounded-fact strong { font-size: 13px; font-variant-numeric: tabular-nums; }
+.hercules-grounded-fact small { color: var(--muted); font-size: 9px; }
 .hercules-replies { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
 .hercules-replies button,
 .hercules-help,

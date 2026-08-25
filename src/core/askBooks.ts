@@ -8,9 +8,12 @@ import { creditCardView, householdWallet } from "./accounts.ts";
 import { claimPublicLabel, claimsTraySentence, craMedicalLog, outstandingClaims, upcomingVisitProposals } from "./appointments.ts";
 import { describeGoalContributors } from "./goals.ts";
 import { leftoverProjection } from "./sitDown.ts";
-import type { Household } from "./types.ts";
+import type { HerculesNumberSource } from "./herculesProvenance.ts";
+import type { Household, LedgerView } from "./types.ts";
 
-export type BooksAskRow = { label: string; value: string };
+export type HerculesAskContext = { memberId: string; view: LedgerView };
+
+export type BooksAskRow = { label: string; value: string; source?: HerculesNumberSource; basis?: "journal" | "projection" };
 
 export type BooksAsk = {
   kind: "answer" | "help";
@@ -18,6 +21,7 @@ export type BooksAsk = {
   rows: BooksAskRow[];
   sql?: string;
   suggestions?: string[];
+  source?: HerculesNumberSource;
 };
 
 export const ASK_SUGGESTIONS = [
@@ -82,7 +86,25 @@ function help(extra?: string): BooksAsk {
   };
 }
 
-export function askBooks(household: Household, question: string, today: DateKey): BooksAsk {
+function source(
+  context: HerculesAskContext,
+  route: HerculesNumberSource["route"],
+  label: string,
+  detail: Omit<Partial<HerculesNumberSource>, "route" | "view" | "label"> = {},
+): HerculesNumberSource {
+  return { route, view: context.view, label, ...detail };
+}
+
+function memberNamedIn(household: Household, q: string) {
+  return household.members.find((member) => member.name.toLowerCase().split(/\s+/).some((token) => token.length >= 2 && new RegExp(`\\b${token}\\b`).test(q)));
+}
+
+export function askBooks(
+  household: Household,
+  question: string,
+  today: DateKey,
+  context: HerculesAskContext = { memberId: household.members[0]?.id ?? "", view: "household" },
+): BooksAsk {
   const raw = question.trim();
   if (!raw) return help();
   const q = normalize(raw);
@@ -95,6 +117,97 @@ export function askBooks(household: Household, question: string, today: DateKey)
   const rangeLabel = looksLikeWeek(q) ? "this week" : "this month";
 
   if (/\b(help|what can i ask|examples)\b/.test(q)) return help();
+
+  if (/\b(will i|can i|able to|afford).*(eat|food|grocer)|\b(eat|food|grocer).*(this week|until payday)\b/.test(q)) {
+    const grocery = month.categories.find((row) => row.subcategoryId === "SUB-FOOD-GROCERIES")
+      ?? month.categories.find((row) => /grocer/i.test(row.name));
+    const planLeft = grocery ? Math.max(0, grocery.budgetedCents - grocery.actualCents) : 0;
+    const leftover = leftoverProjection(household, today);
+    const enough = leftover.cashLikeCents > 0 && (planLeft > 0 || (grocery?.actualCents ?? 0) > 0);
+    const foodSource = source(context, "plan", "Open the groceries plan", {
+      surface: "blotter",
+      categoryId: grocery?.subcategoryId,
+      from: monthStart,
+      to: today,
+    });
+    return {
+      kind: "answer",
+      sentence: enough
+        ? `The books say yes, cautiously: ${formatCad(planLeft)} remains in the groceries plan and cash-like is ${formatCad(leftover.cashLikeCents)}. That's a plan, not a promise.`
+        : `The books cannot give me an easy yes. Groceries plan left is ${formatCad(planLeft)} and cash-like is ${formatCad(leftover.cashLikeCents)}. Open Plan before treats, kitten.`,
+      rows: [
+        { label: "Groceries plan left", value: formatCad(planLeft), source: foodSource, basis: "projection" },
+        { label: "Cash-like", value: formatCad(leftover.cashLikeCents), source: source(context, "plan", "Open the sit-down cash calculation", { surface: "postcard" }), basis: "projection" },
+      ],
+      source: foodSource,
+    };
+  }
+
+  const namedMember = memberNamedIn(household, q);
+  if ((/\b(overspend|overspent|over spent|spending habit|spent this week|spend this week)\b/.test(q) || (/\bdid\b/.test(q) && /\bspend/.test(q))) && namedMember) {
+    const currentRows = household.transactions.filter((tx) => (
+      tx.createdBy === namedMember.id
+      && tx.date >= week.start && tx.date <= week.end
+      && !tx.isDuplicate
+      && (tx.type === "expense" || tx.type === "refund")
+    ));
+    const current = currentRows.reduce((sum, tx) => sum + (tx.type === "expense" ? tx.amountCents : -tx.amountCents), 0);
+    const priorStart = addDays(week.start, -28);
+    const prior = household.transactions.filter((tx) => (
+      tx.createdBy === namedMember.id
+      && tx.date >= priorStart && tx.date < week.start
+      && !tx.isDuplicate
+      && (tx.type === "expense" || tx.type === "refund")
+    )).reduce((sum, tx) => sum + (tx.type === "expense" ? tx.amountCents : -tx.amountCents), 0);
+    const average = Math.round(prior / 4);
+    const delta = current - average;
+    const spendSource = source(context, "ledger", `Open ${namedMember.name}'s shared posts`, {
+      memberId: namedMember.id,
+      from: week.start,
+      to: week.end,
+    });
+    return {
+      kind: "answer",
+      sentence: average <= 0
+        ? `${namedMember.name} has ${formatCad(current)} of shared spend this week. I need earlier shared weeks before I call that higher or lower.`
+        : delta > 0
+          ? `${namedMember.name}'s shared posts are ${formatCad(delta)} above their four-week weekly average (${formatCad(current)} vs ${formatCad(average)}). That's a pattern, not a scolding.`
+          : `${namedMember.name}'s shared posts are ${formatCad(-delta)} below their four-week weekly average (${formatCad(current)} vs ${formatCad(average)}).`,
+      rows: [
+        { label: `${namedMember.name} · this week`, value: formatCad(current), source: spendSource, basis: "journal" },
+        { label: "Prior four-week average", value: formatCad(average), source: source(context, "ledger", "Open the comparison rows", { memberId: namedMember.id, from: priorStart, to: addDays(week.start, -1) }), basis: "projection" },
+      ],
+      source: spendSource,
+    };
+  }
+
+  if (/\b(shift|hours worked|wages|tips|income|earned|make this week)\b/.test(q) && /\b(this week|week)\b/.test(q)) {
+    const target = namedMember?.id ?? (context.view === "personal" ? context.memberId : null);
+    const shifts = household.shifts.filter((shift) => (
+      shift.date >= week.start && shift.date <= week.end && (!target || shift.memberId === target)
+    ));
+    const shiftIncome = shifts.reduce((sum, shift) => sum + shift.wagesCents + shift.netTipsCents + (shift.paidBreakIncomeCents ?? 0), 0);
+    const postedIncome = household.transactions.filter((tx) => (
+      tx.type === "income" && tx.date >= week.start && tx.date <= week.end && (!target || tx.createdBy === target)
+    )).reduce((sum, tx) => sum + tx.amountCents, 0);
+    const hours = shifts.reduce((sum, shift) => sum + shift.hours, 0);
+    const shiftSource = source(context, "home", "Open the timesheet", {
+      surface: "timesheet",
+      memberId: target ?? undefined,
+      from: week.start,
+      to: week.end,
+    });
+    return {
+      kind: "answer",
+      sentence: `${target ? household.members.find((member) => member.id === target)?.name ?? "This member" : "The household"} has ${shifts.length} posted shift${shifts.length === 1 ? "" : "s"}, ${hours.toFixed(1)} hours, and ${formatCad(shiftIncome || postedIncome)} of posted shift income this week.`,
+      rows: [
+        { label: "Posted shift income", value: formatCad(shiftIncome || postedIncome), source: shiftSource, basis: "journal" },
+        { label: "Hours", value: hours.toFixed(1), source: shiftSource, basis: "journal" },
+        { label: "Shifts", value: String(shifts.length), source: shiftSource, basis: "journal" },
+      ],
+      source: shiftSource,
+    };
+  }
 
   if (/\b(leftover|sitdown|sit-?down|safe to assign|what can we move)\b/.test(q)) {
     const leftover = leftoverProjection(household, today);
@@ -151,6 +264,7 @@ export function askBooks(household: Household, question: string, today: DateKey)
       rows: due.map((item) => ({
         label: `${item.nextDate} · ${item.note || "Recurring"}`,
         value: formatCad(item.amountCents),
+        source: source(context, "calendar", "Open this repeating item", { surface: "calendar", recurrenceId: item.id, from: item.nextDate, to: item.nextDate }),
       })),
     };
   }
@@ -166,6 +280,7 @@ export function askBooks(household: Household, question: string, today: DateKey)
       rows: owing.map((claim) => ({
         label: claimPublicLabel(household, claim, "hercules"),
         value: formatCad(claim.expectedCents - claim.receivedCents - claim.writtenOffCents),
+        source: source(context, "calendar", "Open this claim", { surface: "claims", claimId: claim.id }),
       })),
     };
   }
@@ -199,6 +314,7 @@ export function askBooks(household: Household, question: string, today: DateKey)
       rows: household.goals.map((goal) => ({
         label: goal.name,
         value: `${formatCad(goal.savedCents)} / ${formatCad(goal.targetCents)}`,
+        source: source(context, "plan", "Open this jar", { surface: "jars", goalId: goal.id }),
       })),
     };
   }
@@ -210,7 +326,7 @@ export function askBooks(household: Household, question: string, today: DateKey)
     return {
       kind: "answer",
       sentence: `${top.name} has the most posted spend this week at ${formatCad(top.amountCents)}.`,
-      rows: parties.map((party) => ({ label: party.name, value: formatCad(party.amountCents) })),
+      rows: parties.map((party) => ({ label: party.name, value: formatCad(party.amountCents), source: source(context, "ledger", `Open ${party.name}'s shared rows`, { memberId: party.party, from: week.start, to: week.end }) })),
     };
   }
 
@@ -283,11 +399,11 @@ export function askBooks(household: Household, question: string, today: DateKey)
       kind: "answer",
       sentence,
       rows: [
-        { label: "Tray", value: tray },
-        { label: "Statement owed", value: owed },
-        { label: "Available", value: view.limitCents ? formatCad(view.availableCents) : "no limit" },
-        { label: "Due", value: view.dueDate },
-        { label: "Min pay", value: formatCad(view.minPaymentCents) },
+        { label: "Tray", value: tray, source: source(context, "ledger", `Open ${card.name}`, { accountId: card.id, surface: "wallet" }) },
+        { label: "Statement owed", value: owed, source: source(context, "ledger", `Open ${card.name}`, { accountId: card.id, surface: "wallet" }) },
+        { label: "Available", value: view.limitCents ? formatCad(view.availableCents) : "no limit", source: source(context, "ledger", `Open ${card.name}`, { accountId: card.id, surface: "wallet" }), basis: "projection" },
+        { label: "Due", value: view.dueDate, source: source(context, "ledger", `Open ${card.name}`, { accountId: card.id, surface: "wallet" }) },
+        { label: "Min pay", value: formatCad(view.minPaymentCents), source: source(context, "ledger", `Open ${card.name}`, { accountId: card.id, surface: "wallet" }) },
       ],
     };
   }
@@ -316,6 +432,7 @@ export function askBooks(household: Household, question: string, today: DateKey)
     const rows = targets.map((account) => ({
       label: account.name,
       value: formatCad(accountBalance(household, account.id)),
+      source: source(context, "ledger", `Open ${account.name}`, { accountId: account.id, surface: "accounts" }),
     }));
     return {
       kind: "answer",
@@ -349,12 +466,15 @@ export function askBooks(household: Household, question: string, today: DateKey)
     if (category) {
       const cents = categorySpend(household, category.id, rangeStart, today);
       const plan = month.categories.find((row) => row.subcategoryId === category.id);
-      const rows: BooksAskRow[] = [{ label: `${category.name} ${rangeLabel}`, value: formatCad(cents) }];
+      const categorySource = source(context, "ledger", `Open ${category.name} rows`, { categoryId: category.id, from: rangeStart, to: today });
+      const rows: BooksAskRow[] = [{ label: `${category.name} ${rangeLabel}`, value: formatCad(cents), source: categorySource }];
       if (plan && !looksLikeWeek(q) && plan.budgetedCents) {
-        rows.push({ label: "Plan this month", value: formatCad(plan.budgetedCents) });
+        rows.push({ label: "Plan this month", value: formatCad(plan.budgetedCents), source: source(context, "plan", `Open ${category.name} plan`, { categoryId: category.id, surface: "blotter", from: monthStart, to: today }), basis: "projection" });
         rows.push({
           label: plan.actualCents > plan.budgetedCents ? "Over" : "Left",
           value: formatCad(Math.abs(plan.budgetedCents - plan.actualCents)),
+          source: source(context, "plan", `Open ${category.name} plan`, { categoryId: category.id, surface: "blotter", from: monthStart, to: today }),
+          basis: "projection",
         });
       }
       return {

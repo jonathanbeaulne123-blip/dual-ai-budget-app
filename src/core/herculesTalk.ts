@@ -11,7 +11,8 @@ import {
   type HearthTab,
 } from "./hercules.ts";
 import { formatCad } from "./money.ts";
-import type { BooksAsk } from "./askBooks.ts";
+import type { BooksAsk, HerculesAskContext } from "./askBooks.ts";
+import { herculesFactId, type HerculesGroundedFact, type HerculesNumberSource } from "./herculesProvenance.ts";
 import type { Household } from "./types.ts";
 import { householdWallet } from "./accounts.ts";
 import { claimsTraySentence, outstandingClaims, upcomingVisitProposals } from "./appointments.ts";
@@ -43,7 +44,9 @@ export type HerculesPose =
 export type HerculesTalk = {
   spoken: string;
   lesson: string | null;
-  fact: { label: string; value: string } | null;
+  fact: { label: string; value: string; source?: HerculesNumberSource } | null;
+  /** Structured, clickable claims. Never inferred from prose. */
+  facts?: HerculesGroundedFact[];
   replies: string[];
   pose: HerculesPose;
   topic: string;
@@ -60,9 +63,25 @@ function clip(text: string, max = MAX_SPOKEN): string {
   return `${cut.slice(0, space > 48 ? space : max - 1).replace(/[,:;.–-]$/, "")}…`;
 }
 
-function oneFact(rows: { label: string; value: string }[]): HerculesTalk["fact"] {
+function oneFact(rows: { label: string; value: string; source?: HerculesNumberSource }[]): HerculesTalk["fact"] {
   const row = rows[0];
-  return row ? { label: row.label, value: row.value } : null;
+  return row ? { label: row.label, value: row.value, source: row.source } : null;
+}
+
+function defaultFactSource(context: HerculesAskContext, topic: string): HerculesNumberSource {
+  if (topic === "forecast" || topic === "shift" || topic === "timesheet") {
+    return { route: "home", view: context.view, surface: "timesheet", label: "Open the timesheet" };
+  }
+  if (topic === "bills" || topic === "calendar" || topic === "claims" || topic === "visit") {
+    return { route: "calendar", view: context.view, surface: topic === "claims" ? "claims" : "calendar", label: "Open Calendar" };
+  }
+  if (topic === "postcard" || topic === "cook" || topic === "jars") {
+    return { route: "plan", view: context.view, surface: topic === "postcard" ? "postcard" : topic === "jars" ? "jars" : "cookoff", label: "Open Plan" };
+  }
+  if (topic === "wallet") {
+    return { route: "ledger", view: context.view, surface: "wallet", label: "Open the account ledger" };
+  }
+  return { route: "ledger", view: context.view, label: "Open the journal source" };
 }
 
 function poseFromMood(mood: CompanionMood, celebrating: boolean): HerculesPose {
@@ -120,6 +139,7 @@ export function talkFromAsk(
   today: DateKey,
   tab: HearthTab,
   topic: string,
+  context: HerculesAskContext = { memberId: household.members[0]?.id ?? "", view: "household" },
 ): HerculesTalk {
   const name = household.kitchen.companion.name || "Hercules";
   const { mood } = companionMood(household, today, name);
@@ -132,10 +152,19 @@ export function talkFromAsk(
     .replace(/\bNot a leaderboard\.?/gi, "")
     .replace(/\s+/g, " ")
     .trim());
+  const fallbackSource = ask.source ?? defaultFactSource(context, topic);
+  const facts = ask.rows.map((row, index) => ({
+    id: herculesFactId(row.label, row.value, index),
+    label: row.label,
+    value: row.value,
+    source: row.source ?? fallbackSource,
+    basis: row.basis ?? "journal" as const,
+  }));
   return {
     spoken,
     lesson: null,
     fact: oneFact(ask.rows),
+    facts,
     replies: repliesFor(mood, tab, topic).slice(0, 3),
     pose: poseFromMood(mood, five.yes),
     topic,
@@ -255,6 +284,7 @@ export function talkHercules(
   today: DateKey,
   tab: HearthTab = "home",
   lastTopic = "",
+  context: HerculesAskContext = { memberId: household.members[0]?.id ?? "", view: "household" },
 ): HerculesTalk {
   const q = question.trim().toLowerCase().replace(/['’]/g, "");
   const view = describeCompanion(household, today);
@@ -327,7 +357,7 @@ export function talkHercules(
     };
   }
 
-  const ask = askHercules(household, question, today);
+  const ask = askHercules(household, question, today, context);
   let topic = "ask";
   let lesson: string | null = "I read. You write. That's how we stay friends.";
   if (/who are you|maine coon|hercules|ember|your name/.test(q)) {
@@ -341,6 +371,15 @@ export function talkHercules(
     lesson = view.mood === "content" || view.mood === "glowing"
       ? "Budgeting is milk, then bills, then treats. In that order."
       : lesson;
+  } else if (/overspend|overspent|over spent|spending habit|who spent|who paid/.test(q)) {
+    topic = "member-spend";
+    lesson = "Shared posts can teach a pattern. Partner-personal rows stay out of my paws.";
+  } else if (/eat this week|afford.*(?:food|grocer)|food.*this week/.test(q)) {
+    topic = "food";
+    lesson = "I compare the groceries plan with cash-like money. I do not promise the future.";
+  } else if (/income|earned|wages|tips|shift|hours worked/.test(q) && /week/.test(q)) {
+    topic = /shift|hours/.test(q) ? "shift" : "income";
+    lesson = "Posted shifts and income are facts. Open previews are not.";
   } else if (/cook|kitchen vs/.test(q)) {
     topic = "cook";
     const cook = cookOffScore(household, today);
@@ -367,7 +406,7 @@ export function talkHercules(
     lesson = "Screenshot the bubble. Don't screenshot a lecture.";
   }
 
-  const talk = talkFromAsk(household, ask, today, tab, topic);
+  const talk = talkFromAsk(household, ask, today, tab, topic, context);
   talk.lesson = lesson;
   const memoryFact = memoryFactForTopic(household, topic);
   if (memoryFact && (topicUsesKitchenMemories(topic) || !talk.fact)) {

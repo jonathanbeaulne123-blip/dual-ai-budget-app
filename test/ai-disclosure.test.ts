@@ -34,14 +34,14 @@ describe("member-scoped AI disclosure (D-115)", () => {
       memory: { kind: "payday", text: "payday Friday", label: "payday: Friday" },
     }).household;
 
-    const forJonathan = householdForAiDisclosure(household, "MEM-001");
+    const forJonathan = householdForAiDisclosure(household, "MEM-001", { view: "personal" });
     expect(forJonathan.transactions.some((tx) => /gym drop-in/i.test(tx.note))).toBe(false);
     expect(forJonathan.transactions.some((tx) => /haircut/i.test(tx.note))).toBe(true);
     expect(forJonathan.kitchen.hercules?.memories.some((row) => /secret spa/i.test(row.label))).toBe(false);
     expect(forJonathan.kitchen.hercules?.memories.some((row) => /payday/i.test(row.label))).toBe(true);
     expect(forJonathan.kitchen.hercules?.chats).toEqual([]);
 
-    const forBianca = householdForAiDisclosure(household, "MEM-002");
+    const forBianca = householdForAiDisclosure(household, "MEM-002", { view: "personal" });
     expect(forBianca.transactions.some((tx) => /haircut/i.test(tx.note))).toBe(false);
     expect(forBianca.transactions.some((tx) => /gym drop-in/i.test(tx.note))).toBe(true);
   });
@@ -86,7 +86,7 @@ describe("member-scoped AI disclosure (D-115)", () => {
   it("keeps own personal rows and both-visibility rows visible to the viewer", () => {
     const household = seedDemoHousehold({ today, environment: "development" });
     const briefing = herculesBriefing(household, "home", today);
-    const asMem001 = composeHerculesChatRequest(household, "what did I spend", briefing, today, "MEM-001");
+    const asMem001 = composeHerculesChatRequest(household, "what did I spend", briefing, today, "MEM-001", "", { view: "personal" });
 
     expect(asMem001.ledger.recent.some((row) => /haircut/i.test(row.note))).toBe(true);
     expect(asMem001.ledger.recent.some((row) => /saturday coffee/i.test(row.note))).toBe(true);

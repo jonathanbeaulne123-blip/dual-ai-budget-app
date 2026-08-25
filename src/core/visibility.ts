@@ -1,4 +1,4 @@
-import type { Goal, Household, LedgerView, Shift, Transaction, Visibility } from "./types.ts";
+import { COMPANION, JOINT, type Goal, type Household, type LedgerView, type Shift, type Transaction, type Visibility } from "./types.ts";
 
 export const VISIBILITIES: Visibility[] = ["household", "personal", "both"];
 
@@ -40,19 +40,19 @@ export function visibleForDuplicateScan(
 export function householdForAiDisclosure(
   household: Household,
   memberId: string,
-  options: { shareCoordsWithModel?: boolean } = {},
+  options: { shareCoordsWithModel?: boolean; view?: LedgerView } = {},
 ): Household {
+  const contextual = householdForHerculesContext(household, memberId, options.view ?? "household");
   const keepCoords = Boolean(options.shareCoordsWithModel);
-  const transactions = household.transactions
-    .filter((tx) => visibleForDuplicateScan(tx, memberId))
+  const transactions = contextual.transactions
     .map((tx) => {
       if (keepCoords || !tx.location) return tx;
       const { location: _coords, ...rest } = tx;
       return rest;
     });
-  const shifts = household.shifts.filter((shift) => visibleForDuplicateScan(shift, memberId));
-  const goals = household.goals.filter((goal) => goal.shared || goal.ownerMemberId === memberId);
-  const desk = household.kitchen.hercules;
+  const shifts = contextual.shifts;
+  const goals = contextual.goals;
+  const desk = contextual.kitchen.hercules;
   const hercules = desk
     ? {
         ...desk,
@@ -62,15 +62,93 @@ export function householdForAiDisclosure(
       }
     : desk;
   return {
-    ...household,
+    ...contextual,
     transactions,
     shifts,
     goals,
     kitchen: {
-      ...household.kitchen,
+      ...contextual.kitchen,
       hercules,
     },
   };
+}
+
+/**
+ * Exact books scope used before Hercules answers a money question.
+ * Household view means shared/both rows only. Personal view means only the
+ * requesting member's personal/both rows. Partner-personal rows never cross
+ * either boundary.
+ */
+export function householdForHerculesContext(
+  household: Household,
+  memberId: string,
+  view: LedgerView,
+): Household {
+  const scoped = householdForView(household, memberId, view);
+  // Old local Development snapshots can predate these collections. Shape the
+  // read-only projection defensively so Hercules never crashes while the normal
+  // household upgrader catches the snapshot up.
+  const allAppointments = household.appointments ?? [];
+  const allClaims = household.claims ?? [];
+  const appointments = view === "household"
+    ? allAppointments.filter((item) => item.sensitivity === "household")
+    : allAppointments.filter((item) => item.memberId === memberId || item.memberId === JOINT || item.memberId === COMPANION);
+  const appointmentIds = new Set(appointments.map((item) => item.id));
+  const transactionIds = new Set(scoped.transactions.map((item) => item.id));
+  const claims = allClaims.filter((claim) => (
+    claim.appointmentId
+      ? appointmentIds.has(claim.appointmentId)
+      : transactionIds.has(claim.expenseTransactionId)
+  ));
+  const hercules = household.kitchen.hercules
+    ? {
+        ...household.kitchen.hercules,
+        memories: (household.kitchen.hercules.memories ?? []).filter((row) => row.createdBy === memberId),
+        chats: (household.kitchen.hercules.chats ?? []).filter((row) => row.createdBy === memberId),
+      }
+    : household.kitchen.hercules;
+  return {
+    ...scoped,
+    appointments,
+    claims,
+    kitchen: { ...household.kitchen, hercules },
+  };
+}
+
+export type HerculesQuestionGate =
+  | { allow: true }
+  | { allow: false; reason: "partner-personal" | "wrong-ledger"; spoken: string };
+
+/** Text classification only chooses the ledger boundary; it never extracts CAD. */
+export function gateHerculesQuestion(
+  household: Household,
+  question: string,
+  memberId: string,
+  view: LedgerView,
+): HerculesQuestionGate {
+  const q = question.toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9\s]/g, " ");
+  const namedOthers = household.members.filter((member) => {
+    if (member.id === memberId) return false;
+    const tokens = member.name.toLowerCase().split(/\s+/).filter((token) => token.length >= 2);
+    return tokens.some((token) => new RegExp(`\\b${token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(q));
+  });
+  const asksPerson = /\b(who spent|who paid|who earned|their personal|their private)\b/.test(q);
+  const moneyQuestion = /\b(spend|spends|spending|spent|overspend|overspent|paid|earned|earns|income|wages?|tips?|shifts?|hours?|balances?|accounts?|ledgers?|budgets?|categories?|grocer(?:y|ies)?|bills?|debts?|owe|owes|owed)\b/.test(q);
+  if (view === "personal" && ((namedOthers.length > 0 && moneyQuestion) || asksPerson)) {
+    return {
+      allow: false,
+      reason: "partner-personal",
+      spoken: "Nice try, you silly kitten. This personal ledger only tells me about you. Ask about shared spending from the household ledger.",
+    };
+  }
+  if (view === "household" && /\b(my|personal|private)\s+(ledger|spend|spending|income|shift|tips|wages|balance)\b/.test(q)) {
+    return {
+      allow: false,
+      reason: "wrong-ledger",
+      spoken: "That belongs in your personal ledger. Switch there and ask me again; I won't mix it into the household books.",
+    };
+  }
+  return { allow: true };
 }
 
 export function goalVisibleInView(goal: Goal, memberId: string, view: LedgerView): boolean {
@@ -81,9 +159,9 @@ export function goalVisibleInView(goal: Goal, memberId: string, view: LedgerView
 export function householdForView(household: Household, memberId: string, view: LedgerView): Household {
   return {
     ...household,
-    transactions: household.transactions.filter((tx) => isVisibleInView(tx, memberId, view)),
-    shifts: household.shifts.filter((shift) => isVisibleInView(shift, memberId, view)),
-    goals: household.goals.filter((goal) => goalVisibleInView(goal, memberId, view)),
+    transactions: (household.transactions ?? []).filter((tx) => isVisibleInView(tx, memberId, view)),
+    shifts: (household.shifts ?? []).filter((shift) => isVisibleInView(shift, memberId, view)),
+    goals: (household.goals ?? []).filter((goal) => goalVisibleInView(goal, memberId, view)),
   };
 }
 
