@@ -7,6 +7,7 @@ import { cloneHousehold } from "./household.ts";
 import { duplicateKey, describeSimilarMatches, findSimilarTransactions, refreshDuplicateFlags } from "./duplicate.ts";
 import { jointSplit } from "./splits.ts";
 import { calcShiftAmounts, parseShiftInput, shiftSettingsFingerprint, DEFAULT_SHIFT_SETTINGS } from "./shift.ts";
+import { calculateWorkShift, previousWorkWeekHours, shapeWorkJob, workJobFingerprint, workShiftIsReversed } from "./work.ts";
 import {
   incomeSubcategory,
   parseAmount,
@@ -33,7 +34,7 @@ import { COSMETIC_BY_ID, isCosmeticUnlocked } from "./companion.ts";
 import { EMPTY_TICTACTOE, emptyHangman, hangmanMisses, hangmanWon, MAX_HANGMAN_MISSES, pickHangmanWord, shapeGames, tttWinner } from "./deskGames.ts";
 import { EMPTY_KITCHEN, MAX_CHALK_CHARS, MAX_CHALK_NOTES, MAX_COMPANION_NAME, MAX_HERCULES_CHAT_CHARS, MAX_HERCULES_CHATS, MAX_HERCULES_MEMORIES, MAX_HERCULES_MEMORY_CHARS, closedPeriodId, isCosmeticSlot, shapeKitchen } from "./kitchen.ts";
 import { detectChalkLetters, hasChalkInk, organizeNeatText, shapeChalkInk } from "./chalkLetters.ts";
-import { activeOpenShift } from "./shiftClock.ts";
+import { activeOpenShift, openShiftConflicts } from "./shiftClock.ts";
 import {
   EMPTY_GOOGLE,
   findActiveGoogleLink,
@@ -91,6 +92,7 @@ import type {
   Transaction,
   UndoToken,
   Visibility,
+  WorkJob,
 } from "./types.ts";
 import { COMPANION, JOINT, NeedsConfirmationError, ValidationError } from "./types.ts";
 
@@ -475,41 +477,482 @@ export function postShift(household: Household, input: {
   const warnings = [];
   if (amounts.netTipsCents < 0) warnings.push("Net tips are negative after tip-out. The shift was still saved.");
   next.kitchen = shapeKitchen(next.kitchen);
-  const punch = activeOpenShift(next.kitchen);
+  const punch = activeOpenShift(next.kitchen, member.id);
   if (punch && punch.memberId === member.id) {
-    next.kitchen.openShift = { ...punch, status: "cleared", updatedAt: createdAt };
+    next.kitchen.openShifts = next.kitchen.openShifts.map((row) => row.id === punch.id ? { ...row, status: "cleared", updatedAt: createdAt } : row);
   }
   return commit(previous, next, "Add Shift", `${shiftId}: ${member.name} on ${parsed.date}`, [shiftId, wagesTx.id, tipsTx.id], warnings);
 }
 
-export function clockInShift(household: Household, input: { memberId: string }): CommitResult {
+function optionalMoneyCents(value: string | number | undefined, label: string): number {
+  if (value == null || value === "" || Number(value) === 0) return 0;
+  return parseAmount(value, label);
+}
+
+function ensureWorkPostingCategory(household: Household, input: {
+  id: string;
+  parentId: string;
+  parentName: string;
+  name: string;
+  transactionType: "income" | "expense";
+  at: string;
+}): Category {
+  let parent = household.categories.find((row) => row.id === input.parentId);
+  if (!parent) {
+    parent = {
+      id: input.parentId,
+      parentId: null,
+      recordType: "group",
+      name: input.parentName,
+      transactionType: input.transactionType,
+      essential: false,
+      incomeStability: null,
+      active: true,
+      sortOrder: household.categories.reduce((max, row) => Math.max(max, row.sortOrder), 0) + 10,
+      createdAt: input.at,
+      updatedAt: input.at,
+    };
+    household.categories.push(parent);
+  }
+  let category = household.categories.find((row) => row.id === input.id);
+  if (!category) {
+    category = {
+      id: input.id,
+      parentId: parent.id,
+      recordType: "category",
+      name: input.name,
+      transactionType: input.transactionType,
+      essential: false,
+      incomeStability: input.transactionType === "income" ? "variable" : null,
+      active: true,
+      sortOrder: household.categories.reduce((max, row) => Math.max(max, row.sortOrder), 0) + 1,
+      createdAt: input.at,
+      updatedAt: input.at,
+    };
+    household.categories.push(category);
+  }
+  return category;
+}
+
+export type PostWorkShiftInput = {
+  date: string;
+  memberId: string;
+  jobId: string;
+  roleId: string;
+  workedHours: string | number;
+  paidBreakHours?: string | number;
+  sales?: string | number;
+  salesByField?: Record<string, string | number>;
+  cashTips?: string | number;
+  cardTips?: string | number;
+  cashTipsAccountId?: string;
+  wagesDepositAccountId?: string;
+  cardTipsDepositAccountId?: string;
+  wagesVisibility?: Visibility;
+  cashTipsVisibility?: Visibility;
+  cardTipsVisibility?: Visibility;
+  tipOutVisibility?: Visibility;
+  startedAt?: string | null;
+  endedAt?: string | null;
+  note?: string;
+  settingsFingerprint?: string;
+  confirmDuplicate?: boolean;
+  createdBy?: string;
+};
+
+/**
+ * Job-based Confirm boundary. Earnings first land in employer receivables; only
+ * same-day cash tips touch cash. Payday and card-tip payout are later transfers.
+ */
+export function postWorkShift(household: Household, input: PostWorkShiftInput): CommitResult {
+  requireTimezone(household);
+  const date = parseDate(input.date);
   const member = requireMember(household, input.memberId);
-  const already = activeOpenShift(household.kitchen);
-  if (already?.memberId === member.id) {
-    throw new ValidationError("Already on the clock. Sign out when you know the hours.");
+  const actor = resolveActor(household, { createdBy: input.createdBy, visibility: input.wagesVisibility }, member.id);
+  const job = (household.workJobs ?? []).find((row) => row.id === input.jobId && row.active && row.memberId === member.id);
+  if (!job) throw new ValidationError("Choose one of this worker's active jobs.");
+  const role = job.roles.find((row) => row.id === input.roleId && row.active);
+  if (!role) throw new ValidationError("Choose an active role for this job.");
+  requireOpenPeriod(household, date);
+  requireAccount(household, job.wagesReceivableAccountId);
+  if (role.tipped && !job.cardTipsReceivableAccountId) throw new ValidationError("This tipped job needs a Card tips owed account. Edit the job once to repair it.");
+
+  const workedHours = Number(input.workedHours);
+  const paidBreakHours = Number(input.paidBreakHours || 0);
+  const salesByField = Object.fromEntries(Object.entries(input.salesByField ?? {}).map(([id, value]) => [id, optionalMoneyCents(value, "Sales")]));
+  for (const field of job.salesFields.filter((row) => row.requirement === "required")) {
+    if (!(field.id in salesByField)) throw new ValidationError(`Enter ${field.label} before confirming this shift.`);
+  }
+  const fieldSalesCents = Object.values(salesByField).reduce((sum, value) => sum + value, 0);
+  const salesCents = fieldSalesCents || optionalMoneyCents(input.sales, "Sales");
+  const cashTipsCents = optionalMoneyCents(input.cashTips, "Cash tips");
+  const cardTipsCents = optionalMoneyCents(input.cardTips, "Card tips");
+  if (!role.tipped && (cashTipsCents || cardTipsCents)) throw new ValidationError(`${role.name} is not configured as a tipped role.`);
+
+  const previousWeekHours = previousWorkWeekHours(household, job.id, member.id, date);
+  const calculation = calculateWorkShift(job, role.id, {
+    date,
+    workedHours,
+    paidBreakHours,
+    previousWeekHours,
+    salesCents,
+    cashTipsCents,
+    cardTipsCents,
+  });
+  const fingerprint = workJobFingerprint(job, role.id, date);
+  if (input.settingsFingerprint && input.settingsFingerprint !== fingerprint) {
+    throw new NeedsConfirmationError("settingsChanged", "This job's pay or tip rules changed. Review the new amounts before confirming.", [], calculation);
+  }
+  const conflicts = openShiftConflicts(household.kitchen, member.id);
+  if (conflicts.length > 1) throw new ValidationError("Two devices recorded an open shift for you. Choose the correct timeline before confirming pay.");
+  const sameDay = household.shifts.filter((shift) => shift.memberId === member.id && shift.jobId === job.id && shift.date === date);
+  if (sameDay.length && !input.confirmDuplicate) {
+    const matches = household.transactions.filter((tx) => sameDay.some((shift) => tx.sourceId === shift.id));
+    throw new NeedsConfirmationError("sameShiftDay", `${member.name} already has a ${job.name} shift on ${date}. Double shifts are allowed — confirm this is another one.`, matches);
+  }
+
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const createdAt = nowIso();
+  const shiftId = nextId("SHIFT-", next.shifts.map((shift) => shift.id));
+  const wagesCat = incomeSubcategory(next, "Wages");
+  const tipsCat = incomeSubcategory(next, "Tips");
+  const paidBreakCat = ensureWorkPostingCategory(next, {
+    id: "SUB-INCOME-PAID-BREAKS", parentId: "INCOME", parentName: "Income", name: "Paid breaks", transactionType: "income", at: createdAt,
+  });
+  const tipOutCat = ensureWorkPostingCategory(next, {
+    id: "SUB-WORK-TIP-OUTS", parentId: "CAT-WORK", parentName: "Work", name: "Tip-outs", transactionType: "expense", at: createdAt,
+  });
+  const cashAccountId = input.cashTipsAccountId || job.defaults.cashTipsAccountId;
+  if ((cashTipsCents || calculation.immediateTipOutCents) && !cashAccountId) throw new ValidationError("Choose where same-day cash tips land.");
+  if (cashAccountId) requireAccount(next, cashAccountId);
+  const splits = (amountCents: number): Split[] => [{ party: member.id, amountCents }];
+  const transactionIds: string[] = [];
+  let wagesTransactionId = "";
+  let paidBreakTransactionId = "";
+  let cashTipsTransactionId = "";
+  let cardTipsTransactionId = "";
+  const tipOutTransactionIds: string[] = [];
+
+  const push = (tx: Transaction, prefix: string): string => {
+    tx.id = nextId(prefix, next.transactions.map((row) => row.id));
+    next.transactions.push(tx);
+    transactionIds.push(tx.id);
+    return tx.id;
+  };
+  const wageWorkCents = calculation.takeHomeWagesCents - calculation.paidBreakIncomeCents;
+  if (wageWorkCents > 0) {
+    wagesTransactionId = push(baseTx(next, {
+      date, type: "income", amountCents: wageWorkCents, accountId: job.wagesReceivableAccountId,
+      categoryId: wagesCat.parentId, subcategoryId: wagesCat.id, note: `${job.name} wages earned — ${member.name}`,
+      splits: splits(wageWorkCents), source: "shift", sourceId: shiftId, createdAt, createdBy: actor.createdBy,
+      visibility: parseVisibility(input.wagesVisibility ?? job.defaults.wagesVisibility),
+    }), "TXN-IN-");
+  }
+  if (calculation.paidBreakIncomeCents > 0) {
+    paidBreakTransactionId = push(baseTx(next, {
+      date, type: "income", amountCents: calculation.paidBreakIncomeCents, accountId: job.wagesReceivableAccountId,
+      categoryId: paidBreakCat.parentId, subcategoryId: paidBreakCat.id, note: `${job.name} paid break — ${member.name}`,
+      splits: splits(calculation.paidBreakIncomeCents), source: "shift", sourceId: shiftId, createdAt, createdBy: actor.createdBy,
+      visibility: parseVisibility(input.wagesVisibility ?? job.defaults.wagesVisibility),
+    }), "TXN-IN-");
+  }
+  if (cashTipsCents > 0) {
+    cashTipsTransactionId = push(baseTx(next, {
+      date, type: "income", amountCents: cashTipsCents, accountId: cashAccountId,
+      categoryId: tipsCat.parentId, subcategoryId: tipsCat.id, note: `${job.name} cash tips — ${member.name}`,
+      splits: splits(cashTipsCents), source: "shift", sourceId: shiftId, createdAt, createdBy: actor.createdBy,
+      visibility: parseVisibility(input.cashTipsVisibility ?? job.defaults.cashTipsVisibility),
+    }), "TXN-IN-");
+  }
+  if (cardTipsCents > 0) {
+    cardTipsTransactionId = push(baseTx(next, {
+      date, type: "income", amountCents: cardTipsCents, accountId: job.cardTipsReceivableAccountId,
+      categoryId: tipsCat.parentId, subcategoryId: tipsCat.id, note: `${job.name} card tips earned — ${member.name}`,
+      splits: splits(cardTipsCents), source: "shift", sourceId: shiftId, createdAt, createdBy: actor.createdBy,
+      visibility: parseVisibility(input.cardTipsVisibility ?? job.defaults.cardTipsVisibility),
+    }), "TXN-IN-");
+  }
+  for (const tipOut of calculation.tipOuts.filter((row) => row.amountCents > 0 && row.timing !== "deferred")) {
+    const accountId = tipOut.timing === "immediate" ? cashAccountId : job.cardTipsReceivableAccountId;
+    if (!accountId) throw new ValidationError(`${tipOut.label} needs a source account.`);
+    tipOutTransactionIds.push(push(baseTx(next, {
+      date, type: "expense", amountCents: tipOut.amountCents, accountId,
+      categoryId: tipOutCat.parentId, subcategoryId: tipOutCat.id, note: `${job.name} ${tipOut.label} tip-out — ${member.name}`,
+      splits: splits(tipOut.amountCents), source: "shift", sourceId: shiftId, createdAt, createdBy: actor.createdBy,
+      visibility: parseVisibility(input.tipOutVisibility ?? job.defaults.tipOutVisibility),
+    }), "TXN-EX-"));
+  }
+  if (!transactionIds.length) throw new ValidationError("This shift has no wages or tips to post.");
+
+  const primaryTipsId = cashTipsTransactionId || cardTipsTransactionId;
+  next.shifts.push({
+    id: shiftId,
+    date,
+    memberId: member.id,
+    accountId: job.wagesReceivableAccountId,
+    salesCents,
+    cashTipsCents,
+    ccTipsCents: cardTipsCents,
+    hours: calculation.regularHours + calculation.overtimeHours,
+    floorTipOutCents: calculation.withheldTipOutCents,
+    barTipOutCents: calculation.immediateTipOutCents,
+    ccTipOutCents: 0,
+    netTipsCents: calculation.netTipsCents,
+    wagesCents: calculation.takeHomeWagesCents,
+    settings: DEFAULT_SHIFT_SETTINGS,
+    settingsFingerprint: fingerprint,
+    wagesTransactionId: wagesTransactionId || paidBreakTransactionId,
+    tipsTransactionId: primaryTipsId,
+    createdBy: actor.createdBy,
+    visibility: parseVisibility(input.wagesVisibility ?? job.defaults.wagesVisibility),
+    createdAt,
+    updatedAt: createdAt,
+    jobId: job.id,
+    roleId: role.id,
+    startedAt: input.startedAt || null,
+    endedAt: input.endedAt || null,
+    grossWagesCents: calculation.grossWagesCents,
+    paidBreakHours: calculation.paidBreakHours,
+    paidBreakIncomeCents: calculation.paidBreakIncomeCents,
+    overtimeHours: calculation.overtimeHours,
+    cardTipsAfterTipOutCents: calculation.cardTipsAfterTipOutCents,
+    immediateTipOutCents: calculation.immediateTipOutCents,
+    withheldTipOutCents: calculation.withheldTipOutCents,
+    deferredTipOutCents: calculation.deferredTipOutCents,
+    deferredTipOutPaidCents: 0,
+    salesByField,
+    transactionIds,
+    cashTipsTransactionId,
+    cardTipsTransactionId,
+    paidBreakTransactionId,
+    tipOutTransactionIds,
+    wagesVisibility: parseVisibility(input.wagesVisibility ?? job.defaults.wagesVisibility),
+    cashTipsVisibility: parseVisibility(input.cashTipsVisibility ?? job.defaults.cashTipsVisibility),
+    cardTipsVisibility: parseVisibility(input.cardTipsVisibility ?? job.defaults.cardTipsVisibility),
+    tipOutVisibility: parseVisibility(input.tipOutVisibility ?? job.defaults.tipOutVisibility),
+    wagesDepositAccountId: input.wagesDepositAccountId || job.defaults.wagesDepositAccountId,
+    cashTipsAccountId: cashAccountId,
+    cardTipsDepositAccountId: input.cardTipsDepositAccountId || job.defaults.cardTipsDepositAccountId,
+    note: String(input.note || "").trim().slice(0, 500),
+  });
+  const punch = activeOpenShift(next.kitchen, member.id);
+  if (punch) next.kitchen.openShifts = next.kitchen.openShifts.map((row) => row.id === punch.id ? { ...row, status: "cleared", updatedAt: createdAt } : row);
+  const warnings = calculation.cardTipsAfterTipOutCents < 0 ? ["Withheld tip-outs are greater than this shift's card tips; the job's owed balance may be negative."] : [];
+  return commit(previous, next, "Confirm Work Shift", `${shiftId}: ${member.name} at ${job.name} on ${date}`, [shiftId, ...transactionIds], warnings);
+}
+
+export type WorkSettlementKind = "wages" | "card-tips";
+
+export function settleWorkReceivable(household: Household, input: {
+  jobId: string;
+  kind: WorkSettlementKind;
+  date: string;
+  amount: string | number;
+  accountId?: string;
+  createdBy: string;
+}): CommitResult {
+  const date = parseDate(input.date);
+  const job = (household.workJobs ?? []).find((row) => row.id === input.jobId && row.active);
+  if (!job) throw new ValidationError("That job is no longer active.");
+  requireMember(household, input.createdBy);
+  const receivableAccountId = input.kind === "wages" ? job.wagesReceivableAccountId : job.cardTipsReceivableAccountId;
+  if (!receivableAccountId) throw new ValidationError(input.kind === "wages" ? "This job has no Wages owed account." : "This job has no Card tips owed account.");
+  const amountCents = parseAmount(input.amount);
+  const owedCents = Math.max(0, bookBalanceAsOf(household, receivableAccountId, date));
+  if (amountCents > owedCents) throw new ValidationError(`Only $${(owedCents / 100).toFixed(2)} is currently recorded as owed.`);
+  const accountId = input.accountId || (input.kind === "wages" ? job.defaults.wagesDepositAccountId : job.defaults.cardTipsDepositAccountId);
+  if (!accountId) throw new ValidationError("Choose where the received money landed.");
+  return postTransfer(household, {
+    date,
+    amount: amountCents / 100,
+    fromAccountId: receivableAccountId,
+    toAccountId: accountId,
+    note: `${job.name} · ${input.kind === "wages" ? "paycheck received" : "tip envelope received"}`,
+    confirmDuplicate: true,
+    createdBy: input.createdBy,
+    visibility: input.kind === "wages" ? job.defaults.wagesVisibility : job.defaults.cardTipsVisibility,
+  });
+}
+
+export function payDeferredWorkTipOut(household: Household, input: {
+  jobId: string;
+  date: string;
+  amount: string | number;
+  accountId?: string;
+  createdBy: string;
+}): CommitResult {
+  requireTimezone(household);
+  const date = parseDate(input.date);
+  requireOpenPeriod(household, date);
+  const job = (household.workJobs ?? []).find((row) => row.id === input.jobId && row.active);
+  if (!job) throw new ValidationError("That job is no longer active.");
+  const member = requireMember(household, input.createdBy);
+  const amountCents = parseAmount(input.amount);
+  const eligible = household.shifts
+    .filter((shift) => shift.jobId === job.id && shift.memberId === member.id && !workShiftIsReversed(household, shift))
+    .sort((left, right) => left.date.localeCompare(right.date) || left.createdAt.localeCompare(right.createdAt));
+  const unpaidCents = eligible.reduce((sum, shift) => sum + Math.max(0, (shift.deferredTipOutCents ?? 0) - (shift.deferredTipOutPaidCents ?? 0)), 0);
+  if (amountCents > unpaidCents) throw new ValidationError(`Only $${(unpaidCents / 100).toFixed(2)} of deferred tip-outs are waiting.`);
+  const accountId = input.accountId || job.defaults.cashTipsAccountId;
+  if (!accountId) throw new ValidationError("Choose the account used to pay the deferred tip-out.");
+  requireAccount(household, accountId);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nowIso();
+  const tipOutCat = ensureWorkPostingCategory(next, {
+    id: "SUB-WORK-TIP-OUTS", parentId: "CAT-WORK", parentName: "Work", name: "Tip-outs", transactionType: "expense", at,
+  });
+  const tx = baseTx(next, {
+    date, type: "expense", amountCents, accountId, categoryId: tipOutCat.parentId, subcategoryId: tipOutCat.id,
+    note: `${job.name} · deferred tip-out paid`, splits: [{ party: member.id, amountCents }], source: "manual",
+    createdAt: at, createdBy: member.id, visibility: job.defaults.tipOutVisibility,
+  });
+  tx.id = nextId("TXN-EX-", next.transactions.map((row) => row.id));
+  next.transactions.push(tx);
+  let left = amountCents;
+  next.shifts = next.shifts.map((shift) => {
+    if (left <= 0 || shift.jobId !== job.id || shift.memberId !== member.id) return shift;
+    const unpaid = Math.max(0, (shift.deferredTipOutCents ?? 0) - (shift.deferredTipOutPaidCents ?? 0));
+    const applied = Math.min(left, unpaid);
+    left -= applied;
+    return { ...shift, deferredTipOutPaidCents: (shift.deferredTipOutPaidCents ?? 0) + applied, updatedAt: at };
+  });
+  return commit(previous, next, "Pay Deferred Tip-out", `${job.name}: paid $${(amountCents / 100).toFixed(2)} deferred tip-out`, [tx.id]);
+}
+
+export function clockInShift(household: Household, input: { memberId: string; scheduledItemId?: string | null; sourceDeviceId?: string | null }): CommitResult {
+  const member = requireMember(household, input.memberId);
+  const already = activeOpenShift(household.kitchen, member.id);
+  if (already) throw new ValidationError(already.status === "confirming" ? "Finish confirming the previous shift before starting another." : "Already on the clock. Sign out when you know the hours.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const at = nowIso();
+  const id = uniquePrefixedId(`OPEN-${member.id}-${at.replace(/\D/g, "")}`, next.kitchen.openShifts.map((row) => row.id));
+  next.kitchen.openShifts.push({
+    id,
+    memberId: member.id,
+    startedAt: at,
+    endedAt: null,
+    breaks: [],
+    scheduledItemId: input.scheduledItemId || null,
+    sourceDeviceId: input.sourceDeviceId || null,
+    updatedAt: at,
+    status: "open",
+  });
+  return commit(previous, next, "Clock in", `${member.name} punched in.`, []);
+}
+
+export function clockOutShift(household: Household, input: { memberId: string }): CommitResult {
+  const member = requireMember(household, input.memberId);
+  const punch = activeOpenShift(household.kitchen, member.id);
+  if (!punch) throw new ValidationError("There is no open shift to clock out.");
+  if (punch.status === "confirming") throw new ValidationError("This shift is already waiting for confirmation.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const at = nowIso();
+  next.kitchen.openShifts = next.kitchen.openShifts.map((row) => row.id === punch.id ? {
+    ...row,
+    endedAt: at,
+    breaks: row.breaks.map((item) => item.endedAt ? item : { ...item, endedAt: at, updatedAt: at }),
+    status: "confirming",
+    updatedAt: at,
+  } : row);
+  return commit(previous, next, "Clock out", `${member.name} clocked out; Confirm still posts the shift`, []);
+}
+
+export function startShiftBreak(household: Household, input: { memberId: string; kind: "paid" | "unpaid" | "custom"; label?: string }): CommitResult {
+  const member = requireMember(household, input.memberId);
+  const punch = activeOpenShift(household.kitchen, member.id);
+  if (!punch || punch.status !== "open") throw new ValidationError("Clock in before starting a break.");
+  if (punch.breaks.some((item) => !item.endedAt)) throw new ValidationError("End the current break before starting another.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const at = nowIso();
+  next.kitchen.openShifts = next.kitchen.openShifts.map((row) => row.id === punch.id ? {
+    ...row,
+    breaks: [...row.breaks, {
+      id: uniquePrefixedId(`BREAK-${row.id}`, row.breaks.map((item) => item.id)),
+      kind: input.kind,
+      label: (input.label || (input.kind === "paid" ? "Paid break" : input.kind === "unpaid" ? "Unpaid break" : "Break")).trim().slice(0, 40),
+      startedAt: at,
+      endedAt: null,
+      updatedAt: at,
+    }],
+    updatedAt: at,
+  } : row);
+  return commit(previous, next, "Start break", `${member.name} started a ${input.kind} break`, []);
+}
+
+export function endShiftBreak(household: Household, input: { memberId: string }): CommitResult {
+  const member = requireMember(household, input.memberId);
+  const punch = activeOpenShift(household.kitchen, member.id);
+  const openBreak = punch?.breaks.find((item) => !item.endedAt);
+  if (!punch || punch.status !== "open" || !openBreak) throw new ValidationError("There is no open break to end.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const at = nowIso();
+  next.kitchen.openShifts = next.kitchen.openShifts.map((row) => row.id === punch.id ? {
+    ...row,
+    breaks: row.breaks.map((item) => item.id === openBreak.id ? { ...item, endedAt: at, updatedAt: at } : item),
+    updatedAt: at,
+  } : row);
+  return commit(previous, next, "End break", `${member.name} ended a break`, []);
+}
+
+export function updateOpenShiftTimeline(household: Household, input: { memberId: string; startedAt: string; endedAt: string; breaks: Household["kitchen"]["openShifts"][number]["breaks"] }): CommitResult {
+  const member = requireMember(household, input.memberId);
+  const punch = activeOpenShift(household.kitchen, member.id);
+  if (!punch) throw new ValidationError("That shift is no longer open.");
+  if (Number.isNaN(Date.parse(input.startedAt)) || Number.isNaN(Date.parse(input.endedAt)) || Date.parse(input.endedAt) <= Date.parse(input.startedAt)) {
+    throw new ValidationError("Clock-out must be after clock-in.");
   }
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   next.kitchen = shapeKitchen(next.kitchen);
   const at = nowIso();
-  next.kitchen.openShift = {
-    memberId: member.id,
-    startedAt: at,
+  next.kitchen.openShifts = next.kitchen.openShifts.map((row) => row.id === punch.id ? {
+    ...row,
+    startedAt: input.startedAt,
+    endedAt: input.endedAt,
+    breaks: input.breaks,
+    status: "confirming",
     updatedAt: at,
-    status: "open",
-  };
-  const replaced = already ? ` Replaced ${already.memberId}'s punch.` : "";
-  return commit(previous, next, "Clock in", `${member.name} punched in.${replaced}`, []);
+  } : row);
+  next.kitchen = shapeKitchen(next.kitchen);
+  return commit(previous, next, "Edit timesheet", `${member.name} corrected clock and break times before Confirm`, []);
 }
 
-export function abandonOpenShift(household: Household): CommitResult {
-  const punch = activeOpenShift(household.kitchen);
+export function abandonOpenShift(household: Household, input?: { memberId?: string }): CommitResult {
+  const punch = activeOpenShift(household.kitchen, input?.memberId);
   if (!punch) throw new ValidationError("Nobody is on the clock.");
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   next.kitchen = shapeKitchen(next.kitchen);
-  next.kitchen.openShift = { ...punch, status: "cleared", updatedAt: nowIso() };
+  const at = nowIso();
+  next.kitchen.openShifts = next.kitchen.openShifts.map((row) => row.id === punch.id ? { ...row, status: "cleared", updatedAt: at } : row);
   return commit(previous, next, "Clock out", "Wiped an open punch. Not a reverse.", []);
+}
+
+export function chooseOpenShiftTimeline(household: Household, input: { memberId: string; keepId: string }): CommitResult {
+  const member = requireMember(household, input.memberId);
+  const conflicts = openShiftConflicts(household.kitchen, member.id);
+  const keep = conflicts.find((row) => row.id === input.keepId);
+  if (!keep) throw new ValidationError("That device timeline is no longer waiting.");
+  if (conflicts.length < 2) throw new ValidationError("There is only one timeline now; nothing needs choosing.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const at = nowIso();
+  next.kitchen.openShifts = next.kitchen.openShifts.map((row) => row.memberId === member.id && row.status !== "cleared" && row.id !== keep.id
+    ? { ...row, status: "cleared", updatedAt: at }
+    : row);
+  return commit(previous, next, "Choose Timesheet", `${member.name} kept one device timeline; no money posted`, []);
 }
 
 export function addCategory(household: Household, input: {
@@ -1745,6 +2188,91 @@ export function updateShiftSettings(household: Household, settings: Household["s
   return commit(previous, next, "Shift Settings", "Updated tip-out and wage rules", []);
 }
 
+function workReceivableAccount(household: Household, id: string, name: string, memberId: string, at: string) {
+  return shapeAccount({
+    id,
+    name,
+    kind: "receivable",
+    currency: CURRENCY,
+    active: true,
+    ownerMemberId: memberId,
+    institution: "Employer",
+    last4: "",
+    sortOrder: (household.accounts.reduce((max, account) => Math.max(max, account.sortOrder), 0) || 0) + 10,
+    createdAt: at,
+    updatedAt: at,
+  }, household.accounts.length, at);
+}
+
+/** Add/Edit Job is catalog-only. It creates job-specific receivable accounts but never posts money. */
+export function upsertWorkJob(household: Household, input: { job: WorkJob }): CommitResult {
+  requireTimezone(household);
+  const member = requireMember(household, input.job.memberId);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nowIso();
+  const existing = (next.workJobs ?? []).find((row) => row.id === input.job.id);
+  const jobId = existing?.id || uniquePrefixedId(`JOB-${slug(input.job.name || "work")}`, (next.workJobs ?? []).map((row) => row.id));
+  const accountIds = next.accounts.map((account) => account.id);
+  const wagesReceivableAccountId = existing?.wagesReceivableAccountId
+    || input.job.wagesReceivableAccountId
+    || uniquePrefixedId(`ACC-${slug(input.job.name || "work")}-WAGES-OWED`, accountIds);
+  if (!next.accounts.some((account) => account.id === wagesReceivableAccountId)) {
+    next.accounts.push(workReceivableAccount(next, wagesReceivableAccountId, `${input.job.name} · Wages owed`, member.id, at));
+    accountIds.push(wagesReceivableAccountId);
+  }
+  const tipped = input.job.roles.some((role) => role.active && role.tipped);
+  const cardTipsReceivableAccountId = tipped
+    ? existing?.cardTipsReceivableAccountId
+      || input.job.cardTipsReceivableAccountId
+      || uniquePrefixedId(`ACC-${slug(input.job.name || "work")}-CARD-TIPS-OWED`, accountIds)
+    : "";
+  if (cardTipsReceivableAccountId && !next.accounts.some((account) => account.id === cardTipsReceivableAccountId)) {
+    next.accounts.push(workReceivableAccount(next, cardTipsReceivableAccountId, `${input.job.name} · Card tips owed`, member.id, at));
+  }
+
+  const fallbackCash = next.accounts.find((account) => account.active && account.kind === "other")?.id
+    || next.accounts.find((account) => account.active && account.kind === "chequing")?.id
+    || "";
+  const fallbackDeposit = next.accounts.find((account) => account.active && account.kind === "chequing")?.id || fallbackCash;
+  const shaped = shapeWorkJob({
+    ...input.job,
+    id: jobId,
+    memberId: member.id,
+    wagesReceivableAccountId,
+    cardTipsReceivableAccountId,
+    defaults: {
+      ...input.job.defaults,
+      wagesDepositAccountId: input.job.defaults.wagesDepositAccountId || fallbackDeposit,
+      cashTipsAccountId: input.job.defaults.cashTipsAccountId || fallbackCash,
+      cardTipsDepositAccountId: input.job.defaults.cardTipsDepositAccountId || fallbackCash,
+    },
+    createdAt: existing?.createdAt || input.job.createdAt || at,
+    updatedAt: at,
+  }, at);
+  if (!shaped.name.trim()) throw new ValidationError("Give this job a name.");
+  if (!shaped.roles.some((role) => role.active)) throw new ValidationError("Add at least one active role.");
+  for (const role of shaped.roles.filter((row) => row.active)) {
+    const latest = role.rates.at(-1);
+    if (!latest || (latest.grossHourlyRateCents <= 0 && latest.takeHomeHourlyRateCents <= 0)) {
+      throw new ValidationError(`Add a wage rate for ${role.name}.`);
+    }
+  }
+  next.workJobs = [...(next.workJobs ?? []).filter((row) => row.id !== jobId), shaped]
+    .sort((left, right) => left.name.localeCompare(right.name));
+  return commit(previous, next, existing ? "Edit Job" : "Add Job", `${existing ? "Updated" : "Added"} ${shaped.name}`, [jobId]);
+}
+
+export function archiveWorkJob(household: Household, jobId: string): CommitResult {
+  const existing = (household.workJobs ?? []).find((job) => job.id === jobId);
+  if (!existing) throw new ValidationError("That job is gone.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nowIso();
+  next.workJobs = (next.workJobs ?? []).map((job) => job.id === jobId ? { ...job, active: false, updatedAt: at } : job);
+  return commit(previous, next, "Archive Job", `Archived ${existing.name}; shifts and owed balances remain`, []);
+}
+
 export function reversePostedMoney(household: Household, transactionId: string, input: ActorInput = {}): CommitResult {
   const tx = household.transactions.find((item) => item.id === transactionId);
   if (!tx) throw new ValidationError("That row is already gone.");
@@ -1754,7 +2282,7 @@ export function reversePostedMoney(household: Household, transactionId: string, 
   const shift = tx.source === "shift" && tx.sourceId
     ? household.shifts.find((item) => item.id === tx.sourceId)
     : undefined;
-  const watched = [tx.id, pair?.id, shift?.wagesTransactionId, shift?.tipsTransactionId].filter((id): id is string => Boolean(id));
+  const watched = [tx.id, pair?.id, ...(shift?.transactionIds ?? []), shift?.wagesTransactionId, shift?.tipsTransactionId].filter((id): id is string => Boolean(id));
   if (household.transactions.some((item) => item.reversalOfId && watched.includes(item.reversalOfId))) {
     throw new ValidationError("Already reversed. Reverse the reversing entry if you meant to reinstate.");
   }
@@ -1766,8 +2294,11 @@ export function reversePostedMoney(household: Household, transactionId: string, 
   const postedIds: string[] = [];
   const dollars = `$${(tx.amountCents / 100).toFixed(2)}`;
 
+  const shiftTransactionIds = shift?.transactionIds?.length
+    ? shift.transactionIds
+    : [shift?.wagesTransactionId, shift?.tipsTransactionId].filter((id): id is string => Boolean(id));
   const targets = shift
-    ? next.transactions.filter((item) => item.id === shift.wagesTransactionId || item.id === shift.tipsTransactionId)
+    ? next.transactions.filter((item) => shiftTransactionIds.includes(item.id))
     : tx.type === "transfer"
       ? []
       : [tx];
@@ -3059,6 +3590,7 @@ export function emptyHousehold(environment: Household["environment"] = "developm
     sitDownSessions: [],
     activity: [],
     devices: [],
+    workJobs: [],
     shiftSettings: DEFAULT_SHIFT_SETTINGS,
     lastCommittedAt: null,
     commandReceipts: [],

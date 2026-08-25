@@ -26,6 +26,7 @@ import type {
 } from "./types.ts";
 import { belongsToSharedLedger, isPersonalOnly, parseVisibility } from "./visibility.ts";
 import { shapeLedgerNames } from "./ledgerNames.ts";
+import { shapeWorkJobs } from "./work.ts";
 
 export type { PersonalEnvelope, SharedEnvelope };
 
@@ -159,6 +160,7 @@ export function ensureHouseholdShape(household: Household): Household {
     sitDownSessions: shapeSitDownSessions(household.sitDownSessions),
     activity: shapeActivity(household.activity),
     devices: shapeDevices(household.devices, fallbackIso),
+    workJobs: shapeWorkJobs(household.workJobs, fallbackIso),
     goals: progress.goals,
     goalContributions: progress.goalContributions,
     goalPurchases: shapeGoalPurchases(household.goalPurchases, fallbackIso, fallback),
@@ -237,6 +239,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     sitDownSessions: shaped.sitDownSessions,
     activity: shaped.activity,
     devices: shaped.devices,
+    workJobs: shaped.workJobs,
     shiftSettings: shaped.shiftSettings,
     lastCommittedAt: shaped.lastCommittedAt,
     transactions: sharedTx,
@@ -326,6 +329,7 @@ export function assembleHousehold(
     sitDownSessions: shared.sitDownSessions ?? [],
     activity: shared.activity,
     devices: shared.devices ?? [],
+    workJobs: shapeWorkJobs(shared.workJobs, shared.lastCommittedAt || MISSING_ISO),
     shiftSettings: shared.shiftSettings,
     lastCommittedAt: laterIso(shared.lastCommittedAt, personal?.lastCommittedAt ?? null),
     transactions: [...txById.values()],
@@ -366,6 +370,11 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     sitDownSessions: mergeRecords(shapeSitDownSessions(server.sitDownSessions), shapeSitDownSessions(client.sitDownSessions), tombstones),
     activity: mergeRecords(server.activity, client.activity, []).sort((left, right) => left.at.localeCompare(right.at)).slice(-200),
     devices: mergeDevices(server.devices ?? [], client.devices ?? []),
+    workJobs: mergeRecords(
+      shapeWorkJobs(server.workJobs, server.lastCommittedAt || MISSING_ISO),
+      shapeWorkJobs(client.workJobs, client.lastCommittedAt || MISSING_ISO),
+      tombstones,
+    ),
     shiftSettings: newer.shiftSettings,
     lastCommittedAt: newer.lastCommittedAt,
     transactions: mergeRecords(server.transactions, client.transactions, tombstones),

@@ -14,9 +14,11 @@ import {
 import { projectCadence } from "./recurrence.ts";
 import { appointmentPublicTitle, claimExpectedLandingDate, claimRemainingCents, outstandingClaims, projectAppointmentDates } from "./appointments.ts";
 import { detectRhythms, type Rhythm } from "./rhythm.ts";
+import { workOwedFactsInRange, type WorkOwedFact } from "./workSettlement.ts";
+import { workShiftIsReversed } from "./work.ts";
 import type { Household, Recurrence, RecurrenceKind } from "./types.ts";
 
-export type BoardKind = RecurrenceKind | "shift" | "google" | "detected" | "visit" | "claim";
+export type BoardKind = RecurrenceKind | "shift" | "google" | "detected" | "visit" | "claim" | "work-pay" | "work-tip" | "work-tipout";
 
 export type OverlayEvent = {
   id: string;
@@ -34,12 +36,14 @@ export type BoardItem = {
   amountCents: number;
   direction: "in" | "out" | "work" | "busy";
   kind: BoardKind;
-  source: "recurrence" | "rhythm" | "shift" | "google" | "appointment" | "claim";
+  source: "recurrence" | "rhythm" | "shift" | "google" | "appointment" | "claim" | "work-settlement";
   recurrenceId?: string;
   appointmentId?: string;
   rhythmKey?: string;
   memberId?: string;
   memberColor?: string;
+  workJobId?: string;
+  workSettlementKind?: WorkOwedFact["kind"];
   due: boolean;
 };
 
@@ -153,20 +157,41 @@ export function buildMonthBoard(
     }
   }
 
-  for (const shift of household.shifts) {
+  for (const shift of household.shifts.filter((row) => !workShiftIsReversed(household, row))) {
     if (!inInclusiveRange(shift.date, gridStart, gridEnd)) continue;
     const member = household.members.find((item) => item.id === shift.memberId);
+    const job = (household.workJobs ?? []).find((item) => item.id === shift.jobId);
     items.push({
       id: `shift:${shift.id}`,
       date: shift.date,
-      title: `${member?.name ?? "Shift"} · ${shift.hours}h`,
+      title: job
+        ? `${job.name} · ${shift.hours.toFixed(2)}h · wages $${(shift.wagesCents / 100).toFixed(2)} · tips $${(shift.netTipsCents / 100).toFixed(2)}`
+        : `${member?.name ?? "Shift"} · ${shift.hours}h`,
       amountCents: shift.wagesCents + shift.netTipsCents,
       direction: "work",
       kind: "shift",
       source: "shift",
       memberId: shift.memberId,
-      memberColor: member?.color,
+      memberColor: job?.color ?? member?.color,
       due: false,
+    });
+  }
+
+  for (const fact of workOwedFactsInRange(household, today, gridStart, gridEnd)) {
+    const member = household.members.find((item) => item.id === fact.memberId);
+    items.push({
+      id: fact.id,
+      date: fact.date,
+      title: fact.title,
+      amountCents: fact.amountCents,
+      direction: fact.kind === "deferred-tipout" ? "out" : "in",
+      kind: fact.kind === "wages" ? "work-pay" : fact.kind === "card-tips" ? "work-tip" : "work-tipout",
+      source: "work-settlement",
+      memberId: fact.memberId,
+      memberColor: fact.color || member?.color,
+      workJobId: fact.jobId,
+      workSettlementKind: fact.kind,
+      due: fact.due,
     });
   }
 

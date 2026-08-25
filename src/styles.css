@@ -50,6 +50,63 @@ html, body {
     overscroll-behavior-x: none;
   }
 }
+/* Job-based shift confirmation keeps the existing paper sheet and CAD pad. */
+.work-shift-flow { display: grid; gap: 18px; }
+.work-shift-progress { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.work-shift-progress button {
+  border: 0;
+  border-top: 2px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  padding: 8px 2px;
+  text-align: left;
+  font: inherit;
+  font-size: 11px;
+}
+.work-shift-progress button span { display: inline-grid; place-items: center; width: 20px; height: 20px; margin-right: 5px; border: 1px solid currentColor; border-radius: 50%; }
+.work-shift-progress button.active { border-color: var(--pine); color: var(--ink); font-weight: 700; }
+.work-shift-progress button.done { border-color: var(--copper); color: var(--copper); cursor: pointer; }
+.work-shift-step h2 { margin-top: 2px; }
+.work-shift-grid { display: grid; gap: 12px; }
+.work-shift-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.work-shift-pad-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.work-shift-pad-grid .cad-pad { min-width: 0; }
+.work-shift-pad-grid .cad-pad-keys { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.work-shift-metrics { margin-bottom: 10px; }
+.work-destinations { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.work-destination { padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.42); }
+.work-destination .chips { margin-top: 8px; }
+.work-shift-review { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--line); }
+.work-shift-review div { display: flex; justify-content: space-between; gap: 12px; padding: 12px; background: var(--paper); }
+.work-shift-review span { color: var(--muted); }
+.work-shift-footer { display: flex; justify-content: flex-end; gap: 8px; position: sticky; bottom: 0; padding: 12px 0 2px; background: linear-gradient(0deg, var(--paper) 70%, transparent); }
+.work-shift-empty { padding: 18px; border: 1px dashed var(--line); border-radius: 12px; }
+.work-history-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.work-history-row.is-reversed { opacity: .62; }
+.work-history-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.work-history-main div, .work-history-money { display: grid; gap: 2px; }
+.work-history-main span:not(.work-history-color), .work-history-money span { color: var(--muted); font-size: 12px; }
+.work-history-color { width: 8px; align-self: stretch; min-height: 38px; border-radius: 99px; flex: 0 0 auto; }
+.work-history-money { text-align: right; }
+.work-report-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; overflow: hidden; margin: 10px 0 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--line); }
+.work-report-metrics div { display: grid; gap: 3px; padding: 11px; background: var(--card); }
+.work-report-metrics span { color: var(--muted); font-size: 11px; }
+.work-report-owed { margin: 12px 0; padding: 12px; border-left: 3px solid var(--copper); background: rgba(196,92,38,.07); }
+
+@media (max-width: 719px) {
+  .work-shift-progress button { font-size: 0; }
+  .work-shift-progress button span { font-size: 11px; }
+  .work-shift-grid.two,
+  .work-shift-pad-grid,
+  .work-destinations,
+  .work-shift-review { grid-template-columns: 1fr; }
+  .work-shift-review div { padding: 10px; }
+  .work-history-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .work-history-money { grid-column: 1; text-align: left; padding-left: 18px; }
+  .work-history-row > button, .work-history-row > .pill { grid-column: 2; grid-row: 1 / span 2; }
+  .work-report-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 @media (min-width: 720px) {
   html, body {
     overflow-x: clip;
@@ -191,6 +248,56 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
   margin: 14px 0;
 }
 .card header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+
+.work-jobs-card,
+.work-job-editor { border-color: color-mix(in srgb, var(--line) 74%, #a85a3d); }
+.work-job-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0 12px 14px;
+  border-left: 4px solid #a85a3d;
+  border-bottom: 1px solid var(--line);
+}
+.work-job-row:last-child { border-bottom: 0; }
+.work-job-editor-grid { display: grid; gap: 10px; }
+.work-job-editor details {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--card) 86%, var(--paper));
+  padding: 0 14px 14px;
+}
+.work-job-editor summary {
+  cursor: pointer;
+  padding: 13px 0;
+  font-family: var(--display);
+  font-weight: 700;
+}
+.work-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+.work-form-grid label,
+.work-rate-row label,
+.work-schedule-block label { display: grid; gap: 5px; align-content: start; }
+.work-check { display: flex !important; align-items: center; gap: 8px !important; padding-top: 24px; }
+.work-check input { width: auto; }
+.work-rule-block {
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--paper) 76%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--line) 80%, #a85a3d);
+}
+.work-rate-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 10px 0; }
+.work-schedule-block { display: grid; gap: 8px; align-content: start; }
+.work-job-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 14px; }
+
+@media (max-width: 719px) {
+  .work-form-grid,
+  .work-rate-row { grid-template-columns: 1fr; }
+  .work-check { padding-top: 4px; }
+  .work-job-editor details { padding-inline: 11px; }
+  .work-job-actions { position: sticky; bottom: 76px; padding: 10px; background: var(--paper); border-radius: 14px; z-index: 3; }
+}
 .row {
   display: flex;
   justify-content: space-between;

@@ -52,7 +52,7 @@ export function CalculatorBody({
 }) {
   const postRef = useFurniture("calculator-post", "pad", false, false);
   const active = accounts.filter((account) => account.active);
-  const punch = activeOpenShift(household.kitchen);
+  const punch = activeOpenShift(household.kitchen, form.memberId);
   const [shiftOpen, setShiftOpen] = useState(false);
   const [tips, setTips] = useState(() => ({
     sales: "0",

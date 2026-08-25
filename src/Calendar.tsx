@@ -14,17 +14,21 @@ import {
   monthKeyFromDateKey,
   pauseRecurrence,
   setRecurrenceGoogleSync,
+  settleWorkReceivable,
+  payDeferredWorkTipOut,
   shiftMonthKey,
   skipOccurrence,
   typicalVisitDraft,
   unlinkGoogleIdentity,
   visitPostSummary,
+  workOwedFacts,
   type CommitResult,
   type DateKey,
   type Environment,
   type Household,
   type Recurrence,
   type VisitPostDraft,
+  type WorkOwedFact,
 } from "./core/index.ts";
 import type { OverlayEvent } from "./core/board.ts";
 import {
@@ -45,6 +49,7 @@ import {
   RepeatingForm,
   type RepeatingDraft,
 } from "./RepeatingForm.tsx";
+import { WorkSettlementSheet } from "./WorkSettlementSheet.tsx";
 
 type Pane = CalendarPane;
 
@@ -55,6 +60,9 @@ function kindLabel(kind: string): string {
   if (kind === "shift") return "Shift";
   if (kind === "google") return "GCal";
   if (kind === "claim") return "Owed";
+  if (kind === "work-pay") return "Pay";
+  if (kind === "work-tip") return "Tips";
+  if (kind === "work-tipout") return "Tip-out";
   return "Bill";
 }
 
@@ -95,11 +103,13 @@ export function CalendarPage(props: {
   const [googleError, setGoogleError] = useState("");
   const [overlays, setOverlays] = useState<OverlayEvent[]>([]);
   const [repeatingDraft, setRepeatingDraft] = useState<RepeatingDraft | null>(null);
+  const [workSettlement, setWorkSettlement] = useState<WorkOwedFact | null>(null);
 
   const board = useMemo(
     () => buildMonthBoard(household, monthKey, today, overlays),
     [household, monthKey, today, overlays],
   );
+  const workFacts = useMemo(() => workOwedFacts(household, today), [household, today]);
   const selectedDay = board.days.find((day) => day.date === selected) ?? board.days.find((day) => day.isToday);
   const due = household.recurrences.filter((item) => item.active && item.nextDate <= today);
   const suggested = board.rhythms.filter((item) => item.status === "suggested");
@@ -301,7 +311,7 @@ export function CalendarPage(props: {
                   title={item.title}
                   amountCents={item.amountCents}
                   kind={item.kind}
-                  due={item.due && (item.source === "recurrence" || item.source === "appointment")}
+                  due={item.due && (item.source === "recurrence" || item.source === "appointment" || item.source === "work-settlement")}
                   recurrenceId={item.recurrenceId}
                   appointmentId={item.appointmentId}
                   rhythmKey={item.rhythmKey}
@@ -312,6 +322,8 @@ export function CalendarPage(props: {
                   onAskPost={props.onAskPost}
                   date={selectedDay.date}
                   onAskVisit={props.onAskVisit}
+                  workSettlementId={item.source === "work-settlement" ? item.id : undefined}
+                  onAskWork={(id) => setWorkSettlement(workFacts.find((fact) => fact.id === id) ?? null)}
                 />
               ))}
             </section>
@@ -490,6 +502,23 @@ export function CalendarPage(props: {
           </button>
         </section>
       )}
+      {workSettlement && (
+        <WorkSettlementSheet
+          household={household}
+          fact={workSettlement}
+          busy={props.busy}
+          onCancel={() => setWorkSettlement(null)}
+          onConfirm={(input) => {
+            const fact = workSettlement;
+            setWorkSettlement(null);
+            if (fact.kind === "deferred-tipout") {
+              props.onCommand((current) => payDeferredWorkTipOut(current, { jobId: fact.jobId, ...input, createdBy: props.memberId }));
+            } else {
+              props.onCommand((current) => settleWorkReceivable(current, { jobId: fact.jobId, kind: fact.kind === "wages" ? "wages" : "card-tips", ...input, createdBy: props.memberId }));
+            }
+          }}
+        />
+      )}
     </>
   );
 }
@@ -502,6 +531,7 @@ function DayRow(props: {
   recurrenceId?: string;
   appointmentId?: string;
   rhythmKey?: string;
+  workSettlementId?: string;
   date: DateKey;
   today: DateKey;
   household: Household;
@@ -509,6 +539,7 @@ function DayRow(props: {
   onAdopt: (key: string) => void;
   onAskPost: (recurrenceId: string, summary: string) => void;
   onAskVisit: (draft: VisitPostDraft, summary: string) => void;
+  onAskWork: (id: string) => void;
 }) {
   const rec = props.recurrenceId ? props.household.recurrences.find((item) => item.id === props.recurrenceId) : undefined;
   const visit = props.appointmentId ? props.household.appointments.find((item) => item.id === props.appointmentId) : undefined;
@@ -543,6 +574,9 @@ function DayRow(props: {
           >
             Post
           </button>
+        )}
+        {props.workSettlementId && props.due && (
+          <button className="chip selected" disabled={props.busy} onClick={() => props.onAskWork(props.workSettlementId!)}>Confirm</button>
         )}
       </span>
     </div>

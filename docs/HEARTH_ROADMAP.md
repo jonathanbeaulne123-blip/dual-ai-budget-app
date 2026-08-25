@@ -63,6 +63,7 @@ Only the currently open or just-closed worksession belongs here. Durable history
 
 | Worksession | State | Scope | Output |
 |---|---|---|---|
+| [2026-08-25 Shift workflow rebuild](worksessions/2026-08-25-shift-workflow.md) | **CLOSED; local branch** | Job rules, Timesheet, Confirm/history, Calendar settlement/reporting | Codex; D-127; four local implementation commits |
 | [2026-08-24 Command states Slice A+B](worksessions/2026-08-24-command-states-slice-ab.md) | **CLOSED; PR #76 merged** | Command chrome, sync anchor, conflict choose, Add a11y (Development) | Claude UX spec; Cursor Cloud Agent (GPT) implementation; 51 files / 373 tests on merged `main` |
 | [2026-08-24 Ledger naming](worksessions/2026-08-24-ledger-naming.md) | **CLOSED; PR #77 merged** | Name household, shared, and Personal ledgers at setup | Codex; D-118 |
 | [2026-08-24 Continuity slice 4](worksessions/2026-08-24-continuity-slice-4.md) | **CLOSED; PR #74–#75 merged** | Hosted membership + Personal scope; migration 003 applied | Codex; D-117 |
@@ -201,10 +202,10 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 
 - [x] Build current-month budget editing through a typed books command, retaining/reworking the useful budget editor from #62 rather than blindly merging its stack. *(D-109: Statements → Budget variance → `setBudget`; plans only.)*
 - [x] Add a first-class bill/recurrence form for genuinely new entries; calendar/email/OCR may only prefill a draft. *(D-125: Calendar → Bills → Add repeating; Confirm optional post-first.)*
-- [ ] Add shift/income settings with explicit effective date and preview.
+- [x] Add shift/income settings with explicit effective date and preview. *(D-127: four-slice local implementation; slice-level review explicitly deferred to the comprehensive pre-September audit.)*
 - [ ] Add opening-balance/setup guidance without fabricating history.
 - [x] Ship due-on-open preview only after its branch/decision ancestry is repaired. Rebuilt from current `main` under D-108; reminders remain read-only until the existing Confirm path.
-- [ ] Make correction reversal/repost a first-class phone flow; never silently rewrite the original journal.
+- [x] Make correction reversal/repost a first-class phone flow; never silently rewrite the original journal. *(D-127 covers job shifts; broader entry correction remains separate.)*
 - [ ] Make undo durable across relaunch and sync, or label its exact local/session scope truthfully.
 - [ ] Keep validation and duplicate warnings beside the field/action that created them; never hide a blocked post in a toast alone.
 - [ ] Verify keyboard, focus, touch targets, reduced motion, screen-reader names, empty states, and low-light use.

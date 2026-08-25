@@ -40,6 +40,7 @@ No phone or computer is the host. Turning off, losing, or replacing one device m
 - After sign-in and membership discovery, synchronization is automatic. `linked: true`, a separate **Publish to the cloud** action, a three-word phrase, or a Hearth Pass must not be required for ordinary ongoing access.
 - Pairing phrases, join links, and Hearth Pass files may remain invitation, bootstrap, backup, export, or recovery tools. They are not the primary storage or authentication model.
 - Offline writes use durable command identity/outbox records and synchronize when connectivity returns. Two devices may work independently; neither silently overwrites the other.
+- D-127 work jobs, confirmed shifts, member-keyed open Timesheet records, breaks, and settlement facts travel inside the same shaped household/personal continuity envelopes. They require no device host and no new hosted table. A competing punch is preserved for worker choice; cloud merge never chooses which device worked the shift or posts money automatically.
 - Every pulled or merged money state must pass the same command, accounting, environment, and idempotency checks as a local write before it becomes the visible or durable accepted snapshot.
 
 ## Development-data window

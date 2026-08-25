@@ -15,7 +15,7 @@ import type {
   ClosedPeriod,
 } from "./types.ts";
 import { hasChalkInk, shapeChalkInk } from "./chalkLetters.ts";
-import { mergeOpenShift, shapeOpenShift } from "./shiftClock.ts";
+import { mergeOpenShifts, shapeOpenShifts } from "./shiftClock.ts";
 import { mergeGames, shapeGames } from "./deskGames.ts";
 
 export const MAX_CHALK_NOTES = 12;
@@ -45,6 +45,7 @@ export const EMPTY_KITCHEN: HouseholdKitchen = {
   books: { reconciliations: [], closedMonths: [] },
   hercules: { ...EMPTY_HERCULES, chats: [], memories: [] },
   openShift: null,
+  openShifts: [],
   games: shapeGames(),
 };
 
@@ -202,7 +203,8 @@ export function shapeKitchen(input?: Partial<HouseholdKitchen> | null): Househol
       closedMonths: [...closedMap.values()].sort((left, right) => left.monthKey.localeCompare(right.monthKey)),
     },
     hercules: shapeHerculesDesk(input?.hercules),
-    openShift: shapeOpenShift(input?.openShift),
+    openShift: null,
+    openShifts: shapeOpenShifts(input),
     games: shapeGames(input?.games),
   };
 }
@@ -262,7 +264,8 @@ export function mergeKitchen(
       chats: [...chatMap.values()].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).slice(-MAX_HERCULES_CHATS),
       memories: [...memoMap.values()].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).slice(-MAX_HERCULES_MEMORIES),
     },
-    openShift: mergeOpenShift(left.openShift, right.openShift),
+    openShift: null,
+    openShifts: mergeOpenShifts(left.openShifts, right.openShifts),
     games: mergeGames(left.games, right.games),
   };
 }

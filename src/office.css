@@ -524,6 +524,31 @@
 
 .instrument-timesheet { background: #efe8d8; }
 .clock-droop .instrument-glance { transform: rotate(8deg); display: inline-block; }
+.timesheet-status {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 10px 0 4px;
+  padding: 10px 12px;
+  border: 1px solid rgba(83, 66, 42, 0.18);
+  border-radius: 10px;
+  background: rgba(255, 252, 242, 0.58);
+}
+.timesheet-status[data-state="confirming"] { border-color: rgba(171, 112, 52, 0.42); }
+.timesheet-status span { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.timesheet-breaks { list-style: none; padding: 0; margin: 8px 0; font-size: 12px; }
+.timesheet-breaks li { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; border-bottom: 1px dashed rgba(83, 66, 42, 0.18); }
+.timesheet-breaks li span:last-child { color: var(--muted); white-space: nowrap; }
+.timesheet-actions { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+.timesheet-actions .primary { margin-left: auto; }
+.timesheet-never-mind { margin-top: 8px; }
+.timesheet-conflict { display: grid; gap: 7px; margin-top: 10px; padding: 12px; border: 1px solid var(--copper); border-radius: 10px; background: rgba(196, 92, 38, .08); }
+
+@media (max-width: 719px) {
+  .timesheet-status { align-items: flex-start; flex-direction: column; gap: 2px; }
+  .timesheet-actions .primary { flex-basis: 100%; margin-left: 0; }
+}
 
 .instrument-postcard { background: #f6ead3; }
 .postcard-face { font-family: var(--display); }

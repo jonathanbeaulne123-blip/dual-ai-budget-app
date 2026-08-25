@@ -141,6 +141,109 @@ export type ShiftSettings = {
   hourlyRateCents: number;
 };
 
+export type WorkTakeHomeMode = "direct" | "deductions";
+export type WorkPayCadence = "weekly" | "biweekly" | "twice-monthly" | "custom";
+export type WorkTipOutBasis = "total-sales" | "card-tips" | "all-tips" | "fixed-shift" | "fixed-hour" | "manual";
+export type WorkTipOutTiming = "immediate" | "withheld" | "deferred";
+export type WorkSalesRequirement = "off" | "optional" | "required";
+
+export type WorkDeductionRule = {
+  id: string;
+  label: string;
+  percent: number;
+};
+
+export type WorkRatePeriod = {
+  id: string;
+  effectiveDate: DateKey;
+  grossHourlyRateCents: number;
+  takeHomeMode: WorkTakeHomeMode;
+  takeHomeHourlyRateCents: number;
+  deductions: WorkDeductionRule[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type WorkRole = {
+  id: string;
+  name: string;
+  tipped: boolean;
+  active: boolean;
+  rates: WorkRatePeriod[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type WorkTipOutRule = {
+  id: string;
+  label: string;
+  basis: WorkTipOutBasis;
+  /** Percentage for percentage bases; cents for fixed-shift/manual; cents-per-hour for fixed-hour. */
+  value: number;
+  roundingCents: number;
+  roundingMode: "nearest" | "up" | "down";
+  timing: WorkTipOutTiming;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type WorkSalesField = {
+  id: string;
+  label: string;
+  requirement: WorkSalesRequirement;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type WorkPaySchedule = {
+  cadence: WorkPayCadence;
+  anchorDate: DateKey;
+  weekday: number;
+  monthDays: number[];
+  customDates: DateKey[];
+  reminderTime: string;
+};
+
+export type WorkLedgerDefaults = {
+  wagesVisibility: Visibility;
+  cashTipsVisibility: Visibility;
+  cardTipsVisibility: Visibility;
+  tipOutVisibility: Visibility;
+  wagesDepositAccountId: string;
+  cashTipsAccountId: string;
+  cardTipsDepositAccountId: string;
+};
+
+/** One employer setup. A shift selects exactly one role; changing roles requires a new shift. */
+export type WorkJob = {
+  id: string;
+  memberId: string;
+  name: string;
+  color: string;
+  active: boolean;
+  timezone: string;
+  locationName: string;
+  gpsEnabled: boolean;
+  roles: WorkRole[];
+  paidBreakRate: "role" | "custom";
+  paidBreakHourlyRateCents: number;
+  overtimeEnabled: boolean;
+  overtimeWeeklyThresholdHours: number;
+  overtimeMultiplier: number;
+  tipOutRules: WorkTipOutRule[];
+  salesFields: WorkSalesField[];
+  paySchedule: WorkPaySchedule;
+  tipSchedule: WorkPaySchedule;
+  tipWeekStartsOn: number;
+  defaults: WorkLedgerDefaults;
+  wagesReceivableAccountId: string;
+  cardTipsReceivableAccountId: string;
+  note: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type Shift = {
   id: string;
   date: DateKey;
@@ -163,6 +266,36 @@ export type Shift = {
   visibility: Visibility;
   createdAt: string;
   updatedAt: string;
+  /** Job-based fields are optional only for legacy D-028 shifts. */
+  jobId?: string;
+  roleId?: string;
+  startedAt?: string | null;
+  endedAt?: string | null;
+  grossWagesCents?: number;
+  paidBreakHours?: number;
+  paidBreakIncomeCents?: number;
+  overtimeHours?: number;
+  cardTipsAfterTipOutCents?: number;
+  immediateTipOutCents?: number;
+  withheldTipOutCents?: number;
+  deferredTipOutCents?: number;
+  deferredTipOutPaidCents?: number;
+  salesByField?: Record<string, number>;
+  transactionIds?: string[];
+  cashTipsTransactionId?: string;
+  cardTipsTransactionId?: string;
+  paidBreakTransactionId?: string;
+  tipOutTransactionIds?: string[];
+  wagesVisibility?: Visibility;
+  cashTipsVisibility?: Visibility;
+  cardTipsVisibility?: Visibility;
+  tipOutVisibility?: Visibility;
+  wagesDepositAccountId?: string;
+  cashTipsAccountId?: string;
+  cardTipsDepositAccountId?: string;
+  correctedByShiftId?: string;
+  correctionOfShiftId?: string;
+  note?: string;
 };
 
 export type RecurrenceCadence = "daily" | "weekly" | "biweekly" | "monthly";
@@ -315,11 +448,25 @@ export type ChalkNote = {
   ink?: ChalkInk | null;
 };
 
-export type OpenShiftStatus = "open" | "cleared";
+export type OpenShiftStatus = "open" | "confirming" | "cleared";
+
+export type ShiftBreak = {
+  id: string;
+  kind: "paid" | "unpaid" | "custom";
+  label: string;
+  startedAt: string;
+  endedAt: string | null;
+  updatedAt: string;
+};
 
 export type OpenShift = {
+  id: string;
   memberId: string;
   startedAt: string;
+  endedAt: string | null;
+  breaks: ShiftBreak[];
+  scheduledItemId: string | null;
+  sourceDeviceId: string | null;
   updatedAt: string;
   status: OpenShiftStatus;
 };
@@ -457,7 +604,9 @@ export type HouseholdKitchen = {
   companion: HouseholdCompanion;
   books: HouseholdBooksDesk;
   hercules: HerculesDesk;
+  /** Legacy single punch is read during migration; new writes use member-keyed openShifts. */
   openShift: OpenShift | null;
+  openShifts: OpenShift[];
   games: HouseholdGames;
 };
 
@@ -646,6 +795,7 @@ export type Household = {
   sitDownSessions: SitDownSession[];
   activity: Activity[];
   devices: HouseholdDevice[];
+  workJobs: WorkJob[];
   shiftSettings: ShiftSettings;
   lastCommittedAt: string | null;
   commandReceipts: CommandReceipt[];
@@ -680,6 +830,8 @@ export type SharedEnvelope = {
   sitDownSessions: SitDownSession[];
   activity: Activity[];
   devices: HouseholdDevice[];
+  /** Optional only for envelopes written before job-based shifts shipped. */
+  workJobs?: WorkJob[];
   shiftSettings: ShiftSettings;
   lastCommittedAt: string | null;
   transactions: Transaction[];

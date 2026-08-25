@@ -62,8 +62,8 @@ export function claimsOverdue(household: { claims?: { expectedCents: number; rec
   return (household.claims ?? []).some((claim) => claim.expectedCents - claim.receivedCents - claim.writtenOffCents > 0);
 }
 
-export function timesheetEmpty(streak: ShiftStreak, kitchen?: Household["kitchen"]): boolean {
-  if (activeOpenShift(kitchen)) return false;
+export function timesheetEmpty(streak: ShiftStreak, kitchen?: Household["kitchen"], memberId?: string): boolean {
+  if (activeOpenShift(kitchen, memberId)) return false;
   return streak.count === 0 && streak.lastDate == null;
 }
 

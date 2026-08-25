@@ -131,6 +131,9 @@ export function Office({
   onCoffee,
   onClockIn,
   onAbandonShift,
+  onStartBreak,
+  onEndBreak,
+  onChooseShiftTimeline,
   onSignOut,
   onFinishedShift,
   onPayCard,
@@ -164,6 +167,9 @@ export function Office({
   onCoffee: () => void;
   onClockIn: () => void;
   onAbandonShift: () => void;
+  onStartBreak: (kind: "paid" | "unpaid" | "custom") => void;
+  onEndBreak: () => void;
+  onChooseShiftTimeline: (openShiftId: string) => void;
   onSignOut: () => void;
   onFinishedShift: () => void;
   onPayCard: (account: Account) => void;
@@ -672,16 +678,20 @@ export function Office({
     timesheet: (index, pair) => frame(
       "timesheet",
       "Timesheet",
-      <TimesheetGlance household={household} streak={streak} />,
+      <TimesheetGlance household={household} streak={streak} memberId={memberId} />,
       `Timesheet. ${streak.spoken}`,
       <TimesheetBody
         household={household}
         streak={streak}
+        memberId={memberId}
         memberName={household.members.find((member) => member.id === memberId)?.name ?? "You"}
         today={today}
         busy={busy}
         onClockIn={onClockIn}
         onAbandon={onAbandonShift}
+        onStartBreak={onStartBreak}
+        onEndBreak={onEndBreak}
+        onChooseTimeline={onChooseShiftTimeline}
         onSignOut={onSignOut}
         onFinished={onFinishedShift}
       />,
@@ -817,6 +827,8 @@ export function Office({
         form={form} mode={mode} error={error} categories={categories} postLabel={postLabel}
         onForm={onForm} onPost={onPost} onMore={onMore} onMilk={onMilk} onCoffee={onCoffee}
         onClockIn={onClockIn} onAbandonShift={onAbandonShift} onSignOut={onSignOut}
+        onStartBreak={onStartBreak} onEndBreak={onEndBreak}
+        onChooseShiftTimeline={onChooseShiftTimeline}
         onFinishedShift={onFinishedShift} onPayCard={onPayCard} onOpenAccount={onOpenAccount}
         onKitchen={onKitchen} onMarkPaid={onMarkPaid} onGo={onGo}
       />

@@ -96,8 +96,13 @@ describe("analog shift clock", () => {
     household.kitchen = shapeKitchen({
       ...household.kitchen,
       openShift: {
+        id: "OPEN-MEM-002-LEGACY",
         memberId: "MEM-002",
         startedAt: "2026-08-21T16:00:00.000Z",
+        endedAt: null,
+        breaks: [],
+        scheduledItemId: null,
+        sourceDeviceId: null,
         updatedAt: "2026-08-21T16:00:00.000Z",
         status: "open",
       },
