@@ -106,6 +106,8 @@ export {
 } from "./sharing.ts";
 export {
   canAutoMergeConflict,
+  canAbsorbDisjointSharedMoney,
+  absorbDisjointSharedMoney,
   countDifferingSharedTransactionIds,
   moneyFactsChanged,
   recordConflict,

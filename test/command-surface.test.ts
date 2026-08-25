@@ -27,7 +27,8 @@ describe("renderCommandChrome", () => {
 
   it("keeps pending chip always and banner only when offline or errored", () => {
     const quiet = renderCommandChrome(COMMAND_SURFACE_FIXTURES["pending-transport"], { amountLabel: "$2.00" });
-    expect(quiet.chip?.primary).toBe("Waiting to share");
+    expect(quiet.chip?.primary).toBe("Sharing…");
+    expect(quiet.chip?.tone).toBe("neutral");
     expect(quiet.banner).toBeNull();
     expect(quiet.toast?.secondary).toBe("Waiting to share.");
 
@@ -35,6 +36,7 @@ describe("renderCommandChrome", () => {
       offline: true,
       pendingCount: 2,
     });
+    expect(offline.chip?.primary).toBe("Waiting to share");
     expect(offline.chip?.secondary).toBe("· offline");
     expect(offline.banner?.primary).toBe("Saved here. Not shared yet.");
     expect(offline.banner?.actionLabel).toBe("Review pending");
@@ -42,6 +44,7 @@ describe("renderCommandChrome", () => {
     const failed = renderCommandChrome(COMMAND_SURFACE_FIXTURES["pending-transport"], {
       lastError: "Share paused after three tries.",
     });
+    expect(failed.chip?.primary).toBe("Waiting to share");
     expect(failed.banner?.secondary).toBe("Share paused after three tries.");
   });
 

@@ -81,6 +81,8 @@ import {
   undo,
   reversePostedMoney,
   recordConflict,
+  canAbsorbDisjointSharedMoney,
+  absorbDisjointSharedMoney,
   resolveConflictChoice,
   unresolvedConflicts,
   markSynchronized,
@@ -134,7 +136,8 @@ import { clearSession, loadSession, saveSession, type Session } from "./session.
 import { joinSharedHousehold, reconcileHousehold, reconcileHouseholdSnapshots } from "./api.ts";
 import { acceptHouseholdWrite, classifyCommandError, hostedTransportAllowed, newConfirmationId, isLedgerWrite } from "./core/index.ts";
 import { ingestHouseholdBooks, inspectBrowserBooks, restoreHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
-import { pushSupabaseHousehold, readSupabaseConfig } from "./ledger/supabase.ts";
+import { pushSupabaseHousehold, readSupabaseConfig, pullHouseholdSnapshotById } from "./ledger/supabase.ts";
+import { livePullIntervalMs, shouldRunLivePull } from "./continuityLivePull.ts";
 import {
   authenticatedSupabaseConfig,
   clearSupabaseSession,
@@ -145,6 +148,7 @@ import {
   supabaseAuthEnabled,
 } from "./auth/supabaseSession.ts";
 import {
+  clearContinuityOutboxConflictBlocks,
   continuityMemberId,
   discoverContinuityMemberships,
   flushContinuityOutbox,
@@ -598,6 +602,58 @@ export function App() {
         if (conflict) {
           const current = householdRef.current;
           if (current && current.householdId === conflict.item.householdId) {
+            if (canAbsorbDisjointSharedMoney(current, conflict.remote)) {
+              const absorbed = absorbDisjointSharedMoney(current, conflict.remote, memberId);
+              const accepted = await acceptReplayCandidate(
+                absorbed,
+                `outbox-absorb-${current.householdId}-${conflict.remote.revision}`,
+                "outbox-absorb",
+              );
+              if (!live) return;
+              if (!accepted?.ok) {
+                setSyncState("error");
+                setError(accepted?.userMessage || conflict.message);
+                return;
+              }
+              const ready = accepted.household;
+              clearContinuityOutboxConflictBlocks({
+                environment,
+                identity,
+                householdId: ready.householdId,
+                expectedRevision: ready.baseRevision ?? absorbed.baseRevision,
+              });
+              const pushed = await transportHouseholdWithOutbox({
+                household: ready,
+                identity,
+                expectedRevision: ready.baseRevision ?? absorbed.baseRevision,
+                confirmationId: `absorb-${ready.householdId}-${ready.revision}`,
+                config: cloudConfig,
+                flush: true,
+              });
+              if (!live) return;
+              if (pushed.ok) {
+                const synced = markSynchronized(ready);
+                await saveHousehold(synced, { memberId });
+                householdRef.current = synced;
+                setHousehold(synced);
+                setSyncState("synced");
+                return;
+              }
+              if (pushed.errorClass === "conflict-detected" && pushed.remote) {
+                const conflicted = await recordConflict(ready, pushed.remote, false);
+                await acceptReplayCandidate(
+                  conflicted,
+                  `outbox-conflict-${ready.householdId}-${pushed.remote.revision}`,
+                  "outbox-conflict",
+                );
+                setSyncState("error");
+                setError(pushed.message);
+                return;
+              }
+              // Still pending transport — honest chip, not "up to date".
+              setSyncState("syncing");
+              return;
+            }
             const conflicted = await recordConflict(current, conflict.remote, false);
             await acceptReplayCandidate(
               conflicted,
@@ -612,8 +668,9 @@ export function App() {
           return;
         }
         if (flushed.pending > 0) {
-          setSyncState("error");
-          return;
+          // Healthy background queue is not an error — only surface offline/conflict as red.
+          if (live) setSyncState(typeof navigator !== "undefined" && !navigator.onLine ? "syncing" : "synced");
+          // Still try a live pull below so partner posts appear.
         }
 
         let current = householdRef.current;
@@ -626,21 +683,71 @@ export function App() {
           }
         }
 
-        const memberships = await discoverContinuityMemberships(identity, environment, cloudConfig);
+        current = householdRef.current;
+        let remoteHousehold = current
+          ? await pullHouseholdSnapshotById(current.householdId, environment, cloudConfig)
+          : null;
+        if (!remoteHousehold) {
+          const memberships = await discoverContinuityMemberships(identity, environment, cloudConfig);
+          if (!live) return;
+          current = householdRef.current;
+          remoteHousehold = current
+            ? memberships.find((item) => item.household.householdId === current?.householdId)?.household ?? null
+            : null;
+        }
         if (!live) return;
         current = householdRef.current;
-        const remote = current
-          ? memberships.find((item) => item.household.householdId === current?.householdId)
-          : undefined;
-        if (current && remote && remote.household.revision > (current.baseRevision ?? 0)) {
-          const reconciled = await reconcileHouseholdSnapshots(current, remote.household, memberId);
-          await acceptReplayCandidate(
+        if (current && remoteHousehold && remoteHousehold.revision > (current.baseRevision ?? 0)) {
+          const reconciled = await reconcileHouseholdSnapshots(current, remoteHousehold, memberId);
+          const accepted = await acceptReplayCandidate(
             reconciled,
-            `continuity-pull-${current.householdId}-${remote.household.revision}`,
+            `continuity-pull-${current.householdId}-${remoteHousehold.revision}`,
             "continuity-pull",
           );
+          if (!live) return;
+          if (!accepted?.ok) {
+            setSyncState("error");
+            setError(accepted?.userMessage || "Could not accept the shared household.");
+            return;
+          }
+          if (accepted.household.sharing?.mode === "pending-transport") {
+            const tip = remoteHousehold.revision;
+            const ready = accepted.household;
+            const pushed = await transportHouseholdWithOutbox({
+              household: ready,
+              identity,
+              expectedRevision: tip,
+              confirmationId: `live-absorb-${ready.householdId}-${ready.revision}`,
+              config: cloudConfig,
+              flush: true,
+            });
+            if (!live) return;
+            if (pushed.ok) {
+              const synced = markSynchronized(ready);
+              await saveHousehold(synced, { memberId });
+              householdRef.current = synced;
+              setHousehold(synced);
+            } else if (pushed.errorClass === "conflict-detected" && pushed.remote) {
+              const conflicted = await recordConflict(ready, pushed.remote, false);
+              await acceptReplayCandidate(
+                conflicted,
+                `live-absorb-conflict-${ready.householdId}-${pushed.remote.revision}`,
+                "outbox-conflict",
+              );
+              setSyncState("error");
+              setError(pushed.message);
+              return;
+            } else {
+              setSyncState("syncing");
+              return;
+            }
+          }
         }
-        if (live) setSyncState("synced");
+        if (live) {
+          const open = householdRef.current ? unresolvedConflicts(householdRef.current) : [];
+          const pending = householdRef.current?.sharing?.mode === "pending-transport";
+          setSyncState(open.length > 0 ? "error" : pending ? "syncing" : "synced");
+        }
       } catch (caught) {
         if (!live) return;
         setSyncState("error");
@@ -652,13 +759,30 @@ export function App() {
 
     const onOnline = () => void replay();
     const onFocus = () => void replay();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void replay();
+    };
     window.addEventListener("online", onOnline);
     window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
     void replay();
+    const memberCount = householdRef.current?.members.filter((m) => m.active).length ?? 2;
+    const intervalMs = livePullIntervalMs(memberCount);
+    const timer = window.setInterval(() => {
+      if (!shouldRunLivePull({
+        documentVisible: document.visibilityState === "visible",
+        online: typeof navigator === "undefined" ? true : navigator.onLine,
+        hasSession: Boolean(memberId),
+        hasHousehold: Boolean(householdRef.current),
+      })) return;
+      void replay();
+    }, intervalMs);
     return () => {
       live = false;
       window.removeEventListener("online", onOnline);
       window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.clearInterval(timer);
     };
   }, [environment, session?.memberId, household?.householdId]);
 
@@ -1159,8 +1283,32 @@ export function App() {
     }
     try {
       const next = resolveConflictChoice(current, open.id, side);
+      const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
+      const google = session?.memberId ? loadGoogleSession(environment, session.memberId) : null;
+      const continuityIdentity: ContinuityIdentity | null = authSession
+        ? { email: authSession.email, subject: authSession.googleSubject }
+        : google?.identity
+          ? { email: google.identity.email, subject: google.identity.subject }
+          : null;
+      if (continuityIdentity) {
+        clearContinuityOutboxConflictBlocks({
+          environment,
+          identity: continuityIdentity,
+          householdId: next.householdId,
+          expectedRevision: next.baseRevision ?? Math.max(0, next.revision - 1),
+        });
+      }
       await commitHousehold(next);
       setShowConflictSheet(false);
+      if (continuityIdentity) {
+        const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
+        void flushContinuityOutbox({
+          environment,
+          identity: continuityIdentity,
+          config: cloudConfig,
+          force: true,
+        }).catch(() => undefined);
+      }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     }

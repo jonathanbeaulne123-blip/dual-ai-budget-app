@@ -5,7 +5,7 @@ import {
 import { applyHearthPass, isHearthPass, parseHearthPass } from "./core/pass.ts";
 import { inviteFromText, isValidInviteToken } from "./core/invite.ts";
 import { markLinked, markSynchronized } from "./core/sharing.ts";
-import { canAutoMergeConflict, recordConflict } from "./core/conflict.ts";
+import { canAutoMergeConflict, canAbsorbDisjointSharedMoney, absorbDisjointSharedMoney, recordConflict } from "./core/conflict.ts";
 import type { Environment, Household } from "./core/types.ts";
 import { probeSupabase, pullSupabaseHousehold } from "./ledger/supabase.ts";
 
@@ -89,6 +89,9 @@ export async function reconcileHouseholdSnapshots(
   }
   if (remoteRevision === localBase && localRevision > localBase) {
     return local;
+  }
+  if (canAbsorbDisjointSharedMoney(local, remote)) {
+    return absorbDisjointSharedMoney(local, remote, memberId);
   }
   const auto = canAutoMergeConflict(local, remote);
   return recordConflict(local, remote, auto);

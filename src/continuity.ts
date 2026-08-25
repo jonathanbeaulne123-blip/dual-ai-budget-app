@@ -207,7 +207,8 @@ export function enqueueContinuitySnapshot(input: {
     updatedAt: now,
     attempts: existing?.attempts ?? 0,
     lastError: null,
-    blockedByConflict: existing?.blockedByConflict ?? false,
+    // Compacting a newer snapshot after conflict choose must not inherit the block.
+    blockedByConflict: false,
     nextAttemptAt: null,
   };
   write(snapshot.environment, [...items.filter((row) => row.id !== id), item]);
@@ -225,6 +226,37 @@ export function acknowledgeContinuityOutboxItem(item: ContinuityOutboxItem): voi
     item.environment,
     read(item.environment).filter((row) => row.id !== item.id),
   );
+}
+
+/**
+ * After an explicit conflict choose, unblock the outbox so background flush can
+ * push the resolved snapshot without a manual Sync tap.
+ */
+export function clearContinuityOutboxConflictBlocks(input: {
+  environment: Environment;
+  identity: ContinuityIdentity;
+  householdId?: string;
+  /** When set, replace the queued CAS base so resume targets the post-choose revision. */
+  expectedRevision?: number;
+}): number {
+  const items = read(input.environment);
+  let cleared = 0;
+  const next = items.map((item) => {
+    if (!sameIdentity(item.identity, input.identity)) return item;
+    if (input.householdId && item.householdId !== input.householdId) return item;
+    if (!item.blockedByConflict) return item;
+    cleared += 1;
+    return {
+      ...item,
+      blockedByConflict: false,
+      nextAttemptAt: null,
+      lastError: null,
+      expectedRevision: input.expectedRevision ?? item.expectedRevision,
+      updatedAt: new Date(nowMs()).toISOString(),
+    };
+  });
+  if (cleared > 0) write(input.environment, next);
+  return cleared;
 }
 
 function pendingItem(item: ContinuityOutboxItem, message: string, blockedByConflict = false): ContinuityOutboxItem {

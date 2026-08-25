@@ -590,6 +590,34 @@ async function readRemoteSnapshot(
   return snapshotFromRow(rows[0]);
 }
 
+/** Membership-scoped live pull: one row by household id + environment (Auth JWT). */
+export async function pullHouseholdSnapshotById(
+  householdId: string,
+  environment: Environment = "development",
+  config = readSupabaseConfig(),
+): Promise<Household | null> {
+  if (!config || !hostedContinuityAllowed(environment)) return null;
+  const result = await rest(
+    config,
+    `household_snapshots?household_id=eq.${encodeURIComponent(householdId)}&environment=eq.${encodeURIComponent(environment)}&select=payload&limit=1`,
+    { method: "GET", headers: { Prefer: "return=representation" } },
+  );
+  if (!result.ok) {
+    if (isMissingTable(result.body)) return null;
+    throw new Error(messageOf(result.body));
+  }
+  const rows = Array.isArray(result.body) ? result.body as { payload: string | Household }[] : [];
+  const pulled = snapshotFromRow(rows[0]);
+  if (!pulled) return null;
+  if (pulled.environment !== environment) {
+    throw new Error("That shared snapshot belongs to a different Development/Production pill.");
+  }
+  if (pulled.householdId !== householdId) {
+    throw new Error("Cloud returned a different household than this phone asked for.");
+  }
+  return { ...pulled, linked: true, baseRevision: pulled.revision };
+}
+
 export async function pushSupabaseHousehold(
   household: Household,
   config = readSupabaseConfig(),

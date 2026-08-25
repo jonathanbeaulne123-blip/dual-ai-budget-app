@@ -375,9 +375,16 @@ export function PairingCard({
       {error && <p className="danger">{error}</p>}
       <button className="primary" onClick={() => void shareInvite(household)}>Share phrase and link</button>
       <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => downloadPass(household)}>Download Hearth Pass</button>
-      <button className="ghost" style={{ width: "100%", marginTop: 8 }} disabled={busy} onClick={() => void publish()}>
-        {household.linked ? "Sync to the cloud" : "Publish to the cloud"}
-      </button>
+      {!supabaseAuthEnabled() && (
+        <button className="ghost" style={{ width: "100%", marginTop: 8 }} disabled={busy} onClick={() => void publish()}>
+          {household.linked ? "Sync to the cloud" : "Publish to the cloud"}
+        </button>
+      )}
+      {supabaseAuthEnabled() && (
+        <p className="muted" style={{ marginTop: 8 }}>
+          Signed-in phones share in the background. Partner posts appear while this kitchen stays open.
+        </p>
+      )}
       {household.linked && (
         <button
           className="ghost"
@@ -452,7 +459,7 @@ export function PairingCard({
           });
         }}
       />
-      {household.linked && (
+      {household.linked && !supabaseAuthEnabled() && (
         <button
           className="ghost"
           style={{ width: "100%", marginTop: 8 }}
