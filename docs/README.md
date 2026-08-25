@@ -37,7 +37,10 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) | Legacy Auth/RLS sketch — do not apply; superseded by cutover packet |
 | [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md) | Living Auth/RLS cutover design (D-123); 004/005/007 applied; path B approved in principle; **006 blocked**; Production continuity client behind `VITE_PRODUCTION_CONTINUITY` + SELECT-only `008` (unapplied) |
 | [`sql/006_preflight_readonly.sql`](sql/006_preflight_readonly.sql) | Read-only 006 go/no-go queries for the SQL Editor — run before any cutover paste |
+| [`sql/delete_empty_production_household.sql`](sql/delete_empty_production_household.sql) | Jonathan-approved delete of empty Production `HH-9465baf2ec6c9d9d` (paste in SQL Editor) |
+| [`sql/apply_008_production_continuity_select.sql`](sql/apply_008_production_continuity_select.sql) | Paste-ready 008 SELECT bridge (Jonathan approved 2026-08-25) |
 | [`sql/008_seed_production_owner_TEMPLATE.sql`](sql/008_seed_production_owner_TEMPLATE.sql) | Privileged Production owner seed + Personal extract template — fill placeholders; Jonathan approval required |
+| [SUPABASE_GOOGLE_AUTH_SETUP.md](SUPABASE_GOOGLE_AUTH_SETUP.md) | Step-by-step Google provider + redirect URLs for Supabase Auth (D-123 Q1 A) |
 | [`../supabase/migrations/004_auth_rls_prepare.sql`](../supabase/migrations/004_auth_rls_prepare.sql) | Additive Auth preparation — applied 2026-08-24 |
 | [`../supabase/migrations/005_snapshot_cas_hardening.sql`](../supabase/migrations/005_snapshot_cas_hardening.sql) | Forward repair for live 002 CAS — applied 2026-08-24 |
 | [`../supabase/migrations/006_auth_rls_cutover.sql`](../supabase/migrations/006_auth_rls_cutover.sql) | Preflighted deny-by-default project-wide cutover — **not applied**; Production/project boundary decision required |

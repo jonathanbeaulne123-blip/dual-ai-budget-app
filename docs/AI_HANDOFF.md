@@ -94,17 +94,17 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 ## Auth + membership RLS cutover (D-123)
 
-**Status:** Path B approved in principle. Product locks remain Q1 A (Supabase Auth Google → `auth.uid()`), Q2 owner/member, Q3 email or QR invite, and Q4 no household REST for anon. Migrations 004/005 applied; 30 Dev households cleaned; one Production household remains. Preflighted `006_auth_rls_cutover.sql` is **not applied**. Production continuity client is implemented behind `VITE_PRODUCTION_CONTINUITY=1` (off by default): membership-scoped discovery, no Production membership mint from the publishable key, projected shared pushes on RPC and legacy, revert-to-last-sync still Development-only. SELECT-only `008_production_continuity_select.sql` and privileged seed template are in-repo and **unapplied**. See [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md).
+**Status:** Path B approved in principle. Preflight (2026-08-25): migrations `2,4,5,7`; one empty Production household; zero memberships; Personal 0/0/0; zero Google `auth.users`. Jonathan ordered: (1) delete empty Production household, (2) configure Google Auth, (3) apply 008, (4) postpone 006 NOTICE/apply until 1–3 done. Production continuity client remains behind `VITE_PRODUCTION_CONTINUITY=1` (off). See [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md), [SUPABASE_GOOGLE_AUTH_SETUP.md](SUPABASE_GOOGLE_AUTH_SETUP.md).
 
 **Budget delta (5):** `+3` readiness — preparation live; Production continuity client ready behind flag; deny-by-default door still inactive until 006.
 
 **Engagement delta (3):** `0`
 
-**Next owner:** Jonathan — run `docs/sql/006_preflight_readonly.sql`; export Production; approve apply of 008 + filled seed template; configure Google Auth; revise 006 Production abort to NOTICE; rehearse `009_rollback_006.sql`; then approve 006 apply.
+**Next owner:** Jonathan — paste delete SQL, paste 008, complete Google Auth setup. Then bring back 006 Production-abort NOTICE + rollback rehearsal.
 
-**Risk:** Release. Independent trust review before any apply. Do not enable `VITE_PRODUCTION_CONTINUITY` until export + privileged Personal extract exist.
+**Risk:** Release. This agent cannot apply hosted SQL (no DB password in cloud env); Jonathan pastes in SQL Editor.
 
-**Environment / data disclosure:** No hosted schema applied this packet. No Production row mutation. Fictional fixtures in tests only.
+**Environment / data disclosure:** No hosted schema applied by the agent this turn. Delete + 008 require Jonathan's SQL Editor Run.
 
 ## Trust-foundation worksession (2026-08-24, local branch)
 
