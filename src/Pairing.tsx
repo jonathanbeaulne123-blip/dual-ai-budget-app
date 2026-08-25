@@ -112,7 +112,7 @@ export function WelcomeJoin({
         await onJoined(await joinSharedHousehold(raw, undefined, environment));
         return;
       }
-      throw new Error("Paste the Auth join link, the three-word phrase, or a Hearth Pass.");
+      throw new Error("Paste an invite link, type the three-word household code, or import a Hearth Pass.");
     } catch (caught) {
       onError(caught instanceof Error ? caught.message : String(caught));
     } finally {
@@ -122,11 +122,11 @@ export function WelcomeJoin({
 
   return (
     <>
-      <label>Join link, phrase, or Hearth Pass</label>
+      <label>3-word household code or invite link</label>
       <input
         value={inviteInput}
         onChange={(event) => onInviteInput(event.target.value)}
-        placeholder={supabaseAuthEnabled() ? "Auth link or cedar lantern kite" : "cedar lantern kite"}
+        placeholder={supabaseAuthEnabled() ? "Invite link or cedar lantern kite" : "cedar lantern kite"}
         autoCapitalize="none"
         autoCorrect="off"
       />

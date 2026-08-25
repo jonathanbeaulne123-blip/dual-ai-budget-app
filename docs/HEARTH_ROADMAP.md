@@ -301,6 +301,7 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 **Exit condition:** delight increases completion and shared understanding without creating pressure, distraction, or financial side effects.
 
 - [ ] Unlock short, human-reviewed lessons after real workflow wins; lessons simulate but never post.
+- [ ] **Future financial-education academy (not implemented):** design a Fabulous/Duolingo-style interactive quest path that can begin with age-five concepts such as “what is money?” and “what is a bank account?”, then grow through household budgeting, credit, investing, bookkeeping, and CPA-level topics such as efficient tax filing. Keep difficulty, language, and pacing adaptable to the learner; label jurisdiction, tax year, sources, and professional-advice boundaries. Quests may teach and simulate, but never post money, file a return, or imply a credential.
 - [ ] Add cooperative household quests tied to safe actions such as reconcile/review, never spending or partner comparison.
 - [ ] Use rolling/graceful progress; no punitive streak reset, hearts, scarcity, shame, or pet harm.
 - [ ] Let Hercules explain deterministic results and ask one useful question at a time; retain explicit consent and memory controls.
