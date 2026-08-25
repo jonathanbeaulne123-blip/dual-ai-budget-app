@@ -42,11 +42,17 @@ if (!/^\d{3}$/.test(arg)) {
 }
 
 const migrationsDir = fileURLToPath(new URL("../supabase/migrations/", import.meta.url));
-const match = readdirSync(migrationsDir).find((name) => name.startsWith(`${arg}_`) && name.endsWith(".sql"));
-if (!match) {
+const matches = readdirSync(migrationsDir).filter((name) => name.startsWith(`${arg}_`) && name.endsWith(".sql"));
+if (!matches.length) {
   console.error(`No migration file starting with ${arg}_ in supabase/migrations/`);
   process.exit(1);
 }
+if (matches.length > 1) {
+  console.error(`Ambiguous migration prefix ${arg}_ — rename so exactly one file matches:`);
+  for (const name of matches) console.error(`  - ${name}`);
+  process.exit(1);
+}
+const match = matches[0];
 
 const migrationPath = `${migrationsDir}${match}`;
 console.log(`Applying ${match} to project ${PROJECT_REF}…`);
@@ -88,6 +94,19 @@ try {
     console.log("household_snapshots columns:", cols.map((row) => row.column_name).join(", ") || "(missing)");
     console.log("function:", fn[0]?.proname || "(missing)");
   }
+  if (arg === "007") {
+    const check = await sql`
+      select conname, pg_get_constraintdef(oid) as def
+      from pg_constraint
+      where conrelid = 'public.households'::regclass
+        and contype = 'c'
+        and conname like 'households_timezone%'
+      order by conname
+    `;
+    console.log("households timezone checks:", check.map((row) => `${row.conname}: ${row.def}`).join(" | ") || "(none)");
+  }
+  const ids = await sql`select id from public.schema_migrations order by id`;
+  console.log("schema_migrations ids:", ids.map((row) => row.id).join(", ") || "(empty)");
   console.log(`applied ${match}`);
 } catch (caught) {
   const message = caught instanceof Error ? caught.message : String(caught);

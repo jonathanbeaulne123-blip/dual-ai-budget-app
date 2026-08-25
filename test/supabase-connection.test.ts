@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   DIRECT_HOST,
@@ -86,5 +86,25 @@ describe("hosted books migration", () => {
     expect(casHardening).toMatch(/compacted offline/i);
     expect(casHardening).toMatch(/VALUES \(5,/);
     expect(casHardening).not.toMatch(/DROP COLUMN|DELETE FROM public\.household_snapshots/i);
+  });
+
+  it("keeps one SQL file per numeric prefix and parks D-126 timezone as 007", () => {
+    const names = readdirSync("supabase/migrations").filter((name) => name.endsWith(".sql"));
+    const byPrefix = new Map<string, string[]>();
+    for (const name of names) {
+      const prefix = name.slice(0, 3);
+      const list = byPrefix.get(prefix) ?? [];
+      list.push(name);
+      byPrefix.set(prefix, list);
+    }
+    for (const [prefix, list] of byPrefix) {
+      expect(list, `prefix ${prefix}`).toHaveLength(1);
+    }
+    expect(names).toContain("007_household_timezone_iana.sql");
+    expect(names.some((name) => name.startsWith("004_household"))).toBe(false);
+    const tz = readFileSync("supabase/migrations/007_household_timezone_iana.sql", "utf8");
+    expect(tz).toMatch(/DO NOT APPLY/i);
+    expect(tz).toMatch(/VALUES \(7,/);
+    expect(tz).toMatch(/households_timezone_nonempty/);
   });
 });
