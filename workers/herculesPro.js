@@ -47,6 +47,25 @@ const TOOL_PROPERTIES = {
   limit: { type: "integer", minimum: 1, maximum: 10 },
 };
 
+const TOOL_PROPERTY_NAMES = {
+  account_balance: ["view", "account"],
+  find_transactions: ["view", "period", "from", "to", "member", "account", "category", "merchant", "minimumAmountCents", "maximumAmountCents", "limit"],
+  spending_summary: ["view", "period", "from", "to", "member", "account", "category", "merchant"],
+  income_summary: ["view", "period", "from", "to", "member", "account", "category", "merchant"],
+  compare_spending: ["view", "currentPeriod", "comparisonPeriod", "member", "category"],
+  bills_due: ["view", "horizonDays"],
+  shift_summary: ["view", "period", "from", "to", "member"],
+  goal_progress: ["view", "goal"],
+  money_owed: ["view"],
+  cash_position: ["view"],
+  budget_status: ["view", "period"],
+  category_breakdown: ["view", "period", "type", "limit"],
+  credit_card_status: ["view", "account"],
+  net_worth: ["view"],
+  audit_health: ["view"],
+  duplicate_review: ["view", "limit"],
+};
+
 function json(body, status = 200, headers = {}) {
   return new Response(JSON.stringify(body), {
     status,
@@ -56,6 +75,10 @@ function json(body, status = 200, headers = {}) {
 
 function originOf(request) {
   return new URL(request.url).origin;
+}
+
+function mcpResource(request) {
+  return `${originOf(request)}/mcp`;
 }
 
 function base64Url(bytes) {
@@ -245,7 +268,11 @@ function toolDefinitions() {
     name,
     title: name.split("_").map((word) => word[0].toUpperCase() + word.slice(1)).join(" "),
     description: `${description} Read-only; uses posted Hearth books and never changes them.`,
-    inputSchema: { type: "object", properties: TOOL_PROPERTIES, additionalProperties: false },
+    inputSchema: {
+      type: "object",
+      properties: Object.fromEntries(TOOL_PROPERTY_NAMES[name].map((property) => [property, TOOL_PROPERTIES[property]])),
+      additionalProperties: false,
+    },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     securitySchemes: [{ type: "oauth2", scopes: ["hearth.read"] }],
     _meta: { securitySchemes: [{ type: "oauth2", scopes: ["hearth.read"] }] },
@@ -269,7 +296,11 @@ async function accessClaims(request, env) {
   const match = request.headers.get("Authorization")?.match(/^Bearer\s+(.+)$/i);
   if (!match) return null;
   try {
-    return await unsealPrivate(env, match[1], "access");
+    const claims = await unsealPrivate(env, match[1], "access");
+    const resource = mcpResource(request);
+    const scopes = String(claims.scope || "").split(/\s+/).filter(Boolean);
+    if (claims.resource !== resource || claims.aud !== resource || !scopes.includes("hearth.read")) return null;
+    return claims;
   } catch {
     return null;
   }
@@ -351,6 +382,10 @@ async function authorize(request, env) {
     if (!client.redirectUris.includes(redirectUri)) throw new Error("Redirect mismatch.");
     if (url.searchParams.get("response_type") !== "code") throw new Error("Only authorization code is supported.");
     if (url.searchParams.get("code_challenge_method") !== "S256" || !url.searchParams.get("code_challenge")) throw new Error("PKCE S256 is required.");
+    const resource = url.searchParams.get("resource") || "";
+    if (resource !== mcpResource(request)) throw new Error("The OAuth resource must be this Hearth MCP server.");
+    const requestedScopes = (url.searchParams.get("scope") || "hearth.read").split(/\s+/).filter(Boolean);
+    if (!requestedScopes.includes("hearth.read") || requestedScopes.some((scope) => scope !== "hearth.read")) throw new Error("Only hearth.read is supported.");
     const now = Math.floor(Date.now() / 1000);
     const approvalRequest = await seal(env, {
       kind: "authorize",
@@ -359,6 +394,7 @@ async function authorize(request, env) {
       state: url.searchParams.get("state") || "",
       challenge: url.searchParams.get("code_challenge"),
       scope: "hearth.read",
+      resource,
       iat: now,
       exp: now + AUTH_REQUEST_TTL_SECONDS,
     });
@@ -374,6 +410,7 @@ async function approve(request, env) {
   const body = await request.json().catch(() => null);
   try {
     const authorization = await unseal(env, body?.authorizationRequest, "authorize");
+    if (authorization.resource !== mcpResource(request) || authorization.scope !== "hearth.read") throw new Error("The authorization request is for a different resource.");
     if (body?.deny === true) {
       const redirect = new URL(authorization.redirectUri);
       redirect.searchParams.set("error", "access_denied");
@@ -405,6 +442,7 @@ async function approve(request, env) {
       clientId: authorization.clientId,
       redirectUri: authorization.redirectUri,
       challenge: authorization.challenge,
+      resource: authorization.resource,
       jti,
       iat: now,
       exp: now + CODE_TTL_SECONDS,
@@ -441,6 +479,8 @@ async function issueTokens(env, claims, clientId) {
     authUserId: claims.authUserId,
     clientId,
     scope: "hearth.read",
+    resource: claims.resource,
+    aud: claims.resource,
     supabaseAccessToken: claims.supabaseAccessToken,
   };
   return {
@@ -479,17 +519,19 @@ async function token(request, env) {
   try {
     const grant = form.get("grant_type");
     const clientId = form.get("client_id") || "";
+    const resource = form.get("resource") || "";
+    if (resource !== mcpResource(request)) throw new Error("The token request is for a different resource.");
     await unseal(env, clientId, "client");
     if (grant === "authorization_code") {
       const code = await unsealPrivate(env, form.get("code"), "code");
-      if (code.clientId !== clientId || code.redirectUri !== form.get("redirect_uri")) throw new Error("Authorization code does not match this client.");
+      if (code.clientId !== clientId || code.redirectUri !== form.get("redirect_uri") || code.resource !== resource) throw new Error("Authorization code does not match this client or resource.");
       if (await sha256Base64Url(form.get("code_verifier") || "") !== code.challenge) throw new Error("PKCE verification failed.");
       if (!await useCodeOnce(env, code.jti, code.exp)) throw new Error("Authorization code was already used.");
       return json(await issueTokens(env, code, clientId));
     }
     if (grant === "refresh_token") {
       const refresh = await unsealPrivate(env, form.get("refresh_token"), "refresh");
-      if (refresh.clientId !== clientId) throw new Error("Refresh token does not match this client.");
+      if (refresh.clientId !== clientId || refresh.resource !== resource || refresh.aud !== resource) throw new Error("Refresh token does not match this client or resource.");
       const renewed = await refreshSupabaseTokens(env, refresh.supabaseRefreshToken);
       const claims = { ...refresh, ...renewed };
       await verifiedMembership(env, claims);
@@ -504,7 +546,16 @@ async function token(request, env) {
 export async function handleHerculesPro(request, env) {
   const url = new URL(request.url);
   if (url.pathname === "/.well-known/oauth-protected-resource" || url.pathname === "/.well-known/oauth-protected-resource/mcp") {
-    return json({ resource: `${url.origin}/mcp`, authorization_servers: [url.origin], scopes_supported: ["hearth.read"], bearer_methods_supported: ["header"] });
+    return json({
+      resource: `${url.origin}/mcp`,
+      authorization_servers: [url.origin],
+      scopes_supported: ["hearth.read"],
+      bearer_methods_supported: ["header"],
+      resource_name: "Hercules Pro read-only Hearth books",
+      resource_documentation: "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/main/docs/HERCULES_PRO.md",
+      resource_policy_uri: "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/main/docs/HERCULES_PRO_PRIVACY.md",
+      resource_tos_uri: "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/main/docs/HERCULES_PRO_TERMS.md",
+    });
   }
   if (url.pathname === "/.well-known/oauth-authorization-server") {
     return json({

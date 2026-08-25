@@ -55,6 +55,8 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
     authorize.searchParams.set("code_challenge_method", "S256");
     authorize.searchParams.set("code_challenge", challenge);
     authorize.searchParams.set("state", "state-1");
+    authorize.searchParams.set("scope", "hearth.read");
+    authorize.searchParams.set("resource", `${origin}/mcp`);
     const authorization = await worker.fetch(new Request(authorize), env);
     const approvalRequest = new URL(authorization.headers.get("Location")!).searchParams.get("herculesProAuthorize");
     expect(approvalRequest).toBeTruthy();
@@ -84,6 +86,7 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
         code: code!,
         code_verifier: verifier,
         redirect_uri: "https://chatgpt.com/aip/callback",
+        resource: `${origin}/mcp`,
       }),
     }), env);
     const tokens = await token.json() as { access_token: string; refresh_token: string; scope: string };
@@ -114,7 +117,7 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
     const refresh = await worker.fetch(new Request(`${origin}/oauth/token`, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ grant_type: "refresh_token", client_id: client.client_id, refresh_token: tokens.refresh_token }),
+      body: new URLSearchParams({ grant_type: "refresh_token", client_id: client.client_id, refresh_token: tokens.refresh_token, resource: `${origin}/mcp` }),
     }), env);
     const refreshed = await refresh.json() as { access_token: string; refresh_token: string };
     expect(refresh.status).toBe(200);
@@ -124,7 +127,7 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
     const replay = await worker.fetch(new Request(`${origin}/oauth/token`, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ grant_type: "authorization_code", client_id: client.client_id, code: code!, code_verifier: verifier, redirect_uri: "https://chatgpt.com/aip/callback" }),
+      body: new URLSearchParams({ grant_type: "authorization_code", client_id: client.client_id, code: code!, code_verifier: verifier, redirect_uri: "https://chatgpt.com/aip/callback", resource: `${origin}/mcp` }),
     }), env);
     expect(replay.status).toBe(400);
   });
@@ -140,6 +143,8 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       clientId: "client",
       redirectUri: "https://chatgpt.com/aip/callback",
       challenge: "challenge",
+      scope: "hearth.read",
+      resource: `${origin}/mcp`,
       state: "state",
       iat: now,
       exp: now + 60,
@@ -151,5 +156,40 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
     }), env);
     expect(result.status).toBe(400);
     expect(await result.text()).toMatch(/Development-only/);
+  });
+
+  it("binds authorization, token exchange, and MCP access to the exact resource", async () => {
+    const now = Math.floor(Date.now() / 1000);
+    const wrongAudience = await herculesProTest.sealPrivate(env, {
+      kind: "access",
+      scope: "hearth.read",
+      resource: "https://example.com/mcp",
+      aud: "https://example.com/mcp",
+      iat: now,
+      exp: now + 60,
+    });
+    const denied = await worker.fetch(new Request(`${origin}/mcp`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${wrongAudience}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 9, method: "tools/list" }),
+    }), env);
+    expect(denied.status).toBe(401);
+
+    const registered = await worker.fetch(new Request(`${origin}/oauth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ redirect_uris: ["https://chatgpt.com/aip/callback"] }),
+    }), env);
+    const client = await registered.json() as { client_id: string };
+    const authorize = new URL(`${origin}/oauth/authorize`);
+    authorize.searchParams.set("client_id", client.client_id);
+    authorize.searchParams.set("redirect_uri", "https://chatgpt.com/aip/callback");
+    authorize.searchParams.set("response_type", "code");
+    authorize.searchParams.set("code_challenge_method", "S256");
+    authorize.searchParams.set("code_challenge", "challenge");
+    authorize.searchParams.set("resource", "https://example.com/mcp");
+    const rejected = await worker.fetch(new Request(authorize), env);
+    expect(rejected.status).toBe(400);
+    expect(await rejected.text()).toMatch(/OAuth resource/);
   });
 });

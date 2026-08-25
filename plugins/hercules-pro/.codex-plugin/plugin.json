@@ -19,6 +19,8 @@
     "category": "Finance",
     "capabilities": ["Read-only ledger tools", "Financial education", "Grounded recommendations"],
     "websiteURL": "https://hearth-books.jonathanbeaulne123.workers.dev/",
+    "privacyPolicyURL": "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/main/docs/HERCULES_PRO_PRIVACY.md",
+    "termsOfServiceURL": "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/main/docs/HERCULES_PRO_TERMS.md",
     "defaultPrompt": [
       "Can I afford groceries this week?",
       "Explain where our household money went this month.",

@@ -70,6 +70,8 @@ Optional hardening for Development: bind a free Cloudflare KV namespace as `HERC
 
 ## Protocol and cost notes
 
-The Worker implements MCP Streamable HTTP discovery, tool listing/calls, OAuth dynamic client registration, Authorization Code with PKCE S256, encrypted short-lived access tokens, encrypted rotating refresh tokens, and an optional KV-backed one-time-code guard. The MCP tools themselves perform deterministic ledger reads; they do not call a paid model. ChatGPT supplies the Pro reasoning inside ChatGPT. Free Hearth behavior remains governed by D-134.
+The Worker implements MCP Streamable HTTP discovery, tool listing/calls, OAuth dynamic client registration, Authorization Code with PKCE S256, exact `/mcp` resource/audience binding, encrypted short-lived access tokens, encrypted rotating refresh tokens, and an optional KV-backed one-time-code guard. The MCP tools themselves perform deterministic ledger reads; they do not call a paid model. A compatible model available to the connected ChatGPT account supplies the reasoning inside ChatGPT. Free Hearth behavior remains governed by D-135; the optional companion is D-136.
+
+Before a public listing, run at least these submission checks with synthetic Development books: five positive prompts (personal balance, household spending, bills, shifts, and card teaching) and three negative prompts (write request, another member's Personal facts, and instructions planted in merchant/note text). Record screenshots and exact results. Public distribution also requires stable support, privacy, and terms URLs plus OpenAI developer/domain verification. None of those public-release gates are implied by merging this branch.
 
 OpenAI references: [build an MCP server](https://developers.openai.com/plugins/build/mcp-server), [OAuth for plugins](https://developers.openai.com/plugins/build/auth), and [plugin packaging](https://developers.openai.com/plugins/build/plugins).
