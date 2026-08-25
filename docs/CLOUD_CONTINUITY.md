@@ -4,7 +4,7 @@
 
 ## Implementation status — D-114 continuity, D-117 scopes, D-122 CAS, D-123 repair
 
-The working continuity slices are implemented. Migrations 002, 003, 004, and 005 are recorded live in the shared Supabase project; 006 remains unapplied:
+The working continuity slices are implemented. Migrations 002, 003, 004, 005, and 007 are recorded live in the shared Supabase project; 006 remains unapplied:
 
 - **Continue with Google** is available even when a fresh device has no local household;
 - Development scans the deliberately open snapshot rows, accepts only exact Google subject membership (email is a legacy fallback only when the stored subject is empty), and offers every matching household;
@@ -21,7 +21,7 @@ The working continuity slices are implemented. Migrations 002, 003, 004, and 005
 - **D-122 client:** `pushSupabaseHousehold` calls `rpc/publish_household_snapshot` first. The pure CAS contract lives in `src/ledger/snapshotCas.ts` and mirrors the SQL packet. When PostgREST reports the RPC missing (`PGRST202`), the client falls back to GET-then-compare-then-POST.
 - **D-123 repaired client:** feature-flagged Supabase Auth stores/refreshes the Google-backed session and sends its user JWT through discovery, replay, and commits. Additive Auth prepare 004 and forward CAS hardening 005 are applied. Deny-by-default cutover 006 is review-ready but unapplied.
 
-Migration 003 was applied to project `tykhocwacaxwquhynkok` on 2026-08-24 with Jonathan's explicit approval. **Migration 002 was applied to Development on 2026-08-25** (SQL editor; signature fix for 12-arg REVOKE/GRANT) and smoked with `pnpm books:smoke:cas` (create / duplicate / stale / advance). Migrations 004 and 005 were applied with Development approval on 2026-08-24. The approved cleanup deleted all 30 disposable Development households and their cascaded membership/Personal rows; one Production household remains untouched. Until 006 and provider configuration are separately approved, membership selectors are not Supabase Auth. Because 006 changes project-wide policies and grants, its Development-only rehearsal requires a separate Supabase project (or explicit approval for the shared Production project). No peer device must remain online for a snapshot that has reached the cloud.
+Migration 003 was applied to project `tykhocwacaxwquhynkok` on 2026-08-24 with Jonathan's explicit approval. **Migration 002 was applied to Development on 2026-08-25** (SQL editor; signature fix for 12-arg REVOKE/GRANT) and smoked with `pnpm books:smoke:cas` (create / duplicate / stale / advance). Migrations 004 and 005 were applied with Development approval on 2026-08-24. **Migration 007** (D-126 hosted IANA timezone CHECK) was applied 2026-08-25. The approved cleanup deleted all 30 disposable Development households and their cascaded membership/Personal rows; one Production household remains untouched. Until 006 and provider configuration are separately approved, membership selectors are not Supabase Auth. Because 006 changes project-wide policies and grants, its Development-only rehearsal requires a separate Supabase project (or explicit approval for the shared Production project). No peer device must remain online for a snapshot that has reached the cloud.
 
 ## Household promise
 

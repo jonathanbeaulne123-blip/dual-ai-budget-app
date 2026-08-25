@@ -103,7 +103,7 @@ describe("hosted books migration", () => {
     expect(names).toContain("007_household_timezone_iana.sql");
     expect(names.some((name) => name.startsWith("004_household"))).toBe(false);
     const tz = readFileSync("supabase/migrations/007_household_timezone_iana.sql", "utf8");
-    expect(tz).toMatch(/DO NOT APPLY/i);
+    expect(tz).toMatch(/Applied to the shared Supabase project/i);
     expect(tz).toMatch(/VALUES \(7,/);
     expect(tz).toMatch(/households_timezone_nonempty/);
   });

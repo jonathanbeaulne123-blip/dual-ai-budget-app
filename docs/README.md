@@ -39,7 +39,7 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [`../supabase/migrations/004_auth_rls_prepare.sql`](../supabase/migrations/004_auth_rls_prepare.sql) | Additive Auth preparation — applied 2026-08-24 |
 | [`../supabase/migrations/005_snapshot_cas_hardening.sql`](../supabase/migrations/005_snapshot_cas_hardening.sql) | Forward repair for live 002 CAS — applied 2026-08-24 |
 | [`../supabase/migrations/006_auth_rls_cutover.sql`](../supabase/migrations/006_auth_rls_cutover.sql) | Preflighted deny-by-default project-wide cutover — **not applied**; Production/project boundary decision required |
-| [`../supabase/migrations/007_household_timezone_iana.sql`](../supabase/migrations/007_household_timezone_iana.sql) | D-126 hosted IANA timezone CHECK — **not applied** (Q8 A); schema id 7 (renamed off colliding Auth `004_`) |
+| [`../supabase/migrations/007_household_timezone_iana.sql`](../supabase/migrations/007_household_timezone_iana.sql) | D-126 hosted IANA timezone CHECK — **applied** 2026-08-25 (schema id 7) |
 | [SITDOWN.md](SITDOWN.md) | Monthly sitdown, leftover, lock, reverse, and export guidance |
 | [GOALS.md](GOALS.md) | Goals vault and leftover parking |
 | [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md) | Private repository and publish workflow |

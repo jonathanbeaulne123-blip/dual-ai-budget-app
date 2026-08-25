@@ -1,6 +1,6 @@
 # Auth + membership RLS cutover (D-123)
 
-> **Live Development status (2026-08-24):** 004 and 005 applied with Jonathan's approval; 30 disposable Development households and their cascaded membership/Personal rows deleted with Jonathan's confirmation. Verification: 0 Development households, 0 memberships, 0 Personal snapshots, and migration ids `[2,4,5]`.
+> **Live Development status (2026-08-25):** 004, 005, and D-126 `007` applied with Jonathan's approval; 30 disposable Development households and their cascaded membership/Personal rows deleted with Jonathan's confirmation. Verification after Auth prep: 0 Development households, 0 memberships, 0 Personal snapshots, and migration ids including `[2,4,5,7]`.
 > **Production:** one Production household remains untouched. **006 is not applied.** Its policies and grants are project-wide, so it cannot be called a Development-only change while Production shares this Supabase project.
 
 ## Goal
@@ -67,7 +67,7 @@ Because the checks occur before policy replacement inside one transaction, a fai
 
 ## Next cutover runbook (006 not performed)
 
-Independent of Auth/RLS: Jonathan may still apply D-126 `007_household_timezone_iana.sql` (`pnpm books:apply:007` or SQL editor) whenever he wants hosted CHECK to accept non-Toronto IANA. That packet does not close the anon bridge.
+Independent of Auth/RLS: D-126 `007_household_timezone_iana.sql` is **applied** (2026-08-25). Hosted CHECK allows nonempty IANA; the app kernel still requires Toronto for books civil (Q2 C). That packet does not close the anon bridge.
 
 1. Decide the project boundary: move Production to a separate Supabase project for a Development-only rehearsal, or explicitly approve a full shared-project cutover. The current 006 intentionally aborts while a Production household exists.
 2. In the chosen project, enable the Google provider and add the kitchen's exact redirect URLs.
