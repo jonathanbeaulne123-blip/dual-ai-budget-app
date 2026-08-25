@@ -35,7 +35,7 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [CLAUDE_COMMAND_STATES_UX.md](CLAUDE_COMMAND_STATES_UX.md) | Command/continuity/conflict/recovery UX spec — merged [PR #76](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/76) |
 | [HOSTED_ROW_INVENTORY.md](HOSTED_ROW_INVENTORY.md) | Leftover hosted-row runbook. Metadata only. Do not delete without Jonathan. |
 | [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) | Legacy Auth/RLS sketch — do not apply; superseded by cutover packet |
-| [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md) | Living Auth/RLS cutover design (D-123); 004/005/007 applied; path B approved in principle; **006 blocked**; Production continuity client behind `VITE_PRODUCTION_CONTINUITY` + SELECT-only `008` (unapplied) |
+| [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md) | Living Auth/RLS cutover (D-123); 004/005/007/008 applied; Google Auth live; **006 not applied** (path B NOTICE + ceiling 1 ready) |
 | [`sql/006_preflight_readonly.sql`](sql/006_preflight_readonly.sql) | Read-only 006 go/no-go queries — re-run before paste |
 | [`sql/009_rollback_006.sql`](sql/009_rollback_006.sql) | Rollback packet after 006 — rehearse on a clone first |
 | [`sql/apply_006_auth_rls_cutover.md`](sql/apply_006_auth_rls_cutover.md) | Paste pointer for 006 (awaiting Jonathan approve) |
@@ -47,7 +47,7 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [`../supabase/migrations/005_snapshot_cas_hardening.sql`](../supabase/migrations/005_snapshot_cas_hardening.sql) | Forward repair for live 002 CAS — applied 2026-08-24 |
 | [`../supabase/migrations/006_auth_rls_cutover.sql`](../supabase/migrations/006_auth_rls_cutover.sql) | Preflighted deny-by-default project-wide cutover — **not applied**; Production/project boundary decision required |
 | [`../supabase/migrations/007_household_timezone_iana.sql`](../supabase/migrations/007_household_timezone_iana.sql) | D-126 hosted IANA timezone CHECK — **applied** 2026-08-25 (schema id 7) |
-| [`../supabase/migrations/008_production_continuity_select.sql`](../supabase/migrations/008_production_continuity_select.sql) | SELECT-only Production continuity bridge — **not applied** (schema id 8) |
+| [`../supabase/migrations/008_production_continuity_select.sql`](../supabase/migrations/008_production_continuity_select.sql) | SELECT-only Production continuity bridge — **applied** 2026-08-25 (schema id 8) |
 | [SITDOWN.md](SITDOWN.md) | Monthly sitdown, leftover, lock, reverse, and export guidance |
 | [GOALS.md](GOALS.md) | Goals vault and leftover parking |
 | [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md) | Private repository and publish workflow |
