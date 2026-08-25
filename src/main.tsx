@@ -4,6 +4,7 @@ import { App } from "./App.tsx";
 import "./styles.css";
 import "./office.css";
 import "./office-phone.css";
+import "./hearth-theme.css";
 import "./hercules.css";
 
 if (typeof window !== "undefined") {

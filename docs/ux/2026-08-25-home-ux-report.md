@@ -1,10 +1,117 @@
 # Hearth UX report — Home vs Books (2026-08-25)
 
-**Status:** rough draft for Jonathan — design direction, not an implementation packet  
+**Status:** rough draft v2 — Jonathan feedback incorporated (2026-08-25 evening)  
 **Scope:** Home / September Office (phone + wide) compared with Books  
-**Evidence:** live Development demo screenshots, code audit of `OfficePhone` / `Office` / `Books` / CSS, hearth-ux-auditor pass  
+**Evidence:** live Development demo screenshots, code audit of `OfficePhone` / `Office` / `Books` / CSS, hearth-ux-auditor pass, round-2 mockups  
 **Budget delta (5):** `0` (report only; money meaning unchanged)  
-**Engagement delta (3):** `+1` if Jonathan picks a Home tile language closer to Books paper
+**Engagement delta (3):** `+2` — Draft C mobile + Draft D desktop + Hercules focus/wander locked
+
+---
+
+## Jonathan's direction (locked 2026-08-25 evening — v3)
+
+| Surface | Pick | Notes |
+|---|---|---|
+| **Mobile Home** | **Draft C ★** | Hybrid seals + story strip + one-at-a-time expand — **final mobile direction** |
+| **Mobile Books** | **C grammar** | Same paper family as Home C |
+| **Desktop Home / room** | **Draft D ★ synthesis** | **First mock stylized room** (`ux_mock_draft_d_wide_paper_desk`) **+ wander pathing** (`ux_mock_d2_desktop_hercules_wander`) |
+| **Desktop Calendar + Books** | **Draft D family** | Same room, not a cold separate app |
+| **Hercules mobile** | **Duolingo focus/unfocus ★** | Small pill → full-screen teacher → dismiss — **exactly this** |
+| **Hercules desktop** | **Ever-present wanderer** | Pathing between furniture; never blocks Confirm |
+| **Theme packet** | **`docs/HEARTH_UI_THEME.md`** | All AIs implement new UI against this |
+
+**Implementation authority:** `docs/HEARTH_UI_THEME.md` + `docs/briefs/CURSOR_UI_THEME_PACKET.md`
+
+---
+
+## Draft pros & cons (Jonathan + audit)
+
+### Draft A — paper stack
+| Pros | Cons |
+|---|---|
+| Simplicity; perfect mobile glance | Not unique enough — lacks *je ne sais quoi* |
+| Easiest scan path | No stamp/story personality |
+| Best Books tile grammar reference | |
+
+### Draft B — wallet stack
+| Pros | Cons |
+|---|---|
+| Loved design; stacks feel tactile | Can feel cluttered — needs spacing refinement |
+| Future swipe-between-stacks animation | More to process at once |
+| Strong “paper you touch” metaphor | |
+
+### Draft C — hybrid seals ★
+| Pros | Cons |
+|---|---|
+| **Perfect mobile Home candidate** | Expand body must stay one-at-a-time |
+| Seals = controllers without dashboard chrome | Seal + story + expand is three layers — tune copy/size |
+| Story strip matches Books | |
+| Room for Hercules focus without losing desk | |
+
+### Draft D — wide paper desk
+| Pros | Cons |
+|---|---|
+| **Perfect desktop direction** | Mobile needs separate shell (C), not D shrunk |
+| Free-move + material tints + rain window | Prior pass slightly stiff — **refined softer + cartoony bg** |
+| Hercules can live on furniture | |
+
+### Draft E — books twin
+| Pros | Cons |
+|---|---|
+| Strong Books rhyme | Redundant once A+B+C are combined |
+| | Combo design accomplishes more |
+
+---
+
+## Hercules — mobile vs desktop (non-negotiable)
+
+```text
+MOBILE (<720px)                    DESKTOP (≥720px)
+─────────────────                  ─────────────────
+Small Duolingo-style mascot        Large Maine Coon always on desk
+corner pill / avatar               wanders, loafs, perch on widgets
+Out of the way until tapped        motion path across instruments
+Tap → FULL-SCREEN focus overlay    never covers Confirm / Post
+Teacher chips + chat               chat bubble optional; cat is scenery
+Dismiss → shrinks back             pin/drag still available
+```
+
+**Kill criterion unchanged:** if Hercules blocks Milk/Confirm, shrink him — on mobile that means **collapsed by default**, not smaller text.
+
+Mockups: `ux_mock_mobile_hercules_focus.png`, `ux_mock_d2_desktop_hercules_wander.png`
+
+---
+
+## Round 2 mockup index
+
+### Desktop — Draft D refined (softer + cartoony background)
+
+| File | Tab |
+|---|---|
+| `ux_mock_d2_desktop_home_soft.png` | Home |
+| `ux_mock_d2_desktop_calendar_soft.png` | Calendar |
+| `ux_mock_d2_desktop_books_soft.png` | Books |
+| `ux_mock_d2_desktop_hercules_wander.png` | Hercules wander concept |
+
+### Mobile Home — A / B / C notes
+
+| File | Variant |
+|---|---|
+| `ux_mock_mobile_home_a_simple.png` | A — simple 2×2 glance |
+| `ux_mock_mobile_home_b_stack.png` | B — overlapping wallet stack |
+| `ux_mock_mobile_home_c_hybrid.png` | **C ★ — near-final** |
+
+### Mobile Books — A / B / C notes
+
+| File | Variant |
+|---|---|
+| `ux_mock_mobile_books_a_simple.png` | A — flat story grid |
+| `ux_mock_mobile_books_b_stack.png` | B — account paper stack |
+| `ux_mock_mobile_books_c_hybrid.png` | **C — matches Home C** |
+
+### Round 1 (still valid reference)
+
+`ux_mock_draft_a` … `ux_mock_draft_e` — original creative set
 
 ---
 
@@ -126,9 +233,15 @@ Fun fails when **decoration wins the hit-test or the first glance**. Kill criter
 - Confirm still posts; widgets never invent CAD
 - Phone stays ≤ ~5 desk objects at rest
 
-### Preferred synthesis (if only one ships)
+### Preferred synthesis (Jonathan v2)
 
-**Draft B lean + Draft A story strip:** thin weather ribbon → one needs line → Month net hero paper → stacked/overlapping Books-like tiles (Wallet, Next bill, Shifts, Pad) → nav. Optional slim Post/Due/Close **seals** (Draft C) if stamps still earn their keep after tile stack proves itself.
+**Mobile:** **Draft C** shell — thin weather ribbon, **paper seals** (Post/Due/Close), **Today's stories** 2×2, **one expandable notebook body**, **Duolingo Hercules** collapsed. Borrow **A**'s glance simplicity inside tiles; borrow **B**'s stack overlap only where it aids depth (not full vertical deck on phone Home).
+
+**Desktop:** **Draft D refined** — same instrument layout, softer watercolor wall, faint cartoony margin doodles, sentence-case paper names, **Hercules ever-wandering**. Calendar + Books tabs use the **same room** (not a cold separate app).
+
+**Books mobile:** **C hybrid** — seals for pane family (Wallet/Activity/Close month), hero net worth, story strip, expandable statement notebook.
+
+**Drop:** Draft E as standalone; combo A+B+C wins.
 
 ### Small fixes worth doing even before a redesign
 
@@ -178,14 +291,17 @@ Jonathan’s stated preference (“Home widgets more like Books… warm beige…
 
 ---
 
-## 9. Proposed next implementation slice (optional)
+## 9. Proposed next implementation slice (after desktop mock sign-off)
 
-Only after Jonathan picks a draft letter:
+Jonathan asked for **more desktop mockups before code** — round 2 delivers Home, Calendar, Books + Hercules wander. Next optional mock pass if needed: **Plan tab desktop**, **Add sheet in room**, **mobile Hercules focus with Maine Coon** (round-2 focus mock used generic teacher silhouette — production stays Maine Coon per D-044).
 
-1. Phone Home tile shell: story/wallet grammar, sentence-case, no tilt (or tilt only in play mode)  
-2. Collapse stamps into seals **or** drop them if Story strip covers Post/Due/Close  
-3. Shrink chalk band default height; notes stay, weather stays non-CAD  
-4. Wide: rename instruments to finance words; keep material tints + Hercules perch  
-5. Focused a11y + 320/390/720/1100 visual proof  
+Implementation order once approved:
 
-No money kernel changes. No Auth/RLS. Development demo data only.
+1. Phone Home C shell + Duolingo Hercules expand/collapse  
+2. Phone Books C shell (shared tile components with Home)  
+3. Desktop D refined tokens (softer bg, sentence-case instruments)  
+4. Desktop Calendar/Books room chrome parity  
+5. B-stack swipe animation (Engagement 3) — after legibility pass  
+6. a11y fixes from auditor (gutters, stamp type, drawer 44px)
+
+No money kernel changes. Development demo only.

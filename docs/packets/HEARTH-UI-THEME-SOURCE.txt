@@ -1,0 +1,38 @@
+# Hearth UI theme — attach pack for implementers
+
+Paste `docs/HEARTH_UI_THEME.md` first. This file is a compact index; living canon is the full theme doc + UX report.
+
+## Locked (Jonathan 2026-08-25)
+
+MOBILE (<720px): Draft C — weather ribbon, wax seals (Post/Due/Close), 2x2 story strip, one notebook expand, Duolingo Hercules pill → full-screen focus/unfocus.
+
+DESKTOP (≥720px): Draft D — first mock stylized room (rain window, paper objects on desk) PLUS Hercules wander pathing between furniture. Same room for Calendar/Books tabs.
+
+SHARED: --paper #f3eee4, --card #fffaf2, Figtree body, Fraunces money, sentence-case finance labels, paper tile grammar (kind/name/value), no CAD on weather, Confirm never covered.
+
+DROPPED: Draft E standalone; phone stamp chips; uppercase furniture names.
+
+## New feature rules
+
+1. Reuse paper tile / wax seal / notebook expand — do not invent card types.
+2. Pick shell: mobile C or desktop D — never one blurred responsive layout.
+3. Hercules: mobile collapsed until focus; desktop ever-wandering Maine Coon.
+4. Verify 320/390/720/1100, reduced motion, 44px targets, aria-expanded+controls.
+5. Budget delta 5 wins over Engagement 3 if they conflict.
+
+## Key files
+
+src/OfficePhone.tsx, src/Office.tsx, src/Books.tsx, src/Calendar.tsx, src/Hercules.tsx
+src/styles.css, src/office.css, src/office-phone.css
+
+## Mockups (PR #117)
+
+ux_mock_draft_d_wide_paper_desk.png — desktop visual style
+ux_mock_d2_desktop_hercules_wander.png — desktop pathing
+ux_mock_mobile_home_c_hybrid.png — mobile Home
+ux_mock_mobile_books_c_hybrid.png — mobile Books
+ux_mock_mobile_hercules_focus.png — mobile focus mode
+
+## Implementation packet
+
+docs/briefs/CURSOR_UI_THEME_PACKET.md

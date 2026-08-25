@@ -1,7 +1,5 @@
-import { useMemo, useState, type ReactNode, type Ref } from "react";
-import { useFurniture } from "./widgets/useFurniture.ts";
+import { useMemo, useState, type ReactNode } from "react";
 import {
-  INSTRUMENT_KIND,
   auditOpinion,
   formatDateLabel,
   householdWallet,
@@ -10,6 +8,7 @@ import {
   phoneDrawerIds,
   phoneDueBill,
   phoneRailOrder,
+  phoneStoryIds,
   instrumentIsOpen,
   revealPhoneInstrument,
   toggleInstrumentPin,
@@ -26,48 +25,27 @@ import { BlotterBody, BlotterGlance } from "./widgets/Blotter.tsx";
 import { CalculatorBody, CalculatorGlance } from "./widgets/CalculatorPad.tsx";
 import { TimesheetBody, TimesheetGlance } from "./widgets/Timesheet.tsx";
 import { ChalkboardBody } from "./widgets/ChalkboardDesk.tsx";
-import { WindowBand } from "./widgets/WindowBand.tsx";
+import { WeatherRibbon } from "./widgets/WeatherRibbon.tsx";
 import { JarsBody, JarsGlance } from "./widgets/Jars.tsx";
 import { LampBody, LampGlance, lampAria } from "./widgets/Lamp.tsx";
 import { MailBody, MailGlance } from "./widgets/Mail.tsx";
 import { WalletBody, WalletGlance } from "./widgets/WalletTray.tsx";
+import { NotebookBody, PaperTile, StoryStrip, WaxSeal } from "./theme/PaperTheme.tsx";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
 
 /**
- * OfficePhone — the mobile Home board (< 720px only).
- *
- * Wide is untouched: Office.tsx branches to this component before it renders
- * the desk canvas, so every wide code path below that branch is unchanged.
- *
- * Three stamps carry wayfinding. Five objects at rest. Confirm still posts
- * through CalculatorBody. Stamps never write money.
+ * OfficePhone — mobile Home board (< 720px). Draft C shell:
+ * weather ribbon → wax seals → 2×2 story strip → one notebook expand.
  */
 
-type Stamp = {
-  key: "post" | "due" | "close";
-  label: string;
-  value: string;
-  sub: string;
-  pending: boolean;
-  go: InstrumentId;
-};
-
 type Spec = {
+  kind: string;
   name: string;
   glance: ReactNode;
   aria: string;
   body: ReactNode;
-  wide?: boolean;
-  kind?: "text";
   warn?: boolean;
 };
-
-/** Stable per-object tilt, so the same thing is always askew the same way. */
-function tilt(id: string): number {
-  let n = 0;
-  for (const ch of id) n += ch.charCodeAt(0);
-  return ((n % 9) - 4) / 5.5;
-}
 
 export function OfficePhone({
   household, dashboard, sill, reading, layout, onLayout,
@@ -109,7 +87,7 @@ export function OfficePhone({
   onMarkPaid: (recurrenceId: string, summary: string) => void;
   onGo: (tab: HearthTab) => void;
 }) {
-  const [chalkShrunk, setChalkShrunk] = useState(false);
+  const [chalkOpen, setChalkOpen] = useState(false);
   const opinion = useMemo(() => auditOpinion(household), [household]);
   const findings = useMemo(() => runHealthCheck(household), [household]);
   const streak = useMemo(() => shiftPostingStreak(household, today), [household, today]);
@@ -134,6 +112,7 @@ export function OfficePhone({
     lampLit,
     expanded: layout.expanded,
   });
+  const storyIds = phoneStoryIds(order);
 
   const expanded = layout.expanded;
   const setExpanded = (id: InstrumentId | null) =>
@@ -143,36 +122,30 @@ export function OfficePhone({
   const bill = phoneDueBill(dashboard.upcoming);
   const closeNeeds = findings.length > 0;
 
-  const stamps: Stamp[] = [
-    {
-      key: "post", label: "Post", pending: !postedToday, go: "calculator",
-      value: postedToday ? "—" : "Milk",
-      sub: postedToday ? "posted today" : "nothing yet today",
-    },
-    {
-      key: "due", label: "Due", pending: Boolean(bill), go: "mail",
-      value: bill ? bill.title : "—",
-      sub: bill ? formatDateLabel(bill.date) : "nothing near",
-    },
-    {
-      key: "close", label: "Close", pending: closeNeeds, go: "lamp",
-      value: closeNeeds ? String(findings.length) : "—",
-      sub: closeNeeds ? "needs you" : "books agree",
-    },
-  ];
-
-  function tapStamp(stamp: Stamp) {
-    onLayout(revealPhoneInstrument(layout, stamp.go));
+  function tapSeal(go: InstrumentId) {
+    onLayout(revealPhoneInstrument(layout, go));
   }
+
+  const kindLabel: Partial<Record<InstrumentId, string>> = {
+    blotter: "Month",
+    wallet: "Wallet",
+    mail: "Mail",
+    timesheet: "Shifts",
+    jars: "Jars",
+    lamp: "Health",
+    calculator: "Pad",
+  };
 
   const specs: Partial<Record<InstrumentId, Spec>> = {
     blotter: {
-      name: "Month net", wide: true,
+      kind: kindLabel.blotter ?? "Month",
+      name: "Month net",
       glance: <BlotterGlance dashboard={dashboard} opinion={opinion} findings={findings.length} />,
       aria: `Month net. ${dashboard.monthLabel}.`,
       body: <BlotterBody dashboard={dashboard} opinion={opinion} findings={findings.length} />,
     },
     calculator: {
+      kind: kindLabel.calculator ?? "Pad",
       name: "Pad",
       glance: <CalculatorGlance amount={form.amount} />,
       aria: `Pad. ${form.note || "Post milk."}`,
@@ -186,7 +159,7 @@ export function OfficePhone({
       ),
     },
     timesheet: {
-      kind: "text",
+      kind: kindLabel.timesheet ?? "Shifts",
       name: "Shifts",
       warn: streak.waiting,
       glance: <TimesheetGlance household={household} streak={streak} memberId={memberId} />,
@@ -202,13 +175,14 @@ export function OfficePhone({
       ),
     },
     jars: {
-      kind: "text",
+      kind: kindLabel.jars ?? "Jars",
       name: "Jars",
       glance: <JarsGlance dashboard={dashboard} />,
       aria: "Jars.",
       body: <JarsBody dashboard={dashboard} household={household} today={today} busy={busy} onPlan={() => onGo("plan")} onCommand={onKitchen} />,
     },
     lamp: {
+      kind: kindLabel.lamp ?? "Health",
       name: "Health",
       warn: lampLit,
       glance: <LampGlance findings={findings} />,
@@ -216,6 +190,7 @@ export function OfficePhone({
       body: <LampBody findings={findings} onMore={() => onGo("more")} />,
     },
     mail: {
+      kind: kindLabel.mail ?? "Mail",
       name: "Next bill",
       warn: mailWarn,
       glance: <MailGlance dashboard={dashboard} today={today} />,
@@ -223,78 +198,104 @@ export function OfficePhone({
       body: <MailBody dashboard={dashboard} today={today} onMarkPaid={onMarkPaid} onCalendar={() => onGo("calendar")} />,
     },
     wallet: {
+      kind: kindLabel.wallet ?? "Wallet",
       name: "Wallet",
       warn: walletIsWarn,
       glance: <WalletGlance wallet={wallet} />,
       aria: "Wallet.",
-      body: (
-        <WalletBody wallet={wallet} onPayCard={onPayCard} onOpenAccount={onOpenAccount} />
-      ),
+      body: <WalletBody wallet={wallet} onPayCard={onPayCard} onOpenAccount={onOpenAccount} />,
     },
   };
 
   const drawer = phoneDrawerIds(order.filter((id) => id !== "chalkboard"));
+  const openSpec = expanded && expanded !== "window" ? specs[expanded as InstrumentId] : undefined;
+  const openId = expanded && expanded !== "window" ? (expanded as InstrumentId) : null;
+  const panelId = openId ? `ph-notebook-${openId}` : "ph-notebook";
 
   return (
-    <div className={`office-phone ${adding ? "is-adding" : ""}`} data-desk={deskKey}>
-      <WindowBand
-        reading={reading}
-        chalkboardBody={
-          <ChalkboardBody
-            household={household}
-            memberId={memberId}
-            busy={busy}
-            onCommand={onKitchen}
-            reading={reading}
-            shrinkable
-            shrunk={chalkShrunk}
-            onToggleShrink={() => setChalkShrunk((on) => !on)}
-          />
-        }
-      />
+    <div className={`office-phone office-phone-c ${adding ? "is-adding" : ""}`} data-desk={deskKey}>
+      <WeatherRibbon reading={reading} />
 
-      <div className="ph-sill">
-        <span className="ph-needs">{sill.needsMe}</span>
+      {sill.needsMe && (
+        <div className="ph-sill">
+          <span className="ph-needs">{sill.needsMe}</span>
+        </div>
+      )}
+
+      <div className="hearth-wax-seals ph-seals" role="group" aria-label="Desk seals">
+        <WaxSeal
+          label="Post"
+          tone="post"
+          pending={!postedToday}
+          value={postedToday ? "—" : "Add"}
+          sub={postedToday ? "posted today" : "nothing yet today"}
+          onClick={() => tapSeal("calculator")}
+        />
+        <WaxSeal
+          label="Due"
+          tone="due"
+          pending={Boolean(bill)}
+          value={bill ? bill.title : "—"}
+          sub={bill ? formatDateLabel(bill.date) : "nothing near"}
+          onClick={() => tapSeal("mail")}
+        />
+        <WaxSeal
+          label="Close"
+          tone="close"
+          pending={closeNeeds}
+          value={closeNeeds ? String(findings.length) : "—"}
+          sub={closeNeeds ? "needs you" : "books agree"}
+          onClick={() => tapSeal("lamp")}
+        />
       </div>
 
-      <div className="ph-stamps">
-        {stamps.map((stamp) => (
-          <button
-            key={stamp.key}
-            type="button"
-            className={`ph-stamp ${stamp.pending ? "is-pending" : "is-clear"}`}
-            onClick={() => tapStamp(stamp)}
-            aria-label={`${stamp.label}. ${stamp.value}. ${stamp.sub}.`}
-          >
-            <span className="ph-lbl">{stamp.label}</span>
-            <span className="ph-val">{stamp.value}</span>
-            <span className="ph-sub">{stamp.sub}</span>
-          </button>
-        ))}
-      </div>
-
-      <div className="ph-rail">
-        {order.filter((id) => id !== "chalkboard").map((id) => {
+      <StoryStrip>
+        {storyIds.map((id) => {
           const spec = specs[id];
           if (!spec) return null;
           return (
-            <PhoneInstrument
+            <PaperTile
               key={id}
-              id={id}
-              spec={spec}
-              open={instrumentIsOpen(layout, id)}
-              adding={adding}
-              pinned={(layout.pinned ?? []).includes(id)}
-              onToggle={() => setExpanded(id)}
-              onPin={() => onLayout(toggleInstrumentPin(layout, id))}
+              kind={spec.kind}
+              name={spec.name}
+              value={spec.glance}
+              warn={spec.warn}
+              active={instrumentIsOpen(layout, id)}
+              onClick={() => setExpanded(id)}
+              ariaLabel={spec.aria}
             />
           );
         })}
-      </div>
+      </StoryStrip>
+
+      {openSpec && openId && (
+        <NotebookBody
+          title={openSpec.name}
+          open
+          panelId={panelId}
+          onClose={() => setExpanded(null)}
+        >
+          <div className={`ph-notebook-inner ${adding ? "is-inert" : ""}`}>
+            <button
+              type="button"
+              className={`ph-pin ${(layout.pinned ?? []).includes(openId) ? "is-on" : ""}`}
+              onClick={() => onLayout(toggleInstrumentPin(layout, openId))}
+              aria-label={(layout.pinned ?? []).includes(openId) ? `Unpin ${openSpec.name}` : `Pin ${openSpec.name} open`}
+            >
+              {(layout.pinned ?? []).includes(openId) ? "pinned" : "pin"}
+            </button>
+            {openSpec.body}
+          </div>
+        </NotebookBody>
+      )}
 
       {drawer.length > 0 && (
         <details className="ph-drawer">
-          <summary>Drawer · {drawer.length}</summary>
+          <summary>
+            More instruments
+            <span aria-hidden="true"> · </span>
+            {drawer.length}
+          </summary>
           <div className="ph-drawer-grid">
             {drawer.map((id) => (
               <button
@@ -309,42 +310,18 @@ export function OfficePhone({
           </div>
         </details>
       )}
-    </div>
-  );
-}
 
-/** One object on the phone desk. Publishes a corner seat so Hercules does not sit on the glance. */
-function PhoneInstrument({
-  id, spec, open, adding, pinned, onToggle, onPin,
-}: {
-  id: InstrumentId;
-  spec: Spec;
-  open: boolean;
-  adding: boolean;
-  pinned: boolean;
-  onToggle: () => void;
-  onPin: () => void;
-}) {
-  const ref = useFurniture(id, INSTRUMENT_KIND[id], true, Boolean(spec.warn), {
-    enabled: !adding,
-    seat: "corner",
-  });
-  return (
-    <section
-      ref={ref as unknown as Ref<HTMLElement>}
-      className={`ph-inst ${spec.wide ? "is-wide" : ""} ${open ? "is-open" : ""} ${adding ? "is-inert" : ""} ${spec.warn ? "is-warn" : ""}`}
-      style={{ ["--rot" as string]: `${tilt(id)}deg` }}
-      data-kind={spec.kind ?? "figure"}
-      aria-label={spec.aria}
-    >
-      <button type="button" className="ph-head" onClick={onToggle} aria-expanded={open}>
-        <span className="ph-name">{spec.name}</span>
-        <span className="ph-value">{spec.glance}</span>
-      </button>
-      <button type="button" className={`ph-pin ${pinned ? "is-on" : ""}`} onClick={onPin} aria-label={pinned ? `Unpin ${spec.name}` : `Pin ${spec.name} open`}>
-        {pinned ? "pinned" : "pin"}
-      </button>
-      {open && <div className="ph-body">{spec.body}</div>}
-    </section>
+      <details className="ph-chalk" open={chalkOpen} onToggle={(event) => setChalkOpen(event.currentTarget.open)}>
+        <summary>Chalkboard</summary>
+        <div className={`ph-chalk-body ${adding ? "is-inert" : ""}`}>
+          <ChalkboardBody
+            household={household}
+            memberId={memberId}
+            busy={busy}
+            onCommand={onKitchen}
+          />
+        </div>
+      </details>
+    </div>
   );
 }

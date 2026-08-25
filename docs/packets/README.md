@@ -9,3 +9,4 @@ Generated attach files for other models. They are not the plan; living canon is 
 | [../CLAUDE_MOBILE_SHELL.md](../CLAUDE_MOBILE_SHELL.md) | **Shipped** — mobile Home (`OfficePhone`) (D-079). |
 | [CLAUDE-MOBILE-SHELL-SOURCE.txt](CLAUDE-MOBILE-SHELL-SOURCE.txt) | Historical attach pack. Regenerate: `pnpm pack:claude-mobile`. |
 | [CLAUDE-OFFICE-UX-SOURCE.txt](CLAUDE-OFFICE-UX-SOURCE.txt) | Historical attach pack. Prompt was [../CLAUDE_OFFICE_UX.md](../CLAUDE_OFFICE_UX.md). Regenerate: `pnpm pack:claude-ux`. |
+| [HEARTH-UI-THEME-SOURCE.txt](HEARTH-UI-THEME-SOURCE.txt) | **Current** — compact attach index for UI theme. Full canon: [../HEARTH_UI_THEME.md](../HEARTH_UI_THEME.md). |

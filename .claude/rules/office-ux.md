@@ -7,8 +7,10 @@ paths:
 
 # Office UX
 
-- Mobile below 720px is `OfficePhone`: five or fewer default objects, one clear hero fact, and milk postable in roughly ten seconds.
-- Wide at or above 720px is the customizable office. Both branches share kernel, theme, Commands, and financial meaning, not layout decisions.
+Living theme packet: `docs/HEARTH_UI_THEME.md` (mobile Draft C, desktop Draft D, Hercules focus/wander).
+
+- Mobile below 720px is `OfficePhone`: **Draft C** — wax seals, story strip, one notebook expand, Duolingo Hercules pill → focus overlay; five or fewer default objects at rest; milk postable in roughly ten seconds.
+- Wide at or above 720px is the customizable office: **Draft D** stylized room + Hercules wander pathing. Both branches share kernel, theme tokens, Commands, and financial meaning, not layout decisions.
 - Verify 320px, 390px, 720px, and approximately 1100px.
 - Never cover Confirm/Post, hide the active environment, invent CAD, or make a decorative object look authoritative.
 - Preserve keyboard order, visible focus, semantic controls, sufficient contrast, reduced motion, and touch targets.
