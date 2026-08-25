@@ -14,7 +14,7 @@ describe("Auth/RLS readiness packet", () => {
       expect(packet).toMatch(/DO NOT APPLY/i);
       expect(packet).not.toMatch(/tykhocwacaxwquhynkok|service_role key\s*=/i);
     }
-    expect(cutover).toMatch(/006 is not applied/i);
+    expect(cutover).toMatch(/006 applied/i);
   });
 
   it("locks path B Production ceiling as NOTICE (abort only above ceiling 1)", () => {

@@ -1,6 +1,6 @@
 # Auth + membership RLS cutover (D-123)
 
-> **Live Development status (2026-08-25):** 004, 005, D-126 `007`, and SELECT bridge `008` applied. Empty Production household deleted. Google Auth provider live; at least one Google `auth.users` identity exists. **006 is not applied.** Path B NOTICE revision (Production ceiling 1) is in the migration file awaiting Jonathan’s paste approval after a green preflight re-run.
+> **Live status (2026-08-25):** 004, 005, D-126 `007`, SELECT bridge `008`, and deny-by-default cutover **`006` applied** (Jonathan paste; policy proof `hearth_households_select`). Empty Production household previously deleted. Google Auth live. Path B NOTICE + ceiling 1 was in force at apply. Smoke Create / invite / anon denial still recommended.
 
 ## Goal
 
@@ -22,7 +22,7 @@ Before meaningful October data, a Google-authenticated person can reach their ow
 |---|---|---|---|
 | 004 | `supabase/migrations/004_auth_rls_prepare.sql` | Adds Auth bindings, roles, hashed one-time invitations, and a safe legacy-owner claim | **Applied**; it deliberately leaves the temporary Development bridge open |
 | 005 | `supabase/migrations/005_snapshot_cas_hardening.sql` | Repairs live 002 with an advisory transaction lock and rejects non-advancing writes; compacted offline revision jumps remain valid | **Applied** |
-| 006 | `supabase/migrations/006_auth_rls_cutover.sql` | Preflights every binding/owner/shared payload, then closes anon access and exposes bounded authenticated RPCs | **Not applied**; this is a project-wide cutover |
+| 006 | `supabase/migrations/006_auth_rls_cutover.sql` | Preflights every binding/owner/shared payload, then closes anon access and exposes bounded authenticated RPCs | **Applied** 2026-08-25 (path B NOTICE + ceiling 1) |
 
 The already-applied 002 file is history. Its repair is forward migration 005; do not edit/reapply 002 and pretend the live database changed.
 
@@ -74,15 +74,14 @@ Independent of Auth/RLS: D-126 `007_household_timezone_iana.sql` is **applied** 
 
 **Mandatory sequence now (Jonathan)**
 
-1. ~~Delete empty Production household~~ — done (already absent)
-2. ~~Configure Google Auth~~ — done (`auth.users` has Google identity)
-3. ~~Apply 008~~ — done (`schema_migrations` id 8)
-4. Re-run [`sql/006_preflight_readonly.sql`](sql/006_preflight_readonly.sql) (expect green with 0 households)
-5. Review path B NOTICE revision in `006_auth_rls_cutover.sql` (ceiling 1) and [`sql/009_rollback_006.sql`](sql/009_rollback_006.sql)
-6. **Only after explicit Jonathan approve:** paste `supabase/migrations/006_auth_rls_cutover.sql` in the SQL Editor
-7. Smoke Create / email / QR / revoke / anon denial / wrong-household denial on Auth-enabled kitchen
+1. ~~Delete empty Production household~~ — done
+2. ~~Configure Google Auth~~ — done
+3. ~~Apply 008~~ — done
+4. ~~Apply 006~~ — done (policy proof: `hearth_households_select`)
+5. Smoke on Auth-enabled kitchen: Continue with Google → open/create household → offline outbox → anon denial (publishable key alone must not read household rows) → wrong-household denial
+6. Optional: Bianca Continue with Google; email/QR invite chrome still a follow-up
 
-**Client readiness:** Production discovery/transport remains behind `VITE_PRODUCTION_CONTINUITY=1` (off by default). Kitchen Auth door is live via `VITE_SUPABASE_AUTH_ENABLED=1`.
+Rollback if needed: [`sql/009_rollback_006.sql`](sql/009_rollback_006.sql) on Jonathan’s explicit order only.
 
 ## Remaining live rehearsal requirements
 

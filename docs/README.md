@@ -38,17 +38,18 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [CLAUDE_COMMAND_STATES_UX.md](CLAUDE_COMMAND_STATES_UX.md) | Command/continuity/conflict/recovery UX spec — merged [PR #76](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/76) |
 | [HOSTED_ROW_INVENTORY.md](HOSTED_ROW_INVENTORY.md) | Leftover hosted-row runbook. Metadata only. Do not delete without Jonathan. |
 | [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) | Legacy Auth/RLS sketch — do not apply; superseded by cutover packet |
-| [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md) | Living Auth/RLS cutover (D-123); 004/005/007/008 applied; Google Auth live; **006 not applied** (path B NOTICE + ceiling 1 ready) |
-| [`sql/006_preflight_readonly.sql`](sql/006_preflight_readonly.sql) | Read-only 006 go/no-go queries — re-run before paste |
-| [`sql/009_rollback_006.sql`](sql/009_rollback_006.sql) | Rollback packet after 006 — rehearse on a clone first |
-| [`sql/apply_006_auth_rls_cutover.md`](sql/apply_006_auth_rls_cutover.md) | Paste pointer for 006 (awaiting Jonathan approve) |
+| [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md) | Living Auth/RLS cutover (D-123); 004/005/006/007/008 applied; Google Auth live; anon household REST closed |
+| [`sql/006_preflight_readonly.sql`](sql/006_preflight_readonly.sql) | Read-only 006 go/no-go queries (historical / re-verify) |
+| [`sql/009_rollback_006.sql`](sql/009_rollback_006.sql) | Rollback packet after 006 — Jonathan explicit order only |
+| [`sql/006_fix_owners.sql`](sql/006_fix_owners.sql) | Pre-006 owner promote helper (used during cutover) |
+| [`sql/apply_006_auth_rls_cutover.md`](sql/apply_006_auth_rls_cutover.md) | Paste pointer for 006 — **applied** 2026-08-25 |
 | [`sql/delete_empty_production_household.sql`](sql/delete_empty_production_household.sql) | Jonathan-approved delete of empty Production `HH-9465baf2ec6c9d9d` (paste in SQL Editor) |
 | [`sql/apply_008_production_continuity_select.sql`](sql/apply_008_production_continuity_select.sql) | Paste-ready 008 SELECT bridge (Jonathan approved 2026-08-25) |
 | [`sql/008_seed_production_owner_TEMPLATE.sql`](sql/008_seed_production_owner_TEMPLATE.sql) | Privileged Production owner seed + Personal extract template — fill placeholders; Jonathan approval required |
 | [SUPABASE_GOOGLE_AUTH_SETUP.md](SUPABASE_GOOGLE_AUTH_SETUP.md) | Step-by-step Google provider + redirect URLs for Supabase Auth (D-123 Q1 A) |
 | [`../supabase/migrations/004_auth_rls_prepare.sql`](../supabase/migrations/004_auth_rls_prepare.sql) | Additive Auth preparation — applied 2026-08-24 |
 | [`../supabase/migrations/005_snapshot_cas_hardening.sql`](../supabase/migrations/005_snapshot_cas_hardening.sql) | Forward repair for live 002 CAS — applied 2026-08-24 |
-| [`../supabase/migrations/006_auth_rls_cutover.sql`](../supabase/migrations/006_auth_rls_cutover.sql) | Preflighted deny-by-default project-wide cutover — **not applied**; Production/project boundary decision required |
+| [`../supabase/migrations/006_auth_rls_cutover.sql`](../supabase/migrations/006_auth_rls_cutover.sql) | Deny-by-default project-wide cutover — **applied** 2026-08-25 (schema id 6) |
 | [`../supabase/migrations/007_household_timezone_iana.sql`](../supabase/migrations/007_household_timezone_iana.sql) | D-126 hosted IANA timezone CHECK — **applied** 2026-08-25 (schema id 7) |
 | [`../supabase/migrations/008_production_continuity_select.sql`](../supabase/migrations/008_production_continuity_select.sql) | SELECT-only Production continuity bridge — **applied** 2026-08-25 (schema id 8) |
 | [SITDOWN.md](SITDOWN.md) | Monthly sitdown, leftover, lock, reverse, and export guidance |
