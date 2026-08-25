@@ -35,7 +35,8 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [CLAUDE_COMMAND_STATES_UX.md](CLAUDE_COMMAND_STATES_UX.md) | Command/continuity/conflict/recovery UX spec — merged [PR #76](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/76) |
 | [HOSTED_ROW_INVENTORY.md](HOSTED_ROW_INVENTORY.md) | Leftover hosted-row runbook. Metadata only. Do not delete without Jonathan. |
 | [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) | Legacy Auth/RLS sketch — do not apply; superseded by cutover packet |
-| [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md) | Living Auth/RLS cutover design (D-123); 004/005 applied, project-wide 006 pending |
+| [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md) | Living Auth/RLS cutover design (D-123); 004/005/007 applied; path B approved in principle; **006 blocked** pending Production continuity + preflight |
+| [`sql/006_preflight_readonly.sql`](sql/006_preflight_readonly.sql) | Read-only 006 go/no-go queries for the SQL Editor — run before any cutover paste |
 | [`../supabase/migrations/004_auth_rls_prepare.sql`](../supabase/migrations/004_auth_rls_prepare.sql) | Additive Auth preparation — applied 2026-08-24 |
 | [`../supabase/migrations/005_snapshot_cas_hardening.sql`](../supabase/migrations/005_snapshot_cas_hardening.sql) | Forward repair for live 002 CAS — applied 2026-08-24 |
 | [`../supabase/migrations/006_auth_rls_cutover.sql`](../supabase/migrations/006_auth_rls_cutover.sql) | Preflighted deny-by-default project-wide cutover — **not applied**; Production/project boundary decision required |

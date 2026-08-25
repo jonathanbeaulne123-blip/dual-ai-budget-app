@@ -69,22 +69,28 @@ Because the checks occur before policy replacement inside one transaction, a fai
 
 Independent of Auth/RLS: D-126 `007_household_timezone_iana.sql` is **applied** (2026-08-25). Hosted CHECK allows nonempty IANA; the app kernel still requires Toronto for books civil (Q2 C). That packet does not close the anon bridge.
 
-1. Decide the project boundary: move Production to a separate Supabase project for a Development-only rehearsal, or explicitly approve a full shared-project cutover. The current 006 intentionally aborts while a Production household exists.
-2. In the chosen project, enable the Google provider and add the kitchen's exact redirect URLs.
+**Path B lock (Jonathan 2026-08-25):** full shared-project cutover is approved *in principle* while one Production household remains. Independent trust review the same day: **do not apply 006 yet.** Closing anon REST before a Production hosted write path exists would strand that household. Development-only membership/Personal transport and the empty Production `continuity_memberships` table also fail 006’s remaining preflights.
+
+**Mandatory before any paste of 006**
+
+0. Run the read-only packet [`sql/006_preflight_readonly.sql`](sql/006_preflight_readonly.sql) and keep the result set.
+1. Ship Production continuity on the client (member id, `householdCloudProjection`, Personal envelope, App transport not Development-gated) and lift Development-only membership/Personal RLS from migration 003 for Production — separate packet, separate review.
+2. Enable the Google provider; add the kitchen’s exact redirect URLs.
 3. Deploy a Development build with `VITE_SUPABASE_AUTH_ENABLED=1`, the project URL, and the publishable key—never a secret/service-role key.
-4. Have each intended member choose **Continue with Google** once so an `auth.users` identity exists.
-5. Verify the 006 preflight query returns zero problems. No legacy Development membership remains after the approved cleanup, so new household creation must establish the first owner through `hearth_create_household`.
-6. Apply 006 only within the project boundary approved in step 1.
-7. Test two clean browser profiles: Create, email invite, QR invite, revoke, reconnect/offline outbox, own Personal visibility, other-Personal denial, anon denial, and wrong-household denial.
-8. Keep the untouched Production household outside this cutover unless Jonathan explicitly approves it.
+4. Have each intended member choose **Continue with Google** once so an `auth.users` identity exists; re-run the 004 Google-subject bind `UPDATE` (it was one-shot at apply time).
+5. Ensure every household (including Production) has exactly one active owner membership row with `auth_user_id` set. Creating a missing Production membership requires a **reviewed privileged migration**, not SQL-editor improvisation.
+6. Strip Personal transactions/shifts/private goals from shared snapshots (export Production first; decide Personal destination). Preflight personal counts must be zero.
+7. Capture `pg_policies` + grants (section 8 of the preflight). Stage and rehearse `008_rollback_006.sql` on a disposable clone.
+8. Revise the Production-count abort in 006 into a named `RAISE NOTICE` with Jonathan’s approved ceiling (do not silently delete the guard). Rehearse 006 on a disposable Postgres/Supabase clone.
+9. Apply 006 only after steps 0–8 are green.
+10. Test two clean browser profiles: Create, email invite, QR invite, revoke, reconnect/offline outbox, own Personal visibility, other-Personal denial, anon denial, wrong-household denial, **and Production** linked reconcile.
 
 ## Remaining live rehearsal requirements
 
 - Rehearse 006 against a disposable PostgreSQL/Supabase clone; repository tests verify structure and pure behavior but are not a substitute for real RLS semantics.
 - Verify provider redirect configuration and token refresh in two browsers.
-- Decide whether Development and Production get separate Supabase projects. Shared project policies cannot isolate a migration by the row's `environment` value.
-- Build the visible email/QR invitation screens; the RPC and URL contracts exist, but full invite chrome is not part of this repair.
-
+- Build the visible email/QR invitation screens; the RPC and URL contracts exist, but full invite chrome is not part of the cutover SQL.
+- Confirm PITR / backups on the shared project before apply.
 ## Secrets
 
 The browser uses a publishable key plus the signed-in user's JWT. Never place database passwords, model keys, or a Supabase secret/service-role key in `VITE_*`. GIS tokens may remain for Calendar/Drive, but they are not the books credential.
