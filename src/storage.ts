@@ -1,4 +1,5 @@
 import type { Environment, Household, PersonalEnvelope } from "./core/types.ts";
+import { assertEnvironmentMatch } from "./core/environmentIsolation.ts";
 import { ensureHouseholdShape, personalReplicaForMember } from "./core/sync.ts";
 
 const LEGACY_PREFIX = "hearth:v1:";
@@ -18,7 +19,7 @@ export type HouseholdReplicaSummary = {
   updatedAt: string | null;
 };
 
-export type SaveHouseholdOptions = { memberId?: string; activate?: boolean };
+export type SaveHouseholdOptions = { memberId?: string; activate?: boolean; operatingEnvironment?: Environment };
 
 function householdKey(environment: Environment, householdId: string): string {
   return `${REPLICA_PREFIX}${environment}:${encodeURIComponent(householdId)}`;
@@ -173,6 +174,9 @@ export async function loadHousehold(environment: Environment, householdId?: stri
 
 export async function saveHousehold(household: Household, options: SaveHouseholdOptions = {}): Promise<void> {
   const shaped = migrate(household);
+  if (options.operatingEnvironment) {
+    assertEnvironmentMatch(shaped.environment, { environment: options.operatingEnvironment }, "persist");
+  }
   const activate = options.activate !== false;
   const replicaKey = householdKey(shaped.environment, shaped.householdId);
   const legacyKey = LEGACY_PREFIX + shaped.environment;

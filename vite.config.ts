@@ -34,8 +34,9 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["test/**/*.test.ts"],
-    // PGlite starts a PostgreSQL/WASM runtime per test file. An unbounded pool
-    // starves the existing five-second tests on high-core CI and desktop hosts.
-    maxWorkers: 4,
+    // PGlite starts a PostgreSQL/WASM runtime per test file. Running those
+    // runtimes concurrently starves otherwise-fast tests on CI and desktop.
+    maxWorkers: 1,
+    testTimeout: 15_000,
   },
 });

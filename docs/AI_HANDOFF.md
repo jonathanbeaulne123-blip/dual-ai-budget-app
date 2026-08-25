@@ -4,6 +4,28 @@ After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. 
 
 Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
 
+## Environment isolation Phase 0 (2026-08-25)
+
+**Status:** Branch `cursor/environment-isolation-f375` (not merged). Risk: **High**.
+
+**What was examined:** Roadmap §1.3 STOP-SHIP — join/pass/pull/persist paths lacked consistent environment + household + invite binding.
+
+**Changes:** `src/core/environmentIsolation.ts`; wired into `pass.ts`, `storage.ts` (`operatingEnvironment`), `ledger/supabase.ts` pulls, `continuity.ts` outbox enqueue/flush, `api.ts` reconcile, `App.tsx` persist paths. Adversarial tests in `test/environment-isolation.test.ts`.
+
+**Budget delta (5):** `+2` — fail-closed binding on import/pull/persist/reconcile/outbox; blocks cross-pill or cross-household snapshot bleed.
+
+**Engagement delta (3):** `0` — safety-only; no companion or onboarding UX change.
+
+**Worksession:** [`worksessions/2026-08-25-environment-isolation.md`](worksessions/2026-08-25-environment-isolation.md)
+
+**Verification:** `pnpm check` — 555 tests passed, build OK.
+
+**Remaining uncertainty:** Legacy `readRemoteSnapshot` still lacks environment query filter (CAS path is primary). Phase 0 roadmap checkbox stays open until Jonathan confirms proof bar alongside two-device convergence.
+
+**Data/environment:** Development client only; no hosted schema/secrets/Production mutation.
+
+**Next owner:** Review PR; optional two-client fault harness while two-phone smoke waits.
+
 ## App Store sync UX P0+P1 (2026-08-25)
 
 **Status:** **Merged** to `main` as [`3dcb12f`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/commit/3dcb12f) via [PR #114](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/114). Not deployed/live-verified yet. Risk: **High**.
@@ -65,15 +87,17 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 **Next owner:** independent review of provenance routing, shared-member aggregation, personal-ledger refusals, and desktop/mobile visual behavior. Do not deploy from this branch.
 
-## Hercules Brain v2 typed reads (D-133)
+## Hercules Brain v2 typed reads + free depth (D-133/D-135)
 
 **Status:** implemented on `codex/hercules-brain-v2-tools`; no deploy, schema, hosted row, secret, or Production mutation. Built on the D-132 living-teacher branch so the result cards use its typed provenance UI.
 
-**Shape:** `/hercules/plan` may select at most four of ten fixed read-only tools. Provider output is sanitized on the Worker and phone. The phone executes against `householdForHerculesContext`; Personal never widens to a partner and Household never exposes personal-only rows. There is no SQL, code, mutation, or Confirm capability. Planner failure preserves the existing chat/local fallback.
+**Shape:** `/hercules/plan` may select at most four of sixteen fixed read-only tools. Provider output is sanitized on the Worker and phone. The phone executes against `householdForHerculesContext`; Personal never widens to a partner and Household never exposes personal-only rows. There is no SQL, code, mutation, or Confirm capability. Planner failure preserves the existing chat/local fallback.
 
-**Budget delta (5): +2** — grounded balances, searches, summaries, bills, shifts, goals, obligations, and cash-position answers now compose without granting model write authority.
+**Spend posture:** Workers AI is first for planning, grounded voice, and selected-image scanning. Gemma 4 is tried before Llama 3.1. OpenAI/Anthropic are inert unless `HERCULES_ALLOW_PAID_PROVIDERS=true`; checked-in Development configuration is `false`, including when provider secrets happen to exist. No Worker was deployed in this slice.
 
-**Engagement delta (3): +2** — Hercules can answer broader natural-language financial questions and every shown amount remains a tappable legitimacy card.
+**Budget delta (5): +3** — grounded balances, searches, summaries, bills, shifts, goals, obligations, cash position, budget variance, categories, cards, net worth, audit health, and duplicate review compose without granting model write authority.
+
+**Engagement delta (3): +3** — Hercules can answer broader natural-language financial questions, then gives the deterministic result a short grounded cat-voice pass while every shown amount remains a tappable legitimacy card.
 
 **Next owner:** review catalog arithmetic/scope, provider plan parsing, and source routing; then smoke the four prompts in `docs/HERCULES.md`. Do not deploy from this branch.
 

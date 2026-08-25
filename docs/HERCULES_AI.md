@@ -1,6 +1,6 @@
 # Hercules AI
 
-Hercules is the household's resident data scientist who never touches the money. This file is the living spec for that layer (D-057–D-060, D-133). Companion how-to still lives in [HERCULES.md](HERCULES.md). Laws: [DECISIONS.md](DECISIONS.md).
+Hercules is the household's resident data scientist who never touches the money. This file is the living spec for that layer (D-057–D-060, D-133/D-135). Companion how-to still lives in [HERCULES.md](HERCULES.md). Laws: [DECISIONS.md](DECISIONS.md).
 
 ## Research taken
 
@@ -33,7 +33,7 @@ The model does language: framing as a cat, which of several true notices is wort
 
 For an unmatched financial question, the Worker may choose a plan of at most four calls from a fixed read-only catalog. The Worker chooses names and bounded arguments; the phone executes the calls against the active member/view projection. No journal rows or account balances are sent to the planner, and the Worker never executes a tool.
 
-Catalog: `account_balance`, `find_transactions`, `spending_summary`, `income_summary`, `compare_spending`, `bills_due`, `shift_summary`, `goal_progress`, `money_owed`, and `cash_position`.
+Catalog: `account_balance`, `find_transactions`, `spending_summary`, `income_summary`, `compare_spending`, `bills_due`, `shift_summary`, `goal_progress`, `money_owed`, `cash_position`, `budget_status`, `category_breakdown`, `credit_card_status`, `net_worth`, `audit_health`, and `duplicate_review`.
 
 The boundary is deliberately narrow:
 
@@ -46,7 +46,15 @@ The boundary is deliberately narrow:
 - every displayed amount is a typed `HerculesNumberSource` card that routes to the supplying account, transaction, category, member, recurrence, shift, goal, or claim surface;
 - a missing/failed planner falls through to the existing guarded chat/local answer. Off-topic cat talk does not wait for the planner.
 
-The OpenAI path uses strict function tools through Responses with `store: false`; Anthropic uses equivalent tool schemas; Workers AI uses constrained JSON. All provider output is sanitized again on the Worker and again on the phone. This is model-planned retrieval, not model authority: arithmetic and scope remain deterministic on-device.
+Workers AI is first and uses constrained JSON. OpenAI Responses (`store: false`) and Anthropic remain available only when `HERCULES_ALLOW_PAID_PROVIDERS=true`; the checked-in default is `false`. All provider output is sanitized again on the Worker and again on the phone. This is model-planned retrieval, not model authority: arithmetic and scope remain deterministic on-device.
+
+### Brain v2 free-depth — zero-surprise-spend policy (D-135)
+
+The free route tries Cloudflare's free-plan eligible `@cf/google/gemma-4-26b-a4b-it`, then the smaller `@cf/meta/llama-3.1-8b-instruct`. The same binding now attempts selected receipt/bill/statement vision before any paid vendor. The Worker never calls OpenAI or Anthropic merely because an old secret happens to exist.
+
+After deterministic tools answer, one small second Workers AI pass may rewrite only that grounded answer in Hercules's voice. It receives no extra journal dump and cannot replace the typed facts or source links. If planning, vision, or voice is unavailable, the deterministic/local result survives.
+
+Cloudflare documents a [10,000-neuron daily Workers AI free allocation](https://developers.cloudflare.com/workers-ai/platform/pricing/) and at least [100,000 Worker requests per day on Free](https://developers.cloudflare.com/workers/platform/limits/). This household's expected two users and a few daily questions are intentionally far below those ceilings. On a Workers Free plan, exceeding the AI allocation fails with a limit error instead of billing; paid-provider fallback still stays disabled. A Cloudflare account upgrade changes Cloudflare's own overage behavior, so the deployment owner must keep the usage dashboard visible even though this workload should remain tiny.
 
 **When he thinks.** On open and after a post. Offline, notices still work; the model is flavor and fallback (`localHerculesChat`).
 
@@ -98,7 +106,7 @@ Hand-create from Add: “Save as preset” writes the catalog, not money. Forget
 6. Appointments → the quiet therapy row. Calendar cards still show the typed title. Ask Hercules about it: he says “the Tuesday visit.” He does not say the practitioner.
 7. Type `what did you notice?` He answers from on-device notices. Typed unmatched talk may hit the Worker; quiet titles stay out of that payload.
 8. Dismiss a notice with **Not now**. Reload. It should not come back.
-9. Ask `How much did we spend on groceries this month?`, `Show coffee charges over $5`, `What is due in the next two weeks?`, and `How are the jars doing?`. Hercules may combine several read tools, but each shown amount must be tappable and must open its actual source.
+9. Ask `How much did we spend on groceries this month?`, `Show coffee charges over $5`, `What is due in the next two weeks?`, `How are the jars doing?`, `Are we ahead of budget?`, `How healthy are the books?`, `What is our net worth?`, and `Do any duplicates need review?`. Hercules may combine several read tools, but each shown amount must be tappable and must open its actual source.
 10. Switch to Bianca's Personal ledger and ask for Jonathan's spending. Hercules must refuse with no Jonathan CAD. Ask ordinary cat talk such as `Did you catch the fly?`; it should keep the existing chat path.
 
 ## Dual Course

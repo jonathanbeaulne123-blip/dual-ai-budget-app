@@ -195,6 +195,14 @@ export function sanitizeHerculesReply(
   return clipReply(reply);
 }
 
+/** Keep a model's grounded tool narration from adding a new numeric fact. */
+export function sanitizeGroundedNumerals(text: string, fallback: string, ...groundedParts: string[]): string {
+  const numerals = (value: string) => [...String(value || "").matchAll(/\b\d+(?:[.,]\d+)?%?/g)].map((match) => match[0]);
+  const allowed = new Set(numerals([fallback, ...groundedParts].join(" ")));
+  if (numerals(text).some((value) => !allowed.has(value))) return clipReply(fallback);
+  return text;
+}
+
 function flavorIndex(text: string, n: number): number {
   let hash = 0;
   for (let i = 0; i < text.length; i += 1) hash = (hash * 31 + text.charCodeAt(i)) >>> 0;

@@ -5,6 +5,7 @@ import {
   bubbleNotice,
   chatHercules,
   composeHerculesChatRequest,
+  collectAllowedFigures,
   describeCompanion,
   emitOfficeIntent,
   furnitureUnderCat,
@@ -33,6 +34,7 @@ import {
   shouldPlanHerculesTools,
   executeHerculesReadToolPlan,
   recordHerculesTalk,
+  sanitizeGroundedNumerals,
   requestCalendarPane,
   subscribeFurniture,
   subscribeOfficeIntent,
@@ -741,7 +743,34 @@ export function HerculesPresence({
     })) return;
     if (toolPlan.calls.length) {
       const investigation = executeHerculesReadToolPlan(household, toolPlan, today, { memberId, view });
-      const answer = investigation.talk;
+      const groundedAnswer = investigation.talk;
+      const voiced = await chatHercules({
+        message: text,
+        briefing,
+        householdId: household.householdId,
+        grounded: {
+          spoken: groundedAnswer.spoken,
+          lesson: groundedAnswer.lesson,
+          fact: groundedAnswer.fact ? { label: groundedAnswer.fact.label, value: groundedAnswer.fact.value } : null,
+        },
+        figures: collectAllowedFigures(
+          groundedAnswer.spoken,
+          groundedAnswer.lesson,
+          ...(groundedAnswer.facts ?? []).flatMap((item) => [item.label, item.value]),
+        ),
+      });
+      if (!isCurrentHerculesReply(replyContext, {
+        ...activeChatIdentity.current,
+        requestId: chatGen.current,
+      })) return;
+      const voicedText = sanitizeGroundedNumerals(
+        voiced.text,
+        groundedAnswer.spoken,
+        groundedAnswer.lesson ?? "",
+        ...(groundedAnswer.facts ?? []).flatMap((item) => [item.label, item.value]),
+      );
+      const usedModelVoice = voiced.source === "ai" && voicedText !== groundedAnswer.spoken;
+      const answer = { ...groundedAnswer, spoken: voicedText };
       setTalk(answer);
       setTopic(answer.topic);
       setTurns((prev) => [...prev, { role: "hercules" as const, text: answer.spoken }].slice(-12));
@@ -753,8 +782,8 @@ export function HerculesPresence({
       }
       setMotion(answer.pose);
       setBusy(false);
-      setReplySource(null);
-      keepTalk(message, answer.spoken, "journal");
+      setReplySource(usedModelVoice ? "ai" : null);
+      keepTalk(message, answer.spoken, usedModelVoice ? "ai" : "journal");
       return;
     }
     const result = await chatHercules(

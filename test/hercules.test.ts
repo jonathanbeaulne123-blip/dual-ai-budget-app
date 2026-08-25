@@ -24,6 +24,7 @@ import {
   postEntry,
   postTransfer,
   recordHerculesTalk,
+  sanitizeGroundedNumerals,
   sanitizeHerculesReply,
   scribbleChalk,
   seedDemoHousehold,
@@ -267,6 +268,12 @@ describe("The Hercules Update", () => {
     expect(sanitizeHerculesReply(dump, visaGrounded, visaFigures, "what's on the Visa?")).toBe(visaGrounded);
     expect(sanitizeHerculesReply("FIGURES $0.00", visaGrounded, visaFigures, "what's on the Visa?")).toBe(visaGrounded);
     expect(sanitizeHerculesReply("Mastercard $242.00", visaGrounded, ["$886.55", "$0.00", "$242.00"], "what's on the Visa?")).toBe(visaGrounded);
+  });
+
+  it("keeps model voice from inventing tool-result numbers", () => {
+    const grounded = "Visa utilization is 31% with a $242.00 balance and 2 findings.";
+    expect(sanitizeGroundedNumerals("Mrrp. 31% and $242.00, with 2 findings.", grounded)).toContain("31%");
+    expect(sanitizeGroundedNumerals("Mrrp. 91% and $242.00, with 3 findings.", grounded)).toBe(grounded);
   });
 
   it("falls back to local purrsonality and never claims a chat write", () => {

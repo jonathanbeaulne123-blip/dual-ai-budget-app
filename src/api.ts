@@ -69,6 +69,12 @@ export async function reconcileHouseholdSnapshots(
   if (local.environment !== remote.environment) {
     throw new Error("That shared snapshot belongs to a different Development/Production pill.");
   }
+  if (remote.householdId && local.householdId && remote.householdId !== local.householdId) {
+    throw new Error("That shared snapshot belongs to a different household.");
+  }
+  if (remote.inviteCode && local.inviteCode && inviteFromText(remote.inviteCode) !== inviteFromText(local.inviteCode)) {
+    throw new Error("That shared snapshot does not match this household invite.");
+  }
   const localBase = local.baseRevision ?? 0;
   const remoteRevision = remote.revision ?? 0;
   const localRevision = local.revision ?? 0;
