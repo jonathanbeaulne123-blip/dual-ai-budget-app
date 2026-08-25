@@ -1,6 +1,6 @@
 # Hercules Pro
 
-Status: **implemented locally; not deployed or registered in ChatGPT yet.** Free Hercules remains the default product.
+Status: **deployed and registered as a private Development app in ChatGPT.** Free Hercules remains the default product.
 
 ## What the two Hercules modes mean
 
@@ -20,7 +20,7 @@ Production is refused unless `HERCULES_PRO_ALLOW_PRODUCTION=true`. Leave it fals
 
 ## Owner setup — exact steps
 
-These steps change a live service. They are intentionally **not** performed by this implementation branch.
+These steps document the live Development setup completed on August 25, 2026.
 
 1. Merge the reviewed Hercules Pro code.
 2. Open Terminal in the Hearth repository.
@@ -53,8 +53,8 @@ These steps change a live service. They are intentionally **not** performed by t
    ```
 
    Follow OpenAI's current [connect-from-ChatGPT instructions](https://developers.openai.com/plugins/deploy/connect-chatgpt). OAuth should show a **Connect** action; if it does not, recheck both metadata URLs and the `WWW-Authenticate` response from `/mcp`.
-9. Install/use the package in `plugins/hercules-pro`, or register the deployed MCP server as the Hercules Pro app. The package supplies the financial-teacher voice and starter prompts.
-10. Once ChatGPT gives the installed Hercules experience a stable URL, set the public build variable `VITE_HERCULES_PRO_URL` to that URL and rebuild. Until then, the button opens ChatGPT's home page.
+9. Hercules Pro is registered in ChatGPT developer mode as app `asdk_app_6a8e199c18908191b5005692b56f69d6`. The package in `plugins/hercules-pro` supplies the financial-teacher voice and starter prompts.
+10. The **Use Hercules Pro ↗** button opens the registered app directly. `VITE_HERCULES_PRO_URL` remains available as an explicit build-time override.
 11. In ChatGPT, ask Hercules for a current number. Choose **Connect**, sign in to Hearth with Google if asked, enter the intended household, and approve **read-only books**.
 
 Optional hardening for Development: bind a free Cloudflare KV namespace as `HERCULES_PRO_AUTH`. It makes authorization-code replay protection durable across Worker isolates. Without it, a bounded in-memory replay guard is suitable for the tiny Development test group but is not the September Production posture.
