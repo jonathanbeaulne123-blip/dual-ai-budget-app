@@ -3,7 +3,7 @@ import worker from "../workers/site.js";
 import { herculesProTest } from "../workers/herculesPro.js";
 import { seedDemoHousehold } from "../src/core/index.ts";
 
-const origin = "https://hearth-books.jonathanbeaulne123.workers.dev";
+const origin = "https://hearth-books.jonathan-beaulne123.workers.dev";
 const env = { HERCULES_PRO_SIGNING_SECRET: "test-secret-that-is-longer-than-thirty-two-characters" };
 
 function response(body: unknown, status = 200): Response {

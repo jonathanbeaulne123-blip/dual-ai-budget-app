@@ -2,7 +2,7 @@
   "mcpServers": {
     "hearth-hercules-pro": {
       "type": "http",
-      "url": "https://hearth-books.jonathanbeaulne123.workers.dev/mcp"
+      "url": "https://hearth-books.jonathan-beaulne123.workers.dev/mcp"
     }
   }
 }
