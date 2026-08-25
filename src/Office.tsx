@@ -71,12 +71,12 @@ import type { Dashboard } from "./core/insights.ts";
 import type { HearthTab } from "./core/hercules.ts";
 import type { Account, Category, CommitResult, UndoToken } from "./core/index.ts";
 import { OfficePhone } from "./OfficePhone.tsx";
-import { OfficeWindow } from "./widgets/OfficeWindow.tsx";
+import { WindowBand } from "./widgets/WindowBand.tsx";
 import { DeskItem } from "./widgets/DeskItem.tsx";
 import { BlotterBody, BlotterGlance } from "./widgets/Blotter.tsx";
 import { WalletBody, WalletGlance } from "./widgets/WalletTray.tsx";
 import { CalculatorBody, CalculatorGlance } from "./widgets/CalculatorPad.tsx";
-import { ChalkboardBody, chalkboardGlance } from "./widgets/ChalkboardDesk.tsx";
+import { ChalkboardBody } from "./widgets/ChalkboardDesk.tsx";
 import { MailBody, MailGlance } from "./widgets/Mail.tsx";
 import { ClaimsBody, ClaimsGlance } from "./widgets/ClaimsTray.tsx";
 import { TimesheetBody, TimesheetGlance } from "./widgets/Timesheet.tsx";
@@ -328,7 +328,7 @@ export function Office({
   const parked = layout.items.filter((item) => item.hidden).map((item) => item.id);
   const packed = useMemo(
     () => packWide(
-      order.map((id) => ({ id, size: layout.items.find((item) => item.id === id)?.size })),
+      order.filter((id) => id !== "chalkboard").map((id) => ({ id, size: layout.items.find((item) => item.id === id)?.size })),
       deskWidth,
     ),
     [order, layout.items, deskWidth],
@@ -336,7 +336,7 @@ export function Office({
 
   useEffect(() => {
     if (breakpoint !== "wide") return;
-    const ids = order;
+    const ids = order.filter((id) => id !== "chalkboard");
     let maxBottom = DESK_GUTTER;
     for (const id of ids) {
       const item = layout.items.find((row) => row.id === id);
@@ -611,10 +611,10 @@ export function Office({
   const claimsWarn = claimsOverdue(household);
   const walletIsWarn = walletWarn(wallet);
 
-  const renderers: Record<InstrumentId, (index: number, pair?: boolean) => ReactNode> = {
+  const renderers: Record<Exclude<InstrumentId, "chalkboard">, (index: number, pair?: boolean) => ReactNode> = {
     calculator: (index, pair) => frame(
       "calculator",
-      "Pad",
+      "Calculator",
       <CalculatorGlance amount={form.amount} />,
       `Calculator. ${form.note || "Desk pad."}`,
       <CalculatorBody
@@ -636,7 +636,7 @@ export function Office({
     ),
     blotter: (index, pair) => frame(
       "blotter",
-      "Month net",
+      "Blotter",
       <BlotterGlance dashboard={dashboard} opinion={opinion} findings={findings.length} />,
       `Blotter. Month net ${blotter.glance}. ${opinion.kind} opinion.`,
       <BlotterBody dashboard={dashboard} opinion={opinion} findings={findings.length} />,
@@ -652,7 +652,7 @@ export function Office({
     ),
     mail: (index, pair) => frame(
       "mail",
-      "Next bill",
+      "Mail",
       <MailGlance dashboard={dashboard} today={today} />,
       `Mail. ${dashboard.upcoming[0] ? dashboard.upcoming[0].title : "No money dates in the next while."}`,
       <MailBody dashboard={dashboard} today={today} onMarkPaid={onMarkPaid} onCalendar={() => onGo("calendar")} />,
@@ -677,7 +677,7 @@ export function Office({
     ),
     timesheet: (index, pair) => frame(
       "timesheet",
-      "Shifts",
+      "Timesheet",
       <TimesheetGlance household={household} streak={streak} memberId={memberId} />,
       `Timesheet. ${streak.spoken}`,
       <TimesheetBody
@@ -762,7 +762,7 @@ export function Office({
     ),
     lamp: (index, pair) => frame(
       "lamp",
-      "Health",
+      "Lamp",
       <LampGlance findings={findings} />,
       lampAria(findings),
       <LampBody findings={findings} onMore={() => onGo("more")} />,
@@ -813,19 +813,6 @@ export function Office({
       <HangmanBody household={household} memberId={memberId} busy={busy} onCommand={onKitchen} />,
       { index, pair, extraClass: "instrument-game" },
     ),
-    chalkboard: (index, pair) => frame(
-      "chalkboard",
-      "Chalkboard",
-      <span>{chalkboardGlance(household)}</span>,
-      "Chalkboard. Draw or type a note.",
-      <ChalkboardBody
-        household={household}
-        memberId={memberId}
-        busy={busy}
-        onCommand={onKitchen}
-      />,
-      { index, pair, extraClass: "instrument-chalkboard" },
-    ),
   };
 
   /* Mobile shell (< 720px). Wide falls through to the desk canvas below,
@@ -851,16 +838,28 @@ export function Office({
 
   return (
     <div
-      className={`office is-wide-room glass-${reading.glass} ${adding ? "is-adding" : ""} ${editing ? "is-editing" : ""} ${layout.expanded && layout.expanded !== "window" ? "is-wide-dim" : ""}`}
+      className={`office glass-${reading.glass} ${adding ? "is-adding" : ""} ${editing ? "is-editing" : ""} ${layout.expanded && layout.expanded !== "window" ? "is-wide-dim" : ""}`}
       data-stock={look.stock}
       data-density={look.density}
       style={{ ["--room-dim" as string]: String(room.roomDim), ["--room-cool" as string]: String(room.roomCool) }}
     >
-      <OfficeWindow
+      <WindowBand
         reading={reading}
-        expanded={layout.expanded === "window"}
         minimized={layout.windowMinimized}
         onToggle={cycleWindow}
+        chalkboardBody={
+          !layout.items.find((item) => item.id === "chalkboard")?.hidden
+            ? (
+              <ChalkboardBody
+                household={household}
+                memberId={memberId}
+                busy={busy}
+                onCommand={onKitchen}
+                reading={reading}
+              />
+            )
+            : null
+        }
       />
       <SillOverviewPlate overview={sill} compact={layout.windowMinimized} />
       <div
@@ -871,7 +870,7 @@ export function Office({
         {rings.map((ring) => (
           <div key={`${ring.id}-${ring.at}`} className="desk-ring" style={{ left: ring.x, top: ring.y }} />
         ))}
-        {order.map((id, index) => renderers[id](index))}
+        {order.filter((id) => id !== "chalkboard").map((id, index) => renderers[id](index))}
       </div>
       <Cabinets
         editing={editing}

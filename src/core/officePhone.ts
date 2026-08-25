@@ -77,8 +77,3 @@ export function phoneDueBill<T extends Pick<BoardItem, "kind" | "direction">>(up
 export function phoneDrawerIds(rail: InstrumentId[]): PhoneShellId[] {
   return PHONE_SHELL_IDS.filter((id) => !rail.includes(id));
 }
-
-/** Up to four story scraps for the 2×2 strip — pad and chalk stay elsewhere. */
-export function phoneStoryIds(order: InstrumentId[]): InstrumentId[] {
-  return order.filter((id) => id !== "chalkboard" && id !== "calculator").slice(0, 4);
-}

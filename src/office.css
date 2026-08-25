@@ -302,10 +302,9 @@
 }
 .sill-figure.is-warn { box-shadow: inset 0 0 0 1px var(--copper); }
 .sill-label {
-  font-size: 11px;
-  letter-spacing: 0.01em;
-  text-transform: none;
-  font-weight: 650;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--muted);
 }
 .sill-value { font-weight: 700; font-size: 12px; font-variant-numeric: tabular-nums; }
@@ -392,9 +391,9 @@
 }
 .instrument-name {
   font-family: var(--display);
-  font-size: 14px;
-  letter-spacing: 0.01em;
-  text-transform: none;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 .instrument-glance {
   font-weight: 700;
@@ -835,86 +834,6 @@
   border-radius: 10px;
 }
 
-.office.is-wide-room {
-  background:
-    radial-gradient(circle at 8% 12%, rgba(201, 168, 132, 0.12), transparent 34%),
-    radial-gradient(circle at 92% 8%, rgba(120, 160, 180, 0.08), transparent 28%),
-    radial-gradient(circle at 78% 88%, rgba(201, 168, 132, 0.06), transparent 24%),
-    var(--paper);
-}
-.office.is-wide-room .desk-wide {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--paper-2) 80%, #c4a574) 0%, transparent 120px),
-    color-mix(in srgb, var(--desk) 92%, #c4a574);
-  border-radius: 12px;
-  box-shadow: inset 0 1px 0 rgba(255, 250, 242, 0.45);
-}
-.office.is-wide-room .instrument {
-  border-radius: 14px 14px 16px 12px;
-  box-shadow:
-    0 1px 0 rgba(255, 250, 242, 0.65) inset,
-    var(--lift-1),
-    0 14px 28px rgba(60, 42, 20, 0.06);
-}
-.office.is-wide-room .instrument-blotter {
-  border-radius: 12px 12px 18px 10px;
-  box-shadow:
-    var(--lift-1),
-    0 16px 32px rgba(60, 42, 20, 0.1);
-}
-.office.is-wide-room .instrument-mail {
-  border-radius: 4px 14px 14px 4px;
-  background:
-    linear-gradient(135deg, #faf6ec 0%, #f7f1e4 55%, #efe6d4 100%);
-  box-shadow:
-    0 2px 0 rgba(255, 250, 242, 0.8) inset,
-    var(--lift-1);
-}
-.office.is-wide-room .instrument-mail::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 14px;
-  height: 100%;
-  background: color-mix(in srgb, var(--line) 40%, transparent);
-  border-radius: 4px 0 0 4px;
-  pointer-events: none;
-}
-.office.is-wide-room .instrument-wallet {
-  border-radius: 16px 16px 12px 12px;
-  background:
-    linear-gradient(160deg, #f8edd9 0%, #f3e6d2 45%, #e8d4b4 100%);
-}
-.office.is-wide-room .instrument-calculator {
-  background:
-    linear-gradient(180deg, #f5f1e8 0%, #ece7dc 100%);
-  border-radius: 10px;
-}
-.office.is-wide-room .instrument-name {
-  font-family: var(--font);
-  font-size: 13px;
-  font-weight: 650;
-  letter-spacing: 0.01em;
-  text-transform: none;
-  color: var(--muted);
-}
-.office-sill-weather {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-.office.is-wide-room .office-window.glass-rain .rain-a { opacity: 0.72; }
-.office.is-wide-room .office-window.glass-rain .rain-b { opacity: 0.55; }
-.office.is-wide-room .office-window {
-  box-shadow: var(--lift-1);
-  border: 1px solid color-mix(in srgb, var(--line) 40%, transparent);
-}
-.office.is-wide-room .instrument-glance {
-  font-family: var(--display);
-  font-size: 1.125rem;
-  letter-spacing: -0.02em;
-}
 .office.is-editing .instrument {
   animation: desk-jiggle 0.36s ease-in-out infinite alternate;
 }
@@ -1089,8 +1008,7 @@
 /* F13 — the chips sit absolutely in the instrument's top-right corner and were
    painting over the instrument's own value ("CLEAN" rendered as "CLE"). Reserve
    the corner so content is laid out clear of it instead of under it. */
-.instrument { --desk-chip-gutter: 52px; }
-.office.is-editing .instrument { --desk-chip-gutter: 104px; }
+.instrument { --desk-chip-gutter: 104px; }
 .instrument > *:not(.desk-chips) {
   padding-right: var(--desk-chip-gutter);
 }
@@ -1287,6 +1205,7 @@
 .chalk-compose .chalk-input { flex: 1; margin: 0; }
 .chalk-save { flex: 0 0 auto; }
 @media (max-width: 719px) {
+  .office-phone .office-chalk-band { margin-bottom: 8px; min-height: 120px; }
   .office-phone .chalkboard-stage { grid-template-columns: 1fr; }
   .office-phone .chalk-rail {
     flex-direction: row;
