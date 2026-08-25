@@ -32,12 +32,20 @@ export function WalletStrip({
   household,
   today,
   focusedId,
+  memberId,
   onOpen,
+  onChange,
+  onPay,
+  onAdd,
 }: {
   household: Household;
   today: string;
   focusedId?: string | null;
-  onOpen: (accountId: string) => void;
+  memberId?: string;
+  onOpen: (accountId: string | null) => void;
+  onChange?: (household: Household, undo?: UndoToken) => void;
+  onPay?: (account: Account) => void;
+  onAdd?: (account: Account) => void;
 }) {
   const wallet = useMemo(() => householdWallet(household, today), [household, today]);
   return (
@@ -55,14 +63,33 @@ export function WalletStrip({
         <div key={group.kind} className="wallet-group">
           <p className="wallet-group-label">{group.label}</p>
           <div className="wallet-tiles">
-            {group.tiles.map((tile) => (
-              <WalletTileButton
-                key={tile.account.id}
-                tile={tile}
-                selected={focusedId === tile.account.id}
-                onOpen={() => onOpen(tile.account.id)}
-              />
-            ))}
+            {group.tiles.map((tile) => {
+              const expanded = focusedId === tile.account.id;
+              return (
+                <div
+                  key={tile.account.id}
+                  className={`wallet-tile-slot ${expanded ? "is-expanded" : ""}`}
+                >
+                  <WalletTileButton
+                    tile={tile}
+                    selected={expanded}
+                    onOpen={() => onOpen(expanded ? null : tile.account.id)}
+                  />
+                  {expanded && memberId && onChange && onPay && onAdd && (
+                    <AccountRoom
+                      household={household}
+                      accountId={tile.account.id}
+                      today={today}
+                      memberId={memberId}
+                      onChange={onChange}
+                      onPay={onPay}
+                      onAdd={onAdd}
+                      embedded
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       ))}
@@ -109,6 +136,7 @@ export function AccountRoom({
   onChange,
   onPay,
   onAdd,
+  embedded = false,
 }: {
   household: Household;
   accountId: string;
@@ -117,6 +145,7 @@ export function AccountRoom({
   onChange: (household: Household, undo?: UndoToken) => void;
   onPay: (account: Account) => void;
   onAdd: (account: Account) => void;
+  embedded?: boolean;
 }) {
   const account = household.accounts.find((row) => row.id === accountId);
   const wallet = useMemo(() => householdWallet(household, today), [household, today]);
@@ -150,14 +179,16 @@ export function AccountRoom({
   const investment = tile.investment;
 
   return (
-    <section className="card account-room">
+    <section className={`account-room ${embedded ? "is-embedded" : "card"}`}>
       <header>
-        <h2>{account.name}</h2>
+        <h2>{embedded ? "Details" : account.name}</h2>
         <span className="muted">{accountOptionLabel(account)}</span>
       </header>
-      <div className={`money ${tile.displayCents < 0 ? "negative" : ""}`}>
-        {formatCad(account.kind === "credit" ? tile.balanceCents : tile.displayCents)}
-      </div>
+      {!embedded && (
+        <div className={`money ${tile.displayCents < 0 ? "negative" : ""}`}>
+          {formatCad(account.kind === "credit" ? tile.balanceCents : tile.displayCents)}
+        </div>
+      )}
       <p className="muted">{tile.sub}. {ACCOUNT_KIND_HINT[account.kind]}</p>
 
       {credit && (
@@ -434,26 +465,23 @@ export function WalletPane({
   today: string;
   memberId: string;
   focusedId: string | null;
-  onFocus: (accountId: string) => void;
+  onFocus: (accountId: string | null) => void;
   onChange: (household: Household, undo?: UndoToken) => void;
   onPay: (account: Account) => void;
   onAdd: (account: Account) => void;
 }) {
-  const selected = focusedId || household.accounts.find((account) => account.active)?.id || "";
   return (
     <>
-      <WalletStrip household={household} today={today} focusedId={selected} onOpen={onFocus} />
-      {selected && (
-        <AccountRoom
-          household={household}
-          accountId={selected}
-          today={today}
-          memberId={memberId}
-          onChange={onChange}
-          onPay={onPay}
-          onAdd={onAdd}
-        />
-      )}
+      <WalletStrip
+        household={household}
+        today={today}
+        focusedId={focusedId}
+        memberId={memberId}
+        onOpen={onFocus}
+        onChange={onChange}
+        onPay={onPay}
+        onAdd={onAdd}
+      />
       <AddAccountForm household={household} onSave={onChange} />
     </>
   );

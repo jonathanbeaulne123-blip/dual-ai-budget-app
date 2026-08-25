@@ -37,14 +37,23 @@
 html, body, #root { min-height: 100%; }
 html, body {
   overscroll-behavior: none;
-  touch-action: manipulation;
-  overflow-x: hidden;
 }
+/* D-090 mobile viewport lock only — desktop keeps native document scroll. */
 @media (max-width: 719px) {
+  html, body {
+    touch-action: manipulation;
+    overflow-x: hidden;
+  }
   html, body, #root, .app {
     max-width: 100vw;
     overflow-x: hidden;
     overscroll-behavior-x: none;
+  }
+}
+@media (min-width: 720px) {
+  html, body {
+    overflow-x: clip;
+    touch-action: auto;
   }
 }
 body {
@@ -993,6 +1002,18 @@ input, select, textarea {
   grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
   gap: 8px;
 }
+.wallet-tile-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.wallet-tile-slot.is-expanded {
+  grid-column: 1 / -1;
+}
+.wallet-tile-slot .wallet-tile {
+  width: 100%;
+}
 .wallet-tile {
   display: flex;
   flex-direction: column;
@@ -1042,6 +1063,17 @@ input, select, textarea {
 .account-room h3 {
   font-size: 16px;
   margin: 0;
+}
+.account-room.is-embedded {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper);
+  box-shadow: none;
+}
+.account-room.is-embedded > header h2 {
+  font-size: 15px;
 }
 .card-desk {
   margin-top: 12px;

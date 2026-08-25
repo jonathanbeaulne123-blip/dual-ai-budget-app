@@ -96,14 +96,24 @@ function ChalkCanvas({
     const frame = canvas.parentElement;
     const resize = () => {
       const width = Math.max(160, frame?.clientWidth ?? 240);
-      const height = tall ? Math.max(120, frame?.clientHeight ?? 200) : Math.round(width * 0.55);
+      // Tall boards use a fixed aspect from width only — never parent height.
+      // Sizing from clientHeight + style.height caused a ResizeObserver growth loop while drawing.
+      const height = tall
+        ? Math.min(160, Math.max(110, Math.round(width * 0.42)))
+        : Math.round(width * 0.55);
       canvas.width = Math.round(width * 2);
       canvas.height = Math.round(height * 2);
       canvas.style.height = `${height}px`;
       redraw();
     };
     resize();
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(resize);
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      // Observe width only so chalk strokes / reading labels cannot grow the board.
+      const nextWidth = Math.round(entry.contentRect.width);
+      if (nextWidth > 0) resize();
+    });
     if (frame && observer) observer.observe(frame);
     window.addEventListener("resize", resize);
     return () => {
