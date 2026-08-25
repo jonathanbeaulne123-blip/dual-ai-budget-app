@@ -101,6 +101,7 @@ export {
   markPendingTransport,
   markPublishConfirming,
   markSynchronized,
+  markConflicted,
   unlinkHousehold,
   shapeSharing,
 } from "./sharing.ts";
@@ -126,3 +127,20 @@ export {
   CONFLICT_BUNDLE_KIND,
 } from "./recovery.ts";
 export { classifyCommitWrite, isLedgerWrite, type CommitWriteKind } from "./writeKind.ts";
+export {
+  undoLedgerConfirm,
+  latestMemberLedgerToken,
+  assertLatestMemberLedgerUndo,
+} from "./confirmationUndo.ts";
+export {
+  appendRestorePoint,
+  applyRestorePoint,
+  canRestorePoint,
+  listRestorePoints,
+  restoreConfirmBody,
+  restorePointLabel,
+  sharedMoneyAuditHash,
+  RESTORE_POINT_RETENTION_DAYS,
+  type RestoreEligibility,
+} from "./restorePoints.ts";
+export type { RestorePoint } from "./types.ts";

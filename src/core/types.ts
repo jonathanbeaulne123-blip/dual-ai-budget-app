@@ -801,6 +801,18 @@ export type Household = {
   commandReceipts: CommandReceipt[];
   sharing: SharingRecord;
   conflicts: ConflictRecord[];
+  /** Dated shared sync tips for owner Restore (D-124). Hosted inside the household payload. */
+  restorePoints?: RestorePoint[];
+};
+
+export type RestorePoint = {
+  id: string;
+  createdAt: string;
+  sourceRevision: number;
+  createdByMemberId: string;
+  label: string;
+  sharedMoneyHash: string;
+  shared: SharedEnvelope;
 };
 
 export type SharedEnvelope = {
@@ -839,6 +851,9 @@ export type SharedEnvelope = {
   tombstones: Tombstone[];
   /** Exactly-once receipts are shared financial facts; old envelopes may omit them. */
   commandReceipts?: CommandReceipt[];
+  conflicts?: ConflictRecord[];
+  /** Nested points are stripped when recording a new tip. */
+  restorePoints?: RestorePoint[];
 };
 
 export type PersonalEnvelope = {
@@ -880,6 +895,8 @@ export type UndoToken = {
   label: string;
   snapshot: Household;
   postedIds: string[];
+  /** Member who posted the Confirm — LIFO Undo is per member. */
+  actorMemberId?: string;
 };
 
 export type CommitResult = {

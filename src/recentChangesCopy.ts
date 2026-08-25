@@ -1,31 +1,37 @@
-import type { Environment } from "./core/types.ts";
+/** More → Recent changes + Restore copy (combined undo engine). */
 
-/** More → Recent changes empty-state copy (D-119 now; D-124 later). */
-export function recentChangesEmptyCopy(environment: Environment): string {
-  if (environment === "development") {
-    return "After a sync, Undo here restores the last cloud-acknowledged copy of the books — not one step at a time.";
-  }
-  return "Only the latest change on this phone can be undone, so the books stay in order.";
+export function recentChangesEmptyCopy(_environment?: string): string {
+  return "Ledger posts you make show up here. Undo peels your latest money Confirm only — partner posts stay.";
 }
 
 /** Header pill beside Recent changes. */
 export function recentChangesHeaderPill(input: {
-  environment: Environment;
+  environment?: string;
   historyCount: number;
-  hasSyncAnchor: boolean;
+  hasSyncAnchor?: boolean;
+  myLedgerCount?: number;
 }): string {
-  if (input.historyCount <= 0) return "None";
-  if (input.environment === "development" && input.hasSyncAnchor) {
-    return `${input.historyCount} since last sync`;
-  }
-  return `${input.historyCount} on this phone`;
+  const mine = input.myLedgerCount ?? input.historyCount;
+  if (mine <= 0) return "None";
+  return `${mine} on this phone`;
 }
 
 /**
  * Label for older history rows (not the latest Undo target).
- * Development: "synced" — Undo restores last sync, not that row.
- * Production: "later" — still LIFO until D-124.
+ * Combined engine: LIFO of this member's ledger Confirms.
  */
-export function recentChangesOlderLabel(environment: Environment): string {
-  return environment === "development" ? "synced" : "later";
+export function recentChangesOlderLabel(_environment?: string): string {
+  return "undo newer first";
+}
+
+export function restorePointsEmptyCopy(isOwner: boolean): string {
+  if (!isOwner) {
+    return "After a sync, restore points appear here. Only an owner can Restore.";
+  }
+  return "After a cloud sync, dated restore points appear here. Restore replaces shared books with that tip.";
+}
+
+export function restorePointsHeaderPill(count: number): string {
+  if (count <= 0) return "None";
+  return `${count} saved`;
 }

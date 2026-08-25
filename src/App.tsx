@@ -78,7 +78,13 @@ import {
   shapeTransactionLocation,
   touchGoogleConfirmation,
   touchVisitSpark,
-  undo,
+  undoLedgerConfirm,
+  assertLatestMemberLedgerUndo,
+  appendRestorePoint,
+  applyRestorePoint,
+  canRestorePoint,
+  listRestorePoints,
+  restoreConfirmBody,
   reversePostedMoney,
   recordConflict,
   canAbsorbDisjointSharedMoney,
@@ -136,7 +142,7 @@ import { clearSession, loadSession, saveSession, type Session } from "./session.
 import { joinSharedHousehold, reconcileHousehold, reconcileHouseholdSnapshots } from "./api.ts";
 import { acceptHouseholdWrite, classifyCommandError, hostedTransportAllowed, newConfirmationId, isLedgerWrite } from "./core/index.ts";
 import { ingestHouseholdBooks, inspectBrowserBooks, restoreHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
-import { pushSupabaseHousehold, readSupabaseConfig, pullHouseholdSnapshotById } from "./ledger/supabase.ts";
+import { pushSupabaseHousehold, readSupabaseConfig, pullHouseholdSnapshotById, fetchContinuityMembershipRole } from "./ledger/supabase.ts";
 import { livePullIntervalMs, shouldRunLivePull } from "./continuityLivePull.ts";
 import {
   authenticatedSupabaseConfig,
@@ -176,11 +182,13 @@ import {
   renderCommandSurface,
   type CommandChromeResult,
 } from "./commandSurface.tsx";
-import { loadSyncAnchor, saveSyncAnchor } from "./syncAnchor.ts";
+import { saveSyncAnchor } from "./syncAnchor.ts";
 import {
   recentChangesEmptyCopy,
   recentChangesHeaderPill,
   recentChangesOlderLabel,
+  restorePointsEmptyCopy,
+  restorePointsHeaderPill,
 } from "./recentChangesCopy.ts";
 import { useDialog } from "./useDialog.ts";
 import { CalendarPage } from "./Calendar.tsx";
@@ -221,7 +229,8 @@ type Guard =
   | { kind: "writeOffClaim"; claimId: string; summary: string }
   | { kind: "acceptVisitGoal"; appointmentId: string; summary: string }
   | { kind: "acceptPreset"; key: string; summary: string }
-  | { kind: "addPreset"; summary: string };
+  | { kind: "addPreset"; summary: string }
+  | { kind: "restorePoint"; pointId: string; summary: string };
 
 const emptyForm = {
   date: todayKey(),
@@ -277,6 +286,7 @@ export function App() {
   const [confirm, setConfirm] = useState<NeedsConfirmationError | null>(null);
   const [toast, setToast] = useState<UndoToken | null>(null);
   const [history, setHistory] = useState<UndoToken[]>([]);
+  const [isHouseholdOwner, setIsHouseholdOwner] = useState(false);
   const [guard, setGuard] = useState<Guard | null>(null);
   const [saveRepeatingPostFirst, setSaveRepeatingPostFirst] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
@@ -811,6 +821,43 @@ export function App() {
     setPlacePrefs(loadPhonePlacePrefs(environment));
   }, [environment]);
 
+  useEffect(() => {
+    let live = true;
+    const memberId = session?.memberId;
+    const householdId = household?.householdId;
+    if (!memberId || !householdId) {
+      setIsHouseholdOwner(false);
+      return () => { live = false; };
+    }
+    void (async () => {
+      try {
+        const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
+        const google = loadGoogleSession(environment, memberId);
+        const identity = authSession
+          ? { email: authSession.email, subject: authSession.googleSubject }
+          : google?.identity
+            ? { email: google.identity.email, subject: google.identity.subject }
+            : null;
+        if (!identity) {
+          if (live) setIsHouseholdOwner(false);
+          return;
+        }
+        const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
+        const role = await fetchContinuityMembershipRole({
+          householdId,
+          memberId,
+          identity,
+          environment,
+          config: cloudConfig,
+        });
+        if (live) setIsHouseholdOwner(role === "owner");
+      } catch {
+        if (live) setIsHouseholdOwner(false);
+      }
+    })();
+    return () => { live = false; };
+  }, [environment, session?.memberId, household?.householdId]);
+
   // Q2 C: books civil dates stay America/Toronto; this phone may display another zone.
   const booksZone = TIMEZONE;
   const displayZone = placePrefs.displayTimeZone || detectDeviceTimeZone();
@@ -1142,6 +1189,17 @@ export function App() {
       setCommandChrome(chrome);
       if (outcome.kind === "synchronized") {
         saveSyncAnchor(environment, outcome.household);
+        const who = session?.memberId;
+        if (who) {
+          void appendRestorePoint(outcome.household, who).then(async (withPoint) => {
+            if (withPoint === outcome.household) return;
+            await saveHousehold(withPoint, { memberId: who });
+            if (householdRef.current?.householdId === withPoint.householdId) {
+              householdRef.current = withPoint;
+              setHousehold(withPoint);
+            }
+          }).catch(() => undefined);
+        }
       }
       if (
         automaticContinuity &&
@@ -1149,12 +1207,21 @@ export function App() {
         (outcome.kind === "synchronized" || outcome.kind === "pending-transport" || !flushTransport)
       ) {
         void flushContinuityOutbox({ environment, identity: continuityIdentity, config: cloudConfig })
-          .then((flushed) => {
+          .then(async (flushed) => {
             if (flushed.synchronized <= 0) return;
             const current = householdRef.current;
             if (!current || current.householdId !== outcome.household.householdId) return;
-            const synced = markSynchronized(current);
+            let synced = markSynchronized(current);
+            const who = session?.memberId;
+            if (who) {
+              try {
+                synced = await appendRestorePoint(synced, who);
+              } catch {
+                /* restore tip is best-effort */
+              }
+            }
             saveSyncAnchor(environment, synced);
+            await saveHousehold(synced, { memberId: who });
             setHousehold(synced);
             setSyncState("synced");
           })
@@ -1170,9 +1237,13 @@ export function App() {
         chrome.toast?.showUndo !== false &&
         outcome.kind !== "conflict-needs-attention"
       ) {
-        setToast(token);
-        setHistory((current) => [...current, token].slice(-20));
-        window.setTimeout(() => setToast((item) => (item?.id === token.id ? null : item)), 8000);
+        const stamped: UndoToken = {
+          ...token,
+          actorMemberId: token.actorMemberId ?? session?.memberId,
+        };
+        setToast(stamped);
+        setHistory((current) => [...current, stamped].slice(-20));
+        window.setTimeout(() => setToast((item) => (item?.id === stamped.id ? null : item)), 8000);
       } else if (!outcome.ok || outcome.kind === "conflict-needs-attention") {
         setToast(null);
       }
@@ -1237,40 +1308,48 @@ export function App() {
   function applyUndo(token: UndoToken) {
     return enqueueWrite(async () => {
       const current = householdRef.current;
-      if (!current) return;
-      if (environment === "development") {
-        const anchor = loadSyncAnchor(environment, current.householdId);
-        if (anchor) {
-          lastAmountLabelRef.current = null;
-          const outcome = await commitHousehold(anchor, token);
-          if (!outcome || !outcome.postedExactlyOnce || outcome.kind === "conflict-needs-attention") return;
-          setHistory((items) => items.filter((item) => item.id !== token.id));
-          setToast(null);
-          return;
-        }
+      const who = session?.memberId;
+      if (!current || !who) return;
+      try {
+        assertLatestMemberLedgerUndo(historyRef.current, who, token);
+        const result = undoLedgerConfirm(current, token);
+        lastAmountLabelRef.current = null;
+        const outcome = await commitHousehold(result.household, {
+          ...result.undo,
+          actorMemberId: who,
+        });
+        if (!outcome || !outcome.postedExactlyOnce || outcome.kind === "conflict-needs-attention") return;
+        setHistory((items) => items.filter((item) => item.id !== token.id));
+        setToast((item) => (item?.id === token.id ? null : item));
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : String(caught));
       }
-      const latest = historyRef.current[historyRef.current.length - 1];
-      if (latest && latest.id !== token.id) {
-        setError("Undo the latest change first so the books stay in order.");
-        return;
-      }
-      const outcome = await commitHousehold(undo(current, token));
-      if (!outcome || !outcome.postedExactlyOnce || outcome.kind === "conflict-needs-attention") return;
-      setHistory((items) => items.filter((item) => item.id !== token.id));
-      setToast((item) => (item?.id === token.id ? null : item));
     });
   }
 
-  async function revertToLastSync(label: string) {
+  async function runRestorePoint(pointId: string) {
     const current = householdRef.current;
-    if (!current || environment !== "development") return;
-    const anchor = loadSyncAnchor(environment, current.householdId);
-    if (!anchor) {
-      setError("No cloud-acknowledged copy yet. Post and sync first, or use Ledger when a sync exists.");
+    const who = session?.memberId;
+    if (!current || !who) return;
+    const point = listRestorePoints(current).find((row) => row.id === pointId);
+    const gate = canRestorePoint(current, point, { isOwner: isHouseholdOwner });
+    if (!gate.ok) {
+      setError(gate.message);
       return;
     }
-    lastAmountLabelRef.current = null;
-    await commitHousehold(anchor, { id: label, label, snapshot: anchor, postedIds: [] });
+    if (!point) return;
+    try {
+      const restored = applyRestorePoint(current, point, who, { isOwner: isHouseholdOwner });
+      await commitHousehold(restored, {
+        id: `restore-${point.id}`,
+        label: `Restored ${point.label}`,
+        snapshot: current,
+        postedIds: [],
+        actorMemberId: who,
+      });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
   }
 
   async function resolveConflictSide(side: "local" | "remote") {
@@ -2102,23 +2181,75 @@ export function App() {
               <span className="muted">{recentChangesHeaderPill({
                 environment,
                 historyCount: history.length,
-                hasSyncAnchor: Boolean(household && loadSyncAnchor(environment, household.householdId)),
+                myLedgerCount: history.filter((item) => (
+                  isLedgerWrite(item)
+                  && (!item.actorMemberId || item.actorMemberId === session.memberId)
+                )).length,
               })}</span>
             </header>
-            {history.length === 0 ? (
+            {history.filter((item) => (
+              isLedgerWrite(item)
+              && (!item.actorMemberId || item.actorMemberId === session.memberId)
+            )).length === 0 ? (
               <p className="muted">{recentChangesEmptyCopy(environment)}</p>
             ) : (
-              [...history].reverse().map((item, index) => (
-                <div className="row" key={item.id}>
-                  <span>{item.label}</span>
-                  {index === 0 ? (
-                    <button className="chip" disabled={busy} onClick={() => void applyUndo(item)}>Undo</button>
-                  ) : (
-                    <span className="muted">{recentChangesOlderLabel(environment)}</span>
-                  )}
-                </div>
-              ))
+              [...history]
+                .filter((item) => (
+                  isLedgerWrite(item)
+                  && (!item.actorMemberId || item.actorMemberId === session.memberId)
+                ))
+                .reverse()
+                .map((item, index) => (
+                  <div className="row" key={item.id}>
+                    <span>{item.label}</span>
+                    {index === 0 ? (
+                      <button className="chip" disabled={busy} onClick={() => void applyUndo(item)}>Undo</button>
+                    ) : (
+                      <span className="muted">{recentChangesOlderLabel(environment)}</span>
+                    )}
+                  </div>
+                ))
             )}
+          </section>
+          <section className="card">
+            <header>
+              <h2>Restore points</h2>
+              <span className="muted">{restorePointsHeaderPill(listRestorePoints(household).length)}</span>
+            </header>
+            {listRestorePoints(household).length === 0 ? (
+              <p className="muted">{restorePointsEmptyCopy(isHouseholdOwner)}</p>
+            ) : (
+              listRestorePoints(household).map((point) => {
+                const gate = canRestorePoint(household, point, { isOwner: isHouseholdOwner });
+                return (
+                  <div className="row" key={point.id}>
+                    <span>
+                      {point.label}
+                      <span className="muted"> · rev {point.sourceRevision}</span>
+                    </span>
+                    {isHouseholdOwner ? (
+                      <button
+                        className="chip"
+                        disabled={busy || !gate.ok}
+                        title={gate.ok ? undefined : gate.message}
+                        onClick={() => setGuard({
+                          kind: "restorePoint",
+                          pointId: point.id,
+                          summary: restoreConfirmBody(point),
+                        })}
+                      >
+                        Restore
+                      </button>
+                    ) : (
+                      <span className="muted">owner only</span>
+                    )}
+                  </div>
+                );
+              })
+            )}
+            {!isHouseholdOwner && listRestorePoints(household).length > 0 ? (
+              <p className="muted">Everyone can see restore points. Only an owner can Restore.</p>
+            ) : null}
           </section>
           <PairingCard
             household={household}
@@ -2841,21 +2972,15 @@ export function App() {
       )}
       {guard?.kind === "remove" && (
         <ConfirmSheet
-          title={environment === "development" ? "Revert to last sync?" : "Reverse this row?"}
-          body={environment === "development"
-            ? `${guard.summary} This restores the last cloud-acknowledged copy on this phone. Changes since that sync go away — not a second journal row.`
-            : `${guard.summary} Both the original and the reversing entry stay. Undo from the toast or More → Recent changes.`}
-          confirmLabel={environment === "development" ? "Revert to last sync" : "Reverse"}
+          title="Reverse this row?"
+          body={`${guard.summary} Both the original and the reversing entry stay. Prefer Undo from the toast or More → Recent when it is your latest Confirm.`}
+          confirmLabel="Reverse"
           danger
           busy={busy}
           onCancel={() => setGuard(null)}
           onConfirm={() => {
             const id = guard.transactionId;
             setGuard(null);
-            if (environment === "development") {
-              void revertToLastSync(`revert-${id}`);
-              return;
-            }
             const current = householdRef.current;
             if (!current) return;
             try {
@@ -2864,6 +2989,21 @@ export function App() {
             } catch (caught) {
               setError(caught instanceof Error ? caught.message : String(caught));
             }
+          }}
+        />
+      )}
+      {guard?.kind === "restorePoint" && (
+        <ConfirmSheet
+          title="Restore shared books?"
+          body={guard.summary}
+          confirmLabel="Restore"
+          danger
+          busy={busy}
+          onCancel={() => setGuard(null)}
+          onConfirm={() => {
+            const pointId = guard.pointId;
+            setGuard(null);
+            void runRestorePoint(pointId);
           }}
         />
       )}
@@ -3122,7 +3262,7 @@ export function App() {
           <span>
             {commandChrome.toast.primary}
             {commandChrome.toast.secondary ? `. ${commandChrome.toast.secondary}` : ""}
-            {commandChrome.toast.showUndo !== false ? " You can undo to last sync, or find it later under More." : ""}
+            {commandChrome.toast.showUndo !== false ? " You can Undo, or find it later under More." : ""}
           </span>
           {commandChrome.toast.showUndo !== false && (
             <button
@@ -3131,7 +3271,7 @@ export function App() {
               type="button"
               onClick={() => void applyUndo(toast)}
             >
-              {environment === "development" ? "Undo to last sync" : "Undo"}
+              Undo
             </button>
           )}
         </div>
