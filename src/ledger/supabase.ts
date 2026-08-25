@@ -47,6 +47,7 @@ type ContinuityMembershipRow = {
   google_subject: string;
   google_email: string;
   auth_user_id?: string;
+  role?: string;
 };
 
 const DEFAULT_URL = "https://tykhocwacaxwquhynkok.supabase.co";
@@ -310,7 +311,7 @@ async function continuityMembershipRows(
 ): Promise<ContinuityMembershipRow[] | null> {
   const subject = identity.subject.trim();
   const email = identity.email.trim().toLowerCase();
-  const select = "select=household_id,member_id,google_subject,google_email,auth_user_id&active=eq.true&limit=500";
+  const select = "select=household_id,member_id,google_subject,google_email,auth_user_id,role&active=eq.true&limit=500";
   if (config.authUserId) {
     const byAuthUser = await rest(
       config,
@@ -571,6 +572,28 @@ export async function discoverSupabaseHouseholdsByGoogleIdentity(
     }
   }
   return [...found.values()];
+}
+
+/** Active membership role for owner Restore gate. Null if unknown / offline. */
+export async function fetchContinuityMembershipRole(input: {
+  householdId: string;
+  memberId: string;
+  identity: GoogleIdentitySelector;
+  environment?: Environment;
+  config?: SupabaseConfig | null;
+}): Promise<"owner" | "member" | null> {
+  const environment = input.environment ?? "development";
+  const config = input.config === undefined ? readSupabaseConfig() : input.config;
+  if (!config || !hostedContinuityAllowed(environment)) return null;
+  const rows = await continuityMembershipRows(config, input.identity, environment);
+  if (!rows) return null;
+  const match = rows.find((row) => (
+    row.household_id === input.householdId && row.member_id === input.memberId
+  ));
+  if (!match) return null;
+  if (match.role === "owner") return "owner";
+  if (match.role === "member") return "member";
+  return null;
 }
 
 async function readRemoteSnapshot(

@@ -26,6 +26,7 @@ export {
   readSupabaseConfig,
   bundledSupabaseConfig,
   hostedTransportAllowed,
+  fetchContinuityMembershipRole,
 } from "./supabase.ts";
 export {
   applyPublishHouseholdSnapshotCas,

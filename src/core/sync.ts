@@ -185,6 +185,7 @@ export function ensureHouseholdShape(household: Household): Household {
     commandReceipts: household.commandReceipts ?? [],
     sharing: shapeSharing(household),
     conflicts: household.conflicts ?? [],
+    restorePoints: household.restorePoints ?? [],
   };
 }
 
@@ -246,6 +247,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     shifts: sharedShifts,
     tombstones: shaped.tombstones,
     commandReceipts: shaped.commandReceipts,
+    restorePoints: shaped.restorePoints ?? [],
   };
   const personal: PersonalEnvelope = {
     kind: "personal",
@@ -305,7 +307,8 @@ export function assembleHousehold(
     booksAcceptedHash: null,
     commandReceipts: shared.commandReceipts ?? [],
     sharing: shapeSharing({ linked: options?.linked === true }),
-    conflicts: [],
+    conflicts: shared.conflicts ?? [],
+    restorePoints: shared.restorePoints ?? [],
     tombstones: mergeTombstones(shared.tombstones, personal?.tombstones ?? []),
     name: shared.name,
     ledgerNames: shapeLedgerNames(shared.ledgerNames, shared.members),

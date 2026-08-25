@@ -3,18 +3,16 @@ import {
   recentChangesEmptyCopy,
   recentChangesHeaderPill,
   recentChangesOlderLabel,
+  restorePointsEmptyCopy,
 } from "../src/recentChangesCopy.ts";
 
-describe("Recent changes copy (D-119 tighten)", () => {
-  it("uses last-sync empty copy in Development and LIFO copy in Production", () => {
-    expect(recentChangesEmptyCopy("development")).toMatch(/last cloud-acknowledged copy/);
-    expect(recentChangesEmptyCopy("development")).not.toMatch(/Only the latest change undoes/);
-    expect(recentChangesEmptyCopy("production")).toBe(
-      "Only the latest change on this phone can be undone, so the books stay in order.",
-    );
+describe("Recent changes copy (combined undo engine)", () => {
+  it("describes confirmation-scoped Undo for every environment", () => {
+    expect(recentChangesEmptyCopy("development")).toMatch(/latest money Confirm/);
+    expect(recentChangesEmptyCopy("production")).toMatch(/partner posts stay/i);
   });
 
-  it("labels the pill with since-last-sync only when Development has an anchor", () => {
+  it("labels the pill with this-phone count", () => {
     expect(recentChangesHeaderPill({
       environment: "development",
       historyCount: 0,
@@ -23,22 +21,18 @@ describe("Recent changes copy (D-119 tighten)", () => {
     expect(recentChangesHeaderPill({
       environment: "development",
       historyCount: 3,
-      hasSyncAnchor: true,
-    })).toBe("3 since last sync");
-    expect(recentChangesHeaderPill({
-      environment: "development",
-      historyCount: 3,
-      hasSyncAnchor: false,
-    })).toBe("3 on this phone");
-    expect(recentChangesHeaderPill({
-      environment: "production",
-      historyCount: 2,
+      myLedgerCount: 2,
       hasSyncAnchor: true,
     })).toBe("2 on this phone");
   });
 
-  it("marks older Development rows synced and Production rows later", () => {
-    expect(recentChangesOlderLabel("development")).toBe("synced");
-    expect(recentChangesOlderLabel("production")).toBe("later");
+  it("marks older rows as undo-newer-first", () => {
+    expect(recentChangesOlderLabel("development")).toBe("undo newer first");
+    expect(recentChangesOlderLabel("production")).toBe("undo newer first");
+  });
+
+  it("explains Restore empty state for owners and members", () => {
+    expect(restorePointsEmptyCopy(true)).toMatch(/dated restore points/i);
+    expect(restorePointsEmptyCopy(false)).toMatch(/Only an owner/i);
   });
 });
