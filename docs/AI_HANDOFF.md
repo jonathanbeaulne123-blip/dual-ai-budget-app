@@ -4,19 +4,17 @@ After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. 
 
 Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
 
-## Auth kitchen smoke + invite chrome (2026-08-25)
+## Auth discover bind + scannable QR (2026-08-25)
 
-**Status:** Branch `cursor/auth-invite-chrome-f375` (not merged). Live 006 anon denial and kitchen OAuth door verified. Email/QR invite client + Welcome/More chrome implemented; signed-in issue/redeem still needs Jonathan.
+**Status:** Branch `cursor/auth-discover-qr-f375` (not merged). Root cause of “not linked to a Development ledger”: post-006 discovery is `auth_user_id`-only; legacy “link Google once” cannot repair memberships. Fix: migration 010 bind RPC + client retry; pending invite across OAuth; visible QR.
 
-**Budget delta (5):** `+3` — hashed one-time Auth invites wire the membership door; anon REST remains denied.
+**Budget delta (5):** `+3` — rediscovery/bind + invite accept without prior household.
 
-**Engagement delta (3):** `+1` — More/Welcome invite chrome; Hercules unchanged.
+**Engagement delta (3):** `+2` — scannable QR; corrected Welcome copy.
 
-**Verified:** anon `households` / `continuity_memberships` / `hearth_issue_invite` → HTTP 401; kitchen Continue with Google → Google OAuth for `tykhocwacaxwquhynkok.supabase.co`; `pnpm check` green on branch (462 tests).
+**Jonathan must paste:** `docs/sql/010_bind_google_memberships.sql` (or diagnose/rebind in `docs/sql/010_rebind_jonathan_household.sql`), then Continue with Google after kitchen deploy.
 
-**Still required:** Jonathan Google sign-in → open `HH-591c6905afd19707` → post/sync; owner issue email/QR; second identity redeem. Docs PR #104 (006 applied) remains open.
-
-**Next owner:** Jonathan for signed-in smoke; merge invite PR after review.
+**Next owner:** Jonathan paste 010 → smoke open `HH-591c6905afd19707` → issue QR → second device camera join.
 
 ## Risk routing
 

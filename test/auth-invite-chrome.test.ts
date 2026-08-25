@@ -3,13 +3,19 @@ import {
   authInviteFromLocation,
   authInviteTokenFromText,
   isAuthInviteToken,
+  savePendingAuthInvite,
+  loadPendingAuthInvite,
+  clearPendingAuthInvite,
 } from "../src/core/authInvite.ts";
 import {
   inviteReasonMessage,
   issueHouseholdInvite,
   redeemHouseholdInvite,
+  bindGoogleMemberships,
 } from "../src/ledger/householdInvites.ts";
 import type { SupabaseConfig } from "../src/ledger/supabase.ts";
+import { readFileSync } from "node:fs";
+import { renderSVG } from "uqr";
 
 const HEX64 = "a".repeat(64);
 
@@ -120,5 +126,64 @@ describe("household invite RPC client", () => {
       config: { url: "https://example.supabase.co", key: "sb_publishable_test" },
     });
     expect(result).toEqual({ ok: false, reason: "unauthenticated" });
+  });
+
+  it("maps bind Google memberships success and missing-RPC", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      ok: true,
+      bound: 1,
+      google_subject: "sub-1",
+      google_email: "j@example.com",
+    }), { status: 200 })));
+    const ok = await bindGoogleMemberships({
+      environment: "development",
+      config,
+    });
+    expect(ok).toEqual({
+      ok: true,
+      bound: 1,
+      googleSubject: "sub-1",
+      googleEmail: "j@example.com",
+    });
+
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      message: "Could not find the function public.hearth_bind_google_memberships",
+      code: "PGRST202",
+    }), { status: 404 })));
+    const missing = await bindGoogleMemberships({ config });
+    expect(missing).toEqual({ ok: false, reason: "bind-rpc-missing" });
+    vi.unstubAllGlobals();
+  });
+});
+
+describe("pending Auth invite storage", () => {
+  it("round-trips an invite through sessionStorage across OAuth", () => {
+    const store = new Map<string, string>();
+    vi.stubGlobal("sessionStorage", {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => { store.set(key, value); },
+      removeItem: (key: string) => { store.delete(key); },
+    });
+    savePendingAuthInvite({ token: HEX64, environment: "development" });
+    expect(loadPendingAuthInvite()).toEqual({ token: HEX64, environment: "development" });
+    clearPendingAuthInvite();
+    expect(loadPendingAuthInvite()).toBeNull();
+    vi.unstubAllGlobals();
+  });
+});
+
+describe("Auth join QR", () => {
+  it("renders SVG for a kitchen join URL", () => {
+    const joinUrl = `https://hearth-books.example.workers.dev/join?invite=${HEX64}&env=development`;
+    const svg = renderSVG(joinUrl, { ecc: "M", border: 2 });
+    expect(svg).toMatch(/<svg/i);
+    expect(svg.length).toBeGreaterThan(100);
+  });
+
+  it("ships migration 010 bind RPC", () => {
+    const migration = readFileSync("supabase/migrations/010_bind_google_memberships.sql", "utf8");
+    expect(migration).toMatch(/hearth_bind_google_memberships/);
+    expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.hearth_bind_google_memberships/);
+    expect(migration).toMatch(/VALUES \(10,/);
   });
 });

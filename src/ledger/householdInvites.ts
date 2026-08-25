@@ -32,6 +32,10 @@ export type RedeemInviteResult =
 
 export type RevokeMemberResult = { ok: true } | { ok: false; reason: string };
 
+export type BindMembershipsResult =
+  | { ok: true; bound: number; googleSubject: string; googleEmail: string }
+  | { ok: false; reason: string };
+
 type RpcBody = Record<string, unknown>;
 
 function messageOf(body: unknown): string {
@@ -202,4 +206,36 @@ export async function revokeHouseholdMember(input: {
     return { ok: false, reason: String(body.reason || "revoke-failed") };
   }
   return { ok: true };
+}
+
+/** Bind caller's Google identity onto matching continuity_memberships (migration 010). */
+export async function bindGoogleMemberships(input: {
+  environment?: Environment | null;
+  config?: SupabaseConfig | null;
+}): Promise<BindMembershipsResult> {
+  const config = input.config ?? readSupabaseConfig();
+  if (!config?.accessToken) {
+    return { ok: false, reason: "unauthenticated" };
+  }
+  const result = await rpc(config, "hearth_bind_google_memberships", {
+    p_environment: input.environment ?? null,
+  });
+  if (!result.ok) {
+    const message = messageOf(result.body);
+    if (/could not find|schema cache|404|PGRST202/i.test(message)) {
+      return { ok: false, reason: "bind-rpc-missing" };
+    }
+    return { ok: false, reason: message };
+  }
+  const body = asObject(result.body);
+  if (!body) return { ok: false, reason: "invalid-response" };
+  if (body.ok !== true) {
+    return { ok: false, reason: String(body.reason || "bind-failed") };
+  }
+  return {
+    ok: true,
+    bound: Number(body.bound || 0),
+    googleSubject: String(body.google_subject || ""),
+    googleEmail: String(body.google_email || ""),
+  };
 }
