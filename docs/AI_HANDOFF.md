@@ -4,6 +4,20 @@ After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. 
 
 Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
 
+## App Store sync UX P0+P1 (2026-08-25)
+
+**Status:** Draft PR #114 on `cursor/appstore-sync-ux-f375` (not merged). Baseline `83a1974` (`main`).
+
+**Budget delta (5):** `+3` — conflict impact honesty; durable Undo on this phone; Restore blast-radius + tip host + Personal strip; Retry flush; personal live-pull.
+
+**Engagement delta (3):** `+2` — Pairing Invite/Advanced; clearer sync chrome; Sign out clarity.
+
+**Worksession:** [`worksessions/2026-08-25-appstore-sync-ux.md`](worksessions/2026-08-25-appstore-sync-ux.md)
+
+**Verification:** focused vitest + `pnpm check` (526 tests) passed. Two-phone Auth smoke still needs Jonathan/Bianca devices.
+
+**Next owner:** Review PR #114; correct any default if wrong; two-phone smoke on live Dev.
+
 ## Combined undo + restore engine (2026-08-25)
 
 **Status:** Branch `cursor/undo-restore-engine-f375` (not merged). Confirmation-scoped LIFO **Undo** (partner stays, auto CAS) + owner **Restore points** (D-124 shape in household payload). Dev last-sync whole-snapshot Undo retired.

@@ -1,11 +1,12 @@
 # Hearth worksession — App Store sync UX (P0+P1)
 
-- **Status:** OPEN
+- **Status:** READY FOR REVIEW (draft PR #114)
 - **Opened:** 2026-08-25 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor Cloud Agent
 - **Branch:** `cursor/appstore-sync-ux-f375`
 - **Baseline SHA:** `83a1974` (`main`)
+- **Head SHA:** see branch tip
 - **Risk:** High (sync recovery UX + auth session chrome; money conflict presentation)
 - **Decision owner:** Jonathan
 - **Environment impact:** Development client; no hosted schema apply
@@ -26,3 +27,9 @@
 ## Scope
 
 P0 then P1 from App Store sync deep dive. Attempt new tests; assume unrelated waiting tests pass.
+
+## Verification
+
+- Focused: `test/appstore-sync-ux.test.ts`, `test/undo-history.test.ts`, undo-restore, command-surface, conflict-cas
+- `pnpm check` — 526 tests + build passed
+- Two-phone live Auth smoke still outstanding (needs real devices)
