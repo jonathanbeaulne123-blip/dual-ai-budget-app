@@ -132,6 +132,11 @@ import {
   type CommandChromeResult,
 } from "./commandSurface.tsx";
 import { loadSyncAnchor, saveSyncAnchor } from "./syncAnchor.ts";
+import {
+  recentChangesEmptyCopy,
+  recentChangesHeaderPill,
+  recentChangesOlderLabel,
+} from "./recentChangesCopy.ts";
 import { useDialog } from "./useDialog.ts";
 import { CalendarPage } from "./Calendar.tsx";
 import { Office } from "./Office.tsx";
@@ -1611,10 +1616,14 @@ export function App() {
           <section className="card">
             <header>
               <h2>Recent changes</h2>
-              <span className="muted">{history.length ? `${history.length} on this phone` : "None"}</span>
+              <span className="muted">{recentChangesHeaderPill({
+                environment,
+                historyCount: history.length,
+                hasSyncAnchor: Boolean(household && loadSyncAnchor(environment, household.householdId)),
+              })}</span>
             </header>
             {history.length === 0 ? (
-              <p className="muted">Saves, removes, and reviews can be undone here. Only the latest change undoes, so the books stay in order.</p>
+              <p className="muted">{recentChangesEmptyCopy(environment)}</p>
             ) : (
               [...history].reverse().map((item, index) => (
                 <div className="row" key={item.id}>
@@ -1622,7 +1631,7 @@ export function App() {
                   {index === 0 ? (
                     <button className="chip" disabled={busy} onClick={() => void applyUndo(item)}>Undo</button>
                   ) : (
-                    <span className="muted">later</span>
+                    <span className="muted">{recentChangesOlderLabel(environment)}</span>
                   )}
                 </div>
               ))

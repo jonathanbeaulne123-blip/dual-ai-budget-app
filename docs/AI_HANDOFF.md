@@ -48,7 +48,17 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 **Engagement delta (3):** `+1` — accessible Add sheet, honest chip/banner/toast copy; Hercules preset prompt unchanged.
 
-**Still required:** two-device conflict choose proof; tighten More → Recent changes copy for D-119; Production reversal semantics stay on D-085 until Jonathan approves.
+**Still required:** two-device conflict choose proof; Production reversal semantics stay on D-085 until Jonathan approves D-124 build (or an interim Production D-119 approval).
+
+## More → Recent changes copy (D-119 tighten) + D-124 accepted
+
+**Status:** Copy tighten on `cursor/recent-changes-copy-4ffb`. Development empty state and header pill match last-sync undo; older rows say **synced**; Production empty state stays honest LIFO until D-124 ships. Button label remains **Undo**. Pure helpers in `src/recentChangesCopy.ts`.
+
+**Budget delta (5):** `0` — wording only; restore semantics unchanged this pass.
+
+**Engagement delta (3):** `+1` — More card no longer contradicts the toast / D-119 behavior.
+
+**D-124 accepted (not built):** dated hosted restore points, last 30 days, visible to everyone, restore owner-only, Dev+Production together. Next build is a separate PR after Auth/RLS sequencing Jonathan chooses.
 
 ## Office chalkboard / Home themes / Hercules snippets (D-120, PR #80)
 
