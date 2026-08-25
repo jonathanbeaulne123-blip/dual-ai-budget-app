@@ -4,15 +4,31 @@ After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. 
 
 Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
 
+## Live pull dual-use (2026-08-25)
+
+**Status:** Branch `cursor/live-pull-dual-use-f375` (not merged). Visibility-aware REST live pull; disjoint shared-money absorb; Auth hides manual Sync; conflict choose clears outbox blocks and force-flushes.
+
+**Budget delta (5):** `+3` — partner money appears while kitchens stay open; conflict only when shared rows diverge.
+
+**Engagement delta (3):** `+1` — quiet `Sharing…` chip; no Auth Sync CTA.
+
+**Scale (current REST poll, no Realtime client):** 2 people → 4s; ~10 → 5s; 50–100 → 8s stopgap — prefer Realtime for high concurrency.
+
+**Item 5 (undo, elaborate only):** Dev last-sync whole-snapshot undo can wipe partner posts after live pull. Options: toast = token only; confirmation-scoped undo; or D-124. Not changed this PR.
+
+**Item 6 (outbox resume):** Wired — `clearContinuityOutboxConflictBlocks` + force flush after choose; enqueue no longer inherits conflict block.
+
+**Next owner:** Review PR; two-browser smoke after merge; decide undo option.
+
+**Worksession:** [`worksessions/2026-08-25-live-pull-dual-use.md`](worksessions/2026-08-25-live-pull-dual-use.md)
+
 ## Quiet sync + ledger-only undo (2026-08-25)
 
-**Status:** Branch `cursor/sync-undo-quiet-f375` (not merged). Jonathan-approved: sync on ledger write; undo only for money writes; no undo popup for Hercules/UX.
+**Status:** Merged via PR #107. Ledger sync-on-write + undo; kitchen quiet / background flush.
 
 **Budget delta (5):** `+2` — ledger keeps sync-on-write + undo; kitchen no longer shares that chrome.
 
 **Engagement delta (3):** `+2` — chalk/chat/cosmetics feel instant without Posted/Undo noise.
-
-**Next owner:** Review PR; smoke post vs chalk on kitchen after merge.
 
 ## Auth discover bind + scannable QR (2026-08-25)
 

@@ -87,10 +87,15 @@ function chipForSharingMode(state: CommandSurfaceState, ctx: CommandChromeContex
     return { primary: "Linked", tone: "neutral" };
   }
   if (mode === "pending-transport" || state.kind === "pending-transport") {
-    const secondary = ctx.offline || mode === "disconnected" ? "· offline" : undefined;
+    const offline = ctx.offline || mode === "disconnected";
+    const unhealthy = offline || Boolean(ctx.lastError) || mode === "transport-error";
+    if (!unhealthy) {
+      // Healthy Auth/background queue — not a red state.
+      return { primary: "Sharing…", tone: "neutral" };
+    }
     return {
       primary: "Waiting to share",
-      secondary,
+      secondary: offline ? "· offline" : undefined,
       actionLabel: "Retry now",
       tone: "warning",
     };

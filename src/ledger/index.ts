@@ -21,6 +21,7 @@ export { booksSqlDump, booksJournalCsv, downloadText, booksFilename } from "./ex
 export {
   probeSupabase,
   pullSupabaseHousehold,
+  pullHouseholdSnapshotById,
   pushSupabaseHousehold,
   readSupabaseConfig,
   bundledSupabaseConfig,

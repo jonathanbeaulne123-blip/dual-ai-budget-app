@@ -63,6 +63,84 @@ export function canAutoMergeConflict(local: Household, remote: Household): boole
   return !moneyFactsChanged(local, remote);
 }
 
+function idContentConflict<T extends { id: string }>(left: T[] = [], right: T[] = []): boolean {
+  const byId = new Map(right.map((row) => [row.id, row]));
+  for (const row of left) {
+    const other = byId.get(row.id);
+    if (other && JSON.stringify(row) !== JSON.stringify(other)) return true;
+  }
+  return false;
+}
+
+/**
+ * True when both sides only added different shared money rows (no same-id edits).
+ * Safe to union without opening the conflict sheet.
+ */
+export function canAbsorbDisjointSharedMoney(local: Household, remote: Household): boolean {
+  if (local.householdId !== remote.householdId) return false;
+  if (local.environment !== remote.environment) return false;
+  if (!goalCatalogsMatch(local.goals, remote.goals)) return false;
+  if (idContentConflict(sharedTransactions(local), sharedTransactions(remote))) return false;
+  if (idContentConflict(
+    local.shifts.filter((shift) => belongsToSharedLedger(shift)),
+    remote.shifts.filter((shift) => belongsToSharedLedger(shift)),
+  )) return false;
+  if (idContentConflict(local.claims ?? [], remote.claims ?? [])) return false;
+  if (idContentConflict(local.sitDownSessions ?? [], remote.sitDownSessions ?? [])) return false;
+  if (idContentConflict(local.goalPurchases ?? [], remote.goalPurchases ?? [])) return false;
+  // Identical money → canAutoMergeConflict path; absorb still ok as a no-op union.
+  return true;
+}
+
+function unionById<T extends { id: string }>(left: T[] = [], right: T[] = []): T[] {
+  const map = new Map<string, T>();
+  for (const row of left) map.set(row.id, row);
+  for (const row of right) {
+    if (!map.has(row.id)) map.set(row.id, row);
+  }
+  return [...map.values()];
+}
+
+/** Union disjoint shared money; keep this member's Personal from local. */
+export function absorbDisjointSharedMoney(
+  local: Household,
+  remote: Household,
+  memberId: string,
+): Household {
+  const localParts = splitForSync(local, memberId);
+  const remoteParts = splitForSync(remote, memberId);
+  const tombstones = mergeTombstones(local.tombstones, remote.tombstones);
+  const revision = Math.max(local.revision, remote.revision);
+  const shared = {
+    ...remoteParts.shared,
+    revision,
+    transactions: unionById(remoteParts.shared.transactions, localParts.shared.transactions),
+    shifts: unionById(remoteParts.shared.shifts, localParts.shared.shifts),
+    claims: unionById(remoteParts.shared.claims ?? [], localParts.shared.claims ?? []),
+    sitDownSessions: unionById(remoteParts.shared.sitDownSessions ?? [], localParts.shared.sitDownSessions ?? []),
+    goalPurchases: unionById(remoteParts.shared.goalPurchases ?? [], localParts.shared.goalPurchases ?? []),
+    goalContributions: unionById(
+      remoteParts.shared.goalContributions ?? [],
+      localParts.shared.goalContributions ?? [],
+    ),
+    activity: mergeRecords(remote.activity ?? [], local.activity ?? [], []).slice(-200),
+    devices: mergeRecords(remote.devices ?? [], local.devices ?? [], []),
+    tombstones,
+    commandReceipts: [...(local.commandReceipts ?? []), ...(remote.commandReceipts ?? [])].filter(
+      (row, index, rows) => rows.findIndex((item) => item.confirmationId === row.confirmationId) === index,
+    ),
+    conflicts: [...(local.conflicts ?? []), ...(remote.conflicts ?? [])].filter(
+      (row, index, rows) => rows.findIndex((item) => item.id === row.id) === index && row.resolved,
+    ),
+  };
+  const assembled = assembleHousehold(shared, localParts.personal, { linked: true });
+  return markSynchronized({
+    ...assembled,
+    revision,
+    baseRevision: Math.max(local.baseRevision ?? 0, remote.baseRevision ?? 0, remote.revision, local.revision),
+  });
+}
+
 export function autoMergeSafe(local: Household, remote: Household): Household {
   const tombstones = mergeTombstones(local.tombstones, remote.tombstones);
   const goalContributions = mergeRecords(remote.goalContributions ?? [], local.goalContributions ?? [], tombstones);
