@@ -1,30 +1,26 @@
 # Hearth worksession — Auth/RLS 006 path B
 
-- **Status:** OPEN — 006 NOTICE revision ready; awaiting green preflight + Jonathan paste approve
+- **Status:** CLOSED — 006 applied live; smoke remaining
 - **Opened:** 2026-08-25 (`America/Toronto`)
-- **Branch:** `cursor/auth-rls-006-notice-f375`
-- **Baseline SHA:** `9f50aae` (`main`)
-- **Risk:** Release
+- **Closed:** 2026-08-25
+- **Branch (docs):** `cursor/d123-006-applied-f375`
+- **Risk:** Release residual until smoke
 - **Decision owner:** Jonathan
 
-## Completed (Jonathan)
+## Completed
 
-1. Empty Production household gone
-2. Google Auth → `auth.users` (Jonathan Google identity)
-3. `008` applied (`schema_migrations` id 8 at 2026-08-25 08:17 UTC)
+1. Empty Production household removed
+2. Google Auth → `auth.users`
+3. `008` applied
+4. Bind + owner cleanup; empty Dev shells deleted
+5. **`006` applied** — live proof `hearth_households_select`
 
-## This packet
+## Remaining
 
-- 006 Production abort → NOTICE + ceiling 1
-- `docs/sql/009_rollback_006.sql`
-- Preflight/go-no-go text updated for ids `2,4,5,7,8`
-
-## Still blocked until Jonathan
-
-- Re-run preflight green
-- Explicit “paste 006” approval
-- Smoke after apply
+- Kitchen smoke: Continue with Google, create/open, anon denial
+- Invite email/QR chrome
+- Bianca Google sign-in optional
 
 ## Handoff
 
-Do **not** apply 006 until Jonathan says so after preflight.
+Docs record applied. Do not call fully shipped until smoke verified. Rollback only on Jonathan’s explicit order via `docs/sql/009_rollback_006.sql`.

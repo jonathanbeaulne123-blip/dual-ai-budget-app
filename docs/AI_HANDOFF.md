@@ -94,17 +94,17 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 ## Auth + membership RLS cutover (D-123)
 
-**Status:** Tasks 1–3 complete (empty Production removed; Google Auth live with `auth.users`; `008` applied). Path B NOTICE revision + `009_rollback_006.sql` prepared on branch. **006 not applied.** Re-run preflight, then Jonathan must explicitly approve the paste.
+**Status:** **006 applied** on the shared project (2026-08-25, Jonathan paste, path B NOTICE + ceiling 1). Live proof: `pg_policies` shows `hearth_households_select` (not `hearth_anon_all`). Google Auth live; `008` applied earlier; empty Production removed. Post-apply smoke (Create / anon denial / wrong-household) not yet recorded as verified.
 
-**Budget delta (5):** `+4` readiness — Auth door live; deny-by-default SQL ready; door still open until 006 paste.
+**Budget delta (5):** `+5` — deny-by-default membership RLS is live; anon household REST closed.
 
 **Engagement delta (3):** `0`
 
-**Next owner:** Jonathan — re-run `docs/sql/006_preflight_readonly.sql`; if green, approve paste of `supabase/migrations/006_auth_rls_cutover.sql`; then smoke Create/invite/anon denial.
+**Next owner:** Jonathan — smoke Auth kitchen (Continue with Google, create/open, anon denial). Optional Bianca sign-in. Invite chrome remains a follow-up.
 
-**Risk:** Release. Do not enable `VITE_PRODUCTION_CONTINUITY` casually.
+**Risk:** Release residual until smoke passes. Rollback only via `docs/sql/009_rollback_006.sql` on explicit order.
 
-**Environment / data disclosure:** Live applies so far: delete (already gone), 008. No 006 apply by agent.
+**Environment / data disclosure:** Live applies: 004/005/006/007/008. Agent did not paste 006; Jonathan did. Fictional/disposable Development data only.
 
 ## Trust-foundation worksession (2026-08-24, local branch)
 
