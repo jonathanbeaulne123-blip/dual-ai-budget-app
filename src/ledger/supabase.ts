@@ -4,7 +4,10 @@ import { inviteFromText } from "../core/invite.ts";
 import { memberIdForGoogleIdentity, type GoogleIdentitySelector } from "../core/google.ts";
 import { hostedTransportAllowed } from "../core/sharing.ts";
 import type { Environment, Household, PersonalEnvelope } from "../core/types.ts";
+import { hostedContinuityAllowed } from "./continuityPolicy.ts";
 import type { SnapshotCasConflict, SnapshotCasResult } from "./snapshotCas.ts";
+
+export { hostedContinuityAllowed, productionContinuityEnabled } from "./continuityPolicy.ts";
 
 export type SupabaseConfig = {
   url: string;
@@ -417,7 +420,20 @@ async function publishContinuityMemberScope(
   });
   if (isMissingTable(probe.body)) return;
   if (!probe.ok) throw new Error(messageOf(probe.body));
-  if (!config.authUserId) {
+
+  // Production membership INSERT stays privileged until Auth/RLS cutover. Never hand
+  // anon clients the ability to mint Production membership rows with the publishable key.
+  if (snapshot.environment === "production") {
+    const existing = await continuityMembershipRows(config, identity, "production");
+    const match = (existing ?? []).find((row) => (
+      row.household_id === snapshot.householdId && row.member_id === memberId
+    ));
+    if (!match) {
+      throw new Error(
+        "Production continuity membership is missing. Seed the owner row with a reviewed migration before cloud writes.",
+      );
+    }
+  } else if (!config.authUserId) {
     const link = snapshot.google.links.find((item) => item.active && item.memberId === memberId);
     const membership = await rest(config, "continuity_memberships?on_conflict=environment,household_id,member_id", {
       method: "POST",
@@ -513,19 +529,20 @@ export async function pullSupabaseHousehold(
 }
 
 /**
- * Temporary Development discovery for D-114. Hosted rows are deliberately open
- * during the disposable-data window, so the client can scan snapshots and keep
- * only exact Google memberships. Production stays blocked until Auth/RLS can do
- * this filtering on the server.
+ * Google-account discovery for hosted continuity. Development may fall back to a
+ * bounded snapshot scan while membership tables are missing. Production is
+ * membership-scoped only and stays off unless VITE_PRODUCTION_CONTINUITY=1.
  */
 export async function discoverSupabaseHouseholdsByGoogleIdentity(
   identity: GoogleIdentitySelector,
   config = readSupabaseConfig(),
   environment: Environment = "development",
 ): Promise<DiscoveredHousehold[]> {
-  if (!config || environment !== "development") return [];
+  if (!config || !hostedContinuityAllowed(environment)) return [];
   const fromMemberships = await discoverFromContinuityMemberships(config, identity, environment);
   if (fromMemberships !== null) return fromMemberships;
+  // Never bulk-scan Production snapshots with the publishable key.
+  if (environment !== "development") return [];
   const result = await rest(
     config,
     `household_snapshots?environment=eq.${encodeURIComponent(environment)}&select=payload,updated_at&order=updated_at.desc&limit=500`,
@@ -578,9 +595,22 @@ export async function pushSupabaseHousehold(
   config = readSupabaseConfig(),
   options?: { expectedRevision?: number; continuityIdentity?: GoogleIdentitySelector },
 ): Promise<PushHouseholdResult> {
-  const continuityMemberId = household.environment === "development" && options?.continuityIdentity
+  const continuityMemberId = hostedContinuityAllowed(household.environment) && options?.continuityIdentity
     ? memberIdForGoogleIdentity(household, options.continuityIdentity)
     : null;
+  if (household.environment === "production" && options?.continuityIdentity && !continuityMemberId) {
+    return {
+      configured: Boolean(config),
+      reachable: false,
+      schema: false,
+      skipped: true,
+      error: "This Google account is not a member of that Production household.",
+    };
+  }
+  // Production never publishes an unprojected full snapshot through the phrase/`linked` path.
+  if (household.environment === "production" && !continuityMemberId) {
+    return { configured: Boolean(config), reachable: false, schema: false, skipped: true };
+  }
   if (!hostedTransportAllowed(household) && !continuityMemberId) {
     return { configured: Boolean(config), reachable: false, schema: false, skipped: true };
   }
@@ -596,8 +626,15 @@ export async function pushSupabaseHousehold(
     : snapshot;
   const snapshotHash = await financialAuditHash(cloudSnapshot);
   const payload = JSON.stringify(cloudSnapshot);
+  const identity = options?.continuityIdentity;
+  // Personal-before-CAS only when the household row already exists (FK on memberships).
+  // First create still publishes scope after the household write.
+  const publishScopeBeforeCas = Boolean(continuityMemberId && identity && expectedRevision > 0);
+  if (publishScopeBeforeCas && continuityMemberId && identity) {
+    await publishContinuityMemberScope(config, snapshot, continuityMemberId, identity);
+  }
 
-  if (config.authUserId && continuityMemberId && options?.continuityIdentity && expectedRevision === 0) {
+  if (config.authUserId && continuityMemberId && identity && expectedRevision === 0) {
     const member = snapshot.members.find((item) => item.id === continuityMemberId);
     const create = await rest(config, "rpc/hearth_create_household", {
       method: "POST",
@@ -621,7 +658,7 @@ export async function pushSupabaseHousehold(
     if (create.ok) {
       const created = parseCasRpcBody(create.body);
       if (created?.ok) {
-        await publishContinuityMemberScope(config, snapshot, continuityMemberId, options.continuityIdentity);
+        await publishContinuityMemberScope(config, snapshot, continuityMemberId, identity);
         return {
           ...probe,
           schema: true,
@@ -669,8 +706,8 @@ export async function pushSupabaseHousehold(
   if (rpc.ok) {
     const cas = parseCasRpcBody(rpc.body);
     if (cas?.ok) {
-      if (continuityMemberId && options?.continuityIdentity) {
-        await publishContinuityMemberScope(config, snapshot, continuityMemberId, options.continuityIdentity);
+      if (!publishScopeBeforeCas && continuityMemberId && identity) {
+        await publishContinuityMemberScope(config, snapshot, continuityMemberId, identity);
       }
       return {
         ...probe,
@@ -701,9 +738,11 @@ export async function pushSupabaseHousehold(
     config,
     probe,
     snapshot,
+    cloudSnapshot,
     expectedRevision,
     continuityMemberId,
-    options?.continuityIdentity,
+    identity,
+    publishScopeBeforeCas,
   );
 }
 
@@ -711,9 +750,11 @@ async function pushSupabaseHouseholdLegacy(
   config: SupabaseConfig,
   probe: SupabaseProbe,
   snapshot: Household,
+  cloudSnapshot: Household,
   expectedRevision: number,
   continuityMemberId: string | null,
-  continuityIdentity?: GoogleIdentitySelector,
+  continuityIdentity: GoogleIdentitySelector | undefined,
+  personalAlreadyPublished: boolean,
 ): Promise<PushHouseholdResult> {
   const remote = await readRemoteSnapshot(config, snapshot.householdId);
   if (remote && remote.environment !== snapshot.environment) {
@@ -736,9 +777,6 @@ async function pushSupabaseHouseholdLegacy(
       error: "Another phone posted a newer household snapshot. Nothing was overwritten.",
     };
   }
-  if (continuityMemberId && continuityIdentity) {
-    await publishContinuityMemberScope(config, snapshot, continuityMemberId, continuityIdentity);
-  }
   const houseBody = {
     id: snapshot.householdId,
     name: snapshot.name,
@@ -756,6 +794,9 @@ async function pushSupabaseHouseholdLegacy(
     body: JSON.stringify(houseBody),
   });
   if (!house.ok) throw new Error(messageOf(house.body));
+  if (!personalAlreadyPublished && continuityMemberId && continuityIdentity) {
+    await publishContinuityMemberScope(config, snapshot, continuityMemberId, continuityIdentity);
+  }
   const snap = await rest(config, "household_snapshots?on_conflict=household_id", {
     method: "POST",
     headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
@@ -763,10 +804,10 @@ async function pushSupabaseHouseholdLegacy(
       household_id: snapshot.householdId,
       invite_phrase: snapshot.inviteCode,
       environment: snapshot.environment,
-      payload: JSON.stringify(snapshot),
+      payload: JSON.stringify(cloudSnapshot),
       updated_at: new Date().toISOString(),
       revision: snapshot.revision,
-      snapshot_hash: await financialAuditHash(snapshot),
+      snapshot_hash: await financialAuditHash(cloudSnapshot),
     }),
   });
   if (!snap.ok) throw new Error(messageOf(snap.body));

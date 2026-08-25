@@ -13,7 +13,7 @@ The working continuity slices are implemented. Migrations 002, 003, 004, 005, an
 - launch, focus, and reconnect retry the outbox (with exponential `nextAttemptAt` backoff) and then pull newer matching snapshots;
 - successful hosted CAS (including idempotent duplicate delivery) **acknowledges** by removing the outbox item; failed/stale writes never erase locally accepted books;
 - stale hosted revisions stop automatic replay, keep the queued local snapshot, retain the remote snapshot, and surface a conflict instead of overwriting either side;
-- Production discovery is deliberately disabled until the Auth/RLS cutover.
+- Production discovery/transport stays off unless `VITE_PRODUCTION_CONTINUITY=1`. When enabled, discovery is membership-scoped only (no bulk snapshot scan), membership INSERT is refused from the client, and shared pushes use Personal projection.
 - each environment now keeps a catalog of household replicas keyed by household id; opening one ledger no longer overwrites another, and the header switcher changes the active replica explicitly;
 - the active session remembers its household id, legacy `hearth:v1:<environment>` snapshots migrate automatically, and reset removes only the selected ledger;
 - every signed-in member gets a durable member-only personal replica keyed by environment, household, and member. Shared cloud projection excludes Personal transactions, shifts, and private goals; only that member's Personal envelope overlays them on read.

@@ -1,5 +1,5 @@
 import type { Environment } from "../core/types.ts";
-import type { SupabaseConfig } from "../ledger/supabase.ts";
+import { bundledSupabaseConfig, type SupabaseConfig } from "../ledger/supabase.ts";
 
 /** Supabase Auth session used only for Hearth's books REST/RPC boundary. */
 export type HearthSupabaseSession = {
@@ -53,8 +53,11 @@ export function supabaseAuthEnabled(): boolean {
 
 export function readHearthAuthConfig(): HearthAuthConfig | null {
   if (!supabaseAuthEnabled()) return null;
-  const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL || "").replace(/\/$/, "");
-  const publishableKey = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "");
+  // Prefer explicit VITE_ values; fall back to the same bundled Development project
+  // defaults the kitchen already ships for hosted books REST.
+  const bundled = bundledSupabaseConfig();
+  const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL || bundled.url).replace(/\/$/, "");
+  const publishableKey = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || bundled.key);
   if (!supabaseUrl || !publishableKey) return null;
   assertPublishableKey(publishableKey);
   return { supabaseUrl, publishableKey };

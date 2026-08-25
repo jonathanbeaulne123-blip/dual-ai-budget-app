@@ -94,15 +94,17 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 ## Auth + membership RLS cutover (D-123)
 
-**Status:** Repaired after review. Product locks remain Q1 A (Supabase Auth Google → `auth.uid()`), Q2 owner/member (Create→owner, Join→member), Q3 email or QR invite, and Q4 no household REST for anon. With Jonathan's Development approval, `004_auth_rls_prepare.sql` and `005_snapshot_cas_hardening.sql` were applied on 2026-08-24. With Jonathan's explicit cleanup confirmation, all 30 disposable Development households and cascaded membership/Personal rows were deleted; verification is 0/0/0. The one Production household was untouched. Runtime token storage/refresh and bearer propagation are implemented behind `VITE_SUPABASE_AUTH_ENABLED=1`; shared payload projection excludes Personal transactions, shifts, and private goals. Preflighted deny-by-default `006_auth_rls_cutover.sql` is **not applied** and now refuses to run while a Production household remains because its grants/policies affect the entire shared Supabase project. See [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md).
+**Status:** Path B approved in principle. Preflight (2026-08-25): migrations `2,4,5,7`; one empty Production household; zero memberships; Personal 0/0/0; zero Google `auth.users`. Jonathan ordered: (1) delete empty Production household, (2) configure Google Auth, (3) apply 008, (4) postpone 006 NOTICE/apply until 1–3 done. Production continuity client remains behind `VITE_PRODUCTION_CONTINUITY=1` (off). See [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md), [SUPABASE_GOOGLE_AUTH_SETUP.md](SUPABASE_GOOGLE_AUTH_SETUP.md).
 
-**Budget delta (5):** `+2` readiness — preparation and CAS hardening are live; deny-by-default door + invite RPCs remain inactive until 006.
+**Budget delta (5):** `+3` readiness — preparation live; Production continuity client ready behind flag; deny-by-default door still inactive until 006.
 
-**Engagement delta (3):** `0` — Welcome email/QR chrome is a follow-up after apply.
+**Engagement delta (3):** `0`
 
-**Next owner:** Jonathan decides whether Development gets a separate Supabase project or whether the shared Production project receives a full cutover approval. Then configure Google Auth, apply 006 in that approved boundary, and smoke Create / email / QR / revoke / anon denial.
+**Next owner:** Jonathan — paste delete SQL, paste 008, complete Google Auth setup. Then bring back 006 Production-abort NOTICE + rollback rehearsal.
 
-**Risk:** Release. Independent trust review before any apply.
+**Risk:** Release. This agent cannot apply hosted SQL (no DB password in cloud env); Jonathan pastes in SQL Editor.
+
+**Environment / data disclosure:** No hosted schema applied by the agent this turn. Delete + 008 require Jonathan's SQL Editor Run.
 
 ## Trust-foundation worksession (2026-08-24, local branch)
 
