@@ -122,3 +122,4 @@ export {
   HOUSEHOLD_EXPORT_KIND,
   CONFLICT_BUNDLE_KIND,
 } from "./recovery.ts";
+export { classifyCommitWrite, isLedgerWrite, type CommitWriteKind } from "./writeKind.ts";
