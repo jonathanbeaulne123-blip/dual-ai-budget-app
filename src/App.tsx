@@ -156,7 +156,9 @@ import {
   type ContinuityIdentity,
 } from "./continuity.ts";
 import { inviteFromLocation } from "./core/invite.ts";
+import { authInviteFromLocation, isAuthInviteToken } from "./core/authInvite.ts";
 import { PairingCard, WelcomeJoin } from "./Pairing.tsx";
+import { inviteReasonMessage, redeemHouseholdInvite } from "./ledger/householdInvites.ts";
 import { BooksPage } from "./Books.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
 import type { RepeatingDraft } from "./RepeatingForm.tsx";
@@ -286,6 +288,7 @@ export function App() {
   const [discoveredLedgers, setDiscoveredLedgers] = useState<DiscoveredHousehold[]>([]);
   const [supabaseAuthReturned, setSupabaseAuthReturned] = useState(false);
   const [inviteInput, setInviteInput] = useState("");
+  const [pendingAuthInvite, setPendingAuthInvite] = useState<string | null>(null);
   const [welcomeMode, setWelcomeMode] = useState<"home" | "join" | "new">("home");
   const [newHouseholdDraft, setNewHouseholdDraft] = useState({
     householdName: "Our Household",
@@ -353,6 +356,22 @@ export function App() {
   }, [supabaseAuthReturned]);
 
   useEffect(() => {
+    const authInvite = authInviteFromLocation(window.location.href);
+    if (authInvite) {
+      setInviteInput(authInvite.token);
+      setPendingAuthInvite(authInvite.token);
+      if (authInvite.environment && authInvite.environment !== environment) {
+        setEnvironment(authInvite.environment);
+      }
+      setWelcomeMode("join");
+      const url = new URL(window.location.href);
+      url.searchParams.delete("invite");
+      url.searchParams.delete("env");
+      if (url.pathname === "/join") url.pathname = "/";
+      const next = url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : "") + url.hash;
+      window.history.replaceState({}, "", next);
+      return;
+    }
     const token = inviteFromLocation(window.location.href);
     if (!token) return;
     setInviteInput(token);
@@ -768,6 +787,43 @@ export function App() {
     });
   }
 
+  async function redeemAuthInviteToken(token: string): Promise<void> {
+    if (!supabaseAuthEnabled()) {
+      throw new Error("Auth invites need an Auth-enabled kitchen build.");
+    }
+    let authSession = await ensureSupabaseSession(environment);
+    if (!authSession) {
+      setPendingAuthInvite(token);
+      setInviteInput(token);
+      setWelcomeMode("join");
+      startSupabaseGoogleSignIn(environment);
+      return;
+    }
+    const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
+    const redeemed = await redeemHouseholdInvite({
+      inviteToken: token,
+      displayName: authSession.displayName,
+      config: cloudConfig,
+    });
+    if (!redeemed.ok) {
+      throw new Error(inviteReasonMessage(redeemed.reason));
+    }
+    if (redeemed.environment !== environment) {
+      setEnvironment(redeemed.environment);
+    }
+    const identity = { email: authSession.email, subject: authSession.googleSubject };
+    const found = await discoverContinuityMemberships(identity, redeemed.environment, cloudConfig);
+    const match = found.find((row) => row.household.householdId === redeemed.householdId)
+      ?? (redeemed.memberId
+        ? found.find((row) => row.memberId === redeemed.memberId)
+        : undefined);
+    if (!match) {
+      throw new Error("Invite accepted, but this device could not open the household yet. Try Continue with Google.");
+    }
+    setPendingAuthInvite(null);
+    await openDiscoveredLedger(match);
+  }
+
   async function continueWithGoogle(): Promise<void> {
     setBusy(true);
     setError("");
@@ -782,6 +838,12 @@ export function App() {
         }
         cloudConfig = authenticatedSupabaseConfig(cloudConfig, authSession);
         identity = { email: authSession.email, subject: authSession.googleSubject };
+        const inviteToken = pendingAuthInvite
+          || (isAuthInviteToken(inviteInput.trim()) ? inviteInput.trim().toLowerCase() : "");
+        if (inviteToken) {
+          await redeemAuthInviteToken(inviteToken);
+          return;
+        }
       } else {
         const googleSession = await connectGoogle({
           environment,
@@ -1145,6 +1207,10 @@ export function App() {
               onError={setError}
               onBusy={setBusy}
               onJoined={async (next) => { await persist(next); }}
+              onRedeemAuthInvite={async (token) => {
+                setPendingAuthInvite(token);
+                await redeemAuthInviteToken(token);
+              }}
               onBack={() => { setWelcomeMode("home"); setError(""); }}
             />
           ) : welcomeMode === "new" ? (

@@ -4,6 +4,20 @@ After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. 
 
 Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
 
+## Auth kitchen smoke + invite chrome (2026-08-25)
+
+**Status:** Branch `cursor/auth-invite-chrome-f375` (not merged). Live 006 anon denial and kitchen OAuth door verified. Email/QR invite client + Welcome/More chrome implemented; signed-in issue/redeem still needs Jonathan.
+
+**Budget delta (5):** `+3` — hashed one-time Auth invites wire the membership door; anon REST remains denied.
+
+**Engagement delta (3):** `+1` — More/Welcome invite chrome; Hercules unchanged.
+
+**Verified:** anon `households` / `continuity_memberships` / `hearth_issue_invite` → HTTP 401; kitchen Continue with Google → Google OAuth for `tykhocwacaxwquhynkok.supabase.co`; `pnpm check` green on branch (462 tests).
+
+**Still required:** Jonathan Google sign-in → open `HH-591c6905afd19707` → post/sync; owner issue email/QR; second identity redeem. Docs PR #104 (006 applied) remains open.
+
+**Next owner:** Jonathan for signed-in smoke; merge invite PR after review.
+
 ## Risk routing
 
 | Risk | Examples | Default routing |
@@ -94,17 +108,17 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 ## Auth + membership RLS cutover (D-123)
 
-**Status:** Tasks 1–3 complete (empty Production removed; Google Auth live with `auth.users`; `008` applied). Path B NOTICE revision + `009_rollback_006.sql` prepared on branch. **006 not applied.** Re-run preflight, then Jonathan must explicitly approve the paste.
+**Status:** Migration **006 applied** on live shared project (Jonathan paste). Anon REST denial verified. Kitchen Auth door reaches Google OAuth. Docs record of apply: open PR #104. Invite chrome: branch `cursor/auth-invite-chrome-f375`.
 
-**Budget delta (5):** `+4` readiness — Auth door live; deny-by-default SQL ready; door still open until 006 paste.
+**Budget delta (5):** `+4` — deny-by-default membership door is live for Development data on the shared project.
 
-**Engagement delta (3):** `0`
+**Engagement delta (3):** `+1` (invite chrome in flight)
 
-**Next owner:** Jonathan — re-run `docs/sql/006_preflight_readonly.sql`; if green, approve paste of `supabase/migrations/006_auth_rls_cutover.sql`; then smoke Create/invite/anon denial.
+**Next owner:** Jonathan — signed-in Create/open/`HH-591c6905afd19707` sync smoke; then email/QR issue+redeem. Rollback only via explicit order and `docs/sql/009_rollback_006.sql`.
 
-**Risk:** Release. Do not enable `VITE_PRODUCTION_CONTINUITY` casually.
+**Risk:** Release residual until signed-in smoke and invite redeem. Do not enable `VITE_PRODUCTION_CONTINUITY` casually.
 
-**Environment / data disclosure:** Live applies so far: delete (already gone), 008. No 006 apply by agent.
+**Environment / data disclosure:** Live applies: 002/004/005/007/008/006. Disposable Development data. No Production continuity client flag.
 
 ## Trust-foundation worksession (2026-08-24, local branch)
 

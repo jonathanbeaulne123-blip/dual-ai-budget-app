@@ -88,7 +88,7 @@ Independent of Auth/RLS: D-126 `007_household_timezone_iana.sql` is **applied** 
 
 - Rehearse 006 against a disposable PostgreSQL/Supabase clone; repository tests verify structure and pure behavior but are not a substitute for real RLS semantics.
 - Verify provider redirect configuration and token refresh in two browsers.
-- Build the visible email/QR invitation screens; the RPC and URL contracts exist, but full invite chrome is not part of the cutover SQL.
+- Visible email/QR invitation chrome is in flight on `cursor/auth-invite-chrome-f375` (RPC client + More/Welcome wiring). Signed-in issue/redeem smoke still needs Jonathan’s Google session.
 - Confirm PITR / backups on the shared project before apply.
 ## Secrets
 

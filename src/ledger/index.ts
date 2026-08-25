@@ -40,4 +40,16 @@ export {
   qrJoinPath,
   redeemInvitation,
 } from "./authRlsPolicy.ts";
+export {
+  inviteReasonMessage,
+  issueHouseholdInvite,
+  redeemHouseholdInvite,
+  revokeHouseholdMember,
+} from "./householdInvites.ts";
+export type {
+  InviteKind,
+  IssueInviteResult,
+  RedeemInviteResult,
+  RevokeMemberResult,
+} from "./householdInvites.ts";
 export { BOOKS_SCHEMA, BOOKS_SCHEMA_VERSION } from "./schema.ts";
