@@ -10,7 +10,9 @@ paths:
 
 Living theme authority: `docs/HEARTH_UI_THEME.md`. Implementation packet: `docs/briefs/CURSOR_UI_THEME_PACKET.md`.
 
-## Locked shells
+**Shipped vs target:** Production code is still pre-theme September Office. Draft C/D below is the **design target** — not current UI. See `docs/ux/2026-08-25-implementation-target-mockups.md`.
+
+## Locked shells (target — not yet shipped)
 
 - Mobile `<720px`: **Draft C** — wax seals, story strip, notebook expand, Duolingo Hercules focus/unfocus.
 - Desktop `≥720px`: **Draft D** — first mock stylized room + Hercules wander pathing; Calendar/Books in same room.

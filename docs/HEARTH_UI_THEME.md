@@ -4,6 +4,8 @@
 > **Use when:** any AI adds or restyles UI on Home, Calendar, Books, Plan, Add-in-room, or Hercules chrome.  
 > **Does not change:** money meaning, Commands, Confirm boundary, Auth/RLS, hosted schema.
 
+> **Implementation status (2026-08-25):** **Not shipped in code.** Production UX is the pre-theme September Office (`WindowBand` chalkboard, stamp rail on phone). A CSS-only Draft C/D pass was **reverted** — see [implementation-target mockups](ux/2026-08-25-implementation-target-mockups.md). Do not re-implement until Jonathan approves the binding mockups **and** the illustrated asset pipeline.
+
 Hearth is **one product, two UI branches, one theme kernel** (D-079 / D-080 / D-082).
 
 | Branch | Breakpoint | Shell name | Direction |
@@ -110,22 +112,22 @@ Every new surface should compose from these **instruments**, not invent new card
 ### 4.1 Paper tile (Books + mobile story strip)
 
 CSS: `.hearth-paper-tile`, `.hearth-tile-kind`, `.hearth-tile-name`, `.hearth-tile-value`  
-React: `PaperTile` in `src/theme/PaperTheme.tsx`
+React: **planned** shared module (not yet in tree — reuse Books tile patterns when implementing)
 
 ### 4.2 Wax seal (mobile controllers)
 
 CSS: `.hearth-wax-seal`, `.hearth-wax-seals`  
-React: `WaxSeal` in `src/theme/PaperTheme.tsx`
+React: **planned** (not yet in tree)
 
 ### 4.3 Story strip
 
 CSS: `.hearth-story-strip`, `.hearth-story-grid`, `.hearth-story-heading`  
-React: `StoryStrip` in `src/theme/PaperTheme.tsx`
+React: **planned** (not yet in tree)
 
 ### 4.4 Notebook expand body
 
 CSS: `.hearth-notebook`, `.hearth-notebook-body`  
-React: `NotebookBody` in `src/theme/PaperTheme.tsx`
+React: **planned** (not yet in tree)
 
 ### 4.5 Desktop instrument
 

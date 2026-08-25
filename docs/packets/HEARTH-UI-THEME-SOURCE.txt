@@ -2,6 +2,10 @@
 
 Paste `docs/HEARTH_UI_THEME.md` first. This file is a compact index; living canon is the full theme doc + UX report.
 
+## Status (2026-08-25)
+
+NOT SHIPPED. Draft C/D code reverted. Await binding mockup approval + asset pipeline (see docs/ux/2026-08-25-implementation-target-mockups.md).
+
 ## Locked (Jonathan 2026-08-25)
 
 MOBILE (<720px): Draft C — weather ribbon, wax seals (Post/Due/Close), 2x2 story strip, one notebook expand, Duolingo Hercules pill → full-screen focus/unfocus.

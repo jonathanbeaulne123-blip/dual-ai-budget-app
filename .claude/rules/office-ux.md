@@ -7,10 +7,10 @@ paths:
 
 # Office UX
 
-Living theme packet: `docs/HEARTH_UI_THEME.md` (mobile Draft C, desktop Draft D, Hercules focus/wander).
+Living theme packet: `docs/HEARTH_UI_THEME.md` (mobile Draft C, desktop Draft D, Hercules focus/wander are **design targets** — not shipped; production is pre-theme September Office).
 
-- Mobile below 720px is `OfficePhone`: **Draft C** — wax seals, story strip, one notebook expand, Duolingo Hercules pill → focus overlay; five or fewer default objects at rest; milk postable in roughly ten seconds.
-- Wide at or above 720px is the customizable office: **Draft D** stylized room + Hercules wander pathing. Both branches share kernel, theme tokens, Commands, and financial meaning, not layout decisions.
+- Mobile below 720px is `OfficePhone`: **shipped** stamp rail + chalkboard band; **target** Draft C — wax seals, story strip, one notebook expand, Duolingo Hercules pill → focus overlay; five or fewer default objects at rest; milk postable in roughly ten seconds.
+- Wide at or above 720px is the customizable office: **shipped** chalkboard `WindowBand` + free-move desk; **target** Draft D stylized room + Hercules wander pathing. Both branches share kernel, theme tokens, Commands, and financial meaning, not layout decisions.
 - Verify 320px, 390px, 720px, and approximately 1100px.
 - Never cover Confirm/Post, hide the active environment, invent CAD, or make a decorative object look authoritative.
 - Preserve keyboard order, visible focus, semantic controls, sufficient contrast, reduced motion, and touch targets.

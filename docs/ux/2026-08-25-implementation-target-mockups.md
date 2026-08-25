@@ -1,8 +1,7 @@
 # Hearth implementation-target mockups (2026-08-25)
 
 **Status:** BINDING visual target — approve these before any further theme code lands.  
-**Author:** Cursor agent after Jonathan feedback (“looks nothing like what we talked about”)  
-**Supersedes for visual fidelity:** prior CSS-only “theme kernel” pass on `cursor/ui-theme-implement-f375`
+**Code status (2026-08-25):** Draft C/D implementation **reverted** on `cursor/ui-theme-implement-f375` (commit `3c6ebb5`). Production UX restored to pre-theme September Office.
 
 ---
 

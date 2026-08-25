@@ -15,6 +15,7 @@ __pycache__/
 ~$*
 .DS_Store
 Thumbs.db
+hearth-ui-verification-screenshots/
 
 # Local-only household data and recovery artifacts. Never host these in GitHub.
 /Budget_App__v*.ods

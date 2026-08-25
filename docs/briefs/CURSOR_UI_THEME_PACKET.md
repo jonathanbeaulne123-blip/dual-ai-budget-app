@@ -1,5 +1,7 @@
 # Cursor brief — Hearth UI theme implementation packet
 
+> **Status (2026-08-25):** **Blocked.** Draft C/D code was reverted; production UX is pre-theme September Office. Implement only after [implementation-target mockups](../ux/2026-08-25-implementation-target-mockups.md) are approved and illustrated assets exist. CSS-only passes are explicitly out of scope.
+
 > **Paste with:** `docs/HEARTH_UI_THEME.md`, `docs/ux/2026-08-25-home-ux-report.md`  
 > **Lead:** Cursor (implementation). **Review:** Claude or `hearth-ux-auditor` (visual/a11y), `books-auditor` if money labels touched.  
 > **Baseline:** `main` at start of branch  
