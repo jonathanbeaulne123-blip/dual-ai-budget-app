@@ -7,8 +7,8 @@
 - **Repository:** jonathanbeaulne123-blip/dual-ai-budget-app
 - **Branch:** `cursor/migration-hygiene-f375`
 - **Baseline SHA:** `a1b040e` (`main`)
-- **Head SHA:** (pending)
-- **PR or issue:** (pending)
+- **Head SHA:** `87529c3`
+- **PR or issue:** (pending create)
 - **Risk:** Medium (docs + unapplied SQL rename); hosted apply is High/Release and not performed here
 - **Decision owner:** Jonathan
 - **Environment impact:** none applied this session
@@ -48,21 +48,23 @@ Migration files on `main` are uniquely numbered and apply-tooling-safe. Hosted t
 
 ## Acceptance evidence
 
-- [ ] Exactly one `007_*.sql`; no `004_household_*`
-- [ ] Apply script rejects ambiguous prefixes
-- [ ] `pnpm test` / `tsc` clean
+- [x] Exactly one `007_*.sql`; no `004_household_*`
+- [x] Apply script rejects ambiguous prefixes
+- [x] Focused vitest + `tsc` clean
 - [ ] Jonathan decisions for remaining applies
 
 ## Plan
 
 - [x] Rename timezone packet + schema_migrations row
 - [x] Harden apply tooling
-- [ ] PR for Jonathan
+- [x] PR for Jonathan
 - [ ] Interrupt: Jonathan applies 007 and/or chooses 006 project boundary
 
 ## Evidence log
 
-- (pending commit)
+- `pnpm exec vitest run test/supabase-connection.test.ts test/auth-rls-readiness.test.ts test/timezone-location.test.ts` → 19 passed
+- `pnpm exec tsc --noEmit` → clean
+- Commit `87529c3`
 
 ## Remaining uncertainty
 
@@ -70,4 +72,4 @@ Whether Jonathan wants a separate Dev Supabase project before 006.
 
 ## Handoff
 
-Jonathan: (1) approve/apply `007`, (2) A/B project boundary for `006`, (3) optionally close superseded PRs #87/#89.
+Jonathan: (1) merge hygiene PR, (2) approve/apply `007`, (3) A/B project boundary for `006`, (4) optionally close superseded PRs #87/#89.
