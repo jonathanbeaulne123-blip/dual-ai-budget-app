@@ -149,8 +149,8 @@ export function GoogleBridgeCard(props: {
       </header>
       <p>
         Google is how Jonathan and Bianca find their personal and household ledgers on another device.
-        Tokens stay on this device. The shared snapshot only remembers who is linked — never the password.
-        Development sync retries automatically after sign-in or reconnection. Google never posts money.
+        Tokens stay on this device in the browser store (native Keychain is a later release). The shared snapshot only remembers who is linked — never the password.
+        Sign out and clear this phone removes local tokens; the cloud household remains. Development sync retries automatically after sign-in or reconnection. Google never posts money.
       </p>
       {household.members.filter((member) => member.active).sort((left, right) => {
         if (left.id === memberId) return -1;

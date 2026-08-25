@@ -4,6 +4,7 @@ import {
   defaultImportResolution,
   duplicateTier,
   postEntry,
+  postTransfer,
   prepareImportRows,
   type Household,
   type ImportedSourceRow,
@@ -139,5 +140,197 @@ describe("import duplicate triage", () => {
       view: "household",
       rows: [source({ accountLast4: "4821" })],
     })[0]!.accountId).toBe("");
+  });
+
+  it("uses an internal account name or last-four to complete transfer coding", () => {
+    const [visa, savings, tfsa] = prepareImportRows({
+      household: catalogHousehold(),
+      memberId: "MEM-002",
+      view: "household",
+      rows: [
+        source({
+          id: "VISA-PAYMENT",
+          provenanceId: "visa-payment",
+          accountLast4: "4821",
+          suggestedType: "unknown",
+          bankType: "PAYMENT",
+          note: "ONLINE PAYMENT TO VISA 4412",
+          place: "",
+        }),
+        source({
+          id: "TO-SAVINGS",
+          provenanceId: "to-savings",
+          accountLast4: "4821",
+          suggestedType: "transfer",
+          bankType: "XFER",
+          note: "Transfer to high-interest savings",
+          place: "",
+        }),
+        source({
+          id: "TFSA-CONTRIBUTION",
+          provenanceId: "tfsa-contribution",
+          accountLast4: "4821",
+          suggestedType: "expense",
+          bankType: "DEBIT",
+          note: "TFSA contribution",
+          place: "",
+        }),
+      ],
+    });
+
+    expect(visa).toEqual(expect.objectContaining({
+      type: "transfer",
+      accountId: "ACC-CHEQUING",
+      transferAccountId: "ACC-VISA",
+      subcategoryId: "",
+    }));
+    expect(savings).toEqual(expect.objectContaining({
+      type: "transfer",
+      accountId: "ACC-CHEQUING",
+      transferAccountId: "ACC-SAVINGS",
+    }));
+    expect(tfsa).toEqual(expect.objectContaining({
+      type: "transfer",
+      accountId: "ACC-CHEQUING",
+      transferAccountId: "ACC-TFSA",
+    }));
+  });
+
+  it("does not turn an external or ambiguous transfer description into an internal transfer", () => {
+    let household = catalogHousehold();
+    for (const [date, amount] of [["2026-07-01", 75], ["2026-07-15", 90]] as const) {
+      household = postTransfer(household, {
+        date,
+        amount,
+        fromAccountId: "ACC-CHEQUING",
+        toAccountId: "ACC-SAVINGS",
+        note: "John savings",
+        createdBy: "MEM-002",
+        visibility: "household",
+      }).household;
+    }
+    const rows = prepareImportRows({
+      household,
+      memberId: "MEM-002",
+      view: "household",
+      rows: [
+        source({
+          id: "INTERAC",
+          provenanceId: "interac",
+          accountLast4: "4821",
+          suggestedType: "unknown",
+          note: "INTERAC E-TRANSFER JOHN",
+          place: "",
+        }),
+        source({
+          id: "AMBIGUOUS-TD",
+          provenanceId: "ambiguous-td",
+          accountLast4: "4821",
+          suggestedType: "unknown",
+          note: "TD PAYMENT",
+          place: "",
+        }),
+      ],
+    });
+
+    expect(rows[0]).toEqual(expect.objectContaining({ type: "unknown", transferAccountId: "" }));
+    expect(rows[1]).toEqual(expect.objectContaining({ type: "unknown", transferAccountId: "" }));
+  });
+
+  it("learns a repeated visible transfer description without exposing Personal history", () => {
+    let household = catalogHousehold();
+    for (const [date, amount] of [["2026-07-01", 75], ["2026-07-15", 90]] as const) {
+      household = postTransfer(household, {
+        date,
+        amount,
+        fromAccountId: "ACC-CHEQUING",
+        toAccountId: "ACC-VISA",
+        note: "Monthly card payment",
+        createdBy: "MEM-002",
+        visibility: "personal",
+      }).household;
+    }
+    for (const [date, amount] of [["2026-06-01", 50], ["2026-06-08", 60], ["2026-06-15", 70]] as const) {
+      household = postTransfer(household, {
+        date,
+        amount,
+        fromAccountId: "ACC-CHEQUING",
+        toAccountId: "ACC-SAVINGS",
+        note: "Monthly transfer",
+        createdBy: "MEM-002",
+        visibility: "personal",
+      }).household;
+    }
+    const visible = prepareImportRows({
+      household,
+      memberId: "MEM-002",
+      view: "personal",
+      rows: [source({
+        accountLast4: "4821",
+        suggestedType: "unknown",
+        note: "Monthly card payment",
+        place: "",
+      })],
+    })[0]!;
+    const hidden = prepareImportRows({
+      household,
+      memberId: "MEM-001",
+      view: "personal",
+      rows: [source({
+        accountLast4: "4821",
+        suggestedType: "unknown",
+        note: "Monthly card payment",
+        place: "",
+      })],
+    })[0]!;
+
+    expect(visible).toEqual(expect.objectContaining({ type: "transfer", transferAccountId: "ACC-VISA" }));
+    expect(hidden).toEqual(expect.objectContaining({ type: "unknown", transferAccountId: "" }));
+  });
+
+  it("uses an unambiguous category name in the description before the legacy default", () => {
+    const row = prepareImportRows({
+      household: catalogHousehold(),
+      memberId: "MEM-002",
+      view: "household",
+      rows: [source({
+        accountLast4: "4821",
+        note: "Monthly phone bill",
+        place: "Rogers",
+      })],
+    })[0]!;
+
+    expect(row.subcategoryId).toBe("SUB-LIFE-PHONE");
+  });
+
+  it("learns category context only from transactions visible to the current member", () => {
+    let household = catalogHousehold();
+    for (const [date, amount] of [["2026-05-01", 71], ["2026-06-01", 72], ["2026-07-01", 73]] as const) {
+      household = postEntry(household, {
+        date,
+        type: "expense",
+        amount,
+        accountId: "ACC-CHEQUING",
+        subcategoryId: "SUB-LIFE-PHONE",
+        note: "Zetatel wireless",
+        createdBy: "MEM-002",
+        visibility: "personal",
+      }).household;
+    }
+    const visible = prepareImportRows({
+      household,
+      memberId: "MEM-002",
+      view: "personal",
+      rows: [source({ accountLast4: "4821", note: "Zetatel wireless", place: "" })],
+    })[0]!;
+    const hidden = prepareImportRows({
+      household,
+      memberId: "MEM-001",
+      view: "personal",
+      rows: [source({ accountLast4: "4821", note: "Zetatel wireless", place: "" })],
+    })[0]!;
+
+    expect(visible.subcategoryId).toBe("SUB-LIFE-PHONE");
+    expect(hidden.subcategoryId).not.toBe("SUB-LIFE-PHONE");
   });
 });

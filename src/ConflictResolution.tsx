@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { countDifferingSharedTransactionIds, unresolvedConflicts } from "./core/conflict.ts";
+import { describeSharedConflictImpact, unresolvedConflicts } from "./core/conflict.ts";
+import { formatCad } from "./core/money.ts";
 import type { Household } from "./core/types.ts";
 import { useDialog } from "./useDialog.ts";
 
@@ -19,17 +20,12 @@ export function ConflictResolution({
   const dialogRef = useDialog(true, onDismiss);
   const conflict = unresolvedConflicts(household)[0] ?? null;
 
-  const sharedDiffCount = useMemo(() => {
-    if (!conflict) return 0;
-    return countDifferingSharedTransactionIds(conflict.localSnapshot, conflict.remoteSnapshot);
+  const impact = useMemo(() => {
+    if (!conflict) return null;
+    return describeSharedConflictImpact(conflict.localSnapshot, conflict.remoteSnapshot);
   }, [conflict]);
 
-  if (!conflict) return null;
-
-  const diffLabel =
-    sharedDiffCount === 0
-      ? "No shared transactions differ."
-      : `${sharedDiffCount} shared transaction${sharedDiffCount === 1 ? "" : "s"} differ.`;
+  if (!conflict || !impact) return null;
 
   return (
     <div
@@ -42,36 +38,38 @@ export function ConflictResolution({
     >
       <div className="sheet-inner">
         <div className="topbar">
-          <h1 id="conflict-title">Two snapshots</h1>
+          <h1 id="conflict-title" tabIndex={-1} data-autofocus>
+            Two versions need review
+          </h1>
           <button className="ghost" type="button" onClick={onDismiss} disabled={busy}>
             Dismiss
           </button>
         </div>
         <p id="conflict-summary">
-          {diffLabel} Personal rows stay member-scoped; export includes the full bundle.
+          {impact.summary} Your Personal rows stay on this phone either way. Export keeps both full copies.
         </p>
         <div className="conflict-cards">
           <section aria-label="This phone">
             <h2>This phone</h2>
             <p className="muted">Revision {conflict.localRevision}</p>
+            {impact.onlyOnPhoneCents > 0 && (
+              <p>{formatCad(impact.onlyOnPhoneCents)} only on this phone</p>
+            )}
           </section>
           <section aria-label="Cloud copy">
             <h2>Cloud copy</h2>
             <p className="muted">Revision {conflict.remoteRevision}</p>
+            {impact.onlyOnCloudCents > 0 && (
+              <p>{formatCad(impact.onlyOnCloudCents)} only in the cloud</p>
+            )}
           </section>
         </div>
         <div className="conflict-actions">
-          <button
-            className="primary"
-            type="button"
-            data-autofocus
-            disabled={busy}
-            onClick={() => onChoose("local")}
-          >
-            Keep this phone
-          </button>
           <button className="secondary" type="button" disabled={busy} onClick={() => onChoose("remote")}>
             Keep cloud copy
+          </button>
+          <button className="ghost" type="button" disabled={busy} onClick={() => onChoose("local")}>
+            Keep this phone
           </button>
           <button className="ghost" type="button" disabled={busy} onClick={onExport}>
             Export both
