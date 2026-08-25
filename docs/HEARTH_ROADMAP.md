@@ -306,6 +306,7 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 - [ ] Add cooperative household quests tied to safe actions such as reconcile/review, never spending or partner comparison.
 - [ ] Use rolling/graceful progress; no punitive streak reset, hearts, scarcity, shame, or pet harm.
 - [x] Let Hercules explain deterministic results and ask one useful question at a time; retain explicit consent and memory controls. *(D-132: typed source cards plus scoped food/spend/income/shift questions; broader lesson curriculum remains.)*
+- [x] Give Hercules a bounded Brain v2 read layer: model-selectable, phone-executed balances/search/spending/income/comparison/bills/shifts/goals/owed/cash-position tools with member/view scope and typed provenance. *(D-133 Slice 1; implementation branch, review required.)*
 - [ ] Add opt-in what-if simulators with a visible “not posted” state and a Convert-to-draft path that still requires Confirm.
 - [ ] Add widgets/watch/weather only after safe-to-spend/freshness semantics are proven; ambient surfaces are display-only.
 - [ ] Research voice/camera assistance only for draft capture with clear recording, retention, and review controls.

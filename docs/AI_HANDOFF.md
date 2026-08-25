@@ -41,6 +41,18 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 **Next owner:** independent review of provenance routing, shared-member aggregation, personal-ledger refusals, and desktop/mobile visual behavior. Do not deploy from this branch.
 
+## Hercules Brain v2 typed reads (D-133)
+
+**Status:** implemented on `codex/hercules-brain-v2-tools`; no deploy, schema, hosted row, secret, or Production mutation. Built on the D-132 living-teacher branch so the result cards use its typed provenance UI.
+
+**Shape:** `/hercules/plan` may select at most four of ten fixed read-only tools. Provider output is sanitized on the Worker and phone. The phone executes against `householdForHerculesContext`; Personal never widens to a partner and Household never exposes personal-only rows. There is no SQL, code, mutation, or Confirm capability. Planner failure preserves the existing chat/local fallback.
+
+**Budget delta (5): +2** — grounded balances, searches, summaries, bills, shifts, goals, obligations, and cash-position answers now compose without granting model write authority.
+
+**Engagement delta (3): +2** — Hercules can answer broader natural-language financial questions and every shown amount remains a tappable legitimacy card.
+
+**Next owner:** review catalog arithmetic/scope, provider plan parsing, and source routing; then smoke the four prompts in `docs/HERCULES.md`. Do not deploy from this branch.
+
 Dual Course (D-048): if Course A (books, weight 5) and Course B (engagement, weight 3) disagree, the books win. A companion change that can touch CAD meaning is High, not Medium.
 
 ## Required handoff

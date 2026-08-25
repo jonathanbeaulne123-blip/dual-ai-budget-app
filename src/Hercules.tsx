@@ -29,6 +29,9 @@ import {
   perchOnFurniture,
   perchTarget,
   planHerculesTurn,
+  planHerculesReadTools,
+  shouldPlanHerculesTools,
+  executeHerculesReadToolPlan,
   recordHerculesTalk,
   requestCalendarPane,
   subscribeFurniture,
@@ -729,6 +732,31 @@ export function HerculesPresence({
     setTalk(grounded);
     setTopic(grounded.topic);
     setMotion("pounce");
+    const toolPlan = shouldPlanHerculesTools(text)
+      ? await planHerculesReadTools({ message: text, page, view })
+      : { calls: [] };
+    if (!isCurrentHerculesReply(replyContext, {
+      ...activeChatIdentity.current,
+      requestId: chatGen.current,
+    })) return;
+    if (toolPlan.calls.length) {
+      const investigation = executeHerculesReadToolPlan(household, toolPlan, today, { memberId, view });
+      const answer = investigation.talk;
+      setTalk(answer);
+      setTopic(answer.topic);
+      setTurns((prev) => [...prev, { role: "hercules" as const, text: answer.spoken }].slice(-12));
+      if (focusedWidget && tab === "home") {
+        setSnippets((prev) => {
+          const trimmed = prev.filter((row) => row.text !== "mrrp…");
+          return [...trimmed, { role: "hercules" as const, text: answer.spoken.slice(0, 160) }].slice(-8);
+        });
+      }
+      setMotion(answer.pose);
+      setBusy(false);
+      setReplySource(null);
+      keepTalk(message, answer.spoken, "journal");
+      return;
+    }
     const result = await chatHercules(
       composeHerculesChatRequest(household, message, briefing, today, memberId, topic, {
         shareCoordsWithModel: loadPhonePlacePrefs(household.environment).shareCoordsWithModel,

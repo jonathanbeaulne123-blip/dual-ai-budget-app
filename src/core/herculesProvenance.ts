@@ -18,6 +18,7 @@ export type HerculesNumberSource = {
   accountId?: string;
   categoryId?: string;
   transactionId?: string;
+  transactionTypes?: Transaction["type"][];
   recurrenceId?: string;
   claimId?: string;
   goalId?: string;
@@ -46,6 +47,7 @@ export function transactionsForHerculesSource(
   if (!source || source.route !== "ledger") return transactions;
   return transactions.filter((tx) => {
     if (source.transactionId && tx.id !== source.transactionId) return false;
+    if (source.transactionTypes?.length && !source.transactionTypes.includes(tx.type)) return false;
     if (source.accountId && tx.accountId !== source.accountId) return false;
     if (source.categoryId && tx.subcategoryId !== source.categoryId) return false;
     if (source.memberId && tx.createdBy !== source.memberId) return false;
@@ -53,4 +55,15 @@ export function transactionsForHerculesSource(
     if (source.to && tx.date > source.to) return false;
     return true;
   });
+}
+
+export function herculesLedgerSourcePane(source: HerculesNumberSource): "wallet" | "register" {
+  const rowInvestigation = Boolean(
+    source.transactionId
+    || source.categoryId
+    || source.memberId
+    || source.from
+    || (source.to && !source.accountId),
+  );
+  return rowInvestigation ? "register" : "wallet";
 }
