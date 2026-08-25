@@ -612,6 +612,9 @@ export async function pullHouseholdSnapshotById(
   if (pulled.environment !== environment) {
     throw new Error("That shared snapshot belongs to a different Development/Production pill.");
   }
+  if (pulled.householdId !== householdId) {
+    throw new Error("Cloud returned a different household than this phone asked for.");
+  }
   return { ...pulled, linked: true, baseRevision: pulled.revision };
 }
 

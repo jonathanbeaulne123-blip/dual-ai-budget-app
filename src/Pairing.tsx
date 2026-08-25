@@ -459,7 +459,7 @@ export function PairingCard({
           });
         }}
       />
-      {household.linked && (
+      {household.linked && !supabaseAuthEnabled() && (
         <button
           className="ghost"
           style={{ width: "100%", marginTop: 8 }}

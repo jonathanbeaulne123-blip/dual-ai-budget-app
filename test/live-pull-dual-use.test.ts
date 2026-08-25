@@ -110,8 +110,35 @@ describe("disjoint shared money absorb", () => {
     expect(canAutoMergeConflict(local, remote)).toBe(false);
     expect(canAbsorbDisjointSharedMoney(local, remote)).toBe(true);
     const merged = absorbDisjointSharedMoney(local, remote, "MEM-001");
+    expect(merged.sharing?.mode).toBe("pending-transport");
+    expect(merged.revision).toBe(5);
+    expect(merged.baseRevision).toBe(4);
     expect(merged.transactions.some((tx) => tx.note === "Jonathan milk")).toBe(true);
     expect(merged.transactions.some((tx) => tx.note === "Bianca bread")).toBe(true);
+  });
+
+  it("refuses absorb when tombstones disagree (no silent resurrect)", () => {
+    const posted = postEntry(catalogHousehold(), {
+      date: "2026-08-25",
+      type: "expense",
+      amount: "10.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Shared coffee",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    }).household;
+    const txId = posted.transactions.find((tx) => tx.note === "Shared coffee")!.id;
+    const local = {
+      ...posted,
+      revision: 2,
+      baseRevision: 1,
+      linked: true,
+      transactions: posted.transactions.filter((tx) => tx.id !== txId),
+      tombstones: [{ id: txId, deletedAt: "2026-08-25T12:00:00.000Z" }],
+    };
+    const remote = { ...posted, revision: 2, baseRevision: 2, linked: true };
+    expect(canAbsorbDisjointSharedMoney(local, remote)).toBe(false);
   });
 
   it("refuses absorb when the same shared txn id diverges", () => {

@@ -7,8 +7,8 @@
 - **Repository:** jonathanbeaulne123-blip/dual-ai-budget-app
 - **Branch:** `cursor/live-pull-dual-use-f375`
 - **Baseline SHA:** `6eeff0c` (`main` after quiet sync #107)
-- **Head SHA:** (pending commit)
-- **PR or issue:** (pending)
+- **Head SHA:** `2cbc27f`
+- **PR or issue:** (pending create)
 - **Risk:** Medium (continuity pull + conflict absorb; money meaning preserved — no silent LWW)
 - **Decision owner:** Jonathan
 - **Environment impact:** Development (no hosted schema; REST pull of existing snapshot row)
@@ -69,11 +69,11 @@ Two signed-in phones on the same household see each other's money while both kit
 
 **Options (decide later):**
 
-1. **Toast undo = token snapshot only** (LIFO for the write you just made), even in Development — last-sync remains a separate More action with a clear warning.
-2. **Confirmation-scoped undo** — remove only `postedIds` / confirmation ids from this member; leave partner rows.
-3. **D-124 dated restore points** — hosted list, owner-only restore; replaces single-anchor as end state.
+1. **Toast undo = token snapshot only** — still unsafe in dual-use: `undo()` tombstones every txn/shift added after the token snapshot, including a partner’s live-pulled post.
+2. **Confirmation-scoped undo (recommended next)** — remove/reverse only this member’s `postedIds` / confirmation; leave partner rows; then CAS.
+3. **D-124 dated restore points** — hosted list, owner-only restore; still needs rebase/reconcile so restore does not clobber concurrent partner work.
 
-**Recommendation:** ship (1) next as a small High-trust chrome fix; keep D-124 as the durable books story. Do not silently change D-119 without Jonathan’s line.
+**Recommendation:** ship (2) next as High-trust chrome. Do not silently change D-119 without Jonathan’s line.
 
 ## Item 6 — Post-conflict outbox resume (elaborate + wired)
 
@@ -104,7 +104,9 @@ Two signed-in phones on the same household see each other's money while both kit
 
 ## Evidence log
 
-(filled after `pnpm check`)
+- `pnpm exec vitest run test/live-pull-dual-use.test.ts` — 8 passed
+- `pnpm check` — 478 tests passed; `tsc` + vite build ok
+- Artifact: `/opt/cursor/artifacts/live-pull-check.log`
 
 ## Remaining uncertainty
 

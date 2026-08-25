@@ -14,7 +14,7 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 **Scale (current REST poll, no Realtime client):** 2 people → 4s; ~10 → 5s; 50–100 → 8s stopgap — prefer Realtime for high concurrency.
 
-**Item 5 (undo, elaborate only):** Dev last-sync whole-snapshot undo can wipe partner posts after live pull. Options: toast = token only; confirmation-scoped undo; or D-124. Not changed this PR.
+**Item 5 (undo, elaborate only):** Dev last-sync whole-snapshot undo can wipe partner posts after live pull. Token-only undo is still unsafe (tombstones later partner rows). Recommended next: confirmation-scoped undo, then D-124 with rebase. Not changed this PR.
 
 **Item 6 (outbox resume):** Wired — `clearContinuityOutboxConflictBlocks` + force flush after choose; enqueue no longer inherits conflict block.
 
