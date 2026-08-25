@@ -276,6 +276,20 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
 .primary:disabled { opacity: 0.5; }
 .ghost { background: transparent; }
 .danger { background: #f4d7d0; color: var(--danger); border-color: #e4b4a4; width: 100%; padding: 12px; }
+.confirm-option {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.confirm-option input {
+  width: auto;
+  margin-top: 2px;
+}
+.repeating-form .chips { margin-top: 4px; }
 .budget-variance-row { align-items: center; gap: 8px; }
 .budget-edit {
   display: flex;

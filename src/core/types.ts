@@ -153,7 +153,7 @@ export type Shift = {
   updatedAt: string;
 };
 
-export type RecurrenceCadence = "weekly" | "biweekly" | "monthly";
+export type RecurrenceCadence = "daily" | "weekly" | "biweekly" | "monthly";
 export type RecurrenceKind = "bill" | "subscription" | "paycheck" | "other";
 export type RecurrenceOrigin = "manual" | "detected";
 export type RecurrenceGoogleSync = Record<string, { calendarId: string; eventId: string }>;

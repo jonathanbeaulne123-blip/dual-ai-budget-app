@@ -1,5 +1,5 @@
 import { TIMEZONE, todayKey, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
-import { advanceCadence, DEFAULT_REMINDER_HOURS_BEFORE, EMPTY_CALENDAR, inferRecurrenceKind, shapeCalendar } from "./recurrence.ts";
+import { advanceCadence, DEFAULT_REMINDER_HOURS_BEFORE, EMPTY_CALENDAR, inferRecurrenceKind, normalizeRecurrenceCadence, shapeCalendar } from "./recurrence.ts";
 import { detectHabits, detectRhythms } from "./rhythm.ts";
 import { CURRENCY, parseWholeCents } from "./money.ts";
 import { nextId, nowIso, randomHouseholdId, randomInviteCode, slug, uniquePrefixedId } from "./ids.ts";
@@ -1457,13 +1457,13 @@ export function addRecurrence(household: Household, input: {
   const note = input.note ?? "";
   next.recurrences.push({
     id,
-    cadence: input.cadence,
+    cadence: normalizeRecurrenceCadence(input.cadence),
     nextDate: parseDate(input.nextDate),
     type: input.type,
     amountCents,
     accountId: input.accountId,
     transferToAccountId: input.type === "transfer" ? (input.transferToAccountId ?? null) : null,
-    goalId: input.goalId ?? null,
+    goalId: input.type === "transfer" ? (input.goalId ?? null) : null,
     subcategoryId: input.subcategoryId || "SUB-LIFE-FUN",
     note,
     splits,
@@ -1481,6 +1481,60 @@ export function addRecurrence(household: Household, input: {
     updatedAt: at,
   });
   return commit(previous, next, "Add Recurring", `${note || "Recurring"} ${input.cadence}`, [id]);
+}
+
+export function updateRecurrence(household: Household, input: {
+  id: string;
+  cadence: Recurrence["cadence"];
+  nextDate: string;
+  type: "expense" | "income" | "transfer";
+  amount: string | number;
+  accountId: string;
+  transferToAccountId?: string | null;
+  goalId?: string | null;
+  subcategoryId?: string;
+  note?: string;
+  splits?: Split[];
+  kind?: RecurrenceKind;
+}): CommitResult {
+  const amountCents = parseAmount(input.amount);
+  requireAccount(household, input.accountId);
+  if (input.type === "transfer") {
+    if (!input.transferToAccountId) throw new ValidationError("A transfer standing order needs a destination account.");
+    requireAccount(household, input.transferToAccountId);
+    if (input.transferToAccountId === input.accountId) {
+      throw new ValidationError("Choose two different accounts for a transfer standing order.");
+    }
+  } else {
+    if (!input.subcategoryId) throw new ValidationError("Pick a category.");
+    requireSubcategory(household, input.subcategoryId, input.type);
+  }
+  const subcategory = input.type === "transfer" || !input.subcategoryId
+    ? null
+    : requireSubcategory(household, input.subcategoryId, input.type);
+  const splits = catalogValidateOwned(input.splits ?? jointSplit(amountCents), amountCents, household);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const item = next.recurrences.find((row) => row.id === input.id);
+  if (!item) throw new ValidationError("That repeating item no longer exists.");
+  const note = input.note ?? "";
+  item.cadence = normalizeRecurrenceCadence(input.cadence);
+  item.nextDate = parseDate(input.nextDate);
+  item.type = input.type;
+  item.amountCents = amountCents;
+  item.accountId = input.accountId;
+  item.transferToAccountId = input.type === "transfer" ? (input.transferToAccountId ?? null) : null;
+  item.goalId = input.type === "transfer" ? (input.goalId ?? null) : null;
+  item.subcategoryId = input.subcategoryId || item.subcategoryId || "SUB-LIFE-FUN";
+  item.note = note;
+  item.splits = splits;
+  item.kind = input.kind ?? inferRecurrenceKind({
+    type: input.type === "transfer" ? "expense" : input.type,
+    note,
+    subcategoryName: subcategory?.name ?? note,
+  });
+  item.updatedAt = nowIso();
+  return commit(previous, next, "Edit Recurring", `${note || "Recurring"} ${item.cadence}`, [item.id]);
 }
 
 export function adoptRhythm(household: Household, key: string, today: DateKey): CommitResult {
@@ -1539,10 +1593,15 @@ export function skipOccurrence(household: Household, recurrenceId: string): Comm
   return commit(previous, next, "Calendar", `Skipped ${item.note || "recurring"} · next ${item.nextDate}`, [item.id]);
 }
 
-export function postOneRecurrence(household: Household, recurrenceId: string, today: DateKey): CommitResult {
+export function postOneRecurrence(
+  household: Household,
+  recurrenceId: string,
+  today: DateKey,
+  options: { allowNotDue?: boolean } = {},
+): CommitResult {
   const item = household.recurrences.find((row) => row.id === recurrenceId && row.active);
   if (!item) throw new ValidationError("That repeating item is not active.");
-  if (item.nextDate > today) throw new ValidationError("That item is not due yet.");
+  if (!options.allowNotDue && item.nextDate > today) throw new ValidationError("That item is not due yet.");
   const previous = cloneHousehold(household);
   let working = household;
   const postedIds: string[] = [];

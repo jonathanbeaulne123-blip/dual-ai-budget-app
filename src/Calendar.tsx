@@ -38,6 +38,13 @@ import {
 import { connectGoogle } from "./google/index.ts";
 import { AppointmentsPage } from "./Appointments.tsx";
 import { takeCalendarPane, type CalendarPane } from "./core/calendarIntent.ts";
+import {
+  blankRepeatingDraft,
+  draftFromRecurrence,
+  repeatingConfirmSummary,
+  RepeatingForm,
+  type RepeatingDraft,
+} from "./RepeatingForm.tsx";
 
 type Pane = CalendarPane;
 
@@ -72,6 +79,7 @@ export function CalendarPage(props: {
   onCommand: (fn: (current: Household) => CommitResult) => void;
   onAskPost: (recurrenceId: string, summary: string) => void;
   onAskPostDue: (count: number, summary: string) => void;
+  onAskSaveRepeating: (draft: RepeatingDraft, summary: string) => void;
   onAskVisit: (draft: VisitPostDraft, summary: string) => void;
   onAskSettle: (claimId: string, summary: string) => void;
   onAskWriteOff: (claimId: string, summary: string) => void;
@@ -86,6 +94,7 @@ export function CalendarPage(props: {
   const [googleBusy, setGoogleBusy] = useState(false);
   const [googleError, setGoogleError] = useState("");
   const [overlays, setOverlays] = useState<OverlayEvent[]>([]);
+  const [repeatingDraft, setRepeatingDraft] = useState<RepeatingDraft | null>(null);
 
   const board = useMemo(
     () => buildMonthBoard(household, monthKey, today, overlays),
@@ -344,7 +353,32 @@ export function CalendarPage(props: {
 
       {pane === "bills" && (
         <>
-          {suggested.length > 0 && (
+          {repeatingDraft ? (
+            <RepeatingForm
+              household={household}
+              today={today}
+              initial={repeatingDraft}
+              busy={props.busy}
+              onCancel={() => setRepeatingDraft(null)}
+              onSubmit={(draft) => {
+                setRepeatingDraft(null);
+                props.onAskSaveRepeating(draft, repeatingConfirmSummary(draft));
+              }}
+            />
+          ) : (
+            <div className="chips" style={{ marginBottom: 12 }}>
+              <button
+                type="button"
+                className="chip selected"
+                disabled={props.busy}
+                onClick={() => setRepeatingDraft(blankRepeatingDraft(household, today))}
+              >
+                Add repeating
+              </button>
+            </div>
+          )}
+
+          {suggested.length > 0 && !repeatingDraft && (
             <section className="card">
               <header>
                 <h2>Spotted in the ledger</h2>
@@ -381,7 +415,7 @@ export function CalendarPage(props: {
               <span className="muted">{household.recurrences.length ? `${household.recurrences.filter((item) => item.active).length} active` : "None yet"}</span>
             </header>
             {household.recurrences.length === 0 ? (
-              <p className="muted">Adopted bills live here. Mark paid posts.</p>
+              <p className="muted">Add repeating for a new bill, pay, or standing transfer. Mark paid posts.</p>
             ) : household.recurrences.map((item) => (
               <RecurrenceCard
                 key={item.id}
@@ -391,6 +425,7 @@ export function CalendarPage(props: {
                 onPause={() => props.onCommand((current) => pauseRecurrence(current, item.id))}
                 onSkip={() => props.onCommand((current) => skipOccurrence(current, item.id))}
                 onAskPost={props.onAskPost}
+                onEdit={() => setRepeatingDraft(draftFromRecurrence(item))}
               />
             ))}
           </section>
@@ -519,6 +554,7 @@ function RecurrenceCard(props: {
   busy: boolean;
   onPause: () => void;
   onSkip: () => void;
+  onEdit: () => void;
   onAskPost: (recurrenceId: string, summary: string) => void;
 }) {
   const { item } = props;
@@ -534,6 +570,7 @@ function RecurrenceCard(props: {
       </div>
       <p className="muted">
         {item.cadence} · next {formatDayLabel(item.nextDate)}
+        {item.type === "transfer" ? " · transfer" : item.type === "income" ? " · income" : ""}
         {item.origin === "detected" ? " · spotted in the ledger" : ""}
         {Object.keys(item.googleSync).length ? " · on Google" : ""}
       </p>
@@ -547,6 +584,7 @@ function RecurrenceCard(props: {
             Mark paid
           </button>
         )}
+        <button className="chip" disabled={props.busy} onClick={props.onEdit}>Edit</button>
         <button className="chip" disabled={props.busy} onClick={props.onSkip}>Skip once</button>
         <button className="chip" disabled={props.busy} onClick={props.onPause}>{item.active ? "Pause" : "Resume"}</button>
       </div>

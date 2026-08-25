@@ -200,7 +200,7 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 **Exit condition:** Bianca can create the first useful month, understand it, make an error, correct it, and see a trustworthy result on a phone without developer help.
 
 - [x] Build current-month budget editing through a typed books command, retaining/reworking the useful budget editor from #62 rather than blindly merging its stack. *(D-109: Statements → Budget variance → `setBudget`; plans only.)*
-- [ ] Add a first-class bill/recurrence form for genuinely new entries; calendar/email/OCR may only prefill a draft.
+- [x] Add a first-class bill/recurrence form for genuinely new entries; calendar/email/OCR may only prefill a draft. *(D-125: Calendar → Bills → Add repeating; Confirm optional post-first.)*
 - [ ] Add shift/income settings with explicit effective date and preview.
 - [ ] Add opening-balance/setup guidance without fabricating history.
 - [x] Ship due-on-open preview only after its branch/decision ancestry is repaired. Rebuilt from current `main` under D-108; reminders remain read-only until the existing Confirm path.

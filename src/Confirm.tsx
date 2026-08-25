@@ -5,6 +5,7 @@ export function ConfirmSheet({
   confirmLabel,
   danger,
   busy,
+  option,
   onCancel,
   onConfirm,
 }: {
@@ -14,10 +15,20 @@ export function ConfirmSheet({
   confirmLabel: string;
   danger?: boolean;
   busy?: boolean;
+  option?: {
+    id: string;
+    label: string;
+    checked: boolean;
+    onChange: (checked: boolean) => void;
+  };
   onCancel: () => void;
   onConfirm: () => void;
 }) {
-  const describedBy = extra ? "guard-body guard-extra" : "guard-body";
+  const describedBy = [
+    "guard-body",
+    extra ? "guard-extra" : null,
+    option ? "guard-option" : null,
+  ].filter(Boolean).join(" ");
 
   return (
     <div
@@ -34,6 +45,17 @@ export function ConfirmSheet({
         </div>
         <p id="guard-body">{body}</p>
         {extra && <p id="guard-extra" className="muted">{extra}</p>}
+        {option && (
+          <label id="guard-option" className="confirm-option">
+            <input
+              type="checkbox"
+              checked={option.checked}
+              disabled={busy}
+              onChange={(event) => option.onChange(event.target.checked)}
+            />
+            <span>{option.label}</span>
+          </label>
+        )}
         <button
           className={danger ? "danger" : "primary"}
           style={{ width: "100%", marginTop: 12 }}

@@ -41,6 +41,8 @@ import {
   postDueRecurrences,
   postEntry,
   postOneRecurrence,
+  addRecurrence,
+  updateRecurrence,
   postShift,
   postTransfer,
   postVisit,
@@ -125,6 +127,7 @@ import { inviteFromLocation } from "./core/invite.ts";
 import { PairingCard, WelcomeJoin } from "./Pairing.tsx";
 import { BooksPage } from "./Books.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
+import type { RepeatingDraft } from "./RepeatingForm.tsx";
 import { ConflictResolution } from "./ConflictResolution.tsx";
 import { DuePreviewSheet } from "./DuePreviewSheet.tsx";
 import {
@@ -166,6 +169,7 @@ type Guard =
   | { kind: "remove"; transactionId: string; summary: string }
   | { kind: "duePreview"; rows: ReturnType<typeof dueRecurrencePreview> }
   | { kind: "postRecurrence"; recurrenceId: string; summary: string }
+  | { kind: "saveRepeating"; draft: RepeatingDraft; summary: string }
   | { kind: "postDueAll"; summary: string }
   | { kind: "postVisit"; draft: VisitPostDraft; summary: string }
   | { kind: "settleClaim"; claimId: string; summary: string }
@@ -217,6 +221,7 @@ export function App() {
   const [toast, setToast] = useState<UndoToken | null>(null);
   const [history, setHistory] = useState<UndoToken[]>([]);
   const [guard, setGuard] = useState<Guard | null>(null);
+  const [saveRepeatingPostFirst, setSaveRepeatingPostFirst] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   const [splitPercents, setSplitPercents] = useState<Record<string, number>>({ "MEM-001": 50, "MEM-002": 50 });
   const [now] = useState(() => new Date());
@@ -1574,6 +1579,10 @@ export function App() {
           onCommand={(fn) => { void run(fn); }}
           onAskPost={(recurrenceId, summary) => setGuard({ kind: "postRecurrence", recurrenceId, summary })}
           onAskPostDue={(_count, summary) => setGuard({ kind: "postDueAll", summary })}
+          onAskSaveRepeating={(draft, summary) => {
+            setSaveRepeatingPostFirst(false);
+            setGuard({ kind: "saveRepeating", draft, summary });
+          }}
           onAskVisit={(draft, summary) => setGuard({ kind: "postVisit", draft, summary })}
           onAskSettle={(claimId, summary) => setGuard({ kind: "settleClaim", claimId, summary })}
           onAskWriteOff={(claimId, summary) => setGuard({ kind: "writeOffClaim", claimId, summary })}
@@ -2233,6 +2242,52 @@ export function App() {
             const id = guard.recurrenceId;
             setGuard(null);
             void run((current) => postOneRecurrence(current, id, today));
+          }}
+        />
+      )}
+      {guard?.kind === "saveRepeating" && (
+        <ConfirmSheet
+          title={guard.draft.id ? "Save repeating changes?" : "Save repeating item?"}
+          body={guard.summary}
+          extra="Unchecked = reminder only. Checked = also post this occurrence into the books, then advance the next date."
+          confirmLabel={saveRepeatingPostFirst ? "Save and post" : "Save reminder"}
+          busy={busy}
+          option={{
+            id: "post-first",
+            label: `Also post ${guard.draft.amount ? `$${guard.draft.amount}` : "this amount"} on ${guard.draft.nextDate} now`,
+            checked: saveRepeatingPostFirst,
+            onChange: setSaveRepeatingPostFirst,
+          }}
+          onCancel={() => {
+            setGuard(null);
+            setSaveRepeatingPostFirst(false);
+          }}
+          onConfirm={() => {
+            const draft = guard.draft;
+            const postFirst = saveRepeatingPostFirst;
+            setGuard(null);
+            setSaveRepeatingPostFirst(false);
+            void run((current) => {
+              const input = {
+                cadence: draft.cadence,
+                nextDate: draft.nextDate,
+                type: draft.type,
+                amount: draft.amount,
+                accountId: draft.accountId,
+                transferToAccountId: draft.type === "transfer" ? draft.transferToAccountId : null,
+                goalId: draft.type === "transfer" && draft.goalId ? draft.goalId : null,
+                subcategoryId: draft.type === "transfer" ? undefined : draft.subcategoryId,
+                note: draft.note.trim(),
+                kind: draft.kind,
+              };
+              const saved = draft.id
+                ? updateRecurrence(current, { id: draft.id, ...input })
+                : addRecurrence(current, { ...input, origin: "manual" as const });
+              if (!postFirst) return saved;
+              const recurrenceId = draft.id ?? saved.postedIds[0];
+              if (!recurrenceId) return saved;
+              return postOneRecurrence(saved.household, recurrenceId, today, { allowNotDue: true });
+            });
           }}
         />
       )}
