@@ -8,17 +8,19 @@
 
 ---
 
-## Jonathan's direction (locked for next mockup round)
+## Jonathan's direction (locked 2026-08-25 evening — v3)
 
 | Surface | Pick | Notes |
 |---|---|---|
-| **Mobile Home** | **Draft C ★** | Hybrid seals + story strip + one-at-a-time expand — near-final |
-| **Mobile Books** | **C grammar** with A/B learnings | Same paper family as Home C |
-| **Desktop Home / room** | **Draft D refined** | Same layout; **softer** watercolor + **slightly cartoony** background (incremental only) |
-| **Desktop Calendar + Books** | **Draft D family** | Need desktop tabs mocked before implementation |
-| **Draft E** | Drop as standalone | Combo A+B+C beats it |
-| **Hercules mobile** | **Duolingo pattern** | Small mascot out of the way → tap expands to **full-screen focus** for the task |
-| **Hercules desktop** | **Ever-present wanderer** | Use wide space; cat on furniture, motion trail, never blocks Confirm |
+| **Mobile Home** | **Draft C ★** | Hybrid seals + story strip + one-at-a-time expand — **final mobile direction** |
+| **Mobile Books** | **C grammar** | Same paper family as Home C |
+| **Desktop Home / room** | **Draft D ★ synthesis** | **First mock stylized room** (`ux_mock_draft_d_wide_paper_desk`) **+ wander pathing** (`ux_mock_d2_desktop_hercules_wander`) |
+| **Desktop Calendar + Books** | **Draft D family** | Same room, not a cold separate app |
+| **Hercules mobile** | **Duolingo focus/unfocus ★** | Small pill → full-screen teacher → dismiss — **exactly this** |
+| **Hercules desktop** | **Ever-present wanderer** | Pathing between furniture; never blocks Confirm |
+| **Theme packet** | **`docs/HEARTH_UI_THEME.md`** | All AIs implement new UI against this |
+
+**Implementation authority:** `docs/HEARTH_UI_THEME.md` + `docs/briefs/CURSOR_UI_THEME_PACKET.md`
 
 ---
 

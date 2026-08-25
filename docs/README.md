@@ -30,7 +30,9 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [CLAUDE_DESKTOP_OFFICE.md](CLAUDE_DESKTOP_OFFICE.md) | Claude desktop-office prompt |
 | [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md) | Shipped phone Home prompt/history |
 | [CLAUDE_OFFICE_UX.md](CLAUDE_OFFICE_UX.md) | Historical Office prompt |
-| [ux/2026-08-25-home-ux-report.md](ux/2026-08-25-home-ux-report.md) | Rough Home vs Books UX report + mockup draft letters (design direction, not implementation) |
+| [HEARTH_UI_THEME.md](HEARTH_UI_THEME.md) | **Living UI theme packet** — mobile C, desktop D, Hercules focus/wander, paper tile grammar (Jonathan 2026-08-25) |
+| [ux/2026-08-25-home-ux-report.md](ux/2026-08-25-home-ux-report.md) | UX audit + mockup index |
+| [briefs/CURSOR_UI_THEME_PACKET.md](briefs/CURSOR_UI_THEME_PACKET.md) | Paste-ready theme implementation slices for Cursor/other AIs |
 | [AUDIT_OFFICE.md](AUDIT_OFFICE.md) | Statements, reconciliation, and close guidance |
 | [ACCOUNTS.md](ACCOUNTS.md) | Wallet, cards, and investments guidance |
 | [APPOINTMENTS.md](APPOINTMENTS.md) | Visits, claims, receivables, and Appointments guidance |

@@ -1,0 +1,25 @@
+---
+paths:
+  - "src/**/*.{tsx,css}"
+  - "public/**/*.{svg,png,webp}"
+  - "docs/{HEARTH_UI_THEME,OFFICE,CLAUDE_MOBILE_SHELL,CLAUDE_DESKTOP_OFFICE}.md"
+  - "docs/ux/**/*.md"
+---
+
+# Hearth UI theme
+
+Living theme authority: `docs/HEARTH_UI_THEME.md`. Implementation packet: `docs/briefs/CURSOR_UI_THEME_PACKET.md`.
+
+## Locked shells
+
+- Mobile `<720px`: **Draft C** — wax seals, story strip, notebook expand, Duolingo Hercules focus/unfocus.
+- Desktop `≥720px`: **Draft D** — first mock stylized room + Hercules wander pathing; Calendar/Books in same room.
+
+## Before any UI change
+
+1. Reuse paper tile / seal / notebook grammar; do not invent new card systems.
+2. Use `:root` tokens only; Figtree + Fraunces; sentence-case finance labels.
+3. Never cover Confirm/Post; never put CAD on weather; never shrink desktop to match phone.
+4. Hercules: Maine Coon; mobile pill until focus; desktop ever-present wanderer.
+5. Verify 320/390/720/~1100px, reduced motion, 44px targets, expand a11y.
+6. Name Budget delta (5) and Engagement delta (3); books win on conflict.
