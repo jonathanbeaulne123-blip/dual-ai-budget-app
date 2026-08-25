@@ -15,6 +15,15 @@ VERSION:102
 <STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20260820<TRNAMT>-47.23<FITID>FIT-UI<NAME>No Frills<MEMO>Groceries</STMTTRN>
 </BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>`;
 
+const OFX_NEEDS_DETAILS = `OFXHEADER:100
+DATA:OFXSGML
+VERSION:102
+<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS><CURDEF>CAD
+<BANKACCTFROM><BANKID>004<ACCTID>9999</BANKACCTFROM><BANKTRANLIST>
+<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20260824<TRNAMT>-14.20<FITID>DETAIL-1<NAME>First Merchant<MEMO>Needs account</STMTTRN>
+<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20260825<TRNAMT>-19.30<FITID>DETAIL-2<NAME>Second Merchant<MEMO>Needs account</STMTTRN>
+</BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>`;
+
 let container: HTMLDivElement;
 let root: Root;
 
@@ -77,5 +86,46 @@ describe("batch import review UI", () => {
     const posted = onCommit.mock.calls[0]![0];
     expect(posted.transactions).toHaveLength(2);
     expect(posted.transactions.at(-1)!.source).toBe("import");
+  });
+
+  it("turns the details count into a guided queue and advances focus until Confirm is ready", async () => {
+    act(() => root.render(createElement(BatchImportCard, {
+      household: catalogHousehold(),
+      memberId: "MEM-002",
+      view: "household",
+      onCommit: vi.fn(),
+    })));
+
+    const input = container.querySelector<HTMLInputElement>('input[accept*=".ofx"]')!;
+    const file = new File([OFX_NEEDS_DETAILS], "needs-details.ofx", { type: "application/x-ofx" });
+    Object.defineProperty(file, "arrayBuffer", { value: async () => new TextEncoder().encode(OFX_NEEDS_DETAILS).buffer });
+    Object.defineProperty(input, "files", { configurable: true, value: { 0: file, length: 1, item: () => file, [Symbol.iterator]: function* () { yield file; } } });
+    act(() => input.dispatchEvent(new Event("change", { bubbles: true })));
+
+    await settleUntil(() => container.textContent?.includes("2 transactions need details") === true, "Details count did not appear.");
+    act(() => button("2 transactions need details")!.click());
+    await settleUntil(() => document.activeElement?.getAttribute("aria-label")?.startsWith("First Merchant") === true, "First details row was not focused.");
+    act(() => button("Close")!.focus());
+    expect(document.activeElement?.textContent).toContain("Close");
+    act(() => button("2 transactions need details")!.click());
+    await settleUntil(() => document.activeElement?.getAttribute("aria-label")?.startsWith("First Merchant") === true, "Repeated activation did not refocus the first details row.");
+
+    const first = document.activeElement as HTMLElement;
+    const firstAccount = first.querySelectorAll<HTMLSelectElement>("select")[1]!;
+    act(() => {
+      firstAccount.value = "ACC-CHEQUING";
+      firstAccount.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await settleUntil(() => document.activeElement?.getAttribute("aria-label")?.startsWith("Second Merchant") === true, "Focus did not advance to the next details row.");
+    expect(container.textContent).toContain("1 transaction needs details");
+
+    const second = document.activeElement as HTMLElement;
+    const secondAccount = second.querySelectorAll<HTMLSelectElement>("select")[1]!;
+    act(() => {
+      secondAccount.value = "ACC-CHEQUING";
+      secondAccount.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await settleUntil(() => document.activeElement?.textContent?.includes("Review final Confirm") === true, "Confirm was not focused after the last required detail.");
+    expect(button("Review final Confirm")!.disabled).toBe(false);
   });
 });

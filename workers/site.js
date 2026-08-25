@@ -317,6 +317,8 @@ Classify documentKind as bank-statement, credit-card-statement, bill, receipt, o
 Return currency, accountLast4 when visible, and rows. Each row has YYYY-MM-DD date, positive integer amountCents, direction debit/credit/unknown, typeHint expense/income/refund/transfer/unknown, merchant, description, reference, and confidence 0-100.
 For a receipt, return the final paid total once, not every line item. For a bill, return the amount due once. For a bank/card statement, return each clearly visible transaction. Never invent a missing date or amount; omit that row and add a short warning. Do not include card/account numbers beyond last four digits.`;
 
+const DOCUMENT_VISION_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
+
 const DOCUMENT_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -357,6 +359,14 @@ function parseModelJson(value) {
   }
 }
 
+function redactFinancialIdentifiers(value, max) {
+  const redacted = String(value || "").replace(/\b(?:\d[\s-]?){6,18}\d\b/g, (match) => {
+    const digits = match.replace(/\D/g, "");
+    return `•••• ${digits.slice(-4)}`;
+  });
+  return clip(redacted, max);
+}
+
 function sanitizeDocumentResult(value) {
   if (!value || typeof value !== "object") return null;
   const kinds = new Set(["bank-statement", "credit-card-statement", "bill", "receipt", "unknown"]);
@@ -367,9 +377,9 @@ function sanitizeDocumentResult(value) {
     amountCents: Number.isSafeInteger(Number(row?.amountCents)) ? Math.abs(Number(row.amountCents)) : 0,
     direction: directions.has(row?.direction) ? row.direction : "unknown",
     typeHint: typeHints.has(row?.typeHint) ? row.typeHint : "unknown",
-    merchant: clip(row?.merchant, 100),
-    description: clip(row?.description, 180),
-    reference: clip(row?.reference, 80),
+    merchant: redactFinancialIdentifiers(row?.merchant, 100),
+    description: redactFinancialIdentifiers(row?.description, 180),
+    reference: redactFinancialIdentifiers(row?.reference, 80),
     confidence: Math.max(0, Math.min(100, Math.round(Number(row?.confidence) || 0))),
   })).filter((row) => /^\d{4}-\d{2}-\d{2}$/.test(row.date) && row.amountCents > 0) : [];
   return {
@@ -377,7 +387,7 @@ function sanitizeDocumentResult(value) {
     currency: clip(value.currency || "CAD", 8).toUpperCase(),
     accountLast4: String(value.accountLast4 || "").replace(/\D/g, "").slice(-4),
     rows,
-    warnings: Array.isArray(value.warnings) ? value.warnings.slice(0, 20).map((item) => clip(item, 180)).filter(Boolean) : [],
+    warnings: Array.isArray(value.warnings) ? value.warnings.slice(0, 20).map((item) => redactFinancialIdentifiers(item, 180)).filter(Boolean) : [],
   };
 }
 
@@ -442,6 +452,23 @@ async function scanAnthropic(env, imageDataUrl) {
   return sanitizeDocumentResult(parseModelJson(text));
 }
 
+async function scanWorkersAi(env, imageDataUrl) {
+  if (!env.AI) return null;
+  const model = String(env.DOCUMENT_VISION_MODEL || DOCUMENT_VISION_MODEL).trim() || DOCUMENT_VISION_MODEL;
+  const output = await env.AI.run(model, {
+    messages: [
+      { role: "system", content: DOCUMENT_SYSTEM },
+      { role: "user", content: "Extract the selected document. Return only the requested JSON object." },
+    ],
+    image: imageDataUrl,
+    max_tokens: 2800,
+    temperature: 0,
+    response_format: { type: "json_schema", json_schema: DOCUMENT_SCHEMA },
+  });
+  const response = output?.response ?? output?.result?.response ?? output?.result ?? null;
+  return sanitizeDocumentResult(typeof response === "string" ? parseModelJson(response) : response);
+}
+
 async function scanDocument(request, env) {
   const { allowed, origin } = resolveChatOrigin(request);
   const cors = corsHeaders(origin);
@@ -472,6 +499,14 @@ async function scanDocument(request, env) {
     try {
       result = await scanAnthropic(env, imageDataUrl);
       if (result) provider = "anthropic";
+    } catch {
+      result = null;
+    }
+  }
+  if (!result) {
+    try {
+      result = await scanWorkersAi(env, imageDataUrl);
+      if (result) provider = "workers-ai";
     } catch {
       result = null;
     }

@@ -9,12 +9,13 @@ This is selected-file intake, not a connected bank feed. No bank credentials or 
 ## Flow
 
 1. Choose one or more `.qfx` / `.ofx` files, take a document photo, or choose existing document images.
-2. Hearth parses bank files on the device. A selected image is sent once to `POST /documents/scan` for structured detection.
+2. Hearth parses bank files on the device. A selected image is sent once to `POST /documents/scan` for structured detection. The Worker tries OpenAI, Anthropic, then its bound Workers AI vision model.
 3. Hearth maps exact account last-four values, suggests a transaction type/category, and applies the existing duplicate confidence scorer against rows visible in the current ledger view and earlier rows in the same batch.
 4. The review popup separates rows into:
    - **Confident:** confidence `> 90`; the imported row starts cancelled.
    - **Not sure:** confidence `50–90`; the person must choose before Confirm.
    - **Probably not a duplicate:** confidence `< 50`; the imported row starts kept and otherwise untouched.
+   Counts for unresolved duplicate choices and missing transaction details are actionable links. Selecting either starts at the first required row and advances focus to the next required row—even if an edit changes that row's confidence tab—until final Confirm is ready.
 5. Each candidate shows the imported row next to the likely existing Hearth row or earlier batch row. The person may cancel the import, keep both, keep the import and exclude the old posted row, or keep one of two batch rows.
 6. One final Confirm posts every kept row through ordinary `postEntry` / `postTransfer`, then through `acceptHouseholdWrite` (PGlite acceptance, local persistence, and eligible continuity transport). Cancel changes nothing.
 
@@ -33,7 +34,7 @@ Excluding an old posted row sets its reviewed duplicate flag. It is never physic
 
 - The image is submitted only after the person takes or chooses it.
 - Supported image types: JPEG, PNG, WebP. Limit: 10 MB per image.
-- The Worker tries OpenAI vision, then Anthropic image input. Keys remain Worker secrets and never enter Vite or the household.
+- The Worker tries OpenAI vision, then Anthropic image input, then the bound Cloudflare Workers AI vision model. Keys remain Worker secrets and never enter Vite or the household.
 - Printed instructions, QR text, and URLs inside a document are untrusted data. The extraction prompt tells the provider to ignore them.
 - The Worker returns document kind, currency, account last four, rows, and per-row extraction confidence. It never returns or stores full account/card numbers.
 - Raw image bytes are not written into the household, PGlite, Supabase, or app logs by this feature. The client keeps only a SHA-256 source digest (with a deterministic fallback) and normalized row provenance.
@@ -60,5 +61,5 @@ The endpoint in `workers/site.js` was deployed to the Development kitchen on 202
 ## Remaining release actions
 
 1. Merge PR #108 after review.
-2. Smoke a legible synthetic receipt and synthetic OFX through the deployed Development UI. The live route, origin guard, CORS preflight, and invalid-image fail-closed response are already verified.
+2. With Jonathan's explicit approval, accept Meta's license/AUP for `@cf/meta/llama-3.2-11b-vision-instruct` once in the Cloudflare account, deploy the Workers AI receipt fallback, then smoke a legible synthetic receipt and synthetic OFX through the Development UI. On 2026-08-25 the live route accepted a clean synthetic receipt but returned `503 Document detection is unavailable`; the local fix adds a bound Workers AI vision fallback and regression proof, but license acceptance and deployment remain separate explicit release actions.
 3. Include batch intake in the comprehensive pre-September audit. PDF ingestion, statement closing-balance completeness, persistent draft inboxes, and connected bank feeds remain separate work.

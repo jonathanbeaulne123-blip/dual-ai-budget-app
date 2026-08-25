@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   accountName,
   buildBatchImport,
@@ -24,6 +24,29 @@ const TABS: Array<{ id: DuplicateTier; label: string; hint: string }> = [
   { id: "not-sure", label: "Not sure", hint: "50–90% · you must choose" },
   { id: "probably-not", label: "Probably not a duplicate", hint: "Under 50% · imported row stays kept" },
 ];
+
+const FINAL_CONFIRM_FOCUS = "__final-confirm__";
+
+function needsTransactionDetails(row: ImportReviewRow): boolean {
+  if (row.resolution === "cancel-import") return false;
+  return row.type === "unknown" || !row.accountId || row.currency !== "CAD"
+    || (row.type === "transfer" ? !row.transferAccountId || row.transferAccountId === row.accountId : !row.subcategoryId);
+}
+
+function needsHumanAttention(row: ImportReviewRow): boolean {
+  return row.resolution === "undecided" || needsTransactionDetails(row);
+}
+
+function nextAttentionId(rows: ImportReviewRow[], afterId: string): string | null {
+  if (!rows.length) return null;
+  const found = rows.findIndex((row) => row.id === afterId);
+  const start = found >= 0 ? found : -1;
+  for (let offset = 1; offset <= rows.length; offset += 1) {
+    const candidate = rows[(start + offset) % rows.length];
+    if (candidate && needsHumanAttention(candidate)) return candidate.id;
+  }
+  return null;
+}
 
 async function readBankFile(file: File): Promise<string> {
   const bytes = await file.arrayBuffer();
@@ -54,20 +77,57 @@ export function BatchImportCard({
   const [tier, setTier] = useState<DuplicateTier>("confident");
   const [working, setWorking] = useState(false);
   const [finalConfirm, setFinalConfirm] = useState(false);
+  const [focusRequestId, setFocusRequestId] = useState<string | null>(null);
+  const [focusRequestNonce, setFocusRequestNonce] = useState(0);
+  const rowRefs = useRef(new Map<string, HTMLElement>());
+  const finalConfirmButton = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useDialog(open && !finalConfirm, () => setOpen(false));
   const visible = useMemo(() => rows.filter((row) => row.duplicateTier === tier), [rows, tier]);
   const unresolved = rows.filter((row) => row.resolution === "undecided").length;
   const kept = rows.filter((row) => row.resolution === "keep-import" || row.resolution === "exclude-ledger").length;
   const cancelled = rows.filter((row) => row.resolution === "cancel-import").length;
-  const incomplete = rows.filter((row) => row.resolution !== "cancel-import" && (
-    row.type === "unknown" || !row.accountId || row.currency !== "CAD"
-    || (row.type === "transfer" ? !row.transferAccountId || row.transferAccountId === row.accountId : !row.subcategoryId)
-  )).length;
+  const incomplete = rows.filter(needsTransactionDetails).length;
+  const focusRequestRow = focusRequestId && focusRequestId !== FINAL_CONFIRM_FOCUS
+    ? rows.find((row) => row.id === focusRequestId)
+    : null;
+  const focusRequestTier = focusRequestRow?.duplicateTier ?? null;
+  const focusRequestNeedsAttention = focusRequestRow ? needsHumanAttention(focusRequestRow) : false;
+
+  useEffect(() => {
+    if (!open || !focusRequestId) return;
+    if (focusRequestId === FINAL_CONFIRM_FOCUS) {
+      const timeout = window.setTimeout(() => finalConfirmButton.current?.focus(), 0);
+      return () => window.clearTimeout(timeout);
+    }
+    const target = rows.find((row) => row.id === focusRequestId);
+    if (!target || !focusRequestNeedsAttention) {
+      setFocusRequestId(nextAttentionId(rows, focusRequestId) ?? FINAL_CONFIRM_FOCUS);
+      return;
+    }
+    if (tier !== target.duplicateTier) {
+      setTier(target.duplicateTier);
+      return;
+    }
+    const timeout = window.setTimeout(() => {
+      const element = rowRefs.current.get(target.id);
+      element?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+      element?.focus();
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [focusRequestId, focusRequestNeedsAttention, focusRequestNonce, focusRequestTier, open, tier]);
+
+  function beginAttention(preferred: (row: ImportReviewRow) => boolean) {
+    const target = rows.find((row) => preferred(row) && needsHumanAttention(row))
+      ?? rows.find(needsHumanAttention);
+    setFocusRequestId(target?.id ?? FINAL_CONFIRM_FOCUS);
+    setFocusRequestNonce((current) => current + 1);
+  }
 
   function replaceRows(sourceRows: Parameters<typeof prepareImportRows>[0]["rows"], nextWarnings: string[]) {
     const prepared = prepareImportRows({ household, memberId, view, rows: sourceRows });
     setRows(prepared);
     setWarnings(nextWarnings.filter(Boolean));
+    setFocusRequestId(null);
     setTier(prepared.some((row) => row.duplicateTier === "confident") ? "confident"
       : prepared.some((row) => row.duplicateTier === "not-sure") ? "not-sure" : "probably-not");
     setError("");
@@ -119,28 +179,37 @@ export function BatchImportCard({
   }
 
   function updateRow(id: string, patch: Partial<ImportReviewRow>) {
-    setRows((current) => refreshImportTriage({
-      household,
-      memberId,
-      view,
-      rows: current.map((row) => row.id === id ? { ...row, ...patch } : row),
-    }));
+    setRows((current) => {
+      const next = refreshImportTriage({
+        household,
+        memberId,
+        view,
+        rows: current.map((row) => row.id === id ? { ...row, ...patch } : row),
+      });
+      return next;
+    });
   }
 
   function decide(id: string, resolution: ImportReviewRow["resolution"]) {
-    setRows((current) => current.map((row) => row.id === id
-      ? { ...row, resolution, resolutionTouched: true }
-      : row));
+    setRows((current) => {
+      const next = current.map((row) => row.id === id
+        ? { ...row, resolution, resolutionTouched: true }
+        : row);
+      return next;
+    });
   }
 
   function keepThisCancelBatchMatch(row: ImportReviewRow) {
     if (row.duplicateMatch?.kind !== "batch") return;
     const matchedRowId = row.duplicateMatch.rowId;
-    setRows((current) => current.map((candidate) => {
-      if (candidate.id === row.id) return { ...candidate, resolution: "keep-import", resolutionTouched: true };
-      if (candidate.id === matchedRowId) return { ...candidate, resolution: "cancel-import", resolutionTouched: true };
-      return candidate;
-    }));
+    setRows((current) => {
+      const next = current.map((candidate) => {
+        if (candidate.id === row.id) return { ...candidate, resolution: "keep-import" as const, resolutionTouched: true };
+        if (candidate.id === matchedRowId) return { ...candidate, resolution: "cancel-import" as const, resolutionTouched: true };
+        return candidate;
+      });
+      return next;
+    });
   }
 
   async function confirmBatch() {
@@ -204,7 +273,20 @@ export function BatchImportCard({
               </div>
               <button type="button" className="ghost" onClick={() => setOpen(false)} disabled={working}>Close</button>
             </div>
-            <p>{rows.length} imported row{rows.length === 1 ? "" : "s"} · {kept} kept · {cancelled} cancelled · {unresolved} need a duplicate decision · {incomplete} need transaction details</p>
+            <p className="import-review-summary">
+              {rows.length} imported row{rows.length === 1 ? "" : "s"} · {kept} kept · {cancelled} cancelled ·{" "}
+              {unresolved ? (
+                <button type="button" className="import-attention-link" onClick={() => beginAttention((row) => row.resolution === "undecided")}>
+                  {unresolved} transaction{unresolved === 1 ? "" : "s"} need{unresolved === 1 ? "s" : ""} a duplicate decision
+                </button>
+              ) : "0 need a duplicate decision"}
+              {" · "}
+              {incomplete ? (
+                <button type="button" className="import-attention-link" onClick={() => beginAttention(needsTransactionDetails)}>
+                  {incomplete} transaction{incomplete === 1 ? "" : "s"} need{incomplete === 1 ? "s" : ""} details
+                </button>
+              ) : "0 need transaction details"}
+            </p>
             <div className="tabs import-tabs" role="tablist" aria-label="Duplicate confidence">
               {TABS.map((item) => {
                 const count = rows.filter((row) => row.duplicateTier === item.id).length;
@@ -232,6 +314,11 @@ export function BatchImportCard({
                   household={household}
                   row={row}
                   allRows={rows}
+                  attention={focusRequestId === row.id}
+                  setAttentionRef={(element) => {
+                    if (element) rowRefs.current.set(row.id, element);
+                    else rowRefs.current.delete(row.id);
+                  }}
                   onUpdate={(patch) => updateRow(row.id, patch)}
                   onDecide={(resolution) => decide(row.id, resolution)}
                   onKeepThisCancelOther={() => keepThisCancelBatchMatch(row)}
@@ -241,6 +328,7 @@ export function BatchImportCard({
             <div className="import-footer">
               <button type="button" className="ghost" onClick={() => setOpen(false)}>Close review</button>
               <button
+                ref={finalConfirmButton}
                 type="button"
                 className="primary"
                 disabled={working || unresolved > 0 || incomplete > 0 || kept === 0}
@@ -272,6 +360,8 @@ function ImportReviewItem({
   household,
   row,
   allRows,
+  attention,
+  setAttentionRef,
   onUpdate,
   onDecide,
   onKeepThisCancelOther,
@@ -279,6 +369,8 @@ function ImportReviewItem({
   household: Household;
   row: ImportReviewRow;
   allRows: ImportReviewRow[];
+  attention: boolean;
+  setAttentionRef: (element: HTMLElement | null) => void;
   onUpdate: (patch: Partial<ImportReviewRow>) => void;
   onDecide: (resolution: ImportReviewRow["resolution"]) => void;
   onKeepThisCancelOther: () => void;
@@ -297,7 +389,12 @@ function ImportReviewItem({
   ));
 
   return (
-    <article className={`import-pair import-pair--${row.resolution}`}>
+    <article
+      ref={setAttentionRef}
+      tabIndex={-1}
+      className={`import-pair import-pair--${row.resolution}${attention ? " import-pair--attention" : ""}`}
+      aria-label={`${row.note || row.sourceName} import review`}
+    >
       <header>
         <span className={`confidence useful-${row.duplicateConfidence > 90 ? "green" : row.duplicateConfidence >= 50 ? "yellow" : "red"}`}>
           {row.duplicateConfidence}%
