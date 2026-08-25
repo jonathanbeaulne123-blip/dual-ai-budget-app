@@ -1,13 +1,12 @@
--- Development apply authorized by Jonathan 2026-08-24 (D-122).
+-- Applied to Development on 2026-08-25 (Jonathan SQL editor; D-122).
 -- Production: DO NOT APPLY without a separate Jonathan approval.
 -- Trust-foundation compare-and-swap for hosted JSON snapshots (D-122).
 -- Client prefers POST /rest/v1/rpc/publish_household_snapshot; falls back to
 -- GET-then-compare-then-POST only when this function is missing from the API.
 -- Order: after 001_hearth_books.sql; safe beside applied 003_continuity_membership.sql.
--- Apply: SUPABASE_DB_PASSWORD=… pnpm books:apply:002
---    or paste this file into https://supabase.com/dashboard/project/tykhocwacaxwquhynkok/sql/new
+-- Re-apply / verify: SUPABASE_DB_PASSWORD=… pnpm books:apply:002
 -- Smoke: pnpm books:smoke:cas  (publishable key; disposable Development row)
--- Rollback: DROP FUNCTION IF EXISTS publish_household_snapshot(text, integer, text, text, text, text, boolean, integer, text, text, text);
+-- Rollback: DROP FUNCTION IF EXISTS publish_household_snapshot(text, integer, text, text, text, text, text, boolean, integer, text, text, text);
 --           ALTER TABLE household_snapshots DROP COLUMN IF EXISTS revision;
 --           ALTER TABLE household_snapshots DROP COLUMN IF EXISTS snapshot_hash;
 --           DELETE FROM schema_migrations WHERE id = 2;

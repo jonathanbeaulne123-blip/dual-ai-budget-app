@@ -72,17 +72,15 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 ## Hosted snapshot CAS + outbox ack (D-122)
 
-**Status:** Client work merged via [PR #84](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/84) (id corrected in [#86](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/86)). Jonathan authorized Development apply. **Live apply is blocked in this Cloud Agent on missing `SUPABASE_DB_PASSWORD`** (Supabase MCP `needsAuth`; no `.env`). Tooling on `cursor/cas-002-apply-4ffb`: `pnpm books:apply:002` + `pnpm books:smoke:cas`. Live probe: RPC missing (`PGRST202`); `household_snapshots.revision` missing; `households.revision` already present.
+**Status:** Applied to Development on 2026-08-25 (Jonathan SQL-editor paste of fixed `002_snapshot_cas.sql`). Live smoke `pnpm books:smoke:cas` **4/4**: first publish, duplicate ack, stale conflict, advance 1→2. Disposable smoke household `HH-cas-smoke-mt7xsikl`. Client + outbox work already on `main` via [PR #84](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/84) / [#86](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/86). Production schema **not** applied.
 
-**Budget delta (5):** `+3` in code; live atomic door still closed until apply+smoke.
+**Budget delta (5):** `+3` — live atomic hosted CAS is on for Development.
 
 **Engagement delta (3):** `0`.
 
-**Next / Jonathan:** Provide `SUPABASE_DB_PASSWORD` in a follow-up (ephemeral `.env`, never committed), **or** paste `supabase/migrations/002_snapshot_cas.sql` into the [SQL editor](https://supabase.com/dashboard/project/tykhocwacaxwquhynkok/sql/new) and Run, then say “smoke it.” Agent will run smoke and mark D-122 applied.
+**Still required:** two-browser E2E on real devices; Auth/RLS cutover before October; Production apply is a separate approval.
 
-**Still required after apply:** two-browser E2E; Auth/RLS cutover before October. Production schema remains separate.
-
-**Risk:** High (hosted write protocol).
+**Risk:** High residual until Auth/RLS; open Development RLS unchanged through 2026-09-30.
 
 ## Trust-foundation worksession (2026-08-24, local branch)
 
