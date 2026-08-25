@@ -4,6 +4,20 @@ After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. 
 
 Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
 
+## Auth kitchen smoke + invite chrome (2026-08-25)
+
+**Status:** Branch `cursor/auth-invite-chrome-f375` (not merged). Live 006 anon denial and kitchen OAuth door verified. Email/QR invite client + Welcome/More chrome implemented; signed-in issue/redeem still needs Jonathan.
+
+**Budget delta (5):** `+3` — hashed one-time Auth invites wire the membership door; anon REST remains denied.
+
+**Engagement delta (3):** `+1` — More/Welcome invite chrome; Hercules unchanged.
+
+**Verified:** anon `households` / `continuity_memberships` / `hearth_issue_invite` → HTTP 401; kitchen Continue with Google → Google OAuth for `tykhocwacaxwquhynkok.supabase.co`; `pnpm check` green on branch (462 tests).
+
+**Still required:** Jonathan Google sign-in → open `HH-591c6905afd19707` → post/sync; owner issue email/QR; second identity redeem. Docs PR #104 (006 applied) remains open.
+
+**Next owner:** Jonathan for signed-in smoke; merge invite PR after review.
+
 ## Risk routing
 
 | Risk | Examples | Default routing |
@@ -94,17 +108,17 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 ## Auth + membership RLS cutover (D-123)
 
-**Status:** **006 applied** on the shared project (2026-08-25, Jonathan paste, path B NOTICE + ceiling 1). Live proof: `pg_policies` shows `hearth_households_select` (not `hearth_anon_all`). Google Auth live; `008` applied earlier; empty Production removed. Post-apply smoke (Create / anon denial / wrong-household) not yet recorded as verified.
+**Status:** Migration **006 applied** on live shared project (Jonathan paste). Anon REST denial verified. Kitchen Auth door reaches Google OAuth. Docs record of apply: open PR #104. Invite chrome: branch `cursor/auth-invite-chrome-f375`.
 
-**Budget delta (5):** `+5` — deny-by-default membership RLS is live; anon household REST closed.
+**Budget delta (5):** `+4` — deny-by-default membership door is live for Development data on the shared project.
 
-**Engagement delta (3):** `0`
+**Engagement delta (3):** `+1` (invite chrome in flight)
 
-**Next owner:** Jonathan — smoke Auth kitchen (Continue with Google, create/open, anon denial). Optional Bianca sign-in. Invite chrome remains a follow-up.
+**Next owner:** Jonathan — signed-in Create/open/`HH-591c6905afd19707` sync smoke; then email/QR issue+redeem. Rollback only via explicit order and `docs/sql/009_rollback_006.sql`.
 
-**Risk:** Release residual until smoke passes. Rollback only via `docs/sql/009_rollback_006.sql` on explicit order.
+**Risk:** Release residual until signed-in smoke and invite redeem. Do not enable `VITE_PRODUCTION_CONTINUITY` casually.
 
-**Environment / data disclosure:** Live applies: 004/005/006/007/008. Agent did not paste 006; Jonathan did. Fictional/disposable Development data only.
+**Environment / data disclosure:** Live applies: 002/004/005/007/008/006. Disposable Development data. No Production continuity client flag.
 
 ## Trust-foundation worksession (2026-08-24, local branch)
 
