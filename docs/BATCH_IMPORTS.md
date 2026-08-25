@@ -40,7 +40,7 @@ Excluding an old posted row sets its reviewed duplicate flag. It is never physic
 - Receipt and bill detection returns one total/due row. Statement detection may return up to 250 clearly visible rows per image.
 - Detection output is always editable and can never post directly.
 
-The endpoint is implemented in `workers/site.js` but is not live until an explicitly approved Worker deployment includes it.
+The endpoint in `workers/site.js` was deployed to the Development kitchen on 2026-08-25 through GitHub Actions run `32872129163`, with Jonathan's explicit approval.
 
 ## Failure and recovery
 
@@ -59,7 +59,6 @@ The endpoint is implemented in `workers/site.js` but is not live until an explic
 
 ## Remaining release actions
 
-1. Merge the code after review.
-2. Deploy the Worker so `/documents/scan` is live; deployment needs Jonathan's explicit approval.
-3. Smoke a synthetic receipt and synthetic OFX on the deployed Development site.
-4. Include batch intake in the comprehensive pre-September audit. PDF ingestion, statement closing-balance completeness, persistent draft inboxes, and connected bank feeds remain separate work.
+1. Merge PR #108 after review.
+2. Smoke a legible synthetic receipt and synthetic OFX through the deployed Development UI. The live route, origin guard, CORS preflight, and invalid-image fail-closed response are already verified.
+3. Include batch intake in the comprehensive pre-September audit. PDF ingestion, statement closing-balance completeness, persistent draft inboxes, and connected bank feeds remain separate work.

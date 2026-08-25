@@ -1,14 +1,14 @@
 # Worksession — Batch imports
 
 - **Opened:** 2026-08-25, America/Toronto
-- **Status:** IMPLEMENTED + VERIFIED LOCALLY — Worker not deployed
+- **Status:** PR #108 OPEN — Worker deployed; merge and full UI smoke remain
 - **Baseline:** `origin/main@5c91060`
 - **Branch:** `codex/batch-imports`
 - **Owner:** Codex
 - **Risk:** High — bulk external proposals can alter many financial rows after Confirm
 - **Environment:** local Development and synthetic fixtures only
 - **Hosted mutations / migration / Auth/RLS / Production:** none
-- **Deployment:** none; `/documents/scan` requires separate approval to publish
+- **Deployment:** Jonathan approved; GitHub Actions run `32872129163` completed successfully against `codex/batch-imports`
 
 ## Scope
 
@@ -33,7 +33,10 @@ Selected images may reach the existing Worker providers during the disposable De
 - `pnpm build`: succeeded. Existing PGlite browser-external/eval and chunk-size warnings remain non-fatal.
 - `git diff --check`: clean.
 - Local Books → Import desktop walkthrough: launcher and existing flow verified; the in-app synthetic file picker became unavailable, so parser/modal handoff is proven by the jsdom UI test rather than claimed as a completed browser upload.
+- PR #108: open, mergeable; CI and pull-request Cloudflare build both green on `9407312`.
+- Production workflow dispatch: `32872129163` completed successfully.
+- Live smoke: app `200`; `/documents/scan` allowlisted CORS preflight `204`; invalid GIF payload fails closed `400`. A subsequent blank-image provider probe was not completed because DNS resolution became unavailable after the route smoke; no real household image was sent.
 
 ## Stop point
 
-When local gates are green, commit the branch. Ask Jonathan before push/PR/merge or Worker deployment. No schema is required.
+Review and merge PR #108. Then perform one legible synthetic receipt plus synthetic OFX UI smoke. No schema is required.
