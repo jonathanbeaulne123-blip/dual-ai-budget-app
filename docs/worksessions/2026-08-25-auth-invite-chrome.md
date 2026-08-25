@@ -7,7 +7,7 @@
 - **Repository:** jonathanbeaulne123-blip/dual-ai-budget-app
 - **Branch:** `cursor/auth-invite-chrome-f375`
 - **Baseline SHA:** `5c910606ac2da723f55321dd40be2f317738df12` (`main`)
-- **Head SHA:** (update on commit)
+- **Head SHA:** `714d0472818d1b56e107d8d6079e25428d2e775f`
 - **PR or issue:** (draft after push)
 - **Risk:** High (Auth/RLS membership door + kitchen chrome)
 - **Decision owner:** Jonathan
