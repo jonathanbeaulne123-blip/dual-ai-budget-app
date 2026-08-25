@@ -24,7 +24,7 @@
 | Q5 | **A** | Location stored on the transaction in the household snapshot. |
 | Q6 | **C** | Coords may reach the Hercules model only when the member opts in. |
 | Q7 | **B** | Office weather uses browser geolocation when location is enabled. |
-| Q8 | **A** | Hosted `007_household_timezone_iana.sql` (renamed from colliding `004_…`; schema id 7) remains unapplied until Jonathan applies it. |
+| Q8 | **A → applied** | Hosted `007_household_timezone_iana.sql` (schema id 7) applied 2026-08-25 by Jonathan. |
 
 ## Implementation map
 

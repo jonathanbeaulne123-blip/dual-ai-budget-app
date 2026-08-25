@@ -8,7 +8,7 @@ The old implicit upload path (`syncHouseholdBooks` forced `linked: true` on boot
 - 0 continuity memberships;
 - 0 continuity Personal snapshots;
 - 1 Production household, untouched;
-- applied migration ids `[2,4,5]`.
+- applied migration ids including `[2,4,5,7]` (007 = D-126 timezone CHECK, 2026-08-25).
 
 No payload contents or household identifiers are stored in this document. Do not delete or edit the remaining Production household without a new explicit approval.
 
