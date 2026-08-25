@@ -25,6 +25,7 @@ import {
   notesToFinancialStatements,
   recordReconciliation,
   reopenBooksMonth,
+  setBudget,
   shiftMonthKey,
   sitDownExportText,
   statementOfChangesInEquity,
@@ -276,7 +277,7 @@ export function BooksPage({
         </section>
       )}
       {pane === "statements" && (
-        <StatementsPane household={household} monthKey={monthKey} today={today} />
+        <StatementsPane household={household} monthKey={monthKey} today={today} onChange={onChange} />
       )}
       {pane === "rec" && (
         <section className="card">
@@ -485,11 +486,16 @@ function StatementsPane({
   household,
   monthKey,
   today,
+  onChange,
 }: {
   household: Household;
   monthKey: string;
   today: string;
+  onChange: (household: Household, undo?: UndoToken) => void;
 }) {
+  const [editId, setEditId] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const [budgetError, setBudgetError] = useState("");
   const sheet = useMemo(() => balanceSheet(household), [household]);
   const income = useMemo(() => incomeStatement(household, monthKey), [household, monthKey]);
   const cash = useMemo(() => cashFlowStatement(household, monthKey), [household, monthKey]);
@@ -500,6 +506,22 @@ function StatementsPane({
   const variance = useMemo(() => budgetVariance(household, monthKey).slice(0, 8), [household, monthKey]);
   const aging = useMemo(() => agedPayables(household, today), [household, today]);
   const ratio = liq.workingCapital.currentRatio;
+
+  function cancelBudgetEdit() {
+    setEditId(null);
+    setDraft("");
+    setBudgetError("");
+  }
+
+  function saveBudgetEdit(subcategoryId: string) {
+    try {
+      const result = setBudget(household, { monthKey, subcategoryId, amount: draft });
+      onChange(result.household, result.undo);
+      cancelBudgetEdit();
+    } catch (caught) {
+      setBudgetError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }
 
   return (
     <>
@@ -557,10 +579,49 @@ function StatementsPane({
       </section>
       <section className="card">
         <header><h2>Budget variance</h2></header>
-        {variance.length === 0 ? <p className="muted">No expense actuals this month yet.</p> : variance.map((row) => (
-          <div className="row" key={row.id}>
+        <p className="muted">Tap actual/budget to edit this month&apos;s plan. Actuals still come from posted rows.</p>
+        {budgetError && <p className="danger" role="alert">{budgetError}</p>}
+        {variance.length === 0 ? (
+          <p className="muted">No budget plans or expense actuals this month yet.</p>
+        ) : variance.map((row) => (
+          <div className="row budget-variance-row" key={row.id}>
             <span>{row.name}{row.essential ? " · essential" : ""}</span>
-            <span className={row.varianceCents < 0 ? "danger" : "muted"}>{formatCad(row.actualCents)} / {formatCad(row.budgetedCents)}</span>
+            {editId === row.id ? (
+              <span className="budget-edit">
+                <span className="muted">{formatCad(row.actualCents)} /</span>
+                <input
+                  inputMode="decimal"
+                  value={draft}
+                  autoFocus
+                  aria-label={`Budget for ${row.name} in ${monthKey}`}
+                  aria-invalid={Boolean(budgetError)}
+                  onChange={(event) => setDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") cancelBudgetEdit();
+                    if (event.key === "Enter") saveBudgetEdit(row.id);
+                  }}
+                />
+                <button type="button" className="chip" onClick={() => saveBudgetEdit(row.id)}>
+                  Save
+                </button>
+                <button type="button" className="chip quiet" onClick={cancelBudgetEdit}>
+                  Cancel
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                className={`ghost budget-edit-trigger ${row.varianceCents < 0 ? "over" : ""}`}
+                aria-label={`Edit ${row.name} budget. Actual ${formatCad(row.actualCents)}, budget ${formatCad(row.budgetedCents)}`}
+                onClick={() => {
+                  setEditId(row.id);
+                  setDraft(row.budgetedCents ? (row.budgetedCents / 100).toFixed(2) : "");
+                  setBudgetError("");
+                }}
+              >
+                {formatCad(row.actualCents)} / {formatCad(row.budgetedCents)}
+              </button>
+            )}
           </div>
         ))}
       </section>
