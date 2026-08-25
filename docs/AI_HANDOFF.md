@@ -4,6 +4,30 @@ After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. 
 
 Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
 
+## App Store sync UX P0+P1 (2026-08-25)
+
+**Status:** Draft PR https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/114 on `cursor/appstore-sync-ux-f375` (not merged). Baseline `83a1974` (`main`). Risk: **High**.
+
+**What was examined:** Conflict sheet, Undo persistence, Sign out wipe, Pairing Invite/Advanced, command Retry, Restore tip host/privacy, personal live-pull.
+
+**Verified findings:** Shared-only conflict impact; Undo scoped env+household+member (last 20); Sign out clears Auth/Google/session/undo/outbox/sync-anchor/pending invite + local household; restore tips strip Personal; Retry force-flushes outbox.
+
+**Changes:** See PR #114 diff (`ConflictResolution`, `undoHistory`, `Pairing`, `App`, `restorePoints`, `continuity`, `supabase` personal pull).
+
+**Budget delta (5):** `+3` — conflict impact honesty; durable Undo on this phone; Restore blast-radius + tip host + Personal strip; Retry flush; personal live-pull; complete Sign out local wipe.
+
+**Engagement delta (3):** `+2` — Pairing Invite/Advanced; clearer sync chrome; Sign out clarity.
+
+**Worksession:** [`worksessions/2026-08-25-appstore-sync-ux.md`](worksessions/2026-08-25-appstore-sync-ux.md)
+
+**Verification:** focused vitest + `pnpm check` passed on packet. UI smoke on local Vite demo (Invite/Advanced, Recent copy, Sign out confirm). Two-phone Auth smoke still needs Jonathan/Bianca devices.
+
+**Remaining uncertainty / decision needed:** Confirm worksession defaults if any are wrong. Independent trust review of Sign out wipe + conflict export. No merge until Jonathan says so.
+
+**Data/environment:** Development client only; disposable Dev data; no hosted schema/secrets/Production mutation; no peer device required online for Sign out.
+
+**Next owner:** Review PR #114; correct any default if wrong; two-phone smoke on live Dev.
+
 ## Combined undo + restore engine (2026-08-25)
 
 **Status:** Branch `cursor/undo-restore-engine-f375` (not merged). Confirmation-scoped LIFO **Undo** (partner stays, auto CAS) + owner **Restore points** (D-124 shape in household payload). Dev last-sync whole-snapshot Undo retired.

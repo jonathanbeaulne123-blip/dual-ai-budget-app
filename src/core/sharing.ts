@@ -167,3 +167,21 @@ export function unlinkHousehold(household: Household): Household {
     },
   };
 }
+
+/** Pairing / header pill — one model with command chrome sharing modes. */
+export function pairingStatusLabel(
+  household: Household,
+  options?: { authEnabled?: boolean },
+): { label: string; good: boolean } {
+  const mode = deriveSharing(household).mode;
+  const auth = options?.authEnabled === true;
+  if (mode === "conflicted") return { label: "Needs attention", good: false };
+  if (mode === "pending-transport" || mode === "disconnected" || mode === "transport-error") {
+    return { label: "Waiting to share", good: false };
+  }
+  if (mode === "synchronized") return { label: auth ? "Sharing" : "Up to date", good: true };
+  if (household.linked || mode === "linked") {
+    return { label: auth ? "Signed in" : "Cloud live", good: true };
+  }
+  return { label: "Pass / phrase", good: false };
+}

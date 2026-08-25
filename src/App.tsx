@@ -96,6 +96,7 @@ import {
   resolveConflictChoice,
   unresolvedConflicts,
   markSynchronized,
+  markPendingTransport,
   makeConflictBundle,
   suggestCategory,
   shouldPrefillCategory,
@@ -134,6 +135,7 @@ import {
 } from "./core/index.ts";
 import {
   STORAGE_EXPLAINER,
+  clearHousehold,
   downloadJson,
   listHouseholdReplicas,
   loadHousehold,
@@ -142,11 +144,12 @@ import {
   selectHouseholdReplica,
   type HouseholdReplicaSummary,
 } from "./storage.ts";
-import { loadSession, saveSession, type Session } from "./session.ts";
+import { clearSession, loadSession, saveSession, type Session } from "./session.ts";
 import { joinSharedHousehold, reconcileHousehold, reconcileHouseholdSnapshots } from "./api.ts";
 import { acceptHouseholdWrite, classifyCommandError, hostedTransportAllowed, newConfirmationId, isLedgerWrite } from "./core/index.ts";
 import { ingestHouseholdBooks, inspectBrowserBooks, restoreHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
-import { pushSupabaseHousehold, readSupabaseConfig, pullHouseholdSnapshotById, fetchContinuityMembershipRole } from "./ledger/supabase.ts";
+import { pushSupabaseHousehold, readSupabaseConfig, pullHouseholdSnapshotById, pullPersonalSnapshotById, fetchContinuityMembershipRole } from "./ledger/supabase.ts";
+import { clearUndoHistory, loadUndoHistory, saveUndoHistory } from "./undoHistory.ts";
 import { livePullIntervalMs, shouldRunLivePull } from "./continuityLivePull.ts";
 import {
   authenticatedSupabaseConfig,
@@ -159,6 +162,7 @@ import {
 } from "./auth/supabaseSession.ts";
 import {
   clearContinuityOutboxConflictBlocks,
+  clearContinuityOutboxForHousehold,
   continuityMemberId,
   discoverContinuityMemberships,
   flushContinuityOutbox,
@@ -187,7 +191,7 @@ import {
   renderCommandSurface,
   type CommandChromeResult,
 } from "./commandSurface.tsx";
-import { saveSyncAnchor } from "./syncAnchor.ts";
+import { clearSyncAnchor, saveSyncAnchor } from "./syncAnchor.ts";
 import {
   recentChangesEmptyCopy,
   recentChangesHeaderPill,
@@ -244,6 +248,7 @@ type Guard =
   | { kind: "stress-random" }
   | { kind: "stress-pretty" }
   | { kind: "erase-development" }
+  | { kind: "clear-this-phone" }
   | { kind: "remove"; transactionId: string; summary: string }
   | { kind: "correctShift"; shift: Shift; transactionId: string }
   | { kind: "duePreview"; rows: ReturnType<typeof dueRecurrencePreview> }
@@ -365,6 +370,68 @@ export function App() {
   const workShiftInputRef = useRef<PostWorkShiftInput | null>(null);
   const workShiftDateRef = useRef(todayKey());
   const duePreviewOffered = useRef<string | null>(null);
+
+  function rememberUndoHistory(next: UndoToken[]) {
+    setHistory(next);
+    const hid = householdRef.current?.householdId;
+    const mid = session?.memberId;
+    if (hid && mid) saveUndoHistory(environment, hid, mid, next);
+  }
+
+  async function retryShareNow() {
+    const who = session?.memberId;
+    const current = householdRef.current;
+    if (!who || !current) {
+      setTab("more");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
+      const google = loadGoogleSession(environment, who);
+      const identity: ContinuityIdentity | null = authSession
+        ? { email: authSession.email, subject: authSession.googleSubject }
+        : google?.identity
+          ? { email: google.identity.email, subject: google.identity.subject }
+          : null;
+      if (!identity || (!identity.email && !identity.subject)) {
+        setError("Sign in with Google before retrying share.");
+        setTab("more");
+        return;
+      }
+      const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
+      setSyncState("syncing");
+      const flushed = await flushContinuityOutbox({
+        environment,
+        identity,
+        config: cloudConfig,
+        force: true,
+      });
+      if (flushed.conflicts[0]) {
+        setSyncState("error");
+        setError(flushed.conflicts[0].message);
+        setShowConflictSheet(true);
+        return;
+      }
+      if (flushed.synchronized > 0) {
+        const synced = markSynchronized(current);
+        await saveHousehold(synced, { memberId: who });
+        householdRef.current = synced;
+        setHousehold(synced);
+        setSyncState("synced");
+      } else if (flushed.pending > 0) {
+        setSyncState(typeof navigator !== "undefined" && !navigator.onLine ? "syncing" : "synced");
+      } else {
+        setSyncState("synced");
+      }
+    } catch (caught) {
+      setSyncState("error");
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   useEffect(() => {
     const onOnline = () => setOffline(false);
@@ -490,6 +557,11 @@ export function App() {
         }
       }
       setHousehold(current);
+      if (current && loadedSession?.memberId) {
+        setHistory(loadUndoHistory(environment, current.householdId, loadedSession.memberId));
+      } else {
+        setHistory([]);
+      }
       void listHouseholdReplicas(environment).then((items) => { if (live) setReplicas(items); });
       if (current) {
         void inspectBrowserBooks(current)
@@ -736,6 +808,25 @@ export function App() {
         }
         if (!live) return;
         current = householdRef.current;
+        if (current && memberId) {
+          try {
+            const remotePersonal = await pullPersonalSnapshotById(
+              current.householdId,
+              memberId,
+              environment,
+              cloudConfig,
+            );
+            if (remotePersonal && live) {
+              setPersonalReplica((previous) => {
+                const prevAt = previous?.lastCommittedAt ?? "";
+                const nextAt = remotePersonal.lastCommittedAt ?? "";
+                return nextAt >= prevAt ? remotePersonal : previous;
+              });
+            }
+          } catch {
+            /* personal pull is best-effort; shared pull continues */
+          }
+        }
         if (current && remoteHousehold && remoteHousehold.revision > (current.baseRevision ?? 0)) {
           const reconciled = await reconcileHouseholdSnapshots(current, remoteHousehold, memberId);
           const accepted = await acceptReplayCandidate(
@@ -946,7 +1037,7 @@ export function App() {
       setHousehold(candidate);
       rememberSession({ memberId: nextMemberId, view: session?.view ?? "household", householdId });
       setBooksStatus(status);
-      setHistory([]);
+      setHistory(loadUndoHistory(environment, householdId, nextMemberId));
       setToast(null);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
@@ -1248,10 +1339,33 @@ export function App() {
         if (who) {
           void appendRestorePoint(outcome.household, who).then(async (withPoint) => {
             if (withPoint === outcome.household) return;
-            await saveHousehold(withPoint, { memberId: who });
-            if (householdRef.current?.householdId === withPoint.householdId) {
-              householdRef.current = withPoint;
-              setHousehold(withPoint);
+            // Host the newest tip: bump revision and enqueue so partners see Restore points.
+            const pending = markPendingTransport({
+              ...withPoint,
+              revision: withPoint.revision + 1,
+            });
+            await saveHousehold(pending, { memberId: who });
+            if (householdRef.current?.householdId === pending.householdId) {
+              householdRef.current = pending;
+              setHousehold(pending);
+            }
+            if (continuityIdentity && cloudConfig) {
+              void transportHouseholdWithOutbox({
+                household: pending,
+                identity: continuityIdentity,
+                expectedRevision: pending.baseRevision ?? outcome.household.revision,
+                confirmationId: `restore-tip-${pending.householdId}-${pending.revision}`,
+                config: cloudConfig,
+                flush: true,
+              }).then(async (pushed) => {
+                if (!pushed.ok) return;
+                const synced = markSynchronized(pending);
+                await saveHousehold(synced, { memberId: who });
+                if (householdRef.current?.householdId === synced.householdId) {
+                  householdRef.current = synced;
+                  setHousehold(synced);
+                }
+              }).catch(() => undefined);
             }
           }).catch(() => undefined);
         }
@@ -1270,7 +1384,30 @@ export function App() {
             const who = memberId;
             if (who) {
               try {
-                synced = await appendRestorePoint(synced, who);
+                const withPoint = await appendRestorePoint(synced, who);
+                if (withPoint !== synced) {
+                  const pending = markPendingTransport({
+                    ...withPoint,
+                    revision: withPoint.revision + 1,
+                  });
+                  await saveHousehold(pending, { memberId: who });
+                  householdRef.current = pending;
+                  setHousehold(pending);
+                  const tipPush = await transportHouseholdWithOutbox({
+                    household: pending,
+                    identity: continuityIdentity,
+                    expectedRevision: pending.baseRevision ?? synced.revision,
+                    confirmationId: `restore-tip-${pending.householdId}-${pending.revision}`,
+                    config: cloudConfig,
+                    flush: true,
+                  });
+                  if (tipPush.ok) {
+                    synced = markSynchronized(pending);
+                  } else {
+                    setSyncState("syncing");
+                    return;
+                  }
+                }
               } catch {
                 /* restore tip is best-effort */
               }
@@ -1297,7 +1434,7 @@ export function App() {
           actorMemberId: token.actorMemberId ?? memberId,
         };
         setToast(stamped);
-        setHistory((current) => [...current, stamped].slice(-20));
+        rememberUndoHistory([...historyRef.current, stamped].slice(-20));
         window.setTimeout(() => setToast((item) => (item?.id === stamped.id ? null : item)), 8000);
       } else if (!outcome.ok || outcome.kind === "conflict-needs-attention") {
         setToast(null);
@@ -1374,7 +1511,7 @@ export function App() {
           actorMemberId: who,
         });
         if (!outcome || !outcome.postedExactlyOnce || outcome.kind === "conflict-needs-attention") return;
-        setHistory((items) => items.filter((item) => item.id !== token.id));
+        rememberUndoHistory(historyRef.current.filter((item) => item.id !== token.id));
         setToast((item) => (item?.id === token.id ? null : item));
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : String(caught));
@@ -2085,6 +2222,20 @@ export function App() {
         >
           <span>{commandChrome.chip.primary}</span>
           {commandChrome.chip.secondary && <span className="muted">{commandChrome.chip.secondary}</span>}
+          {commandChrome.chip.actionLabel && (
+            <button
+              type="button"
+              className="ghost command-chip__action"
+              disabled={busy}
+              onClick={() => {
+                const label = commandChrome.chip?.actionLabel;
+                if (label === "Retry now" || label === "Retry") void retryShareNow();
+                else if (label === "Review") setShowConflictSheet(true);
+              }}
+            >
+              {commandChrome.chip.actionLabel}
+            </button>
+          )}
         </div>
       )}
       {commandChrome?.banner && (
@@ -2100,10 +2251,13 @@ export function App() {
             <button
               type="button"
               className="ghost command-banner__action"
+              disabled={busy}
               onClick={() => {
-                if (commandChrome.banner?.actionLabel === "Review conflict") setShowConflictSheet(true);
-                else if (commandChrome.banner?.actionLabel === "Review pending") setTab("more");
-                else if (commandChrome.banner?.actionLabel === "Open recovery") setTab("more");
+                const label = commandChrome.banner?.actionLabel;
+                if (label === "Review conflict") setShowConflictSheet(true);
+                else if (label === "Retry" || label === "Retry now") void retryShareNow();
+                else if (label === "Review pending") setTab("more");
+                else if (label === "Open recovery") setTab("more");
               }}
             >
               {commandChrome.banner.actionLabel}
@@ -2345,7 +2499,7 @@ export function App() {
                         onClick={() => setGuard({
                           kind: "restorePoint",
                           pointId: point.id,
-                          summary: restoreConfirmBody(point),
+                          summary: restoreConfirmBody(point, household),
                         })}
                       >
                         Restore
@@ -2416,6 +2570,18 @@ export function App() {
                 </button>
               ))}
             </div>
+            <p className="muted" style={{ marginTop: 12 }}>
+              Sign out clears Google and Auth tokens on this phone only. The cloud household stays.
+              Native Keychain storage is a later release note — web builds keep tokens in localStorage until then.
+            </p>
+            <button
+              className="ghost"
+              style={{ width: "100%", marginTop: 8 }}
+              disabled={busy}
+              onClick={() => setGuard({ kind: "clear-this-phone" })}
+            >
+              Sign out and clear this phone
+            </button>
           </section>
           <section className="card">
             <header><h2>Clock &amp; place</h2></header>
@@ -3009,6 +3175,52 @@ export function App() {
                 setToast(null);
                 setGuard(null);
                 await persist(eraseDevelopmentData(household));
+                if (session?.memberId) {
+                  clearUndoHistory(environment, household.householdId, session.memberId);
+                }
+              } catch (caught) {
+                setError(caught instanceof Error ? caught.message : String(caught));
+              } finally {
+                setBusy(false);
+              }
+            })();
+          }}
+        />
+      )}
+      {guard?.kind === "clear-this-phone" && (
+        <ConfirmSheet
+          title="Sign out and clear this phone?"
+          body="This removes the Google and Auth session, Undo history, and local household copy from this phone. The cloud household and partner phones are not deleted. There is no full account-wipe from the kitchen yet."
+          extra={googleStepUpExtra}
+          confirmLabel="Sign out and clear this phone"
+          danger
+          busy={busy}
+          onCancel={() => setGuard(null)}
+          onConfirm={() => {
+            void (async () => {
+              setBusy(true);
+              try {
+                const who = session?.memberId;
+                const hid = household.householdId;
+                if (who) {
+                  clearUndoHistory(environment, hid, who);
+                  disconnectGoogle(environment, who);
+                }
+                clearSupabaseSession(environment);
+                clearSession(environment);
+                clearPendingAuthInvite();
+                clearSyncAnchor(environment, hid);
+                clearContinuityOutboxForHousehold(environment, hid);
+                await clearHousehold(environment, hid);
+                setHistory([]);
+                setToast(null);
+                setPersonalReplica(null);
+                setHousehold(null);
+                setSession(null);
+                setDiscoveredLedgers([]);
+                setGuard(null);
+                setError("");
+                setWelcomeMode("home");
               } catch (caught) {
                 setError(caught instanceof Error ? caught.message : String(caught));
               } finally {
@@ -3395,7 +3607,7 @@ export function App() {
           <span>
             {commandChrome.toast.primary}
             {commandChrome.toast.secondary ? `. ${commandChrome.toast.secondary}` : ""}
-            {commandChrome.toast.showUndo !== false ? " You can Undo, or find it later under More." : ""}
+            {commandChrome.toast.showUndo !== false ? " You can Undo, or find it later under More → Recent on this phone." : ""}
           </span>
           {commandChrome.toast.showUndo !== false && (
             <button

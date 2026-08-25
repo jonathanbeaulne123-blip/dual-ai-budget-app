@@ -228,6 +228,18 @@ export function acknowledgeContinuityOutboxItem(item: ContinuityOutboxItem): voi
   );
 }
 
+/** Drop queued snapshots for one household (Sign out / clear this phone). */
+export function clearContinuityOutboxForHousehold(
+  environment: Environment,
+  householdId: string,
+): number {
+  const items = read(environment);
+  const next = items.filter((item) => item.householdId !== householdId);
+  const removed = items.length - next.length;
+  if (removed > 0) write(environment, next);
+  return removed;
+}
+
 /**
  * After an explicit conflict choose, unblock the outbox so background flush can
  * push the resolved snapshot without a manual Sync tap.
