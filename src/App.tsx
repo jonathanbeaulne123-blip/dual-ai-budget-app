@@ -114,7 +114,16 @@ import { clearSession, loadSession, saveSession, type Session } from "./session.
 import { joinSharedHousehold, reconcileHousehold, reconcileHouseholdSnapshots } from "./api.ts";
 import { acceptHouseholdWrite, classifyCommandError, hostedTransportAllowed, newConfirmationId } from "./core/index.ts";
 import { ingestHouseholdBooks, inspectBrowserBooks, restoreHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
-import { pushSupabaseHousehold } from "./ledger/supabase.ts";
+import { pushSupabaseHousehold, readSupabaseConfig } from "./ledger/supabase.ts";
+import {
+  authenticatedSupabaseConfig,
+  clearSupabaseSession,
+  consumeSupabaseAuthRedirect,
+  ensureSupabaseSession,
+  loadSupabaseSession,
+  startSupabaseGoogleSignIn,
+  supabaseAuthEnabled,
+} from "./auth/supabaseSession.ts";
 import {
   continuityMemberId,
   discoverContinuityMemberships,
@@ -233,6 +242,7 @@ export function App() {
   const [showConflictSheet, setShowConflictSheet] = useState(false);
   const [offline, setOffline] = useState(() => typeof navigator !== "undefined" && !navigator.onLine);
   const [discoveredLedgers, setDiscoveredLedgers] = useState<DiscoveredHousehold[]>([]);
+  const [supabaseAuthReturned, setSupabaseAuthReturned] = useState(false);
   const [inviteInput, setInviteInput] = useState("");
   const [welcomeMode, setWelcomeMode] = useState<"home" | "join" | "new">("home");
   const [newHouseholdDraft, setNewHouseholdDraft] = useState({
@@ -279,6 +289,20 @@ export function App() {
     confirmPanelRef.current?.focus();
     confirmPanelRef.current?.scrollIntoView({ block: "center" });
   }, [confirm]);
+
+  useEffect(() => {
+    try {
+      if (supabaseAuthEnabled() && consumeSupabaseAuthRedirect()) setSupabaseAuthReturned(true);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!supabaseAuthReturned) return;
+    setSupabaseAuthReturned(false);
+    void continueWithGoogle();
+  }, [supabaseAuthReturned]);
 
   useEffect(() => {
     const token = inviteFromLocation(window.location.href);
@@ -446,11 +470,8 @@ export function App() {
     const memberId = session?.memberId;
     if (!memberId) return;
     const googleSession = loadGoogleSession(environment, memberId);
-    if (!googleSession?.identity.email && !googleSession?.identity.subject) return;
-    const identity: ContinuityIdentity = {
-      email: googleSession.identity.email,
-      subject: googleSession.identity.subject,
-    };
+    const storedAuthSession = loadSupabaseSession(environment);
+    if (!storedAuthSession && !googleSession?.identity.email && !googleSession?.identity.subject) return;
     let live = true;
     let running = false;
 
@@ -487,7 +508,15 @@ export function App() {
       running = true;
       if (live) setSyncState("syncing");
       try {
-        const flushed = await flushContinuityOutbox({ environment, identity });
+        const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
+        const identity: ContinuityIdentity = authSession
+          ? { email: authSession.email, subject: authSession.googleSubject }
+          : {
+              email: googleSession?.identity.email ?? "",
+              subject: googleSession?.identity.subject ?? "",
+            };
+        const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
+        const flushed = await flushContinuityOutbox({ environment, identity, config: cloudConfig });
         if (!live) return;
         const conflict = flushed.conflicts[0];
         if (conflict) {
@@ -521,7 +550,7 @@ export function App() {
           }
         }
 
-        const memberships = await discoverContinuityMemberships(identity, environment);
+        const memberships = await discoverContinuityMemberships(identity, environment, cloudConfig);
         if (!live) return;
         current = householdRef.current;
         const remote = current
@@ -668,7 +697,9 @@ export function App() {
     });
     if (!accepted.ok) throw new Error(accepted.userMessage || "Those cloud books could not be accepted on this device.");
     const adopted = adoptGoogleSession(environment, "__welcome__", found.memberId);
-    if (!adopted) throw new Error("Google signed in, but this device could not keep the session.");
+    if (!adopted && !loadSupabaseSession(environment)) {
+      throw new Error("Google signed in, but this device could not keep the session.");
+    }
     setHousehold(accepted.household);
     rememberSession({ memberId: found.memberId, view: "household", householdId: accepted.household.householdId });
     setDiscoveredLedgers([]);
@@ -686,15 +717,29 @@ export function App() {
     setBusy(true);
     setError("");
     try {
-      const googleSession = await connectGoogle({
-        environment,
-        memberId: "__welcome__",
-        services: ["identity"],
-        selectAccount: true,
-      });
-      const found = await discoverContinuityMemberships(googleSession.identity, environment);
+      let identity: ContinuityIdentity;
+      let cloudConfig = readSupabaseConfig();
+      if (supabaseAuthEnabled()) {
+        let authSession = await ensureSupabaseSession(environment);
+        if (!authSession) {
+          startSupabaseGoogleSignIn(environment);
+          return;
+        }
+        cloudConfig = authenticatedSupabaseConfig(cloudConfig, authSession);
+        identity = { email: authSession.email, subject: authSession.googleSubject };
+      } else {
+        const googleSession = await connectGoogle({
+          environment,
+          memberId: "__welcome__",
+          services: ["identity"],
+          selectAccount: true,
+        });
+        identity = googleSession.identity;
+      }
+      const found = await discoverContinuityMemberships(identity, environment, cloudConfig);
       if (!found.length) {
-        disconnectGoogle(environment, "__welcome__");
+        if (supabaseAuthEnabled()) clearSupabaseSession(environment);
+        else disconnectGoogle(environment, "__welcome__");
         throw new Error(
           environment === "production"
             ? "Production account discovery waits for the late-September security cutover."
@@ -720,17 +765,24 @@ export function App() {
     const previous = householdRef.current;
     const confirmationId = confirmationRef.current ?? newConfirmationId();
     confirmationRef.current = confirmationId;
-    const googleSession = session?.memberId ? loadGoogleSession(environment, session.memberId) : null;
-    const continuityIdentity: ContinuityIdentity | null = googleSession?.identity
-      ? { email: googleSession.identity.email, subject: googleSession.identity.subject }
-      : null;
-    const automaticContinuity = Boolean(
-      continuityIdentity &&
-      session?.memberId &&
-      continuityMemberId(next, continuityIdentity) === session.memberId,
-    );
-    const transportRequested = environment === "development" && (automaticContinuity || hostedTransportAllowed(next));
     try {
+      const googleSession = session?.memberId ? loadGoogleSession(environment, session.memberId) : null;
+      const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
+      const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
+      const continuityIdentity: ContinuityIdentity | null = authSession
+        ? { email: authSession.email, subject: authSession.googleSubject }
+        : googleSession?.identity
+          ? { email: googleSession.identity.email, subject: googleSession.identity.subject }
+          : null;
+      const automaticContinuity = Boolean(
+        continuityIdentity &&
+        session?.memberId &&
+        (
+          (authSession && next.members.some((member) => member.id === session.memberId && member.active))
+          || continuityMemberId(next, continuityIdentity) === session.memberId
+        ),
+      );
+      const transportRequested = environment === "development" && (automaticContinuity || hostedTransportAllowed(next));
       const outcome = await acceptHouseholdWrite({
         previous,
         candidate: next,
@@ -757,10 +809,11 @@ export function App() {
                 identity: continuityIdentity,
                 expectedRevision,
                 confirmationId,
+                config: cloudConfig,
               })
             : transportRequested && hostedTransportAllowed(next)
               ? async (household, expectedRevision) => {
-                const pushed = await pushSupabaseHousehold(household, undefined, { expectedRevision });
+                const pushed = await pushSupabaseHousehold(household, cloudConfig, { expectedRevision });
                 if (pushed.skipped) return { ok: true };
                 if (pushed.conflict && pushed.remote) {
                   return {
@@ -801,7 +854,7 @@ export function App() {
       if (outcome.kind === "synchronized") {
         saveSyncAnchor(environment, outcome.household);
         if (automaticContinuity && continuityIdentity) {
-          void flushContinuityOutbox({ environment, identity: continuityIdentity }).catch(() => undefined);
+          void flushContinuityOutbox({ environment, identity: continuityIdentity, config: cloudConfig }).catch(() => undefined);
         }
       }
       if (outcome.kind === "conflict-needs-attention" || unresolvedConflicts(outcome.household).length > 0) {

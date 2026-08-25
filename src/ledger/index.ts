@@ -30,4 +30,14 @@ export {
   applyPublishHouseholdSnapshotCas,
   createMemoryHostedCas,
 } from "./snapshotCas.ts";
+export {
+  anonMayAccessHouseholdRest,
+  claimLegacyOwner,
+  createHouseholdOwner,
+  issueInvitation,
+  mayAccessResource,
+  mayInviteOrRevoke,
+  qrJoinPath,
+  redeemInvitation,
+} from "./authRlsPolicy.ts";
 export { BOOKS_SCHEMA, BOOKS_SCHEMA_VERSION } from "./schema.ts";

@@ -17,7 +17,7 @@ import {
   type SnapshotCasRequest,
   type SnapshotCasStore,
 } from "../src/ledger/snapshotCas.ts";
-import { pushSupabaseHousehold } from "../src/ledger/supabase.ts";
+import { householdCloudProjection, pushSupabaseHousehold } from "../src/ledger/supabase.ts";
 
 const config = { url: "https://cas.example.supabase.co", key: "sb_publishable_cas_test" };
 const identityA = { email: "jonathan@example.com", subject: "google-sub-jonathan" };
@@ -138,6 +138,36 @@ afterEach(() => {
 });
 
 describe("publish_household_snapshot CAS contract", () => {
+  it("projects Personal rows out of the household payload while keeping command receipts", () => {
+    const base = googleHousehold();
+    const personal = postEntry(base, {
+      date: "2026-08-24",
+      type: "expense",
+      amount: "9.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Private pharmacy",
+      createdBy: "MEM-001",
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+    const withReceipt = {
+      ...personal,
+      commandReceipts: [{
+        confirmationId: "confirm-private",
+        identityHash: "identity",
+        auditHash: "audit",
+        commandKind: "postEntry",
+        postedIds: [personal.transactions.at(-1)?.id ?? ""],
+        revision: 1,
+        acceptedAt: "2026-08-24T12:00:00.000Z",
+      }],
+    };
+    const cloud = householdCloudProjection(withReceipt, "MEM-001");
+    expect(cloud.transactions.some((row) => row.visibility === "personal")).toBe(false);
+    expect(cloud.commandReceipts).toHaveLength(1);
+  });
+
   it("accepts the first write, rejects a simultaneous stale writer, and acks duplicates", async () => {
     let store: SnapshotCasStore = { household: null, snapshot: null };
     const a = { ...expense(googleHousehold("A"), "Milk A", "4.00"), revision: 1, baseRevision: 0, linked: true };
@@ -162,14 +192,30 @@ describe("publish_household_snapshot CAS contract", () => {
     expect(dup.store.snapshot?.payload).toBe(store.snapshot?.payload);
   });
 
-  it("never advances revision backwards", async () => {
+  it("accepts compacted offline revision jumps but never accepts a non-advancing revision", async () => {
     const host = createMemoryHostedCas();
-    const first = { ...expense(googleHousehold(), "Coffee", "6.00"), revision: 2, linked: true };
+    // The outbox may compact several local confirmations into one upload while
+    // retaining the earliest hosted base revision.
+    const first = { ...expense(googleHousehold(), "Coffee", "6.00"), revision: 3, linked: true };
     await host.publish(await casRequest(first, 0));
-    const stale = { ...first, revision: 1 };
-    const result = await host.publish(await casRequest(stale, 0));
+    expect(host.get(first.householdId).household?.revision).toBe(3);
+
+    const nonAdvancing = { ...first, revision: 2 };
+    const result = await host.publish(await casRequest(nonAdvancing, 3));
     expect(result.ok).toBe(false);
-    expect(host.get(first.householdId).household?.revision).toBe(2);
+    if (result.ok) throw new Error("expected non-advancing conflict");
+    expect(result.reason).toBe("non-advancing-revision");
+    expect(host.get(first.householdId).household?.revision).toBe(3);
+  });
+
+  it("rejects an initial revision zero instead of creating an unadvanced cloud base", async () => {
+    const host = createMemoryHostedCas();
+    const initial = { ...googleHousehold(), revision: 0, baseRevision: 0, linked: true };
+    const result = await host.publish(await casRequest(initial, 0));
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("expected non-advancing conflict");
+    expect(result.reason).toBe("non-advancing-revision");
+    expect(host.get(initial.householdId).household).toBeNull();
   });
 });
 

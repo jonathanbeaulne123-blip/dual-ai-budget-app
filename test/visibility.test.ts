@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { catalogHousehold } from "../src/core/seed.ts";
-import { postEntry, postShift, undo } from "../src/core/commands.ts";
+import { addGoal, postEntry, postShift, undo } from "../src/core/commands.ts";
 import {
   assembleHousehold,
   emptyPersonal,
@@ -57,6 +57,23 @@ describe("household and personal visibility", () => {
     expect(assembled.transactions.map((tx) => tx.note).sort()).toEqual(["Bianca only", "Groceries", "Jonathan only"]);
     expect(householdForView(assembled, "MEM-002", "personal").transactions.map((tx) => tx.note)).toEqual(["Jonathan only"]);
     expect(householdForView(assembled, "MEM-001", "personal").transactions.map((tx) => tx.note)).toEqual(["Bianca only"]);
+  });
+
+  it("stores personal goals only in their owner's Personal envelope", () => {
+    let household = catalogHousehold();
+    household = addGoal(household, {
+      name: "Jonathan surprise",
+      target: "100.00",
+      shared: false,
+      ownerMemberId: "MEM-002",
+    }).household;
+    const jonathan = splitForSync(household, "MEM-002");
+    const bianca = splitForSync(household, "MEM-001");
+    expect(jonathan.shared.goals.some((goal) => !goal.shared)).toBe(false);
+    expect(jonathan.personal.goals?.map((goal) => goal.name)).toEqual(["Jonathan surprise"]);
+    expect(bianca.personal.goals).toEqual([]);
+    expect(assembleHousehold(jonathan.shared, jonathan.personal).goals.map((goal) => goal.name))
+      .toEqual(["Jonathan surprise"]);
   });
 
   it("merges concurrent household adds without dropping either person's row", () => {
