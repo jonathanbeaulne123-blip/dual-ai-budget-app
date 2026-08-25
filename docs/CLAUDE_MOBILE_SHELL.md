@@ -143,7 +143,7 @@ Commands are the money trust boundary. UI is untrusted (D-025 / D-026).
 - Development vs Production are two snapshots. Default to Development.
 - Journal wins if a statement disagrees (D-046).
 - Hercules, chalk, wardrobe, widgets, weather, layout, Google **never** `postEntry`.
-- He never names who spent more. No hunger-meter death. Shift streak = **posted** dates (D-050).
+- He never reads partner-personal money. Household-view teaching may explain named members' shared posts without shame (D-132). No hunger-meter death. Shift streak = **posted** dates (D-050). Fly/litter play is desktop-only and must not render here.
 - Bank / Interac / issued cards: Auth + RLS first (D-039). Google is live product (D-078) and is **not** a bank. Do not add an 18th mobile widget named Google. Calendar overlay and reminders stay in the Calendar cabinet.
 - Quiet appointment titles stay coded in Hercules / pulses (D-054 / D-060).
 - Layout never enters `splitForSync`. Phone layout ≠ wide layout.

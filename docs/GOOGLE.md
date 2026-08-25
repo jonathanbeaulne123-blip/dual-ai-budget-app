@@ -2,6 +2,17 @@
 
 Google is Hearth's account-entry and recovery identity. The accepted target is simple: sign in on any device and see your personal ledger plus every household ledger you belong to, even when the old device is off. Google also connects Calendar and, when enabled, Drive, Contacts, Gmail, and Sheets. It is **not** a bank and **never** posts money.
 
+## First-time entry choices
+
+The empty-device screen exposes three focused paths instead of one ambiguous Continue button:
+
+1. **Create household with Google** — sign in first, name the household/shared/Personal ledgers, then create the Google-owned cloud household and enter its shared ledger.
+2. **Login with Google** — sign in, list the household memberships returned for that exact identity, then choose the household to open.
+3. **Join with QR code** — mobile opens its rear camera and reads the existing Auth invite QR. Desktop explains that camera join is mobile-only. QR redemption still requires Google Auth; the QR is not a substitute identity.
+Existing three-word codes and pasted Auth/legacy invite links remain supported for deep links, QR fallback, and compatibility, but are not advertised as another first-screen choice. Hearth has no three-letter-code protocol; do not invent one in UI copy or treat a short routing code as authentication.
+
+The demo remains a secondary Development exploration path, not one of the three real-account choices.
+
 The D-114 slice provides automatic Development household discovery and durable outbox replay alongside legacy phrase/`linked` transport. Migration 003 is applied, so D-117 dedicated hosted personal-ledger storage and server-side memberships are live in Development. Each device keeps its own token/session. Tokens never enter the ledger snapshot, outbox, or Git, and Development and Production stay separate. Atomic CAS and secured Production remain.
 
 Related: [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md), [DECISIONS.md](DECISIONS.md) D-032, D-040, D-043, D-114, D-117, [ENVIRONMENTS.md](ENVIRONMENTS.md), and [STRATEGY.md](STRATEGY.md).

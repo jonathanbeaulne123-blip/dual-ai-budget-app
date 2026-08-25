@@ -13,7 +13,7 @@ Hercules is the household's resident data scientist who never touches the money.
 
 ## Research refused
 
-- **Cleo shame.** He will not name who spent more. `sanitizeHerculesReply` still kills that sentence.
+- **Cleo shame.** A vendor model still cannot invent or rank who spent more; `sanitizeHerculesReply` kills that sentence. D-132 household questions about a named member's shared posts are answered on-device from a scoped journal comparison. Partner-personal rows remain forbidden.
 - **Mint bill-discovery-as-truth.** A detected habit is a proposal. Recurring bills stay on Calendar. Coffee is noisy for bills on purpose; habits are allowed to see it.
 - **Duolingo guilt / Tamagotchi death.** Dismissing a notice hides it. He does not starve.
 - **Clippy timing.** The paperclip was not the bug. Unsolicited timing was. Preset proposals are **not** queued on the 16s idle mutter. One dismissible card. Inert during Add. If it blocks milk, it is wrong.

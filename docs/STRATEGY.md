@@ -39,7 +39,7 @@ A change is incomplete until it names both deltas:
 
 - A Hercules-only PR that does not improve a budget primitive is a toy.
 - A Books-only PR that does not surface on an interactable is a developer tool nobody opens.
-- **If they conflict, Course A wins.** A prettier cat that hides a grocery, invents CAD, names who spent more, or posts money is a defect. Shrink him.
+- **If they conflict, Course A wins.** A prettier cat that hides a grocery, invents CAD, exposes partner-personal money, turns shared patterns into shame, or posts money is a defect. Shrink him.
 
 ### What Dual Course is not
 
@@ -63,7 +63,7 @@ These are **important features**. Dual Course does not rewrite them. Smaller sur
 | Development and Production never mix. | D-002 |
 | Double-entry books. Health refuses imbalance. Journal wins if a statement disagrees. | D-033, D-046 |
 | Hercules, chalkboard, wardrobe, visit sparks, rec, close, marks, Google, Hercules desk, office widgets and weather never post money. | D-042, D-043, D-044, D-045, D-046, D-047, D-049, D-050, D-051 |
-| Hercules never names who spent more. No fake fees. No pay-to-keep-alive. No hunger-meter death. | D-044 |
+| Hercules never reads or compares a partner's personal ledger. In the shared ledger he may explain named members' **shared** posts and trends without shame or moral rank. No fake fees. No pay-to-keep-alive. No hunger-meter death. | D-044, D-132 |
 | Bank feeds, Interac APIs, issued cards: blocked until Auth + RLS. Jonathan approves production money movement. | D-011, D-039 |
 | Accounts are financial accounts (chequing, savings, credit, investment, other), not categories. Receivable is D-053. | D-047, D-053 |
 | Phrase / join link / Hearth Pass join a phone. Google is a live bridge, not a bank, not a parking lot. | D-032, D-043, D-078 |

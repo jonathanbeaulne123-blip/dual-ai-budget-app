@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   formatCad,
   formatDateLabel,
@@ -7,12 +7,14 @@ import {
   accountName,
   categoryName,
   splitSummary,
+  transactionsForHerculesSource,
   transactionTypeLabel,
   visibilityLabel,
   isVisibleInView,
   ledgerNameForView,
   duplicateContrastPairs,
   type Household,
+  type HerculesNumberSource,
   type LedgerSection,
   type LedgerView,
   type Transaction,
@@ -29,12 +31,16 @@ export function LedgerPage({
   household,
   memberId,
   view,
+  sourceFocus,
+  onClearSource,
   onChange,
   onRemove,
 }: {
   household: Household;
   memberId: string;
   view: LedgerView;
+  sourceFocus: HerculesNumberSource | null;
+  onClearSource: () => void;
   onChange: (household: Household, undo?: UndoToken) => void;
   onRemove: (transaction: Transaction) => void;
 }) {
@@ -45,9 +51,20 @@ export function LedgerPage({
     () => household.transactions.filter((tx) => isVisibleInView(tx, memberId, view)),
     [household.transactions, memberId, view],
   );
-  const grouped = useMemo(() => partitionLedger(visible), [visible]);
+  const sourceRows = useMemo(() => {
+    return transactionsForHerculesSource(visible, sourceFocus);
+  }, [sourceFocus, visible]);
+  const grouped = useMemo(() => partitionLedger(sourceRows), [sourceRows]);
   const flagged = visible.filter((tx) => tx.potentialDuplicate && !tx.isDuplicate).length;
   const contrasts = useMemo(() => duplicateContrastPairs(visible), [visible]);
+
+  useEffect(() => {
+    if (!sourceFocus?.transactionId) return;
+    const transaction = visible.find((tx) => tx.id === sourceFocus.transactionId);
+    if (transaction?.type === "expense") setSection("expenses");
+    else if (transaction?.type === "income") setSection("income");
+    else if (transaction) setSection("other");
+  }, [sourceFocus, visible]);
 
   const rows = grouped[section].filter((tx) => {
     if (!query.trim()) return true;
@@ -116,6 +133,12 @@ export function LedgerPage({
             </article>
           ))}
         </section>
+      )}
+      {sourceFocus && (
+        <p className="muted">
+          Hercules opened: <strong>{sourceFocus.label}</strong>{" "}
+          <button type="button" className="chip" onClick={onClearSource}>Show all activity</button>
+        </p>
       )}
       <div className="tabs">
         {SECTIONS.map((item) => (

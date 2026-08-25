@@ -15,7 +15,7 @@ Laws: [DECISIONS.md](DECISIONS.md) D-044 / D-047 / D-049 / D-050 / D-051. Strate
 - Commands remain the money trust boundary.
 - Expense / income / transfer / refund keep their meanings. Card paydown is a transfer.
 - CAD cents. `America/Toronto`.
-- Hercules never posts, never names who spent more, never dies on vacation.
+- Hercules never posts, never reads partner-personal money, and never dies on vacation. D-132 lets on-device household talk explain named members' shared posts without shame.
 - Bank / Interac / issued cards stay gated on Auth + RLS (D-039).
 - **Kill criterion:** if Bianca will not add milk because a widget or the cat is in the way, shrink the furniture.
 
@@ -436,7 +436,7 @@ Each widget publishes its rect on mount, resize, drag-end, and expand/collapse (
 | **perch** | `perchable` furniture, weighted: sill 3×, tray 2×, board 2×, others 1×; phase promotes its instrument (§A6) 2× | `loaf` → `sleep` (evening) / `stretch` (morning) | Lands on the **top edge**: `y = rect.y - CAT + 12` so his paws overlap the object by 12px. Sill is **profile along the ledge** (left or right), never a looking-out-the-window drawing. |
 | **bump** | any furniture whose rect the walk path or a drag crosses | `bump` | Widget nudges 3px and settles (200ms spring). **Never moves a number, never re-orders the desk. No clink.** |
 | **lick** | board or tray, mood `content`/`glowing` | `lick` | Idle only. No modal, no chat open. |
-| **pounce** | the decorative fly | `pounce` | Butt wiggle, then launch. The fly never carries CAD. Reduced motion hides the fly. |
+| **pounce** | the decorative desktop fly | `pounce` | Butt wiggle, then launch/catch. The fly never carries CAD. Mobile and reduced motion hide the fly and litter box. Automatic paths never enter the litter zone. |
 | **attack** | `attackTarget()` — **only** `warn === true`: overdue Mail, waiting Timesheet, lit Lamp while `hiding` | `attack` | Stands beside the object, facing it, raised paw. Never on the user. Never on Add. Never on the Calculator. Never on a person's name. Max once per 90s. |
 | **hide** | corner, mood `hiding` | `hide` | Unchanged. |
 | **drag / pin** | user | — | Unchanged. Dragging across an instrument emits `bump`. Pinned = he stays; instruments may still move under him, and he does not re-perch until unpinned. |

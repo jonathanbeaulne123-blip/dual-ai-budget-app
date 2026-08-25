@@ -1,6 +1,6 @@
 import { addDays, hourInToronto, monthKeyFromDateKey, weekBounds, weekdaySunday0, type DateKey } from "./calendar.ts";
 import { monthSummary, weekSummary } from "./budget.ts";
-import { askBooks, type BooksAsk } from "./askBooks.ts";
+import { askBooks, type BooksAsk, type HerculesAskContext } from "./askBooks.ts";
 import { companionMood, describeCompanion } from "./companion.ts";
 import { formatCad } from "./money.ts";
 import { auditOpinion, agedPayables, balanceSheet, cashFlowStatement, comparativeIncome, incomeStatement, liquidityWatch, notesToFinancialStatements, statementOfChangesInEquity, subsequentEvents } from "./statements.ts";
@@ -339,7 +339,12 @@ export const HERCULES_CHIPS = [
   "What now?",
 ];
 
-export function askHercules(household: Household, question: string, today: DateKey): BooksAsk {
+export function askHercules(
+  household: Household,
+  question: string,
+  today: DateKey,
+  context: HerculesAskContext = { memberId: household.members[0]?.id ?? "", view: "household" },
+): BooksAsk {
   const name = household.kitchen.companion.name || DEFAULT_COMPANION_NAME;
   const q = normalize(question);
   if (!q) {
@@ -354,7 +359,7 @@ export function askHercules(household: Household, question: string, today: DateK
     return identityAnswer(household, today);
   }
   if (/\b(we good|you good|hey cat)\b/.test(q)) {
-    return askHercules(household, "are we alright", today);
+    return askHercules(household, "are we alright", today, context);
   }
   if (/\b(opinion|unmodified|qualified|adverse|audit|are the books clean|trial balance|in balance)\b/.test(q) && !/\b(spent|grocery)\b/.test(q)) {
     const opinion = auditOpinion(household);
@@ -518,7 +523,7 @@ export function askHercules(household: Household, question: string, today: DateK
     };
   }
   if (/\b(what.?s on the visa|what.?s on the mastercard|what.?s on the card|pay the card|utilization|cashback|rewards|savings account|tfsa)\b/.test(q)) {
-    return voice(name, askBooks(household, question, today));
+    return voice(name, askBooks(household, question, today, context));
   }
   if (/\b(what should i do|coach|advise|next move|what now)\b/.test(q)) {
     return coachAnswer(household, today, name);
@@ -575,5 +580,5 @@ export function askHercules(household: Household, question: string, today: DateK
       rows: mems.slice(-6).map((row) => ({ label: row.kind, value: row.label })),
     };
   }
-  return voice(name, askBooks(household, question, today));
+  return voice(name, askBooks(household, question, today, context));
 }

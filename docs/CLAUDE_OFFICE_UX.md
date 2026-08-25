@@ -67,7 +67,7 @@ Commands are the money trust boundary. UI is untrusted (D-025 / D-026).
 - Development and Production are two **phone snapshots**, not Cloudflare prod vs preview (D-002). Default the design to Development.
 - Double-entry. Health refuses imbalance. **If a statement disagrees with the journal, the journal wins** (D-033 / D-046).
 - Hercules, chalkboard, wardrobe, visit sparks, rec, close, marks, Google, Hercules desk, **widgets, weather, office layout** never post money (D-042–D-051).
-- Hercules never names who spent more. No fake fees. No pay-to-keep-alive. No hunger-meter death (D-044). Vacation does not kill him. Shift streak is **posted shift dates**, not opens (D-050).
+- Hercules never reads partner-personal money. Household-view teaching may explain named members' shared posts without shame (D-132). No fake fees. No pay-to-keep-alive. No hunger-meter death (D-044). Vacation does not kill him. Shift streak is **posted shift dates**, not opens (D-050).
 - Bank feeds, Interac, issued cards: **blocked until Auth + RLS** (D-039). Do not spec a live bank ticker.
 - Accounts are financial accounts (chequing, savings, credit, investment, other), not categories (D-047).
 - Personal rows are a **filter**, not privacy, until Auth (D-015).

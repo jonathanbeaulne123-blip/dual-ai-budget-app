@@ -9,7 +9,7 @@ import { composeNotices, type HerculesNotice } from "./notices.ts";
 import { herculesBriefing, type HerculesBriefing, type HerculesGrounded } from "./herculesPersonality.ts";
 import { talkHercules } from "./herculesTalk.ts";
 import { memoriesForModel, type HerculesMemoryView } from "./herculesLedger.ts";
-import type { Appointment, Claim, Household, Transaction } from "./types.ts";
+import type { Appointment, Claim, Household, LedgerView, Transaction } from "./types.ts";
 import { householdForAiDisclosure, visibleForDuplicateScan } from "./visibility.ts";
 
 const RECENT_TX_LIMIT = 18;
@@ -120,8 +120,12 @@ function redactedNote(household: Household, tx: Transaction, secrets: QuietSecre
   return scrubQuietText(tx.note, secrets) || tx.type;
 }
 
-export function buildLedgerExcerpt(household: Household, today: DateKey, memberId: string): HerculesLedgerExcerpt {
-  const secrets = quietSecrets(household);
+export function buildLedgerExcerpt(
+  household: Household,
+  today: DateKey,
+  memberId: string,
+  secrets = quietSecrets(household),
+): HerculesLedgerExcerpt {
   const recent = [...household.transactions]
     .filter((tx) => !tx.isDuplicate)
     .filter((tx) => visibleForDuplicateScan(tx, memberId))
@@ -223,7 +227,7 @@ export function composeHerculesChatRequest(
   today: DateKey,
   memberId: string,
   lastTopic = "",
-  options: { shareCoordsWithModel?: boolean } = {},
+  options: { shareCoordsWithModel?: boolean; view?: LedgerView } = {},
 ): {
   message: string;
   briefing: HerculesBriefing;
@@ -239,18 +243,24 @@ export function composeHerculesChatRequest(
 } {
   const disclosed = householdForAiDisclosure(household, memberId, {
     shareCoordsWithModel: options.shareCoordsWithModel,
+    view: options.view ?? "household",
   });
-  const secrets = quietSecrets(disclosed);
+  // Quiet rows are deliberately absent from the active disclosure projection.
+  // Keep the original snapshot's secret dictionary for one final scrub of
+  // linked transaction notes and category labels without disclosing the rows.
+  const secrets = quietSecrets(household);
   const scopedBriefing = herculesBriefing(disclosed, briefing.page, today);
   // Rebuild every model-bound fact inside this disclosure boundary so a caller
   // cannot pass full-household aggregates through fallback copy or FIGURES.
-  const scopedGrounded = talkHercules(disclosed, message, today, briefing.page, lastTopic);
-  const ledger = buildLedgerExcerpt(disclosed, today, memberId);
+  const context = { memberId, view: options.view ?? "household" } as const;
+  const scopedGrounded = talkHercules(disclosed, message, today, briefing.page, lastTopic, context);
+  const ledger = buildLedgerExcerpt(disclosed, today, memberId, secrets);
   const notices = noticeViews(disclosed, today);
   const figures = collectAllowedFigures(
     scopedGrounded.spoken,
     scopedGrounded.lesson,
     scopedGrounded.fact?.value,
+    ...(scopedGrounded.facts ?? []).map((fact) => fact.value),
   );
   return {
     message: scrubQuietText(message, secrets) || message.trim(),

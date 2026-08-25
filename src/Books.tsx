@@ -35,6 +35,7 @@ import {
   type LedgerView,
   type UndoToken,
   type Account,
+  type HerculesNumberSource,
 } from "./core/index.ts";
 import { LedgerPage } from "./Ledger.tsx";
 import { BatchImportCard } from "./BatchImport.tsx";
@@ -64,7 +65,9 @@ export function BooksPage({
   view,
   booksStatus,
   focusedAccountId,
+  sourceFocus,
   onFocusAccount,
+  onClearSource,
   onChange,
   onRemove,
   onPayAccount,
@@ -75,7 +78,9 @@ export function BooksPage({
   view: LedgerView;
   booksStatus: BooksStatus | null;
   focusedAccountId: string | null;
+  sourceFocus: HerculesNumberSource | null;
   onFocusAccount: (accountId: string | null) => void;
+  onClearSource: () => void;
   onChange: (household: Household, undo?: UndoToken) => unknown | Promise<unknown>;
   onRemove: (transaction: Household["transactions"][number]) => void;
   onPayAccount: (account: Account) => void;
@@ -102,6 +107,16 @@ export function BooksPage({
     setAccountId(focusedAccountId);
     setPane("wallet");
   }, [focusedAccountId]);
+
+  useEffect(() => {
+    if (sourceFocus?.route !== "ledger") return;
+    if (sourceFocus.accountId) {
+      setAccountId(sourceFocus.accountId);
+      setPane("wallet");
+      return;
+    }
+    setPane("register");
+  }, [sourceFocus]);
 
   return (
     <>
@@ -196,7 +211,15 @@ export function BooksPage({
         />
       )}
       {pane === "register" && (
-        <LedgerPage household={household} memberId={memberId} view={view} onChange={onChange} onRemove={onRemove} />
+        <LedgerPage
+          household={household}
+          memberId={memberId}
+          view={view}
+          sourceFocus={sourceFocus?.route === "ledger" ? sourceFocus : null}
+          onClearSource={onClearSource}
+          onChange={onChange}
+          onRemove={onRemove}
+        />
       )}
       {pane === "import" && (
         <BatchImportCard

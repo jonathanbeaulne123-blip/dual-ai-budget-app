@@ -11,6 +11,8 @@ import {
 } from "./kitchen.ts";
 import type { DateKey } from "./calendar.ts";
 import type { HearthTab } from "./hercules.ts";
+import type { HerculesAskContext } from "./askBooks.ts";
+import { gateHerculesQuestion, householdForHerculesContext } from "./visibility.ts";
 import type {
   HerculesMemory,
   HerculesMemoryKind,
@@ -36,6 +38,10 @@ const JOURNAL_TOPICS = new Set([
   "coach",
   "why",
   "notice",
+  "member-spend",
+  "food",
+  "income",
+  "shift",
 ]);
 
 export type HerculesDraft = {
@@ -183,8 +189,20 @@ export function planHerculesTurn(
   today: DateKey,
   tab: HearthTab = "home",
   lastTopic = "",
+  context: HerculesAskContext = { memberId: household.members[0]?.id ?? "", view: "household" },
 ): HerculesPlan {
   const q = question.trim();
+  const gate = gateHerculesQuestion(household, q, context.memberId, context.view);
+  if (!gate.allow) {
+    return {
+      talk: lineTalk(gate.spoken, "Shared questions stay shared. Personal questions stay with their owner.", "privacy", [context.view === "personal" ? "We good?" : "What's on the Visa?"]),
+      source: "local",
+      memory: null,
+      draft: null,
+      skipModel: true,
+    };
+  }
+  const scoped = householdForHerculesContext(household, context.memberId, context.view);
   const extracted = extractHerculesMemory(q);
   if (extracted) {
     return {
@@ -211,7 +229,7 @@ export function planHerculesTurn(
       skipModel: true,
     };
   }
-  if (SHAME.test(lower)) {
+  if (SHAME.test(lower) && context.view === "personal") {
     return {
       talk: lineTalk(HERCULES_REFUSE_SHAME, "Household totals only.", "ask", ["We good?", "What's on the Visa?"]),
       source: "local",
@@ -238,7 +256,7 @@ export function planHerculesTurn(
   }
 
   if (isRecall(q)) {
-    const mems = ledgerMemories(household);
+    const mems = ledgerMemories(scoped);
     const spoken = mems.length
       ? `I kept ${mems.length} note${mems.length === 1 ? "" : "s"} in the kitchen ledger: ${mems.map((row) => row.label).slice(-3).join("; ")}.`
       : "Empty notebook. Say “remember …” and I’ll keep it next to the milk.";
@@ -254,15 +272,17 @@ export function planHerculesTurn(
     };
   }
 
-  const talk = talkHercules(household, q, today, tab, lastTopic);
-  const ask = askHercules(household, q, today);
+  const talk = talkHercules(scoped, q, today, tab, lastTopic, context);
+  const ask = askHercules(scoped, q, today, context);
   const fromBooks = ask.kind === "answer" || JOURNAL_TOPICS.has(talk.topic);
+  const privacySensitiveGrounded = /\b(who spent|who paid|overspend|overspent|over spent|spending habit|income|earned|wages|tips|shift|hours worked|eat this week|afford.*(?:food|grocer))\b/i.test(q)
+    && ask.kind === "answer";
   return {
     talk,
     source: fromBooks ? "journal" : "local",
     memory: null,
     draft: null,
     // Model-first (D-104): grounded talk is the fallback, not the default exit.
-    skipModel: false,
+    skipModel: privacySensitiveGrounded,
   };
 }
