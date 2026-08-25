@@ -7,7 +7,7 @@
 - **Repository:** jonathanbeaulne123-blip/dual-ai-budget-app
 - **Branch:** `cursor/auth-discover-qr-f375`
 - **Baseline SHA:** `913364c` (`main`)
-- **Head SHA:** (update on commit)
+- **Head SHA:** `646783d`
 - **Risk:** High (Auth membership door + invite UX)
 - **Decision owner:** Jonathan
 - **Environment impact:** Development (paste migration 010)
