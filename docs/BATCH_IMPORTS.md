@@ -42,7 +42,7 @@ Excluding an old posted row sets its reviewed duplicate flag. It is never physic
 - Receipt and bill detection returns one total/due row. Statement detection may return up to 250 clearly visible rows per image.
 - Detection output is always editable and can never post directly.
 
-The endpoint in `workers/site.js` was deployed to the Development kitchen on 2026-08-25 through GitHub Actions run `32872129163`, with Jonathan's explicit approval.
+The current receipt fallback at commit `fc280f8` was deployed to the Development kitchen on 2026-08-25 through GitHub Actions run `32891016109`, with Jonathan's explicit approval. A post-deploy synthetic receipt still failed closed with `503 Document detection is unavailable`; receipt work is deferred while batch review remains the priority.
 
 ## Failure and recovery
 
@@ -61,6 +61,7 @@ The endpoint in `workers/site.js` was deployed to the Development kitchen on 202
 
 ## Remaining release actions
 
-1. Merge PR #108 after review.
-2. With Jonathan's explicit approval, accept Meta's license/AUP for `@cf/meta/llama-3.2-11b-vision-instruct` once in the Cloudflare account, deploy the Workers AI receipt fallback, then smoke a legible synthetic receipt and synthetic OFX through the Development UI. On 2026-08-25 the live route accepted a clean synthetic receipt but returned `503 Document detection is unavailable`; the local fix adds a bound Workers AI vision fallback and regression proof, but license acceptance and deployment remain separate explicit release actions.
-3. Include batch intake in the comprehensive pre-September audit. PDF ingestion, statement closing-balance completeness, persistent draft inboxes, and connected bank feeds remain separate work.
+1. Review and merge PR #113 separately.
+2. Deploy the latest batch-review head to Development only after fresh explicit authorization; the earlier deployment authorization covered receipt-repair commit `fc280f8`, not the later batch-review commit.
+3. Keep receipt-provider diagnosis deferred until it becomes a priority again.
+4. Include batch intake in the comprehensive pre-September audit. PDF ingestion, statement closing-balance completeness, persistent draft inboxes, and connected bank feeds remain separate work.
