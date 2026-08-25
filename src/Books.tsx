@@ -17,6 +17,7 @@ import {
   compileHousehold,
   formatCad,
   householdWallet,
+  herculesLedgerSourcePane,
   incomeStatement,
   liquidityWatch,
   likelyMiscoded,
@@ -110,6 +111,10 @@ export function BooksPage({
 
   useEffect(() => {
     if (sourceFocus?.route !== "ledger") return;
+    if (herculesLedgerSourcePane(sourceFocus) === "register") {
+      setPane("register");
+      return;
+    }
     if (sourceFocus.accountId) {
       setAccountId(sourceFocus.accountId);
       setPane("wallet");

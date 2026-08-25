@@ -1,6 +1,6 @@
 # Hercules AI
 
-Hercules is the household's resident data scientist who never touches the money. This file is the living spec for that layer (D-057–D-060). Companion how-to still lives in [HERCULES.md](HERCULES.md). Laws: [DECISIONS.md](DECISIONS.md).
+Hercules is the household's resident data scientist who never touches the money. This file is the living spec for that layer (D-057–D-060, D-133). Companion how-to still lives in [HERCULES.md](HERCULES.md). Laws: [DECISIONS.md](DECISIONS.md).
 
 ## Research taken
 
@@ -28,6 +28,25 @@ Hercules is the household's resident data scientist who never touches the money.
 The phone computes arithmetic, clustering, cadence, anomaly, preset/habit detection, quiet reasoning, and grounded CAD. It recomputes on open and after a post. That is a cheap GROUP BY, not a nightly job — phones are not a reliable scheduler — and it does **not** ride `useFurniture`'s 100ms interval.
 
 The model does language: framing as a cat, which of several true notices is worth a sentence. It does **not** create proposal objects. Notices have ids computed on the phone. Accept uses those ids only.
+
+### Brain v2 Slice 1 — typed read tools (D-133)
+
+For an unmatched financial question, the Worker may choose a plan of at most four calls from a fixed read-only catalog. The Worker chooses names and bounded arguments; the phone executes the calls against the active member/view projection. No journal rows or account balances are sent to the planner, and the Worker never executes a tool.
+
+Catalog: `account_balance`, `find_transactions`, `spending_summary`, `income_summary`, `compare_spending`, `bills_due`, `shift_summary`, `goal_progress`, `money_owed`, and `cash_position`.
+
+The boundary is deliberately narrow:
+
+- unknown calls and unknown arguments are discarded;
+- dates are validated and limits/horizons are clamped;
+- a plan contains at most four valid calls;
+- the catalog exposes no SQL, code execution, mutation, Confirm, or generic query tool;
+- every calculation begins from `householdForHerculesContext`, so Household reads shared/`both` facts and Personal reads that member's personal/`both` facts only;
+- a Personal request for another member refuses without widening scope;
+- every displayed amount is a typed `HerculesNumberSource` card that routes to the supplying account, transaction, category, member, recurrence, shift, goal, or claim surface;
+- a missing/failed planner falls through to the existing guarded chat/local answer. Off-topic cat talk does not wait for the planner.
+
+The OpenAI path uses strict function tools through Responses with `store: false`; Anthropic uses equivalent tool schemas; Workers AI uses constrained JSON. All provider output is sanitized again on the Worker and again on the phone. This is model-planned retrieval, not model authority: arithmetic and scope remain deterministic on-device.
 
 **When he thinks.** On open and after a post. Offline, notices still work; the model is flavor and fallback (`localHerculesChat`).
 
@@ -79,6 +98,8 @@ Hand-create from Add: “Save as preset” writes the catalog, not money. Forget
 6. Appointments → the quiet therapy row. Calendar cards still show the typed title. Ask Hercules about it: he says “the Tuesday visit.” He does not say the practitioner.
 7. Type `what did you notice?` He answers from on-device notices. Typed unmatched talk may hit the Worker; quiet titles stay out of that payload.
 8. Dismiss a notice with **Not now**. Reload. It should not come back.
+9. Ask `How much did we spend on groceries this month?`, `Show coffee charges over $5`, `What is due in the next two weeks?`, and `How are the jars doing?`. Hercules may combine several read tools, but each shown amount must be tappable and must open its actual source.
+10. Switch to Bianca's Personal ledger and ask for Jonathan's spending. Hercules must refuse with no Jonathan CAD. Ask ordinary cat talk such as `Did you catch the fly?`; it should keep the existing chat path.
 
 ## Dual Course
 
