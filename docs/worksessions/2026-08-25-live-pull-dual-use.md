@@ -7,8 +7,8 @@
 - **Repository:** jonathanbeaulne123-blip/dual-ai-budget-app
 - **Branch:** `cursor/live-pull-dual-use-f375`
 - **Baseline SHA:** `6eeff0c` (`main` after quiet sync #107)
-- **Head SHA:** `2cbc27f`
-- **PR or issue:** (pending create)
+- **Head SHA:** `87fc751` → follow-up commits on same branch
+- **PR or issue:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/109
 - **Risk:** Medium (continuity pull + conflict absorb; money meaning preserved — no silent LWW)
 - **Decision owner:** Jonathan
 - **Environment impact:** Development (no hosted schema; REST pull of existing snapshot row)

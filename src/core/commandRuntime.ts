@@ -162,7 +162,9 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
 
     assertAcceptableBooks(candidate);
 
-    const revision = (sameHousehold ? previous?.revision ?? 0 : candidate.revision ?? 0) + 1;
+    const bumped = (sameHousehold ? previous?.revision ?? 0 : candidate.revision ?? 0) + 1;
+    // Continuity absorb / conflict-local may already set tip+1 above previous+1.
+    const revision = Math.max(bumped, candidate.revision ?? 0);
     const acceptedAt = new Date().toISOString();
     let accepted: Household = {
       ...candidate,

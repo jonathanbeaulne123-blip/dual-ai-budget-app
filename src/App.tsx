@@ -604,28 +604,35 @@ export function App() {
           if (current && current.householdId === conflict.item.householdId) {
             if (canAbsorbDisjointSharedMoney(current, conflict.remote)) {
               const absorbed = absorbDisjointSharedMoney(current, conflict.remote, memberId);
-              await acceptReplayCandidate(
+              const accepted = await acceptReplayCandidate(
                 absorbed,
                 `outbox-absorb-${current.householdId}-${conflict.remote.revision}`,
                 "outbox-absorb",
               );
+              if (!live) return;
+              if (!accepted?.ok) {
+                setSyncState("error");
+                setError(accepted?.userMessage || conflict.message);
+                return;
+              }
+              const ready = accepted.household;
               clearContinuityOutboxConflictBlocks({
                 environment,
                 identity,
-                householdId: absorbed.householdId,
-                expectedRevision: absorbed.baseRevision,
+                householdId: ready.householdId,
+                expectedRevision: ready.baseRevision ?? absorbed.baseRevision,
               });
               const pushed = await transportHouseholdWithOutbox({
-                household: absorbed,
+                household: ready,
                 identity,
-                expectedRevision: absorbed.baseRevision,
-                confirmationId: `absorb-${absorbed.householdId}-${absorbed.revision}`,
+                expectedRevision: ready.baseRevision ?? absorbed.baseRevision,
+                confirmationId: `absorb-${ready.householdId}-${ready.revision}`,
                 config: cloudConfig,
                 flush: true,
               });
               if (!live) return;
               if (pushed.ok) {
-                const synced = markSynchronized(absorbed);
+                const synced = markSynchronized(ready);
                 await saveHousehold(synced, { memberId });
                 householdRef.current = synced;
                 setHousehold(synced);
@@ -633,17 +640,18 @@ export function App() {
                 return;
               }
               if (pushed.errorClass === "conflict-detected" && pushed.remote) {
-                const conflicted = await recordConflict(absorbed, pushed.remote, false);
+                const conflicted = await recordConflict(ready, pushed.remote, false);
                 await acceptReplayCandidate(
                   conflicted,
-                  `outbox-conflict-${absorbed.householdId}-${pushed.remote.revision}`,
+                  `outbox-conflict-${ready.householdId}-${pushed.remote.revision}`,
                   "outbox-conflict",
                 );
                 setSyncState("error");
                 setError(pushed.message);
                 return;
               }
-              setSyncState("synced");
+              // Still pending transport — honest chip, not "up to date".
+              setSyncState("syncing");
               return;
             }
             const conflicted = await recordConflict(current, conflict.remote, false);
@@ -691,33 +699,54 @@ export function App() {
         current = householdRef.current;
         if (current && remoteHousehold && remoteHousehold.revision > (current.baseRevision ?? 0)) {
           const reconciled = await reconcileHouseholdSnapshots(current, remoteHousehold, memberId);
-          await acceptReplayCandidate(
+          const accepted = await acceptReplayCandidate(
             reconciled,
             `continuity-pull-${current.householdId}-${remoteHousehold.revision}`,
             "continuity-pull",
           );
-          if (reconciled.sharing?.mode === "pending-transport") {
+          if (!live) return;
+          if (!accepted?.ok) {
+            setSyncState("error");
+            setError(accepted?.userMessage || "Could not accept the shared household.");
+            return;
+          }
+          if (accepted.household.sharing?.mode === "pending-transport") {
             const tip = remoteHousehold.revision;
+            const ready = accepted.household;
             const pushed = await transportHouseholdWithOutbox({
-              household: reconciled,
+              household: ready,
               identity,
               expectedRevision: tip,
-              confirmationId: `live-absorb-${reconciled.householdId}-${reconciled.revision}`,
+              confirmationId: `live-absorb-${ready.householdId}-${ready.revision}`,
               config: cloudConfig,
               flush: true,
             });
             if (!live) return;
             if (pushed.ok) {
-              const synced = markSynchronized(reconciled);
+              const synced = markSynchronized(ready);
               await saveHousehold(synced, { memberId });
               householdRef.current = synced;
               setHousehold(synced);
+            } else if (pushed.errorClass === "conflict-detected" && pushed.remote) {
+              const conflicted = await recordConflict(ready, pushed.remote, false);
+              await acceptReplayCandidate(
+                conflicted,
+                `live-absorb-conflict-${ready.householdId}-${pushed.remote.revision}`,
+                "outbox-conflict",
+              );
+              setSyncState("error");
+              setError(pushed.message);
+              return;
+            } else {
+              setSyncState("syncing");
+              return;
             }
           }
         }
         if (live) {
           const open = householdRef.current ? unresolvedConflicts(householdRef.current) : [];
-          setSyncState(open.length > 0 ? "error" : "synced");
+          const pending = householdRef.current?.sharing?.mode === "pending-transport";
+          setSyncState(open.length > 0 ? "error" : pending ? "syncing" : "synced");
         }
       } catch (caught) {
         if (!live) return;

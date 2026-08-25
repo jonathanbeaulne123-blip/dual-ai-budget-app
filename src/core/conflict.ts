@@ -85,6 +85,9 @@ export function canAbsorbDisjointSharedMoney(local: Household, remote: Household
   if (!recordsMatch(local.budgetPlans ?? [], remote.budgetPlans ?? [])) return false;
   if (!recordsMatch(local.accounts ?? [], remote.accounts ?? [])) return false;
   if (!recordsMatch(local.categories ?? [], remote.categories ?? [])) return false;
+  if (!recordsMatch(local.recurrences ?? [], remote.recurrences ?? [])) return false;
+  if (!recordsMatch(local.workJobs ?? [], remote.workJobs ?? [])) return false;
+  if (JSON.stringify(local.shiftSettings ?? null) !== JSON.stringify(remote.shiftSettings ?? null)) return false;
   if (idContentConflict(sharedTransactions(local), sharedTransactions(remote))) return false;
   if (idContentConflict(
     local.shifts.filter((shift) => belongsToSharedLedger(shift)),
@@ -130,7 +133,16 @@ export function absorbDisjointSharedMoney(
       localParts.shared.goalContributions ?? [],
       tombstones,
     ),
+    goals: applyGoalSavings(
+      mergeRecords(remoteParts.shared.goals ?? [], localParts.shared.goals ?? [], tombstones),
+      mergeRecords(
+        remoteParts.shared.goalContributions ?? [],
+        localParts.shared.goalContributions ?? [],
+        tombstones,
+      ),
+    ),
     budgetPlans: mergeRecords(remoteParts.shared.budgetPlans ?? [], localParts.shared.budgetPlans ?? [], tombstones),
+    workJobs: mergeRecords(remoteParts.shared.workJobs ?? [], localParts.shared.workJobs ?? [], tombstones),
     activity: mergeRecords(remote.activity ?? [], local.activity ?? [], []).slice(-200),
     devices: mergeRecords(remote.devices ?? [], local.devices ?? [], []),
     tombstones,
