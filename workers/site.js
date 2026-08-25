@@ -614,8 +614,6 @@ Classify documentKind as bank-statement, credit-card-statement, bill, receipt, o
 Return currency, accountLast4 when visible, and rows. Each row has YYYY-MM-DD date, positive integer amountCents, direction debit/credit/unknown, typeHint expense/income/refund/transfer/unknown, merchant, description, reference, and confidence 0-100.
 For a receipt, return the final paid total once, not every line item. For a bill, return the amount due once. For a bank/card statement, return each clearly visible transaction. Never invent a missing date or amount; omit that row and add a short warning. Do not include card/account numbers beyond last four digits.`;
 
-const DOCUMENT_VISION_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
-
 const DOCUMENT_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -690,7 +688,8 @@ function sanitizeDocumentResult(value) {
 
 async function scanWorkersAi(env, imageDataUrl) {
   if (!env.AI) return null;
-  const output = await env.AI.run(FREE_VISION_MODEL, {
+  const model = String(env.DOCUMENT_VISION_MODEL || FREE_VISION_MODEL).trim() || FREE_VISION_MODEL;
+  const output = await env.AI.run(model, {
     messages: [
       { role: "system", content: DOCUMENT_SYSTEM },
       { role: "user", content: "Extract the selected document. Return only the requested JSON schema." },
@@ -767,23 +766,6 @@ async function scanAnthropic(env, imageDataUrl) {
   return sanitizeDocumentResult(parseModelJson(text));
 }
 
-async function scanWorkersAi(env, imageDataUrl) {
-  if (!env.AI) return null;
-  const model = String(env.DOCUMENT_VISION_MODEL || DOCUMENT_VISION_MODEL).trim() || DOCUMENT_VISION_MODEL;
-  const output = await env.AI.run(model, {
-    messages: [
-      { role: "system", content: DOCUMENT_SYSTEM },
-      { role: "user", content: "Extract the selected document. Return only the requested JSON object." },
-    ],
-    image: imageDataUrl,
-    max_tokens: 2800,
-    temperature: 0,
-    response_format: { type: "json_schema", json_schema: DOCUMENT_SCHEMA },
-  });
-  const response = output?.response ?? output?.result?.response ?? output?.result ?? null;
-  return sanitizeDocumentResult(typeof response === "string" ? parseModelJson(response) : response);
-}
-
 async function scanDocument(request, env) {
   const { allowed, origin } = resolveChatOrigin(request);
   const cors = corsHeaders(origin);
@@ -822,14 +804,6 @@ async function scanDocument(request, env) {
     try {
       result = await scanAnthropic(env, imageDataUrl);
       if (result) provider = "anthropic";
-    } catch {
-      result = null;
-    }
-  }
-  if (!result) {
-    try {
-      result = await scanWorkersAi(env, imageDataUrl);
-      if (result) provider = "workers-ai";
     } catch {
       result = null;
     }

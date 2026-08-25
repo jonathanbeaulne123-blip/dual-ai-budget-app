@@ -115,7 +115,7 @@ describe("document detection Worker", () => {
     const body = await response.json() as { provider: string; result: { rows: Array<{ amountCents: number }> } };
     expect(body.provider).toBe("workers-ai");
     expect(body.result.rows[0]?.amountCents).toBe(903);
-    expect(run).toHaveBeenCalledWith("@cf/meta/llama-3.2-11b-vision-instruct", expect.any(Object));
+    expect(run).toHaveBeenCalledWith("@cf/google/gemma-4-26b-a4b-it", expect.any(Object));
   });
 
   it("fails honestly when no image-capable provider answers and never stores the image", async () => {
