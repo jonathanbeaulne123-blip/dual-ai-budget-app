@@ -94,17 +94,17 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 ## Auth + membership RLS cutover (D-123)
 
-**Status:** Path B approved in principle. Preflight (2026-08-25): migrations `2,4,5,7`; one empty Production household; zero memberships; Personal 0/0/0; zero Google `auth.users`. Jonathan ordered: (1) delete empty Production household, (2) configure Google Auth, (3) apply 008, (4) postpone 006 NOTICE/apply until 1–3 done. Production continuity client remains behind `VITE_PRODUCTION_CONTINUITY=1` (off). See [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md), [SUPABASE_GOOGLE_AUTH_SETUP.md](SUPABASE_GOOGLE_AUTH_SETUP.md).
+**Status:** Tasks 1–3 complete (empty Production removed; Google Auth live with `auth.users`; `008` applied). Path B NOTICE revision + `009_rollback_006.sql` prepared on branch. **006 not applied.** Re-run preflight, then Jonathan must explicitly approve the paste.
 
-**Budget delta (5):** `+3` readiness — preparation live; Production continuity client ready behind flag; deny-by-default door still inactive until 006.
+**Budget delta (5):** `+4` readiness — Auth door live; deny-by-default SQL ready; door still open until 006 paste.
 
 **Engagement delta (3):** `0`
 
-**Next owner:** Jonathan — paste delete SQL, paste 008, complete Google Auth setup. Then bring back 006 Production-abort NOTICE + rollback rehearsal.
+**Next owner:** Jonathan — re-run `docs/sql/006_preflight_readonly.sql`; if green, approve paste of `supabase/migrations/006_auth_rls_cutover.sql`; then smoke Create/invite/anon denial.
 
-**Risk:** Release. This agent cannot apply hosted SQL (no DB password in cloud env); Jonathan pastes in SQL Editor.
+**Risk:** Release. Do not enable `VITE_PRODUCTION_CONTINUITY` casually.
 
-**Environment / data disclosure:** No hosted schema applied by the agent this turn. Delete + 008 require Jonathan's SQL Editor Run.
+**Environment / data disclosure:** Live applies so far: delete (already gone), 008. No 006 apply by agent.
 
 ## Trust-foundation worksession (2026-08-24, local branch)
 

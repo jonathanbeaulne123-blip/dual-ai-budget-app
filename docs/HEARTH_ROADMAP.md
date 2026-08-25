@@ -240,7 +240,7 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 
 **Deadline and exit condition:** before 2026-10-01 and before meaningful household data, an authenticated Google identity can reach only its personal ledger and intended household/environment records, and an outsider cannot enumerate them.
 
-**D-123 packet progress:** Q1–Q5 locked. Path B (shared-project cutover) approved in principle. Additive preparation 004 and forward CAS hardening 005 are applied. Legacy cleanup removed 30 Development households and preserved the one Production household. Preflighted deny-by-default cutover 006 is unapplied and still aborts while Production remains. Production continuity client is in-repo behind `VITE_PRODUCTION_CONTINUITY=1` (off by default); SELECT-only bridge `008` and privileged seed template are unapplied. Provider configuration, privileged Production seed/extract, 006 Production-guard NOTICE revision, rollback rehearsal (`009`), 006 apply, and Welcome email/QR chrome remain open.
+**D-123 packet progress:** Q1–Q5 locked. Path B approved. 004/005/007/008 applied. Empty Production household removed. Google Auth live. Preflighted deny-by-default cutover 006 revised to NOTICE + Production ceiling 1; **006 still not applied**. Rollback packet `009_rollback_006.sql` in-repo. Awaiting Jonathan green preflight re-run + paste approval.
 
 - [x] Design Google-to-hosted-auth identity mapping and durable personal-ledger/household membership relationships before writing policies around them. (D-123: Supabase Auth Google → `auth.uid()`; door = `continuity_memberships` + `household_invitations`)
 - [x] Author deny-by-default RLS + REVOKE anon household REST packet (unapplied until review).

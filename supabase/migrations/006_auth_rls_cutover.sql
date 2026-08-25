@@ -1,6 +1,5 @@
--- DO NOT APPLY without Jonathan's explicit Development cutover approval.
+-- DO NOT APPLY without Jonathan's explicit cutover approval.
 -- Deny-by-default Auth + membership RLS cutover (D-123).
--- Production: DO NOT APPLY without a separate Production approval.
 --
 -- Required order:
 --   002 (already live) -> 004_auth_rls_prepare -> 005_snapshot_cas_hardening
@@ -9,13 +8,14 @@
 -- 006 aborts before changing policies unless every active membership is bound
 -- to auth.users, each represented household has exactly one active owner, and
 -- shared snapshots contain no Personal transactions, shifts, or goals.
--- The policies and grants below are project-wide, not environment-scoped. The
--- preflight therefore also refuses to run while any Production household is in
--- this shared Supabase project. Move Production to an independently approved
--- project, or obtain explicit full-project cutover approval and revise this
--- guard in a reviewed follow-up migration; do not mistake 006 for a
--- Development-only switch.
+-- The policies and grants below are project-wide, not environment-scoped.
+--
+-- Path B (Jonathan 2026-08-25): shared-project cutover is approved. Production
+-- household count is NOTICE with ceiling 1 (not a hard abort at 1). Abort only
+-- if more than one Production household remains. Empty Production (count 0) is
+-- the current live state after Jonathan deleted the empty household.
 -- A failed preflight leaves the disposable-Development policies intact.
+-- Rollback packet: docs/sql/009_rollback_006.sql (rehearse on a clone first).
 
 BEGIN;
 
@@ -25,6 +25,9 @@ DECLARE
   bad_owner_count BIGINT;
   personal_payload_count BIGINT;
   production_household_count BIGINT;
+  -- Jonathan-approved path B ceiling: at most one Production household may
+  -- share this project during cutover. Raise it only with a new approval.
+  production_ceiling CONSTANT BIGINT := 1;
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.schema_migrations WHERE id = 4) THEN
     RAISE EXCEPTION 'Auth preparation 004 has not been applied.';
@@ -36,8 +39,12 @@ BEGIN
   SELECT count(*) INTO production_household_count
   FROM public.households
   WHERE environment = 'production';
-  IF production_household_count > 0 THEN
-    RAISE EXCEPTION 'Auth cutover blocked: 006 changes project-wide policies and grants, but % Production households remain. Development-only cutover requires a separate project; Production needs explicit approval.', production_household_count;
+  IF production_household_count > production_ceiling THEN
+    RAISE EXCEPTION 'Auth cutover blocked: % Production households exceed Jonathan-approved path B ceiling of %.', production_household_count, production_ceiling;
+  ELSIF production_household_count > 0 THEN
+    RAISE NOTICE 'Path B: applying project-wide Auth/RLS cutover with % Production household(s) (ceiling %).', production_household_count, production_ceiling;
+  ELSE
+    RAISE NOTICE 'Path B: applying project-wide Auth/RLS cutover with 0 Production households.';
   END IF;
 
   SELECT count(*) INTO unbound_count

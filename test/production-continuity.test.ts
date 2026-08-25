@@ -109,4 +109,14 @@ describe("Production continuity safety", () => {
     expect(sql).toContain("schema_migrations");
     expect(sql).toContain("009_rollback_006.sql");
   });
+
+  it("keeps 009 rollback from opening invitations or flipping view invoker off", () => {
+    const rollback = readFileSync("docs/sql/009_rollback_006.sql", "utf8");
+    expect(rollback).toMatch(/SECURITY INVOKER/);
+    expect(rollback).toMatch(/security_invoker = true/);
+    expect(rollback).not.toMatch(/security_invoker = false/);
+    expect(rollback).toMatch(/household_invitations stays RLS-enabled with no policy/);
+    expect(rollback).not.toMatch(/DROP FUNCTION IF EXISTS public\.hearth_claim_legacy_owner/);
+    expect(rollback).toMatch(/CREATE OR REPLACE FUNCTION publish_household_snapshot/);
+  });
 });
