@@ -17,6 +17,10 @@ export default defineConfig({
         target: "https://hearth-books.jonathan-beaulne123.workers.dev",
         changeOrigin: true,
       },
+      "/hercules/plan": {
+        target: "https://hearth-books.jonathan-beaulne123.workers.dev",
+        changeOrigin: true,
+      },
       "/documents/scan": {
         target: "https://hearth-books.jonathan-beaulne123.workers.dev",
         changeOrigin: true,
