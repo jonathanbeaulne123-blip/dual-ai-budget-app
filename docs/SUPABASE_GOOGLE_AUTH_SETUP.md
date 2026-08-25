@@ -52,20 +52,23 @@ Hearth builds `redirect_to` as the current page plus `?hearthAuthEnv=development
 
 ---
 
-## 4. Kitchen build flag (after provider works)
+## 4. Kitchen build flag (Auth-enabled kitchen)
 
-Auth code is behind `VITE_SUPABASE_AUTH_ENABLED=1`. For a local check:
+Auth code is behind `VITE_SUPABASE_AUTH_ENABLED=1`. The live Worker bakes Vite env at `pnpm build` from GitHub Actions **variables** (see `.github/workflows/pages.yml`).
 
-```bash
-VITE_SUPABASE_AUTH_ENABLED=1
-VITE_SUPABASE_URL=https://tykhocwacaxwquhynkok.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=<publishable key from Supabase Settings → API>
-```
+**Live kitchen (preferred when localhost is unavailable)**
 
-Publishable key: [Project Settings → API](https://supabase.com/dashboard/project/tykhocwacaxwquhynkok/settings/api)  
-Never put the **service_role** or database password in `VITE_`.
+1. Open [GitHub → Settings → Secrets and variables → Actions → Variables](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/settings/variables/actions)
+2. Add variable `VITE_SUPABASE_AUTH_ENABLED` = `1` (not a secret)
+3. Optional overrides (usually skip — kitchen falls back to the bundled Development project URL/publishable key):
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY` (publishable/anon only — never service_role)
+4. Confirm redirect allow list includes `https://hearth-books.jonathan-beaulne123.workers.dev/**`
+5. Deploy: merge to `main`, or [Actions → Cloudflare Workers → Run workflow](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/workflows/pages.yml) on `main`
+6. Hard-refresh https://hearth-books.jonathan-beaulne123.workers.dev/ → **Continue with Google**
 
-For the live kitchen, set the same as GitHub Actions **variables** (not secrets) so `pnpm build` on merge bakes them — only when Jonathan is ready to ship an Auth-enabled build.
+Publishable key reference: [Project Settings → API](https://supabase.com/dashboard/project/tykhocwacaxwquhynkok/settings/api)  
+Never put the **service_role** or database password in `VITE_` or Actions variables.
 
 ---
 

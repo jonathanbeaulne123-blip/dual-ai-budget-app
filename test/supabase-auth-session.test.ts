@@ -8,9 +8,11 @@ import {
   consumeSupabaseAuthRedirect,
   joinUrlFromInviteToken,
   loadSupabaseSession,
+  readHearthAuthConfig,
   refreshSupabaseSession,
   saveSupabaseSession,
   setSupabaseSessionStore,
+  supabaseAuthEnabled,
   supabaseSessionFresh,
   type HearthSupabaseSession,
 } from "../src/auth/supabaseSession.ts";
@@ -34,9 +36,22 @@ function memoryStore(): Storage {
 
 const config = { supabaseUrl: "https://example.supabase.co", publishableKey: "sb_publishable_test" };
 
-afterEach(() => setSupabaseSessionStore(null));
+afterEach(() => {
+  setSupabaseSessionStore(null);
+  vi.unstubAllEnvs();
+});
 
 describe("Supabase Auth browser session", () => {
+  it("falls back to the bundled kitchen project when Auth is on and VITE URL/key are empty", () => {
+    vi.stubEnv("VITE_SUPABASE_AUTH_ENABLED", "1");
+    vi.stubEnv("VITE_SUPABASE_URL", "");
+    vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "");
+    expect(supabaseAuthEnabled()).toBe(true);
+    expect(readHearthAuthConfig()).toEqual({
+      supabaseUrl: "https://tykhocwacaxwquhynkok.supabase.co",
+      publishableKey: "sb_publishable_8UAlkucmkTyh36yQGhnUbw_Orl9GkuS",
+    });
+  });
   it("builds a Google authorize URL with an environment-bound return", () => {
     const url = new URL(buildSupabaseGoogleAuthorizeUrl(config, "development", "https://kitchen.example/welcome?from=home"));
     expect(url.pathname).toBe("/auth/v1/authorize");
