@@ -641,6 +641,25 @@ export async function pullHouseholdSnapshotById(
   return { ...pulled, linked: true, baseRevision: pulled.revision };
 }
 
+/** Same-member second-device personal tip (Auth JWT). */
+export async function pullPersonalSnapshotById(
+  householdId: string,
+  memberId: string,
+  environment: Environment = "development",
+  config = readSupabaseConfig(),
+): Promise<PersonalEnvelope | null> {
+  if (!config || !hostedContinuityAllowed(environment)) return null;
+  const result = await rest(
+    config,
+    `continuity_personal_snapshots?environment=eq.${encodeURIComponent(environment)}&household_id=eq.${encodeURIComponent(householdId)}&member_id=eq.${encodeURIComponent(memberId)}&select=payload&limit=1`,
+    { method: "GET", headers: { Prefer: "return=representation" } },
+  );
+  if (isMissingTable(result.body)) return null;
+  if (!result.ok) throw new Error(messageOf(result.body));
+  const rows = Array.isArray(result.body) ? result.body as { payload?: string | PersonalEnvelope }[] : [];
+  return personalFromRow(rows[0], memberId);
+}
+
 export async function pushSupabaseHousehold(
   household: Household,
   config = readSupabaseConfig(),

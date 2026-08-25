@@ -8,6 +8,7 @@ import {
   spokenInviteHint,
   describeDeviceLabel,
   localDeviceId,
+  pairingStatusLabel,
   type Household,
 } from "./core/index.ts";
 import { authInviteTokenFromText, isAuthInviteToken } from "./core/authInvite.ts";
@@ -226,7 +227,7 @@ function AuthInviteChrome({
   if (invitees.length === 0) {
     return (
       <div className="auth-invite">
-        <h3>Auth invite</h3>
+        <h3>Invite with Google</h3>
         <p className="muted">Add another person to the household roster before issuing an email or QR invite.</p>
       </div>
     );
@@ -238,9 +239,9 @@ function AuthInviteChrome({
 
   return (
     <div className="auth-invite">
-      <h3>Auth invite (email / QR)</h3>
+      <h3>Invite with Google</h3>
       <p className="muted">
-        One-time Google join. Phrase and Hearth Pass stay legacy aids — they are not Auth.
+        One-time Google join. Phrase and Hearth Pass stay under Advanced — they are not Auth.
       </p>
       <label htmlFor="auth-invite-member">Invite seat</label>
       <select
@@ -313,8 +314,10 @@ export function PairingCard({
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [cloudLive, setCloudLive] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const phrase = formatInvitePhrase(household.inviteCode);
   const url = typeof window !== "undefined" ? joinUrlFor(household.inviteCode, window.location.origin) : "";
+  const status = pairingStatusLabel(household, { authEnabled: supabaseAuthEnabled() });
 
   async function publish() {
     onBusy(true);
@@ -335,17 +338,14 @@ export function PairingCard({
   return (
     <section className="card">
       <header>
-        <h2>Invite the other person</h2>
-        <span className={`pill ${household.linked ? "good" : ""}`}>{household.linked ? "Cloud live" : "Pass / phrase"}</span>
+        <h2>Invite</h2>
+        <span className={`pill ${status.good ? "good" : ""}`}>{status.label}</span>
       </header>
       <p>
-        Do not type a six-character code. Say the phrase across the table, send the join link,
-        or hand over a Hearth Pass. The pass is the shared ledger without anyone’s personal rows.
+        {supabaseAuthEnabled()
+          ? "Send a Google invite so your partner opens the same household on their phone. Sharing continues in the background while this kitchen stays open."
+          : "Say the phrase across the table, send the join link, or hand over a Hearth Pass. The pass is the shared ledger without anyone’s personal rows."}
       </p>
-      <div className="invite-code" aria-label="Household phrase">{phrase}</div>
-      <p className="muted">{spokenInviteHint(household.inviteCode)}</p>
-      {url && <p className="join-url">{url}</p>}
-      <p className="muted">{hostingHint(cloudLive || household.linked)}</p>
       <AuthInviteChrome
         household={household}
         memberId={memberId}
@@ -353,113 +353,82 @@ export function PairingCard({
         onError={onError}
         onBusy={onBusy}
       />
+      {!supabaseAuthEnabled() && (
+        <>
+          <div className="invite-code" aria-label="Household phrase">{phrase}</div>
+          <p className="muted">{spokenInviteHint(household.inviteCode)}</p>
+          {url && <p className="join-url">{url}</p>}
+          <button className="primary" onClick={() => void shareInvite(household)}>Share phrase and link</button>
+          <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => downloadPass(household)}>Download Hearth Pass</button>
+        </>
+      )}
+      {supabaseAuthEnabled() && (
+        <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => void shareInvite(household)}>
+          Share legacy phrase and link
+        </button>
+      )}
+      <p className="muted">{hostingHint(cloudLive || household.linked || supabaseAuthEnabled())}</p>
       {syncState === "syncing" && <p className="muted">Syncing the shared household…</p>}
       {syncState === "synced" && <p className="muted">Shared household is up to date.</p>}
-      <div className="device-list">
-        <h3>Devices on this household</h3>
-        <p className="muted">Soft presence from phones that touched the shared snapshot. Not Auth. This device: {describeDeviceLabel()} · {localDeviceId()}</p>
-        {(household.devices ?? []).length === 0 ? (
-          <p className="muted">No devices recorded yet. Sync or open the kitchen and one will appear.</p>
-        ) : (
-          <ul>
-            {(household.devices ?? []).map((device) => (
-              <li key={device.id}>
-                <strong>{device.label}</strong>
-                <span className="muted"> · {device.environment} · seen {device.seenAt.slice(0, 16).replace("T", " ")}</span>
-                {device.id === localDeviceId() ? <span className="pill good">this phone</span> : null}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
       {error && <p className="danger">{error}</p>}
-      <button className="primary" onClick={() => void shareInvite(household)}>Share phrase and link</button>
-      <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => downloadPass(household)}>Download Hearth Pass</button>
       {!supabaseAuthEnabled() && (
         <button className="ghost" style={{ width: "100%", marginTop: 8 }} disabled={busy} onClick={() => void publish()}>
           {household.linked ? "Sync to the cloud" : "Publish to the cloud"}
         </button>
       )}
-      {supabaseAuthEnabled() && (
-        <p className="muted" style={{ marginTop: 8 }}>
-          Signed-in phones share in the background. Partner posts appear while this kitchen stays open.
-        </p>
-      )}
-      {household.linked && (
-        <button
-          className="ghost"
-          style={{ width: "100%", marginTop: 8 }}
-          disabled={busy}
-          onClick={() => {
-            void onHousehold(unlinkHousehold(household));
-            onSyncState("idle");
-          }}
-        >
-          Stop sharing from this phone
-        </button>
-      )}
-      <label>Join a different household</label>
-      <input
-        value={inviteInput}
-        onChange={(event) => onInviteInput(event.target.value)}
-        placeholder="cedar lantern kite"
-        autoCapitalize="none"
-      />
-      <button
-        className="ghost"
-        style={{ width: "100%", marginTop: 8 }}
-        disabled={busy}
-        onClick={() => {
-          void (async () => {
-            onBusy(true);
-            onError("");
-            try {
-              await onBeforeSensitive?.();
-              const raw = inviteInput.trim();
-              if (raw.startsWith("{")) {
-                await onHousehold(joinFromPastedSecret(raw, household, memberId, household.environment));
-                return;
-              }
-              const live = await cloudBooksLive();
-              setCloudLive(live);
-              await onHousehold(await joinSharedHousehold(raw, memberId, household.environment));
-              onSyncState("synced");
-            } catch (caught) {
-              onError(caught instanceof Error ? caught.message : String(caught));
-            } finally {
-              onBusy(false);
-            }
-          })();
-        }}
+      <details
+        className="pairing-advanced"
+        open={advancedOpen}
+        onToggle={(event) => setAdvancedOpen((event.target as HTMLDetailsElement).open)}
       >
-        Join with phrase or link
-      </button>
-      <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => fileRef.current?.click()}>
-        Import Hearth Pass
-      </button>
-      <input
-        ref={fileRef}
-        type="file"
-        accept="application/json,.json"
-        hidden
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (!file) return;
-          void file.text().then(async (text) => {
-            onBusy(true);
-            onError("");
-            try {
-              await onBeforeSensitive?.();
-              await onHousehold(applyHearthPass(household, parseHearthPass(text), memberId, household.environment));
-            } catch (caught) {
-              onError(caught instanceof Error ? caught.message : String(caught));
-            } finally {
-              onBusy(false);
-            }
-          });
-        }}
-      />
-      {household.linked && !supabaseAuthEnabled() && (
+        <summary>Advanced</summary>
+        <div className="device-list">
+          <h3>Devices on this household</h3>
+          <p className="muted">Soft presence from phones that touched the shared snapshot. Not Auth. This device: {describeDeviceLabel()} · {localDeviceId()}</p>
+          {(household.devices ?? []).length === 0 ? (
+            <p className="muted">No devices recorded yet. Sync or open the kitchen and one will appear.</p>
+          ) : (
+            <ul>
+              {(household.devices ?? []).map((device) => (
+                <li key={device.id}>
+                  <strong>{device.label}</strong>
+                  <span className="muted"> · {device.environment} · seen {device.seenAt.slice(0, 16).replace("T", " ")}</span>
+                  {device.id === localDeviceId() ? <span className="pill good">this phone</span> : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        {supabaseAuthEnabled() && (
+          <>
+            <div className="invite-code" aria-label="Household phrase">{phrase}</div>
+            <p className="muted">{spokenInviteHint(household.inviteCode)}</p>
+            {url && <p className="join-url">{url}</p>}
+            <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => downloadPass(household)}>
+              Download Hearth Pass
+            </button>
+          </>
+        )}
+        {household.linked && (
+          <button
+            className="ghost"
+            style={{ width: "100%", marginTop: 8 }}
+            disabled={busy}
+            onClick={() => {
+              void onHousehold(unlinkHousehold(household));
+              onSyncState("idle");
+            }}
+          >
+            Stop sharing from this phone
+          </button>
+        )}
+        <label>Join a different household</label>
+        <input
+          value={inviteInput}
+          onChange={(event) => onInviteInput(event.target.value)}
+          placeholder="cedar lantern kite"
+          autoCapitalize="none"
+        />
         <button
           className="ghost"
           style={{ width: "100%", marginTop: 8 }}
@@ -470,20 +439,76 @@ export function PairingCard({
               onError("");
               try {
                 await onBeforeSensitive?.();
-                const merged = await reconcileHousehold(household, memberId);
-                await onHousehold(merged);
+                const raw = inviteInput.trim();
+                if (raw.startsWith("{")) {
+                  await onHousehold(joinFromPastedSecret(raw, household, memberId, household.environment));
+                  return;
+                }
+                const live = await cloudBooksLive();
+                setCloudLive(live);
+                await onHousehold(await joinSharedHousehold(raw, memberId, household.environment));
+                onSyncState("synced");
               } catch (caught) {
                 onError(caught instanceof Error ? caught.message : String(caught));
-                onSyncState("error");
               } finally {
                 onBusy(false);
               }
             })();
           }}
         >
-          Pull latest from the cloud
+          Join with phrase or link
         </button>
-      )}
+        <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => fileRef.current?.click()}>
+          Import Hearth Pass
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="application/json,.json"
+          hidden
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            void file.text().then(async (text) => {
+              onBusy(true);
+              onError("");
+              try {
+                await onBeforeSensitive?.();
+                await onHousehold(applyHearthPass(household, parseHearthPass(text), memberId, household.environment));
+              } catch (caught) {
+                onError(caught instanceof Error ? caught.message : String(caught));
+              } finally {
+                onBusy(false);
+              }
+            });
+          }}
+        />
+        {household.linked && !supabaseAuthEnabled() && (
+          <button
+            className="ghost"
+            style={{ width: "100%", marginTop: 8 }}
+            disabled={busy}
+            onClick={() => {
+              void (async () => {
+                onBusy(true);
+                onError("");
+                try {
+                  await onBeforeSensitive?.();
+                  const merged = await reconcileHousehold(household, memberId);
+                  await onHousehold(merged);
+                } catch (caught) {
+                  onError(caught instanceof Error ? caught.message : String(caught));
+                  onSyncState("error");
+                } finally {
+                  onBusy(false);
+                }
+              })();
+            }}
+          >
+            Pull latest from the cloud
+          </button>
+        )}
+      </details>
     </section>
   );
 }

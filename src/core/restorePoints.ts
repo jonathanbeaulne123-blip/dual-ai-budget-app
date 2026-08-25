@@ -3,6 +3,7 @@ import { financialAuditHash } from "./commandIdentity.ts";
 import { nextId } from "./ids.ts";
 import { assembleHousehold, ensureHouseholdShape, splitForSync } from "./sync.ts";
 import { unresolvedConflicts } from "./conflict.ts";
+import { belongsToSharedLedger } from "./visibility.ts";
 import { ValidationError, type Household, type RestorePoint, type SharedEnvelope } from "./types.ts";
 
 export const RESTORE_POINT_RETENTION_DAYS = 30;
@@ -20,10 +21,30 @@ function pruneRestorePoints(points: RestorePoint[], now = Date.now()): RestorePo
     .slice(0, RESTORE_POINT_MAX);
 }
 
+/**
+ * Shared tip payload only — no Personal rows, no nested restore history.
+ * Restore points travel inside the household snapshot; they must never smuggle
+ * another member's personal ledger into the shared tip.
+ */
+export function sharedEnvelopeForRestorePoint(shared: SharedEnvelope): SharedEnvelope {
+  const sharedGoals = (shared.goals ?? []).filter((goal) => goal.shared);
+  const sharedGoalIds = new Set(sharedGoals.map((goal) => goal.id));
+  return {
+    ...shared,
+    kind: "shared",
+    transactions: (shared.transactions ?? []).filter((tx) => belongsToSharedLedger(tx)),
+    shifts: (shared.shifts ?? []).filter((shift) => belongsToSharedLedger(shift)),
+    goals: sharedGoals,
+    goalContributions: (shared.goalContributions ?? []).filter((row) => sharedGoalIds.has(row.goalId)),
+    goalPurchases: (shared.goalPurchases ?? []).filter((row) => sharedGoalIds.has(row.goalId)),
+    restorePoints: undefined,
+  };
+}
+
 /** Shared money fingerprint stored on each restore point. */
 export async function sharedMoneyAuditHash(household: Household, memberId: string): Promise<string> {
   const { shared } = splitForSync(household, memberId);
-  const projected = assembleHousehold(shared, null, { linked: household.linked });
+  const projected = assembleHousehold(sharedEnvelopeForRestorePoint(shared), null, { linked: household.linked });
   return financialAuditHash(projected);
 }
 
@@ -63,11 +84,7 @@ export async function appendRestorePoint(
     createdByMemberId: memberId,
     label: restorePointLabel(createdAt),
     sharedMoneyHash,
-    shared: {
-      ...shared,
-      // Never nest restore history inside a point.
-      restorePoints: undefined,
-    } as SharedEnvelope,
+    shared: sharedEnvelopeForRestorePoint(shared),
   };
   return {
     ...shaped,
@@ -137,7 +154,7 @@ export function applyRestorePoint(
 
   const localParts = splitForSync(household, memberId);
   const pointShared: SharedEnvelope = {
-    ...point.shared,
+    ...sharedEnvelopeForRestorePoint(point.shared),
     householdId: household.householdId,
     environment: household.environment,
     inviteCode: household.inviteCode || point.shared.inviteCode,
@@ -172,6 +189,39 @@ export function listRestorePoints(household: Household): RestorePoint[] {
   return pruneRestorePoints(household.restorePoints ?? []);
 }
 
-export function restoreConfirmBody(point: RestorePoint): string {
-  return `Replace shared books with the copy from ${point.label}. Money posted after that time leaves the shared books. Your Personal rows stay. This cannot use Undo — take a new sync after if you need another Restore point.`;
+export type RestorePointImpact = {
+  sharedTxAfterCount: number;
+  sharedShiftAfterCount: number;
+  summary: string;
+};
+
+/** Blast radius for owner Restore confirm — shared rows only. */
+export function restorePointImpact(household: Household, point: RestorePoint): RestorePointImpact {
+  const tipTx = new Set((point.shared.transactions ?? []).map((row) => row.id));
+  const tipShift = new Set((point.shared.shifts ?? []).map((row) => row.id));
+  const sharedTxAfterCount = household.transactions
+    .filter((tx) => belongsToSharedLedger(tx) && !tipTx.has(tx.id))
+    .length;
+  const sharedShiftAfterCount = household.shifts
+    .filter((shift) => belongsToSharedLedger(shift) && !tipShift.has(shift.id))
+    .length;
+  const parts: string[] = [];
+  if (sharedTxAfterCount) {
+    parts.push(`${sharedTxAfterCount} shared transaction${sharedTxAfterCount === 1 ? "" : "s"}`);
+  }
+  if (sharedShiftAfterCount) {
+    parts.push(`${sharedShiftAfterCount} shift${sharedShiftAfterCount === 1 ? "" : "s"}`);
+  }
+  const summary = parts.length
+    ? `${parts.join(" and ")} posted after that tip leave the shared books.`
+    : "No later shared money rows leave — this tip already matches today's shared tip.";
+  return { sharedTxAfterCount, sharedShiftAfterCount, summary };
+}
+
+export function restoreConfirmBody(point: RestorePoint, household?: Household): string {
+  const impact = household ? restorePointImpact(household, point).summary : null;
+  const blast = impact
+    ? ` ${impact}`
+    : " Money posted after that time leaves the shared books.";
+  return `Replace shared books with the copy from ${point.label}.${blast} Your Personal rows stay. This cannot use Undo — take a new sync after if you need another Restore point.`;
 }

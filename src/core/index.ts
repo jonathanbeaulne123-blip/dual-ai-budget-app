@@ -106,16 +106,19 @@ export {
   markConflicted,
   unlinkHousehold,
   shapeSharing,
+  pairingStatusLabel,
 } from "./sharing.ts";
 export {
   canAutoMergeConflict,
   canAbsorbDisjointSharedMoney,
   absorbDisjointSharedMoney,
   countDifferingSharedTransactionIds,
+  describeSharedConflictImpact,
   moneyFactsChanged,
   recordConflict,
   resolveConflictChoice,
   unresolvedConflicts,
+  type SharedConflictImpact,
 } from "./conflict.ts";
 export {
   makeHouseholdExport,
@@ -140,9 +143,12 @@ export {
   canRestorePoint,
   listRestorePoints,
   restoreConfirmBody,
+  restorePointImpact,
   restorePointLabel,
+  sharedEnvelopeForRestorePoint,
   sharedMoneyAuditHash,
   RESTORE_POINT_RETENTION_DAYS,
   type RestoreEligibility,
+  type RestorePointImpact,
 } from "./restorePoints.ts";
 export type { RestorePoint } from "./types.ts";

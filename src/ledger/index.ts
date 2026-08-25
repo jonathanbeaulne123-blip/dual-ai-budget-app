@@ -22,6 +22,7 @@ export {
   probeSupabase,
   pullSupabaseHousehold,
   pullHouseholdSnapshotById,
+  pullPersonalSnapshotById,
   pushSupabaseHousehold,
   readSupabaseConfig,
   bundledSupabaseConfig,

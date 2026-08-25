@@ -228,6 +228,85 @@ export function countDifferingSharedTransactionIds(local: Household, remote: Hou
   return count;
 }
 
+export type SharedConflictImpact = {
+  transactionCount: number;
+  shiftCount: number;
+  claimCount: number;
+  sitDownCount: number;
+  goalPurchaseCount: number;
+  onlyOnPhoneCents: number;
+  onlyOnCloudCents: number;
+  summary: string;
+};
+
+function countIdDiffs<T extends { id: string }>(left: T[] = [], right: T[] = []): number {
+  const leftById = new Map(left.map((row) => [row.id, row]));
+  const rightById = new Map(right.map((row) => [row.id, row]));
+  const ids = new Set([...leftById.keys(), ...rightById.keys()]);
+  let count = 0;
+  for (const id of ids) {
+    const a = leftById.get(id);
+    const b = rightById.get(id);
+    if (!a || !b || JSON.stringify(a) !== JSON.stringify(b)) count += 1;
+  }
+  return count;
+}
+
+function onlySideCents(
+  left: Transaction[],
+  right: Transaction[],
+): { onlyLeft: number; onlyRight: number } {
+  const rightIds = new Set(right.map((row) => row.id));
+  const leftIds = new Set(left.map((row) => row.id));
+  let onlyLeft = 0;
+  let onlyRight = 0;
+  for (const tx of left) {
+    if (!rightIds.has(tx.id)) onlyLeft += Math.abs(tx.amountCents);
+  }
+  for (const tx of right) {
+    if (!leftIds.has(tx.id)) onlyRight += Math.abs(tx.amountCents);
+  }
+  return { onlyLeft, onlyRight };
+}
+
+/** Human-readable shared impact for the conflict sheet (Personal excluded). */
+export function describeSharedConflictImpact(local: Household, remote: Household): SharedConflictImpact {
+  const localTx = sharedTransactions(local);
+  const remoteTx = sharedTransactions(remote);
+  const transactionCount = countDifferingSharedTransactionIds(local, remote);
+  const shiftCount = countIdDiffs(
+    local.shifts.filter((shift) => belongsToSharedLedger(shift)),
+    remote.shifts.filter((shift) => belongsToSharedLedger(shift)),
+  );
+  const claimCount = countIdDiffs(local.claims ?? [], remote.claims ?? []);
+  const sitDownCount = countIdDiffs(local.sitDownSessions ?? [], remote.sitDownSessions ?? []);
+  const goalPurchaseCount = countIdDiffs(local.goalPurchases ?? [], remote.goalPurchases ?? []);
+  const { onlyLeft, onlyRight } = onlySideCents(localTx, remoteTx);
+  const parts: string[] = [];
+  if (transactionCount) {
+    parts.push(`${transactionCount} shared transaction${transactionCount === 1 ? "" : "s"}`);
+  }
+  if (shiftCount) parts.push(`${shiftCount} shift${shiftCount === 1 ? "" : "s"}`);
+  if (claimCount) parts.push(`${claimCount} claim${claimCount === 1 ? "" : "s"}`);
+  if (sitDownCount) parts.push(`${sitDownCount} sit-down${sitDownCount === 1 ? "" : "s"}`);
+  if (goalPurchaseCount) {
+    parts.push(`${goalPurchaseCount} goal purchase${goalPurchaseCount === 1 ? "" : "s"}`);
+  }
+  const summary = parts.length
+    ? `${parts.join(", ")} differ between this phone and the cloud.`
+    : "Shared money rows match, but other shared facts still need a choice.";
+  return {
+    transactionCount,
+    shiftCount,
+    claimCount,
+    sitDownCount,
+    goalPurchaseCount,
+    onlyOnPhoneCents: onlyLeft,
+    onlyOnCloudCents: onlyRight,
+    summary,
+  };
+}
+
 function resolveConflictRecord(conflicts: ConflictRecord[], conflictId: string): ConflictRecord[] {
   return (conflicts ?? []).map((row) => (row.id === conflictId ? { ...row, resolved: true } : row));
 }
