@@ -65,6 +65,7 @@ function coefficientOfVariation(values: number[]): number {
 }
 
 function cadenceFromMedian(days: number): RecurrenceCadence | null {
+  if (days >= 1 && days <= 2) return "daily";
   if (days >= 6 && days <= 9) return "weekly";
   if (days >= 12 && days <= 18) return "biweekly";
   if (days >= 26 && days <= 35) return "monthly";

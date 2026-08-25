@@ -10,9 +10,15 @@ const WEEKDAY_ICAL = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"] as const;
 /** Same month-add the household already posts with. Jan 31 becomes a March date when February is short. */
 export function advanceCadence(date: DateKey, cadence: RecurrenceCadence): DateKey {
   const { year, month, day } = parseDateKey(date);
+  if (cadence === "daily") return addDays(date, 1);
   if (cadence === "weekly") return addDays(date, 7);
   if (cadence === "biweekly") return addDays(date, 14);
   return new Date(Date.UTC(year, month, day)).toISOString().slice(0, 10);
+}
+
+export function normalizeRecurrenceCadence(value: string | null | undefined): RecurrenceCadence {
+  if (value === "daily" || value === "weekly" || value === "biweekly" || value === "monthly") return value;
+  return "monthly";
 }
 
 export function nextOnOrAfter(start: DateKey, cadence: RecurrenceCadence, today: DateKey): DateKey {
@@ -38,6 +44,7 @@ export function projectCadence(start: DateKey, cadence: RecurrenceCadence, from:
 
 export function googleRrule(nextDate: DateKey, cadence: RecurrenceCadence): string {
   const byDay = WEEKDAY_ICAL[weekdaySunday0(nextDate)];
+  if (cadence === "daily") return "RRULE:FREQ=DAILY";
   if (cadence === "weekly") return `RRULE:FREQ=WEEKLY;BYDAY=${byDay}`;
   if (cadence === "biweekly") return `RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=${byDay}`;
   return `RRULE:FREQ=MONTHLY;BYMONTHDAY=${parseDateKey(nextDate).day}`;
@@ -66,6 +73,7 @@ export function shapeRecurrence(item: Recurrence, fallbackIso: string): Recurren
   return {
     ...item,
     type,
+    cadence: normalizeRecurrenceCadence(item.cadence),
     transferToAccountId: typeof item.transferToAccountId === "string" && item.transferToAccountId
       ? item.transferToAccountId
       : null,

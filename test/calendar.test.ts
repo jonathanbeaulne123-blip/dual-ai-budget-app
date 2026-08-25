@@ -31,10 +31,12 @@ describe("Toronto calendar", () => {
 });
 
 describe("cadence math", () => {
-  it("advances weekly, biweekly, and monthly the same way posting does", () => {
+  it("advances weekly, biweekly, monthly, and daily the same way posting does", () => {
     expect(advanceCadence("2026-08-21", "weekly")).toBe("2026-08-28");
     expect(advanceCadence("2026-08-21", "biweekly")).toBe("2026-09-04");
     expect(advanceCadence("2026-08-01", "monthly")).toBe("2026-09-01");
+    expect(advanceCadence("2026-08-21", "daily")).toBe("2026-08-22");
     expect(googleRrule("2026-08-21", "biweekly")).toBe("RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=FR");
+    expect(googleRrule("2026-08-21", "daily")).toBe("RRULE:FREQ=DAILY");
   });
 });
