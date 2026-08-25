@@ -17,6 +17,13 @@ describe("Auth/RLS readiness packet", () => {
     expect(cutover).toMatch(/006 is not applied/i);
   });
 
+  it("locks path B Production ceiling as NOTICE (abort only above ceiling 1)", () => {
+    expect(migration).toMatch(/production_ceiling CONSTANT BIGINT := 1/);
+    expect(migration).toMatch(/RAISE NOTICE 'Path B:/);
+    expect(migration).toMatch(/Production households exceed Jonathan-approved path B ceiling/);
+    expect(migration).not.toMatch(/Development-only cutover requires a separate project; Production needs explicit approval/);
+  });
+
   it("anchors cutover on continuity_memberships rather than a fictional members door", () => {
     expect(cutover).toMatch(/membership/i);
     expect(prepare).toMatch(/auth_user_id/);
@@ -57,7 +64,7 @@ describe("Auth/RLS readiness packet", () => {
     expect(hardening).toMatch(/p_revision <= p_expected_revision/i);
     expect(hardening).toMatch(/compacted offline/i);
     expect(migration).toMatch(/CAS hardening 005 has not been applied/i);
-    expect(migration).toMatch(/Development-only cutover requires a separate project/i);
+    expect(migration).toMatch(/Jonathan-approved path B ceiling/i);
     expect(migration).toMatch(/WHERE environment = 'production'/i);
     expect(migration).toMatch(/exactly one active owner/i);
     expect(migration).toMatch(/Personal ledger rows/i);

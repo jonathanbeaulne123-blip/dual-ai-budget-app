@@ -1,7 +1,6 @@
 # Auth + membership RLS cutover (D-123)
 
-> **Live Development status (2026-08-25):** 004, 005, and D-126 `007` applied with Jonathan's approval; 30 disposable Development households and their cascaded membership/Personal rows deleted with Jonathan's confirmation. Verification after Auth prep: 0 Development households, 0 memberships, 0 Personal snapshots, and migration ids including `[2,4,5,7]`.
-> **Production:** one Production household remains untouched. **006 is not applied.** Its policies and grants are project-wide, so it cannot be called a Development-only change while Production shares this Supabase project.
+> **Live Development status (2026-08-25):** 004, 005, D-126 `007`, and SELECT bridge `008` applied. Empty Production household deleted. Google Auth provider live; at least one Google `auth.users` identity exists. **006 is not applied.** Path B NOTICE revision (Production ceiling 1) is in the migration file awaiting Jonathan’s paste approval after a green preflight re-run.
 
 ## Goal
 
@@ -75,21 +74,15 @@ Independent of Auth/RLS: D-126 `007_household_timezone_iana.sql` is **applied** 
 
 **Mandatory sequence now (Jonathan)**
 
-1. Delete empty Production household — [`sql/delete_empty_production_household.sql`](sql/delete_empty_production_household.sql)
-2. Configure Google Auth — [`SUPABASE_GOOGLE_AUTH_SETUP.md`](SUPABASE_GOOGLE_AUTH_SETUP.md)
-3. Apply 008 — [`sql/apply_008_production_continuity_select.sql`](sql/apply_008_production_continuity_select.sql) (approved)
-4. **Then** return: revise 006 Production abort → NOTICE, write/rehearse `009_rollback_006.sql`, apply 006 only when preflight is green again
+1. ~~Delete empty Production household~~ — done (already absent)
+2. ~~Configure Google Auth~~ — done (`auth.users` has Google identity)
+3. ~~Apply 008~~ — done (`schema_migrations` id 8)
+4. Re-run [`sql/006_preflight_readonly.sql`](sql/006_preflight_readonly.sql) (expect green with 0 households)
+5. Review path B NOTICE revision in `006_auth_rls_cutover.sql` (ceiling 1) and [`sql/009_rollback_006.sql`](sql/009_rollback_006.sql)
+6. **Only after explicit Jonathan approve:** paste `supabase/migrations/006_auth_rls_cutover.sql` in the SQL Editor
+7. Smoke Create / email / QR / revoke / anon denial / wrong-household denial on Auth-enabled kitchen
 
-Older checklist retained for cutover day:
-
-0. Re-run [`sql/006_preflight_readonly.sql`](sql/006_preflight_readonly.sql) after steps 1–3.
-1. Enable Google provider and kitchen redirect URLs (step 2 above).
-2. Deploy a build with `VITE_SUPABASE_AUTH_ENABLED=1` when ready (publishable key only).
-3. Each intended member **Continue with Google** once; confirm `auth.users` rows.
-4. Create/bind memberships as needed (privileged seed only if a Production household returns).
-5. Capture `pg_policies` + grants; rehearse `009_rollback_006.sql` on a clone.
-6. Revise 006 Production-count abort to named NOTICE (path B); apply 006 only after green preflight.
-7. Smoke Create / email / QR / revoke / anon denial / wrong-household denial.
+**Client readiness:** Production discovery/transport remains behind `VITE_PRODUCTION_CONTINUITY=1` (off by default). Kitchen Auth door is live via `VITE_SUPABASE_AUTH_ENABLED=1`.
 
 ## Remaining live rehearsal requirements
 

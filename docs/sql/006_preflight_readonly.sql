@@ -3,21 +3,23 @@
 -- Project: tykhocwacaxwquhynkok
 -- Paste into https://supabase.com/dashboard/project/tykhocwacaxwquhynkok/sql/new and Run.
 --
--- Path B (Jonathan 2026-08-25): shared-project cutover is approved in principle,
--- but 006 must not be applied until every section below is green and the
--- Production client continuity gap is fixed on main.
+-- Path B (Jonathan 2026-08-25): shared-project cutover approved. Empty Production
+-- household deleted; Google Auth identities exist; SELECT bridge 008 applied.
+-- 006 Production guard is NOTICE + ceiling 1 (see migration header). Re-run this
+-- packet before any paste of 006.
 
 -- ── 1. Migration ledger ─────────────────────────────────────────────
 SELECT id, applied_at
 FROM public.schema_migrations
 ORDER BY id;
--- Expect ids including 2, 4, 5, 7. Must NOT include 6 yet.
+-- Expect ids including 2, 4, 5, 7, 8. Must NOT include 6 yet.
 
 -- ── 2. Household inventory ──────────────────────────────────────────
 SELECT id, name, environment, timezone, currency, linked, revision, last_committed_at
 FROM public.households
 ORDER BY environment, id;
--- Expect: 0 Development rows after cleanup; exactly 1 Production row.
+-- Expect: 0 Development and 0 Production after empty Production delete
+-- (or ≤1 Production under path B ceiling).
 
 -- ── 3. Production membership rows (often EMPTY today) ───────────────
 SELECT
@@ -33,9 +35,8 @@ SELECT
 FROM public.continuity_memberships
 WHERE environment = 'production'
 ORDER BY household_id, member_id;
--- If zero rows: 006 owner preflight FAILS. There is no supported app path
--- today to create Production memberships (003 + client are Development-scoped).
--- Needs a reviewed privileged migration + Jonathan approval — not SQL improvisation.
+-- If zero rows with zero households: OK (owner check passes).
+-- If households exist with zero memberships: 006 owner preflight FAILS.
 
 -- ── 4. Unbound memberships (project-wide) ───────────────────────────
 SELECT count(*) AS unbound_active_memberships
@@ -114,11 +115,11 @@ ORDER BY table_name, grantee, privilege_type;
 
 -- ── Go / no-go summary (human) ──────────────────────────────────────
 -- GREEN only if:
---   schema_migrations has 2,4,5,7 and not 6
+--   schema_migrations has 2,4,5,7,8 and not 6
 --   unbound_active_memberships = 0
---   every household has owner_count = 1
+--   every household has owner_count = 1 (zero households is OK)
 --   personal_txns = personal_shifts = private_goals = 0 on every snapshot
 --   auth.users has the intended Google identities
---   AND main has Production continuity client path (member id + cloud projection
---       + Personal envelope + App transport not Development-gated)
+--   Production household count ≤ 1 (path B ceiling)
 -- Otherwise DO NOT paste 006.
+-- Rollback rehearsal: docs/sql/009_rollback_006.sql on a disposable clone.

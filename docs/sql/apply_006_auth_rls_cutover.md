@@ -1,0 +1,15 @@
+-- Paste-ready pointer for 006 Auth/RLS cutover (path B NOTICE revision).
+--
+-- DO NOT APPLY until Jonathan re-runs docs/sql/006_preflight_readonly.sql
+-- green and explicitly orders the paste.
+--
+-- SQL Editor: https://supabase.com/dashboard/project/tykhocwacaxwquhynkok/sql/new
+-- Paste the full file: supabase/migrations/006_auth_rls_cutover.sql
+--
+-- After apply:
+--   SELECT id, applied_at FROM public.schema_migrations WHERE id = 6;
+--   SELECT policyname FROM pg_catalog.pg_policies
+--   WHERE tablename = 'households' ORDER BY policyname;
+-- Expect hearth_households_select (not hearth_anon_all).
+--
+-- Rollback rehearsal: docs/sql/009_rollback_006.sql (clone first).
