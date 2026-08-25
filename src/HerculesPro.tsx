@@ -17,7 +17,10 @@ export function herculesProAuthorizationRequest(url = window.location.href): str
 }
 
 export function herculesProLaunchUrl(): string {
-  return String(import.meta.env.VITE_HERCULES_PRO_URL || "https://chatgpt.com/").trim();
+  return String(
+    import.meta.env.VITE_HERCULES_PRO_URL
+      || "https://chatgpt.com/plugins/plugin_asdk_app_6a8e199c18908191b5005692b56f69d6",
+  ).trim();
 }
 
 export function launchHerculesPro(): void {
