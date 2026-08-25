@@ -6,7 +6,7 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 ## App Store sync UX P0+P1 (2026-08-25)
 
-**Status:** Draft PR https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/114 on `cursor/appstore-sync-ux-f375` (not merged). Baseline `83a1974` (`main`). Risk: **High**.
+**Status:** **Merged** to `main` as [`3dcb12f`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/commit/3dcb12f) via [PR #114](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/114). Not deployed/live-verified yet. Risk: **High**.
 
 **What was examined:** Conflict sheet, Undo persistence, Sign out wipe, Pairing Invite/Advanced, command Retry, Restore tip host/privacy, personal live-pull.
 
@@ -22,11 +22,11 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 **Verification:** focused vitest + `pnpm check` passed on packet. UI smoke on local Vite demo (Invite/Advanced, Recent copy, Sign out confirm). Two-phone Auth smoke still needs Jonathan/Bianca devices.
 
-**Remaining uncertainty / decision needed:** Confirm worksession defaults if any are wrong. Independent trust review of Sign out wipe + conflict export. No merge until Jonathan says so.
+**Remaining uncertainty / decision needed:** Confirm worksession defaults if any are wrong. Two-phone Auth smoke on live Dev.
 
 **Data/environment:** Development client only; disposable Dev data; no hosted schema/secrets/Production mutation; no peer device required online for Sign out.
 
-**Next owner:** Review PR #114; correct any default if wrong; two-phone smoke on live Dev.
+**Next owner:** Two-phone smoke on live Dev; verify Workers deploy from `main` CI green.
 
 ## Combined undo + restore engine (2026-08-25)
 

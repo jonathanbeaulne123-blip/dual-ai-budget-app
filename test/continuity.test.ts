@@ -309,14 +309,12 @@ describe("Sign out continuity wipe", () => {
     const keep = googleHousehold();
     const drop = { ...googleHousehold(), householdId: "HH-DROP", name: "Drop me" };
     enqueueContinuitySnapshot({
-      environment: "development",
       identity,
       household: keep,
       expectedRevision: 0,
       confirmationId: "keep-1",
     });
     enqueueContinuitySnapshot({
-      environment: "development",
       identity,
       household: drop,
       expectedRevision: 0,

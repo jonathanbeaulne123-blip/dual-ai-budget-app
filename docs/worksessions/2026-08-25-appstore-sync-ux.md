@@ -1,6 +1,6 @@
 # Hearth worksession — App Store sync UX (P0+P1)
 
-- **Status:** READY FOR REVIEW (draft PR #114)
+- **Status:** MERGED ([PR #114](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/114) → `main` @ `3dcb12f`)
 - **Opened:** 2026-08-25 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor Cloud Agent
