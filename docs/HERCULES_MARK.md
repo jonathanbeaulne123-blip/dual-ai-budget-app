@@ -2,7 +2,7 @@
 
 **Supersedes** the “Hercules redrawn” brief’s §2a / §2b / §4. The mark and the 96px character are drawn. §2c (furniture targeting), §5 (the fly and drag collisions), and the `useFurniture` publish path are implemented here too.
 
-Do not redo the ink paths. Do not scale the mark down for the tab icon. Do not put `models/hercules.source.glb` on the kitchen Worker.
+Do not redo the ink paths. Do not scale the mark down for the tab icon. Do not put the 7.46 MB `models/hercules.source.glb` on the ordinary kitchen surface.
 
 ## What ships at runtime
 
@@ -12,7 +12,8 @@ Do not redo the ink paths. Do not scale the mark down for the tab icon. Do not p
 | Wardrobe still | same figure, `size="stage"` | Cosmetics overlay; equipped `ruff` is a no-op (the mane is already there). |
 | In-app mark | `public/hercules-mark.svg` | Front-facing, `currentColor`. |
 | Tab icon | `public/favicon.svg` | Separate file. Heavier stroke, no muzzle, own `prefers-color-scheme`. |
-| 3D source | `models/hercules.source.glb` + `models/hercules.mtl` | Anatomy and physical palette. **Not** bundled into `dist/`. |
+| 3D source | `models/hercules.source.glb` + `models/hercules.mtl` | Canonical anatomy and physical palette. **Not** bundled into `dist/`. |
+| Hercules Pro 3D companion | `models/hercules.pro.glb` + `workers/hercules-pro-ui/widget.ts` | Preserved named rig, Meshopt-compressed to 2.80 MB, loaded only after ChatGPT summons the optional MCP Apps companion. |
 
 Together the two SVGs replace `public/icon.png` (~822 KB).
 
@@ -49,6 +50,7 @@ Timing carries him. At 96px almost none of the drawing survives.
 - Squash/stretch on jump. Slow blink every 6.5s.
 - `hide` scales down and folds ears.
 - Reduced motion: animations off; each pose still a distinct static silhouette.
+- The optional ChatGPT companion animates the source rig procedurally: chest breath, head teaching nods, eyelid blinks, ear reactions, eleven tail joints, and a celebration bounce. It is not the 96px kitchen cat and does not replace the SVG surface.
 
 ## Weaknesses (aim here; do not silently “fix” the drawing)
 
