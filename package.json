@@ -24,12 +24,14 @@
     "books:apply:002": "node scripts/apply-supabase-migration.mjs 002",
     "books:apply:007": "node scripts/apply-supabase-migration.mjs 007",
     "books:apply:008": "node scripts/apply-supabase-migration.mjs 008",
+    "books:apply:012": "node scripts/apply-supabase-migration.mjs 012",
     "books:smoke:cas": "node scripts/smoke-snapshot-cas.mjs",
     "cf:deploy": "pnpm build && rm -f dist/_redirects && wrangler deploy --assets=./dist",
     "cf:preview": "pnpm build && rm -f dist/_redirects && wrangler versions upload --assets=./dist"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.5",
+    "@supabase/supabase-js": "^2.112.4",
     "jsqr": "1.4.0",
     "postgres": "^3.4.9",
     "react": "^19.1.1",

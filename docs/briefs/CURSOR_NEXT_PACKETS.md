@@ -301,7 +301,27 @@ Deliver the command classification, receipt schema, stale-token behavior, revers
 
 ---
 
-## Packet 7 — P1 convergence: atomic multi-device CAS and a durable idempotent outbox
+## Packet 7 — P1 push-native sync (D-149; supersedes prior CAS/outbox-only framing)
+
+**Canonical plan:** [`docs/SYNC_ARCHITECTURE.md`](../SYNC_ARCHITECTURE.md) and slice prompts [`docs/briefs/sync/README.md`](sync/README.md).
+
+### Goal
+
+**Tier 1:** Migration 012 atomic Shared+Personal SQL + Supabase Realtime for **100–500 ms** partner visibility (4 s poll fallback only). **Tier 2:** command-log primary, materialized snapshots, confirmation-scoped undo. Execute slices T1-S1 through T1-S6 before Tier 2.
+
+### Why now / evidence
+
+Live pull uses 4 s REST poll (`src/continuityLivePull.ts`). Personal+Shared can be two trips; D-147 treats partial failure as pending. Whole-snapshot transport remains heavy at month scale (D-145 slimmed local outbox only).
+
+### Handoff
+
+Use per-slice prompts in `docs/briefs/sync/`. Do not re-litigate D-122 CAS client or D-145 outbox — extend them. Packet 7 acceptance = Tier 1 gates G1–G6 in SYNC_ARCHITECTURE.md.
+
+---
+
+## Packet 7 (archived text) — P1 convergence: atomic multi-device CAS and a durable idempotent outbox
+
+*The following remains historical context; implementation follows D-148 tiers above.*
 
 ### Goal
 
