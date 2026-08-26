@@ -152,7 +152,7 @@ export function assertOutboxItemBinding(item: {
   environment: Environment;
   householdId: string;
   memberId: string;
-  /** Present for memory tips and after resolve; slim durable rows omit it (D-144). */
+  /** Present for memory tips and after resolve; slim durable rows omit it (D-145). */
   snapshot?: Household;
 }): void {
   const binding: IdentityBinding = {

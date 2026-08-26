@@ -504,11 +504,11 @@ export function planTaxMilk(
   if (tipCents == null) return null;
   if (tipCents <= 0) {
     return {
-      error: `Net tips are ${tipCents < 0 ? "negative after tip-out" : "zero"}, so there is no tax milk to set aside.`,
+      error: `Net tips are ${tipCents < 0 ? "negative after tip-out" : "zero"}, so there is no tax milk (tip tax set-aside) to park.`,
     };
   }
   if (!observations.length) {
-    return { error: "I need posted tip history before I can split tax milk and a buffer." };
+    return { error: "I need posted tip history before I can split tax milk — tip tax set-aside — and a buffer." };
   }
   const taxRateBps = Math.min(5000, Math.max(0, Math.round(input.taxRateBps ?? DEFAULT_TAX_BPS)));
   if (!Number.isFinite(tipCents) || !Number.isInteger(tipCents)) {
@@ -530,7 +530,7 @@ export function planTaxMilk(
     taxRateBps,
     peak,
     assumptions: [
-      `Tax milk uses an educational ${(taxRateBps / 100).toFixed(0)}% rate — not CRA withholding or a filed return.`,
+      `Tax milk — tip tax set-aside — uses an educational ${(taxRateBps / 100).toFixed(0)}% rate — not CRA withholding or a filed return.`,
       "Buffer only appears on peak shifts (at/above historical tip p75) to smooth dry weeks.",
       "All three buckets are projections. Transfer drafts still require Confirm in Hearth.",
     ],

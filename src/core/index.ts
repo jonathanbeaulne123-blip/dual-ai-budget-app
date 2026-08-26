@@ -49,6 +49,7 @@ export * from "./tipScience.ts";
 export * from "./simReview.ts";
 export * from "./herculesPlanner.ts";
 export * from "./herculesPersonality.ts";
+export * from "./naming.ts";
 export * from "./ledgerNames.ts";
 export * from "./herculesChat.ts";
 export * from "./herculesLedger.ts";

@@ -31,7 +31,7 @@ const STORAGE_QUOTA_MESSAGE =
 export type ContinuityIdentity = GoogleIdentitySelector;
 
 /**
- * In-memory continuity queue tip (D-144).
+ * In-memory continuity queue tip (D-145).
  * `snapshot` is session-only; durable LS/IDB stores {@link ContinuityOutboxDurable} only.
  */
 export type ContinuityOutboxItem = {
@@ -55,7 +55,7 @@ export type ContinuityOutboxItem = {
   nextAttemptAt: string | null;
 };
 
-/** Slim durable outbox row — never carries journal/transactions (D-144). */
+/** Slim durable outbox row — never carries journal/transactions (D-145). */
 export type ContinuityOutboxDurable = Omit<ContinuityOutboxItem, "snapshot">;
 
 export type ContinuityFlushConflict = {
@@ -207,7 +207,7 @@ function isOutboxItem(value: unknown): value is ContinuityOutboxItem {
   )) {
     return false;
   }
-  // Slim durable rows (D-144) or legacy full-snapshot rows both qualify.
+  // Slim durable rows (D-145) or legacy full-snapshot rows both qualify.
   if (item.snapshot) return true;
   return Number.isFinite(item.tipRevision) || Number.isFinite(item.expectedRevision);
 }
@@ -232,7 +232,7 @@ function read(environment: Environment): ContinuityOutboxItem[] {
   if (!mem.length) return local;
   if (!local.length) return mem;
   // Tests may mutate the injected store after enqueue; prefer that durable view when overridden,
-  // but reattach the matching memory tip so same-session flush still has books (D-144).
+  // but reattach the matching memory tip so same-session flush still has books (D-145).
   // Production quota path keeps memory ahead of a stale/partial localStorage copy.
   if (storeOverride) {
     const memById = new Map(mem.map((item) => [item.id, item]));
@@ -358,7 +358,7 @@ export function continuityMemberId(
 /**
  * Resolve the household tip to push. Prefers the newest eligible tip among
  * memory snapshot, Retry live household, and the on-device replica. Never
- * publishes books older than the queued tipRevision (D-144).
+ * publishes books older than the queued tipRevision (D-145).
  */
 export async function resolveOutboxHousehold(
   item: ContinuityOutboxItem,
@@ -628,7 +628,7 @@ export async function flushContinuityOutbox(input: {
   /**
    * When the durable queue is empty (e.g. localStorage quota dropped it), Retry can
    * still push the live in-memory household by seeding one outbox item first.
-   * Also used to resolve slim durable tips that omit the memory snapshot (D-144).
+   * Also used to resolve slim durable tips that omit the memory snapshot (D-145).
    */
   liveHousehold?: Household;
   expectedRevision?: number;

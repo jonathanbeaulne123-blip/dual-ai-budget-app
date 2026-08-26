@@ -1,5 +1,5 @@
 /**
- * Hosted snapshot / personal envelope wire codec (D-144).
+ * Hosted snapshot / personal envelope wire codec (D-145).
  *
  * Plain JSON remains valid forever (legacy rows + tiny payloads).
  * Large payloads use a versioned gzip envelope so PostgREST still stores TEXT
@@ -121,7 +121,7 @@ export async function encodeJsonPayload(value: unknown): Promise<{
   }
 }
 
-/** Decode a hosted TEXT payload (plain JSON or D-144 gzip envelope). */
+/** Decode a hosted TEXT payload (plain JSON or D-145 gzip envelope). */
 export async function decodeJsonPayload(raw: string | object): Promise<unknown> {
   if (typeof raw !== "string") {
     if (isSnapshotPayloadEnvelope(raw)) {

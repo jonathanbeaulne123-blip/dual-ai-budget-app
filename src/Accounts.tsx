@@ -262,13 +262,13 @@ export function AccountRoom({
               type="button"
               onClick={() => run((current) => updateAccount(current, { accountId: account.id, purpose: "goals" }))}
             >
-              Goals vault
+              Goals savings
             </button>
           </div>
           <p className="muted">
             {account.savings?.purpose === "goals"
-              ? "Leftover jar cash parks here. Pigs are envelopes on this account, not extra bank logins."
-              : "Everyday high-interest parking. Sit-down leftover for jars goes to a Goals vault instead."}
+              ? "Leftover goal cash parks here. Each goal tracks its share of this account — not extra bank logins."
+              : "Everyday high-interest parking. Sit-down leftover for goals goes to Goals savings instead."}
           </p>
           <div className="chips">
             <button className="chip" type="button" onClick={() => onAdd(account)}>Move in</button>
@@ -360,7 +360,7 @@ export function AddAccountForm({
         <h2>Open an account</h2>
         <span className="muted">Expandable. Not a feed.</span>
       </header>
-      <p className="muted">Chequing, savings, as many cards as you hold, investments, money owed to us, or the jar. Interest and cashback never auto-post.</p>
+      <p className="muted">Chequing, savings, as many cards as you hold, investments, money owed to us, or Goals savings. Interest and cashback never auto-post.</p>
       <label>Kind</label>
       <div className="chips">
         {ACCOUNT_KINDS.map((item) => (
@@ -398,13 +398,13 @@ export function AddAccountForm({
               Everyday HIS
             </button>
             <button className={`chip ${purpose === "goals" ? "selected" : ""}`} type="button" onClick={() => setPurpose("goals")}>
-              Goals vault
+              Goals savings
             </button>
           </div>
           <p className="muted">
             {purpose === "goals"
-              ? "One sinking-fund account. Pigs fill as envelopes. Sit-down leftover parks here."
-              : "Everyday savings. Jar leftover still prefers a Goals vault if one exists."}
+              ? "One sinking-fund account. Goals track their share here. Sit-down leftover parks here."
+              : "Everyday savings. Goal leftover still prefers Goals savings if one exists."}
           </p>
         </>
       )}

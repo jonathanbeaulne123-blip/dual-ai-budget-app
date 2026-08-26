@@ -89,7 +89,7 @@ export function helpCommands(input: {
     rows.push({
       id: "purchased",
       label: `${full.name} is full`,
-      prompt: "Purchased?",
+      prompt: "Mark purchased",
       expand: "jars",
     });
   }
@@ -184,7 +184,7 @@ export function helpIntro(
     parts.push(`${bill.title} lives on Calendar.`);
   }
 
-  if (full) parts.push(`${full.name} is full. Purchased? is on Jars.`);
+  if (full) parts.push(`${full.name} is full. Mark purchased is on Goals.`);
   if (notice && notice.kind === "habit-preset") parts.push(notice.spoken);
   if (vault && instrument === "accounts") parts.push(`${vault.name} is the sinking-fund vault, not the everyday HIS.`);
 

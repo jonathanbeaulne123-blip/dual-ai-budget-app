@@ -8,7 +8,7 @@ import {
   SNAPSHOT_PAYLOAD_CODEC,
 } from "../src/ledger/snapshotPayload.ts";
 
-describe("D-144 snapshot payload codec", () => {
+describe("D-145 snapshot payload codec", () => {
   it("keeps tiny payloads as plain JSON", async () => {
     const encoded = await encodeJsonPayload({ hello: "hearth", n: 1 });
     expect(encoded.codec).toBe("plain");

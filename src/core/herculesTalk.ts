@@ -53,7 +53,7 @@ export type HerculesTalk = {
   attention: boolean;
 };
 
-const MAX_SPOKEN = 110;
+const MAX_SPOKEN = 140;
 
 function clip(text: string, max = MAX_SPOKEN): string {
   const trimmed = text.replace(/\s+/g, " ").trim();
@@ -93,29 +93,29 @@ function poseFromMood(mood: CompanionMood, celebrating: boolean): HerculesPose {
 }
 
 function repliesFor(mood: CompanionMood, tab: HearthTab, topic: string): string[] {
-  if (topic === "identity") return ["Opinion?", "Scratch"];
+  if (topic === "identity") return ["Opinion?", "Scratch — say hi"];
   if (topic === "opinion") return ["Working capital?", "Balance sheet"];
   if (topic === "fieldwork") return ["Opinion?", "Policies?"];
   if (topic === "wallet" || topic === "accounts") return ["Pay the card?", "What's on the Visa?"];
-  if (topic === "cook") return ["Why?", "Milk"];
+  if (topic === "cook") return ["Why?", "Groceries"];
   if (topic === "bills" || topic === "calendar" || topic === "mail") return ["Calendar", "What now?"];
   if (topic === "health") return ["Health", "What now?"];
   if (topic === "forecast") return ["Tips this week", "We good?"];
   if (topic === "shift" || topic === "timesheet") return ["Log shift", "We good?"];
   if (topic === "wardrobe") return ["Remember payday", "Opinion?"];
-  if (topic === "jars") return ["Start this jar", "Sit-down?"];
-  if (topic === "tictactoe" || topic === "hangman" || topic === "game") return ["We good?", "Milk"];
-  if (topic === "chalkboard") return ["Milk", "We good?"];
-  if (topic === "claims") return ["What's owed?", "Start this jar"];
-  if (topic === "visit") return ["Start this jar", "Calendar"];
+  if (topic === "jars") return ["Start this goal", "Sit-down?"];
+  if (topic === "tictactoe" || topic === "hangman" || topic === "game") return ["We good?", "Groceries"];
+  if (topic === "chalkboard") return ["Groceries", "We good?"];
+  if (topic === "claims") return ["What's owed?", "Start this goal"];
+  if (topic === "visit") return ["Start this goal", "Calendar"];
   if (topic === "notice") return ["Save as preset", "What now?"];
   if (mood === "hiding") return ["Health", "What broke?"];
   if (mood === "restless") return ["Which bill?", "What now?"];
-  if (tab === "calendar") return ["Which bill?", "What's owed?", "Start this jar"];
+  if (tab === "calendar") return ["Which bill?", "What's owed?", "Start this goal"];
   if (tab === "ledger") return ["Opinion?", "Working capital?"];
   if (tab === "plan") return ["Sit-down?", "Leftover?", "We good?"];
   if (tab === "more") return ["Health", "What broke?", "We good?"];
-  return ["We good?", "What now?", "Milk"];
+  return ["We good?", "What now?", "Groceries"];
 }
 
 export function herculesNeedsCheck(household: Household, today: DateKey): boolean {
@@ -189,7 +189,7 @@ export function herculesIdle(
 
   if (five.yes) {
     spoken = `${five.names.join(" and ")} both bought food. That's the move.`;
-    lesson = "A household is two phones posting milk, not a lecture.";
+    lesson = "A household is two phones posting milk — ordinary groceries — not a lecture.";
     topic = "high-five";
     pose = "celebrate";
   } else if (view.mood === "hiding") {
@@ -226,7 +226,7 @@ export function herculesIdle(
     } else if (upcomingVisitProposals(household, today)[0]) {
       const proposal = upcomingVisitProposals(household, today)[0]!;
       spoken = clip(proposal.hercules);
-      lesson = "I propose the jar. You tap Start. I don't write.";
+      lesson = "I propose the goal (jar on the shelf). You tap Start. I don't write.";
       topic = "visit";
       pose = proposal.appointmentId && household.appointments.find((item) => item.id === proposal.appointmentId)?.memberId === "companion"
         ? "celebrate"
@@ -237,7 +237,7 @@ export function herculesIdle(
       lesson = "One breath. Then go live your life.";
       topic = "recap";
     } else if (phase === "morning") {
-      spoken = "Mrrp. Morning. Coffee counts. Groceries count more.";
+      spoken = "Mrrp. Morning. Coffee counts. Milk — groceries — count more.";
       lesson = "The ordinary grocery is how households stay friends.";
       topic = "morning";
       pose = "stretch";
@@ -253,7 +253,7 @@ export function herculesIdle(
       topic = "opinion";
       pose = "loaf";
     } else {
-      spoken = "I'm here. Scratch me or ask a number.";
+      spoken = "I'm here. Scratch — say hi — or ask a number.";
     }
   } else {
     const surface = herculesPageSurface(tab, household, today, now);
@@ -302,7 +302,7 @@ export function talkHercules(
       spoken: "Groceries feed you twice. Coffee out feeds the till.",
       lesson: "Win the kitchen week. Nobody gets named. That's the point.",
       fact: null,
-      replies: ["Milk", "We good?"],
+      replies: ["Groceries", "We good?"],
       pose: "pounce",
       topic: "cook",
       attention: false,
@@ -316,12 +316,12 @@ export function talkHercules(
       ? clip(bubble.spoken)
       : desk[0]
         ? clip(desk[0].spoken)
-        : "Nothing new. Post milk. I'll watch.";
+        : "Nothing new. Post milk — ordinary groceries. I'll watch.";
     return {
       spoken,
       lesson: bubble?.lesson ?? "I notice on this phone. A tap saves a preset. I never post.",
       fact: bubble?.cad ? { label: bubble.kind, value: bubble.cad } : null,
-      replies: bubble ? ["Save as preset", "Not now"] : ["We good?", "Milk"],
+      replies: bubble ? ["Save as preset", "Not now"] : ["We good?", "Groceries"],
       pose: "perch",
       topic: "notice",
       attention: Boolean(bubble),
@@ -333,7 +333,7 @@ export function talkHercules(
     return {
       spoken: proposal
         ? clip(`${proposal.hercules} Calendar → Appointments. You tap Start. I don't write.`)
-        : "No jar to start. A typical cost on a visit comes first.",
+        : "No goal to start yet. A typical visit cost comes first.",
       lesson: "Creating a goal is a household write. I propose. A human confirms.",
       fact: proposal ? { label: proposal.title, value: `${formatCad(proposal.weeklyCents)}/wk` } : null,
       replies: ["What's owed?", "Calendar"],
@@ -369,7 +369,7 @@ export function talkHercules(
   } else if (/what should|what now|coach|advise/.test(q)) {
     topic = view.mood === "hiding" ? "health" : view.mood === "restless" ? "bills" : "coach";
     lesson = view.mood === "content" || view.mood === "glowing"
-      ? "Budgeting is milk, then bills, then treats. In that order."
+      ? "Budgeting is milk — groceries — then bills, then treats. In that order."
       : lesson;
   } else if (/overspend|overspent|over spent|spending habit|who spent|who paid/.test(q)) {
     topic = "member-spend";
@@ -400,7 +400,7 @@ export function talkHercules(
   } else if (/postcard|sit-?down|sit down|leftover/.test(q)) {
     topic = "postcard";
     const card = sitDownPostcard(household);
-    lesson = card.ready ? "The close lives on the chalkboard if you pin it." : "Leftover is cash-like minus bills and card mins. Confirm still moves.";
+    lesson = card.ready ? "Month close lives on Notes (the chalkboard) if you pin it." : "Leftover is cash-like minus bills and card mins. Confirm still moves.";
   } else if (/recap|envelope/.test(q)) {
     topic = "recap";
     lesson = "Screenshot the bubble. Don't screenshot a lecture.";

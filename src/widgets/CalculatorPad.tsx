@@ -74,7 +74,7 @@ export function CalculatorBody({
   return (
     <div>
       <div className="chips">
-        <button type="button" className={`chip ${form.note === "Milk" ? "selected" : ""}`} onClick={onMilk}>Milk</button>
+        <button type="button" className={`chip ${form.note === "Groceries" ? "selected" : ""}`} onClick={onMilk}>Groceries</button>
         <button type="button" className={`chip ${form.note === "Coffee" ? "selected" : ""}`} onClick={onCoffee}>Coffee</button>
         <button type="button" className={`chip ${shiftOpen ? "selected" : ""}`} onClick={() => setShiftOpen((open) => !open)}>
           Shift
