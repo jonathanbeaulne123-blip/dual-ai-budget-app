@@ -69,7 +69,7 @@ export function herculesPageSurface(
     return {
       tab,
       spoken,
-      lesson: "Leftover is cash-like minus bills and card mins. Confirm parks jars in the Goals vault.",
+      lesson: "Leftover is cash-like minus bills and card mins. Confirm parks goal cash in Goals savings.",
       chips: ["Sit-down?", "Leftover?", "We good?"],
       placeholder: "ask about the plan…",
       fact: { label: "Leftover", value: formatCad(leftover.leftoverCents), source: { route: "plan", view: context.view, surface: "postcard", label: "Open the sit-down calculation" } },
@@ -81,7 +81,7 @@ export function herculesPageSurface(
       tab,
       spoken,
       lesson: "Dates remind. Mark paid writes.",
-      chips: ["Which bill?", "What's owed?", "Start this jar"],
+      chips: ["Which bill?", "What's owed?", "Start this goal"],
       placeholder: "ask about a date…",
       fact: visitFact(household, today) ?? billFact(household, today),
     };
@@ -161,9 +161,9 @@ export function herculesInstrumentSurface(
     },
     calculator: {
       id: "calculator",
-      spoken: punch ? "Pad's for tips mid-shift. Confirm still posts the shift." : "Milk is the ordinary grocery. Confirm writes it.",
+      spoken: punch ? "Pad's for tips mid-shift. Confirm still posts the shift." : "Milk — ordinary groceries. Confirm posts them.",
       lesson: "The pad previews. Confirm posts. Shift math on the pad never writes.",
-      chips: ["Milk", "Log shift", "We good?"],
+      chips: ["Groceries", "Log shift", "We good?"],
       pose: "pounce",
     },
     blotter: {
@@ -196,9 +196,9 @@ export function herculesInstrumentSurface(
     },
     appointments: {
       id: "appointments",
-      spoken: visit ? "A visit is on the board. Start this jar is your tap, not mine." : "No visit on the horizon. Quiet titles stay coded in my mouth.",
-      lesson: "I propose jars. A human starts them.",
-      chips: ["Start this jar", "What's owed?", "Calendar"],
+      spoken: visit ? "A visit is on the board. Start this goal is your tap, not mine." : "No visit on the horizon. Quiet titles stay coded in my mouth.",
+      lesson: "I propose goals. A human starts them.",
+      chips: ["Start this goal", "What's owed?", "Calendar"],
       pose: "loaf",
     },
     mail: {
@@ -225,13 +225,13 @@ export function herculesInstrumentSurface(
     chalkboard: {
       id: "chalkboard",
       spoken: "Draw or type. Save keeps it. Delete only — chalk never posts.",
-      lesson: "Weather sits on the glass. Confirm still writes milk.",
-      chips: ["Milk", "Remember payday", "We good?"],
+      lesson: "Weather sits on the glass. Confirm still posts groceries.",
+      chips: ["Groceries", "Remember payday", "We good?"],
       pose: "loaf",
     },
     wardrobe: {
       id: "wardrobe",
-      spoken: "Hats, chains, the house. Kitchen ledger notes live with the milk.",
+      spoken: "Hats, chains, the house — outfits only. Kitchen ledger notes live with the groceries.",
       lesson: "Cosmetics never post. Remember … keeps a note.",
       chips: ["Remember payday", "Opinion?", "We good?"],
       pose: "loaf",
@@ -245,16 +245,16 @@ export function herculesInstrumentSurface(
     },
     cookoff: {
       id: "cookoff",
-      spoken: "Kitchen versus till. Groceries feed you twice.",
+      spoken: "Kitchen vs takeout: groceries feed you twice; coffee & lunches feed the till.",
       lesson: "Nobody gets named. That's the point.",
-      chips: ["Milk", "Why?", "We good?"],
+      chips: ["Groceries", "Why?", "We good?"],
       pose: "pounce",
     },
     jars: {
       id: "jars",
-      spoken: "Pigs fill from posted contributions. Cash lives in the Goals vault.",
-      lesson: "Contribute on Plan. Purchased? posts an expense from the vault.",
-      chips: ["Start this jar", "Sit-down?", "Leftover?"],
+      spoken: "Pigs — goal envelopes — fill from posted contributions. Cash lives in Goals savings.",
+      lesson: "Contribute on Plan. Mark purchased posts an expense from Goals savings.",
+      chips: ["Start this goal", "Sit-down?", "Leftover?"],
       pose: "loaf",
     },
     lamp: {
@@ -268,14 +268,14 @@ export function herculesInstrumentSurface(
       id: "tictactoe",
       spoken: "Your move. Two phones. No CAD on the grid.",
       lesson: "Turn-based. Games never post.",
-      chips: ["We good?", "Milk", "What now?"],
+      chips: ["We good?", "Groceries", "What now?"],
       pose: "pounce",
     },
     hangman: {
       id: "hangman",
-      spoken: "Household words. Milk, hydro, visor. Not the Tuesday visit.",
+      spoken: "Household words — milk (groceries), hydro, visor. Not the Tuesday visit.",
       lesson: "Guessing is a kitchen scribble. Quiet titles stay off the board.",
-      chips: ["Milk", "We good?", "What now?"],
+      chips: ["Groceries", "We good?", "What now?"],
       pose: "pounce",
     },
   };

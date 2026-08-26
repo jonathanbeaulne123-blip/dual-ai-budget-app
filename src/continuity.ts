@@ -12,6 +12,7 @@ import {
   type DiscoveredHousehold,
   type SupabaseConfig,
 } from "./ledger/supabase.ts";
+import { loadHousehold } from "./storage.ts";
 
 export {
   hostedContinuityAllowed,
@@ -29,6 +30,10 @@ const STORAGE_QUOTA_MESSAGE =
 
 export type ContinuityIdentity = GoogleIdentitySelector;
 
+/**
+ * In-memory continuity queue tip (D-145).
+ * `snapshot` is session-only; durable LS/IDB stores {@link ContinuityOutboxDurable} only.
+ */
 export type ContinuityOutboxItem = {
   id: string;
   environment: Environment;
@@ -36,8 +41,11 @@ export type ContinuityOutboxItem = {
   memberId: string;
   identity: ContinuityIdentity;
   expectedRevision: number;
+  /** Tip revision of the books this queue entry intends to publish. */
+  tipRevision: number;
   confirmationIds: string[];
-  snapshot: Household;
+  /** Memory-only tip snapshot. Omitted from durable LS/IDB. */
+  snapshot?: Household;
   createdAt: string;
   updatedAt: string;
   attempts: number;
@@ -46,6 +54,9 @@ export type ContinuityOutboxItem = {
   /** ISO time when automatic flush may try again. Null when due immediately or blocked. */
   nextAttemptAt: string | null;
 };
+
+/** Slim durable outbox row — never carries journal/transactions (D-145). */
+export type ContinuityOutboxDurable = Omit<ContinuityOutboxItem, "snapshot">;
 
 export type ContinuityFlushConflict = {
   item: ContinuityOutboxItem;
@@ -129,6 +140,17 @@ function openOutboxDb(): Promise<IDBDatabase> {
   });
 }
 
+/** Strip the memory-only tip so durable bytes never hold the journal. */
+export function toDurableOutboxItems(items: ContinuityOutboxItem[]): ContinuityOutboxDurable[] {
+  return items.map((item) => {
+    const { snapshot: _snapshot, ...rest } = item;
+    return {
+      ...rest,
+      tipRevision: item.snapshot?.revision ?? item.tipRevision ?? 0,
+    };
+  });
+}
+
 async function idbReadOutbox(environment: Environment): Promise<ContinuityOutboxItem[] | null> {
   try {
     const db = await openOutboxDb();
@@ -144,7 +166,7 @@ async function idbReadOutbox(environment: Environment): Promise<ContinuityOutbox
   }
 }
 
-async function idbWriteOutbox(environment: Environment, items: ContinuityOutboxItem[]): Promise<void> {
+async function idbWriteOutbox(environment: Environment, items: ContinuityOutboxDurable[]): Promise<void> {
   const db = await openOutboxDb();
   await new Promise<void>((resolve, reject) => {
     const transaction = db.transaction(OUTBOX_STORE, "readwrite");
@@ -158,9 +180,13 @@ async function idbWriteOutbox(environment: Environment, items: ContinuityOutboxI
 }
 
 function normalizeOutboxItem(item: ContinuityOutboxItem): ContinuityOutboxItem {
+  const tipRevision = Number.isInteger(item.tipRevision)
+    ? item.tipRevision
+    : (item.snapshot?.revision ?? 0);
   return {
     ...item,
-    snapshot: ensureHouseholdShape(item.snapshot),
+    tipRevision,
+    snapshot: item.snapshot ? ensureHouseholdShape(item.snapshot) : undefined,
     confirmationIds: Array.isArray(item.confirmationIds) ? item.confirmationIds.filter(Boolean) : [],
     attempts: Number.isInteger(item.attempts) ? item.attempts : 0,
     lastError: item.lastError ? humanizeContinuityError(item.lastError) : null,
@@ -172,14 +198,18 @@ function normalizeOutboxItem(item: ContinuityOutboxItem): ContinuityOutboxItem {
 function isOutboxItem(value: unknown): value is ContinuityOutboxItem {
   if (!value || typeof value !== "object") return false;
   const item = value as ContinuityOutboxItem;
-  return Boolean(
-    item.id &&
-    item.householdId &&
-    item.memberId &&
-    item.snapshot &&
-    item.identity &&
-    (item.identity.subject || item.identity.email),
-  );
+  if (!(
+    item.id
+    && item.householdId
+    && item.memberId
+    && item.identity
+    && (item.identity.subject || item.identity.email)
+  )) {
+    return false;
+  }
+  // Slim durable rows (D-145) or legacy full-snapshot rows both qualify.
+  if (item.snapshot) return true;
+  return Number.isFinite(item.tipRevision) || Number.isFinite(item.expectedRevision);
 }
 
 function readFromLocal(environment: Environment): ContinuityOutboxItem[] {
@@ -198,34 +228,67 @@ function readFromLocal(environment: Environment): ContinuityOutboxItem[] {
 
 function read(environment: Environment): ContinuityOutboxItem[] {
   const local = readFromLocal(environment);
-  const mem = memoryOutbox.get(environment);
-  if (!mem?.length) return local;
+  const mem = memoryOutbox.get(environment) ?? [];
+  if (!mem.length) return local;
   if (!local.length) return mem;
-  // Tests may mutate the injected store after enqueue; prefer that view when overridden.
+  // Tests may mutate the injected store after enqueue; prefer that durable view when overridden,
+  // but reattach the matching memory tip so same-session flush still has books (D-145).
   // Production quota path keeps memory ahead of a stale/partial localStorage copy.
-  if (storeOverride) return local;
+  if (storeOverride) {
+    const memById = new Map(mem.map((item) => [item.id, item]));
+    return local.map((item) => {
+      const tip = memById.get(item.id);
+      if (!tip?.snapshot) return item;
+      if (item.householdId !== tip.householdId || item.environment !== tip.environment) {
+        return item;
+      }
+      return {
+        ...item,
+        snapshot: tip.snapshot,
+        tipRevision: tip.tipRevision,
+        confirmationIds: item.confirmationIds.length ? item.confirmationIds : tip.confirmationIds,
+      };
+    });
+  }
   return mem;
+}
+
+function writeLocalDurable(environment: Environment, durable: ContinuityOutboxDurable[]): void {
+  const store = browserStore();
+  if (!store) return;
+  try {
+    if (durable.length) store.setItem(key(environment), JSON.stringify(durable));
+    else store.removeItem(key(environment));
+  } catch (caught) {
+    if (isStorageQuotaError(caught)) return;
+    throw new Error(humanizeContinuityError(caught));
+  }
+}
+
+/** IDB-first durable persist; LS holds the same slim metadata when space allows. */
+async function persistDurableOutbox(environment: Environment, durable: ContinuityOutboxDurable[]): Promise<void> {
+  try {
+    await idbWriteOutbox(environment, durable);
+  } catch {
+    /* IndexedDB may be unavailable in private mode; LS + memory still hold the tip pointer. */
+  }
+  try {
+    writeLocalDurable(environment, durable);
+  } catch {
+    /* Quota on slim metadata is rare; memory + IDB remain authoritative. */
+  }
 }
 
 function write(environment: Environment, items: ContinuityOutboxItem[]): void {
   memoryOutbox.set(environment, items);
-  const store = browserStore();
-  if (!store) {
-    void idbWriteOutbox(environment, items).catch(() => undefined);
+  const durable = toDurableOutboxItems(items);
+  if (storeOverride) {
+    // Tests inject a sync store and read it immediately — write slim LS first.
+    writeLocalDurable(environment, durable);
+    void idbWriteOutbox(environment, durable).catch(() => undefined);
     return;
   }
-  try {
-    if (items.length) store.setItem(key(environment), JSON.stringify(items));
-    else store.removeItem(key(environment));
-  } catch (caught) {
-    if (isStorageQuotaError(caught)) {
-      // Memory keeps the queue for this session; IndexedDB is the durable backup.
-      void idbWriteOutbox(environment, items).catch(() => undefined);
-      return;
-    }
-    throw new Error(humanizeContinuityError(caught));
-  }
-  void idbWriteOutbox(environment, items).catch(() => undefined);
+  void persistDurableOutbox(environment, durable);
 }
 
 /** Load a durable IndexedDB outbox when localStorage was emptied by quota. */
@@ -292,6 +355,63 @@ export function continuityMemberId(
   return memberIdForGoogleIdentity(household, identity);
 }
 
+/**
+ * Resolve the household tip to push. Prefers the newest eligible tip among
+ * memory snapshot, Retry live household, and the on-device replica. Never
+ * publishes books older than the queued tipRevision (D-145).
+ */
+export async function resolveOutboxHousehold(
+  item: ContinuityOutboxItem,
+  liveHousehold?: Household,
+): Promise<Household> {
+  const tipRevision = Number.isFinite(item.tipRevision) ? item.tipRevision : 0;
+  const candidates: Household[] = [];
+
+  if (item.snapshot) {
+    candidates.push(ensureHouseholdShape(item.snapshot));
+  }
+  if (
+    liveHousehold
+    && liveHousehold.householdId === item.householdId
+    && liveHousehold.environment === item.environment
+  ) {
+    candidates.push(ensureHouseholdShape(liveHousehold));
+  }
+
+  let loaded: Household | null = null;
+  try {
+    loaded = await loadHousehold(item.environment, item.householdId, item.memberId);
+  } catch {
+    loaded = null;
+  }
+  if (loaded) candidates.push(ensureHouseholdShape(loaded));
+
+  const eligible = candidates.filter((household) => {
+    try {
+      assertOutboxItemBinding({ ...item, snapshot: household, identity: item.identity });
+      return household.revision >= tipRevision;
+    } catch {
+      return false;
+    }
+  });
+
+  if (!eligible.length) {
+    if (candidates.length) {
+      throw new Error(
+        "This phone's books are behind the share queue tip. Open the latest books, then tap Retry now.",
+      );
+    }
+    throw new Error(
+      "Saved on this phone. Open these household books, then tap Retry now to share them.",
+    );
+  }
+
+  eligible.sort((left, right) => right.revision - left.revision || right.baseRevision - left.baseRevision);
+  const chosen = eligible[0]!;
+  assertOutboxItemBinding({ ...item, snapshot: chosen, identity: item.identity });
+  return chosen;
+}
+
 export function enqueueContinuitySnapshot(input: {
   household: Household;
   identity: ContinuityIdentity;
@@ -321,6 +441,7 @@ export function enqueueContinuitySnapshot(input: {
       email: input.identity.email.trim().toLowerCase(),
     },
     expectedRevision: existing?.expectedRevision ?? input.expectedRevision,
+    tipRevision: snapshot.revision,
     confirmationIds: [...new Set([...(existing?.confirmationIds ?? []), input.confirmationId].filter(Boolean))],
     snapshot,
     createdAt: existing?.createdAt ?? now,
@@ -331,7 +452,7 @@ export function enqueueContinuitySnapshot(input: {
     blockedByConflict: false,
     nextAttemptAt: null,
   };
-  assertOutboxItemBinding(item);
+  assertOutboxItemBinding({ ...item, snapshot, identity: item.identity });
   write(snapshot.environment, [...items.filter((row) => row.id !== id), item]);
   return item;
 }
@@ -419,6 +540,7 @@ async function flushItem(
   item: ContinuityOutboxItem,
   identity: ContinuityIdentity,
   config?: SupabaseConfig | null,
+  liveHousehold?: Household,
 ): Promise<
   | { kind: "synchronized"; revision: number }
   | { kind: "pending"; message: string }
@@ -428,8 +550,9 @@ async function flushItem(
     if (!sameIdentity(item.identity, identity)) {
       throw new Error("This outbox entry belongs to a different Google account and was not replayed.");
     }
-    assertOutboxItemBinding({ ...item, identity: item.identity });
-    const pushed = await pushSupabaseHousehold(item.snapshot, config, {
+    const household = await resolveOutboxHousehold(item, liveHousehold);
+    assertOutboxItemBinding({ ...item, snapshot: household, identity: item.identity });
+    const pushed = await pushSupabaseHousehold(household, config, {
       expectedRevision: item.expectedRevision,
       continuityIdentity: identity,
     });
@@ -446,7 +569,7 @@ async function flushItem(
     // Successful CAS (including idempotent duplicate delivery) acknowledges the outbox entry.
     // Local books are never cleared here — only the transport queue item.
     acknowledgeContinuityOutboxItem(item);
-    return { kind: "synchronized", revision: item.snapshot.revision };
+    return { kind: "synchronized", revision: household.revision };
   } catch (caught) {
     const message = humanizeContinuityError(caught);
     pendingItem(item, message);
@@ -487,7 +610,7 @@ export async function transportHouseholdWithOutbox(input: {
       message: "Saved on this phone. Sharing in the background.",
     };
   }
-  const result = await flushItem(item, input.identity, input.config);
+  const result = await flushItem(item, input.identity, input.config, input.household);
   if (result.kind === "synchronized") return { ok: true, remoteRevision: result.revision };
   if (result.kind === "conflict") {
     return {
@@ -509,6 +632,7 @@ export async function flushContinuityOutbox(input: {
   /**
    * When the durable queue is empty (e.g. localStorage quota dropped it), Retry can
    * still push the live in-memory household by seeding one outbox item first.
+   * Also used to resolve slim durable tips that omit the memory snapshot (D-145).
    */
   liveHousehold?: Household;
   expectedRevision?: number;
@@ -540,7 +664,7 @@ export async function flushContinuityOutbox(input: {
       result.pending += 1;
       continue;
     }
-    const flushed = await flushItem(item, input.identity, input.config);
+    const flushed = await flushItem(item, input.identity, input.config, input.liveHousehold);
     if (flushed.kind === "synchronized") result.synchronized += 1;
     else if (flushed.kind === "conflict") {
       result.pending += 1;

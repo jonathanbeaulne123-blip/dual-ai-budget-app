@@ -47,14 +47,14 @@ import { queryBooks, type BooksStatus } from "./ledger/engine.ts";
 import { assertReadOnlySelect } from "./ledger/queryGuard.ts";
 
 const PANES = [
-  { id: "wallet", label: "Wallet", blurb: "Net worth story: chequing → Goals vault → cards → investments. Touch a tile to open the room." },
+  { id: "wallet", label: "Wallet", blurb: "Net worth story: chequing → Goals savings → cards → investments. Touch a tile to open the room." },
   { id: "register", label: "All activity", blurb: "Every posted row you can see in this view. Duplicate contrast lives here." },
   { id: "import", label: "Import", blurb: "QFX/OFX and selected document photos enter an inbox. Duplicate review and one final Confirm protect the books." },
   { id: "journal", label: "Journal", blurb: "Debit and credit lines compiled from the snapshot. The books engine." },
   { id: "trial", label: "Trial balance", blurb: "Account totals that must balance. Health refuses a lie." },
   { id: "statements", label: "Statements", blurb: "Balance sheet, P&L, cash flow, equity, working capital, notes." },
   { id: "rec", label: "Reconcile", blurb: "Tie a statement figure to the books. Never posts money by itself." },
-  { id: "close", label: "Close pack", blurb: "Hard month lock. Reopen is explicit. Milk in the open month still posts." },
+  { id: "close", label: "Close pack", blurb: "Hard month lock. Reopen is explicit. Groceries in the open month still posts." },
   { id: "accounts", label: "Chart", blurb: "Every account on the chart of accounts." },
   { id: "query", label: "Ask", blurb: "Read-only SQL and Ask the books. Hercules answers from the journal." },
 ] as const;

@@ -44,7 +44,7 @@ export function sillOverview(household: Household, dashboard: Dashboard, today: 
   const streak = shiftPostingStreak(household, today);
   const overdueBill = dashboard.upcoming.find((item) => isOutgoingBill(item) && (item.due || item.date < today));
 
-  let needsMe = "Quiet desk. Milk whenever.";
+  let needsMe = "Quiet desk. Groceries whenever.";
   if (punch) needsMe = `On the clock · ${previewHoursLabel(punch.startedAt, nowMs)}`;
   else if (overdueBill) needsMe = `${overdueBill.title} is lifted. Mark paid writes.`;
   else if (hot && (hot.daysUntilDue < 3 || (hot.utilization != null && hot.utilization >= 0.8))) {

@@ -18,6 +18,7 @@ import {
   type SnapshotCasStore,
 } from "../src/ledger/snapshotCas.ts";
 import { householdCloudProjection, pushSupabaseHousehold } from "../src/ledger/supabase.ts";
+import { decodeJsonPayload } from "../src/ledger/snapshotPayload.ts";
 
 const config = { url: "https://cas.example.supabase.co", key: "sb_publishable_cas_test" };
 const identityA = { email: "jonathan@example.com", subject: "google-sub-jonathan" };
@@ -184,7 +185,7 @@ describe("publish_household_snapshot CAS contract", () => {
     if (loser.result.ok) throw new Error("expected conflict");
     // Same target revision + different books → hash mismatch; otherwise stale base.
     expect(["stale-revision", "revision-hash-mismatch"]).toContain(loser.result.reason);
-    expect(JSON.parse(String(loser.result.remotePayload)).transactions.some((row: { note: string }) => row.note === "Milk A")).toBe(true);
+    expect(((await decodeJsonPayload(String(loser.result.remotePayload))) as Household).transactions.some((row) => row.note === "Milk A")).toBe(true);
     expect(store.snapshot?.payload).toBe(first.store.snapshot?.payload);
 
     const dup = applyPublishHouseholdSnapshotCas(store, reqA, "2026-08-24T12:00:02.000Z");
@@ -255,7 +256,7 @@ describe("two-client hosted CAS + outbox", () => {
     const winnerNote = resultA.conflict ? "Device B bread" : "Device A milk";
     const loserNote = resultA.conflict ? "Device A milk" : "Device B bread";
     const loserLocal = resultA.conflict ? localA : localB;
-    const remote = JSON.parse(String(host.get(localA.householdId).snapshot?.payload)) as Household;
+    const remote = await decodeJsonPayload(String(host.get(localA.householdId).snapshot?.payload)) as Household;
     expect(remote.revision).toBe(1);
     expect(remote.transactions.some((row) => row.note === winnerNote)).toBe(true);
     expect(remote.transactions.some((row) => row.note === loserNote)).toBe(false);
@@ -274,7 +275,7 @@ describe("two-client hosted CAS + outbox", () => {
     const queued = listContinuityOutbox("development");
     expect(queued).toHaveLength(1);
     expect(queued[0]?.blockedByConflict).toBe(true);
-    expect(queued[0]?.snapshot.transactions.some((row) => row.note === loserNote)).toBe(true);
+    expect(queued[0]?.snapshot?.transactions.some((row) => row.note === loserNote)).toBe(true);
   });
 
   it("acknowledges duplicate delivery without rewriting a different payload", async () => {
@@ -290,7 +291,7 @@ describe("two-client hosted CAS + outbox", () => {
     const again = await pushSupabaseHousehold(household, config, { expectedRevision: 0, continuityIdentity: identityA });
     expect(again.conflict).toBeFalsy();
     expect(again.duplicate).toBe(true);
-    const remote = JSON.parse(String(host.get(household.householdId).snapshot?.payload)) as Household;
+    const remote = await decodeJsonPayload(String(host.get(household.householdId).snapshot?.payload)) as Household;
     expect(remote.transactions.some((row) => row.note === "Dup milk")).toBe(true);
     expect(remote.revision).toBe(1);
     expect(host.get(household.householdId).household?.revision).toBe(1);
@@ -315,8 +316,8 @@ describe("two-client hosted CAS + outbox", () => {
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected conflict");
     expect(result.errorClass).toBe("conflict-detected");
-    expect(listContinuityOutbox("development")[0]?.snapshot.transactions.some((row) => row.note === "Stale toast")).toBe(true);
-    expect(JSON.parse(String(host.get(first.householdId).snapshot?.payload)).transactions.some((row: { note: string }) => row.note === "Cloud milk")).toBe(true);
+    expect(listContinuityOutbox("development")[0]?.snapshot?.transactions.some((row) => row.note === "Stale toast")).toBe(true);
+    expect(((await decodeJsonPayload(String(host.get(first.householdId).snapshot?.payload))) as Household).transactions.some((row) => row.note === "Cloud milk")).toBe(true);
   });
 
   it("replays an offline client's outbox after reconnect without erasing local acceptance", async () => {
@@ -335,7 +336,7 @@ describe("two-client hosted CAS + outbox", () => {
       config,
     });
     expect(pending.ok).toBe(false);
-    expect(listContinuityOutbox("development")[0]?.snapshot.transactions.some((row) => row.note === "Offline milk")).toBe(true);
+    expect(listContinuityOutbox("development")[0]?.snapshot?.transactions.some((row) => row.note === "Offline milk")).toBe(true);
 
     vi.stubGlobal("fetch", stubFetchAgainstHostedCas(host));
     const flushed = await flushContinuityOutbox({
@@ -346,7 +347,7 @@ describe("two-client hosted CAS + outbox", () => {
     });
     expect(flushed).toEqual({ synchronized: 1, pending: 0, deferred: 0, conflicts: [] });
     expect(listContinuityOutbox("development")).toEqual([]);
-    expect(JSON.parse(String(host.get(household.householdId).snapshot?.payload)).transactions.some((row: { note: string }) => row.note === "Offline milk")).toBe(true);
+    expect(((await decodeJsonPayload(String(host.get(household.householdId).snapshot?.payload))) as Household).transactions.some((row) => row.note === "Offline milk")).toBe(true);
   });
 
   it("keeps one completely offline client queued while the online peer publishes", async () => {
@@ -388,8 +389,9 @@ describe("two-client hosted CAS + outbox", () => {
     });
     expect(offline.ok).toBe(false);
     expect(listContinuityOutbox("development")).toHaveLength(1);
-    expect(JSON.parse(String(host.get(onlineLocal.householdId).snapshot?.payload)).transactions.some((row: { note: string }) => row.note === "Online milk")).toBe(true);
-    expect(JSON.parse(String(host.get(onlineLocal.householdId).snapshot?.payload)).transactions.some((row: { note: string }) => row.note === "Still offline milk")).toBe(false);
+    const onlineRemote = await decodeJsonPayload(String(host.get(onlineLocal.householdId).snapshot?.payload)) as Household;
+    expect(onlineRemote.transactions.some((row) => row.note === "Online milk")).toBe(true);
+    expect(onlineRemote.transactions.some((row) => row.note === "Still offline milk")).toBe(false);
   });
 
   it("defers automatic flush until backoff elapses", async () => {
@@ -484,7 +486,7 @@ describe("two-client hosted CAS + outbox", () => {
       continuityIdentity: identityA,
     });
     expect(second.conflict).toBeFalsy();
-    const remote = JSON.parse(String(host.get(skewedEarly.householdId).snapshot?.payload)) as Household;
+    const remote = await decodeJsonPayload(String(host.get(skewedEarly.householdId).snapshot?.payload)) as Household;
     expect(remote.revision).toBe(2);
     expect(remote.lastCommittedAt).toBe("2026-08-24T08:00:00.000Z");
     expect(remote.transactions.some((row) => row.note === "Skew late bread")).toBe(true);
@@ -525,7 +527,7 @@ describe("two-client hosted CAS + outbox", () => {
     expect(casCalls).toBe(1);
     const queued = listContinuityOutbox("development");
     expect(queued).toHaveLength(1);
-    expect(queued[0]?.snapshot.transactions.some((row) => row.note === "Partial milk")).toBe(true);
+    expect(queued[0]?.snapshot?.transactions.some((row) => row.note === "Partial milk")).toBe(true);
     expect(queued[0]?.blockedByConflict).toBe(false);
     expect(queued[0]?.attempts).toBe(1);
 
@@ -539,8 +541,8 @@ describe("two-client hosted CAS + outbox", () => {
     });
     expect(flushed.synchronized).toBe(1);
     expect(listContinuityOutbox("development")).toEqual([]);
-    expect(JSON.parse(String(host.get(household.householdId).snapshot?.payload)).transactions.some(
-      (row: { note: string }) => row.note === "Partial milk",
+    expect(((await decodeJsonPayload(String(host.get(household.householdId).snapshot?.payload))) as Household).transactions.some(
+      (row) => row.note === "Partial milk",
     )).toBe(true);
   });
 });

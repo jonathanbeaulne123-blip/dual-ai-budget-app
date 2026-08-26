@@ -218,7 +218,7 @@ export function askBooks(
     return {
       kind: "answer",
       sentence: leftover.leftoverCents
-        ? `Sit-down leftover is ${formatCad(leftover.leftoverCents)}. ${leftover.formula} Month net is not leftover. Confirm parks jar cash in the Goals vault. Hercules never does.`
+        ? `Sit-down leftover is ${formatCad(leftover.leftoverCents)}. ${leftover.formula} Month net is not leftover. Confirm parks goal cash in Goals savings. Hercules never does.`
         : leftover.shortfallCents
           ? `Nothing to move. ${leftover.formula} Sit-down still runs. It does not invent CAD.`
           : leftover.formula,
@@ -227,7 +227,7 @@ export function askBooks(
         { label: "Bills next 30 days", value: formatCad(leftover.billsNext30Cents) },
         { label: "Card minimums", value: formatCad(leftover.minPaymentsCents) },
         { label: "Leftover", value: formatCad(leftover.leftoverCents) },
-        { label: "Parks in", value: "Goals vault" },
+        { label: "Parks in", value: "Goals savings" },
       ],
     };
   }
@@ -300,7 +300,7 @@ export function askBooks(
         { label: "Reimbursed", value: formatCad(log.reimbursedCents) },
         { label: "Still owing", value: formatCad(log.outstandingCents) },
         { label: "CRA cap", value: formatCad(log.capCents) },
-        ...(saveFor ? [{ label: "Next jar", value: `${saveFor.title} · ${formatCad(saveFor.weeklyCents)}/wk` }] : []),
+        ...(saveFor ? [{ label: "Next goal", value: `${saveFor.title} · ${formatCad(saveFor.weeklyCents)}/wk` }] : []),
       ],
     };
   }
@@ -318,7 +318,7 @@ export function askBooks(
       rows: household.goals.map((goal) => ({
         label: goal.name,
         value: `${formatCad(goal.savedCents)} / ${formatCad(goal.targetCents)}`,
-        source: source(context, "plan", "Open this jar", { surface: "jars", goalId: goal.id }),
+        source: source(context, "plan", "Open this goal", { surface: "jars", goalId: goal.id }),
       })),
     };
   }

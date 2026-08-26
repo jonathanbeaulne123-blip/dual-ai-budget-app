@@ -35,7 +35,7 @@ Phase 0 can honestly check: Sheets-era archive evidence; environment + Google me
 ### In scope
 
 - `docs/SHEETS_ERA_TRACKER_ARCHIVE.md`
-- D-145 membership tuple + unified financial hash + accept verify + switch-ledger accept
+- D-146 membership tuple + unified financial hash + accept verify + switch-ledger accept
 - Roadmap Phase 0 checkbox updates
 
 ### Out of scope
@@ -57,7 +57,7 @@ Phase 0 can honestly check: Sheets-era archive evidence; environment + Google me
 
 ## Decisions
 
-- D-145; phrase/Pass remain recovery without Google; D-144 left for open naming/outbox drafts
+- D-146; phrase/Pass remain recovery without Google; D-144 is Scheme A (#154); D-145 is slim outbox (#155)
 
 ## Remaining uncertainty
 

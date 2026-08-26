@@ -315,7 +315,7 @@ describe("office projections stay honest", () => {
     expect(TIMESHEET_EMPTY).toMatch(/No shifts posted yet/);
     expect(POSTCARD_EMPTY).toMatch(/Next sit-down/);
     expect(COOK_EMPTY).toMatch(/Nothing cooked, nothing bought/);
-    expect(JARS_EMPTY).toMatch(/No jars on the shelf yet/);
+    expect(JARS_EMPTY).toMatch(/No goals yet/);
     expect(CLAIMS_EMPTY).toMatch(/Nothing owed to this household/);
     expect(BOARD_EMPTY).toMatch(/Nothing on the board/);
   });

@@ -54,7 +54,7 @@ export function DailyHearth({
     <section className="daily-hearth">
       <article className="chalkboard">
         <header>
-          <h2>Chalkboard</h2>
+          <h2>Notes</h2>
           <span>Silly, one-off, not money</span>
         </header>
         {household.kitchen.chalkboard.length === 0 ? (
@@ -81,7 +81,7 @@ export function DailyHearth({
             </button>
           )}
         </div>
-        <label className="sr-only" htmlFor="chalk-input">Write on the chalkboard</label>
+        <label className="sr-only" htmlFor="chalk-input">Write a note</label>
         <textarea
           id="chalk-input"
           className="chalk-input"
@@ -144,7 +144,7 @@ export function DailyHearth({
         <div className="hercules-notes">
           <span className="muted">Kitchen ledger notes</span>
           {(household.kitchen.hercules?.memories ?? []).length === 0 ? (
-            <p className="muted">Say “remember …” to Hercules. Notes stay in this snapshot — same door as the milk.</p>
+            <p className="muted">Say “remember …” to Hercules. Notes stay in this snapshot — same door as the books.</p>
           ) : (
             (household.kitchen.hercules?.memories ?? []).map((row) => (
               <div className="chalk-note" key={row.id}>

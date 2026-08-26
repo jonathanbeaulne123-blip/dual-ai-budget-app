@@ -361,7 +361,7 @@ describe("The Hercules Update", () => {
     expect(leaderboard.talk.spoken).toMatch(/posted spend|shared/i);
 
     const draft = planHerculesTurn(household, "add milk", today, "home");
-    expect(draft.draft?.note).toBe("Milk");
+    expect(draft.draft?.note).toBe("Groceries");
     expect(draft.draft?.subcategoryId).toBe("SUB-FOOD-GROCERIES");
     expect(draft.talk.spoken).toBe(HERCULES_REFUSE_WRITE);
 

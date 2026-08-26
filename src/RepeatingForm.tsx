@@ -270,7 +270,7 @@ export function RepeatingForm(props: {
           </select>
           {goals.length > 0 && (
             <>
-              <label htmlFor="repeating-goal">Fund jar (optional)</label>
+              <label htmlFor="repeating-goal">Fund goal (optional)</label>
               <select
                 id="repeating-goal"
                 value={draft.goalId}

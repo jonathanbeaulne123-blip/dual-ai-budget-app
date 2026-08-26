@@ -4,9 +4,9 @@ After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. 
 
 Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
 
-## Phase 0 evidence + membership tuple + hash acceptance (D-145, 2026-08-26)
+## Phase 0 evidence + membership tuple + hash acceptance (D-146, 2026-08-26)
 
-**Status:** Branch `cursor/phase0-evidence-isolation-hash-c04e`; PR pending. Not merged, not deployed. Risk: **High**.
+**Status:** Branch `cursor/phase0-evidence-isolation-hash-c04e`; draft PR #156. Not merged, not deployed. Risk: **High**.
 
 **Household outcome:** Sheets-era issues/PRs have retained evidence; automatic continuity boundaries validate environment + Google membership; pulled/merged money cannot become active books on entry-count alone — PGlite and `financialAuditHash` must agree.
 
@@ -20,9 +20,47 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 **Next owner:** Jonathan — review PR; remaining Phase 0: optional-publish removal, full atomic hosted stack, Hercules KV, branch protection, WORKING_MEMORY canon drift.
 
+## Scheme A naming clarity (D-144, 2026-08-26)
+
+**Status:** Merged via #154 onto `main`. Risk: **Medium**.
+
+**Household outcome:** All chrome the household sees uses plain Scheme A labels (Groceries, Goals, Health, Sit-down, Shifts, Goals savings, Mark purchased). Only Hercules AI talk and Hercules Pro may use cat/kitchen metaphors, and those lines gloss the human money meaning.
+
+**Budget delta (5):** `+2` — money controls stop sharing colliding metaphors.
+
+**Engagement delta (3):** `+1` — Hercules keeps personality in AI/Pro only.
+
+**Verification:** Focused naming/hercules/office tests green; `tsc` green; `pnpm build` green; `pnpm check` blocked only by pre-existing `batch-import-ui` SubtleCrypto failures on `main`. Phone CDP proof: seals Post/Due/Health; story Goals; Pad chips Groceries/Coffee; account Goals savings.
+
+**Data/environment:** Development demo only; no schema/secrets/Production/deploy.
+
+**Next owner:** Jonathan — naming is on `main`; no further action unless chrome regressions appear.
+
+## Slim continuity outbox + gzip payloads (D-145, 2026-08-26)
+
+**Status:** Merged via #155 onto `main`. Risk: **High**.
+
+**Household outcome:** Large Development books can share without blowing browser `localStorage` quota. The durable outbox stores a slim tip pointer; flush publishes the live accepted household. Personal cloud envelopes may gzip; shared CAS snapshots stay plain JSON for live 006 SQL guards; legacy plain JSON still pulls.
+
+**Budget delta (5):** `+3` — continuity transport reliability; prevents share stalls that diverge two phones’ books.
+
+**Engagement delta (3):** `+1` — Retry/share stays honest under stress fixtures.
+
+**What changed:** `src/ledger/snapshotPayload.ts` codec; shared CAS payloads stay plain JSON (006 SQL guards); personal envelopes may gzip; `continuity.ts` IDB-first slim durable outbox + tipRevision-aware live resolve; D-145 in decisions + continuity canon.
+
+**Verification:** Focused vitest green; size demo fat outbox ~93KB → slim ~427B; personal gzip ~10.6% wire; books/privacy auditors passed on the PR.
+
+**Data/environment:** Development client transport encoding only; no schema migrate, secrets, Production, or real household data.
+
+**Worksession:** [`worksessions/2026-08-26-outbox-compress.md`](worksessions/2026-08-26-outbox-compress.md)
+
+**PR:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/155
+
+**Next owner:** Jonathan — after deploy, on the quota desktop tap **Retry now**; confirm banner clears and Bianca’s entry count / Assets converge.
+
 ## Auth membership continuity authority (D-143, 2026-08-26)
 
-**Status:** Branch `cursor/auth-membership-authority-e279`; PR pending. Not merged, not deployed. Risk: **High**.
+**Status:** Merged via #152 onto `main`. Live Create/invite smoke still open. Risk: **High**.
 
 **Household outcome:** Automatic cloud share requires a Google continuity identity that matches an active household member. `linked` alone no longer publishes. Phrase remains Advanced recovery routing. Live anon REST stays denied; migration 010 bind RPC is live.
 

@@ -131,7 +131,7 @@ export function OfficePhone({
     wallet: "Wallet",
     mail: "Mail",
     timesheet: "Shifts",
-    jars: "Jars",
+    jars: "Goals",
     lamp: "Health",
     calculator: "Pad",
   };
@@ -148,7 +148,7 @@ export function OfficePhone({
       kind: kindLabel.calculator ?? "Pad",
       name: "Pad",
       glance: <CalculatorGlance amount={form.amount} />,
-      aria: `Pad. ${form.note || "Post milk."}`,
+      aria: `Pad. ${form.note || "Post groceries."}`,
       body: (
         <CalculatorBody
           form={form} setForm={onForm} mode={mode} household={household}
@@ -175,10 +175,10 @@ export function OfficePhone({
       ),
     },
     jars: {
-      kind: kindLabel.jars ?? "Jars",
-      name: "Jars",
+      kind: kindLabel.jars ?? "Goals",
+      name: "Goals",
       glance: <JarsGlance dashboard={dashboard} />,
-      aria: "Jars.",
+      aria: "Goals.",
       body: <JarsBody dashboard={dashboard} household={household} today={today} busy={busy} onPlan={() => onGo("plan")} onCommand={onKitchen} />,
     },
     lamp: {
@@ -240,7 +240,7 @@ export function OfficePhone({
           onClick={() => tapSeal("mail")}
         />
         <WaxSeal
-          label="Close"
+          label="Health"
           tone="close"
           pending={closeNeeds}
           value={closeNeeds ? String(findings.length) : "—"}
@@ -312,7 +312,7 @@ export function OfficePhone({
       )}
 
       <details className="ph-chalk" open={chalkOpen} onToggle={(event) => setChalkOpen(event.currentTarget.open)}>
-        <summary>Chalkboard</summary>
+        <summary>Notes</summary>
         <div className={`ph-chalk-body ${adding ? "is-inert" : ""}`}>
           <ChalkboardBody
             household={household}

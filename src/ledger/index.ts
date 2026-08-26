@@ -58,3 +58,14 @@ export type {
   BindMembershipsResult,
 } from "./householdInvites.ts";
 export { BOOKS_SCHEMA, BOOKS_SCHEMA_VERSION } from "./schema.ts";
+export {
+  encodeJsonPayload,
+  decodeJsonPayload,
+  encodeHouseholdPayload,
+  encodeSharedSnapshotPayload,
+  decodeHouseholdPayload,
+  isSnapshotPayloadEnvelope,
+  SNAPSHOT_PAYLOAD_CODEC,
+  SNAPSHOT_PAYLOAD_VERSION,
+  SNAPSHOT_COMPRESS_MIN_BYTES,
+} from "./snapshotPayload.ts";

@@ -151,7 +151,7 @@ export const HERCULES_READ_TOOL_CATALOG: ReadonlyArray<{ name: HerculesReadToolN
   { name: "compare_spending", description: "Compare spending between two named periods." },
   { name: "bills_due", description: "List repeating household bills due within 1–90 days." },
   { name: "shift_summary", description: "Summarize posted shifts, hours, wages, tips, and paid breaks." },
-  { name: "goal_progress", description: "Read visible savings-jar progress." },
+  { name: "goal_progress", description: "Read visible savings-goal progress." },
   { name: "money_owed", description: "Read visible outstanding claims and receivables." },
   { name: "cash_position", description: "Read the household sit-down cash position; household ledger only." },
   { name: "budget_status", description: "Compare posted income and spending with the monthly plan." },
@@ -643,11 +643,11 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
   if (call.name === "goal_progress") {
     const target = fuzzy(household.goals, cleanString(call.args.goal), (row) => row.name);
     const goalQuery = cleanString(call.args.goal);
-    if (goalQuery && !target) return empty(call, `I cannot match visible jar “${goalQuery}” in this ledger.`);
+    if (goalQuery && !target) return empty(call, `I cannot match visible goal “${goalQuery}” in this ledger.`);
     const rows = target ? [target] : household.goals.slice(0, 8);
-    if (!rows.length) return empty(call, "No visible savings jars are on these books.");
+    if (!rows.length) return empty(call, "No visible savings goals are on these books.");
     const facts = rows.map((goal, index) => fact(call, index, goal.name, `${formatCad(goal.savedCents)} / ${formatCad(goal.targetCents)}`, { route: "plan", view: context.view, surface: "jars", goalId: goal.id, label: `Open ${goal.name}` }));
-    return { callId: call.id, name: call.name, status: "ok", sentence: target ? `${target.name} is ${target.targetCents ? Math.round((target.savedCents / target.targetCents) * 100) : 0}% funded.` : `I found ${rows.length} visible savings jars.`, facts };
+    return { callId: call.id, name: call.name, status: "ok", sentence: target ? `${target.name} is ${target.targetCents ? Math.round((target.savedCents / target.targetCents) * 100) : 0}% funded.` : `I found ${rows.length} visible savings goals.`, facts };
   }
 
   if (call.name === "money_owed") {
@@ -1398,10 +1398,10 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
       callId: call.id,
       name: call.name,
       status: "ok",
-      sentence: `Of ${formatCad(plan.tipCents)} tips, set aside about ${formatCad(plan.taxMilkCents)} tax milk${plan.peak ? ` and ${formatCad(plan.bufferCents)} smoothing buffer` : ""}, leaving ${formatCad(plan.leftoverCents)} free. Educational rate ${(plan.taxRateBps / 100).toFixed(0)}% — not a filed return. Transfer drafts still need Confirm.`,
+      sentence: `Of ${formatCad(plan.tipCents)} tips, set aside about ${formatCad(plan.taxMilkCents)} tax milk — educational tip tax set-aside${plan.peak ? ` and ${formatCad(plan.bufferCents)} smoothing buffer` : ""}, leaving ${formatCad(plan.leftoverCents)} free. Educational rate ${(plan.taxRateBps / 100).toFixed(0)}% — not a filed return. Transfer drafts still need Confirm.`,
       facts: [
         fact(call, 0, "Tip base", formatCad(plan.tipCents), source, "projection"),
-        fact(call, 1, "Tax milk", formatCad(plan.taxMilkCents), source, "projection"),
+        fact(call, 1, "Tax milk (tip tax set-aside)", formatCad(plan.taxMilkCents), source, "projection"),
         fact(call, 2, "Smoothing buffer", formatCad(plan.bufferCents), source, "projection"),
         fact(call, 3, "Leftover after set-asides", formatCad(plan.leftoverCents), source, "projection"),
       ],
@@ -1638,7 +1638,7 @@ export function executeHerculesReadToolPlan(
   const facts = results.flatMap((result) => result.facts).slice(0, 8);
   const sentence = results.length
     ? clipSentence(results.map((result) => result.sentence).join(" "))
-    : "I need a clearer books question. Try an account, period, category, bill, shift, jar, or claim.";
+    : "I need a clearer books question. Try an account, period, category, bill, shift, goal, or claim.";
   return {
     plan,
     results,
