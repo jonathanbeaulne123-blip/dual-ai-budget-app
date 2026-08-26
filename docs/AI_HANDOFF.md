@@ -6,9 +6,9 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 ## Shift year simulation + sandbox gate (D-139, 2026-08-25)
 
-**Status:** Branch `cursor/shift-year-simulation-85bf` — draft PR; not merged, not deployed. Risk: **Medium**.
+**Status:** Branch `cursor/shift-year-simulation-85bf` — draft [PR #138](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/138); not merged, not deployed. Risk: **Medium**.
 
-**Household outcome:** Hercules Pro can build a reproducible next-year tips+wages simulation from posted shifts and teach how it works. Python sandbox is designed as a later High-risk gate, not built.
+**Household outcome:** Hercules (free + Pro) can build a reproducible next-year tips+wages simulation from posted shifts and teach how it works. Python sandbox is designed as a later High-risk gate, not built.
 
 **Budget delta (5):** `+2` — deterministic year Monte Carlo of tips and wages; never posts.
 
@@ -16,9 +16,9 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 **Worksession:** [`worksessions/2026-08-25-shift-year-simulation.md`](worksessions/2026-08-25-shift-year-simulation.md)
 
-**What changed:** `runShiftYearSimulation` / `explainShiftYearSimulation` in `tipScience.ts`; tools `shift_year_simulation` + `explain_shift_simulation` on free Hercules and Pro MCP; D-139 + sandbox gate in `HERCULES_PRO.md`; Pro `tools/list` expectations corrected to catalog+write (63).
+**What changed:** `runShiftYearSimulation` / `explainShiftYearSimulation` in `tipScience.ts`; tools `shift_year_simulation` + `explain_shift_simulation` on free Hercules (Worker planner + on-device) and Pro MCP; D-139 + sandbox gate in `HERCULES_PRO.md`; Pro `tools/list` expectations corrected to catalog+write (63).
 
-**Head SHA:** `781076dc450c1c0bdfe9dc28c69cc47792843283`
+**Head SHA:** `cfbc1d7051e8af43ea54210ea5b5763234dff34e`
 
 **Verification:**
 - `pnpm exec vitest run test/tip-science.test.ts test/hercules-tools.test.ts test/hercules-pro.test.ts` — pass
