@@ -120,7 +120,7 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
     expect(listed.result.tools.find((tool) => tool.name === "shift_year_simulation")?.annotations.readOnlyHint).toBe(true);
     expect(listed.result.tools.some((tool) => /^(?:post|delete|pay|transfer)(?:_|$)/.test(tool.name))).toBe(false);
     expect(listed.result.tools.some((tool) => tool.name === "tip_oracle")).toBe(true);
-    expect(listed.result.tools.find((tool) => tool.name === "summon_hercules")?._meta?.ui?.resourceUri).toBe("ui://hearth/hercules-companion-v1.html");
+    expect(listed.result.tools.find((tool) => tool.name === "summon_hercules")?._meta?.ui?.resourceUri).toBe("ui://hearth/hercules-companion-v2.html");
 
     const resources = await worker.fetch(new Request(`${origin}/mcp`, {
       method: "POST",
@@ -128,18 +128,19 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 30, method: "resources/list" }),
     }), env);
     expect(await resources.json()).toMatchObject({ result: { resources: [{
-      uri: "ui://hearth/hercules-companion-v1.html",
+      uri: "ui://hearth/hercules-companion-v2.html",
       mimeType: "text/html;profile=mcp-app",
     }] } });
 
     const resource = await worker.fetch(new Request(`${origin}/mcp`, {
       method: "POST",
       headers: { Authorization: `Bearer ${tokens.access_token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ jsonrpc: "2.0", id: 31, method: "resources/read", params: { uri: "ui://hearth/hercules-companion-v1.html" } }),
+      body: JSON.stringify({ jsonrpc: "2.0", id: 31, method: "resources/read", params: { uri: "ui://hearth/hercules-companion-v2.html" } }),
     }), env);
     const rendered = await resource.json() as { result: { contents: Array<{ text: string; _meta: { ui: { csp: { resourceDomains: string[] } } } }> } };
     expect(rendered.result.contents[0]?.text).toContain("/hercules-pro/hercules.pro.v1.glb");
     expect(rendered.result.contents[0]?.text).toContain("/hercules-pro/companion.v1.js");
+    expect(rendered.result.contents[0]?.text).toContain("3D unavailable — Hercules is still listening");
     expect(rendered.result.contents[0]?._meta.ui.csp.resourceDomains).toEqual([origin]);
     expect(rendered.result.contents[0]?.text).not.toContain("verified-supabase-token");
 

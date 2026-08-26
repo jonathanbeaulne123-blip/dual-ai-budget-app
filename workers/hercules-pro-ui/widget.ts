@@ -38,6 +38,12 @@ const ledgerEl = requiredElement<HTMLElement>("#hercules-ledger");
 const statusEl = requiredElement<HTMLElement>("#hercules-status");
 const pipButton = requiredElement<HTMLButtonElement>("#hercules-pip");
 const motionButton = requiredElement<HTMLButtonElement>("#hercules-motion");
+const fallbackImage = requiredElement<HTMLImageElement>("#hercules-fallback");
+
+// Signals to the tiny inline watchdog that the cross-origin module loaded.
+host.dataset.runtime = "booted";
+canvas.hidden = false;
+fallbackImage.hidden = true;
 
 const modelUrl = host.dataset.modelUrl;
 const fallbackUrl = host.dataset.fallbackUrl;
@@ -110,14 +116,10 @@ motionButton.addEventListener("click", () => {
 });
 
 function showFallback(): void {
+  host.dataset.runtime = "failed";
   canvas.hidden = true;
-  if (!host.querySelector(".hercules-fallback")) {
-    const image = document.createElement("img");
-    image.className = "hercules-fallback";
-    image.alt = "Hercules";
-    if (fallbackUrl) image.src = fallbackUrl;
-    host.querySelector(".hercules-stage")?.append(image);
-  }
+  if (fallbackUrl && fallbackImage.src !== fallbackUrl) fallbackImage.src = fallbackUrl;
+  fallbackImage.hidden = false;
   statusEl.textContent = "3D unavailable — Hercules is still listening";
 }
 
@@ -201,15 +203,21 @@ function fitModel(model: THREE.Object3D): void {
 
 const loader = new GLTFLoader();
 loader.setMeshoptDecoder(MeshoptDecoder);
+const modelLoadTimeout = window.setTimeout(showFallback, 12000);
 loader.load(modelUrl, (gltf) => {
+  window.clearTimeout(modelLoadTimeout);
   const model = gltf.scene;
   findRig(model);
   fitModel(model);
   stage.add(model);
   modelReady = true;
+  host.dataset.runtime = "ready";
   statusEl.textContent = "Hercules is awake";
   setTimeout(() => void requestPictureInPicture(), 180);
-}, undefined, showFallback);
+}, undefined, () => {
+  window.clearTimeout(modelLoadTimeout);
+  showFallback();
+});
 
 let dragStart: { x: number; rotation: number } | undefined;
 canvas.addEventListener("pointerdown", (event) => {

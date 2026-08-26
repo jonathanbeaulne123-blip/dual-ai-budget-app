@@ -16,7 +16,8 @@ const REFRESH_TTL_SECONDS = 30 * 24 * 60 * 60;
 const AUTH_REQUEST_TTL_SECONDS = 10 * 60;
 const CODE_TTL_SECONDS = 5 * 60;
 const WRITE_PREVIEW_TTL_SECONDS = 10 * 60;
-const HERCULES_COMPANION_URI = "ui://hearth/hercules-companion-v1.html";
+// MCP Apps cache UI resources by URI. Bump this when the companion boot contract changes.
+const HERCULES_COMPANION_URI = "ui://hearth/hercules-companion-v2.html";
 const HERCULES_COMPANION_MIME = "text/html;profile=mcp-app";
 const memoryCodes = new Set();
 
@@ -599,6 +600,7 @@ function companionResource(request) {
     .hercules-stage { position: relative; min-height: 0; }
     canvas { display: block; width: 100%; height: 100%; min-height: 176px; touch-action: none; cursor: grab; }
     canvas:active { cursor: grabbing; }
+    [hidden] { display: none !important; }
     .hercules-fallback { position: absolute; inset: 14% 20%; width: 60%; height: 70%; object-fit: contain; color: #6b4a2e; }
     .plaque { position: relative; z-index: 2; margin: 0 10px 10px; padding: 11px 12px 10px; border: 1px solid rgba(91,60,37,.18); border-radius: 17px; background: rgba(255,252,244,.86); box-shadow: 0 8px 24px rgba(75,47,29,.12); backdrop-filter: blur(10px); }
     .eyebrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #6b4a2e; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
@@ -622,7 +624,10 @@ function companionResource(request) {
       <button id="hercules-pip" type="button">Keep beside chat</button>
       <button id="hercules-motion" type="button" aria-pressed="false">Pause</button>
     </div>
-    <div class="hercules-stage"><canvas id="hercules-canvas" aria-label="Animated 3D Hercules"></canvas></div>
+    <div class="hercules-stage">
+      <canvas id="hercules-canvas" aria-label="Animated 3D Hercules"></canvas>
+      <img id="hercules-fallback" class="hercules-fallback" src="${htmlAttribute(fallbackUrl)}" alt="Hercules" hidden>
+    </div>
     <section class="plaque" aria-live="polite">
       <div class="eyebrow"><span id="hercules-ledger">Hearth books</span><span>3D companion</span></div>
       <h1 id="hercules-headline">Hercules Pro</h1>
@@ -630,6 +635,18 @@ function companionResource(request) {
       <div id="hercules-status" class="status">Waking Hercules…</div>
     </section>
   </main>
+  <script>
+    // The module is cross-origin in ChatGPT. Never leave a failed module looking like
+    // a slow model: reveal the safe static companion if boot has not begun promptly.
+    window.setTimeout(function () {
+      var host = document.getElementById("hercules-companion");
+      if (!host || host.dataset.runtime) return;
+      host.dataset.runtime = "failed";
+      document.getElementById("hercules-canvas").hidden = true;
+      document.getElementById("hercules-fallback").hidden = false;
+      document.getElementById("hercules-status").textContent = "3D unavailable — Hercules is still listening";
+    }, 8000);
+  </script>
   <script type="module" src="${htmlAttribute(scriptUrl)}"></script>
 </body>
 </html>`;
