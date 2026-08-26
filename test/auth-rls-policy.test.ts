@@ -269,6 +269,25 @@ describe("Auth/RLS policy matrix (D-123)", () => {
       })).toBe(false);
     }
   });
+
+  it("denies a Development member from reading the same household id in Production", () => {
+    expect(mayAccessResource({
+      principal: owner,
+      memberships: [ownerMembership],
+      resource: "household_snapshots",
+      action: "select",
+      householdId: "HH-1",
+      environment: "production",
+    })).toBe(false);
+    expect(mayAccessResource({
+      principal: owner,
+      memberships: [{ ...ownerMembership, environment: "production" }],
+      resource: "household_snapshots",
+      action: "select",
+      householdId: "HH-1",
+      environment: "development",
+    })).toBe(false);
+  });
 });
 
 describe("Auth/RLS migration packet files", () => {

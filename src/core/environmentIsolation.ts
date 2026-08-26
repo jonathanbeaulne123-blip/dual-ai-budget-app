@@ -27,8 +27,20 @@ export function assertEnvironmentMatch(
   payloadEnvironment: Environment | undefined,
   binding: Pick<IdentityBinding, "environment">,
   boundary: IsolationBoundary,
+  options: { requirePresent?: boolean } = {},
 ): void {
-  if (!payloadEnvironment) return;
+  if (!payloadEnvironment) {
+    if (options.requirePresent) {
+      throw new ValidationError(
+        boundary === "persist"
+          ? "This snapshot is missing its environment and was not saved."
+          : boundary === "outbox"
+            ? "This outbox entry is missing its environment and was not replayed."
+            : "That payload is missing its Development/Production environment. Nothing was imported.",
+      );
+    }
+    return;
+  }
   if (payloadEnvironment !== binding.environment) {
     throw new ValidationError(
       boundary === "pull"
@@ -96,7 +108,7 @@ export function assertHouseholdBinding(
   binding: IdentityBinding,
   boundary: IsolationBoundary,
 ): Household {
-  assertEnvironmentMatch(household.environment, binding, boundary);
+  assertEnvironmentMatch(household.environment, binding, boundary, { requirePresent: true });
   assertHouseholdIdMatch(household.householdId, binding, boundary);
   assertInviteMatch(household.inviteCode, binding, boundary);
   return household;
@@ -107,7 +119,7 @@ export function assertSharedEnvelopeBinding(
   binding: IdentityBinding,
   boundary: IsolationBoundary,
 ): void {
-  assertEnvironmentMatch(shared.environment, binding, boundary);
+  assertEnvironmentMatch(shared.environment, binding, boundary, { requirePresent: true });
   assertHouseholdIdMatch(shared.householdId, binding, boundary);
   assertInviteMatch(shared.inviteCode, binding, boundary);
 }
@@ -148,6 +160,6 @@ export function assertOutboxItemBinding(item: {
     memberId: item.memberId,
     inviteCode: item.snapshot.inviteCode,
   };
-  assertEnvironmentMatch(item.snapshot.environment, binding, "outbox");
+  assertEnvironmentMatch(item.snapshot.environment, binding, "outbox", { requirePresent: true });
   assertHouseholdIdMatch(item.snapshot.householdId, binding, "outbox");
 }

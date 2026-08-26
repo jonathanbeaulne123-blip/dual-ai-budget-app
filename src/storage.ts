@@ -168,6 +168,7 @@ export async function loadHousehold(environment: Environment, householdId?: stri
   if (!chosen) return null;
   const migrated = migrate(chosen);
   if (migrated.environment !== environment) return null;
+  if (selectedId && migrated.householdId !== selectedId) return null;
   await saveHousehold(migrated, { memberId, activate: true });
   return migrated;
 }
@@ -175,7 +176,9 @@ export async function loadHousehold(environment: Environment, householdId?: stri
 export async function saveHousehold(household: Household, options: SaveHouseholdOptions = {}): Promise<void> {
   const shaped = migrate(household);
   if (options.operatingEnvironment) {
-    assertEnvironmentMatch(shaped.environment, { environment: options.operatingEnvironment }, "persist");
+    assertEnvironmentMatch(shaped.environment, { environment: options.operatingEnvironment }, "persist", {
+      requirePresent: true,
+    });
   }
   const activate = options.activate !== false;
   const replicaKey = householdKey(shaped.environment, shaped.householdId);
