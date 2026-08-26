@@ -608,13 +608,36 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const memberQuery = cleanString(call.args.member);
     const member = resolveMember(household, memberQuery, context);
     if (memberQuery && !member) return empty(call, `I cannot match member “${memberQuery}” in this ledger.`);
-    const rows = household.shifts.filter((shift) => shift.date >= range.start && shift.date <= range.end && (!member || shift.memberId === member.id));
+    const visibleShifts = household.shifts.filter((shift) => !member || shift.memberId === member.id);
+    const rows = visibleShifts.filter((shift) => shift.date >= range.start && shift.date <= range.end);
     const hours = rows.reduce((sum, row) => sum + row.hours, 0);
     // D-127 stores paid-break income inside wagesCents while retaining the
     // component separately for reporting; adding it again would double count.
     const income = rows.reduce((sum, row) => sum + row.wagesCents + row.netTipsCents, 0);
     const source: HerculesNumberSource = { route: "home", view: context.view, surface: "timesheet", memberId: member?.id, from: range.start, to: range.end, label: "Open the timesheet" };
-    return { callId: call.id, name: call.name, status: rows.length ? "ok" : "empty", sentence: `${member?.name ?? (context.view === "household" ? "The household" : "You")} has ${rows.length} posted shift${rows.length === 1 ? "" : "s"}, ${hours.toFixed(1)} hours, and ${formatCad(income)} of shift income ${range.label}.`, facts: [fact(call, 0, "Shift income", formatCad(income), source), fact(call, 1, "Hours", hours.toFixed(1), source), fact(call, 2, "Shifts", String(rows.length), source)] };
+    const subject = member?.name ?? (context.view === "household" ? "The household" : "You");
+    if (!rows.length && visibleShifts.length > 0) {
+      return {
+        callId: call.id,
+        name: call.name,
+        status: "empty",
+        sentence: `${subject} has ${visibleShifts.length} posted shift${visibleShifts.length === 1 ? "" : "s"} in this cloud ledger, but none ${range.label}. Try another period or custom from/to dates.`,
+        facts: [fact(call, 0, "Posted shifts in ledger", String(visibleShifts.length), source), fact(call, 1, "Shifts in period", "0", source)],
+      };
+    }
+    if (!rows.length) {
+      const cloudHint = context.view === "personal"
+        ? " Hercules Pro reads your hosted cloud ledger, not the phone directly. If shifts appear in Hearth on your phone, open Hearth, confirm Google sign-in for this member, wait until sync finishes, then ask again."
+        : " Hercules Pro reads hosted household snapshots. If shifts appear on your phone, sync from Hearth first, then ask again.";
+      return {
+        callId: call.id,
+        name: call.name,
+        status: "empty",
+        sentence: `I found 0 posted shifts in this ${context.view} cloud ledger${range.label ? ` for ${range.label}` : ""}.${cloudHint}`,
+        facts: [fact(call, 0, "Posted shifts in ledger", "0", source)],
+      };
+    }
+    return { callId: call.id, name: call.name, status: "ok", sentence: `${subject} has ${rows.length} posted shift${rows.length === 1 ? "" : "s"}, ${hours.toFixed(1)} hours, and ${formatCad(income)} of shift income ${range.label}.`, facts: [fact(call, 0, "Shift income", formatCad(income), source), fact(call, 1, "Hours", hours.toFixed(1), source), fact(call, 2, "Shifts", String(rows.length), source)] };
   }
 
   if (call.name === "goal_progress") {

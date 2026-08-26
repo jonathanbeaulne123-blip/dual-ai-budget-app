@@ -9,7 +9,8 @@ import {
   setContinuityStore,
   transportHouseholdWithOutbox,
 } from "../src/continuity.ts";
-import { catalogHousehold, linkGoogleIdentity, personalReplicaForMember, postEntry } from "../src/core/index.ts";
+import { catalogHousehold, linkGoogleIdentity, personalReplicaForMember, postEntry, postShift, postWorkShift, upsertWorkJob, shapeWorkJob, type WorkJob } from "../src/core/index.ts";
+import { householdCloudProjection } from "../src/ledger/supabase.ts";
 import type { Household } from "../src/core/types.ts";
 import { pushSupabaseHousehold } from "../src/ledger/supabase.ts";
 
@@ -306,6 +307,103 @@ describe("Google-account continuity", () => {
     expect(payload.transactions.map((item) => item.note)).not.toContain("Partner private");
     expect(personalIndex).toBeGreaterThan(-1);
     expect(snapshotIndex).toBeGreaterThan(personalIndex);
+  });
+
+  it("publishes posted work shifts into the signed-in member's personal cloud envelope", async () => {
+    let household = googleHousehold();
+    const job = shapeWorkJob({
+      id: "",
+      memberId: "MEM-001",
+      name: "Harbour Dining Room",
+      color: "#a85a3d",
+      active: true,
+      timezone: "America/Toronto",
+      roles: [{
+        id: "ROLE-SERVER",
+        name: "Server",
+        tipped: true,
+        active: true,
+        rates: [{
+          id: "RATE-1",
+          effectiveDate: "2026-01-01",
+          grossHourlyRateCents: 1800,
+          takeHomeMode: "direct",
+          takeHomeHourlyRateCents: 1500,
+          deductions: [],
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-01T00:00:00.000Z",
+        }],
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      }],
+      paidBreakRate: "role",
+      paidBreakHourlyRateCents: 0,
+      overtimeEnabled: true,
+      overtimeWeeklyThresholdHours: 44,
+      overtimeMultiplier: 1.5,
+      tipOutRules: [],
+      salesFields: [{ id: "FOOD", label: "Food", requirement: "required", createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z" }],
+      paySchedule: { kind: "weekly", weekday: 5, createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z" },
+      tipSchedule: { kind: "weekly", weekday: 1, createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z" },
+      tipWeekStartsOn: 1,
+      defaults: {
+        wagesVisibility: "personal",
+        cashTipsVisibility: "personal",
+        cardTipsVisibility: "personal",
+        tipOutVisibility: "personal",
+        wagesDepositAccountId: "ACC-CHEQUING",
+        cashTipsAccountId: "ACC-CASH",
+        cardTipsDepositAccountId: "ACC-CHEQUING",
+      },
+      wagesReceivableAccountId: "ACC-CLAIMS",
+      cardTipsReceivableAccountId: "ACC-CLAIMS",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    } satisfies WorkJob);
+    household = upsertWorkJob(household, { job }).household;
+    const savedJob = household.workJobs[0]!;
+    household = postWorkShift(household, {
+      date: "2026-08-25",
+      memberId: "MEM-001",
+      jobId: savedJob.id,
+      roleId: "ROLE-SERVER",
+      workedHours: 5,
+      salesByField: { FOOD: 1200 },
+      cashTips: 40,
+      cardTips: 80,
+      cashTipsAccountId: "ACC-CASH",
+      confirmDuplicate: true,
+      createdBy: "MEM-001",
+    }).household;
+    const personal = personalReplicaForMember(household, "MEM-001");
+    expect(personal.shifts).toHaveLength(1);
+    const shared = householdCloudProjection(household, "MEM-001");
+    expect(shared.shifts).toHaveLength(0);
+
+    const calls: Array<{ url: string; body: unknown }> = [];
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      calls.push({ url, body: init?.body ? JSON.parse(String(init.body)) : null });
+      if (url.includes("households?select=id")) return response([]);
+      if (url.includes("rpc/publish_household_snapshot")) {
+        return response({
+          code: "PGRST202",
+          message: "Could not find the function public.publish_household_snapshot",
+        }, 404);
+      }
+      if (url.includes("household_snapshots?household_id")) return response([]);
+      if (url.includes("continuity_memberships?select=household_id")) return response([]);
+      return response(null, 201);
+    }));
+
+    const pushed = await pushSupabaseHousehold(household, config, {
+      expectedRevision: 0,
+      continuityIdentity: identity,
+    });
+    expect(pushed.schema).toBe(true);
+    const personalCall = calls.find((item) => item.url.includes("continuity_personal_snapshots?on_conflict"));
+    const payload = JSON.parse(String((personalCall?.body as { payload?: string })?.payload)) as { shifts: Array<{ id: string }> };
+    expect(payload.shifts).toHaveLength(1);
   });
 });
 
