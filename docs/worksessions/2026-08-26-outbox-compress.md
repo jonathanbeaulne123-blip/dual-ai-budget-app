@@ -1,6 +1,6 @@
 # Hearth worksession — Slim continuity outbox + gzip cloud payloads
 
-- **Status:** OPEN
+- **Status:** READY FOR REVIEW (draft PR)
 - **Opened:** 2026-08-26 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor Cloud Agent
@@ -11,11 +11,11 @@
 - **PR or issue:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/155
 - **Risk:** High (continuity transport / money sync path)
 - **Decision owner:** Jonathan
-- **Environment impact:** Development client transport encoding; no schema migrate; hosted TEXT payloads gain optional gzip envelope (legacy plain JSON still accepted)
+- **Environment impact:** Development client transport encoding; no schema migrate; personal TEXT may gzip; shared CAS payloads stay plain for 006 SQL guards
 
 ## Household outcome
 
-Jonathan’s desktop can share large Development books without blowing `localStorage` quota. Cloud snapshots travel compressed. The outbox stores a slim tip pointer and loads the live accepted household on flush. Bianca’s phone can receive the tip without Jonathan’s browser storage failing mid-share.
+Jonathan’s desktop can share large Development books without blowing `localStorage` quota. The outbox stores a slim tip pointer and loads the live accepted household on flush. Personal cloud envelopes may gzip; shared household snapshots stay plain JSON. Bianca’s phone can receive the tip without Jonathan’s browser storage failing mid-share.
 
 ## Budget delta (5)
 
@@ -36,7 +36,7 @@ Jonathan’s desktop can share large Development books without blowing `localSto
 
 ### In scope
 
-- D-144 gzip envelope codec (`snapshotPayload.ts`) for shared + personal hosted payloads
+- D-144 gzip envelope codec (`snapshotPayload.ts`) for **personal** hosted payloads; shared CAS payloads stay plain
 - Slim durable outbox (no full snapshot in LS/IDB); tipRevision + ids; resolve live household on flush
 - IDB-first durable outbox write; LS only for slim metadata
 - Legacy plain JSON pull still works

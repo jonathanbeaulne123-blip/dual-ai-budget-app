@@ -7,9 +7,9 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 ## Slim continuity outbox + gzip payloads (D-144, 2026-08-26)
 
-**Status:** Branch `cursor/outbox-compress-e279`; PR pending. Not merged, not deployed. Risk: **High**.
+**Status:** Branch `cursor/outbox-compress-e279`; draft PR #155. Not merged, not deployed. Risk: **High**.
 
-**Household outcome:** Large Development books can share without blowing browser `localStorage` quota. The durable outbox stores a slim tip pointer; flush publishes the live accepted household. Hosted snapshot/personal TEXT payloads compress with a versioned gzip envelope when worthwhile; legacy plain JSON still pulls.
+**Household outcome:** Large Development books can share without blowing browser `localStorage` quota. The durable outbox stores a slim tip pointer; flush publishes the live accepted household. Personal cloud envelopes may gzip; shared CAS snapshots stay plain JSON for live 006 SQL guards; legacy plain JSON still pulls.
 
 **Budget delta (5):** `+3` — continuity transport reliability; prevents share stalls that diverge two phones’ books.
 
@@ -17,11 +17,13 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 **What changed:** `src/ledger/snapshotPayload.ts` codec; shared CAS payloads stay plain JSON (006 SQL guards); personal envelopes may gzip; `continuity.ts` IDB-first slim durable outbox + tipRevision-aware live resolve; D-144 in decisions + continuity canon.
 
-**Verification:** Focused vitest 49/49 (`snapshot-payload`, `continuity`, `hosted-cas-two-client`, `environment-isolation`, `production-continuity`); `tsc --noEmit` green. Privacy/books auditors: shared gzip blocked by design after P0 finding.
+**Verification:** Focused vitest green (`snapshot-payload` 5, `continuity` 18, plus CAS/isolation/production suites); size demo fat outbox 92,770B → slim 427B; personal gzip ~10.6% wire; `tsc --noEmit` green; full suite 645 pass / 2 pre-existing `batch-import-ui` SubtleCrypto fails (reproduced on main). Books auditor **PASS**; privacy auditor **PASS WITH NOTES**.
 
 **Data/environment:** Development client transport encoding only; no schema migrate, secrets, Production, or real household data.
 
 **Worksession:** [`worksessions/2026-08-26-outbox-compress.md`](worksessions/2026-08-26-outbox-compress.md)
+
+**PR:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/155
 
 **Next owner:** Jonathan — after merge+deploy, on the quota desktop tap **Retry now**; confirm banner clears and Bianca’s entry count / Assets converge. Auth Create/invite smoke remains a separate gate.
 
