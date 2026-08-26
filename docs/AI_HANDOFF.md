@@ -18,7 +18,7 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 **What changed:** `runShiftYearSimulation` / `explainShiftYearSimulation` in `tipScience.ts`; tools `shift_year_simulation` + `explain_shift_simulation` on free Hercules and Pro MCP; D-139 + sandbox gate in `HERCULES_PRO.md`; Pro `tools/list` expectations corrected to catalog+write (63).
 
-**Head SHA:** `02de120624e83967ed879d843d2b5fbfef483d7c`
+**Head SHA:** `781076dc450c1c0bdfe9dc28c69cc47792843283`
 
 **Verification:**
 - `pnpm exec vitest run test/tip-science.test.ts test/hercules-tools.test.ts test/hercules-pro.test.ts` — pass
