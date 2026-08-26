@@ -44,7 +44,7 @@ describe("Production continuity safety", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("refuses Production membership minting and posts only the projected shared payload on legacy CAS", async () => {
+  it("refuses Production membership minting and refuses legacy CAS when the RPC is missing (D-147)", async () => {
     vi.stubEnv("VITE_PRODUCTION_CONTINUITY", "1");
     const base = productionHousehold();
     const withPersonal = postEntry(base, {
@@ -89,16 +89,15 @@ describe("Production continuity safety", () => {
       expectedRevision: 1,
       continuityIdentity: identity,
     });
-    expect(result.conflict).toBeFalsy();
+    expect(result.skipped).toBe(true);
+    expect(result.error).toMatch(/CAS RPC is unavailable/);
     expect(result.usedCasRpc).toBe(false);
     expect(posts.some((item) => item.url.includes("continuity_memberships?on_conflict"))).toBe(false);
+    expect(posts.some((item) => item.url.includes("household_snapshots?on_conflict"))).toBe(false);
     const personalPost = posts.find((item) => item.url.includes("continuity_personal_snapshots"));
     expect(personalPost).toBeTruthy();
-    const sharedPost = posts.find((item) => item.url.includes("household_snapshots?on_conflict"));
-    expect(sharedPost).toBeTruthy();
-    const sharedPayload = await decodeJsonPayload(JSON.parse(sharedPost!.body).payload) as Household;
-    expect(sharedPayload.transactions.some((row) => row.visibility === "personal")).toBe(false);
-    expect(sharedPayload.transactions.some((row) => row.note === "Partner must not see this in shared")).toBe(false);
+    const personalPayload = await decodeJsonPayload(JSON.parse(personalPost!.body).payload) as Household;
+    expect(personalPayload.transactions.some((row) => row.note === "Partner must not see this in shared")).toBe(true);
   });
 
   it("ships SELECT-only Production bridge SQL and keeps open INSERT out of Production policies", () => {
