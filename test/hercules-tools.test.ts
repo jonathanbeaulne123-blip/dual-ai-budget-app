@@ -84,6 +84,45 @@ describe("Hercules read-only tool brain", () => {
     expect(personalWallet.talk.spoken).toMatch(/household ledger/i);
   });
 
+  it("builds posted accounting statements and traces every balance back to the journal", () => {
+    const household = seedDemoHousehold({ today, environment: "development" });
+    const before = structuredClone(household);
+    const statements = executeHerculesReadToolPlan(household, { calls: [
+      { name: "balance_sheet", args: {} },
+      { name: "income_statement", args: { period: "this_month" } },
+      { name: "cash_flow_statement", args: { period: "this_month" } },
+      { name: "trial_balance", args: {} },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+    expect(statements.results.map((result) => result.name)).toEqual([
+      "balance_sheet", "income_statement", "cash_flow_statement", "trial_balance",
+    ]);
+    expect(statements.results[0]?.sentence).toMatch(/accounting equation (holds|does not hold)/i);
+    expect(statements.results[1]?.facts.map((row) => row.label)).toEqual(["Income", "Expenses", "Net income"]);
+    expect(statements.results[2]?.sentence).toMatch(/card spending.*not cash movement/i);
+    expect(statements.results[3]?.sentence).toMatch(/trial balance balances/i);
+
+    const tracing = executeHerculesReadToolPlan(household, { calls: [
+      { name: "general_ledger", args: { period: "this_month", limit: 3 } },
+      { name: "account_activity", args: { account: "Visa", period: "this_month" } },
+      { name: "explain_balance", args: { account: "Visa", period: "this_month" } },
+      { name: "period_comparison", args: { period: "this_month" } },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+    expect(tracing.results[0]?.facts.every((row) => row.source.journalEntryId)).toBe(true);
+    expect(tracing.results[1]?.facts.every((row) => row.source.journalEntryId)).toBe(true);
+    expect(tracing.results[2]?.sentence).toMatch(/normal credit balance/i);
+    expect(tracing.results[3]?.sentence).toMatch(/compared with/i);
+
+    const entryId = tracing.results[0]!.facts[0]!.source.journalEntryId!;
+    const detail = executeHerculesReadToolPlan(household, { calls: [
+      { name: "journal_entry_detail", args: { entryId } },
+      { name: "changes_in_net_worth", args: { period: "this_month" } },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+    expect(detail.results[0]?.sentence).toMatch(/equal credits/i);
+    expect(detail.results[0]?.facts.length).toBeGreaterThanOrEqual(2);
+    expect(detail.results[1]?.sentence).toMatch(/roll-forward (reconciles|does not reconcile)/i);
+    expect(household).toEqual(before);
+  });
+
   it("never crosses from a personal ledger into the partner's personal rows", () => {
     let household = catalogHousehold("development");
     household = postEntry(household, {
