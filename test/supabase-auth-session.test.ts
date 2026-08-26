@@ -56,6 +56,7 @@ describe("Supabase Auth browser session", () => {
     const url = new URL(buildSupabaseGoogleAuthorizeUrl(config, "development", "https://kitchen.example/welcome?from=home"));
     expect(url.pathname).toBe("/auth/v1/authorize");
     expect(url.searchParams.get("provider")).toBe("google");
+    expect(url.searchParams.get("scopes")).toBe("https://www.googleapis.com/auth/drive.file");
     const redirect = new URL(url.searchParams.get("redirect_to")!);
     expect(redirect.searchParams.get("hearthAuthEnv")).toBe("development");
     expect(redirect.searchParams.get("from")).toBe("home");

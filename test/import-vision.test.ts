@@ -15,6 +15,10 @@ const result: VisionDocumentResult = {
     reference: "R-1",
     confidence: 96,
   }],
+  receiptNumbers: {
+    lineAmountsCents: [1000], subtotalCents: 1000, discountCents: 0,
+    taxCents: 150, tipCents: 100, feeCents: 0, totalCents: 1250,
+  },
   warnings: [],
 };
 
@@ -29,8 +33,11 @@ describe("vision document normalization", () => {
       suggestedType: "expense",
       signedAmountCents: -1250,
       extractionConfidence: 96,
-      provenanceId: "vision:image-hash:R-1",
+      receiptNumbers: result.receiptNumbers,
     }));
+    expect(first.rows[0]?.provenanceId).toMatch(/^vision:image-hash:/);
+    expect(first.rows[0]?.note).toBe("Cafe · Receipt total");
+    expect(first.rows[0]?.fitId).toBe("");
     expect(JSON.stringify(first)).not.toContain("base64");
   });
 

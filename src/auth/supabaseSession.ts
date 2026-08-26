@@ -22,6 +22,7 @@ export type HearthAuthConfig = {
 type TokenStore = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
 const SESSION_PREFIX = "hearth:v1:supabase-auth:";
+const REQUIRED_GOOGLE_ACCOUNT_SCOPES = "https://www.googleapis.com/auth/drive.file";
 let storeOverride: TokenStore | null = null;
 
 function browserStore(): TokenStore | null {
@@ -149,6 +150,7 @@ export function buildSupabaseGoogleAuthorizeUrl(
   redirect.searchParams.set("hearthAuthEnv", environment);
   const url = new URL("/auth/v1/authorize", config.supabaseUrl);
   url.searchParams.set("provider", "google");
+  url.searchParams.set("scopes", REQUIRED_GOOGLE_ACCOUNT_SCOPES);
   url.searchParams.set("redirect_to", redirect.toString());
   return url.toString();
 }
