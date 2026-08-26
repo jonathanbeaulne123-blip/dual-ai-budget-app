@@ -604,10 +604,11 @@ export async function fetchContinuityMembershipRole(input: {
 async function readRemoteSnapshot(
   config: SupabaseConfig,
   householdId: string,
+  environment: Environment,
 ): Promise<Household | null> {
   const result = await rest(
     config,
-    `household_snapshots?household_id=eq.${encodeURIComponent(householdId)}&select=payload&limit=1`,
+    `household_snapshots?household_id=eq.${encodeURIComponent(householdId)}&environment=eq.${encodeURIComponent(environment)}&select=payload&limit=1`,
     { method: "GET", headers: { Prefer: "return=representation" } },
   );
   if (!result.ok) {
@@ -615,7 +616,9 @@ async function readRemoteSnapshot(
     throw new Error(messageOf(result.body));
   }
   const rows = Array.isArray(result.body) ? result.body as { payload: string | Household }[] : [];
-  return snapshotFromRow(rows[0]);
+  const pulled = snapshotFromRow(rows[0]);
+  if (!pulled) return null;
+  return assertHouseholdBinding(pulled, { environment, householdId }, "pull");
 }
 
 /** Membership-scoped live pull: one row by household id + environment (Auth JWT). */
@@ -832,7 +835,7 @@ async function pushSupabaseHouseholdLegacy(
   continuityIdentity: GoogleIdentitySelector | undefined,
   personalAlreadyPublished: boolean,
 ): Promise<PushHouseholdResult> {
-  const remote = await readRemoteSnapshot(config, snapshot.householdId);
+  const remote = await readRemoteSnapshot(config, snapshot.householdId, snapshot.environment);
   if (remote && remote.environment !== snapshot.environment) {
     return {
       ...probe,
