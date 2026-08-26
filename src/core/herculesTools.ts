@@ -27,7 +27,7 @@ import {
   budgetVariance,
 } from "./statements.ts";
 import { accountRegister, booksEquation, compileHousehold, trialBalance } from "./journal.ts";
-import { householdForHerculesContext } from "./visibility.ts";
+import { householdForHerculesContext, householdForShiftReadTools } from "./visibility.ts";
 import type { HerculesAskContext } from "./askBooks.ts";
 import type { HerculesGroundedFact, HerculesNumberSource } from "./herculesProvenance.ts";
 import type { HerculesTalk } from "./herculesTalk.ts";
@@ -1584,6 +1584,26 @@ function clipSentence(value: string, max = 260): string {
   return `${cut.slice(0, space > 80 ? space : max - 1)}…`;
 }
 
+const SHIFT_READ_TOOL_NAMES = new Set([
+  "shift_summary",
+  "tip_oracle",
+  "shift_outlook",
+  "tip_schedule_sim",
+  "tax_milk_plan",
+  "shift_year_simulation",
+  "explain_shift_simulation",
+  "cash_cinema",
+  "what_if_desk",
+  "year_review",
+]);
+
+function scopeHouseholdForTool(household: Household, call: HerculesReadToolCall, context: HerculesAskContext): Household {
+  if (!SHIFT_READ_TOOL_NAMES.has(call.name)) {
+    return householdForHerculesContext(household, context.memberId, context.view);
+  }
+  return householdForShiftReadTools(household, context.memberId, context.view, cleanString(call.args.member));
+}
+
 export function executeHerculesReadToolPlan(
   household: Household,
   rawPlan: unknown,
@@ -1591,8 +1611,7 @@ export function executeHerculesReadToolPlan(
   context: HerculesAskContext,
 ): HerculesReadToolRun {
   const plan = parseHerculesReadToolPlan(rawPlan);
-  const scoped = householdForHerculesContext(household, context.memberId, context.view);
-  const results = plan.calls.map((call) => executeCall(scoped, call, today, context));
+  const results = plan.calls.map((call) => executeCall(scopeHouseholdForTool(household, call, context), call, today, context));
   const facts = results.flatMap((result) => result.facts).slice(0, 8);
   const sentence = results.length
     ? clipSentence(results.map((result) => result.sentence).join(" "))

@@ -4,7 +4,7 @@ import {
   assertPersonalEnvelopeBinding,
 } from "../core/environmentIsolation.ts";
 import { ValidationError, type Environment, type Household, type PersonalEnvelope } from "../core/types.ts";
-import { assembleHousehold, ensureHouseholdShape, personalReplicaForMember, shapeHerculesProPermissions, splitForSync } from "../core/sync.ts";
+import { assembleHousehold, ensureHouseholdShape, overlayPersonalReplica, personalEnvelopeFromPayload, personalReplicaForMember, splitForSync } from "../core/sync.ts";
 import { inviteFromText } from "../core/invite.ts";
 import { memberIdForGoogleIdentity, type GoogleIdentitySelector } from "../core/google.ts";
 import { hostedTransportAllowed } from "../core/sharing.ts";
@@ -223,81 +223,10 @@ function personalFromRow(row: { payload?: string | PersonalEnvelope } | undefine
   if (!row?.payload) return null;
   try {
     const payload = typeof row.payload === "string" ? JSON.parse(row.payload) as PersonalEnvelope : row.payload;
-    if (payload.kind !== "personal" || payload.memberId !== memberId) return null;
-    const goals = Array.isArray(payload.goals)
-      ? payload.goals.filter((item) => !item.shared && item.ownerMemberId === memberId)
-      : [];
-    const goalIds = new Set(goals.map((item) => item.id));
-    return {
-      ...payload,
-      transactions: Array.isArray(payload.transactions)
-        ? payload.transactions.filter((item) => item.createdBy === memberId && item.visibility === "personal")
-        : [],
-      shifts: Array.isArray(payload.shifts)
-        ? payload.shifts.filter((item) => item.createdBy === memberId && item.visibility === "personal")
-        : [],
-      goals,
-      goalContributions: Array.isArray(payload.goalContributions)
-        ? payload.goalContributions.filter((item) => goalIds.has(item.goalId))
-        : [],
-      goalPurchases: Array.isArray(payload.goalPurchases)
-        ? payload.goalPurchases.filter((item) => goalIds.has(item.goalId))
-        : [],
-      tombstones: Array.isArray(payload.tombstones) ? payload.tombstones : [],
-      ...(payload.herculesProPermissions
-        ? { herculesProPermissions: shapeHerculesProPermissions(payload.herculesProPermissions) }
-        : {}),
-    };
+    return personalEnvelopeFromPayload(payload, memberId);
   } catch {
     return null;
   }
-}
-
-function overlayPersonalReplica(household: Household, personal: PersonalEnvelope | null, memberId: string): Household {
-  if (!personal) return household;
-  const personalTransactionIds = new Set(personal.transactions.map((item) => item.id));
-  const personalShiftIds = new Set(personal.shifts.map((item) => item.id));
-  const personalGoals = personal.goals ?? [];
-  const personalGoalIds = new Set(personalGoals.map((item) => item.id));
-  const tombstones = new Map(household.tombstones.map((item) => [item.id, item]));
-  for (const item of personal.tombstones) {
-    const existing = tombstones.get(item.id);
-    if (!existing || item.deletedAt >= existing.deletedAt) tombstones.set(item.id, item);
-  }
-  return ensureHouseholdShape({
-    ...household,
-    transactions: [
-      ...household.transactions.filter((item) => !(
-        (item.visibility === "personal" && item.createdBy === memberId) || personalTransactionIds.has(item.id)
-      )),
-      ...personal.transactions,
-    ],
-    shifts: [
-      ...household.shifts.filter((item) => !(
-        (item.visibility === "personal" && item.createdBy === memberId) || personalShiftIds.has(item.id)
-      )),
-      ...personal.shifts,
-    ],
-    goals: [
-      ...household.goals.filter((item) => !personalGoalIds.has(item.id) && (item.shared || item.ownerMemberId !== memberId)),
-      ...personalGoals,
-    ],
-    goalContributions: [
-      ...household.goalContributions.filter((item) => !personalGoalIds.has(item.goalId)),
-      ...(personal.goalContributions ?? []),
-    ],
-    goalPurchases: [
-      ...household.goalPurchases.filter((item) => !personalGoalIds.has(item.goalId)),
-      ...(personal.goalPurchases ?? []),
-    ],
-    tombstones: [...tombstones.values()],
-    ...(personal.herculesProPermissions
-      ? { herculesProPermissions: shapeHerculesProPermissions(personal.herculesProPermissions) }
-      : {}),
-    lastCommittedAt: (personal.lastCommittedAt ?? "") > (household.lastCommittedAt ?? "")
-      ? personal.lastCommittedAt
-      : household.lastCommittedAt,
-  });
 }
 
 /** Shared cloud payload plus exactly-once receipts; no member-owned Personal rows. */

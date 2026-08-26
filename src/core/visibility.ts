@@ -165,6 +165,37 @@ export function householdForView(household: Household, memberId: string, view: L
   };
 }
 
+/**
+ * Shift/oracle reads in Personal view still need the worker's own posted history even
+ * when legacy rows were stamped household-only. Partner-personal rows never cross.
+ */
+export function householdForShiftReadTools(
+  household: Household,
+  memberId: string,
+  view: LedgerView,
+  memberQuery?: string,
+): Household {
+  const contextual = householdForHerculesContext(household, memberId, view);
+  if (view !== "personal") return contextual;
+  const needle = memberQuery?.trim().toLowerCase();
+  if (needle && needle !== "me") {
+    const self = household.members.find((member) => member.id === memberId);
+    const selfName = self?.name.trim().toLowerCase() ?? "";
+    if (selfName && !selfName.includes(needle) && needle !== selfName) return contextual;
+  }
+  const ownShiftIds = new Set(
+    (household.shifts ?? [])
+      .filter((shift) => shift.memberId === memberId)
+      .map((shift) => shift.id),
+  );
+  if (!ownShiftIds.size) return contextual;
+  const merged = new Map(contextual.shifts.map((shift) => [shift.id, shift]));
+  for (const shift of household.shifts ?? []) {
+    if (ownShiftIds.has(shift.id)) merged.set(shift.id, shift);
+  }
+  return { ...contextual, shifts: [...merged.values()] };
+}
+
 export function defaultVisibilityForView(view: LedgerView): Visibility {
   return view === "personal" ? "personal" : "household";
 }

@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import worker from "../workers/site.js";
 import { herculesProTest } from "../workers/herculesPro.js";
-import { seedDemoHousehold } from "../src/core/index.ts";
+import { catalogHousehold, postShift, seedDemoHousehold } from "../src/core/index.ts";
+import { assembleHousehold, personalReplicaForMember, splitForSync } from "../src/core/sync.ts";
 
 const origin = "https://hearth-books.jonathan-beaulne123.workers.dev";
 const env = { HERCULES_PRO_SIGNING_SECRET: "test-secret-that-is-longer-than-thirty-two-characters" };
@@ -188,6 +189,68 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       body: new URLSearchParams({ grant_type: "authorization_code", client_id: client.client_id, code: code!, code_verifier: verifier, redirect_uri: "https://chatgpt.com/aip/callback", resource: `${origin}/mcp` }),
     }), env);
     expect(replay.status).toBe(400);
+  });
+
+  it("reads personal-envelope shifts from split hosted snapshots through MCP", async () => {
+    let household = catalogHousehold();
+    household = postShift(household, {
+      date: "2026-08-25",
+      memberId: "MEM-002",
+      accountId: "ACC-CASH",
+      sales: "120.00",
+      cashTips: "25.00",
+      ccTips: "35.00",
+      hours: "5.00",
+      createdBy: "MEM-002",
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+    const { shared } = splitForSync(household, "MEM-002");
+    const personal = personalReplicaForMember(household, "MEM-002");
+    expect(shared.shifts).toHaveLength(0);
+    expect(personal.shifts).toHaveLength(1);
+
+    const now = Math.floor(Date.now() / 1000);
+    const accessToken = await herculesProTest.sealPrivate(env, {
+      kind: "access",
+      scope: "hearth.read",
+      resource: `${origin}/mcp`,
+      aud: `${origin}/mcp`,
+      environment: "development",
+      householdId: household.householdId,
+      memberId: "MEM-002",
+      authUserId: "auth-user-1",
+      supabaseAccessToken: "supabase-token",
+      iat: now,
+      exp: now + 60,
+    });
+
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("continuity_memberships?")) {
+        return response([{ household_id: household.householdId, member_id: "MEM-002", auth_user_id: "auth-user-1", role: "member" }]);
+      }
+      if (url.includes("continuity_personal_snapshots?")) {
+        return response([{ payload: JSON.stringify(personal) }]);
+      }
+      if (url.includes("household_snapshots?")) {
+        return response([{ payload: JSON.stringify(assembleHousehold(shared, null)) }]);
+      }
+      return response({ message: `unexpected ${url}` }, 404);
+    }));
+
+    const shiftCall = await worker.fetch(new Request(`${origin}/mcp`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 40, method: "tools/call", params: {
+        name: "shift_summary",
+        arguments: { period: "this_week" },
+      } }),
+    }), env);
+    const shiftResult = await shiftCall.json() as { result: { isError: boolean; structuredContent: { status: string; usedTool: string; answer: string; ledger: string } } };
+    expect(shiftResult.result.isError).toBe(false);
+    expect(shiftResult.result.structuredContent).toMatchObject({ status: "ok", usedTool: "shift_summary", ledger: "personal" });
+    expect(shiftResult.result.structuredContent.answer).toMatch(/1 posted shift/i);
   });
 
   it("keeps Production off until the reviewed security cutover", async () => {

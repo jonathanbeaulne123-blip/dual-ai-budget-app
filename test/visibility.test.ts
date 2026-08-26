@@ -5,9 +5,12 @@ import {
   assembleHousehold,
   emptyPersonal,
   mergeShared,
+  overlayPersonalReplica,
+  personalReplicaForMember,
   splitForSync,
 } from "../src/core/sync.ts";
-import { householdForView } from "../src/core/visibility.ts";
+import { householdForShiftReadTools, householdForView } from "../src/core/visibility.ts";
+import { executeHerculesReadToolPlan } from "../src/core/herculesTools.ts";
 
 function grocery(createdBy: string, visibility: "household" | "personal" | "both", note: string, amount = "12.00") {
   return {
@@ -124,5 +127,54 @@ describe("household and personal visibility", () => {
     expect(assembled.transactions).toHaveLength(0);
     expect(assembled.linked).toBe(false);
     expect(assembleHousehold(shared, emptyPersonal("MEM-001"), { linked: true }).linked).toBe(true);
+  });
+
+  it("includes the worker's own household-posted shifts in personal shift reads", () => {
+    const posted = postShift(catalogHousehold(), {
+      date: "2026-08-18",
+      memberId: "MEM-002",
+      accountId: "ACC-CASH",
+      sales: "100.00",
+      cashTips: "20.00",
+      ccTips: "30.00",
+      hours: "4.00",
+      createdBy: "MEM-002",
+      visibility: "household",
+      confirmDuplicate: true,
+    });
+    const personalView = householdForView(posted.household, "MEM-002", "personal");
+    expect(personalView.shifts).toHaveLength(0);
+    const shiftRead = householdForShiftReadTools(posted.household, "MEM-002", "personal");
+    expect(shiftRead.shifts).toHaveLength(1);
+    const run = executeHerculesReadToolPlan(posted.household, {
+      calls: [{ id: "shift-1", name: "shift_summary", args: { period: "this_week" } }],
+    }, "2026-08-18", { memberId: "MEM-002", view: "personal" });
+    expect(run.results[0]?.status).toBe("ok");
+    expect(run.results[0]?.sentence).toMatch(/1 posted shift/i);
+  });
+
+  it("overlays hosted personal shifts onto the shared cloud snapshot", () => {
+    let household = catalogHousehold();
+    household = postShift(household, {
+      date: "2026-08-18",
+      memberId: "MEM-002",
+      accountId: "ACC-CASH",
+      sales: "100.00",
+      hours: "4.00",
+      createdBy: "MEM-002",
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+    const { shared } = splitForSync(household, "MEM-002");
+    expect(shared.shifts).toHaveLength(0);
+    const personal = personalReplicaForMember(household, "MEM-002");
+    expect(personal.shifts).toHaveLength(1);
+    const cloudShared = assembleHousehold(shared, null);
+    const merged = overlayPersonalReplica(cloudShared, personal, "MEM-002");
+    const run = executeHerculesReadToolPlan(merged, {
+      calls: [{ id: "shift-2", name: "shift_summary", args: { period: "this_week" } }],
+    }, "2026-08-18", { memberId: "MEM-002", view: "personal" });
+    expect(run.results[0]?.status).toBe("ok");
+    expect(run.results[0]?.sentence).toMatch(/1 posted shift/i);
   });
 });

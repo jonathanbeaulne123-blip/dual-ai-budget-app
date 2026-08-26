@@ -299,6 +299,92 @@ export function personalReplicaForMember(household: Household, memberId: string)
   };
 }
 
+/** Normalize a hosted personal envelope row before overlaying it onto shared books. */
+export function personalEnvelopeFromPayload(
+  payload: unknown,
+  memberId: string,
+): PersonalEnvelope | null {
+  if (!payload || typeof payload !== "object") return null;
+  const row = payload as PersonalEnvelope;
+  if (row.kind !== "personal" || row.memberId !== memberId) return null;
+  const goals = Array.isArray(row.goals)
+    ? row.goals.filter((item) => !item.shared && item.ownerMemberId === memberId)
+    : [];
+  const goalIds = new Set(goals.map((item) => item.id));
+  return {
+    ...row,
+    transactions: Array.isArray(row.transactions)
+      ? row.transactions.filter((item) => item.createdBy === memberId && item.visibility === "personal")
+      : [],
+    shifts: Array.isArray(row.shifts)
+      ? row.shifts.filter((item) => item.createdBy === memberId && item.visibility === "personal")
+      : [],
+    goals,
+    goalContributions: Array.isArray(row.goalContributions)
+      ? row.goalContributions.filter((item) => goalIds.has(item.goalId))
+      : [],
+    goalPurchases: Array.isArray(row.goalPurchases)
+      ? row.goalPurchases.filter((item) => goalIds.has(item.goalId))
+      : [],
+    tombstones: Array.isArray(row.tombstones) ? row.tombstones : [],
+    ...(row.herculesProPermissions
+      ? { herculesProPermissions: shapeHerculesProPermissions(row.herculesProPermissions) }
+      : {}),
+  };
+}
+
+/** Merge one member's hosted personal replica onto the shared cloud snapshot. */
+export function overlayPersonalReplica(
+  household: Household,
+  personal: PersonalEnvelope | null | undefined,
+  memberId: string,
+): Household {
+  if (!personal || personal.kind !== "personal" || personal.memberId !== memberId) return household;
+  const personalTransactionIds = new Set(personal.transactions.map((item) => item.id));
+  const personalShiftIds = new Set(personal.shifts.map((item) => item.id));
+  const personalGoals = personal.goals ?? [];
+  const personalGoalIds = new Set(personalGoals.map((item) => item.id));
+  const tombstones = new Map(household.tombstones.map((item) => [item.id, item]));
+  for (const item of personal.tombstones) {
+    const existing = tombstones.get(item.id);
+    if (!existing || item.deletedAt >= existing.deletedAt) tombstones.set(item.id, item);
+  }
+  return ensureHouseholdShape({
+    ...household,
+    transactions: [
+      ...household.transactions.filter((item) => !(
+        (item.visibility === "personal" && item.createdBy === memberId) || personalTransactionIds.has(item.id)
+      )),
+      ...personal.transactions,
+    ],
+    shifts: [
+      ...household.shifts.filter((item) => !(
+        (item.visibility === "personal" && item.createdBy === memberId) || personalShiftIds.has(item.id)
+      )),
+      ...personal.shifts,
+    ],
+    goals: [
+      ...household.goals.filter((item) => !personalGoalIds.has(item.id) && (item.shared || item.ownerMemberId !== memberId)),
+      ...personalGoals,
+    ],
+    goalContributions: [
+      ...household.goalContributions.filter((item) => !personalGoalIds.has(item.goalId)),
+      ...(personal.goalContributions ?? []),
+    ],
+    goalPurchases: [
+      ...household.goalPurchases.filter((item) => !personalGoalIds.has(item.goalId)),
+      ...(personal.goalPurchases ?? []),
+    ],
+    tombstones: [...tombstones.values()],
+    ...(personal.herculesProPermissions
+      ? { herculesProPermissions: shapeHerculesProPermissions(personal.herculesProPermissions) }
+      : {}),
+    lastCommittedAt: (personal.lastCommittedAt ?? "") > (household.lastCommittedAt ?? "")
+      ? personal.lastCommittedAt
+      : household.lastCommittedAt,
+  });
+}
+
 export function assembleHousehold(
   shared: SharedEnvelope,
   personal: PersonalEnvelope | null,
