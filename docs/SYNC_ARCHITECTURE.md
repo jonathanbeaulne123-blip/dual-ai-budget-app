@@ -1,6 +1,6 @@
 # Hearth sync architecture — tiered plan
 
-> **Accepted direction — D-148 (2026-08-26).** This file is the canonical sync plan. It supersedes snapshot-only Phase 2 wording, the 4-second live-pull target, and Packet 7’s “atomic CAS + outbox” framing as the *end state*. Those pieces remain **Tier 1 foundations**, not the finish line.
+> **Accepted direction — D-149 (2026-08-26).** This file is the canonical sync plan. It supersedes snapshot-only Phase 2 wording, the 4-second live-pull target, and Packet 7’s “atomic CAS + outbox” framing as the *end state*. Those pieces remain **Tier 1 foundations**, not the finish line.
 >
 > **Household outcome:** when Bianca confirms a grocery on her phone, Jonathan’s open kitchen shows it in **100–500 ms** — as naturally as a text message — without either phone being the host, without silent loss, and without the model or widgets posting money.
 >
@@ -313,4 +313,4 @@ All slices live under [`docs/briefs/sync/`](briefs/sync/). Each file includes: g
 
 ---
 
-*Decision: **D-148**. Worksession: [`worksessions/2026-08-26-sync-architecture-reframe.md`](worksessions/2026-08-26-sync-architecture-reframe.md).*
+*Decision: **D-149**. Worksession: [`worksessions/2026-08-26-sync-architecture-reframe.md`](worksessions/2026-08-26-sync-architecture-reframe.md).*

@@ -236,6 +236,8 @@ function conflictMessage(reason: SnapshotCasConflict["reason"] | undefined): str
     case "invalid-personal-payload":
     case "personal-payload-mismatch":
       return "The personal cloud envelope was invalid or disagreed with this phone. Nothing was overwritten.";
+    case "production-disabled":
+      return "Production cloud continuity is not enabled yet. Nothing was overwritten.";
     case "google-identity-required":
       return "Reconnect with Google through Hearth before creating cloud books.";
     case "payload-identity-mismatch":

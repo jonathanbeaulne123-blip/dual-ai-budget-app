@@ -38,7 +38,7 @@ Jonathan and Bianca get a written, slice-by-slice plan to see each other's confi
 
 ## Next owner
 
-**Cursor** — implement **T1-S1** (`docs/briefs/sync/T1-S1-atomic-continuity-rpc.md`) on disposable Development after Jonathan reviews D-148 plan.
+**Cursor** — implement **T1-S1** (`docs/briefs/sync/T1-S1-atomic-continuity-rpc.md`) on disposable Development after Jonathan reviews D-149 plan.
 
 ## Uncertainty
 

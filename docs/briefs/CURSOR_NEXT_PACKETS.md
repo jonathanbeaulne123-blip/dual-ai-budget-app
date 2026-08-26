@@ -301,7 +301,7 @@ Deliver the command classification, receipt schema, stale-token behavior, revers
 
 ---
 
-## Packet 7 — P1 push-native sync (D-148; supersedes prior CAS/outbox-only framing)
+## Packet 7 — P1 push-native sync (D-149; supersedes prior CAS/outbox-only framing)
 
 **Canonical plan:** [`docs/SYNC_ARCHITECTURE.md`](../SYNC_ARCHITECTURE.md) and slice prompts [`docs/briefs/sync/README.md`](sync/README.md).
 

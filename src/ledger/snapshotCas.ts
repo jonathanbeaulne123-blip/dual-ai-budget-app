@@ -66,7 +66,10 @@ export type SnapshotCasConflict = {
     | "payload-identity-mismatch"
     | "google-identity-required"
     | "household-already-exists"
-    | "invalid-household";
+    | "invalid-household"
+    | "invalid-personal-payload"
+    | "personal-payload-mismatch"
+    | "production-disabled";
 };
 
 export type SnapshotCasResult = SnapshotCasOk | SnapshotCasConflict;
