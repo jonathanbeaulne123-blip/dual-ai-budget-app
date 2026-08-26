@@ -30,6 +30,7 @@ jobs:
           VITE_SUPABASE_AUTH_ENABLED: ${{ vars.VITE_SUPABASE_AUTH_ENABLED }}
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_CONTINUITY_REALTIME: "1"
         run: |
           . scripts/sanitize-cloudflare-env.sh
           if [ -z "$VITE_GOOGLE_CLIENT_ID" ]; then

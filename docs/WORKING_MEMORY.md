@@ -6,7 +6,7 @@ This file is a **chat-thread orientation**, not a second canon and not a license
 
 Living plan: Jonathan's latest instruction → [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md) → [HEARTH_ROADMAP.md](HEARTH_ROADMAP.md) → [STRATEGY.md](STRATEGY.md).
 
-Branch tip when this was rewritten: **`cursor/atomic-continuity-tx-7270`** (D-149 T1-S1/S2/S3 on PR #165; rebased onto `main`, not yet merged). Kitchen: Development.
+Branch tip when this was rewritten: **`main@dffd701`** (D-149 T1-S1/S2/S3 merged via PR #165). Realtime enablement PR pending: `cursor/t1-realtime-enable-7270`. Kitchen: Development.
 
 Household-only files (`Project Context.txt`, ODS, credentials) stay **local** (D-018).
 
@@ -54,8 +54,9 @@ Kill criteria still in force: milk one Confirm; phone five objects; leftover is 
 - Jonathan: create `HERCULES_RATE` KV + deploy Worker with real ids.
 - Jonathan: apply GitHub ruleset from [GITHUB_BRANCH_PROTECTION.md](GITHUB_BRANCH_PROTECTION.md).
 - Live two-browser continuity E2E; signed-in Create/invite smoke.
-- Merge PR #165 (D-149 Tier 1: atomic 012 + Realtime T1-S3) after CI green. Apply Migration 014 + enable `VITE_CONTINUITY_REALTIME=1` on Dev for live Realtime smoke.
+- **Jonathan:** apply Migration **014** on Development (`pnpm books:apply:014` or SQL Editor) after Realtime enablement PR merges. Hard refresh both phones; two-browser Realtime smoke (A posts → B faster than 4 s poll).
+- Create KV + apply branch protection when ready.
 
 ## Next recommended action
 
-Review PR #159 / `cursor/atomic-continuity-tx-7270`. Confirm Migration 012 is applied on Dev if not already. Create KV + apply branch protection when ready. Default experiments to Development. Do not clasp. Do not touch Production without explicit approval.
+Merge Realtime enablement PR (`VITE_CONTINUITY_REALTIME=1` + `books:apply:014` script). Jonathan applies 014 on Dev, then runs two-phone latency smoke. Default experiments to Development. Do not clasp. Do not touch Production without explicit approval.

@@ -1,10 +1,12 @@
--- PROPOSED — T1-S3 Realtime publication (Jonathan approval before apply)
--- Do not run via pnpm books:apply until Development smoke confirms events arrive.
---
+-- Migration 014 — Realtime publication for snapshot tables (D-149 T1-S3).
 -- Supabase Realtime postgres_changes requires tables in supabase_realtime publication.
 -- RLS on SELECT still applies to websocket delivery under Auth JWT.
 --
--- Rollback (Development only, after approval):
+-- Apply Development:
+--   SUPABASE_DB_PASSWORD=… pnpm books:apply:014
+--   or paste into Supabase SQL Editor.
+--
+-- Rollback (Development only):
 --   ALTER PUBLICATION supabase_realtime DROP TABLE public.household_snapshots;
 --   ALTER PUBLICATION supabase_realtime DROP TABLE public.continuity_personal_snapshots;
 --   DELETE FROM public.schema_migrations WHERE id = 14;
@@ -32,5 +34,9 @@ BEGIN
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
+
+INSERT INTO public.schema_migrations (id, applied_at)
+VALUES (14, NOW()::text)
+ON CONFLICT (id) DO NOTHING;
 
 COMMIT;

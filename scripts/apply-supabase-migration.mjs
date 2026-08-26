@@ -103,6 +103,17 @@ try {
     `;
     console.log("function:", fn[0] ? `${fn[0].proname}(${fn[0].args})` : "(missing)");
   }
+  if (arg === "014") {
+    const pubs = await sql`
+      select schemaname, tablename
+      from pg_publication_tables
+      where pubname = 'supabase_realtime'
+        and schemaname = 'public'
+        and tablename in ('household_snapshots', 'continuity_personal_snapshots')
+      order by tablename
+    `;
+    console.log("supabase_realtime tables:", pubs.map((row) => `${row.schemaname}.${row.tablename}`).join(", ") || "(none)");
+  }
   const ids = await sql`select id from public.schema_migrations order by id`;
   console.log("schema_migrations ids:", ids.map((row) => row.id).join(", ") || "(empty)");
   console.log(`applied ${match}`);
