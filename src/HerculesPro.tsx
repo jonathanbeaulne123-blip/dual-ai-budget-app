@@ -1,5 +1,5 @@
-import { useState } from "react";
-import type { Environment, Household } from "./core/types.ts";
+import { useEffect, useState } from "react";
+import type { Environment, HerculesProPermissions, Household } from "./core/types.ts";
 import type { Session } from "./session.ts";
 import {
   loadSupabaseSession,
@@ -25,6 +25,164 @@ export function herculesProLaunchUrl(): string {
 
 export function launchHerculesPro(): void {
   window.open(herculesProLaunchUrl(), "_blank", "noopener,noreferrer");
+}
+
+const DISABLED_PERMISSIONS: HerculesProPermissions = {
+  personalWrite: false,
+  householdWrite: false,
+  updatedAt: null,
+};
+
+function permissionsPath(environment: Environment, householdId: string, memberId: string): string {
+  const query = new URLSearchParams({ environment, householdId, memberId });
+  return `/hercules-pro/permissions?${query}`;
+}
+
+async function requestPermissions(input: {
+  environment: Environment;
+  householdId: string;
+  memberId: string;
+  next?: Pick<HerculesProPermissions, "personalWrite" | "householdWrite">;
+}): Promise<HerculesProPermissions> {
+  const cloud = await ensureSupabaseSession(input.environment);
+  if (!cloud) throw new Error("Continue with Google before changing Hercules Pro permissions.");
+  const response = await fetch(permissionsPath(input.environment, input.householdId, input.memberId), {
+    method: input.next ? "PUT" : "GET",
+    headers: {
+      Authorization: `Bearer ${cloud.accessToken}`,
+      ...(input.next ? { "Content-Type": "application/json" } : {}),
+    },
+    ...(input.next ? { body: JSON.stringify(input.next) } : {}),
+  });
+  const body = await response.json() as { ok?: boolean; permissions?: HerculesProPermissions; error?: string };
+  if (!response.ok || !body.ok || !body.permissions) throw new Error(body.error || "Hercules Pro permissions could not be saved.");
+  return body.permissions;
+}
+
+export function HerculesProPermissionsCard({
+  environment,
+  household,
+  session,
+  onChanged,
+}: {
+  environment: Environment;
+  household: Household;
+  session: Session;
+  onChanged?: (permissions: HerculesProPermissions) => void;
+}) {
+  const [permissions, setPermissions] = useState<HerculesProPermissions>(
+    household.herculesProPermissions ?? DISABLED_PERMISSIONS,
+  );
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [pendingEnable, setPendingEnable] = useState<"personal" | "household" | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    setLoading(true);
+    setError("");
+    void requestPermissions({
+      environment,
+      householdId: household.householdId,
+      memberId: session.memberId,
+    }).then((next) => {
+      if (!live) return;
+      setPermissions(next);
+      onChanged?.(next);
+    }).catch((caught) => {
+      if (live) setError(caught instanceof Error ? caught.message : String(caught));
+    }).finally(() => {
+      if (live) setLoading(false);
+    });
+    return () => { live = false; };
+  }, [environment, household.householdId, session.memberId]);
+
+  async function save(next: Pick<HerculesProPermissions, "personalWrite" | "householdWrite">): Promise<void> {
+    setSaving(true);
+    setError("");
+    try {
+      const saved = await requestPermissions({
+        environment,
+        householdId: household.householdId,
+        memberId: session.memberId,
+        next,
+      });
+      setPermissions(saved);
+      onChanged?.(saved);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setSaving(false);
+      setPendingEnable(null);
+    }
+  }
+
+  function choose(view: "personal" | "household", checked: boolean): void {
+    if (checked) {
+      setPendingEnable(view);
+      return;
+    }
+    void save({
+      personalWrite: view === "personal" ? false : permissions.personalWrite,
+      householdWrite: view === "household" ? false : permissions.householdWrite,
+    });
+  }
+
+  const memberName = household.members.find((member) => member.id === session.memberId)?.name || "This member";
+  return (
+    <>
+      <section className="card">
+        <header><h2>Hercules Pro permissions</h2><span className={`pill ${permissions.personalWrite || permissions.householdWrite ? "warn" : "good"}`}>{permissions.personalWrite || permissions.householdWrite ? "writes on" : "read-only"}</span></header>
+        <p className="muted">
+          Free Hercules is unchanged. ChatGPT reads stay available. Writing is member-owned, off by default, and can only add a prepared transaction after you confirm the exact preview in ChatGPT.
+        </p>
+        <label style={{ marginTop: 10 }}>
+          <input
+            type="checkbox"
+            checked={permissions.personalWrite}
+            disabled={loading || saving || environment === "production"}
+            onChange={(event) => choose("personal", event.target.checked)}
+          />
+          {" "}Allow {memberName} to post to their Personal ledger from ChatGPT
+        </label>
+        <label style={{ marginTop: 10 }}>
+          <input
+            type="checkbox"
+            checked={permissions.householdWrite}
+            disabled={loading || saving || environment === "production"}
+            onChange={(event) => choose("household", event.target.checked)}
+          />
+          {" "}Allow {memberName} to post to the shared Household ledger from ChatGPT
+        </label>
+        <p className="muted" style={{ marginTop: 10 }}>
+          No delete, bill payment, card payment, transfer to a bank, settings change, or silent write tool is enabled. Turn either switch off to block new and already-prepared confirmations for that ledger.
+        </p>
+        {environment === "production" ? <p className="danger">Production stays read-only until the September security cutover.</p> : null}
+        {error ? <p className="danger">{error}</p> : null}
+        <button className="ghost" style={{ width: "100%", marginTop: 8 }} type="button" onClick={launchHerculesPro}>
+          Open / reconnect Hercules Pro ↗
+        </button>
+        {(permissions.personalWrite || permissions.householdWrite) ? (
+          <p className="muted" style={{ marginTop: 8 }}>Reconnect the ChatGPT app after enabling writing so OAuth can add the separate <code>hearth.write</code> permission.</p>
+        ) : null}
+      </section>
+      {pendingEnable ? (
+        <ConfirmSheet
+          title={`Allow ${pendingEnable === "personal" ? "Personal" : "Household"} writes from ChatGPT?`}
+          body={`Hercules Pro may prepare a transaction for the ${pendingEnable} ledger. ChatGPT must show the amount, date, account, category, note, and duplicate warning, then ask you to confirm before Hearth posts it.`}
+          extra="This Development permission is optional and reversible. It does not allow deletes, bank payments, settings changes, or writes without a fresh confirmation preview."
+          confirmLabel="Allow confirmed writes"
+          busy={saving}
+          onCancel={() => setPendingEnable(null)}
+          onConfirm={() => { void save({
+            personalWrite: pendingEnable === "personal" ? true : permissions.personalWrite,
+            householdWrite: pendingEnable === "household" ? true : permissions.householdWrite,
+          }); }}
+        />
+      ) : null}
+    </>
+  );
 }
 
 async function finishAuthorization(input: {
@@ -110,14 +268,14 @@ export function HerculesProApproval({
   return (
     <>
       <ConfirmSheet
-        title="Let Hercules Pro read this ledger?"
+        title="Connect Hercules Pro to this ledger?"
         body={ready
-          ? `Connect ${memberName} in ${household?.name}. ChatGPT may ask Hearth's read-only tools about this member's personal ledger and the shared household ledger.`
+          ? `Connect ${memberName} in ${household?.name}. ChatGPT may read this member's Personal ledger and the shared Household ledger. If this member enabled writing in More and ChatGPT requested that separate scope, every post still requires an exact preview and confirmation.`
           : cloudSession
             ? "First enter the household you want to use in ChatGPT. Nothing is connected yet."
             : "Continue with Google first. Hearth will then ask which open household and member ChatGPT may read."}
-        extra={`${error ? `${error} ` : ""}This never replaces free Hercules. It cannot add, edit, delete, post, pay, or move money. You can close ChatGPT and keep using every in-app Hercules tool.`}
-        confirmLabel={cloudSession ? "Connect read-only books" : "Continue with Google"}
+        extra={`${error ? `${error} ` : ""}This never replaces free Hercules. Read-only is the default. Confirmed write access cannot delete, pay a bank, change settings, or bypass the member's opt-in. You can close ChatGPT and keep using every in-app Hercules tool.`}
+        confirmLabel={cloudSession ? "Connect Hercules Pro" : "Continue with Google"}
         busy={busy}
         onCancel={() => { void deny(); }}
         onConfirm={() => { void connect(); }}

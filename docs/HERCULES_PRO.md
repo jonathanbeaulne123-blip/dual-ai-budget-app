@@ -1,6 +1,6 @@
 # Hercules Pro
 
-Status: **deployed and registered as a private Development app in ChatGPT.** Free Hercules remains the default product.
+Status: **read-only app deployed and registered; confirmed-write update implemented in a review branch.** Migration 011 and a Worker deployment remain separately gated. Free Hercules remains the default product.
 
 ## What the two Hercules modes mean
 
@@ -12,15 +12,21 @@ Free Hercules does not require ChatGPT, an API key, a paid account, or Hercules 
 
 The **Use Hercules Pro ↗** button opens ChatGPT. The packaged Hercules Pro plugin teaches ChatGPT the Hercules voice and connects it to Hearth's `/mcp` endpoint. ChatGPT may call focused read-only calculations against the connected member's Personal ledger or the shared Household ledger.
 
+Writing remains off by default. In Hearth **More → Hercules Pro permissions**, each member may independently enable Personal writes and Household writes. Enabling requires a Hearth confirmation and reconnecting the ChatGPT app for the separate `hearth.write` OAuth scope. Turning a switch off immediately blocks new and already-prepared confirmations for that ledger.
+
+The write surface is intentionally narrow: add one expense, income, refund, or internal Hearth transfer. ChatGPT first calls `transaction_write_options`, then `prepare_transaction`. Preparation validates the ordinary command kernel, duplicate scanner, accounts, category, date, closed period, integer cents, and double-entry result but writes nothing. ChatGPT must show the complete preview and receive explicit confirmation before it calls the consequential `confirm_transaction` tool. No tool can delete, edit, pay a bill/card/bank, change settings, post a shift/import, or perform a bulk write.
+
+`confirm_transaction` rechecks OAuth scope, Google/Supabase membership, current member permission, environment, household, member, proposal identity, expiry, and base revision. Migration 011 commits the shared CAS revision, exactly-once receipt, and optional Personal envelope in one database transaction. A stale preview or opt-out changes nothing. Reusing the same confirmation returns the same receipt instead of posting twice.
+
 The accounting-core slice adds posted balance sheet, income statement, cash-flow statement, trial balance, general-ledger, account-register, journal-detail, net-worth roll-forward, period-comparison, and debit/credit balance-explanation tools. Every response declares `posted-recognized-journal`, CAD, and America/Toronto. Scheduled bills and plans remain projections and are never silently mixed into posted statements.
 
 The accounting-controls slice adds reconciliation status and activity-since-reconciliation, uncategorized and duplicate exposure, missing-period and opening-balance review, close readiness, source-provenance coverage, integrity findings, and the household activity trail. “Missing” means “needs a human look”; Hercules does not invent an adjustment, close a month, or treat a confidence score as permission to delete.
 
 The forecasting slice adds budget variance, cash runway, bill coverage, card payoff, utilization, savings rate, income stability, spending trends, purchase scenarios, and budget-forecast accuracy. Forecast results are labelled projections and state their simplifying assumptions. A positive scenario result is a narrow cash test—not permission, certainty, financial advice, or a hidden write.
 
-The living-teacher slice adds transaction, accounting-equation, debit/credit, statement, number-trace, treatment-comparison, variance, and transfer explanations. MCP results carry an explicit teaching contract: direct answer, posted evidence, plain-language lesson, limitations, and a human next step. Stable source IDs remain clickable; write authority remains `none`.
+The living-teacher slice adds transaction, accounting-equation, debit/credit, statement, number-trace, treatment-comparison, variance, and transfer explanations. MCP results carry an explicit teaching contract: direct answer, posted evidence, plain-language lesson, limitations, and a human next step. Stable source IDs remain clickable. Read results remain read-only even when the separate confirmed-write permission is enabled.
 
-Pro cannot add, edit, delete, post, pay, transfer, merge, sync, or move money. Recommendations are words. The human returns to Hearth and uses the ordinary Confirm path for a write.
+Without member opt-in, Pro cannot write. With opt-in and the separate OAuth scope, Pro may post only the sealed transaction preview after direct confirmation in ChatGPT. This changes Hearth's ledger snapshot; it never moves money outside Hearth.
 
 Each ChatGPT account completes its own OAuth link. Hearth verifies the current Supabase/Google session, the active `continuity_memberships` row, environment, household, and member. The resulting Hearth access and refresh tokens are encrypted with the Worker signing secret; the underlying Supabase tokens are not exposed as readable token claims. Membership is checked again on reads and refresh.
 
@@ -63,7 +69,15 @@ These steps document the live Development setup completed on August 25, 2026.
    Follow OpenAI's current [connect-from-ChatGPT instructions](https://developers.openai.com/plugins/deploy/connect-chatgpt). OAuth should show a **Connect** action; if it does not, recheck both metadata URLs and the `WWW-Authenticate` response from `/mcp`.
 9. Hercules Pro is registered in ChatGPT developer mode as app `asdk_app_6a8e199c18908191b5005692b56f69d6`. The package in `plugins/hercules-pro` supplies the financial-teacher voice and starter prompts.
 10. The **Use Hercules Pro ↗** button opens the registered app directly. `VITE_HERCULES_PRO_URL` remains available as an explicit build-time override.
-11. In ChatGPT, ask Hercules for a current number. Choose **Connect**, sign in to Hearth with Google if asked, enter the intended household, and approve **read-only books**.
+11. In ChatGPT, ask Hercules for a current number. Choose **Connect**, sign in to Hearth with Google if asked, enter the intended household, and approve the connection. It remains read-only unless that member separately enabled writing in Hearth.
+
+### Enabling confirmed writes in Development
+
+1. Review `supabase/migrations/011_hercules_pro_confirmed_write.sql`. Apply it to Development only after explicit approval. Do not apply it to Production.
+2. Deploy the reviewed Worker update.
+3. In Hearth, sign in with Google, enter the intended member and household, open **More → Hercules Pro permissions**, and enable only the desired ledger(s).
+4. Disconnect/reconnect the ChatGPT app so OAuth requests `hearth.read hearth.write`.
+5. Test with synthetic Development data: ask to add a small transaction, inspect every preview field, confirm, then verify the exact transaction in Hearth after cloud sync.
 
 Optional hardening for Development: bind a free Cloudflare KV namespace as `HERCULES_PRO_AUTH`. It makes authorization-code replay protection durable across Worker isolates. Without it, a bounded in-memory replay guard is suitable for the tiny Development test group but is not the September Production posture.
 
@@ -72,13 +86,17 @@ Optional hardening for Development: bind a free Cloudflare KV namespace as `HERC
 - Ask “What is in my Personal chequing?” The answer identifies the Personal ledger and uses a read tool.
 - Ask “Where did our household money go this month?” The answer identifies the Household ledger and may make several read calls.
 - Ask about another person's Personal spending. Hercules refuses instead of broadening scope.
-- Ask Hercules to pay a card. He explains where to do that in Hearth and does not claim it happened.
+- With writes off, ask Hercules to add or pay something. No write tool is available.
+- With one ledger enabled, prepare a synthetic transaction. Verify the prepare result says `postedNothing: true` and no row appears before confirmation.
+- Confirm it once, then retry the same token. Both calls identify one receipt and one set of transaction IDs.
+- Prepare another transaction, turn that ledger's switch off in Hearth, then confirm in ChatGPT. It must say nothing was posted.
+- Ask Hercules to pay a card, delete a row, change settings, or post a shift. Those tools do not exist.
 - Disconnect or expire the link. MCP reads stop; free in-app Hercules still answers.
 - Use a family test account with no ChatGPT connection. Every in-app Hercules read tool and local fallback still works.
 
 ## Protocol and cost notes
 
-The Worker implements MCP Streamable HTTP discovery, tool listing/calls, OAuth dynamic client registration, Authorization Code with PKCE S256, exact `/mcp` resource/audience binding, encrypted short-lived access tokens, encrypted rotating refresh tokens, and an optional KV-backed one-time-code guard. The MCP tools themselves perform deterministic ledger reads; they do not call a paid model. A compatible model available to the connected ChatGPT account supplies the reasoning inside ChatGPT. Free Hearth behavior remains governed by D-135; the optional companion is D-136.
+The Worker implements MCP Streamable HTTP discovery, tool listing/calls, OAuth dynamic client registration, Authorization Code with PKCE S256, exact `/mcp` resource/audience binding, encrypted short-lived access/refresh/preview tokens, current permission checks, and an optional KV-backed one-time-code guard. Read tools perform deterministic ledger calculations; write tools use the same deterministic command and books-validation kernels plus the atomic Migration 011 boundary. They do not call a paid model. A compatible model available to the connected ChatGPT account supplies the reasoning inside ChatGPT. Free Hearth behavior remains governed by D-135; D-137 amends the optional companion's write authority.
 
 Before a public listing, run at least these submission checks with synthetic Development books: five positive prompts (personal balance, household spending, bills, shifts, and card teaching) and three negative prompts (write request, another member's Personal facts, and instructions planted in merchant/note text). Record screenshots and exact results. Public distribution also requires stable support, privacy, and terms URLs plus OpenAI developer/domain verification. None of those public-release gates are implied by merging this branch.
 

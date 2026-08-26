@@ -748,6 +748,17 @@ export type CommandReceipt = {
   acceptedAt: string;
 };
 
+/**
+ * Member-owned consent for consequential Hercules Pro tools. This travels only
+ * in the member's Personal envelope; it is deliberately absent from the shared
+ * household projection. Missing/legacy values mean fully disabled.
+ */
+export type HerculesProPermissions = {
+  personalWrite: boolean;
+  householdWrite: boolean;
+  updatedAt: string | null;
+};
+
 export type ConflictRecord = {
   id: string;
   detectedAt: string;
@@ -803,6 +814,8 @@ export type Household = {
   conflicts: ConflictRecord[];
   /** Dated shared sync tips for owner Restore (D-124). Hosted inside the household payload. */
   restorePoints?: RestorePoint[];
+  /** Local/member overlay only. `splitForSync` removes it from Shared. */
+  herculesProPermissions?: HerculesProPermissions;
 };
 
 export type RestorePoint = {
@@ -867,6 +880,7 @@ export type PersonalEnvelope = {
   goalContributions?: GoalContribution[];
   goalPurchases?: GoalPurchase[];
   tombstones: Tombstone[];
+  herculesProPermissions?: HerculesProPermissions;
 };
 
 export class ValidationError extends Error {

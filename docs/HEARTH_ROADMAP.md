@@ -16,7 +16,7 @@ This is a living planning document, not an authority to deploy, mutate productio
 - **Course A — useful household finance and family office — has weight 5.**
 - **Course B — shared engagement, Hercules, learning, delight, and interactables — has weight 3.**
 - Course A wins any conflict. Engagement earns its place by making correct financial habits easier; it never edits, hides, or posts money.
-- Commands are the money boundary. UI state, AI output, OCR, bank feeds, calendar data, widgets, weather, and Hercules are proposals or displays only.
+- Commands are the money boundary. UI state, AI output, OCR, bank feeds, calendar data, widgets, weather, and Hercules are proposals or displays only, except D-137's narrowly typed ChatGPT path: the model may prepare one command, but only a member opt-in plus a separately confirmed sealed preview can invoke the atomic write boundary.
 - Only a visible user **Confirm** may post a command. Reversal/repost corrects mistakes; financial history is not silently rewritten.
 - CAD is stored as integer cents. Toronto is the household time zone. Posted activity must remain double-entry and auditable.
 - Development is not production. Production writes, deployments, migrations, and record cleanup require Jonathan's explicit approval.
@@ -307,6 +307,7 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 - [ ] Use rolling/graceful progress; no punitive streak reset, hearts, scarcity, shame, or pet harm.
 - [x] Let Hercules explain deterministic results and ask one useful question at a time; retain explicit consent and memory controls. *(D-132: typed source cards plus scoped food/spend/income/shift questions; broader lesson curriculum remains.)*
 - [x] Give Hercules a bounded Brain v2 read layer: model-selectable, phone-executed balances/search/spending/income/comparison/bills/shifts/goals/owed/cash-position tools with member/view scope and typed provenance. *(D-133 Slice 1; implementation branch, review required.)*
+- [ ] Deploy D-137 Hercules Pro confirmed transactions after review and explicit Development Migration 011 approval. Pro remains read-only by default; Personal/Household switches, separate OAuth scope, sealed preview, current opt-in recheck, exact-once receipt, atomic Personal+Shared CAS, and negative unsupported-tool proofs are required. Production remains off.
 - [ ] Add opt-in what-if simulators with a visible “not posted” state and a Convert-to-draft path that still requires Confirm.
 - [ ] Add widgets/watch/weather only after safe-to-spend/freshness semantics are proven; ambient surfaces are display-only.
 - [ ] Research voice/camera assistance only for draft capture with clear recording, retention, and review controls.

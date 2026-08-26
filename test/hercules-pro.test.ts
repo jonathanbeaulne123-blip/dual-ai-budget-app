@@ -16,7 +16,7 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
   it("advertises OAuth and refuses anonymous ledger tools", async () => {
     const metadata = await worker.fetch(new Request(`${origin}/.well-known/oauth-protected-resource`), env);
     expect(metadata.status).toBe(200);
-    expect(await metadata.json()).toMatchObject({ resource: `${origin}/mcp`, scopes_supported: ["hearth.read"] });
+    expect(await metadata.json()).toMatchObject({ resource: `${origin}/mcp`, scopes_supported: ["hearth.read", "hearth.write"] });
 
     const denied = await worker.fetch(new Request(`${origin}/mcp`, {
       method: "POST",
@@ -101,8 +101,9 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list" }),
     }), env);
     const listed = await tools.json() as { result: { tools: Array<{ name: string; annotations: { readOnlyHint: boolean } }> } };
-    expect(listed.result.tools).toHaveLength(54);
-    expect(listed.result.tools.every((tool) => tool.annotations.readOnlyHint)).toBe(true);
+    expect(listed.result.tools).toHaveLength(57);
+    expect(listed.result.tools.filter((tool) => tool.name !== "confirm_transaction").every((tool) => tool.annotations.readOnlyHint)).toBe(true);
+    expect(listed.result.tools.find((tool) => tool.name === "confirm_transaction")?.annotations.readOnlyHint).toBe(false);
     expect(listed.result.tools.some((tool) => /^(?:post|delete|pay|transfer)(?:_|$)/.test(tool.name))).toBe(false);
 
     const call = await worker.fetch(new Request(`${origin}/mcp`, {
@@ -156,6 +157,167 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
     }), env);
     expect(result.status).toBe(400);
     expect(await result.text()).toMatch(/Development-only/);
+  });
+
+  it("stores member-owned Personal and Household opt-ins in the Personal envelope", async () => {
+    const household = seedDemoHousehold({ today: "2026-08-25", environment: "development" });
+    const writes: unknown[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/auth/v1/user")) return response({ id: "auth-user-1", email: "bianca@example.com" });
+      if (url.includes("continuity_memberships?")) return response([{ household_id: household.householdId, member_id: "MEM-002", auth_user_id: "auth-user-1", role: "member" }]);
+      if (url.includes("household_snapshots?")) return response([{ payload: JSON.stringify(household) }]);
+      if (url.includes("continuity_personal_snapshots?") && init?.method === "POST") {
+        writes.push(JSON.parse(String(init.body)));
+        return response(null);
+      }
+      if (url.includes("continuity_personal_snapshots?")) return response([]);
+      return response({ message: `unexpected ${url}` }, 404);
+    }));
+    const permissionsUrl = new URL(`${origin}/hercules-pro/permissions`);
+    permissionsUrl.searchParams.set("environment", "development");
+    permissionsUrl.searchParams.set("householdId", household.householdId);
+    permissionsUrl.searchParams.set("memberId", "MEM-002");
+    const saved = await worker.fetch(new Request(permissionsUrl, {
+      method: "PUT",
+      headers: { Authorization: "Bearer supabase-user-token", "Content-Type": "application/json" },
+      body: JSON.stringify({ personalWrite: true, householdWrite: false }),
+    }), env);
+    expect(saved.status).toBe(200);
+    expect(await saved.json()).toMatchObject({ ok: true, permissions: { personalWrite: true, householdWrite: false } });
+    expect(writes).toHaveLength(1);
+    const row = writes[0] as { member_id: string; payload: string };
+    expect(row.member_id).toBe("MEM-002");
+    expect(JSON.parse(row.payload)).toMatchObject({
+      kind: "personal",
+      memberId: "MEM-002",
+      herculesProPermissions: { personalWrite: true, householdWrite: false },
+    });
+  });
+
+  it("previews without writing and posts the sealed preview only after confirmation", async () => {
+    const household = seedDemoHousehold({ today: "2026-08-25", environment: "development" });
+    const personal = {
+      kind: "personal",
+      memberId: "MEM-002",
+      lastCommittedAt: household.lastCommittedAt,
+      transactions: [],
+      shifts: [],
+      goals: [],
+      goalContributions: [],
+      goalPurchases: [],
+      tombstones: [],
+      herculesProPermissions: { personalWrite: true, householdWrite: true, updatedAt: "2026-08-25T12:00:00.000Z" },
+    };
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    let permissionsEnabled = true;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      calls.push({ url, init });
+      if (url.includes("continuity_memberships?")) return response([{ household_id: household.householdId, member_id: "MEM-002", auth_user_id: "auth-user-1", role: "member" }]);
+      if (url.includes("continuity_personal_snapshots?")) return response([{ payload: JSON.stringify({
+        ...personal,
+        herculesProPermissions: { ...personal.herculesProPermissions, personalWrite: permissionsEnabled },
+      }) }]);
+      if (url.includes("household_snapshots?")) return response([{ payload: JSON.stringify(household) }]);
+      if (url.includes("rpc/publish_hercules_confirmed_write")) return response([{ ok: true, duplicate: false, revision: household.revision + 1 }]);
+      return response({ message: `unexpected ${url}` }, 404);
+    }));
+    const now = Math.floor(Date.now() / 1000);
+    const accessToken = await herculesProTest.sealPrivate(env, {
+      kind: "access",
+      scope: "hearth.read hearth.write",
+      resource: `${origin}/mcp`,
+      aud: `${origin}/mcp`,
+      environment: "development",
+      householdId: household.householdId,
+      memberId: "MEM-002",
+      authUserId: "auth-user-1",
+      supabaseAccessToken: "supabase-token",
+      iat: now,
+      exp: now + 60,
+    });
+    const headers = { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" };
+
+    const listedResponse = await worker.fetch(new Request(`${origin}/mcp`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ jsonrpc: "2.0", id: 20, method: "tools/list" }),
+    }), env);
+    const listed = await listedResponse.json() as { result: { tools: Array<{ name: string; annotations: { readOnlyHint: boolean; destructiveHint: boolean } }> } };
+    expect(listed.result.tools).toHaveLength(57);
+    expect(listed.result.tools.find((tool) => tool.name === "confirm_transaction")?.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: true });
+
+    const account = household.accounts.find((row) => row.active)!;
+    const category = household.categories.find((row) => row.active && row.recordType === "category" && row.transactionType === "expense")!;
+    const prepare = await worker.fetch(new Request(`${origin}/mcp`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ jsonrpc: "2.0", id: 21, method: "tools/call", params: {
+        name: "prepare_transaction",
+        arguments: {
+          view: "personal",
+          type: "expense",
+          date: "2026-08-24",
+          amountCents: 4321,
+          accountId: account.id,
+          subcategoryId: category.id,
+          note: "Synthetic write proof",
+        },
+      } }),
+    }), env);
+    const prepared = await prepare.json() as { result: { isError: boolean; structuredContent: { confirmationToken: string; postedNothing: boolean; preview: { amountCents: number; ledger: string } } } };
+    expect(prepared.result.isError).toBe(false);
+    expect(prepared.result.structuredContent).toMatchObject({ postedNothing: true, preview: { amountCents: 4321, ledger: "personal" } });
+    expect(calls.some((call) => call.url.includes("rpc/publish_hercules_confirmed_write"))).toBe(false);
+
+    const confirm = await worker.fetch(new Request(`${origin}/mcp`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ jsonrpc: "2.0", id: 22, method: "tools/call", params: {
+        name: "confirm_transaction",
+        arguments: { confirmationToken: prepared.result.structuredContent.confirmationToken, confirmed: true },
+      } }),
+    }), env);
+    const confirmed = await confirm.json() as { result: { isError: boolean; structuredContent: { postedExactlyOnce: boolean; ledger: string } } };
+    expect(confirmed.result.isError).toBe(false);
+    expect(confirmed.result.structuredContent).toMatchObject({ postedExactlyOnce: true, ledger: "personal" });
+    const publish = calls.find((call) => call.url.includes("rpc/publish_hercules_confirmed_write"));
+    expect(publish).toBeTruthy();
+    const body = JSON.parse(String(publish?.init?.body));
+    expect(body).toMatchObject({ p_ledger_view: "personal", p_member_id: "MEM-002" });
+    expect(JSON.parse(body.p_personal_payload).transactions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ amountCents: 4321, visibility: "personal", createdBy: "MEM-002" }),
+    ]));
+
+    const secondPrepare = await worker.fetch(new Request(`${origin}/mcp`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ jsonrpc: "2.0", id: 23, method: "tools/call", params: {
+        name: "prepare_transaction",
+        arguments: {
+          view: "personal",
+          type: "expense",
+          date: "2026-08-23",
+          amountCents: 1111,
+          accountId: account.id,
+          subcategoryId: category.id,
+        },
+      } }),
+    }), env);
+    const second = await secondPrepare.json() as { result: { structuredContent: { confirmationToken: string } } };
+    permissionsEnabled = false;
+    const rpcCount = calls.filter((call) => call.url.includes("rpc/publish_hercules_confirmed_write")).length;
+    const blocked = await worker.fetch(new Request(`${origin}/mcp`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ jsonrpc: "2.0", id: 24, method: "tools/call", params: {
+        name: "confirm_transaction",
+        arguments: { confirmationToken: second.result.structuredContent.confirmationToken, confirmed: true },
+      } }),
+    }), env);
+    expect(await blocked.text()).toMatch(/turned off/);
+    expect(calls.filter((call) => call.url.includes("rpc/publish_hercules_confirmed_write"))).toHaveLength(rpcCount);
   });
 
   it("binds authorization, token exchange, and MCP access to the exact resource", async () => {
