@@ -15,7 +15,7 @@ export const ACCOUNT_KIND_LABEL: Record<AccountKind, string> = {
 
 export const ACCOUNT_KIND_HINT: Record<AccountKind, string> = {
   chequing: "Everyday spend and paycheques",
-  savings: "High-interest parking. Goals vault is the sinking-fund account; everyday HIS stays general. APY is a projection until you post interest",
+  savings: "High-interest parking. Goals savings is the sinking-fund account; everyday HIS stays general. APY is a projection until you post interest",
   credit: "What you owe. Paydown is a transfer. Interest and cashback never auto-post",
   investment: "Cost basis from transfers in. Market value is a typed mark, not a feed",
   other: "Cash, tip envelopes, the jar on the counter",

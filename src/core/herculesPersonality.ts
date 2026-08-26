@@ -221,7 +221,7 @@ export function localHerculesChat(
   if (/\bwho spent\b/.test(q) || /\bwho paid more\b/.test(q) || /\b(bianca|jonathan) (spent|wasted)\b/.test(q)) {
     return HERCULES_REFUSE_SHAME;
   }
-  const spoken = grounded.spoken?.trim() || "I'm here. Scratch me or ask a number.";
+  const spoken = grounded.spoken?.trim() || "I'm here. Scratch — say hi — or ask a number.";
   if (/^(mrrp|prrrp|from the counter|listen|tail flick)/i.test(spoken)) {
     return sanitizeHerculesReply(spoken, spoken);
   }

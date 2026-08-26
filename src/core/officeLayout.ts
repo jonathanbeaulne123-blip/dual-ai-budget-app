@@ -81,13 +81,13 @@ export const INSTRUMENT_LABEL: Record<InstrumentId, string> = {
   appointments: "Appointments",
   mail: "Mail",
   claims: "Claims",
-  timesheet: "Timesheet",
-  chalkboard: "Chalkboard",
-  wardrobe: "Accessories",
-  postcard: "Postcard",
-  cookoff: "Cook-off",
-  jars: "Jars",
-  lamp: "Lamp",
+  timesheet: "Shifts",
+  chalkboard: "Notes",
+  wardrobe: "Hercules outfits",
+  postcard: "Sit-down",
+  cookoff: "Kitchen vs takeout",
+  jars: "Goals",
+  lamp: "Health",
   tictactoe: "Tic-tac-toe",
   hangman: "Hangman",
 };
@@ -137,7 +137,7 @@ export const PERSONALITY_BLURB: Record<Exclude<DeskPersonality, "custom">, strin
   tracker: "Capture it and move on.",
   household: "Budget, habits, the week ahead.",
   cpa: "Opinion, accounts, what is owed.",
-  play: "Jars, shifts, and the cat.",
+  play: "Goals, shifts, and Hercules.",
 };
 
 export const PERSONALITY_DESK: Record<Exclude<DeskPersonality, "custom">, [InstrumentId, InstrumentSize][]> = {

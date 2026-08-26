@@ -131,7 +131,7 @@ export function SitDownGuide({
         <>
           <p className="sit-q">Where leftover goes.</p>
           <p className="muted">
-            Plan first. One Confirm turns it into transfers you already have — jars park in savings and track the pig; card paydown is a transfer. Hercules never moves a dollar.
+            Plan first. One Confirm turns it into transfers you already have — goals park in Goals savings; card paydown is a transfer. Hercules never moves a dollar.
           </p>
           <LeftoverMath leftover={leftover} />
           {!leftover.leftoverCents && (
@@ -289,7 +289,7 @@ export function SitDownGuide({
             </button>
           </div>
           {driveNote && <p className="muted">{driveNote}</p>}
-          <p className="muted">Lock closes last month. This month stays open so milk still posts.</p>
+          <p className="muted">Lock closes last month. This month stays open so groceries still post.</p>
         </>
       )}
     </section>
@@ -303,7 +303,7 @@ function LeftoverMath({ leftover }: { leftover: ReturnType<typeof leftoverProjec
       <div className="row"><span>− Bills next 30 days</span><span>{formatCad(leftover.billsNext30Cents)}</span></div>
       <div className="row"><span>− Card minimums</span><span>{formatCad(leftover.minPaymentsCents)}</span></div>
       <div className="row"><strong>Leftover</strong><strong>{formatCad(leftover.leftoverCents)}</strong></div>
-      <p className="muted">If leftover is positive, Confirm parks jar cash in the Goals vault — not month net, not everyday HIS. Pigs are envelopes on that vault.</p>
+      <p className="muted">If leftover is positive, Confirm parks goal cash in Goals savings — not month net, not everyday HIS. Each goal tracks its share of that account.</p>
       {leftover.shortfallCents > 0 && (
         <p className="muted">Shortfall {formatCad(leftover.shortfallCents)}. Do not invent CAD to fill it.</p>
       )}

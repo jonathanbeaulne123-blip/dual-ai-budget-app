@@ -487,8 +487,8 @@ export function AppointmentsPage(props: {
               {proposals.map((proposal) => (
                 <div className="row" key={proposal.appointmentId}>
                   <span>{proposal.hercules}{proposal.drift ? ` ${proposal.drift}` : ""}</span>
-                  <button type="button" className="chip selected" disabled={props.busy} onClick={() => props.onAskStartJar(proposal.appointmentId, `${proposal.hercules} This creates a shared jar. Hercules does not write it.`)}>
-                    Start this jar
+                  <button type="button" className="chip selected" disabled={props.busy} onClick={() => props.onAskStartJar(proposal.appointmentId, `${proposal.hercules} This creates a shared goal. Hercules does not write it.`)}>
+                    Start this goal
                   </button>
                 </div>
               ))}
@@ -699,7 +699,7 @@ export function AppointmentsPage(props: {
                   {selected.typicalRecoveryCents ? ` · ${formatCad(selected.typicalRecoveryCents)} expected back` : ""}
                 </p>
                 {jar && (
-                  <p>Jar: {jar.name} · {formatCad(jar.savedCents)} of {formatCad(jar.targetCents)}</p>
+                  <p>Goal: {jar.name} · {formatCad(jar.savedCents)} of {formatCad(jar.targetCents)}</p>
                 )}
                 {!jar && proposeVisitGoal(household, selected.id, today) && (
                   <button
@@ -708,10 +708,10 @@ export function AppointmentsPage(props: {
                     disabled={props.busy}
                     onClick={() => {
                       const proposal = proposeVisitGoal(household, selected.id, today);
-                      if (proposal) props.onAskStartJar(selected.id, `${proposal.hercules} This creates a shared jar. Hercules does not write it.`);
+                      if (proposal) props.onAskStartJar(selected.id, `${proposal.hercules} This creates a shared goal. Hercules does not write it.`);
                     }}
                   >
-                    Start this jar
+                    Start this goal
                   </button>
                 )}
               </section>

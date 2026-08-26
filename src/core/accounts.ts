@@ -262,7 +262,7 @@ function tileSub(household: Household, account: Account, today: DateKey): { sub:
   }
   if (account.kind === "savings") {
     const savings = savingsView(household, account, today);
-    const vault = account.savings?.purpose === "goals" ? "Goals vault · " : "";
+    const vault = account.savings?.purpose === "goals" ? "Goals savings · " : "";
     return {
       sub: savings.apyBps
         ? `${vault}${(savings.apyBps / 100).toFixed(2)}% APY · est. ${formatCad(savings.estimatedMonthlyInterestCents)}/mo`

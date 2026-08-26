@@ -1,5 +1,22 @@
 # AI Task and Handoff Standard
 
+## Scheme A naming clarity (D-144, 2026-08-26)
+
+**Status:** Branch `cursor/scheme-a-naming-clarity-0893`; draft PR #154. Not merged, not deployed. Risk: **Medium**.
+
+**Household outcome:** All chrome the household sees uses plain Scheme A labels (Groceries, Goals, Health, Sit-down, Shifts, Goals savings, Mark purchased). Only Hercules AI talk and Hercules Pro may use cat/kitchen metaphors, and those lines gloss the human money meaning.
+
+**Budget delta (5):** `+2` — money controls stop sharing colliding metaphors.
+
+**Engagement delta (3):** `+1` — Hercules keeps personality in AI/Pro only.
+
+**Verification:** Focused naming/hercules/office tests green; `tsc` green; `pnpm build` green; `pnpm check` blocked only by pre-existing `batch-import-ui` SubtleCrypto failures on `main`. Phone CDP proof: seals Post/Due/Health; story Goals; Pad chips Groceries/Coffee; account Goals savings.
+
+**Data/environment:** Development demo only; no schema/secrets/Production/deploy.
+
+**Next owner:** Jonathan — review PR #154 naming on phone Home + Pad; merge when satisfied.
+
+
 After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. GitHub remains the full project context (D-095): [DECISIONS.md](DECISIONS.md), merged PRs, living specs, [nostalgia/](nostalgia/), [reference/](reference/). Do not treat unfinished chat as `main`. Do not skip GitHub history.
 
 Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.

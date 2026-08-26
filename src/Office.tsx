@@ -731,25 +731,25 @@ export function Office({
     ),
     postcard: (index, pair) => frame(
       "postcard",
-      "Postcard",
+      "Sit-down",
       <PostcardGlance card={postcard} />,
-      `Postcard. ${postcard.sentence}`,
+      `Sit-down. ${postcard.sentence}`,
       <PostcardBody household={household} card={postcard} viewPersonal={view === "personal"} onApply={onSitDown} />,
       { index, pair },
     ),
     cookoff: (index, pair) => frame(
       "cookoff",
-      "Cook-off",
+      "Kitchen vs takeout",
       <CookOffGlance score={cook} />,
-      `Cook-off. ${cookOffEmptySafe(cook)}`,
+      `Kitchen vs takeout. ${cookOffEmptySafe(cook)}`,
       <CookOffBody score={cook} />,
       { index, pair, extraClass: cook.winner === "kitchen" ? "steam" : undefined },
     ),
     jars: (index, pair) => frame(
       "jars",
-      "Jars",
+      "Goals",
       <JarsGlance dashboard={dashboard} />,
-      `Jars. ${dashboard.goals[0]?.goal.name ?? "No jars on the shelf yet."}`,
+      `Goals. ${dashboard.goals[0]?.goal.name ?? "No goals yet."}`,
       <JarsBody
         dashboard={dashboard}
         household={household}
@@ -783,9 +783,9 @@ export function Office({
     ),
     wardrobe: (index, pair) => frame(
       "wardrobe",
-      "Accessories",
+      "Hercules outfits",
       <span>{wardrobeGlance(household, today)}</span>,
-      `Hercules accessories. ${wardrobeGlance(household, today)}`,
+      `Hercules outfits. ${wardrobeGlance(household, today)}`,
       <WardrobeBody
         household={household}
         today={today}
@@ -815,9 +815,9 @@ export function Office({
     ),
     chalkboard: (index, pair) => frame(
       "chalkboard",
-      "Chalkboard",
+      "Notes",
       <span>{chalkboardGlance(household)}</span>,
-      "Chalkboard. Draw or type a note.",
+      "Notes. Draw or type a household note.",
       <ChalkboardBody
         household={household}
         memberId={memberId}

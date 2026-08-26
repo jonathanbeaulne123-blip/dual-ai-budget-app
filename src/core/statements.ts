@@ -417,7 +417,7 @@ export function liquidityWatch(household: Household, today: DateKey): LiquidityW
   }
   const hercules =
     goingConcern === "comfortable"
-      ? "Liquidity is ordinary. Milk, then bills, then treats."
+      ? "Liquidity is ordinary. Groceries, then bills, then treats."
       : goingConcern === "tight"
         ? "Cash covers less than the next 30 days of repeating bills. Not a prophecy. A look."
         : "Material uncertainty on 30-day bills vs cash, or working capital is negative. I hide from vibes. Health, then Calendar.";

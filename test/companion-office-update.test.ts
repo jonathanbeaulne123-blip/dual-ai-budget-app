@@ -163,7 +163,7 @@ describe("duplicate contrast confidence", () => {
 });
 
 describe("books story order and funded jars", () => {
-  it("puts Goals vault first among savings tiles", () => {
+  it("puts Goals savings first among savings tiles", () => {
     const wallet = householdWallet(catalogHousehold(), today);
     const savings = wallet.story.find((group) => group.kind === "savings");
     expect(savings?.tiles[0]?.account.savings?.purpose).toBe("goals");
@@ -194,7 +194,7 @@ describe("books story order and funded jars", () => {
     expect(live.funded).toBe(true);
     expect(live.status).toBe("open");
     expect(live.savedCents).toBe(4000);
-    expect(funded.household.transactions.some((tx) => tx.type === "transfer" && tx.note.includes("Fund jar"))).toBe(true);
+    expect(funded.household.transactions.some((tx) => tx.type === "transfer" && tx.note.includes("Fund goal"))).toBe(true);
   });
 });
 

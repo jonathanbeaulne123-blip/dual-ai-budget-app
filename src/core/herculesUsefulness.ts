@@ -78,11 +78,11 @@ export function herculesUsefulness(household: Household, today: DateKey): Hercul
   }
   if (visits.length) {
     score += 10;
-    reasons.push("A visit jar proposal is waiting");
+    reasons.push("A visit goal proposal is waiting");
   }
   if (full.length) {
     score += 12;
-    reasons.push(`${full[0]!.name} is full — Purchased?`);
+    reasons.push(`${full[0]!.name} is full — Mark purchased`);
   }
   if (habit) {
     score += 12;

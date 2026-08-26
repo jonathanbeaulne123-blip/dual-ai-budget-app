@@ -1610,7 +1610,7 @@ export function adoptSitDownStandingOrders(household: Household, input: {
     if (line.cents <= 0) continue;
     if (line.kind === "goal") {
       if (!parkingId) {
-        warnings.push(`Skipped ${line.label} — no Goals vault.`);
+        warnings.push(`Skipped ${line.label} — no Goals savings.`);
         continue;
       }
       const goal = working.goals.find((g) => g.id === line.targetId);
@@ -1771,9 +1771,9 @@ export function fundGoal(household: Household, input: {
   const withVault = ensureGoalsVault(working);
   working = withVault.household;
   const vault = goalsVaultAccount(working);
-  if (!vault) throw new ValidationError("Open a Goals vault first.");
+  if (!vault) throw new ValidationError("Open Goals savings first.");
   if (input.fromAccountId === vault.id) {
-    throw new ValidationError("Pick a source account that is not the Goals vault.");
+    throw new ValidationError("Pick a source account that is not Goals savings.");
   }
   requireOpenPeriod(working, date);
   const moved = postTransfer(working, {
@@ -1781,7 +1781,7 @@ export function fundGoal(household: Household, input: {
     amount: amountCents / 100,
     fromAccountId: input.fromAccountId,
     toAccountId: vault.id,
-    note: `Fund jar · ${goal.name}`,
+    note: `Fund goal · ${goal.name}`,
     confirmDuplicate: true,
     createdBy: actor.createdBy,
   });
@@ -1811,11 +1811,11 @@ export function ensureGoalsVault(household: Household): CommitResult {
       household,
       warnings: [],
       postedIds: [],
-      undo: { id: "vault-present", label: "Goals vault already open", snapshot: household, postedIds: [] },
+      undo: { id: "vault-present", label: "Goals savings already open", snapshot: household, postedIds: [] },
     };
   }
   return addAccount(household, {
-    name: "Goals vault",
+    name: "Goals savings",
     kind: "savings",
     purpose: "goals",
     institution: "EQ Bank",
@@ -1840,17 +1840,17 @@ export function purchaseGoal(household: Household, input: {
     throw new ValidationError("That jar already lives in the retirement home.");
   }
   if (!goal.funded) {
-    throw new ValidationError("Fund this jar with a real transfer into the Goals vault first. Envelope-only progress is unfunded.");
+    throw new ValidationError("Fund this goal with a real transfer into Goals savings first. Envelope-only progress is unfunded.");
   }
   if (goal.savedCents < goal.targetCents) {
     throw new ValidationError("Fill the jar before you buy it. Contribute stays on Plan.");
   }
   const vault = goalsVaultAccount(household);
-  if (!vault) throw new ValidationError("Open a Goals vault first. Sit-down Confirm can create one.");
+  if (!vault) throw new ValidationError("Open Goals savings first. Sit-down Confirm can create one.");
   const spendable = vaultSpendableCents(household, goal.id, date);
   if (spentCents > spendable) {
     throw new ValidationError(
-      `The Goals vault can spare $${(spendable / 100).toFixed(2)} without raiding other jars. Transfer extra in, or spend less.`,
+      `Goals savings can spare $${(spendable / 100).toFixed(2)} without raiding other goals. Transfer extra in, or spend less.`,
     );
   }
   const lines = (input.lines ?? []).map((row) => ({

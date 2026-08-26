@@ -92,7 +92,7 @@ export function catalogHousehold(environment: Household["environment"] = "develo
     },
     {
       id: "ACC-GOALS",
-      name: "Goals vault",
+      name: "Goals savings",
       kind: "savings",
       currency: "CAD",
       active: true,

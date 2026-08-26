@@ -1711,7 +1711,7 @@ export function App() {
           <img src="/hercules-mark.svg" alt="" />
           <h1>Hearth</h1>
           <p>
-            Two phones. One journal. CAD. Toronto civil books. Each phone keeps its own clock. Hercules loafs while you post milk.
+            Two phones. One journal. CAD. Toronto civil books. Each phone keeps its own clock. Hercules loafs while you post groceries.
           </p>
           {welcomeMode === "join" ? (
             <WelcomeJoin
@@ -2245,7 +2245,7 @@ export function App() {
     const money = digits ? formatCad(Number(digits)) : "";
     if (mode === "transfer") return money ? `Move ${money}` : "Move money";
     const note = form.note.trim().toLowerCase();
-    if (note === "milk") return money ? `Post milk ${money}` : "Post milk";
+    if (note === "milk" || note === "groceries") return money ? `Post groceries ${money}` : "Post groceries";
     if (note === "coffee") return money ? `Post coffee ${money}` : "Post coffee";
     return money ? `Post ${money}` : "Post";
   }
@@ -2372,7 +2372,7 @@ export function App() {
           }}
           onMilk={() => {
             setMode("expense");
-            setForm((current) => ({ ...current, note: "Milk", subcategoryId: "SUB-FOOD-GROCERIES" }));
+            setForm((current) => ({ ...current, note: "Groceries", subcategoryId: "SUB-FOOD-GROCERIES" }));
             emitOfficeIntent({ type: "expand", id: "calculator" });
           }}
           onCoffee={() => {
@@ -2839,14 +2839,14 @@ export function App() {
                     ))}
                     <button
                       type="button"
-                      className={`chip ${form.note === "Milk" && presetId == null ? "selected" : ""}`}
+                      className={`chip ${form.note === "Groceries" && presetId == null ? "selected" : ""}`}
                       onClick={() => {
                         setPresetId(null);
                         setCategoryTouched(true);
-                        setForm({ ...form, note: "Milk", subcategoryId: "SUB-FOOD-GROCERIES" });
+                        setForm({ ...form, note: "Groceries", subcategoryId: "SUB-FOOD-GROCERIES" });
                       }}
                     >
-                      Milk
+                      Groceries
                     </button>
                     <button
                       type="button"
@@ -2969,7 +2969,7 @@ export function App() {
                     }
                     setForm(next);
                   }}
-                  placeholder="Milk, rent…"
+                  placeholder="Groceries, rent…"
                 />
                 {codingHint && <p className="muted">{codingHint}</p>}
               </>
@@ -3249,7 +3249,7 @@ export function App() {
       {guard?.kind === "erase-development" && (
         <ConfirmSheet
           title="Erase all Development activity?"
-          body="This removes every Development transaction, shift, bill, import, appointment, claim, jar, budget, note, reconciliation, and command history from this household. It keeps the household identity, members, ledger names, Google connection, accounts, categories, jobs, and shift settings so testing can continue."
+          body="This removes every Development transaction, shift, bill, import, appointment, claim, goal, budget, note, reconciliation, and command history from this household. It keeps the household identity, members, ledger names, Google connection, accounts, categories, jobs, and shift settings so testing can continue."
           extra={`This cannot be undone. If this household synchronizes, the empty Development activity can replace the shared Development cloud copy. Production is not touched. ${googleStepUpExtra}`}
           confirmLabel="Erase all Development activity"
           danger
@@ -3357,7 +3357,7 @@ export function App() {
       {guard?.kind === "stress-random" && (
         <ConfirmSheet
           title="Reload randomized stress data?"
-          body={`This replaces the ${environment} ledger activity with twelve months of fictional CAD covering weighted harbour shifts (weather, location, full tip/sales forms), wages, tips, expenses, bills, imported rows, transfers, appointments, claims, jars, budgets, presets, card balances, and money owed. In Development it keeps this household’s Google link and membership so Hercules Pro can still read the fixture after sync. Tip shifts are posted for the member signed in on this phone.`}
+          body={`This replaces the ${environment} ledger activity with twelve months of fictional CAD covering weighted harbour shifts (weather, location, full tip/sales forms), wages, tips, expenses, bills, imported rows, transfers, appointments, claims, goals, budgets, presets, card balances, and money owed. In Development it keeps this household’s Google link and membership so Hercules Pro can still read the fixture after sync. Tip shifts are posted for the member signed in on this phone.`}
           extra={googleStepUpExtra}
           confirmLabel="Load random stress data"
           danger
@@ -3389,7 +3389,7 @@ export function App() {
       {guard?.kind === "stress-pretty" && (
         <ConfirmSheet
           title="Display a fresh pretty-number household?"
-          body={`This replaces the ${environment} ledger activity with a twelve-month fictional household. Amounts are deliberately rounded into clean, presentation-friendly values while the same weather-weighted harbour shifts, location stamps, bills, imports, appointments, claims, jars, budgets, and owed balances remain testable. In Development it keeps this household’s Google link and membership for Hercules Pro. Tip shifts go to the member signed in on this phone.`}
+          body={`This replaces the ${environment} ledger activity with a twelve-month fictional household. Amounts are deliberately rounded into clean, presentation-friendly values while the same weather-weighted harbour shifts, location stamps, bills, imports, appointments, claims, goals, budgets, and owed balances remain testable. In Development it keeps this household’s Google link and membership for Hercules Pro. Tip shifts go to the member signed in on this phone.`}
           extra={googleStepUpExtra}
           confirmLabel="Load pretty numbers"
           danger
@@ -3652,9 +3652,9 @@ export function App() {
       )}
       {guard?.kind === "acceptVisitGoal" && (
         <ConfirmSheet
-          title="Start this jar?"
+          title="Start this goal?"
           body={`${guard.summary} Hercules proposed it. This write is yours.`}
-          confirmLabel="Start this jar"
+          confirmLabel="Start this goal"
           busy={busy}
           onCancel={() => setGuard(null)}
           onConfirm={() => {
@@ -3900,7 +3900,7 @@ function Goals({ household, createdBy, goals, onChange, onAskStartJar }: {
             <strong>{proposal.title}</strong>
             <div className="muted">{proposal.hercules}</div>
           </div>
-          <button className="chip selected" onClick={() => onAskStartJar(proposal.appointmentId, `${proposal.hercules} This creates a shared jar. Hercules does not write it.`)}>Start this jar</button>
+          <button className="chip selected" onClick={() => onAskStartJar(proposal.appointmentId, `${proposal.hercules} This creates a shared goal. Hercules does not write it.`)}>Start this goal</button>
         </div>
       ))}
       {live.map((goal) => (
@@ -3939,17 +3939,17 @@ function Goals({ household, createdBy, goals, onChange, onAskStartJar }: {
                 createdBy,
               });
               onChange(result.household, result.undo);
-            }}>{goalStatus(goal) === "unfunded" ? "Fund jar" : "+ add"}</button>
+            }}>{goalStatus(goal) === "unfunded" ? "Fund goal" : "+ add"}</button>
             {goalIsFull(goal) && (
-              <button className="primary" onClick={() => setBuying(goal.id)}>Purchased?</button>
+              <button className="primary" onClick={() => setBuying(goal.id)}>Mark purchased</button>
             )}
           </div>
         </div>
       ))}
       {retired.length > 0 && (
         <div className="retirement-home">
-          <h3>Retirement home</h3>
-          <p className="muted">Jars you bought. The contribution rows and the purchase expense stay on the books.</p>
+          <h3>Completed goals</h3>
+          <p className="muted">Goals you marked purchased. The contribution rows and the purchase expense stay on the books.</p>
           {retired.map((goal) => (
             <div className="row" key={goal.id}>
               <div>

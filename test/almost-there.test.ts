@@ -46,7 +46,7 @@ import {
 const today = "2026-08-21";
 
 describe("goals vault leftover parking", () => {
-  it("parks sit-down jar cash in the Goals vault, not everyday HIS", () => {
+  it("parks sit-down goal cash in Goals savings, not everyday HIS", () => {
     const household = catalogHousehold();
     expect(goalsVaultAccount(household)?.id).toBe("ACC-GOALS");
     expect(jarParkingAccountId(household)).toBe("ACC-GOALS");
