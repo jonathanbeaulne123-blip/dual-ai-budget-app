@@ -14,6 +14,8 @@ The **Use Hercules Pro ↗** button opens ChatGPT. The packaged Hercules Pro plu
 
 The accounting-core slice adds posted balance sheet, income statement, cash-flow statement, trial balance, general-ledger, account-register, journal-detail, net-worth roll-forward, period-comparison, and debit/credit balance-explanation tools. Every response declares `posted-recognized-journal`, CAD, and America/Toronto. Scheduled bills and plans remain projections and are never silently mixed into posted statements.
 
+The accounting-controls slice adds reconciliation status and activity-since-reconciliation, uncategorized and duplicate exposure, missing-period and opening-balance review, close readiness, source-provenance coverage, integrity findings, and the household activity trail. “Missing” means “needs a human look”; Hercules does not invent an adjustment, close a month, or treat a confidence score as permission to delete.
+
 Pro cannot add, edit, delete, post, pay, transfer, merge, sync, or move money. Recommendations are words. The human returns to Hearth and uses the ordinary Confirm path for a write.
 
 Each ChatGPT account completes its own OAuth link. Hearth verifies the current Supabase/Google session, the active `continuity_memberships` row, environment, household, and member. The resulting Hearth access and refresh tokens are encrypted with the Worker signing secret; the underlying Supabase tokens are not exposed as readable token claims. Membership is checked again on reads and refresh.
