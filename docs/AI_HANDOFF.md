@@ -4,6 +4,24 @@ After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. 
 
 Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
 
+## Stress reload weighted shifts (D-138, 2026-08-25)
+
+**Status:** Branch `cursor/stress-shift-weather-location-85bf` — draft PR; not merged, not deployed. Risk: **Medium**.
+
+**Household outcome:** More → Reload random data fills twelve months of complete Harbour Dining Room shifts with weather notes, Toronto GPS stamps, and weekday/season/weather-weighted tips so Hercules Pro can analyze realistic trends.
+
+**Budget delta (5):** `+1` — same `postWorkShift` / settlement commands; every sales, tip, break, clock, and destination field filled; optional location/`occurredAt` stamps on work-shift rows.
+
+**Engagement delta (3):** `+2` — reload fixture carries analyzable tip weather/location/weekday trends for Hercules Pro testing.
+
+**Worksession:** [`worksessions/2026-08-25-stress-shift-trends.md`](worksessions/2026-08-25-stress-shift-trends.md)
+
+**Verification:** `pnpm exec vitest run test/stress-seed.test.ts test/work-jobs.test.ts` green (14); full `pnpm check` pending on this turn.
+
+**Data/environment:** Development fixtures only; no hosted schema, secrets, Production, or peer-device requirement.
+
+**Next owner:** Jonathan review of draft PR; smoke More → Reload random data in Development.
+
 ## Environment isolation Phase 0 (2026-08-25)
 
 **Status:** Merged to `main`. Follow-up branch `cursor/legacy-pull-env-bind-f375` closes the leftover legacy `readRemoteSnapshot` environment query filter and adds two-client clock-skew / partial-failure proofs.
