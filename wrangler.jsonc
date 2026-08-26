@@ -18,6 +18,18 @@
     "HERCULES_ALLOW_PAID_PROVIDERS": "false",
     "HERCULES_PRO_ALLOW_PRODUCTION": "false",
     "OPENAI_MODEL": "gpt-4o-mini",
-    "ANTHROPIC_MODEL": "claude-haiku-4-5"
-  }
+    "ANTHROPIC_MODEL": "claude-haiku-4-5",
+    "SUPABASE_URL": "https://tykhocwacaxwquhynkok.supabase.co",
+    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_8UAlkucmkTyh36yQGhnUbw_Orl9GkuS",
+    "FLINKS_INSTANCE": "toolbox",
+    "FLINKS_DEMO": "true",
+    "FLINKS_CONNECT_REDIRECT_PATH": "/import/flinks/callback"
+  },
+  "d1_databases": [
+    {
+      "binding": "FLINKS_DB",
+      "database_name": "hearth-flinks-development",
+      "database_id": "00000000-0000-4000-8000-000000000001"
+    }
+  ]
 }

@@ -21,13 +21,14 @@ import {
   type LedgerView,
   type ParsedOfxAccount,
   type ReceiptNumbers,
+  type ParsedOfxBatch,
   type Transaction,
   type UndoToken,
 } from "./core/index.ts";
 import { ConfirmSheet } from "./Confirm.tsx";
 import { deleteDriveReceipt, uploadDriveReceipt, type DriveReceiptResult } from "./google/index.ts";
 import { scanFinancialDocument } from "./imports/documentScanner.ts";
-import { readStoredFlinksLoginId, storeFlinksLoginId, syncFlinksAccounts } from "./imports/flinksClient.ts";
+import { FlinksConnectPanel } from "./FlinksConnectPanel.tsx";
 import { useDialog } from "./useDialog.ts";
 
 const TABS: Array<{ id: DuplicateTier; label: string; hint: string }> = [
@@ -148,17 +149,20 @@ export function BatchImportCard({
   const [receiptFiles, setReceiptFiles] = useState<Map<string, File>>(() => new Map());
   const [keepReceiptInDrive, setKeepReceiptInDrive] = useState<Record<string, boolean>>({});
   const [driveReceipts, setDriveReceipts] = useState<Record<string, DriveReceiptState>>({});
-  const [flinksLoginId, setFlinksLoginId] = useState(() => readStoredFlinksLoginId());
   const scopeKey = `${household.environment}|${household.householdId}|${memberId}|${view}`;
   const activeScopeRef = useRef(scopeKey);
   const stagedScopeRef = useRef(scopeKey);
   const renderedScopeRef = useRef(scopeKey);
   const scopeGenerationRef = useRef(0);
+  const stagedRowsRef = useRef(rows);
+  const importContextRef = useRef({ scopeKey, generation: 0 });
   if (renderedScopeRef.current !== scopeKey) {
     renderedScopeRef.current = scopeKey;
     scopeGenerationRef.current += 1;
   }
   activeScopeRef.current = scopeKey;
+  importContextRef.current = { scopeKey, generation: scopeGenerationRef.current };
+  stagedRowsRef.current = rows;
   const rowRefs = useRef(new Map<string, HTMLElement>());
   const finalConfirmButton = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useDialog(open && !finalConfirm, () => setOpen(false));
@@ -323,23 +327,10 @@ export function BatchImportCard({
     }
   }
 
-  async function importFromFlinks() {
-    const startedScope = scopeKey;
-    const startedGeneration = scopeGenerationRef.current;
-    setWorking(true);
-    setError("");
-    try {
-      storeFlinksLoginId(flinksLoginId);
-      const synced = await syncFlinksAccounts({ loginId: flinksLoginId });
-      if (!scopeIsCurrent(startedScope, startedGeneration)) return;
-      appendRows(synced.batch.rows, synced.batch.warnings, synced.batch.accounts);
-    } catch (caught) {
-      if (scopeIsCurrent(startedScope, startedGeneration)) {
-        setError(caught instanceof Error ? caught.message : String(caught));
-      }
-    } finally {
-      if (scopeIsCurrent(startedScope, startedGeneration)) setWorking(false);
-    }
+  function importFromFlinksBatch(batch: ParsedOfxBatch) {
+    const context = importContextRef.current;
+    if (context.scopeKey !== activeScopeRef.current || context.generation !== scopeGenerationRef.current) return;
+    appendRows(batch.rows, batch.warnings, batch.accounts);
   }
 
   async function importImages(files: FileList | null, input: HTMLInputElement | null) {
@@ -527,14 +518,19 @@ export function BatchImportCard({
           <span className="pill">Inbox → duplicate review → Confirm</span>
         </header>
         <p className="muted">
-          Bank exports are parsed on this device. Flinks sync fetches read-only transactions through the Worker, then runs the same inbox review here. A photo is sent for detection only after you take or choose it; the image is not saved in the household.
+          Bank exports are parsed on this device. Flinks evidence arrives through the secure Worker inbox, then runs the same duplicate review here. A photo is sent for detection only after you take or choose it; the image is not saved in the household.
         </p>
+        <FlinksConnectPanel
+          environment={household.environment}
+          householdId={household.householdId}
+          memberId={memberId}
+          disabled={working}
+          onImported={importFromFlinksBatch}
+          onError={setError}
+        />
         <div className="import-actions">
           <button type="button" className="primary" disabled={working} onClick={() => bankInput.current?.click()}>
             Import QFX / OFX
-          </button>
-          <button type="button" className="chip" disabled={working || !flinksLoginId.trim()} onClick={() => void importFromFlinks()}>
-            Sync Flinks inbox
           </button>
           <button type="button" className="chip" disabled={working} onClick={() => cameraInput.current?.click()}>
             Take document photo
@@ -543,20 +539,6 @@ export function BatchImportCard({
             Choose receipt / bill / statement
           </button>
         </div>
-        <label className="import-flinks-login">
-          Flinks LoginId
-          <input
-            value={flinksLoginId}
-            onChange={(event) => {
-              setFlinksLoginId(event.target.value);
-              storeFlinksLoginId(event.target.value);
-            }}
-            placeholder="Paste the LoginId from Flinks Connect"
-            autoComplete="off"
-            spellCheck={false}
-          />
-        </label>
-        {flinksLoginId.trim() && <p className="muted">Flinks is connected for demo testing. Sync stages rows in the inbox; Confirm still posts.</p>}
         <input ref={bankInput} hidden type="file" multiple accept=".ofx,.qfx,application/x-ofx" onChange={(event) => void importBankFiles(event.target.files)} />
         <input ref={cameraInput} hidden type="file" multiple accept="image/jpeg,image/png,image/webp" capture="environment" onChange={(event) => void importImages(event.target.files, event.target)} />
         <input ref={uploadInput} hidden type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={(event) => void importImages(event.target.files, event.target)} />

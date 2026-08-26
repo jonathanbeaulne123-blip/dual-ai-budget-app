@@ -2,38 +2,30 @@ import { isValidDateKey, type DateKey } from "../calendar.ts";
 import { stableImportHash } from "./hash.ts";
 import type { ImportReviewType, ImportedSourceRow, ParsedOfxAccount, ParsedOfxBatch } from "./types.ts";
 
-export type FlinksTransaction = {
-  Id?: string | null;
-  Date?: string | null;
-  Description?: string | null;
-  Debit?: number | null;
-  Credit?: number | null;
-  Balance?: number | null;
-  Code?: number | null;
+export type FlinksInboxAccount = {
+  accountRef: string;
+  accountLast4: string;
+  title: string;
+  type: string;
+  category: string;
+  currency: string;
+  balanceCents: number | null;
 };
 
-export type FlinksAccount = {
-  Id?: string | null;
-  Title?: string | null;
-  AccountNumber?: string | null;
-  LastFourDigits?: string | null;
-  TransitNumber?: string | null;
-  InstitutionNumber?: string | null;
-  Category?: string | null;
-  Type?: string | null;
-  Currency?: string | null;
-  Balance?: {
-    Available?: number | null;
-    Current?: number | null;
-    Limit?: number | null;
-  } | null;
-  Transactions?: FlinksTransaction[] | null;
+export type FlinksInboxTransaction = {
+  accountRef: string;
+  provenanceId: string;
+  date: string;
+  description: string;
+  debitCents: number | null;
+  creditCents: number | null;
 };
 
-export type FlinksAccountsPayload = {
-  RequestId?: string | null;
-  Institution?: string | null;
-  Accounts?: FlinksAccount[] | null;
+export type FlinksInboxPayload = {
+  institution: string;
+  sourceHash: string;
+  accounts: FlinksInboxAccount[];
+  transactions: FlinksInboxTransaction[];
 };
 
 function cleanText(value: string, max = 240): string {
@@ -52,43 +44,19 @@ function dateFromFlinks(value: string): DateKey | null {
   return isValidDateKey(key) ? key : null;
 }
 
-function centsFromAmount(value: number | null | undefined): number | null {
-  if (value == null || !Number.isFinite(value)) return null;
-  const cents = Math.round(value * 100);
-  return Number.isSafeInteger(cents) ? cents : null;
-}
-
-function accountKind(account: FlinksAccount): "bank" | "credit-card" | "investment" | null {
-  const type = cleanText(account.Type ?? "", 80).toLowerCase();
-  const category = cleanText(account.Category ?? "", 80).toLowerCase();
+function accountKind(account: FlinksInboxAccount): "bank" | "credit-card" | "investment" | null {
+  const type = cleanText(account.type, 80).toLowerCase();
+  const category = cleanText(account.category, 80).toLowerCase();
   if (/credit|visa|mastercard|line of credit|loc/.test(type) || category === "credits") return "credit-card";
   if (/tfsa|rrsp|fhsa|resp|investment|broker|crypto/.test(type) || category === "products") return "investment";
-  if (/chequing|checking|savings|operations|other/.test(type) || category === "operations" || category === "other") {
-    return "bank";
-  }
+  if (/chequing|checking|savings|operations|other/.test(type) || category === "operations" || category === "other") return "bank";
   if (type) return "bank";
   return null;
 }
 
-function accountLast4(account: FlinksAccount): string {
-  const explicit = cleanText(account.LastFourDigits ?? "", 4).replace(/\D/g, "");
-  if (explicit.length >= 4) return explicit.slice(-4);
-  const number = cleanText(account.AccountNumber ?? "", 40).replace(/\s+/g, "");
-  return number.slice(-4);
-}
-
-function accountRef(account: FlinksAccount): string {
-  const id = cleanText(account.Id ?? "", 80);
-  if (id) return `flinks:${id}`;
-  const last4 = accountLast4(account);
-  const institution = cleanText(account.InstitutionNumber ?? "", 20);
-  const transit = cleanText(account.TransitNumber ?? "", 20);
-  return cleanText([institution, transit, last4].filter(Boolean).join(":"), 100) || "flinks:unknown";
-}
-
-function signedCentsForTransaction(transaction: FlinksTransaction, kind: "bank" | "credit-card"): number | null {
-  const debit = centsFromAmount(transaction.Debit);
-  const credit = centsFromAmount(transaction.Credit);
+function signedCentsForTransaction(transaction: FlinksInboxTransaction, kind: "bank" | "credit-card"): number | null {
+  const debit = transaction.debitCents;
+  const credit = transaction.creditCents;
   if (debit != null && debit > 0) return -debit;
   if (credit != null && credit > 0) return credit;
   if (debit === 0 && credit === 0) return 0;
@@ -99,47 +67,43 @@ function signedCentsForTransaction(transaction: FlinksTransaction, kind: "bank" 
 function inferredType(description: string, signedAmountCents: number, kind: "bank" | "credit-card"): ImportReviewType {
   const haystack = ` ${description.toLowerCase()} `;
   if (/\b(transfer|payment|paid|contribution|move|moving)\b/.test(haystack)) return "transfer";
-  if (kind === "credit-card" && signedAmountCents > 0 && /\b(payment|paid|thank you|merci)\b/.test(haystack)) {
-    return "transfer";
-  }
+  if (kind === "credit-card" && signedAmountCents > 0 && /\b(payment|paid|thank you|merci)\b/.test(haystack)) return "transfer";
   if (signedAmountCents < 0) return "expense";
   if (signedAmountCents > 0) return "income";
   return "unknown";
 }
 
 function parseAccount(input: {
-  account: FlinksAccount;
+  account: FlinksInboxAccount;
   institution: string;
   sourceHash: string;
   rowOffset: number;
+  transactionsForAccount: (accountRef: string) => FlinksInboxTransaction[];
 }): { account: ParsedOfxAccount | null; rows: ImportedSourceRow[]; warnings: string[] } {
   const kind = accountKind(input.account);
   const warnings: string[] = [];
   if (!kind) {
-    warnings.push(`Skipped an account Flinks did not classify.`);
+    warnings.push("Skipped an account Flinks did not classify.");
     return { account: null, rows: [], warnings };
   }
   if (kind === "investment") {
-    warnings.push(`Skipped ${cleanText(input.account.Title ?? "investment account", 80)}: investment trades are not imported yet.`);
+    warnings.push(`Skipped ${cleanText(input.account.title, 80)}: investment trades are not imported yet.`);
     return { account: null, rows: [], warnings };
   }
-  const ref = accountRef(input.account);
-  const last4 = accountLast4(input.account);
-  const currency = cleanText(input.account.Currency ?? "CAD", 8).toUpperCase() || "CAD";
-  const currentBalance = centsFromAmount(input.account.Balance?.Current ?? input.account.Balance?.Available);
+  const ref = cleanText(input.account.accountRef, 120);
+  const last4 = cleanText(input.account.accountLast4, 4).replace(/\D/g, "").slice(-4);
+  const currency = cleanText(input.account.currency || "CAD", 8).toUpperCase() || "CAD";
   const rows: ImportedSourceRow[] = [];
-  const transactions = input.account.Transactions ?? [];
+  const transactions = input.transactionsForAccount(ref);
   transactions.forEach((transaction, index) => {
-    const date = transaction.Date ? dateFromFlinks(transaction.Date) : null;
+    const date = dateFromFlinks(transaction.date);
     const signedAmountCents = signedCentsForTransaction(transaction, kind);
     if (!date || signedAmountCents == null || signedAmountCents === 0) {
       warnings.push(`Skipped transaction ${input.rowOffset + index + 1}: invalid date or zero/invalid amount.`);
       return;
     }
-    const description = cleanText(transaction.Description ?? "", 240);
-    const fitId = cleanText(transaction.Id ?? "", 120);
-    const rowFingerprint = stableImportHash([ref, date, signedAmountCents, description, index].join("|"));
-    const provenanceId = `flinks:${ref}:${fitId || rowFingerprint}`;
+    const description = cleanText(transaction.description, 240);
+    const provenanceId = cleanText(transaction.provenanceId, 160);
     rows.push({
       id: `IMP-${stableImportHash(`${input.sourceHash}|${provenanceId}|${index}`)}`,
       sourceKind: "flinks",
@@ -157,7 +121,7 @@ function parseAccount(input: {
       bankType: signedAmountCents < 0 ? "DEBIT" : "CREDIT",
       note: description,
       place: cleanText(description.split(/\s+/).slice(0, 3).join(" "), 100),
-      fitId,
+      fitId: provenanceId,
       extractionConfidence: null,
     });
   });
@@ -170,7 +134,7 @@ function parseAccount(input: {
       kind,
       currency,
       openingBalanceCents: null,
-      ledgerBalanceCents: currentBalance,
+      ledgerBalanceCents: input.account.balanceCents,
       ledgerBalanceDate: null,
     },
     rows,
@@ -178,20 +142,18 @@ function parseAccount(input: {
   };
 }
 
-export function parseFlinks(payload: FlinksAccountsPayload, sourceName = "Flinks"): ParsedOfxBatch {
-  const accounts = payload.Accounts ?? [];
+export function parseFlinksInbox(payload: FlinksInboxPayload): ParsedOfxBatch {
+  const accounts = payload.accounts ?? [];
   if (!accounts.length) throw new Error("Flinks returned no linked accounts.");
-  const institution = cleanText(payload.Institution ?? sourceName, 160) || "Flinks";
-  const sourceHash = stableImportHash(JSON.stringify({
-    requestId: payload.RequestId ?? "",
-    institution,
-    accounts: accounts.map((account) => ({
-      id: account.Id ?? "",
-      last4: accountLast4(account),
-      type: account.Type ?? "",
-      txCount: account.Transactions?.length ?? 0,
-    })),
-  }));
+  const institution = cleanText(payload.institution ?? "Flinks", 160) || "Flinks";
+  const sourceHash = cleanText(payload.sourceHash, 120) || stableImportHash(JSON.stringify({ institution, accounts: accounts.map((account) => account.accountRef) }));
+  const transactionsByAccount = new Map<string, FlinksInboxTransaction[]>();
+  for (const transaction of payload.transactions ?? []) {
+    const key = cleanText(transaction.accountRef, 120);
+    const bucket = transactionsByAccount.get(key) ?? [];
+    bucket.push(transaction);
+    transactionsByAccount.set(key, bucket);
+  }
   const parsedAccounts: ParsedOfxAccount[] = [];
   const rows: ImportedSourceRow[] = [];
   const warnings: string[] = [];
@@ -201,6 +163,7 @@ export function parseFlinks(payload: FlinksAccountsPayload, sourceName = "Flinks
       institution,
       sourceHash,
       rowOffset: rows.length,
+      transactionsForAccount: (accountRef) => transactionsByAccount.get(accountRef) ?? [],
     });
     if (parsed.account) parsedAccounts.push(parsed.account);
     rows.push(...parsed.rows);
@@ -215,4 +178,40 @@ export function parseFlinks(payload: FlinksAccountsPayload, sourceName = "Flinks
     rows: rows.sort((left, right) => left.date.localeCompare(right.date) || left.id.localeCompare(right.id)),
     warnings,
   };
+}
+
+/** @deprecated Use parseFlinksInbox with Worker-redacted inbox payloads. */
+export function parseFlinks(payload: { RequestId?: string | null; Institution?: string | null; Accounts?: Array<Record<string, unknown>> | null }, sourceName = "Flinks"): ParsedOfxBatch {
+  const inbox: FlinksInboxPayload = {
+    institution: cleanText(payload.Institution ?? sourceName, 160) || "Flinks",
+    sourceHash: stableImportHash(JSON.stringify({
+      requestId: payload.RequestId ?? "",
+      institution: payload.Institution ?? sourceName,
+      accounts: (payload.Accounts ?? []).map((account) => ({
+        id: String(account?.Id ?? ""),
+        last4: String(account?.LastFourDigits ?? account?.AccountNumber ?? "").slice(-4),
+      })),
+    })),
+    accounts: (payload.Accounts ?? []).map((account) => ({
+      accountRef: `flinks:${String(account?.Id ?? "unknown")}`,
+      accountLast4: String(account?.LastFourDigits ?? account?.AccountNumber ?? "").replace(/\D/g, "").slice(-4),
+      title: cleanText(String(account?.Title ?? "Linked account"), 120),
+      type: cleanText(String(account?.Type ?? ""), 80),
+      category: cleanText(String(account?.Category ?? ""), 80),
+      currency: cleanText(String(account?.Currency ?? "CAD"), 8).toUpperCase() || "CAD",
+      balanceCents: null,
+    })),
+    transactions: (payload.Accounts ?? []).flatMap((account, accountIndex) => {
+      const accountRef = `flinks:${String(account?.Id ?? accountIndex)}`;
+      return (Array.isArray(account?.Transactions) ? account.Transactions : []).map((transaction, index) => ({
+        accountRef,
+        provenanceId: `flinks:${accountRef}:${String((transaction as { Id?: string })?.Id ?? index)}`,
+        date: String((transaction as { Date?: string })?.Date ?? ""),
+        description: String((transaction as { Description?: string })?.Description ?? ""),
+        debitCents: (transaction as { Debit?: number | null })?.Debit == null ? null : Math.round(Number((transaction as { Debit?: number }).Debit) * 100),
+        creditCents: (transaction as { Credit?: number | null })?.Credit == null ? null : Math.round(Number((transaction as { Credit?: number }).Credit) * 100),
+      }));
+    }),
+  };
+  return parseFlinksInbox(inbox);
 }

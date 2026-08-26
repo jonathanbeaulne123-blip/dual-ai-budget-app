@@ -1,12 +1,60 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { catalogHousehold, parseFlinks, postEntry, prepareImportRows } from "../src/core/index.ts";
+import { catalogHousehold, parseFlinksInbox, postEntry, prepareImportRows, type FlinksInboxPayload } from "../src/core/index.ts";
 
-const fixture = JSON.parse(readFileSync(new URL("./fixtures/flinks-demo.json", import.meta.url), "utf8"));
+const inbox: FlinksInboxPayload = {
+  institution: "TD Demo",
+  sourceHash: "flinks-batch-demo-hash",
+  accounts: [
+    {
+      accountRef: "flinks:account:chequing-digest",
+      accountLast4: "4821",
+      title: "Everyday Chequing",
+      type: "Chequing",
+      category: "Operations",
+      currency: "CAD",
+      balanceCents: 182344,
+    },
+    {
+      accountRef: "flinks:account:visa-digest",
+      accountLast4: "4412",
+      title: "Visa Infinite",
+      type: "CreditCard",
+      category: "Credits",
+      currency: "CAD",
+      balanceCents: -31218,
+    },
+  ],
+  transactions: [
+    {
+      accountRef: "flinks:account:chequing-digest",
+      provenanceId: "flinks:tx:groc-digest",
+      date: "2026-08-20",
+      description: "NO FRILLS #1234 TORONTO",
+      debitCents: 4723,
+      creditCents: null,
+    },
+    {
+      accountRef: "flinks:account:chequing-digest",
+      provenanceId: "flinks:tx:payroll-digest",
+      date: "2026-08-15",
+      description: "PAYROLL DEPOSIT BIANCA INC",
+      debitCents: null,
+      creditCents: 245000,
+    },
+    {
+      accountRef: "flinks:account:visa-digest",
+      provenanceId: "flinks:tx:coffee-digest",
+      date: "2026-08-19",
+      description: "TIM HORTONS #1234 TORONTO",
+      debitCents: 625,
+      creditCents: null,
+    },
+  ],
+};
 
-describe("flinks intake adapter", () => {
-  it("normalizes linked accounts and transactions into import rows", () => {
-    const batch = parseFlinks(fixture, "TD Demo");
+describe("flinks inbox adapter", () => {
+  it("normalizes redacted inbox rows into import evidence", () => {
+    const batch = parseFlinksInbox(inbox);
     expect(batch.rows.length).toBe(3);
     expect(batch.accounts).toHaveLength(2);
     expect(batch.rows.find((row) => row.note.includes("NO FRILLS"))).toEqual(expect.objectContaining({
@@ -14,16 +62,9 @@ describe("flinks intake adapter", () => {
       accountLast4: "4821",
       currency: "CAD",
       suggestedType: "expense",
-      note: "NO FRILLS #1234 TORONTO",
+      provenanceId: "flinks:tx:groc-digest",
     }));
-    expect(batch.rows.find((row) => row.note.includes("PAYROLL"))).toEqual(expect.objectContaining({
-      suggestedType: "income",
-      accountLast4: "4821",
-    }));
-    expect(batch.rows.find((row) => row.note.includes("TIM HORTONS"))).toEqual(expect.objectContaining({
-      suggestedType: "expense",
-      accountLast4: "4412",
-    }));
+    expect(JSON.stringify(batch)).not.toMatch(/acct-chequing-1|tx-groceries-1|LoginId|RequestId/i);
   });
 
   it("prefills categories from the mapped account ledger history", () => {
@@ -52,7 +93,7 @@ describe("flinks intake adapter", () => {
         createdBy: "MEM-002",
       }).household;
     }
-    const batch = parseFlinks(fixture, "TD Demo");
+    const batch = parseFlinksInbox(inbox);
     const rows = prepareImportRows({
       household,
       memberId: "MEM-002",

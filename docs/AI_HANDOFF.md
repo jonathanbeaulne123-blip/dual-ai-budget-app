@@ -4,6 +4,29 @@ After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. 
 
 Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
 
+## Phase 0 secure Flinks Connect inbox (D-148, 2026-08-26)
+
+**Status:** Branch `cursor/secure-flinks-import-63b2` — PR open; **not merged, not deployed, not Production-ready**. Risk: **High** (hosted Worker + bank evidence boundary).
+
+**Household outcome:** Flinks supplies read-only bank evidence to the import inbox on Development. Connect uses Supabase bearer + membership scope, encrypted D1 state, iframe origin validation, HMAC-redacted inbox payloads, and DeleteCard disconnect. PR #160 `/flinks/sync` and browser LoginId storage are retired. Account-scoped category autofill from PR #160 remains in `prepareImportRows`. Final Confirm still posts money.
+
+**Budget delta (5):** `+2` — secure bank evidence path without weakening Confirm or posting authority.
+
+**Engagement delta (3):** `+2` — Import from Flinks returns on Batch Import with Connect + one-tap import after link.
+
+**What changed:** `workers/flinks.js` (`/bank/flinks/*`), D1 migration, `FlinksConnectPanel`, `flinksClient`, `parseFlinksInbox`, Batch Import wiring, vite proxy, wrangler D1 binding. Minor fix: `documentScanner` SubtleCrypto digest for jsdom receipt tests.
+
+**Verification:** Focused Flinks + import triage + batch-import-ui 34/34; full `pnpm test` 672 pass / 2 skipped; `pnpm build` green; `wrangler deploy --dry-run` green with `FLINKS_DB` binding.
+
+**Privacy review:** PASS WITH NOTES — Development scaffold only; deploy blocked until real D1 + secrets; `connect/complete` loginId attestation remains a Production follow-up.
+
+**Data/environment:** Development only. No Production deploy, schema apply on Supabase, or secret values committed. Jonathan must create D1, apply `migrations/flinks/0001_connections.sql`, and set Worker secrets before live Dev Connect.
+
+**Worksession:** [`worksessions/2026-08-26-flinks-connect-sandbox.md`](worksessions/2026-08-26-flinks-connect-sandbox.md), [`worksessions/2026-08-26-flinks-development-scaffold.md`](worksessions/2026-08-26-flinks-development-scaffold.md)
+
+**Next owner:** Jonathan — independent security review sign-off, D1 + secrets, merge approval (main auto-deploys).
+
+
 ## Phase 0 optional-publish demotion + hosted honesty (D-147, 2026-08-26)
 
 **Status:** Implementation merged via #157 onto `main@2ee381e` (`ca70ce1`). Follow-up draft PR #158 realigns continuity tests that still assumed legacy GET-compare-POST. Risk: **High** (product) / **Medium** (follow-up tests).
