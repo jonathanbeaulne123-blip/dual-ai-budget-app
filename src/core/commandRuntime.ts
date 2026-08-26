@@ -45,7 +45,7 @@ export type AcceptWriteInput = {
   confirmationId?: string;
   commandKind?: string;
   postedIds?: string[];
-  /** Explicit D-114 Google continuity transport; legacy callers still require linked=true. */
+  /** Explicit continuity transport request (App sets this for membership-matched Google continuity). `linked` alone never enables transport (D-147). */
   transportRequested?: boolean;
   adapters: WriteAdapters;
 };

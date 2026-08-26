@@ -234,6 +234,7 @@ describe("trust-foundation proof matrix", () => {
       candidate: { ...posted.household, linked: true },
       confirmationId: "proof-conflict",
       postedIds: posted.postedIds,
+      transportRequested: true,
       adapters: memoryAdapters({
         transport: async () => ({
           ok: false,

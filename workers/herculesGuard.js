@@ -104,7 +104,7 @@ export function resetChatRateMemory() {
  * Meter 60 chats per client IP per UTC day. KV is durable when configured;
  * isolate memory is a bounded fallback, not a globally consistent counter.
  *
- * Concurrent failure semantics (D-146): both backends use get-then-put, so two
+ * Concurrent failure semantics (D-147): both backends use get-then-put, so two
  * overlapping reads of the same count can both succeed and briefly exceed 60.
  * KV still wins for cross-isolate durability. A Durable Object hard cap is future work.
  *

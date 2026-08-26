@@ -16,7 +16,7 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 **What changed:** `commandRuntime` transports only on `transportRequested`; Pairing demotes Publish; `supabase` Personal-fail honesty + refuse-legacy; `continuity` flush treats `pushed.error` as pending; Hercules concurrent rate tests + [HERCULES_KV_BINDING.md](HERCULES_KV_BINDING.md); [GITHUB_BRANCH_PROTECTION.md](GITHUB_BRANCH_PROTECTION.md); [WORKING_MEMORY.md](WORKING_MEMORY.md) reconciled.
 
-**Verification:** Focused vitest 66/66 after rebase onto `main@391e3af` (auth-membership, api, write-safety, hercules-worker, command-runtime, hosted-transport, environment-isolation). Broader `pnpm check` / auditors follow before merge.
+**Verification:** Focused suites green; full `pnpm check` → 658 pass / 2 pre-existing `batch-import-ui` SubtleCrypto fails (reproduced on main). Continuity/proof-matrix/live-pull/production-continuity updated for refuse-legacy. Privacy auditor PASS WITH NOTES; books auditor PASS WITH NOTES; UX auditor PASS WITH NOTES.
 
 **Data/environment:** Development client + Worker guard + docs. No schema migrate, secrets, Production, Cloudflare KV create, or GitHub ruleset apply (Jonathan).
 
