@@ -1,8 +1,13 @@
 # AI Task and Handoff Standard
 
+After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. GitHub remains the full project context (D-095): [DECISIONS.md](DECISIONS.md), merged PRs, living specs, [nostalgia/](nostalgia/), [reference/](reference/). Do not treat unfinished chat as `main`. Do not skip GitHub history.
+
+Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
+
+
 ## Scheme A naming clarity (D-144, 2026-08-26)
 
-**Status:** Branch `cursor/scheme-a-naming-clarity-0893`; draft PR #154. Not merged, not deployed. Risk: **Medium**.
+**Status:** Merged via #154 onto `main`. Risk: **Medium**.
 
 **Household outcome:** All chrome the household sees uses plain Scheme A labels (Groceries, Goals, Health, Sit-down, Shifts, Goals savings, Mark purchased). Only Hercules AI talk and Hercules Pro may use cat/kitchen metaphors, and those lines gloss the human money meaning.
 
@@ -16,14 +21,31 @@
 
 **Next owner:** Jonathan — review PR #154 naming on phone Home + Pad; merge when satisfied.
 
+## Slim continuity outbox + gzip payloads (D-145, 2026-08-26)
 
-After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. GitHub remains the full project context (D-095): [DECISIONS.md](DECISIONS.md), merged PRs, living specs, [nostalgia/](nostalgia/), [reference/](reference/). Do not treat unfinished chat as `main`. Do not skip GitHub history.
+**Status:** Branch `cursor/outbox-compress-e279`; draft PR #155. Not merged, not deployed. Risk: **High**.
 
-Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
+**Household outcome:** Large Development books can share without blowing browser `localStorage` quota. The durable outbox stores a slim tip pointer; flush publishes the live accepted household. Personal cloud envelopes may gzip; shared CAS snapshots stay plain JSON for live 006 SQL guards; legacy plain JSON still pulls.
+
+**Budget delta (5):** `+3` — continuity transport reliability; prevents share stalls that diverge two phones’ books.
+
+**Engagement delta (3):** `+1` — Retry/share stays honest under stress fixtures.
+
+**What changed:** `src/ledger/snapshotPayload.ts` codec; shared CAS payloads stay plain JSON (006 SQL guards); personal envelopes may gzip; `continuity.ts` IDB-first slim durable outbox + tipRevision-aware live resolve; D-145 in decisions + continuity canon (D-144 claimed by Scheme A on main).
+
+**Verification:** Focused vitest green (`snapshot-payload` 5, `continuity` 18, plus CAS/isolation/production suites); size demo fat outbox 92,770B → slim 427B; personal gzip ~10.6% wire; `tsc --noEmit` green; full suite 645 pass / 2 pre-existing `batch-import-ui` SubtleCrypto fails (reproduced on main). Books auditor **PASS**; privacy auditor **PASS WITH NOTES**.
+
+**Data/environment:** Development client transport encoding only; no schema migrate, secrets, Production, or real household data.
+
+**Worksession:** [`worksessions/2026-08-26-outbox-compress.md`](worksessions/2026-08-26-outbox-compress.md)
+
+**PR:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/155
+
+**Next owner:** Jonathan — after merge+deploy, on the quota desktop tap **Retry now**; confirm banner clears and Bianca’s entry count / Assets converge. Auth Create/invite smoke remains a separate gate.
 
 ## Auth membership continuity authority (D-143, 2026-08-26)
 
-**Status:** Branch `cursor/auth-membership-authority-e279`; PR pending. Not merged, not deployed. Risk: **High**.
+**Status:** Merged via #152 onto `main`. Live Create/invite smoke still open. Risk: **High**.
 
 **Household outcome:** Automatic cloud share requires a Google continuity identity that matches an active household member. `linked` alone no longer publishes. Phrase remains Advanced recovery routing. Live anon REST stays denied; migration 010 bind RPC is live.
 

@@ -152,14 +152,20 @@ export function assertOutboxItemBinding(item: {
   environment: Environment;
   householdId: string;
   memberId: string;
-  snapshot: Household;
+  /** Present for memory tips and after resolve; slim durable rows omit it (D-145). */
+  snapshot?: Household;
 }): void {
   const binding: IdentityBinding = {
     environment: item.environment,
     householdId: item.householdId,
     memberId: item.memberId,
-    inviteCode: item.snapshot.inviteCode,
+    inviteCode: item.snapshot?.inviteCode,
   };
+  if (!item.snapshot) {
+    assertEnvironmentMatch(item.environment, binding, "outbox", { requirePresent: true });
+    assertHouseholdIdMatch(item.householdId, binding, "outbox");
+    return;
+  }
   assertEnvironmentMatch(item.snapshot.environment, binding, "outbox", { requirePresent: true });
   assertHouseholdIdMatch(item.snapshot.householdId, binding, "outbox");
 }

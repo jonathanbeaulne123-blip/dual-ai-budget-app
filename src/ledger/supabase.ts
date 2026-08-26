@@ -9,6 +9,7 @@ import { inviteFromText } from "../core/invite.ts";
 import { memberIdForGoogleIdentity, type GoogleIdentitySelector } from "../core/google.ts";
 import { hostedTransportAllowed } from "../core/sharing.ts";
 import { hostedContinuityAllowed, legacyLinkedPublishAllowed } from "./continuityPolicy.ts";
+import { decodeJsonPayload, encodeHouseholdPayload, encodeSharedSnapshotPayload } from "./snapshotPayload.ts";
 import type { SnapshotCasConflict, SnapshotCasResult } from "./snapshotCas.ts";
 
 export {
@@ -16,6 +17,14 @@ export {
   legacyLinkedPublishAllowed,
   productionContinuityEnabled,
 } from "./continuityPolicy.ts";
+export {
+  decodeHouseholdPayload,
+  decodeJsonPayload,
+  encodeHouseholdPayload,
+  encodeJsonPayload,
+  encodeSharedSnapshotPayload,
+  isSnapshotPayloadEnvelope,
+} from "./snapshotPayload.ts";
 
 export type SupabaseConfig = {
   url: string;
@@ -140,11 +149,12 @@ export function isMissingRpc(body: unknown): boolean {
     && /publish_household_snapshot/i.test(message);
 }
 
-function remoteFromCasPayload(payload: string | null | undefined): Household | null {
+async function remoteFromCasPayload(payload: string | null | undefined): Promise<Household | null> {
   if (!payload) return null;
   try {
-    const parsed = JSON.parse(payload) as Household;
-    return ensureHouseholdShape({ ...parsed, linked: true });
+    const parsed = await decodeJsonPayload(payload);
+    if (!parsed || typeof parsed !== "object") return null;
+    return ensureHouseholdShape({ ...(parsed as Household), linked: true });
   } catch {
     return null;
   }
@@ -217,16 +227,24 @@ function conflictMessage(reason: SnapshotCasConflict["reason"] | undefined): str
   }
 }
 
-function snapshotFromRow(row: { payload?: string | Household } | undefined): Household | null {
-  if (!row?.payload) return null;
-  const payload = typeof row.payload === "string" ? JSON.parse(row.payload) as Household : row.payload;
-  return ensureHouseholdShape({ ...payload, linked: true });
-}
-
-function personalFromRow(row: { payload?: string | PersonalEnvelope } | undefined, memberId: string): PersonalEnvelope | null {
+async function snapshotFromRow(row: { payload?: string | Household | Record<string, unknown> } | undefined): Promise<Household | null> {
   if (!row?.payload) return null;
   try {
-    const payload = typeof row.payload === "string" ? JSON.parse(row.payload) as PersonalEnvelope : row.payload;
+    const payload = await decodeJsonPayload(row.payload as string | object);
+    if (!payload || typeof payload !== "object") return null;
+    return ensureHouseholdShape({ ...(payload as Household), linked: true });
+  } catch {
+    return null;
+  }
+}
+
+async function personalFromRow(
+  row: { payload?: string | PersonalEnvelope | Record<string, unknown> } | undefined,
+  memberId: string,
+): Promise<PersonalEnvelope | null> {
+  if (!row?.payload) return null;
+  try {
+    const payload = await decodeJsonPayload(row.payload as string | object);
     return personalEnvelopeFromPayload(payload, memberId);
   } catch {
     return null;
@@ -314,7 +332,7 @@ async function personalSnapshotForMembership(
   if (isMissingTable(result.body)) return null;
   if (!result.ok) throw new Error(messageOf(result.body));
   const rows = Array.isArray(result.body) ? result.body as { payload?: string | PersonalEnvelope }[] : [];
-  return personalFromRow(rows[0], row.member_id);
+  return await personalFromRow(rows[0], row.member_id);
 }
 
 async function discoverFromContinuityMemberships(
@@ -338,7 +356,7 @@ async function discoverFromContinuityMemberships(
     const snapshotRows = Array.isArray(snapshotResult.body)
       ? snapshotResult.body as { payload?: string | Household }[]
       : [];
-    const household = snapshotFromRow(snapshotRows[0]);
+    const household = await snapshotFromRow(snapshotRows[0]);
     if (!household || household.environment !== environment) continue;
     const personal = await personalSnapshotForMembership(config, membership, environment);
     found.push({
@@ -407,7 +425,7 @@ async function publishContinuityMemberScope(
         household_id: snapshot.householdId,
         member_id: memberId,
         revision: snapshot.revision,
-        payload: JSON.stringify(personal),
+        payload: await encodeHouseholdPayload(personal),
         updated_at: new Date().toISOString(),
       }),
     },
@@ -464,7 +482,7 @@ export async function pullSupabaseHousehold(
     throw new Error(messageOf(result.body));
   }
   const rows = Array.isArray(result.body) ? result.body as { payload: string | Household }[] : [];
-  const pulled = snapshotFromRow(rows[0]);
+  const pulled = await snapshotFromRow(rows[0]);
   if (!pulled) return null;
   return assertHouseholdBinding(
     { ...pulled, linked: true, baseRevision: pulled.revision },
@@ -503,7 +521,7 @@ export async function discoverSupabaseHouseholdsByGoogleIdentity(
   const found = new Map<string, DiscoveredHousehold>();
   for (const row of rows) {
     try {
-      const household = snapshotFromRow(row);
+      const household = await snapshotFromRow(row);
       if (!household || household.environment !== environment || found.has(household.householdId)) continue;
       const memberId = memberIdForGoogleIdentity(household, identity);
       if (!memberId) continue;
@@ -555,7 +573,7 @@ async function readRemoteSnapshot(
     throw new Error(messageOf(result.body));
   }
   const rows = Array.isArray(result.body) ? result.body as { payload: string | Household }[] : [];
-  const pulled = snapshotFromRow(rows[0]);
+  const pulled = await snapshotFromRow(rows[0]);
   if (!pulled) return null;
   return assertHouseholdBinding(pulled, { environment, householdId }, "pull");
 }
@@ -577,7 +595,7 @@ export async function pullHouseholdSnapshotById(
     throw new Error(messageOf(result.body));
   }
   const rows = Array.isArray(result.body) ? result.body as { payload: string | Household }[] : [];
-  const pulled = snapshotFromRow(rows[0]);
+  const pulled = await snapshotFromRow(rows[0]);
   if (!pulled) return null;
   return assertHouseholdBinding(
     { ...pulled, linked: true, baseRevision: pulled.revision },
@@ -602,7 +620,7 @@ export async function pullPersonalSnapshotById(
   if (isMissingTable(result.body)) return null;
   if (!result.ok) throw new Error(messageOf(result.body));
   const rows = Array.isArray(result.body) ? result.body as { payload?: string | PersonalEnvelope }[] : [];
-  const personal = personalFromRow(rows[0], memberId);
+  const personal = await personalFromRow(rows[0], memberId);
   if (!personal) return null;
   assertPersonalEnvelopeBinding(personal, { environment, householdId, memberId });
   return personal;
@@ -654,7 +672,7 @@ export async function pushSupabaseHousehold(
     ? householdCloudProjection(snapshot, continuityMemberId)
     : snapshot;
   const snapshotHash = await financialAuditHash(cloudSnapshot);
-  const payload = JSON.stringify(cloudSnapshot);
+  const payload = await encodeSharedSnapshotPayload(cloudSnapshot);
   const identity = options?.continuityIdentity;
   // Personal-before-CAS only when the household row already exists (FK on memberships).
   // First create still publishes scope after the household write.
@@ -704,7 +722,7 @@ export async function pushSupabaseHousehold(
           schema: true,
           conflict: true,
           usedCasRpc: true,
-          remote: remoteFromCasPayload(created.remotePayload) ?? undefined,
+          remote: (await remoteFromCasPayload(created.remotePayload)) ?? undefined,
           error: conflictMessage(created.reason),
         };
       }
@@ -754,7 +772,7 @@ export async function pushSupabaseHousehold(
         schema: true,
         conflict: true,
         usedCasRpc: true,
-        remote: remoteFromCasPayload(cas.remotePayload) ?? undefined,
+        remote: (await remoteFromCasPayload(cas.remotePayload)) ?? undefined,
         error: conflictMessage(cas.reason),
       };
     }
@@ -848,7 +866,7 @@ async function pushSupabaseHouseholdLegacy(
       household_id: snapshot.householdId,
       invite_phrase: snapshot.inviteCode,
       environment: snapshot.environment,
-      payload: JSON.stringify(cloudSnapshot),
+      payload: await encodeSharedSnapshotPayload(cloudSnapshot),
       updated_at: new Date().toISOString(),
       revision: snapshot.revision,
       snapshot_hash: await financialAuditHash(cloudSnapshot),

@@ -162,8 +162,16 @@ describe("environment isolation adversarial boundaries", () => {
     });
     const raw = store.getItem("hearth:continuity-outbox:v1:development");
     expect(raw).toBeTruthy();
-    const items = JSON.parse(raw!) as Array<{ snapshot: typeof household; householdId: string }>;
-    items[0]!.snapshot = { ...items[0]!.snapshot, householdId: "HH-TAMPERED" };
+    expect(raw).not.toMatch(/"transactions"/);
+    const items = JSON.parse(raw!) as Array<{
+      householdId: string;
+      tipRevision: number;
+      snapshot?: typeof household;
+    }>;
+    expect(items[0]?.snapshot).toBeUndefined();
+    expect(items[0]?.tipRevision).toBe(household.revision);
+    // Tamper the durable tip pointer — flush must not publish under the wrong id.
+    items[0]!.householdId = "HH-TAMPERED";
     store.setItem("hearth:continuity-outbox:v1:development", JSON.stringify(items));
 
     const fetch = vi.fn();
