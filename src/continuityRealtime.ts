@@ -1,5 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Environment } from "./core/types.ts";
+import { continuityCommandLogEnabled } from "./ledger/continuityCommandLog.ts";
+import {
+  parseContinuityCommandEventRow,
+  type ContinuityCommandEvent,
+} from "./ledger/materializeSnapshotFromEvents.ts";
 
 /** Supabase Realtime channel status — poll runs when this is not SUBSCRIBED. */
 export type ContinuityRealtimeStatus =
@@ -24,14 +29,16 @@ export function shouldUsePollFallback(
 
 export function canAttachContinuityRealtime(input: {
   enabled?: boolean;
+  commandLogEnabled?: boolean;
   authSessionPresent: boolean;
   membershipResolved: boolean;
   hostedAllowed: boolean;
   hasHousehold: boolean;
 }): boolean {
-  const enabled = input.enabled ?? continuityRealtimeEnabled();
-  return enabled
-    && input.authSessionPresent
+  const snapshotRealtime = input.enabled ?? continuityRealtimeEnabled();
+  const commandLog = input.commandLogEnabled ?? continuityCommandLogEnabled();
+  if (!snapshotRealtime && !commandLog) return false;
+  return input.authSessionPresent
     && input.membershipResolved
     && input.hostedAllowed
     && input.hasHousehold;
@@ -46,6 +53,9 @@ export type AttachContinuityRealtimeInput = {
   environment: Environment;
   /** Revision-only trigger — must call existing pull/reconcile, never merge websocket payload. */
   onSnapshotSignal: () => void;
+  /** Tier 2: apply one command event locally; caller falls back to snapshot pull on failure. */
+  onCommandEvent?: (event: ContinuityCommandEvent) => void;
+  commandLogEnabled?: boolean;
   onStatusChange?: (status: ContinuityRealtimeStatus) => void;
 };
 
@@ -53,7 +63,7 @@ type RealtimeChannelHandle = {
   on: (
     type: "postgres_changes",
     filter: Record<string, string>,
-    callback: () => void,
+    callback: (payload?: { new?: unknown }) => void,
   ) => RealtimeChannelHandle;
   subscribe: (callback: (status: string) => void) => RealtimeChannelHandle;
 };
@@ -99,37 +109,58 @@ export function attachContinuityRealtime(
   client.realtime.setAuth(input.accessToken);
 
   let disposed = false;
+  const commandLogEnabled = input.commandLogEnabled ?? continuityCommandLogEnabled();
+  const snapshotRealtimeEnabled = continuityRealtimeEnabled();
   const channelName = `hearth:${input.environment}:${input.householdId}:${input.memberId}`;
   const signal = () => {
     if (!disposed) input.onSnapshotSignal();
   };
+  const handleCommandInsert = (payload?: { new?: unknown }) => {
+    if (disposed || !input.onCommandEvent) return;
+    const event = parseContinuityCommandEventRow(payload?.new);
+    if (event) input.onCommandEvent(event);
+  };
 
-  const channel = client
-    .channel(channelName)
-    .on(
+  let channel = client.channel(channelName);
+  if (snapshotRealtimeEnabled) {
+    channel = channel
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "household_snapshots",
+          filter: `household_id=eq.${input.householdId}`,
+        },
+        () => signal(),
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "continuity_personal_snapshots",
+          filter: `household_id=eq.${input.householdId}`,
+        },
+        () => signal(),
+      );
+  }
+  if (commandLogEnabled) {
+    channel = channel.on(
       "postgres_changes",
       {
-        event: "*",
+        event: "INSERT",
         schema: "public",
-        table: "household_snapshots",
+        table: "continuity_command_events",
         filter: `household_id=eq.${input.householdId}`,
       },
-      signal,
-    )
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "continuity_personal_snapshots",
-        filter: `household_id=eq.${input.householdId}`,
-      },
-      signal,
-    )
-    .subscribe((status) => {
-      if (disposed) return;
-      input.onStatusChange?.(status as ContinuityRealtimeStatus);
-    });
+      handleCommandInsert,
+    );
+  }
+  channel.subscribe((status) => {
+    if (disposed) return;
+    input.onStatusChange?.(status as ContinuityRealtimeStatus);
+  });
 
   return () => {
     disposed = true;

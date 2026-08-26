@@ -41,6 +41,8 @@ describe("shouldUsePollFallback", () => {
 
 describe("canAttachContinuityRealtime", () => {
   it("requires auth session, membership, hosted allowance, and household", () => {
+    vi.stubEnv("VITE_CONTINUITY_REALTIME", "1");
+    vi.stubEnv("VITE_CONTINUITY_COMMAND_LOG", "");
     expect(canAttachContinuityRealtime({
       enabled: true,
       authSessionPresent: true,
@@ -70,10 +72,23 @@ describe("canAttachContinuityRealtime", () => {
       hasHousehold: true,
     })).toBe(false);
   });
+
+  it("allows attach when only command log Realtime is enabled", () => {
+    vi.stubEnv("VITE_CONTINUITY_REALTIME", "");
+    vi.stubEnv("VITE_CONTINUITY_COMMAND_LOG", "1");
+    expect(canAttachContinuityRealtime({
+      authSessionPresent: true,
+      membershipResolved: true,
+      hostedAllowed: true,
+      hasHousehold: true,
+    })).toBe(true);
+  });
 });
 
 describe("attachContinuityRealtime lifecycle", () => {
   it("subscribes to shared and personal snapshot channels and cleans up", () => {
+    vi.stubEnv("VITE_CONTINUITY_REALTIME", "1");
+    vi.stubEnv("VITE_CONTINUITY_COMMAND_LOG", "");
     const onSnapshotSignal = vi.fn();
     const onStatusChange = vi.fn();
     const postgresHandlers: Array<() => void> = [];
@@ -132,6 +147,7 @@ describe("attachContinuityRealtime lifecycle", () => {
   });
 
   it("does not merge websocket payload — only signals pull/reconcile", () => {
+    vi.stubEnv("VITE_CONTINUITY_REALTIME", "1");
     const onSnapshotSignal = vi.fn();
     const postgresHandlers: Array<() => void> = [];
     const channel = {
@@ -159,5 +175,68 @@ describe("attachContinuityRealtime lifecycle", () => {
 
     postgresHandlers[0]?.();
     expect(onSnapshotSignal).toHaveBeenCalledWith();
+  });
+
+  it("subscribes to continuity_command_events INSERT when command log is on", () => {
+    vi.stubEnv("VITE_CONTINUITY_REALTIME", "");
+    vi.stubEnv("VITE_CONTINUITY_COMMAND_LOG", "1");
+    const onCommandEvent = vi.fn();
+    const commandHandlers: Array<(payload?: { new?: unknown }) => void> = [];
+    const channel = {
+      on: vi.fn((_type: string, filter: Record<string, string>, handler: (payload?: { new?: unknown }) => void) => {
+        if (filter.table === "continuity_command_events") commandHandlers.push(handler);
+        return channel;
+      }),
+      subscribe: vi.fn(() => channel),
+    };
+    const client = {
+      channel: vi.fn(() => channel),
+      removeChannel: vi.fn(),
+      realtime: { setAuth: vi.fn() },
+    };
+
+    attachContinuityRealtime({
+      supabaseUrl: "https://example.supabase.co",
+      publishableKey: "sb_publishable_test",
+      accessToken: "access-token",
+      householdId: "HH-DEMO",
+      memberId: "MEM-001",
+      environment: "development",
+      onSnapshotSignal: vi.fn(),
+      onCommandEvent,
+    }, { createClient: vi.fn(() => client) as ContinuityRealtimeDeps["createClient"] });
+
+    expect(channel.on).toHaveBeenCalledTimes(1);
+    expect(channel.on.mock.calls[0]?.[1]?.table).toBe("continuity_command_events");
+    expect(channel.on.mock.calls[0]?.[1]?.event).toBe("INSERT");
+
+    commandHandlers[0]?.({
+      new: {
+        id: "evt-cmd",
+        environment: "development",
+        household_id: "HH-DEMO",
+        member_id: "MEM-001",
+        idempotency_key: "cmd-1",
+        confirmation_id: "cmd-1",
+        identity_hash: "hash",
+        base_revision: 0,
+        result_revision: 1,
+        ledger_scope: "shared",
+        command_type: "postEntry",
+        payload_json: {
+          confirmationId: "cmd-1",
+          identityHash: "hash",
+          commandKind: "postEntry",
+          postedIds: ["TXN-1"],
+          auditHash: "audit",
+          revision: 1,
+          acceptedAt: "2026-08-26T12:00:00.000Z",
+          materializationFacts: { transactions: [] },
+        },
+        created_at: "2026-08-26T12:00:00.000Z",
+      },
+    });
+    expect(onCommandEvent).toHaveBeenCalledOnce();
+    expect(onCommandEvent.mock.calls[0]?.[0]?.idempotency_key).toBe("cmd-1");
   });
 });
