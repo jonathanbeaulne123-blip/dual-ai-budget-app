@@ -56,13 +56,21 @@ function activeDefaultCategory(
   type: TransactionType,
   note: string,
   place: string,
+  accountId = "",
 ): string {
   const categoryType = type === "refund" ? "expense" : type;
   const named = directlyNamedCategory(household, type, note, place);
   if (named) return named;
   if (categoryType === "expense") {
-    const guess = suggestCategory({ ...household, transactions: visibleLedger }, note, place);
-    if (shouldPrefillCategory(guess)) return guess!.subcategoryId;
+    const accountLedger = accountId
+      ? visibleLedger.filter((transaction) => transaction.accountId === accountId)
+      : visibleLedger;
+    const accountGuess = suggestCategory({ ...household, transactions: accountLedger }, note, place);
+    if (shouldPrefillCategory(accountGuess)) return accountGuess!.subcategoryId;
+    if (accountId && accountLedger.length !== visibleLedger.length) {
+      const broadGuess = suggestCategory({ ...household, transactions: visibleLedger }, note, place);
+      if (shouldPrefillCategory(broadGuess)) return broadGuess!.subcategoryId;
+    }
   }
   return household.categories.find((category) => (
     category.active && category.recordType === "category" && category.transactionType === categoryType
@@ -315,7 +323,7 @@ export function prepareImportRows(input: {
       accountId,
       transferAccountId: type === "transfer" ? otherAccountId : "",
       subcategoryId: type !== "unknown" && type !== "transfer"
-        ? activeDefaultCategory(input.household, ledger, type, source.note, source.place)
+        ? activeDefaultCategory(input.household, ledger, type, source.note, source.place, accountId)
         : "",
       visibility,
       duplicateConfidence: 0,

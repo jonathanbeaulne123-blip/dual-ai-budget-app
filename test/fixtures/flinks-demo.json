@@ -1,0 +1,49 @@
+{
+  "RequestId": "3fa391bc-bc52-4424-82c5-8662600df9b2",
+  "Institution": "TD Canada Trust",
+  "Accounts": [
+    {
+      "Id": "acct-chequing-1",
+      "Title": "Everyday Chequing",
+      "LastFourDigits": "4821",
+      "Type": "Chequing",
+      "Category": "Operations",
+      "Currency": "CAD",
+      "Balance": { "Current": 1823.44 },
+      "Transactions": [
+        {
+          "Id": "tx-groceries-1",
+          "Date": "2026-08-20",
+          "Description": "NO FRILLS #1234 TORONTO",
+          "Debit": 47.23,
+          "Credit": null
+        },
+        {
+          "Id": "tx-payroll-1",
+          "Date": "2026-08-15",
+          "Description": "PAYROLL DEPOSIT BIANCA INC",
+          "Debit": null,
+          "Credit": 2450.00
+        }
+      ]
+    },
+    {
+      "Id": "acct-visa-1",
+      "Title": "Visa Infinite",
+      "LastFourDigits": "4412",
+      "Type": "CreditCard",
+      "Category": "Credits",
+      "Currency": "CAD",
+      "Balance": { "Current": -312.18 },
+      "Transactions": [
+        {
+          "Id": "tx-coffee-1",
+          "Date": "2026-08-19",
+          "Description": "TIM HORTONS #1234 TORONTO",
+          "Debit": 6.25,
+          "Credit": null
+        }
+      ]
+    }
+  ]
+}

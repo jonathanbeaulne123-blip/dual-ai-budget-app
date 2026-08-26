@@ -6,6 +6,7 @@ import {
   resolveChatOrigin,
 } from "./herculesGuard.js";
 import { handleHerculesPro } from "./herculesPro.js";
+import { handleFlinksSync } from "./flinks.js";
 
 const HTML_PATH = /(?:^\/$|\.html(?:$|\?))/i;
 const HERCULES_COMPANION_ASSETS = new Set([
@@ -1058,6 +1059,10 @@ export default {
       }
       if (request.method === "POST") return scanDocument(request, env);
       return json({ ok: false, error: "method" }, 405, cors);
+    }
+
+    if (url.pathname === "/flinks/sync") {
+      return handleFlinksSync(request, env);
     }
 
     const response = exposeHerculesCompanionAsset(request, await env.ASSETS.fetch(request));
