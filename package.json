@@ -10,7 +10,8 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "rm -rf dist && tsc --noEmit && vite build && test ! -e dist/_redirects",
+    "build": "rm -rf dist && tsc --noEmit && vite build && pnpm build:hercules-pro-ui && test ! -e dist/_redirects",
+    "build:hercules-pro-ui": "node scripts/build-hercules-pro-ui.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -33,12 +34,15 @@
     "postgres": "^3.4.9",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "three": "0.185.1",
     "uqr": "^0.1.3"
   },
   "devDependencies": {
     "@types/react": "^19.1.12",
     "@types/react-dom": "^19.1.9",
+    "@types/three": "0.185.0",
     "@vitejs/plugin-react": "^5.0.2",
+    "esbuild": "0.28.2",
     "jsdom": "^26.1.0",
     "typescript": "^5.9.2",
     "vite": "^7.1.3",

@@ -1,7 +1,7 @@
 {
   "name": "hercules-pro",
-  "version": "0.1.0",
-  "description": "A read-only ChatGPT financial teacher grounded in your live Hearth ledgers.",
+  "version": "0.2.0",
+  "description": "An animated ChatGPT financial teacher grounded in your live Hearth ledgers.",
   "author": {
     "name": "Jonathan Beaulne",
     "url": "https://github.com/jonathanbeaulne123-blip"
@@ -14,10 +14,10 @@
   "interface": {
     "displayName": "Hercules Pro",
     "shortDescription": "Ask your Hearth books in ChatGPT",
-    "longDescription": "Hercules Pro uses sixteen read-only Hearth tools to explain personal and shared household ledgers. It can investigate posted facts and teach, but cannot change money.",
+    "longDescription": "Hercules Pro investigates posted Personal and Household facts, teaches the accounting idea, and appears as a living 3D companion beside ChatGPT. Reading is the default; an opted-in member may post one exact preview only after direct confirmation.",
     "developerName": "Hearth",
     "category": "Finance",
-    "capabilities": ["Read-only ledger tools", "Financial education", "Grounded recommendations"],
+    "capabilities": ["Grounded ledger tools", "Animated 3D companion", "Financial education", "Confirmed opt-in transactions"],
     "websiteURL": "https://hearth-books.jonathanbeaulne123.workers.dev/",
     "privacyPolicyURL": "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/main/docs/HERCULES_PRO_PRIVACY.md",
     "termsOfServiceURL": "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/main/docs/HERCULES_PRO_TERMS.md",
