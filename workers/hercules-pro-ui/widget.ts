@@ -83,7 +83,7 @@ window.addEventListener("message", (event) => {
 
 window.addEventListener("openai:set_globals", () => {
   if (window.openai?.toolOutput) applyResult(window.openai.toolOutput);
-  tryAutomaticPictureInPicture();
+  if (!reflectPictureInPictureMode()) tryAutomaticPictureInPicture();
 }, { passive: true });
 
 applyResult(window.openai?.toolOutput);
@@ -95,6 +95,18 @@ if (!motionEnabled) {
 
 let pipRequestPending = false;
 let automaticPipSettled = false;
+
+function reflectPictureInPictureMode(): boolean {
+  const active = window.openai?.displayMode === "pip";
+  if (active) {
+    statusEl.textContent = "Beside your chat";
+    pipButton.hidden = true;
+  } else if (automaticPipSettled) {
+    statusEl.textContent = "Tap to keep Hercules beside the chat";
+    pipButton.hidden = false;
+  }
+  return active;
+}
 
 async function requestPictureInPicture(userInitiated = false): Promise<boolean> {
   if (pipRequestPending || (automaticPipSettled && !userInitiated)) return false;
@@ -111,13 +123,12 @@ async function requestPictureInPicture(userInitiated = false): Promise<boolean> 
   try {
     await bridge.requestDisplayMode({ mode: "pip" });
     automaticPipSettled = true;
-    statusEl.textContent = "Beside your chat";
-    pipButton.hidden = true;
-    return true;
+    // A resolved request means the host received the preference, not that it
+    // granted it. The host reports the authoritative mode through globals.
+    return reflectPictureInPictureMode();
   } catch {
     automaticPipSettled = true;
-    statusEl.textContent = "Tap to keep Hercules beside the chat";
-    pipButton.hidden = false;
+    reflectPictureInPictureMode();
     return false;
   } finally {
     pipRequestPending = false;
