@@ -1,6 +1,6 @@
 # Hercules Pro
 
-Status: **read-only app deployed and registered; confirmed-write update implemented in a review branch.** Migration 011 and a Worker deployment remain separately gated. Free Hercules remains the default product.
+Status: **read-only app deployed and registered; confirmed-write and living-3D-companion updates implemented in a review branch.** Migration 011 and a Worker deployment remain separately gated. Free Hercules remains the default product.
 
 ## What the two Hercules modes mean
 
@@ -11,6 +11,10 @@ Free Hercules does not require ChatGPT, an API key, a paid account, or Hercules 
 ### Hercules Pro — optional in ChatGPT
 
 The **Use Hercules Pro ↗** button opens ChatGPT. The packaged Hercules Pro plugin teaches ChatGPT the Hercules voice and connects it to Hearth's `/mcp` endpoint. ChatGPT may call focused read-only calculations against the connected member's Personal ledger or the shared Household ledger.
+
+Hercules Pro can also summon the preserved-rig 3D Hercules as an MCP Apps interface. He asks ChatGPT to remain beside the conversation in picture-in-picture, breathes, blinks, turns his ears, moves his eleven-part tail, reacts to teaching/curiosity/concern/celebration, and can be rotated by dragging. A visible Pause/Play control and the operating system's reduced-motion preference stop animation. If WebGL, the model, or picture-in-picture is unavailable, the ordinary Hercules mark or inline view appears and every accounting tool continues working.
+
+The visual is deliberately decoupled from the accounting calls. ChatGPT calls `summon_hercules` once near the start, not after every balance or statement, so subsequent tools do not remount him. The widget receives only a presentation mood, short line, headline, and Personal/Household label. It receives no OAuth credential, confirmation token, raw journal, or independent write authority. Its message is not evidence; current financial claims still require the ordinary grounded read tools and clickable sources.
 
 Writing remains off by default. In Hearth **More → Hercules Pro permissions**, each member may independently enable Personal writes and Household writes. Enabling requires a Hearth confirmation and reconnecting the ChatGPT app for the separate `hearth.write` OAuth scope. Turning a switch off immediately blocks new and already-prepared confirmations for that ledger.
 
@@ -85,6 +89,10 @@ Optional hardening for Development: bind a free Cloudflare KV namespace as `HERC
 
 ## Verification checklist
 
+- Start a new Hercules Pro conversation. Hercules appears animated beside the chat, or remains animated inline when picture-in-picture is unavailable.
+- Drag horizontally over Hercules to rotate him; use Pause and Play; verify reduced-motion starts paused.
+- Ask for an explanation, inspect an uncertain figure, and complete a balanced synthetic result. Confirm his teaching, concerned, and celebration reactions do not replace the grounded written answer.
+- Block WebGL or the model asset. Verify the Hercules mark appears and ledger tools still answer.
 - Ask “What is in my Personal chequing?” The answer identifies the Personal ledger and uses a read tool.
 - Ask “Where did our household money go this month?” The answer identifies the Household ledger and may make several read calls.
 - Ask about another person's Personal spending. Hercules refuses instead of broadening scope.
