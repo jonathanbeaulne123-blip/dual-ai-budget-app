@@ -18,13 +18,14 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 **What changed:** `runShiftYearSimulation` / `explainShiftYearSimulation` in `tipScience.ts`; tools `shift_year_simulation` + `explain_shift_simulation` on free Hercules and Pro MCP; D-139 + sandbox gate in `HERCULES_PRO.md`; Pro `tools/list` expectations corrected to catalog+write (63).
 
-**Head SHA:** `2dab506f4f7060752b42ce673b975ad8c6504d9e`
+**Head SHA:** `02de120624e83967ed879d843d2b5fbfef483d7c`
 
 **Verification:**
 - `pnpm exec vitest run test/tip-science.test.ts test/hercules-tools.test.ts test/hercules-pro.test.ts` — pass
 - Same household+seed identical; facts `projection`; household unchanged
 - Demo proof: 12-month p50 tip+wage ~CAD $10,783; household unchanged; teach tool cites gated Python sandbox
-- `pnpm check`: `ai:verify` + build OK; full vitest 606 pass / 2 fail in `batch-import-ui` (SubtleCrypto) — same failure on `main`, unrelated to this packet
+- `pnpm ai:verify` pass; `pnpm build` pass
+- Full vitest via `pnpm check`: 606 pass / 2 fail in `batch-import-ui` (SubtleCrypto) — same failure on `main`, unrelated to this packet
 
 **Uncertainty:** Season under-modelled until weather stamps are universal; wages resample posted take-home ÷ hours.
 
