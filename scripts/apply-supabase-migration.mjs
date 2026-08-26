@@ -94,16 +94,14 @@ try {
     console.log("household_snapshots columns:", cols.map((row) => row.column_name).join(", ") || "(missing)");
     console.log("function:", fn[0]?.proname || "(missing)");
   }
-  if (arg === "007") {
-    const check = await sql`
-      select conname, pg_get_constraintdef(oid) as def
-      from pg_constraint
-      where conrelid = 'public.households'::regclass
-        and contype = 'c'
-        and conname like 'households_timezone%'
-      order by conname
+  if (arg === "012") {
+    const fn = await sql`
+      select proname, pg_catalog.pg_get_function_identity_arguments(oid) as args
+      from pg_proc
+      where pronamespace = 'public'::regnamespace
+        and proname = 'publish_continuity_snapshot'
     `;
-    console.log("households timezone checks:", check.map((row) => `${row.conname}: ${row.def}`).join(" | ") || "(none)");
+    console.log("function:", fn[0] ? `${fn[0].proname}(${fn[0].args})` : "(missing)");
   }
   const ids = await sql`select id from public.schema_migrations order by id`;
   console.log("schema_migrations ids:", ids.map((row) => row.id).join(", ") || "(empty)");

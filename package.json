@@ -24,6 +24,7 @@
     "books:apply:002": "node scripts/apply-supabase-migration.mjs 002",
     "books:apply:007": "node scripts/apply-supabase-migration.mjs 007",
     "books:apply:008": "node scripts/apply-supabase-migration.mjs 008",
+    "books:apply:012": "node scripts/apply-supabase-migration.mjs 012",
     "books:smoke:cas": "node scripts/smoke-snapshot-cas.mjs",
     "cf:deploy": "pnpm build && rm -f dist/_redirects && wrangler deploy --assets=./dist",
     "cf:preview": "pnpm build && rm -f dist/_redirects && wrangler versions upload --assets=./dist"
