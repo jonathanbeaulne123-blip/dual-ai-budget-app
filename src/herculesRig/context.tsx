@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { bindHerculesRigEngine, createHerculesRigEngine, exposeHerculesRigConsole } from "./controller.ts";
 import type { HerculesRigEngine } from "./engine.ts";
 import type { HerculesRigCommand, HerculesRigMood, HerculesRigPose, RigEngineState } from "./types.ts";
+import { startHerculesRigPoller } from "./transport.ts";
+import "./macros.ts";
 
 type RigContextValue = {
   engine: HerculesRigEngine;
@@ -30,7 +32,9 @@ export function HerculesRigProvider({
     bindHerculesRigEngine(engine);
     const stop = engine.subscribe(setState);
     engine.start();
+    const stopPoll = startHerculesRigPoller((command) => engine.dispatch(command));
     return () => {
+      stopPoll();
       stop();
       bindHerculesRigEngine(null);
       engine.destroy();

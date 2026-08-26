@@ -31,9 +31,18 @@ export {
 } from "./controller.ts";
 export { HerculesRigProvider, useHerculesRig, useOptionalHerculesRig } from "./context.tsx";
 export { snapshotToDomStyles, rigRootClassName } from "./dom.ts";
+export {
+  rigSessionId,
+  submitHerculesRigCommands,
+  pollHerculesRigQueue,
+  startHerculesRigPoller,
+} from "./transport.ts";
+export { validateRigCommands, validateRigPayload, sanitizeRigSessionId, HERCULES_RIG_PATH, HERCULES_RIG_POLL_PATH } from "./validate.ts";
+export { EXPAND_RIG_MACROS, expandRigMacro } from "./macros.ts";
 
 import { installBuiltinClips } from "./registry.ts";
 import { IDLE_CLIPS, POSE_CLIPS } from "./clips.ts";
+import "./macros.ts";
 
 /** Call once at module load so AI-registered clips layer on built-ins. */
 installBuiltinClips({ ...POSE_CLIPS, ...IDLE_CLIPS });

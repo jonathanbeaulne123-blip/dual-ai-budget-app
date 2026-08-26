@@ -4,9 +4,29 @@ After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. 
 
 Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
 
+## Hercules rig engine — Worker route, MCP dispatch, furniture macros (2026-08-26)
+
+**Status:** Branch `cursor/hercules-rig-engine-90cc`, PR #167. Risk: **Low** (presentation-only; no money, no ledger reads).
+
+**Household outcome:** Remote agents and Hercules Pro can puppeteer the live kitchen cat part-by-part (head, tail, each leg). Desk instruments trigger layered rig macros when expanded on Home. Fly auto-deposit (PR #163) remains separate.
+
+**Budget delta (5):** `0` — rig never posts money or reads books.
+
+**Engagement delta (3):** `+2` — AI-controllable animation + furniture-reactive cat.
+
+**What changed:** `src/herculesRig/` engine (parts, clips, validate, transport, macros); `HerculesFigure` inline transforms; Worker `POST /hercules/rig` + `GET /hercules/rig/poll` with KV/memory queue; MCP `hercules_rig_dispatch`; client poller in `HerculesRigProvider`; `HerculesOfficeRigBridge` on widget expand; [HERCULES_RIG.md](HERCULES_RIG.md).
+
+**Verification:** `test/hercules-rig.test.ts` (10), `test/hercules-rig-validate.test.ts` (3), `test/hercules-rig-worker.test.ts` (2), `test/hercules-pro.test.ts` rig tool count (68 tools, 67 read-only) — all green. Full `pnpm test`: 675 pass; 2 pre-existing `batch-import-ui` SubtleCrypto failures unchanged on `main`.
+
+**Data/environment:** Development client + Worker routes. No schema, secrets, Production, or deploy.
+
+**Next owner:** Jonathan — review/merge PR #167; optional live deploy smoke of `/hercules/rig` + `hearthRig().sessionId()` + MCP dispatch.
+
+**PR:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/167
+
 ## Phase 0 secure Flinks Connect inbox (D-148, 2026-08-26)
 
-**Status:** Branch `cursor/secure-flinks-import-63b2` — PR open; **not merged, not deployed, not Production-ready**. Risk: **High** (hosted Worker + bank evidence boundary).
+**Status:** Merged via #161 onto `main@efac0d2`. Risk: **High** (hosted Worker + bank evidence boundary).
 
 **Household outcome:** Flinks supplies read-only bank evidence to the import inbox on Development. Connect uses Supabase bearer + membership scope, encrypted D1 state, iframe origin validation, HMAC-redacted inbox payloads, and DeleteCard disconnect. PR #160 `/flinks/sync` and browser LoginId storage are retired. Account-scoped category autofill from PR #160 remains in `prepareImportRows`. Final Confirm still posts money.
 
@@ -24,7 +44,7 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 **Worksession:** [`worksessions/2026-08-26-flinks-connect-sandbox.md`](worksessions/2026-08-26-flinks-connect-sandbox.md), [`worksessions/2026-08-26-flinks-development-scaffold.md`](worksessions/2026-08-26-flinks-development-scaffold.md)
 
-**Next owner:** Jonathan — merge approval after CI and Cloudflare preview are green (main auto-deploys).
+**Next owner:** Jonathan — live Flinks Connect smoke on deployed Development after merge.
 
 
 ## Phase 0 optional-publish demotion + hosted honesty (D-147, 2026-08-26)

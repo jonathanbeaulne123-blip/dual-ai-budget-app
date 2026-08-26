@@ -1,4 +1,6 @@
 import { executeHerculesReadToolPlan } from "../src/core/herculesTools.ts";
+import { validateRigPayload } from "../src/herculesRig/validate.ts";
+import { enqueueRigCommands } from "./herculesRigQueue.js";
 import {
   acceptPreparedHerculesProTransaction,
   herculesProSharedProjection,
@@ -546,8 +548,49 @@ function companionToolDefinition() {
   };
 }
 
+function rigDispatchToolDefinition() {
+  const security = [{ type: "oauth2", scopes: ["hearth.read"] }];
+  return {
+    name: "hercules_rig_dispatch",
+    title: "Puppet kitchen Hercules rig",
+    description: "Presentation-only. Queue part-level rig commands for the open Hearth kitchen cat (head, tail, legs). Requires the rig sessionId from hearthRig().sessionId() in the live kitchen tab. Never posts money.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        sessionId: { type: "string", minLength: 8, maxLength: 64, description: "Kitchen rig session id from hearthRig().sessionId()." },
+        commands: {
+          type: "array",
+          minItems: 1,
+          maxItems: 16,
+          items: { type: "object", additionalProperties: true },
+          description: "Bounded rig commands: playPose, setPart, setParts, playClip, blendTo, queue, wait, reset.",
+        },
+      },
+      required: ["sessionId", "commands"],
+      additionalProperties: false,
+    },
+    outputSchema: {
+      type: "object",
+      properties: {
+        usedTool: { type: "string", const: "hercules_rig_dispatch" },
+        status: { type: "string", const: "queued" },
+        queueId: { type: "string" },
+        at: { type: "number" },
+        accepted: { type: "number" },
+        readOnly: { type: "boolean", const: true },
+        postedNothing: { type: "boolean", const: true },
+      },
+      required: ["usedTool", "status", "queueId", "at", "accepted", "readOnly", "postedNothing"],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    securitySchemes: security,
+    _meta: { securitySchemes: security },
+  };
+}
+
 function allToolDefinitions(claims) {
-  return [companionToolDefinition(), ...toolDefinitions(), ...writeToolDefinitions(claims)];
+  return [companionToolDefinition(), rigDispatchToolDefinition(), ...toolDefinitions(), ...writeToolDefinitions(claims)];
 }
 
 function mcpSuccess(id, structuredContent) {
@@ -647,6 +690,21 @@ function companionResource(request) {
 
 function companionMood(value) {
   return ["idle", "curious", "teaching", "concerned", "celebrating"].includes(value) ? value : "idle";
+}
+
+async function rigDispatchResult(env, args) {
+  const payload = validateRigPayload({ sessionId: args.sessionId, commands: args.commands });
+  if (!payload) throw new Error("Invalid rig sessionId or commands.");
+  const entry = await enqueueRigCommands(env, payload.sessionId, payload.commands);
+  return {
+    usedTool: "hercules_rig_dispatch",
+    status: "queued",
+    queueId: entry.id,
+    at: entry.at,
+    accepted: payload.commands.length,
+    readOnly: true,
+    postedNothing: true,
+  };
 }
 
 function companionResult(args) {
@@ -792,6 +850,7 @@ async function handleMcp(request, env) {
     const args = rpc.params?.arguments && typeof rpc.params.arguments === "object" ? rpc.params.arguments : {};
     try {
       if (name === "summon_hercules") return mcpSuccess(rpc.id, companionResult(args));
+      if (name === "hercules_rig_dispatch") return mcpSuccess(rpc.id, await rigDispatchResult(env, args));
       if (name === "transaction_write_options") {
         const { books } = await loadBooks(env, claims);
         return mcpSuccess(rpc.id, { usedTool: name, ...writeOptions(books, args) });
