@@ -26,7 +26,7 @@ import {
   isMonthClosed,
   budgetVariance,
 } from "./statements.ts";
-import { accountRegister, compileHousehold, trialBalance } from "./journal.ts";
+import { accountRegister, booksEquation, compileHousehold, trialBalance } from "./journal.ts";
 import { householdForHerculesContext } from "./visibility.ts";
 import type { HerculesAskContext } from "./askBooks.ts";
 import type { HerculesGroundedFact, HerculesNumberSource } from "./herculesProvenance.ts";
@@ -80,6 +80,14 @@ export const HERCULES_READ_TOOL_NAMES = [
   "spending_trend",
   "scenario_analysis",
   "forecast_accuracy",
+  "explain_transaction",
+  "explain_accounting_equation",
+  "explain_debit_credit",
+  "explain_financial_statement",
+  "trace_number",
+  "compare_accounting_treatments",
+  "explain_variance",
+  "explain_transfer",
 ] as const;
 
 export type HerculesReadToolName = (typeof HERCULES_READ_TOOL_NAMES)[number];
@@ -156,6 +164,14 @@ export const HERCULES_READ_TOOL_CATALOG: ReadonlyArray<{ name: HerculesReadToolN
   { name: "spending_trend", description: "Show posted monthly spending totals over 2–12 months." },
   { name: "scenario_analysis", description: "Test a hypothetical purchase against current cash and scheduled bills." },
   { name: "forecast_accuracy", description: "Compare a month's budget forecast with posted actual results." },
+  { name: "explain_transaction", description: "Explain the debit, credit, recognition, and source of one posted transaction." },
+  { name: "explain_accounting_equation", description: "Explain the visible ledger's assets, liabilities, and net income equation." },
+  { name: "explain_debit_credit", description: "Explain what debits and credits do to a named chart account." },
+  { name: "explain_financial_statement", description: "Explain one current statement's purpose and linked headline figures." },
+  { name: "trace_number", description: "Trace one transaction, account, or category figure to posted source rows." },
+  { name: "compare_accounting_treatments", description: "Contrast two commonly confused household accounting treatments." },
+  { name: "explain_variance", description: "Explain one category's actual-versus-budget variance for a month." },
+  { name: "explain_transfer", description: "Explain both journal legs of one posted transfer transaction." },
 ];
 
 const TOOL_SET = new Set<string>(HERCULES_READ_TOOL_NAMES);
@@ -247,6 +263,13 @@ function cleanArgs(name: HerculesReadToolName, raw: unknown): Record<string, unk
   if (name === "credit_utilization") return { account: common.account };
   if (name === "income_stability" || name === "spending_trend") return { months: Math.min(12, Math.max(2, Math.round(Number(input.months) || 6))) };
   if (name === "scenario_analysis") return { amountCents: cleanCents(input.amountCents), horizonDays: Math.min(90, Math.max(1, Math.round(Number(input.horizonDays) || 30))) };
+  if (name === "explain_transaction" || name === "explain_transfer") return { transactionId: cleanString(input.transactionId, 100) };
+  if (name === "explain_accounting_equation") return {};
+  if (name === "explain_debit_credit") return { account: common.account };
+  if (name === "explain_financial_statement") return { statement: cleanString(input.statement, 40) };
+  if (name === "trace_number") return { transactionId: cleanString(input.transactionId, 100), account: common.account, category: common.category, period: cleanPeriod(input.period) };
+  if (name === "compare_accounting_treatments") return { topic: cleanString(input.topic, 60) };
+  if (name === "explain_variance") return { category: common.category, period: cleanPeriod(input.period) };
   if (name === "money_owed" || name === "cash_position" || name === "net_worth" || name === "audit_health") return {};
   return common;
 }
@@ -326,6 +349,11 @@ function visibleAccounts(household: Household, context: HerculesAskContext): Acc
     if (context.view === "personal") return account.ownerMemberId === context.memberId || account.ownerMemberId === JOINT || referenced.has(account.id);
     return account.ownerMemberId === JOINT || referenced.has(account.id);
   });
+}
+
+function visibleChartAccounts(household: Household, context: HerculesAskContext, books: ReturnType<typeof compileHousehold>) {
+  const bankIds = new Set(visibleAccounts(household, context).map((account) => account.id));
+  return books.chart.filter((account) => account.source !== "bank" || bankIds.has(account.id));
 }
 
 function resolveMember(household: Household, query: string | undefined, context: HerculesAskContext) {
@@ -660,7 +688,8 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
   if (call.name === "trial_balance") {
     const books = compileHousehold(household);
     const trial = trialBalance(books, { recognizedOnly: true });
-    const rows = trial.rows.filter((row) => row.displayDebitCents || row.displayCreditCents).slice(0, 8);
+    const visibleIds = new Set(visibleChartAccounts(household, context, books).map((row) => row.id));
+    const rows = trial.rows.filter((row) => visibleIds.has(row.id) && (row.displayDebitCents || row.displayCreditCents)).slice(0, 8);
     const facts = rows.map((row, index) => fact(
       call,
       index,
@@ -685,7 +714,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const books = compileHousehold(household);
     const range = periodRange(today, cleanPeriod(call.args.period), call.args);
     const accountQuery = cleanString(call.args.account);
-    const account = fuzzy(books.chart, accountQuery, (row) => `${row.code} ${row.name}`);
+    const account = fuzzy(visibleChartAccounts(household, context, books), accountQuery, (row) => `${row.code} ${row.name}`);
     if (accountQuery && !account) return empty(call, `I cannot match journal account “${accountQuery}” in this ledger.`);
     const memberQuery = cleanString(call.args.member);
     const member = resolveMember(household, memberQuery, context);
@@ -703,7 +732,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
   if (call.name === "account_activity" || call.name === "explain_balance") {
     const books = compileHousehold(household);
     const accountQuery = cleanString(call.args.account);
-    const account = fuzzy(books.chart, accountQuery, (row) => `${row.code} ${row.name}`);
+    const account = fuzzy(visibleChartAccounts(household, context, books), accountQuery, (row) => `${row.code} ${row.name}`);
     if (!account) return empty(call, accountQuery ? `I cannot match account “${accountQuery}” in this ledger.` : "Name the account you want me to trace.");
     const range = periodRange(today, cleanPeriod(call.args.period), call.args);
     const fullRegister = accountRegister(books, account.id, { recognizedOnly: true });
@@ -827,10 +856,10 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
   if (call.name === "opening_balance_review") {
     const books = compileHousehold(household);
     const accountQuery = cleanString(call.args.account);
-    const target = fuzzy(books.chart.filter((row) => row.source === "bank"), accountQuery, (row) => `${row.code} ${row.name}`);
+    const visible = visibleChartAccounts(household, context, books).filter((row) => row.source === "bank");
+    const target = fuzzy(visible, accountQuery, (row) => `${row.code} ${row.name}`);
     if (accountQuery && !target) return empty(call, `I cannot match visible account “${accountQuery}” in this ledger.`);
-    const allowed = new Set(visibleAccounts(household, context).map((row) => row.id));
-    const rows = (target ? [target] : books.chart.filter((row) => row.source === "bank" && allowed.has(row.id))).slice(0, 8);
+    const rows = (target ? [target] : visible).slice(0, 8);
     const facts = rows.map((account, index) => {
       const register = accountRegister(books, account.id, { recognizedOnly: true });
       const first = register[0];
@@ -1000,6 +1029,130 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const expenseError = summary.expenseActualCents - summary.expenseBudgetedCents;
     const source = toolSource(context, `Open the ${month} plan and actuals`, { from: `${month}-01` as DateKey, to: addDays(monthStartKey(shiftMonthKey(month, 1)), -1) });
     return { callId: call.id, name: call.name, status: "ok", sentence: `${month}'s budget forecast missed posted income by ${formatCad(incomeError)} and spending by ${formatCad(expenseError)}. Positive means actual was higher. This measures the saved budget, not scheduled-bill prediction quality.`, facts: [fact(call, 0, "Income forecast error", formatCad(incomeError), source, "projection"), fact(call, 1, "Spending forecast error", formatCad(expenseError), source, "projection"), fact(call, 2, "Actual net", formatCad(summary.netActualCents), source), fact(call, 3, "Budgeted net", formatCad(summary.netBudgetedCents), source, "projection")] };
+  }
+
+  if (call.name === "explain_transaction") {
+    const transactionId = cleanString(call.args.transactionId);
+    if (!transactionId) return empty(call, "Give me the posted transaction ID you want explained.");
+    const tx = household.transactions.find((row) => row.id.toLowerCase() === transactionId.toLowerCase());
+    if (!tx) return empty(call, `I cannot find visible transaction “${transactionId}”.`);
+    const books = compileHousehold(household);
+    const entry = books.entries.find((row) => row.originTransactionIds.includes(tx.id));
+    if (!entry) return empty(call, `${tx.id} is visible but has no compiled journal entry. Health should inspect it.`);
+    const chart = new Map(books.chart.map((row) => [row.id, row]));
+    const facts = entry.lines.map((line, index) => fact(call, index, `${chart.get(line.accountId)?.name ?? line.accountId} · ${line.debitCents ? "debit" : "credit"}`, formatCad(line.debitCents || line.creditCents), journalSource(context, entry, { accountId: chart.get(line.accountId)?.bankAccountId, categoryId: chart.get(line.accountId)?.categoryId })));
+    return { callId: call.id, name: call.name, status: "ok", sentence: `${tx.date} ${tx.place || tx.note || tx.type} is a ${tx.type} for ${formatCad(tx.amountCents)}. ${entry.id} posts equal debits and credits across ${entry.lines.length} lines and is ${entry.recognized ? "recognized" : "excluded from recognized books"}.`, facts };
+  }
+
+  if (call.name === "explain_accounting_equation") {
+    const equation = booksEquation(compileHousehold(household));
+    const source = toolSource(context, "Open the accounting equation", { to: today });
+    return { callId: call.id, name: call.name, status: "ok", sentence: `Posted assets of ${formatCad(equation.assetCents)} less liabilities of ${formatCad(equation.liabilityCents)} equal net worth of ${formatCad(equation.netWorthCents)}. Posted income of ${formatCad(equation.incomeCents)} less expenses of ${formatCad(equation.expenseCents)} equal net income of ${formatCad(equation.netIncomeCents)}. Those sides ${equation.holds ? "match" : "do not match"}; every recognized entry still has equal debits and credits.`, facts: [fact(call, 0, "Assets", formatCad(equation.assetCents), source), fact(call, 1, "Liabilities", formatCad(equation.liabilityCents), source), fact(call, 2, "Net worth", formatCad(equation.netWorthCents), source), fact(call, 3, "Income", formatCad(equation.incomeCents), source), fact(call, 4, "Expenses", formatCad(equation.expenseCents), source), fact(call, 5, "Net income", formatCad(equation.netIncomeCents), source)] };
+  }
+
+  if (call.name === "explain_debit_credit") {
+    const accountQuery = cleanString(call.args.account);
+    if (!accountQuery) return empty(call, "Name the bank, liability, income, or expense account you want explained.");
+    const books = compileHousehold(household);
+    const account = fuzzy(visibleChartAccounts(household, context, books), accountQuery, (row) => `${row.code} ${row.name}`);
+    if (!account) return empty(call, `I cannot match chart account “${accountQuery}” in this ledger.`);
+    const trial = trialBalance(books, { recognizedOnly: true }).rows.find((row) => row.id === account.id);
+    const balance = trial ? (account.normalBalance === "debit" ? trial.netCents : -trial.netCents) : 0;
+    const increase = account.normalBalance === "debit" ? "debits increase it; credits decrease it" : "credits increase it; debits decrease it";
+    const source = toolSource(context, `Open ${account.name}`, { accountId: account.bankAccountId, categoryId: account.categoryId });
+    return { callId: call.id, name: call.name, status: "ok", sentence: `${account.name} is a ${account.accountType} account with a normal ${account.normalBalance} balance: ${increase}. Its recognized normal-balance amount is ${formatCad(balance)}. “Debit” and “credit” mean left and right journal sides, not good and bad.`, facts: [fact(call, 0, `${account.name} balance`, formatCad(balance), source), fact(call, 1, "Normal side", account.normalBalance, source)] };
+  }
+
+  if (call.name === "explain_financial_statement") {
+    const statement = cleanString(call.args.statement)?.toLowerCase().replace(/[\s-]+/g, "_");
+    if (!statement) return empty(call, "Choose balance_sheet, income_statement, cash_flow_statement, or trial_balance.");
+    if (statement === "balance_sheet") {
+      const sheet = balanceSheet(household);
+      const source = toolSource(context, "Open the balance sheet", { to: sheet.asOf ?? today });
+      return { callId: call.id, name: call.name, status: "ok", sentence: `A balance sheet is the financial position at a point in time: what the ledger controls, what it owes, and the remainder. Here, assets are ${formatCad(sheet.assetCents)}, liabilities are ${formatCad(sheet.liabilityCents)}, and net worth is ${formatCad(sheet.equityCents)}.`, facts: [fact(call, 0, "Assets", formatCad(sheet.assetCents), source), fact(call, 1, "Liabilities", formatCad(sheet.liabilityCents), source), fact(call, 2, "Net worth", formatCad(sheet.equityCents), source)] };
+    }
+    if (statement === "income_statement") {
+      const month = monthKeyFromDateKey(today);
+      const row = incomeStatement(household, month);
+      const source = toolSource(context, `Open ${month} income statement`, { from: `${month}-01` as DateKey, to: addDays(monthStartKey(shiftMonthKey(month, 1)), -1) });
+      return { callId: call.id, name: call.name, status: "ok", sentence: `An income statement measures performance across a period: income minus expenses. ${month} has ${formatCad(row.incomeCents)} income, ${formatCad(row.expenseCents)} expenses, and ${formatCad(row.netCents)} net income.`, facts: [fact(call, 0, "Income", formatCad(row.incomeCents), source), fact(call, 1, "Expenses", formatCad(row.expenseCents), source), fact(call, 2, "Net income", formatCad(row.netCents), source)] };
+    }
+    if (statement === "cash_flow_statement") {
+      const month = monthKeyFromDateKey(today);
+      const row = cashFlowStatement(household, month);
+      const source = toolSource(context, `Open ${month} cash flow`, { from: `${month}-01` as DateKey, to: addDays(monthStartKey(shiftMonthKey(month, 1)), -1) });
+      return { callId: call.id, name: call.name, status: "ok", sentence: `A cash-flow statement explains cash movement, not profit. ${month} net cash movement is ${formatCad(row.netCashCents)}; card spending of ${formatCad(row.cardSpendCents)} is separate because charging a card does not move cash that day.`, facts: [fact(call, 0, "Net cash movement", formatCad(row.netCashCents), source), fact(call, 1, "Non-cash card spending", formatCad(row.cardSpendCents), source)] };
+    }
+    if (statement === "trial_balance") {
+      const row = trialBalance(compileHousehold(household), { recognizedOnly: true });
+      const source = toolSource(context, "Open the trial balance");
+      return { callId: call.id, name: call.name, status: "ok", sentence: `A trial balance lists each chart account's ending debit or credit balance and tests total debits against total credits. Here both totals are ${formatCad(row.totalDebitCents)} and the trial ${row.inBalance ? "balances" : "does not balance"}.`, facts: [fact(call, 0, "Total debits", formatCad(row.totalDebitCents), source), fact(call, 1, "Total credits", formatCad(row.totalCreditCents), source)] };
+    }
+    return empty(call, `“${statement}” is not a supported statement. Choose balance_sheet, income_statement, cash_flow_statement, or trial_balance.`);
+  }
+
+  if (call.name === "trace_number") {
+    const transactionId = cleanString(call.args.transactionId);
+    if (transactionId) {
+      const tx = household.transactions.find((row) => row.id.toLowerCase() === transactionId.toLowerCase());
+      if (!tx) return empty(call, `I cannot find visible transaction “${transactionId}”.`);
+      return { callId: call.id, name: call.name, status: "ok", sentence: `${tx.id} is a ${tx.type} posted on ${tx.date} for ${formatCad(tx.amountCents)} from ${tx.source}${tx.sourceId ? ` source ${tx.sourceId}` : " without a separate source ID"}.`, facts: [fact(call, 0, `${tx.date} · ${tx.place || tx.note || tx.type}`, formatCad(tx.amountCents), toolSource(context, "Open this posted row", { transactionId: tx.id, accountId: tx.accountId, categoryId: tx.subcategoryId ?? undefined, from: tx.date, to: tx.date }))] };
+    }
+    const accountQuery = cleanString(call.args.account);
+    if (accountQuery) {
+      const account = fuzzy(visibleAccounts(household, context), accountQuery, (row) => `${row.name} ${row.institution} ${row.last4}`);
+      if (!account) return empty(call, `I cannot match visible account “${accountQuery}”.`);
+      const balance = accountBookBalance(household, account.id, today);
+      return { callId: call.id, name: call.name, status: "ok", sentence: `${account.name}'s ${formatCad(balance)} comes from the recognized journal lines posted to that account through ${today}.`, facts: [fact(call, 0, account.name, formatCad(balance), toolSource(context, `Open ${account.name}`, { accountId: account.id, to: today }))] };
+    }
+    const categoryQuery = cleanString(call.args.category);
+    if (categoryQuery) {
+      const category = fuzzy(household.categories.filter((row) => row.recordType === "category"), categoryQuery, (row) => row.name);
+      if (!category) return empty(call, `I cannot match visible category “${categoryQuery}”.`);
+      const month = statementMonth(today, call.args);
+      const summary = monthSummary(household, month).categories.find((row) => row.subcategoryId === category.id);
+      const value = summary?.actualCents ?? 0;
+      const source = toolSource(context, `Open ${category.name} rows`, { categoryId: category.id, from: `${month}-01` as DateKey, to: addDays(monthStartKey(shiftMonthKey(month, 1)), -1) });
+      return { callId: call.id, name: call.name, status: summary ? "ok" : "empty", sentence: `${category.name}'s ${month} posted actual is ${formatCad(value)}, traced to recognized rows carrying category ID ${category.id}.`, facts: [fact(call, 0, category.name, formatCad(value), source)] };
+    }
+    return empty(call, "Trace one stable transaction ID, account name, or category name.");
+  }
+
+  if (call.name === "compare_accounting_treatments") {
+    const topic = cleanString(call.args.topic)?.toLowerCase().replace(/[\s-]+/g, "_");
+    const lessons: Record<string, string> = {
+      card_purchase_vs_card_payment: "A card purchase is an expense: debit the expense and credit the card liability. Paying the card is a transfer: debit the liability and credit cash. Recording both as expenses double-counts spending.",
+      refund_vs_income: "A refund reverses prior spending: debit the receiving account and credit the expense category. Income credits an income account. Calling a refund income overstates both revenue and the original expense.",
+      transfer_vs_expense: "A transfer moves value between balance-sheet accounts and does not change net income. An expense reduces net income because it debits an expense account.",
+      receivable_vs_income: "A receivable is an asset representing money already owed. Collecting it swaps receivable for cash; it is not new income unless the earning event was never recognized before.",
+      budget_vs_actual: "A budget is a plan and stays projection basis. An actual is a confirmed journal fact. Variance compares them without converting the plan into a post.",
+    };
+    const lesson = topic ? lessons[topic] : undefined;
+    if (!lesson) return empty(call, "Choose card_purchase_vs_card_payment, refund_vs_income, transfer_vs_expense, receivable_vs_income, or budget_vs_actual.");
+    return { callId: call.id, name: call.name, status: "ok", sentence: lesson, facts: [] };
+  }
+
+  if (call.name === "explain_variance") {
+    const categoryQuery = cleanString(call.args.category);
+    if (!categoryQuery) return empty(call, "Name the budget category whose variance you want explained.");
+    const month = statementMonth(today, call.args);
+    const row = budgetVariance(household, month).find((item) => normalize(item.name).includes(normalize(categoryQuery)) || normalize(categoryQuery).includes(normalize(item.name)));
+    if (!row) return empty(call, `I cannot match budget category “${categoryQuery}” in ${month}.`);
+    const source = toolSource(context, `Open ${row.name} in the ${month} plan`, { categoryId: row.id, from: `${month}-01` as DateKey, to: addDays(monthStartKey(shiftMonthKey(month, 1)), -1) });
+    return { callId: call.id, name: call.name, status: "ok", sentence: `${row.name} budgeted ${formatCad(row.budgetedCents)} and posted ${formatCad(row.actualCents)} in ${month}. The ${formatCad(Math.abs(row.varianceCents))} variance is ${row.varianceCents >= 0 ? "unspent plan" : "over plan"}. It does not create or move money.`, facts: [fact(call, 0, "Budget", formatCad(row.budgetedCents), source, "projection"), fact(call, 1, "Actual", formatCad(row.actualCents), source), fact(call, 2, "Variance", formatCad(row.varianceCents), source, "projection")] };
+  }
+
+  if (call.name === "explain_transfer") {
+    const transactionId = cleanString(call.args.transactionId);
+    if (!transactionId) return empty(call, "Give me either transaction ID from the posted transfer.");
+    const tx = household.transactions.find((row) => row.id.toLowerCase() === transactionId.toLowerCase());
+    if (!tx || tx.type !== "transfer") return empty(call, `“${transactionId}” is not a visible transfer transaction.`);
+    const books = compileHousehold(household);
+    const entry = books.entries.find((row) => row.originTransactionIds.includes(tx.id));
+    if (!entry) return empty(call, `${tx.id} has no compiled transfer journal entry.`);
+    const chart = new Map(books.chart.map((row) => [row.id, row]));
+    const facts = entry.lines.map((line, index) => fact(call, index, `${chart.get(line.accountId)?.name ?? line.accountId} · ${line.debitCents ? "debit" : "credit"}`, formatCad(line.debitCents || line.creditCents), journalSource(context, entry, { accountId: chart.get(line.accountId)?.bankAccountId })));
+    return { callId: call.id, name: call.name, status: "ok", sentence: `${entry.id} moves ${formatCad(tx.amountCents)} between two balance-sheet accounts with equal debit and credit legs. It changes where value sits, not income, expenses, or net worth.`, facts };
   }
 
   return { callId: call.id, name: call.name, status: "unavailable", sentence: "That read-only tool is unavailable.", facts: [] };

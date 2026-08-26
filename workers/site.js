@@ -136,6 +136,14 @@ const HERCULES_READ_TOOLS = [
   { name: "spending_trend", description: "Show posted monthly spending totals over 2 to 12 months.", parameters: strictObject({ months: { anyOf: [{ type: "integer", minimum: 2, maximum: 12 }, { type: "null" }] } }) },
   { name: "scenario_analysis", description: "Test a hypothetical purchase against current cash and scheduled bills.", parameters: strictObject({ amountCents: { anyOf: [{ type: "integer", minimum: 1, maximum: 1000000000 }, { type: "null" }] }, horizonDays: { anyOf: [{ type: "integer", minimum: 1, maximum: 90 }, { type: "null" }] } }) },
   { name: "forecast_accuracy", description: "Compare a month's budget forecast with posted actual results.", parameters: strictObject({ period: nullablePeriod() }) },
+  { name: "explain_transaction", description: "Explain the debit, credit, recognition, and source of one posted transaction.", parameters: strictObject({ transactionId: nullableString() }) },
+  { name: "explain_accounting_equation", description: "Explain the visible ledger's assets, liabilities, and net income equation.", parameters: strictObject({}) },
+  { name: "explain_debit_credit", description: "Explain what debits and credits do to a named chart account.", parameters: strictObject({ account: nullableString() }) },
+  { name: "explain_financial_statement", description: "Explain one current statement's purpose and linked headline figures.", parameters: strictObject({ statement: { anyOf: [{ type: "string", enum: ["balance_sheet", "income_statement", "cash_flow_statement", "trial_balance"] }, { type: "null" }] } }) },
+  { name: "trace_number", description: "Trace one transaction, account, or category figure to posted source rows.", parameters: strictObject({ transactionId: nullableString(), account: nullableString(), category: nullableString(), period: nullablePeriod() }) },
+  { name: "compare_accounting_treatments", description: "Contrast two commonly confused household accounting treatments.", parameters: strictObject({ topic: { anyOf: [{ type: "string", enum: ["card_purchase_vs_card_payment", "refund_vs_income", "transfer_vs_expense", "receivable_vs_income", "budget_vs_actual"] }, { type: "null" }] } }) },
+  { name: "explain_variance", description: "Explain one category's actual-versus-budget variance for a month.", parameters: strictObject({ category: nullableString(), period: nullablePeriod() }) },
+  { name: "explain_transfer", description: "Explain both journal legs of one posted transfer transaction.", parameters: strictObject({ transactionId: nullableString() }) },
 ];
 const HERCULES_READ_TOOL_NAMES = new Set(HERCULES_READ_TOOLS.map((tool) => tool.name));
 const TOOL_ARG_KEYS = {
@@ -185,6 +193,14 @@ const TOOL_ARG_KEYS = {
   spending_trend: ["months"],
   scenario_analysis: ["amountCents", "horizonDays"],
   forecast_accuracy: ["period"],
+  explain_transaction: ["transactionId"],
+  explain_accounting_equation: [],
+  explain_debit_credit: ["account"],
+  explain_financial_statement: ["statement"],
+  trace_number: ["transactionId", "account", "category", "period"],
+  compare_accounting_treatments: ["topic"],
+  explain_variance: ["category", "period"],
+  explain_transfer: ["transactionId"],
 };
 
 function parseJsonObject(value) {
@@ -330,6 +346,9 @@ const HERCULES_PLAN_SCHEMA = {
               monthlyPaymentCents: { type: "integer", minimum: 0, maximum: 1000000000 },
               amountCents: { type: "integer", minimum: 1, maximum: 1000000000 },
               months: { type: "integer", minimum: 2, maximum: 12 },
+              transactionId: { type: "string" },
+              statement: { type: "string", enum: ["balance_sheet", "income_statement", "cash_flow_statement", "trial_balance"] },
+              topic: { type: "string", enum: ["card_purchase_vs_card_payment", "refund_vs_income", "transfer_vs_expense", "receivable_vs_income", "budget_vs_actual"] },
             },
           },
         },
