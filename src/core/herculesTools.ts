@@ -1306,7 +1306,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
       callId: call.id,
       name: call.name,
       status: "ok",
-      sentence: `Next ${sim.rows.length} cadence shift${sim.rows.length === 1 ? "" : "s"} project ${formatCad(sim.totalExpectedCents)} tips (${formatCad(sim.totalLowCents)}–${formatCad(sim.totalHighCents)}). Advice ranks: ${headline || "neutral"}. This never books or declines a shift.`,
+      sentence: `Next ${sim.rows.length} likely cadence day${sim.rows.length === 1 ? "" : "s"} project about ${formatCad(sim.totalExpectedCents)} tips after weighting by how often those weekdays historically happen (${formatCad(sim.totalLowCents)}–${formatCad(sim.totalHighCents)}). Advice ranks: ${headline || "neutral"}. This never books or declines a shift.`,
       facts: [
         fact(call, 0, "Expected schedule tips", formatCad(sim.totalExpectedCents), source, "projection"),
         fact(call, 1, "Floor schedule tips", formatCad(sim.totalLowCents), source, "projection"),

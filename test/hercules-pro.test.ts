@@ -103,15 +103,18 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
     const listed = await tools.json() as { result: { tools: Array<{ name: string; annotations: { readOnlyHint: boolean } }> } };
     // TOOL_CATALOG (60) + writeToolDefinitions (3). Write tools stay listed; confirm is not read-only.
     expect(listed.result.tools).toHaveLength(63);
+    expect(listed.result.tools.filter((tool) => tool.annotations.readOnlyHint)).toHaveLength(62);
     const names = listed.result.tools.map((tool) => tool.name);
     expect(names).toEqual(expect.arrayContaining([
       "shift_year_simulation",
       "explain_shift_simulation",
+      "tip_oracle",
       "confirm_transaction",
     ]));
     expect(listed.result.tools.find((tool) => tool.name === "confirm_transaction")?.annotations.readOnlyHint).toBe(false);
     expect(listed.result.tools.find((tool) => tool.name === "shift_year_simulation")?.annotations.readOnlyHint).toBe(true);
     expect(listed.result.tools.some((tool) => /^(?:post|delete|pay|transfer)(?:_|$)/.test(tool.name))).toBe(false);
+    expect(listed.result.tools.some((tool) => tool.name === "tip_oracle")).toBe(true);
 
     const call = await worker.fetch(new Request(`${origin}/mcp`, {
       method: "POST",

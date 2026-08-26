@@ -70,6 +70,7 @@ export type ScheduleSimShift = {
 };
 
 export type ScheduleSimRow = ShiftOutlookResult & {
+  frequency: number;
   protectFloorScore: number;
   chaseSpikeScore: number;
   recommendation: "protect-floor" | "chase-spike" | "neutral";
@@ -411,9 +412,9 @@ export function shiftOutlook(
   const tipPerHour = Math.round(percentile(rates, 0.5) * factor);
   const lowPerHour = Math.round(percentile(rates, 0.1) * factor);
   const highPerHour = Math.round(percentile(rates, 0.9) * factor);
-  const similar = observations.filter((row) => row.weekday === weekday && row.meal === meal).length
-    || observations.filter((row) => row.meal === meal).length
-    || observations.length;
+  const similarExact = observations.filter((row) => row.weekday === weekday && row.meal === meal).length;
+  const similarMeal = observations.filter((row) => row.meal === meal).length;
+  const similar = similarExact >= MIN_BUCKET ? similarExact : similarMeal >= MIN_BUCKET ? similarMeal : observations.length;
   return {
     date: input.date,
     hours: input.hours,
@@ -440,6 +441,9 @@ export function simulateTipSchedule(
   options?: { memberId?: string },
 ): ScheduleSimResult | null {
   if (!schedule.length) return null;
+  const observations = observeTipShifts(household, options?.memberId);
+  const profiles = weekdayProfiles(observations);
+  const frequencyByWeekday = new Map(profiles.map((row) => [row.weekday, row.frequency]));
   const rows: ScheduleSimRow[] = [];
   for (const slot of schedule.slice(0, 14)) {
     const outlook = shiftOutlook(household, {
@@ -450,6 +454,7 @@ export function simulateTipSchedule(
       memberId: options?.memberId,
     });
     if (!outlook) continue;
+    const frequency = Math.min(1, frequencyByWeekday.get(weekdaySunday0(slot.date)) ?? 0);
     const spread = Math.max(1, outlook.highTipCents - outlook.lowTipCents);
     const midGap = outlook.expectedTipCents - outlook.lowTipCents;
     const upGap = outlook.highTipCents - outlook.expectedTipCents;
@@ -458,17 +463,19 @@ export function simulateTipSchedule(
     let recommendation: ScheduleSimRow["recommendation"] = "neutral";
     if (protectFloorScore >= chaseSpikeScore + 15) recommendation = "protect-floor";
     else if (chaseSpikeScore >= protectFloorScore + 15) recommendation = "chase-spike";
-    rows.push({ ...outlook, protectFloorScore, chaseSpikeScore, recommendation });
+    rows.push({ ...outlook, frequency, protectFloorScore, chaseSpikeScore, recommendation });
   }
   if (!rows.length) return null;
+  // Weight by historical weekday frequency so a once-a-month day does not count as certain.
+  const weight = (row: ScheduleSimRow) => row.frequency;
   return {
     rows,
-    totalExpectedCents: rows.reduce((sum, row) => sum + row.expectedTipCents, 0),
-    totalLowCents: rows.reduce((sum, row) => sum + row.lowTipCents, 0),
-    totalHighCents: rows.reduce((sum, row) => sum + row.highTipCents, 0),
+    totalExpectedCents: Math.round(rows.reduce((sum, row) => sum + row.expectedTipCents * weight(row), 0)),
+    totalLowCents: Math.round(rows.reduce((sum, row) => sum + row.lowTipCents * weight(row), 0)),
+    totalHighCents: Math.round(rows.reduce((sum, row) => sum + row.highTipCents * weight(row), 0)),
     assumptions: [
-      "Schedule simulation ranks advice only — it never books or declines a shift.",
-      "protect-floor vs chase-spike compares downside depth to upside depth inside the tip range.",
+      "Schedule totals are probability-weighted by historical weekday frequency — not a guarantee those shifts happen.",
+      "protect-floor vs chase-spike compares downside depth to upside depth inside each tip range.",
       ...rows[0]!.assumptions,
     ],
   };
@@ -500,7 +507,13 @@ export function planTaxMilk(
       error: `Net tips are ${tipCents < 0 ? "negative after tip-out" : "zero"}, so there is no tax milk to set aside.`,
     };
   }
+  if (!observations.length) {
+    return { error: "I need posted tip history before I can split tax milk and a buffer." };
+  }
   const taxRateBps = Math.min(5000, Math.max(0, Math.round(input.taxRateBps ?? DEFAULT_TAX_BPS)));
+  if (!Number.isFinite(tipCents) || !Number.isInteger(tipCents)) {
+    return { error: "Tip amount must be whole CAD cents." };
+  }
   const rates = sortNumbers(observations.map((row) => row.netTipsCents));
   const p50 = percentile(rates, 0.5);
   const p75 = percentile(rates, 0.75);
@@ -525,9 +538,8 @@ export function planTaxMilk(
 }
 
 /**
- * Near-term schedule from cadence: include a weekday when its historical
- * weekly frequency is meaningful (≥0.25). This is a planning preview, not the
- * Monte Carlo draw.
+ * Near-term schedule preview: only weekdays that historically appear at least
+ * ~every other week (frequency ≥ 0.5). Totals are still probability-weighted.
  */
 export function upcomingCadenceSchedule(
   household: Household,
@@ -537,15 +549,12 @@ export function upcomingCadenceSchedule(
   const observations = observeTipShifts(household, options?.memberId);
   const days = Math.min(14, Math.max(3, Math.round(options?.days ?? 7)));
   const profiles = weekdayProfiles(observations);
-  const ranked = [...profiles].sort((a, b) => b.frequency - a.frequency);
   const byWeekday = new Map(profiles.map((row) => [row.weekday, row]));
   const schedule: ScheduleSimShift[] = [];
   for (let offset = 1; offset <= days; offset += 1) {
     const date = addDays(today, offset);
     const profile = byWeekday.get(weekdaySunday0(date));
-    if (!profile) continue;
-    const include = profile.frequency >= 0.25 || profile.weekday === ranked[0]?.weekday;
-    if (!include) continue;
+    if (!profile || profile.frequency < 0.35) continue;
     schedule.push({ date, hours: profile.hours, meal: profile.meal });
     if (profile.frequency >= 1.5) {
       schedule.push({ date, hours: profile.hours, meal: profile.meal });

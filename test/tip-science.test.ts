@@ -70,7 +70,7 @@ describe("Hercules Shift Oracle tip science", () => {
 
     const weekSlots = upcomingCadenceSchedule(household, today, { days: 7 }).length;
     expect(weekSlots).toBeGreaterThan(0);
-    expect(weekSlots).toBeLessThanOrEqual(6);
+    expect(weekSlots).toBeLessThanOrEqual(3);
   });
 
   it("produces weather-adjusted shift outlook and schedule advice as projections", () => {
@@ -89,6 +89,15 @@ describe("Hercules Shift Oracle tip science", () => {
     expect(sim!.totalLowCents).toBeLessThanOrEqual(sim!.totalExpectedCents);
     expect(sim!.totalExpectedCents).toBeLessThanOrEqual(sim!.totalHighCents);
     expect(["protect-floor", "chase-spike", "neutral"]).toContain(sim!.rows[0]!.recommendation);
+
+    const observations = observeTipShifts(household);
+    const first = observations[0]!.date;
+    const last = observations[observations.length - 1]!.date;
+    const spanWeeks = Math.max(1, (calendarDaysBetween(first, last) + 1) / 7);
+    const historicalWeekly = observations.reduce((sum, row) => sum + row.netTipsCents, 0) / spanWeeks;
+    // Probability-weighted week preview should stay near historical weekly tips.
+    expect(sim!.totalExpectedCents).toBeLessThan(Math.round(historicalWeekly * 1.75));
+    expect(sim!.totalExpectedCents).toBeGreaterThan(Math.round(historicalWeekly * 0.25));
   });
 
   it("plans educational tax milk, fails closed on unknown or non-positive tips, and never posts", () => {

@@ -7,7 +7,7 @@
 - **Repository:** dual-ai-budget-app
 - **Branch:** `cursor/hercules-shift-oracle-129b`
 - **Baseline SHA:** `6e2baea3fd5f65a85dd65dd22ee3f455d2faf963` (`main`)
-- **Head SHA:** (see latest commit on branch)
+- **Head SHA:** see `git rev-parse HEAD` on branch (latest includes schedule weighting)
 - **PR or issue:** [#133](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/133) draft
 - **Risk:** High
 - **Decision owner:** Jonathan
@@ -25,18 +25,12 @@ Hercules Shift Oracle: seeded Monte Carlo tip floors, schedule simulation, weath
 
 `+2`
 
-## Verified baseline
-
-- D-127 job shifts store date, hours, tips, optional `startedAt`.
-- Hercules Pro on `main` had 54 read-only tools before this branch.
-- Weather is Toronto atmosphere; not stamped on shift rows yet.
-
 ## Scope
 
 ### In scope
 
 - `tipScience.ts` + four read tools + Worker MCP catalogs + tests + D-137 canon.
-- Math repairs after trust review: span-based cadence, order stability, empty payroll weeks, negative tip inclusion, exact horizon days, Toronto meal hour, fail-closed shiftId, comparable advice scores.
+- Math repairs: order stability, Bernoulli day cadence from today, payroll-week dry streaks, fail-closed shiftId/non-positive tips, probability-weighted schedule totals, historical pace assertions.
 
 ### Out of scope
 
@@ -47,34 +41,21 @@ Hercules Shift Oracle: seeded Monte Carlo tip floors, schedule simulation, weath
 - [x] Seeded Monte Carlo deterministic for same household/seed and shift-array order
 - [x] Tools never mutate household; Oracle facts use `projection` basis
 - [x] Pro `tools/list` length 58; no write-shaped tools
-- [x] Focused tip-science tests + `pnpm check` (587 tests) green
-- [x] Simulated p10 stays inside historical monthly envelope on demo seed
-
-## Plan
-
-- [x] Open branch + worksession
-- [x] Implement tipScience engine
-- [x] Wire Hercules/Pro tools
-- [x] Tests + check
-- [x] Trust-review math fixes
-- [x] Canon/handoff + PR
+- [x] Focused tip-science tests + `pnpm check` green
+- [x] p50 near historical pace; schedule totals probability-weighted
 
 ## Evidence log
 
-- Focused: `pnpm exec vitest run test/tip-science.test.ts test/hercules-pro.test.ts test/hercules-tools.test.ts` → 21 passed (pre-fix) / tip-science 6 passed (post-fix)
-- Full: `pnpm check` → 84 files / 587 tests + build green
-- Artifacts under `/opt/cursor/artifacts/tip-oracle-*.log`
-
-## Decisions
-
-- Jonathan selected Strategy 3 (Shift Oracle).
-- Independent trust review blocked merge until cadence inflation and order dependence were fixed; those fixes are on this branch.
+- `pnpm check` green (587 tests + build)
+- Artifacts: `/opt/cursor/artifacts/tip-oracle-*.log`
 
 ## Remaining uncertainty
 
 - Soft weather/season priors until Confirm stamps.
 - Free-route GROUNDED JOURNAL projection marker gap (shared with earlier forecast tools).
+- Hours pinned to weekday median while tip/hour is resampled.
+- Tiny tip histories can still produce floors; sampleShifts is disclosed.
 
 ## Handoff
 
-Independent High-risk re-review → Jonathan Development smoke in ChatGPT Pro + in-app Ask. Not shipped until merged; not live until deploy approved.
+Independent High-risk re-review → Jonathan Development smoke. Not shipped until merged; not live until deploy approved.
