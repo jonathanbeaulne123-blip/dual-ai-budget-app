@@ -305,3 +305,120 @@ export async function materializedHashMatchesSnapshot(input: {
   const snapshotHash = await financialAuditHash(input.project(input.snapshotTip, input.memberId));
   return materializedHash === snapshotHash;
 }
+
+export type ApplyCommandEventResult =
+  | { ok: true; household: Household; duplicate: boolean }
+  | { ok: false; reason: string; fallback: boolean };
+
+/** True when this member may observe the hosted command event over Realtime. */
+export function commandEventVisibleToMember(event: ContinuityCommandEvent, memberId: string): boolean {
+  if (event.ledger_scope === "shared") return true;
+  return event.member_id === memberId;
+}
+
+function asString(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function asNumber(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : Number.NaN;
+}
+
+/** Parse a Realtime postgres_changes `new` row into a hosted command event. */
+export function parseContinuityCommandEventRow(row: unknown): ContinuityCommandEvent | null {
+  if (!row || typeof row !== "object") return null;
+  const input = row as Record<string, unknown>;
+  const environment = input.environment;
+  const householdId = asString(input.household_id);
+  const memberId = asString(input.member_id);
+  const idempotencyKey = asString(input.idempotency_key);
+  const commandType = asString(input.command_type);
+  const ledgerScope = input.ledger_scope;
+  const baseRevision = asNumber(input.base_revision);
+  const resultRevision = asNumber(input.result_revision);
+  const payloadJson = input.payload_json;
+  if (
+    (environment !== "development" && environment !== "production")
+    || !householdId
+    || !memberId
+    || !idempotencyKey
+    || !commandType
+    || (ledgerScope !== "shared" && ledgerScope !== "personal")
+    || !Number.isFinite(baseRevision)
+    || !Number.isFinite(resultRevision)
+    || !payloadJson
+    || typeof payloadJson !== "object"
+  ) {
+    return null;
+  }
+  return {
+    id: asString(input.id) || idempotencyKey,
+    environment,
+    household_id: householdId,
+    member_id: memberId,
+    idempotency_key: idempotencyKey,
+    confirmation_id: asString(input.confirmation_id),
+    identity_hash: asString(input.identity_hash),
+    base_revision: baseRevision,
+    result_revision: resultRevision,
+    ledger_scope: ledgerScope,
+    command_type: commandType,
+    payload_json: payloadJson as ContinuityCommandEventPayload,
+    created_at: asString(input.created_at) || new Date(0).toISOString(),
+  };
+}
+
+/** Apply one hosted command event onto the current local books (no full snapshot pull). */
+export async function applyCommandEventLocally(input: {
+  local: Household;
+  event: ContinuityCommandEvent;
+  memberId: string;
+}): Promise<ApplyCommandEventResult> {
+  const local = ensureHouseholdShape(input.local);
+  const { event } = input;
+  if (event.household_id !== local.householdId) {
+    return { ok: false, reason: "household-mismatch", fallback: true };
+  }
+  if (event.environment !== local.environment) {
+    return { ok: false, reason: "environment-mismatch", fallback: true };
+  }
+  if (!commandEventVisibleToMember(event, input.memberId)) {
+    return { ok: false, reason: "personal-scope-hidden", fallback: false };
+  }
+  if (alreadyApplied(local, event)) {
+    return { ok: true, household: local, duplicate: true };
+  }
+  if (event.result_revision <= local.revision) {
+    return { ok: true, household: local, duplicate: true };
+  }
+  if (event.base_revision !== local.revision) {
+    return { ok: false, reason: "revision-gap", fallback: true };
+  }
+  if (!event.payload_json.materializationFacts) {
+    return { ok: false, reason: "missing-materialization-facts", fallback: true };
+  }
+
+  const candidate = await buildSnapshotFromEvents([event], local);
+  const auditHash = event.payload_json.auditHash;
+  if (auditHash) {
+    const recomputed = await financialAuditHash(candidate);
+    if (recomputed !== auditHash) {
+      return { ok: false, reason: "audit-hash-mismatch", fallback: true };
+    }
+  }
+  return { ok: true, household: candidate, duplicate: false };
+}
+
+/** Compare websocket payload sizes for handoff evidence (command event vs snapshot row). */
+export function compareContinuityPayloadBytes(input: {
+  commandEvent: ContinuityCommandEvent;
+  snapshotRow: { payload: unknown; revision?: number; snapshot_hash?: string };
+}): { commandEventBytes: number; snapshotRowBytes: number; ratio: number } {
+  const commandEventBytes = Buffer.byteLength(JSON.stringify(input.commandEvent));
+  const snapshotRowBytes = Buffer.byteLength(JSON.stringify(input.snapshotRow));
+  return {
+    commandEventBytes,
+    snapshotRowBytes,
+    ratio: snapshotRowBytes > 0 ? commandEventBytes / snapshotRowBytes : 0,
+  };
+}

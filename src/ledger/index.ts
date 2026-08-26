@@ -42,7 +42,12 @@ export {
   catalogBaseFromSnapshot,
   extractMaterializationFacts,
   materializedHashMatchesSnapshot,
+  applyCommandEventLocally,
+  parseContinuityCommandEventRow,
+  commandEventVisibleToMember,
+  compareContinuityPayloadBytes,
   type ContinuityCommandEvent,
+  type ApplyCommandEventResult,
 } from "./materializeSnapshotFromEvents.ts";
 export {
   applyPublishHouseholdSnapshotCas,

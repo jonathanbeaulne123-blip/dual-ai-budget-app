@@ -35,6 +35,15 @@ EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
+DO $$
+BEGIN
+  IF to_regclass('public.continuity_command_events') IS NOT NULL THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.continuity_command_events;
+  END IF;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
 INSERT INTO public.schema_migrations (id, applied_at)
 VALUES (14, NOW()::text)
 ON CONFLICT (id) DO NOTHING;
