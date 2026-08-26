@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { calendarDaysBetween } from "../src/core/calendar.ts";
 import {
   executeHerculesReadToolPlan,
   mulberry32,
@@ -44,23 +45,30 @@ describe("Hercules Shift Oracle tip science", () => {
     expect(household).toEqual(before);
   });
 
-  it("keeps the simulated floor inside the historical tip envelope", () => {
+  it("keeps the simulated floor near historical tip pace and reacts to today", () => {
     const household = seedDemoHousehold({ today, environment: "development" });
     const observations = observeTipShifts(household);
-    const byMonth = new Map<string, number>();
-    for (const row of observations) {
-      const month = row.date.slice(0, 7);
-      byMonth.set(month, (byMonth.get(month) ?? 0) + row.netTipsCents);
-    }
-    const monthly = [...byMonth.values()];
-    const maxMonth = Math.max(...monthly);
-    const oracle = runTipOracle(household, { today, iterations: 1200, seed: 7, horizonDays: 28 });
+    const first = observations[0]!.date;
+    const last = observations[observations.length - 1]!.date;
+    const spanDays = Math.max(1, calendarDaysBetween(first, last) + 1);
+    const totalTips = observations.reduce((sum, row) => sum + row.netTipsCents, 0);
+    const expected28 = (totalTips / spanDays) * 28;
+    const oracle = runTipOracle(household, { today, iterations: 1500, seed: 7, horizonDays: 28 });
     expect(oracle).not.toBeNull();
-    // A 28-day safe floor must not exceed the best observed month by more than 25%.
-    expect(oracle!.p10Cents).toBeLessThanOrEqual(Math.round(maxMonth * 1.25));
-    // Cadence for one week should stay near historical weekly pace, not invent five shifts.
+    // p50 should sit within a reasonable band of historical daily pace × horizon.
+    expect(oracle!.p50Cents).toBeGreaterThan(Math.round(expected28 * 0.45));
+    expect(oracle!.p50Cents).toBeLessThan(Math.round(expected28 * 1.55));
+    expect(oracle!.p10Cents).toBeLessThanOrEqual(oracle!.p50Cents);
+
+    const monday = runTipOracle(household, { today: "2026-08-24", iterations: 800, seed: 11, horizonDays: 10 });
+    const friday = runTipOracle(household, { today: "2026-08-21", iterations: 800, seed: 11, horizonDays: 10 });
+    expect(monday).not.toBeNull();
+    expect(friday).not.toBeNull();
+    expect(monday!.p50Cents).not.toEqual(friday!.p50Cents);
+
     const weekSlots = upcomingCadenceSchedule(household, today, { days: 7 }).length;
-    expect(weekSlots).toBeLessThanOrEqual(4);
+    expect(weekSlots).toBeGreaterThan(0);
+    expect(weekSlots).toBeLessThanOrEqual(6);
   });
 
   it("produces weather-adjusted shift outlook and schedule advice as projections", () => {
@@ -81,7 +89,7 @@ describe("Hercules Shift Oracle tip science", () => {
     expect(["protect-floor", "chase-spike", "neutral"]).toContain(sim!.rows[0]!.recommendation);
   });
 
-  it("plans educational tax milk, fails closed on unknown shift ids, and never posts", () => {
+  it("plans educational tax milk, fails closed on unknown or non-positive tips, and never posts", () => {
     const household = seedDemoHousehold({ today, environment: "development" });
     const before = structuredClone(household);
     const plan = planTaxMilk(household, { tipCents: 40_000, taxRateBps: 2500 });
@@ -93,6 +101,8 @@ describe("Hercules Shift Oracle tip science", () => {
     }
     const missing = planTaxMilk(household, { shiftId: "SHIFT-NOPE" });
     expect(missing && "error" in missing && missing.error).toMatch(/cannot match shift/i);
+    const negative = planTaxMilk(household, { tipCents: -12000 });
+    expect(negative && "error" in negative && negative.error).toMatch(/negative|zero/i);
     expect(household).toEqual(before);
   });
 

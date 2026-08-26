@@ -111,7 +111,6 @@ export function inferTipMeal(shift: Pick<Shift, "startedAt" | "hours">): TipMeal
       return hourInToronto(instant) < 15 ? "lunch" : "dinner";
     }
   }
-  // Short mid-day posts without punch metadata default to lunch; long ones dinner.
   return shift.hours > 0 && shift.hours < 5.5 ? "lunch" : "dinner";
 }
 
@@ -164,8 +163,6 @@ function pickSorted(values: number[], random: () => number): number {
 }
 
 export function weatherTipFactor(glass: WeatherGlass | "season" | undefined, season: ReturnType<typeof kitchenSeason>): number {
-  // Soft priors only — labelled assumptions until Confirm stamps live weather.
-  // Season and glass multiply so January rain is not treated as patio rain.
   let factor = 1;
   if (season === "patio") factor *= 1.04;
   else if (season === "ruff") factor *= 0.94;
@@ -178,6 +175,13 @@ export function weatherTipFactor(glass: WeatherGlass | "season" | undefined, sea
 }
 
 type RateCache = Map<string, number[]>;
+
+type WeekdayProfile = {
+  weekday: number;
+  frequency: number;
+  meal: TipMeal;
+  hours: number;
+};
 
 function ratesForCached(
   observations: TipShiftObservation[],
@@ -208,53 +212,28 @@ function ratesForCached(
   return fallback;
 }
 
-/**
- * Typical weekly cadence: expected count of shifts for each weekday, scaled by
- * how often that weekday appeared across the full observation calendar span —
- * not across only the weeks that already contain that weekday.
- */
-function hoursTemplate(observations: TipShiftObservation[]): Array<{ weekday: number; meal: TipMeal; hours: number }> {
+function weekdayProfiles(observations: TipShiftObservation[]): WeekdayProfile[] {
   if (!observations.length) return [];
   const first = observations[0]!.date;
   const last = observations[observations.length - 1]!.date;
   const spanDays = Math.max(1, calendarDaysBetween(first, last) + 1);
   const spanWeeks = Math.max(1, spanDays / 7);
-
-  const byWeekday = new Map<number, TipShiftObservation[]>();
-  for (const row of observations) {
-    const list = byWeekday.get(row.weekday) ?? [];
-    list.push(row);
-    byWeekday.set(row.weekday, list);
-  }
-
-  const template: Array<{ weekday: number; meal: TipMeal; hours: number }> = [];
+  const profiles: WeekdayProfile[] = [];
   for (let weekday = 0; weekday < 7; weekday += 1) {
-    const rows = byWeekday.get(weekday) ?? [];
+    const rows = observations.filter((row) => row.weekday === weekday);
     if (!rows.length) continue;
-    const frequency = rows.length / spanWeeks;
-    // Bernoulli per simulated week: include the weekday with probability = frequency,
-    // represented here as an expected fractional slot rounded to 0/1 for the template,
-    // plus a second slot only when history clearly shows doubles.
-    const expected = Math.min(2, Math.round(frequency * 1000) / 1000);
-    if (expected < 0.35) continue;
-    const slots = expected >= 1.5 ? 2 : 1;
-    const sorted = [...rows].sort((a, b) => a.date.localeCompare(b.date) || a.shiftId.localeCompare(b.shiftId));
-    const medianHours = percentile(sortNumbers(sorted.map((row) => row.hours)), 0.5) || sorted[0]!.hours;
     const mealCounts = { lunch: 0, dinner: 0 };
-    for (const row of sorted) mealCounts[row.meal] += 1;
-    const meal: TipMeal = mealCounts.dinner >= mealCounts.lunch ? "dinner" : "lunch";
-    for (let i = 0; i < slots; i += 1) {
-      template.push({ weekday, meal, hours: medianHours });
-    }
+    for (const row of rows) mealCounts[row.meal] += 1;
+    profiles.push({
+      weekday,
+      frequency: Math.min(2, rows.length / spanWeeks),
+      meal: mealCounts.dinner >= mealCounts.lunch ? "dinner" : "lunch",
+      hours: percentile(sortNumbers(rows.map((row) => row.hours)), 0.5) || rows[0]!.hours,
+    });
   }
-  if (!template.length) {
-    const sample = observations[observations.length - 1]!;
-    template.push({ weekday: sample.weekday, meal: sample.meal, hours: sample.hours });
-  }
-  return template.sort((a, b) => a.weekday - b.weekday || a.meal.localeCompare(b.meal));
+  return profiles.sort((a, b) => a.weekday - b.weekday);
 }
 
-/** Payroll-week tip totals including empty weeks inside the observation span. */
 function weeklyTotals(observations: TipShiftObservation[]): Array<{ weekStart: DateKey; cents: number }> {
   if (!observations.length) return [];
   const first = workWeekStart(observations[0]!.date);
@@ -308,27 +287,27 @@ export function runTipOracle(
   const iterations = Math.min(5000, Math.max(200, Math.round(options?.iterations ?? DEFAULT_ITERATIONS)));
   const seed = (options?.seed ?? 137) >>> 0;
   const horizonDays = Math.min(62, Math.max(14, Math.round(options?.horizonDays ?? 28)));
-  // Exact day count via floor(days/7) weeks + remaining day fraction of a typical week.
-  const fullWeeks = Math.floor(horizonDays / 7);
-  const remainderDays = horizonDays % 7;
-  const template = hoursTemplate(observations);
+  const today = options?.today ?? observations[observations.length - 1]!.date;
+  const profiles = weekdayProfiles(observations);
   const rateCache: RateCache = new Map();
   const random = mulberry32(seed);
   const totals: number[] = [];
 
   for (let i = 0; i < iterations; i += 1) {
     let total = 0;
-    for (let week = 0; week < fullWeeks; week += 1) {
-      for (const slot of template) {
-        const rates = ratesForCached(observations, slot.weekday, slot.meal, rateCache);
-        total += Math.round(pickSorted(rates, random) * slot.hours);
-      }
-    }
-    if (remainderDays > 0) {
-      const partial = template.filter((slot) => slot.weekday < remainderDays);
-      for (const slot of partial) {
-        const rates = ratesForCached(observations, slot.weekday, slot.meal, rateCache);
-        total += Math.round(pickSorted(rates, random) * slot.hours);
+    for (let offset = 1; offset <= horizonDays; offset += 1) {
+      const date = addDays(today, offset);
+      const weekday = weekdaySunday0(date);
+      const profile = profiles.find((row) => row.weekday === weekday);
+      if (!profile) continue;
+      // Frequency is per-week; convert to per-day chance for this exact weekday occurrence.
+      const perDayChance = Math.min(1, profile.frequency);
+      if (random() >= perDayChance) continue;
+      // Occasional doubles on the same weekday historically (frequency > 1).
+      const doubles = profile.frequency > 1 && random() < (profile.frequency - 1) ? 2 : 1;
+      for (let n = 0; n < doubles; n += 1) {
+        const rates = ratesForCached(observations, profile.weekday, profile.meal, rateCache);
+        total += Math.round(pickSorted(rates, random) * profile.hours);
       }
     }
     totals.push(total);
@@ -353,12 +332,12 @@ export function runTipOracle(
     emergencyReserveCents: dry.reserveCents,
     longestDryWeeks: dry.longestDryWeeks,
     assumptions: [
-      "Monte Carlo resamples tip/hour from posted shifts by weekday and lunch/dinner.",
+      "Monte Carlo walks each civil day from today and Bernoulli-samples whether that weekday works from historical frequency.",
+      "Tip/hour is resampled from posted shifts by weekday and lunch/dinner; shift count varies across iterations.",
       "Corrected/reversed shifts are excluded; negative tip-out shifts remain in the sample.",
-      "Cadence uses each weekday's frequency across the full observation span, not only weeks that already contain it.",
-      "p10 is the simulated floor for the exact horizon day count — not a promise and not posted income.",
+      "p10 is the simulated floor for the exact horizon — not a promise and not posted income.",
       "Emergency reserve covers the worst payroll-week streak of sub-p25 tip weeks, including empty weeks.",
-      "Independent draws narrow the band; correlated slow seasons are not yet modelled.",
+      "Independent draws do not model correlated slow seasons; treat the band as a planning aid.",
       "No weather stamp is required for the month oracle; season/weather enter shift outlook only.",
     ],
   };
@@ -425,7 +404,6 @@ export function simulateTipSchedule(
       memberId: options?.memberId,
     });
     if (!outlook) continue;
-    // Both scores are within-spread shares so they are comparable.
     const spread = Math.max(1, outlook.highTipCents - outlook.lowTipCents);
     const midGap = outlook.expectedTipCents - outlook.lowTipCents;
     const upGap = outlook.highTipCents - outlook.expectedTipCents;
@@ -471,11 +449,16 @@ export function planTaxMilk(
     tipCents = latest?.netTipsCents;
   }
   if (tipCents == null) return null;
+  if (tipCents <= 0) {
+    return {
+      error: `Net tips are ${tipCents < 0 ? "negative after tip-out" : "zero"}, so there is no tax milk to set aside.`,
+    };
+  }
   const taxRateBps = Math.min(5000, Math.max(0, Math.round(input.taxRateBps ?? DEFAULT_TAX_BPS)));
   const rates = sortNumbers(observations.map((row) => row.netTipsCents));
   const p50 = percentile(rates, 0.5);
   const p75 = percentile(rates, 0.75);
-  const peak = tipCents >= p75 && tipCents > 0;
+  const peak = tipCents >= p75;
   const taxMilkCents = Math.round((tipCents * taxRateBps) / 10_000);
   const surplus = Math.max(0, tipCents - Math.max(p50, taxMilkCents));
   const bufferCents = peak ? Math.round(surplus * 0.5) : 0;
@@ -495,7 +478,11 @@ export function planTaxMilk(
   };
 }
 
-/** Build a near-term schedule from recent cadence when the caller does not supply dates. */
+/**
+ * Near-term schedule from cadence: include a weekday when its historical
+ * weekly frequency is meaningful (≥0.25). This is a planning preview, not the
+ * Monte Carlo draw.
+ */
 export function upcomingCadenceSchedule(
   household: Household,
   today: DateKey,
@@ -503,20 +490,19 @@ export function upcomingCadenceSchedule(
 ): ScheduleSimShift[] {
   const observations = observeTipShifts(household, options?.memberId);
   const days = Math.min(14, Math.max(3, Math.round(options?.days ?? 7)));
-  const template = hoursTemplate(observations);
-  const byWeekday = new Map<number, Array<{ meal: TipMeal; hours: number }>>();
-  for (const slot of template) {
-    const list = byWeekday.get(slot.weekday) ?? [];
-    list.push({ meal: slot.meal, hours: slot.hours });
-    byWeekday.set(slot.weekday, list);
-  }
+  const profiles = weekdayProfiles(observations);
+  const ranked = [...profiles].sort((a, b) => b.frequency - a.frequency);
+  const byWeekday = new Map(profiles.map((row) => [row.weekday, row]));
   const schedule: ScheduleSimShift[] = [];
   for (let offset = 1; offset <= days; offset += 1) {
     const date = addDays(today, offset);
-    const weekday = weekdaySunday0(date);
-    const slots = byWeekday.get(weekday) ?? [];
-    for (const slot of slots.slice(0, 2)) {
-      schedule.push({ date, hours: slot.hours, meal: slot.meal });
+    const profile = byWeekday.get(weekdaySunday0(date));
+    if (!profile) continue;
+    const include = profile.frequency >= 0.25 || profile.weekday === ranked[0]?.weekday;
+    if (!include) continue;
+    schedule.push({ date, hours: profile.hours, meal: profile.meal });
+    if (profile.frequency >= 1.5) {
+      schedule.push({ date, hours: profile.hours, meal: profile.meal });
     }
   }
   return schedule;

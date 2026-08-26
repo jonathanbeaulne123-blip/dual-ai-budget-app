@@ -290,7 +290,7 @@ function cleanArgs(name: HerculesReadToolName, raw: unknown): Record<string, unk
   if (name === "tip_oracle") {
     return {
       member: common.member,
-      horizonDays: Math.min(62, Math.max(14, Math.round(Number(input.horizonDays) || 30))),
+      horizonDays: Math.min(62, Math.max(14, Math.round(Number(input.horizonDays) || 28))),
       iterations: Math.min(5000, Math.max(200, Math.round(Number(input.iterations) || 2000))),
       seed: Math.min(1_000_000_000, Math.max(0, Math.round(Number(input.seed) || 137))),
     };
@@ -1219,7 +1219,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const oracle = runTipOracle(household, {
       memberId,
       today,
-      horizonDays: Number(call.args.horizonDays) || 30,
+      horizonDays: Number(call.args.horizonDays) || 28,
       iterations: Number(call.args.iterations) || 2000,
       seed: Number(call.args.seed) || 137,
     });
