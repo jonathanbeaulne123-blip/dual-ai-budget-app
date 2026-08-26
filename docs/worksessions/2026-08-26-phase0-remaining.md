@@ -7,7 +7,7 @@
 - **Repository:** dual-ai-budget-app
 - **Branch:** `cursor/phase0-remaining-c04e`
 - **Baseline SHA:** `391e3af860e605eaa9d437a12c94056a505c46a2` (`main` after #156 / D-146)
-- **Head SHA:** `63ff74ce941805e6632a9296018efa6dba852652`
+- **Head SHA:** `c286c590f39d98708fbc3cd60896d82832154bc1`
 - **PR or issue:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/157
 - **Risk:** High
 - **Decision owner:** Jonathan
@@ -54,7 +54,7 @@ Ordinary Hearth use is Google continuity without **Publish to the cloud**. Local
 - [x] Guard tests cover concurrent/missing-KV semantics; binding runbook (no fake wrangler ids)
 - [x] Branch protection runbook committed
 - [x] WORKING_MEMORY reflects current main facts
-- [x] Full `pnpm check` (658 pass; 2 pre-existing batch-import SubtleCrypto fails) / auditors / PR #157
+- [x] Full `pnpm check` (658 pass; 2 pre-existing batch-import SubtleCrypto fails) / auditors / PR #157 (merged ca70ce1); follow-up test realign on this branch
 
 ## Evidence log
 
@@ -62,7 +62,7 @@ Ordinary Hearth use is Google continuity without **Publish to the cloud**. Local
 - Continuity/proof-matrix/live-pull/production suites realigned to CAS success/conflict (D-147 refuse-legacy).
 - `pnpm check`: 658 pass / 2 pre-existing `batch-import-ui` SubtleCrypto fails.
 - Privacy / books / UX auditors: PASS WITH NOTES.
-- Head `63ff74c`.
+- Head `c286c59`.
 
 ## Decisions
 
@@ -76,4 +76,4 @@ Ordinary Hearth use is Google continuity without **Publish to the cloud**. Local
 
 ## Handoff
 
-Jonathan: create KV namespace + deploy Worker; apply GitHub ruleset from runbook; review PR #157.
+Jonathan: create KV namespace + deploy Worker; apply GitHub ruleset from runbook; review PR #157 (merged ca70ce1); follow-up test realign on this branch.
