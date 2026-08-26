@@ -25,7 +25,7 @@ Recover secure Development Flinks Connect on current `main` (D-148). Flinks supp
 - [x] Apply the reviewed D-148 schema remotely. Five incompatible PR #160 demo rows remain recoverable in `flinks_connections_legacy_pr160`; the active table starts empty.
 - [x] Configure all five Worker secrets: `FLINKS_CUSTOMER_ID`, `FLINKS_API_KEY`, `FLINKS_SECRET_KEY`, `FLINKS_CONNECTION_ENCRYPTION_KEY`, `FLINKS_DIGEST_KEY`.
 - [x] Re-review the security/privacy gate and prepare Cloudflare version `1d296d03-7776-4d72-add1-217dc718e377` without assigning traffic.
-- [ ] Merge only after GitHub CI and the Cloudflare PR check are green; `main` auto-deploys.
+- [x] Merge PR #161 after GitHub CI and Cloudflare PR checks passed; D-148 is on `main@efac0d2` and preserved by combined `main@10f466a`.
 
 ## Privacy/security re-review
 
@@ -35,4 +35,4 @@ Production remains blocked. Server-side attestation that the callback `loginId` 
 
 ## Status
 
-Implementation branch only. Not merged or Production-ready. D1 is bound and migrated; all five required secrets exist in the prepared Cloudflare version. Preview smoke reports `sandbox-configured`, and `/flinks/sync` returns `410`. Production traffic is unchanged until merge/deploy approval.
+Merged and live on the Development Worker; still not Production-ready. D1 is bound and migrated, all five required values are secret bindings, live status reports `sandbox-configured`, unauthenticated member access returns JSON `401`, and `/flinks/sync` returns `410`. The deployed bundle exposes **Connect bank with Flinks** and **Fetch posted transactions**. Production environment activation remains refused in code and configuration.
