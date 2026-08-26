@@ -1,13 +1,13 @@
 # Hearth worksession — Scheme A naming clarity
 
-- **Status:** OPEN
+- **Status:** REVIEW; PR #154
 - **Opened:** 2026-08-26 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor Cloud Agent
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/scheme-a-naming-clarity-0893`
 - **Baseline SHA:** `0029ee0`
-- **Head SHA:** (in progress)
+- **Head SHA:** `4ce0d4d`
 - **PR or issue:** pending
 - **Risk:** Medium
 - **Decision owner:** Jonathan (D-144)
@@ -46,19 +46,19 @@ Every chrome control Bianca and Jonathan see uses plain Scheme A human names (Go
 
 ## Acceptance evidence
 
-- [ ] No money chrome button uses an ungossed cat-only label.
-- [ ] Seals: Post / Due / Health (not Close).
-- [ ] Goals instrument titled Goals; Start this goal; Mark purchased; Completed goals; Goals savings.
-- [ ] Groceries chip and Post groceries (not Milk) on Pad/Add.
-- [ ] Hercules talk that still says milk/pigs/etc. includes the human meaning.
-- [ ] Focused + `pnpm check` green.
+- [x] No money chrome button uses an ungossed cat-only label.
+- [x] Seals: Post / Due / Health (not Close).
+- [x] Goals instrument titled Goals; Start this goal; Mark purchased; Completed goals; Goals savings.
+- [x] Groceries chip and Post groceries (not Milk) on Pad/Add.
+- [x] Hercules talk that still says milk/pigs/etc. includes the human meaning.
+- [x] Focused tests + tsc + build green; `pnpm check` only fails pre-existing batch-import SubtleCrypto on main.
 
 ## Plan
 
 - [x] Lock Scheme A map in `src/core/naming.ts` + D-144
-- [ ] Apply chrome renames
-- [ ] Clarify Hercules AI/Pro talk
-- [ ] Tests + handoff + PR
+- [x] Apply chrome renames
+- [x] Clarify Hercules AI/Pro talk
+- [x] Tests + handoff + PR
 
 ## Evidence log
 
