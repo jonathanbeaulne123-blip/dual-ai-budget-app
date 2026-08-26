@@ -128,7 +128,7 @@ export function GoogleBridgeCard(props: {
   }
 
   function toggleService(service: GoogleService, on: boolean) {
-    if (service === "identity") return;
+    if (service === "identity" || service === "drive") return;
     const next = on
       ? uniqueGoogleServices([...google.enabledServices, service])
       : google.enabledServices.filter((item) => item !== service);
@@ -203,7 +203,7 @@ export function GoogleBridgeCard(props: {
               {copy.label}
               <span className="muted"> — {copy.summary}</span>
             </span>
-            {service === "identity" ? (
+            {service === "identity" || service === "drive" ? (
               <span className="muted">always</span>
             ) : (
               <button

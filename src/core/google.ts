@@ -4,7 +4,7 @@ import { ValidationError } from "./types.ts";
 export type { GoogleService };
 
 export const GOOGLE_SERVICES: GoogleService[] = ["identity", "calendar", "drive", "contacts", "gmail", "sheets"];
-export const DEFAULT_GOOGLE_SERVICES: GoogleService[] = ["identity", "calendar"];
+export const DEFAULT_GOOGLE_SERVICES: GoogleService[] = ["identity", "calendar", "drive"];
 export const SENSITIVE_GOOGLE_SERVICES: GoogleService[] = ["drive", "contacts", "gmail", "sheets"];
 
 export const GOOGLE_SERVICE_COPY: Record<GoogleService, { label: string; summary: string; sensitive: boolean }> = {
@@ -20,7 +20,7 @@ export const GOOGLE_SERVICE_COPY: Record<GoogleService, { label: string; summary
   },
   drive: {
     label: "Drive (Hearth files only)",
-    summary: "Hearth-owned files only: sit-down workbook and desk look. Not your whole Drive.",
+    summary: "Hearth-owned files only: receipt evidence, sit-down workbook, and desk look. Not your whole Drive.",
     sensitive: true,
   },
   contacts: {
@@ -56,6 +56,7 @@ export function uniqueGoogleServices(services: Iterable<string>): GoogleService[
     if (isGoogleService(service)) wanted.add(service);
   }
   wanted.add("identity");
+  wanted.add("drive");
   return GOOGLE_SERVICES.filter((service) => wanted.has(service));
 }
 

@@ -126,7 +126,7 @@ describe("Google service policy", () => {
     expect(() => assertServicesAllowed(["identity", "calendar"], ["gmail"])).toThrow(ValidationError);
     expect(() => assertServicesAllowed(["identity", "calendar"], ["gmail"])).toThrow(/Gmail/);
     const household = catalogHousehold();
-    expect(household.google.enabledServices).toEqual(["identity", "calendar"]);
+    expect(household.google.enabledServices).toEqual(["identity", "calendar", "drive"]);
     const enabled = setGoogleServices(household, ["identity", "calendar", "gmail"]);
     expect(enabled.postedIds).toEqual([]);
     expect(enabled.household.transactions).toHaveLength(0);
