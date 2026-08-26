@@ -1,6 +1,6 @@
 {
   "name": "hercules-pro",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "An animated ChatGPT financial teacher grounded in your live Hearth ledgers.",
   "author": {
     "name": "Jonathan Beaulne",
@@ -14,7 +14,7 @@
   "interface": {
     "displayName": "Hercules Pro",
     "shortDescription": "Ask your Hearth books in ChatGPT",
-    "longDescription": "Hercules Pro investigates posted Personal and Household facts, teaches the accounting idea, and appears as a living 3D companion beside ChatGPT. Reading is the default; an opted-in member may post one exact preview only after direct confirmation.",
+    "longDescription": "Hercules Pro auto-loads on the first user turn, investigates posted Personal and Household facts, teaches the accounting idea, and requests to appear beside ChatGPT as a living 3D companion. Reading is the default; an opted-in member may post one exact preview only after direct confirmation.",
     "developerName": "Hearth",
     "category": "Finance",
     "capabilities": ["Grounded ledger tools", "Animated 3D companion", "Financial education", "Confirmed opt-in transactions"],
