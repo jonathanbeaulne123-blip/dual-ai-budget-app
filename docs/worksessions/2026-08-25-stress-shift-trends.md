@@ -7,7 +7,7 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/stress-shift-weather-location-85bf`
 - **Baseline SHA:** `244bd081c1d1e6fb3d60dce159fa250ee080bba4`
-- **Head SHA:** `6cdf9fe7c6b4733c434a24076ffa5d8cfd9d9864` (+ follow-up doc commit if any)
+- **Head SHA:** `3d5f050dc1a235b9b1577341c4bf9afad85e2bb5`
 - **PR:** [#136](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/136)
 - **Risk:** Medium
 - **Decision owner:** Jonathan
