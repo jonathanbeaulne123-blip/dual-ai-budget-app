@@ -5,6 +5,8 @@ import {
   discoverContinuityMemberships,
   enqueueContinuitySnapshot,
   flushContinuityOutbox,
+  humanizeContinuityError,
+  isStorageQuotaError,
   listContinuityOutbox,
   setContinuityStore,
   transportHouseholdWithOutbox,
@@ -432,5 +434,91 @@ describe("Sign out continuity wipe", () => {
     const left = listContinuityOutbox("development");
     expect(left).toHaveLength(1);
     expect(left[0]?.householdId).toBe(keep.householdId);
+  });
+});
+
+describe("continuity outbox quota resilience", () => {
+  it("humanizes browser Storage quota errors for the share banner", () => {
+    const raw = "Failed to execute 'setItem' on 'Storage': Setting the value of 'hearth:continuity-outbox:v1:development' exceeded the quota.";
+    expect(isStorageQuotaError(new DOMException(raw, "QuotaExceededError"))).toBe(true);
+    expect(humanizeContinuityError(raw)).toMatch(/browser storage is full/i);
+    expect(humanizeContinuityError(raw)).not.toMatch(/setItem/i);
+  });
+
+  it("keeps the outbox in memory when localStorage quota is exceeded so Retry can flush", async () => {
+    const store = createMemoryContinuityStore();
+    const originalSet = store.setItem.bind(store);
+    store.setItem = (itemKey, value) => {
+      if (itemKey.includes("continuity-outbox")) {
+        throw new DOMException(
+          "Failed to execute 'setItem' on 'Storage': Setting the value of 'hearth:continuity-outbox:v1:development' exceeded the quota.",
+          "QuotaExceededError",
+        );
+      }
+      return originalSet(itemKey, value);
+    };
+    setContinuityStore(store);
+    const household = googleHousehold();
+    const item = enqueueContinuitySnapshot({
+      identity,
+      household,
+      expectedRevision: 0,
+      confirmationId: "quota-1",
+    });
+    expect(item.householdId).toBe(household.householdId);
+    expect(listContinuityOutbox("development")).toHaveLength(1);
+    expect(store.snapshot()[`hearth:continuity-outbox:v1:development`]).toBeUndefined();
+
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("households?select=id")) return response([]);
+      if (url.includes("rpc/publish_household_snapshot")) {
+        return response({
+          code: "PGRST202",
+          message: "Could not find the function public.publish_household_snapshot",
+        }, 404);
+      }
+      if (url.includes("household_snapshots?household_id")) return response([]);
+      if (url.includes("continuity_memberships?select=household_id")) return response([]);
+      return response(null, 201);
+    }));
+
+    const flushed = await flushContinuityOutbox({
+      environment: "development",
+      identity,
+      config,
+      force: true,
+    });
+    expect(flushed.synchronized).toBe(1);
+    expect(listContinuityOutbox("development")).toHaveLength(0);
+  });
+
+  it("seeds a live household into the outbox when Retry finds an empty queue", async () => {
+    setContinuityStore(createMemoryContinuityStore());
+    const household = googleHousehold();
+    expect(listContinuityOutbox("development")).toHaveLength(0);
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("households?select=id")) return response([]);
+      if (url.includes("rpc/publish_household_snapshot")) {
+        return response({
+          code: "PGRST202",
+          message: "Could not find the function public.publish_household_snapshot",
+        }, 404);
+      }
+      if (url.includes("household_snapshots?household_id")) return response([]);
+      if (url.includes("continuity_memberships?select=household_id")) return response([]);
+      return response(null, 201);
+    }));
+    const flushed = await flushContinuityOutbox({
+      environment: "development",
+      identity,
+      config,
+      force: true,
+      liveHousehold: household,
+      expectedRevision: 0,
+      confirmationId: "retry-empty",
+    });
+    expect(flushed.synchronized).toBe(1);
   });
 });

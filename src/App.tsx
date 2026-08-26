@@ -166,7 +166,9 @@ import {
   continuityMemberId,
   discoverContinuityMemberships,
   flushContinuityOutbox,
+  hydrateContinuityOutbox,
   hostedContinuityAllowed,
+  humanizeContinuityError,
   listContinuityOutbox,
   productionContinuityEnabled,
   transportHouseholdWithOutbox,
@@ -409,6 +411,9 @@ export function App() {
         identity,
         config: cloudConfig,
         force: true,
+        liveHousehold: current,
+        expectedRevision: current.baseRevision ?? 0,
+        confirmationId: `retry-share-${current.householdId}-${current.revision}`,
       });
       if (flushed.conflicts[0]) {
         setSyncState("error");
@@ -422,14 +427,52 @@ export function App() {
         householdRef.current = synced;
         setHousehold(synced);
         setSyncState("synced");
-      } else if (flushed.pending > 0) {
-        setSyncState(typeof navigator !== "undefined" && !navigator.onLine ? "syncing" : "synced");
-      } else {
-        setSyncState("synced");
+        setCommandChrome(null);
+        setError("");
+        return;
       }
+      const pendingItem = listContinuityOutbox(environment).find((item) => item.householdId === current.householdId);
+      const pendingMessage = humanizeContinuityError(
+        pendingItem?.lastError
+        || (flushed.pending > 0
+          ? "Saved on this phone. Sharing can retry from More."
+          : "Nothing was waiting to share. Confirm Google sign-in, then post or Retry again."),
+      );
+      const pending = markPendingTransport(current, pendingMessage);
+      await saveHousehold(pending, { operatingEnvironment: environment, memberId: who });
+      householdRef.current = pending;
+      setHousehold(pending);
+      setSyncState(typeof navigator !== "undefined" && !navigator.onLine ? "syncing" : "error");
+      setError(pendingMessage);
+      setCommandChrome(renderCommandSurface(
+        {
+          kind: "pending-transport",
+          ok: true,
+          household: pending,
+          previous: pending,
+          postedIds: [],
+          confirmationId: `retry-share-${pending.householdId}`,
+          identityHash: null,
+          revision: pending.revision,
+          sharingMode: "pending-transport",
+          errorClass: "pending-transport",
+          userMessage: pendingMessage,
+          retryable: true,
+          recoveryAvailable: false,
+          postedExactlyOnce: false,
+          postedNothing: true,
+        },
+        {
+          offline: typeof navigator !== "undefined" && !navigator.onLine,
+          pendingCount: listContinuityOutbox(environment).filter((item) => item.householdId === pending.householdId).length,
+          lastError: pendingMessage,
+          ledgerName: pending.name,
+          ledgerWrite: false,
+        },
+      ));
     } catch (caught) {
       setSyncState("error");
-      setError(caught instanceof Error ? caught.message : String(caught));
+      setError(humanizeContinuityError(caught));
     } finally {
       setBusy(false);
     }
@@ -525,6 +568,7 @@ export function App() {
     setBooting(true);
     const loadedSession = loadSession(environment);
     setSession(loadedSession);
+    void hydrateContinuityOutbox(environment);
     loadHousehold(environment, loadedSession?.householdId, loadedSession?.memberId).then(async (loaded) => {
       if (!live) return;
       let current = loaded;
