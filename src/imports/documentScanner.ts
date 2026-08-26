@@ -15,7 +15,8 @@ function bytesToBase64(bytes: Uint8Array): string {
 
 async function sourceDigest(fileType: string, bytes: Uint8Array, base64: string): Promise<string> {
   if (globalThis.crypto?.subtle) {
-    const digest = await globalThis.crypto.subtle.digest("SHA-256", Uint8Array.from(bytes).buffer);
+    const copy = new Uint8Array(bytes);
+    const digest = await globalThis.crypto.subtle.digest("SHA-256", copy);
     return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
   }
   return stableImportHash(`${fileType}|${base64}`);
