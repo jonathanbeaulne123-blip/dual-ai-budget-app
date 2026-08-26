@@ -7,7 +7,7 @@ import {
   trialBalance,
 } from "../src/core/journal.ts";
 import { seedDemoHousehold } from "../src/core/seed.ts";
-import { ingestBooks, openMemoryBooks } from "../src/ledger/engine.ts";
+import { hashBooksSnapshot, ingestBooks, openMemoryBooks } from "../src/ledger/engine.ts";
 import { assertReadOnlySelect } from "../src/ledger/queryGuard.ts";
 import { booksSqlDump } from "../src/ledger/export.ts";
 
@@ -194,7 +194,7 @@ describe("Postgres books engine", () => {
     }
   }, 30_000);
 
-  it("replaces the active PGlite books when two household replicas reuse catalog ids", async () => {
+  it("replaces the active PGlite books across an A to B to A replica switch", async () => {
     const first = { ...catalogHousehold(), householdId: "HH-FIRST", name: "First household" };
     const second = { ...catalogHousehold(), householdId: "HH-SECOND", name: "Second household" };
     const db = await openMemoryBooks();
@@ -206,6 +206,79 @@ describe("Postgres books engine", () => {
       expect(households.rows).toEqual([{ id: "HH-SECOND" }]);
       expect(members.rows.length).toBe(second.members.length);
       expect(members.rows.every((row) => row.household_id === "HH-SECOND")).toBe(true);
+
+      expect((await ingestBooks(db, first)).ok).toBe(true);
+      const returned = await db.query<{ id: string }>("SELECT id FROM households ORDER BY id");
+      const revisions = await db.query<{ household_id: string }>("SELECT household_id FROM audit_revisions");
+      expect(returned.rows).toEqual([{ id: "HH-FIRST" }]);
+      expect(revisions.rows).toEqual([{ household_id: "HH-FIRST" }]);
+    } finally {
+      await db.close();
+    }
+  }, 30_000);
+
+  it("rolls back the active projection when a replacement fails after truncation", async () => {
+    const accepted = postEntry(
+      { ...catalogHousehold(), householdId: "HH-ACCEPTED", name: "Accepted household" },
+      {
+        date: "2026-08-26",
+        type: "expense",
+        amount: "12.50",
+        accountId: "ACC-VISA",
+        subcategoryId: "SUB-FOOD-GROCERIES",
+        note: "Rollback proof",
+      },
+    ).household;
+    const rejected = { ...catalogHousehold(), householdId: "HH-REJECTED", timezone: "" };
+    const db = await openMemoryBooks();
+    try {
+      await ingestBooks(db, accepted);
+      await expect(ingestBooks(db, rejected)).rejects.toThrow();
+
+      const households = await db.query<{ id: string }>("SELECT id FROM households ORDER BY id");
+      const journal = await db.query<{ household_id: string }>("SELECT household_id FROM journal_entries");
+      const audit = await db.query<{ snapshot_hash: string }>("SELECT snapshot_hash FROM audit_revisions");
+      expect(households.rows).toEqual([{ id: "HH-ACCEPTED" }]);
+      expect(journal.rows).toEqual([{ household_id: "HH-ACCEPTED" }]);
+      expect(audit.rows).toEqual([{ snapshot_hash: await hashBooksSnapshot(accepted) }]);
+    } finally {
+      await db.close();
+    }
+  }, 30_000);
+
+  it("releases the previous large snapshot file when opening a new household", async () => {
+    let seed = 0x12345678;
+    const bytes = new Uint8Array(4 * 1024 * 1024);
+    for (let index = 0; index < bytes.length; index += 1) {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      bytes[index] = 32 + (seed % 95);
+    }
+    const large = {
+      ...catalogHousehold(),
+      householdId: "HH-LARGE",
+      name: "Large household",
+      activity: [{
+        id: "ACT-LARGE",
+        at: "2026-08-26T12:00:00.000Z",
+        action: "Regression padding",
+        summary: new TextDecoder().decode(bytes),
+        updatedAt: "2026-08-26T12:00:00.000Z",
+      }],
+    };
+    const fresh = { ...catalogHousehold(), householdId: "HH-FRESH", name: "Fresh household" };
+    const db = await openMemoryBooks();
+    try {
+      await ingestBooks(db, large);
+      const first = await db.query<{ bytes: number }>(
+        "SELECT pg_total_relation_size('household_snapshots')::float8 AS bytes",
+      );
+      await ingestBooks(db, fresh);
+      const final = await db.query<{ bytes: number }>(
+        "SELECT pg_total_relation_size('household_snapshots')::float8 AS bytes",
+      );
+
+      expect(Number(first.rows[0]?.bytes)).toBeGreaterThan(4 * 1024 * 1024);
+      expect(Number(final.rows[0]?.bytes)).toBeLessThan(Number(first.rows[0]?.bytes) / 4);
     } finally {
       await db.close();
     }

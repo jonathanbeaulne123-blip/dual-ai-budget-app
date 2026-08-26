@@ -359,7 +359,16 @@ async function writeBooks(db: Queryable, household: Household, compiled: Compile
   // before compiling another replica so switching households cannot collide.
   // The durable inactive replicas remain in src/storage.ts and are re-ingested
   // through this same transaction when selected.
-  await db.query("DELETE FROM households");
+  // PGlite's IndexedDB filesystem persists a PostgreSQL relation as one
+  // serialized browser value. DELETE leaves the previous full-snapshot pages
+  // in that relation, so switching away from a large ledger can make the next
+  // flush exceed Chromium's 127 MiB value ceiling even when the new household
+  // is empty. This projection is rebuilt in full and TRUNCATE is transactional
+  // in PostgreSQL, so CASCADE releases the old relation files without weakening
+  // rollback or touching the durable JSON/cloud household replicas.
+  // audit_revisions intentionally has no household FK, so include it explicitly;
+  // otherwise an A -> B -> A switch collides with A's prior revision id.
+  await db.query("TRUNCATE TABLE audit_revisions, households CASCADE");
   await db.query(
     `INSERT INTO households (id, name, timezone, currency, environment, invite_phrase, linked, revision, last_committed_at)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
