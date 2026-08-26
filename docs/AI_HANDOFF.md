@@ -4,6 +4,26 @@ After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. 
 
 Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
 
+## Hercules rig engine — Worker route, MCP dispatch, furniture macros (2026-08-26)
+
+**Status:** Branch `cursor/hercules-rig-engine-90cc`, PR #164. Risk: **Low** (presentation-only; no money, no ledger reads).
+
+**Household outcome:** Remote agents and Hercules Pro can puppeteer the live kitchen cat part-by-part (head, tail, each leg). Desk instruments trigger layered rig macros when expanded on Home. Fly auto-deposit (PR #163) remains separate.
+
+**Budget delta (5):** `0` — rig never posts money or reads books.
+
+**Engagement delta (3):** `+2` — AI-controllable animation + furniture-reactive cat.
+
+**What changed:** `src/herculesRig/` engine (parts, clips, validate, transport, macros); `HerculesFigure` inline transforms; Worker `POST /hercules/rig` + `GET /hercules/rig/poll` with KV/memory queue; MCP `hercules_rig_dispatch`; client poller in `HerculesRigProvider`; `HerculesOfficeRigBridge` on widget expand; [HERCULES_RIG.md](HERCULES_RIG.md).
+
+**Verification:** `test/hercules-rig.test.ts` (10), `test/hercules-rig-validate.test.ts` (3), `test/hercules-rig-worker.test.ts` (2), `test/hercules-pro.test.ts` rig tool count (68 tools, 67 read-only) — all green. Full `pnpm test`: 675 pass; 2 pre-existing `batch-import-ui` SubtleCrypto failures unchanged on `main`.
+
+**Data/environment:** Development client + Worker routes. No schema, secrets, Production, or deploy.
+
+**Next owner:** Jonathan — review/merge PR #164; optional live deploy smoke of `/hercules/rig` + `hearthRig().sessionId()` + MCP dispatch.
+
+**PR:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/164
+
 ## Phase 0 optional-publish demotion + hosted honesty (D-147, 2026-08-26)
 
 **Status:** Implementation merged via #157 onto `main@2ee381e` (`ca70ce1`). Follow-up draft PR #158 realigns continuity tests that still assumed legacy GET-compare-POST. Risk: **High** (product) / **Medium** (follow-up tests).

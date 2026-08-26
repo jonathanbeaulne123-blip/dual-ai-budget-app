@@ -69,6 +69,7 @@ import { launchHerculesPro } from "./HerculesPro.tsx";
 import {
   HerculesRigProvider,
   useHerculesRig,
+  expandRigMacro,
   type HerculesRigPose,
 } from "./herculesRig/index.ts";
 import {
@@ -170,6 +171,15 @@ function HerculesRigBridge({
 function HerculesLivePortrait(props: Parameters<typeof HerculesPortrait>[0]) {
   const { state } = useHerculesRig();
   return <HerculesPortrait {...props} rigSnapshot={state.parts} />;
+}
+
+function HerculesOfficeRigBridge({ expandId }: { expandId: InstrumentId | "window" | null }) {
+  const { dispatch } = useHerculesRig();
+  useEffect(() => {
+    if (!expandId) return;
+    for (const command of expandRigMacro(expandId)) dispatch(command);
+  }, [expandId, dispatch]);
+  return null;
 }
 
 export function HerculesPresence({
@@ -1052,6 +1062,7 @@ export function HerculesPresence({
   return (
     <HerculesRigProvider mood={look.view.mood} reducedMotion={reducedMotion()}>
       <HerculesRigBridge mood={look.view.mood} pose={pose} begging={begging} bagPlay={bagPlay} />
+      <HerculesOfficeRigBridge expandId={tab === "home" ? focusedWidget : null} />
     <div className={`hercules-world ${hideLiveCat ? "is-phone-compact" : ""} ${focusShellOpen ? "is-focus-open" : ""} ${desktopFly ? "is-desktop-wander" : ""}`} aria-live="polite">
       {desktopFly && !adding && !reducedMotion() && (
         <HerculesLitterBox deadFlies={deadFlies} />

@@ -1,5 +1,6 @@
 import type { HerculesRigEngine } from "./engine.ts";
 import type { HerculesRigCommand, HerculesRigPose, RigEngineState, RigPartId, RigPartTransform } from "./types.ts";
+import { rigSessionId } from "./transport.ts";
 
 let activeEngine: HerculesRigEngine | null = null;
 
@@ -30,6 +31,7 @@ export type HearthRigConsole = {
   dispatch: (command: HerculesRigCommand) => boolean;
   state: () => RigEngineState | null;
   parts: () => RigEngineState["parts"] | null;
+  sessionId: () => string;
   playPose: (pose: HerculesRigPose) => boolean;
   setPart: (part: RigPartId, transform: Partial<RigPartTransform>) => boolean;
 };
@@ -41,6 +43,7 @@ export function exposeHerculesRigConsole(): void {
     dispatch: (command) => dispatchHerculesRig(command),
     state: () => readHerculesRigState(),
     parts: () => readHerculesRigState()?.parts ?? null,
+    sessionId: () => rigSessionId(),
     playPose: (pose) => dispatchHerculesRig({ type: "playPose", pose }),
     setPart: (part, transform) => dispatchHerculesRig({ type: "setPart", part, transform }),
   });

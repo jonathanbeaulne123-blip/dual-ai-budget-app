@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { POSE_CLIPS, IDLE_CLIPS, registerRigClip, getRigClip, dispatchHerculesRig, createHerculesRigEngine, RIG_PARTS } from "../src/herculesRig/index.ts";
+import { POSE_CLIPS, IDLE_CLIPS, registerRigClip, getRigClip, dispatchHerculesRig, createHerculesRigEngine, RIG_PARTS, expandRigMacro } from "../src/herculesRig/index.ts";
 import { transformToCss } from "../src/herculesRig/transform.ts";
 
 describe("Hercules rig engine", () => {
@@ -72,5 +72,11 @@ describe("Hercules rig engine", () => {
       expect(POSE_CLIPS[pose].keyframes.length).toBeGreaterThan(0);
     }
     expect(IDLE_CLIPS.blink.id).toBe("idle-blink");
+  });
+
+  it("maps wallet expand to a rig macro queue", () => {
+    const macro = expandRigMacro("wallet");
+    expect(macro.some((row) => row.type === "playPose" && row.pose === "perch")).toBe(true);
+    expect(macro.some((row) => row.type === "setPart" && row.part === "legFront")).toBe(true);
   });
 });

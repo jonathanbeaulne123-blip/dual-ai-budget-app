@@ -21,11 +21,38 @@ Built-in **pose clips** mirror `hercules.css` (loaf, walk, pounce, beg, …). **
 When the live cat is mounted:
 
 ```javascript
+const session = hearthRig().sessionId(); // share with remote agents
 hearthRig().playPose("beg");
 hearthRig().setPart("head", { rotate: -12, translateY: -6 });
 hearthRig().setPart("tail", { rotate: -40 });
 hearthRig().dispatch({ type: "blendTo", parts: { legFront: { rotate: -30 } }, durationMs: 400 });
 ```
+
+## Remote dispatch (Worker + MCP)
+
+**Kitchen Worker routes** (presentation-only queue):
+
+| Route | Method | Body / query |
+|-------|--------|----------------|
+| `/hercules/rig` | POST | `{ sessionId, commands }` → `{ ok, queueId, at, accepted }` |
+| `/hercules/rig/poll` | GET | `?sessionId=…&since=…` → `{ ok, entries[] }` |
+
+The live kitchen tab polls every 2s (and on focus) via `startHerculesRigPoller` inside `HerculesRigProvider`. Commands are validated and bounded server-side (`src/herculesRig/validate.ts`).
+
+**MCP tool (Hercules Pro):** `hercules_rig_dispatch`
+
+```json
+{
+  "sessionId": "<from hearthRig().sessionId()>",
+  "commands": [{ "type": "playPose", "pose": "perch" }]
+}
+```
+
+Returns `{ status: "queued", queueId, at, accepted, readOnly: true, postedNothing: true }`.
+
+## Furniture expand macros
+
+When a desk instrument expands on Home, `HerculesOfficeRigBridge` runs a macro from `src/herculesRig/macros.ts` — e.g. wallet → perch + head tilt + front leg shift; calculator → pounce + tail flick. Extend `EXPAND_RIG_MACROS` or register clips in `installRigMacroClips()`.
 
 ## TypeScript API
 
@@ -112,7 +139,7 @@ Pivots match `hercules.css` (e.g. head pivot 72×92 in the 200×200 viewBox).
 1. `registerRigClip({ id, durationMs, loop, keyframes })`
 2. `dispatchHerculesRig({ type: "playClip", clipId: id })`
 
-For Worker integration, add a bounded `/hercules/rig` route that accepts `{ commands: HerculesRigCommand[] }` and forwards to the client via SSE or postMessage — **not shipped in this slice**.
+3. Add furniture reactions in `EXPAND_RIG_MACROS` (`src/herculesRig/macros.ts`)
 
 ## Related
 
