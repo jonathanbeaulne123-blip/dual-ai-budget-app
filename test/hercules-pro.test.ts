@@ -244,7 +244,7 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 20, method: "tools/list" }),
     }), env);
     const listed = await listedResponse.json() as { result: { tools: Array<{ name: string; annotations: { readOnlyHint: boolean; destructiveHint: boolean } }> } };
-    expect(listed.result.tools).toHaveLength(57);
+    expect(listed.result.tools).toHaveLength(61);
     expect(listed.result.tools.find((tool) => tool.name === "confirm_transaction")?.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: true });
 
     const account = household.accounts.find((row) => row.active)!;
