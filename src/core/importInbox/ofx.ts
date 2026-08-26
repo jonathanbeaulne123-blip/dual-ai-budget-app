@@ -76,6 +76,9 @@ function parseAccountBlock(input: {
 }): { account: ParsedOfxAccount; rows: ImportedSourceRow[]; warnings: string[] } {
   const { ref, last4 } = accountRef(input.block, input.kind);
   const currency = tagValue(input.block, "CURDEF") || input.fallbackCurrency || "CAD";
+  const openingBalanceCents = centsFromOfx(
+    tagValue(input.block, "OPENBAL") || tagValue(input.block, "BALOPEN") || tagValue(input.block, "OPENINGBAL"),
+  );
   const ledgerBalanceCents = centsFromOfx(tagValue(input.block, "BALAMT"));
   const ledgerBalanceDate = dateFromOfx(tagValue(input.block, "DTASOF"));
   const warnings: string[] = [];
@@ -120,10 +123,13 @@ function parseAccountBlock(input: {
 
   return {
     account: {
+      sourceName: input.sourceName,
+      sourceHash: input.sourceHash,
       accountRef: ref,
       accountLast4: last4,
       kind: input.kind,
       currency: currency.toUpperCase(),
+      openingBalanceCents,
       ledgerBalanceCents,
       ledgerBalanceDate,
     },

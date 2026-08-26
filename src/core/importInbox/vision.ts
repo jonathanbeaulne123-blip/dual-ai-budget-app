@@ -1,5 +1,6 @@
 import { isValidDateKey, type DateKey } from "../calendar.ts";
 import { stableImportHash } from "./hash.ts";
+import { normalizeReceiptNumbers } from "./reconciliation.ts";
 import type { ImportedSourceRow, ImportReviewType, VisionDocumentResult } from "./types.ts";
 
 function safeText(value: unknown, max: number): string {
@@ -17,7 +18,10 @@ export function visionDocumentRows(input: {
   sourceName: string;
   sourceHash: string;
 }): { rows: ImportedSourceRow[]; warnings: string[] } {
-  const warnings = [...(Array.isArray(input.result.warnings) ? input.result.warnings.map((item) => safeText(item, 180)) : [])];
+  const receiptDocument = input.result.documentKind === "receipt";
+  const warnings = receiptDocument
+    ? []
+    : [...(Array.isArray(input.result.warnings) ? input.result.warnings.map((item) => safeText(item, 180)) : [])];
   const rows: ImportedSourceRow[] = [];
   const currency = safeText(input.result.currency || "CAD", 8).toUpperCase();
   const accountLast4 = safeText(input.result.accountLast4, 4);
@@ -37,8 +41,8 @@ export function visionDocumentRows(input: {
       else if (direction === "credit") suggestedType = "income";
     }
     const merchant = safeText(item.merchant, 100);
-    const description = safeText(item.description, 180);
-    const reference = safeText(item.reference, 80);
+    const description = receiptDocument ? "Receipt total" : safeText(item.description, 180);
+    const reference = receiptDocument ? "" : safeText(item.reference, 80);
     const rowFingerprint = stableImportHash([date, amountCents, merchant, description, reference, index].join("|"));
     const provenanceId = `vision:${input.sourceHash}:${reference || rowFingerprint}`;
     const confidence = Math.max(0, Math.min(100, Math.round(Number(item.confidence) || 0)));
@@ -61,6 +65,9 @@ export function visionDocumentRows(input: {
       place: merchant,
       fitId: reference,
       extractionConfidence: confidence,
+      receiptNumbers: input.result.documentKind === "receipt"
+        ? normalizeReceiptNumbers(input.result.receiptNumbers, amountCents)
+        : null,
     });
   }
   if (!rows.length) throw new Error("No usable transaction date and amount were detected. Retake the photo straight-on with the total visible.");

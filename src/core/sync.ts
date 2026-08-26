@@ -18,6 +18,7 @@ import type {
   Household,
   Member,
   PersonalEnvelope,
+  HerculesProPermissions,
   Preset,
   SharedEnvelope,
   Shift,
@@ -29,6 +30,18 @@ import { shapeLedgerNames } from "./ledgerNames.ts";
 import { shapeWorkJobs } from "./work.ts";
 
 export type { PersonalEnvelope, SharedEnvelope };
+
+export function shapeHerculesProPermissions(value: unknown): HerculesProPermissions {
+  const input = value && typeof value === "object" ? value as Partial<HerculesProPermissions> : {};
+  const updatedAt = typeof input.updatedAt === "string" && !Number.isNaN(Date.parse(input.updatedAt))
+    ? new Date(input.updatedAt).toISOString()
+    : null;
+  return {
+    personalWrite: input.personalWrite === true,
+    householdWrite: input.householdWrite === true,
+    updatedAt,
+  };
+}
 
 /** Missing catalog timestamps must be stable across two split() calls, not `new Date()`. */
 const MISSING_ISO = "1970-01-01T00:00:00.000Z";
@@ -186,6 +199,9 @@ export function ensureHouseholdShape(household: Household): Household {
     sharing: shapeSharing(household),
     conflicts: household.conflicts ?? [],
     restorePoints: household.restorePoints ?? [],
+    ...(household.herculesProPermissions
+      ? { herculesProPermissions: shapeHerculesProPermissions(household.herculesProPermissions) }
+      : {}),
   };
 }
 
@@ -200,6 +216,11 @@ export function emptyPersonal(memberId: string): PersonalEnvelope {
     goalContributions: [],
     goalPurchases: [],
     tombstones: [],
+    herculesProPermissions: {
+      personalWrite: false,
+      householdWrite: false,
+      updatedAt: null,
+    },
   };
 }
 
@@ -259,6 +280,9 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     goalContributions: shaped.goalContributions.filter((row) => personalGoalIds.has(row.goalId)),
     goalPurchases: shaped.goalPurchases.filter((row) => personalGoalIds.has(row.goalId)),
     tombstones: shaped.tombstones,
+    herculesProPermissions: shaped.herculesProPermissions
+      ? shapeHerculesProPermissions(shaped.herculesProPermissions)
+      : undefined,
   };
   return { shared, personal };
 }
@@ -337,6 +361,9 @@ export function assembleHousehold(
     lastCommittedAt: laterIso(shared.lastCommittedAt, personal?.lastCommittedAt ?? null),
     transactions: [...txById.values()],
     shifts: [...shiftById.values()],
+    ...(personal?.herculesProPermissions
+      ? { herculesProPermissions: personal.herculesProPermissions }
+      : {}),
   });
 }
 
@@ -389,6 +416,11 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
 export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope): PersonalEnvelope {
   const tombstones = mergeTombstones(server.tombstones, client.tombstones);
   const newer = laterEnvelope(server, client);
+  const serverPermissionAt = server.herculesProPermissions?.updatedAt ?? "";
+  const clientPermissionAt = client.herculesProPermissions?.updatedAt ?? "";
+  const herculesProPermissions = clientPermissionAt >= serverPermissionAt
+    ? client.herculesProPermissions ?? server.herculesProPermissions
+    : server.herculesProPermissions ?? client.herculesProPermissions;
   return {
     kind: "personal",
     memberId: client.memberId || server.memberId,
@@ -399,6 +431,7 @@ export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope
     goalContributions: mergeRecords(server.goalContributions ?? [], client.goalContributions ?? [], tombstones),
     goalPurchases: mergeRecords(server.goalPurchases ?? [], client.goalPurchases ?? [], tombstones),
     tombstones,
+    ...(herculesProPermissions ? { herculesProPermissions } : {}),
   };
 }
 

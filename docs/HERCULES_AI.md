@@ -37,6 +37,8 @@ Catalog: `account_balance`, `find_transactions`, `spending_summary`, `income_sum
 
 Hercules Pro's accounting-core extension also exposes focused posted-journal statements and tracing: `balance_sheet`, `income_statement`, `cash_flow_statement`, `trial_balance`, `general_ledger`, `account_activity`, `journal_entry_detail`, `changes_in_net_worth`, `period_comparison`, and `explain_balance`. Those tools declare their accounting basis, currency, and timezone; they do not turn budgets or scheduled items into posted facts.
 
+D-137 optionally adds three separate Pro contracts without changing the free Brain catalog: `transaction_write_options` is read-only; `prepare_transaction` validates and seals one exact expense/income/refund/internal-transfer preview with zero mutation; `confirm_transaction` is consequential and available only with current member opt-in plus `hearth.write`. ChatGPT must display the full preview and receive explicit confirmation between prepare and confirm. The server rechecks membership, permission, expiry, exact identity, revision, duplicate evidence, and balanced books. Migration 011 atomically stores the shared receipt and optional Personal row; no SQL fallback or broader model command exists. Production remains disabled.
+
 The boundary is deliberately narrow:
 
 - unknown calls and unknown arguments are discarded;

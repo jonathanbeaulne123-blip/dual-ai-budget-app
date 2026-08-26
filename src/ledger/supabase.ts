@@ -4,7 +4,7 @@ import {
   assertPersonalEnvelopeBinding,
 } from "../core/environmentIsolation.ts";
 import { ValidationError, type Environment, type Household, type PersonalEnvelope } from "../core/types.ts";
-import { assembleHousehold, ensureHouseholdShape, personalReplicaForMember, splitForSync } from "../core/sync.ts";
+import { assembleHousehold, ensureHouseholdShape, personalReplicaForMember, shapeHerculesProPermissions, splitForSync } from "../core/sync.ts";
 import { inviteFromText } from "../core/invite.ts";
 import { memberIdForGoogleIdentity, type GoogleIdentitySelector } from "../core/google.ts";
 import { hostedTransportAllowed } from "../core/sharing.ts";
@@ -244,6 +244,9 @@ function personalFromRow(row: { payload?: string | PersonalEnvelope } | undefine
         ? payload.goalPurchases.filter((item) => goalIds.has(item.goalId))
         : [],
       tombstones: Array.isArray(payload.tombstones) ? payload.tombstones : [],
+      ...(payload.herculesProPermissions
+        ? { herculesProPermissions: shapeHerculesProPermissions(payload.herculesProPermissions) }
+        : {}),
     };
   } catch {
     return null;
@@ -288,6 +291,9 @@ function overlayPersonalReplica(household: Household, personal: PersonalEnvelope
       ...(personal.goalPurchases ?? []),
     ],
     tombstones: [...tombstones.values()],
+    ...(personal.herculesProPermissions
+      ? { herculesProPermissions: shapeHerculesProPermissions(personal.herculesProPermissions) }
+      : {}),
     lastCommittedAt: (personal.lastCommittedAt ?? "") > (household.lastCommittedAt ?? "")
       ? personal.lastCommittedAt
       : household.lastCommittedAt,

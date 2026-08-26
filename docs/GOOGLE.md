@@ -29,7 +29,7 @@ Live URL: [https://hearth-books.jonathan-beaulne123.workers.dev/](https://hearth
 2. Tap **More**.
 3. Open **Google household bridge**.
 4. Next to your name, tap **Link**.
-5. Pick **your** Google account and allow email (and Calendar if asked).
+5. Pick **your** Google account and allow email, Calendar, and **Drive (Hearth-created files only)**. Drive consent is required at connection; saving any individual receipt remains optional.
 6. Bianca does the same on **her** phone, with **her** Google account.
 
 The same Google email cannot be linked to both people.
@@ -67,13 +67,12 @@ If you are not linked, or this build has no client ID, Hearth does not block tho
 
 Tap **Confirm it is me** or **Sync Google now** on **More → Google household bridge** anytime you want an extra check.
 
-### 5. Optional Google suite
+### 5. Google suite
 
-Default on: Google sign-in and Calendar.
+Required at connection: Google sign-in and narrow `drive.file`. Both **Continue with Google** (Supabase Auth) and the direct Google household bridge request it. Calendar is also on by default in the direct suite. `drive.file` does not grant Hearth access to unrelated Drive files.
 
 Off until you turn them on (each shows a warning):
 
-- Drive — only files Hearth creates
 - Contacts — read names to match the household
 - Gmail — read-only; never posts money from an email
 - Sheets — read-only; not the old budget workbook. The books stay in Postgres
@@ -123,7 +122,7 @@ Living pairs and refused list: [STRATEGY.md](STRATEGY.md) § Google Dual Course.
 
 ### Shipping now
 
-Identity, Calendar overlay, bill reminders, Continue with Google, step-up on sensitive household actions, opt-in suite **ping**, **sit-down Drive workbook** (create a Sheet with `drive.file`, never edit an existing file; local download always works; D-087), **desk appearance** (`Hearth desk.json` for this Google identity; D-092).
+Identity, Calendar overlay, bill reminders, Continue with Google, step-up on sensitive household actions, suite **ping**, **sit-down Drive workbook** (create a Sheet with `drive.file`, never edit an existing file; local download always works; D-087), **desk appearance** (`Hearth desk.json` for this Google identity; D-092), and optional per-receipt evidence in private `Hearth Receipts/YYYY/MM` with soft retry and explicit deletion (D-137; local branch, not deployed).
 
 ### Proposed next (in scope)
 

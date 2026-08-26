@@ -16,7 +16,7 @@ This is a living planning document, not an authority to deploy, mutate productio
 - **Course A — useful household finance and family office — has weight 5.**
 - **Course B — shared engagement, Hercules, learning, delight, and interactables — has weight 3.**
 - Course A wins any conflict. Engagement earns its place by making correct financial habits easier; it never edits, hides, or posts money.
-- Commands are the money boundary. UI state, AI output, OCR, bank feeds, calendar data, widgets, weather, and Hercules are proposals or displays only.
+- Commands are the money boundary. UI state, AI output, OCR, bank feeds, calendar data, widgets, weather, and Hercules are proposals or displays only, except D-137's narrowly typed ChatGPT path: the model may prepare one command, but only a member opt-in plus a separately confirmed sealed preview can invoke the atomic write boundary.
 - Only a visible user **Confirm** may post a command. Reversal/repost corrects mistakes; financial history is not silently rewritten.
 - CAD is stored as integer cents. Toronto is the household time zone. Posted activity must remain double-entry and auditable.
 - Development is not production. Production writes, deployments, migrations, and record cleanup require Jonathan's explicit approval.
@@ -54,7 +54,7 @@ Checkboxes show work state, not product value: `[x]` is shipped on the named bas
 | Rate limiting | PR #79 salvaged the exact Git-main host and a per-IP meter under D-121. Missing KV no longer bypasses the limit, but isolate memory is not a durable or globally consistent hard cap; live KV remains unbound. | Code containment is merged; do not call it a reliable production cap until KV/concurrency proof exists. | Bound production namespace plus concurrent-request tests, telemetry, explicit failure semantics, and documented rollback. |
 | Delivery controls | `main` is unprotected, required checks are off, and direct commits can reach the deploy workflow. | Add branch/ruleset and production-environment approvals before higher-risk merges. | Required build/test/security checks block merge; deploy requires reviewed `main` state and environment approval. |
 | Onboarding / first-number utility | Mobile/Office, Accounts, Audit, appointments, sitdown/vault, Hercules, budget foundations, and D-127 work flow have shipped, but there is no Google-member-scoped guided setup or opening-truth command. Current first-run lessons are device-local and flat. | **PARTS 1–2 PLANNED:** D-128 isolates Practice; D-129 locks Pokémon-rhythm Hercules routes, camera focus, interaction locking, progress, and finale. Cursor foundation prompt is ready without migration overlap. | Automatic/Skip first Google-member entry; D-128 isolation; exact target/route/dialogue proofs; balanced opening truth; replayable member-scoped progress; both members see accepted results from independent devices. D-129's deliberate reduced-motion exception remains named accessibility debt. |
-| Batch intake | QFX/OFX and selected receipt/bill/statement images are in PR #108; no bank credentials or feed are involved. The Development Worker route is live from approved Actions run `32872129163`. | **PR OPEN + WORKER DEPLOYED — D-130:** three exact confidence lanes, side-by-side choice, ordinary commands, one final Confirm. | 477-test full gate and PR CI are green; merge plus legible synthetic OFX/image UI smoke remain. PDF, persistent drafts, completeness/reconciliation, and feeds remain separate. |
+| Batch intake | D-130 selected QFX/OFX and image intake is merged; no bank credentials or feed are involved. D-137 exact statement/receipt reconciliation and optional private Drive evidence are reviewed and not deployed. | **PR HANDOFF — D-137:** available balance equations and receipt math block mismatch; exact payment matches prevent duplicate expenses; Drive failure is separate. | PR CI and synthetic combined QFX+receipt UI smoke. PDF, persistent drafts, and feeds remain separate. |
 | Active PR topology | #61 was replaced by merged #81; #63 was salvaged through merged #79; #83 is merged and independently reviewed; #86 cleanly renumbered CAS to D-122. #66 is superseded by clean current-main PR #88. #62's budget editor is salvaged onto `main` as D-109; reviewed #87/#89 artifacts are being repaired on a current-main integration branch. | Review the combined repair as code plus staged Development migrations. Do not revive #66. | Every open PR targets current `main`, has unique decision IDs, truthful tests, and one reviewable purpose. |
 | Tracker hygiene | Seven older PRs and the five open issues are legacy/stale; the issues are Sheets-era. | Archive or rewrite after inspecting unique code/history; do not let them drive priority. | Every closure links to its replacement, retained commit, or explicit “superseded” reason. |
 
@@ -64,6 +64,7 @@ Only the currently open or just-closed worksession belongs here. Durable history
 
 | Worksession | State | Scope | Output |
 |---|---|---|---|
+| [2026-08-25 Import reconciliation engine](worksessions/2026-08-25-import-reconciliation-engine.md) | **REVIEWED; PR HANDOFF; NOT DEPLOYED** | Exact statement/receipt arithmetic, exact payment matching, optional private Drive evidence | D-137; 85 test files / 595 tests green after rebase; no remaining P0/P1/P2 review finding |
 | [2026-08-25 Hercules living teacher](worksessions/2026-08-25-hercules-living-teacher.md) | **IMPLEMENTED; REVIEW REQUIRED** | Typed number provenance, shared/Personal talk scopes, teacher questions, per-turn bubbles, desktop fly/litter | D-132; no deploy/schema; high-risk privacy review pending |
 | [2026-08-25 Onboarding Update](worksessions/2026-08-25-onboarding-update.md) | **ACTIVE; Parts 1–2 planned** | Control/feature review plus exact phone/desktop motion and interaction storyboard | D-128/D-129; Cursor foundation prompt ready; no migration overlap; reduced-motion exception explicit |
 | [2026-08-25 Batch imports](worksessions/2026-08-25-batch-imports.md) | **PR #108 OPEN; WORKER DEPLOYED** | Multi-file QFX/OFX, selected document vision, duplicate triage, one Confirm | D-130; 71 files / 477 tests; Actions/CI green; no migration or Supabase mutation |
@@ -268,12 +269,13 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 **Exit condition:** external data becomes a traceable inbox of proposals that a person can match, reject, or Confirm; it never bypasses the books.
 
 - [ ] Add versioned JSON export/import and CSV transaction intake through typed commands, preview, row-level errors, provenance, and idempotency.
-- [ ] Merge D-130 selected intake in PR #108: multi-file QFX/OFX plus explicitly selected receipt/bill/statement images, exact confidence lanes, side-by-side choice, and final Confirm. *(Worker deployed to Development 2026-08-25 through approved Actions run `32872129163`; PR merge remains.)*
+- [x] Merge D-130 selected intake: multi-file QFX/OFX plus explicitly selected receipt/bill/statement images, exact confidence lanes, side-by-side choice, and final Confirm.
 - [ ] If old Sheets data must be recovered, treat it as a one-time read-only document import. No clasp, formulas-as-runtime, or bidirectional sync.
 - [ ] Extend Gmail/Drive intake only as approved-source draft evidence. D-130 selected images retain no raw image in Hearth; archive/redaction and PDFs remain unbuilt.
-- [ ] Build reconciliation lanes: unmatched, suggested match, duplicate, resolved; show source/freshness and why a match is proposed.
+- [ ] Merge D-137 exact reconciliation: available statement opening + transaction net = closing; receipt numeric components; unique exact one/multi-payment matching; total-only receipt clearance; private Drive retry/delete evidence.
+- [ ] Extend D-137's totals panel into persistent unmatched/suggested/resolved lanes only if household-scale use needs saved drafts.
 - [ ] Add category/rule preview, diff, replay, bounded scope, and audit; no retroactive invisible mutation.
-- [ ] Add statement-level completeness controls and opening/closing balance checks.
+- [x] Add selected-source statement opening/closing balance checks; missing opening balance is explicitly skipped by product decision.
 - [ ] Research Canadian account connectivity/Flinks/Open Banking only after Auth + RLS; imported rows remain an inbox until Confirm.
 
 **Risk/gate:** Auth + RLS, provider terms, PII retention, command boundary, deterministic duplicate handling.  
@@ -307,6 +309,7 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 - [ ] Use rolling/graceful progress; no punitive streak reset, hearts, scarcity, shame, or pet harm.
 - [x] Let Hercules explain deterministic results and ask one useful question at a time; retain explicit consent and memory controls. *(D-132: typed source cards plus scoped food/spend/income/shift questions; broader lesson curriculum remains.)*
 - [x] Give Hercules a bounded Brain v2 read layer: model-selectable, phone-executed balances/search/spending/income/comparison/bills/shifts/goals/owed/cash-position tools with member/view scope and typed provenance. *(D-133 Slice 1; implementation branch, review required.)*
+- [ ] Deploy D-137 Hercules Pro confirmed transactions after review and explicit Development Migration 011 approval. Pro remains read-only by default; Personal/Household switches, separate OAuth scope, sealed preview, current opt-in recheck, exact-once receipt, atomic Personal+Shared CAS, and negative unsupported-tool proofs are required. Production remains off.
 - [ ] Add opt-in what-if simulators with a visible “not posted” state and a Convert-to-draft path that still requires Confirm.
 - [ ] Add widgets/watch/weather only after safe-to-spend/freshness semantics are proven; ambient surfaces are display-only.
 - [ ] Research voice/camera assistance only for draft capture with clear recording, retention, and review controls.

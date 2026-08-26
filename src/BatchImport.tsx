@@ -3,19 +3,29 @@ import {
   accountName,
   buildBatchImport,
   categoryName,
+  conflictingReceiptSources,
   formatCad,
+  normalizeReceiptNumbers,
   parseOfx,
   prepareImportRows,
+  receiptMathBlocks,
+  reconcileImportSources,
   refreshImportTriage,
+  selectedPaymentTotal,
+  shapeGoogle,
   visionDocumentRows,
   type DuplicateTier,
   type Household,
+  type ImportReconciliationReport,
   type ImportReviewRow,
   type LedgerView,
+  type ParsedOfxAccount,
+  type ReceiptNumbers,
   type Transaction,
   type UndoToken,
 } from "./core/index.ts";
 import { ConfirmSheet } from "./Confirm.tsx";
+import { deleteDriveReceipt, uploadDriveReceipt, type DriveReceiptResult } from "./google/index.ts";
 import { scanFinancialDocument } from "./imports/documentScanner.ts";
 import { useDialog } from "./useDialog.ts";
 
@@ -29,6 +39,32 @@ const FINAL_CONFIRM_FOCUS = "__final-confirm__";
 const AUTO_KEEP_HIDDEN_MAX = 20;
 
 type AttentionStep = "duplicate" | "type" | "account" | "currency" | "transfer-account" | "category";
+
+type DriveReceiptState = DriveReceiptResult & {
+  file?: File;
+  date: string;
+};
+
+function receiptSelectionBlocks(
+  check: ImportReconciliationReport["receipts"][number],
+  selectedIds: string[],
+  paymentConflict = false,
+  manualAssignment = false,
+): boolean {
+  if (paymentConflict) return true;
+  if (check.paymentAssignmentConflict && !manualAssignment) return true;
+  if (receiptMathBlocks(check)) return true;
+  if (selectedIds.length) return selectedPaymentTotal(check, selectedIds) !== check.totalCents;
+  if (check.matchSearchStatus === "truncated") return true;
+  return check.lineSumCents == null || check.componentStatus !== "balanced";
+}
+
+function receiptSelectionCleared(check: ImportReconciliationReport["receipts"][number], selectedIds: string[], paymentConflict = false): boolean {
+  return selectedIds.length > 0
+    && !paymentConflict
+    && !receiptMathBlocks(check)
+    && selectedPaymentTotal(check, selectedIds) === check.totalCents;
+}
 
 function needsTransactionDetails(row: ImportReviewRow): boolean {
   if (row.resolution === "cancel-import") return false;
@@ -106,21 +142,71 @@ export function BatchImportCard({
   const [finalConfirm, setFinalConfirm] = useState(false);
   const [focusRequestId, setFocusRequestId] = useState<string | null>(null);
   const [focusRequestNonce, setFocusRequestNonce] = useState(0);
+  const [statementAccounts, setStatementAccounts] = useState<ParsedOfxAccount[]>([]);
+  const [receiptMatches, setReceiptMatches] = useState<Record<string, string[]>>({});
+  const [receiptFiles, setReceiptFiles] = useState<Map<string, File>>(() => new Map());
+  const [keepReceiptInDrive, setKeepReceiptInDrive] = useState<Record<string, boolean>>({});
+  const [driveReceipts, setDriveReceipts] = useState<Record<string, DriveReceiptState>>({});
+  const scopeKey = `${household.environment}|${household.householdId}|${memberId}|${view}`;
+  const activeScopeRef = useRef(scopeKey);
+  const stagedScopeRef = useRef(scopeKey);
+  const renderedScopeRef = useRef(scopeKey);
+  const scopeGenerationRef = useRef(0);
+  if (renderedScopeRef.current !== scopeKey) {
+    renderedScopeRef.current = scopeKey;
+    scopeGenerationRef.current += 1;
+  }
+  activeScopeRef.current = scopeKey;
   const rowRefs = useRef(new Map<string, HTMLElement>());
   const finalConfirmButton = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useDialog(open && !finalConfirm, () => setOpen(false));
-  const reviewRows = useMemo(() => rows.filter(appearsInReview), [rows]);
+  const reconciliation = useMemo(() => reconcileImportSources({
+    household,
+    memberId,
+    view,
+    rows,
+    accounts: statementAccounts,
+  }), [household, memberId, rows, statementAccounts, view]);
+  const receiptSelection = (check: ImportReconciliationReport["receipts"][number]): string[] => (
+    receiptMatches[check.sourceHash] ?? check.suggestedMatchIds
+  );
+  const receiptSelectionTouched = (check: ImportReconciliationReport["receipts"][number]): boolean => (
+    Object.prototype.hasOwnProperty.call(receiptMatches, check.sourceHash)
+  );
+  const receiptConflicts = conflictingReceiptSources(reconciliation.receipts, receiptSelection);
+  const clearedReceiptRows = new Set(reconciliation.receipts
+    .filter((check) => receiptSelectionCleared(check, receiptSelection(check), receiptConflicts.has(check.sourceHash)))
+    .map((check) => check.rowId));
+  const effectiveRows = useMemo(() => rows.map((row) => clearedReceiptRows.has(row.id)
+    ? { ...row, resolution: "cancel-import" as const }
+    : row), [rows, [...clearedReceiptRows].sort().join("|")]);
+  const reviewRows = useMemo(() => effectiveRows.filter(appearsInReview), [effectiveRows]);
   const visible = useMemo(() => reviewRows.filter((row) => row.duplicateTier === tier), [reviewRows, tier]);
-  const unresolved = rows.filter((row) => row.resolution === "undecided").length;
-  const kept = rows.filter((row) => row.resolution === "keep-import" || row.resolution === "exclude-ledger").length;
-  const cancelled = rows.filter((row) => row.resolution === "cancel-import").length;
-  const autoKept = rows.filter((row) => !appearsInReview(row) && row.resolution === "keep-import").length;
-  const incomplete = rows.filter(needsTransactionDetails).length;
+  const unresolved = effectiveRows.filter((row) => row.resolution === "undecided").length;
+  const kept = effectiveRows.filter((row) => row.resolution === "keep-import" || row.resolution === "exclude-ledger").length;
+  const cancelled = effectiveRows.filter((row) => row.resolution === "cancel-import").length;
+  const autoKept = effectiveRows.filter((row) => !appearsInReview(row) && row.resolution === "keep-import").length;
+  const incomplete = effectiveRows.filter(needsTransactionDetails).length;
+  const clearedReceipts = clearedReceiptRows.size;
+  const statementMismatches = reconciliation.statements.filter((check) => check.status === "mismatch").length;
+  const receiptMismatches = reconciliation.receipts.filter((check) => receiptSelectionBlocks(
+    check,
+    receiptSelection(check),
+    receiptConflicts.has(check.sourceHash),
+    receiptSelectionTouched(check),
+  )).length;
+  const reconciliationBlocked = statementMismatches > 0 || receiptMismatches > 0;
   const focusRequestRow = focusRequestId && focusRequestId !== FINAL_CONFIRM_FOCUS
-    ? rows.find((row) => row.id === focusRequestId)
+    ? effectiveRows.find((row) => row.id === focusRequestId)
     : null;
   const focusRequestTier = focusRequestRow?.duplicateTier ?? null;
   const focusRequestStep = focusRequestRow ? attentionStep(focusRequestRow) : null;
+
+  useEffect(() => {
+    if (stagedScopeRef.current === scopeKey) return;
+    stagedScopeRef.current = scopeKey;
+    clearStaging(true);
+  }, [scopeKey]);
 
   useEffect(() => {
     if (!open || !focusRequestId) return;
@@ -131,9 +217,9 @@ export function BatchImportCard({
       }, 0);
       return () => window.clearTimeout(timeout);
     }
-    const target = rows.find((row) => row.id === focusRequestId);
+    const target = effectiveRows.find((row) => row.id === focusRequestId);
     if (!target || !focusRequestStep) {
-      setFocusRequestId(nextAttentionId(rows, focusRequestId) ?? FINAL_CONFIRM_FOCUS);
+      setFocusRequestId(nextAttentionId(effectiveRows, focusRequestId) ?? FINAL_CONFIRM_FOCUS);
       return;
     }
     if (tier !== target.duplicateTier) {
@@ -151,21 +237,57 @@ export function BatchImportCard({
       control?.focus({ preventScroll: true });
     }, 0);
     return () => window.clearTimeout(timeout);
-  }, [focusRequestId, focusRequestNonce, focusRequestStep, focusRequestTier, open, tier]);
+  }, [effectiveRows, focusRequestId, focusRequestNonce, focusRequestStep, focusRequestTier, open, tier]);
 
   function beginAttention(preferred: (row: ImportReviewRow) => boolean) {
-    const target = rows.find((row) => preferred(row) && needsHumanAttention(row))
-      ?? rows.find(needsHumanAttention);
+    const target = effectiveRows.find((row) => preferred(row) && needsHumanAttention(row))
+      ?? effectiveRows.find(needsHumanAttention);
     setFocusRequestId(target?.id ?? FINAL_CONFIRM_FOCUS);
     setFocusRequestNonce((current) => current + 1);
   }
 
-  function replaceRows(sourceRows: Parameters<typeof prepareImportRows>[0]["rows"], nextWarnings: string[]) {
-    const prepared = prepareImportRows({ household, memberId, view, rows: sourceRows });
-    setRows(prepared);
-    setWarnings(nextWarnings.filter(Boolean));
+  function clearStaging(clearDriveResults = false) {
+    setWorking(false);
+    setRows([]);
+    setStatementAccounts([]);
+    setWarnings([]);
+    setError("");
+    setReceiptMatches({});
+    setReceiptFiles(new Map());
+    setKeepReceiptInDrive({});
+    if (clearDriveResults) setDriveReceipts({});
     setFocusRequestId(null);
-    const reviewable = prepared.filter(appearsInReview);
+    setFinalConfirm(false);
+    setOpen(false);
+  }
+
+  function scopeIsCurrent(startedScope: string, startedGeneration: number): boolean {
+    return activeScopeRef.current === startedScope && scopeGenerationRef.current === startedGeneration;
+  }
+
+  function appendRows(
+    sourceRows: Parameters<typeof prepareImportRows>[0]["rows"],
+    nextWarnings: string[],
+    accounts: ParsedOfxAccount[] = [],
+    files: Map<string, File> = new Map(),
+  ) {
+    const prepared = prepareImportRows({ household, memberId, view, rows: sourceRows });
+    const existingIds = new Set(rows.map((row) => row.id));
+    const combined = refreshImportTriage({ household, memberId, view, rows: [...rows, ...prepared.filter((row) => !existingIds.has(row.id))] });
+    setRows(combined);
+    setStatementAccounts((current) => {
+      const byId = new Map(current.map((account) => [`${account.sourceHash}|${account.accountRef}`, account]));
+      accounts.forEach((account) => byId.set(`${account.sourceHash}|${account.accountRef}`, account));
+      return [...byId.values()];
+    });
+    setReceiptFiles((current) => {
+      const next = new Map(current);
+      files.forEach((file, sourceHash) => next.set(sourceHash, file));
+      return next;
+    });
+    setWarnings((current) => [...new Set([...current, ...nextWarnings].filter(Boolean))]);
+    setFocusRequestId(null);
+    const reviewable = combined.filter(appearsInReview);
     setTier(reviewable.some((row) => row.duplicateTier === "confident") ? "confident"
       : reviewable.some((row) => row.duplicateTier === "not-sure") ? "not-sure" : "probably-not");
     setError("");
@@ -174,44 +296,54 @@ export function BatchImportCard({
 
   async function importBankFiles(files: FileList | null) {
     if (!files?.length) return;
+    const startedScope = scopeKey;
+    const startedGeneration = scopeGenerationRef.current;
     setWorking(true);
     setError("");
     try {
       const sourceRows: Parameters<typeof prepareImportRows>[0]["rows"] = [];
       const nextWarnings: string[] = [];
+      const accounts: ParsedOfxAccount[] = [];
       for (const file of [...files]) {
         if (!/\.(?:ofx|qfx)$/i.test(file.name)) throw new Error(`${file.name} is not an OFX or QFX export.`);
         const parsed = parseOfx(await readBankFile(file), file.name);
         sourceRows.push(...parsed.rows);
+        accounts.push(...parsed.accounts);
         nextWarnings.push(...parsed.warnings);
       }
-      replaceRows(sourceRows, nextWarnings);
+      if (!scopeIsCurrent(startedScope, startedGeneration)) return;
+      appendRows(sourceRows, nextWarnings, accounts);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
+      if (scopeIsCurrent(startedScope, startedGeneration)) setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
-      setWorking(false);
+      if (scopeIsCurrent(startedScope, startedGeneration)) setWorking(false);
       if (bankInput.current) bankInput.current.value = "";
     }
   }
 
   async function importImages(files: FileList | null, input: HTMLInputElement | null) {
     if (!files?.length) return;
+    const startedScope = scopeKey;
+    const startedGeneration = scopeGenerationRef.current;
     setWorking(true);
     setError("");
     try {
       const sourceRows: Parameters<typeof prepareImportRows>[0]["rows"] = [];
       const nextWarnings: string[] = [];
+      const filesByHash = new Map<string, File>();
       for (const file of [...files]) {
         const scanned = await scanFinancialDocument(file);
         const normalized = visionDocumentRows({ result: scanned.result, sourceName: file.name, sourceHash: scanned.sourceHash });
         sourceRows.push(...normalized.rows);
         nextWarnings.push(...normalized.warnings);
+        if (normalized.rows.some((row) => row.documentKind === "receipt")) filesByHash.set(scanned.sourceHash, file);
       }
-      replaceRows(sourceRows, nextWarnings);
+      if (!scopeIsCurrent(startedScope, startedGeneration)) return;
+      appendRows(sourceRows, nextWarnings, [], filesByHash);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
+      if (scopeIsCurrent(startedScope, startedGeneration)) setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
-      setWorking(false);
+      if (scopeIsCurrent(startedScope, startedGeneration)) setWorking(false);
       if (input) input.value = "";
     }
   }
@@ -226,6 +358,30 @@ export function BatchImportCard({
       });
       return next;
     });
+  }
+
+  function updateReceiptNumbers(rowId: string, numbers: ReceiptNumbers) {
+    const normalized = normalizeReceiptNumbers(numbers, numbers.totalCents);
+    setRows((current) => refreshImportTriage({
+      household,
+      memberId,
+      view,
+      rows: current.map((row) => row.id === rowId ? {
+        ...row,
+        receiptNumbers: normalized,
+        amountCents: normalized.totalCents,
+        signedAmountCents: row.signedAmountCents < 0 ? -normalized.totalCents : normalized.totalCents,
+      } : row),
+    }));
+  }
+
+  function toggleReceiptMatch(sourceHash: string, candidateId: string, checked: boolean, currentIds: string[]) {
+    setReceiptMatches((current) => ({
+      ...current,
+      [sourceHash]: checked
+        ? [...new Set([...currentIds, candidateId])]
+        : currentIds.filter((id) => id !== candidateId),
+    }));
   }
 
   function decide(id: string, resolution: ImportReviewRow["resolution"]) {
@@ -254,29 +410,91 @@ export function BatchImportCard({
     });
   }
 
+  async function saveReceiptToDrive(sourceHash: string, file: File, date: string): Promise<DriveReceiptState> {
+    const result = await uploadDriveReceipt({
+      environment: household.environment,
+      memberId,
+      enabledServices: shapeGoogle(household.google).enabledServices,
+      file,
+      sourceHash,
+      date,
+    });
+    return { ...result, date, ...(result.ok ? {} : { file }) };
+  }
+
+  async function retryDriveReceipt(sourceHash: string) {
+    const startedScope = scopeKey;
+    const startedGeneration = scopeGenerationRef.current;
+    const pending = driveReceipts[sourceHash];
+    if (!pending?.file) return;
+    setWorking(true);
+    const result = await saveReceiptToDrive(sourceHash, pending.file, pending.date);
+    if (scopeIsCurrent(startedScope, startedGeneration)) setDriveReceipts((current) => ({ ...current, [sourceHash]: result }));
+    if (scopeIsCurrent(startedScope, startedGeneration)) setWorking(false);
+  }
+
+  async function removeDriveReceipt(sourceHash: string) {
+    const startedScope = scopeKey;
+    const startedGeneration = scopeGenerationRef.current;
+    setWorking(true);
+    const result = await deleteDriveReceipt({
+      environment: household.environment,
+      memberId,
+      enabledServices: shapeGoogle(household.google).enabledServices,
+      sourceHash,
+    });
+    if (scopeIsCurrent(startedScope, startedGeneration)) {
+      setDriveReceipts((current) => ({
+        ...current,
+        [sourceHash]: { ...result, date: current[sourceHash]?.date ?? "" },
+      }));
+    }
+    if (scopeIsCurrent(startedScope, startedGeneration)) setWorking(false);
+  }
+
   async function confirmBatch() {
+    const startedScope = scopeKey;
+    const startedGeneration = scopeGenerationRef.current;
     setWorking(true);
     setError("");
     try {
-      const result = buildBatchImport({ household, memberId, rows });
-      const outcome = await onCommit(result.household, result.undo);
-      if (outcome === null) throw new Error("The books did not accept this batch. The staged review is still open.");
-      if (outcome && typeof outcome === "object" && "ok" in outcome && outcome.ok === false) {
-        const detail = "userMessage" in outcome && typeof outcome.userMessage === "string"
-          ? outcome.userMessage.trim()
-          : "The books rejected this batch.";
-        throw new Error(`${detail} The staged review is still open.`);
+      if (reconciliationBlocked || unresolved || incomplete) throw new Error("Finish every reconciliation issue before Confirm.");
+      if (!scopeIsCurrent(startedScope, startedGeneration)) throw new Error("The active books changed. Re-import into the current ledger.");
+      if (kept > 0) {
+        const result = buildBatchImport({ household, memberId, rows: effectiveRows });
+        const outcome = await onCommit(result.household, result.undo);
+        if (outcome === null) throw new Error("The books did not accept this batch. The staged review is still open.");
+        if (outcome && typeof outcome === "object" && "ok" in outcome && outcome.ok === false) {
+          const detail = "userMessage" in outcome && typeof outcome.userMessage === "string"
+            ? outcome.userMessage.trim()
+            : "The books rejected this batch.";
+          throw new Error(`${detail} The staged review is still open.`);
+        }
       }
-      setRows([]);
-      setWarnings([]);
-      setFinalConfirm(false);
-      setOpen(false);
+      const uploads = reconciliation.receipts.flatMap((check) => {
+        const file = receiptFiles.get(check.sourceHash);
+        return keepReceiptInDrive[check.sourceHash] && file
+          ? [{ sourceHash: check.sourceHash, file, date: rows.find((row) => row.id === check.rowId)?.date ?? "" }]
+          : [];
+      });
+      const uploadResults = await Promise.all(uploads.map(async (upload) => ({
+        sourceHash: upload.sourceHash,
+        result: await saveReceiptToDrive(upload.sourceHash, upload.file, upload.date),
+      })));
+      if (uploadResults.length && scopeIsCurrent(startedScope, startedGeneration)) setDriveReceipts((current) => {
+        const next = { ...current };
+        uploadResults.forEach(({ sourceHash, result }) => { next[sourceHash] = result; });
+        return next;
+      });
+      if (scopeIsCurrent(startedScope, startedGeneration)) clearStaging();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
-      setFinalConfirm(false);
-      setOpen(true);
+      if (scopeIsCurrent(startedScope, startedGeneration)) {
+        setError(caught instanceof Error ? caught.message : String(caught));
+        setFinalConfirm(false);
+        setOpen(true);
+      }
     } finally {
-      setWorking(false);
+      if (scopeIsCurrent(startedScope, startedGeneration)) setWorking(false);
     }
   }
 
@@ -306,6 +524,16 @@ export function BatchImportCard({
         <input ref={uploadInput} hidden type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={(event) => void importImages(event.target.files, event.target)} />
         {working && <p role="status">Reading and checking duplicates…</p>}
         {error && !open && <p className="danger" role="alert">{error}</p>}
+        {Object.values(driveReceipts).map((receipt) => (
+          <div className={`import-drive-status ${receipt.ok ? "" : "warn"}`} key={receipt.sourceHash} role="status">
+            <span>{receipt.detail}</span>
+            <div className="row-actions">
+              {receipt.webViewLink && <a className="chip" href={receipt.webViewLink} target="_blank" rel="noreferrer">Open in Drive</a>}
+              {!receipt.ok && receipt.file && <button type="button" className="chip" disabled={working} onClick={() => void retryDriveReceipt(receipt.sourceHash)}>Retry Drive save</button>}
+              {receipt.ok && receipt.fileId && <button type="button" className="ghost" disabled={working} onClick={() => void removeDriveReceipt(receipt.sourceHash)}>Delete Drive copy</button>}
+            </div>
+          </div>
+        ))}
       </section>
 
       {open && !finalConfirm && (
@@ -314,7 +542,7 @@ export function BatchImportCard({
             <div className="topbar">
               <div>
                 <p className="kicker">Batch inbox</p>
-                <h1 id="import-review-title">Duplicate check</h1>
+                <h1 id="import-review-title">Import review</h1>
               </div>
               <button type="button" className="ghost" onClick={() => setOpen(false)} disabled={working}>Close</button>
             </div>
@@ -331,7 +559,20 @@ export function BatchImportCard({
                   {incomplete} transaction{incomplete === 1 ? "" : "s"} need{incomplete === 1 ? "s" : ""} details
                 </button>
               ) : "0 need transaction details"}
+              {" · "}{statementMismatches + receiptMismatches} reconciliation issue{statementMismatches + receiptMismatches === 1 ? "" : "s"}
             </p>
+            <ImportReconciliationPanel
+              report={reconciliation}
+              rows={rows}
+              receiptMatches={receiptMatches}
+              keepReceiptInDrive={keepReceiptInDrive}
+              receiptFiles={receiptFiles}
+              receiptConflicts={receiptConflicts}
+              onToggleMatch={toggleReceiptMatch}
+              onUseNewExpense={(sourceHash) => setReceiptMatches((current) => ({ ...current, [sourceHash]: [] }))}
+              onUpdateNumbers={updateReceiptNumbers}
+              onKeepInDrive={(sourceHash, checked) => setKeepReceiptInDrive((current) => ({ ...current, [sourceHash]: checked }))}
+            />
             <div className="tabs import-tabs" role="tablist" aria-label="Duplicate confidence">
               {TABS.map((item) => {
                 const count = reviewRows.filter((row) => row.duplicateTier === item.id).length;
@@ -358,7 +599,7 @@ export function BatchImportCard({
                   key={row.id}
                   household={household}
                   row={row}
-                  allRows={rows}
+                  allRows={effectiveRows}
                   attention={focusRequestId === row.id}
                   setAttentionRef={(element) => {
                     if (element) rowRefs.current.set(row.id, element);
@@ -376,7 +617,7 @@ export function BatchImportCard({
                 ref={finalConfirmButton}
                 type="button"
                 className="primary"
-                disabled={working || unresolved > 0 || incomplete > 0 || kept === 0}
+                disabled={working || unresolved > 0 || incomplete > 0 || reconciliationBlocked || kept + clearedReceipts === 0}
                 onClick={() => setFinalConfirm(true)}
               >
                 Review final Confirm
@@ -389,8 +630,8 @@ export function BatchImportCard({
       {finalConfirm && (
         <ConfirmSheet
           title="Confirm batch import?"
-          body={`${kept} imported row${kept === 1 ? "" : "s"} will enter the real books. ${cancelled} cancelled import${cancelled === 1 ? " stays" : "s stay"} out. Existing rows you chose are excluded, not erased.`}
-          extra="The whole batch crosses the same validated PGlite and cloud-continuity boundary as an ordinary Confirm. Cancel changes nothing."
+          body={`${kept} imported row${kept === 1 ? "" : "s"} will enter the real books. ${clearedReceipts} receipt${clearedReceipts === 1 ? " is" : "s are"} cleared against exact payment totals. ${cancelled} cancelled import${cancelled === 1 ? " stays" : "s stay"} out.`}
+          extra="Statement and receipt totals are checked before the books can accept this batch. Optional Drive evidence is saved afterward; a Drive failure never rolls back accepted money and can be retried separately."
           confirmLabel={`Confirm ${kept} import${kept === 1 ? "" : "s"}`}
           busy={working}
           onCancel={() => setFinalConfirm(false)}
@@ -398,6 +639,148 @@ export function BatchImportCard({
         />
       )}
     </>
+  );
+}
+
+function dollarsToCents(value: string): number | null {
+  const normalized = value.trim().replace(/[$,]/g, "");
+  if (!normalized) return null;
+  if (!/^\d+(?:\.\d{0,2})?$/.test(normalized)) return null;
+  const cents = Math.round(Number(normalized) * 100);
+  return Number.isSafeInteger(cents) && cents >= 0 ? cents : null;
+}
+
+function ImportReconciliationPanel({
+  report,
+  rows,
+  receiptMatches,
+  keepReceiptInDrive,
+  receiptFiles,
+  receiptConflicts,
+  onToggleMatch,
+  onUseNewExpense,
+  onUpdateNumbers,
+  onKeepInDrive,
+}: {
+  report: ImportReconciliationReport;
+  rows: ImportReviewRow[];
+  receiptMatches: Record<string, string[]>;
+  keepReceiptInDrive: Record<string, boolean>;
+  receiptFiles: Map<string, File>;
+  receiptConflicts: Set<string>;
+  onToggleMatch: (sourceHash: string, candidateId: string, checked: boolean, currentIds: string[]) => void;
+  onUseNewExpense: (sourceHash: string) => void;
+  onUpdateNumbers: (rowId: string, numbers: ReceiptNumbers) => void;
+  onKeepInDrive: (sourceHash: string, checked: boolean) => void;
+}) {
+  if (!report.statements.length && !report.receipts.length) return null;
+  return (
+    <section className="import-reconciliation" aria-labelledby="import-reconciliation-title">
+      <header>
+        <div>
+          <h2 id="import-reconciliation-title">Totals check</h2>
+          <p className="muted">Exact cents only. Hearth never stores receipt item names.</p>
+        </div>
+      </header>
+      {report.statements.map((check) => (
+        <article className={`import-check import-check--${check.status}`} key={check.id}>
+          <strong>{check.sourceName} · account •••• {check.accountLast4 || "unknown"}</strong>
+          {check.status === "skipped" ? (
+            <p>Opening or closing balance is unavailable. Per your rule, this balance equation is skipped and assumed to line up.</p>
+          ) : (
+            <p>
+              {formatCad(check.openingBalanceCents ?? 0)} + {formatCad(check.transactionNetCents)} = {formatCad(check.expectedClosingBalanceCents ?? 0)}; statement closes at {formatCad(check.closingBalanceCents ?? 0)}.
+              {check.status === "mismatch" ? ` Difference: ${formatCad(Math.abs(check.differenceCents ?? 0))}.` : " Exact."}
+            </p>
+          )}
+        </article>
+      ))}
+      {report.receipts.map((check) => {
+        const row = rows.find((candidate) => candidate.id === check.rowId);
+        if (!row) return null;
+        const numbers = normalizeReceiptNumbers(row.receiptNumbers, row.amountCents);
+        const selectedIds = receiptMatches[check.sourceHash] ?? check.suggestedMatchIds;
+        const selectedTotal = selectedPaymentTotal(check, selectedIds);
+        const paymentConflict = receiptConflicts.has(check.sourceHash);
+        const manualAssignment = Object.prototype.hasOwnProperty.call(receiptMatches, check.sourceHash);
+        const blocked = receiptSelectionBlocks(check, selectedIds, paymentConflict, manualAssignment);
+        const cleared = receiptSelectionCleared(check, selectedIds, paymentConflict);
+        const updateNumber = (field: keyof ReceiptNumbers, value: number | null | number[]) => {
+          onUpdateNumbers(check.rowId, { ...numbers, [field]: value } as ReceiptNumbers);
+        };
+        return (
+          <article className={`import-check import-check--${blocked ? "mismatch" : "balanced"}`} key={check.id}>
+            <header>
+              <strong>{check.sourceName} · {formatCad(check.totalCents)}</strong>
+              <span className="pill">{cleared ? "Cleared to payment" : check.paymentAssignmentConflict && !manualAssignment ? "Needs choice" : blocked ? "Needs numbers" : "New expense"}</span>
+            </header>
+            <div className="import-receipt-numbers">
+              <label>Item amounts only
+                <input
+                  key={`lines-${numbers.lineAmountsCents.join("-")}`}
+                  defaultValue={numbers.lineAmountsCents.map((cents) => (cents / 100).toFixed(2)).join(", ")}
+                  placeholder="12.00, 3.49, 6.50"
+                  onBlur={(event) => updateNumber("lineAmountsCents", event.target.value.split(/[,;\n]+/).map(dollarsToCents).filter((cents): cents is number => cents !== null))}
+                />
+              </label>
+              {(["subtotalCents", "discountCents", "taxCents", "tipCents", "feeCents", "totalCents"] as const).map((field) => (
+                <label key={field}>{field.replace("Cents", "").replace(/^./, (letter) => letter.toUpperCase())}
+                  <input
+                    inputMode="decimal"
+                    defaultValue={field === "subtotalCents" && numbers[field] == null ? "" : ((numbers[field] ?? 0) / 100).toFixed(2)}
+                    onBlur={(event) => updateNumber(field, dollarsToCents(event.target.value) ?? (field === "subtotalCents" ? null : 0))}
+                  />
+                </label>
+              ))}
+            </div>
+            <p className={receiptMathBlocks(check) ? "danger" : "muted"}>
+              Items {check.lineSumCents == null ? "unreadable" : formatCad(check.lineSumCents)} · calculated total {check.componentSumCents == null ? "unavailable" : formatCad(check.componentSumCents)} · detected total {formatCad(check.totalCents)}
+            </p>
+            <fieldset className="import-payment-matches">
+              <legend>Payments within two days</legend>
+              {check.candidates.length ? check.candidates.map((candidate) => (
+                <label key={candidate.id}>
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(candidate.id)}
+                    onChange={(event) => onToggleMatch(check.sourceHash, candidate.id, event.target.checked, selectedIds)}
+                  />
+                  <span>{candidate.date} · {candidate.label}</span>
+                </label>
+              )) : <p className="muted">No nearby imported or posted payment found.</p>}
+            </fieldset>
+            {check.paymentAssignmentConflict && !manualAssignment && (
+              <button type="button" className="secondary" onClick={() => onUseNewExpense(check.sourceHash)}>
+                Treat as new expense
+              </button>
+            )}
+            <p className={blocked ? "danger" : "muted"}>
+              {paymentConflict
+                ? "One selected payment is also claimed by another receipt. Each payment can clear only one receipt."
+                : check.paymentAssignmentConflict && !manualAssignment
+                  ? "This payment also fits another receipt. Select the payment here, or explicitly treat this receipt as a new expense."
+                : selectedIds.length
+                ? `Selected payments total ${formatCad(selectedTotal)}. They must equal ${formatCad(check.totalCents)} exactly.`
+                : check.matchSearchStatus === "truncated"
+                  ? "Many nearby payments were found. Choose the exact payment or payments before Confirm; Hearth will not assume there is no match."
+                : check.lineSumCents == null
+                  ? "Item amounts are unreadable. Select an exact payment match to clear this receipt."
+                  : blocked ? "Correct the receipt numbers before Confirm." : "No payment selected; this balanced receipt will post as a new expense."}
+            </p>
+            <label className="import-drive-choice">
+              <input
+                type="checkbox"
+                checked={Boolean(keepReceiptInDrive[check.sourceHash])}
+                disabled={!receiptFiles.has(check.sourceHash)}
+                onChange={(event) => onKeepInDrive(check.sourceHash, event.target.checked)}
+              />
+              Keep the original image in my private Drive at Hearth Receipts/YYYY/MM
+            </label>
+            {!receiptFiles.has(check.sourceHash) && <p className="muted">The original image is no longer available in this review.</p>}
+          </article>
+        );
+      })}
+    </section>
   );
 }
 
