@@ -255,7 +255,7 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 - [x] Apply SELECT bridge `008`; configure Google provider; revise 006 Production abort to NOTICE; apply **006**.
 - [ ] Smoke Create / email / QR / revoke / anon denial / wrong-household denial on Auth-enabled kitchen; invite chrome.
 - [ ] Add device/session revoke and household leave/recovery semantics.
-- [ ] Replace phrase-as-authority and `linked` publishing with automatic authenticated discovery/synchronization; invitations only establish membership.
+- [x] Replace phrase-as-authority and `linked` publishing with automatic authenticated discovery/synchronization; invitations only establish membership. *(D-143 client: automatic transport requires continuity membership; live anon phrase REST denied under 006; 010 bind live. Signed-in Create/invite redeem smoke still open; revoke UI deferred.)*
 - [ ] Build and test migrations on a disposable rehearsal project; Production cutover is a separate Jonathan-approved plan.
 - [ ] Add pgTAP negative tests and a permission matrix to required CI.
 - [ ] Complete concurrency/outbox work (002 live + member-guard in CAS) before claiming authenticated two-phone safety.

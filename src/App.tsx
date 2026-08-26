@@ -146,9 +146,9 @@ import {
 } from "./storage.ts";
 import { clearSession, loadSession, saveSession, type Session } from "./session.ts";
 import { joinSharedHousehold, reconcileHousehold, reconcileHouseholdSnapshots } from "./api.ts";
-import { acceptHouseholdWrite, classifyCommandError, hostedTransportAllowed, newConfirmationId, isLedgerWrite } from "./core/index.ts";
+import { acceptHouseholdWrite, classifyCommandError, newConfirmationId, isLedgerWrite } from "./core/index.ts";
 import { ingestHouseholdBooks, inspectBrowserBooks, restoreHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
-import { pushSupabaseHousehold, readSupabaseConfig, pullHouseholdSnapshotById, pullPersonalSnapshotById, fetchContinuityMembershipRole } from "./ledger/supabase.ts";
+import { readSupabaseConfig, pullHouseholdSnapshotById, pullPersonalSnapshotById, fetchContinuityMembershipRole } from "./ledger/supabase.ts";
 import { clearUndoHistory, loadUndoHistory, saveUndoHistory } from "./undoHistory.ts";
 import { livePullIntervalMs, shouldRunLivePull } from "./continuityLivePull.ts";
 import {
@@ -172,7 +172,6 @@ import {
   listContinuityOutbox,
   productionContinuityEnabled,
   transportHouseholdWithOutbox,
-  unprojectedHostedTransportAllowed,
   type ContinuityIdentity,
 } from "./continuity.ts";
 import { inviteFromLocation } from "./core/invite.ts";
@@ -1292,10 +1291,7 @@ export function App() {
           || continuityMemberId(next, continuityIdentity) === memberId
         ),
       );
-      const transportRequested = hostedContinuityAllowed(environment) && (
-        automaticContinuity
-        || (unprojectedHostedTransportAllowed(environment) && hostedTransportAllowed(next))
-      );
+      const transportRequested = hostedContinuityAllowed(environment) && automaticContinuity;
       // Kitchen/UX: enqueue only, flush in background. Ledger: flush immediately (sync-on-write).
       const flushTransport = ledgerWrite;
       const outcome = await acceptHouseholdWrite({
@@ -1327,35 +1323,6 @@ export function App() {
                 config: cloudConfig,
                 flush: flushTransport,
               })
-            : transportRequested && hostedTransportAllowed(next)
-              ? async (household, expectedRevision) => {
-                if (!flushTransport) {
-                  void pushSupabaseHousehold(household, cloudConfig, { expectedRevision }).catch(() => undefined);
-                  return {
-                    ok: false,
-                    errorClass: "pending-transport" as const,
-                    message: "Saved on this phone. Sharing in the background.",
-                  };
-                }
-                const pushed = await pushSupabaseHousehold(household, cloudConfig, { expectedRevision });
-                if (pushed.skipped) return { ok: true };
-                if (pushed.conflict && pushed.remote) {
-                  return {
-                    ok: false,
-                    errorClass: "conflict-detected" as const,
-                    remote: pushed.remote,
-                    message: pushed.error || "Another phone posted a newer household snapshot. Nothing was overwritten.",
-                  };
-                }
-                if (!pushed.schema) {
-                  return {
-                    ok: false,
-                    errorClass: "pending-transport" as const,
-                    message: pushed.error || "Saved on this phone. Sharing can retry from More.",
-                  };
-                }
-                return { ok: true, remoteRevision: household.revision };
-              }
               : undefined,
         },
       });

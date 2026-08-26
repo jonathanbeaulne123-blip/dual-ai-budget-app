@@ -49,7 +49,7 @@ describe("hosted compare-and-swap", () => {
       }
       return response(null, 201);
     }));
-    const result = await pushSupabaseHousehold(local, bundledSupabaseConfig(), { expectedRevision: 3 });
+    const result = await pushSupabaseHousehold(local, bundledSupabaseConfig(), { expectedRevision: 3, legacyLinkedPublish: true });
     expect(result.conflict).toBe(true);
     expect(result.remote?.revision).toBe(4);
     expect(result.usedCasRpc).toBe(false);
@@ -85,7 +85,7 @@ describe("hosted compare-and-swap", () => {
       }
       return response(null, 201);
     }));
-    const result = await pushSupabaseHousehold(local, bundledSupabaseConfig(), { expectedRevision: 2 });
+    const result = await pushSupabaseHousehold(local, bundledSupabaseConfig(), { expectedRevision: 2, legacyLinkedPublish: true });
     expect(result.conflict).toBe(true);
     expect(result.usedCasRpc).toBe(false);
     expect(calls.some((call) => /POST/i.test(call) && call.includes("household_snapshots"))).toBe(false);
@@ -117,7 +117,7 @@ describe("hosted compare-and-swap", () => {
       }
       return response(null, 201);
     }));
-    const result = await pushSupabaseHousehold(local, bundledSupabaseConfig(), { expectedRevision: 1 });
+    const result = await pushSupabaseHousehold(local, bundledSupabaseConfig(), { expectedRevision: 1, legacyLinkedPublish: true });
     expect(result.conflict).toBeFalsy();
     expect(result.usedCasRpc).toBe(true);
     expect(calls.some((call) => call.includes("rpc/publish_household_snapshot"))).toBe(true);

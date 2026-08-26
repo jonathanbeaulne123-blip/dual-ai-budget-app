@@ -32,6 +32,39 @@ describe("D-110 local-first sharing", () => {
     expect(hostedTransportAllowed({ linked: true })).toBe(true);
   });
 
+  it("D-143: linked alone does not publish without continuity identity or legacy opt-in", async () => {
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    const config = bundledSupabaseConfig();
+    const linked = { ...catalogHousehold(), linked: true as const };
+    const skipped = await pushSupabaseHousehold(linked, config);
+    expect(skipped.skipped).toBe(true);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("D-143: explicit legacyLinkedPublish still reaches Development transport", async () => {
+    const linked = { ...catalogHousehold(), linked: true as const };
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("households?select=id") || url.includes("household_snapshots?")) {
+        return new Response(JSON.stringify([]), { status: 200 });
+      }
+      if (url.includes("rpc/publish_household_snapshot") || url.includes("rpc/hearth_create_household")) {
+        return new Response(JSON.stringify({
+          code: "PGRST202",
+          message: "Could not find the function",
+        }), { status: 404 });
+      }
+      if ((init?.method || "GET") === "POST") {
+        return new Response(null, { status: 201 });
+      }
+      return new Response(JSON.stringify([]), { status: 200 });
+    }));
+    const result = await pushSupabaseHousehold(linked, bundledSupabaseConfig(), { legacyLinkedPublish: true });
+    expect(result.skipped).toBe(false);
+    expect(result.schema).toBe(true);
+  });
+
   it("does not treat a Hearth Pass household as linked transport", () => {
     const pass = makeHearthPass(catalogHousehold());
     const joined = applyHearthPass(null, pass);

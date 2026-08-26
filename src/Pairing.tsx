@@ -33,7 +33,7 @@ import {
   type InviteKind,
   type IssueInviteResult,
 } from "./ledger/householdInvites.ts";
-import { readSupabaseConfig } from "./ledger/supabase.ts";
+import { pushSupabaseHousehold, readSupabaseConfig } from "./ledger/supabase.ts";
 import { AuthJoinQr } from "./AuthJoinQr.tsx";
 
 function downloadPass(household: Household) {
@@ -326,6 +326,27 @@ export function PairingCard({
       await onBeforeSensitive?.();
       const next = household.linked ? household : markLinked(household);
       await onHousehold(next);
+      // D-143: Auth-off recovery only — automatic commits never use linked alone.
+      const pushed = await pushSupabaseHousehold(next, readSupabaseConfig(), {
+        expectedRevision: next.baseRevision ?? 0,
+        legacyLinkedPublish: true,
+      });
+      if (pushed.skipped) {
+        onError(pushed.error || "Cloud publish was skipped. Continue with Google for automatic sharing.");
+        onSyncState("error");
+        return;
+      }
+      if (pushed.conflict) {
+        onError(pushed.error || "Another phone posted a newer household snapshot. Nothing was overwritten.");
+        onSyncState("error");
+        return;
+      }
+      if (!pushed.schema) {
+        onError(pushed.error || "Could not reach the shared household.");
+        onSyncState("error");
+        return;
+      }
+      onSyncState("synced");
     } catch (caught) {
       downloadPass(household);
       onError(caught instanceof Error ? caught.message : String(caught));

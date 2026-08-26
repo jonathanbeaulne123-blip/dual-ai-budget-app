@@ -15,6 +15,7 @@ import {
 
 export {
   hostedContinuityAllowed,
+  legacyLinkedPublishAllowed,
   productionContinuityEnabled,
   unprojectedHostedTransportAllowed,
 } from "./ledger/continuityPolicy.ts";

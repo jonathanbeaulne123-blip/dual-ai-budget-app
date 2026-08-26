@@ -17,9 +17,16 @@ export function hostedContinuityAllowed(environment: Environment): boolean {
 }
 
 /**
- * Phrase/`linked` unprojected transport remains Development-only.
+ * Explicit legacy `linked` publish (Pairing recovery when Auth is off) stays
+ * Development-only. Automatic commits never use this path (D-143): Auth JWT +
+ * continuity membership is the sole automatic continuity authority.
  * Production may only use Google-matched projected continuity when the flag is on.
  */
 export function unprojectedHostedTransportAllowed(environment: Environment): boolean {
   return environment === "development";
+}
+
+/** True when a caller explicitly opts into legacy linked publish (not automatic commit). */
+export function legacyLinkedPublishAllowed(environment: Environment): boolean {
+  return unprojectedHostedTransportAllowed(environment);
 }
