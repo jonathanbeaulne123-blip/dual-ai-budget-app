@@ -79,7 +79,7 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 ## Hercules Sim + Review packs (D-138)
 
-**Status:** Draft PR [#140](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/140) on `cursor/hercules-sim-review-packs-129b` @ `624f380`. Not merged; not deployed; no schema/secrets/Production mutation.
+**Status:** Draft PR [#140](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/140) on `cursor/hercules-sim-review-packs-129b` @ `02970b9`. Not merged; not deployed; no schema/secrets/Production mutation.
 
 **Baseline:** `main@cd3eb87`. Worksession: [`worksessions/2026-08-26-hercules-sim-review-packs.md`](worksessions/2026-08-26-hercules-sim-review-packs.md).
 
