@@ -6,18 +6,18 @@ import {
   addDays,
   calendarDaysBetween,
   monthKeyFromDateKey,
+  monthStartKey,
   shiftMonthKey,
   type DateKey,
   type MonthKey,
 } from "./calendar.ts";
-import { accountBookBalance } from "./accounts.ts";
+import { accountBookBalance, creditCardView } from "./accounts.ts";
 import { isCashLikeKind } from "./accountKinds.ts";
 import { monthSummary } from "./budget.ts";
 import { budgetVariance } from "./statements.ts";
 import { formatCad, sumCents } from "./money.ts";
 import { projectCadence } from "./recurrence.ts";
 import { leftoverProjection } from "./sitDown.ts";
-import { creditCardView } from "./accounts.ts";
 import { runTipOracle, observeTipShifts } from "./tipScience.ts";
 import { workShiftIsReversed } from "./work.ts";
 import type { Household } from "./types.ts";
@@ -40,6 +40,7 @@ export type CashCinemaResult = {
   openingCashCents: number;
   lowestCashCents: number;
   dryWeeks: number;
+  oracleHorizonDays: number;
   assumptions: string[];
 };
 
@@ -68,6 +69,7 @@ export type YearReviewResult = {
   totalSpendCents: number;
   budgetMissCount: number;
   shiftCount: number;
+  memberScoped: boolean;
   assumptions: string[];
 };
 
@@ -112,6 +114,35 @@ function weeklyWageEstimate(household: Household, memberId?: string): number {
   return Math.round(wages / weeks);
 }
 
+function transactionWasReversed(household: Household, transactionId: string): boolean {
+  return household.transactions.some((row) => row.reversalOfId === transactionId);
+}
+
+/** Month income/spend from non-reversed posted rows; optional member creator filter. */
+function monthPostedActuals(
+  household: Household,
+  month: MonthKey,
+  memberId?: string,
+): { incomeCents: number; spendCents: number } {
+  if (!memberId) {
+    const summary = monthSummary(household, month);
+    return { incomeCents: summary.incomeActualCents, spendCents: summary.expenseActualCents };
+  }
+  const start = monthStartKey(month);
+  const end = addDays(monthStartKey(shiftMonthKey(month, 1)), -1);
+  let incomeCents = 0;
+  let spendCents = 0;
+  for (const tx of household.transactions) {
+    if (tx.isDuplicate || tx.reversalOfId) continue;
+    if (transactionWasReversed(household, tx.id)) continue;
+    if (tx.date < start || tx.date > end) continue;
+    if (tx.createdBy !== memberId) continue;
+    if (tx.type === "income") incomeCents += tx.amountCents;
+    if (tx.type === "expense") spendCents += tx.amountCents;
+  }
+  return { incomeCents, spendCents };
+}
+
 /** 13-week forward cash path using tip floor/typical, wage pace, bills, and card mins. */
 export function runCashCinema(
   household: Household,
@@ -119,7 +150,9 @@ export function runCashCinema(
   options?: { memberId?: string; weeks?: number },
 ): CashCinemaResult {
   const weekCount = Math.min(13, Math.max(4, Math.round(options?.weeks ?? 13)));
-  const opening = leftoverProjection(household, today).cashLikeCents || cashLike(household, today);
+  const leftover = leftoverProjection(household, today);
+  // Prefer sit-down cash-like leftover (may be 0); fall back only when leftover is unavailable.
+  const opening = leftover.cashLikeCents ?? cashLike(household, today);
   const oracle = runTipOracle(household, {
     memberId: options?.memberId,
     today,
@@ -127,15 +160,17 @@ export function runCashCinema(
     iterations: 800,
     seed: 211,
   });
-  const tipFloorWeekly = oracle ? Math.round(oracle.p10Cents / weekCount) : 0;
-  const tipTypicalWeekly = oracle ? Math.round(oracle.p50Cents / weekCount) : 0;
+  // Oracle clamps horizon (currently ≤62 days). Scale weekly tip from the oracle's actual horizon.
+  const oracleHorizonDays = oracle?.horizonDays ?? weekCount * 7;
+  const tipFloorWeekly = oracle ? Math.round((oracle.p10Cents * 7) / oracleHorizonDays) : 0;
+  const tipTypicalWeekly = oracle ? Math.round((oracle.p50Cents * 7) / oracleHorizonDays) : 0;
   const wagesWeekly = weeklyWageEstimate(household, options?.memberId);
   const weeks: CashCinemaWeek[] = [];
   let cash = opening;
   let lowest = opening;
   let dryWeeks = 0;
   for (let i = 0; i < weekCount; i += 1) {
-    const weekStart = addDays(today, i * 7 + 1);
+    const weekStart = addDays(today, i * 7);
     const weekEnd = addDays(weekStart, 6);
     const bills = outgoingBills(household, weekStart, weekEnd);
     const mins = i === 0 ? cardMins(household, today) : 0; // card mins once at front; avoid weekly double-count
@@ -162,11 +197,13 @@ export function runCashCinema(
     openingCashCents: opening,
     lowestCashCents: lowest,
     dryWeeks,
+    oracleHorizonDays,
     assumptions: [
-      "Cash Cinema is a 13-week projection ribbon, not posted balances.",
-      "Tip floor/typical come from the Shift Oracle Monte Carlo; wages use historical weekly pace.",
+      "Cash Cinema is a forward projection ribbon, not posted balances.",
+      `Tip floor/typical are weekly rates from a ${oracleHorizonDays}-day Shift Oracle Monte Carlo (oracle may clamp the requested horizon).`,
+      "Wages use historical weekly pace across confirmed non-reversed shifts.",
       "Scheduled bills are cadence projections until Confirm marks them paid.",
-      "Card minimums are applied once at the start of the ribbon to avoid weekly double-counting.",
+      "Card minimums are applied once in week 1 to avoid weekly double-counting.",
       "Dry week means closing cash falls below one week of tip-floor income — a planning flag, not an overdraft fact.",
     ],
   };
@@ -180,7 +217,7 @@ export function runWhatIfDesk(
     amountCents?: number;
     memberId?: string;
   },
-): WhatIfResult {
+): WhatIfResult | { error: string } {
   const leftover = leftoverProjection(household, today);
   const beforeCash = leftover.cashLikeCents;
   const oracle = runTipOracle(household, { memberId: input.memberId, today, horizonDays: 28, iterations: 600, seed: 89 });
@@ -189,16 +226,24 @@ export function runWhatIfDesk(
   let afterTipFloor = beforeTipFloor;
   let label = "";
   let amount = Math.max(0, Math.round(input.amountCents ?? 0));
+  const assumptions = [
+    "What-If Desk scenarios are not posted. Any real draft still requires Confirm in Hearth.",
+    "Cash uses the sit-down cash-like projection; tip floor uses the Shift Oracle when available.",
+    "“Fits” is a narrow leftover test against remaining cash — not permission or advice.",
+  ];
 
   if (input.scenario === "cut_one_dinner_shift") {
     const tips = observeTipShifts(household, input.memberId).filter((row) => row.meal === "dinner");
-    const typical = tips.length
-      ? Math.round(tips.reduce((sum, row) => sum + row.netTipsCents, 0) / tips.length)
-      : 15_000;
+    if (!tips.length) {
+      return { error: "I need posted dinner tip shifts before I can cut one from the What-If Desk." };
+    }
+    const typical = Math.round(tips.reduce((sum, row) => sum + row.netTipsCents, 0) / tips.length);
     amount = typical;
     afterCash = beforeCash - typical;
+    // Illustrative one-shift haircut on the 28-day tip-floor window — not a re-simulated oracle.
     afterTipFloor = Math.max(0, beforeTipFloor - typical);
     label = `Cut one typical dinner shift (~${formatCad(typical)} tips)`;
+    assumptions.push("Tip-floor change is an illustrative one-shift haircut on the 28-day oracle floor, not a fresh Monte Carlo.");
   } else if (input.scenario === "extra_card_pay") {
     amount = amount || 40_000;
     afterCash = beforeCash - amount;
@@ -209,7 +254,6 @@ export function runWhatIfDesk(
     label = `Hypothetical purchase of ${formatCad(amount)}`;
   } else {
     amount = amount || Math.round(beforeTipFloor * 0.25);
-    // Treat the boost as cash reserved out of free cash-like leftover.
     afterCash = beforeCash - amount;
     label = `Boost tax-milk reserve by ${formatCad(amount)}`;
   }
@@ -222,12 +266,8 @@ export function runWhatIfDesk(
     beforeTipFloorCents: beforeTipFloor,
     afterTipFloorCents: afterTipFloor,
     deltaCashCents: afterCash - beforeCash,
-    fits: afterCash >= 0 && afterCash >= leftover.billsNext30Cents * 0.25,
-    assumptions: [
-      "What-If Desk scenarios are not posted. Convert-to-draft still requires Confirm in Hearth.",
-      "Cash uses the sit-down cash-like projection; tip floor uses the Shift Oracle when available.",
-      "“Fits” is a narrow leftover test against remaining cash — not permission or advice.",
-    ],
+    fits: afterCash >= 0 && afterCash * 4 >= leftover.billsNext30Cents,
+    assumptions,
   };
 }
 
@@ -254,25 +294,29 @@ export function runYearReview(
     };
   });
   const ranked = [...tipMonths].sort((a, b) => b.tipCents - a.tipCents);
-  const summaries = keys.map((month) => monthSummary(household, month));
-  const totalIncome = summaries.reduce((sum, row) => sum + row.incomeActualCents, 0);
-  const totalSpend = summaries.reduce((sum, row) => sum + row.expenseActualCents, 0);
+  const hasTips = tipMonths.some((row) => row.tipCents > 0);
+  const actuals = keys.map((month) => monthPostedActuals(household, month, options?.memberId));
+  const totalIncome = actuals.reduce((sum, row) => sum + row.incomeCents, 0);
+  const totalSpend = actuals.reduce((sum, row) => sum + row.spendCents, 0);
   const budgetMissCount = keys.reduce((sum, month) => sum + budgetVariance(household, month).filter((row) => row.varianceCents < 0).length, 0);
   return {
     fromMonth: keys[0]!,
     toMonth: keys[keys.length - 1]!,
     tipMonths,
-    bestTipMonth: ranked[0]?.tipCents ? ranked[0].month : null,
-    worstTipMonth: ranked.at(-1)?.tipCents != null ? ranked.at(-1)!.month : null,
+    bestTipMonth: hasTips && ranked[0] && ranked[0].tipCents > 0 ? ranked[0].month : null,
+    worstTipMonth: hasTips ? ranked.at(-1)!.month : null,
     totalTipsCents: tipMonths.reduce((sum, row) => sum + row.tipCents, 0),
     totalIncomeCents: totalIncome,
     totalSpendCents: totalSpend,
     budgetMissCount,
     shiftCount: tipMonths.reduce((sum, row) => sum + row.shifts, 0),
+    memberScoped: Boolean(options?.memberId),
     assumptions: [
-      "Year-in-Review uses posted journal and confirmed shifts only for money totals.",
+      "Tips and shift counts use confirmed non-reversed shifts only.",
+      options?.memberId
+        ? "Income and spend are non-reversed posted rows created by that member (reversals excluded)."
+        : "Income and spend use the same month category actuals as the budget tools (monthSummary).",
       "Budget misses count categories over plan; budgets remain projections.",
-      "Best/worst tip months are from posted tip history, not simulated.",
     ],
   };
 }

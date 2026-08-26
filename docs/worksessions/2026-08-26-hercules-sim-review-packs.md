@@ -1,10 +1,12 @@
 # Worksession — Hercules Sim + Review packs (D-138)
 
 **Opened:** 2026-08-26  
+**Closed:** 2026-08-26  
 **Owner:** Cursor (Cloud Agent)  
 **Risk:** High (forecast / scenario math; Pro announcement UX)  
 **Mode:** Implementation  
-**Baseline:** `origin/main` at open; rebase before PR.
+**Baseline:** `main@cd3eb87` → head `624f380`  
+**PR:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/140
 
 ## Goal
 
@@ -30,6 +32,18 @@ Also:
 - Silent money posts from Pro or in-app Hercules.
 - Schema / Production / deploy without Jonathan.
 
+## Landed
+
+- `src/core/simReview.ts` + tools `cash_cinema`, `what_if_desk`, `year_review`
+- Wired through `herculesTools.ts`, `workers/site.js`, `workers/herculesPro.js`
+- Pro MCP `usedTool` + `I used \`tool\`.` answer prefix; skill updated
+- Inventory: `docs/HERCULES_PRO_CAPABILITIES.md`; D-138 in decisions
+
+## Verification
+
+- Focused: `sim-review`, `hercules-pro`, `tip-science` green
+- Full `pnpm check`: 609 pass; 2 known unrelated `batch-import-ui` SubtleCrypto failures on this VM
+
 ## Status
 
-- Open — implementing.
+- Closed for implementation; awaiting trust review + Jonathan merge. Not deployed.

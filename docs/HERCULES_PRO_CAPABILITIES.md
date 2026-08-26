@@ -13,6 +13,7 @@ Status: living inventory for D-136 / D-137 / D-138. Count on `tools/list` is **6
 | Personal vs Household view | Every read takes `view`; Personal never reveals partner-personal |
 | Confirmed writes (opt-in) | Off by default; `hearth.write` scope + More → permissions |
 | Production gate | Refused unless `HERCULES_PRO_ALLOW_PRODUCTION=true` |
+| Development-data window | Through **2026-09-30**, hosted Development information is disposable and may remain openly readable/writable to accelerate continuity work. Credentials and secrets are never disposable. See `HERCULES_PRO_PRIVACY.md` / `CLOUD_CONTINUITY.md`. |
 | Currency / books civil TZ | CAD integer cents; America/Toronto |
 
 ## Write-path tools (3)

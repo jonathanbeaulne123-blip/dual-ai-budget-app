@@ -1379,18 +1379,21 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     });
     const source = tipOracleSource(context, memberId);
     const firstDry = cinema.weeks.find((week) => week.dry);
+    const assumptionTail = cinema.assumptions.slice(0, 3).join(" ");
     return {
       callId: call.id,
       name: call.name,
       status: "ok",
-      sentence: `Cash Cinema opens at ${formatCad(cinema.openingCashCents)} and projects a low near ${formatCad(cinema.lowestCashCents)} over ${cinema.weeks.length} weeks, with ${cinema.dryWeeks} pressure week${cinema.dryWeeks === 1 ? "" : "s"}${firstDry ? ` (first around ${firstDry.weekStart})` : ""}. Tip typical/floor and wages are projections; bills are cadence until Confirm. ${cinema.assumptions[0]}`,
+      sentence: `Cash Cinema opens at ${formatCad(cinema.openingCashCents)} and projects a low near ${formatCad(cinema.lowestCashCents)} over ${cinema.weeks.length} weeks (oracle horizon ${cinema.oracleHorizonDays} days), with ${cinema.dryWeeks} pressure week${cinema.dryWeeks === 1 ? "" : "s"}${firstDry ? ` (first around ${firstDry.weekStart})` : ""}. ${assumptionTail}`,
       facts: [
         fact(call, 0, "Opening cash", formatCad(cinema.openingCashCents), source, "projection"),
         fact(call, 1, "Lowest cash", formatCad(cinema.lowestCashCents), source, "projection"),
         fact(call, 2, "Dry weeks", String(cinema.dryWeeks), source, "projection"),
-        ...cinema.weeks.slice(0, 4).map((week, index) => fact(
+        fact(call, 3, "Weekly tip typical", formatCad(cinema.weeks[0]?.tipTypicalCents ?? 0), source, "projection"),
+        fact(call, 4, "Oracle horizon days", String(cinema.oracleHorizonDays), source, "projection"),
+        ...cinema.weeks.slice(0, 3).map((week, index) => fact(
           call,
-          index + 3,
+          index + 5,
           `Week of ${week.weekStart}`,
           `${formatCad(week.closingCashCents)}${week.dry ? " · pressure" : ""}`,
           tipOracleSource(context, memberId, week.weekStart),
@@ -1414,12 +1417,13 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
       amountCents: cleanCents(call.args.amountCents),
       memberId,
     });
+    if ("error" in desk) return empty(call, desk.error);
     const source = tipOracleSource(context, memberId);
     return {
       callId: call.id,
       name: call.name,
       status: "ok",
-      sentence: `${desk.label}: cash moves from ${formatCad(desk.beforeCashCents)} to ${formatCad(desk.afterCashCents)} (${formatCad(desk.deltaCashCents)}). Tip-floor window ${formatCad(desk.beforeTipFloorCents)} → ${formatCad(desk.afterTipFloorCents)}. ${desk.fits ? "It still clears a narrow leftover test." : "It fails the narrow leftover test."} Not posted — Confirm still required for any draft.`,
+      sentence: `${desk.label}: cash moves from ${formatCad(desk.beforeCashCents)} to ${formatCad(desk.afterCashCents)} (${formatCad(desk.deltaCashCents)}). Tip-floor window ${formatCad(desk.beforeTipFloorCents)} → ${formatCad(desk.afterTipFloorCents)}. ${desk.fits ? "It still clears a narrow leftover test." : "It fails the narrow leftover test."} ${desk.assumptions.slice(0, 2).join(" ")}`,
       facts: [
         fact(call, 0, "Before cash", formatCad(desk.beforeCashCents), source, "projection"),
         fact(call, 1, "After cash", formatCad(desk.afterCashCents), source, "projection"),
@@ -1443,7 +1447,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
       callId: call.id,
       name: call.name,
       status: "ok",
-      sentence: `Season Replay ${review.fromMonth}–${review.toMonth}: ${formatCad(review.totalTipsCents)} tips across ${review.shiftCount} shift${review.shiftCount === 1 ? "" : "s"}, ${formatCad(review.totalIncomeCents)} income, ${formatCad(review.totalSpendCents)} spend, and ${review.budgetMissCount} budget miss${review.budgetMissCount === 1 ? "" : "es"}. Best tip month ${review.bestTipMonth ?? "n/a"}; softest ${review.worstTipMonth ?? "n/a"}. Posted history only.`,
+      sentence: `Season Replay ${review.fromMonth}–${review.toMonth}${review.memberScoped ? " (member-scoped)" : ""}: ${formatCad(review.totalTipsCents)} tips across ${review.shiftCount} shift${review.shiftCount === 1 ? "" : "s"}, ${formatCad(review.totalIncomeCents)} income, ${formatCad(review.totalSpendCents)} spend, and ${review.budgetMissCount} budget miss${review.budgetMissCount === 1 ? "" : "es"}. Best tip month ${review.bestTipMonth ?? "n/a"}; softest ${review.worstTipMonth ?? "n/a"}. ${review.assumptions[0]} ${review.assumptions[1]}`,
       facts: [
         fact(call, 0, "Total tips", formatCad(review.totalTipsCents), source),
         fact(call, 1, "Total income", formatCad(review.totalIncomeCents), source),
