@@ -1,6 +1,6 @@
 # Hercules Rig — AI animation engine
 
-**Status:** ACTIVE on branch. The live kitchen cat can be puppeteered part-by-part by any agent with access to the dispatch API.
+**Status:** ACTIVE. Base engine on `main`; remote Worker route, MCP dispatch, and furniture macros ship with PR #167.
 
 Hercules is drawn as one SVG with independently controllable parts: **head**, **ears**, **tail**, **body**, **ruff**, **legs**, **legFront**, **legBack**, **bag**, **whiskers**, **eye**, **eyeShut**, and **root** (whole cat). The engine never posts money, never reads the ledger, and never gains Command authority.
 
@@ -138,7 +138,6 @@ Pivots match `hercules.css` (e.g. head pivot 72×92 in the 200×200 viewBox).
 
 1. `registerRigClip({ id, durationMs, loop, keyframes })`
 2. `dispatchHerculesRig({ type: "playClip", clipId: id })`
-
 3. Add furniture reactions in `EXPAND_RIG_MACROS` (`src/herculesRig/macros.ts`)
 
 ## Related
