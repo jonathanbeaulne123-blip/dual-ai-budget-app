@@ -79,6 +79,8 @@ const TOOL_CATALOG = [
   ["shift_outlook", "Estimate tip range for one upcoming shift from weekday, meal, hours, and optional weather. Projection only."],
   ["tip_schedule_sim", "Simulate the next week of tip outcomes from cadence; ranks protect-floor vs chase-spike advice."],
   ["tax_milk_plan", "Split tip income into educational tax-milk, smoothing buffer, and leftover projections. Never posts."],
+  ["shift_year_simulation", "Seeded Monte Carlo for the next 6–12 months of tips and wages from posted shift history. Projection only."],
+  ["explain_shift_simulation", "Teach how the shift year simulation works: method, limits, and a human next step. Never posts."],
 ];
 
 const TOOL_PROPERTIES = {
@@ -176,6 +178,8 @@ const TOOL_PROPERTY_NAMES = {
   shift_outlook: ["view", "member", "date", "hours", "meal", "weatherGlass"],
   tip_schedule_sim: ["view", "member", "days", "weatherGlass"],
   tax_milk_plan: ["view", "member", "tipCents", "shiftId", "taxRateBps"],
+  shift_year_simulation: ["view", "member", "months", "iterations", "seed"],
+  explain_shift_simulation: ["view", "member"],
 };
 
 const TOOL_REQUIRED_PROPERTIES = {

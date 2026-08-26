@@ -9,6 +9,8 @@ import {
   calendarDaysBetween,
   hourInToronto,
   kitchenSeason,
+  monthKeyFromDateKey,
+  shiftMonthKey,
   weekdaySunday0,
   type DateKey,
 } from "./calendar.ts";
@@ -27,6 +29,8 @@ export type TipShiftObservation = {
   hours: number;
   netTipsCents: number;
   tipPerHourCents: number;
+  wagesCents: number;
+  wagePerHourCents: number;
   season: ReturnType<typeof kitchenSeason>;
 };
 
@@ -90,9 +94,47 @@ export type TaxMilkPlanResult = {
   assumptions: string[];
 };
 
+export type ShiftYearMonthRow = {
+  monthKey: string;
+  tipsP10Cents: number;
+  tipsP50Cents: number;
+  tipsP90Cents: number;
+  wagesP10Cents: number;
+  wagesP50Cents: number;
+  wagesP90Cents: number;
+  hoursP50: number;
+};
+
+export type ShiftYearSimulationResult = {
+  sampleShifts: number;
+  months: number;
+  iterations: number;
+  seed: number;
+  tipsP10Cents: number;
+  tipsP50Cents: number;
+  tipsP90Cents: number;
+  wagesP10Cents: number;
+  wagesP50Cents: number;
+  wagesP90Cents: number;
+  totalP10Cents: number;
+  totalP50Cents: number;
+  totalP90Cents: number;
+  byMonth: ShiftYearMonthRow[];
+  assumptions: string[];
+};
+
+export type ShiftYearExplainResult = {
+  sampleShifts: number;
+  method: string[];
+  limitations: string[];
+  humanNextStep: string;
+  assumptions: string[];
+};
+
 const DEFAULT_ITERATIONS = 2000;
 const DEFAULT_TAX_BPS = 2500;
 const MIN_BUCKET = 3;
+const DEFAULT_YEAR_ITERATIONS = 800;
 
 /** Seeded PRNG — same seed + same sorted observations ⇒ same Monte Carlo path. */
 export function mulberry32(seed: number): () => number {
@@ -129,6 +171,7 @@ export function activeTipShifts(household: Household, memberId?: string): Shift[
 export function observeTipShifts(household: Household, memberId?: string): TipShiftObservation[] {
   return activeTipShifts(household, memberId).map((shift) => {
     const tipPerHourCents = Math.round(shift.netTipsCents / shift.hours);
+    const wagePerHourCents = Math.round(shift.wagesCents / shift.hours);
     return {
       shiftId: shift.id,
       date: shift.date,
@@ -138,6 +181,8 @@ export function observeTipShifts(household: Household, memberId?: string): TipSh
       hours: shift.hours,
       netTipsCents: shift.netTipsCents,
       tipPerHourCents,
+      wagesCents: shift.wagesCents,
+      wagePerHourCents,
       season: kitchenSeason(shift.date),
     };
   });
@@ -189,25 +234,26 @@ function ratesForCached(
   weekday: number,
   meal: TipMeal,
   cache: RateCache,
+  field: "tipPerHourCents" | "wagePerHourCents" = "tipPerHourCents",
 ): number[] {
-  const key = `${weekday}-${meal}`;
+  const key = `${field}-${weekday}-${meal}`;
   const hit = cache.get(key);
   if (hit) return hit;
   const exact = sortNumbers(
-    observations.filter((row) => row.weekday === weekday && row.meal === meal).map((row) => row.tipPerHourCents),
+    observations.filter((row) => row.weekday === weekday && row.meal === meal).map((row) => row[field]),
   );
   if (exact.length >= MIN_BUCKET) {
     cache.set(key, exact);
     return exact;
   }
   const sameMeal = sortNumbers(
-    observations.filter((row) => row.meal === meal).map((row) => row.tipPerHourCents),
+    observations.filter((row) => row.meal === meal).map((row) => row[field]),
   );
   if (sameMeal.length >= MIN_BUCKET) {
     cache.set(key, sameMeal);
     return sameMeal;
   }
-  const all = sortNumbers(observations.map((row) => row.tipPerHourCents));
+  const all = sortNumbers(observations.map((row) => row[field]));
   const fallback = all.length ? all : [0];
   cache.set(key, fallback);
   return fallback;
@@ -515,4 +561,184 @@ export function upcomingCadenceSchedule(
     }
   }
   return schedule;
+}
+
+function monthKeyOf(date: DateKey): string {
+  return monthKeyFromDateKey(date);
+}
+
+function forwardMonthKeys(today: DateKey, months: number): string[] {
+  const first = monthKeyOf(addDays(today, 1));
+  return Array.from({ length: months }, (_, index) => shiftMonthKey(first, index));
+}
+
+function daysInForwardMonths(today: DateKey, months: number): number {
+  const keys = forwardMonthKeys(today, months);
+  const last = keys[keys.length - 1]!;
+  const endExclusive = `${shiftMonthKey(last, 1)}-01` as DateKey;
+  return Math.max(1, calendarDaysBetween(addDays(today, 1), endExclusive));
+}
+
+/**
+ * Seeded Monte Carlo for the next 6–12 civil months of tips + wages.
+ * Same household + seed ⇒ same result. Never posts.
+ */
+export function runShiftYearSimulation(
+  household: Household,
+  options?: {
+    memberId?: string;
+    today?: DateKey;
+    months?: number;
+    iterations?: number;
+    seed?: number;
+  },
+): ShiftYearSimulationResult | null {
+  const observations = observeTipShifts(household, options?.memberId);
+  if (observations.length < 4) return null;
+  const months = Math.min(12, Math.max(6, Math.round(options?.months ?? 12)));
+  const iterations = Math.min(2000, Math.max(200, Math.round(options?.iterations ?? DEFAULT_YEAR_ITERATIONS)));
+  const seed = (options?.seed ?? 137) >>> 0;
+  const today = options?.today ?? observations[observations.length - 1]!.date;
+  const horizonDays = daysInForwardMonths(today, months);
+  const profiles = weekdayProfiles(observations);
+  if (!profiles.length) return null;
+  const tipCache: RateCache = new Map();
+  const wageCache: RateCache = new Map();
+  const random = mulberry32(seed);
+
+  const yearTips: number[] = [];
+  const yearWages: number[] = [];
+  const yearTotals: number[] = [];
+  const monthTips = new Map<string, number[]>();
+  const monthWages = new Map<string, number[]>();
+  const monthHours = new Map<string, number[]>();
+
+  for (let i = 0; i < iterations; i += 1) {
+    let tipsTotal = 0;
+    let wagesTotal = 0;
+    const tipsByMonth = new Map<string, number>();
+    const wagesByMonth = new Map<string, number>();
+    const hoursByMonth = new Map<string, number>();
+
+    for (let offset = 1; offset <= horizonDays; offset += 1) {
+      const date = addDays(today, offset);
+      const weekday = weekdaySunday0(date);
+      const profile = profiles.find((row) => row.weekday === weekday);
+      if (!profile) continue;
+      const perDayChance = Math.min(1, profile.frequency);
+      if (random() >= perDayChance) continue;
+      const doubles = profile.frequency > 1 && random() < (profile.frequency - 1) ? 2 : 1;
+      const month = monthKeyOf(date);
+      for (let n = 0; n < doubles; n += 1) {
+        const tipRates = ratesForCached(observations, profile.weekday, profile.meal, tipCache, "tipPerHourCents");
+        const wageRates = ratesForCached(observations, profile.weekday, profile.meal, wageCache, "wagePerHourCents");
+        const tips = Math.round(pickSorted(tipRates, random) * profile.hours);
+        const wages = Math.round(pickSorted(wageRates, random) * profile.hours);
+        tipsTotal += tips;
+        wagesTotal += wages;
+        tipsByMonth.set(month, (tipsByMonth.get(month) ?? 0) + tips);
+        wagesByMonth.set(month, (wagesByMonth.get(month) ?? 0) + wages);
+        hoursByMonth.set(month, (hoursByMonth.get(month) ?? 0) + profile.hours);
+      }
+    }
+
+    yearTips.push(tipsTotal);
+    yearWages.push(wagesTotal);
+    yearTotals.push(tipsTotal + wagesTotal);
+    for (const [month, cents] of tipsByMonth) {
+      const bucket = monthTips.get(month) ?? [];
+      bucket.push(cents);
+      monthTips.set(month, bucket);
+    }
+    for (const [month, cents] of wagesByMonth) {
+      const bucket = monthWages.get(month) ?? [];
+      bucket.push(cents);
+      monthWages.set(month, bucket);
+    }
+    for (const [month, hours] of hoursByMonth) {
+      const bucket = monthHours.get(month) ?? [];
+      bucket.push(hours);
+      monthHours.set(month, bucket);
+    }
+  }
+
+  const sortedTips = sortNumbers(yearTips);
+  const sortedWages = sortNumbers(yearWages);
+  const sortedTotals = sortNumbers(yearTotals);
+  const monthKeys = forwardMonthKeys(today, months);
+  const byMonth: ShiftYearMonthRow[] = monthKeys.map((monthKey) => {
+    const tipsRaw = monthTips.get(monthKey) ?? [];
+    const wagesRaw = monthWages.get(monthKey) ?? [];
+    const hoursRaw = monthHours.get(monthKey) ?? [];
+    const tips = sortNumbers([...tipsRaw, ...Array.from({ length: Math.max(0, iterations - tipsRaw.length) }, () => 0)]);
+    const wages = sortNumbers([...wagesRaw, ...Array.from({ length: Math.max(0, iterations - wagesRaw.length) }, () => 0)]);
+    const hours = sortNumbers([...hoursRaw, ...Array.from({ length: Math.max(0, iterations - hoursRaw.length) }, () => 0)]);
+    return {
+      monthKey,
+      tipsP10Cents: percentile(tips, 0.1),
+      tipsP50Cents: percentile(tips, 0.5),
+      tipsP90Cents: percentile(tips, 0.9),
+      wagesP10Cents: percentile(wages, 0.1),
+      wagesP50Cents: percentile(wages, 0.5),
+      wagesP90Cents: percentile(wages, 0.9),
+      hoursP50: Math.round(percentile(hours, 0.5) * 4) / 4,
+    };
+  });
+
+  return {
+    sampleShifts: observations.length,
+    months,
+    iterations,
+    seed,
+    tipsP10Cents: percentile(sortedTips, 0.1),
+    tipsP50Cents: percentile(sortedTips, 0.5),
+    tipsP90Cents: percentile(sortedTips, 0.9),
+    wagesP10Cents: percentile(sortedWages, 0.1),
+    wagesP50Cents: percentile(sortedWages, 0.5),
+    wagesP90Cents: percentile(sortedWages, 0.9),
+    totalP10Cents: percentile(sortedTotals, 0.1),
+    totalP50Cents: percentile(sortedTotals, 0.5),
+    totalP90Cents: percentile(sortedTotals, 0.9),
+    byMonth,
+    assumptions: [
+      `Monte Carlo walks the next ${months} civil months day by day and Bernoulli-samples whether each weekday works from historical frequency.`,
+      "Tips and wages resample tip/hour and wage/hour independently from posted shifts by weekday × lunch/dinner.",
+      "Wages use posted take-home wagesCents ÷ hours, not a second payroll engine.",
+      "Corrected/reversed shifts are excluded; negative tip-out shifts remain in the sample.",
+      "Season is not re-drawn month by month; correlated slow winters are under-modelled.",
+      "p10/p50/p90 are simulation percentiles — not posted income, not CRA, not a promise.",
+      "Confirm remains the only write path. This tool never posts shifts or transfers.",
+    ],
+  };
+}
+
+/** Teaching companion for the year sim — method, limits, next step. Never posts. */
+export function explainShiftYearSimulation(
+  household: Household,
+  options?: { memberId?: string },
+): ShiftYearExplainResult | null {
+  const observations = observeTipShifts(household, options?.memberId);
+  if (observations.length < 4) return null;
+  const profiles = weekdayProfiles(observations);
+  const weekdays = profiles.map((row) => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][row.weekday]).join(", ");
+  return {
+    sampleShifts: observations.length,
+    method: [
+      "Fit weekday work frequency and typical hours from posted tip shifts.",
+      "For each simulated day, decide whether that weekday works, then resample tip/hour and wage/hour from similar weekday × meal history.",
+      "Sum tips and wages across 6–12 months; report p10/p50/p90 bands and monthly midpoints.",
+      "Same household, seed, months, and iterations always reproduce the same numbers.",
+    ],
+    limitations: [
+      "Independent daily draws do not fully model vacation blocks, illness, or a slow winter streak.",
+      "Weather stamps improve outlook tools; the year sim uses cadence history, not live forecasts.",
+      "Wage rates follow posted take-home history and ignore future raise/role changes unless those shifts are posted.",
+      "A Python sandbox is gated for later open-ended science; this engine stays deterministic TypeScript.",
+    ],
+    humanNextStep: "Ask shift_year_simulation for the numbers, then decide in Hearth whether any budget or jar plan should change — Confirm still posts.",
+    assumptions: [
+      `${observations.length} posted shifts across weekdays ${weekdays || "none"} power the fit.`,
+      "All outputs are projections. Nothing writes the journal.",
+    ],
+  };
 }

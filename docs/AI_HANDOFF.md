@@ -4,6 +4,35 @@ After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. 
 
 Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
 
+## Shift year simulation + sandbox gate (D-140, 2026-08-25)
+
+**Status:** Branch `cursor/shift-year-simulation-85bf` — draft [PR #138](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/138); not merged, not deployed. Risk: **Medium**.
+
+**Household outcome:** Hercules (free + Pro) can build a reproducible next-year tips+wages simulation from posted shifts and teach how it works. Python sandbox is designed as a later High-risk gate, not built.
+
+**Budget delta (5):** `+2` — deterministic year Monte Carlo of tips and wages; never posts.
+
+**Engagement delta (3):** `+2` — teachable year simulation for Pro and free Hercules.
+
+**Worksession:** [`worksessions/2026-08-25-shift-year-simulation.md`](worksessions/2026-08-25-shift-year-simulation.md)
+
+**What changed:** `runShiftYearSimulation` / `explainShiftYearSimulation` in `tipScience.ts`; tools `shift_year_simulation` + `explain_shift_simulation` on free Hercules (Worker planner + on-device) and Pro MCP; D-140 + sandbox gate in `HERCULES_PRO.md` (renumbered from provisional D-139 after main claimed D-139 for the animated companion); Pro `tools/list` = companion + catalog + write (64).
+
+**Head SHA:** `ce8162013deb8b41e6277e42f594643daacbb828`
+
+**Verification:**
+- `pnpm exec vitest run test/tip-science.test.ts test/hercules-tools.test.ts test/hercules-pro.test.ts` — pass
+- Same household+seed identical; facts `projection`; household unchanged
+- Demo proof: 12-month p50 tip+wage ~CAD $10,783; household unchanged; teach tool cites gated Python sandbox
+- `pnpm ai:verify` pass; `pnpm build` pass
+- Full vitest via `pnpm check`: 606 pass / 2 fail in `batch-import-ui` (SubtleCrypto) — same failure on `main`, unrelated to this packet
+
+**Uncertainty:** Season under-modelled until weather stamps are universal; wages resample posted take-home ÷ hours.
+
+**Data/environment:** Development code only; fictional demo/stress data in tests; no schema, secrets, Production, or deploy.
+
+**Next owner:** Jonathan reviews draft PR; ChatGPT Pro smoke: “Simulate my next year of tips and wages, then teach me how it works.” Do not merge/deploy without approval.
+
 ## Environment isolation Phase 0 (2026-08-25)
 
 **Status:** Merged to `main`. Follow-up branch `cursor/legacy-pull-env-bind-f375` closes the leftover legacy `readRemoteSnapshot` environment query filter and adds two-client clock-skew / partial-failure proofs.
