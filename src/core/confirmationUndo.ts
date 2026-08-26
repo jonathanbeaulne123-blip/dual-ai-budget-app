@@ -29,6 +29,9 @@ export function undoLedgerConfirm(current: Household, token: UndoToken): CommitR
   const actor = token.actorMemberId;
 
   for (const id of postedIds) {
+    if (current.transactions.some((row) => row.reversalOfId === id)) {
+      throw new ValidationError("Already reversed. Undo cannot remove a row that has a reversal.");
+    }
     const tx = current.transactions.find((row) => row.id === id);
     if (tx && actor && tx.createdBy && tx.createdBy !== actor) {
       throw new ValidationError("Undo cannot remove another person's money row.");
@@ -36,6 +39,16 @@ export function undoLedgerConfirm(current: Household, token: UndoToken): CommitR
     const shift = current.shifts.find((row) => row.id === id);
     if (shift && actor && shift.createdBy && shift.createdBy !== actor) {
       throw new ValidationError("Undo cannot remove another person's shift.");
+    }
+    if (shift) {
+      const shiftTxIds = [
+        ...(shift.transactionIds ?? []),
+        shift.wagesTransactionId,
+        shift.tipsTransactionId,
+      ].filter((rowId): rowId is string => Boolean(rowId));
+      if (shiftTxIds.some((txId) => current.transactions.some((row) => row.reversalOfId === txId))) {
+        throw new ValidationError("Already reversed. Undo cannot remove a shift that has a reversal.");
+      }
     }
   }
 

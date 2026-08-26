@@ -150,7 +150,7 @@ import { acceptHouseholdWrite, classifyCommandError, newConfirmationId, isLedger
 import type { WriteAdapters } from "./core/commandRuntime.ts";
 import { ingestHouseholdBooks, inspectBrowserBooks, restoreHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
 import { readSupabaseConfig, pullHouseholdSnapshotById, pullPersonalSnapshotById, fetchContinuityMembershipRole } from "./ledger/supabase.ts";
-import { clearUndoHistory, loadUndoHistory, saveUndoHistory } from "./undoHistory.ts";
+import { undoToastSecondaryCopy } from "./core/commandClassification.ts";
 import { livePullIntervalMs, shouldRunLivePull } from "./continuityLivePull.ts";
 import {
   createContinuityCoordinator,
@@ -4013,7 +4013,9 @@ export function App() {
           <span>
             {commandChrome.toast.primary}
             {commandChrome.toast.secondary ? `. ${commandChrome.toast.secondary}` : ""}
-            {commandChrome.toast.showUndo !== false ? " You can Undo, or find it later under More → Recent on this phone." : ""}
+            {commandChrome.toast.showUndo !== false
+              ? ` ${undoToastSecondaryCopy()} Find it later under More → Recent on this phone.`
+              : ""}
           </span>
           {commandChrome.toast.showUndo !== false && (
             <button

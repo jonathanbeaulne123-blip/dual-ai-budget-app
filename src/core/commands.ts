@@ -2368,6 +2368,11 @@ export function reversePostedMoney(household: Household, transactionId: string, 
   return commit(previous, next, "Reverse", label, postedIds);
 }
 
+/**
+ * @deprecated Whole-snapshot undo — unsafe in dual-use (can tombstone partner live-pulled rows).
+ * Product path uses {@link undoLedgerConfirm} (confirmation-scoped, postedIds only).
+ * Retained for regression tests documenting the legacy hazard.
+ */
 export function undo(current: Household, token: UndoToken): Household {
   if (!token?.snapshot) throw new ValidationError("Nothing to undo.");
   const restored = cloneHousehold(token.snapshot);
