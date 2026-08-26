@@ -60,9 +60,9 @@ After deterministic tools answer, one small second Workers AI pass may rewrite o
 
 ### Shift Oracle (D-137)
 
-Tipped-income science lives on-device in `tipScience.ts` and is exposed as four read tools shared by free Hercules and Hercules Pro: `tip_oracle` (seeded Monte Carlo p10/p50/p90 + dry-streak reserve), `shift_outlook` (weekday × meal tip range with optional weather glass), `tip_schedule_sim` (cadence advice: protect-floor vs chase-spike), and `tax_milk_plan` (educational tax-milk + peak smoothing buffer). All facts are projection-labelled. No Python sandbox, no write tool, no e-file. Kill criterion: rip the Oracle if a projection is treated as posted income or posts without Confirm.
+Tipped-income science lives on-device in `tipScience.ts` and is exposed as read tools shared by free Hercules and Hercules Pro: `tip_oracle` (seeded Monte Carlo p10/p50/p90 + dry-streak reserve), `shift_outlook` (weekday × meal tip range with optional weather glass), `tip_schedule_sim` (cadence advice: protect-floor vs chase-spike), `tax_milk_plan` (educational tax-milk + peak smoothing buffer), `shift_year_simulation` (6–12 month tips+wages Monte Carlo), and `explain_shift_simulation` (method, limits, next step). All facts are projection-labelled. No Python sandbox yet (D-140 gate). No e-file. Kill criterion: rip the Oracle if a projection is treated as posted income or posts without Confirm.
 
-### Sim + Review packs (D-138)
+### Sim + Review packs (D-142)
 
 On-device `simReview.ts` adds three shared read tools: `cash_cinema` (13-week tip/wage/bill/card cash ribbon), `what_if_desk` (named unposted scenarios), and `year_review` (Season Replay from posted tips and journal). Hercules Pro MCP answers announce `usedTool` and prefix `I used \`tool_name\`.` Full inventory: [`HERCULES_PRO_CAPABILITIES.md`](HERCULES_PRO_CAPABILITIES.md).
 

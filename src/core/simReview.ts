@@ -1,5 +1,5 @@
 /**
- * Simulation and historical review packs for Hercules (D-138).
+ * Simulation and historical review packs for Hercules (D-142).
  * Cash Cinema, What-If Desk, and Year-in-Review — projections only; never post.
  */
 import {

@@ -10,7 +10,7 @@ import {
 
 const today = "2026-08-21";
 
-describe("Hercules Sim + Review packs (D-138)", () => {
+describe("Hercules Sim + Review packs (D-142)", () => {
   it("projects a cash cinema ribbon with oracle-horizon tip scaling", () => {
     const household = seedDemoHousehold({ today, environment: "development" });
     const before = structuredClone(household);

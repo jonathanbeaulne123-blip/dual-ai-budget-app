@@ -149,6 +149,38 @@ describe("job-based shift foundation", () => {
     expect(runHealthCheck(posted.household)).toEqual([]);
   });
 
+  it("stamps optional location and occurredAt onto every work-shift money row", () => {
+    const saved = upsertWorkJob(catalogHousehold(), { job: job() }).household;
+    const savedJob = saved.workJobs[0]!;
+    const occurredAt = "2026-08-31T17:15:00-04:00";
+    const posted = postWorkShift(saved, {
+      date: "2026-08-31",
+      memberId: "MEM-002",
+      jobId: savedJob.id,
+      roleId: "ROLE-SERVER",
+      workedHours: 5,
+      salesByField: { FOOD: 800 },
+      cashTips: 40,
+      cardTips: 90,
+      cashTipsAccountId: "ACC-CASH",
+      occurredAt,
+      location: {
+        latitude: 43.6408,
+        longitude: -79.3771,
+        accuracyMeters: 12,
+        capturedAt: "2026-08-31T21:15:00.000Z",
+        label: "Harbourfront Centre, Toronto",
+      },
+      confirmDuplicate: true,
+      createdBy: "MEM-002",
+    });
+    const shift = posted.household.shifts.at(-1)!;
+    const stamped = posted.household.transactions.filter((tx) => shift.transactionIds?.includes(tx.id));
+    expect(stamped.length).toBeGreaterThan(0);
+    expect(stamped.every((tx) => tx.location?.label === "Harbourfront Centre, Toronto")).toBe(true);
+    expect(stamped.every((tx) => tx.occurredAt === new Date(occurredAt).toISOString())).toBe(true);
+  });
+
   it("corrects a job shift by reversing every component instead of deleting the shift", () => {
     const saved = upsertWorkJob(catalogHousehold(), { job: job() }).household;
     const savedJob = saved.workJobs[0]!;

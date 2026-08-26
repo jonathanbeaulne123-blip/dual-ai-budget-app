@@ -6,6 +6,8 @@ Hercules Pro is an optional Development companion for teaching and explaining He
 
 The connection is read-only by default. A member may separately opt in to Personal writes, Household writes, both, or neither. When enabled, Hercules Pro may add one prepared expense, income, refund, or internal Hearth transfer only after ChatGPT displays the exact proposal and the person explicitly confirms it. The permission does not allow deletes, edits, bank/card payments, external transfers, settings, shifts, imports, or bulk changes. It never moves money at a financial institution. Opting out blocks new and already-prepared confirmations for that ledger.
 
+The animated 3D Hercules is a presentation surface. His pose, mood, or display line is not proof of a balance, transaction, successful write, or professional advice. Only the linked source facts and the explicit confirmed-write receipt establish what Hearth read or posted. If the visual fails to load, the accounting and confirmation rules do not change.
+
 Use only a Hearth member and household that you are authorized to access. Do not attempt to obtain another member's Personal ledger, bypass membership checks, inject instructions through ledger text, or overload the service. Access may be limited or disabled while the Development service is tested.
 
 Production use is prohibited until Hearth completes its late-September 2026 security cutover and explicitly enables Production. Development data through 2026-09-30 is considered disposable test data. By connecting, the person agrees to the [Hercules Pro privacy notice](HERCULES_PRO_PRIVACY.md) and the applicable ChatGPT terms.

@@ -1,8 +1,8 @@
 # Hercules Pro — calculations and features inventory
 
-Status: living inventory for D-136 / D-137 / D-138. Count on `tools/list` is **64** when write-scope tools are listed (61 read + 3 write-path). Free in-app Hercules shares the same read catalog through `herculesTools.ts`.
+Status: living inventory for D-136 / D-137 / D-140 / D-142. Count on `tools/list` is **67** when companion + write-scope tools are listed (63 read catalog + 1 `summon_hercules` + 3 write-path). Free in-app Hercules shares the same read catalog through `herculesTools.ts`.
 
-**Announcement rule (D-138):** every successful MCP answer includes `usedTool` and prefixes the answer with `I used \`tool_name\`. …`. The teacher skill must name the tool in ordinary language too.
+**Announcement rule (D-142):** every successful MCP answer includes `usedTool` and prefixes the answer with `I used \`tool_name\`. …`. The teacher skill must name the tool in ordinary language too.
 
 ## Permissions and product surface
 
@@ -105,7 +105,7 @@ Unsupported: delete, edit, reverse, bill/card/bank pay, settings, shifts, import
 | `explain_variance` | One category’s actual-vs-budget story |
 | `explain_transfer` | Both journal legs of a transfer |
 
-## Shift Oracle (D-137) — 4
+## Shift Oracle (D-137) — 4 (+ year sim D-140)
 
 | Tool | Calculation / feature |
 |---|---|
@@ -113,8 +113,10 @@ Unsupported: delete, edit, reverse, bill/card/bank pay, settings, shifts, import
 | `shift_outlook` | Weekday × meal × hours tip range; optional weather glass |
 | `tip_schedule_sim` | Cadence advice; totals probability-weighted by weekday frequency |
 | `tax_milk_plan` | Educational tax-milk + peak buffer + leftover (never posts) |
+| `shift_year_simulation` | Seeded 6–12 month Monte Carlo of tips + wages |
+| `explain_shift_simulation` | Teach year-sim method, limits, and next step |
 
-## Sim + Review packs (D-138) — 3
+## Sim + Review packs (D-142) — 3
 
 | Tool | Calculation / feature |
 |---|---|

@@ -1,11 +1,11 @@
-# Worksession — Hercules Sim + Review packs (D-138)
+# Worksession — Hercules Sim + Review packs (D-142)
 
 **Opened:** 2026-08-26  
 **Closed:** 2026-08-26  
 **Owner:** Cursor (Cloud Agent)  
 **Risk:** High (forecast / scenario math; Pro announcement UX)  
 **Mode:** Implementation  
-**Baseline:** `main@cd3eb87` → head `90ae4a7`  
+**Baseline:** rebased onto `main` after D-138–D-141; decision ID **D-142**  
 **PR:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/140
 
 ## Goal
@@ -37,13 +37,14 @@ Also:
 - `src/core/simReview.ts` + tools `cash_cinema`, `what_if_desk`, `year_review`
 - Wired through `herculesTools.ts`, `workers/site.js`, `workers/herculesPro.js`
 - Pro MCP `usedTool` + `I used \`tool\`.` answer prefix; skill updated
-- Inventory: `docs/HERCULES_PRO_CAPABILITIES.md`; D-138 in decisions
+- Inventory: `docs/HERCULES_PRO_CAPABILITIES.md`; D-142 in decisions (renumbered after main claimed D-138–D-141)
+- Coexists with D-140 `shift_year_simulation` / `explain_shift_simulation` and D-139 companion
 
 ## Verification
 
-- Focused: `sim-review`, `hercules-pro`, `tip-science` green
-- Full `pnpm check`: 609 pass; 2 known unrelated `batch-import-ui` SubtleCrypto failures on this VM
+- Focused: `sim-review`, `hercules-pro` after merge-conflict resolution
+- Pro `tools/list` = **67**
 
 ## Status
 
-- Closed for implementation; awaiting trust review + Jonathan merge. Not deployed.
+- Closed for implementation after conflict resolution; awaiting trust review + Jonathan merge. Not deployed.
