@@ -161,6 +161,7 @@ function showFallback(): void {
 let renderer: THREE.WebGLRenderer | undefined;
 try {
   renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: "high-performance" });
+  renderer.setClearColor(0x000000, 0);
 } catch {
   showFallback();
   setTimeout(tryAutomaticPictureInPicture, 180);

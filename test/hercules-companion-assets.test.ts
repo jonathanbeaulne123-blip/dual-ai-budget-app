@@ -33,6 +33,12 @@ describe("Hercules Pro companion assets", () => {
     expect(widget).not.toContain('await bridge.requestDisplayMode({ mode: "pip" });\n    automaticPipSettled = true;\n    statusEl.textContent = "Beside your chat"');
   });
 
+  it("renders the WebGL scene with a fully transparent clear color", () => {
+    const widget = readFileSync(new URL("../workers/hercules-pro-ui/widget.ts", import.meta.url), "utf8");
+
+    expect(widget).toContain("renderer.setClearColor(0x000000, 0)");
+  });
+
   it.each([
     "/hercules-pro/companion.v1.js",
     "/hercules-pro/hercules.pro.v1.glb",
