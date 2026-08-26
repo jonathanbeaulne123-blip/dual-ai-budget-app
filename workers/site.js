@@ -106,6 +106,16 @@ const HERCULES_READ_TOOLS = [
   { name: "net_worth", description: "Read household assets less liabilities. Household ledger only.", parameters: strictObject({}) },
   { name: "audit_health", description: "Read the deterministic books opinion and integrity-finding count.", parameters: strictObject({}) },
   { name: "duplicate_review", description: "List visible potential-duplicate pairs and confidence. Never delete either row.", parameters: strictObject({ limit: { anyOf: [{ type: "integer", minimum: 1, maximum: 4 }, { type: "null" }] } }) },
+  { name: "balance_sheet", description: "Read posted assets, liabilities, net worth, and the accounting-equation check.", parameters: strictObject({}) },
+  { name: "income_statement", description: "Read posted income, expenses, and net income for one month.", parameters: strictObject({ period: nullablePeriod() }) },
+  { name: "cash_flow_statement", description: "Read operating, card, debt-paydown, and investing cash activity for one month.", parameters: strictObject({ period: nullablePeriod() }) },
+  { name: "trial_balance", description: "Read recognized debit and credit balances and verify they match.", parameters: strictObject({}) },
+  { name: "general_ledger", description: "Read recent recognized journal entries across the visible ledger.", parameters: strictObject({ ...filterProperties(), limit: { anyOf: [{ type: "integer", minimum: 1, maximum: 10 }, { type: "null" }] } }) },
+  { name: "account_activity", description: "Read a named account's debit, credit, and running-balance register.", parameters: strictObject({ account: nullableString(), period: nullablePeriod(), from: nullableString(), to: nullableString(), limit: { anyOf: [{ type: "integer", minimum: 1, maximum: 10 }, { type: "null" }] } }) },
+  { name: "journal_entry_detail", description: "Read both sides and source rows of one journal entry.", parameters: strictObject({ entryId: nullableString() }) },
+  { name: "changes_in_net_worth", description: "Read opening net worth, posted net income, and closing net worth for one month.", parameters: strictObject({ period: nullablePeriod() }) },
+  { name: "period_comparison", description: "Compare posted income, expenses, and net income with the prior month.", parameters: strictObject({ period: nullablePeriod() }) },
+  { name: "explain_balance", description: "Explain how debits and credits produced one visible account balance.", parameters: strictObject({ account: nullableString(), period: nullablePeriod(), from: nullableString(), to: nullableString() }) },
 ];
 const HERCULES_READ_TOOL_NAMES = new Set(HERCULES_READ_TOOLS.map((tool) => tool.name));
 const TOOL_ARG_KEYS = {
@@ -125,6 +135,16 @@ const TOOL_ARG_KEYS = {
   net_worth: [],
   audit_health: [],
   duplicate_review: ["limit"],
+  balance_sheet: [],
+  income_statement: ["period"],
+  cash_flow_statement: ["period"],
+  trial_balance: [],
+  general_ledger: ["period", "from", "to", "member", "account", "category", "merchant", "limit"],
+  account_activity: ["account", "period", "from", "to", "limit"],
+  journal_entry_detail: ["entryId"],
+  changes_in_net_worth: ["period"],
+  period_comparison: ["period"],
+  explain_balance: ["account", "period", "from", "to"],
 };
 
 function parseJsonObject(value) {
@@ -263,6 +283,7 @@ const HERCULES_PLAN_SCHEMA = {
               maximumAmountCents: { type: "integer", minimum: 0, maximum: 1000000000 },
               limit: { type: "integer", minimum: 1, maximum: 10 },
               horizonDays: { type: "integer", minimum: 1, maximum: 90 },
+              entryId: { type: "string" },
             },
           },
         },

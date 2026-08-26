@@ -26,6 +26,16 @@ const TOOL_CATALOG = [
   ["net_worth", "Read household assets less liabilities."],
   ["audit_health", "Read the deterministic books opinion and integrity-finding count."],
   ["duplicate_review", "List potential duplicate pairs and confidence. Never deletes rows."],
+  ["balance_sheet", "Read posted assets, liabilities, net worth, and the accounting-equation check."],
+  ["income_statement", "Read posted income, expenses, and net income for one month."],
+  ["cash_flow_statement", "Read operating, card, debt-paydown, and investing cash activity for one month."],
+  ["trial_balance", "Read recognized debit and credit balances and verify they match."],
+  ["general_ledger", "Read recent recognized journal entries across the visible ledger."],
+  ["account_activity", "Read a named account's debit, credit, and running-balance register."],
+  ["journal_entry_detail", "Read both sides and source rows of one journal entry."],
+  ["changes_in_net_worth", "Read opening net worth, posted net income, and closing net worth for one month."],
+  ["period_comparison", "Compare posted income, expenses, and net income with the prior month."],
+  ["explain_balance", "Explain how debits and credits produced one visible account balance."],
 ];
 
 const TOOL_PROPERTIES = {
@@ -45,6 +55,7 @@ const TOOL_PROPERTIES = {
   maximumAmountCents: { type: "integer", minimum: 0, maximum: 1000000000 },
   horizonDays: { type: "integer", minimum: 1, maximum: 90 },
   limit: { type: "integer", minimum: 1, maximum: 10 },
+  entryId: { type: "string", maxLength: 100, description: "Exact journal entry ID or originating transaction ID." },
 };
 
 const TOOL_PROPERTY_NAMES = {
@@ -64,6 +75,22 @@ const TOOL_PROPERTY_NAMES = {
   net_worth: ["view"],
   audit_health: ["view"],
   duplicate_review: ["view", "limit"],
+  balance_sheet: ["view"],
+  income_statement: ["view", "period"],
+  cash_flow_statement: ["view", "period"],
+  trial_balance: ["view"],
+  general_ledger: ["view", "period", "from", "to", "member", "account", "limit"],
+  account_activity: ["view", "account", "period", "from", "to", "limit"],
+  journal_entry_detail: ["view", "entryId"],
+  changes_in_net_worth: ["view", "period"],
+  period_comparison: ["view", "period"],
+  explain_balance: ["view", "account", "period", "from", "to"],
+};
+
+const TOOL_REQUIRED_PROPERTIES = {
+  account_activity: ["account"],
+  journal_entry_detail: ["entryId"],
+  explain_balance: ["account"],
 };
 
 function json(body, status = 200, headers = {}) {
@@ -271,6 +298,7 @@ function toolDefinitions() {
     inputSchema: {
       type: "object",
       properties: Object.fromEntries(TOOL_PROPERTY_NAMES[name].map((property) => [property, TOOL_PROPERTIES[property]])),
+      ...(TOOL_REQUIRED_PROPERTIES[name] ? { required: TOOL_REQUIRED_PROPERTIES[name] } : {}),
       additionalProperties: false,
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
@@ -347,6 +375,9 @@ async function handleMcp(request, env) {
         householdId: claims.householdId,
         memberId: claims.memberId,
         asOf: torontoToday(),
+        accountingBasis: "posted-recognized-journal",
+        currency: books.currency || "CAD",
+        timeZone: books.timezone || "America/Toronto",
         readOnly: true,
       };
       return json({ jsonrpc: "2.0", id: rpc.id, result: {

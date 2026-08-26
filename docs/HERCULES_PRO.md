@@ -6,11 +6,13 @@ Status: **deployed and registered as a private Development app in ChatGPT.** Fre
 
 ### Free Hercules — always in Hearth
 
-Free Hercules does not require ChatGPT, an API key, a paid account, or Hercules Pro. He keeps all sixteen deterministic read tools, local answers, source cards, offline fallback, on-device notices, and the free-first Workers AI voice/planner when that service is available. If every model service is unavailable, the calculated answer still works.
+Free Hercules does not require ChatGPT, an API key, a paid account, or Hercules Pro. He keeps the deterministic read tools, local answers, source cards, offline fallback, on-device notices, and the free-first Workers AI voice/planner when that service is available. If every model service is unavailable, the calculated answer still works.
 
 ### Hercules Pro — optional in ChatGPT
 
-The **Use Hercules Pro ↗** button opens ChatGPT. The packaged Hercules Pro plugin teaches ChatGPT the Hercules voice and connects it to Hearth's `/mcp` endpoint. ChatGPT may call the same sixteen read-only calculations against the connected member's Personal ledger or the shared Household ledger.
+The **Use Hercules Pro ↗** button opens ChatGPT. The packaged Hercules Pro plugin teaches ChatGPT the Hercules voice and connects it to Hearth's `/mcp` endpoint. ChatGPT may call focused read-only calculations against the connected member's Personal ledger or the shared Household ledger.
+
+The accounting-core slice adds posted balance sheet, income statement, cash-flow statement, trial balance, general-ledger, account-register, journal-detail, net-worth roll-forward, period-comparison, and debit/credit balance-explanation tools. Every response declares `posted-recognized-journal`, CAD, and America/Toronto. Scheduled bills and plans remain projections and are never silently mixed into posted statements.
 
 Pro cannot add, edit, delete, post, pay, transfer, merge, sync, or move money. Recommendations are words. The human returns to Hearth and uses the ordinary Confirm path for a write.
 

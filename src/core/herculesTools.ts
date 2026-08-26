@@ -6,6 +6,7 @@ import {
   shiftMonthKey,
   weekBounds,
   type DateKey,
+  type MonthKey,
 } from "./calendar.ts";
 import { accountBookBalance, creditCardView, householdWallet } from "./accounts.ts";
 import { claimPublicLabel, outstandingClaims } from "./appointments.ts";
@@ -13,7 +14,15 @@ import { monthSummary } from "./budget.ts";
 import { duplicateContrastPairs } from "./duplicate.ts";
 import { formatCad } from "./money.ts";
 import { leftoverProjection } from "./sitDown.ts";
-import { auditOpinion } from "./statements.ts";
+import {
+  auditOpinion,
+  balanceSheet,
+  cashFlowStatement,
+  comparativeIncome,
+  incomeStatement,
+  statementOfChangesInEquity,
+} from "./statements.ts";
+import { accountRegister, compileHousehold, trialBalance } from "./journal.ts";
 import { householdForHerculesContext } from "./visibility.ts";
 import type { HerculesAskContext } from "./askBooks.ts";
 import type { HerculesGroundedFact, HerculesNumberSource } from "./herculesProvenance.ts";
@@ -37,6 +46,16 @@ export const HERCULES_READ_TOOL_NAMES = [
   "net_worth",
   "audit_health",
   "duplicate_review",
+  "balance_sheet",
+  "income_statement",
+  "cash_flow_statement",
+  "trial_balance",
+  "general_ledger",
+  "account_activity",
+  "journal_entry_detail",
+  "changes_in_net_worth",
+  "period_comparison",
+  "explain_balance",
 ] as const;
 
 export type HerculesReadToolName = (typeof HERCULES_READ_TOOL_NAMES)[number];
@@ -83,6 +102,16 @@ export const HERCULES_READ_TOOL_CATALOG: ReadonlyArray<{ name: HerculesReadToolN
   { name: "net_worth", description: "Read household assets less liabilities; household ledger only." },
   { name: "audit_health", description: "Read the deterministic books opinion and integrity-finding count." },
   { name: "duplicate_review", description: "List visible potential-duplicate pairs and confidence; never delete either row." },
+  { name: "balance_sheet", description: "Read posted assets, liabilities, equity, and the accounting-equation check." },
+  { name: "income_statement", description: "Read posted income, expenses, and net income for one month." },
+  { name: "cash_flow_statement", description: "Read operating, card, debt-paydown, and investing cash activity for one month." },
+  { name: "trial_balance", description: "Read debit and credit balances from the recognized journal." },
+  { name: "general_ledger", description: "Read recent recognized journal activity across the visible ledger." },
+  { name: "account_activity", description: "Read a named account's debit, credit, and running-balance register." },
+  { name: "journal_entry_detail", description: "Read both sides and source rows of one journal entry." },
+  { name: "changes_in_net_worth", description: "Read opening net worth, posted net income, and closing net worth for one month." },
+  { name: "period_comparison", description: "Compare posted income, expenses, and net income with the prior month." },
+  { name: "explain_balance", description: "Explain how debits and credits produced one visible account balance." },
 ];
 
 const TOOL_SET = new Set<string>(HERCULES_READ_TOOL_NAMES);
@@ -151,6 +180,17 @@ function cleanArgs(name: HerculesReadToolName, raw: unknown): Record<string, unk
   if (name === "credit_card_status") return { account: common.account };
   if (name === "budget_status") return { period: cleanPeriod(input.period) };
   if (name === "duplicate_review") return { limit: Math.min(4, Math.max(1, Math.round(Number(input.limit) || 3))) };
+  if (name === "balance_sheet" || name === "trial_balance") return {};
+  if (name === "income_statement" || name === "cash_flow_statement" || name === "changes_in_net_worth" || name === "period_comparison") {
+    return { period: cleanPeriod(input.period) };
+  }
+  if (name === "general_ledger") {
+    return { ...common, limit: Math.min(10, Math.max(1, Math.round(Number(input.limit) || 8))) };
+  }
+  if (name === "account_activity" || name === "explain_balance") {
+    return { account: common.account, period: cleanPeriod(input.period), from: common.from, to: common.to, limit: Math.min(10, Math.max(1, Math.round(Number(input.limit) || 8))) };
+  }
+  if (name === "journal_entry_detail") return { entryId: cleanString(input.entryId, 100) };
   if (name === "money_owed" || name === "cash_position" || name === "net_worth" || name === "audit_health") return {};
   return common;
 }
@@ -266,6 +306,26 @@ function fact(call: HerculesReadToolCall, index: number, label: string, value: s
 
 function empty(call: HerculesReadToolCall, sentence: string): HerculesReadToolResult {
   return { callId: call.id, name: call.name, status: "empty", sentence, facts: [] };
+}
+
+function statementMonth(today: DateKey, args: Record<string, unknown>): MonthKey {
+  return cleanPeriod(args.period) === "last_month"
+    ? shiftMonthKey(monthKeyFromDateKey(today), -1)
+    : monthKeyFromDateKey(today);
+}
+
+function journalSource(
+  context: HerculesAskContext,
+  entry: ReturnType<typeof compileHousehold>["entries"][number],
+  detail: Partial<HerculesNumberSource> = {},
+): HerculesNumberSource {
+  return toolSource(context, `Open journal entry ${entry.id}`, {
+    journalEntryId: entry.id,
+    transactionId: entry.originTransactionIds[0],
+    from: entry.date,
+    to: entry.date,
+    ...detail,
+  });
 }
 
 function executeCall(household: Household, call: HerculesReadToolCall, today: DateKey, context: HerculesAskContext): HerculesReadToolResult {
@@ -483,6 +543,161 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
       fact(call, index * 2 + 1, `${pair.confidence}% · ${pair.right.date} · ${pair.right.place || pair.right.note || "Second row"}`, formatCad(pair.right.amountCents), toolSource(context, "Open the second candidate", { transactionId: pair.right.id, from: pair.right.date, to: pair.right.date })),
     ]);
     return { callId: call.id, name: call.name, status: "ok", sentence: `${pairs.length} potential-duplicate pair${pairs.length === 1 ? " needs" : "s need"} a human decision. I will not remove either row.`, facts };
+  }
+
+  if (call.name === "balance_sheet") {
+    const sheet = balanceSheet(household);
+    const source = toolSource(context, "Open the balance sheet", { to: sheet.asOf ?? today });
+    return {
+      callId: call.id,
+      name: call.name,
+      status: "ok",
+      sentence: `As of ${sheet.asOf ?? "the empty ledger"}, posted assets are ${formatCad(sheet.assetCents)}, liabilities are ${formatCad(sheet.liabilityCents)}, and net worth is ${formatCad(sheet.equityCents)}. The accounting equation ${sheet.holds ? "holds" : "does not hold"}.`,
+      facts: [
+        fact(call, 0, "Assets", formatCad(sheet.assetCents), source),
+        fact(call, 1, "Liabilities", formatCad(sheet.liabilityCents), source),
+        fact(call, 2, "Net worth", formatCad(sheet.equityCents), source),
+        fact(call, 3, "Equation", sheet.holds ? "balanced" : "not balanced", source),
+      ],
+    };
+  }
+
+  if (call.name === "income_statement") {
+    const month = statementMonth(today, call.args);
+    const statement = incomeStatement(household, month);
+    const from = `${month}-01` as DateKey;
+    const to = addDays(monthStartKey(shiftMonthKey(month, 1)), -1);
+    const source = toolSource(context, `Open posted ${month} activity`, { from, to });
+    return {
+      callId: call.id,
+      name: call.name,
+      status: statement.income.length || statement.expenses.length ? "ok" : "empty",
+      sentence: `${month} posted income is ${formatCad(statement.incomeCents)}, expenses are ${formatCad(statement.expenseCents)}, and net income is ${formatCad(statement.netCents)}.`,
+      facts: [
+        fact(call, 0, "Income", formatCad(statement.incomeCents), { ...source, transactionTypes: ["income"] }),
+        fact(call, 1, "Expenses", formatCad(statement.expenseCents), { ...source, transactionTypes: ["expense", "refund"] }),
+        fact(call, 2, "Net income", formatCad(statement.netCents), source),
+      ],
+    };
+  }
+
+  if (call.name === "cash_flow_statement") {
+    const month = statementMonth(today, call.args);
+    const statement = cashFlowStatement(household, month);
+    const source = toolSource(context, `Open ${month} cash-flow rows`, { from: `${month}-01` as DateKey, to: addDays(monthStartKey(shiftMonthKey(month, 1)), -1) });
+    return {
+      callId: call.id,
+      name: call.name,
+      status: "ok",
+      sentence: `${month} net cash movement is ${formatCad(statement.netCashCents)}: ${formatCad(statement.operatingInCents)} operating in, ${formatCad(statement.operatingOutCents)} operating out, ${formatCad(statement.debtPaydownCents)} debt paydown, and ${formatCad(statement.investingOutCents - statement.investingInCents)} net invested. Card spending of ${formatCad(statement.cardSpendCents)} is shown separately because it was not cash movement.`,
+      facts: [
+        fact(call, 0, "Net cash movement", formatCad(statement.netCashCents), source),
+        fact(call, 1, "Operating cash in", formatCad(statement.operatingInCents), source),
+        fact(call, 2, "Operating cash out", formatCad(statement.operatingOutCents), source),
+        fact(call, 3, "Debt paydown", formatCad(statement.debtPaydownCents), source),
+        fact(call, 4, "Net invested", formatCad(statement.investingOutCents - statement.investingInCents), source),
+        fact(call, 5, "Non-cash card spending", formatCad(statement.cardSpendCents), source),
+      ],
+    };
+  }
+
+  if (call.name === "trial_balance") {
+    const books = compileHousehold(household);
+    const trial = trialBalance(books, { recognizedOnly: true });
+    const rows = trial.rows.filter((row) => row.displayDebitCents || row.displayCreditCents).slice(0, 8);
+    const facts = rows.map((row, index) => fact(
+      call,
+      index,
+      `${row.code} · ${row.name}`,
+      row.displayDebitCents ? `${formatCad(row.displayDebitCents)} debit` : `${formatCad(row.displayCreditCents)} credit`,
+      toolSource(context, `Open ${row.name}`, { accountId: row.bankAccountId, categoryId: row.categoryId }),
+    ));
+    return {
+      callId: call.id,
+      name: call.name,
+      status: rows.length ? "ok" : "empty",
+      sentence: `Recognized debit balances total ${formatCad(trial.totalDebitCents)} and credit balances total ${formatCad(trial.totalCreditCents)}. The trial balance ${trial.inBalance ? "balances" : "does not balance"}.`,
+      facts: [
+        fact(call, 20, "Total debits", formatCad(trial.totalDebitCents), toolSource(context, "Open the trial balance")),
+        fact(call, 21, "Total credits", formatCad(trial.totalCreditCents), toolSource(context, "Open the trial balance")),
+        ...facts,
+      ],
+    };
+  }
+
+  if (call.name === "general_ledger") {
+    const books = compileHousehold(household);
+    const range = periodRange(today, cleanPeriod(call.args.period), call.args);
+    const accountQuery = cleanString(call.args.account);
+    const account = fuzzy(books.chart, accountQuery, (row) => `${row.code} ${row.name}`);
+    if (accountQuery && !account) return empty(call, `I cannot match journal account “${accountQuery}” in this ledger.`);
+    const memberQuery = cleanString(call.args.member);
+    const member = resolveMember(household, memberQuery, context);
+    if (memberQuery && !member) return empty(call, `I cannot match member “${memberQuery}” in this ledger.`);
+    const limit = Math.min(10, Math.max(1, Number(call.args.limit) || 8));
+    const rows = books.entries.filter((entry) => entry.recognized && entry.date >= range.start && entry.date <= range.end
+      && (!account || entry.lines.some((line) => line.accountId === account.id))
+      && (!member || entry.createdBy === member.id || entry.lines.some((line) => line.partyId === member.id)))
+      .slice(-limit).reverse();
+    if (!rows.length) return empty(call, `No recognized journal entries match ${range.label}.`);
+    const facts = rows.map((entry, index) => fact(call, index, `${entry.date} · ${entry.memo}`, formatCad(entry.lines.reduce((sum, line) => sum + line.debitCents, 0)), journalSource(context, entry, { accountId: account?.bankAccountId, categoryId: account?.categoryId })));
+    return { callId: call.id, name: call.name, status: "ok", sentence: `I found ${rows.length} recognized journal entr${rows.length === 1 ? "y" : "ies"} ${range.label}. Each amount is the entry's total debits, matched by equal credits.`, facts };
+  }
+
+  if (call.name === "account_activity" || call.name === "explain_balance") {
+    const books = compileHousehold(household);
+    const accountQuery = cleanString(call.args.account);
+    const account = fuzzy(books.chart, accountQuery, (row) => `${row.code} ${row.name}`);
+    if (!account) return empty(call, accountQuery ? `I cannot match account “${accountQuery}” in this ledger.` : "Name the account you want me to trace.");
+    const range = periodRange(today, cleanPeriod(call.args.period), call.args);
+    const fullRegister = accountRegister(books, account.id, { recognizedOnly: true });
+    const openingRows = fullRegister.filter((row) => row.date < range.start);
+    const opening = openingRows.at(-1)?.runningCents ?? 0;
+    const rows = fullRegister.filter((row) => row.date >= range.start && row.date <= range.end);
+    const ending = rows.at(-1)?.runningCents ?? opening;
+    const debits = rows.reduce((sum, row) => sum + row.debitCents, 0);
+    const credits = rows.reduce((sum, row) => sum + row.creditCents, 0);
+    const source = toolSource(context, `Open ${account.name}`, { accountId: account.bankAccountId, categoryId: account.categoryId, from: range.start, to: range.end });
+    if (call.name === "explain_balance") {
+      const normal = account.normalBalance;
+      return {
+        callId: call.id,
+        name: call.name,
+        status: "ok",
+        sentence: `${account.name} has a normal ${normal} balance. It opened ${range.label} at ${formatCad(opening)}, had ${formatCad(debits)} of debits and ${formatCad(credits)} of credits, and ended at ${formatCad(ending)}. ${normal === "debit" ? "Debits increase it and credits decrease it." : "Credits increase it and debits decrease it."}`,
+        facts: [fact(call, 0, "Opening balance", formatCad(opening), source), fact(call, 1, "Debits", formatCad(debits), source), fact(call, 2, "Credits", formatCad(credits), source), fact(call, 3, "Ending balance", formatCad(ending), source)],
+      };
+    }
+    const limit = Math.min(10, Math.max(1, Number(call.args.limit) || 8));
+    const facts = rows.slice(-limit).reverse().map((row, index) => fact(call, index, `${row.date} · ${row.memo}`, `${row.debitCents ? `${formatCad(row.debitCents)} debit` : `${formatCad(row.creditCents)} credit`} · balance ${formatCad(row.runningCents)}`, { ...source, journalEntryId: row.entryId, from: row.date, to: row.date, label: `Open journal entry ${row.entryId}` }));
+    return { callId: call.id, name: call.name, status: rows.length ? "ok" : "empty", sentence: `${account.name} moved from ${formatCad(opening)} to ${formatCad(ending)} ${range.label} across ${rows.length} journal line${rows.length === 1 ? "" : "s"}.`, facts };
+  }
+
+  if (call.name === "journal_entry_detail") {
+    const entryId = cleanString(call.args.entryId);
+    if (!entryId) return empty(call, "Give me the journal entry ID you want to inspect.");
+    const books = compileHousehold(household);
+    const entry = books.entries.find((row) => row.id.toLowerCase() === entryId.toLowerCase() || row.originTransactionIds.some((id) => id.toLowerCase() === entryId.toLowerCase()));
+    if (!entry) return empty(call, `I cannot find journal entry “${entryId}” in this ledger.`);
+    const chart = new Map(books.chart.map((row) => [row.id, row]));
+    const facts = entry.lines.map((line, index) => fact(call, index, `${chart.get(line.accountId)?.code ?? line.accountId} · ${chart.get(line.accountId)?.name ?? line.accountId}`, line.debitCents ? `${formatCad(line.debitCents)} debit` : `${formatCad(line.creditCents)} credit`, journalSource(context, entry, { accountId: chart.get(line.accountId)?.bankAccountId, categoryId: chart.get(line.accountId)?.categoryId })));
+    const total = entry.lines.reduce((sum, line) => sum + line.debitCents, 0);
+    return { callId: call.id, name: call.name, status: "ok", sentence: `${entry.id} on ${entry.date} posts ${formatCad(total)} of debits and equal credits across ${entry.lines.length} lines. Source: ${entry.source}; recognized: ${entry.recognized ? "yes" : "no"}.`, facts };
+  }
+
+  if (call.name === "changes_in_net_worth") {
+    const month = statementMonth(today, call.args);
+    const movement = statementOfChangesInEquity(household, month);
+    const source = toolSource(context, `Open ${month} posted activity`, { from: `${month}-01` as DateKey, to: addDays(monthStartKey(shiftMonthKey(month, 1)), -1) });
+    return { callId: call.id, name: call.name, status: "ok", sentence: `${month} opened with ${formatCad(movement.openingCents)} of accumulated posted net income, added ${formatCad(movement.netIncomeCents)}, and closed at ${formatCad(movement.closingCents)}. The roll-forward ${movement.rolls ? "reconciles" : "does not reconcile"}.`, facts: [fact(call, 0, "Opening", formatCad(movement.openingCents), source), fact(call, 1, "Net income", formatCad(movement.netIncomeCents), source), fact(call, 2, "Closing", formatCad(movement.closingCents), source)] };
+  }
+
+  if (call.name === "period_comparison") {
+    const month = statementMonth(today, call.args);
+    const comparison = comparativeIncome(household, month);
+    const currentSource = toolSource(context, `Open ${comparison.monthKey}`, { from: `${comparison.monthKey}-01` as DateKey, to: addDays(monthStartKey(shiftMonthKey(comparison.monthKey, 1)), -1) });
+    const priorSource = toolSource(context, `Open ${comparison.priorKey}`, { from: `${comparison.priorKey}-01` as DateKey, to: addDays(monthStartKey(shiftMonthKey(comparison.priorKey, 1)), -1) });
+    return { callId: call.id, name: call.name, status: "ok", sentence: `Compared with ${comparison.priorKey}, ${comparison.monthKey} income changed by ${formatCad(comparison.incomeDeltaCents)}, expenses by ${formatCad(comparison.expenseDeltaCents)}, and net income by ${formatCad(comparison.netDeltaCents)}.`, facts: [fact(call, 0, `${comparison.monthKey} net`, formatCad(comparison.current.netCents), currentSource), fact(call, 1, `${comparison.priorKey} net`, formatCad(comparison.prior.netCents), priorSource), fact(call, 2, "Net change", formatCad(comparison.netDeltaCents), currentSource)] };
   }
 
   return { callId: call.id, name: call.name, status: "unavailable", sentence: "That read-only tool is unavailable.", facts: [] };
