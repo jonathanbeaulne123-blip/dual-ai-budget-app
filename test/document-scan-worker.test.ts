@@ -25,14 +25,18 @@ describe("document detection Worker", () => {
       expect(JSON.stringify(sent.messages)).toContain("untrusted data");
       return new Response(JSON.stringify({
         choices: [{ message: { content: JSON.stringify({
-          documentKind: "receipt",
+          documentKind: "RECEIPT",
           currency: "cad",
           accountLast4: "card 1234",
+          receiptNumbers: {
+            lineAmountsCents: [1000], subtotalCents: 1000, discountCents: 0,
+            taxCents: 150, tipCents: 100, feeCents: 0, totalCents: 1250,
+          },
           rows: [{
             date: "2026-08-24", amountCents: 1250, direction: "debit", typeHint: "expense",
-            merchant: "Cafe", description: "Paid with 4111 1111 1111 1111", reference: "1234567890123456", confidence: 96,
+            merchant: "Cafe", description: "Insulin · Paid with 4111 1111 1111 1111", reference: "Organic milk 1234567890123456", confidence: 96,
           }],
-          warnings: ["Account 987654321 was visible"],
+          warnings: ["Prescription item Account 987654321 was visible"],
         }) } }],
       }), { status: 200, headers: { "Content-Type": "application/json" } });
     });
@@ -44,15 +48,18 @@ describe("document detection Worker", () => {
     });
     expect(response.status).toBe(200);
     expect(response.headers.get("Access-Control-Allow-Origin")).toBe(origin);
-    const body = await response.json() as { ok: boolean; provider: string; result: { accountLast4: string; rows: Array<{ description: string; reference: string }>; warnings: string[] } };
+    const body = await response.json() as { ok: boolean; provider: string; result: { accountLast4: string; receiptNumbers: { lineAmountsCents: number[]; totalCents: number }; rows: Array<{ description: string; reference: string }>; warnings: string[] } };
     expect(body.ok).toBe(true);
     expect(body.provider).toBe("openai");
     expect(body.result.accountLast4).toBe("1234");
     expect(body.result.rows).toHaveLength(1);
+    expect(body.result.receiptNumbers).toEqual(expect.objectContaining({ lineAmountsCents: [1000], totalCents: 1250 }));
+    expect(JSON.stringify((JSON.parse(String(upstream.mock.calls[0]?.[1]?.body)) as { messages: unknown }).messages)).toContain("never item names");
     expect(JSON.stringify(body.result)).not.toMatch(/4111 1111 1111 1111|1234567890123456|987654321/);
-    expect(body.result.rows[0]?.description).toContain("•••• 1111");
-    expect(body.result.rows[0]?.reference).toBe("•••• 3456");
-    expect(body.result.warnings[0]).toContain("•••• 4321");
+    expect(body.result.rows[0]?.description).toBe("Receipt total");
+    expect(body.result.rows[0]?.reference).toBe("");
+    expect(body.result.warnings).toEqual([]);
+    expect(JSON.stringify(body.result)).not.toMatch(/Insulin|Organic milk|Prescription item/i);
     expect(upstream).toHaveBeenCalledTimes(1);
   });
 
@@ -102,6 +109,10 @@ describe("document detection Worker", () => {
           documentKind: "receipt",
           currency: "CAD",
           accountLast4: "4821",
+          receiptNumbers: {
+            lineAmountsCents: [], subtotalCents: null, discountCents: 0,
+            taxCents: 0, tipCents: 0, feeCents: 0, totalCents: 903,
+          },
           rows: [{
             date: "2026-08-25", amountCents: 903, direction: "debit", typeHint: "expense",
             merchant: "Maple Corner Market", description: "Receipt total", reference: "QA-1", confidence: 97,
@@ -112,9 +123,10 @@ describe("document detection Worker", () => {
     });
     const response = await worker.fetch(request(), { AI: { run }, ASSETS: { fetch: vi.fn() } });
     expect(response.status).toBe(200);
-    const body = await response.json() as { provider: string; result: { rows: Array<{ amountCents: number }> } };
+    const body = await response.json() as { provider: string; result: { rows: Array<{ amountCents: number }>; receiptNumbers: { subtotalCents: number | null } } };
     expect(body.provider).toBe("workers-ai");
     expect(body.result.rows[0]?.amountCents).toBe(903);
+    expect(body.result.receiptNumbers.subtotalCents).toBeNull();
     expect(run).toHaveBeenCalledWith("@cf/google/gemma-4-26b-a4b-it", expect.any(Object));
   });
 

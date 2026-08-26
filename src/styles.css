@@ -1688,6 +1688,47 @@ input, select, textarea {
 }
 .import-tabs { position: sticky; top: -1px; z-index: 2; background: var(--card); }
 .import-review-summary { line-height: 1.7; }
+.import-drive-status,
+.import-reconciliation,
+.import-check {
+  display: grid;
+  gap: 8px;
+}
+.import-drive-status {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.import-reconciliation {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+}
+.import-reconciliation h2,
+.import-reconciliation p { margin: 0; }
+.import-check {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+}
+.import-check--mismatch { border-color: #a33b2b; box-shadow: 0 0 0 2px color-mix(in srgb, #a33b2b 14%, transparent); }
+.import-check--balanced { border-color: #2f6b4f; }
+.import-check > header { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.import-receipt-numbers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+}
+.import-receipt-numbers label { display: grid; gap: 3px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.import-receipt-numbers label:first-child { grid-column: 1 / -1; }
+.import-receipt-numbers input { width: 100%; min-width: 0; padding: 8px; }
+.import-payment-matches { display: grid; gap: 6px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; }
+.import-payment-matches label,
+.import-drive-choice { display: flex; gap: 8px; align-items: flex-start; }
 .import-attention-link {
   border: 0;
   padding: 0;

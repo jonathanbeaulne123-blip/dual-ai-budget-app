@@ -15,6 +15,7 @@ export {
   describeGooglePing,
   disconnectGoogle,
   googleApiFetch,
+  googleApiResponse,
   googleClientId,
   googleConfigured,
   requestGoogleAccess,
@@ -30,7 +31,13 @@ export {
   type GoogleSuitePing,
   type GoogleTokenRequester,
 } from "./engine.ts";
-export { uploadSitDownWorkbook, type DriveUploadResult } from "./drive.ts";
+export {
+  deleteDriveReceipt,
+  uploadDriveReceipt,
+  uploadSitDownWorkbook,
+  type DriveReceiptResult,
+  type DriveUploadResult,
+} from "./drive.ts";
 export { pushDeskAppearance, pullDeskAppearance, type DeskSyncResult } from "./desk.ts";
 export {
   adoptGoogleSession,

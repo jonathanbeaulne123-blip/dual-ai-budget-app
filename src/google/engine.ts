@@ -67,6 +67,7 @@ export type GoogleCallContext = {
   memberId: string;
   session: GoogleSession;
   fetch: typeof googleApiFetch;
+  fetchResponse: typeof googleApiResponse;
 };
 
 export type GoogleSuitePing = {
@@ -120,7 +121,7 @@ function friendlyGoogleError(body: string, status: number): string {
   return `Google returned ${status}.`;
 }
 
-export async function googleApiFetch<T>(token: string, url: string, init?: RequestInit): Promise<T> {
+export async function googleApiResponse(token: string, url: string, init?: RequestInit): Promise<Response> {
   const response = await httpFetch(url, {
     ...init,
     headers: {
@@ -133,6 +134,11 @@ export async function googleApiFetch<T>(token: string, url: string, init?: Reque
     const body = await response.text();
     throw new Error(friendlyGoogleError(body, response.status));
   }
+  return response;
+}
+
+export async function googleApiFetch<T>(token: string, url: string, init?: RequestInit): Promise<T> {
+  const response = await googleApiResponse(token, url, init);
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
@@ -338,6 +344,7 @@ export async function withGoogle<T>(input: {
     memberId: input.memberId,
     session,
     fetch: googleApiFetch,
+    fetchResponse: googleApiResponse,
   });
 }
 

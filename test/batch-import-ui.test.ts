@@ -77,6 +77,7 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   Reflect.deleteProperty(HTMLElement.prototype, "scrollIntoView");
+  vi.unstubAllGlobals();
 });
 
 describe("batch import review UI", () => {
@@ -283,5 +284,196 @@ describe("batch import review UI", () => {
       && document.activeElement?.closest("article")?.getAttribute("aria-label")?.startsWith("Second Merchant") === true, "Keep both did not advance to the next duplicate decision.");
     act(() => (document.activeElement as HTMLButtonElement).click());
     await settleUntil(() => document.activeElement?.textContent?.includes("Review final Confirm") === true, "The queue did not finish at final Confirm.");
+  });
+
+  it("clears a total-only receipt against one exact posted payment without posting a second expense", async () => {
+    const household = postEntry(catalogHousehold(), {
+      date: "2026-08-24", type: "expense", amount: 16.95, accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-FOOD-GROCERIES", note: "Market payment", place: "Market",
+      createdBy: "MEM-002", visibility: "household", confirmDuplicate: true,
+    }).household;
+    const onCommit = vi.fn();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      ok: true,
+      provider: "workers-ai",
+      sourceHash: "receipt-ui-hash",
+      result: {
+        documentKind: "receipt",
+        currency: "CAD",
+        accountLast4: "4821",
+        rows: [{
+          date: "2026-08-24", amountCents: 1695, direction: "debit", typeHint: "expense",
+          merchant: "Market", description: "Receipt total", reference: "RCPT-UI", confidence: 96,
+        }],
+        receiptNumbers: {
+          lineAmountsCents: [], subtotalCents: null, discountCents: 0,
+          taxCents: 0, tipCents: 0, feeCents: 0, totalCents: 1695,
+        },
+        warnings: [],
+      },
+    }), { status: 200, headers: { "Content-Type": "application/json" } })));
+    act(() => root.render(createElement(BatchImportCard, {
+      household,
+      memberId: "MEM-002",
+      view: "household",
+      onCommit,
+    })));
+
+    const input = container.querySelector<HTMLInputElement>('input[accept="image/jpeg,image/png,image/webp"]:not([capture])')!;
+    const file = new File(["image"], "receipt.jpg", { type: "image/jpeg" });
+    Object.defineProperty(file, "arrayBuffer", { value: async () => new TextEncoder().encode("image").buffer });
+    Object.defineProperty(input, "files", { configurable: true, value: { 0: file, length: 1, item: () => file, [Symbol.iterator]: function* () { yield file; } } });
+    act(() => input.dispatchEvent(new Event("change", { bubbles: true })));
+
+    await settleUntil(() => container.textContent?.includes("Cleared to payment") === true, "Exact receipt payment was not selected.");
+    expect(container.textContent).toContain("Items unreadable");
+    expect(button("Review final Confirm")!.disabled).toBe(false);
+    act(() => button("Review final Confirm")!.click());
+    await settleUntil(() => container.textContent?.includes("1 receipt is cleared") === true, "Receipt clearance was absent from Confirm.");
+    act(() => button("Confirm 0 imports")!.click());
+    await settleUntil(() => container.querySelector(".import-review") == null, "Evidence-only review did not close.");
+    expect(onCommit).not.toHaveBeenCalled();
+  });
+
+  it("discards staged rows when the environment, household, member, or ledger view changes", async () => {
+    const firstHousehold = catalogHousehold();
+    const onCommit = vi.fn();
+    act(() => root.render(createElement(BatchImportCard, {
+      household: firstHousehold,
+      memberId: "MEM-002",
+      view: "household",
+      onCommit,
+    })));
+    const input = container.querySelector<HTMLInputElement>('input[accept*=".ofx"]')!;
+    const file = new File([OFX_AUTO_KEEP], "scoped.ofx", { type: "application/x-ofx" });
+    Object.defineProperty(file, "arrayBuffer", { value: async () => new TextEncoder().encode(OFX_AUTO_KEEP).buffer });
+    Object.defineProperty(input, "files", { configurable: true, value: { 0: file, length: 1, item: () => file, [Symbol.iterator]: function* () { yield file; } } });
+    act(() => input.dispatchEvent(new Event("change", { bubbles: true })));
+    await settleUntil(() => container.querySelector(".import-review") != null, "Scoped review did not stage.");
+
+    const nextHousehold = { ...catalogHousehold(), householdId: "HH-OTHER", environment: "production" as const };
+    act(() => root.render(createElement(BatchImportCard, {
+      household: nextHousehold,
+      memberId: "MEM-001",
+      view: "personal",
+      onCommit,
+    })));
+    await settleUntil(() => container.querySelector(".import-review") == null, "Old scoped review survived a ledger switch.");
+    expect(container.textContent).not.toContain("1 auto-kept without review");
+    expect(onCommit).not.toHaveBeenCalled();
+  });
+
+  it("does not let an old async confirmation clear a newly staged A to B to A ledger scope", async () => {
+    let acceptOldBatch!: (value: { ok: true }) => void;
+    const onCommit = vi.fn(() => new Promise<{ ok: true }>((resolve) => { acceptOldBatch = resolve; }));
+    const firstHousehold = catalogHousehold();
+    act(() => root.render(createElement(BatchImportCard, {
+      household: firstHousehold,
+      memberId: "MEM-002",
+      view: "household",
+      onCommit,
+    })));
+    const stageBankFile = async (name: string) => {
+      const input = container.querySelector<HTMLInputElement>('input[accept*=".ofx"]')!;
+      const file = new File([OFX_AUTO_KEEP], name, { type: "application/x-ofx" });
+      Object.defineProperty(file, "arrayBuffer", { value: async () => new TextEncoder().encode(OFX_AUTO_KEEP).buffer });
+      Object.defineProperty(input, "files", { configurable: true, value: { 0: file, length: 1, item: () => file, [Symbol.iterator]: function* () { yield file; } } });
+      act(() => input.dispatchEvent(new Event("change", { bubbles: true })));
+      await settleUntil(() => container.querySelector(".import-review") != null, `${name} did not stage.`);
+    };
+
+    await stageBankFile("old-scope.ofx");
+    act(() => button("Review final Confirm")!.click());
+    await settleUntil(() => container.textContent?.includes("Confirm batch import?") === true, "Old final Confirm did not open.");
+    act(() => button("Confirm 1 import")!.click());
+    await settleUntil(() => onCommit.mock.calls.length === 1, "Old confirmation did not reach the write callback.");
+
+    const nextHousehold = { ...catalogHousehold(), householdId: "HH-NEW-SCOPE" };
+    act(() => root.render(createElement(BatchImportCard, {
+      household: nextHousehold,
+      memberId: "MEM-001",
+      view: "personal",
+      onCommit,
+    })));
+    await settleUntil(() => container.querySelector(".import-review") == null, "Old scope did not clear after the switch.");
+
+    act(() => root.render(createElement(BatchImportCard, {
+      household: firstHousehold,
+      memberId: "MEM-002",
+      view: "household",
+      onCommit,
+    })));
+    await stageBankFile("new-scope.ofx");
+    expect(container.textContent).toContain("1 auto-kept without review");
+
+    await act(async () => { acceptOldBatch({ ok: true }); });
+    await settleUntil(() => button("Review final Confirm")?.disabled === false, "New scope was changed by the old confirmation.");
+    expect(container.querySelector(".import-review")).not.toBeNull();
+    expect(container.textContent).toContain("1 auto-kept without review");
+  });
+
+  it("requires an explicit choice when one payment fits two receipts", async () => {
+    const household = postEntry(catalogHousehold(), {
+      date: "2026-08-24", type: "expense", amount: 16.95, accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-FOOD-GROCERIES", note: "Receipt payment", place: "",
+      createdBy: "MEM-002", visibility: "household", confirmDuplicate: true,
+    }).household;
+    let scan = 0;
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      const current = scan++;
+      return new Response(JSON.stringify({
+        ok: true,
+        provider: "workers-ai",
+        result: {
+          documentKind: "receipt",
+          currency: "CAD",
+          accountLast4: "4821",
+          rows: [{
+            date: current === 0 ? "2026-08-23" : "2026-08-25",
+            amountCents: 1695,
+            direction: "debit",
+            typeHint: "expense",
+            merchant: current === 0 ? "Market North" : "Market South",
+            description: "Receipt total",
+            reference: "",
+            confidence: 96,
+          }],
+          receiptNumbers: {
+            lineAmountsCents: [1500], subtotalCents: 1500, discountCents: 0,
+            taxCents: 195, tipCents: 0, feeCents: 0, totalCents: 1695,
+          },
+          warnings: [],
+        },
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    }));
+    act(() => root.render(createElement(BatchImportCard, {
+      household,
+      memberId: "MEM-002",
+      view: "household",
+      onCommit: vi.fn(),
+    })));
+
+    const input = container.querySelector<HTMLInputElement>('input[accept="image/jpeg,image/png,image/webp"]:not([capture])')!;
+    const files = [
+      new File(["receipt-a"], "receipt-a.jpg", { type: "image/jpeg" }),
+      new File(["receipt-b"], "receipt-b.jpg", { type: "image/jpeg" }),
+    ];
+    files.forEach((file, index) => Object.defineProperty(file, "arrayBuffer", {
+      value: async () => new TextEncoder().encode(`receipt-${index}`).buffer,
+    }));
+    Object.defineProperty(input, "files", { configurable: true, value: { 0: files[0], 1: files[1], length: 2, item: (index: number) => files[index] ?? null, [Symbol.iterator]: function* () { yield* files; } } });
+    act(() => input.dispatchEvent(new Event("change", { bubbles: true })));
+
+    await settleUntil(() => container.querySelectorAll("button").length > 0 && button("Treat as new expense") != null, "Competing receipt choice did not appear.");
+    expect(container.querySelectorAll(".import-check .pill")).toHaveLength(2);
+    expect(button("Review final Confirm")!.disabled).toBe(true);
+    act(() => button("Treat as new expense")!.click());
+    expect(button("Review final Confirm")!.disabled).toBe(true);
+    const unresolvedChoice = button("Treat as new expense")!.closest(".import-check")!;
+    const payment = unresolvedChoice.querySelector<HTMLInputElement>(".import-payment-matches input")!;
+    act(() => payment.click());
+    await settleUntil(() => button("Review final Confirm")?.disabled === false, "Explicit receipt choices did not unlock final Confirm.");
+    expect(container.textContent).toContain("Cleared to payment");
+    expect(container.textContent).toContain("New expense");
   });
 });

@@ -233,6 +233,7 @@ function topDuplicate(
   ledger: Transaction[],
   priorRows: ImportReviewRow[],
 ): { confidence: number; reasons: string[]; match: ImportDuplicateMatch | null } {
+  const receiptEvidence = row.documentKind === "receipt";
   for (const transaction of ledger) {
     if (transaction.isDuplicate) continue;
     if (transaction.sourceId && transaction.sourceId === row.provenanceId) {
@@ -252,13 +253,14 @@ function topDuplicate(
   let best = { confidence: 0, reasons: ["No close transaction found in the current ledger."], match: null as ImportDuplicateMatch | null };
 
   for (const transaction of ledger) {
+    if (receiptEvidence) continue;
     if (transaction.isDuplicate) continue;
     if (transaction.duplicateKey && transaction.duplicateKey === candidateKey) {
       return { confidence: 100, reasons: ["exact date, amount, account, type, note, and place"], match: { kind: "ledger", transactionId: transaction.id } };
     }
   }
   const ledgerMatch = findSimilarTransactions(ledger.filter((transaction) => !transaction.isDuplicate), candidate)[0];
-  if (ledgerMatch) {
+  if (ledgerMatch && !receiptEvidence) {
     best = {
       confidence: confidenceFromScore(ledgerMatch.score),
       reasons: ledgerMatch.reasons,
@@ -268,6 +270,7 @@ function topDuplicate(
 
   for (const prior of priorRows) {
     if (prior.resolution === "cancel-import") continue;
+    if ((prior.documentKind === "receipt") !== receiptEvidence) continue;
     const synthetic = asSyntheticTransaction(prior);
     if (!synthetic) continue;
     const match = scoreSimilarity(candidate, synthetic);
