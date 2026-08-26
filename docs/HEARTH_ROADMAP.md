@@ -234,8 +234,8 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 - [x] Shared snapshot CAS via `publish_household_snapshot` (Migration 002, Development). *(D-122.)*
 - [x] Idempotent outbox, ack/backoff, conflict block, slim local tip (D-145/D-147).
 - [x] Live pull disjoint shared absorb; 4 s poll when tab visible *(fallback until Realtime primary)*.
-- [ ] **T1-S1** Migration **012** — atomic Shared CAS + Personal in one SQL TX. *([`briefs/sync/T1-S1`](briefs/sync/T1-S1-atomic-continuity-rpc.md).)*
-- [ ] **T1-S2** Client single-trip atomic push. *([`T1-S2`](briefs/sync/T1-S2-client-atomic-push.md).)*
+- [x] **T1-S1** Migration **012** — atomic Shared CAS + Personal in one SQL TX. *(Applied Development 2026-08-26.)*
+- [x] **T1-S2** Client single-trip atomic push (Auth session → `publish_continuity_snapshot`). *([`T1-S2`](briefs/sync/T1-S2-client-atomic-push.md).)*
 - [ ] **T1-S3** Supabase Realtime subscribe; demote poll to fallback. *([`T1-S3`](briefs/sync/T1-S3-realtime-subscribe.md).)*
 - [ ] **T1-S4** Push/pull race coordinator. *([`T1-S4`](briefs/sync/T1-S4-push-pull-coordinator.md).)*
 - [ ] **T1-S5** Two-browser E2E + fault harness (p95 ≤ 500 ms). *([`T1-S5`](briefs/sync/T1-S5-two-browser-proof.md).)*
