@@ -56,6 +56,14 @@ const TOOL_CATALOG = [
   ["spending_trend", "Show posted monthly spending totals over 2 to 12 months."],
   ["scenario_analysis", "Test a hypothetical purchase against current cash and scheduled bills."],
   ["forecast_accuracy", "Compare a month's budget forecast with posted actual results."],
+  ["explain_transaction", "Explain the debit, credit, recognition, and source of one posted transaction."],
+  ["explain_accounting_equation", "Explain the visible ledger's assets, liabilities, and net income equation."],
+  ["explain_debit_credit", "Explain what debits and credits do to a named chart account."],
+  ["explain_financial_statement", "Explain one current statement's purpose and linked headline figures."],
+  ["trace_number", "Trace one transaction, account, or category figure to posted source rows."],
+  ["compare_accounting_treatments", "Contrast two commonly confused household accounting treatments."],
+  ["explain_variance", "Explain one category's actual-versus-budget variance for a month."],
+  ["explain_transfer", "Explain both journal legs of one posted transfer transaction."],
 ];
 
 const TOOL_PROPERTIES = {
@@ -79,6 +87,9 @@ const TOOL_PROPERTIES = {
   monthlyPaymentCents: { type: "integer", minimum: 0, maximum: 1000000000, description: "Optional hypothetical monthly payment in integer CAD cents." },
   amountCents: { type: "integer", minimum: 1, maximum: 1000000000, description: "Hypothetical purchase amount in integer CAD cents." },
   months: { type: "integer", minimum: 2, maximum: 12 },
+  transactionId: { type: "string", maxLength: 100, description: "Stable posted transaction ID." },
+  statement: { type: "string", enum: ["balance_sheet", "income_statement", "cash_flow_statement", "trial_balance"] },
+  topic: { type: "string", enum: ["card_purchase_vs_card_payment", "refund_vs_income", "transfer_vs_expense", "receivable_vs_income", "budget_vs_actual"] },
 };
 
 const TOOL_PROPERTY_NAMES = {
@@ -128,6 +139,14 @@ const TOOL_PROPERTY_NAMES = {
   spending_trend: ["view", "months"],
   scenario_analysis: ["view", "amountCents", "horizonDays"],
   forecast_accuracy: ["view", "period"],
+  explain_transaction: ["view", "transactionId"],
+  explain_accounting_equation: ["view"],
+  explain_debit_credit: ["view", "account"],
+  explain_financial_statement: ["view", "statement"],
+  trace_number: ["view", "transactionId", "account", "category", "period"],
+  compare_accounting_treatments: ["view", "topic"],
+  explain_variance: ["view", "category", "period"],
+  explain_transfer: ["view", "transactionId"],
 };
 
 const TOOL_REQUIRED_PROPERTIES = {
@@ -136,6 +155,12 @@ const TOOL_REQUIRED_PROPERTIES = {
   explain_balance: ["account"],
   activity_since_reconciliation: ["account"],
   scenario_analysis: ["amountCents"],
+  explain_transaction: ["transactionId"],
+  explain_debit_credit: ["account"],
+  explain_financial_statement: ["statement"],
+  compare_accounting_treatments: ["topic"],
+  explain_variance: ["category"],
+  explain_transfer: ["transactionId"],
 };
 
 function json(body, status = 200, headers = {}) {
@@ -423,6 +448,12 @@ async function handleMcp(request, env) {
         accountingBasis: "posted-recognized-journal",
         currency: books.currency || "CAD",
         timeZone: books.timezone || "America/Toronto",
+        teachingContract: {
+          order: ["direct-answer", "posted-evidence", "plain-language-lesson", "limitations", "human-next-step"],
+          clickableSources: true,
+          projectionFactsLabeled: true,
+          writeAuthority: "none",
+        },
         readOnly: true,
       };
       return json({ jsonrpc: "2.0", id: rpc.id, result: {

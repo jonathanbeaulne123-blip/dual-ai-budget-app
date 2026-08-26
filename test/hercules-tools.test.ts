@@ -213,8 +213,46 @@ describe("Hercules read-only tool brain", () => {
     expect(personalScenario.results.every((result) => result.status === "unavailable")).toBe(true);
   });
 
+  it("teaches accounting by tracing current figures to their journal evidence", () => {
+    const household = seedDemoHousehold({ today, environment: "development" });
+    const before = structuredClone(household);
+    const purchase = household.transactions.find((row) => row.type === "expense" && row.visibility !== "personal")!;
+    const transfer = household.transactions.find((row) => row.type === "transfer" && row.visibility !== "personal")!;
+    const lessons = executeHerculesReadToolPlan(household, { calls: [
+      { name: "explain_transaction", args: { transactionId: purchase.id } },
+      { name: "explain_accounting_equation", args: {} },
+      { name: "explain_debit_credit", args: { account: "Visa" } },
+      { name: "explain_financial_statement", args: { statement: "cash_flow_statement" } },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+    expect(lessons.results[0]?.sentence).toMatch(/equal debits and credits/i);
+    expect(lessons.results[0]?.facts.every((row) => row.source.journalEntryId)).toBe(true);
+    expect(lessons.results[1]?.sentence).toMatch(/assets.*liabilities.*net worth/i);
+    expect(lessons.results[2]?.sentence).toMatch(/not good and bad/i);
+    expect(lessons.results[3]?.sentence).toMatch(/cash movement, not profit/i);
+
+    const tracing = executeHerculesReadToolPlan(household, { calls: [
+      { name: "trace_number", args: { category: "Groceries", period: "this_month" } },
+      { name: "compare_accounting_treatments", args: { topic: "card_purchase_vs_card_payment" } },
+      { name: "explain_variance", args: { category: "Groceries", period: "this_month" } },
+      { name: "explain_transfer", args: { transactionId: transfer.id } },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+    expect(tracing.results[0]?.facts[0]?.source.categoryId).toBeTruthy();
+    expect(tracing.results[1]?.sentence).toMatch(/double-counts spending/i);
+    expect(tracing.results[2]?.sentence).toMatch(/does not create or move money/i);
+    expect(tracing.results[3]?.sentence).toMatch(/not income, expenses, or net worth/i);
+    expect(tracing.results[3]?.facts).toHaveLength(2);
+    expect(household).toEqual(before);
+  });
+
   it("never crosses from a personal ledger into the partner's personal rows", () => {
     let household = catalogHousehold("development");
+    household.accounts.push({
+      ...household.accounts[0]!,
+      id: "ACC-PARTNER-VAULT",
+      name: "Partner Vault",
+      ownerMemberId: "MEM-002",
+      sortOrder: 99,
+    });
     household = postEntry(household, {
       date: today,
       type: "expense",
@@ -250,6 +288,17 @@ describe("Hercules read-only tool brain", () => {
     expect(partnerRequest.talk.facts).toEqual([]);
     expect(partnerRequest.talk.spoken).toMatch(/cannot match member/i);
     expect(partnerRequest.talk.spoken).not.toMatch(/999|25\.00/);
+
+    const partnerAccount = executeHerculesReadToolPlan(household, {
+      calls: [
+        { name: "explain_balance", args: { account: "Partner Vault" } },
+        { name: "opening_balance_review", args: { account: "Partner Vault" } },
+        { name: "explain_debit_credit", args: { account: "Partner Vault" } },
+        { name: "trial_balance", args: {} },
+      ],
+    }, today, { memberId: "MEM-001", view: "personal" });
+    expect(partnerAccount.results.slice(0, 3).every((result) => result.status === "empty")).toBe(true);
+    expect(partnerAccount.results.flatMap((result) => result.facts).some((row) => row.label.includes("Partner Vault"))).toBe(false);
   });
 
   it("finds exact posted rows and gives each one a transaction provenance id", () => {

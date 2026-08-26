@@ -101,18 +101,18 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list" }),
     }), env);
     const listed = await tools.json() as { result: { tools: Array<{ name: string; annotations: { readOnlyHint: boolean } }> } };
-    expect(listed.result.tools).toHaveLength(46);
+    expect(listed.result.tools).toHaveLength(54);
     expect(listed.result.tools.every((tool) => tool.annotations.readOnlyHint)).toBe(true);
-    expect(listed.result.tools.some((tool) => /post|delete|pay|transfer/.test(tool.name))).toBe(false);
+    expect(listed.result.tools.some((tool) => /^(?:post|delete|pay|transfer)(?:_|$)/.test(tool.name))).toBe(false);
 
     const call = await worker.fetch(new Request(`${origin}/mcp`, {
       method: "POST",
       headers: { Authorization: `Bearer ${tokens.access_token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "account_balance", arguments: { view: "personal" } } }),
     }), env);
-    const called = await call.json() as { result: { isError: boolean; structuredContent: { readOnly: boolean; memberId: string; ledger: string; accountingBasis: string; currency: string; timeZone: string } } };
+    const called = await call.json() as { result: { isError: boolean; structuredContent: { readOnly: boolean; memberId: string; ledger: string; accountingBasis: string; currency: string; timeZone: string; teachingContract: { writeAuthority: string; clickableSources: boolean } } } };
     expect(called.result.isError).toBe(false);
-    expect(called.result.structuredContent).toMatchObject({ readOnly: true, memberId: "MEM-002", ledger: "personal", accountingBasis: "posted-recognized-journal", currency: "CAD", timeZone: "America/Toronto" });
+    expect(called.result.structuredContent).toMatchObject({ readOnly: true, memberId: "MEM-002", ledger: "personal", accountingBasis: "posted-recognized-journal", currency: "CAD", timeZone: "America/Toronto", teachingContract: { writeAuthority: "none", clickableSources: true } });
 
     const refresh = await worker.fetch(new Request(`${origin}/oauth/token`, {
       method: "POST",
