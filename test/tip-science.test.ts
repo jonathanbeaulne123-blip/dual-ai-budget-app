@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   executeHerculesReadToolPlan,
   mulberry32,
+  observeTipShifts,
   planTaxMilk,
   runTipOracle,
   seedDemoHousehold,
@@ -9,24 +10,57 @@ import {
   simulateTipSchedule,
   upcomingCadenceSchedule,
 } from "../src/core/index.ts";
+import type { Household } from "../src/core/types.ts";
 
 const today = "2026-08-21";
 
+function shuffleShifts(household: Household, seed: number): Household {
+  const random = mulberry32(seed);
+  const shifts = [...household.shifts];
+  for (let i = shifts.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(random() * (i + 1));
+    [shifts[i], shifts[j]] = [shifts[j]!, shifts[i]!];
+  }
+  return { ...household, shifts };
+}
+
 describe("Hercules Shift Oracle tip science", () => {
-  it("keeps Monte Carlo deterministic for the same seed and never mutates the household", () => {
+  it("keeps Monte Carlo deterministic across seed and shift-array order", () => {
     const household = seedDemoHousehold({ today, environment: "development" });
     const before = structuredClone(household);
     const a = runTipOracle(household, { today, iterations: 800, seed: 42, horizonDays: 28 });
     const b = runTipOracle(household, { today, iterations: 800, seed: 42, horizonDays: 28 });
-    const c = runTipOracle(household, { today, iterations: 800, seed: 43, horizonDays: 28 });
+    const shuffled = shuffleShifts(household, 99);
+    const c = runTipOracle(shuffled, { today, iterations: 800, seed: 42, horizonDays: 28 });
+    const d = runTipOracle(household, { today, iterations: 800, seed: 43, horizonDays: 28 });
     expect(a).not.toBeNull();
     expect(b).toEqual(a);
-    expect(c?.p50Cents).not.toEqual(a?.p50Cents);
+    expect(c).toEqual(a);
+    expect(d?.p50Cents).not.toEqual(a?.p50Cents);
     expect(a!.p10Cents).toBeLessThanOrEqual(a!.p50Cents);
     expect(a!.p50Cents).toBeLessThanOrEqual(a!.p90Cents);
     expect(a!.safeBaselineCents).toBe(a!.p10Cents);
     expect(a!.assumptions.some((line) => /projection|not a promise/i.test(line))).toBe(true);
     expect(household).toEqual(before);
+  });
+
+  it("keeps the simulated floor inside the historical tip envelope", () => {
+    const household = seedDemoHousehold({ today, environment: "development" });
+    const observations = observeTipShifts(household);
+    const byMonth = new Map<string, number>();
+    for (const row of observations) {
+      const month = row.date.slice(0, 7);
+      byMonth.set(month, (byMonth.get(month) ?? 0) + row.netTipsCents);
+    }
+    const monthly = [...byMonth.values()];
+    const maxMonth = Math.max(...monthly);
+    const oracle = runTipOracle(household, { today, iterations: 1200, seed: 7, horizonDays: 28 });
+    expect(oracle).not.toBeNull();
+    // A 28-day safe floor must not exceed the best observed month by more than 25%.
+    expect(oracle!.p10Cents).toBeLessThanOrEqual(Math.round(maxMonth * 1.25));
+    // Cadence for one week should stay near historical weekly pace, not invent five shifts.
+    const weekSlots = upcomingCadenceSchedule(household, today, { days: 7 }).length;
+    expect(weekSlots).toBeLessThanOrEqual(4);
   });
 
   it("produces weather-adjusted shift outlook and schedule advice as projections", () => {
@@ -47,14 +81,18 @@ describe("Hercules Shift Oracle tip science", () => {
     expect(["protect-floor", "chase-spike", "neutral"]).toContain(sim!.rows[0]!.recommendation);
   });
 
-  it("plans educational tax milk and peak buffers without posting", () => {
+  it("plans educational tax milk, fails closed on unknown shift ids, and never posts", () => {
     const household = seedDemoHousehold({ today, environment: "development" });
     const before = structuredClone(household);
     const plan = planTaxMilk(household, { tipCents: 40_000, taxRateBps: 2500 });
     expect(plan).not.toBeNull();
-    expect(plan!.taxMilkCents).toBe(10_000);
-    expect(plan!.taxMilkCents + plan!.bufferCents + plan!.leftoverCents).toBe(plan!.tipCents);
-    expect(plan!.assumptions.some((line) => /Confirm/i.test(line))).toBe(true);
+    expect(plan && !("error" in plan) && plan.taxMilkCents).toBe(10_000);
+    if (plan && !("error" in plan)) {
+      expect(plan.taxMilkCents + plan.bufferCents + plan.leftoverCents).toBe(plan.tipCents);
+      expect(plan.assumptions.some((line) => /Confirm/i.test(line))).toBe(true);
+    }
+    const missing = planTaxMilk(household, { shiftId: "SHIFT-NOPE" });
+    expect(missing && "error" in missing && missing.error).toMatch(/cannot match shift/i);
     expect(household).toEqual(before);
   });
 
@@ -75,8 +113,14 @@ describe("Hercules Shift Oracle tip science", () => {
       "tip_oracle", "shift_outlook", "tip_schedule_sim", "tax_milk_plan",
     ]);
     expect(run.results.every((result) => result.status === "ok")).toBe(true);
-    expect(run.results.every((result) => result.facts.every((fact) => fact.basis === "projection" || fact.label === "Sample shifts"))).toBe(true);
+    expect(run.results.every((result) => result.facts.every((fact) => fact.basis === "projection"))).toBe(true);
     expect(run.talk.spoken).toMatch(/projection|tax milk|tips/i);
+
+    const badId = executeHerculesReadToolPlan(household, {
+      calls: [{ name: "tax_milk_plan", args: { shiftId: "SHIFT-NOPE" } }],
+    }, today, { memberId: "MEM-001", view: "household" });
+    expect(badId.results[0]?.status).toBe("empty");
+    expect(badId.results[0]?.sentence).toMatch(/cannot match shift/i);
   });
 
   it("keeps the seeded PRNG in unit interval", () => {

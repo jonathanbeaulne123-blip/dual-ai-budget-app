@@ -187,7 +187,7 @@ export const HERCULES_READ_TOOL_CATALOG: ReadonlyArray<{ name: HerculesReadToolN
   { name: "explain_transfer", description: "Explain both journal legs of one posted transfer transaction." },
   { name: "tip_oracle", description: "Monte Carlo tipped-income floor, mid, high, and dry-streak reserve from posted shifts. Projection only." },
   { name: "shift_outlook", description: "Estimate tip range for one upcoming shift from weekday, meal, hours, and optional weather. Projection only." },
-  { name: "tip_schedule_sim", description: "Simulate the next week of tip outcomes from cadence or supplied shifts; ranks protect-floor vs chase-spike advice." },
+  { name: "tip_schedule_sim", description: "Simulate the next days of tip outcomes from historical cadence; ranks protect-floor vs chase-spike advice. Projection only." },
   { name: "tax_milk_plan", description: "Split tip income into educational tax-milk, smoothing buffer, and leftover projections. Never posts." },
 ];
 
@@ -1235,7 +1235,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
         fact(call, 1, "Typical tips (p50)", formatCad(oracle.p50Cents), source, "projection"),
         fact(call, 2, "Upside tips (p90)", formatCad(oracle.p90Cents), source, "projection"),
         fact(call, 3, "Dry-streak reserve", formatCad(oracle.emergencyReserveCents), source, "projection"),
-        fact(call, 4, "Sample shifts", String(oracle.sampleShifts), source),
+        fact(call, 4, "Sample shifts", String(oracle.sampleShifts), source, "projection"),
       ],
     };
   }
@@ -1310,6 +1310,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
       shiftId: cleanString(call.args.shiftId, 100),
       taxRateBps: Number(call.args.taxRateBps) || 2500,
     });
+    if (plan && "error" in plan) return empty(call, plan.error);
     if (!plan) return empty(call, "Give me a tip amount, a shift id, or post a tip shift first.");
     const source = tipOracleSource(context, memberId);
     return {
