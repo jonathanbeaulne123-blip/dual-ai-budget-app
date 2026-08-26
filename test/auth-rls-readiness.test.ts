@@ -17,6 +17,20 @@ describe("Auth/RLS readiness packet", () => {
     expect(cutover).toMatch(/006[`*]*\s*applied/i);
   });
 
+  it("keeps living constitution aligned with applied deny-by-default 006", () => {
+    const agents = readFileSync("AGENTS.md", "utf8");
+    const continuity = readFileSync("docs/CLOUD_CONTINUITY.md", "utf8");
+    const architecture = readFileSync("docs/ARCHITECTURE.md", "utf8");
+    const environments = readFileSync("docs/ENVIRONMENTS.md", "utf8");
+    for (const living of [agents, continuity, architecture, environments]) {
+      expect(living).toMatch(/006 is applied/i);
+      expect(living).not.toMatch(/RLS is still [`']?USING \(true\)/i);
+      expect(living).not.toMatch(/006 remains unapplied/i);
+      expect(living).not.toMatch(/006 is not applied/i);
+      expect(living).not.toMatch(/006 is review-ready but unapplied/i);
+    }
+  });
+
   it("locks path B Production ceiling as NOTICE (abort only above ceiling 1)", () => {
     expect(migration).toMatch(/production_ceiling CONSTANT BIGINT := 1/);
     expect(migration).toMatch(/RAISE NOTICE 'Path B:/);

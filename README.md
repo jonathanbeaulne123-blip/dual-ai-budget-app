@@ -87,7 +87,7 @@ The Google Sheets / Apps Script prototype is archived as reference under `docs/r
 
 ## Disposable Development now; security cutover before October
 
-Through 2026-09-30, hosted rows are disposable Development data and may remain openly readable/writable while cloud continuity is built. Do not call them private. Google Auth, durable personal/household membership, and deny-by-default RLS must ship before meaningful October data.
+Through 2026-09-30, hosted Development rows are disposable fixtures while Auth smoke finishes. Deny-by-default RLS **006 is applied** (anon household REST revoked). Do not call them private or October-ready. Finish Create / invite smoke and Production hardening before meaningful October data.
 
 These still remain blocked until that security foundation and their own gates are complete:
 

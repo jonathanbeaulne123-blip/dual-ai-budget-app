@@ -19,7 +19,7 @@ Hercules is the household's resident data scientist who never touches the money.
 - **Clippy timing.** The paperclip was not the bug. Unsolicited timing was. Preset proposals are **not** queued on the 16s idle mutter. One dismissible card. Inert during Add. If it blocks milk, it is wrong.
 - **Sending the whole journal every question.** `test/scale.test.ts` is 12 months × 200 txs. Retrieval is the design, not a concession.
 - **Model-side tool-calling that writes.** Tools stay on the phone. The model cannot invent notice keys. The tap uses those ids only (`acceptPresetNotice`, same shape as `acceptVisitGoal`).
-- **Bank aggregation.** D-039 stands. No Flinks, Plaid, Interac, or issued cards. Hosted RLS is still `USING (true)`.
+- **Bank aggregation.** D-039 stands. No Flinks, Plaid, Interac, or issued cards until Auth smoke and October Production readiness are complete. Deny-by-default RLS 006 is applied.
 
 ## Architecture
 
