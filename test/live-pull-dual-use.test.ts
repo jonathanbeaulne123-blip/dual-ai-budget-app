@@ -183,12 +183,19 @@ describe("post-conflict outbox resume", () => {
       if (url.includes("households?select=id")) return response([]);
       if (url.includes("rpc/publish_household_snapshot")) {
         return response({
-          code: "PGRST202",
-          message: "Could not find the function public.publish_household_snapshot",
-        }, 404);
+          ok: false,
+          conflict: true,
+          reason: "stale-revision",
+          remote_revision: remote.revision,
+          remote_payload: JSON.stringify(remote),
+        });
       }
-      if (url.includes("household_snapshots?household_id")) {
-        return response([{ payload: JSON.stringify(remote) }]);
+      if (url.includes("continuity_memberships?select=household_id")) return response([]);
+      if (
+        url.includes("continuity_memberships?on_conflict")
+        || url.includes("continuity_personal_snapshots?on_conflict")
+      ) {
+        return response(null, 201);
       }
       return response(null, 201);
     }));

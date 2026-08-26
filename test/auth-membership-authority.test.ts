@@ -88,4 +88,50 @@ describe("D-143 Auth membership continuity authority", () => {
     const urls = fetch.mock.calls.map((call) => String(call[0]));
     expect(urls.some((url) => url.includes("household_snapshots?on_conflict"))).toBe(false);
   });
+
+  it("D-147: Personal fail after Shared CAS returns skipped+error (outbox must not treat as success)", async () => {
+    const base = linkGoogleIdentity(catalogHousehold(), {
+      memberId: "MEM-001",
+      email: identity.email,
+      subject: identity.subject,
+      displayName: "Jonathan",
+      grantedScopes: ["openid", "email"],
+    }).household;
+    const household = { ...base, linked: true, revision: 1, baseRevision: 0 };
+    let casSeen = false;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("households?select=id")) {
+        return new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      if (url.includes("rpc/publish_household_snapshot")) {
+        casSeen = true;
+        return new Response(JSON.stringify({ ok: true, conflict: false, duplicate: false, revision: 1 }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      if (url.includes("continuity_memberships?select=household_id")) {
+        return new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      if (url.includes("continuity_memberships?on_conflict")) {
+        return new Response(null, { status: 201 });
+      }
+      if (url.includes("continuity_personal_snapshots?on_conflict")) {
+        return new Response(JSON.stringify({ message: "personal write failed" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } });
+    }));
+    const result = await pushSupabaseHousehold(household, bundledSupabaseConfig(), {
+      expectedRevision: 0,
+      continuityIdentity: identity,
+    });
+    expect(casSeen).toBe(true);
+    expect(result.usedCasRpc).toBe(true);
+    expect(result.skipped).toBe(true);
+    expect(result.error).toMatch(/Personal scope failed/i);
+  });
 });
