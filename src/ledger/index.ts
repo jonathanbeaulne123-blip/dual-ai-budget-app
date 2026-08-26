@@ -28,7 +28,22 @@ export {
   bundledSupabaseConfig,
   hostedTransportAllowed,
   fetchContinuityMembershipRole,
+  fetchContinuityCommandEvents,
+  householdCloudProjection,
 } from "./supabase.ts";
+export {
+  continuityCommandLogEnabled,
+  receiptToCommandRef,
+  buildCommandRef,
+  compactedCommandPayload,
+} from "./continuityCommandLog.ts";
+export {
+  buildSnapshotFromEvents,
+  catalogBaseFromSnapshot,
+  extractMaterializationFacts,
+  materializedHashMatchesSnapshot,
+  type ContinuityCommandEvent,
+} from "./materializeSnapshotFromEvents.ts";
 export {
   applyPublishHouseholdSnapshotCas,
   createMemoryHostedCas,

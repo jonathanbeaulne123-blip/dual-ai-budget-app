@@ -12,6 +12,13 @@ import { hostedContinuityAllowed, legacyLinkedPublishAllowed } from "./continuit
 import { decodeJsonPayload, encodeHouseholdPayload, encodeSharedSnapshotPayload } from "./snapshotPayload.ts";
 import type { SnapshotCasConflict, SnapshotCasResult } from "./snapshotCas.ts";
 import type { ContinuityCommandRef } from "./continuityCommandLog.ts";
+import { continuityCommandLogEnabled } from "./continuityCommandLog.ts";
+import {
+  buildSnapshotFromEvents,
+  catalogBaseFromSnapshot,
+  materializedHashMatchesSnapshot,
+  type ContinuityCommandEvent,
+} from "./materializeSnapshotFromEvents.ts";
 
 export {
   hostedContinuityAllowed,
@@ -846,6 +853,68 @@ async function readRemoteSnapshot(
 }
 
 /** Membership-scoped live pull: one row by household id + environment (Auth JWT). */
+export async function fetchContinuityCommandEvents(
+  householdId: string,
+  environment: Environment = "development",
+  config = readSupabaseConfig(),
+  options?: {
+    afterRevision?: number;
+    memberId?: string;
+  },
+): Promise<ContinuityCommandEvent[]> {
+  if (!config || !hostedContinuityAllowed(environment)) return [];
+  const filters = [
+    `household_id=eq.${encodeURIComponent(householdId)}`,
+    `environment=eq.${encodeURIComponent(environment)}`,
+  ];
+  if (typeof options?.afterRevision === "number" && options.afterRevision >= 0) {
+    filters.push(`result_revision=gt.${options.afterRevision}`);
+  }
+  const result = await rest(
+    config,
+    `continuity_command_events?${filters.join("&")}&select=id,environment,household_id,member_id,idempotency_key,confirmation_id,identity_hash,base_revision,result_revision,ledger_scope,command_type,payload_json,created_at&order=result_revision.asc,created_at.asc`,
+    { method: "GET", headers: { Prefer: "return=representation" } },
+  );
+  if (isMissingTable(result.body)) return [];
+  if (!result.ok) throw new Error(messageOf(result.body));
+  const rows = Array.isArray(result.body) ? result.body as ContinuityCommandEvent[] : [];
+  if (!options?.memberId) return rows;
+  return rows.filter((row) => row.ledger_scope === "shared" || row.member_id === options.memberId);
+}
+
+async function pullViaCommandLogMaterialization(
+  snapshotTip: Household,
+  householdId: string,
+  environment: Environment,
+  config: SupabaseConfig,
+  continuityIdentity?: GoogleIdentitySelector | null,
+): Promise<Household | null> {
+  if (!continuityCommandLogEnabled()) return null;
+  const memberId = continuityIdentity
+    ? memberIdForGoogleIdentity(snapshotTip, continuityIdentity)
+    : null;
+  if (!memberId) return null;
+  const events = await fetchContinuityCommandEvents(householdId, environment, config, { memberId });
+  if (!events.length) return null;
+  const base = catalogBaseFromSnapshot(snapshotTip);
+  const materialized = await buildSnapshotFromEvents(events, base);
+  const matches = await materializedHashMatchesSnapshot({
+    materialized,
+    snapshotTip,
+    memberId,
+    project: householdCloudProjection,
+  });
+  if (!matches) return null;
+  return {
+    ...materialized,
+    linked: true,
+    baseRevision: snapshotTip.revision,
+    revision: snapshotTip.revision,
+    lastCommittedAt: snapshotTip.lastCommittedAt ?? materialized.lastCommittedAt,
+  };
+}
+
+/** Membership-scoped live pull: one row by household id + environment (Auth JWT). */
 export async function pullHouseholdSnapshotById(
   householdId: string,
   environment: Environment = "development",
@@ -881,11 +950,24 @@ export async function pullHouseholdSnapshotById(
     }
     binding.memberId = memberId;
   }
-  return assertHouseholdBinding(
+  const bound = assertHouseholdBinding(
     { ...pulled, linked: true, baseRevision: pulled.revision },
     binding,
     "pull",
   );
+  try {
+    const materialized = await pullViaCommandLogMaterialization(
+      bound,
+      householdId,
+      environment,
+      config,
+      continuityIdentity,
+    );
+    if (materialized) return materialized;
+  } catch {
+    /* command-log materialization is best-effort; snapshot row remains canonical */
+  }
+  return bound;
 }
 
 /** Same-member second-device personal tip (Auth JWT). */
