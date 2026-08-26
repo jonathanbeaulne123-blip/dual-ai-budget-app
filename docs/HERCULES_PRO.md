@@ -16,6 +16,8 @@ The accounting-core slice adds posted balance sheet, income statement, cash-flow
 
 The accounting-controls slice adds reconciliation status and activity-since-reconciliation, uncategorized and duplicate exposure, missing-period and opening-balance review, close readiness, source-provenance coverage, integrity findings, and the household activity trail. “Missing” means “needs a human look”; Hercules does not invent an adjustment, close a month, or treat a confidence score as permission to delete.
 
+The forecasting slice adds budget variance, cash runway, bill coverage, card payoff, utilization, savings rate, income stability, spending trends, purchase scenarios, and budget-forecast accuracy. Forecast results are labelled projections and state their simplifying assumptions. A positive scenario result is a narrow cash test—not permission, certainty, financial advice, or a hidden write.
+
 Pro cannot add, edit, delete, post, pay, transfer, merge, sync, or move money. Recommendations are words. The human returns to Hearth and uses the ordinary Confirm path for a write.
 
 Each ChatGPT account completes its own OAuth link. Hearth verifies the current Supabase/Google session, the active `continuity_memberships` row, environment, household, and member. The resulting Hearth access and refresh tokens are encrypted with the Worker signing secret; the underlying Supabase tokens are not exposed as readable token claims. Membership is checked again on reads and refresh.

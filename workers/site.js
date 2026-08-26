@@ -126,6 +126,16 @@ const HERCULES_READ_TOOLS = [
   { name: "source_document_coverage", description: "Summarize import/source provenance attached to posted rows.", parameters: strictObject(filterProperties()) },
   { name: "integrity_findings", description: "List deterministic books-health findings with source identifiers.", parameters: strictObject({ limit: { anyOf: [{ type: "integer", minimum: 1, maximum: 10 }, { type: "null" }] } }) },
   { name: "audit_trail", description: "Read the latest immutable household activity records.", parameters: strictObject({ limit: { anyOf: [{ type: "integer", minimum: 1, maximum: 10 }, { type: "null" }] } }) },
+  { name: "budget_variance", description: "Compare posted category spending with the selected month's budget.", parameters: strictObject({ period: nullablePeriod(), limit: { anyOf: [{ type: "integer", minimum: 1, maximum: 10 }, { type: "null" }] } }) },
+  { name: "cash_runway", description: "Estimate days of cash runway from recent posted spending.", parameters: strictObject({ period: nullablePeriod() }) },
+  { name: "bill_coverage", description: "Compare cash-like balances with scheduled bills in a chosen horizon.", parameters: strictObject({ horizonDays: { anyOf: [{ type: "integer", minimum: 1, maximum: 90 }, { type: "null" }] } }) },
+  { name: "debt_projection", description: "Project card payoff time with a stated or current minimum payment.", parameters: strictObject({ account: nullableString(), monthlyPaymentCents: { anyOf: [{ type: "integer", minimum: 0, maximum: 1000000000 }, { type: "null" }] } }) },
+  { name: "credit_utilization", description: "Read per-card and aggregate posted balance utilization.", parameters: strictObject({ account: nullableString() }) },
+  { name: "savings_rate", description: "Calculate posted monthly income retained after spending.", parameters: strictObject({ period: nullablePeriod() }) },
+  { name: "income_stability", description: "Measure variation in posted monthly income over 2 to 12 months.", parameters: strictObject({ months: { anyOf: [{ type: "integer", minimum: 2, maximum: 12 }, { type: "null" }] } }) },
+  { name: "spending_trend", description: "Show posted monthly spending totals over 2 to 12 months.", parameters: strictObject({ months: { anyOf: [{ type: "integer", minimum: 2, maximum: 12 }, { type: "null" }] } }) },
+  { name: "scenario_analysis", description: "Test a hypothetical purchase against current cash and scheduled bills.", parameters: strictObject({ amountCents: { anyOf: [{ type: "integer", minimum: 1, maximum: 1000000000 }, { type: "null" }] }, horizonDays: { anyOf: [{ type: "integer", minimum: 1, maximum: 90 }, { type: "null" }] } }) },
+  { name: "forecast_accuracy", description: "Compare a month's budget forecast with posted actual results.", parameters: strictObject({ period: nullablePeriod() }) },
 ];
 const HERCULES_READ_TOOL_NAMES = new Set(HERCULES_READ_TOOLS.map((tool) => tool.name));
 const TOOL_ARG_KEYS = {
@@ -165,6 +175,16 @@ const TOOL_ARG_KEYS = {
   source_document_coverage: ["period", "from", "to", "member", "account", "category", "merchant"],
   integrity_findings: ["limit"],
   audit_trail: ["limit"],
+  budget_variance: ["period", "limit"],
+  cash_runway: ["period"],
+  bill_coverage: ["horizonDays"],
+  debt_projection: ["account", "monthlyPaymentCents"],
+  credit_utilization: ["account"],
+  savings_rate: ["period"],
+  income_stability: ["months"],
+  spending_trend: ["months"],
+  scenario_analysis: ["amountCents", "horizonDays"],
+  forecast_accuracy: ["period"],
 };
 
 function parseJsonObject(value) {
@@ -195,6 +215,9 @@ function sanitizeToolArgs(name, value) {
       }
       else if (key === "horizonDays") output[key] = Math.min(90, Math.max(1, rounded));
       else if (key === "minimumAmountCents" || key === "maximumAmountCents") output[key] = Math.min(1000000000, Math.max(0, rounded));
+      else if (key === "monthlyPaymentCents") output[key] = Math.min(1000000000, Math.max(0, rounded));
+      else if (key === "amountCents") output[key] = Math.min(1000000000, Math.max(1, rounded));
+      else if (key === "months") output[key] = Math.min(12, Math.max(2, rounded));
     }
   }
   return output;
@@ -304,6 +327,9 @@ const HERCULES_PLAN_SCHEMA = {
               limit: { type: "integer", minimum: 1, maximum: 10 },
               horizonDays: { type: "integer", minimum: 1, maximum: 90 },
               entryId: { type: "string" },
+              monthlyPaymentCents: { type: "integer", minimum: 0, maximum: 1000000000 },
+              amountCents: { type: "integer", minimum: 1, maximum: 1000000000 },
+              months: { type: "integer", minimum: 2, maximum: 12 },
             },
           },
         },
