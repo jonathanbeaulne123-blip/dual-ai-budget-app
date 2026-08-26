@@ -1,8 +1,9 @@
 /**
  * Live pull while the kitchen stays open (dual-use).
  *
- * Current capability (no supabase-js Realtime client yet): visibility-aware REST
- * poll of one household_snapshots row. Scale notes live in the worksession.
+ * Primary path when `VITE_CONTINUITY_REALTIME=1`: Supabase Realtime triggers
+ * reconcile; this module supplies the visibility-aware REST poll fallback when
+ * Realtime is not SUBSCRIBED.
  */
 export const LIVE_PULL_INTERVAL_MS = 4_000;
 
