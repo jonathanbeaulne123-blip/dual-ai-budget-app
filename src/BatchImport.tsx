@@ -21,7 +21,6 @@ import {
   type LedgerView,
   type ParsedOfxAccount,
   type ReceiptNumbers,
-  type ParsedOfxBatch,
   type Transaction,
   type UndoToken,
 } from "./core/index.ts";
@@ -155,14 +154,14 @@ export function BatchImportCard({
   const renderedScopeRef = useRef(scopeKey);
   const scopeGenerationRef = useRef(0);
   const stagedRowsRef = useRef(rows);
-  const importContextRef = useRef({ scopeKey, generation: 0 });
+  stagedRowsRef.current = rows;
+  const importContextRef = useRef({ household, memberId, view, scopeKey });
+  importContextRef.current = { household, memberId, view, scopeKey };
   if (renderedScopeRef.current !== scopeKey) {
     renderedScopeRef.current = scopeKey;
     scopeGenerationRef.current += 1;
   }
   activeScopeRef.current = scopeKey;
-  importContextRef.current = { scopeKey, generation: scopeGenerationRef.current };
-  stagedRowsRef.current = rows;
   const rowRefs = useRef(new Map<string, HTMLElement>());
   const finalConfirmButton = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useDialog(open && !finalConfirm, () => setOpen(false));
@@ -254,6 +253,7 @@ export function BatchImportCard({
 
   function clearStaging(clearDriveResults = false) {
     setWorking(false);
+    stagedRowsRef.current = [];
     setRows([]);
     setStatementAccounts([]);
     setWarnings([]);
@@ -277,9 +277,12 @@ export function BatchImportCard({
     accounts: ParsedOfxAccount[] = [],
     files: Map<string, File> = new Map(),
   ) {
-    const prepared = prepareImportRows({ household, memberId, view, rows: sourceRows });
-    const existingIds = new Set(rows.map((row) => row.id));
-    const combined = refreshImportTriage({ household, memberId, view, rows: [...rows, ...prepared.filter((row) => !existingIds.has(row.id))] });
+    const context = importContextRef.current;
+    const prepared = prepareImportRows({ household: context.household, memberId: context.memberId, view: context.view, rows: sourceRows });
+    const current = stagedRowsRef.current;
+    const existingIds = new Set(current.map((row) => row.id));
+    const combined = refreshImportTriage({ household: context.household, memberId: context.memberId, view: context.view, rows: [...current, ...prepared.filter((row) => !existingIds.has(row.id))] });
+    stagedRowsRef.current = combined;
     setRows(combined);
     setStatementAccounts((current) => {
       const byId = new Map(current.map((account) => [`${account.sourceHash}|${account.accountRef}`, account]));
@@ -325,12 +328,6 @@ export function BatchImportCard({
       if (scopeIsCurrent(startedScope, startedGeneration)) setWorking(false);
       if (bankInput.current) bankInput.current.value = "";
     }
-  }
-
-  function importFromFlinksBatch(batch: ParsedOfxBatch) {
-    const context = importContextRef.current;
-    if (context.scopeKey !== activeScopeRef.current || context.generation !== scopeGenerationRef.current) return;
-    appendRows(batch.rows, batch.warnings, batch.accounts);
   }
 
   async function importImages(files: FileList | null, input: HTMLInputElement | null) {
@@ -524,9 +521,13 @@ export function BatchImportCard({
           environment={household.environment}
           householdId={household.householdId}
           memberId={memberId}
+          scopeKey={scopeKey}
+          generation={scopeGenerationRef.current}
           disabled={working}
-          onImported={importFromFlinksBatch}
-          onError={setError}
+          onStage={(batch, expectedScope, expectedGeneration) => {
+            if (!scopeIsCurrent(expectedScope, expectedGeneration)) return;
+            appendRows(batch.rows, batch.warnings);
+          }}
         />
         <div className="import-actions">
           <button type="button" className="primary" disabled={working} onClick={() => bankInput.current?.click()}>

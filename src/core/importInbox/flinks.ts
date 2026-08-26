@@ -1,217 +1,163 @@
 import { isValidDateKey, type DateKey } from "../calendar.ts";
 import { stableImportHash } from "./hash.ts";
-import type { ImportReviewType, ImportedSourceRow, ParsedOfxAccount, ParsedOfxBatch } from "./types.ts";
+import type { ImportReviewType, ImportedSourceRow } from "./types.ts";
 
-export type FlinksInboxAccount = {
-  accountRef: string;
-  accountLast4: string;
-  title: string;
-  type: string;
-  category: string;
-  currency: string;
-  balanceCents: number | null;
-};
+const MAX_ROWS = 10_000;
+const TRANSFER_CODES = new Set(["TRANSFER", "XFER"]);
+const ACCOUNT_KINDS = new Set(["bank", "credit-card", "unknown"]);
 
 export type FlinksInboxTransaction = {
+  /** Server-issued stable digest. Never a login id, account id, or raw provider credential. */
+  stableTransactionId: string;
+  status: "posted" | "pending";
   accountRef: string;
-  provenanceId: string;
+  accountLast4: string;
+  accountKind: "bank" | "credit-card" | "unknown";
+  currency: string;
   date: string;
-  description: string;
-  debitCents: number | null;
-  creditCents: number | null;
+  debit: string | number | null;
+  credit: string | number | null;
+  code?: string | null;
+  description?: string | null;
+  merchant?: string | null;
 };
 
 export type FlinksInboxPayload = {
-  institution: string;
+  provider: "flinks";
+  /** Bounded display label returned by Hearth's authenticated Worker. */
+  sourceName: string;
+  /** Server-issued digest for this pull. It must contain no bank credential or raw account number. */
   sourceHash: string;
-  accounts: FlinksInboxAccount[];
   transactions: FlinksInboxTransaction[];
 };
 
-function cleanText(value: string, max = 240): string {
-  return value.replace(/\0/g, "").replace(/\s+/g, " ").trim().slice(0, max);
+export type ParsedFlinksBatch = {
+  sourceName: string;
+  sourceKind: "flinks";
+  sourceHash: string;
+  rows: ImportedSourceRow[];
+  warnings: string[];
+};
+
+function cleanText(value: unknown, max: number): string {
+  return String(value ?? "").replace(/\0/g, "").replace(/\s+/g, " ").trim().slice(0, max);
 }
 
-function dateFromFlinks(value: string): DateKey | null {
-  const trimmed = value.trim();
-  if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
-    const key = trimmed.slice(0, 10);
-    return isValidDateKey(key) ? key : null;
+function opaqueDigest(value: unknown, label: string, prefix: "fpull_" | "ftx_" | "fac_"): string {
+  const cleaned = cleanText(value, 160);
+  const digest = cleaned.slice(prefix.length);
+  if (!cleaned.startsWith(prefix) || !/^[a-f0-9]{64}$/.test(digest)) {
+    throw new Error(`Flinks returned an invalid ${label}.`);
   }
-  const digits = trimmed.replace(/[^0-9]/g, "").slice(0, 8);
-  if (digits.length !== 8) return null;
-  const key = `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`;
-  return isValidDateKey(key) ? key : null;
+  return cleaned;
 }
 
-function accountKind(account: FlinksInboxAccount): "bank" | "credit-card" | "investment" | null {
-  const type = cleanText(account.type, 80).toLowerCase();
-  const category = cleanText(account.category, 80).toLowerCase();
-  if (/credit|visa|mastercard|line of credit|loc/.test(type) || category === "credits") return "credit-card";
-  if (/tfsa|rrsp|fhsa|resp|investment|broker|crypto/.test(type) || category === "products") return "investment";
-  if (/chequing|checking|savings|operations|other/.test(type) || category === "operations" || category === "other") return "bank";
-  if (type) return "bank";
-  return null;
+function decimalToCents(value: string | number | null): number {
+  if (value == null || value === "") return 0;
+  const normalized = String(value).replace(/,/g, "").trim();
+  if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) {
+    throw new Error("Flinks returned an amount that is not exact to CAD cents.");
+  }
+  const [whole, fraction = ""] = normalized.split(".");
+  const cents = Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
+  if (!Number.isSafeInteger(cents)) throw new Error("Flinks returned an amount outside Hearth's safe range.");
+  return cents;
 }
 
-function signedCentsForTransaction(transaction: FlinksInboxTransaction, kind: "bank" | "credit-card"): number | null {
-  const debit = transaction.debitCents;
-  const credit = transaction.creditCents;
-  if (debit != null && debit > 0) return -debit;
-  if (credit != null && credit > 0) return credit;
-  if (debit === 0 && credit === 0) return 0;
-  if (kind === "credit-card" && debit != null) return debit > 0 ? -debit : debit;
-  return null;
-}
-
-function inferredType(description: string, signedAmountCents: number, kind: "bank" | "credit-card"): ImportReviewType {
-  const haystack = ` ${description.toLowerCase()} `;
-  if (/\b(transfer|payment|paid|contribution|move|moving)\b/.test(haystack)) return "transfer";
-  if (kind === "credit-card" && signedAmountCents > 0 && /\b(payment|paid|thank you|merci)\b/.test(haystack)) return "transfer";
+function suggestedType(
+  code: string,
+  signedAmountCents: number,
+  accountKind: FlinksInboxTransaction["accountKind"],
+): ImportReviewType {
+  if (TRANSFER_CODES.has(code)) return "transfer";
+  if (code === "PAYMENT") return accountKind === "credit-card" ? "transfer" : "unknown";
   if (signedAmountCents < 0) return "expense";
   if (signedAmountCents > 0) return "income";
   return "unknown";
 }
 
-function parseAccount(input: {
-  account: FlinksInboxAccount;
-  institution: string;
-  sourceHash: string;
-  rowOffset: number;
-  transactionsForAccount: (accountRef: string) => FlinksInboxTransaction[];
-}): { account: ParsedOfxAccount | null; rows: ImportedSourceRow[]; warnings: string[] } {
-  const kind = accountKind(input.account);
+function normalizedLast4(value: unknown): string {
+  const digits = cleanText(value, 16).replace(/\D/g, "");
+  return digits.slice(-4);
+}
+
+/**
+ * Normalize the deliberately bounded response from Hearth's future authenticated
+ * Flinks Worker facade. This function does not accept raw Flinks login/account
+ * payloads and never writes money; its rows still pass through Import review and
+ * the existing final Confirm command.
+ */
+export function parseFlinksInbox(payload: FlinksInboxPayload): ParsedFlinksBatch {
+  if (!payload || payload.provider !== "flinks" || !Array.isArray(payload.transactions)) {
+    throw new Error("Flinks returned an invalid Bank Inbox response.");
+  }
+  if (payload.transactions.length > MAX_ROWS) {
+    throw new Error("Flinks returned more than 10,000 rows. Pull a smaller date range.");
+  }
+  const sourceName = cleanText(payload.sourceName, 100) || "Flinks bank connection";
+  const sourceHash = opaqueDigest(payload.sourceHash, "pull digest", "fpull_");
   const warnings: string[] = [];
-  if (!kind) {
-    warnings.push("Skipped an account Flinks did not classify.");
-    return { account: null, rows: [], warnings };
-  }
-  if (kind === "investment") {
-    warnings.push(`Skipped ${cleanText(input.account.title, 80)}: investment trades are not imported yet.`);
-    return { account: null, rows: [], warnings };
-  }
-  const ref = cleanText(input.account.accountRef, 120);
-  const last4 = cleanText(input.account.accountLast4, 4).replace(/\D/g, "").slice(-4);
-  const currency = cleanText(input.account.currency || "CAD", 8).toUpperCase() || "CAD";
   const rows: ImportedSourceRow[] = [];
-  const transactions = input.transactionsForAccount(ref);
-  transactions.forEach((transaction, index) => {
-    const date = dateFromFlinks(transaction.date);
-    const signedAmountCents = signedCentsForTransaction(transaction, kind);
-    if (!date || signedAmountCents == null || signedAmountCents === 0) {
-      warnings.push(`Skipped transaction ${input.rowOffset + index + 1}: invalid date or zero/invalid amount.`);
+  let pending = 0;
+
+  payload.transactions.forEach((transaction, index) => {
+    if (transaction.status === "pending") {
+      pending += 1;
       return;
     }
-    const description = cleanText(transaction.description, 240);
-    const provenanceId = cleanText(transaction.provenanceId, 160);
+    if (transaction.status !== "posted") throw new Error(`Flinks row ${index + 1} has an invalid status.`);
+    const currency = cleanText(transaction.currency, 8).toUpperCase();
+    if (currency !== "CAD") {
+      throw new Error(`Flinks row ${index + 1} uses ${currency || "an unknown currency"}. Hearth imports CAD only.`);
+    }
+    const date = cleanText(transaction.date, 10);
+    if (!isValidDateKey(date)) throw new Error(`Flinks row ${index + 1} has an invalid posting date.`);
+    const debitCents = decimalToCents(transaction.debit);
+    const creditCents = decimalToCents(transaction.credit);
+    if ((debitCents > 0 && creditCents > 0) || (debitCents === 0 && creditCents === 0)) {
+      throw new Error(`Flinks row ${index + 1} must contain exactly one non-zero debit or credit.`);
+    }
+    const stableTransactionId = opaqueDigest(transaction.stableTransactionId, "transaction digest", "ftx_");
+    const accountRef = opaqueDigest(transaction.accountRef, "account digest", "fac_");
+    if (!ACCOUNT_KINDS.has(transaction.accountKind)) throw new Error(`Flinks row ${index + 1} has an invalid account kind.`);
+    const accountLast4 = normalizedLast4(transaction.accountLast4);
+    const signedAmountCents = creditCents - debitCents;
+    const code = cleanText(transaction.code, 40).toUpperCase() || "OTHER";
+    const note = cleanText(transaction.description, 240);
+    const place = cleanText(transaction.merchant, 100);
+    const provenanceId = `flinks:${accountRef}:${stableTransactionId}`;
     rows.push({
-      id: `IMP-${stableImportHash(`${input.sourceHash}|${provenanceId}|${index}`)}`,
+      id: `IMP-${stableImportHash(provenanceId)}`,
       sourceKind: "flinks",
-      sourceName: cleanText(input.institution || "Flinks", 160),
-      sourceHash: input.sourceHash,
+      sourceName,
+      sourceHash,
       provenanceId,
-      documentKind: kind === "credit-card" ? "credit-card-statement" : "bank-statement",
-      accountRef: ref,
-      accountLast4: last4,
+      documentKind: transaction.accountKind === "credit-card" ? "credit-card-statement" : "bank-statement",
+      accountRef,
+      accountLast4,
       currency,
-      date,
+      date: date as DateKey,
       amountCents: Math.abs(signedAmountCents),
       signedAmountCents,
-      suggestedType: inferredType(description, signedAmountCents, kind),
-      bankType: signedAmountCents < 0 ? "DEBIT" : "CREDIT",
-      note: description,
-      place: cleanText(description.split(/\s+/).slice(0, 3).join(" "), 100),
-      fitId: provenanceId,
+      suggestedType: suggestedType(code, signedAmountCents, transaction.accountKind),
+      bankType: code,
+      note,
+      place: place || note.slice(0, 100),
+      fitId: stableTransactionId,
       extractionConfidence: null,
     });
   });
-  return {
-    account: {
-      sourceName: cleanText(input.institution || "Flinks", 160),
-      sourceHash: input.sourceHash,
-      accountRef: ref,
-      accountLast4: last4,
-      kind,
-      currency,
-      openingBalanceCents: null,
-      ledgerBalanceCents: input.account.balanceCents,
-      ledgerBalanceDate: null,
-    },
-    rows,
-    warnings,
-  };
-}
 
-export function parseFlinksInbox(payload: FlinksInboxPayload): ParsedOfxBatch {
-  const accounts = payload.accounts ?? [];
-  if (!accounts.length) throw new Error("Flinks returned no linked accounts.");
-  const institution = cleanText(payload.institution ?? "Flinks", 160) || "Flinks";
-  const sourceHash = cleanText(payload.sourceHash, 120) || stableImportHash(JSON.stringify({ institution, accounts: accounts.map((account) => account.accountRef) }));
-  const transactionsByAccount = new Map<string, FlinksInboxTransaction[]>();
-  for (const transaction of payload.transactions ?? []) {
-    const key = cleanText(transaction.accountRef, 120);
-    const bucket = transactionsByAccount.get(key) ?? [];
-    bucket.push(transaction);
-    transactionsByAccount.set(key, bucket);
-  }
-  const parsedAccounts: ParsedOfxAccount[] = [];
-  const rows: ImportedSourceRow[] = [];
-  const warnings: string[] = [];
-  for (const account of accounts) {
-    const parsed = parseAccount({
-      account,
-      institution,
-      sourceHash,
-      rowOffset: rows.length,
-      transactionsForAccount: (accountRef) => transactionsByAccount.get(accountRef) ?? [],
-    });
-    if (parsed.account) parsedAccounts.push(parsed.account);
-    rows.push(...parsed.rows);
-    warnings.push(...parsed.warnings);
-  }
-  if (!rows.length) throw new Error("Flinks returned no usable non-zero transactions.");
+  if (pending) warnings.push(`${pending} pending Flinks transaction${pending === 1 ? " was" : "s were"} left out until posted.`);
+  if (!rows.length) throw new Error(pending
+    ? "Flinks returned only pending transactions. Nothing was staged."
+    : "Flinks returned no posted transactions to stage.");
+
   return {
-    sourceName: institution,
-    sourceKind: "ofx",
+    sourceName,
+    sourceKind: "flinks",
     sourceHash,
-    accounts: parsedAccounts,
     rows: rows.sort((left, right) => left.date.localeCompare(right.date) || left.id.localeCompare(right.id)),
     warnings,
   };
-}
-
-/** @deprecated Use parseFlinksInbox with Worker-redacted inbox payloads. */
-export function parseFlinks(payload: { RequestId?: string | null; Institution?: string | null; Accounts?: Array<Record<string, unknown>> | null }, sourceName = "Flinks"): ParsedOfxBatch {
-  const inbox: FlinksInboxPayload = {
-    institution: cleanText(payload.Institution ?? sourceName, 160) || "Flinks",
-    sourceHash: stableImportHash(JSON.stringify({
-      requestId: payload.RequestId ?? "",
-      institution: payload.Institution ?? sourceName,
-      accounts: (payload.Accounts ?? []).map((account) => ({
-        id: String(account?.Id ?? ""),
-        last4: String(account?.LastFourDigits ?? account?.AccountNumber ?? "").slice(-4),
-      })),
-    })),
-    accounts: (payload.Accounts ?? []).map((account) => ({
-      accountRef: `flinks:${String(account?.Id ?? "unknown")}`,
-      accountLast4: String(account?.LastFourDigits ?? account?.AccountNumber ?? "").replace(/\D/g, "").slice(-4),
-      title: cleanText(String(account?.Title ?? "Linked account"), 120),
-      type: cleanText(String(account?.Type ?? ""), 80),
-      category: cleanText(String(account?.Category ?? ""), 80),
-      currency: cleanText(String(account?.Currency ?? "CAD"), 8).toUpperCase() || "CAD",
-      balanceCents: null,
-    })),
-    transactions: (payload.Accounts ?? []).flatMap((account, accountIndex) => {
-      const accountRef = `flinks:${String(account?.Id ?? accountIndex)}`;
-      return (Array.isArray(account?.Transactions) ? account.Transactions : []).map((transaction, index) => ({
-        accountRef,
-        provenanceId: `flinks:${accountRef}:${String((transaction as { Id?: string })?.Id ?? index)}`,
-        date: String((transaction as { Date?: string })?.Date ?? ""),
-        description: String((transaction as { Description?: string })?.Description ?? ""),
-        debitCents: (transaction as { Debit?: number | null })?.Debit == null ? null : Math.round(Number((transaction as { Debit?: number }).Debit) * 100),
-        creditCents: (transaction as { Credit?: number | null })?.Credit == null ? null : Math.round(Number((transaction as { Credit?: number }).Credit) * 100),
-      }));
-    }),
-  };
-  return parseFlinksInbox(inbox);
 }

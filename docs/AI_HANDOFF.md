@@ -16,15 +16,15 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 **What changed:** `workers/flinks.js` (`/bank/flinks/*`), D1 migration, `FlinksConnectPanel`, `flinksClient`, `parseFlinksInbox`, Batch Import wiring, vite proxy, wrangler D1 binding. Minor fix: `documentScanner` SubtleCrypto digest for jsdom receipt tests.
 
-**Verification:** Focused Flinks + import triage + batch-import-ui 34/34; full `pnpm test` 672 pass / 2 skipped; `pnpm build` green; `wrangler deploy --dry-run` green with `FLINKS_DB` binding.
+**Verification:** Corrected Flinks + import triage + Batch Import UI 51/51. Full serial suite reached 686 pass / 2 skipped with one unrelated 30-second stress-fixture timeout; that complete stress file passed 7/7 with a 90-second allowance. TypeScript + production build, Wrangler dry run/startup profile, and non-traffic Cloudflare version `1d296d03-7776-4d72-add1-217dc718e377` are green. Preview status is `sandbox-configured`; legacy `/flinks/sync` returns `410`.
 
-**Privacy review:** PASS WITH NOTES — Development scaffold only; deploy blocked until real D1 + secrets; `connect/complete` loginId attestation remains a Production follow-up.
+**Privacy review:** PASS WITH NOTES — Development scaffold only. Exact member scope, ownership-bound encrypted state, iframe origin/window and callback state, selected CAD accounts, bounded responses, provider-delete retry state, stable HMAC identifiers, and Final Confirm were rechecked. Server-side loginId attestation remains a Production follow-up.
 
-**Data/environment:** Development only. No Production deploy, schema apply on Supabase, or secret values committed. Jonathan must create D1, apply `migrations/flinks/0001_connections.sql`, and set Worker secrets before live Dev Connect.
+**Data/environment:** Development only. No Production deploy, Supabase schema apply, or secret values committed. D1 `hearth-flinks-development` is bound and migrated; five legacy PR #160 demo rows were preserved in a renamed legacy table. All five required Flinks secrets exist in the prepared Cloudflare version.
 
 **Worksession:** [`worksessions/2026-08-26-flinks-connect-sandbox.md`](worksessions/2026-08-26-flinks-connect-sandbox.md), [`worksessions/2026-08-26-flinks-development-scaffold.md`](worksessions/2026-08-26-flinks-development-scaffold.md)
 
-**Next owner:** Jonathan — independent security review sign-off, D1 + secrets, merge approval (main auto-deploys).
+**Next owner:** Jonathan — merge approval after CI and Cloudflare preview are green (main auto-deploys).
 
 
 ## Phase 0 optional-publish demotion + hosted honesty (D-147, 2026-08-26)

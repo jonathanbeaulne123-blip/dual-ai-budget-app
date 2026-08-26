@@ -1,116 +1,133 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import worker from "../workers/site.js";
-import { digestFlinksId, handleFlinks } from "../workers/flinks.js";
-import { resetChatRateMemory } from "../workers/herculesGuard.js";
 
-const origin = "https://hearth-books.jonathan-beaulne123.workers.dev";
+const kitchen = "https://hearth-books.jonathan-beaulne123.workers.dev";
+const activeEnv = {
+  FLINKS_ENABLED: "true",
+  FLINKS_ALLOW_PRODUCTION: "false",
+  FLINKS_API_BASE_URL: "https://toolbox-api.private.fin.ag",
+  FLINKS_CONNECT_BASE_URL: "https://toolbox-iframe.private.fin.ag",
+  FLINKS_REDIRECT_ORIGIN: "https://hearth-books.jonathan-beaulne123.workers.dev",
+  FLINKS_CUSTOMER_ID: "43387ca6-0391-4c82-857d-70d95f087ecb",
+  FLINKS_SECRET_KEY: "s".repeat(32),
+  FLINKS_API_KEY: "a".repeat(32),
+  FLINKS_CONNECTION_ENCRYPTION_KEY: "e".repeat(32),
+  FLINKS_DIGEST_KEY: "d".repeat(32),
+  SUPABASE_PUBLISHABLE_KEY: "publishable-test-key",
+  FLINKS_DB: { prepare: vi.fn(() => ({ first: vi.fn(async () => null) })) },
+  ASSETS: { fetch: vi.fn() },
+};
 
-function createMockD1() {
-  const connections = new Map();
-  const sessions = new Map();
-  return {
-    prepare(sql: string) {
-      return {
-        bind: (...args: unknown[]) => ({
-          async first() {
-            if (sql.includes("FROM flinks_connections")) {
-              return connections.get(String(args[0])) ?? null;
-            }
-            if (sql.includes("FROM flinks_connect_sessions")) {
-              return sessions.get(String(args[0])) ?? null;
-            }
-            return null;
-          },
-          async run() {
-            if (sql.includes("INSERT INTO flinks_connections")) {
-              connections.set(String(args[0]), {
-                encrypted_blob: args[1],
-                institution: args[2],
-                account_label: args[3],
-                account_last4: args[4],
-                currency: args[5],
-              });
-            }
-            if (sql.includes("INSERT INTO flinks_connect_sessions")) {
-              sessions.set(String(args[0]), {
-                member_key: args[1],
-                state_nonce: args[2],
-                iframe_origin: args[3],
-                expires_at: args[4],
-              });
-            }
-            if (sql.includes("DELETE FROM flinks_connections")) connections.delete(String(args[0]));
-            if (sql.includes("DELETE FROM flinks_connect_sessions")) sessions.delete(String(args[0]));
-            return { success: true };
-          },
-        }),
-      };
-    },
-  };
+function request(path = "/bank/flinks/status", method = "GET", origin: string | null = kitchen): Request {
+  const headers = new Headers();
+  if (origin) headers.set("Origin", origin);
+  return new Request(`${kitchen}${path}`, { method, headers });
 }
 
-function env(overrides: Record<string, unknown> = {}) {
-  return {
-    FLINKS_DB: createMockD1(),
-    FLINKS_CUSTOMER_ID: "customer-id",
-    FLINKS_API_KEY: "api-key",
-    FLINKS_SECRET_KEY: "secret-key",
-    FLINKS_CONNECTION_ENCRYPTION_KEY: "connection-encryption-key-123456",
-    FLINKS_DIGEST_KEY: "digest-key-1234567890",
-    SUPABASE_URL: "https://supabase.example",
-    SUPABASE_PUBLISHABLE_KEY: "publishable-key",
-    ASSETS: { fetch: vi.fn(async () => new Response("<html>Hearth</html>", { headers: { "Content-Type": "text/html" } })) },
-    ...overrides,
-  };
-}
-
-function request(path: string, init: RequestInit = {}, requestOrigin: string | null = origin) {
-  const headers = new Headers(init.headers ?? {});
-  if (requestOrigin) headers.set("Origin", requestOrigin);
-  if (!headers.has("Content-Type") && init.body) headers.set("Content-Type", "application/json");
-  return new Request(`${origin}${path}`, { ...init, headers });
-}
-
-beforeEach(() => resetChatRateMemory());
 afterEach(() => vi.unstubAllGlobals());
 
-describe("secure flinks worker", () => {
-  it("returns JSON for /bank/flinks/status instead of falling through to SPA assets", async () => {
-    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
-      if (url.includes("/auth/v1/user")) {
-        return new Response(JSON.stringify({ id: "auth-user", email: "demo@example.com" }), { status: 200, headers: { "Content-Type": "application/json" } });
-      }
-      if (url.includes("/rest/v1/continuity_memberships")) {
-        return new Response(JSON.stringify([{ household_id: "HH-1", member_id: "MEM-002" }]), { status: 200, headers: { "Content-Type": "application/json" } });
-      }
-      throw new Error(`Unexpected fetch ${url}`);
-    }));
-    const response = await worker.fetch(
-      request("/bank/flinks/status?environment=development&householdId=HH-1&memberId=MEM-002", {
-        method: "GET",
-        headers: { Authorization: "Bearer user-jwt" },
-      }),
-      env(),
-    );
+describe("Flinks Worker scaffold", () => {
+  it("reports an inert Development scaffold and never contacts a provider", async () => {
+    const upstream = vi.fn();
+    vi.stubGlobal("fetch", upstream);
+    const response = await worker.fetch(request(), {
+      FLINKS_ENABLED: "false",
+      FLINKS_ALLOW_PRODUCTION: "false",
+      ASSETS: { fetch: vi.fn() },
+    });
     expect(response.status).toBe(200);
-    expect(response.headers.get("Content-Type")).toContain("application/json");
-    const body = await response.json() as { ok: boolean; configured: boolean; connected: boolean };
-    expect(body.ok).toBe(true);
-    expect(body.configured).toBe(true);
-    expect(body.connected).toBe(false);
-    expect(JSON.stringify(body)).not.toContain("<html");
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe(kitchen);
+    expect(await response.json()).toEqual(expect.objectContaining({
+      ok: true,
+      available: false,
+      phase: "scaffold",
+      environment: "development-only",
+      providerCallsEnabled: false,
+      productionAllowed: false,
+    }));
+    expect(upstream).not.toHaveBeenCalled();
   });
 
-  it("retires /flinks/sync with 410", async () => {
-    const response = await handleFlinks(request("/flinks/sync", { method: "POST", body: JSON.stringify({ loginId: "legacy" }) }), env());
-    expect(response?.status).toBe(410);
-    const payload = await response?.json() as { error: string };
-    expect(payload.error).toMatch(/retired/i);
+  it("stays locked even if the public flag is flipped before the security boundary exists", async () => {
+    const upstream = vi.fn();
+    vi.stubGlobal("fetch", upstream);
+    const response = await worker.fetch(request(), {
+      FLINKS_ENABLED: "true",
+      FLINKS_ALLOW_PRODUCTION: "true",
+      ASSETS: { fetch: vi.fn() },
+    });
+    expect(response.status).toBe(200);
+    const body = await response.json() as { available: boolean; providerCallsEnabled: boolean; productionAllowed: boolean; detail: string };
+    expect(body.available).toBe(false);
+    expect(body.providerCallsEnabled).toBe(false);
+    expect(body.productionAllowed).toBe(false);
+    expect(body.detail).toMatch(/No bank was contacted/i);
+    expect(upstream).not.toHaveBeenCalled();
   });
 
-  it("redacts provider ids with stable digests before browser return", async () => {
-    const digest = await digestFlinksId(env(), "tx", "provider-tx-1");
-    expect(digest.startsWith("flinks:tx:")).toBe(true);
-    expect(digest).not.toContain("provider-tx-1");
+  it("locks every unfinished bank route and rejects a foreign browser origin", async () => {
+    expect((await worker.fetch(request("/bank/flinks/connect", "POST"), { ASSETS: { fetch: vi.fn() } })).status).toBe(503);
+    expect((await worker.fetch(request("/bank/flinks/status", "GET", "https://evil.example"), { ASSETS: { fetch: vi.fn() } })).status).toBe(403);
+  });
+
+  it("retires the raw LoginId sync route before static assets can answer", async () => {
+    const assets = { fetch: vi.fn() };
+    const response = await worker.fetch(request("/flinks/sync", "POST"), { ASSETS: assets });
+    expect(response.status).toBe(410);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(await response.json()).toEqual(expect.objectContaining({ error: expect.stringMatching(/legacy .* retired/i) }));
+    expect(assets.fetch).not.toHaveBeenCalled();
+  });
+
+  it("allows same-origin status without an Origin header and answers preflight narrowly", async () => {
+    expect((await worker.fetch(request("/bank/flinks/status", "GET", null), { ASSETS: { fetch: vi.fn() } })).status).toBe(200);
+    const preflight = await worker.fetch(request("/bank/flinks/status", "OPTIONS"), { ASSETS: { fetch: vi.fn() } });
+    expect(preflight.status).toBe(204);
+    expect(preflight.headers.get("Access-Control-Allow-Methods")).toBe("GET, OPTIONS");
+    expect(preflight.headers.get("Access-Control-Allow-Headers")).not.toMatch(/Authorization/i);
+  });
+
+  it("advertises the sandbox only when every locked binding is present, without contacting Flinks", async () => {
+    const upstream = vi.fn();
+    vi.stubGlobal("fetch", upstream);
+    const response = await worker.fetch(request(), activeEnv);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(expect.objectContaining({
+      available: true,
+      phase: "sandbox-configured",
+      providerCallsEnabled: true,
+      productionAllowed: false,
+    }));
+    expect(upstream).not.toHaveBeenCalled();
+  });
+
+  it("requires an exact browser Origin and bearer before D1 or provider access", async () => {
+    activeEnv.FLINKS_DB.prepare.mockClear();
+    const upstream = vi.fn();
+    vi.stubGlobal("fetch", upstream);
+    const response = await worker.fetch(new Request(`${kitchen}/bank/flinks/sessions`, {
+      method: "POST",
+      headers: { Origin: kitchen, "Content-Type": "application/json" },
+      body: JSON.stringify({ environment: "development", householdId: "HH-TEST", memberId: "MEM-001" }),
+    }), activeEnv);
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual(expect.objectContaining({ error: expect.stringMatching(/Continue with Google/) }));
+    expect(activeEnv.FLINKS_DB.prepare).not.toHaveBeenCalled();
+    expect(upstream).not.toHaveBeenCalled();
+    const preflight = await worker.fetch(request("/bank/flinks/sessions", "OPTIONS"), activeEnv);
+    expect(preflight.headers.get("Access-Control-Allow-Headers")).toBe("Accept, Authorization, Content-Type");
+  });
+
+  it("accepts only a browser-declared same-origin GET when Origin is omitted", async () => {
+    const denied = await worker.fetch(new Request(`${kitchen}/bank/flinks/connections?environment=development&householdId=HH-TEST&memberId=MEM-001`), activeEnv);
+    expect(denied.status).toBe(403);
+    expect(await denied.json()).toEqual({ ok: false, error: "origin" });
+
+    const sameOrigin = await worker.fetch(new Request(`${kitchen}/bank/flinks/connections?environment=development&householdId=HH-TEST&memberId=MEM-001`, {
+      headers: { "Sec-Fetch-Site": "same-origin", Authorization: "Bearer invalid" },
+    }), activeEnv);
+    expect(sameOrigin.status).toBe(401);
+    expect(await sameOrigin.json()).toEqual(expect.objectContaining({ error: "Hearth could not verify this Google session." }));
   });
 });

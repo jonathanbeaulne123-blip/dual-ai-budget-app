@@ -14,6 +14,21 @@
   "ai": {
     "binding": "AI"
   },
+  "kv_namespaces": [
+    {
+      "binding": "HERCULES_RATE",
+      "id": "aa08ed983ec541b6b1a1f10fb6632651"
+    }
+  ],
+  "secrets": {
+    "required": [
+      "FLINKS_CUSTOMER_ID",
+      "FLINKS_API_KEY",
+      "FLINKS_SECRET_KEY",
+      "FLINKS_CONNECTION_ENCRYPTION_KEY",
+      "FLINKS_DIGEST_KEY"
+    ]
+  },
   "vars": {
     "HERCULES_ALLOW_PAID_PROVIDERS": "false",
     "HERCULES_PRO_ALLOW_PRODUCTION": "false",
@@ -21,15 +36,18 @@
     "ANTHROPIC_MODEL": "claude-haiku-4-5",
     "SUPABASE_URL": "https://tykhocwacaxwquhynkok.supabase.co",
     "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_8UAlkucmkTyh36yQGhnUbw_Orl9GkuS",
-    "FLINKS_INSTANCE": "toolbox",
-    "FLINKS_DEMO": "true",
-    "FLINKS_CONNECT_REDIRECT_PATH": "/import/flinks/callback"
+    "FLINKS_ENABLED": "true",
+    "FLINKS_ALLOW_PRODUCTION": "false",
+    "FLINKS_API_BASE_URL": "https://toolbox-api.private.fin.ag",
+    "FLINKS_CONNECT_BASE_URL": "https://toolbox-iframe.private.fin.ag",
+    "FLINKS_REDIRECT_ORIGIN": "https://hearth-books.jonathan-beaulne123.workers.dev"
   },
   "d1_databases": [
     {
       "binding": "FLINKS_DB",
       "database_name": "hearth-flinks-development",
-      "database_id": "00000000-0000-4000-8000-000000000001"
+      "database_id": "f01c81bd-db36-4715-a484-8f2f3bdad2a3",
+      "migrations_dir": "migrations/flinks"
     }
   ]
 }

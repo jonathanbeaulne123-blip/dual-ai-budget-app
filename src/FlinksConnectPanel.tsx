@@ -1,202 +1,218 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Environment } from "./core/types.ts";
-import type { ParsedOfxBatch } from "./core/index.ts";
-import { ensureSupabaseSession } from "./auth/supabaseSession.ts";
+import { useEffect, useRef, useState } from "react";
+import { parseFlinksInbox, type Environment, type ParsedFlinksBatch } from "./core/index.ts";
 import {
   clearLegacyFlinksLoginStorage,
   completeFlinksConnect,
-  disconnectFlinks,
-  fetchFlinksStatus,
-  importFlinksInbox,
-  isFlinksRedirectMessage,
+  listFlinksConnections,
+  pollFlinksPull,
+  readFlinksStatus,
+  revokeFlinksConnection,
   startFlinksConnect,
-  type FlinksConnectionStatus,
-  type FlinksConnectStart,
+  type FlinksConnectSession,
+  type FlinksPullResult,
+  type FlinksScope,
 } from "./imports/flinksClient.ts";
+
+type State = "idle" | "starting" | "connecting" | "retrieving" | "ready" | "revoking" | "error";
 
 export function FlinksConnectPanel({
   environment,
   householdId,
   memberId,
-  disabled = false,
-  onImported,
-  onError,
+  scopeKey,
+  generation,
+  disabled,
+  onStage,
 }: {
   environment: Environment;
   householdId: string;
   memberId: string;
-  disabled?: boolean;
-  onImported: (batch: ParsedOfxBatch) => void;
-  onError: (message: string) => void;
+  scopeKey: string;
+  generation: number;
+  disabled: boolean;
+  onStage: (batch: ParsedFlinksBatch, expectedScopeKey: string, expectedGeneration: number, connectionId: string) => void;
 }) {
-  const [status, setStatus] = useState<FlinksConnectionStatus | null>(null);
-  const [connectSession, setConnectSession] = useState<FlinksConnectStart | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [connectOpen, setConnectOpen] = useState(false);
+  const scope: FlinksScope = { environment, householdId, memberId };
+  const [state, setState] = useState<State>("idle");
+  const [notice, setNotice] = useState("");
+  const [session, setSession] = useState<FlinksConnectSession | null>(null);
+  const [connectedId, setConnectedId] = useState<string | null>(null);
+  const [connectedState, setConnectedState] = useState<string | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const controllerRef = useRef<AbortController | null>(null);
+  const completingRef = useRef(false);
+  const mountedScopeRef = useRef(`${scopeKey}|${generation}`);
+  mountedScopeRef.current = `${scopeKey}|${generation}`;
 
-  const scope = useMemo(() => ({ environment, householdId, memberId }), [environment, householdId, memberId]);
+  useEffect(() => clearLegacyFlinksLoginStorage(), []);
+  useEffect(() => () => controllerRef.current?.abort(), []);
+  useEffect(() => {
+    controllerRef.current?.abort();
+    controllerRef.current = null;
+    completingRef.current = false;
+    setSession(null);
+    setConnectedId(null);
+    setConnectedState(null);
+    setState("idle");
+    setNotice("");
+  }, [scopeKey, generation]);
 
-  const refreshStatus = useCallback(async () => {
-    const session = await ensureSupabaseSession(environment);
-    if (!session) {
-      setStatus({
-        ok: true,
-        configured: false,
-        connected: false,
-        institution: null,
-        accountLabel: null,
-        accountLast4: null,
-        currency: "CAD",
-      });
-      return;
+  function stillCurrent(expected: string) {
+    return mountedScopeRef.current === expected;
+  }
+
+  async function start() {
+    if (state !== "idle" && state !== "error") return;
+    const expected = `${scopeKey}|${generation}`;
+    controllerRef.current?.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
+    setState("starting");
+    setNotice("");
+    try {
+      const status = await readFlinksStatus();
+      if (!stillCurrent(expected)) return;
+      if (!status.available) {
+        setState("idle");
+        setNotice(status.detail);
+        return;
+      }
+      const existing = await listFlinksConnections(scope, controller.signal);
+      if (!stillCurrent(expected)) return;
+      const existingConnection = existing[0];
+      if (existingConnection) {
+        setConnectedId(existingConnection.connectionId);
+        setConnectedState(existingConnection.state);
+        setState("ready");
+        setNotice(["ready", "polling"].includes(existingConnection.state)
+          ? "This member already has a Flinks connection. Fetch posted transactions or disconnect it."
+          : "This member has an unfinished Flinks connection. Disconnect it before starting another.");
+        return;
+      }
+      const next = await startFlinksConnect(scope, controller.signal);
+      if (!stillCurrent(expected)) return;
+      setSession(next);
+      setState("connecting");
+      setNotice("Flinks is open. Sign in to the Development demo institution; nothing enters the books yet.");
+    } catch (caught) {
+      if (!controller.signal.aborted && stillCurrent(expected)) {
+        setState("error");
+        setNotice(caught instanceof Error ? caught.message : String(caught));
+      }
     }
-    const next = await fetchFlinksStatus({ ...scope, session });
-    setStatus(next);
-  }, [environment, scope]);
+  }
 
-  useEffect(() => {
-    clearLegacyFlinksLoginStorage();
-    void refreshStatus().catch(() => {
-      setStatus({
-        ok: true,
-        configured: false,
-        connected: false,
-        institution: null,
-        accountLabel: null,
-        accountLast4: null,
-        currency: "CAD",
+  async function handleReady(result: FlinksPullResult, expected: string, signal: AbortSignal) {
+    let current = result;
+    for (let attempt = 0; current.status === "pending" && attempt < 180; attempt += 1) {
+      const retryAfterMs = current.retryAfterMs;
+      await new Promise<void>((resolve, reject) => {
+        const onAbort = () => { window.clearTimeout(timeout); reject(new DOMException("Aborted", "AbortError")); };
+        const timeout = window.setTimeout(() => {
+          signal.removeEventListener("abort", onAbort);
+          resolve();
+        }, Math.max(10_000, retryAfterMs));
+        signal.addEventListener("abort", onAbort, { once: true });
       });
-    });
-  }, [refreshStatus]);
+      if (!stillCurrent(expected)) return;
+      current = await pollFlinksPull(scope, current.connectionId, signal);
+    }
+    if (current.status !== "ready") throw new Error("Flinks is still processing after 30 minutes. Try again.");
+    if (!stillCurrent(expected)) return;
+    const batch = parseFlinksInbox(current.payload);
+    onStage(batch, scopeKey, generation, current.connectionId);
+    setConnectedId(current.connectionId);
+    setConnectedState("ready");
+    setState("ready");
+    setNotice(`${batch.rows.length} posted bank transaction${batch.rows.length === 1 ? " is" : "s are"} staged for review. Flinks did not post money.`);
+    setSession(null);
+  }
 
   useEffect(() => {
-    if (!connectOpen || !connectSession) return;
-    const expectedOrigin = connectSession.iframeOrigin;
-    const onMessage = (event: MessageEvent) => {
-      if (!isFlinksRedirectMessage(event.data, expectedOrigin, event.origin)) return;
-      void (async () => {
-        setBusy(true);
-        try {
-          const session = await ensureSupabaseSession(environment);
-          if (!session) throw new Error("Continue with Google in Hearth before using Flinks.");
-          const next = await completeFlinksConnect({
-            ...scope,
-            session,
-            sessionId: connectSession.sessionId,
-            stateNonce: connectSession.stateNonce,
-            iframeOrigin: expectedOrigin,
-            message: event.data,
-          });
-          setStatus(next);
-          setConnectOpen(false);
-          setConnectSession(null);
-        } catch (caught) {
-          onError(caught instanceof Error ? caught.message : String(caught));
-        } finally {
-          setBusy(false);
-        }
-      })();
+    if (!session || state !== "connecting") return;
+    const expected = `${scopeKey}|${generation}`;
+    const listener = (event: MessageEvent) => {
+      if (event.origin !== session.messageOrigin || event.source !== iframeRef.current?.contentWindow || completingRef.current) return;
+      const data = event.data;
+      if (!data || typeof data !== "object" || data.step !== "REDIRECT" || typeof data.url !== "string") return;
+      completingRef.current = true;
+      setState("retrieving");
+      setNotice("Flinks connected. Retrieving posted CAD evidence for the inbox…");
+      const controller = controllerRef.current ?? new AbortController();
+      controllerRef.current = controller;
+      void completeFlinksConnect(scope, session.connectionId, data.url, controller.signal)
+        .then((result) => handleReady(result, expected, controller.signal))
+        .catch((caught) => {
+          if (!controller.signal.aborted && stillCurrent(expected)) {
+            setState("error");
+            setNotice(caught instanceof Error ? caught.message : String(caught));
+          }
+        })
+        .finally(() => { completingRef.current = false; });
     };
-    window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
-  }, [connectOpen, connectSession, environment, onError, scope]);
+    window.addEventListener("message", listener);
+    return () => window.removeEventListener("message", listener);
+  }, [generation, scopeKey, session, state]);
 
-  async function beginConnect() {
-    setBusy(true);
-    onError("");
+  async function refresh() {
+    if (!connectedId || !["ready", "polling"].includes(connectedState ?? "") || state === "retrieving") return;
+    const expected = `${scopeKey}|${generation}`;
+    controllerRef.current?.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
+    setState("retrieving");
+    setNotice("Retrieving posted CAD evidence for the inbox…");
     try {
-      const session = await ensureSupabaseSession(environment);
-      if (!session) throw new Error("Continue with Google in Hearth before using Flinks.");
-      const next = await startFlinksConnect({ ...scope, session });
-      setConnectSession(next);
-      setConnectOpen(true);
+      await handleReady(await pollFlinksPull(scope, connectedId, controller.signal), expected, controller.signal);
     } catch (caught) {
-      onError(caught instanceof Error ? caught.message : String(caught));
-    } finally {
-      setBusy(false);
+      if (!controller.signal.aborted && stillCurrent(expected)) {
+        setState("error");
+        setNotice(caught instanceof Error ? caught.message : String(caught));
+      }
     }
   }
 
-  async function runImport() {
-    setBusy(true);
-    onError("");
+  async function disconnect() {
+    const connectionId = session?.connectionId ?? connectedId;
+    if (!connectionId || state === "revoking") return;
+    const expected = `${scopeKey}|${generation}`;
+    setState("revoking");
     try {
-      const session = await ensureSupabaseSession(environment);
-      if (!session) throw new Error("Continue with Google in Hearth before using Flinks.");
-      const { batch } = await importFlinksInbox({ ...scope, session });
-      onImported(batch);
+      await revokeFlinksConnection(scope, connectionId);
+      if (!stillCurrent(expected)) return;
+      setSession(null);
+      setConnectedId(null);
+      setConnectedState(null);
+      setState("idle");
+      setNotice("Flinks access was disconnected. Accepted Hearth journal history was not changed.");
     } catch (caught) {
-      onError(caught instanceof Error ? caught.message : String(caught));
-    } finally {
-      setBusy(false);
+      if (stillCurrent(expected)) {
+        setState("error");
+        setNotice(caught instanceof Error ? caught.message : String(caught));
+      }
     }
   }
-
-  async function runDisconnect() {
-    setBusy(true);
-    onError("");
-    try {
-      const session = await ensureSupabaseSession(environment);
-      if (!session) throw new Error("Continue with Google in Hearth before using Flinks.");
-      const next = await disconnectFlinks({ ...scope, session });
-      setStatus(next);
-      setConnectOpen(false);
-      setConnectSession(null);
-    } catch (caught) {
-      onError(caught instanceof Error ? caught.message : String(caught));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const connected = Boolean(status?.connected);
-  const configured = Boolean(status?.configured);
 
   return (
-    <section className="flinks-status" aria-labelledby="flinks-connect-title">
-      <header>
-        <div>
-          <p className="kicker">Development only</p>
-          <h3 id="flinks-connect-title">Import from Flinks</h3>
+    <>
+      <button type="button" className="chip" disabled={disabled || Boolean(connectedId) || state === "starting" || state === "retrieving" || state === "revoking"} onClick={() => void start()}>
+        {state === "starting" ? "Checking Flinks…" : state === "retrieving" ? "Retrieving bank evidence…" : connectedId ? "Flinks connected" : "Connect bank with Flinks"}
+      </button>
+      {connectedId && ["ready", "polling"].includes(connectedState ?? "") && <button type="button" className="chip" disabled={disabled || state === "retrieving" || state === "revoking"} onClick={() => void refresh()}>{state === "retrieving" ? "Retrieving bank evidence…" : "Fetch posted transactions"}</button>}
+      {connectedId && !session && <button type="button" className="ghost" disabled={state === "revoking"} onClick={() => void disconnect()}>{state === "revoking" ? "Disconnecting Flinks…" : "Disconnect Flinks"}</button>}
+      {notice && <p className="muted flinks-status" role={state === "error" ? "alert" : "status"}>{notice}</p>}
+      {session && (
+        <div className="sheet flinks-connect" role="dialog" aria-modal="true" aria-labelledby="flinks-connect-title">
+          <div className="sheet-inner">
+            <div className="topbar">
+              <div><p className="kicker">Development Bank Inbox</p><h1 id="flinks-connect-title">Connect with Flinks</h1></div>
+              <button type="button" className="ghost" disabled={state === "retrieving" || state === "revoking"} onClick={() => void disconnect()}>Disconnect</button>
+            </div>
+            <p>Flinks supplies evidence only. You will still review every posted CAD row and use Hearth's final Confirm.</p>
+            <iframe ref={iframeRef} title="Flinks secure bank connection" src={session.iframeUrl} referrerPolicy="no-referrer" sandbox="allow-forms allow-scripts allow-same-origin allow-popups" />
+          </div>
         </div>
-      </header>
-      <p className="muted">
-        Flinks supplies read-only bank evidence to the import inbox. Hearth never posts money from Flinks, and provider identifiers stay on the Worker.
-      </p>
-      {status && (
-        <p className="muted" role="status">
-          {connected
-            ? `Connected to ${status.institution || "your bank"} · ${status.accountLabel || "linked account"}${status.accountLast4 ? ` · •••• ${status.accountLast4}` : ""}.`
-            : configured
-              ? "Not connected yet."
-              : "Flinks is not configured on the Worker yet."}
-        </p>
       )}
-      <div className="import-actions">
-        {!connected && (
-          <button type="button" className="primary" disabled={disabled || busy || !configured} onClick={() => void beginConnect()}>
-            Connect Flinks
-          </button>
-        )}
-        {connected && (
-          <>
-            <button type="button" className="primary" disabled={disabled || busy} onClick={() => void runImport()}>
-              Import from Flinks
-            </button>
-            <button type="button" className="chip" disabled={disabled || busy} onClick={() => void runDisconnect()}>
-              Disconnect
-            </button>
-          </>
-        )}
-      </div>
-      {connectOpen && connectSession?.iframeUrl && (
-        <iframe
-          className="flinks-connect"
-          title="Flinks Connect"
-          src={connectSession.iframeUrl}
-          height={760}
-        />
-      )}
-    </section>
+    </>
   );
 }

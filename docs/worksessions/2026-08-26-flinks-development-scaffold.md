@@ -19,9 +19,11 @@ Scaffold secure Flinks on the Cloudflare Worker without exposing provider identi
 
 - `SUPABASE_URL`
 - `SUPABASE_PUBLISHABLE_KEY`
-- `FLINKS_INSTANCE` (default `toolbox`)
-- `FLINKS_DEMO` (default `true`)
-- `FLINKS_CONNECT_REDIRECT_PATH`
+- `FLINKS_ENABLED` (`true` only for the reviewed Development Worker)
+- `FLINKS_ALLOW_PRODUCTION` (`false`)
+- `FLINKS_API_BASE_URL` (fixed Toolbox origin)
+- `FLINKS_CONNECT_BASE_URL` (fixed Toolbox iframe origin)
+- `FLINKS_REDIRECT_ORIGIN` (fixed approved Hearth origin)
 
 ## Secret names only
 
@@ -44,4 +46,4 @@ pnpm exec wrangler deploy --dry-run
 
 ## Open
 
-Independent review: bearer/member scope, D1 encryption, iframe origin/state validation, provider deletion, ID redaction, Final Confirm boundary.
+Independent review: bearer/member scope, ownership-bound D1 encryption, exact iframe origin/window plus callback-state validation, provider deletion retry state, bounded provider responses, stable ID redaction, exact-cent parsing, scope-generation cancellation, and Final Confirm boundary.

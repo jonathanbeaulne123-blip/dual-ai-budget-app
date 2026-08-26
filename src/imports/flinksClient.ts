@@ -1,172 +1,174 @@
-import { parseFlinksInbox, type FlinksInboxPayload, type ParsedOfxBatch } from "../core/index.ts";
 import { ensureSupabaseSession, type HearthSupabaseSession } from "../auth/supabaseSession.ts";
 import type { Environment } from "../core/types.ts";
+import type { FlinksInboxPayload } from "../core/importInbox/flinks.ts";
 
-export const FLINKS_BASE_PATH = "/bank/flinks";
-export const LEGACY_FLINKS_LOGIN_STORAGE_KEY = "hearth.flinks.loginId";
+export const FLINKS_STATUS_PATH = "/bank/flinks/status";
+const FLINKS_TOOLBOX_ORIGIN = "https://toolbox-iframe.private.fin.ag";
+const FLINKS_DEVELOPMENT_CALLBACK_ORIGIN = "https://hearth-books.jonathan-beaulne123.workers.dev";
+const LEGACY_LOGIN_KEYS = ["hearth.flinks.loginId", "flinksLoginId", "hearth.flinks.connect.loginId"];
 
-const LEGACY_LOGIN_KEYS = [
-  LEGACY_FLINKS_LOGIN_STORAGE_KEY,
-  "flinksLoginId",
-  "hearth.flinks.connect.loginId",
-];
-
-export type FlinksConnectionStatus = {
-  ok: boolean;
-  configured: boolean;
-  connected: boolean;
-  institution: string | null;
-  accountLabel: string | null;
-  accountLast4: string | null;
-  currency: string;
-  error?: string;
-};
-
-export type FlinksConnectStart = {
-  ok: boolean;
-  sessionId: string;
-  stateNonce: string;
-  iframeOrigin: string;
-  iframeUrl: string;
-  redirectUrl: string;
-  expiresAt: number;
-  error?: string;
-};
-
-export type FlinksRedirectMessage = {
-  step?: string;
-  loginId?: string;
-  LoginId?: string;
-  requestId?: string;
-  institution?: string;
-  accountId?: string;
-  accountTitle?: string;
-  accountLast4?: string;
-};
-
-/** One-time migration: clear any PR #160 LoginId persisted in browser storage. */
+/** One-time migration away from PR #160's raw browser-stored provider LoginId. */
 export function clearLegacyFlinksLoginStorage(): void {
   try {
     for (const key of LEGACY_LOGIN_KEYS) localStorage.removeItem(key);
   } catch {
-    /* ignore quota / private mode */
+    /* Browser storage may be disabled; the secure flow never depends on it. */
   }
 }
 
-function authHeaders(session: HearthSupabaseSession): HeadersInit {
-  return {
-    Authorization: `Bearer ${session.accessToken}`,
-    "Content-Type": "application/json",
-  };
-}
+export type FlinksScope = {
+  environment: Environment;
+  householdId: string;
+  memberId: string;
+};
 
-function scopeBody(environment: Environment, householdId: string, memberId: string) {
-  return { environment, householdId, memberId };
-}
+export type FlinksStatus = {
+  ok: true;
+  available: boolean;
+  phase: "scaffold" | "sandbox-configured";
+  environment: "development-only";
+  providerCallsEnabled: boolean;
+  productionAllowed: false;
+  detail: string;
+};
 
-async function flinksJson<T>(path: string, init: RequestInit, fetcher: typeof fetch = fetch): Promise<T> {
-  let response: Response;
-  try {
-    response = await fetcher(`${FLINKS_BASE_PATH}${path}`, init);
-  } catch (caught) {
-    throw new Error(caught instanceof Error ? caught.message : String(caught));
-  }
+export type FlinksConnectSession = {
+  connectionId: string;
+  iframeUrl: string;
+  messageOrigin: string;
+  expiresAt: string;
+};
+
+export type FlinksPullResult =
+  | { status: "pending"; connectionId: string; retryAfterMs: number }
+  | { status: "ready"; connectionId: string; payload: FlinksInboxPayload };
+
+export type FlinksConnectionSummary = {
+  connectionId: string;
+  state: string;
+  updatedAt: string;
+};
+
+type SessionProvider = (environment: Environment) => Promise<HearthSupabaseSession | null>;
+
+async function responseJson<T>(response: Response): Promise<T> {
   const type = response.headers.get("content-type") || "";
   if (!type.includes("json")) throw new Error(`Flinks returned ${response.status}.`);
-  const data = await response.json() as T & { ok?: boolean; error?: string };
-  if (!response.ok || data.ok === false) throw new Error(data.error || `Flinks returned ${response.status}.`);
-  return data;
+  const body = await response.json() as T & { error?: string };
+  if (!response.ok) throw new Error(body.error || `Flinks returned ${response.status}.`);
+  return body;
 }
 
-export async function fetchFlinksStatus(input: {
-  environment: Environment;
-  householdId: string;
-  memberId: string;
-  session: HearthSupabaseSession;
-}, fetcher: typeof fetch = fetch): Promise<FlinksConnectionStatus> {
-  const query = new URLSearchParams(scopeBody(input.environment, input.householdId, input.memberId));
-  return flinksJson(`/status?${query.toString()}`, { method: "GET", headers: authHeaders(input.session) }, fetcher);
+function safeStatus(body: FlinksStatus): FlinksStatus {
+  const inert = body.available === false && body.phase === "scaffold" && body.providerCallsEnabled === false;
+  const active = body.available === true && body.phase === "sandbox-configured" && body.providerCallsEnabled === true;
+  if (body.ok !== true || body.environment !== "development-only" || body.productionAllowed !== false || !body.detail || (!inert && !active)) {
+    throw new Error("Flinks setup returned an unsafe or invalid status.");
+  }
+  return body;
 }
 
-export async function startFlinksConnect(input: {
-  environment: Environment;
-  householdId: string;
-  memberId: string;
-  session: HearthSupabaseSession;
-}, fetcher: typeof fetch = fetch): Promise<FlinksConnectStart> {
-  return flinksJson("/connect/start", {
-    method: "POST",
-    headers: authHeaders(input.session),
-    body: JSON.stringify(scopeBody(input.environment, input.householdId, input.memberId)),
-  }, fetcher);
+export async function readFlinksStatus(fetcher: typeof fetch = fetch): Promise<FlinksStatus> {
+  return safeStatus(await responseJson<FlinksStatus>(await fetcher(FLINKS_STATUS_PATH, { method: "GET", headers: { Accept: "application/json" } })));
 }
 
-export async function completeFlinksConnect(input: {
-  environment: Environment;
-  householdId: string;
-  memberId: string;
-  session: HearthSupabaseSession;
-  sessionId: string;
-  stateNonce: string;
-  iframeOrigin: string;
-  message: FlinksRedirectMessage;
-}, fetcher: typeof fetch = fetch): Promise<FlinksConnectionStatus> {
-  const loginId = String(input.message.loginId ?? input.message.LoginId ?? "").trim();
-  if (!loginId) throw new Error("Flinks Connect did not return a connection.");
-  return flinksJson("/connect/complete", {
-    method: "POST",
-    headers: authHeaders(input.session),
-    body: JSON.stringify({
-      ...scopeBody(input.environment, input.householdId, input.memberId),
-      sessionId: input.sessionId,
-      stateNonce: input.stateNonce,
-      iframeOrigin: input.iframeOrigin,
-      loginId,
-      institution: input.message.institution,
-      accountId: input.message.accountId,
-      accountLabel: input.message.accountTitle,
-      accountLast4: input.message.accountLast4,
-    }),
-  }, fetcher);
+/** Backward-compatible name for the inert Development launcher tests. */
+export const readFlinksScaffoldStatus = readFlinksStatus;
+
+async function authenticatedRequest<T>(
+  path: string,
+  scope: FlinksScope,
+  init: RequestInit,
+  fetcher: typeof fetch,
+  sessionProvider: SessionProvider,
+): Promise<T> {
+  if (scope.environment !== "development") throw new Error("Flinks is Development-only.");
+  const session = await sessionProvider(scope.environment);
+  if (!session) throw new Error("Continue with Google before connecting a bank.");
+  return responseJson<T>(await fetcher(path, {
+    ...init,
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${session.accessToken}`,
+      ...(init.body ? { "Content-Type": "application/json" } : {}),
+      ...init.headers,
+    },
+  }));
 }
 
-export async function importFlinksInbox(input: {
-  environment: Environment;
-  householdId: string;
-  memberId: string;
-  session: HearthSupabaseSession;
-}, fetcher: typeof fetch = fetch): Promise<{ batch: ParsedOfxBatch; inbox: FlinksInboxPayload }> {
-  const data = await flinksJson<{ ok: boolean; inbox: FlinksInboxPayload }>("/import", {
-    method: "POST",
-    headers: authHeaders(input.session),
-    body: JSON.stringify(scopeBody(input.environment, input.householdId, input.memberId)),
-  }, fetcher);
-  const batch = parseFlinksInbox(data.inbox);
-  return { batch, inbox: data.inbox };
+export async function startFlinksConnect(
+  scope: FlinksScope,
+  signal?: AbortSignal,
+  fetcher: typeof fetch = fetch,
+  sessionProvider: SessionProvider = ensureSupabaseSession,
+): Promise<FlinksConnectSession> {
+  const body = await authenticatedRequest<{ ok: true } & FlinksConnectSession>("/bank/flinks/sessions", scope, {
+    method: "POST", signal, body: JSON.stringify(scope),
+  }, fetcher, sessionProvider);
+  const iframe = new URL(body.iframeUrl);
+  if (iframe.protocol !== "https:" || iframe.origin !== body.messageOrigin || body.messageOrigin !== FLINKS_TOOLBOX_ORIGIN) {
+    throw new Error("Flinks returned an unsafe Connect address.");
+  }
+  const redirect = new URL(iframe.searchParams.get("redirectUrl") || "about:blank");
+  if (
+    iframe.searchParams.get("demo") !== "true"
+    || iframe.searchParams.get("jsRedirect") !== "true"
+    || iframe.searchParams.get("accountSelectorEnable") !== "true"
+    || iframe.searchParams.get("accountSelectorCurrency") !== "cad"
+    || iframe.searchParams.get("fetchAllAccounts") !== "false"
+    || !iframe.searchParams.get("authorizeToken")
+    || redirect.origin !== FLINKS_DEVELOPMENT_CALLBACK_ORIGIN
+    || redirect.pathname !== "/bank/flinks/callback"
+    || !/^[A-Za-z0-9_-]{20,80}$/.test(redirect.searchParams.get("state") || "")
+  ) throw new Error("Flinks returned an unsafe or incomplete Connect session.");
+  if (!body.connectionId || !Number.isFinite(Date.parse(body.expiresAt))) throw new Error("Flinks returned an invalid Connect session.");
+  return body;
 }
 
-export async function disconnectFlinks(input: {
-  environment: Environment;
-  householdId: string;
-  memberId: string;
-  session: HearthSupabaseSession;
-}, fetcher: typeof fetch = fetch): Promise<FlinksConnectionStatus> {
-  return flinksJson("/disconnect", {
-    method: "POST",
-    headers: authHeaders(input.session),
-    body: JSON.stringify(scopeBody(input.environment, input.householdId, input.memberId)),
-  }, fetcher);
+export async function listFlinksConnections(
+  scope: FlinksScope,
+  signal?: AbortSignal,
+  fetcher: typeof fetch = fetch,
+  sessionProvider: SessionProvider = ensureSupabaseSession,
+): Promise<FlinksConnectionSummary[]> {
+  const query = new URLSearchParams(scope);
+  const body = await authenticatedRequest<{ ok: true; connections: FlinksConnectionSummary[] }>(`/bank/flinks/connections?${query}`, scope, { method: "GET", signal }, fetcher, sessionProvider);
+  if (!Array.isArray(body.connections)) throw new Error("Flinks returned an invalid connection list.");
+  return body.connections.filter((row) => /^[A-Za-z0-9_-]{20,80}$/.test(row.connectionId));
 }
 
-export function isFlinksRedirectMessage(value: unknown, expectedOrigin: string, eventOrigin: string): value is FlinksRedirectMessage {
-  if (!value || typeof value !== "object") return false;
-  if (eventOrigin !== expectedOrigin) return false;
-  const message = value as FlinksRedirectMessage;
-  return message.step === "REDIRECT" || Boolean(message.loginId || message.LoginId);
+export async function completeFlinksConnect(
+  scope: FlinksScope,
+  connectionId: string,
+  redirectUrl: string,
+  signal?: AbortSignal,
+  fetcher: typeof fetch = fetch,
+  sessionProvider: SessionProvider = ensureSupabaseSession,
+): Promise<FlinksPullResult> {
+  return authenticatedRequest<{ ok: true } & FlinksPullResult>(`/bank/flinks/sessions/${encodeURIComponent(connectionId)}/complete`, scope, {
+    method: "POST", signal, body: JSON.stringify({ ...scope, redirectUrl }),
+  }, fetcher, sessionProvider);
 }
 
-export async function resolveFlinksSession(environment: Environment): Promise<HearthSupabaseSession> {
-  const session = await ensureSupabaseSession(environment);
-  if (!session) throw new Error("Continue with Google in Hearth before using Flinks.");
-  return session;
+export async function pollFlinksPull(
+  scope: FlinksScope,
+  connectionId: string,
+  signal?: AbortSignal,
+  fetcher: typeof fetch = fetch,
+  sessionProvider: SessionProvider = ensureSupabaseSession,
+): Promise<FlinksPullResult> {
+  return authenticatedRequest<{ ok: true } & FlinksPullResult>(`/bank/flinks/sessions/${encodeURIComponent(connectionId)}/transactions`, scope, {
+    method: "POST", signal, body: JSON.stringify(scope),
+  }, fetcher, sessionProvider);
+}
+
+export async function revokeFlinksConnection(
+  scope: FlinksScope,
+  connectionId: string,
+  signal?: AbortSignal,
+  fetcher: typeof fetch = fetch,
+  sessionProvider: SessionProvider = ensureSupabaseSession,
+): Promise<{ ok: true; revoked: true }> {
+  const query = new URLSearchParams(scope);
+  return authenticatedRequest(`/bank/flinks/sessions/${encodeURIComponent(connectionId)}?${query}`, scope, { method: "DELETE", signal }, fetcher, sessionProvider);
 }
