@@ -69,7 +69,7 @@ These are **important features**. Dual Course does not rewrite them. Smaller sur
 | Phrase / join link / Hearth Pass join a phone. Google is a live bridge, not a bank, not a parking lot. | D-032, D-043, D-078 |
 | Google sign-in reveals personal-ledger and household-ledger memberships on any device. No peer device is the host. Cloud is durable continuity; PGlite is the validated offline replica. | D-114 |
 | Personal rows are a filter until Auth. A hidden tab is not privacy. | D-015 |
-| Hosted `USING (true)` is an open door. The publishable key is not a lock. | D-034 |
+| Hosted door was historically open (`USING (true)`). Deny-by-default **006 is applied**; finish invite smoke before October. | D-034 / D-123 |
 
 ---
 
@@ -199,7 +199,7 @@ A creature and a kitchen that teach the books by living on them:
 | **Almost-there office** | Leftover parking destination, purchase expense, vault receipt. | No-zoom phone, pin-open, chalk on glass, How can I help, perch-on-expand, click-to-close. | **Shipping (D-088–D-094).** |
 | **September Office** | Posting, wallet, sit-down, bills, Health reachable without leaving Home unless you dive. | Mobile: five objects, not seventeen rows. Desktop: unique office, sizes, personalities, CPA density. | **Direction (D-051), split (D-079), desktop packet (D-080).** Mobile Home is `OfficePhone`. Claude builds wide. Widgets never post. |
 | **Google Dual Course** | Dates, mail, and close-pack files next to the books — still confirmed. | Calendar chips, visit reminders, “there’s a statement.” | **In scope (D-078).** Engine ships. Features below. Not a Home widget. |
-| **Lock the hosted door** | Auth + RLS. Personal can become privacy. Opinion about *access* can go unmodified. | Hercules can tell the truth: “the door latched.” No more qualified opinion pretending math is the only issue. | **Next engineering dollar.** Do not apply [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) while `USING (true)`. |
+| **Lock the hosted door** | Auth + RLS. Personal can become privacy. Opinion about *access* can go unmodified. | Hercules can tell the truth: “the door latched.” No more qualified opinion pretending math is the only issue. | **006 applied.** Finish Create/invite smoke; do not apply [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) as a second cutover. |
 | **GitHub 2FA** | The canon remote stops being a single-factor door (D-020). | None required — Course A wins. | Open |
 | **Due-on-open preview** | Recurring literacy before `postEntry`. | Kettle whistle that matches a real due row. | Confirm still posts |
 | **Statement inbox** | D-011/D-130 import path. Family-office mail. | Mail on the counter. “There’s a statement. You still confirm.” | **Selected QFX/OFX and selected document images are active locally (D-130).** Gmail/Drive automation, PDF archives, and connected feeds remain gated. |
@@ -258,7 +258,7 @@ Each row is a whole feature. Call `withGoogle` on demand. No background daemon. 
 |---|---|
 | Google as the ledger / Sheets write-back | The books stay PGlite. A second workbook is how the prototype died. |
 | Auto-post from Gmail or Calendar | Confirm still writes. D-025. |
-| Tokens or mail bodies on the hosted snapshot | RLS is still `USING (true)`. Payloads stay on this phone until Auth. |
+| Tokens or mail bodies on the hosted snapshot | Deny-by-default RLS is applied. Payloads stay on this phone until a reviewed suite archive path exists. |
 | Google replaces phrase-join | D-032. Continue with Google identifies *who on this phone*, not a new household. |
 | Receipt images in Drive or Postgres as the archive | D-039. Auth first. |
 | An eighteenth Home widget named Google | The disease is seventeen equal rows. Calendar is the cabinet. |

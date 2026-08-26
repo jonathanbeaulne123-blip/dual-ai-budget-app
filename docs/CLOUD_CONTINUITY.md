@@ -4,10 +4,10 @@
 
 ## Implementation status — D-114 continuity, D-117 scopes, D-122 CAS, D-123 repair
 
-The working continuity slices are implemented. Migrations 002, 003, 004, 005, and 007 are recorded live in the shared Supabase project; 006 remains unapplied:
+The working continuity slices are implemented. Migrations **002, 003, 004, 005, 006, 007, and 008** are recorded live in the shared Supabase project:
 
 - **Continue with Google** is available even when a fresh device has no local household;
-- Development scans the deliberately open snapshot rows, accepts only exact Google subject membership (email is a legacy fallback only when the stored subject is empty), and offers every matching household;
+- Development discovers memberships through Auth JWT / continuity membership rows (legacy open snapshot scan remains only when membership tables are missing);
 - pulled/reconciled snapshots pass the same PGlite/accounting acceptance boundary before display or persistence;
 - signed-in accepted writes enter a durable per-device outbox before transport; later offline writes compact into the latest snapshot while keeping the earliest expected hosted revision and all confirmation ids;
 - launch, focus, and reconnect retry the outbox (with exponential `nextAttemptAt` backoff) and then pull newer matching snapshots;
@@ -17,11 +17,11 @@ The working continuity slices are implemented. Migrations 002, 003, 004, 005, an
 - each environment now keeps a catalog of household replicas keyed by household id; opening one ledger no longer overwrites another, and the header switcher changes the active replica explicitly;
 - the active session remembers its household id, legacy `hearth:v1:<environment>` snapshots migrate automatically, and reset removes only the selected ledger;
 - every signed-in member gets a durable member-only personal replica keyed by environment, household, and member. Shared cloud projection excludes Personal transactions, shifts, and private goals; only that member's Personal envelope overlays them on read.
-- Migration 003 is applied. D-117 explicit Google membership rows and member-personal snapshots are live in Development: discovery filters by Google subject on the server, fetches only matching households, and overlays that member's hosted Personal scope. Signed-in transport writes the membership and member-only Personal payload after a successful household publish. Inherited broad table privileges were reset and verified as exactly `SELECT`/`INSERT`/`UPDATE` for `anon` and `authenticated`.
+- Migration 003 is applied. D-117 explicit Google membership rows and member-personal snapshots are live in Development: discovery filters by Google subject on the server, fetches only matching households, and overlays that member's hosted Personal scope. Signed-in transport writes the membership and member-only Personal payload after a successful household publish.
 - **D-122 client:** `pushSupabaseHousehold` calls `rpc/publish_household_snapshot` first. The pure CAS contract lives in `src/ledger/snapshotCas.ts` and mirrors the SQL packet. When PostgREST reports the RPC missing (`PGRST202`), the client falls back to GET-then-compare-then-POST.
-- **D-123 repaired client:** feature-flagged Supabase Auth stores/refreshes the Google-backed session and sends its user JWT through discovery, replay, and commits. Additive Auth prepare 004 and forward CAS hardening 005 are applied. Deny-by-default cutover 006 is review-ready but unapplied.
+- **D-123 Auth/RLS:** Google Auth is live. Feature-flagged Supabase Auth stores/refreshes the session and sends its user JWT through discovery, replay, and commits. Additive prepare 004, CAS hardening 005, SELECT bridge 008, and deny-by-default cutover **006 are applied**. Anon household REST is revoked. Create / email / QR / revoke / anon-denial smoke remains recommended before calling October-ready.
 
-Migration 003 was applied to project `tykhocwacaxwquhynkok` on 2026-08-24 with Jonathan's explicit approval. **Migration 002 was applied to Development on 2026-08-25** (SQL editor; signature fix for 12-arg REVOKE/GRANT) and smoked with `pnpm books:smoke:cas` (create / duplicate / stale / advance). Migrations 004 and 005 were applied with Development approval on 2026-08-24. **Migration 007** (D-126 hosted IANA timezone CHECK) was applied 2026-08-25. The approved cleanup deleted all 30 disposable Development households and their cascaded membership/Personal rows; one Production household remains untouched. Until 006 and provider configuration are separately approved, membership selectors are not Supabase Auth. Because 006 changes project-wide policies and grants, its Development-only rehearsal requires a separate Supabase project (or explicit approval for the shared Production project). No peer device must remain online for a snapshot that has reached the cloud.
+Migration 003 was applied to project `tykhocwacaxwquhynkok` on 2026-08-24 with Jonathan's explicit approval. **Migration 002 was applied to Development on 2026-08-25** (SQL editor; signature fix for 12-arg REVOKE/GRANT) and smoked with `pnpm books:smoke:cas` (create / duplicate / stale / advance). Migrations 004 and 005 were applied with Development approval on 2026-08-24. **Migration 007** (D-126 hosted IANA timezone CHECK) was applied 2026-08-25. **Migration 006** (deny-by-default RLS) and **008** were applied 2026-08-25 (path B NOTICE + ceiling 1). The approved cleanup deleted disposable Development households and their cascaded membership/Personal rows; empty Production was removed earlier. No peer device must remain online for a snapshot that has reached the cloud.
 
 ## Household promise
 
@@ -47,9 +47,9 @@ No phone or computer is the host. Turning off, losing, or replacing one device m
 
 Through **2026-09-30**, Hearth is operating with disposable development data:
 
-- information entered before October is not important household data and may be fully readable and writable to accelerate development;
-- open hosted read/write access, incomplete Auth/RLS, and weak privacy controls are disclosed temporary development conditions, not blockers for building and testing cloud continuity;
-- do not describe this data as private, secure, or production-ready;
+- information entered before October is not important household data and may be replaced while continuity and Auth smoke finish;
+- deny-by-default RLS (006) is live: do not describe hosted rows as anonymously open. Incomplete invite smoke, Production hardening, and device revoke still keep this window non-production;
+- do not describe this data as private, secure, or production-ready for October household use;
 - credentials, service-role keys, database passwords, third-party secrets, and unrelated personal accounts are never disposable and must still stay out of the repository and browser bundle;
 - Development and Production remain separate, and accounting integrity, idempotency, recovery, and conflict safety remain mandatory.
 
@@ -67,7 +67,7 @@ Before **2026-10-01** and before meaningful household information is entered, sh
 - a reviewed migration, rollback, and cutover plan;
 - proof that pre-October disposable rows are either intentionally retained as fixtures or removed through an approved recovery-aware cleanup.
 
-Security is a scheduled September milestone. It must not be misused to justify a device-dependent architecture, and temporary openness must not be carried into October by accident.
+Security is a scheduled September milestone. Deny-by-default 006 is applied; finish invite/Create smoke and Production readiness before meaningful October data. Temporary openness language must not be carried forward as if anon REST were still open.
 
 ## Acceptance tests
 
