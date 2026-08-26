@@ -100,21 +100,63 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       headers: { Authorization: `Bearer ${tokens.access_token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list" }),
     }), env);
-    const listed = await tools.json() as { result: { tools: Array<{ name: string; annotations: { readOnlyHint: boolean } }> } };
-    // TOOL_CATALOG (60) + writeToolDefinitions (3). Write tools stay listed; confirm is not read-only.
-    expect(listed.result.tools).toHaveLength(63);
-    expect(listed.result.tools.filter((tool) => tool.annotations.readOnlyHint)).toHaveLength(62);
+    const listed = await tools.json() as { result: { tools: Array<{ name: string; annotations: { readOnlyHint: boolean }; _meta?: { ui?: { resourceUri?: string } } }> } };
+    // companion (1) + TOOL_CATALOG (60) + writeToolDefinitions (3). Confirm is the only non-read-only tool.
+    expect(listed.result.tools).toHaveLength(64);
+    expect(listed.result.tools.filter((tool) => tool.annotations.readOnlyHint)).toHaveLength(63);
+    expect(listed.result.tools.filter((tool) => tool.name !== "confirm_transaction").every((tool) => tool.annotations.readOnlyHint)).toBe(true);
     const names = listed.result.tools.map((tool) => tool.name);
     expect(names).toEqual(expect.arrayContaining([
       "shift_year_simulation",
       "explain_shift_simulation",
       "tip_oracle",
+      "summon_hercules",
       "confirm_transaction",
     ]));
     expect(listed.result.tools.find((tool) => tool.name === "confirm_transaction")?.annotations.readOnlyHint).toBe(false);
     expect(listed.result.tools.find((tool) => tool.name === "shift_year_simulation")?.annotations.readOnlyHint).toBe(true);
     expect(listed.result.tools.some((tool) => /^(?:post|delete|pay|transfer)(?:_|$)/.test(tool.name))).toBe(false);
     expect(listed.result.tools.some((tool) => tool.name === "tip_oracle")).toBe(true);
+    expect(listed.result.tools.find((tool) => tool.name === "summon_hercules")?._meta?.ui?.resourceUri).toBe("ui://hearth/hercules-companion-v1.html");
+
+    const resources = await worker.fetch(new Request(`${origin}/mcp`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${tokens.access_token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 30, method: "resources/list" }),
+    }), env);
+    expect(await resources.json()).toMatchObject({ result: { resources: [{
+      uri: "ui://hearth/hercules-companion-v1.html",
+      mimeType: "text/html;profile=mcp-app",
+    }] } });
+
+    const resource = await worker.fetch(new Request(`${origin}/mcp`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${tokens.access_token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 31, method: "resources/read", params: { uri: "ui://hearth/hercules-companion-v1.html" } }),
+    }), env);
+    const rendered = await resource.json() as { result: { contents: Array<{ text: string; _meta: { ui: { csp: { resourceDomains: string[] } } } }> } };
+    expect(rendered.result.contents[0]?.text).toContain("/hercules-pro/hercules.pro.v1.glb");
+    expect(rendered.result.contents[0]?.text).toContain("/hercules-pro/companion.v1.js");
+    expect(rendered.result.contents[0]?._meta.ui.csp.resourceDomains).toEqual([origin]);
+    expect(rendered.result.contents[0]?.text).not.toContain("verified-supabase-token");
+
+    const summon = await worker.fetch(new Request(`${origin}/mcp`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${tokens.access_token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 32, method: "tools/call", params: { name: "summon_hercules", arguments: {
+        mood: "teaching",
+        message: "Debits on the left. I brought my pointing paw.",
+        headline: "Follow the journal",
+        ledger: "personal",
+      } } }),
+    }), env);
+    expect(await summon.json()).toMatchObject({ result: { isError: false, structuredContent: {
+      status: "companion-ready",
+      mood: "teaching",
+      headline: "Follow the journal",
+      ledger: "personal",
+      readOnly: true,
+    } } });
 
     const call = await worker.fetch(new Request(`${origin}/mcp`, {
       method: "POST",
@@ -255,7 +297,7 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 20, method: "tools/list" }),
     }), env);
     const listed = await listedResponse.json() as { result: { tools: Array<{ name: string; annotations: { readOnlyHint: boolean; destructiveHint: boolean } }> } };
-    expect(listed.result.tools).toHaveLength(63);
+    expect(listed.result.tools).toHaveLength(64);
     expect(listed.result.tools.find((tool) => tool.name === "confirm_transaction")?.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: true });
 
     const account = household.accounts.find((row) => row.active)!;

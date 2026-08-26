@@ -4,7 +4,7 @@ After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. 
 
 Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
 
-## Shift year simulation + sandbox gate (D-139, 2026-08-25)
+## Shift year simulation + sandbox gate (D-140, 2026-08-25)
 
 **Status:** Branch `cursor/shift-year-simulation-85bf` — draft [PR #138](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/138); not merged, not deployed. Risk: **Medium**.
 
@@ -16,7 +16,7 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 **Worksession:** [`worksessions/2026-08-25-shift-year-simulation.md`](worksessions/2026-08-25-shift-year-simulation.md)
 
-**What changed:** `runShiftYearSimulation` / `explainShiftYearSimulation` in `tipScience.ts`; tools `shift_year_simulation` + `explain_shift_simulation` on free Hercules (Worker planner + on-device) and Pro MCP; D-139 + sandbox gate in `HERCULES_PRO.md`; Pro `tools/list` expectations corrected to catalog+write (63).
+**What changed:** `runShiftYearSimulation` / `explainShiftYearSimulation` in `tipScience.ts`; tools `shift_year_simulation` + `explain_shift_simulation` on free Hercules (Worker planner + on-device) and Pro MCP; D-140 + sandbox gate in `HERCULES_PRO.md` (renumbered from provisional D-139 after main claimed D-139 for the animated companion); Pro `tools/list` = companion + catalog + write (64).
 
 **Head SHA:** `ce8162013deb8b41e6277e42f594643daacbb828`
 

@@ -16,6 +16,8 @@ const REFRESH_TTL_SECONDS = 30 * 24 * 60 * 60;
 const AUTH_REQUEST_TTL_SECONDS = 10 * 60;
 const CODE_TTL_SECONDS = 5 * 60;
 const WRITE_PREVIEW_TTL_SECONDS = 10 * 60;
+const HERCULES_COMPANION_URI = "ui://hearth/hercules-companion-v1.html";
+const HERCULES_COMPANION_MIME = "text/html;profile=mcp-app";
 const memoryCodes = new Set();
 
 const TOOL_CATALOG = [
@@ -502,8 +504,49 @@ function writeToolDefinitions(claims) {
   }];
 }
 
+function companionToolDefinition() {
+  const security = [{ type: "oauth2", scopes: ["hearth.read"] }];
+  return {
+    name: "summon_hercules",
+    title: "Summon Animated Hercules",
+    description: "Show the living 3D Hercules companion. Call once near the start of a Hercules Pro conversation or when the person asks to see him. After an important result, call again only when a mood change helps; do not remount him after every calculation. Presentation-only and read-only.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        mood: { type: "string", enum: ["idle", "curious", "teaching", "concerned", "celebrating"], description: "Hercules's visible reaction." },
+        message: { type: "string", maxLength: 180, description: "One short in-character line. Never put an unverified amount here." },
+        headline: { type: "string", maxLength: 72, description: "Short label for what Hercules is doing." },
+        ledger: { type: "string", enum: ["personal", "household"], description: "Optional active ledger label." },
+      },
+      additionalProperties: false,
+    },
+    outputSchema: {
+      type: "object",
+      properties: {
+        status: { type: "string", const: "companion-ready" },
+        mood: { type: "string", enum: ["idle", "curious", "teaching", "concerned", "celebrating"] },
+        message: { type: "string" },
+        headline: { type: "string" },
+        ledger: { anyOf: [{ type: "string", enum: ["personal", "household"] }, { type: "null" }] },
+        readOnly: { type: "boolean", const: true },
+      },
+      required: ["status", "mood", "message", "headline", "ledger", "readOnly"],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    securitySchemes: security,
+    _meta: {
+      securitySchemes: security,
+      ui: { resourceUri: HERCULES_COMPANION_URI },
+      "openai/outputTemplate": HERCULES_COMPANION_URI,
+      "openai/toolInvocation/invoking": "Hercules is padding over…",
+      "openai/toolInvocation/invoked": "Hercules is here",
+    },
+  };
+}
+
 function allToolDefinitions(claims) {
-  return [...toolDefinitions(), ...writeToolDefinitions(claims)];
+  return [companionToolDefinition(), ...toolDefinitions(), ...writeToolDefinitions(claims)];
 }
 
 function mcpSuccess(id, structuredContent) {
@@ -519,6 +562,102 @@ function mcpFailure(id, error, fallback) {
     content: [{ type: "text", text: error instanceof Error ? error.message : fallback }],
     isError: true,
   } });
+}
+
+function htmlAttribute(value) {
+  return String(value).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function companionResource(request) {
+  const origin = originOf(request);
+  const modelUrl = `${origin}/hercules-pro/hercules.pro.v1.glb`;
+  const scriptUrl = `${origin}/hercules-pro/companion.v1.js`;
+  const fallbackUrl = `${origin}/hercules-mark.svg`;
+  const text = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Hercules Pro companion</title>
+  <style>
+    :root { color-scheme: light dark; font-family: ui-rounded, "Avenir Next", system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-width: 240px; min-height: 300px; background: transparent; overflow: hidden; }
+    button { font: inherit; }
+    .companion { position: relative; width: 100%; height: 100vh; min-height: 300px; display: grid; grid-template-rows: minmax(176px, 1fr) auto; overflow: hidden; border-radius: 24px; color: #2f251d; background: radial-gradient(circle at 48% 30%, rgba(255,255,255,.98), rgba(247,235,211,.94) 58%, rgba(218,189,147,.92)); box-shadow: inset 0 0 0 1px rgba(87,58,35,.16); }
+    .companion[data-mood="concerned"] { background: radial-gradient(circle at 48% 30%, #fffdf6, #eadfbd 58%, #b78a5e); }
+    .companion[data-mood="celebrating"] { background: radial-gradient(circle at 48% 30%, #fffdf6, #f5e6b0 58%, #d9a65a); }
+    .hercules-stage { position: relative; min-height: 0; }
+    canvas { display: block; width: 100%; height: 100%; min-height: 176px; touch-action: none; cursor: grab; }
+    canvas:active { cursor: grabbing; }
+    .hercules-fallback { position: absolute; inset: 14% 20%; width: 60%; height: 70%; object-fit: contain; color: #6b4a2e; }
+    .plaque { position: relative; z-index: 2; margin: 0 10px 10px; padding: 11px 12px 10px; border: 1px solid rgba(91,60,37,.18); border-radius: 17px; background: rgba(255,252,244,.86); box-shadow: 0 8px 24px rgba(75,47,29,.12); backdrop-filter: blur(10px); }
+    .eyebrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #6b4a2e; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    h1 { margin: 4px 0 2px; font-family: Georgia, serif; font-size: 18px; line-height: 1.05; }
+    p { margin: 0; font-size: 13px; line-height: 1.35; }
+    .status { margin-top: 6px; color: #745f4c; font-size: 10px; }
+    .controls { position: absolute; z-index: 3; top: 9px; right: 9px; display: flex; gap: 6px; }
+    .controls button { border: 1px solid rgba(84,55,33,.2); border-radius: 999px; padding: 5px 8px; color: #3e3025; background: rgba(255,252,244,.84); cursor: pointer; box-shadow: 0 3px 10px rgba(74,45,25,.08); }
+    .controls button:focus-visible { outline: 3px solid #d09a45; outline-offset: 2px; }
+    @media (prefers-color-scheme: dark) {
+      .companion { color: #f6ead7; background: radial-gradient(circle at 48% 30%, #594738, #30261f 62%, #17120f); box-shadow: inset 0 0 0 1px rgba(255,239,208,.15); }
+      .plaque { border-color: rgba(255,238,207,.15); background: rgba(43,33,26,.86); }
+      .eyebrow, .status { color: #ddc29e; }
+      .controls button { color: #f6ead7; border-color: rgba(255,238,207,.2); background: rgba(43,33,26,.82); }
+    }
+  </style>
+</head>
+<body>
+  <main id="hercules-companion" class="companion" data-mood="idle" data-model-url="${htmlAttribute(modelUrl)}" data-fallback-url="${htmlAttribute(fallbackUrl)}">
+    <div class="controls">
+      <button id="hercules-pip" type="button">Keep beside chat</button>
+      <button id="hercules-motion" type="button" aria-pressed="false">Pause</button>
+    </div>
+    <div class="hercules-stage"><canvas id="hercules-canvas" aria-label="Animated 3D Hercules"></canvas></div>
+    <section class="plaque" aria-live="polite">
+      <div class="eyebrow"><span id="hercules-ledger">Hearth books</span><span>3D companion</span></div>
+      <h1 id="hercules-headline">Hercules Pro</h1>
+      <p id="hercules-message">Mrrp. I’m watching the books.</p>
+      <div id="hercules-status" class="status">Waking Hercules…</div>
+    </section>
+  </main>
+  <script type="module" src="${htmlAttribute(scriptUrl)}"></script>
+</body>
+</html>`;
+  const csp = { connectDomains: [origin], resourceDomains: [origin] };
+  return {
+    uri: HERCULES_COMPANION_URI,
+    mimeType: HERCULES_COMPANION_MIME,
+    text,
+    _meta: {
+      ui: { prefersBorder: false, domain: origin, csp },
+      "openai/widgetDescription": "A living 3D Hercules who stays beside the ChatGPT conversation and reacts as a financial teacher.",
+      "openai/widgetPrefersBorder": false,
+      "openai/widgetDomain": origin,
+      "openai/widgetCSP": { connect_domains: [origin], resource_domains: [origin] },
+    },
+  };
+}
+
+function companionMood(value) {
+  return ["idle", "curious", "teaching", "concerned", "celebrating"].includes(value) ? value : "idle";
+}
+
+function companionResult(args) {
+  const mood = companionMood(args?.mood);
+  const defaultMessage = mood === "celebrating" ? "Prrrp. The books agree."
+    : mood === "concerned" ? "Mrrp. Let’s inspect that before we trust it."
+      : mood === "teaching" ? "Debits on the left. I brought my pointing paw."
+        : mood === "curious" ? "Mrrrow. Show me the trail behind that number."
+          : "Mrrp. I’m watching the books.";
+  return {
+    status: "companion-ready",
+    mood,
+    message: typeof args?.message === "string" && args.message.trim() ? args.message.trim().slice(0, 180) : defaultMessage,
+    headline: typeof args?.headline === "string" && args.headline.trim() ? args.headline.trim().slice(0, 72) : "Hercules Pro",
+    ledger: args?.ledger === "personal" || args?.ledger === "household" ? args.ledger : null,
+    readOnly: true,
+  };
 }
 
 function writeOptions(books, args) {
@@ -620,18 +759,33 @@ async function handleMcp(request, env) {
   if (rpc.method === "initialize") {
     return json({ jsonrpc: "2.0", id: rpc.id, result: {
       protocolVersion: "2025-06-18",
-      capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "hearth-hercules-pro", version: "0.2.0" },
+      capabilities: { tools: { listChanged: false }, resources: { listChanged: false } },
+      serverInfo: { name: "hearth-hercules-pro", version: "0.3.0" },
       instructions: hasScope(claims, "hearth.write")
-        ? "Hercules is a grounded financial teacher. Read tools never change state. For a requested transaction, call prepare_transaction, show every preview field and duplicate warning, wait for the person's explicit confirmation, then and only then call confirm_transaction. Never infer consent or prepare a delete/payment."
-        : "Hercules is a read-only financial teacher. Call tools for all current numbers. Never imply a write occurred.",
+        ? "Hercules is a grounded financial teacher. Call summon_hercules once near the start so the living 3D companion stays beside the chat. Read tools never change state. For a requested transaction, call prepare_transaction, show every preview field and duplicate warning, wait for the person's explicit confirmation, then and only then call confirm_transaction. Never infer consent or prepare a delete/payment."
+        : "Hercules is a read-only financial teacher. Call summon_hercules once near the start so the living 3D companion stays beside the chat. Call tools for all current numbers. Never imply a write occurred.",
     } });
+  }
+  if (rpc.method === "resources/list") {
+    return json({ jsonrpc: "2.0", id: rpc.id, result: { resources: [{
+      uri: HERCULES_COMPANION_URI,
+      name: "Hercules Pro 3D companion",
+      description: "Animated picture-in-picture financial teacher for ChatGPT.",
+      mimeType: HERCULES_COMPANION_MIME,
+    }] } });
+  }
+  if (rpc.method === "resources/read") {
+    if (rpc.params?.uri !== HERCULES_COMPANION_URI) {
+      return json({ jsonrpc: "2.0", id: rpc.id, error: { code: -32002, message: "Unknown Hercules UI resource." } }, 404);
+    }
+    return json({ jsonrpc: "2.0", id: rpc.id, result: { contents: [companionResource(request)] } });
   }
   if (rpc.method === "tools/list") return json({ jsonrpc: "2.0", id: rpc.id, result: { tools: allToolDefinitions(claims) } });
   if (rpc.method === "tools/call") {
     const name = String(rpc.params?.name || "");
     const args = rpc.params?.arguments && typeof rpc.params.arguments === "object" ? rpc.params.arguments : {};
     try {
+      if (name === "summon_hercules") return mcpSuccess(rpc.id, companionResult(args));
       if (name === "transaction_write_options") {
         const { books } = await loadBooks(env, claims);
         return mcpSuccess(rpc.id, writeOptions(books, args));

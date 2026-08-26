@@ -35,7 +35,7 @@ Hercules Pro can build a real, reproducible next-year tips+wages simulation from
 ### In scope
 
 - Year horizon tips+wages simulation + explain/teach tool shared by free Hercules and Pro MCP.
-- Canon: D-139, HERCULES_PRO sandbox gate, plugin teacher skill, worksession/handoff.
+- Canon: D-140, HERCULES_PRO sandbox gate, plugin teacher skill, worksession/handoff.
 - Focused tests.
 
 ### Out of scope
