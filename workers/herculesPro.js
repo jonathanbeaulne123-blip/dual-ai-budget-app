@@ -7,7 +7,7 @@ import {
 } from "../src/core/herculesProWrite.ts";
 import { commandIdentityHash, financialAuditHash, findReceipt } from "../src/core/commandIdentity.ts";
 import { assertAcceptableBooks } from "../src/core/commandRuntime.ts";
-import { emptyPersonal, ensureHouseholdShape, personalReplicaForMember, shapeHerculesProPermissions } from "../src/core/sync.ts";
+import { emptyPersonal, ensureHouseholdShape, overlayPersonalReplica, personalEnvelopeFromPayload, personalReplicaForMember, shapeHerculesProPermissions } from "../src/core/sync.ts";
 
 const DEFAULT_SUPABASE_URL = "https://tykhocwacaxwquhynkok.supabase.co";
 const DEFAULT_SUPABASE_KEY = "sb_publishable_8UAlkucmkTyh36yQGhnUbw_Orl9GkuS";
@@ -368,31 +368,6 @@ function parsePayload(row) {
   return typeof row.payload === "string" ? JSON.parse(row.payload) : row.payload;
 }
 
-function overlayPersonal(household, personal, memberId) {
-  if (!personal || personal.kind !== "personal" || personal.memberId !== memberId) return household;
-  const txIds = new Set((personal.transactions || []).map((row) => row.id));
-  const shiftIds = new Set((personal.shifts || []).map((row) => row.id));
-  const goals = (personal.goals || []).filter((row) => !row.shared && row.ownerMemberId === memberId);
-  const goalIds = new Set(goals.map((row) => row.id));
-  return ensureHouseholdShape({
-    ...household,
-    transactions: [
-      ...household.transactions.filter((row) => !((row.visibility === "personal" && row.createdBy === memberId) || txIds.has(row.id))),
-      ...(personal.transactions || []).filter((row) => row.visibility === "personal" && row.createdBy === memberId),
-    ],
-    shifts: [
-      ...household.shifts.filter((row) => !((row.visibility === "personal" && row.createdBy === memberId) || shiftIds.has(row.id))),
-      ...(personal.shifts || []).filter((row) => row.visibility === "personal" && row.createdBy === memberId),
-    ],
-    goals: [...household.goals.filter((row) => !goalIds.has(row.id) && (row.shared || row.ownerMemberId !== memberId)), ...goals],
-    goalContributions: [...household.goalContributions.filter((row) => !goalIds.has(row.goalId)), ...(personal.goalContributions || []).filter((row) => goalIds.has(row.goalId))],
-    goalPurchases: [...household.goalPurchases.filter((row) => !goalIds.has(row.goalId)), ...(personal.goalPurchases || []).filter((row) => goalIds.has(row.goalId))],
-    ...(personal.herculesProPermissions
-      ? { herculesProPermissions: shapeHerculesProPermissions(personal.herculesProPermissions) }
-      : {}),
-  });
-}
-
 async function loadBooks(env, claims) {
   await verifiedMembership(env, claims);
   const sharedQuery = new URLSearchParams({
@@ -414,9 +389,12 @@ async function loadBooks(env, claims) {
   ]);
   const shared = parsePayload(sharedRows?.[0]);
   if (!shared) throw new Error("Hearth could not find this household's cloud ledger.");
-  const personal = parsePayload(personalRows?.[0]);
+  const personalPayload = parsePayload(personalRows?.[0]);
+  const personal = personalPayload
+    ? personalEnvelopeFromPayload(personalPayload, claims.memberId)
+    : null;
   return {
-    books: overlayPersonal(ensureHouseholdShape(shared), personal, claims.memberId),
+    books: overlayPersonalReplica(ensureHouseholdShape(shared), personal, claims.memberId),
     personal: personal?.kind === "personal" && personal.memberId === claims.memberId
       ? { ...personal, herculesProPermissions: shapeHerculesProPermissions(personal.herculesProPermissions) }
       : emptyPersonal(claims.memberId),
@@ -1273,4 +1251,4 @@ export async function handleHerculesPro(request, env) {
   return null;
 }
 
-export const herculesProTest = { seal, unseal, sealPrivate, unsealPrivate, sha256Base64Url, toolDefinitions, overlayPersonal };
+export const herculesProTest = { seal, unseal, sealPrivate, unsealPrivate, sha256Base64Url, toolDefinitions, overlayPersonalReplica, personalEnvelopeFromPayload };
