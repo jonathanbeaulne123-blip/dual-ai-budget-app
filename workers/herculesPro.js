@@ -1041,7 +1041,7 @@ async function approve(request, env) {
   try {
     const authorization = await unseal(env, body?.authorizationRequest, "authorize");
     if (authorization.resource !== mcpResource(request)) throw new Error("The authorization request is for a different resource.");
-    const authorizedScope = normalizeRequestedScopes(authorization.scope);
+    const requestedScope = normalizeRequestedScopes(authorization.scope);
     if (body?.deny === true) {
       const redirect = new URL(authorization.redirectUri);
       redirect.searchParams.set("error", "access_denied");
@@ -1064,10 +1064,14 @@ async function approve(request, env) {
     };
     if (!membershipClaims.supabaseRefreshToken) throw new Error("Reconnect Google in Hearth, then try again.");
     await verifiedMembership(env, membershipClaims);
-    if (authorizedScope.includes("hearth.write")) {
+    let authorizedScope = requestedScope;
+    if (requestedScope.includes("hearth.write")) {
       const { books } = await loadBooks(env, membershipClaims);
       if (!herculesProWriteAllowed(books, "personal") && !herculesProWriteAllowed(books, "household")) {
-        throw new Error("Turn on at least one Hercules Pro writing permission in Hearth More before connecting ChatGPT with write access.");
+        // ChatGPT can request the union of every scope advertised by the app.
+        // OAuth permits a narrower grant, so keep the default connection useful
+        // without silently enabling write authority.
+        authorizedScope = "hearth.read";
       }
     }
     const now = Math.floor(Date.now() / 1000);

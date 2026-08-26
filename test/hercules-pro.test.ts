@@ -201,6 +201,49 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
     expect(replay.status).toBe(400);
   });
 
+  it("downgrades a broad connector reconnect to read-only when writing is off", async () => {
+    const household = seedDemoHousehold({ today: "2026-08-25", environment: "development" });
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/auth/v1/user")) return response({ id: "auth-user-1", email: "jonathan@example.com" });
+      if (url.includes("continuity_memberships?")) return response([{ household_id: household.householdId, member_id: "MEM-002", auth_user_id: "auth-user-1", role: "member" }]);
+      if (url.includes("continuity_personal_snapshots?")) return response([]);
+      if (url.includes("household_snapshots?")) return response([{ payload: JSON.stringify(household) }]);
+      return response({ message: `unexpected ${url}` }, 404);
+    }));
+
+    const now = Math.floor(Date.now() / 1000);
+    const authorizationRequest = await herculesProTest.seal(env, {
+      kind: "authorize",
+      clientId: "client",
+      redirectUri: "https://chatgpt.com/aip/callback",
+      challenge: "challenge",
+      scope: "hearth.read hearth.write",
+      resource: `${origin}/mcp`,
+      state: "state",
+      iat: now,
+      exp: now + 60,
+    });
+    const approved = await worker.fetch(new Request(`${origin}/oauth/approve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        authorizationRequest,
+        environment: "development",
+        householdId: household.householdId,
+        memberId: "MEM-002",
+        supabaseAccessToken: "verified-supabase-token",
+        supabaseRefreshToken: "verified-refresh-token",
+      }),
+    }), env);
+
+    expect(approved.status).toBe(200);
+    const approval = await approved.json() as { redirect: string };
+    const code = new URL(approval.redirect).searchParams.get("code");
+    const claims = await herculesProTest.unsealPrivate(env, code, "code");
+    expect(claims.scope).toBe("hearth.read");
+  });
+
   it("reads personal-envelope shifts from split hosted snapshots through MCP", async () => {
     let household = catalogHousehold();
     household = postShift(household, {
