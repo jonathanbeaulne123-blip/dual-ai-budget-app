@@ -242,7 +242,7 @@ Every tier adds rows; none delete prior proofs.
 | 011 | Hercules Pro atomic write (prototype) | pre-T1 | Not applied; pattern donor for 012 |
 | **012** | `publish_continuity_snapshot` atomic Shared+Personal | **T1-S1** | **Applied** Development (2026-08-26) |
 | **013** | `continuity_command_events` append log | **T2-S1** | **Proposed** |
-| **014** | Realtime publication (`supabase_realtime` ADD TABLE) | **T1-S3** | **Ready** — apply via `pnpm books:apply:014`; flag on in CI build |
+| **014** | Realtime publication (`supabase_realtime` ADD TABLE) | **T1-S3** | **Applied** Development (2026-08-26); flag on in CI build (#175) |
 
 Jonathan approval required before any `pnpm books:apply` or Production apply.
 

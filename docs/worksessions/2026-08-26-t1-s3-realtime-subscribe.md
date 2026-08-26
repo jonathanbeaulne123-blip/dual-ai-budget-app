@@ -18,7 +18,7 @@ When `VITE_CONTINUITY_REALTIME=1`, partner snapshot writes ring the open kitchen
 - `src/continuityRealtime.ts` — Realtime channel on `household_snapshots` + `continuity_personal_snapshots`; revision-only signal → existing `replay()` pull/reconcile.
 - `src/App.tsx` — subscribe after `fetchContinuityMembershipRole`; poll skipped when Realtime `SUBSCRIBED`.
 - `test/continuity-realtime.test.ts` — lifecycle, fallback, attach guards.
-- `supabase/migrations/014_realtime_publication.sql` — ready to apply (idempotent ADD TABLE).
+- `supabase/migrations/014_realtime_publication.sql` — **applied** Development (2026-08-26).
 - `VITE_CONTINUITY_REALTIME` in `vite-env.d.ts`.
 
 ## Verification
@@ -36,7 +36,7 @@ pnpm test                                     # 673 pass; 2 pre-existing batch-i
 
 ## Uncertainty
 
-- Migration **014** — apply via `pnpm books:apply:014` or SQL Editor (Jonathan action; see `2026-08-26-t1-realtime-enable.md`).
+- Migration **014** — **applied** Development (2026-08-26).
 - End-to-end ≤ 500 ms p95 not measured this slice — deferred to **T1-S5**.
 
 ## Data / environment

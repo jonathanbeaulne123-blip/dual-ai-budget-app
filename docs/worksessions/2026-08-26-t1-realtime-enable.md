@@ -18,20 +18,11 @@ Partner snapshot writes ring the open kitchen via Supabase Realtime within the T
 | `.github/workflows/pages.yml` | `VITE_CONTINUITY_REALTIME: "1"` at build time |
 | `.env.example` | Documents flag + Migration 014 dependency |
 
-## Jonathan action required (cannot run from agent VM)
+## Hosted apply status
 
-Migration 014 was **not** applied — no `SUPABASE_DB_PASSWORD` in this environment.
+Migration **014 applied on Development** (2026-08-26, Jonathan).
 
-```bash
-# Option A — local with password
-SUPABASE_DB_PASSWORD=… pnpm books:apply:014
-
-# Option B — SQL Editor
-# Paste supabase/migrations/014_realtime_publication.sql into:
-# https://supabase.com/dashboard/project/tykhocwacaxwquhynkok/sql/new
-```
-
-Verify after apply:
+Verify (optional):
 
 ```sql
 SELECT schemaname, tablename
@@ -40,7 +31,7 @@ WHERE pubname = 'supabase_realtime'
   AND tablename IN ('household_snapshots', 'continuity_personal_snapshots');
 ```
 
-## Verification (post-merge + post-014)
+## Verification (post-deploy + post-014)
 
 1. Hard refresh kitchen on two signed-in Development browsers (same household, different members if possible).
 2. Device A: Confirm a shared post.
@@ -59,4 +50,4 @@ WHERE pubname = 'supabase_realtime'
 
 ## Next owner
 
-Jonathan — merge PR, apply 014, run two-phone smoke. Then T1-S4 (coordinator) and T1-S5 (latency harness).
+Jonathan — run two-phone Realtime smoke on deployed Development. Then T1-S4 (coordinator) and T1-S5 (latency harness).
