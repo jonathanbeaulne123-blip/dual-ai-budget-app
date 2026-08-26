@@ -1,5 +1,13 @@
 import { executeHerculesReadToolPlan } from "../src/core/herculesTools.ts";
-import { ensureHouseholdShape } from "../src/core/sync.ts";
+import {
+  acceptPreparedHerculesProTransaction,
+  herculesProSharedProjection,
+  herculesProWriteAllowed,
+  prepareHerculesProTransaction,
+} from "../src/core/herculesProWrite.ts";
+import { commandIdentityHash, financialAuditHash, findReceipt } from "../src/core/commandIdentity.ts";
+import { assertAcceptableBooks } from "../src/core/commandRuntime.ts";
+import { emptyPersonal, ensureHouseholdShape, personalReplicaForMember, shapeHerculesProPermissions } from "../src/core/sync.ts";
 
 const DEFAULT_SUPABASE_URL = "https://tykhocwacaxwquhynkok.supabase.co";
 const DEFAULT_SUPABASE_KEY = "sb_publishable_8UAlkucmkTyh36yQGhnUbw_Orl9GkuS";
@@ -7,6 +15,7 @@ const ACCESS_TTL_SECONDS = 60 * 60;
 const REFRESH_TTL_SECONDS = 30 * 24 * 60 * 60;
 const AUTH_REQUEST_TTL_SECONDS = 10 * 60;
 const CODE_TTL_SECONDS = 5 * 60;
+const WRITE_PREVIEW_TTL_SECONDS = 10 * 60;
 const memoryCodes = new Set();
 
 const TOOL_CATALOG = [
@@ -64,6 +73,10 @@ const TOOL_CATALOG = [
   ["compare_accounting_treatments", "Contrast two commonly confused household accounting treatments."],
   ["explain_variance", "Explain one category's actual-versus-budget variance for a month."],
   ["explain_transfer", "Explain both journal legs of one posted transfer transaction."],
+  ["tip_oracle", "Monte Carlo tipped-income floor, mid, high, and dry-streak reserve from posted shifts. Projection only."],
+  ["shift_outlook", "Estimate tip range for one upcoming shift from weekday, meal, hours, and optional weather. Projection only."],
+  ["tip_schedule_sim", "Simulate the next week of tip outcomes from cadence; ranks protect-floor vs chase-spike advice."],
+  ["tax_milk_plan", "Split tip income into educational tax-milk, smoothing buffer, and leftover projections. Never posts."],
 ];
 
 const TOOL_PROPERTIES = {
@@ -90,6 +103,16 @@ const TOOL_PROPERTIES = {
   transactionId: { type: "string", maxLength: 100, description: "Stable posted transaction ID." },
   statement: { type: "string", enum: ["balance_sheet", "income_statement", "cash_flow_statement", "trial_balance"] },
   topic: { type: "string", enum: ["card_purchase_vs_card_payment", "refund_vs_income", "transfer_vs_expense", "receivable_vs_income", "budget_vs_actual"] },
+  date: { type: "string", pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+  hours: { type: "number", minimum: 0.25, maximum: 24 },
+  meal: { type: "string", enum: ["lunch", "dinner"] },
+  weatherGlass: { type: "string", enum: ["clear", "rain", "snow", "night", "humid"] },
+  days: { type: "integer", minimum: 3, maximum: 14 },
+  tipCents: { type: "integer", minimum: 0, maximum: 1000000000 },
+  shiftId: { type: "string", maxLength: 100 },
+  taxRateBps: { type: "integer", minimum: 0, maximum: 5000, description: "Educational tax-milk rate in basis points. 2500 = 25%." },
+  iterations: { type: "integer", minimum: 200, maximum: 5000 },
+  seed: { type: "integer", minimum: 0, maximum: 1000000000 },
 };
 
 const TOOL_PROPERTY_NAMES = {
@@ -147,6 +170,10 @@ const TOOL_PROPERTY_NAMES = {
   compare_accounting_treatments: ["view", "topic"],
   explain_variance: ["view", "category", "period"],
   explain_transfer: ["view", "transactionId"],
+  tip_oracle: ["view", "member", "horizonDays", "iterations", "seed"],
+  shift_outlook: ["view", "member", "date", "hours", "meal", "weatherGlass"],
+  tip_schedule_sim: ["view", "member", "days", "weatherGlass"],
+  tax_milk_plan: ["view", "member", "tipCents", "shiftId", "taxRateBps"],
 };
 
 const TOOL_REQUIRED_PROPERTIES = {
@@ -161,6 +188,7 @@ const TOOL_REQUIRED_PROPERTIES = {
   compare_accounting_treatments: ["topic"],
   explain_variance: ["category"],
   explain_transfer: ["transactionId"],
+  shift_outlook: ["hours"],
 };
 
 function json(body, status = 200, headers = {}) {
@@ -278,14 +306,24 @@ function supabaseConfig(env) {
   };
 }
 
-async function supabaseJson(env, path, accessToken) {
+async function supabaseRequest(env, path, accessToken, init = {}) {
   const config = supabaseConfig(env);
   const response = await fetch(`${config.url}${path}`, {
-    headers: { apikey: config.key, Authorization: `Bearer ${accessToken || config.key}` },
+    ...init,
+    headers: {
+      apikey: config.key,
+      Authorization: `Bearer ${accessToken || config.key}`,
+      ...(init.body ? { "Content-Type": "application/json" } : {}),
+      ...(init.headers || {}),
+    },
   });
   const body = await response.json().catch(() => null);
   if (!response.ok) throw new Error(body?.message || "Hearth cloud did not answer.");
   return body;
+}
+
+async function supabaseJson(env, path, accessToken) {
+  return supabaseRequest(env, path, accessToken);
 }
 
 async function verifiedSupabaseUser(env, accessToken) {
@@ -333,6 +371,9 @@ function overlayPersonal(household, personal, memberId) {
     goals: [...household.goals.filter((row) => !goalIds.has(row.id) && (row.shared || row.ownerMemberId !== memberId)), ...goals],
     goalContributions: [...household.goalContributions.filter((row) => !goalIds.has(row.goalId)), ...(personal.goalContributions || []).filter((row) => goalIds.has(row.goalId))],
     goalPurchases: [...household.goalPurchases.filter((row) => !goalIds.has(row.goalId)), ...(personal.goalPurchases || []).filter((row) => goalIds.has(row.goalId))],
+    ...(personal.herculesProPermissions
+      ? { herculesProPermissions: shapeHerculesProPermissions(personal.herculesProPermissions) }
+      : {}),
   });
 }
 
@@ -357,7 +398,13 @@ async function loadBooks(env, claims) {
   ]);
   const shared = parsePayload(sharedRows?.[0]);
   if (!shared) throw new Error("Hearth could not find this household's cloud ledger.");
-  return overlayPersonal(ensureHouseholdShape(shared), parsePayload(personalRows?.[0]), claims.memberId);
+  const personal = parsePayload(personalRows?.[0]);
+  return {
+    books: overlayPersonal(ensureHouseholdShape(shared), personal, claims.memberId),
+    personal: personal?.kind === "personal" && personal.memberId === claims.memberId
+      ? { ...personal, herculesProPermissions: shapeHerculesProPermissions(personal.herculesProPermissions) }
+      : emptyPersonal(claims.memberId),
+  };
 }
 
 function toolDefinitions() {
@@ -375,6 +422,158 @@ function toolDefinitions() {
     securitySchemes: [{ type: "oauth2", scopes: ["hearth.read"] }],
     _meta: { securitySchemes: [{ type: "oauth2", scopes: ["hearth.read"] }] },
   }));
+}
+
+const WRITE_INPUT_PROPERTIES = {
+  view: { type: "string", enum: ["personal", "household"], description: "Exact ledger to change. Required; never inferred." },
+  type: { type: "string", enum: ["expense", "income", "refund", "transfer"] },
+  date: { type: "string", pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$", description: "Toronto civil posting date." },
+  amountCents: { type: "integer", minimum: 1, maximum: 100000000000, description: "Exact amount in integer CAD cents." },
+  accountId: { type: "string", maxLength: 100 },
+  subcategoryId: { type: "string", maxLength: 100 },
+  fromAccountId: { type: "string", maxLength: 100 },
+  toAccountId: { type: "string", maxLength: 100 },
+  note: { type: "string", maxLength: 160 },
+  place: { type: "string", maxLength: 120 },
+};
+
+function hasScope(claims, scope) {
+  return String(claims?.scope || "").split(/\s+/).filter(Boolean).includes(scope);
+}
+
+function normalizeRequestedScopes(value) {
+  const requested = String(value || "hearth.read").split(/\s+/).filter(Boolean);
+  if (!requested.includes("hearth.read") || requested.some((scope) => scope !== "hearth.read" && scope !== "hearth.write")) {
+    throw new Error("Hercules Pro supports hearth.read and the optional hearth.write permission.");
+  }
+  return requested.includes("hearth.write") ? "hearth.read hearth.write" : "hearth.read";
+}
+
+function writeToolDefinitions(claims) {
+  const options = {
+    name: "transaction_write_options",
+    title: "Transaction Write Options",
+    description: "List the exact active Hearth account and category IDs required to prepare a transaction. Read-only; call this instead of guessing identifiers.",
+    inputSchema: {
+      type: "object",
+      properties: { view: WRITE_INPUT_PROPERTIES.view, type: WRITE_INPUT_PROPERTIES.type },
+      required: ["view", "type"],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    securitySchemes: [{ type: "oauth2", scopes: ["hearth.read"] }],
+    _meta: { securitySchemes: [{ type: "oauth2", scopes: ["hearth.read"] }] },
+  };
+  void claims;
+  const writeSecurity = [{ type: "oauth2", scopes: ["hearth.read", "hearth.write"] }];
+  return [options, {
+    name: "prepare_transaction",
+    title: "Preview a Hearth Transaction",
+    description: "Validate and preview one expense, income, refund, or transfer without changing Hearth. Use only after the person asks to post. Return the exact preview and wait for explicit confirmation before calling confirm_transaction.",
+    inputSchema: {
+      type: "object",
+      properties: WRITE_INPUT_PROPERTIES,
+      required: ["view", "type", "date", "amountCents"],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    securitySchemes: writeSecurity,
+    _meta: { securitySchemes: writeSecurity },
+  }, {
+    name: "confirm_transaction",
+    title: "Confirm and Post a Hearth Transaction",
+    description: "Post exactly one previously prepared Hearth transaction. Consequential cloud write: call only after showing the complete preview and receiving explicit confirmation in the current ChatGPT conversation. Never use this tool to infer consent.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        confirmationToken: { type: "string", minLength: 40, maxLength: 20000, description: "Opaque token returned by prepare_transaction." },
+        confirmed: { type: "boolean", const: true, description: "True only after the person explicitly confirms the shown preview." },
+      },
+      required: ["confirmationToken", "confirmed"],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+    securitySchemes: writeSecurity,
+    _meta: { securitySchemes: writeSecurity },
+  }];
+}
+
+function allToolDefinitions(claims) {
+  return [...toolDefinitions(), ...writeToolDefinitions(claims)];
+}
+
+function mcpSuccess(id, structuredContent) {
+  return json({ jsonrpc: "2.0", id, result: {
+    content: [{ type: "text", text: JSON.stringify(structuredContent) }],
+    structuredContent,
+    isError: false,
+  } });
+}
+
+function mcpFailure(id, error, fallback) {
+  return json({ jsonrpc: "2.0", id, result: {
+    content: [{ type: "text", text: error instanceof Error ? error.message : fallback }],
+    isError: true,
+  } });
+}
+
+function writeOptions(books, args) {
+  const type = args?.type;
+  const categoryType = type === "refund" ? "expense" : type;
+  return {
+    ledger: args?.view === "household" ? "household" : "personal",
+    currency: books.currency || "CAD",
+    accounts: books.accounts.filter((row) => row.active).map((row) => ({ id: row.id, name: row.name, kind: row.kind })),
+    categories: type === "transfer" ? [] : books.categories
+      .filter((row) => row.active && row.recordType === "category" && row.transactionType === categoryType)
+      .map((row) => ({ id: row.id, name: row.name, parentId: row.parentId, transactionType: row.transactionType })),
+    rules: type === "transfer"
+      ? "Use two different active account IDs."
+      : "Use one active accountId and one matching active subcategoryId.",
+    readOnly: true,
+  };
+}
+
+async function publishConfirmedTransaction(env, claims, input) {
+  const result = await supabaseRequest(env, "/rest/v1/rpc/publish_hercules_confirmed_write", claims.supabaseAccessToken, {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({
+      p_household_id: claims.householdId,
+      p_expected_revision: input.expectedRevision,
+      p_name: input.shared.name,
+      p_timezone: input.shared.timezone,
+      p_currency: input.shared.currency,
+      p_environment: claims.environment,
+      p_invite_phrase: input.shared.inviteCode,
+      p_linked: input.shared.linked === true,
+      p_revision: input.shared.revision,
+      p_last_committed_at: input.shared.lastCommittedAt,
+      p_payload: JSON.stringify(input.shared),
+      p_snapshot_hash: input.snapshotHash,
+      p_ledger_view: input.view,
+      p_member_id: claims.memberId,
+      p_personal_payload: input.personal ? JSON.stringify(input.personal) : null,
+      p_confirmation_id: input.confirmationId,
+      p_identity_hash: input.identityHash,
+    }),
+  });
+  const row = Array.isArray(result) ? result[0] : result;
+  if (!row?.ok) throw new Error(row?.reason === "stale-revision"
+    ? "The cloud ledger changed after the preview. Nothing was posted; prepare a fresh preview."
+    : row?.reason === "write-permission-off"
+      ? "Hercules Pro writing is off in Hearth. Nothing was posted."
+      : row?.reason === "not-member"
+        ? "This Google account is no longer linked to that Hearth member. Nothing was posted."
+        : `Hearth refused the confirmed write${row?.reason ? ` (${row.reason})` : ""}. Nothing was posted.`);
+  return row;
+}
+
+function writeTokenMatchesClaims(preview, claims) {
+  return preview.environment === claims.environment
+    && preview.householdId === claims.householdId
+    && preview.memberId === claims.memberId
+    && preview.authUserId === claims.authUserId;
 }
 
 function torontoToday() {
@@ -418,19 +617,154 @@ async function handleMcp(request, env) {
     return json({ jsonrpc: "2.0", id: rpc.id, result: {
       protocolVersion: "2025-06-18",
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "hearth-hercules-pro", version: "0.1.0" },
-      instructions: "Hercules is a read-only financial teacher. Call tools for all current numbers. Never imply a write occurred.",
+      serverInfo: { name: "hearth-hercules-pro", version: "0.2.0" },
+      instructions: hasScope(claims, "hearth.write")
+        ? "Hercules is a grounded financial teacher. Read tools never change state. For a requested transaction, call prepare_transaction, show every preview field and duplicate warning, wait for the person's explicit confirmation, then and only then call confirm_transaction. Never infer consent or prepare a delete/payment."
+        : "Hercules is a read-only financial teacher. Call tools for all current numbers. Never imply a write occurred.",
     } });
   }
-  if (rpc.method === "tools/list") return json({ jsonrpc: "2.0", id: rpc.id, result: { tools: toolDefinitions() } });
+  if (rpc.method === "tools/list") return json({ jsonrpc: "2.0", id: rpc.id, result: { tools: allToolDefinitions(claims) } });
   if (rpc.method === "tools/call") {
     const name = String(rpc.params?.name || "");
-    if (!TOOL_CATALOG.some(([toolName]) => toolName === name)) {
-      return json({ jsonrpc: "2.0", id: rpc.id, error: { code: -32602, message: "Unknown read tool." } }, 400);
-    }
+    const args = rpc.params?.arguments && typeof rpc.params.arguments === "object" ? rpc.params.arguments : {};
     try {
-      const books = await loadBooks(env, claims);
-      const args = rpc.params?.arguments && typeof rpc.params.arguments === "object" ? rpc.params.arguments : {};
+      if (name === "transaction_write_options") {
+        const { books } = await loadBooks(env, claims);
+        return mcpSuccess(rpc.id, writeOptions(books, args));
+      }
+      if (name === "prepare_transaction") {
+        if (!hasScope(claims, "hearth.write")) throw new Error("Reconnect Hercules Pro after enabling writing in Hearth.");
+        const { books } = await loadBooks(env, claims);
+        const prepared = await prepareHerculesProTransaction(books, claims.memberId, args);
+        const now = Math.floor(Date.now() / 1000);
+        const confirmationId = randomId();
+        const confirmationToken = await sealPrivate(env, {
+          kind: "write-preview",
+          environment: claims.environment,
+          householdId: claims.householdId,
+          memberId: claims.memberId,
+          authUserId: claims.authUserId,
+          baseRevision: books.revision,
+          confirmationId,
+          input: prepared.input,
+          identityHash: prepared.identityHash,
+          postedIds: prepared.postedIds,
+          postedTransactions: prepared.postedTransactions,
+          preview: prepared.preview,
+          iat: now,
+          exp: now + WRITE_PREVIEW_TTL_SECONDS,
+        });
+        return mcpSuccess(rpc.id, {
+          status: "confirmation-required",
+          preview: prepared.preview,
+          confirmationToken,
+          expiresInSeconds: WRITE_PREVIEW_TTL_SECONDS,
+          requiresExplicitConfirmation: true,
+          confirmationPrompt: `Post this ${prepared.preview.amount} ${prepared.preview.type} to the ${prepared.preview.ledger} ledger on ${prepared.preview.date}?`,
+          postedNothing: true,
+          readOnly: true,
+        });
+      }
+      if (name === "confirm_transaction") {
+        if (!hasScope(claims, "hearth.write")) throw new Error("Reconnect Hercules Pro after enabling writing in Hearth.");
+        if (args.confirmed !== true) throw new Error("Nothing was posted because explicit confirmation was not supplied.");
+        const preview = await unsealPrivate(env, String(args.confirmationToken || ""), "write-preview");
+        if (!writeTokenMatchesClaims(preview, claims)) throw new Error("This confirmation belongs to a different Hearth member or household.");
+        const { books } = await loadBooks(env, claims);
+        if (!herculesProWriteAllowed(books, preview.input.view)) {
+          throw new Error(`Hercules Pro ${preview.input.view} writing was turned off in Hearth. Nothing was posted.`);
+        }
+        const existingReceipt = findReceipt(books, preview.confirmationId);
+        if (existingReceipt) {
+          if (existingReceipt.identityHash !== preview.identityHash) throw new Error("Hearth found a mismatched confirmation receipt. Nothing else was posted.");
+          const posted = new Set(books.transactions.map((row) => row.id));
+          const missing = preview.postedIds.filter((id) => !posted.has(id));
+          if (preview.input.view === "personal" && missing.length) {
+            const recovered = ensureHouseholdShape({
+              ...books,
+              transactions: [
+                ...books.transactions,
+                ...preview.postedTransactions.filter((row) => missing.includes(row.id)),
+              ],
+            });
+            assertAcceptableBooks(recovered);
+            const shared = herculesProSharedProjection(books, claims.memberId);
+            await publishConfirmedTransaction(env, claims, {
+              expectedRevision: preview.baseRevision,
+              shared,
+              personal: personalReplicaForMember(recovered, claims.memberId),
+              snapshotHash: await financialAuditHash(shared),
+              view: "personal",
+              confirmationId: preview.confirmationId,
+              identityHash: preview.identityHash,
+            });
+          }
+          return mcpSuccess(rpc.id, {
+            status: "posted-exactly-once",
+            duplicateConfirmation: true,
+            ledger: preview.input.view,
+            transactionIds: existingReceipt.postedIds,
+            revision: existingReceipt.revision,
+            confirmationId: preview.confirmationId,
+            postedExactlyOnce: true,
+            postedNothing: false,
+            readOnly: false,
+          });
+        }
+        if (books.revision !== preview.baseRevision) {
+          throw new Error("The cloud ledger changed after the preview. Nothing was posted; prepare a fresh preview.");
+        }
+        const generated = await prepareHerculesProTransaction(books, claims.memberId, preview.input);
+        const generatedIds = new Set(generated.postedIds);
+        const candidate = ensureHouseholdShape({
+          ...generated.candidate,
+          transactions: [
+            ...generated.candidate.transactions.filter((row) => !generatedIds.has(row.id)),
+            ...preview.postedTransactions,
+          ],
+        });
+        const prepared = {
+          ...generated,
+          candidate,
+          postedIds: preview.postedIds,
+          postedTransactions: preview.postedTransactions,
+          identityHash: await commandIdentityHash(books, candidate, preview.postedIds),
+          preview: preview.preview,
+        };
+        if (prepared.identityHash !== preview.identityHash) {
+          throw new Error("The exact proposed transaction no longer matches the books. Nothing was posted; prepare it again.");
+        }
+        const accepted = await acceptPreparedHerculesProTransaction(
+          books,
+          prepared,
+          claims.memberId,
+          preview.confirmationId,
+        );
+        const published = await publishConfirmedTransaction(env, claims, {
+          expectedRevision: preview.baseRevision,
+          shared: accepted.sharedProjection,
+          personal: accepted.personalProjection,
+          snapshotHash: accepted.snapshotHash,
+          view: preview.input.view,
+          confirmationId: preview.confirmationId,
+          identityHash: preview.identityHash,
+        });
+        return mcpSuccess(rpc.id, {
+          status: "posted-exactly-once",
+          duplicateConfirmation: published.duplicate === true,
+          ledger: preview.input.view,
+          transactionIds: prepared.postedIds,
+          revision: accepted.accepted.revision,
+          confirmationId: preview.confirmationId,
+          postedExactlyOnce: true,
+          postedNothing: false,
+          readOnly: false,
+        });
+      }
+      if (!TOOL_CATALOG.some(([toolName]) => toolName === name)) {
+        return json({ jsonrpc: "2.0", id: rpc.id, error: { code: -32602, message: "Unknown Hercules tool." } }, 400);
+      }
+      const { books } = await loadBooks(env, claims);
       const view = args.view === "household" ? "household" : "personal";
       const run = executeHerculesReadToolPlan(books, { calls: [{ id: String(rpc.id ?? randomId()), name, args }] }, torontoToday(), {
         memberId: claims.memberId,
@@ -456,16 +790,9 @@ async function handleMcp(request, env) {
         },
         readOnly: true,
       };
-      return json({ jsonrpc: "2.0", id: rpc.id, result: {
-        content: [{ type: "text", text: JSON.stringify(structuredContent) }],
-        structuredContent,
-        isError: false,
-      } });
+      return mcpSuccess(rpc.id, structuredContent);
     } catch (error) {
-      return json({ jsonrpc: "2.0", id: rpc.id, result: {
-        content: [{ type: "text", text: error instanceof Error ? error.message : "Hearth could not read the books." }],
-        isError: true,
-      } });
+      return mcpFailure(rpc.id, error, "Hearth could not complete that tool call.");
     }
   }
   return json({ jsonrpc: "2.0", id: rpc.id ?? null, error: { code: -32601, message: "Method not found" } }, 404);
@@ -491,8 +818,7 @@ async function authorize(request, env) {
     if (url.searchParams.get("code_challenge_method") !== "S256" || !url.searchParams.get("code_challenge")) throw new Error("PKCE S256 is required.");
     const resource = url.searchParams.get("resource") || "";
     if (resource !== mcpResource(request)) throw new Error("The OAuth resource must be this Hearth MCP server.");
-    const requestedScopes = (url.searchParams.get("scope") || "hearth.read").split(/\s+/).filter(Boolean);
-    if (!requestedScopes.includes("hearth.read") || requestedScopes.some((scope) => scope !== "hearth.read")) throw new Error("Only hearth.read is supported.");
+    const scope = normalizeRequestedScopes(url.searchParams.get("scope"));
     const now = Math.floor(Date.now() / 1000);
     const approvalRequest = await seal(env, {
       kind: "authorize",
@@ -500,7 +826,7 @@ async function authorize(request, env) {
       redirectUri,
       state: url.searchParams.get("state") || "",
       challenge: url.searchParams.get("code_challenge"),
-      scope: "hearth.read",
+      scope,
       resource,
       iat: now,
       exp: now + AUTH_REQUEST_TTL_SECONDS,
@@ -517,7 +843,8 @@ async function approve(request, env) {
   const body = await request.json().catch(() => null);
   try {
     const authorization = await unseal(env, body?.authorizationRequest, "authorize");
-    if (authorization.resource !== mcpResource(request) || authorization.scope !== "hearth.read") throw new Error("The authorization request is for a different resource.");
+    if (authorization.resource !== mcpResource(request)) throw new Error("The authorization request is for a different resource.");
+    const authorizedScope = normalizeRequestedScopes(authorization.scope);
     if (body?.deny === true) {
       const redirect = new URL(authorization.redirectUri);
       redirect.searchParams.set("error", "access_denied");
@@ -540,6 +867,12 @@ async function approve(request, env) {
     };
     if (!membershipClaims.supabaseRefreshToken) throw new Error("Reconnect Google in Hearth, then try again.");
     await verifiedMembership(env, membershipClaims);
+    if (authorizedScope.includes("hearth.write")) {
+      const { books } = await loadBooks(env, membershipClaims);
+      if (!herculesProWriteAllowed(books, "personal") && !herculesProWriteAllowed(books, "household")) {
+        throw new Error("Turn on at least one Hercules Pro writing permission in Hearth More before connecting ChatGPT with write access.");
+      }
+    }
     const now = Math.floor(Date.now() / 1000);
     const jti = randomId();
     const code = await sealPrivate(env, {
@@ -550,6 +883,7 @@ async function approve(request, env) {
       redirectUri: authorization.redirectUri,
       challenge: authorization.challenge,
       resource: authorization.resource,
+      scope: authorizedScope,
       jti,
       iat: now,
       exp: now + CODE_TTL_SECONDS,
@@ -585,7 +919,7 @@ async function issueTokens(env, claims, clientId) {
     memberId: claims.memberId,
     authUserId: claims.authUserId,
     clientId,
-    scope: "hearth.read",
+    scope: normalizeRequestedScopes(claims.scope),
     resource: claims.resource,
     aud: claims.resource,
     supabaseAccessToken: claims.supabaseAccessToken,
@@ -601,7 +935,7 @@ async function issueTokens(env, claims, clientId) {
       iat: now,
       exp: now + REFRESH_TTL_SECONDS,
     }),
-    scope: "hearth.read",
+    scope: normalizeRequestedScopes(claims.scope),
   };
 }
 
@@ -650,15 +984,70 @@ async function token(request, env) {
   }
 }
 
+async function handlePermissions(request, env) {
+  try {
+    const url = new URL(request.url);
+    const match = request.headers.get("Authorization")?.match(/^Bearer\s+(.+)$/i);
+    if (!match) return json({ ok: false, error: "Continue with Google in Hearth first." }, 401);
+    const environment = url.searchParams.get("environment") === "production" ? "production" : "development";
+    if (environment === "production" && String(env?.HERCULES_PRO_ALLOW_PRODUCTION || "") !== "true") {
+      throw new Error("Hercules Pro is Development-only until the September security cutover.");
+    }
+    const user = await verifiedSupabaseUser(env, match[1]);
+    const claims = {
+      environment,
+      householdId: String(url.searchParams.get("householdId") || ""),
+      memberId: String(url.searchParams.get("memberId") || ""),
+      authUserId: user.id,
+      supabaseAccessToken: match[1],
+    };
+    await verifiedMembership(env, claims);
+    const loaded = await loadBooks(env, claims);
+    const current = shapeHerculesProPermissions(loaded.personal.herculesProPermissions);
+    if (request.method === "GET") return json({ ok: true, permissions: current });
+    if (request.method !== "PUT") return json({ ok: false, error: "Use GET or PUT." }, 405, { Allow: "GET, PUT" });
+    const body = await request.json().catch(() => null);
+    if (typeof body?.personalWrite !== "boolean" || typeof body?.householdWrite !== "boolean") {
+      throw new Error("Both Personal and Household write choices are required.");
+    }
+    const permissions = shapeHerculesProPermissions({
+      personalWrite: body.personalWrite,
+      householdWrite: body.householdWrite,
+      updatedAt: new Date().toISOString(),
+    });
+    const personal = { ...loaded.personal, herculesProPermissions: permissions };
+    await supabaseRequest(
+      env,
+      "/rest/v1/continuity_personal_snapshots?on_conflict=environment,household_id,member_id",
+      match[1],
+      {
+        method: "POST",
+        headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+        body: JSON.stringify({
+          environment,
+          household_id: claims.householdId,
+          member_id: claims.memberId,
+          revision: loaded.books.revision,
+          payload: JSON.stringify(personal),
+          updated_at: permissions.updatedAt,
+        }),
+      },
+    );
+    return json({ ok: true, permissions });
+  } catch (error) {
+    return json({ ok: false, error: error instanceof Error ? error.message : "Hercules Pro permissions could not be saved." }, 400);
+  }
+}
+
 export async function handleHerculesPro(request, env) {
   const url = new URL(request.url);
   if (url.pathname === "/.well-known/oauth-protected-resource" || url.pathname === "/.well-known/oauth-protected-resource/mcp") {
     return json({
       resource: `${url.origin}/mcp`,
       authorization_servers: [url.origin],
-      scopes_supported: ["hearth.read"],
+      scopes_supported: ["hearth.read", "hearth.write"],
       bearer_methods_supported: ["header"],
-      resource_name: "Hercules Pro read-only Hearth books",
+      resource_name: "Hercules Pro Hearth books",
       resource_documentation: "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/main/docs/HERCULES_PRO.md",
       resource_policy_uri: "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/main/docs/HERCULES_PRO_PRIVACY.md",
       resource_tos_uri: "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/main/docs/HERCULES_PRO_TERMS.md",
@@ -674,9 +1063,10 @@ export async function handleHerculesPro(request, env) {
       grant_types_supported: ["authorization_code", "refresh_token"],
       code_challenge_methods_supported: ["S256"],
       token_endpoint_auth_methods_supported: ["none"],
-      scopes_supported: ["hearth.read"],
+      scopes_supported: ["hearth.read", "hearth.write"],
     });
   }
+  if (url.pathname === "/hercules-pro/permissions") return handlePermissions(request, env);
   if (url.pathname === "/oauth/register" && request.method === "POST") return registerClient(request, env);
   if (url.pathname === "/oauth/authorize" && request.method === "GET") return authorize(request, env);
   if (url.pathname === "/oauth/approve" && request.method === "POST") return approve(request, env);

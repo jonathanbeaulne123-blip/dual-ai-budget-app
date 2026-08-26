@@ -203,7 +203,7 @@ import { useDialog } from "./useDialog.ts";
 import { CalendarPage } from "./Calendar.tsx";
 import { Office } from "./Office.tsx";
 import { HerculesPresence } from "./Hercules.tsx";
-import { HerculesProApproval, herculesProAuthorizationRequest } from "./HerculesPro.tsx";
+import { HerculesProApproval, HerculesProPermissionsCard, herculesProAuthorizationRequest } from "./HerculesPro.tsx";
 import { CadPad } from "./CadPad.tsx";
 import { PresetChip } from "./widgets/PresetChip.tsx";
 import { SitDownGuide } from "./SitDownGuide.tsx";
@@ -2543,6 +2543,25 @@ export function App() {
             busy={busy}
             onCommand={(fn) => { void run(fn); }}
             onError={setError}
+          />
+          <HerculesProPermissionsCard
+            environment={environment}
+            household={household}
+            session={session}
+            onChanged={(permissions) => {
+              const nextHousehold = { ...household, herculesProPermissions: permissions };
+              setHousehold(nextHousehold);
+              setPersonalReplica((current) => {
+                const base = current?.memberId === session.memberId
+                  ? current
+                  : splitForSync(household, session.memberId).personal;
+                return { ...base, herculesProPermissions: permissions };
+              });
+              void saveHousehold(nextHousehold, {
+                operatingEnvironment: environment,
+                memberId: session.memberId,
+              }).catch((caught) => setError(caught instanceof Error ? caught.message : String(caught)));
+            }}
           />
           <WorkJobsCard
             household={household}
