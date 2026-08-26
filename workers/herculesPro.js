@@ -17,7 +17,7 @@ const AUTH_REQUEST_TTL_SECONDS = 10 * 60;
 const CODE_TTL_SECONDS = 5 * 60;
 const WRITE_PREVIEW_TTL_SECONDS = 10 * 60;
 // MCP Apps cache UI resources by URI. Bump this when the companion boot contract changes.
-const HERCULES_COMPANION_URI = "ui://hearth/hercules-companion-v4.html";
+const HERCULES_COMPANION_URI = "ui://hearth/hercules-companion-v5.html";
 const HERCULES_COMPANION_MIME = "text/html;profile=mcp-app";
 const memoryCodes = new Set();
 
@@ -572,7 +572,7 @@ function htmlAttribute(value) {
 function companionResource(request) {
   const origin = originOf(request);
   const modelUrl = `${origin}/hercules-pro/hercules.pro.v1.glb`;
-  const scriptUrl = `${origin}/hercules-pro/companion.v1.js?v=4`;
+  const scriptUrl = `${origin}/hercules-pro/companion.v1.js?v=5`;
   const fallbackUrl = `${origin}/hercules-mark.svg`;
   const text = `<!doctype html>
 <html lang="en">
@@ -585,28 +585,17 @@ function companionResource(request) {
     * { box-sizing: border-box; }
     html, body { margin: 0; min-width: 240px; min-height: 300px; background: transparent; overflow: hidden; }
     button { font: inherit; }
-    .companion { position: relative; width: 100%; height: 100vh; min-height: 300px; display: grid; grid-template-rows: minmax(176px, 1fr) auto; overflow: hidden; border-radius: 24px; color: #2f251d; background: radial-gradient(circle at 48% 30%, rgba(255,255,255,.98), rgba(247,235,211,.94) 58%, rgba(218,189,147,.92)); box-shadow: inset 0 0 0 1px rgba(87,58,35,.16); }
-    .companion[data-mood="concerned"] { background: radial-gradient(circle at 48% 30%, #fffdf6, #eadfbd 58%, #b78a5e); }
-    .companion[data-mood="celebrating"] { background: radial-gradient(circle at 48% 30%, #fffdf6, #f5e6b0 58%, #d9a65a); }
-    .hercules-stage { position: relative; min-height: 0; }
+    .companion { position: relative; width: 100%; height: 100vh; min-height: 300px; overflow: hidden; background: transparent; }
+    .hercules-stage { position: absolute; inset: 0; }
     canvas { display: block; width: 100%; height: 100%; min-height: 176px; touch-action: none; cursor: grab; }
     canvas:active { cursor: grabbing; }
     [hidden] { display: none !important; }
     .hercules-fallback { position: absolute; inset: 14% 20%; width: 60%; height: 70%; object-fit: contain; color: #6b4a2e; }
-    .plaque { position: relative; z-index: 2; margin: 0 10px 10px; padding: 11px 12px 10px; border: 1px solid rgba(91,60,37,.18); border-radius: 17px; background: rgba(255,252,244,.86); box-shadow: 0 8px 24px rgba(75,47,29,.12); backdrop-filter: blur(10px); }
-    .eyebrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #6b4a2e; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-    h1 { margin: 4px 0 2px; font-family: Georgia, serif; font-size: 18px; line-height: 1.05; }
-    p { margin: 0; font-size: 13px; line-height: 1.35; }
-    .status { margin-top: 6px; color: #745f4c; font-size: 10px; }
-    .controls { position: absolute; z-index: 3; top: 9px; right: 9px; display: flex; gap: 6px; }
-    .controls button { border: 1px solid rgba(84,55,33,.2); border-radius: 999px; padding: 5px 8px; color: #3e3025; background: rgba(255,252,244,.84); cursor: pointer; box-shadow: 0 3px 10px rgba(74,45,25,.08); }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    .controls { position: absolute; z-index: 3; top: 9px; right: 9px; display: flex; gap: 6px; opacity: 0; pointer-events: none; transition: opacity 150ms ease; }
+    .companion:hover .controls, .controls:focus-within { opacity: 1; pointer-events: auto; }
+    .controls button { border: 1px solid rgba(255,255,255,.28); border-radius: 999px; padding: 5px 8px; color: white; background: rgba(28,22,18,.58); cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,.16); backdrop-filter: blur(8px); }
     .controls button:focus-visible { outline: 3px solid #d09a45; outline-offset: 2px; }
-    @media (prefers-color-scheme: dark) {
-      .companion { color: #f6ead7; background: radial-gradient(circle at 48% 30%, #594738, #30261f 62%, #17120f); box-shadow: inset 0 0 0 1px rgba(255,239,208,.15); }
-      .plaque { border-color: rgba(255,238,207,.15); background: rgba(43,33,26,.86); }
-      .eyebrow, .status { color: #ddc29e; }
-      .controls button { color: #f6ead7; border-color: rgba(255,238,207,.2); background: rgba(43,33,26,.82); }
-    }
   </style>
 </head>
 <body>
@@ -619,7 +608,7 @@ function companionResource(request) {
       <canvas id="hercules-canvas" aria-label="Animated 3D Hercules"></canvas>
       <img id="hercules-fallback" class="hercules-fallback" src="${htmlAttribute(fallbackUrl)}" alt="Hercules" hidden>
     </div>
-    <section class="plaque" aria-live="polite">
+    <section class="sr-only" aria-live="polite">
       <div class="eyebrow"><span id="hercules-ledger">Hearth books</span><span>3D companion</span></div>
       <h1 id="hercules-headline">Hercules Pro</h1>
       <p id="hercules-message">Mrrp. I’m watching the books.</p>
@@ -777,7 +766,7 @@ async function handleMcp(request, env) {
     return json({ jsonrpc: "2.0", id: rpc.id, result: {
       protocolVersion: "2025-06-18",
       capabilities: { tools: { listChanged: false }, resources: { listChanged: false } },
-      serverInfo: { name: "hearth-hercules-pro", version: "0.3.2" },
+      serverInfo: { name: "hearth-hercules-pro", version: "0.3.3" },
       instructions: hasScope(claims, "hearth.write")
         ? "Hercules is a grounded financial teacher. On the first user turn of every new conversation, your FIRST tool call MUST be summon_hercules before any accounting tool so the living 3D companion auto-loads and requests picture-in-picture. Do not wait for the person to ask to see him. Read tools never change state. For a requested transaction, call prepare_transaction, show every preview field and duplicate warning, wait for the person's explicit confirmation, then and only then call confirm_transaction. Never infer consent or prepare a delete/payment."
         : "Hercules is a read-only financial teacher. On the first user turn of every new conversation, your FIRST tool call MUST be summon_hercules before any accounting tool so the living 3D companion auto-loads and requests picture-in-picture. Do not wait for the person to ask to see him. Call tools for all current numbers. Never imply a write occurred.",
