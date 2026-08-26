@@ -140,6 +140,13 @@ export {
 } from "./recovery.ts";
 export { classifyCommitWrite, isLedgerWrite, type CommitWriteKind } from "./writeKind.ts";
 export {
+  COMMAND_CLASSIFICATION,
+  classifyCommandKind,
+  undoToastSecondaryCopy,
+  type CommandClassificationRow,
+  type CommandCorrectionRoute,
+} from "./commandClassification.ts";
+export {
   undoLedgerConfirm,
   latestMemberLedgerToken,
   assertLatestMemberLedgerUndo,

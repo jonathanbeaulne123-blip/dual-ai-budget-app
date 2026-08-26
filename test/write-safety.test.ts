@@ -7,6 +7,7 @@ import {
   undo,
   reversePostedMoney,
 } from "../src/core/commands.ts";
+import { undoLedgerConfirm } from "../src/core/confirmationUndo.ts";
 import { createWriteQueue } from "../src/core/writeQueue.ts";
 import { shiftSettingsFingerprint } from "../src/core/shift.ts";
 import { UNPUBLISHED_PHRASE } from "../src/api.ts";
@@ -49,9 +50,40 @@ describe("reverse and undo", () => {
     expect(reversed.household.transactions).toHaveLength(2);
     expect(reversed.household.transactions.some((tx) => tx.note === "QA milk")).toBe(true);
     expect(reversed.household.transactions.some((tx) => tx.reversalOfId === posted.postedIds[0])).toBe(true);
-    const restored = undo(reversed.household, reversed.undo);
-    expect(restored.transactions).toHaveLength(1);
-    expect(restored.transactions[0]?.note).toBe("QA milk");
+    const restored = undoLedgerConfirm(reversed.household, {
+      ...reversed.undo,
+      actorMemberId: "MEM-001",
+    });
+    expect(restored.household.transactions).toHaveLength(1);
+    expect(restored.household.transactions[0]?.note).toBe("QA milk");
+  });
+
+  it("legacy whole-snapshot undo tombstones partner rows that confirmation undo keeps", () => {
+    const base = catalogHousehold();
+    const mine = postEntry(base, {
+      date: "2026-08-21",
+      type: "expense",
+      amount: "4.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "My row",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    });
+    const partner = postEntry(mine.household, {
+      date: "2026-08-21",
+      type: "expense",
+      amount: "3.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Partner row",
+      createdBy: "MEM-002",
+      confirmDuplicate: true,
+    });
+    const legacy = undo(partner.household, mine.undo);
+    expect(legacy.transactions.some((row) => row.note === "Partner row")).toBe(false);
+    const scoped = undoLedgerConfirm(partner.household, { ...mine.undo, actorMemberId: "MEM-001" });
+    expect(scoped.household.transactions.some((row) => row.note === "Partner row")).toBe(true);
   });
 
   it("reverses both sides of a transfer without deleting the original pair", () => {

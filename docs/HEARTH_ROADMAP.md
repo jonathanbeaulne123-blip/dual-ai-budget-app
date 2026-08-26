@@ -248,7 +248,7 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 - [ ] **T2-S3** Materialized snapshot from events. *([`T2-S3`](briefs/sync/T2-S3-materialized-snapshot.md).)*
 - [ ] **T2-S4** Realtime on command INSERT. *([`T2-S4`](briefs/sync/T2-S4-realtime-command-events.md).)*
 - [ ] **T2-S5** Interleaving/convergence harness. *([`T2-S5`](briefs/sync/T2-S5-interleaving-harness.md).)*
-- [ ] **T2-S6** Confirmation-scoped undo (dual-use safe). *([`T2-S6`](briefs/sync/T2-S6-confirmation-scoped-undo.md).)*
+- [x] **T2-S6** Confirmation-scoped undo (dual-use safe). *([`T2-S6`](briefs/sync/T2-S6-confirmation-scoped-undo.md); handoff `docs/worksessions/2026-08-26-t2-s6-confirmation-scoped-undo.md`.)*
 
 #### Tier 2+ cross-cutting (unchanged gates)
 

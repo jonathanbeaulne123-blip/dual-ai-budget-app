@@ -1,7 +1,9 @@
+import { undoToastSecondaryCopy } from "./core/commandClassification.ts";
+
 /** More → Recent changes + Restore copy (combined undo engine). */
 
 export function recentChangesEmptyCopy(_environment?: string): string {
-  return "Ledger posts you Confirm show up here and stay on this phone (last 20). Undo peels your latest money Confirm only — partner posts stay.";
+  return `Ledger posts you Confirm show up here and stay on this phone (last 20). ${undoToastSecondaryCopy()}`;
 }
 
 /** Header pill beside Recent changes. */
