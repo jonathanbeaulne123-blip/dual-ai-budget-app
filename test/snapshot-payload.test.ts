@@ -78,6 +78,54 @@ describe("D-144 snapshot payload codec", () => {
     expect(parsed.transactions.some((row) => row.visibility === "personal")).toBe(false);
   });
 
+  it("proves slim outbox + personal gzip beat a fat localStorage tip", async () => {
+    const {
+      createMemoryContinuityStore,
+      enqueueContinuitySnapshot,
+      setContinuityStore,
+    } = await import("../src/continuity.ts");
+    const { encodeSharedSnapshotPayload: encodeShared } = await import("../src/ledger/snapshotPayload.ts");
+
+    let household = linkGoogleIdentity(catalogHousehold(), {
+      memberId: "MEM-001",
+      email: "jonathan@example.com",
+      subject: "google-sub-jonathan",
+      displayName: "Jonathan",
+      grantedScopes: ["openid", "email"],
+    }).household;
+    for (let i = 0; i < 100; i += 1) {
+      household = postEntry(household, {
+        date: "2026-08-24",
+        type: "expense",
+        amount: "11.11",
+        accountId: "ACC-VISA",
+        subcategoryId: "SUB-FOOD-GROCERIES",
+        note: `quota stress line ${i} xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`,
+        createdBy: "MEM-001",
+        visibility: i % 2 ? "personal" : "household",
+        confirmDuplicate: true,
+      }).household;
+    }
+
+    const fatOutboxBytes = Buffer.byteLength(JSON.stringify([{ id: "legacy", snapshot: household }]));
+    const store = createMemoryContinuityStore();
+    setContinuityStore(store);
+    enqueueContinuitySnapshot({
+      household,
+      identity: { subject: "google-sub-jonathan", email: "jonathan@example.com" },
+      expectedRevision: 0,
+      confirmationId: "size-demo",
+    });
+    const slim = store.getItem("hearth:continuity-outbox:v1:development") ?? "";
+    const personal = await encodeJsonPayload(household);
+    const shared = await encodeShared(household);
+    expect(Buffer.byteLength(slim)).toBeLessThan(fatOutboxBytes / 50);
+    expect(slim).not.toMatch(/"transactions"/);
+    expect(personal.codec).toBe(SNAPSHOT_PAYLOAD_CODEC);
+    expect(personal.wireBytes).toBeLessThan(personal.rawBytes * 0.2);
+    expect(shared.includes("gzip-base64")).toBe(false);
+  });
+
   it("still decodes legacy plain hosted rows", async () => {
     const household = catalogHousehold();
     const plain = JSON.stringify(household);

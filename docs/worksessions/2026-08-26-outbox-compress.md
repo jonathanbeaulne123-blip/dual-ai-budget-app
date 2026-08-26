@@ -7,8 +7,8 @@
 - **Repository:** jonathanbeaulne123-blip/dual-ai-budget-app
 - **Branch:** `cursor/outbox-compress-e279`
 - **Baseline SHA:** `0029ee07201a403b7be6a3950795cf17af13e581` (`main`)
-- **Head SHA:** (evolving)
-- **PR or issue:** (draft after push)
+- **Head SHA:** evolving on `cursor/outbox-compress-e279`
+- **PR or issue:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/155
 - **Risk:** High (continuity transport / money sync path)
 - **Decision owner:** Jonathan
 - **Environment impact:** Development client transport encoding; no schema migrate; hosted TEXT payloads gain optional gzip envelope (legacy plain JSON still accepted)
@@ -59,7 +59,7 @@ Jonathan’s desktop can share large Development books without blowing `localSto
 - [x] Flush after reload loads from live tip when snapshot omitted
 - [x] Flush fails closed when live tip is older than tipRevision
 - [x] Legacy plain payload pull still works
-- [ ] Focused + `pnpm test` / `tsc` green (in progress)
+- [x] Focused + `tsc` green; full suite 645 pass / 2 pre-existing batch-import SubtleCrypto fails on main
 
 ## Plan
 
@@ -67,8 +67,8 @@ Jonathan’s desktop can share large Development books without blowing `localSto
 - [x] Codec + supabase wire
 - [x] Slim IDB-first outbox
 - [x] Auditor-driven shared-plain / tipRevision guards
-- [ ] Tests + auditors closeout
-- [ ] PR + handoff
+- [x] Tests + auditors closeout
+- [x] PR + handoff
 
 ## Remaining uncertainty
 
