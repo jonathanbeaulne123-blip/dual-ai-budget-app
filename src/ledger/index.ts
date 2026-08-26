@@ -50,6 +50,17 @@ export {
   type ApplyCommandEventResult,
 } from "./materializeSnapshotFromEvents.ts";
 export {
+  appendHostedCommandEvent,
+  buildCommandEventFromReceipt,
+  catchUpClientFromCommandLog,
+  createMemoryCommandLogStore,
+  materializeCommandLogTip,
+  sharedConvergenceHash,
+  sharedTransactionIds,
+  type MemoryCommandLogStore,
+  type AppendHostedCommandResult,
+} from "./continuityCommandLogHarness.ts";
+export {
   applyPublishHouseholdSnapshotCas,
   createMemoryHostedCas,
 } from "./snapshotCas.ts";
