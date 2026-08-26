@@ -32,6 +32,13 @@ export type StressSeedOptions = {
   environment?: Household["environment"];
   seed?: number;
   numberStyle?: StressNumberStyle;
+  /**
+   * When set (Reload on an existing Development household), keep Google continuity
+   * identity so Hercules Pro can still read the fixture after sync.
+   */
+  preserveFrom?: Household;
+  /** Member who receives harbour tip shifts (default MEM-002 / Jonathan). */
+  tipMemberId?: string;
 };
 
 function mulberry32(seed: number): () => number {
@@ -169,11 +176,11 @@ function pickStressWeather(random: () => number, date: DateKey, hour: number): S
   return { glass: "clear", celsius: Math.round(8 + random() * 12), word: "clear", tipWeight: 1.02, section: "Dining room" };
 }
 
-function stressJob(startDate: DateKey): WorkJob {
+function stressJob(startDate: DateKey, memberId: string): WorkJob {
   const at = `${startDate}T12:00:00.000Z`;
   return {
     id: "",
-    memberId: "MEM-002",
+    memberId,
     name: "Harbour Dining Room",
     color: "#2f6b4f",
     active: true,
@@ -299,11 +306,38 @@ function spendStamp(
   };
 }
 
+/**
+ * Keep Google/membership/revision identity while replacing activity with stress books.
+ * Accounts/categories/jobs come from the stress fixture (catalog IDs); continuity fields
+ * stay on the live household so Pro OAuth and hosted snapshots still match.
+ */
+export function preserveContinuityForStressSeed(current: Household, stress: Household): Household {
+  if (current.environment !== "development") {
+    throw new Error("Preserving continuity on Reload is available only in Development.");
+  }
+  return {
+    ...stress,
+    householdId: current.householdId,
+    inviteCode: current.inviteCode,
+    linked: current.linked,
+    revision: current.revision,
+    baseRevision: current.baseRevision,
+    members: current.members,
+    google: current.google,
+    devices: current.devices,
+    sharing: current.sharing,
+  };
+}
+
 /** A dense but valid twelve-month household for Development and visual demos. */
 export function seedStressHousehold(options: StressSeedOptions): Household {
   const style = options.numberStyle ?? "realistic";
   const random = mulberry32(options.seed ?? 20260825);
   const today = options.today;
+  const tipMemberId = options.tipMemberId
+    || options.preserveFrom?.members.find((member) => member.active && member.id === "MEM-002")?.id
+    || options.preserveFrom?.members.find((member) => member.active)?.id
+    || "MEM-002";
   let household = catalogHousehold(options.environment ?? "development");
   household.name = style === "pretty" ? "The Pretty Numbers Household" : "The Stress-Test Household";
   household.ledgerNames = {
@@ -316,7 +350,7 @@ export function seedStressHousehold(options: StressSeedOptions): Household {
 
   const firstMonth = shiftMonthKey(monthKeyFromDateKey(today), -11);
   const firstDate = `${firstMonth}-01` as DateKey;
-  household = upsertWorkJob(household, { job: stressJob(firstDate) }).household;
+  household = upsertWorkJob(household, { job: stressJob(firstDate, tipMemberId) }).household;
   const job = household.workJobs.find((row) => row.name === "Harbour Dining Room")!;
   const role = job.roles[0]!;
   const annualTarget = money(random, 92_000, 116_000, style, 5_000);
@@ -512,7 +546,7 @@ export function seedStressHousehold(options: StressSeedOptions): Household {
       const location = stampAt(random, HARBOUR, new Date(startedAt).toISOString(), 0.0008);
       household = postWorkShift(household, {
         date,
-        memberId: "MEM-002",
+        memberId: tipMemberId,
         jobId: job.id,
         roleId: role.id,
         workedHours: hours,
@@ -537,7 +571,7 @@ export function seedStressHousehold(options: StressSeedOptions): Household {
         occurredAt: startedAt,
         location,
         confirmDuplicate: true,
-        createdBy: "MEM-002",
+        createdBy: tipMemberId,
       }).household;
     }
 
@@ -555,7 +589,7 @@ export function seedStressHousehold(options: StressSeedOptions): Household {
             date,
             amount: style === "pretty" ? Math.max(25, Math.floor(dollars / 25) * 25) : dollars,
             accountId: "ACC-CHEQUING",
-            createdBy: "MEM-002",
+            createdBy: tipMemberId,
           }).household;
         }
       }
@@ -569,11 +603,11 @@ export function seedStressHousehold(options: StressSeedOptions): Household {
             date,
             amount: style === "pretty" ? Math.max(5, Math.floor(dollars / 5) * 5) : dollars,
             accountId: "ACC-CHEQUING",
-            createdBy: "MEM-002",
+            createdBy: tipMemberId,
           }).household;
         }
         const deferredUnpaid = household.shifts
-          .filter((shift) => shift.jobId === job.id && shift.memberId === "MEM-002")
+          .filter((shift) => shift.jobId === job.id && shift.memberId === tipMemberId)
           .reduce((sum, shift) => sum + Math.max(0, (shift.deferredTipOutCents ?? 0) - (shift.deferredTipOutPaidCents ?? 0)), 0);
         if (deferredUnpaid >= 1_000 && random() > 0.35) {
           const dollars = deferredUnpaid / 100;
@@ -582,7 +616,7 @@ export function seedStressHousehold(options: StressSeedOptions): Household {
             date,
             amount: style === "pretty" ? Math.max(5, Math.floor(dollars / 5) * 5) : dollars,
             accountId: "ACC-CASH",
-            createdBy: "MEM-002",
+            createdBy: tipMemberId,
           }).household;
         }
       }
@@ -629,7 +663,16 @@ export function seedStressHousehold(options: StressSeedOptions): Household {
   household = addPreset(household, { type: "expense", amount: style === "pretty" ? 10 : 6.25, accountId: "ACC-VISA", subcategoryId: "SUB-FOOD-COFFEE", note: "Coffee", place: "Tim Hortons", splits: [{ party: "MEM-002", amountCents: (style === "pretty" ? 1_000 : 625) }], visibility: "both" }).household;
   household = markInvestmentValue(household, { accountId: "ACC-TFSA", markedValue: style === "pretty" ? 12_500 : money(random, 11_400, 13_600, style, 50), markedAt: today }).household;
   household = scribbleChalk(household, { text: "Synthetic Development household — safe to erase", author: "MEM-001" }).household;
-  household = scribbleChalk(household, { text: style === "pretty" ? "Pretty numbers; weather-weighted harbour shifts for Hercules Pro" : "Reload data: weather, location, and full shift forms for Hercules Pro", author: "MEM-002" }).household;
+  household = scribbleChalk(household, {
+    text: style === "pretty"
+      ? "Pretty numbers; weather-weighted harbour shifts for Hercules Pro"
+      : "Reload data: weather, location, and full shift forms for Hercules Pro",
+    author: tipMemberId,
+  }).household;
+
+  if (options.preserveFrom) {
+    return preserveContinuityForStressSeed(options.preserveFrom, household);
+  }
   return household;
 }
 

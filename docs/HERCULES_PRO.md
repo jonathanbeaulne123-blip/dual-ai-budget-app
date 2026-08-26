@@ -83,6 +83,19 @@ These steps document the live Development setup completed on August 25, 2026.
 10. The **Use Hercules Pro ↗** button opens the registered app directly. `VITE_HERCULES_PRO_URL` remains available as an explicit build-time override.
 11. In ChatGPT, ask Hercules for a current number. Choose **Connect**, sign in to Hearth with Google if asked, enter the intended household, and approve the connection. It remains read-only unless that member separately enabled writing in Hearth.
 
+### Development fixture Hercules Pro can read (Reload stress data)
+
+Do **not** use Welcome → Open the demo kitchen table for Pro — demo/empty/Pass make zero household REST calls.
+
+1. Development pill. Sign in with Google and **Create household with Google** (or open an existing linked Development household). Confirm so membership + snapshot exist.
+2. Stay on the member who should own tip history (Jonathan / `MEM-002` is the default tip earner when you create as that person; Reload posts tip shifts for whoever is signed in on this phone).
+3. More → **Reload random data** (or pretty numbers). Confirm. Development Reload **keeps** this household id, invite, Google links, revision, and members while replacing activity with ~twelve months of weather-weighted harbour shifts.
+4. Wait for sync (focus/reconnect or Pairing publish). Confirm the outbox is quiet.
+5. In ChatGPT, Connect Hercules Pro while that household/member is open.
+6. Ask: `Simulate my next year of tips and wages, then teach me how it works.` or `What is my tip floor for the next month?` Use household view if you connected as a member without tip shifts.
+
+Erase Development still clears tip history while keeping identity — Reload again (or post ≥4 tipped shifts) before Oracle tools will answer.
+
 ### Enabling confirmed writes in Development
 
 1. Review `supabase/migrations/011_hercules_pro_confirmed_write.sql`. Apply it to Development only after explicit approval. Do not apply it to Production.

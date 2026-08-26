@@ -120,4 +120,45 @@ describe("Development stress data controls", () => {
 
     expect(() => eraseDevelopmentData({ ...household, environment: "production" })).toThrow(/Development/);
   });
+
+  it("preserves Google continuity identity on Reload so Hercules Pro can still read the fixture", () => {
+    const linked = {
+      ...realistic,
+      householdId: "HH-pro-fixture",
+      inviteCode: "pro-fixture-invite",
+      linked: true,
+      revision: 17,
+      baseRevision: 17,
+      google: {
+        ...realistic.google,
+        links: [{
+          memberId: "MEM-002",
+          subject: "google-sub-jonathan",
+          email: "jonathan@example.com",
+          displayName: "Jonathan",
+          grantedScopes: ["openid", "email", "profile"],
+          active: true,
+          linkedAt: "2026-08-01T12:00:00.000Z",
+          lastConfirmedAt: "2026-08-01T12:00:00.000Z",
+          updatedAt: "2026-08-01T12:00:00.000Z",
+        }],
+      },
+    };
+    const reloaded = seedStressHousehold({
+      today: TODAY,
+      environment: "development",
+      seed: 99,
+      numberStyle: "realistic",
+      preserveFrom: linked,
+      tipMemberId: "MEM-001",
+    });
+    expect(reloaded.householdId).toBe("HH-pro-fixture");
+    expect(reloaded.inviteCode).toBe("pro-fixture-invite");
+    expect(reloaded.linked).toBe(true);
+    expect(reloaded.revision).toBe(17);
+    expect(reloaded.google.links).toEqual(linked.google.links);
+    expect(reloaded.shifts.length).toBeGreaterThan(90);
+    expect(reloaded.shifts.every((shift) => shift.memberId === "MEM-001")).toBe(true);
+    expect(reloaded.workJobs[0]?.memberId).toBe("MEM-001");
+  });
 });
