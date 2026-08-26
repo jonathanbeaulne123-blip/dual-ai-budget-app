@@ -6,7 +6,7 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 ## Stress reload weighted shifts (D-138, 2026-08-25)
 
-**Status:** Branch `cursor/stress-shift-weather-location-85bf` — draft [PR #136](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/136); not merged, not deployed. Risk: **Medium**.
+**Status:** Follow-up branch `cursor/pro-legible-reload-85bf` (continuity preserve on Reload for Hercules Pro). Stress trends merged via PR #136; this packet keeps Google identity so Pro can read Reload fixtures. Not merged, not deployed. Risk: **Medium**.
 
 **Household outcome:** More → Reload random data fills twelve months of complete Harbour Dining Room shifts with weather notes, Toronto GPS stamps, and weekday/season/weather-weighted tips so Hercules Pro can analyze realistic trends.
 
