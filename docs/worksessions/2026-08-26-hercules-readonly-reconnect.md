@@ -26,7 +26,7 @@ Hercules Pro still reconnects usefully when ChatGPT requests its full advertised
 ## Acceptance evidence
 
 - [x] Requested `hearth.read hearth.write` downgrades to `hearth.read` when both member write permissions are off.
-- [x] Focused Hercules Pro tests pass (1 file / 8 tests).
+- [x] After rebasing over #147, focused Hercules Pro + continuity tests pass (2 files / 19 tests).
 - [x] TypeScript passes.
 - [ ] PR/main CI, Worker deployment, reconnect, and PiP smoke pass.
 
@@ -35,6 +35,7 @@ Hercules Pro still reconnects usefully when ChatGPT requests its full advertised
 - OAuth may grant a narrower scope than requested.
 - A member must still explicitly enable a ledger write permission and reconnect before any write tool can execute.
 - No permission, journal row, cloud snapshot, migration, or Production setting is changed by this repair.
+- The branch also corrects #147's continuity-test fixture to the current `WorkPaySchedule` shape; runtime continuity code is unchanged.
 
 ## Handoff
 

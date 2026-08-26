@@ -9,7 +9,7 @@ import {
   setContinuityStore,
   transportHouseholdWithOutbox,
 } from "../src/continuity.ts";
-import { catalogHousehold, linkGoogleIdentity, personalReplicaForMember, postEntry, postShift, postWorkShift, upsertWorkJob, shapeWorkJob, type WorkJob } from "../src/core/index.ts";
+import { catalogHousehold, linkGoogleIdentity, personalReplicaForMember, postEntry, postWorkShift, upsertWorkJob, shapeWorkJob, type WorkJob } from "../src/core/index.ts";
 import { householdCloudProjection } from "../src/ledger/supabase.ts";
 import type { Household } from "../src/core/types.ts";
 import { pushSupabaseHousehold } from "../src/ledger/supabase.ts";
@@ -318,6 +318,8 @@ describe("Google-account continuity", () => {
       color: "#a85a3d",
       active: true,
       timezone: "America/Toronto",
+      locationName: "Toronto",
+      gpsEnabled: false,
       roles: [{
         id: "ROLE-SERVER",
         name: "Server",
@@ -343,8 +345,8 @@ describe("Google-account continuity", () => {
       overtimeMultiplier: 1.5,
       tipOutRules: [],
       salesFields: [{ id: "FOOD", label: "Food", requirement: "required", createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z" }],
-      paySchedule: { kind: "weekly", weekday: 5, createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z" },
-      tipSchedule: { kind: "weekly", weekday: 1, createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z" },
+      paySchedule: { cadence: "weekly", anchorDate: "2026-01-02", weekday: 5, monthDays: [15, 30], customDates: [], reminderTime: "09:00" },
+      tipSchedule: { cadence: "weekly", anchorDate: "2026-01-05", weekday: 1, monthDays: [15, 30], customDates: [], reminderTime: "09:00" },
       tipWeekStartsOn: 1,
       defaults: {
         wagesVisibility: "personal",
@@ -357,6 +359,7 @@ describe("Google-account continuity", () => {
       },
       wagesReceivableAccountId: "ACC-CLAIMS",
       cardTipsReceivableAccountId: "ACC-CLAIMS",
+      note: "",
       createdAt: "2026-01-01T00:00:00.000Z",
       updatedAt: "2026-01-01T00:00:00.000Z",
     } satisfies WorkJob);
