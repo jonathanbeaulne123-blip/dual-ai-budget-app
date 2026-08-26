@@ -1,22 +1,19 @@
-import { useId, type ReactNode } from "react";
+import { useId, type CSSProperties, type ReactNode } from "react";
+import type { RigSnapshot } from "./herculesRig/types.ts";
+import { rigRootClassName, snapshotToDomStyles } from "./herculesRig/dom.ts";
 
 /**
  * HerculesFigure — the rigged ink-on-paper Maine Coon.
  *
- * One drawing, six moving parts, every pose driven by CSS on the root.
- * Nothing here knows about the ledger. It takes a pose and a mood and draws a cat.
+ * One drawing, independently controllable parts (head, tail, each leg, …).
+ * Default: CSS pose classes. When `rigSnapshot` is passed, the JS rig engine
+ * drives per-part transforms — the path AI agents use.
  *
  * Coat: mostly white with faint warm dapples, per the real Hercules.
  * Line: --herc-ink, which defaults to the house --ink so he sits on the paper.
  *
  * Paint order is load-bearing (later SVG nodes sit on top):
  *   tail → body → ruff → head → legs → ground
- * The ruff sits UNDER the head. That hides the neck join so the head can tilt
- * without tearing the silhouette open, and the head's own jaw curve reads as
- * the cheek. Drawing the ruff over the head is what produced the napkin.
- *
- * Flip lives on an outer wrapper. Pose animations also set `transform` on `.herc`;
- * putting scaleX(-1) on the same node would clobber the hop / pounce / attack.
  */
 
 export type HerculesFigurePose =
@@ -26,6 +23,10 @@ export type HerculesFigurePose =
 
 export type HerculesFigureMood = "glowing" | "content" | "restless" | "hiding";
 
+function part(group: keyof ReturnType<typeof snapshotToDomStyles>, styles: ReturnType<typeof snapshotToDomStyles>): CSSProperties {
+  return styles[group] as CSSProperties;
+}
+
 export function HerculesFigure({
   pose = "loaf",
   mood = "content",
@@ -33,6 +34,7 @@ export function HerculesFigure({
   size = 96,
   title,
   children,
+  rigSnapshot,
 }: {
   pose?: HerculesFigurePose;
   mood?: HerculesFigureMood;
@@ -42,10 +44,19 @@ export function HerculesFigure({
   /** Only pass when the figure is the sole carrier of meaning; otherwise he stays aria-hidden. */
   title?: string;
   children?: ReactNode;
+  /** When set, per-part transforms come from the rig engine instead of CSS pose classes. */
+  rigSnapshot?: RigSnapshot;
 }) {
   const uid = useId().replace(/:/g, "");
   const bodyClip = `hercBodyClip-${uid}`;
   const headClip = `hercHeadClip-${uid}`;
+  const rigDriven = Boolean(rigSnapshot);
+  const styles = rigSnapshot ? snapshotToDomStyles(rigSnapshot) : null;
+  const rootClass = rigDriven
+    ? rigRootClassName(mood, true)
+    : `herc herc-pose-${pose} herc-mood-${mood}`;
+  const rootStyle = rigDriven && styles ? part("root", styles) : undefined;
+  const bagOpacity = rigDriven && rigSnapshot?.bag.opacity != null ? rigSnapshot.bag.opacity : undefined;
 
   return (
     <div
@@ -56,7 +67,8 @@ export function HerculesFigure({
         viewBox="0 0 200 200"
         width="100%"
         height="100%"
-        className={`herc herc-pose-${pose} herc-mood-${mood}`}
+        className={rootClass}
+        style={rootStyle}
         role={title ? "img" : undefined}
         aria-label={title}
         aria-hidden={title ? undefined : true}
@@ -78,7 +90,7 @@ export function HerculesFigure({
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          <g className="herc-tail">
+          <g className="herc-tail" data-herc-part="tail" style={styles ? part("tail", styles) : undefined}>
             <path
               d="M138 158 C176 170 198 142 193 106 C189 80 172 66 158 72
                  C174 84 182 110 174 132 C166 152 150 158 136 156 Z"
@@ -88,7 +100,7 @@ export function HerculesFigure({
             <path d="M182 96 C190 112 189 132 181 146" strokeWidth="1" opacity="0.22" />
           </g>
 
-          <g className="herc-body">
+          <g className="herc-body" data-herc-part="body" style={styles ? part("body", styles) : undefined}>
             <path
               d="M84 92 C112 74 148 92 165 122 C180 148 174 170 156 177 L104 179 C86 174 74 132 84 92 Z"
               fill="var(--herc-coat, #fdfbf6)"
@@ -102,8 +114,7 @@ export function HerculesFigure({
             <path d="M146 100 C160 114 168 134 167 156" strokeWidth="1.1" opacity="0.3" />
           </g>
 
-          {/* Ruff UNDER the head — paint order, not comment order. */}
-          <g className="herc-ruff">
+          <g className="herc-ruff" data-herc-part="ruff" style={styles ? part("ruff", styles) : undefined}>
             <path
               d="M46 62
                  C34 74 26 88 30 100
@@ -121,7 +132,7 @@ export function HerculesFigure({
             <path d="M76 108 C74 120 74 132 76 142" strokeWidth="1.1" opacity="0.22" />
           </g>
 
-          <g className="herc-head">
+          <g className="herc-head" data-herc-part="head" style={styles ? part("head", styles) : undefined}>
             <path
               d="M38 25 L58 47 C66 41 77 39 87 43 L98 23 L108 51
                  C120 64 122 84 108 96 C92 110 58 110 42 96 C28 84 30 60 38 25 Z"
@@ -132,7 +143,7 @@ export function HerculesFigure({
               <ellipse cx="60" cy="92" rx="12" ry="5" fill="var(--herc-spot, #c9a884)" opacity="0.14" />
             </g>
 
-            <g className="herc-ears">
+            <g className="herc-ears" data-herc-part="ears" style={styles ? part("ears", styles) : undefined}>
               <path d="M40 34 C45 40 50 44 55 46" strokeWidth="1.4" opacity="0.5" />
               <path d="M96 32 C93 39 90 43 87 46" strokeWidth="1.4" opacity="0.5" />
               <path d="M38 26 C36 22 35 20 34 17" strokeWidth="2" />
@@ -140,32 +151,54 @@ export function HerculesFigure({
             </g>
 
             <g className="herc-face">
-              <g className="herc-eye">
+              <g
+                className="herc-eye"
+                data-herc-part="eye"
+                style={styles ? part("eye", styles) : undefined}
+              >
                 <path d="M40 63 C46 56 59 56 64 63 C58 70 46 70 40 63 Z" fill="#ffffff" strokeWidth="2" />
                 <circle cx="52" cy="63" r="3.8" fill="var(--herc-ink, #1b1712)" stroke="none" />
                 <circle cx="50.4" cy="61.4" r="1.1" fill="#ffffff" stroke="none" />
               </g>
-              <path className="herc-eye-shut" d="M41 64 C47 69 58 69 63 64" strokeWidth="2" />
+              <path
+                className="herc-eye-shut"
+                data-herc-part="eyeShut"
+                style={styles ? part("eyeShut", styles) : undefined}
+                d="M41 64 C47 69 58 69 63 64"
+                strokeWidth="2"
+              />
               <path d="M28 83 C33 87 41 87 45 83" strokeWidth="1.4" opacity="0.5" />
               <path d="M26 79 l7 -2 l-3 5 Z" fill="var(--herc-ink, #1b1712)" strokeWidth="1" />
               <path d="M30 85 c3 3 8 2 9 -1" strokeWidth="1.4" />
               <path d="M36 51 l-8 -6 M33 59 l-9 -4" strokeWidth="1.3" opacity="0.55" />
-              <path className="herc-whiskers" d="M30 81 l-18 -8 M30 85 l-19 -1 M32 89 l-16 8" strokeWidth="1" opacity="0.45" />
+              <path
+                className="herc-whiskers"
+                data-herc-part="whiskers"
+                style={styles ? part("whiskers", styles) : undefined}
+                d="M30 81 l-18 -8 M30 85 l-19 -1 M32 89 l-16 8"
+                strokeWidth="1"
+                opacity="0.45"
+              />
             </g>
           </g>
 
-          <g className="herc-legs">
-            <g className="herc-leg herc-leg-front">
+          <g className="herc-legs" data-herc-part="legs" style={styles ? part("legs", styles) : undefined}>
+            <g className="herc-leg herc-leg-front" data-herc-part="legFront" style={styles ? part("legFront", styles) : undefined}>
               <path d="M63 140 C58 152 56 166 58 175 C59 180 70 181 73 177 C75 165 76 150 74 140 Z" fill="var(--herc-coat, #fdfbf6)" />
               <path d="M58 174 c4 4 10 4 14 1" strokeWidth="1.3" opacity="0.65" />
             </g>
-            <g className="herc-leg herc-leg-back">
+            <g className="herc-leg herc-leg-back" data-herc-part="legBack" style={styles ? part("legBack", styles) : undefined}>
               <path d="M80 142 C77 154 76 166 78 175 C79 180 89 181 92 177 C94 165 94 152 92 142 Z" fill="var(--herc-coat, #fdfbf6)" />
               <path d="M78 175 c4 4 10 4 13 1" strokeWidth="1.3" opacity="0.65" />
             </g>
           </g>
 
-          <g className="herc-bag" opacity="0">
+          <g
+            className="herc-bag"
+            data-herc-part="bag"
+            opacity={bagOpacity ?? 0}
+            style={styles ? part("bag", styles) : undefined}
+          >
             <path
               d="M118 128 L168 118 L174 168 L122 176 Z"
               fill="#c4a574"

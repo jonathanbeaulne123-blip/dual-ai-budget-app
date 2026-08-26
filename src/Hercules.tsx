@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type PointerEvent } from "react";
 import {
   attackStand,
   attackTarget,
@@ -67,6 +67,14 @@ import { HerculesDress } from "./HerculesDress.tsx";
 import { HerculesFigure } from "./HerculesFigure.tsx";
 import { launchHerculesPro } from "./HerculesPro.tsx";
 import {
+  HerculesRigProvider,
+  useHerculesRig,
+  expandRigMacro,
+  dispatchChatRigTriggers,
+  dispatchHerculesRig,
+  type HerculesRigPose,
+} from "./herculesRig/index.ts";
+import {
   HerculesFly,
   HerculesLitterBox,
   herculesInLitter,
@@ -121,6 +129,7 @@ export function HerculesPortrait({
   pose = "loaf",
   size = "live",
   flip = false,
+  rigSnapshot,
 }: {
   mood: CompanionMood;
   hat: string | null;
@@ -130,16 +139,54 @@ export function HerculesPortrait({
   pose?: HerculesPose;
   size?: "stage" | "live" | number;
   flip?: boolean;
+  rigSnapshot?: import("./herculesRig/types.ts").RigSnapshot;
 }) {
   const px = typeof size === "number" ? size : size === "stage" ? 120 : 96;
   return (
     <div className={`hercules-stage size-${size} mood-${mood}`} aria-hidden="true">
-      <HerculesFigure pose={pose} mood={mood} size={px} flip={flip}>
+      <HerculesFigure pose={pose} mood={mood} size={px} flip={flip} rigSnapshot={rigSnapshot}>
         <HerculesDress hat={hat} chain={chain} house={house} collar={collar} />
       </HerculesFigure>
       {pose === "sleep" && <span className="hercules-zzz">z</span>}
     </div>
   );
+}
+
+function HerculesRigBridge({
+  mood,
+  pose,
+  begging,
+  bagPlay,
+  chatRigUntilRef,
+}: {
+  mood: CompanionMood;
+  pose: HerculesPose;
+  begging: boolean;
+  bagPlay: boolean;
+  chatRigUntilRef: MutableRefObject<number>;
+}) {
+  const { playPose, setMood } = useHerculesRig();
+  const target = (bagPlay ? "bag" : begging ? "beg" : pose) as HerculesRigPose;
+  useEffect(() => setMood(mood), [mood, setMood]);
+  useEffect(() => {
+    if (performance.now() < chatRigUntilRef.current) return;
+    playPose(target);
+  }, [target, playPose, chatRigUntilRef]);
+  return null;
+}
+
+function HerculesLivePortrait(props: Parameters<typeof HerculesPortrait>[0]) {
+  const { state } = useHerculesRig();
+  return <HerculesPortrait {...props} rigSnapshot={state.parts} />;
+}
+
+function HerculesOfficeRigBridge({ expandId }: { expandId: InstrumentId | "window" | null }) {
+  const { dispatch } = useHerculesRig();
+  useEffect(() => {
+    if (!expandId) return;
+    for (const command of expandRigMacro(expandId)) dispatch(command);
+  }, [expandId, dispatch]);
+  return null;
 }
 
 export function HerculesPresence({
@@ -222,6 +269,7 @@ export function HerculesPresence({
   const idleAt = useRef(0);
   const mutterAt = useRef(0);
   const chatGen = useRef(0);
+  const chatRigUntilRef = useRef(0);
   const chatScope = `${household.environment}\u001f${household.householdId}\u001f${memberId}`;
   const previousChatScope = useRef(chatScope);
   const activeChatIdentity = useRef<Omit<HerculesReplyContext, "requestId">>({
@@ -623,7 +671,22 @@ export function HerculesPresence({
     });
   }
 
+  function reactToChatText(...texts: Array<string | undefined | null>) {
+    let fired = false;
+    for (const text of texts) {
+      if (text?.trim() && dispatchChatRigTriggers(text)) fired = true;
+    }
+    if (!fired) return;
+    chatRigUntilRef.current = performance.now() + 1500;
+    window.setTimeout(() => {
+      chatRigUntilRef.current = 0;
+      const target = (bagPlay ? "bag" : begging ? "beg" : motion) as HerculesRigPose;
+      dispatchHerculesRig({ type: "playPose", pose: target === "sleep" ? "loaf" : target });
+    }, 1500);
+  }
+
   function applyTalk(next: HerculesTalk, userText?: string) {
+    reactToChatText(userText, next.spoken);
     setTalk(next);
     setTopic(next.topic);
     setMotion(next.pose === "sleep" ? "loaf" : next.pose);
@@ -753,6 +816,7 @@ export function HerculesPresence({
       requestId: gen,
     };
     setTurns((prev) => [...prev, { role: "user" as const, text: message }].slice(-12));
+    reactToChatText(message);
     if (focusedWidget && tab === "home") pushSnippet(message, "mrrp…");
     setQuestion("");
     setBusy(true);
@@ -800,6 +864,7 @@ export function HerculesPresence({
       setTalk(answer);
       setTopic(answer.topic);
       setTurns((prev) => [...prev, { role: "hercules" as const, text: answer.spoken }].slice(-12));
+      reactToChatText(answer.spoken);
       if (focusedWidget && tab === "home") {
         setSnippets((prev) => {
           const trimmed = prev.filter((row) => row.text !== "mrrp…");
@@ -824,6 +889,7 @@ export function HerculesPresence({
     })) return;
     setTalk({ ...grounded, spoken: result.text });
     setTurns((prev) => [...prev, { role: "hercules" as const, text: result.text }].slice(-12));
+    reactToChatText(result.text);
     if (focusedWidget && tab === "home") {
       setSnippets((prev) => {
         const trimmed = prev.filter((row) => row.text !== "mrrp…");
@@ -988,6 +1054,9 @@ export function HerculesPresence({
       : [];
 
   return (
+    <HerculesRigProvider mood={look.view.mood} reducedMotion={reducedMotion()}>
+      <HerculesRigBridge mood={look.view.mood} pose={pose} begging={begging} bagPlay={bagPlay} chatRigUntilRef={chatRigUntilRef} />
+      <HerculesOfficeRigBridge expandId={tab === "home" ? focusedWidget : null} />
     <div className={`hercules-world ${hideLiveCat ? "is-phone-compact" : ""} ${focusShellOpen ? "is-focus-open" : ""} ${desktopFly ? "is-desktop-wander" : ""}`} aria-live="polite">
       {desktopFly && !adding && !reducedMotion() && (
         <HerculesLitterBox deadFlies={deadFlies} />
@@ -1058,7 +1127,7 @@ export function HerculesPresence({
             Close
           </button>
           <div className="hercules-focus-hero">
-            <HerculesPortrait
+            <HerculesLivePortrait
               mood={look.view.mood}
               hat={look.hat}
               chain={look.chain}
@@ -1317,7 +1386,7 @@ export function HerculesPresence({
           setPinned((value) => !value);
         }}
       >
-        <HerculesPortrait
+        <HerculesLivePortrait
           mood={look.view.mood}
           hat={look.hat}
           chain={look.chain}
@@ -1330,6 +1399,7 @@ export function HerculesPresence({
         <span className={`hercules-useful useful-${usefulness.light}`} aria-hidden="true">!</span>
       </button>
     </div>
+    </HerculesRigProvider>
   );
 }
 

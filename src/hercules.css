@@ -227,6 +227,28 @@
 .herc-mood-hiding   .herc-ears { transform: rotate(-12deg) scaleY(.8); }
 .herc-mood-glowing  .herc-ears { transform: rotate(3deg); }
 
+.herc-rig-driven .herc-tail,
+.herc-rig-driven .herc-head,
+.herc-rig-driven .herc-body,
+.herc-rig-driven .herc-ruff,
+.herc-rig-driven .herc-ears,
+.herc-rig-driven .herc-legs,
+.herc-rig-driven .herc-leg-front,
+.herc-rig-driven .herc-leg-back,
+.herc-rig-driven .herc-bag,
+.herc-rig-driven .herc-whiskers,
+.herc-rig-driven .herc-eye,
+.herc-rig-driven .herc-eye-shut {
+  animation: none !important;
+  transition: transform 48ms linear, opacity 48ms linear;
+}
+
+.herc-rig-driven.herc-mood-glowing .herc-tail,
+.herc-rig-driven.herc-mood-restless .herc-tail,
+.herc-rig-driven.herc-mood-hiding .herc-ears {
+  animation: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .herc, .herc *, .herc-fly, .herc-fly * {
     animation: none !important;

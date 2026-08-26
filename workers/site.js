@@ -3,10 +3,13 @@
 import {
   checkChatRateLimit,
   corsHeaders,
+  rigCorsHeaders,
   resolveChatOrigin,
 } from "./herculesGuard.js";
 import { handleHerculesPro } from "./herculesPro.js";
-import { handleFlinksSync } from "./flinks.js";
+import { handleFlinks } from "./flinks.js";
+import { validateRigPayload, sanitizeRigSessionId } from "../src/herculesRig/validate.ts";
+import { enqueueRigCommands, pollRigCommands } from "./herculesRigQueue.js";
 
 const HTML_PATH = /(?:^\/$|\.html(?:$|\?))/i;
 const HERCULES_COMPANION_ASSETS = new Set([
@@ -1023,9 +1026,47 @@ async function scanDocument(request, env) {
   return json({ ok: true, provider, result }, 200, cors);
 }
 
+async function herculesRigPost(request, env) {
+  const { allowed, origin } = resolveChatOrigin(request);
+  const cors = rigCorsHeaders(origin);
+  if (!allowed) return json({ ok: false, error: "origin" }, 403, cors);
+  const limited = await checkChatRateLimit(env, request);
+  if (!limited.ok) return json({ ok: false, error: "rate", remaining: limited.remaining ?? 0 }, 429, cors);
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ ok: false, error: "json" }, 400, cors);
+  }
+  const payload = validateRigPayload(body);
+  if (!payload) return json({ ok: false, error: "invalid" }, 400, cors);
+  const entry = await enqueueRigCommands(env, payload.sessionId, payload.commands);
+  return json({
+    ok: true,
+    queueId: entry.id,
+    at: entry.at,
+    accepted: payload.commands.length,
+    readOnly: true,
+  }, 200, cors);
+}
+
+async function herculesRigPoll(request, env) {
+  const { allowed, origin } = resolveChatOrigin(request);
+  const cors = rigCorsHeaders(origin);
+  if (!allowed) return json({ ok: false, error: "origin" }, 403, cors);
+  const url = new URL(request.url);
+  const sessionId = sanitizeRigSessionId(url.searchParams.get("sessionId"));
+  if (!sessionId) return json({ ok: false, error: "session" }, 400, cors);
+  const since = Number(url.searchParams.get("since") || 0);
+  const entries = await pollRigCommands(env, sessionId, Number.isFinite(since) ? since : 0);
+  return json({ ok: true, entries, readOnly: true }, 200, cors);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const flinks = await handleFlinks(request, env);
+    if (flinks) return flinks;
     const herculesPro = await handleHerculesPro(request, env);
     if (herculesPro) return herculesPro;
     if (url.pathname === "/hercules/chat") {
@@ -1050,6 +1091,28 @@ export default {
       return json({ ok: false, error: "method" }, 405, cors);
     }
 
+    if (url.pathname === "/hercules/rig") {
+      const { allowed, origin } = resolveChatOrigin(request);
+      const cors = rigCorsHeaders(origin);
+      if (request.method === "OPTIONS") {
+        if (!allowed) return new Response(null, { status: 403 });
+        return new Response(null, { status: 204, headers: cors });
+      }
+      if (request.method === "POST") return herculesRigPost(request, env);
+      return json({ ok: false, error: "method" }, 405, cors);
+    }
+
+    if (url.pathname === "/hercules/rig/poll") {
+      const { allowed, origin } = resolveChatOrigin(request);
+      const cors = rigCorsHeaders(origin);
+      if (request.method === "OPTIONS") {
+        if (!allowed) return new Response(null, { status: 403 });
+        return new Response(null, { status: 204, headers: cors });
+      }
+      if (request.method === "GET") return herculesRigPoll(request, env);
+      return json({ ok: false, error: "method" }, 405, cors);
+    }
+
     if (url.pathname === "/documents/scan") {
       const { allowed, origin } = resolveChatOrigin(request);
       const cors = corsHeaders(origin);
@@ -1059,10 +1122,6 @@ export default {
       }
       if (request.method === "POST") return scanDocument(request, env);
       return json({ ok: false, error: "method" }, 405, cors);
-    }
-
-    if (url.pathname === "/flinks/sync") {
-      return handleFlinksSync(request, env);
     }
 
     const response = exposeHerculesCompanionAsset(request, await env.ASSETS.fetch(request));

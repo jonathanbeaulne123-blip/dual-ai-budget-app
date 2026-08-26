@@ -49,6 +49,16 @@ export function corsHeaders(origin) {
   };
 }
 
+export function rigCorsHeaders(origin) {
+  if (!origin) return {};
+  return {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    Vary: "Origin",
+  };
+}
+
 function dayKeyUtc() {
   return new Date().toISOString().slice(0, 10);
 }
