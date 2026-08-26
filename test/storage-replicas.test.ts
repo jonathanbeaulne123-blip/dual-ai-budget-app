@@ -196,6 +196,19 @@ describe("multi-ledger replicas", () => {
     expect((await loadHousehold("development"))?.householdId).toBe("HH-KEEP");
   });
 
+  it("refuses a replica whose payload householdId disagrees with the storage key", async () => {
+    const valid = household("HH-KEY", "Keyed home");
+    const tampered = { ...valid, householdId: "HH-OTHER" };
+    localStorage.setItem(
+      "hearth:household:v2:development:" + encodeURIComponent("HH-KEY"),
+      JSON.stringify(tampered),
+    );
+    expect(await loadHousehold("development", "HH-KEY", "MEM-001")).toBeNull();
+    await expect(selectHouseholdReplica("development", "HH-KEY", "MEM-001")).rejects.toThrow(
+      /not saved on this device/,
+    );
+  });
+
   it("remembers the active household in the environment session", () => {
     saveSession("development", { memberId: "MEM-001", view: "personal", householdId: "HH-SECOND" });
     expect(loadSession("development")).toEqual({

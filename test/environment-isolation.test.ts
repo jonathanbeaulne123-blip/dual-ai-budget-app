@@ -186,4 +186,19 @@ describe("environment isolation adversarial boundaries", () => {
       inviteCode: inviteFromText("Cedar Lantern Maple"),
     }, "pull")).not.toThrow();
   });
+
+  it("rejects a pulled or persisted snapshot that omits environment", () => {
+    const household = catalogHousehold();
+    expect(() => assertHouseholdBinding(
+      { ...household, environment: undefined as unknown as "development" },
+      { environment: "development" },
+      "pull",
+    )).toThrow(/missing its Development\/Production environment/);
+    expect(() => assertOutboxItemBinding({
+      environment: "development",
+      householdId: household.householdId,
+      memberId: "MEM-001",
+      snapshot: { ...household, environment: undefined as unknown as "development" },
+    })).toThrow(/missing its environment and was not replayed/);
+  });
 });
