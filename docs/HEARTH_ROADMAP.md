@@ -47,10 +47,10 @@ Checkboxes show work state, not product value: `[x]` is shipped on the named bas
 |---|---|---|---|
 | Environment isolation | Env + household + invite binding shipped (#121/#126/#127). Google subject + member match are required on automatic discovery/pull/persist/outbox when a continuity identity is present (D-146). Phrase/Pass remain recovery without Google. | **SHIPPED for Phase 0 tuple:** adversarial tests reject wrong Google subject and identity-mismatched outbox flush with zero fetch. | Keep canaries green; Create/invite smoke still open separately. |
 | Local books | Confirm writes pass `acceptHouseholdWrite`: validate → PGlite → verify canonical hash → persist → transport. Pulled Development snapshots pass PGlite acceptance before becoming active, and conflicts keep both sides. Restore failure after successful ingest remains honestly `recovery-available`, not proven rollback. | **ACTIVE:** keep the local command boundary closed while hosted authority and two-device interleavings are built. | Failure and same-count/different-facts tests stay green; recovery and conflict outcomes never celebrate an uncertain write. |
-| Google-account cloud continuity | Development has exact-subject discovery, automatic accepted-command transport, a durable compacting outbox, multi-household switching, and member-personal replicas (D-114 / D-117 / D-143 / D-147). Optional Publish/`linked` client semantics are demoted; hosted Personal+Shared is not yet one SQL TX. | **ACTIVE product gap:** finish Personal+Shared atomic hosted write, acknowledgement/backoff, and two-device convergence; no device is the host. | A fresh signed-in device reads/writes both scopes while the old device is off; offline/outbox and two-device tests prove convergence. |
+| Google-account cloud continuity | Development has exact-subject discovery, automatic accepted-command transport, a durable compacting outbox, multi-household switching, and member-personal replicas (D-114 / D-117 / D-143 / D-147). Sync **target feel** is **100–500 ms** partner visibility via Tier 1 Realtime + atomic SQL ([`SYNC_ARCHITECTURE.md`](SYNC_ARCHITECTURE.md), D-148); today’s primary path is 4 s poll fallback. | **ACTIVE:** execute Tier 1 slices T1-S1…T1-S6, then Tier 2 command-log; no device is the host. | Tier 1 two-browser proof + atomic Migration 012; fresh device off/old device off read/write; offline outbox convergence. |
 | Temporary hosted openness | Deny-by-default Auth/RLS **006 is applied**; anon household REST revoked. Development data through 2026-09-30 remains disposable fixtures. Create / invite / anon-denial smoke and Production hardening are still open. | Treat openness language as historical. Finish smoke before meaningful October data. | Live Create/invite/revoke/anon denial green; October-ready Production path reviewed. |
 | AI disclosure | Merged PR #83 introduced the member projection; independent review then reproduced and closed a full-household grounded P&L/FIGURES leak. D-132 tightens the UI boundary again: household talk uses shared/both rows, Personal talk uses only the requesting member's personal/both rows, and partner-personal questions are refused before model transport. | **SHIPPED baseline; D-132 implementation in review.** Keep aggregate, view-scope, provenance, and delayed-response canaries green. | Outbound canaries exclude other-member personal notes, direct amounts, and derived aggregates; household context excludes even the viewer's personal rows; stale responses cannot display or persist after a context switch. |
-| Two phones | Pull-merge followed by unconditional two-table upsert has no compare-and-swap or authoritative RPC; simultaneous devices can still overwrite a merged snapshot. | Treat “no lost update” as unproven. | Deterministic interleaving/fault tests on two clients, monotonic revision/CAS, retryable outbox, and post-reconcile equality. |
+| Two phones | Live pull (4 s REST poll when Realtime unavailable) + Shared CAS + slim outbox + disjoint shared absorb ship on Development; Personal+Shared is not one SQL TX yet; **100–500 ms push-native target** is documented in [`SYNC_ARCHITECTURE.md`](SYNC_ARCHITECTURE.md) (D-148). | **ACTIVE:** Tier 1 atomic RPC + Realtime + two-browser proof before claiming seamless dual-use. | Tier 1 gates G1–G6 in SYNC_ARCHITECTURE; p95 partner visibility ≤ 500 ms; interleaving harness before Production claim. |
 | Rate limiting | PR #79 salvaged the exact Git-main host and a per-IP meter under D-121. Missing KV no longer bypasses the limit, but isolate memory is not a durable or globally consistent hard cap; live KV remains unbound. | Code containment is merged; do not call it a reliable production cap until KV/concurrency proof exists. | Bound production namespace plus concurrent-request tests, telemetry, explicit failure semantics, and documented rollback. |
 | Delivery controls | `main` is unprotected, required checks are off, and direct commits can reach the deploy workflow. | Add branch/ruleset and production-environment approvals before higher-risk merges. | Required build/test/security checks block merge; deploy requires reviewed `main` state and environment approval. |
 | Onboarding / first-number utility | Mobile/Office, Accounts, Audit, appointments, sitdown/vault, Hercules, budget foundations, and D-127 work flow have shipped, but there is no Google-member-scoped guided setup or opening-truth command. Current first-run lessons are device-local and flat. | **PARTS 1–2 PLANNED:** D-128 isolates Practice; D-129 locks Pokémon-rhythm Hercules routes, camera focus, interaction locking, progress, and finale. Cursor foundation prompt is ready without migration overlap. | Automatic/Skip first Google-member entry; D-128 isolation; exact target/route/dialogue proofs; balanced opening truth; replayable member-scoped progress; both members see accepted results from independent devices. D-129's deliberate reduced-motion exception remains named accessibility debt. |
@@ -64,6 +64,7 @@ Only the currently open or just-closed worksession belongs here. Durable history
 
 | Worksession | State | Scope | Output |
 |---|---|---|---|
+| [2026-08-26 Sync architecture reframe](worksessions/2026-08-26-sync-architecture-reframe.md) | **CLOSED; docs PR** | D-148 tiered sync plan, 100–500 ms target, 20 slice prompts | [`SYNC_ARCHITECTURE.md`](SYNC_ARCHITECTURE.md), Phase 2 rewrite |
 | [2026-08-25 Import reconciliation engine](worksessions/2026-08-25-import-reconciliation-engine.md) | **REVIEWED; PR HANDOFF; NOT DEPLOYED** | Exact statement/receipt arithmetic, exact payment matching, optional private Drive evidence | D-137; 85 test files / 595 tests green after rebase; no remaining P0/P1/P2 review finding |
 | [2026-08-25 Hercules living teacher](worksessions/2026-08-25-hercules-living-teacher.md) | **IMPLEMENTED; REVIEW REQUIRED** | Typed number provenance, shared/Personal talk scopes, teacher questions, per-turn bubbles, desktop fly/litter | D-132; no deploy/schema; high-risk privacy review pending |
 | [2026-08-25 Onboarding Update](worksessions/2026-08-25-onboarding-update.md) | **ACTIVE; Parts 1–2 planned** | Control/feature review plus exact phone/desktop motion and interaction storyboard | D-128/D-129; Cursor foundation prompt ready; no migration overlap; reduced-motion exception explicit |
@@ -184,7 +185,7 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 
 - [x] Replace optional-publish/`linked` transport semantics with automatic Google-account continuity for personal and household ledgers. *(D-143 membership authority + D-147: transport only when `transportRequested`; Auth-off Publish is Advanced recovery only; Auth-on has no Publish.)*
 - [x] Keep local PGlite ingest and hosted transport as separate failure domains, but synchronize accepted commands automatically after sign-in rather than requiring **Publish to the cloud**. *(D-114/D-143/D-147: App requests transport for continuity members; local accept never waits on cloud.)*
-- [ ] Make command application atomic and fail closed across PGlite, JSON/UI state, IndexedDB/local storage, hosted snapshot, and audit trail. *(Partial D-147: refuse legacy race when CAS missing; Personal fail after Shared CAS does not ack. Full Personal+Shared single SQL TX and two-browser E2E remain open.)*
+- [ ] Make command application atomic and fail closed across PGlite, JSON/UI state, IndexedDB/local storage, hosted snapshot, and audit trail. *(Partial D-147: refuse legacy race when CAS missing; Personal fail after Shared CAS does not ack. **Tier 1 T1-S1/T1-S2** ([`SYNC_ARCHITECTURE.md`](SYNC_ARCHITECTURE.md)): Migration 012 atomic Shared+Personal + two-browser E2E.)*
 - [x] Validate environment + Google identity + personal/household membership tuple on every discovery/join/pass/pull/persist boundary. *(D-146: Google subject/member required when continuity identity is present; phrase/Pass remain recovery without Google; #121/#126/#127 env/invite bind.)*
 - [x] Validate pulled and merged financial content against PGlite/canonical hashes before persistence or display; entry-count equality is not acceptance. *(Unified `financialAuditHash` for PGlite audit + `booksAcceptedHash`; post-ingest verify; same-count mismatch tests.)*
 - [x] Centralize a member-scoped AI disclosure projection; canary-test every outbound field, aggregate, notice, memory, and delayed reply identity.
@@ -222,24 +223,56 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 **Proof:** phone E2E and fresh-profile usability pass; reversal journal inspection; property tests for cents/dates/balancing; Jonathan/Bianca acceptance.  
 **Kill criterion:** cut decorative or secondary surfaces before weakening correction, clarity, or books proofs.
 
-### Phase 2 — Make every signed-in device boring and lossless — NEXT after the monthly loop
+### Phase 2 — Push-native sync and lossless multi-device — NEXT after the monthly loop
 
-**Exit condition:** any signed-in device can work online or offline, interleave edits, relaunch, and converge without losing a valid command; no peer device must remain online.
+**Canonical plan:** [`docs/SYNC_ARCHITECTURE.md`](SYNC_ARCHITECTURE.md) (D-148). **Target feel:** partner sees confirmed shared money in **100–500 ms** (Tier 1 Realtime + atomic SQL), not 4 s poll. Command-log primary (Tier 2) follows Tier 1 proof.
 
-- [x] Replace unconditional snapshot upsert with monotonic revision/CAS or an authoritative merge RPC. *(D-122 client + Development apply of `002_snapshot_cas.sql` on 2026-08-25; smoked create/duplicate/stale/advance.)*
-- [ ] Define per-member/per-device identity, clocks, and actor attribution; `openShift` is not one global mutable slot.
-- [x] Add an idempotent outbox, acknowledgement, retry/backoff, and explicit “not yet shared” state. *(D-122; conflict remains the explicit not-yet-shared / needs-attention path.)*
-- [ ] Discover personal and household ledger memberships after Google sign-in, then pull on launch/focus/reconnect without erasing a safe local result when pull fails.
-- [ ] Define tombstone/reversal retention and bounded compaction without destroying audit evidence.
-- [ ] Make join semantics additive and recoverable; a second phone never replaces an existing household silently.
-- [ ] Test every meaningful interleaving with two fresh clients, including clock skew, duplicate delivery, stale write, partial failure, and long offline periods.
-- [ ] Show actor, source, freshness, and sync state in Audit without exposing another member's personal detail.
+**Exit condition:** any signed-in device works online or offline, interleaves edits, relaunch, and converges without losing a valid command; no peer device must remain online; sync UI is honest.
 
-**Risk/gate:** lost updates, duplicate posts, wrong ledger scope, and false “synced” status.  
-**Proof:** deterministic fault harness plus Playwright/WebKit two-context scenarios; post-reconcile journal equality and stable hashes.  
-**Kill criterion:** queue writes and surface recovery if convergence cannot be proved; do not fall back to a one-device host.
+#### Tier 1 — Push-native continuity (100–500 ms) — ACTIVE
 
-**D-114/D-117/D-122 progress:** Development household discovery, multi-household offline replicas, launch/focus/reconnect replay, hosted Personal scope, client CAS RPC wiring, outbox acknowledgement/backoff, deterministic two-client CAS proofs, and **live Development `publish_household_snapshot`** (migration 002 applied 2026-08-25) are implemented. Migration 003 is applied. Two-browser live E2E and Auth/RLS keep this phase open.
+- [x] Shared snapshot CAS via `publish_household_snapshot` (Migration 002, Development). *(D-122.)*
+- [x] Idempotent outbox, ack/backoff, conflict block, slim local tip (D-145/D-147).
+- [x] Live pull disjoint shared absorb; 4 s poll when tab visible *(fallback until Realtime primary)*.
+- [ ] **T1-S1** Migration **012** — atomic Shared CAS + Personal in one SQL TX. *([`briefs/sync/T1-S1`](briefs/sync/T1-S1-atomic-continuity-rpc.md).)*
+- [ ] **T1-S2** Client single-trip atomic push. *([`T1-S2`](briefs/sync/T1-S2-client-atomic-push.md).)*
+- [ ] **T1-S3** Supabase Realtime subscribe; demote poll to fallback. *([`T1-S3`](briefs/sync/T1-S3-realtime-subscribe.md).)*
+- [ ] **T1-S4** Push/pull race coordinator. *([`T1-S4`](briefs/sync/T1-S4-push-pull-coordinator.md).)*
+- [ ] **T1-S5** Two-browser E2E + fault harness (p95 ≤ 500 ms). *([`T1-S5`](briefs/sync/T1-S5-two-browser-proof.md).)*
+- [ ] **T1-S6** Sync freshness UI (actor, revision, Realtime honest). *([`T1-S6`](briefs/sync/T1-S6-sync-freshness-ui.md).)*
+
+#### Tier 2 — Command-log primary — GATED on Tier 1
+
+- [ ] **T2-S1** Migration **013** command event append log. *([`T2-S1`](briefs/sync/T2-S1-command-event-schema.md).)*
+- [ ] **T2-S2** Outbox stores command refs, not full journal. *([`T2-S2`](briefs/sync/T2-S2-slim-command-outbox.md).)*
+- [ ] **T2-S3** Materialized snapshot from events. *([`T2-S3`](briefs/sync/T2-S3-materialized-snapshot.md).)*
+- [ ] **T2-S4** Realtime on command INSERT. *([`T2-S4`](briefs/sync/T2-S4-realtime-command-events.md).)*
+- [ ] **T2-S5** Interleaving/convergence harness. *([`T2-S5`](briefs/sync/T2-S5-interleaving-harness.md).)*
+- [ ] **T2-S6** Confirmation-scoped undo (dual-use safe). *([`T2-S6`](briefs/sync/T2-S6-confirmation-scoped-undo.md).)*
+
+#### Tier 2+ cross-cutting (unchanged gates)
+
+- [ ] Per-member/device actor attribution; `openShift` not one global slot.
+- [ ] Tombstone/reversal retention and bounded compaction policy.
+- [ ] Join semantics additive; second phone never replaces household silently.
+- [ ] Discovery pull on launch/focus/reconnect without erasing safe local result on pull fail.
+
+#### Tier 3 — Optimistic UX + presence — GATED on Tier 1 Realtime
+
+- [ ] **T3-S1** Optimistic command chrome. *([`T3-S1`](briefs/sync/T3-S1-optimistic-command-chrome.md).)*
+- [ ] **T3-S2** Soft presence (extends D-100). *([`T3-S2`](briefs/sync/T3-S2-soft-presence.md).)*
+- [ ] **T3-S3** Background sync polish. *([`T3-S3`](briefs/sync/T3-S3-background-sync-polish.md).)*
+- [ ] **T3-S4** Scale envelope (10–100 members). *([`T3-S4`](briefs/sync/T3-S4-scale-envelope.md).)*
+
+#### Tier 4 — Normalized hosted journal — SPECULATIVE / research
+
+- [ ] **T4-S1–S4** Tenant journal design through Production cutover runbook. *([`briefs/sync/`](briefs/sync/README.md).)*
+
+**Risk/gate:** lost updates, duplicate posts, wrong scope, false “synced,” Realtime bypassing PGlite accept.  
+**Proof:** SYNC_ARCHITECTURE §8 test matrix; Tier 1 gates G1–G6; trust + books auditors on money transport.  
+**Kill criterion:** halt hosted sharing; preserve outbox; never one-device host.
+
+**Progress:** D-114/D-117/D-122/D-145/D-146/D-147 foundations shipped. **Next engineering slice:** T1-S1 Migration 012.
 
 ### Phase 3 — Late-September Google Auth + membership RLS cutover — DATE-GATED security foundation
 
@@ -369,7 +402,7 @@ These are ranked starting points, not limits on Cursor's inspection or solution 
 | 4 | Delivery and rate-limit guardrails | Protected `main`, required checks, production approval, truthful/bound limiter. | High-risk deploys |
 | 5 | First Numbers | Complete budget, bill, shift, due-preview, opening truth, and phone accessibility loop. | Broader office/companion work |
 | 6 | Corrections that survive | Reversal/repost, durable undo semantics, local validation placement, duplicate explanation. | Trusting daily use |
-| 7 | Multi-device no-loss protocol | CAS/revision, actor/device clocks, outbox, interleaving/fault tests, truthful sync UI. | Seamless continuity claim |
+| 7 | Push-native sync (D-148) | Tier 1: atomic 012 + Realtime **100–500 ms**; Tier 2: command-log; slice prompts in [`briefs/sync/`](briefs/sync/README.md). | Seamless continuity claim |
 | 8 | Late-September Auth + RLS | Google identity, personal/household membership schema, negative RLS tests, invite/session recovery. | Meaningful October data; bank/Interac/cards/hosted intake |
 | 9 | Reconciliation/import inbox | JSON/CSV and later approved sources as provenance-rich proposals; no Sheets runtime. | External-data expansion |
 
@@ -503,7 +536,7 @@ For roadmap comparison, each item gets a raw delta from `-2` (material harm) to 
 | Protected main, required checks, deploy approval | `+2 × 5 = +10` | `0 × 3 = 0` | **+10** | First. Slower direct publishing is an acceptable trade for household safety. | Ruleset and blocked-failure demonstration. |
 | First Numbers monthly loop | `+2 × 5 = +10` | `+1 × 3 = +3` | **+13** | Highest product slice after containment. Calm phone interaction supports the books. | Fresh-profile Bianca-ready E2E. |
 | Reversal/repost + durable undo | `+2 × 5 = +10` | `+1 × 3 = +3` | **+13** | Trust and willingness to use Hearth reinforce each other. | Original journal remains; relaunch/sync recovery. |
-| Multi-device CAS/outbox/convergence | `+2 × 5 = +10` | `+2 × 3 = +6` | **+16** | Strongest shared-product multiplier and part of the core household promise. | Two-client interleaving/fault suite with either peer offline. |
+| Multi-device push-native sync + command-log | `+2 × 5 = +10` | `+2 × 3 = +6` | **+16** | Tier 1 Realtime **100–500 ms** then Tier 2 command-log ([`SYNC_ARCHITECTURE.md`](SYNC_ARCHITECTURE.md) D-148). | Tier 1 two-browser p95 ≤ 500 ms; Tier 2 interleaving harness. |
 | Late-September Auth + membership RLS | `+2 × 5 = +10` | `+1 × 3 = +3` | **+13** | Mandatory before meaningful October data; temporary openness may accelerate Development but cannot slip past the date. | Cross-personal/household/environment negative pgTAP. |
 | Reconciliation + JSON/CSV inbox | `+2 × 5 = +10` | `+1 × 3 = +3` | **+13** | Major utility. Proposals remain visibly separate until Confirm. | Provenance, idempotency, closing balance. |
 | Family-office controls | `+2 × 5 = +10` | `+1 × 3 = +3` | **+13** | Grow after the household loop, not instead of it. | Deterministic rebuild and reviewer scenario pack. |
