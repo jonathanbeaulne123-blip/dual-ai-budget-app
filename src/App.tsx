@@ -1107,36 +1107,22 @@ export function App() {
       const continuityIdentity = currentGoogle?.identity
         ? { email: currentGoogle.identity.email, subject: currentGoogle.identity.subject }
         : null;
-      const accepted = await acceptHouseholdWrite({
-        previous: householdRef.current,
-        candidate,
-        confirmationId: `switch-${candidate.householdId}-${candidate.revision}`,
-        commandKind: "switch-ledger",
-        postedIds: [],
-        adapters: makeBooksAdapters({
-          environment,
-          memberId: nextMemberId,
-          continuityIdentity,
-        }),
-      });
-      if (!accepted.ok) throw new Error(accepted.userMessage || "Those books could not be opened on this device.");
-      await saveHousehold(accepted.household, {
+      // Replica navigation is not a money command: ingest + hash verify without bumping revision.
+      const { status } = await ingestHouseholdBooks(candidate);
+      if (!status.ok) throw new Error(status.error || "Those books could not be opened on this device.");
+      const inspection = await inspectBrowserBooks(candidate);
+      if (!inspection.ok) throw new Error(inspection.message || "Those books do not match the accepted PGlite journal.");
+      await saveHousehold(candidate, {
         operatingEnvironment: environment,
         memberId: nextMemberId,
         activate: true,
         continuityIdentity: continuityIdentity ?? undefined,
       });
-      householdRef.current = accepted.household;
-      setHousehold(accepted.household);
+      householdRef.current = candidate;
+      setHousehold(candidate);
       rememberSession({ memberId: nextMemberId, view: session?.view ?? "household", householdId });
-      setBooksStatus({
-        ok: true,
-        engine: "pglite",
-        entryCount: accepted.household.transactions.length,
-        inBalance: true,
-        equationHolds: true,
-      });
-      setHistory(loadUndoHistory(environment, householdId, nextMemberId, accepted.household));
+      setBooksStatus(status);
+      setHistory(loadUndoHistory(environment, householdId, nextMemberId, candidate));
       setToast(null);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));

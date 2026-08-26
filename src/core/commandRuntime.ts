@@ -216,8 +216,21 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       }
     } catch (error) {
       if (error instanceof NeedsConfirmationError) throw error;
-      if (error instanceof BooksRejectedError) return failedOutcome(previous, confirmationId, error);
-      return failedOutcome(previous, confirmationId, error);
+      const booksError = error instanceof BooksRejectedError
+        ? error
+        : new BooksRejectedError(
+            error instanceof Error ? error.message : String(error),
+            "books-unavailable",
+          );
+      if (previous && input.adapters.restoreIngest) {
+        try {
+          await input.adapters.restoreIngest(previous);
+          return failedOutcome(previous, confirmationId, booksError, true);
+        } catch {
+          return uncertainRecoveryOutcome(previous, confirmationId, booksError);
+        }
+      }
+      return failedOutcome(previous, confirmationId, booksError);
     }
 
     try {
