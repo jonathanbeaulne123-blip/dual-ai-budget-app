@@ -20,6 +20,8 @@ The forecasting slice adds budget variance, cash runway, bill coverage, card pay
 
 The living-teacher slice adds transaction, accounting-equation, debit/credit, statement, number-trace, treatment-comparison, variance, and transfer explanations. MCP results carry an explicit teaching contract: direct answer, posted evidence, plain-language lesson, limitations, and a human next step. Stable source IDs remain clickable; write authority remains `none`.
 
+The Shift Oracle slice (D-137) adds `tip_oracle`, `shift_outlook`, `tip_schedule_sim`, and `tax_milk_plan`. Monte Carlo tip floors, weather-adjusted shift ranges, cadence advice, and educational tax-milk/buffer splits are projections resampled from posted tip shifts. They never post, never e-file, and never treat a forecast as income.
+
 Pro cannot add, edit, delete, post, pay, transfer, merge, sync, or move money. Recommendations are words. The human returns to Hearth and uses the ordinary Confirm path for a write.
 
 Each ChatGPT account completes its own OAuth link. Hearth verifies the current Supabase/Google session, the active `continuity_memberships` row, environment, household, and member. The resulting Hearth access and refresh tokens are encrypted with the Worker signing secret; the underlying Supabase tokens are not exposed as readable token claims. Membership is checked again on reads and refresh.

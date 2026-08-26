@@ -144,6 +144,30 @@ const HERCULES_READ_TOOLS = [
   { name: "compare_accounting_treatments", description: "Contrast two commonly confused household accounting treatments.", parameters: strictObject({ topic: { anyOf: [{ type: "string", enum: ["card_purchase_vs_card_payment", "refund_vs_income", "transfer_vs_expense", "receivable_vs_income", "budget_vs_actual"] }, { type: "null" }] } }) },
   { name: "explain_variance", description: "Explain one category's actual-versus-budget variance for a month.", parameters: strictObject({ category: nullableString(), period: nullablePeriod() }) },
   { name: "explain_transfer", description: "Explain both journal legs of one posted transfer transaction.", parameters: strictObject({ transactionId: nullableString() }) },
+  { name: "tip_oracle", description: "Monte Carlo tipped-income floor, mid, high, and dry-streak reserve from posted shifts. Projection only.", parameters: strictObject({
+    member: nullableString(),
+    horizonDays: { anyOf: [{ type: "integer", minimum: 14, maximum: 62 }, { type: "null" }] },
+    iterations: { anyOf: [{ type: "integer", minimum: 200, maximum: 5000 }, { type: "null" }] },
+    seed: { anyOf: [{ type: "integer", minimum: 0, maximum: 1000000000 }, { type: "null" }] },
+  }) },
+  { name: "shift_outlook", description: "Estimate tip range for one upcoming shift from weekday, meal, hours, and optional weather. Projection only.", parameters: strictObject({
+    member: nullableString(),
+    date: nullableString(),
+    hours: { anyOf: [{ type: "number", minimum: 0.25, maximum: 24 }, { type: "null" }] },
+    meal: { anyOf: [{ type: "string", enum: ["lunch", "dinner"] }, { type: "null" }] },
+    weatherGlass: { anyOf: [{ type: "string", enum: ["clear", "rain", "snow", "night", "humid"] }, { type: "null" }] },
+  }) },
+  { name: "tip_schedule_sim", description: "Simulate the next week of tip outcomes from cadence; ranks protect-floor vs chase-spike advice.", parameters: strictObject({
+    member: nullableString(),
+    days: { anyOf: [{ type: "integer", minimum: 3, maximum: 14 }, { type: "null" }] },
+    weatherGlass: { anyOf: [{ type: "string", enum: ["clear", "rain", "snow", "night", "humid"] }, { type: "null" }] },
+  }) },
+  { name: "tax_milk_plan", description: "Split tip income into educational tax-milk, smoothing buffer, and leftover projections. Never posts.", parameters: strictObject({
+    member: nullableString(),
+    tipCents: { anyOf: [{ type: "integer", minimum: 0, maximum: 1000000000 }, { type: "null" }] },
+    shiftId: nullableString(),
+    taxRateBps: { anyOf: [{ type: "integer", minimum: 0, maximum: 5000 }, { type: "null" }] },
+  }) },
 ];
 const HERCULES_READ_TOOL_NAMES = new Set(HERCULES_READ_TOOLS.map((tool) => tool.name));
 const TOOL_ARG_KEYS = {
@@ -201,6 +225,10 @@ const TOOL_ARG_KEYS = {
   compare_accounting_treatments: ["topic"],
   explain_variance: ["category", "period"],
   explain_transfer: ["transactionId"],
+  tip_oracle: ["member", "horizonDays", "iterations", "seed"],
+  shift_outlook: ["member", "date", "hours", "meal", "weatherGlass"],
+  tip_schedule_sim: ["member", "days", "weatherGlass"],
+  tax_milk_plan: ["member", "tipCents", "shiftId", "taxRateBps"],
 };
 
 function parseJsonObject(value) {

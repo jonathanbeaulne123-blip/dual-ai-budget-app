@@ -64,6 +64,10 @@ const TOOL_CATALOG = [
   ["compare_accounting_treatments", "Contrast two commonly confused household accounting treatments."],
   ["explain_variance", "Explain one category's actual-versus-budget variance for a month."],
   ["explain_transfer", "Explain both journal legs of one posted transfer transaction."],
+  ["tip_oracle", "Monte Carlo tipped-income floor, mid, high, and dry-streak reserve from posted shifts. Projection only."],
+  ["shift_outlook", "Estimate tip range for one upcoming shift from weekday, meal, hours, and optional weather. Projection only."],
+  ["tip_schedule_sim", "Simulate the next week of tip outcomes from cadence; ranks protect-floor vs chase-spike advice."],
+  ["tax_milk_plan", "Split tip income into educational tax-milk, smoothing buffer, and leftover projections. Never posts."],
 ];
 
 const TOOL_PROPERTIES = {
@@ -90,6 +94,16 @@ const TOOL_PROPERTIES = {
   transactionId: { type: "string", maxLength: 100, description: "Stable posted transaction ID." },
   statement: { type: "string", enum: ["balance_sheet", "income_statement", "cash_flow_statement", "trial_balance"] },
   topic: { type: "string", enum: ["card_purchase_vs_card_payment", "refund_vs_income", "transfer_vs_expense", "receivable_vs_income", "budget_vs_actual"] },
+  date: { type: "string", pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+  hours: { type: "number", minimum: 0.25, maximum: 24 },
+  meal: { type: "string", enum: ["lunch", "dinner"] },
+  weatherGlass: { type: "string", enum: ["clear", "rain", "snow", "night", "humid"] },
+  days: { type: "integer", minimum: 3, maximum: 14 },
+  tipCents: { type: "integer", minimum: 0, maximum: 1000000000 },
+  shiftId: { type: "string", maxLength: 100 },
+  taxRateBps: { type: "integer", minimum: 0, maximum: 5000, description: "Educational tax-milk rate in basis points. 2500 = 25%." },
+  iterations: { type: "integer", minimum: 200, maximum: 5000 },
+  seed: { type: "integer", minimum: 0, maximum: 1000000000 },
 };
 
 const TOOL_PROPERTY_NAMES = {
@@ -147,6 +161,10 @@ const TOOL_PROPERTY_NAMES = {
   compare_accounting_treatments: ["view", "topic"],
   explain_variance: ["view", "category", "period"],
   explain_transfer: ["view", "transactionId"],
+  tip_oracle: ["view", "member", "horizonDays", "iterations", "seed"],
+  shift_outlook: ["view", "member", "date", "hours", "meal", "weatherGlass"],
+  tip_schedule_sim: ["view", "member", "days", "weatherGlass"],
+  tax_milk_plan: ["view", "member", "tipCents", "shiftId", "taxRateBps"],
 };
 
 const TOOL_REQUIRED_PROPERTIES = {
@@ -161,6 +179,7 @@ const TOOL_REQUIRED_PROPERTIES = {
   compare_accounting_treatments: ["topic"],
   explain_variance: ["category"],
   explain_transfer: ["transactionId"],
+  shift_outlook: ["hours"],
 };
 
 function json(body, status = 200, headers = {}) {
