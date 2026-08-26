@@ -218,6 +218,7 @@ export function HerculesPresence({
   const [perchPlay, setPerchPlay] = useState(false);
   const perchPlayFor = useRef<string | null>(null);
   const drag = useRef<{ x: number; y: number; px: number; py: number; moved: boolean; lastX: number; lastY: number; caughtFly: boolean } | null>(null);
+  const depositTimer = useRef<number | null>(null);
   const clickAt = useRef(0);
   const sitTimer = useRef<number | null>(null);
   const idleAt = useRef(0);
@@ -246,6 +247,36 @@ export function HerculesPresence({
   const showTalk = Boolean((open || talk || begging) && !adding && talk && !(proposal && !open && !begging) && !showWidgetSnippets);
   const hideLiveCat = phoneShell && !mobileFocus;
   const focusShellOpen = phoneShell && mobileFocus && !adding;
+
+  function clearDepositTimer() {
+    if (depositTimer.current) {
+      window.clearTimeout(depositTimer.current);
+      depositTimer.current = null;
+    }
+  }
+
+  function depositFlyAtLitter() {
+    clearDepositTimer();
+    setCarryingFly(false);
+    setDeadFlies((count) => count + 1);
+    const viewport = { w: window.innerWidth, h: window.innerHeight };
+    setFly(wanderFly(viewport, NAV, Math.random, herculesLitterRect(viewport, NAV)));
+    setMotion("lick");
+  }
+
+  function catchFly() {
+    if (!desktopFly || carryingFly || depositTimer.current) return;
+    setFly(null);
+    setCarryingFly(true);
+    setMotion("pounce");
+    clearDepositTimer();
+    depositTimer.current = window.setTimeout(() => {
+      depositTimer.current = null;
+      depositFlyAtLitter();
+    }, reducedMotion() ? 0 : 450);
+  }
+
+  useEffect(() => () => clearDepositTimer(), []);
 
   function automaticPoint(point: { x: number; y: number }): { x: number; y: number } {
     if (!desktopFly) return point;
@@ -416,8 +447,7 @@ export function HerculesPresence({
           x: Math.max(4, Math.min(window.innerWidth - CAT - 4, fly.x - 36)),
           y: Math.max(4, Math.min(window.innerHeight - CAT - NAV, fly.y - 28)),
         }));
-        setFly(null);
-        setCarryingFly(true);
+        catchFly();
         return;
       }
       if (phase === 0 || phase === 3) {
@@ -864,10 +894,8 @@ export function HerculesPresence({
     start.lastY = next.y;
     setPos(next);
     if (desktopFly && fly && herculesOverFly(next, fly, CAT)) {
-      setFly(null);
-      setCarryingFly(true);
       start.caughtFly = true;
-      setMotion("pounce");
+      catchFly();
     }
     if (desktopFly && deadFlies > 0 && !carryingFly && herculesInLitter(next, { w, h }, CAT, NAV)) {
       setDeadFlies(0);
@@ -884,14 +912,6 @@ export function HerculesPresence({
     const start = drag.current;
     drag.current = null;
     if (!start) return;
-    if (start.moved && desktopFly && (carryingFly || start.caughtFly) && herculesInLitter({ x: start.lastX, y: start.lastY }, { w: window.innerWidth, h: window.innerHeight }, CAT, NAV)) {
-      setCarryingFly(false);
-      setDeadFlies((count) => count + 1);
-      const viewport = { w: window.innerWidth, h: window.innerHeight };
-      setFly(wanderFly(viewport, NAV, Math.random, herculesLitterRect(viewport, NAV)));
-      setMotion("lick");
-      return;
-    }
     if (!start.moved) {
       setPurr(true);
       const now = Date.now();
@@ -938,15 +958,6 @@ export function HerculesPresence({
     } else {
       setMotion(look.view.mood === "restless" ? "pace" : pinned ? "sit" : "loaf");
     }
-  }
-
-  function dropCarriedFly() {
-    if (!carryingFly || !desktopFly) return;
-    setCarryingFly(false);
-    setDeadFlies((count) => count + 1);
-    const viewport = { w: window.innerWidth, h: window.innerHeight };
-    setFly(wanderFly(viewport, NAV, Math.random, herculesLitterRect(viewport, NAV)));
-    setMotion("lick");
   }
 
   const perchMove = perchPlayFor.current
@@ -1011,7 +1022,7 @@ export function HerculesPresence({
   return (
     <div className={`hercules-world ${hideLiveCat ? "is-phone-compact" : ""} ${focusShellOpen ? "is-focus-open" : ""} ${desktopFly ? "is-desktop-wander" : ""}`} aria-live="polite">
       {desktopFly && !adding && !reducedMotion() && (
-        <HerculesLitterBox deadFlies={deadFlies} carrying={carryingFly} onDrop={dropCarriedFly} />
+        <HerculesLitterBox deadFlies={deadFlies} />
       )}
       <HerculesFly x={fly?.x ?? 0} y={fly?.y ?? 0} hidden={!desktopFly || !fly || adding || reducedMotion()} />
       {showWidgetSnippets && (

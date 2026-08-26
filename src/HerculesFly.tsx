@@ -83,10 +83,8 @@ export function keepHerculesOutOfLitter(
   };
 }
 
-export function HerculesLitterBox({ deadFlies, carrying, onDrop }: {
+export function HerculesLitterBox({ deadFlies }: {
   deadFlies: number;
-  carrying: boolean;
-  onDrop: () => void;
 }) {
   return (
     <div className="herc-litter" aria-label={`Hercules's litter box. ${deadFlies} dead ${deadFlies === 1 ? "fly" : "flies"}.`}>
@@ -96,7 +94,6 @@ export function HerculesLitterBox({ deadFlies, carrying, onDrop }: {
           <i key={index} style={{ left: 12 + ((index * 17) % 82), top: 15 + ((index * 11) % 20), transform: `rotate(${(index * 37) % 180}deg)` }} />
         ))}
       </div>
-      {carrying && <button type="button" onClick={onDrop}>Drop fly</button>}
     </div>
   );
 }
