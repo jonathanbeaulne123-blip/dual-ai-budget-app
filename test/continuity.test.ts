@@ -8,6 +8,7 @@ import {
   humanizeContinuityError,
   isStorageQuotaError,
   listContinuityOutbox,
+  resolveOutboxHousehold,
   setContinuityStore,
   transportHouseholdWithOutbox,
 } from "../src/continuity.ts";
@@ -151,6 +152,47 @@ describe("Google-account continuity", () => {
     expect(durable[0]?.tipRevision).toBe(household.revision);
     // Memory still holds the tip for same-session flush.
     expect(listContinuityOutbox("development")[0]?.snapshot?.householdId).toBe(household.householdId);
+  });
+
+  it("prefers the memory tip over an older Retry liveHousehold", async () => {
+    setContinuityStore(createMemoryContinuityStore());
+    const tip = { ...googleHousehold(), revision: 5, baseRevision: 0 };
+    enqueueContinuitySnapshot({
+      household: tip,
+      identity,
+      expectedRevision: 4,
+      confirmationId: "tip-guard",
+    });
+    const older = { ...tip, revision: 3 };
+    const item = listContinuityOutbox("development")[0]!;
+    const resolved = await resolveOutboxHousehold(item, older);
+    expect(resolved.revision).toBe(5);
+  });
+
+  it("fails closed when only an older live tip is available after memory clear", async () => {
+    const store = createMemoryContinuityStore();
+    setContinuityStore(store);
+    const tip = { ...googleHousehold(), revision: 5, baseRevision: 0 };
+    enqueueContinuitySnapshot({
+      household: tip,
+      identity,
+      expectedRevision: 4,
+      confirmationId: "tip-stale",
+    });
+    const raw = store.getItem("hearth:continuity-outbox:v1:development");
+    setContinuityStore(store);
+    store.setItem("hearth:continuity-outbox:v1:development", raw!);
+    const older = { ...tip, revision: 3 };
+    const flushed = await flushContinuityOutbox({
+      environment: "development",
+      identity,
+      config,
+      force: true,
+      liveHousehold: older,
+    });
+    expect(flushed.synchronized).toBe(0);
+    expect(flushed.pending).toBe(1);
+    expect(listContinuityOutbox("development")[0]?.lastError).toMatch(/behind the share queue tip/i);
   });
 
   it("flushes a slim durable tip by resolving the live household", async () => {

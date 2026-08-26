@@ -52,19 +52,22 @@ Jonathan’s desktop can share large Development books without blowing `localSto
 
 ## Acceptance evidence
 
-- [ ] Compress round-trip preserves household JSON
-- [ ] Large fixture wire size ≪ plain JSON
-- [ ] Durable outbox JSON has no `transactions` array
-- [ ] Flush after reload loads from `loadHousehold` when snapshot omitted
-- [ ] Legacy plain payload pull still works
-- [ ] Focused + `pnpm test` / `tsc` green
+- [x] Compress round-trip preserves household JSON (personal envelopes)
+- [x] Large personal fixture wire size ≪ plain JSON
+- [x] Shared snapshots stay plain for live CAS SQL guards
+- [x] Durable outbox JSON has no `transactions` array
+- [x] Flush after reload loads from live tip when snapshot omitted
+- [x] Flush fails closed when live tip is older than tipRevision
+- [x] Legacy plain payload pull still works
+- [ ] Focused + `pnpm test` / `tsc` green (in progress)
 
 ## Plan
 
 - [x] Branch from `main`
 - [x] Codec + supabase wire
 - [x] Slim IDB-first outbox
-- [ ] Tests + auditors
+- [x] Auditor-driven shared-plain / tipRevision guards
+- [ ] Tests + auditors closeout
 - [ ] PR + handoff
 
 ## Remaining uncertainty

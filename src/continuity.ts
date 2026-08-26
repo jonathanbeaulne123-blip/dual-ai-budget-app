@@ -356,35 +356,60 @@ export function continuityMemberId(
 }
 
 /**
- * Resolve the household tip to push. Prefers the memory snapshot, then the
- * caller-supplied live household, then the on-device replica via loadHousehold.
+ * Resolve the household tip to push. Prefers the newest eligible tip among
+ * memory snapshot, Retry live household, and the on-device replica. Never
+ * publishes books older than the queued tipRevision (D-144).
  */
 export async function resolveOutboxHousehold(
   item: ContinuityOutboxItem,
   liveHousehold?: Household,
 ): Promise<Household> {
+  const tipRevision = Number.isFinite(item.tipRevision) ? item.tipRevision : 0;
+  const candidates: Household[] = [];
+
   if (item.snapshot) {
-    const shaped = ensureHouseholdShape(item.snapshot);
-    assertOutboxItemBinding({ ...item, snapshot: shaped });
-    return shaped;
+    candidates.push(ensureHouseholdShape(item.snapshot));
   }
   if (
     liveHousehold
     && liveHousehold.householdId === item.householdId
     && liveHousehold.environment === item.environment
   ) {
-    const shaped = ensureHouseholdShape(liveHousehold);
-    assertOutboxItemBinding({ ...item, snapshot: shaped });
-    return shaped;
+    candidates.push(ensureHouseholdShape(liveHousehold));
   }
-  const loaded = await loadHousehold(item.environment, item.householdId, item.memberId);
-  if (!loaded) {
+
+  let loaded: Household | null = null;
+  try {
+    loaded = await loadHousehold(item.environment, item.householdId, item.memberId);
+  } catch {
+    loaded = null;
+  }
+  if (loaded) candidates.push(ensureHouseholdShape(loaded));
+
+  const eligible = candidates.filter((household) => {
+    try {
+      assertOutboxItemBinding({ ...item, snapshot: household });
+      return household.revision >= tipRevision;
+    } catch {
+      return false;
+    }
+  });
+
+  if (!eligible.length) {
+    if (candidates.length) {
+      throw new Error(
+        "This phone's books are behind the share queue tip. Open the latest books, then tap Retry now.",
+      );
+    }
     throw new Error(
       "Saved on this phone. Open these household books, then tap Retry now to share them.",
     );
   }
-  assertOutboxItemBinding({ ...item, snapshot: loaded });
-  return loaded;
+
+  eligible.sort((left, right) => right.revision - left.revision || right.baseRevision - left.baseRevision);
+  const chosen = eligible[0]!;
+  assertOutboxItemBinding({ ...item, snapshot: chosen });
+  return chosen;
 }
 
 export function enqueueContinuitySnapshot(input: {

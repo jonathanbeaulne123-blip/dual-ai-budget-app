@@ -62,7 +62,9 @@ function base64ToBytes(base64: string): Uint8Array {
 
 async function gzipBytes(bytes: Uint8Array): Promise<Uint8Array> {
   if (typeof CompressionStream === "function") {
-    const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream("gzip"));
+    const copy = new Uint8Array(bytes.byteLength);
+    copy.set(bytes);
+    const stream = new Blob([copy]).stream().pipeThrough(new CompressionStream("gzip"));
     const buffer = await new Response(stream).arrayBuffer();
     return new Uint8Array(buffer);
   }
@@ -72,7 +74,9 @@ async function gzipBytes(bytes: Uint8Array): Promise<Uint8Array> {
 
 async function gunzipBytes(bytes: Uint8Array): Promise<Uint8Array> {
   if (typeof DecompressionStream === "function") {
-    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+    const copy = new Uint8Array(bytes.byteLength);
+    copy.set(bytes);
+    const stream = new Blob([copy]).stream().pipeThrough(new DecompressionStream("gzip"));
     const buffer = await new Response(stream).arrayBuffer();
     return new Uint8Array(buffer);
   }
@@ -83,6 +87,9 @@ async function gunzipBytes(bytes: Uint8Array): Promise<Uint8Array> {
 /**
  * Encode an arbitrary JSON-serializable value for hosted TEXT columns.
  * Returns legacy plain JSON for small or poorly-compressible values.
+ *
+ * Shared household snapshots that live SQL inspects (`payload_is_shared`,
+ * create identity checks) must stay plain — use {@link encodeSharedSnapshotPayload}.
  */
 export async function encodeJsonPayload(value: unknown): Promise<{
   text: string;
@@ -119,16 +126,34 @@ export async function decodeJsonPayload(raw: string | object): Promise<unknown> 
   if (typeof raw !== "string") {
     if (isSnapshotPayloadEnvelope(raw)) {
       const inflated = await gunzipBytes(base64ToBytes(raw.body));
-      return JSON.parse(new TextDecoder().decode(inflated));
+      const text = new TextDecoder().decode(inflated);
+      if (raw.bytes > 0 && utf8Bytes(text).byteLength !== raw.bytes) {
+        throw new Error("Hosted snapshot envelope byte length mismatch.");
+      }
+      return JSON.parse(text);
     }
     return raw;
   }
   const parsed: unknown = JSON.parse(raw);
   if (!isSnapshotPayloadEnvelope(parsed)) return parsed;
   const inflated = await gunzipBytes(base64ToBytes(parsed.body));
-  return JSON.parse(new TextDecoder().decode(inflated));
+  const text = new TextDecoder().decode(inflated);
+  if (parsed.bytes > 0 && utf8Bytes(text).byteLength !== parsed.bytes) {
+    throw new Error("Hosted snapshot envelope byte length mismatch.");
+  }
+  return JSON.parse(text);
 }
 
+/**
+ * Shared cloud household payload — always plain JSON so live CAS / create RPCs
+ * can inspect householdId, members, and visibility (006 `payload_is_shared`).
+ */
+export async function encodeSharedSnapshotPayload(household: unknown): Promise<string> {
+  const raw = JSON.stringify(household);
+  return raw;
+}
+
+/** Personal / opaque envelopes may gzip; server does not cast them as shared household JSON. */
 export async function encodeHouseholdPayload(household: unknown): Promise<string> {
   return (await encodeJsonPayload(household)).text;
 }

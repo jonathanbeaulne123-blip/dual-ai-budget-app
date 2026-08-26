@@ -15,9 +15,9 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 **Engagement delta (3):** `+1` — Retry/share stays honest under stress fixtures.
 
-**What changed:** `src/ledger/snapshotPayload.ts` codec; `supabase.ts` encode on push / decode on pull; `continuity.ts` IDB-first slim durable outbox + live resolve; D-144 in decisions + continuity canon.
+**What changed:** `src/ledger/snapshotPayload.ts` codec; shared CAS payloads stay plain JSON (006 SQL guards); personal envelopes may gzip; `continuity.ts` IDB-first slim durable outbox + tipRevision-aware live resolve; D-144 in decisions + continuity canon.
 
-**Verification:** Focused vitest (`snapshot-payload`, `continuity`, `hosted-cas-two-client`, `environment-isolation`, `production-continuity`) then `pnpm test` / `tsc --noEmit`. Privacy + books auditors on the PR.
+**Verification:** Focused vitest 49/49 (`snapshot-payload`, `continuity`, `hosted-cas-two-client`, `environment-isolation`, `production-continuity`); `tsc --noEmit` green. Privacy/books auditors: shared gzip blocked by design after P0 finding.
 
 **Data/environment:** Development client transport encoding only; no schema migrate, secrets, Production, or real household data.
 

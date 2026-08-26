@@ -9,7 +9,7 @@ import { inviteFromText } from "../core/invite.ts";
 import { memberIdForGoogleIdentity, type GoogleIdentitySelector } from "../core/google.ts";
 import { hostedTransportAllowed } from "../core/sharing.ts";
 import { hostedContinuityAllowed, legacyLinkedPublishAllowed } from "./continuityPolicy.ts";
-import { decodeJsonPayload, encodeHouseholdPayload } from "./snapshotPayload.ts";
+import { decodeJsonPayload, encodeHouseholdPayload, encodeSharedSnapshotPayload } from "./snapshotPayload.ts";
 import type { SnapshotCasConflict, SnapshotCasResult } from "./snapshotCas.ts";
 
 export {
@@ -22,6 +22,7 @@ export {
   decodeJsonPayload,
   encodeHouseholdPayload,
   encodeJsonPayload,
+  encodeSharedSnapshotPayload,
   isSnapshotPayloadEnvelope,
 } from "./snapshotPayload.ts";
 
@@ -671,7 +672,7 @@ export async function pushSupabaseHousehold(
     ? householdCloudProjection(snapshot, continuityMemberId)
     : snapshot;
   const snapshotHash = await financialAuditHash(cloudSnapshot);
-  const payload = await encodeHouseholdPayload(cloudSnapshot);
+  const payload = await encodeSharedSnapshotPayload(cloudSnapshot);
   const identity = options?.continuityIdentity;
   // Personal-before-CAS only when the household row already exists (FK on memberships).
   // First create still publishes scope after the household write.
@@ -865,7 +866,7 @@ async function pushSupabaseHouseholdLegacy(
       household_id: snapshot.householdId,
       invite_phrase: snapshot.inviteCode,
       environment: snapshot.environment,
-      payload: await encodeHouseholdPayload(cloudSnapshot),
+      payload: await encodeSharedSnapshotPayload(cloudSnapshot),
       updated_at: new Date().toISOString(),
       revision: snapshot.revision,
       snapshot_hash: await financialAuditHash(cloudSnapshot),
