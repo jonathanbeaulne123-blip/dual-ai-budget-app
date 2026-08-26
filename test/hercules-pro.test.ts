@@ -101,7 +101,7 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list" }),
     }), env);
     const listed = await tools.json() as { result: { tools: Array<{ name: string; annotations: { readOnlyHint: boolean } }> } };
-    expect(listed.result.tools).toHaveLength(36);
+    expect(listed.result.tools).toHaveLength(46);
     expect(listed.result.tools.every((tool) => tool.annotations.readOnlyHint)).toBe(true);
     expect(listed.result.tools.some((tool) => /post|delete|pay|transfer/.test(tool.name))).toBe(false);
 

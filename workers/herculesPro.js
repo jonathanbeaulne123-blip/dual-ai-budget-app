@@ -46,6 +46,16 @@ const TOOL_CATALOG = [
   ["source_document_coverage", "Summarize import/source provenance attached to posted rows."],
   ["integrity_findings", "List deterministic books-health findings with source identifiers."],
   ["audit_trail", "Read the latest immutable household activity records."],
+  ["budget_variance", "Compare posted category spending with the selected month's budget."],
+  ["cash_runway", "Estimate days of cash runway from recent posted spending."],
+  ["bill_coverage", "Compare cash-like balances with scheduled bills in a chosen horizon."],
+  ["debt_projection", "Project card payoff time with a stated or current minimum payment."],
+  ["credit_utilization", "Read per-card and aggregate posted balance utilization."],
+  ["savings_rate", "Calculate posted monthly income retained after spending."],
+  ["income_stability", "Measure variation in posted monthly income over 2 to 12 months."],
+  ["spending_trend", "Show posted monthly spending totals over 2 to 12 months."],
+  ["scenario_analysis", "Test a hypothetical purchase against current cash and scheduled bills."],
+  ["forecast_accuracy", "Compare a month's budget forecast with posted actual results."],
 ];
 
 const TOOL_PROPERTIES = {
@@ -66,6 +76,9 @@ const TOOL_PROPERTIES = {
   horizonDays: { type: "integer", minimum: 1, maximum: 90 },
   limit: { type: "integer", minimum: 1, maximum: 10 },
   entryId: { type: "string", maxLength: 100, description: "Exact journal entry ID or originating transaction ID." },
+  monthlyPaymentCents: { type: "integer", minimum: 0, maximum: 1000000000, description: "Optional hypothetical monthly payment in integer CAD cents." },
+  amountCents: { type: "integer", minimum: 1, maximum: 1000000000, description: "Hypothetical purchase amount in integer CAD cents." },
+  months: { type: "integer", minimum: 2, maximum: 12 },
 };
 
 const TOOL_PROPERTY_NAMES = {
@@ -105,6 +118,16 @@ const TOOL_PROPERTY_NAMES = {
   source_document_coverage: ["view", "period", "from", "to"],
   integrity_findings: ["view", "limit"],
   audit_trail: ["view", "limit"],
+  budget_variance: ["view", "period", "limit"],
+  cash_runway: ["view", "period"],
+  bill_coverage: ["view", "horizonDays"],
+  debt_projection: ["view", "account", "monthlyPaymentCents"],
+  credit_utilization: ["view", "account"],
+  savings_rate: ["view", "period"],
+  income_stability: ["view", "months"],
+  spending_trend: ["view", "months"],
+  scenario_analysis: ["view", "amountCents", "horizonDays"],
+  forecast_accuracy: ["view", "period"],
 };
 
 const TOOL_REQUIRED_PROPERTIES = {
@@ -112,6 +135,7 @@ const TOOL_REQUIRED_PROPERTIES = {
   journal_entry_detail: ["entryId"],
   explain_balance: ["account"],
   activity_since_reconciliation: ["account"],
+  scenario_analysis: ["amountCents"],
 };
 
 function json(body, status = 200, headers = {}) {

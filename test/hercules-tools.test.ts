@@ -172,6 +172,47 @@ describe("Hercules read-only tool brain", () => {
     expect(personal.results.every((result) => result.status === "unavailable")).toBe(true);
   });
 
+  it("builds bounded forecasts with explicit assumptions and projection facts", () => {
+    const household = seedDemoHousehold({ today, environment: "development" });
+    const before = structuredClone(household);
+    const planning = executeHerculesReadToolPlan(household, { calls: [
+      { name: "budget_variance", args: { period: "this_month" } },
+      { name: "cash_runway", args: { period: "last_30_days" } },
+      { name: "bill_coverage", args: { horizonDays: 30 } },
+      { name: "debt_projection", args: { account: "Visa", monthlyPaymentCents: 25_000 } },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+    expect(planning.results[0]?.sentence).toMatch(/budget.*over plan/i);
+    expect(planning.results[1]?.sentence).toMatch(/runway|not meaningful/i);
+    expect(planning.results[2]?.sentence).toMatch(/scheduled bills.*projection/i);
+    expect(planning.results[3]?.sentence).toMatch(/no new charges|estimated interest/i);
+    expect(planning.results.flatMap((result) => result.facts).some((row) => row.basis === "projection")).toBe(true);
+
+    const trends = executeHerculesReadToolPlan(household, { calls: [
+      { name: "credit_utilization", args: {} },
+      { name: "savings_rate", args: { period: "this_month" } },
+      { name: "income_stability", args: { months: 6 } },
+      { name: "spending_trend", args: { months: 6 } },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+    expect(trends.results[0]?.sentence).toMatch(/aggregate utilization/i);
+    expect(trends.results[1]?.sentence).toMatch(/savings rate|not meaningful/i);
+    expect(trends.results[2]?.sentence).toMatch(/variation|no average/i);
+    expect(trends.results[3]?.sentence).toMatch(/history, not a forecast/i);
+
+    const scenarios = executeHerculesReadToolPlan(household, { calls: [
+      { name: "scenario_analysis", args: { amountCents: 50_000, horizonDays: 30 } },
+      { name: "forecast_accuracy", args: { period: "this_month" } },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+    expect(scenarios.results[0]?.sentence).toMatch(/not a guarantee or permission/i);
+    expect(scenarios.results[1]?.sentence).toMatch(/budget forecast missed/i);
+    expect(household).toEqual(before);
+
+    const personalScenario = executeHerculesReadToolPlan(household, { calls: [
+      { name: "scenario_analysis", args: { amountCents: 50_000 } },
+      { name: "bill_coverage", args: {} },
+    ] }, today, { memberId: "MEM-001", view: "personal" });
+    expect(personalScenario.results.every((result) => result.status === "unavailable")).toBe(true);
+  });
+
   it("never crosses from a personal ledger into the partner's personal rows", () => {
     let household = catalogHousehold("development");
     household = postEntry(household, {

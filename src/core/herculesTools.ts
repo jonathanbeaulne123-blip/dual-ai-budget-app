@@ -1,5 +1,6 @@
 import {
   addDays,
+  calendarDaysBetween,
   isValidDateKey,
   monthKeyFromDateKey,
   monthStartKey,
@@ -23,6 +24,7 @@ import {
   incomeStatement,
   statementOfChangesInEquity,
   isMonthClosed,
+  budgetVariance,
 } from "./statements.ts";
 import { accountRegister, compileHousehold, trialBalance } from "./journal.ts";
 import { householdForHerculesContext } from "./visibility.ts";
@@ -68,6 +70,16 @@ export const HERCULES_READ_TOOL_NAMES = [
   "source_document_coverage",
   "integrity_findings",
   "audit_trail",
+  "budget_variance",
+  "cash_runway",
+  "bill_coverage",
+  "debt_projection",
+  "credit_utilization",
+  "savings_rate",
+  "income_stability",
+  "spending_trend",
+  "scenario_analysis",
+  "forecast_accuracy",
 ] as const;
 
 export type HerculesReadToolName = (typeof HERCULES_READ_TOOL_NAMES)[number];
@@ -134,6 +146,16 @@ export const HERCULES_READ_TOOL_CATALOG: ReadonlyArray<{ name: HerculesReadToolN
   { name: "source_document_coverage", description: "Summarize import/source provenance attached to posted rows." },
   { name: "integrity_findings", description: "List deterministic books-health findings with source identifiers." },
   { name: "audit_trail", description: "Read the latest immutable household activity records." },
+  { name: "budget_variance", description: "Compare posted category spending with the selected month's budget." },
+  { name: "cash_runway", description: "Estimate days of cash runway from recent posted spending." },
+  { name: "bill_coverage", description: "Compare cash-like balances with scheduled bills in a chosen horizon." },
+  { name: "debt_projection", description: "Project card payoff time with a stated or current minimum payment." },
+  { name: "credit_utilization", description: "Read per-card and aggregate posted balance utilization." },
+  { name: "savings_rate", description: "Calculate posted monthly income retained after spending." },
+  { name: "income_stability", description: "Measure variation in posted monthly income over 2–12 months." },
+  { name: "spending_trend", description: "Show posted monthly spending totals over 2–12 months." },
+  { name: "scenario_analysis", description: "Test a hypothetical purchase against current cash and scheduled bills." },
+  { name: "forecast_accuracy", description: "Compare a month's budget forecast with posted actual results." },
 ];
 
 const TOOL_SET = new Set<string>(HERCULES_READ_TOOL_NAMES);
@@ -218,6 +240,13 @@ function cleanArgs(name: HerculesReadToolName, raw: unknown): Record<string, unk
   if (name === "uncategorized_activity" || name === "source_document_coverage") return { ...common, limit: Math.min(10, Math.max(1, Math.round(Number(input.limit) || 8))) };
   if (name === "duplicate_exposure" || name === "integrity_findings" || name === "audit_trail" || name === "missing_periods") return { limit: Math.min(10, Math.max(1, Math.round(Number(input.limit) || 8))) };
   if (name === "period_close_readiness") return { period: cleanPeriod(input.period) };
+  if (name === "budget_variance" || name === "savings_rate" || name === "forecast_accuracy") return { period: cleanPeriod(input.period), limit: Math.min(10, Math.max(1, Math.round(Number(input.limit) || 8))) };
+  if (name === "cash_runway") return { period: cleanPeriod(input.period, "last_30_days") };
+  if (name === "bill_coverage") return { horizonDays: Math.min(90, Math.max(1, Math.round(Number(input.horizonDays) || 30))) };
+  if (name === "debt_projection") return { account: common.account, monthlyPaymentCents: cleanCents(input.monthlyPaymentCents) };
+  if (name === "credit_utilization") return { account: common.account };
+  if (name === "income_stability" || name === "spending_trend") return { months: Math.min(12, Math.max(2, Math.round(Number(input.months) || 6))) };
+  if (name === "scenario_analysis") return { amountCents: cleanCents(input.amountCents), horizonDays: Math.min(90, Math.max(1, Math.round(Number(input.horizonDays) || 30))) };
   if (name === "money_owed" || name === "cash_position" || name === "net_worth" || name === "audit_health") return {};
   return common;
 }
@@ -848,6 +877,129 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const rows = [...household.activity].sort((a, b) => b.at.localeCompare(a.at)).slice(0, limit);
     const facts = rows.map((row, index) => fact(call, index, `${row.at.slice(0, 10)} · ${row.action}`, row.summary, { route: "more", view: context.view, label: "Open household activity" }));
     return { callId: call.id, name: call.name, status: rows.length ? "ok" : "empty", sentence: rows.length ? `Here are the latest ${rows.length} household activity record${rows.length === 1 ? "" : "s"}. They describe committed actions; they do not authorize a new one.` : "The household activity trail is empty.", facts };
+  }
+
+  if (call.name === "budget_variance") {
+    const month = statementMonth(today, call.args);
+    const rows = budgetVariance(household, month);
+    const limit = Math.min(10, Math.max(1, Number(call.args.limit) || 8));
+    const source = toolSource(context, `Open the ${month} budget`, { from: `${month}-01` as DateKey, to: addDays(monthStartKey(shiftMonthKey(month, 1)), -1) });
+    const facts = rows.slice(0, limit).map((row, index) => fact(call, index, row.name, `${formatCad(row.actualCents)} actual · ${formatCad(row.budgetedCents)} budget · ${formatCad(row.varianceCents)} remaining`, { ...source, categoryId: row.id }, "projection"));
+    const over = rows.filter((row) => row.varianceCents < 0);
+    return { callId: call.id, name: call.name, status: rows.length ? "ok" : "empty", sentence: `${month} has ${over.length} category budget${over.length === 1 ? "" : "s"} over plan. Budget is a forecast; actuals are posted journal facts.`, facts };
+  }
+
+  if (call.name === "cash_runway") {
+    const query = matchingTransactionsAt(household, { period: call.args.period ?? "last_30_days" }, context, today);
+    const spending = query.rows.reduce((sum, tx) => sum + (tx.type === "expense" ? tx.amountCents : tx.type === "refund" ? -tx.amountCents : 0), 0);
+    const days = Math.max(1, calendarDaysBetween(query.range.start, query.range.end) + 1);
+    const daily = Math.max(0, Math.round(spending / days));
+    const cash = visibleAccounts(household, context).filter((account) => account.kind === "chequing" || account.kind === "savings").reduce((sum, account) => sum + Math.max(0, accountBookBalance(household, account.id, today)), 0);
+    const runway = daily > 0 ? Math.floor(cash / daily) : null;
+    const source = toolSource(context, `Open ${query.range.label} spending`, { from: query.range.start, to: query.range.end });
+    return { callId: call.id, name: call.name, status: "ok", sentence: runway == null ? `Recent net spending is zero, so a cash-runway day count is not meaningful. Cash-like balances are ${formatCad(cash)}.` : `At ${query.range.label}'s posted net-spending pace of ${formatCad(daily)} per day, the estimated cash runway from ${formatCad(cash)} of cash-like balances is about ${runway} days. This is a straight-line estimate, not a promise.`, facts: [fact(call, 0, "Cash-like", formatCad(cash), source), fact(call, 1, "Observed daily spending", formatCad(daily), source, "projection"), fact(call, 2, "Estimated runway", runway == null ? "not meaningful" : `${runway} days`, source, "projection")] };
+  }
+
+  if (call.name === "bill_coverage") {
+    if (context.view !== "household") return { callId: call.id, name: call.name, status: "unavailable", sentence: "Shared scheduled-bill coverage lives in the Household ledger.", facts: [] };
+    const horizon = Math.min(90, Math.max(1, Number(call.args.horizonDays) || 30));
+    const end = addDays(today, horizon);
+    const bills = household.recurrences.filter((row) => row.active && row.type === "expense" && row.nextDate >= today && row.nextDate <= end).reduce((sum, row) => sum + row.amountCents, 0);
+    const cash = visibleAccounts(household, context).filter((account) => account.kind === "chequing" || account.kind === "savings").reduce((sum, account) => sum + Math.max(0, accountBookBalance(household, account.id, today)), 0);
+    const remaining = cash - bills;
+    const source: HerculesNumberSource = { route: "calendar", view: context.view, surface: "calendar", from: today, to: end, label: "Open scheduled bills" };
+    return { callId: call.id, name: call.name, status: "ok", sentence: `${formatCad(cash)} of posted cash-like balances ${remaining >= 0 ? "covers" : "does not cover"} ${formatCad(bills)} of scheduled bills in the next ${horizon} days, leaving ${formatCad(remaining)} before other spending. Scheduled bills are projections until confirmed paid.`, facts: [fact(call, 0, "Cash-like", formatCad(cash), source), fact(call, 1, "Scheduled bills", formatCad(bills), source, "projection"), fact(call, 2, "Coverage after bills", formatCad(remaining), source, "projection")] };
+  }
+
+  if (call.name === "debt_projection") {
+    const cards = visibleAccounts(household, context).filter((account) => account.kind === "credit");
+    const accountQuery = cleanString(call.args.account);
+    const card = fuzzy(cards, accountQuery, (row) => `${row.name} ${row.institution} ${row.last4}`) ?? (!accountQuery && cards.length === 1 ? cards[0] : undefined);
+    if (!card) return empty(call, accountQuery ? `I cannot match visible card “${accountQuery}” in this ledger.` : "Name the card whose payoff you want to project.");
+    const view = creditCardView(household, card, today);
+    const payment = cleanCents(call.args.monthlyPaymentCents) || view.minPaymentCents;
+    const monthlyRate = (card.credit?.aprBps ?? 0) / 10_000 / 12;
+    let balance = Math.max(0, view.owedCents);
+    let interest = 0;
+    let months = 0;
+    let stalls = false;
+    while (balance > 0 && months < 600) {
+      const charge = Math.round(balance * monthlyRate);
+      if (payment <= charge) { stalls = true; break; }
+      interest += charge;
+      balance = Math.max(0, balance + charge - payment);
+      months += 1;
+    }
+    const source = toolSource(context, `Open ${card.name}`, { accountId: card.id, to: today });
+    const sentence = stalls ? `${card.name}'s ${formatCad(payment)} monthly payment does not exceed the first month's estimated interest under the current APR assumption.` : `${card.name} would take about ${months} month${months === 1 ? "" : "s"} to repay with ${formatCad(payment)} monthly payments and no new charges, adding about ${formatCad(interest)} interest. This is a simplified projection, not a lender quote.`;
+    return { callId: call.id, name: call.name, status: "ok", sentence, facts: [fact(call, 0, "Current posted balance", formatCad(view.owedCents), source), fact(call, 1, "Assumed monthly payment", formatCad(payment), source, "projection"), fact(call, 2, "Projected payoff", stalls ? "payment too low" : `${months} months`, source, "projection"), fact(call, 3, "Projected interest", formatCad(interest), source, "projection")] };
+  }
+
+  if (call.name === "credit_utilization") {
+    const cards = visibleAccounts(household, context).filter((account) => account.kind === "credit");
+    const accountQuery = cleanString(call.args.account);
+    const target = fuzzy(cards, accountQuery, (row) => `${row.name} ${row.institution} ${row.last4}`);
+    if (accountQuery && !target) return empty(call, `I cannot match visible card “${accountQuery}” in this ledger.`);
+    const selected = target ? [target] : cards;
+    if (!selected.length) return empty(call, "No visible credit card has utilization terms.");
+    const views = selected.map((card) => ({ card, view: creditCardView(household, card, today) }));
+    const balance = views.reduce((sum, row) => sum + row.view.owedCents, 0);
+    const limit = views.reduce((sum, row) => sum + (row.card.credit?.creditLimitCents ?? 0), 0);
+    const facts = views.map((row, index) => fact(call, index, row.card.name, row.view.utilization == null ? "limit unavailable" : `${Math.round(row.view.utilization * 100)}%`, toolSource(context, `Open ${row.card.name}`, { accountId: row.card.id, to: today }), "projection"));
+    return { callId: call.id, name: call.name, status: "ok", sentence: `Visible card balances total ${formatCad(balance)} against ${formatCad(limit)} of recorded limits: ${limit ? Math.round((balance / limit) * 100) : 0}% aggregate utilization. Posted balance is fact; utilization is a ratio and may differ from bureau reporting.`, facts: [fact(call, 20, "Aggregate utilization", limit ? `${Math.round((balance / limit) * 100)}%` : "not available", toolSource(context, "Open visible cards"), "projection"), ...facts] };
+  }
+
+  if (call.name === "savings_rate") {
+    const month = statementMonth(today, call.args);
+    const summary = monthSummary(household, month);
+    const retained = summary.incomeActualCents - summary.expenseActualCents;
+    const rate = summary.incomeActualCents > 0 ? retained / summary.incomeActualCents : null;
+    const source = toolSource(context, `Open ${month} activity`, { from: `${month}-01` as DateKey, to: addDays(monthStartKey(shiftMonthKey(month, 1)), -1) });
+    return { callId: call.id, name: call.name, status: "ok", sentence: rate == null ? `${month} has no posted income, so a savings rate is not meaningful.` : `${month} retained ${formatCad(retained)} after posted spending, a ${Math.round(rate * 100)}% savings rate. Transfers between accounts do not count as income or spending.`, facts: [fact(call, 0, "Posted income", formatCad(summary.incomeActualCents), source), fact(call, 1, "Posted spending", formatCad(summary.expenseActualCents), source), fact(call, 2, "Retained", formatCad(retained), source), fact(call, 3, "Savings rate", rate == null ? "not meaningful" : `${Math.round(rate * 100)}%`, source, "projection")] };
+  }
+
+  if (call.name === "income_stability" || call.name === "spending_trend") {
+    const months = Math.min(12, Math.max(2, Number(call.args.months) || 6));
+    const current = monthKeyFromDateKey(today);
+    const rows = Array.from({ length: months }, (_, index) => shiftMonthKey(current, index - months + 1)).map((month) => {
+      const summary = monthSummary(household, month);
+      return { month, income: summary.incomeActualCents, spending: summary.expenseActualCents };
+    });
+    const sourceFor = (month: MonthKey) => toolSource(context, `Open ${month}`, { from: `${month}-01` as DateKey, to: addDays(monthStartKey(shiftMonthKey(month, 1)), -1) });
+    if (call.name === "spending_trend") {
+      const first = rows[0]!.spending;
+      const last = rows.at(-1)!.spending;
+      const facts = rows.map((row, index) => fact(call, index, row.month, formatCad(row.spending), sourceFor(row.month)));
+      return { callId: call.id, name: call.name, status: "ok", sentence: `Posted monthly spending moved from ${formatCad(first)} to ${formatCad(last)} across ${months} months, a change of ${formatCad(last - first)}. This is history, not a forecast.`, facts };
+    }
+    const values = rows.map((row) => row.income);
+    const average = values.reduce((sum, value) => sum + value, 0) / values.length;
+    const deviation = Math.sqrt(values.reduce((sum, value) => sum + (value - average) ** 2, 0) / values.length);
+    const variation = average > 0 ? deviation / average : null;
+    const facts = rows.map((row, index) => fact(call, index, row.month, formatCad(row.income), sourceFor(row.month)));
+    return { callId: call.id, name: call.name, status: "ok", sentence: variation == null ? `No average posted income exists across these ${months} months.` : `Average posted monthly income is ${formatCad(Math.round(average))}; month-to-month variation is about ${Math.round(variation * 100)}% across ${months} months. Lower variation is steadier, not guaranteed.`, facts: [fact(call, 20, "Average income", formatCad(Math.round(average)), toolSource(context, "Open income history"), "projection"), fact(call, 21, "Variation", variation == null ? "not meaningful" : `${Math.round(variation * 100)}%`, toolSource(context, "Open income history"), "projection"), ...facts] };
+  }
+
+  if (call.name === "scenario_analysis") {
+    if (context.view !== "household") return { callId: call.id, name: call.name, status: "unavailable", sentence: "The shared affordability scenario uses Household cash and bills. Switch there and ask again.", facts: [] };
+    const amount = cleanCents(call.args.amountCents);
+    if (!amount) return empty(call, "Give me the hypothetical purchase amount in integer CAD cents.");
+    const horizon = Math.min(90, Math.max(1, Number(call.args.horizonDays) || 30));
+    const end = addDays(today, horizon);
+    const cash = visibleAccounts(household, context).filter((account) => account.kind === "chequing" || account.kind === "savings").reduce((sum, account) => sum + Math.max(0, accountBookBalance(household, account.id, today)), 0);
+    const bills = household.recurrences.filter((row) => row.active && row.type === "expense" && row.nextDate >= today && row.nextDate <= end).reduce((sum, row) => sum + row.amountCents, 0);
+    const after = cash - bills - amount;
+    const source = toolSource(context, "Open the affordability inputs", { from: today, to: end });
+    return { callId: call.id, name: call.name, status: "ok", sentence: `A hypothetical ${formatCad(amount)} purchase would leave ${formatCad(after)} after current cash-like balances and ${formatCad(bills)} of scheduled bills through ${end}, before groceries, surprises, and new income. ${after >= 0 ? "It fits this narrow cash test" : "It does not fit this narrow cash test"}; that is not a guarantee or permission to spend.`, facts: [fact(call, 0, "Current cash-like", formatCad(cash), source), fact(call, 1, "Scheduled bills", formatCad(bills), source, "projection"), fact(call, 2, "Hypothetical purchase", formatCad(amount), source, "projection"), fact(call, 3, "After scenario", formatCad(after), source, "projection")] };
+  }
+
+  if (call.name === "forecast_accuracy") {
+    const month = statementMonth(today, call.args);
+    const summary = monthSummary(household, month);
+    const incomeError = summary.incomeActualCents - summary.incomeBudgetedCents;
+    const expenseError = summary.expenseActualCents - summary.expenseBudgetedCents;
+    const source = toolSource(context, `Open the ${month} plan and actuals`, { from: `${month}-01` as DateKey, to: addDays(monthStartKey(shiftMonthKey(month, 1)), -1) });
+    return { callId: call.id, name: call.name, status: "ok", sentence: `${month}'s budget forecast missed posted income by ${formatCad(incomeError)} and spending by ${formatCad(expenseError)}. Positive means actual was higher. This measures the saved budget, not scheduled-bill prediction quality.`, facts: [fact(call, 0, "Income forecast error", formatCad(incomeError), source, "projection"), fact(call, 1, "Spending forecast error", formatCad(expenseError), source, "projection"), fact(call, 2, "Actual net", formatCad(summary.netActualCents), source), fact(call, 3, "Budgeted net", formatCad(summary.netBudgetedCents), source, "projection")] };
   }
 
   return { callId: call.id, name: call.name, status: "unavailable", sentence: "That read-only tool is unavailable.", facts: [] };
