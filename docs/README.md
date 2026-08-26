@@ -22,6 +22,7 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [GOOGLE.md](GOOGLE.md) | Household Google bridge: identity, Calendar, opt-in suite; never posts money |
 | [HERCULES.md](HERCULES.md) | Companion laws and product guidance |
 | [HERCULES_MARK.md](HERCULES_MARK.md) | Mark and runtime asset guidance |
+| [HERCULES_RIG.md](HERCULES_RIG.md) | Part-level animation engine — AI command API for head, tail, legs |
 | [HERCULES_AI.md](HERCULES_AI.md) | Resident data-scientist boundary, payload, notices, and memory guidance; reconcile with current decisions when stale |
 | [HERCULES_PRO.md](HERCULES_PRO.md) | ChatGPT companion setup, OAuth, confirmed-write contract |
 | [HERCULES_PRO_CAPABILITIES.md](HERCULES_PRO_CAPABILITIES.md) | Full inventory of Hercules Pro tools, calculations, and packs |

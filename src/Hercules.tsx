@@ -67,6 +67,11 @@ import { HerculesDress } from "./HerculesDress.tsx";
 import { HerculesFigure } from "./HerculesFigure.tsx";
 import { launchHerculesPro } from "./HerculesPro.tsx";
 import {
+  HerculesRigProvider,
+  useHerculesRig,
+  type HerculesRigPose,
+} from "./herculesRig/index.ts";
+import {
   HerculesFly,
   HerculesLitterBox,
   herculesInLitter,
@@ -121,6 +126,7 @@ export function HerculesPortrait({
   pose = "loaf",
   size = "live",
   flip = false,
+  rigSnapshot,
 }: {
   mood: CompanionMood;
   hat: string | null;
@@ -130,16 +136,40 @@ export function HerculesPortrait({
   pose?: HerculesPose;
   size?: "stage" | "live" | number;
   flip?: boolean;
+  rigSnapshot?: import("./herculesRig/types.ts").RigSnapshot;
 }) {
   const px = typeof size === "number" ? size : size === "stage" ? 120 : 96;
   return (
     <div className={`hercules-stage size-${size} mood-${mood}`} aria-hidden="true">
-      <HerculesFigure pose={pose} mood={mood} size={px} flip={flip}>
+      <HerculesFigure pose={pose} mood={mood} size={px} flip={flip} rigSnapshot={rigSnapshot}>
         <HerculesDress hat={hat} chain={chain} house={house} collar={collar} />
       </HerculesFigure>
       {pose === "sleep" && <span className="hercules-zzz">z</span>}
     </div>
   );
+}
+
+function HerculesRigBridge({
+  mood,
+  pose,
+  begging,
+  bagPlay,
+}: {
+  mood: CompanionMood;
+  pose: HerculesPose;
+  begging: boolean;
+  bagPlay: boolean;
+}) {
+  const { playPose, setMood } = useHerculesRig();
+  const target = (bagPlay ? "bag" : begging ? "beg" : pose) as HerculesRigPose;
+  useEffect(() => setMood(mood), [mood, setMood]);
+  useEffect(() => playPose(target), [target, playPose]);
+  return null;
+}
+
+function HerculesLivePortrait(props: Parameters<typeof HerculesPortrait>[0]) {
+  const { state } = useHerculesRig();
+  return <HerculesPortrait {...props} rigSnapshot={state.parts} />;
 }
 
 export function HerculesPresence({
@@ -1020,6 +1050,8 @@ export function HerculesPresence({
       : [];
 
   return (
+    <HerculesRigProvider mood={look.view.mood} reducedMotion={reducedMotion()}>
+      <HerculesRigBridge mood={look.view.mood} pose={pose} begging={begging} bagPlay={bagPlay} />
     <div className={`hercules-world ${hideLiveCat ? "is-phone-compact" : ""} ${focusShellOpen ? "is-focus-open" : ""} ${desktopFly ? "is-desktop-wander" : ""}`} aria-live="polite">
       {desktopFly && !adding && !reducedMotion() && (
         <HerculesLitterBox deadFlies={deadFlies} />
@@ -1349,8 +1381,7 @@ export function HerculesPresence({
           setPinned((value) => !value);
         }}
       >
-        {desktopFly && carryingFly && <span className="herc-carried-fly" aria-hidden="true">✦</span>}
-        <HerculesPortrait
+        <HerculesLivePortrait
           mood={look.view.mood}
           hat={look.hat}
           chain={look.chain}
@@ -1363,6 +1394,7 @@ export function HerculesPresence({
         <span className={`hercules-useful useful-${usefulness.light}`} aria-hidden="true">!</span>
       </button>
     </div>
+    </HerculesRigProvider>
   );
 }
 
