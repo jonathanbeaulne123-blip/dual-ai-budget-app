@@ -7,8 +7,8 @@
 - **Repository:** dual-ai-budget-app
 - **Branch:** `cursor/phase0-evidence-isolation-hash-c04e`
 - **Baseline SHA:** `0029ee07201a403b7be6a3950795cf17af13e581`
-- **Head SHA:** (see branch tip after push)
-- **PR or issue:** (open on push)
+- **Head SHA:** `18f9a7bea8139638d8054eae37abd1cca5942feb`
+- **PR or issue:** [#156](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/156)
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** Development client + living docs; no hosted schema/secrets/Production mutation
