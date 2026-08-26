@@ -3294,7 +3294,7 @@ export function App() {
       {guard?.kind === "stress-random" && (
         <ConfirmSheet
           title="Reload randomized stress data?"
-          body={`This replaces the ${environment} ledger with twelve months of fictional CAD covering shifts, wages, tips, expenses, bills, imported rows, transfers, appointments, claims, jars, budgets, presets, card balances, and money owed.`}
+          body={`This replaces the ${environment} ledger with twelve months of fictional CAD covering weighted harbour shifts (weather, location, full tip/sales forms), wages, tips, expenses, bills, imported rows, transfers, appointments, claims, jars, budgets, presets, card balances, and money owed — realistic enough for Hercules Pro trend testing.`}
           extra={googleStepUpExtra}
           confirmLabel="Load random stress data"
           danger
@@ -3319,7 +3319,7 @@ export function App() {
       {guard?.kind === "stress-pretty" && (
         <ConfirmSheet
           title="Display a fresh pretty-number household?"
-          body={`This replaces the ${environment} ledger with a new twelve-month fictional household. Amounts are deliberately rounded into clean, presentation-friendly values while the same shifts, bills, imports, appointments, claims, jars, budgets, and owed balances remain testable.`}
+          body={`This replaces the ${environment} ledger with a new twelve-month fictional household. Amounts are deliberately rounded into clean, presentation-friendly values while the same weather-weighted harbour shifts, location stamps, bills, imports, appointments, claims, jars, budgets, and owed balances remain testable.`}
           extra={googleStepUpExtra}
           confirmLabel="Load pretty numbers"
           danger

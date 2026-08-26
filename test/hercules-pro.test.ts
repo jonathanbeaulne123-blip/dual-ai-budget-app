@@ -114,8 +114,7 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       "confirm_transaction",
     ]));
     expect(listed.result.tools.find((tool) => tool.name === "confirm_transaction")?.annotations.readOnlyHint).toBe(false);
-    expect(listed.result.tools.find((tool) => tool.name === "shift_year_simulation")?.annotations.readOnlyHint).toBe(true);
-    expect(listed.result.tools.some((tool) => /^(?:post|delete|pay|transfer)(?:_|$)/.test(tool.name))).toBe(false);
+    expect(listed.result.tools.find((tool) => tool.name === "shift_year_simulation")?.annotations.readOnlyHint).toBe(true);    expect(listed.result.tools.some((tool) => /^(?:post|delete|pay|transfer)(?:_|$)/.test(tool.name))).toBe(false);
     expect(listed.result.tools.some((tool) => tool.name === "tip_oracle")).toBe(true);
     expect(listed.result.tools.find((tool) => tool.name === "summon_hercules")?._meta?.ui?.resourceUri).toBe("ui://hearth/hercules-companion-v1.html");
 

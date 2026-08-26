@@ -4,9 +4,33 @@ After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. 
 
 Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
 
+## Stress reload weighted shifts (D-138, 2026-08-25)
+
+**Status:** Branch `cursor/stress-shift-weather-location-85bf` — draft [PR #136](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/136); not merged, not deployed. Risk: **Medium**.
+
+**Household outcome:** More → Reload random data fills twelve months of complete Harbour Dining Room shifts with weather notes, Toronto GPS stamps, and weekday/season/weather-weighted tips so Hercules Pro can analyze realistic trends.
+
+**Budget delta (5):** `+1` — same `postWorkShift` / settlement commands; every sales, tip, break, clock, and destination field filled; optional location/`occurredAt` stamps on work-shift rows.
+
+**Engagement delta (3):** `+2` — reload fixture carries analyzable tip weather/location/weekday trends for Hercules Pro testing.
+
+**Worksession:** [`worksessions/2026-08-25-stress-shift-trends.md`](worksessions/2026-08-25-stress-shift-trends.md)
+
+**Verification:**
+- `pnpm exec vitest run test/stress-seed.test.ts test/work-jobs.test.ts test/timezone-location.test.ts` → 19 passed
+- `pnpm ai:verify` + `tsc --noEmit` + `vite build` green
+- Trend proof (seed `424242`): Fri/Sat tip/hr 1552¢ > Mon–Wed 1177¢; clearish 1557¢ > rainy 1020¢; 177 job-based shifts with Harbourfront stamps
+- Full `pnpm check` fails 2× `batch-import-ui` SubtleCrypto digests on **this branch and `main`** (pre-existing; unrelated)
+- Books auditor: PASS
+- After merge with `main`: Pro `tools/list` expects companion + catalog + write (**64**)
+
+**Data/environment:** Synthetic Development fixtures; no hosted schema, secrets, Production mutation, or peer-device requirement. Reload UI itself remains available when the env pill is Production (pre-existing).
+
+**Next owner:** Jonathan review of draft PR #136; smoke More → Reload random data in Development.
+
 ## Shift year simulation + sandbox gate (D-140, 2026-08-25)
 
-**Status:** Branch `cursor/shift-year-simulation-85bf` — draft [PR #138](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/138); not merged, not deployed. Risk: **Medium**.
+**Status:** **Merged** to `main` as [`6baf033`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/commit/6baf033) via [PR #138](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/138). Not deployed/live-verified. Risk: **Medium**.
 
 **Household outcome:** Hercules (free + Pro) can build a reproducible next-year tips+wages simulation from posted shifts and teach how it works. Python sandbox is designed as a later High-risk gate, not built.
 
@@ -16,22 +40,13 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 **Worksession:** [`worksessions/2026-08-25-shift-year-simulation.md`](worksessions/2026-08-25-shift-year-simulation.md)
 
-**What changed:** `runShiftYearSimulation` / `explainShiftYearSimulation` in `tipScience.ts`; tools `shift_year_simulation` + `explain_shift_simulation` on free Hercules (Worker planner + on-device) and Pro MCP; D-140 + sandbox gate in `HERCULES_PRO.md` (renumbered from provisional D-139 after main claimed D-139 for the animated companion); Pro `tools/list` = companion + catalog + write (64).
+**What changed:** `runShiftYearSimulation` / `explainShiftYearSimulation` in `tipScience.ts`; tools `shift_year_simulation` + `explain_shift_simulation` on free Hercules (Worker planner + on-device) and Pro MCP; D-140 + sandbox gate in `HERCULES_PRO.md`; Pro `tools/list` = companion + catalog + write (64).
 
-**Head SHA:** `ce8162013deb8b41e6277e42f594643daacbb828`
-
-**Verification:**
-- `pnpm exec vitest run test/tip-science.test.ts test/hercules-tools.test.ts test/hercules-pro.test.ts` — pass
-- Same household+seed identical; facts `projection`; household unchanged
-- Demo proof: 12-month p50 tip+wage ~CAD $10,783; household unchanged; teach tool cites gated Python sandbox
-- `pnpm ai:verify` pass; `pnpm build` pass
-- Full vitest via `pnpm check`: 606 pass / 2 fail in `batch-import-ui` (SubtleCrypto) — same failure on `main`, unrelated to this packet
-
-**Uncertainty:** Season under-modelled until weather stamps are universal; wages resample posted take-home ÷ hours.
+**Verification:** focused tip-science / hercules-tools / hercules-pro green on the packet; CI green before merge.
 
 **Data/environment:** Development code only; fictional demo/stress data in tests; no schema, secrets, Production, or deploy.
 
-**Next owner:** Jonathan reviews draft PR; ChatGPT Pro smoke: “Simulate my next year of tips and wages, then teach me how it works.” Do not merge/deploy without approval.
+**Next owner:** ChatGPT Pro smoke when convenient; Worker deploy remains separately gated.
 
 ## Environment isolation Phase 0 (2026-08-25)
 
