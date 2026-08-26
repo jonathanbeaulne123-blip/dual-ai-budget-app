@@ -32,6 +32,23 @@ import type { HerculesAskContext } from "./askBooks.ts";
 import type { HerculesGroundedFact, HerculesNumberSource } from "./herculesProvenance.ts";
 import type { HerculesTalk } from "./herculesTalk.ts";
 import { JOINT, type Account, type Household, type Transaction } from "./types.ts";
+import {
+  explainShiftYearSimulation,
+  planTaxMilk,
+  runShiftYearSimulation,
+  runTipOracle,
+  shiftOutlook,
+  simulateTipSchedule,
+  upcomingCadenceSchedule,
+  type TipMeal,
+} from "./tipScience.ts";
+import {
+  runCashCinema,
+  runWhatIfDesk,
+  runYearReview,
+  type WhatIfScenario,
+} from "./simReview.ts";
+import type { WeatherGlass } from "./weather.ts";
 
 export const HERCULES_READ_TOOL_NAMES = [
   "account_balance",
@@ -88,6 +105,15 @@ export const HERCULES_READ_TOOL_NAMES = [
   "compare_accounting_treatments",
   "explain_variance",
   "explain_transfer",
+  "tip_oracle",
+  "shift_outlook",
+  "tip_schedule_sim",
+  "tax_milk_plan",
+  "shift_year_simulation",
+  "explain_shift_simulation",
+  "cash_cinema",
+  "what_if_desk",
+  "year_review",
 ] as const;
 
 export type HerculesReadToolName = (typeof HERCULES_READ_TOOL_NAMES)[number];
@@ -172,6 +198,15 @@ export const HERCULES_READ_TOOL_CATALOG: ReadonlyArray<{ name: HerculesReadToolN
   { name: "compare_accounting_treatments", description: "Contrast two commonly confused household accounting treatments." },
   { name: "explain_variance", description: "Explain one category's actual-versus-budget variance for a month." },
   { name: "explain_transfer", description: "Explain both journal legs of one posted transfer transaction." },
+  { name: "tip_oracle", description: "Monte Carlo tipped-income floor, mid, high, and dry-streak reserve from posted shifts. Projection only." },
+  { name: "shift_outlook", description: "Estimate tip range for one upcoming shift from weekday, meal, hours, and optional weather. Projection only." },
+  { name: "tip_schedule_sim", description: "Simulate the next days of tip outcomes from historical cadence; ranks protect-floor vs chase-spike advice. Projection only." },
+  { name: "tax_milk_plan", description: "Split tip income into educational tax-milk, smoothing buffer, and leftover projections. Never posts." },
+  { name: "shift_year_simulation", description: "Seeded Monte Carlo for the next 6–12 months of tips and wages from posted shift history. Projection only." },
+  { name: "explain_shift_simulation", description: "Teach how the shift year simulation works: method, limits, and a human next step. Never posts." },
+  { name: "cash_cinema", description: "13-week forward cash ribbon from tip floor/typical, wage pace, bills, and card mins. Projection only." },
+  { name: "what_if_desk", description: "Named unposted scenario versus current cash and tip floor. Never posts." },
+  { name: "year_review", description: "Posted tip months, income, spend, budget misses, and shift count for a trailing window." },
 ];
 
 const TOOL_SET = new Set<string>(HERCULES_READ_TOOL_NAMES);
@@ -270,8 +305,87 @@ function cleanArgs(name: HerculesReadToolName, raw: unknown): Record<string, unk
   if (name === "trace_number") return { transactionId: cleanString(input.transactionId, 100), account: common.account, category: common.category, period: cleanPeriod(input.period) };
   if (name === "compare_accounting_treatments") return { topic: cleanString(input.topic, 60) };
   if (name === "explain_variance") return { category: common.category, period: cleanPeriod(input.period) };
+  if (name === "tip_oracle") {
+    return {
+      member: common.member,
+      horizonDays: Math.min(62, Math.max(14, Math.round(Number(input.horizonDays) || 28))),
+      iterations: Math.min(5000, Math.max(200, Math.round(Number(input.iterations) || 2000))),
+      seed: Math.min(1_000_000_000, Math.max(0, Math.round(Number(input.seed) || 137))),
+    };
+  }
+  if (name === "shift_outlook") {
+    const hoursRaw = Number(input.hours);
+    return {
+      member: common.member,
+      date: cleanDate(input.date) ?? cleanDate(input.from),
+      hours: Number.isFinite(hoursRaw) && hoursRaw > 0 ? Math.min(24, Math.max(0.25, hoursRaw)) : 0,
+      meal: input.meal === "lunch" || input.meal === "dinner" ? input.meal : undefined,
+      weatherGlass: cleanWeatherGlass(input.weatherGlass),
+    };
+  }
+  if (name === "tip_schedule_sim") {
+    return {
+      member: common.member,
+      days: Math.min(14, Math.max(3, Math.round(Number(input.days) || 7))),
+      weatherGlass: cleanWeatherGlass(input.weatherGlass),
+    };
+  }
+  if (name === "tax_milk_plan") {
+    return {
+      member: common.member,
+      tipCents: cleanCents(input.tipCents),
+      shiftId: cleanString(input.shiftId, 100),
+      taxRateBps: Math.min(5000, Math.max(0, Math.round(Number(input.taxRateBps) || 2500))),
+    };
+  }
+  if (name === "shift_year_simulation") {
+    return {
+      member: common.member,
+      months: Math.min(12, Math.max(6, Math.round(Number(input.months) || 12))),
+      iterations: Math.min(2000, Math.max(200, Math.round(Number(input.iterations) || 800))),
+      seed: Math.min(1_000_000_000, Math.max(0, Math.round(Number(input.seed) || 137))),
+    };
+  }
+  if (name === "explain_shift_simulation") {
+    return { member: common.member };
+  }
+  if (name === "cash_cinema") {
+    return {
+      member: common.member,
+      weeks: Math.min(13, Math.max(4, Math.round(Number(input.weeks) || 13))),
+    };
+  }
+  if (name === "what_if_desk") {
+    const scenario = cleanWhatIfScenario(input.scenario);
+    return {
+      member: common.member,
+      scenario,
+      amountCents: cleanCents(input.amountCents),
+    };
+  }
+  if (name === "year_review") {
+    return {
+      member: common.member,
+      months: Math.min(12, Math.max(3, Math.round(Number(input.months) || 12))),
+    };
+  }
   if (name === "money_owed" || name === "cash_position" || name === "net_worth" || name === "audit_health") return {};
   return common;
+}
+
+function cleanWeatherGlass(value: unknown): WeatherGlass | undefined {
+  return value === "clear" || value === "rain" || value === "snow" || value === "night" || value === "humid"
+    ? value
+    : undefined;
+}
+
+function cleanWhatIfScenario(value: unknown): WhatIfScenario | undefined {
+  return value === "cut_one_dinner_shift"
+    || value === "extra_card_pay"
+    || value === "purchase"
+    || value === "tax_milk_boost"
+    ? value
+    : undefined;
 }
 
 /** Untrusted model output enters here. Unknown/write-shaped calls disappear. */
@@ -1155,7 +1269,292 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     return { callId: call.id, name: call.name, status: "ok", sentence: `${entry.id} moves ${formatCad(tx.amountCents)} between two balance-sheet accounts with equal debit and credit legs. It changes where value sits, not income, expenses, or net worth.`, facts };
   }
 
+  if (call.name === "tip_oracle") {
+    const memberQuery = cleanString(call.args.member);
+    const member = resolveMember(household, memberQuery, context);
+    if (memberQuery && !member) return empty(call, `I cannot match member “${memberQuery}” in this ledger.`);
+    const memberId = tipOracleMemberId(context, member?.id);
+    const oracle = runTipOracle(household, {
+      memberId,
+      today,
+      horizonDays: Number(call.args.horizonDays) || 28,
+      iterations: Number(call.args.iterations) || 2000,
+      seed: Number(call.args.seed) || 137,
+    });
+    if (!oracle) return empty(call, "I need at least four posted tip shifts before the Shift Oracle can simulate a floor.");
+    const source = tipOracleSource(context, memberId);
+    return {
+      callId: call.id,
+      name: call.name,
+      status: "ok",
+      sentence: `Across ${oracle.iterations} seeded simulations of the next ${oracle.horizonDays} days from ${oracle.sampleShifts} posted shifts, tip income lands near ${formatCad(oracle.p50Cents)} (p50), with a safe floor of ${formatCad(oracle.p10Cents)} and an upside near ${formatCad(oracle.p90Cents)}. Dry-streak reserve about ${formatCad(oracle.emergencyReserveCents)} after ${oracle.longestDryWeeks} weak week${oracle.longestDryWeeks === 1 ? "" : "s"}. These are projections, not posted income. ${oracle.assumptions[0]}`,
+      facts: [
+        fact(call, 0, "Safe tip floor (p10)", formatCad(oracle.p10Cents), source, "projection"),
+        fact(call, 1, "Typical tips (p50)", formatCad(oracle.p50Cents), source, "projection"),
+        fact(call, 2, "Upside tips (p90)", formatCad(oracle.p90Cents), source, "projection"),
+        fact(call, 3, "Dry-streak reserve", formatCad(oracle.emergencyReserveCents), source, "projection"),
+        fact(call, 4, "Sample shifts", String(oracle.sampleShifts), source, "projection"),
+      ],
+    };
+  }
+
+  if (call.name === "shift_outlook") {
+    const memberQuery = cleanString(call.args.member);
+    const member = resolveMember(household, memberQuery, context);
+    if (memberQuery && !member) return empty(call, `I cannot match member “${memberQuery}” in this ledger.`);
+    const memberId = tipOracleMemberId(context, member?.id);
+    const date = cleanDate(call.args.date) ?? addDays(today, 1);
+    const hours = Number(call.args.hours) || 0;
+    if (!(hours > 0)) return empty(call, "Tell me the shift length in hours for an outlook.");
+    const outlook = shiftOutlook(household, {
+      date,
+      hours,
+      meal: call.args.meal as TipMeal | undefined,
+      weatherGlass: call.args.weatherGlass as WeatherGlass | undefined,
+      memberId,
+    });
+    if (!outlook) return empty(call, "I need posted tip history before I can estimate tonight.");
+    const source = tipOracleSource(context, memberId, date);
+    return {
+      callId: call.id,
+      name: call.name,
+      status: "ok",
+      sentence: `For a ${outlook.hours.toFixed(2)}h ${outlook.meal} on ${outlook.date}, I expect about ${formatCad(outlook.expectedTipCents)} net tips (${formatCad(outlook.lowTipCents)}–${formatCad(outlook.highTipCents)}) from ${outlook.similarShifts} similar posted shift${outlook.similarShifts === 1 ? "" : "s"}, weather/season factor ${outlook.weatherFactor.toFixed(2)}. Projection only — Confirm still posts the real shift.`,
+      facts: [
+        fact(call, 0, "Expected tips", formatCad(outlook.expectedTipCents), source, "projection"),
+        fact(call, 1, "Low tips (p10)", formatCad(outlook.lowTipCents), source, "projection"),
+        fact(call, 2, "High tips (p90)", formatCad(outlook.highTipCents), source, "projection"),
+        fact(call, 3, "Tip per hour", formatCad(outlook.tipPerHourCents), source, "projection"),
+      ],
+    };
+  }
+
+  if (call.name === "tip_schedule_sim") {
+    const memberQuery = cleanString(call.args.member);
+    const member = resolveMember(household, memberQuery, context);
+    if (memberQuery && !member) return empty(call, `I cannot match member “${memberQuery}” in this ledger.`);
+    const memberId = tipOracleMemberId(context, member?.id);
+    const days = Number(call.args.days) || 7;
+    const weatherGlass = call.args.weatherGlass as WeatherGlass | undefined;
+    const schedule = upcomingCadenceSchedule(household, today, { memberId, days }).map((slot) => (
+      weatherGlass ? { ...slot, weatherGlass } : slot
+    ));
+    const sim = simulateTipSchedule(household, schedule, { memberId });
+    if (!sim) return empty(call, "I need posted tip cadence before I can simulate the next shifts.");
+    const source = tipOracleSource(context, memberId);
+    const headline = sim.rows.slice(0, 3).map((row) => `${row.date} ${row.recommendation}`).join("; ");
+    return {
+      callId: call.id,
+      name: call.name,
+      status: "ok",
+      sentence: `Next ${sim.rows.length} likely cadence day${sim.rows.length === 1 ? "" : "s"} project about ${formatCad(sim.totalExpectedCents)} tips after weighting by how often those weekdays historically happen (${formatCad(sim.totalLowCents)}–${formatCad(sim.totalHighCents)}). Advice ranks: ${headline || "neutral"}. This never books or declines a shift.`,
+      facts: [
+        fact(call, 0, "Expected schedule tips", formatCad(sim.totalExpectedCents), source, "projection"),
+        fact(call, 1, "Floor schedule tips", formatCad(sim.totalLowCents), source, "projection"),
+        fact(call, 2, "Upside schedule tips", formatCad(sim.totalHighCents), source, "projection"),
+        ...sim.rows.slice(0, 4).map((row, index) => fact(call, index + 3, `${row.date} ${row.meal}`, `${formatCad(row.expectedTipCents)} · ${row.recommendation}`, tipOracleSource(context, memberId, row.date), "projection")),
+      ],
+    };
+  }
+
+  if (call.name === "tax_milk_plan") {
+    const memberQuery = cleanString(call.args.member);
+    const member = resolveMember(household, memberQuery, context);
+    if (memberQuery && !member) return empty(call, `I cannot match member “${memberQuery}” in this ledger.`);
+    const memberId = tipOracleMemberId(context, member?.id);
+    const plan = planTaxMilk(household, {
+      memberId,
+      tipCents: cleanCents(call.args.tipCents),
+      shiftId: cleanString(call.args.shiftId, 100),
+      taxRateBps: Number(call.args.taxRateBps) || 2500,
+    });
+    if (plan && "error" in plan) return empty(call, plan.error);
+    if (!plan) return empty(call, "Give me a tip amount, a shift id, or post a tip shift first.");
+    const source = tipOracleSource(context, memberId);
+    return {
+      callId: call.id,
+      name: call.name,
+      status: "ok",
+      sentence: `Of ${formatCad(plan.tipCents)} tips, set aside about ${formatCad(plan.taxMilkCents)} tax milk${plan.peak ? ` and ${formatCad(plan.bufferCents)} smoothing buffer` : ""}, leaving ${formatCad(plan.leftoverCents)} free. Educational rate ${(plan.taxRateBps / 100).toFixed(0)}% — not a filed return. Transfer drafts still need Confirm.`,
+      facts: [
+        fact(call, 0, "Tip base", formatCad(plan.tipCents), source, "projection"),
+        fact(call, 1, "Tax milk", formatCad(plan.taxMilkCents), source, "projection"),
+        fact(call, 2, "Smoothing buffer", formatCad(plan.bufferCents), source, "projection"),
+        fact(call, 3, "Leftover after set-asides", formatCad(plan.leftoverCents), source, "projection"),
+      ],
+    };
+  }
+
+  if (call.name === "shift_year_simulation") {
+    const memberQuery = cleanString(call.args.member);
+    const member = resolveMember(household, memberQuery, context);
+    if (memberQuery && !member) return empty(call, `I cannot match member “${memberQuery}” in this ledger.`);
+    const memberId = tipOracleMemberId(context, member?.id);
+    const sim = runShiftYearSimulation(household, {
+      memberId,
+      today,
+      months: Number(call.args.months) || 12,
+      iterations: Number(call.args.iterations) || 800,
+      seed: Number(call.args.seed) || 137,
+    });
+    if (!sim) return empty(call, "I need at least four posted tip shifts before I can simulate a year of tips and wages.");
+    const source = tipOracleSource(context, memberId);
+    const monthFacts = sim.byMonth.slice(0, 4).map((row, index) => fact(
+      call,
+      index + 5,
+      `${row.monthKey} mid`,
+      `${formatCad(row.tipsP50Cents)} tips · ${formatCad(row.wagesP50Cents)} wages`,
+      tipOracleSource(context, memberId, `${row.monthKey}-01` as DateKey),
+      "projection",
+    ));
+    return {
+      callId: call.id,
+      name: call.name,
+      status: "ok",
+      sentence: `Across ${sim.iterations} seeded simulations of the next ${sim.months} months from ${sim.sampleShifts} posted shifts, tip+wage income lands near ${formatCad(sim.totalP50Cents)} (p50), with a floor of ${formatCad(sim.totalP10Cents)} and upside near ${formatCad(sim.totalP90Cents)} — about ${formatCad(sim.tipsP50Cents)} tips and ${formatCad(sim.wagesP50Cents)} wages at the midpoint. These are projections, not posted income. ${sim.assumptions[0]}`,
+      facts: [
+        fact(call, 0, "Year tip+wage mid (p50)", formatCad(sim.totalP50Cents), source, "projection"),
+        fact(call, 1, "Year tip+wage floor (p10)", formatCad(sim.totalP10Cents), source, "projection"),
+        fact(call, 2, "Year tips mid (p50)", formatCad(sim.tipsP50Cents), source, "projection"),
+        fact(call, 3, "Year wages mid (p50)", formatCad(sim.wagesP50Cents), source, "projection"),
+        fact(call, 4, "Sample shifts", String(sim.sampleShifts), source, "projection"),
+        ...monthFacts,
+      ],
+    };
+  }
+
+  if (call.name === "explain_shift_simulation") {
+    const memberQuery = cleanString(call.args.member);
+    const member = resolveMember(household, memberQuery, context);
+    if (memberQuery && !member) return empty(call, `I cannot match member “${memberQuery}” in this ledger.`);
+    const memberId = tipOracleMemberId(context, member?.id);
+    const lesson = explainShiftYearSimulation(household, { memberId });
+    if (!lesson) return empty(call, "I need at least four posted tip shifts before I can teach the year simulation.");
+    const source = tipOracleSource(context, memberId);
+    return {
+      callId: call.id,
+      name: call.name,
+      status: "ok",
+      sentence: `The year sim fits ${lesson.sampleShifts} posted shifts, then Monte Carlo-resamples tip/hour and wage/hour by weekday and meal for 6–12 months. ${lesson.method[0]} Limitation: ${lesson.limitations[0]} A Python sandbox is gated for later open-ended science; this engine stays deterministic TypeScript. Next: ${lesson.humanNextStep}`,
+      facts: [
+        fact(call, 0, "Sample shifts", String(lesson.sampleShifts), source, "projection"),
+        fact(call, 1, "Method", lesson.method[1] ?? lesson.method[0]!, source, "projection"),
+        fact(call, 2, "Limitation", lesson.limitations[0]!, source, "projection"),
+        fact(call, 3, "Sandbox gate", lesson.limitations.find((line) => /Python sandbox/i.test(line)) ?? lesson.limitations[3]!, source, "projection"),
+        fact(call, 4, "Human next step", lesson.humanNextStep, source, "projection"),
+      ],
+    };
+  }
+
+  if (call.name === "cash_cinema") {
+    const memberQuery = cleanString(call.args.member);
+    const member = resolveMember(household, memberQuery, context);
+    if (memberQuery && !member) return empty(call, `I cannot match member “${memberQuery}” in this ledger.`);
+    const memberId = tipOracleMemberId(context, member?.id);
+    const cinema = runCashCinema(household, today, {
+      memberId,
+      weeks: Number(call.args.weeks) || 13,
+    });
+    const source = tipOracleSource(context, memberId);
+    const firstDry = cinema.weeks.find((week) => week.dry);
+    const assumptionTail = cinema.assumptions.slice(0, 3).join(" ");
+    return {
+      callId: call.id,
+      name: call.name,
+      status: "ok",
+      sentence: `Cash Cinema opens at ${formatCad(cinema.openingCashCents)} and projects a low near ${formatCad(cinema.lowestCashCents)} over ${cinema.weeks.length} weeks (oracle horizon ${cinema.oracleHorizonDays} days), with ${cinema.dryWeeks} pressure week${cinema.dryWeeks === 1 ? "" : "s"}${firstDry ? ` (first around ${firstDry.weekStart})` : ""}. ${assumptionTail}`,
+      facts: [
+        fact(call, 0, "Opening cash", formatCad(cinema.openingCashCents), source, "projection"),
+        fact(call, 1, "Lowest cash", formatCad(cinema.lowestCashCents), source, "projection"),
+        fact(call, 2, "Dry weeks", String(cinema.dryWeeks), source, "projection"),
+        fact(call, 3, "Weekly tip typical", formatCad(cinema.weeks[0]?.tipTypicalCents ?? 0), source, "projection"),
+        fact(call, 4, "Oracle horizon days", String(cinema.oracleHorizonDays), source, "projection"),
+        ...cinema.weeks.slice(0, 3).map((week, index) => fact(
+          call,
+          index + 5,
+          `Week of ${week.weekStart}`,
+          `${formatCad(week.closingCashCents)}${week.dry ? " · pressure" : ""}`,
+          tipOracleSource(context, memberId, week.weekStart),
+          "projection",
+        )),
+      ],
+    };
+  }
+
+  if (call.name === "what_if_desk") {
+    const memberQuery = cleanString(call.args.member);
+    const member = resolveMember(household, memberQuery, context);
+    if (memberQuery && !member) return empty(call, `I cannot match member “${memberQuery}” in this ledger.`);
+    const scenario = cleanWhatIfScenario(call.args.scenario);
+    if (!scenario) {
+      return empty(call, "Choose cut_one_dinner_shift, extra_card_pay, purchase, or tax_milk_boost.");
+    }
+    const memberId = tipOracleMemberId(context, member?.id);
+    const desk = runWhatIfDesk(household, today, {
+      scenario,
+      amountCents: cleanCents(call.args.amountCents),
+      memberId,
+    });
+    if ("error" in desk) return empty(call, desk.error);
+    const source = tipOracleSource(context, memberId);
+    return {
+      callId: call.id,
+      name: call.name,
+      status: "ok",
+      sentence: `${desk.label}: cash moves from ${formatCad(desk.beforeCashCents)} to ${formatCad(desk.afterCashCents)} (${formatCad(desk.deltaCashCents)}). Tip-floor window ${formatCad(desk.beforeTipFloorCents)} → ${formatCad(desk.afterTipFloorCents)}. ${desk.fits ? "It still clears a narrow leftover test." : "It fails the narrow leftover test."} ${desk.assumptions.slice(0, 2).join(" ")}`,
+      facts: [
+        fact(call, 0, "Before cash", formatCad(desk.beforeCashCents), source, "projection"),
+        fact(call, 1, "After cash", formatCad(desk.afterCashCents), source, "projection"),
+        fact(call, 2, "Cash delta", formatCad(desk.deltaCashCents), source, "projection"),
+        fact(call, 3, "Fits leftover test", desk.fits ? "yes" : "no", source, "projection"),
+      ],
+    };
+  }
+
+  if (call.name === "year_review") {
+    const memberQuery = cleanString(call.args.member);
+    const member = resolveMember(household, memberQuery, context);
+    if (memberQuery && !member) return empty(call, `I cannot match member “${memberQuery}” in this ledger.`);
+    const memberId = tipOracleMemberId(context, member?.id);
+    const review = runYearReview(household, today, {
+      memberId,
+      months: Number(call.args.months) || 12,
+    });
+    const source = tipOracleSource(context, memberId);
+    return {
+      callId: call.id,
+      name: call.name,
+      status: "ok",
+      sentence: `Season Replay ${review.fromMonth}–${review.toMonth}${review.memberScoped ? " (member-scoped)" : ""}: ${formatCad(review.totalTipsCents)} tips across ${review.shiftCount} shift${review.shiftCount === 1 ? "" : "s"}, ${formatCad(review.totalIncomeCents)} income, ${formatCad(review.totalSpendCents)} spend, and ${review.budgetMissCount} budget miss${review.budgetMissCount === 1 ? "" : "es"}. Best tip month ${review.bestTipMonth ?? "n/a"}; softest ${review.worstTipMonth ?? "n/a"}. ${review.assumptions[0]} ${review.assumptions[1]}`,
+      facts: [
+        fact(call, 0, "Total tips", formatCad(review.totalTipsCents), source),
+        fact(call, 1, "Total income", formatCad(review.totalIncomeCents), source),
+        fact(call, 2, "Total spend", formatCad(review.totalSpendCents), source),
+        fact(call, 3, "Budget misses", String(review.budgetMissCount), source, "projection"),
+        fact(call, 4, "Shifts", String(review.shiftCount), source),
+      ],
+    };
+  }
+
   return { callId: call.id, name: call.name, status: "unavailable", sentence: "That read-only tool is unavailable.", facts: [] };
+}
+
+function tipOracleMemberId(context: HerculesAskContext, explicit?: string): string | undefined {
+  if (explicit) return explicit;
+  if (context.view === "personal") return context.memberId;
+  return undefined;
+}
+
+function tipOracleSource(context: HerculesAskContext, memberId?: string, date?: DateKey): HerculesNumberSource {
+  return {
+    route: "home",
+    view: context.view,
+    surface: "timesheet",
+    label: "Open the timesheet",
+    memberId,
+    from: date,
+    to: date,
+  };
 }
 
 function matchingTransactionsAt(household: Household, args: Record<string, unknown>, context: HerculesAskContext, today: DateKey) {

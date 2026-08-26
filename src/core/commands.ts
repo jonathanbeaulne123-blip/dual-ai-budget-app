@@ -560,6 +560,9 @@ export type PostWorkShiftInput = {
   startedAt?: string | null;
   endedAt?: string | null;
   note?: string;
+  /** Optional D-126 stamp on every income/expense row this Confirm creates. */
+  occurredAt?: string;
+  location?: Transaction["location"];
   settingsFingerprint?: string;
   confirmDuplicate?: boolean;
   createdBy?: string;
@@ -640,6 +643,10 @@ export function postWorkShift(household: Household, input: PostWorkShiftInput): 
   let cardTipsTransactionId = "";
   const tipOutTransactionIds: string[] = [];
 
+  const stamp = {
+    occurredAt: input.occurredAt,
+    location: input.location,
+  };
   const push = (tx: Transaction, prefix: string): string => {
     tx.id = nextId(prefix, next.transactions.map((row) => row.id));
     next.transactions.push(tx);
@@ -653,6 +660,7 @@ export function postWorkShift(household: Household, input: PostWorkShiftInput): 
       categoryId: wagesCat.parentId, subcategoryId: wagesCat.id, note: `${job.name} wages earned — ${member.name}`,
       splits: splits(wageWorkCents), source: "shift", sourceId: shiftId, createdAt, createdBy: actor.createdBy,
       visibility: parseVisibility(input.wagesVisibility ?? job.defaults.wagesVisibility),
+      ...stamp,
     }), "TXN-IN-");
   }
   if (calculation.paidBreakIncomeCents > 0) {
@@ -661,6 +669,7 @@ export function postWorkShift(household: Household, input: PostWorkShiftInput): 
       categoryId: paidBreakCat.parentId, subcategoryId: paidBreakCat.id, note: `${job.name} paid break — ${member.name}`,
       splits: splits(calculation.paidBreakIncomeCents), source: "shift", sourceId: shiftId, createdAt, createdBy: actor.createdBy,
       visibility: parseVisibility(input.wagesVisibility ?? job.defaults.wagesVisibility),
+      ...stamp,
     }), "TXN-IN-");
   }
   if (cashTipsCents > 0) {
@@ -669,6 +678,7 @@ export function postWorkShift(household: Household, input: PostWorkShiftInput): 
       categoryId: tipsCat.parentId, subcategoryId: tipsCat.id, note: `${job.name} cash tips — ${member.name}`,
       splits: splits(cashTipsCents), source: "shift", sourceId: shiftId, createdAt, createdBy: actor.createdBy,
       visibility: parseVisibility(input.cashTipsVisibility ?? job.defaults.cashTipsVisibility),
+      ...stamp,
     }), "TXN-IN-");
   }
   if (cardTipsCents > 0) {
@@ -677,6 +687,7 @@ export function postWorkShift(household: Household, input: PostWorkShiftInput): 
       categoryId: tipsCat.parentId, subcategoryId: tipsCat.id, note: `${job.name} card tips earned — ${member.name}`,
       splits: splits(cardTipsCents), source: "shift", sourceId: shiftId, createdAt, createdBy: actor.createdBy,
       visibility: parseVisibility(input.cardTipsVisibility ?? job.defaults.cardTipsVisibility),
+      ...stamp,
     }), "TXN-IN-");
   }
   for (const tipOut of calculation.tipOuts.filter((row) => row.amountCents > 0 && row.timing !== "deferred")) {
@@ -687,6 +698,7 @@ export function postWorkShift(household: Household, input: PostWorkShiftInput): 
       categoryId: tipOutCat.parentId, subcategoryId: tipOutCat.id, note: `${job.name} ${tipOut.label} tip-out — ${member.name}`,
       splits: splits(tipOut.amountCents), source: "shift", sourceId: shiftId, createdAt, createdBy: actor.createdBy,
       visibility: parseVisibility(input.tipOutVisibility ?? job.defaults.tipOutVisibility),
+      ...stamp,
     }), "TXN-EX-"));
   }
   if (!transactionIds.length) throw new ValidationError("This shift has no wages or tips to post.");

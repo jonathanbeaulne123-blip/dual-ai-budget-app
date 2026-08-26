@@ -75,6 +75,15 @@ const TOOL_CATALOG = [
   ["compare_accounting_treatments", "Contrast two commonly confused household accounting treatments."],
   ["explain_variance", "Explain one category's actual-versus-budget variance for a month."],
   ["explain_transfer", "Explain both journal legs of one posted transfer transaction."],
+  ["tip_oracle", "Monte Carlo tipped-income floor, mid, high, and dry-streak reserve from posted shifts. Projection only."],
+  ["shift_outlook", "Estimate tip range for one upcoming shift from weekday, meal, hours, and optional weather. Projection only."],
+  ["tip_schedule_sim", "Simulate the next week of tip outcomes from cadence; ranks protect-floor vs chase-spike advice."],
+  ["tax_milk_plan", "Split tip income into educational tax-milk, smoothing buffer, and leftover projections. Never posts."],
+  ["shift_year_simulation", "Seeded Monte Carlo for the next 6–12 months of tips and wages from posted shift history. Projection only."],
+  ["explain_shift_simulation", "Teach how the shift year simulation works: method, limits, and a human next step. Never posts."],
+  ["cash_cinema", "13-week forward cash ribbon from tip floor/typical, wage pace, bills, and card mins. Projection only."],
+  ["what_if_desk", "Named unposted scenario versus current cash and tip floor. Never posts."],
+  ["year_review", "Posted tip months, income, spend, budget misses, and shift count for a trailing window."],
 ];
 
 const TOOL_PROPERTIES = {
@@ -101,6 +110,18 @@ const TOOL_PROPERTIES = {
   transactionId: { type: "string", maxLength: 100, description: "Stable posted transaction ID." },
   statement: { type: "string", enum: ["balance_sheet", "income_statement", "cash_flow_statement", "trial_balance"] },
   topic: { type: "string", enum: ["card_purchase_vs_card_payment", "refund_vs_income", "transfer_vs_expense", "receivable_vs_income", "budget_vs_actual"] },
+  date: { type: "string", pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+  hours: { type: "number", minimum: 0.25, maximum: 24 },
+  meal: { type: "string", enum: ["lunch", "dinner"] },
+  weatherGlass: { type: "string", enum: ["clear", "rain", "snow", "night", "humid"] },
+  days: { type: "integer", minimum: 3, maximum: 14 },
+  tipCents: { type: "integer", minimum: 0, maximum: 1000000000 },
+  shiftId: { type: "string", maxLength: 100 },
+  taxRateBps: { type: "integer", minimum: 0, maximum: 5000, description: "Educational tax-milk rate in basis points. 2500 = 25%." },
+  iterations: { type: "integer", minimum: 200, maximum: 5000 },
+  seed: { type: "integer", minimum: 0, maximum: 1000000000 },
+  weeks: { type: "integer", minimum: 4, maximum: 13 },
+  scenario: { type: "string", enum: ["cut_one_dinner_shift", "extra_card_pay", "purchase", "tax_milk_boost"] },
 };
 
 const TOOL_PROPERTY_NAMES = {
@@ -158,6 +179,15 @@ const TOOL_PROPERTY_NAMES = {
   compare_accounting_treatments: ["view", "topic"],
   explain_variance: ["view", "category", "period"],
   explain_transfer: ["view", "transactionId"],
+  tip_oracle: ["view", "member", "horizonDays", "iterations", "seed"],
+  shift_outlook: ["view", "member", "date", "hours", "meal", "weatherGlass"],
+  tip_schedule_sim: ["view", "member", "days", "weatherGlass"],
+  tax_milk_plan: ["view", "member", "tipCents", "shiftId", "taxRateBps"],
+  shift_year_simulation: ["view", "member", "months", "iterations", "seed"],
+  explain_shift_simulation: ["view", "member"],
+  cash_cinema: ["view", "member", "weeks"],
+  what_if_desk: ["view", "member", "scenario", "amountCents"],
+  year_review: ["view", "member", "months"],
 };
 
 const TOOL_REQUIRED_PROPERTIES = {
@@ -172,6 +202,8 @@ const TOOL_REQUIRED_PROPERTIES = {
   compare_accounting_treatments: ["topic"],
   explain_variance: ["category"],
   explain_transfer: ["transactionId"],
+  shift_outlook: ["hours"],
+  what_if_desk: ["scenario"],
 };
 
 function json(body, status = 200, headers = {}) {
@@ -765,7 +797,7 @@ async function handleMcp(request, env) {
       if (name === "summon_hercules") return mcpSuccess(rpc.id, companionResult(args));
       if (name === "transaction_write_options") {
         const { books } = await loadBooks(env, claims);
-        return mcpSuccess(rpc.id, writeOptions(books, args));
+        return mcpSuccess(rpc.id, { usedTool: name, ...writeOptions(books, args) });
       }
       if (name === "prepare_transaction") {
         if (!hasScope(claims, "hearth.write")) throw new Error("Reconnect Hercules Pro after enabling writing in Hearth.");
@@ -790,6 +822,7 @@ async function handleMcp(request, env) {
           exp: now + WRITE_PREVIEW_TTL_SECONDS,
         });
         return mcpSuccess(rpc.id, {
+          usedTool: name,
           status: "confirmation-required",
           preview: prepared.preview,
           confirmationToken,
@@ -835,6 +868,7 @@ async function handleMcp(request, env) {
             });
           }
           return mcpSuccess(rpc.id, {
+            usedTool: name,
             status: "posted-exactly-once",
             duplicateConfirmation: true,
             ledger: preview.input.view,
@@ -885,6 +919,7 @@ async function handleMcp(request, env) {
           identityHash: preview.identityHash,
         });
         return mcpSuccess(rpc.id, {
+          usedTool: name,
           status: "posted-exactly-once",
           duplicateConfirmation: published.duplicate === true,
           ledger: preview.input.view,
@@ -906,9 +941,15 @@ async function handleMcp(request, env) {
         view,
       });
       const result = run.results[0];
+      const usedTool = name;
+      const rawAnswer = result?.sentence || run.talk.spoken;
+      const answer = rawAnswer.startsWith("I used `")
+        ? rawAnswer
+        : `I used \`${usedTool}\`. ${rawAnswer}`;
       const structuredContent = {
         status: result?.status || "empty",
-        answer: result?.sentence || run.talk.spoken,
+        usedTool,
+        answer,
         facts: result?.facts || [],
         ledger: view,
         householdId: claims.householdId,
@@ -918,10 +959,11 @@ async function handleMcp(request, env) {
         currency: books.currency || "CAD",
         timeZone: books.timezone || "America/Toronto",
         teachingContract: {
-          order: ["direct-answer", "posted-evidence", "plain-language-lesson", "limitations", "human-next-step"],
+          order: ["name-the-tool", "direct-answer", "posted-evidence", "plain-language-lesson", "limitations", "human-next-step"],
           clickableSources: true,
           projectionFactsLabeled: true,
           writeAuthority: "none",
+          announceTool: true,
         },
         readOnly: true,
       };

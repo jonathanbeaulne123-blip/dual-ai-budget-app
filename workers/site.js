@@ -144,6 +144,52 @@ const HERCULES_READ_TOOLS = [
   { name: "compare_accounting_treatments", description: "Contrast two commonly confused household accounting treatments.", parameters: strictObject({ topic: { anyOf: [{ type: "string", enum: ["card_purchase_vs_card_payment", "refund_vs_income", "transfer_vs_expense", "receivable_vs_income", "budget_vs_actual"] }, { type: "null" }] } }) },
   { name: "explain_variance", description: "Explain one category's actual-versus-budget variance for a month.", parameters: strictObject({ category: nullableString(), period: nullablePeriod() }) },
   { name: "explain_transfer", description: "Explain both journal legs of one posted transfer transaction.", parameters: strictObject({ transactionId: nullableString() }) },
+  { name: "tip_oracle", description: "Monte Carlo tipped-income floor, mid, high, and dry-streak reserve from posted shifts. Projection only.", parameters: strictObject({
+    member: nullableString(),
+    horizonDays: { anyOf: [{ type: "integer", minimum: 14, maximum: 62 }, { type: "null" }] },
+    iterations: { anyOf: [{ type: "integer", minimum: 200, maximum: 5000 }, { type: "null" }] },
+    seed: { anyOf: [{ type: "integer", minimum: 0, maximum: 1000000000 }, { type: "null" }] },
+  }) },
+  { name: "shift_outlook", description: "Estimate tip range for one upcoming shift from weekday, meal, hours, and optional weather. Projection only.", parameters: strictObject({
+    member: nullableString(),
+    date: nullableString(),
+    hours: { anyOf: [{ type: "number", minimum: 0.25, maximum: 24 }, { type: "null" }] },
+    meal: { anyOf: [{ type: "string", enum: ["lunch", "dinner"] }, { type: "null" }] },
+    weatherGlass: { anyOf: [{ type: "string", enum: ["clear", "rain", "snow", "night", "humid"] }, { type: "null" }] },
+  }) },
+  { name: "tip_schedule_sim", description: "Simulate the next week of tip outcomes from cadence; ranks protect-floor vs chase-spike advice.", parameters: strictObject({
+    member: nullableString(),
+    days: { anyOf: [{ type: "integer", minimum: 3, maximum: 14 }, { type: "null" }] },
+    weatherGlass: { anyOf: [{ type: "string", enum: ["clear", "rain", "snow", "night", "humid"] }, { type: "null" }] },
+  }) },
+  { name: "tax_milk_plan", description: "Split tip income into educational tax-milk, smoothing buffer, and leftover projections. Never posts.", parameters: strictObject({
+    member: nullableString(),
+    tipCents: { anyOf: [{ type: "integer", minimum: 0, maximum: 1000000000 }, { type: "null" }] },
+    shiftId: nullableString(),
+    taxRateBps: { anyOf: [{ type: "integer", minimum: 0, maximum: 5000 }, { type: "null" }] },
+  }) },
+  { name: "shift_year_simulation", description: "Seeded Monte Carlo for the next 6–12 months of tips and wages from posted shift history. Projection only.", parameters: strictObject({
+    member: nullableString(),
+    months: { anyOf: [{ type: "integer", minimum: 6, maximum: 12 }, { type: "null" }] },
+    iterations: { anyOf: [{ type: "integer", minimum: 200, maximum: 2000 }, { type: "null" }] },
+    seed: { anyOf: [{ type: "integer", minimum: 0, maximum: 1000000000 }, { type: "null" }] },
+  }) },
+  { name: "explain_shift_simulation", description: "Teach how the shift year simulation works: method, limits, and a human next step. Never posts.", parameters: strictObject({
+    member: nullableString(),
+  }) },
+  { name: "cash_cinema", description: "13-week forward cash ribbon from tip floor/typical, wage pace, bills, and card mins. Projection only.", parameters: strictObject({
+    member: nullableString(),
+    weeks: { anyOf: [{ type: "integer", minimum: 4, maximum: 13 }, { type: "null" }] },
+  }) },
+  { name: "what_if_desk", description: "Named unposted scenario versus current cash and tip floor. Never posts.", parameters: strictObject({
+    member: nullableString(),
+    scenario: { anyOf: [{ type: "string", enum: ["cut_one_dinner_shift", "extra_card_pay", "purchase", "tax_milk_boost"] }, { type: "null" }] },
+    amountCents: { anyOf: [{ type: "integer", minimum: 0, maximum: 1000000000 }, { type: "null" }] },
+  }) },
+  { name: "year_review", description: "Posted tip months, income, spend, budget misses, and shift count for a trailing window.", parameters: strictObject({
+    member: nullableString(),
+    months: { anyOf: [{ type: "integer", minimum: 3, maximum: 12 }, { type: "null" }] },
+  }) },
 ];
 const HERCULES_READ_TOOL_NAMES = new Set(HERCULES_READ_TOOLS.map((tool) => tool.name));
 const TOOL_ARG_KEYS = {
@@ -201,6 +247,15 @@ const TOOL_ARG_KEYS = {
   compare_accounting_treatments: ["topic"],
   explain_variance: ["category", "period"],
   explain_transfer: ["transactionId"],
+  tip_oracle: ["member", "horizonDays", "iterations", "seed"],
+  shift_outlook: ["member", "date", "hours", "meal", "weatherGlass"],
+  tip_schedule_sim: ["member", "days", "weatherGlass"],
+  tax_milk_plan: ["member", "tipCents", "shiftId", "taxRateBps"],
+  shift_year_simulation: ["member", "months", "iterations", "seed"],
+  explain_shift_simulation: ["member"],
+  cash_cinema: ["member", "weeks"],
+  what_if_desk: ["member", "scenario", "amountCents"],
+  year_review: ["member", "months"],
 };
 
 function parseJsonObject(value) {
@@ -233,7 +288,15 @@ function sanitizeToolArgs(name, value) {
       else if (key === "minimumAmountCents" || key === "maximumAmountCents") output[key] = Math.min(1000000000, Math.max(0, rounded));
       else if (key === "monthlyPaymentCents") output[key] = Math.min(1000000000, Math.max(0, rounded));
       else if (key === "amountCents") output[key] = Math.min(1000000000, Math.max(1, rounded));
-      else if (key === "months") output[key] = Math.min(12, Math.max(2, rounded));
+      else if (key === "months") {
+        const minimum = name === "shift_year_simulation" ? 6 : 2;
+        output[key] = Math.min(12, Math.max(minimum, rounded));
+      }
+      else if (key === "iterations") output[key] = Math.min(5000, Math.max(200, rounded));
+      else if (key === "seed") output[key] = Math.min(1000000000, Math.max(0, rounded));
+      else if (key === "tipCents" || key === "taxRateBps") output[key] = Math.min(1000000000, Math.max(0, rounded));
+      else if (key === "days") output[key] = Math.min(14, Math.max(3, rounded));
+      else if (key === "hours") output[key] = Math.min(24, Math.max(0.25, item));
     }
   }
   return output;

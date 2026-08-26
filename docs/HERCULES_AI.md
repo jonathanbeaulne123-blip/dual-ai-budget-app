@@ -58,6 +58,14 @@ The free route tries Cloudflare's free-plan eligible `@cf/google/gemma-4-26b-a4b
 
 After deterministic tools answer, one small second Workers AI pass may rewrite only that grounded answer in Hercules's voice. It receives no extra journal dump and cannot replace the typed facts or source links. If planning, vision, or voice is unavailable, the deterministic/local result survives.
 
+### Shift Oracle (D-137)
+
+Tipped-income science lives on-device in `tipScience.ts` and is exposed as read tools shared by free Hercules and Hercules Pro: `tip_oracle` (seeded Monte Carlo p10/p50/p90 + dry-streak reserve), `shift_outlook` (weekday × meal tip range with optional weather glass), `tip_schedule_sim` (cadence advice: protect-floor vs chase-spike), `tax_milk_plan` (educational tax-milk + peak smoothing buffer), `shift_year_simulation` (6–12 month tips+wages Monte Carlo), and `explain_shift_simulation` (method, limits, next step). All facts are projection-labelled. No Python sandbox yet (D-140 gate). No e-file. Kill criterion: rip the Oracle if a projection is treated as posted income or posts without Confirm.
+
+### Sim + Review packs (D-142)
+
+On-device `simReview.ts` adds three shared read tools: `cash_cinema` (13-week tip/wage/bill/card cash ribbon), `what_if_desk` (named unposted scenarios), and `year_review` (Season Replay from posted tips and journal). Hercules Pro MCP answers announce `usedTool` and prefix `I used \`tool_name\`.` Full inventory: [`HERCULES_PRO_CAPABILITIES.md`](HERCULES_PRO_CAPABILITIES.md).
+
 Cloudflare documents a [10,000-neuron daily Workers AI free allocation](https://developers.cloudflare.com/workers-ai/platform/pricing/) and at least [100,000 Worker requests per day on Free](https://developers.cloudflare.com/workers/platform/limits/). This household's expected two users and a few daily questions are intentionally far below those ceilings. On a Workers Free plan, exceeding the AI allocation fails with a limit error instead of billing; paid-provider fallback still stays disabled. A Cloudflare account upgrade changes Cloudflare's own overage behavior, so the deployment owner must keep the usage dashboard visible even though this workload should remain tiny.
 
 **When he thinks.** On open and after a post. Offline, notices still work; the model is flavor and fallback (`localHerculesChat`).
