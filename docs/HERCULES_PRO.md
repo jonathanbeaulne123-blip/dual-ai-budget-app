@@ -28,6 +28,10 @@ The living-teacher slice adds transaction, accounting-equation, debit/credit, st
 
 The Shift Oracle slice (D-137) adds `tip_oracle`, `shift_outlook`, `tip_schedule_sim`, and `tax_milk_plan`. Monte Carlo tip floors, weather-adjusted shift ranges, cadence advice, and educational tax-milk/buffer splits are projections resampled from posted tip shifts. They never post, never e-file, and never treat a forecast as income.
 
+The Sim + Review slice (D-138) adds `cash_cinema` (13-week forward cash ribbon), `what_if_desk` (named unposted scenarios), and `year_review` (Season Replay from posted history). Full inventory of every Pro calculation and feature: [`HERCULES_PRO_CAPABILITIES.md`](HERCULES_PRO_CAPABILITIES.md).
+
+Every successful MCP tool answer includes `usedTool` and prefixes the spoken answer with `I used \`tool_name\`.` so ChatGPT/Hercules Pro always says which calculation it ran.
+
 Pro cannot add, edit, delete, post, pay, transfer, merge, sync, or move money. Recommendations are words. The human returns to Hearth and uses the ordinary Confirm path for a write.
 
 Each ChatGPT account completes its own OAuth link. Hearth verifies the current Supabase/Google session, the active `continuity_memberships` row, environment, household, and member. The resulting Hearth access and refresh tokens are encrypted with the Worker signing secret; the underlying Supabase tokens are not exposed as readable token claims. Membership is checked again on reads and refresh.

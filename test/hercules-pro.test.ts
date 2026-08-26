@@ -101,10 +101,11 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list" }),
     }), env);
     const listed = await tools.json() as { result: { tools: Array<{ name: string; annotations: { readOnlyHint: boolean } }> } };
-    expect(listed.result.tools).toHaveLength(61);
-    expect(listed.result.tools.filter((tool) => tool.annotations.readOnlyHint)).toHaveLength(60);
+    expect(listed.result.tools).toHaveLength(64);
+    expect(listed.result.tools.filter((tool) => tool.annotations.readOnlyHint)).toHaveLength(63);
     expect(listed.result.tools.some((tool) => /^(?:post|delete|pay|transfer)(?:_|$)/.test(tool.name))).toBe(false);
     expect(listed.result.tools.some((tool) => tool.name === "tip_oracle")).toBe(true);
+    expect(listed.result.tools.some((tool) => tool.name === "cash_cinema")).toBe(true);
     expect(listed.result.tools.find((tool) => tool.name === "confirm_transaction")?.annotations.readOnlyHint).toBe(false);
 
     const call = await worker.fetch(new Request(`${origin}/mcp`, {
@@ -112,9 +113,10 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       headers: { Authorization: `Bearer ${tokens.access_token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "account_balance", arguments: { view: "personal" } } }),
     }), env);
-    const called = await call.json() as { result: { isError: boolean; structuredContent: { readOnly: boolean; memberId: string; ledger: string; accountingBasis: string; currency: string; timeZone: string; teachingContract: { writeAuthority: string; clickableSources: boolean } } } };
+    const called = await call.json() as { result: { isError: boolean; structuredContent: { readOnly: boolean; memberId: string; ledger: string; accountingBasis: string; currency: string; timeZone: string; usedTool: string; answer: string; teachingContract: { writeAuthority: string; clickableSources: boolean; announceTool: boolean } } } };
     expect(called.result.isError).toBe(false);
-    expect(called.result.structuredContent).toMatchObject({ readOnly: true, memberId: "MEM-002", ledger: "personal", accountingBasis: "posted-recognized-journal", currency: "CAD", timeZone: "America/Toronto", teachingContract: { writeAuthority: "none", clickableSources: true } });
+    expect(called.result.structuredContent).toMatchObject({ readOnly: true, memberId: "MEM-002", ledger: "personal", accountingBasis: "posted-recognized-journal", currency: "CAD", timeZone: "America/Toronto", usedTool: "account_balance", teachingContract: { writeAuthority: "none", clickableSources: true, announceTool: true } });
+    expect(called.result.structuredContent.answer.startsWith("I used `account_balance`.")).toBe(true);
 
     const refresh = await worker.fetch(new Request(`${origin}/oauth/token`, {
       method: "POST",
@@ -246,8 +248,9 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 20, method: "tools/list" }),
     }), env);
     const listed = await listedResponse.json() as { result: { tools: Array<{ name: string; annotations: { readOnlyHint: boolean; destructiveHint: boolean } }> } };
-    expect(listed.result.tools).toHaveLength(61);
+    expect(listed.result.tools).toHaveLength(64);
     expect(listed.result.tools.find((tool) => tool.name === "confirm_transaction")?.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: true });
+    expect(listed.result.tools.some((tool) => tool.name === "year_review")).toBe(true);
 
     const account = household.accounts.find((row) => row.active)!;
     const category = household.categories.find((row) => row.active && row.recordType === "category" && row.transactionType === "expense")!;

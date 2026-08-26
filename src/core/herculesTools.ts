@@ -40,6 +40,12 @@ import {
   upcomingCadenceSchedule,
   type TipMeal,
 } from "./tipScience.ts";
+import {
+  runCashCinema,
+  runWhatIfDesk,
+  runYearReview,
+  type WhatIfScenario,
+} from "./simReview.ts";
 import type { WeatherGlass } from "./weather.ts";
 
 export const HERCULES_READ_TOOL_NAMES = [
@@ -101,6 +107,9 @@ export const HERCULES_READ_TOOL_NAMES = [
   "shift_outlook",
   "tip_schedule_sim",
   "tax_milk_plan",
+  "cash_cinema",
+  "what_if_desk",
+  "year_review",
 ] as const;
 
 export type HerculesReadToolName = (typeof HERCULES_READ_TOOL_NAMES)[number];
@@ -189,6 +198,9 @@ export const HERCULES_READ_TOOL_CATALOG: ReadonlyArray<{ name: HerculesReadToolN
   { name: "shift_outlook", description: "Estimate tip range for one upcoming shift from weekday, meal, hours, and optional weather. Projection only." },
   { name: "tip_schedule_sim", description: "Simulate the next days of tip outcomes from historical cadence; ranks protect-floor vs chase-spike advice. Projection only." },
   { name: "tax_milk_plan", description: "Split tip income into educational tax-milk, smoothing buffer, and leftover projections. Never posts." },
+  { name: "cash_cinema", description: "13-week forward cash ribbon from tip floor/typical, wage pace, bills, and card mins. Projection only." },
+  { name: "what_if_desk", description: "Named unposted scenario versus current cash and tip floor. Never posts." },
+  { name: "year_review", description: "Posted tip months, income, spend, budget misses, and shift count for a trailing window." },
 ];
 
 const TOOL_SET = new Set<string>(HERCULES_READ_TOOL_NAMES);
@@ -320,12 +332,41 @@ function cleanArgs(name: HerculesReadToolName, raw: unknown): Record<string, unk
       taxRateBps: Math.min(5000, Math.max(0, Math.round(Number(input.taxRateBps) || 2500))),
     };
   }
+  if (name === "cash_cinema") {
+    return {
+      member: common.member,
+      weeks: Math.min(13, Math.max(4, Math.round(Number(input.weeks) || 13))),
+    };
+  }
+  if (name === "what_if_desk") {
+    const scenario = cleanWhatIfScenario(input.scenario);
+    return {
+      member: common.member,
+      scenario,
+      amountCents: cleanCents(input.amountCents),
+    };
+  }
+  if (name === "year_review") {
+    return {
+      member: common.member,
+      months: Math.min(12, Math.max(3, Math.round(Number(input.months) || 12))),
+    };
+  }
   if (name === "money_owed" || name === "cash_position" || name === "net_worth" || name === "audit_health") return {};
   return common;
 }
 
 function cleanWeatherGlass(value: unknown): WeatherGlass | undefined {
   return value === "clear" || value === "rain" || value === "snow" || value === "night" || value === "humid"
+    ? value
+    : undefined;
+}
+
+function cleanWhatIfScenario(value: unknown): WhatIfScenario | undefined {
+  return value === "cut_one_dinner_shift"
+    || value === "extra_card_pay"
+    || value === "purchase"
+    || value === "tax_milk_boost"
     ? value
     : undefined;
 }
@@ -1323,6 +1364,92 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
         fact(call, 1, "Tax milk", formatCad(plan.taxMilkCents), source, "projection"),
         fact(call, 2, "Smoothing buffer", formatCad(plan.bufferCents), source, "projection"),
         fact(call, 3, "Leftover after set-asides", formatCad(plan.leftoverCents), source, "projection"),
+      ],
+    };
+  }
+
+  if (call.name === "cash_cinema") {
+    const memberQuery = cleanString(call.args.member);
+    const member = resolveMember(household, memberQuery, context);
+    if (memberQuery && !member) return empty(call, `I cannot match member “${memberQuery}” in this ledger.`);
+    const memberId = tipOracleMemberId(context, member?.id);
+    const cinema = runCashCinema(household, today, {
+      memberId,
+      weeks: Number(call.args.weeks) || 13,
+    });
+    const source = tipOracleSource(context, memberId);
+    const firstDry = cinema.weeks.find((week) => week.dry);
+    return {
+      callId: call.id,
+      name: call.name,
+      status: "ok",
+      sentence: `Cash Cinema opens at ${formatCad(cinema.openingCashCents)} and projects a low near ${formatCad(cinema.lowestCashCents)} over ${cinema.weeks.length} weeks, with ${cinema.dryWeeks} pressure week${cinema.dryWeeks === 1 ? "" : "s"}${firstDry ? ` (first around ${firstDry.weekStart})` : ""}. Tip typical/floor and wages are projections; bills are cadence until Confirm. ${cinema.assumptions[0]}`,
+      facts: [
+        fact(call, 0, "Opening cash", formatCad(cinema.openingCashCents), source, "projection"),
+        fact(call, 1, "Lowest cash", formatCad(cinema.lowestCashCents), source, "projection"),
+        fact(call, 2, "Dry weeks", String(cinema.dryWeeks), source, "projection"),
+        ...cinema.weeks.slice(0, 4).map((week, index) => fact(
+          call,
+          index + 3,
+          `Week of ${week.weekStart}`,
+          `${formatCad(week.closingCashCents)}${week.dry ? " · pressure" : ""}`,
+          tipOracleSource(context, memberId, week.weekStart),
+          "projection",
+        )),
+      ],
+    };
+  }
+
+  if (call.name === "what_if_desk") {
+    const memberQuery = cleanString(call.args.member);
+    const member = resolveMember(household, memberQuery, context);
+    if (memberQuery && !member) return empty(call, `I cannot match member “${memberQuery}” in this ledger.`);
+    const scenario = cleanWhatIfScenario(call.args.scenario);
+    if (!scenario) {
+      return empty(call, "Choose cut_one_dinner_shift, extra_card_pay, purchase, or tax_milk_boost.");
+    }
+    const memberId = tipOracleMemberId(context, member?.id);
+    const desk = runWhatIfDesk(household, today, {
+      scenario,
+      amountCents: cleanCents(call.args.amountCents),
+      memberId,
+    });
+    const source = tipOracleSource(context, memberId);
+    return {
+      callId: call.id,
+      name: call.name,
+      status: "ok",
+      sentence: `${desk.label}: cash moves from ${formatCad(desk.beforeCashCents)} to ${formatCad(desk.afterCashCents)} (${formatCad(desk.deltaCashCents)}). Tip-floor window ${formatCad(desk.beforeTipFloorCents)} → ${formatCad(desk.afterTipFloorCents)}. ${desk.fits ? "It still clears a narrow leftover test." : "It fails the narrow leftover test."} Not posted — Confirm still required for any draft.`,
+      facts: [
+        fact(call, 0, "Before cash", formatCad(desk.beforeCashCents), source, "projection"),
+        fact(call, 1, "After cash", formatCad(desk.afterCashCents), source, "projection"),
+        fact(call, 2, "Cash delta", formatCad(desk.deltaCashCents), source, "projection"),
+        fact(call, 3, "Fits leftover test", desk.fits ? "yes" : "no", source, "projection"),
+      ],
+    };
+  }
+
+  if (call.name === "year_review") {
+    const memberQuery = cleanString(call.args.member);
+    const member = resolveMember(household, memberQuery, context);
+    if (memberQuery && !member) return empty(call, `I cannot match member “${memberQuery}” in this ledger.`);
+    const memberId = tipOracleMemberId(context, member?.id);
+    const review = runYearReview(household, today, {
+      memberId,
+      months: Number(call.args.months) || 12,
+    });
+    const source = tipOracleSource(context, memberId);
+    return {
+      callId: call.id,
+      name: call.name,
+      status: "ok",
+      sentence: `Season Replay ${review.fromMonth}–${review.toMonth}: ${formatCad(review.totalTipsCents)} tips across ${review.shiftCount} shift${review.shiftCount === 1 ? "" : "s"}, ${formatCad(review.totalIncomeCents)} income, ${formatCad(review.totalSpendCents)} spend, and ${review.budgetMissCount} budget miss${review.budgetMissCount === 1 ? "" : "es"}. Best tip month ${review.bestTipMonth ?? "n/a"}; softest ${review.worstTipMonth ?? "n/a"}. Posted history only.`,
+      facts: [
+        fact(call, 0, "Total tips", formatCad(review.totalTipsCents), source),
+        fact(call, 1, "Total income", formatCad(review.totalIncomeCents), source),
+        fact(call, 2, "Total spend", formatCad(review.totalSpendCents), source),
+        fact(call, 3, "Budget misses", String(review.budgetMissCount), source, "projection"),
+        fact(call, 4, "Shifts", String(review.shiftCount), source),
       ],
     };
   }
