@@ -7,8 +7,8 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/shift-year-simulation-85bf`
 - **Baseline SHA:** `8336b5d4649d2cad4f13d56e4a433178c42b8af5`
-- **Head SHA:** TBD (set after commit)
-- **PR or issue:** TBD
+- **Head SHA:** `2a7ad57b5b22a3f15f7eff9d7b8c3a01b8fd058c`
+- **PR or issue:** draft (opening)
 - **Risk:** Medium (High if sandbox were built; sandbox is design-only)
 - **Decision owner:** Jonathan
 - **Environment impact:** none beyond Development code; no deploy/schema/secrets
