@@ -73,6 +73,25 @@ describe("atomic household writes", () => {
     expect(compileHousehold(outcome.household).entries.length).toBeGreaterThan(0);
   });
 
+  it("restores previous PGlite books when post-ingest hash verify fails", async () => {
+    const previous = catalogHousehold();
+    const posted = postEntry(previous, grocery("Milk"));
+    const store = memoryAdapters();
+    store.adapters.verifyBooks = async () => ({ ok: false, error: "projection-mismatch" });
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: posted.household,
+      confirmationId: "confirm-verify-fail",
+      postedIds: posted.postedIds,
+      adapters: store.adapters,
+    });
+    expect(outcome.ok).toBe(false);
+    expect(outcome.postedNothing).toBe(true);
+    expect(store.persisted()).toBeNull();
+    expect(store.ingested()?.householdId).toBe(previous.householdId);
+    expect(store.ingested()?.transactions.some((row) => row.note === "Milk")).toBeFalsy();
+  });
+
   it("rejects an invalid command without writing JSON, books, or transport", async () => {
     const previous = catalogHousehold();
     const store = memoryAdapters();

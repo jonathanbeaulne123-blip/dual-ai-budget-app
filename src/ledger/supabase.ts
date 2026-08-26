@@ -358,6 +358,22 @@ async function discoverFromContinuityMemberships(
       : [];
     const household = await snapshotFromRow(snapshotRows[0]);
     if (!household || household.environment !== environment) continue;
+    if (household.householdId !== membership.household_id) continue;
+    try {
+      assertHouseholdBinding(
+        household,
+        {
+          environment,
+          householdId: membership.household_id,
+          memberId: membership.member_id,
+          googleSubject: identity.subject,
+          googleEmail: identity.email,
+        },
+        "pull",
+      );
+    } catch {
+      continue;
+    }
     const personal = await personalSnapshotForMembership(config, membership, environment);
     found.push({
       household: {
@@ -525,6 +541,17 @@ export async function discoverSupabaseHouseholdsByGoogleIdentity(
       if (!household || household.environment !== environment || found.has(household.householdId)) continue;
       const memberId = memberIdForGoogleIdentity(household, identity);
       if (!memberId) continue;
+      assertHouseholdBinding(
+        household,
+        {
+          environment,
+          householdId: household.householdId,
+          memberId,
+          googleSubject: identity.subject,
+          googleEmail: identity.email,
+        },
+        "pull",
+      );
       found.set(household.householdId, {
         household: { ...household, baseRevision: household.revision },
         memberId,
@@ -583,6 +610,7 @@ export async function pullHouseholdSnapshotById(
   householdId: string,
   environment: Environment = "development",
   config = readSupabaseConfig(),
+  continuityIdentity?: GoogleIdentitySelector | null,
 ): Promise<Household | null> {
   if (!config || !hostedContinuityAllowed(environment)) return null;
   const result = await rest(
@@ -597,9 +625,25 @@ export async function pullHouseholdSnapshotById(
   const rows = Array.isArray(result.body) ? result.body as { payload: string | Household }[] : [];
   const pulled = await snapshotFromRow(rows[0]);
   if (!pulled) return null;
+  const binding: {
+    environment: Environment;
+    householdId: string;
+    googleSubject?: string;
+    googleEmail?: string;
+    memberId?: string;
+  } = { environment, householdId };
+  if (continuityIdentity && (continuityIdentity.subject.trim() || continuityIdentity.email.trim())) {
+    binding.googleSubject = continuityIdentity.subject;
+    binding.googleEmail = continuityIdentity.email;
+    const memberId = memberIdForGoogleIdentity(pulled, continuityIdentity);
+    if (!memberId) {
+      throw new ValidationError("That cloud household is not linked to this Google account. Nothing was imported.");
+    }
+    binding.memberId = memberId;
+  }
   return assertHouseholdBinding(
     { ...pulled, linked: true, baseRevision: pulled.revision },
-    { environment, householdId },
+    binding,
     "pull",
   );
 }

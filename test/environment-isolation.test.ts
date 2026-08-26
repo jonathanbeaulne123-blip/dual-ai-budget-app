@@ -209,4 +209,122 @@ describe("environment isolation adversarial boundaries", () => {
       snapshot: { ...household, environment: undefined as unknown as "development" },
     })).toThrow(/missing its environment and was not replayed/);
   });
+
+  it("rejects pull/persist/outbox when Google subject does not match household membership", async () => {
+    let household = seedDemoHousehold({ today: "2026-08-24", environment: "development" });
+    household = {
+      ...household,
+      google: {
+        ...household.google,
+        links: [{
+          memberId: "MEM-001",
+          subject: "sub-owner",
+          email: "jon@example.com",
+          displayName: "Jonathan",
+          active: true,
+          linkedAt: "2026-08-25T12:00:00.000Z",
+          lastConfirmedAt: "2026-08-25T12:00:00.000Z",
+          grantedScopes: [],
+          updatedAt: "2026-08-25T12:00:00.000Z",
+        }],
+      },
+    };
+
+    expect(() => assertHouseholdBinding(household, {
+      environment: "development",
+      householdId: household.householdId,
+      memberId: "MEM-001",
+      googleSubject: "sub-other",
+      googleEmail: "other@example.com",
+    }, "pull")).toThrow(/not linked to this Google account/);
+
+    await expect(saveHousehold(household, {
+      operatingEnvironment: "development",
+      memberId: "MEM-001",
+      continuityIdentity: { subject: "sub-other", email: "other@example.com" },
+    })).rejects.toThrow(/not linked to the signed-in Google account/);
+
+    expect(() => assertOutboxItemBinding({
+      environment: "development",
+      householdId: household.householdId,
+      memberId: "MEM-001",
+      identity: { subject: "sub-other", email: "other@example.com" },
+      snapshot: household,
+    })).toThrow(/not linked to the signed-in Google account/);
+  });
+
+  it("rejects a live pull when the signed-in Google identity is not on the payload", async () => {
+    const household = {
+      ...catalogHousehold(),
+      householdId: "HH-EXPECTED",
+      inviteCode: "cedar-lantern-maple",
+      google: {
+        ...catalogHousehold().google,
+        links: [{
+          memberId: "MEM-001",
+          subject: "sub-owner",
+          email: "jon@example.com",
+          displayName: "Jonathan",
+          active: true,
+          linkedAt: "2026-08-25T12:00:00.000Z",
+          lastConfirmedAt: "2026-08-25T12:00:00.000Z",
+          grantedScopes: [],
+          updatedAt: "2026-08-25T12:00:00.000Z",
+        }],
+      },
+    };
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(
+      JSON.stringify([{ payload: JSON.stringify(household) }]),
+      { status: 200 },
+    )));
+    await expect(pullHouseholdSnapshotById(
+      "HH-EXPECTED",
+      "development",
+      config,
+      { subject: "sub-intruder", email: "intruder@example.com" },
+    )).rejects.toThrow(/not linked to this Google account/);
+  });
+
+  it("refuses to flush an outbox item when the flush identity differs from the queued identity", async () => {
+    const store = createMemoryContinuityStore();
+    setContinuityStore(store);
+    let household = seedDemoHousehold({ today: "2026-08-24", environment: "development" });
+    household = {
+      ...household,
+      linked: true,
+      google: {
+        ...household.google,
+        links: [{
+          memberId: "MEM-001",
+          subject: "sub-1",
+          email: "jon@example.com",
+          displayName: "Jonathan",
+          active: true,
+          linkedAt: "2026-08-25T12:00:00.000Z",
+          lastConfirmedAt: "2026-08-25T12:00:00.000Z",
+          grantedScopes: [],
+          updatedAt: "2026-08-25T12:00:00.000Z",
+        }],
+      },
+    };
+    enqueueContinuitySnapshot({
+      household,
+      identity: { subject: "sub-1", email: "jon@example.com" },
+      expectedRevision: 0,
+      confirmationId: "CONF-IDENTITY",
+    });
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    const flushed = await flushContinuityOutbox({
+      environment: "development",
+      identity: { subject: "sub-other", email: "other@example.com" },
+      config,
+      force: true,
+    });
+    expect(fetch).not.toHaveBeenCalled();
+    expect(flushed.synchronized).toBe(0);
+    expect(flushed.pending).toBe(0);
+    // Queued item remains for the original Google identity.
+    expect(JSON.parse(store.getItem("hearth:continuity-outbox:v1:development")!).length).toBe(1);
+  });
 });

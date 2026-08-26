@@ -388,7 +388,7 @@ export async function resolveOutboxHousehold(
 
   const eligible = candidates.filter((household) => {
     try {
-      assertOutboxItemBinding({ ...item, snapshot: household });
+      assertOutboxItemBinding({ ...item, snapshot: household, identity: item.identity });
       return household.revision >= tipRevision;
     } catch {
       return false;
@@ -408,7 +408,7 @@ export async function resolveOutboxHousehold(
 
   eligible.sort((left, right) => right.revision - left.revision || right.baseRevision - left.baseRevision);
   const chosen = eligible[0]!;
-  assertOutboxItemBinding({ ...item, snapshot: chosen });
+  assertOutboxItemBinding({ ...item, snapshot: chosen, identity: item.identity });
   return chosen;
 }
 
@@ -452,7 +452,7 @@ export function enqueueContinuitySnapshot(input: {
     blockedByConflict: false,
     nextAttemptAt: null,
   };
-  assertOutboxItemBinding({ ...item, snapshot });
+  assertOutboxItemBinding({ ...item, snapshot, identity: item.identity });
   write(snapshot.environment, [...items.filter((row) => row.id !== id), item]);
   return item;
 }
@@ -547,7 +547,11 @@ async function flushItem(
   | { kind: "conflict"; remote: Household; message: string }
 > {
   try {
+    if (!sameIdentity(item.identity, identity)) {
+      throw new Error("This outbox entry belongs to a different Google account and was not replayed.");
+    }
     const household = await resolveOutboxHousehold(item, liveHousehold);
+    assertOutboxItemBinding({ ...item, snapshot: household, identity: item.identity });
     const pushed = await pushSupabaseHousehold(household, config, {
       expectedRevision: item.expectedRevision,
       continuityIdentity: identity,

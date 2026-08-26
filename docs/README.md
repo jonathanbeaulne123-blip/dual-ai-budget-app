@@ -43,6 +43,7 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [claude/COMMAND_CONTRACT.md](claude/COMMAND_CONTRACT.md) | Typed write-surface states for Claude (no toast-inferred posting) |
 | [CLAUDE_COMMAND_STATES_UX.md](CLAUDE_COMMAND_STATES_UX.md) | Command/continuity/conflict/recovery UX spec — merged [PR #76](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/76) |
 | [HOSTED_ROW_INVENTORY.md](HOSTED_ROW_INVENTORY.md) | Leftover hosted-row runbook. Metadata only. Do not delete without Jonathan. |
+| [SHEETS_ERA_TRACKER_ARCHIVE.md](SHEETS_ERA_TRACKER_ARCHIVE.md) | Retained evidence for closed Sheets-era issues and superseded PRs (Phase 0 hygiene). |
 | [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) | Legacy Auth/RLS sketch — do not apply; superseded by cutover packet |
 | [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md) | Living Auth/RLS cutover (D-123); 004/005/006/007/008 applied; Google Auth live; anon household REST closed |
 | [`sql/006_preflight_readonly.sql`](sql/006_preflight_readonly.sql) | Read-only 006 go/no-go queries (historical / re-verify) |
