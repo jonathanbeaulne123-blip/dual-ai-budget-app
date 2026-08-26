@@ -1,14 +1,14 @@
 # Hearth worksession — Hercules companion cross-origin load repair
 
-- **Status:** OPEN
+- **Status:** CLOSED — merged, deployed, connector refreshed, and visually verified
 - **Opened:** 2026-08-26 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `codex/hercules-companion-load-fix`
 - **Baseline SHA:** `d2650440b9547996b7d728085b30bdb60abdf8e7`
-- **Head SHA:** pending
-- **PR or issue:** pending
+- **Head SHA:** `cb77cad3ec3b11670428ed7985fd9bbe22bfbd0e`
+- **PR or issue:** [#143](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/143)
 - **Risk:** Medium
 - **Decision owner:** Jonathan
 - **Environment impact:** Development Worker presentation assets; no ledger, schema, secret, or Production-data mutation
@@ -47,18 +47,18 @@ Animated Hercules loads inside ChatGPT's sandbox. If the JavaScript module, WebG
 
 ## Acceptance evidence
 
-- [ ] Focused MCP resource and asset-header tests pass.
-- [ ] Typecheck, build, full tests, and Wrangler dry run pass.
-- [ ] Exact public JS/GLB/SVG responses carry cross-origin headers; unrelated assets do not.
-- [ ] Fresh ChatGPT summon reaches animated awake/listening state or the explicit static fallback within its deadline.
-- [ ] No credentials, rows, command authority, schema, or household data changed.
+- [x] Focused MCP resource and asset-header tests pass.
+- [x] Typecheck, build, full tests, and Wrangler dry run pass.
+- [x] Exact public JS/GLB/SVG responses carry cross-origin headers; unrelated assets do not.
+- [x] Refreshed ChatGPT card renders the 3D model and reaches `Hercules is listening`.
+- [x] No credentials, rows, command authority, schema, or household data changed.
 
 ## Plan
 
 - [x] Reproduce and identify the sandbox/Worker origin boundary.
 - [x] Add URI v2, exact asset headers, and two-stage fallback.
-- [ ] Verify, review diff, and record evidence.
-- [ ] Push, merge, deploy, refresh, and visually verify.
+- [x] Verify, review diff, and record evidence.
+- [x] Push, merge, deploy, refresh, and visually verify.
 
 ## Evidence log
 
@@ -66,6 +66,15 @@ Animated Hercules loads inside ChatGPT's sandbox. If the JavaScript module, WebG
 - ChatGPT iframe shell: controls and plaque rendered; status remained `Waking Hercules…`; no 3D model or static fallback appeared.
 - Cloudflare Static Assets guidance: when the Worker runs first, response headers may be attached in Worker code; public CORS example uses `Access-Control-Allow-Origin: *`.
 - OpenAI MCP Apps guidance: exact resource/connect domains must be declared and a breaking UI change needs a new resource URI because the URI is the cache key.
+- Focused: `pnpm exec vitest run test/hercules-pro.test.ts test/hercules-companion-assets.test.ts` → 2 files, 10 tests passed.
+- `pnpm exec tsc --noEmit` → clean.
+- `pnpm build` → passed; companion bundle and preserved-rig model emitted.
+- `pnpm test` → 89 files, 622 tests passed.
+- `pnpm exec wrangler deploy --dry-run` → passed with Assets + Workers AI bindings and paid-provider flags still false.
+- PR #143 checks: Pages success, both test checks success, Workers Builds success, Supabase Preview skipped on the PR.
+- Merge: `cb77cad3ec3b11670428ed7985fd9bbe22bfbd0e`; main Pages deploy and Workers Builds both succeeded.
+- Connector refresh changed the registered template from `ui://hearth/hercules-companion-v1.html` to `ui://hearth/hercules-companion-v2.html`.
+- Live ChatGPT proof: the iframe rendered the 3D model, exposed Pause, and reported `Hercules is listening` instead of `Waking Hercules…`.
 
 ## Decisions
 
@@ -75,8 +84,8 @@ Animated Hercules loads inside ChatGPT's sandbox. If the JavaScript module, WebG
 
 ## Remaining uncertainty
 
-- ChatGPT picture-in-picture availability is host-controlled. Inline animation/fallback remains the guaranteed presentation path.
+- ChatGPT picture-in-picture availability remains host-controlled. Inline animation and bounded static fallback are verified; the card's current host kept Hercules inline.
 
 ## Handoff
 
-Codex owns implementation through live visual verification. Final handoff must distinguish branch, PR, merge, Worker deployment, connector refresh, and observed card state.
+Complete. PR #143 is merged to `main`; the main Worker deployment succeeded; Hercules Pro is refreshed to the v2 template; live ChatGPT rendered animated 3D Hercules with `Hercules is listening`. Jonathan can keep playtesting the model framing and motion as a later aesthetic adjustment.
