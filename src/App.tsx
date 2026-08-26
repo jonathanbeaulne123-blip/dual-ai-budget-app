@@ -153,6 +153,11 @@ import { readSupabaseConfig, pullHouseholdSnapshotById, pullPersonalSnapshotById
 import { clearUndoHistory, loadUndoHistory, saveUndoHistory } from "./undoHistory.ts";
 import { livePullIntervalMs, shouldRunLivePull } from "./continuityLivePull.ts";
 import {
+  createContinuityCoordinator,
+  shouldIgnoreInboundSnapshot,
+  type ContinuitySyncSource,
+} from "./continuityCoordinator.ts";
+import {
   attachContinuityRealtime,
   canAttachContinuityRealtime,
   continuityRealtimeEnabled,
@@ -746,7 +751,7 @@ export function App() {
     const storedAuthSession = loadSupabaseSession(environment);
     if (!storedAuthSession && !googleSession?.identity.email && !googleSession?.identity.subject) return;
     let live = true;
-    let running = false;
+    const coordinator = createContinuityCoordinator();
 
     const acceptReplayCandidate = async (candidate: Household, confirmationId: string, commandKind: string) => {
       const previous = householdRef.current;
@@ -776,9 +781,7 @@ export function App() {
       return accepted;
     };
 
-    const replay = async () => {
-      if (running) return;
-      running = true;
+    const replayWork = async () => {
       if (live) setSyncState("syncing");
       try {
         const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
@@ -909,7 +912,24 @@ export function App() {
             /* personal pull is best-effort; shared pull continues */
           }
         }
-        if (current && remoteHousehold && remoteHousehold.revision > (current.baseRevision ?? 0)) {
+        if (current && remoteHousehold) {
+          const remoteRevision = remoteHousehold.revision ?? 0;
+          const hasOpenConflict = unresolvedConflicts(current).length > 0;
+          const staleSignal = shouldIgnoreInboundSnapshot({
+            remoteRevision,
+            localTipRevision: current.revision ?? 0,
+            hasOpenConflict,
+          });
+          const duplicatePull = !staleSignal
+            && remoteRevision > (current.baseRevision ?? 0)
+            && coordinator.shouldDedupePull(current.householdId, remoteRevision);
+          if (
+            !staleSignal
+            && !duplicatePull
+            && remoteRevision > (current.baseRevision ?? 0)
+          ) {
+          coordinator.recordPull(current.householdId, remoteRevision);
+          if (!coordinator.shouldSkipAccept(current.householdId, remoteRevision)) {
           const reconciled = await reconcileHouseholdSnapshots(current, remoteHousehold, memberId);
           const accepted = await acceptReplayCandidate(
             reconciled,
@@ -922,6 +942,7 @@ export function App() {
             setError(accepted?.userMessage || "Could not accept the shared household.");
             return;
           }
+          coordinator.recordAccept(current.householdId, remoteRevision);
           if (accepted.household.sharing?.mode === "pending-transport") {
             const tip = remoteHousehold.revision;
             const ready = accepted.household;
@@ -954,6 +975,8 @@ export function App() {
               return;
             }
           }
+          }
+          }
         }
         if (live) {
           const open = householdRef.current ? unresolvedConflicts(householdRef.current) : [];
@@ -964,20 +987,22 @@ export function App() {
         if (!live) return;
         setSyncState("error");
         setError(caught instanceof Error ? caught.message : String(caught));
-      } finally {
-        running = false;
       }
     };
 
-    const onOnline = () => void replay();
-    const onFocus = () => void replay();
+    const scheduleReplay = (source: ContinuitySyncSource) => {
+      void coordinator.run(source, replayWork);
+    };
+
+    const onOnline = () => scheduleReplay("online");
+    const onFocus = () => scheduleReplay("focus");
     const onVisibility = () => {
-      if (document.visibilityState === "visible") void replay();
+      if (document.visibilityState === "visible") scheduleReplay("visibility");
     };
     window.addEventListener("online", onOnline);
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
-    void replay();
+    scheduleReplay("manual");
 
     let detachRealtime: (() => void) | null = null;
     const realtimeStatusRef: { current: ContinuityRealtimeStatus | null } = { current: null };
@@ -1025,7 +1050,7 @@ export function App() {
             hasSession: Boolean(memberId),
             hasHousehold: Boolean(householdRef.current),
           })) return;
-          void replay();
+          scheduleReplay("realtime");
         },
         onStatusChange: (status) => {
           realtimeStatusRef.current = status;
@@ -1044,7 +1069,7 @@ export function App() {
         hasHousehold: Boolean(householdRef.current),
       })) return;
       if (!shouldUsePollFallback(realtimeStatusRef.current)) return;
-      void replay();
+      scheduleReplay("poll");
     }, intervalMs);
     return () => {
       live = false;
