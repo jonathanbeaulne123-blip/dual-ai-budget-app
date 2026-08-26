@@ -18,11 +18,11 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 **Verification:** `pnpm exec vitest run test/visibility.test.ts test/hercules-pro.test.ts test/hercules-tools.test.ts` green (29 tests). Full `pnpm test`: 624/626 green; 2× pre-existing `batch-import-ui` SubtleCrypto failures on `main`.
 
-**Uncertainty:** Live ChatGPT smoke against a signed-in Development household with synced personal shifts not run in this VM.
+**Uncertainty:** Live ChatGPT smoke against a signed-in Development household with synced personal shifts not run in this VM. Jonathan's 2026-08-26 check showed `shift_summary` 0 on both Personal and Household — that matches **empty hosted snapshots**, not a period-filter bug. In-app Hercules reads local PGlite; Pro reads cloud only until sync completes.
 
 **Data/environment:** Development code only; synthetic fixtures; no schema, secrets, Production, or deploy.
 
-**Next owner:** Jonathan — reconnect Pro, ask for shift summary / tip oracle on Personal ledger after a sync; review PR.
+**Next owner:** Jonathan — on the phone with shifts: confirm Google sign-in, wait for sync (no pending/error chip), optionally More → Reload random data (keep identity) to seed stress shifts, then re-ask Pro. After merge+deploy, `cloudBooks.memberShiftCount` in shift tool responses shows hosted shift totals explicitly. Review PR.
 
 ## Hercules PiP auto-load (D-139 follow-up, 2026-08-26)
 

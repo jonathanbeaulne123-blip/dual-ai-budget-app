@@ -21,6 +21,19 @@ const HERCULES_COMPANION_URI = "ui://hearth/hercules-companion-v3.html";
 const HERCULES_COMPANION_MIME = "text/html;profile=mcp-app";
 const memoryCodes = new Set();
 
+const SHIFT_DIAGNOSTIC_TOOLS = new Set([
+  "shift_summary",
+  "tip_oracle",
+  "shift_outlook",
+  "tip_schedule_sim",
+  "tax_milk_plan",
+  "shift_year_simulation",
+  "explain_shift_simulation",
+  "cash_cinema",
+  "what_if_desk",
+  "year_review",
+]);
+
 const TOOL_CATALOG = [
   ["account_balance", "Read one visible account balance or list visible accounts."],
   ["find_transactions", "Find posted rows by merchant, account, category, member, period, or amount."],
@@ -929,7 +942,8 @@ async function handleMcp(request, env) {
       if (!TOOL_CATALOG.some(([toolName]) => toolName === name)) {
         return json({ jsonrpc: "2.0", id: rpc.id, error: { code: -32602, message: "Unknown Hercules tool." } }, 400);
       }
-      const { books } = await loadBooks(env, claims);
+      const loaded = await loadBooks(env, claims);
+      const { books, personal } = loaded;
       const view = args.view === "household" ? "household" : "personal";
       const run = executeHerculesReadToolPlan(books, { calls: [{ id: String(rpc.id ?? randomId()), name, args }] }, torontoToday(), {
         memberId: claims.memberId,
@@ -941,6 +955,7 @@ async function handleMcp(request, env) {
       const answer = rawAnswer.startsWith("I used `")
         ? rawAnswer
         : `I used \`${usedTool}\`. ${rawAnswer}`;
+      const memberShiftCount = books.shifts.filter((shift) => shift.memberId === claims.memberId).length;
       const structuredContent = {
         status: result?.status || "empty",
         usedTool,
@@ -953,6 +968,16 @@ async function handleMcp(request, env) {
         accountingBasis: "posted-recognized-journal",
         currency: books.currency || "CAD",
         timeZone: books.timezone || "America/Toronto",
+        ...(SHIFT_DIAGNOSTIC_TOOLS.has(name)
+          ? {
+              cloudBooks: {
+                mergedShiftCount: books.shifts.length,
+                memberShiftCount,
+                personalEnvelopeShiftCount: personal?.shifts?.length ?? 0,
+                personalEnvelopeLoaded: Boolean(personal?.kind === "personal" && personal.memberId === claims.memberId),
+              },
+            }
+          : {}),
         teachingContract: {
           order: ["name-the-tool", "direct-answer", "posted-evidence", "plain-language-lesson", "limitations", "human-next-step"],
           clickableSources: true,
