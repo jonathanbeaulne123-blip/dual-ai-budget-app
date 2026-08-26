@@ -149,6 +149,20 @@ export function isMissingRpc(body: unknown): boolean {
     && /publish_household_snapshot/i.test(message);
 }
 
+/** Migration 012 atomic continuity RPC missing from PostgREST schema cache. */
+export function isMissingContinuityRpc(body: unknown): boolean {
+  if (!body || typeof body !== "object") return false;
+  const code = "code" in body ? String((body as { code: unknown }).code) : "";
+  const message = "message" in body ? String((body as { message: unknown }).message) : "";
+  if (code === "PGRST202" || code === "PGRST203") return true;
+  return /could not find the function|schema cache/i.test(message)
+    && /publish_continuity_snapshot/i.test(message);
+}
+
+function usesAuthContinuitySession(config: SupabaseConfig): boolean {
+  return Boolean(config.authUserId || config.accessToken);
+}
+
 async function remoteFromCasPayload(payload: string | null | undefined): Promise<Household | null> {
   if (!payload) return null;
   try {
@@ -186,6 +200,9 @@ function parseCasRpcBody(body: unknown): SnapshotCasResult | null {
       || reasonRaw === "google-identity-required"
       || reasonRaw === "household-already-exists"
       || reasonRaw === "invalid-household"
+      || reasonRaw === "invalid-personal-payload"
+      || reasonRaw === "personal-payload-mismatch"
+      || reasonRaw === "production-disabled"
       || reasonRaw === "stale-revision"
         ? reasonRaw
         : "stale-revision";
@@ -216,6 +233,9 @@ function conflictMessage(reason: SnapshotCasConflict["reason"] | undefined): str
       return "This Google account is not an active member of that household. Nothing was overwritten.";
     case "personal-data-in-shared-payload":
       return "Personal ledger rows were refused from the shared cloud snapshot. Nothing was overwritten.";
+    case "invalid-personal-payload":
+    case "personal-payload-mismatch":
+      return "The personal cloud envelope was invalid or disagreed with this phone. Nothing was overwritten.";
     case "google-identity-required":
       return "Reconnect with Google through Hearth before creating cloud books.";
     case "payload-identity-mismatch":
@@ -447,6 +467,75 @@ async function publishContinuityMemberScope(
     },
   );
   if (!personalResult.ok) throw new Error(messageOf(personalResult.body));
+}
+
+async function publishContinuitySnapshotAtomic(
+  config: SupabaseConfig,
+  probe: SupabaseProbe,
+  snapshot: Household,
+  cloudSnapshot: Household,
+  expectedRevision: number,
+  continuityMemberId: string,
+): Promise<PushHouseholdResult> {
+  const snapshotHash = await financialAuditHash(cloudSnapshot);
+  const payload = await encodeSharedSnapshotPayload(cloudSnapshot);
+  const personalPayload = await encodeHouseholdPayload(personalReplicaForMember(snapshot, continuityMemberId));
+  const rpc = await rest(config, "rpc/publish_continuity_snapshot", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({
+      p_household_id: snapshot.householdId,
+      p_expected_revision: expectedRevision,
+      p_name: snapshot.name,
+      p_timezone: snapshot.timezone,
+      p_currency: snapshot.currency,
+      p_environment: snapshot.environment,
+      p_invite_phrase: snapshot.inviteCode,
+      p_linked: snapshot.linked || true,
+      p_revision: snapshot.revision,
+      p_last_committed_at: snapshot.lastCommittedAt,
+      p_payload: payload,
+      p_snapshot_hash: snapshotHash,
+      p_member_id: continuityMemberId,
+      p_personal_payload: personalPayload,
+    }),
+  });
+
+  if (rpc.ok) {
+    const cas = parseCasRpcBody(rpc.body);
+    if (cas?.ok) {
+      return {
+        ...probe,
+        schema: true,
+        error: undefined,
+        skipped: false,
+        conflict: false,
+        duplicate: cas.duplicate === true,
+        usedCasRpc: true,
+      };
+    }
+    if (cas && !cas.ok) {
+      return {
+        ...probe,
+        schema: true,
+        conflict: true,
+        usedCasRpc: true,
+        remote: (await remoteFromCasPayload(cas.remotePayload)) ?? undefined,
+        error: conflictMessage(cas.reason),
+      };
+    }
+  } else if (!isMissingContinuityRpc(rpc.body)) {
+    throw new Error(messageOf(rpc.body));
+  }
+
+  return {
+    ...probe,
+    schema: true,
+    skipped: true,
+    conflict: false,
+    usedCasRpc: false,
+    error: "Hosted continuity RPC is unavailable. Automatic sharing stopped instead of racing a legacy upsert. Retry after the kitchen recovers, or use Advanced recovery only while Auth is off.",
+  };
 }
 
 export async function probeSupabase(config = readSupabaseConfig()): Promise<SupabaseProbe> {
@@ -718,9 +807,11 @@ export async function pushSupabaseHousehold(
   const snapshotHash = await financialAuditHash(cloudSnapshot);
   const payload = await encodeSharedSnapshotPayload(cloudSnapshot);
   const identity = options?.continuityIdentity;
-  // Personal-before-CAS only when the household row already exists (FK on memberships).
-  // First create still publishes scope after the household write.
-  const publishScopeBeforeCas = Boolean(continuityMemberId && identity && expectedRevision > 0);
+  const atomicAuthContinuity = Boolean(continuityMemberId && identity && usesAuthContinuitySession(config));
+  // Personal-before-CAS only for the Auth-off two-trip bridge when the household row already exists.
+  const publishScopeBeforeCas = Boolean(
+    !atomicAuthContinuity && continuityMemberId && identity && expectedRevision > 0,
+  );
   if (publishScopeBeforeCas && continuityMemberId && identity) {
     await publishContinuityMemberScope(config, snapshot, continuityMemberId, identity);
   }
@@ -749,6 +840,16 @@ export async function pushSupabaseHousehold(
     if (create.ok) {
       const created = parseCasRpcBody(create.body);
       if (created?.ok) {
+        if (atomicAuthContinuity) {
+          return publishContinuitySnapshotAtomic(
+            config,
+            probe,
+            snapshot,
+            cloudSnapshot,
+            snapshot.revision,
+            continuityMemberId,
+          );
+        }
         try {
           await publishContinuityMemberScope(config, snapshot, continuityMemberId, identity);
         } catch (caught) {
@@ -787,6 +888,17 @@ export async function pushSupabaseHousehold(
     } else if (!isMissingRpc(create.body)) {
       throw new Error(messageOf(create.body));
     }
+  }
+
+  if (atomicAuthContinuity && continuityMemberId) {
+    return publishContinuitySnapshotAtomic(
+      config,
+      probe,
+      snapshot,
+      cloudSnapshot,
+      expectedRevision,
+      continuityMemberId,
+    );
   }
 
   const rpc = await rest(config, "rpc/publish_household_snapshot", {

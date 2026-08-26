@@ -5,6 +5,11 @@ import { pushSupabaseHousehold, bundledSupabaseConfig } from "../src/ledger/supa
 import { vi, afterEach } from "vitest";
 
 const identity = { email: "jonathan@example.com", subject: "google-sub-jonathan" };
+const authConfig = {
+  ...bundledSupabaseConfig(),
+  authUserId: "auth-user-jonathan",
+  accessToken: "jwt-test-token",
+};
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -23,7 +28,7 @@ describe("D-143 Auth membership continuity authority", () => {
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes("households?select=id")) return new Response(JSON.stringify([]), { status: 200 });
-      if (url.includes("rpc/hearth_create_household") || url.includes("rpc/publish_household_snapshot")) {
+      if (url.includes("rpc/hearth_create_household") || url.includes("rpc/publish_continuity_snapshot")) {
         return new Response(JSON.stringify({ ok: true, conflict: false, duplicate: false, revision: 1 }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -34,7 +39,7 @@ describe("D-143 Auth membership continuity authority", () => {
       }
       return new Response(null, { status: 201 });
     }));
-    const result = await pushSupabaseHousehold(household, bundledSupabaseConfig(), {
+    const result = await pushSupabaseHousehold(household, authConfig, {
       expectedRevision: 0,
       continuityIdentity: identity,
     });
@@ -68,10 +73,10 @@ describe("D-143 Auth membership continuity authority", () => {
       if (url.includes("households?select=id")) {
         return new Response(JSON.stringify([{ id: household.householdId }]), { status: 200 });
       }
-      if (url.includes("rpc/publish_household_snapshot") || url.includes("rpc/hearth_create_household")) {
+      if (url.includes("rpc/publish_continuity_snapshot") || url.includes("rpc/hearth_create_household")) {
         return new Response(JSON.stringify({
           code: "PGRST202",
-          message: "Could not find the function",
+          message: "Could not find the function public.publish_continuity_snapshot",
         }), { status: 404, headers: { "Content-Type": "application/json" } });
       }
       if (url.includes("continuity_")) return new Response(JSON.stringify([]), { status: 200 });
@@ -83,13 +88,13 @@ describe("D-143 Auth membership continuity authority", () => {
       continuityIdentity: identity,
     });
     expect(result.skipped).toBe(true);
-    expect(result.error).toMatch(/CAS RPC is unavailable/);
+    expect(result.error).toMatch(/continuity RPC is unavailable/);
     expect(result.usedCasRpc).toBe(false);
     const urls = fetch.mock.calls.map((call) => String(call[0]));
     expect(urls.some((url) => url.includes("household_snapshots?on_conflict"))).toBe(false);
   });
 
-  it("D-147: Personal fail after Shared CAS returns skipped+error (outbox must not treat as success)", async () => {
+  it("T1-S2: Auth continuity uses one atomic RPC (no separate Personal POST)", async () => {
     const base = linkGoogleIdentity(catalogHousehold(), {
       memberId: "MEM-001",
       email: identity.email,
@@ -97,41 +102,36 @@ describe("D-143 Auth membership continuity authority", () => {
       displayName: "Jonathan",
       grantedScopes: ["openid", "email"],
     }).household;
-    const household = { ...base, linked: true, revision: 1, baseRevision: 0 };
-    let casSeen = false;
-    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+    const household = { ...base, linked: true, revision: 2, baseRevision: 1 };
+    const calls: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+      calls.push(url);
       if (url.includes("households?select=id")) {
-        return new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } });
+        return new Response(JSON.stringify([{ id: household.householdId }]), { status: 200, headers: { "Content-Type": "application/json" } });
       }
-      if (url.includes("rpc/publish_household_snapshot")) {
-        casSeen = true;
-        return new Response(JSON.stringify({ ok: true, conflict: false, duplicate: false, revision: 1 }), {
+      if (url.includes("rpc/publish_continuity_snapshot")) {
+        const body = init?.body ? JSON.parse(String(init.body)) as Record<string, unknown> : {};
+        expect(body.p_member_id).toBe("MEM-001");
+        expect(typeof body.p_personal_payload).toBe("string");
+        return new Response(JSON.stringify({ ok: true, conflict: false, duplicate: false, revision: 2 }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
       }
-      if (url.includes("continuity_memberships?select=household_id")) {
-        return new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } });
-      }
-      if (url.includes("continuity_memberships?on_conflict")) {
-        return new Response(null, { status: 201 });
-      }
       if (url.includes("continuity_personal_snapshots?on_conflict")) {
-        return new Response(JSON.stringify({ message: "personal write failed" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
+        throw new Error("Personal must not POST separately on Auth atomic path");
       }
       return new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } });
     }));
-    const result = await pushSupabaseHousehold(household, bundledSupabaseConfig(), {
-      expectedRevision: 0,
+    const result = await pushSupabaseHousehold(household, authConfig, {
+      expectedRevision: 1,
       continuityIdentity: identity,
     });
-    expect(casSeen).toBe(true);
+    expect(result.skipped).toBe(false);
     expect(result.usedCasRpc).toBe(true);
-    expect(result.skipped).toBe(true);
-    expect(result.error).toMatch(/Personal scope failed/i);
+    expect(calls.some((url) => url.includes("rpc/publish_continuity_snapshot"))).toBe(true);
+    expect(calls.some((url) => url.includes("rpc/publish_household_snapshot"))).toBe(false);
+    expect(calls.some((url) => url.includes("continuity_personal_snapshots?on_conflict"))).toBe(false);
   });
 });
