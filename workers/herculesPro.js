@@ -81,6 +81,9 @@ const TOOL_CATALOG = [
   ["tax_milk_plan", "Split tip income into educational tax-milk, smoothing buffer, and leftover projections. Never posts."],
   ["shift_year_simulation", "Seeded Monte Carlo for the next 6–12 months of tips and wages from posted shift history. Projection only."],
   ["explain_shift_simulation", "Teach how the shift year simulation works: method, limits, and a human next step. Never posts."],
+  ["cash_cinema", "13-week forward cash ribbon from tip floor/typical, wage pace, bills, and card mins. Projection only."],
+  ["what_if_desk", "Named unposted scenario versus current cash and tip floor. Never posts."],
+  ["year_review", "Posted tip months, income, spend, budget misses, and shift count for a trailing window."],
 ];
 
 const TOOL_PROPERTIES = {
@@ -117,6 +120,8 @@ const TOOL_PROPERTIES = {
   taxRateBps: { type: "integer", minimum: 0, maximum: 5000, description: "Educational tax-milk rate in basis points. 2500 = 25%." },
   iterations: { type: "integer", minimum: 200, maximum: 5000 },
   seed: { type: "integer", minimum: 0, maximum: 1000000000 },
+  weeks: { type: "integer", minimum: 4, maximum: 13 },
+  scenario: { type: "string", enum: ["cut_one_dinner_shift", "extra_card_pay", "purchase", "tax_milk_boost"] },
 };
 
 const TOOL_PROPERTY_NAMES = {
@@ -180,6 +185,9 @@ const TOOL_PROPERTY_NAMES = {
   tax_milk_plan: ["view", "member", "tipCents", "shiftId", "taxRateBps"],
   shift_year_simulation: ["view", "member", "months", "iterations", "seed"],
   explain_shift_simulation: ["view", "member"],
+  cash_cinema: ["view", "member", "weeks"],
+  what_if_desk: ["view", "member", "scenario", "amountCents"],
+  year_review: ["view", "member", "months"],
 };
 
 const TOOL_REQUIRED_PROPERTIES = {
@@ -195,6 +203,7 @@ const TOOL_REQUIRED_PROPERTIES = {
   explain_variance: ["category"],
   explain_transfer: ["transactionId"],
   shift_outlook: ["hours"],
+  what_if_desk: ["scenario"],
 };
 
 function json(body, status = 200, headers = {}) {
@@ -788,7 +797,7 @@ async function handleMcp(request, env) {
       if (name === "summon_hercules") return mcpSuccess(rpc.id, companionResult(args));
       if (name === "transaction_write_options") {
         const { books } = await loadBooks(env, claims);
-        return mcpSuccess(rpc.id, writeOptions(books, args));
+        return mcpSuccess(rpc.id, { usedTool: name, ...writeOptions(books, args) });
       }
       if (name === "prepare_transaction") {
         if (!hasScope(claims, "hearth.write")) throw new Error("Reconnect Hercules Pro after enabling writing in Hearth.");
@@ -813,6 +822,7 @@ async function handleMcp(request, env) {
           exp: now + WRITE_PREVIEW_TTL_SECONDS,
         });
         return mcpSuccess(rpc.id, {
+          usedTool: name,
           status: "confirmation-required",
           preview: prepared.preview,
           confirmationToken,
@@ -858,6 +868,7 @@ async function handleMcp(request, env) {
             });
           }
           return mcpSuccess(rpc.id, {
+            usedTool: name,
             status: "posted-exactly-once",
             duplicateConfirmation: true,
             ledger: preview.input.view,
@@ -908,6 +919,7 @@ async function handleMcp(request, env) {
           identityHash: preview.identityHash,
         });
         return mcpSuccess(rpc.id, {
+          usedTool: name,
           status: "posted-exactly-once",
           duplicateConfirmation: published.duplicate === true,
           ledger: preview.input.view,
@@ -929,9 +941,15 @@ async function handleMcp(request, env) {
         view,
       });
       const result = run.results[0];
+      const usedTool = name;
+      const rawAnswer = result?.sentence || run.talk.spoken;
+      const answer = rawAnswer.startsWith("I used `")
+        ? rawAnswer
+        : `I used \`${usedTool}\`. ${rawAnswer}`;
       const structuredContent = {
         status: result?.status || "empty",
-        answer: result?.sentence || run.talk.spoken,
+        usedTool,
+        answer,
         facts: result?.facts || [],
         ledger: view,
         householdId: claims.householdId,
@@ -941,10 +959,11 @@ async function handleMcp(request, env) {
         currency: books.currency || "CAD",
         timeZone: books.timezone || "America/Toronto",
         teachingContract: {
-          order: ["direct-answer", "posted-evidence", "plain-language-lesson", "limitations", "human-next-step"],
+          order: ["name-the-tool", "direct-answer", "posted-evidence", "plain-language-lesson", "limitations", "human-next-step"],
           clickableSources: true,
           projectionFactsLabeled: true,
           writeAuthority: "none",
+          announceTool: true,
         },
         readOnly: true,
       };

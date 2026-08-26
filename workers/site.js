@@ -177,6 +177,19 @@ const HERCULES_READ_TOOLS = [
   { name: "explain_shift_simulation", description: "Teach how the shift year simulation works: method, limits, and a human next step. Never posts.", parameters: strictObject({
     member: nullableString(),
   }) },
+  { name: "cash_cinema", description: "13-week forward cash ribbon from tip floor/typical, wage pace, bills, and card mins. Projection only.", parameters: strictObject({
+    member: nullableString(),
+    weeks: { anyOf: [{ type: "integer", minimum: 4, maximum: 13 }, { type: "null" }] },
+  }) },
+  { name: "what_if_desk", description: "Named unposted scenario versus current cash and tip floor. Never posts.", parameters: strictObject({
+    member: nullableString(),
+    scenario: { anyOf: [{ type: "string", enum: ["cut_one_dinner_shift", "extra_card_pay", "purchase", "tax_milk_boost"] }, { type: "null" }] },
+    amountCents: { anyOf: [{ type: "integer", minimum: 0, maximum: 1000000000 }, { type: "null" }] },
+  }) },
+  { name: "year_review", description: "Posted tip months, income, spend, budget misses, and shift count for a trailing window.", parameters: strictObject({
+    member: nullableString(),
+    months: { anyOf: [{ type: "integer", minimum: 3, maximum: 12 }, { type: "null" }] },
+  }) },
 ];
 const HERCULES_READ_TOOL_NAMES = new Set(HERCULES_READ_TOOLS.map((tool) => tool.name));
 const TOOL_ARG_KEYS = {
@@ -240,6 +253,9 @@ const TOOL_ARG_KEYS = {
   tax_milk_plan: ["member", "tipCents", "shiftId", "taxRateBps"],
   shift_year_simulation: ["member", "months", "iterations", "seed"],
   explain_shift_simulation: ["member"],
+  cash_cinema: ["member", "weeks"],
+  what_if_desk: ["member", "scenario", "amountCents"],
+  year_review: ["member", "months"],
 };
 
 function parseJsonObject(value) {

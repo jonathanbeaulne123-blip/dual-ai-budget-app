@@ -101,20 +101,24 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list" }),
     }), env);
     const listed = await tools.json() as { result: { tools: Array<{ name: string; annotations: { readOnlyHint: boolean }; _meta?: { ui?: { resourceUri?: string } } }> } };
-    // companion (1) + TOOL_CATALOG (60) + writeToolDefinitions (3). Confirm is the only non-read-only tool.
-    expect(listed.result.tools).toHaveLength(64);
-    expect(listed.result.tools.filter((tool) => tool.annotations.readOnlyHint)).toHaveLength(63);
+    // companion (1) + TOOL_CATALOG (63) + writeToolDefinitions (3). Confirm is the only non-read-only tool.
+    expect(listed.result.tools).toHaveLength(67);
+    expect(listed.result.tools.filter((tool) => tool.annotations.readOnlyHint)).toHaveLength(66);
     expect(listed.result.tools.filter((tool) => tool.name !== "confirm_transaction").every((tool) => tool.annotations.readOnlyHint)).toBe(true);
     const names = listed.result.tools.map((tool) => tool.name);
     expect(names).toEqual(expect.arrayContaining([
       "shift_year_simulation",
       "explain_shift_simulation",
+      "cash_cinema",
+      "what_if_desk",
+      "year_review",
       "tip_oracle",
       "summon_hercules",
       "confirm_transaction",
     ]));
     expect(listed.result.tools.find((tool) => tool.name === "confirm_transaction")?.annotations.readOnlyHint).toBe(false);
-    expect(listed.result.tools.find((tool) => tool.name === "shift_year_simulation")?.annotations.readOnlyHint).toBe(true);    expect(listed.result.tools.some((tool) => /^(?:post|delete|pay|transfer)(?:_|$)/.test(tool.name))).toBe(false);
+    expect(listed.result.tools.find((tool) => tool.name === "shift_year_simulation")?.annotations.readOnlyHint).toBe(true);
+    expect(listed.result.tools.some((tool) => /^(?:post|delete|pay|transfer)(?:_|$)/.test(tool.name))).toBe(false);
     expect(listed.result.tools.some((tool) => tool.name === "tip_oracle")).toBe(true);
     expect(listed.result.tools.find((tool) => tool.name === "summon_hercules")?._meta?.ui?.resourceUri).toBe("ui://hearth/hercules-companion-v1.html");
 
@@ -162,9 +166,10 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       headers: { Authorization: `Bearer ${tokens.access_token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "account_balance", arguments: { view: "personal" } } }),
     }), env);
-    const called = await call.json() as { result: { isError: boolean; structuredContent: { readOnly: boolean; memberId: string; ledger: string; accountingBasis: string; currency: string; timeZone: string; teachingContract: { writeAuthority: string; clickableSources: boolean } } } };
+    const called = await call.json() as { result: { isError: boolean; structuredContent: { readOnly: boolean; memberId: string; ledger: string; accountingBasis: string; currency: string; timeZone: string; usedTool: string; answer: string; teachingContract: { writeAuthority: string; clickableSources: boolean; announceTool: boolean } } } };
     expect(called.result.isError).toBe(false);
-    expect(called.result.structuredContent).toMatchObject({ readOnly: true, memberId: "MEM-002", ledger: "personal", accountingBasis: "posted-recognized-journal", currency: "CAD", timeZone: "America/Toronto", teachingContract: { writeAuthority: "none", clickableSources: true } });
+    expect(called.result.structuredContent).toMatchObject({ readOnly: true, memberId: "MEM-002", ledger: "personal", accountingBasis: "posted-recognized-journal", currency: "CAD", timeZone: "America/Toronto", usedTool: "account_balance", teachingContract: { writeAuthority: "none", clickableSources: true, announceTool: true } });
+    expect(called.result.structuredContent.answer.startsWith("I used `account_balance`.")).toBe(true);
 
     const refresh = await worker.fetch(new Request(`${origin}/oauth/token`, {
       method: "POST",
@@ -296,8 +301,10 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 20, method: "tools/list" }),
     }), env);
     const listed = await listedResponse.json() as { result: { tools: Array<{ name: string; annotations: { readOnlyHint: boolean; destructiveHint: boolean } }> } };
-    expect(listed.result.tools).toHaveLength(64);
+    expect(listed.result.tools).toHaveLength(67);
     expect(listed.result.tools.find((tool) => tool.name === "confirm_transaction")?.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: true });
+    expect(listed.result.tools.some((tool) => tool.name === "year_review")).toBe(true);
+    expect(listed.result.tools.some((tool) => tool.name === "shift_year_simulation")).toBe(true);
 
     const account = household.accounts.find((row) => row.active)!;
     const category = household.categories.find((row) => row.active && row.recordType === "category" && row.transactionType === "expense")!;
