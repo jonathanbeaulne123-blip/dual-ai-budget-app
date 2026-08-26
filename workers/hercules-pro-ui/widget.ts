@@ -83,6 +83,7 @@ window.addEventListener("message", (event) => {
 
 window.addEventListener("openai:set_globals", () => {
   if (window.openai?.toolOutput) applyResult(window.openai.toolOutput);
+  tryAutomaticPictureInPicture();
 }, { passive: true });
 
 applyResult(window.openai?.toolOutput);
@@ -92,23 +93,46 @@ if (!motionEnabled) {
   statusEl.textContent = "Animation paused by your motion preference";
 }
 
-async function requestPictureInPicture(): Promise<void> {
-  if (!window.openai?.requestDisplayMode) {
-    statusEl.textContent = "Animated inline";
-    pipButton.hidden = true;
-    return;
+let pipRequestPending = false;
+let automaticPipSettled = false;
+
+async function requestPictureInPicture(userInitiated = false): Promise<boolean> {
+  if (pipRequestPending || (automaticPipSettled && !userInitiated)) return false;
+  const bridge = window.openai;
+  if (!bridge?.requestDisplayMode) {
+    if (userInitiated) {
+      automaticPipSettled = true;
+      statusEl.textContent = "Animated inline — picture-in-picture unavailable";
+      pipButton.hidden = true;
+    }
+    return false;
   }
+  pipRequestPending = true;
   try {
-    await window.openai.requestDisplayMode({ mode: "pip" });
+    await bridge.requestDisplayMode({ mode: "pip" });
+    automaticPipSettled = true;
     statusEl.textContent = "Beside your chat";
     pipButton.hidden = true;
+    return true;
   } catch {
+    automaticPipSettled = true;
     statusEl.textContent = "Tap to keep Hercules beside the chat";
     pipButton.hidden = false;
+    return false;
+  } finally {
+    pipRequestPending = false;
   }
 }
 
-pipButton.addEventListener("click", () => void requestPictureInPicture());
+function tryAutomaticPictureInPicture(): void {
+  if (!automaticPipSettled && !pipRequestPending) void requestPictureInPicture(false);
+}
+
+// The ChatGPT bridge can arrive before or after the module. Ask immediately,
+// then retry only until the capability appears. A host refusal exposes the button.
+[0, 250, 1000, 2500].forEach((delay) => window.setTimeout(tryAutomaticPictureInPicture, delay));
+
+pipButton.addEventListener("click", () => void requestPictureInPicture(true));
 motionButton.addEventListener("click", () => {
   motionEnabled = !motionEnabled;
   motionButton.textContent = motionEnabled ? "Pause" : "Play";
@@ -128,7 +152,7 @@ try {
   renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: "high-performance" });
 } catch {
   showFallback();
-  setTimeout(() => void requestPictureInPicture(), 180);
+  setTimeout(tryAutomaticPictureInPicture, 180);
 }
 
 if (renderer) {
@@ -213,7 +237,7 @@ loader.load(modelUrl, (gltf) => {
   modelReady = true;
   host.dataset.runtime = "ready";
   statusEl.textContent = "Hercules is awake";
-  setTimeout(() => void requestPictureInPicture(), 180);
+  setTimeout(tryAutomaticPictureInPicture, 180);
 }, undefined, () => {
   window.clearTimeout(modelLoadTimeout);
   showFallback();

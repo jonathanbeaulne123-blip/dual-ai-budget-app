@@ -14,7 +14,7 @@ The **Use Hercules Pro ↗** button opens ChatGPT. The packaged Hercules Pro plu
 
 Hercules Pro can also summon the preserved-rig 3D Hercules as an MCP Apps interface. He asks ChatGPT to remain beside the conversation in picture-in-picture, breathes, blinks, turns his ears, moves his eleven-part tail, reacts to teaching/curiosity/concern/celebration, and can be rotated by dragging. A visible Pause/Play control and the operating system's reduced-motion preference stop animation. If WebGL, the model, or picture-in-picture is unavailable, the ordinary Hercules mark or inline view appears and every accounting tool continues working.
 
-The visual is deliberately decoupled from the accounting calls. ChatGPT calls `summon_hercules` once near the start, not after every balance or statement, so subsequent tools do not remount him. The widget receives only a presentation mood, short line, headline, and Personal/Household label. It receives no OAuth credential, confirmation token, raw journal, or independent write authority. Its message is not evidence; current financial claims still require the ordinary grounded read tools and clickable sources.
+The visual is deliberately decoupled from the accounting calls. On the first user turn of every new Hercules Pro conversation, ChatGPT is instructed to call `summon_hercules` as its first tool before any accounting read; the widget immediately requests picture-in-picture and stays animated inline when the host declines it. A completely blank chat cannot execute a tool before the person sends a message. Subsequent tools do not remount him. The widget receives only a presentation mood, short line, headline, and Personal/Household label. It receives no OAuth credential, confirmation token, raw journal, or independent write authority. Its message is not evidence; current financial claims still require the ordinary grounded read tools and clickable sources.
 
 Writing remains off by default. In Hearth **More → Hercules Pro permissions**, each member may independently enable Personal writes and Household writes. Enabling requires a Hearth confirmation and reconnecting the ChatGPT app for the separate `hearth.write` OAuth scope. Turning a switch off immediately blocks new and already-prepared confirmations for that ledger.
 
@@ -112,7 +112,7 @@ Optional hardening for Development: bind a free Cloudflare KV namespace as `HERC
 
 ## Verification checklist
 
-- Start a new Hercules Pro conversation. Hercules appears animated beside the chat, or remains animated inline when picture-in-picture is unavailable.
+- Start a new Hercules Pro conversation and send the first message. `summon_hercules` is the first tool; Hercules immediately requests picture-in-picture, appears beside the chat when ChatGPT grants it, or remains animated inline when unavailable.
 - Drag horizontally over Hercules to rotate him; use Pause and Play; verify reduced-motion starts paused.
 - Ask for an explanation, inspect an uncertain figure, and complete a balanced synthetic result. Confirm his teaching, concerned, and celebration reactions do not replace the grounded written answer.
 - Block WebGL or the model asset. Verify the Hercules mark appears and ledger tools still answer.
