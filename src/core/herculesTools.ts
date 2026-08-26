@@ -1398,10 +1398,10 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
       callId: call.id,
       name: call.name,
       status: "ok",
-      sentence: `Of ${formatCad(plan.tipCents)} tips, set aside about ${formatCad(plan.taxMilkCents)} tax milk${plan.peak ? ` and ${formatCad(plan.bufferCents)} smoothing buffer` : ""}, leaving ${formatCad(plan.leftoverCents)} free. Educational rate ${(plan.taxRateBps / 100).toFixed(0)}% — not a filed return. Transfer drafts still need Confirm.`,
+      sentence: `Of ${formatCad(plan.tipCents)} tips, set aside about ${formatCad(plan.taxMilkCents)} tax milk — educational tip tax set-aside${plan.peak ? ` and ${formatCad(plan.bufferCents)} smoothing buffer` : ""}, leaving ${formatCad(plan.leftoverCents)} free. Educational rate ${(plan.taxRateBps / 100).toFixed(0)}% — not a filed return. Transfer drafts still need Confirm.`,
       facts: [
         fact(call, 0, "Tip base", formatCad(plan.tipCents), source, "projection"),
-        fact(call, 1, "Tax milk", formatCad(plan.taxMilkCents), source, "projection"),
+        fact(call, 1, "Tax milk (tip tax set-aside)", formatCad(plan.taxMilkCents), source, "projection"),
         fact(call, 2, "Smoothing buffer", formatCad(plan.bufferCents), source, "projection"),
         fact(call, 3, "Leftover after set-asides", formatCad(plan.leftoverCents), source, "projection"),
       ],

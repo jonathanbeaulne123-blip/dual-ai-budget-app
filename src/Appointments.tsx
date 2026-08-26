@@ -488,7 +488,7 @@ export function AppointmentsPage(props: {
                 <div className="row" key={proposal.appointmentId}>
                   <span>{proposal.hercules}{proposal.drift ? ` ${proposal.drift}` : ""}</span>
                   <button type="button" className="chip selected" disabled={props.busy} onClick={() => props.onAskStartJar(proposal.appointmentId, `${proposal.hercules} This creates a shared jar. Hercules does not write it.`)}>
-                    Start this jar
+                    Start this goal
                   </button>
                 </div>
               ))}
@@ -711,7 +711,7 @@ export function AppointmentsPage(props: {
                       if (proposal) props.onAskStartJar(selected.id, `${proposal.hercules} This creates a shared jar. Hercules does not write it.`);
                     }}
                   >
-                    Start this jar
+                    Start this goal
                   </button>
                 )}
               </section>

@@ -68,12 +68,12 @@ function parkingTransfers(household: Household, vaultId: string): GoalLedgerEntr
     if (tx.accountId !== vaultId) continue;
     if (tx.transferToAccountId !== vaultId) continue;
     if (tx.reversalOfId) continue;
-    if (!/^Sit-down/i.test(tx.note) && !/jar/i.test(tx.note) && !/Goals vault/i.test(tx.note)) continue;
+    if (!/^Sit-down/i.test(tx.note) && !/jar/i.test(tx.note) && !/Goals vault/i.test(tx.note) && !/Goals savings/i.test(tx.note) && !/Fund goal/i.test(tx.note)) continue;
     entries.push({
       id: tx.id,
       kind: "parking",
       goalId: null,
-      label: tx.note.trim() || "Goals vault",
+      label: tx.note.trim() || "Goals savings",
       amountCents: tx.amountCents,
       date: tx.date,
       transactionIds: [tx.id],
@@ -98,7 +98,7 @@ export function goalLedger(household: Household, goalId?: string): GoalLedgerEnt
     id: row.id,
     kind: "purchase",
     goalId: row.goalId,
-    label: `Purchased ${names.get(row.goalId) || "jar"}`,
+    label: `Purchased ${names.get(row.goalId) || "goal"}`,
     amountCents: -row.spentCents,
     date: row.date,
     transactionIds: [...row.transactionIds],
@@ -111,11 +111,11 @@ export function goalLedger(household: Household, goalId?: string): GoalLedgerEnt
 
 export function vaultReceiptBlurb(household: Household, asOf: DateKey): string {
   const vault = goalsVaultAccount(household);
-  if (!vault) return "Leftover parks in a Goals vault once sit-down Confirm moves it. Pigs are envelopes on that vault.";
+  if (!vault) return "Leftover parks in Goals savings once sit-down Confirm moves it. Each goal tracks its share of that account.";
   const balance = bookBalanceAsOf(household, vault.id, asOf);
   const allocated = allocatedVaultCents(household);
   const loose = Math.max(0, balance - allocated);
-  return `${vault.name} holds ${formatCad(balance)}. ${formatCad(allocated)} in open pigs, ${formatCad(loose)} unallocated.`;
+  return `${vault.name} holds ${formatCad(balance)}. ${formatCad(allocated)} in open goals, ${formatCad(loose)} unallocated.`;
 }
 
 export function fullOpenGoals(household: Pick<Household, "goals">): Goal[] {

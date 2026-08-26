@@ -46,7 +46,7 @@ function Piggy({ fill, late, clipId, retired }: { fill: number; late?: boolean; 
 
 export function JarsGlance({ dashboard }: { dashboard: Dashboard }) {
   const nearest = dashboard.goals[0];
-  if (!nearest) return <span>shelf</span>;
+  if (!nearest) return <span>no goals</span>;
   return <span>{nearest.goal.name} · {Math.round(nearest.progress * 100)}%</span>;
 }
 
@@ -72,7 +72,7 @@ export function PurchaseGoalSheet({
   if (!goal) return null;
   return (
     <div className="purchase-sheet">
-      <p className="muted">How much did {goal.name} actually cost? Leftover in the vault stays unallocated. Confirm posts an expense from the Goals vault.</p>
+      <p className="muted">How much did {goal.name} actually cost? Leftover in Goals savings stays unallocated. Confirm posts an expense from Goals savings.</p>
       <label>
         Spent
         <input inputMode="decimal" value={total} onChange={(event) => setTotal(event.target.value)} aria-label="Amount spent" />
@@ -117,7 +117,7 @@ export function PurchaseGoalSheet({
             }
           }}
         >
-          Purchased
+          Mark purchased
         </button>
       </div>
     </div>
@@ -178,7 +178,7 @@ export function JarsBody({
                 {pace ? ` · ${pace}` : item.goal.deadline ? ` · ${formatDateLabel(item.goal.deadline)}` : ""}
               </p>
               {status === "unfunded" && (
-                <p className="muted">Unfunded envelope — cash still sits in chequing until you Fund jar or sit-down Confirm.</p>
+                <p className="muted">Unfunded goal — cash still sits in chequing until you Fund goal or sit-down Confirm.</p>
               )}
               {full && status !== "unfunded" && onCommand && (
                 buying === item.goal.id ? (
@@ -190,7 +190,7 @@ export function JarsBody({
                     onClose={() => setBuying(null)}
                   />
                 ) : (
-                  <button type="button" className="primary" onClick={() => setBuying(item.goal.id)}>Purchased?</button>
+                  <button type="button" className="primary" onClick={() => setBuying(item.goal.id)}>Mark purchased</button>
                 )
               )}
             </div>
@@ -199,8 +199,8 @@ export function JarsBody({
       </div>
       {vault && (
         <details className="vault-receipt">
-          <summary>Goals vault receipt</summary>
-          <p className="muted">{vault.name}. Unallocated {formatCad(loose)} stays in the vault, not a pig.</p>
+          <summary>Goals savings receipt</summary>
+          <p className="muted">{vault.name}. Unallocated {formatCad(loose)} stays in Goals savings, not assigned to a goal.</p>
           {receipt.length === 0 ? (
             <p className="muted">No parking, contributions, or purchases yet.</p>
           ) : receipt.slice(-12).reverse().map((row) => (
@@ -212,15 +212,15 @@ export function JarsBody({
       )}
       {retired.length > 0 && (
         <div className="retirement-home">
-          <h4>Retirement home</h4>
-          <p className="muted">Jars you actually bought. The rows stay on the books.</p>
+          <h4>Completed goals</h4>
+          <p className="muted">Goals you marked purchased. The rows stay on the books.</p>
           <div className="piggy-shelf">
             {retired.map((goal) => (
               <div key={goal.id} className="piggy-card is-retired">
                 <Piggy fill={1} clipId={`${goal.id}-retired`} retired />
                 <div className="row">
                   <span>{goal.name}</span>
-                  <span>home</span>
+                  <span>done</span>
                 </div>
                 <p className="muted">
                   Saved {formatCad(goal.savedCents)}
@@ -231,7 +231,7 @@ export function JarsBody({
           </div>
         </div>
       )}
-      <p className="muted">Pigs fill from posted contributions. Cash lives in the Goals vault. Contribute stays on Plan.</p>
+      <p className="muted">Goals fill from posted contributions. Cash lives in Goals savings. Contribute stays on Plan.</p>
       <button type="button" className="cabinet-handle" onClick={onPlan}>Plan</button>
     </>
   );

@@ -662,9 +662,9 @@ export function HerculesPresence({
         return true;
       }
     }
-    if (/^milk$|^post milk$/i.test(text)) {
+    if (/^milk$|^post milk$|^groceries$|^post groceries$/i.test(text)) {
       closeChat();
-      onOpenAdd("Milk");
+      onOpenAdd("Groceries");
       return true;
     }
     if (/^calendar$|^which bill/i.test(text)) {

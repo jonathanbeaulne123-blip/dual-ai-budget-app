@@ -135,7 +135,7 @@ export function weekRecap(household: Household, today: DateKey): WeekRecap {
   ];
   if (five.yes) rows.push({ label: "High-five", value: five.names.join(" + ") });
   const cook = cookOffScore(household, today);
-  rows.push({ label: "Cook-off", value: cook.winner === "kitchen" ? "kitchen" : cook.winner === "takeout" ? "coffee & lunches" : "tie" });
+  rows.push({ label: "Kitchen vs takeout", value: cook.winner === "kitchen" ? "kitchen" : cook.winner === "takeout" ? "coffee & lunches" : "tie" });
   return {
     isSunday,
     sentence: isSunday
@@ -260,8 +260,8 @@ function coachAnswer(household: Household, today: DateKey, name: string): BooksA
   }
   return {
     kind: "answer",
-    sentence: `Milk. Ordinary. That's the whole sport. ${reason}`,
-    rows: [{ label: "Next", value: "Post milk" }],
+    sentence: `Milk — ordinary groceries. That's the whole sport. ${reason}`,
+    rows: [{ label: "Next", value: "Post groceries" }],
   };
 }
 

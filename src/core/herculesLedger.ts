@@ -157,7 +157,7 @@ function proposeDraft(message: string): HerculesDraft | null {
   if (SQL_WRITE.test(q) || /\bpay it for me\b/.test(q)) return null;
   if (!/\b(add|post|log|buy)\b/.test(q)) return null;
   if (/\b(milk|grocer)/.test(q)) {
-    return { kind: "expense", note: "Milk", subcategoryId: "SUB-FOOD-GROCERIES" };
+    return { kind: "expense", note: "Groceries", subcategoryId: "SUB-FOOD-GROCERIES" };
   }
   if (/\bcoffee\b/.test(q)) {
     return { kind: "expense", note: "Coffee", subcategoryId: "SUB-FOOD-COFFEE" };
@@ -207,7 +207,7 @@ export function planHerculesTurn(
   if (extracted) {
     return {
       talk: lineTalk(
-        `Kept in the kitchen ledger. Same door as the milk. "${extracted.label}"`,
+        `Kept in the kitchen ledger — same door as the books / groceries. "${extracted.label}"`,
         "I remember on the books, not at a model shop.",
         "memory",
         ["What do you remember?", "We good?"],
@@ -246,7 +246,7 @@ export function planHerculesTurn(
         HERCULES_REFUSE_WRITE,
         "Safe write: I open Add. Confirm still posts. I never call postEntry.",
         "add",
-        ["Milk", "We good?"],
+        ["Groceries", "We good?"],
       ),
       source: "journal",
       memory: null,

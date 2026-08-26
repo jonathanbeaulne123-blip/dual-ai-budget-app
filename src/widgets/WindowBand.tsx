@@ -16,7 +16,7 @@ export function WindowBand({
   return (
     <section
       className={`office-chalk-band glass-${reading.glass} ${minimized ? "is-minimized" : ""}`}
-      aria-label="Chalkboard"
+      aria-label="Notes"
     >
       {onToggle && (
         <button type="button" className="office-chalk-minimize" onClick={onToggle} aria-expanded={!minimized}>
