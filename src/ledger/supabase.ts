@@ -1,12 +1,17 @@
 import { financialAuditHash } from "../core/commandIdentity.ts";
 import {
   assertHouseholdBinding,
+  assertMembershipAuthoritativeDiscovery,
   assertPersonalEnvelopeBinding,
 } from "../core/environmentIsolation.ts";
 import { ValidationError, type Environment, type Household, type PersonalEnvelope } from "../core/types.ts";
 import { assembleHousehold, ensureHouseholdShape, overlayPersonalReplica, personalEnvelopeFromPayload, personalReplicaForMember, splitForSync } from "../core/sync.ts";
 import { inviteFromText } from "../core/invite.ts";
-import { memberIdForGoogleIdentity, type GoogleIdentitySelector } from "../core/google.ts";
+import {
+  memberIdForGoogleIdentity,
+  overlayGoogleLinkFromMembership,
+  type GoogleIdentitySelector,
+} from "../core/google.ts";
 import { hostedTransportAllowed } from "../core/sharing.ts";
 import { hostedContinuityAllowed, legacyLinkedPublishAllowed } from "./continuityPolicy.ts";
 import { decodeJsonPayload, encodeHouseholdPayload, encodeSharedSnapshotPayload } from "./snapshotPayload.ts";
@@ -382,24 +387,31 @@ async function discoverFromContinuityMemberships(
     if (!household || household.environment !== environment) continue;
     if (household.householdId !== membership.household_id) continue;
     try {
-      assertHouseholdBinding(
+      assertMembershipAuthoritativeDiscovery(
         household,
         {
-          environment,
           householdId: membership.household_id,
           memberId: membership.member_id,
-          googleSubject: identity.subject,
-          googleEmail: identity.email,
+          googleSubject: membership.google_subject,
+          googleEmail: membership.google_email,
+          authUserId: membership.auth_user_id,
         },
-        "pull",
+        identity,
+        environment,
+        { authUserId: config.authUserId },
       );
     } catch {
       continue;
     }
     const personal = await personalSnapshotForMembership(config, membership, environment);
+    const linked = overlayGoogleLinkFromMembership(household, {
+      memberId: membership.member_id,
+      subject: membership.google_subject || identity.subject,
+      email: membership.google_email || identity.email,
+    });
     found.push({
       household: {
-        ...overlayPersonalReplica(household, personal, membership.member_id),
+        ...overlayPersonalReplica(linked, personal, membership.member_id),
         baseRevision: household.revision,
       },
       memberId: membership.member_id,
