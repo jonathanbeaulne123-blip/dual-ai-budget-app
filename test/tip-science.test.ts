@@ -165,6 +165,8 @@ describe("Hercules Shift Oracle tip science", () => {
     expect(tools.results.every((result) => result.facts.every((fact) => fact.basis === "projection"))).toBe(true);
     expect(tools.results[0]?.sentence).toMatch(/tips and .* wages|wages at the midpoint/i);
     expect(tools.results[1]?.sentence).toMatch(/Monte Carlo|method|year sim/i);
+    expect(tools.results[1]?.sentence).toMatch(/Python sandbox/i);
+    expect(tools.results[1]?.facts.some((fact) => /Python sandbox/i.test(fact.value))).toBe(true);
   });
 
   it("keeps the seeded PRNG in unit interval", () => {

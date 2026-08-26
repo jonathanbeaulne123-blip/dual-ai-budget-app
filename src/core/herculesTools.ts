@@ -1394,12 +1394,13 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
       callId: call.id,
       name: call.name,
       status: "ok",
-      sentence: `The year sim fits ${lesson.sampleShifts} posted shifts, then Monte Carlo-resamples tip/hour and wage/hour by weekday and meal for 6–12 months. ${lesson.method[0]} Limitation: ${lesson.limitations[0]} Next: ${lesson.humanNextStep}`,
+      sentence: `The year sim fits ${lesson.sampleShifts} posted shifts, then Monte Carlo-resamples tip/hour and wage/hour by weekday and meal for 6–12 months. ${lesson.method[0]} Limitation: ${lesson.limitations[0]} A Python sandbox is gated for later open-ended science; this engine stays deterministic TypeScript. Next: ${lesson.humanNextStep}`,
       facts: [
         fact(call, 0, "Sample shifts", String(lesson.sampleShifts), source, "projection"),
         fact(call, 1, "Method", lesson.method[1] ?? lesson.method[0]!, source, "projection"),
         fact(call, 2, "Limitation", lesson.limitations[0]!, source, "projection"),
-        fact(call, 3, "Human next step", lesson.humanNextStep, source, "projection"),
+        fact(call, 3, "Sandbox gate", lesson.limitations.find((line) => /Python sandbox/i.test(line)) ?? lesson.limitations[3]!, source, "projection"),
+        fact(call, 4, "Human next step", lesson.humanNextStep, source, "projection"),
       ],
     };
   }
