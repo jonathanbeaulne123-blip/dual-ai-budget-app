@@ -5,7 +5,7 @@
 **Owner:** Cursor (Cloud Agent)  
 **Risk:** High (forecast / scenario math; Pro announcement UX)  
 **Mode:** Implementation  
-**Baseline:** `main@cd3eb87` → head `02970b9`  
+**Baseline:** `main@cd3eb87` → head `90ae4a7`  
 **PR:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/140
 
 ## Goal
