@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type PointerEvent } from "react";
 import {
   attackStand,
   attackTarget,
@@ -70,6 +70,8 @@ import {
   HerculesRigProvider,
   useHerculesRig,
   expandRigMacro,
+  dispatchChatRigTriggers,
+  dispatchHerculesRig,
   type HerculesRigPose,
 } from "./herculesRig/index.ts";
 import {
@@ -155,16 +157,21 @@ function HerculesRigBridge({
   pose,
   begging,
   bagPlay,
+  chatRigUntilRef,
 }: {
   mood: CompanionMood;
   pose: HerculesPose;
   begging: boolean;
   bagPlay: boolean;
+  chatRigUntilRef: MutableRefObject<number>;
 }) {
   const { playPose, setMood } = useHerculesRig();
   const target = (bagPlay ? "bag" : begging ? "beg" : pose) as HerculesRigPose;
   useEffect(() => setMood(mood), [mood, setMood]);
-  useEffect(() => playPose(target), [target, playPose]);
+  useEffect(() => {
+    if (performance.now() < chatRigUntilRef.current) return;
+    playPose(target);
+  }, [target, playPose, chatRigUntilRef]);
   return null;
 }
 
@@ -264,6 +271,7 @@ export function HerculesPresence({
   const idleAt = useRef(0);
   const mutterAt = useRef(0);
   const chatGen = useRef(0);
+  const chatRigUntilRef = useRef(0);
   const chatScope = `${household.environment}\u001f${household.householdId}\u001f${memberId}`;
   const previousChatScope = useRef(chatScope);
   const activeChatIdentity = useRef<Omit<HerculesReplyContext, "requestId">>({
@@ -695,7 +703,22 @@ export function HerculesPresence({
     });
   }
 
+  function reactToChatText(...texts: Array<string | undefined | null>) {
+    let fired = false;
+    for (const text of texts) {
+      if (text?.trim() && dispatchChatRigTriggers(text)) fired = true;
+    }
+    if (!fired) return;
+    chatRigUntilRef.current = performance.now() + 1500;
+    window.setTimeout(() => {
+      chatRigUntilRef.current = 0;
+      const target = (bagPlay ? "bag" : begging ? "beg" : motion) as HerculesRigPose;
+      dispatchHerculesRig({ type: "playPose", pose: target === "sleep" ? "loaf" : target });
+    }, 1500);
+  }
+
   function applyTalk(next: HerculesTalk, userText?: string) {
+    reactToChatText(userText, next.spoken);
     setTalk(next);
     setTopic(next.topic);
     setMotion(next.pose === "sleep" ? "loaf" : next.pose);
@@ -825,6 +848,7 @@ export function HerculesPresence({
       requestId: gen,
     };
     setTurns((prev) => [...prev, { role: "user" as const, text: message }].slice(-12));
+    reactToChatText(message);
     if (focusedWidget && tab === "home") pushSnippet(message, "mrrp…");
     setQuestion("");
     setBusy(true);
@@ -872,6 +896,7 @@ export function HerculesPresence({
       setTalk(answer);
       setTopic(answer.topic);
       setTurns((prev) => [...prev, { role: "hercules" as const, text: answer.spoken }].slice(-12));
+      reactToChatText(answer.spoken);
       if (focusedWidget && tab === "home") {
         setSnippets((prev) => {
           const trimmed = prev.filter((row) => row.text !== "mrrp…");
@@ -896,6 +921,7 @@ export function HerculesPresence({
     })) return;
     setTalk({ ...grounded, spoken: result.text });
     setTurns((prev) => [...prev, { role: "hercules" as const, text: result.text }].slice(-12));
+    reactToChatText(result.text);
     if (focusedWidget && tab === "home") {
       setSnippets((prev) => {
         const trimmed = prev.filter((row) => row.text !== "mrrp…");
@@ -1061,7 +1087,7 @@ export function HerculesPresence({
 
   return (
     <HerculesRigProvider mood={look.view.mood} reducedMotion={reducedMotion()}>
-      <HerculesRigBridge mood={look.view.mood} pose={pose} begging={begging} bagPlay={bagPlay} />
+      <HerculesRigBridge mood={look.view.mood} pose={pose} begging={begging} bagPlay={bagPlay} chatRigUntilRef={chatRigUntilRef} />
       <HerculesOfficeRigBridge expandId={tab === "home" ? focusedWidget : null} />
     <div className={`hercules-world ${hideLiveCat ? "is-phone-compact" : ""} ${focusShellOpen ? "is-focus-open" : ""} ${desktopFly ? "is-desktop-wander" : ""}`} aria-live="polite">
       {desktopFly && !adding && !reducedMotion() && (
@@ -1133,7 +1159,7 @@ export function HerculesPresence({
             Close
           </button>
           <div className="hercules-focus-hero">
-            <HerculesPortrait
+            <HerculesLivePortrait
               mood={look.view.mood}
               hat={look.hat}
               chain={look.chain}

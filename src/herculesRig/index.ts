@@ -39,10 +39,20 @@ export {
 } from "./transport.ts";
 export { validateRigCommands, validateRigPayload, sanitizeRigSessionId, HERCULES_RIG_PATH, HERCULES_RIG_POLL_PATH } from "./validate.ts";
 export { EXPAND_RIG_MACROS, expandRigMacro } from "./macros.ts";
+export {
+  BUDGET_CHAT_TRIGGERS,
+  CAT_CHAT_TRIGGERS,
+  matchChatRigTriggers,
+  rigCommandsForChatText,
+  dispatchChatRigTriggers,
+  type ChatRigTrigger,
+  type ChatRigTriggerCategory,
+} from "./chatTriggers.ts";
 
 import { installBuiltinClips } from "./registry.ts";
 import { IDLE_CLIPS, POSE_CLIPS } from "./clips.ts";
 import "./macros.ts";
+import "./chatTriggers.ts";
 
 /** Call once at module load so AI-registered clips layer on built-ins. */
 installBuiltinClips({ ...POSE_CLIPS, ...IDLE_CLIPS });

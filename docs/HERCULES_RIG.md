@@ -54,6 +54,16 @@ Returns `{ status: "queued", queueId, at, accepted, readOnly: true, postedNothin
 
 When a desk instrument expands on Home, `HerculesOfficeRigBridge` runs a macro from `src/herculesRig/macros.ts` — e.g. wallet → perch + head tilt + front leg shift; calculator → pounce + tail flick. Extend `EXPAND_RIG_MACROS` or register clips in `installRigMacroClips()`.
 
+## Chat trigger words
+
+When the user or Hercules mentions a trigger word in mobile focus or desktop chat, `dispatchChatRigTriggers` plays a rig reaction (`src/herculesRig/chatTriggers.ts`):
+
+**Budget (10):** budget, groceries, rent, savings, paycheck, bill, visa, confirm, balance, expense
+
+**Cat (10):** mrrp, purr, treat, fly, nap, tail, pounce, loaf, whiskers, meow
+
+At most one budget + one cat animation queue per message. Mobile focus hero uses `HerculesLivePortrait` so rig clips are visible.
+
 ## TypeScript API
 
 ```typescript
