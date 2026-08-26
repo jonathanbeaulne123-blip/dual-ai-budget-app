@@ -4,9 +4,30 @@ After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. 
 
 Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
 
+
+## Slim continuity outbox + gzip payloads (D-144, 2026-08-26)
+
+**Status:** Branch `cursor/outbox-compress-e279`; PR pending. Not merged, not deployed. Risk: **High**.
+
+**Household outcome:** Large Development books can share without blowing browser `localStorage` quota. The durable outbox stores a slim tip pointer; flush publishes the live accepted household. Hosted snapshot/personal TEXT payloads compress with a versioned gzip envelope when worthwhile; legacy plain JSON still pulls.
+
+**Budget delta (5):** `+3` — continuity transport reliability; prevents share stalls that diverge two phones’ books.
+
+**Engagement delta (3):** `+1` — Retry/share stays honest under stress fixtures.
+
+**What changed:** `src/ledger/snapshotPayload.ts` codec; `supabase.ts` encode on push / decode on pull; `continuity.ts` IDB-first slim durable outbox + live resolve; D-144 in decisions + continuity canon.
+
+**Verification:** Focused vitest (`snapshot-payload`, `continuity`, `hosted-cas-two-client`, `environment-isolation`, `production-continuity`) then `pnpm test` / `tsc --noEmit`. Privacy + books auditors on the PR.
+
+**Data/environment:** Development client transport encoding only; no schema migrate, secrets, Production, or real household data.
+
+**Worksession:** [`worksessions/2026-08-26-outbox-compress.md`](worksessions/2026-08-26-outbox-compress.md)
+
+**Next owner:** Jonathan — after merge+deploy, on the quota desktop tap **Retry now**; confirm banner clears and Bianca’s entry count / Assets converge. Auth Create/invite smoke remains a separate gate.
+
 ## Auth membership continuity authority (D-143, 2026-08-26)
 
-**Status:** Branch `cursor/auth-membership-authority-e279`; PR pending. Not merged, not deployed. Risk: **High**.
+**Status:** Merged via #152 onto `main`. Live Create/invite smoke still open. Risk: **High**.
 
 **Household outcome:** Automatic cloud share requires a Google continuity identity that matches an active household member. `linked` alone no longer publishes. Phrase remains Advanced recovery routing. Live anon REST stays denied; migration 010 bind RPC is live.
 

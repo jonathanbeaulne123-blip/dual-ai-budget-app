@@ -10,6 +10,7 @@ The working continuity slices are implemented. Migrations **002, 003, 004, 005, 
 - Development discovers memberships through Auth JWT / continuity membership rows (legacy open snapshot scan remains only when membership tables are missing);
 - pulled/reconciled snapshots pass the same PGlite/accounting acceptance boundary before display or persistence;
 - signed-in accepted writes enter a durable per-device outbox before transport; later offline writes compact into the latest snapshot while keeping the earliest expected hosted revision and all confirmation ids;
+- **D-144:** the durable outbox (IndexedDB-first, slim `localStorage` metadata) stores tip revision + identity only — never the full journal. Flush resolves the live accepted household from memory, Retry's live tip, or `loadHousehold`. Hosted `household_snapshots.payload` / personal payloads use an optional gzip envelope (`hearthPayload: 1`); legacy plain JSON remains readable forever;
 - launch, focus, and reconnect retry the outbox (with exponential `nextAttemptAt` backoff) and then pull newer matching snapshots;
 - successful hosted CAS (including idempotent duplicate delivery) **acknowledges** by removing the outbox item; failed/stale writes never erase locally accepted books;
 - stale hosted revisions stop automatic replay, keep the queued local snapshot, retain the remote snapshot, and surface a conflict instead of overwriting either side;

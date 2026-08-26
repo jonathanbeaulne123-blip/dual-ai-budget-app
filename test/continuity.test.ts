@@ -15,6 +15,7 @@ import { catalogHousehold, linkGoogleIdentity, personalReplicaForMember, postEnt
 import { householdCloudProjection } from "../src/ledger/supabase.ts";
 import type { Household } from "../src/core/types.ts";
 import { pushSupabaseHousehold } from "../src/ledger/supabase.ts";
+import { decodeJsonPayload } from "../src/ledger/snapshotPayload.ts";
 
 const config = { url: "https://continuity.example.supabase.co", key: "sb_publishable_test" };
 const identity = { email: "jonathan@example.com", subject: "google-sub-jonathan" };
@@ -126,8 +127,71 @@ describe("Google-account continuity", () => {
     expect(listContinuityOutbox("development")).toHaveLength(1);
     expect(second.expectedRevision).toBe(3);
     expect(second.confirmationIds).toEqual(["confirm-first", "confirm-second"]);
-    expect(second.snapshot.transactions.some((row) => row.note === "Offline milk")).toBe(true);
+    expect(second.snapshot?.transactions.some((row) => row.note === "Offline milk")).toBe(true);
     expect(JSON.stringify(second)).not.toMatch(/accessToken|Bearer /i);
+  });
+
+  it("stores only a slim tip pointer in durable localStorage (no journal)", () => {
+    const store = createMemoryContinuityStore();
+    setContinuityStore(store);
+    const household = googleHousehold();
+    enqueueContinuitySnapshot({
+      household,
+      identity,
+      expectedRevision: 0,
+      confirmationId: "slim-1",
+    });
+    const raw = store.getItem("hearth:continuity-outbox:v1:development");
+    expect(raw).toBeTruthy();
+    expect(raw!.length).toBeLessThan(4_000);
+    expect(raw).not.toMatch(/"transactions"/);
+    expect(raw).not.toMatch(/"shifts"/);
+    const durable = JSON.parse(raw!) as Array<{ tipRevision: number; snapshot?: unknown }>;
+    expect(durable[0]?.snapshot).toBeUndefined();
+    expect(durable[0]?.tipRevision).toBe(household.revision);
+    // Memory still holds the tip for same-session flush.
+    expect(listContinuityOutbox("development")[0]?.snapshot?.householdId).toBe(household.householdId);
+  });
+
+  it("flushes a slim durable tip by resolving the live household", async () => {
+    const store = createMemoryContinuityStore();
+    setContinuityStore(store);
+    const household = { ...googleHousehold(), revision: 4, baseRevision: 0 };
+    enqueueContinuitySnapshot({
+      household,
+      identity,
+      expectedRevision: 0,
+      confirmationId: "slim-flush",
+    });
+    // Simulate reload: durable tip remains, memory tip is gone.
+    const raw = store.getItem("hearth:continuity-outbox:v1:development");
+    setContinuityStore(store);
+    store.setItem("hearth:continuity-outbox:v1:development", raw!);
+    expect(listContinuityOutbox("development")[0]?.snapshot).toBeUndefined();
+
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("households?select=id")) return response([]);
+      if (url.includes("rpc/publish_household_snapshot")) {
+        return response({
+          code: "PGRST202",
+          message: "Could not find the function public.publish_household_snapshot",
+        }, 404);
+      }
+      if (url.includes("household_snapshots?household_id")) return response([]);
+      if (url.includes("continuity_memberships?select=household_id")) return response([]);
+      return response(null, 201);
+    }));
+
+    const flushed = await flushContinuityOutbox({
+      environment: "development",
+      identity,
+      config,
+      force: true,
+      liveHousehold: household,
+    });
+    expect(flushed.synchronized).toBe(1);
+    expect(listContinuityOutbox("development")).toHaveLength(0);
   });
 
   it("keeps an offline write queued, then replays it exactly once after reconnection", async () => {
@@ -304,7 +368,7 @@ describe("Google-account continuity", () => {
     const snapshotIndex = calls.findIndex((item) => item.url.includes("household_snapshots?on_conflict"));
     const personalIndex = calls.findIndex((item) => item.url.includes("continuity_personal_snapshots?on_conflict"));
     expect(membership?.body).toMatchObject({ member_id: "MEM-001", google_subject: identity.subject });
-    const payload = JSON.parse(String((personalCall?.body as { payload?: string })?.payload)) as { transactions: Array<{ note: string }> };
+    const payload = await decodeJsonPayload(String((personalCall?.body as { payload?: string })?.payload)) as { transactions: Array<{ note: string }> };
     expect(payload.transactions.map((item) => item.note)).toContain("Jonathan private");
     expect(payload.transactions.map((item) => item.note)).not.toContain("Partner private");
     expect(personalIndex).toBeGreaterThan(-1);
@@ -407,7 +471,7 @@ describe("Google-account continuity", () => {
     });
     expect(pushed.schema).toBe(true);
     const personalCall = calls.find((item) => item.url.includes("continuity_personal_snapshots?on_conflict"));
-    const payload = JSON.parse(String((personalCall?.body as { payload?: string })?.payload)) as { shifts: Array<{ id: string }> };
+    const payload = await decodeJsonPayload(String((personalCall?.body as { payload?: string })?.payload)) as { shifts: Array<{ id: string }> };
     expect(payload.shifts).toHaveLength(1);
   });
 });
