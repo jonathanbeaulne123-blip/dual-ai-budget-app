@@ -7,7 +7,7 @@ import {
   resolveChatOrigin,
 } from "./herculesGuard.js";
 import { handleHerculesPro } from "./herculesPro.js";
-import { handleFlinksSync } from "./flinks.js";
+import { handleFlinks } from "./flinks.js";
 import { validateRigPayload, sanitizeRigSessionId } from "../src/herculesRig/validate.ts";
 import { enqueueRigCommands, pollRigCommands } from "./herculesRigQueue.js";
 
@@ -1065,6 +1065,8 @@ async function herculesRigPoll(request, env) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const flinks = await handleFlinks(request, env);
+    if (flinks) return flinks;
     const herculesPro = await handleHerculesPro(request, env);
     if (herculesPro) return herculesPro;
     if (url.pathname === "/hercules/chat") {
@@ -1120,10 +1122,6 @@ export default {
       }
       if (request.method === "POST") return scanDocument(request, env);
       return json({ ok: false, error: "method" }, 405, cors);
-    }
-
-    if (url.pathname === "/flinks/sync") {
-      return handleFlinksSync(request, env);
     }
 
     const response = exposeHerculesCompanionAsset(request, await env.ASSETS.fetch(request));

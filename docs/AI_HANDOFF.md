@@ -6,7 +6,7 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 ## Hercules rig engine — Worker route, MCP dispatch, furniture macros (2026-08-26)
 
-**Status:** Branch `cursor/hercules-rig-engine-90cc`, PR #164. Risk: **Low** (presentation-only; no money, no ledger reads).
+**Status:** Branch `cursor/hercules-rig-engine-90cc`, PR #167. Risk: **Low** (presentation-only; no money, no ledger reads).
 
 **Household outcome:** Remote agents and Hercules Pro can puppeteer the live kitchen cat part-by-part (head, tail, each leg). Desk instruments trigger layered rig macros when expanded on Home. Fly auto-deposit (PR #163) remains separate.
 
@@ -20,9 +20,32 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 **Data/environment:** Development client + Worker routes. No schema, secrets, Production, or deploy.
 
-**Next owner:** Jonathan — review/merge PR #164; optional live deploy smoke of `/hercules/rig` + `hearthRig().sessionId()` + MCP dispatch.
+**Next owner:** Jonathan — review/merge PR #167; optional live deploy smoke of `/hercules/rig` + `hearthRig().sessionId()` + MCP dispatch.
 
-**PR:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/164
+**PR:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/167
+
+## Phase 0 secure Flinks Connect inbox (D-148, 2026-08-26)
+
+**Status:** Merged via #161 onto `main@efac0d2`. Risk: **High** (hosted Worker + bank evidence boundary).
+
+**Household outcome:** Flinks supplies read-only bank evidence to the import inbox on Development. Connect uses Supabase bearer + membership scope, encrypted D1 state, iframe origin validation, HMAC-redacted inbox payloads, and DeleteCard disconnect. PR #160 `/flinks/sync` and browser LoginId storage are retired. Account-scoped category autofill from PR #160 remains in `prepareImportRows`. Final Confirm still posts money.
+
+**Budget delta (5):** `+2` — secure bank evidence path without weakening Confirm or posting authority.
+
+**Engagement delta (3):** `+2` — Import from Flinks returns on Batch Import with Connect + one-tap import after link.
+
+**What changed:** `workers/flinks.js` (`/bank/flinks/*`), D1 migration, `FlinksConnectPanel`, `flinksClient`, `parseFlinksInbox`, Batch Import wiring, vite proxy, wrangler D1 binding. Minor fix: `documentScanner` SubtleCrypto digest for jsdom receipt tests.
+
+**Verification:** Corrected Flinks + import triage + Batch Import UI 51/51. Full serial suite reached 686 pass / 2 skipped with one unrelated 30-second stress-fixture timeout; that complete stress file passed 7/7 with a 90-second allowance. TypeScript + production build, Wrangler dry run/startup profile, and non-traffic Cloudflare version `1d296d03-7776-4d72-add1-217dc718e377` are green. Preview status is `sandbox-configured`; legacy `/flinks/sync` returns `410`.
+
+**Privacy review:** PASS WITH NOTES — Development scaffold only. Exact member scope, ownership-bound encrypted state, iframe origin/window and callback state, selected CAD accounts, bounded responses, provider-delete retry state, stable HMAC identifiers, and Final Confirm were rechecked. Server-side loginId attestation remains a Production follow-up.
+
+**Data/environment:** Development only. No Production deploy, Supabase schema apply, or secret values committed. D1 `hearth-flinks-development` is bound and migrated; five legacy PR #160 demo rows were preserved in a renamed legacy table. All five required Flinks secrets exist in the prepared Cloudflare version.
+
+**Worksession:** [`worksessions/2026-08-26-flinks-connect-sandbox.md`](worksessions/2026-08-26-flinks-connect-sandbox.md), [`worksessions/2026-08-26-flinks-development-scaffold.md`](worksessions/2026-08-26-flinks-development-scaffold.md)
+
+**Next owner:** Jonathan — live Flinks Connect smoke on deployed Development after merge.
+
 
 ## Phase 0 optional-publish demotion + hosted honesty (D-147, 2026-08-26)
 

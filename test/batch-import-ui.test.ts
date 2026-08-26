@@ -3,6 +3,10 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BatchImportCard } from "../src/BatchImport.tsx";
+
+vi.mock("../src/FlinksConnectPanel.tsx", () => ({
+  FlinksConnectPanel: () => null,
+}));
 import { catalogHousehold, postEntry, type Household, type UndoToken } from "../src/core/index.ts";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

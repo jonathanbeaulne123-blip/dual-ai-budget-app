@@ -1679,6 +1679,23 @@ input, select, textarea {
   flex-wrap: wrap;
   gap: 8px;
 }
+.flinks-status {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--paper) 90%, transparent);
+}
+.flinks-status .import-actions { margin-top: 4px; }
+iframe.flinks-connect {
+  width: 100%;
+  min-height: 760px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+}
 .import-review { z-index: 42; }
 .import-review .sheet-inner {
   width: min(1080px, calc(100vw - 24px));

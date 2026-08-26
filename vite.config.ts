@@ -29,6 +29,10 @@ export default defineConfig({
         target: "https://hearth-books.jonathan-beaulne123.workers.dev",
         changeOrigin: true,
       },
+      "/bank/flinks": {
+        target: "https://hearth-books.jonathan-beaulne123.workers.dev",
+        changeOrigin: true,
+      },
     },
   },
   preview: { host: true, port: 4173 },
