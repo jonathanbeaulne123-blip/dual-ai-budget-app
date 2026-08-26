@@ -1,13 +1,17 @@
+import { memberIdForGoogleIdentity, type GoogleIdentitySelector } from "./google.ts";
 import { inviteFromText } from "./invite.ts";
 import type { Environment, Household, PersonalEnvelope, SharedEnvelope } from "./types.ts";
 import { ValidationError } from "./types.ts";
 
-/** Selected environment plus optional household, invite, and member scope. */
+/** Selected environment plus optional household, invite, member, and Google continuity scope. */
 export type IdentityBinding = {
   environment: Environment;
   householdId?: string;
   inviteCode?: string;
   memberId?: string;
+  /** When set, automatic continuity requires this Google subject (or email fallback) on the snapshot. */
+  googleSubject?: string;
+  googleEmail?: string;
 };
 
 export type IsolationBoundary =
@@ -103,6 +107,42 @@ export function assertMemberMatch(
   }
 }
 
+/**
+ * When a Google identity is present on the binding, the household must contain a
+ * matching active google.links membership. Phrase/Pass recovery may omit Google
+ * fields; automatic continuity must pass subject (preferred) or email.
+ */
+export function assertGoogleMembershipMatch(
+  household: Household,
+  binding: IdentityBinding,
+  boundary: IsolationBoundary,
+): string | null {
+  const subject = binding.googleSubject?.trim() ?? "";
+  const email = binding.googleEmail?.trim() ?? "";
+  if (!subject && !email) return null;
+  const identity: GoogleIdentitySelector = { subject, email };
+  const resolved = memberIdForGoogleIdentity(household, identity);
+  if (!resolved) {
+    throw new ValidationError(
+      boundary === "pull" || boundary === "join"
+        ? "That cloud household is not linked to this Google account. Nothing was imported."
+        : boundary === "outbox"
+          ? "This outbox entry is not linked to the signed-in Google account and was not replayed."
+          : boundary === "persist"
+            ? "This snapshot is not linked to the signed-in Google account and was not saved."
+            : "That household is not linked to this Google account.",
+    );
+  }
+  if (binding.memberId && binding.memberId !== resolved) {
+    throw new ValidationError(
+      boundary === "pull"
+        ? "Cloud membership does not match this Google account's household member."
+        : "That personal membership does not match this Google account.",
+    );
+  }
+  return resolved;
+}
+
 export function assertHouseholdBinding(
   household: Household,
   binding: IdentityBinding,
@@ -111,6 +151,7 @@ export function assertHouseholdBinding(
   assertEnvironmentMatch(household.environment, binding, boundary, { requirePresent: true });
   assertHouseholdIdMatch(household.householdId, binding, boundary);
   assertInviteMatch(household.inviteCode, binding, boundary);
+  assertGoogleMembershipMatch(household, binding, boundary);
   return household;
 }
 
@@ -139,12 +180,18 @@ export function assertPassInviteConsistency(pass: { invite: string; shared: Shar
   }
 }
 
-export function bindingForHousehold(household: Household, memberId?: string): IdentityBinding {
+export function bindingForHousehold(
+  household: Household,
+  memberId?: string,
+  identity?: GoogleIdentitySelector | null,
+): IdentityBinding {
   return {
     environment: household.environment,
     householdId: household.householdId,
     inviteCode: household.inviteCode,
     memberId,
+    googleSubject: identity?.subject,
+    googleEmail: identity?.email,
   };
 }
 
@@ -153,13 +200,20 @@ export function assertOutboxItemBinding(item: {
   householdId: string;
   memberId: string;
   snapshot: Household;
+  identity?: GoogleIdentitySelector;
 }): void {
   const binding: IdentityBinding = {
     environment: item.environment,
     householdId: item.householdId,
     memberId: item.memberId,
     inviteCode: item.snapshot.inviteCode,
+    googleSubject: item.identity?.subject,
+    googleEmail: item.identity?.email,
   };
   assertEnvironmentMatch(item.snapshot.environment, binding, "outbox", { requirePresent: true });
   assertHouseholdIdMatch(item.snapshot.householdId, binding, "outbox");
+  const resolved = assertGoogleMembershipMatch(item.snapshot, binding, "outbox");
+  if (resolved && resolved !== item.memberId) {
+    throw new ValidationError("This outbox entry belongs to a different household member and was not replayed.");
+  }
 }

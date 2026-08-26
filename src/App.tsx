@@ -147,6 +147,7 @@ import {
 import { clearSession, loadSession, saveSession, type Session } from "./session.ts";
 import { joinSharedHousehold, reconcileHousehold, reconcileHouseholdSnapshots } from "./api.ts";
 import { acceptHouseholdWrite, classifyCommandError, newConfirmationId, isLedgerWrite } from "./core/index.ts";
+import type { WriteAdapters } from "./core/commandRuntime.ts";
 import { ingestHouseholdBooks, inspectBrowserBooks, restoreHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
 import { readSupabaseConfig, pullHouseholdSnapshotById, pullPersonalSnapshotById, fetchContinuityMembershipRole } from "./ledger/supabase.ts";
 import { clearUndoHistory, loadUndoHistory, saveUndoHistory } from "./undoHistory.ts";
@@ -174,6 +175,41 @@ import {
   transportHouseholdWithOutbox,
   type ContinuityIdentity,
 } from "./continuity.ts";
+
+function makeBooksAdapters(input: {
+  environment: import("./core/types.ts").Environment;
+  memberId?: string;
+  continuityIdentity?: ContinuityIdentity | null;
+  transport?: WriteAdapters["transport"];
+}): WriteAdapters {
+  return {
+    persist: (household) => saveHousehold(household, {
+      operatingEnvironment: input.environment,
+      memberId: input.memberId,
+      continuityIdentity: input.continuityIdentity ?? undefined,
+    }),
+    ingest: async (household) => {
+      try {
+        const { status } = await ingestHouseholdBooks(household);
+        return { ok: status.ok, error: status.error };
+      } catch (error) {
+        return { ok: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    },
+    verifyBooks: async (household) => {
+      try {
+        const inspection = await inspectBrowserBooks(household);
+        return { ok: inspection.ok, error: inspection.ok ? undefined : inspection.message };
+      } catch (caught) {
+        return { ok: false, error: caught instanceof Error ? caught.message : String(caught) };
+      }
+    },
+    restoreIngest: async (household) => {
+      await restoreHouseholdBooks(household);
+    },
+    transport: input.transport,
+  };
+}
 import { inviteFromLocation } from "./core/invite.ts";
 import { authInviteFromLocation, authInviteTokenFromText, isAuthInviteToken, savePendingAuthInvite, loadPendingAuthInvite, clearPendingAuthInvite } from "./core/authInvite.ts";
 import { PairingCard, WelcomeJoin } from "./Pairing.tsx";
@@ -581,18 +617,10 @@ export function App() {
             confirmationId: `reconcile-${loaded.householdId}-${reconciled.revision}`,
             commandKind: "boot-reconcile",
             postedIds: [],
-            adapters: {
-              persist: (next) => saveHousehold(next, { operatingEnvironment: environment, memberId: loadedSession.memberId }),
-              ingest: async (household) => {
-                try {
-                  const { status } = await ingestHouseholdBooks(household);
-                  return { ok: status.ok, error: status.error };
-                } catch (error) {
-                  return { ok: false, error: error instanceof Error ? error.message : String(error) };
-                }
-              },
-              restoreIngest: restoreHouseholdBooks,
-            },
+            adapters: makeBooksAdapters({
+              environment,
+              memberId: loadedSession.memberId,
+            }),
           });
           if (!live) return;
           current = accepted.household;
@@ -624,8 +652,7 @@ export function App() {
             }
             if (
               inspection.issue === "missing-schema" ||
-              inspection.issue === "incomplete-migration" ||
-              inspection.issue === "interrupted-transaction"
+              inspection.issue === "incomplete-migration"
             ) {
               try {
                 const { status } = await ingestHouseholdBooks(current);
@@ -643,6 +670,8 @@ export function App() {
               }
               return;
             }
+            // projection-mismatch / interrupted-transaction / invalid-stored-data: fail closed.
+            // Do not silently re-ingest mismatched money JSON into PGlite.
             setBooksStatus({
               ok: false,
               engine: "pglite",
@@ -713,24 +742,24 @@ export function App() {
 
     const acceptReplayCandidate = async (candidate: Household, confirmationId: string, commandKind: string) => {
       const previous = householdRef.current;
+      const googleSession = loadGoogleSession(environment, memberId);
+      const authSession = supabaseAuthEnabled() ? loadSupabaseSession(environment) : null;
+      const continuityIdentity: ContinuityIdentity | null = authSession
+        ? { email: authSession.email, subject: authSession.googleSubject }
+        : googleSession?.identity
+          ? { email: googleSession.identity.email, subject: googleSession.identity.subject }
+          : null;
       const accepted = await acceptHouseholdWrite({
         previous,
         candidate,
         confirmationId,
         commandKind,
         postedIds: [],
-        adapters: {
-          persist: (next) => saveHousehold(next, { operatingEnvironment: environment, memberId }),
-          ingest: async (next) => {
-            try {
-              const { status } = await ingestHouseholdBooks(next);
-              return { ok: status.ok, error: status.error };
-            } catch (caught) {
-              return { ok: false, error: caught instanceof Error ? caught.message : String(caught) };
-            }
-          },
-          restoreIngest: restoreHouseholdBooks,
-        },
+        adapters: makeBooksAdapters({
+          environment,
+          memberId,
+          continuityIdentity,
+        }),
       });
       if (!live) return accepted;
       householdRef.current = accepted.household;
@@ -841,7 +870,7 @@ export function App() {
 
         current = householdRef.current;
         let remoteHousehold = current
-          ? await pullHouseholdSnapshotById(current.householdId, environment, cloudConfig)
+          ? await pullHouseholdSnapshotById(current.householdId, environment, cloudConfig, identity)
           : null;
         if (!remoteHousehold) {
           const memberships = await discoverContinuityMemberships(identity, environment, cloudConfig);
@@ -1075,14 +1104,39 @@ export function App() {
         ?? (candidate.members.some((member) => member.id === session?.memberId && member.active) ? session?.memberId : undefined)
         ?? candidate.members.find((member) => member.active)?.id;
       if (!nextMemberId) throw new Error("That ledger has no active household member.");
-      const { status } = await ingestHouseholdBooks(candidate);
-      if (!status.ok) throw new Error(status.error || "Those books could not be opened on this device.");
-      await saveHousehold(candidate, { operatingEnvironment: environment, memberId: nextMemberId, activate: true });
-      householdRef.current = candidate;
-      setHousehold(candidate);
+      const continuityIdentity = currentGoogle?.identity
+        ? { email: currentGoogle.identity.email, subject: currentGoogle.identity.subject }
+        : null;
+      const accepted = await acceptHouseholdWrite({
+        previous: householdRef.current,
+        candidate,
+        confirmationId: `switch-${candidate.householdId}-${candidate.revision}`,
+        commandKind: "switch-ledger",
+        postedIds: [],
+        adapters: makeBooksAdapters({
+          environment,
+          memberId: nextMemberId,
+          continuityIdentity,
+        }),
+      });
+      if (!accepted.ok) throw new Error(accepted.userMessage || "Those books could not be opened on this device.");
+      await saveHousehold(accepted.household, {
+        operatingEnvironment: environment,
+        memberId: nextMemberId,
+        activate: true,
+        continuityIdentity: continuityIdentity ?? undefined,
+      });
+      householdRef.current = accepted.household;
+      setHousehold(accepted.household);
       rememberSession({ memberId: nextMemberId, view: session?.view ?? "household", householdId });
-      setBooksStatus(status);
-      setHistory(loadUndoHistory(environment, householdId, nextMemberId, candidate));
+      setBooksStatus({
+        ok: true,
+        engine: "pglite",
+        entryCount: accepted.household.transactions.length,
+        inBalance: true,
+        equationHolds: true,
+      });
+      setHistory(loadUndoHistory(environment, householdId, nextMemberId, accepted.household));
       setToast(null);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
@@ -1096,24 +1150,22 @@ export function App() {
     const candidate = previous?.householdId === found.household.householdId
       ? await reconcileHouseholdSnapshots(previous, found.household, found.memberId)
       : found.household;
+    const googleSession = loadGoogleSession(environment, found.memberId)
+      ?? loadGoogleSession(environment, "__welcome__");
+    const continuityIdentity = googleSession?.identity
+      ? { email: googleSession.identity.email, subject: googleSession.identity.subject }
+      : null;
     const accepted = await acceptHouseholdWrite({
       previous,
       candidate,
       confirmationId: `discover-${found.household.householdId}-${found.household.revision}`,
       commandKind: "google-discovery",
       postedIds: [],
-      adapters: {
-        persist: (next) => saveHousehold(next, { operatingEnvironment: environment, memberId: found.memberId }),
-        ingest: async (candidate) => {
-          try {
-            const { status } = await ingestHouseholdBooks(candidate);
-            return { ok: status.ok, error: status.error };
-          } catch (caught) {
-            return { ok: false, error: caught instanceof Error ? caught.message : String(caught) };
-          }
-        },
-        restoreIngest: restoreHouseholdBooks,
-      },
+      adapters: makeBooksAdapters({
+        environment,
+        memberId: found.memberId,
+        continuityIdentity,
+      }),
     });
     if (!accepted.ok) throw new Error(accepted.userMessage || "Those cloud books could not be accepted on this device.");
     const adopted = adoptGoogleSession(environment, "__welcome__", found.memberId);
@@ -1301,19 +1353,10 @@ export function App() {
         commandKind: token?.label ?? "commit",
         postedIds: token?.postedIds ?? [],
         transportRequested,
-        adapters: {
-          persist: (household) => saveHousehold(household, { operatingEnvironment: environment, memberId }),
-          ingest: async (household) => {
-            try {
-              const { status } = await ingestHouseholdBooks(household);
-              return { ok: status.ok, error: status.error };
-            } catch (error) {
-              return { ok: false, error: error instanceof Error ? error.message : String(error) };
-            }
-          },
-          restoreIngest: async (household) => {
-            await restoreHouseholdBooks(household);
-          },
+        adapters: makeBooksAdapters({
+          environment,
+          memberId,
+          continuityIdentity,
           transport: transportRequested && automaticContinuity && continuityIdentity
             ? async (household, expectedRevision) => transportHouseholdWithOutbox({
                 household,
@@ -1323,8 +1366,8 @@ export function App() {
                 config: cloudConfig,
                 flush: flushTransport,
               })
-              : undefined,
-        },
+            : undefined,
+        }),
       });
       if (outcome.postedExactlyOnce || (outcome.postedNothing && !outcome.retryable)) {
         confirmationRef.current = null;

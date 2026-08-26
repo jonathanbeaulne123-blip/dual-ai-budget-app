@@ -425,7 +425,10 @@ async function flushItem(
   | { kind: "conflict"; remote: Household; message: string }
 > {
   try {
-    assertOutboxItemBinding(item);
+    if (!sameIdentity(item.identity, identity)) {
+      throw new Error("This outbox entry belongs to a different Google account and was not replayed.");
+    }
+    assertOutboxItemBinding({ ...item, identity: item.identity });
     const pushed = await pushSupabaseHousehold(item.snapshot, config, {
       expectedRevision: item.expectedRevision,
       continuityIdentity: identity,

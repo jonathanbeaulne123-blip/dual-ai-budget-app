@@ -34,6 +34,8 @@ export type TransportResult =
 export type WriteAdapters = {
   persist: (household: Household) => Promise<void>;
   ingest: (household: Household) => Promise<BooksAcceptStatus>;
+  /** Optional post-ingest PGlite/canonical-hash check. Fail closed when provided and not ok. */
+  verifyBooks?: (household: Household) => Promise<BooksAcceptStatus>;
   restoreIngest?: (household: Household) => Promise<void>;
   transport?: (household: Household, expectedRevision: number) => Promise<TransportResult>;
 };
@@ -194,6 +196,23 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
           ? "unbalanced-journal"
           : "books-unavailable";
         throw new BooksRejectedError(message, errorClass);
+      }
+      if (input.adapters.verifyBooks) {
+        const verified = await input.adapters.verifyBooks(accepted);
+        if (!verified.ok) {
+          throw new BooksRejectedError(
+            verified.error || "PGlite and the snapshot hash do not agree. Nothing was posted.",
+            "books-unavailable",
+          );
+        }
+      }
+      const expectedHash = accepted.booksAcceptedHash;
+      const recomputed = await financialAuditHash(accepted);
+      if (expectedHash && expectedHash !== recomputed) {
+        throw new BooksRejectedError(
+          "The accepted books hash changed during ingest. Nothing was posted.",
+          "books-unavailable",
+        );
       }
     } catch (error) {
       if (error instanceof NeedsConfirmationError) throw error;

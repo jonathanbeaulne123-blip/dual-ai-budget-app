@@ -133,6 +133,68 @@ describe("D-110 local-first sharing", () => {
     expect(inspection.entryCount).toBe(posted.transactions.length);
   });
 
+  it("acceptHouseholdWrite verifies PGlite against the canonical financial hash; entry count alone never accepts", async () => {
+    await resetBrowserBooksForTests();
+    const { acceptHouseholdWrite } = await import("../src/core/commandRuntime.ts");
+    const { financialAuditHash } = await import("../src/core/commandIdentity.ts");
+    const { hashBooksSnapshot } = await import("../src/ledger/engine.ts");
+    const posted = postEntry(catalogHousehold(), {
+      date: "2026-08-24",
+      type: "expense",
+      amount: "4.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Milk",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    }).household;
+    const accepted = await acceptHouseholdWrite({
+      previous: null,
+      candidate: posted,
+      confirmationId: "CONF-PULL-ACCEPT-1",
+      commandKind: "continuity-pull",
+      postedIds: [],
+      adapters: {
+        persist: async () => undefined,
+        ingest: async (household) => {
+          const { status } = await ingestHouseholdBooks(household);
+          return { ok: status.ok, error: status.error };
+        },
+        verifyBooks: async (household) => {
+          const inspection = await inspectBrowserBooks(household);
+          return { ok: inspection.ok, error: inspection.ok ? undefined : inspection.message };
+        },
+      },
+    });
+    expect(accepted.ok).toBe(true);
+    const canonical = await financialAuditHash(accepted.household);
+    expect(accepted.household.booksAcceptedHash).toBe(canonical);
+    expect(await hashBooksSnapshot(accepted.household)).toBe(canonical);
+    expect((await inspectBrowserBooks(accepted.household)).ok).toBe(true);
+
+    const transaction = accepted.household.transactions.at(-1)!;
+    const mutated = {
+      ...accepted.household,
+      transactions: accepted.household.transactions.map((row) =>
+        row.id === transaction.id
+          ? {
+              ...row,
+              amountCents: transaction.amountCents + 100,
+              splits: row.splits.map((split, index) =>
+                index === row.splits.length - 1 ? { ...split, amountCents: split.amountCents + 100 } : split,
+              ),
+            }
+          : row,
+      ),
+    };
+    expect(mutated.transactions.length).toBe(accepted.household.transactions.length);
+    expect(await financialAuditHash(mutated)).not.toBe(canonical);
+    const inspection = await inspectBrowserBooks(mutated);
+    expect(inspection.ok).toBe(false);
+    expect(inspection.issue, inspection.message).toBe("projection-mismatch");
+    expect(inspection.entryCount).toBe(accepted.household.transactions.length);
+  });
+
   it("keeps boot on inspect/ingest, not the deprecated combined sync", () => {
     const app = readFileSync(fileURLToPath(new URL("../src/App.tsx", import.meta.url)), "utf8");
     const engine = readFileSync(fileURLToPath(new URL("../src/ledger/engine.ts", import.meta.url)), "utf8");

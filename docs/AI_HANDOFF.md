@@ -4,6 +4,22 @@ After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. 
 
 Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
 
+## Phase 0 evidence + membership tuple + hash acceptance (D-145, 2026-08-26)
+
+**Status:** Branch `cursor/phase0-evidence-isolation-hash-c04e`; PR pending. Not merged, not deployed. Risk: **High**.
+
+**Household outcome:** Sheets-era issues/PRs have retained evidence; automatic continuity boundaries validate environment + Google membership; pulled/merged money cannot become active books on entry-count alone — PGlite and `financialAuditHash` must agree.
+
+**Budget delta (5):** `+3` — fail-closed identity and books acceptance on discovery/pull/persist/outbox/switch.
+
+**Engagement delta (3):** `0` — safety and tracker hygiene.
+
+**Verification:** Focused `environment-isolation` + `hosted-transport` + `command-runtime` green; `tsc --noEmit` green; full `pnpm test` on branch.
+
+**Worksession:** [`worksessions/2026-08-26-phase0-evidence-isolation-hash.md`](worksessions/2026-08-26-phase0-evidence-isolation-hash.md)
+
+**Next owner:** Jonathan — review PR; remaining Phase 0: optional-publish removal, full atomic hosted stack, Hercules KV, branch protection, WORKING_MEMORY canon drift.
+
 ## Auth membership continuity authority (D-143, 2026-08-26)
 
 **Status:** Branch `cursor/auth-membership-authority-e279`; PR pending. Not merged, not deployed. Risk: **High**.

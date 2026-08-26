@@ -1,4 +1,5 @@
 import type { PGlite } from "@electric-sql/pglite";
+import { financialAuditHash } from "../core/commandIdentity.ts";
 import {
   booksEquation,
   compileHousehold,
@@ -177,10 +178,9 @@ export function booksIntegrityFacts(household: Household) {
   };
 }
 
+/** Canonical money integrity hash (same facts as hosted CAS and booksAcceptedHash). */
 export async function hashBooksSnapshot(household: Household): Promise<string> {
-  const bytes = new TextEncoder().encode(JSON.stringify(booksIntegrityFacts(household)));
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return financialAuditHash(household);
 }
 
 export function hostedFailureStatus(

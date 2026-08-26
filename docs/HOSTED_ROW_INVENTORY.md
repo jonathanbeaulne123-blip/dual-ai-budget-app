@@ -10,7 +10,7 @@ The old implicit upload path (`syncHouseholdBooks` forced `linked: true` on boot
 - 1 Production household, untouched;
 - applied migration ids including `[2,4,5,7]` (007 = D-126 timezone CHECK, 2026-08-25).
 
-No payload contents or household identifiers are stored in this document. Do not delete or edit the remaining Production household without a new explicit approval.
+No payload contents or household identifiers are stored in this document. Do not delete or edit Production households without a new explicit approval.
 
 ## What was removed
 
@@ -23,20 +23,18 @@ The deletion decision was environment-wide because Jonathan declared legacy Deve
 
 ## What this record does not authorize
 
-- Any Production row change.
-- Applying project-wide migration 006.
+- Any Production row change without a new Jonathan approval.
 - Enabling providers, changing secrets, deploying, or merging.
 - Future blanket cleanup of Development rows created after this event.
 
 ## Jonathan decisions still required
 
-1. Choose a separate Development Supabase project or explicitly approve a full shared-project cutover.
-2. Configure the Google provider and prove signed-in Create, Join, invite, revoke, and reconnect behavior.
-3. Apply migration 006 only after that project-boundary decision and a clean preflight.
+1. Finish Create / invite / revoke smoke after Auth membership (D-143).
+2. Decide whether new disposable Development fixtures need another approved cleanup before October.
 
 ## Metadata-only verification query
 
-The bundled project is `tykhocwacaxwquhynkok` (`https://tykhocwacaxwquhynkok.supabase.co`). RLS remains open until 006. In the Supabase SQL editor, list metadata without payload:
+The bundled project is `tykhocwacaxwquhynkok` (`https://tykhocwacaxwquhynkok.supabase.co`). Deny-by-default RLS **006 is applied** (anon household REST revoked). In the Supabase SQL editor, list metadata without payload:
 
 ```sql
 SELECT

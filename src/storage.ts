@@ -1,5 +1,9 @@
 import type { Environment, Household, PersonalEnvelope } from "./core/types.ts";
-import { assertEnvironmentMatch } from "./core/environmentIsolation.ts";
+import {
+  assertEnvironmentMatch,
+  assertGoogleMembershipMatch,
+} from "./core/environmentIsolation.ts";
+import type { GoogleIdentitySelector } from "./core/google.ts";
 import { ensureHouseholdShape, personalReplicaForMember } from "./core/sync.ts";
 
 const LEGACY_PREFIX = "hearth:v1:";
@@ -19,7 +23,13 @@ export type HouseholdReplicaSummary = {
   updatedAt: string | null;
 };
 
-export type SaveHouseholdOptions = { memberId?: string; activate?: boolean; operatingEnvironment?: Environment };
+export type SaveHouseholdOptions = {
+  memberId?: string;
+  activate?: boolean;
+  operatingEnvironment?: Environment;
+  /** When signed in, persist refuses snapshots that are not linked to this Google identity. */
+  continuityIdentity?: GoogleIdentitySelector | null;
+};
 
 function householdKey(environment: Environment, householdId: string): string {
   return `${REPLICA_PREFIX}${environment}:${encodeURIComponent(householdId)}`;
@@ -179,6 +189,19 @@ export async function saveHousehold(household: Household, options: SaveHousehold
     assertEnvironmentMatch(shaped.environment, { environment: options.operatingEnvironment }, "persist", {
       requirePresent: true,
     });
+  }
+  if (options.continuityIdentity && (options.continuityIdentity.subject.trim() || options.continuityIdentity.email.trim())) {
+    assertGoogleMembershipMatch(
+      shaped,
+      {
+        environment: shaped.environment,
+        householdId: shaped.householdId,
+        memberId: options.memberId,
+        googleSubject: options.continuityIdentity.subject,
+        googleEmail: options.continuityIdentity.email,
+      },
+      "persist",
+    );
   }
   const activate = options.activate !== false;
   const replicaKey = householdKey(shaped.environment, shaped.householdId);
