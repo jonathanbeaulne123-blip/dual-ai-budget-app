@@ -605,7 +605,7 @@ async function flushItem(
           continuityMemberId: item.memberId,
           expectedRevision: item.expectedRevision,
           commandRef: primary,
-          commandPayload: compactedCommandPayload(item, primary),
+          commandPayload: compactedCommandPayload(item, primary, household),
         });
       })()
       : await pushSupabaseHousehold(household, config, {

@@ -1,6 +1,8 @@
 import type { CommandReceipt, Household } from "../core/types.ts";
-
-/** Tier 2 command-log transport (D-148 T2-S2). Off by default until Migration 013 is applied on Dev. */
+import {
+  extractMaterializationFacts,
+  type ContinuityMaterializationFacts,
+} from "./materializeSnapshotFromEvents.ts";
 export function continuityCommandLogEnabled(): boolean {
   return String(import.meta.env.VITE_CONTINUITY_COMMAND_LOG || "") === "1";
 }
@@ -22,6 +24,7 @@ export type ContinuityCommandRef = {
     auditHash: string;
     revision: number;
     acceptedAt: string;
+    materializationFacts?: ContinuityMaterializationFacts;
   };
 };
 
@@ -99,9 +102,12 @@ export function primaryCommandRef(refs: ContinuityCommandRef[]): ContinuityComma
 export function compactedCommandPayload(
   item: { confirmationIds: string[]; commandRefs: ContinuityCommandRef[] },
   primary: ContinuityCommandRef,
+  household: Household,
 ): Record<string, unknown> {
+  const mergedFacts = mergeMaterializationFacts(item.commandRefs, household);
   return {
     ...primary.commandPayload,
+    materializationFacts: mergedFacts,
     compactedConfirmationIds: item.confirmationIds,
     compactedCommands: item.commandRefs.map((ref) => ({
       confirmationId: ref.confirmationId,
@@ -110,4 +116,38 @@ export function compactedCommandPayload(
       ledgerScope: ref.ledgerScope,
     })),
   };
+}
+
+function mergeMaterializationFacts(
+  refs: ContinuityCommandRef[],
+  household: Household,
+): ContinuityMaterializationFacts | undefined {
+  const merged: ContinuityMaterializationFacts = {};
+  for (const ref of refs) {
+    const facts = extractMaterializationFacts(household, ref.commandPayload.postedIds, {
+      acceptedAt: ref.commandPayload.acceptedAt,
+    });
+    if (facts.transactions?.length) {
+      merged.transactions = [...(merged.transactions ?? []), ...facts.transactions];
+    }
+    if (facts.shifts?.length) {
+      merged.shifts = [...(merged.shifts ?? []), ...facts.shifts];
+    }
+    if (facts.claims?.length) {
+      merged.claims = [...(merged.claims ?? []), ...facts.claims];
+    }
+    if (facts.sitDownSessions?.length) {
+      merged.sitDownSessions = [...(merged.sitDownSessions ?? []), ...facts.sitDownSessions];
+    }
+    if (facts.goalContributions?.length) {
+      merged.goalContributions = [...(merged.goalContributions ?? []), ...facts.goalContributions];
+    }
+    if (facts.goalPurchases?.length) {
+      merged.goalPurchases = [...(merged.goalPurchases ?? []), ...facts.goalPurchases];
+    }
+    if (facts.tombstones?.length) {
+      merged.tombstones = [...(merged.tombstones ?? []), ...facts.tombstones];
+    }
+  }
+  return Object.keys(merged).length ? merged : undefined;
 }
