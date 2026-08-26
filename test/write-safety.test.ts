@@ -113,6 +113,7 @@ describe("reverse and undo", () => {
 describe("join copy", () => {
   it("does not tell Bianca a missing phrase is right", () => {
     expect(UNPUBLISHED_PHRASE).not.toMatch(/phrase is right/i);
-    expect(UNPUBLISHED_PHRASE).toMatch(/Check the three words/);
+    expect(UNPUBLISHED_PHRASE).toMatch(/Continue with Google/);
+    expect(UNPUBLISHED_PHRASE).toMatch(/Advanced recovery/);
   });
 });

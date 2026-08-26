@@ -104,19 +104,27 @@ export function resetChatRateMemory() {
  * Meter 60 chats per client IP per UTC day. KV is durable when configured;
  * isolate memory is a bounded fallback, not a globally consistent counter.
  *
+ * Concurrent failure semantics (D-146): both backends use get-then-put, so two
+ * overlapping reads of the same count can both succeed and briefly exceed 60.
+ * KV still wins for cross-isolate durability. A Durable Object hard cap is future work.
+ *
  * @param {{ HERCULES_RATE?: KvNamespace }} env
  * @param {Request | undefined | null} request
  */
+export function rateLimitAuthority(env) {
+  return env?.HERCULES_RATE ? "kv" : "memory";
+}
+
 export async function checkChatRateLimit(env, request) {
   const key = `chat:${clientIp(request)}:${dayKeyUtc()}`;
   const kv = env?.HERCULES_RATE;
   const raw = kv ? await kv.get(key) : memoryGet(key);
   const count = raw ? Number(raw) : 0;
   if (!Number.isFinite(count) || count >= DAILY_CHAT_LIMIT) {
-    return { ok: false, remaining: 0 };
+    return { ok: false, remaining: 0, authority: rateLimitAuthority(env) };
   }
   const next = String(count + 1);
   if (kv) await kv.put(key, next, { expirationTtl: 172800 });
   else memoryPut(key, next);
-  return { ok: true, remaining: DAILY_CHAT_LIMIT - count - 1 };
+  return { ok: true, remaining: DAILY_CHAT_LIMIT - count - 1, authority: rateLimitAuthority(env) };
 }

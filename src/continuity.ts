@@ -561,7 +561,7 @@ async function flushItem(
       pendingItem(item, message, true);
       return { kind: "conflict", remote: pushed.remote, message };
     }
-    if (!pushed.schema || pushed.skipped) {
+    if (!pushed.schema || pushed.skipped || pushed.error) {
       const message = pushed.error || "Saved on this device. Cloud continuity will retry automatically.";
       pendingItem(item, message);
       return { kind: "pending", message };
