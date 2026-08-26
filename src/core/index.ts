@@ -43,6 +43,7 @@ export * from "./askBooks.ts";
 export * from "./hercules.ts";
 export * from "./herculesTalk.ts";
 export * from "./herculesProvenance.ts";
+export * from "./herculesProWrite.ts";
 export * from "./herculesTools.ts";
 export * from "./herculesPlanner.ts";
 export * from "./herculesPersonality.ts";
