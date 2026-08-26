@@ -3,11 +3,11 @@ import {
   assertHouseholdBinding,
   assertPersonalEnvelopeBinding,
 } from "../core/environmentIsolation.ts";
+import { ValidationError, type Environment, type Household, type PersonalEnvelope } from "../core/types.ts";
 import { assembleHousehold, ensureHouseholdShape, personalReplicaForMember, splitForSync } from "../core/sync.ts";
 import { inviteFromText } from "../core/invite.ts";
 import { memberIdForGoogleIdentity, type GoogleIdentitySelector } from "../core/google.ts";
 import { hostedTransportAllowed } from "../core/sharing.ts";
-import type { Environment, Household, PersonalEnvelope } from "../core/types.ts";
 import { hostedContinuityAllowed } from "./continuityPolicy.ts";
 import type { SnapshotCasConflict, SnapshotCasResult } from "./snapshotCas.ts";
 
@@ -835,7 +835,22 @@ async function pushSupabaseHouseholdLegacy(
   continuityIdentity: GoogleIdentitySelector | undefined,
   personalAlreadyPublished: boolean,
 ): Promise<PushHouseholdResult> {
-  const remote = await readRemoteSnapshot(config, snapshot.householdId, snapshot.environment);
+  let remote: Household | null = null;
+  try {
+    remote = await readRemoteSnapshot(config, snapshot.householdId, snapshot.environment);
+  } catch (caught) {
+    // Fail closed: mismatched identity never posts; surface as conflict so outbox stays blocked.
+    if (caught instanceof ValidationError) {
+      return {
+        ...probe,
+        schema: true,
+        conflict: true,
+        usedCasRpc: false,
+        error: caught.message,
+      };
+    }
+    throw caught;
+  }
   if (remote && remote.environment !== snapshot.environment) {
     return {
       ...probe,

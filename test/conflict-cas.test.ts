@@ -30,7 +30,7 @@ describe("hosted compare-and-swap", () => {
       revision: 5,
       baseRevision: 3,
     };
-    const remote = { ...catalogHousehold(), linked: true, revision: 4 };
+    const remote = { ...catalogHousehold(), linked: true, revision: 4, householdId: local.householdId, inviteCode: local.inviteCode };
     const calls: string[] = [];
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
@@ -63,7 +63,13 @@ describe("hosted compare-and-swap", () => {
       revision: 2,
       baseRevision: 2,
     };
-    const remote = { ...catalogHousehold("production"), linked: true, revision: 2 };
+    const remote = {
+      ...catalogHousehold("production"),
+      linked: true,
+      revision: 2,
+      householdId: local.householdId,
+      inviteCode: local.inviteCode,
+    };
     const calls: string[] = [];
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);

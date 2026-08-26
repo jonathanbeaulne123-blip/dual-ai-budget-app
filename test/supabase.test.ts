@@ -117,8 +117,9 @@ describe("Supabase hosted books", () => {
       }
       throw new Error(`unexpected write: ${url}`);
     }));
-    await expect(pushSupabaseHousehold(household, config, { expectedRevision: 1 })).rejects.toThrow(
-      /Development\/Production pill/,
-    );
+    const result = await pushSupabaseHousehold(household, config, { expectedRevision: 1 });
+    expect(result.conflict).toBe(true);
+    expect(result.usedCasRpc).toBe(false);
+    expect(result.error).toMatch(/Development\/Production pill/);
   });
 });
