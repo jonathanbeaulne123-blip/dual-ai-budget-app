@@ -1,6 +1,6 @@
 # Hercules Pro
 
-Status: **read-only app deployed and registered; confirmed-write and living-3D-companion updates implemented in a review branch.** Migration 011 and a Worker deployment remain separately gated. Free Hercules remains the default product.
+Status: **read-only app deployed and registered; living 3D companion deployed to the Development Worker on 2026-08-26; confirmed-write update implemented in a review branch.** Migration 011 remains separately gated, Production stays disabled, and Free Hercules remains the default product.
 
 ## What the two Hercules modes mean
 
