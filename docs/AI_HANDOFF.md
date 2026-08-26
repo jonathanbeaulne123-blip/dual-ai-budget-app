@@ -18,7 +18,7 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 ## Stress reload weighted shifts (D-138, 2026-08-25)
 
-**Status:** Branch `cursor/stress-shift-weather-location-85bf` — draft [PR #136](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/136); not merged, not deployed. Risk: **Medium**.
+**Status:** Follow-up branch `cursor/pro-legible-reload-85bf` (continuity preserve on Reload for Hercules Pro). Stress trends merged via PR #136; this packet keeps Google identity so Pro can read Reload fixtures. Not merged, not deployed. Risk: **Medium**.
 
 **Household outcome:** More → Reload random data fills twelve months of complete Harbour Dining Room shifts with weather notes, Toronto GPS stamps, and weekday/season/weather-weighted tips so Hercules Pro can analyze realistic trends.
 
@@ -29,16 +29,19 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 **Worksession:** [`worksessions/2026-08-25-stress-shift-trends.md`](worksessions/2026-08-25-stress-shift-trends.md)
 
 **Verification:**
-- `pnpm exec vitest run test/stress-seed.test.ts test/work-jobs.test.ts test/timezone-location.test.ts` → 19 passed
-- `pnpm ai:verify` + `tsc --noEmit` + `vite build` green
+- `pnpm exec vitest run test/stress-seed.test.ts test/work-jobs.test.ts test/timezone-location.test.ts` → focused green (includes continuity-preserve Reload proof)
+- `pnpm ai:verify` + `tsc --noEmit` + `vite build` green (re-run after continuity fix)
 - Trend proof (seed `424242`): Fri/Sat tip/hr 1552¢ > Mon–Wed 1177¢; clearish 1557¢ > rainy 1020¢; 177 job-based shifts with Harbourfront stamps
 - Full `pnpm check` fails 2× `batch-import-ui` SubtleCrypto digests on **this branch and `main`** (pre-existing; unrelated)
 - Books auditor: PASS
 - After merge with `main`: Pro `tools/list` expects companion + catalog + write (**64**)
+- Continuity: Reload with `preserveFrom` keeps householdId / linked / Google links; tip shifts follow signed-in `tipMemberId`
+
+**Pro fixture path:** Development → Google Create → Reload random data (keeps identity) → sync → Connect Hercules Pro → tip_oracle / shift_year_simulation. See `docs/HERCULES_PRO.md`.
 
 **Data/environment:** Synthetic Development fixtures; no hosted schema, secrets, Production mutation, or peer-device requirement. Reload UI itself remains available when the env pill is Production (pre-existing).
 
-**Next owner:** Jonathan review of draft PR #136; smoke More → Reload random data in Development.
+**Next owner:** Jonathan: Development Google Create → Reload → sync → Connect Pro; smoke tip_oracle / year sim. Review this follow-up PR. Do not merge/deploy without approval.
 
 ## Shift year simulation + sandbox gate (D-140, 2026-08-25)
 
