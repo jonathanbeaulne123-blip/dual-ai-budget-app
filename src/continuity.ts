@@ -7,6 +7,14 @@ import { assertOutboxItemBinding } from "./core/environmentIsolation.ts";
 import type { Environment, Household } from "./core/types.ts";
 import { hostedContinuityAllowed } from "./ledger/continuityPolicy.ts";
 import {
+  buildCommandRef,
+  compactedCommandPayload,
+  continuityCommandLogEnabled,
+  primaryCommandRef,
+  type ContinuityCommandRef,
+} from "./ledger/continuityCommandLog.ts";
+import {
+  appendContinuityCommand,
   discoverSupabaseHouseholdsByGoogleIdentity,
   pushSupabaseHousehold,
   type DiscoveredHousehold,
@@ -20,6 +28,10 @@ export {
   productionContinuityEnabled,
   unprojectedHostedTransportAllowed,
 } from "./ledger/continuityPolicy.ts";
+export {
+  continuityCommandLogEnabled,
+  type ContinuityCommandRef,
+} from "./ledger/continuityCommandLog.ts";
 
 const OUTBOX_PREFIX = "hearth:continuity-outbox:v1:";
 const MAX_BACKOFF_MS = 60_000;
@@ -53,6 +65,9 @@ export type ContinuityOutboxItem = {
   blockedByConflict: boolean;
   /** ISO time when automatic flush may try again. Null when due immediately or blocked. */
   nextAttemptAt: string | null;
+  /** T2-S2: ref-only durable transport when command-log flag is on. */
+  transportKind?: "snapshot-tip" | "command-ref";
+  commandRefs?: ContinuityCommandRef[];
 };
 
 /** Slim durable outbox row — never carries journal/transactions (D-145). */
@@ -186,6 +201,8 @@ function normalizeOutboxItem(item: ContinuityOutboxItem): ContinuityOutboxItem {
   return {
     ...item,
     tipRevision,
+    transportKind: item.transportKind ?? (item.commandRefs?.length ? "command-ref" : "snapshot-tip"),
+    commandRefs: Array.isArray(item.commandRefs) ? item.commandRefs : undefined,
     snapshot: item.snapshot ? ensureHouseholdShape(item.snapshot) : undefined,
     confirmationIds: Array.isArray(item.confirmationIds) ? item.confirmationIds.filter(Boolean) : [],
     attempts: Number.isInteger(item.attempts) ? item.attempts : 0,
@@ -207,8 +224,9 @@ function isOutboxItem(value: unknown): value is ContinuityOutboxItem {
   )) {
     return false;
   }
-  // Slim durable rows (D-145) or legacy full-snapshot rows both qualify.
+  // Slim durable rows (D-145), command-ref rows (T2-S2), or legacy full-snapshot rows qualify.
   if (item.snapshot) return true;
+  if (Array.isArray(item.commandRefs) && item.commandRefs.length > 0) return true;
   return Number.isFinite(item.tipRevision) || Number.isFinite(item.expectedRevision);
 }
 
@@ -431,6 +449,20 @@ export function enqueueContinuitySnapshot(input: {
   const id = `${snapshot.environment}:${snapshot.householdId}`;
   const existing = items.find((item) => item.id === id);
   const now = new Date(nowMs()).toISOString();
+  const useCommandRefs = continuityCommandLogEnabled();
+  const commandRef = useCommandRefs
+    ? buildCommandRef({
+      household: snapshot,
+      confirmationId: input.confirmationId,
+      baseRevision: input.expectedRevision,
+    })
+    : null;
+  const mergedCommandRefs = commandRef
+    ? [
+      ...(existing?.commandRefs ?? []).filter((row) => row.confirmationId !== commandRef.confirmationId),
+      commandRef,
+    ]
+    : existing?.commandRefs;
   const item: ContinuityOutboxItem = {
     id,
     environment: snapshot.environment,
@@ -443,6 +475,8 @@ export function enqueueContinuitySnapshot(input: {
     expectedRevision: existing?.expectedRevision ?? input.expectedRevision,
     tipRevision: snapshot.revision,
     confirmationIds: [...new Set([...(existing?.confirmationIds ?? []), input.confirmationId].filter(Boolean))],
+    transportKind: useCommandRefs && mergedCommandRefs?.length ? "command-ref" : "snapshot-tip",
+    commandRefs: mergedCommandRefs,
     snapshot,
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
@@ -536,6 +570,17 @@ function isDue(item: ContinuityOutboxItem, force: boolean): boolean {
   return Date.parse(item.nextAttemptAt) <= nowMs();
 }
 
+function shouldUseCommandLogFlush(
+  item: ContinuityOutboxItem,
+  config?: SupabaseConfig | null,
+): boolean {
+  if (!continuityCommandLogEnabled()) return false;
+  if (item.transportKind !== "command-ref") return false;
+  if (!item.commandRefs?.length) return false;
+  if (!config?.authUserId && !config?.accessToken) return false;
+  return true;
+}
+
 async function flushItem(
   item: ContinuityOutboxItem,
   identity: ContinuityIdentity,
@@ -552,10 +597,22 @@ async function flushItem(
     }
     const household = await resolveOutboxHousehold(item, liveHousehold);
     assertOutboxItemBinding({ ...item, snapshot: household, identity: item.identity });
-    const pushed = await pushSupabaseHousehold(household, config, {
-      expectedRevision: item.expectedRevision,
-      continuityIdentity: identity,
-    });
+
+    const pushed = shouldUseCommandLogFlush(item, config)
+      ? await (async () => {
+        const primary = primaryCommandRef(item.commandRefs!);
+        return appendContinuityCommand(household, config!, {
+          continuityMemberId: item.memberId,
+          expectedRevision: item.expectedRevision,
+          commandRef: primary,
+          commandPayload: compactedCommandPayload(item, primary),
+        });
+      })()
+      : await pushSupabaseHousehold(household, config, {
+        expectedRevision: item.expectedRevision,
+        continuityIdentity: identity,
+      });
+
     if (pushed.conflict && pushed.remote) {
       const message = pushed.error || "Another device has newer books. Nothing was overwritten.";
       pendingItem(item, message, true);

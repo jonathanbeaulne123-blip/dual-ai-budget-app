@@ -21,6 +21,7 @@ import {
   encodeSharedSnapshotPayload,
 } from "./snapshotPayload.ts";
 import type { SnapshotCasConflict, SnapshotCasResult } from "./snapshotCas.ts";
+import type { ContinuityCommandRef } from "./continuityCommandLog.ts";
 
 export {
   hostedContinuityAllowed,
@@ -60,8 +61,10 @@ export type PushHouseholdResult = SupabaseProbe & {
   remote?: Household;
   /** True when the hosted CAS RPC acknowledged an already-applied duplicate. */
   duplicate?: boolean;
-  /** True when the write used publish_household_snapshot; false for legacy GET/POST. */
+  /** True when the write used publish_household_snapshot or append_continuity_command. */
   usedCasRpc?: boolean;
+  /** True when append_continuity_command (Migration 013) was used. */
+  usedCommandLogRpc?: boolean;
 };
 
 export type DiscoveredHousehold = {
@@ -489,6 +492,55 @@ async function publishContinuityMemberScope(
   if (!personalResult.ok) throw new Error(messageOf(personalResult.body));
 }
 
+/** Migration 013 append command log RPC missing from PostgREST schema cache. */
+export function isMissingAppendCommandRpc(body: unknown): boolean {
+  if (!body || typeof body !== "object") return false;
+  const code = "code" in body ? String((body as { code: unknown }).code) : "";
+  const message = "message" in body ? String((body as { message: unknown }).message) : "";
+  if (code === "PGRST202" || code === "PGRST203") return true;
+  return /could not find the function|schema cache/i.test(message)
+    && /append_continuity_command/i.test(message);
+}
+
+function parseAppendCommandBody(body: unknown): {
+  ok: boolean;
+  conflict: boolean;
+  duplicate?: boolean;
+  reason?: string;
+  resultRevision?: number;
+  eventId?: string;
+  remotePayload?: string | null;
+} | null {
+  if (!body || typeof body !== "object") return null;
+  const row = body as Record<string, unknown>;
+  if (row.ok === true) {
+    return {
+      ok: true,
+      conflict: false,
+      duplicate: row.duplicate === true,
+      resultRevision: typeof row.result_revision === "number" ? row.result_revision : undefined,
+      eventId: typeof row.event_id === "string" ? row.event_id : undefined,
+    };
+  }
+  if (row.ok === false || row.conflict === true) {
+    const snapshot = row.snapshot && typeof row.snapshot === "object"
+      ? row.snapshot as Record<string, unknown>
+      : null;
+    return {
+      ok: false,
+      conflict: true,
+      reason: typeof row.reason === "string" ? row.reason : undefined,
+      resultRevision: typeof row.result_revision === "number" ? row.result_revision : undefined,
+      remotePayload: typeof snapshot?.remote_payload === "string"
+        ? snapshot.remote_payload
+        : typeof row.remote_payload === "string"
+          ? row.remote_payload
+          : null,
+    };
+  }
+  return null;
+}
+
 async function publishContinuitySnapshotAtomic(
   config: SupabaseConfig,
   probe: SupabaseProbe,
@@ -557,6 +609,105 @@ async function publishContinuitySnapshotAtomic(
     conflict: false,
     usedCasRpc: false,
     error: "Hosted continuity RPC is unavailable. Automatic sharing stopped instead of racing a legacy upsert. Retry after the kitchen recovers, or use Advanced recovery only while Auth is off.",
+  };
+}
+
+export async function appendContinuityCommand(
+  household: Household,
+  config: SupabaseConfig,
+  input: {
+    continuityMemberId: string;
+    expectedRevision: number;
+    commandRef: ContinuityCommandRef;
+    commandPayload: Record<string, unknown>;
+  },
+): Promise<PushHouseholdResult> {
+  const probe = await probeSupabase(config);
+  if (!probe.schema) return { ...probe, skipped: false };
+  if (!usesAuthContinuitySession(config)) {
+    return {
+      ...probe,
+      schema: true,
+      skipped: true,
+      conflict: false,
+      usedCasRpc: false,
+      usedCommandLogRpc: false,
+      error: "Command-log transport requires a signed-in Auth session.",
+    };
+  }
+
+  const snapshot = ensureHouseholdShape(household);
+  const cloudSnapshot = householdCloudProjection(snapshot, input.continuityMemberId);
+  const snapshotHash = await financialAuditHash(cloudSnapshot);
+  const sharedPayload = await encodeSharedSnapshotPayload(cloudSnapshot);
+  const personalPayload = await encodeHouseholdPayload(
+    personalReplicaForMember(snapshot, input.continuityMemberId),
+  );
+
+  const rpc = await rest(config, "rpc/append_continuity_command", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({
+      p_household_id: snapshot.householdId,
+      p_environment: snapshot.environment,
+      p_member_id: input.continuityMemberId,
+      p_idempotency_key: input.commandRef.idempotencyKey,
+      p_confirmation_id: input.commandRef.confirmationId,
+      p_identity_hash: input.commandRef.identityHash,
+      p_base_revision: input.expectedRevision,
+      p_result_revision: snapshot.revision,
+      p_ledger_scope: input.commandRef.ledgerScope,
+      p_command_type: input.commandRef.commandType,
+      p_command_payload: input.commandPayload,
+      p_name: snapshot.name,
+      p_timezone: snapshot.timezone,
+      p_currency: snapshot.currency,
+      p_invite_phrase: snapshot.inviteCode,
+      p_linked: snapshot.linked || true,
+      p_last_committed_at: snapshot.lastCommittedAt,
+      p_shared_payload: sharedPayload,
+      p_snapshot_hash: snapshotHash,
+      p_personal_payload: personalPayload,
+    }),
+  });
+
+  if (rpc.ok) {
+    const parsed = parseAppendCommandBody(rpc.body);
+    if (parsed?.ok) {
+      return {
+        ...probe,
+        schema: true,
+        error: undefined,
+        skipped: false,
+        conflict: false,
+        duplicate: parsed.duplicate === true,
+        usedCasRpc: true,
+        usedCommandLogRpc: true,
+      };
+    }
+    if (parsed && !parsed.ok) {
+      return {
+        ...probe,
+        schema: true,
+        conflict: true,
+        usedCasRpc: true,
+        usedCommandLogRpc: true,
+        remote: (await remoteFromCasPayload(parsed.remotePayload)) ?? undefined,
+        error: conflictMessage(parsed.reason),
+      };
+    }
+  } else if (!isMissingAppendCommandRpc(rpc.body)) {
+    throw new Error(messageOf(rpc.body));
+  }
+
+  return {
+    ...probe,
+    schema: true,
+    skipped: true,
+    conflict: false,
+    usedCasRpc: false,
+    usedCommandLogRpc: false,
+    error: "Hosted command-log RPC is unavailable. Automatic sharing stopped instead of racing a legacy upsert. Retry after the kitchen recovers.",
   };
 }
 
