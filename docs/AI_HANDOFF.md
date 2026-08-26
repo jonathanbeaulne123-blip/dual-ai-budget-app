@@ -22,10 +22,31 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 - Trend proof (seed `424242`): Fri/Sat tip/hr 1552¢ > Mon–Wed 1177¢; clearish 1557¢ > rainy 1020¢; 177 job-based shifts with Harbourfront stamps
 - Full `pnpm check` fails 2× `batch-import-ui` SubtleCrypto digests on **this branch and `main`** (pre-existing; unrelated)
 - Books auditor: PASS
+- After merge with `main`: Pro `tools/list` expects companion + catalog + write (**64**)
 
 **Data/environment:** Synthetic Development fixtures; no hosted schema, secrets, Production mutation, or peer-device requirement. Reload UI itself remains available when the env pill is Production (pre-existing).
 
 **Next owner:** Jonathan review of draft PR #136; smoke More → Reload random data in Development.
+
+## Shift year simulation + sandbox gate (D-140, 2026-08-25)
+
+**Status:** **Merged** to `main` as [`6baf033`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/commit/6baf033) via [PR #138](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/138). Not deployed/live-verified. Risk: **Medium**.
+
+**Household outcome:** Hercules (free + Pro) can build a reproducible next-year tips+wages simulation from posted shifts and teach how it works. Python sandbox is designed as a later High-risk gate, not built.
+
+**Budget delta (5):** `+2` — deterministic year Monte Carlo of tips and wages; never posts.
+
+**Engagement delta (3):** `+2` — teachable year simulation for Pro and free Hercules.
+
+**Worksession:** [`worksessions/2026-08-25-shift-year-simulation.md`](worksessions/2026-08-25-shift-year-simulation.md)
+
+**What changed:** `runShiftYearSimulation` / `explainShiftYearSimulation` in `tipScience.ts`; tools `shift_year_simulation` + `explain_shift_simulation` on free Hercules (Worker planner + on-device) and Pro MCP; D-140 + sandbox gate in `HERCULES_PRO.md`; Pro `tools/list` = companion + catalog + write (64).
+
+**Verification:** focused tip-science / hercules-tools / hercules-pro green on the packet; CI green before merge.
+
+**Data/environment:** Development code only; fictional demo/stress data in tests; no schema, secrets, Production, or deploy.
+
+**Next owner:** ChatGPT Pro smoke when convenient; Worker deploy remains separately gated.
 
 ## Environment isolation Phase 0 (2026-08-25)
 
@@ -102,21 +123,21 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 ## Hercules Shift Oracle (D-137)
 
-**Status:** Draft PR [#133](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/133) on `cursor/hercules-shift-oracle-129b`. Not merged, not deployed, no schema/secrets/Production mutation.
+**Status:** Core Oracle **merged** to `main` via [#133](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/133). Follow-up schedule-weighting draft [#137](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/137) on `cursor/hercules-shift-oracle-schedule-129b`. Not deployed; no schema/secrets/Production mutation.
 
-**Baseline:** `main@6e2baea` → head inspect on branch. Worksession: [`worksessions/2026-08-25-hercules-shift-oracle.md`](worksessions/2026-08-25-hercules-shift-oracle.md).
+**Baseline:** Strategy 3 implementation from `main@6e2baea` lineage. Worksession: [`worksessions/2026-08-25-hercules-shift-oracle.md`](worksessions/2026-08-25-hercules-shift-oracle.md).
 
-**What shipped on the branch:** deterministic `tipScience.ts` (seeded Monte Carlo tip floors, weather/season-adjusted outlook, cadence schedule sim, educational tax-milk/buffer). Four shared read tools for free Hercules + Hercules Pro MCP (`tip_oracle`, `shift_outlook`, `tip_schedule_sim`, `tax_milk_plan`). Catalog 54→58. Order-stable observations, span-based cadence, payroll-week dry streaks including empty weeks, fail-closed unknown `shiftId`, Toronto wall-hour meal inference.
+**What landed on main (#133):** deterministic `tipScience.ts` with seeded Monte Carlo tip floors, weather/season-adjusted outlook, cadence schedule sim, educational tax-milk/buffer; four shared read tools for free Hercules + Pro (`tip_oracle`, `shift_outlook`, `tip_schedule_sim`, `tax_milk_plan`); Bernoulli day cadence from today; order-stable observations.
 
-**Budget delta (5):** `+3` — tipped-income floor, reserve, and tax-milk projections grounded on posted D-127 shifts; never posts.
+**Follow-up (#137):** probability-weight `tip_schedule_sim` totals by weekday frequency; Pro `tools/list` count 61 after write-scope tools.
 
-**Engagement delta (3):** `+2` — Hercules AI/Pro can run the tipped-worker war-room conversation with projection-labelled source cards.
+**Budget delta (5):** `+3` (merged) / follow-up `+1`
 
-**Verification:** focused tip-science + hercules-pro/tools green; `pnpm check` 84 files / 587 tests + build green. Artifacts: `/opt/cursor/artifacts/tip-oracle-focused.log`, `tip-oracle-math-fix.log`, `tip-oracle-pnpm-check.log`.
+**Engagement delta (3):** `+2` (merged) / follow-up `0`
 
-**Remaining uncertainty:** Confirm-time weather stamps not stored yet (soft priors only); free-route GROUNDED JOURNAL still lists projection CAD without an explicit projection marker (pre-existing for other forecast tools); correlated slow seasons not modelled.
+**Verification:** tip-science + hercules-pro focused suites green on follow-up; full check on this agent VM also hits 2 unrelated `batch-import-ui` SubtleCrypto failures.
 
-**Next owner:** High-risk review of tip math vs history; Development ChatGPT Pro + in-app Ask smoke. Do not deploy from this branch.
+**Next owner:** Review/merge #137; Development smoke in ChatGPT Pro + in-app Ask; do not deploy from these branches without approval.
 
 ## Hercules Brain v2 typed reads + free depth (D-133/D-135)
 

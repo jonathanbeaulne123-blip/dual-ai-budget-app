@@ -33,7 +33,9 @@ import type { HerculesGroundedFact, HerculesNumberSource } from "./herculesProve
 import type { HerculesTalk } from "./herculesTalk.ts";
 import { JOINT, type Account, type Household, type Transaction } from "./types.ts";
 import {
+  explainShiftYearSimulation,
   planTaxMilk,
+  runShiftYearSimulation,
   runTipOracle,
   shiftOutlook,
   simulateTipSchedule,
@@ -101,6 +103,8 @@ export const HERCULES_READ_TOOL_NAMES = [
   "shift_outlook",
   "tip_schedule_sim",
   "tax_milk_plan",
+  "shift_year_simulation",
+  "explain_shift_simulation",
 ] as const;
 
 export type HerculesReadToolName = (typeof HERCULES_READ_TOOL_NAMES)[number];
@@ -189,6 +193,8 @@ export const HERCULES_READ_TOOL_CATALOG: ReadonlyArray<{ name: HerculesReadToolN
   { name: "shift_outlook", description: "Estimate tip range for one upcoming shift from weekday, meal, hours, and optional weather. Projection only." },
   { name: "tip_schedule_sim", description: "Simulate the next days of tip outcomes from historical cadence; ranks protect-floor vs chase-spike advice. Projection only." },
   { name: "tax_milk_plan", description: "Split tip income into educational tax-milk, smoothing buffer, and leftover projections. Never posts." },
+  { name: "shift_year_simulation", description: "Seeded Monte Carlo for the next 6–12 months of tips and wages from posted shift history. Projection only." },
+  { name: "explain_shift_simulation", description: "Teach how the shift year simulation works: method, limits, and a human next step. Never posts." },
 ];
 
 const TOOL_SET = new Set<string>(HERCULES_READ_TOOL_NAMES);
@@ -319,6 +325,17 @@ function cleanArgs(name: HerculesReadToolName, raw: unknown): Record<string, unk
       shiftId: cleanString(input.shiftId, 100),
       taxRateBps: Math.min(5000, Math.max(0, Math.round(Number(input.taxRateBps) || 2500))),
     };
+  }
+  if (name === "shift_year_simulation") {
+    return {
+      member: common.member,
+      months: Math.min(12, Math.max(6, Math.round(Number(input.months) || 12))),
+      iterations: Math.min(2000, Math.max(200, Math.round(Number(input.iterations) || 800))),
+      seed: Math.min(1_000_000_000, Math.max(0, Math.round(Number(input.seed) || 137))),
+    };
+  }
+  if (name === "explain_shift_simulation") {
+    return { member: common.member };
   }
   if (name === "money_owed" || name === "cash_position" || name === "net_worth" || name === "audit_health") return {};
   return common;
@@ -1289,7 +1306,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
       callId: call.id,
       name: call.name,
       status: "ok",
-      sentence: `Next ${sim.rows.length} cadence shift${sim.rows.length === 1 ? "" : "s"} project ${formatCad(sim.totalExpectedCents)} tips (${formatCad(sim.totalLowCents)}–${formatCad(sim.totalHighCents)}). Advice ranks: ${headline || "neutral"}. This never books or declines a shift.`,
+      sentence: `Next ${sim.rows.length} likely cadence day${sim.rows.length === 1 ? "" : "s"} project about ${formatCad(sim.totalExpectedCents)} tips after weighting by how often those weekdays historically happen (${formatCad(sim.totalLowCents)}–${formatCad(sim.totalHighCents)}). Advice ranks: ${headline || "neutral"}. This never books or declines a shift.`,
       facts: [
         fact(call, 0, "Expected schedule tips", formatCad(sim.totalExpectedCents), source, "projection"),
         fact(call, 1, "Floor schedule tips", formatCad(sim.totalLowCents), source, "projection"),
@@ -1323,6 +1340,67 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
         fact(call, 1, "Tax milk", formatCad(plan.taxMilkCents), source, "projection"),
         fact(call, 2, "Smoothing buffer", formatCad(plan.bufferCents), source, "projection"),
         fact(call, 3, "Leftover after set-asides", formatCad(plan.leftoverCents), source, "projection"),
+      ],
+    };
+  }
+
+  if (call.name === "shift_year_simulation") {
+    const memberQuery = cleanString(call.args.member);
+    const member = resolveMember(household, memberQuery, context);
+    if (memberQuery && !member) return empty(call, `I cannot match member “${memberQuery}” in this ledger.`);
+    const memberId = tipOracleMemberId(context, member?.id);
+    const sim = runShiftYearSimulation(household, {
+      memberId,
+      today,
+      months: Number(call.args.months) || 12,
+      iterations: Number(call.args.iterations) || 800,
+      seed: Number(call.args.seed) || 137,
+    });
+    if (!sim) return empty(call, "I need at least four posted tip shifts before I can simulate a year of tips and wages.");
+    const source = tipOracleSource(context, memberId);
+    const monthFacts = sim.byMonth.slice(0, 4).map((row, index) => fact(
+      call,
+      index + 5,
+      `${row.monthKey} mid`,
+      `${formatCad(row.tipsP50Cents)} tips · ${formatCad(row.wagesP50Cents)} wages`,
+      tipOracleSource(context, memberId, `${row.monthKey}-01` as DateKey),
+      "projection",
+    ));
+    return {
+      callId: call.id,
+      name: call.name,
+      status: "ok",
+      sentence: `Across ${sim.iterations} seeded simulations of the next ${sim.months} months from ${sim.sampleShifts} posted shifts, tip+wage income lands near ${formatCad(sim.totalP50Cents)} (p50), with a floor of ${formatCad(sim.totalP10Cents)} and upside near ${formatCad(sim.totalP90Cents)} — about ${formatCad(sim.tipsP50Cents)} tips and ${formatCad(sim.wagesP50Cents)} wages at the midpoint. These are projections, not posted income. ${sim.assumptions[0]}`,
+      facts: [
+        fact(call, 0, "Year tip+wage mid (p50)", formatCad(sim.totalP50Cents), source, "projection"),
+        fact(call, 1, "Year tip+wage floor (p10)", formatCad(sim.totalP10Cents), source, "projection"),
+        fact(call, 2, "Year tips mid (p50)", formatCad(sim.tipsP50Cents), source, "projection"),
+        fact(call, 3, "Year wages mid (p50)", formatCad(sim.wagesP50Cents), source, "projection"),
+        fact(call, 4, "Sample shifts", String(sim.sampleShifts), source, "projection"),
+        ...monthFacts,
+      ],
+    };
+  }
+
+  if (call.name === "explain_shift_simulation") {
+    const memberQuery = cleanString(call.args.member);
+    const member = resolveMember(household, memberQuery, context);
+    if (memberQuery && !member) return empty(call, `I cannot match member “${memberQuery}” in this ledger.`);
+    const memberId = tipOracleMemberId(context, member?.id);
+    const lesson = explainShiftYearSimulation(household, { memberId });
+    if (!lesson) return empty(call, "I need at least four posted tip shifts before I can teach the year simulation.");
+    const source = tipOracleSource(context, memberId);
+    return {
+      callId: call.id,
+      name: call.name,
+      status: "ok",
+      sentence: `The year sim fits ${lesson.sampleShifts} posted shifts, then Monte Carlo-resamples tip/hour and wage/hour by weekday and meal for 6–12 months. ${lesson.method[0]} Limitation: ${lesson.limitations[0]} A Python sandbox is gated for later open-ended science; this engine stays deterministic TypeScript. Next: ${lesson.humanNextStep}`,
+      facts: [
+        fact(call, 0, "Sample shifts", String(lesson.sampleShifts), source, "projection"),
+        fact(call, 1, "Method", lesson.method[1] ?? lesson.method[0]!, source, "projection"),
+        fact(call, 2, "Limitation", lesson.limitations[0]!, source, "projection"),
+        fact(call, 3, "Sandbox gate", lesson.limitations.find((line) => /Python sandbox/i.test(line)) ?? lesson.limitations[3]!, source, "projection"),
+        fact(call, 4, "Human next step", lesson.humanNextStep, source, "projection"),
       ],
     };
   }

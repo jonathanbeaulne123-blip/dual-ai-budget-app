@@ -10,6 +10,8 @@ Write permissions are stored in the member's Personal continuity envelope, not t
 
 Hearth uses the Google-linked Supabase session to verify membership on every ledger load. Its short-lived access and refresh credentials are encrypted inside Worker-issued tokens. Ledger text is sent to ChatGPT only through read-tool results requested during the connected conversation. ChatGPT's own storage and privacy practices are governed by the person's ChatGPT account and OpenAI's terms.
 
+The optional animated companion is served from the same Hearth Worker as static JavaScript and a compressed 3D model. Its tool output contains only a mood, short display line, headline, and Personal/Household label. It receives no Supabase credential, Hearth access or refresh token, confirmation token, raw journal rows, or extra third-party tracking. The visual cannot read or write a ledger by itself.
+
 Disconnecting or revoking the Hearth/Google membership stops future reads. During the pre-October 2026 Development trial, test data is disposable. Production access stays disabled until Hearth's planned security review and cutover. Do not enter meaningful October data before that cutover is complete.
 
 Questions or deletion requests may be filed through the repository: https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/issues

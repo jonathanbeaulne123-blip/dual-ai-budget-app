@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import { calendarDaysBetween } from "../src/core/calendar.ts";
 import {
   executeHerculesReadToolPlan,
+  explainShiftYearSimulation,
   mulberry32,
   observeTipShifts,
   planTaxMilk,
+  runShiftYearSimulation,
   runTipOracle,
   seedDemoHousehold,
   shiftOutlook,
@@ -68,7 +70,7 @@ describe("Hercules Shift Oracle tip science", () => {
 
     const weekSlots = upcomingCadenceSchedule(household, today, { days: 7 }).length;
     expect(weekSlots).toBeGreaterThan(0);
-    expect(weekSlots).toBeLessThanOrEqual(6);
+    expect(weekSlots).toBeLessThanOrEqual(3);
   });
 
   it("produces weather-adjusted shift outlook and schedule advice as projections", () => {
@@ -87,6 +89,15 @@ describe("Hercules Shift Oracle tip science", () => {
     expect(sim!.totalLowCents).toBeLessThanOrEqual(sim!.totalExpectedCents);
     expect(sim!.totalExpectedCents).toBeLessThanOrEqual(sim!.totalHighCents);
     expect(["protect-floor", "chase-spike", "neutral"]).toContain(sim!.rows[0]!.recommendation);
+
+    const observations = observeTipShifts(household);
+    const first = observations[0]!.date;
+    const last = observations[observations.length - 1]!.date;
+    const spanWeeks = Math.max(1, (calendarDaysBetween(first, last) + 1) / 7);
+    const historicalWeekly = observations.reduce((sum, row) => sum + row.netTipsCents, 0) / spanWeeks;
+    // Probability-weighted week preview should stay near historical weekly tips.
+    expect(sim!.totalExpectedCents).toBeLessThan(Math.round(historicalWeekly * 1.75));
+    expect(sim!.totalExpectedCents).toBeGreaterThan(Math.round(historicalWeekly * 0.25));
   });
 
   it("plans educational tax milk, fails closed on unknown or non-positive tips, and never posts", () => {
@@ -131,6 +142,40 @@ describe("Hercules Shift Oracle tip science", () => {
     }, today, { memberId: "MEM-001", view: "household" });
     expect(badId.results[0]?.status).toBe("empty");
     expect(badId.results[0]?.sentence).toMatch(/cannot match shift/i);
+  });
+
+  it("simulates a year of tips and wages and teaches the method without posting", () => {
+    const household = seedDemoHousehold({ today, environment: "development" });
+    const before = structuredClone(household);
+    const a = runShiftYearSimulation(household, { today, months: 12, iterations: 400, seed: 21 });
+    const b = runShiftYearSimulation(household, { today, months: 12, iterations: 400, seed: 21 });
+    const c = runShiftYearSimulation(shuffleShifts(household, 5), { today, months: 12, iterations: 400, seed: 21 });
+    expect(a).not.toBeNull();
+    expect(b).toEqual(a);
+    expect(c).toEqual(a);
+    expect(a!.byMonth).toHaveLength(12);
+    expect(a!.tipsP10Cents).toBeLessThanOrEqual(a!.tipsP50Cents);
+    expect(a!.wagesP50Cents).toBeGreaterThan(0);
+    expect(a!.totalP50Cents).toBeGreaterThan(a!.tipsP50Cents);
+    expect(a!.assumptions.some((line) => /never posts|Confirm/i.test(line))).toBe(true);
+
+    const lesson = explainShiftYearSimulation(household);
+    expect(lesson?.method.length).toBeGreaterThan(0);
+    expect(lesson?.limitations.some((line) => /Python sandbox/i.test(line))).toBe(true);
+
+    const tools = executeHerculesReadToolPlan(household, {
+      calls: [
+        { name: "shift_year_simulation", args: { months: 12, iterations: 300, seed: 3 } },
+        { name: "explain_shift_simulation", args: {} },
+      ],
+    }, today, { memberId: "MEM-002", view: "household" });
+    expect(household).toEqual(before);
+    expect(tools.results.every((result) => result.status === "ok")).toBe(true);
+    expect(tools.results.every((result) => result.facts.every((fact) => fact.basis === "projection"))).toBe(true);
+    expect(tools.results[0]?.sentence).toMatch(/tips and .* wages|wages at the midpoint/i);
+    expect(tools.results[1]?.sentence).toMatch(/Monte Carlo|method|year sim/i);
+    expect(tools.results[1]?.sentence).toMatch(/Python sandbox/i);
+    expect(tools.results[1]?.facts.some((fact) => /Python sandbox/i.test(fact.value))).toBe(true);
   });
 
   it("keeps the seeded PRNG in unit interval", () => {
