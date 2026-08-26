@@ -6,7 +6,7 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 ## Stress reload weighted shifts (D-138, 2026-08-25)
 
-**Status:** Branch `cursor/stress-shift-weather-location-85bf` — draft PR; not merged, not deployed. Risk: **Medium**.
+**Status:** Branch `cursor/stress-shift-weather-location-85bf` — draft [PR #136](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/136); not merged, not deployed. Risk: **Medium**.
 
 **Household outcome:** More → Reload random data fills twelve months of complete Harbour Dining Room shifts with weather notes, Toronto GPS stamps, and weekday/season/weather-weighted tips so Hercules Pro can analyze realistic trends.
 
@@ -16,11 +16,16 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 **Worksession:** [`worksessions/2026-08-25-stress-shift-trends.md`](worksessions/2026-08-25-stress-shift-trends.md)
 
-**Verification:** `pnpm exec vitest run test/stress-seed.test.ts test/work-jobs.test.ts` green (14); full `pnpm check` pending on this turn.
+**Verification:**
+- `pnpm exec vitest run test/stress-seed.test.ts test/work-jobs.test.ts test/timezone-location.test.ts` → 19 passed
+- `pnpm ai:verify` + `tsc --noEmit` + `vite build` green
+- Trend proof (seed `424242`): Fri/Sat tip/hr 1552¢ > Mon–Wed 1177¢; clearish 1557¢ > rainy 1020¢; 177 job-based shifts with Harbourfront stamps
+- Full `pnpm check` fails 2× `batch-import-ui` SubtleCrypto digests on **this branch and `main`** (pre-existing; unrelated)
+- Books auditor: PASS
 
-**Data/environment:** Development fixtures only; no hosted schema, secrets, Production, or peer-device requirement.
+**Data/environment:** Synthetic Development fixtures; no hosted schema, secrets, Production mutation, or peer-device requirement. Reload UI itself remains available when the env pill is Production (pre-existing).
 
-**Next owner:** Jonathan review of draft PR; smoke More → Reload random data in Development.
+**Next owner:** Jonathan review of draft PR #136; smoke More → Reload random data in Development.
 
 ## Environment isolation Phase 0 (2026-08-25)
 
