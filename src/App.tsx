@@ -1658,6 +1658,20 @@ export function App() {
     });
   }
 
+  function requestClearThisPhone() {
+    setGuard({ kind: "clear-this-phone" });
+  }
+
+  function signOutWelcomeGoogle() {
+    disconnectGoogle(environment, "__welcome__");
+    clearSupabaseSession(environment);
+    rememberWelcomeGoogleIntent(null);
+    setWelcomeIdentity(null);
+    setDiscoveredLedgers([]);
+    setWelcomeMode("home");
+    setError("");
+  }
+
   if (booting) {
     return (
       <>
@@ -1673,6 +1687,12 @@ export function App() {
   }
 
   if (!household) {
+    const welcomeSignedIn = Boolean(
+      welcomeIdentity
+      || discoveredLedgers.length > 0
+      || loadGoogleSession(environment, "__welcome__")
+      || loadSupabaseSession(environment),
+    );
     return (
       <div className="welcome">
         <div className="welcome-card">
@@ -1793,6 +1813,11 @@ export function App() {
               <button className="ghost" type="button" style={{ width: "100%", marginTop: 8 }} onClick={() => { setWelcomeMode("home"); setError(""); }}>
                 Back
               </button>
+              {welcomeSignedIn && (
+                <button className="ghost" type="button" style={{ width: "100%", marginTop: 8 }} disabled={busy} onClick={() => signOutWelcomeGoogle()}>
+                  Sign out of Google
+                </button>
+              )}
             </form>
           ) : (
             <>
@@ -1834,12 +1859,22 @@ export function App() {
                     );
                   })}
                   <button className="ghost" disabled={busy} onClick={() => setDiscoveredLedgers([])}>Back</button>
+                  {welcomeSignedIn && (
+                    <button className="ghost" disabled={busy} onClick={() => signOutWelcomeGoogle()}>
+                      Sign out of Google
+                    </button>
+                  )}
                 </section>
               )}
               {error && <p className="danger">{error}</p>}
               {discoveredLedgers.length === 0 && (
                 <button className="ghost welcome-demo" onClick={() => persist(seedDemoHousehold({ today, environment }))}>
                   Open the demo kitchen table
+                </button>
+              )}
+              {welcomeSignedIn && welcomeMode === "home" && discoveredLedgers.length === 0 && (
+                <button className="ghost" type="button" style={{ width: "100%", marginTop: 8 }} disabled={busy} onClick={() => signOutWelcomeGoogle()}>
+                  Sign out of Google
                 </button>
               )}
             </>
@@ -2441,6 +2476,22 @@ export function App() {
       {tab === "more" && (
         <>
           <section className="card">
+            <header><h2>Account</h2></header>
+            <p className="muted">
+              You are {household.members.find((member) => member.id === session.memberId)?.name}.
+              Sign out removes Google and Auth tokens from this phone only. The cloud household stays.
+            </p>
+            <button
+              type="button"
+              className="ghost"
+              style={{ width: "100%", marginTop: 8 }}
+              disabled={busy}
+              onClick={requestClearThisPhone}
+            >
+              Sign out
+            </button>
+          </section>
+          <section className="card">
             <header><h2>Health</h2><span className={`pill ${findings.length ? "warn" : "good"}`}>{findings.length ? `${findings.length} findings` : "Clean"}</span></header>
             {findings.length === 0 ? <p className="muted">Ledger, splits, transfers, shifts, flags, and the books agree.</p> : (
               <ul className="health">{findings.map((finding) => <li key={finding.section + finding.message}><strong>{finding.section}.</strong> {finding.message}</li>)}</ul>
@@ -2543,6 +2594,7 @@ export function App() {
             busy={busy}
             onCommand={(fn) => { void run(fn); }}
             onError={setError}
+            onSignOut={requestClearThisPhone}
           />
           <HerculesProPermissionsCard
             environment={environment}
