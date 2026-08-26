@@ -4,6 +4,22 @@ After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. 
 
 Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
 
+## Auth membership continuity authority (D-143, 2026-08-26)
+
+**Status:** Branch `cursor/auth-membership-authority-e279`; PR pending. Not merged, not deployed. Risk: **High**.
+
+**Household outcome:** Automatic cloud share requires a Google continuity identity that matches an active household member. `linked` alone no longer publishes. Phrase remains Advanced recovery routing. Live anon REST stays denied; migration 010 bind RPC is live.
+
+**Budget delta (5):** `+3` — membership is the only automatic write authority.
+
+**Engagement delta (3):** `+1` — Continue with Google / Auth invites stay the normal door.
+
+**Verification:** Focused vitest + `VITE_SUPABASE_LIVE=1` anon denial matrix. Signed-in Create/invite redeem still needs Jonathan.
+
+**Worksession:** [`worksessions/2026-08-26-auth-membership-authority.md`](worksessions/2026-08-26-auth-membership-authority.md)
+
+**Next owner:** Jonathan — Continue with Google Create/open, issue QR invite, redeem on a second session; Cursor continues S5 canon after smoke.
+
 ## Continuity outbox quota + Retry now (2026-08-26)
 
 **Status:** Branch `cursor/fix-outbox-quota-retry-129b`; PR pending. Not merged, not deployed. Risk: **Medium**.

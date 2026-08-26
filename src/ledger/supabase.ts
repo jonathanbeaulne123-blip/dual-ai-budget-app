@@ -8,10 +8,14 @@ import { assembleHousehold, ensureHouseholdShape, overlayPersonalReplica, person
 import { inviteFromText } from "../core/invite.ts";
 import { memberIdForGoogleIdentity, type GoogleIdentitySelector } from "../core/google.ts";
 import { hostedTransportAllowed } from "../core/sharing.ts";
-import { hostedContinuityAllowed } from "./continuityPolicy.ts";
+import { hostedContinuityAllowed, legacyLinkedPublishAllowed } from "./continuityPolicy.ts";
 import type { SnapshotCasConflict, SnapshotCasResult } from "./snapshotCas.ts";
 
-export { hostedContinuityAllowed, productionContinuityEnabled } from "./continuityPolicy.ts";
+export {
+  hostedContinuityAllowed,
+  legacyLinkedPublishAllowed,
+  productionContinuityEnabled,
+} from "./continuityPolicy.ts";
 
 export type SupabaseConfig = {
   url: string;
@@ -607,7 +611,12 @@ export async function pullPersonalSnapshotById(
 export async function pushSupabaseHousehold(
   household: Household,
   config = readSupabaseConfig(),
-  options?: { expectedRevision?: number; continuityIdentity?: GoogleIdentitySelector },
+  options?: {
+    expectedRevision?: number;
+    continuityIdentity?: GoogleIdentitySelector;
+    /** Development-only recovery when Auth is off (D-143). Never set from automatic commits. */
+    legacyLinkedPublish?: boolean;
+  },
 ): Promise<PushHouseholdResult> {
   const continuityMemberId = hostedContinuityAllowed(household.environment) && options?.continuityIdentity
     ? memberIdForGoogleIdentity(household, options.continuityIdentity)
@@ -625,7 +634,13 @@ export async function pushSupabaseHousehold(
   if (household.environment === "production" && !continuityMemberId) {
     return { configured: Boolean(config), reachable: false, schema: false, skipped: true };
   }
-  if (!hostedTransportAllowed(household) && !continuityMemberId) {
+  const legacyLinked =
+    Boolean(options?.legacyLinkedPublish) &&
+    legacyLinkedPublishAllowed(household.environment) &&
+    hostedTransportAllowed(household);
+  // D-143: automatic continuity requires a resolved membership identity.
+  // linked alone is no longer enough unless an explicit legacy publish opts in.
+  if (!continuityMemberId && !legacyLinked) {
     return { configured: Boolean(config), reachable: false, schema: false, skipped: true };
   }
   const probe = await probeSupabase(config);

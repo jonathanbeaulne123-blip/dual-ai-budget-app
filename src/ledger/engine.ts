@@ -512,13 +512,15 @@ export async function restoreHouseholdBooks(household: Household): Promise<void>
   await ingestHouseholdBooks(household);
 }
 
-/** Linked snapshot transport only. Unlinked households skip with zero fetch. */
+/** Linked snapshot transport only. Unlinked households skip with zero fetch.
+ * D-143: this path is explicit legacy recovery (Auth-off Pairing), not automatic continuity.
+ */
 export async function publishLinkedHousehold(household: Household): Promise<BooksStatus["hosted"]> {
   if (!hostedTransportAllowed(household)) {
     return { provider: "supabase", mode: "local", reachable: false, schema: false, error: undefined };
   }
   try {
-    const hosted = await pushSupabaseHousehold(household);
+    const hosted = await pushSupabaseHousehold(household, undefined, { legacyLinkedPublish: true });
     return {
       provider: "supabase",
       mode: hosted.schema ? "published" : "failed",

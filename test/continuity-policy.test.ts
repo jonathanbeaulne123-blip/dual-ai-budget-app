@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   hostedContinuityAllowed,
+  legacyLinkedPublishAllowed,
   productionContinuityEnabled,
   unprojectedHostedTransportAllowed,
 } from "../src/ledger/continuityPolicy.ts";
@@ -17,6 +18,8 @@ describe("hosted continuity policy", () => {
     expect(hostedContinuityAllowed("production")).toBe(false);
     expect(unprojectedHostedTransportAllowed("development")).toBe(true);
     expect(unprojectedHostedTransportAllowed("production")).toBe(false);
+    expect(legacyLinkedPublishAllowed("development")).toBe(true);
+    expect(legacyLinkedPublishAllowed("production")).toBe(false);
   });
 
   it("allows Production continuity only when VITE_PRODUCTION_CONTINUITY=1", () => {
@@ -24,5 +27,6 @@ describe("hosted continuity policy", () => {
     expect(productionContinuityEnabled()).toBe(true);
     expect(hostedContinuityAllowed("production")).toBe(true);
     expect(unprojectedHostedTransportAllowed("production")).toBe(false);
+    expect(legacyLinkedPublishAllowed("production")).toBe(false);
   });
 });

@@ -1,6 +1,8 @@
 # Auth + membership RLS cutover (D-123)
 
 > **Live status (2026-08-25):** 004, 005, D-126 `007`, SELECT bridge `008`, and deny-by-default cutover **`006` applied** (Jonathan paste; policy proof `hearth_households_select`). Empty Production household previously deleted. Google Auth live. Path B NOTICE + ceiling 1 was in force at apply. Smoke Create / invite / anon denial still recommended.
+>
+> **2026-08-26 addendum (D-143):** Migration **010** `hearth_bind_google_memberships` is live — anon `EXECUTE` returns HTTP 401 permission denied for the function (not missing-RPC). Anon SELECT on `households` / `household_snapshots` / `continuity_memberships` remains 401. Client automatic transport now requires continuity membership identity; `linked` alone no longer publishes. Signed-in Create / email / QR redeem smoke still needs Jonathan’s Google session.
 
 ## Goal
 

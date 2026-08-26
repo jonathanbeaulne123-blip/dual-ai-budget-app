@@ -445,7 +445,7 @@ describe("two-client hosted CAS + outbox", () => {
       }
       return response(null, 201);
     }));
-    const result = await pushSupabaseHousehold(local, config, { expectedRevision: 3 });
+    const result = await pushSupabaseHousehold(local, config, { expectedRevision: 3, legacyLinkedPublish: true });
     expect(result.conflict).toBe(true);
     expect(result.usedCasRpc).toBe(false);
     expect(calls.some((call) => call.includes("rpc/publish_household_snapshot"))).toBe(true);

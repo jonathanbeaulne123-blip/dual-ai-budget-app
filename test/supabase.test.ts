@@ -62,7 +62,7 @@ describe("Supabase hosted books", () => {
       }
       return new Response(null, { status: 201 });
     }));
-    const result = await pushSupabaseHousehold(household, config);
+    const result = await pushSupabaseHousehold(household, config, { legacyLinkedPublish: true });
     expect(result.schema).toBe(true);
     expect(calls.some((call) => call.startsWith("DELETE"))).toBe(false);
     expect(calls.some((call) => call.startsWith("POST households?on_conflict=id"))).toBe(true);
@@ -92,7 +92,7 @@ describe("Supabase hosted books", () => {
       }
       return new Response(null, { status: 201 });
     }));
-    const result = await pushSupabaseHousehold(household, config, { expectedRevision: 1 });
+    const result = await pushSupabaseHousehold(household, config, { expectedRevision: 1, legacyLinkedPublish: true });
     expect(result.conflict).toBeFalsy();
     expect(result.usedCasRpc).toBe(false);
     expect(urls.some((url) => url.includes("household_snapshots?") && url.includes("environment=eq.development"))).toBe(true);
@@ -117,7 +117,7 @@ describe("Supabase hosted books", () => {
       }
       throw new Error(`unexpected write: ${url}`);
     }));
-    const result = await pushSupabaseHousehold(household, config, { expectedRevision: 1 });
+    const result = await pushSupabaseHousehold(household, config, { expectedRevision: 1, legacyLinkedPublish: true });
     expect(result.conflict).toBe(true);
     expect(result.usedCasRpc).toBe(false);
     expect(result.error).toMatch(/Development\/Production pill/);
