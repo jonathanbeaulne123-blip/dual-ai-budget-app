@@ -6,25 +6,15 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 
 ## Environment isolation Phase 0 (2026-08-25)
 
-**Status:** Branch `cursor/environment-isolation-f375` (not merged). Risk: **High**.
+**Status:** Merged to `main`. Follow-up branch `cursor/legacy-pull-env-bind-f375` closes the leftover legacy `readRemoteSnapshot` environment query filter and adds two-client clock-skew / partial-failure proofs.
 
-**What was examined:** Roadmap §1.3 STOP-SHIP — join/pass/pull/persist paths lacked consistent environment + household + invite binding.
+**Budget delta (5):** `+2` (original) / follow-up `+1` — legacy pull scoped to env+household; fault harness covers clock skew + mid-publish failure recovery.
 
-**Changes:** `src/core/environmentIsolation.ts`; wired into `pass.ts`, `storage.ts` (`operatingEnvironment`), `ledger/supabase.ts` pulls, `continuity.ts` outbox enqueue/flush, `api.ts` reconcile, `App.tsx` persist paths. Adversarial tests in `test/environment-isolation.test.ts`.
+**Engagement delta (3):** `0`
 
-**Budget delta (5):** `+2` — fail-closed binding on import/pull/persist/reconcile/outbox; blocks cross-pill or cross-household snapshot bleed.
+**Verification:** focused vitest on `supabase` + `hosted-cas-two-client`; then `pnpm check`.
 
-**Engagement delta (3):** `0` — safety-only; no companion or onboarding UX change.
-
-**Worksession:** [`worksessions/2026-08-25-environment-isolation.md`](worksessions/2026-08-25-environment-isolation.md)
-
-**Verification:** `pnpm check` — 555 tests passed, build OK.
-
-**Remaining uncertainty:** Legacy `readRemoteSnapshot` still lacks environment query filter (CAS path is primary). Phase 0 roadmap checkbox stays open until Jonathan confirms proof bar alongside two-device convergence.
-
-**Data/environment:** Development client only; no hosted schema/secrets/Production mutation.
-
-**Next owner:** Review PR; optional two-client fault harness while two-phone smoke waits.
+**Next owner:** Review follow-up PR; two-phone Auth smoke still needs devices.
 
 ## App Store sync UX P0+P1 (2026-08-25)
 

@@ -18,6 +18,7 @@ export type HerculesNumberSource = {
   accountId?: string;
   categoryId?: string;
   transactionId?: string;
+  journalEntryId?: string;
   transactionTypes?: Transaction["type"][];
   recurrenceId?: string;
   claimId?: string;

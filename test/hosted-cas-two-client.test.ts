@@ -424,15 +424,25 @@ describe("two-client hosted CAS + outbox", () => {
   });
 
   it("falls back to legacy GET-compare when the CAS RPC is missing", async () => {
-    const remote = { ...googleHousehold(), revision: 4, linked: true };
     const local = { ...expense(googleHousehold(), "Legacy", "1.00"), revision: 5, baseRevision: 3, linked: true };
+    const remote = {
+      ...googleHousehold(),
+      revision: 4,
+      linked: true,
+      householdId: local.householdId,
+      inviteCode: local.inviteCode,
+    };
     const calls: string[] = [];
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       calls.push(`${init?.method || "GET"} ${url}`);
       if (url.includes("households?select=id")) return response([]);
       if (url.includes("rpc/publish_household_snapshot")) return missingRpc();
-      if (url.includes("household_snapshots?")) return response([{ payload: JSON.stringify(remote) }]);
+      if (url.includes("household_snapshots?")) {
+        expect(url).toContain("environment=eq.development");
+        expect(url).toContain(`household_id=eq.${encodeURIComponent(local.householdId)}`);
+        return response([{ payload: JSON.stringify(remote) }]);
+      }
       return response(null, 201);
     }));
     const result = await pushSupabaseHousehold(local, config, { expectedRevision: 3 });
@@ -440,5 +450,97 @@ describe("two-client hosted CAS + outbox", () => {
     expect(result.usedCasRpc).toBe(false);
     expect(calls.some((call) => call.includes("rpc/publish_household_snapshot"))).toBe(true);
     expect(calls.some((call) => /POST/i.test(call) && call.includes("household_snapshots"))).toBe(false);
+  });
+
+  it("converges after clock skew when revisions remain monotonic", async () => {
+    const host = createMemoryHostedCas();
+    vi.stubGlobal("fetch", stubFetchAgainstHostedCas(host));
+
+    const skewedEarly = {
+      ...expense(googleHousehold(), "Skew early milk", "4.00"),
+      revision: 1,
+      baseRevision: 0,
+      linked: true,
+      lastCommittedAt: "2026-08-24T09:00:00.000Z",
+    };
+    const skewedLate = {
+      ...expense(googleHousehold(), "Skew late bread", "3.50"),
+      revision: 2,
+      baseRevision: 1,
+      linked: true,
+      householdId: skewedEarly.householdId,
+      inviteCode: skewedEarly.inviteCode,
+      lastCommittedAt: "2026-08-24T08:00:00.000Z",
+    };
+
+    const first = await pushSupabaseHousehold(skewedEarly, config, {
+      expectedRevision: 0,
+      continuityIdentity: identityA,
+    });
+    expect(first.conflict).toBeFalsy();
+
+    const second = await pushSupabaseHousehold(skewedLate, config, {
+      expectedRevision: 1,
+      continuityIdentity: identityA,
+    });
+    expect(second.conflict).toBeFalsy();
+    const remote = JSON.parse(String(host.get(skewedEarly.householdId).snapshot?.payload)) as Household;
+    expect(remote.revision).toBe(2);
+    expect(remote.lastCommittedAt).toBe("2026-08-24T08:00:00.000Z");
+    expect(remote.transactions.some((row) => row.note === "Skew late bread")).toBe(true);
+  });
+
+  it("keeps local outbox intact when publish fails after the probe succeeds (partial failure)", async () => {
+    setContinuityStore(createMemoryContinuityStore());
+    const household = {
+      ...expense(googleHousehold(), "Partial milk", "4.00"),
+      revision: 1,
+      baseRevision: 0,
+      linked: true,
+    };
+    let casCalls = 0;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("households?select=id")) return response([]);
+      if (url.includes("rpc/publish_household_snapshot")) {
+        casCalls += 1;
+        throw new Error("socket reset mid-publish");
+      }
+      if (url.includes("continuity_memberships?") || url.includes("continuity_personal_snapshots?")) {
+        return response({ code: "PGRST205", message: "missing" }, 404);
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    }));
+
+    const pending = await transportHouseholdWithOutbox({
+      household,
+      identity: identityA,
+      expectedRevision: 0,
+      confirmationId: "confirm-partial",
+      config,
+    });
+    expect(pending.ok).toBe(false);
+    if (pending.ok) throw new Error("expected pending");
+    expect(pending.errorClass).toBe("pending-transport");
+    expect(casCalls).toBe(1);
+    const queued = listContinuityOutbox("development");
+    expect(queued).toHaveLength(1);
+    expect(queued[0]?.snapshot.transactions.some((row) => row.note === "Partial milk")).toBe(true);
+    expect(queued[0]?.blockedByConflict).toBe(false);
+    expect(queued[0]?.attempts).toBe(1);
+
+    const host = createMemoryHostedCas();
+    vi.stubGlobal("fetch", stubFetchAgainstHostedCas(host));
+    const flushed = await flushContinuityOutbox({
+      environment: "development",
+      identity: identityA,
+      config,
+      force: true,
+    });
+    expect(flushed.synchronized).toBe(1);
+    expect(listContinuityOutbox("development")).toEqual([]);
+    expect(JSON.parse(String(host.get(household.householdId).snapshot?.payload)).transactions.some(
+      (row: { note: string }) => row.note === "Partial milk",
+    )).toBe(true);
   });
 });

@@ -4,11 +4,13 @@ import worker from "../workers/site.js";
 import { resetChatRateMemory } from "../workers/herculesGuard.js";
 import {
   executeHerculesReadToolPlan,
+  bookBalanceAsOf,
   herculesLedgerSourcePane,
   catalogHousehold,
   parseHerculesReadToolPlan,
   planHerculesReadTools,
   postEntry,
+  recordReconciliation,
   seedDemoHousehold,
   shouldPlanHerculesTools,
   transactionsForHerculesSource,
@@ -84,8 +86,173 @@ describe("Hercules read-only tool brain", () => {
     expect(personalWallet.talk.spoken).toMatch(/household ledger/i);
   });
 
+  it("builds posted accounting statements and traces every balance back to the journal", () => {
+    const household = seedDemoHousehold({ today, environment: "development" });
+    const before = structuredClone(household);
+    const statements = executeHerculesReadToolPlan(household, { calls: [
+      { name: "balance_sheet", args: {} },
+      { name: "income_statement", args: { period: "this_month" } },
+      { name: "cash_flow_statement", args: { period: "this_month" } },
+      { name: "trial_balance", args: {} },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+    expect(statements.results.map((result) => result.name)).toEqual([
+      "balance_sheet", "income_statement", "cash_flow_statement", "trial_balance",
+    ]);
+    expect(statements.results[0]?.sentence).toMatch(/accounting equation (holds|does not hold)/i);
+    expect(statements.results[1]?.facts.map((row) => row.label)).toEqual(["Income", "Expenses", "Net income"]);
+    expect(statements.results[2]?.sentence).toMatch(/card spending.*not cash movement/i);
+    expect(statements.results[3]?.sentence).toMatch(/trial balance balances/i);
+
+    const tracing = executeHerculesReadToolPlan(household, { calls: [
+      { name: "general_ledger", args: { period: "this_month", limit: 3 } },
+      { name: "account_activity", args: { account: "Visa", period: "this_month" } },
+      { name: "explain_balance", args: { account: "Visa", period: "this_month" } },
+      { name: "period_comparison", args: { period: "this_month" } },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+    expect(tracing.results[0]?.facts.every((row) => row.source.journalEntryId)).toBe(true);
+    expect(tracing.results[1]?.facts.every((row) => row.source.journalEntryId)).toBe(true);
+    expect(tracing.results[2]?.sentence).toMatch(/normal credit balance/i);
+    expect(tracing.results[3]?.sentence).toMatch(/compared with/i);
+
+    const entryId = tracing.results[0]!.facts[0]!.source.journalEntryId!;
+    const detail = executeHerculesReadToolPlan(household, { calls: [
+      { name: "journal_entry_detail", args: { entryId } },
+      { name: "changes_in_net_worth", args: { period: "this_month" } },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+    expect(detail.results[0]?.sentence).toMatch(/equal credits/i);
+    expect(detail.results[0]?.facts.length).toBeGreaterThanOrEqual(2);
+    expect(detail.results[1]?.sentence).toMatch(/roll-forward (reconciles|does not reconcile)/i);
+    expect(household).toEqual(before);
+  });
+
+  it("reads reconciliation, completeness, provenance, close, and audit controls without writing", () => {
+    let household = seedDemoHousehold({ today, environment: "development" });
+    const statementDate = "2026-08-20";
+    household = recordReconciliation(household, {
+      accountId: "ACC-CHEQUING",
+      statementDate,
+      statementAmount: bookBalanceAsOf(household, "ACC-CHEQUING", statementDate) / 100,
+      createdBy: "MEM-001",
+    }).household;
+    const before = structuredClone(household);
+    const controls = executeHerculesReadToolPlan(household, { calls: [
+      { name: "reconciliation_status", args: { account: "Chequing" } },
+      { name: "activity_since_reconciliation", args: { account: "Chequing" } },
+      { name: "uncategorized_activity", args: { period: "this_month" } },
+      { name: "duplicate_exposure", args: { limit: 5 } },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+    expect(controls.results[0]?.sentence).toMatch(/most recently tied/i);
+    expect(controls.results[1]?.sentence).toMatch(/after the 2026-08-20 reconciliation/i);
+    expect(controls.results[2]?.sentence).toMatch(/valid category/i);
+    expect(controls.results[3]?.sentence).toMatch(/candidate pair/i);
+
+    const completeness = executeHerculesReadToolPlan(household, { calls: [
+      { name: "missing_periods", args: {} },
+      { name: "opening_balance_review", args: { account: "Chequing" } },
+      { name: "period_close_readiness", args: { period: "this_month" } },
+      { name: "source_document_coverage", args: { period: "this_month" } },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+    expect(completeness.results[0]?.sentence).toMatch(/calendar month|recognized row/i);
+    expect(completeness.results[1]?.sentence).toMatch(/first recognized journal activity/i);
+    expect(completeness.results[2]?.sentence).toMatch(/close-ready|not close-ready|already closed/i);
+    expect(completeness.results[3]?.sentence).toMatch(/source identifier|entered manually/i);
+
+    const trail = executeHerculesReadToolPlan(household, { calls: [
+      { name: "integrity_findings", args: { limit: 5 } },
+      { name: "audit_trail", args: { limit: 5 } },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+    expect(trail.results[0]?.sentence).toMatch(/integrity finding/i);
+    expect(trail.results[1]?.sentence).toMatch(/activity record/i);
+    expect(household).toEqual(before);
+
+    const personal = executeHerculesReadToolPlan(household, { calls: [
+      { name: "reconciliation_status", args: {} },
+      { name: "audit_trail", args: {} },
+    ] }, today, { memberId: "MEM-001", view: "personal" });
+    expect(personal.results.every((result) => result.status === "unavailable")).toBe(true);
+  });
+
+  it("builds bounded forecasts with explicit assumptions and projection facts", () => {
+    const household = seedDemoHousehold({ today, environment: "development" });
+    const before = structuredClone(household);
+    const planning = executeHerculesReadToolPlan(household, { calls: [
+      { name: "budget_variance", args: { period: "this_month" } },
+      { name: "cash_runway", args: { period: "last_30_days" } },
+      { name: "bill_coverage", args: { horizonDays: 30 } },
+      { name: "debt_projection", args: { account: "Visa", monthlyPaymentCents: 25_000 } },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+    expect(planning.results[0]?.sentence).toMatch(/budget.*over plan/i);
+    expect(planning.results[1]?.sentence).toMatch(/runway|not meaningful/i);
+    expect(planning.results[2]?.sentence).toMatch(/scheduled bills.*projection/i);
+    expect(planning.results[3]?.sentence).toMatch(/no new charges|estimated interest/i);
+    expect(planning.results.flatMap((result) => result.facts).some((row) => row.basis === "projection")).toBe(true);
+
+    const trends = executeHerculesReadToolPlan(household, { calls: [
+      { name: "credit_utilization", args: {} },
+      { name: "savings_rate", args: { period: "this_month" } },
+      { name: "income_stability", args: { months: 6 } },
+      { name: "spending_trend", args: { months: 6 } },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+    expect(trends.results[0]?.sentence).toMatch(/aggregate utilization/i);
+    expect(trends.results[1]?.sentence).toMatch(/savings rate|not meaningful/i);
+    expect(trends.results[2]?.sentence).toMatch(/variation|no average/i);
+    expect(trends.results[3]?.sentence).toMatch(/history, not a forecast/i);
+
+    const scenarios = executeHerculesReadToolPlan(household, { calls: [
+      { name: "scenario_analysis", args: { amountCents: 50_000, horizonDays: 30 } },
+      { name: "forecast_accuracy", args: { period: "this_month" } },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+    expect(scenarios.results[0]?.sentence).toMatch(/not a guarantee or permission/i);
+    expect(scenarios.results[1]?.sentence).toMatch(/budget forecast missed/i);
+    expect(household).toEqual(before);
+
+    const personalScenario = executeHerculesReadToolPlan(household, { calls: [
+      { name: "scenario_analysis", args: { amountCents: 50_000 } },
+      { name: "bill_coverage", args: {} },
+    ] }, today, { memberId: "MEM-001", view: "personal" });
+    expect(personalScenario.results.every((result) => result.status === "unavailable")).toBe(true);
+  });
+
+  it("teaches accounting by tracing current figures to their journal evidence", () => {
+    const household = seedDemoHousehold({ today, environment: "development" });
+    const before = structuredClone(household);
+    const purchase = household.transactions.find((row) => row.type === "expense" && row.visibility !== "personal")!;
+    const transfer = household.transactions.find((row) => row.type === "transfer" && row.visibility !== "personal")!;
+    const lessons = executeHerculesReadToolPlan(household, { calls: [
+      { name: "explain_transaction", args: { transactionId: purchase.id } },
+      { name: "explain_accounting_equation", args: {} },
+      { name: "explain_debit_credit", args: { account: "Visa" } },
+      { name: "explain_financial_statement", args: { statement: "cash_flow_statement" } },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+    expect(lessons.results[0]?.sentence).toMatch(/equal debits and credits/i);
+    expect(lessons.results[0]?.facts.every((row) => row.source.journalEntryId)).toBe(true);
+    expect(lessons.results[1]?.sentence).toMatch(/assets.*liabilities.*net worth/i);
+    expect(lessons.results[2]?.sentence).toMatch(/not good and bad/i);
+    expect(lessons.results[3]?.sentence).toMatch(/cash movement, not profit/i);
+
+    const tracing = executeHerculesReadToolPlan(household, { calls: [
+      { name: "trace_number", args: { category: "Groceries", period: "this_month" } },
+      { name: "compare_accounting_treatments", args: { topic: "card_purchase_vs_card_payment" } },
+      { name: "explain_variance", args: { category: "Groceries", period: "this_month" } },
+      { name: "explain_transfer", args: { transactionId: transfer.id } },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+    expect(tracing.results[0]?.facts[0]?.source.categoryId).toBeTruthy();
+    expect(tracing.results[1]?.sentence).toMatch(/double-counts spending/i);
+    expect(tracing.results[2]?.sentence).toMatch(/does not create or move money/i);
+    expect(tracing.results[3]?.sentence).toMatch(/not income, expenses, or net worth/i);
+    expect(tracing.results[3]?.facts).toHaveLength(2);
+    expect(household).toEqual(before);
+  });
+
   it("never crosses from a personal ledger into the partner's personal rows", () => {
     let household = catalogHousehold("development");
+    household.accounts.push({
+      ...household.accounts[0]!,
+      id: "ACC-PARTNER-VAULT",
+      name: "Partner Vault",
+      ownerMemberId: "MEM-002",
+      sortOrder: 99,
+    });
     household = postEntry(household, {
       date: today,
       type: "expense",
@@ -121,6 +288,17 @@ describe("Hercules read-only tool brain", () => {
     expect(partnerRequest.talk.facts).toEqual([]);
     expect(partnerRequest.talk.spoken).toMatch(/cannot match member/i);
     expect(partnerRequest.talk.spoken).not.toMatch(/999|25\.00/);
+
+    const partnerAccount = executeHerculesReadToolPlan(household, {
+      calls: [
+        { name: "explain_balance", args: { account: "Partner Vault" } },
+        { name: "opening_balance_review", args: { account: "Partner Vault" } },
+        { name: "explain_debit_credit", args: { account: "Partner Vault" } },
+        { name: "trial_balance", args: {} },
+      ],
+    }, today, { memberId: "MEM-001", view: "personal" });
+    expect(partnerAccount.results.slice(0, 3).every((result) => result.status === "empty")).toBe(true);
+    expect(partnerAccount.results.flatMap((result) => result.facts).some((row) => row.label.includes("Partner Vault"))).toBe(false);
   });
 
   it("finds exact posted rows and gives each one a transaction provenance id", () => {
