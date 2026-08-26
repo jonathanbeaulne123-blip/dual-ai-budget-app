@@ -15,15 +15,15 @@
 
 ## Household outcome
 
-Reload random Development data produces full job-based shifts with realistic Toronto weather/location stamps and weighted tip trends Hercules Pro can read for testing, without inventing a second money path.
+Reload random Development data produces full job-based shifts with realistic Toronto weather/location stamps and weighted tip trends, and **keeps Google continuity identity** so Hercules Pro can read the fixture after sync.
 
 ## Budget delta (5)
 
-`+1` — stress fixture shifts post through the same `postWorkShift` / settlement commands with every sales, tip, break, and destination field filled; money meaning unchanged.
+`+1` — stress fixture shifts post through the same `postWorkShift` / settlement commands; Development Reload preserves membership identity (no second money path).
 
 ## Engagement delta (3)
 
-`+2` — reload data carries weather-noted, location-stamped, weekday/season/weather-weighted shift history so Hercules Pro shift tools have analyzable trends.
+`+2` — reload data carries weather-noted, location-stamped, weekday/season/weather-weighted shift history Hercules Pro can analyze; tip shifts follow the signed-in member.
 
 ## Verified baseline
 
