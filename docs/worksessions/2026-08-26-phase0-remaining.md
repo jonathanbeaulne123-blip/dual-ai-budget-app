@@ -7,7 +7,7 @@
 - **Repository:** dual-ai-budget-app
 - **Branch:** `cursor/phase0-remaining-c04e`
 - **Baseline SHA:** `391e3af860e605eaa9d437a12c94056a505c46a2` (`main` after #156 / D-146)
-- **Head SHA:** `604258c742f04426859776268bc6f2f59bdae014`
+- **Head SHA:** `63ff74ce941805e6632a9296018efa6dba852652`
 - **PR or issue:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/157
 - **Risk:** High
 - **Decision owner:** Jonathan
@@ -62,7 +62,7 @@ Ordinary Hearth use is Google continuity without **Publish to the cloud**. Local
 - Continuity/proof-matrix/live-pull/production suites realigned to CAS success/conflict (D-147 refuse-legacy).
 - `pnpm check`: 658 pass / 2 pre-existing `batch-import-ui` SubtleCrypto fails.
 - Privacy / books / UX auditors: PASS WITH NOTES.
-- Head `604258c`.
+- Head `63ff74c`.
 
 ## Decisions
 
