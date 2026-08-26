@@ -171,7 +171,13 @@ describe("Google-account continuity", () => {
   it("blocks automatic replay on a stale revision and keeps both sides available", async () => {
     setContinuityStore(createMemoryContinuityStore());
     const household = { ...googleHousehold(), revision: 4, baseRevision: 3 };
-    const remote = { ...googleHousehold(), revision: 5, baseRevision: 5 };
+    const remote = {
+      ...googleHousehold(),
+      revision: 5,
+      baseRevision: 5,
+      householdId: household.householdId,
+      inviteCode: household.inviteCode,
+    };
     const fetch = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
       const url = String(input);
       if (url.includes("households?select=id")) return response([]);

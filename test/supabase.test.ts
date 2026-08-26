@@ -67,5 +67,59 @@ describe("Supabase hosted books", () => {
     expect(calls.some((call) => call.startsWith("DELETE"))).toBe(false);
     expect(calls.some((call) => call.startsWith("POST households?on_conflict=id"))).toBe(true);
     expect(calls.some((call) => call.startsWith("POST household_snapshots?on_conflict=household_id"))).toBe(true);
+    expect(calls.some((call) => call.includes("environment=eq.development"))).toBe(true);
+  });
+
+  it("scopes the legacy remote read to the household environment before compare", async () => {
+    const household = { ...catalogHousehold(), linked: true, revision: 2, baseRevision: 1 };
+    const urls: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      urls.push(url);
+      if (url.includes("households?select=id")) {
+        return new Response(JSON.stringify([]), { status: 200 });
+      }
+      if (url.includes("rpc/publish_household_snapshot") || url.includes("rpc/hearth_create_household")) {
+        return new Response(JSON.stringify({
+          code: "PGRST202",
+          message: "Could not find the function public.publish_household_snapshot without parameters in the schema cache",
+        }), { status: 404 });
+      }
+      if (url.includes("household_snapshots?") && (init?.method || "GET") === "GET") {
+        expect(url).toContain(`household_id=eq.${encodeURIComponent(household.householdId)}`);
+        expect(url).toContain("environment=eq.development");
+        return new Response(JSON.stringify([]), { status: 200 });
+      }
+      return new Response(null, { status: 201 });
+    }));
+    const result = await pushSupabaseHousehold(household, config, { expectedRevision: 1 });
+    expect(result.conflict).toBeFalsy();
+    expect(result.usedCasRpc).toBe(false);
+    expect(urls.some((url) => url.includes("household_snapshots?") && url.includes("environment=eq.development"))).toBe(true);
+  });
+
+  it("rejects a legacy remote payload whose environment disagrees with this phone", async () => {
+    const household = { ...catalogHousehold(), linked: true, revision: 2, baseRevision: 1 };
+    const foreign = { ...household, environment: "production" as const, revision: 1 };
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("households?select=id")) {
+        return new Response(JSON.stringify([]), { status: 200 });
+      }
+      if (url.includes("rpc/publish_household_snapshot") || url.includes("rpc/hearth_create_household")) {
+        return new Response(JSON.stringify({
+          code: "PGRST202",
+          message: "Could not find the function public.publish_household_snapshot without parameters in the schema cache",
+        }), { status: 404 });
+      }
+      if (url.includes("household_snapshots?") && (init?.method || "GET") === "GET") {
+        return new Response(JSON.stringify([{ payload: JSON.stringify(foreign) }]), { status: 200 });
+      }
+      throw new Error(`unexpected write: ${url}`);
+    }));
+    const result = await pushSupabaseHousehold(household, config, { expectedRevision: 1 });
+    expect(result.conflict).toBe(true);
+    expect(result.usedCasRpc).toBe(false);
+    expect(result.error).toMatch(/Development\/Production pill/);
   });
 });
