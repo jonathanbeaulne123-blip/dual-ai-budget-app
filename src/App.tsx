@@ -153,11 +153,19 @@ import { readSupabaseConfig, pullHouseholdSnapshotById, pullPersonalSnapshotById
 import { clearUndoHistory, loadUndoHistory, saveUndoHistory } from "./undoHistory.ts";
 import { livePullIntervalMs, shouldRunLivePull } from "./continuityLivePull.ts";
 import {
+  attachContinuityRealtime,
+  canAttachContinuityRealtime,
+  continuityRealtimeEnabled,
+  shouldUsePollFallback,
+  type ContinuityRealtimeStatus,
+} from "./continuityRealtime.ts";
+import {
   authenticatedSupabaseConfig,
   clearSupabaseSession,
   consumeSupabaseAuthRedirect,
   ensureSupabaseSession,
   loadSupabaseSession,
+  readHearthAuthConfig,
   startSupabaseGoogleSignIn,
   supabaseAuthEnabled,
 } from "./auth/supabaseSession.ts";
@@ -970,6 +978,62 @@ export function App() {
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
     void replay();
+
+    let detachRealtime: (() => void) | null = null;
+    const realtimeStatusRef: { current: ContinuityRealtimeStatus | null } = { current: null };
+
+    const setupRealtime = async () => {
+      if (!continuityRealtimeEnabled() || !supabaseAuthEnabled()) return;
+      const authSession = await ensureSupabaseSession(environment);
+      if (!live || !authSession) return;
+      const currentHouseholdId = householdRef.current?.householdId;
+      if (!currentHouseholdId) return;
+      const identity: ContinuityIdentity = {
+        email: authSession.email,
+        subject: authSession.googleSubject,
+      };
+      const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
+      const role = await fetchContinuityMembershipRole({
+        householdId: currentHouseholdId,
+        memberId,
+        identity,
+        environment,
+        config: cloudConfig,
+      });
+      if (!live || !role) return;
+      const authConfig = readHearthAuthConfig();
+      if (!authConfig) return;
+      if (!canAttachContinuityRealtime({
+        authSessionPresent: true,
+        membershipResolved: true,
+        hostedAllowed: hostedContinuityAllowed(environment),
+        hasHousehold: true,
+      })) return;
+      if (!live) return;
+
+      detachRealtime = attachContinuityRealtime({
+        supabaseUrl: authConfig.supabaseUrl,
+        publishableKey: authConfig.publishableKey,
+        accessToken: authSession.accessToken,
+        householdId: currentHouseholdId,
+        memberId,
+        environment,
+        onSnapshotSignal: () => {
+          if (!shouldRunLivePull({
+            documentVisible: document.visibilityState === "visible",
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+            hasSession: Boolean(memberId),
+            hasHousehold: Boolean(householdRef.current),
+          })) return;
+          void replay();
+        },
+        onStatusChange: (status) => {
+          realtimeStatusRef.current = status;
+        },
+      });
+    };
+    void setupRealtime();
+
     const memberCount = householdRef.current?.members.filter((m) => m.active).length ?? 2;
     const intervalMs = livePullIntervalMs(memberCount);
     const timer = window.setInterval(() => {
@@ -979,10 +1043,12 @@ export function App() {
         hasSession: Boolean(memberId),
         hasHousehold: Boolean(householdRef.current),
       })) return;
+      if (!shouldUsePollFallback(realtimeStatusRef.current)) return;
       void replay();
     }, intervalMs);
     return () => {
       live = false;
+      detachRealtime?.();
       window.removeEventListener("online", onOnline);
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);

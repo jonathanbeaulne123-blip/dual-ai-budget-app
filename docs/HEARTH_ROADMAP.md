@@ -236,7 +236,7 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 - [x] Live pull disjoint shared absorb; 4 s poll when tab visible *(fallback until Realtime primary)*.
 - [x] **T1-S1** Migration **012** — atomic Shared CAS + Personal in one SQL TX. *(Applied Development 2026-08-26.)*
 - [x] **T1-S2** Client single-trip atomic push (Auth session → `publish_continuity_snapshot`). *([`T1-S2`](briefs/sync/T1-S2-client-atomic-push.md).)*
-- [ ] **T1-S3** Supabase Realtime subscribe; demote poll to fallback. *([`T1-S3`](briefs/sync/T1-S3-realtime-subscribe.md).)*
+- [x] **T1-S3** Supabase Realtime subscribe; demote poll to fallback. *([`T1-S3`](briefs/sync/T1-S3-realtime-subscribe.md).)*
 - [ ] **T1-S4** Push/pull race coordinator. *([`T1-S4`](briefs/sync/T1-S4-push-pull-coordinator.md).)*
 - [ ] **T1-S5** Two-browser E2E + fault harness (p95 ≤ 500 ms). *([`T1-S5`](briefs/sync/T1-S5-two-browser-proof.md).)*
 - [ ] **T1-S6** Sync freshness UI (actor, revision, Realtime honest). *([`T1-S6`](briefs/sync/T1-S6-sync-freshness-ui.md).)*
@@ -272,7 +272,7 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 **Proof:** SYNC_ARCHITECTURE §8 test matrix; Tier 1 gates G1–G6; trust + books auditors on money transport.  
 **Kill criterion:** halt hosted sharing; preserve outbox; never one-device host.
 
-**Progress:** D-114/D-117/D-122/D-145/D-146/D-147 foundations shipped. **Next engineering slice:** T1-S1 Migration 012.
+**Progress:** T1-S1/T1-S2/T1-S3 shipped on branch. **Next engineering slice:** T1-S4 push/pull coordinator.
 
 ### Phase 3 — Late-September Google Auth + membership RLS cutover — DATE-GATED security foundation
 

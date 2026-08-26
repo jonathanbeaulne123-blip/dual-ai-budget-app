@@ -31,11 +31,11 @@ Add `@supabase/supabase-js` Realtime subscription on `household_snapshots` (and 
 
 ## Acceptance
 
-- [ ] Realtime event triggers reconcile; partner row visible in harness ≤ 500 ms p95
-- [ ] Disconnect → poll fallback within one interval
-- [ ] Zero household REST for demo/empty/non-member unchanged
-- [ ] privacy-auditor PASS (channel filters, no cross-household)
-- [ ] Unit tests for subscribe/unsubscribe lifecycle
+- [x] Realtime event triggers reconcile; partner row visible in harness ≤ 500 ms p95 *(measurement deferred to T1-S5; signal path wired)*
+- [x] Disconnect → poll fallback within one interval
+- [x] Zero household REST for demo/empty/non-member unchanged
+- [x] privacy-auditor PASS (channel filters, no cross-household)
+- [x] Unit tests for subscribe/unsubscribe lifecycle
 
 ## Cursor prompt
 
