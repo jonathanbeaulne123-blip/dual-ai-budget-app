@@ -116,6 +116,16 @@ const HERCULES_READ_TOOLS = [
   { name: "changes_in_net_worth", description: "Read opening net worth, posted net income, and closing net worth for one month.", parameters: strictObject({ period: nullablePeriod() }) },
   { name: "period_comparison", description: "Compare posted income, expenses, and net income with the prior month.", parameters: strictObject({ period: nullablePeriod() }) },
   { name: "explain_balance", description: "Explain how debits and credits produced one visible account balance.", parameters: strictObject({ account: nullableString(), period: nullablePeriod(), from: nullableString(), to: nullableString() }) },
+  { name: "reconciliation_status", description: "Read the latest bank-reconciliation result for visible accounts.", parameters: strictObject({ account: nullableString() }) },
+  { name: "activity_since_reconciliation", description: "List posted account rows after its latest statement reconciliation.", parameters: strictObject({ account: nullableString(), limit: { anyOf: [{ type: "integer", minimum: 1, maximum: 10 }, { type: "null" }] } }) },
+  { name: "uncategorized_activity", description: "Find posted income or expense rows with no valid category.", parameters: strictObject({ ...filterProperties(), limit: { anyOf: [{ type: "integer", minimum: 1, maximum: 10 }, { type: "null" }] } }) },
+  { name: "duplicate_exposure", description: "Summarize unresolved duplicate candidates and excluded duplicate rows.", parameters: strictObject({ limit: { anyOf: [{ type: "integer", minimum: 1, maximum: 10 }, { type: "null" }] } }) },
+  { name: "missing_periods", description: "Find empty calendar months between the first visible post and today.", parameters: strictObject({ limit: { anyOf: [{ type: "integer", minimum: 1, maximum: 10 }, { type: "null" }] } }) },
+  { name: "opening_balance_review", description: "Show the first recognized journal activity for visible accounts.", parameters: strictObject({ account: nullableString() }) },
+  { name: "period_close_readiness", description: "Check whether a month has integrity, duplicate, and reconciliation blockers.", parameters: strictObject({ period: nullablePeriod() }) },
+  { name: "source_document_coverage", description: "Summarize import/source provenance attached to posted rows.", parameters: strictObject(filterProperties()) },
+  { name: "integrity_findings", description: "List deterministic books-health findings with source identifiers.", parameters: strictObject({ limit: { anyOf: [{ type: "integer", minimum: 1, maximum: 10 }, { type: "null" }] } }) },
+  { name: "audit_trail", description: "Read the latest immutable household activity records.", parameters: strictObject({ limit: { anyOf: [{ type: "integer", minimum: 1, maximum: 10 }, { type: "null" }] } }) },
 ];
 const HERCULES_READ_TOOL_NAMES = new Set(HERCULES_READ_TOOLS.map((tool) => tool.name));
 const TOOL_ARG_KEYS = {
@@ -145,6 +155,16 @@ const TOOL_ARG_KEYS = {
   changes_in_net_worth: ["period"],
   period_comparison: ["period"],
   explain_balance: ["account", "period", "from", "to"],
+  reconciliation_status: ["account"],
+  activity_since_reconciliation: ["account", "limit"],
+  uncategorized_activity: ["period", "from", "to", "member", "account", "category", "merchant", "limit"],
+  duplicate_exposure: ["limit"],
+  missing_periods: ["limit"],
+  opening_balance_review: ["account"],
+  period_close_readiness: ["period"],
+  source_document_coverage: ["period", "from", "to", "member", "account", "category", "merchant"],
+  integrity_findings: ["limit"],
+  audit_trail: ["limit"],
 };
 
 function parseJsonObject(value) {

@@ -36,6 +36,16 @@ const TOOL_CATALOG = [
   ["changes_in_net_worth", "Read opening net worth, posted net income, and closing net worth for one month."],
   ["period_comparison", "Compare posted income, expenses, and net income with the prior month."],
   ["explain_balance", "Explain how debits and credits produced one visible account balance."],
+  ["reconciliation_status", "Read the latest bank-reconciliation result for visible accounts."],
+  ["activity_since_reconciliation", "List posted account rows after its latest statement reconciliation."],
+  ["uncategorized_activity", "Find posted income or expense rows with no valid category."],
+  ["duplicate_exposure", "Summarize unresolved duplicate candidates and excluded duplicate rows."],
+  ["missing_periods", "Find empty calendar months between the first visible post and today."],
+  ["opening_balance_review", "Show the first recognized journal activity for visible accounts."],
+  ["period_close_readiness", "Check whether a month has integrity, duplicate, and reconciliation blockers."],
+  ["source_document_coverage", "Summarize import/source provenance attached to posted rows."],
+  ["integrity_findings", "List deterministic books-health findings with source identifiers."],
+  ["audit_trail", "Read the latest immutable household activity records."],
 ];
 
 const TOOL_PROPERTIES = {
@@ -85,12 +95,23 @@ const TOOL_PROPERTY_NAMES = {
   changes_in_net_worth: ["view", "period"],
   period_comparison: ["view", "period"],
   explain_balance: ["view", "account", "period", "from", "to"],
+  reconciliation_status: ["view", "account"],
+  activity_since_reconciliation: ["view", "account", "limit"],
+  uncategorized_activity: ["view", "period", "from", "to", "limit"],
+  duplicate_exposure: ["view", "limit"],
+  missing_periods: ["view", "limit"],
+  opening_balance_review: ["view", "account"],
+  period_close_readiness: ["view", "period"],
+  source_document_coverage: ["view", "period", "from", "to"],
+  integrity_findings: ["view", "limit"],
+  audit_trail: ["view", "limit"],
 };
 
 const TOOL_REQUIRED_PROPERTIES = {
   account_activity: ["account"],
   journal_entry_detail: ["entryId"],
   explain_balance: ["account"],
+  activity_since_reconciliation: ["account"],
 };
 
 function json(body, status = 200, headers = {}) {

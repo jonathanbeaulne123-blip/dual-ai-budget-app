@@ -12,6 +12,7 @@ import { accountBookBalance, creditCardView, householdWallet } from "./accounts.
 import { claimPublicLabel, outstandingClaims } from "./appointments.ts";
 import { monthSummary } from "./budget.ts";
 import { duplicateContrastPairs } from "./duplicate.ts";
+import { runHealthCheck } from "./health.ts";
 import { formatCad } from "./money.ts";
 import { leftoverProjection } from "./sitDown.ts";
 import {
@@ -21,6 +22,7 @@ import {
   comparativeIncome,
   incomeStatement,
   statementOfChangesInEquity,
+  isMonthClosed,
 } from "./statements.ts";
 import { accountRegister, compileHousehold, trialBalance } from "./journal.ts";
 import { householdForHerculesContext } from "./visibility.ts";
@@ -56,6 +58,16 @@ export const HERCULES_READ_TOOL_NAMES = [
   "changes_in_net_worth",
   "period_comparison",
   "explain_balance",
+  "reconciliation_status",
+  "activity_since_reconciliation",
+  "uncategorized_activity",
+  "duplicate_exposure",
+  "missing_periods",
+  "opening_balance_review",
+  "period_close_readiness",
+  "source_document_coverage",
+  "integrity_findings",
+  "audit_trail",
 ] as const;
 
 export type HerculesReadToolName = (typeof HERCULES_READ_TOOL_NAMES)[number];
@@ -112,6 +124,16 @@ export const HERCULES_READ_TOOL_CATALOG: ReadonlyArray<{ name: HerculesReadToolN
   { name: "changes_in_net_worth", description: "Read opening net worth, posted net income, and closing net worth for one month." },
   { name: "period_comparison", description: "Compare posted income, expenses, and net income with the prior month." },
   { name: "explain_balance", description: "Explain how debits and credits produced one visible account balance." },
+  { name: "reconciliation_status", description: "Read the latest bank-reconciliation result for visible accounts." },
+  { name: "activity_since_reconciliation", description: "List posted account rows after its latest statement reconciliation." },
+  { name: "uncategorized_activity", description: "Find posted income or expense rows with no valid category." },
+  { name: "duplicate_exposure", description: "Summarize unresolved duplicate candidates and excluded duplicate rows." },
+  { name: "missing_periods", description: "Find empty calendar months between the first visible post and today." },
+  { name: "opening_balance_review", description: "Show the first recognized journal activity for visible accounts." },
+  { name: "period_close_readiness", description: "Check whether a month has integrity, duplicate, and reconciliation blockers." },
+  { name: "source_document_coverage", description: "Summarize import/source provenance attached to posted rows." },
+  { name: "integrity_findings", description: "List deterministic books-health findings with source identifiers." },
+  { name: "audit_trail", description: "Read the latest immutable household activity records." },
 ];
 
 const TOOL_SET = new Set<string>(HERCULES_READ_TOOL_NAMES);
@@ -191,6 +213,11 @@ function cleanArgs(name: HerculesReadToolName, raw: unknown): Record<string, unk
     return { account: common.account, period: cleanPeriod(input.period), from: common.from, to: common.to, limit: Math.min(10, Math.max(1, Math.round(Number(input.limit) || 8))) };
   }
   if (name === "journal_entry_detail") return { entryId: cleanString(input.entryId, 100) };
+  if (name === "reconciliation_status" || name === "opening_balance_review") return { account: common.account };
+  if (name === "activity_since_reconciliation") return { account: common.account, limit: Math.min(10, Math.max(1, Math.round(Number(input.limit) || 8))) };
+  if (name === "uncategorized_activity" || name === "source_document_coverage") return { ...common, limit: Math.min(10, Math.max(1, Math.round(Number(input.limit) || 8))) };
+  if (name === "duplicate_exposure" || name === "integrity_findings" || name === "audit_trail" || name === "missing_periods") return { limit: Math.min(10, Math.max(1, Math.round(Number(input.limit) || 8))) };
+  if (name === "period_close_readiness") return { period: cleanPeriod(input.period) };
   if (name === "money_owed" || name === "cash_position" || name === "net_worth" || name === "audit_health") return {};
   return common;
 }
@@ -698,6 +725,129 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const currentSource = toolSource(context, `Open ${comparison.monthKey}`, { from: `${comparison.monthKey}-01` as DateKey, to: addDays(monthStartKey(shiftMonthKey(comparison.monthKey, 1)), -1) });
     const priorSource = toolSource(context, `Open ${comparison.priorKey}`, { from: `${comparison.priorKey}-01` as DateKey, to: addDays(monthStartKey(shiftMonthKey(comparison.priorKey, 1)), -1) });
     return { callId: call.id, name: call.name, status: "ok", sentence: `Compared with ${comparison.priorKey}, ${comparison.monthKey} income changed by ${formatCad(comparison.incomeDeltaCents)}, expenses by ${formatCad(comparison.expenseDeltaCents)}, and net income by ${formatCad(comparison.netDeltaCents)}.`, facts: [fact(call, 0, `${comparison.monthKey} net`, formatCad(comparison.current.netCents), currentSource), fact(call, 1, `${comparison.priorKey} net`, formatCad(comparison.prior.netCents), priorSource), fact(call, 2, "Net change", formatCad(comparison.netDeltaCents), currentSource)] };
+  }
+
+  if (call.name === "reconciliation_status") {
+    if (context.view !== "household") return { callId: call.id, name: call.name, status: "unavailable", sentence: "Bank-reconciliation controls live in the Household ledger.", facts: [] };
+    const accounts = visibleAccounts(household, context);
+    const accountQuery = cleanString(call.args.account);
+    const target = fuzzy(accounts, accountQuery, (row) => `${row.name} ${row.institution} ${row.last4}`);
+    if (accountQuery && !target) return empty(call, `I cannot match visible account “${accountQuery}” in this ledger.`);
+    const selected = target ? [target] : accounts;
+    const facts = selected.slice(0, 8).map((account, index) => {
+      const rec = [...(household.kitchen.books?.reconciliations ?? [])].reverse().find((row) => row.accountId === account.id);
+      const value = rec ? `${rec.status} · difference ${formatCad(rec.differenceCents)}` : "never reconciled";
+      return fact(call, index, account.name, value, toolSource(context, `Open ${account.name} reconciliation`, { accountId: account.id, to: rec?.statementDate }));
+    });
+    const tied = facts.filter((row) => row.value.startsWith("tied")).length;
+    return { callId: call.id, name: call.name, status: facts.length ? "ok" : "empty", sentence: `${tied} of ${facts.length} visible account${facts.length === 1 ? "" : "s"} most recently tied to a statement. A missing reconciliation is reported as missing, never assumed.`, facts };
+  }
+
+  if (call.name === "activity_since_reconciliation") {
+    if (context.view !== "household") return { callId: call.id, name: call.name, status: "unavailable", sentence: "Bank-reconciliation controls live in the Household ledger.", facts: [] };
+    const accountQuery = cleanString(call.args.account);
+    const account = fuzzy(visibleAccounts(household, context), accountQuery, (row) => `${row.name} ${row.institution} ${row.last4}`);
+    if (!account) return empty(call, accountQuery ? `I cannot match visible account “${accountQuery}” in this ledger.` : "Name the account whose post-reconciliation activity you want.");
+    const rec = [...(household.kitchen.books?.reconciliations ?? [])].reverse().find((row) => row.accountId === account.id);
+    if (!rec) return empty(call, `${account.name} has no saved reconciliation. Reconcile a statement before asking what came after it.`);
+    const rows = household.transactions.filter((tx) => !tx.isDuplicate && tx.accountId === account.id && tx.date > rec.statementDate && tx.date <= today).sort((a, b) => b.date.localeCompare(a.date));
+    const limit = Math.min(10, Math.max(1, Number(call.args.limit) || 8));
+    const facts = rows.slice(0, limit).map((tx, index) => fact(call, index, `${tx.date} · ${tx.place || tx.note || tx.type}`, formatCad(tx.amountCents), toolSource(context, "Open this post-reconciliation row", { transactionId: tx.id, accountId: account.id, from: tx.date, to: tx.date })));
+    return { callId: call.id, name: call.name, status: rows.length ? "ok" : "empty", sentence: `${account.name} has ${rows.length} posted row${rows.length === 1 ? "" : "s"} after the ${rec.statementDate} reconciliation. These are newer rows, not automatically errors.`, facts };
+  }
+
+  if (call.name === "uncategorized_activity") {
+    const query = matchingTransactionsAt(household, call.args, context, today);
+    const known = new Set(household.categories.filter((row) => row.recordType === "category").map((row) => row.id));
+    const rows = query.rows.filter((tx) => tx.type !== "transfer" && (!tx.subcategoryId || !known.has(tx.subcategoryId)));
+    const limit = Math.min(10, Math.max(1, Number(call.args.limit) || 8));
+    const facts = rows.slice(0, limit).map((tx, index) => fact(call, index, `${tx.date} · ${tx.place || tx.note || tx.type}`, formatCad(tx.amountCents), toolSource(context, "Open this uncategorized row", { transactionId: tx.id, accountId: tx.accountId, from: tx.date, to: tx.date })));
+    return { callId: call.id, name: call.name, status: rows.length ? "ok" : "empty", sentence: rows.length ? `${rows.length} posted row${rows.length === 1 ? " needs" : "s need"} a valid category ${query.range.label}.` : `Every posted income and expense row has a valid category ${query.range.label}.`, facts };
+  }
+
+  if (call.name === "duplicate_exposure") {
+    const pairs = duplicateContrastPairs(household.transactions);
+    const excluded = household.transactions.filter((tx) => tx.isDuplicate);
+    const excludedCents = excluded.reduce((sum, tx) => sum + tx.amountCents, 0);
+    const limit = Math.min(10, Math.max(1, Number(call.args.limit) || 8));
+    const facts = [
+      fact(call, 0, "Unresolved candidate pairs", String(pairs.length), toolSource(context, "Open duplicate review"), "projection"),
+      fact(call, 1, "Excluded duplicate rows", String(excluded.length), toolSource(context, "Open excluded duplicate rows")),
+      fact(call, 2, "Excluded row face value", formatCad(excludedCents), toolSource(context, "Open excluded duplicate rows")),
+      ...pairs.slice(0, Math.max(0, limit - 3)).map((pair, index) => fact(call, index + 3, `${pair.confidence}% · ${pair.left.date} / ${pair.right.date}`, formatCad(pair.left.amountCents), toolSource(context, "Open the duplicate candidates", { transactionId: pair.left.id, from: pair.left.date, to: pair.right.date }), "projection")),
+    ];
+    return { callId: call.id, name: call.name, status: pairs.length || excluded.length ? "ok" : "empty", sentence: `${pairs.length} unresolved candidate pair${pairs.length === 1 ? "" : "s"}; ${excluded.length} row${excluded.length === 1 ? " is" : "s are"} already excluded from recognized books. Candidate confidence is a review signal, not a deletion.`, facts };
+  }
+
+  if (call.name === "missing_periods") {
+    const postedMonths = new Set(household.transactions.filter((tx) => !tx.isDuplicate).map((tx) => monthKeyFromDateKey(tx.date)));
+    const first = [...postedMonths].sort()[0];
+    if (!first) return empty(call, "This ledger has no recognized transaction month yet.");
+    const current = monthKeyFromDateKey(today);
+    const missing: MonthKey[] = [];
+    let cursor = first;
+    for (let steps = 0; steps < 120 && cursor <= current; steps += 1) {
+      if (!postedMonths.has(cursor)) missing.push(cursor);
+      cursor = shiftMonthKey(cursor, 1);
+    }
+    const limit = Math.min(10, Math.max(1, Number(call.args.limit) || 8));
+    const facts = missing.slice(-limit).map((month, index) => fact(call, index, month, "no recognized rows", toolSource(context, `Open ${month}`, { from: `${month}-01` as DateKey, to: addDays(monthStartKey(shiftMonthKey(month, 1)), -1) })));
+    return { callId: call.id, name: call.name, status: missing.length ? "ok" : "empty", sentence: missing.length ? `${missing.length} empty calendar month${missing.length === 1 ? " appears" : "s appear"} between the first visible post and today. Empty can be legitimate; it is a completeness question.` : "Every calendar month from the first visible post through today has at least one recognized row.", facts };
+  }
+
+  if (call.name === "opening_balance_review") {
+    const books = compileHousehold(household);
+    const accountQuery = cleanString(call.args.account);
+    const target = fuzzy(books.chart.filter((row) => row.source === "bank"), accountQuery, (row) => `${row.code} ${row.name}`);
+    if (accountQuery && !target) return empty(call, `I cannot match visible account “${accountQuery}” in this ledger.`);
+    const allowed = new Set(visibleAccounts(household, context).map((row) => row.id));
+    const rows = (target ? [target] : books.chart.filter((row) => row.source === "bank" && allowed.has(row.id))).slice(0, 8);
+    const facts = rows.map((account, index) => {
+      const register = accountRegister(books, account.id, { recognizedOnly: true });
+      const first = register[0];
+      return fact(call, index, account.name, first ? `${first.date} · ${formatCad(first.runningCents)}` : "no recognized activity", toolSource(context, `Open ${account.name}`, { accountId: account.bankAccountId, from: first?.date, to: first?.date }));
+    });
+    return { callId: call.id, name: call.name, status: facts.length ? "ok" : "empty", sentence: `I reviewed the first recognized journal activity for ${facts.length} account${facts.length === 1 ? "" : "s"}. Hearth currently derives opening position from posted history; it does not silently invent a separate opening balance.`, facts };
+  }
+
+  if (call.name === "period_close_readiness") {
+    if (context.view !== "household") return { callId: call.id, name: call.name, status: "unavailable", sentence: "The formal close checklist lives in the Household ledger.", facts: [] };
+    const month = statementMonth(today, call.args);
+    const end = addDays(monthStartKey(shiftMonthKey(month, 1)), -1);
+    const findings = runHealthCheck(household);
+    const pairs = duplicateContrastPairs(household.transactions).filter((pair) => monthKeyFromDateKey(pair.left.date) === month || monthKeyFromDateKey(pair.right.date) === month);
+    const accounts = visibleAccounts(household, context);
+    const unreconciled = accounts.filter((account) => !(household.kitchen.books?.reconciliations ?? []).some((row) => row.accountId === account.id && row.status === "tied" && row.statementDate >= end));
+    const closed = isMonthClosed(household, month);
+    const blockers = findings.length + pairs.length + unreconciled.length;
+    const source = toolSource(context, `Open the ${month} close checklist`, { from: `${month}-01` as DateKey, to: end });
+    return { callId: call.id, name: call.name, status: blockers ? "ok" : "empty", sentence: `${month} is ${closed ? "already closed" : blockers ? `not close-ready: ${findings.length} health finding${findings.length === 1 ? "" : "s"}, ${pairs.length} duplicate candidate pair${pairs.length === 1 ? "" : "s"}, and ${unreconciled.length} account${unreconciled.length === 1 ? "" : "s"} without a tied month-end statement` : "ready for a human to close"}. Closing remains a separate confirmed action in Hearth.`, facts: [fact(call, 0, "Health findings", String(findings.length), source), fact(call, 1, "Duplicate candidates", String(pairs.length), source, "projection"), fact(call, 2, "Accounts missing month-end tie", String(unreconciled.length), source), fact(call, 3, "Closed", closed ? "yes" : "no", source)] };
+  }
+
+  if (call.name === "source_document_coverage") {
+    const query = matchingTransactionsAt(household, call.args, context, today);
+    const rows = query.rows.filter((tx) => tx.type !== "transfer");
+    const imported = rows.filter((tx) => tx.source === "import");
+    const linked = imported.filter((tx) => Boolean(tx.sourceId));
+    const manual = rows.filter((tx) => tx.source === "manual");
+    const source = toolSource(context, `Open ${query.range.label} source rows`, { from: query.range.start, to: query.range.end });
+    return { callId: call.id, name: call.name, status: rows.length ? "ok" : "empty", sentence: `${query.range.label}, ${linked.length} of ${imported.length} imported row${imported.length === 1 ? " has" : "s have"} a source identifier; ${manual.length} row${manual.length === 1 ? " was" : "s were"} entered manually. A source ID proves provenance linkage, not that an image is archived.`, facts: [fact(call, 0, "Posted rows", String(rows.length), source), fact(call, 1, "Imported rows", String(imported.length), source), fact(call, 2, "Imports with source ID", String(linked.length), source), fact(call, 3, "Manual rows", String(manual.length), source)] };
+  }
+
+  if (call.name === "integrity_findings") {
+    if (context.view !== "household") return { callId: call.id, name: call.name, status: "unavailable", sentence: "The complete integrity review lives in the Household ledger.", facts: [] };
+    const rows = runHealthCheck(household);
+    const limit = Math.min(10, Math.max(1, Number(call.args.limit) || 8));
+    const facts = rows.slice(0, limit).map((row, index) => fact(call, index, row.section, row.message, toolSource(context, "Open Health", { transactionId: row.id?.startsWith("TX-") ? row.id : undefined, accountId: row.id?.startsWith("ACC-") ? row.id : undefined })));
+    return { callId: call.id, name: call.name, status: rows.length ? "ok" : "empty", sentence: rows.length ? `Health found ${rows.length} deterministic integrity finding${rows.length === 1 ? "" : "s"}; here are ${facts.length}.` : "Health found no deterministic integrity findings.", facts };
+  }
+
+  if (call.name === "audit_trail") {
+    if (context.view !== "household") return { callId: call.id, name: call.name, status: "unavailable", sentence: "The household activity trail lives in the Household ledger.", facts: [] };
+    const limit = Math.min(10, Math.max(1, Number(call.args.limit) || 8));
+    const rows = [...household.activity].sort((a, b) => b.at.localeCompare(a.at)).slice(0, limit);
+    const facts = rows.map((row, index) => fact(call, index, `${row.at.slice(0, 10)} · ${row.action}`, row.summary, { route: "more", view: context.view, label: "Open household activity" }));
+    return { callId: call.id, name: call.name, status: rows.length ? "ok" : "empty", sentence: rows.length ? `Here are the latest ${rows.length} household activity record${rows.length === 1 ? "" : "s"}. They describe committed actions; they do not authorize a new one.` : "The household activity trail is empty.", facts };
   }
 
   return { callId: call.id, name: call.name, status: "unavailable", sentence: "That read-only tool is unavailable.", facts: [] };

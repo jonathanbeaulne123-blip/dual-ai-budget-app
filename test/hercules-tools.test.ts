@@ -4,11 +4,13 @@ import worker from "../workers/site.js";
 import { resetChatRateMemory } from "../workers/herculesGuard.js";
 import {
   executeHerculesReadToolPlan,
+  bookBalanceAsOf,
   herculesLedgerSourcePane,
   catalogHousehold,
   parseHerculesReadToolPlan,
   planHerculesReadTools,
   postEntry,
+  recordReconciliation,
   seedDemoHousehold,
   shouldPlanHerculesTools,
   transactionsForHerculesSource,
@@ -121,6 +123,53 @@ describe("Hercules read-only tool brain", () => {
     expect(detail.results[0]?.facts.length).toBeGreaterThanOrEqual(2);
     expect(detail.results[1]?.sentence).toMatch(/roll-forward (reconciles|does not reconcile)/i);
     expect(household).toEqual(before);
+  });
+
+  it("reads reconciliation, completeness, provenance, close, and audit controls without writing", () => {
+    let household = seedDemoHousehold({ today, environment: "development" });
+    const statementDate = "2026-08-20";
+    household = recordReconciliation(household, {
+      accountId: "ACC-CHEQUING",
+      statementDate,
+      statementAmount: bookBalanceAsOf(household, "ACC-CHEQUING", statementDate) / 100,
+      createdBy: "MEM-001",
+    }).household;
+    const before = structuredClone(household);
+    const controls = executeHerculesReadToolPlan(household, { calls: [
+      { name: "reconciliation_status", args: { account: "Chequing" } },
+      { name: "activity_since_reconciliation", args: { account: "Chequing" } },
+      { name: "uncategorized_activity", args: { period: "this_month" } },
+      { name: "duplicate_exposure", args: { limit: 5 } },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+    expect(controls.results[0]?.sentence).toMatch(/most recently tied/i);
+    expect(controls.results[1]?.sentence).toMatch(/after the 2026-08-20 reconciliation/i);
+    expect(controls.results[2]?.sentence).toMatch(/valid category/i);
+    expect(controls.results[3]?.sentence).toMatch(/candidate pair/i);
+
+    const completeness = executeHerculesReadToolPlan(household, { calls: [
+      { name: "missing_periods", args: {} },
+      { name: "opening_balance_review", args: { account: "Chequing" } },
+      { name: "period_close_readiness", args: { period: "this_month" } },
+      { name: "source_document_coverage", args: { period: "this_month" } },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+    expect(completeness.results[0]?.sentence).toMatch(/calendar month|recognized row/i);
+    expect(completeness.results[1]?.sentence).toMatch(/first recognized journal activity/i);
+    expect(completeness.results[2]?.sentence).toMatch(/close-ready|not close-ready|already closed/i);
+    expect(completeness.results[3]?.sentence).toMatch(/source identifier|entered manually/i);
+
+    const trail = executeHerculesReadToolPlan(household, { calls: [
+      { name: "integrity_findings", args: { limit: 5 } },
+      { name: "audit_trail", args: { limit: 5 } },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+    expect(trail.results[0]?.sentence).toMatch(/integrity finding/i);
+    expect(trail.results[1]?.sentence).toMatch(/activity record/i);
+    expect(household).toEqual(before);
+
+    const personal = executeHerculesReadToolPlan(household, { calls: [
+      { name: "reconciliation_status", args: {} },
+      { name: "audit_trail", args: {} },
+    ] }, today, { memberId: "MEM-001", view: "personal" });
+    expect(personal.results.every((result) => result.status === "unavailable")).toBe(true);
   });
 
   it("never crosses from a personal ledger into the partner's personal rows", () => {
