@@ -392,17 +392,20 @@ export function PairingCard({
       {syncState === "syncing" && <p className="muted">Syncing the shared household…</p>}
       {syncState === "synced" && <p className="muted">Shared household is up to date.</p>}
       {error && <p className="danger">{error}</p>}
-      {!supabaseAuthEnabled() && (
-        <button className="ghost" style={{ width: "100%", marginTop: 8 }} disabled={busy} onClick={() => void publish()}>
-          {household.linked ? "Sync to the cloud" : "Publish to the cloud"}
-        </button>
-      )}
       <details
         className="pairing-advanced"
         open={advancedOpen}
         onToggle={(event) => setAdvancedOpen((event.target as HTMLDetailsElement).open)}
       >
-        <summary>Advanced</summary>
+        <summary>Advanced recovery</summary>
+        {!supabaseAuthEnabled() && (
+          <button className="ghost" style={{ width: "100%", marginTop: 8 }} disabled={busy} onClick={() => void publish()}>
+            {household.linked ? "Sync to the cloud (legacy)" : "Publish to the cloud (legacy)"}
+          </button>
+        )}
+        <p className="muted">
+          Prefer Continue with Google. Legacy publish is Auth-off Development recovery only and does not replace membership continuity.
+        </p>
         <div className="device-list">
           <h3>Devices on this household</h3>
           <p className="muted">Soft presence from phones that touched the shared snapshot. Not Auth. This device: {describeDeviceLabel()} · {localDeviceId()}</p>

@@ -189,7 +189,7 @@ export function BooksPage({
           <p className="muted">This household is linked. Sharing uses the reviewed transport path after a local accept.</p>
         )
       ) : (
-        <p className="muted">This household stays on this phone. Publishing is an explicit Confirm on Invite. A Hearth Pass does not upload.</p>
+        <p className="muted">This household stays on this phone until a signed-in Google member shares it. A Hearth Pass does not upload.</p>
       )}
       <PaneSeals
         items={[

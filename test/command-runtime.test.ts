@@ -263,6 +263,7 @@ describe("atomic household writes", () => {
       candidate: { ...posted.household, linked: true },
       confirmationId: "confirm-merge-fail",
       postedIds: posted.postedIds,
+      transportRequested: true,
       adapters: store.adapters,
     });
     expect(outcome.kind).toBe("conflict-needs-attention");
@@ -288,6 +289,7 @@ describe("atomic household writes", () => {
       candidate: { ...local.household, linked: true },
       confirmationId: "confirm-contribution-merge",
       postedIds: local.postedIds,
+      transportRequested: true,
       adapters: {
         ingest: async () => {
           events.push(`ingest-${++ingestCount}`);
@@ -323,6 +325,7 @@ describe("atomic household writes", () => {
       candidate: { ...posted.household, linked: true },
       confirmationId: "confirm-pending",
       postedIds: posted.postedIds,
+      transportRequested: true,
       adapters: store.adapters,
     });
     expect(outcome.kind).toBe("pending-transport");
@@ -330,7 +333,7 @@ describe("atomic household writes", () => {
     expect(outcome.postedExactlyOnce).toBe(true);
   });
 
-  it("returns synchronized when linked transport succeeds", async () => {
+  it("returns synchronized when continuity transport is requested and succeeds", async () => {
     const previous = { ...catalogHousehold(), linked: true, revision: 1, baseRevision: 1 };
     const posted = postEntry(previous, grocery("Oats"));
     const store = memoryAdapters({
@@ -341,6 +344,7 @@ describe("atomic household writes", () => {
       candidate: { ...posted.household, linked: true },
       confirmationId: "confirm-sync",
       postedIds: posted.postedIds,
+      transportRequested: true,
       adapters: store.adapters,
     });
     expect(outcome.kind).toBe("synchronized");
@@ -424,6 +428,7 @@ describe("atomic household writes", () => {
       candidate: { ...posted.household, linked: true },
       confirmationId: "confirm-conflict",
       postedIds: posted.postedIds,
+      transportRequested: true,
       adapters: store.adapters,
     });
     expect(outcome.ok).toBe(true);

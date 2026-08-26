@@ -6,6 +6,7 @@ import {
   clientIp,
   corsHeaders,
   isAllowedKitchenHost,
+  rateLimitAuthority,
   resetChatRateMemory,
   resolveChatOrigin,
 } from "../workers/herculesGuard.js";
@@ -95,6 +96,43 @@ describe("Hercules kitchen Worker guard", () => {
     }
     expect((await checkChatRateLimit({}, request)).ok).toBe(false);
     expect((await checkChatRateLimit({}, requestWithIp("203.0.113.11"))).ok).toBe(true);
+  });
+
+  it("documents concurrent get-then-put can briefly exceed the daily cap", async () => {
+    resetChatRateMemory();
+    const key = `chat:203.0.113.77:${new Date().toISOString().slice(0, 10)}`;
+    const racingStore = new Map<string, string>([[key, String(DAILY_CHAT_LIMIT - 1)]]);
+    let pendingGets = 0;
+    let releaseGets: (() => void) | null = null;
+    const hold = new Promise<void>((resolve) => { releaseGets = resolve; });
+    const racingKv = {
+      get: async (itemKey: string) => {
+        pendingGets += 1;
+        if (pendingGets >= 2 && releaseGets) releaseGets();
+        await hold;
+        return racingStore.get(itemKey) ?? null;
+      },
+      put: async (itemKey: string, value: string) => {
+        racingStore.set(itemKey, value);
+      },
+    };
+    expect(rateLimitAuthority({ HERCULES_RATE: racingKv })).toBe("kv");
+    expect(rateLimitAuthority({})).toBe("memory");
+    const raced = await Promise.all([
+      checkChatRateLimit({ HERCULES_RATE: racingKv }, requestWithIp("203.0.113.77")),
+      checkChatRateLimit({ HERCULES_RATE: racingKv }, requestWithIp("203.0.113.77")),
+    ]);
+    expect(raced.every((row) => row.ok)).toBe(true);
+    expect(raced.every((row) => row.authority === "kv")).toBe(true);
+    expect(Number(racingStore.get(key))).toBe(DAILY_CHAT_LIMIT);
+  });
+
+  it("records the KV binding contract for Jonathan without breaking live deploy placeholders", () => {
+    const bindingDoc = readFileSync("docs/HERCULES_KV_BINDING.md", "utf8");
+    const wrangler = readFileSync("wrangler.jsonc", "utf8");
+    expect(bindingDoc).toContain("HERCULES_RATE");
+    expect(bindingDoc).toContain("wrangler kv namespace create HERCULES_RATE");
+    expect(wrangler).not.toContain("REPLACE_WITH_HERCULES_RATE");
   });
 
   it("shares an unknown bucket when client IP metadata is absent", async () => {

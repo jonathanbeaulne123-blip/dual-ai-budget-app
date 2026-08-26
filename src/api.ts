@@ -10,7 +10,7 @@ import type { Environment, Household } from "./core/types.ts";
 import { probeSupabase, pullSupabaseHousehold } from "./ledger/supabase.ts";
 
 export const UNPUBLISHED_PHRASE =
-  "No household is published with that phrase. Check the three words, or on the other phone open Invite and tap Publish to the cloud.";
+  "No household matches that phrase in the cloud. Prefer Continue with Google on both phones. Phrase join is Advanced recovery only; a Hearth Pass file also works offline.";
 
 export async function cloudBooksLive(): Promise<boolean> {
   const hosted = await probeSupabase();
@@ -120,7 +120,7 @@ export function joinFromPastedSecret(
 
 export function hostingHint(cloudLive: boolean): string {
   if (cloudLive) {
-    return "Supabase Postgres is on. Publish is an explicit Confirm. A Hearth Pass or the three-word phrase is not encryption. Treat hosted rows as disclosed until Auth.";
+    return "Cloud continuity is on. After Google sign-in, accepted books share automatically. Phrase and Hearth Pass are Advanced recovery — not encryption.";
   }
-  return "This phone keeps local Postgres books. Shared join needs the Supabase tables; a Hearth Pass still works as a backup. Opening the kitchen does not publish.";
+  return "This phone keeps local Postgres books. Continue with Google for cross-device continuity. A Hearth Pass still works as an offline backup. Opening the kitchen does not upload.";
 }

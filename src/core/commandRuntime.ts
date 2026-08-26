@@ -15,7 +15,6 @@ import {
 } from "./commandOutcome.ts";
 import {
   deriveSharing,
-  hostedTransportAllowed,
   markConflicted,
   markPendingTransport,
   markSynchronized,
@@ -144,7 +143,7 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
     const existing = sameHousehold && previous ? findReceipt(previous, confirmationId) : undefined;
     if (existing && previous) {
       return outcome({
-        kind: (hostedTransportAllowed(previous) || input.transportRequested) && previous.sharing?.pending ? "pending-transport" : previous.sharing?.mode === "synchronized" ? "synchronized" : "accepted-local",
+        kind: input.transportRequested && previous.sharing?.pending ? "pending-transport" : previous.sharing?.mode === "synchronized" ? "synchronized" : "accepted-local",
         household: previous,
         previous,
         postedIds: existing.postedIds,
@@ -251,7 +250,7 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       return uncertainRecoveryOutcome(previous, confirmationId, persistError);
     }
 
-    const transportAllowed = hostedTransportAllowed(accepted) || input.transportRequested === true;
+    const transportAllowed = input.transportRequested === true;
     if (!transportAllowed || !input.adapters.transport) {
       return outcome({
         kind: "accepted-local",

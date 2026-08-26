@@ -7,10 +7,12 @@ import { hostingHint, UNPUBLISHED_PHRASE } from "../src/api.ts";
 const root = fileURLToPath(new URL("..", import.meta.url));
 
 describe("Cloudflare static host pairing", () => {
-  it("describes Supabase as the shared books", () => {
-    expect(hostingHint(true)).toMatch(/Supabase/);
+  it("describes cloud continuity without teaching Publish as the ordinary door", () => {
+    expect(hostingHint(true)).toMatch(/Google sign-in|Cloud continuity/i);
+    expect(hostingHint(true)).not.toMatch(/Publish is an explicit Confirm/);
     expect(hostingHint(false)).not.toMatch(/Netlify/i);
     expect(UNPUBLISHED_PHRASE).not.toMatch(/phrase is right/i);
+    expect(UNPUBLISHED_PHRASE).not.toMatch(/Publish to the cloud/);
   });
 
   it("points Wrangler at dist/ and runs the Worker before HTML assets", () => {

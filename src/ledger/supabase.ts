@@ -749,7 +749,21 @@ export async function pushSupabaseHousehold(
     if (create.ok) {
       const created = parseCasRpcBody(create.body);
       if (created?.ok) {
-        await publishContinuityMemberScope(config, snapshot, continuityMemberId, identity);
+        try {
+          await publishContinuityMemberScope(config, snapshot, continuityMemberId, identity);
+        } catch (caught) {
+          return {
+            ...probe,
+            schema: true,
+            skipped: true,
+            conflict: false,
+            duplicate: created.duplicate === true,
+            usedCasRpc: true,
+            error: caught instanceof Error
+              ? `Household created in the cloud, but Personal scope failed: ${caught.message}`
+              : "Household created in the cloud, but Personal scope failed.",
+          };
+        }
         return {
           ...probe,
           schema: true,
@@ -798,7 +812,22 @@ export async function pushSupabaseHousehold(
     const cas = parseCasRpcBody(rpc.body);
     if (cas?.ok) {
       if (!publishScopeBeforeCas && continuityMemberId && identity) {
-        await publishContinuityMemberScope(config, snapshot, continuityMemberId, identity);
+        try {
+          await publishContinuityMemberScope(config, snapshot, continuityMemberId, identity);
+        } catch (caught) {
+          // Shared CAS already committed. Keep the outbox pending so Personal can retry.
+          return {
+            ...probe,
+            schema: true,
+            skipped: true,
+            conflict: false,
+            duplicate: cas.duplicate === true,
+            usedCasRpc: true,
+            error: caught instanceof Error
+              ? `Shared books reached the cloud, but Personal scope failed: ${caught.message}`
+              : "Shared books reached the cloud, but Personal scope failed.",
+          };
+        }
       }
       return {
         ...probe,
@@ -822,6 +851,19 @@ export async function pushSupabaseHousehold(
     }
   } else if (!isMissingRpc(rpc.body)) {
     throw new Error(messageOf(rpc.body));
+  }
+
+  // Automatic continuity must not fall through to the racy GET-compare-POST path.
+  // Legacy publish remains only for explicit Auth-off recovery (`legacyLinkedPublish`).
+  if (continuityMemberId || config.authUserId) {
+    return {
+      ...probe,
+      schema: true,
+      skipped: true,
+      conflict: false,
+      usedCasRpc: false,
+      error: "Hosted CAS RPC is unavailable. Automatic sharing stopped instead of racing a legacy upsert. Retry after the kitchen recovers, or use Advanced recovery only while Auth is off.",
+    };
   }
 
   // Migration 002 not applied: keep the legacy client CAS path (still racy under load).

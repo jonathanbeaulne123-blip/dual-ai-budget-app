@@ -4,9 +4,29 @@ After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. 
 
 Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
 
+## Phase 0 optional-publish demotion + hosted honesty (D-147, 2026-08-26)
+
+**Status:** Branch `cursor/phase0-remaining-c04e`. Not merged, not deployed. Risk: **High**.
+
+**Household outcome:** Ordinary use never needs **Publish to the cloud**. Auth-off legacy publish is Advanced recovery only. Automatic continuity refuses a racy legacy upsert when CAS is missing, and Personal-scope failure after Shared CAS stays pending in the outbox.
+
+**Budget delta (5):** `+3` — remove false Publish authority; fail closed on partial hosted writes.
+
+**Engagement delta (3):** `+1` — Invite chrome matches the Google door.
+
+**What changed:** `commandRuntime` transports only on `transportRequested`; Pairing demotes Publish; `supabase` Personal-fail honesty + refuse-legacy; `continuity` flush treats `pushed.error` as pending; Hercules concurrent rate tests + [HERCULES_KV_BINDING.md](HERCULES_KV_BINDING.md); [GITHUB_BRANCH_PROTECTION.md](GITHUB_BRANCH_PROTECTION.md); [WORKING_MEMORY.md](WORKING_MEMORY.md) reconciled.
+
+**Verification:** Focused vitest 66/66 after rebase onto `main@391e3af` (auth-membership, api, write-safety, hercules-worker, command-runtime, hosted-transport, environment-isolation). Broader `pnpm check` / auditors follow before merge.
+
+**Data/environment:** Development client + Worker guard + docs. No schema migrate, secrets, Production, Cloudflare KV create, or GitHub ruleset apply (Jonathan).
+
+**Worksession:** [`worksessions/2026-08-26-phase0-remaining.md`](worksessions/2026-08-26-phase0-remaining.md)
+
+**Next owner:** Jonathan — review PR; create `HERCULES_RATE` KV + deploy; apply branch ruleset; Create/invite smoke and two-browser E2E remain separate.
+
 ## Phase 0 evidence + membership tuple + hash acceptance (D-146, 2026-08-26)
 
-**Status:** Branch `cursor/phase0-evidence-isolation-hash-c04e`; draft PR #156. Not merged, not deployed. Risk: **High**.
+**Status:** Merged via #156 onto `main@391e3af`. Risk: **High**.
 
 **Household outcome:** Sheets-era issues/PRs have retained evidence; automatic continuity boundaries validate environment + Google membership; pulled/merged money cannot become active books on entry-count alone — PGlite and `financialAuditHash` must agree.
 

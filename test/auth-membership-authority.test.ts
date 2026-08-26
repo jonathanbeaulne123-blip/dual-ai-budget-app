@@ -53,4 +53,39 @@ describe("D-143 Auth membership continuity authority", () => {
     expect(sql).toContain("hearth_bind_google_memberships");
     expect(sql).toMatch(/VALUES\s*\(\s*10\s*,/);
   });
+
+  it("does not fall through to legacy upsert when continuity identity is present and CAS RPC is missing", async () => {
+    const base = linkGoogleIdentity(catalogHousehold(), {
+      memberId: "MEM-001",
+      email: identity.email,
+      subject: identity.subject,
+      displayName: "Jonathan",
+      grantedScopes: ["openid", "email"],
+    }).household;
+    const household = { ...base, linked: true, revision: 2, baseRevision: 1 };
+    const fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("households?select=id")) {
+        return new Response(JSON.stringify([{ id: household.householdId }]), { status: 200 });
+      }
+      if (url.includes("rpc/publish_household_snapshot") || url.includes("rpc/hearth_create_household")) {
+        return new Response(JSON.stringify({
+          code: "PGRST202",
+          message: "Could not find the function",
+        }), { status: 404, headers: { "Content-Type": "application/json" } });
+      }
+      if (url.includes("continuity_")) return new Response(JSON.stringify([]), { status: 200 });
+      return new Response(JSON.stringify([]), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetch);
+    const result = await pushSupabaseHousehold(household, { ...bundledSupabaseConfig(), authUserId: "auth-user-1" }, {
+      expectedRevision: 1,
+      continuityIdentity: identity,
+    });
+    expect(result.skipped).toBe(true);
+    expect(result.error).toMatch(/CAS RPC is unavailable/);
+    expect(result.usedCasRpc).toBe(false);
+    const urls = fetch.mock.calls.map((call) => String(call[0]));
+    expect(urls.some((url) => url.includes("household_snapshots?on_conflict"))).toBe(false);
+  });
 });
