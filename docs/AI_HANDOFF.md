@@ -4,6 +4,31 @@ After a long thread, [WORKING_MEMORY.md](WORKING_MEMORY.md) recaps *this chat*. 
 
 Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sign-in must reveal personal and household ledgers from any device, no peer device is the host, data through 2026-09-30 is disposable/open Development data, and the security cutover is mandatory before meaningful October data.
 
+## Shift year simulation + sandbox gate (D-139, 2026-08-25)
+
+**Status:** Branch `cursor/shift-year-simulation-85bf` — draft PR; not merged, not deployed. Risk: **Medium**.
+
+**Household outcome:** Hercules Pro can build a reproducible next-year tips+wages simulation from posted shifts and teach how it works. Python sandbox is designed as a later High-risk gate, not built.
+
+**Budget delta (5):** `+2` — deterministic year Monte Carlo of tips and wages; never posts.
+
+**Engagement delta (3):** `+2` — teachable year simulation for Pro and free Hercules.
+
+**Worksession:** [`worksessions/2026-08-25-shift-year-simulation.md`](worksessions/2026-08-25-shift-year-simulation.md)
+
+**What changed:** `runShiftYearSimulation` / `explainShiftYearSimulation` in `tipScience.ts`; tools `shift_year_simulation` + `explain_shift_simulation` on free Hercules and Pro MCP; D-139 + sandbox gate in `HERCULES_PRO.md`; Pro `tools/list` expectations corrected to catalog+write (63).
+
+**Verification:**
+- `pnpm exec vitest run test/tip-science.test.ts test/hercules-tools.test.ts test/hercules-pro.test.ts` — pass
+- Same household+seed identical; facts `projection`; household unchanged
+- Full `pnpm check` / `pnpm ai:verify` recorded after commit
+
+**Uncertainty:** Season under-modelled until weather stamps are universal; wages resample posted take-home ÷ hours.
+
+**Data/environment:** Development code only; fictional demo/stress data in tests; no schema, secrets, Production, or deploy.
+
+**Next owner:** Jonathan reviews draft PR; ChatGPT Pro smoke: “Simulate my next year of tips and wages, then teach me how it works.” Do not merge/deploy without approval.
+
 ## Environment isolation Phase 0 (2026-08-25)
 
 **Status:** Merged to `main`. Follow-up branch `cursor/legacy-pull-env-bind-f375` closes the leftover legacy `readRemoteSnapshot` environment query filter and adds two-client clock-skew / partial-failure proofs.

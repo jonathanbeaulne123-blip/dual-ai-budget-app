@@ -101,8 +101,16 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list" }),
     }), env);
     const listed = await tools.json() as { result: { tools: Array<{ name: string; annotations: { readOnlyHint: boolean } }> } };
-    expect(listed.result.tools).toHaveLength(58);
-    expect(listed.result.tools.every((tool) => tool.annotations.readOnlyHint)).toBe(true);
+    // TOOL_CATALOG (60) + writeToolDefinitions (3). Write tools stay listed; confirm is not read-only.
+    expect(listed.result.tools).toHaveLength(63);
+    const names = listed.result.tools.map((tool) => tool.name);
+    expect(names).toEqual(expect.arrayContaining([
+      "shift_year_simulation",
+      "explain_shift_simulation",
+      "confirm_transaction",
+    ]));
+    expect(listed.result.tools.find((tool) => tool.name === "confirm_transaction")?.annotations.readOnlyHint).toBe(false);
+    expect(listed.result.tools.find((tool) => tool.name === "shift_year_simulation")?.annotations.readOnlyHint).toBe(true);
     expect(listed.result.tools.some((tool) => /^(?:post|delete|pay|transfer)(?:_|$)/.test(tool.name))).toBe(false);
 
     const call = await worker.fetch(new Request(`${origin}/mcp`, {
@@ -244,7 +252,7 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 20, method: "tools/list" }),
     }), env);
     const listed = await listedResponse.json() as { result: { tools: Array<{ name: string; annotations: { readOnlyHint: boolean; destructiveHint: boolean } }> } };
-    expect(listed.result.tools).toHaveLength(57);
+    expect(listed.result.tools).toHaveLength(63);
     expect(listed.result.tools.find((tool) => tool.name === "confirm_transaction")?.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: true });
 
     const account = household.accounts.find((row) => row.active)!;

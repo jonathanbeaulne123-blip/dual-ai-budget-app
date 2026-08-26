@@ -24,11 +24,17 @@ The accounting-controls slice adds reconciliation status and activity-since-reco
 
 The forecasting slice adds budget variance, cash runway, bill coverage, card payoff, utilization, savings rate, income stability, spending trends, purchase scenarios, and budget-forecast accuracy. Forecast results are labelled projections and state their simplifying assumptions. A positive scenario result is a narrow cash test—not permission, certainty, financial advice, or a hidden write.
 
+The Shift Oracle slice (D-137 / D-139) adds `tip_oracle`, `shift_outlook`, `tip_schedule_sim`, `tax_milk_plan`, `shift_year_simulation`, and `explain_shift_simulation`. Short-horizon tip floors, weather-adjusted outlook, cadence advice, educational tax-milk, and a seeded 6–12 month tips+wages year simulation are projections resampled from posted shifts. They never post, never e-file, and never treat a forecast as income. `explain_shift_simulation` teaches method, limits, and a human next step.
+
+### Python sandbox gate (designed, not built)
+
+A future open-ended Python/scientific sandbox requires an explicit High-risk Jonathan packet. Until then, Pro must not execute arbitrary code. The gate requires: isolated runtime (no network, no ledger write API, timeout/memory caps); aggregate/redacted inputs by default; structured projection results under the same teaching contract; free Hercules usable without it. Kill criterion: if sandbox output is treated as posted income or can mutate books, disable it. Until that ships, year-ahead tip/wage science stays in deterministic TypeScript (`tipScience.ts`).
+
 The living-teacher slice adds transaction, accounting-equation, debit/credit, statement, number-trace, treatment-comparison, variance, and transfer explanations. MCP results carry an explicit teaching contract: direct answer, posted evidence, plain-language lesson, limitations, and a human next step. Stable source IDs remain clickable. Read results remain read-only even when the separate confirmed-write permission is enabled.
 
-The Shift Oracle slice (D-137) adds `tip_oracle`, `shift_outlook`, `tip_schedule_sim`, and `tax_milk_plan`. Monte Carlo tip floors, weather-adjusted shift ranges, cadence advice, and educational tax-milk/buffer splits are projections resampled from posted tip shifts. They never post, never e-file, and never treat a forecast as income.
+The older Oracle blurb is superseded by the Shift Oracle slice above.
 
-Pro cannot add, edit, delete, post, pay, transfer, merge, sync, or move money. Recommendations are words. The human returns to Hearth and uses the ordinary Confirm path for a write.
+Pro cannot add, edit, delete, post, pay, transfer, merge, sync, or move money outside the optional confirmed-write path. Recommendations are words. The human returns to Hearth and uses Confirm for ordinary writes.
 
 Each ChatGPT account completes its own OAuth link. Hearth verifies the current Supabase/Google session, the active `continuity_memberships` row, environment, household, and member. The resulting Hearth access and refresh tokens are encrypted with the Worker signing secret; the underlying Supabase tokens are not exposed as readable token claims. Membership is checked again on reads and refresh.
 
