@@ -1,7 +1,7 @@
 import type { DateKey } from "../calendar.ts";
 import type { TransactionType, Visibility } from "../types.ts";
 
-export type ImportSourceKind = "ofx" | "qfx" | "camera";
+export type ImportSourceKind = "ofx" | "qfx" | "camera" | "flinks";
 export type ImportDocumentKind = "bank-statement" | "credit-card-statement" | "bill" | "receipt" | "unknown";
 export type ImportReviewType = TransactionType | "unknown";
 export type DuplicateTier = "confident" | "not-sure" | "probably-not";

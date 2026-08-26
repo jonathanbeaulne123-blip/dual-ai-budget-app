@@ -407,6 +407,47 @@ describe("import duplicate triage", () => {
     expect(row.subcategoryId).toBe("SUB-LIFE-PHONE");
   });
 
+  it("prefers category history on the mapped account before household-wide guesses", () => {
+    let household = catalogHousehold();
+    for (const [date, amount] of [["2026-05-01", 71], ["2026-06-01", 72], ["2026-07-01", 73]] as const) {
+      household = postEntry(household, {
+        date,
+        type: "expense",
+        amount,
+        accountId: "ACC-VISA",
+        subcategoryId: "SUB-FOOD-COFFEE",
+        note: "Tim Hortons coffee",
+        place: "Tim Hortons",
+        createdBy: "MEM-002",
+      }).household;
+    }
+    for (const [date, amount] of [["2026-05-01", 45], ["2026-06-01", 46], ["2026-07-01", 47]] as const) {
+      household = postEntry(household, {
+        date,
+        type: "expense",
+        amount,
+        accountId: "ACC-CHEQUING",
+        subcategoryId: "SUB-FOOD-GROCERIES",
+        note: "Tim Hortons coffee",
+        place: "Tim Hortons",
+        createdBy: "MEM-002",
+      }).household;
+    }
+    const row = prepareImportRows({
+      household,
+      memberId: "MEM-002",
+      view: "household",
+      rows: [source({
+        accountLast4: "4412",
+        note: "Tim Hortons coffee",
+        place: "Tim Hortons",
+      })],
+    })[0]!;
+
+    expect(row.accountId).toBe("ACC-VISA");
+    expect(row.subcategoryId).toBe("SUB-FOOD-COFFEE");
+  });
+
   it("learns category context only from transactions visible to the current member", () => {
     let household = catalogHousehold();
     for (const [date, amount] of [["2026-05-01", 71], ["2026-06-01", 72], ["2026-07-01", 73]] as const) {
