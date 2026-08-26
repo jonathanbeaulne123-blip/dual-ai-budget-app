@@ -107,6 +107,85 @@ export function assertMemberMatch(
   }
 }
 
+/** Row fields from continuity_memberships used as invite/discovery authority (D-123+). */
+export type ContinuityMembershipEvidence = {
+  householdId: string;
+  memberId: string;
+  googleSubject?: string;
+  googleEmail?: string;
+  authUserId?: string;
+};
+
+/**
+ * Active continuity_memberships is authoritative for Auth invite discovery when
+ * shared snapshot google.links lag behind redeem. Mirrors continuityMembershipRows
+ * subject/email matching without requiring snapshot links.
+ */
+export function assertContinuityMembershipEvidence(
+  membership: ContinuityMembershipEvidence,
+  identity: GoogleIdentitySelector,
+  options: { authUserId?: string; boundary?: IsolationBoundary } = {},
+): void {
+  const boundary = options.boundary ?? "pull";
+  const subject = identity.subject.trim();
+  const email = identity.email.trim().toLowerCase();
+  const rowSubject = membership.googleSubject?.trim() ?? "";
+  const rowEmail = membership.googleEmail?.trim().toLowerCase() ?? "";
+
+  if (options.authUserId && membership.authUserId && membership.authUserId !== options.authUserId) {
+    throw new ValidationError(
+      boundary === "pull"
+        ? "That cloud household is not linked to this Google account. Nothing was imported."
+        : "That household is not linked to this Google account.",
+    );
+  }
+
+  if (subject) {
+    if (rowSubject && rowSubject !== subject) {
+      throw new ValidationError(
+        boundary === "pull"
+          ? "That cloud household is not linked to this Google account. Nothing was imported."
+          : "That household is not linked to this Google account.",
+      );
+    }
+    if (!rowSubject && email && rowEmail && rowEmail !== email) {
+      throw new ValidationError(
+        boundary === "pull"
+          ? "That cloud household is not linked to this Google account. Nothing was imported."
+          : "That household is not linked to this Google account.",
+      );
+    }
+  } else if (email) {
+    if (rowEmail !== email) {
+      throw new ValidationError(
+        boundary === "pull"
+          ? "That cloud household is not linked to this Google account. Nothing was imported."
+          : "That household is not linked to this Google account.",
+      );
+    }
+  }
+}
+
+/** Membership-scoped discovery: environment/household/member roster + membership identity. */
+export function assertMembershipAuthoritativeDiscovery(
+  household: Household,
+  membership: ContinuityMembershipEvidence,
+  identity: GoogleIdentitySelector,
+  environment: Environment,
+  options: { authUserId?: string } = {},
+): Household {
+  assertEnvironmentMatch(household.environment, { environment }, "pull", { requirePresent: true });
+  if (household.householdId !== membership.householdId) {
+    throw new ValidationError("Cloud returned a different household than this phone asked for.");
+  }
+  const member = household.members.find((item) => item.id === membership.memberId);
+  if (!member?.active) {
+    throw new ValidationError("That membership seat is not active on this household roster.");
+  }
+  assertContinuityMembershipEvidence(membership, identity, { authUserId: options.authUserId, boundary: "pull" });
+  return household;
+}
+
 /**
  * When a Google identity is present on the binding, the household must contain a
  * matching active google.links membership. Phrase/Pass recovery may omit Google
