@@ -1,14 +1,14 @@
 # Hearth worksession — Phase 0 remaining (linked demotion, atomic honesty, KV, protection, working memory)
 
-- **Status:** OPEN (proof in progress)
+- **Status:** OPEN (proof complete; awaiting Jonathan review)
 - **Opened:** 2026-08-26 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor Cloud Agent
 - **Repository:** dual-ai-budget-app
 - **Branch:** `cursor/phase0-remaining-c04e`
 - **Baseline SHA:** `391e3af860e605eaa9d437a12c94056a505c46a2` (`main` after #156 / D-146)
-- **Head SHA:** (commit after this packet)
-- **PR or issue:** (open on push)
+- **Head SHA:** `604258c742f04426859776268bc6f2f59bdae014`
+- **PR or issue:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/157
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** Development client + Worker guard + living docs. No Production schema. No hosted row deletes. KV namespace create/deploy and GitHub rulesets require Jonathan (API 403 / Cloudflare account).
@@ -54,11 +54,15 @@ Ordinary Hearth use is Google continuity without **Publish to the cloud**. Local
 - [x] Guard tests cover concurrent/missing-KV semantics; binding runbook (no fake wrangler ids)
 - [x] Branch protection runbook committed
 - [x] WORKING_MEMORY reflects current main facts
-- [ ] Full `pnpm check` / auditors / PR
+- [x] Full `pnpm check` (658 pass; 2 pre-existing batch-import SubtleCrypto fails) / auditors / PR #157
 
 ## Evidence log
 
-- Focused vitest 66/66 after rebase onto `391e3af`.
+- Focused vitest green after rebase onto `391e3af`.
+- Continuity/proof-matrix/live-pull/production suites realigned to CAS success/conflict (D-147 refuse-legacy).
+- `pnpm check`: 658 pass / 2 pre-existing `batch-import-ui` SubtleCrypto fails.
+- Privacy / books / UX auditors: PASS WITH NOTES.
+- Head `604258c`.
 
 ## Decisions
 
@@ -72,4 +76,4 @@ Ordinary Hearth use is Google continuity without **Publish to the cloud**. Local
 
 ## Handoff
 
-Jonathan: create KV namespace + deploy Worker; apply GitHub ruleset from runbook; review PR.
+Jonathan: create KV namespace + deploy Worker; apply GitHub ruleset from runbook; review PR #157.
