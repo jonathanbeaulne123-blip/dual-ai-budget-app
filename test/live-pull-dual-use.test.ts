@@ -170,7 +170,14 @@ describe("post-conflict outbox resume", () => {
   it("clears conflict blocks so force flush can run again", async () => {
     setContinuityStore(createMemoryContinuityStore());
     const household = { ...googleHousehold(), revision: 4, baseRevision: 3, linked: true };
-    const remote = { ...googleHousehold(), revision: 5, baseRevision: 5, linked: true };
+    const remote = {
+      ...googleHousehold(),
+      revision: 5,
+      baseRevision: 5,
+      linked: true,
+      householdId: household.householdId,
+      inviteCode: household.inviteCode,
+    };
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
       const url = String(input);
       if (url.includes("households?select=id")) return response([]);

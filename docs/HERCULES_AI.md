@@ -35,6 +35,8 @@ For an unmatched financial question, the Worker may choose a plan of at most fou
 
 Catalog: `account_balance`, `find_transactions`, `spending_summary`, `income_summary`, `compare_spending`, `bills_due`, `shift_summary`, `goal_progress`, `money_owed`, `cash_position`, `budget_status`, `category_breakdown`, `credit_card_status`, `net_worth`, `audit_health`, and `duplicate_review`.
 
+Hercules Pro's accounting-core extension also exposes focused posted-journal statements and tracing: `balance_sheet`, `income_statement`, `cash_flow_statement`, `trial_balance`, `general_ledger`, `account_activity`, `journal_entry_detail`, `changes_in_net_worth`, `period_comparison`, and `explain_balance`. Those tools declare their accounting basis, currency, and timezone; they do not turn budgets or scheduled items into posted facts.
+
 The boundary is deliberately narrow:
 
 - unknown calls and unknown arguments are discarded;
