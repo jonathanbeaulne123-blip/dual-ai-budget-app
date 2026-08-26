@@ -240,7 +240,7 @@ Every tier adds rows; none delete prior proofs.
 | 002 | Shared snapshot CAS | pre-T1 | **Applied** Development |
 | 003 | Membership + Personal scope | pre-T1 | **Applied** |
 | 011 | Hercules Pro atomic write (prototype) | pre-T1 | Not applied; pattern donor for 012 |
-| **012** | `publish_continuity_snapshot` atomic Shared+Personal | **T1-S1** | **Proposed** — Dev only |
+| **012** | `publish_continuity_snapshot` atomic Shared+Personal | **T1-S1** | **Proposed** — Dev apply via `pnpm books:apply:012` |
 | **013** | `continuity_command_events` append log | **T2-S1** | **Proposed** |
 | **014** | Realtime RLS publication + replica identity | **T1-S3** | **Proposed** if required by Supabase |
 
