@@ -3357,7 +3357,7 @@ export function App() {
       {guard?.kind === "stress-random" && (
         <ConfirmSheet
           title="Reload randomized stress data?"
-          body={`This replaces the ${environment} ledger activity with twelve months of fictional CAD covering weighted harbour shifts (weather, location, full tip/sales forms), wages, tips, expenses, bills, imported rows, transfers, appointments, claims, jars, budgets, presets, card balances, and money owed. In Development it keeps this household’s Google link and membership so Hercules Pro can still read the fixture after sync. Tip shifts are posted for the member signed in on this phone.`}
+          body={`This replaces the ${environment} ledger activity with twelve months of fictional CAD covering weighted harbour shifts (weather, location, full tip/sales forms), wages, tips, expenses, bills, imported rows, transfers, appointments, claims, goals, budgets, presets, card balances, and money owed. In Development it keeps this household’s Google link and membership so Hercules Pro can still read the fixture after sync. Tip shifts are posted for the member signed in on this phone.`}
           extra={googleStepUpExtra}
           confirmLabel="Load random stress data"
           danger
@@ -3389,7 +3389,7 @@ export function App() {
       {guard?.kind === "stress-pretty" && (
         <ConfirmSheet
           title="Display a fresh pretty-number household?"
-          body={`This replaces the ${environment} ledger activity with a twelve-month fictional household. Amounts are deliberately rounded into clean, presentation-friendly values while the same weather-weighted harbour shifts, location stamps, bills, imports, appointments, claims, jars, budgets, and owed balances remain testable. In Development it keeps this household’s Google link and membership for Hercules Pro. Tip shifts go to the member signed in on this phone.`}
+          body={`This replaces the ${environment} ledger activity with a twelve-month fictional household. Amounts are deliberately rounded into clean, presentation-friendly values while the same weather-weighted harbour shifts, location stamps, bills, imports, appointments, claims, goals, budgets, and owed balances remain testable. In Development it keeps this household’s Google link and membership for Hercules Pro. Tip shifts go to the member signed in on this phone.`}
           extra={googleStepUpExtra}
           confirmLabel="Load pretty numbers"
           danger

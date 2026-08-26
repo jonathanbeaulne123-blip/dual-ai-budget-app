@@ -151,7 +151,7 @@ export const HERCULES_READ_TOOL_CATALOG: ReadonlyArray<{ name: HerculesReadToolN
   { name: "compare_spending", description: "Compare spending between two named periods." },
   { name: "bills_due", description: "List repeating household bills due within 1–90 days." },
   { name: "shift_summary", description: "Summarize posted shifts, hours, wages, tips, and paid breaks." },
-  { name: "goal_progress", description: "Read visible savings-jar progress." },
+  { name: "goal_progress", description: "Read visible savings-goal progress." },
   { name: "money_owed", description: "Read visible outstanding claims and receivables." },
   { name: "cash_position", description: "Read the household sit-down cash position; household ledger only." },
   { name: "budget_status", description: "Compare posted income and spending with the monthly plan." },
@@ -643,11 +643,11 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
   if (call.name === "goal_progress") {
     const target = fuzzy(household.goals, cleanString(call.args.goal), (row) => row.name);
     const goalQuery = cleanString(call.args.goal);
-    if (goalQuery && !target) return empty(call, `I cannot match visible jar “${goalQuery}” in this ledger.`);
+    if (goalQuery && !target) return empty(call, `I cannot match visible goal “${goalQuery}” in this ledger.`);
     const rows = target ? [target] : household.goals.slice(0, 8);
-    if (!rows.length) return empty(call, "No visible savings jars are on these books.");
+    if (!rows.length) return empty(call, "No visible savings goals are on these books.");
     const facts = rows.map((goal, index) => fact(call, index, goal.name, `${formatCad(goal.savedCents)} / ${formatCad(goal.targetCents)}`, { route: "plan", view: context.view, surface: "jars", goalId: goal.id, label: `Open ${goal.name}` }));
-    return { callId: call.id, name: call.name, status: "ok", sentence: target ? `${target.name} is ${target.targetCents ? Math.round((target.savedCents / target.targetCents) * 100) : 0}% funded.` : `I found ${rows.length} visible savings jars.`, facts };
+    return { callId: call.id, name: call.name, status: "ok", sentence: target ? `${target.name} is ${target.targetCents ? Math.round((target.savedCents / target.targetCents) * 100) : 0}% funded.` : `I found ${rows.length} visible savings goals.`, facts };
   }
 
   if (call.name === "money_owed") {
@@ -1638,7 +1638,7 @@ export function executeHerculesReadToolPlan(
   const facts = results.flatMap((result) => result.facts).slice(0, 8);
   const sentence = results.length
     ? clipSentence(results.map((result) => result.sentence).join(" "))
-    : "I need a clearer books question. Try an account, period, category, bill, shift, jar, or claim.";
+    : "I need a clearer books question. Try an account, period, category, bill, shift, goal, or claim.";
   return {
     plan,
     results,

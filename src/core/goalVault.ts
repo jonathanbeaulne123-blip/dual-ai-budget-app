@@ -89,7 +89,7 @@ export function goalLedger(household: Household, goalId?: string): GoalLedgerEnt
     id: row.id,
     kind: "contribution",
     goalId: row.goalId,
-    label: `${names.get(row.goalId) || "Jar"} envelope`,
+    label: `${names.get(row.goalId) || "Goal"} envelope`,
     amountCents: row.amountCents,
     date: row.date,
     transactionIds: [],

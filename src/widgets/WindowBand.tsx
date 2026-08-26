@@ -20,7 +20,7 @@ export function WindowBand({
     >
       {onToggle && (
         <button type="button" className="office-chalk-minimize" onClick={onToggle} aria-expanded={!minimized}>
-          {minimized ? "Show chalkboard" : "Minimize band"}
+          {minimized ? "Show notes" : "Minimize notes"}
         </button>
       )}
       {!minimized && chalkboardBody}

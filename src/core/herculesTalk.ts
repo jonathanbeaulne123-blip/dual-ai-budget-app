@@ -189,7 +189,7 @@ export function herculesIdle(
 
   if (five.yes) {
     spoken = `${five.names.join(" and ")} both bought food. That's the move.`;
-    lesson = "A household is two phones posting milk, not a lecture.";
+    lesson = "A household is two phones posting milk — ordinary groceries — not a lecture.";
     topic = "high-five";
     pose = "celebrate";
   } else if (view.mood === "hiding") {
@@ -226,7 +226,7 @@ export function herculesIdle(
     } else if (upcomingVisitProposals(household, today)[0]) {
       const proposal = upcomingVisitProposals(household, today)[0]!;
       spoken = clip(proposal.hercules);
-      lesson = "I propose the jar. You tap Start. I don't write.";
+      lesson = "I propose the goal (jar on the shelf). You tap Start. I don't write.";
       topic = "visit";
       pose = proposal.appointmentId && household.appointments.find((item) => item.id === proposal.appointmentId)?.memberId === "companion"
         ? "celebrate"
@@ -333,7 +333,7 @@ export function talkHercules(
     return {
       spoken: proposal
         ? clip(`${proposal.hercules} Calendar → Appointments. You tap Start. I don't write.`)
-        : "No jar to start. A typical cost on a visit comes first.",
+        : "No goal to start yet. A typical visit cost comes first.",
       lesson: "Creating a goal is a household write. I propose. A human confirms.",
       fact: proposal ? { label: proposal.title, value: `${formatCad(proposal.weeklyCents)}/wk` } : null,
       replies: ["What's owed?", "Calendar"],
@@ -369,7 +369,7 @@ export function talkHercules(
   } else if (/what should|what now|coach|advise/.test(q)) {
     topic = view.mood === "hiding" ? "health" : view.mood === "restless" ? "bills" : "coach";
     lesson = view.mood === "content" || view.mood === "glowing"
-      ? "Budgeting is milk, then bills, then treats. In that order."
+      ? "Budgeting is milk — groceries — then bills, then treats. In that order."
       : lesson;
   } else if (/overspend|overspent|over spent|spending habit|who spent|who paid/.test(q)) {
     topic = "member-spend";
@@ -400,7 +400,7 @@ export function talkHercules(
   } else if (/postcard|sit-?down|sit down|leftover/.test(q)) {
     topic = "postcard";
     const card = sitDownPostcard(household);
-    lesson = card.ready ? "The close lives on the chalkboard if you pin it." : "Leftover is cash-like minus bills and card mins. Confirm still moves.";
+    lesson = card.ready ? "Month close lives on Notes (the chalkboard) if you pin it." : "Leftover is cash-like minus bills and card mins. Confirm still moves.";
   } else if (/recap|envelope/.test(q)) {
     topic = "recap";
     lesson = "Screenshot the bubble. Don't screenshot a lecture.";
