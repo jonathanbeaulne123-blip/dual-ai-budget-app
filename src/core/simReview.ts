@@ -12,7 +12,8 @@ import {
 } from "./calendar.ts";
 import { accountBookBalance } from "./accounts.ts";
 import { isCashLikeKind } from "./accountKinds.ts";
-import { monthSummary, budgetVariance } from "./budget.ts";
+import { monthSummary } from "./budget.ts";
+import { budgetVariance } from "./statements.ts";
 import { formatCad, sumCents } from "./money.ts";
 import { projectCadence } from "./recurrence.ts";
 import { leftoverProjection } from "./sitDown.ts";
