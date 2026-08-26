@@ -24,6 +24,15 @@ describe("Hercules Pro companion assets", () => {
     expect(widget).toContain("tryAutomaticPictureInPicture();");
   });
 
+  it("keeps the manual control when the host accepts the request but stays inline", () => {
+    const widget = readFileSync(new URL("../workers/hercules-pro-ui/widget.ts", import.meta.url), "utf8");
+
+    expect(widget).toContain('window.openai?.displayMode === "pip"');
+    expect(widget).toContain('statusEl.textContent = "Tap to keep Hercules beside the chat"');
+    expect(widget).toContain("pipButton.hidden = false");
+    expect(widget).not.toContain('await bridge.requestDisplayMode({ mode: "pip" });\n    automaticPipSettled = true;\n    statusEl.textContent = "Beside your chat"');
+  });
+
   it.each([
     "/hercules-pro/companion.v1.js",
     "/hercules-pro/hercules.pro.v1.glb",
