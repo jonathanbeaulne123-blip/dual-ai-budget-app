@@ -8,6 +8,11 @@ import {
 import { handleHerculesPro } from "./herculesPro.js";
 
 const HTML_PATH = /(?:^\/$|\.html(?:$|\?))/i;
+const HERCULES_COMPANION_ASSETS = new Set([
+  "/hercules-pro/companion.v1.js",
+  "/hercules-pro/hercules.pro.v1.glb",
+  "/hercules-mark.svg",
+]);
 
 // Keep in sync with src/core/herculesPersonality.ts laws. The prompt stays on the Worker.
 const HERCULES_SYSTEM = `You are Hercules, a smug-kind Maine Coon who lives in Jonathan and Bianca's Toronto kitchen budget app, Hearth.
@@ -469,6 +474,21 @@ function isHtml(request, response) {
   if (HTML_PATH.test(new URL(request.url).pathname)) return true;
   const type = response.headers.get("content-type") || "";
   return type.includes("text/html");
+}
+
+function exposeHerculesCompanionAsset(request, response) {
+  if (!HERCULES_COMPANION_ASSETS.has(new URL(request.url).pathname)) return response;
+  const headers = new Headers(response.headers);
+  // ChatGPT MCP Apps execute on an OpenAI sandbox origin. These three immutable,
+  // public presentation assets contain no household data or credentials.
+  headers.set("Access-Control-Allow-Origin", "*");
+  headers.set("Cross-Origin-Resource-Policy", "cross-origin");
+  headers.set("X-Content-Type-Options", "nosniff");
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
 }
 
 function json(data, status = 200, extraHeaders = {}) {
@@ -1040,7 +1060,7 @@ export default {
       return json({ ok: false, error: "method" }, 405, cors);
     }
 
-    const response = await env.ASSETS.fetch(request);
+    const response = exposeHerculesCompanionAsset(request, await env.ASSETS.fetch(request));
     if (!isHtml(request, response)) return response;
 
     const headers = new Headers(response.headers);
