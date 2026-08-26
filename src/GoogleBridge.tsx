@@ -35,6 +35,7 @@ export function GoogleBridgeCard(props: {
   busy: boolean;
   onCommand: (fn: (current: Household) => CommitResult) => void;
   onError: (message: string) => void;
+  onSignOut?: () => void;
 }) {
   const { household, environment, memberId } = props;
   const google = shapeGoogle(household.google);
@@ -223,6 +224,17 @@ export function GoogleBridgeCard(props: {
       <button className="ghost" style={{ width: "100%", marginTop: 8 }} disabled={working || !configured} onClick={() => void syncNow()}>
         Sync Google now
       </button>
+      {props.onSignOut && (
+        <button
+          type="button"
+          className="ghost"
+          style={{ width: "100%", marginTop: 8 }}
+          disabled={working}
+          onClick={props.onSignOut}
+        >
+          Sign out and clear this phone
+        </button>
+      )}
       {pings.length > 0 && (
         <ul className="health" style={{ marginTop: 12 }}>
           {pings.map((ping) => (

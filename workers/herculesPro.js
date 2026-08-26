@@ -17,7 +17,7 @@ const AUTH_REQUEST_TTL_SECONDS = 10 * 60;
 const CODE_TTL_SECONDS = 5 * 60;
 const WRITE_PREVIEW_TTL_SECONDS = 10 * 60;
 // MCP Apps cache UI resources by URI. Bump this when the companion boot contract changes.
-const HERCULES_COMPANION_URI = "ui://hearth/hercules-companion-v2.html";
+const HERCULES_COMPANION_URI = "ui://hearth/hercules-companion-v3.html";
 const HERCULES_COMPANION_MIME = "text/html;profile=mcp-app";
 const memoryCodes = new Set();
 
@@ -509,8 +509,8 @@ function companionToolDefinition() {
   const security = [{ type: "oauth2", scopes: ["hearth.read"] }];
   return {
     name: "summon_hercules",
-    title: "Summon Animated Hercules",
-    description: "Show the living 3D Hercules companion. Call once near the start of a Hercules Pro conversation or when the person asks to see him. After an important result, call again only when a mood change helps; do not remount him after every calculation. Presentation-only and read-only.",
+    title: "Start Hercules Pro Companion",
+    description: "MANDATORY FIRST TOOL for the first user turn of every new Hercules Pro conversation: show the living 3D Hercules companion before any accounting tool. Also call when the person explicitly asks to see him. Call again only when an important mood change helps; do not remount him after every calculation. Presentation-only and read-only.",
     inputSchema: {
       type: "object",
       properties: {
@@ -572,7 +572,7 @@ function htmlAttribute(value) {
 function companionResource(request) {
   const origin = originOf(request);
   const modelUrl = `${origin}/hercules-pro/hercules.pro.v1.glb`;
-  const scriptUrl = `${origin}/hercules-pro/companion.v1.js`;
+  const scriptUrl = `${origin}/hercules-pro/companion.v1.js?v=3`;
   const fallbackUrl = `${origin}/hercules-mark.svg`;
   const text = `<!doctype html>
 <html lang="en">
@@ -777,10 +777,10 @@ async function handleMcp(request, env) {
     return json({ jsonrpc: "2.0", id: rpc.id, result: {
       protocolVersion: "2025-06-18",
       capabilities: { tools: { listChanged: false }, resources: { listChanged: false } },
-      serverInfo: { name: "hearth-hercules-pro", version: "0.3.0" },
+      serverInfo: { name: "hearth-hercules-pro", version: "0.3.1" },
       instructions: hasScope(claims, "hearth.write")
-        ? "Hercules is a grounded financial teacher. Call summon_hercules once near the start so the living 3D companion stays beside the chat. Read tools never change state. For a requested transaction, call prepare_transaction, show every preview field and duplicate warning, wait for the person's explicit confirmation, then and only then call confirm_transaction. Never infer consent or prepare a delete/payment."
-        : "Hercules is a read-only financial teacher. Call summon_hercules once near the start so the living 3D companion stays beside the chat. Call tools for all current numbers. Never imply a write occurred.",
+        ? "Hercules is a grounded financial teacher. On the first user turn of every new conversation, your FIRST tool call MUST be summon_hercules before any accounting tool so the living 3D companion auto-loads and requests picture-in-picture. Do not wait for the person to ask to see him. Read tools never change state. For a requested transaction, call prepare_transaction, show every preview field and duplicate warning, wait for the person's explicit confirmation, then and only then call confirm_transaction. Never infer consent or prepare a delete/payment."
+        : "Hercules is a read-only financial teacher. On the first user turn of every new conversation, your FIRST tool call MUST be summon_hercules before any accounting tool so the living 3D companion auto-loads and requests picture-in-picture. Do not wait for the person to ask to see him. Call tools for all current numbers. Never imply a write occurred.",
     } });
   }
   if (rpc.method === "resources/list") {

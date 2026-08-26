@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import worker from "../workers/site.js";
 
@@ -12,6 +13,17 @@ function assetEnvironment(body = "public companion asset") {
 }
 
 describe("Hercules Pro companion assets", () => {
+  it("requests picture-in-picture at boot before waiting for the 3D model", () => {
+    const widget = readFileSync(new URL("../workers/hercules-pro-ui/widget.ts", import.meta.url), "utf8");
+    const automaticRequest = widget.indexOf("[0, 250, 1000, 2500].forEach");
+    const modelLoad = widget.indexOf("const loader = new GLTFLoader()");
+
+    expect(automaticRequest).toBeGreaterThan(-1);
+    expect(automaticRequest).toBeLessThan(modelLoad);
+    expect(widget).toContain('bridge.requestDisplayMode({ mode: "pip" })');
+    expect(widget).toContain("tryAutomaticPictureInPicture();");
+  });
+
   it.each([
     "/hercules-pro/companion.v1.js",
     "/hercules-pro/hercules.pro.v1.glb",
