@@ -21,6 +21,10 @@ export {
 
 const OUTBOX_PREFIX = "hearth:continuity-outbox:v1:";
 const MAX_BACKOFF_MS = 60_000;
+const OUTBOX_DB_NAME = "hearth-continuity";
+const OUTBOX_STORE = "outbox";
+const STORAGE_QUOTA_MESSAGE =
+  "This phone's browser storage is full, so Hearth could not keep a share queue copy there. Your books are still saved here. Tap Retry now to send them to the cloud.";
 
 export type ContinuityIdentity = GoogleIdentitySelector;
 
@@ -63,6 +67,8 @@ type ContinuityStore = {
 
 let storeOverride: ContinuityStore | null = null;
 let nowOverride: (() => number) | null = null;
+/** Survives localStorage quota failures so Retry can still flush this session. */
+const memoryOutbox = new Map<Environment, ContinuityOutboxItem[]>();
 
 function browserStore(): ContinuityStore | null {
   if (storeOverride) return storeOverride;
@@ -86,6 +92,82 @@ export function continuityBackoffMs(attempts: number): number {
   return Math.min(MAX_BACKOFF_MS, 1_000 * (2 ** capped));
 }
 
+export function isStorageQuotaError(error: unknown): boolean {
+  if (!error) return false;
+  const name = typeof error === "object" && error && "name" in error ? String((error as { name?: string }).name) : "";
+  if (name === "QuotaExceededError" || name === "NS_ERROR_DOM_QUOTA_REACHED") return true;
+  const message = error instanceof Error ? error.message : String(error);
+  return /quota|exceeded the quota|setItem.*Storage/i.test(message);
+}
+
+/** Turn browser/storage exceptions into a household-facing share message. */
+export function humanizeContinuityError(error: unknown): string {
+  if (isStorageQuotaError(error)) return STORAGE_QUOTA_MESSAGE;
+  if (error instanceof Error && error.message.trim()) {
+    if (/Failed to execute 'setItem' on 'Storage'/i.test(error.message)) return STORAGE_QUOTA_MESSAGE;
+    return error.message;
+  }
+  const text = String(error ?? "").trim();
+  if (/Failed to execute 'setItem' on 'Storage'|quota/i.test(text)) return STORAGE_QUOTA_MESSAGE;
+  return text || "Saved on this phone. Sharing can retry from More.";
+}
+
+function openOutboxDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    if (typeof indexedDB === "undefined") {
+      reject(new Error("IndexedDB is unavailable."));
+      return;
+    }
+    const request = indexedDB.open(OUTBOX_DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(OUTBOX_STORE)) db.createObjectStore(OUTBOX_STORE);
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error ?? new Error("Could not open the continuity outbox database."));
+  });
+}
+
+async function idbReadOutbox(environment: Environment): Promise<ContinuityOutboxItem[] | null> {
+  try {
+    const db = await openOutboxDb();
+    const raw = await new Promise<unknown>((resolve, reject) => {
+      const request = db.transaction(OUTBOX_STORE, "readonly").objectStore(OUTBOX_STORE).get(key(environment));
+      request.onsuccess = () => resolve(request.result ?? null);
+      request.onerror = () => reject(request.error ?? new Error("Could not read the continuity outbox."));
+    });
+    if (!Array.isArray(raw)) return null;
+    return raw.filter(isOutboxItem).map(normalizeOutboxItem);
+  } catch {
+    return null;
+  }
+}
+
+async function idbWriteOutbox(environment: Environment, items: ContinuityOutboxItem[]): Promise<void> {
+  const db = await openOutboxDb();
+  await new Promise<void>((resolve, reject) => {
+    const transaction = db.transaction(OUTBOX_STORE, "readwrite");
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error ?? new Error("Could not save the continuity outbox."));
+    transaction.onabort = () => reject(transaction.error ?? new Error("Could not save the continuity outbox."));
+    const store = transaction.objectStore(OUTBOX_STORE);
+    if (items.length) store.put(items, key(environment));
+    else store.delete(key(environment));
+  });
+}
+
+function normalizeOutboxItem(item: ContinuityOutboxItem): ContinuityOutboxItem {
+  return {
+    ...item,
+    snapshot: ensureHouseholdShape(item.snapshot),
+    confirmationIds: Array.isArray(item.confirmationIds) ? item.confirmationIds.filter(Boolean) : [],
+    attempts: Number.isInteger(item.attempts) ? item.attempts : 0,
+    lastError: item.lastError ? humanizeContinuityError(item.lastError) : null,
+    blockedByConflict: item.blockedByConflict === true,
+    nextAttemptAt: typeof item.nextAttemptAt === "string" ? item.nextAttemptAt : null,
+  };
+}
+
 function isOutboxItem(value: unknown): value is ContinuityOutboxItem {
   if (!value || typeof value !== "object") return false;
   const item = value as ContinuityOutboxItem;
@@ -99,7 +181,7 @@ function isOutboxItem(value: unknown): value is ContinuityOutboxItem {
   );
 }
 
-function read(environment: Environment): ContinuityOutboxItem[] {
+function readFromLocal(environment: Environment): ContinuityOutboxItem[] {
   const store = browserStore();
   if (!store) return [];
   try {
@@ -107,25 +189,60 @@ function read(environment: Environment): ContinuityOutboxItem[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isOutboxItem).map((item) => ({
-      ...item,
-      snapshot: ensureHouseholdShape(item.snapshot),
-      confirmationIds: Array.isArray(item.confirmationIds) ? item.confirmationIds.filter(Boolean) : [],
-      attempts: Number.isInteger(item.attempts) ? item.attempts : 0,
-      lastError: item.lastError || null,
-      blockedByConflict: item.blockedByConflict === true,
-      nextAttemptAt: typeof item.nextAttemptAt === "string" ? item.nextAttemptAt : null,
-    }));
+    return parsed.filter(isOutboxItem).map(normalizeOutboxItem);
   } catch {
     return [];
   }
 }
 
+function read(environment: Environment): ContinuityOutboxItem[] {
+  const local = readFromLocal(environment);
+  const mem = memoryOutbox.get(environment);
+  if (!mem?.length) return local;
+  if (!local.length) return mem;
+  // Tests may mutate the injected store after enqueue; prefer that view when overridden.
+  // Production quota path keeps memory ahead of a stale/partial localStorage copy.
+  if (storeOverride) return local;
+  return mem;
+}
+
 function write(environment: Environment, items: ContinuityOutboxItem[]): void {
+  memoryOutbox.set(environment, items);
   const store = browserStore();
-  if (!store) throw new Error("This device could not open its continuity outbox.");
-  if (items.length) store.setItem(key(environment), JSON.stringify(items));
-  else store.removeItem(key(environment));
+  if (!store) {
+    void idbWriteOutbox(environment, items).catch(() => undefined);
+    return;
+  }
+  try {
+    if (items.length) store.setItem(key(environment), JSON.stringify(items));
+    else store.removeItem(key(environment));
+  } catch (caught) {
+    if (isStorageQuotaError(caught)) {
+      // Memory keeps the queue for this session; IndexedDB is the durable backup.
+      void idbWriteOutbox(environment, items).catch(() => undefined);
+      return;
+    }
+    throw new Error(humanizeContinuityError(caught));
+  }
+  void idbWriteOutbox(environment, items).catch(() => undefined);
+}
+
+/** Load a durable IndexedDB outbox when localStorage was emptied by quota. */
+export async function hydrateContinuityOutbox(environment: Environment): Promise<number> {
+  if (memoryOutbox.has(environment) && (memoryOutbox.get(environment)?.length ?? 0) > 0) {
+    return memoryOutbox.get(environment)?.length ?? 0;
+  }
+  const local = readFromLocal(environment);
+  if (local.length) {
+    memoryOutbox.set(environment, local);
+    return local.length;
+  }
+  const fromIdb = await idbReadOutbox(environment);
+  if (fromIdb?.length) {
+    memoryOutbox.set(environment, fromIdb);
+    return fromIdb.length;
+  }
+  return 0;
 }
 
 function sameIdentity(left: ContinuityIdentity, right: ContinuityIdentity): boolean {
@@ -137,6 +254,7 @@ function sameIdentity(left: ContinuityIdentity, right: ContinuityIdentity): bool
 
 export function setContinuityStore(store: ContinuityStore | null): void {
   storeOverride = store;
+  memoryOutbox.clear();
 }
 
 export function setContinuityNow(now: (() => number) | null): void {
@@ -282,7 +400,7 @@ function pendingItem(item: ContinuityOutboxItem, message: string, blockedByConfl
     ...item,
     attempts,
     updatedAt: new Date(nowMs()).toISOString(),
-    lastError: message,
+    lastError: humanizeContinuityError(message),
     blockedByConflict,
     nextAttemptAt,
   };
@@ -326,7 +444,7 @@ async function flushItem(
     acknowledgeContinuityOutboxItem(item);
     return { kind: "synchronized", revision: item.snapshot.revision };
   } catch (caught) {
-    const message = caught instanceof Error ? caught.message : String(caught);
+    const message = humanizeContinuityError(caught);
     pendingItem(item, message);
     return { kind: "pending", message };
   }
@@ -355,7 +473,7 @@ export async function transportHouseholdWithOutbox(input: {
     return {
       ok: false,
       errorClass: "pending-transport",
-      message: caught instanceof Error ? caught.message : String(caught),
+      message: humanizeContinuityError(caught),
     };
   }
   if (input.flush === false) {
@@ -384,9 +502,30 @@ export async function flushContinuityOutbox(input: {
   config?: SupabaseConfig | null;
   /** Bypass nextAttemptAt backoff (manual retry / tests). Conflicts still stay blocked. */
   force?: boolean;
+  /**
+   * When the durable queue is empty (e.g. localStorage quota dropped it), Retry can
+   * still push the live in-memory household by seeding one outbox item first.
+   */
+  liveHousehold?: Household;
+  expectedRevision?: number;
+  confirmationId?: string;
 }): Promise<ContinuityFlushResult> {
+  await hydrateContinuityOutbox(input.environment);
+  let items = read(input.environment).filter((item) => sameIdentity(item.identity, input.identity));
+  if (!items.length && input.liveHousehold && input.force) {
+    try {
+      enqueueContinuitySnapshot({
+        household: input.liveHousehold,
+        identity: input.identity,
+        expectedRevision: input.expectedRevision ?? input.liveHousehold.baseRevision ?? 0,
+        confirmationId: input.confirmationId ?? `retry-${input.liveHousehold.householdId}-${Date.now()}`,
+      });
+      items = read(input.environment).filter((item) => sameIdentity(item.identity, input.identity));
+    } catch {
+      /* enqueue already humanizes; leave empty so caller can surface the message */
+    }
+  }
   const result: ContinuityFlushResult = { synchronized: 0, pending: 0, deferred: 0, conflicts: [] };
-  const items = read(input.environment).filter((item) => sameIdentity(item.identity, input.identity));
   for (const item of items) {
     if (item.blockedByConflict) {
       result.pending += 1;

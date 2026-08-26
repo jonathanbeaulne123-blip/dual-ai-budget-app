@@ -6,6 +6,7 @@ import {
   type CommandSurfaceState,
 } from "./claude/commandContract.ts";
 import type { CommandOutcome } from "./core/commandOutcome.ts";
+import { humanizeContinuityError } from "./continuity.ts";
 
 export type CommandChromeContext = {
   offline?: boolean;
@@ -201,8 +202,10 @@ export function renderCommandChrome(state: CommandSurfaceState, ctx: CommandChro
       banner: pendingBannerVisible(state, ctx)
         ? {
             primary: "Saved here. Not shared yet.",
-            secondary: ctx.lastError ?? "Hearth will retry when you're back online.",
-            actionLabel: "Review pending",
+            secondary: ctx.lastError
+              ? humanizeContinuityError(ctx.lastError)
+              : "Hearth will retry when you're back online.",
+            actionLabel: "Retry now",
             tone: "warning",
           }
         : null,

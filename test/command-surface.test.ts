@@ -39,13 +39,19 @@ describe("renderCommandChrome", () => {
     expect(offline.chip?.primary).toBe("Waiting to share");
     expect(offline.chip?.secondary).toBe("· offline");
     expect(offline.banner?.primary).toBe("Saved here. Not shared yet.");
-    expect(offline.banner?.actionLabel).toBe("Review pending");
+    expect(offline.banner?.actionLabel).toBe("Retry now");
 
     const failed = renderCommandChrome(COMMAND_SURFACE_FIXTURES["pending-transport"], {
       lastError: "Share paused after three tries.",
     });
     expect(failed.chip?.primary).toBe("Waiting to share");
     expect(failed.banner?.secondary).toBe("Share paused after three tries.");
+
+    const quota = renderCommandChrome(COMMAND_SURFACE_FIXTURES["pending-transport"], {
+      lastError: "Failed to execute 'setItem' on 'Storage': Setting the value of 'hearth:continuity-outbox:v1:development' exceeded the quota.",
+    });
+    expect(quota.banner?.secondary).toMatch(/browser storage is full/i);
+    expect(quota.banner?.actionLabel).toBe("Retry now");
   });
 
   it("maps conflict to blocking banner and assertive announcement", () => {
