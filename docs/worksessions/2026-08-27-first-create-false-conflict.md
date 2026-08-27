@@ -7,7 +7,7 @@
 - **Repository:** jonathanbeaulne123-blip/dual-ai-budget-app
 - **Branch:** `cursor/first-create-false-conflict-5958`
 - **Baseline SHA:** `4009b6cf80ee95f3226a01c52d4cba61d4053603` (`main`, invite-owner merge)
-- **Head SHA:** (see latest commit on branch)
+- **Head SHA:** `824ba668d90d129d4d24b79aa39825ea46a4a46c`
 - **PR or issue:** draft PR #210
 - **Risk:** High (hosted CAS / first-create retry; money meaning unchanged)
 - **Decision owner:** Jonathan
