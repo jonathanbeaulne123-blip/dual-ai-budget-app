@@ -7,6 +7,7 @@ import {
   bookBalanceAsOf,
   herculesLedgerSourcePane,
   catalogHousehold,
+  nameHouseholdLedgers,
   parseHerculesReadToolPlan,
   planHerculesReadTools,
   postEntry,
@@ -35,6 +36,28 @@ describe("Hercules read-only tool brain", () => {
     expect(plan.calls[0]?.args).not.toHaveProperty("sql");
     expect(plan.calls[2]?.args.horizonDays).toBe(90);
     expect(parseHerculesReadToolPlan("```json\n{}\n```").calls).toEqual([]);
+  });
+
+  it("reads household, ledger, member, and visible bank account names through ledger_context", () => {
+    const household = nameHouseholdLedgers(seedDemoHousehold({ today, environment: "development" }), {
+      householdName: "The North House",
+      sharedLedgerName: "Kitchen Books",
+      personalLedgerName: "Bianca's Quiet Books",
+      personalMemberId: "MEM-001",
+    });
+    const run = executeHerculesReadToolPlan(household, {
+      calls: [{ name: "ledger_context", args: {} }],
+    }, today, { memberId: "MEM-001", view: "household" });
+    expect(run.results).toHaveLength(1);
+    expect(run.results[0]?.status).toBe("ok");
+    expect(run.results[0]?.sentence).toMatch(/The North House/);
+    expect(run.results[0]?.sentence).toMatch(/Kitchen Books/);
+    expect(run.results[0]?.sentence).toMatch(/Bianca's Quiet Books/);
+    expect(run.results[0]?.facts.some((fact) => fact.label === "Household" && fact.value === "The North House")).toBe(true);
+    expect(run.results[0]?.facts.some((fact) => fact.label === "Shared ledger" && fact.value === "Kitchen Books")).toBe(true);
+    expect(run.results[0]?.facts.some((fact) => fact.label === "Your personal ledger" && fact.value === "Bianca's Quiet Books")).toBe(true);
+    expect(run.results[0]?.facts.some((fact) => fact.label === "Visa")).toBe(true);
+    expect(run.results[0]?.facts.every((fact) => fact.label !== "Jonathan's Personal Ledger")).toBe(true);
   });
 
   it("executes composite questions without mutating the household and attaches exact sources", () => {

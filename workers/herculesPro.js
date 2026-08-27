@@ -37,6 +37,7 @@ const SHIFT_DIAGNOSTIC_TOOLS = new Set([
 ]);
 
 const TOOL_CATALOG = [
+  ["ledger_context", "Read the household name, shared and personal ledger names, connected member, and visible bank account names."],
   ["account_balance", "Read one visible account balance or list visible accounts."],
   ["find_transactions", "Find posted rows by merchant, account, category, member, period, or amount."],
   ["spending_summary", "Total expenses less refunds for a period, optionally filtered."],
@@ -141,6 +142,7 @@ const TOOL_PROPERTIES = {
 };
 
 const TOOL_PROPERTY_NAMES = {
+  ledger_context: ["view"],
   account_balance: ["view", "account"],
   find_transactions: ["view", "period", "from", "to", "member", "account", "category", "merchant", "minimumAmountCents", "maximumAmountCents", "limit"],
   spending_summary: ["view", "period", "from", "to", "member", "account", "category", "merchant"],

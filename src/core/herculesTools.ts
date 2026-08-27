@@ -27,6 +27,7 @@ import {
   budgetVariance,
 } from "./statements.ts";
 import { accountRegister, booksEquation, compileHousehold, trialBalance } from "./journal.ts";
+import { ledgerNameForView, shapeLedgerNames } from "./ledgerNames.ts";
 import { householdForHerculesContext, householdForShiftReadTools } from "./visibility.ts";
 import type { HerculesAskContext } from "./askBooks.ts";
 import type { HerculesGroundedFact, HerculesNumberSource } from "./herculesProvenance.ts";
@@ -51,6 +52,7 @@ import {
 import type { WeatherGlass } from "./weather.ts";
 
 export const HERCULES_READ_TOOL_NAMES = [
+  "ledger_context",
   "account_balance",
   "find_transactions",
   "spending_summary",
@@ -144,6 +146,7 @@ export type HerculesReadToolRun = {
 };
 
 export const HERCULES_READ_TOOL_CATALOG: ReadonlyArray<{ name: HerculesReadToolName; description: string }> = [
+  { name: "ledger_context", description: "Read the household name, shared and personal ledger names, connected member, and visible bank account names." },
   { name: "account_balance", description: "Read one visible account balance or the visible account list." },
   { name: "find_transactions", description: "Find posted rows by merchant, account, category, member, date period, or amount bounds." },
   { name: "spending_summary", description: "Total expenses less refunds for a period, optionally filtered." },
@@ -263,6 +266,7 @@ function cleanArgs(name: HerculesReadToolName, raw: unknown): Record<string, unk
       category: common.category,
     };
   }
+  if (name === "ledger_context") return {};
   if (name === "account_balance") return { account: common.account };
   if (name === "goal_progress") return { goal: cleanString(input.goal) };
   if (name === "category_breakdown") {
@@ -527,6 +531,35 @@ function journalSource(
 }
 
 function executeCall(household: Household, call: HerculesReadToolCall, today: DateKey, context: HerculesAskContext): HerculesReadToolResult {
+  if (call.name === "ledger_context") {
+    const member = household.members.find((row) => row.id === context.memberId && row.active);
+    const names = shapeLedgerNames(household.ledgerNames, household.members);
+    const activeLedger = ledgerNameForView(household, context.memberId, context.view);
+    const accounts = visibleAccounts(household, context);
+    const source = toolSource(context, "Ledger context");
+    const facts = [
+      fact(call, 0, "Household", household.name, source),
+      fact(call, 1, "Shared ledger", names.shared, source),
+      fact(call, 2, "Your personal ledger", names.personal[context.memberId] ?? "Personal Ledger", toolSource(context, "Personal ledger name")),
+      fact(call, 3, "Active ledger", activeLedger, source),
+      fact(call, 4, "Connected member", member?.name ?? context.memberId, source),
+      ...accounts.map((account, index) => fact(
+        call,
+        5 + index,
+        account.name,
+        `${account.kind}${account.institution ? ` · ${account.institution}` : ""}${account.last4 ? ` ···${account.last4}` : ""} · ${formatCad(accountBookBalance(household, account.id, today))}`,
+        toolSource(context, `Open ${account.name}`, { accountId: account.id, surface: "accounts", to: today }),
+      )),
+    ];
+    return {
+      callId: call.id,
+      name: call.name,
+      status: "ok",
+      sentence: `Household “${household.name}” uses “${names.shared}” for shared books and “${names.personal[context.memberId] ?? "Personal Ledger"}” for your personal ledger. You are on “${activeLedger}” as ${member?.name ?? "this member"} with ${accounts.length} visible bank account${accounts.length === 1 ? "" : "s"}.`,
+      facts,
+    };
+  }
+
   if (call.name === "account_balance") {
     const accounts = visibleAccounts(household, context);
     const accountQuery = cleanString(call.args.account);
