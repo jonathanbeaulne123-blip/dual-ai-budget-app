@@ -1,5 +1,21 @@
 # AI Task and Handoff Standard
 
+## Tip-sheet provider choice + clarity-gated camera (D-152) (2026-08-27)
+
+**Status:** PR open on `cursor/scan-provider-clarity-gate-403c`. Risk: **Medium**. Development only; Confirm still posts; OCR never auto-posts.
+
+**Household outcome:** On Shift tip-sheet scan, choose **Auto / Workers AI / OpenAI / Anthropic**. Live camera capture stays locked until the slip looks sharp and readable (QR-scanner style). Choose-photo applies the same clarity check.
+
+**Budget delta (5):** `+1` — fewer unusable OCR drafts; invent-nothing boundary unchanged.
+
+**Engagement delta (3):** `+2` — clearer camera UX and explicit provider control for dense tip sheets.
+
+**What changed:** Provider chips + local preference; `/documents/scan` honors forced provider without silent fall-through; `DocumentCamera` live clarity meter; Choose-photo clarity gate; D-152 why-note.
+
+**Verification:** `pnpm check` → **954 passed / 2 skipped**.
+
+**Next owner:** Jonathan — review PR, then say if merge/deploy. Hard-refresh after deploy; Shift → tip sheet → try providers; confirm Capture stays disabled until clear.
+
 ## Native 7shifts Timesheet inbox (D-155) (2026-08-27)
 
 **Status:** Release branch `codex/d152-shifts-release`, based on current `main`; user-authorized two-stage Development release in progress. Risk: **Release**. Production provider access remains refused.

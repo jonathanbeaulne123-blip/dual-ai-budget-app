@@ -107,6 +107,32 @@ describe("shift-report Confirm draft mapping", () => {
     expect(JSON.stringify(mapped)).not.toMatch(/Alex|Priya/i);
   });
 
+  it("forwards an explicit vision provider and omits auto from the request body", async () => {
+    const fetcher = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body)) as { documentHint?: string; provider?: string };
+      expect(body.documentHint).toBe("shift-report");
+      expect(body.provider).toBe("openai");
+      return new Response(JSON.stringify({ ok: true, provider: "openai", result: shiftResult }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    const file = new File([new Uint8Array([4, 5, 6])], "tips.jpg", { type: "image/jpeg" });
+    const mapped = await scanShiftReportFile(file, fetcher as typeof fetch, undefined, "openai");
+    expect(mapped.provider).toBe("openai");
+    expect(mapped.draft?.sales).toBe(1245);
+
+    const autoFetcher = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body)) as { provider?: string };
+      expect(body.provider).toBeUndefined();
+      return new Response(JSON.stringify({ ok: true, provider: "workers-ai", result: shiftResult }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    await scanShiftReportFile(file, autoFetcher as typeof fetch, undefined, "auto");
+  });
+
   it("maps Toast Employee Shift Report food/alcohol classes into Confirm salesByField", () => {
     const mapped = workShiftDraftFromVision({
       documentKind: "shift-report",
