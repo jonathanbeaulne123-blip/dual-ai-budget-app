@@ -266,7 +266,8 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 
 #### Tier 4 — Normalized hosted journal — SPECULATIVE / research
 
-- [ ] **T4-S1–S4** Tenant journal design through Production cutover runbook. *([`briefs/sync/`](briefs/sync/README.md).)*
+- [x] **T4-S1** Tenant journal identity design (composite keys; no apply). *([`T4-S1`](briefs/sync/T4-S1-tenant-journal-design.md); living [`SYNC_TENANT_JOURNAL_DESIGN.md`](SYNC_TENANT_JOURNAL_DESIGN.md).)*
+- [ ] **T4-S2–S4** Incremental pull, compaction, Production cutover runbook. *([`briefs/sync/`](briefs/sync/README.md).)*
 
 **Risk/gate:** lost updates, duplicate posts, wrong scope, false “synced,” Realtime bypassing PGlite accept.  
 **Proof:** SYNC_ARCHITECTURE §8 test matrix; Tier 1 gates G1–G6; trust + books auditors on money transport.  

@@ -1,22 +1,42 @@
 # AI Task and Handoff Standard
 
+## T4-S1 tenant journal design (2026-08-27)
+
+**Status:** Branch `cursor/t4-s1-tenant-journal-design-403c` (draft PR). Risk: **High** (architecture — **design only**).
+
+**Household outcome:** Hosted journal facts will use `(environment, household_id, id)` so multi-tenant Postgres cannot collide bare device ids. No live transport or schema apply in this slice.
+
+**Budget delta (5):** `+2` — prerequisite identity for incremental journal pull.
+
+**Engagement delta (3):** `0`
+
+**What changed:** `docs/SYNC_TENANT_JOURNAL_DESIGN.md`; worksession; roadmap/SYNC_ARCHITECTURE/README pointers.
+
+**Note:** There is **no T3-S5** — Tier 3 ended at T3-S4. This slice is the next sync brief (T4-S1).
+
+**Verification:** Design acceptance checklist in the doc; books-auditor **PASS WITH NOTES** (P1 FK graph + rebuild fail-closed folded into design); ai-architect **PASS WITH NOTES** (Q1–Q3 closures recorded). Docs-only — no `pnpm check` delta required.
+
+**Auditors:** books + architect notes incorporated in follow-up commit on this branch.
+
+**Data/environment:** none — no schema, secrets, Production, or deploy.
+
+**Next owner:** Jonathan — review design; open T4-S2 only with explicit go-ahead or month-scale JSON pain.
+
 ## T3-S4 scale envelope (2026-08-27)
 
-**Status:** Branch `cursor/t3-s4-scale-envelope-403c` (draft PR). Risk: **Medium** (policy + scheduling honesty; no money meaning change).
+**Status:** Merged via #205 onto `main`; kitchen deploy Version `662114da-ef34-43a6-848e-d8283c8d9530` verified (`SCALE_PULL_BANDS` live). Risk: **Medium**.
 
 **Household outcome:** Named 2–9 / 10–49 / 50–100 poll bands with Realtime primary; D-121 chat limits untouched; explicit refusal to claim 100-person Production on poll alone.
 
-**Budget delta (5):** `+1` — calmer REST under larger N when Realtime is down.
+**Budget delta (5):** `+1`
 
-**Engagement delta (3):** `0` — honesty/docs; no new interactable.
+**Engagement delta (3):** `0`
 
-**What changed:** `continuityLivePull.ts` (`SCALE_PULL_BANDS`, `scaleEnvelopeClaim`, `activeMemberCountHint`); App recomputes band each poll tick; `SYNC_ARCHITECTURE` scale table + load-test notes; live-pull tests.
+**What changed:** `continuityLivePull.ts` bands + claim helper; App tick recomputes band; `SYNC_ARCHITECTURE` scale table.
 
-**Verification:** `pnpm exec vitest run test/live-pull-dual-use.test.ts test/continuity-resume.test.ts` → 22 pass; full `pnpm check` → 857 pass.
+**Verification:** `pnpm check` 857 on PR; live bundle contains `minMembers:50,intervalMs:8e3`.
 
-**Data/environment:** Development client/docs only. No schema, secrets, Production, or D-121 retune.
-
-**Next owner:** Jonathan — review/merge; no 100-person load harness in this slice.
+**Next owner:** Done on main.
 
 ## T3-S3 background sync polish (2026-08-27)
 
