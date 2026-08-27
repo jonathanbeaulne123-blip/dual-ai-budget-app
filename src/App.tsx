@@ -241,9 +241,17 @@ import { WorkShiftHistoryCard } from "./WorkShiftHistory.tsx";
 import { WorkReportCard } from "./WorkReport.tsx";
 import { DuePreviewSheet } from "./DuePreviewSheet.tsx";
 import {
+  renderCommandChrome,
   renderCommandSurface,
   type CommandChromeResult,
 } from "./commandSurface.tsx";
+import { COMMAND_SURFACE_FIXTURES } from "./claude/commandContract.ts";
+import { CommandProgressStatus } from "./CommandProgressStatus.tsx";
+import {
+  buildCommandProgress,
+  commandProgressPhaseAfterOutcome,
+  type CommandProgressPhase,
+} from "./commandProgress.ts";
 import { clearSyncAnchor, saveSyncAnchor } from "./syncAnchor.ts";
 import { SyncFreshnessStatus } from "./SyncFreshnessStatus.tsx";
 import { buildSyncFreshness, sharedHouseholdFreshnessCopy, suppressesCommandSyncChrome } from "./syncFreshness.ts";
@@ -394,6 +402,7 @@ export function App() {
     revision: number;
   } | null>(null);
   const [commandChrome, setCommandChrome] = useState<CommandChromeResult | null>(null);
+  const [commandProgressPhase, setCommandProgressPhase] = useState<CommandProgressPhase>("idle");
   const [offline, setOffline] = useState(() => typeof navigator !== "undefined" && !navigator.onLine);
   const [discoveredLedgers, setDiscoveredLedgers] = useState<DiscoveredHousehold[]>([]);
   const [supabaseAuthReturned, setSupabaseAuthReturned] = useState(false);
@@ -1271,6 +1280,19 @@ export function App() {
     ),
     [syncFreshnessDisplay, commandChrome?.chip?.primary, commandChrome?.banner?.primary],
   );
+  const commandProgressDisplay = useMemo(
+    () => buildCommandProgress({
+      phase: commandProgressPhase,
+      transportRequested: Boolean(household?.linked && hostedContinuityAllowed(environment)),
+    }),
+    [commandProgressPhase, household?.linked, environment],
+  );
+
+  useEffect(() => {
+    if (commandProgressPhase !== "cloud-ack") return undefined;
+    const timer = window.setTimeout(() => setCommandProgressPhase("idle"), 4000);
+    return () => window.clearTimeout(timer);
+  }, [commandProgressPhase]);
 
   useEffect(() => {
     setLastReconcile(null);
@@ -1520,6 +1542,17 @@ export function App() {
     confirmationRef.current = confirmationId;
     const ledgerWrite = isLedgerWrite(token);
     const memberId = actorId ?? session?.memberId;
+    const shareCapable = Boolean(previous?.linked && hostedContinuityAllowed(environment) && memberId);
+    if (shareCapable && ledgerWrite) {
+      setCommandProgressPhase("confirming");
+      setCommandChrome(renderCommandChrome(COMMAND_SURFACE_FIXTURES.saving, {
+        amountLabel: lastAmountLabelRef.current,
+        ledgerName: previous?.name ?? null,
+        ledgerWrite,
+      }));
+    } else {
+      setCommandProgressPhase("idle");
+    }
     try {
       const googleSession = memberId ? loadGoogleSession(environment, memberId) : null;
       const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
@@ -1584,6 +1617,7 @@ export function App() {
         ledgerWrite,
       });
       setCommandChrome(chrome);
+      setCommandProgressPhase(commandProgressPhaseAfterOutcome(outcome, transportRequested));
       if (outcome.kind === "synchronized") {
         saveSyncAnchor(environment, outcome.household);
         const who = memberId;
@@ -1667,6 +1701,12 @@ export function App() {
             await saveHousehold(synced, { operatingEnvironment: environment, memberId: who });
             setHousehold(synced);
             setSyncState("synced");
+            setCommandProgressPhase("cloud-ack");
+            setCommandChrome(renderCommandChrome(COMMAND_SURFACE_FIXTURES.synchronized, {
+              amountLabel: lastAmountLabelRef.current,
+              ledgerName: synced.name,
+              ledgerWrite: true,
+            }));
           })
           .catch(() => undefined);
       }
@@ -1717,6 +1757,7 @@ export function App() {
       }
       return outcome;
     } catch (caught) {
+      if (shareCapable && ledgerWrite) setCommandProgressPhase("failed");
       if (caught instanceof NeedsConfirmationError) throw caught;
       setError(classifyCommandError(caught).userMessage);
       return null;
@@ -2555,6 +2596,7 @@ export function App() {
           void retryShareNow();
         }}
       />
+      <CommandProgressStatus display={commandProgressDisplay} />
       {commandChrome?.chip && !syncChromeSuppression.hideChip && (
         <div
           className={`command-chip command-chip--${commandChrome.chip.tone}`}
@@ -4090,7 +4132,7 @@ export function App() {
       )}
 
       <p className="sr-only" role="status" aria-live="polite">
-        {commandChrome?.liveAnnouncement ?? ""}
+        {commandProgressDisplay.liveAnnouncement ?? commandChrome?.liveAnnouncement ?? ""}
       </p>
 
       {toast && commandChrome?.toast && (

@@ -1,5 +1,23 @@
 # AI Task and Handoff Standard
 
+## T3-S1 optimistic command chrome (2026-08-27)
+
+**Status:** Branch `cursor/t3-s1-optimistic-command-chrome-403c` (draft PR). Risk: **Medium** (UX only; CommandOutcome unchanged).
+
+**Household outcome:** Linked Development confirms feel instant: Saving → This phone → Cloud → Household progress rail; success toast still waits for PGlite accept; background flush upgrades chip to Up to date.
+
+**Budget delta (5):** `+1` — honest progressive sync chrome reduces false “posted to cloud” belief.
+
+**Engagement delta (3):** `+2` — confirm path feels responsive without celebrating before books accept.
+
+**What changed:** `commandProgress.ts`, `CommandProgressStatus.tsx`, `App.tsx` commit/flush wiring, styles, `test/command-progress.test.ts`.
+
+**Verification:** `pnpm exec vitest run test/command-progress.test.ts test/command-surface.test.ts` → 12 pass; `pnpm check` green.
+
+**Data/environment:** Development client only. No schema, secrets, Production, or deploy.
+
+**Next owner:** Jonathan — merge PR; manual confirm on linked Development household (post expense, watch progress rail).
+
 ## Auto-resolve sync conflicts — no blocking modal (2026-08-27)
 
 **Status:** Branch `cursor/auto-sync-conflict-resolve-12ce`, draft PR. Risk: **Medium** (sync UX + conflict resolution policy).
