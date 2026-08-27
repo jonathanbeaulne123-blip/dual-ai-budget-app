@@ -55,6 +55,14 @@ describe("continuityTransportLabel", () => {
       offline: true,
     })).toEqual({ primary: "Offline", mode: "offline" });
   });
+
+  it("shows Connecting when Realtime is joining", () => {
+    expect(continuityTransportLabel({
+      realtimeEnabled: true,
+      realtimeStatus: "JOINING",
+      offline: false,
+    })).toEqual({ primary: "Connecting…", mode: "connecting" });
+  });
 });
 
 describe("inferLastSharedActor", () => {

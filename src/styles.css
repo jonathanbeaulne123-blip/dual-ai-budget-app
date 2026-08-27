@@ -552,7 +552,7 @@ input, select, textarea {
 }
 .sync-freshness__actor {
   color: var(--muted);
-  max-width: 14ch;
+  max-width: 22ch;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -920,17 +920,6 @@ input, select, textarea {
   border-radius: 99px;
   margin-right: 4px;
   vertical-align: middle;
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  border: 0;
 }
 
 .daily-hearth { margin-bottom: 8px; }

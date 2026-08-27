@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { freshnessUpdatedLine, type SyncFreshnessDisplay } from "./syncFreshness.ts";
 
 type Props = {
@@ -20,22 +20,10 @@ export function SyncFreshnessStatus({ display }: Props) {
     ? freshnessUpdatedLine(display.updatedAtIso, new Date())
     : null;
 
-  const statusSummary = useMemo(() => [
-    display.transportPrimary,
-    display.revisionLine,
-    updatedLine,
-    display.actorLine,
-    display.sourceLine,
-  ].filter(Boolean).join(". "), [
-    display.transportPrimary,
-    display.revisionLine,
-    display.actorLine,
-    display.sourceLine,
-    updatedLine,
-  ]);
-
   if (!display.visible) return null;
 
+  // Visible children alone speak for the live region — no parallel sr-only
+  // summary, which would double-announce under aria-atomic.
   return (
     <div
       className={`sync-freshness sync-freshness--${display.tone} sync-freshness--${display.transportMode}`}
@@ -53,12 +41,13 @@ export function SyncFreshnessStatus({ display }: Props) {
         <span className="sync-freshness__updated">{updatedLine}</span>
       )}
       {display.actorLine && (
-        <span className="sync-freshness__actor">{display.actorLine}</span>
+        <span className="sync-freshness__actor" title={display.actorLine}>
+          {display.actorLine}
+        </span>
       )}
       {display.sourceLine && (
         <span className="sync-freshness__source muted">{display.sourceLine}</span>
       )}
-      <span className="sr-only">{statusSummary}</span>
     </div>
   );
 }
