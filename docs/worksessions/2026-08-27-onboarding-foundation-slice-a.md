@@ -72,12 +72,20 @@ Reusable onboarding coordinator and interaction primitives so Hercules-led first
 
 ## Evidence log
 
+- Baseline: `main@001fa6c`
+- Head: `00b49fb` (pre-check docs tip may advance)
+- `pnpm exec vitest run test/onboarding-foundation.test.ts` → 15 passed
+- `pnpm check` → 897 passed / 2 skipped; build green
+- PR: https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/216
+
 ## Decisions
+
+- D-153 records Slice A foundation behind `VITE_ONBOARDING_FOUNDATION`.
 
 ## Remaining uncertainty
 
-Scene content and Hercules walk animation remain Slice B+.
+Scene content and Hercules walk animation remain Slice B+. Flag defaults off.
 
 ## Handoff
 
-GPT review before merge; Jonathan merge/deploy only after review.
+GPT review on PR #216; Jonathan merge/deploy only after review. Not shipped.
