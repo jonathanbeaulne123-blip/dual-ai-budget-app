@@ -22,15 +22,22 @@ export function shouldUsePollFallback(
   return status !== "SUBSCRIBED";
 }
 
+/** Tier 1 Realtime matches Migration 012 — Development only until October cutover. */
+export function continuityRealtimeAllowed(environment: Environment): boolean {
+  return environment === "development";
+}
+
 export function canAttachContinuityRealtime(input: {
   enabled?: boolean;
   authSessionPresent: boolean;
   membershipResolved: boolean;
   hostedAllowed: boolean;
   hasHousehold: boolean;
+  environment: Environment;
 }): boolean {
   const enabled = input.enabled ?? continuityRealtimeEnabled();
   return enabled
+    && continuityRealtimeAllowed(input.environment)
     && input.authSessionPresent
     && input.membershipResolved
     && input.hostedAllowed

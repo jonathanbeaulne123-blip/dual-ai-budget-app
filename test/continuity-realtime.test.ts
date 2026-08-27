@@ -2,6 +2,7 @@ import { describe, expect, it, vi, afterEach } from "vitest";
 import {
   attachContinuityRealtime,
   canAttachContinuityRealtime,
+  continuityRealtimeAllowed,
   continuityRealtimeEnabled,
   shouldUsePollFallback,
   type ContinuityRealtimeDeps,
@@ -40,35 +41,39 @@ describe("shouldUsePollFallback", () => {
 });
 
 describe("canAttachContinuityRealtime", () => {
-  it("requires auth session, membership, hosted allowance, and household", () => {
-    expect(canAttachContinuityRealtime({
+  it("requires auth session, membership, hosted allowance, household, and Development environment", () => {
+    const base = {
       enabled: true,
       authSessionPresent: true,
       membershipResolved: true,
       hostedAllowed: true,
       hasHousehold: true,
-    })).toBe(true);
+      environment: "development" as const,
+    };
+    expect(canAttachContinuityRealtime(base)).toBe(true);
     expect(canAttachContinuityRealtime({
-      enabled: true,
+      ...base,
       authSessionPresent: false,
-      membershipResolved: true,
-      hostedAllowed: true,
-      hasHousehold: true,
     })).toBe(false);
     expect(canAttachContinuityRealtime({
-      enabled: true,
-      authSessionPresent: true,
+      ...base,
       membershipResolved: false,
-      hostedAllowed: true,
-      hasHousehold: true,
     })).toBe(false);
     expect(canAttachContinuityRealtime({
+      ...base,
       enabled: false,
-      authSessionPresent: true,
-      membershipResolved: true,
-      hostedAllowed: true,
-      hasHousehold: true,
     })).toBe(false);
+    expect(canAttachContinuityRealtime({
+      ...base,
+      environment: "production",
+    })).toBe(false);
+  });
+});
+
+describe("continuityRealtimeAllowed", () => {
+  it("matches Migration 012 — Development only until October cutover", () => {
+    expect(continuityRealtimeAllowed("development")).toBe(true);
+    expect(continuityRealtimeAllowed("production")).toBe(false);
   });
 });
 

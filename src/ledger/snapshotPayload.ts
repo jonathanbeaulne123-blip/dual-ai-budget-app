@@ -153,9 +153,17 @@ export async function encodeSharedSnapshotPayload(household: unknown): Promise<s
   return raw;
 }
 
-/** Personal / opaque envelopes may gzip; server does not cast them as shared household JSON. */
+/** Personal / opaque envelopes may gzip for legacy REST upserts and outbox slimming. */
 export async function encodeHouseholdPayload(household: unknown): Promise<string> {
   return (await encodeJsonPayload(household)).text;
+}
+
+/**
+ * Personal envelope for Migration 012 `publish_continuity_snapshot` — always plain JSON
+ * so `payload_is_member_personal` can read `kind` and `memberId`.
+ */
+export async function encodePersonalEnvelopePayload(envelope: unknown): Promise<string> {
+  return JSON.stringify(envelope);
 }
 
 export async function decodeHouseholdPayload(raw: string | object): Promise<unknown> {

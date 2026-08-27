@@ -56,6 +56,39 @@ describe("D-145 snapshot payload codec", () => {
     });
   });
 
+  it("keeps personal envelopes plain for Migration 012 payload_is_member_personal", async () => {
+    const { encodePersonalEnvelopePayload, isSnapshotPayloadEnvelope } = await import("../src/ledger/snapshotPayload.ts");
+    const { personalReplicaForMember } = await import("../src/core/sync.ts");
+    let household = linkGoogleIdentity(catalogHousehold(), {
+      memberId: "MEM-001",
+      email: "jonathan@example.com",
+      subject: "google-sub-jonathan",
+      displayName: "Jonathan",
+      grantedScopes: ["openid", "email"],
+    }).household;
+    for (let i = 0; i < 12; i += 1) {
+      household = postEntry(household, {
+        date: "2026-08-24",
+        type: "expense",
+        amount: "12.34",
+        accountId: "ACC-VISA",
+        subcategoryId: "SUB-FOOD-GROCERIES",
+        note: `Personal atomic publish line ${i} with enough text to exceed gzip threshold`,
+        createdBy: "MEM-001",
+        visibility: "personal",
+        confirmDuplicate: true,
+      }).household;
+    }
+    const envelope = personalReplicaForMember(household, "MEM-001");
+    const text = await encodePersonalEnvelopePayload(envelope);
+    expect(Buffer.byteLength(text, "utf8")).toBeGreaterThan(SNAPSHOT_COMPRESS_MIN_BYTES);
+    expect(isSnapshotPayloadEnvelope(JSON.parse(text))).toBe(false);
+    const parsed = JSON.parse(text) as typeof envelope;
+    expect(parsed.kind).toBe("personal");
+    expect(parsed.memberId).toBe("MEM-001");
+    expect(parsed.transactions.every((row) => row.createdBy === "MEM-001")).toBe(true);
+  });
+
   it("keeps shared snapshot payloads plain so live CAS SQL can inspect them", async () => {
     const { encodeSharedSnapshotPayload } = await import("../src/ledger/snapshotPayload.ts");
     let household = catalogHousehold();
