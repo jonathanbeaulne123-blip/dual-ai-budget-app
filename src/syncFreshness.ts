@@ -190,8 +190,8 @@ export function buildSyncFreshness(input: SyncFreshnessInput): SyncFreshnessDisp
   let actionLabel: string | null = null;
   let actionKind: SyncFreshnessActionKind | null = null;
   if (input.hasOpenConflict || mode === "conflicted") {
-    actionLabel = "Review";
-    actionKind = "review";
+    actionLabel = "Retry now";
+    actionKind = "retry";
   } else if (
     mode === "pending-transport"
     && (input.offline || household.sharing?.lastError || !showPendingHint)

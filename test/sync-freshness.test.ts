@@ -208,8 +208,8 @@ describe("buildSyncFreshness", () => {
     expect(display.transportPrimary).toBe("Needs attention");
     expect(display.blocksSyncedLabel).toBe(true);
     expect(display.tone).toBe("warning");
-    expect(display.actionKind).toBe("review");
-    expect(display.actionLabel).toBe("Review");
+    expect(display.actionKind).toBe("retry");
+    expect(display.actionLabel).toBe("Retry now");
   });
 
   it("offers retry on unhealthy pending transport", () => {
