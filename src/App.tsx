@@ -286,6 +286,9 @@ import { CalendarPage } from "./Calendar.tsx";
 import { Office } from "./Office.tsx";
 import { HerculesPresence } from "./Hercules.tsx";
 import { HerculesProApproval, HerculesProPermissionsCard, herculesProAuthorizationRequest } from "./HerculesPro.tsx";
+import { OnboardingController, requestOnboardingReplay } from "./onboarding/OnboardingController.tsx";
+import { isOnboardingFoundationEnabled } from "./core/onboarding/featureFlag.ts";
+import { onboardingTargetProps } from "./core/onboarding/targets.ts";
 import { CadPad } from "./CadPad.tsx";
 import { PresetChip } from "./widgets/PresetChip.tsx";
 import { SitDownGuide } from "./SitDownGuide.tsx";
@@ -3080,6 +3083,7 @@ export function App() {
       </div>
 
       {tab === "home" && dashboard && (
+        <div {...onboardingTargetProps("home.root")}>
         <Office
           household={household}
           dashboard={dashboard}
@@ -3134,6 +3138,7 @@ export function App() {
             goTab(next);
           }}
         />
+        </div>
       )}
 
       {tab === "plan" && dashboard && (
@@ -3254,6 +3259,26 @@ export function App() {
               Sign out
             </button>
           </section>
+          {isOnboardingFoundationEnabled() && (
+            <section className="card">
+              <header><h2>Tutorial</h2></header>
+              <p className="muted">
+                Foundation preview — Replay restarts the guided kitchen walkthrough on this phone.
+              </p>
+              <button
+                type="button"
+                className="ghost"
+                style={{ width: "100%", marginTop: 8 }}
+                {...onboardingTargetProps("more.replay-tutorial")}
+                onClick={() => {
+                  goTab("home");
+                  requestOnboardingReplay();
+                }}
+              >
+                Replay tutorial
+              </button>
+            </section>
+          )}
           <section className="card">
             <header><h2>Health</h2><span className={`pill ${findings.length ? "warn" : "good"}`}>{findings.length ? `${findings.length} findings` : "Clean"}</span></header>
             {findings.length === 0 ? <p className="muted">Ledger, splits, transfers, shifts, flags, and the books agree.</p> : (
@@ -4699,6 +4724,26 @@ export function App() {
         </div>
       )}
 
+      <OnboardingController
+        environment={environment}
+        householdId={household.householdId}
+        memberKey={(
+          (supabaseAuthEnabled() ? loadSupabaseSession(environment)?.googleSubject : null)
+          || session.memberId
+        )}
+        shell={typeof window !== "undefined" && window.matchMedia("(min-width: 720px)").matches ? "desktop" : "phone"}
+        ready={!booting && Boolean(household) && Boolean(session)}
+        onRequestTab={(next) => {
+          if (next === "add") {
+            openAddFor(null);
+            return;
+          }
+          if (next === "home" || next === "plan" || next === "calendar" || next === "ledger" || next === "more") {
+            goTab(next);
+          }
+        }}
+      />
+
       <HerculesPresence
         household={household}
         today={today}
@@ -4764,6 +4809,7 @@ export function App() {
         <button
           className={tab === "home" && !adding ? "active" : ""}
           aria-current={tab === "home" && !adding ? "page" : undefined}
+          {...onboardingTargetProps("nav.home")}
           onClick={() => goTab("home")}
         >
           Home
@@ -4771,14 +4817,24 @@ export function App() {
         <button
           className={tab === "calendar" ? "active" : ""}
           aria-current={tab === "calendar" ? "page" : undefined}
+          {...onboardingTargetProps("nav.calendar")}
           onClick={() => goTab("calendar")}
         >
           Calendar
         </button>
-        <button className="fab" type="button" aria-label="Add money" onClick={() => openAddFor(null)}>+</button>
+        <button
+          className="fab"
+          type="button"
+          aria-label="Add money"
+          {...onboardingTargetProps("nav.add")}
+          onClick={() => openAddFor(null)}
+        >
+          +
+        </button>
         <button
           className={tab === "plan" ? "active" : ""}
           aria-current={tab === "plan" ? "page" : undefined}
+          {...onboardingTargetProps("nav.plan")}
           onClick={() => goTab("plan")}
         >
           Plan
@@ -4786,6 +4842,7 @@ export function App() {
         <button
           className={tab === "ledger" ? "active" : ""}
           aria-current={tab === "ledger" ? "page" : undefined}
+          {...onboardingTargetProps("nav.ledger")}
           onClick={() => goTab("ledger")}
         >
           Books
@@ -4793,6 +4850,7 @@ export function App() {
         <button
           className={tab === "more" ? "active" : ""}
           aria-current={tab === "more" ? "page" : undefined}
+          {...onboardingTargetProps("nav.more")}
           onClick={() => goTab("more")}
         >
           More

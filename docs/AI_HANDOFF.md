@@ -1,5 +1,31 @@
 # AI Task and Handoff Standard
 
+## Onboarding Slice A foundation (D-153) (2026-08-27)
+
+**Status:** Branch `cursor/onboarding-foundation-d129-4857` — PR for GPT review (not merge-ready polish). Risk: **Medium**.
+
+**Base SHA:** `001fa6c` (`main`) · **Head SHA:** (see branch tip).
+
+**Household outcome:** Reusable onboarding coordinator and interaction primitives so Hercules-led first-run teaching can attach later without contaminating books.
+
+**Budget delta (5):** `0` — no money commands; Practice stays ephemeral; Confirm untouched.
+
+**Engagement delta (3):** `+2` — foundation for the guided kitchen members actually open.
+
+**What changed:**
+- `src/core/onboarding/*` — registry, coordinator reducer, geometry, Practice, progress, targets, diagnostics, route plan, feature flag.
+- `src/onboarding/*` — shell, Skip, interaction lock, controller; CSS.
+- Minimal `data-onboarding-id` anchors on Home root + nav + Replay; More → Replay tutorial when `VITE_ONBOARDING_FOUNDATION=1`.
+- D-153 recorded; worksession `docs/worksessions/2026-08-27-onboarding-foundation-slice-a.md`.
+
+**Verification:** Focused `pnpm exec vitest run test/onboarding-foundation.test.ts` → **15 passed**. `pnpm exec tsc --noEmit` green. Full `pnpm check` pending before handoff close.
+
+**Uncertainty:** Auto-start eligibility for Google members is wired when flag is on; full storyboard scenes, Hercules walk animation, and opening-truth Slice B are not in this PR. Flag defaults off so kitchen behavior is unchanged until opted in.
+
+**Data/environment:** Development client/docs only. No schema, secrets, Production, Worker, or household wipe.
+
+**Next owner:** GPT review → Jonathan merge decision. Enable `VITE_ONBOARDING_FOUNDATION=1` locally to smoke Skip/Replay. Next packet: Slice B scene content / opening truth.
+
 ## Tip covariates + Hercules tip science + Pro paged reads (D-152) (2026-08-27)
 
 **Status:** Merging via [PR #208](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/208) onto `main` (Jonathan approved push/merge/deploy). Risk: **Medium–High**. Kitchen publish follows GitHub `main` → Cloudflare Workers.

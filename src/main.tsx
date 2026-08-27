@@ -6,6 +6,7 @@ import "./office.css";
 import "./office-phone.css";
 import "./hearth-theme.css";
 import "./hercules.css";
+import "./onboarding/onboarding.css";
 
 if (typeof window !== "undefined") {
   const phone = window.matchMedia("(max-width: 719px)");
