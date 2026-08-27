@@ -208,8 +208,8 @@ describe("buildSyncFreshness", () => {
     expect(display.transportPrimary).toBe("Needs attention");
     expect(display.blocksSyncedLabel).toBe(true);
     expect(display.tone).toBe("warning");
-    expect(display.actionKind).toBe("review");
-    expect(display.actionLabel).toBe("Review");
+    expect(display.actionKind).toBe("retry");
+    expect(display.actionLabel).toBe("Retry now");
   });
 
   it("offers retry on unhealthy pending transport", () => {
@@ -313,7 +313,7 @@ describe("sync freshness preview artifact", () => {
     const renderRow = (display: ReturnType<typeof buildSyncFreshness>) => {
       if (!display.visible) return "";
       const action = display.actionLabel
-        ? `<button type="button" class="sync-freshness__action${display.actionKind === "review" ? " sync-freshness__action--text" : ""}" aria-label="${display.actionLabel}">${display.actionKind === "review" ? display.actionLabel : "↻"}</button>`
+        ? `<button type="button" class="sync-freshness__action" aria-label="${display.actionLabel}">↻</button>`
         : "";
       return `<div class="sync-freshness sync-freshness--${display.tone} sync-freshness--${display.transportMode}" role="status">
         <div class="sync-freshness__content">

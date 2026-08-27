@@ -2551,9 +2551,8 @@ export function App() {
       <SyncFreshnessStatus
         display={syncFreshnessDisplay}
         busy={busy}
-        onAction={(kind) => {
-          if (kind === "review") setShowConflictSheet(true);
-          else void retryShareNow();
+        onAction={() => {
+          void retryShareNow();
         }}
       />
       {commandChrome?.chip && !syncChromeSuppression.hideChip && (

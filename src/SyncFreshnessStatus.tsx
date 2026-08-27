@@ -4,7 +4,7 @@ import { freshnessUpdatedLine, type SyncFreshnessDisplay } from "./syncFreshness
 type Props = {
   display: SyncFreshnessDisplay;
   busy?: boolean;
-  onAction?: (kind: NonNullable<SyncFreshnessDisplay["actionKind"]>) => void;
+  onAction?: () => void;
 };
 
 const TICK_MS = 30_000;
@@ -38,9 +38,7 @@ export function SyncFreshnessStatus({ display, busy = false, onAction }: Props) 
 
   if (!display.visible) return null;
 
-  const actionLabel = display.actionLabel;
-  const actionKind = display.actionKind;
-  const showAction = Boolean(actionLabel && actionKind && onAction);
+  const showAction = Boolean(display.actionLabel && display.actionKind && onAction);
 
   // Visible children alone speak for the live region — no parallel sr-only
   // summary, which would double-announce under aria-atomic.
@@ -73,12 +71,12 @@ export function SyncFreshnessStatus({ display, busy = false, onAction }: Props) 
       {showAction && (
         <button
           type="button"
-          className={`sync-freshness__action${actionKind === "review" ? " sync-freshness__action--text" : ""}`}
+          className="sync-freshness__action"
           disabled={busy}
-          aria-label={actionKind === "retry" ? actionLabel ?? "Retry now" : actionLabel ?? "Review"}
-          onClick={() => onAction?.(actionKind!)}
+          aria-label={display.actionLabel ?? "Retry now"}
+          onClick={() => onAction?.()}
         >
-          {actionKind === "review" ? actionLabel : <RefreshIcon />}
+          <RefreshIcon />
         </button>
       )}
     </div>
