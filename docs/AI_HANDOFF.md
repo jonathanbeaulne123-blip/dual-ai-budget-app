@@ -1,5 +1,23 @@
 # AI Task and Handoff Standard
 
+## T3-S2 soft presence (2026-08-27)
+
+**Status:** Branch `cursor/t3-s2-soft-presence-403c` (draft PR). Risk: **Low–Medium** (privacy UX).
+
+**Household outcome:** Calm “Bianca is in the kitchen” chrome for signed-in partners. Optional Realtime presence when Development Realtime is on; D-100 devices remain the durable fallback. Opt-out: “Hide that I'm in the kitchen.”
+
+**Budget delta (5):** `0` — presence never posts money or carries personal ledger rows.
+
+**Engagement delta (3):** `+2` — soft shared kitchen presence without surveillance ranking.
+
+**What changed:** `softPresence.ts`, `softPresenceRealtime.ts`, `SoftPresenceStatus.tsx`; App stamp/share/track wiring (signed-in + throttle + opt-out); Pairing opt-out + member names; conflict merge uses `mergeDevices`; tests.
+
+**Verification:** `pnpm exec vitest run test/soft-presence.test.ts test/soft-presence-realtime.test.ts`; privacy-auditor **PASS WITH NOTES** (Dev presence topics not membership-private — accepted until private channels; opt-out now flushes inactive device row).
+
+**Data/environment:** Development client only. Presence payload is memberId/deviceId/seenAt. No schema, secrets, Production, or deploy.
+
+**Next owner:** Jonathan — merge; two-phone smoke with Realtime on; confirm opt-out hides self.
+
 ## T3-S1 optimistic command chrome (2026-08-27)
 
 **Status:** Branch `cursor/t3-s1-optimistic-command-chrome-403c` (draft PR). Risk: **Medium** (UX only; CommandOutcome unchanged).

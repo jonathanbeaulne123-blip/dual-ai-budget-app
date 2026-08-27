@@ -254,6 +254,17 @@ import {
 } from "./commandProgress.ts";
 import { clearSyncAnchor, saveSyncAnchor } from "./syncAnchor.ts";
 import { SyncFreshnessStatus } from "./SyncFreshnessStatus.tsx";
+import { SoftPresenceStatus } from "./SoftPresenceStatus.tsx";
+import {
+  buildSoftPresenceDisplay,
+  canAdvertiseSoftPresence,
+  deactivateLocalDevice,
+  isSoftPresenceOptedOut,
+  setSoftPresenceOptOut,
+  SOFT_PRESENCE_TOUCH_THROTTLE_MS,
+  type SoftPresenceLiveRow,
+} from "./softPresence.ts";
+import { attachSoftPresenceRealtime, softPresenceRealtimeEnabled } from "./softPresenceRealtime.ts";
 import { buildSyncFreshness, sharedHouseholdFreshnessCopy, suppressesCommandSyncChrome } from "./syncFreshness.ts";
 import {
   recentChangesEmptyCopy,
@@ -403,6 +414,9 @@ export function App() {
   } | null>(null);
   const [commandChrome, setCommandChrome] = useState<CommandChromeResult | null>(null);
   const [commandProgressPhase, setCommandProgressPhase] = useState<CommandProgressPhase>("idle");
+  const [softPresenceLive, setSoftPresenceLive] = useState<SoftPresenceLiveRow[]>([]);
+  const [softPresenceOptOut, setSoftPresenceOptOutState] = useState(() => isSoftPresenceOptedOut("development"));
+  const softPresenceTouchAtRef = useRef(0);
   const [offline, setOffline] = useState(() => typeof navigator !== "undefined" && !navigator.onLine);
   const [discoveredLedgers, setDiscoveredLedgers] = useState<DiscoveredHousehold[]>([]);
   const [supabaseAuthReturned, setSupabaseAuthReturned] = useState(false);
@@ -743,25 +757,126 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    setSoftPresenceOptOutState(isSoftPresenceOptedOut(environment));
+  }, [environment]);
+
+  useEffect(() => {
     if (!household) return;
     touchVisitSpark(environment, todayKey());
     setClinkOn(readClinkOn(environment));
-    const stampKey = `hearth.device.touched.${environment}.${household.householdId}`;
+    const memberId = session?.memberId ?? null;
+    const signedIn = Boolean(
+      memberId && (
+        loadGoogleSession(environment, memberId)
+        || (supabaseAuthEnabled() && loadSupabaseSession(environment))
+      ),
+    );
+    if (!canAdvertiseSoftPresence({ signedIn, memberId, environment, optedOut: softPresenceOptOut })) {
+      return;
+    }
+    const now = Date.now();
+    if (now - softPresenceTouchAtRef.current < SOFT_PRESENCE_TOUCH_THROTTLE_MS) return;
     const deviceId = localDeviceId();
-    const already = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(stampKey) : null;
-    if (already === deviceId) return;
     try {
+      softPresenceTouchAtRef.current = now;
       const touched = touchHouseholdDevice(household, {
         deviceId,
         label: describeDeviceLabel(),
-        memberId: session?.memberId ?? household.members.find((member) => member.active)?.id ?? null,
+        memberId,
       });
-      if (typeof sessionStorage !== "undefined") sessionStorage.setItem(stampKey, deviceId);
-      void saveHousehold(touched.household, { operatingEnvironment: environment, memberId: session?.memberId }).then(() => setHousehold(touched.household));
+      let next = touched.household;
+      const who = memberId ?? undefined;
+      void saveHousehold(next, { operatingEnvironment: environment, memberId: who }).then(() => {
+        if (householdRef.current?.householdId === next.householdId) {
+          householdRef.current = next;
+          setHousehold(next);
+        }
+      });
+      // Durable soft presence rides the next continuity flush when linked + signed in.
+      if (next.linked && hostedContinuityAllowed(environment) && memberId) {
+        const googleSession = loadGoogleSession(environment, memberId);
+        const authSession = supabaseAuthEnabled() ? loadSupabaseSession(environment) : null;
+        const identity: ContinuityIdentity | null = authSession
+          ? { email: authSession.email, subject: authSession.googleSubject }
+          : googleSession?.identity
+            ? { email: googleSession.identity.email, subject: googleSession.identity.subject }
+            : null;
+        if (identity) {
+          next = markPendingTransport({
+            ...next,
+            revision: (next.revision ?? 0) + 1,
+          });
+          void saveHousehold(next, { operatingEnvironment: environment, memberId: who }).then(() => {
+            if (householdRef.current?.householdId === next.householdId) {
+              householdRef.current = next;
+              setHousehold(next);
+            }
+          });
+          const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
+          void transportHouseholdWithOutbox({
+            household: next,
+            identity,
+            expectedRevision: next.baseRevision ?? (next.revision - 1),
+            confirmationId: `presence-${next.householdId}-${deviceId}-${now}`,
+            config: cloudConfig,
+            flush: true,
+          }).then(async (pushed) => {
+            if (!pushed.ok) return;
+            const synced = markSynchronized(next);
+            await saveHousehold(synced, { operatingEnvironment: environment, memberId: who });
+            if (householdRef.current?.householdId === synced.householdId) {
+              householdRef.current = synced;
+              setHousehold(synced);
+            }
+          }).catch(() => undefined);
+        }
+      }
     } catch {
       /* soft presence only */
     }
-  }, [environment, household?.householdId]);
+  }, [environment, household?.householdId, session?.memberId, softPresenceOptOut]);
+
+  useEffect(() => {
+    if (!household || !session?.memberId) {
+      setSoftPresenceLive([]);
+      return;
+    }
+    if (!softPresenceRealtimeEnabled(environment)) {
+      setSoftPresenceLive([]);
+      return;
+    }
+    const authSession = supabaseAuthEnabled() ? loadSupabaseSession(environment) : null;
+    const authConfig = readHearthAuthConfig();
+    if (!authSession || !authConfig) {
+      setSoftPresenceLive([]);
+      return;
+    }
+    const advertise = canAdvertiseSoftPresence({
+      signedIn: true,
+      memberId: session.memberId,
+      environment,
+      optedOut: softPresenceOptOut,
+    });
+    const detach = attachSoftPresenceRealtime({
+      supabaseUrl: authConfig.supabaseUrl,
+      publishableKey: authConfig.publishableKey,
+      accessToken: authSession.accessToken,
+      householdId: household.householdId,
+      environment,
+      track: advertise
+        ? {
+            memberId: session.memberId,
+            deviceId: localDeviceId(),
+            seenAt: new Date().toISOString(),
+          }
+        : null,
+      onPresence: (rows) => setSoftPresenceLive(rows),
+    });
+    return () => {
+      detach();
+      setSoftPresenceLive([]);
+    };
+  }, [environment, household?.householdId, session?.memberId, softPresenceOptOut]);
 
   useEffect(() => {
     const memberId = session?.memberId;
@@ -1287,6 +1402,69 @@ export function App() {
     }),
     [commandProgressPhase, household?.linked, environment],
   );
+  const softPresenceDisplay = useMemo(
+    () => buildSoftPresenceDisplay({
+      household,
+      viewerMemberId: session?.memberId ?? null,
+      environment,
+      optedOut: softPresenceOptOut,
+      live: softPresenceLive,
+    }),
+    [household, session?.memberId, environment, softPresenceOptOut, softPresenceLive],
+  );
+
+  function applySoftPresenceOptOut(nextOptOut: boolean) {
+    setSoftPresenceOptOut(environment, nextOptOut);
+    setSoftPresenceOptOutState(nextOptOut);
+    if (!household || !session?.memberId) return;
+    const deviceId = localDeviceId();
+    const memberId = session.memberId;
+    let next = nextOptOut
+      ? { ...household, devices: deactivateLocalDevice(household.devices ?? [], deviceId) }
+      : touchHouseholdDevice(household, {
+          deviceId,
+          label: describeDeviceLabel(),
+          memberId,
+        }).household;
+    void saveHousehold(next, { operatingEnvironment: environment, memberId }).then(() => {
+      if (householdRef.current?.householdId === next.householdId) {
+        householdRef.current = next;
+        setHousehold(next);
+      }
+    });
+    if (!next.linked || !hostedContinuityAllowed(environment)) return;
+    const googleSession = loadGoogleSession(environment, memberId);
+    const authSession = supabaseAuthEnabled() ? loadSupabaseSession(environment) : null;
+    const identity: ContinuityIdentity | null = authSession
+      ? { email: authSession.email, subject: authSession.googleSubject }
+      : googleSession?.identity
+        ? { email: googleSession.identity.email, subject: googleSession.identity.subject }
+        : null;
+    if (!identity) return;
+    next = markPendingTransport({
+      ...next,
+      revision: (next.revision ?? 0) + 1,
+    });
+    softPresenceTouchAtRef.current = Date.now();
+    void saveHousehold(next, { operatingEnvironment: environment, memberId });
+    const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
+    void transportHouseholdWithOutbox({
+      household: next,
+      identity,
+      expectedRevision: next.baseRevision ?? (next.revision - 1),
+      confirmationId: `presence-opt-${next.householdId}-${deviceId}-${Date.now()}`,
+      config: cloudConfig,
+      flush: true,
+    }).then(async (pushed) => {
+      if (!pushed.ok) return;
+      const synced = markSynchronized(next);
+      await saveHousehold(synced, { operatingEnvironment: environment, memberId });
+      if (householdRef.current?.householdId === synced.householdId) {
+        householdRef.current = synced;
+        setHousehold(synced);
+      }
+    }).catch(() => undefined);
+  }
 
   useEffect(() => {
     if (commandProgressPhase !== "cloud-ack") return undefined;
@@ -2596,6 +2774,7 @@ export function App() {
           void retryShareNow();
         }}
       />
+      <SoftPresenceStatus display={softPresenceDisplay} />
       <CommandProgressStatus display={commandProgressDisplay} />
       {commandChrome?.chip && !syncChromeSuppression.hideChip && (
         <div
@@ -2925,6 +3104,8 @@ export function App() {
             onBusy={setBusy}
             onSyncState={setSyncState}
             onBeforeSensitive={() => gateWithGoogle({ record: true })}
+            softPresenceOptedOut={softPresenceOptOut}
+            onSoftPresenceOptOut={applySoftPresenceOptOut}
           />
           <GoogleBridgeCard
             household={household}
