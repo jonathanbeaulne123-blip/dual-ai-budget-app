@@ -77,6 +77,7 @@ export {
   redeemInvitation,
 } from "./authRlsPolicy.ts";
 export {
+  authInviteIssueGate,
   inviteReasonMessage,
   issueHouseholdInvite,
   redeemHouseholdInvite,
@@ -86,6 +87,7 @@ export {
   bindGoogleMemberships,
 } from "./householdInvites.ts";
 export type {
+  ContinuitySyncUiState,
   InviteKind,
   IssueInviteResult,
   RedeemInviteResult,

@@ -8,6 +8,7 @@ import {
   clearPendingAuthInvite,
 } from "../src/core/authInvite.ts";
 import {
+  authInviteIssueGate,
   inviteReasonMessage,
   issueHouseholdInvite,
   redeemHouseholdInvite,
@@ -89,6 +90,16 @@ describe("household invite RPC client", () => {
     expect(denied).toEqual({ ok: false, reason: "not-owner" });
     expect(inviteReasonMessage("not-owner")).toMatch(/owner/i);
     vi.unstubAllGlobals();
+  });
+
+  it("holds Auth invites until the household finishes sharing", () => {
+    expect(authInviteIssueGate("syncing")).toEqual({
+      ready: false,
+      message: "Wait until this household finishes sharing before sending an invite.",
+    });
+    expect(authInviteIssueGate("synced").ready).toBe(true);
+    expect(authInviteIssueGate("idle").ready).toBe(true);
+    expect(authInviteIssueGate("error").ready).toBe(true);
   });
 
   it("maps redeem email-mismatch and success", async () => {

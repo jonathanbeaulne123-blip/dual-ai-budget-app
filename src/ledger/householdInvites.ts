@@ -85,6 +85,22 @@ function asObject(body: unknown): RpcBody | null {
   return body as RpcBody;
 }
 
+export type ContinuitySyncUiState = "idle" | "syncing" | "synced" | "error";
+
+/** Issue Auth invites only after the owner row exists in the cloud. */
+export function authInviteIssueGate(syncState: ContinuitySyncUiState): {
+  ready: boolean;
+  message: string | null;
+} {
+  if (syncState === "syncing") {
+    return {
+      ready: false,
+      message: "Wait until this household finishes sharing before sending an invite.",
+    };
+  }
+  return { ready: true, message: null };
+}
+
 export function inviteReasonMessage(reason: string): string {
   switch (reason) {
     case "not-owner":

@@ -28,8 +28,10 @@ import {
   supabaseAuthEnabled,
 } from "./auth/supabaseSession.ts";
 import {
+  authInviteIssueGate,
   inviteReasonMessage,
   issueHouseholdInvite,
+  type ContinuitySyncUiState,
   type InviteKind,
   type IssueInviteResult,
 } from "./ledger/householdInvites.ts";
@@ -175,12 +177,14 @@ function AuthInviteChrome({
   household,
   memberId,
   busy,
+  syncState,
   onError,
   onBusy,
 }: {
   household: Household;
   memberId: string;
   busy: boolean;
+  syncState: ContinuitySyncUiState;
   onError: (value: string) => void;
   onBusy: (value: boolean) => void;
 }) {
@@ -188,12 +192,15 @@ function AuthInviteChrome({
   const [targetMemberId, setTargetMemberId] = useState(invitees[0]?.id ?? "");
   const [email, setEmail] = useState("");
   const [issued, setIssued] = useState<IssueInviteResult & { ok: true } | null>(null);
+  const issueGate = authInviteIssueGate(syncState);
+  const issueBlocked = busy || !issueGate.ready;
 
   async function issue(kind: InviteKind) {
     onBusy(true);
     onError("");
     setIssued(null);
     try {
+      if (!issueGate.ready) throw new Error(issueGate.message ?? "Wait until this household finishes sharing.");
       if (!targetMemberId) throw new Error("Choose who this invite is for.");
       const session = await ensureSupabaseSession(household.environment);
       const config = authenticatedSupabaseConfig(readSupabaseConfig(), session);
@@ -248,6 +255,7 @@ function AuthInviteChrome({
         id="auth-invite-member"
         value={targetMemberId}
         onChange={(event) => setTargetMemberId(event.target.value)}
+        disabled={issueBlocked}
       >
         {invitees.map((member) => (
           <option key={member.id} value={member.id}>{member.name}</option>
@@ -262,11 +270,27 @@ function AuthInviteChrome({
         placeholder="partner@gmail.com"
         autoCapitalize="none"
         autoCorrect="off"
+        disabled={issueBlocked}
       />
-      <button className="ghost" style={{ width: "100%", marginTop: 8 }} disabled={busy} onClick={() => void issue("email")}>
+      {issueGate.message && (
+        <p className="muted" id="auth-invite-wait" role="status">{issueGate.message}</p>
+      )}
+      <button
+        className="ghost"
+        style={{ width: "100%", marginTop: 8 }}
+        disabled={issueBlocked}
+        aria-describedby={issueGate.message ? "auth-invite-wait" : undefined}
+        onClick={() => void issue("email")}
+      >
         Issue email invite
       </button>
-      <button className="ghost" style={{ width: "100%", marginTop: 8 }} disabled={busy} onClick={() => void issue("qr")}>
+      <button
+        className="ghost"
+        style={{ width: "100%", marginTop: 8 }}
+        disabled={issueBlocked}
+        aria-describedby={issueGate.message ? "auth-invite-wait" : undefined}
+        onClick={() => void issue("qr")}
+      >
         Issue QR / link invite
       </button>
       {issued && (
@@ -324,6 +348,8 @@ export function PairingCard({
   const phrase = formatInvitePhrase(household.inviteCode);
   const url = typeof window !== "undefined" ? joinUrlFor(household.inviteCode, window.location.origin) : "";
   const status = pairingStatusLabel(household, { authEnabled: supabaseAuthEnabled() });
+  const hideOwnerErrorWhileSharing = syncState === "syncing"
+    && error === inviteReasonMessage("not-owner");
 
   async function publish() {
     onBusy(true);
@@ -377,6 +403,7 @@ export function PairingCard({
         household={household}
         memberId={memberId}
         busy={busy}
+        syncState={syncState}
         onError={onError}
         onBusy={onBusy}
       />
@@ -400,7 +427,7 @@ export function PairingCard({
       {!syncFreshnessLine && syncState === "synced" && household.linked && (
         <p className="muted">Shared household is up to date.</p>
       )}
-      {error && <p className="danger">{error}</p>}
+      {error && !hideOwnerErrorWhileSharing && <p className="danger">{error}</p>}
       <details
         className="pairing-advanced"
         open={advancedOpen}

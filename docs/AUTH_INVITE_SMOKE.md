@@ -27,10 +27,10 @@ When prior test households clutter **Login with Google**:
 
 1. Hard-refresh the kitchen.
 2. **Login with Google** (owner or joiner).
-3. **Live `main` kitchen:** tap **Delete** on each owned household (migration **015**). **PR #201 / preview Worker:** tap **Start from scratch** and confirm **Delete all Development households**, or **More → Where the books live → Start from scratch**.
+3. **Live `main` kitchen:** tap **Start from scratch** (Development welcome or More) and confirm **Delete all Development households**, or tap **Delete** on each owned household (migration **015**).
 4. Owner bulk delete (016) removes the cloud rows you own; member-only seats are left. This phone’s Development copies are cleared. Google stays signed in and **Create household** opens.
 
-Migration **016** (`hearth_reset_development_households`) is applied. The Start-from-scratch **button** is on PR #201 until that kitchen is deployed. Production cannot be deleted here.
+Migration **016** (`hearth_reset_development_households`) is applied. **Start from scratch** is on the live kitchen after #201. Production cannot be deleted here.
 
 ---
 

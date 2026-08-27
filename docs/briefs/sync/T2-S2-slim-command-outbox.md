@@ -16,12 +16,14 @@ Outbox stores command receipt refs (confirmation_id, idempotency_key, base_revis
 ## Forbidden
 
 - Storing full journal in IndexedDB outbox body
+- Skipping `hearth_create_household` on the first hosted write (`expectedRevision === 0`)
 
 ## Acceptance
 
 - [ ] New enqueues are ref-only
 - [ ] Legacy items flush correctly
 - [ ] localStorage quota tests with large household
+- [ ] First flush (`expectedRevision === 0`) still calls `hearth_create_household` — command-log append requires an existing owner membership
 
 ## Cursor prompt
 

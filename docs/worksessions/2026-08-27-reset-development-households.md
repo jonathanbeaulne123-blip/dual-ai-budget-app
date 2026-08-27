@@ -1,6 +1,6 @@
 # Hearth worksession — Start from scratch (Development household reset)
 
-- **Status:** IMPLEMENTED; DRAFT PR #201; NOT SHIPPED
+- **Status:** CLOSED; MERGED #201; NOT a live wipe (016 applied, RPC not invoked)
 - **Opened:** 2026-08-27 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor Cloud Agent
@@ -71,4 +71,4 @@ The bulk RPC is live. The Start-from-scratch **button** is still this PR, not th
 
 ## Handoff
 
-Next owner: Jonathan. 016 is applied. Merge/deploy PR #201 (or open the preview Worker) → Development → Login with Google → **Start from scratch**.
+Next owner: Jonathan. 016 is applied. Start from scratch is on live `main` after #201. Development → Login with Google → **Start from scratch**.
