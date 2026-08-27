@@ -18,7 +18,7 @@ When `VITE_CONTINUITY_REALTIME=1`, partner snapshot writes ring the open kitchen
 - `src/continuityRealtime.ts` — Realtime channel on `household_snapshots` + `continuity_personal_snapshots`; revision-only signal → existing `replay()` pull/reconcile.
 - `src/App.tsx` — subscribe after `fetchContinuityMembershipRole`; poll skipped when Realtime `SUBSCRIBED`.
 - `test/continuity-realtime.test.ts` — lifecycle, fallback, attach guards.
-- `supabase/migrations/014_realtime_publication.sql` — ready to apply (idempotent ADD TABLE).
+- `supabase/migrations/014_realtime_publication.sql` — **applied** Development (2026-08-26).
 - `VITE_CONTINUITY_REALTIME` in `vite-env.d.ts`.
 
 ## Verification
@@ -36,8 +36,8 @@ pnpm test                                     # 673 pass; 2 pre-existing batch-i
 
 ## Uncertainty
 
-- Migration **014** — apply via `pnpm books:apply:014` or SQL Editor (Jonathan action; see `2026-08-26-t1-realtime-enable.md`).
-- End-to-end ≤ 500 ms p95 not measured this slice — deferred to **T1-S5**.
+- Migration **014** — **applied** Development (2026-08-26). Two-phone smoke passed 2026-08-27.
+- End-to-end ≤ 500 ms p95 was later measured in T1-S5 / [`SYNC_REALTIME_SMOKE.md`](../SYNC_REALTIME_SMOKE.md).
 
 ## Data / environment
 
@@ -46,6 +46,4 @@ pnpm test                                     # 673 pass; 2 pre-existing batch-i
 
 ## Next owner
 
-1. Apply **014** in Development SQL Editor after Jonathan approval (if events missing).
-2. Enable `VITE_CONTINUITY_REALTIME=1` in Development build env.
-3. **T1-S4** push/pull coordinator; **T1-S5** two-browser proof.
+014 and the Realtime flag are live on Development. Next work is G6 proof (in-memory 012 harness) and live command-log smoke, not another 014 apply.

@@ -20,20 +20,11 @@ Partner snapshot writes ring the open kitchen via Supabase Realtime within the T
 | `.github/workflows/pages.yml` | `VITE_CONTINUITY_REALTIME: "1"` at build time |
 | `.env.example` | Documents flag + Migration 014 dependency |
 
-## Jonathan action required (cannot run from agent VM)
+## Hosted apply status
 
-Migration 014 was **not** applied — no `SUPABASE_DB_PASSWORD` in this environment.
+Migration **014 applied on Development** (2026-08-26, Jonathan). Two-phone Realtime smoke passed 2026-08-27.
 
-```bash
-# Option A — local with password
-SUPABASE_DB_PASSWORD=… pnpm books:apply:014
-
-# Option B — SQL Editor
-# Paste supabase/migrations/014_realtime_publication.sql into:
-# https://supabase.com/dashboard/project/tykhocwacaxwquhynkok/sql/new
-```
-
-Verify after apply:
+Verify (optional):
 
 ```sql
 SELECT schemaname, tablename
@@ -61,4 +52,4 @@ WHERE pubname = 'supabase_realtime'
 
 ## Next owner
 
-T1-S5 harness merge (#179); G6 trust review; T2-S1 rebase after Tier 1 gates close.
+T1-S5 / two-phone Realtime smoke already passed. G6 in-memory 012 proof is PR #197. Do not re-apply Migration 014.
