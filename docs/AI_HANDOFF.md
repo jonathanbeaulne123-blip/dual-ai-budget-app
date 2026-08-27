@@ -1,8 +1,26 @@
 # AI Task and Handoff Standard
 
+## Invite owner first create (D-149 / D-123) (2026-08-27)
+
+**Status:** Branch `cursor/invite-owner-first-create-5958`, draft [PR #209](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/209). Head `03cb3f5`. Baseline `main@ef3274a`. Risk: **High** (Auth/RLS/membership path; money meaning unchanged). Not merged. No schema apply.
+
+**Household outcome:** The person who starts a household can send a Google invite. Command-log must not skip `hearth_create_household` on the first cloud write.
+
+**Budget delta (5):** `+2` — partner invite is the door to shared books.
+
+**Engagement delta (3):** `+2` — Invite waits for share instead of a false “only the owner” warning.
+
+**What changed:** `shouldUseCommandLogFlush` returns false when `expectedRevision === 0`, so the first write uses `pushSupabaseHousehold` → `hearth_create_household` (owner membership). Invite Issue stays disabled while sharing (`syncState === "syncing"` or `sharing.mode === "pending-transport"`). Compacted later writes keep `expectedRevision === 0` and still create.
+
+**Verification:** Focused `pnpm exec vitest run test/continuity-command-outbox.test.ts test/auth-invite-chrome.test.ts` → 26 pass. Full `pnpm check` on `f5c6649` → `pnpm ai:verify` green; **868 passed / 2 skipped**; `pnpm build` green. Independent reviews: privacy **PASS WITH NOTES** (P3 proof gaps; compact-0 test added after); trust **PASS WITH NOTES** (P1 handoff filled here; P2 pending-transport gate added); books **PASS WITH NOTES** (assert 012 on first-create); UX **PASS WITH NOTES** (live region always in DOM).
+
+**Data/environment:** Development client/docs only. No hosted SQL, secrets, Production rows, or deploy. Fictional Development fixtures in tests.
+
+**Next owner:** Jonathan — review/merge PR #209; hard-refresh the kitchen; Retry now if a leftover household is still sharing, then Issue.
+
 ## Start from scratch — Development household reset (D-151) (2026-08-27)
 
-**Status:** Branch `cursor/reset-development-households-5958`, draft [PR #201](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/201). Risk: **High** (hosted Development delete/leave; Production blocked). Not merged. Migration **016 applied** 2026-08-27. RPC **not** invoked.
+**Status:** Merged via #201 onto `main` (`ef3274a`). Risk: **High** (hosted Development delete/leave; Production blocked). Migration **016 applied** 2026-08-27. RPC **not** invoked during apply.
 
 **Household outcome:** One Confirm deletes every disposable Development household this Google account owns, leaves member-only seats, clears this phone’s Development copies, and opens Create household while Google stays signed in.
 
@@ -10,13 +28,13 @@
 
 **Engagement delta (3):** `+2` — one Confirm instead of tapping Delete on every household.
 
-**What changed:** `hearth_reset_development_households` (016) is live; **Start from scratch** is on the Development welcome home and the first card in More (not only after Google discovery).
+**What changed:** `hearth_reset_development_households` (016) is live; **Start from scratch** is on the Development welcome home and the first card in More.
 
-**Verification:** 016 metadata apply (Production 0→0, Development 7→7, anon EXECUTE false). Focused tests: first-entry + auth-invite-chrome + claude-ux-dialog 29 pass.
+**Verification:** 016 metadata apply (Production 0→0, Development 7→7, anon EXECUTE false). Kitchen bundle includes Start from scratch after merge/deploy.
 
-**Data/environment:** Hosted Development schema (016). No household wipe, secrets, or Production rows. Kitchen chrome still this PR until live Worker publish.
+**Data/environment:** Hosted Development schema (016). No household wipe, secrets, or Production rows during apply.
 
-**Next owner:** Jonathan — hard-refresh the kitchen after this PR publishes; Development welcome or More → **Start from scratch**.
+**Next owner:** Jonathan — hard-refresh live kitchen → Development pill → **Start from scratch** (welcome or More) when wiping leftover test households.
 
 ## T3-S4 scale envelope (2026-08-27)
 

@@ -85,6 +85,25 @@ function asObject(body: unknown): RpcBody | null {
   return body as RpcBody;
 }
 
+export type ContinuitySyncUiState = "idle" | "syncing" | "synced" | "error";
+
+/** Chrome-only: do not Issue while this phone is still trying to share. The invite RPC stays owner-gated. */
+export function authInviteIssueGate(input: {
+  syncState: ContinuitySyncUiState;
+  sharingMode?: string | null;
+}): {
+  ready: boolean;
+  message: string | null;
+} {
+  if (input.syncState === "syncing" || input.sharingMode === "pending-transport") {
+    return {
+      ready: false,
+      message: "Wait until this household finishes sharing before sending an invite.",
+    };
+  }
+  return { ready: true, message: null };
+}
+
 export function inviteReasonMessage(reason: string): string {
   switch (reason) {
     case "not-owner":
