@@ -2,7 +2,7 @@
 
 ## Native 7shifts Timesheet inbox (D-152) (2026-08-27)
 
-**Status:** Branch `cursor/seven-shifts-inbox-5958`. Draft PR **#214**. Risk: **High** (provider token, coworker PII, work hours → wage drafts). Not merged. Not deployed. No secrets put. D1 table not applied.
+**Status:** Branch `cursor/seven-shifts-inbox-5958`. PR **#214** ready for review. Risk: **High** (provider token, coworker PII, work hours → wage drafts). Not merged. Not deployed. No secrets put. D1 table not applied.
 
 **Household outcome:** A Harbour worker can add a 7shifts account on Jobs. Punches fill Timesheet hours, role, and clock times. Cash and card tips stay blank. Confirm still posts wages. The restaurant roster is a Co-workers tab, not household members.
 

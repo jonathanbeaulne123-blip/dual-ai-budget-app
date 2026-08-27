@@ -102,4 +102,4 @@ A Harbour worker can add a 7shifts access token on Jobs, pull clocked punches in
 
 ## Handoff
 
-Draft PR #214. Not merged, not deployed, not live verified. Next owner: Jonathan — secrets, D1 apply, enable flag, then deploy.
+PR #214 is ready for review. Not merged, not deployed, not live verified. Next owner: Jonathan — secrets, D1 apply, enable flag, then deploy.
