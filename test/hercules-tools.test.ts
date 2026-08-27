@@ -52,8 +52,8 @@ describe("Hercules read-only tool brain", () => {
     expect(run.results[0]?.status).toBe("ok");
     expect(run.results[0]?.sentence).toMatch(/The North House/);
     expect(run.results[0]?.sentence).toMatch(/Kitchen Books/);
-    expect(run.results[0]?.facts.some((fact) => fact.label === "Household" && fact.value === "The North House")).toBe(true);
-    expect(run.results[0]?.facts.some((fact) => fact.label === "Shared ledger" && fact.value === "Kitchen Books")).toBe(true);
+    expect(run.results[0]?.facts.some((fact) => fact.label === "Household name" && fact.value === "The North House")).toBe(true);
+    expect(run.results[0]?.facts.some((fact) => fact.label === "Shared ledger name" && fact.value === "Kitchen Books")).toBe(true);
     expect(run.results[0]?.facts.some((fact) => fact.label === "Jonathan" && fact.value.includes("Personal Ledger"))).toBe(true);
     expect(run.results[0]?.facts.some((fact) => fact.label === "Visa")).toBe(true);
   });
