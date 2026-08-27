@@ -540,11 +540,6 @@ input, select, textarea {
   color: inherit;
   cursor: pointer;
 }
-.sync-freshness__action--text {
-  padding: 4px 10px;
-  font-size: 0.75rem;
-  font-weight: 650;
-}
 .sync-freshness__action:disabled {
   opacity: 0.55;
   cursor: wait;
