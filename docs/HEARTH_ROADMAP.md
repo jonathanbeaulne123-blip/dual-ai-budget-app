@@ -243,7 +243,7 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 
 #### Tier 2 — Command-log primary — ACTIVE (Jonathan approved same-day land)
 
-- [x] **T2-S1** Migration **013** command event append log. *([`T2-S1`](briefs/sync/T2-S1-command-event-schema.md). Code landed; **hosted apply pending** — paste `013_continuity_command_events.sql`.)*
+- [x] **T2-S1** Migration **013** command event append log. *([`T2-S1`](briefs/sync/T2-S1-command-event-schema.md). **Applied** Development 2026-08-27; kitchen `VITE_CONTINUITY_COMMAND_LOG=1`.)*
 - [x] **T2-S2** Outbox stores command refs, not full journal. *([`T2-S2`](briefs/sync/T2-S2-slim-command-outbox.md).)*
 - [x] **T2-S3** Materialized snapshot from events. *([`T2-S3`](briefs/sync/T2-S3-materialized-snapshot.md).)*
 - [x] **T2-S4** Realtime on command INSERT. *([`T2-S4`](briefs/sync/T2-S4-realtime-command-events.md).)*
