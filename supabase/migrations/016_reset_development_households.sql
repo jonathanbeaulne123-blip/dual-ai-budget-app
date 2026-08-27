@@ -1,5 +1,7 @@
 -- Migration 016 — one-shot Development reset for the signed-in Google member.
--- Paste into Supabase SQL Editor after Jonathan approves Development mutation.
+-- Applied 2026-08-27 to project tykhocwacaxwquhynkok (Jonathan: paste 016).
+-- public.schema_migrations id 16; MCP version 20260827072847 / reset_development_households.
+-- Re-apply is idempotent (CREATE OR REPLACE + ON CONFLICT).
 -- Deletes every Development household this person owns, and leaves any they
 -- only joined as a member. Production households are never touched.
 

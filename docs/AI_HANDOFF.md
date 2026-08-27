@@ -2,7 +2,7 @@
 
 ## Start from scratch — Development household reset (D-151) (2026-08-27)
 
-**Status:** Branch `cursor/reset-development-households-5958`, draft [PR #201](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/201). Risk: **High** (hosted Development delete/leave; Production blocked). Not merged, not deployed, migration **016 not applied**.
+**Status:** Branch `cursor/reset-development-households-5958`, draft [PR #201](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/201). Risk: **High** (hosted Development delete/leave; Production blocked). Not merged, not deployed. Migration **016 applied** 2026-08-27 (Jonathan: “paste 016”). RPC **not** invoked.
 
 **Household outcome:** One Confirm deletes every disposable Development household this Google account owns, leaves member-only seats, clears this phone’s Development copies, and opens Create household while Google stays signed in.
 
@@ -10,13 +10,13 @@
 
 **Engagement delta (3):** `+2` — one Confirm instead of tapping Delete on every household.
 
-**What changed:** `hearth_reset_development_households` (016); client 015 fallback; local replica/PGlite/outbox/Undo wipe; picker + More **Start from scratch**; ConfirmSheet focus trap; JWT required before wipe.
+**What changed:** `hearth_reset_development_households` (016) is live on project `tykhocwacaxwquhynkok`; kitchen Start-from-scratch chrome remains on this PR until merge/deploy.
 
-**Verification:** Focused vitest 35 pass (`auth-invite-chrome`, `storage-replicas`, `reset-development-local`, `claude-ux-dialog`). Full `pnpm test` 840 pass + 2 skipped; one unrelated `sync-freshness` preview timeout, re-run 17/17. `pnpm build` green. Manual More Confirm at 320/390/720/1100; no-Google Confirm fail-closes with Continue with Google.
+**Verification:** Live metadata only — `public.schema_migrations` id 16; function exists, `SECURITY DEFINER`, `search_path=""`, `authenticated` EXECUTE yes, `anon` EXECUTE no. Production household count **0→0**. Development household count **7→7**. MCP migration `20260827072847` / `reset_development_households`. `NOTIFY pgrst, 'reload schema'`. Did not call the reset RPC.
 
-**Data/environment:** Development client + SQL file only. No live schema apply, secrets, Production, or deploy.
+**Data/environment:** Hosted Development schema (function + grants + schema_migrations 16). No household payloads, secrets, Production rows, kitchen deploy, or RPC wipe.
 
-**Next owner:** Jonathan — review PR; paste `supabase/migrations/016_reset_development_households.sql` when ready; Login with Google → **Start from scratch**.
+**Next owner:** Jonathan — merge/deploy PR #201 (or use the preview Worker), then Development → Login with Google → **Start from scratch**.
 
 ## T3-S1 optimistic command chrome (2026-08-27)
 

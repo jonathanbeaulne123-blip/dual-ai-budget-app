@@ -13,7 +13,7 @@
 | Kitchen URL | https://hearth-books.jonathan-beaulne123.workers.dev |
 | Environment pill | **Development** on both devices |
 | Auth build | `VITE_SUPABASE_AUTH_ENABLED=1` on deployed kitchen |
-| Hosted migrations | **006** (RLS), **010** (bind Google memberships), **012** (atomic continuity push, Auth path), **015** (delete/leave), **016** (Start from scratch bulk reset; optional, 015 loop fallback) |
+| Hosted migrations | **006** (RLS), **010** (bind Google memberships), **012** (atomic continuity push, Auth path), **015** (delete/leave), **016** (Start from scratch bulk reset — **applied** 2026-08-27) |
 | Two Google accounts | Owner + joiner (different `auth.users` / Google subjects) |
 | Two browsers or phones | Normal incognito/private split is fine |
 
@@ -30,7 +30,7 @@ When prior test households clutter **Login with Google**:
 3. On the household picker, tap **Start from scratch** and confirm **Delete all Development households** — or tap **Delete** on each row — or inside a household: **More → Where the books live → Start from scratch**.
 4. Owner bulk delete removes the cloud rows you own; member-only seats are left. This phone’s Development copies are cleared. Google stays signed in and **Create household** opens.
 
-Prefer migration **016** (`supabase/migrations/016_reset_development_households.sql`). Without it, the kitchen loops migration **015** per household. Production cannot be deleted here.
+Migration **016** (`hearth_reset_development_households`) is applied. The Start-from-scratch **button** is on PR #201 until that kitchen is deployed; the live `main` kitchen still uses per-household **Delete** (015). Production cannot be deleted here.
 
 ---
 
@@ -80,6 +80,23 @@ Prefer migration **016** (`supabase/migrations/016_reset_development_households.
 
 **Evidence type:** live Development kitchen, real Google accounts, disposable hosted rows. No Production mutation.
 
+---
+
+## Recorded apply — migration 016, 2026-08-27
+
+| Step | Result |
+|---|---|
+| Jonathan order | “paste 016” |
+| Apply | Supabase MCP `apply_migration` name `reset_development_households` on project `tykhocwacaxwquhynkok` |
+| `public.schema_migrations` | id **16** present |
+| MCP migrations list | version `20260827072847`, name `reset_development_households` |
+| Function | `public.hearth_reset_development_households()` exists; `SECURITY DEFINER`; `search_path=""` |
+| Grants | `authenticated` EXECUTE **true**; `anon` EXECUTE **false**; ACL has no PUBLIC/anon |
+| Household counts | Production **0→0**; Development **7→7** (reset RPC **not** called) |
+| PostgREST | `NOTIFY pgrst, 'reload schema'` |
+
+Kitchen Start-from-scratch chrome remains draft PR #201 (not the live `main` Worker).
+
 **Still open on the broader Auth checklist** ([`HEARTH_ROADMAP.md`](HEARTH_ROADMAP.md) Phase 3): email-invite mismatch path, owner revoke UI, automated anon-denial matrix, wrong-household denial spot-checks as a formal suite.
 
 ---
@@ -88,6 +105,7 @@ Prefer migration **016** (`supabase/migrations/016_reset_development_households.
 
 | ID | Topic |
 |---|---|
+| **D-151** | Start from scratch — Development-only bulk reset (016 applied 2026-08-27; kitchen UI PR #201) |
 | **D-150** | QR redeem → membership-authoritative discovery (snapshot `google.links` may lag) |
 | **D-149** | Tiered sync plan (Realtime + atomic SQL) — **separate** from invite discovery; see below |
 | **D-123** | Auth + RLS cutover (006) |
