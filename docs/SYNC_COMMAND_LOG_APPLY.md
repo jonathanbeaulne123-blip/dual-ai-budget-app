@@ -2,11 +2,11 @@
 
 > **One paste to unlock Tier 2.** Development disposable data only. Do not apply to Production.
 >
-> **Do not paste until trust P0 remediation is on `main`** (`cursor/t2-trust-p0-fixes-12ce`): GRANT arity + shared-scope personal canary. The kitchen flag stays off until then.
+> Trust P0 remediation is on `main` (`2b1b1ec` / #189). Safe to paste.
 
 ## Why
 
-`append_continuity_command` + `continuity_command_events` let kitchens share **confirmed command receipts** instead of whole snapshots. The kitchen build will ship with `VITE_CONTINUITY_COMMAND_LOG=1` after this apply.
+`append_continuity_command` + `continuity_command_events` let kitchens share **confirmed command receipts** instead of whole snapshots. After this apply, reply **“013 applied”** so the kitchen can flip `VITE_CONTINUITY_COMMAND_LOG=1` and redeploy.
 
 ## Steps
 
