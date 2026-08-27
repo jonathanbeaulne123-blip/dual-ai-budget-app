@@ -174,7 +174,7 @@ export function WorkShiftPage({
               <h2>Tip climate</h2>
               <span className="pill proj">Projection</span>
             </header>
-            <p className="muted">Next 7 dinners &amp; lunches. Tap a seal — Hercules speaks the range.</p>
+            <p className="muted">Next 7 dinners &amp; lunches. Tap a seal for the nights-like-this range.</p>
             <div className="shift-climate-seals">
               {climate.map((seal) => (
                 <button

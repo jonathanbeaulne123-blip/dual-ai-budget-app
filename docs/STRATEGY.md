@@ -77,7 +77,7 @@ These are **important features**. Dual Course does not rewrite them. Smaller sur
 
 Do not re-litigate these as “Chapter 0” or “Ring 1.” They are the kitchen as of this canon:
 
-- Phone-first Home, Cal, Shift, Add, Plan, Books, More (D-152)
+- Phone-first Home, Calendar, Add, Plan, Books, More
 - Command kernel: spend, income, shift, transfer, category, budget, goals, recurrences, undo, confirm, duplicates
 - PGlite journal + current legacy Supabase snapshot transport; trial balance; read-only SQL. D-114 cloud continuity supersedes optional publish as the target.
 - Sync integrity (D-052): append-only goal contributions, timestamped catalog merge, personal rows kept on the snapshot, upsert without DELETE
