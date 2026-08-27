@@ -2,9 +2,9 @@
 
 ## Shift tab (D-152) (2026-08-27)
 
-**Status:** Branch `cursor/shift-tab-mobile-6319` off `origin/main` `@93df0ec`. Risk: **Medium**. Not merged, not deployed.
+**Status:** Branch `cursor/shift-tab-mobile-6319` @ `84819c3` off `origin/main` `@93df0ec`. Draft PR [#213](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/213). Risk: **Medium**. **Not merged, not deployed, not shipped.** Visual proof is the remaining gate.
 
-**Household outcome:** Bianca and Jonathan open **Shift** from the phone bar. Punch, last shifts, Jobs, compressed report, and Hercules Shift Oracle glances live there. Add stays centered. Confirm still posts.
+**Household outcome:** Bianca and Jonathan open **Shift** from the phone bar. Punch, last shifts, Jobs, compressed report, and Hercules Shift Oracle glances live there. Add stays centered. Confirm still posts. The tab never writes money.
 
 **Budget delta (5):** `+1`
 
@@ -12,11 +12,19 @@
 
 **What changed:** Nav is `Home · Cal · Shift · [+] · Plan · Books · More`. `WorkShiftPage` hosts Today / Report / Jobs. More no longer mounts Jobs / history / report. Home Timesheet stays. Projections are copper-badged and never post.
 
-**Verification:** (in progress — focused tests then `pnpm check`)
+**Verification:**
+- Focused `test/shift-glance.test.ts` **5 passed**; `tsc --noEmit` green on `84819c3`.
+- Full `pnpm check` **green** at `fa7b8a3`: **880 passed / 2 skipped**; `tsc` + vite build green. Not re-run on HEAD `84819c3` (a11y + copy-only commits after).
+- Independent reviews: books / privacy / UX / verifier **PASS WITH NOTES**. UX F-1/F-2 (tab/tabpanel + `.tabs :focus-visible`) fixed in `0b1b2ee`. STRATEGY overclaim reverted in `84819c3`.
+- **Visual proof not done.** Cursor Cloud `computerUse` failed twice with `The execution environment has become unreachable`. No walkthrough screenshots/video were saved. Do not treat mocks or invented images as app proof.
 
-**Data/environment:** Client/docs only. Visual proof uses fictional Development demo. No Production, schema, secrets, or deploy.
+**GPT packet:** paste-ready prompt in [`docs/briefs/SHIFT_TAB_VISUAL_PROOF_GPT.md`](briefs/SHIFT_TAB_VISUAL_PROOF_GPT.md).
 
-**Next owner:** Jonathan — review the draft PR. Do not merge until visual proof at 320 / 390 / 720 / ~1100.
+**Data/environment:** Client/docs only. Intended visual proof uses fictional Development demo (`Open the demo kitchen table` → Bianca). No Production, schema, secrets, or deploy. No real household data.
+
+**Remaining uncertainty:** Future climate days cannot show real rain without a multi-day forecast (cadence + season). Today's rain drop uses cached Open-Meteo / fallback. Demo Thursdays can be cadence-off. Visual match to the locked 390px mocks is unproven in a live browser.
+
+**Next owner:** GPT (or another visual agent) — run the prompt in `docs/briefs/SHIFT_TAB_VISUAL_PROOF_GPT.md`, capture 320 / 390 / 720 / ~1100, then Jonathan reviews PR #213. Do not merge until that evidence is on the PR.
 
 ## Supabase Preview history matches 016 (D-151) (2026-08-27)
 
