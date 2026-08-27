@@ -1,5 +1,13 @@
 # AI Task and Handoff Standard
 
+## D-152 studio pipeline map (2026-08-27, later)
+
+**Status:** Same branch. Docs only. **Not shipped.** Compositor still locked.
+
+**What changed:** [`docs/ux/computer-office/STUDIO_PIPELINE.md`](ux/computer-office/STUDIO_PIPELINE.md) maps Blender / fSpy / Krita / Affinity Photo / Resolve / ComfyUI jobs, MUST plugins (fSpy importer, Node Wrangler, ComfyUI Manager, ffmpeg, PureRef), automations, and skills. Jonathan has those DCCs installed.
+
+**Next owner:** Jonathan enables MUST plugins this week, then **studio is installed**. Then empty Home suite only.
+
 ## D-152 photoreal stills + studio kit (2026-08-27)
 
 **Status:** Branch `cursor/computer-office-d151-605a`, draft PR #207. Risk: **Low** (docs + canon stills; no compositor yet). **Not shipped.** Empty-room pixels stay locked until Jonathan confirms the studio is installed.

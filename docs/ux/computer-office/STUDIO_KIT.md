@@ -97,6 +97,8 @@ canon stills  →  fSpy + Blender camera
 
 Fire/snow WebM, EmberGen, Meshy, and three.js overlay are how it *stops looking like a screenshot* after the empty room already matches.
 
+**Pipeline (who owns which job, MUST plugins, automations, skills):** [`STUDIO_PIPELINE.md`](STUDIO_PIPELINE.md).
+
 ---
 
 ## Privacy

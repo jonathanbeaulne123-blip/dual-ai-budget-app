@@ -13,7 +13,7 @@ Fictional demo CAD only. These files are the pixel source of truth for computer 
 | `hearth-canon-play-fleet.jpg` | Kitchen Fleet parchment + pieces |
 | `hearth-canon-play-boards.jpg` | Sill Four, tic-tac-toe, hangman |
 
-Studio install list (free / one-time / optional subs): [`STUDIO_KIT.md`](STUDIO_KIT.md). Program: [`docs/COMPUTER_OFFICE.md`](../../COMPUTER_OFFICE.md). Decision **D-152**.
+Studio install list: [`STUDIO_KIT.md`](STUDIO_KIT.md). Job map, plugins, automations, skills: [`STUDIO_PIPELINE.md`](STUDIO_PIPELINE.md). Program: [`docs/COMPUTER_OFFICE.md`](../../COMPUTER_OFFICE.md). Decision **D-152**.
 
 **Superseded generation** (earlier CSS-cabin mockups; keep for history, do not match pixels to these):
 
