@@ -32,7 +32,7 @@ import { ledgerNameForView, shapeLedgerNames } from "./ledgerNames.ts";
 import type { HerculesAskContext } from "./askBooks.ts";
 import type { HerculesGroundedFact, HerculesNumberSource } from "./herculesProvenance.ts";
 import type { HerculesTalk } from "./herculesTalk.ts";
-import { JOINT, type Account, type Household, type Transaction } from "./types.ts";
+import type { Account, Household, Transaction } from "./types.ts";
 import {
   explainShiftYearSimulation,
   planTaxMilk,

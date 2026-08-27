@@ -121,9 +121,9 @@ export type HerculesQuestionGate =
 
 /** Text classification only chooses the ledger boundary; it never extracts CAD. */
 export function gateHerculesQuestion(
-  household: Household,
+  _household: Household,
   question: string,
-  memberId: string,
+  _memberId: string,
   view: LedgerView,
 ): HerculesQuestionGate {
   const q = question.toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9\s]/g, " ");
