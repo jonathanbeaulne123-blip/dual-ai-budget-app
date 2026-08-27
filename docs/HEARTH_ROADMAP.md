@@ -286,7 +286,7 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 - [x] Apply reviewed `004` and `005` preparation/hardening with Development approval; remove approved legacy Development rows and verify Production data is untouched.
 - [x] Explicit shared-project cutover permission in principle (path B, 2026-08-25); Production continuity client behind build flag.
 - [x] Apply SELECT bridge `008`; configure Google provider; revise 006 Production abort to NOTICE; apply **006**.
-- [ ] Smoke Create / email / QR / revoke / anon denial / wrong-household denial on Auth-enabled kitchen; invite chrome.
+- [ ] Smoke Create / email / QR / revoke / anon denial / wrong-household denial on Auth-enabled kitchen; invite chrome. *(QR two-device smoke **passed** 2026-08-26 — [`AUTH_INVITE_SMOKE.md`](AUTH_INVITE_SMOKE.md); email/revoke/anon suite still open.)*
 - [ ] Add device/session revoke and household leave/recovery semantics.
 - [x] Replace phrase-as-authority and `linked` publishing with automatic authenticated discovery/synchronization; invitations only establish membership. *(D-143 client: automatic transport requires continuity membership; live anon phrase REST denied under 006; 010 bind live. Signed-in Create/invite redeem smoke still open; revoke UI deferred.)*
 - [ ] Build and test migrations on a disposable rehearsal project; Production cutover is a separate Jonathan-approved plan.

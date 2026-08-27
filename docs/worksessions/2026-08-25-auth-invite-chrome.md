@@ -1,6 +1,6 @@
 # Hearth worksession — Auth kitchen smoke + invite chrome
 
-- **Status:** OPEN
+- **Status:** CLOSED — QR two-device smoke passed 2026-08-26 ([`AUTH_INVITE_SMOKE.md`](../AUTH_INVITE_SMOKE.md))
 - **Opened:** 2026-08-25 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor Cloud Agent
@@ -52,26 +52,26 @@ After 006, Jonathan can prove anon denial and the Auth Google door on the live k
 
 - [x] Anon denial against live REST
 - [x] Kitchen Auth door reaches Google OAuth
-- [ ] Owner issues email/QR on signed-in kitchen (Jonathan)
-- [ ] Joiner redeems invite (second Google / Jonathan assist)
-- [ ] `pnpm check` / focused tests green on branch
+- [x] Owner issues QR on signed-in kitchen; joiner redeems (Jonathan two-device smoke 2026-08-26)
+- [x] `pnpm check` / focused tests green on branch
 
 ## Plan
 
 - [x] Sync main; open branch
 - [x] Implement invite client + chrome
-- [ ] Tests + check
-- [ ] Draft PR + handoff
+- [x] Tests + check
+- [x] Draft PR + handoff
 
 ## Evidence log
 
 - `curl` anon households → 401 `permission denied for table households`
 - Computer-use: welcome Continue with Google → accounts.google.com for `tykhocwacaxwquhynkok.supabase.co`
+- **2026-08-26:** Jonathan — migration 015 applied; two-device QR invite smoke passed on live kitchen (D-150 + delete cleanup #181). See [`AUTH_INVITE_SMOKE.md`](../AUTH_INVITE_SMOKE.md).
 
 ## Remaining uncertainty
 
-Full Create/post/sync and invite redeem require Jonathan’s Google session on the kitchen.
+Email-invite mismatch path, revoke UI, and formal anon-denial matrix not re-run in this smoke pass.
 
 ## Handoff
 
-Next owner: Jonathan for signed-in smoke; Cursor continues invite PR until green checks.
+QR invite front door verified live. Next: email invite spot-check, revoke chrome (S4), or D-149 Tier 1 Realtime two-phone latency smoke.
