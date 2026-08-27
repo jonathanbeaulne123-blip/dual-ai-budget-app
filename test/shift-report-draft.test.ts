@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { visionDocumentRows, type VisionDocumentResult } from "../src/core/index.ts";
 import { scanFinancialDocument } from "../src/imports/documentScanner.ts";
-import { workShiftDraftFromVision } from "../src/imports/shiftReportDraft.ts";
+import { workShiftDraftFromVision, scanShiftReportFile } from "../src/imports/shiftReportDraft.ts";
 
 const shiftResult = {
   documentKind: "shift-report" as const,
@@ -72,7 +72,7 @@ describe("shift-report Confirm draft mapping", () => {
       result: shiftResult,
       sourceName: "tips.jpg",
       sourceHash: "tips-hash",
-    })).toThrow(/Timesheet → Scan shift report/i);
+    })).toThrow(/Shift → Today/i);
   });
 
   it("sends documentHint shift-report on the shared camera scan path", async () => {
@@ -88,5 +88,20 @@ describe("shift-report Confirm draft mapping", () => {
     const scanned = await scanFinancialDocument(file, fetcher as typeof fetch, { documentHint: "shift-report" });
     expect(scanned.result.documentKind).toBe("shift-report");
     expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("scanShiftReportFile keeps documentHint shift-report and still omits OCR notes", async () => {
+    const fetcher = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body)) as { documentHint?: string };
+      expect(body.documentHint).toBe("shift-report");
+      return new Response(JSON.stringify({ ok: true, result: shiftResult }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    const file = new File([new Uint8Array([1, 2, 3])], "tips.jpg", { type: "image/jpeg" });
+    const mapped = await scanShiftReportFile(file, fetcher as typeof fetch);
+    expect(mapped.draft).not.toHaveProperty("note");
+    expect(JSON.stringify(mapped)).not.toMatch(/Alex|Priya/i);
   });
 });

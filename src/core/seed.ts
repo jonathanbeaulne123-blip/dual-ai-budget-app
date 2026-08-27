@@ -655,5 +655,21 @@ export function seedDemoHousehold(options?: { today?: DateKey; environment?: Hou
   } satisfies WorkJob, demoJobAt);
   household = upsertWorkJob(household, { job: demoWorkJob }).household;
 
+  const biancaDemoJob = shapeWorkJob({
+    ...demoWorkJob,
+    id: "",
+    memberId: "MEM-001",
+    name: "Demo Bistro",
+    color: "#c45c26",
+    roles: demoWorkJob.roles.map((role) => ({
+      ...role,
+      id: "ROLE-SERVER-BIANCA",
+      rates: role.rates.map((rate) => ({ ...rate, id: "RATE-SERVER-BIANCA" })),
+    })),
+    salesFields: demoWorkJob.salesFields.map((field) => ({ ...field, id: "SALES-TOTAL-BIANCA" })),
+    note: "Demo Timesheet job so Bianca can punch and scan on Shift Today.",
+  } satisfies WorkJob, demoJobAt);
+  household = upsertWorkJob(household, { job: biancaDemoJob }).household;
+
   return household;
 }

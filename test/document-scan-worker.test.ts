@@ -178,6 +178,8 @@ describe("document detection Worker", () => {
   it("sanitizes shift-report drafts, drops OCR notes, and honors documentHint", async () => {
     const run = vi.fn(async (_model: string, input: { messages?: Array<{ content?: string }> }) => {
       expect(JSON.stringify(input.messages)).toMatch(/Prefer documentKind shift-report/i);
+      expect(JSON.stringify(input.messages)).toMatch(/Shift → Today/i);
+      expect(JSON.stringify(input.messages)).not.toMatch(/from Timesheet/i);
       return {
         response: {
           documentKind: "shift-report",
