@@ -984,7 +984,7 @@ function sanitizeDocumentResult(value) {
 
 function documentScanUserText(documentHint) {
   if (documentHint === "shift-report") {
-    return "This photo was taken from Timesheet to draft a shift Confirm. Prefer documentKind shift-report when it is a tip sheet, close-out, or work summary. Extract only clearly readable numeric fields into shiftDraft. Never invent amounts or coworker names. Return only the schema.";
+    return "This photo was taken from Shift → Today to draft a shift Confirm. Prefer documentKind shift-report when it is a tip sheet, close-out, or work summary. Extract only clearly readable numeric fields into shiftDraft. Never invent amounts or coworker names. Return only the schema.";
   }
   return "Extract the selected document. Return only the requested JSON schema.";
 }

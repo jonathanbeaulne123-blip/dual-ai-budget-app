@@ -90,5 +90,7 @@ describe("Shift Today camera draft", () => {
     act(() => { alreadyOff!.click(); });
     expect(container.textContent).toContain(SHIFT_REPORT_SCAN_COPY.take);
     expect(container.textContent).toContain("Back to clock");
+    const html = container.innerHTML;
+    expect(html.indexOf("Back to clock")).toBeLessThan(html.indexOf(SHIFT_REPORT_SCAN_COPY.take));
   });
 });

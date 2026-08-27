@@ -224,17 +224,17 @@ export function WorkShiftPage({
             />
             {reviewing ? (
               <>
+                {finishedReview && !punch ? (
+                  <button type="button" className="chip" disabled={busy} onClick={() => { setFinishedReview(false); clearScanDraft(); }}>
+                    Back to clock
+                  </button>
+                ) : null}
                 <ShiftReportScanBar
                   busy={busy}
                   scanBusy={shiftScanBusy}
                   error={shiftScanError}
                   onFile={(file) => { void applyScan(file); }}
                 />
-                {finishedReview && !punch ? (
-                  <button type="button" className="chip" disabled={busy} onClick={() => { setFinishedReview(false); clearScanDraft(); }}>
-                    Back to clock
-                  </button>
-                ) : null}
                 <WorkShiftFlow
                   key={workShiftDraft ? `draft-${JSON.stringify(workShiftDraft)}` : "blank"}
                   household={household}
