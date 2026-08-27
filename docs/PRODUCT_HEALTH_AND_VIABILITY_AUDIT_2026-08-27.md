@@ -347,5 +347,3 @@ The canonical roadmap now needs an explicit product-health and investor-evidence
 - [Monarch Money pricing](https://partners.monarchmoney.com/pricing)
 - [Copilot Money pricing](https://www.copilot.money/)
 - [Wealthica Canada pricing](https://wealthica.com/ca-en/pricing/)
-
-
