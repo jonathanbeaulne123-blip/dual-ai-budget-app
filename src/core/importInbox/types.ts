@@ -98,6 +98,8 @@ export type VisionDocumentResult = {
     date?: string;
     workedHours?: number;
     salesCents?: number;
+    foodSalesCents?: number;
+    alcoholSalesCents?: number;
     cashTipsCents?: number;
     cardTipsCents?: number;
     customersServed?: number;

@@ -43,6 +43,8 @@ export type WorkShiftDraft = {
   workedHours?: string | number;
   paidBreakHours?: string | number;
   sales?: string | number;
+  /** Optional POS class totals keyed by label (Food / Alcohol). Never invents a split. */
+  salesByField?: Record<string, string | number>;
   cashTips?: string | number;
   cardTips?: string | number;
   customersServed?: string | number;
@@ -127,13 +129,27 @@ export function WorkShiftFlow({
       cashTips: asDigitsFromDollars(cameraDraft?.cashTips),
       cardTips: asDigitsFromDollars(cameraDraft?.cardTips),
     };
-    if (salesDigits) {
+    const classDraft = cameraDraft?.salesByField ?? {};
+    let matchedClass = false;
+    for (const field of draftSalesFields) {
+      const key = Object.keys(classDraft).find((label) => label.toLowerCase() === field.label.toLowerCase()
+        || field.id.toLowerCase().includes(label.toLowerCase())
+        || label.toLowerCase().includes(field.label.toLowerCase()));
+      if (key == null) continue;
+      const digits = asDigitsFromDollars(classDraft[key]);
+      if (!digits) continue;
+      next[`sales:${field.id}`] = digits;
+      matchedClass = true;
+    }
+    if (!matchedClass && salesDigits) {
       if (draftSalesFields.length === 1) {
         next[`sales:${draftSalesFields[0]!.id}`] = salesDigits;
       } else if (draftSalesFields.length === 0) {
         next.sales = salesDigits;
       }
-      // Multi-field jobs: leave blank — never invent a Food/Alcohol/Other split.
+      // Multi-field jobs without class totals: leave blank — never invent a Food/Alcohol/Other split.
+    } else if (!matchedClass && draftSalesFields.length === 0 && salesDigits) {
+      next.sales = salesDigits;
     }
     return next;
   });
@@ -296,7 +312,7 @@ export function WorkShiftFlow({
         <div className="work-shift-draft-banner" role="status">
           <p className="kicker">Draft from camera</p>
           <p>Review every figure before Confirm. Scan never posts money.</p>
-          {cameraDraft.sales != null && salesFields.length > 1 && (
+          {cameraDraft.sales != null && salesFields.length > 1 && !cameraDraft.salesByField && (
             <p className="muted">Camera saw a sales total — enter it across {salesFields.map((field) => field.label).join(" / ")} yourself. Hearth will not invent a split.</p>
           )}
           {(scanWarnings ?? []).slice(0, 4).map((warning) => <p className="muted" key={warning}>{warning}</p>)}

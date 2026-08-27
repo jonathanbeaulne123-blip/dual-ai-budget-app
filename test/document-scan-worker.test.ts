@@ -243,4 +243,56 @@ describe("document detection Worker", () => {
     expect(body.result.warnings[0]).toMatch(/Pool line faint/i);
     expect(run).toHaveBeenCalledTimes(1);
   });
+
+  it("coerces Toast-style Employee Shift Report fields into a sanitized Confirm draft", async () => {
+    const run = vi.fn(async (_model: string, input: { messages?: Array<{ content?: string }> }) => {
+      expect(JSON.stringify(input.messages)).toMatch(/EMPLOYEE SHIFT REPORT|Tip Summary Debit/i);
+      return {
+        response: {
+          documentKind: "shift-report",
+          currency: "CAD",
+          accountLast4: "",
+          rows: [],
+          receiptNumbers: null,
+          // Simulate messy model output: US date, dollar strings, headcount alias, total tips only.
+          shiftDraft: {
+            date: "08/20/2026",
+            workedHours: 2.05,
+            salesCents: "586.01",
+            foodSalesCents: "486.01",
+            alcoholSalesCents: "100.00",
+            cashTipsCents: "0.00",
+            totalTipsCents: "131.02",
+            headcount: 17,
+            note: "Jonathan",
+          },
+          warnings: [],
+        },
+      };
+    });
+    const response = await worker.fetch(new Request(`${origin}/documents/scan`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: origin },
+      body: JSON.stringify({
+        fileName: "employee-shift-report.jpg",
+        mimeType: "image/jpeg",
+        imageDataUrl: "data:image/jpeg;base64,AA==",
+        documentHint: "shift-report",
+      }),
+    }), { AI: { run }, ASSETS: { fetch: vi.fn() } });
+    expect(response.status).toBe(200);
+    const body = await response.json() as { result: { shiftDraft?: Record<string, unknown> } };
+    expect(body.result.shiftDraft).toEqual({
+      date: "2026-08-20",
+      workedHours: 2.05,
+      salesCents: 58_601,
+      foodSalesCents: 48_601,
+      alcoholSalesCents: 10_000,
+      cashTipsCents: 0,
+      cardTipsCents: 13_102,
+      customersServed: 17,
+    });
+    expect(body.result.shiftDraft).not.toHaveProperty("note");
+    expect(body.result.shiftDraft).not.toHaveProperty("staffingCount");
+  });
 });
