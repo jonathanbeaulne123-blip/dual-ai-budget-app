@@ -36,8 +36,20 @@ export function WorkShiftWithSevenShifts({
   const [batch, setBatch] = useState<ParsedSevenShiftsBatch | null>(null);
   const [draft, setDraft] = useState<SevenShiftsTimesheetDraft | null>(null);
   const [notice, setNotice] = useState("");
-  const posted = useMemo(() => postedSevenShiftsPunchDigests(household.shifts), [household.shifts]);
+  const posted = useMemo(() => postedSevenShiftsPunchDigests(household), [household.shifts]);
   const jobs = (household.workJobs ?? []).filter((job) => job.active && job.memberId === memberId);
+  if (household.environment !== "development") {
+    return (
+      <WorkShiftFlow
+        household={household}
+        memberId={memberId}
+        today={today}
+        punch={punch}
+        busy={busy}
+        onConfirm={onConfirm}
+      />
+    );
+  }
 
   useEffect(() => {
     if (initialDraft) setDraft(null);

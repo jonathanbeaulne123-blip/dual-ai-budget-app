@@ -1,13 +1,18 @@
 import { describe, expect, it } from "vitest";
 import {
   catalogHousehold,
+  compileHousehold,
+  composeHerculesChatRequest,
+  herculesBriefing,
   hoursFromSevenShiftsPunch,
   parseSevenShiftsInbox,
   postedSevenShiftsPunchDigests,
   postWorkShift,
+  reversePostedMoney,
+  runHealthCheck,
   sevenShiftsDisplayName,
+  trialBalance,
   upsertWorkJob,
-  herculesPageBrief,
   type SevenShiftsInboxPayload,
   type WorkJob,
 } from "../src/core/index.ts";
@@ -131,7 +136,8 @@ describe("7shifts Timesheet inbox", () => {
       preferred_last_name: "Example",
     })).toBe("Bianca E.");
     expect(sevenShiftsDisplayName({ first_name: "Alex" })).toBe("Alex");
-    expect(sevenShiftsDisplayName({ first_name: "", last_name: "" })).toBe("Coworker");
+    expect(sevenShiftsDisplayName({ first_name: "alex@example.com", last_name: "Park" })).toBe("Coworker");
+    expect(sevenShiftsDisplayName({ first_name: "5555551234" })).toBe("Coworker");
   });
 
   it("fills hours and role, leaves cash and card tips empty, and does not mint household members", () => {
@@ -209,7 +215,26 @@ describe("7shifts Timesheet inbox", () => {
     expect(shift.cashTipsCents).toBe(0);
     expect(shift.ccTipsCents).toBe(0);
     expect(shift.hours).toBeGreaterThan(0);
-    expect(postedSevenShiftsPunchDigests(posted.household.shifts)).toContain(PUNCH);
+    expect(postedSevenShiftsPunchDigests(posted.household)).toContain(PUNCH);
+    expect(shift.wagesCents).toBe(8_370);
+    expect(shift.cashTipsCents).toBe(0);
+    expect(shift.ccTipsCents).toBe(0);
+    const books = compileHousehold(posted.household);
+    expect(trialBalance(books).inBalance).toBe(true);
+    expect(runHealthCheck(posted.household)).toEqual([]);
+    expect(() => postWorkShift(posted.household, {
+      date: draft.date,
+      memberId: "MEM-002",
+      jobId: draft.jobId,
+      roleId: draft.roleId,
+      workedHours: 1,
+      paidBreakHours: 0,
+      cashTips: "",
+      cardTips: "",
+      cashTipsAccountId: "ACC-CASH",
+      sevenShiftsPunchDigest: `s7punch_${"d".repeat(64)}`,
+      createdBy: "MEM-002",
+    })).toThrow(/already has a .* shift on/);
     expect(() => postWorkShift(posted.household, {
       date: draft.date,
       memberId: "MEM-002",
@@ -225,7 +250,12 @@ describe("7shifts Timesheet inbox", () => {
       createdBy: "MEM-002",
     })).toThrow(/already on the books/);
 
-    const briefing = herculesPageBrief(posted.household, "more", "2026-08-26");
-    expect(JSON.stringify(briefing)).not.toMatch(/Alex P\.|7shifts access|s7c_/);
+    const reversed = reversePostedMoney(posted.household, shift.transactionIds![0]!, { createdBy: "MEM-002" }).household;
+    expect(postedSevenShiftsPunchDigests(reversed)).not.toContain(PUNCH);
+    expect(parseSevenShiftsInbox(payload({ jobId: savedJob.id }), reversed.workJobs, postedSevenShiftsPunchDigests(reversed)).drafts).toHaveLength(1);
+
+    const briefing = herculesBriefing(posted.household, "home", "2026-08-26");
+    const request = composeHerculesChatRequest(posted.household, "what did I make", briefing, "2026-08-26", "MEM-002");
+    expect(JSON.stringify(request)).not.toMatch(/Alex P\.|7shifts access|s7c_|s7user_|example\.com/);
   });
 });

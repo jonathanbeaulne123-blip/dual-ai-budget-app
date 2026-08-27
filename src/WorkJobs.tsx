@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   TIMEZONE,
   formatCad,
+  postedSevenShiftsPunchDigests,
   shapeWorkJob,
   type Account,
   type Household,
@@ -185,6 +186,7 @@ export function WorkJobsCard({ household, memberId, today, busy, onAskSave, onAr
           householdId={household.householdId}
           memberId={memberId}
           jobs={jobs}
+          postedPunchDigests={postedSevenShiftsPunchDigests(household)}
           disabled={busy}
         />
       </section>

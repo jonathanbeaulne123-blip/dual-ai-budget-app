@@ -7,8 +7,8 @@
 - **Repository:** jonathanbeaulne123-blip/dual-ai-budget-app
 - **Branch:** `cursor/seven-shifts-inbox-5958`
 - **Baseline SHA:** `93df0ec`
-- **Head SHA:** (in progress)
-- **PR or issue:** (draft after first push)
+- **Head SHA:** (see git)
+- **PR or issue:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/214
 - **Risk:** High (provider token, coworker PII, work hours → wage drafts)
 - **Decision owner:** Jonathan
 - **Environment impact:** Development Worker + D1 table (unapplied until Jonathan orders). No Production. No hosted SQL. No secrets put by this packet.
@@ -62,24 +62,27 @@ A Harbour worker can add a 7shifts access token on Jobs, pull clocked punches in
 
 ## Acceptance evidence
 
-- [ ] Status is inert scaffold without secrets; Production stays refused.
-- [ ] Unauthenticated / foreign-origin / non-member routes never touch D1 or 7shifts.
-- [ ] Pull payload has hours/role/roster, `tipsOmitted: true`, and no token/email/wage/tip cents.
-- [ ] Mapping leaves cash/card tips empty; Confirm still uses `postWorkShift`.
-- [ ] Replaying the same punch digest refuses a second wage post.
-- [ ] Coworker names are not members and are absent from Hercules briefing helpers.
+- [x] Status is inert scaffold without secrets; Production stays refused.
+- [x] Unauthenticated / foreign-origin / non-member routes never touch D1 or 7shifts (401/403 before insert; status `SELECT 1` is the Flinks-shaped exception).
+- [x] Pull payload has hours/role/roster, `tipsOmitted: true`, and no token/email/wage/tip cents.
+- [x] Mapping leaves cash/card tips empty; Confirm still uses `postWorkShift`.
+- [x] Replaying the same live punch digest refuses a second wage post on this device.
+- [x] Coworker names are not members and are absent from `composeHerculesChatRequest`.
 
 ## Plan
 
 - [x] Open worksession from `main@93df0ec`.
-- [ ] Parser + hours math + Worker + client + Jobs/Timesheet UI.
-- [ ] Focused tests, then `pnpm check`.
-- [ ] Independent privacy + trust audits; books auditor for Confirm boundary.
-- [ ] Handoff + draft PR. Do not merge/deploy.
+- [x] Parser + hours math + Worker + client + Jobs/Timesheet UI.
+- [x] Focused tests, then `pnpm check`.
+- [x] Independent privacy + trust + books audits; verifier.
+- [x] Handoff + draft PR. Do not merge/deploy.
 
 ## Evidence log
 
-Record exact commands, results, and SHAs here as they land.
+- Focused 25 tests pass (`sevenshifts-*` + `work-jobs`).
+- `pnpm check` on `8bd4ad0`: 892 passed / 2 skipped; production build green.
+- Privacy / trust / books / verifier: PASS WITH NOTES.
+- Two-phone same-digest merge is named, not fixed.
 
 ## Decisions
 
@@ -88,13 +91,15 @@ Record exact commands, results, and SHAs here as they land.
 - Ignore 7shifts `tips` even when the API returns `0`.
 - Reuse Development D1 `hearth-flinks-development` for the new table only; encryption keys stay separate.
 - Coworker PII is session inbox + Jobs tab, not the household snapshot.
+- Duplicate punch refuse is this-device until sync digest reconciliation.
 
 ## Remaining uncertainty
 
 - Live token/company smoke needs Jonathan’s Harbour Developer Tools token after Worker secrets + D1 apply.
 - Break object shapes besides `in`/`out`/`paid` may need a follow-up once a real punch is pulled.
 - Webhooks (Time Punch Created) remain a later enqueue-only path.
+- Two phones Confirm-before-sync can still double-post the same punch (merge by shift id).
 
 ## Handoff
 
-Local/branch until the PR exists. Not merged, not deployed, not live verified. Next owner after review: Jonathan — secrets, D1 apply, then deploy.
+Draft PR #214. Not merged, not deployed, not live verified. Next owner: Jonathan — secrets, D1 apply, enable flag, then deploy.

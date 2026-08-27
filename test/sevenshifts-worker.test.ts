@@ -131,6 +131,12 @@ function sevenShiftsUpstream() {
             mobile_number: "5555551234",
             birth_date: "1990-01-01",
             active: true,
+          }, {
+            id: 556,
+            company_id: 1234,
+            first_name: "alex@example.com",
+            last_name: "Park",
+            active: true,
           }],
         },
       });
@@ -244,6 +250,7 @@ describe("authenticated 7shifts Worker", () => {
     const probeBody = await probed.json() as { companyName: string; users: Array<{ userDigest: string; displayName: string }> };
     expect(probeBody.companyName).toBe("Harbour");
     expect(probeBody.users[0]?.displayName).toBe("Jonathan H.");
+    expect(probeBody.users.some((user) => user.displayName === "Coworker")).toBe(true);
     expect(JSON.stringify(probeBody)).not.toMatch(/example\.com|5555551234|1990-01-01|hourly_wage|accessToken|seven-shifts-access/);
     expect(db.rows).toHaveLength(0);
 
