@@ -1490,6 +1490,7 @@ export function App() {
     next: Household,
     token?: UndoToken,
     actorId?: string,
+    options?: { forceFlush?: boolean },
   ): Promise<CommandOutcome | null> {
     setBusy(true);
     const previous = householdRef.current;
@@ -1516,7 +1517,8 @@ export function App() {
       );
       const transportRequested = hostedContinuityAllowed(environment) && automaticContinuity;
       // Kitchen/UX: enqueue only, flush in background. Ledger: flush immediately (sync-on-write).
-      const flushTransport = ledgerWrite;
+      // Stress Reload forces an immediate flush so Hercules Pro can read the new harbour shifts.
+      const flushTransport = ledgerWrite || options?.forceFlush === true;
       const outcome = await acceptHouseholdWrite({
         previous,
         candidate: next,
@@ -1704,8 +1706,8 @@ export function App() {
     }
   }
 
-  function persist(next: Household, token?: UndoToken, actorId?: string) {
-    return enqueueWrite(() => commitHousehold(next, token, actorId));
+  function persist(next: Household, token?: UndoToken, actorId?: string, options?: { forceFlush?: boolean }) {
+    return enqueueWrite(() => commitHousehold(next, token, actorId, options));
   }
 
   async function gateWithGoogle(options?: { record?: boolean }) {
@@ -3727,14 +3729,37 @@ export function App() {
               try {
                 await gateWithGoogle({ record: false });
                 setGuard(null);
-                await persist(seedStressHousehold({
+                const seeded = seedStressHousehold({
                   today,
                   environment,
                   seed: Date.now() & 0xffffffff,
                   numberStyle: "realistic",
                   preserveFrom: environment === "development" ? household ?? undefined : undefined,
                   tipMemberId: session?.memberId,
-                }));
+                });
+                await persist(seeded, undefined, session?.memberId, { forceFlush: true });
+                const who = session?.memberId;
+                if (who && hostedContinuityAllowed(environment)) {
+                  const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
+                  const googleSession = loadGoogleSession(environment, who);
+                  const continuityIdentity: ContinuityIdentity | null = authSession
+                    ? { email: authSession.email, subject: authSession.googleSubject }
+                    : googleSession?.identity
+                      ? { email: googleSession.identity.email, subject: googleSession.identity.subject }
+                      : null;
+                  if (continuityIdentity) {
+                    const flushed = await flushContinuityOutbox({
+                      environment,
+                      identity: continuityIdentity,
+                      config: authenticatedSupabaseConfig(readSupabaseConfig(), authSession),
+                    });
+                    if (flushed.conflicts[0]) {
+                      setError(flushed.conflicts[0].message);
+                    } else if (flushed.pending > 0) {
+                      setError(`Stress data is on this phone (${seeded.shifts.length} shifts) but ${flushed.pending} cloud push${flushed.pending === 1 ? " is" : "es are"} still pending. Open Pairing / Retry now before asking Hercules Pro.`);
+                    }
+                  }
+                }
               } catch (caught) {
                 setError(caught instanceof Error ? caught.message : String(caught));
               } finally {
@@ -3759,14 +3784,37 @@ export function App() {
               try {
                 await gateWithGoogle({ record: false });
                 setGuard(null);
-                await persist(seedStressHousehold({
+                const seeded = seedStressHousehold({
                   today,
                   environment,
                   seed: Date.now() & 0xffffffff,
                   numberStyle: "pretty",
                   preserveFrom: environment === "development" ? household ?? undefined : undefined,
                   tipMemberId: session?.memberId,
-                }));
+                });
+                await persist(seeded, undefined, session?.memberId, { forceFlush: true });
+                const who = session?.memberId;
+                if (who && hostedContinuityAllowed(environment)) {
+                  const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
+                  const googleSession = loadGoogleSession(environment, who);
+                  const continuityIdentity: ContinuityIdentity | null = authSession
+                    ? { email: authSession.email, subject: authSession.googleSubject }
+                    : googleSession?.identity
+                      ? { email: googleSession.identity.email, subject: googleSession.identity.subject }
+                      : null;
+                  if (continuityIdentity) {
+                    const flushed = await flushContinuityOutbox({
+                      environment,
+                      identity: continuityIdentity,
+                      config: authenticatedSupabaseConfig(readSupabaseConfig(), authSession),
+                    });
+                    if (flushed.conflicts[0]) {
+                      setError(flushed.conflicts[0].message);
+                    } else if (flushed.pending > 0) {
+                      setError(`Pretty numbers are on this phone (${seeded.shifts.length} shifts) but ${flushed.pending} cloud push${flushed.pending === 1 ? " is" : "es are"} still pending. Open Pairing / Retry now before asking Hercules Pro.`);
+                    }
+                  }
+                }
               } catch (caught) {
                 setError(caught instanceof Error ? caught.message : String(caught));
               } finally {

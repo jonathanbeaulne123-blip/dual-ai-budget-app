@@ -95,8 +95,8 @@ Do **not** use Welcome → Open the demo kitchen table for Pro — demo/empty/Pa
 
 1. Development pill. Sign in with Google and **Create household with Google** (or open an existing linked Development household). Confirm so membership + snapshot exist.
 2. Stay on the member who should own tip history (Jonathan / `MEM-002` is the default tip earner when you create as that person; Reload posts tip shifts for whoever is signed in on this phone).
-3. More → **Reload random data** (or pretty numbers). Confirm. Development Reload **keeps** this household id, invite, Google links, revision, and members while replacing activity with ~twelve months of weather-weighted harbour shifts.
-4. Wait for sync (focus/reconnect or Pairing publish). Confirm the outbox is quiet.
+3. More → **Reload random data** (or pretty numbers). Confirm. Development Reload **keeps** this household id, invite, Google links, revision, and members while replacing activity with ~twelve months of weather-weighted harbour shifts, then **force-flushes** the shared cloud snapshot so Hercules Pro can read the same shifts as the Work report.
+4. If Pairing still shows pending/conflict after Reload, tap **Retry now** and wait until quiet. Work report on the phone is local; Pro only sees the hosted snapshot.
 5. In ChatGPT, Connect Hercules Pro while that household/member is open.
 6. Ask: `Simulate my next year of tips and wages, then teach me how it works.` or `What is my tip floor for the next month?` Use household view if you connected as a member without tip shifts.
 
