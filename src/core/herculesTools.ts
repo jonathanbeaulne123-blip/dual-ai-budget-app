@@ -1611,7 +1611,6 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
       cursor: cleanString(call.args.cursor, 40),
     });
     if (!page.rows.length) return empty(call, `I found 0 posted shifts ${range.label}.`);
-    const source = tipOracleSource(context, memberId, range.start);
     const facts = page.rows.slice(0, Math.min(8, page.rows.length)).map((row, index) => fact(
       call,
       index,

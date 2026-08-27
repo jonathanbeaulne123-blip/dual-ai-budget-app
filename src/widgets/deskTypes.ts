@@ -17,6 +17,9 @@ export type DeskForm = {
   cashTips: string;
   ccTips: string;
   hours: string;
+  customersServed: string;
+  staffingCount: string;
+  eventTag: string;
   visibility: Visibility;
   occurredAt: string;
 };
