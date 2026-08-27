@@ -2,7 +2,7 @@
 
 ## Tip-sheet provider choice + clarity-gated camera (D-152) (2026-08-27)
 
-**Status:** PR open on `cursor/scan-provider-clarity-gate-403c`. Risk: **Medium**. Development only; Confirm still posts; OCR never auto-posts.
+**Status:** Merged via [#225](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/225) onto `main` (`94f8cd0`). Kitchen Worker **live** via Cloudflare Workers run `33124596368` (Deploy green). Risk: **Medium**. Not Production household data.
 
 **Household outcome:** On Shift tip-sheet scan, choose **Auto / Workers AI / OpenAI / Anthropic**. Live camera capture stays locked until the slip looks sharp and readable (QR-scanner style). Choose-photo applies the same clarity check.
 
@@ -12,9 +12,9 @@
 
 **What changed:** Provider chips + local preference; `/documents/scan` honors forced provider without silent fall-through; `DocumentCamera` live clarity meter; Choose-photo clarity gate; D-152 why-note.
 
-**Verification:** `pnpm check` → **954 passed / 2 skipped**.
+**Verification:** `pnpm check` → **954 passed / 2 skipped**. Deploy `33124596368` success. Live bundle contains `Take tip sheet photo`, `Vision provider`, `Waiting for clear tip sheet`, `doc-camera-overlay`. Forced-provider probe returns provider-specific 503 (image not saved); foreign origin still 403.
 
-**Next owner:** Jonathan — review PR, then say if merge/deploy. Hard-refresh after deploy; Shift → tip sheet → try providers; confirm Capture stays disabled until clear.
+**Next owner:** Jonathan — hard-refresh https://hearth-books.jonathan-beaulne123.workers.dev/ , Development pill, Shift tip sheet → try providers; confirm Capture stays disabled until clear. Do not treat as Production household data.
 
 ## Native 7shifts Timesheet inbox (D-155) (2026-08-27)
 
