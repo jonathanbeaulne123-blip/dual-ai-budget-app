@@ -31,6 +31,7 @@
   },
   "vars": {
     "HERCULES_ALLOW_PAID_PROVIDERS": "false",
+    "DOCUMENT_SCAN_ALLOW_PAID": "true",
     "HERCULES_PRO_ALLOW_PRODUCTION": "false",
     "OPENAI_MODEL": "gpt-4o-mini",
     "ANTHROPIC_MODEL": "claude-haiku-4-5",
