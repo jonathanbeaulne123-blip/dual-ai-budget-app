@@ -4,7 +4,7 @@
 
 **Status:** [`docs/ux/computer-office/GPT_CATCHUP.md`](ux/computer-office/GPT_CATCHUP.md). Paste that file into GPT/Codex. Not shipped.
 
-**What it contains:** reconstructed Cursor Cloud thread (CSS cabin rejected → D-152 stills → studio → handholding), living files used, PR #207 head `436d32c`, next owner = Jonathan checklist then empty room.
+**What it contains:** reconstructed Cursor Cloud thread (CSS cabin rejected → D-152 stills → studio → handholding), living files used, PR #207 head `7b02f8e`, next owner = Jonathan checklist then empty room.
 
 ## D-152 beginner checklist + AI handholding (2026-08-27)
 

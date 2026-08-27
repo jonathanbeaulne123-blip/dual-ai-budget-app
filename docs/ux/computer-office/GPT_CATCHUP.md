@@ -6,7 +6,7 @@ Paste this file (or this folder) into GPT/Codex so it is current. This is a **re
 - **Repo:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/computer-office-d151-605a`
 - **Base:** `main@e7ad717`
-- **Head when written:** `436d32c`
+- **Head when written:** `7b02f8e`
 - **Draft PR:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/207
 - **Agent:** Cursor Grok (Cloud Agent), implementer. Codex/GPT was not in this thread.
 - **Do not:** merge, deploy, Production, hosted schema, secrets, restyle phone unless Jonathan unfreezes it.

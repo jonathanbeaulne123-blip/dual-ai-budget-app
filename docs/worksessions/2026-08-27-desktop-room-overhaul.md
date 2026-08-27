@@ -7,7 +7,7 @@
 - **Repository:** dual-ai-budget-app
 - **Branch:** `cursor/computer-office-d151-605a`
 - **Baseline SHA:** `e7ad717b6536749f3906e713df4e2107b4e61f1b` (`main`)
-- **Head SHA:** `436d32c` (docs: stills, studio kit, pipeline, beginner checklist, GPT catch-up). CSS cabin commits remain on the branch as discarded look.
+- **Head SHA:** `7b02f8e` (GPT catch-up). CSS cabin commits remain on the branch as discarded look.
 - **PR or issue:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/207
 - **Risk:** Medium (UI/layout; games are kitchen cosmetics; Commands unchanged)
 - **Decision owner:** Jonathan (G0–G5 continue/revert)
