@@ -363,6 +363,29 @@
   border-color: var(--pine);
 }
 
+@media (min-width: 720px) and (max-width: 1279.98px) {
+  .office-phone {
+    gap: 16px;
+    padding: 8px 8px 16px;
+  }
+  .office-phone .ph-stamps {
+    gap: 12px;
+  }
+  .office-phone .ph-stamp {
+    min-height: 72px;
+    padding: 12px 10px;
+  }
+  .office-phone .ph-weather {
+    font-size: 12px;
+  }
+  .office-phone .ph-needs {
+    font-size: 15px;
+  }
+  .office-phone .ph-value {
+    font-size: 22px;
+  }
+}
+
 /* F13/F14 — reserve the pin corner so an instrument's own value is never
    painted under its pin. */
 .office-phone .ph-inst > *:not(.ph-pin) {

@@ -63,15 +63,19 @@ export function DeskItem({
   chips?: ReactNode;
 }) {
   const ref = useFurniture(id, kind, perchable, warn, { live: Boolean(dragging) });
-  const wide = breakpoint === "wide";
   const resolved = sizeOf({ id, size });
   const shell: ExpandShell = expandShellFor(id);
-  const width = expanded && wide ? EXPAND_SIZE[shell].w : SIZE_WIDTH[resolved];
+  const placed = breakpoint === "computer";
+  const width = expanded && placed
+    ? EXPAND_SIZE[shell].w
+    : (placed
+      ? ({ s: 140, m: 196, l: 268 } as const)[resolved]
+      : SIZE_WIDTH[resolved]);
   return (
     <div
       ref={ref}
-      className={`desk-item ${pair ? "pair-cell" : ""} ${extraClass ?? ""}`.trim()}
-      style={wide ? { position: "absolute", left: x ?? 8, top: y ?? 8, width } : undefined}
+      className={`desk-item ${pair ? "pair-cell" : ""} ${placed ? "desk-object" : ""} ${extraClass ?? ""}`.trim()}
+      style={placed ? { position: "absolute", left: x ?? 8, top: y ?? 8, width } : undefined}
     >
       <Instrument
         id={id}

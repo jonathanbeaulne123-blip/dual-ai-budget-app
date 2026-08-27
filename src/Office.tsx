@@ -37,11 +37,13 @@ import {
   sillOverview,
   formatCad,
   applyPersonality,
+  applyAutoSize,
   buildDeskSyncPayload,
   cycleInstrumentSize,
   instrumentIsOpen,
   toggleInstrumentPin,
   MAX_USER_PINS,
+  packComputerDesk,
   packWide,
   sizeOf,
   bumpLayoutForExpand,
@@ -49,6 +51,7 @@ import {
   expandShellFor,
   EXPAND_SIZE,
   SIZE_HEIGHT,
+  COMPUTER_SIZE_HEIGHT,
   DESK_GUTTER,
   INSTRUMENT_LABEL,
   PERSONALITY_BLURB,
@@ -56,6 +59,7 @@ import {
   PERSONALITY_LABEL,
   PINNED_INSTRUMENTS,
   STOCK_LABEL,
+  COMPUTER_BREAKPOINT,
   type DeskRing,
   type DeskPersonality,
   type Environment,
@@ -87,25 +91,27 @@ import { LampBody, LampGlance, lampAria } from "./widgets/Lamp.tsx";
 import { Cabinets, type DeskSheet } from "./widgets/Cabinets.tsx";
 import { CalendarBody, CalendarGlance } from "./widgets/CalendarDesk.tsx";
 import { AppointmentsBody, AppointmentsGlance } from "./widgets/AppointmentsDesk.tsx";
-import { SillOverviewPlate } from "./widgets/SillOverview.tsx";
 import { AccountsBody, AccountsGlance } from "./widgets/AccountsDesk.tsx";
 import { WardrobeBody, wardrobeGlance } from "./widgets/WardrobeDesk.tsx";
-import { HangmanBody, HangmanGlance, TicTacToeBody, TicTacToeGlance } from "./widgets/GamesDesk.tsx";
+import { HangmanBody, HangmanGlance, TicTacToeBody, TicTacToeGlance, FourBody, FourGlance, FleetBody, FleetGlance, PanesBody, PanesGlance } from "./widgets/GamesDesk.tsx";
+import { OpinionBody, OpinionGlance, LeftoverBody, LeftoverGlance, NextDueBody, NextDueGlance, SyncBody, SyncGlance } from "./widgets/ProjectionDesk.tsx";
+import { useFurniture } from "./widgets/useFurniture.ts";
 import { pullDeskAppearance, pushDeskAppearance } from "./google/index.ts";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
 
-const WIDE = 720;
+const PHONE = 720;
 
 function useBreakpoint(): OfficeBreakpoint {
-  const [wide, setWide] = useState(() => typeof window !== "undefined" && window.innerWidth >= WIDE);
+  const [width, setWidth] = useState(() => typeof window !== "undefined" ? window.innerWidth : 390);
   useEffect(() => {
-    const mq = window.matchMedia(`(min-width: ${WIDE}px)`);
-    const onChange = () => setWide(mq.matches);
+    const onChange = () => setWidth(window.innerWidth);
     onChange();
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
+    window.addEventListener("resize", onChange);
+    return () => window.removeEventListener("resize", onChange);
   }, []);
-  return wide ? "wide" : "phone";
+  if (width < PHONE) return "phone";
+  if (width < COMPUTER_BREAKPOINT) return "tablet";
+  return "computer";
 }
 
 export function Office({
@@ -196,6 +202,7 @@ export function Office({
   const [canvasHeight, setCanvasHeight] = useState(720);
   const [deskNote, setDeskNote] = useState("");
   const canvasRef = useRef<HTMLDivElement | null>(null);
+  const sofaRef = useFurniture("sofa", "tray", true, false, { seat: "ledge", enabled: breakpoint === "computer" });
   const drag = useRef<{
     id: InstrumentId;
     px: number;
@@ -293,8 +300,8 @@ export function Office({
   useEffect(() => {
     if (!household.google.enabledServices.includes("drive")) return;
     const timer = window.setTimeout(() => {
-      const phone = breakpoint === "phone" ? layout : loadOfficeLayout(environment, "phone", localStorage, memberId);
-      const wide = breakpoint === "wide" ? layout : loadOfficeLayout(environment, "wide", localStorage, memberId);
+      const phone = breakpoint !== "computer" ? layout : loadOfficeLayout(environment, "phone", localStorage, memberId);
+      const wide = breakpoint === "computer" ? layout : loadOfficeLayout(environment, "computer", localStorage, memberId);
       void pushDeskAppearance({
         environment,
         memberId,
@@ -327,15 +334,17 @@ export function Office({
   const inert = adding;
   const parked = layout.items.filter((item) => item.hidden).map((item) => item.id);
   const packed = useMemo(
-    () => packWide(
+    () => (breakpoint === "computer"
+      ? packComputerDesk
+      : packWide)(
       order.map((id) => ({ id, size: layout.items.find((item) => item.id === id)?.size })),
       deskWidth,
     ),
-    [order, layout.items, deskWidth],
+    [order, layout.items, deskWidth, breakpoint],
   );
 
   useEffect(() => {
-    if (breakpoint !== "wide") return;
+    if (breakpoint !== "computer") return;
     const ids = order;
     let maxBottom = DESK_GUTTER;
     for (const id of ids) {
@@ -345,7 +354,7 @@ export function Office({
       const size = sizeOf({ id, size: item?.size });
       const expanded = layout.expanded === id;
       const shell = expandShellFor(id);
-      const h = expanded ? EXPAND_SIZE[shell].h : SIZE_HEIGHT[size];
+      const h = expanded ? EXPAND_SIZE[shell].h : (breakpoint === "computer" ? COMPUTER_SIZE_HEIGHT[size] : SIZE_HEIGHT[size]);
       maxBottom = Math.max(maxBottom, y + h);
     }
     const viewportFloor = typeof window !== "undefined"
@@ -366,9 +375,10 @@ export function Office({
   }
 
   function park(id: InstrumentId) {
-    if (PINNED_INSTRUMENTS.includes(id)) return;
-    setLayout((current) => ({
+    if (PINNED_INSTRUMENTS.includes(id) && layout.personality !== "play") return;
+    setLayout((current) => applyAutoSize({
       ...current,
+      personality: "custom",
       items: current.items.map((item) => (item.id === id ? { ...item, hidden: true } : item)),
       expanded: current.expanded === id ? null : current.expanded,
       pinned: (current.pinned ?? []).filter((row) => row !== id),
@@ -376,8 +386,9 @@ export function Office({
   }
 
   function restore(id: InstrumentId) {
-    setLayout((current) => ({
+    setLayout((current) => applyAutoSize({
       ...current,
+      personality: "custom",
       items: current.items.map((item) => (item.id === id ? { ...item, hidden: false, x: undefined, y: undefined } : item)),
     }));
   }
@@ -435,7 +446,7 @@ export function Office({
       x: item?.x ?? packed[id]?.x ?? 0,
       y: item?.y ?? packed[id]?.y ?? 0,
       moved: false,
-      timer: breakpoint === "phone"
+      timer: breakpoint !== "computer"
         ? window.setTimeout(() => {
             setDragging(id);
             setLifted(id);
@@ -451,7 +462,7 @@ export function Office({
     if (!start || start.id !== id) return;
     const dx = event.clientX - start.px;
     const dy = event.clientY - start.py;
-    if (breakpoint === "wide") {
+    if (breakpoint === "computer") {
       if (Math.abs(dx) + Math.abs(dy) > 8) {
         start.moved = true;
         setDragging(id);
@@ -470,7 +481,7 @@ export function Office({
   function onHeaderUp(id: InstrumentId, event: PointerEvent<HTMLButtonElement>) {
     const start = drag.current;
     if (start?.timer) window.clearTimeout(start.timer);
-    if (breakpoint === "phone" && start?.moved && dragging === id) {
+    if (breakpoint !== "computer" && start?.moved && dragging === id) {
       const ids = order;
       const from = ids.indexOf(id);
       const rowH = 56;
@@ -482,7 +493,7 @@ export function Office({
         while (steps--) reorder(id, dir);
       }
     }
-    if (breakpoint === "wide" && start?.moved) {
+    if (breakpoint === "computer" && start?.moved) {
       setLayout((current) => ({
         ...current,
         items: levelLayoutItems(current.items),
@@ -813,6 +824,62 @@ export function Office({
       <HangmanBody household={household} memberId={memberId} busy={busy} onCommand={onKitchen} />,
       { index, pair, extraClass: "instrument-game" },
     ),
+    opinion: (index, pair) => frame(
+      "opinion",
+      "Opinion",
+      <OpinionGlance opinion={opinion} />,
+      `Opinion. ${opinion.kind}.`,
+      <OpinionBody opinion={opinion} />,
+      { index, pair },
+    ),
+    leftover: (index, pair) => frame(
+      "leftover",
+      "Leftover",
+      <LeftoverGlance household={household} today={today} />,
+      "Leftover. Cash-like minus bills and card mins.",
+      <LeftoverBody household={household} today={today} onSitDown={() => onGo("plan")} />,
+      { index, pair },
+    ),
+    nextDue: (index, pair) => frame(
+      "nextDue",
+      "Next due",
+      <NextDueGlance sill={sill} />,
+      "Next due bill or visit. Quiet titles stay coded.",
+      <NextDueBody sill={sill} onCalendar={() => onGo("calendar")} />,
+      { index, pair },
+    ),
+    sync: (index, pair) => frame(
+      "sync",
+      "Sync",
+      <SyncGlance household={household} />,
+      "Sync freshness. Projection only.",
+      <SyncBody household={household} />,
+      { index, pair },
+    ),
+    four: (index, pair) => frame(
+      "four",
+      "Sill Four",
+      <FourGlance household={household} />,
+      "Sill Four. Pine vs copper. No CAD.",
+      <FourBody household={household} memberId={memberId} busy={busy} onCommand={onKitchen} />,
+      { index, pair, extraClass: "instrument-game" },
+    ),
+    fleet: (index, pair) => frame(
+      "fleet",
+      "Kitchen Fleet",
+      <FleetGlance household={household} />,
+      "Kitchen Fleet. Household-safe ship names. No journal.",
+      <FleetBody household={household} memberId={memberId} busy={busy} onCommand={onKitchen} />,
+      { index, pair, extraClass: "instrument-game" },
+    ),
+    panes: (index, pair) => frame(
+      "panes",
+      "Pane Boxes",
+      <PanesGlance household={household} />,
+      "Pane Boxes. Mullions. No off-device ink.",
+      <PanesBody household={household} memberId={memberId} busy={busy} onCommand={onKitchen} />,
+      { index, pair, extraClass: "instrument-game" },
+    ),
     chalkboard: (index, pair) => frame(
       "chalkboard",
       "Notes",
@@ -828,9 +895,8 @@ export function Office({
     ),
   };
 
-  /* Mobile shell (< 720px). Wide falls through to the desk canvas below,
-     unchanged — see docs/CLAUDE_MOBILE_SHELL.md §1. */
-  if (breakpoint === "phone") {
+  /* Phone and tablet: Draft C. Computer falls through to the night-cabin room. */
+  if (breakpoint !== "computer") {
     return (
       <OfficePhone
         household={household} dashboard={dashboard} sill={sill}
@@ -851,27 +917,62 @@ export function Office({
 
   return (
     <div
-      className={`office is-wide-room glass-${reading.glass} ${adding ? "is-adding" : ""} ${editing ? "is-editing" : ""} ${layout.expanded && layout.expanded !== "window" ? "is-wide-dim" : ""}`}
+      className={`office office-room is-computer-room glass-${reading.glass} ${adding ? "is-adding" : ""} ${editing ? "is-editing" : ""} ${layout.personality === "play" ? "is-play" : ""} ${layout.expanded && layout.expanded !== "window" ? "is-wide-dim" : ""}`}
       data-stock={look.stock}
       data-density={look.density}
+      data-personality={layout.personality ?? "household"}
       style={{ ["--room-dim" as string]: String(room.roomDim), ["--room-cool" as string]: String(room.roomCool) }}
     >
-      <OfficeWindow
-        reading={reading}
-        expanded={layout.expanded === "window"}
-        minimized={layout.windowMinimized}
-        onToggle={cycleWindow}
-      />
-      <SillOverviewPlate overview={sill} compact={layout.windowMinimized} />
+      <div className={`office-room-sky is-${reading.glass}`} aria-hidden="true" />
+      <div className="office-room-fireplace" aria-hidden="true" />
+      <nav className="office-room-shelves" aria-label="Bookshelves">
+        <button type="button" onClick={() => onGo("ledger")}>Books</button>
+        <button type="button" onClick={() => onGo("calendar")}>Calendar</button>
+        <button type="button" onClick={() => onGo("ledger")}>Accounts</button>
+        <button type="button" onClick={() => emitOfficeIntent({ type: "expand", id: "mail" })}>Mail</button>
+      </nav>
       <div
-        ref={canvasRef}
-        className={`desk-canvas desk-wide ${dragging ? "is-grid" : ""}`}
-        style={{ minHeight: `${canvasHeight}px` }}
-      >
-        {rings.map((ring) => (
-          <div key={`${ring.id}-${ring.at}`} className="desk-ring" style={{ left: ring.x, top: ring.y }} />
-        ))}
-        {order.map((id, index) => renderers[id](index))}
+        ref={sofaRef}
+        className="office-room-sofa"
+        role="button"
+        tabIndex={0}
+        aria-label="Hercules nest. How can I help."
+        onClick={() => {
+          window.dispatchEvent(new CustomEvent("hearth:hercules-help"));
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            window.dispatchEvent(new CustomEvent("hearth:hercules-help"));
+          }
+        }}
+      />
+      <div className="office-room-window-wall">
+        <OfficeWindow
+          reading={reading}
+          expanded={layout.expanded === "window"}
+          minimized={layout.windowMinimized}
+          onToggle={cycleWindow}
+        />
+      </div>
+      <div className="office-room-desk">
+        {layout.personality === "play" && (
+          <>
+            <span className="play-crayon play-crayon-a" aria-hidden="true" />
+            <span className="play-crayon play-crayon-b" aria-hidden="true" />
+            <span className="play-crayon play-marker" aria-hidden="true" />
+          </>
+        )}
+        <div
+          ref={canvasRef}
+          className={`desk-canvas office-room-desk-top ${dragging ? "is-grid" : ""}`}
+          style={{ minHeight: `${Math.max(220, canvasHeight * 0.45)}px` }}
+        >
+          {rings.map((ring) => (
+            <div key={`${ring.id}-${ring.at}`} className="desk-ring" style={{ left: ring.x, top: ring.y }} />
+          ))}
+          {order.map((id, index) => renderers[id](index))}
+        </div>
       </div>
       <Cabinets
         editing={editing}
@@ -968,8 +1069,8 @@ export function Office({
                   setLook(result.payload.look);
                   saveOfficeLook(environment, result.payload.look, localStorage, memberId);
                   saveOfficeLayout(environment, "phone", result.payload.phone, localStorage, memberId);
-                  saveOfficeLayout(environment, "wide", result.payload.wide, localStorage, memberId);
-                  setLayout(breakpoint === "wide" ? result.payload.wide : result.payload.phone);
+                  saveOfficeLayout(environment, "computer", result.payload.wide, localStorage, memberId);
+                  setLayout(breakpoint === "computer" ? result.payload.wide : result.payload.phone);
                 });
               }}
             >

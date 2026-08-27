@@ -104,7 +104,7 @@ function repliesFor(mood: CompanionMood, tab: HearthTab, topic: string): string[
   if (topic === "shift" || topic === "timesheet") return ["Log shift", "We good?"];
   if (topic === "wardrobe") return ["Remember payday", "Opinion?"];
   if (topic === "jars") return ["Start this goal", "Sit-down?"];
-  if (topic === "tictactoe" || topic === "hangman" || topic === "game") return ["We good?", "Groceries"];
+  if (topic === "tictactoe" || topic === "hangman" || topic === "four" || topic === "fleet" || topic === "panes" || topic === "game") return ["We good?", "Groceries"];
   if (topic === "chalkboard") return ["Groceries", "We good?"];
   if (topic === "claims") return ["What's owed?", "Start this goal"];
   if (topic === "visit") return ["Start this goal", "Calendar"];

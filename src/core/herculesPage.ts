@@ -278,6 +278,55 @@ export function herculesInstrumentSurface(
       chips: ["Groceries", "We good?", "What now?"],
       pose: "pounce",
     },
+    opinion: {
+      id: "opinion",
+      spoken: "That's the auditor's stamp. I read the books. I don't write them.",
+      lesson: "Opinion is a projection of Health and statements. Confirm still posts.",
+      chips: ["Opinion?", "Working capital?", "We good?"],
+      pose: "loaf",
+    },
+    leftover: {
+      id: "leftover",
+      spoken: "Leftover is cash-like minus bills minus card minimums. Not month net.",
+      lesson: "Sit-down moves leftover. I clap. Confirm still writes.",
+      chips: ["Leftover?", "Sit-down?", "We good?"],
+      pose: "perch",
+    },
+    nextDue: {
+      id: "nextDue",
+      spoken: "Dates remind. Mark paid writes.",
+      lesson: "Next bill is an outflow. Paychecks are not bills.",
+      chips: ["Which bill?", "Calendar", "What now?"],
+      pose: "stretch",
+    },
+    sync: {
+      id: "sync",
+      spoken: "Sharing is a freshness light, not a second ledger.",
+      lesson: "This phone's replica. Confirm still posts locally first.",
+      chips: ["We good?", "What now?", "Health"],
+      pose: "stretch",
+    },
+    four: {
+      id: "four",
+      spoken: "Pine versus copper. Two phones. No CAD in the grid.",
+      lesson: "Turn-based kitchen scribble. Games never post.",
+      chips: ["We good?", "Groceries", "What now?"],
+      pose: "pounce",
+    },
+    fleet: {
+      id: "fleet",
+      spoken: "Milk, Visa, Hydro, Jar, Pad — household-safe names. Fog of war, not the journal.",
+      lesson: "Kitchen Fleet never posts. Quiet titles stay off the board.",
+      chips: ["Groceries", "We good?", "What now?"],
+      pose: "pounce",
+    },
+    panes: {
+      id: "panes",
+      spoken: "Mullions on the glass. Boxes are play. Rain still has no CAD.",
+      lesson: "Pane Boxes never post. Weather stays atmosphere.",
+      chips: ["We good?", "Groceries", "What now?"],
+      pose: "pounce",
+    },
   };
   return table[id];
 }

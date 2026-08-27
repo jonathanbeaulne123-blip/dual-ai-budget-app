@@ -43,7 +43,8 @@ describe("wide desk packing", () => {
     expect(cycleInstrumentSize("mail", "s")).toBe("m");
     const cpa = applyPersonality(defaultLayout(), "cpa");
     expect(cpa.items.find((item) => item.id === "calculator")?.hidden).toBeFalsy();
-    expect(cpa.items.find((item) => item.id === "blotter")?.size).toBe("l");
+    expect(cpa.items.find((item) => item.id === "calculator")?.size).toBe("m");
+    expect(cpa.items.find((item) => item.id === "blotter")?.size).toBe("s");
     expect(cpa.items.find((item) => item.id === "hangman")?.hidden).toBe(true);
     expect(cpa.items.filter((item) => !item.hidden).map((item) => item.id)).toEqual(
       PERSONALITY_DESK.cpa.map(([id]) => id),
@@ -65,7 +66,7 @@ describe("wide desk packing", () => {
     expect(parseOfficeLook({ stock: "pink", density: "names" }).stock).toBe("pink");
     expect(parseOfficeLook({ stock: "gold", density: "names" }).stock).toBe("gold");
     expect(parseOfficeLook({ stock: "slate", density: "names" }).stock).toBe("slate");
-    const tidied = tidyOfficeLayout(parsed, "wide", 900);
+    const tidied = tidyOfficeLayout(parsed, "computer", 900);
     expect(tidied.items.find((item) => item.id === "blotter")?.x).toBe(16);
     expect(tidied.expanded).toBeNull();
   });
@@ -79,7 +80,6 @@ describe("desktop warmth fence", () => {
     expect(office).toMatch(/font-size: 13px;/);
     expect(office).not.toMatch(/\.office \.instrument-name \{[\s\S]*font-size: 10px/);
     expect(styles).toMatch(/max-width: min\(900px, 100%\)/);
-    expect(styles).not.toMatch(/1280px/);
     expect(office).not.toMatch(/always-open panel/);
     const cabinets = readFileSync("src/widgets/Cabinets.tsx", "utf8");
     expect(cabinets).toMatch(/Home theme/);
