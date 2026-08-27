@@ -1,0 +1,154 @@
+name: D-155 7shifts Development setup
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: hearth-books-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  setup:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CI: "true"
+      WRANGLER_SEND_METRICS: "false"
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      KITCHEN_ORIGIN: https://hearth-books.jonathan-beaulne123.workers.dev
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Apply only D-155 and install missing 7shifts secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::D-155 setup may run only from refs/heads/main."
+            exit 1
+          fi
+          current_main_sha="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+          if [ -z "$current_main_sha" ] || [ "$GITHUB_SHA" != "$current_main_sha" ]; then
+            echo "::error::D-155 setup must use the current main commit."
+            exit 1
+          fi
+
+          node -e '
+            const fs = require("node:fs");
+            const config = JSON.parse(fs.readFileSync("wrangler.jsonc", "utf8"));
+            const d1 = (config.d1_databases || []).find((binding) => binding.binding === "FLINKS_DB");
+            if (config.vars?.SEVENSHIFTS_ENABLED !== "false" || config.vars?.SEVENSHIFTS_ALLOW_PRODUCTION !== "false") {
+              throw new Error("Checked-out 7shifts flags must be exactly false/false before setup.");
+            }
+            if (!d1 || d1.database_name !== "hearth-flinks-development" || d1.database_id !== "f01c81bd-db36-4715-a484-8f2f3bdad2a3" || d1.migrations_dir !== "migrations/flinks") {
+              throw new Error("FLINKS_DB must resolve to the reviewed Development D1 binding.");
+            }
+            console.log("Checkout preflight: current main is disabled and targets only the Development D1 database.");
+          '
+
+          . scripts/sanitize-cloudflare-env.sh
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::Cloudflare API token is unavailable after sanitizing."
+            exit 1
+          fi
+
+          before_status="$RUNNER_TEMP/seven-shifts-status-before.json"
+          curl --fail --silent --show-error \
+            -H "Origin: $KITCHEN_ORIGIN" \
+            "$KITCHEN_ORIGIN/work/7shifts/status" > "$before_status"
+          STATUS_FILE="$before_status" node -e '
+            const fs = require("node:fs");
+            const status = JSON.parse(fs.readFileSync(process.env.STATUS_FILE, "utf8"));
+            const disabledDetail = "7shifts is installed as a Development Timesheet inbox. Activation still requires Worker secrets, the D1 table, and deploy approval.";
+            if (status.ok !== true || status.available !== false || status.phase !== "scaffold" || status.environment !== "development-only" || status.providerCallsEnabled !== false || status.productionAllowed !== false || status.detail !== disabledDetail) {
+              throw new Error("7shifts must be fully inert before Development setup.");
+            }
+            console.log("Preflight: 7shifts is inert and Production is locked.");
+          '
+
+          pending_file="$RUNNER_TEMP/seven-shifts-pending-before.txt"
+          npx wrangler d1 migrations list FLINKS_DB --remote > "$pending_file"
+          PENDING_FILE="$pending_file" node -e '
+            const fs = require("node:fs");
+            const raw = fs.readFileSync(process.env.PENDING_FILE, "utf8");
+            const names = [...new Set(raw.match(/[0-9]{4}_[A-Za-z0-9_.-]+\.sql/g) || [])];
+            if (names.length > 1 || (names.length === 1 && names[0] !== "0002_seven_shifts_connections.sql")) {
+              throw new Error(`Expected only D1 migration 0002 or a verified resume state; found: ${names.join(", ")}`);
+            }
+            console.log(names.length ? "D1 preflight: only migration 0002 is pending." : "D1 preflight: migration 0002 is already applied; verifying the resume state.");
+          '
+          if grep -q "0002_seven_shifts_connections.sql" "$pending_file"; then
+            npx wrangler d1 migrations apply FLINKS_DB --remote
+          fi
+
+          after_migrations="$RUNNER_TEMP/seven-shifts-pending-after.txt"
+          npx wrangler d1 migrations list FLINKS_DB --remote > "$after_migrations"
+          PENDING_FILE="$after_migrations" node -e '
+            const fs = require("node:fs");
+            const raw = fs.readFileSync(process.env.PENDING_FILE, "utf8");
+            const names = [...new Set(raw.match(/[0-9]{4}_[A-Za-z0-9_.-]+\.sql/g) || [])];
+            if (names.length) throw new Error(`D1 still has pending migrations: ${names.join(", ")}`);
+            console.log("D1 migration state is current.");
+          '
+
+          schema_file="$RUNNER_TEMP/seven-shifts-schema.json"
+          npx wrangler d1 execute FLINKS_DB --remote --json --command \
+            "SELECT cid, name, type, [notnull] AS notnull_value, dflt_value, pk FROM pragma_table_info('seven_shifts_connections') ORDER BY cid; SELECT sql AS table_sql FROM sqlite_master WHERE type = 'table' AND name = 'seven_shifts_connections'; SELECT name, [unique] AS is_unique, origin, partial FROM pragma_index_list('seven_shifts_connections') WHERE name = 'seven_shifts_connections_owner'; SELECT seqno, cid, name FROM pragma_index_info('seven_shifts_connections_owner') ORDER BY seqno; SELECT COUNT(*) AS row_count FROM seven_shifts_connections;" \
+            > "$schema_file"
+          node scripts/verify-seven-shifts-schema.mjs "$schema_file"
+
+          secrets_before="$RUNNER_TEMP/seven-shifts-secrets-before.json"
+          npx wrangler secret list --format json > "$secrets_before"
+          secret_upload="$RUNNER_TEMP/seven-shifts-secret-upload.json"
+          secret_upload_next="$RUNNER_TEMP/seven-shifts-secret-upload-next.json"
+          trap 'rm -f "$secret_upload" "$secret_upload_next"' EXIT
+          umask 077
+          printf '{}' > "$secret_upload"
+          missing=0
+          for key in SEVENSHIFTS_CONNECTION_ENCRYPTION_KEY SEVENSHIFTS_DIGEST_KEY; do
+            if ! jq -e --arg key "$key" 'any(.[]; .name == $key)' "$secrets_before" > /dev/null; then
+              value="$(openssl rand -hex 32)"
+              jq --arg key "$key" --arg value "$value" '. + {($key): $value}' "$secret_upload" > "$secret_upload_next"
+              mv "$secret_upload_next" "$secret_upload"
+              unset value
+              missing=$((missing + 1))
+            fi
+          done
+          if [ "$missing" -gt 0 ]; then
+            npx wrangler secret bulk "$secret_upload"
+            echo "Installed $missing missing 7shifts Worker secret(s) in one disabled deployment."
+          else
+            echo "Both 7shifts Worker secrets already existed; nothing was rotated."
+          fi
+
+          secrets_after="$RUNNER_TEMP/seven-shifts-secrets-after.json"
+          npx wrangler secret list --format json > "$secrets_after"
+          for key in SEVENSHIFTS_CONNECTION_ENCRYPTION_KEY SEVENSHIFTS_DIGEST_KEY; do
+            jq -e --arg key "$key" 'any(.[]; .name == $key)' "$secrets_after" > /dev/null
+          done
+          echo "Verified Worker secret names:"
+          jq -r '.[].name' "$secrets_after" | grep '^SEVENSHIFTS_' | sort
+
+          after_status="$RUNNER_TEMP/seven-shifts-status-after.json"
+          curl --fail --silent --show-error \
+            -H "Origin: $KITCHEN_ORIGIN" \
+            "$KITCHEN_ORIGIN/work/7shifts/status" > "$after_status"
+          STATUS_FILE="$after_status" node -e '
+            const fs = require("node:fs");
+            const status = JSON.parse(fs.readFileSync(process.env.STATUS_FILE, "utf8"));
+            const disabledDetail = "7shifts is installed as a Development Timesheet inbox. Activation still requires Worker secrets, the D1 table, and deploy approval.";
+            if (status.ok !== true || status.available !== false || status.phase !== "scaffold" || status.environment !== "development-only" || status.providerCallsEnabled !== false || status.productionAllowed !== false || status.detail !== disabledDetail) {
+              throw new Error("7shifts did not remain inert after Development setup.");
+            }
+            console.log("Postflight: D1 and secrets are ready; 7shifts remains inert and Production stays locked.");
+          '
