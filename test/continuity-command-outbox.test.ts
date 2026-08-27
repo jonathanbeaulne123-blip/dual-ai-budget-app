@@ -169,6 +169,60 @@ describe("T2-S2 command-ref outbox", () => {
     expect(calls.some((url) => url.includes("rpc/append_continuity_command"))).toBe(false);
   });
 
+  it("does not treat this phone's own first create as another phone", async () => {
+    vi.stubEnv("VITE_CONTINUITY_COMMAND_LOG", "1");
+    setContinuityStore(createMemoryContinuityStore());
+    const remote = withReceipt(googleHousehold(), "confirm-remote");
+    const local = withReceipt(remote, "confirm-local-ahead");
+    enqueueContinuitySnapshot({
+      household: local,
+      identity,
+      expectedRevision: 0,
+      confirmationId: "confirm-local-ahead",
+    });
+    const expectedRevisions: number[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("households?select=id")) {
+        return new Response(JSON.stringify([{ id: local.householdId }]), { status: 200 });
+      }
+      if (url.includes("rpc/hearth_create_household")) {
+        return new Response(JSON.stringify({
+          ok: false,
+          conflict: true,
+          reason: "household-already-exists",
+        }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      if (url.includes("household_snapshots?") && (init?.method || "GET") === "GET") {
+        return new Response(JSON.stringify([{ payload: JSON.stringify(remote) }]), { status: 200 });
+      }
+      if (url.includes("rpc/publish_continuity_snapshot")) {
+        const body = init?.body ? JSON.parse(String(init.body)) as Record<string, unknown> : {};
+        expectedRevisions.push(Number(body.p_expected_revision));
+        return new Response(JSON.stringify({
+          ok: true,
+          conflict: false,
+          duplicate: false,
+          revision: local.revision,
+        }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      if (url.includes("rpc/append_continuity_command")) {
+        throw new Error("append_continuity_command must not run on first-create retry");
+      }
+      return new Response(JSON.stringify([]), { status: 200 });
+    }));
+    const flushed = await flushContinuityOutbox({
+      environment: "development",
+      identity,
+      config: authConfig,
+      force: true,
+    });
+    expect(flushed.synchronized).toBe(1);
+    expect(flushed.conflicts).toEqual([]);
+    expect(expectedRevisions).toEqual([remote.revision]);
+    expect(listContinuityOutbox("development")).toEqual([]);
+  });
+
   it("keeps expectedRevision 0 when later command-refs compact, then still creates", async () => {
     vi.stubEnv("VITE_CONTINUITY_COMMAND_LOG", "1");
     setContinuityStore(createMemoryContinuityStore());

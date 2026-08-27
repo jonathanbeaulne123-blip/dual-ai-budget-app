@@ -267,6 +267,8 @@ function conflictMessage(reason: SnapshotCasConflict["reason"] | undefined): str
       return "Production cloud continuity is not enabled yet. Nothing was overwritten.";
     case "google-identity-required":
       return "Reconnect with Google through Hearth before creating cloud books.";
+    case "household-already-exists":
+      return "This household is already in the cloud. Sharing continues from the hosted books.";
     case "payload-identity-mismatch":
     case "invalid-create":
     case "invalid-household":
@@ -1175,6 +1177,45 @@ export async function pushSupabaseHousehold(
           duplicate: created.duplicate === true,
           usedCasRpc: true,
         };
+      }
+      // Create already inserted the owner row. CAS from the hosted revision — never
+      // from expectedRevision 0, which 012 treats as stale ("another phone").
+      if (created && !created.ok && created.reason === "household-already-exists") {
+        try {
+          const remote = await readRemoteSnapshot(config, snapshot.householdId, snapshot.environment);
+          if (remote && snapshot.revision < remote.revision) {
+            return {
+              ...probe,
+              schema: true,
+              conflict: true,
+              usedCasRpc: true,
+              remote,
+              error: conflictMessage("stale-revision"),
+            };
+          }
+          const hostedBase = remote?.revision ?? 0;
+          if (atomicAuthContinuity) {
+            return publishContinuitySnapshotAtomic(
+              config,
+              probe,
+              snapshot,
+              cloudSnapshot,
+              hostedBase,
+              continuityMemberId,
+            );
+          }
+        } catch (caught) {
+          return {
+            ...probe,
+            schema: true,
+            skipped: true,
+            conflict: false,
+            usedCasRpc: true,
+            error: caught instanceof Error
+              ? caught.message
+              : conflictMessage("not-member"),
+          };
+        }
       }
       if (created && !created.ok && created.reason !== "household-already-exists") {
         return {
