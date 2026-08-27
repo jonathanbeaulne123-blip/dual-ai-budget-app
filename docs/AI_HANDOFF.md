@@ -1,8 +1,26 @@
 # AI Task and Handoff Standard
 
+## T3-S1 optimistic command chrome (2026-08-27)
+
+**Status:** Branch `cursor/t3-s1-optimistic-command-chrome-403c` (draft PR). Risk: **Medium** (UX only; CommandOutcome unchanged).
+
+**Household outcome:** Linked Development confirms feel instant: Saving → This phone → Cloud → Household progress rail; success toast still waits for PGlite accept; background flush upgrades chip to Up to date.
+
+**Budget delta (5):** `+1` — honest progressive sync chrome reduces false “posted to cloud” belief.
+
+**Engagement delta (3):** `+2` — confirm path feels responsive without celebrating before books accept.
+
+**What changed:** `commandProgress.ts`, `CommandProgressStatus.tsx`, `App.tsx` commit/flush wiring, styles, `test/command-progress.test.ts`.
+
+**Verification:** `pnpm exec vitest run test/command-progress.test.ts test/command-surface.test.ts` → 12 pass; `pnpm check` green.
+
+**Data/environment:** Development client only. No schema, secrets, Production, or deploy.
+
+**Next owner:** Jonathan — merge PR; manual confirm on linked Development household (post expense, watch progress rail).
+
 ## G6 Tier 1 proof gaps — Migration 012 harness (2026-08-27)
 
-**Status:** Branch `cursor/g6-tier1-proof-gaps-403c` (draft PR). Risk: **High** (hosted continuity transport proof; no money meaning change).
+**Status:** Merged via #197 onto `main`. Risk: **High** (hosted continuity transport proof; no money meaning change).
 
 **Household outcome:** T1-S5 two-client harness exercises the same Auth + Migration 012 atomic publish path production uses, and inbound Realtime pulls accept through `acceptHouseholdWrite` like `App.tsx`.
 
@@ -12,11 +30,11 @@
 
 **What changed:** `src/ledger/continuityCasHarness.ts` (in-memory 012 CAS + fetch stub); `continuityTwoClientHarness.ts` Auth config, 012 stub, `acceptHouseholdWrite` on pull; `test/continuity-cas-harness.test.ts`; `scripts/smoke-continuity-cas.mjs` + `pnpm books:smoke:012`; G6 worksession doc update. Includes cherry-picked T6 build fix (`setShowConflictSheet` removal fallout from #194).
 
-**Verification:** `pnpm exec vitest run test/continuity-cas-harness.test.ts test/continuity-two-browser-proof.test.ts` → 13 pass; full `pnpm check` green.
+**Verification:** `pnpm exec vitest run test/continuity-cas-harness.test.ts test/continuity-two-browser-proof.test.ts` → 13 pass; full `pnpm check` green. P1-4 confirmed live Jonathan SQL Editor 2026-08-27.
 
 **Data/environment:** In-memory Vitest + optional live Development smoke (JWT required). No schema apply, secrets, Production, or deploy.
 
-**Next owner:** Jonathan — merge PR; optional `SUPABASE_ACCESS_TOKEN=… pnpm books:smoke:012` on Development; close G6 gate after P1-4 Realtime policy confirmation.
+**Next owner:** Optional `SUPABASE_ACCESS_TOKEN=… pnpm books:smoke:012` on Development.
 
 ## Auto-resolve sync conflicts — no blocking modal (2026-08-27)
 
