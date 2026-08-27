@@ -84,7 +84,7 @@ export function continuityTransportLabel(input: {
   offline: boolean;
   pollIntervalMs?: number;
 }): { primary: string; mode: SyncFreshnessTransportMode } {
-  if (input.offline) return { primary: "Offline", mode: "offline" };
+  if (input.offline) return { primary: "Offline · will sync when you're back", mode: "offline" };
   if (!input.realtimeEnabled) {
     const seconds = Math.round((input.pollIntervalMs ?? LIVE_PULL_INTERVAL_MS) / 1000);
     return { primary: `Checking every ${seconds} s`, mode: "poll" };
@@ -172,10 +172,14 @@ export function buildSyncFreshness(input: SyncFreshnessInput): SyncFreshnessDisp
     transportPrimary = "Needs attention";
     tone = "warning";
   } else if (mode === "pending-transport") {
-    transportPrimary = showPendingHint ? "Sharing…" : "Waiting to share";
+    transportPrimary = input.offline
+      ? "Offline · waiting to share"
+      : showPendingHint
+        ? "Sharing…"
+        : "Waiting to share";
     tone = input.offline || household.sharing?.lastError ? "warning" : "neutral";
   } else if (mode === "transport-error" || mode === "disconnected") {
-    transportPrimary = input.offline ? "Offline" : "Share paused";
+    transportPrimary = input.offline ? "Offline · will sync when you're back" : "Share paused";
     tone = "warning";
   }
 

@@ -54,7 +54,7 @@ describe("continuityTransportLabel", () => {
       realtimeEnabled: true,
       realtimeStatus: "SUBSCRIBED",
       offline: true,
-    })).toEqual({ primary: "Offline", mode: "offline" });
+    })).toEqual({ primary: "Offline · will sync when you're back", mode: "offline" });
   });
 
   it("shows Connecting when Realtime is joining", () => {
@@ -227,7 +227,7 @@ describe("buildSyncFreshness", () => {
       now: NOW,
     });
 
-    expect(display.transportPrimary).toBe("Waiting to share");
+    expect(display.transportPrimary).toBe("Offline · waiting to share");
     expect(display.actionKind).toBe("retry");
     expect(display.actionLabel).toBe("Retry now");
   });
@@ -383,7 +383,7 @@ describe("sync freshness preview artifact", () => {
     expect(html).toContain("sync-freshness--live");
     expect(html).toContain("Checking every 4 s");
     expect(html).toContain("Sharing…");
-    expect(html).toContain("Waiting to share");
+    expect(html).toContain("Offline · waiting to share");
     expect(html).toContain("Needs attention");
     expect(html).toContain("sync-freshness__action");
   });

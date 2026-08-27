@@ -156,6 +156,11 @@ import {
   type ContinuitySyncSource,
 } from "./continuityCoordinator.ts";
 import {
+  createContinuityResumeGate,
+  isUnhealthyRealtimeStatus,
+  reconnectPollDelayMs,
+} from "./continuityResume.ts";
+import {
   attachContinuityRealtime,
   canAttachContinuityRealtime,
   shouldUsePollFallback,
@@ -886,6 +891,9 @@ export function App() {
     if (!storedAuthSession && !googleSession?.identity.email && !googleSession?.identity.subject) return;
     let live = true;
     const coordinator = createContinuityCoordinator();
+    const resumeGate = createContinuityResumeGate();
+    let consecutiveUnhealthyPolls = 0;
+    let nextPollAllowedAtMs = 0;
 
     const acceptReplayCandidate = async (candidate: Household, confirmationId: string, commandKind: string) => {
       const previous = householdRef.current;
@@ -1154,15 +1162,33 @@ export function App() {
       void coordinator.run(source, () => replayWork(source));
     };
 
-    const onOnline = () => scheduleReplay("online");
-    const onFocus = () => scheduleReplay("focus");
+    /** T3-S3: coalesce focus+visibility; online/manual/realtime stay immediate. */
+    const requestResume = (source: ContinuitySyncSource) => {
+      resumeGate.request({
+        source,
+        nowMs: Date.now(),
+        schedule: (resolved) => {
+          if (resolved === "focus" || resolved === "visibility" || resolved === "online") {
+            resumeGate.markResumed(Date.now());
+          }
+          scheduleReplay(resolved);
+        },
+        defer: (fn, waitMs) => {
+          const id = window.setTimeout(fn, waitMs);
+          return { clear: () => window.clearTimeout(id) };
+        },
+      });
+    };
+
+    const onOnline = () => requestResume("online");
+    const onFocus = () => requestResume("focus");
     const onVisibility = () => {
-      if (document.visibilityState === "visible") scheduleReplay("visibility");
+      if (document.visibilityState === "visible") requestResume("visibility");
     };
     window.addEventListener("online", onOnline);
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
-    scheduleReplay("manual");
+    requestResume("manual");
 
     let detachRealtime: (() => void) | null = null;
     const realtimeStatusRef: { current: ContinuityRealtimeStatus | null } = { current: null };
@@ -1248,6 +1274,10 @@ export function App() {
         },
         onStatusChange: (status) => {
           realtimeStatusRef.current = status;
+          if (status === "SUBSCRIBED") {
+            consecutiveUnhealthyPolls = 0;
+            nextPollAllowedAtMs = 0;
+          }
           if (live) setRealtimeStatus(status);
         },
       });
@@ -1255,7 +1285,9 @@ export function App() {
     void setupRealtime();
 
     const memberCount = householdRef.current?.members.filter((m) => m.active).length ?? 2;
-    const intervalMs = livePullIntervalMs(memberCount);
+    const baseIntervalMs = livePullIntervalMs(memberCount);
+    const realtimeOn = continuityRealtimeTransportEnabled();
+    // Tick often enough to honor backoff without a fixed 4s heartbeat when unhealthy.
     const timer = window.setInterval(() => {
       if (!shouldRunLivePull({
         documentVisible: document.visibilityState === "visible",
@@ -1263,11 +1295,29 @@ export function App() {
         hasSession: Boolean(memberId),
         hasHousehold: Boolean(householdRef.current),
       })) return;
-      if (!shouldUsePollFallback(realtimeStatusRef.current)) return;
+      if (!shouldUsePollFallback(realtimeStatusRef.current)) {
+        consecutiveUnhealthyPolls = 0;
+        return;
+      }
+      const now = Date.now();
+      if (now < nextPollAllowedAtMs) return;
+      const delay = reconnectPollDelayMs({
+        baseIntervalMs,
+        realtimeStatus: realtimeStatusRef.current,
+        consecutiveUnhealthyPolls,
+        realtimeEnabled: realtimeOn,
+      });
+      nextPollAllowedAtMs = now + delay;
+      if (isUnhealthyRealtimeStatus(realtimeStatusRef.current, realtimeOn)) {
+        consecutiveUnhealthyPolls += 1;
+      } else {
+        consecutiveUnhealthyPolls = 0;
+      }
       scheduleReplay("poll");
-    }, intervalMs);
+    }, Math.min(1_000, baseIntervalMs));
     return () => {
       live = false;
+      resumeGate.dispose();
       detachRealtime?.();
       window.removeEventListener("online", onOnline);
       window.removeEventListener("focus", onFocus);
