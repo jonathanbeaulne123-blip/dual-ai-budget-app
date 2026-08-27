@@ -112,12 +112,13 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list" }),
     }), env);
     const listed = await tools.json() as { result: { tools: Array<{ name: string; annotations: { readOnlyHint: boolean }; _meta?: { ui?: { resourceUri?: string } } }> } };
-    // companion (1) + TOOL_CATALOG (63) + writeToolDefinitions (3). Confirm is the only non-read-only tool; rig dispatch is read-only UI.
-    expect(listed.result.tools).toHaveLength(68);
-    expect(listed.result.tools.filter((tool) => tool.annotations.readOnlyHint)).toHaveLength(67);
+    // companion (1) + TOOL_CATALOG (64) + writeToolDefinitions (3). Confirm is the only non-read-only tool; rig dispatch is read-only UI.
+    expect(listed.result.tools).toHaveLength(69);
+    expect(listed.result.tools.filter((tool) => tool.annotations.readOnlyHint)).toHaveLength(68);
     expect(listed.result.tools.filter((tool) => tool.name !== "confirm_transaction").every((tool) => tool.annotations.readOnlyHint)).toBe(true);
     const names = listed.result.tools.map((tool) => tool.name);
     expect(names).toEqual(expect.arrayContaining([
+      "ledger_context",
       "shift_year_simulation",
       "explain_shift_simulation",
       "cash_cinema",
@@ -422,7 +423,7 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 20, method: "tools/list" }),
     }), env);
     const listed = await listedResponse.json() as { result: { tools: Array<{ name: string; annotations: { readOnlyHint: boolean; destructiveHint: boolean } }> } };
-    expect(listed.result.tools).toHaveLength(68);
+    expect(listed.result.tools).toHaveLength(69);
     expect(listed.result.tools.find((tool) => tool.name === "confirm_transaction")?.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: true });
     expect(listed.result.tools.some((tool) => tool.name === "year_review")).toBe(true);
     expect(listed.result.tools.some((tool) => tool.name === "shift_year_simulation")).toBe(true);

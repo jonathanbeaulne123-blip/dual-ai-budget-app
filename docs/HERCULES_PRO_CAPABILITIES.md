@@ -1,6 +1,6 @@
 # Hercules Pro — calculations and features inventory
 
-Status: living inventory for D-136 / D-137 / D-140 / D-142. Count on `tools/list` is **67** when companion + write-scope tools are listed (63 read catalog + 1 `summon_hercules` + 3 write-path). Free in-app Hercules shares the same read catalog through `herculesTools.ts`.
+Status: living inventory for D-136 / D-137 / D-140 / D-142. Count on `tools/list` is **68** when companion + write-scope tools are listed (64 read catalog + 1 `summon_hercules` + 3 write-path). Free in-app Hercules shares the same read catalog through `herculesTools.ts`.
 
 **Announcement rule (D-142):** every successful MCP answer includes `usedTool` and prefixes the answer with `I used \`tool_name\`. …`. The teacher skill must name the tool in ordinary language too.
 
@@ -26,10 +26,11 @@ Status: living inventory for D-136 / D-137 / D-140 / D-142. Count on `tools/list
 
 Unsupported: delete, edit, reverse, bill/card/bank pay, settings, shifts, imports, bulk writes.
 
-## Core ledger reads (16)
+## Core ledger reads (17)
 
 | Tool | Calculation / feature |
 |---|---|
+| `ledger_context` | Household name, shared/personal ledger names, connected member, visible bank accounts |
 | `account_balance` | One visible account balance or account list |
 | `find_transactions` | Posted rows by merchant/account/category/member/period/amount |
 | `spending_summary` | Expenses less refunds for a period |
