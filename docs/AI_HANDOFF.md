@@ -4,9 +4,9 @@
 
 **Status:** Branch `cursor/tip-science-covariates-403c`, draft [PR #208](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/208). Risk: **Medium–High** (shift schema + Hercules tools + Pro pagination + OCR draft). Not merged. Not deployed. No Production macro claims.
 
-**Base SHA:** `ef3274a` · **Head SHA:** `481a69b`.
+**Base SHA:** `ef3274a` · **Head SHA:** `5a35ec4`.
 
-**Household outcome:** End-of-night Confirm captures sales, customers served, floor headcount, and event tags so tip projections get better; Hercules (free + Pro) uses those covariates; Pro can page long shift/ledger history; optional camera drafts a shift report into Confirm without posting.
+**Household outcome:** End-of-night Confirm captures sales, customers served, floor headcount, and event tags so tip projections get better; Hercules (free + Pro) uses those covariates; Pro can page long shift/ledger history; Timesheet can photograph a tip sheet and draft Confirm without posting.
 
 **Budget delta (5):** `+2` — richer covariates improve tip projections without posting money; OCR stays proposal-only.
 
@@ -17,16 +17,17 @@
 - `WorkShiftFlow` Sales & tips step + legacy ceremony fields; stress seed synthesizes covers/staffing/events.
 - `tipScience` observations + soft sales/covers/staffing/event/macro factors on outlook/oracle/year-sim.
 - Hercules: tip tools consume covariates; new `list_shifts`; Pro `toolPageMode` page size 50/100 + cursors; free ≤10.
-- Worker `/macro/priors` soft Ontario/Canada prior (fail soft); shift-report OCR kind → Confirm draft only.
+- Worker `/macro/priors` soft Ontario/Canada prior (fail soft); shift-report OCR via shared `/documents/scan` + `documentHint` → Confirm draft only; OCR notes dropped (Worker + `workShiftDraftFromVision`); BatchImport rejects shift-report rows.
+- Single-field sales jobs map camera sales into that pad; multi-field jobs leave sales blank with an honest banner (no invented Food/Alcohol/Other split).
 - D-152 recorded.
 
-**Verification:** Focused `test/tip-covariates.test.ts` + `test/tip-science.test.ts` + hercules/work-jobs/document-scan pass; full `pnpm check` → **868 pass** / 2 skipped. Independent [books auditor](bc-7a1de1ab-9b4c-5988-b241-7008f2482591) **PASS** (Confirm-only money; covariates not in wage/tip calc). Independent [privacy auditor](bc-0df639b7-613e-53cd-8caa-cafb3253dbc2) **PASS** (headcount-only; OCR draft-only; macro region-only). Residuals tracked: OCR `note` as free-text name risk; Pro up to 100 detailed rows; no shift-report OCR unit test; legacy Confirm defaults for covers/staffing.
+**Verification:** Focused `test/shift-report-draft.test.ts` + `test/document-scan-worker.test.ts` (shift-report sanitize + hint) pass; prior tip-covariates suite green; full `pnpm check` → **873 pass** / 2 skipped. Independent books auditor **PASS WITH NOTES** (Confirm-only; sales multi-field note addressed). Independent privacy auditor **PASS WITH NOTES** (OCR note residual fixed; warnings may still echo names on-device only; third-party vision transit inherent).
 
-**Uncertainty:** Live StatsCan fetch not wired (static/Worker fallback only); OCR quality depends on model vision; Pro `list_shifts` rows still respect existing ledger view scoping — confirm after deploy smoke.
+**Uncertainty:** Live StatsCan fetch not wired; OCR quality depends on model vision; Cloud UI smoke of Timesheet Confirm may need a Development household (welcome-demo path was previously blocked).
 
-**Data/environment:** Development client/Worker code only. No schema, secrets, Production, or household wipe. Macro endpoint sends region key only.
+**Data/environment:** Development client/Worker code only. No schema, secrets, Production, or household wipe. Scan POSTs image bytes like receipts; macro endpoint sends region key only.
 
-**Next owner:** Jonathan — review Confirm required fields + Pro page size; merge; Worker publish; Development smoke of Confirm + optional scan draft; do not treat macro as Production truth.
+**Next owner:** Jonathan — review Confirm required fields + Timesheet scan buttons; merge; Worker publish; Development smoke of Take shift-report photo → review draft → Confirm.
 
 ## Start from scratch — Development household reset (D-151) (2026-08-27)
 
