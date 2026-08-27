@@ -1,9 +1,10 @@
 import { addDays, monthKeyFromDateKey, shiftMonthKey, todayKey, TIMEZONE, type DateKey } from "./calendar.ts";
 import { DEFAULT_SHIFT_SETTINGS } from "./shift.ts";
-import { emptyHousehold, postEntry, postShift, postTransfer, addGoal, addRecurrence, setBudget, contributeToGoal, scribbleChalk, markInvestmentValue, addAppointment, postVisit } from "./commands.ts";
+import { emptyHousehold, postEntry, postShift, postTransfer, addGoal, addRecurrence, setBudget, contributeToGoal, scribbleChalk, markInvestmentValue, addAppointment, postVisit, upsertWorkJob } from "./commands.ts";
 import { emptyCreditDesk, shapeAccounts } from "./accountKinds.ts";
-import { COMPANION, JOINT, type Category, type Household } from "./types.ts";
+import { COMPANION, JOINT, type Category, type Household, type WorkJob } from "./types.ts";
 import { jointSplit, equalSplits } from "./splits.ts";
+import { shapeWorkJob } from "./work.ts";
 
 function mulberry32(seed: number) {
   return function random() {
@@ -598,6 +599,61 @@ export function seedDemoHousehold(options?: { today?: DateKey; environment?: Hou
       }).household;
     }
   }
+
+  const demoJobAt = `${today}T12:00:00.000Z`;
+  const demoWorkJob = shapeWorkJob({
+    id: "",
+    memberId: "MEM-002",
+    name: "Demo Bistro",
+    color: "#2f6b4f",
+    active: true,
+    timezone: TIMEZONE,
+    locationName: "Toronto",
+    gpsEnabled: false,
+    roles: [{
+      id: "ROLE-SERVER",
+      name: "Server",
+      tipped: true,
+      active: true,
+      rates: [{
+        id: "RATE-SERVER",
+        effectiveDate: today,
+        grossHourlyRateCents: 1600,
+        takeHomeMode: "direct",
+        takeHomeHourlyRateCents: 1400,
+        deductions: [],
+        createdAt: demoJobAt,
+        updatedAt: demoJobAt,
+      }],
+      createdAt: demoJobAt,
+      updatedAt: demoJobAt,
+    }],
+    paidBreakRate: "role",
+    paidBreakHourlyRateCents: 0,
+    overtimeEnabled: false,
+    overtimeWeeklyThresholdHours: 44,
+    overtimeMultiplier: 1.5,
+    tipOutRules: [],
+    salesFields: [{ id: "SALES-TOTAL", label: "Sales", requirement: "optional", createdAt: demoJobAt, updatedAt: demoJobAt }],
+    paySchedule: { cadence: "biweekly", anchorDate: today, weekday: 5, monthDays: [15, 30], customDates: [], reminderTime: "09:00" },
+    tipSchedule: { cadence: "weekly", anchorDate: today, weekday: 5, monthDays: [15, 30], customDates: [], reminderTime: "16:00" },
+    tipWeekStartsOn: 1,
+    defaults: {
+      wagesVisibility: "personal",
+      cashTipsVisibility: "personal",
+      cardTipsVisibility: "personal",
+      tipOutVisibility: "personal",
+      wagesDepositAccountId: "ACC-CHEQUING",
+      cashTipsAccountId: "ACC-CASH",
+      cardTipsDepositAccountId: "ACC-CHEQUING",
+    },
+    wagesReceivableAccountId: "",
+    cardTipsReceivableAccountId: "",
+    note: "Demo Timesheet job for Development kitchen.",
+    createdAt: demoJobAt,
+    updatedAt: demoJobAt,
+  } satisfies WorkJob, demoJobAt);
+  household = upsertWorkJob(household, { job: demoWorkJob }).household;
 
   return household;
 }
