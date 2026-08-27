@@ -18,6 +18,24 @@
 
 **Next owner:** Jonathan — merge PR; manual confirm on linked Development household (post expense, watch progress rail).
 
+## G6 Tier 1 proof gaps — Migration 012 harness (2026-08-27)
+
+**Status:** Merged via #197 onto `main`. Risk: **High** (hosted continuity transport proof; no money meaning change).
+
+**Household outcome:** T1-S5 two-client harness exercises the same Auth + Migration 012 atomic publish path production uses, and inbound Realtime pulls accept through `acceptHouseholdWrite` like `App.tsx`.
+
+**Budget delta (5):** `+2` — proof that shared CAS and personal envelope commit atomically in tests before T2 planning continues.
+
+**Engagement delta (3):** `+1` — partner visibility harness now matches live transport semantics.
+
+**What changed:** `src/ledger/continuityCasHarness.ts` (in-memory 012 CAS + fetch stub); `continuityTwoClientHarness.ts` Auth config, 012 stub, `acceptHouseholdWrite` on pull; `test/continuity-cas-harness.test.ts`; `scripts/smoke-continuity-cas.mjs` + `pnpm books:smoke:012`; G6 worksession doc update. Includes cherry-picked T6 build fix (`setShowConflictSheet` removal fallout from #194).
+
+**Verification:** `pnpm exec vitest run test/continuity-cas-harness.test.ts test/continuity-two-browser-proof.test.ts` → 13 pass; full `pnpm check` green. P1-4 confirmed live Jonathan SQL Editor 2026-08-27.
+
+**Data/environment:** In-memory Vitest + optional live Development smoke (JWT required). No schema apply, secrets, Production, or deploy.
+
+**Next owner:** Optional `SUPABASE_ACCESS_TOKEN=… pnpm books:smoke:012` on Development.
+
 ## Auto-resolve sync conflicts — no blocking modal (2026-08-27)
 
 **Status:** Branch `cursor/auto-sync-conflict-resolve-12ce`, draft PR. Risk: **Medium** (sync UX + conflict resolution policy).

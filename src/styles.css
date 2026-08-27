@@ -1857,7 +1857,11 @@ input, select, textarea {
   background: color-mix(in srgb, var(--paper) 90%, transparent);
 }
 .flinks-status .import-actions { margin-top: 4px; }
-iframe.flinks-connect {
+.sheet.flinks-connect .sheet-inner {
+  width: min(1080px, calc(100vw - 24px));
+  max-width: 1080px;
+}
+.sheet.flinks-connect iframe {
   width: 100%;
   min-height: 760px;
   border: 1px solid var(--line);

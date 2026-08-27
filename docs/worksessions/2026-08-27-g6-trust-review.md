@@ -3,7 +3,7 @@
 **Date:** 2026-08-27  
 **Baseline:** `4efe6dc` (pre-T1-S1) → `main`  
 **Risk:** High — hosted money transport + Realtime boundaries  
-**Status:** **CONDITIONAL PASS** — P0 remediated on branch; P1 proof gaps remain before Tier 1 “closed”
+**Status:** **PASS** — P0 remediated; P1 harness proof in #197; **P1-4 confirmed live** Jonathan SQL Editor 2026-08-27.
 
 ## Household outcome
 
@@ -24,14 +24,14 @@ Independent trust + books auditors reviewed Tier 1 push-native continuity before
 - **Fix:** `encodePersonalEnvelopePayload` (always plain JSON); atomic publish path uses it.
 - **Tests:** `test/snapshot-payload.test.ts`, `test/auth-membership-authority.test.ts` (large personal canary).
 
-## P1 — open before Tier 1 “closed”
+## P1 — remediated (2026-08-27 follow-up)
 
-| ID | Finding | Owner |
+| ID | Finding | Remediation |
 |---|---|---|
-| P1-1 | Migration 012 tests are static SQL regex only — no pgTAP / `books:smoke:012` | Engineering |
-| P1-2 | T1-S5 harness stubs legacy `publish_household_snapshot`, not 012 atomic path | Engineering |
-| P1-3 | T1-S5 inbound reconcile skips `acceptHouseholdWrite` (prod `App.tsx` does not) | Engineering |
-| P1-4 | Realtime Production guard added (`continuityRealtimeAllowed`); confirm 008 policy state on Dev project | Jonathan / Engineering |
+| P1-1 | Migration 012 tests static SQL regex only | `test/continuity-cas-harness.test.ts` + `pnpm books:smoke:012` (JWT-gated live smoke) |
+| P1-2 | T1-S5 harness stubbed legacy `publish_household_snapshot` | `src/ledger/continuityCasHarness.ts` + Auth config in T1-S5 harness |
+| P1-3 | T1-S5 inbound reconcile skipped `acceptHouseholdWrite` | `applyRealtimePullOnB` now mirrors prod pull accept path |
+| P1-4 | Realtime Production guard added (`continuityRealtimeAllowed`); confirm 008 policy state on Dev project | **Closed** — Jonathan confirmed live 2026-08-27 (see § P1-4 live verification) |
 
 ## P2 — follow-ups (not blocking T2 planning)
 
@@ -49,7 +49,21 @@ Independent trust + books auditors reviewed Tier 1 push-native continuity before
 | G3 Poll demoted | ✅ |
 | G4 Two-browser latency | ✅ Jonathan manual 2026-08-27 |
 | G5 No ack lie | ✅ |
-| G6 Trust review | ⚠️ **CONDITIONAL PASS** — auditors run; P0 fixed; P1 proof before “closed” |
+| G6 Trust review | ✅ **PASS** — P0 fixed; P1 proof in repo; P1-4 live confirmed 2026-08-27 |
+
+## P1-4 live verification — Jonathan (2026-08-27)
+
+Project: `tykhocwacaxwquhynkok` (Supabase SQL Editor).
+
+**schema_migrations:** 2, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15 applied.
+
+**Policies on continuity tables:** `hearth_memberships_select`, `hearth_personal_select/insert/update` (006 member-scoped) plus `continuity_production_select` and `continuity_personal_production_select` (008 SELECT-only, `environment = 'production'`). No unexpected Production write policies.
+
+**Realtime publication:** `household_snapshots` and `continuity_personal_snapshots` in `supabase_realtime`.
+
+**Household inventory:** 9 Development households, 0 Production. 008 Production bridge policies are live but inert until Production rows exist.
+
+**Client guard:** `continuityRealtimeAllowed("production")` remains false in code; Production Realtime stays blocked until 008 personal OR-policy is reviewed for October cutover.
 
 ## Dual Course
 
@@ -59,12 +73,13 @@ Independent trust + books auditors reviewed Tier 1 push-native continuity before
 ## Verification
 
 ```text
-pnpm exec vitest run test/snapshot-payload.test.ts test/auth-membership-authority.test.ts test/continuity-realtime.test.ts
+pnpm exec vitest run test/continuity-cas-harness.test.ts test/continuity-two-browser-proof.test.ts test/auth-membership-authority.test.ts
 pnpm test
+SUPABASE_ACCESS_TOKEN=<jwt> pnpm books:smoke:012
 ```
 
 ## Next owner
 
-1. Merge G6 remediation branch (P0 + Production Realtime guard).
-2. Optional: T1-S6 freshness UI.
-3. Rebase T2-S1 onto `main` after Jonathan applies Migration 013 — do not merge full T2 stack until Tier 1 proof gaps close.
+1. Merge G6 remediation branch (#197) if not yet merged.
+2. T3-S1 optimistic command chrome (Tier 3).
+3. Rebase T2 stack onto `main`; P2 JWT re-attach optional.
