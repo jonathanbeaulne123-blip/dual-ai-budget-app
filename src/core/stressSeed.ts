@@ -544,6 +544,18 @@ export function seedStressHousehold(options: StressSeedOptions): Household {
       const endedAt = `${date}T${String(endHour).padStart(2, "0")}:${String(choose(random, [0, 15, 30, 45] as const)).padStart(2, "0")}:00-04:00`;
       const note = `${weather.word} · ${weather.celsius}°C · ${weather.section}`;
       const location = stampAt(random, HARBOUR, new Date(startedAt).toISOString(), 0.0008);
+      const salesTotal = food + alcohol + other;
+      const avgCheck = dinner ? 42 + random() * 28 : 26 + random() * 16;
+      const customersServed = Math.max(1, Math.min(5000, Math.round(salesTotal / avgCheck)));
+      const staffingBase = weekday >= 5 ? 6 : weekday === 0 ? 5 : 4;
+      const staffingCount = Math.max(1, Math.min(200, staffingBase + Math.floor(random() * 3) - 1));
+      const monthDay = date.slice(5);
+      let eventTag: "regular" | "holiday" | "sports" | "festival" | "short_staffed" | "private_party" = "regular";
+      if (monthDay === "07-01" || monthDay === "12-25" || monthDay === "12-26" || monthDay === "01-01") eventTag = "holiday";
+      else if (weekday >= 5 && random() < 0.1) eventTag = "sports";
+      else if (random() < 0.05) eventTag = "short_staffed";
+      else if (random() < 0.04) eventTag = "festival";
+      else if (random() < 0.03) eventTag = "private_party";
       household = postWorkShift(household, {
         date,
         memberId: tipMemberId,
@@ -558,6 +570,10 @@ export function seedStressHousehold(options: StressSeedOptions): Household {
         },
         cashTips,
         cardTips,
+        customersServed,
+        staffingCount,
+        eventTag,
+        weatherGlass: weather.glass,
         cashTipsAccountId: "ACC-CASH",
         wagesDepositAccountId: "ACC-CHEQUING",
         cardTipsDepositAccountId: "ACC-CHEQUING",

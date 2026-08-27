@@ -25,6 +25,7 @@ async function sourceDigest(fileType: string, bytes: Uint8Array, base64: string)
 export async function scanFinancialDocument(
   file: File,
   fetcher: typeof fetch = fetch,
+  options?: { documentHint?: "shift-report" | "receipt" | "bill" | "bank-statement" | "credit-card-statement" },
 ): Promise<{ result: VisionDocumentResult; sourceHash: string }> {
   if (!ALLOWED_IMAGE_TYPES.has(file.type)) throw new Error("Use a JPEG, PNG, or WebP photo.");
   if (file.size <= 0) throw new Error("That image is empty.");
@@ -36,6 +37,7 @@ export async function scanFinancialDocument(
     fileName: file.name.slice(0, 160),
     mimeType: file.type,
     imageDataUrl: `data:${file.type};base64,${base64}`,
+    ...(options?.documentHint ? { documentHint: options.documentHint } : {}),
   });
   let response: Response;
   try {

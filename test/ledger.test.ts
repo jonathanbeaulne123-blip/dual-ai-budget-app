@@ -146,6 +146,10 @@ describe("ledger commits", () => {
       ccTips: "100.00",
       hours: "4.00",
       settingsFingerprint: shiftSettingsFingerprint(catalogHousehold().shiftSettings),
+    
+      customersServed: 40,
+      staffingCount: 4,
+      eventTag: "regular",
     });
     expect(posted.household.shifts).toHaveLength(1);
     expect(posted.household.transactions).toHaveLength(2);
@@ -170,6 +174,10 @@ describe("ledger commits", () => {
       sales: "100.00",
       hours: "4.00",
       settingsFingerprint: fingerprint,
+    
+      customersServed: 40,
+      staffingCount: 4,
+      eventTag: "regular",
     })).toThrow(/Tip rules changed/);
     expect(household.shifts).toHaveLength(0);
   });

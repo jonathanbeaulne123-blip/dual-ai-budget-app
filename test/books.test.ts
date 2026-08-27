@@ -179,6 +179,10 @@ describe("Postgres books engine", () => {
       cashTips: "50.00",
       ccTips: "100.00",
       hours: "4.00",
+    
+      customersServed: 40,
+      staffingCount: 4,
+      eventTag: "regular",
     });
     const db = await openMemoryBooks();
     try {

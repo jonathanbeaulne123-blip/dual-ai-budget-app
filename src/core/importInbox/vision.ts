@@ -18,6 +18,9 @@ export function visionDocumentRows(input: {
   sourceName: string;
   sourceHash: string;
 }): { rows: ImportedSourceRow[]; warnings: string[] } {
+  if (input.result.documentKind === "shift-report") {
+    throw new Error("Shift reports belong on Timesheet → Scan shift report. They draft Confirm fields and never import as ledger rows.");
+  }
   const receiptDocument = input.result.documentKind === "receipt";
   const warnings = receiptDocument
     ? []

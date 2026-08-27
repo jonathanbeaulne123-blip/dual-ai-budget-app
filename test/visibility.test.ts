@@ -111,6 +111,10 @@ describe("household and personal visibility", () => {
       createdBy: "MEM-002",
       visibility: "both",
       confirmDuplicate: true,
+    
+      customersServed: 40,
+      staffingCount: 4,
+      eventTag: "regular",
     });
     expect(posted.household.shifts[0]?.visibility).toBe("both");
     expect(posted.household.transactions.every((tx) => tx.visibility === "both" && tx.createdBy === "MEM-002")).toBe(true);
@@ -141,6 +145,10 @@ describe("household and personal visibility", () => {
       createdBy: "MEM-002",
       visibility: "household",
       confirmDuplicate: true,
+    
+      customersServed: 40,
+      staffingCount: 4,
+      eventTag: "regular",
     });
     const personalView = householdForView(posted.household, "MEM-002", "personal");
     expect(personalView.shifts).toHaveLength(0);
@@ -164,6 +172,10 @@ describe("household and personal visibility", () => {
       createdBy: "MEM-002",
       visibility: "personal",
       confirmDuplicate: true,
+    
+      customersServed: 40,
+      staffingCount: 4,
+      eventTag: "regular",
     }).household;
     const { shared } = splitForSync(household, "MEM-002");
     expect(shared.shifts).toHaveLength(0);

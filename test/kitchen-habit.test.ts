@@ -29,6 +29,10 @@ function logShift(household: Household, date: string): Household {
     ccTips: "5",
     hours: "4",
     confirmDuplicate: true,
+  
+    customersServed: 40,
+    staffingCount: 4,
+    eventTag: "regular",
   }).household;
 }
 
