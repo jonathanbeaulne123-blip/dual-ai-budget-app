@@ -191,14 +191,15 @@ export function shiftClimateSeals(
     const expected = outlook?.expectedTipCents ?? 0;
     const upside = outlook?.highTipCents ?? expected;
     const tone: ClimateTone = on ? climateTone(expected, typicalTips || expected, upside) : "empty";
+    const weekdayName = WEEKDAY_LONG[weekday] ?? WEEKDAY_SHORT[weekday] ?? "Day";
     const caption = outlook
-      ? `${WEEKDAY_LONG[weekday]} ${meal}, nights like this ${formatCad(outlook.lowTipCents)}–${formatCad(outlook.highTipCents)} · projection`
+      ? `${weekdayName} ${meal}, nights like this ${formatCad(outlook.lowTipCents)}–${formatCad(outlook.highTipCents)} · projection`
       : on
-        ? `${WEEKDAY_LONG[weekday]} · not enough nights yet · projection`
-        : `${WEEKDAY_LONG[weekday]} off · days off are not a broken streak`;
+        ? `${weekdayName} · not enough nights yet · projection`
+        : `${weekdayName} off · days off are not a broken streak`;
     seals.push({
       date,
-      weekdayShort: WEEKDAY_SHORT[weekday],
+      weekdayShort: WEEKDAY_SHORT[weekday] ?? "Day",
       meal,
       mealMark: mealMark(meal),
       sub: climateSub({ today: todayRow, on, wet, tone, meal }),
@@ -304,7 +305,7 @@ export function shiftReportGlance(
   const protectWeekdays = [...new Set(
     (sim?.rows ?? [])
       .filter((row) => row.recommendation === "protect-floor")
-      .map((row) => WEEKDAY_SHORT[weekdaySunday0(row.date)]),
+      .map((row) => WEEKDAY_SHORT[weekdaySunday0(row.date)] ?? "Day"),
   )];
   const milkRaw = oracle
     ? planTaxMilk(household, { tipCents: oracle.p50Cents, memberId, taxRateBps: 2500 })
@@ -354,7 +355,7 @@ export function shiftOracleChipTalk(
       upcomingCadenceSchedule(household, today, { memberId, days: 7 }),
       { memberId },
     );
-    const chase = [...new Set((sim?.rows ?? []).filter((row) => row.recommendation === "chase-spike").map((row) => WEEKDAY_SHORT[weekdaySunday0(row.date)]))];
+    const chase = [...new Set((sim?.rows ?? []).filter((row) => row.recommendation === "chase-spike").map((row) => WEEKDAY_SHORT[weekdaySunday0(row.date)] ?? "Day"))];
     const spoken = chase.length && glance.protectWeekdays.length
       ? `Protect ${glance.protectLabel}. Chase ${chase.join(" · ")}. Advice, not a post.`
       : glance.protectWeekdays.length
