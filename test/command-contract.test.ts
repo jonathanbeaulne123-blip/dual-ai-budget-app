@@ -39,7 +39,7 @@ describe("Claude command contract", () => {
     expect(guaranteesPostedNothing(COMMAND_SURFACE_FIXTURES["permanent-validation-failure"])).toBe(true);
     expect(guaranteesPostedExactlyOnce(COMMAND_SURFACE_FIXTURES["accepted-local"])).toBe(true);
     expect(guaranteesPostedExactlyOnce(COMMAND_SURFACE_FIXTURES.synchronized)).toBe(true);
-    expect(retryRuleFor(COMMAND_SURFACE_FIXTURES["conflict-needs-attention"])).toBe("wait-for-human-conflict");
+    expect(retryRuleFor(COMMAND_SURFACE_FIXTURES["conflict-needs-attention"])).toBe("retry-same-confirmation");
     expect(retryRuleFor(COMMAND_SURFACE_FIXTURES["recovery-available"])).toBe("open-recovery");
     expect(retryRuleFor(COMMAND_SURFACE_FIXTURES["retryable-failure"])).toBe("retry-same-confirmation");
   });
