@@ -3227,9 +3227,24 @@ export function App() {
           onChooseTimeline={(keepId) => { void runKitchen((current) => chooseOpenShiftTimeline(current, { memberId: actorId, keepId })); }}
           onClockOut={clockOutStayOnShiftPage}
           onConfirmShift={(input) => submitWorkShift(input)}
-          duplicateConfirm={confirm && workShiftInputRef.current && !adding ? confirm : null}
+          duplicateConfirm={
+            confirm
+            && workShiftInputRef.current
+            && !adding
+            && workShiftInputRef.current.memberId === session.memberId
+              ? confirm
+              : null
+          }
           onConfirmAnyway={() => {
-            if (workShiftInputRef.current) submitWorkShift(workShiftInputRef.current, true);
+            const pending = workShiftInputRef.current;
+            const plan = resolveDuplicateRetry({
+              pendingWorkShift: pending,
+              confirmCode: confirm?.code ?? null,
+              tab,
+            });
+            if (plan.kind === "work-shift" && pending && pending.memberId === session.memberId) {
+              submitWorkShift(pending, true);
+            }
           }}
           onDismissDuplicate={() => setConfirm(null)}
           onCorrect={(shift, transactionId) => setGuard({ kind: "correctShift", shift, transactionId })}

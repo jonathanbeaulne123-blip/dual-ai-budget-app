@@ -2,7 +2,7 @@
 
 ## Shift Today camera (D-152 on D-153) (2026-08-27)
 
-**Status:** Branch `cursor/shift-tab-camera-6319` off `origin/main` `@891cc5d`. Risk: **Medium**. Not merged until Jonathan's "get everything done" kitchen publish.
+**Status:** Ready PR [#217](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/217) on `cursor/shift-tab-camera-6319`. Risk: **Medium**. Jonathan asked to finish without him (merge + kitchen publish). Not live until `main` Worker deploy is verified.
 
 **Household outcome:** On Shift → Today, photograph a tip sheet (or pick a photo). The scan drafts Confirm on this page. Confirm still posts. Home Timesheet / Add camera stays.
 
@@ -10,13 +10,13 @@
 
 **Engagement delta (3):** `+2`
 
-**What changed:** Shared `ShiftReportScanBar`. Clock out on Shift clocks out without opening Add. Already off stays on Today. Same `scanShiftReportFile` / `documentHint: shift-report`. Demo kitchen job for Bianca (MEM-001). BatchImport copy points at Shift → Today.
+**What changed:** Shared `ShiftReportScanBar`. Clock out on Shift clocks out without opening Add. Already off stays on Today. Same `scanShiftReportFile` / `documentHint: shift-report`. Demo kitchen job for Bianca (MEM-001). BatchImport copy points at Shift → Today. Worker prompt names Shift → Today. Same-day Confirm retry stays on `postWorkShift` even if Add is still on the expense pad; the duplicate banner stays on Shift Today.
 
-**Verification:** (running `pnpm check` after focused tests)
+**Verification:** `pnpm check` → **895 passed / 2 skipped**. Focused camera + duplicate + scan Worker tests green. Independent books **PASS WITH NOTES** (P1 expense-pad retry closed). Privacy **PASS WITH NOTES**. UX **PASS WITH NOTES**.
 
 **Data/environment:** Client/docs. Scan still POSTs image bytes like receipts. No schema, secrets, Production rows.
 
-**Next owner:** After kitchen deploy — hard-refresh, Development, demo kitchen, Bianca, Shift → Already off? → camera chips.
+**Next owner:** After kitchen deploy — hard-refresh, Development, demo kitchen, Bianca, Shift → Already off? → camera chips. Do not Confirm unless intending a fictional demo post.
 
 ## Shift tab (D-153) (2026-08-27)
 
