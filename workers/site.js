@@ -1106,6 +1106,53 @@ async function scanDocument(request, env) {
   return json({ ok: true, provider, result }, 200, cors);
 }
 
+/** Monthly Ontario/Canada soft tip priors — no household data; fail soft. */
+async function macroPriors(request, env) {
+  const url = new URL(request.url);
+  const regionKey = url.searchParams.get("region") === "CA" ? "CA" : "CA-ON";
+  const now = new Date();
+  const monthKey = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+  const cacheKey = `macro:${regionKey}:${monthKey}`;
+  try {
+    if (env?.HEARTH_KV) {
+      const cached = await env.HEARTH_KV.get(cacheKey, "json");
+      if (cached && typeof cached === "object") {
+        return json({ ok: true, prior: { ...cached, source: "worker-cache" } }, 200);
+      }
+    }
+  } catch {
+    // fail soft
+  }
+  // Soft seasonal fallback — disclosed; not live StatsCan. Production claims remain gated.
+  const month = Number(monthKey.slice(5, 7));
+  const foodserviceSalesYoY = month >= 6 && month <= 8 ? 0.03 : month === 12 || month === 1 ? 0.01 : 0;
+  const unemploymentRate = month >= 11 || month <= 2 ? 6.4 : 5.9;
+  const consumerConfidence = 98;
+  let factor = 1 + Math.max(-0.05, Math.min(0.05, foodserviceSalesYoY)) * 0.6;
+  factor *= 1 - Math.max(-0.03, Math.min(0.04, (unemploymentRate - 6) * 0.008));
+  factor *= 1 + Math.max(-0.03, Math.min(0.03, (consumerConfidence - 100) / 1000));
+  factor = Math.round(Math.min(1.1, Math.max(0.9, factor)) * 1000) / 1000;
+  const prior = {
+    regionKey,
+    monthKey,
+    factor,
+    foodserviceSalesYoY,
+    unemploymentRate,
+    consumerConfidence,
+    source: "static-fallback",
+    assumptions: [
+      `Macro prior from Worker static ${regionKey} fallback for ${monthKey} (factor ${factor.toFixed(3)}); not live StatsCan.`,
+      "Macro soft priors are never posted income.",
+    ],
+  };
+  try {
+    if (env?.HEARTH_KV) await env.HEARTH_KV.put(cacheKey, JSON.stringify(prior), { expirationTtl: 60 * 60 * 24 * 35 });
+  } catch {
+    // ignore cache write failures
+  }
+  return json({ ok: true, prior }, 200);
+}
+
 async function herculesRigPost(request, env) {
   const { allowed, origin } = resolveChatOrigin(request);
   const cors = rigCorsHeaders(origin);
@@ -1202,6 +1249,10 @@ export default {
       }
       if (request.method === "POST") return scanDocument(request, env);
       return json({ ok: false, error: "method" }, 405, cors);
+    }
+    if (url.pathname === "/macro/priors") {
+      if (request.method === "GET") return macroPriors(request, env);
+      return json({ ok: false, error: "method" }, 405);
     }
 
     const response = exposeHerculesCompanionAsset(request, await env.ASSETS.fetch(request));

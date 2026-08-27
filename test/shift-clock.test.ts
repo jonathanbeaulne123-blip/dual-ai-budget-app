@@ -63,6 +63,10 @@ describe("shift punch clock", () => {
       ccTips: "5",
       hours: "4",
       confirmDuplicate: true,
+    
+      customersServed: 40,
+      staffingCount: 4,
+      eventTag: "regular",
     });
     expect(posted.postedIds.length).toBeGreaterThan(0);
     expect(activeOpenShift(posted.household.kitchen)).toBeNull();

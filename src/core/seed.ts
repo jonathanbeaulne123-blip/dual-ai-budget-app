@@ -354,6 +354,9 @@ export function seedDemoHousehold(options?: { today?: DateKey; environment?: Hou
         cashTips: +(40 + random() * 50).toFixed(2),
         ccTips: +(60 + random() * 90).toFixed(2),
         hours: +(4 + random() * 3).toFixed(2),
+        customersServed: 40,
+        staffingCount: 4,
+        eventTag: "regular",
         confirmDuplicate: true,
       }).household;
     }

@@ -32,9 +32,11 @@ import { ledgerNameForView, shapeLedgerNames } from "./ledgerNames.ts";
 import type { HerculesAskContext } from "./askBooks.ts";
 import type { HerculesGroundedFact, HerculesNumberSource } from "./herculesProvenance.ts";
 import type { HerculesTalk } from "./herculesTalk.ts";
-import type { Account, Household, Transaction } from "./types.ts";
+import type { Account, Household, ShiftEventTag, Transaction } from "./types.ts";
+import { isShiftEventTag } from "./types.ts";
 import {
   explainShiftYearSimulation,
+  listTipShifts,
   planTaxMilk,
   runShiftYearSimulation,
   runTipOracle,
@@ -43,6 +45,7 @@ import {
   upcomingCadenceSchedule,
   type TipMeal,
 } from "./tipScience.ts";
+import { staticMacroPrior } from "./macroPriors.ts";
 import {
   runCashCinema,
   runWhatIfDesk,
@@ -113,6 +116,7 @@ export const HERCULES_READ_TOOL_NAMES = [
   "tax_milk_plan",
   "shift_year_simulation",
   "explain_shift_simulation",
+  "list_shifts",
   "cash_cinema",
   "what_if_desk",
   "year_review",
@@ -137,6 +141,8 @@ export type HerculesReadToolResult = {
   status: "ok" | "empty" | "unavailable";
   sentence: string;
   facts: HerculesGroundedFact[];
+  /** Optional structured page payload for Pro (cursors, rows). */
+  payload?: Record<string, unknown>;
 };
 
 export type HerculesReadToolRun = {
@@ -207,6 +213,7 @@ export const HERCULES_READ_TOOL_CATALOG: ReadonlyArray<{ name: HerculesReadToolN
   { name: "tax_milk_plan", description: "Split tip income into educational tax-milk, smoothing buffer, and leftover projections. Never posts." },
   { name: "shift_year_simulation", description: "Seeded Monte Carlo for the next 6–12 months of tips and wages from posted shift history. Projection only." },
   { name: "explain_shift_simulation", description: "Teach how the shift year simulation works: method, limits, and a human next step. Never posts." },
+  { name: "list_shifts", description: "Page through posted shifts with sales, covers, staffing, tip%, and event tags. Prefer tip_oracle aggregates first." },
   { name: "cash_cinema", description: "13-week forward cash ribbon from tip floor/typical, wage pace, bills, and card mins. Projection only." },
   { name: "what_if_desk", description: "Named unposted scenario versus current cash and tip floor. Never posts." },
   { name: "year_review", description: "Posted tip months, income, spend, budget misses, and shift count for a trailing window." },
@@ -236,7 +243,34 @@ function cleanPeriod(value: unknown, fallback: HerculesPeriod = "this_month"): H
   return typeof value === "string" && PERIODS.has(value as HerculesPeriod) ? value as HerculesPeriod : fallback;
 }
 
-function cleanArgs(name: HerculesReadToolName, raw: unknown): Record<string, unknown> {
+/** Free Brain ≤10; Pro MCP default 50 / max 100. */
+function toolPageLimit(context: HerculesAskContext, requested: unknown, freeDefault: number, freeMax = 10): number {
+  const fallback = context.toolPageMode === "pro" ? 50 : freeDefault;
+  const raw = Math.round(Number(requested));
+  const value = Number.isFinite(raw) && raw > 0 ? raw : fallback;
+  if (context.toolPageMode === "pro") return Math.min(100, Math.max(1, value));
+  return Math.min(freeMax, Math.max(1, value));
+}
+
+function resolveMacroPrior(context: HerculesAskContext, today: DateKey) {
+  if (context.macroPrior) return context.macroPrior;
+  if (context.toolPageMode === "pro") return staticMacroPrior(monthKeyFromDateKey(today));
+  return null;
+}
+
+function encodePageCursor(offset: number): string {
+  return `o:${Math.max(0, Math.floor(offset))}`;
+}
+
+function decodePageCursor(cursor: string | undefined | null): number {
+  if (!cursor) return 0;
+  const match = /^o:(\d+)$/.exec(String(cursor).trim());
+  if (!match) return 0;
+  return Math.max(0, Number(match[1]));
+}
+
+function cleanArgs(name: HerculesReadToolName, raw: unknown, context?: HerculesAskContext): Record<string, unknown> {
+  const pageContext: HerculesAskContext = context ?? { memberId: "", view: "personal", toolPageMode: "free" };
   const input = raw && typeof raw === "object" && !Array.isArray(raw) ? raw as Record<string, unknown> : {};
   const common = {
     period: cleanPeriod(input.period),
@@ -252,7 +286,8 @@ function cleanArgs(name: HerculesReadToolName, raw: unknown): Record<string, unk
       ...common,
       minimumAmountCents: cleanCents(input.minimumAmountCents),
       maximumAmountCents: cleanCents(input.maximumAmountCents),
-      limit: Math.min(10, Math.max(1, Math.round(Number(input.limit) || 5))),
+      limit: toolPageLimit(pageContext, input.limit, 5),
+      cursor: cleanString(input.cursor, 40),
     };
   }
   if (name === "bills_due") {
@@ -284,18 +319,18 @@ function cleanArgs(name: HerculesReadToolName, raw: unknown): Record<string, unk
     return { period: cleanPeriod(input.period) };
   }
   if (name === "general_ledger") {
-    return { ...common, limit: Math.min(10, Math.max(1, Math.round(Number(input.limit) || 8))) };
+    return { ...common, limit: Math.min(100, Math.max(1, Math.round(Number(input.limit) || 8))), cursor: cleanString(input.cursor, 40) };
   }
   if (name === "account_activity" || name === "explain_balance") {
-    return { account: common.account, period: cleanPeriod(input.period), from: common.from, to: common.to, limit: Math.min(10, Math.max(1, Math.round(Number(input.limit) || 8))) };
+    return { account: common.account, period: cleanPeriod(input.period), from: common.from, to: common.to, limit: Math.min(100, Math.max(1, Math.round(Number(input.limit) || 8))), cursor: cleanString(input.cursor, 40) };
   }
   if (name === "journal_entry_detail") return { entryId: cleanString(input.entryId, 100) };
   if (name === "reconciliation_status" || name === "opening_balance_review") return { account: common.account };
-  if (name === "activity_since_reconciliation") return { account: common.account, limit: Math.min(10, Math.max(1, Math.round(Number(input.limit) || 8))) };
-  if (name === "uncategorized_activity" || name === "source_document_coverage") return { ...common, limit: Math.min(10, Math.max(1, Math.round(Number(input.limit) || 8))) };
-  if (name === "duplicate_exposure" || name === "integrity_findings" || name === "audit_trail" || name === "missing_periods") return { limit: Math.min(10, Math.max(1, Math.round(Number(input.limit) || 8))) };
+  if (name === "activity_since_reconciliation") return { account: common.account, limit: Math.min(100, Math.max(1, Math.round(Number(input.limit) || 8))), cursor: cleanString(input.cursor, 40) };
+  if (name === "uncategorized_activity" || name === "source_document_coverage") return { ...common, limit: Math.min(100, Math.max(1, Math.round(Number(input.limit) || 8))), cursor: cleanString(input.cursor, 40) };
+  if (name === "duplicate_exposure" || name === "integrity_findings" || name === "audit_trail" || name === "missing_periods") return { limit: Math.min(100, Math.max(1, Math.round(Number(input.limit) || 8))), cursor: cleanString(input.cursor, 40) };
   if (name === "period_close_readiness") return { period: cleanPeriod(input.period) };
-  if (name === "budget_variance" || name === "savings_rate" || name === "forecast_accuracy") return { period: cleanPeriod(input.period), limit: Math.min(10, Math.max(1, Math.round(Number(input.limit) || 8))) };
+  if (name === "budget_variance" || name === "savings_rate" || name === "forecast_accuracy") return { period: cleanPeriod(input.period), limit: Math.min(100, Math.max(1, Math.round(Number(input.limit) || 8))) };
   if (name === "cash_runway") return { period: cleanPeriod(input.period, "last_30_days") };
   if (name === "bill_coverage") return { horizonDays: Math.min(90, Math.max(1, Math.round(Number(input.horizonDays) || 30))) };
   if (name === "debt_projection") return { account: common.account, monthlyPaymentCents: cleanCents(input.monthlyPaymentCents) };
@@ -325,6 +360,10 @@ function cleanArgs(name: HerculesReadToolName, raw: unknown): Record<string, unk
       hours: Number.isFinite(hoursRaw) && hoursRaw > 0 ? Math.min(24, Math.max(0.25, hoursRaw)) : 0,
       meal: input.meal === "lunch" || input.meal === "dinner" ? input.meal : undefined,
       weatherGlass: cleanWeatherGlass(input.weatherGlass),
+      eventTag: isShiftEventTag(input.eventTag) ? input.eventTag : undefined,
+      salesCents: cleanCents(input.salesCents),
+      customersServed: Number.isInteger(Number(input.customersServed)) ? Math.min(5000, Math.max(0, Number(input.customersServed))) : undefined,
+      staffingCount: Number.isInteger(Number(input.staffingCount)) ? Math.min(200, Math.max(1, Number(input.staffingCount))) : undefined,
     };
   }
   if (name === "tip_schedule_sim") {
@@ -332,6 +371,7 @@ function cleanArgs(name: HerculesReadToolName, raw: unknown): Record<string, unk
       member: common.member,
       days: Math.min(14, Math.max(3, Math.round(Number(input.days) || 7))),
       weatherGlass: cleanWeatherGlass(input.weatherGlass),
+      eventTag: isShiftEventTag(input.eventTag) ? input.eventTag : undefined,
     };
   }
   if (name === "tax_milk_plan") {
@@ -352,6 +392,16 @@ function cleanArgs(name: HerculesReadToolName, raw: unknown): Record<string, unk
   }
   if (name === "explain_shift_simulation") {
     return { member: common.member };
+  }
+  if (name === "list_shifts") {
+    return {
+      ...common,
+      job: cleanString(input.job),
+      eventTag: isShiftEventTag(input.eventTag) ? input.eventTag : undefined,
+      tippedOnly: input.tippedOnly === true || input.tippedOnly === "true",
+      limit: Math.min(100, Math.max(1, Math.round(Number(input.limit) || 50))),
+      cursor: cleanString(input.cursor, 40),
+    };
   }
   if (name === "cash_cinema") {
     return {
@@ -597,8 +647,10 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
   if (call.name === "find_transactions") {
     const query = matchingTransactionsAt(household, call.args, context, today);
     if (query.filters.missing.length) return empty(call, `I cannot match ${query.filters.missing.join(" or ")} in this ledger.`);
-    const limit = Math.min(10, Math.max(1, Number(call.args.limit) || 5));
-    const rows = [...query.rows].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)).slice(0, limit);
+    const limit = toolPageLimit(context, call.args.limit, 5);
+    const sorted = [...query.rows].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
+    const offset = decodePageCursor(cleanString(call.args.cursor, 40));
+    const rows = sorted.slice(offset, offset + limit);
     if (!rows.length) return empty(call, `I found no matching posted rows ${query.range.label}.`);
     const facts = rows.map((tx, index) => fact(
       call,
@@ -607,7 +659,16 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
       formatCad(tx.amountCents),
       toolSource(context, "Open this posted row", { transactionId: tx.id, accountId: tx.accountId, categoryId: tx.subcategoryId ?? undefined, memberId: tx.createdBy, from: tx.date, to: tx.date }),
     ));
-    return { callId: call.id, name: call.name, status: "ok", sentence: `I found ${query.rows.length} matching posted row${query.rows.length === 1 ? "" : "s"} ${query.range.label}; here are ${facts.length}.`, facts };
+    const nextOffset = offset + rows.length;
+    const nextCursor = nextOffset < sorted.length ? encodePageCursor(nextOffset) : null;
+    return {
+      callId: call.id,
+      name: call.name,
+      status: "ok",
+      sentence: `I found ${query.rows.length} matching posted row${query.rows.length === 1 ? "" : "s"} ${query.range.label}; showing ${facts.length}${nextCursor ? " (more available via cursor)" : ""}.`,
+      facts,
+      payload: { nextCursor, totalMatched: sorted.length, limit },
+    };
   }
 
   if (call.name === "spending_summary" || call.name === "income_summary") {
@@ -676,6 +737,9 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     // D-127 stores paid-break income inside wagesCents while retaining the
     // component separately for reporting; adding it again would double count.
     const income = rows.reduce((sum, row) => sum + row.wagesCents + row.netTipsCents, 0);
+    const sales = rows.reduce((sum, row) => sum + (row.salesCents || 0), 0);
+    const covers = rows.reduce((sum, row) => sum + (row.customersServed || 0), 0);
+    const staffing = rows.reduce((sum, row) => sum + (row.staffingCount || 0), 0);
     const source: HerculesNumberSource = { route: "home", view: context.view, surface: "timesheet", memberId: member?.id, from: range.start, to: range.end, label: "Open the timesheet" };
     const subject = member?.name ?? (context.view === "household" ? "The household" : "You");
     if (!rows.length && visibleShifts.length > 0) {
@@ -699,7 +763,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
         facts: [fact(call, 0, "Posted shifts in ledger", "0", source)],
       };
     }
-    return { callId: call.id, name: call.name, status: "ok", sentence: `${subject} has ${rows.length} posted shift${rows.length === 1 ? "" : "s"}, ${hours.toFixed(1)} hours, and ${formatCad(income)} of shift income ${range.label}.`, facts: [fact(call, 0, "Shift income", formatCad(income), source), fact(call, 1, "Hours", hours.toFixed(1), source), fact(call, 2, "Shifts", String(rows.length), source)] };
+    return { callId: call.id, name: call.name, status: "ok", sentence: `${subject} has ${rows.length} posted shift${rows.length === 1 ? "" : "s"}, ${hours.toFixed(1)} hours, and ${formatCad(income)} of shift income ${range.label}. Sales ${formatCad(sales)} · covers ${covers || "—"} · floor headcount sum ${staffing || "—"}.`, facts: [fact(call, 0, "Shift income", formatCad(income), source), fact(call, 1, "Hours", hours.toFixed(1), source), fact(call, 2, "Shifts", String(rows.length), source), fact(call, 3, "Sales", formatCad(sales), source), fact(call, 4, "Customers served", covers ? String(covers) : "not stamped", source)] };
   }
 
   if (call.name === "goal_progress") {
@@ -918,7 +982,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const memberQuery = cleanString(call.args.member);
     const member = resolveMember(household, memberQuery, context);
     if (memberQuery && !member) return empty(call, `I cannot match member “${memberQuery}” in this ledger.`);
-    const limit = Math.min(10, Math.max(1, Number(call.args.limit) || 8));
+    const limit = toolPageLimit(context, call.args.limit, 8);
     const rows = books.entries.filter((entry) => entry.recognized && entry.date >= range.start && entry.date <= range.end
       && (!account || entry.lines.some((line) => line.accountId === account.id))
       && (!member || entry.createdBy === member.id || entry.lines.some((line) => line.partyId === member.id)))
@@ -952,7 +1016,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
         facts: [fact(call, 0, "Opening balance", formatCad(opening), source), fact(call, 1, "Debits", formatCad(debits), source), fact(call, 2, "Credits", formatCad(credits), source), fact(call, 3, "Ending balance", formatCad(ending), source)],
       };
     }
-    const limit = Math.min(10, Math.max(1, Number(call.args.limit) || 8));
+    const limit = toolPageLimit(context, call.args.limit, 8);
     const facts = rows.slice(-limit).reverse().map((row, index) => fact(call, index, `${row.date} · ${row.memo}`, `${row.debitCents ? `${formatCad(row.debitCents)} debit` : `${formatCad(row.creditCents)} credit`} · balance ${formatCad(row.runningCents)}`, { ...source, journalEntryId: row.entryId, from: row.date, to: row.date, label: `Open journal entry ${row.entryId}` }));
     return { callId: call.id, name: call.name, status: rows.length ? "ok" : "empty", sentence: `${account.name} moved from ${formatCad(opening)} to ${formatCad(ending)} ${range.label} across ${rows.length} journal line${rows.length === 1 ? "" : "s"}.`, facts };
   }
@@ -1008,7 +1072,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const rec = [...(household.kitchen.books?.reconciliations ?? [])].reverse().find((row) => row.accountId === account.id);
     if (!rec) return empty(call, `${account.name} has no saved reconciliation. Reconcile a statement before asking what came after it.`);
     const rows = household.transactions.filter((tx) => !tx.isDuplicate && tx.accountId === account.id && tx.date > rec.statementDate && tx.date <= today).sort((a, b) => b.date.localeCompare(a.date));
-    const limit = Math.min(10, Math.max(1, Number(call.args.limit) || 8));
+    const limit = toolPageLimit(context, call.args.limit, 8);
     const facts = rows.slice(0, limit).map((tx, index) => fact(call, index, `${tx.date} · ${tx.place || tx.note || tx.type}`, formatCad(tx.amountCents), toolSource(context, "Open this post-reconciliation row", { transactionId: tx.id, accountId: account.id, from: tx.date, to: tx.date })));
     return { callId: call.id, name: call.name, status: rows.length ? "ok" : "empty", sentence: `${account.name} has ${rows.length} posted row${rows.length === 1 ? "" : "s"} after the ${rec.statementDate} reconciliation. These are newer rows, not automatically errors.`, facts };
   }
@@ -1017,7 +1081,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const query = matchingTransactionsAt(household, call.args, context, today);
     const known = new Set(household.categories.filter((row) => row.recordType === "category").map((row) => row.id));
     const rows = query.rows.filter((tx) => tx.type !== "transfer" && (!tx.subcategoryId || !known.has(tx.subcategoryId)));
-    const limit = Math.min(10, Math.max(1, Number(call.args.limit) || 8));
+    const limit = toolPageLimit(context, call.args.limit, 8);
     const facts = rows.slice(0, limit).map((tx, index) => fact(call, index, `${tx.date} · ${tx.place || tx.note || tx.type}`, formatCad(tx.amountCents), toolSource(context, "Open this uncategorized row", { transactionId: tx.id, accountId: tx.accountId, from: tx.date, to: tx.date })));
     return { callId: call.id, name: call.name, status: rows.length ? "ok" : "empty", sentence: rows.length ? `${rows.length} posted row${rows.length === 1 ? " needs" : "s need"} a valid category ${query.range.label}.` : `Every posted income and expense row has a valid category ${query.range.label}.`, facts };
   }
@@ -1026,7 +1090,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const pairs = duplicateContrastPairs(household.transactions);
     const excluded = household.transactions.filter((tx) => tx.isDuplicate);
     const excludedCents = excluded.reduce((sum, tx) => sum + tx.amountCents, 0);
-    const limit = Math.min(10, Math.max(1, Number(call.args.limit) || 8));
+    const limit = toolPageLimit(context, call.args.limit, 8);
     const facts = [
       fact(call, 0, "Unresolved candidate pairs", String(pairs.length), toolSource(context, "Open duplicate review"), "projection"),
       fact(call, 1, "Excluded duplicate rows", String(excluded.length), toolSource(context, "Open excluded duplicate rows")),
@@ -1047,7 +1111,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
       if (!postedMonths.has(cursor)) missing.push(cursor);
       cursor = shiftMonthKey(cursor, 1);
     }
-    const limit = Math.min(10, Math.max(1, Number(call.args.limit) || 8));
+    const limit = toolPageLimit(context, call.args.limit, 8);
     const facts = missing.slice(-limit).map((month, index) => fact(call, index, month, "no recognized rows", toolSource(context, `Open ${month}`, { from: `${month}-01` as DateKey, to: addDays(monthStartKey(shiftMonthKey(month, 1)), -1) })));
     return { callId: call.id, name: call.name, status: missing.length ? "ok" : "empty", sentence: missing.length ? `${missing.length} empty calendar month${missing.length === 1 ? " appears" : "s appear"} between the first visible post and today. Empty can be legitimate; it is a completeness question.` : "Every calendar month from the first visible post through today has at least one recognized row.", facts };
   }
@@ -1094,14 +1158,14 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
   if (call.name === "integrity_findings") {
     if (context.view !== "household") return { callId: call.id, name: call.name, status: "unavailable", sentence: "The complete integrity review lives in the Household ledger.", facts: [] };
     const rows = runHealthCheck(household);
-    const limit = Math.min(10, Math.max(1, Number(call.args.limit) || 8));
+    const limit = toolPageLimit(context, call.args.limit, 8);
     const facts = rows.slice(0, limit).map((row, index) => fact(call, index, row.section, row.message, toolSource(context, "Open Health", { transactionId: row.id?.startsWith("TX-") ? row.id : undefined, accountId: row.id?.startsWith("ACC-") ? row.id : undefined })));
     return { callId: call.id, name: call.name, status: rows.length ? "ok" : "empty", sentence: rows.length ? `Health found ${rows.length} deterministic integrity finding${rows.length === 1 ? "" : "s"}; here are ${facts.length}.` : "Health found no deterministic integrity findings.", facts };
   }
 
   if (call.name === "audit_trail") {
     if (context.view !== "household") return { callId: call.id, name: call.name, status: "unavailable", sentence: "The household activity trail lives in the Household ledger.", facts: [] };
-    const limit = Math.min(10, Math.max(1, Number(call.args.limit) || 8));
+    const limit = toolPageLimit(context, call.args.limit, 8);
     const rows = [...household.activity].sort((a, b) => b.at.localeCompare(a.at)).slice(0, limit);
     const facts = rows.map((row, index) => fact(call, index, `${row.at.slice(0, 10)} · ${row.action}`, row.summary, { route: "more", view: context.view, label: "Open household activity" }));
     return { callId: call.id, name: call.name, status: rows.length ? "ok" : "empty", sentence: rows.length ? `Here are the latest ${rows.length} household activity record${rows.length === 1 ? "" : "s"}. They describe committed actions; they do not authorize a new one.` : "The household activity trail is empty.", facts };
@@ -1110,7 +1174,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
   if (call.name === "budget_variance") {
     const month = statementMonth(today, call.args);
     const rows = budgetVariance(household, month);
-    const limit = Math.min(10, Math.max(1, Number(call.args.limit) || 8));
+    const limit = toolPageLimit(context, call.args.limit, 8);
     const source = toolSource(context, `Open the ${month} budget`, { from: `${month}-01` as DateKey, to: addDays(monthStartKey(shiftMonthKey(month, 1)), -1) });
     const facts = rows.slice(0, limit).map((row, index) => fact(call, index, row.name, `${formatCad(row.actualCents)} actual · ${formatCad(row.budgetedCents)} budget · ${formatCad(row.varianceCents)} remaining`, { ...source, categoryId: row.id }, "projection"));
     const over = rows.filter((row) => row.varianceCents < 0);
@@ -1359,12 +1423,14 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const member = resolveMember(household, memberQuery, context);
     if (memberQuery && !member) return empty(call, `I cannot match member “${memberQuery}” in this ledger.`);
     const memberId = tipOracleMemberId(context, member?.id);
+    const macroPrior = resolveMacroPrior(context, today);
     const oracle = runTipOracle(household, {
       memberId,
       today,
       horizonDays: Number(call.args.horizonDays) || 28,
       iterations: Number(call.args.iterations) || 2000,
       seed: Number(call.args.seed) || 137,
+      macroPrior,
     });
     if (!oracle) return empty(call, "I need at least four posted tip shifts before the Shift Oracle can simulate a floor.");
     const source = tipOracleSource(context, memberId);
@@ -1391,12 +1457,18 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const date = cleanDate(call.args.date) ?? addDays(today, 1);
     const hours = Number(call.args.hours) || 0;
     if (!(hours > 0)) return empty(call, "Tell me the shift length in hours for an outlook.");
+    const macroPrior = resolveMacroPrior(context, today);
     const outlook = shiftOutlook(household, {
       date,
       hours,
       meal: call.args.meal as TipMeal | undefined,
       weatherGlass: call.args.weatherGlass as WeatherGlass | undefined,
+      eventTag: isShiftEventTag(call.args.eventTag) ? call.args.eventTag as ShiftEventTag : undefined,
+      salesCents: cleanCents(call.args.salesCents),
+      customersServed: Number.isInteger(Number(call.args.customersServed)) ? Number(call.args.customersServed) : undefined,
+      staffingCount: Number.isInteger(Number(call.args.staffingCount)) ? Number(call.args.staffingCount) : undefined,
       memberId,
+      macroPrior,
     });
     if (!outlook) return empty(call, "I need posted tip history before I can estimate tonight.");
     const source = tipOracleSource(context, memberId, date);
@@ -1404,12 +1476,13 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
       callId: call.id,
       name: call.name,
       status: "ok",
-      sentence: `For a ${outlook.hours.toFixed(2)}h ${outlook.meal} on ${outlook.date}, I expect about ${formatCad(outlook.expectedTipCents)} net tips (${formatCad(outlook.lowTipCents)}–${formatCad(outlook.highTipCents)}) from ${outlook.similarShifts} similar posted shift${outlook.similarShifts === 1 ? "" : "s"}, weather/season factor ${outlook.weatherFactor.toFixed(2)}. Projection only — Confirm still posts the real shift.`,
+      sentence: `For a ${outlook.hours.toFixed(2)}h ${outlook.meal} on ${outlook.date}, I expect about ${formatCad(outlook.expectedTipCents)} net tips (${formatCad(outlook.lowTipCents)}–${formatCad(outlook.highTipCents)}) from ${outlook.similarShifts} similar posted shift${outlook.similarShifts === 1 ? "" : "s"}, combined soft factor ${((outlook.weatherFactor * outlook.eventFactor * outlook.covariateFactor * outlook.macroFactor)).toFixed(3)}. Projection only — Confirm still posts the real shift.`,
       facts: [
         fact(call, 0, "Expected tips", formatCad(outlook.expectedTipCents), source, "projection"),
         fact(call, 1, "Low tips (p10)", formatCad(outlook.lowTipCents), source, "projection"),
         fact(call, 2, "High tips (p90)", formatCad(outlook.highTipCents), source, "projection"),
         fact(call, 3, "Tip per hour", formatCad(outlook.tipPerHourCents), source, "projection"),
+        fact(call, 4, "Macro factor", outlook.macroFactor.toFixed(3), source, "projection"),
       ],
     };
   }
@@ -1421,10 +1494,14 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const memberId = tipOracleMemberId(context, member?.id);
     const days = Number(call.args.days) || 7;
     const weatherGlass = call.args.weatherGlass as WeatherGlass | undefined;
-    const schedule = upcomingCadenceSchedule(household, today, { memberId, days }).map((slot) => (
-      weatherGlass ? { ...slot, weatherGlass } : slot
-    ));
-    const sim = simulateTipSchedule(household, schedule, { memberId });
+    const eventTag = isShiftEventTag(call.args.eventTag) ? call.args.eventTag as ShiftEventTag : undefined;
+    const macroPrior = resolveMacroPrior(context, today);
+    const schedule = upcomingCadenceSchedule(household, today, { memberId, days }).map((slot) => ({
+      ...slot,
+      ...(weatherGlass ? { weatherGlass } : {}),
+      ...(eventTag ? { eventTag } : {}),
+    }));
+    const sim = simulateTipSchedule(household, schedule, { memberId, macroPrior });
     if (!sim) return empty(call, "I need posted tip cadence before I can simulate the next shifts.");
     const source = tipOracleSource(context, memberId);
     const headline = sim.rows.slice(0, 3).map((row) => `${row.date} ${row.recommendation}`).join("; ");
@@ -1475,12 +1552,14 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const member = resolveMember(household, memberQuery, context);
     if (memberQuery && !member) return empty(call, `I cannot match member “${memberQuery}” in this ledger.`);
     const memberId = tipOracleMemberId(context, member?.id);
+    const macroPrior = resolveMacroPrior(context, today);
     const sim = runShiftYearSimulation(household, {
       memberId,
       today,
       months: Number(call.args.months) || 12,
       iterations: Number(call.args.iterations) || 800,
       seed: Number(call.args.seed) || 137,
+      macroPrior,
     });
     if (!sim) return empty(call, "I need at least four posted tip shifts before I can simulate a year of tips and wages.");
     const source = tipOracleSource(context, memberId);
@@ -1505,6 +1584,53 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
         fact(call, 4, "Sample shifts", String(sim.sampleShifts), source, "projection"),
         ...monthFacts,
       ],
+    };
+  }
+
+  if (call.name === "list_shifts") {
+    const memberQuery = cleanString(call.args.member);
+    const member = resolveMember(household, memberQuery, context);
+    if (memberQuery && !member) return empty(call, `I cannot match member “${memberQuery}” in this ledger.`);
+    const memberId = tipOracleMemberId(context, member?.id);
+    const period = cleanPeriod(call.args.period, "last_30_days");
+    const range = periodRange(today, period, call.args);
+    const jobQuery = cleanString(call.args.job);
+    const job = jobQuery
+      ? (household.workJobs ?? []).find((row) => row.id === jobQuery || row.name.toLowerCase().includes(jobQuery.toLowerCase()))
+      : undefined;
+    if (jobQuery && !job) return empty(call, `I cannot match job “${jobQuery}” in this ledger.`);
+    const limit = toolPageLimit(context, call.args.limit, 10);
+    const page = listTipShifts(household, {
+      memberId,
+      from: range.start,
+      to: range.end,
+      jobId: job?.id,
+      eventTag: isShiftEventTag(call.args.eventTag) ? call.args.eventTag as ShiftEventTag : undefined,
+      tippedOnly: call.args.tippedOnly === true,
+      limit,
+      cursor: cleanString(call.args.cursor, 40),
+    });
+    if (!page.rows.length) return empty(call, `I found 0 posted shifts ${range.label}.`);
+    const source = tipOracleSource(context, memberId, range.start);
+    const facts = page.rows.slice(0, Math.min(8, page.rows.length)).map((row, index) => fact(
+      call,
+      index,
+      `${row.date} · ${row.meal} · ${row.eventTag}`,
+      `${formatCad(row.netTipsCents)} tips · ${formatCad(row.salesCents)} sales · ${row.customersServed ?? "—"} covers · ${row.staffingCount ?? "—"} staff`,
+      tipOracleSource(context, memberId, row.date),
+    ));
+    return {
+      callId: call.id,
+      name: call.name,
+      status: "ok",
+      sentence: `Showing ${page.rows.length} of ${page.totalMatched} posted shift${page.totalMatched === 1 ? "" : "s"} ${range.label}${page.nextCursor ? `; nextCursor ${page.nextCursor}` : " (end of list)"}. Prefer tip_oracle aggregates before paging the full history. Headcount only — never coworker names.`,
+      facts,
+      payload: {
+        rows: page.rows,
+        nextCursor: page.nextCursor,
+        totalMatched: page.totalMatched,
+        limit,
+      },
     };
   }
 
