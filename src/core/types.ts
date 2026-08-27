@@ -597,6 +597,47 @@ export type HangmanGame = {
 export type HouseholdGames = {
   tictactoe: TicTacToeGame;
   hangman: HangmanGame;
+  four: FourGame;
+  fleet: FleetGame;
+  panes: PanesGame;
+};
+
+export type FourColor = "pine" | "copper";
+
+export type FourGame = {
+  columns: FourColor[][];
+  turn: FourColor;
+  lastMemberId: string;
+  winner: FourColor | "draw" | null;
+  updatedAt: string;
+  updatedBy: string;
+};
+
+export type FleetShipId = "milk" | "visa" | "hydro" | "jar" | "pad";
+
+export type FleetBoard = {
+  memberId: string;
+  ships: Array<{ id: FleetShipId; cells: number[]; sunk: boolean }>;
+  shots: Record<string, "hit" | "miss">;
+  placed: boolean;
+};
+
+export type FleetGame = {
+  boards: FleetBoard[];
+  turnMemberId: string;
+  winnerMemberId: string | null;
+  updatedAt: string;
+  updatedBy: string;
+};
+
+export type PanesGame = {
+  h: string[];
+  v: string[];
+  boxes: string[];
+  lastMemberId: string;
+  turnMemberId: string;
+  updatedAt: string;
+  updatedBy: string;
 };
 
 export type HouseholdKitchen = {

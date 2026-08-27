@@ -31,7 +31,7 @@ import { touchDevicePresence } from "./devices.ts";
 import type { AllocationSlice } from "./allocate.ts";
 import { bookBalanceAsOf, isMonthClosed } from "./statements.ts";
 import { COSMETIC_BY_ID, isCosmeticUnlocked } from "./companion.ts";
-import { EMPTY_TICTACTOE, emptyHangman, hangmanMisses, hangmanWon, MAX_HANGMAN_MISSES, pickHangmanWord, shapeGames, tttWinner } from "./deskGames.ts";
+import { EMPTY_TICTACTOE, emptyHangman, emptyFour, emptyFleet, emptyPanes, fourWinner, FOUR_ROWS, FOUR_COLS, hangmanMisses, hangmanWon, MAX_HANGMAN_MISSES, pickHangmanWord, placeFleetRandom, fleetOccupies, FLEET_SIZE, panesBoxComplete, PANES_H, PANES_V, PANES_BOXES, shapeGames, tttWinner } from "./deskGames.ts";
 import { EMPTY_KITCHEN, MAX_CHALK_CHARS, MAX_CHALK_NOTES, MAX_COMPANION_NAME, MAX_HERCULES_CHAT_CHARS, MAX_HERCULES_CHATS, MAX_HERCULES_MEMORIES, MAX_HERCULES_MEMORY_CHARS, closedPeriodId, isCosmeticSlot, shapeKitchen } from "./kitchen.ts";
 import { detectChalkLetters, hasChalkInk, organizeNeatText, shapeChalkInk } from "./chalkLetters.ts";
 import { activeOpenShift, openShiftConflicts } from "./shiftClock.ts";
@@ -3553,6 +3553,163 @@ export function guessHangman(household: Household, input: { memberId: string; le
     : game.lost
       ? "Hung. New word when you're ready."
       : `${member.name} guessed ${letter.toUpperCase()}.`;
+  return commit(previous, next, "Desk game", summary, []);
+}
+
+export function resetFour(household: Household, memberId: string): CommitResult {
+  requireMember(household, memberId);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const at = nowIso();
+  next.kitchen.games = shapeGames(next.kitchen.games);
+  next.kitchen.games.four = { ...emptyFour(), updatedAt: at, updatedBy: memberId };
+  return commit(previous, next, "Desk game", "New Sill Four", []);
+}
+
+export function playFour(household: Household, input: { memberId: string; column: number }): CommitResult {
+  const member = requireMember(household, input.memberId);
+  const column = Math.round(input.column);
+  if (!Number.isInteger(column) || column < 0 || column >= FOUR_COLS) {
+    throw new ValidationError("That column is off the sill.");
+  }
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const game = next.kitchen.games.four;
+  if (game.winner) throw new ValidationError("That game is over. Start a new one.");
+  if (game.columns[column]!.length >= FOUR_ROWS) throw new ValidationError("That column is full.");
+  const started = game.columns.some((col) => col.length > 0);
+  assertGameTurn(household, game.lastMemberId, member.id, started);
+  const color = game.turn;
+  game.columns[column] = [...game.columns[column]!, color];
+  game.turn = color === "pine" ? "copper" : "pine";
+  game.lastMemberId = member.id;
+  game.updatedAt = nowIso();
+  game.updatedBy = member.id;
+  game.winner = fourWinner(game);
+  const summary = game.winner === "draw"
+    ? "Sill is full. Draw."
+    : game.winner
+      ? `${member.name} wins Sill Four.`
+      : `${member.name} dropped ${color}.`;
+  return commit(previous, next, "Desk game", summary, []);
+}
+
+export function resetFleet(household: Household, memberId: string): CommitResult {
+  requireMember(household, memberId);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const at = nowIso();
+  next.kitchen.games = shapeGames(next.kitchen.games);
+  next.kitchen.games.fleet = { ...emptyFleet(), updatedAt: at, updatedBy: memberId };
+  return commit(previous, next, "Desk game", "New Kitchen Fleet", []);
+}
+
+export function placeFleet(household: Household, input: { memberId: string }): CommitResult {
+  const member = requireMember(household, input.memberId);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const game = next.kitchen.games.fleet;
+  if (game.winnerMemberId) throw new ValidationError("That game is over. Start a new one.");
+  let board = game.boards.find((row) => row.memberId === member.id);
+  if (!board) {
+    const open = game.boards.find((row) => !row.memberId);
+    if (!open) throw new ValidationError("Two people already have fleets.");
+    open.memberId = member.id;
+    board = open;
+  }
+  if (board.placed) throw new ValidationError("Your fleet is already on the water.");
+  const seeded = placeFleetRandom(board, `${member.id}:${nowIso()}`);
+  board.ships = seeded.ships;
+  board.placed = seeded.placed;
+  game.updatedAt = nowIso();
+  game.updatedBy = member.id;
+  if (!game.turnMemberId) game.turnMemberId = member.id;
+  return commit(previous, next, "Desk game", `${member.name} set Milk, Visa, Hydro, Jar, and Pad.`, []);
+}
+
+export function fireFleet(household: Household, input: { memberId: string; cell: number }): CommitResult {
+  const member = requireMember(household, input.memberId);
+  const cell = Math.round(input.cell);
+  if (!Number.isInteger(cell) || cell >= FLEET_SIZE * FLEET_SIZE || cell < 0) {
+    throw new ValidationError("That square is off the water.");
+  }
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const game = next.kitchen.games.fleet;
+  if (game.winnerMemberId) throw new ValidationError("That game is over. Start a new one.");
+  const attacker = game.boards.find((row) => row.memberId === member.id);
+  if (!attacker?.placed) throw new ValidationError("Set your fleet first.");
+  const defender = game.boards.find((row) => row.memberId && row.memberId !== member.id);
+  if (!defender?.placed) throw new ValidationError("Wait for the other person to set a fleet.");
+  const started = Object.keys(defender.shots).length + Object.keys(attacker.shots).length > 0;
+  if (started && game.turnMemberId && game.turnMemberId !== member.id && gamesMemberCount(household) > 1) {
+    throw new ValidationError("Wait for the other person. Two phones, one turn.");
+  }
+  if (defender.shots[String(cell)]) throw new ValidationError("Already fired there.");
+  const ship = fleetOccupies(defender, cell);
+  defender.shots[String(cell)] = ship ? "hit" : "miss";
+  if (ship && ship.cells.every((index) => defender.shots[String(index)] === "hit")) ship.sunk = true;
+  if (defender.ships.every((row) => row.sunk)) game.winnerMemberId = member.id;
+  else game.turnMemberId = defender.memberId;
+  game.updatedAt = nowIso();
+  game.updatedBy = member.id;
+  const summary = game.winnerMemberId
+    ? `${member.name} sank the kitchen fleet.`
+    : ship
+      ? `${member.name} hit ${ship.sunk ? `${ship.id} (sunk)` : ship.id}.`
+      : `${member.name} missed.`;
+  return commit(previous, next, "Desk game", summary, []);
+}
+
+export function resetPanes(household: Household, memberId: string): CommitResult {
+  requireMember(household, memberId);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const at = nowIso();
+  next.kitchen.games = shapeGames(next.kitchen.games);
+  next.kitchen.games.panes = { ...emptyPanes(), updatedAt: at, updatedBy: memberId };
+  return commit(previous, next, "Desk game", "New Pane Boxes", []);
+}
+
+export function playPanes(household: Household, input: { memberId: string; kind: "h" | "v"; index: number }): CommitResult {
+  const member = requireMember(household, input.memberId);
+  const index = Math.round(input.index);
+  const max = input.kind === "h" ? PANES_H : PANES_V;
+  if (!Number.isInteger(index) || index < 0 || index >= max) {
+    throw new ValidationError("That mullion is off the pane.");
+  }
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const game = next.kitchen.games.panes;
+  const edges = input.kind === "h" ? game.h : game.v;
+  if (edges[index]) throw new ValidationError("That line is already claimed.");
+  const started = game.h.some(Boolean) || game.v.some(Boolean);
+  assertGameTurn(household, game.lastMemberId, member.id, started);
+  edges[index] = member.id;
+  let extra = false;
+  for (let box = 0; box < PANES_BOXES; box += 1) {
+    if (!game.boxes[box] && panesBoxComplete(game, box)) {
+      game.boxes[box] = member.name.slice(0, 1).toUpperCase() || member.id.slice(0, 1);
+      extra = true;
+    }
+  }
+  game.lastMemberId = extra ? "" : member.id;
+  game.turnMemberId = extra ? member.id : "";
+  game.updatedAt = nowIso();
+  game.updatedBy = member.id;
+  const filled = game.boxes.filter(Boolean).length;
+  const summary = filled === PANES_BOXES
+    ? `${member.name} finished the panes.`
+    : extra
+      ? `${member.name} closed a pane.`
+      : `${member.name} claimed a mullion.`;
   return commit(previous, next, "Desk game", summary, []);
 }
 

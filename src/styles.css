@@ -134,9 +134,14 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
   padding: 18px 18px calc(var(--nav) + 28px);
 }
 
+.app.is-office-computer {
+  max-width: none;
+}
+
 @media (min-width: 720px) {
-  /* Desk, not a hotel lobby. 900px fits L+M without the 1280 empty-wall look. */
+  /* Desk, not a hotel lobby. Phone/tablet keep the 900px column. Computer Home lifts it (D-151). */
   .app { max-width: min(900px, 100%); }
+  .app.is-office-computer { max-width: none; }
 }
 
 .topbar {

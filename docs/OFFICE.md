@@ -1,6 +1,6 @@
 # The September Office
 
-**Two UI branches (D-079 / D-080 / D-082):** Mobile (`< 720px`) is glance + one-tap via `OfficePhone`. Desktop/wide (`≥ 720px`) is this office — unique desks, sizes, Edit Desk, without turning Home into a dashboard. Current Claude prompt: [CLAUDE_DESKTOP_OFFICE.md](CLAUDE_DESKTOP_OFFICE.md). Mobile record: [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md).
+**Three UI views (D-151):** Phone (`< 720px`) is glance + one-tap via `OfficePhone` Draft C — **frozen**. Tablet (`720–1279`) is the **same** `OfficePhone`, scaled larger/wider — never the cabin. Computer (`≥ 1280`) is the inhabited night-cabin room: first-person desk wood wall-to-wall, gold nav on the front edge of the wood, personalities on that table. Canon: [COMPUTER_OFFICE.md](COMPUTER_OFFICE.md). D-079 / D-080 still name the phone vs office split; D-082 warmth stays; “wide ≥720 is the office” and the 900px column are superseded. Historical two-branch prompts: [CLAUDE_DESKTOP_OFFICE.md](CLAUDE_DESKTOP_OFFICE.md), [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md).
 
 **The product face for September testing:** Home is a lived-in Toronto office. Rain on the glass. A desk of true instruments. Hercules on the furniture. Deep Books and Calendar still exist for people who want to dive.
 

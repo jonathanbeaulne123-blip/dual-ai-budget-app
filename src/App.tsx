@@ -17,6 +17,7 @@ import {
   describeGoalContributors,
   dollarsFromCentsDigits,
   emitOfficeIntent,
+  COMPUTER_BREAKPOINT,
   formatCad,
   describeDeviceLabel,
   localDeviceId,
@@ -379,6 +380,7 @@ export function App() {
   const [household, setHousehold] = useState<Household | null>(null);
   const [booting, setBooting] = useState(true);
   const [tab, setTab] = useState<Tab>("home");
+  const [computerOffice, setComputerOffice] = useState(() => typeof window !== "undefined" && window.innerWidth >= COMPUTER_BREAKPOINT);
   const [adding, setAdding] = useState(false);
   const confirmPanelRef = useRef<HTMLDivElement | null>(null);
   const lastAmountLabelRef = useRef<string | null>(null);
@@ -573,6 +575,13 @@ export function App() {
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
     };
+  }, []);
+
+  useEffect(() => {
+    const onResize = () => setComputerOffice(window.innerWidth >= COMPUTER_BREAKPOINT);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
 
   useEffect(() => {
@@ -2801,7 +2810,7 @@ export function App() {
   }
 
   return (
-    <div className="app">
+    <div className={`app${computerOffice ? " is-office-computer" : ""}${computerOffice && tab === "home" && !adding ? " is-home-tab" : ""}`}>
       <header className="topbar">
         <div className="brand">
           <img src="/hercules-mark.svg" alt="" />
@@ -2962,7 +2971,7 @@ export function App() {
       )}
 
       {tab === "plan" && dashboard && (
-        <>
+        <div className={computerOffice ? "office-destination" : undefined}>
           <section className="hero">
             <div className="label">Plan vs actual</div>
             <div className="money">{formatCad(dashboard.month.netBudgetedCents)}</div>
@@ -2991,10 +3000,11 @@ export function App() {
             onChange={(next, token) => persist(next, token)}
             onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
           />
-        </>
+        </div>
       )}
 
       {tab === "calendar" && (
+        <div className={computerOffice ? "office-destination" : undefined}>
         <CalendarPage
           household={household}
           today={today}
@@ -3014,9 +3024,11 @@ export function App() {
           onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
           onOpenPlan={() => goTab("plan")}
         />
+        </div>
       )}
 
       {tab === "ledger" && (
+        <div className={computerOffice ? "office-destination" : undefined}>
         <BooksPage
           household={household}
           memberId={session.memberId}
@@ -3039,10 +3051,11 @@ export function App() {
             setGuard({ kind: "remove", transactionId: transaction.id, summary });
           }}
         />
+        </div>
       )}
 
       {tab === "more" && (
-        <>
+        <div className={computerOffice ? "office-destination" : undefined}>
           <section className="card">
             <header><h2>Account</h2></header>
             <p className="muted">
@@ -3373,7 +3386,7 @@ export function App() {
             )}
           </section>
           <AddCategoryForm household={household} onSave={(next, token) => persist(next, token)} />
-        </>
+        </div>
       )}
 
       {adding && (

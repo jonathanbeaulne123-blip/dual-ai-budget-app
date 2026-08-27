@@ -6,6 +6,8 @@ import type { HerculesPose } from "./herculesTalk.ts";
 export const CAT = 96;
 export const NAV = 76;
 export const WIDE_BREAKPOINT = 720;
+/** Computer night-cabin office. Tablet (720–1279) stays scaled OfficePhone. */
+export const COMPUTER_BREAKPOINT = 1280;
 
 export const DESK_GRID = 16;
 
@@ -27,6 +29,13 @@ export const INSTRUMENT_IDS = [
   "lamp",
   "tictactoe",
   "hangman",
+  "opinion",
+  "leftover",
+  "nextDue",
+  "sync",
+  "four",
+  "fleet",
+  "panes",
 ] as const;
 
 export type InstrumentId = (typeof INSTRUMENT_IDS)[number];
@@ -47,7 +56,9 @@ export type Furniture = {
 
 export type Point = { x: number; y: number };
 
-export type OfficeBreakpoint = "phone" | "wide";
+export type OfficeBreakpoint = "phone" | "tablet" | "computer";
+/** @deprecated D-151 — `wide` stored keys migrate into `computer`. */
+export type LegacyOfficeBreakpoint = OfficeBreakpoint | "wide";
 
 /** Desk sizes. S is a tile; L is a wider card. Opening still takes a tap. */
 export type InstrumentSize = "s" | "m" | "l";
@@ -61,7 +72,7 @@ export type LayoutItem = {
 };
 
 export type OfficeLayout = {
-  v: 2;
+  v: 2 | 3;
   items: LayoutItem[];
   expanded: InstrumentId | "window" | null;
   minimized: InstrumentId[];
@@ -70,6 +81,9 @@ export type OfficeLayout = {
   pinned: InstrumentId[];
   /** Snapshot of x/y before expand-bump so close can reset. */
   restPositions: Partial<Record<InstrumentId, Point>>;
+  personality?: DeskPersonality;
+  /** Default true on computer. After park/restore, sizes follow visible count. */
+  autoSize?: boolean;
 };
 
 export const INSTRUMENT_LABEL: Record<InstrumentId, string> = {
@@ -90,6 +104,13 @@ export const INSTRUMENT_LABEL: Record<InstrumentId, string> = {
   lamp: "Health",
   tictactoe: "Tic-tac-toe",
   hangman: "Hangman",
+  opinion: "Opinion",
+  leftover: "Leftover",
+  nextDue: "Next due",
+  sync: "Sync",
+  four: "Sill Four",
+  fleet: "Kitchen Fleet",
+  panes: "Pane Boxes",
 };
 
 export const PINNED_INSTRUMENTS: InstrumentId[] = ["calculator"];
@@ -118,6 +139,13 @@ export const DEFAULT_SIZE: Partial<Record<InstrumentId, InstrumentSize>> = {
   wardrobe: "s",
   tictactoe: "s",
   hangman: "s",
+  opinion: "m",
+  leftover: "m",
+  nextDue: "s",
+  sync: "s",
+  four: "m",
+  fleet: "m",
+  panes: "m",
 };
 
 /**
@@ -137,25 +165,25 @@ export const PERSONALITY_BLURB: Record<Exclude<DeskPersonality, "custom">, strin
   tracker: "Capture it and move on.",
   household: "Budget, habits, the week ahead.",
   cpa: "Opinion, accounts, what is owed.",
-  play: "Goals, shifts, and Hercules.",
+  play: "Games on the wood. Milk is still Add.",
 };
 
 export const PERSONALITY_DESK: Record<Exclude<DeskPersonality, "custom">, [InstrumentId, InstrumentSize][]> = {
   tracker: [
-    ["calculator", "l"], ["blotter", "m"], ["wallet", "m"],
-    ["mail", "s"], ["claims", "s"], ["lamp", "s"],
+    ["calculator", "l"], ["blotter", "l"], ["wallet", "l"], ["mail", "l"],
   ],
   household: [
-    ["blotter", "l"], ["calculator", "m"], ["calendar", "m"],
-    ["timesheet", "m"], ["chalkboard", "m"], ["jars", "s"], ["mail", "s"], ["lamp", "s"],
+    ["blotter", "m"], ["calculator", "m"], ["wallet", "m"], ["timesheet", "m"],
+    ["mail", "m"], ["jars", "m"], ["lamp", "m"], ["leftover", "m"],
   ],
   cpa: [
-    ["blotter", "l"], ["accounts", "l"], ["claims", "m"], ["mail", "m"],
-    ["calculator", "m"], ["lamp", "s"], ["postcard", "s"], ["appointments", "s"],
+    ["blotter", "s"], ["accounts", "s"], ["claims", "s"], ["mail", "s"],
+    ["calculator", "m"], ["opinion", "s"], ["leftover", "s"], ["appointments", "s"], ["nextDue", "s"],
   ],
   play: [
-    ["jars", "l"], ["chalkboard", "m"], ["timesheet", "m"], ["calculator", "m"],
-    ["cookoff", "s"], ["wardrobe", "s"], ["tictactoe", "s"],
+    ["blotter", "m"], ["calendar", "m"],
+    ["tictactoe", "s"], ["hangman", "s"], ["four", "m"], ["fleet", "m"], ["panes", "m"],
+    ["cookoff", "s"],
   ],
 };
 
@@ -221,12 +249,54 @@ export function saveOfficeLook(
   }
 }
 
-/** Apply a personality: listed instruments visible at their size, the rest parked. Pad stays. */
+export function resolveOfficeBreakpoint(width: number): OfficeBreakpoint {
+  if (width < WIDE_BREAKPOINT) return "phone";
+  if (width < COMPUTER_BREAKPOINT) return "tablet";
+  return "computer";
+}
+
+export function isComputerDesk(breakpoint: LegacyOfficeBreakpoint): boolean {
+  return breakpoint === "computer" || breakpoint === "wide";
+}
+
+export function layoutStorageBreakpoint(breakpoint: LegacyOfficeBreakpoint): "phone" | "computer" {
+  if (breakpoint === "computer" || breakpoint === "wide") return "computer";
+  return "phone";
+}
+
+export function autoSizeForCount(count: number): InstrumentSize {
+  if (count <= 4) return "l";
+  if (count <= 8) return "m";
+  return "s";
+}
+
+export function calculatorCannotHide(personality?: DeskPersonality): boolean {
+  return personality !== "play";
+}
+
+export function applyAutoSize(layout: OfficeLayout): OfficeLayout {
+  if (layout.autoSize === false) return layout;
+  const visible = layout.items.filter((item) => !item.hidden);
+  const size = autoSizeForCount(visible.length);
+  return {
+    ...layout,
+    items: layout.items.map((item) => {
+      if (item.hidden) return item;
+      if (item.id === "calculator" && calculatorCannotHide(layout.personality)) {
+        return { ...item, size: size === "s" ? "m" : size };
+      }
+      return { ...item, size };
+    }),
+  };
+}
+
+/** Apply a personality: listed instruments visible, the rest parked. Pad stays except Play. */
 export function applyPersonality(layout: OfficeLayout, key: Exclude<DeskPersonality, "custom">): OfficeLayout {
   const listed = PERSONALITY_DESK[key];
   const ordered: LayoutItem[] = [];
   const seen = new Set<InstrumentId>();
-  if (!listed.some(([id]) => id === "calculator")) {
+  const keepPad = calculatorCannotHide(key);
+  if (keepPad && !listed.some(([id]) => id === "calculator")) {
     ordered.push({ id: "calculator", size: "m", hidden: false });
     seen.add("calculator");
   }
@@ -236,9 +306,19 @@ export function applyPersonality(layout: OfficeLayout, key: Exclude<DeskPersonal
   }
   for (const id of DEFAULT_ORDER) {
     if (seen.has(id)) continue;
-    ordered.push({ id, hidden: !PINNED_INSTRUMENTS.includes(id) });
+    const hide = !(keepPad && PINNED_INSTRUMENTS.includes(id));
+    ordered.push({ id, hidden: hide || undefined });
   }
-  return { ...layout, v: 2, items: ordered, expanded: null, pinned: [], restPositions: {} };
+  return applyAutoSize({
+    ...layout,
+    v: 3,
+    personality: key,
+    autoSize: true,
+    items: ordered,
+    expanded: null,
+    pinned: [],
+    restPositions: {},
+  });
 }
 
 export function cycleInstrumentSize(id: InstrumentId, current: InstrumentSize): InstrumentSize {
@@ -246,10 +326,17 @@ export function cycleInstrumentSize(id: InstrumentId, current: InstrumentSize): 
   return current === "s" ? "m" : current === "m" ? "l" : "s";
 }
 
-export function officeLayoutKey(environment: Environment, breakpoint: OfficeBreakpoint, memberId?: string): string {
+export function officeLayoutKey(environment: Environment, breakpoint: LegacyOfficeBreakpoint, memberId?: string): string {
+  const stored = layoutStorageBreakpoint(breakpoint);
   return memberId
-    ? `hearth.office.${environment}.${breakpoint}.${memberId}`
-    : `hearth.office.${environment}.${breakpoint}`;
+    ? `hearth.office.${environment}.${stored}.${memberId}`
+    : `hearth.office.${environment}.${stored}`;
+}
+
+function wideLayoutKey(environment: Environment, memberId?: string): string {
+  return memberId
+    ? `hearth.office.${environment}.wide.${memberId}`
+    : `hearth.office.${environment}.wide`;
 }
 
 export function officeRingsKey(environment: Environment): string {
@@ -258,25 +345,36 @@ export function officeRingsKey(environment: Environment): string {
 
 export function defaultLayout(): OfficeLayout {
   return {
-    v: 2,
+    v: 3,
     items: DEFAULT_ORDER.map((id) => ({ id })),
     expanded: null,
     minimized: [],
     windowMinimized: false,
     pinned: [],
     restPositions: {},
+    personality: "custom",
+    autoSize: true,
   };
+}
+
+export function defaultComputerLayout(): OfficeLayout {
+  return applyPersonality(defaultLayout(), "household");
 }
 
 export function isInstrumentId(value: unknown): value is InstrumentId {
   return typeof value === "string" && (INSTRUMENT_IDS as readonly string[]).includes(value);
 }
 
+function isDeskPersonality(value: unknown): value is DeskPersonality {
+  return value === "tracker" || value === "household" || value === "cpa" || value === "play" || value === "custom";
+}
+
 export function parseOfficeLayout(raw: unknown): OfficeLayout {
   const fallback = defaultLayout();
   if (!raw || typeof raw !== "object") return fallback;
   const record = raw as Record<string, unknown>;
-  if (record.v !== 1 && record.v !== 2) return fallback;
+  if (record.v !== 1 && record.v !== 2 && record.v !== 3) return fallback;
+  const personality = isDeskPersonality(record.personality) ? record.personality : "custom";
   const seen = new Set<InstrumentId>();
   const items: LayoutItem[] = [];
   if (Array.isArray(record.items)) {
@@ -285,7 +383,8 @@ export function parseOfficeLayout(raw: unknown): OfficeLayout {
       const id = (row as LayoutItem).id;
       if (!isInstrumentId(id) || seen.has(id)) continue;
       seen.add(id);
-      const hidden = Boolean((row as LayoutItem).hidden) && !PINNED_INSTRUMENTS.includes(id);
+      const hidden = Boolean((row as LayoutItem).hidden)
+        && !(calculatorCannotHide(personality) && PINNED_INSTRUMENTS.includes(id));
       const x = Number((row as LayoutItem).x);
       const y = Number((row as LayoutItem).y);
       const rawSize = (row as LayoutItem).size;
@@ -321,36 +420,51 @@ export function parseOfficeLayout(raw: unknown): OfficeLayout {
     }
   }
   return {
-    v: 2,
+    v: record.v === 3 ? 3 : 2,
     items,
     expanded,
     minimized,
     windowMinimized: Boolean(record.windowMinimized),
     pinned,
     restPositions,
+    personality,
+    autoSize: record.autoSize === false ? false : true,
   };
 }
 
 export function loadOfficeLayout(
   environment: Environment,
-  breakpoint: OfficeBreakpoint,
-  storage?: { getItem(key: string): string | null },
+  breakpoint: LegacyOfficeBreakpoint,
+  storage?: { getItem(key: string): string | null; setItem?(key: string, value: string): void },
   memberId?: string,
 ): OfficeLayout {
-  if (!storage) return defaultLayout();
+  const computer = isComputerDesk(breakpoint);
+  if (!storage) return computer ? defaultComputerLayout() : defaultLayout();
   try {
     const memberRaw = memberId ? storage.getItem(officeLayoutKey(environment, breakpoint, memberId)) : null;
     const raw = memberRaw || storage.getItem(officeLayoutKey(environment, breakpoint));
-    if (!raw) return defaultLayout();
-    return parseOfficeLayout(JSON.parse(raw));
-  } catch {
+    if (raw) return parseOfficeLayout(JSON.parse(raw));
+    if (computer) {
+      const legacyMember = memberId ? storage.getItem(wideLayoutKey(environment, memberId)) : null;
+      const legacy = legacyMember || storage.getItem(wideLayoutKey(environment));
+      if (legacy) {
+        const migrated = parseOfficeLayout(JSON.parse(legacy));
+        if (storage.setItem) {
+          saveOfficeLayout(environment, "computer", migrated, { setItem: storage.setItem }, memberId);
+        }
+        return migrated;
+      }
+      return defaultComputerLayout();
+    }
     return defaultLayout();
+  } catch {
+    return computer ? defaultComputerLayout() : defaultLayout();
   }
 }
 
 export function saveOfficeLayout(
   environment: Environment,
-  breakpoint: OfficeBreakpoint,
+  breakpoint: LegacyOfficeBreakpoint,
   layout: OfficeLayout,
   storage?: { setItem(key: string, value: string): void },
   memberId?: string,
@@ -379,17 +493,19 @@ export function hiddenInstruments(layout: OfficeLayout): InstrumentId[] {
 }
 
 export function setInstrumentHidden(layout: OfficeLayout, id: InstrumentId, hidden: boolean): OfficeLayout {
-  if (PINNED_INSTRUMENTS.includes(id) && hidden) return layout;
+  if (calculatorCannotHide(layout.personality) && PINNED_INSTRUMENTS.includes(id) && hidden) return layout;
   const items = layout.items.map((item) => (
     item.id === id ? { ...item, hidden: hidden || undefined } : item
   ));
-  return {
+  const next = {
     ...layout,
+    personality: "custom" as const,
     items,
     expanded: hidden && layout.expanded === id ? null : layout.expanded,
     minimized: hidden ? layout.minimized.filter((row) => row !== id) : layout.minimized,
     pinned: hidden ? (layout.pinned ?? []).filter((row) => row !== id) : layout.pinned,
   };
+  return applyAutoSize(next);
 }
 
 export function promoteRail(order: InstrumentId[], promoted: InstrumentId, lampLit: boolean): InstrumentId[] {
@@ -705,6 +821,13 @@ export const INSTRUMENT_KIND: Record<InstrumentId, FurnitureKind> = {
   lamp: "lamp",
   tictactoe: "game",
   hangman: "game",
+  opinion: "card",
+  leftover: "card",
+  nextDue: "envelope",
+  sync: "clock",
+  four: "game",
+  fleet: "game",
+  panes: "game",
 };
 
 export function snapGrid(value: number, grid = DESK_GRID): number {
@@ -720,6 +843,9 @@ export const DESK_GUTTER = 16;
 export const SIZE_WIDTH: Record<InstrumentSize, number> = { s: 208, m: 288, l: 432 };
 /** Header-only heights. L is a wider glance, not an always-open panel. */
 export const SIZE_HEIGHT: Record<InstrumentSize, number> = { s: 72, m: 88, l: 104 };
+/** Physical objects on the computer desk wood — smaller than the old 900px cards. */
+export const COMPUTER_SIZE_WIDTH: Record<InstrumentSize, number> = { s: 140, m: 196, l: 268 };
+export const COMPUTER_SIZE_HEIGHT: Record<InstrumentSize, number> = { s: 108, m: 140, l: 176 };
 
 export function sizeOf(item: Pick<LayoutItem, "id" | "size">): InstrumentSize {
   if (item.size) return item.size;
@@ -752,6 +878,33 @@ export function packWide(
     }
     out[item.id] = { x: snapGrid(x), y: snapGrid(y) };
     x += w + DESK_GUTTER;
+    rowHeight = Math.max(rowHeight, h);
+  }
+  return out;
+}
+
+/** Pack physical objects onto the computer desk rectangle, not the old 900px column. */
+export function packComputerDesk(
+  items: { id: InstrumentId; size?: InstrumentSize }[],
+  canvasWidth: number,
+): Record<string, Point> {
+  const width = Math.max(480, canvasWidth);
+  const gutter = 20;
+  const out: Record<string, Point> = {};
+  let x = gutter;
+  let y = gutter;
+  let rowHeight = 0;
+  for (const item of items) {
+    const size = sizeOf(item);
+    const w = COMPUTER_SIZE_WIDTH[size];
+    const h = COMPUTER_SIZE_HEIGHT[size];
+    if (x > gutter && x + w + gutter > width) {
+      x = gutter;
+      y += rowHeight + gutter;
+      rowHeight = 0;
+    }
+    out[item.id] = { x: snapGrid(x), y: snapGrid(y) };
+    x += w + gutter;
     rowHeight = Math.max(rowHeight, h);
   }
   return out;
@@ -890,7 +1043,7 @@ export function collapseSavedOffice(
   },
 ): void {
   if (!storage) return;
-  for (const breakpoint of ["phone", "wide"] as const) {
+  for (const breakpoint of ["phone", "computer"] as const) {
     const current = loadOfficeLayout(environment, breakpoint, storage);
     saveOfficeLayout(environment, breakpoint, collapseOfficeLayout(current), storage);
   }
@@ -919,12 +1072,12 @@ export function levelLayoutItems(items: LayoutItem[]): LayoutItem[] {
 
 export function tidyOfficeLayout(
   layout: OfficeLayout,
-  breakpoint: OfficeBreakpoint,
+  breakpoint: LegacyOfficeBreakpoint,
   canvasWidth = 900,
 ): OfficeLayout {
   const hidden = layout.items.filter((item) => item.hidden);
   const hiddenIds = new Set(hidden.map((item) => item.id));
-  if (breakpoint === "phone") {
+  if (!isComputerDesk(breakpoint)) {
     const order = DEFAULT_ORDER.filter((id) => !hiddenIds.has(id));
     return {
       ...layout,
@@ -933,7 +1086,7 @@ export function tidyOfficeLayout(
     };
   }
   const visible = layout.items.filter((item) => !item.hidden);
-  const packed = packWide(visible, canvasWidth);
+  const packed = packComputerDesk(visible, canvasWidth);
   return {
     ...layout,
     items: [

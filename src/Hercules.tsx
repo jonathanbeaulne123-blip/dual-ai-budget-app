@@ -49,7 +49,7 @@ import {
   householdForHerculesContext,
   CAT,
   NAV,
-  WIDE_BREAKPOINT,
+  COMPUTER_BREAKPOINT,
   type CommitResult,
   type CompanionMood,
   type HearthTab,
@@ -116,7 +116,7 @@ function furnitureLand(adding: boolean, mood: CompanionMood, today: string) {
     { w: window.innerWidth, h: window.innerHeight },
     post?.rect ?? null,
   );
-  if (window.innerWidth < WIDE_BREAKPOINT) return land;
+  if (window.innerWidth < COMPUTER_BREAKPOINT) return land;
   return { ...land, ...keepHerculesOutOfLitter(land, { w: window.innerWidth, h: window.innerHeight }, CAT, NAV) };
 }
 
@@ -257,7 +257,7 @@ export function HerculesPresence({
   const [busy, setBusy] = useState(false);
   const [replySource, setReplySource] = useState<"ai" | "local" | null>(null);
   const [fly, setFly] = useState<{ x: number; y: number } | null>(null);
-  const [desktopFly, setDesktopFly] = useState(() => typeof window !== "undefined" && window.innerWidth >= WIDE_BREAKPOINT);
+  const [desktopFly, setDesktopFly] = useState(() => typeof window !== "undefined" && window.innerWidth >= COMPUTER_BREAKPOINT);
   const [mobileFocus, setMobileFocus] = useState(false);
   const phoneShell = !desktopFly;
   const [deadFlies, setDeadFlies] = useState(0);
@@ -334,10 +334,16 @@ export function HerculesPresence({
   }, [tab, adding, look.view.mood, five.yes, spark, today]);
 
   useEffect(() => {
-    const onResize = () => setDesktopFly(window.innerWidth >= WIDE_BREAKPOINT);
+    const onResize = () => setDesktopFly(window.innerWidth >= COMPUTER_BREAKPOINT);
     window.addEventListener("resize", onResize);
     onResize();
     return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  useEffect(() => {
+    const onHelp = () => setOpen(true);
+    window.addEventListener("hearth:hercules-help", onHelp);
+    return () => window.removeEventListener("hearth:hercules-help", onHelp);
   }, []);
 
   useEffect(() => {
@@ -504,10 +510,11 @@ export function HerculesPresence({
         setMotion(next.pose);
         return;
       }
-      setPos((current) => automaticPoint({
-        x: current.x,
-        y: Math.max(6, item.rect.y - CAT + 12),
-      }));
+      setPos((current) => {
+        const y = Math.max(6, item.rect.y - CAT + 12);
+        if (Math.abs(current.y - y) < 1) return current;
+        return automaticPoint({ x: current.x, y });
+      });
     });
   }, [pinned, adding, open, look.view.mood, today]);
 
@@ -560,7 +567,7 @@ export function HerculesPresence({
   }
 
   function isWideDesk(): boolean {
-    return typeof window !== "undefined" && window.innerWidth >= WIDE_BREAKPOINT;
+    return typeof window !== "undefined" && window.innerWidth >= COMPUTER_BREAKPOINT;
   }
 
   function directToCalendar(): void {

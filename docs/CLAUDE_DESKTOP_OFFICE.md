@@ -1,6 +1,8 @@
 # Claude assignment — Desktop office (unique desks)
 
-**Cursor is shipping the warm middle (D-082).** Jonathan liked Claude’s packing, sizes, Edit Desk, and decluttering, and refused the cold lobby (10px names, always-open L panels, 1280 boxed chrome). Further desktop pixels must keep Fraunces names, cream papers, and the notebook page. Do not restyle `.instrument-name` to 10px muted body type. Do not paint `.office` as a second app shell.
+> **Historical (two-branch / ≥720 office era).** Living computer-office law is **D-151 / [COMPUTER_OFFICE.md](COMPUTER_OFFICE.md):** the customizable office is computer `≥1280` night cabin, not a 900px column at `≥720`. D-082 warmth (Fraunces names, cream papers, no 10px Bloomberg, no CAD on glass) still applies. Tablet must not inherit this packet.
+
+**Cursor is shipping the warm middle (D-082) inside the D-151 room.** Jonathan liked Claude’s packing, sizes, Edit Desk, and decluttering, and refused the cold lobby (10px names, always-open L panels, 1280 boxed chrome). Further computer pixels must keep Fraunces names, cream papers, and the notebook page. Do not restyle `.instrument-name` to 10px muted body type. Do not paint `.office` as a SaaS dashboard.
 
 Paste **this whole file** into Claude. Then attach `docs/packets/CLAUDE-DESKTOP-OFFICE-SOURCE.txt` (regenerate with `pnpm pack:claude-desktop`). Open the kitchen or `pnpm dev` at **≥720px** *and* at **390×844**. Do not plan from `docs/nostalgia/` or `docs/reference/`.
 

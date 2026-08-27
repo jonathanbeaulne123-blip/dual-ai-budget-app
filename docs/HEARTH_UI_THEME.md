@@ -4,12 +4,13 @@
 > **Use when:** any AI adds or restyles UI on Home, Calendar, Books, Plan, Add-in-room, or Hercules chrome.  
 > **Does not change:** money meaning, Commands, Confirm boundary, Auth/RLS, hosted schema.
 
-Hearth is **one product, two UI branches, one theme kernel** (D-079 / D-080 / D-082).
+Hearth is **one product, three views, one theme kernel** (D-079 / D-080 / D-082 warmth / **D-151**).
 
-| Branch | Breakpoint | Shell name | Direction |
+| View | Breakpoint | Shell name | Direction |
 |---|---|---|---|
-| **Mobile** | `< 720px` | `OfficePhone` + tab pages | **Draft C ★** — hybrid seals, story strip, notebook expand |
-| **Desktop / wide** | `≥ 720px` | `Office` desk + tab pages in same **room** | **Draft D ★** — first mock's stylized desk room **plus** Hercules wander **pathing** |
+| **Phone** | `< 720px` | `OfficePhone` + tab pages | **Draft C ★ frozen** — hybrid seals, story strip, notebook expand |
+| **Tablet** | `720–1279` | same `OfficePhone`, scaled CSS | Draft C larger/wider — **never the cabin** |
+| **Computer** | `≥ 1280` | night-cabin `Office` room | **D-151** — first-person night cabin, desk wood wall-to-wall, Hercules wander |
 
 **Theme is shared.** Tokens, fonts, paper grammar, Hercules identity (Maine Coon), Dual Course gates.  
 **Layout is not shared.** Never shrink desktop to phone or stretch phone to desktop.
@@ -49,7 +50,13 @@ Borrow from **A** (glance simplicity inside tiles) and **B** (stack overlap dept
 
 **Mobile Books / Calendar / Plan:** same **paper family** as Home C (seals or soft pills for sub-nav, hero card, story scraps, optional notebook expand). Not a cold separate app skin.
 
-### Desktop — Draft D synthesis
+### Computer — night cabin (D-151)
+
+Locked frames live under [`docs/ux/computer-office/`](ux/computer-office/). You sit **in** the room: fireplace, shelves, sofa, snow windows, desk filling the entire bottom, gold nav on the **front edge of the wood**. Not a widget dashboard, not a nested monitor, not a 900px sticker column.
+
+Tablet must not inherit this chrome. Phone Draft C must not be restyled to match it.
+
+### Desktop — Draft D synthesis (historical ≥720 office)
 
 Combine two mockup intents:
 
