@@ -1,14 +1,14 @@
 # Hearth worksession — Tier 2 command-log land + deploy
 
-- **Status:** OPEN
+- **Status:** OPEN — code merged + kitchen deployed; **blocked on Migration 013 apply**
 - **Opened:** 2026-08-27 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor (this agent)
 - **Repository:** dual-ai-budget-app
-- **Branch:** `cursor/t2-stack-deploy-12ce`
-- **Baseline SHA:** `f647ccc` (main)
-- **Head SHA:** (updating)
-- **PR or issue:** pending
+- **Branch:** `main` (`ad5a1f5`)
+- **Baseline SHA:** `f647ccc`
+- **Head SHA:** `ad5a1f5`
+- **PR or issue:** #186 merged; follow-up merge-fix on main
 - **Risk:** High
 - **Decision owner:** Jonathan (explicit: get T2 done and deployed today)
 - **Environment impact:** Development (Migration 013 apply + kitchen flag)
