@@ -244,6 +244,24 @@ export type WorkJob = {
   updatedAt: string;
 };
 
+/** Closed enum for Confirm event anomaly tags (tip covariates). Never stores coworker names. */
+export const SHIFT_EVENT_TAGS = [
+  "regular",
+  "holiday",
+  "sports",
+  "festival",
+  "private_party",
+  "short_staffed",
+  "vacation_cover",
+  "illness_cover",
+  "other",
+] as const;
+export type ShiftEventTag = (typeof SHIFT_EVENT_TAGS)[number];
+
+export function isShiftEventTag(value: unknown): value is ShiftEventTag {
+  return typeof value === "string" && (SHIFT_EVENT_TAGS as readonly string[]).includes(value);
+}
+
 export type Shift = {
   id: string;
   date: DateKey;
@@ -281,6 +299,14 @@ export type Shift = {
   deferredTipOutCents?: number;
   deferredTipOutPaidCents?: number;
   salesByField?: Record<string, number>;
+  /** Self-reported covers; required on tipped Confirm going forward. */
+  customersServed?: number;
+  /** Floor/section headcount only — never coworker names. */
+  staffingCount?: number;
+  /** Demand/anomaly tag for tip science soft priors. */
+  eventTag?: ShiftEventTag;
+  /** Kitchen weather glass stamp at Confirm (soft prior; not income). */
+  weatherGlass?: "clear" | "rain" | "snow" | "night" | "humid";
   transactionIds?: string[];
   cashTipsTransactionId?: string;
   cardTipsTransactionId?: string;

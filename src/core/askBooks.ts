@@ -11,7 +11,14 @@ import { leftoverProjection } from "./sitDown.ts";
 import type { HerculesNumberSource } from "./herculesProvenance.ts";
 import type { Household, LedgerView } from "./types.ts";
 
-export type HerculesAskContext = { memberId: string; view: LedgerView };
+export type HerculesAskContext = {
+  memberId: string;
+  view: LedgerView;
+  /** Pro MCP allows larger page sizes (default 50, max 100). Free Brain stays ≤10. */
+  toolPageMode?: "free" | "pro";
+  /** Optional disclosed macro soft prior for tip tools. */
+  macroPrior?: import("./macroPriors.ts").MacroPrior | null;
+};
 
 export type BooksAskRow = { label: string; value: string; source?: HerculesNumberSource; basis?: "journal" | "projection" };
 

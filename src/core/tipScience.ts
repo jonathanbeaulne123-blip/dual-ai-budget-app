@@ -15,8 +15,9 @@ import {
   type DateKey,
 } from "./calendar.ts";
 import { workShiftIsReversed, workWeekStart } from "./work.ts";
-import type { Household, Shift } from "./types.ts";
+import type { Household, Shift, ShiftEventTag } from "./types.ts";
 import type { WeatherGlass } from "./weather.ts";
+import { clampMacroFactor, type MacroPrior } from "./macroPriors.ts";
 
 export type TipMeal = "lunch" | "dinner";
 
@@ -32,6 +33,17 @@ export type TipShiftObservation = {
   wagesCents: number;
   wagePerHourCents: number;
   season: ReturnType<typeof kitchenSeason>;
+  salesCents: number;
+  tipPctBps: number | null;
+  customersServed: number | null;
+  tipsPerCoverCents: number | null;
+  salesPerCoverCents: number | null;
+  staffingCount: number | null;
+  tipsPerStaffHour: number | null;
+  eventTag: ShiftEventTag;
+  jobId?: string;
+  roleId?: string;
+  weatherGlass?: WeatherGlass;
 };
 
 export type TipOracleResult = {
@@ -59,6 +71,9 @@ export type ShiftOutlookResult = {
   tipPerHourCents: number;
   similarShifts: number;
   weatherFactor: number;
+  eventFactor: number;
+  macroFactor: number;
+  covariateFactor: number;
   assumptions: string[];
 };
 
@@ -67,6 +82,10 @@ export type ScheduleSimShift = {
   hours: number;
   meal?: TipMeal;
   weatherGlass?: WeatherGlass;
+  eventTag?: ShiftEventTag;
+  salesCents?: number;
+  customersServed?: number;
+  staffingCount?: number;
 };
 
 export type ScheduleSimRow = ShiftOutlookResult & {
@@ -172,6 +191,23 @@ export function observeTipShifts(household: Household, memberId?: string): TipSh
   return activeTipShifts(household, memberId).map((shift) => {
     const tipPerHourCents = Math.round(shift.netTipsCents / shift.hours);
     const wagePerHourCents = Math.round(shift.wagesCents / shift.hours);
+    const salesCents = Math.max(0, Math.round(shift.salesCents || 0));
+    const customersServed = typeof shift.customersServed === "number" && Number.isInteger(shift.customersServed)
+      ? shift.customersServed
+      : null;
+    const staffingCount = typeof shift.staffingCount === "number" && Number.isInteger(shift.staffingCount)
+      ? shift.staffingCount
+      : null;
+    const tipPctBps = salesCents > 0 ? Math.round((shift.netTipsCents * 10_000) / salesCents) : null;
+    const tipsPerCoverCents = customersServed && customersServed > 0
+      ? Math.round(shift.netTipsCents / customersServed)
+      : null;
+    const salesPerCoverCents = customersServed && customersServed > 0
+      ? Math.round(salesCents / customersServed)
+      : null;
+    const tipsPerStaffHour = staffingCount && staffingCount > 0 && shift.hours > 0
+      ? Math.round(shift.netTipsCents / (staffingCount * shift.hours))
+      : null;
     return {
       shiftId: shift.id,
       date: shift.date,
@@ -184,8 +220,81 @@ export function observeTipShifts(household: Household, memberId?: string): TipSh
       wagesCents: shift.wagesCents,
       wagePerHourCents,
       season: kitchenSeason(shift.date),
+      salesCents,
+      tipPctBps,
+      customersServed,
+      tipsPerCoverCents,
+      salesPerCoverCents,
+      staffingCount,
+      tipsPerStaffHour,
+      eventTag: shift.eventTag ?? "regular",
+      jobId: shift.jobId,
+      roleId: shift.roleId,
+      weatherGlass: shift.weatherGlass,
     };
   });
+}
+
+export function eventTipFactor(tag: ShiftEventTag | undefined): number {
+  switch (tag) {
+    case "holiday":
+      return 1.12;
+    case "sports":
+      return 1.08;
+    case "festival":
+      return 1.1;
+    case "private_party":
+      return 1.05;
+    case "short_staffed":
+      return 1.06;
+    case "vacation_cover":
+    case "illness_cover":
+    case "other":
+    case "regular":
+    default:
+      return 1;
+  }
+}
+
+function relativeBandFactor(value: number | null | undefined, sample: number[], high = 1.05, low = 0.95): number {
+  if (value == null || !(value > 0) || sample.length < MIN_BUCKET) return 1;
+  const mid = percentile(sortNumbers(sample), 0.5);
+  if (!(mid > 0)) return 1;
+  if (value >= mid * 1.15) return high;
+  if (value <= mid * 0.85) return low;
+  return 1;
+}
+
+/** Soft sales/covers/staffing multipliers; fall back to 1 when covariate buckets are sparse. */
+export function softCovariateFactor(
+  observations: TipShiftObservation[],
+  target: {
+    salesCents?: number;
+    customersServed?: number;
+    staffingCount?: number;
+  },
+): { factor: number; assumptions: string[] } {
+  const salesSample = observations.map((row) => row.salesCents).filter((value) => value > 0);
+  const coverSample = observations.map((row) => row.customersServed).filter((value): value is number => value != null && value > 0);
+  const staffSample = observations.map((row) => row.staffingCount).filter((value): value is number => value != null && value > 0);
+  const salesFactor = relativeBandFactor(target.salesCents, salesSample, 1.06, 0.94);
+  const coverFactor = relativeBandFactor(target.customersServed, coverSample, 1.04, 0.96);
+  // Short-staffed nights often concentrate tips on fewer people.
+  const staffFactor = relativeBandFactor(target.staffingCount, staffSample, 0.97, 1.05);
+  const factor = Math.round(salesFactor * coverFactor * staffFactor * 1000) / 1000;
+  const assumptions = [
+    "Covers and staffing are self-reported headcounts — never coworker names.",
+    salesSample.length >= MIN_BUCKET
+      ? `Sales band soft factor ${salesFactor.toFixed(3)} versus posted sales median.`
+      : "Sales band soft factor skipped — fewer than 3 posted shifts with sales.",
+    coverSample.length >= MIN_BUCKET
+      ? `Covers band soft factor ${coverFactor.toFixed(3)}.`
+      : "Covers band soft factor skipped — sparse customersServed history.",
+    staffSample.length >= MIN_BUCKET
+      ? `Staffing band soft factor ${staffFactor.toFixed(3)}.`
+      : "Staffing band soft factor skipped — sparse staffingCount history.",
+  ];
+  return { factor, assumptions };
 }
 
 function percentile(sorted: number[], p: number): number {
@@ -327,6 +436,7 @@ export function runTipOracle(
     iterations?: number;
     seed?: number;
     horizonDays?: number;
+    macroPrior?: MacroPrior | null;
   },
 ): TipOracleResult | null {
   const observations = observeTipShifts(household, options?.memberId);
@@ -339,6 +449,7 @@ export function runTipOracle(
   const rateCache: RateCache = new Map();
   const random = mulberry32(seed);
   const totals: number[] = [];
+  const macroFactor = clampMacroFactor(options?.macroPrior?.factor ?? 1);
 
   for (let i = 0; i < iterations; i += 1) {
     let total = 0;
@@ -354,7 +465,7 @@ export function runTipOracle(
       const doubles = profile.frequency > 1 && random() < (profile.frequency - 1) ? 2 : 1;
       for (let n = 0; n < doubles; n += 1) {
         const rates = ratesForCached(observations, profile.weekday, profile.meal, rateCache);
-        total += Math.round(pickSorted(rates, random) * profile.hours);
+        total += Math.round(pickSorted(rates, random) * profile.hours * macroFactor);
       }
     }
     totals.push(total);
@@ -386,6 +497,8 @@ export function runTipOracle(
       "Emergency reserve covers the worst payroll-week streak of sub-p25 tip weeks, including empty weeks.",
       "Independent draws do not model correlated slow seasons; treat the band as a planning aid.",
       "No weather stamp is required for the month oracle; season/weather enter shift outlook only.",
+      `Macro soft prior factor ${macroFactor.toFixed(3)} (disclosed; never posted income).`,
+      ...(options?.macroPrior?.assumptions ?? []),
     ],
   };
 }
@@ -397,7 +510,12 @@ export function shiftOutlook(
     hours: number;
     meal?: TipMeal;
     weatherGlass?: WeatherGlass;
+    eventTag?: ShiftEventTag;
+    salesCents?: number;
+    customersServed?: number;
+    staffingCount?: number;
     memberId?: string;
+    macroPrior?: MacroPrior | null;
   },
 ): ShiftOutlookResult | null {
   const observations = observeTipShifts(household, input.memberId);
@@ -408,13 +526,25 @@ export function shiftOutlook(
   const rates = ratesForCached(observations, weekday, meal, rateCache);
   const season = kitchenSeason(input.date);
   const weatherGlass = input.weatherGlass ?? "season";
-  const factor = weatherTipFactor(weatherGlass === "season" ? undefined : weatherGlass, season);
+  const weatherFactor = weatherTipFactor(weatherGlass === "season" ? undefined : weatherGlass, season);
+  const eventFactor = eventTipFactor(input.eventTag);
+  const covariates = softCovariateFactor(observations, input);
+  const macroFactor = clampMacroFactor(input.macroPrior?.factor ?? 1);
+  const factor = Math.round(weatherFactor * eventFactor * covariates.factor * macroFactor * 1000) / 1000;
   const tipPerHour = Math.round(percentile(rates, 0.5) * factor);
   const lowPerHour = Math.round(percentile(rates, 0.1) * factor);
   const highPerHour = Math.round(percentile(rates, 0.9) * factor);
   const similarExact = observations.filter((row) => row.weekday === weekday && row.meal === meal).length;
   const similarMeal = observations.filter((row) => row.meal === meal).length;
   const similar = similarExact >= MIN_BUCKET ? similarExact : similarMeal >= MIN_BUCKET ? similarMeal : observations.length;
+  const assumptions = [
+    "Outlook resamples tip/hour from similar posted weekday × meal shifts.",
+    `Weather/season factor ${weatherFactor.toFixed(2)}; event factor ${eventFactor.toFixed(2)}; combined soft factor ${factor.toFixed(3)}.`,
+    ...covariates.assumptions,
+    ...(input.macroPrior?.assumptions ?? ["Macro prior not applied."]),
+    "Hours means worked hours on the timesheet, not paid-break hours.",
+    "Ranges are projections, not booked income.",
+  ];
   return {
     date: input.date,
     hours: input.hours,
@@ -425,20 +555,18 @@ export function shiftOutlook(
     highTipCents: Math.round(highPerHour * input.hours),
     tipPerHourCents: tipPerHour,
     similarShifts: similar,
-    weatherFactor: factor,
-    assumptions: [
-      "Outlook resamples tip/hour from similar posted weekday × meal shifts.",
-      `Weather/season factor ${factor.toFixed(2)} multiplies soft priors; Confirm weather stamps are a follow-up.`,
-      "Hours means worked hours on the timesheet, not paid-break hours.",
-      "Ranges are projections, not booked income.",
-    ],
+    weatherFactor,
+    eventFactor,
+    macroFactor,
+    covariateFactor: covariates.factor,
+    assumptions,
   };
 }
 
 export function simulateTipSchedule(
   household: Household,
   schedule: ScheduleSimShift[],
-  options?: { memberId?: string },
+  options?: { memberId?: string; macroPrior?: MacroPrior | null },
 ): ScheduleSimResult | null {
   if (!schedule.length) return null;
   const observations = observeTipShifts(household, options?.memberId);
@@ -451,7 +579,12 @@ export function simulateTipSchedule(
       hours: slot.hours,
       meal: slot.meal,
       weatherGlass: slot.weatherGlass,
+      eventTag: slot.eventTag,
+      salesCents: slot.salesCents,
+      customersServed: slot.customersServed,
+      staffingCount: slot.staffingCount,
       memberId: options?.memberId,
+      macroPrior: options?.macroPrior,
     });
     if (!outlook) continue;
     const frequency = Math.min(1, frequencyByWeekday.get(weekdaySunday0(slot.date)) ?? 0);
@@ -591,6 +724,7 @@ export function runShiftYearSimulation(
     months?: number;
     iterations?: number;
     seed?: number;
+    macroPrior?: MacroPrior | null;
   },
 ): ShiftYearSimulationResult | null {
   const observations = observeTipShifts(household, options?.memberId);
@@ -605,6 +739,7 @@ export function runShiftYearSimulation(
   const tipCache: RateCache = new Map();
   const wageCache: RateCache = new Map();
   const random = mulberry32(seed);
+  const macroFactor = clampMacroFactor(options?.macroPrior?.factor ?? 1);
 
   const yearTips: number[] = [];
   const yearWages: number[] = [];
@@ -632,7 +767,7 @@ export function runShiftYearSimulation(
       for (let n = 0; n < doubles; n += 1) {
         const tipRates = ratesForCached(observations, profile.weekday, profile.meal, tipCache, "tipPerHourCents");
         const wageRates = ratesForCached(observations, profile.weekday, profile.meal, wageCache, "wagePerHourCents");
-        const tips = Math.round(pickSorted(tipRates, random) * profile.hours);
+        const tips = Math.round(pickSorted(tipRates, random) * profile.hours * macroFactor);
         const wages = Math.round(pickSorted(wageRates, random) * profile.hours);
         tipsTotal += tips;
         wagesTotal += wages;
@@ -707,6 +842,8 @@ export function runShiftYearSimulation(
       "Corrected/reversed shifts are excluded; negative tip-out shifts remain in the sample.",
       "Season is not re-drawn month by month; correlated slow winters are under-modelled.",
       "p10/p50/p90 are simulation percentiles — not posted income, not CRA, not a promise.",
+      `Macro soft prior factor ${macroFactor.toFixed(3)} applies to tips only (disclosed; never posted income).`,
+      ...(options?.macroPrior?.assumptions ?? []),
       "Confirm remains the only write path. This tool never posts shifts or transfers.",
     ],
   };
@@ -740,5 +877,105 @@ export function explainShiftYearSimulation(
       `${observations.length} posted shifts across weekdays ${weekdays || "none"} power the fit.`,
       "All outputs are projections. Nothing writes the journal.",
     ],
+  };
+}
+
+export type ListShiftsRow = {
+  id: string;
+  date: DateKey;
+  hours: number;
+  meal: TipMeal;
+  jobId?: string;
+  roleId?: string;
+  salesCents: number;
+  cashTipsCents: number;
+  cardTipsCents: number;
+  netTipsCents: number;
+  wagesCents: number;
+  tipPctBps: number | null;
+  customersServed: number | null;
+  tipsPerCoverCents: number | null;
+  staffingCount: number | null;
+  tipsPerStaffHour: number | null;
+  eventTag: ShiftEventTag;
+  weatherGlass?: WeatherGlass;
+  memberId: string;
+};
+
+export type ListShiftsResult = {
+  rows: ListShiftsRow[];
+  nextCursor: string | null;
+  totalMatched: number;
+};
+
+export function encodeListCursor(offset: number): string {
+  return `o:${Math.max(0, Math.floor(offset))}`;
+}
+
+export function decodeListCursor(cursor: string | undefined | null): number {
+  if (!cursor) return 0;
+  const match = /^o:(\d+)$/.exec(String(cursor).trim());
+  if (!match) return 0;
+  return Math.max(0, Number(match[1]));
+}
+
+/** Rich paged shift rows for Hercules Pro (and free Brain with tighter limits). */
+export function listTipShifts(
+  household: Household,
+  input: {
+    memberId?: string;
+    from?: DateKey;
+    to?: DateKey;
+    jobId?: string;
+    eventTag?: ShiftEventTag;
+    tippedOnly?: boolean;
+    limit?: number;
+    cursor?: string | null;
+  },
+): ListShiftsResult {
+  const observations = observeTipShifts(household, input.memberId);
+  const byId = new Map(activeTipShifts(household, input.memberId).map((shift) => [shift.id, shift]));
+  let matched = observations.filter((row) => {
+    if (input.from && row.date < input.from) return false;
+    if (input.to && row.date > input.to) return false;
+    if (input.jobId && row.jobId !== input.jobId) return false;
+    if (input.eventTag && row.eventTag !== input.eventTag) return false;
+    if (input.tippedOnly && !(row.netTipsCents !== 0 || row.salesCents > 0)) return false;
+    return true;
+  });
+  // Newest first for Pro reading of long history.
+  matched = matched.slice().sort((a, b) => b.date.localeCompare(a.date) || b.shiftId.localeCompare(a.shiftId));
+  const limit = Math.min(100, Math.max(1, Math.round(input.limit ?? 50)));
+  const offset = decodeListCursor(input.cursor);
+  const page = matched.slice(offset, offset + limit);
+  const rows: ListShiftsRow[] = page.map((row) => {
+    const shift = byId.get(row.shiftId)!;
+    return {
+      id: row.shiftId,
+      date: row.date,
+      hours: row.hours,
+      meal: row.meal,
+      jobId: row.jobId,
+      roleId: row.roleId,
+      salesCents: row.salesCents,
+      cashTipsCents: shift.cashTipsCents,
+      cardTipsCents: shift.ccTipsCents,
+      netTipsCents: row.netTipsCents,
+      wagesCents: row.wagesCents,
+      tipPctBps: row.tipPctBps,
+      customersServed: row.customersServed,
+      tipsPerCoverCents: row.tipsPerCoverCents,
+      staffingCount: row.staffingCount,
+      tipsPerStaffHour: row.tipsPerStaffHour,
+      eventTag: row.eventTag,
+      weatherGlass: row.weatherGlass,
+      memberId: row.memberId,
+    };
+  });
+  const nextOffset = offset + rows.length;
+  return {
+    rows,
+    nextCursor: nextOffset < matched.length ? encodeListCursor(nextOffset) : null,
+    totalMatched: matched.length,
   };
 }

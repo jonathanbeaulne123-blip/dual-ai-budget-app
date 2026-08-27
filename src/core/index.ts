@@ -46,6 +46,7 @@ export * from "./herculesProvenance.ts";
 export * from "./herculesProWrite.ts";
 export * from "./herculesTools.ts";
 export * from "./tipScience.ts";
+export * from "./macroPriors.ts";
 export * from "./simReview.ts";
 export * from "./herculesPlanner.ts";
 export * from "./herculesPersonality.ts";

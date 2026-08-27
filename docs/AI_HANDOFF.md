@@ -1,8 +1,8 @@
 # AI Task and Handoff Standard
 
-## Shift tab (D-152) (2026-08-27)
+## Shift tab (D-153) (2026-08-27)
 
-**Status:** Branch `cursor/shift-tab-mobile-6319` off `origin/main` `@93df0ec`. Last product commit `84819c3`. Draft PR [#213](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/213). Risk: **Medium**. **Not merged, not deployed, not shipped.** Visual proof is the remaining gate.
+**Status:** Branch `cursor/shift-tab-mobile-6319` merging onto `main` per Jonathan (preview was perfect). Draft PR [#213](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/213). Risk: **Medium**. Numbered **D-153** because `main` already used **D-152** for tip covariates (#208). Not live until merge + kitchen Worker verify.
 
 **Household outcome:** Bianca and Jonathan open **Shift** from the phone bar. Punch, last shifts, Jobs, compressed report, and Hercules Shift Oracle glances live there. Add stays centered. Confirm still posts. The tab never writes money.
 
@@ -10,21 +10,44 @@
 
 **Engagement delta (3):** `+2`
 
-**What changed:** Nav is `Home · Cal · Shift · [+] · Plan · Books · More`. `WorkShiftPage` hosts Today / Report / Jobs. More no longer mounts Jobs / history / report. Home Timesheet stays. Projections are copper-badged and never post.
+**What changed:** Nav is `Home · Cal · Shift · [+] · Plan · Books · More`. `WorkShiftPage` hosts Today / Report / Jobs. More no longer mounts Jobs / history / report. Home Timesheet stays. Projections are copper-badged and never post. Rebased onto #208 camera/covariate Confirm path (Add still hosts scan + `WorkShiftFlow`).
 
-**Verification:**
-- Focused `test/shift-glance.test.ts` **5 passed**; `tsc --noEmit` green on `84819c3`.
-- Full `pnpm check` **green** at `fa7b8a3`: **880 passed / 2 skipped**; `tsc` + vite build green. Not re-run on HEAD `84819c3` (a11y + copy-only commits after).
-- Independent reviews: books / privacy / UX / verifier **PASS WITH NOTES**. UX F-1/F-2 (tab/tabpanel + `.tabs :focus-visible`) fixed in `0b1b2ee`. STRATEGY overclaim reverted in `84819c3`.
-- **Visual proof not done.** Cursor Cloud `computerUse` failed twice with `The execution environment has become unreachable`. No walkthrough screenshots/video were saved. Do not treat mocks or invented images as app proof.
+**Verification:** Focused `test/shift-glance.test.ts` and full `pnpm check` re-run after merging `origin/main`. Independent reviews on the pre-rebase SHA were PASS WITH NOTES. Jonathan approved the preview hostname and ordered merge/deploy.
 
-**GPT packet:** paste-ready prompt in [`docs/briefs/SHIFT_TAB_VISUAL_PROOF_GPT.md`](briefs/SHIFT_TAB_VISUAL_PROOF_GPT.md).
+**Data/environment:** Client/docs. Kitchen publish is GitHub `main` → Cloudflare Workers. No schema, secrets, or Production household mutation.
 
-**Data/environment:** Client/docs only. Intended visual proof uses fictional Development demo (`Open the demo kitchen table` → Bianca). No Production, schema, secrets, or deploy. No real household data.
+**Remaining uncertainty:** Future climate days cannot show real rain without a multi-day forecast. Today's rain drop uses cached Open-Meteo / fallback.
 
-**Remaining uncertainty:** Future climate days cannot show real rain without a multi-day forecast (cadence + season). Today's rain drop uses cached Open-Meteo / fallback. Demo Thursdays can be cadence-off. Visual match to the locked 390px mocks is unproven in a live browser.
+**Next owner:** After kitchen deploy — hard-refresh https://hearth-books.jonathan-beaulne123.workers.dev/ , Development pill, Shift tab.
 
-**Next owner:** GPT (or another visual agent) — run the prompt in `docs/briefs/SHIFT_TAB_VISUAL_PROOF_GPT.md`, capture 320 / 390 / 720 / ~1100, then Jonathan reviews PR #213. Do not merge until that evidence is on the PR.
+## Tip covariates + Hercules tip science + Pro paged reads (D-152) (2026-08-27)
+
+**Status:** Merging via [PR #208](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/208) onto `main` (Jonathan approved push/merge/deploy). Risk: **Medium–High**. Kitchen publish follows GitHub `main` → Cloudflare Workers.
+
+**Base SHA:** `ef3274a` · **Head SHA:** merge-base-resolved (see tip).
+
+**Household outcome:** End-of-night Confirm captures sales, customers served, floor headcount, and event tags so tip projections get better; Hercules (free + Pro) uses those covariates; Pro can page long shift/ledger history; Timesheet can photograph a tip sheet and draft Confirm without posting.
+
+**Budget delta (5):** `+2` — richer covariates improve tip projections without posting money; OCR stays proposal-only.
+
+**Engagement delta (3):** `+2` — Confirm + optional camera draft + Pro long-history paging.
+
+**What changed:**
+- Shift / `postWorkShift` / legacy `postShift`: `customersServed`, `staffingCount`, `eventTag`, optional `weatherGlass`; tipped Confirm requires covers/staffing (+ sales when sales fields exist).
+- `WorkShiftFlow` Sales & tips step + legacy ceremony fields; stress seed synthesizes covers/staffing/events.
+- `tipScience` observations + soft sales/covers/staffing/event/macro factors on outlook/oracle/year-sim.
+- Hercules: tip tools consume covariates; new `list_shifts`; Pro `toolPageMode` page size 50/100 + cursors; free ≤10.
+- Worker `/macro/priors` soft Ontario/Canada prior (fail soft); shift-report OCR via shared `/documents/scan` + `documentHint` → Confirm draft only; OCR notes dropped (Worker + `workShiftDraftFromVision`); BatchImport rejects shift-report rows.
+- Single-field sales jobs map camera sales into that pad; multi-field jobs leave sales blank with an honest banner (no invented Food/Alcohol/Other split).
+- D-152 recorded.
+
+**Verification:** Focused `test/shift-report-draft.test.ts` + `test/document-scan-worker.test.ts` (shift-report sanitize + hint) pass; prior tip-covariates suite green; full `pnpm check` → **873 pass** / 2 skipped. Independent books auditor **PASS WITH NOTES** (Confirm-only; sales multi-field note addressed). Independent privacy auditor **PASS WITH NOTES** (OCR note residual fixed; warnings may still echo names on-device only; third-party vision transit inherent).
+
+**Uncertainty:** Live StatsCan fetch not wired; OCR quality depends on model vision; Cloud UI smoke of Timesheet Confirm may need a Development household (welcome-demo path was previously blocked).
+
+**Data/environment:** Development client/Worker code only. No schema, secrets, Production, or household wipe. Scan POSTs image bytes like receipts; macro endpoint sends region key only.
+
+**Next owner:** After kitchen deploy — hard-refresh; Development smoke of Timesheet → Already off? → Take shift-report photo → Confirm.
 
 ## Supabase Preview history matches 016 (D-151) (2026-08-27)
 

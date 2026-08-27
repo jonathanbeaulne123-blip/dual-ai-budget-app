@@ -2,7 +2,7 @@ import type { DateKey } from "../calendar.ts";
 import type { TransactionType, Visibility } from "../types.ts";
 
 export type ImportSourceKind = "ofx" | "qfx" | "camera" | "flinks";
-export type ImportDocumentKind = "bank-statement" | "credit-card-statement" | "bill" | "receipt" | "unknown";
+export type ImportDocumentKind = "bank-statement" | "credit-card-statement" | "bill" | "receipt" | "shift-report" | "unknown";
 export type ImportReviewType = TransactionType | "unknown";
 export type DuplicateTier = "confident" | "not-sure" | "probably-not";
 export type ImportResolution = "cancel-import" | "keep-import" | "exclude-ledger" | "undecided";
@@ -94,6 +94,16 @@ export type VisionDocumentResult = {
     confidence: number;
   }>;
   receiptNumbers?: ReceiptNumbers | null;
+  shiftDraft?: {
+    date?: string;
+    workedHours?: number;
+    salesCents?: number;
+    cashTipsCents?: number;
+    cardTipsCents?: number;
+    customersServed?: number;
+    staffingCount?: number;
+    eventTag?: string;
+  } | null;
   warnings: string[];
 };
 

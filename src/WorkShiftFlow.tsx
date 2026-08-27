@@ -6,12 +6,15 @@ import {
   dollarsFromCentsDigits,
   formatCad,
   previousWorkWeekHours,
+  SHIFT_EVENT_TAGS,
   workedHoursFromOpenShift,
   workJobFingerprint,
   type Household,
   type OpenShift,
   type PostWorkShiftInput,
+  type ShiftEventTag,
   type Visibility,
+  type WeatherGlass,
 } from "./core/index.ts";
 
 type MoneyKey = `sales:${string}` | "sales" | "cashTips" | "cardTips";
@@ -22,8 +25,39 @@ const VISIBILITY: Array<{ id: Visibility; label: string }> = [
   { id: "both", label: "Both" },
 ];
 
+const EVENT_LABELS: Record<ShiftEventTag, string> = {
+  regular: "Regular",
+  holiday: "Holiday",
+  sports: "Sports",
+  festival: "Festival",
+  private_party: "Private party",
+  short_staffed: "Short-staffed",
+  vacation_cover: "Vacation cover",
+  illness_cover: "Illness cover",
+  other: "Other",
+};
+
+export type WorkShiftDraft = {
+  date?: string;
+  workedHours?: string | number;
+  paidBreakHours?: string | number;
+  sales?: string | number;
+  cashTips?: string | number;
+  cardTips?: string | number;
+  customersServed?: string | number;
+  staffingCount?: string | number;
+  eventTag?: ShiftEventTag;
+  weatherGlass?: WeatherGlass;
+  note?: string;
+};
+
 function dollars(digits: string): string {
   return dollarsFromCentsDigits(digits || "0");
+}
+
+function asDigitsFromDollars(value: string | number | undefined): string {
+  if (value == null || value === "") return "";
+  return centsDigitsFromDollars(String(value));
 }
 
 export function WorkShiftFlow({
@@ -33,6 +67,10 @@ export function WorkShiftFlow({
   punch,
   busy,
   onConfirm,
+  initialDraft,
+  weatherGlassPrefill,
+  scanWarnings,
+  onClearDraft,
 }: {
   household: Household;
   memberId: string;
@@ -40,20 +78,67 @@ export function WorkShiftFlow({
   punch: OpenShift | null;
   busy: boolean;
   onConfirm: (input: PostWorkShiftInput) => void;
+  /** OCR / scan draft — never posts alone; Confirm remains the money boundary. */
+  initialDraft?: WorkShiftDraft | null;
+  weatherGlassPrefill?: WeatherGlass | null;
+  scanWarnings?: string[];
+  onClearDraft?: () => void;
 }) {
   const jobs = useMemo(() => (household.workJobs ?? []).filter((job) => job.active && job.memberId === memberId), [household.workJobs, memberId]);
-  const [step, setStep] = useState(0);
-  const [date, setDate] = useState(today);
+  const hasDraftTotals = Boolean(
+    initialDraft
+    && (initialDraft.sales != null
+      || initialDraft.cashTips != null
+      || initialDraft.cardTips != null
+      || initialDraft.customersServed != null
+      || initialDraft.workedHours != null),
+  );
+  const [step, setStep] = useState(() => (hasDraftTotals ? 1 : 0));
+  const [date, setDate] = useState(initialDraft?.date || today);
   const [jobId, setJobId] = useState(() => jobs[0]?.id ?? "");
   const job = jobs.find((row) => row.id === jobId) ?? jobs[0];
   const [roleId, setRoleId] = useState(() => job?.roles.find((role) => role.active)?.id ?? "");
   const role = job?.roles.find((row) => row.id === roleId && row.active) ?? job?.roles.find((row) => row.active);
   const punchHours = punch ? workedHoursFromOpenShift(punch) : null;
-  const [hoursDigits, setHoursDigits] = useState(() => centsDigitsFromDollars(String(punchHours?.workedHours ?? 0)));
-  const [paidBreakDigits, setPaidBreakDigits] = useState(() => centsDigitsFromDollars(String(punchHours?.paidBreakHours ?? 0)));
-  const [hoursTouched, setHoursTouched] = useState(false);
-  const [money, setMoney] = useState<Record<string, string>>({ sales: "", cashTips: "", cardTips: "" });
-  const [activeMoney, setActiveMoney] = useState<MoneyKey>("sales");
+  const [hoursDigits, setHoursDigits] = useState(() => asDigitsFromDollars(initialDraft?.workedHours ?? punchHours?.workedHours ?? 0) || centsDigitsFromDollars("0"));
+  const [paidBreakDigits, setPaidBreakDigits] = useState(() => asDigitsFromDollars(initialDraft?.paidBreakHours ?? punchHours?.paidBreakHours ?? 0) || centsDigitsFromDollars("0"));
+  const [hoursTouched, setHoursTouched] = useState(Boolean(initialDraft?.workedHours != null));
+  const draftSalesFields = jobs[0]?.salesFields.filter((field) => field.requirement !== "off") ?? [];
+  const [money, setMoney] = useState<Record<string, string>>(() => {
+    const salesDigits = asDigitsFromDollars(initialDraft?.sales);
+    const next: Record<string, string> = {
+      sales: "",
+      cashTips: asDigitsFromDollars(initialDraft?.cashTips),
+      cardTips: asDigitsFromDollars(initialDraft?.cardTips),
+    };
+    if (salesDigits) {
+      if (draftSalesFields.length === 1) {
+        next[`sales:${draftSalesFields[0]!.id}`] = salesDigits;
+      } else if (draftSalesFields.length === 0) {
+        next.sales = salesDigits;
+      }
+      // Multi-field jobs: leave blank — never invent a Food/Alcohol/Other split.
+    }
+    return next;
+  });
+  const [activeMoney, setActiveMoney] = useState<MoneyKey>(() => (
+    draftSalesFields.length === 1
+      ? `sales:${draftSalesFields[0]!.id}`
+      : draftSalesFields.length > 1
+        ? `sales:${draftSalesFields[0]!.id}`
+        : "sales"
+  ));
+  const lastSameJob = useMemo(() => {
+    if (!job) return null;
+    return household.shifts
+      .filter((shift) => shift.memberId === memberId && shift.jobId === job.id && !shift.correctedByShiftId)
+      .slice()
+      .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id))[0] ?? null;
+  }, [household.shifts, job?.id, memberId]);
+  const [customersServed, setCustomersServed] = useState(() => String(initialDraft?.customersServed ?? ""));
+  const [staffingCount, setStaffingCount] = useState(() => String(initialDraft?.staffingCount ?? lastSameJob?.staffingCount ?? 1));
+  const [eventTag, setEventTag] = useState<ShiftEventTag>(() => initialDraft?.eventTag ?? "regular");
+  const [weatherGlass, setWeatherGlass] = useState<WeatherGlass | "">(() => initialDraft?.weatherGlass ?? weatherGlassPrefill ?? "");
   const [cashAccountId, setCashAccountId] = useState(() => job?.defaults.cashTipsAccountId ?? "");
   const [wagesDepositAccountId, setWagesDepositAccountId] = useState(() => job?.defaults.wagesDepositAccountId ?? "");
   const [cardDepositAccountId, setCardDepositAccountId] = useState(() => job?.defaults.cardTipsDepositAccountId ?? "");
@@ -61,7 +146,8 @@ export function WorkShiftFlow({
   const [cashVisibility, setCashVisibility] = useState<Visibility>(() => job?.defaults.cashTipsVisibility ?? "personal");
   const [cardVisibility, setCardVisibility] = useState<Visibility>(() => job?.defaults.cardTipsVisibility ?? "personal");
   const [tipOutVisibility, setTipOutVisibility] = useState<Visibility>(() => job?.defaults.tipOutVisibility ?? "personal");
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(initialDraft?.note ?? "");
+  const [stepError, setStepError] = useState("");
 
   useEffect(() => {
     if (hoursTouched || !punch) return;
@@ -81,6 +167,9 @@ export function WorkShiftFlow({
     setCashVisibility(job.defaults.cashTipsVisibility);
     setCardVisibility(job.defaults.cardTipsVisibility);
     setTipOutVisibility(job.defaults.tipOutVisibility);
+    if (initialDraft?.staffingCount == null && lastSameJob?.staffingCount != null) {
+      setStaffingCount(String(lastSameJob.staffingCount));
+    }
   }, [job?.id]);
 
   const salesFields = job?.salesFields.filter((field) => field.requirement !== "off") ?? [];
@@ -121,33 +210,69 @@ export function WorkShiftFlow({
   const selectedMoney = money[activeMoney] ?? "";
   const canContinue = Number(dollars(hoursDigits)) + Number(dollars(paidBreakDigits)) > 0;
 
-  const confirm = () => onConfirm({
-    date,
-    memberId,
-    jobId: job.id,
-    roleId: role.id,
-    workedHours: dollars(hoursDigits),
-    paidBreakHours: dollars(paidBreakDigits),
-    sales: dollars(money.sales ?? ""),
-    salesByField: Object.fromEntries(salesFields.map((field) => [field.id, dollars(money[`sales:${field.id}`] ?? "")])),
-    cashTips: dollars(money.cashTips ?? ""),
-    cardTips: dollars(money.cardTips ?? ""),
-    cashTipsAccountId: cashAccountId,
-    wagesDepositAccountId,
-    cardTipsDepositAccountId: cardDepositAccountId,
-    wagesVisibility,
-    cashTipsVisibility: cashVisibility,
-    cardTipsVisibility: cardVisibility,
-    tipOutVisibility,
-    startedAt: punch?.startedAt ?? null,
-    endedAt: punch?.endedAt ?? null,
-    note,
-    settingsFingerprint: workJobFingerprint(job, role.id, date),
-    createdBy: memberId,
-  });
+  const validateSalesStep = (): string | null => {
+    if (!role.tipped) return null;
+    if (salesFields.length && !(salesCents > 0)) return "Enter sales before confirming a tipped shift.";
+    const covers = Number(customersServed);
+    if (!Number.isInteger(covers) || covers < 0 || covers > 5000) return "Enter customers served (0–5000).";
+    const staff = Number(staffingCount);
+    if (!Number.isInteger(staff) || staff < 1 || staff > 200) return "Enter people on floor (1–200). Headcount only — never names.";
+    return null;
+  };
+
+  const confirm = () => {
+    const error = validateSalesStep();
+    if (error) {
+      setStepError(error);
+      setStep(1);
+      return;
+    }
+    setStepError("");
+    onConfirm({
+      date,
+      memberId,
+      jobId: job.id,
+      roleId: role.id,
+      workedHours: dollars(hoursDigits),
+      paidBreakHours: dollars(paidBreakDigits),
+      sales: dollars(money.sales ?? ""),
+      salesByField: Object.fromEntries(salesFields.map((field) => [field.id, dollars(money[`sales:${field.id}`] ?? "")])),
+      cashTips: dollars(money.cashTips ?? ""),
+      cardTips: dollars(money.cardTips ?? ""),
+      customersServed: role.tipped ? Number(customersServed) : undefined,
+      staffingCount: role.tipped ? Number(staffingCount) : undefined,
+      eventTag: role.tipped ? eventTag : undefined,
+      weatherGlass: weatherGlass || undefined,
+      cashTipsAccountId: cashAccountId,
+      wagesDepositAccountId,
+      cardTipsDepositAccountId: cardDepositAccountId,
+      wagesVisibility,
+      cashTipsVisibility: cashVisibility,
+      cardTipsVisibility: cardVisibility,
+      tipOutVisibility,
+      startedAt: punch?.startedAt ?? null,
+      endedAt: punch?.endedAt ?? null,
+      note,
+      settingsFingerprint: workJobFingerprint(job, role.id, date),
+      createdBy: memberId,
+    });
+  };
 
   return (
     <section className="work-shift-flow" aria-label="Confirm work shift">
+      {initialDraft && (
+        <div className="work-shift-draft-banner" role="status">
+          <p className="kicker">Draft from camera</p>
+          <p>Review every figure before Confirm. Scan never posts money.</p>
+          {initialDraft.sales != null && salesFields.length > 1 && (
+            <p className="muted">Camera saw a sales total — enter it across {salesFields.map((field) => field.label).join(" / ")} yourself. Hearth will not invent a split.</p>
+          )}
+          {(scanWarnings ?? []).slice(0, 4).map((warning) => <p className="muted" key={warning}>{warning}</p>)}
+          {onClearDraft && (
+            <button type="button" className="chip" disabled={busy} onClick={onClearDraft}>Clear scan draft</button>
+          )}
+        </div>
+      )}
       <div className="work-shift-progress" aria-label={`Step ${step + 1} of 4`}>
         {["Job & time", "Sales & tips", "Destinations", "Review"].map((label, index) => (
           <button key={label} type="button" className={step === index ? "active" : step > index ? "done" : ""} onClick={() => index < step && setStep(index)}>
@@ -182,7 +307,54 @@ export function WorkShiftFlow({
             {moneyChoices.map((choice) => <button key={choice.id} type="button" className={`chip ${activeMoney === choice.id ? "selected" : ""}`} onClick={() => setActiveMoney(choice.id)}>{choice.label} · {formatCad(Number(money[choice.id] || 0))}</button>)}
           </div>
           <CadPad digits={selectedMoney} onDigits={(digits) => setMoney((current) => ({ ...current, [activeMoney]: digits }))} label={moneyChoices.find((choice) => choice.id === activeMoney)?.label ?? "Amount"} />
+          {role.tipped && (
+            <div className="work-shift-grid two" style={{ marginTop: "1rem" }}>
+              <label>
+                Customers served
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={5000}
+                  value={customersServed}
+                  onChange={(event) => setCustomersServed(event.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                People on floor
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={200}
+                  value={staffingCount}
+                  onChange={(event) => setStaffingCount(event.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Event tag
+                <select value={eventTag} onChange={(event) => setEventTag(event.target.value as ShiftEventTag)}>
+                  {SHIFT_EVENT_TAGS.map((tag) => <option key={tag} value={tag}>{EVENT_LABELS[tag]}</option>)}
+                </select>
+              </label>
+              <label>
+                Weather glass
+                <select value={weatherGlass} onChange={(event) => setWeatherGlass(event.target.value as WeatherGlass | "")}>
+                  <option value="">Not stamped</option>
+                  <option value="clear">Clear</option>
+                  <option value="rain">Rain</option>
+                  <option value="snow">Snow</option>
+                  <option value="night">Night</option>
+                  <option value="humid">Humid</option>
+                </select>
+              </label>
+            </div>
+          )}
+          {role.tipped && <p className="muted">People on floor is headcount only — never coworker names. Covers and staffing feed tip projections; Confirm still posts the money.</p>}
           {job.tipOutRules.some((rule) => rule.active) && <p className="muted">Configured tip-outs recalculate as these figures change. Cash tips remain gross income; any immediate bar payment is a separate work expense.</p>}
+          {stepError && <p className="error" role="alert">{stepError}</p>}
         </div>
       )}
 
@@ -211,6 +383,9 @@ export function WorkShiftFlow({
             <div><span>Expected take-home wages</span><strong>{calculation ? formatCad(calculation.takeHomeWagesCents) : "—"}</strong></div>
             <div><span>Tips before tip-outs</span><strong>{calculation ? formatCad(calculation.tipsBeforeTipOutCents) : "—"}</strong></div>
             <div><span>Tips after tip-outs</span><strong>{calculation ? formatCad(calculation.netTipsCents) : "—"}</strong></div>
+            {role.tipped && <div><span>Customers served</span><strong>{customersServed || "—"}</strong></div>}
+            {role.tipped && <div><span>People on floor</span><strong>{staffingCount || "—"}</strong></div>}
+            {role.tipped && <div><span>Event</span><strong>{EVENT_LABELS[eventTag]}</strong></div>}
           </div>
           {calculation?.tipOuts.map((row) => <p className="muted" key={row.ruleId}>{row.label}: {formatCad(row.amountCents)} · {row.timing === "immediate" ? "paid from cash now" : row.timing === "deferred" ? "remind daily until paid" : "held from tip envelope"}</p>)}
           <p className="muted">Confirm posts earned wages to Wages owed, card tips to Card tips owed, and same-day cash tips to {household.accounts.find((account) => account.id === cashAccountId)?.name ?? "the chosen account"}. Payday prompts move owed money later.</p>
@@ -219,7 +394,26 @@ export function WorkShiftFlow({
 
       <div className="work-shift-footer">
         {step > 0 && <button type="button" className="chip" disabled={busy} onClick={() => setStep((current) => current - 1)}>Back</button>}
-        {step < 3 ? <button type="button" className="primary" disabled={busy || (step === 0 && !canContinue)} onClick={() => setStep((current) => current + 1)}>Next</button> : <button type="button" className="primary post-big" disabled={busy || !calculation} onClick={confirm}>Confirm shift</button>}
+        {step < 3 ? (
+          <button
+            type="button"
+            className="primary"
+            disabled={busy || (step === 0 && !canContinue)}
+            onClick={() => {
+              if (step === 1) {
+                const error = validateSalesStep();
+                if (error) {
+                  setStepError(error);
+                  return;
+                }
+                setStepError("");
+              }
+              setStep((current) => current + 1);
+            }}
+          >
+            Next
+          </button>
+        ) : <button type="button" className="primary post-big" disabled={busy || !calculation} onClick={confirm}>Confirm shift</button>}
       </div>
     </section>
   );

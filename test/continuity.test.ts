@@ -477,6 +477,10 @@ describe("Google-account continuity", () => {
       cashTipsAccountId: "ACC-CASH",
       confirmDuplicate: true,
       createdBy: "MEM-001",
+    
+      customersServed: 40,
+      staffingCount: 4,
+      eventTag: "regular",
     }).household;
     const personal = personalReplicaForMember(household, "MEM-001");
     expect(personal.shifts).toHaveLength(1);

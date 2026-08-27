@@ -113,6 +113,10 @@ describe("reverse and undo", () => {
       settingsFingerprint: shiftSettingsFingerprint(catalogHousehold().shiftSettings),
       createdBy: "MEM-002",
       confirmDuplicate: true,
+    
+      customersServed: 40,
+      staffingCount: 4,
+      eventTag: "regular",
     });
     expect(posted.household.shifts).toHaveLength(1);
     expect(posted.household.transactions).toHaveLength(2);

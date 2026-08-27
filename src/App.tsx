@@ -241,8 +241,10 @@ import { inviteReasonMessage, redeemHouseholdInvite, bindGoogleMemberships, leav
 import { BooksPage } from "./Books.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
 import type { RepeatingDraft } from "./RepeatingForm.tsx";
-import { WorkShiftFlow } from "./WorkShiftFlow.tsx";
+import { WorkShiftFlow, type WorkShiftDraft } from "./WorkShiftFlow.tsx";
 import { WorkShiftPage } from "./WorkShiftPage.tsx";
+import { scanFinancialDocument } from "./imports/documentScanner.ts";
+import { workShiftDraftFromVision } from "./imports/shiftReportDraft.ts";
 import { DuePreviewSheet } from "./DuePreviewSheet.tsx";
 import {
   renderCommandChrome,
@@ -360,6 +362,9 @@ const emptyForm = {
   cashTips: "0",
   ccTips: "0",
   hours: "",
+  customersServed: "40",
+  staffingCount: "4",
+  eventTag: "regular",
   visibility: "household" as Visibility,
   occurredAt: "" as string,
 };
@@ -461,6 +466,34 @@ export function App() {
   const workShiftInputRef = useRef<PostWorkShiftInput | null>(null);
   const workShiftDateRef = useRef(todayKey());
   const duePreviewOffered = useRef<string | null>(null);
+  const [workShiftDraft, setWorkShiftDraft] = useState<WorkShiftDraft | null>(null);
+  const [shiftScanBusy, setShiftScanBusy] = useState(false);
+  const [shiftScanError, setShiftScanError] = useState("");
+  const [shiftScanWarnings, setShiftScanWarnings] = useState<string[]>([]);
+  const shiftReportCameraRef = useRef<HTMLInputElement | null>(null);
+  const shiftReportUploadRef = useRef<HTMLInputElement | null>(null);
+
+  async function applyShiftReportScan(file: File | undefined) {
+    if (!file) return;
+    setShiftScanBusy(true);
+    setShiftScanError("");
+    setShiftScanWarnings([]);
+    try {
+      const scanned = await scanFinancialDocument(file, fetch, { documentHint: "shift-report" });
+      const mapped = workShiftDraftFromVision(scanned.result);
+      if (!mapped.draft) {
+        setShiftScanError(mapped.error || "That photo could not draft a shift.");
+        setShiftScanWarnings(mapped.warnings);
+        return;
+      }
+      setWorkShiftDraft(mapped.draft);
+      setShiftScanWarnings(mapped.warnings);
+    } catch (caught) {
+      setShiftScanError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setShiftScanBusy(false);
+    }
+  }
 
   function rememberUndoHistory(next: UndoToken[]) {
     setHistory(next);
@@ -2894,6 +2927,9 @@ export function App() {
           cashTips: form.cashTips,
           ccTips: form.ccTips,
           hours: form.hours,
+          customersServed: Number(form.customersServed || 0),
+          staffingCount: Number(form.staffingCount || 1),
+          eventTag: form.eventTag || "regular",
           settingsFingerprint: shiftSettingsFingerprint(current.shiftSettings),
           confirmDuplicate: flags.confirmDuplicate,
           createdBy: actorId,
@@ -3806,14 +3842,74 @@ export function App() {
                   );
                 })()}
                 {(shiftGate === "signOut" || shiftGate === "finished") && household.workJobs.some((job) => job.active && job.memberId === actorId) && (
-                  <WorkShiftFlow
-                    household={household}
-                    memberId={actorId}
-                    today={workShiftDateRef.current}
-                    punch={activeOpenShift(household.kitchen, actorId)}
-                    busy={busy}
-                    onConfirm={(input) => submitWorkShift(input)}
-                  />
+                  <>
+                    <div className="work-shift-scan">
+                      <p className="kicker">Optional camera draft</p>
+                      <div className="import-actions">
+                        <button
+                          type="button"
+                          className="chip"
+                          disabled={busy || shiftScanBusy}
+                          onClick={() => shiftReportCameraRef.current?.click()}
+                        >
+                          {shiftScanBusy ? "Scanning…" : "Take shift-report photo"}
+                        </button>
+                        <button
+                          type="button"
+                          className="chip"
+                          disabled={busy || shiftScanBusy}
+                          onClick={() => shiftReportUploadRef.current?.click()}
+                        >
+                          Choose tip sheet photo
+                        </button>
+                      </div>
+                      <input
+                        ref={shiftReportCameraRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        capture="environment"
+                        hidden
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          event.target.value = "";
+                          void applyShiftReportScan(file);
+                        }}
+                      />
+                      <input
+                        ref={shiftReportUploadRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        hidden
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          event.target.value = "";
+                          void applyShiftReportScan(file);
+                        }}
+                      />
+                      <p className="muted">Same document camera as receipts — drafts Confirm only. Invents nothing and never posts money.</p>
+                      {shiftScanError && <p className="error" role="alert">{shiftScanError}</p>}
+                    </div>
+                    <WorkShiftFlow
+                      key={workShiftDraft ? `draft-${JSON.stringify(workShiftDraft)}` : "blank"}
+                      household={household}
+                      memberId={actorId}
+                      today={workShiftDateRef.current}
+                      punch={activeOpenShift(household.kitchen, actorId)}
+                      busy={busy || shiftScanBusy}
+                      initialDraft={workShiftDraft}
+                      scanWarnings={shiftScanWarnings}
+                      onClearDraft={() => {
+                        setWorkShiftDraft(null);
+                        setShiftScanWarnings([]);
+                        setShiftScanError("");
+                      }}
+                      onConfirm={(input) => {
+                        setWorkShiftDraft(null);
+                        setShiftScanWarnings([]);
+                        submitWorkShift(input);
+                      }}
+                    />
+                  </>
                 )}
                 {(shiftGate === "signOut" || shiftGate === "finished") && !household.workJobs.some((job) => job.active && job.memberId === actorId) && (() => {
                   const fields = ceremonyFields(shiftGate);
@@ -3847,6 +3943,46 @@ export function App() {
                         label={shiftFieldLabel(field)}
                         unit={field === "hours" ? "hours" : "cad"}
                       />
+                      {field === "sales" && (
+                        <div className="work-shift-grid two">
+                          <label>
+                            Customers served
+                            <input
+                              type="number"
+                              inputMode="numeric"
+                              min={0}
+                              max={5000}
+                              value={form.customersServed}
+                              onChange={(event) => setForm({ ...form, customersServed: event.target.value })}
+                            />
+                          </label>
+                          <label>
+                            People on floor
+                            <input
+                              type="number"
+                              inputMode="numeric"
+                              min={1}
+                              max={200}
+                              value={form.staffingCount}
+                              onChange={(event) => setForm({ ...form, staffingCount: event.target.value })}
+                            />
+                          </label>
+                          <label>
+                            Event tag
+                            <select value={form.eventTag} onChange={(event) => setForm({ ...form, eventTag: event.target.value })}>
+                              <option value="regular">Regular</option>
+                              <option value="holiday">Holiday</option>
+                              <option value="sports">Sports</option>
+                              <option value="festival">Festival</option>
+                              <option value="private_party">Private party</option>
+                              <option value="short_staffed">Short-staffed</option>
+                              <option value="vacation_cover">Vacation cover</option>
+                              <option value="illness_cover">Illness cover</option>
+                              <option value="other">Other</option>
+                            </select>
+                          </label>
+                        </div>
+                      )}
                       {field !== "hours" && (
                         <div className={`preview ${shiftPreview.netTipsCents < 0 ? "warn" : ""}`}>
                           <div className="row"><span>Net tips</span><span>{formatCad(shiftPreview.netTipsCents)}</span></div>

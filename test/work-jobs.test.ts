@@ -133,6 +133,10 @@ describe("job-based shift foundation", () => {
       cashTipsAccountId: "ACC-CASH",
       confirmDuplicate: true,
       createdBy: "MEM-002",
+    
+      customersServed: 40,
+      staffingCount: 4,
+      eventTag: "regular",
     });
     const shift = posted.household.shifts.at(-1)!;
     expect(shift.jobId).toBe(savedJob.id);
@@ -173,6 +177,10 @@ describe("job-based shift foundation", () => {
       },
       confirmDuplicate: true,
       createdBy: "MEM-002",
+    
+      customersServed: 40,
+      staffingCount: 4,
+      eventTag: "regular",
     });
     const shift = posted.household.shifts.at(-1)!;
     const stamped = posted.household.transactions.filter((tx) => shift.transactionIds?.includes(tx.id));
@@ -188,6 +196,10 @@ describe("job-based shift foundation", () => {
       date: "2026-08-31", memberId: "MEM-002", jobId: savedJob.id, roleId: "ROLE-SERVER",
       workedHours: 4, salesByField: { FOOD: 500 }, cashTips: 25, cardTips: 75,
       cashTipsAccountId: "ACC-CASH", confirmDuplicate: true, createdBy: "MEM-002",
+    
+      customersServed: 40,
+      staffingCount: 4,
+      eventTag: "regular",
     });
     const shift = posted.household.shifts.at(-1)!;
     const reversed = reversePostedMoney(posted.household, shift.transactionIds![0]!, { createdBy: "MEM-002" });
@@ -207,6 +219,10 @@ describe("job-based shift foundation", () => {
       date: "2026-08-31", memberId: "MEM-002", jobId: savedJob.id, roleId: "ROLE-SERVER",
       workedHours: 4, salesByField: { FOOD: 500 }, cashTips: 25, cardTips: 75,
       cashTipsAccountId: "ACC-CASH", confirmDuplicate: true, createdBy: "MEM-002",
+    
+      customersServed: 40,
+      staffingCount: 4,
+      eventTag: "regular",
     }).household;
     const facts = workOwedFacts(posted, "2026-08-31", "MEM-002");
     const wages = facts.find((fact) => fact.kind === "wages")!;
@@ -230,6 +246,10 @@ describe("job-based shift foundation", () => {
       date: "2026-08-31", memberId: "MEM-002", jobId: savedJob.id, roleId: "ROLE-SERVER",
       workedHours: 4, salesByField: { FOOD: 500 }, cashTips: 25, cardTips: 75,
       cashTipsAccountId: "ACC-CASH", confirmDuplicate: true, createdBy: "MEM-002",
+    
+      customersServed: 40,
+      staffingCount: 4,
+      eventTag: "regular",
     }).household;
     const waiting = workOwedFacts(posted, "2026-08-31", "MEM-002").find((fact) => fact.kind === "deferred-tipout")!;
     expect(waiting.amountCents).toBe(500);

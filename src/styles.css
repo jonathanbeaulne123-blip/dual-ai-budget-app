@@ -81,6 +81,10 @@ html, body {
 .work-shift-review span { color: var(--muted); }
 .work-shift-footer { display: flex; justify-content: flex-end; gap: 8px; position: sticky; bottom: 0; padding: 12px 0 2px; background: linear-gradient(0deg, var(--paper) 70%, transparent); }
 .work-shift-empty { padding: 18px; border: 1px dashed var(--line); border-radius: 12px; }
+.work-shift-scan { display: grid; gap: 10px; margin-bottom: 8px; padding: 12px; border: 1px dashed var(--line); border-radius: 12px; }
+.work-shift-scan .import-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.work-shift-draft-banner { display: grid; gap: 6px; padding: 12px; border: 1px solid var(--copper); border-radius: 12px; background: color-mix(in srgb, var(--copper) 8%, var(--paper)); }
+.work-shift-draft-banner .chip { justify-self: start; }
 .work-history-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
 .work-history-row.is-reversed { opacity: .62; }
 .work-history-main { display: flex; align-items: center; gap: 10px; min-width: 0; }

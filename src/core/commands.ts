@@ -89,12 +89,13 @@ import type {
   SavingsPurpose,
   SitDownSession,
   Split,
+  ShiftEventTag,
   Transaction,
   UndoToken,
   Visibility,
   WorkJob,
 } from "./types.ts";
-import { COMPANION, JOINT, NeedsConfirmationError, ValidationError } from "./types.ts";
+import { COMPANION, JOINT, NeedsConfirmationError, ValidationError, isShiftEventTag } from "./types.ts";
 
 export type ActorInput = {
   createdBy?: string;
@@ -397,6 +398,10 @@ export function postShift(household: Household, input: {
   cashTips?: string | number;
   ccTips?: string | number;
   hours: string | number;
+  customersServed?: string | number;
+  staffingCount?: string | number;
+  eventTag?: string;
+  weatherGlass?: string;
   settingsFingerprint?: string;
   confirmDuplicate?: boolean;
   createdBy?: string;
@@ -415,6 +420,10 @@ export function postShift(household: Household, input: {
   if (input.settingsFingerprint && input.settingsFingerprint !== fingerprint) {
     throw new NeedsConfirmationError("settingsChanged", "Tip rules changed since the preview. Review the new amounts before posting.", [], calcShiftAmounts(parsed, settings));
   }
+  const tippedLegacy = parsed.cashTipsCents > 0 || parsed.ccTipsCents > 0 || parsed.salesCents > 0;
+  const covariates = tippedLegacy
+    ? parseTippedShiftCovariates(input, { requireSales: true, salesCents: parsed.salesCents })
+    : parseOptionalShiftCovariates(input);
   const amounts = calcShiftAmounts(parsed, settings);
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
@@ -478,6 +487,10 @@ export function postShift(household: Household, input: {
     visibility: actor.visibility,
     createdAt,
     updatedAt: createdAt,
+    customersServed: covariates.customersServed,
+    staffingCount: covariates.staffingCount,
+    eventTag: covariates.eventTag,
+    weatherGlass: covariates.weatherGlass,
   });
   const warnings = [];
   if (amounts.netTipsCents < 0) warnings.push("Net tips are negative after tip-out. The shift was still saved.");
@@ -492,6 +505,76 @@ export function postShift(household: Household, input: {
 function optionalMoneyCents(value: string | number | undefined, label: string): number {
   if (value == null || value === "" || Number(value) === 0) return 0;
   return parseAmount(value, label);
+}
+
+type ShiftCovariateFields = {
+  customersServed?: number;
+  staffingCount?: number;
+  eventTag?: ShiftEventTag;
+  weatherGlass?: "clear" | "rain" | "snow" | "night" | "humid";
+};
+
+const WEATHER_GLASS_VALUES = new Set(["clear", "rain", "snow", "night", "humid"]);
+
+function parseOptionalInteger(value: unknown, label: string, min: number, max: number): number | undefined {
+  if (value == null || value === "") return undefined;
+  const n = typeof value === "string" ? Number(value.trim()) : Number(value);
+  if (!Number.isFinite(n) || !Number.isInteger(n)) throw new ValidationError(`${label} must be a whole number.`);
+  if (n < min || n > max) throw new ValidationError(`${label} must be between ${min} and ${max}.`);
+  return n;
+}
+
+function parseRequiredInteger(value: unknown, label: string, min: number, max: number): number {
+  const parsed = parseOptionalInteger(value, label, min, max);
+  if (parsed == null) throw new ValidationError(`Enter ${label.toLowerCase()} before confirming this shift.`);
+  return parsed;
+}
+
+function parseEventTag(value: unknown, required: boolean): ShiftEventTag | undefined {
+  if (value == null || value === "") {
+    if (required) return "regular";
+    return undefined;
+  }
+  if (!isShiftEventTag(value)) throw new ValidationError("Choose a valid event tag for this shift.");
+  return value;
+}
+
+function parseWeatherGlass(value: unknown): ShiftCovariateFields["weatherGlass"] | undefined {
+  if (value == null || value === "") return undefined;
+  const glass = String(value).trim();
+  if (!WEATHER_GLASS_VALUES.has(glass)) throw new ValidationError("Choose a valid weather glass stamp.");
+  return glass as ShiftCovariateFields["weatherGlass"];
+}
+
+function parseTippedShiftCovariates(input: {
+  customersServed?: string | number;
+  staffingCount?: string | number;
+  eventTag?: string;
+  weatherGlass?: string;
+}, opts: { requireSales: boolean; salesCents: number }): Required<Pick<ShiftCovariateFields, "customersServed" | "staffingCount" | "eventTag">> & Pick<ShiftCovariateFields, "weatherGlass"> {
+  if (opts.requireSales && !(opts.salesCents > 0)) {
+    throw new ValidationError("Enter sales before confirming a tipped shift.");
+  }
+  return {
+    customersServed: parseRequiredInteger(input.customersServed, "Customers served", 0, 5000),
+    staffingCount: parseRequiredInteger(input.staffingCount, "People on floor", 1, 200),
+    eventTag: parseEventTag(input.eventTag, true) ?? "regular",
+    weatherGlass: parseWeatherGlass(input.weatherGlass),
+  };
+}
+
+function parseOptionalShiftCovariates(input: {
+  customersServed?: string | number;
+  staffingCount?: string | number;
+  eventTag?: string;
+  weatherGlass?: string;
+}): ShiftCovariateFields {
+  return {
+    customersServed: parseOptionalInteger(input.customersServed, "Customers served", 0, 5000),
+    staffingCount: parseOptionalInteger(input.staffingCount, "People on floor", 1, 200),
+    eventTag: parseEventTag(input.eventTag, false),
+    weatherGlass: parseWeatherGlass(input.weatherGlass),
+  };
 }
 
 function ensureWorkPostingCategory(household: Household, input: {
@@ -550,6 +633,12 @@ export type PostWorkShiftInput = {
   salesByField?: Record<string, string | number>;
   cashTips?: string | number;
   cardTips?: string | number;
+  /** Covers / customers served — required for tipped roles. */
+  customersServed?: string | number;
+  /** Floor headcount only — required for tipped roles; never names. */
+  staffingCount?: string | number;
+  eventTag?: string;
+  weatherGlass?: string;
   cashTipsAccountId?: string;
   wagesDepositAccountId?: string;
   cardTipsDepositAccountId?: string;
@@ -596,6 +685,12 @@ export function postWorkShift(household: Household, input: PostWorkShiftInput): 
   const cashTipsCents = optionalMoneyCents(input.cashTips, "Cash tips");
   const cardTipsCents = optionalMoneyCents(input.cardTips, "Card tips");
   if (!role.tipped && (cashTipsCents || cardTipsCents)) throw new ValidationError(`${role.name} is not configured as a tipped role.`);
+  const covariates = role.tipped
+    ? parseTippedShiftCovariates(input, {
+      requireSales: job.salesFields.some((field) => field.requirement !== "off"),
+      salesCents,
+    })
+    : parseOptionalShiftCovariates(input);
 
   const previousWeekHours = previousWorkWeekHours(household, job.id, member.id, date);
   const calculation = calculateWorkShift(job, role.id, {
@@ -752,6 +847,10 @@ export function postWorkShift(household: Household, input: PostWorkShiftInput): 
     wagesDepositAccountId: input.wagesDepositAccountId || job.defaults.wagesDepositAccountId,
     cashTipsAccountId: cashAccountId,
     cardTipsDepositAccountId: input.cardTipsDepositAccountId || job.defaults.cardTipsDepositAccountId,
+    customersServed: covariates.customersServed,
+    staffingCount: covariates.staffingCount,
+    eventTag: covariates.eventTag,
+    weatherGlass: covariates.weatherGlass,
     note: String(input.note || "").trim().slice(0, 500),
   });
   const punch = activeOpenShift(next.kitchen, member.id);
