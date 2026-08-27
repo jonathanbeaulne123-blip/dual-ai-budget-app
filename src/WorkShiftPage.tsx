@@ -70,6 +70,9 @@ export function WorkShiftPage({
   onChooseTimeline,
   onClockOut,
   onConfirmShift,
+  duplicateConfirm = null,
+  onConfirmAnyway,
+  onDismissDuplicate,
   onCorrect,
   onAskSaveJob,
   onArchiveJob,
@@ -88,6 +91,9 @@ export function WorkShiftPage({
   onChooseTimeline: (openShiftId: string) => void;
   onClockOut: () => void;
   onConfirmShift: (input: PostWorkShiftInput) => void;
+  duplicateConfirm?: { message: string } | null;
+  onConfirmAnyway?: () => void;
+  onDismissDuplicate?: () => void;
   onCorrect: (shift: Shift, transactionId: string) => void;
   onAskSaveJob: (job: WorkJob, summary: string) => void;
   onArchiveJob: (jobId: string) => void;
@@ -99,6 +105,7 @@ export function WorkShiftPage({
   const [breakdown, setBreakdown] = useState(false);
   const [weatherGlass, setWeatherGlass] = useState<WeatherGlass | undefined>(undefined);
   const [finishedReview, setFinishedReview] = useState(false);
+  const [shiftsWhenReviewOpened, setShiftsWhenReviewOpened] = useState(0);
   const [workShiftDraft, setWorkShiftDraft] = useState<WorkShiftDraft | null>(null);
   const [shiftScanBusy, setShiftScanBusy] = useState(false);
   const [shiftScanError, setShiftScanError] = useState("");
@@ -136,6 +143,17 @@ export function WorkShiftPage({
     setShiftScanError("");
     setShiftScanWarnings([]);
   }, [reviewing]);
+
+  useEffect(() => {
+    if (!finishedReview) return;
+    const count = household.shifts.filter((shift) => shift.memberId === memberId).length;
+    if (count > shiftsWhenReviewOpened) {
+      setFinishedReview(false);
+      setWorkShiftDraft(null);
+      setShiftScanError("");
+      setShiftScanWarnings([]);
+    }
+  }, [finishedReview, household.shifts, memberId, shiftsWhenReviewOpened]);
 
   async function applyScan(file: File | undefined) {
     if (!file) return;
@@ -215,6 +233,7 @@ export function WorkShiftPage({
               onSignOut={onClockOut}
               onFinished={() => {
                 clearScanDraft();
+                setShiftsWhenReviewOpened(household.shifts.filter((shift) => shift.memberId === memberId).length);
                 setFinishedReview(true);
               }}
               previewHours={preview?.hours ?? null}
@@ -224,6 +243,19 @@ export function WorkShiftPage({
             />
             {reviewing ? (
               <>
+                {duplicateConfirm ? (
+                  <div className="preview warn" role="alert">
+                    <p>{duplicateConfirm.message}</p>
+                    <div className="chips">
+                      <button type="button" className="primary" disabled={busy} onClick={() => onConfirmAnyway?.()}>
+                        Add anyway
+                      </button>
+                      <button type="button" className="chip" disabled={busy} onClick={() => onDismissDuplicate?.()}>
+                        Not now
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
                 {finishedReview && !punch ? (
                   <button type="button" className="chip" disabled={busy} onClick={() => { setFinishedReview(false); clearScanDraft(); }}>
                     Back to clock
@@ -248,7 +280,6 @@ export function WorkShiftPage({
                   onClearDraft={clearScanDraft}
                   onConfirm={(input) => {
                     clearScanDraft();
-                    setFinishedReview(false);
                     onConfirmShift(input);
                   }}
                 />

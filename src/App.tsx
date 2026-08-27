@@ -243,6 +243,7 @@ import { ConfirmSheet } from "./Confirm.tsx";
 import type { RepeatingDraft } from "./RepeatingForm.tsx";
 import { WorkShiftFlow, type WorkShiftDraft } from "./WorkShiftFlow.tsx";
 import { WorkShiftPage } from "./WorkShiftPage.tsx";
+import { resolveDuplicateRetry } from "./shiftDuplicateRetry.ts";
 import { ShiftReportScanBar } from "./ShiftReportScan.tsx";
 import { scanShiftReportFile } from "./imports/shiftReportDraft.ts";
 import { DuePreviewSheet } from "./DuePreviewSheet.tsx";
@@ -2117,6 +2118,7 @@ export function App() {
           outcome?.postedExactlyOnce === true &&
           (outcome.kind === "accepted-local" || outcome.kind === "pending-transport" || outcome.kind === "synchronized");
         if (!accepted) return;
+        workShiftInputRef.current = null;
         setConfirm(null);
         setAdding(false);
         setForm({
@@ -2142,8 +2144,21 @@ export function App() {
         }
       } catch (caught) {
         if (caught instanceof NeedsConfirmationError) {
+          const plan = resolveDuplicateRetry({
+            pendingWorkShift: workShiftInputRef.current,
+            confirmCode: caught.code,
+            tab,
+          });
+          if (plan.setShiftMode) {
+            setMode("shift");
+            const memberId = session?.memberId;
+            const punch = householdRef.current && memberId
+              ? activeOpenShift(householdRef.current.kitchen, memberId)
+              : null;
+            setShiftGate(punch ? "signOut" : "finished");
+          }
           setConfirm(caught);
-          setAdding(true);
+          if (plan.openAdd) setAdding(true);
         } else setError(caught instanceof Error ? caught.message : String(caught));
       } finally {
         postingRef.current = false;
@@ -2961,6 +2976,9 @@ export function App() {
 
   function submitWorkShift(input: PostWorkShiftInput, confirmDuplicate = false) {
     workShiftInputRef.current = input;
+    setMode("shift");
+    const punch = householdRef.current ? activeOpenShift(householdRef.current.kitchen, actorId) : null;
+    setShiftGate(punch ? "signOut" : "finished");
     run((current) => postWorkShift(current, { ...input, confirmDuplicate }));
   }
 
@@ -3209,6 +3227,11 @@ export function App() {
           onChooseTimeline={(keepId) => { void runKitchen((current) => chooseOpenShiftTimeline(current, { memberId: actorId, keepId })); }}
           onClockOut={clockOutStayOnShiftPage}
           onConfirmShift={(input) => submitWorkShift(input)}
+          duplicateConfirm={confirm && workShiftInputRef.current && !adding ? confirm : null}
+          onConfirmAnyway={() => {
+            if (workShiftInputRef.current) submitWorkShift(workShiftInputRef.current, true);
+          }}
+          onDismissDuplicate={() => setConfirm(null)}
           onCorrect={(shift, transactionId) => setGuard({ kind: "correctShift", shift, transactionId })}
           onAskSaveJob={(job, summary) => setGuard({ kind: "saveWorkJob", job, summary })}
           onArchiveJob={(jobId) => { void run((current) => archiveWorkJob(current, jobId)); }}
@@ -4096,8 +4119,16 @@ export function App() {
                   </div>
                 ))}
                 <button className="primary" onClick={() => {
-                  if (mode === "shift" && workShiftInputRef.current) submitWorkShift(workShiftInputRef.current, true);
-                  else submit({ confirmDuplicate: true });
+                  const plan = resolveDuplicateRetry({
+                    pendingWorkShift: workShiftInputRef.current,
+                    confirmCode: confirm.code,
+                    tab,
+                  });
+                  if (plan.kind === "work-shift" && workShiftInputRef.current) {
+                    submitWorkShift(workShiftInputRef.current, true);
+                  } else {
+                    submit({ confirmDuplicate: true });
+                  }
                 }}>
                   Add anyway
                 </button>
