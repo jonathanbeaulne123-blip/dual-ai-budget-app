@@ -242,6 +242,8 @@ import {
   type CommandChromeResult,
 } from "./commandSurface.tsx";
 import { clearSyncAnchor, saveSyncAnchor } from "./syncAnchor.ts";
+import { SyncFreshnessStatus } from "./SyncFreshnessStatus.tsx";
+import { buildSyncFreshness, sharedHouseholdFreshnessCopy } from "./syncFreshness.ts";
 import {
   recentChangesEmptyCopy,
   recentChangesHeaderPill,
@@ -382,6 +384,12 @@ export function App() {
   const [replicas, setReplicas] = useState<HouseholdReplicaSummary[]>([]);
   const [personalReplica, setPersonalReplica] = useState<PersonalEnvelope | null>(null);
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "synced" | "error">("idle");
+  const [realtimeStatus, setRealtimeStatus] = useState<ContinuityRealtimeStatus | null>(null);
+  const [lastReconcile, setLastReconcile] = useState<{
+    at: string;
+    source: ContinuitySyncSource;
+    revision: number;
+  } | null>(null);
   const [commandChrome, setCommandChrome] = useState<CommandChromeResult | null>(null);
   const [showConflictSheet, setShowConflictSheet] = useState(false);
   const [offline, setOffline] = useState(() => typeof navigator !== "undefined" && !navigator.onLine);
@@ -782,7 +790,7 @@ export function App() {
       return accepted;
     };
 
-    const replayWork = async () => {
+    const replayWork = async (source: ContinuitySyncSource) => {
       if (live) setSyncState("syncing");
       try {
         const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
@@ -944,6 +952,13 @@ export function App() {
             return;
           }
           coordinator.recordAccept(current.householdId, remoteRevision);
+          if (live) {
+            setLastReconcile({
+              at: new Date().toISOString(),
+              source,
+              revision: remoteRevision,
+            });
+          }
           if (accepted.household.sharing?.mode === "pending-transport") {
             const tip = remoteHousehold.revision;
             const ready = accepted.household;
@@ -992,7 +1007,7 @@ export function App() {
     };
 
     const scheduleReplay = (source: ContinuitySyncSource) => {
-      void coordinator.run(source, replayWork);
+      void coordinator.run(source, () => replayWork(source));
     };
 
     const onOnline = () => scheduleReplay("online");
@@ -1055,6 +1070,7 @@ export function App() {
         },
         onStatusChange: (status) => {
           realtimeStatusRef.current = status;
+          if (live) setRealtimeStatus(status);
         },
       });
     };
@@ -1161,6 +1177,43 @@ export function App() {
     () => (visible ? buildDashboard(visible, today, now, findings.length) : null),
     [visible, today, now, findings.length],
   );
+  const syncFreshnessDisplay = useMemo(() => {
+    if (!household || !memberId) {
+      return buildSyncFreshness({
+        household: null,
+        viewerMemberId: null,
+        realtimeEnabled: continuityRealtimeEnabled(),
+        realtimeStatus,
+        offline,
+        pendingOutboxCount: 0,
+        hasOpenConflict: false,
+        lastReconcileAt: null,
+        lastReconcileSource: null,
+      });
+    }
+    const activeMembers = household.members.filter((member) => member.active).length;
+    return buildSyncFreshness({
+      household,
+      viewerMemberId: memberId,
+      realtimeEnabled: continuityRealtimeEnabled(),
+      realtimeStatus,
+      offline,
+      pendingOutboxCount: listContinuityOutbox(environment).filter((item) => item.householdId === household.householdId).length,
+      hasOpenConflict: unresolvedConflicts(household).length > 0,
+      lastReconcileAt: lastReconcile?.at ?? null,
+      lastReconcileSource: lastReconcile?.source ?? null,
+      pollIntervalMs: livePullIntervalMs(activeMembers),
+    });
+  }, [household, memberId, realtimeStatus, lastReconcile, environment, offline]);
+  const syncFreshnessLine = useMemo(
+    () => sharedHouseholdFreshnessCopy(syncFreshnessDisplay, syncState),
+    [syncFreshnessDisplay, syncState],
+  );
+
+  useEffect(() => {
+    setLastReconcile(null);
+    setRealtimeStatus(null);
+  }, [household?.householdId]);
 
   useEffect(() => {
     if (booting || !household || adding || guard || showConflictSheet) return;
@@ -2475,6 +2528,7 @@ export function App() {
         </div>
         <span className="pill dev" aria-label="Development environment">Development</span>
       </header>
+      <SyncFreshnessStatus display={syncFreshnessDisplay} />
       {commandChrome?.chip && (
         <div
           className={`command-chip command-chip--${commandChrome.chip.tone}`}
@@ -2797,6 +2851,7 @@ export function App() {
             error={error}
             busy={busy}
             syncState={syncState}
+            syncFreshnessLine={syncFreshnessLine}
             inviteInput={inviteInput}
             onInviteInput={setInviteInput}
             onHousehold={async (next) => { await persist(next); }}
