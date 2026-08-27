@@ -167,13 +167,14 @@ describe("phone CSS fence", () => {
     expect(css).toMatch(/var\(--font\)/);
   });
 
-  it("keeps OfficePhone off the wide canvas path", () => {
+  it("keeps OfficePhone off the computer canvas path", () => {
     const office = readFileSync("src/Office.tsx", "utf8");
-    expect(office).toMatch(/if \(breakpoint === "phone"\)/);
-    expect(office).toMatch(/desk-canvas desk-wide/);
-    expect(office).toMatch(/is-wide-room/);
+    expect(office).toMatch(/if \(breakpoint !== "computer"\)/);
+    expect(office).toMatch(/office-room/);
+    expect(office).toMatch(/is-computer-room/);
     const phone = readFileSync("src/OfficePhone.tsx", "utf8");
     expect(phone).not.toMatch(/desk-wide/);
+    expect(phone).not.toMatch(/office-room/);
     expect(phone).toMatch(/revealPhoneInstrument/);
     expect(phone).toMatch(/StoryStrip/);
     expect(phone).toMatch(/WaxSeal/);
