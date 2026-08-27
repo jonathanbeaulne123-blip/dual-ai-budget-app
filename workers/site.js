@@ -8,6 +8,7 @@ import {
 } from "./herculesGuard.js";
 import { handleHerculesPro } from "./herculesPro.js";
 import { handleFlinks } from "./flinks.js";
+import { handleSevenShifts } from "./sevenshifts.js";
 import { validateRigPayload, sanitizeRigSessionId } from "../src/herculesRig/validate.ts";
 import { enqueueRigCommands, pollRigCommands } from "./herculesRigQueue.js";
 
@@ -1067,6 +1068,8 @@ async function herculesRigPoll(request, env) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const sevenshifts = await handleSevenShifts(request, env);
+    if (sevenshifts) return sevenshifts;
     const flinks = await handleFlinks(request, env);
     if (flinks) return flinks;
     const herculesPro = await handleHerculesPro(request, env);

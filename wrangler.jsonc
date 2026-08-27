@@ -40,7 +40,10 @@
     "FLINKS_ALLOW_PRODUCTION": "false",
     "FLINKS_API_BASE_URL": "https://toolbox-api.private.fin.ag",
     "FLINKS_CONNECT_BASE_URL": "https://toolbox-iframe.private.fin.ag",
-    "FLINKS_REDIRECT_ORIGIN": "https://hearth-books.jonathan-beaulne123.workers.dev"
+    "FLINKS_REDIRECT_ORIGIN": "https://hearth-books.jonathan-beaulne123.workers.dev",
+    "SEVENSHIFTS_ENABLED": "false",
+    "SEVENSHIFTS_ALLOW_PRODUCTION": "false",
+    "SEVENSHIFTS_API_BASE_URL": "https://api.7shifts.com"
   },
   "d1_databases": [
     {

@@ -296,6 +296,8 @@ export type Shift = {
   correctedByShiftId?: string;
   correctionOfShiftId?: string;
   note?: string;
+  /** HMAC digest of a 7shifts time punch. Provenance only; never a token or wage. */
+  sevenShiftsPunchDigest?: string;
 };
 
 export type RecurrenceCadence = "daily" | "weekly" | "biweekly" | "monthly";

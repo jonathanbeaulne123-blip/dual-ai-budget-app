@@ -242,7 +242,7 @@ import { BooksPage } from "./Books.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
 import type { RepeatingDraft } from "./RepeatingForm.tsx";
 import { WorkJobsCard } from "./WorkJobs.tsx";
-import { WorkShiftFlow } from "./WorkShiftFlow.tsx";
+import { WorkShiftWithSevenShifts } from "./WorkShiftWithSevenShifts.tsx";
 import { WorkShiftHistoryCard } from "./WorkShiftHistory.tsx";
 import { WorkReportCard } from "./WorkReport.tsx";
 import { DuePreviewSheet } from "./DuePreviewSheet.tsx";
@@ -3801,7 +3801,7 @@ export function App() {
                   );
                 })()}
                 {(shiftGate === "signOut" || shiftGate === "finished") && household.workJobs.some((job) => job.active && job.memberId === actorId) && (
-                  <WorkShiftFlow
+                  <WorkShiftWithSevenShifts
                     household={household}
                     memberId={actorId}
                     today={workShiftDateRef.current}

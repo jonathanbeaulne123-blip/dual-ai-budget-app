@@ -1,5 +1,25 @@
 # AI Task and Handoff Standard
 
+## Native 7shifts Timesheet inbox (D-152) (2026-08-27)
+
+**Status:** Branch `cursor/seven-shifts-inbox-5958`. Risk: **High** (provider token, coworker PII, work hours → wage drafts). Not merged. Not deployed. No secrets put. D1 table not applied.
+
+**Household outcome:** A Harbour worker can add a 7shifts account on Jobs. Punches fill Timesheet hours, role, and clock times. Cash and card tips stay blank. Confirm still posts wages. The restaurant roster is a Co-workers tab, not household members.
+
+**Budget delta (5):** `+3` — hours arrive as a reviewable draft so wage Confirm is the remaining tap. Duplicate 7shifts punches cannot post twice.
+
+**Engagement delta (3):** `+2` — Timesheet opens from the restaurant clock; Jobs shows who was on the floor. Hercules never receives the roster or the token.
+
+**What changed:** Worker `/work/7shifts/*` (status, probe, connect, pull, disconnect) with Auth JWT + membership scope, AES-GCM D1 rows on the existing Development Flinks database (separate `SEVENSHIFTS_*` keys), HMAC-redacted inbox, Jobs Connect + Co-workers, Timesheet “Fill from 7shifts”. `postWorkShift` stores `sevenShiftsPunchDigest` and refuses the same punch. 7shifts `tips` / `hourly_wage` / emails never leave the Worker.
+
+**Verification:** Focused `pnpm exec vitest run test/sevenshifts-inbox.test.ts test/sevenshifts-worker.test.ts test/sevenshifts-client.test.ts test/sevenshifts-connect-ui.test.ts test/work-jobs.test.ts` → **25 passed**. Full `pnpm check` and independent audits follow on this branch.
+
+**Data/environment:** Development client/Worker code only. `SEVENSHIFTS_ENABLED` stays `false` in `wrangler.jsonc`. Migration `migrations/flinks/0002_seven_shifts_connections.sql` is reviewed input, not applied. No Production, no `wrangler secret put`, no kitchen deploy.
+
+**Next owner:** Jonathan — after PR review: `wrangler secret put` for `SEVENSHIFTS_CONNECTION_ENCRYPTION_KEY` and `SEVENSHIFTS_DIGEST_KEY`, apply D1 `0002`, set `SEVENSHIFTS_ENABLED=true`, then deploy. Live token smoke uses a Harbour Developer Tools access token.
+
+**Worksession:** [`worksessions/2026-08-27-seven-shifts-inbox.md`](worksessions/2026-08-27-seven-shifts-inbox.md)
+
 ## Supabase Preview history matches 016 (D-151) (2026-08-27)
 
 **Status:** Branch `cursor/supabase-preview-016-history-5958`. Risk: **Low** (migration *history* metadata only; money meaning unchanged). Hosted `supabase_migrations.schema_migrations` version retagged `20260827072847` → `016`. Function not re-applied. No household rows.

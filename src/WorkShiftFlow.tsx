@@ -11,6 +11,7 @@ import {
   type Household,
   type OpenShift,
   type PostWorkShiftInput,
+  type SevenShiftsTimesheetDraft,
   type Visibility,
 } from "./core/index.ts";
 
@@ -31,6 +32,7 @@ export function WorkShiftFlow({
   memberId,
   today,
   punch,
+  inboxDraft = null,
   busy,
   onConfirm,
 }: {
@@ -38,19 +40,20 @@ export function WorkShiftFlow({
   memberId: string;
   today: string;
   punch: OpenShift | null;
+  inboxDraft?: SevenShiftsTimesheetDraft | null;
   busy: boolean;
   onConfirm: (input: PostWorkShiftInput) => void;
 }) {
   const jobs = useMemo(() => (household.workJobs ?? []).filter((job) => job.active && job.memberId === memberId), [household.workJobs, memberId]);
   const [step, setStep] = useState(0);
-  const [date, setDate] = useState(today);
-  const [jobId, setJobId] = useState(() => jobs[0]?.id ?? "");
+  const [date, setDate] = useState(inboxDraft?.date ?? today);
+  const [jobId, setJobId] = useState(() => inboxDraft?.jobId || jobs[0]?.id || "");
   const job = jobs.find((row) => row.id === jobId) ?? jobs[0];
-  const [roleId, setRoleId] = useState(() => job?.roles.find((role) => role.active)?.id ?? "");
+  const [roleId, setRoleId] = useState(() => inboxDraft?.roleId || job?.roles.find((role) => role.active)?.id || "");
   const role = job?.roles.find((row) => row.id === roleId && row.active) ?? job?.roles.find((row) => row.active);
   const punchHours = punch ? workedHoursFromOpenShift(punch) : null;
-  const [hoursDigits, setHoursDigits] = useState(() => centsDigitsFromDollars(String(punchHours?.workedHours ?? 0)));
-  const [paidBreakDigits, setPaidBreakDigits] = useState(() => centsDigitsFromDollars(String(punchHours?.paidBreakHours ?? 0)));
+  const [hoursDigits, setHoursDigits] = useState(() => centsDigitsFromDollars(String(inboxDraft?.workedHours ?? punchHours?.workedHours ?? 0)));
+  const [paidBreakDigits, setPaidBreakDigits] = useState(() => centsDigitsFromDollars(String(inboxDraft?.paidBreakHours ?? punchHours?.paidBreakHours ?? 0)));
   const [hoursTouched, setHoursTouched] = useState(false);
   const [money, setMoney] = useState<Record<string, string>>({ sales: "", cashTips: "", cardTips: "" });
   const [activeMoney, setActiveMoney] = useState<MoneyKey>("sales");
@@ -64,16 +67,31 @@ export function WorkShiftFlow({
   const [note, setNote] = useState("");
 
   useEffect(() => {
-    if (hoursTouched || !punch) return;
+    if (!inboxDraft) return;
+    setDate(inboxDraft.date);
+    setJobId(inboxDraft.jobId);
+    setRoleId(inboxDraft.roleId);
+    setHoursDigits(centsDigitsFromDollars(String(inboxDraft.workedHours)));
+    setPaidBreakDigits(centsDigitsFromDollars(String(inboxDraft.paidBreakHours)));
+    setHoursTouched(false);
+    setMoney((current) => ({ ...current, cashTips: "", cardTips: "" }));
+    setStep(0);
+  }, [inboxDraft?.punchDigest]);
+
+  useEffect(() => {
+    if (inboxDraft || hoursTouched || !punch) return;
     const preview = workedHoursFromOpenShift(punch);
     setHoursDigits(centsDigitsFromDollars(String(preview.workedHours)));
     setPaidBreakDigits(centsDigitsFromDollars(String(preview.paidBreakHours)));
-  }, [punch, hoursTouched]);
+  }, [punch, hoursTouched, inboxDraft]);
 
   useEffect(() => {
     if (!job) return;
-    const nextRole = job.roles.find((candidate) => candidate.active);
-    if (!job.roles.some((candidate) => candidate.id === roleId && candidate.active)) setRoleId(nextRole?.id ?? "");
+    if (inboxDraft && inboxDraft.jobId === job.id && job.roles.some((candidate) => candidate.id === inboxDraft.roleId && candidate.active)) {
+      setRoleId(inboxDraft.roleId);
+    } else if (!job.roles.some((candidate) => candidate.id === roleId && candidate.active)) {
+      setRoleId(job.roles.find((candidate) => candidate.active)?.id ?? "");
+    }
     setCashAccountId(job.defaults.cashTipsAccountId);
     setWagesDepositAccountId(job.defaults.wagesDepositAccountId);
     setCardDepositAccountId(job.defaults.cardTipsDepositAccountId);
@@ -81,7 +99,7 @@ export function WorkShiftFlow({
     setCashVisibility(job.defaults.cashTipsVisibility);
     setCardVisibility(job.defaults.cardTipsVisibility);
     setTipOutVisibility(job.defaults.tipOutVisibility);
-  }, [job?.id]);
+  }, [job?.id, inboxDraft?.punchDigest]);
 
   const salesFields = job?.salesFields.filter((field) => field.requirement !== "off") ?? [];
   const salesCents = salesFields.length
@@ -139,11 +157,12 @@ export function WorkShiftFlow({
     cashTipsVisibility: cashVisibility,
     cardTipsVisibility: cardVisibility,
     tipOutVisibility,
-    startedAt: punch?.startedAt ?? null,
-    endedAt: punch?.endedAt ?? null,
+    startedAt: inboxDraft?.startedAt ?? punch?.startedAt ?? null,
+    endedAt: inboxDraft?.endedAt ?? punch?.endedAt ?? null,
     note,
     settingsFingerprint: workJobFingerprint(job, role.id, date),
     createdBy: memberId,
+    ...(inboxDraft?.punchDigest ? { sevenShiftsPunchDigest: inboxDraft.punchDigest } : {}),
   });
 
   return (
@@ -158,14 +177,15 @@ export function WorkShiftFlow({
 
       {step === 0 && (
         <div className="work-shift-step">
-          <p className="kicker">{punch ? "Timesheet review" : "Already off"}</p>
-          <h2>{punch ? "Check the clock" : "Which shift did you work?"}</h2>
+          <p className="kicker">{inboxDraft ? "7shifts draft" : punch ? "Timesheet review" : "Already off"}</p>
+          <h2>{inboxDraft ? "Check the 7shifts clock" : punch ? "Check the clock" : "Which shift did you work?"}</h2>
           <div className="work-shift-grid two">
             <label>Shift date<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label>
             <label>Job<select value={job.id} onChange={(event) => setJobId(event.target.value)}>{jobs.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}</select></label>
             <label>Role<select value={role.id} onChange={(event) => setRoleId(event.target.value)}>{job.roles.filter((row) => row.active).map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}</select></label>
           </div>
-          {punch && <p className="muted">Clocked {new Date(punch.startedAt).toLocaleTimeString([], { timeZone: "America/Toronto", hour: "numeric", minute: "2-digit" })}{punch.endedAt ? `–${new Date(punch.endedAt).toLocaleTimeString([], { timeZone: "America/Toronto", hour: "numeric", minute: "2-digit" })}` : ""}. Edit the totals below before Confirm if the clock was wrong.</p>}
+          {inboxDraft && <p className="muted">7shifts filled hours and role from {inboxDraft.sourceLabel}. Cash and card tips stay blank — 7shifts does not track them. Enter tips on the next step, then Confirm still posts.</p>}
+          {punch && !inboxDraft && <p className="muted">Clocked {new Date(punch.startedAt).toLocaleTimeString([], { timeZone: "America/Toronto", hour: "numeric", minute: "2-digit" })}{punch.endedAt ? `–${new Date(punch.endedAt).toLocaleTimeString([], { timeZone: "America/Toronto", hour: "numeric", minute: "2-digit" })}` : ""}. Edit the totals below before Confirm if the clock was wrong.</p>}
           <div className="work-shift-pad-grid">
             <CadPad digits={hoursDigits} onDigits={(digits) => { setHoursTouched(true); setHoursDigits(digits); }} label="Actual working hours" unit="hours" />
             <CadPad digits={paidBreakDigits} onDigits={(digits) => { setHoursTouched(true); setPaidBreakDigits(digits); }} label="Paid-break hours" unit="hours" />
@@ -182,6 +202,7 @@ export function WorkShiftFlow({
             {moneyChoices.map((choice) => <button key={choice.id} type="button" className={`chip ${activeMoney === choice.id ? "selected" : ""}`} onClick={() => setActiveMoney(choice.id)}>{choice.label} · {formatCad(Number(money[choice.id] || 0))}</button>)}
           </div>
           <CadPad digits={selectedMoney} onDigits={(digits) => setMoney((current) => ({ ...current, [activeMoney]: digits }))} label={moneyChoices.find((choice) => choice.id === activeMoney)?.label ?? "Amount"} />
+          {inboxDraft && <p className="muted">7shifts left cash and card tips empty on purpose.</p>}
           {job.tipOutRules.some((rule) => rule.active) && <p className="muted">Configured tip-outs recalculate as these figures change. Cash tips remain gross income; any immediate bar payment is a separate work expense.</p>}
         </div>
       )}
