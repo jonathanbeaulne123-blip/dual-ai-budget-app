@@ -312,17 +312,52 @@ describe("sync freshness preview artifact", () => {
 
     const renderRow = (display: ReturnType<typeof buildSyncFreshness>) => {
       if (!display.visible) return "";
+      const action = display.actionLabel
+        ? `<button type="button" class="sync-freshness__action${display.actionKind === "review" ? " sync-freshness__action--text" : ""}" aria-label="${display.actionLabel}">${display.actionKind === "review" ? display.actionLabel : "↻"}</button>`
+        : "";
       return `<div class="sync-freshness sync-freshness--${display.tone} sync-freshness--${display.transportMode}" role="status">
-        <span class="sync-freshness__transport">${display.transportPrimary}</span>
-        <span class="sync-freshness__revision">${display.revisionLine ?? ""}</span>
-        <span class="sync-freshness__updated">${display.updatedLine ?? ""}</span>
-        ${display.actorLine ? `<span class="sync-freshness__actor">${display.actorLine}</span>` : ""}
-        ${display.sourceLine ? `<span class="sync-freshness__source muted">${display.sourceLine}</span>` : ""}
-        <span class="sr-only">${display.statusSummary}</span>
+        <div class="sync-freshness__content">
+          <span class="sync-freshness__transport">${display.transportPrimary}</span>
+          <span class="sync-freshness__revision">${display.revisionLine ?? ""}</span>
+          <span class="sync-freshness__updated">${display.updatedLine ?? ""}</span>
+          ${display.actorLine ? `<span class="sync-freshness__actor">${display.actorLine}</span>` : ""}
+          ${display.sourceLine ? `<span class="sync-freshness__source muted">${display.sourceLine}</span>` : ""}
+        </div>
+        ${action}
       </div>`;
     };
 
+    const pendingHousehold = markPendingTransport(baseHousehold(), "offline");
+    const conflictHousehold = {
+      ...markPendingTransport(baseHousehold(), "conflict"),
+      sharing: { ...markPendingTransport(baseHousehold(), "conflict").sharing, mode: "conflicted" as const },
+    };
+
     const states: Array<[string, ReturnType<typeof buildSyncFreshness>]> = [
+      ["waiting-to-share", buildSyncFreshness({
+        household: pendingHousehold,
+        viewerMemberId: memberId,
+        realtimeEnabled: true,
+        realtimeStatus: "SUBSCRIBED",
+        offline: true,
+        pendingOutboxCount: 2,
+        hasOpenConflict: false,
+        lastReconcileAt: pendingHousehold.lastCommittedAt,
+        lastReconcileSource: "focus",
+        now: NOW,
+      })],
+      ["needs-attention", buildSyncFreshness({
+        household: conflictHousehold,
+        viewerMemberId: memberId,
+        realtimeEnabled: true,
+        realtimeStatus: "SUBSCRIBED",
+        offline: false,
+        pendingOutboxCount: 0,
+        hasOpenConflict: true,
+        lastReconcileAt: conflictHousehold.lastCommittedAt,
+        lastReconcileSource: "realtime",
+        now: NOW,
+      })],
       ["live", buildSyncFreshness({
         household, viewerMemberId: memberId, realtimeEnabled: true, realtimeStatus: "SUBSCRIBED",
         offline: false, pendingOutboxCount: 0, hasOpenConflict: false,
@@ -348,5 +383,8 @@ describe("sync freshness preview artifact", () => {
     expect(html).toContain("sync-freshness--live");
     expect(html).toContain("Checking every 4 s");
     expect(html).toContain("Sharing…");
+    expect(html).toContain("Waiting to share");
+    expect(html).toContain("Needs attention");
+    expect(html).toContain("sync-freshness__action");
   });
 });
