@@ -20,8 +20,7 @@ You are finishing Hearth PR #213 — first-class Shift tab (D-152). Visual proof
 - Repo: jonathanbeaulne123-blip/dual-ai-budget-app
 - Branch: cursor/shift-tab-mobile-6319 (keep cursor/ prefix and -6319 suffix)
 - Base: origin/main @ 93df0ec1d31c245cdc213d204ab8185ad3bb38a5
-- Head to start from: 84819c3ff238f8a8ec9167e37815fd077bdb4555
-  "Keep climate copy honest and unship D-152 from STRATEGY."
+- Head: branch tip of `cursor/shift-tab-mobile-6319` (PR #213). Last product commit is `84819c3ff238f8a8ec9167e37815fd077bdb4555` ("Keep climate copy honest and unship D-152 from STRATEGY."). Later commits on this branch are docs/handoff unless you found a visual bug.
 - Draft PR already exists: https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/213
 - Use ManagePullRequest / GitHub PR tools to update the existing PR. Do not open a second PR. Do not merge.
 
@@ -97,7 +96,7 @@ Copy: WorkShiftFlow.tsx says Shift → Jobs, not More → Jobs.
 
 ## Your job
 
-1. Checkout cursor/shift-tab-mobile-6319 at 84819c3 (or later commits that only close this packet).
+1. Checkout cursor/shift-tab-mobile-6319 at the PR head (last product commit 84819c3 plus packet docs).
 2. pnpm install if needed. pnpm dev → http://localhost:5173 (or 127.0.0.1:5173).
 3. Development pill → Open the demo kitchen table → Bianca. Fictional data only.
 4. Prove nav: Home · Cal · Shift · [+] · Plan · Books · More. Add centered. Cal/Shift aria-labels. Labels not clipped at 320px.

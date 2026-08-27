@@ -2,7 +2,7 @@
 
 ## Shift tab (D-152) (2026-08-27)
 
-**Status:** Branch `cursor/shift-tab-mobile-6319` @ `84819c3` off `origin/main` `@93df0ec`. Draft PR [#213](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/213). Risk: **Medium**. **Not merged, not deployed, not shipped.** Visual proof is the remaining gate.
+**Status:** Branch `cursor/shift-tab-mobile-6319` off `origin/main` `@93df0ec`. Last product commit `84819c3`. Draft PR [#213](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/213). Risk: **Medium**. **Not merged, not deployed, not shipped.** Visual proof is the remaining gate.
 
 **Household outcome:** Bianca and Jonathan open **Shift** from the phone bar. Punch, last shifts, Jobs, compressed report, and Hercules Shift Oracle glances live there. Add stays centered. Confirm still posts. The tab never writes money.
 
