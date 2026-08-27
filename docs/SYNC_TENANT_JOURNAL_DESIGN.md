@@ -114,9 +114,11 @@ A `row_uuid UUID DEFAULT gen_random_uuid()` column is allowed for Realtime/row r
 
 - **REVOKE** direct INSERT/UPDATE/DELETE on journal tables from `anon` and `authenticated`.
 - **GRANT SELECT** to `authenticated` only.
-- **Shared facts:** `is_active_member(household_id, environment)` and visibility ≠ partner-personal.
-- **Personal facts:** `member_id = own_member_id(household_id, environment)` (same spirit as `continuity_command_events` personal SELECT and personal snapshots).
+- **Shared facts:** `is_active_member(household_id, environment)` and `visibility <> 'personal'`.
+- **Personal facts:** `visibility = 'personal'` and `created_by = own_member_id(household_id, environment)` (match materialization; do not invent a second member column unless projection always fills it).
+- **First incremental cut (recommended):** project **shared-scope facts only**; leave personal on personal snapshots / personal command events until T4-S2 proves out.
 - **Writes:** SECURITY DEFINER RPCs only (append / compact / rebuild projection) — never PostgREST table writes from the kitchen SPA.
+- **Rebuild projection:** append-only or wipe-and-replay from command-log only; on `financialAuditHash` / count mismatch **refuse activation**; corrections are new reversing entries, never silent rewrite of posted `JE-…` / `TXN-…`.
 - **Production:** fail-closed until T4-S4 + Jonathan approval (same posture as 012/013 Development gates).
 - **Do not** weaken Auth below deny-by-default 006.
 
@@ -162,13 +164,13 @@ T4-S4
 
 ---
 
-## 8. Open questions (for ai-architect + books-auditor)
+## 8. Open questions (auditor-recommended closures)
 
-1. Rekey Shared `household_snapshots` to `(environment, household_id)` in the same era as journal tables, or keep as envelope-only with a uniqueness invariant?
-2. Should `households` PK become `(environment, id)` or stay global `id` + env column?
-3. Personal journal rows: separate tables vs `ledger_scope` / visibility column with RLS — prefer separate for blast-radius?
-4. Surrogate UUID on every journal line: required for Realtime, or revision-cursor pull enough for T4-S2?
-5. When does month-scale JSON pain justify starting T4-S2 implementation?
+1. **Shared snapshot PK:** Rekey to `PRIMARY KEY (environment, household_id)` in the **same era** as journal tables (required before T4-S4 Production cutover).
+2. **`households` PK:** Prefer `PRIMARY KEY (environment, id)` (or `UNIQUE (environment, id)` as FK parent); treat global `HH-…` entropy as defense-in-depth.
+3. **Personal rows:** Prefer **one table + visibility RLS**; optional shared-only projection for first incremental pull (not separate personal journal tables in v1).
+4. **Surrogate UUID:** Optional; T4-S2 revision/id cursor is enough; Realtime can stay on command-events.
+5. **When T4-S2:** Month-scale JSON pain measured **or** Jonathan’s explicit go — not speculation alone.
 
 ---
 
