@@ -1,5 +1,23 @@
 # AI Task and Handoff Standard
 
+## Start from scratch — Development household reset (D-151) (2026-08-27)
+
+**Status:** Branch `cursor/reset-development-households-5958`, draft [PR #201](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/201). Risk: **High** (hosted Development delete/leave; Production blocked). Not merged. Migration **016 applied** 2026-08-27. RPC **not** invoked.
+
+**Household outcome:** One Confirm deletes every disposable Development household this Google account owns, leaves member-only seats, clears this phone’s Development copies, and opens Create household while Google stays signed in.
+
+**Budget delta (5):** `+2` — leftover test ledgers cannot be mistaken for September books.
+
+**Engagement delta (3):** `+2` — one Confirm instead of tapping Delete on every household.
+
+**What changed:** `hearth_reset_development_households` (016) is live; **Start from scratch** is on the Development welcome home and the first card in More (not only after Google discovery).
+
+**Verification:** 016 metadata apply (Production 0→0, Development 7→7, anon EXECUTE false). Focused tests: first-entry + auth-invite-chrome + claude-ux-dialog 29 pass.
+
+**Data/environment:** Hosted Development schema (016). No household wipe, secrets, or Production rows. Kitchen chrome still this PR until live Worker publish.
+
+**Next owner:** Jonathan — hard-refresh the kitchen after this PR publishes; Development welcome or More → **Start from scratch**.
+
 ## T3-S4 scale envelope (2026-08-27)
 
 **Status:** Branch `cursor/t3-s4-scale-envelope-403c` (draft PR). Risk: **Medium** (policy + scheduling honesty; no money meaning change).

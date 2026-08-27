@@ -79,6 +79,12 @@ export type DiscoveredHousehold = {
   memberId: string;
 };
 
+export type ContinuityMembershipSummary = {
+  householdId: string;
+  memberId: string;
+  role: "owner" | "member" | null;
+};
+
 type ContinuityMembershipRow = {
   household_id: string;
   member_id: string;
@@ -843,6 +849,37 @@ export async function discoverSupabaseHouseholdsByGoogleIdentity(
   return [...found.values()];
 }
 
+function membershipRole(role: string | undefined): "owner" | "member" | null {
+  if (role === "owner") return "owner";
+  if (role === "member") return "member";
+  return null;
+}
+
+/** Active Development/Production memberships for the signed-in Google identity. */
+export async function listActiveContinuityMemberships(input: {
+  identity: GoogleIdentitySelector;
+  environment?: Environment;
+  config?: SupabaseConfig | null;
+}): Promise<ContinuityMembershipSummary[]> {
+  const environment = input.environment ?? "development";
+  const config = input.config === undefined ? readSupabaseConfig() : input.config;
+  if (!config || !hostedContinuityAllowed(environment)) return [];
+  const rows = await continuityMembershipRows(config, input.identity, environment);
+  if (!rows) return [];
+  const seen = new Set<string>();
+  const summaries: ContinuityMembershipSummary[] = [];
+  for (const row of rows) {
+    if (seen.has(row.household_id)) continue;
+    seen.add(row.household_id);
+    summaries.push({
+      householdId: row.household_id,
+      memberId: row.member_id,
+      role: membershipRole(row.role),
+    });
+  }
+  return summaries;
+}
+
 /** Active membership role for owner Restore gate. Null if unknown / offline. */
 export async function fetchContinuityMembershipRole(input: {
   householdId: string;
@@ -860,9 +897,7 @@ export async function fetchContinuityMembershipRole(input: {
     row.household_id === input.householdId && row.member_id === input.memberId
   ));
   if (!match) return null;
-  if (match.role === "owner") return "owner";
-  if (match.role === "member") return "member";
-  return null;
+  return membershipRole(match.role);
 }
 
 async function readRemoteSnapshot(

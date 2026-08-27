@@ -3,8 +3,9 @@
  * Tokens are one-time; only the raw token from issue is shown in UI.
  */
 import type { Environment } from "../core/types.ts";
-import type { SupabaseConfig } from "./supabase.ts";
-import { readSupabaseConfig } from "./supabase.ts";
+import type { GoogleIdentitySelector } from "../core/google.ts";
+import type { ContinuityMembershipSummary, SupabaseConfig } from "./supabase.ts";
+import { listActiveContinuityMemberships, readSupabaseConfig } from "./supabase.ts";
 
 export type InviteKind = "email" | "qr";
 
@@ -38,6 +39,10 @@ export type LeaveHouseholdResult =
 
 export type BindMembershipsResult =
   | { ok: true; bound: number; googleSubject: string; googleEmail: string }
+  | { ok: false; reason: string };
+
+export type ResetDevelopmentHouseholdsResult =
+  | { ok: true; deleted: string[]; left: string[] }
   | { ok: false; reason: string };
 
 type RpcBody = Record<string, unknown>;
@@ -91,7 +96,7 @@ export function inviteReasonMessage(reason: string): string {
     case "member-already-bound":
       return "That person already has a Google account on this household.";
     case "unauthenticated":
-      return "Continue with Google before redeeming an invite.";
+      return "Continue with Google first.";
     case "google-identity-required":
       return "Sign in with Google (not email/password alone) to join.";
     case "not-found":
@@ -116,6 +121,12 @@ export function inviteReasonMessage(reason: string): string {
       return "You are not an active member of that household.";
     case "delete-rpc-missing":
       return "Delete household needs migration 015 pasted in the Supabase SQL Editor.";
+    case "reset-rpc-missing":
+      return "Start from scratch needs migration 016 (or 015) pasted in the Supabase SQL Editor.";
+    case "production-reset-blocked":
+      return "Start from scratch is Development only. Production households stay.";
+    case "reset-failed":
+      return "The cloud could not reset Development households. Nothing was cleared on this phone.";
     default:
       return reason ? `Invite failed (${reason}).` : "Invite failed.";
   }
@@ -257,6 +268,71 @@ export async function leaveOrDeleteHousehold(input: {
     mode,
     householdId: String(body.household_id || input.householdId),
   };
+}
+
+function asStringIds(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string" && item.length > 0);
+}
+
+/** Delete owned Development households and leave member seats. Production is refused. */
+export async function resetDevelopmentHouseholds(input: {
+  environment: Environment;
+  identity: GoogleIdentitySelector;
+  known?: ContinuityMembershipSummary[];
+  config?: SupabaseConfig | null;
+}): Promise<ResetDevelopmentHouseholdsResult> {
+  if (input.environment !== "development") {
+    return { ok: false, reason: "production-reset-blocked" };
+  }
+  const config = input.config ?? readSupabaseConfig();
+  if (!config?.accessToken) {
+    return { ok: false, reason: "unauthenticated" };
+  }
+  const bulk = await rpc(config, "hearth_reset_development_households", {});
+  if (bulk.ok) {
+    const body = asObject(bulk.body);
+    if (!body) return { ok: false, reason: "invalid-response" };
+    if (body.ok !== true) {
+      return { ok: false, reason: String(body.reason || "reset-failed") };
+    }
+    return {
+      ok: true,
+      deleted: asStringIds(body.deleted),
+      left: asStringIds(body.left),
+    };
+  }
+  const message = messageOf(bulk.body);
+  if (!/could not find|schema cache|404|PGRST202/i.test(message)) {
+    return { ok: false, reason: message };
+  }
+
+  const listed = input.known?.length
+    ? input.known
+    : await listActiveContinuityMemberships({
+      identity: input.identity,
+      environment: "development",
+      config,
+    });
+  const deleted: string[] = [];
+  const left: string[] = [];
+  for (const row of listed) {
+    const result = await leaveOrDeleteHousehold({
+      environment: "development",
+      householdId: row.householdId,
+      role: row.role,
+      config,
+    });
+    if (!result.ok) {
+      if (result.reason === "delete-rpc-missing") {
+        return { ok: false, reason: "reset-rpc-missing" };
+      }
+      return { ok: false, reason: result.reason };
+    }
+    if (result.mode === "delete") deleted.push(result.householdId);
+    else left.push(result.householdId);
+  }
+  return { ok: true, deleted, left };
 }
 
 /** Bind caller's Google identity onto matching continuity_memberships (migration 010). */

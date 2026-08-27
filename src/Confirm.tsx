@@ -1,3 +1,5 @@
+import { useDialog } from "./useDialog.ts";
+
 export function ConfirmSheet({
   title,
   body,
@@ -29,6 +31,7 @@ export function ConfirmSheet({
     extra ? "guard-extra" : null,
     option ? "guard-option" : null,
   ].filter(Boolean).join(" ");
+  const sheetRef = useDialog(true, busy ? undefined : onCancel);
 
   return (
     <div
@@ -37,11 +40,12 @@ export function ConfirmSheet({
       aria-modal="true"
       aria-labelledby="guard-title"
       aria-describedby={describedBy}
+      ref={sheetRef}
     >
       <div className="sheet-inner">
         <div className="topbar">
           <h1 id="guard-title">{title}</h1>
-          <button className="ghost" onClick={onCancel} disabled={busy}>Cancel</button>
+          <button className="ghost" type="button" data-autofocus onClick={onCancel} disabled={busy}>Cancel</button>
         </div>
         <p id="guard-body">{body}</p>
         {extra && <p id="guard-extra" className="muted">{extra}</p>}
@@ -51,7 +55,7 @@ export function ConfirmSheet({
               type="checkbox"
               checked={option.checked}
               disabled={busy}
-              onChange={(event) => option.onChange(event.target.checked)}
+              onChange={(event) => option.onChange(event.currentTarget.checked)}
             />
             <span>{option.label}</span>
           </label>

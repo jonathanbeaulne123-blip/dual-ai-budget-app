@@ -64,6 +64,7 @@ Only the currently open or just-closed worksession belongs here. Durable history
 
 | Worksession | State | Scope | Output |
 |---|---|---|---|
+| [2026-08-27 Start from scratch](worksessions/2026-08-27-reset-development-households.md) | **ACTIVE** | One Confirm deletes owned Development households and returns to Create | D-151; migration **016 applied**; kitchen UI still PR #201 |
 | [2026-08-26 Sync architecture reframe](worksessions/2026-08-26-sync-architecture-reframe.md) | **CLOSED; docs PR** | D-149 tiered sync plan, 100–500 ms target, 20 slice prompts | [`SYNC_ARCHITECTURE.md`](SYNC_ARCHITECTURE.md), Phase 2 rewrite |
 | [2026-08-25 Import reconciliation engine](worksessions/2026-08-25-import-reconciliation-engine.md) | **REVIEWED; PR HANDOFF; NOT DEPLOYED** | Exact statement/receipt arithmetic, exact payment matching, optional private Drive evidence | D-137; 85 test files / 595 tests green after rebase; no remaining P0/P1/P2 review finding |
 | [2026-08-25 Hercules living teacher](worksessions/2026-08-25-hercules-living-teacher.md) | **IMPLEMENTED; REVIEW REQUIRED** | Typed number provenance, shared/Personal talk scopes, teacher questions, per-turn bubbles, desktop fly/litter | D-132; no deploy/schema; high-risk privacy review pending |
