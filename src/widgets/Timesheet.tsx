@@ -7,6 +7,7 @@ import {
   formatPreviewHours,
   openShiftElapsedHours,
   openShiftConflicts,
+  previewClockSpan,
   todayShiftSpan,
   workedHoursFromOpenShift,
 } from "../core/index.ts";
@@ -41,6 +42,8 @@ export function TimesheetBody({
   onChooseTimeline,
   onSignOut,
   onFinished,
+  previewHours,
+  previewCaption,
 }: {
   household: Household;
   streak: ShiftStreak;
@@ -55,6 +58,8 @@ export function TimesheetBody({
   onChooseTimeline: (openShiftId: string) => void;
   onSignOut: () => void;
   onFinished: () => void;
+  previewHours?: number | null;
+  previewCaption?: string | null;
 }) {
   const punch = activeOpenShift(household.kitchen, memberId);
   const conflicts = openShiftConflicts(household.kitchen, memberId);
@@ -64,6 +69,7 @@ export function TimesheetBody({
     return () => window.clearInterval(id);
   }, []);
   const span = todayShiftSpan(household, today, now.getTime(), memberId);
+  const previewSpan = punch && previewHours ? previewClockSpan(punch.startedAt, previewHours) : null;
   const hours = punch ? workedHoursFromOpenShift(punch, now.getTime()) : null;
   const openBreak = punch?.breaks.find((item) => !item.endedAt);
   const who = punch
@@ -77,7 +83,8 @@ export function TimesheetBody({
 
   return (
     <>
-      <AnalogClockFace now={now} span={span} label={label} />
+      <AnalogClockFace now={now} span={span} previewSpan={previewSpan} label={label} />
+      {previewCaption ? <p className="shift-preview-caption">{previewCaption}</p> : null}
       {conflicts.length > 1 ? (
         <div className="timesheet-conflict">
           <strong>Two devices recorded this shift</strong>

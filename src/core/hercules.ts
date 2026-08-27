@@ -10,7 +10,7 @@ import type { Household } from "./types.ts";
 export const DEFAULT_COMPANION_NAME = "Hercules";
 export const SHIFT_FORECAST_WEEKS = 8;
 
-export type HearthTab = "home" | "plan" | "calendar" | "ledger" | "more" | "add";
+export type HearthTab = "home" | "plan" | "calendar" | "shift" | "ledger" | "more" | "add";
 
 export type KettlePhase = "morning" | "after-shift" | "sunday" | "evening";
 
@@ -321,6 +321,7 @@ export function herculesPageBrief(
   if (highFive.yes) return `${highFive.names.join(" and ")} both bought food. High-five.`;
   if (tab === "add") return `${name} will loaf. You confirm.`;
   if (tab === "calendar") return "Dates remind. Mark paid writes.";
+  if (tab === "shift") return "Hours are a preview until Confirm. Oracle never posts.";
   if (tab === "plan") return "Sit-down is three acts. Confirm still moves leftover.";
   if (tab === "ledger") return "Fieldwork. I walk the journal. I don't write it.";
   if (tab === "more") return "Health is the adult screen. I hide when it's dirty.";

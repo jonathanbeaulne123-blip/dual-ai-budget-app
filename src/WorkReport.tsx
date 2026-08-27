@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { formatCad, workOwedFacts, workReportFacts, type Household } from "./core/index.ts";
 
-function downloadCsv(household: Household, memberId: string) {
+export function downloadWorkReportCsv(household: Household, memberId: string) {
   const rows = household.shifts.filter((shift) => shift.memberId === memberId && shift.jobId).map((shift) => {
     const job = household.workJobs.find((row) => row.id === shift.jobId);
     const role = job?.roles.find((row) => row.id === shift.roleId);
@@ -38,7 +38,7 @@ export function WorkReportCard({ household, memberId, today }: { household: Hous
       </div>
       {report.byJob.map((row) => <div className="row" key={row.job.id}><span><i className="swatch" style={{ background: row.job.color }} /> {row.job.name} · {row.shifts} shifts · {row.hours.toFixed(2)} h</span><strong>{formatCad(row.cents)}</strong></div>)}
       {owed.length > 0 && <div className="work-report-owed"><strong>Still waiting</strong>{owed.map((fact) => <div className="row" key={fact.id}><span>{fact.title}</span><span>{formatCad(fact.amountCents)}</span></div>)}</div>}
-      <button type="button" className="chip" disabled={!report.count} onClick={() => downloadCsv(household, memberId)}>Export for Google Sheets (.csv)</button>
+      <button type="button" className="chip" disabled={!report.count} onClick={() => downloadWorkReportCsv(household, memberId)}>Export for Google Sheets (.csv)</button>
       <p className="muted">Reporting only. Calendar Confirm moves received money; this card never posts.</p>
     </section>
   );

@@ -1,16 +1,19 @@
-import { analogAngles, clockArcPath, torontoClockParts, type ShiftClockSpan } from "../core/analogClock.ts";
+import { analogAngles, clockArcPath, PREVIEW_ARC_RADIUS, torontoClockParts, type ShiftClockSpan } from "../core/analogClock.ts";
 
 export function AnalogClockFace({
   now = new Date(),
   span,
+  previewSpan,
   label,
 }: {
   now?: Date;
   span?: ShiftClockSpan | null;
+  previewSpan?: ShiftClockSpan | null;
   label?: string;
 }) {
   const parts = torontoClockParts(now);
   const angles = analogAngles(parts);
+  const previewArc = previewSpan ? clockArcPath(previewSpan.startAngle, previewSpan.endAngle, 50, 50, PREVIEW_ARC_RADIUS) : "";
   const arc = span ? clockArcPath(span.startAngle, span.endAngle) : "";
   return (
     <div className="analog-clock" role="img" aria-label={label ?? `Toronto clock ${parts.hour}:${String(parts.minute).padStart(2, "0")}`}>
@@ -31,6 +34,7 @@ export function AnalogClockFace({
             />
           );
         })}
+        {previewArc && <path d={previewArc} className="analog-arc preview" />}
         {arc && <path d={arc} className={span?.live ? "analog-arc live" : "analog-arc"} />}
         {span && (
           <circle

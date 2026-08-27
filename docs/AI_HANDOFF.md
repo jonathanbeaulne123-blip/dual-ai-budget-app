@@ -1,5 +1,25 @@
 # AI Task and Handoff Standard
 
+## Shift tab (D-153) (2026-08-27)
+
+**Status:** Branch `cursor/shift-tab-mobile-6319` merging onto `main` per Jonathan (preview was perfect). Draft PR [#213](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/213). Risk: **Medium**. Numbered **D-153** because `main` already used **D-152** for tip covariates (#208). Not live until merge + kitchen Worker verify.
+
+**Household outcome:** Bianca and Jonathan open **Shift** from the phone bar. Punch, last shifts, Jobs, compressed report, and Hercules Shift Oracle glances live there. Add stays centered. Confirm still posts. The tab never writes money.
+
+**Budget delta (5):** `+1`
+
+**Engagement delta (3):** `+2`
+
+**What changed:** Nav is `Home · Cal · Shift · [+] · Plan · Books · More`. `WorkShiftPage` hosts Today / Report / Jobs. More no longer mounts Jobs / history / report. Home Timesheet stays. Projections are copper-badged and never post. Rebased onto #208 camera/covariate Confirm path (Add still hosts scan + `WorkShiftFlow`).
+
+**Verification:** Focused `test/shift-glance.test.ts` and full `pnpm check` re-run after merging `origin/main`. Independent reviews on the pre-rebase SHA were PASS WITH NOTES. Jonathan approved the preview hostname and ordered merge/deploy.
+
+**Data/environment:** Client/docs. Kitchen publish is GitHub `main` → Cloudflare Workers. No schema, secrets, or Production household mutation.
+
+**Remaining uncertainty:** Future climate days cannot show real rain without a multi-day forecast. Today's rain drop uses cached Open-Meteo / fallback.
+
+**Next owner:** After kitchen deploy — hard-refresh https://hearth-books.jonathan-beaulne123.workers.dev/ , Development pill, Shift tab.
+
 ## Tip covariates + Hercules tip science + Pro paged reads (D-152) (2026-08-27)
 
 **Status:** Merging via [PR #208](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/208) onto `main` (Jonathan approved push/merge/deploy). Risk: **Medium–High**. Kitchen publish follows GitHub `main` → Cloudflare Workers.
@@ -28,6 +48,7 @@
 **Data/environment:** Development client/Worker code only. No schema, secrets, Production, or household wipe. Scan POSTs image bytes like receipts; macro endpoint sends region key only.
 
 **Next owner:** After kitchen deploy — hard-refresh; Development smoke of Timesheet → Already off? → Take shift-report photo → Confirm.
+
 ## Supabase Preview history matches 016 (D-151) (2026-08-27)
 
 **Status:** Branch `cursor/supabase-preview-016-history-5958`. Risk: **Low** (migration *history* metadata only; money meaning unchanged). Hosted `supabase_migrations.schema_migrations` version retagged `20260827072847` → `016`. Function not re-applied. No household rows.

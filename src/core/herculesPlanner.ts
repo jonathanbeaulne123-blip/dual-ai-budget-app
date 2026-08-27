@@ -31,7 +31,7 @@ function plannerAllowed(message: string): boolean {
 }
 
 export function shouldPlanHerculesTools(message: string): boolean {
-  return /\b(account|balance|cash|chequ|check|saving|visa|master\s*card|credit|transaction|spent|spend|expense|income|earned|wage|tip|shift|bill|due|rent|hydro|phone|grocer|food|coffee|category|merchant|month|week|compare|change|difference|goal|jar|owed|owing|claim|afford|money|net worth|budget|plan|variance|duplicate|audit|health|books|trial balance|largest|biggest|oracle|monte\s*carlo|forecast|runway|tax\s*milk|outlook|simulate|household name|ledger name|what.*called|bank account)\b/i.test(message);
+  return /\b(account|balance|cash|chequ|check|saving|visa|master\s*card|credit|transaction|spent|spend|expense|income|earned|wage|tip|shift|bill|due|rent|hydro|phone|grocer|food|coffee|category|merchant|month|week|compare|change|difference|goal|jar|owed|owing|claim|afford|money|net worth|budget|plan|variance|duplicate|audit|health|books|trial balance|largest|biggest|oracle|monte\s*carlo|forecast|runway|tax\s*milk|outlook|simulate|tonight|protect or chase|household name|ledger name|what.*called|bank account)\b/i.test(message);
 }
 
 export function herculesPlannerPayload(request: HerculesPlannerRequest): string {

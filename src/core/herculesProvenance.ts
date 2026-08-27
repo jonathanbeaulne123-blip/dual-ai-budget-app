@@ -2,7 +2,7 @@ import type { DateKey } from "./calendar.ts";
 import type { InstrumentId } from "./officeLayout.ts";
 import type { LedgerView, Transaction } from "./types.ts";
 
-export type HerculesSourceRoute = "home" | "plan" | "calendar" | "ledger" | "more";
+export type HerculesSourceRoute = "home" | "plan" | "calendar" | "shift" | "ledger" | "more";
 
 /**
  * A number shown by Hercules is clickable only when the books code supplies one

@@ -19,6 +19,7 @@ import { claimsTraySentence, outstandingClaims, upcomingVisitProposals } from ".
 import { bubbleNotice, deskNotices } from "./notices.ts";
 import { shiftPostingStreak } from "./shiftStreak.ts";
 import { herculesPageSurface } from "./herculesPage.ts";
+import { shiftOracleChipTalk } from "./shiftGlance.ts";
 import { herculesUsefulness } from "./herculesUsefulness.ts";
 import { memoryFactForTopic, topicUsesKitchenMemories } from "./herculesLedger.ts";
 
@@ -101,6 +102,7 @@ function repliesFor(mood: CompanionMood, tab: HearthTab, topic: string): string[
   if (topic === "bills" || topic === "calendar" || topic === "mail") return ["Calendar", "What now?"];
   if (topic === "health") return ["Health", "What now?"];
   if (topic === "forecast") return ["Tips this week", "We good?"];
+  if (tab === "shift") return ["Tonight?", "Protect or chase?", "Tax milk?"];
   if (topic === "shift" || topic === "timesheet") return ["Log shift", "We good?"];
   if (topic === "wardrobe") return ["Remember payday", "Opinion?"];
   if (topic === "jars") return ["Start this goal", "Sit-down?"];
@@ -353,6 +355,19 @@ export function talkHercules(
       replies: ["We good?", "What now?"],
       pose: "loaf",
       topic: lastTopic || "why",
+      attention: herculesNeedsCheck(household, today),
+    };
+  }
+
+  const oracleTalk = shiftOracleChipTalk(household, question, today, context.memberId);
+  if (oracleTalk) {
+    return {
+      spoken: clip(oracleTalk.spoken),
+      lesson: oracleTalk.lesson,
+      fact: oracleTalk.fact ? { ...oracleTalk.fact, source: { route: "shift", view: context.view, label: "Open Shift" } } : null,
+      replies: ["Tonight?", "Protect or chase?", "Tax milk?"],
+      pose: "loaf",
+      topic: "shift",
       attention: herculesNeedsCheck(household, today),
     };
   }
