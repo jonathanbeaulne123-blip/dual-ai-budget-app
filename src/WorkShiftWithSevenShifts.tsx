@@ -47,8 +47,20 @@ function ScopedWorkShiftWithSevenShifts({
   const controllerRef = useRef<AbortController | null>(null);
   const posted = useMemo(() => postedSevenShiftsPunchDigests(household), [household.shifts]);
   const jobs = (household.workJobs ?? []).filter((job) => job.active && job.memberId === memberId);
+  const providerDraftVersion = draft
+    ? JSON.stringify([
+        draft.punchDigest,
+        draft.date,
+        draft.jobId,
+        draft.roleId,
+        draft.workedHours,
+        draft.paidBreakHours,
+        draft.startedAt,
+        draft.endedAt,
+      ])
+    : "";
   const flowKey = draft
-    ? `${scopeKey}:seven:${draft.punchDigest}`
+    ? `${scopeKey}:seven:${providerDraftVersion}`
     : initialDraft
       ? `${scopeKey}:camera:${JSON.stringify(initialDraft)}`
       : `${scopeKey}:blank`;

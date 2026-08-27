@@ -71,8 +71,9 @@ export function workShiftDraftFromVision(
 export async function scanShiftReportFile(
   file: File,
   fetcher: typeof fetch = fetch,
+  signal?: AbortSignal,
 ): Promise<{ draft: WorkShiftDraft | null; warnings: string[]; error?: string }> {
-  const scanned = await scanFinancialDocument(file, fetcher, { documentHint: "shift-report" });
+  const scanned = await scanFinancialDocument(file, fetcher, { documentHint: "shift-report", signal });
   return workShiftDraftFromVision(scanned.result);
 }
 

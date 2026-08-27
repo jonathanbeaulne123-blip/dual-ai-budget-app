@@ -1,4 +1,4 @@
--- D-152: Development-only 7shifts connection state.
+-- D-155: Development-only 7shifts connection state.
 -- Lives on the existing hearth-flinks-development D1. Encryption keys are
 -- SEVENSHIFTS_* — never FLINKS_CONNECTION_ENCRYPTION_KEY.
 -- This file is reviewed migration input. It is not applied by this commit.

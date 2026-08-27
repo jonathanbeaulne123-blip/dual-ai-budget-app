@@ -88,31 +88,44 @@ export function WorkShiftFlow({
   onClearDraft?: () => void;
 }) {
   const jobs = useMemo(() => (household.workJobs ?? []).filter((job) => job.active && job.memberId === memberId), [household.workJobs, memberId]);
+  const cameraDraft = inboxDraft ? null : initialDraft;
+  const inboxDraftVersion = inboxDraft
+    ? JSON.stringify([
+        inboxDraft.punchDigest,
+        inboxDraft.date,
+        inboxDraft.jobId,
+        inboxDraft.roleId,
+        inboxDraft.workedHours,
+        inboxDraft.paidBreakHours,
+        inboxDraft.startedAt,
+        inboxDraft.endedAt,
+      ])
+    : "";
   const hasDraftTotals = Boolean(
-    initialDraft
-    && (initialDraft.sales != null
-      || initialDraft.cashTips != null
-      || initialDraft.cardTips != null
-      || initialDraft.customersServed != null
-      || initialDraft.workedHours != null),
+    cameraDraft
+    && (cameraDraft.sales != null
+      || cameraDraft.cashTips != null
+      || cameraDraft.cardTips != null
+      || cameraDraft.customersServed != null
+      || cameraDraft.workedHours != null),
   );
   const [step, setStep] = useState(() => (hasDraftTotals ? 1 : 0));
-  const [date, setDate] = useState(inboxDraft?.date ?? initialDraft?.date ?? today);
+  const [date, setDate] = useState(inboxDraft?.date ?? cameraDraft?.date ?? today);
   const [jobId, setJobId] = useState(() => inboxDraft?.jobId || jobs[0]?.id || "");
   const job = jobs.find((row) => row.id === jobId) ?? jobs[0];
   const [roleId, setRoleId] = useState(() => inboxDraft?.roleId || job?.roles.find((role) => role.active)?.id || "");
   const role = job?.roles.find((row) => row.id === roleId && row.active) ?? job?.roles.find((row) => row.active);
   const punchHours = punch ? workedHoursFromOpenShift(punch) : null;
-  const [hoursDigits, setHoursDigits] = useState(() => asDigitsFromDollars(inboxDraft?.workedHours ?? initialDraft?.workedHours ?? punchHours?.workedHours ?? 0) || centsDigitsFromDollars("0"));
-  const [paidBreakDigits, setPaidBreakDigits] = useState(() => asDigitsFromDollars(inboxDraft?.paidBreakHours ?? initialDraft?.paidBreakHours ?? punchHours?.paidBreakHours ?? 0) || centsDigitsFromDollars("0"));
-  const [hoursTouched, setHoursTouched] = useState(Boolean(!inboxDraft && initialDraft?.workedHours != null));
-  const draftSalesFields = jobs[0]?.salesFields.filter((field) => field.requirement !== "off") ?? [];
+  const [hoursDigits, setHoursDigits] = useState(() => asDigitsFromDollars(inboxDraft?.workedHours ?? cameraDraft?.workedHours ?? punchHours?.workedHours ?? 0) || centsDigitsFromDollars("0"));
+  const [paidBreakDigits, setPaidBreakDigits] = useState(() => asDigitsFromDollars(inboxDraft?.paidBreakHours ?? cameraDraft?.paidBreakHours ?? punchHours?.paidBreakHours ?? 0) || centsDigitsFromDollars("0"));
+  const [hoursTouched, setHoursTouched] = useState(Boolean(cameraDraft?.workedHours != null));
+  const draftSalesFields = job?.salesFields.filter((field) => field.requirement !== "off") ?? [];
   const [money, setMoney] = useState<Record<string, string>>(() => {
-    const salesDigits = asDigitsFromDollars(initialDraft?.sales);
+    const salesDigits = asDigitsFromDollars(cameraDraft?.sales);
     const next: Record<string, string> = {
       sales: "",
-      cashTips: asDigitsFromDollars(initialDraft?.cashTips),
-      cardTips: asDigitsFromDollars(initialDraft?.cardTips),
+      cashTips: asDigitsFromDollars(cameraDraft?.cashTips),
+      cardTips: asDigitsFromDollars(cameraDraft?.cardTips),
     };
     if (salesDigits) {
       if (draftSalesFields.length === 1) {
@@ -138,10 +151,10 @@ export function WorkShiftFlow({
       .slice()
       .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id))[0] ?? null;
   }, [household.shifts, job?.id, memberId]);
-  const [customersServed, setCustomersServed] = useState(() => String(initialDraft?.customersServed ?? ""));
-  const [staffingCount, setStaffingCount] = useState(() => String(initialDraft?.staffingCount ?? lastSameJob?.staffingCount ?? 1));
-  const [eventTag, setEventTag] = useState<ShiftEventTag>(() => initialDraft?.eventTag ?? "regular");
-  const [weatherGlass, setWeatherGlass] = useState<WeatherGlass | "">(() => initialDraft?.weatherGlass ?? weatherGlassPrefill ?? "");
+  const [customersServed, setCustomersServed] = useState(() => String(cameraDraft?.customersServed ?? ""));
+  const [staffingCount, setStaffingCount] = useState(() => String(cameraDraft?.staffingCount ?? lastSameJob?.staffingCount ?? 1));
+  const [eventTag, setEventTag] = useState<ShiftEventTag>(() => cameraDraft?.eventTag ?? "regular");
+  const [weatherGlass, setWeatherGlass] = useState<WeatherGlass | "">(() => cameraDraft?.weatherGlass ?? weatherGlassPrefill ?? "");
   const [cashAccountId, setCashAccountId] = useState(() => job?.defaults.cashTipsAccountId ?? "");
   const [wagesDepositAccountId, setWagesDepositAccountId] = useState(() => job?.defaults.wagesDepositAccountId ?? "");
   const [cardDepositAccountId, setCardDepositAccountId] = useState(() => job?.defaults.cardTipsDepositAccountId ?? "");
@@ -149,7 +162,7 @@ export function WorkShiftFlow({
   const [cashVisibility, setCashVisibility] = useState<Visibility>(() => job?.defaults.cashTipsVisibility ?? "personal");
   const [cardVisibility, setCardVisibility] = useState<Visibility>(() => job?.defaults.cardTipsVisibility ?? "personal");
   const [tipOutVisibility, setTipOutVisibility] = useState<Visibility>(() => job?.defaults.tipOutVisibility ?? "personal");
-  const [note, setNote] = useState(initialDraft?.note ?? "");
+  const [note, setNote] = useState(cameraDraft?.note ?? "");
   const [stepError, setStepError] = useState("");
 
   useEffect(() => {
@@ -162,7 +175,7 @@ export function WorkShiftFlow({
     setHoursTouched(false);
     setMoney((current) => ({ ...current, cashTips: "", cardTips: "" }));
     setStep(0);
-  }, [inboxDraft?.punchDigest]);
+  }, [inboxDraftVersion]);
 
   useEffect(() => {
     if (inboxDraft || hoursTouched || !punch) return;
@@ -185,10 +198,10 @@ export function WorkShiftFlow({
     setCashVisibility(job.defaults.cashTipsVisibility);
     setCardVisibility(job.defaults.cardTipsVisibility);
     setTipOutVisibility(job.defaults.tipOutVisibility);
-    if (initialDraft?.staffingCount == null && lastSameJob?.staffingCount != null) {
+    if (cameraDraft?.staffingCount == null && lastSameJob?.staffingCount != null) {
       setStaffingCount(String(lastSameJob.staffingCount));
     }
-  }, [job?.id, inboxDraft?.punchDigest]);
+  }, [job?.id, inboxDraftVersion]);
 
   const salesFields = job?.salesFields.filter((field) => field.requirement !== "off") ?? [];
   const salesCents = salesFields.length
@@ -279,11 +292,11 @@ export function WorkShiftFlow({
 
   return (
     <section className="work-shift-flow" aria-label="Confirm work shift">
-      {initialDraft && (
+      {cameraDraft && (
         <div className="work-shift-draft-banner" role="status">
           <p className="kicker">Draft from camera</p>
           <p>Review every figure before Confirm. Scan never posts money.</p>
-          {initialDraft.sales != null && salesFields.length > 1 && (
+          {cameraDraft.sales != null && salesFields.length > 1 && (
             <p className="muted">Camera saw a sales total — enter it across {salesFields.map((field) => field.label).join(" / ")} yourself. Hearth will not invent a split.</p>
           )}
           {(scanWarnings ?? []).slice(0, 4).map((warning) => <p className="muted" key={warning}>{warning}</p>)}

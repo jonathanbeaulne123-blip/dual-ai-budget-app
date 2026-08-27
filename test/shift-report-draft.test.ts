@@ -91,16 +91,18 @@ describe("shift-report Confirm draft mapping", () => {
   });
 
   it("scanShiftReportFile keeps documentHint shift-report and still omits OCR notes", async () => {
+    const controller = new AbortController();
     const fetcher = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
       const body = JSON.parse(String(init?.body)) as { documentHint?: string };
       expect(body.documentHint).toBe("shift-report");
+      expect(init?.signal).toBe(controller.signal);
       return new Response(JSON.stringify({ ok: true, result: shiftResult }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });
     });
     const file = new File([new Uint8Array([1, 2, 3])], "tips.jpg", { type: "image/jpeg" });
-    const mapped = await scanShiftReportFile(file, fetcher as typeof fetch);
+    const mapped = await scanShiftReportFile(file, fetcher as typeof fetch, controller.signal);
     expect(mapped.draft).not.toHaveProperty("note");
     expect(JSON.stringify(mapped)).not.toMatch(/Alex|Priya/i);
   });

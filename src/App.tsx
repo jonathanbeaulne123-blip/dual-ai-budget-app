@@ -247,6 +247,7 @@ import { resolveDuplicateRetry } from "./shiftDuplicateRetry.ts";
 import { ShiftReportScanBar } from "./ShiftReportScan.tsx";
 import { scanShiftReportFile } from "./imports/shiftReportDraft.ts";
 import { WorkShiftWithSevenShifts } from "./WorkShiftWithSevenShifts.tsx";
+import { createShiftScanScope } from "./shiftScanScope.ts";
 import {
   runScopedWorkShift,
   workShiftScopeMatches,
@@ -394,11 +395,17 @@ export function App() {
   const [tab, setTab] = useState<Tab>("home");
   const [adding, setAdding] = useState(false);
   const workShiftInputRef = useRef<ScopedWorkShiftInput | null>(null);
+  const shiftScanScopeRef = useRef(createShiftScanScope());
   const confirmPanelRef = useRef<HTMLDivElement | null>(null);
   const lastAmountLabelRef = useRef<string | null>(null);
 
   const closeAdd = () => {
     workShiftInputRef.current = null;
+    shiftScanScopeRef.current.cancel();
+    setWorkShiftDraft(null);
+    setShiftScanBusy(false);
+    setShiftScanError("");
+    setShiftScanWarnings([]);
     setAdding(false);
     setConfirm(null);
     setError("");
@@ -484,11 +491,13 @@ export function App() {
 
   async function applyShiftReportScan(file: File | undefined) {
     if (!file) return;
+    const scan = shiftScanScopeRef.current.begin();
     setShiftScanBusy(true);
     setShiftScanError("");
     setShiftScanWarnings([]);
     try {
-      const mapped = await scanShiftReportFile(file);
+      const mapped = await scanShiftReportFile(file, fetch, scan.signal);
+      if (!scan.isCurrent()) return;
       if (!mapped.draft) {
         setShiftScanError(mapped.error || "That photo could not draft a shift.");
         setShiftScanWarnings(mapped.warnings);
@@ -497,9 +506,10 @@ export function App() {
       setWorkShiftDraft(mapped.draft);
       setShiftScanWarnings(mapped.warnings);
     } catch (caught) {
+      if (!scan.isCurrent()) return;
       setShiftScanError(caught instanceof Error ? caught.message : String(caught));
     } finally {
-      setShiftScanBusy(false);
+      if (scan.isCurrent()) setShiftScanBusy(false);
     }
   }
 
@@ -3274,6 +3284,7 @@ export function App() {
 
       {tab === "shift" && (
         <WorkShiftPage
+          key={`${environment}:${household.householdId}:${session.memberId}`}
           household={household}
           memberId={session.memberId}
           memberName={household.members.find((member) => member.id === session.memberId)?.name ?? "You"}

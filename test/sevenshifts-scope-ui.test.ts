@@ -118,7 +118,12 @@ function payload(jobId = "JOB-SHARED"): SevenShiftsInboxPayload {
   };
 }
 
-function renderTimesheet(nextHousehold: Household, memberId: string, onConfirm = vi.fn()) {
+function renderTimesheet(
+  nextHousehold: Household,
+  memberId: string,
+  onConfirm = vi.fn(),
+  extra: Partial<Parameters<typeof WorkShiftWithSevenShifts>[0]> = {},
+) {
   root.render(createElement(WorkShiftWithSevenShifts, {
     household: nextHousehold,
     memberId,
@@ -126,6 +131,7 @@ function renderTimesheet(nextHousehold: Household, memberId: string, onConfirm =
     punch: null,
     busy: false,
     onConfirm,
+    ...extra,
   }));
 }
 
@@ -179,5 +185,87 @@ describe("7shifts Timesheet scope boundary", () => {
     await act(async () => finishOldPull?.({ connectionId: CONNECTION_ID, payload: payload() }));
     await settleUntil(() => /Already off/.test(container.textContent || ""));
     expect(container.textContent).not.toMatch(/7shifts draft|5\.08 h/);
+  });
+
+  it("makes a provider punch replace, never mix with, a camera draft", async () => {
+    const onClearDraft = vi.fn();
+    const scoped = household("HH-ONE", "MEM-001");
+    client.pull.mockResolvedValue({ connectionId: CONNECTION_ID, payload: payload(scoped.workJobs[0]!.id) });
+    act(() => renderTimesheet(scoped, "MEM-001", vi.fn(), {
+      initialDraft: { workedHours: 8, cashTips: 99, customersServed: 80, staffingCount: 5 },
+      scanWarnings: ["Camera warning must leave with the camera draft."],
+      onClearDraft,
+    }));
+    await settleUntil(() => /Draft from camera/.test(container.textContent || ""));
+
+    act(() => (Array.from(container.querySelectorAll("button")).find((button) => /Fill from 7shifts/.test(button.textContent || "")) as HTMLButtonElement).click());
+    await settleUntil(() => /7shifts draft/.test(container.textContent || ""));
+
+    expect(onClearDraft).toHaveBeenCalledTimes(1);
+    expect(container.textContent).not.toMatch(/Draft from camera|Camera warning|\$99\.00/);
+    expect(container.querySelector(".cad-pad-display")?.textContent).toBe("5.08 h");
+  });
+
+  it("refreshes corrected provider hours without changing the stable punch identity", async () => {
+    const scoped = household("HH-ONE", "MEM-001");
+    client.pull.mockResolvedValue({ connectionId: CONNECTION_ID, payload: payload(scoped.workJobs[0]!.id) });
+    act(() => renderTimesheet(scoped, "MEM-001"));
+    await settleUntil(() => /Fill from 7shifts/.test(container.textContent || ""));
+    const fill = () => (Array.from(container.querySelectorAll("button")).find((button) => /Fill from 7shifts/.test(button.textContent || "")) as HTMLButtonElement).click();
+
+    act(fill);
+    await settleUntil(() => container.querySelector(".cad-pad-display")?.textContent === "5.08 h");
+
+    client.pull.mockResolvedValue({
+      connectionId: CONNECTION_ID,
+      payload: {
+        ...payload(scoped.workJobs[0]!.id),
+        punches: [{ ...payload(scoped.workJobs[0]!.id).punches[0]!, workedHours: 6.25, paidBreakHours: 0.25 }],
+      },
+    });
+    act(fill);
+    await settleUntil(() => container.querySelector(".cad-pad-display")?.textContent === "6.25 h");
+    expect(container.textContent).toMatch(/6\.25 h/);
+  });
+
+  it("starts and validates sales against the provider-selected second job", async () => {
+    const firstOnly = household("HH-ONE", "MEM-001");
+    const first = firstOnly.workJobs[0]!;
+    const second = shapeWorkJob({
+      ...structuredClone(first),
+      id: "JOB-SECOND",
+      name: "Second Harbour",
+      salesFields: [{
+        id: "SALES-SECOND",
+        label: "Second sales",
+        requirement: "required",
+        createdAt: "",
+        updatedAt: "",
+      }],
+    });
+    const scoped = upsertWorkJob(firstOnly, { job: second }).household;
+    const savedSecond = scoped.workJobs.find((job) => job.name === second.name)!;
+    client.pull.mockResolvedValue({ connectionId: CONNECTION_ID, payload: payload(savedSecond.id) });
+    act(() => renderTimesheet(scoped, "MEM-001"));
+    await settleUntil(() => /Fill from 7shifts/.test(container.textContent || ""));
+
+    act(() => (Array.from(container.querySelectorAll("button")).find((button) => /Fill from 7shifts/.test(button.textContent || "")) as HTMLButtonElement).click());
+    await settleUntil(() => /7shifts draft/.test(container.textContent || ""));
+    act(() => (Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "Next") as HTMLButtonElement).click());
+
+    const selected = Array.from(container.querySelectorAll("button.selected")).find((button) => /Second sales/.test(button.textContent || ""));
+    expect(selected).toBeTruthy();
+    expect(container.querySelector(".cad-pad-label")?.textContent).toBe("Second sales");
+    const one = Array.from(container.querySelectorAll(".cad-pad-keys button")).find((button) => button.getAttribute("aria-label") === "1") as HTMLButtonElement;
+    act(() => one.click());
+    const customers = Array.from(container.querySelectorAll("input")).find((input) => input.parentElement?.textContent?.includes("Customers served")) as HTMLInputElement;
+    act(() => {
+      customers.value = "12";
+      customers.dispatchEvent(new Event("input", { bubbles: true }));
+      customers.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    act(() => (Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "Next") as HTMLButtonElement).click());
+    expect(container.textContent).toMatch(/Check destinations/);
+    expect(container.textContent).not.toMatch(/Enter sales before confirming/);
   });
 });

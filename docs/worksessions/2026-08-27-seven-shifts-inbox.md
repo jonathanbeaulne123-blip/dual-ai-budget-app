@@ -1,17 +1,17 @@
 # Hearth worksession — Native 7shifts Timesheet inbox
 
-- **Status:** OPEN
+- **Status:** RELEASE IN PROGRESS
 - **Opened:** 2026-08-27 (`America/Toronto`)
 - **Owner:** Jonathan
-- **Assignee or AI:** Cursor (chief implementer)
+- **Assignee or AI:** Codex (coordinator and integrator); Cursor feature branch reviewed
 - **Repository:** jonathanbeaulne123-blip/dual-ai-budget-app
-- **Branch:** `cursor/seven-shifts-inbox-5958`
-- **Baseline SHA:** `93df0ec`
+- **Branch:** `codex/d152-shifts-release`
+- **Baseline SHA:** `2ae8793` (`origin/main` at final integration rebase)
 - **Head SHA:** (see git)
-- **PR or issue:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/214
-- **Risk:** High (provider token, coworker PII, work hours → wage drafts)
+- **PR or issue:** [#214](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/214) was the reviewed source branch; release PR follows
+- **Risk:** Release (provider token, coworker PII, remote D1, work hours → wage drafts, Worker enablement)
 - **Decision owner:** Jonathan
-- **Environment impact:** Development Worker + D1 table (unapplied until Jonathan orders). No Production. No hosted SQL. No secrets put by this packet.
+- **Environment impact:** Development Worker + existing Development D1. Jonathan explicitly authorized D1 apply, secrets, enablement, merge, and deploy. Production provider access remains refused.
 
 ## Household outcome
 
@@ -49,7 +49,7 @@ A Harbour worker can add a 7shifts access token on Jobs, pull clocked punches in
 - Timesheet punch list → `WorkShiftFlow` draft; tips empty.
 - Jobs Co-workers tab (display name + role + scheduled/punched; not household members).
 - Exact-punch dedupe on Confirm.
-- Focused tests + D-152 why-note.
+- Focused tests + D-155 why-note.
 
 ### Out of scope
 
@@ -57,7 +57,7 @@ A Harbour worker can add a 7shifts access token on Jobs, pull clocked punches in
 - Reading 7shifts `tips` or `hourly_wage` into the books.
 - Minting household members from the roster.
 - Hercules coworker dump or token in any model payload.
-- OAuth partnership, Production flag, `wrangler secret put`, remote D1 apply, kitchen deploy.
+- OAuth partnership, webhooks, or Production provider access.
 - Zapier / Gmail parsing.
 
 ## Acceptance evidence
@@ -75,14 +75,19 @@ A Harbour worker can add a 7shifts access token on Jobs, pull clocked punches in
 - [x] Parser + hours math + Worker + client + Jobs/Timesheet UI.
 - [x] Focused tests, then `pnpm check`.
 - [x] Independent privacy + trust + books audits; verifier.
-- [x] Handoff + draft PR. Do not merge/deploy.
+- [x] Independent P0/P1 repair and current-main Shift-tab integration.
+- [ ] Merge/deploy inert, apply Development D1 + secrets, then enable through a minimal second release.
+- [ ] Live status and fail-closed route smoke.
 
 ## Evidence log
 
-- Focused 25 tests pass (`sevenshifts-*` + `work-jobs`).
-- `pnpm check` on `8bd4ad0`: 892 passed / 2 skipped; production build green.
-- Privacy / trust / books / verifier: PASS WITH NOTES.
-- Two-phone same-digest merge is named, not fixed.
+- Original feature proof: 25 focused tests and 892 full tests passed at `8bd4ad0`.
+- Review repair proof: 36 focused tests passed; TypeScript and builds green; independent trust/release and books audits passed.
+- Current-main integration adds tests for camera cancellation, camera/provider precedence, same-digest provider corrections, and Shift → Jobs editor scope.
+- Latest-main focused run: **54 passed** across the 7shifts, Shift camera, scope, scan, and tip-covariate seams.
+- Current-main full run: **934 passed / 2 skipped**. The only two failures are unchanged Windows baseline checks (Bash absent; CRLF-sensitive Hercules source regex). TypeScript, web build, Hercules Pro build, AI surface, and Wrangler dry-run pass.
+- Browser proof at 320 / 390 / 720 / 1100 px: Shift → Jobs and Timesheet review have no horizontal overflow; connector, camera, provider fill, and four-step review remain usable.
+- PR CI, D1 apply, and live smoke remain release gates.
 
 ## Decisions
 
@@ -91,15 +96,16 @@ A Harbour worker can add a 7shifts access token on Jobs, pull clocked punches in
 - Ignore 7shifts `tips` even when the API returns `0`.
 - Reuse Development D1 `hearth-flinks-development` for the new table only; encryption keys stay separate.
 - Coworker PII is session inbox + Jobs tab, not the household snapshot.
-- Duplicate punch refuse is this-device until sync digest reconciliation.
+- Stable punch digest survives cloud sync and reversal-aware duplicate detection; simultaneous offline confirms before sync remain named uncertainty.
+- D-155 preserves D-152 tip-covariate requirements and D-153’s Shift → Jobs / Shift → Today interaction model, while retaining the Add Timesheet path.
 
 ## Remaining uncertainty
 
-- Live token/company smoke needs Jonathan’s Harbour Developer Tools token after Worker secrets + D1 apply.
+- Live token/company smoke needs a Harbour Developer Tools token after Worker secrets + D1 apply.
 - Break object shapes besides `in`/`out`/`paid` may need a follow-up once a real punch is pulled.
 - Webhooks (Time Punch Created) remain a later enqueue-only path.
-- Two phones Confirm-before-sync can still double-post the same punch (merge by shift id).
+- Two phones can still Confirm the same punch before either receives the other’s sync; hosted atomic punch uniqueness is a later Production-hardening concern.
 
 ## Handoff
 
-Draft PR #214. Not merged, not deployed, not live verified. Next owner: Jonathan — secrets, D1 apply, enable flag, then deploy.
+Integrate and verify on current main, then release in two stages: inert merge/deploy first; Development D1 + secrets; minimal enablement merge/deploy second. Never enable Production. Final provider smoke stops before Confirm unless Jonathan separately wants a real financial test post.
