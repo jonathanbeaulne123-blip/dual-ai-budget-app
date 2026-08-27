@@ -275,6 +275,21 @@ describe("household invite RPC client", () => {
     expect(inviteReasonMessage("reset-rpc-missing")).toMatch(/016/);
     vi.unstubAllGlobals();
   });
+
+  it("refuses reset without a JWT", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await resetDevelopmentHouseholds({
+      environment: "development",
+      identity: { email: "j@example.com", subject: "sub-1" },
+      config: { url: "https://example.supabase.co", key: "sb_publishable_test" },
+    });
+    expect(result).toEqual({ ok: false, reason: "unauthenticated" });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(inviteReasonMessage("unauthenticated")).toMatch(/Continue with Google/i);
+    expect(inviteReasonMessage("reset-failed")).toMatch(/Nothing was cleared/i);
+    vi.unstubAllGlobals();
+  });
 });
 
 describe("pending Auth invite storage", () => {
@@ -319,8 +334,11 @@ describe("Auth join QR", () => {
     const migration = readFileSync("supabase/migrations/016_reset_development_households.sql", "utf8");
     expect(migration).toMatch(/hearth_reset_development_households/);
     expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.hearth_reset_development_households/);
+    expect(migration).toMatch(/REVOKE ALL ON FUNCTION public\.hearth_reset_development_households\(\) FROM PUBLIC, anon/);
     expect(migration).toMatch(/VALUES \(16,/);
-    expect(migration).toMatch(/environment = 'development'/);
+    expect(migration).toMatch(/DELETE FROM public\.households\s+WHERE environment = 'development'/);
+    expect(migration).toMatch(/auth\.uid\(\)/);
+    expect(migration).not.toMatch(/service_role/);
     expect(migration).not.toMatch(/DELETE FROM public\.households\s+WHERE environment = 'production'/);
   });
 });

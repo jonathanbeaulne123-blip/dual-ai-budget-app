@@ -1,5 +1,23 @@
 # AI Task and Handoff Standard
 
+## Start from scratch — Development household reset (D-151) (2026-08-27)
+
+**Status:** Branch `cursor/reset-development-households-5958`, draft [PR #201](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/201). Risk: **High** (hosted Development delete/leave; Production blocked). Not merged, not deployed, migration **016 not applied**.
+
+**Household outcome:** One Confirm deletes every disposable Development household this Google account owns, leaves member-only seats, clears this phone’s Development copies, and opens Create household while Google stays signed in.
+
+**Budget delta (5):** `+2` — leftover test ledgers cannot be mistaken for September books.
+
+**Engagement delta (3):** `+2` — one Confirm instead of tapping Delete on every household.
+
+**What changed:** `hearth_reset_development_households` (016); client 015 fallback; local replica/PGlite/outbox/Undo wipe; picker + More **Start from scratch**; ConfirmSheet focus trap; JWT required before wipe.
+
+**Verification:** Focused vitest 35 pass (`auth-invite-chrome`, `storage-replicas`, `reset-development-local`, `claude-ux-dialog`). Full `pnpm test` 840 pass + 2 skipped; one unrelated `sync-freshness` preview timeout, re-run 17/17. `pnpm build` green. Manual More Confirm at 320/390/720/1100; no-Google Confirm fail-closes with Continue with Google.
+
+**Data/environment:** Development client + SQL file only. No live schema apply, secrets, Production, or deploy.
+
+**Next owner:** Jonathan — review PR; paste `supabase/migrations/016_reset_development_households.sql` when ready; Login with Google → **Start from scratch**.
+
 ## T3-S1 optimistic command chrome (2026-08-27)
 
 **Status:** Branch `cursor/t3-s1-optimistic-command-chrome-403c` (draft PR). Risk: **Medium** (UX only; CommandOutcome unchanged).

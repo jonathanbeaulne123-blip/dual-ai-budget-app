@@ -96,7 +96,7 @@ export function inviteReasonMessage(reason: string): string {
     case "member-already-bound":
       return "That person already has a Google account on this household.";
     case "unauthenticated":
-      return "Continue with Google before redeeming an invite.";
+      return "Continue with Google first.";
     case "google-identity-required":
       return "Sign in with Google (not email/password alone) to join.";
     case "not-found":
@@ -124,7 +124,9 @@ export function inviteReasonMessage(reason: string): string {
     case "reset-rpc-missing":
       return "Start from scratch needs migration 016 (or 015) pasted in the Supabase SQL Editor.";
     case "production-reset-blocked":
-      return "Start from scratch is Development only. Production households stay."
+      return "Start from scratch is Development only. Production households stay.";
+    case "reset-failed":
+      return "The cloud could not reset Development households. Nothing was cleared on this phone.";
     default:
       return reason ? `Invite failed (${reason}).` : "Invite failed.";
   }

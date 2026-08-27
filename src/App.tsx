@@ -148,7 +148,7 @@ import { joinSharedHousehold, reconcileHousehold, reconcileHouseholdSnapshots } 
 import { acceptHouseholdWrite, classifyCommandError, newConfirmationId, isLedgerWrite } from "./core/index.ts";
 import type { WriteAdapters } from "./core/commandRuntime.ts";
 import { ingestHouseholdBooks, inspectBrowserBooks, restoreHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
-import { readSupabaseConfig, pullHouseholdSnapshotById, pullPersonalSnapshotById, fetchContinuityMembershipRole } from "./ledger/supabase.ts";
+import { readSupabaseConfig, pullHouseholdSnapshotById, pullPersonalSnapshotById, fetchContinuityMembershipRole, listActiveContinuityMemberships } from "./ledger/supabase.ts";
 import { undoToastSecondaryCopy } from "./core/commandClassification.ts";
 import { livePullIntervalMs, shouldRunLivePull } from "./continuityLivePull.ts";
 import {
@@ -1945,9 +1945,12 @@ export function App() {
       }
       clearSyncAnchor(environment, input.householdId);
       clearContinuityOutboxForHousehold(environment, input.householdId);
+      disconnectGoogle(environment, input.memberId);
+      if (session?.memberId && session.memberId !== input.memberId) {
+        disconnectGoogle(environment, session.memberId);
+      }
       if (session?.memberId) {
         clearUndoHistory(environment, input.householdId, session.memberId);
-        disconnectGoogle(environment, session.memberId);
       }
       await clearHousehold(environment, input.householdId);
       setDiscoveredLedgers((current) => current.filter((item) => item.household.householdId !== input.householdId));
@@ -1968,22 +1971,48 @@ export function App() {
   }
 
   async function startFromScratch(): Promise<void> {
-    if (environment !== "development") {
-      throw new Error("Start from scratch is Development only. Production stays.");
-    }
     setBusy(true);
     try {
+      if (environment !== "development") {
+        throw new Error("Start from scratch is Development only. Production stays.");
+      }
       const authSession = await ensureSupabaseSession(environment);
-      if (authSession) {
-        const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
-        const result = await resetDevelopmentHouseholds({
+      if (!authSession) {
+        throw new Error("Continue with Google before starting from scratch.");
+      }
+      const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
+      const identity = { email: authSession.email, subject: authSession.googleSubject };
+      const listed = await listActiveContinuityMemberships({
+        identity,
+        environment,
+        config: cloudConfig,
+      });
+      const known = [...listed];
+      const remember = async (householdId: string, memberId: string) => {
+        if (known.some((row) => row.householdId === householdId)) return;
+        const role = await fetchContinuityMembershipRole({
+          householdId,
+          memberId,
+          identity,
           environment,
-          identity: { email: authSession.email, subject: authSession.googleSubject },
           config: cloudConfig,
         });
-        if (!result.ok) {
-          throw new Error(inviteReasonMessage(result.reason));
-        }
+        known.push({ householdId, memberId, role });
+      };
+      for (const found of discoveredLedgers) {
+        await remember(found.household.householdId, found.memberId);
+      }
+      if (household && session) {
+        await remember(household.householdId, session.memberId);
+      }
+      const result = await resetDevelopmentHouseholds({
+        environment,
+        identity,
+        known,
+        config: cloudConfig,
+      });
+      if (!result.ok) {
+        throw new Error(inviteReasonMessage(result.reason));
       }
       await wipeLocalDevelopmentCopies(environment);
       setHistory([]);
@@ -1995,18 +2024,13 @@ export function App() {
       setSession(null);
       setGuard(null);
       setError("");
-      if (authSession) {
-        setWelcomeIdentity({
-          email: authSession.email,
-          subject: authSession.googleSubject,
-          displayName: authSession.displayName,
-          grantedScopes: ["openid", "email", "profile"],
-        });
-        setWelcomeMode("new");
-      } else {
-        setWelcomeIdentity(null);
-        setWelcomeMode("home");
-      }
+      setWelcomeIdentity({
+        email: authSession.email,
+        subject: authSession.googleSubject,
+        displayName: authSession.displayName,
+        grantedScopes: ["openid", "email", "profile"],
+      });
+      setWelcomeMode("new");
     } catch (caught) {
       setGuard(null);
       setError(caught instanceof Error ? caught.message : String(caught));
@@ -2184,7 +2208,7 @@ export function App() {
                 onChange={(event) => setNewHouseholdDraft((current) => ({ ...current, personalLedgerName: event.target.value }))}
                 placeholder="My Books"
               />
-              {error && <p className="danger">{error}</p>}
+              {error && <p className="danger" role="alert">{error}</p>}
               <button className="primary" type="submit" disabled={busy} style={{ width: "100%", marginTop: 12 }}>
                 {busy ? "Creating…" : "Create household"}
               </button>
@@ -2277,13 +2301,16 @@ export function App() {
                     );
                   })}
                   {environment === "development" && (
-                    <button
-                      className="danger"
-                      disabled={busy}
-                      onClick={() => setGuard({ kind: "reset-development" })}
-                    >
-                      Start from scratch
-                    </button>
+                    <>
+                      <p className="kicker">Wipe leftover test households</p>
+                      <button
+                        className="danger"
+                        disabled={busy}
+                        onClick={() => setGuard({ kind: "reset-development" })}
+                      >
+                        {busy ? "Starting over…" : "Start from scratch"}
+                      </button>
+                    </>
                   )}
                   <button className="ghost" disabled={busy} onClick={() => setDiscoveredLedgers([])}>Back</button>
                   {welcomeSignedIn && (
@@ -2293,7 +2320,7 @@ export function App() {
                   )}
                 </section>
               )}
-              {error && <p className="danger">{error}</p>}
+              {error && <p className="danger" role="alert">{error}</p>}
               {discoveredLedgers.length === 0 && (
                 <button className="ghost welcome-demo" onClick={() => persist(seedDemoHousehold({ today, environment }))}>
                   Open the demo kitchen table
@@ -2346,7 +2373,7 @@ export function App() {
               </button>
             );
           })}
-          {error && <p className="danger">{error}</p>}
+          {error && <p className="danger" role="alert">{error}</p>}
           {household.members.filter((member) => member.active).map((member) => (
             <button
               key={member.id}
@@ -3236,14 +3263,19 @@ export function App() {
               </button>
             )}
             {environment === "development" && (
-              <button
-                className="danger"
-                style={{ width: "100%", marginTop: 8 }}
-                disabled={busy}
-                onClick={() => setGuard({ kind: "reset-development" })}
-              >
-                Start from scratch
-              </button>
+              <>
+                <button
+                  className="danger"
+                  style={{ width: "100%", marginTop: 8 }}
+                  disabled={busy}
+                  onClick={() => setGuard({ kind: "reset-development" })}
+                >
+                  {busy ? "Starting over…" : "Start from scratch"}
+                </button>
+                {error && (
+                  <p className="danger" role="alert" style={{ marginTop: 8 }}>{error}</p>
+                )}
+              </>
             )}
           </section>
           <AddCategoryForm household={household} onSave={(next, token) => persist(next, token)} />
