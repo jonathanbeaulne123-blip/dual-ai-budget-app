@@ -609,6 +609,7 @@ async function flushItem(
             { confirmationIds: item.confirmationIds, commandRefs: item.commandRefs! },
             primary,
             household,
+            item.memberId,
           ),
         });
       })()

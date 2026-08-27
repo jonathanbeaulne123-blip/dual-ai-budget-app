@@ -103,29 +103,54 @@ export function compactedCommandPayload(
   item: { confirmationIds: string[]; commandRefs: ContinuityCommandRef[] },
   primary: ContinuityCommandRef,
   household: Household,
+  memberId?: string,
 ): Record<string, unknown> {
-  const mergedFacts = mergeMaterializationFacts(item.commandRefs, household);
+  const mergedFacts = mergeMaterializationFacts(item.commandRefs, household, primary.ledgerScope, memberId);
+  const scopedPostedIds = [
+    ...(mergedFacts?.transactions ?? []).map((row) => row.id),
+    ...(mergedFacts?.shifts ?? []).map((row) => row.id),
+    ...(mergedFacts?.claims ?? []).map((row) => row.id),
+    ...(mergedFacts?.sitDownSessions ?? []).map((row) => row.id),
+    ...(mergedFacts?.goalContributions ?? []).map((row) => row.id),
+    ...(mergedFacts?.goalPurchases ?? []).map((row) => row.id),
+    ...(mergedFacts?.tombstones ?? []).map((row) => row.id),
+  ].sort();
   return {
     ...primary.commandPayload,
+    postedIds: scopedPostedIds.length ? scopedPostedIds : primary.commandPayload.postedIds.filter((id) => {
+      const tx = household.transactions.find((row) => row.id === id);
+      const shift = household.shifts.find((row) => row.id === id);
+      const row = tx ?? shift;
+      if (!row) return primary.ledgerScope === "shared";
+      if (primary.ledgerScope === "shared") return row.visibility !== "personal";
+      return row.visibility === "personal" && (!memberId || row.createdBy === memberId);
+    }),
     materializationFacts: mergedFacts,
     compactedConfirmationIds: item.confirmationIds,
-    compactedCommands: item.commandRefs.map((ref) => ({
-      confirmationId: ref.confirmationId,
-      commandKind: ref.commandType,
-      postedIds: ref.commandPayload.postedIds,
-      ledgerScope: ref.ledgerScope,
-    })),
+    compactedCommands: item.commandRefs
+      .filter((ref) => ref.ledgerScope === primary.ledgerScope)
+      .map((ref) => ({
+        confirmationId: ref.confirmationId,
+        commandKind: ref.commandType,
+        postedIds: ref.commandPayload.postedIds,
+        ledgerScope: ref.ledgerScope,
+      })),
   };
 }
 
 function mergeMaterializationFacts(
   refs: ContinuityCommandRef[],
   household: Household,
+  ledgerScope: "shared" | "personal",
+  memberId?: string,
 ): ContinuityMaterializationFacts | undefined {
   const merged: ContinuityMaterializationFacts = {};
   for (const ref of refs) {
+    if (ref.ledgerScope !== ledgerScope) continue;
     const facts = extractMaterializationFacts(household, ref.commandPayload.postedIds, {
       acceptedAt: ref.commandPayload.acceptedAt,
+      ledgerScope,
+      memberId,
     });
     if (facts.transactions?.length) {
       merged.transactions = [...(merged.transactions ?? []), ...facts.transactions];

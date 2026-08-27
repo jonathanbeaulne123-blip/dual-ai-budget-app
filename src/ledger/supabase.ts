@@ -631,6 +631,17 @@ export async function appendContinuityCommand(
 ): Promise<PushHouseholdResult> {
   const probe = await probeSupabase(config);
   if (!probe.schema) return { ...probe, skipped: false };
+  if (!hostedContinuityAllowed(household.environment)) {
+    return {
+      ...probe,
+      schema: true,
+      skipped: true,
+      conflict: false,
+      usedCasRpc: false,
+      usedCommandLogRpc: false,
+      error: "Hosted command-log transport is off for this environment.",
+    };
+  }
   if (!usesAuthContinuitySession(config)) {
     return {
       ...probe,
@@ -670,7 +681,7 @@ export async function appendContinuityCommand(
       p_timezone: snapshot.timezone,
       p_currency: snapshot.currency,
       p_invite_phrase: snapshot.inviteCode,
-      p_linked: snapshot.linked || true,
+      p_linked: snapshot.linked || Boolean(input.continuityMemberId),
       p_last_committed_at: snapshot.lastCommittedAt,
       p_shared_payload: sharedPayload,
       p_snapshot_hash: snapshotHash,

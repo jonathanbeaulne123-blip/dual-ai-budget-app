@@ -141,6 +141,10 @@ describe("T2-S2 command-ref outbox", () => {
         expect(body.p_confirmation_id).toBe("confirm-append");
         expect(typeof body.p_shared_payload).toBe("string");
         expect(typeof body.p_personal_payload).toBe("string");
+        const personal = JSON.parse(String(body.p_personal_payload)) as { kind?: string; memberId?: string };
+        expect(personal.kind).toBe("personal");
+        expect(personal.memberId).toBe("MEM-001");
+        expect(JSON.stringify(personal)).not.toMatch(/hearthPayload/);
         return new Response(JSON.stringify({
           ok: true,
           conflict: false,
@@ -164,6 +168,104 @@ describe("T2-S2 command-ref outbox", () => {
     expect(listContinuityOutbox("development")).toEqual([]);
     expect(calls.some((url) => url.includes("rpc/append_continuity_command"))).toBe(true);
     expect(calls.some((url) => url.includes("rpc/publish_continuity_snapshot"))).toBe(false);
+  });
+
+  it("never puts partner-personal rows on a shared-scope command payload", async () => {
+    vi.stubEnv("VITE_CONTINUITY_COMMAND_LOG", "1");
+    setContinuityStore(createMemoryContinuityStore());
+    let household = googleHousehold();
+    household = postEntry(household, {
+      date: "2026-08-24",
+      type: "expense",
+      amount: "88.88",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "SECRET-PERSONAL-THERAPY-COPAY",
+      createdBy: "MEM-001",
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+    const personalId = household.transactions.at(-1)!.id;
+    household = postEntry(household, {
+      date: "2026-08-24",
+      type: "expense",
+      amount: "6.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Shared milk",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    }).household;
+    const sharedId = household.transactions.at(-1)!.id;
+    household = {
+      ...household,
+      commandReceipts: [
+        {
+          confirmationId: "confirm-personal",
+          identityHash: "hash-personal",
+          auditHash: "audit-personal",
+          commandKind: "postEntry",
+          postedIds: [personalId],
+          revision: household.revision - 1,
+          acceptedAt: "2026-08-26T12:00:00.000Z",
+        },
+        {
+          confirmationId: "confirm-shared",
+          identityHash: "hash-shared",
+          auditHash: "audit-shared",
+          commandKind: "postEntry",
+          postedIds: [sharedId],
+          revision: household.revision,
+          acceptedAt: "2026-08-26T12:00:01.000Z",
+        },
+      ],
+    };
+    enqueueContinuitySnapshot({
+      household,
+      identity,
+      expectedRevision: 0,
+      confirmationId: "confirm-personal",
+    });
+    enqueueContinuitySnapshot({
+      household,
+      identity,
+      expectedRevision: 0,
+      confirmationId: "confirm-shared",
+    });
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("households?select=id")) {
+        return new Response(JSON.stringify([{ id: household.householdId }]), { status: 200 });
+      }
+      if (url.includes("rpc/append_continuity_command")) {
+        const body = init?.body ? JSON.parse(String(init.body)) as Record<string, unknown> : {};
+        expect(body.p_ledger_scope).toBe("shared");
+        const payload = body.p_command_payload as {
+          materializationFacts?: { transactions?: Array<{ id: string; note?: string; visibility?: string }> };
+          postedIds?: string[];
+        };
+        const wire = JSON.stringify(payload);
+        expect(wire).not.toMatch(/SECRET-PERSONAL-THERAPY-COPAY/);
+        expect(payload.materializationFacts?.transactions?.some((row) => row.visibility === "personal")).toBeFalsy();
+        expect(payload.postedIds ?? []).not.toContain(personalId);
+        expect(payload.postedIds ?? []).toContain(sharedId);
+        return new Response(JSON.stringify({
+          ok: true,
+          conflict: false,
+          duplicate: false,
+          result_revision: household.revision,
+          event_id: "evt-shared-only",
+        }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      return new Response(JSON.stringify([]), { status: 200 });
+    }));
+    const flushed = await flushContinuityOutbox({
+      environment: "development",
+      identity,
+      config: authConfig,
+      force: true,
+    });
+    expect(flushed.synchronized).toBe(1);
   });
 
   it("stays smaller than a fat snapshot tip for large households", () => {
