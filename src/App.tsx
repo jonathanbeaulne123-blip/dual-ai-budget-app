@@ -2241,6 +2241,19 @@ export function App() {
                 {!googleEntryAvailable && (
                   <p className="muted">Google sign-in is not configured in this build. QR and received invite links remain available.</p>
                 )}
+                {environment === "development" && (
+                  <>
+                    <p className="kicker">Wipe leftover test households</p>
+                    <button
+                      className="danger"
+                      type="button"
+                      disabled={busy}
+                      onClick={() => setGuard({ kind: "reset-development" })}
+                    >
+                      {busy ? "Starting over…" : "Start from scratch"}
+                    </button>
+                  </>
+                )}
               </> : (
                 <section className="welcome-household-list">
                   <p className="kicker">Your Google households</p>
@@ -2936,6 +2949,26 @@ export function App() {
 
       {tab === "more" && (
         <>
+          {environment === "development" && (
+            <section className="card">
+              <header><h2>Start from scratch</h2></header>
+              <p className="muted">
+                Deletes leftover Development households this Google account owns, leaves any you only joined, and clears this phone’s Development copies. Production stays.
+              </p>
+              <button
+                className="danger"
+                type="button"
+                style={{ width: "100%", marginTop: 8 }}
+                disabled={busy}
+                onClick={() => setGuard({ kind: "reset-development" })}
+              >
+                {busy ? "Starting over…" : "Start from scratch"}
+              </button>
+              {error && (
+                <p className="danger" role="alert" style={{ marginTop: 8 }}>{error}</p>
+              )}
+            </section>
+          )}
           <section className="card">
             <header><h2>Account</h2></header>
             <p className="muted">
@@ -3263,19 +3296,9 @@ export function App() {
               </button>
             )}
             {environment === "development" && (
-              <>
-                <button
-                  className="danger"
-                  style={{ width: "100%", marginTop: 8 }}
-                  disabled={busy}
-                  onClick={() => setGuard({ kind: "reset-development" })}
-                >
-                  {busy ? "Starting over…" : "Start from scratch"}
-                </button>
-                {error && (
-                  <p className="danger" role="alert" style={{ marginTop: 8 }}>{error}</p>
-                )}
-              </>
+              <p className="muted" style={{ marginTop: 8 }}>
+                To wipe every leftover Development household, use <strong>Start from scratch</strong> at the top of this page.
+              </p>
             )}
           </section>
           <AddCategoryForm household={household} onSave={(next, token) => persist(next, token)} />
