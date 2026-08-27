@@ -585,6 +585,11 @@ function shouldUseCommandLogFlush(
   if (item.transportKind !== "command-ref") return false;
   if (!item.commandRefs?.length) return false;
   if (!config?.authUserId && !config?.accessToken) return false;
+  // D-149 / D-123: the first hosted write must call hearth_create_household so
+  // continuity_memberships gets role=owner. append_continuity_command requires
+  // an existing membership and never inserts the owner — invite then returns
+  // not-owner for the person who started the household.
+  if (item.expectedRevision === 0) return false;
   return true;
 }
 
