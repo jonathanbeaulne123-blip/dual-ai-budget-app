@@ -2,7 +2,7 @@
 
 ## Shift Today camera (D-152 on D-153) (2026-08-27)
 
-**Status:** Ready PR [#217](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/217) on `cursor/shift-tab-camera-6319`. Risk: **Medium**. Jonathan asked to finish without him (merge + kitchen publish). Not live until `main` Worker deploy is verified.
+**Status:** Merged via [#217](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/217) onto `main` (`048e619`). Kitchen Worker **live** version `c942e55b-a53d-403e-9ab1-3c17c1f9957d` (bundle `index-Ce4ACG2v.js`). Risk: **Medium**. Not Production household data.
 
 **Household outcome:** On Shift → Today, photograph a tip sheet (or pick a photo). The scan drafts Confirm on this page. Confirm still posts. Home Timesheet / Add camera stays.
 
@@ -12,11 +12,11 @@
 
 **What changed:** Shared `ShiftReportScanBar`. Clock out on Shift clocks out without opening Add. Already off stays on Today. Same `scanShiftReportFile` / `documentHint: shift-report`. Demo kitchen job for Bianca (MEM-001). BatchImport copy points at Shift → Today. Worker prompt names Shift → Today. Same-day Confirm retry stays on `postWorkShift` even if Add is still on the expense pad; the duplicate banner stays on Shift Today.
 
-**Verification:** `pnpm check` → **895 passed / 2 skipped**. Focused camera + duplicate + scan Worker tests green. Independent books **PASS WITH NOTES** (P1 expense-pad retry closed). Privacy **PASS WITH NOTES**. UX **PASS WITH NOTES**.
+**Verification:** `pnpm check` → **895 passed / 2 skipped**. GitHub Actions Cloudflare Workers `33111839360` Deploy green. Live HTML serves `index-Ce4ACG2v.js` containing `Take shift-report photo`, `Choose tip sheet photo`, `Optional camera draft`, Bianca demo job note. Browser smoke: Development, demo kitchen, Bianca then Jonathan, Shift → Already off? → camera chips. No Confirm / no journal post.
 
-**Data/environment:** Client/docs. Scan still POSTs image bytes like receipts. No schema, secrets, Production rows.
+**Data/environment:** Client/docs. Kitchen publish is GitHub `main` → Cloudflare Workers. Scan still POSTs image bytes like receipts. No schema, secrets, Production rows.
 
-**Next owner:** After kitchen deploy — hard-refresh, Development, demo kitchen, Bianca, Shift → Already off? → camera chips. Do not Confirm unless intending a fictional demo post.
+**Next owner:** Jonathan — hard-refresh https://hearth-books.jonathan-beaulne123.workers.dev/ , Development pill, demo kitchen, Shift → Already off? Photograph a tip sheet if you want. Confirm still posts. Do not treat this as Production household data.
 
 ## Shift tab (D-153) (2026-08-27)
 
