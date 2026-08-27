@@ -15,6 +15,7 @@ Checkout:
 - PR: https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/214
 - Base: main@93df0ec
 - Implementation commits that must be ancestors: 8bd4ad0 (feature), 8899d7c (reverse fill + Hercules canary)
+- Review prompt added in 28aab7c; later docs-only commits may follow. Review the PR head.
 - Record the SHA you actually checked out with `git rev-parse HEAD`. Do not review main. Do not trust chat memory or the brief if current code disagrees.
 
 Authority, in order:

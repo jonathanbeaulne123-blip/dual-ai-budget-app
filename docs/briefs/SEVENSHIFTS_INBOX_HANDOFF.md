@@ -14,6 +14,7 @@ This packet lets a fresh AI review the work from the named SHA without private c
 | Base | `main@93df0ec` |
 | Branch | `cursor/seven-shifts-inbox-5958` |
 | Implementation | `8bd4ad0` (feature), `8899d7c` (reverse fill + Hercules canary) |
+| Packet | Added in `28aab7c`. Review the current PR #214 head. |
 | PR | https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/214 |
 | Worksession | [`docs/worksessions/2026-08-27-seven-shifts-inbox.md`](../worksessions/2026-08-27-seven-shifts-inbox.md) |
 | Decision | D-152 in [`docs/DECISIONS.md`](../DECISIONS.md) |
