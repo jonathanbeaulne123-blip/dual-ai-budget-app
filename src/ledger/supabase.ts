@@ -1183,7 +1183,17 @@ export async function pushSupabaseHousehold(
       if (created && !created.ok && created.reason === "household-already-exists") {
         try {
           const remote = await readRemoteSnapshot(config, snapshot.householdId, snapshot.environment);
-          if (remote && snapshot.revision < remote.revision) {
+          if (!remote) {
+            return {
+              ...probe,
+              schema: true,
+              skipped: true,
+              conflict: false,
+              usedCasRpc: true,
+              error: conflictMessage("missing-snapshot"),
+            };
+          }
+          if (snapshot.revision < remote.revision) {
             return {
               ...probe,
               schema: true,
@@ -1193,14 +1203,13 @@ export async function pushSupabaseHousehold(
               error: conflictMessage("stale-revision"),
             };
           }
-          const hostedBase = remote?.revision ?? 0;
           if (atomicAuthContinuity) {
             return publishContinuitySnapshotAtomic(
               config,
               probe,
               snapshot,
               cloudSnapshot,
-              hostedBase,
+              remote.revision,
               continuityMemberId,
             );
           }
