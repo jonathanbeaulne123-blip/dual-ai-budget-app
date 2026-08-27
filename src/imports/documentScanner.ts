@@ -3,6 +3,9 @@ import { stableImportHash, type VisionDocumentResult } from "../core/index.ts";
 export const DOCUMENT_SCAN_PATH = "/documents/scan";
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+/** Phone camera originals routinely exceed what Workers AI accepts reliably. */
+const MAX_SCAN_EDGE_PX = 1600;
+const SCAN_JPEG_QUALITY = 0.82;
 
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = "";
@@ -22,6 +25,58 @@ async function sourceDigest(fileType: string, bytes: Uint8Array, base64: string)
   return stableImportHash(`${fileType}|${base64}`);
 }
 
+function canvasToJpegBlob(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) reject(new Error("Could not compress that photo."));
+      else resolve(blob);
+    }, "image/jpeg", quality);
+  });
+}
+
+/**
+ * Downscale/re-encode camera photos before /documents/scan.
+ * Keeps text readable while staying under Workers AI payload limits.
+ */
+export async function compressDocumentImage(file: File): Promise<{ bytes: Uint8Array; mimeType: string; fileName: string }> {
+  if (typeof createImageBitmap !== "function" || typeof document === "undefined") {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    return { bytes, mimeType: file.type, fileName: file.name.slice(0, 160) };
+  }
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    return { bytes, mimeType: file.type, fileName: file.name.slice(0, 160) };
+  }
+  try {
+    const longest = Math.max(bitmap.width, bitmap.height);
+    const scale = longest > MAX_SCAN_EDGE_PX ? MAX_SCAN_EDGE_PX / longest : 1;
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      return { bytes, mimeType: file.type, fileName: file.name.slice(0, 160) };
+    }
+    context.drawImage(bitmap, 0, 0, width, height);
+    const blob = await canvasToJpegBlob(canvas, SCAN_JPEG_QUALITY);
+    if (blob.size <= 0 || blob.size >= file.size && scale === 1 && file.type === "image/jpeg") {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      return { bytes, mimeType: file.type, fileName: file.name.slice(0, 160) };
+    }
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    const base = file.name.replace(/\.[^.]+$/, "") || "document";
+    return { bytes, mimeType: "image/jpeg", fileName: `${base.slice(0, 140)}.jpg` };
+  } finally {
+    bitmap.close();
+  }
+}
+
 export async function scanFinancialDocument(
   file: File,
   fetcher: typeof fetch = fetch,
@@ -33,13 +88,17 @@ export async function scanFinancialDocument(
   if (!ALLOWED_IMAGE_TYPES.has(file.type)) throw new Error("Use a JPEG, PNG, or WebP photo.");
   if (file.size <= 0) throw new Error("That image is empty.");
   if (file.size > MAX_IMAGE_BYTES) throw new Error("That image is larger than 10 MB. Crop it to the document and try again.");
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  const base64 = bytesToBase64(bytes);
-  const sourceHash = await sourceDigest(file.type, bytes, base64);
+  const compressed = await compressDocumentImage(file);
+  if (compressed.bytes.byteLength <= 0) throw new Error("That image is empty.");
+  if (compressed.bytes.byteLength > MAX_IMAGE_BYTES) {
+    throw new Error("That image is still larger than 10 MB after compression. Crop closer to the tip sheet and try again.");
+  }
+  const base64 = bytesToBase64(compressed.bytes);
+  const sourceHash = await sourceDigest(compressed.mimeType, compressed.bytes, base64);
   const payload = JSON.stringify({
-    fileName: file.name.slice(0, 160),
-    mimeType: file.type,
-    imageDataUrl: `data:${file.type};base64,${base64}`,
+    fileName: compressed.fileName,
+    mimeType: compressed.mimeType,
+    imageDataUrl: `data:${compressed.mimeType};base64,${base64}`,
     ...(options?.documentHint ? { documentHint: options.documentHint } : {}),
   });
   let response: Response;

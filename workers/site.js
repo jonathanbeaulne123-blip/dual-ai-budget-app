@@ -58,12 +58,23 @@ UNTRUSTED DATA:
 Use the briefing for mood, page, and audit opinion. Use GROUNDED JOURNAL and FIGURES as the only source of dollar facts. Use ON-DEVICE NOTICES when they ask what you noticed.`;
 
 // Free-eligible Workers AI models are the default. External vendor keys remain
-// inert unless the deployer explicitly opts into paid providers.
+// inert for chat unless the deployer explicitly opts into paid providers.
+// Document scan may use paid vision when DOCUMENT_SCAN_ALLOW_PAID is true.
 const FREE_TEXT_MODELS = ["@cf/google/gemma-4-26b-a4b-it", "@cf/meta/llama-3.1-8b-instruct"];
 const FREE_VISION_MODEL = "@cf/google/gemma-4-26b-a4b-it";
+const FREE_VISION_MODELS = [
+  "@cf/google/gemma-4-26b-a4b-it",
+  "@cf/meta/llama-3.2-11b-vision-instruct",
+  "@cf/llava-hf/llava-1.5-7b-hf",
+];
 
 function paidProvidersAllowed(env) {
   return String(env?.HERCULES_ALLOW_PAID_PROVIDERS || "").trim().toLowerCase() === "true";
+}
+
+function documentScanPaidAllowed(env) {
+  if (paidProvidersAllowed(env)) return true;
+  return String(env?.DOCUMENT_SCAN_ALLOW_PAID || "").trim().toLowerCase() === "true";
 }
 
 function workersAiText(output) {
@@ -1051,23 +1062,36 @@ function documentScanUserText(documentHint) {
 
 async function scanWorkersAi(env, imageDataUrl, documentHint) {
   if (!env.AI) return null;
-  const model = String(env.DOCUMENT_VISION_MODEL || FREE_VISION_MODEL).trim() || FREE_VISION_MODEL;
-  const output = await env.AI.run(model, {
-    messages: [
-      { role: "system", content: DOCUMENT_SYSTEM },
-      { role: "user", content: documentScanUserText(documentHint) },
-    ],
-    image: imageDataUrl,
-    response_format: { type: "json_schema", json_schema: DOCUMENT_SCHEMA },
-    max_completion_tokens: 2800,
-    temperature: 0,
-  });
-  const candidate = output?.response ?? output?.result?.response ?? output?.choices?.[0]?.message?.content;
-  return sanitizeDocumentResult(typeof candidate === "string" ? parseModelJson(candidate) : candidate);
+  const preferred = String(env.DOCUMENT_VISION_MODEL || FREE_VISION_MODEL).trim() || FREE_VISION_MODEL;
+  const models = [preferred, ...FREE_VISION_MODELS.filter((model) => model !== preferred)];
+  const prompt = documentScanUserText(documentHint);
+  for (const model of models) {
+    for (const useSchema of [true, false]) {
+      try {
+        const input = {
+          messages: [
+            { role: "system", content: DOCUMENT_SYSTEM },
+            { role: "user", content: useSchema ? prompt : `${prompt}\nReturn only valid JSON matching the financial document schema.` },
+          ],
+          image: imageDataUrl,
+          max_completion_tokens: 2800,
+          temperature: 0,
+        };
+        if (useSchema) input.response_format = { type: "json_schema", json_schema: DOCUMENT_SCHEMA };
+        const output = await env.AI.run(model, input);
+        const candidate = output?.response ?? output?.result?.response ?? output?.choices?.[0]?.message?.content;
+        const sanitized = sanitizeDocumentResult(typeof candidate === "string" ? parseModelJson(candidate) : candidate);
+        if (sanitized) return sanitized;
+      } catch {
+        // Try the next schema/model combination.
+      }
+    }
+  }
+  return null;
 }
 
 async function scanOpenAI(env, imageDataUrl, documentHint) {
-  if (!paidProvidersAllowed(env)) return null;
+  if (!documentScanPaidAllowed(env)) return null;
   const key = String(env.OPENAI_API_KEY || "").trim();
   if (!key) return null;
   const model = String(env.OPENAI_MODEL || "gpt-4o-mini").trim() || "gpt-4o-mini";
@@ -1100,7 +1124,7 @@ async function scanOpenAI(env, imageDataUrl, documentHint) {
 }
 
 async function scanAnthropic(env, imageDataUrl, documentHint) {
-  if (!paidProvidersAllowed(env)) return null;
+  if (!documentScanPaidAllowed(env)) return null;
   const key = String(env.ANTHROPIC_API_KEY || "").trim();
   if (!key) return null;
   const match = imageDataUrl.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);
@@ -1175,7 +1199,10 @@ async function scanDocument(request, env) {
       result = null;
     }
   }
-  if (!result) return json({ ok: false, error: "Document detection is unavailable. Your image was not saved." }, 503, cors);
+  if (!result) return json({
+    ok: false,
+    error: "Document detection is unavailable. Your image was not saved. Try a closer crop of the tip sheet, or try again in a minute.",
+  }, 503, cors);
   return json({ ok: true, provider, result }, 200, cors);
 }
 

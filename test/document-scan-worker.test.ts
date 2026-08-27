@@ -175,6 +175,39 @@ describe("document detection Worker", () => {
     expect(upstream).not.toHaveBeenCalled();
   });
 
+  it("allows paid document-scan fallback when DOCUMENT_SCAN_ALLOW_PAID is on and Workers AI is quiet", async () => {
+    const upstream = vi.fn(async (_url: string, init?: RequestInit) => {
+      const sent = JSON.parse(String(init?.body)) as { messages: unknown };
+      expect(JSON.stringify(sent.messages)).toContain("data:image/jpeg;base64,AA==");
+      return new Response(JSON.stringify({
+        choices: [{ message: { content: JSON.stringify({
+          documentKind: "receipt",
+          currency: "CAD",
+          accountLast4: "1234",
+          receiptNumbers: {
+            lineAmountsCents: [1000], subtotalCents: 1000, discountCents: 0,
+            taxCents: 150, tipCents: 0, feeCents: 0, totalCents: 1250,
+          },
+          rows: [{
+            date: "2026-08-24", amountCents: 1250, direction: "debit", typeHint: "expense",
+            merchant: "Cafe", description: "Lunch", reference: "R-1", confidence: 96,
+          }],
+          warnings: [],
+        }) } }],
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", upstream);
+    const response = await worker.fetch(request(), {
+      OPENAI_API_KEY: "scan-key",
+      DOCUMENT_SCAN_ALLOW_PAID: "true",
+      HERCULES_ALLOW_PAID_PROVIDERS: "false",
+      ASSETS: { fetch: vi.fn() },
+    });
+    expect(response.status).toBe(200);
+    expect((await response.json() as { provider: string }).provider).toBe("openai");
+    expect(upstream).toHaveBeenCalledTimes(1);
+  });
+
   it("sanitizes shift-report drafts, drops OCR notes, and honors documentHint", async () => {
     const run = vi.fn(async (_model: string, input: { messages?: Array<{ content?: string }> }) => {
       expect(JSON.stringify(input.messages)).toMatch(/Prefer documentKind shift-report/i);

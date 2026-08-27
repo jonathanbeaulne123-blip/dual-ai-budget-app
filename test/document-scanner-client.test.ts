@@ -57,4 +57,19 @@ describe("document scanner client", () => {
     await scanFinancialDocument(file, fetcher as typeof fetch, { signal: controller.signal });
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
+
+  it("falls back to the original bytes when canvas compression is unavailable", async () => {
+    const fetcher = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body)) as { imageDataUrl: string; mimeType: string };
+      expect(body.mimeType).toBe("image/jpeg");
+      expect(body.imageDataUrl.startsWith("data:image/jpeg;base64,")).toBe(true);
+      return new Response(JSON.stringify({ ok: true, result }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    const file = new File([new Uint8Array([9, 8, 7, 6])], "tip-sheet.jpg", { type: "image/jpeg" });
+    await scanFinancialDocument(file, fetcher as typeof fetch, { documentHint: "shift-report" });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
 });
