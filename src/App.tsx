@@ -244,7 +244,7 @@ import type { RepeatingDraft } from "./RepeatingForm.tsx";
 import { WorkJobsCard } from "./WorkJobs.tsx";
 import { WorkShiftFlow, type WorkShiftDraft } from "./WorkShiftFlow.tsx";
 import { scanFinancialDocument } from "./imports/documentScanner.ts";
-import { isShiftEventTag, type ShiftEventTag } from "./core/index.ts";
+import { workShiftDraftFromVision } from "./imports/shiftReportDraft.ts";
 import { WorkShiftHistoryCard } from "./WorkShiftHistory.tsx";
 import { WorkReportCard } from "./WorkReport.tsx";
 import { DuePreviewSheet } from "./DuePreviewSheet.tsx";
@@ -471,7 +471,31 @@ export function App() {
   const [workShiftDraft, setWorkShiftDraft] = useState<WorkShiftDraft | null>(null);
   const [shiftScanBusy, setShiftScanBusy] = useState(false);
   const [shiftScanError, setShiftScanError] = useState("");
-  const shiftReportInputRef = useRef<HTMLInputElement | null>(null);
+  const [shiftScanWarnings, setShiftScanWarnings] = useState<string[]>([]);
+  const shiftReportCameraRef = useRef<HTMLInputElement | null>(null);
+  const shiftReportUploadRef = useRef<HTMLInputElement | null>(null);
+
+  async function applyShiftReportScan(file: File | undefined) {
+    if (!file) return;
+    setShiftScanBusy(true);
+    setShiftScanError("");
+    setShiftScanWarnings([]);
+    try {
+      const scanned = await scanFinancialDocument(file, fetch, { documentHint: "shift-report" });
+      const mapped = workShiftDraftFromVision(scanned.result);
+      if (!mapped.draft) {
+        setShiftScanError(mapped.error || "That photo could not draft a shift.");
+        setShiftScanWarnings(mapped.warnings);
+        return;
+      }
+      setWorkShiftDraft(mapped.draft);
+      setShiftScanWarnings(mapped.warnings);
+    } catch (caught) {
+      setShiftScanError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setShiftScanBusy(false);
+    }
+  }
 
   function rememberUndoHistory(next: UndoToken[]) {
     setHistory(next);
@@ -3815,52 +3839,49 @@ export function App() {
                 {(shiftGate === "signOut" || shiftGate === "finished") && household.workJobs.some((job) => job.active && job.memberId === actorId) && (
                   <>
                     <div className="work-shift-scan">
+                      <p className="kicker">Optional camera draft</p>
+                      <div className="import-actions">
+                        <button
+                          type="button"
+                          className="chip"
+                          disabled={busy || shiftScanBusy}
+                          onClick={() => shiftReportCameraRef.current?.click()}
+                        >
+                          {shiftScanBusy ? "Scanning…" : "Take shift-report photo"}
+                        </button>
+                        <button
+                          type="button"
+                          className="chip"
+                          disabled={busy || shiftScanBusy}
+                          onClick={() => shiftReportUploadRef.current?.click()}
+                        >
+                          Choose tip sheet photo
+                        </button>
+                      </div>
                       <input
-                        ref={shiftReportInputRef}
+                        ref={shiftReportCameraRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        capture="environment"
+                        hidden
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          event.target.value = "";
+                          void applyShiftReportScan(file);
+                        }}
+                      />
+                      <input
+                        ref={shiftReportUploadRef}
                         type="file"
                         accept="image/jpeg,image/png,image/webp"
                         hidden
-                        onChange={async (event) => {
+                        onChange={(event) => {
                           const file = event.target.files?.[0];
                           event.target.value = "";
-                          if (!file) return;
-                          setShiftScanBusy(true);
-                          setShiftScanError("");
-                          try {
-                            const scanned = await scanFinancialDocument(file);
-                            if (scanned.result.documentKind !== "shift-report" || !scanned.result.shiftDraft) {
-                              setShiftScanError("That photo did not look like a shift report. Confirm still needs your review.");
-                              return;
-                            }
-                            const draft = scanned.result.shiftDraft;
-                            const next: WorkShiftDraft = {
-                              date: draft.date || undefined,
-                              workedHours: draft.workedHours != null ? draft.workedHours : undefined,
-                              sales: draft.salesCents != null ? draft.salesCents / 100 : undefined,
-                              cashTips: draft.cashTipsCents != null ? draft.cashTipsCents / 100 : undefined,
-                              cardTips: draft.cardTipsCents != null ? draft.cardTipsCents / 100 : undefined,
-                              customersServed: draft.customersServed,
-                              staffingCount: draft.staffingCount,
-                              eventTag: isShiftEventTag(draft.eventTag) ? draft.eventTag as ShiftEventTag : undefined,
-                              note: draft.note,
-                            };
-                            setWorkShiftDraft(next);
-                          } catch (caught) {
-                            setShiftScanError(caught instanceof Error ? caught.message : String(caught));
-                          } finally {
-                            setShiftScanBusy(false);
-                          }
+                          void applyShiftReportScan(file);
                         }}
                       />
-                      <button
-                        type="button"
-                        className="chip"
-                        disabled={busy || shiftScanBusy}
-                        onClick={() => shiftReportInputRef.current?.click()}
-                      >
-                        {shiftScanBusy ? "Scanning…" : "Scan shift report"}
-                      </button>
-                      <p className="muted">Camera builds a Confirm draft only — invents nothing and never posts money.</p>
+                      <p className="muted">Same document camera as receipts — drafts Confirm only. Invents nothing and never posts money.</p>
                       {shiftScanError && <p className="error" role="alert">{shiftScanError}</p>}
                     </div>
                     <WorkShiftFlow
@@ -3871,8 +3892,15 @@ export function App() {
                       punch={activeOpenShift(household.kitchen, actorId)}
                       busy={busy || shiftScanBusy}
                       initialDraft={workShiftDraft}
+                      scanWarnings={shiftScanWarnings}
+                      onClearDraft={() => {
+                        setWorkShiftDraft(null);
+                        setShiftScanWarnings([]);
+                        setShiftScanError("");
+                      }}
                       onConfirm={(input) => {
                         setWorkShiftDraft(null);
+                        setShiftScanWarnings([]);
                         submitWorkShift(input);
                       }}
                     />

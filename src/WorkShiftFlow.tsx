@@ -69,6 +69,8 @@ export function WorkShiftFlow({
   onConfirm,
   initialDraft,
   weatherGlassPrefill,
+  scanWarnings,
+  onClearDraft,
 }: {
   household: Household;
   memberId: string;
@@ -79,9 +81,19 @@ export function WorkShiftFlow({
   /** OCR / scan draft — never posts alone; Confirm remains the money boundary. */
   initialDraft?: WorkShiftDraft | null;
   weatherGlassPrefill?: WeatherGlass | null;
+  scanWarnings?: string[];
+  onClearDraft?: () => void;
 }) {
   const jobs = useMemo(() => (household.workJobs ?? []).filter((job) => job.active && job.memberId === memberId), [household.workJobs, memberId]);
-  const [step, setStep] = useState(0);
+  const hasDraftTotals = Boolean(
+    initialDraft
+    && (initialDraft.sales != null
+      || initialDraft.cashTips != null
+      || initialDraft.cardTips != null
+      || initialDraft.customersServed != null
+      || initialDraft.workedHours != null),
+  );
+  const [step, setStep] = useState(() => (hasDraftTotals ? 1 : 0));
   const [date, setDate] = useState(initialDraft?.date || today);
   const [jobId, setJobId] = useState(() => jobs[0]?.id ?? "");
   const job = jobs.find((row) => row.id === jobId) ?? jobs[0];
@@ -229,6 +241,16 @@ export function WorkShiftFlow({
 
   return (
     <section className="work-shift-flow" aria-label="Confirm work shift">
+      {initialDraft && (
+        <div className="work-shift-draft-banner" role="status">
+          <p className="kicker">Draft from camera</p>
+          <p>Review every figure before Confirm. Scan never posts money.</p>
+          {(scanWarnings ?? []).slice(0, 4).map((warning) => <p className="muted" key={warning}>{warning}</p>)}
+          {onClearDraft && (
+            <button type="button" className="chip" disabled={busy} onClick={onClearDraft}>Clear scan draft</button>
+          )}
+        </div>
+      )}
       <div className="work-shift-progress" aria-label={`Step ${step + 1} of 4`}>
         {["Job & time", "Sales & tips", "Destinations", "Review"].map((label, index) => (
           <button key={label} type="button" className={step === index ? "active" : step > index ? "done" : ""} onClick={() => index < step && setStep(index)}>

@@ -174,4 +174,71 @@ describe("document detection Worker", () => {
     expect(response.status).toBe(503);
     expect(upstream).not.toHaveBeenCalled();
   });
+
+  it("sanitizes shift-report drafts, drops OCR notes, and honors documentHint", async () => {
+    const run = vi.fn(async (_model: string, input: { messages?: Array<{ content?: string }> }) => {
+      expect(JSON.stringify(input.messages)).toMatch(/Prefer documentKind shift-report/i);
+      return {
+        response: {
+          documentKind: "shift-report",
+          currency: "CAD",
+          accountLast4: "",
+          rows: [{
+            date: "2026-08-26", amountCents: 999, direction: "debit", typeHint: "expense",
+            merchant: "Should drop", description: "ledger bait", reference: "X", confidence: 10,
+          }],
+          receiptNumbers: null,
+          shiftDraft: {
+            date: "2026-08-26",
+            workedHours: 6.25,
+            salesCents: 88_000,
+            cashTipsCents: 2_500,
+            cardTipsCents: 6_100,
+            customersServed: 31,
+            staffingCount: 3,
+            eventTag: "short_staffed",
+            note: "Covered for Jordan",
+          },
+          warnings: ["Pool line faint"],
+        },
+      };
+    });
+    const response = await worker.fetch(new Request(`${origin}/documents/scan`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: origin },
+      body: JSON.stringify({
+        fileName: "tips.jpg",
+        mimeType: "image/jpeg",
+        imageDataUrl: "data:image/jpeg;base64,AA==",
+        documentHint: "shift-report",
+      }),
+    }), { AI: { run }, ASSETS: { fetch: vi.fn() } });
+    expect(response.status).toBe(200);
+    const body = await response.json() as {
+      ok: boolean;
+      result: {
+        documentKind: string;
+        rows: unknown[];
+        shiftDraft?: Record<string, unknown>;
+        warnings: string[];
+      };
+    };
+    expect(body.ok).toBe(true);
+    expect(body.result.documentKind).toBe("shift-report");
+    expect(body.result.rows).toEqual([]);
+    expect(body.result.shiftDraft).toEqual({
+      date: "2026-08-26",
+      workedHours: 6.25,
+      salesCents: 88_000,
+      cashTipsCents: 2_500,
+      cardTipsCents: 6_100,
+      customersServed: 31,
+      staffingCount: 3,
+      eventTag: "short_staffed",
+    });
+    expect(body.result.shiftDraft).not.toHaveProperty("note");
+    expect(JSON.stringify(body.result)).not.toMatch(/Jordan|Should drop|ledger bait/i);
+    expect(body.result.warnings[0]).toMatch(/Pool line faint/i);
+    expect(run).toHaveBeenCalledTimes(1);
+  });
 });
