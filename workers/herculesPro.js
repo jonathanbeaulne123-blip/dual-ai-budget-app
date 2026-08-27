@@ -10,6 +10,7 @@ import {
 import { commandIdentityHash, financialAuditHash, findReceipt } from "../src/core/commandIdentity.ts";
 import { assertAcceptableBooks } from "../src/core/commandRuntime.ts";
 import { emptyPersonal, ensureHouseholdShape, overlayPersonalReplica, personalEnvelopeFromPayload, personalReplicaForMember, shapeHerculesProPermissions } from "../src/core/sync.ts";
+import { ledgerNameForView } from "../src/core/ledgerNames.ts";
 
 const DEFAULT_SUPABASE_URL = "https://tykhocwacaxwquhynkok.supabase.co";
 const DEFAULT_SUPABASE_KEY = "sb_publishable_8UAlkucmkTyh36yQGhnUbw_Orl9GkuS";
@@ -709,28 +710,57 @@ async function rigDispatchResult(env, args) {
   };
 }
 
-function companionResult(args) {
+function booksIdentity(books, claims, view) {
+  const ledgerView = view === "household" ? "household" : "personal";
+  const member = books.members?.find((row) => row.id === claims.memberId && row.active);
+  return {
+    householdName: String(books.name || "").trim() || "Unnamed household",
+    ledgerName: ledgerNameForView(books, claims.memberId, ledgerView),
+    ledgerView,
+    // Keep legacy `ledger` as the machine view enum so older clients still work.
+    ledger: ledgerView,
+    memberName: member?.name || claims.memberId,
+    householdId: claims.householdId,
+    memberId: claims.memberId,
+  };
+}
+
+function companionResult(args, identity = null) {
   const mood = companionMood(args?.mood);
   const defaultMessage = mood === "celebrating" ? "Prrrp. The books agree."
     : mood === "concerned" ? "Mrrp. Let’s inspect that before we trust it."
       : mood === "teaching" ? "Debits on the left. I brought my pointing paw."
         : mood === "curious" ? "Mrrrow. Show me the trail behind that number."
           : "Mrrp. I’m watching the books.";
+  const ledgerView = args?.ledger === "personal" || args?.ledger === "household"
+    ? args.ledger
+    : identity?.ledgerView || null;
   return {
     status: "companion-ready",
     mood,
     message: typeof args?.message === "string" && args.message.trim() ? args.message.trim().slice(0, 180) : defaultMessage,
     headline: typeof args?.headline === "string" && args.headline.trim() ? args.headline.trim().slice(0, 72) : "Hercules Pro",
-    ledger: args?.ledger === "personal" || args?.ledger === "household" ? args.ledger : null,
+    ledger: ledgerView,
+    ...(identity
+      ? {
+          householdName: identity.householdName,
+          ledgerName: identity.ledgerName,
+          ledgerView: identity.ledgerView,
+          memberName: identity.memberName,
+          householdId: identity.householdId,
+          memberId: identity.memberId,
+        }
+      : {}),
     readOnly: true,
   };
 }
 
-function writeOptions(books, args) {
+function writeOptions(books, args, claims) {
   const type = args?.type;
   const categoryType = type === "refund" ? "expense" : type;
+  const view = args?.view === "household" ? "household" : "personal";
   return {
-    ledger: args?.view === "household" ? "household" : "personal",
+    ...booksIdentity(books, claims, view),
     currency: books.currency || "CAD",
     accounts: books.accounts.filter((row) => row.active).map((row) => ({ name: row.name, kind: row.kind, institution: row.institution, last4: row.last4 })),
     categories: type === "transfer" ? [] : books.categories
@@ -829,10 +859,10 @@ async function handleMcp(request, env) {
     return json({ jsonrpc: "2.0", id: rpc.id, result: {
       protocolVersion: "2025-06-18",
       capabilities: { tools: { listChanged: false }, resources: { listChanged: false } },
-      serverInfo: { name: "hearth-hercules-pro", version: "0.3.3" },
+      serverInfo: { name: "hearth-hercules-pro", version: "0.3.4" },
       instructions: hasScope(claims, "hearth.write")
-        ? "Hercules is a grounded financial teacher. On the first user turn of every new conversation, your FIRST tool call MUST be summon_hercules before any accounting tool so the living 3D companion auto-loads and requests picture-in-picture. Do not wait for the person to ask to see him. Read tools never change state. For a requested transaction, call prepare_transaction, show every preview field and duplicate warning, wait for the person's explicit confirmation, then and only then call confirm_transaction. Never infer consent or prepare a delete/payment."
-        : "Hercules is a read-only financial teacher. On the first user turn of every new conversation, your FIRST tool call MUST be summon_hercules before any accounting tool so the living 3D companion auto-loads and requests picture-in-picture. Do not wait for the person to ask to see him. Call tools for all current numbers. Never imply a write occurred.",
+        ? "Hercules is a grounded financial teacher. On the first user turn of every new conversation, your FIRST tool call MUST be summon_hercules before any accounting tool so the living 3D companion auto-loads and requests picture-in-picture. Do not wait for the person to ask to see him. Every tool result includes householdName (the custom household title people entered) and ledgerName (the custom shared or personal ledger label). Always identify the books by those display names, never by householdId or by the machine words Household/Personal alone. Read tools never change state. For a requested transaction, call prepare_transaction, show every preview field and duplicate warning, wait for the person's explicit confirmation, then and only then call confirm_transaction. Never infer consent or prepare a delete/payment."
+        : "Hercules is a read-only financial teacher. On the first user turn of every new conversation, your FIRST tool call MUST be summon_hercules before any accounting tool so the living 3D companion auto-loads and requests picture-in-picture. Do not wait for the person to ask to see him. Every tool result includes householdName (the custom household title people entered) and ledgerName (the custom shared or personal ledger label). Always identify the books by those display names, never by householdId or by the machine words Household/Personal alone. Call tools for all current numbers. Never imply a write occurred.",
     } });
   }
   if (rpc.method === "resources/list") {
@@ -854,11 +884,15 @@ async function handleMcp(request, env) {
     const name = String(rpc.params?.name || "");
     const args = rpc.params?.arguments && typeof rpc.params.arguments === "object" ? rpc.params.arguments : {};
     try {
-      if (name === "summon_hercules") return mcpSuccess(rpc.id, companionResult(args));
+      if (name === "summon_hercules") {
+        const { books } = await loadBooks(env, claims);
+        const view = args.ledger === "household" ? "household" : "personal";
+        return mcpSuccess(rpc.id, companionResult(args, booksIdentity(books, claims, view)));
+      }
       if (name === "hercules_rig_dispatch") return mcpSuccess(rpc.id, await rigDispatchResult(env, args));
       if (name === "transaction_write_options") {
         const { books } = await loadBooks(env, claims);
-        return mcpSuccess(rpc.id, { usedTool: name, ...writeOptions(books, args) });
+        return mcpSuccess(rpc.id, { usedTool: name, ...writeOptions(books, args, claims) });
       }
       if (name === "prepare_transaction") {
         if (!hasScope(claims, "hearth.write")) throw new Error("Reconnect Hercules Pro after enabling writing in Hearth.");
@@ -1009,14 +1043,13 @@ async function handleMcp(request, env) {
         ? rawAnswer
         : `I used \`${usedTool}\`. ${rawAnswer}`;
       const memberShiftCount = books.shifts.filter((shift) => shift.memberId === claims.memberId).length;
+      const identity = booksIdentity(books, claims, view);
       const structuredContent = {
         status: result?.status || "empty",
         usedTool,
         answer,
         facts: result?.facts || [],
-        ledger: view,
-        householdId: claims.householdId,
-        memberId: claims.memberId,
+        ...identity,
         asOf: torontoToday(),
         accountingBasis: "posted-recognized-journal",
         currency: books.currency || "CAD",

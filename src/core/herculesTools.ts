@@ -554,9 +554,9 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const categories = household.categories.filter((row) => row.active && row.recordType === "category");
     const source = toolSource(context, "Ledger context");
     const facts = [
-      fact(call, 0, "Household", household.name, source),
-      fact(call, 1, "Shared ledger", names.shared, source),
-      fact(call, 2, "Active ledger", activeLedger, source),
+      fact(call, 0, "Household name", household.name, source),
+      fact(call, 1, "Shared ledger name", names.shared, source),
+      fact(call, 2, "Active ledger name", activeLedger, source),
       fact(call, 3, "Connected member", member?.name ?? context.memberId, source),
       ...members.map((row, index) => fact(call, 4 + index, row.name, names.personal[row.id] ?? "Personal Ledger", source)),
       ...accounts.map((account, index) => fact(
