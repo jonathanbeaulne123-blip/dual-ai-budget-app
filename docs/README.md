@@ -51,7 +51,8 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [GITHUB_BRANCH_PROTECTION.md](GITHUB_BRANCH_PROTECTION.md) | Jonathan steps for main ruleset + production environment approval (D-147). |
 | [sql/rls_auth_ready.sql](sql/rls_auth_ready.sql) | Legacy Auth/RLS sketch — do not apply; superseded by cutover packet |
 | [AUTH_RLS_CUTOVER.md](AUTH_RLS_CUTOVER.md) | Living Auth/RLS cutover (D-123); 004/005/006/007/008 applied; Google Auth live; anon household REST closed |
-| [AUTH_INVITE_SMOKE.md](AUTH_INVITE_SMOKE.md) | **Development two-device QR invite smoke** (D-150); cleanup via migration 015; Jonathan pass 2026-08-26 |
+| [AUTH_INVITE_SMOKE.md](AUTH_INVITE_SMOKE.md) | **Development two-device QR invite smoke** (D-150); cleanup via Start from scratch (D-151 / 016, 015 fallback); Jonathan pass 2026-08-26 |
+| [`../supabase/migrations/016_reset_development_households.sql`](../supabase/migrations/016_reset_development_households.sql) | D-151 bulk Development reset RPC — **not applied**; Jonathan paste in SQL Editor |
 | [`sql/006_preflight_readonly.sql`](sql/006_preflight_readonly.sql) | Read-only 006 go/no-go queries (historical / re-verify) |
 | [`sql/009_rollback_006.sql`](sql/009_rollback_006.sql) | Rollback packet after 006 — Jonathan explicit order only |
 | [`sql/006_fix_owners.sql`](sql/006_fix_owners.sql) | Pre-006 owner promote helper (used during cutover) |

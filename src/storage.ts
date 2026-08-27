@@ -291,6 +291,24 @@ export async function clearHousehold(environment: Environment, householdId?: str
   }
 }
 
+/** Remove every local replica for one environment without activating another ledger. */
+export async function clearAllHouseholdReplicas(environment: Environment): Promise<void> {
+  const catalog = readCatalog(environment);
+  for (const item of catalog) {
+    const key = householdKey(environment, item.householdId);
+    localStorage.removeItem(key);
+    for (const memberId of item.memberIds) localStorage.removeItem(personalKey(environment, item.householdId, memberId));
+    try { await idbDelete(key); } catch { /* ignore */ }
+    for (const memberId of item.memberIds) {
+      try { await idbDelete(personalKey(environment, item.householdId, memberId)); } catch { /* ignore */ }
+    }
+  }
+  writeCatalog(environment, []);
+  localStorage.removeItem(LEGACY_PREFIX + environment);
+  localStorage.removeItem(activeKey(environment));
+  try { await idbDelete(environment); } catch { /* ignore */ }
+}
+
 export function exportHousehold(household: Household): string { return JSON.stringify(household, null, 2); }
 
 export function downloadJson(household: Household): string {

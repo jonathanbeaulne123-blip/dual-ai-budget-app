@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { personalReplicaForMember, seedDemoHousehold } from "../src/core/index.ts";
 import {
   activeHouseholdId,
+  clearAllHouseholdReplicas,
   clearHousehold,
   listHouseholdReplicas,
   loadHousehold,
@@ -194,6 +195,17 @@ describe("multi-ledger replicas", () => {
 
     expect((await listHouseholdReplicas("development")).map((item) => item.householdId)).toEqual(["HH-KEEP"]);
     expect((await loadHousehold("development"))?.householdId).toBe("HH-KEEP");
+  });
+
+  it("clears every Development replica without activating another household", async () => {
+    await saveHousehold(household("HH-ONE", "One"), { memberId: "MEM-001" });
+    await saveHousehold(household("HH-TWO", "Two"), { memberId: "MEM-001", activate: false });
+
+    await clearAllHouseholdReplicas("development");
+
+    expect(await listHouseholdReplicas("development")).toEqual([]);
+    expect(activeHouseholdId("development")).toBeNull();
+    expect(await loadHousehold("development")).toBeNull();
   });
 
   it("refuses a replica whose payload householdId disagrees with the storage key", async () => {

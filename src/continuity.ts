@@ -516,6 +516,13 @@ export function clearContinuityOutboxForHousehold(
   return removed;
 }
 
+/** Drop every queued snapshot for one environment. */
+export function clearContinuityOutbox(environment: Environment): number {
+  const removed = read(environment).length;
+  write(environment, []);
+  return removed;
+}
+
 /**
  * After an explicit conflict choose, unblock the outbox so background flush can
  * push the resolved snapshot without a manual Sync tap.

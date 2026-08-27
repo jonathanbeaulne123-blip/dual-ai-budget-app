@@ -252,6 +252,31 @@ export async function resetBrowserBooksForTests(): Promise<void> {
   browserDbs = new Map();
 }
 
+function deleteIndexedDatabase(name: string): Promise<void> {
+  if (typeof indexedDB === "undefined") return Promise.resolve();
+  return new Promise((resolve) => {
+    const request = indexedDB.deleteDatabase(name);
+    request.onsuccess = () => resolve();
+    request.onerror = () => resolve();
+    request.onblocked = () => resolve();
+  });
+}
+
+/** Close and drop the PGlite IDB for one environment so a new household starts empty. */
+export async function wipeBrowserBooks(environment: Environment): Promise<void> {
+  const existing = browserDbs.get(environment);
+  if (existing) {
+    try {
+      await existing.close();
+    } catch {
+      /* drop proceeds even if close is already done */
+    }
+    browserDbs.delete(environment);
+  }
+  const name = booksIdbName(environment).replace(/^idb:\/\//, "");
+  await deleteIndexedDatabase(name);
+}
+
 export async function inspectBrowserBooks(household: Household): Promise<{
   ok: boolean;
   issue?: BooksRecoveryIssue;

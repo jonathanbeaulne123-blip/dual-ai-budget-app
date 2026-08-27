@@ -13,7 +13,7 @@
 | Kitchen URL | https://hearth-books.jonathan-beaulne123.workers.dev |
 | Environment pill | **Development** on both devices |
 | Auth build | `VITE_SUPABASE_AUTH_ENABLED=1` on deployed kitchen |
-| Hosted migrations | **006** (RLS), **010** (bind Google memberships), **012** (atomic continuity push, Auth path), **015** (delete/leave for test cleanup) |
+| Hosted migrations | **006** (RLS), **010** (bind Google memberships), **012** (atomic continuity push, Auth path), **015** (delete/leave), **016** (Start from scratch bulk reset; optional, 015 loop fallback) |
 | Two Google accounts | Owner + joiner (different `auth.users` / Google subjects) |
 | Two browsers or phones | Normal incognito/private split is fine |
 
@@ -27,10 +27,10 @@ When prior test households clutter **Login with Google**:
 
 1. Hard-refresh the kitchen.
 2. **Login with Google** (owner or joiner).
-3. On the household picker, tap **Delete** on each disposable Development household — or inside a household: **More → Where the books live → Delete this Development household**.
-4. Owner delete removes the cloud row; member delete **leaves** (membership revoked, household stays for owner).
+3. On the household picker, tap **Start from scratch** and confirm **Delete all Development households** — or tap **Delete** on each row — or inside a household: **More → Where the books live → Start from scratch**.
+4. Owner bulk delete removes the cloud rows you own; member-only seats are left. This phone’s Development copies are cleared. Google stays signed in and **Create household** opens.
 
-Requires migration **015** live. Without it, the UI reports that migration 015 is missing.
+Prefer migration **016** (`supabase/migrations/016_reset_development_households.sql`). Without it, the kitchen loops migration **015** per household. Production cannot be deleted here.
 
 ---
 

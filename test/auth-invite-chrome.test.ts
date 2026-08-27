@@ -13,6 +13,7 @@ import {
   redeemHouseholdInvite,
   bindGoogleMemberships,
   leaveOrDeleteHousehold,
+  resetDevelopmentHouseholds,
 } from "../src/ledger/householdInvites.ts";
 import type { SupabaseConfig } from "../src/ledger/supabase.ts";
 import { readFileSync } from "node:fs";
@@ -180,6 +181,100 @@ describe("household invite RPC client", () => {
     expect(left).toEqual({ ok: true, mode: "leave", householdId: "HH-2" });
     vi.unstubAllGlobals();
   });
+
+  it("resets Development households through the bulk RPC", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input) => {
+      expect(String(input)).toMatch(/hearth_reset_development_households$/);
+      return new Response(JSON.stringify({
+        ok: true,
+        mode: "reset",
+        deleted: ["HH-1", "HH-2"],
+        left: ["HH-3"],
+      }), { status: 200 });
+    }));
+    const result = await resetDevelopmentHouseholds({
+      environment: "development",
+      identity: { email: "j@example.com", subject: "sub-1" },
+      config,
+    });
+    expect(result).toEqual({
+      ok: true,
+      deleted: ["HH-1", "HH-2"],
+      left: ["HH-3"],
+    });
+    vi.unstubAllGlobals();
+  });
+
+  it("refuses Production start-from-scratch without calling hosted RPC", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await resetDevelopmentHouseholds({
+      environment: "production",
+      identity: { email: "j@example.com", subject: "sub-1" },
+      config,
+    });
+    expect(result).toEqual({ ok: false, reason: "production-reset-blocked" });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(inviteReasonMessage("production-reset-blocked")).toMatch(/Development only/i);
+    vi.unstubAllGlobals();
+  });
+
+  it("falls back to per-household 015 delete when 016 is missing", async () => {
+    const fetchMock = vi.fn(async (input, init) => {
+      const url = String(input);
+      if (url.includes("hearth_reset_development_households")) {
+        return new Response(JSON.stringify({
+          message: "Could not find the function public.hearth_reset_development_households",
+          code: "PGRST202",
+        }), { status: 404 });
+      }
+      const body = init?.body ? JSON.parse(String(init.body)) : {};
+      if (url.includes("hearth_delete_development_household")) {
+        return new Response(JSON.stringify({
+          ok: true,
+          mode: "delete",
+          household_id: body.p_household_id,
+        }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ ok: true, mode: "leave" }), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await resetDevelopmentHouseholds({
+      environment: "development",
+      identity: { email: "j@example.com", subject: "sub-1" },
+      known: [
+        { householdId: "HH-OWN", memberId: "MEM-001", role: "owner" },
+        { householdId: "HH-JOIN", memberId: "MEM-002", role: "member" },
+      ],
+      config,
+    });
+    expect(result).toEqual({
+      ok: true,
+      deleted: ["HH-OWN"],
+      left: ["HH-JOIN"],
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://example.supabase.co/rest/v1/rpc/hearth_delete_development_household",
+      expect.objectContaining({ method: "POST" }),
+    );
+    vi.unstubAllGlobals();
+  });
+
+  it("maps missing 016 and 015 to reset-rpc-missing", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      message: "Could not find the function",
+      code: "PGRST202",
+    }), { status: 404 })));
+    const result = await resetDevelopmentHouseholds({
+      environment: "development",
+      identity: { email: "j@example.com", subject: "sub-1" },
+      known: [{ householdId: "HH-OWN", memberId: "MEM-001", role: "owner" }],
+      config,
+    });
+    expect(result).toEqual({ ok: false, reason: "reset-rpc-missing" });
+    expect(inviteReasonMessage("reset-rpc-missing")).toMatch(/016/);
+    vi.unstubAllGlobals();
+  });
 });
 
 describe("pending Auth invite storage", () => {
@@ -218,5 +313,14 @@ describe("Auth join QR", () => {
     expect(migration).toMatch(/hearth_delete_development_household/);
     expect(migration).toMatch(/hearth_leave_household/);
     expect(migration).toMatch(/VALUES \(15,/);
+  });
+
+  it("ships migration 016 Development reset RPC", () => {
+    const migration = readFileSync("supabase/migrations/016_reset_development_households.sql", "utf8");
+    expect(migration).toMatch(/hearth_reset_development_households/);
+    expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.hearth_reset_development_households/);
+    expect(migration).toMatch(/VALUES \(16,/);
+    expect(migration).toMatch(/environment = 'development'/);
+    expect(migration).not.toMatch(/DELETE FROM public\.households\s+WHERE environment = 'production'/);
   });
 });

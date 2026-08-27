@@ -142,6 +142,7 @@ import {
   selectHouseholdReplica,
   type HouseholdReplicaSummary,
 } from "./storage.ts";
+import { wipeLocalDevelopmentCopies } from "./resetDevelopmentLocal.ts";
 import { clearSession, loadSession, saveSession, type Session } from "./session.ts";
 import { joinSharedHousehold, reconcileHousehold, reconcileHouseholdSnapshots } from "./api.ts";
 import { acceptHouseholdWrite, classifyCommandError, newConfirmationId, isLedgerWrite } from "./core/index.ts";
@@ -231,7 +232,7 @@ import { inviteFromLocation } from "./core/invite.ts";
 import { authInviteFromLocation, authInviteTokenFromText, isAuthInviteToken, savePendingAuthInvite, loadPendingAuthInvite, clearPendingAuthInvite } from "./core/authInvite.ts";
 import { PairingCard, WelcomeJoin } from "./Pairing.tsx";
 import { WelcomeQrScanner } from "./WelcomeQrScanner.tsx";
-import { inviteReasonMessage, redeemHouseholdInvite, bindGoogleMemberships, leaveOrDeleteHousehold } from "./ledger/householdInvites.ts";
+import { inviteReasonMessage, redeemHouseholdInvite, bindGoogleMemberships, leaveOrDeleteHousehold, resetDevelopmentHouseholds } from "./ledger/householdInvites.ts";
 import { BooksPage } from "./Books.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
 import type { RepeatingDraft } from "./RepeatingForm.tsx";
@@ -313,6 +314,7 @@ type Guard =
   | { kind: "stress-pretty" }
   | { kind: "erase-development" }
   | { kind: "clear-this-phone" }
+  | { kind: "reset-development" }
   | { kind: "remove"; transactionId: string; summary: string }
   | { kind: "correctShift"; shift: Shift; transactionId: string }
   | { kind: "duePreview"; rows: ReturnType<typeof dueRecurrencePreview> }
@@ -1507,17 +1509,18 @@ export function App() {
       }
       if (!found.length) {
         rememberWelcomeGoogleIntent(null);
-        if (supabaseAuthEnabled()) clearSupabaseSession(environment);
-        else disconnectGoogle(environment, "__welcome__");
-        throw new Error(
-          environment === "production"
-            ? (
-              productionContinuityEnabled()
-                ? "That Google account is not a member of a Production household yet. An owner must invite you, or seed an owner membership before Continue with Google can open it."
-                : "Production cloud continuity is off on this build. Development remains the usual working ledger until Jonathan enables Production continuity."
-            )
-            : "No Development household is bound to this Google account yet. If you already own one in the cloud, paste migration 010 then try again. Otherwise Start our household, or open a partner invite/QR and Continue with Google — you do not need a household first to accept an invite.",
-        );
+        if (environment === "production") {
+          if (supabaseAuthEnabled()) clearSupabaseSession(environment);
+          else disconnectGoogle(environment, "__welcome__");
+          throw new Error(
+            productionContinuityEnabled()
+              ? "That Google account is not a member of a Production household yet. An owner must invite you, or seed an owner membership before Continue with Google can open it."
+              : "Production cloud continuity is off on this build. Development remains the usual working ledger until Jonathan enables Production continuity.",
+          );
+        }
+        setWelcomeIdentity(identityDetails);
+        setWelcomeMode("new");
+        return;
       }
       const only = found[0];
       rememberWelcomeGoogleIntent(null);
@@ -1964,6 +1967,89 @@ export function App() {
     }
   }
 
+  async function startFromScratch(): Promise<void> {
+    if (environment !== "development") {
+      throw new Error("Start from scratch is Development only. Production stays.");
+    }
+    setBusy(true);
+    try {
+      const authSession = await ensureSupabaseSession(environment);
+      if (authSession) {
+        const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
+        const result = await resetDevelopmentHouseholds({
+          environment,
+          identity: { email: authSession.email, subject: authSession.googleSubject },
+          config: cloudConfig,
+        });
+        if (!result.ok) {
+          throw new Error(inviteReasonMessage(result.reason));
+        }
+      }
+      await wipeLocalDevelopmentCopies(environment);
+      setHistory([]);
+      setToast(null);
+      setPersonalReplica(null);
+      setReplicas([]);
+      setDiscoveredLedgers([]);
+      setHousehold(null);
+      setSession(null);
+      setGuard(null);
+      setError("");
+      if (authSession) {
+        setWelcomeIdentity({
+          email: authSession.email,
+          subject: authSession.googleSubject,
+          displayName: authSession.displayName,
+          grantedScopes: ["openid", "email", "profile"],
+        });
+        setWelcomeMode("new");
+      } else {
+        setWelcomeIdentity(null);
+        setWelcomeMode("home");
+      }
+    } catch (caught) {
+      setGuard(null);
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const householdResetGuards = (
+    <>
+      {guard?.kind === "delete-household" && (
+        <ConfirmSheet
+          title={guard.role === "owner" ? "Delete this Development household?" : "Leave this household?"}
+          body={guard.role === "owner"
+            ? `This permanently deletes ${guard.name} from the disposable Development cloud and removes its local copy from this phone.`
+            : `This removes your membership from ${guard.name} and clears its local copy from this phone. The owner's cloud household stays.`}
+          extra="Requires migration 015 in Supabase for cloud delete/leave. Production households cannot be deleted here."
+          confirmLabel={guard.role === "owner" ? "Delete household" : "Leave household"}
+          danger
+          busy={busy}
+          onCancel={() => setGuard(null)}
+          onConfirm={() => {
+            void removeHouseholdFromDevice(guard);
+          }}
+        />
+      )}
+      {guard?.kind === "reset-development" && (
+        <ConfirmSheet
+          title="Start from scratch?"
+          body="This permanently deletes every disposable Development household you own from the cloud, leaves any you only joined, and clears this phone’s Development copies. Then you can create a new household."
+          extra="Production is not touched. Partner phones keep their own copies until they refresh. Google stays signed in. Prefer migration 016 in the Supabase SQL Editor; without it this uses the existing per-household delete."
+          confirmLabel="Delete all Development households"
+          danger
+          busy={busy}
+          onCancel={() => setGuard(null)}
+          onConfirm={() => {
+            void startFromScratch();
+          }}
+        />
+      )}
+    </>
+  );
+
   if (booting) {
     return (
       <>
@@ -2190,6 +2276,15 @@ export function App() {
                       </div>
                     );
                   })}
+                  {environment === "development" && (
+                    <button
+                      className="danger"
+                      disabled={busy}
+                      onClick={() => setGuard({ kind: "reset-development" })}
+                    >
+                      Start from scratch
+                    </button>
+                  )}
                   <button className="ghost" disabled={busy} onClick={() => setDiscoveredLedgers([])}>Back</button>
                   {welcomeSignedIn && (
                     <button className="ghost" disabled={busy} onClick={() => signOutWelcomeGoogle()}>
@@ -2212,6 +2307,7 @@ export function App() {
             </>
           )}
         </div>
+        {householdResetGuards}
         <HerculesProApproval authorizationRequest={herculesProRequest} environment={environment} household={household} session={session} />
       </div>
     );
@@ -3139,6 +3235,16 @@ export function App() {
                 Delete this Development household
               </button>
             )}
+            {environment === "development" && (
+              <button
+                className="danger"
+                style={{ width: "100%", marginTop: 8 }}
+                disabled={busy}
+                onClick={() => setGuard({ kind: "reset-development" })}
+              >
+                Start from scratch
+              </button>
+            )}
           </section>
           <AddCategoryForm household={household} onSave={(next, token) => persist(next, token)} />
         </>
@@ -3647,7 +3753,7 @@ export function App() {
       {guard?.kind === "clear-this-phone" && (
         <ConfirmSheet
           title="Sign out and clear this phone?"
-          body="This removes the Google and Auth session, Undo history, and local household copy from this phone. The cloud household and partner phones are not deleted. There is no full account-wipe from the kitchen yet."
+          body="This removes the Google and Auth session, Undo history, and local household copy from this phone. The cloud household and partner phones are not deleted. Use Start from scratch in Development to delete the cloud households this Google account owns."
           extra={googleStepUpExtra}
           confirmLabel="Sign out and clear this phone"
           danger
@@ -3687,22 +3793,7 @@ export function App() {
           }}
         />
       )}
-      {guard?.kind === "delete-household" && (
-        <ConfirmSheet
-          title={guard.role === "owner" ? "Delete this Development household?" : "Leave this household?"}
-          body={guard.role === "owner"
-            ? `This permanently deletes ${guard.name} from the disposable Development cloud and removes its local copy from this phone.`
-            : `This removes your membership from ${guard.name} and clears its local copy from this phone. The owner's cloud household stays.`}
-          extra="Requires migration 015 in Supabase for cloud delete/leave. Production households cannot be deleted here."
-          confirmLabel={guard.role === "owner" ? "Delete household" : "Leave household"}
-          danger
-          busy={busy}
-          onCancel={() => setGuard(null)}
-          onConfirm={() => {
-            void removeHouseholdFromDevice(guard);
-          }}
-        />
-      )}
+      {householdResetGuards}
       {guard?.kind === "environment" && (
         <ConfirmSheet
           title={`Switch to ${guard.next}?`}

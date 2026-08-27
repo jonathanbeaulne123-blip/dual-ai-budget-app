@@ -78,6 +78,18 @@ export function clearSyncAnchor(environment: Environment, householdId: string): 
   activeStore.clear(environment, householdId);
 }
 
+/** Drop every localStorage sync-anchor snapshot for one environment. */
+export function clearSyncAnchorsForEnvironment(environment: Environment): void {
+  if (typeof localStorage === "undefined") return;
+  const prefix = `${PREFIX}${environment}:`;
+  const keys: string[] = [];
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const key = localStorage.key(index);
+    if (key?.startsWith(prefix)) keys.push(key);
+  }
+  for (const key of keys) localStorage.removeItem(key);
+}
+
 export function syncAnchorStorageKey(environment: Environment, householdId: string): string {
   return anchorKey(environment, householdId);
 }

@@ -14,6 +14,7 @@ export {
   booksIntegrityFacts,
   hostedFailureStatus,
   resetBrowserBooksForTests,
+  wipeBrowserBooks,
   UnbalancedBooksError,
 } from "./engine.ts";
 export { assertReadOnlySelect } from "./queryGuard.ts";
@@ -28,6 +29,7 @@ export {
   bundledSupabaseConfig,
   hostedTransportAllowed,
   fetchContinuityMembershipRole,
+  listActiveContinuityMemberships,
   fetchContinuityCommandEvents,
   householdCloudProjection,
 } from "./supabase.ts";
@@ -80,6 +82,7 @@ export {
   redeemHouseholdInvite,
   revokeHouseholdMember,
   leaveOrDeleteHousehold,
+  resetDevelopmentHouseholds,
   bindGoogleMemberships,
 } from "./householdInvites.ts";
 export type {
@@ -88,6 +91,7 @@ export type {
   RedeemInviteResult,
   RevokeMemberResult,
   BindMembershipsResult,
+  ResetDevelopmentHouseholdsResult,
 } from "./householdInvites.ts";
 export { BOOKS_SCHEMA, BOOKS_SCHEMA_VERSION } from "./schema.ts";
 export {

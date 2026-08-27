@@ -76,3 +76,15 @@ export function clearUndoHistory(
   if (typeof localStorage === "undefined") return;
   localStorage.removeItem(undoHistoryKey(environment, householdId, memberId));
 }
+
+/** Drop every stored Undo list for one environment. */
+export function clearUndoHistoryForEnvironment(environment: Environment): void {
+  if (typeof localStorage === "undefined") return;
+  const prefix = `${PREFIX}${environment}:`;
+  const keys: string[] = [];
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const key = localStorage.key(index);
+    if (key?.startsWith(prefix)) keys.push(key);
+  }
+  for (const key of keys) localStorage.removeItem(key);
+}
