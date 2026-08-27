@@ -12,7 +12,7 @@ export type SyncFreshnessTransportMode =
   | "local"
   | "hidden";
 
-export type SyncFreshnessActionKind = "retry" | "review";
+export type SyncFreshnessActionKind = "retry";
 
 export type SyncFreshnessDisplay = {
   visible: boolean;
@@ -187,18 +187,19 @@ export function buildSyncFreshness(input: SyncFreshnessInput): SyncFreshnessDisp
     sourceLine,
   ].filter(Boolean);
 
+  // Conflicts auto-resolve (#194); freshness action is always Retry, never a Review sheet.
   let actionLabel: string | null = null;
   let actionKind: SyncFreshnessActionKind | null = null;
-  if (input.hasOpenConflict || mode === "conflicted") {
-    actionLabel = "Review";
-    actionKind = "review";
-  } else if (
-    mode === "pending-transport"
-    && (input.offline || household.sharing?.lastError || !showPendingHint)
+  if (
+    input.hasOpenConflict
+    || mode === "conflicted"
+    || mode === "transport-error"
+    || mode === "disconnected"
+    || (
+      mode === "pending-transport"
+      && (input.offline || household.sharing?.lastError || !showPendingHint)
+    )
   ) {
-    actionLabel = "Retry now";
-    actionKind = "retry";
-  } else if (mode === "transport-error" || mode === "disconnected") {
     actionLabel = "Retry now";
     actionKind = "retry";
   }
@@ -232,7 +233,6 @@ const SYNC_DUPLICATE_CHIP_LABELS = new Set([
 
 const SYNC_DUPLICATE_BANNER_LABELS = new Set([
   "Saved here. Not shared yet.",
-  "Both copies kept.",
 ]);
 
 /** T1-S6 freshness row replaces legacy command chip/banner for sync status. */
