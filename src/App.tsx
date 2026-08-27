@@ -160,7 +160,6 @@ import {
 import {
   attachContinuityRealtime,
   canAttachContinuityRealtime,
-  continuityRealtimeEnabled,
   shouldUsePollFallback,
   type ContinuityRealtimeStatus,
 } from "./continuityRealtime.ts";
@@ -170,6 +169,7 @@ import {
   applyCommandEventLocally,
   type ContinuityCommandEvent,
 } from "./ledger/materializeSnapshotFromEvents.ts";
+import { clearUndoHistory, loadUndoHistory, saveUndoHistory } from "./undoHistory.ts";
 import {
   authenticatedSupabaseConfig,
   clearSupabaseSession,
@@ -1081,7 +1081,7 @@ export function App() {
           })) return;
           void (async () => {
             const outcome = await tryApplyCommandEvent(event);
-            if (outcome === "fallback") void replay();
+            if (outcome === "fallback") scheduleReplay("realtime");
           })();
         },
         onSnapshotSignal: () => {

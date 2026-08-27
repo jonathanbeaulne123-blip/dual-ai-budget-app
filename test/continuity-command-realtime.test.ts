@@ -197,7 +197,7 @@ describe("T2-S4 command event apply", () => {
     const snapshotRow = {
       payload: await encodeSharedSnapshotPayload(cloud),
       revision: household.revision,
-      snapshot_hash: household.booksAcceptedHash,
+      snapshot_hash: household.booksAcceptedHash ?? undefined,
     };
     const sizes = compareContinuityPayloadBytes({ commandEvent: event, snapshotRow });
     expect(sizes.commandEventBytes).toBeLessThan(sizes.snapshotRowBytes / 10);

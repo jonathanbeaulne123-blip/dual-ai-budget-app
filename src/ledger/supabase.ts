@@ -700,7 +700,7 @@ export async function appendContinuityCommand(
         usedCasRpc: true,
         usedCommandLogRpc: true,
         remote: (await remoteFromCasPayload(parsed.remotePayload)) ?? undefined,
-        error: conflictMessage(parsed.reason),
+        error: conflictMessage(parsed.reason as SnapshotCasConflict["reason"] | undefined),
       };
     }
   } else if (!isMissingAppendCommandRpc(rpc.body)) {

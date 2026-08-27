@@ -105,12 +105,20 @@ function alreadyApplied(snapshot: Household, event: ContinuityCommandEvent): boo
 
 function scopeAllowsRow(
   event: ContinuityCommandEvent,
-  row: { visibility?: string; createdBy?: string },
+  row: object,
 ): boolean {
+  const record = row as { visibility?: string; createdBy?: string; memberId?: string };
   if (event.ledger_scope === "shared") {
-    return row.visibility !== "personal";
+    return record.visibility !== "personal";
   }
-  return row.visibility === "personal" && row.createdBy === event.member_id;
+  if (record.visibility === "personal") {
+    return record.createdBy === event.member_id;
+  }
+  if (record.memberId) {
+    return record.memberId === event.member_id;
+  }
+  // Claims / sit-downs / similar rows lack visibility — postedIds already bound the set.
+  return true;
 }
 
 function filterFactsForScope(
@@ -273,7 +281,7 @@ export function catalogBaseFromSnapshot(tip: Household): Household {
     tombstones: [],
     commandReceipts: [],
     conflicts: [],
-    booksAcceptedHash: undefined,
+    booksAcceptedHash: null,
     sharing: shaped.sharing,
   };
 }
