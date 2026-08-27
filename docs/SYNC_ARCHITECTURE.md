@@ -225,12 +225,12 @@ Channel policy for **10–100 active members**. Realtime is primary when `VITE_C
 
 | Slice | Outcome | Prompt file |
 |---|---|---|
-| **T4-S1** | Tenant-scoped journal identity design (composite keys, no global PK collision) | [`briefs/sync/T4-S1-tenant-journal-design.md`](briefs/sync/T4-S1-tenant-journal-design.md) |
+| **T4-S1** | Tenant-scoped journal identity design (composite keys, no global PK collision) | [`briefs/sync/T4-S1-tenant-journal-design.md`](briefs/sync/T4-S1-tenant-journal-design.md) · living design [`SYNC_TENANT_JOURNAL_DESIGN.md`](SYNC_TENANT_JOURNAL_DESIGN.md) |
 | **T4-S2** | Incremental pull cursor + PGlite merge | [`briefs/sync/T4-S2-incremental-pull.md`](briefs/sync/T4-S2-incremental-pull.md) |
 | **T4-S3** | Compaction, tombstones, export/rebuild | [`briefs/sync/T4-S3-compaction-retention.md`](briefs/sync/T4-S3-compaction-retention.md) |
 | **T4-S4** | Production cutover + rollback rehearsal | [`briefs/sync/T4-S4-production-cutover.md`](briefs/sync/T4-S4-production-cutover.md) |
 
-**Refusal until Tier 2 proves command semantics:** populating `001_hearth_books.sql` normalized tables as live transport (see ARCHITECTURE scale note).
+**Refusal until Tier 2 proves command semantics:** populating `001_hearth_books.sql` normalized tables as live transport (see ARCHITECTURE scale note). **T4-S1 design:** [`SYNC_TENANT_JOURNAL_DESIGN.md`](SYNC_TENANT_JOURNAL_DESIGN.md) — composite `(environment, household_id, id)`; no apply in that slice.
 
 ---
 
