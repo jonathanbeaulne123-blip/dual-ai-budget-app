@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   appendRestorePoint,
+  autoResolveSharedConflict,
   catalogHousehold,
   describeSharedConflictImpact,
   markSynchronized,
@@ -10,6 +11,7 @@ import {
   restorePointImpact,
   sharedEnvelopeForRestorePoint,
   splitForSync,
+  unresolvedConflicts,
 } from "../src/core/index.ts";
 
 describe("shared conflict impact", () => {
@@ -113,6 +115,33 @@ describe("restore point privacy and blast radius", () => {
     expect(impact.sharedTxAfterCount).toBe(1);
     expect(restoreConfirmBody(point, later.household)).toMatch(/1 shared transaction/);
     expect(restoreConfirmBody(point, later.household)).toMatch(/Personal rows stay/);
+  });
+});
+
+describe("autoResolveSharedConflict", () => {
+  it("merges when shared money matches but catalogs differ without leaving open conflicts", async () => {
+    const base = catalogHousehold();
+    const phone = {
+      ...base,
+      linked: true,
+      revision: 9,
+      baseRevision: 8,
+      shiftSettings: { ...base.shiftSettings, defaultBreakMinutes: 15 },
+    };
+    const cloud = {
+      ...base,
+      linked: true,
+      revision: 8,
+      baseRevision: 8,
+      shiftSettings: { ...base.shiftSettings, defaultBreakMinutes: 30 },
+    };
+    const impact = describeSharedConflictImpact(phone, cloud);
+    expect(impact.summary).toMatch(/Shared money rows match/);
+
+    const resolved = await autoResolveSharedConflict(phone, cloud, "MEM-001", "local");
+    expect(unresolvedConflicts(resolved)).toHaveLength(0);
+    expect(resolved.sharing?.mode).toBe("pending-transport");
+    expect(resolved.revision).toBeGreaterThan(cloud.revision);
   });
 });
 

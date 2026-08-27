@@ -1,5 +1,5 @@
 import { financialAuditHash } from "../core/commandIdentity.ts";
-import { recordConflict } from "../core/conflict.ts";
+import { recordConflict, resolveConflictChoice, unresolvedConflicts } from "../core/conflict.ts";
 import { rememberReceipt } from "../core/commandIdentity.ts";
 import { ensureHouseholdShape, mergeTombstones } from "../core/sync.ts";
 import type {
@@ -204,6 +204,13 @@ export function extractMaterializationFacts(
   return facts;
 }
 
+async function deferConflictingEvent(snapshot: Household, remote: Household): Promise<Household> {
+  const conflicted = await recordConflict(snapshot, remote, false);
+  const open = unresolvedConflicts(conflicted)[0];
+  if (!open) return snapshot;
+  return resolveConflictChoice(conflicted, open.id, "local");
+}
+
 async function applyEvent(
   snapshot: Household,
   event: ContinuityCommandEvent,
@@ -220,17 +227,17 @@ async function applyEvent(
       transactions: mergeRow(snapshot.transactions, facts.transactions),
       revision: event.result_revision,
     };
-    return recordConflict(snapshot, remote, false);
+    return deferConflictingEvent(snapshot, remote);
   }
   const shiftResult = applyMoneyCollection(snapshot.shifts, facts.shifts, mergedTombstones);
   if (shiftResult.sameIdConflict) {
     const remote = { ...snapshot, shifts: mergeRow(snapshot.shifts, facts.shifts), revision: event.result_revision };
-    return recordConflict(snapshot, remote, false);
+    return deferConflictingEvent(snapshot, remote);
   }
   const claimResult = applyMoneyCollection(snapshot.claims ?? [], facts.claims, mergedTombstones);
   if (claimResult.sameIdConflict) {
     const remote = { ...snapshot, claims: mergeRow(snapshot.claims ?? [], facts.claims), revision: event.result_revision };
-    return recordConflict(snapshot, remote, false);
+    return deferConflictingEvent(snapshot, remote);
   }
   const sitDownResult = applyMoneyCollection(snapshot.sitDownSessions ?? [], facts.sitDownSessions, mergedTombstones);
   if (sitDownResult.sameIdConflict) {
@@ -239,7 +246,7 @@ async function applyEvent(
       sitDownSessions: mergeRow(snapshot.sitDownSessions ?? [], facts.sitDownSessions),
       revision: event.result_revision,
     };
-    return recordConflict(snapshot, remote, false);
+    return deferConflictingEvent(snapshot, remote);
   }
   const contributionResult = applyMoneyCollection(snapshot.goalContributions ?? [], facts.goalContributions, mergedTombstones);
   if (contributionResult.sameIdConflict) {
@@ -248,7 +255,7 @@ async function applyEvent(
       goalContributions: mergeRow(snapshot.goalContributions ?? [], facts.goalContributions),
       revision: event.result_revision,
     };
-    return recordConflict(snapshot, remote, false);
+    return deferConflictingEvent(snapshot, remote);
   }
   const purchaseResult = applyMoneyCollection(snapshot.goalPurchases ?? [], facts.goalPurchases, mergedTombstones);
   if (purchaseResult.sameIdConflict) {
@@ -257,7 +264,7 @@ async function applyEvent(
       goalPurchases: mergeRow(snapshot.goalPurchases ?? [], facts.goalPurchases),
       revision: event.result_revision,
     };
-    return recordConflict(snapshot, remote, false);
+    return deferConflictingEvent(snapshot, remote);
   }
 
   let next: Household = {

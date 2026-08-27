@@ -198,7 +198,7 @@ describe("T2-S3 materialized snapshot builder", () => {
     expect(materialized.transactions.some((row) => row.id === posted.postedIds[0])).toBe(false);
   });
 
-  it("records conflict for same-row diverge instead of silent overwrite", async () => {
+  it("auto-resolves same-row diverge on incoming command instead of silent LWW", async () => {
     const previous = googleHousehold();
     const posted = postEntry(previous, grocery("conflict row", "8.00"));
     const txId = posted.postedIds[0]!;
@@ -243,7 +243,7 @@ describe("T2-S3 materialized snapshot builder", () => {
       [baseEvent, conflictEvent],
       catalogBaseFromSnapshot(previous),
     );
-    expect(materialized.conflicts?.some((row) => !row.resolved)).toBe(true);
+    expect(materialized.conflicts?.some((row) => row.resolved)).toBe(true);
     expect(materialized.transactions.find((row) => row.id === txId)?.amountCents).toBe(
       posted.household.transactions.find((row) => row.id === txId)?.amountCents,
     );

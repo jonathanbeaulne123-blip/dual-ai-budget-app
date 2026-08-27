@@ -234,7 +234,7 @@ describe("atomic household writes", () => {
     expect(store.ingested()).toBeNull();
   });
 
-  it("keeps a conflict visible when auto-merge ingest fails", async () => {
+  it("queues retry when auto-resolve ingest fails", async () => {
     const previous = {
       ...addGoal(catalogHousehold(), { name: "Trip", target: "100.00" }).household,
       linked: true,
@@ -266,9 +266,9 @@ describe("atomic household writes", () => {
       transportRequested: true,
       adapters: store.adapters,
     });
-    expect(outcome.kind).toBe("conflict-needs-attention");
+    expect(outcome.kind).toBe("pending-transport");
     expect(outcome.postedExactlyOnce).toBe(true);
-    expect(outcome.household.conflicts.some((row) => !row.resolved)).toBe(true);
+    expect(outcome.retryable).toBe(true);
   });
 
   it("ingests an automatic contribution merge before persisting it", async () => {
@@ -306,7 +306,7 @@ describe("atomic household writes", () => {
         }),
       },
     });
-    expect(outcome.kind).toBe("accepted-local");
+    expect(outcome.kind).toBe("pending-transport");
     expect(events).toEqual(["ingest-1", "persist-1", "ingest-2", "persist-2"]);
   });
 
@@ -411,7 +411,7 @@ describe("atomic household writes", () => {
     expect(published).toBe(0);
   });
 
-  it("keeps both sides when a stale linked write is detected", async () => {
+  it("auto-resolves stale linked writes without blocking review UI", async () => {
     const previous = { ...catalogHousehold(), linked: true, revision: 3, baseRevision: 3 };
     const posted = postEntry(previous, grocery("Coffee"));
     const remote = { ...previous, revision: 4, lastCommittedAt: "2026-08-24T12:00:00.000Z" };
@@ -432,10 +432,8 @@ describe("atomic household writes", () => {
       adapters: store.adapters,
     });
     expect(outcome.ok).toBe(true);
-    expect(outcome.kind).toBe("conflict-needs-attention");
-    expect(outcome.household.conflicts.some((row) => !row.resolved)).toBe(true);
-    expect(outcome.household.conflicts[0]?.localSnapshot).toBeTruthy();
-    expect(outcome.household.conflicts[0]?.remoteSnapshot).toBeTruthy();
+    expect(outcome.kind).toBe("pending-transport");
+    expect(outcome.retryable).toBe(true);
   });
 
   it("does not auto-merge when claims money differs", () => {

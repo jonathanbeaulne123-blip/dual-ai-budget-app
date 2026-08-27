@@ -44,7 +44,7 @@ export function toCommandSurface(outcome: CommandOutcome): CommandSurfaceState {
 }
 
 export function retryRuleFor(state: CommandSurfaceState): CommandRetryRule {
-  if (state.kind === "conflict-needs-attention") return "wait-for-human-conflict";
+  if (state.kind === "conflict-needs-attention") return "retry-same-confirmation";
   if (state.kind === "recovery-available") return "open-recovery";
   if (state.retryable) return "retry-same-confirmation";
   return "do-not-retry";
