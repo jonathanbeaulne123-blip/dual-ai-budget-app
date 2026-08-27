@@ -8,7 +8,10 @@ import type { Environment, Household, HouseholdDevice, Member } from "./core/typ
 /** Device / live presence older than this is not “in the kitchen”. */
 export const SOFT_PRESENCE_FRESH_MS = 15 * 60 * 1000;
 
-/** Re-stamp local device at most this often (focus / visibility). */
+/**
+ * Re-stamp local device at most this often.
+ * T3-S3: do not wire a focus/visibility heartbeat — touch only on session/household entry.
+ */
 export const SOFT_PRESENCE_TOUCH_THROTTLE_MS = 5 * 60 * 1000;
 
 const OPT_OUT_KEY_PREFIX = "hearth.soft-presence.opt-out:";

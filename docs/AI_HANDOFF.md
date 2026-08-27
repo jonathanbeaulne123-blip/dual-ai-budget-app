@@ -1,8 +1,26 @@
 # AI Task and Handoff Standard
 
+## T3-S3 background sync polish (2026-08-27)
+
+**Status:** Branch `cursor/t3-s3-background-sync-polish-403c` (draft PR). Risk: **Low**.
+
+**Household outcome:** Returning to the kitchen resumes share without double focus+visibility churn; Realtime flaps back off the REST poll instead of heartbeat-spamming; Offline badge says when share will resume.
+
+**Budget delta (5):** `+1` — calmer reconnect preserves outbox/poll honesty without changing command posting.
+
+**Engagement delta (3):** `+1` — less sync noise when flipping apps; clearer Offline chrome.
+
+**What changed:** `src/continuityResume.ts` (coalesce + reconnect poll backoff); App continuity loop uses resume gate; offline freshness copy; soft-presence comment (no focus heartbeat); tests.
+
+**Verification:** `pnpm exec vitest run test/continuity-resume.test.ts test/sync-freshness.test.ts` → 27 pass; full `pnpm check` → 854 pass (120 files). UX auditor **PASS WITH NOTES**.
+
+**Data/environment:** Development client only. No schema, secrets, Production, or deploy.
+
+**Next owner:** Jonathan — merge; optional tab-hide/show + airplane-mode smoke on linked Development.
+
 ## T3-S2 soft presence (2026-08-27)
 
-**Status:** Branch `cursor/t3-s2-soft-presence-403c` (draft PR). Risk: **Low–Medium** (privacy UX).
+**Status:** Merged via #202 onto `main` and kitchen deploy verified. Risk: **Low–Medium** (privacy UX).
 
 **Household outcome:** Calm “Bianca is in the kitchen” chrome for signed-in partners. Optional Realtime presence when Development Realtime is on; D-100 devices remain the durable fallback. Opt-out: “Hide that I'm in the kitchen.”
 
@@ -16,11 +34,11 @@
 
 **Data/environment:** Development client only. Presence payload is memberId/deviceId/seenAt. No schema, secrets, Production, or deploy.
 
-**Next owner:** Jonathan — merge; two-phone smoke with Realtime on; confirm opt-out hides self.
+**Next owner:** Optional two-phone smoke with Realtime on; confirm opt-out hides self.
 
 ## T3-S1 optimistic command chrome (2026-08-27)
 
-**Status:** Branch `cursor/t3-s1-optimistic-command-chrome-403c` (draft PR). Risk: **Medium** (UX only; CommandOutcome unchanged).
+**Status:** Merged via #200 onto `main`. Risk: **Medium** (UX only; CommandOutcome unchanged).
 
 **Household outcome:** Linked Development confirms feel instant: Saving → This phone → Cloud → Household progress rail; success toast still waits for PGlite accept; background flush upgrades chip to Up to date.
 
@@ -34,7 +52,7 @@
 
 **Data/environment:** Development client only. No schema, secrets, Production, or deploy.
 
-**Next owner:** Jonathan — merge PR; manual confirm on linked Development household (post expense, watch progress rail).
+**Next owner:** Done on main — optional manual confirm smoke.
 
 ## G6 Tier 1 proof gaps — Migration 012 harness (2026-08-27)
 
