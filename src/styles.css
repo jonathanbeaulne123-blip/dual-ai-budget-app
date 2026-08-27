@@ -505,17 +505,56 @@ input, select, textarea {
 
 .sync-freshness {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 6px 10px;
+  gap: 8px;
   margin: -8px 0 12px;
-  padding: 8px 12px;
+  padding: 8px 10px 8px 12px;
   border-radius: 12px;
   border: 1px solid var(--line);
   background: var(--card);
   font-size: 0.78rem;
   line-height: 1.35;
   min-height: 40px;
+}
+.sync-freshness__content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  min-width: 0;
+}
+.sync-freshness__action {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  margin-block: -4px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+  background: color-mix(in srgb, var(--card) 72%, transparent);
+  color: inherit;
+  cursor: pointer;
+}
+.sync-freshness__action--text {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+.sync-freshness__action:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.sync-freshness__action:focus-visible {
+  outline: 2px solid var(--pine-2);
+  outline-offset: 2px;
+}
+.sync-freshness__icon {
+  display: block;
 }
 .sync-freshness__transport {
   font-weight: 650;

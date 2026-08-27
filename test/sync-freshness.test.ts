@@ -9,6 +9,7 @@ import {
   continuityTransportLabel,
   inferLastSharedActor,
   sharedHouseholdFreshnessCopy,
+  suppressesCommandSyncChrome,
 } from "../src/syncFreshness.ts";
 
 const NOW = new Date("2026-08-26T18:00:00.000Z");
@@ -207,6 +208,53 @@ describe("buildSyncFreshness", () => {
     expect(display.transportPrimary).toBe("Needs attention");
     expect(display.blocksSyncedLabel).toBe(true);
     expect(display.tone).toBe("warning");
+    expect(display.actionKind).toBe("review");
+    expect(display.actionLabel).toBe("Review");
+  });
+
+  it("offers retry on unhealthy pending transport", () => {
+    const household = markPendingTransport(baseHousehold(), "offline");
+    const display = buildSyncFreshness({
+      household,
+      viewerMemberId: household.members[0]!.id,
+      realtimeEnabled: true,
+      realtimeStatus: "SUBSCRIBED",
+      offline: true,
+      pendingOutboxCount: 1,
+      hasOpenConflict: false,
+      lastReconcileAt: null,
+      lastReconcileSource: null,
+      now: NOW,
+    });
+
+    expect(display.transportPrimary).toBe("Waiting to share");
+    expect(display.actionKind).toBe("retry");
+    expect(display.actionLabel).toBe("Retry now");
+  });
+
+  it("suppresses duplicate command chip and banner when freshness is visible", () => {
+    const household = markPendingTransport(baseHousehold(), "offline");
+    const display = buildSyncFreshness({
+      household,
+      viewerMemberId: household.members[0]!.id,
+      realtimeEnabled: true,
+      realtimeStatus: "SUBSCRIBED",
+      offline: true,
+      pendingOutboxCount: 1,
+      hasOpenConflict: false,
+      lastReconcileAt: null,
+      lastReconcileSource: null,
+      now: NOW,
+    });
+
+    const suppressed = suppressesCommandSyncChrome(
+      display,
+      "Waiting to share",
+      "Saved here. Not shared yet.",
+    );
+    expect(suppressed.hideChip).toBe(true);
+    expect(suppressed.hideBanner).toBe(true);
+    expect(suppressesCommandSyncChrome(display, "Recovery needed", null).hideChip).toBe(false);
   });
 });
 
