@@ -42,9 +42,10 @@ describe("migration 013 continuity_command_events (D-148 T2-S1)", () => {
   });
 
   it("links event insert to atomic snapshot bump via publish_continuity_snapshot in same transaction", () => {
-    expect(sql).toMatch(/INSERT INTO public\.continuity_command_events[\s\S]*RETURNING id INTO new_event_id/);
     expect(sql).toMatch(/snapshot_result := public\.publish_continuity_snapshot\(/);
-    expect(sql).toMatch(/RAISE EXCEPTION 'snapshot-bump-failed: %', snapshot_result/);
+    expect(sql).toMatch(/INSERT INTO public\.continuity_command_events[\s\S]*RETURNING id INTO new_event_id/);
+    expect(sql).toMatch(/'reason', coalesce\(snapshot_result ->> 'reason', 'snapshot-bump-failed'\)/);
+    expect(sql).not.toMatch(/RAISE EXCEPTION 'snapshot-bump-failed/);
     expect(sql).toMatch(/pg_advisory_xact_lock/i);
   });
 
@@ -54,6 +55,27 @@ describe("migration 013 continuity_command_events (D-148 T2-S1)", () => {
     expect(sql).toMatch(/INSERT INTO public\.schema_migrations[\s\S]*VALUES \(13,/);
     expect(sql).toMatch(/DROP FUNCTION IF EXISTS public\.append_continuity_command/);
     expect(sql).toMatch(/NOTIFY pgrst, 'reload schema'/);
+  });
+
+  it("matches CREATE FUNCTION arity on REVOKE/GRANT (20 params)", () => {
+    const createArgs = sql.match(
+      /CREATE OR REPLACE FUNCTION public\.append_continuity_command\(([\s\S]*?)\) RETURNS JSONB/,
+    )?.[1] ?? "";
+    const grantArgs = sql.match(
+      /GRANT EXECUTE ON FUNCTION public\.append_continuity_command\(\s*([\s\S]*?)\s*\) TO authenticated/,
+    )?.[1] ?? "";
+    const createCount = (createArgs.match(/\b(TEXT|INTEGER|BOOLEAN|JSONB)\b/gi) ?? []).length;
+    const grantCount = (grantArgs.match(/\b(text|integer|boolean|jsonb)\b/gi) ?? []).length;
+    expect(createCount).toBe(20);
+    expect(grantCount).toBe(20);
+    expect(grantArgs.replace(/\s+/g, " ").trim()).toBe(
+      "text, text, text, text, text, text, integer, integer, text, text, jsonb, text, text, text, text, boolean, text, text, text, text",
+    );
+  });
+
+  it("rejects personal visibility rows inside shared-scope command payloads", () => {
+    expect(sql).toMatch(/personal-data-in-shared-command/);
+    expect(sql).toMatch(/p_ledger_scope = 'shared'[\s\S]*visibility' = 'personal'/);
   });
 
   it("requires Migration 012 publish_continuity_snapshot to exist at apply time", () => {

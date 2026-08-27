@@ -9,11 +9,11 @@
 -- Rollback:
 --   REVOKE ALL ON FUNCTION public.append_continuity_command(
 --     text, text, text, text, text, text, integer, integer, text, text, jsonb,
---     text, text, text, text, text, boolean, text, text, text, text
+--     text, text, text, text, boolean, text, text, text, text
 --   ) FROM authenticated;
 --   DROP FUNCTION IF EXISTS public.append_continuity_command(
 --     text, text, text, text, text, text, integer, integer, text, text, jsonb,
---     text, text, text, text, text, boolean, text, text, text, text
+--     text, text, text, text, boolean, text, text, text, text
 --   );
 --   DROP TABLE IF EXISTS public.continuity_command_events;
 --   DELETE FROM public.schema_migrations WHERE id = 13;
@@ -66,6 +66,11 @@ CREATE POLICY hearth_command_events_select ON public.continuity_command_events
 REVOKE ALL PRIVILEGES ON TABLE public.continuity_command_events FROM PUBLIC, anon, authenticated;
 GRANT SELECT ON TABLE public.continuity_command_events TO authenticated;
 
+DROP FUNCTION IF EXISTS public.append_continuity_command(
+  text, text, text, text, text, text, integer, integer, text, text, jsonb,
+  text, text, text, text, boolean, text, text, text, text
+);
+
 CREATE OR REPLACE FUNCTION public.append_continuity_command(
   p_household_id TEXT,
   p_environment TEXT,
@@ -94,6 +99,7 @@ DECLARE
   existing public.continuity_command_events%ROWTYPE;
   snapshot_result JSONB;
   new_event_id UUID;
+  facts JSONB;
 BEGIN
   IF auth.uid() IS NULL THEN
     RETURN jsonb_build_object('ok', false, 'conflict', true, 'reason', 'unauthenticated');
@@ -119,6 +125,23 @@ BEGIN
   END IF;
   IF p_base_revision < 0 OR p_result_revision < 0 OR p_result_revision <= p_base_revision THEN
     RETURN jsonb_build_object('ok', false, 'conflict', true, 'reason', 'non-advancing-revision');
+  END IF;
+  -- Shared-scope events must never carry partner-personal money rows in materializationFacts.
+  IF p_ledger_scope = 'shared' THEN
+    facts := coalesce(p_command_payload -> 'materializationFacts', '{}'::jsonb);
+    IF EXISTS (
+      SELECT 1
+      FROM jsonb_array_elements(coalesce(facts -> 'transactions', '[]'::jsonb)) AS row
+      WHERE row ->> 'visibility' = 'personal'
+    ) OR EXISTS (
+      SELECT 1
+      FROM jsonb_array_elements(coalesce(facts -> 'shifts', '[]'::jsonb)) AS row
+      WHERE row ->> 'visibility' = 'personal'
+    ) THEN
+      RETURN jsonb_build_object(
+        'ok', false, 'conflict', true, 'reason', 'personal-data-in-shared-command'
+      );
+    END IF;
   END IF;
   IF NOT hearth_private.is_active_member(p_household_id, p_environment) THEN
     RETURN jsonb_build_object('ok', false, 'conflict', true, 'reason', 'not-member');
@@ -155,6 +178,37 @@ BEGIN
     );
   END IF;
 
+  -- Snapshot CAS first so a conflict returns structured JSON without leaving an orphan event row.
+  snapshot_result := public.publish_continuity_snapshot(
+    p_household_id,
+    p_base_revision,
+    p_name,
+    p_timezone,
+    p_currency,
+    p_environment,
+    p_invite_phrase,
+    p_linked,
+    p_result_revision,
+    p_last_committed_at,
+    p_shared_payload,
+    p_snapshot_hash,
+    p_member_id,
+    p_personal_payload,
+    coalesce(p_confirmation_id, ''),
+    coalesce(p_identity_hash, '')
+  );
+
+  IF coalesce((snapshot_result ->> 'ok')::boolean, false) IS NOT TRUE THEN
+    RETURN jsonb_build_object(
+      'ok', false,
+      'conflict', true,
+      'reason', coalesce(snapshot_result ->> 'reason', 'snapshot-bump-failed'),
+      'result_revision', snapshot_result -> 'remote_revision',
+      'remote_payload', snapshot_result -> 'remote_payload',
+      'snapshot', snapshot_result
+    );
+  END IF;
+
   INSERT INTO public.continuity_command_events (
     environment,
     household_id,
@@ -182,29 +236,6 @@ BEGIN
   )
   RETURNING id INTO new_event_id;
 
-  snapshot_result := public.publish_continuity_snapshot(
-    p_household_id,
-    p_base_revision,
-    p_name,
-    p_timezone,
-    p_currency,
-    p_environment,
-    p_invite_phrase,
-    p_linked,
-    p_result_revision,
-    p_last_committed_at,
-    p_shared_payload,
-    p_snapshot_hash,
-    p_member_id,
-    p_personal_payload,
-    coalesce(p_confirmation_id, ''),
-    coalesce(p_identity_hash, '')
-  );
-
-  IF coalesce((snapshot_result ->> 'ok')::boolean, false) IS NOT TRUE THEN
-    RAISE EXCEPTION 'snapshot-bump-failed: %', snapshot_result;
-  END IF;
-
   RETURN jsonb_build_object(
     'ok', true,
     'conflict', false,
@@ -218,12 +249,12 @@ $$;
 
 REVOKE ALL ON FUNCTION public.append_continuity_command(
   text, text, text, text, text, text, integer, integer, text, text, jsonb,
-  text, text, text, text, text, boolean, text, text, text, text
+  text, text, text, text, boolean, text, text, text, text
 ) FROM PUBLIC, anon;
 
 GRANT EXECUTE ON FUNCTION public.append_continuity_command(
   text, text, text, text, text, text, integer, integer, text, text, jsonb,
-  text, text, text, text, text, boolean, text, text, text, text
+  text, text, text, text, boolean, text, text, text, text
 ) TO authenticated;
 
 INSERT INTO public.schema_migrations (id, applied_at)

@@ -1,6 +1,8 @@
 # Migration 013 apply — Development (T2-S1)
 
 > **One paste to unlock Tier 2.** Development disposable data only. Do not apply to Production.
+>
+> **Do not paste until trust P0 remediation is on `main`** (`cursor/t2-trust-p0-fixes-12ce`): GRANT arity + shared-scope personal canary. The kitchen flag stays off until then.
 
 ## Why
 
@@ -28,7 +30,7 @@ Expect: table present, function present, publication row present, schema id `13`
 
 ## After apply
 
-Reply **“013 applied”** — agent merges PR, kitchen deploys with command-log on.
+Reply **“013 applied”** — agent flips `VITE_CONTINUITY_COMMAND_LOG=1` and redeploys.
 
 ## Rollback (Development only)
 

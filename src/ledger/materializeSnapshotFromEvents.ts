@@ -154,21 +154,37 @@ function filterFactsForScope(
 export function extractMaterializationFacts(
   household: Household,
   postedIds: string[],
-  options?: { acceptedAt?: string },
+  options?: {
+    acceptedAt?: string;
+    ledgerScope?: "shared" | "personal";
+    memberId?: string;
+  },
 ): ContinuityMaterializationFacts {
   const posted = new Set(postedIds.filter(Boolean));
+  const scope = options?.ledgerScope;
+  const memberId = options?.memberId;
+  const allows = (row: object): boolean => {
+    if (!scope) return true;
+    const record = row as { visibility?: string; createdBy?: string; memberId?: string };
+    if (scope === "shared") return record.visibility !== "personal";
+    if (record.visibility === "personal") {
+      return !memberId || record.createdBy === memberId;
+    }
+    if (record.memberId) return record.memberId === memberId;
+    return false;
+  };
   const facts: ContinuityMaterializationFacts = {};
-  const transactions = household.transactions.filter((row) => posted.has(row.id));
+  const transactions = household.transactions.filter((row) => posted.has(row.id) && allows(row));
   if (transactions.length) facts.transactions = transactions;
-  const shifts = household.shifts.filter((row) => posted.has(row.id));
+  const shifts = household.shifts.filter((row) => posted.has(row.id) && allows(row));
   if (shifts.length) facts.shifts = shifts;
-  const claims = (household.claims ?? []).filter((row) => posted.has(row.id));
+  const claims = (household.claims ?? []).filter((row) => posted.has(row.id) && allows(row));
   if (claims.length) facts.claims = claims;
-  const sitDownSessions = (household.sitDownSessions ?? []).filter((row) => posted.has(row.id));
+  const sitDownSessions = (household.sitDownSessions ?? []).filter((row) => posted.has(row.id) && allows(row));
   if (sitDownSessions.length) facts.sitDownSessions = sitDownSessions;
-  const goalContributions = (household.goalContributions ?? []).filter((row) => posted.has(row.id));
+  const goalContributions = (household.goalContributions ?? []).filter((row) => posted.has(row.id) && allows(row));
   if (goalContributions.length) facts.goalContributions = goalContributions;
-  const goalPurchases = (household.goalPurchases ?? []).filter((row) => posted.has(row.id));
+  const goalPurchases = (household.goalPurchases ?? []).filter((row) => posted.has(row.id) && allows(row));
   if (goalPurchases.length) facts.goalPurchases = goalPurchases;
   let tombstones = (household.tombstones ?? []).filter((row) => posted.has(row.id));
   if (!tombstones.length && !posted.size) {
@@ -176,6 +192,13 @@ export function extractMaterializationFacts(
     if (marker) {
       tombstones = (household.tombstones ?? []).filter((row) => row.deletedAt === marker);
     }
+  }
+  if (scope === "shared") {
+    const personalIds = new Set([
+      ...household.transactions.filter((row) => row.visibility === "personal").map((row) => row.id),
+      ...household.shifts.filter((row) => row.visibility === "personal").map((row) => row.id),
+    ]);
+    tombstones = tombstones.filter((row) => !personalIds.has(row.id));
   }
   if (tombstones.length) facts.tombstones = tombstones;
   return facts;
