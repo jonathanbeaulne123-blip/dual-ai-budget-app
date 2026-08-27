@@ -87,6 +87,8 @@ describe("Shift tab wiring", () => {
     expect(page).toMatch(/WorkJobsCard/);
     expect(page).toMatch(/WorkShiftHistoryCard/);
     expect(page).toMatch(/WorkReportCard/);
+    expect(page).toMatch(/aria-controls=\{`shift-panel-\$\{id\}`\}/);
+    expect(page).toMatch(/role="tabpanel"/);
     expect(herculesPage).toMatch(/Tonight\?/);
     expect(more).not.toMatch(/More → Jobs/);
     expect(more).toMatch(/Shift → Jobs/);

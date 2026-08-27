@@ -126,9 +126,21 @@ export function WorkShiftPage({
             key={id}
             type="button"
             role="tab"
+            id={`shift-tab-${id}`}
+            aria-controls={`shift-panel-${id}`}
             aria-selected={pane === id}
+            tabIndex={pane === id ? 0 : -1}
             className={pane === id ? "active" : ""}
             onClick={() => setPane(id)}
+            onKeyDown={(event) => {
+              const order = ["today", "report", "jobs"] as const;
+              const index = order.indexOf(id);
+              if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+              event.preventDefault();
+              const next = order[(index + (event.key === "ArrowRight" ? 1 : order.length - 1)) % order.length]!;
+              setPane(next);
+              window.requestAnimationFrame(() => document.getElementById(`shift-tab-${next}`)?.focus());
+            }}
           >
             {id === "today" ? "Today" : id === "report" ? "Report" : "Jobs"}
           </button>
@@ -136,7 +148,7 @@ export function WorkShiftPage({
       </div>
 
       {pane === "today" && (
-        <>
+        <div className="shift-panel" role="tabpanel" id="shift-panel-today" aria-labelledby="shift-tab-today">
           <section className="card shift-punch">
             <TimesheetBody
               household={household}
@@ -236,11 +248,11 @@ export function WorkShiftPage({
               <p className="muted">Not enough nights yet. Four posted tip shifts light the lamp. Confirm still posts.</p>
             )}
           </section>
-        </>
+        </div>
       )}
 
       {pane === "report" && (
-        <>
+        <div className="shift-panel" role="tabpanel" id="shift-panel-report" aria-labelledby="shift-tab-report">
           <p className="shift-kicker">This month · books</p>
           <section className="card">
             <div className="hearth-story-grid" aria-label={`${formatMonthLabel(monthKeyFromDateKey(today))} shift story`}>
@@ -293,10 +305,11 @@ export function WorkShiftPage({
             </div>
           </section>
           {breakdown ? <WorkReportCard household={household} memberId={memberId} today={today} /> : null}
-        </>
+        </div>
       )}
 
       {pane === "jobs" && (
+        <div className="shift-panel" role="tabpanel" id="shift-panel-jobs" aria-labelledby="shift-tab-jobs">
         <WorkJobsCard
           household={household}
           memberId={memberId}
@@ -305,6 +318,7 @@ export function WorkShiftPage({
           onAskSave={onAskSaveJob}
           onArchive={onArchiveJob}
         />
+        </div>
       )}
     </div>
   );

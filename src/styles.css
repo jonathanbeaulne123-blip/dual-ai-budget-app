@@ -394,6 +394,10 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
   font-weight: 600;
 }
 .tabs button.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.tabs button:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
 .primary { background: var(--ink); color: var(--paper); border-color: var(--ink); width: 100%; padding: 14px; font-size: 16px; margin-top: 8px; }
 .primary:disabled { opacity: 0.5; }
 .ghost { background: transparent; }
