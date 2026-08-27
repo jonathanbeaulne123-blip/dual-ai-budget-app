@@ -103,7 +103,6 @@ export type VisionDocumentResult = {
     customersServed?: number;
     staffingCount?: number;
     eventTag?: string;
-    note?: string;
   } | null;
   warnings: string[];
 };

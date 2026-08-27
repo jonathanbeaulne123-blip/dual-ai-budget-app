@@ -3,8 +3,8 @@ import { visionDocumentRows, type VisionDocumentResult } from "../src/core/index
 import { scanFinancialDocument } from "../src/imports/documentScanner.ts";
 import { workShiftDraftFromVision } from "../src/imports/shiftReportDraft.ts";
 
-const shiftResult: VisionDocumentResult = {
-  documentKind: "shift-report",
+const shiftResult = {
+  documentKind: "shift-report" as const,
   currency: "CAD",
   accountLast4: "",
   rows: [],
@@ -17,10 +17,11 @@ const shiftResult: VisionDocumentResult = {
     customersServed: 42,
     staffingCount: 4,
     eventTag: "sports",
+    // Simulate a model that still emits note; mapper + Worker must drop it.
     note: "Worked with Alex and Priya",
   },
   warnings: ["Tip pool line was blurry"],
-};
+} as VisionDocumentResult;
 
 describe("shift-report Confirm draft mapping", () => {
   it("maps sanitized vision fields into a Confirm draft and never copies OCR note", () => {

@@ -103,12 +103,31 @@ export function WorkShiftFlow({
   const [hoursDigits, setHoursDigits] = useState(() => asDigitsFromDollars(initialDraft?.workedHours ?? punchHours?.workedHours ?? 0) || centsDigitsFromDollars("0"));
   const [paidBreakDigits, setPaidBreakDigits] = useState(() => asDigitsFromDollars(initialDraft?.paidBreakHours ?? punchHours?.paidBreakHours ?? 0) || centsDigitsFromDollars("0"));
   const [hoursTouched, setHoursTouched] = useState(Boolean(initialDraft?.workedHours != null));
-  const [money, setMoney] = useState<Record<string, string>>({
-    sales: asDigitsFromDollars(initialDraft?.sales),
-    cashTips: asDigitsFromDollars(initialDraft?.cashTips),
-    cardTips: asDigitsFromDollars(initialDraft?.cardTips),
+  const draftSalesFields = jobs[0]?.salesFields.filter((field) => field.requirement !== "off") ?? [];
+  const [money, setMoney] = useState<Record<string, string>>(() => {
+    const salesDigits = asDigitsFromDollars(initialDraft?.sales);
+    const next: Record<string, string> = {
+      sales: "",
+      cashTips: asDigitsFromDollars(initialDraft?.cashTips),
+      cardTips: asDigitsFromDollars(initialDraft?.cardTips),
+    };
+    if (salesDigits) {
+      if (draftSalesFields.length === 1) {
+        next[`sales:${draftSalesFields[0]!.id}`] = salesDigits;
+      } else if (draftSalesFields.length === 0) {
+        next.sales = salesDigits;
+      }
+      // Multi-field jobs: leave blank — never invent a Food/Alcohol/Other split.
+    }
+    return next;
   });
-  const [activeMoney, setActiveMoney] = useState<MoneyKey>("sales");
+  const [activeMoney, setActiveMoney] = useState<MoneyKey>(() => (
+    draftSalesFields.length === 1
+      ? `sales:${draftSalesFields[0]!.id}`
+      : draftSalesFields.length > 1
+        ? `sales:${draftSalesFields[0]!.id}`
+        : "sales"
+  ));
   const lastSameJob = useMemo(() => {
     if (!job) return null;
     return household.shifts
@@ -245,6 +264,9 @@ export function WorkShiftFlow({
         <div className="work-shift-draft-banner" role="status">
           <p className="kicker">Draft from camera</p>
           <p>Review every figure before Confirm. Scan never posts money.</p>
+          {initialDraft.sales != null && salesFields.length > 1 && (
+            <p className="muted">Camera saw a sales total — enter it across {salesFields.map((field) => field.label).join(" / ")} yourself. Hearth will not invent a split.</p>
+          )}
           {(scanWarnings ?? []).slice(0, 4).map((warning) => <p className="muted" key={warning}>{warning}</p>)}
           {onClearDraft && (
             <button type="button" className="chip" disabled={busy} onClick={onClearDraft}>Clear scan draft</button>
