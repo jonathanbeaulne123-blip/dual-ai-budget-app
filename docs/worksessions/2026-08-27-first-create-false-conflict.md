@@ -1,14 +1,14 @@
 # Hearth worksession — First-create false another-phone conflict
 
-- **Status:** OPEN (draft PR #210; not merged; not live)
+- **Status:** CLOSED; merged #210; kitchen Worker `cc694eee-3462-4fff-8f71-8675e8ad2ecf` live
 - **Opened:** 2026-08-27 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor Cloud Agent
 - **Repository:** jonathanbeaulne123-blip/dual-ai-budget-app
-- **Branch:** `cursor/first-create-false-conflict-5958`
+- **Branch:** `main` (`48b1716`)
 - **Baseline SHA:** `4009b6cf80ee95f3226a01c52d4cba61d4053603` (`main`, invite-owner merge)
-- **Head SHA:** `824ba668d90d129d4d24b79aa39825ea46a4a46c`
-- **PR or issue:** draft PR #210
+- **Head SHA:** `48b1716aa22555235e57e42f0febc6ae518818e8`
+- **PR or issue:** merged PR #210
 - **Risk:** High (hosted CAS / first-create retry; money meaning unchanged)
 - **Decision owner:** Jonathan
 - **Environment impact:** Development client only. No schema apply, no Production.
@@ -61,11 +61,11 @@ The person who starts a Development household does not see “Another phone post
 
 ## Remaining uncertainty
 
-- Stuck kitchens keep the Health finding until this client is live and Retry now (or the next background flush) runs.
+- The stuck household still needs a hard-refresh plus Retry now (or the next background flush) so the new client can CAS from the hosted revision.
 - A hosted row without owner (pre-#209 leftover) still needs Start from scratch — already-exists does not mint owner; symptom may change to not-member.
 - **October:** local-ahead CAS uses revision numbers only, not shared-money ancestry.
 - Unrecognized 012 reasons (including `unauthenticated`) still default to the “Another phone” copy.
 
 ## Next owner
 
-Jonathan — review #210, then merge + kitchen deploy. Hard-refresh and Retry now on the waiting-to-share household.
+Jonathan — hard-refresh the kitchen, open More, tap Retry now on the waiting-to-share household.

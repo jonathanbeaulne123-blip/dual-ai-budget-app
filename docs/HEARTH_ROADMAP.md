@@ -64,7 +64,7 @@ Only the currently open or just-closed worksession belongs here. Durable history
 
 | Worksession | State | Scope | Output |
 |---|---|---|---|
-| [2026-08-27 First-create false conflict](worksessions/2026-08-27-first-create-false-conflict.md) | **ACTIVE** | Retry after create must not say another phone | D-149 why-note; CAS from hosted revision |
+| [2026-08-27 First-create false conflict](worksessions/2026-08-27-first-create-false-conflict.md) | **CLOSED; merged #210** | Retry after create must not say another phone | Live Worker `cc694eee`; Retry now on stuck household |
 | [2026-08-27 Invite owner first create](worksessions/2026-08-27-invite-owner-first-create.md) | **CLOSED; merged #209** | First cloud write creates the owner so Google invite works | D-149; live Worker `10b7de13`; follow-up false-conflict branch |
 | [2026-08-27 Start from scratch](worksessions/2026-08-27-reset-development-households.md) | **CLOSED; merged #201** | One Confirm deletes owned Development households and returns to Create | D-151; migration **016 applied**; kitchen Start from scratch on `main` |
 | [2026-08-26 Sync architecture reframe](worksessions/2026-08-26-sync-architecture-reframe.md) | **CLOSED; docs PR** | D-149 tiered sync plan, 100–500 ms target, 20 slice prompts | [`SYNC_ARCHITECTURE.md`](SYNC_ARCHITECTURE.md), Phase 2 rewrite |
