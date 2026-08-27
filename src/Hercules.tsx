@@ -498,24 +498,33 @@ export function HerculesPresence({
   }, [open, pinned, adding, look.view.mood, pos.x, pos.y, today, fly]);
 
   useEffect(() => {
-    return subscribeFurniture(() => {
-      if (pinned || adding || open || drag.current) return;
-      const on = perchedOn.current;
-      if (!on) return;
-      const item = listFurniture().find((row) => row.id === on);
-      if (!item) {
-        const next = furnitureLand(false, look.view.mood, today);
-        perchedOn.current = next.on;
-        setPos({ x: next.x, y: next.y });
-        setMotion(next.pose);
-        return;
-      }
-      setPos((current) => {
-        const y = Math.max(6, item.rect.y - CAT + 12);
-        if (Math.abs(current.y - y) < 1) return current;
-        return automaticPoint({ x: current.x, y });
+    let raf = 0;
+    const stop = subscribeFurniture(() => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(() => {
+        raf = 0;
+        if (pinned || adding || open || drag.current) return;
+        const on = perchedOn.current;
+        if (!on) return;
+        const item = listFurniture().find((row) => row.id === on);
+        if (!item) {
+          const next = furnitureLand(false, look.view.mood, today);
+          perchedOn.current = next.on;
+          setPos({ x: next.x, y: next.y });
+          setMotion(next.pose);
+          return;
+        }
+        setPos((current) => {
+          const y = Math.max(6, item.rect.y - CAT + 12);
+          if (Math.abs(current.y - y) < 4) return current;
+          return automaticPoint({ x: current.x, y });
+        });
       });
     });
+    return () => {
+      if (raf) window.cancelAnimationFrame(raf);
+      stop();
+    };
   }, [pinned, adding, open, look.view.mood, today]);
 
   useEffect(() => {

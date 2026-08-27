@@ -12,15 +12,19 @@ import {
   fireFleet,
   layoutStorageBreakpoint,
   loadOfficeLayout,
+  listFurniture,
   officeLayoutKey,
   packComputerDesk,
   placeFleet,
   playFour,
   playPanes,
+  publishFurniture,
   resetFour,
+  resetFurnitureForTests,
   resolveOfficeBreakpoint,
   setInstrumentHidden,
   shapeGames,
+  subscribeFurniture,
 } from "../src/core/index.ts";
 import { catalogHousehold } from "../src/core/index.ts";
 import { readFileSync } from "node:fs";
@@ -138,5 +142,20 @@ describe("D-151 computer room a11y", () => {
     expect(css).toMatch(/office-room-sofa:focus-visible/);
     const instrument = readFileSync("src/widgets/Instrument.tsx", "utf8");
     expect(instrument).toMatch(/inert \? \{ inert: true \}/);
+  });
+
+  it("does not notify furniture listeners when a desk object did not move", () => {
+    resetFurnitureForTests();
+    let calls = 0;
+    const stop = subscribeFurniture(() => { calls += 1; });
+    const blotter = { id: "blotter", rect: { x: 8, y: 8, w: 100, h: 40 }, perchable: true, warn: false, kind: "card" as const };
+    publishFurniture(blotter);
+    publishFurniture({ ...blotter });
+    expect(calls).toBe(1);
+    expect(listFurniture()).toHaveLength(1);
+    publishFurniture({ ...blotter, rect: { ...blotter.rect, y: 40 } });
+    expect(calls).toBe(2);
+    stop();
+    resetFurnitureForTests();
   });
 });

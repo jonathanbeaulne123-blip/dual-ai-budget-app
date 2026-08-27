@@ -784,6 +784,20 @@ export function listFurniture(): Furniture[] {
 }
 
 export function publishFurniture(item: Furniture): void {
+  const prev = furniture.find((row) => row.id === item.id);
+  if (
+    prev
+    && prev.kind === item.kind
+    && prev.perchable === item.perchable
+    && prev.warn === item.warn
+    && prev.seat === item.seat
+    && Math.abs(prev.rect.x - item.rect.x) < 0.5
+    && Math.abs(prev.rect.y - item.rect.y) < 0.5
+    && Math.abs(prev.rect.w - item.rect.w) < 0.5
+    && Math.abs(prev.rect.h - item.rect.h) < 0.5
+  ) {
+    return;
+  }
   furniture = [...furniture.filter((row) => row.id !== item.id), item];
   for (const listener of listeners) listener();
 }
