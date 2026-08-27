@@ -138,6 +138,9 @@ describe("7shifts Timesheet inbox", () => {
     expect(sevenShiftsDisplayName({ first_name: "Alex" })).toBe("Alex");
     expect(sevenShiftsDisplayName({ first_name: "alex@example.com", last_name: "Park" })).toBe("Coworker");
     expect(sevenShiftsDisplayName({ first_name: "5555551234" })).toBe("Coworker");
+    expect(sevenShiftsDisplayName({ first_name: "416-555-1212" })).toBe("Coworker");
+    expect(sevenShiftsDisplayName({ first_name: "(416) 555 1212" })).toBe("Coworker");
+    expect(sevenShiftsDisplayName({ first_name: "Dock 416", last_name: "Five" })).toBe("Dock 416 F.");
   });
 
   it("fills hours and role, leaves cash and card tips empty, and does not mint household members", () => {
@@ -165,12 +168,43 @@ describe("7shifts Timesheet inbox", () => {
     expect(() => parseSevenShiftsInbox({
       ...payload(),
       coworkers: [{ displayName: "alex@example.com", roleName: "Host", date: "2026-08-26", status: "scheduled" }],
-    }, [job()])).toThrow(/unsafe name/);
+    }, [job()])).toThrow(/unsafe label/);
     expect(() => parseSevenShiftsInbox({
       ...payload(),
       sourceName: "Harbour",
       access_token: "secret-token",
     } as never, [job()])).toThrow(/forbidden field/);
+  });
+
+  it("rejects every unknown wage or tip field at both payload boundaries", () => {
+    for (const field of ["hourlyWage", "wage_cents", "tip_amount", "tip_cents"]) {
+      expect(() => parseSevenShiftsInbox({ ...payload(), [field]: 123 } as never, [job()])).toThrow(/tip|wage/i);
+      expect(() => parseSevenShiftsInbox({
+        ...payload(),
+        punches: [{ ...payload().punches[0]!, [field]: 123 } as never],
+      }, [job()])).toThrow(/tip|wage/i);
+    }
+  });
+
+  it("rejects unsafe company, role, location, and coworker labels at the browser boundary", () => {
+    expect(() => parseSevenShiftsInbox(payload({ sourceName: "harbour@example.com" }), [job()])).toThrow(/unsafe label/);
+    expect(() => parseSevenShiftsInbox(payload({
+      punches: [{ ...payload().punches[0]!, roleName: "Call 416-555-1212" }],
+    }), [job()])).toThrow(/unsafe label/);
+    expect(() => parseSevenShiftsInbox(payload({
+      punches: [{ ...payload().punches[0]!, locationName: "dock@example.com" }],
+    }), [job()])).toThrow(/unsafe label/);
+    expect(() => parseSevenShiftsInbox(payload({
+      coworkers: [{ ...payload().coworkers[0]!, roleName: "Host (416) 555-1212" }],
+    }), [job()])).toThrow(/unsafe label/);
+  });
+
+  it("turns bounded degradation codes into fixed browser copy while preserving the punch", () => {
+    const parsed = parseSevenShiftsInbox(payload({ warningCodes: ["coworker-roster-incomplete"] }), [job()]);
+    expect(parsed.drafts).toHaveLength(1);
+    expect(parsed.warnings).toEqual([
+      "7shifts could not fully load the Co-workers roster. Your punch is still ready to review.",
+    ]);
   });
 
   it("skips open punches and already-posted digests instead of double-filling Timesheet", () => {

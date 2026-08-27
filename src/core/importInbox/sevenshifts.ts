@@ -7,7 +7,11 @@ const MAX_COWORKERS = 40;
 const PULL_PREFIX = "s7pull_";
 const PUNCH_PREFIX = "s7punch_";
 const USER_PREFIX = "s7user_";
-const FORBIDDEN = /email|mobile|phone|address|birth|token|secret|password|hourly_wage|access_token|punch_id|employee_id/i;
+const PAYLOAD_KEYS = new Set(["provider", "sourceName", "sourceHash", "jobId", "punches", "coworkers", "warningCodes"]);
+const PUNCH_KEYS = new Set(["stablePunchId", "date", "startedAt", "endedAt", "workedHours", "paidBreakHours", "roleName", "locationName", "open", "tipsOmitted"]);
+const COWORKER_KEYS = new Set(["displayName", "roleName", "date", "status"]);
+
+export type SevenShiftsInboxWarningCode = "coworker-roster-incomplete";
 
 export type SevenShiftsPunchHours = {
   workedHours: number;
@@ -44,6 +48,7 @@ export type SevenShiftsInboxPayload = {
   jobId: string;
   punches: SevenShiftsInboxPunch[];
   coworkers: SevenShiftsInboxCoworker[];
+  warningCodes?: SevenShiftsInboxWarningCode[];
 };
 
 export type SevenShiftsTimesheetDraft = {
@@ -86,16 +91,41 @@ function opaqueDigest(value: unknown, label: string, prefix: typeof PULL_PREFIX 
   return cleaned;
 }
 
-function assertSafeValue(value: unknown, path: string): void {
-  if (FORBIDDEN.test(path)) throw new Error("7shifts inbox included a forbidden field.");
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => assertSafeValue(item, `${path}[${index}]`));
-    return;
+function unsafeLabel(value: string): boolean {
+  return value.includes("@") || (value.match(/\d/g) ?? []).length >= 7;
+}
+
+export function sevenShiftsSafeLabel(value: unknown, max: number, fallback: string): string {
+  const cleaned = cleanText(value, max);
+  return !cleaned || unsafeLabel(cleaned) ? fallback : cleaned;
+}
+
+function requireSafeLabel(value: unknown, max: number, fallback: string, label: string): string {
+  const cleaned = cleanText(value, max);
+  if (!cleaned) return fallback;
+  if (unsafeLabel(cleaned)) throw new Error(`7shifts ${label} included an unsafe label.`);
+  return cleaned;
+}
+
+function assertAllowedKeys(value: unknown, allowed: Set<string>, label: string): asserts value is Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`7shifts ${label} is invalid.`);
   }
-  if (value && typeof value === "object") {
-    for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
-      if (FORBIDDEN.test(key)) throw new Error("7shifts inbox included a forbidden field.");
-      assertSafeValue(nested, `${path}.${key}`);
+  for (const key of Object.keys(value)) {
+    if (allowed.has(key)) continue;
+    if (/tip/i.test(key)) throw new Error("7shifts inbox must not carry tip amounts.");
+    if (/wage/i.test(key)) throw new Error("7shifts inbox must not carry wage fields.");
+    throw new Error("7shifts inbox included a forbidden field.");
+  }
+}
+
+function assertInboxAllowlist(payload: SevenShiftsInboxPayload): void {
+  assertAllowedKeys(payload, PAYLOAD_KEYS, "inbox payload");
+  payload.punches.forEach((row) => assertAllowedKeys(row, PUNCH_KEYS, "punch"));
+  payload.coworkers.forEach((row) => assertAllowedKeys(row, COWORKER_KEYS, "coworker"));
+  if (payload.warningCodes !== undefined) {
+    if (!Array.isArray(payload.warningCodes) || payload.warningCodes.some((code) => code !== "coworker-roster-incomplete")) {
+      throw new Error("7shifts inbox included an invalid warning code.");
     }
   }
 }
@@ -156,7 +186,7 @@ export function sevenShiftsDisplayName(user: {
   const first = cleanText(user?.preferred_first_name || user?.first_name, 40);
   const last = cleanText(user?.preferred_last_name || user?.last_name, 40);
   if (!first && !last) return "Coworker";
-  if (/@|\d{7,}/.test(`${first}${last}`)) return "Coworker";
+  if (unsafeLabel(`${first} ${last}`)) return "Coworker";
   if (!last) return first;
   return `${first} ${last.slice(0, 1)}.`;
 }
@@ -188,23 +218,22 @@ export function parseSevenShiftsInbox(
   if (!payload || payload.provider !== "7shifts" || !Array.isArray(payload.punches) || !Array.isArray(payload.coworkers)) {
     throw new Error("7shifts returned an invalid Timesheet inbox response.");
   }
-  assertSafeValue(payload, "payload");
+  assertInboxAllowlist(payload);
   if (payload.punches.length > MAX_PUNCHES) throw new Error("7shifts returned more than 200 punches. Pull a smaller date range.");
   if (payload.coworkers.length > MAX_COWORKERS) throw new Error("7shifts returned too many coworkers. Pull a smaller date range.");
-  const sourceName = cleanText(payload.sourceName, 100) || "7shifts";
+  const sourceName = requireSafeLabel(payload.sourceName, 100, "7shifts", "source");
   const sourceHash = opaqueDigest(payload.sourceHash, "pull digest", PULL_PREFIX);
   const jobId = cleanText(payload.jobId, 80);
   const job = jobs.find((row) => row.id === jobId && row.active);
   const posted = new Set([...postedPunchDigests].filter(Boolean));
-  const warnings: string[] = [];
+  const warnings: string[] = payload.warningCodes?.includes("coworker-roster-incomplete")
+    ? ["7shifts could not fully load the Co-workers roster. Your punch is still ready to review."]
+    : [];
   const punches: SevenShiftsInboxPunch[] = [];
   const drafts: SevenShiftsTimesheetDraft[] = [];
 
   for (const row of payload.punches) {
     if (row?.tipsOmitted !== true) throw new Error("7shifts inbox must omit tips.");
-    if ("cashTips" in (row as object) || "cardTips" in (row as object) || "tips" in (row as object)) {
-      throw new Error("7shifts inbox must not carry tip amounts.");
-    }
     const stablePunchId = opaqueDigest(row.stablePunchId, "punch digest", PUNCH_PREFIX);
     if (!isValidDateKey(row.date)) throw new Error("7shifts punch is missing a Toronto calendar date.");
     if (!row.startedAt || Number.isNaN(Date.parse(row.startedAt))) throw new Error("7shifts punch is missing a clock-in time.");
@@ -216,8 +245,8 @@ export function parseSevenShiftsInbox(
       endedAt,
       workedHours: Math.max(0, Number(row.workedHours) || 0),
       paidBreakHours: Math.max(0, Number(row.paidBreakHours) || 0),
-      roleName: cleanText(row.roleName, 40) || "Role",
-      locationName: cleanText(row.locationName, 80),
+      roleName: requireSafeLabel(row.roleName, 40, "Role", "punch role"),
+      locationName: requireSafeLabel(row.locationName, 80, "", "punch location"),
       open: row.open === true || !endedAt,
       tipsOmitted: true,
     };
@@ -262,13 +291,12 @@ export function parseSevenShiftsInbox(
   }
 
   const coworkers: SevenShiftsInboxCoworker[] = payload.coworkers.map((row) => {
-    const displayName = cleanText(row.displayName, 40);
-    if (!displayName || displayName.includes("@")) throw new Error("7shifts coworker list included an unsafe name.");
+    const displayName = requireSafeLabel(row.displayName, 40, "Coworker", "coworker name");
     if (!isValidDateKey(row.date)) throw new Error("7shifts coworker is missing a date.");
     if (row.status !== "scheduled" && row.status !== "punched") throw new Error("7shifts coworker status is invalid.");
     return {
       displayName,
-      roleName: cleanText(row.roleName, 40) || "Role",
+      roleName: requireSafeLabel(row.roleName, 40, "Role", "coworker role"),
       date: row.date,
       status: row.status,
     };

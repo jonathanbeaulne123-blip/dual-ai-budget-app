@@ -8,16 +8,25 @@ type Stored = Record<string, unknown>;
 
 class FakeD1 {
   rows: Stored[] = [];
+  preparedSql: string[] = [];
 
   prepare(sql: string) {
     const db = this;
+    db.preparedSql.push(sql);
     return {
       bind(...values: unknown[]) {
         return {
           async first() {
             if (sql.includes("SELECT 1 AS ok")) return { ok: 1 };
             if (sql.startsWith("SELECT *")) {
-              return db.rows.find((row) => row.connection_id === values[0] && row.state === "ready") ?? null;
+              return db.rows.find((row) => (
+                row.connection_id === values[0]
+                && row.environment === values[1]
+                && row.auth_user_id === values[2]
+                && row.household_id === values[3]
+                && row.member_id === values[4]
+                && row.state === "ready"
+              )) ?? null;
             }
             return db.rows[0] ?? null;
           },
@@ -40,13 +49,25 @@ class FakeD1 {
                 last_pull_at: null,
               });
             } else if (sql.includes("SET last_pull_at")) {
-              const row = db.rows.find((item) => item.connection_id === values[2]);
+              const row = db.rows.find((item) => (
+                item.connection_id === values[2]
+                && item.environment === values[3]
+                && item.auth_user_id === values[4]
+                && item.household_id === values[5]
+                && item.member_id === values[6]
+              ));
               if (row) {
                 row.last_pull_at = values[0];
                 row.updated_at = values[1];
               }
             } else if (sql.includes("SET state = 'revoked'")) {
-              const row = db.rows.find((item) => item.connection_id === values[2]);
+              const row = db.rows.find((item) => (
+                item.connection_id === values[2]
+                && item.environment === values[3]
+                && item.auth_user_id === values[4]
+                && item.household_id === values[5]
+                && item.member_id === values[6]
+              ));
               if (row) {
                 row.state = "revoked";
                 row.sealed_private = null;
@@ -59,7 +80,13 @@ class FakeD1 {
           async all() {
             return {
               results: db.rows
-                .filter((row) => row.state === "ready")
+                .filter((row) => (
+                  row.environment === values[0]
+                  && row.auth_user_id === values[1]
+                  && row.household_id === values[2]
+                  && row.member_id === values[3]
+                  && row.state === "ready"
+                ))
                 .map((row) => ({
                   connection_id: row.connection_id,
                   state: row.state,
@@ -108,15 +135,27 @@ function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 }
 
-function sevenShiftsUpstream() {
-  return vi.fn(async (input: string | URL | Request) => {
+function sevenShiftsUpstream(options: {
+  shiftsStatus?: number;
+  membershipRows?: Array<Record<string, unknown>>;
+  companyName?: string;
+  roleName?: string;
+  locationName?: string;
+} = {}) {
+  return vi.fn(async (input: string | URL | Request, _init?: RequestInit) => {
     const url = String(input);
     if (url.endsWith("/auth/v1/user")) return json({ id: "auth-user-1", email: "member@example.com" });
     if (url.includes("/rest/v1/continuity_memberships?")) {
-      return json([{ household_id: "HH-TEST", member_id: "MEM-001", auth_user_id: "auth-user-1", role: "owner" }]);
+      return json(options.membershipRows ?? [{
+        environment: "development",
+        household_id: "HH-TEST",
+        member_id: "MEM-001",
+        auth_user_id: "auth-user-1",
+        role: "owner",
+      }]);
     }
     if (url.startsWith("https://api.7shifts.com/v2/companies")) {
-      return json({ data: [{ id: 1234, name: "Harbour" }] });
+      return json({ data: [{ id: 1234, name: options.companyName ?? "Harbour" }] });
     }
     if (url.startsWith("https://api.7shifts.com/v2/whoami")) {
       return json({
@@ -158,6 +197,7 @@ function sevenShiftsUpstream() {
       });
     }
     if (url.includes("/shifts?")) {
+      if (options.shiftsStatus) return json({ error: "provider plan details must stay private" }, options.shiftsStatus);
       return json({
         data: [{
           id: 1,
@@ -169,8 +209,8 @@ function sevenShiftsUpstream() {
         }],
       });
     }
-    if (url.includes("/roles?")) return json({ data: [{ id: 2583, name: "Server" }, { id: 9, name: "Host" }] });
-    if (url.includes("/locations?")) return json({ data: [{ id: 4569, name: "Harbour" }] });
+    if (url.includes("/roles?")) return json({ data: [{ id: 2583, name: options.roleName ?? "Server" }, { id: 9, name: "Host" }] });
+    if (url.includes("/locations?")) return json({ data: [{ id: 4569, name: options.locationName ?? "Harbour" }] });
     if (url.includes("/users?")) {
       return json({
         data: [
@@ -232,6 +272,37 @@ describe("7shifts Worker scaffold", () => {
     expect(db.rows).toHaveLength(0);
     expect(upstream).not.toHaveBeenCalled();
   });
+
+  it("denies authenticated non-members before any connection D1 or provider call", async () => {
+    const membershipCases = [
+      [],
+      [{
+        environment: "development",
+        household_id: "HH-OTHER",
+        member_id: "MEM-999",
+        auth_user_id: "auth-user-1",
+        role: "owner",
+      }],
+    ];
+    for (const membershipRows of membershipCases) {
+      for (const route of ["probe", "list"] as const) {
+        const db = new FakeD1();
+        const upstream = sevenShiftsUpstream({ membershipRows });
+        vi.stubGlobal("fetch", upstream);
+        const scope = { environment: "development", householdId: "HH-TEST", memberId: "MEM-001" };
+        const response = route === "probe"
+          ? await worker.fetch(api("/work/7shifts/probe", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ...scope, accessToken: token }),
+            }), env(db))
+          : await worker.fetch(api(`/work/7shifts/connections?${new URLSearchParams(scope)}`, { method: "GET" }), env(db));
+        expect(response.status).toBe(401);
+        expect(db.preparedSql).toEqual([]);
+        expect(upstream.mock.calls.some(([input]) => String(input).startsWith("https://api.7shifts.com"))).toBe(false);
+      }
+    }
+  });
 });
 
 describe("authenticated 7shifts Worker", () => {
@@ -270,7 +341,9 @@ describe("authenticated 7shifts Worker", () => {
       body: JSON.stringify(scope),
     }), env(db));
     expect(pulled.status).toBe(200);
-    const pullBody = await pulled.json() as { payload: { punches: Array<Record<string, unknown>>; coworkers: Array<Record<string, unknown>> } };
+    const pullBody = await pulled.json() as {
+      payload: { punches: Array<Record<string, unknown>>; coworkers: Array<Record<string, unknown>> };
+    };
     expect(pullBody.payload.punches[0]).toEqual(expect.objectContaining({
       tipsOmitted: true,
       roleName: "Server",
@@ -285,10 +358,97 @@ describe("authenticated 7shifts Worker", () => {
     const serialized = JSON.stringify(pullBody);
     expect(serialized).not.toMatch(/hourly_wage|"tips"|example\.com|seven-shifts-access|1550|4800/);
     expect(serialized).not.toContain(token);
+    const providerCalls = upstream.mock.calls.filter(([input]) => String(input).startsWith("https://api.7shifts.com"));
+    expect(providerCalls.length).toBeGreaterThan(0);
+    for (const [, init] of providerCalls) {
+      expect(new Headers((init as RequestInit | undefined)?.headers).get("x-api-version")).toBe("2026-01-01");
+    }
 
     const revoked = await worker.fetch(api(`/work/7shifts/connections/${connection.connectionId}?${new URLSearchParams(scope)}`, { method: "DELETE" }), env(db));
     expect(revoked.status).toBe(200);
     expect(db.rows[0]?.sealed_private).toBeNull();
     expect(db.rows[0]?.state).toBe("revoked");
+
+    const reconnected = await worker.fetch(api("/work/7shifts/connections", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...scope, accessToken: token, userDigest: probeBody.users[0]!.userDigest, jobId: "JOB-HARBOUR" }),
+    }), env(db));
+    expect(reconnected.status).toBe(201);
+    const secondConnection = await reconnected.json() as { connectionId: string };
+    expect(secondConnection.connectionId).not.toBe(connection.connectionId);
+    const repulled = await worker.fetch(api(`/work/7shifts/connections/${secondConnection.connectionId}/pull`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(scope),
+    }), env(db));
+    const secondPull = await repulled.json() as { payload: { punches: Array<Record<string, unknown>> } };
+    expect(secondPull.payload.punches[0]?.stablePunchId).toBe(pullBody.payload.punches[0]?.stablePunchId);
+  });
+
+  it("keeps money punches available when scheduled-shift enrichment is unavailable", async () => {
+    const db = new FakeD1();
+    const upstream = sevenShiftsUpstream({ shiftsStatus: 403 });
+    vi.stubGlobal("fetch", upstream);
+    const scope = { environment: "development", householdId: "HH-TEST", memberId: "MEM-001" };
+    const probed = await worker.fetch(api("/work/7shifts/probe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...scope, accessToken: token }),
+    }), env(db));
+    const probeBody = await probed.json() as { users: Array<{ userDigest: string }> };
+    const connected = await worker.fetch(api("/work/7shifts/connections", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...scope, accessToken: token, userDigest: probeBody.users[0]!.userDigest, jobId: "JOB-HARBOUR" }),
+    }), env(db));
+    const connection = await connected.json() as { connectionId: string };
+    const pulled = await worker.fetch(api(`/work/7shifts/connections/${connection.connectionId}/pull`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(scope),
+    }), env(db));
+    expect(pulled.status).toBe(200);
+    const body = await pulled.json() as {
+      payload: { punches: Array<Record<string, unknown>>; coworkers: Array<Record<string, unknown>>; warningCodes: string[] };
+    };
+    expect(body.payload.punches).toHaveLength(1);
+    expect(body.payload.punches[0]).toEqual(expect.objectContaining({ tipsOmitted: true, roleName: "Server" }));
+    expect(body.payload.coworkers).toEqual([]);
+    expect(body.payload.warningCodes).toEqual(["coworker-roster-incomplete"]);
+    expect(JSON.stringify(body)).not.toContain("provider plan details");
+  });
+
+  it("replaces unsafe provider labels before they reach the browser", async () => {
+    const db = new FakeD1();
+    const upstream = sevenShiftsUpstream({
+      companyName: "harbour@example.com",
+      roleName: "Call (416) 555-1212",
+      locationName: "dock@example.com",
+    });
+    vi.stubGlobal("fetch", upstream);
+    const scope = { environment: "development", householdId: "HH-TEST", memberId: "MEM-001" };
+    const probed = await worker.fetch(api("/work/7shifts/probe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...scope, accessToken: token }),
+    }), env(db));
+    const probeBody = await probed.json() as { companyName: string; users: Array<{ userDigest: string }> };
+    expect(probeBody.companyName).toBe("7shifts");
+    const connected = await worker.fetch(api("/work/7shifts/connections", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...scope, accessToken: token, userDigest: probeBody.users[0]!.userDigest, jobId: "JOB-HARBOUR" }),
+    }), env(db));
+    const connection = await connected.json() as { connectionId: string };
+    const pulled = await worker.fetch(api(`/work/7shifts/connections/${connection.connectionId}/pull`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(scope),
+    }), env(db));
+    const body = await pulled.json() as { payload: { sourceName: string; punches: Array<Record<string, unknown>> } };
+    expect(body.payload.sourceName).toBe("7shifts");
+    expect(body.payload.punches[0]).toEqual(expect.objectContaining({ roleName: "Role", locationName: "" }));
+    expect(JSON.stringify(body)).not.toMatch(/@|416|555|1212/);
   });
 });

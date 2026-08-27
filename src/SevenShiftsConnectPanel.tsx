@@ -19,15 +19,7 @@ import type { ParsedSevenShiftsBatch } from "./core/importInbox/sevenshifts.ts";
 
 type State = "idle" | "probing" | "connecting" | "ready" | "error";
 
-export function SevenShiftsConnectPanel({
-  environment,
-  householdId,
-  memberId,
-  jobs,
-  postedPunchDigests = [],
-  disabled,
-  onPulled,
-}: {
+type SevenShiftsConnectPanelProps = {
   environment: Environment;
   householdId: string;
   memberId: string;
@@ -35,7 +27,22 @@ export function SevenShiftsConnectPanel({
   postedPunchDigests?: Iterable<string>;
   disabled: boolean;
   onPulled?: (batch: ParsedSevenShiftsBatch) => void;
-}) {
+};
+
+export function SevenShiftsConnectPanel(props: SevenShiftsConnectPanelProps) {
+  const scopeKey = `${props.environment}:${props.householdId}:${props.memberId}`;
+  return <ScopedSevenShiftsConnectPanel key={scopeKey} {...props} />;
+}
+
+function ScopedSevenShiftsConnectPanel({
+  environment,
+  householdId,
+  memberId,
+  jobs,
+  postedPunchDigests = [],
+  disabled,
+  onPulled,
+}: SevenShiftsConnectPanelProps) {
   const scope: SevenShiftsScope = { environment, householdId, memberId };
   const [state, setState] = useState<State>("idle");
   const [notice, setNotice] = useState("");
@@ -132,9 +139,11 @@ export function SevenShiftsConnectPanel({
       setCoworkers(batch.coworkers);
       setTab("coworkers");
       onPulled?.(batch);
-      setNotice(batch.drafts.length
+      const baseNotice = batch.drafts.length
         ? `${batch.drafts.length} clocked punch${batch.drafts.length === 1 ? "" : "es"} pulled. Open Timesheet and tap Fill from 7shifts. Tips stay blank.`
-        : batch.warnings[0] || "No new clocked punches to confirm.");
+        : batch.warnings[0] || "No new clocked punches to confirm.";
+      const warning = batch.drafts.length ? batch.warnings[0] : "";
+      setNotice([baseNotice, warning].filter(Boolean).join(" "));
     } catch (caught) {
       setState("error");
       setNotice(caught instanceof Error ? caught.message : String(caught));

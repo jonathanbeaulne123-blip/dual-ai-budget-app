@@ -387,10 +387,17 @@ export function App() {
   const [booting, setBooting] = useState(true);
   const [tab, setTab] = useState<Tab>("home");
   const [adding, setAdding] = useState(false);
+  const workShiftInputRef = useRef<{
+    input: PostWorkShiftInput;
+    environment: Environment;
+    householdId: string;
+    memberId: string;
+  } | null>(null);
   const confirmPanelRef = useRef<HTMLDivElement | null>(null);
   const lastAmountLabelRef = useRef<string | null>(null);
 
   const closeAdd = () => {
+    workShiftInputRef.current = null;
     setAdding(false);
     setConfirm(null);
     setError("");
@@ -415,6 +422,8 @@ export function App() {
   const [splitPercents, setSplitPercents] = useState<Record<string, number>>({ "MEM-001": 50, "MEM-002": 50 });
   const [now] = useState(() => new Date());
   const [session, setSession] = useState<Session | null>(null);
+  const sessionRef = useRef<Session | null>(session);
+  sessionRef.current = session;
   const [replicas, setReplicas] = useState<HouseholdReplicaSummary[]>([]);
   const [personalReplica, setPersonalReplica] = useState<PersonalEnvelope | null>(null);
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "synced" | "error">("idle");
@@ -465,7 +474,6 @@ export function App() {
   historyRef.current = history;
   const confirmationRef = useRef<string | null>(null);
   const postingRef = useRef(false);
-  const workShiftInputRef = useRef<PostWorkShiftInput | null>(null);
   const workShiftDateRef = useRef(todayKey());
   const duePreviewOffered = useRef<string | null>(null);
   const [workShiftDraft, setWorkShiftDraft] = useState<WorkShiftDraft | null>(null);
@@ -493,6 +501,15 @@ export function App() {
       setShiftScanBusy(false);
     }
   }
+
+  const addScopeKey = `${environment}:${household?.householdId ?? ""}:${session?.memberId ?? ""}`;
+  const previousAddScopeRef = useRef(addScopeKey);
+
+  useEffect(() => {
+    if (previousAddScopeRef.current === addScopeKey) return;
+    previousAddScopeRef.current = addScopeKey;
+    closeAdd();
+  }, [addScopeKey]);
 
   function rememberUndoHistory(next: UndoToken[]) {
     setHistory(next);
@@ -685,6 +702,7 @@ export function App() {
     let live = true;
     setBooting(true);
     const loadedSession = loadSession(environment);
+    sessionRef.current = loadedSession;
     setSession(loadedSession);
     void hydrateContinuityOutbox(environment);
     loadHousehold(environment, loadedSession?.householdId, loadedSession?.memberId).then(async (loaded) => {
@@ -1576,6 +1594,9 @@ export function App() {
 
   function rememberSession(next: Session) {
     const remembered = { ...next, householdId: next.householdId ?? householdRef.current?.householdId };
+    const previous = sessionRef.current;
+    if (previous?.memberId !== remembered.memberId || previous?.householdId !== remembered.householdId) closeAdd();
+    sessionRef.current = remembered;
     setSession(remembered);
     saveSession(environment, remembered);
   }
@@ -1608,6 +1629,7 @@ export function App() {
         activate: true,
         continuityIdentity: continuityIdentity ?? undefined,
       });
+      closeAdd();
       householdRef.current = candidate;
       setHousehold(candidate);
       rememberSession({ memberId: nextMemberId, view: session?.view ?? "household", householdId });
@@ -2146,7 +2168,7 @@ export function App() {
       } catch (caught) {
         if (caught instanceof NeedsConfirmationError) {
           const plan = resolveDuplicateRetry({
-            pendingWorkShift: workShiftInputRef.current,
+            pendingWorkShift: workShiftInputRef.current?.input ?? null,
             confirmCode: caught.code,
             tab,
           });
@@ -2228,6 +2250,9 @@ export function App() {
       await clearHousehold(environment, input.householdId);
       setDiscoveredLedgers((current) => current.filter((item) => item.household.householdId !== input.householdId));
       if (household?.householdId === input.householdId) {
+        closeAdd();
+        householdRef.current = null;
+        sessionRef.current = null;
         setHousehold(null);
         setSession(null);
         setHistory([]);
@@ -2293,6 +2318,9 @@ export function App() {
       setPersonalReplica(null);
       setReplicas([]);
       setDiscoveredLedgers([]);
+      closeAdd();
+      householdRef.current = null;
+      sessionRef.current = null;
       setHousehold(null);
       setSession(null);
       setGuard(null);
@@ -2434,6 +2462,8 @@ export function App() {
                   return;
                 }
                 const nextSession = { memberId, view: "household" as const, householdId: next.householdId };
+                closeAdd();
+                sessionRef.current = nextSession;
                 setSession(nextSession);
                 saveSession(environment, nextSession);
                 setWelcomeIdentity(null);
@@ -2825,7 +2855,7 @@ export function App() {
   function goTab(next: Tab) {
     leaveDesk();
     setTab(next);
-    setAdding(false);
+    closeAdd();
   }
 
   function beginSignOut() {
@@ -2976,11 +3006,44 @@ export function App() {
   }
 
   function submitWorkShift(input: PostWorkShiftInput, confirmDuplicate = false) {
-    workShiftInputRef.current = input;
-    setMode("shift");
-    const punch = householdRef.current ? activeOpenShift(householdRef.current.kitchen, actorId) : null;
-    setShiftGate(punch ? "signOut" : "finished");
-    run((current) => postWorkShift(current, { ...input, confirmDuplicate }));
+    const current = householdRef.current;
+    const currentMemberId = sessionRef.current?.memberId;
+    const pending = confirmDuplicate
+      ? workShiftInputRef.current
+      : current && currentMemberId
+        ? {
+            input,
+            environment: current.environment,
+            householdId: current.householdId,
+            memberId: currentMemberId,
+          }
+        : null;
+    const scopeMatches = Boolean(
+      pending
+      && current
+      && current.environment === pending.environment
+      && current.householdId === pending.householdId
+      && currentMemberId === pending.memberId
+      && input.memberId === pending.memberId,
+    );
+    if (!pending || !scopeMatches) {
+      workShiftInputRef.current = null;
+      setConfirm(null);
+      setError("That Timesheet draft belongs to another ledger or member. Pull it again.");
+      return;
+    }
+    workShiftInputRef.current = pending;
+    void run((live) => {
+      if (
+        live.environment !== pending.environment
+        || live.householdId !== pending.householdId
+        || sessionRef.current?.memberId !== pending.memberId
+      ) {
+        workShiftInputRef.current = null;
+        throw new Error("That Timesheet draft belongs to another ledger or member. Pull it again.");
+      }
+      return postWorkShift(live, { ...pending.input, confirmDuplicate });
+    });
   }
 
   function addPostLabel(): string {
@@ -3233,18 +3296,19 @@ export function App() {
             && workShiftInputRef.current
             && !adding
             && workShiftInputRef.current.memberId === session.memberId
+            && workShiftInputRef.current.input.memberId === session.memberId
               ? confirm
               : null
           }
           onConfirmAnyway={() => {
             const pending = workShiftInputRef.current;
             const plan = resolveDuplicateRetry({
-              pendingWorkShift: pending,
+              pendingWorkShift: pending?.input ?? null,
               confirmCode: confirm?.code ?? null,
               tab,
             });
             if (plan.kind === "work-shift" && pending && pending.memberId === session.memberId) {
-              submitWorkShift(pending, true);
+              submitWorkShift(pending.input, true);
             }
           }}
           onDismissDuplicate={() => setConfirm(null)}
@@ -4135,13 +4199,14 @@ export function App() {
                   </div>
                 ))}
                 <button className="primary" onClick={() => {
+                  const pending = workShiftInputRef.current;
                   const plan = resolveDuplicateRetry({
-                    pendingWorkShift: workShiftInputRef.current,
+                    pendingWorkShift: pending?.input ?? null,
                     confirmCode: confirm.code,
                     tab,
                   });
-                  if (plan.kind === "work-shift" && workShiftInputRef.current) {
-                    submitWorkShift(workShiftInputRef.current, true);
+                  if (plan.kind === "work-shift" && pending) {
+                    submitWorkShift(pending.input, true);
                   } else {
                     submit({ confirmDuplicate: true });
                   }
@@ -4218,6 +4283,9 @@ export function App() {
                 clearSyncAnchor(environment, hid);
                 clearContinuityOutboxForHousehold(environment, hid);
                 await clearHousehold(environment, hid);
+                closeAdd();
+                householdRef.current = null;
+                sessionRef.current = null;
                 setHistory([]);
                 setToast(null);
                 setPersonalReplica(null);
@@ -4259,6 +4327,7 @@ export function App() {
               setBusy(true);
               try {
                 await gateWithGoogle({ record: false });
+                closeAdd();
                 setEnvironment(next);
                 setHistory([]);
                 setToast(null);

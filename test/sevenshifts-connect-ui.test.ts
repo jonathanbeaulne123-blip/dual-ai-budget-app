@@ -111,5 +111,20 @@ describe("7shifts Connect panel", () => {
     await settleUntil(() => /Co-workers/i.test(container.textContent || ""));
     expect(container.textContent).toMatch(/not household members/i);
     expect(container.textContent).toMatch(/Tips are not in 7shifts/i);
+
+    const nextJob = { ...job, id: "JOB-OTHER", memberId: "MEM-002", name: "Other job" };
+    act(() => root.render(createElement(SevenShiftsConnectPanel, {
+      environment: "development",
+      householdId: "HH-OTHER",
+      memberId: "MEM-002",
+      jobs: [nextJob],
+      disabled: false,
+      onPulled,
+    })));
+    await settleUntil(() => /access token/i.test(container.textContent || ""));
+    expect((container.querySelector("input[type='password']") as HTMLInputElement).value).toBe("");
+    const resetTabs = container.querySelectorAll("button");
+    expect(resetTabs[0]?.className).toContain("selected");
+    expect(resetTabs[1]?.className).not.toContain("selected");
   });
 });

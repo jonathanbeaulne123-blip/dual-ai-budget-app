@@ -3,11 +3,13 @@ import {
   hoursFromSevenShiftsPunch,
   sevenShiftsDisplayName,
   sevenShiftsPunchDate,
+  sevenShiftsSafeLabel,
 } from "../src/core/importInbox/sevenshifts.ts";
 
 export const SEVENSHIFTS_STATUS_PATH = "/work/7shifts/status";
 const SEVENSHIFTS_PREFIX = "/work/7shifts/";
 const API_BASE = "https://api.7shifts.com";
+const API_VERSION = "2026-01-01";
 const MAX_PROVIDER_BYTES = 2 * 1024 * 1024;
 const MAX_PAGES = 5;
 const PAGE_LIMIT = 100;
@@ -137,11 +139,18 @@ async function verifiedScope(request, env, input) {
     member_id: `eq.${scope.memberId}`,
     auth_user_id: `eq.${String(user.id)}`,
     active: "eq.true",
-    select: "household_id,member_id,auth_user_id,role",
+    select: "environment,household_id,member_id,auth_user_id,role",
     limit: "1",
   });
   const memberships = await supabaseJson(env, `/rest/v1/continuity_memberships?${query}`, accessToken);
-  if (!Array.isArray(memberships) || memberships.length !== 1) {
+  const membership = Array.isArray(memberships) && memberships.length === 1 ? memberships[0] : null;
+  if (
+    !membership
+    || membership.environment !== scope.environment
+    || membership.household_id !== scope.householdId
+    || membership.member_id !== scope.memberId
+    || membership.auth_user_id !== String(user.id)
+  ) {
     throw new Error("This Google account is not linked to that Hearth member.");
   }
   return { ...scope, authUserId: String(user.id) };
@@ -197,11 +206,15 @@ async function hmacHex(env, value) {
   return [...digest].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+function punchOwnership(scope, companyId, userId, punchId) {
+  return `sevenshifts:punch:v1:${scope.environment}:${scope.authUserId}:${scope.householdId}:${scope.memberId}:${companyId}:${userId}:${punchId}`;
+}
+
 async function providerJson(url, token) {
   const response = await fetch(url, {
     method: "GET",
     redirect: "manual",
-    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json", "x-api-version": API_VERSION },
   });
   if (response.status >= 300 && response.status < 400) {
     const error = new Error("7shifts attempted an unexpected redirect.");
@@ -247,7 +260,7 @@ async function discoverCompany(token) {
   const body = await providerJson(`${API_BASE}/v2/companies?limit=5`, token);
   const company = Array.isArray(body?.data) ? body.data[0] : null;
   const companyId = Number(company?.id);
-  const name = String(company?.name || company?.company_name || "7shifts").slice(0, 80);
+  const name = sevenShiftsSafeLabel(company?.name || company?.company_name, 80, "7shifts");
   if (!Number.isInteger(companyId) || companyId <= 0) throw new Error("That 7shifts token did not return a company.");
   return { companyId, name };
 }
@@ -265,7 +278,7 @@ async function probeConnection(request, env, input) {
   const users = await discoverUsers(token, company.companyId);
   if (!users.length) throw new Error("That 7shifts token has no active users on this company.");
   return {
-    companyName: company.name.slice(0, 80),
+    companyName: sevenShiftsSafeLabel(company.name, 80, "7shifts"),
     users: await Promise.all(users.slice(0, 20).map(async (user) => ({
       userDigest: `s7user_${await hmacHex(env, `${scope.authUserId}:${company.companyId}:${user.id}`)}`,
       displayName: sevenShiftsDisplayName(user),
@@ -298,8 +311,8 @@ async function connectAccount(request, env, config, input) {
   });
   await config.db.prepare(
     "INSERT INTO seven_shifts_connections (connection_id, environment, auth_user_id, household_id, member_id, job_id, state, state_version, sealed_private, key_version, company_label, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'ready', 1, ?, 1, ?, ?, ?)",
-  ).bind(connectionId, scope.environment, scope.authUserId, scope.householdId, scope.memberId, jobId, sealed, company.name.slice(0, 80), now, now).run();
-  return { connectionId, companyName: company.name.slice(0, 80), jobId, state: "ready" };
+  ).bind(connectionId, scope.environment, scope.authUserId, scope.householdId, scope.memberId, jobId, sealed, sevenShiftsSafeLabel(company.name, 80, "7shifts"), now, now).run();
+  return { connectionId, companyName: sevenShiftsSafeLabel(company.name, 80, "7shifts"), jobId, state: "ready" };
 }
 
 function ownerWhere(scope, connectionId) {
@@ -315,7 +328,7 @@ async function listConnections(request, env, config, query) {
     connectionId: row.connection_id,
     state: row.state,
     jobId: row.job_id,
-    companyName: String(row.company_label || "7shifts").slice(0, 80),
+    companyName: sevenShiftsSafeLabel(row.company_label, 80, "7shifts"),
     updatedAt: row.updated_at,
     lastPullAt: row.last_pull_at || null,
   }));
@@ -332,7 +345,7 @@ async function loadConnection(config, scope, connectionId) {
 async function nameMap(url, token) {
   const rows = await paged(url, token);
   const map = new Map();
-  for (const row of rows) map.set(Number(row.id), String(row.name || row.location_name || "").slice(0, 40));
+  for (const row of rows) map.set(Number(row.id), sevenShiftsSafeLabel(row.name || row.location_name, 40, ""));
   return map;
 }
 
@@ -349,30 +362,38 @@ async function pullConnection(request, env, config, connectionId, input) {
   const from = new Date(to.getTime() - PULL_DAYS * 24 * 60 * 60 * 1000);
   const range = `clocked_in[gte]=${encodeURIComponent(from.toISOString())}&clocked_in[lte]=${encodeURIComponent(to.toISOString())}&limit=${PAGE_LIMIT}`;
   const shiftRange = `start[gte]=${encodeURIComponent(from.toISOString())}&start[lte]=${encodeURIComponent(to.toISOString())}&limit=${PAGE_LIMIT}&draft=false`;
-  const [punches, scheduled, roles, locations, users] = await Promise.all([
+  const [punches, roles] = await Promise.all([
     paged(`${API_BASE}/v2/company/${companyId}/time_punches?user_id=${userId}&${range}`, token),
-    paged(`${API_BASE}/v2/company/${companyId}/shifts?${shiftRange}`, token),
     nameMap(`${API_BASE}/v2/company/${companyId}/roles?limit=${PAGE_LIMIT}`, token),
+  ]);
+  const enrichment = await Promise.allSettled([
+    paged(`${API_BASE}/v2/company/${companyId}/shifts?${shiftRange}`, token),
     nameMap(`${API_BASE}/v2/company/${companyId}/locations?limit=${PAGE_LIMIT}`, token),
     paged(`${API_BASE}/v2/company/${companyId}/users?limit=${PAGE_LIMIT}`, token),
   ]);
+  const scheduled = enrichment[0].status === "fulfilled" ? enrichment[0].value : [];
+  const locations = enrichment[1].status === "fulfilled" ? enrichment[1].value : new Map();
+  const users = enrichment[2].status === "fulfilled" ? enrichment[2].value : [];
+  const warningCodes = enrichment.some((result) => result.status === "rejected") ? ["coworker-roster-incomplete"] : [];
   const usersById = byId(users);
   const inboxPunches = [];
   for (const punch of punches) {
     if (Number(punch.user_id) !== userId) continue;
     if (punch.deleted === true) continue;
+    const providerPunchId = String(punch.id ?? "").trim();
+    if (!/^\d{1,32}$/.test(providerPunchId)) continue;
     const hours = hoursFromSevenShiftsPunch(punch);
     const startedAt = String(punch.clocked_in || "");
     if (!startedAt || Number.isNaN(Date.parse(startedAt))) continue;
     inboxPunches.push({
-      stablePunchId: `s7punch_${await hmacHex(env, `${ownership(scope, connectionId)}:punch:${punch.id}`)}`,
+      stablePunchId: `s7punch_${await hmacHex(env, punchOwnership(scope, companyId, userId, providerPunchId))}`,
       date: sevenShiftsPunchDate(startedAt),
       startedAt,
       endedAt: hours.open ? null : String(punch.clocked_out),
       workedHours: hours.workedHours,
       paidBreakHours: hours.paidBreakHours,
-      roleName: roles.get(Number(punch.role_id)) || "Role",
-      locationName: locations.get(Number(punch.location_id)) || "",
+      roleName: sevenShiftsSafeLabel(roles.get(Number(punch.role_id)), 40, "Role"),
+      locationName: sevenShiftsSafeLabel(locations.get(Number(punch.location_id)), 40, ""),
       open: hours.open,
       tipsOmitted: true,
     });
@@ -387,7 +408,7 @@ async function pullConnection(request, env, config, connectionId, input) {
     if (!start || Number.isNaN(Date.parse(start))) continue;
     const date = sevenShiftsPunchDate(start);
     const displayName = sevenShiftsDisplayName(usersById.get(otherId));
-    const roleName = roles.get(Number(item.role_id)) || "Role";
+    const roleName = sevenShiftsSafeLabel(roles.get(Number(item.role_id)), 40, "Role");
     const status = item.clocked_in ? "punched" : "scheduled";
     const key = `${displayName}|${roleName}|${date}|${status}`;
     if (coworkerKeys.has(key) || coworkers.length >= 40) continue;
@@ -402,11 +423,12 @@ async function pullConnection(request, env, config, connectionId, input) {
     connectionId,
     payload: {
       provider: "7shifts",
-      sourceName: String(row.company_label || "7shifts").slice(0, 80),
+      sourceName: sevenShiftsSafeLabel(row.company_label, 80, "7shifts"),
       sourceHash: `s7pull_${await hmacHex(env, `${ownership(scope, connectionId)}:pull:${now}`)}`,
       jobId,
       punches: inboxPunches.slice(0, 200),
       coworkers,
+      ...(warningCodes.length ? { warningCodes } : {}),
     },
   };
 }
