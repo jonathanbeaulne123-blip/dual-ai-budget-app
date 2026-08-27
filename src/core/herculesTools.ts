@@ -10,6 +10,7 @@ import {
   type MonthKey,
 } from "./calendar.ts";
 import { accountBookBalance, creditCardView, householdWallet } from "./accounts.ts";
+import { activeAccounts } from "./catalog.ts";
 import { claimPublicLabel, outstandingClaims } from "./appointments.ts";
 import { monthSummary } from "./budget.ts";
 import { duplicateContrastPairs } from "./duplicate.ts";
@@ -28,7 +29,6 @@ import {
 } from "./statements.ts";
 import { accountRegister, booksEquation, compileHousehold, trialBalance } from "./journal.ts";
 import { ledgerNameForView, shapeLedgerNames } from "./ledgerNames.ts";
-import { householdForHerculesContext, householdForShiftReadTools } from "./visibility.ts";
 import type { HerculesAskContext } from "./askBooks.ts";
 import type { HerculesGroundedFact, HerculesNumberSource } from "./herculesProvenance.ts";
 import type { HerculesTalk } from "./herculesTalk.ts";
@@ -146,7 +146,7 @@ export type HerculesReadToolRun = {
 };
 
 export const HERCULES_READ_TOOL_CATALOG: ReadonlyArray<{ name: HerculesReadToolName; description: string }> = [
-  { name: "ledger_context", description: "Read the household name, shared and personal ledger names, connected member, and visible bank account names." },
+  { name: "ledger_context", description: "Read the household name, every ledger name, every member, every active bank account, and category names the books use." },
   { name: "account_balance", description: "Read one visible account balance or the visible account list." },
   { name: "find_transactions", description: "Find posted rows by merchant, account, category, member, date period, or amount bounds." },
   { name: "spending_summary", description: "Total expenses less refunds for a period, optionally filtered." },
@@ -455,30 +455,44 @@ function fuzzy<T>(rows: T[], query: string | undefined, label: (row: T) => strin
     ?? rows.find((row) => normalize(label(row)).includes(needle) || needle.includes(normalize(label(row))));
 }
 
-function visibleAccounts(household: Household, context: HerculesAskContext): Account[] {
-  const referenced = new Set<string>();
-  for (const tx of household.transactions) {
-    referenced.add(tx.accountId);
-    if (tx.transferFromAccountId) referenced.add(tx.transferFromAccountId);
-    if (tx.transferToAccountId) referenced.add(tx.transferToAccountId);
-  }
-  return household.accounts.filter((account) => {
-    if (!account.active) return false;
-    if (context.view === "personal") return account.ownerMemberId === context.memberId || account.ownerMemberId === JOINT || referenced.has(account.id);
-    return account.ownerMemberId === JOINT || referenced.has(account.id);
-  });
+function herculesAccounts(household: Household): Account[] {
+  return activeAccounts(household);
 }
 
-function visibleChartAccounts(household: Household, context: HerculesAskContext, books: ReturnType<typeof compileHousehold>) {
-  const bankIds = new Set(visibleAccounts(household, context).map((account) => account.id));
+function herculesChartAccounts(household: Household, books: ReturnType<typeof compileHousehold>) {
+  const bankIds = new Set(herculesAccounts(household).map((account) => account.id));
   return books.chart.filter((account) => account.source !== "bank" || bankIds.has(account.id));
+}
+
+function accountLabel(household: Household, accountId: string | null | undefined): string {
+  if (!accountId) return "Unknown account";
+  return household.accounts.find((account) => account.id === accountId)?.name ?? accountId;
+}
+
+function categoryLabel(household: Household, categoryId: string | null | undefined): string {
+  if (!categoryId) return "Uncategorized";
+  const category = household.categories.find((item) => item.id === categoryId);
+  if (!category) return categoryId;
+  if (category.recordType === "category" && category.parentId) {
+    const parent = household.categories.find((item) => item.id === category.parentId);
+    return parent ? `${parent.name} · ${category.name}` : category.name;
+  }
+  return category.name;
+}
+
+function chartAccountLabel(chart: Map<string, { name: string }>, accountId: string): string {
+  return chart.get(accountId)?.name ?? accountId;
+}
+
+function journalEntryLabel(entry: { date: string; memo?: string | null }): string {
+  const memo = entry.memo?.trim();
+  return memo ? `${entry.date} · ${memo}` : `${entry.date} journal entry`;
 }
 
 function resolveMember(household: Household, query: string | undefined, context: HerculesAskContext) {
   if (!query) return undefined;
-  if (context.view === "personal") {
-    const self = household.members.find((member) => member.id === context.memberId);
-    return self && (normalize(query) === "me" || normalize(self.name).includes(normalize(query))) ? self : undefined;
+  if (normalize(query) === "me") {
+    return household.members.find((member) => member.id === context.memberId);
   }
   return fuzzy(household.members.filter((member) => member.active), query, (member) => member.name);
 }
@@ -487,7 +501,7 @@ function resolveFilters(household: Household, args: Record<string, unknown>, con
   const accountQuery = cleanString(args.account);
   const categoryQuery = cleanString(args.category);
   const memberQuery = cleanString(args.member);
-  const account = fuzzy(visibleAccounts(household, context), accountQuery, (row) => `${row.name} ${row.institution} ${row.last4}`);
+  const account = fuzzy(herculesAccounts(household), accountQuery, (row) => `${row.name} ${row.institution} ${row.last4}`);
   const category = fuzzy(household.categories.filter((row) => row.recordType === "category" && row.active), categoryQuery, (row) => row.name);
   const member = resolveMember(household, memberQuery, context);
   const missing = [
@@ -521,7 +535,7 @@ function journalSource(
   entry: ReturnType<typeof compileHousehold>["entries"][number],
   detail: Partial<HerculesNumberSource> = {},
 ): HerculesNumberSource {
-  return toolSource(context, `Open journal entry ${entry.id}`, {
+  return toolSource(context, `Open ${journalEntryLabel(entry)}`, {
     journalEntryId: entry.id,
     transactionId: entry.originTransactionIds[0],
     from: entry.date,
@@ -535,37 +549,46 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const member = household.members.find((row) => row.id === context.memberId && row.active);
     const names = shapeLedgerNames(household.ledgerNames, household.members);
     const activeLedger = ledgerNameForView(household, context.memberId, context.view);
-    const accounts = visibleAccounts(household, context);
+    const accounts = herculesAccounts(household);
+    const members = household.members.filter((row) => row.active);
+    const categories = household.categories.filter((row) => row.active && row.recordType === "category");
     const source = toolSource(context, "Ledger context");
     const facts = [
       fact(call, 0, "Household", household.name, source),
       fact(call, 1, "Shared ledger", names.shared, source),
-      fact(call, 2, "Your personal ledger", names.personal[context.memberId] ?? "Personal Ledger", toolSource(context, "Personal ledger name")),
-      fact(call, 3, "Active ledger", activeLedger, source),
-      fact(call, 4, "Connected member", member?.name ?? context.memberId, source),
+      fact(call, 2, "Active ledger", activeLedger, source),
+      fact(call, 3, "Connected member", member?.name ?? context.memberId, source),
+      ...members.map((row, index) => fact(call, 4 + index, row.name, names.personal[row.id] ?? "Personal Ledger", source)),
       ...accounts.map((account, index) => fact(
         call,
-        5 + index,
+        20 + index,
         account.name,
         `${account.kind}${account.institution ? ` · ${account.institution}` : ""}${account.last4 ? ` ···${account.last4}` : ""} · ${formatCad(accountBookBalance(household, account.id, today))}`,
         toolSource(context, `Open ${account.name}`, { accountId: account.id, surface: "accounts", to: today }),
+      )),
+      ...categories.slice(0, 12).map((category, index) => fact(
+        call,
+        40 + index,
+        categoryLabel(household, category.id),
+        category.transactionType,
+        toolSource(context, `Open ${category.name}`, { categoryId: category.id }),
       )),
     ];
     return {
       callId: call.id,
       name: call.name,
       status: "ok",
-      sentence: `Household “${household.name}” uses “${names.shared}” for shared books and “${names.personal[context.memberId] ?? "Personal Ledger"}” for your personal ledger. You are on “${activeLedger}” as ${member?.name ?? "this member"} with ${accounts.length} visible bank account${accounts.length === 1 ? "" : "s"}.`,
+      sentence: `Household “${household.name}” · active ledger “${activeLedger}” · ${members.length} member${members.length === 1 ? "" : "s"} · ${accounts.length} active account${accounts.length === 1 ? "" : "s"} · ${categories.length} active categories.`,
       facts,
     };
   }
 
   if (call.name === "account_balance") {
-    const accounts = visibleAccounts(household, context);
+    const accounts = herculesAccounts(household);
     const accountQuery = cleanString(call.args.account);
     const target = fuzzy(accounts, accountQuery, (row) => `${row.name} ${row.institution} ${row.last4}`);
     if (accountQuery && !target) return empty(call, `I cannot match visible account “${accountQuery}” in this ledger.`);
-    const rows = target ? [target] : accounts.slice(0, 8);
+    const rows = target ? [target] : accounts;
     if (!rows.length) return empty(call, "I cannot see an account in this ledger.");
     const facts = rows.map((account, index) => fact(call, index, account.name, formatCad(accountBookBalance(household, account.id, today)), toolSource(context, `Open ${account.name}`, { accountId: account.id, surface: "accounts", to: today })));
     return { callId: call.id, name: call.name, status: "ok", sentence: target ? `${target.name} is ${facts[0]!.value} on the visible books.` : `I found ${facts.length} visible account balances.`, facts };
@@ -577,7 +600,13 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const limit = Math.min(10, Math.max(1, Number(call.args.limit) || 5));
     const rows = [...query.rows].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)).slice(0, limit);
     if (!rows.length) return empty(call, `I found no matching posted rows ${query.range.label}.`);
-    const facts = rows.map((tx, index) => fact(call, index, `${tx.date} · ${tx.place || tx.note || tx.type}`, formatCad(tx.amountCents), toolSource(context, "Open this posted row", { transactionId: tx.id, accountId: tx.accountId, categoryId: tx.subcategoryId ?? undefined, memberId: tx.createdBy, from: tx.date, to: tx.date })));
+    const facts = rows.map((tx, index) => fact(
+      call,
+      index,
+      `${tx.date} · ${tx.place || tx.note || tx.type} · ${accountLabel(household, tx.accountId)} · ${categoryLabel(household, tx.subcategoryId)}`,
+      formatCad(tx.amountCents),
+      toolSource(context, "Open this posted row", { transactionId: tx.id, accountId: tx.accountId, categoryId: tx.subcategoryId ?? undefined, memberId: tx.createdBy, from: tx.date, to: tx.date }),
+    ));
     return { callId: call.id, name: call.name, status: "ok", sentence: `I found ${query.rows.length} matching posted row${query.rows.length === 1 ? "" : "s"} ${query.range.label}; here are ${facts.length}.`, facts };
   }
 
@@ -733,7 +762,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
   }
 
   if (call.name === "credit_card_status") {
-    const cards = visibleAccounts(household, context).filter((account) => account.kind === "credit");
+    const cards = herculesAccounts(household).filter((account) => account.kind === "credit");
     const accountQuery = cleanString(call.args.account);
     const target = fuzzy(cards, accountQuery, (row) => `${row.name} ${row.institution} ${row.last4}`) ?? (!accountQuery && cards.length === 1 ? cards[0] : undefined);
     if (!target) return empty(call, accountQuery ? `I cannot match visible card “${accountQuery}” in this ledger.` : "Name the card you want me to inspect.");
@@ -858,12 +887,12 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
   if (call.name === "trial_balance") {
     const books = compileHousehold(household);
     const trial = trialBalance(books, { recognizedOnly: true });
-    const visibleIds = new Set(visibleChartAccounts(household, context, books).map((row) => row.id));
+    const visibleIds = new Set(herculesChartAccounts(household, books).map((row) => row.id));
     const rows = trial.rows.filter((row) => visibleIds.has(row.id) && (row.displayDebitCents || row.displayCreditCents)).slice(0, 8);
     const facts = rows.map((row, index) => fact(
       call,
       index,
-      `${row.code} · ${row.name}`,
+      `${row.name}`,
       row.displayDebitCents ? `${formatCad(row.displayDebitCents)} debit` : `${formatCad(row.displayCreditCents)} credit`,
       toolSource(context, `Open ${row.name}`, { accountId: row.bankAccountId, categoryId: row.categoryId }),
     ));
@@ -884,7 +913,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const books = compileHousehold(household);
     const range = periodRange(today, cleanPeriod(call.args.period), call.args);
     const accountQuery = cleanString(call.args.account);
-    const account = fuzzy(visibleChartAccounts(household, context, books), accountQuery, (row) => `${row.code} ${row.name}`);
+    const account = fuzzy(herculesChartAccounts(household, books), accountQuery, (row) => row.name);
     if (accountQuery && !account) return empty(call, `I cannot match journal account “${accountQuery}” in this ledger.`);
     const memberQuery = cleanString(call.args.member);
     const member = resolveMember(household, memberQuery, context);
@@ -902,7 +931,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
   if (call.name === "account_activity" || call.name === "explain_balance") {
     const books = compileHousehold(household);
     const accountQuery = cleanString(call.args.account);
-    const account = fuzzy(visibleChartAccounts(household, context, books), accountQuery, (row) => `${row.code} ${row.name}`);
+    const account = fuzzy(herculesChartAccounts(household, books), accountQuery, (row) => row.name);
     if (!account) return empty(call, accountQuery ? `I cannot match account “${accountQuery}” in this ledger.` : "Name the account you want me to trace.");
     const range = periodRange(today, cleanPeriod(call.args.period), call.args);
     const fullRegister = accountRegister(books, account.id, { recognizedOnly: true });
@@ -935,9 +964,9 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const entry = books.entries.find((row) => row.id.toLowerCase() === entryId.toLowerCase() || row.originTransactionIds.some((id) => id.toLowerCase() === entryId.toLowerCase()));
     if (!entry) return empty(call, `I cannot find journal entry “${entryId}” in this ledger.`);
     const chart = new Map(books.chart.map((row) => [row.id, row]));
-    const facts = entry.lines.map((line, index) => fact(call, index, `${chart.get(line.accountId)?.code ?? line.accountId} · ${chart.get(line.accountId)?.name ?? line.accountId}`, line.debitCents ? `${formatCad(line.debitCents)} debit` : `${formatCad(line.creditCents)} credit`, journalSource(context, entry, { accountId: chart.get(line.accountId)?.bankAccountId, categoryId: chart.get(line.accountId)?.categoryId })));
+    const facts = entry.lines.map((line, index) => fact(call, index, chartAccountLabel(chart, line.accountId), line.debitCents ? `${formatCad(line.debitCents)} debit` : `${formatCad(line.creditCents)} credit`, journalSource(context, entry, { accountId: chart.get(line.accountId)?.bankAccountId, categoryId: chart.get(line.accountId)?.categoryId })));
     const total = entry.lines.reduce((sum, line) => sum + line.debitCents, 0);
-    return { callId: call.id, name: call.name, status: "ok", sentence: `${entry.id} on ${entry.date} posts ${formatCad(total)} of debits and equal credits across ${entry.lines.length} lines. Source: ${entry.source}; recognized: ${entry.recognized ? "yes" : "no"}.`, facts };
+    return { callId: call.id, name: call.name, status: "ok", sentence: `${journalEntryLabel(entry)} posts ${formatCad(total)} of debits and equal credits across ${entry.lines.length} lines. Source: ${entry.source}; recognized: ${entry.recognized ? "yes" : "no"}.`, facts };
   }
 
   if (call.name === "changes_in_net_worth") {
@@ -957,7 +986,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
 
   if (call.name === "reconciliation_status") {
     if (context.view !== "household") return { callId: call.id, name: call.name, status: "unavailable", sentence: "Bank-reconciliation controls live in the Household ledger.", facts: [] };
-    const accounts = visibleAccounts(household, context);
+    const accounts = herculesAccounts(household);
     const accountQuery = cleanString(call.args.account);
     const target = fuzzy(accounts, accountQuery, (row) => `${row.name} ${row.institution} ${row.last4}`);
     if (accountQuery && !target) return empty(call, `I cannot match visible account “${accountQuery}” in this ledger.`);
@@ -974,7 +1003,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
   if (call.name === "activity_since_reconciliation") {
     if (context.view !== "household") return { callId: call.id, name: call.name, status: "unavailable", sentence: "Bank-reconciliation controls live in the Household ledger.", facts: [] };
     const accountQuery = cleanString(call.args.account);
-    const account = fuzzy(visibleAccounts(household, context), accountQuery, (row) => `${row.name} ${row.institution} ${row.last4}`);
+    const account = fuzzy(herculesAccounts(household), accountQuery, (row) => `${row.name} ${row.institution} ${row.last4}`);
     if (!account) return empty(call, accountQuery ? `I cannot match visible account “${accountQuery}” in this ledger.` : "Name the account whose post-reconciliation activity you want.");
     const rec = [...(household.kitchen.books?.reconciliations ?? [])].reverse().find((row) => row.accountId === account.id);
     if (!rec) return empty(call, `${account.name} has no saved reconciliation. Reconcile a statement before asking what came after it.`);
@@ -1026,8 +1055,8 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
   if (call.name === "opening_balance_review") {
     const books = compileHousehold(household);
     const accountQuery = cleanString(call.args.account);
-    const visible = visibleChartAccounts(household, context, books).filter((row) => row.source === "bank");
-    const target = fuzzy(visible, accountQuery, (row) => `${row.code} ${row.name}`);
+    const visible = herculesChartAccounts(household, books).filter((row) => row.source === "bank");
+    const target = fuzzy(visible, accountQuery, (row) => row.name);
     if (accountQuery && !target) return empty(call, `I cannot match visible account “${accountQuery}” in this ledger.`);
     const rows = (target ? [target] : visible).slice(0, 8);
     const facts = rows.map((account, index) => {
@@ -1044,7 +1073,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const end = addDays(monthStartKey(shiftMonthKey(month, 1)), -1);
     const findings = runHealthCheck(household);
     const pairs = duplicateContrastPairs(household.transactions).filter((pair) => monthKeyFromDateKey(pair.left.date) === month || monthKeyFromDateKey(pair.right.date) === month);
-    const accounts = visibleAccounts(household, context);
+    const accounts = herculesAccounts(household);
     const unreconciled = accounts.filter((account) => !(household.kitchen.books?.reconciliations ?? []).some((row) => row.accountId === account.id && row.status === "tied" && row.statementDate >= end));
     const closed = isMonthClosed(household, month);
     const blockers = findings.length + pairs.length + unreconciled.length;
@@ -1093,7 +1122,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const spending = query.rows.reduce((sum, tx) => sum + (tx.type === "expense" ? tx.amountCents : tx.type === "refund" ? -tx.amountCents : 0), 0);
     const days = Math.max(1, calendarDaysBetween(query.range.start, query.range.end) + 1);
     const daily = Math.max(0, Math.round(spending / days));
-    const cash = visibleAccounts(household, context).filter((account) => account.kind === "chequing" || account.kind === "savings").reduce((sum, account) => sum + Math.max(0, accountBookBalance(household, account.id, today)), 0);
+    const cash = herculesAccounts(household).filter((account) => account.kind === "chequing" || account.kind === "savings").reduce((sum, account) => sum + Math.max(0, accountBookBalance(household, account.id, today)), 0);
     const runway = daily > 0 ? Math.floor(cash / daily) : null;
     const source = toolSource(context, `Open ${query.range.label} spending`, { from: query.range.start, to: query.range.end });
     return { callId: call.id, name: call.name, status: "ok", sentence: runway == null ? `Recent net spending is zero, so a cash-runway day count is not meaningful. Cash-like balances are ${formatCad(cash)}.` : `At ${query.range.label}'s posted net-spending pace of ${formatCad(daily)} per day, the estimated cash runway from ${formatCad(cash)} of cash-like balances is about ${runway} days. This is a straight-line estimate, not a promise.`, facts: [fact(call, 0, "Cash-like", formatCad(cash), source), fact(call, 1, "Observed daily spending", formatCad(daily), source, "projection"), fact(call, 2, "Estimated runway", runway == null ? "not meaningful" : `${runway} days`, source, "projection")] };
@@ -1104,14 +1133,14 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const horizon = Math.min(90, Math.max(1, Number(call.args.horizonDays) || 30));
     const end = addDays(today, horizon);
     const bills = household.recurrences.filter((row) => row.active && row.type === "expense" && row.nextDate >= today && row.nextDate <= end).reduce((sum, row) => sum + row.amountCents, 0);
-    const cash = visibleAccounts(household, context).filter((account) => account.kind === "chequing" || account.kind === "savings").reduce((sum, account) => sum + Math.max(0, accountBookBalance(household, account.id, today)), 0);
+    const cash = herculesAccounts(household).filter((account) => account.kind === "chequing" || account.kind === "savings").reduce((sum, account) => sum + Math.max(0, accountBookBalance(household, account.id, today)), 0);
     const remaining = cash - bills;
     const source: HerculesNumberSource = { route: "calendar", view: context.view, surface: "calendar", from: today, to: end, label: "Open scheduled bills" };
     return { callId: call.id, name: call.name, status: "ok", sentence: `${formatCad(cash)} of posted cash-like balances ${remaining >= 0 ? "covers" : "does not cover"} ${formatCad(bills)} of scheduled bills in the next ${horizon} days, leaving ${formatCad(remaining)} before other spending. Scheduled bills are projections until confirmed paid.`, facts: [fact(call, 0, "Cash-like", formatCad(cash), source), fact(call, 1, "Scheduled bills", formatCad(bills), source, "projection"), fact(call, 2, "Coverage after bills", formatCad(remaining), source, "projection")] };
   }
 
   if (call.name === "debt_projection") {
-    const cards = visibleAccounts(household, context).filter((account) => account.kind === "credit");
+    const cards = herculesAccounts(household).filter((account) => account.kind === "credit");
     const accountQuery = cleanString(call.args.account);
     const card = fuzzy(cards, accountQuery, (row) => `${row.name} ${row.institution} ${row.last4}`) ?? (!accountQuery && cards.length === 1 ? cards[0] : undefined);
     if (!card) return empty(call, accountQuery ? `I cannot match visible card “${accountQuery}” in this ledger.` : "Name the card whose payoff you want to project.");
@@ -1135,7 +1164,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
   }
 
   if (call.name === "credit_utilization") {
-    const cards = visibleAccounts(household, context).filter((account) => account.kind === "credit");
+    const cards = herculesAccounts(household).filter((account) => account.kind === "credit");
     const accountQuery = cleanString(call.args.account);
     const target = fuzzy(cards, accountQuery, (row) => `${row.name} ${row.institution} ${row.last4}`);
     if (accountQuery && !target) return empty(call, `I cannot match visible card “${accountQuery}” in this ledger.`);
@@ -1185,7 +1214,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     if (!amount) return empty(call, "Give me the hypothetical purchase amount in integer CAD cents.");
     const horizon = Math.min(90, Math.max(1, Number(call.args.horizonDays) || 30));
     const end = addDays(today, horizon);
-    const cash = visibleAccounts(household, context).filter((account) => account.kind === "chequing" || account.kind === "savings").reduce((sum, account) => sum + Math.max(0, accountBookBalance(household, account.id, today)), 0);
+    const cash = herculesAccounts(household).filter((account) => account.kind === "chequing" || account.kind === "savings").reduce((sum, account) => sum + Math.max(0, accountBookBalance(household, account.id, today)), 0);
     const bills = household.recurrences.filter((row) => row.active && row.type === "expense" && row.nextDate >= today && row.nextDate <= end).reduce((sum, row) => sum + row.amountCents, 0);
     const after = cash - bills - amount;
     const source = toolSource(context, "Open the affordability inputs", { from: today, to: end });
@@ -1210,8 +1239,8 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const entry = books.entries.find((row) => row.originTransactionIds.includes(tx.id));
     if (!entry) return empty(call, `${tx.id} is visible but has no compiled journal entry. Health should inspect it.`);
     const chart = new Map(books.chart.map((row) => [row.id, row]));
-    const facts = entry.lines.map((line, index) => fact(call, index, `${chart.get(line.accountId)?.name ?? line.accountId} · ${line.debitCents ? "debit" : "credit"}`, formatCad(line.debitCents || line.creditCents), journalSource(context, entry, { accountId: chart.get(line.accountId)?.bankAccountId, categoryId: chart.get(line.accountId)?.categoryId })));
-    return { callId: call.id, name: call.name, status: "ok", sentence: `${tx.date} ${tx.place || tx.note || tx.type} is a ${tx.type} for ${formatCad(tx.amountCents)}. ${entry.id} posts equal debits and credits across ${entry.lines.length} lines and is ${entry.recognized ? "recognized" : "excluded from recognized books"}.`, facts };
+    const facts = entry.lines.map((line, index) => fact(call, index, chartAccountLabel(chart, line.accountId), formatCad(line.debitCents || line.creditCents), journalSource(context, entry, { accountId: chart.get(line.accountId)?.bankAccountId, categoryId: chart.get(line.accountId)?.categoryId })));
+    return { callId: call.id, name: call.name, status: "ok", sentence: `${tx.date} ${tx.place || tx.note || tx.type} on ${accountLabel(household, tx.accountId)} is a ${tx.type} for ${formatCad(tx.amountCents)}. ${journalEntryLabel(entry)} posts equal debits and credits across ${entry.lines.length} lines and is ${entry.recognized ? "recognized" : "excluded from recognized books"}.`, facts };
   }
 
   if (call.name === "explain_accounting_equation") {
@@ -1224,7 +1253,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const accountQuery = cleanString(call.args.account);
     if (!accountQuery) return empty(call, "Name the bank, liability, income, or expense account you want explained.");
     const books = compileHousehold(household);
-    const account = fuzzy(visibleChartAccounts(household, context, books), accountQuery, (row) => `${row.code} ${row.name}`);
+    const account = fuzzy(herculesChartAccounts(household, books), accountQuery, (row) => row.name);
     if (!account) return empty(call, `I cannot match chart account “${accountQuery}” in this ledger.`);
     const trial = trialBalance(books, { recognizedOnly: true }).rows.find((row) => row.id === account.id);
     const balance = trial ? (account.normalBalance === "debit" ? trial.netCents : -trial.netCents) : 0;
@@ -1270,7 +1299,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     }
     const accountQuery = cleanString(call.args.account);
     if (accountQuery) {
-      const account = fuzzy(visibleAccounts(household, context), accountQuery, (row) => `${row.name} ${row.institution} ${row.last4}`);
+      const account = fuzzy(herculesAccounts(household), accountQuery, (row) => `${row.name} ${row.institution} ${row.last4}`);
       if (!account) return empty(call, `I cannot match visible account “${accountQuery}”.`);
       const balance = accountBookBalance(household, account.id, today);
       return { callId: call.id, name: call.name, status: "ok", sentence: `${account.name}'s ${formatCad(balance)} comes from the recognized journal lines posted to that account through ${today}.`, facts: [fact(call, 0, account.name, formatCad(balance), toolSource(context, `Open ${account.name}`, { accountId: account.id, to: today }))] };
@@ -1321,8 +1350,8 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const entry = books.entries.find((row) => row.originTransactionIds.includes(tx.id));
     if (!entry) return empty(call, `${tx.id} has no compiled transfer journal entry.`);
     const chart = new Map(books.chart.map((row) => [row.id, row]));
-    const facts = entry.lines.map((line, index) => fact(call, index, `${chart.get(line.accountId)?.name ?? line.accountId} · ${line.debitCents ? "debit" : "credit"}`, formatCad(line.debitCents || line.creditCents), journalSource(context, entry, { accountId: chart.get(line.accountId)?.bankAccountId })));
-    return { callId: call.id, name: call.name, status: "ok", sentence: `${entry.id} moves ${formatCad(tx.amountCents)} between two balance-sheet accounts with equal debit and credit legs. It changes where value sits, not income, expenses, or net worth.`, facts };
+    const facts = entry.lines.map((line, index) => fact(call, index, chartAccountLabel(chart, line.accountId), formatCad(line.debitCents || line.creditCents), journalSource(context, entry, { accountId: chart.get(line.accountId)?.bankAccountId })));
+    return { callId: call.id, name: call.name, status: "ok", sentence: `${journalEntryLabel(entry)} moves ${formatCad(tx.amountCents)} from ${accountLabel(household, tx.transferFromAccountId)} to ${accountLabel(household, tx.transferToAccountId)} with equal debit and credit legs. It changes where value sits, not income, expenses, or net worth.`, facts };
   }
 
   if (call.name === "tip_oracle") {
@@ -1640,24 +1669,8 @@ function clipSentence(value: string, max = 260): string {
   return `${cut.slice(0, space > 80 ? space : max - 1)}…`;
 }
 
-const SHIFT_READ_TOOL_NAMES = new Set([
-  "shift_summary",
-  "tip_oracle",
-  "shift_outlook",
-  "tip_schedule_sim",
-  "tax_milk_plan",
-  "shift_year_simulation",
-  "explain_shift_simulation",
-  "cash_cinema",
-  "what_if_desk",
-  "year_review",
-]);
-
-function scopeHouseholdForTool(household: Household, call: HerculesReadToolCall, context: HerculesAskContext): Household {
-  if (!SHIFT_READ_TOOL_NAMES.has(call.name)) {
-    return householdForHerculesContext(household, context.memberId, context.view);
-  }
-  return householdForShiftReadTools(household, context.memberId, context.view, cleanString(call.args.member));
+function scopeHouseholdForTool(household: Household, _call: HerculesReadToolCall, _context: HerculesAskContext): Household {
+  return household;
 }
 
 export function executeHerculesReadToolPlan(

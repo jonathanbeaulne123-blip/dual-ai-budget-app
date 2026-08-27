@@ -94,7 +94,7 @@ const filterProperties = () => ({
 });
 const strictObject = (properties) => ({ type: "object", additionalProperties: false, properties, required: Object.keys(properties) });
 const HERCULES_READ_TOOLS = [
-  { name: "ledger_context", description: "Read the household name, shared and personal ledger names, connected member, and visible bank account names.", parameters: strictObject({}) },
+  { name: "ledger_context", description: "Read the household name, every ledger name, every member, every active bank account, and category names the books use.", parameters: strictObject({}) },
   { name: "account_balance", description: "Read one visible account balance or list visible account balances.", parameters: strictObject({ account: nullableString() }) },
   { name: "find_transactions", description: "Find posted rows by merchant, account, category, member, date period, or user-stated amount bounds.", parameters: strictObject({
     ...filterProperties(),

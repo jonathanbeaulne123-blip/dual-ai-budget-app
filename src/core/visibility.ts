@@ -127,20 +127,6 @@ export function gateHerculesQuestion(
   view: LedgerView,
 ): HerculesQuestionGate {
   const q = question.toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9\s]/g, " ");
-  const namedOthers = household.members.filter((member) => {
-    if (member.id === memberId) return false;
-    const tokens = member.name.toLowerCase().split(/\s+/).filter((token) => token.length >= 2);
-    return tokens.some((token) => new RegExp(`\\b${token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(q));
-  });
-  const asksPerson = /\b(who spent|who paid|who earned|their personal|their private)\b/.test(q);
-  const moneyQuestion = /\b(spend|spends|spending|spent|overspend|overspent|paid|earned|earns|income|wages?|tips?|shifts?|hours?|balances?|accounts?|ledgers?|budgets?|categories?|grocer(?:y|ies)?|bills?|debts?|owe|owes|owed)\b/.test(q);
-  if (view === "personal" && ((namedOthers.length > 0 && moneyQuestion) || asksPerson)) {
-    return {
-      allow: false,
-      reason: "partner-personal",
-      spoken: "Nice try, you silly kitten. This personal ledger only tells me about you. Ask about shared spending from the household ledger.",
-    };
-  }
   if (view === "household" && /\b(my|personal|private)\s+(ledger|spend|spending|income|shift|tips|wages|balance)\b/.test(q)) {
     return {
       allow: false,

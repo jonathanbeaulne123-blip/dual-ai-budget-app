@@ -37,7 +37,7 @@ const SHIFT_DIAGNOSTIC_TOOLS = new Set([
 ]);
 
 const TOOL_CATALOG = [
-  ["ledger_context", "Read the household name, shared and personal ledger names, connected member, and visible bank account names."],
+  ["ledger_context", "Read the household name, every ledger name, every member, every active bank account, and category names the books use."],
   ["account_balance", "Read one visible account balance or list visible accounts."],
   ["find_transactions", "Find posted rows by merchant, account, category, member, period, or amount."],
   ["spending_summary", "Total expenses less refunds for a period, optionally filtered."],
@@ -440,10 +440,10 @@ const WRITE_INPUT_PROPERTIES = {
   type: { type: "string", enum: ["expense", "income", "refund", "transfer"] },
   date: { type: "string", pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$", description: "Toronto civil posting date." },
   amountCents: { type: "integer", minimum: 1, maximum: 100000000000, description: "Exact amount in integer CAD cents." },
-  accountId: { type: "string", maxLength: 100 },
-  subcategoryId: { type: "string", maxLength: 100 },
-  fromAccountId: { type: "string", maxLength: 100 },
-  toAccountId: { type: "string", maxLength: 100 },
+  accountId: { type: "string", maxLength: 100, description: "Active account name or legacy account id." },
+  subcategoryId: { type: "string", maxLength: 100, description: "Active category name or legacy category id." },
+  fromAccountId: { type: "string", maxLength: 100, description: "Transfer-from account name or legacy account id." },
+  toAccountId: { type: "string", maxLength: 100, description: "Transfer-to account name or legacy account id." },
   note: { type: "string", maxLength: 160 },
   place: { type: "string", maxLength: 120 },
 };
@@ -464,7 +464,7 @@ function writeToolDefinitions(claims) {
   const options = {
     name: "transaction_write_options",
     title: "Transaction Write Options",
-    description: "List the exact active Hearth account and category IDs required to prepare a transaction. Read-only; call this instead of guessing identifiers.",
+    description: "List the active Hearth account and category names required to prepare a transaction. Read-only; call this instead of guessing identifiers.",
     inputSchema: {
       type: "object",
       properties: { view: WRITE_INPUT_PROPERTIES.view, type: WRITE_INPUT_PROPERTIES.type },
@@ -732,13 +732,16 @@ function writeOptions(books, args) {
   return {
     ledger: args?.view === "household" ? "household" : "personal",
     currency: books.currency || "CAD",
-    accounts: books.accounts.filter((row) => row.active).map((row) => ({ id: row.id, name: row.name, kind: row.kind })),
+    accounts: books.accounts.filter((row) => row.active).map((row) => ({ name: row.name, kind: row.kind, institution: row.institution, last4: row.last4 })),
     categories: type === "transfer" ? [] : books.categories
       .filter((row) => row.active && row.recordType === "category" && row.transactionType === categoryType)
-      .map((row) => ({ id: row.id, name: row.name, parentId: row.parentId, transactionType: row.transactionType })),
+      .map((row) => {
+        const parent = books.categories.find((item) => item.id === row.parentId);
+        return { name: parent ? `${parent.name} · ${row.name}` : row.name, transactionType: row.transactionType };
+      }),
     rules: type === "transfer"
-      ? "Use two different active account IDs."
-      : "Use one active accountId and one matching active subcategoryId.",
+      ? "Use two different active account names."
+      : "Use one active account name and one matching category name.",
     readOnly: true,
   };
 }

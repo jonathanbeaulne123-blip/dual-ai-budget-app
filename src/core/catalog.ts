@@ -44,6 +44,26 @@ export function requireAccount(household: Household, accountId: string): Account
   return account;
 }
 
+function normalizeCatalogRef(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+export function findAccountByRef(household: Household, ref: string): Account {
+  const trimmed = ref.trim();
+  if (!trimmed) throw new ValidationError("Choose an account.");
+  const accounts = activeAccounts(household);
+  const exact = accounts.find((item) => item.id === trimmed);
+  if (exact) return requireAccount(household, exact.id);
+  const needle = normalizeCatalogRef(trimmed);
+  const matches = accounts.filter((account) => {
+    const hay = normalizeCatalogRef(`${account.name} ${account.institution} ${account.last4}`);
+    return hay === needle || hay.includes(needle) || needle.includes(hay);
+  });
+  if (matches.length === 1) return requireAccount(household, matches[0]!.id);
+  if (matches.length > 1) throw new ValidationError(`More than one account matches “${trimmed}”. Name the exact account.`);
+  throw new ValidationError(`Account “${trimmed}” is not active in Hearth.`);
+}
+
 export function requireCadAccounts(household: Household): Account[] {
   const accounts = activeAccounts(household);
   if (accounts.length === 0) throw new ValidationError("Add an active CAD account before posting.");
@@ -75,6 +95,26 @@ export function requireSubcategory(household: Household, subcategoryId: string, 
     throw new ValidationError("Category group is missing or inactive — run Health Check.");
   }
   return category;
+}
+
+export function findSubcategoryByRef(household: Household, ref: string, type: "expense" | "income"): Category {
+  const trimmed = ref.trim();
+  if (!trimmed) throw new ValidationError("Choose a category.");
+  const categories = activeCategories(household).filter(
+    (item) => item.recordType === "category" && item.transactionType === type,
+  );
+  const exact = categories.find((item) => item.id === trimmed);
+  if (exact) return requireSubcategory(household, exact.id, type);
+  const needle = normalizeCatalogRef(trimmed);
+  const matches = categories.filter((category) => {
+    const parent = household.categories.find((item) => item.id === category.parentId);
+    const hay = normalizeCatalogRef(`${parent?.name ?? ""} ${category.name}`);
+    const nameOnly = normalizeCatalogRef(category.name);
+    return nameOnly === needle || hay === needle || nameOnly.includes(needle) || needle.includes(nameOnly) || hay.includes(needle);
+  });
+  if (matches.length === 1) return requireSubcategory(household, matches[0]!.id, type);
+  if (matches.length > 1) throw new ValidationError(`More than one ${type} category matches “${trimmed}”. Name the exact category.`);
+  throw new ValidationError(`${type === "expense" ? "Expense" : "Income"} category “${trimmed}” is not active in Hearth.`);
 }
 
 export function incomeSubcategory(household: Household, name: string): Category {

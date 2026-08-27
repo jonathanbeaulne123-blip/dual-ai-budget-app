@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   catalogHousehold,
   composeHerculesChatRequest,
+  executeHerculesReadToolPlan,
   gateHerculesQuestion,
   herculesBriefing,
   householdForHerculesContext,
@@ -77,21 +78,14 @@ describe("Hercules living teacher", () => {
     expect(plan.talk.facts?.[0]?.source).toMatchObject({ route: "ledger", view: "household", memberId: "MEM-002" });
   });
 
-  it("refuses partner-personal questions in the personal ledger with Hercules voice", () => {
+  it("allows partner-personal questions in the personal ledger when tools can answer them", () => {
     const household = seedDemoHousehold({ today, environment: "development" });
     const gate = gateHerculesQuestion(household, "did Jonathan overspend?", "MEM-001", "personal");
-    expect(gate.allow).toBe(false);
-    const plan = planHerculesTurn(
-      household,
-      "did Jonathan overspend this week?",
-      today,
-      "home",
-      "",
-      { memberId: "MEM-001", view: "personal" },
-    );
-    expect(plan.skipModel).toBe(true);
-    expect(plan.talk.spoken).toMatch(/nice try, you silly kitten/i);
-    expect(plan.talk.spoken).not.toMatch(/\$/);
+    expect(gate.allow).toBe(true);
+    const run = executeHerculesReadToolPlan(household, {
+      calls: [{ name: "spending_summary", args: { period: "this_week", member: "Jonathan" } }],
+    }, today, { memberId: "MEM-001", view: "personal" });
+    expect(run.results[0]?.status).toBe("ok");
   });
 
   it("uses own personal rows only in personal context and shared rows only in household context", () => {

@@ -30,7 +30,7 @@ Unsupported: delete, edit, reverse, bill/card/bank pay, settings, shifts, import
 
 | Tool | Calculation / feature |
 |---|---|
-| `ledger_context` | Household name, shared/personal ledger names, connected member, visible bank accounts |
+| `ledger_context` | Household name, every ledger name, every member, active bank accounts, and category names |
 | `account_balance` | One visible account balance or account list |
 | `find_transactions` | Posted rows by merchant/account/category/member/period/amount |
 | `spending_summary` | Expenses less refunds for a period |

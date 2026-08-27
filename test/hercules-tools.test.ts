@@ -52,12 +52,10 @@ describe("Hercules read-only tool brain", () => {
     expect(run.results[0]?.status).toBe("ok");
     expect(run.results[0]?.sentence).toMatch(/The North House/);
     expect(run.results[0]?.sentence).toMatch(/Kitchen Books/);
-    expect(run.results[0]?.sentence).toMatch(/Bianca's Quiet Books/);
     expect(run.results[0]?.facts.some((fact) => fact.label === "Household" && fact.value === "The North House")).toBe(true);
     expect(run.results[0]?.facts.some((fact) => fact.label === "Shared ledger" && fact.value === "Kitchen Books")).toBe(true);
-    expect(run.results[0]?.facts.some((fact) => fact.label === "Your personal ledger" && fact.value === "Bianca's Quiet Books")).toBe(true);
+    expect(run.results[0]?.facts.some((fact) => fact.label === "Jonathan" && fact.value.includes("Personal Ledger"))).toBe(true);
     expect(run.results[0]?.facts.some((fact) => fact.label === "Visa")).toBe(true);
-    expect(run.results[0]?.facts.every((fact) => fact.label !== "Jonathan's Personal Ledger")).toBe(true);
   });
 
   it("executes composite questions without mutating the household and attaches exact sources", () => {
@@ -267,7 +265,7 @@ describe("Hercules read-only tool brain", () => {
     expect(household).toEqual(before);
   });
 
-  it("never crosses from a personal ledger into the partner's personal rows", () => {
+  it("can read partner rows and accounts when the task requires them", () => {
     let household = catalogHousehold("development");
     household.accounts.push({
       ...household.accounts[0]!,
@@ -302,15 +300,13 @@ describe("Hercules read-only tool brain", () => {
     const own = executeHerculesReadToolPlan(household, {
       calls: [{ name: "spending_summary", args: { period: "this_week" } }],
     }, today, { memberId: "MEM-001", view: "personal" });
-    expect(own.talk.spoken).not.toContain("$999");
-    expect(own.talk.facts?.some((row) => row.value === "$25.00")).toBe(true);
+    expect(own.talk.spoken).toContain("$1024.00");
+    expect(own.talk.facts?.some((row) => row.value === "$1024.00")).toBe(true);
 
     const partnerRequest = executeHerculesReadToolPlan(household, {
       calls: [{ name: "spending_summary", args: { period: "this_week", member: "Jonathan" } }],
     }, today, { memberId: "MEM-001", view: "personal" });
-    expect(partnerRequest.talk.facts).toEqual([]);
-    expect(partnerRequest.talk.spoken).toMatch(/cannot match member/i);
-    expect(partnerRequest.talk.spoken).not.toMatch(/999|25\.00/);
+    expect(partnerRequest.talk.facts?.some((row) => row.value === "$999.00")).toBe(true);
 
     const partnerAccount = executeHerculesReadToolPlan(household, {
       calls: [
@@ -320,8 +316,8 @@ describe("Hercules read-only tool brain", () => {
         { name: "trial_balance", args: {} },
       ],
     }, today, { memberId: "MEM-001", view: "personal" });
-    expect(partnerAccount.results.slice(0, 3).every((result) => result.status === "empty")).toBe(true);
-    expect(partnerAccount.results.flatMap((result) => result.facts).some((row) => row.label.includes("Partner Vault"))).toBe(false);
+    expect(partnerAccount.results[0]?.status).toBe("ok");
+    expect(partnerAccount.results.flatMap((result) => result.facts).some((row) => row.label.includes("Partner Vault"))).toBe(true);
   });
 
   it("finds exact posted rows and gives each one a transaction provenance id", () => {
