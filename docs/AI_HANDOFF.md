@@ -18,7 +18,7 @@
 
 **Named open risk (October):** two devices that Confirm the same 7shifts punch before sync merge by shift id, not punch digest. `canAbsorbDisjointSharedMoney` / digest reconciliation is later.
 
-**Next owner:** Jonathan — after PR review: `wrangler secret put` for `SEVENSHIFTS_CONNECTION_ENCRYPTION_KEY` and `SEVENSHIFTS_DIGEST_KEY`, apply D1 `0002`, set `SEVENSHIFTS_ENABLED=true`, then deploy. Live token smoke uses a Harbour Developer Tools access token.
+**Next owner:** GPT / Codex independent review via [`briefs/GPT_SEVENSHIFTS_REVIEW_PROMPT.md`](briefs/GPT_SEVENSHIFTS_REVIEW_PROMPT.md). Packet: [`briefs/SEVENSHIFTS_INBOX_HANDOFF.md`](briefs/SEVENSHIFTS_INBOX_HANDOFF.md). After a PASS Jonathan accepts: `wrangler secret put` for `SEVENSHIFTS_CONNECTION_ENCRYPTION_KEY` and `SEVENSHIFTS_DIGEST_KEY`, apply D1 `0002`, set `SEVENSHIFTS_ENABLED=true`, then deploy. Live token smoke uses a Harbour Developer Tools access token.
 
 **Worksession:** [`worksessions/2026-08-27-seven-shifts-inbox.md`](worksessions/2026-08-27-seven-shifts-inbox.md)
 

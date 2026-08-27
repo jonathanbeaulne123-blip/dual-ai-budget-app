@@ -31,6 +31,8 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [ONBOARDING_UPDATE.md](ONBOARDING_UPDATE.md) | Four-part Hercules-led onboarding plan, button/feature audit, Bianca journey, scripts, architecture direction, and gates |
 | [ONBOARDING_PART2_STORYBOARD.md](ONBOARDING_PART2_STORYBOARD.md) | Locked phone/desktop routes, focus camera, dialogue, Practice scenarios, failure recovery, implementation slices, and D-129 exception |
 | [briefs/CURSOR_ONBOARDING_FOUNDATION_PROMPT.md](briefs/CURSOR_ONBOARDING_FOUNDATION_PROMPT.md) | Bounded Cursor Slice A foundation prompt with multi-model review and no migration/provider overlap |
+| [briefs/SEVENSHIFTS_INBOX_HANDOFF.md](briefs/SEVENSHIFTS_INBOX_HANDOFF.md) | **D-152 7shifts Timesheet inbox** — durable handoff for PR #214 (not shipped) |
+| [briefs/GPT_SEVENSHIFTS_REVIEW_PROMPT.md](briefs/GPT_SEVENSHIFTS_REVIEW_PROMPT.md) | Paste-ready GPT/Codex independent review prompt for D-152 |
 | [OFFICE.md](OFFICE.md) | Office direction; reconcile with shipped Office/mobile state when stale |
 | [CLAUDE_DESKTOP_OFFICE.md](CLAUDE_DESKTOP_OFFICE.md) | Claude desktop-office prompt |
 | [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md) | Shipped phone Home prompt/history |

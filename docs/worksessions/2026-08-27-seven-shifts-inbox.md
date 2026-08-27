@@ -76,6 +76,7 @@ A Harbour worker can add a 7shifts access token on Jobs, pull clocked punches in
 - [x] Focused tests, then `pnpm check`.
 - [x] Independent privacy + trust + books audits; verifier.
 - [x] Handoff + draft PR. Do not merge/deploy.
+- [x] Durable GPT review packet under `docs/briefs/`.
 
 ## Evidence log
 
@@ -102,4 +103,4 @@ A Harbour worker can add a 7shifts access token on Jobs, pull clocked punches in
 
 ## Handoff
 
-PR #214 is ready for review. Not merged, not deployed, not live verified. Next owner: Jonathan — secrets, D1 apply, enable flag, then deploy.
+PR #214 is ready for review. Not merged, not deployed, not live verified. Next owner: GPT / Codex independent review via [`docs/briefs/GPT_SEVENSHIFTS_REVIEW_PROMPT.md`](../briefs/GPT_SEVENSHIFTS_REVIEW_PROMPT.md). Durable packet: [`docs/briefs/SEVENSHIFTS_INBOX_HANDOFF.md`](../briefs/SEVENSHIFTS_INBOX_HANDOFF.md). After a PASS Jonathan accepts: secrets, D1 apply, enable flag, then deploy.

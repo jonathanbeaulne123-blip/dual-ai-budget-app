@@ -64,7 +64,7 @@ Only the currently open or just-closed worksession belongs here. Durable history
 
 | Worksession | State | Scope | Output |
 |---|---|---|---|
-| [2026-08-27 Native 7shifts inbox](worksessions/2026-08-27-seven-shifts-inbox.md) | **OPEN** | Access-token connect; punch drafts into Timesheet; tips blank | D-152; Worker `/work/7shifts/*`; Jobs Connect + Co-workers |
+| [2026-08-27 Native 7shifts inbox](worksessions/2026-08-27-seven-shifts-inbox.md) | **OPEN** | Access-token connect; punch drafts into Timesheet; tips blank | D-152; PR #214; GPT review packet in `docs/briefs/` |
 | [2026-08-27 Supabase Preview 016 history](worksessions/2026-08-27-supabase-preview-016-history.md) | **CLOSED; merged #212** | GitHub Preview must match local 016 filename | History row retagged; no schema re-apply |
 | [2026-08-27 First-create false conflict](worksessions/2026-08-27-first-create-false-conflict.md) | **CLOSED; merged #210** | Retry after create must not say another phone | Live Worker `cc694eee`; Retry now on stuck household |
 | [2026-08-27 Invite owner first create](worksessions/2026-08-27-invite-owner-first-create.md) | **CLOSED; merged #209** | First cloud write creates the owner so Google invite works | D-149; live Worker `10b7de13`; follow-up false-conflict branch |
