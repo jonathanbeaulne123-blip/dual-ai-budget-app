@@ -8,14 +8,22 @@ import {
   resolveConflictChoice,
   recordConflict,
 } from "../src/core/index.ts";
-import { livePullIntervalMs, shouldRunLivePull } from "../src/continuityLivePull.ts";
+import {
+  activeMemberCountHint,
+  livePullIntervalMs,
+  scaleEnvelopeClaim,
+  scalePullBandForMembers,
+  shouldRunLivePull,
+} from "../src/continuityLivePull.ts";
 import {
   clearContinuityOutboxConflictBlocks,
+  continuityBackoffMs,
   createMemoryContinuityStore,
   listContinuityOutbox,
   setContinuityStore,
   transportHouseholdWithOutbox,
 } from "../src/continuity.ts";
+import { reconnectPollDelayMs } from "../src/continuityResume.ts";
 import { linkGoogleIdentity } from "../src/core/index.ts";
 import type { Household } from "../src/core/types.ts";
 
@@ -47,15 +55,53 @@ afterEach(() => {
 describe("live pull interval (2 / 10 / 100 scale)", () => {
   it("polls every 4s for a two-person kitchen", () => {
     expect(livePullIntervalMs(2)).toBe(4_000);
+    expect(livePullIntervalMs(9)).toBe(4_000);
   });
 
   it("slows slightly for ~10 active members", () => {
     expect(livePullIntervalMs(10)).toBe(5_000);
+    expect(livePullIntervalMs(49)).toBe(5_000);
   });
 
-  it("slows further at 50+ (100-person hint) until Realtime ships", () => {
+  it("slows further at 50+ (100-person hint) until Realtime is primary", () => {
     expect(livePullIntervalMs(50)).toBe(8_000);
     expect(livePullIntervalMs(100)).toBe(8_000);
+  });
+
+  it("maps named T3-S4 bands and active member hints", () => {
+    expect(scalePullBandForMembers(2).label).toBe("2–9");
+    expect(scalePullBandForMembers(10).label).toBe("10–49");
+    expect(scalePullBandForMembers(50).label).toBe("50–100");
+    expect(activeMemberCountHint([{ active: true }, { active: true }, { active: false }])).toBe(2);
+    expect(activeMemberCountHint([])).toBe(2);
+  });
+
+  it("refuses a 100-person production claim on poll alone", () => {
+    expect(scaleEnvelopeClaim({
+      memberCountHint: 100,
+      realtimeEnabled: false,
+      realtimeSubscribed: false,
+    }).productionReadyClaim).toBe(false);
+    expect(scaleEnvelopeClaim({
+      memberCountHint: 2,
+      realtimeEnabled: true,
+      realtimeSubscribed: true,
+    }).productionReadyClaim).toBe(true);
+  });
+
+  it("composes T3-S3 reconnect backoff on the scaled poll base", () => {
+    expect(reconnectPollDelayMs({
+      baseIntervalMs: livePullIntervalMs(10),
+      realtimeStatus: "CHANNEL_ERROR",
+      consecutiveUnhealthyPolls: 3,
+      realtimeEnabled: true,
+    })).toBe(Math.max(5_000, continuityBackoffMs(3)));
+    expect(reconnectPollDelayMs({
+      baseIntervalMs: livePullIntervalMs(100),
+      realtimeStatus: "CLOSED",
+      consecutiveUnhealthyPolls: 6,
+      realtimeEnabled: true,
+    })).toBe(Math.max(8_000, continuityBackoffMs(6)));
   });
 
   it("runs only when visible, online, and signed into a household", () => {

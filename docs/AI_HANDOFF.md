@@ -1,8 +1,26 @@
 # AI Task and Handoff Standard
 
+## T3-S4 scale envelope (2026-08-27)
+
+**Status:** Branch `cursor/t3-s4-scale-envelope-403c` (draft PR). Risk: **Medium** (policy + scheduling honesty; no money meaning change).
+
+**Household outcome:** Named 2–9 / 10–49 / 50–100 poll bands with Realtime primary; D-121 chat limits untouched; explicit refusal to claim 100-person Production on poll alone.
+
+**Budget delta (5):** `+1` — calmer REST under larger N when Realtime is down.
+
+**Engagement delta (3):** `0` — honesty/docs; no new interactable.
+
+**What changed:** `continuityLivePull.ts` (`SCALE_PULL_BANDS`, `scaleEnvelopeClaim`, `activeMemberCountHint`); App recomputes band each poll tick; `SYNC_ARCHITECTURE` scale table + load-test notes; live-pull tests.
+
+**Verification:** `pnpm exec vitest run test/live-pull-dual-use.test.ts test/continuity-resume.test.ts` → 22 pass; full `pnpm check` → 857 pass.
+
+**Data/environment:** Development client/docs only. No schema, secrets, Production, or D-121 retune.
+
+**Next owner:** Jonathan — review/merge; no 100-person load harness in this slice.
+
 ## T3-S3 background sync polish (2026-08-27)
 
-**Status:** Branch `cursor/t3-s3-background-sync-polish-403c` (draft PR). Risk: **Low**.
+**Status:** Merged via #204 onto `main`; kitchen deploy Version `1fa56e20-4d07-4cbf-95e4-6e9774db3017` verified (Offline badge strings live). Risk: **Low**.
 
 **Household outcome:** Returning to the kitchen resumes share without double focus+visibility churn; Realtime flaps back off the REST poll instead of heartbeat-spamming; Offline badge says when share will resume.
 
@@ -12,11 +30,11 @@
 
 **What changed:** `src/continuityResume.ts` (coalesce + reconnect poll backoff); App continuity loop uses resume gate; offline freshness copy; soft-presence comment (no focus heartbeat); tests.
 
-**Verification:** `pnpm exec vitest run test/continuity-resume.test.ts test/sync-freshness.test.ts` → 27 pass; full `pnpm check` → 854 pass (120 files). UX auditor **PASS WITH NOTES**.
+**Verification:** `pnpm check` green on PR; live bundle contains `Offline · will sync when you're back`.
 
-**Data/environment:** Development client only. No schema, secrets, Production, or deploy.
+**Data/environment:** Development client only. No schema, secrets, Production.
 
-**Next owner:** Jonathan — merge; optional tab-hide/show + airplane-mode smoke on linked Development.
+**Next owner:** Optional tab-hide/show + airplane-mode smoke.
 
 ## T3-S2 soft presence (2026-08-27)
 
