@@ -1222,7 +1222,7 @@ export function App() {
       return buildSyncFreshness({
         household: null,
         viewerMemberId: null,
-        realtimeEnabled: continuityRealtimeEnabled(),
+        realtimeEnabled: continuityRealtimeTransportEnabled(),
         realtimeStatus,
         offline,
         pendingOutboxCount: 0,
@@ -1235,7 +1235,7 @@ export function App() {
     return buildSyncFreshness({
       household,
       viewerMemberId: memberId,
-      realtimeEnabled: continuityRealtimeEnabled(),
+      realtimeEnabled: continuityRealtimeTransportEnabled(),
       realtimeStatus,
       offline,
       pendingOutboxCount: listContinuityOutbox(environment).filter((item) => item.householdId === household.householdId).length,
