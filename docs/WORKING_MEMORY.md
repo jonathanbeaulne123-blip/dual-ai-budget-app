@@ -6,7 +6,7 @@ This file is a **chat-thread orientation**, not a second canon and not a license
 
 Living plan: Jonathan's latest instruction → [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md) → [HEARTH_ROADMAP.md](HEARTH_ROADMAP.md) → [STRATEGY.md](STRATEGY.md).
 
-Branch tip when this was rewritten: **`main@dffd701`** (D-149 T1-S1/S2/S3 merged via PR #165). Realtime enablement PR pending: `cursor/t1-realtime-enable-7270`. Kitchen: Development.
+Branch tip when this was rewritten: **`main@8ccf5d9`**. T1-S1…S4 + Realtime enablement merged; **two-phone Realtime smoke passed 2026-08-27** ([`SYNC_REALTIME_SMOKE.md`](SYNC_REALTIME_SMOKE.md)). Kitchen: Development.
 
 Household-only files (`Project Context.txt`, ODS, credentials) stay **local** (D-018).
 
@@ -27,7 +27,7 @@ Household-only files (`Project Context.txt`, ODS, credentials) stay **local** (D
 ## Orientation — last five capability chapters (use roadmap for full list)
 
 1. **U-08 Hercules AI Phase 1** — model-first intent, 18-row excerpt, typed memory. Evidence on roadmap.
-2. **U-09 Google-account cloud continuity** — discovery, outbox, membership, Personal scope, Dev CAS, **atomic 012 push (Auth)**. Still finishing Create/invite smoke and two-device E2E.
+2. **U-09 Google-account cloud continuity** — discovery, outbox, membership, Personal scope, Dev CAS, **atomic 012 push (Auth)**, **Realtime ≤500 ms p95 two-phone smoke passed**. QR invite smoke (D-150) passed 2026-08-26.
 3. **U-10 Command states** — honest Confirm chrome (PR #76).
 4. **D-127 job-based work** — Timesheet / Confirm / Calendar settlement.
 5. **D-130/D-137 batch import + reconciliation** — QFX/OFX + selected images; exact receipt math.
@@ -53,10 +53,10 @@ Kill criteria still in force: milk one Confirm; phone five objects; leftover is 
 
 - Jonathan: create `HERCULES_RATE` KV + deploy Worker with real ids.
 - Jonathan: apply GitHub ruleset from [GITHUB_BRANCH_PROTECTION.md](GITHUB_BRANCH_PROTECTION.md).
-- Live two-browser continuity E2E; signed-in Create/invite smoke.
-- **Jonathan:** apply Migration **014** on Development (`pnpm books:apply:014` or SQL Editor) after Realtime enablement PR merges. Hard refresh both phones; two-browser Realtime smoke (A posts → B faster than 4 s poll).
+- Live two-browser Realtime latency smoke — **passed 2026-08-27** ([`SYNC_REALTIME_SMOKE.md`](SYNC_REALTIME_SMOKE.md)).
+- Signed-in Create/invite: QR two-device passed ([`AUTH_INVITE_SMOKE.md`](AUTH_INVITE_SMOKE.md)); email/revoke/anon suite still open.
 - Create KV + apply branch protection when ready.
 
 ## Next recommended action
 
-Merge Realtime enablement PR (`VITE_CONTINUITY_REALTIME=1` + `books:apply:014` script). Jonathan applies 014 on Dev, then runs two-phone latency smoke. Default experiments to Development. Do not clasp. Do not touch Production without explicit approval.
+Merge T1-S5 harness (#179). G6 trust review on Tier 1, then rebase T2-S1 — not the full T2 stack. Default experiments to Development. Do not clasp. Do not touch Production without explicit approval.

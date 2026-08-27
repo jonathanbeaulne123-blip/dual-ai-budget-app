@@ -11,6 +11,7 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [HEARTH_ROADMAP.md](HEARTH_ROADMAP.md) | Living phased roadmap, Updates history, rival matrix, AI workflow, Dual Course deltas, gates, risks, and proofs |
 | [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md) | Google-account access from any device, cloud/PGlite roles, the disposable-data window, and the late-September security milestone |
 | [SYNC_ARCHITECTURE.md](SYNC_ARCHITECTURE.md) | **Tiered sync plan (D-149):** 100–500 ms Realtime push, atomic SQL, command-log, slice prompts under [`briefs/sync/`](briefs/sync/README.md) |
+| [SYNC_REALTIME_SMOKE.md](SYNC_REALTIME_SMOKE.md) | **Two-phone Realtime latency smoke** (D-149 T1 G4); Jonathan pass 2026-08-27 |
 | [WORKING_MEMORY.md](WORKING_MEMORY.md) | Chat-thread recap; update when its shipped baseline drifts |
 | [STRATEGY.md](STRATEGY.md) | Dual Course vision: family-office books (weight 5) and companion/interactables (weight 3) |
 | [PROJECT_CHARTER.md](PROJECT_CHARTER.md) | Who Hearth is for and what success looks like |
