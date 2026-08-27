@@ -1,5 +1,6 @@
 import { isValidDateKey, dateKeyInZone, TIMEZONE, type DateKey } from "../calendar.ts";
-import type { WorkJob } from "../types.ts";
+import type { Household, WorkJob } from "../types.ts";
+import { workShiftIsReversed } from "../work.ts";
 
 const MAX_PUNCHES = 200;
 const MAX_COWORKERS = 40;
@@ -155,6 +156,7 @@ export function sevenShiftsDisplayName(user: {
   const first = cleanText(user?.preferred_first_name || user?.first_name, 40);
   const last = cleanText(user?.preferred_last_name || user?.last_name, 40);
   if (!first && !last) return "Coworker";
+  if (/@|\d{7,}/.test(`${first}${last}`)) return "Coworker";
   if (!last) return first;
   return `${first} ${last.slice(0, 1)}.`;
 }
@@ -275,9 +277,8 @@ export function parseSevenShiftsInbox(
   return { sourceName, sourceKind: "7shifts", sourceHash, jobId, punches, coworkers, drafts, warnings };
 }
 
-export function postedSevenShiftsPunchDigests(shifts: Array<{ sevenShiftsPunchDigest?: string | null; correctedByShiftId?: string | null }>): string[] {
-  return shifts
-    .filter((shift) => !shift.correctedByShiftId)
-    .map((shift) => shift.sevenShiftsPunchDigest)
-    .filter((value): value is string => Boolean(value));
+export function postedSevenShiftsPunchDigests(household: Household): string[] {
+  return household.shifts
+    .filter((shift) => shift.sevenShiftsPunchDigest && !workShiftIsReversed(household, shift))
+    .map((shift) => shift.sevenShiftsPunchDigest as string);
 }

@@ -24,6 +24,7 @@ export function SevenShiftsConnectPanel({
   householdId,
   memberId,
   jobs,
+  postedPunchDigests = [],
   disabled,
   onPulled,
 }: {
@@ -31,6 +32,7 @@ export function SevenShiftsConnectPanel({
   householdId: string;
   memberId: string;
   jobs: WorkJob[];
+  postedPunchDigests?: Iterable<string>;
   disabled: boolean;
   onPulled?: (batch: ParsedSevenShiftsBatch) => void;
 }) {
@@ -126,12 +128,12 @@ export function SevenShiftsConnectPanel({
     controllerRef.current = controller;
     try {
       const result = await pullSevenShiftsPunches(scope, connectionId, controller.signal);
-      const batch = parseSevenShiftsInbox(result.payload, activeJobs);
+      const batch = parseSevenShiftsInbox(result.payload, activeJobs, postedPunchDigests);
       setCoworkers(batch.coworkers);
       setTab("coworkers");
       onPulled?.(batch);
       setNotice(batch.drafts.length
-        ? `${batch.drafts.length} punch${batch.drafts.length === 1 ? "" : "es"} ready in Timesheet. Tips stay blank.`
+        ? `${batch.drafts.length} clocked punch${batch.drafts.length === 1 ? "" : "es"} pulled. Open Timesheet and tap Fill from 7shifts. Tips stay blank.`
         : batch.warnings[0] || "No new clocked punches to confirm.");
     } catch (caught) {
       setState("error");

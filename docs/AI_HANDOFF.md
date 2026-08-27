@@ -2,19 +2,21 @@
 
 ## Native 7shifts Timesheet inbox (D-152) (2026-08-27)
 
-**Status:** Branch `cursor/seven-shifts-inbox-5958`. Risk: **High** (provider token, coworker PII, work hours → wage drafts). Not merged. Not deployed. No secrets put. D1 table not applied.
+**Status:** Branch `cursor/seven-shifts-inbox-5958`. Draft PR **#214**. Risk: **High** (provider token, coworker PII, work hours → wage drafts). Not merged. Not deployed. No secrets put. D1 table not applied.
 
 **Household outcome:** A Harbour worker can add a 7shifts account on Jobs. Punches fill Timesheet hours, role, and clock times. Cash and card tips stay blank. Confirm still posts wages. The restaurant roster is a Co-workers tab, not household members.
 
-**Budget delta (5):** `+3` — hours arrive as a reviewable draft so wage Confirm is the remaining tap. Duplicate 7shifts punches cannot post twice.
+**Budget delta (5):** `+3` — hours arrive as a reviewable draft so wage Confirm is the remaining tap. **On this device**, a live 7shifts punch digest cannot post twice.
 
 **Engagement delta (3):** `+2` — Timesheet opens from the restaurant clock; Jobs shows who was on the floor. Hercules never receives the roster or the token.
 
-**What changed:** Worker `/work/7shifts/*` (status, probe, connect, pull, disconnect) with Auth JWT + membership scope, AES-GCM D1 rows on the existing Development Flinks database (separate `SEVENSHIFTS_*` keys), HMAC-redacted inbox, Jobs Connect + Co-workers, Timesheet “Fill from 7shifts”. `postWorkShift` stores `sevenShiftsPunchDigest` and refuses the same punch. 7shifts `tips` / `hourly_wage` / emails never leave the Worker.
+**What changed:** Worker `/work/7shifts/*` (status, probe, connect, pull, disconnect) with Auth JWT + membership scope, AES-GCM D1 rows on the existing Development Flinks database (separate `SEVENSHIFTS_*` keys), HMAC-redacted inbox, Jobs Connect + Co-workers, Timesheet “Fill from 7shifts”. `postWorkShift` stores `sevenShiftsPunchDigest` and refuses the same live punch. Reverse restores the draft. 7shifts `tips` / `hourly_wage` / emails never leave the Worker. Display names that look like emails or phone numbers become “Coworker”. Production Timesheet hides Fill.
 
-**Verification:** Focused `pnpm exec vitest run test/sevenshifts-inbox.test.ts test/sevenshifts-worker.test.ts test/sevenshifts-client.test.ts test/sevenshifts-connect-ui.test.ts test/work-jobs.test.ts` → **25 passed**. Full `pnpm check` and independent audits follow on this branch.
+**Verification:** Focused `pnpm exec vitest run test/sevenshifts-inbox.test.ts test/sevenshifts-worker.test.ts test/sevenshifts-client.test.ts test/sevenshifts-connect-ui.test.ts test/work-jobs.test.ts` → **25 passed**. Full `pnpm check` on `8bd4ad0` → `pnpm ai:verify` green; **892 passed / 2 skipped**; `tsc --noEmit` + `vite build` green. Independent reviews: privacy **PASS WITH NOTES**; trust **PASS WITH NOTES**; books **PASS WITH NOTES**; verifier **PASS WITH NOTES**. Follow-up on this head: reverse uses `workShiftIsReversed` for Timesheet fill; Hercules canary is `composeHerculesChatRequest`; D-152 names two-phone digest merge as October follow-up.
 
-**Data/environment:** Development client/Worker code only. `SEVENSHIFTS_ENABLED` stays `false` in `wrangler.jsonc`. Migration `migrations/flinks/0002_seven_shifts_connections.sql` is reviewed input, not applied. No Production, no `wrangler secret put`, no kitchen deploy.
+**Data/environment:** Development client/Worker code only. `SEVENSHIFTS_ENABLED` stays `false` in `wrangler.jsonc`. Migration `migrations/flinks/0002_seven_shifts_connections.sql` is reviewed input, not applied. No Production, no `wrangler secret put`, no kitchen deploy. Tests use fictional Harbour fixtures.
+
+**Named open risk (October):** two devices that Confirm the same 7shifts punch before sync merge by shift id, not punch digest. `canAbsorbDisjointSharedMoney` / digest reconciliation is later.
 
 **Next owner:** Jonathan — after PR review: `wrangler secret put` for `SEVENSHIFTS_CONNECTION_ENCRYPTION_KEY` and `SEVENSHIFTS_DIGEST_KEY`, apply D1 `0002`, set `SEVENSHIFTS_ENABLED=true`, then deploy. Live token smoke uses a Harbour Developer Tools access token.
 
