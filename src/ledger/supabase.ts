@@ -1178,22 +1178,24 @@ export async function pushSupabaseHousehold(
           usedCasRpc: true,
         };
       }
-      // Create already inserted the owner row. CAS from the hosted revision — never
-      // from expectedRevision 0, which 012 treats as stale ("another phone").
+      // Household row already exists. Owner membership exists only if a prior
+      // create by this Google account inserted it; 012 still returns not-member
+      // otherwise. Never CAS from expectedRevision 0 (012 reports that as another phone).
       if (created && !created.ok && created.reason === "household-already-exists") {
         try {
           const remote = await readRemoteSnapshot(config, snapshot.householdId, snapshot.environment);
-          if (!remote) {
+          if (!remote || !Number.isFinite(remote.revision) || remote.revision <= 0) {
             return {
               ...probe,
               schema: true,
               skipped: true,
               conflict: false,
-              usedCasRpc: true,
+              usedCasRpc: false,
               error: conflictMessage("missing-snapshot"),
             };
           }
-          if (snapshot.revision < remote.revision) {
+          const hostedRevision = remote.revision;
+          if (snapshot.revision < hostedRevision) {
             return {
               ...probe,
               schema: true,
@@ -1203,23 +1205,31 @@ export async function pushSupabaseHousehold(
               error: conflictMessage("stale-revision"),
             };
           }
-          if (atomicAuthContinuity) {
-            return publishContinuitySnapshotAtomic(
-              config,
-              probe,
-              snapshot,
-              cloudSnapshot,
-              remote.revision,
-              continuityMemberId,
-            );
+          if (!continuityMemberId) {
+            return {
+              ...probe,
+              schema: true,
+              skipped: true,
+              conflict: false,
+              usedCasRpc: false,
+              error: conflictMessage("not-member"),
+            };
           }
+          return publishContinuitySnapshotAtomic(
+            config,
+            probe,
+            snapshot,
+            cloudSnapshot,
+            hostedRevision,
+            continuityMemberId,
+          );
         } catch (caught) {
           return {
             ...probe,
             schema: true,
             skipped: true,
             conflict: false,
-            usedCasRpc: true,
+            usedCasRpc: false,
             error: caught instanceof Error
               ? caught.message
               : conflictMessage("not-member"),

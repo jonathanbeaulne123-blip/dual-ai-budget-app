@@ -2,21 +2,23 @@
 
 ## First-create retry is not another phone (D-149) (2026-08-27)
 
-**Status:** Branch `cursor/first-create-false-conflict-5958`. Risk: **High** (hosted CAS retry; money meaning unchanged). Not merged. No schema apply.
+**Status:** Draft PR #210 on `cursor/first-create-false-conflict-5958`. Risk: **High** (hosted CAS retry; money meaning unchanged). Not merged. Not deployed. No schema apply.
 
-**Household outcome:** Starting a household alone does not show “Another phone posted a newer household snapshot.” After create, retries CAS from the hosted revision.
+**Household outcome:** Starting a household alone does not show “Another phone posted a newer household snapshot.” After create, retries CAS from the hosted revision when that revision is a positive integer.
 
 **Budget delta (5):** `+2` — the only copy of the books can reach the cloud.
 
 **Engagement delta (3):** `+2` — Health/More stop blaming a partner who is not there.
 
-**What changed:** `pushSupabaseHousehold` treats `household-already-exists` by reading the hosted snapshot and calling `publish_continuity_snapshot` with that revision when local is same or ahead. Genuinely newer hosted tips still conflict.
+**What changed:** `pushSupabaseHousehold` treats `household-already-exists` by reading the hosted snapshot and calling `publish_continuity_snapshot` with that revision when local is same or ahead. Unreadable or non-positive hosted revision stays pending (`missing-snapshot`), not another-phone. Genuinely newer hosted tips still conflict.
 
-**Verification:** (filled after `pnpm check`)
+**Verification:** Focused `pnpm exec vitest run test/auth-membership-authority.test.ts test/continuity-command-outbox.test.ts test/publish-continuity-snapshot.test.ts` → **27 passed**. Full `pnpm test` → **875 passed / 2 skipped**. `pnpm ai:verify` green. `pnpm build` (`tsc --noEmit` + `vite build`) green after narrowing `hostedRevision`. Independent reviews at `2ad4411`: books **PASS WITH NOTES**; privacy **PASS WITH NOTES**; trust **PASS WITH NOTES**. Follow-up commit on this branch closes: no CAS from defaulted revision 0; already-exists arm always returns; 012 duplicate-before-stale regex.
 
-**Data/environment:** Development client/docs only. No hosted SQL, secrets, Production, or deploy.
+**Data/environment:** Development client/docs only. No hosted SQL, secrets, Production, or deploy. Fictional Development fixtures in tests.
 
-**Next owner:** Jonathan — review/merge; hard-refresh; Retry now on the stuck household.
+**Next owner:** Jonathan — review/merge/deploy #210; hard-refresh kitchen; Retry now on the stuck household.
+
+**Named open risk (October):** this retry compares revision numbers only. A local-ahead snapshot that is not a descendant of the hosted tip can still CAS-advance. `canAbsorbDisjointSharedMoney` is the later guard; not in this packet.
 
 ## Invite owner first create (D-149 / D-123) (2026-08-27)
 

@@ -172,8 +172,10 @@ describe("T2-S2 command-ref outbox", () => {
   it("does not treat this phone's own first create as another phone", async () => {
     vi.stubEnv("VITE_CONTINUITY_COMMAND_LOG", "1");
     setContinuityStore(createMemoryContinuityStore());
-    const remote = withReceipt(googleHousehold(), "confirm-remote");
-    const local = withReceipt(remote, "confirm-local-ahead");
+    const remoteBase = withReceipt(googleHousehold(), "confirm-remote");
+    const remote = { ...remoteBase, linked: true, revision: 1, baseRevision: 0 };
+    const localBase = withReceipt(remote, "confirm-local-ahead");
+    const local = { ...localBase, linked: true, revision: 3, baseRevision: 0 };
     enqueueContinuitySnapshot({
       household: local,
       identity,

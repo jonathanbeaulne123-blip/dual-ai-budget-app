@@ -32,6 +32,9 @@ describe("migration 012 publish_continuity_snapshot (D-148 T1-S1)", () => {
     expect(sql).toMatch(/duplicate', true/);
     expect(sql).toMatch(/hearth_private\.payload_has_confirmation/);
     expect(sql).toMatch(/missing-confirmation-receipt/);
+    expect(sql).toMatch(
+      /current_rev = p_revision[\s\S]*current_rev IS DISTINCT FROM p_expected_revision[\s\S]*p_revision <= p_expected_revision/,
+    );
   });
 
   it("guards Development-only and grants authenticated execution only", () => {

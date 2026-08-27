@@ -359,4 +359,45 @@ describe("D-143 Auth membership continuity authority", () => {
     expect(result.error).toMatch(/books snapshot is missing/);
     expect(result.error).not.toMatch(/Another phone/);
   });
+
+  it("does not CAS from 0 when the hosted payload omits revision", async () => {
+    const base = linkGoogleIdentity(catalogHousehold(), {
+      memberId: "MEM-001",
+      email: identity.email,
+      subject: identity.subject,
+      displayName: "Jonathan",
+      grantedScopes: ["openid", "email"],
+    }).household;
+    const local = { ...base, linked: true, revision: 7, baseRevision: 0 };
+    const { revision: _omit, ...payloadWithoutRevision } = { ...base, linked: true };
+    void _omit;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("households?select=id")) {
+        return new Response(JSON.stringify([{ id: local.householdId }]), { status: 200 });
+      }
+      if (url.includes("rpc/hearth_create_household")) {
+        return new Response(JSON.stringify({
+          ok: false,
+          conflict: true,
+          reason: "household-already-exists",
+        }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      if (url.includes("household_snapshots?")) {
+        return new Response(JSON.stringify([{ payload: JSON.stringify(payloadWithoutRevision) }]), { status: 200 });
+      }
+      if (url.includes("rpc/publish_continuity_snapshot")) {
+        throw new Error("CAS from defaulted revision 0 would recreate the false another-phone warning");
+      }
+      return new Response(JSON.stringify([]), { status: 200 });
+    }));
+    const result = await pushSupabaseHousehold(local, authConfig, {
+      expectedRevision: 0,
+      continuityIdentity: identity,
+    });
+    expect(result.conflict).toBeFalsy();
+    expect(result.skipped).toBe(true);
+    expect(result.error).toMatch(/books snapshot is missing/);
+    expect(result.error).not.toMatch(/Another phone/);
+  });
 });
