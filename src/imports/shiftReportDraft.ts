@@ -1,4 +1,5 @@
 import { isShiftEventTag, type ShiftEventTag, type VisionDocumentResult } from "../core/index.ts";
+import { scanFinancialDocument } from "./documentScanner.ts";
 import type { WorkShiftDraft } from "../WorkShiftFlow.tsx";
 
 /**
@@ -17,7 +18,7 @@ export function workShiftDraftFromVision(
     return {
       draft: null,
       warnings,
-      error: "That photo did not look like a shift report. Use Timesheet → Scan shift report, or retake a clearer tip sheet.",
+      error: "That photo did not look like a shift report. Use Shift → Today, or retake a clearer tip sheet.",
     };
   }
 
@@ -66,3 +67,12 @@ export function workShiftDraftFromVision(
   }
   return { draft, warnings };
 }
+
+export async function scanShiftReportFile(
+  file: File,
+  fetcher: typeof fetch = fetch,
+): Promise<{ draft: WorkShiftDraft | null; warnings: string[]; error?: string }> {
+  const scanned = await scanFinancialDocument(file, fetcher, { documentHint: "shift-report" });
+  return workShiftDraftFromVision(scanned.result);
+}
+

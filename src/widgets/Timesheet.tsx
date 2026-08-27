@@ -44,6 +44,8 @@ export function TimesheetBody({
   onFinished,
   previewHours,
   previewCaption,
+  inlineConfirm,
+  hideIdleActions,
 }: {
   household: Household;
   streak: ShiftStreak;
@@ -60,6 +62,10 @@ export function TimesheetBody({
   onFinished: () => void;
   previewHours?: number | null;
   previewCaption?: string | null;
+  /** Parent hosts Confirm (Shift tab). Hide the Add-sheet review button. */
+  inlineConfirm?: boolean;
+  /** Parent is posting an already-off shift; hide Start shift / Already off. */
+  hideIdleActions?: boolean;
 }) {
   const punch = activeOpenShift(household.kitchen, memberId);
   const conflicts = openShiftConflicts(household.kitchen, memberId);
@@ -117,10 +123,14 @@ export function TimesheetBody({
             </ol>
           )}
           {punch.status === "confirming" ? (
-            <>
-              <button type="button" className="primary" disabled={busy} onClick={onSignOut}>Review &amp; confirm pay</button>
-              <p className="muted">Nothing has reached the ledger yet. You can fix the clock and breaks on the review screen.</p>
-            </>
+            inlineConfirm ? (
+              <p className="muted">Nothing has reached the ledger yet. Review hours, scan a tip sheet, then Confirm below.</p>
+            ) : (
+              <>
+                <button type="button" className="primary" disabled={busy} onClick={onSignOut}>Review &amp; confirm pay</button>
+                <p className="muted">Nothing has reached the ledger yet. You can fix the clock and breaks on the review screen.</p>
+              </>
+            )
           ) : (
             <>
               <div className="timesheet-actions">
@@ -147,8 +157,14 @@ export function TimesheetBody({
           ) : (
             <p className="muted">{streak.spoken} New days show a plain clock until you start a shift.</p>
           )}
-          <button type="button" className="primary" disabled={busy} onClick={onClockIn}>Start shift · {memberName}</button>
-          <button type="button" className={streak.waiting ? "primary" : "chip"} onClick={() => onFinished()}>Already off?</button>
+          {hideIdleActions ? (
+            <p className="muted">Post the finished shift below. Confirm still posts. Camera drafts only.</p>
+          ) : (
+            <>
+              <button type="button" className="primary" disabled={busy} onClick={onClockIn}>Start shift · {memberName}</button>
+              <button type="button" className={streak.waiting ? "primary" : "chip"} onClick={() => onFinished()}>Already off?</button>
+            </>
+          )}
         </>
       )}
     </>

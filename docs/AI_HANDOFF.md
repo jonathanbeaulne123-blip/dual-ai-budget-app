@@ -1,5 +1,23 @@
 # AI Task and Handoff Standard
 
+## Shift Today camera (D-152 on D-153) (2026-08-27)
+
+**Status:** Branch `cursor/shift-tab-camera-6319` off `origin/main` `@891cc5d`. Risk: **Medium**. Not merged until Jonathan's "get everything done" kitchen publish.
+
+**Household outcome:** On Shift → Today, photograph a tip sheet (or pick a photo). The scan drafts Confirm on this page. Confirm still posts. Home Timesheet / Add camera stays.
+
+**Budget delta (5):** `+1`
+
+**Engagement delta (3):** `+2`
+
+**What changed:** Shared `ShiftReportScanBar`. Clock out on Shift clocks out without opening Add. Already off stays on Today. Same `scanShiftReportFile` / `documentHint: shift-report`. Demo kitchen job for Bianca (MEM-001). BatchImport copy points at Shift → Today.
+
+**Verification:** (running `pnpm check` after focused tests)
+
+**Data/environment:** Client/docs. Scan still POSTs image bytes like receipts. No schema, secrets, Production rows.
+
+**Next owner:** After kitchen deploy — hard-refresh, Development, demo kitchen, Bianca, Shift → Already off? → camera chips.
+
 ## Shift tab (D-153) (2026-08-27)
 
 **Status:** Merged via [#213](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/213) onto `main` (`1e12d32`). Kitchen Worker **live** version `5b2b2b47-d996-427c-b3bf-61a845ee9bcf` (bundle `index-CTPtvBuT.js`). Risk: **Medium**. Numbered **D-153** because `main` already used **D-152** for tip covariates (#208).

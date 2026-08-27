@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  activeOpenShift,
   formatCad,
   formatMonthLabel,
   monthKeyFromDateKey,
@@ -12,14 +13,18 @@ import {
   shiftSaucerBoard,
   type Environment,
   type Household,
+  type PostWorkShiftInput,
   type Shift,
   type WeatherGlass,
   type WorkJob,
 } from "./core/index.ts";
+import { scanShiftReportFile } from "./imports/shiftReportDraft.ts";
+import { ShiftReportScanBar } from "./ShiftReportScan.tsx";
 import { PaperTile } from "./theme/PaperTheme.tsx";
 import { TimesheetBody } from "./widgets/Timesheet.tsx";
 import { WorkJobsCard } from "./WorkJobs.tsx";
 import { WorkReportCard, downloadWorkReportCsv } from "./WorkReport.tsx";
+import { WorkShiftFlow, type WorkShiftDraft } from "./WorkShiftFlow.tsx";
 import { WorkShiftHistoryCard } from "./WorkShiftHistory.tsx";
 
 type ShiftPane = "today" | "report" | "jobs";
@@ -63,8 +68,8 @@ export function WorkShiftPage({
   onStartBreak,
   onEndBreak,
   onChooseTimeline,
-  onSignOut,
-  onFinished,
+  onClockOut,
+  onConfirmShift,
   onCorrect,
   onAskSaveJob,
   onArchiveJob,
@@ -81,8 +86,8 @@ export function WorkShiftPage({
   onStartBreak: (kind: "paid" | "unpaid" | "custom") => void;
   onEndBreak: () => void;
   onChooseTimeline: (openShiftId: string) => void;
-  onSignOut: () => void;
-  onFinished: () => void;
+  onClockOut: () => void;
+  onConfirmShift: (input: PostWorkShiftInput) => void;
   onCorrect: (shift: Shift, transactionId: string) => void;
   onAskSaveJob: (job: WorkJob, summary: string) => void;
   onArchiveJob: (jobId: string) => void;
@@ -93,7 +98,14 @@ export function WorkShiftPage({
   const [period, setPeriod] = useState<"month" | "all">("month");
   const [breakdown, setBreakdown] = useState(false);
   const [weatherGlass, setWeatherGlass] = useState<WeatherGlass | undefined>(undefined);
+  const [finishedReview, setFinishedReview] = useState(false);
+  const [workShiftDraft, setWorkShiftDraft] = useState<WorkShiftDraft | null>(null);
+  const [shiftScanBusy, setShiftScanBusy] = useState(false);
+  const [shiftScanError, setShiftScanError] = useState("");
+  const [shiftScanWarnings, setShiftScanWarnings] = useState<string[]>([]);
   const streak = useMemo(() => shiftPostingStreak(household, today), [household, today]);
+  const punch = useMemo(() => activeOpenShift(household.kitchen, memberId), [household.kitchen, memberId]);
+  const reviewing = punch?.status === "confirming" || finishedReview;
 
   useEffect(() => {
     const storage = typeof localStorage === "undefined" ? undefined : localStorage;
@@ -117,6 +129,40 @@ export function WorkShiftPage({
   const saucers = useMemo(() => shiftSaucerBoard(household, today, memberId), [household, today, memberId]);
   const oracle = useMemo(() => shiftFloorOracle(household, today, memberId), [household, today, memberId]);
   const report = useMemo(() => shiftReportGlance(household, today, memberId, period), [household, today, memberId, period]);
+
+  useEffect(() => {
+    if (reviewing) return;
+    setWorkShiftDraft(null);
+    setShiftScanError("");
+    setShiftScanWarnings([]);
+  }, [reviewing]);
+
+  async function applyScan(file: File | undefined) {
+    if (!file) return;
+    setShiftScanBusy(true);
+    setShiftScanError("");
+    setShiftScanWarnings([]);
+    try {
+      const mapped = await scanShiftReportFile(file);
+      if (!mapped.draft) {
+        setShiftScanError(mapped.error || "That photo could not draft a shift.");
+        setShiftScanWarnings(mapped.warnings);
+        return;
+      }
+      setWorkShiftDraft(mapped.draft);
+      setShiftScanWarnings(mapped.warnings);
+    } catch (caught) {
+      setShiftScanError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setShiftScanBusy(false);
+    }
+  }
+
+  function clearScanDraft() {
+    setWorkShiftDraft(null);
+    setShiftScanWarnings([]);
+    setShiftScanError("");
+  }
 
   return (
     <div className="shift-page">
@@ -158,15 +204,56 @@ export function WorkShiftPage({
               today={today}
               busy={busy}
               onClockIn={onClockIn}
-              onAbandon={onAbandon}
+              onAbandon={() => {
+                setFinishedReview(false);
+                clearScanDraft();
+                onAbandon();
+              }}
               onStartBreak={onStartBreak}
               onEndBreak={onEndBreak}
               onChooseTimeline={onChooseTimeline}
-              onSignOut={onSignOut}
-              onFinished={onFinished}
+              onSignOut={onClockOut}
+              onFinished={() => {
+                clearScanDraft();
+                setFinishedReview(true);
+              }}
               previewHours={preview?.hours ?? null}
               previewCaption={preview?.caption ?? null}
+              inlineConfirm
+              hideIdleActions={finishedReview && !punch}
             />
+            {reviewing ? (
+              <>
+                <ShiftReportScanBar
+                  busy={busy}
+                  scanBusy={shiftScanBusy}
+                  error={shiftScanError}
+                  onFile={(file) => { void applyScan(file); }}
+                />
+                {finishedReview && !punch ? (
+                  <button type="button" className="chip" disabled={busy} onClick={() => { setFinishedReview(false); clearScanDraft(); }}>
+                    Back to clock
+                  </button>
+                ) : null}
+                <WorkShiftFlow
+                  key={workShiftDraft ? `draft-${JSON.stringify(workShiftDraft)}` : "blank"}
+                  household={household}
+                  memberId={memberId}
+                  today={today}
+                  punch={punch}
+                  busy={busy || shiftScanBusy}
+                  initialDraft={workShiftDraft}
+                  weatherGlassPrefill={weatherGlass}
+                  scanWarnings={shiftScanWarnings}
+                  onClearDraft={clearScanDraft}
+                  onConfirm={(input) => {
+                    clearScanDraft();
+                    setFinishedReview(false);
+                    onConfirmShift(input);
+                  }}
+                />
+              </>
+            ) : null}
           </section>
 
           <section className="card shift-climate">
