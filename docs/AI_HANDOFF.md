@@ -15,8 +15,9 @@
 **Verification:**
 - `pnpm check` green at `80d190c` (853 passed, 2 skipped, production build).
 - Follow-up: `pnpm exec vitest run test/computer-office.test.ts test/office-phone.test.ts test/hercules-rig.test.ts` green after loop/a11y guards.
-- Browser (fictional demo): 390 Draft C (weather, POST/DUE/HEALTH, Today's stories); 768 scaled phone; 1280/1440 night cabin + gold nav; CAD pad `1-2-5-0` posted **$12.50** groceries with toast “Posted $12.50. On this phone…”.
-- UX audit: **PASS WITH NOTES**; inert + focus-visible + room destinations label addressed in later commits.
+- **Stop-ship fix after verifier:** `src/main.tsx` must import both `office-phone.css` and `office-room.css`. An earlier commit dropped the phone sheet; that is restored so G0 Draft C styles load.
+- Browser (fictional demo): 390 Home shows weather, POST/DUE/HEALTH, Today's stories (re-check after restoring `office-phone.css`); 768 scaled phone; 1280/1440 night cabin + gold nav; CAD pad `1-2-5-0` posted **$12.50** groceries.
+- UX audit: **PASS WITH NOTES**; inert + focus-visible + room destinations label addressed; stylesheet import was a later FAIL then patched.
 - Superdesign CLI remains unauthenticated on this VM. Locked frames from the prior working Superdesign/image pass live in `docs/ux/computer-office/`.
 
 **Uncertainty:** Cabin CSS is a first-person room, not a photoreal match to the locked PNGs. Play personality is in code (`PERSONALITY_DESK.play`); the Desks sheet was not visually confirmed (click did not open the sheet during the second browser pass). Rig still emits every animation frame for part transforms — reentrancy/same-mood guards only. 12.9" iPad at 1280 is a named edge.

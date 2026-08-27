@@ -51,6 +51,12 @@ describe("D-151 three-view breakpoint", () => {
     expect(officeLayoutKey("development", "computer")).not.toBe(officeLayoutKey("development", "phone"));
   });
 
+  it("loads both OfficePhone and night-cabin stylesheets", () => {
+    const main = readFileSync("src/main.tsx", "utf8");
+    expect(main).toMatch(/import "\.\/office-phone\.css"/);
+    expect(main).toMatch(/import "\.\/office-room\.css"/);
+  });
+
   it("soft-migrates wide JSON onto the computer key", () => {
     const storage = memoryStore();
     storage.setItem("hearth.office.development.wide", JSON.stringify({
