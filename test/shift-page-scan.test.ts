@@ -57,6 +57,10 @@ describe("Shift Today camera draft", () => {
     const text = container.textContent ?? "";
     expect(text).toContain(SHIFT_REPORT_SCAN_COPY.take);
     expect(text).toContain(SHIFT_REPORT_SCAN_COPY.choose);
+    expect(text).toContain("Workers AI");
+    expect(text).toContain("OpenAI");
+    expect(text).toContain("Anthropic");
+    expect(text).toContain("Auto");
     expect(text).toContain("Confirm");
     expect(text).not.toContain("Review & confirm pay");
     expect(household.shifts.filter((shift) => shift.memberId === "MEM-001" && shift.date === today)).toHaveLength(0);

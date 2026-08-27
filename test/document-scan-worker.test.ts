@@ -328,4 +328,66 @@ describe("document detection Worker", () => {
     expect(body.result.shiftDraft).not.toHaveProperty("note");
     expect(body.result.shiftDraft).not.toHaveProperty("staffingCount");
   });
+
+  it("honors an explicit provider and does not fall through to another backend", async () => {
+    const run = vi.fn(async () => {
+      throw new Error("workers-ai must not run when OpenAI is forced");
+    });
+    const upstream = vi.fn(async () => new Response(JSON.stringify({
+      choices: [{ message: { content: JSON.stringify({
+        documentKind: "receipt",
+        currency: "CAD",
+        accountLast4: "1234",
+        rows: [{
+          date: "2026-08-24", amountCents: 1250, direction: "debit", typeHint: "expense",
+          merchant: "Cafe", description: "Lunch", reference: "R-1", confidence: 96,
+        }],
+        warnings: [],
+      }) } }],
+    }), { status: 200, headers: { "Content-Type": "application/json" } }));
+    vi.stubGlobal("fetch", upstream);
+    const response = await worker.fetch(new Request(`${origin}/documents/scan`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: origin },
+      body: JSON.stringify({
+        fileName: "tips.jpg",
+        mimeType: "image/jpeg",
+        imageDataUrl: "data:image/jpeg;base64,AA==",
+        documentHint: "shift-report",
+        provider: "openai",
+      }),
+    }), {
+      AI: { run },
+      OPENAI_API_KEY: "scan-key",
+      DOCUMENT_SCAN_ALLOW_PAID: "true",
+      ASSETS: { fetch: vi.fn() },
+    });
+    expect(response.status).toBe(200);
+    expect((await response.json() as { provider: string }).provider).toBe("openai");
+    expect(run).not.toHaveBeenCalled();
+    expect(upstream).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses a forced paid provider when DOCUMENT_SCAN_ALLOW_PAID is off", async () => {
+    const upstream = vi.fn();
+    vi.stubGlobal("fetch", upstream);
+    const response = await worker.fetch(new Request(`${origin}/documents/scan`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: origin },
+      body: JSON.stringify({
+        fileName: "tips.jpg",
+        mimeType: "image/jpeg",
+        imageDataUrl: "data:image/jpeg;base64,AA==",
+        provider: "anthropic",
+      }),
+    }), {
+      ANTHROPIC_API_KEY: "present-but-disabled",
+      DOCUMENT_SCAN_ALLOW_PAID: "false",
+      ASSETS: { fetch: vi.fn() },
+    });
+    expect(response.status).toBe(503);
+    const body = await response.json() as { error: string };
+    expect(body.error).toMatch(/Paid vision is not enabled/i);
+    expect(upstream).not.toHaveBeenCalled();
+  });
 });

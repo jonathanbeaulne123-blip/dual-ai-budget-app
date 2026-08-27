@@ -1,4 +1,5 @@
 import { stableImportHash, type VisionDocumentResult } from "../core/index.ts";
+import type { DocumentVisionProvider } from "./documentScanProvider.ts";
 
 export const DOCUMENT_SCAN_PATH = "/documents/scan";
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -82,9 +83,11 @@ export async function scanFinancialDocument(
   fetcher: typeof fetch = fetch,
   options?: {
     documentHint?: "shift-report" | "receipt" | "bill" | "bank-statement" | "credit-card-statement";
+    /** `auto` omits the field so the Worker keeps its default attempt order. */
+    provider?: DocumentVisionProvider;
     signal?: AbortSignal;
   },
-): Promise<{ result: VisionDocumentResult; sourceHash: string }> {
+): Promise<{ result: VisionDocumentResult; sourceHash: string; provider?: string }> {
   if (!ALLOWED_IMAGE_TYPES.has(file.type)) throw new Error("Use a JPEG, PNG, or WebP photo.");
   if (file.size <= 0) throw new Error("That image is empty.");
   if (file.size > MAX_IMAGE_BYTES) throw new Error("That image is larger than 10 MB. Crop it to the document and try again.");
@@ -95,11 +98,14 @@ export async function scanFinancialDocument(
   }
   const base64 = bytesToBase64(compressed.bytes);
   const sourceHash = await sourceDigest(compressed.mimeType, compressed.bytes, base64);
+  const forcedProvider =
+    options?.provider && options.provider !== "auto" ? options.provider : undefined;
   const payload = JSON.stringify({
     fileName: compressed.fileName,
     mimeType: compressed.mimeType,
     imageDataUrl: `data:${compressed.mimeType};base64,${base64}`,
     ...(options?.documentHint ? { documentHint: options.documentHint } : {}),
+    ...(forcedProvider ? { provider: forcedProvider } : {}),
   });
   let response: Response;
   try {
@@ -114,7 +120,9 @@ export async function scanFinancialDocument(
   }
   const type = response.headers.get("content-type") || "";
   if (!type.includes("json")) throw new Error(`Document detection returned ${response.status}.`);
-  const data = await response.json() as { ok?: boolean; result?: VisionDocumentResult; error?: string };
-  if (response.ok && data.ok && data.result) return { result: data.result, sourceHash };
+  const data = await response.json() as { ok?: boolean; result?: VisionDocumentResult; provider?: string; error?: string };
+  if (response.ok && data.ok && data.result) {
+    return { result: data.result, sourceHash, provider: data.provider };
+  }
   throw new Error(data.error || `Document detection returned ${response.status}.`);
 }

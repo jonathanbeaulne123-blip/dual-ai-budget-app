@@ -18,6 +18,7 @@ import {
   type WeatherGlass,
   type WorkJob,
 } from "./core/index.ts";
+import { loadDocumentVisionProvider } from "./imports/documentScanProvider.ts";
 import { scanShiftReportFile } from "./imports/shiftReportDraft.ts";
 import { ShiftReportScanBar } from "./ShiftReportScan.tsx";
 import { PaperTile } from "./theme/PaperTheme.tsx";
@@ -163,7 +164,7 @@ export function WorkShiftPage({
     setShiftScanError("");
     setShiftScanWarnings([]);
     try {
-      const mapped = await scanShiftReportFile(file, fetch, scan.signal);
+      const mapped = await scanShiftReportFile(file, fetch, scan.signal, loadDocumentVisionProvider());
       if (!scan.isCurrent()) return;
       if (!mapped.draft) {
         setShiftScanError(mapped.error || "That photo could not draft a shift.");

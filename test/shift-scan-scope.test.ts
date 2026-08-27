@@ -22,12 +22,12 @@ describe("shift camera scope", () => {
     const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
     const page = readFileSync(new URL("../src/WorkShiftPage.tsx", import.meta.url), "utf8");
     expect(app).toContain("shiftScanScopeRef.current.cancel()");
-    expect(app).toContain("scanShiftReportFile(file, fetch, scan.signal)");
+    expect(app).toContain("scanShiftReportFile(file, fetch, scan.signal, loadDocumentVisionProvider())");
     expect(app.match(/if \(!scan\.isCurrent\(\)\) return;/g)).toHaveLength(2);
     expect(app).toContain("setWorkShiftDraft(null)");
     expect(app).toContain("setShiftScanWarnings([])");
     expect(page).toContain("shiftScanScopeRef.current.cancel()");
-    expect(page).toContain("scanShiftReportFile(file, fetch, scan.signal)");
+    expect(page).toContain("scanShiftReportFile(file, fetch, scan.signal, loadDocumentVisionProvider())");
     expect(page.match(/if \(!scan\.isCurrent\(\)\) return;/g)).toHaveLength(2);
   });
 });

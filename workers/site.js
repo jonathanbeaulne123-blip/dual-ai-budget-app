@@ -1191,23 +1191,44 @@ async function scanDocument(request, env) {
   const documentHint = ["shift-report", "receipt", "bill", "bank-statement", "credit-card-statement"].includes(hintRaw)
     ? hintRaw
     : "";
+  const forcedRaw = String(body?.provider || "").trim().toLowerCase();
+  const forcedProvider = ["workers-ai", "openai", "anthropic"].includes(forcedRaw) ? forcedRaw : "";
 
   let result = null;
   let provider = "";
-  // Shift reports are dense POS slips — prefer strong paid vision first when allowed.
-  // Free Workers AI often returns a wrong-but-valid shape and would otherwise short-circuit.
-  const preferPaid = documentHint === "shift-report" && documentScanPaidAllowed(env);
-  const attempts = preferPaid
+  // Explicit provider choice (Shift tip-sheet chips) tries only that backend.
+  // Auto keeps prior order: tip sheets prefer paid vision first when allowed.
+  if (forcedProvider === "openai" || forcedProvider === "anthropic") {
+    if (!documentScanPaidAllowed(env)) {
+      return json({
+        ok: false,
+        error: "Paid vision is not enabled on this kitchen. Pick Workers AI or Auto.",
+      }, 503, cors);
+    }
+  }
+  const preferPaid = !forcedProvider && documentHint === "shift-report" && documentScanPaidAllowed(env);
+  const attempts = forcedProvider
     ? [
-        ["openai", () => scanOpenAI(env, imageDataUrl, documentHint)],
-        ["anthropic", () => scanAnthropic(env, imageDataUrl, documentHint)],
-        ["workers-ai", () => scanWorkersAi(env, imageDataUrl, documentHint)],
+        [
+          forcedProvider,
+          forcedProvider === "openai"
+            ? () => scanOpenAI(env, imageDataUrl, documentHint)
+            : forcedProvider === "anthropic"
+              ? () => scanAnthropic(env, imageDataUrl, documentHint)
+              : () => scanWorkersAi(env, imageDataUrl, documentHint),
+        ],
       ]
-    : [
-        ["workers-ai", () => scanWorkersAi(env, imageDataUrl, documentHint)],
-        ["openai", () => scanOpenAI(env, imageDataUrl, documentHint)],
-        ["anthropic", () => scanAnthropic(env, imageDataUrl, documentHint)],
-      ];
+    : preferPaid
+      ? [
+          ["openai", () => scanOpenAI(env, imageDataUrl, documentHint)],
+          ["anthropic", () => scanAnthropic(env, imageDataUrl, documentHint)],
+          ["workers-ai", () => scanWorkersAi(env, imageDataUrl, documentHint)],
+        ]
+      : [
+          ["workers-ai", () => scanWorkersAi(env, imageDataUrl, documentHint)],
+          ["openai", () => scanOpenAI(env, imageDataUrl, documentHint)],
+          ["anthropic", () => scanAnthropic(env, imageDataUrl, documentHint)],
+        ];
   for (const [name, run] of attempts) {
     try {
       result = await run();
@@ -1219,10 +1240,19 @@ async function scanDocument(request, env) {
       result = null;
     }
   }
-  if (!result) return json({
-    ok: false,
-    error: "Document detection is unavailable. Your image was not saved. Try a closer crop of the tip sheet, or try again in a minute.",
-  }, 503, cors);
+  if (!result) {
+    const forcedLabel =
+      forcedProvider === "openai" ? "OpenAI"
+        : forcedProvider === "anthropic" ? "Anthropic"
+          : forcedProvider === "workers-ai" ? "Workers AI"
+            : "";
+    return json({
+      ok: false,
+      error: forcedLabel
+        ? `${forcedLabel} could not read that tip sheet. Try Auto, another provider, or a clearer photo. Your image was not saved.`
+        : "Document detection is unavailable. Your image was not saved. Try a closer crop of the tip sheet, or try again in a minute.",
+    }, 503, cors);
+  }
   return json({ ok: true, provider, result }, 200, cors);
 }
 

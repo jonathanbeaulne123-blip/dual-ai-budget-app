@@ -245,6 +245,7 @@ import type { WorkShiftDraft } from "./WorkShiftFlow.tsx";
 import { WorkShiftPage } from "./WorkShiftPage.tsx";
 import { resolveDuplicateRetry } from "./shiftDuplicateRetry.ts";
 import { ShiftReportScanBar } from "./ShiftReportScan.tsx";
+import { loadDocumentVisionProvider } from "./imports/documentScanProvider.ts";
 import { scanShiftReportFile } from "./imports/shiftReportDraft.ts";
 import { WorkShiftWithSevenShifts } from "./WorkShiftWithSevenShifts.tsx";
 import { createShiftScanScope } from "./shiftScanScope.ts";
@@ -496,7 +497,7 @@ export function App() {
     setShiftScanError("");
     setShiftScanWarnings([]);
     try {
-      const mapped = await scanShiftReportFile(file, fetch, scan.signal);
+      const mapped = await scanShiftReportFile(file, fetch, scan.signal, loadDocumentVisionProvider());
       if (!scan.isCurrent()) return;
       if (!mapped.draft) {
         setShiftScanError(mapped.error || "That photo could not draft a shift.");
