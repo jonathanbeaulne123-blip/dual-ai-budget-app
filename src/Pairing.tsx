@@ -192,7 +192,10 @@ function AuthInviteChrome({
   const [targetMemberId, setTargetMemberId] = useState(invitees[0]?.id ?? "");
   const [email, setEmail] = useState("");
   const [issued, setIssued] = useState<IssueInviteResult & { ok: true } | null>(null);
-  const issueGate = authInviteIssueGate(syncState);
+  const issueGate = authInviteIssueGate({
+    syncState,
+    sharingMode: household.sharing?.mode,
+  });
   const issueBlocked = busy || !issueGate.ready;
 
   async function issue(kind: InviteKind) {
@@ -256,6 +259,7 @@ function AuthInviteChrome({
         value={targetMemberId}
         onChange={(event) => setTargetMemberId(event.target.value)}
         disabled={issueBlocked}
+        aria-describedby="auth-invite-wait"
       >
         {invitees.map((member) => (
           <option key={member.id} value={member.id}>{member.name}</option>
@@ -272,14 +276,14 @@ function AuthInviteChrome({
         autoCorrect="off"
         disabled={issueBlocked}
       />
-      {issueGate.message && (
-        <p className="muted" id="auth-invite-wait" role="status">{issueGate.message}</p>
-      )}
+      <p className="muted" id="auth-invite-wait" role="status" aria-atomic="true">
+        {issueGate.message ?? ""}
+      </p>
       <button
         className="ghost"
         style={{ width: "100%", marginTop: 8 }}
         disabled={issueBlocked}
-        aria-describedby={issueGate.message ? "auth-invite-wait" : undefined}
+        aria-describedby="auth-invite-wait"
         onClick={() => void issue("email")}
       >
         Issue email invite
@@ -288,7 +292,7 @@ function AuthInviteChrome({
         className="ghost"
         style={{ width: "100%", marginTop: 8 }}
         disabled={issueBlocked}
-        aria-describedby={issueGate.message ? "auth-invite-wait" : undefined}
+        aria-describedby="auth-invite-wait"
         onClick={() => void issue("qr")}
       >
         Issue QR / link invite
@@ -348,7 +352,11 @@ export function PairingCard({
   const phrase = formatInvitePhrase(household.inviteCode);
   const url = typeof window !== "undefined" ? joinUrlFor(household.inviteCode, window.location.origin) : "";
   const status = pairingStatusLabel(household, { authEnabled: supabaseAuthEnabled() });
-  const hideOwnerErrorWhileSharing = syncState === "syncing"
+  const inviteGate = authInviteIssueGate({
+    syncState,
+    sharingMode: household.sharing?.mode,
+  });
+  const hideOwnerErrorWhileSharing = !inviteGate.ready
     && error === inviteReasonMessage("not-owner");
 
   async function publish() {

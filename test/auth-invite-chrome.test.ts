@@ -93,13 +93,14 @@ describe("household invite RPC client", () => {
   });
 
   it("holds Auth invites until the household finishes sharing", () => {
-    expect(authInviteIssueGate("syncing")).toEqual({
+    expect(authInviteIssueGate({ syncState: "syncing" })).toEqual({
       ready: false,
       message: "Wait until this household finishes sharing before sending an invite.",
     });
-    expect(authInviteIssueGate("synced").ready).toBe(true);
-    expect(authInviteIssueGate("idle").ready).toBe(true);
-    expect(authInviteIssueGate("error").ready).toBe(true);
+    expect(authInviteIssueGate({ syncState: "error", sharingMode: "pending-transport" }).ready).toBe(false);
+    expect(authInviteIssueGate({ syncState: "synced" }).ready).toBe(true);
+    expect(authInviteIssueGate({ syncState: "idle" }).ready).toBe(true);
+    expect(authInviteIssueGate({ syncState: "error" }).ready).toBe(true);
   });
 
   it("maps redeem email-mismatch and success", async () => {

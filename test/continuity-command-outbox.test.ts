@@ -165,6 +165,56 @@ describe("T2-S2 command-ref outbox", () => {
     expect(flushed.synchronized).toBe(1);
     expect(listContinuityOutbox("development")).toEqual([]);
     expect(calls.some((url) => url.includes("rpc/hearth_create_household"))).toBe(true);
+    expect(calls.some((url) => url.includes("rpc/publish_continuity_snapshot"))).toBe(true);
+    expect(calls.some((url) => url.includes("rpc/append_continuity_command"))).toBe(false);
+  });
+
+  it("keeps expectedRevision 0 when later command-refs compact, then still creates", async () => {
+    vi.stubEnv("VITE_CONTINUITY_COMMAND_LOG", "1");
+    setContinuityStore(createMemoryContinuityStore());
+    const first = withReceipt(googleHousehold(), "confirm-create-first");
+    enqueueContinuitySnapshot({
+      household: first,
+      identity,
+      expectedRevision: 0,
+      confirmationId: "confirm-create-first",
+    });
+    const second = withReceipt(first, "confirm-create-second");
+    enqueueContinuitySnapshot({
+      household: second,
+      identity,
+      expectedRevision: 1,
+      confirmationId: "confirm-create-second",
+    });
+    expect(listContinuityOutbox("development")[0]?.expectedRevision).toBe(0);
+    const calls: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      calls.push(url);
+      if (url.includes("households?select=id")) {
+        return new Response(JSON.stringify([]), { status: 200 });
+      }
+      if (url.includes("rpc/append_continuity_command")) {
+        throw new Error("append_continuity_command must not run until the household exists");
+      }
+      if (url.includes("rpc/hearth_create_household") || url.includes("rpc/publish_continuity_snapshot")) {
+        return new Response(JSON.stringify({
+          ok: true,
+          conflict: false,
+          duplicate: false,
+          revision: second.revision,
+        }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      return new Response(JSON.stringify([]), { status: 200 });
+    }));
+    const flushed = await flushContinuityOutbox({
+      environment: "development",
+      identity,
+      config: authConfig,
+      force: true,
+    });
+    expect(flushed.synchronized).toBe(1);
+    expect(calls.some((url) => url.includes("rpc/hearth_create_household"))).toBe(true);
     expect(calls.some((url) => url.includes("rpc/append_continuity_command"))).toBe(false);
   });
 

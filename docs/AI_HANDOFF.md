@@ -2,7 +2,7 @@
 
 ## Invite owner first create (D-149 / D-123) (2026-08-27)
 
-**Status:** Branch `cursor/invite-owner-first-create-5958`. Risk: **High** (Auth/RLS/membership path; money meaning unchanged). Not merged. No schema apply.
+**Status:** Branch `cursor/invite-owner-first-create-5958`, draft [PR #209](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/209). Risk: **High** (Auth/RLS/membership path; money meaning unchanged). Not merged. No schema apply.
 
 **Household outcome:** The person who starts a household can send a Google invite. Command-log must not skip `hearth_create_household` on the first cloud write.
 
@@ -10,13 +10,13 @@
 
 **Engagement delta (3):** `+2` — Invite waits for share instead of a false “only the owner” warning.
 
-**What changed:** `shouldUseCommandLogFlush` returns false when `expectedRevision === 0`, so the first write uses `pushSupabaseHousehold` → `hearth_create_household` (owner membership). Invite Issue buttons stay disabled while `syncState === "syncing"`.
+**What changed:** `shouldUseCommandLogFlush` returns false when `expectedRevision === 0`, so the first write uses `pushSupabaseHousehold` → `hearth_create_household` (owner membership). Invite Issue stays disabled while sharing (`syncState === "syncing"` or `sharing.mode === "pending-transport"`). Compacted later writes keep `expectedRevision === 0` and still create.
 
-**Verification:** (filled after focused tests and `pnpm check`)
+**Verification:** Focused `pnpm exec vitest run test/continuity-command-outbox.test.ts test/auth-invite-chrome.test.ts` → 26 pass. Full `pnpm check` on `f5c6649` → `pnpm ai:verify` green; **868 passed / 2 skipped**; `pnpm build` green. Independent reviews: privacy **PASS WITH NOTES** (P3 proof gaps; compact-0 test added after); trust **PASS WITH NOTES** (P1 handoff filled here; P2 pending-transport gate added); books **PASS WITH NOTES** (assert 012 on first-create); UX **PASS WITH NOTES** (live region always in DOM).
 
-**Data/environment:** Development client/docs only. No hosted SQL, secrets, Production rows, or deploy.
+**Data/environment:** Development client/docs only. No hosted SQL, secrets, Production rows, or deploy. Fictional Development fixtures in tests.
 
-**Next owner:** Jonathan — review/merge; hard-refresh the kitchen; Retry now if a leftover household is still “Syncing…”, then Issue.
+**Next owner:** Jonathan — review/merge PR #209; hard-refresh the kitchen; Retry now if a leftover household is still sharing, then Issue.
 
 ## Start from scratch — Development household reset (D-151) (2026-08-27)
 
