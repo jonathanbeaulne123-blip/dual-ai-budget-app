@@ -6,7 +6,7 @@
 - **Assignee or AI:** Cursor
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/shift-tab-camera-6319`
-- **Baseline SHA:** `891cc5dfe535dc4244cd87577af18e47a0fdd3f1` (`origin/main`)
+- **Baseline SHA:** `e50fb75625fa1ab48953abaaf338e1a7bd58c403` (`origin/main` after rebase)
 - **Head SHA:** (this commit)
 - **PR or issue:** [#217](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/217)
 - **Risk:** Medium (OCR already exists; new surface; Confirm still posts)
