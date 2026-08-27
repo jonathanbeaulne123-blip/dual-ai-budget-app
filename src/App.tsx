@@ -247,6 +247,12 @@ import { resolveDuplicateRetry } from "./shiftDuplicateRetry.ts";
 import { ShiftReportScanBar } from "./ShiftReportScan.tsx";
 import { scanShiftReportFile } from "./imports/shiftReportDraft.ts";
 import { WorkShiftWithSevenShifts } from "./WorkShiftWithSevenShifts.tsx";
+import {
+  runScopedWorkShift,
+  workShiftScopeMatches,
+  WORK_SHIFT_SCOPE_ERROR,
+  type ScopedWorkShiftInput,
+} from "./workShiftScope.ts";
 import { DuePreviewSheet } from "./DuePreviewSheet.tsx";
 import {
   renderCommandChrome,
@@ -387,12 +393,7 @@ export function App() {
   const [booting, setBooting] = useState(true);
   const [tab, setTab] = useState<Tab>("home");
   const [adding, setAdding] = useState(false);
-  const workShiftInputRef = useRef<{
-    input: PostWorkShiftInput;
-    environment: Environment;
-    householdId: string;
-    memberId: string;
-  } | null>(null);
+  const workShiftInputRef = useRef<ScopedWorkShiftInput | null>(null);
   const confirmPanelRef = useRef<HTMLDivElement | null>(null);
   const lastAmountLabelRef = useRef<string | null>(null);
 
@@ -3018,31 +3019,26 @@ export function App() {
             memberId: currentMemberId,
           }
         : null;
-    const scopeMatches = Boolean(
-      pending
-      && current
-      && current.environment === pending.environment
-      && current.householdId === pending.householdId
-      && currentMemberId === pending.memberId
-      && input.memberId === pending.memberId,
-    );
-    if (!pending || !scopeMatches) {
+    if (!workShiftScopeMatches(current, currentMemberId, pending)) {
       workShiftInputRef.current = null;
       setConfirm(null);
-      setError("That Timesheet draft belongs to another ledger or member. Pull it again.");
+      setError(WORK_SHIFT_SCOPE_ERROR);
       return;
     }
     workShiftInputRef.current = pending;
     void run((live) => {
-      if (
-        live.environment !== pending.environment
-        || live.householdId !== pending.householdId
-        || sessionRef.current?.memberId !== pending.memberId
-      ) {
+      try {
+        return runScopedWorkShift(
+          live,
+          sessionRef.current?.memberId,
+          pending,
+          confirmDuplicate,
+          (safeInput) => postWorkShift(live, safeInput),
+        );
+      } catch (caught) {
         workShiftInputRef.current = null;
-        throw new Error("That Timesheet draft belongs to another ledger or member. Pull it again.");
+        throw caught;
       }
-      return postWorkShift(live, { ...pending.input, confirmDuplicate });
     });
   }
 

@@ -137,6 +137,8 @@ function json(body: unknown, status = 200): Response {
 
 function sevenShiftsUpstream(options: {
   shiftsStatus?: number;
+  punchesStatus?: number;
+  rolesStatus?: number;
   membershipRows?: Array<Record<string, unknown>>;
   companyName?: string;
   roleName?: string;
@@ -181,6 +183,7 @@ function sevenShiftsUpstream(options: {
       });
     }
     if (url.includes("/time_punches")) {
+      if (options.punchesStatus) return json({ error: "required punch call failed" }, options.punchesStatus);
       return json({
         data: [{
           id: 85452022,
@@ -209,7 +212,10 @@ function sevenShiftsUpstream(options: {
         }],
       });
     }
-    if (url.includes("/roles?")) return json({ data: [{ id: 2583, name: options.roleName ?? "Server" }, { id: 9, name: "Host" }] });
+    if (url.includes("/roles?")) {
+      if (options.rolesStatus) return json({ error: "required role call failed" }, options.rolesStatus);
+      return json({ data: [{ id: 2583, name: options.roleName ?? "Server" }, { id: 9, name: "Host" }] });
+    }
     if (url.includes("/locations?")) return json({ data: [{ id: 4569, name: options.locationName ?? "Harbour" }] });
     if (url.includes("/users?")) {
       return json({
@@ -419,6 +425,36 @@ describe("authenticated 7shifts Worker", () => {
     expect(JSON.stringify(body)).not.toContain("provider plan details");
   });
 
+  it("fails closed when required punch or role data is unavailable", async () => {
+    for (const options of [{ punchesStatus: 403 }, { rolesStatus: 403 }]) {
+      const db = new FakeD1();
+      const upstream = sevenShiftsUpstream(options);
+      vi.stubGlobal("fetch", upstream);
+      const scope = { environment: "development", householdId: "HH-TEST", memberId: "MEM-001" };
+      const probed = await worker.fetch(api("/work/7shifts/probe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...scope, accessToken: token }),
+      }), env(db));
+      const probeBody = await probed.json() as { users: Array<{ userDigest: string }> };
+      const connected = await worker.fetch(api("/work/7shifts/connections", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...scope, accessToken: token, userDigest: probeBody.users[0]!.userDigest, jobId: "JOB-HARBOUR" }),
+      }), env(db));
+      const connection = await connected.json() as { connectionId: string };
+      const pulled = await worker.fetch(api(`/work/7shifts/connections/${connection.connectionId}/pull`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(scope),
+      }), env(db));
+      expect(pulled.ok).toBe(false);
+      const body = await pulled.json() as Record<string, unknown>;
+      expect(body).not.toHaveProperty("payload");
+      expect(JSON.stringify(body)).not.toMatch(/required punch call failed|required role call failed/);
+    }
+  });
+
   it("replaces unsafe provider labels before they reach the browser", async () => {
     const db = new FakeD1();
     const upstream = sevenShiftsUpstream({
@@ -449,6 +485,11 @@ describe("authenticated 7shifts Worker", () => {
     const body = await pulled.json() as { payload: { sourceName: string; punches: Array<Record<string, unknown>> } };
     expect(body.payload.sourceName).toBe("7shifts");
     expect(body.payload.punches[0]).toEqual(expect.objectContaining({ roleName: "Role", locationName: "" }));
-    expect(JSON.stringify(body)).not.toMatch(/@|416|555|1212/);
+    const visibleLabels = [
+      body.payload.sourceName,
+      body.payload.punches[0]?.roleName,
+      body.payload.punches[0]?.locationName,
+    ];
+    expect(JSON.stringify(visibleLabels)).not.toMatch(/@|416|555|1212/);
   });
 });
