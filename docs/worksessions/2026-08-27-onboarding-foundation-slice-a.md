@@ -55,27 +55,28 @@ Reusable onboarding coordinator and interaction primitives so Hercules-led first
 
 ## Acceptance evidence
 
-- [ ] Registry rejects invalid ids/combos
-- [ ] Eligibility / skip / replay / completion identity proofs
-- [ ] Arbitrary clicks/timers cannot advance
-- [ ] Practice destroy proves no Household mutation
-- [ ] `pnpm check` green
-- [ ] No migration/provider/hosted work
+- [x] Registry rejects invalid ids/combos
+- [x] Eligibility / skip / replay / completion identity proofs
+- [x] Arbitrary clicks/timers cannot advance
+- [x] Practice destroy proves no Household mutation
+- [x] `pnpm check` green
+- [x] No migration/provider/hosted work
 
 ## Plan
 
 - [x] Branch from current `main`
-- [ ] Implement `src/core/onboarding/*`
-- [ ] Wire flagged shell + anchors
-- [ ] Tests + check
-- [ ] PR for GPT review
+- [x] Implement `src/core/onboarding/*`
+- [x] Wire flagged shell + anchors
+- [x] Tests + check
+- [x] PR for GPT review
 
 ## Evidence log
 
 - Baseline: `main@001fa6c`
-- Head: `00b49fb` (pre-check docs tip may advance)
+- Head: `5754dc1` (+ docs tip)
 - `pnpm exec vitest run test/onboarding-foundation.test.ts` → 15 passed
 - `pnpm check` → 897 passed / 2 skipped; build green
+- Privacy auditor: PASS WITH NOTES (P2)
 - PR: https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/216
 
 ## Decisions

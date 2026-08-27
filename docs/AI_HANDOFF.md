@@ -2,9 +2,9 @@
 
 ## Onboarding Slice A foundation (D-153) (2026-08-27)
 
-**Status:** Branch `cursor/onboarding-foundation-d129-4857` — PR for GPT review (not merge-ready polish). Risk: **Medium**.
+**Status:** Draft [PR #216](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/216) — for GPT review. Risk: **Medium**.
 
-**Base SHA:** `001fa6c` (`main`) · **Head SHA:** (see branch tip).
+**Base SHA:** `001fa6c` (`main`) · **Head SHA:** `5754dc1` (+ handoff tip).
 
 **Household outcome:** Reusable onboarding coordinator and interaction primitives so Hercules-led first-run teaching can attach later without contaminating books.
 
@@ -18,13 +18,13 @@
 - Minimal `data-onboarding-id` anchors on Home root + nav + Replay; More → Replay tutorial when `VITE_ONBOARDING_FOUNDATION=1`.
 - D-153 recorded; worksession `docs/worksessions/2026-08-27-onboarding-foundation-slice-a.md`.
 
-**Verification:** Focused `pnpm exec vitest run test/onboarding-foundation.test.ts` → **15 passed**. `pnpm exec tsc --noEmit` green. Full `pnpm check` pending before handoff close.
+**Verification:** Focused `pnpm exec vitest run test/onboarding-foundation.test.ts` → **15 passed**. Full `pnpm check` → **897 passed** / 2 skipped; `ai:verify` + `tsc` + `vite build` green. Log: `/opt/cursor/artifacts/onboarding-slice-a-pnpm-check.log`. Privacy auditor **PASS WITH NOTES** (P2 only).
 
 **Uncertainty:** Auto-start eligibility for Google members is wired when flag is on; full storyboard scenes, Hercules walk animation, and opening-truth Slice B are not in this PR. Flag defaults off so kitchen behavior is unchanged until opted in.
 
 **Data/environment:** Development client/docs only. No schema, secrets, Production, Worker, or household wipe.
 
-**Next owner:** GPT review → Jonathan merge decision. Enable `VITE_ONBOARDING_FOUNDATION=1` locally to smoke Skip/Replay. Next packet: Slice B scene content / opening truth.
+**Next owner:** GPT review on PR #216 → Jonathan merge decision. Enable `VITE_ONBOARDING_FOUNDATION=1` locally to smoke Skip/Replay. Next packet: Slice B scene content / opening truth.
 
 ## Tip covariates + Hercules tip science + Pro paged reads (D-152) (2026-08-27)
 
