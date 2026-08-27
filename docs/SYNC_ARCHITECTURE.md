@@ -195,6 +195,26 @@ UNIQUE (household_id, environment, idempotency_key)
 | **T3-S3** | Background sync: focus/visibility reconnect, exponential backoff, offline badge | [`briefs/sync/T3-S3-background-sync-polish.md`](briefs/sync/T3-S3-background-sync-polish.md) |
 | **T3-S4** | Scale envelope: multi-member channel policy, rate limits, Realtime vs poll table | [`briefs/sync/T3-S4-scale-envelope.md`](briefs/sync/T3-S4-scale-envelope.md) |
 
+### Scale envelope (T3-S4)
+
+Channel policy for **10–100 active members**. Realtime is primary when `VITE_CONTINUITY_REALTIME=1` and the channel is `SUBSCRIBED`. Visibility-aware REST poll is fallback only. **Hercules chat rate limits (D-121: 60/IP/UTC day) are unchanged.**
+
+| Active members | Realtime `SUBSCRIBED` | Healthy poll fallback | Unhealthy Realtime (T3-S3) | Production claim |
+|---:|---|---:|---|---|
+| 2–9 | Push primary; poll idle | **4 s** (`LIVE_PULL_INTERVAL_MS`) | `max(4 s, continuityBackoffMs(n))` ≤ 60 s | OK for dual-use kitchen |
+| 10–49 | Same | **5 s** | `max(5 s, …)` | OK as Development stopgap; prefer Realtime |
+| 50–100 | Same | **8 s** | `max(8 s, …)` | **Not production-ready on poll alone** — Realtime required |
+
+**Load-test notes (Development):**
+
+- Each visible signed-in tab does at most one snapshot GET per poll interval when Realtime is down.
+- N open kitchens × (1 / interval) ≈ REST GETs/sec. At 100 tabs on 8 s poll ≈ 12.5 GETs/sec plus CAS posts — chatty and conflict-prone; do not call that Production-ready.
+- With Realtime subscribed, poll is idle; partner visibility targets 100–500 ms (Tier 1), not the poll table.
+- Soft presence Realtime (T3-S2) is a separate ephemeral channel and must not bump journal revisions on a heartbeat.
+- Code: `src/continuityLivePull.ts` (`SCALE_PULL_BANDS`, `livePullIntervalMs`, `scaleEnvelopeClaim`); App recomputes the band each poll tick.
+
+**Anti-claim:** Hearth does **not** claim a 100-person Production kitchen without Realtime, private channel hygiene, and load proof. T3-S4 documents the envelope; it does not certify mega-household Production.
+
 ---
 
 ## 7. Tier 4 — Normalized hosted journal (long-term)

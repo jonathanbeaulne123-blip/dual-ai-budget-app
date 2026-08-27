@@ -2,7 +2,7 @@
 
 ## Start from scratch — Development household reset (D-151) (2026-08-27)
 
-**Status:** Branch `cursor/reset-development-households-5958`, draft [PR #201](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/201). Risk: **High** (hosted Development delete/leave; Production blocked). Not merged, not deployed. Migration **016 applied** 2026-08-27 (Jonathan: “paste 016”). RPC **not** invoked.
+**Status:** Branch `cursor/reset-development-households-5958`, draft [PR #201](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/201). Risk: **High** (hosted Development delete/leave; Production blocked). Not merged. Migration **016 applied** 2026-08-27. RPC **not** invoked.
 
 **Household outcome:** One Confirm deletes every disposable Development household this Google account owns, leaves member-only seats, clears this phone’s Development copies, and opens Create household while Google stays signed in.
 
@@ -10,17 +10,71 @@
 
 **Engagement delta (3):** `+2` — one Confirm instead of tapping Delete on every household.
 
-**What changed:** `hearth_reset_development_households` (016) is live on project `tykhocwacaxwquhynkok`; kitchen Start-from-scratch chrome remains on this PR until merge/deploy. Confirm extra no longer asks to paste 016.
+**What changed:** `hearth_reset_development_households` (016) is live; **Start from scratch** is on the Development welcome home and the first card in More (not only after Google discovery).
 
-**Verification:** Live metadata only — `public.schema_migrations` id 16; function exists, `SECURITY DEFINER`, `search_path=""`, `authenticated` EXECUTE yes, `anon` EXECUTE no. Production household count **0→0**. Development household count **7→7**. MCP migration `20260827072847` / `reset_development_households`. `NOTIFY pgrst, 'reload schema'`. Did not call the reset RPC.
+**Verification:** 016 metadata apply (Production 0→0, Development 7→7, anon EXECUTE false). Focused tests: first-entry + auth-invite-chrome + claude-ux-dialog 29 pass.
 
-**Data/environment:** Hosted Development schema (function + grants + schema_migrations 16). No household payloads, secrets, Production rows, kitchen deploy, or RPC wipe.
+**Data/environment:** Hosted Development schema (016). No household wipe, secrets, or Production rows. Kitchen chrome still this PR until live Worker publish.
 
-**Next owner:** Jonathan — merge/deploy PR #201 (or use the preview Worker), then Development → Login with Google → **Start from scratch**.
+**Next owner:** Jonathan — hard-refresh the kitchen after this PR publishes; Development welcome or More → **Start from scratch**.
+
+## T3-S4 scale envelope (2026-08-27)
+
+**Status:** Branch `cursor/t3-s4-scale-envelope-403c` (draft PR). Risk: **Medium** (policy + scheduling honesty; no money meaning change).
+
+**Household outcome:** Named 2–9 / 10–49 / 50–100 poll bands with Realtime primary; D-121 chat limits untouched; explicit refusal to claim 100-person Production on poll alone.
+
+**Budget delta (5):** `+1` — calmer REST under larger N when Realtime is down.
+
+**Engagement delta (3):** `0` — honesty/docs; no new interactable.
+
+**What changed:** `continuityLivePull.ts` (`SCALE_PULL_BANDS`, `scaleEnvelopeClaim`, `activeMemberCountHint`); App recomputes band each poll tick; `SYNC_ARCHITECTURE` scale table + load-test notes; live-pull tests.
+
+**Verification:** `pnpm exec vitest run test/live-pull-dual-use.test.ts test/continuity-resume.test.ts` → 22 pass; full `pnpm check` → 857 pass.
+
+**Data/environment:** Development client/docs only. No schema, secrets, Production, or D-121 retune.
+
+**Next owner:** Jonathan — review/merge; no 100-person load harness in this slice.
+
+## T3-S3 background sync polish (2026-08-27)
+
+**Status:** Merged via #204 onto `main`; kitchen deploy Version `1fa56e20-4d07-4cbf-95e4-6e9774db3017` verified (Offline badge strings live). Risk: **Low**.
+
+**Household outcome:** Returning to the kitchen resumes share without double focus+visibility churn; Realtime flaps back off the REST poll instead of heartbeat-spamming; Offline badge says when share will resume.
+
+**Budget delta (5):** `+1` — calmer reconnect preserves outbox/poll honesty without changing command posting.
+
+**Engagement delta (3):** `+1` — less sync noise when flipping apps; clearer Offline chrome.
+
+**What changed:** `src/continuityResume.ts` (coalesce + reconnect poll backoff); App continuity loop uses resume gate; offline freshness copy; soft-presence comment (no focus heartbeat); tests.
+
+**Verification:** `pnpm check` green on PR; live bundle contains `Offline · will sync when you're back`.
+
+**Data/environment:** Development client only. No schema, secrets, Production.
+
+**Next owner:** Optional tab-hide/show + airplane-mode smoke.
+
+## T3-S2 soft presence (2026-08-27)
+
+**Status:** Merged via #202 onto `main` and kitchen deploy verified. Risk: **Low–Medium** (privacy UX).
+
+**Household outcome:** Calm “Bianca is in the kitchen” chrome for signed-in partners. Optional Realtime presence when Development Realtime is on; D-100 devices remain the durable fallback. Opt-out: “Hide that I'm in the kitchen.”
+
+**Budget delta (5):** `0` — presence never posts money or carries personal ledger rows.
+
+**Engagement delta (3):** `+2` — soft shared kitchen presence without surveillance ranking.
+
+**What changed:** `softPresence.ts`, `softPresenceRealtime.ts`, `SoftPresenceStatus.tsx`; App stamp/share/track wiring (signed-in + throttle + opt-out); Pairing opt-out + member names; conflict merge uses `mergeDevices`; tests.
+
+**Verification:** `pnpm exec vitest run test/soft-presence.test.ts test/soft-presence-realtime.test.ts`; privacy-auditor **PASS WITH NOTES** (Dev presence topics not membership-private — accepted until private channels; opt-out now flushes inactive device row).
+
+**Data/environment:** Development client only. Presence payload is memberId/deviceId/seenAt. No schema, secrets, Production, or deploy.
+
+**Next owner:** Optional two-phone smoke with Realtime on; confirm opt-out hides self.
 
 ## T3-S1 optimistic command chrome (2026-08-27)
 
-**Status:** Branch `cursor/t3-s1-optimistic-command-chrome-403c` (draft PR). Risk: **Medium** (UX only; CommandOutcome unchanged).
+**Status:** Merged via #200 onto `main`. Risk: **Medium** (UX only; CommandOutcome unchanged).
 
 **Household outcome:** Linked Development confirms feel instant: Saving → This phone → Cloud → Household progress rail; success toast still waits for PGlite accept; background flush upgrades chip to Up to date.
 
@@ -34,7 +88,7 @@
 
 **Data/environment:** Development client only. No schema, secrets, Production, or deploy.
 
-**Next owner:** Jonathan — merge PR; manual confirm on linked Development household (post expense, watch progress rail).
+**Next owner:** Done on main — optional manual confirm smoke.
 
 ## G6 Tier 1 proof gaps — Migration 012 harness (2026-08-27)
 

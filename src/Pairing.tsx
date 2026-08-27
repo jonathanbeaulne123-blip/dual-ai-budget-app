@@ -299,6 +299,8 @@ export function PairingCard({
   onBusy,
   onSyncState,
   onBeforeSensitive,
+  softPresenceOptedOut = false,
+  onSoftPresenceOptOut,
 }: {
   household: Household;
   memberId: string;
@@ -307,6 +309,8 @@ export function PairingCard({
   syncState: "idle" | "syncing" | "synced" | "error";
   syncFreshnessLine?: string | null;
   inviteInput: string;
+  softPresenceOptedOut?: boolean;
+  onSoftPresenceOptOut?: (optedOut: boolean) => void;
   onInviteInput: (value: string) => void;
   onHousehold: (household: Household) => Promise<void>;
   onError: (value: string) => void;
@@ -413,18 +417,42 @@ export function PairingCard({
         </p>
         <div className="device-list">
           <h3>Devices on this household</h3>
-          <p className="muted">Soft presence from phones that touched the shared snapshot. Not Auth. This device: {describeDeviceLabel()} · {localDeviceId()}</p>
-          {(household.devices ?? []).length === 0 ? (
+          <p className="muted">
+            Soft presence from phones that touched the shared snapshot. Not Auth. This device: {describeDeviceLabel()} · {localDeviceId()}
+          </p>
+          {onSoftPresenceOptOut && (
+            <label className="soft-presence-opt-out">
+              <input
+                type="checkbox"
+                checked={softPresenceOptedOut}
+                disabled={busy}
+                onChange={(event) => onSoftPresenceOptOut(event.target.checked)}
+              />
+              <span>Hide that I&apos;m in the kitchen</span>
+            </label>
+          )}
+          {(household.devices ?? []).filter((device) => device.active).length === 0 ? (
             <p className="muted">No devices recorded yet. Sync or open the kitchen and one will appear.</p>
           ) : (
             <ul>
-              {(household.devices ?? []).map((device) => (
-                <li key={device.id}>
-                  <strong>{device.label}</strong>
-                  <span className="muted"> · {device.environment} · seen {device.seenAt.slice(0, 16).replace("T", " ")}</span>
-                  {device.id === localDeviceId() ? <span className="pill good">this phone</span> : null}
-                </li>
-              ))}
+              {(household.devices ?? []).filter((device) => device.active).map((device) => {
+                const who = device.memberId
+                  ? household.members.find((member) => member.id === device.memberId && member.active)?.name
+                  : null;
+                return (
+                  <li key={device.id}>
+                    <strong>{who || device.label}</strong>
+                    <span className="muted">
+                      {" · "}
+                      {who ? `${device.label} · ` : ""}
+                      {device.environment}
+                      {" · seen "}
+                      {device.seenAt.slice(0, 16).replace("T", " ")}
+                    </span>
+                    {device.id === localDeviceId() ? <span className="pill good">this phone</span> : null}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>

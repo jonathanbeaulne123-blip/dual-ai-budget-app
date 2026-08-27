@@ -663,6 +663,33 @@ input, select, textarea {
   font-size: 13px;
 }
 
+.soft-presence {
+  margin: 0 16px 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.soft-presence-opt-out {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 10px 0;
+  font-size: 0.9rem;
+  min-height: 44px;
+}
+
+.soft-presence-opt-out input {
+  margin-top: 3px;
+}
+
+@media (min-width: 720px) {
+  .soft-presence {
+    margin-left: 24px;
+    margin-right: 24px;
+    max-width: 720px;
+  }
+}
+
 @media (max-width: 360px) {
   .command-progress__steps {
     flex-direction: column;
