@@ -1,8 +1,28 @@
 # AI Task and Handoff Standard
 
+## First-create retry is not another phone (D-149) (2026-08-27)
+
+**Status:** Draft PR #210 on `cursor/first-create-false-conflict-5958`. Risk: **High** (hosted CAS retry; money meaning unchanged). Not merged. Not deployed. No schema apply.
+
+**Household outcome:** Starting a household alone does not show “Another phone posted a newer household snapshot.” After create, retries CAS from the hosted revision when that revision is a positive integer.
+
+**Budget delta (5):** `+2` — the only copy of the books can reach the cloud.
+
+**Engagement delta (3):** `+2` — Health/More stop blaming a partner who is not there.
+
+**What changed:** `pushSupabaseHousehold` treats `household-already-exists` by reading the hosted snapshot and calling `publish_continuity_snapshot` with that revision when local is same or ahead. Unreadable or non-positive hosted revision stays pending (`missing-snapshot`), not another-phone. Genuinely newer hosted tips still conflict.
+
+**Verification:** Focused `pnpm exec vitest run test/auth-membership-authority.test.ts test/continuity-command-outbox.test.ts test/publish-continuity-snapshot.test.ts` → **27 passed**. Full `pnpm test` → **875 passed / 2 skipped**. `pnpm ai:verify` green. `pnpm build` (`tsc --noEmit` + `vite build`) green after narrowing `hostedRevision`. Independent reviews at `2ad4411`: books **PASS WITH NOTES**; privacy **PASS WITH NOTES**; trust **PASS WITH NOTES**. Follow-up `824ba66` closes CAS-from-0 fall-through, omitted-revision pending, and 012 duplicate-before-stale regex. Independent verifier on `824ba66`: **PASS WITH NOTES** (suite not re-executed in Ask mode; October ancestry risk named).
+
+**Data/environment:** Development client/docs only. No hosted SQL, secrets, Production, or deploy. Fictional Development fixtures in tests.
+
+**Next owner:** Jonathan — review/merge/deploy #210; hard-refresh kitchen; Retry now on the stuck household.
+
+**Named open risk (October):** this retry compares revision numbers only. A local-ahead snapshot that is not a descendant of the hosted tip can still CAS-advance. `canAbsorbDisjointSharedMoney` is the later guard; not in this packet.
+
 ## Invite owner first create (D-149 / D-123) (2026-08-27)
 
-**Status:** Branch `cursor/invite-owner-first-create-5958`, draft [PR #209](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/209). Head `03cb3f5`. Baseline `main@ef3274a`. Risk: **High** (Auth/RLS/membership path; money meaning unchanged). Not merged. No schema apply.
+**Status:** Merged via #209 onto `main` (`4009b6c`). Kitchen Worker version `10b7de13-7c05-4c5d-a8ab-fc0942e375c3` verified. Risk: **High**. Follow-up: first-create retry false conflict (branch above).
 
 **Household outcome:** The person who starts a household can send a Google invite. Command-log must not skip `hearth_create_household` on the first cloud write.
 
@@ -16,7 +36,7 @@
 
 **Data/environment:** Development client/docs only. No hosted SQL, secrets, Production rows, or deploy. Fictional Development fixtures in tests.
 
-**Next owner:** Jonathan — review/merge PR #209; hard-refresh the kitchen; Retry now if a leftover household is still sharing, then Issue.
+**Next owner:** Live on the kitchen after #209. Follow-up: first-create retry false conflict on `cursor/first-create-false-conflict-5958`.
 
 ## Start from scratch — Development household reset (D-151) (2026-08-27)
 
