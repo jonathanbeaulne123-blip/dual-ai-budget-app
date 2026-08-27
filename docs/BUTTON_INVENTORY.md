@@ -29,7 +29,17 @@ Static scan at this SHA: about **361** literal `<button>` elements across `src/*
 - **Predicted use** is Jonathan + Bianca on a normal Toronto week: groceries/coffee, glance Home/Wallet, Calendar dues, work clock-in/out, occasional card paydown, monthly sit-down. Google/QR/restore/SQL are high-stakes and low-frequency.
 - **ELI5** is the function in one breath. It is not marketing copy and not a permission to skip Confirm.
 
-**Law:** tapping can *prepare* money. Only **Confirm** (or a Confirm-labeled cousin such as **Confirm shift**) writes the books.
+**Law (product):** tapping can *prepare* money. A visible **Confirm** is supposed to be the write boundary.
+
+**Current write styles (inspect TSX; do not flatten these):**
+
+| Style | What the human sees | Examples at this SHA |
+|---|---|---|
+| **Confirm sheet** | `Confirm.tsx` dialog, Cancel + confirm label | Add **Post**, Calendar **Mark paid**, Activity **Reverse**, import **Review final Confirm**, shift **Confirm shift** |
+| **Confirm-labeled chip** | Button says Confirm/Lock; calls persist/`onApply` with no sheet | Sit-down **Confirm moves**, **Lock**, **Copy jobs** |
+| **Direct command chip** | Tap runs a command immediately | Wallet **Post estimated interest / rewards**, **Mark value**, Goals **Fund goal** / **Add shared goal** |
+
+When mapping or adding a money tap, prefer a Confirm sheet. Do not treat a direct chip as a model to copy.
 
 ---
 
@@ -140,9 +150,9 @@ Daily glance. Weekly action (pay card, reverse a mistake).
 | **Activity tabs** | Filter posted rows. | No | `Ledger.tsx` |
 | **Reverse** | Honest eraser: matching opposite row. Original stays. | Yes, via Confirm | `Ledger.tsx` |
 | **Include / Exclude / Show contrast** | Count this row vs park a lookalike clone. | No (flag only) | `Ledger.tsx` |
-| **Post estimated interest / rewards** | You tap interest/cashback; it never auto-posts. | Yes, via Confirm | `Accounts.tsx` |
+| **Post estimated interest / rewards** | You tap interest/cashback; it never auto-posts. Direct command chip today (no Confirm sheet). | Yes, on tap | `Accounts.tsx` |
 | **Save terms / Save APY / Everyday HIS / Goals savings** | Store card/savings settings. | No | `Accounts.tsx` |
-| **Mark value** | Write what an investment is worth today. A mark, not a trade. | Yes, via command | `Accounts.tsx` |
+| **Mark value** | Write what an investment is worth today. A mark, not a trade. Direct command chip today. | Yes, on tap | `Accounts.tsx` |
 | **Archive this account** | Hide an old account. History stays. | No | `Accounts.tsx` |
 | **Open an account → kind chips → Open** | Add chequing, savings, credit, investment, receivable. | No (structure) | `Accounts.tsx` |
 
@@ -174,12 +184,12 @@ Monthly. High usefulness, low daily taps.
 | **Category budget Save / Cancel** | Plan vs what you actually posted. Journal is truth; budget is a wish. | Budget edit only | `Books.tsx`, Plan tab |
 | **Sit-down facts / Then the books** | Start leftover ritual. | No | `SitDownGuide.tsx` |
 | **Assign leftover / allocation chips** | Park extra cash into jars. | No until Confirm moves | `SitDownGuide.tsx` |
-| **Pause / Copy jobs** | Stop mid-ritual, or meet overspent categories halfway. | Copy jobs can write | `SitDownGuide.tsx` |
-| **Confirm moves** | Confirm stamp for leftover transfers. | Yes | `SitDownGuide.tsx` |
+| **Pause / Copy jobs** | Stop mid-ritual, or meet overspent categories halfway. Copy jobs writes on tap (no sheet). | Copy jobs writes | `SitDownGuide.tsx` |
+| **Confirm moves** | Confirm-labeled leftover transfers. Calls persist/`onApply` with no Confirm sheet at this SHA. | Yes, on tap | `SitDownGuide.tsx` |
 | **Standing orders / Download workbook / Drive** | Remember leftover moves; take a paper copy. | Drive is export | `SitDownGuide.tsx` |
-| **Lock / Reopen** | Close last month so it stops changing. Reopen is a loud unlock. | Close is a command | `SitDownGuide.tsx`, `Books.tsx` |
-| **Start / Add / Fund goal** | Make or fill a savings jar. Hercules can propose; you tap. | Fund via Confirm | `App.tsx` Goals, `Jars.tsx` |
-| **Mark purchased / Not yet** | We bought the thing from vault cash. Jar retires. | Yes, via Confirm | Goals, `Jars.tsx` |
+| **Lock / Reopen** | Close last month so it stops changing. Reopen is a loud unlock. Sit-down **Lock** writes on tap. | Yes, on tap | `SitDownGuide.tsx`, `Books.tsx` |
+| **Start / Add / Fund goal** | Make or fill a savings jar. Hercules can propose; you tap. **Fund goal** / **Add shared goal** write on tap today. | Yes, on tap | `App.tsx` Goals, `Jars.tsx` |
+| **Mark purchased / Not yet** | We bought the thing from vault cash. Jar retires. | Yes (purchase sheet / tap) | Goals, `Jars.tsx` |
 
 ---
 

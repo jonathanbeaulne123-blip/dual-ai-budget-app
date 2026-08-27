@@ -12,7 +12,7 @@
 
 **What changed:** `docs/BUTTON_INVENTORY.md`; indexed from `docs/README.md`; one-line consult pointers in `ONBOARDING_UPDATE.md` §3, `AI_OPERATING_MODEL.md` context budget, `CLAUDE.md`, and `hearth-design-review`. Not added to `AGENTS.md` required reading.
 
-**Verification:** File exists; README row present; `AGENTS.md` constitution load unchanged. No `pnpm check` — no `src/` change.
+**Verification:** File exists; README row present; `AGENTS.md` constitution load unchanged. Independent verifier PASS on consult-when-needed, index, unmounted `ConflictResolution`, no `src/` change. Follow-up commit records current write styles (Confirm sheet vs Confirm-labeled chip vs direct command chip) so AIs do not flatten every money tap into `Confirm.tsx`. No `pnpm check` — no `src/` change.
 
 **Data/environment:** None. No schema, secrets, Production, or deploy.
 
