@@ -10,6 +10,7 @@ import {
   markConflicted,
   markSynchronized,
   postEntry,
+  reversePostedMoney,
   undoLedgerConfirm,
 } from "../src/core/index.ts";
 import type { UndoToken } from "../src/core/types.ts";
@@ -44,6 +45,36 @@ describe("confirmation-scoped Undo", () => {
     const undone = undoLedgerConfirm(partner.household, token);
     expect(undone.household.transactions.some((tx) => tx.note === "My coffee")).toBe(false);
     expect(undone.household.transactions.some((tx) => tx.note === "Partner bread")).toBe(true);
+  });
+
+  it("refuses undo after a partner reversal (journal integrity)", () => {
+    const base = catalogHousehold();
+    const mine = postEntry(base, {
+      date: "2026-08-25",
+      type: "expense",
+      amount: "12.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "My coffee",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    });
+    const partner = postEntry(mine.household, {
+      date: "2026-08-25",
+      type: "expense",
+      amount: "8.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Partner bread",
+      createdBy: "MEM-002",
+      confirmDuplicate: true,
+    });
+    const reversed = reversePostedMoney(partner.household, mine.postedIds[0]!, { createdBy: "MEM-002" });
+    const token: UndoToken = {
+      ...mine.undo,
+      actorMemberId: "MEM-001",
+    };
+    expect(() => undoLedgerConfirm(reversed.household, token)).toThrow(/already reversed/i);
   });
 
   it("refuses to undo a partner-created row even if listed in postedIds", () => {

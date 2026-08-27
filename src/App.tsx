@@ -150,7 +150,7 @@ import { acceptHouseholdWrite, classifyCommandError, newConfirmationId, isLedger
 import type { WriteAdapters } from "./core/commandRuntime.ts";
 import { ingestHouseholdBooks, inspectBrowserBooks, restoreHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
 import { readSupabaseConfig, pullHouseholdSnapshotById, pullPersonalSnapshotById, fetchContinuityMembershipRole } from "./ledger/supabase.ts";
-import { clearUndoHistory, loadUndoHistory, saveUndoHistory } from "./undoHistory.ts";
+import { undoToastSecondaryCopy } from "./core/commandClassification.ts";
 import { livePullIntervalMs, shouldRunLivePull } from "./continuityLivePull.ts";
 import {
   createContinuityCoordinator,
@@ -160,10 +160,16 @@ import {
 import {
   attachContinuityRealtime,
   canAttachContinuityRealtime,
-  continuityRealtimeEnabled,
   shouldUsePollFallback,
   type ContinuityRealtimeStatus,
 } from "./continuityRealtime.ts";
+import { continuityRealtimeTransportEnabled } from "./continuityRealtimePolicy.ts";
+import { continuityCommandLogEnabled } from "./ledger/continuityCommandLog.ts";
+import {
+  applyCommandEventLocally,
+  type ContinuityCommandEvent,
+} from "./ledger/materializeSnapshotFromEvents.ts";
+import { clearUndoHistory, loadUndoHistory, saveUndoHistory } from "./undoHistory.ts";
 import {
   authenticatedSupabaseConfig,
   clearSupabaseSession,
@@ -1024,7 +1030,7 @@ export function App() {
     const realtimeStatusRef: { current: ContinuityRealtimeStatus | null } = { current: null };
 
     const setupRealtime = async () => {
-      if (!continuityRealtimeEnabled() || !supabaseAuthEnabled()) return;
+      if (!continuityRealtimeTransportEnabled() || !supabaseAuthEnabled()) return;
       const authSession = await ensureSupabaseSession(environment);
       if (!live || !authSession) return;
       const currentHouseholdId = householdRef.current?.householdId;
@@ -1050,8 +1056,27 @@ export function App() {
         hostedAllowed: hostedContinuityAllowed(environment),
         hasHousehold: true,
         environment,
+        commandLogEnabled: continuityCommandLogEnabled(),
       })) return;
       if (!live) return;
+
+      const tryApplyCommandEvent = async (event: ContinuityCommandEvent): Promise<"applied" | "duplicate" | "ignored" | "fallback"> => {
+        const current = householdRef.current;
+        if (!current) return "ignored";
+        const applied = await applyCommandEventLocally({ local: current, event, memberId });
+        if (!applied.ok) {
+          return applied.fallback ? "fallback" : "ignored";
+        }
+        if (applied.duplicate) return "duplicate";
+        const accepted = await acceptReplayCandidate(
+          applied.household,
+          `continuity-cmd-${event.confirmation_id || event.idempotency_key}`,
+          event.command_type,
+        );
+        if (!accepted?.ok) return "fallback";
+        if (live) setSyncState("synced");
+        return "applied";
+      };
 
       detachRealtime = attachContinuityRealtime({
         supabaseUrl: authConfig.supabaseUrl,
@@ -1060,6 +1085,20 @@ export function App() {
         householdId: currentHouseholdId,
         memberId,
         environment,
+        commandLogEnabled: continuityCommandLogEnabled(),
+        onCommandEvent: (event) => {
+          if (!continuityCommandLogEnabled()) return;
+          if (!shouldRunLivePull({
+            documentVisible: document.visibilityState === "visible",
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+            hasSession: Boolean(memberId),
+            hasHousehold: Boolean(householdRef.current),
+          })) return;
+          void (async () => {
+            const outcome = await tryApplyCommandEvent(event);
+            if (outcome === "fallback") scheduleReplay("realtime");
+          })();
+        },
         onSnapshotSignal: () => {
           if (!shouldRunLivePull({
             documentVisible: document.visibilityState === "visible",
@@ -4029,7 +4068,9 @@ export function App() {
           <span>
             {commandChrome.toast.primary}
             {commandChrome.toast.secondary ? `. ${commandChrome.toast.secondary}` : ""}
-            {commandChrome.toast.showUndo !== false ? " You can Undo, or find it later under More → Recent on this phone." : ""}
+            {commandChrome.toast.showUndo !== false
+              ? ` ${undoToastSecondaryCopy()} Find it later under More → Recent on this phone.`
+              : ""}
           </span>
           {commandChrome.toast.showUndo !== false && (
             <button

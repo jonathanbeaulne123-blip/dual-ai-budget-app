@@ -238,17 +238,17 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 - [x] **T1-S2** Client single-trip atomic push (Auth session → `publish_continuity_snapshot`). *([`T1-S2`](briefs/sync/T1-S2-client-atomic-push.md).)*
 - [x] **T1-S3** Supabase Realtime subscribe; demote poll to fallback. *([`T1-S3`](briefs/sync/T1-S3-realtime-subscribe.md).)*
 - [x] **T1-S4** Push/pull race coordinator. *([`T1-S4`](briefs/sync/T1-S4-push-pull-coordinator.md). #177.)*
-- [ ] **T1-S5** Two-browser E2E + fault harness (p95 ≤ 500 ms). *([`T1-S5`](briefs/sync/T1-S5-two-browser-proof.md). **Manual two-phone Realtime smoke passed** 2026-08-27 — [`SYNC_REALTIME_SMOKE.md`](SYNC_REALTIME_SMOKE.md); harness PR #179.)*
-- [ ] **T1-S6** Sync freshness UI (actor, revision, Realtime honest). *([`T1-S6`](briefs/sync/T1-S6-sync-freshness-ui.md).)*
+- [x] **T1-S5** Two-browser E2E + fault harness (p95 ≤ 500 ms). *([`T1-S5`](briefs/sync/T1-S5-two-browser-proof.md). Manual two-phone Realtime smoke passed 2026-08-27 — [`SYNC_REALTIME_SMOKE.md`](SYNC_REALTIME_SMOKE.md); harness #179.)*
+- [ ] **T1-S6** Sync freshness UI (actor, revision, Realtime honest). *([`T1-S6`](briefs/sync/T1-S6-sync-freshness-ui.md). In flight elsewhere.)*
 
-#### Tier 2 — Command-log primary — GATED on Tier 1
+#### Tier 2 — Command-log primary — ACTIVE (Jonathan approved same-day land)
 
-- [ ] **T2-S1** Migration **013** command event append log. *([`T2-S1`](briefs/sync/T2-S1-command-event-schema.md).)*
-- [ ] **T2-S2** Outbox stores command refs, not full journal. *([`T2-S2`](briefs/sync/T2-S2-slim-command-outbox.md).)*
-- [ ] **T2-S3** Materialized snapshot from events. *([`T2-S3`](briefs/sync/T2-S3-materialized-snapshot.md).)*
-- [ ] **T2-S4** Realtime on command INSERT. *([`T2-S4`](briefs/sync/T2-S4-realtime-command-events.md).)*
-- [ ] **T2-S5** Interleaving/convergence harness. *([`T2-S5`](briefs/sync/T2-S5-interleaving-harness.md).)*
-- [ ] **T2-S6** Confirmation-scoped undo (dual-use safe). *([`T2-S6`](briefs/sync/T2-S6-confirmation-scoped-undo.md).)*
+- [x] **T2-S1** Migration **013** command event append log. *([`T2-S1`](briefs/sync/T2-S1-command-event-schema.md). Code landed; **hosted apply pending** — paste `013_continuity_command_events.sql`.)*
+- [x] **T2-S2** Outbox stores command refs, not full journal. *([`T2-S2`](briefs/sync/T2-S2-slim-command-outbox.md).)*
+- [x] **T2-S3** Materialized snapshot from events. *([`T2-S3`](briefs/sync/T2-S3-materialized-snapshot.md).)*
+- [x] **T2-S4** Realtime on command INSERT. *([`T2-S4`](briefs/sync/T2-S4-realtime-command-events.md).)*
+- [x] **T2-S5** Interleaving/convergence harness. *([`T2-S5`](briefs/sync/T2-S5-interleaving-harness.md).)*
+- [x] **T2-S6** Confirmation-scoped undo (dual-use safe). *([`T2-S6`](briefs/sync/T2-S6-confirmation-scoped-undo.md); handoff `docs/worksessions/2026-08-26-t2-s6-confirmation-scoped-undo.md`.)*
 
 #### Tier 2+ cross-cutting (unchanged gates)
 

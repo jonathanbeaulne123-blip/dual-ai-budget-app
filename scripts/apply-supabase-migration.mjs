@@ -103,6 +103,22 @@ try {
     `;
     console.log("function:", fn[0] ? `${fn[0].proname}(${fn[0].args})` : "(missing)");
   }
+  if (arg === "013") {
+    const table = await sql`
+      select tablename
+      from pg_tables
+      where schemaname = 'public'
+        and tablename = 'continuity_command_events'
+    `;
+    const fn = await sql`
+      select proname, pg_catalog.pg_get_function_identity_arguments(oid) as args
+      from pg_proc
+      where pronamespace = 'public'::regnamespace
+        and proname = 'append_continuity_command'
+    `;
+    console.log("table:", table[0]?.tablename || "(missing)");
+    console.log("function:", fn[0] ? `${fn[0].proname}(${fn[0].args})` : "(missing)");
+  }
   if (arg === "014") {
     const pubs = await sql`
       select schemaname, tablename
