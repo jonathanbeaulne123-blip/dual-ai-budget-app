@@ -1,0 +1,368 @@
+window.HEARTH_ROADMAP_DATA = Object.freeze({
+  schemaVersion: 1,
+  meta: {
+    title: "Hearth product health and investor roadmap",
+    shortTitle: "Hearth roadmap",
+    lastUpdated: "2026-08-27",
+    auditAsOf: "August 27, 2026",
+    auditBaseline: "main@93df0ec",
+    siteBaseline: "main@001fa6c",
+    classification: "Pre-traction",
+    posture: "Design-partner validation",
+    access: "Public",
+    summary: "Hearth is a credible technical and product asset, not yet a demonstrated business. Protect the accounting kernel, complete first trustworthy value, and replace unknown business rows with measured cohorts before expanding scope.",
+    disclosure: "This site is a dated planning and evidence artifact. Scores are audit judgments. External benchmarks are context, not achieved Hearth performance.",
+  },
+
+  scorecards: [
+    {
+      area: "Budgeting logic",
+      score: 8.0,
+      confidence: "High",
+      tone: "success",
+      risk: "Opening truth and Production two-device proof remain open.",
+    },
+    {
+      area: "Code health",
+      score: 6.5,
+      confidence: "High",
+      tone: "warning",
+      risk: "Large coordinators, full-projection rebuilds, and no enforced coverage budget.",
+    },
+    {
+      area: "UX experience",
+      score: 5.5,
+      confidence: "Medium-low",
+      tone: "warning",
+      risk: "The first-use path is incomplete and the audit lacked a fresh live tactile walkthrough.",
+    },
+    {
+      area: "Accessibility",
+      score: 4.5,
+      confidence: "High",
+      tone: "danger",
+      risk: "Zoom lock and mandatory onboarding motion block a broad accessibility claim.",
+    },
+    {
+      area: "Design-partner viability",
+      score: 6.5,
+      confidence: "Medium",
+      tone: "warning",
+      risk: "Promising only after First Numbers, performance, accessibility, and reliability gates.",
+    },
+    {
+      area: "Investor readiness",
+      score: 2.0,
+      confidence: "High",
+      tone: "danger",
+      risk: "No traction, revenue, retention, CAC, LTV, or paid-cohort evidence.",
+    },
+  ],
+
+  lenses: [
+    {
+      id: "verdict",
+      label: "Verdict",
+      title: "What the evidence says now",
+      tone: "warning",
+      summary: "Hearth is a credible technical and product asset, not yet a demonstrated business. Protect the kernel, finish first value, and replace unknown business rows with real cohorts before expanding scope.",
+      strengths: [
+        "Integer CAD cents, double-entry compilation, trial-balance and equation checks.",
+        "Reversal-first correction, duplicate confirmation, and closed-period protection.",
+        "Household/personal scoping, CAS/outbox work, and grounded AI boundaries.",
+        "A recognizable Canada-first household and shift-income product wedge.",
+      ],
+      risks: [
+        "No external-household activation, retention, paid conversion, or revenue evidence.",
+        "Opening truth and the complete first monthly loop remain unfinished.",
+        "Heavy browser payload and no field performance measurements.",
+        "Extreme change velocity increases regression and review-depth risk.",
+      ],
+    },
+    {
+      id: "engineering",
+      label: "Engineering",
+      title: "Engineering and accounting",
+      tone: "success",
+      summary: "The financial kernel is the strongest asset. The engineering challenge is preserving explicit invariants while reducing orchestration concentration and proving atomic behavior at scale.",
+      strengths: [
+        "873 tests passed on the dated audit checkout, with strict TypeScript.",
+        "Transactional PGlite ingest with in-memory and SQL balance checks.",
+        "Financial snapshot hashes and audit receipts bind accepted revisions.",
+        "No known production dependency vulnerabilities in the dated audit.",
+      ],
+      risks: [
+        "App.tsx was 4,690 lines and commands.ts was 3,514 lines at audit time.",
+        "Accepted state rebuilds the full active PGlite projection.",
+        "The dated full local gate was red on two cross-platform test assumptions.",
+        "No enforced coverage, real-browser E2E, or performance/storage budget.",
+      ],
+    },
+    {
+      id: "experience",
+      label: "Experience",
+      title: "UX and overall experience",
+      tone: "warning",
+      summary: "The warm household metaphor, phone/desktop job split, and honest command states are differentiators. They must serve a narrower first-value path and meet accessibility and mobile-performance gates.",
+      strengths: [
+        "Phone capture and desktop review are treated as distinct jobs.",
+        "Confirm, pending, failed, stale, duplicate, conflict, and reversal states are explicit.",
+        "Hercules can teach from grounded source facts without posting money.",
+        "The monthly sit-down is a cooperative ritual instead of a punitive streak.",
+      ],
+      risks: [
+        "The surface catalog can overwhelm a household before first value.",
+        "Play and companion motion can undermine seriousness when evidence is not first.",
+        "Pinch zoom is disabled and onboarding intentionally ignores reduced motion.",
+        "Live tactile, screen-reader, and representative-device performance proof is still needed.",
+      ],
+    },
+    {
+      id: "viability",
+      label: "Viability",
+      title: "Business and investor viability",
+      tone: "danger",
+      summary: "The correct classification is pre-traction. A plausible market and competitive price range exist, but no valuation or venture-success claim is supportable until activation, retention, payment, and unit economics are measured.",
+      strengths: [
+        "About 14.98 million Canadian private households form a meaningful denominator.",
+        "Competitor pricing demonstrates willingness to pay in adjacent consumer-finance categories.",
+        "Shared/private books, shift income, corrections, and audit evidence can form a narrow wedge.",
+        "The accounting workflow and longitudinal household record are more defensible than AI styling alone.",
+      ],
+      risks: [
+        "Incumbents have aggregation breadth, native apps, trust, and support operations.",
+        "No repeatable acquisition channel or willingness-to-pay evidence exists.",
+        "A Canada-only consumer subscription may not support venture outcomes without broader reach or ARPU.",
+        "Bank connectivity, security operations, deletion, support, and accessibility create durable costs.",
+      ],
+    },
+  ],
+
+  evidenceSnapshot: {
+    label: "Verified dated audit evidence",
+    caption: "Audit snapshot at main@93df0ec. These values do not update automatically.",
+    facts: [
+      { value: "873", label: "Tests passed" },
+      { value: "2", label: "Harness failures" },
+      { value: "58,921", label: "Source lines" },
+      { value: "21.41 MiB", label: "Build output" },
+      { value: "408", label: "Commits in 7 days" },
+      { value: "0", label: "Known production advisories" },
+    ],
+  },
+
+  gates: [
+    {
+      id: "E0",
+      title: "First trustworthy value",
+      state: "STOP-SHIP",
+      lane: "current",
+      outcome: "One independent household completes opening truth, ten real entries, a correction, a sit-down, and two-phone recovery without developer rescue.",
+      proof: [
+        "Opening truth or an explicit unknown choice",
+        "Windows and Ubuntu green gate",
+        "Two-phone offline, reconnect, and revoke proof",
+        "Export, delete, and recovery rehearsal",
+      ],
+      stop: "No external household until the entire loop is explainable and recoverable.",
+    },
+    {
+      id: "E1",
+      title: "Privacy-safe evidence plane",
+      state: "NEXT",
+      lane: "current",
+      outcome: "Activation, retention, latency, and reliability are measurable without collecting financial content or household identity.",
+      proof: [
+        "Event dictionary and retention policy",
+        "Explicit denominators",
+        "Opt-out and deletion",
+        "No amounts, descriptions, merchants, names, or rows",
+      ],
+      stop: "Redesign any metric that requires raw money or persistent identity.",
+    },
+    {
+      id: "E2",
+      title: "Performance and accessibility",
+      state: "RELEASE GATE",
+      lane: "current",
+      outcome: "Target devices meet p75 Web Vitals, 200% text and zoom, reduced-motion, keyboard, and screen-reader proof.",
+      proof: [
+        "LCP ≤2.5s, INP ≤200ms, and CLS ≤0.1",
+        "Ledger-size performance fixtures",
+        "No general zoom lock",
+        "Equivalent reduced-motion onboarding",
+      ],
+      stop: "No general-availability accessibility or performance claim without observed evidence.",
+    },
+    {
+      id: "E3",
+      title: "Maintainable release train",
+      state: "ACTIVE",
+      lane: "current",
+      outcome: "Bounded feature coordinators, critical coverage, browser E2E, and rollback metrics make review depth visible.",
+      proof: [
+        "Decompose boot, identity, acceptance, and sync",
+        "Critical money and privacy coverage thresholds",
+        "Property and hostile-payload tests",
+        "Change-failure and restore metrics",
+      ],
+      stop: "Do not trade explicit financial semantics for framework abstraction.",
+    },
+    {
+      id: "E4",
+      title: "Design-partner and paid validation",
+      state: "AFTER E0–E3",
+      lane: "later",
+      outcome: "Independent households activate, return, pay, and recover with a support burden the product can afford.",
+      proof: [
+        "20 independent design-partner households",
+        "At least 70% seven-day activation",
+        "At least 60% complete a second sit-down",
+        "10 paying households outside founder relationships",
+      ],
+      stop: "No scaled acquisition before retention, support cost, and payback are credible.",
+    },
+    {
+      id: "E5",
+      title: "Market shape and capital choice",
+      state: "AFTER E4",
+      lane: "later",
+      outcome: "Measured demand decides whether Hearth stays broad, narrows to a sharp wedge, bootstraps, or raises capital.",
+      proof: [
+        "Retained and churned interviews",
+        "Willingness-to-pay evidence",
+        "Measured gross margin and payback",
+        "$1K MRR, then $10K MRR with retention intact",
+      ],
+      stop: "Narrow if fewer than 40% reach a second sit-down or founder rescue exceeds 20%.",
+    },
+  ],
+
+  metrics: [
+    {
+      metric: "D35 paid conversion",
+      hearth: "Unknown",
+      context: "North America median 2.8%; upper quartile above 6.0%",
+      gate: "Meet the median before paid acquisition scales",
+      source: "revenuecat",
+    },
+    {
+      metric: "Annual paid retention",
+      hearth: "Unknown",
+      context: "Overall compared-cohort median 28%",
+      gate: "Exceed the median; target 40%+ in the initial wedge",
+      source: "revenuecat",
+    },
+    {
+      metric: "Revenue",
+      hearth: "Unknown / not instrumented",
+      context: "17.3% reach $1K MRR and 4.6% reach $10K within two years",
+      gate: "$1K MRR, then $10K MRR with retention intact",
+      source: "revenuecat",
+    },
+    {
+      metric: "Core Web Vitals",
+      hearth: "No field evidence",
+      context: "LCP ≤2.5s, INP ≤200ms, CLS ≤0.1 at p75",
+      gate: "Release gate on representative devices",
+      source: "webvitals",
+    },
+    {
+      metric: "CAC payback",
+      hearth: "Unknown",
+      context: "Bessemer SaaS context: 12–18 months good; 6–12 better",
+      gate: "Under 12 months before scaled acquisition",
+      source: "bessemer",
+    },
+    {
+      metric: "Market denominator",
+      hearth: "No adoption evidence",
+      context: "14.98 million Canadian private households in 2021",
+      gate: "Use only for bottom-up scenarios",
+      source: "statcan",
+    },
+  ],
+
+  phases: [
+    { id: "P0", title: "Protect money truth and establish cloud continuity", state: "ACTIVE", lane: "current", summary: "Fail-closed books, identity tuples, disclosure boundaries, delivery controls, and trusted cloud continuity." },
+    { id: "P1", title: "Complete the Bianca-ready monthly loop", state: "NEXT", lane: "current", summary: "Opening truth, onboarding, corrections, durable undo, accessibility, and the smallest useful Today surface." },
+    { id: "P2", title: "Push-native sync and lossless multi-device", state: "ACTIVE", lane: "current", summary: "Realtime continuity, atomic Personal and Shared transport, command-log convergence, and honest freshness." },
+    { id: "P3", title: "October-ready Auth and membership RLS", state: "DATE-GATED", lane: "current", summary: "Finish invitation, revoke, denial, rehearsal, and Production hardening before meaningful household data." },
+    { id: "P4", title: "Reconciliation and safe intake", state: "ACTIVE / GATED", lane: "current", summary: "Selected-source proposals and exact evidence matching; connected sources remain gated." },
+    { id: "P5", title: "Family-office-grade controls", state: "GATED", lane: "later", summary: "Opening balances, reconciliation, runway, audit export, maker-checker, and accountant access." },
+    { id: "P6", title: "Learning, Hercules, and household rhythm", state: "GATED", lane: "later", summary: "Contextual education and cooperative progress that never posts, shames, or blocks the books." },
+    { id: "P7", title: "Settlement and external money coordination", state: "SPECULATIVE", lane: "later", summary: "Represent obligations and prepare external actions without claiming money moved until evidence returns." },
+    { id: "P8", title: "Cards, allowances, and regulated rails", state: "IMPOSSIBLE TODAY", lane: "later", summary: "Research only until qualified partners, counsel, security, fraud, and dispute operations exist." },
+    { id: "P∞", title: "Other households and platform shape", state: "SPECULATIVE", lane: "later", summary: "Generalize only after the founding loop is calm, recoverable, measurable, and supportable." },
+  ],
+
+  priorities: [
+    {
+      title: "Fund now",
+      items: [
+        "Opening truth and the seven-day household loop",
+        "Privacy-safe activation and reliability measurement",
+        "Performance, accessibility, two-device, and recovery proof",
+        "Small external design-partner cohorts and pricing interviews",
+      ],
+    },
+    {
+      title: "Preserve, not pull forward",
+      items: [
+        "Advanced family-office surfaces and wider platform work",
+        "More games, animation, companion behavior, and office density",
+        "Production bank/provider expansion before trust gates",
+        "Broad geographic expansion before Canadian retention",
+      ],
+    },
+    {
+      title: "Durable moat candidate",
+      items: [
+        "Trusted shared and private household workflow",
+        "Correction, reconciliation, provenance, and close quality",
+        "Longitudinal structured household evidence",
+        "Grounded guidance tied to source facts rather than AI novelty",
+      ],
+    },
+  ],
+
+  updates: [
+    {
+      date: "2026-08-27",
+      title: "Dated product-health and investor audit",
+      detail: "Added an evidence-bounded assessment of code health, financial logic, UX, accessibility, design-partner viability, and investor readiness.",
+    },
+    {
+      date: "2026-08-27",
+      title: "Durable roadmap website foundation",
+      detail: "Separated content from rendering and added a read-only, responsive route designed for additive project updates.",
+    },
+  ],
+
+  sources: {
+    revenuecat: {
+      label: "RevenueCat — State of Subscription Apps 2026",
+      url: "https://www.revenuecat.com/state-of-subscription-apps/",
+    },
+    webvitals: {
+      label: "Google — Core Web Vitals thresholds",
+      url: "https://web.dev/articles/defining-core-web-vitals-thresholds",
+    },
+    wcag: {
+      label: "W3C — WCAG 2.2 resize text",
+      url: "https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html",
+    },
+    bessemer: {
+      label: "Bessemer — State of the Cloud",
+      url: "https://www.bvp.com/atlas/state-of-the-cloud-2023",
+    },
+    statcan: {
+      label: "Statistics Canada — 2021 Census profile",
+      url: "https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof/details/page.cfm?DGUIDlist=2021A000011124&GENDERlist=1&HEADERlist=0&Lang=E&STATISTIClist=1%2C4&SearchText=Canada",
+    },
+    audit: {
+      label: "Hearth — full dated product-health audit",
+      url: "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/main/docs/PRODUCT_HEALTH_AND_VIABILITY_AUDIT_2026-08-27.md",
+    },
+  },
+});

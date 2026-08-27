@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Hearth product health, investor evidence, and additive project roadmap.">
+  <meta name="robots" content="index,follow">
+  <meta name="color-scheme" content="light dark">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Hearth">
+  <meta property="og:title" content="Hearth product health and investor roadmap">
+  <meta property="og:description" content="A dated, evidence-bounded view of Hearth's product health, investor readiness, and additive roadmap.">
+  <meta property="og:url" content="https://hearth-books.jonathan-beaulne123.workers.dev/roadmap/">
+  <link rel="canonical" href="https://hearth-books.jonathan-beaulne123.workers.dev/roadmap/">
+  <title>Hearth product health and investor roadmap</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./roadmap-data.js" defer></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to roadmap</a>
+
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="Hearth roadmap home">
+      <span class="brand-mark" aria-hidden="true">H</span>
+      <span>Hearth roadmap</span>
+    </a>
+    <nav aria-label="Roadmap sections">
+      <a href="#health">Health</a>
+      <a href="#gates">Evidence gates</a>
+      <a href="#metrics">Investor metrics</a>
+      <a href="#phases">Phases</a>
+      <a href="#updates">Updates</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section id="top" class="hero" aria-labelledby="page-title">
+      <div class="hero-copy">
+        <p class="eyebrow" id="roadmap-kicker">Product evidence · additive roadmap</p>
+        <h1 id="page-title">Hearth product health and investor roadmap</h1>
+        <p class="hero-summary" id="hero-summary"></p>
+        <div class="hero-actions">
+          <a class="button primary" href="#gates">Inspect evidence gates</a>
+          <a class="button" href="#phases">View the full horizon</a>
+        </div>
+      </div>
+      <aside class="hero-status" aria-label="Roadmap status">
+        <dl id="roadmap-meta"></dl>
+      </aside>
+    </section>
+
+    <section class="disclosure" aria-labelledby="disclosure-title">
+      <h2 id="disclosure-title">Evidence boundary</h2>
+      <p id="roadmap-disclosure"></p>
+    </section>
+
+    <section id="health" class="section" aria-labelledby="health-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Dated audit snapshot</p>
+          <h2 id="health-title">Where Hearth is strong—and where claims stop</h2>
+        </div>
+        <p>Scores are directional judgments backed by the dated audit, not product telemetry.</p>
+      </div>
+      <div id="scorecards" class="score-grid"></div>
+
+      <div class="detail-grid">
+        <article class="lens-workbench">
+          <h3>Inspect an analysis lens</h3>
+          <div id="lens-tabs" class="tabs" role="tablist" aria-label="Analysis lenses"></div>
+          <div id="lens-panel" class="lens-panel" role="tabpanel" tabindex="0"></div>
+        </article>
+        <aside class="evidence-card" aria-labelledby="evidence-title">
+          <h3 id="evidence-title">Verified dated evidence</h3>
+          <div id="evidence-facts" class="fact-grid"></div>
+          <p id="evidence-caption" class="caption"></p>
+        </aside>
+      </div>
+    </section>
+
+    <section id="gates" class="section band" aria-labelledby="gates-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">E0–E5</p>
+          <h2 id="gates-title">Evidence before expansion</h2>
+        </div>
+        <p>Each gate names an outcome, its proof, and the point where Hearth must stop or reshape.</p>
+      </div>
+      <div id="gate-tabs" class="tabs gate-tabs" role="tablist" aria-label="Evidence gates"></div>
+      <article id="gate-panel" class="gate-panel" role="tabpanel" tabindex="0"></article>
+    </section>
+
+    <section id="metrics" class="section" aria-labelledby="metrics-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Investor discipline</p>
+          <h2 id="metrics-title">Benchmarks do not fill unknown rows</h2>
+        </div>
+        <p>External context sets measurable gates. Hearth still needs its own cohorts and unit economics.</p>
+      </div>
+      <div class="table-wrap" tabindex="0" aria-label="Scrollable investor benchmark table">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Metric</th>
+              <th scope="col">Current Hearth</th>
+              <th scope="col">External context</th>
+              <th scope="col">Roadmap gate</th>
+            </tr>
+          </thead>
+          <tbody id="metric-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="phases" class="section" aria-labelledby="phases-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Canonical horizon</p>
+          <h2 id="phases-title">No roadmap item disappears</h2>
+        </div>
+        <p>Filter the horizon without deleting it. Current work and later futures remain visible in the data.</p>
+      </div>
+      <div id="phase-filters" class="tabs" role="group" aria-label="Filter roadmap phases"></div>
+      <div id="phase-list" class="phase-list"></div>
+      <p id="phase-status" class="visually-hidden" aria-live="polite"></p>
+    </section>
+
+    <section class="section priorities" aria-labelledby="priorities-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Capital posture</p>
+          <h2 id="priorities-title">What to fund, preserve, and defend</h2>
+        </div>
+      </div>
+      <div id="priority-grid" class="priority-grid"></div>
+      <div class="capital-note">
+        <strong>Current posture:</strong>
+        Design-partner validation, not feature-completeness fundraising. Raise or scale only when measured household cohorts and unit-economics rows replace “unknown.”
+      </div>
+    </section>
+
+    <section id="updates" class="section band" aria-labelledby="updates-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Additive history</p>
+          <h2 id="updates-title">Roadmap updates</h2>
+        </div>
+        <p>New evidence is appended with an as-of date and baseline. Prior snapshots remain inspectable.</p>
+      </div>
+      <ol id="update-list" class="update-list"></ol>
+    </section>
+
+    <section class="section sources" aria-labelledby="sources-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Source trail</p>
+          <h2 id="sources-title">Evidence and benchmark sources</h2>
+        </div>
+      </div>
+      <ul id="source-list"></ul>
+    </section>
+  </main>
+
+  <footer>
+    <p>Public, read-only project artifact. No household ledger, sign-in state, analytics, or financial records are loaded by this page.</p>
+    <p id="footer-version"></p>
+  </footer>
+
+  <noscript>
+    <div class="noscript">JavaScript is required for the interactive filters. The canonical roadmap remains available in the Hearth repository.</div>
+  </noscript>
+</body>
+</html>
