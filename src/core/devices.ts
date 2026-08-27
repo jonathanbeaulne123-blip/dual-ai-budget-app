@@ -55,7 +55,9 @@ export function mergeDevices(server: HouseholdDevice[], client: HouseholdDevice[
     const existing = map.get(row.id);
     if (!existing || (row.updatedAt || "") >= (existing.updatedAt || "")) map.set(row.id, row);
   }
-  return [...map.values()].filter((row) => row.active).sort((a, b) => b.seenAt.localeCompare(a.seenAt));
+  // Keep inactive rows so opt-out / forget can LWW-propagate to partners (T3-S2).
+  // UI and soft-presence peers filter active === false.
+  return [...map.values()].sort((a, b) => b.seenAt.localeCompare(a.seenAt));
 }
 
 export function touchDevicePresence(input: {

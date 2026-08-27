@@ -5,6 +5,7 @@ import { financialAuditHash } from "./commandIdentity.ts";
 import { nextId } from "./ids.ts";
 import { markConflicted, markPendingTransport, markSynchronized } from "./sharing.ts";
 import { belongsToSharedLedger } from "./visibility.ts";
+import { mergeDevices } from "./devices.ts";
 import type {
   Claim,
   ConflictRecord,
@@ -144,7 +145,7 @@ export function absorbDisjointSharedMoney(
     budgetPlans: mergeRecords(remoteParts.shared.budgetPlans ?? [], localParts.shared.budgetPlans ?? [], tombstones),
     workJobs: mergeRecords(remoteParts.shared.workJobs ?? [], localParts.shared.workJobs ?? [], tombstones),
     activity: mergeRecords(remote.activity ?? [], local.activity ?? [], []).slice(-200),
-    devices: mergeRecords(remote.devices ?? [], local.devices ?? [], []),
+    devices: mergeDevices(remote.devices ?? [], local.devices ?? []),
     tombstones,
     commandReceipts: [...(local.commandReceipts ?? []), ...(remote.commandReceipts ?? [])].filter(
       (row, index, rows) => rows.findIndex((item) => item.confirmationId === row.confirmationId) === index,
@@ -177,7 +178,7 @@ export function autoMergeSafe(local: Household, remote: Household): Household {
     workJobs,
     tombstones,
     activity: mergeRecords(remote.activity ?? [], local.activity ?? [], []).slice(-200),
-    devices: mergeRecords(remote.devices ?? [], local.devices ?? [], []),
+    devices: mergeDevices(remote.devices ?? [], local.devices ?? []),
   };
 }
 

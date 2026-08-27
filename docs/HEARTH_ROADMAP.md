@@ -260,7 +260,7 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 #### Tier 3 — Optimistic UX + presence — GATED on Tier 1 Realtime
 
 - [x] **T3-S1** Optimistic command chrome. *([`T3-S1`](briefs/sync/T3-S1-optimistic-command-chrome.md).)*
-- [ ] **T3-S2** Soft presence (extends D-100). *([`T3-S2`](briefs/sync/T3-S2-soft-presence.md).)*
+- [x] **T3-S2** Soft presence (extends D-100). *([`T3-S2`](briefs/sync/T3-S2-soft-presence.md).)*
 - [ ] **T3-S3** Background sync polish. *([`T3-S3`](briefs/sync/T3-S3-background-sync-polish.md).)*
 - [ ] **T3-S4** Scale envelope (10–100 members). *([`T3-S4`](briefs/sync/T3-S4-scale-envelope.md).)*
 
