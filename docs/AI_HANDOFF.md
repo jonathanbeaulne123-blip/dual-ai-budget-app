@@ -2,9 +2,9 @@
 
 ## Tip covariates + Hercules tip science + Pro paged reads (D-152) (2026-08-27)
 
-**Status:** Branch `cursor/tip-science-covariates-403c`, draft [PR #208](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/208). Risk: **Medium–High** (shift schema + Hercules tools + Pro pagination + OCR draft). Not merged. Not deployed. No Production macro claims.
+**Status:** Merging via [PR #208](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/208) onto `main` (Jonathan approved push/merge/deploy). Risk: **Medium–High**. Kitchen publish follows GitHub `main` → Cloudflare Workers.
 
-**Base SHA:** `ef3274a` · **Head SHA:** `3afecb3`.
+**Base SHA:** `ef3274a` · **Head SHA:** merge-base-resolved (see tip).
 
 **Household outcome:** End-of-night Confirm captures sales, customers served, floor headcount, and event tags so tip projections get better; Hercules (free + Pro) uses those covariates; Pro can page long shift/ledger history; Timesheet can photograph a tip sheet and draft Confirm without posting.
 
@@ -27,11 +27,66 @@
 
 **Data/environment:** Development client/Worker code only. No schema, secrets, Production, or household wipe. Scan POSTs image bytes like receipts; macro endpoint sends region key only.
 
-**Next owner:** Jonathan — review Confirm required fields + Timesheet scan buttons; merge; Worker publish; Development smoke of Take shift-report photo → review draft → Confirm.
+**Next owner:** After kitchen deploy — hard-refresh; Development smoke of Timesheet → Already off? → Take shift-report photo → Confirm.
+## Supabase Preview history matches 016 (D-151) (2026-08-27)
+
+**Status:** Branch `cursor/supabase-preview-016-history-5958`. Risk: **Low** (migration *history* metadata only; money meaning unchanged). Hosted `supabase_migrations.schema_migrations` version retagged `20260827072847` → `016`. Function not re-applied. No household rows.
+
+**Household outcome:** GitHub Supabase Preview can see the same 016 file the kitchen already uses. Start from scratch is unchanged.
+
+**Budget delta (5):** `0`
+
+**Engagement delta (3):** `0` — CI honesty, not an interactable.
+
+**What changed:** MCP apply had stored a 14-digit timestamp; local file is `016_reset_development_households.sql`. Preview looks up remote versions in that folder. History now uses `016`. Filename contract locked in `test/supabase-connection.test.ts`.
+
+**Verification:** Hosted `list_migrations` now ends at `016` / `reset_development_households`. No `20260827072847` row. Focused `pnpm exec vitest run test/supabase-connection.test.ts` → **8 passed**.
+
+**Data/environment:** Development project `tykhocwacaxwquhynkok` history table only. No Production. No Start from scratch invocation.
+
+**Next owner:** Merge this PR so GitHub re-runs Supabase Preview on `main`.
+
+## First-create retry is not another phone (D-149) (2026-08-27)
+
+**Status:** Merged via #210 onto `main` (`48b1716`). Kitchen Worker version `cc694eee-3462-4fff-8f71-8675e8ad2ecf` verified (`index-DTnHo7tC.js`). Risk: **High**. No schema apply.
+
+**Household outcome:** Starting a household alone does not show “Another phone posted a newer household snapshot.” After create, retries CAS from the hosted revision when that revision is a positive integer.
+
+**Budget delta (5):** `+2` — the only copy of the books can reach the cloud.
+
+**Engagement delta (3):** `+2` — Health/More stop blaming a partner who is not there.
+
+**What changed:** `pushSupabaseHousehold` treats `household-already-exists` by reading the hosted snapshot and calling `publish_continuity_snapshot` with that revision when local is same or ahead. Unreadable or non-positive hosted revision stays pending (`missing-snapshot`), not another-phone. Genuinely newer hosted tips still conflict.
+
+**Verification:** Focused 27 tests pass. Full `pnpm test` **875 passed / 2 skipped**. GitHub `main` CI SUCCESS after merge. Live bundle contains `Sharing continues from the hosted books`. Independent reviews at `2ad4411`: books / privacy / trust **PASS WITH NOTES**. Verifier on `824ba66`: **PASS WITH NOTES**.
+
+**Data/environment:** Development kitchen deploy from GitHub `main` (Cloudflare Workers workflow `33092467819`). No hosted SQL, secrets, or Production.
+
+**Next owner:** Jonathan — hard-refresh https://hearth-books.jonathan-beaulne123.workers.dev/ , open More, tap Retry now on the waiting-to-share household.
+
+**Named open risk (October):** this retry compares revision numbers only. A local-ahead snapshot that is not a descendant of the hosted tip can still CAS-advance. `canAbsorbDisjointSharedMoney` is the later guard; not in this packet.
+
+## Invite owner first create (D-149 / D-123) (2026-08-27)
+
+**Status:** Merged via #209 onto `main` (`4009b6c`). Kitchen Worker version `10b7de13-7c05-4c5d-a8ab-fc0942e375c3` verified. Risk: **High**. Follow-up false-conflict fix merged #210 (Worker `cc694eee`).
+
+**Household outcome:** The person who starts a household can send a Google invite. Command-log must not skip `hearth_create_household` on the first cloud write.
+
+**Budget delta (5):** `+2` — partner invite is the door to shared books.
+
+**Engagement delta (3):** `+2` — Invite waits for share instead of a false “only the owner” warning.
+
+**What changed:** `shouldUseCommandLogFlush` returns false when `expectedRevision === 0`, so the first write uses `pushSupabaseHousehold` → `hearth_create_household` (owner membership). Invite Issue stays disabled while sharing (`syncState === "syncing"` or `sharing.mode === "pending-transport"`). Compacted later writes keep `expectedRevision === 0` and still create.
+
+**Verification:** Focused `pnpm exec vitest run test/continuity-command-outbox.test.ts test/auth-invite-chrome.test.ts` → 26 pass. Full `pnpm check` on `f5c6649` → `pnpm ai:verify` green; **868 passed / 2 skipped**; `pnpm build` green. Independent reviews: privacy **PASS WITH NOTES** (P3 proof gaps; compact-0 test added after); trust **PASS WITH NOTES** (P1 handoff filled here; P2 pending-transport gate added); books **PASS WITH NOTES** (assert 012 on first-create); UX **PASS WITH NOTES** (live region always in DOM).
+
+**Data/environment:** Development client/docs only. No hosted SQL, secrets, Production rows, or deploy. Fictional Development fixtures in tests.
+
+**Next owner:** Live on the kitchen after #209. Follow-up: first-create retry false conflict on `cursor/first-create-false-conflict-5958`.
 
 ## Start from scratch — Development household reset (D-151) (2026-08-27)
 
-**Status:** Branch `cursor/reset-development-households-5958`, draft [PR #201](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/201). Risk: **High** (hosted Development delete/leave; Production blocked). Not merged. Migration **016 applied** 2026-08-27. RPC **not** invoked.
+**Status:** Merged via #201 onto `main` (`ef3274a`). Risk: **High** (hosted Development delete/leave; Production blocked). Migration **016 applied** 2026-08-27. RPC **not** invoked during apply.
 
 **Household outcome:** One Confirm deletes every disposable Development household this Google account owns, leaves member-only seats, clears this phone’s Development copies, and opens Create household while Google stays signed in.
 
@@ -39,13 +94,13 @@
 
 **Engagement delta (3):** `+2` — one Confirm instead of tapping Delete on every household.
 
-**What changed:** `hearth_reset_development_households` (016) is live; **Start from scratch** is on the Development welcome home and the first card in More (not only after Google discovery).
+**What changed:** `hearth_reset_development_households` (016) is live; **Start from scratch** is on the Development welcome home and the first card in More.
 
-**Verification:** 016 metadata apply (Production 0→0, Development 7→7, anon EXECUTE false). Focused tests: first-entry + auth-invite-chrome + claude-ux-dialog 29 pass.
+**Verification:** 016 metadata apply (Production 0→0, Development 7→7, anon EXECUTE false). Kitchen bundle includes Start from scratch after merge/deploy.
 
-**Data/environment:** Hosted Development schema (016). No household wipe, secrets, or Production rows. Kitchen chrome still this PR until live Worker publish.
+**Data/environment:** Hosted Development schema (016). No household wipe, secrets, or Production rows during apply.
 
-**Next owner:** Jonathan — hard-refresh the kitchen after this PR publishes; Development welcome or More → **Start from scratch**.
+**Next owner:** Jonathan — hard-refresh live kitchen → Development pill → **Start from scratch** (welcome or More) when wiping leftover test households.
 
 ## T3-S4 scale envelope (2026-08-27)
 

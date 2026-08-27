@@ -51,7 +51,8 @@ describe("shift-report Confirm draft mapping", () => {
 
     expect(workShiftDraftFromVision({
       ...shiftResult,
-      shiftDraft: { note: "only a name" },
+      // Model may still emit note; typed result forbids it — cast only for this rejection fixture.
+      shiftDraft: { note: "only a name" } as VisionDocumentResult["shiftDraft"],
     }).draft).toBeNull();
 
     expect(workShiftDraftFromVision({

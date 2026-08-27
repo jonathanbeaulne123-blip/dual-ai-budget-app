@@ -184,4 +184,220 @@ describe("D-143 Auth membership continuity authority", () => {
     expect(result.skipped).toBe(false);
     expect(result.usedCasRpc).toBe(true);
   });
+
+  it("retries first-create CAS from the hosted revision, not from 0", async () => {
+    const base = linkGoogleIdentity(catalogHousehold(), {
+      memberId: "MEM-001",
+      email: identity.email,
+      subject: identity.subject,
+      displayName: "Jonathan",
+      grantedScopes: ["openid", "email"],
+    }).household;
+    const remote = { ...base, linked: true, revision: 1, baseRevision: 0 };
+    const local = { ...base, linked: true, revision: 3, baseRevision: 0 };
+    const expectedRevisions: number[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("households?select=id")) {
+        return new Response(JSON.stringify([{ id: local.householdId }]), { status: 200 });
+      }
+      if (url.includes("rpc/hearth_create_household")) {
+        return new Response(JSON.stringify({
+          ok: false,
+          conflict: true,
+          reason: "household-already-exists",
+        }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      if (url.includes("household_snapshots?") && (init?.method || "GET") === "GET") {
+        return new Response(JSON.stringify([{ payload: JSON.stringify(remote) }]), { status: 200 });
+      }
+      if (url.includes("rpc/publish_continuity_snapshot")) {
+        const body = init?.body ? JSON.parse(String(init.body)) as Record<string, unknown> : {};
+        expectedRevisions.push(Number(body.p_expected_revision));
+        expect(body.p_revision).toBe(3);
+        return new Response(JSON.stringify({
+          ok: true,
+          conflict: false,
+          duplicate: false,
+          revision: 3,
+        }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      if (url.includes("rpc/append_continuity_command")) {
+        throw new Error("append must not run on the first-create retry");
+      }
+      return new Response(JSON.stringify([]), { status: 200 });
+    }));
+    const result = await pushSupabaseHousehold(local, authConfig, {
+      expectedRevision: 0,
+      continuityIdentity: identity,
+    });
+    expect(result.conflict).toBeFalsy();
+    expect(result.skipped).toBe(false);
+    expect(result.error).toBeUndefined();
+    expect(expectedRevisions).toEqual([1]);
+  });
+
+  it("still conflicts when the hosted household is actually newer", async () => {
+    const base = linkGoogleIdentity(catalogHousehold(), {
+      memberId: "MEM-001",
+      email: identity.email,
+      subject: identity.subject,
+      displayName: "Jonathan",
+      grantedScopes: ["openid", "email"],
+    }).household;
+    const remote = { ...base, linked: true, revision: 4, baseRevision: 3 };
+    const local = { ...base, linked: true, revision: 2, baseRevision: 0 };
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("households?select=id")) {
+        return new Response(JSON.stringify([{ id: local.householdId }]), { status: 200 });
+      }
+      if (url.includes("rpc/hearth_create_household")) {
+        return new Response(JSON.stringify({
+          ok: false,
+          conflict: true,
+          reason: "household-already-exists",
+        }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      if (url.includes("household_snapshots?")) {
+        return new Response(JSON.stringify([{ payload: JSON.stringify(remote) }]), { status: 200 });
+      }
+      throw new Error(`unexpected ${url}`);
+    }));
+    const result = await pushSupabaseHousehold(local, authConfig, {
+      expectedRevision: 0,
+      continuityIdentity: identity,
+    });
+    expect(result.conflict).toBe(true);
+    expect(result.remote?.revision).toBe(4);
+    expect(result.error).toMatch(/Another phone posted a newer household snapshot/);
+  });
+
+  it("treats this phone's own same-revision retry as a duplicate, not another phone", async () => {
+    const base = linkGoogleIdentity(catalogHousehold(), {
+      memberId: "MEM-001",
+      email: identity.email,
+      subject: identity.subject,
+      displayName: "Jonathan",
+      grantedScopes: ["openid", "email"],
+    }).household;
+    const hosted = { ...base, linked: true, revision: 7, baseRevision: 0 };
+    const expectedRevisions: number[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("households?select=id")) {
+        return new Response(JSON.stringify([{ id: hosted.householdId }]), { status: 200 });
+      }
+      if (url.includes("rpc/hearth_create_household")) {
+        return new Response(JSON.stringify({
+          ok: false,
+          conflict: true,
+          reason: "household-already-exists",
+        }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      if (url.includes("household_snapshots?") && (init?.method || "GET") === "GET") {
+        return new Response(JSON.stringify([{ payload: JSON.stringify(hosted) }]), { status: 200 });
+      }
+      if (url.includes("rpc/publish_continuity_snapshot")) {
+        const body = init?.body ? JSON.parse(String(init.body)) as Record<string, unknown> : {};
+        expectedRevisions.push(Number(body.p_expected_revision));
+        expect(body.p_revision).toBe(7);
+        return new Response(JSON.stringify({
+          ok: true,
+          conflict: false,
+          duplicate: true,
+          revision: 7,
+        }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      return new Response(JSON.stringify([]), { status: 200 });
+    }));
+    const result = await pushSupabaseHousehold(hosted, authConfig, {
+      expectedRevision: 0,
+      continuityIdentity: identity,
+    });
+    expect(result.conflict).toBeFalsy();
+    expect(result.duplicate).toBe(true);
+    expect(result.error).toBeUndefined();
+    expect(expectedRevisions).toEqual([7]);
+  });
+
+  it("does not blame another phone when the hosted snapshot cannot be read after create", async () => {
+    const base = linkGoogleIdentity(catalogHousehold(), {
+      memberId: "MEM-001",
+      email: identity.email,
+      subject: identity.subject,
+      displayName: "Jonathan",
+      grantedScopes: ["openid", "email"],
+    }).household;
+    const local = { ...base, linked: true, revision: 7, baseRevision: 0 };
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("households?select=id")) {
+        return new Response(JSON.stringify([{ id: local.householdId }]), { status: 200 });
+      }
+      if (url.includes("rpc/hearth_create_household")) {
+        return new Response(JSON.stringify({
+          ok: false,
+          conflict: true,
+          reason: "household-already-exists",
+        }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      if (url.includes("household_snapshots?")) {
+        return new Response(JSON.stringify([]), { status: 200 });
+      }
+      if (url.includes("rpc/publish_continuity_snapshot")) {
+        throw new Error("CAS from expected 0 would recreate the false another-phone warning");
+      }
+      return new Response(JSON.stringify([]), { status: 200 });
+    }));
+    const result = await pushSupabaseHousehold(local, authConfig, {
+      expectedRevision: 0,
+      continuityIdentity: identity,
+    });
+    expect(result.conflict).toBeFalsy();
+    expect(result.skipped).toBe(true);
+    expect(result.error).toMatch(/books snapshot is missing/);
+    expect(result.error).not.toMatch(/Another phone/);
+  });
+
+  it("does not CAS from 0 when the hosted payload omits revision", async () => {
+    const base = linkGoogleIdentity(catalogHousehold(), {
+      memberId: "MEM-001",
+      email: identity.email,
+      subject: identity.subject,
+      displayName: "Jonathan",
+      grantedScopes: ["openid", "email"],
+    }).household;
+    const local = { ...base, linked: true, revision: 7, baseRevision: 0 };
+    const { revision: _omit, ...payloadWithoutRevision } = { ...base, linked: true };
+    void _omit;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("households?select=id")) {
+        return new Response(JSON.stringify([{ id: local.householdId }]), { status: 200 });
+      }
+      if (url.includes("rpc/hearth_create_household")) {
+        return new Response(JSON.stringify({
+          ok: false,
+          conflict: true,
+          reason: "household-already-exists",
+        }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      if (url.includes("household_snapshots?")) {
+        return new Response(JSON.stringify([{ payload: JSON.stringify(payloadWithoutRevision) }]), { status: 200 });
+      }
+      if (url.includes("rpc/publish_continuity_snapshot")) {
+        throw new Error("CAS from defaulted revision 0 would recreate the false another-phone warning");
+      }
+      return new Response(JSON.stringify([]), { status: 200 });
+    }));
+    const result = await pushSupabaseHousehold(local, authConfig, {
+      expectedRevision: 0,
+      continuityIdentity: identity,
+    });
+    expect(result.conflict).toBeFalsy();
+    expect(result.skipped).toBe(true);
+    expect(result.error).toMatch(/books snapshot is missing/);
+    expect(result.error).not.toMatch(/Another phone/);
+  });
 });

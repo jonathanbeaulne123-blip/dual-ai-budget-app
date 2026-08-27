@@ -267,6 +267,8 @@ function conflictMessage(reason: SnapshotCasConflict["reason"] | undefined): str
       return "Production cloud continuity is not enabled yet. Nothing was overwritten.";
     case "google-identity-required":
       return "Reconnect with Google through Hearth before creating cloud books.";
+    case "household-already-exists":
+      return "This household is already in the cloud. Sharing continues from the hosted books.";
     case "payload-identity-mismatch":
     case "invalid-create":
     case "invalid-household":
@@ -1175,6 +1177,64 @@ export async function pushSupabaseHousehold(
           duplicate: created.duplicate === true,
           usedCasRpc: true,
         };
+      }
+      // Household row already exists. Owner membership exists only if a prior
+      // create by this Google account inserted it; 012 still returns not-member
+      // otherwise. Never CAS from expectedRevision 0 (012 reports that as another phone).
+      if (created && !created.ok && created.reason === "household-already-exists") {
+        try {
+          const remote = await readRemoteSnapshot(config, snapshot.householdId, snapshot.environment);
+          if (!remote || !Number.isFinite(remote.revision) || remote.revision <= 0) {
+            return {
+              ...probe,
+              schema: true,
+              skipped: true,
+              conflict: false,
+              usedCasRpc: false,
+              error: conflictMessage("missing-snapshot"),
+            };
+          }
+          const hostedRevision = remote.revision;
+          if (snapshot.revision < hostedRevision) {
+            return {
+              ...probe,
+              schema: true,
+              conflict: true,
+              usedCasRpc: true,
+              remote,
+              error: conflictMessage("stale-revision"),
+            };
+          }
+          if (!continuityMemberId) {
+            return {
+              ...probe,
+              schema: true,
+              skipped: true,
+              conflict: false,
+              usedCasRpc: false,
+              error: conflictMessage("not-member"),
+            };
+          }
+          return publishContinuitySnapshotAtomic(
+            config,
+            probe,
+            snapshot,
+            cloudSnapshot,
+            hostedRevision,
+            continuityMemberId,
+          );
+        } catch (caught) {
+          return {
+            ...probe,
+            schema: true,
+            skipped: true,
+            conflict: false,
+            usedCasRpc: false,
+            error: caught instanceof Error
+              ? caught.message
+              : conflictMessage("not-member"),
+          };
+        }
       }
       if (created && !created.ok && created.reason !== "household-already-exists") {
         return {

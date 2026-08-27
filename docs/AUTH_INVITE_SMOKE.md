@@ -27,10 +27,10 @@ When prior test households clutter **Login with Google**:
 
 1. Hard-refresh the kitchen.
 2. **Login with Google** (owner or joiner).
-3. **Live `main` kitchen:** tap **Delete** on each owned household (migration **015**). **PR #201 / preview Worker:** tap **Start from scratch** and confirm **Delete all Development households**, or **More → Where the books live → Start from scratch**.
+3. **Live `main` kitchen:** tap **Start from scratch** (Development welcome or More) and confirm **Delete all Development households**, or tap **Delete** on each owned household (migration **015**).
 4. Owner bulk delete (016) removes the cloud rows you own; member-only seats are left. This phone’s Development copies are cleared. Google stays signed in and **Create household** opens.
 
-Migration **016** (`hearth_reset_development_households`) is applied. The Start-from-scratch **button** is on PR #201 until that kitchen is deployed. Production cannot be deleted here.
+Migration **016** (`hearth_reset_development_households`) is applied. **Start from scratch** is on the live kitchen after #201. Production cannot be deleted here.
 
 ---
 
@@ -89,7 +89,7 @@ Migration **016** (`hearth_reset_development_households`) is applied. The Start-
 | Jonathan order | “paste 016” |
 | Apply | Supabase MCP `apply_migration` name `reset_development_households` on project `tykhocwacaxwquhynkok` |
 | `public.schema_migrations` | id **16** present |
-| MCP migrations list | version `20260827072847`, name `reset_development_households` |
+| MCP migrations list | apply-time version `20260827072847`; **retagged 2026-08-27 to `016`** so GitHub Preview matches `016_reset_development_households.sql` |
 | Function | `public.hearth_reset_development_households()` exists; `SECURITY DEFINER`; `search_path=""` |
 | Grants | `authenticated` EXECUTE **true**; `anon` EXECUTE **false**; ACL has no PUBLIC/anon |
 | Household counts | Production **0→0**; Development **7→7** (reset RPC **not** called) |
