@@ -89,7 +89,7 @@ Migration **016** (`hearth_reset_development_households`) is applied. **Start fr
 | Jonathan order | “paste 016” |
 | Apply | Supabase MCP `apply_migration` name `reset_development_households` on project `tykhocwacaxwquhynkok` |
 | `public.schema_migrations` | id **16** present |
-| MCP migrations list | version `20260827072847`, name `reset_development_households` |
+| MCP migrations list | apply-time version `20260827072847`; **retagged 2026-08-27 to `016`** so GitHub Preview matches `016_reset_development_households.sql` |
 | Function | `public.hearth_reset_development_households()` exists; `SECURITY DEFINER`; `search_path=""` |
 | Grants | `authenticated` EXECUTE **true**; `anon` EXECUTE **false**; ACL has no PUBLIC/anon |
 | Household counts | Production **0→0**; Development **7→7** (reset RPC **not** called) |

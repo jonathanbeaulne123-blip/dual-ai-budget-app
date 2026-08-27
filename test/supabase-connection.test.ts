@@ -101,7 +101,15 @@ describe("hosted books migration", () => {
       expect(list, `prefix ${prefix}`).toHaveLength(1);
     }
     expect(names).toContain("007_household_timezone_iana.sql");
+    expect(names).toContain("016_reset_development_households.sql");
     expect(names.some((name) => name.startsWith("004_household"))).toBe(false);
+    expect(names.some((name) => /^\d{14}_/.test(name))).toBe(false);
+    expect(names.some((name) => name.startsWith("009_"))).toBe(false);
+    expect(names.every((name) => /^\d{3}_[a-z0-9_]+\.sql$/.test(name))).toBe(true);
+    expect(names.map((name) => name.slice(0, 3)).sort()).toEqual([
+      "001", "002", "003", "004", "005", "006", "007", "008",
+      "010", "011", "012", "013", "014", "015", "016",
+    ]);
     const tz = readFileSync("supabase/migrations/007_household_timezone_iana.sql", "utf8");
     expect(tz).toMatch(/Applied to the shared Supabase project/i);
     expect(tz).toMatch(/VALUES \(7,/);
