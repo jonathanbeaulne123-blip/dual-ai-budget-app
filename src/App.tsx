@@ -41,6 +41,7 @@ import {
   percentSplits,
   postDueRecurrences,
   postEntry,
+  postOpeningBalances,
   postOneRecurrence,
   addRecurrence,
   updateRecurrence,
@@ -66,6 +67,8 @@ import {
   seedDemoHousehold,
   seedStressHousehold,
   eraseDevelopmentData,
+  householdHasAcceptedMoney,
+  hasPostedOpeningTruth,
   shiftSettingsFingerprint,
   archiveWorkJob,
   upsertWorkJob,
@@ -240,6 +243,7 @@ import { WelcomeQrScanner } from "./WelcomeQrScanner.tsx";
 import { inviteReasonMessage, redeemHouseholdInvite, bindGoogleMemberships, leaveOrDeleteHousehold, resetDevelopmentHouseholds } from "./ledger/householdInvites.ts";
 import { BooksPage } from "./Books.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
+import { OpeningTruthSheet } from "./OpeningTruthSheet.tsx";
 import type { RepeatingDraft } from "./RepeatingForm.tsx";
 import { WorkShiftFlow, type WorkShiftDraft } from "./WorkShiftFlow.tsx";
 import { WorkShiftPage } from "./WorkShiftPage.tsx";
@@ -345,7 +349,8 @@ type Guard =
   | { kind: "acceptPreset"; key: string; summary: string }
   | { kind: "addPreset"; summary: string }
   | { kind: "restorePoint"; pointId: string; summary: string }
-  | { kind: "delete-household"; householdId: string; name: string; memberId: string; role: "owner" | "member" | null };
+  | { kind: "delete-household"; householdId: string; name: string; memberId: string; role: "owner" | "member" | null }
+  | { kind: "openingTruth"; summary: string; confirmationId: string; asOfDate: string; lines: { accountId: string; amountCents: number }[] };
 
 const emptyForm = {
   date: todayKey(),
@@ -385,6 +390,7 @@ export function App() {
   const [booting, setBooting] = useState(true);
   const [tab, setTab] = useState<Tab>("home");
   const [adding, setAdding] = useState(false);
+  const [openingTruthOpen, setOpeningTruthOpen] = useState(false);
   const confirmPanelRef = useRef<HTMLDivElement | null>(null);
   const lastAmountLabelRef = useRef<string | null>(null);
 
@@ -3077,6 +3083,18 @@ export function App() {
         ))}
       </div>
 
+      {tab === "home" && dashboard && !householdHasAcceptedMoney(household) && !hasPostedOpeningTruth(household) && (
+        <section className="card" style={{ marginBottom: 12 }}>
+          <header><h2>Starting numbers</h2></header>
+          <p className="muted">
+            These books still start at zero. Enter opening truth so statements begin from real balances.
+          </p>
+          <button type="button" style={{ width: "100%", marginTop: 8 }} disabled={busy} onClick={() => setOpeningTruthOpen(true)}>
+            Enter opening truth
+          </button>
+        </section>
+      )}
+
       {tab === "home" && dashboard && (
         <Office
           household={household}
@@ -3272,6 +3290,22 @@ export function App() {
               onClick={requestClearThisPhone}
             >
               Sign out
+            </button>
+          </section>
+          <section className="card">
+            <header><h2>Opening truth</h2></header>
+            <p className="muted">
+              Set real starting balances on a Toronto date. Opening equity balances the books — not income or spend.
+              {hasPostedOpeningTruth(household) ? " Opening truth is already on these books; reverse from Books if you need a correction." : ""}
+            </p>
+            <button
+              type="button"
+              className="ghost"
+              style={{ width: "100%", marginTop: 8 }}
+              disabled={busy}
+              onClick={() => setOpeningTruthOpen(true)}
+            >
+              {hasPostedOpeningTruth(household) ? "Enter more opening balances" : "Enter opening truth"}
             </button>
           </section>
           <section className="card">
@@ -4149,6 +4183,49 @@ export function App() {
             )}
           </div>
         </div>
+      )}
+
+      {openingTruthOpen && session && (
+        <OpeningTruthSheet
+          household={household}
+          memberId={session.memberId}
+          today={today}
+          busy={busy}
+          onClose={() => setOpeningTruthOpen(false)}
+          onAskConfirm={(draft, summary, confirmationId) => {
+            setOpeningTruthOpen(false);
+            setGuard({
+              kind: "openingTruth",
+              summary,
+              confirmationId,
+              asOfDate: draft.asOfDate,
+              lines: draft.lines.map((line) => ({
+                accountId: line.accountId,
+                amountCents: line.amountCents,
+              })),
+            });
+          }}
+        />
+      )}
+
+      {guard?.kind === "openingTruth" && (
+        <ConfirmSheet
+          title="Confirm opening truth?"
+          body={guard.summary}
+          extra="Balance sheet and Opening equity only. This does not count as income, spend, or a transfer."
+          confirmLabel="Confirm opening truth"
+          busy={busy}
+          onCancel={() => setGuard(null)}
+          onConfirm={() => {
+            void run((current) => postOpeningBalances(current, {
+              asOfDate: guard.asOfDate,
+              lines: guard.lines,
+              createdBy: session.memberId,
+              confirmationId: guard.confirmationId,
+            }));
+            setGuard(null);
+          }}
+        />
       )}
 
       {guard?.kind === "erase-development" && (

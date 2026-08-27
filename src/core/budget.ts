@@ -3,7 +3,9 @@ import { sumCents } from "./money.ts";
 import { JOINT, type Household, type Transaction } from "./types.ts";
 
 export function countable(tx: Transaction): boolean {
-  return !tx.isDuplicate;
+  if (tx.isDuplicate) return false;
+  if (tx.type === "opening" || tx.source === "opening") return false;
+  return true;
 }
 
 export function signedAmount(tx: Transaction): number {

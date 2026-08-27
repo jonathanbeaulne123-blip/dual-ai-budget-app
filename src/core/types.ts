@@ -2,7 +2,7 @@ import type { Currency } from "./money.ts";
 import type { DateKey, MonthKey } from "./calendar.ts";
 
 export type Environment = "development" | "production";
-export type TransactionType = "expense" | "income" | "transfer" | "refund";
+export type TransactionType = "expense" | "income" | "transfer" | "refund" | "opening";
 export type IncomeStability = "fixed" | "variable";
 export type PartyId = string; // member id or "joint"
 export const JOINT = "joint" as const;
@@ -121,7 +121,7 @@ export type Transaction = {
   transferToAccountId?: string;
   refundOfId?: string;
   reversalOfId?: string;
-  source: "manual" | "shift" | "recurring" | "import" | "visit" | "reversal";
+  source: "manual" | "shift" | "recurring" | "import" | "visit" | "reversal" | "opening";
   sourceId?: string;
   duplicateKey: string;
   potentialDuplicate: boolean;

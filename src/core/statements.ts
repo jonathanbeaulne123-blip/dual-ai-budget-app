@@ -196,14 +196,22 @@ export function balanceSheet(household: Household): BalanceSheet {
       liabilities.push({ id: row.id, code: row.code, name: row.name, cents: -row.netCents });
     }
   }
-  const equity: StatementLine[] = [
-    {
-      id: "EQ-RETAINED",
-      code: trial.rows.find((row) => row.id === "EQ-RETAINED")?.code ?? "3900",
-      name: "Retained earnings",
-      cents: equation.netIncomeCents,
-    },
-  ];
+  const equity: StatementLine[] = [];
+  const openingRow = trial.rows.find((row) => row.id === "EQ-OPENING");
+  if (openingRow && openingRow.netCents !== 0) {
+    equity.push({
+      id: "EQ-OPENING",
+      code: openingRow.code,
+      name: "Opening equity",
+      cents: -openingRow.netCents,
+    });
+  }
+  equity.push({
+    id: "EQ-RETAINED",
+    code: trial.rows.find((row) => row.id === "EQ-RETAINED")?.code ?? "3900",
+    name: "Retained earnings",
+    cents: equation.netIncomeCents,
+  });
   const assetCents = sumCents(assets.map((line) => line.cents));
   const liabilityCents = sumCents(liabilities.map((line) => line.cents));
   const equityCents = sumCents(equity.map((line) => line.cents));
