@@ -575,6 +575,9 @@ input, select, textarea {
 .welcome-household-list { display: grid; gap: 10px; margin-top: 18px; }
 .welcome-household-list h2 { margin: 0 0 4px; }
 .welcome-household-list button { width: 100%; }
+.welcome-household-row { display: grid; gap: 8px; }
+.welcome-household-row .primary { width: 100%; }
+.welcome-household-row .danger.ghost { width: 100%; }
 .welcome-qr { display: grid; gap: 12px; }
 .welcome-qr__video {
   display: block;

@@ -12,6 +12,7 @@ import {
   issueHouseholdInvite,
   redeemHouseholdInvite,
   bindGoogleMemberships,
+  leaveOrDeleteHousehold,
 } from "../src/ledger/householdInvites.ts";
 import type { SupabaseConfig } from "../src/ledger/supabase.ts";
 import { readFileSync } from "node:fs";
@@ -154,6 +155,31 @@ describe("household invite RPC client", () => {
     expect(missing).toEqual({ ok: false, reason: "bind-rpc-missing" });
     vi.unstubAllGlobals();
   });
+
+  it("maps leave and delete household RPC success", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (_input, init) => {
+      const body = init?.body ? JSON.parse(String(init.body)) : {};
+      if (body.p_household_id === "HH-1") {
+        return new Response(JSON.stringify({ ok: true, mode: "delete", household_id: "HH-1" }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ ok: true, mode: "leave" }), { status: 200 });
+    }));
+    const deleted = await leaveOrDeleteHousehold({
+      environment: "development",
+      householdId: "HH-1",
+      role: "owner",
+      config,
+    });
+    expect(deleted).toEqual({ ok: true, mode: "delete", householdId: "HH-1" });
+    const left = await leaveOrDeleteHousehold({
+      environment: "development",
+      householdId: "HH-2",
+      role: "member",
+      config,
+    });
+    expect(left).toEqual({ ok: true, mode: "leave", householdId: "HH-2" });
+    vi.unstubAllGlobals();
+  });
 });
 
 describe("pending Auth invite storage", () => {
@@ -185,5 +211,12 @@ describe("Auth join QR", () => {
     expect(migration).toMatch(/hearth_bind_google_memberships/);
     expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.hearth_bind_google_memberships/);
     expect(migration).toMatch(/VALUES \(10,/);
+  });
+
+  it("ships migration 015 delete/leave RPC", () => {
+    const migration = readFileSync("supabase/migrations/015_delete_development_household.sql", "utf8");
+    expect(migration).toMatch(/hearth_delete_development_household/);
+    expect(migration).toMatch(/hearth_leave_household/);
+    expect(migration).toMatch(/VALUES \(15,/);
   });
 });
