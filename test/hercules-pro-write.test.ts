@@ -44,6 +44,22 @@ describe("Hercules Pro confirmed transaction kernel", () => {
     expect(accepted.receipt).toMatchObject({ confirmationId: "CONFIRM-WRITE-1", commandKind: "hercules-pro-transaction" });
   });
 
+  it("accepts user-entered account and category names when preparing a write", async () => {
+    const household = writableHousehold();
+    const category = household.categories.find((row) => row.active && row.recordType === "category" && row.transactionType === "expense")!;
+    const prepared = await prepareHerculesProTransaction(household, "MEM-002", {
+      view: "personal",
+      type: "expense",
+      date: "2026-08-24",
+      amountCents: 4321,
+      accountId: "Visa",
+      subcategoryId: category.name,
+      note: "Name-based proof",
+    });
+    expect(prepared.preview.account).toBe("Visa");
+    expect(prepared.preview.category).toBe(category.name);
+  });
+
   it("refuses both ledgers when member consent is missing", async () => {
     const household = seedDemoHousehold({ today: "2026-08-25", environment: "development" });
     const account = household.accounts.find((row) => row.active)!;

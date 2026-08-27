@@ -1,4 +1,4 @@
-import { requireAccount, requireSubcategory } from "./catalog.ts";
+import { findAccountByRef, findSubcategoryByRef, requireAccount, requireSubcategory } from "./catalog.ts";
 import { commandIdentityHash, financialAuditHash, rememberReceipt } from "./commandIdentity.ts";
 import { postEntry, postTransfer } from "./commands.ts";
 import { assertAcceptableBooks } from "./commandRuntime.ts";
@@ -119,6 +119,22 @@ function dollarsFromCents(amountCents: number): string {
   return (amountCents / 100).toFixed(2);
 }
 
+function resolveWriteRefs(household: Household, input: HerculesProTransactionInput): HerculesProTransactionInput {
+  if (input.type === "transfer") {
+    return {
+      ...input,
+      fromAccountId: input.fromAccountId ? findAccountByRef(household, input.fromAccountId).id : undefined,
+      toAccountId: input.toAccountId ? findAccountByRef(household, input.toAccountId).id : undefined,
+    };
+  }
+  const categoryType = input.type === "refund" ? "expense" as const : input.type;
+  return {
+    ...input,
+    accountId: input.accountId ? findAccountByRef(household, input.accountId).id : undefined,
+    subcategoryId: input.subcategoryId ? findSubcategoryByRef(household, input.subcategoryId, categoryType).id : undefined,
+  };
+}
+
 function runTransaction(
   household: Household,
   memberId: string,
@@ -171,7 +187,7 @@ export async function prepareHerculesProTransaction(
   memberId: string,
   rawInput: unknown,
 ): Promise<PreparedHerculesProTransaction> {
-  const input = normalizeHerculesProTransactionInput(rawInput);
+  const input = resolveWriteRefs(household, normalizeHerculesProTransactionInput(rawInput));
   if (!herculesProWriteAllowed(household, input.view)) {
     throw new ValidationError(`Hercules Pro ${input.view} writes are off in Hearth. Turn them on in More, then reconnect ChatGPT.`);
   }
