@@ -1,5 +1,33 @@
 # AI Task and Handoff Standard
 
+## Tip covariates + Hercules tip science + Pro paged reads (D-152) (2026-08-27)
+
+**Status:** Branch `cursor/tip-science-covariates-403c` (draft PR). Risk: **Medium–High** (shift schema + Hercules tools + Pro pagination + OCR draft). Not merged. Not deployed. No Production macro claims.
+
+**Base SHA:** `ef3274a` · **Head SHA:** `4613442` (plus follow-up docs commit if any).
+
+**Household outcome:** End-of-night Confirm captures sales, customers served, floor headcount, and event tags so tip projections get better; Hercules (free + Pro) uses those covariates; Pro can page long shift/ledger history; optional camera drafts a shift report into Confirm without posting.
+
+**Budget delta (5):** `+2` — richer covariates improve tip projections without posting money; OCR stays proposal-only.
+
+**Engagement delta (3):** `+2` — Confirm + optional camera draft + Pro long-history paging.
+
+**What changed:**
+- Shift / `postWorkShift` / legacy `postShift`: `customersServed`, `staffingCount`, `eventTag`, optional `weatherGlass`; tipped Confirm requires covers/staffing (+ sales when sales fields exist).
+- `WorkShiftFlow` Sales & tips step + legacy ceremony fields; stress seed synthesizes covers/staffing/events.
+- `tipScience` observations + soft sales/covers/staffing/event/macro factors on outlook/oracle/year-sim.
+- Hercules: tip tools consume covariates; new `list_shifts`; Pro `toolPageMode` page size 50/100 + cursors; free ≤10.
+- Worker `/macro/priors` soft Ontario/Canada prior (fail soft); shift-report OCR kind → Confirm draft only.
+- D-152 recorded.
+
+**Verification:** Focused `test/tip-covariates.test.ts` + `test/tip-science.test.ts` + hercules/work-jobs/document-scan pass; full `pnpm check` → **868 pass** / 2 skipped; books + privacy auditors invoked.
+
+**Uncertainty:** Live StatsCan fetch not wired (static/Worker fallback only); OCR quality depends on model vision; Pro `list_shifts` rows still respect existing ledger view scoping — confirm after deploy smoke.
+
+**Data/environment:** Development client/Worker code only. No schema, secrets, Production, or household wipe. Macro endpoint sends region key only.
+
+**Next owner:** Jonathan — review Confirm required fields + Pro page size; merge; Worker publish; Development smoke of Confirm + optional scan draft; do not treat macro as Production truth.
+
 ## Start from scratch — Development household reset (D-151) (2026-08-27)
 
 **Status:** Branch `cursor/reset-development-households-5958`, draft [PR #201](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/201). Risk: **High** (hosted Development delete/leave; Production blocked). Not merged. Migration **016 applied** 2026-08-27. RPC **not** invoked.

@@ -106,16 +106,19 @@ Unsupported: delete, edit, reverse, bill/card/bank pay, settings, shifts, import
 | `explain_variance` | One category’s actual-vs-budget story |
 | `explain_transfer` | Both journal legs of a transfer |
 
-## Shift Oracle (D-137) — 4 (+ year sim D-140)
+## Shift Oracle (D-137 / D-140 / D-152)
 
 | Tool | Calculation / feature |
 |---|---|
-| `tip_oracle` | Seeded Monte Carlo tip p10 / p50 / p90 + dry-streak reserve |
-| `shift_outlook` | Weekday × meal × hours tip range; optional weather glass |
+| `tip_oracle` | Seeded Monte Carlo tip p10 / p50 / p90 + dry-streak reserve; disclosed macro soft prior |
+| `shift_outlook` | Weekday × meal × hours tip range; weather, event tag, sales/covers/staffing soft factors |
 | `tip_schedule_sim` | Cadence advice; totals probability-weighted by weekday frequency |
 | `tax_milk_plan` | Educational tax-milk + peak buffer + leftover (never posts) |
 | `shift_year_simulation` | Seeded 6–12 month Monte Carlo of tips + wages |
 | `explain_shift_simulation` | Teach year-sim method, limits, and next step |
+| `list_shifts` | Page posted shifts with sales, covers, staffing headcount, tip%, event tags (`cursor`, limit 50/100 on Pro) |
+
+Confirm stamps `customersServed`, `staffingCount` (headcount only — never names), `eventTag`, and optional `weatherGlass`. Macro priors from Worker `/macro/priors` are soft, clamped, and never posted income. Shift-report OCR drafts into Confirm only.
 
 ## Sim + Review packs (D-142) — 3
 
