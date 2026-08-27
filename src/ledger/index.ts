@@ -48,6 +48,7 @@ export {
   issueHouseholdInvite,
   redeemHouseholdInvite,
   revokeHouseholdMember,
+  leaveOrDeleteHousehold,
   bindGoogleMemberships,
 } from "./householdInvites.ts";
 export type {
