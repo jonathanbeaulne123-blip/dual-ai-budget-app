@@ -2,7 +2,7 @@
 
 ## Invite owner first create (D-149 / D-123) (2026-08-27)
 
-**Status:** Branch `cursor/invite-owner-first-create-5958`, draft [PR #209](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/209). Risk: **High** (Auth/RLS/membership path; money meaning unchanged). Not merged. No schema apply.
+**Status:** Branch `cursor/invite-owner-first-create-5958`, draft [PR #209](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/209). Head `03cb3f5`. Baseline `main@ef3274a`. Risk: **High** (Auth/RLS/membership path; money meaning unchanged). Not merged. No schema apply.
 
 **Household outcome:** The person who starts a household can send a Google invite. Command-log must not skip `hearth_create_household` on the first cloud write.
 

@@ -7,7 +7,7 @@
 - **Repository:** jonathanbeaulne123-blip/dual-ai-budget-app
 - **Branch:** `cursor/invite-owner-first-create-5958`
 - **Baseline SHA:** `ef3274a2fac3256092cc5ec13d28dc9793b45478` (`main`)
-- **Head SHA:** (latest on branch after audit follow-up)
+- **Head SHA:** `03cb3f559b76f5598a1112807f3fccbdd515a383`
 - **PR or issue:** [PR #209](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/209) draft
 - **Risk:** High (Auth/RLS/membership path; money meaning unchanged)
 - **Decision owner:** Jonathan
@@ -63,7 +63,7 @@ The person who starts a household can send a Google invite. “Only the househol
 - [x] Implement flush gate + Invite wait copy
 - [x] Tests and canon
 - [x] Privacy / trust / books / UX auditors
-- [ ] Verifier after audit follow-up commit
+- [x] Verifier after audit follow-up commit: **PASS WITH NOTES** (draft, not shipped; full check recorded on `f5c6649`; focused 26 pass on `03cb3f5`)
 
 ## Evidence log
 
