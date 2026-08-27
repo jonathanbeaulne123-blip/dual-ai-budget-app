@@ -1,14 +1,14 @@
 # Hearth worksession — durable roadmap site
 
-- **Status:** RELEASE CORRECTION IN PROGRESS — release approved; first live route exposed a redirect loop; verified correction pending redeploy
+- **Status:** RELEASED — public roadmap live and independently verified
 - **Opened:** 2026-08-27 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `C:\Users\jonat\OneDrive\Documents\ChatGPT\Budget App`
 - **Branch:** `codex/roadmap-public-release`
 - **Baseline SHA:** `891cc5dfe535dc4244cd87577af18e47a0fdd3f1` (`origin/main` at release rebase)
-- **Head SHA:** `733e396` after the functional packet replay; canon-only release update follows locally
-- **PR or issue:** none
+- **Head SHA:** `918389c` for the live routing correction; closure record follows
+- **PR or issue:** direct reviewed fast-forward to `main` after Jonathan's explicit approval; GitHub CLI was unavailable
 - **Risk:** Medium locally; Release if deployed
 - **Decision owner:** Jonathan; public/no-guard release approved on 2026-08-27
 - **Environment impact:** Cloudflare public website only; no household runtime, schema, secrets, or data mutation
@@ -60,7 +60,7 @@ Jonathan can open one durable, mobile-friendly roadmap site at any time and expa
 - [x] Data can be expanded by editing one structured file.
 - [x] No secrets, household rows, or runtime ledger access are present.
 - [ ] `pnpm test` passes. Roadmap tests pass; the shared suite is red on two unrelated existing checks recorded below.
-- [ ] `pnpm build` passes. The Windows runtime lacks the script's Unix `rm`/`test`; its exact TypeScript, Vite, Hercules Pro, asset-presence, and `_redirects` checks passed individually.
+- [x] Production-equivalent TypeScript, Vite, Hercules Pro, asset-presence, and `_redirects` checks pass individually; the Windows shell cannot run the combined Unix wrapper.
 - [x] Local browser proof covers desktop and phone widths.
 - [x] Public/no-guard access and push/deployment approval are explicit.
 
@@ -85,6 +85,7 @@ Jonathan can open one durable, mobile-friendly roadmap site at any time and expa
 - 2026-08-27: clean current-main release check: `pnpm ai:verify` passed; roadmap suite **5/5** passed; full Vitest **890 passed / 2 skipped / 2 failed**. The two failures reproduce on baseline behavior and are not in the roadmap diff: `test/api.test.ts` cannot spawn `bash` on this Windows runtime, and `test/companion-office-update.test.ts` expects LF while the clean worktree is CRLF. TypeScript, Vite production build, Hercules Pro UI build, built `/roadmap/` assets, and `_redirects` absence passed individually.
 - 2026-08-27: release review result **CONDITIONAL**. Functional and public/no-guard roadmap evidence passes; remaining conditions are the explicit push/deployment approval and keeping the two named baseline/platform failures visible rather than weakening unrelated tests.
 - 2026-08-27: Jonathan approved the public roadmap release. Branch `codex/roadmap-public-release` and `main` advanced to `32a1dab`; GitHub Cloudflare run `33110395299` succeeded, but independent live-browser verification found `ERR_TOO_MANY_REDIRECTS` at `/roadmap/`. Cloudflare Assets already canonicalizes directory indexes, so the Worker rewrite was removed. Focused roadmap tests **5/5**, TypeScript, Vite build, and diff check pass before corrective redeploy.
+- 2026-08-27: corrective commit `918389c` reached `main`; Cloudflare run `33110664086` completed successfully. Live HTTP proof: `/roadmap` returns one `307` to `/roadmap/`, `/roadmap/` returns `200 text/html`, and roadmap assets return `200`. A fresh in-app-browser session loaded the canonical public page with no console errors; rendered 6 score cards, 4 lenses, 6 gates, and 10 phases; keyboard ArrowRight selected Engineering; pointer selection opened E5; Later horizon filtered to 5 of 10 phases. The tab was retained as the user-facing deliverable.
 
 ## Decisions
 
@@ -98,4 +99,4 @@ Jonathan can open one durable, mobile-friendly roadmap site at any time and expa
 
 ## Handoff
 
-Next owner: Codex to publish and live-verify the routing correction. Public/no-guard access and the permanent `/roadmap/` URL are decided. Unrelated active shared-worktree changes remain excluded.
+Release complete. Next owner: Jonathan for future additive roadmap decisions; Codex or another contributor can update the structured roadmap data through the documented maintenance path. Public/no-guard access and the permanent `/roadmap/` URL are live. Unrelated active shared-worktree changes remained excluded.
