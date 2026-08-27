@@ -647,7 +647,7 @@ export async function appendContinuityCommand(
   const cloudSnapshot = householdCloudProjection(snapshot, input.continuityMemberId);
   const snapshotHash = await financialAuditHash(cloudSnapshot);
   const sharedPayload = await encodeSharedSnapshotPayload(cloudSnapshot);
-  const personalPayload = await encodeHouseholdPayload(
+  const personalPayload = await encodePersonalEnvelopePayload(
     personalReplicaForMember(snapshot, input.continuityMemberId),
   );
 

@@ -230,6 +230,14 @@ INSERT INTO public.schema_migrations (id, applied_at)
 VALUES (13, now()::text)
 ON CONFLICT (id) DO UPDATE SET applied_at = EXCLUDED.applied_at;
 
+-- Publish command events for T2-S4 Realtime (014 already applied; add table if present).
+DO $$
+BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.continuity_command_events;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
 COMMIT;
 
 NOTIFY pgrst, 'reload schema';
