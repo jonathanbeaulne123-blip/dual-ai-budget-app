@@ -126,14 +126,14 @@ describe("autoResolveSharedConflict", () => {
       linked: true,
       revision: 9,
       baseRevision: 8,
-      workJobs: [{ id: "JOB-PHONE", name: "Phone job", memberId: "MEM-001", active: true }],
+      shiftSettings: { ...base.shiftSettings, defaultBreakMinutes: 15 },
     };
     const cloud = {
       ...base,
       linked: true,
       revision: 8,
       baseRevision: 8,
-      workJobs: [{ id: "JOB-CLOUD", name: "Cloud job", memberId: "MEM-002", active: true }],
+      shiftSettings: { ...base.shiftSettings, defaultBreakMinutes: 30 },
     };
     const impact = describeSharedConflictImpact(phone, cloud);
     expect(impact.summary).toMatch(/Shared money rows match/);
