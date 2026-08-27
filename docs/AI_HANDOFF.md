@@ -1,5 +1,23 @@
 # AI Task and Handoff Standard
 
+## Supabase Preview history matches 016 (D-151) (2026-08-27)
+
+**Status:** Branch `cursor/supabase-preview-016-history-5958`. Risk: **Low** (migration *history* metadata only; money meaning unchanged). Hosted `supabase_migrations.schema_migrations` version retagged `20260827072847` → `016`. Function not re-applied. No household rows.
+
+**Household outcome:** GitHub Supabase Preview can see the same 016 file the kitchen already uses. Start from scratch is unchanged.
+
+**Budget delta (5):** `0`
+
+**Engagement delta (3):** `0` — CI honesty, not an interactable.
+
+**What changed:** MCP apply had stored a 14-digit timestamp; local file is `016_reset_development_households.sql`. Preview looks up remote versions in that folder. History now uses `016`. Filename contract locked in `test/supabase-connection.test.ts`.
+
+**Verification:** Hosted `list_migrations` now ends at `016` / `reset_development_households`. No `20260827072847` row. Focused `pnpm exec vitest run test/supabase-connection.test.ts` → **8 passed**.
+
+**Data/environment:** Development project `tykhocwacaxwquhynkok` history table only. No Production. No Start from scratch invocation.
+
+**Next owner:** Merge this PR so GitHub re-runs Supabase Preview on `main`.
+
 ## First-create retry is not another phone (D-149) (2026-08-27)
 
 **Status:** Merged via #210 onto `main` (`48b1716`). Kitchen Worker version `cc694eee-3462-4fff-8f71-8675e8ad2ecf` verified (`index-DTnHo7tC.js`). Risk: **High**. No schema apply.
