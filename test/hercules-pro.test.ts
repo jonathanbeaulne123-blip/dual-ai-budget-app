@@ -102,9 +102,11 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize" }),
     }), env);
     const initializedBody = await initialized.json() as { result: { serverInfo: { version: string }; instructions: string } };
-    expect(initializedBody.result.serverInfo.version).toBe("0.3.3");
+    expect(initializedBody.result.serverInfo.version).toBe("0.3.4");
     expect(initializedBody.result.instructions).toContain("FIRST tool call MUST be summon_hercules");
     expect(initializedBody.result.instructions).toContain("requests picture-in-picture");
+    expect(initializedBody.result.instructions).toContain("householdName");
+    expect(initializedBody.result.instructions).toContain("never by householdId");
 
     const tools = await worker.fetch(new Request(`${origin}/mcp`, {
       method: "POST",
@@ -175,6 +177,11 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       mood: "teaching",
       headline: "Follow the journal",
       ledger: "personal",
+      householdName: household.name,
+      ledgerName: expect.any(String),
+      memberName: "Jonathan",
+      householdId: household.householdId,
+      memberId: "MEM-002",
       readOnly: true,
     } } });
 
@@ -183,9 +190,23 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       headers: { Authorization: `Bearer ${tokens.access_token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "account_balance", arguments: { view: "personal" } } }),
     }), env);
-    const called = await call.json() as { result: { isError: boolean; structuredContent: { readOnly: boolean; memberId: string; ledger: string; accountingBasis: string; currency: string; timeZone: string; usedTool: string; answer: string; teachingContract: { writeAuthority: string; clickableSources: boolean; announceTool: boolean } } } };
+    const called = await call.json() as { result: { isError: boolean; structuredContent: { readOnly: boolean; memberId: string; ledger: string; householdName: string; ledgerName: string; memberName: string; accountingBasis: string; currency: string; timeZone: string; usedTool: string; answer: string; teachingContract: { writeAuthority: string; clickableSources: boolean; announceTool: boolean } } } };
     expect(called.result.isError).toBe(false);
-    expect(called.result.structuredContent).toMatchObject({ readOnly: true, memberId: "MEM-002", ledger: "personal", accountingBasis: "posted-recognized-journal", currency: "CAD", timeZone: "America/Toronto", usedTool: "account_balance", teachingContract: { writeAuthority: "none", clickableSources: true, announceTool: true } });
+    expect(called.result.structuredContent).toMatchObject({
+      readOnly: true,
+      memberId: "MEM-002",
+      ledger: "personal",
+      householdName: household.name,
+      ledgerName: expect.any(String),
+      memberName: "Jonathan",
+      accountingBasis: "posted-recognized-journal",
+      currency: "CAD",
+      timeZone: "America/Toronto",
+      usedTool: "account_balance",
+      teachingContract: { writeAuthority: "none", clickableSources: true, announceTool: true },
+    });
+    expect(called.result.structuredContent.householdName).not.toBe("Household");
+    expect(called.result.structuredContent.householdName).not.toMatch(/^HH-/);
     expect(called.result.structuredContent.answer.startsWith("I used `account_balance`.")).toBe(true);
 
     const refresh = await worker.fetch(new Request(`${origin}/oauth/token`, {
@@ -309,6 +330,65 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
     expect(shiftResult.result.isError).toBe(false);
     expect(shiftResult.result.structuredContent).toMatchObject({ status: "ok", usedTool: "shift_summary", ledger: "personal" });
     expect(shiftResult.result.structuredContent.answer).toMatch(/1 posted shift/i);
+  });
+
+  it("returns the custom household display name, not Household or HH- id", async () => {
+    const household = {
+      ...seedDemoHousehold({ today: "2026-08-25", environment: "development" }),
+      name: "Stresstest household 1",
+      ledgerNames: {
+        shared: "Kitchen Stress Books",
+        personal: { "MEM-002": "Jonathan's Stress Pad" },
+      },
+    };
+    const now = Math.floor(Date.now() / 1000);
+    const accessToken = await herculesProTest.sealPrivate(env, {
+      kind: "access",
+      scope: "hearth.read",
+      resource: `${origin}/mcp`,
+      aud: `${origin}/mcp`,
+      environment: "development",
+      householdId: household.householdId,
+      memberId: "MEM-002",
+      authUserId: "auth-user-1",
+      supabaseAccessToken: "supabase-token",
+      iat: now,
+      exp: now + 60,
+    });
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("continuity_memberships?")) {
+        return response([{ household_id: household.householdId, member_id: "MEM-002", auth_user_id: "auth-user-1", role: "member" }]);
+      }
+      if (url.includes("continuity_personal_snapshots?")) return response([]);
+      if (url.includes("household_snapshots?")) return response([{ payload: JSON.stringify(household) }]);
+      return response({ message: `unexpected ${url}` }, 404);
+    }));
+
+    const context = await worker.fetch(new Request(`${origin}/mcp`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 50, method: "tools/call", params: {
+        name: "ledger_context",
+        arguments: { view: "household" },
+      } }),
+    }), env);
+    const body = await context.json() as { result: { isError: boolean; structuredContent: {
+      householdName: string;
+      ledgerName: string;
+      ledger: string;
+      householdId: string;
+      answer: string;
+      facts: Array<{ label: string; value: string }>;
+    } } };
+    expect(body.result.isError).toBe(false);
+    expect(body.result.structuredContent.householdName).toBe("Stresstest household 1");
+    expect(body.result.structuredContent.ledgerName).toBe("Kitchen Stress Books");
+    expect(body.result.structuredContent.ledger).toBe("household");
+    expect(body.result.structuredContent.householdId).toBe(household.householdId);
+    expect(body.result.structuredContent.answer).toContain("Stresstest household 1");
+    expect(body.result.structuredContent.answer).not.toMatch(/HH-/);
+    expect(body.result.structuredContent.facts.some((fact) => fact.label === "Household name" && fact.value === "Stresstest household 1")).toBe(true);
   });
 
   it("keeps Production off until the reviewed security cutover", async () => {
