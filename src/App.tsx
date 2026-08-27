@@ -1284,10 +1284,9 @@ export function App() {
     };
     void setupRealtime();
 
-    const memberCount = householdRef.current?.members.filter((m) => m.active).length ?? 2;
-    const baseIntervalMs = livePullIntervalMs(memberCount);
     const realtimeOn = continuityRealtimeTransportEnabled();
     // Tick often enough to honor backoff without a fixed 4s heartbeat when unhealthy.
+    // T3-S4: recompute member-scaled base each tick so roster changes refresh the envelope.
     const timer = window.setInterval(() => {
       if (!shouldRunLivePull({
         documentVisible: document.visibilityState === "visible",
@@ -1301,6 +1300,8 @@ export function App() {
       }
       const now = Date.now();
       if (now < nextPollAllowedAtMs) return;
+      const memberCount = householdRef.current?.members.filter((m) => m.active).length ?? 2;
+      const baseIntervalMs = livePullIntervalMs(memberCount);
       const delay = reconnectPollDelayMs({
         baseIntervalMs,
         realtimeStatus: realtimeStatusRef.current,
@@ -1314,7 +1315,7 @@ export function App() {
         consecutiveUnhealthyPolls = 0;
       }
       scheduleReplay("poll");
-    }, Math.min(1_000, baseIntervalMs));
+    }, 1_000);
     return () => {
       live = false;
       resumeGate.dispose();
