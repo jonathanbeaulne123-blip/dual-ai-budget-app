@@ -13,6 +13,7 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [SYNC_ARCHITECTURE.md](SYNC_ARCHITECTURE.md) | **Tiered sync plan (D-149):** 100–500 ms Realtime push, atomic SQL, command-log, slice prompts under [`briefs/sync/`](briefs/sync/README.md) |
 | [SYNC_REALTIME_SMOKE.md](SYNC_REALTIME_SMOKE.md) | **Two-phone Realtime latency smoke** (D-149 T1 G4); Jonathan pass 2026-08-27 |
 | [WORKING_MEMORY.md](WORKING_MEMORY.md) | Chat-thread recap; update when its shipped baseline drifts |
+| [ux/computer-office/GPT_CATCHUP.md](ux/computer-office/GPT_CATCHUP.md) | **2026-08-27 Cursor thread briefing** for GPT/Codex: photoreal cabin, D-152, studio, what not to do |
 | [STRATEGY.md](STRATEGY.md) | Dual Course vision: family-office books (weight 5) and companion/interactables (weight 3) |
 | [PROJECT_CHARTER.md](PROJECT_CHARTER.md) | Who Hearth is for and what success looks like |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Ledger, books, UI, and how the two courses couple |

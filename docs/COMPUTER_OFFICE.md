@@ -4,7 +4,7 @@ The computer Home must look and function like the **photoreal stills**. This fil
 
 **Pixel canon (D-152):** the six JPGs under [`docs/ux/computer-office/`](ux/computer-office/) named `hearth-canon-*.jpg`. Earlier `hearth-desk-layout-*.png` files are a superseded generation. The CSS cabin on this branch is plumbing, not the look.
 
-**Studio kit:** [`ux/computer-office/STUDIO_KIT.md`](ux/computer-office/STUDIO_KIT.md). **Job map:** [`ux/computer-office/STUDIO_PIPELINE.md`](ux/computer-office/STUDIO_PIPELINE.md). **Beginner checklist (Jonathan):** [`ux/computer-office/STUDIO_SETUP_CHECKLIST.md`](ux/computer-office/STUDIO_SETUP_CHECKLIST.md).
+**Studio kit:** [`ux/computer-office/STUDIO_KIT.md`](ux/computer-office/STUDIO_KIT.md). **Job map:** [`ux/computer-office/STUDIO_PIPELINE.md`](ux/computer-office/STUDIO_PIPELINE.md). **Beginner checklist (Jonathan):** [`ux/computer-office/STUDIO_SETUP_CHECKLIST.md`](ux/computer-office/STUDIO_SETUP_CHECKLIST.md). **Thread briefing for GPT:** [`ux/computer-office/GPT_CATCHUP.md`](ux/computer-office/GPT_CATCHUP.md).
 
 AIs use that bench when computer Home visuals warrant it. If Jonathan must click Blender, fSpy, Krita, Affinity, Resolve, Comfy, PureRef, or ffmpeg, the AI gives numbered/checkbox steps with exact menu names. He has no DCC experience.
 
