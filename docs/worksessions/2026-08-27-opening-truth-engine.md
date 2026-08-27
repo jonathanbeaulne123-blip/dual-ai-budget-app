@@ -66,10 +66,17 @@ A household can Confirm real starting balances (assets and debts) on one Toronto
 
 ## Evidence log
 
+- Baseline: `main@891cc5d`
+- Head: see branch tip
+- Focused opening-truth tests: 10 passed
+- `pnpm check`: 897 passed / 2 skipped; build green
+- Books auditor: PASS WITH NOTES (P2)
+- PR: https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/218
+
 ## Remaining uncertainty
 
-Slice A coordinator merge may later auto-route into this flow.
+Slice A auto-route not on main. Repeat opening batches allowed from More.
 
 ## Handoff
 
-Jonathan review via GPT; not shipped until merge + kitchen verify.
+Jonathan/GPT review on PR #218. Not shipped.
