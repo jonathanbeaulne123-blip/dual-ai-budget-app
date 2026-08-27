@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   activeOpenShift,
   formatCad,
@@ -24,8 +24,10 @@ import { PaperTile } from "./theme/PaperTheme.tsx";
 import { TimesheetBody } from "./widgets/Timesheet.tsx";
 import { WorkJobsCard } from "./WorkJobs.tsx";
 import { WorkReportCard, downloadWorkReportCsv } from "./WorkReport.tsx";
-import { WorkShiftFlow, type WorkShiftDraft } from "./WorkShiftFlow.tsx";
+import type { WorkShiftDraft } from "./WorkShiftFlow.tsx";
+import { WorkShiftWithSevenShifts } from "./WorkShiftWithSevenShifts.tsx";
 import { WorkShiftHistoryCard } from "./WorkShiftHistory.tsx";
+import { createShiftScanScope } from "./shiftScanScope.ts";
 
 type ShiftPane = "today" | "report" | "jobs";
 
@@ -110,6 +112,7 @@ export function WorkShiftPage({
   const [shiftScanBusy, setShiftScanBusy] = useState(false);
   const [shiftScanError, setShiftScanError] = useState("");
   const [shiftScanWarnings, setShiftScanWarnings] = useState<string[]>([]);
+  const shiftScanScopeRef = useRef(createShiftScanScope());
   const streak = useMemo(() => shiftPostingStreak(household, today), [household, today]);
   const punch = useMemo(() => activeOpenShift(household.kitchen, memberId), [household.kitchen, memberId]);
   const reviewing = punch?.status === "confirming" || finishedReview;
@@ -120,6 +123,8 @@ export function WorkShiftPage({
       setWeatherGlass(reading.glass);
     });
   }, [environment, today]);
+
+  useEffect(() => () => shiftScanScopeRef.current.cancel(), []);
 
   const preview = useMemo(
     () => shiftLivePreview(household, today, { memberId, weatherGlass }),
@@ -139,9 +144,7 @@ export function WorkShiftPage({
 
   useEffect(() => {
     if (reviewing) return;
-    setWorkShiftDraft(null);
-    setShiftScanError("");
-    setShiftScanWarnings([]);
+    clearScanDraft();
   }, [reviewing]);
 
   useEffect(() => {
@@ -149,19 +152,19 @@ export function WorkShiftPage({
     const count = household.shifts.filter((shift) => shift.memberId === memberId).length;
     if (count > shiftsWhenReviewOpened) {
       setFinishedReview(false);
-      setWorkShiftDraft(null);
-      setShiftScanError("");
-      setShiftScanWarnings([]);
+      clearScanDraft();
     }
   }, [finishedReview, household.shifts, memberId, shiftsWhenReviewOpened]);
 
   async function applyScan(file: File | undefined) {
     if (!file) return;
+    const scan = shiftScanScopeRef.current.begin();
     setShiftScanBusy(true);
     setShiftScanError("");
     setShiftScanWarnings([]);
     try {
-      const mapped = await scanShiftReportFile(file);
+      const mapped = await scanShiftReportFile(file, fetch, scan.signal);
+      if (!scan.isCurrent()) return;
       if (!mapped.draft) {
         setShiftScanError(mapped.error || "That photo could not draft a shift.");
         setShiftScanWarnings(mapped.warnings);
@@ -170,14 +173,17 @@ export function WorkShiftPage({
       setWorkShiftDraft(mapped.draft);
       setShiftScanWarnings(mapped.warnings);
     } catch (caught) {
+      if (!scan.isCurrent()) return;
       setShiftScanError(caught instanceof Error ? caught.message : String(caught));
     } finally {
-      setShiftScanBusy(false);
+      if (scan.isCurrent()) setShiftScanBusy(false);
     }
   }
 
   function clearScanDraft() {
+    shiftScanScopeRef.current.cancel();
     setWorkShiftDraft(null);
+    setShiftScanBusy(false);
     setShiftScanWarnings([]);
     setShiftScanError("");
   }
@@ -267,8 +273,7 @@ export function WorkShiftPage({
                   error={shiftScanError}
                   onFile={(file) => { void applyScan(file); }}
                 />
-                <WorkShiftFlow
-                  key={workShiftDraft ? `draft-${JSON.stringify(workShiftDraft)}` : "blank"}
+                <WorkShiftWithSevenShifts
                   household={household}
                   memberId={memberId}
                   today={today}
@@ -429,6 +434,7 @@ export function WorkShiftPage({
       {pane === "jobs" && (
         <div className="shift-panel" role="tabpanel" id="shift-panel-jobs" aria-labelledby="shift-tab-jobs">
         <WorkJobsCard
+          key={`${environment}:${household.householdId}:${memberId}`}
           household={household}
           memberId={memberId}
           today={today}

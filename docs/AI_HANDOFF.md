@@ -1,5 +1,23 @@
 # AI Task and Handoff Standard
 
+## Native 7shifts Timesheet inbox (D-155) (2026-08-27)
+
+**Status:** Release branch `codex/d152-shifts-release`, based on current `main`; user-authorized two-stage Development release in progress. Risk: **Release**. Production provider access remains refused.
+
+**Household outcome:** Connect 7shifts under Shift → Jobs. Pull a clocked punch into the existing Timesheet review on Shift → Today or Add. Hours, paid breaks, role, and clock times are drafts; cash/card tips stay blank. Only Confirm can post through `postWorkShift`.
+
+**Budget delta (5):** `+3` — less transcription without changing Hearth-owned rates, tip amounts, or the accounting boundary.
+
+**Engagement delta (3):** `+2` — the restaurant clock and Co-workers roster now meet the first-class Shift tab.
+
+**Safety:** Development only; Auth membership before D1/provider access; AES-GCM token storage; HMAC stable identities; strict response allowlists; 7shifts wage/tip/email fields discarded; provider labels sanitized; API version `2026-01-01`; scope changes cancel provider/camera work and clear pending Confirm state.
+
+**Release plan:** Merge/deploy inert with `SEVENSHIFTS_ENABLED=false`; verify status; apply D1 migration 0002 and put both required secrets; then merge the minimal enablement flag/secret-validation change and verify active status plus fail-closed routes.
+
+**Remaining uncertainty:** A real Harbour Developer Tools token is required for the final provider/company smoke. Stop before Confirm during that smoke so no household money is changed.
+
+**Worksession:** [`worksessions/2026-08-27-seven-shifts-inbox.md`](worksessions/2026-08-27-seven-shifts-inbox.md)
+
 ## Shift Today camera (D-152 on D-153) (2026-08-27)
 
 **Status:** Merged via [#217](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/217) onto `main` (`048e619`). Kitchen Worker **live** version `c942e55b-a53d-403e-9ab1-3c17c1f9957d` (bundle `index-Ce4ACG2v.js`). Risk: **Medium**. Not Production household data.

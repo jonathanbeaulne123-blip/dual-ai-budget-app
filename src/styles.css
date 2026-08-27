@@ -1898,6 +1898,11 @@ input, select, textarea {
   background: color-mix(in srgb, var(--paper) 90%, transparent);
 }
 .flinks-status .import-actions { margin-top: 4px; }
+.seven-shifts-panel { margin-top: 16px; }
+.seven-shifts-status { margin: 8px 0 12px; }
+.seven-shifts-timesheet { display: grid; gap: 14px; }
+.seven-shifts-inbox { display: grid; gap: 8px; }
+.seven-shifts-inbox .chip { justify-self: start; }
 .sheet.flinks-connect .sheet-inner {
   width: min(1080px, calc(100vw - 24px));
   max-width: 1080px;

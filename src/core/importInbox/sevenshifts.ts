@@ -1,0 +1,312 @@
+import { isValidDateKey, dateKeyInZone, TIMEZONE, type DateKey } from "../calendar.ts";
+import type { Household, WorkJob } from "../types.ts";
+import { workShiftIsReversed } from "../work.ts";
+
+const MAX_PUNCHES = 200;
+const MAX_COWORKERS = 40;
+const PULL_PREFIX = "s7pull_";
+const PUNCH_PREFIX = "s7punch_";
+const USER_PREFIX = "s7user_";
+const PAYLOAD_KEYS = new Set(["provider", "sourceName", "sourceHash", "jobId", "punches", "coworkers", "warningCodes"]);
+const PUNCH_KEYS = new Set(["stablePunchId", "date", "startedAt", "endedAt", "workedHours", "paidBreakHours", "roleName", "locationName", "open", "tipsOmitted"]);
+const COWORKER_KEYS = new Set(["displayName", "roleName", "date", "status"]);
+
+export type SevenShiftsInboxWarningCode = "coworker-roster-incomplete";
+
+export type SevenShiftsPunchHours = {
+  workedHours: number;
+  paidBreakHours: number;
+  unpaidBreakHours: number;
+  elapsedHours: number;
+  open: boolean;
+};
+
+export type SevenShiftsInboxPunch = {
+  stablePunchId: string;
+  date: DateKey;
+  startedAt: string;
+  endedAt: string | null;
+  workedHours: number;
+  paidBreakHours: number;
+  roleName: string;
+  locationName: string;
+  open: boolean;
+  tipsOmitted: true;
+};
+
+export type SevenShiftsInboxCoworker = {
+  displayName: string;
+  roleName: string;
+  date: DateKey;
+  status: "scheduled" | "punched";
+};
+
+export type SevenShiftsInboxPayload = {
+  provider: "7shifts";
+  sourceName: string;
+  sourceHash: string;
+  jobId: string;
+  punches: SevenShiftsInboxPunch[];
+  coworkers: SevenShiftsInboxCoworker[];
+  warningCodes?: SevenShiftsInboxWarningCode[];
+};
+
+export type SevenShiftsTimesheetDraft = {
+  date: DateKey;
+  jobId: string;
+  roleId: string;
+  roleName: string;
+  startedAt: string;
+  endedAt: string;
+  workedHours: number;
+  paidBreakHours: number;
+  punchDigest: string;
+  sourceLabel: string;
+  cashTips: "";
+  cardTips: "";
+  roleMatched: boolean;
+};
+
+export type ParsedSevenShiftsBatch = {
+  sourceName: string;
+  sourceKind: "7shifts";
+  sourceHash: string;
+  jobId: string;
+  punches: SevenShiftsInboxPunch[];
+  coworkers: SevenShiftsInboxCoworker[];
+  drafts: SevenShiftsTimesheetDraft[];
+  warnings: string[];
+};
+
+function cleanText(value: unknown, max: number): string {
+  return String(value ?? "").replace(/\0/g, "").replace(/\s+/g, " ").trim().slice(0, max);
+}
+
+function opaqueDigest(value: unknown, label: string, prefix: typeof PULL_PREFIX | typeof PUNCH_PREFIX | typeof USER_PREFIX): string {
+  const cleaned = cleanText(value, 160);
+  const digest = cleaned.slice(prefix.length);
+  if (!cleaned.startsWith(prefix) || !/^[a-f0-9]{64}$/.test(digest)) {
+    throw new Error(`7shifts returned an invalid ${label}.`);
+  }
+  return cleaned;
+}
+
+function unsafeLabel(value: string): boolean {
+  return value.includes("@") || (value.match(/\d/g) ?? []).length >= 7;
+}
+
+export function sevenShiftsSafeLabel(value: unknown, max: number, fallback: string): string {
+  const cleaned = cleanText(value, max);
+  return !cleaned || unsafeLabel(cleaned) ? fallback : cleaned;
+}
+
+function requireSafeLabel(value: unknown, max: number, fallback: string, label: string): string {
+  const cleaned = cleanText(value, max);
+  if (!cleaned) return fallback;
+  if (unsafeLabel(cleaned)) throw new Error(`7shifts ${label} included an unsafe label.`);
+  return cleaned;
+}
+
+function assertAllowedKeys(value: unknown, allowed: Set<string>, label: string): asserts value is Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`7shifts ${label} is invalid.`);
+  }
+  for (const key of Object.keys(value)) {
+    if (allowed.has(key)) continue;
+    if (/tip/i.test(key)) throw new Error("7shifts inbox must not carry tip amounts.");
+    if (/wage/i.test(key)) throw new Error("7shifts inbox must not carry wage fields.");
+    throw new Error("7shifts inbox included a forbidden field.");
+  }
+}
+
+function assertInboxAllowlist(payload: SevenShiftsInboxPayload): void {
+  assertAllowedKeys(payload, PAYLOAD_KEYS, "inbox payload");
+  payload.punches.forEach((row) => assertAllowedKeys(row, PUNCH_KEYS, "punch"));
+  payload.coworkers.forEach((row) => assertAllowedKeys(row, COWORKER_KEYS, "coworker"));
+  if (payload.warningCodes !== undefined) {
+    if (!Array.isArray(payload.warningCodes) || payload.warningCodes.some((code) => code !== "coworker-roster-incomplete")) {
+      throw new Error("7shifts inbox included an invalid warning code.");
+    }
+  }
+}
+
+function hoursBetween(start: string, end: number): number {
+  const from = Date.parse(start);
+  if (!Number.isFinite(from) || !Number.isFinite(end) || end < from) return 0;
+  return Math.round(((end - from) / 3_600_000) * 100) / 100;
+}
+
+function breakWindow(row: Record<string, unknown>): { start: string; end: string | null; paid: boolean } | null {
+  const start = cleanText(row.in ?? row.start ?? row.clocked_in ?? row.started_at, 40);
+  const endRaw = row.out ?? row.end ?? row.clocked_out ?? row.ended_at ?? null;
+  const end = endRaw == null || endRaw === "" ? null : cleanText(endRaw, 40);
+  if (!start || Number.isNaN(Date.parse(start))) return null;
+  return { start, end, paid: row.paid === true || row.is_paid === true };
+}
+
+export function hoursFromSevenShiftsPunch(
+  punch: { clocked_in?: string | null; clocked_out?: string | null; breaks?: unknown },
+  nowMs = Date.now(),
+): SevenShiftsPunchHours {
+  const startedAt = cleanText(punch.clocked_in, 40);
+  const endedRaw = punch.clocked_out == null || punch.clocked_out === "" ? null : cleanText(punch.clocked_out, 40);
+  const open = !endedRaw || Number.isNaN(Date.parse(endedRaw)) || Date.parse(endedRaw) <= Date.parse(startedAt);
+  const stop = open ? nowMs : Date.parse(endedRaw!);
+  const elapsedHours = hoursBetween(startedAt, stop);
+  const breaks = Array.isArray(punch.breaks) ? punch.breaks : [];
+  let paidBreakHours = 0;
+  let unpaidBreakHours = 0;
+  for (const item of breaks) {
+    if (!item || typeof item !== "object") continue;
+    const window = breakWindow(item as Record<string, unknown>);
+    if (!window) continue;
+    const end = window.end ? Date.parse(window.end) : stop;
+    const hours = hoursBetween(window.start, end);
+    if (window.paid) paidBreakHours += hours;
+    else unpaidBreakHours += hours;
+  }
+  paidBreakHours = Math.round(paidBreakHours * 100) / 100;
+  unpaidBreakHours = Math.round(unpaidBreakHours * 100) / 100;
+  return {
+    elapsedHours,
+    paidBreakHours,
+    unpaidBreakHours,
+    workedHours: Math.max(0, Math.round((elapsedHours - paidBreakHours - unpaidBreakHours) * 100) / 100),
+    open,
+  };
+}
+
+/** First name plus last initial. Never an email, phone, or employee id. */
+export function sevenShiftsDisplayName(user: {
+  first_name?: string | null;
+  last_name?: string | null;
+  preferred_first_name?: string | null;
+  preferred_last_name?: string | null;
+} | null | undefined): string {
+  const first = cleanText(user?.preferred_first_name || user?.first_name, 40);
+  const last = cleanText(user?.preferred_last_name || user?.last_name, 40);
+  if (!first && !last) return "Coworker";
+  if (unsafeLabel(`${first} ${last}`)) return "Coworker";
+  if (!last) return first;
+  return `${first} ${last.slice(0, 1)}.`;
+}
+
+export function sevenShiftsPunchDate(clockedIn: string, timeZone = TIMEZONE): DateKey {
+  const at = new Date(clockedIn);
+  if (Number.isNaN(at.getTime())) throw new Error("7shifts punch is missing a clock-in time.");
+  return dateKeyInZone(at, timeZone);
+}
+
+export function matchWorkRoleId(job: WorkJob, roleName: string): { roleId: string; matched: boolean } {
+  const wanted = cleanText(roleName, 40).toLowerCase();
+  const active = job.roles.filter((role) => role.active);
+  const exact = active.find((role) => role.name.trim().toLowerCase() === wanted);
+  if (exact) return { roleId: exact.id, matched: true };
+  const fallback = active[0] ?? job.roles[0];
+  return { roleId: fallback?.id ?? "", matched: false };
+}
+
+/**
+ * Normalize the Worker 7shifts inbox. This never writes money. Tips are required
+ * omitted; cash/card CAD pads stay empty until the worker types them.
+ */
+export function parseSevenShiftsInbox(
+  payload: SevenShiftsInboxPayload,
+  jobs: WorkJob[],
+  postedPunchDigests: Iterable<string> = [],
+): ParsedSevenShiftsBatch {
+  if (!payload || payload.provider !== "7shifts" || !Array.isArray(payload.punches) || !Array.isArray(payload.coworkers)) {
+    throw new Error("7shifts returned an invalid Timesheet inbox response.");
+  }
+  assertInboxAllowlist(payload);
+  if (payload.punches.length > MAX_PUNCHES) throw new Error("7shifts returned more than 200 punches. Pull a smaller date range.");
+  if (payload.coworkers.length > MAX_COWORKERS) throw new Error("7shifts returned too many coworkers. Pull a smaller date range.");
+  const sourceName = requireSafeLabel(payload.sourceName, 100, "7shifts", "source");
+  const sourceHash = opaqueDigest(payload.sourceHash, "pull digest", PULL_PREFIX);
+  const jobId = cleanText(payload.jobId, 80);
+  const job = jobs.find((row) => row.id === jobId && row.active);
+  const posted = new Set([...postedPunchDigests].filter(Boolean));
+  const warnings: string[] = payload.warningCodes?.includes("coworker-roster-incomplete")
+    ? ["7shifts could not fully load the Co-workers roster. Your punch is still ready to review."]
+    : [];
+  const punches: SevenShiftsInboxPunch[] = [];
+  const drafts: SevenShiftsTimesheetDraft[] = [];
+
+  for (const row of payload.punches) {
+    if (row?.tipsOmitted !== true) throw new Error("7shifts inbox must omit tips.");
+    const stablePunchId = opaqueDigest(row.stablePunchId, "punch digest", PUNCH_PREFIX);
+    if (!isValidDateKey(row.date)) throw new Error("7shifts punch is missing a Toronto calendar date.");
+    if (!row.startedAt || Number.isNaN(Date.parse(row.startedAt))) throw new Error("7shifts punch is missing a clock-in time.");
+    const endedAt = row.endedAt && !Number.isNaN(Date.parse(row.endedAt)) ? row.endedAt : null;
+    const punch: SevenShiftsInboxPunch = {
+      stablePunchId,
+      date: row.date,
+      startedAt: row.startedAt,
+      endedAt,
+      workedHours: Math.max(0, Number(row.workedHours) || 0),
+      paidBreakHours: Math.max(0, Number(row.paidBreakHours) || 0),
+      roleName: requireSafeLabel(row.roleName, 40, "Role", "punch role"),
+      locationName: requireSafeLabel(row.locationName, 80, "", "punch location"),
+      open: row.open === true || !endedAt,
+      tipsOmitted: true,
+    };
+    punches.push(punch);
+    if (punch.open) {
+      warnings.push(`${punch.date} is still clocked on 7shifts. Clock out there before Confirm.`);
+      continue;
+    }
+    if (posted.has(punch.stablePunchId)) {
+      warnings.push(`${punch.date} is already on the books.`);
+      continue;
+    }
+    if (!job) {
+      warnings.push("Connect this 7shifts account to an active Hearth job before Confirm.");
+      continue;
+    }
+    if (punch.workedHours + punch.paidBreakHours <= 0) {
+      warnings.push(`${punch.date} has no hours to confirm.`);
+      continue;
+    }
+    const role = matchWorkRoleId(job, punch.roleName);
+    if (!role.roleId) {
+      warnings.push(`${job.name} needs an active role before this punch can fill Timesheet.`);
+      continue;
+    }
+    if (!role.matched) warnings.push(`No Hearth role named ${punch.roleName}; using ${job.roles.find((row) => row.id === role.roleId)?.name ?? "the first role"}.`);
+    drafts.push({
+      date: punch.date,
+      jobId: job.id,
+      roleId: role.roleId,
+      roleName: punch.roleName,
+      startedAt: punch.startedAt,
+      endedAt: punch.endedAt!,
+      workedHours: punch.workedHours,
+      paidBreakHours: punch.paidBreakHours,
+      punchDigest: punch.stablePunchId,
+      sourceLabel: sourceName,
+      cashTips: "",
+      cardTips: "",
+      roleMatched: role.matched,
+    });
+  }
+
+  const coworkers: SevenShiftsInboxCoworker[] = payload.coworkers.map((row) => {
+    const displayName = requireSafeLabel(row.displayName, 40, "Coworker", "coworker name");
+    if (!isValidDateKey(row.date)) throw new Error("7shifts coworker is missing a date.");
+    if (row.status !== "scheduled" && row.status !== "punched") throw new Error("7shifts coworker status is invalid.");
+    return {
+      displayName,
+      roleName: requireSafeLabel(row.roleName, 40, "Role", "coworker role"),
+      date: row.date,
+      status: row.status,
+    };
+  });
+
+  return { sourceName, sourceKind: "7shifts", sourceHash, jobId, punches, coworkers, drafts, warnings };
+}
+
+export function postedSevenShiftsPunchDigests(household: Household): string[] {
+  return household.shifts
+    .filter((shift) => shift.sevenShiftsPunchDigest && !workShiftIsReversed(household, shift))
+    .map((shift) => shift.sevenShiftsPunchDigest as string);
+}

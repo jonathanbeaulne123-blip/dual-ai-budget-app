@@ -241,11 +241,19 @@ import { inviteReasonMessage, redeemHouseholdInvite, bindGoogleMemberships, leav
 import { BooksPage } from "./Books.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
 import type { RepeatingDraft } from "./RepeatingForm.tsx";
-import { WorkShiftFlow, type WorkShiftDraft } from "./WorkShiftFlow.tsx";
+import type { WorkShiftDraft } from "./WorkShiftFlow.tsx";
 import { WorkShiftPage } from "./WorkShiftPage.tsx";
 import { resolveDuplicateRetry } from "./shiftDuplicateRetry.ts";
 import { ShiftReportScanBar } from "./ShiftReportScan.tsx";
 import { scanShiftReportFile } from "./imports/shiftReportDraft.ts";
+import { WorkShiftWithSevenShifts } from "./WorkShiftWithSevenShifts.tsx";
+import { createShiftScanScope } from "./shiftScanScope.ts";
+import {
+  runScopedWorkShift,
+  workShiftScopeMatches,
+  WORK_SHIFT_SCOPE_ERROR,
+  type ScopedWorkShiftInput,
+} from "./workShiftScope.ts";
 import { DuePreviewSheet } from "./DuePreviewSheet.tsx";
 import {
   renderCommandChrome,
@@ -386,10 +394,18 @@ export function App() {
   const [booting, setBooting] = useState(true);
   const [tab, setTab] = useState<Tab>("home");
   const [adding, setAdding] = useState(false);
+  const workShiftInputRef = useRef<ScopedWorkShiftInput | null>(null);
+  const shiftScanScopeRef = useRef(createShiftScanScope());
   const confirmPanelRef = useRef<HTMLDivElement | null>(null);
   const lastAmountLabelRef = useRef<string | null>(null);
 
   const closeAdd = () => {
+    workShiftInputRef.current = null;
+    shiftScanScopeRef.current.cancel();
+    setWorkShiftDraft(null);
+    setShiftScanBusy(false);
+    setShiftScanError("");
+    setShiftScanWarnings([]);
     setAdding(false);
     setConfirm(null);
     setError("");
@@ -414,6 +430,8 @@ export function App() {
   const [splitPercents, setSplitPercents] = useState<Record<string, number>>({ "MEM-001": 50, "MEM-002": 50 });
   const [now] = useState(() => new Date());
   const [session, setSession] = useState<Session | null>(null);
+  const sessionRef = useRef<Session | null>(session);
+  sessionRef.current = session;
   const [replicas, setReplicas] = useState<HouseholdReplicaSummary[]>([]);
   const [personalReplica, setPersonalReplica] = useState<PersonalEnvelope | null>(null);
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "synced" | "error">("idle");
@@ -464,7 +482,6 @@ export function App() {
   historyRef.current = history;
   const confirmationRef = useRef<string | null>(null);
   const postingRef = useRef(false);
-  const workShiftInputRef = useRef<PostWorkShiftInput | null>(null);
   const workShiftDateRef = useRef(todayKey());
   const duePreviewOffered = useRef<string | null>(null);
   const [workShiftDraft, setWorkShiftDraft] = useState<WorkShiftDraft | null>(null);
@@ -474,11 +491,13 @@ export function App() {
 
   async function applyShiftReportScan(file: File | undefined) {
     if (!file) return;
+    const scan = shiftScanScopeRef.current.begin();
     setShiftScanBusy(true);
     setShiftScanError("");
     setShiftScanWarnings([]);
     try {
-      const mapped = await scanShiftReportFile(file);
+      const mapped = await scanShiftReportFile(file, fetch, scan.signal);
+      if (!scan.isCurrent()) return;
       if (!mapped.draft) {
         setShiftScanError(mapped.error || "That photo could not draft a shift.");
         setShiftScanWarnings(mapped.warnings);
@@ -487,11 +506,21 @@ export function App() {
       setWorkShiftDraft(mapped.draft);
       setShiftScanWarnings(mapped.warnings);
     } catch (caught) {
+      if (!scan.isCurrent()) return;
       setShiftScanError(caught instanceof Error ? caught.message : String(caught));
     } finally {
-      setShiftScanBusy(false);
+      if (scan.isCurrent()) setShiftScanBusy(false);
     }
   }
+
+  const addScopeKey = `${environment}:${household?.householdId ?? ""}:${session?.memberId ?? ""}`;
+  const previousAddScopeRef = useRef(addScopeKey);
+
+  useEffect(() => {
+    if (previousAddScopeRef.current === addScopeKey) return;
+    previousAddScopeRef.current = addScopeKey;
+    closeAdd();
+  }, [addScopeKey]);
 
   function rememberUndoHistory(next: UndoToken[]) {
     setHistory(next);
@@ -684,6 +713,7 @@ export function App() {
     let live = true;
     setBooting(true);
     const loadedSession = loadSession(environment);
+    sessionRef.current = loadedSession;
     setSession(loadedSession);
     void hydrateContinuityOutbox(environment);
     loadHousehold(environment, loadedSession?.householdId, loadedSession?.memberId).then(async (loaded) => {
@@ -1575,6 +1605,9 @@ export function App() {
 
   function rememberSession(next: Session) {
     const remembered = { ...next, householdId: next.householdId ?? householdRef.current?.householdId };
+    const previous = sessionRef.current;
+    if (previous?.memberId !== remembered.memberId || previous?.householdId !== remembered.householdId) closeAdd();
+    sessionRef.current = remembered;
     setSession(remembered);
     saveSession(environment, remembered);
   }
@@ -1607,6 +1640,7 @@ export function App() {
         activate: true,
         continuityIdentity: continuityIdentity ?? undefined,
       });
+      closeAdd();
       householdRef.current = candidate;
       setHousehold(candidate);
       rememberSession({ memberId: nextMemberId, view: session?.view ?? "household", householdId });
@@ -2145,7 +2179,7 @@ export function App() {
       } catch (caught) {
         if (caught instanceof NeedsConfirmationError) {
           const plan = resolveDuplicateRetry({
-            pendingWorkShift: workShiftInputRef.current,
+            pendingWorkShift: workShiftInputRef.current?.input ?? null,
             confirmCode: caught.code,
             tab,
           });
@@ -2227,6 +2261,9 @@ export function App() {
       await clearHousehold(environment, input.householdId);
       setDiscoveredLedgers((current) => current.filter((item) => item.household.householdId !== input.householdId));
       if (household?.householdId === input.householdId) {
+        closeAdd();
+        householdRef.current = null;
+        sessionRef.current = null;
         setHousehold(null);
         setSession(null);
         setHistory([]);
@@ -2292,6 +2329,9 @@ export function App() {
       setPersonalReplica(null);
       setReplicas([]);
       setDiscoveredLedgers([]);
+      closeAdd();
+      householdRef.current = null;
+      sessionRef.current = null;
       setHousehold(null);
       setSession(null);
       setGuard(null);
@@ -2433,6 +2473,8 @@ export function App() {
                   return;
                 }
                 const nextSession = { memberId, view: "household" as const, householdId: next.householdId };
+                closeAdd();
+                sessionRef.current = nextSession;
                 setSession(nextSession);
                 saveSession(environment, nextSession);
                 setWelcomeIdentity(null);
@@ -2824,7 +2866,7 @@ export function App() {
   function goTab(next: Tab) {
     leaveDesk();
     setTab(next);
-    setAdding(false);
+    closeAdd();
   }
 
   function beginSignOut() {
@@ -2975,11 +3017,39 @@ export function App() {
   }
 
   function submitWorkShift(input: PostWorkShiftInput, confirmDuplicate = false) {
-    workShiftInputRef.current = input;
-    setMode("shift");
-    const punch = householdRef.current ? activeOpenShift(householdRef.current.kitchen, actorId) : null;
-    setShiftGate(punch ? "signOut" : "finished");
-    run((current) => postWorkShift(current, { ...input, confirmDuplicate }));
+    const current = householdRef.current;
+    const currentMemberId = sessionRef.current?.memberId;
+    const pending = confirmDuplicate
+      ? workShiftInputRef.current
+      : current && currentMemberId
+        ? {
+            input,
+            environment: current.environment,
+            householdId: current.householdId,
+            memberId: currentMemberId,
+          }
+        : null;
+    if (!workShiftScopeMatches(current, currentMemberId, pending)) {
+      workShiftInputRef.current = null;
+      setConfirm(null);
+      setError(WORK_SHIFT_SCOPE_ERROR);
+      return;
+    }
+    workShiftInputRef.current = pending;
+    void run((live) => {
+      try {
+        return runScopedWorkShift(
+          live,
+          sessionRef.current?.memberId,
+          pending,
+          confirmDuplicate,
+          (safeInput) => postWorkShift(live, safeInput),
+        );
+      } catch (caught) {
+        workShiftInputRef.current = null;
+        throw caught;
+      }
+    });
   }
 
   function addPostLabel(): string {
@@ -3214,6 +3284,7 @@ export function App() {
 
       {tab === "shift" && (
         <WorkShiftPage
+          key={`${environment}:${household.householdId}:${session.memberId}`}
           household={household}
           memberId={session.memberId}
           memberName={household.members.find((member) => member.id === session.memberId)?.name ?? "You"}
@@ -3232,18 +3303,19 @@ export function App() {
             && workShiftInputRef.current
             && !adding
             && workShiftInputRef.current.memberId === session.memberId
+            && workShiftInputRef.current.input.memberId === session.memberId
               ? confirm
               : null
           }
           onConfirmAnyway={() => {
             const pending = workShiftInputRef.current;
             const plan = resolveDuplicateRetry({
-              pendingWorkShift: pending,
+              pendingWorkShift: pending?.input ?? null,
               confirmCode: confirm?.code ?? null,
               tab,
             });
             if (plan.kind === "work-shift" && pending && pending.memberId === session.memberId) {
-              submitWorkShift(pending, true);
+              submitWorkShift(pending.input, true);
             }
           }}
           onDismissDuplicate={() => setConfirm(null)}
@@ -3892,8 +3964,8 @@ export function App() {
                       error={shiftScanError}
                       onFile={(file) => { void applyShiftReportScan(file); }}
                     />
-                    <WorkShiftFlow
-                      key={workShiftDraft ? `draft-${JSON.stringify(workShiftDraft)}` : "blank"}
+                    <WorkShiftWithSevenShifts
+                      key={`${environment}:${household.householdId}:${actorId}`}
                       household={household}
                       memberId={actorId}
                       today={workShiftDateRef.current}
@@ -4134,13 +4206,14 @@ export function App() {
                   </div>
                 ))}
                 <button className="primary" onClick={() => {
+                  const pending = workShiftInputRef.current;
                   const plan = resolveDuplicateRetry({
-                    pendingWorkShift: workShiftInputRef.current,
+                    pendingWorkShift: pending?.input ?? null,
                     confirmCode: confirm.code,
                     tab,
                   });
-                  if (plan.kind === "work-shift" && workShiftInputRef.current) {
-                    submitWorkShift(workShiftInputRef.current, true);
+                  if (plan.kind === "work-shift" && pending) {
+                    submitWorkShift(pending.input, true);
                   } else {
                     submit({ confirmDuplicate: true });
                   }
@@ -4217,6 +4290,9 @@ export function App() {
                 clearSyncAnchor(environment, hid);
                 clearContinuityOutboxForHousehold(environment, hid);
                 await clearHousehold(environment, hid);
+                closeAdd();
+                householdRef.current = null;
+                sessionRef.current = null;
                 setHistory([]);
                 setToast(null);
                 setPersonalReplica(null);
@@ -4258,6 +4334,7 @@ export function App() {
               setBusy(true);
               try {
                 await gateWithGoogle({ record: false });
+                closeAdd();
                 setEnvironment(next);
                 setHistory([]);
                 setToast(null);
