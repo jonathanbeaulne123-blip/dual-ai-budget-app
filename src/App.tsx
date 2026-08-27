@@ -90,14 +90,12 @@ import {
   listRestorePoints,
   restoreConfirmBody,
   reversePostedMoney,
-  recordConflict,
+  autoResolveSharedConflict,
   canAbsorbDisjointSharedMoney,
   absorbDisjointSharedMoney,
-  resolveConflictChoice,
   unresolvedConflicts,
   markSynchronized,
   markPendingTransport,
-  makeConflictBundle,
   suggestCategory,
   shouldPrefillCategory,
   suggestSplit,
@@ -241,7 +239,6 @@ import { WorkJobsCard } from "./WorkJobs.tsx";
 import { WorkShiftFlow } from "./WorkShiftFlow.tsx";
 import { WorkShiftHistoryCard } from "./WorkShiftHistory.tsx";
 import { WorkReportCard } from "./WorkReport.tsx";
-import { ConflictResolution } from "./ConflictResolution.tsx";
 import { DuePreviewSheet } from "./DuePreviewSheet.tsx";
 import {
   renderCommandSurface,
@@ -397,7 +394,6 @@ export function App() {
     revision: number;
   } | null>(null);
   const [commandChrome, setCommandChrome] = useState<CommandChromeResult | null>(null);
-  const [showConflictSheet, setShowConflictSheet] = useState(false);
   const [offline, setOffline] = useState(() => typeof navigator !== "undefined" && !navigator.onLine);
   const [discoveredLedgers, setDiscoveredLedgers] = useState<DiscoveredHousehold[]>([]);
   const [supabaseAuthReturned, setSupabaseAuthReturned] = useState(false);
@@ -481,7 +477,6 @@ export function App() {
       if (flushed.conflicts[0]) {
         setSyncState("error");
         setError(flushed.conflicts[0].message);
-        setShowConflictSheet(true);
         return;
       }
       if (flushed.synchronized > 0) {
@@ -850,30 +845,50 @@ export function App() {
                 setSyncState("synced");
                 return;
               }
-              if (pushed.errorClass === "conflict-detected" && pushed.remote) {
-                const conflicted = await recordConflict(ready, pushed.remote, false);
-                await acceptReplayCandidate(
-                  conflicted,
-                  `outbox-conflict-${ready.householdId}-${pushed.remote.revision}`,
-                  "outbox-conflict",
-                );
-                setSyncState("error");
-                setError(pushed.message);
-                return;
-              }
-              // Still pending transport — honest chip, not "up to date".
               setSyncState("syncing");
               return;
             }
-            const conflicted = await recordConflict(current, conflict.remote, false);
-            await acceptReplayCandidate(
-              conflicted,
-              `outbox-conflict-${current.householdId}-${conflict.remote.revision}`,
-              "outbox-conflict",
+            const resolved = await autoResolveSharedConflict(current, conflict.remote, memberId, "local");
+            const accepted = await acceptReplayCandidate(
+              resolved,
+              `outbox-resolve-${current.householdId}-${conflict.remote.revision}`,
+              "outbox-resolve",
             );
+            if (!live) return;
+            if (!accepted?.ok) {
+              setSyncState("error");
+              setError(accepted?.userMessage || conflict.message);
+              return;
+            }
+            const ready = accepted.household;
+            clearContinuityOutboxConflictBlocks({
+              environment,
+              identity,
+              householdId: ready.householdId,
+              expectedRevision: ready.baseRevision ?? resolved.baseRevision,
+            });
+            const pushed = await transportHouseholdWithOutbox({
+              household: ready,
+              identity,
+              expectedRevision: ready.baseRevision ?? resolved.baseRevision,
+              confirmationId: `resolve-${ready.householdId}-${ready.revision}`,
+              config: cloudConfig,
+              flush: true,
+            });
+            if (!live) return;
+            if (pushed.ok) {
+              const synced = markSynchronized(ready);
+              await saveHousehold(synced, { operatingEnvironment: environment, memberId });
+              householdRef.current = synced;
+              setHousehold(synced);
+              setSyncState("synced");
+              return;
+            }
+            setSyncState("syncing");
+            return;
           }
           if (live) {
-            setSyncState("error");
+            setSyncState("syncing");
             setError(conflict.message);
           }
           return;
@@ -983,14 +998,13 @@ export function App() {
               householdRef.current = synced;
               setHousehold(synced);
             } else if (pushed.errorClass === "conflict-detected" && pushed.remote) {
-              const conflicted = await recordConflict(ready, pushed.remote, false);
+              const resolved = await autoResolveSharedConflict(ready, pushed.remote, memberId, "local");
               await acceptReplayCandidate(
-                conflicted,
-                `live-absorb-conflict-${ready.householdId}-${pushed.remote.revision}`,
-                "outbox-conflict",
+                resolved,
+                `live-absorb-resolve-${ready.householdId}-${pushed.remote.revision}`,
+                "outbox-resolve",
               );
-              setSyncState("error");
-              setError(pushed.message);
+              setSyncState("syncing");
               return;
             } else {
               setSyncState("syncing");
@@ -1256,7 +1270,7 @@ export function App() {
   }, [household?.householdId]);
 
   useEffect(() => {
-    if (booting || !household || adding || guard || showConflictSheet) return;
+    if (booting || !household || adding || guard) return;
     if (unresolvedConflicts(household).length > 0) return;
 
     const previewKey = `${environment}:${household.householdId}:${today}`;
@@ -1267,7 +1281,7 @@ export function App() {
     if (!rows.length) return;
     duePreviewOffered.current = previewKey;
     setGuard({ kind: "duePreview", rows });
-  }, [adding, booting, environment, guard, household, showConflictSheet, today]);
+  }, [adding, booting, environment, guard, household, today]);
 
   function rememberSession(next: Session) {
     const remembered = { ...next, householdId: next.householdId ?? householdRef.current?.householdId };
@@ -1646,9 +1660,6 @@ export function App() {
           })
           .catch(() => undefined);
       }
-      if (outcome.kind === "conflict-needs-attention" || unresolvedConflicts(outcome.household).length > 0) {
-        setShowConflictSheet(true);
-      }
       if (
         outcome.ok &&
         token &&
@@ -1673,7 +1684,7 @@ export function App() {
       }
       if (outcome.kind === "synchronized") setSyncState("synced");
       else if (outcome.kind === "pending-transport") setSyncState("syncing");
-      else if (outcome.kind === "conflict-needs-attention") setSyncState("error");
+      else if (outcome.kind === "conflict-needs-attention") setSyncState("syncing");
       else if (outcome.ok) setSyncState("idle");
       if (outcome.ok) {
         setBooksStatus({
@@ -1766,47 +1777,6 @@ export function App() {
         postedIds: [],
         actorMemberId: who,
       });
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
-    }
-  }
-
-  async function resolveConflictSide(side: "local" | "remote") {
-    const current = householdRef.current;
-    if (!current) return;
-    const open = unresolvedConflicts(current)[0];
-    if (!open) {
-      setShowConflictSheet(false);
-      return;
-    }
-    try {
-      const next = resolveConflictChoice(current, open.id, side);
-      const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
-      const google = session?.memberId ? loadGoogleSession(environment, session.memberId) : null;
-      const continuityIdentity: ContinuityIdentity | null = authSession
-        ? { email: authSession.email, subject: authSession.googleSubject }
-        : google?.identity
-          ? { email: google.identity.email, subject: google.identity.subject }
-          : null;
-      if (continuityIdentity) {
-        clearContinuityOutboxConflictBlocks({
-          environment,
-          identity: continuityIdentity,
-          householdId: next.householdId,
-          expectedRevision: next.baseRevision ?? Math.max(0, next.revision - 1),
-        });
-      }
-      await commitHousehold(next);
-      setShowConflictSheet(false);
-      if (continuityIdentity) {
-        const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
-        void flushContinuityOutbox({
-          environment,
-          identity: continuityIdentity,
-          config: cloudConfig,
-          force: true,
-        }).catch(() => undefined);
-      }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     }
@@ -2584,7 +2554,6 @@ export function App() {
               onClick={() => {
                 const label = commandChrome.chip?.actionLabel;
                 if (label === "Retry now" || label === "Retry") void retryShareNow();
-                else if (label === "Review") setShowConflictSheet(true);
               }}
             >
               {commandChrome.chip.actionLabel}
@@ -2608,8 +2577,7 @@ export function App() {
               disabled={busy}
               onClick={() => {
                 const label = commandChrome.banner?.actionLabel;
-                if (label === "Review conflict") setShowConflictSheet(true);
-                else if (label === "Retry" || label === "Retry now") void retryShareNow();
+                if (label === "Retry" || label === "Retry now") void retryShareNow();
                 else if (label === "Review pending") setTab("more");
                 else if (label === "Open recovery") setTab("more");
               }}
@@ -4085,28 +4053,6 @@ export function App() {
         </div>
       )}
 
-      {showConflictSheet && unresolvedConflicts(household).length > 0 && (
-        <ConflictResolution
-          household={household}
-          busy={busy}
-          onChoose={(side) => void resolveConflictSide(side)}
-          onExport={() => {
-            try {
-              const bundle = makeConflictBundle(household);
-              const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" });
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement("a");
-              link.href = url;
-              link.download = `hearth-conflict-${household.householdId}.json`;
-              link.click();
-              URL.revokeObjectURL(url);
-            } catch (caught) {
-              setError(caught instanceof Error ? caught.message : String(caught));
-            }
-          }}
-          onDismiss={() => setShowConflictSheet(false)}
-        />
-      )}
 
       {commandOpen && (
         <div className="cmdk" onClick={() => setCommandOpen(false)}>

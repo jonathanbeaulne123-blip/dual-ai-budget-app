@@ -106,7 +106,11 @@ function chipForSharingMode(state: CommandSurfaceState, ctx: CommandChromeContex
     return { primary: "Up to date", secondary, tone: "success" };
   }
   if (mode === "conflicted" || state.kind === "conflict-needs-attention") {
-    return { primary: "Needs attention", secondary: "· conflict", actionLabel: "Review", tone: "warning" };
+    return {
+      primary: "Waiting to share",
+      actionLabel: "Retry now",
+      tone: "warning",
+    };
   }
   if (mode === "disconnected") {
     return { primary: "Offline", secondary: "· waiting to share", tone: "warning" };
@@ -178,18 +182,19 @@ export function renderCommandChrome(state: CommandSurfaceState, ctx: CommandChro
 
   if (state.kind === "conflict-needs-attention") {
     return {
-      chip: chipForSharingMode(state, ctx),
+      chip: chipForSharingMode({ ...state, kind: "pending-transport", sharingMode: "pending-transport" }, ctx),
       banner: {
-        primary: "Both copies kept.",
-        secondary: "This phone and the cloud each have new work. Nothing was overwritten.",
-        actionLabel: "Review conflict",
-        blocking: true,
+        primary: "Saved here. Not shared yet.",
+        secondary: "Hearth is reconciling both copies in the background.",
+        actionLabel: "Retry now",
         tone: "warning",
       },
       toast: posted
-        ? undoableToast("Posted on this phone", "Share is paused until you choose.", ctx)
+        ? undoableToast(postedPrimary(ctx.amountLabel), "Sharing in the background.", ctx)
         : null,
-      liveAnnouncement: "Conflict. Both copies kept. Review required.",
+      liveAnnouncement: posted && ctx.ledgerWrite !== false
+        ? `${postedPrimary(ctx.amountLabel)}. Sharing in the background.`
+        : "Sharing in the background.",
     };
   }
 

@@ -318,6 +318,45 @@ function mergeReceipts(local: Household, remote: Household): Household["commandR
 }
 
 /**
+ * Resolve a shared conflict without blocking UI. Tries disjoint absorb and safe auto-merge
+ * first; when money rows still diverge on the same id, picks `prefer` deterministically.
+ */
+export async function autoResolveSharedConflict(
+  local: Household,
+  remote: Household,
+  memberId: string,
+  prefer: "local" | "remote" = "local",
+): Promise<Household> {
+  if (canAbsorbDisjointSharedMoney(local, remote)) {
+    return absorbDisjointSharedMoney(local, remote, memberId);
+  }
+  if (canAutoMergeConflict(local, remote)) {
+    const merged = autoMergeSafe(local, remote);
+    const tip = Math.max(local.revision, remote.revision);
+    return markPendingTransport({
+      ...merged,
+      revision: tip + 1,
+      baseRevision: Math.max(local.baseRevision ?? 0, remote.revision),
+    });
+  }
+  if (!moneyFactsChanged(local, remote)) {
+    const merged = autoMergeSafe(local, remote);
+    const tip = Math.max(local.revision, remote.revision);
+    return markPendingTransport({
+      ...merged,
+      revision: tip + 1,
+      baseRevision: Math.min(local.baseRevision ?? 0, remote.baseRevision ?? 0, remote.revision),
+    });
+  }
+  const conflicted = await recordConflict(local, remote, false);
+  const open = unresolvedConflicts(conflicted)[0];
+  if (!open) {
+    return markPendingTransport(local, "Sync is retrying in the background.");
+  }
+  return resolveConflictChoice(conflicted, open.id, prefer);
+}
+
+/**
  * Apply an explicit conflict side. Caller must run acceptHouseholdWrite on the result
  * so journal validation is not skipped.
  */

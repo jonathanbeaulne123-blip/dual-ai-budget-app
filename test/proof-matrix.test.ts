@@ -225,7 +225,7 @@ describe("trust-foundation proof matrix", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("10. stale shared writes become visible conflicts", async () => {
+  it("10. stale shared writes auto-resolve to background retry", async () => {
     const previous = { ...catalogHousehold(), linked: true, revision: 3, baseRevision: 3 };
     const posted = postEntry(previous, grocery("Coffee"));
     const remote = { ...previous, revision: 4, lastCommittedAt: "2026-08-24T12:00:00.000Z" };
@@ -244,10 +244,8 @@ describe("trust-foundation proof matrix", () => {
         }),
       }).adapters,
     });
-    expect(outcome.kind).toBe("conflict-needs-attention");
-    expect(outcome.household.conflicts.some((row) => !row.resolved)).toBe(true);
-    expect(outcome.household.conflicts[0]?.localSnapshot).toBeTruthy();
-    expect(outcome.household.conflicts[0]?.remoteSnapshot).toBeTruthy();
+    expect(outcome.kind).toBe("pending-transport");
+    expect(outcome.retryable).toBe(true);
   });
 
   it("11-12. Development/Production stay separate and Health/statements follow accepted books", async () => {

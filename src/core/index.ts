@@ -116,6 +116,7 @@ export {
   pairingStatusLabel,
 } from "./sharing.ts";
 export {
+  autoResolveSharedConflict,
   canAutoMergeConflict,
   canAbsorbDisjointSharedMoney,
   absorbDisjointSharedMoney,
