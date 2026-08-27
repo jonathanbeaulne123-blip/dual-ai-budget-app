@@ -1,6 +1,6 @@
 # Hearth worksession — durable roadmap site
 
-- **Status:** RELEASE REVIEW — public/no-guard access selected; push/deploy confirmation pending
+- **Status:** RELEASE REVIEW CONDITIONAL — public/no-guard access selected; push/deploy confirmation pending
 - **Opened:** 2026-08-27 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -82,6 +82,8 @@ Jonathan can open one durable, mobile-friendly roadmap site at any time and expa
 - 2026-08-27: D-154, the additive roadmap update, audit link, and site maintenance protocol were appended to canon without deleting existing roadmap content.
 - 2026-08-27: Jonathan selected **public, no-guard** access because displayed people and data are synthetic. Added index/follow metadata, Open Graph identity, and canonical address `https://hearth-books.jonathan-beaulne123.workers.dev/roadmap/`. No push or deployment occurred.
 - 2026-08-27: `origin/main` advanced to `891cc5d` (PR #215). The roadmap functional packet replayed without conflict as `733e396` on clean branch `codex/roadmap-public-release`; unrelated source-checkout changes are excluded.
+- 2026-08-27: clean current-main release check: `pnpm ai:verify` passed; roadmap suite **5/5** passed; full Vitest **890 passed / 2 skipped / 2 failed**. The two failures reproduce on baseline behavior and are not in the roadmap diff: `test/api.test.ts` cannot spawn `bash` on this Windows runtime, and `test/companion-office-update.test.ts` expects LF while the clean worktree is CRLF. TypeScript, Vite production build, Hercules Pro UI build, built `/roadmap/` assets, and `_redirects` absence passed individually.
+- 2026-08-27: release review result **CONDITIONAL**. Functional and public/no-guard roadmap evidence passes; remaining conditions are the explicit push/deployment approval and keeping the two named baseline/platform failures visible rather than weakening unrelated tests.
 
 ## Decisions
 
