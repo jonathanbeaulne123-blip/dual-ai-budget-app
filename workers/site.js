@@ -527,13 +527,6 @@ function exposeHerculesCompanionAsset(request, response) {
   });
 }
 
-function roadmapAssetRequest(request) {
-  const url = new URL(request.url);
-  if (url.pathname !== "/roadmap" && url.pathname !== "/roadmap/") return request;
-  url.pathname = "/roadmap/index.html";
-  return new Request(url, request);
-}
-
 function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
@@ -1275,9 +1268,8 @@ export default {
       return json({ ok: false, error: "method" }, 405);
     }
 
-    const assetRequest = roadmapAssetRequest(request);
-    const response = exposeHerculesCompanionAsset(assetRequest, await env.ASSETS.fetch(assetRequest));
-    if (!isHtml(assetRequest, response)) return response;
+    const response = exposeHerculesCompanionAsset(request, await env.ASSETS.fetch(request));
+    if (!isHtml(request, response)) return response;
 
     const headers = new Headers(response.headers);
     headers.set("Cache-Control", "no-store");

@@ -79,9 +79,9 @@ describe("roadmap website", () => {
     expect(html).toContain('rel="canonical" href="https://hearth-books.jonathan-beaulne123.workers.dev/roadmap/"');
   });
 
-  it("maps the clean roadmap address to the standalone page in development and production", () => {
+  it("maps the clean roadmap address in development and lets Cloudflare resolve the directory index", () => {
     expect(viteConfig).toContain('req.url = "/roadmap/index.html"');
-    expect(workerScript).toContain('url.pathname = "/roadmap/index.html"');
-    expect(workerScript).toContain("env.ASSETS.fetch(assetRequest)");
+    expect(workerScript).not.toContain('url.pathname = "/roadmap/index.html"');
+    expect(workerScript).toContain("env.ASSETS.fetch(request)");
   });
 });

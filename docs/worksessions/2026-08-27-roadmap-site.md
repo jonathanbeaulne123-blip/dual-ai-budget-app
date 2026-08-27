@@ -1,6 +1,6 @@
 # Hearth worksession — durable roadmap site
 
-- **Status:** RELEASE REVIEW CONDITIONAL — public/no-guard access selected; push/deploy confirmation pending
+- **Status:** RELEASE CORRECTION IN PROGRESS — release approved; first live route exposed a redirect loop; verified correction pending redeploy
 - **Opened:** 2026-08-27 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -10,8 +10,8 @@
 - **Head SHA:** `733e396` after the functional packet replay; canon-only release update follows locally
 - **PR or issue:** none
 - **Risk:** Medium locally; Release if deployed
-- **Decision owner:** Jonathan; public/no-guard access selected, final push/deployment confirmation still required
-- **Environment impact:** none until separately approved deployment
+- **Decision owner:** Jonathan; public/no-guard release approved on 2026-08-27
+- **Environment impact:** Cloudflare public website only; no household runtime, schema, secrets, or data mutation
 
 ## Household outcome
 
@@ -62,7 +62,7 @@ Jonathan can open one durable, mobile-friendly roadmap site at any time and expa
 - [ ] `pnpm test` passes. Roadmap tests pass; the shared suite is red on two unrelated existing checks recorded below.
 - [ ] `pnpm build` passes. The Windows runtime lacks the script's Unix `rm`/`test`; its exact TypeScript, Vite, Hercules Pro, asset-presence, and `_redirects` checks passed individually.
 - [x] Local browser proof covers desktop and phone widths.
-- [x] Public/no-guard access is explicit; push/deployment approval remains explicit.
+- [x] Public/no-guard access and push/deployment approval are explicit.
 
 ## Plan
 
@@ -84,6 +84,7 @@ Jonathan can open one durable, mobile-friendly roadmap site at any time and expa
 - 2026-08-27: `origin/main` advanced to `891cc5d` (PR #215). The roadmap functional packet replayed without conflict as `733e396` on clean branch `codex/roadmap-public-release`; unrelated source-checkout changes are excluded.
 - 2026-08-27: clean current-main release check: `pnpm ai:verify` passed; roadmap suite **5/5** passed; full Vitest **890 passed / 2 skipped / 2 failed**. The two failures reproduce on baseline behavior and are not in the roadmap diff: `test/api.test.ts` cannot spawn `bash` on this Windows runtime, and `test/companion-office-update.test.ts` expects LF while the clean worktree is CRLF. TypeScript, Vite production build, Hercules Pro UI build, built `/roadmap/` assets, and `_redirects` absence passed individually.
 - 2026-08-27: release review result **CONDITIONAL**. Functional and public/no-guard roadmap evidence passes; remaining conditions are the explicit push/deployment approval and keeping the two named baseline/platform failures visible rather than weakening unrelated tests.
+- 2026-08-27: Jonathan approved the public roadmap release. Branch `codex/roadmap-public-release` and `main` advanced to `32a1dab`; GitHub Cloudflare run `33110395299` succeeded, but independent live-browser verification found `ERR_TOO_MANY_REDIRECTS` at `/roadmap/`. Cloudflare Assets already canonicalizes directory indexes, so the Worker rewrite was removed. Focused roadmap tests **5/5**, TypeScript, Vite build, and diff check pass before corrective redeploy.
 
 ## Decisions
 
@@ -97,4 +98,4 @@ Jonathan can open one durable, mobile-friendly roadmap site at any time and expa
 
 ## Handoff
 
-Next owner: Codex for a clean release packet, then Jonathan for explicit push/deployment approval. Public/no-guard access and the permanent `/roadmap/` URL are decided. Current state is local branch only, not pushed, merged, or deployed; unrelated active shared-worktree changes must not enter the roadmap release.
+Next owner: Codex to publish and live-verify the routing correction. Public/no-guard access and the permanent `/roadmap/` URL are decided. Unrelated active shared-worktree changes remain excluded.
