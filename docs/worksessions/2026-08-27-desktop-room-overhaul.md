@@ -1,4 +1,4 @@
-# Hearth worksession — Computer office (D-151)
+# Hearth worksession — Computer office (D-151 / D-152)
 
 - **Status:** OPEN
 - **Opened:** 2026-08-27 (`America/Toronto`)
@@ -15,7 +15,7 @@
 
 ## Household outcome
 
-Computer Home (`≥ 1280`) is the locked night-cabin room: first-person desk wood wall-to-wall, fireplace and shelves in view, gold nav on the front edge of the wood, Household objects that post milk through Confirm. Tablet (`720–1279`) is scaled `OfficePhone`. Phone (`< 720`) Draft C is frozen.
+Computer Home (`≥ 1280`) matches the six photoreal stills (`hearth-canon-*.jpg`): first-person desk, fireplace, shelves, gold nav on the wood edge, objects that still post milk through Confirm. CSS cabin is not the look. Tablet (`720–1279`) is scaled `OfficePhone`. Phone (`< 720`) Draft C stays mostly untouched; stop and ask before porting desktop UX. Studio kit: [`docs/ux/computer-office/STUDIO_KIT.md`](../ux/computer-office/STUDIO_KIT.md).
 
 ## Budget delta (5)
 

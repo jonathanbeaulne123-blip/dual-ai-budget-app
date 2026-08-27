@@ -1,26 +1,22 @@
-# Computer office — gated roadmap (D-151)
+# Computer office — gated program (D-151 / D-152)
 
-Jonathan locked the vision: the computer Home must **look and function like the mockups**. This file is the program. Each tier is a Jonathan continue/revert gate. Phone stays Draft C; tablet scales it; computer is the room.
+The computer Home must look and function like the **photoreal stills**. This file is the program. Each slice is a Jonathan continue/revert gate. Phone stays Draft C unless Jonathan unfreezes it; tablet scales that board; computer is the room.
 
-Locked frames (source of truth for pixels), also under [`docs/ux/computer-office/`](ux/computer-office/):
+**Pixel canon (D-152):** the six JPGs under [`docs/ux/computer-office/`](ux/computer-office/) named `hearth-canon-*.jpg`. Earlier `hearth-desk-layout-*.png` files are a superseded generation. The CSS cabin on this branch is plumbing, not the look.
 
-- Room + desk geometry — `hearth-computer-night-cabin-full-desk.png`
-- Tracker — `hearth-desk-layout-tracker.png`
-- Household (default) — `hearth-desk-layout-household.png`
-- CPA — `hearth-desk-layout-cpa.png`
-- Play after-school / Fleet / Panes — `hearth-desk-layout-play-afterschool.png`, `hearth-desk-layout-play-fleet.png`, `hearth-desk-layout-play-panes.png`
+**Studio kit** (free / one-time / optional subs): [`ux/computer-office/STUDIO_KIT.md`](ux/computer-office/STUDIO_KIT.md).
 
-Paste-ready slices: [`docs/briefs/office/`](briefs/office/README.md). Living decision **D-151**. Worksession [`docs/worksessions/2026-08-27-desktop-room-overhaul.md`](worksessions/2026-08-27-desktop-room-overhaul.md).
+Paste-ready slices: [`docs/briefs/office/`](briefs/office/README.md). Decisions **D-151**, **D-152**. Worksession [`docs/worksessions/2026-08-27-desktop-room-overhaul.md`](worksessions/2026-08-27-desktop-room-overhaul.md).
 
-## Non-negotiable law (every slice)
+## Every slice
 
-- Phone `< 720` Draft C is frozen. Do not restyle [`src/OfficePhone.tsx`](../src/OfficePhone.tsx) except additive tablet CSS.
-- Tablet `720–1279` is scaled phone, never the cabin.
+- Phone `< 720` Draft C stays **mostly untouched**. Do not restyle [`src/OfficePhone.tsx`](../src/OfficePhone.tsx) except additive tablet CSS. If a desktop UX change would port cleanly to mobile, **stop and ask Jonathan** before touching phone.
+- Tablet `720–1279` is scaled phone, never the cabin, until Jonathan says otherwise.
 - Computer `≥ 1280` is the cabin. Default cut 1280 (12.9" iPad landscape is a named edge).
-- Commands and Confirm unchanged. Widgets never `postEntry`.
-- No CAD on weather glass. Cream Maine Coon only. Fraunces money, Figtree labels, `--paper` / `--pine` / `--copper`.
-- Not a 3D engine: HTML/CSS layers + hotspots. Not a SaaS card grid. Not a nested monitor.
-- D-082 warmth stays; the 900px column and “wide ≥720 is the office” are superseded.
+- Confirm is the money writer. Widgets do not `postEntry`. Well-integrated command work is allowed when Jonathan gates it; do not invent a second writer.
+- No CAD on weather glass. Fraunces money, Figtree labels. Hercules coat: cream Maine Coon until Section 11 picks against the stills.
+- Visual medium is a **locked-camera plate compositor** (empty room + object plates + HTML hits), not cream CSS cards, not Spline-as-the-room, not Unreal pixel streaming. `three.js` may overlay later; never dump `hercules.source.glb` on Add.
+- D-082 warmth stays as type/colour kernel; the 900px column and “wide ≥720 is the office” stay superseded.
 - Kill: if milk is a hunt or Post is covered, shrink furniture. Games never block Add.
 
 ## Three views

@@ -1,5 +1,25 @@
 # AI Task and Handoff Standard
 
+## D-152 photoreal stills + studio kit (2026-08-27)
+
+**Status:** Branch `cursor/computer-office-d151-605a`, draft PR #207. Risk: **Low** (docs + canon stills; no compositor yet). **Not shipped.** Empty-room pixels stay locked until Jonathan confirms the studio is installed.
+
+**Household outcome:** Computer Home’s pixel target is the six `hearth-canon-*.jpg` stills. Phone/tablet stay mostly untouched; stop and ask before porting desktop UX to mobile. Studio is free/one-time first ([`docs/ux/computer-office/STUDIO_KIT.md`](ux/computer-office/STUDIO_KIT.md)).
+
+**Budget delta (5):** `0` this packet — no command or Confirm change.
+
+**Engagement delta (3):** `0` this packet — no new kitchen pixels. Sets up +3 later when the empty room matches.
+
+**What changed:** Canon JPGs + README; D-152; `COMPUTER_OFFICE.md` retargeted from CSS cabin to plates; studio kit (core / extra / worth-considering subs). Dual Course in `STRATEGY.md` / roadmap §1.1 is unchanged; this packet does not add a “product law” page.
+
+**Verification:** Docs and stills only. No `pnpm` UI proof this packet. Do not treat PR #207’s CSS cabin as the look.
+
+**Uncertainty:** EmberGen is Windows/Linux only. Affinity perpetual availability can change at checkout. Hercules coat still deferred.
+
+**Data/environment:** Fictional stills in git (~3MB). No hosted schema, secrets, Production, or deploy.
+
+**Next owner:** Jonathan installs Core from the studio kit, then says the studio is installed. Then empty Home suite only.
+
 ## D-151 computer office night cabin (2026-08-27)
 
 **Status:** Branch `cursor/computer-office-d151-605a`, draft PR #207. Risk: **Medium** (UI/layout; games kitchen cosmetics; Commands unchanged). **Not shipped.**

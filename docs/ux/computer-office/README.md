@@ -1,15 +1,20 @@
-# Computer office locked frames (D-151)
+# Computer office stills
 
-Fictional demo CAD only. These PNGs are the pixel source of truth for the computer Home (`≥ 1280`). Do not treat them as household data.
+Fictional demo CAD only. These files are the pixel source of truth for computer Home (`≥ 1280`). Do not treat them as household data.
+
+**Current canon (photoreal first-person cabin):**
 
 | File | Use |
 |---|---|
-| `hearth-computer-night-cabin-full-desk.png` | Room + full-bottom desk geometry |
-| `hearth-desk-layout-tracker.png` | Tracker personality |
-| `hearth-desk-layout-household.png` | Household default |
-| `hearth-desk-layout-cpa.png` | CPA personality |
-| `hearth-desk-layout-play-afterschool.png` | Play chrome |
-| `hearth-desk-layout-play-fleet.png` | Kitchen Fleet |
-| `hearth-desk-layout-play-panes.png` | Pane Boxes |
+| `hearth-canon-tracker-sparse.jpg` | Tracker: wallet, month-net parchment, CAD pad, Mail |
+| `hearth-canon-household.jpg` | Household: trays, blotter, CAD, goals jar, Health bell, lamps |
+| `hearth-canon-cpa-dense.jpg` | CPA: blotter + seal, accounts, claims, mail box, wooden calc |
+| `hearth-canon-play-afterschool.jpg` | Play chrome: crayons, J/B board, mancala, clocks |
+| `hearth-canon-play-fleet.jpg` | Kitchen Fleet parchment + pieces |
+| `hearth-canon-play-boards.jpg` | Sill Four, tic-tac-toe, hangman |
 
-Canon: [`docs/COMPUTER_OFFICE.md`](../../COMPUTER_OFFICE.md).
+Studio install list (free / one-time / optional subs): [`STUDIO_KIT.md`](STUDIO_KIT.md). Program: [`docs/COMPUTER_OFFICE.md`](../../COMPUTER_OFFICE.md). Decision **D-152**.
+
+**Superseded generation** (earlier CSS-cabin mockups; keep for history, do not match pixels to these):
+
+`hearth-computer-night-cabin-full-desk.png`, `hearth-desk-layout-*.png`.
