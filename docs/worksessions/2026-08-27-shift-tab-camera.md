@@ -1,17 +1,17 @@
 # Hearth worksession — Shift tab camera (D-152 on D-153)
 
-- **Status:** OPEN — PR ready; Jonathan asked to finish without him (merge + kitchen publish)
+- **Status:** CLOSED; merged #217; kitchen live
 - **Opened:** 2026-08-27 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
-- **Branch:** `cursor/shift-tab-camera-6319`
-- **Baseline SHA:** `e50fb75625fa1ab48953abaaf338e1a7bd58c403` (`origin/main` after rebase)
-- **Head SHA:** (this commit)
+- **Branch:** `cursor/shift-tab-camera-6319` (merged)
+- **Baseline SHA:** `e50fb75625fa1ab48953abaaf338e1a7bd58c403`
+- **Head SHA:** merge `048e61910ad964b494c1115d64cd6eec39effb46`
 - **PR or issue:** [#217](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/217)
 - **Risk:** Medium (OCR already exists; new surface; Confirm still posts)
 - **Decision owner:** Jonathan (ordered camera on Shift page; get it done without him)
-- **Environment impact:** none on household rows; kitchen Worker publish follows merge to `main`
+- **Environment impact:** kitchen Worker publish from GitHub `main`; no household rows
 
 ## Household outcome
 
@@ -29,13 +29,9 @@ On **Shift → Today**, Bianca or Jonathan can photograph a tip sheet (or pick a
 
 **Facts**
 
-- Shift tab is live (D-153, #213). Punch on Today now clocks out in place (`clockOutStayOnShiftPage`); Home Timesheet still opens Add.
+- Shift tab is live (D-153, #213). Punch on Today clocks out in place (`clockOutStayOnShiftPage`); Home Timesheet still opens Add.
 - Camera + `WorkShiftFlow` live on Shift Today and Add (shared `ShiftReportScanBar`).
 - Demo kitchen job `Demo Bistro` exists for both MEM-001 (Bianca) and MEM-002 (Jonathan).
-
-**Inferences**
-
-- Jonathan wants the #208 camera on the Shift page, not a second OCR pipeline.
 
 ## Scope
 
@@ -62,6 +58,7 @@ On **Shift → Today**, Bianca or Jonathan can photograph a tip sheet (or pick a
 - [x] Add sheet still has the same camera
 - [x] Same-day retry stays a shift, not an expense pad
 - [x] Focused tests + `pnpm check` → **895 passed / 2 skipped**
+- [x] Kitchen Worker live `c942e55b`; bundle `index-Ce4ACG2v.js`
 
 ## Plan
 
@@ -70,14 +67,19 @@ On **Shift → Today**, Bianca or Jonathan can photograph a tip sheet (or pick a
 - [x] Bianca demo job
 - [x] Duplicate retry stays on `postWorkShift`
 - [x] Tests, auditors, handoff
+- [x] Merge #217 and kitchen deploy
 
 ## Evidence log
 
 - Focused: `pnpm exec vitest run test/shift-page-scan.test.ts test/shift-duplicate-retry.test.ts test/shift-report-draft.test.ts test/document-scan-worker.test.ts`
-- Full: `pnpm check` → **895 passed / 2 skipped**; `tsc` + vite build green; client chunk `index-DOj0PobS.js`
-- Books auditor: prior P1 (expense-pad retry) closed; **PASS WITH NOTES** (P3 helper alignment on Shift Add anyway — applied)
-- Privacy auditor: **PASS WITH NOTES** (warnings can still echo names on-device; Add prompt still says Shift → Today)
-- UX auditor: **PASS WITH NOTES** (pane-switch unmounts wizard step; chip 44px advisory)
+- Full: `pnpm check` → **895 passed / 2 skipped**
+- Books auditor: prior P1 (expense-pad retry) closed; **PASS WITH NOTES**
+- Privacy auditor: **PASS WITH NOTES**
+- UX auditor: **PASS WITH NOTES**
+- Merge: `048e619` via #217
+- Cloudflare Workers `33111839360` Deploy green; version `c942e55b-a53d-403e-9ab1-3c17c1f9957d`
+- Live bundle `index-Ce4ACG2v.js` contains Take shift-report photo / Choose tip sheet photo / Optional camera draft / Bianca demo job
+- Browser: Development, demo kitchen, Already off camera chips visible; no Confirm
 
 ## Decisions
 
@@ -85,8 +87,8 @@ Same-day Confirm on Shift stays on the tab. Add anyway retries `postWorkShift` e
 
 ## Remaining uncertainty
 
-OCR quality depends on model vision. Switching Today/Report/Jobs mid-flow unmounts wizard step (draft state survives). Preview hostname is not the kitchen.
+OCR quality depends on model vision. Switching Today/Report/Jobs mid-flow unmounts wizard step (draft state survives).
 
 ## Handoff
 
-PR #217, not yet merged. Next: merge → GitHub `main` Cloudflare Workers deploy → hard-refresh kitchen, Development demo, Bianca, Shift → Already off? → camera chips. Do not Confirm unless intending a fictional demo post.
+Merged and kitchen-live. Next owner: Jonathan — hard-refresh the kitchen, Development, Shift → Already off?, photograph a tip sheet if you want. Confirm still posts. Not Production books.
