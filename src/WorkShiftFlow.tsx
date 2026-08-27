@@ -109,7 +109,7 @@ export function WorkShiftFlow({
     return (
       <div className="work-shift-empty">
         <h2>Add a job first</h2>
-        <p className="muted">A job supplies the wage, break, tip-out, sales, and payday rules. Open More → Jobs, then come back to Timesheet.</p>
+        <p className="muted">A job supplies the wage, break, tip-out, sales, and payday rules. Open Shift → Jobs, then come back to Timesheet.</p>
       </div>
     );
   }

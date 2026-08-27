@@ -64,6 +64,7 @@ Only the currently open or just-closed worksession belongs here. Durable history
 
 | Worksession | State | Scope | Output |
 |---|---|---|---|
+| [2026-08-27 Shift tab](worksessions/2026-08-27-shift-tab.md) | **ACTIVE** | First-class Shift tab matching locked 390px mocks | D-152; punch unchanged; More no longer hosts Jobs |
 | [2026-08-27 Supabase Preview 016 history](worksessions/2026-08-27-supabase-preview-016-history.md) | **ACTIVE** | GitHub Preview must match local 016 filename | History row retagged; no schema re-apply |
 | [2026-08-27 First-create false conflict](worksessions/2026-08-27-first-create-false-conflict.md) | **CLOSED; merged #210** | Retry after create must not say another phone | Live Worker `cc694eee`; Retry now on stuck household |
 | [2026-08-27 Invite owner first create](worksessions/2026-08-27-invite-owner-first-create.md) | **CLOSED; merged #209** | First cloud write creates the owner so Google invite works | D-149; live Worker `10b7de13`; follow-up false-conflict branch |

@@ -49,7 +49,7 @@ Home stops being a scroll of cards and becomes **the office**: one desk, fourtee
                        │   │TIMESH│ │JARS│ │CARD│        │
                        │   └──────┘ └────┘ └────┘        │
                        ├─────────────────────────────────┤
-                       │  Home  Cal  (+)  Plan  Books  ⋯ │
+                       │  Home  Cal  Shift (+) Plan Books ⋯ │
                        └─────────────────────────────────┘
                                   │
    DEEP                           ▼
@@ -555,7 +555,7 @@ The old line “the office does not become a desktop app at 1400px” is **withd
 Development snapshot, demo kitchen. Hand this to Bianca unedited.
 
 **App/website:** Hearth — kitchen site or `pnpm dev` → `http://localhost:5173`
-**Tab/page:** Home (the office). Calendar / Plan / Books / More are cabinets.
+**Tab/page:** Home (the office). Shift / Calendar / Plan / Books / More are cabinets.
 
 **Instructions:**
 

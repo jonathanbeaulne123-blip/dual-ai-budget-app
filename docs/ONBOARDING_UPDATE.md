@@ -67,7 +67,7 @@ Legend:
 | Household / Personal ledger buttons | Switch the visible ledger scope. | **Feature.** Explain Shared versus Bianca's Personal clearly and honestly. |
 | Multi-household ledger selector | Switches among cloud/local replicas. | **Context** after a second membership exists. |
 | Development pill | Shows the active environment. | **Spotlight** briefly: September is a trial; Production remains separate. |
-| Bottom navigation: Home, Calendar, Add, Plan, Books, More | Main phone routes. | **Feature.** Teach the map once, then navigate by doing. |
+| Bottom navigation: Home, Cal, Shift, Add, Plan, Books, More | Main phone routes (D-152). | **Feature.** Teach the map once, then navigate by doing. |
 | Command chip/banner/toast actions | Shows saving, sync, conflict, recovery, and undo states. | **Context.** Explain when a real state appears; never manufacture a success state. |
 
 ### Home — phone

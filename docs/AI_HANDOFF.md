@@ -1,5 +1,23 @@
 # AI Task and Handoff Standard
 
+## Shift tab (D-152) (2026-08-27)
+
+**Status:** Branch `cursor/shift-tab-mobile-6319` off `origin/main` `@93df0ec`. Risk: **Medium**. Not merged, not deployed.
+
+**Household outcome:** Bianca and Jonathan open **Shift** from the phone bar. Punch, last shifts, Jobs, compressed report, and Hercules Shift Oracle glances live there. Add stays centered. Confirm still posts.
+
+**Budget delta (5):** `+1`
+
+**Engagement delta (3):** `+2`
+
+**What changed:** Nav is `Home · Cal · Shift · [+] · Plan · Books · More`. `WorkShiftPage` hosts Today / Report / Jobs. More no longer mounts Jobs / history / report. Home Timesheet stays. Projections are copper-badged and never post.
+
+**Verification:** (in progress — focused tests then `pnpm check`)
+
+**Data/environment:** Client/docs only. Visual proof uses fictional Development demo. No Production, schema, secrets, or deploy.
+
+**Next owner:** Jonathan — review the draft PR. Do not merge until visual proof at 320 / 390 / 720 / ~1100.
+
 ## Supabase Preview history matches 016 (D-151) (2026-08-27)
 
 **Status:** Branch `cursor/supabase-preview-016-history-5958`. Risk: **Low** (migration *history* metadata only; money meaning unchanged). Hosted `supabase_migrations.schema_migrations` version retagged `20260827072847` → `016`. Function not re-applied. No household rows.

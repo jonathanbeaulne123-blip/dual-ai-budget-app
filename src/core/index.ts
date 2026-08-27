@@ -71,6 +71,7 @@ export * from "./herculesPage.ts";
 export * from "./sillOverview.ts";
 export * from "./calendarIntent.ts";
 export * from "./analogClock.ts";
+export * from "./shiftGlance.ts";
 export * from "./presetIcons.ts";
 export * from "./deskGames.ts";
 export * from "./allocate.ts";

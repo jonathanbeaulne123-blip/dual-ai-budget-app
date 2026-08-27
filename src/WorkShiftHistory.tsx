@@ -1,22 +1,26 @@
 import { useState } from "react";
 import { formatCad, formatDateLabel, workShiftIsReversed, workShiftTransactionIds, type Household, type Shift } from "./core/index.ts";
 
-export function WorkShiftHistoryCard({ household, memberId, busy, onCorrect }: {
+export function WorkShiftHistoryCard({ household, memberId, busy, onCorrect, initialVisible = 5, title = "Shifts worked", intro }: {
   household: Household;
   memberId: string;
   busy: boolean;
   onCorrect: (shift: Shift, transactionId: string) => void;
+  initialVisible?: number;
+  title?: string;
+  intro?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const peek = Math.max(1, initialVisible);
   const shifts = [...household.shifts]
     .filter((shift) => shift.memberId === memberId)
     .sort((left, right) => right.date.localeCompare(left.date) || right.createdAt.localeCompare(left.createdAt))
     .slice(0, 40);
-  const visible = expanded ? shifts : shifts.slice(0, 5);
+  const visible = expanded ? shifts : shifts.slice(0, peek);
   return (
     <section className="card work-history">
-      <header><h2>Shifts worked</h2><span className="pill">{shifts.length || "none"}</span></header>
-      <p className="muted">Confirmed shifts are locked. Correct replaces a shift while keeping the balanced reversal underneath.</p>
+      <header><h2>{title}</h2><span className="pill">{shifts.length || "none"}</span></header>
+      <p className="muted">{intro ?? "Confirmed shifts are locked. Correct replaces a shift while keeping the balanced reversal underneath."}</p>
       {shifts.length === 0 ? <p>No confirmed shifts yet. Timesheet is ready when you are.</p> : visible.map((shift) => {
         const job = household.workJobs.find((row) => row.id === shift.jobId);
         const role = job?.roles.find((row) => row.id === shift.roleId);
@@ -33,7 +37,7 @@ export function WorkShiftHistoryCard({ household, memberId, busy, onCorrect }: {
           </article>
         );
       })}
-      {shifts.length > 5 && <button type="button" className="chip work-history-expand" onClick={() => setExpanded((open) => !open)}>{expanded ? "Show recent 5" : `Show all ${shifts.length}`}</button>}
+      {shifts.length > peek && <button type="button" className="chip work-history-expand" onClick={() => setExpanded((open) => !open)}>{expanded ? `Show recent ${peek}` : `Show all ${shifts.length}`}</button>}
     </section>
   );
 }

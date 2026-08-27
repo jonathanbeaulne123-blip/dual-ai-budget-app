@@ -78,6 +78,23 @@ export function clockArcPath(startAngle: number, endAngle: number, cx = 50, cy =
   return `M ${from.x.toFixed(2)} ${from.y.toFixed(2)} A ${radius} ${radius} 0 ${large} 1 ${to.x.toFixed(2)} ${to.y.toFixed(2)}`;
 }
 
+/** Typical-night whisker: clock-in plus cadence hours. Never a posted span. */
+export const PREVIEW_ARC_RADIUS = 37;
+
+export function previewClockSpan(startedAt: string, hours: number): ShiftClockSpan | null {
+  if (!(hours > 0)) return null;
+  const startMs = Date.parse(startedAt);
+  if (!Number.isFinite(startMs)) return null;
+  const endedAt = new Date(startMs + hours * 3_600_000).toISOString();
+  return {
+    startedAt,
+    endedAt,
+    live: false,
+    startAngle: clockAngleFromInstant(startedAt),
+    endAngle: clockAngleFromInstant(endedAt),
+  };
+}
+
 /**
  * Live punch always draws. A finished shift draws only when it started that Toronto day.
  * New days with no punch are a plain clock.

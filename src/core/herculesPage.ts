@@ -7,6 +7,7 @@ import { buildMonthBoard, isOutgoingBill } from "./board.ts";
 import { activeOpenShift, previewHoursLabel } from "./shiftClock.ts";
 import { herculesPageBrief, kettlePhase, type HearthTab } from "./hercules.ts";
 import { leftoverProjection } from "./sitDown.ts";
+import { shiftFloorOracle } from "./shiftGlance.ts";
 import type { Household } from "./types.ts";
 import type { LedgerView } from "./types.ts";
 import type { HerculesNumberSource } from "./herculesProvenance.ts";
@@ -84,6 +85,23 @@ export function herculesPageSurface(
       chips: ["Which bill?", "What's owed?", "Start this goal"],
       placeholder: "ask about a date…",
       fact: visitFact(household, today) ?? billFact(household, today),
+    };
+  }
+
+  if (tab === "shift") {
+    const shiftPunch = activeOpenShift(household.kitchen, context.memberId);
+    const oracle = shiftPunch ? null : shiftFloorOracle(household, today, context.memberId);
+    return {
+      tab,
+      spoken,
+      lesson: "Hours are a preview until Confirm. Oracle never posts.",
+      chips: ["Tonight?", "Protect or chase?", "Tax milk?"],
+      placeholder: "ask about tonight…",
+      fact: shiftPunch
+        ? { label: "On the clock", value: previewHoursLabel(shiftPunch.startedAt, now.getTime()), source: { route: "shift", view: context.view, surface: "timesheet", memberId: context.memberId, label: "Open Shift" } }
+        : oracle
+          ? { label: "Floor · projection", value: formatCad(oracle.p10Cents), source: { route: "shift", view: context.view, label: "Open Shift" } }
+          : { label: "Hour", value: `${hourInToronto(now)}h ${kettlePhase(today, hourInToronto(now))}` },
     };
   }
 

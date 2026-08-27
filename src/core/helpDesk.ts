@@ -125,6 +125,7 @@ export function helpCommands(input: {
       go: label === "Health" || label === "What broke?" ? "more"
         : label === "Sit-down?" || label === "Leftover?" ? "plan"
           : label === "Which bill?" || label === "Calendar" ? "calendar"
+            : label === "Tonight?" || label === "Protect or chase?" || label === "Tax milk?" ? "shift"
             : undefined,
     });
   }

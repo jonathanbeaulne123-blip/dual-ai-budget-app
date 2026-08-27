@@ -241,10 +241,8 @@ import { inviteReasonMessage, redeemHouseholdInvite, bindGoogleMemberships, leav
 import { BooksPage } from "./Books.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
 import type { RepeatingDraft } from "./RepeatingForm.tsx";
-import { WorkJobsCard } from "./WorkJobs.tsx";
 import { WorkShiftFlow } from "./WorkShiftFlow.tsx";
-import { WorkShiftHistoryCard } from "./WorkShiftHistory.tsx";
-import { WorkReportCard } from "./WorkReport.tsx";
+import { WorkShiftPage } from "./WorkShiftPage.tsx";
 import { DuePreviewSheet } from "./DuePreviewSheet.tsx";
 import {
   renderCommandChrome,
@@ -301,7 +299,7 @@ import {
 import type { DiscoveredHousehold } from "./ledger/supabase.ts";
 import type { PostWorkShiftInput } from "./core/index.ts";
 
-type Tab = "home" | "plan" | "calendar" | "ledger" | "more";
+type Tab = "home" | "plan" | "calendar" | "shift" | "ledger" | "more";
 type AddMode = "expense" | "income" | "shift" | "transfer";
 type WelcomeGoogleIntent = "create" | "login";
 type WelcomeIdentity = ContinuityIdentity & { displayName: string; grantedScopes: string[] };
@@ -3155,6 +3153,28 @@ export function App() {
         />
       )}
 
+      {tab === "shift" && (
+        <WorkShiftPage
+          household={household}
+          memberId={session.memberId}
+          memberName={household.members.find((member) => member.id === session.memberId)?.name ?? "You"}
+          today={today}
+          environment={environment}
+          busy={busy}
+          onClockIn={() => { void runKitchen((current) => clockInShift(current, { memberId: actorId })); }}
+          onAbandon={() => { void runKitchen((current) => abandonOpenShift(current, { memberId: actorId })); }}
+          onStartBreak={(kind) => { void runKitchen((current) => startShiftBreak(current, { memberId: actorId, kind })); }}
+          onEndBreak={() => { void runKitchen((current) => endShiftBreak(current, { memberId: actorId })); }}
+          onChooseTimeline={(keepId) => { void runKitchen((current) => chooseOpenShiftTimeline(current, { memberId: actorId, keepId })); }}
+          onSignOut={beginSignOut}
+          onFinished={beginFinishedShift}
+          onCorrect={(shift, transactionId) => setGuard({ kind: "correctShift", shift, transactionId })}
+          onAskSaveJob={(job, summary) => setGuard({ kind: "saveWorkJob", job, summary })}
+          onArchiveJob={(jobId) => { void run((current) => archiveWorkJob(current, jobId)); }}
+          onOpenCalendar={() => goTab("calendar")}
+        />
+      )}
+
       {tab === "ledger" && (
         <BooksPage
           household={household}
@@ -3345,21 +3365,6 @@ export function App() {
               }).catch((caught) => setError(caught instanceof Error ? caught.message : String(caught)));
             }}
           />
-          <WorkJobsCard
-            household={household}
-            memberId={session.memberId}
-            today={today}
-            busy={busy}
-            onAskSave={(job, summary) => setGuard({ kind: "saveWorkJob", job, summary })}
-            onArchive={(jobId) => { void run((current) => archiveWorkJob(current, jobId)); }}
-          />
-          <WorkShiftHistoryCard
-            household={household}
-            memberId={session.memberId}
-            busy={busy}
-            onCorrect={(shift, transactionId) => setGuard({ kind: "correctShift", shift, transactionId })}
-          />
-          <WorkReportCard household={household} memberId={session.memberId} today={today} />
           <section className="card">
             <header><h2>This phone</h2></header>
             <p className="muted">
@@ -4550,6 +4555,7 @@ export function App() {
               { label: "Add shift", run: () => openAddFor(null, "shift") },
               { label: "Move money", run: () => openAddFor(null, "transfer") },
               { label: "Calendar", run: () => goTab("calendar") },
+              { label: "Shift", run: () => goTab("shift") },
               { label: "Plan", run: () => goTab("plan") },
               { label: "Books", run: () => goTab("ledger") },
               { label: "Health", run: () => goTab("more") },
@@ -4635,9 +4641,18 @@ export function App() {
         <button
           className={tab === "calendar" ? "active" : ""}
           aria-current={tab === "calendar" ? "page" : undefined}
+          aria-label="Calendar"
           onClick={() => goTab("calendar")}
         >
-          Calendar
+          Cal
+        </button>
+        <button
+          className={tab === "shift" ? "active" : ""}
+          aria-current={tab === "shift" ? "page" : undefined}
+          aria-label="Shifts"
+          onClick={() => goTab("shift")}
+        >
+          Shift
         </button>
         <button className="fab" type="button" aria-label="Add money" onClick={() => openAddFor(null)}>+</button>
         <button
