@@ -138,6 +138,12 @@
   box-shadow: inset 0 -8px 0 rgba(0, 0, 0, 0.18);
 }
 
+.office-room-shelves button:focus-visible,
+.office-room-sofa:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 3px;
+}
+
 .office-room-sofa {
   position: absolute;
   right: 6%;

@@ -330,7 +330,10 @@ export function Office({
   const lampLit = !lampIsDark(findings);
   const blotter = blotterFacts(dashboard, opinion, findings.length);
   const sill = useMemo(() => sillOverview(household, dashboard, today), [household, dashboard, today]);
-  const order = promoteRail(visibleInstruments(layout), room.promoted, lampLit);
+  const order = useMemo(
+    () => promoteRail(visibleInstruments(layout), room.promoted, lampLit),
+    [layout, room.promoted, lampLit],
+  );
   const inert = adding;
   const parked = layout.items.filter((item) => item.hidden).map((item) => item.id);
   const packed = useMemo(
@@ -360,7 +363,8 @@ export function Office({
     const viewportFloor = typeof window !== "undefined"
       ? Math.max(680, window.innerHeight - 260)
       : 680;
-    setCanvasHeight(Math.max(maxBottom + DESK_GUTTER * 2, viewportFloor));
+    const nextHeight = Math.max(maxBottom + DESK_GUTTER * 2, viewportFloor);
+    setCanvasHeight((current) => (current === nextHeight ? current : nextHeight));
   }, [breakpoint, order, layout.items, layout.expanded, packed]);
 
   function cycleSize(id: InstrumentId) {
@@ -925,7 +929,7 @@ export function Office({
     >
       <div className={`office-room-sky is-${reading.glass}`} aria-hidden="true" />
       <div className="office-room-fireplace" aria-hidden="true" />
-      <nav className="office-room-shelves" aria-label="Bookshelves">
+      <nav className="office-room-shelves" aria-label="Room destinations" {...(inert ? { inert: true } : {})}>
         <button type="button" onClick={() => onGo("ledger")}>Books</button>
         <button type="button" onClick={() => onGo("calendar")}>Calendar</button>
         <button type="button" onClick={() => onGo("ledger")}>Accounts</button>
@@ -937,6 +941,7 @@ export function Office({
         role="button"
         tabIndex={0}
         aria-label="Hercules nest. How can I help."
+        {...(inert ? { inert: true } : {})}
         onClick={() => {
           window.dispatchEvent(new CustomEvent("hearth:hercules-help"));
         }}
@@ -955,7 +960,7 @@ export function Office({
           onToggle={cycleWindow}
         />
       </div>
-      <div className="office-room-desk">
+      <div className="office-room-desk" {...(inert ? { inert: true } : {})}>
         {layout.personality === "play" && (
           <>
             <span className="play-crayon play-crayon-a" aria-hidden="true" />

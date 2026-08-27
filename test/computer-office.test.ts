@@ -127,3 +127,16 @@ describe("D-151 kitchen games", () => {
     expect(result.household.kitchen.games.panes.h[0]).toBe("MEM-001");
   });
 });
+
+describe("D-151 computer room a11y", () => {
+  it("marks desk, shelves, and sofa inert while adding, and keeps a pine focus ring", () => {
+    const office = readFileSync("src/Office.tsx", "utf8");
+    expect(office).toMatch(/aria-label="Room destinations"/);
+    expect(office).toMatch(/office-room-desk" \{\.\.\.\(inert \? \{ inert: true \}/);
+    const css = readFileSync("src/office-room.css", "utf8");
+    expect(css).toMatch(/office-room-shelves button:focus-visible/);
+    expect(css).toMatch(/office-room-sofa:focus-visible/);
+    const instrument = readFileSync("src/widgets/Instrument.tsx", "utf8");
+    expect(instrument).toMatch(/inert \? \{ inert: true \}/);
+  });
+});

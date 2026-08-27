@@ -63,6 +63,7 @@ export function Instrument({
       data-size={size}
       data-shell={expanded ? (shell ?? "card") : undefined}
       style={{ ["--tilt" as string]: `${rotation}deg` }}
+      {...(inert ? { inert: true } : {})}
     >
       {chips}
       <button

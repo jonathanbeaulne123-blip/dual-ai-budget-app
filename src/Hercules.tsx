@@ -510,10 +510,11 @@ export function HerculesPresence({
         setMotion(next.pose);
         return;
       }
-      setPos((current) => automaticPoint({
-        x: current.x,
-        y: Math.max(6, item.rect.y - CAT + 12),
-      }));
+      setPos((current) => {
+        const y = Math.max(6, item.rect.y - CAT + 12);
+        if (Math.abs(current.y - y) < 1) return current;
+        return automaticPoint({ x: current.x, y });
+      });
     });
   }, [pinned, adding, open, look.view.mood, today]);
 
