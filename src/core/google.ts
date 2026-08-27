@@ -167,6 +167,39 @@ export type GoogleIdentitySelector = {
  * subject is authoritative. Email is only a legacy fallback when the stored
  * link has no subject yet; it must never override a different subject.
  */
+/** Overlay membership-bound Google identity without posting a household command. */
+export function overlayGoogleLinkFromMembership(
+  household: Household,
+  input: { memberId: string; email: string; subject: string; displayName?: string },
+): Household {
+  const email = normalizeGoogleEmail(input.email);
+  if (!email || !email.includes("@")) return household;
+  const member = household.members.find((item) => item.id === input.memberId && item.active);
+  if (!member) return household;
+  const subject = input.subject.trim();
+  const existing = findActiveGoogleLink(household, input.memberId)
+    ?? household.google.links.find((link) => link.memberId === input.memberId);
+  const at = existing?.linkedAt || existing?.updatedAt || new Date().toISOString();
+  const link = shapeGoogleLink({
+    memberId: input.memberId,
+    email,
+    subject: subject || existing?.subject || "",
+    displayName: (input.displayName ?? existing?.displayName ?? member.name).trim(),
+    linkedAt: existing?.linkedAt || at,
+    lastConfirmedAt: at,
+    grantedScopes: existing?.grantedScopes ?? [],
+    updatedAt: at,
+    active: true,
+  });
+  return {
+    ...household,
+    google: shapeGoogle({
+      ...household.google,
+      links: [...household.google.links.filter((item) => item.memberId !== input.memberId), link],
+    }),
+  };
+}
+
 export function memberIdForGoogleIdentity(
   household: Household,
   identity: GoogleIdentitySelector,

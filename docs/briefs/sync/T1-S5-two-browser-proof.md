@@ -12,7 +12,7 @@ Prove Tier 1 on disposable Development: two authenticated contexts, A posts shar
 ## Baseline
 
 - `test/hosted-cas-two-client.test.ts` — deterministic harness
-- Manual two-browser not yet recorded
+- Manual two-browser **passed** 2026-08-27 — [`SYNC_REALTIME_SMOKE.md`](../../SYNC_REALTIME_SMOKE.md)
 
 ## Allowed scope
 

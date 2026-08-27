@@ -227,7 +227,7 @@ import { inviteFromLocation } from "./core/invite.ts";
 import { authInviteFromLocation, authInviteTokenFromText, isAuthInviteToken, savePendingAuthInvite, loadPendingAuthInvite, clearPendingAuthInvite } from "./core/authInvite.ts";
 import { PairingCard, WelcomeJoin } from "./Pairing.tsx";
 import { WelcomeQrScanner } from "./WelcomeQrScanner.tsx";
-import { inviteReasonMessage, redeemHouseholdInvite, bindGoogleMemberships } from "./ledger/householdInvites.ts";
+import { inviteReasonMessage, redeemHouseholdInvite, bindGoogleMemberships, leaveOrDeleteHousehold } from "./ledger/householdInvites.ts";
 import { BooksPage } from "./Books.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
 import type { RepeatingDraft } from "./RepeatingForm.tsx";
@@ -313,7 +313,8 @@ type Guard =
   | { kind: "acceptVisitGoal"; appointmentId: string; summary: string }
   | { kind: "acceptPreset"; key: string; summary: string }
   | { kind: "addPreset"; summary: string }
-  | { kind: "restorePoint"; pointId: string; summary: string };
+  | { kind: "restorePoint"; pointId: string; summary: string }
+  | { kind: "delete-household"; householdId: string; name: string; memberId: string; role: "owner" | "member" | null };
 
 const emptyForm = {
   date: todayKey(),
@@ -1803,6 +1804,52 @@ export function App() {
     setError("");
   }
 
+  async function removeHouseholdFromDevice(input: {
+    householdId: string;
+    memberId: string;
+    role: "owner" | "member" | null;
+    name: string;
+  }): Promise<void> {
+    setBusy(true);
+    try {
+      const authSession = await ensureSupabaseSession(environment);
+      if (!authSession) {
+        throw new Error("Continue with Google before deleting a household.");
+      }
+      const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
+      const result = await leaveOrDeleteHousehold({
+        environment,
+        householdId: input.householdId,
+        role: input.role,
+        config: cloudConfig,
+      });
+      if (!result.ok) {
+        throw new Error(inviteReasonMessage(result.reason));
+      }
+      clearSyncAnchor(environment, input.householdId);
+      clearContinuityOutboxForHousehold(environment, input.householdId);
+      if (session?.memberId) {
+        clearUndoHistory(environment, input.householdId, session.memberId);
+        disconnectGoogle(environment, session.memberId);
+      }
+      await clearHousehold(environment, input.householdId);
+      setDiscoveredLedgers((current) => current.filter((item) => item.household.householdId !== input.householdId));
+      if (household?.householdId === input.householdId) {
+        setHousehold(null);
+        setSession(null);
+        setHistory([]);
+        setPersonalReplica(null);
+        setWelcomeMode("home");
+      }
+      setGuard(null);
+      setError("");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (booting) {
     return (
       <>
@@ -1977,16 +2024,56 @@ export function App() {
                   {discoveredLedgers.map((found) => {
                     const member = found.household.members.find((item) => item.id === found.memberId);
                     return (
-                      <button
-                        key={found.household.householdId}
-                        className="primary"
-                        disabled={busy}
-                        onClick={() => void openDiscoveredLedger(found).catch((caught) => {
-                          setError(caught instanceof Error ? caught.message : String(caught));
-                        })}
-                      >
-                        {found.household.name} · {member?.name ?? "me"}
-                      </button>
+                      <div key={found.household.householdId} className="welcome-household-row">
+                        <button
+                          className="primary"
+                          disabled={busy}
+                          onClick={() => void openDiscoveredLedger(found).catch((caught) => {
+                            setError(caught instanceof Error ? caught.message : String(caught));
+                          })}
+                        >
+                          {found.household.name} · {member?.name ?? "me"}
+                        </button>
+                        {environment === "development" && (
+                          <button
+                            className="danger ghost"
+                            disabled={busy}
+                            onClick={() => {
+                              void (async () => {
+                                setBusy(true);
+                                try {
+                                  const authSession = await ensureSupabaseSession(environment);
+                                  if (!authSession) {
+                                    throw new Error("Continue with Google before deleting a household.");
+                                  }
+                                  const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
+                                  const identity = { email: authSession.email, subject: authSession.googleSubject };
+                                  const role = await fetchContinuityMembershipRole({
+                                    householdId: found.household.householdId,
+                                    memberId: found.memberId,
+                                    identity,
+                                    environment,
+                                    config: cloudConfig,
+                                  });
+                                  setGuard({
+                                    kind: "delete-household",
+                                    householdId: found.household.householdId,
+                                    name: found.household.name,
+                                    memberId: found.memberId,
+                                    role,
+                                  });
+                                } catch (caught) {
+                                  setError(caught instanceof Error ? caught.message : String(caught));
+                                } finally {
+                                  setBusy(false);
+                                }
+                              })();
+                            }}
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
                     );
                   })}
                   <button className="ghost" disabled={busy} onClick={() => setDiscoveredLedgers([])}>Back</button>
@@ -2891,6 +2978,46 @@ export function App() {
                 Erase Development data
               </button>
             )}
+            {environment === "development" && session && (
+              <button
+                className="danger"
+                style={{ width: "100%", marginTop: 8 }}
+                disabled={busy}
+                onClick={() => {
+                  void (async () => {
+                    setBusy(true);
+                    try {
+                      const authSession = await ensureSupabaseSession(environment);
+                      if (!authSession) {
+                        throw new Error("Continue with Google before deleting a household.");
+                      }
+                      const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
+                      const identity = { email: authSession.email, subject: authSession.googleSubject };
+                      const role = await fetchContinuityMembershipRole({
+                        householdId: household.householdId,
+                        memberId: session.memberId,
+                        identity,
+                        environment,
+                        config: cloudConfig,
+                      });
+                      setGuard({
+                        kind: "delete-household",
+                        householdId: household.householdId,
+                        name: household.name,
+                        memberId: session.memberId,
+                        role,
+                      });
+                    } catch (caught) {
+                      setError(caught instanceof Error ? caught.message : String(caught));
+                    } finally {
+                      setBusy(false);
+                    }
+                  })();
+                }}
+              >
+                Delete this Development household
+              </button>
+            )}
           </section>
           <AddCategoryForm household={household} onSave={(next, token) => persist(next, token)} />
         </>
@@ -3436,6 +3563,22 @@ export function App() {
                 setBusy(false);
               }
             })();
+          }}
+        />
+      )}
+      {guard?.kind === "delete-household" && (
+        <ConfirmSheet
+          title={guard.role === "owner" ? "Delete this Development household?" : "Leave this household?"}
+          body={guard.role === "owner"
+            ? `This permanently deletes ${guard.name} from the disposable Development cloud and removes its local copy from this phone.`
+            : `This removes your membership from ${guard.name} and clears its local copy from this phone. The owner's cloud household stays.`}
+          extra="Requires migration 015 in Supabase for cloud delete/leave. Production households cannot be deleted here."
+          confirmLabel={guard.role === "owner" ? "Delete household" : "Leave household"}
+          danger
+          busy={busy}
+          onCancel={() => setGuard(null)}
+          onConfirm={() => {
+            void removeHouseholdFromDevice(guard);
           }}
         />
       )}

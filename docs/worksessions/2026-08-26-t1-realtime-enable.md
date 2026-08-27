@@ -1,5 +1,7 @@
 # Worksession — T1 Realtime enablement (Migration 014 + flag)
 
+- **Status:** CLOSED — 014 applied; two-phone smoke passed 2026-08-27 ([`SYNC_REALTIME_SMOKE.md`](../SYNC_REALTIME_SMOKE.md))
+
 **Date:** 2026-08-26  
 **Branch:** `cursor/t1-realtime-enable-7270`  
 **Risk:** Medium — hosted Realtime on Development only; RLS still gates websocket delivery.
@@ -59,4 +61,4 @@ WHERE pubname = 'supabase_realtime'
 
 ## Next owner
 
-Jonathan — merge PR, apply 014, run two-phone smoke. Then T1-S4 (coordinator) and T1-S5 (latency harness).
+T1-S5 harness merge (#179); G6 trust review; T2-S1 rebase after Tier 1 gates close.

@@ -32,6 +32,10 @@ export type RedeemInviteResult =
 
 export type RevokeMemberResult = { ok: true } | { ok: false; reason: string };
 
+export type LeaveHouseholdResult =
+  | { ok: true; mode: "leave" | "delete"; householdId: string }
+  | { ok: false; reason: string };
+
 export type BindMembershipsResult =
   | { ok: true; bound: number; googleSubject: string; googleEmail: string }
   | { ok: false; reason: string };
@@ -106,6 +110,12 @@ export function inviteReasonMessage(reason: string): string {
       return "Could not revoke that member.";
     case "bad-kind":
       return "Invite must be email or QR.";
+    case "production-blocked":
+      return "Production households cannot be deleted from the kitchen.";
+    case "not-member":
+      return "You are not an active member of that household.";
+    case "delete-rpc-missing":
+      return "Delete household needs migration 015 pasted in the Supabase SQL Editor.";
     default:
       return reason ? `Invite failed (${reason}).` : "Invite failed.";
   }
@@ -206,6 +216,47 @@ export async function revokeHouseholdMember(input: {
     return { ok: false, reason: String(body.reason || "revoke-failed") };
   }
   return { ok: true };
+}
+
+/** Leave a household as a member, or delete it entirely when owner (Development only). */
+export async function leaveOrDeleteHousehold(input: {
+  environment: Environment;
+  householdId: string;
+  role: "owner" | "member" | null;
+  config?: SupabaseConfig | null;
+}): Promise<LeaveHouseholdResult> {
+  const config = input.config ?? readSupabaseConfig();
+  if (!config?.accessToken) {
+    return { ok: false, reason: "unauthenticated" };
+  }
+  if (!input.role) {
+    return { ok: false, reason: "not-member" };
+  }
+  const rpcName = input.role === "owner" && input.environment === "development"
+    ? "hearth_delete_development_household"
+    : "hearth_leave_household";
+  const args = rpcName === "hearth_delete_development_household"
+    ? { p_household_id: input.householdId }
+    : { p_environment: input.environment, p_household_id: input.householdId };
+  const result = await rpc(config, rpcName, args);
+  if (!result.ok) {
+    const message = messageOf(result.body);
+    if (/could not find|schema cache|404|PGRST202/i.test(message)) {
+      return { ok: false, reason: "delete-rpc-missing" };
+    }
+    return { ok: false, reason: message };
+  }
+  const body = asObject(result.body);
+  if (!body) return { ok: false, reason: "invalid-response" };
+  if (body.ok !== true) {
+    return { ok: false, reason: String(body.reason || "delete-failed") };
+  }
+  const mode = body.mode === "delete" ? "delete" : "leave";
+  return {
+    ok: true,
+    mode,
+    householdId: String(body.household_id || input.householdId),
+  };
 }
 
 /** Bind caller's Google identity onto matching continuity_memberships (migration 010). */
