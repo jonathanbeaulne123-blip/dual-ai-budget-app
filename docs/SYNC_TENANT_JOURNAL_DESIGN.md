@@ -69,12 +69,17 @@ journal_lines
   UNIQUE (environment, household_id, entry_id, line_no)
   FOREIGN KEY (environment, household_id, entry_id)
     REFERENCES journal_entries (environment, household_id, id)
+  FOREIGN KEY (environment, household_id, account_id)
+    REFERENCES chart_accounts (environment, household_id, id)
+  -- every money-graph FK carries the tenant prefix (never bare REFERENCES chart_accounts(id))
 
 source_transactions
   PRIMARY KEY (environment, household_id, id)
   -- id remains TXN-… / SHF-… as today
+  -- inbound FKs from lines/shifts similarly tenant-scoped
 ```
 
+Carry forward 001 money CHECKs (Toronto `date_key`, non-negative exclusive debit/credit, CAD cents) under the new composite keys.
 ### 3.2 Catalog (minimum for rebuild)
 
 ```text

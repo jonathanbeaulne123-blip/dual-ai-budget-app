@@ -14,7 +14,9 @@
 
 **Note:** There is **no T3-S5** — Tier 3 ended at T3-S4. This slice is the next sync brief (T4-S1).
 
-**Verification:** Design acceptance checklist in the doc; books-auditor + ai-architect on the design; `pnpm check` unchanged expectation (docs-only).
+**Verification:** Design acceptance checklist in the doc; books-auditor **PASS WITH NOTES** (P1 FK graph + rebuild fail-closed folded into design); ai-architect **PASS WITH NOTES** (Q1–Q3 closures recorded). Docs-only — no `pnpm check` delta required.
+
+**Auditors:** books + architect notes incorporated in follow-up commit on this branch.
 
 **Data/environment:** none — no schema, secrets, Production, or deploy.
 
