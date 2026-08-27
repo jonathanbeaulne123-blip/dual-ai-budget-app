@@ -2,7 +2,7 @@
 
 ## Shift tab (D-153) (2026-08-27)
 
-**Status:** Branch `cursor/shift-tab-mobile-6319` merging onto `main` per Jonathan (preview was perfect). Draft PR [#213](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/213). Risk: **Medium**. Numbered **D-153** because `main` already used **D-152** for tip covariates (#208). Not live until merge + kitchen Worker verify.
+**Status:** Merged via [#213](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/213) onto `main` (`1e12d32`). Kitchen Worker **live** version `5b2b2b47-d996-427c-b3bf-61a845ee9bcf` (bundle `index-CTPtvBuT.js`). Risk: **Medium**. Numbered **D-153** because `main` already used **D-152** for tip covariates (#208).
 
 **Household outcome:** Bianca and Jonathan open **Shift** from the phone bar. Punch, last shifts, Jobs, compressed report, and Hercules Shift Oracle glances live there. Add stays centered. Confirm still posts. The tab never writes money.
 
@@ -12,13 +12,13 @@
 
 **What changed:** Nav is `Home · Cal · Shift · [+] · Plan · Books · More`. `WorkShiftPage` hosts Today / Report / Jobs. More no longer mounts Jobs / history / report. Home Timesheet stays. Projections are copper-badged and never post. Rebased onto #208 camera/covariate Confirm path (Add still hosts scan + `WorkShiftFlow`).
 
-**Verification:** Focused `test/shift-glance.test.ts` and full `pnpm check` re-run after merging `origin/main`. Independent reviews on the pre-rebase SHA were PASS WITH NOTES. Jonathan approved the preview hostname and ordered merge/deploy.
+**Verification:** `pnpm check` after merging `origin/main`: **887 passed / 2 skipped**. GitHub Actions Cloudflare Workers `33106260692` Deploy green. Live HTML serves `index-CTPtvBuT.js` containing `shift-page`, `Tip climate`, `Floor lamp`, `Protect floor`.
 
 **Data/environment:** Client/docs. Kitchen publish is GitHub `main` → Cloudflare Workers. No schema, secrets, or Production household mutation.
 
 **Remaining uncertainty:** Future climate days cannot show real rain without a multi-day forecast. Today's rain drop uses cached Open-Meteo / fallback.
 
-**Next owner:** After kitchen deploy — hard-refresh https://hearth-books.jonathan-beaulne123.workers.dev/ , Development pill, Shift tab.
+**Next owner:** Jonathan — hard-refresh https://hearth-books.jonathan-beaulne123.workers.dev/ , Development pill, open Shift. Demo kitchen is fine. Do not treat this as Production household data.
 
 ## Tip covariates + Hercules tip science + Pro paged reads (D-152) (2026-08-27)
 
