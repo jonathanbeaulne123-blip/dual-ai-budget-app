@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { catalogHousehold, linkGoogleIdentity } from "../src/core/index.ts";
+import { catalogHousehold, linkGoogleIdentity, postEntry } from "../src/core/index.ts";
+import { personalReplicaForMember } from "../src/core/sync.ts";
 import { pushSupabaseHousehold, bundledSupabaseConfig } from "../src/ledger/supabase.ts";
 import { vi, afterEach } from "vitest";
 
@@ -133,5 +134,54 @@ describe("D-143 Auth membership continuity authority", () => {
     expect(calls.some((url) => url.includes("rpc/publish_continuity_snapshot"))).toBe(true);
     expect(calls.some((url) => url.includes("rpc/publish_household_snapshot"))).toBe(false);
     expect(calls.some((url) => url.includes("continuity_personal_snapshots?on_conflict"))).toBe(false);
+  });
+
+  it("T1-S2 G6: large personal envelope stays plain JSON for Migration 012 SQL", async () => {
+    let base = linkGoogleIdentity(catalogHousehold(), {
+      memberId: "MEM-001",
+      email: identity.email,
+      subject: identity.subject,
+      displayName: "Jonathan",
+      grantedScopes: ["openid", "email"],
+    }).household;
+    for (let i = 0; i < 12; i += 1) {
+      base = postEntry(base, {
+        date: "2026-08-24",
+        type: "expense",
+        amount: "15.00",
+        accountId: "ACC-VISA",
+        subcategoryId: "SUB-FOOD-GROCERIES",
+        note: `G6 personal envelope stress ${i} xxxxxxxxxxxxxxxxxxxxxxxx`,
+        createdBy: "MEM-001",
+        visibility: "personal",
+        confirmDuplicate: true,
+      }).household;
+    }
+    const household = { ...base, linked: true, revision: 2, baseRevision: 1 };
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("households?select=id")) {
+        return new Response(JSON.stringify([{ id: household.householdId }]), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      if (url.includes("rpc/publish_continuity_snapshot")) {
+        const body = init?.body ? JSON.parse(String(init.body)) as Record<string, unknown> : {};
+        const personal = JSON.parse(String(body.p_personal_payload)) as ReturnType<typeof personalReplicaForMember>;
+        expect(personal.kind).toBe("personal");
+        expect(personal.memberId).toBe("MEM-001");
+        expect(personal.transactions.length).toBeGreaterThanOrEqual(10);
+        expect(JSON.stringify(personal)).not.toMatch(/hearthPayload/);
+        return new Response(JSON.stringify({ ok: true, conflict: false, duplicate: false, revision: 2 }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } });
+    }));
+    const result = await pushSupabaseHousehold(household, authConfig, {
+      expectedRevision: 1,
+      continuityIdentity: identity,
+    });
+    expect(result.skipped).toBe(false);
+    expect(result.usedCasRpc).toBe(true);
   });
 });

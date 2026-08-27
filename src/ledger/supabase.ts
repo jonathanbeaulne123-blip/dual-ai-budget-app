@@ -14,7 +14,12 @@ import {
 } from "../core/google.ts";
 import { hostedTransportAllowed } from "../core/sharing.ts";
 import { hostedContinuityAllowed, legacyLinkedPublishAllowed } from "./continuityPolicy.ts";
-import { decodeJsonPayload, encodeHouseholdPayload, encodeSharedSnapshotPayload } from "./snapshotPayload.ts";
+import {
+  decodeJsonPayload,
+  encodeHouseholdPayload,
+  encodePersonalEnvelopePayload,
+  encodeSharedSnapshotPayload,
+} from "./snapshotPayload.ts";
 import type { SnapshotCasConflict, SnapshotCasResult } from "./snapshotCas.ts";
 
 export {
@@ -27,6 +32,7 @@ export {
   decodeJsonPayload,
   encodeHouseholdPayload,
   encodeJsonPayload,
+  encodePersonalEnvelopePayload,
   encodeSharedSnapshotPayload,
   isSnapshotPayloadEnvelope,
 } from "./snapshotPayload.ts";
@@ -493,7 +499,9 @@ async function publishContinuitySnapshotAtomic(
 ): Promise<PushHouseholdResult> {
   const snapshotHash = await financialAuditHash(cloudSnapshot);
   const payload = await encodeSharedSnapshotPayload(cloudSnapshot);
-  const personalPayload = await encodeHouseholdPayload(personalReplicaForMember(snapshot, continuityMemberId));
+  const personalPayload = await encodePersonalEnvelopePayload(
+    personalReplicaForMember(snapshot, continuityMemberId),
+  );
   const rpc = await rest(config, "rpc/publish_continuity_snapshot", {
     method: "POST",
     headers: { Prefer: "return=representation" },

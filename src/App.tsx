@@ -1034,6 +1034,7 @@ export function App() {
         membershipResolved: true,
         hostedAllowed: hostedContinuityAllowed(environment),
         hasHousehold: true,
+        environment,
       })) return;
       if (!live) return;
 

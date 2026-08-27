@@ -63,6 +63,7 @@ export {
   encodeJsonPayload,
   decodeJsonPayload,
   encodeHouseholdPayload,
+  encodePersonalEnvelopePayload,
   encodeSharedSnapshotPayload,
   decodeHouseholdPayload,
   isSnapshotPayloadEnvelope,
