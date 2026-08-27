@@ -31,6 +31,7 @@ jobs:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_CONTINUITY_REALTIME: "1"
+          VITE_CONTINUITY_COMMAND_LOG: "1"
         run: |
           . scripts/sanitize-cloudflare-env.sh
           if [ -z "$VITE_GOOGLE_CLIENT_ID" ]; then
@@ -40,6 +41,9 @@ jobs:
             echo "Supabase Auth Google door is ON for this kitchen build (VITE_SUPABASE_AUTH_ENABLED=1)."
           else
             echo "::notice::Supabase Auth Google door is OFF. Set Actions variable VITE_SUPABASE_AUTH_ENABLED=1 to enable Continue with Google → auth.users."
+          fi
+          if [ "$VITE_CONTINUITY_COMMAND_LOG" = "1" ]; then
+            echo "Tier 2 command-log transport is ON for this kitchen build (VITE_CONTINUITY_COMMAND_LOG=1; requires Migration 013)."
           fi
           pnpm build
       - name: Deploy

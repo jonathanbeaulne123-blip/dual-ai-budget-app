@@ -1,19 +1,12 @@
 # Migration 013 apply — Development (T2-S1)
 
-> **One paste to unlock Tier 2.** Development disposable data only. Do not apply to Production.
->
-> Trust P0 remediation is on `main` (`2b1b1ec` / #189). Safe to paste.
+> **Applied on Development 2026-08-27** (arity fix + trust P0 RPC body). Kitchen ships with `VITE_CONTINUITY_COMMAND_LOG=1`.
 
 ## Why
 
-`append_continuity_command` + `continuity_command_events` let kitchens share **confirmed command receipts** instead of whole snapshots. After this apply, reply **“013 applied”** so the kitchen can flip `VITE_CONTINUITY_COMMAND_LOG=1` and redeploy.
+`append_continuity_command` + `continuity_command_events` let kitchens share **confirmed command receipts** instead of whole snapshots.
 
-## Steps
-
-1. Open Supabase → **SQL Editor** (Development project `tykhocwacaxwquhynkok`).
-2. Paste the full contents of [`supabase/migrations/013_continuity_command_events.sql`](../supabase/migrations/013_continuity_command_events.sql).
-3. Run. Expect **Success. No rows returned** (or similar).
-4. Verify:
+## Verify
 
 ```sql
 SELECT to_regclass('public.continuity_command_events') AS table_ok;
@@ -28,9 +21,13 @@ SELECT id FROM public.schema_migrations WHERE id = 13;
 
 Expect: table present, function present, publication row present, schema id `13`.
 
-## After apply
+## Apply (reference)
 
-Reply **“013 applied”** — agent flips `VITE_CONTINUITY_COMMAND_LOG=1` and redeploys.
+1. Open [Development SQL Editor](https://supabase.com/dashboard/project/tykhocwacaxwquhynkok/sql/new).
+2. Paste [`supabase/migrations/013_continuity_command_events.sql`](../supabase/migrations/013_continuity_command_events.sql) from `main`.
+3. Run. Expect **Success**.
+
+Do **not** apply to Production.
 
 ## Rollback (Development only)
 
