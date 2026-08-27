@@ -52,6 +52,15 @@ export function workShiftDraftFromVision(
     draft.staffingCount = raw.staffingCount;
   }
   if (isShiftEventTag(raw.eventTag)) draft.eventTag = raw.eventTag as ShiftEventTag;
+
+  const salesByField: Record<string, number> = {};
+  if (typeof raw.foodSalesCents === "number" && Number.isInteger(raw.foodSalesCents) && raw.foodSalesCents >= 0) {
+    salesByField.Food = raw.foodSalesCents / 100;
+  }
+  if (typeof raw.alcoholSalesCents === "number" && Number.isInteger(raw.alcoholSalesCents) && raw.alcoholSalesCents >= 0) {
+    salesByField.Alcohol = raw.alcoholSalesCents / 100;
+  }
+  if (Object.keys(salesByField).length) draft.salesByField = salesByField;
   // Deliberately omit OCR note — free text can leak coworker names into Shared sync.
 
   if (!Object.keys(draft).length) {
@@ -76,4 +85,3 @@ export async function scanShiftReportFile(
   const scanned = await scanFinancialDocument(file, fetcher, { documentHint: "shift-report", signal });
   return workShiftDraftFromVision(scanned.result);
 }
-

@@ -106,4 +106,33 @@ describe("shift-report Confirm draft mapping", () => {
     expect(mapped.draft).not.toHaveProperty("note");
     expect(JSON.stringify(mapped)).not.toMatch(/Alex|Priya/i);
   });
+
+  it("maps Toast Employee Shift Report food/alcohol classes into Confirm salesByField", () => {
+    const mapped = workShiftDraftFromVision({
+      documentKind: "shift-report",
+      currency: "CAD",
+      accountLast4: "",
+      rows: [],
+      shiftDraft: {
+        date: "2026-08-20",
+        workedHours: 2.05,
+        salesCents: 58_601,
+        foodSalesCents: 48_601,
+        alcoholSalesCents: 10_000,
+        cashTipsCents: 0,
+        cardTipsCents: 13_102,
+        customersServed: 17,
+      },
+      warnings: [],
+    });
+    expect(mapped.draft).toEqual({
+      date: "2026-08-20",
+      workedHours: 2.05,
+      sales: 586.01,
+      cashTips: 0,
+      cardTips: 131.02,
+      customersServed: 17,
+      salesByField: { Food: 486.01, Alcohol: 100 },
+    });
+  });
 });
