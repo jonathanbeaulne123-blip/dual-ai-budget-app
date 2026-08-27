@@ -2178,3 +2178,35 @@ input, select, textarea {
 @media (prefers-reduced-motion: reduce) {
   .shift-climate-seal, .shift-saucer { transition: none; }
 }
+
+.opening-truth-sheet { display: grid; gap: 12px; }
+.opening-truth-date { display: grid; gap: 4px; font-weight: 700; color: var(--muted); font-size: 12px; }
+.opening-truth-date input { font: inherit; padding: 10px; }
+.opening-truth-accounts { display: grid; gap: 8px; }
+.opening-truth-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.opening-truth-row input {
+  width: 100%;
+  padding: 10px;
+  font: inherit;
+  text-align: right;
+}
+.opening-truth-review { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.opening-truth-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  position: sticky;
+  bottom: 0;
+  padding: 12px 0 4px;
+  background: linear-gradient(transparent, var(--card) 28%);
+}
+@media (min-width: 720px) {
+  .opening-truth-row { grid-template-columns: minmax(0, 1fr) 140px; }
+}

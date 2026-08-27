@@ -96,6 +96,11 @@ import type {
   WorkJob,
 } from "./types.ts";
 import { COMPANION, JOINT, NeedsConfirmationError, ValidationError, isShiftEventTag } from "./types.ts";
+import {
+  buildOpeningTruthDraft,
+  openingTruthReviewSummary,
+  type OpeningLineInput,
+} from "./openingTruth.ts";
 
 export type ActorInput = {
   createdBy?: string;
@@ -284,6 +289,84 @@ export function postEntry(household: Household, input: {
   next.transactions.push(draft);
   const warnings = matches.length ? ["Saved with a duplicate fingerprint. Review it when you have a moment."] : [];
   return commit(previous, next, input.type === "income" ? "Add Income" : input.type === "refund" ? "Add Refund" : "Add Expense", `${draft.id}: ${input.type} $${(amountCents / 100).toFixed(2)} (${subcategory.name}) on ${date}`, [draft.id], warnings);
+}
+
+/**
+ * Post truthful opening balances for existing accounts on one Toronto as-of date.
+ * Balance sheet + Opening equity only — never P&L, cash flow, budgets, or work income.
+ */
+export function postOpeningBalances(household: Household, input: {
+  asOfDate: string;
+  lines: OpeningLineInput[];
+  createdBy?: string;
+  /** Idempotent batch key; re-Confirm with the same key posts nothing twice. */
+  confirmationId?: string;
+}): CommitResult {
+  requireTimezone(household);
+  const actor = resolveActor(household, { createdBy: input.createdBy, visibility: "household" });
+  const draft = buildOpeningTruthDraft(household, {
+    asOfDate: input.asOfDate,
+    createdBy: actor.createdBy,
+    lines: input.lines,
+  });
+  requireOpenPeriod(household, draft.asOfDate);
+
+  const batchId = (input.confirmationId || "").trim() || `opening-${draft.asOfDate}-${actor.createdBy}`;
+  const already = household.transactions.filter(
+    (tx) => tx.source === "opening" && tx.sourceId === batchId && !tx.reversalOfId,
+  );
+  if (already.length) {
+    return {
+      household,
+      warnings: ["Opening truth for this Confirm was already posted."],
+      postedIds: already.map((tx) => tx.id),
+      undo: {
+        id: `open-idempotent-${batchId}`,
+        label: "Opening truth already posted",
+        snapshot: cloneHousehold(household),
+        postedIds: already.map((tx) => tx.id),
+      },
+    };
+  }
+
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const createdAt = nowIso();
+  const postedIds: string[] = [];
+
+  for (const line of draft.lines) {
+    const party = line.ownerMemberId === JOINT ? JOINT : line.ownerMemberId;
+    const row = baseTx(next, {
+      date: draft.asOfDate,
+      type: "opening",
+      amountCents: line.amountCents,
+      accountId: line.accountId,
+      categoryId: null,
+      subcategoryId: null,
+      note: `Opening · ${line.accountName}`,
+      place: "",
+      splits: [{ party, amountCents: line.amountCents }],
+      source: "opening",
+      sourceId: batchId,
+      createdAt,
+      createdBy: actor.createdBy,
+      visibility: line.visibility,
+    });
+    row.id = nextId("TXN-OP-", next.transactions.map((tx) => tx.id));
+    row.potentialDuplicate = false;
+    row.isDuplicate = false;
+    row.reviewed = true;
+    next.transactions.push(row);
+    postedIds.push(row.id);
+  }
+
+  return commit(
+    previous,
+    next,
+    "Opening truth",
+    openingTruthReviewSummary(draft),
+    postedIds,
+  );
 }
 
 /** Books civil timezone is fixed to America/Toronto (D-126 Q2 C). Phone display zones are phone-local. */
@@ -2418,6 +2501,43 @@ export function reversePostedMoney(household: Household, transactionId: string, 
     : tx.type === "transfer"
       ? []
       : [tx];
+
+  if (tx.type === "opening" || tx.source === "opening") {
+    const batchId = tx.sourceId;
+    const siblings = batchId
+      ? next.transactions.filter((item) => item.source === "opening" && item.sourceId === batchId && !item.reversalOfId)
+      : [tx];
+    const previousOpen = cloneHousehold(household);
+    let openNext = cloneHousehold(household);
+    const openPosted: string[] = [];
+    const createdAt = nowIso();
+    for (const original of siblings) {
+      if (openNext.transactions.some((item) => item.reversalOfId === original.id)) {
+        throw new ValidationError("Already reversed. Reverse the reversing entry if you meant to reinstate.");
+      }
+      const row = baseTx(openNext, {
+        date,
+        type: "opening",
+        amountCents: original.amountCents,
+        accountId: original.accountId,
+        categoryId: null,
+        subcategoryId: null,
+        note: `Reversal of ${original.id}`,
+        place: "",
+        splits: original.splits,
+        source: "reversal",
+        sourceId: original.sourceId,
+        reversalOfId: original.id,
+        createdAt,
+        createdBy: actor.createdBy,
+        visibility: actor.visibility,
+      });
+      row.id = nextId("TXN-OP-", openNext.transactions.map((item) => item.id));
+      openNext.transactions.push(row);
+      openPosted.push(row.id);
+    }
+    return commit(previousOpen, openNext, "Reverse", `Reversed opening truth as of ${tx.date}`, openPosted);
+  }
 
   if (tx.type === "transfer") {
     const fromId = tx.transferFromAccountId || tx.accountId;

@@ -128,7 +128,7 @@ export function BooksPage({
         <div className="label">Books · double-entry · CAD · {household.timezone}</div>
         <div className={`money ${equation.netWorthCents < 0 ? "negative" : ""}`}>{formatCad(equation.netWorthCents)}</div>
         <div className="sub">
-          Net worth {equation.holds ? "equals" : "does not equal"} retained income {formatCad(equation.netIncomeCents)}
+          Net worth {equation.holds ? "equals" : "does not equal"} opening equity {formatCad(equation.openingEquityCents)} plus retained income {formatCad(equation.netIncomeCents)}
           {trial.inBalance ? " · trial balance in balance" : " · trial balance is off"}
         </div>
         <p className={`opinion-banner ${opinion.kind}`}>

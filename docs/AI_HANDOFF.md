@@ -1,5 +1,32 @@
 # AI Task and Handoff Standard
 
+## Opening truth engine (D-154) (2026-08-27)
+
+**Status:** Draft [PR #218](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/218). Risk: **High**.
+
+**Base SHA:** `891cc5d` (`main`) · **Head SHA:** `60c1bef` (+ docs tip).
+
+**Household outcome:** Confirm real starting balances on a Toronto date; Opening equity balances the books; nothing pretends the money was earned or spent in Hearth.
+
+**Budget delta (5):** `+5`
+
+**Engagement delta (3):** `+1`
+
+**What changed:**
+- `postOpeningBalances` + pure draft in `openingTruth.ts`; `EQ-OPENING` chart account; opening compile path; equation `A = L + OE + RE`.
+- Opening excluded from P&L/cash/budget/countable; health allows null category on opening.
+- Batch reversal; idempotent confirmation id.
+- UI: `OpeningTruthSheet` + Home banner when no money + More entry; ConfirmSheet posts.
+- D-154; worksession `docs/worksessions/2026-08-27-opening-truth-engine.md`.
+
+**Verification:** Focused `test/opening-truth.test.ts` → **10 passed**. Full `pnpm check` → **897 passed** / 2 skipped; `tsc` + build green. Books auditor **PASS WITH NOTES** (P2 only). Log: `/opt/cursor/artifacts/opening-truth-pnpm-check.log`.
+
+**Uncertainty:** Onboarding Slice A coordinator not on `main` — auto-route through Hercules tutorial remains later. Multiple opening batches allowed from More.
+
+**Data/environment:** Development client/docs only. No schema, secrets, Production, Worker deploy.
+
+**Next owner:** Jonathan/GPT review on PR #218. Kitchen smoke after merge: More → Opening truth → Confirm → Books equation holds.
+
 ## Shift tab (D-153) (2026-08-27)
 
 **Status:** Merged via [#213](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/213) onto `main` (`1e12d32`). Kitchen Worker **live** version `5b2b2b47-d996-427c-b3bf-61a845ee9bcf` (bundle `index-CTPtvBuT.js`). Risk: **Medium**. Numbered **D-153** because `main` already used **D-152** for tip covariates (#208).
