@@ -33,6 +33,10 @@ export default defineConfig({
         target: "https://hearth-books.jonathan-beaulne123.workers.dev",
         changeOrigin: true,
       },
+      "/work/7shifts": {
+        target: "https://hearth-books.jonathan-beaulne123.workers.dev",
+        changeOrigin: true,
+      },
     },
   },
   preview: { host: true, port: 4173 },
