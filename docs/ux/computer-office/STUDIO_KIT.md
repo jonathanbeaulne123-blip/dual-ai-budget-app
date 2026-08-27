@@ -26,7 +26,7 @@ These are the measuring stick + paint + kitchen. Without them, objects will not 
 | **Cloudflare R2** | $0 at our size (10 GB free) | Cloudflare dashboard you already have | Host 4K plates. Do not git 20MB stills as the runtime |
 | **PureRef** | Free to try; ~$7–$15 one-time if you keep it | [pureref.com/download.php](https://www.pureref.com/download.php) | Pin the six stills 1:1. Art bible for every slice |
 
-**This weekend:** Blender, fSpy, Photopea (or Krita), PureRef, Chrome 1280. Cursor and the repo are already there.
+**This weekend:** work [`STUDIO_SETUP_CHECKLIST.md`](STUDIO_SETUP_CHECKLIST.md) top to bottom (folders, PureRef, Blender importer, ffmpeg, Comfy Manager). Cursor and the repo are already there.
 
 ---
 

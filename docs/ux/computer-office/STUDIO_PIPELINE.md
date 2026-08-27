@@ -2,6 +2,10 @@
 
 Jonathan’s machine now has **Blender, fSpy, Krita, Affinity Photo, DaVinci Resolve, ComfyUI**. That is a real lookdev bench. This page maps **who owns which job**, what is **still missing to be a full UI studio**, and the crazy list (plugins, automations, skills, extra apps).
 
+**Beginner install (tick boxes, no experience assumed):** [`STUDIO_SETUP_CHECKLIST.md`](STUDIO_SETUP_CHECKLIST.md).
+
+**AI rule:** use this bench when computer Home visuals warrant it. If Jonathan must click any of these apps, give checkbox steps with exact menu names. He has no DCC experience. Do not say “just do it in Blender.”
+
 Canon stills: `hearth-canon-*.jpg`. Confirm still posts. Phone stays mostly untouched. Empty-room pixels in the kitchen wait until this pipeline can export one locked camera.
 
 Marks: **MUST** (do this week) · **STRONG** (full studio, do before fire/wallet-open) · **LATER** (go-crazy, unlock per slice)

@@ -25,6 +25,10 @@ Precedence is:
 
 Never use `docs/nostalgia/` or `docs/reference/` as a future plan.
 
+## Computer Home studio
+
+When computer Home is visual (plates, camera, masks, grade, loops, Comfy inpaint), AIs use the bench in `docs/ux/computer-office/STUDIO_PIPELINE.md` instead of CSS-card fakery. Jonathan has no DCC experience. Asking him to operate Blender, fSpy, Krita, Affinity Photo, Resolve, ComfyUI, PureRef, or ffmpeg requires a checkbox/numbered procedure with exact menus and a stop-and-screenshot line. Beginner checklist: `docs/ux/computer-office/STUDIO_SETUP_CHECKLIST.md`.
+
 ## Efficient routing
 
 | Work | Lead | Independent proof |

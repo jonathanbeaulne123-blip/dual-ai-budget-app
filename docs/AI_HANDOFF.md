@@ -1,5 +1,17 @@
 # AI Task and Handoff Standard
 
+## D-152 beginner checklist + AI handholding (2026-08-27)
+
+**Status:** Same branch. Docs + Cursor/Claude rules. **Not shipped.** Compositor still locked.
+
+**Household outcome:** Jonathan can tick [`STUDIO_SETUP_CHECKLIST.md`](ux/computer-office/STUDIO_SETUP_CHECKLIST.md) with no DCC experience. AIs must use the studio when visual work warrants it, and must handhold every click.
+
+**Budget / engagement:** `0` / `0` this packet.
+
+**What changed:** Checklist Parts 0–6; `AGENTS.md` / `CLAUDE.md` / `AI_OPERATING_MODEL.md` studio + handholding; `.cursor/rules/35-office-studio.mdc`; `.claude/rules/office-studio.md`.
+
+**Next owner:** Jonathan works the checklist and replies **studio is installed** (or a Part number + screenshot if stuck).
+
 ## D-152 studio pipeline map (2026-08-27, later)
 
 **Status:** Same branch. Docs only. **Not shipped.** Compositor still locked.

@@ -1,0 +1,26 @@
+---
+description: Computer Home studio tools — use when warranted; always handhold Jonathan
+alwaysApply: true
+---
+
+# Computer Home studio (D-152)
+
+Jonathan has a lookdev bench for computer Home (`≥1280`) photoreal plates. **Use these tools when the work is visual stills, camera match, masks, grade, fire/snow loops, or Comfy inpaint.** Do not reach for CSS cards or Spline-as-the-room to fake the cabin.
+
+**Installed / in play:** Blender, fSpy (+ Blender importer), Krita, Affinity Photo, DaVinci Resolve + Fusion, ComfyUI, PureRef, ffmpeg, this Vite kitchen, Chrome 1280/1440.
+
+**Maps:** [`docs/ux/computer-office/STUDIO_PIPELINE.md`](docs/ux/computer-office/STUDIO_PIPELINE.md)  
+**Jonathan setup checklist:** [`docs/ux/computer-office/STUDIO_SETUP_CHECKLIST.md`](docs/ux/computer-office/STUDIO_SETUP_CHECKLIST.md)
+
+## Handholding (non-negotiable)
+
+Jonathan has **no DCC experience**. If an AI asks him to click anything in Blender, fSpy, Krita, Affinity, Resolve, Comfy, PureRef, ffmpeg, or Finder/Explorer:
+
+1. Give a **numbered or checkbox** procedure.
+2. Assume he does not know menus, shortcuts, or jargon. Name the **exact menu path** (example: Mac Blender → **Blender → Preferences…**; Windows → **Edit → Preferences…**).
+3. Say what he should **see** after each step.
+4. If the UI might differ, tell him to **stop and screenshot** rather than guess.
+5. Never say “just enable Node Wrangler” or “run it through Comfy” without the clicks.
+6. One job per message when he is mid-checklist. Do not dump five apps at once unless he asked for the full list.
+
+Agents may run Blender/Comfy/ffmpeg **on the agent machine** themselves when that machine has them. That does not replace handholding when Jonathan must do it on his Mac/Windows.

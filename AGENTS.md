@@ -63,3 +63,11 @@ Help Jonathan and Bianca run a dependable household budget **and** a companion k
 - Use subagents for bounded, independent, read-heavy investigation, review, and verification. Keep one writer per checkout.
 - For multi-step or Medium/High/Release work, use `hearth-worksession`. For a durable handoff, use `hearth-implementation-packet`. Before release consideration, use `hearth-release-review`.
 - Follow [docs/AI_OPERATING_MODEL.md](docs/AI_OPERATING_MODEL.md) for routing, context budget, authority, and evidence. The living plan is [docs/HEARTH_ROADMAP.md](docs/HEARTH_ROADMAP.md). The docs index is [docs/README.md](docs/README.md).
+
+## Computer Home studio (D-152)
+
+Computer Home (`≥1280`) stills, camera match, masks, grade, fire/snow loops, and Comfy inpaint use the lookdev bench Jonathan is installing: **Blender, fSpy, Krita, Affinity Photo, DaVinci Resolve, ComfyUI, PureRef, ffmpeg**, plus this Vite kitchen. Job map: [docs/ux/computer-office/STUDIO_PIPELINE.md](docs/ux/computer-office/STUDIO_PIPELINE.md). Beginner setup: [docs/ux/computer-office/STUDIO_SETUP_CHECKLIST.md](docs/ux/computer-office/STUDIO_SETUP_CHECKLIST.md).
+
+Use those tools **when the work warrants it**. Do not fake the cabin with CSS cards or Spline-as-the-room.
+
+**Handholding:** Jonathan has no DCC experience. If you ask him to use any of those apps, you must give checkbox or numbered steps: exact menu names, what he should see next, and “stop and screenshot if it looks different.” Never assume he knows how to enable an add-on or run ffmpeg. Do not cover Confirm/Post or restyle phone Draft C while doing this.
