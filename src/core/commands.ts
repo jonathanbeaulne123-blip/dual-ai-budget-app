@@ -655,6 +655,8 @@ export type PostWorkShiftInput = {
   settingsFingerprint?: string;
   confirmDuplicate?: boolean;
   createdBy?: string;
+  /** HMAC digest from the 7shifts Timesheet inbox. Exact duplicates refuse a second post. */
+  sevenShiftsPunchDigest?: string;
 };
 
 /**
@@ -708,6 +710,12 @@ export function postWorkShift(household: Household, input: PostWorkShiftInput): 
   }
   const conflicts = openShiftConflicts(household.kitchen, member.id);
   if (conflicts.length > 1) throw new ValidationError("Two devices recorded an open shift for you. Choose the correct timeline before confirming pay.");
+  const punchDigest = String(input.sevenShiftsPunchDigest || "").trim();
+  if (punchDigest) {
+    if (!/^s7punch_[a-f0-9]{64}$/.test(punchDigest)) throw new ValidationError("This 7shifts punch id is not valid.");
+    const already = household.shifts.find((shift) => shift.sevenShiftsPunchDigest === punchDigest && !workShiftIsReversed(household, shift));
+    if (already) throw new ValidationError("This 7shifts punch is already on the books.");
+  }
   const sameDay = household.shifts.filter((shift) => shift.memberId === member.id && shift.jobId === job.id && shift.date === date);
   if (sameDay.length && !input.confirmDuplicate) {
     const matches = household.transactions.filter((tx) => sameDay.some((shift) => tx.sourceId === shift.id));
@@ -852,6 +860,7 @@ export function postWorkShift(household: Household, input: PostWorkShiftInput): 
     eventTag: covariates.eventTag,
     weatherGlass: covariates.weatherGlass,
     note: String(input.note || "").trim().slice(0, 500),
+    ...(punchDigest ? { sevenShiftsPunchDigest: punchDigest } : {}),
   });
   const punch = activeOpenShift(next.kitchen, member.id);
   if (punch) next.kitchen.openShifts = next.kitchen.openShifts.map((row) => row.id === punch.id ? { ...row, status: "cleared", updatedAt: createdAt } : row);

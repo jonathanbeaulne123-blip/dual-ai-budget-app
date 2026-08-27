@@ -241,11 +241,12 @@ import { inviteReasonMessage, redeemHouseholdInvite, bindGoogleMemberships, leav
 import { BooksPage } from "./Books.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
 import type { RepeatingDraft } from "./RepeatingForm.tsx";
-import { WorkShiftFlow, type WorkShiftDraft } from "./WorkShiftFlow.tsx";
+import type { WorkShiftDraft } from "./WorkShiftFlow.tsx";
 import { WorkShiftPage } from "./WorkShiftPage.tsx";
 import { resolveDuplicateRetry } from "./shiftDuplicateRetry.ts";
 import { ShiftReportScanBar } from "./ShiftReportScan.tsx";
 import { scanShiftReportFile } from "./imports/shiftReportDraft.ts";
+import { WorkShiftWithSevenShifts } from "./WorkShiftWithSevenShifts.tsx";
 import { DuePreviewSheet } from "./DuePreviewSheet.tsx";
 import {
   renderCommandChrome,
@@ -3892,8 +3893,8 @@ export function App() {
                       error={shiftScanError}
                       onFile={(file) => { void applyShiftReportScan(file); }}
                     />
-                    <WorkShiftFlow
-                      key={workShiftDraft ? `draft-${JSON.stringify(workShiftDraft)}` : "blank"}
+                    <WorkShiftWithSevenShifts
+                      key={`${environment}:${household.householdId}:${actorId}`}
                       household={household}
                       memberId={actorId}
                       today={workShiftDateRef.current}

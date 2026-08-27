@@ -13,6 +13,7 @@ import {
   type WorkTipOutBasis,
   type WorkTipOutRule,
 } from "./core/index.ts";
+import { SevenShiftsConnectPanel } from "./SevenShiftsConnectPanel.tsx";
 
 const JOB_COLORS = ["#a85a3d", "#2f6b4f", "#4d7182", "#a57935", "#745d86"];
 
@@ -179,6 +180,13 @@ export function WorkJobsCard({ household, memberId, today, busy, onAskSave, onAr
             </div>
           );
         })}
+        <SevenShiftsConnectPanel
+          environment={household.environment}
+          householdId={household.householdId}
+          memberId={memberId}
+          jobs={jobs}
+          disabled={busy}
+        />
       </section>
     );
   }
