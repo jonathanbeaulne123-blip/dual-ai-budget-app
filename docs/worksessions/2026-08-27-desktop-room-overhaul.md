@@ -7,8 +7,8 @@
 - **Repository:** dual-ai-budget-app
 - **Branch:** `cursor/computer-office-d151-605a`
 - **Baseline SHA:** `e7ad717b6536749f3906e713df4e2107b4e61f1b` (`main`)
-- **Head SHA:** (this branch; update as commits land)
-- **PR or issue:** draft PR for this branch
+- **Head SHA:** update on close; current implementation `4105060` plus follow-up rig-guard commit
+- **PR or issue:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/207
 - **Risk:** Medium (UI/layout; games are kitchen cosmetics; Commands unchanged)
 - **Decision owner:** Jonathan (G0–G5 continue/revert)
 - **Environment impact:** Development client only; no hosted schema, secrets, or Production
@@ -54,26 +54,31 @@ Computer Home (`≥ 1280`) is the locked night-cabin room: first-person desk woo
 
 ## Acceptance evidence
 
-- [ ] `pnpm test` / `pnpm check`
-- [ ] 390 Draft C unchanged; 768/1024 scaled phone; 1280/1440 cabin
-- [ ] CadPad 1250 → $12.50 still posts
-- [ ] Add inert on computer desk; games cannot hide Post
-- [ ] `docs/AI_HANDOFF.md` complete
-- [ ] Independent UX audit
+- [x] `pnpm check` at `80d190c` (follow-up commits typecheck + focused tests)
+- [x] 390 Draft C; 768 scaled phone; 1280/1440 cabin (Jonathan G0–G1 still own the visual gate)
+- [x] CadPad 1250 → $12.50 posted on fictional demo
+- [x] Add inert on computer desk (HTML `inert`); games empty `postedIds`
+- [x] `docs/AI_HANDOFF.md` complete
+- [x] Independent UX audit (PASS WITH NOTES; notes patched)
 
 ## Plan
 
 - [x] Persist canon (D-151, COMPUTER_OFFICE, briefs, living rewrite)
-- [ ] T0 three-view plumbing + tablet scale
-- [ ] T1 empty room
-- [ ] T2 living desk
-- [ ] T3 personalities
-- [ ] T4 Play + games
-- [ ] T5 nest/cabinets + proof
+- [x] T0 three-view plumbing + tablet scale
+- [x] T1 empty room
+- [x] T2 living desk
+- [x] T3 personalities
+- [x] T4 Play + games
+- [x] T5 nest/cabinets + proof
 
 ## Evidence log
 
-Record exact commands, results, visual widths, links, and current SHAs.
+- Baseline `e7ad717` (`main`). Branch `cursor/computer-office-d151-605a`. Draft PR #207.
+- `pnpm check` at `80d190c`: 853 passed, 2 skipped, `tsc` + Vite production build green. One earlier `continuity-two-browser-proof` timeout was environmental (passes in isolation).
+- Focused: `test/computer-office.test.ts` (11), `test/office-phone.test.ts` (14), `test/hercules-rig.test.ts` (11).
+- Browser fictional demo: 390 Draft C; 768 scaled phone; 1280/1440 cabin; `1250` → posted `$12.50` groceries.
+- Independent UX audit: PASS WITH NOTES (inert/focus then patched).
+- Superdesign CLI: not authenticated on this Cloud Agent. Pixel source of truth is `docs/ux/computer-office/*.png` from the prior working image pass.
 
 ## Decisions
 

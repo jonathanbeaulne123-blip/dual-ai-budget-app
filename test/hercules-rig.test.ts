@@ -25,6 +25,21 @@ describe("Hercules rig engine", () => {
     engine.destroy();
   });
 
+  it("does not re-enter emit when a listener setMoods the same mood", () => {
+    const engine = createHerculesRigEngine();
+    let calls = 0;
+    engine.subscribe(() => {
+      calls += 1;
+      engine.setMood("content");
+    });
+    engine.setMood("content");
+    expect(calls).toBeGreaterThan(0);
+    const before = calls;
+    engine.setMood("content");
+    expect(calls).toBe(before);
+    engine.destroy();
+  });
+
   it("allows AI part overrides", () => {
     const engine = createHerculesRigEngine();
     engine.dispatch({ type: "setPart", part: "head", transform: { rotate: 33, translateY: -4 } });

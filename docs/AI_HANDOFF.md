@@ -1,5 +1,30 @@
 # AI Task and Handoff Standard
 
+## D-151 computer office night cabin (2026-08-27)
+
+**Status:** Branch `cursor/computer-office-d151-605a`, draft PR #207. Risk: **Medium** (UI/layout; games kitchen cosmetics; Commands unchanged). **Not shipped.**
+
+**Household outcome:** Computer Home (`≥ 1280`) is the night-cabin room: first-person desk wood wall-to-wall, gold nav on the front edge of the wood, Household objects that still post milk through Confirm. Tablet (`720–1279`) is scaled `OfficePhone`. Phone (`< 720`) Draft C stays frozen.
+
+**Budget delta (5):** `+1` — naming/layout law only. Commands, Confirm, `postEntry`, and cents meaning stay. Games write empty `postedIds`. Projections never post.
+
+**Engagement delta (3):** `+3` — computer Home becomes a room you sit in; personalities and Play are in the kernel without becoming a second product.
+
+**What changed:** Three-view breakpoint; `office-room.css` cabin; layout v3 auto-size + personalities; Kitchen Fleet / Sill Four / Pane Boxes; opinion/leftover/nextDue/sync projections; shelves/sofa; HTML `inert` during Add; furniture publish skip + Hercules rig emit reentrancy so the cabin does not max-update-depth.
+
+**Verification:**
+- `pnpm check` green at `80d190c` (853 passed, 2 skipped, production build).
+- Follow-up: `pnpm exec vitest run test/computer-office.test.ts test/office-phone.test.ts test/hercules-rig.test.ts` green after loop/a11y guards.
+- Browser (fictional demo): 390 Draft C (weather, POST/DUE/HEALTH, Today's stories); 768 scaled phone; 1280/1440 night cabin + gold nav; CAD pad `1-2-5-0` posted **$12.50** groceries with toast “Posted $12.50. On this phone…”.
+- UX audit: **PASS WITH NOTES**; inert + focus-visible + room destinations label addressed in later commits.
+- Superdesign CLI remains unauthenticated on this VM. Locked frames from the prior working Superdesign/image pass live in `docs/ux/computer-office/`.
+
+**Uncertainty:** Cabin CSS is a first-person room, not a photoreal match to the locked PNGs. Play personality is in code (`PERSONALITY_DESK.play`); the Desks sheet was not visually confirmed (click did not open the sheet during the second browser pass). Rig still emits every animation frame for part transforms — reentrancy/same-mood guards only. 12.9" iPad at 1280 is a named edge.
+
+**Data/environment:** Development client + fictional demo household only. No hosted schema, secrets, Production, or deploy. No real household data.
+
+**Next owner:** Jonathan — G0 at 390 (Draft C), G1 cabin at 1280, then G2 milk post. Do not merge until gates pass. Draft PR #207.
+
 ## T3-S2 soft presence (2026-08-27)
 
 **Status:** Branch `cursor/t3-s2-soft-presence-403c` (draft PR). Risk: **Low–Medium** (privacy UX).

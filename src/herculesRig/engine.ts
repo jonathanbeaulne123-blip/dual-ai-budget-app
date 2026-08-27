@@ -85,6 +85,7 @@ export class HerculesRigEngine {
   private listeners = new Set<RigListener>();
   private raf = 0;
   private snapshot: RigSnapshot = emptySnapshot();
+  private emitting = false;
 
   constructor() {
     installBuiltinClips({ ...POSE_CLIPS, ...IDLE_CLIPS });
@@ -98,11 +99,13 @@ export class HerculesRigEngine {
   }
 
   setReducedMotion(value: boolean): void {
+    if (this.reducedMotion === value) return;
     this.reducedMotion = value;
     this.emit();
   }
 
   setMood(mood: HerculesRigMood): void {
+    if (this.mood === mood) return;
     this.mood = mood;
     this.emit();
   }
@@ -160,8 +163,14 @@ export class HerculesRigEngine {
   }
 
   private emit(): void {
-    const state = this.getState();
-    for (const listener of this.listeners) listener(state);
+    if (this.emitting) return;
+    this.emitting = true;
+    try {
+      const state = this.getState();
+      for (const listener of this.listeners) listener(state);
+    } finally {
+      this.emitting = false;
+    }
   }
 
   private compose(now: number): RigSnapshot {
