@@ -20,7 +20,7 @@
 - Worker `/macro/priors` soft Ontario/Canada prior (fail soft); shift-report OCR kind → Confirm draft only.
 - D-152 recorded.
 
-**Verification:** Focused `test/tip-covariates.test.ts` + `test/tip-science.test.ts` + hercules/work-jobs/document-scan pass; full `pnpm check` → **868 pass** / 2 skipped; books + privacy auditors invoked.
+**Verification:** Focused `test/tip-covariates.test.ts` + `test/tip-science.test.ts` + hercules/work-jobs/document-scan pass; full `pnpm check` → **868 pass** / 2 skipped. Independent [books auditor](bc-7a1de1ab-9b4c-5988-b241-7008f2482591) **PASS** (Confirm-only money; covariates not in wage/tip calc). Independent [privacy auditor](bc-0df639b7-613e-53cd-8caa-cafb3253dbc2) **PASS** (headcount-only; OCR draft-only; macro region-only). Residuals tracked: OCR `note` as free-text name risk; Pro up to 100 detailed rows; no shift-report OCR unit test; legacy Confirm defaults for covers/staffing.
 
 **Uncertainty:** Live StatsCan fetch not wired (static/Worker fallback only); OCR quality depends on model vision; Pro `list_shifts` rows still respect existing ledger view scoping — confirm after deploy smoke.
 
