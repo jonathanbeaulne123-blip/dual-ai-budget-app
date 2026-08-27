@@ -502,6 +502,82 @@ input, select, textarea {
 .command-chip--warning { background: #fff8e6; border: 1px solid #e6c84a; color: #6b4e12; }
 .command-chip--success { background: #e8f5ee; border: 1px solid var(--wax); color: var(--wax); }
 .command-chip--danger { background: #fdeeee; border: 1px solid #c96a6a; color: var(--danger); }
+
+.sync-freshness {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: -8px 0 12px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  min-height: 40px;
+}
+.sync-freshness__transport {
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+.sync-freshness--live .sync-freshness__transport::before {
+  content: "● ";
+  color: var(--pine-2);
+}
+.sync-freshness--poll .sync-freshness__transport::before,
+.sync-freshness--connecting .sync-freshness__transport::before {
+  content: "◌ ";
+}
+.sync-freshness--offline .sync-freshness__transport::before,
+.sync-freshness--warning .sync-freshness__transport::before {
+  content: "! ";
+  font-weight: 700;
+}
+.sync-freshness--neutral { color: var(--ink); }
+.sync-freshness--warning {
+  background: #fff8e6;
+  border-color: #e6c84a;
+  color: #6b4e12;
+}
+.sync-freshness--danger {
+  background: #fdeeee;
+  border-color: #c96a6a;
+  color: var(--danger);
+}
+.sync-freshness__revision,
+.sync-freshness__updated,
+.sync-freshness__source {
+  color: var(--muted);
+}
+.sync-freshness__actor {
+  color: var(--muted);
+  max-width: 22ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sync-freshness-pairing {
+  margin-top: 6px;
+  font-size: 0.85rem;
+}
+@media (min-width: 720px) {
+  .sync-freshness {
+    font-size: 0.82rem;
+    gap: 8px 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sync-freshness--live .sync-freshness__transport::before {
+    content: "Live · ";
+    color: inherit;
+  }
+  .sync-freshness--poll .sync-freshness__transport::before,
+  .sync-freshness--connecting .sync-freshness__transport::before {
+    content: "";
+  }
+}
+
 .command-banner {
   display: flex;
   align-items: flex-start;
@@ -844,17 +920,6 @@ input, select, textarea {
   border-radius: 99px;
   margin-right: 4px;
   vertical-align: middle;
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  border: 0;
 }
 
 .daily-hearth { margin-bottom: 8px; }

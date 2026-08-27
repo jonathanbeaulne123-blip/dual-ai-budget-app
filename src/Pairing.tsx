@@ -291,6 +291,7 @@ export function PairingCard({
   error,
   busy,
   syncState,
+  syncFreshnessLine,
   inviteInput,
   onInviteInput,
   onHousehold,
@@ -304,6 +305,7 @@ export function PairingCard({
   error: string;
   busy: boolean;
   syncState: "idle" | "syncing" | "synced" | "error";
+  syncFreshnessLine?: string | null;
   inviteInput: string;
   onInviteInput: (value: string) => void;
   onHousehold: (household: Household) => Promise<void>;
@@ -389,8 +391,11 @@ export function PairingCard({
         </button>
       )}
       <p className="muted">{hostingHint(cloudLive || household.linked || supabaseAuthEnabled())}</p>
-      {syncState === "syncing" && <p className="muted">Syncing the shared household…</p>}
-      {syncState === "synced" && <p className="muted">Shared household is up to date.</p>}
+      {syncFreshnessLine && <p className="sync-freshness-pairing muted">{syncFreshnessLine}</p>}
+      {!syncFreshnessLine && syncState === "syncing" && <p className="muted">Syncing the shared household…</p>}
+      {!syncFreshnessLine && syncState === "synced" && household.linked && (
+        <p className="muted">Shared household is up to date.</p>
+      )}
       {error && <p className="danger">{error}</p>}
       <details
         className="pairing-advanced"
