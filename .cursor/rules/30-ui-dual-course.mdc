@@ -6,8 +6,8 @@ alwaysApply: false
 
 - Books integrity weighs 5; engagement weighs 3. When they conflict, books win.
 - Preserve the Command and visible Confirm boundary in every interaction.
-- Mobile below 720px is glance plus one-tap; wide at or above 720px is the customizable office.
-- Verify 320px, 390px, 720px, and approximately 1100px.
+- Phone below 720px is glance plus one-tap (`OfficePhone` Draft C, frozen). Tablet 720–1279 scales that same board. Computer at or above 1280 is the night-cabin office (D-151).
+- Verify 320px, 390px, 768px, 1024px, 1280px, and approximately 1440px.
 - Cover keyboard, focus, semantic labels, contrast, reduced motion, loading, empty, error, offline, overflow, long text, and large-number states relevant to the change.
 - Mode, sync, AI, and environment labels describe literal runtime behavior.
 - Responsible retention comes from real household acts, never guilt, pet death, fake fees, or artificial loss.
