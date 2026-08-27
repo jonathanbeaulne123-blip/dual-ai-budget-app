@@ -64,6 +64,7 @@ Only the currently open or just-closed worksession belongs here. Durable history
 
 | Worksession | State | Scope | Output |
 |---|---|---|---|
+| [2026-08-27 Durable roadmap site](worksessions/2026-08-27-roadmap-site.md) | **LOCAL; PUBLIC/NO-GUARD SELECTED; RELEASE PENDING** | Public read-only `/roadmap/`, additive evidence data, responsive and keyboard proof | D-154; [`ROADMAP_SITE.md`](ROADMAP_SITE.md); no push or deploy |
 | [2026-08-27 Shift tab](worksessions/2026-08-27-shift-tab.md) | **CLOSED; merged #213** | First-class Shift tab matching locked 390px mocks | D-153; live Worker `5b2b2b47`; hard-refresh kitchen |
 | [2026-08-27 Supabase Preview 016 history](worksessions/2026-08-27-supabase-preview-016-history.md) | **ACTIVE** | GitHub Preview must match local 016 filename | History row retagged; no schema re-apply |
 | [2026-08-27 First-create false conflict](worksessions/2026-08-27-first-create-false-conflict.md) | **CLOSED; merged #210** | Retry after create must not say another phone | Live Worker `cc694eee`; Retry now on stuck household |
@@ -172,6 +173,7 @@ Small updates remain compact and link to evidence; promote one to a major blurb 
 
 | Update | Why it matters | Evidence |
 |---|---|---|
+| Durable public product-health and investor roadmap site (local) | Makes dated audit conclusions, E0–E5 evidence gates, real benchmark context, and the full P0–P∞ horizon revisitable without removing prior roadmap items or touching household books. | D-154; [`ROADMAP_SITE.md`](ROADMAP_SITE.md); [`PRODUCT_HEALTH_AND_VIABILITY_AUDIT_2026-08-27.md`](PRODUCT_HEALTH_AND_VIABILITY_AUDIT_2026-08-27.md) |
 | Command states chrome (Development) | Honest command UI on the real shell; sync anchor undo; in-app conflict choose. | [PR #76](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/76) |
 | Ledger naming at setup | First-run household/shared/Personal labels without exposing member ids. | [PR #77](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/77) |
 | Hosted membership + Personal scope | D-117 discovery/transport; migration 003 applied with exact grants. | [PR #74](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/74), [PR #75](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/75) |

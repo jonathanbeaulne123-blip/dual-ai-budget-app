@@ -5,9 +5,9 @@
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `C:\Users\jonat\OneDrive\Documents\ChatGPT\Budget App`
-- **Branch:** `codex/roadmap-site`
-- **Baseline SHA:** `001fa6c4ac31ebf305bc5168b52f7495afbbe721`
-- **Head SHA:** `001fa6c4ac31ebf305bc5168b52f7495afbbe721` at open
+- **Branch:** `codex/roadmap-public-release`
+- **Baseline SHA:** `891cc5dfe535dc4244cd87577af18e47a0fdd3f1` (`origin/main` at release rebase)
+- **Head SHA:** `733e396` after the functional packet replay; canon-only release update follows locally
 - **PR or issue:** none
 - **Risk:** Medium locally; Release if deployed
 - **Decision owner:** Jonathan; public/no-guard access selected, final push/deployment confirmation still required
@@ -27,8 +27,8 @@ Jonathan can open one durable, mobile-friendly roadmap site at any time and expa
 
 ## Verified baseline
 
-- Current branch was cut from `origin/main@001fa6c`; local tracked tree was clean.
-- Existing untracked `outputs/` and `tmp/` belong to prior work and are out of scope.
+- The implementation was first built from `origin/main@001fa6c`, then isolated and replayed cleanly onto current `origin/main@891cc5d` for release review.
+- The source checkout's unrelated computer-suite, `outputs/`, and `tmp/` changes are absent from the release branch.
 - Hearth already publishes Cloudflare Workers + Assets from GitHub `main` through `wrangler deploy`.
 - The temporary roadmap is served only from localhost and its Canvas source opens as code in the current app.
 - The proposed site contains project/audit information only. It must contain no ledger rows, credentials, household exports, or environment secrets.
@@ -81,6 +81,7 @@ Jonathan can open one durable, mobile-friendly roadmap site at any time and expa
 - 2026-08-27: real-browser proof passed at 1440×900 and 390×844. `/roadmap/` resolves to the standalone page, lens arrow keys and E5 pointer selection work, all 6 scores/6 gates/10 phases render, the phone layout has one-column score cards, no page-level horizontal overflow, and the console has no errors or warnings.
 - 2026-08-27: D-154, the additive roadmap update, audit link, and site maintenance protocol were appended to canon without deleting existing roadmap content.
 - 2026-08-27: Jonathan selected **public, no-guard** access because displayed people and data are synthetic. Added index/follow metadata, Open Graph identity, and canonical address `https://hearth-books.jonathan-beaulne123.workers.dev/roadmap/`. No push or deployment occurred.
+- 2026-08-27: `origin/main` advanced to `891cc5d` (PR #215). The roadmap functional packet replayed without conflict as `733e396` on clean branch `codex/roadmap-public-release`; unrelated source-checkout changes are excluded.
 
 ## Decisions
 
