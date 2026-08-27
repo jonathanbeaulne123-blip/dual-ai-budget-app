@@ -49,6 +49,7 @@ Use a subagent for a bounded, independent, read-heavy audit. Keep one writer per
 ## Context budget
 
 - Load the constitution and only the living specs needed for the current outcome.
+- [`docs/BUTTON_INVENTORY.md`](BUTTON_INVENTORY.md) is consult-when-mapping-UI (onboarding, Office/phone chrome, inventing or moving a tap target). Do not load it as constitution or at every session start.
 - Prefer repository skills for repeatable procedures; their full text loads only when invoked.
 - Do not paste the whole repository, old chats, workbook contents, or museum folders into a prompt.
 - A packet must stand on its named SHA and must not require private chat memory.

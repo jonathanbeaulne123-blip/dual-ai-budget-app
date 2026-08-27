@@ -8,7 +8,7 @@ Work on: $ARGUMENTS
 
 1. Establish current branch, commit, PR, task state, and relevant living spec.
 2. State household job, Budget delta (5), Engagement delta (3), and risk.
-3. Inspect current code and tests; an assignment packet is not proof of implementation.
+3. Inspect current code and tests; an assignment packet is not proof of implementation. When mapping or adding tap targets, consult `docs/BUTTON_INVENTORY.md`, then verify labels in `src/`.
 4. Keep, reshape, or refuse each material idea with a concrete reason.
 5. Implement the smallest coherent version that creates the household outcome. Explain justified expansion.
 6. Use fictional Development/demo data.

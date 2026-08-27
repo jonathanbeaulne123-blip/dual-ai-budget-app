@@ -1,5 +1,23 @@
 # AI Task and Handoff Standard
 
+## Button inventory living map (2026-08-27)
+
+**Status:** Branch `cursor/button-inventory-doc-19a1` (draft PR). Risk: **Low** (docs + consult pointers only; no product code).
+
+**Household outcome:** Jonathan has a ranked, ELI5 map of every tap-target family. AIs load it only when mapping UI, not at every session start.
+
+**Budget delta (5):** `+1` — Confirm stays named as the only money write; AIs are less likely to invent a second post path.
+
+**Engagement delta (3):** `+1` — Daily spine vs toys is ranked so onboarding and UX work do not lead with hangman.
+
+**What changed:** `docs/BUTTON_INVENTORY.md`; indexed from `docs/README.md`; one-line consult pointers in `ONBOARDING_UPDATE.md` §3, `AI_OPERATING_MODEL.md` context budget, `CLAUDE.md`, and `hearth-design-review`. Not added to `AGENTS.md` required reading.
+
+**Verification:** File exists; README row present; `AGENTS.md` constitution load unchanged. No `pnpm check` — no `src/` change.
+
+**Data/environment:** None. No schema, secrets, Production, or deploy.
+
+**Next owner:** Jonathan — review/merge the docs PR. Refresh `BUTTON_INVENTORY.md` in the same PR that adds, removes, or renames a control family.
+
 ## T3-S1 optimistic command chrome (2026-08-27)
 
 **Status:** Branch `cursor/t3-s1-optimistic-command-chrome-403c` (draft PR). Risk: **Medium** (UX only; CommandOutcome unchanged).

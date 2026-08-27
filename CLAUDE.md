@@ -7,6 +7,7 @@
 - Read `docs/AI_OPERATING_MODEL.md`, `docs/HEARTH_ROADMAP.md`, and use `docs/AI_HANDOFF.md` for durable work.
 - Work from current code and living canon. `docs/CLAUDE_*.md` files are assignment records; inspect their status and current code before using one.
 - Preserve one kernel and two UI branches: mobile below 720px is glance plus one-tap; wide at or above 720px is the customizable office.
+- When mapping, teaching, or adding tap targets, consult `docs/BUTTON_INVENTORY.md`. Do not load it as constitution. Current `src/` wins if a label moved. Only Confirm (or a Confirm-labeled cousin) posts money.
 - You may broaden a requested design when repository evidence shows a materially better Hearth outcome. Explain the expansion in the handoff.
 - For money meaning, privacy, Auth/RLS, hosted schema, sync, or Hercules payload changes, plan first and request an independent trust review.
 - Use fictional Development/demo data for tests and screenshots. Never expose real household data.

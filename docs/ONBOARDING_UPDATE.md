@@ -48,6 +48,8 @@ That does **not** mean every control is onboarding-ready:
 
 ## 3. Every control family: disposition for the tutorial
 
+Ranked usefulness × predicted-use map (plain-language, consult when mapping UI, not constitution): [BUTTON_INVENTORY.md](BUTTON_INVENTORY.md). This section stays the tutorial disposition. If a label disagrees with current TSX, the TSX wins.
+
 Legend:
 
 - **Feature** — central guided action Bianca performs.
