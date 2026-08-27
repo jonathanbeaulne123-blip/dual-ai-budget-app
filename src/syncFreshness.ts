@@ -12,6 +12,8 @@ export type SyncFreshnessTransportMode =
   | "local"
   | "hidden";
 
+export type SyncFreshnessActionKind = "retry" | "review";
+
 export type SyncFreshnessDisplay = {
   visible: boolean;
   transportPrimary: string;
@@ -26,6 +28,8 @@ export type SyncFreshnessDisplay = {
   showPendingHint: boolean;
   /** True when we must not imply the household is fully synced. */
   blocksSyncedLabel: boolean;
+  actionLabel: string | null;
+  actionKind: SyncFreshnessActionKind | null;
 };
 
 export type SyncFreshnessInput = {
@@ -128,6 +132,8 @@ export function buildSyncFreshness(input: SyncFreshnessInput): SyncFreshnessDisp
     tone: "neutral",
     showPendingHint: false,
     blocksSyncedLabel: true,
+    actionLabel: null,
+    actionKind: null,
   };
 
   if (!household || !input.viewerMemberId) return hidden;
@@ -181,6 +187,22 @@ export function buildSyncFreshness(input: SyncFreshnessInput): SyncFreshnessDisp
     sourceLine,
   ].filter(Boolean);
 
+  let actionLabel: string | null = null;
+  let actionKind: SyncFreshnessActionKind | null = null;
+  if (input.hasOpenConflict || mode === "conflicted") {
+    actionLabel = "Review";
+    actionKind = "review";
+  } else if (
+    mode === "pending-transport"
+    && (input.offline || household.sharing?.lastError || !showPendingHint)
+  ) {
+    actionLabel = "Retry now";
+    actionKind = "retry";
+  } else if (mode === "transport-error" || mode === "disconnected") {
+    actionLabel = "Retry now";
+    actionKind = "retry";
+  }
+
   return {
     visible: true,
     transportPrimary,
@@ -194,6 +216,35 @@ export function buildSyncFreshness(input: SyncFreshnessInput): SyncFreshnessDisp
     tone,
     showPendingHint,
     blocksSyncedLabel,
+    actionLabel,
+    actionKind,
+  };
+}
+
+const SYNC_DUPLICATE_CHIP_LABELS = new Set([
+  "Waiting to share",
+  "Sharing…",
+  "Needs attention",
+  "Share paused",
+  "Offline",
+  "Up to date",
+]);
+
+const SYNC_DUPLICATE_BANNER_LABELS = new Set([
+  "Saved here. Not shared yet.",
+  "Both copies kept.",
+]);
+
+/** T1-S6 freshness row replaces legacy command chip/banner for sync status. */
+export function suppressesCommandSyncChrome(
+  display: SyncFreshnessDisplay,
+  chipPrimary: string | null | undefined,
+  bannerPrimary: string | null | undefined,
+): { hideChip: boolean; hideBanner: boolean } {
+  if (!display.visible) return { hideChip: false, hideBanner: false };
+  return {
+    hideChip: chipPrimary ? SYNC_DUPLICATE_CHIP_LABELS.has(chipPrimary) : false,
+    hideBanner: bannerPrimary ? SYNC_DUPLICATE_BANNER_LABELS.has(bannerPrimary) : false,
   };
 }
 

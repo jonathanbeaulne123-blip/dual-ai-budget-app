@@ -246,7 +246,7 @@ import {
 } from "./commandSurface.tsx";
 import { clearSyncAnchor, saveSyncAnchor } from "./syncAnchor.ts";
 import { SyncFreshnessStatus } from "./SyncFreshnessStatus.tsx";
-import { buildSyncFreshness, sharedHouseholdFreshnessCopy } from "./syncFreshness.ts";
+import { buildSyncFreshness, sharedHouseholdFreshnessCopy, suppressesCommandSyncChrome } from "./syncFreshness.ts";
 import {
   recentChangesEmptyCopy,
   recentChangesHeaderPill,
@@ -1262,6 +1262,14 @@ export function App() {
   const syncFreshnessLine = useMemo(
     () => sharedHouseholdFreshnessCopy(syncFreshnessDisplay, syncState),
     [syncFreshnessDisplay, syncState],
+  );
+  const syncChromeSuppression = useMemo(
+    () => suppressesCommandSyncChrome(
+      syncFreshnessDisplay,
+      commandChrome?.chip?.primary,
+      commandChrome?.banner?.primary,
+    ),
+    [syncFreshnessDisplay, commandChrome?.chip?.primary, commandChrome?.banner?.primary],
   );
 
   useEffect(() => {
@@ -2540,8 +2548,15 @@ export function App() {
         </div>
         <span className="pill dev" aria-label="Development environment">Development</span>
       </header>
-      <SyncFreshnessStatus display={syncFreshnessDisplay} />
-      {commandChrome?.chip && (
+      <SyncFreshnessStatus
+        display={syncFreshnessDisplay}
+        busy={busy}
+        onAction={(kind) => {
+          if (kind === "review") setShowConflictSheet(true);
+          else void retryShareNow();
+        }}
+      />
+      {commandChrome?.chip && !syncChromeSuppression.hideChip && (
         <div
           className={`command-chip command-chip--${commandChrome.chip.tone}`}
           role="status"
@@ -2563,7 +2578,7 @@ export function App() {
           )}
         </div>
       )}
-      {commandChrome?.banner && (
+      {commandChrome?.banner && !syncChromeSuppression.hideBanner && (
         <div
           className={`command-banner command-banner--${commandChrome.banner.tone}`}
           role={commandChrome.banner.blocking ? "alert" : "status"}
