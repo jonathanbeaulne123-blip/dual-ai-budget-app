@@ -65,6 +65,7 @@ describe("Flinks Connect panel", () => {
     act(() => (container.querySelector("button") as HTMLButtonElement).click());
     await settleUntil(() => container.querySelector("iframe") != null);
     const iframe = container.querySelector("iframe") as HTMLIFrameElement;
+    expect(iframe.closest(".flinks-connect")).not.toBeNull();
     expect(iframe.src).toMatch(/^https:\/\/toolbox-iframe\.private\.fin\.ag\/v2\//);
     expect(iframe.getAttribute("referrerpolicy")).toBe("no-referrer");
     expect(iframe.getAttribute("sandbox")).not.toContain("allow-top-navigation");
