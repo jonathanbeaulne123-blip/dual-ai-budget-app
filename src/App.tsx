@@ -2472,10 +2472,11 @@ export function App() {
                 )}
                 {environment === "development" && (
                   <>
-                    <p className="kicker">Wipe leftover test households</p>
+                    <p className="kicker" id="start-from-scratch-home">Wipe leftover test households</p>
                     <button
                       className="danger"
                       type="button"
+                      aria-describedby="start-from-scratch-home"
                       disabled={busy}
                       onClick={() => setGuard({ kind: "reset-development" })}
                     >
@@ -2544,9 +2545,11 @@ export function App() {
                   })}
                   {environment === "development" && (
                     <>
-                      <p className="kicker">Wipe leftover test households</p>
+                      <p className="kicker" id="start-from-scratch-list">Wipe leftover test households</p>
                       <button
                         className="danger"
+                        type="button"
+                        aria-describedby="start-from-scratch-list"
                         disabled={busy}
                         onClick={() => setGuard({ kind: "reset-development" })}
                       >

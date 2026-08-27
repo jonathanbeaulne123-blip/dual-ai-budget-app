@@ -19,6 +19,7 @@ describe("first-time entry surface", () => {
     expect(app).toContain("Start from scratch");
     expect(app).toMatch(/discoveredLedgers\.length === 0[\s\S]*Wipe leftover test households[\s\S]*Start from scratch/);
     expect(app).toMatch(/tab === "more"[\s\S]*Start from scratch[\s\S]*Account/);
+    expect(app).toContain('aria-describedby="start-from-scratch-home"');
   });
 
   it("uses the existing code/link parser instead of inventing auth semantics", () => {
