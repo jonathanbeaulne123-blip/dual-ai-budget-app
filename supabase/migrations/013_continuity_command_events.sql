@@ -9,11 +9,11 @@
 -- Rollback:
 --   REVOKE ALL ON FUNCTION public.append_continuity_command(
 --     text, text, text, text, text, text, integer, integer, text, text, jsonb,
---     text, text, text, text, text, boolean, text, text, text, text
+--     text, text, text, text, boolean, text, text, text, text
 --   ) FROM authenticated;
 --   DROP FUNCTION IF EXISTS public.append_continuity_command(
 --     text, text, text, text, text, text, integer, integer, text, text, jsonb,
---     text, text, text, text, text, boolean, text, text, text, text
+--     text, text, text, text, boolean, text, text, text, text
 --   );
 --   DROP TABLE IF EXISTS public.continuity_command_events;
 --   DELETE FROM public.schema_migrations WHERE id = 13;
@@ -218,12 +218,12 @@ $$;
 
 REVOKE ALL ON FUNCTION public.append_continuity_command(
   text, text, text, text, text, text, integer, integer, text, text, jsonb,
-  text, text, text, text, text, boolean, text, text, text, text
+  text, text, text, text, boolean, text, text, text, text
 ) FROM PUBLIC, anon;
 
 GRANT EXECUTE ON FUNCTION public.append_continuity_command(
   text, text, text, text, text, text, integer, integer, text, text, jsonb,
-  text, text, text, text, text, boolean, text, text, text, text
+  text, text, text, text, boolean, text, text, text, text
 ) TO authenticated;
 
 INSERT INTO public.schema_migrations (id, applied_at)
