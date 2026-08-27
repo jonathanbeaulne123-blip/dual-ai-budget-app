@@ -21,13 +21,14 @@ import {
 import { unresolvedConflicts } from "./core/conflict.ts";
 import { markSynchronized } from "./core/sharing.ts";
 import { financialAuditHash } from "./core/commandIdentity.ts";
-import { catalogHousehold, linkGoogleIdentity, postEntry } from "./core/index.ts";
+import { acceptHouseholdWrite, catalogHousehold, linkGoogleIdentity, postEntry } from "./core/index.ts";
 import type { Household } from "./core/types.ts";
 import {
-  createMemoryHostedCas,
-  type MemoryHostedCas,
-  type SnapshotCasRequest,
-} from "./ledger/snapshotCas.ts";
+  createMemoryContinuityCas,
+  stubFetchAgainstContinuityCas,
+  type MemoryContinuityCas,
+} from "./ledger/continuityCasHarness.ts";
+import type { SnapshotCasRequest } from "./ledger/snapshotCas.ts";
 import { decodeJsonPayload } from "./ledger/snapshotPayload.ts";
 import { pushSupabaseHousehold } from "./ledger/supabase.ts";
 
@@ -75,7 +76,12 @@ export function summarizePartnerVisibility(samples: PartnerVisibilitySample[]): 
   };
 }
 
-const DEFAULT_CONFIG = { url: "https://t1-s5.harness.supabase.co", key: "sb_publishable_t1_s5" };
+const DEFAULT_CONFIG = {
+  url: "https://t1-s5.harness.supabase.co",
+  key: "sb_publishable_t1_s5",
+  authUserId: "auth-user-jonathan-harness",
+  accessToken: "jwt-harness-token",
+};
 
 export const HARNESS_IDENTITY_A: ContinuityIdentity = {
   email: "jonathan.harness@example.com",
@@ -103,56 +109,8 @@ async function casRequest(household: Household, expectedRevision: number): Promi
   };
 }
 
-function response(body: unknown, status = 200): Response {
-  return new Response(body == null ? null : JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
-/** Wire fetch to an in-memory hosted CAS (migration 002 semantics). */
-export function stubFetchAgainstHostedCas(host: MemoryHostedCas) {
-  return async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    if (url.includes("households?select=id")) return response([]);
-    if (url.includes("rpc/publish_household_snapshot")) {
-      const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
-      const result = await host.publish({
-        householdId: String(body.p_household_id),
-        expectedRevision: Number(body.p_expected_revision),
-        revision: Number(body.p_revision),
-        environment: String(body.p_environment),
-        name: String(body.p_name),
-        timezone: String(body.p_timezone),
-        currency: String(body.p_currency),
-        invitePhrase: String(body.p_invite_phrase),
-        linked: Boolean(body.p_linked),
-        lastCommittedAt: String(body.p_last_committed_at ?? ""),
-        payload: String(body.p_payload),
-        snapshotHash: String(body.p_snapshot_hash),
-      });
-      if (result.ok) {
-        return response({
-          ok: true,
-          conflict: false,
-          duplicate: result.duplicate === true,
-          revision: result.revision,
-        });
-      }
-      return response({
-        ok: false,
-        conflict: true,
-        reason: result.reason,
-        remote_revision: result.remoteRevision,
-        remote_payload: result.remotePayload,
-      });
-    }
-    if (url.includes("continuity_memberships?") || url.includes("continuity_personal_snapshots?")) {
-      return response({ code: "PGRST205", message: "missing" }, 404);
-    }
-    throw new Error(`Unexpected harness request: ${url}`);
-  };
-}
+export { stubFetchAgainstContinuityCas as stubFetchAgainstHostedCas };
+export { stubFetchAgainstContinuityCas };
 
 function bumpLocalRevision(household: Household): Household {
   const base = household.baseRevision ?? 0;
@@ -188,7 +146,7 @@ function seedSharedHousehold(): { clientA: Household; clientB: Household } {
 }
 
 export type TwoClientSyncHarness = {
-  host: MemoryHostedCas;
+  host: MemoryContinuityCas;
   config: typeof DEFAULT_CONFIG;
   identityA: ContinuityIdentity;
   identityB: ContinuityIdentity;
@@ -206,14 +164,14 @@ export type TwoClientSyncHarness = {
 };
 
 export function createTwoClientSyncHarness(): TwoClientSyncHarness {
-  const host = createMemoryHostedCas();
+  const host = createMemoryContinuityCas();
   const coordinatorB = createContinuityCoordinator();
   const seeded = seedSharedHousehold();
   let clientA = seeded.clientA;
   let clientB = seeded.clientB;
 
   async function pullRemoteHosted(): Promise<Household | null> {
-    const payload = host.get(clientA.householdId).snapshot?.payload;
+    const payload = host.shared.get(clientA.householdId).snapshot?.payload;
     if (!payload) return null;
     return (await decodeJsonPayload(String(payload))) as Household;
   }
@@ -275,8 +233,20 @@ export function createTwoClientSyncHarness(): TwoClientSyncHarness {
       }
       if (remoteRevision > (clientB.baseRevision ?? 0)) {
         coordinatorB.recordPull(clientB.householdId, remoteRevision);
-          if (!coordinatorB.shouldSkipAccept(clientB.householdId, remoteRevision)) {
-          clientB = await reconcileHouseholdSnapshots(clientB, remote, memberId);
+        if (!coordinatorB.shouldSkipAccept(clientB.householdId, remoteRevision)) {
+          const reconciled = await reconcileHouseholdSnapshots(clientB, remote, memberId);
+          const accepted = await acceptHouseholdWrite({
+            previous: clientB,
+            candidate: reconciled,
+            confirmationId: `continuity-pull-${clientB.householdId}-${remoteRevision}`,
+            commandKind: "continuity-pull",
+            postedIds: [],
+            adapters: { persist: async () => {}, ingest: async () => ({ ok: true }) },
+          });
+          if (!accepted.ok) {
+            throw new Error(accepted.userMessage || "Could not accept continuity pull in harness");
+          }
+          clientB = accepted.household;
           coordinatorB.recordAccept(clientB.householdId, remoteRevision);
         }
       }
@@ -341,7 +311,7 @@ export async function pushStaleFromA(
     createdBy: "MEM-001",
     confirmDuplicate: true,
   }).household);
-  const hostedRevision = harness.host.get(local.householdId).household?.revision ?? 0;
+  const hostedRevision = harness.host.shared.get(local.householdId).household?.revision ?? 0;
   const result = await transportHouseholdWithOutbox({
     household: local,
     identity: HARNESS_IDENTITY_A,
@@ -384,7 +354,7 @@ export async function replayOfflineOutboxFromA(
   });
   if (pending.ok) throw new Error("expected offline pending");
 
-  globalThis.fetch = stubFetchAgainstHostedCas(harness.host) as typeof fetch;
+  globalThis.fetch = stubFetchAgainstContinuityCas(harness.host) as typeof fetch;
   const flushed = await flushContinuityOutbox({
     environment: "development",
     identity: HARNESS_IDENTITY_A,

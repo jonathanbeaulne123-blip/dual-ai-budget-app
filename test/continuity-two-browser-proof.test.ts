@@ -5,6 +5,7 @@ import {
   HARNESS_IDENTITY_A,
   replayOfflineOutboxFromA,
   runPartnerVisibilitySamples,
+  stubFetchAgainstContinuityCas,
   stubFetchAgainstHostedCas,
   summarizePartnerVisibility,
   T1_S5_LATENCY_TARGET_MS,
@@ -57,7 +58,7 @@ describe("T1-S5 fault harness", () => {
     vi.stubGlobal("fetch", stubFetchAgainstHostedCas(harness.host));
     await replayOfflineOutboxFromA(harness, "Offline harness milk");
     const remote = await decodeJsonPayload(
-      String(harness.host.get(harness.getClientA().householdId).snapshot?.payload),
+      String(harness.host.shared.get(harness.getClientA().householdId).snapshot?.payload),
     ) as Household;
     expect(remote.transactions.some((row) => row.note === "Offline harness milk")).toBe(true);
   });
@@ -72,7 +73,7 @@ describe("T1-S5 fault harness", () => {
     expect(listContinuityOutbox("development")[0]?.blockedByConflict).toBe(true);
 
     const remote = await decodeJsonPayload(
-      String(harness.host.get(harness.getClientA().householdId).snapshot?.payload),
+      String(harness.host.shared.get(harness.getClientA().householdId).snapshot?.payload),
     ) as Household;
     expect(remote.transactions.some((row) => row.note === "Cloud anchor")).toBe(true);
     expect(remote.transactions.some((row) => row.note === "Stale harness toast")).toBe(false);
@@ -110,6 +111,20 @@ describe("T1-S5 fault harness", () => {
 
     expect(harness.getClientB().revision).toBeGreaterThanOrEqual(revision);
     expect(harness.getClientB().transactions.filter((row) => row.note === note)).toHaveLength(1);
+  });
+});
+
+describe("T1-S5 G6 Migration 012 path", () => {
+  it("uses publish_continuity_snapshot on Auth harness push, not legacy CAS", async () => {
+    const harness = createTwoClientSyncHarness();
+    const tracker = { calls: [] as string[] };
+    vi.stubGlobal("fetch", stubFetchAgainstContinuityCas(harness.host, tracker));
+
+    await harness.postSharedFromA("012 RPC proof milk", "3.25");
+
+    expect(tracker.calls.some((url) => url.includes("rpc/publish_continuity_snapshot"))).toBe(true);
+    expect(tracker.calls.some((url) => url.includes("rpc/publish_household_snapshot"))).toBe(false);
+    expect(harness.host.getPersonal("development", harness.getClientA().householdId, "MEM-001")).toBeTruthy();
   });
 });
 

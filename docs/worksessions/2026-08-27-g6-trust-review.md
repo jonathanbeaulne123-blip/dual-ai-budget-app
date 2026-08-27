@@ -3,7 +3,7 @@
 **Date:** 2026-08-27  
 **Baseline:** `4efe6dc` (pre-T1-S1) → `main`  
 **Risk:** High — hosted money transport + Realtime boundaries  
-**Status:** **CONDITIONAL PASS** — P0 remediated on branch; P1 proof gaps remain before Tier 1 “closed”
+**Status:** **CONDITIONAL PASS → Tier 1 proof gaps closed in code** (2026-08-27 follow-up). P0 remediated earlier; P1 harness proof landed on branch `cursor/g6-tier1-proof-gaps-403c`.
 
 ## Household outcome
 
@@ -24,14 +24,14 @@ Independent trust + books auditors reviewed Tier 1 push-native continuity before
 - **Fix:** `encodePersonalEnvelopePayload` (always plain JSON); atomic publish path uses it.
 - **Tests:** `test/snapshot-payload.test.ts`, `test/auth-membership-authority.test.ts` (large personal canary).
 
-## P1 — open before Tier 1 “closed”
+## P1 — remediated (2026-08-27 follow-up)
 
-| ID | Finding | Owner |
+| ID | Finding | Remediation |
 |---|---|---|
-| P1-1 | Migration 012 tests are static SQL regex only — no pgTAP / `books:smoke:012` | Engineering |
-| P1-2 | T1-S5 harness stubs legacy `publish_household_snapshot`, not 012 atomic path | Engineering |
-| P1-3 | T1-S5 inbound reconcile skips `acceptHouseholdWrite` (prod `App.tsx` does not) | Engineering |
-| P1-4 | Realtime Production guard added (`continuityRealtimeAllowed`); confirm 008 policy state on Dev project | Jonathan / Engineering |
+| P1-1 | Migration 012 tests static SQL regex only | `test/continuity-cas-harness.test.ts` + `pnpm books:smoke:012` (JWT-gated live smoke) |
+| P1-2 | T1-S5 harness stubbed legacy `publish_household_snapshot` | `src/ledger/continuityCasHarness.ts` + Auth config in T1-S5 harness |
+| P1-3 | T1-S5 inbound reconcile skipped `acceptHouseholdWrite` | `applyRealtimePullOnB` now mirrors prod pull accept path |
+| P1-4 | Realtime Production guard added (`continuityRealtimeAllowed`); confirm 008 policy state on Dev project | Jonathan / Engineering (unchanged) |
 
 ## P2 — follow-ups (not blocking T2 planning)
 
@@ -49,7 +49,7 @@ Independent trust + books auditors reviewed Tier 1 push-native continuity before
 | G3 Poll demoted | ✅ |
 | G4 Two-browser latency | ✅ Jonathan manual 2026-08-27 |
 | G5 No ack lie | ✅ |
-| G6 Trust review | ⚠️ **CONDITIONAL PASS** — auditors run; P0 fixed; P1 proof before “closed” |
+| G6 Trust review | ✅ **PASS WITH NOTES** — P0 fixed; P1 harness proof in repo; P1-4 / P2 follow-ups remain |
 
 ## Dual Course
 
@@ -59,8 +59,9 @@ Independent trust + books auditors reviewed Tier 1 push-native continuity before
 ## Verification
 
 ```text
-pnpm exec vitest run test/snapshot-payload.test.ts test/auth-membership-authority.test.ts test/continuity-realtime.test.ts
+pnpm exec vitest run test/continuity-cas-harness.test.ts test/continuity-two-browser-proof.test.ts test/auth-membership-authority.test.ts
 pnpm test
+SUPABASE_ACCESS_TOKEN=<jwt> pnpm books:smoke:012
 ```
 
 ## Next owner
