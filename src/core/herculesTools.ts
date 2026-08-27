@@ -665,7 +665,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
   }
 
   if (call.name === "shift_summary") {
-    const period = cleanPeriod(call.args.period, "this_week");
+    const period = cleanPeriod(call.args.period, "this_month");
     const range = periodRange(today, period, call.args);
     const memberQuery = cleanString(call.args.member);
     const member = resolveMember(household, memberQuery, context);

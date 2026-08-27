@@ -1039,10 +1039,14 @@ async function handleMcp(request, env) {
       const result = run.results[0];
       const usedTool = name;
       const rawAnswer = result?.sentence || run.talk.spoken;
-      const answer = rawAnswer.startsWith("I used `")
+      let answer = rawAnswer.startsWith("I used `")
         ? rawAnswer
         : `I used \`${usedTool}\`. ${rawAnswer}`;
       const memberShiftCount = books.shifts.filter((shift) => shift.memberId === claims.memberId).length;
+      // Spoken sync hint only on empty tool results — never decorate a successful shift answer.
+      if (SHIFT_DIAGNOSTIC_TOOLS.has(name) && result?.status === "empty") {
+        answer += ` Cloud snapshot check: ${books.shifts.length} shift${books.shifts.length === 1 ? "" : "s"} total, ${memberShiftCount} for this member, ${personal?.shifts?.length ?? 0} in the Personal envelope. If Work report shows shifts on the phone, open Hearth → wait until sync is quiet (or Pairing → Retry now), then ask again.`;
+      }
       const identity = booksIdentity(books, claims, view);
       const structuredContent = {
         status: result?.status || "empty",

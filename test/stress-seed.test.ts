@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   eraseDevelopmentData,
+  executeHerculesReadToolPlan,
   seedStressHousehold,
+  splitForSync,
   stressHouseholdAnnualIncome,
   tipWeather,
   weekdaySunday0,
+  workReportFacts,
 } from "../src/core/index.ts";
 
 const TODAY = "2026-08-25" as const;
@@ -119,6 +122,30 @@ describe("Development stress data controls", () => {
     expect(erased.budgetPlans).toEqual([]);
 
     expect(() => eraseDevelopmentData({ ...household, environment: "production" })).toThrow(/Development/);
+  });
+
+  it("keeps harbour tip shifts in the shared cloud projection Hercules Pro reads", () => {
+    const tipMemberId = "MEM-002";
+    const seeded = seedStressHousehold({
+      today: TODAY,
+      environment: "development",
+      seed: 777,
+      numberStyle: "realistic",
+      tipMemberId,
+    });
+    const { shared, personal } = splitForSync(seeded, tipMemberId);
+    expect(seeded.shifts.length).toBeGreaterThan(90);
+    expect(seeded.shifts.every((shift) => shift.visibility === "both")).toBe(true);
+    expect(shared.shifts).toHaveLength(seeded.shifts.length);
+    expect(personal.shifts).toHaveLength(0);
+    const monthStart = `${TODAY.slice(0, 7)}-01`;
+    const report = workReportFacts(seeded, tipMemberId, monthStart, TODAY);
+    expect(report.count).toBeGreaterThan(0);
+    const run = executeHerculesReadToolPlan(seeded, {
+      calls: [{ name: "shift_summary", args: { period: "this_month", member: "Jonathan" } }],
+    }, TODAY, { memberId: tipMemberId, view: "household" });
+    expect(run.results[0]?.status).toBe("ok");
+    expect(run.results[0]?.sentence).toMatch(new RegExp(`${report.count} posted shift`));
   });
 
   it("preserves Google continuity identity on Reload so Hercules Pro can still read the fixture", () => {
