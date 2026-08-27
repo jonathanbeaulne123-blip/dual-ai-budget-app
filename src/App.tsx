@@ -2061,7 +2061,7 @@ export function App() {
         <ConfirmSheet
           title="Start from scratch?"
           body="This permanently deletes every disposable Development household you own from the cloud, leaves any you only joined, and clears this phone’s Development copies. Then you can create a new household."
-          extra="Production is not touched. Partner phones keep their own copies until they refresh. Google stays signed in. Prefer migration 016 in the Supabase SQL Editor; without it this uses the existing per-household delete."
+          extra="Production is not touched. Partner phones keep their own copies until they refresh. Google stays signed in."
           confirmLabel="Delete all Development households"
           danger
           busy={busy}

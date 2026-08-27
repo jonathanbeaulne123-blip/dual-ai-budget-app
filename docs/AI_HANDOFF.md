@@ -10,7 +10,7 @@
 
 **Engagement delta (3):** `+2` — one Confirm instead of tapping Delete on every household.
 
-**What changed:** `hearth_reset_development_households` (016) is live on project `tykhocwacaxwquhynkok`; kitchen Start-from-scratch chrome remains on this PR until merge/deploy.
+**What changed:** `hearth_reset_development_households` (016) is live on project `tykhocwacaxwquhynkok`; kitchen Start-from-scratch chrome remains on this PR until merge/deploy. Confirm extra no longer asks to paste 016.
 
 **Verification:** Live metadata only — `public.schema_migrations` id 16; function exists, `SECURITY DEFINER`, `search_path=""`, `authenticated` EXECUTE yes, `anon` EXECUTE no. Production household count **0→0**. Development household count **7→7**. MCP migration `20260827072847` / `reset_development_households`. `NOTIFY pgrst, 'reload schema'`. Did not call the reset RPC.
 
