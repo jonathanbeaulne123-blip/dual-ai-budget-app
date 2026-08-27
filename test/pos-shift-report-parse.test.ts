@@ -124,7 +124,8 @@ describe("document scan prefers paid vision for shift reports", () => {
     expect(body.result.shiftDraft.cardTipsCents).toBe(13_102);
     expect(body.result.shiftDraft.customersServed).toBe(17);
     expect(run).not.toHaveBeenCalled();
-    const sent = JSON.parse(String(upstream.mock.calls[0]?.[1]?.body));
+    const sentBody = upstream.mock.calls[0]?.[1]?.body;
+    const sent = JSON.parse(String(sentBody));
     expect(sent.model).toBe("gpt-4o");
   });
 });
