@@ -2,9 +2,9 @@
 
 ## Tip covariates + Hercules tip science + Pro paged reads (D-152) (2026-08-27)
 
-**Status:** Branch `cursor/tip-science-covariates-403c` (draft PR). Risk: **Medium–High** (shift schema + Hercules tools + Pro pagination + OCR draft). Not merged. Not deployed. No Production macro claims.
+**Status:** Branch `cursor/tip-science-covariates-403c`, draft [PR #208](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/208). Risk: **Medium–High** (shift schema + Hercules tools + Pro pagination + OCR draft). Not merged. Not deployed. No Production macro claims.
 
-**Base SHA:** `ef3274a` · **Head SHA:** `4613442` (plus follow-up docs commit if any).
+**Base SHA:** `ef3274a` · **Head SHA:** `481a69b`.
 
 **Household outcome:** End-of-night Confirm captures sales, customers served, floor headcount, and event tags so tip projections get better; Hercules (free + Pro) uses those covariates; Pro can page long shift/ledger history; optional camera drafts a shift report into Confirm without posting.
 
