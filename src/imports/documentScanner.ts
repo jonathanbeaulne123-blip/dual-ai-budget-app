@@ -4,8 +4,8 @@ export const DOCUMENT_SCAN_PATH = "/documents/scan";
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 /** Phone camera originals routinely exceed what Workers AI accepts reliably. */
-const MAX_SCAN_EDGE_PX = 1600;
-const SCAN_JPEG_QUALITY = 0.82;
+const MAX_SCAN_EDGE_PX = 2000;
+const SCAN_JPEG_QUALITY = 0.88;
 
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = "";
