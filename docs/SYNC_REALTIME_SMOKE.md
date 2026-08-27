@@ -45,7 +45,7 @@ Expect **2 rows**. Apply from `supabase/migrations/014_realtime_publication.sql`
 - [ ] Row amounts and accounts match PGlite on both devices (no silent corruption)
 - [ ] Sync chrome does not claim “synced” while outbox is pending after offline (spot-check optional)
 
-Automated harness: `test/continuityTwoClientHarness.test.ts` (merged via T1-S5 / PR #179) covers offline outbox, stale CAS, duplicate Realtime in CI.
+Automated harness: `test/continuity-two-browser-proof.test.ts` (merged via T1-S5 / PR #179) covers offline outbox, stale CAS, duplicate Realtime in CI — **legacy CAS stub path**; see G6 review for 012-path proof gap.
 
 ---
 
@@ -69,9 +69,9 @@ Automated harness: `test/continuityTwoClientHarness.test.ts` (merged via T1-S5 /
 | G3 Poll demoted | ✅ (fallback only) |
 | G4 Two-browser latency | ✅ **Jonathan manual pass 2026-08-27** |
 | G5 No ack lie | ✅ (D-147 + tests) |
-| G6 Trust review | Open before calling Tier 1 “closed” |
+| G6 Trust review | ⚠️ **CONDITIONAL PASS** — auditors run 2026-08-27; P0 personal gzip fix merged pending; P1 proof gaps before “closed” ([`worksessions/2026-08-27-g6-trust-review.md`](worksessions/2026-08-27-g6-trust-review.md)) |
 
-**Still open before T2:** G6 auditors, T1-S6 freshness UI (optional), merge T2-S1 after rebase.
+**Still open before T2:** P1 automated 012 proof + harness Tier 1 path; T1-S6 freshness UI (optional); merge T2-S1 after rebase.
 
 ---
 
