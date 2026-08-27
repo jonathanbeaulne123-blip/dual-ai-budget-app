@@ -63,7 +63,7 @@ describe("shift glance projections", () => {
     expect(glance.takeHomeCents).not.toBe(oracle!.p50Cents);
     expect(glance.taxMilk).not.toBeNull();
     expect(glance.taxMilk!.assumptions.join(" ")).toMatch(/educational|not CRA/i);
-    expect(shiftOracleChipTalk(household, "Tonight?", today, memberId)?.spoken).toMatch(/projection/i);
+    expect(shiftOracleChipTalk(household, "Tonight?", today, memberId)?.spoken).toMatch(/projection|off the cadence|nights like this/i);
     expect(shiftOracleChipTalk(household, "Protect or chase?", today, memberId)?.spoken).toMatch(/protect|chase|even/i);
     expect(shiftOracleChipTalk(household, "Tax milk?", today, memberId)?.spoken).toMatch(/educational|tax milk/i);
   });
@@ -74,6 +74,7 @@ describe("Shift tab wiring", () => {
     const app = readFileSync("src/App.tsx", "utf8");
     const css = readFileSync("src/styles.css", "utf8");
     const page = readFileSync("src/WorkShiftPage.tsx", "utf8");
+    const herculesPage = readFileSync("src/core/herculesPage.ts", "utf8");
     const more = readFileSync("src/WorkShiftFlow.tsx", "utf8");
     expect(css).toMatch(/\.nav \{[\s\S]*grid-template-columns:\s*1fr 1fr 1fr 56px 1fr 1fr 1fr/);
     expect(app).toMatch(/aria-label="Calendar"/);
@@ -86,7 +87,7 @@ describe("Shift tab wiring", () => {
     expect(page).toMatch(/WorkJobsCard/);
     expect(page).toMatch(/WorkShiftHistoryCard/);
     expect(page).toMatch(/WorkReportCard/);
-    expect(page).toMatch(/Tonight/);
+    expect(herculesPage).toMatch(/Tonight\?/);
     expect(more).not.toMatch(/More → Jobs/);
     expect(more).toMatch(/Shift → Jobs/);
   });
