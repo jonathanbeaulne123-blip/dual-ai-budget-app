@@ -32,14 +32,20 @@ function enabled(env) {
   return String(env?.EVIDENCE_ENABLED || "").trim().toLowerCase() === "true";
 }
 
-function activeConfig(env) {
-  if (!enabled(env)) throw new Error("Evidence Mesh is not enabled for Development.");
-  if (String(env?.EVIDENCE_ALLOW_PRODUCTION || "").trim().toLowerCase() === "true") {
+function activeConfig(env, environment = "development") {
+  if (!enabled(env)) throw new Error("Evidence Mesh is not enabled.");
+  if (environment !== "development" && environment !== "production") throw new Error("Evidence environment is invalid.");
+  const production = environment === "production";
+  if (production && String(env?.EVIDENCE_ALLOW_PRODUCTION || "").trim().toLowerCase() !== "true") {
     throw new Error("Evidence Mesh Production activation is not permitted.");
   }
-  if (!env?.EVIDENCE_DB || !env?.EVIDENCE_RAW || !env?.EVIDENCE_DERIVE) throw new Error("Evidence Mesh bindings are not configured.");
-  if (String(env?.EVIDENCE_KEK_V1 || "").length < 32) throw new Error("Evidence encryption key is not configured.");
-  return { db: env.EVIDENCE_DB, raw: env.EVIDENCE_RAW, queue: env.EVIDENCE_DERIVE };
+  const db = production ? env?.EVIDENCE_PRODUCTION_DB : env?.EVIDENCE_DB;
+  const raw = production ? env?.EVIDENCE_PRODUCTION_RAW : env?.EVIDENCE_RAW;
+  const queue = production ? env?.EVIDENCE_PRODUCTION_DERIVE : env?.EVIDENCE_DERIVE;
+  const keyMaterial = String((production ? env?.EVIDENCE_PRODUCTION_KEK_V1 : env?.EVIDENCE_KEK_V1) || "");
+  if (!db || !raw || !queue) throw new Error(`Evidence Mesh ${environment} bindings are not configured.`);
+  if (keyMaterial.length < 32) throw new Error(`Evidence ${environment} encryption key is not configured.`);
+  return { db, raw, queue, environment, keyMaterial };
 }
 
 function base64Url(bytes) {
@@ -70,19 +76,19 @@ function ownership(scope, evidenceId, digest, cipherVersion = 1) {
   return `evidence:v1:${scope.environment}:${scope.authUserId}:${scope.householdId}:${scope.memberId}:${evidenceId}:${digest}:c${cipherVersion}`;
 }
 
-async function kek(env) {
-  const material = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(env.EVIDENCE_KEK_V1)));
+async function kek(config) {
+  const material = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(config.keyMaterial));
   return crypto.subtle.importKey("raw", material, "AES-GCM", false, ["encrypt", "decrypt"]);
 }
 
-async function encryptRaw(env, scope, evidenceId, digest, plaintext) {
+async function encryptRaw(config, scope, evidenceId, digest, plaintext) {
   const aad = new TextEncoder().encode(ownership(scope, evidenceId, digest));
   const dekBytes = crypto.getRandomValues(new Uint8Array(32));
   const dataKey = await crypto.subtle.importKey("raw", dekBytes, "AES-GCM", false, ["encrypt", "decrypt"]);
   const contentIv = crypto.getRandomValues(new Uint8Array(12));
   const ciphertext = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: contentIv, additionalData: aad }, dataKey, plaintext));
   const wrapIv = crypto.getRandomValues(new Uint8Array(12));
-  const wrapped = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: wrapIv, additionalData: aad }, await kek(env), dekBytes));
+  const wrapped = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: wrapIv, additionalData: aad }, await kek(config), dekBytes));
   return {
     ciphertext,
     wrappedDek: `v1.${base64Url(wrapIv)}.${base64Url(wrapped)}`,
@@ -90,7 +96,7 @@ async function encryptRaw(env, scope, evidenceId, digest, plaintext) {
   };
 }
 
-async function decryptRaw(env, scope, row, ciphertext) {
+async function decryptRaw(config, scope, row, ciphertext) {
   const [version, wrapIvRaw, wrappedRaw, extra] = String(row.wrapped_dek || "").split(".");
   const manifest = JSON.parse(String(row.nonce_manifest || "{}"));
   if (version !== "v1" || !wrapIvRaw || !wrappedRaw || extra || manifest.version !== 1 || !manifest.contentIv) {
@@ -99,7 +105,7 @@ async function decryptRaw(env, scope, row, ciphertext) {
   const aad = new TextEncoder().encode(ownership(scope, row.evidence_id, row.plaintext_sha256, row.cipher_version));
   const dek = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv: fromBase64Url(wrapIvRaw), additionalData: aad },
-    await kek(env),
+    await kek(config),
     fromBase64Url(wrappedRaw),
   );
   const dataKey = await crypto.subtle.importKey("raw", dek, "AES-GCM", false, ["decrypt"]);
@@ -210,7 +216,7 @@ async function storeCapture(env, config, scope, captureKind, contentType, bytes,
   const evidenceId = randomId("evi_");
   const digest = await sha256(bytes);
   const objectKey = `v1/${evidenceId}`;
-  const encrypted = await encryptRaw(env, scope, evidenceId, digest, bytes);
+  const encrypted = await encryptRaw(config, scope, evidenceId, digest, bytes);
   const now = new Date().toISOString();
   await reserveR2Storage(config, bytes.byteLength);
   try {
@@ -264,7 +270,7 @@ async function mintCaptureCapability(request, env, config) {
   if (!channel) throw new Error("Capture capability channel is invalid.");
   const origin = capabilityOrigin(channel, input.origin);
   const byteLimit = Math.max(1, Math.min(MAX_BYTES, Math.round(Number(input.byteLimit) || MAX_BYTES)));
-  const token = base64Url(crypto.getRandomValues(new Uint8Array(32)));
+  const token = `${scope.environment === "production" ? "p" : "d"}_${base64Url(crypto.getRandomValues(new Uint8Array(32)))}`;
   const capabilityHash = await sha256(new TextEncoder().encode(token));
   const now = new Date();
   const expiresAt = new Date(now.getTime() + 5 * 60_000).toISOString();
@@ -318,17 +324,36 @@ export async function handleEvidenceEmail(message, env) {
     message.setReject?.("Hearth Evidence email capture is disabled.");
     return;
   }
-  const config = activeConfig(env);
   const domain = String(env?.EVIDENCE_EMAIL_DOMAIN || "").trim().toLowerCase();
   const recipient = String(message.to || "").trim().toLowerCase();
   const match = recipient.match(/^h-([A-Za-z0-9_-]{32})@(.+)$/);
   if (!match || match[2] !== domain) { message.setReject?.("Unknown Hearth Evidence mailbox."); return; }
   const mailboxHash = await sha256(new TextEncoder().encode(match[1]));
-  const owner = await config.db.prepare("SELECT environment, auth_user_id, household_id, member_id FROM evidence_mailboxes WHERE mailbox_hash = ? AND active = 1 LIMIT 1").bind(mailboxHash).first();
-  if (!owner) { message.setReject?.("Unknown Hearth Evidence mailbox."); return; }
+  const matches = [];
+  for (const environment of ["development", "production"]) {
+    try {
+      const config = activeConfig(env, environment);
+      const owner = await config.db.prepare("SELECT environment, auth_user_id, household_id, member_id FROM evidence_mailboxes WHERE mailbox_hash = ? AND active = 1 LIMIT 1").bind(mailboxHash).first();
+      if (owner) matches.push({ config, owner });
+    } catch {
+      // An inactive environment cannot own a live mailbox.
+    }
+  }
+  if (matches.length !== 1) { message.setReject?.("Unknown Hearth Evidence mailbox."); return; }
+  const { config, owner } = matches[0];
   const bytes = await readStreamBytes(message.raw, MAX_BYTES);
   const scope = { environment: owner.environment, authUserId: owner.auth_user_id, householdId: owner.household_id, memberId: owner.member_id };
   await storeCapture(env, config, scope, "email", "message/rfc822", bytes, "quarantined");
+}
+
+async function routeEnvironment(request, url) {
+  const queryEnvironment = String(url.searchParams.get("environment") || "");
+  if (queryEnvironment) return queryEnvironment;
+  if ((request.headers.get("Content-Type") || "").toLowerCase().includes("application/json")) {
+    const input = await readJson(request.clone());
+    return String(input.environment || "");
+  }
+  throw new Error("Evidence environment is required.");
 }
 
 async function listEvidence(request, env, config, url) {
@@ -364,7 +389,7 @@ async function readRaw(request, env, config, url, evidenceId) {
   const object = await config.raw.get(row.object_key);
   if (!object) throw new Error("Evidence object is unavailable.");
   const ciphertext = new Uint8Array(await object.arrayBuffer());
-  const plaintext = await decryptRaw(env, scope, row, ciphertext);
+  const plaintext = await decryptRaw(config, scope, row, ciphertext);
   await audit(config, scope, evidenceId, "read-raw", "allowed");
   return new Response(plaintext, {
     status: 200,
@@ -657,7 +682,7 @@ async function hostedCommandReceipt(request, env, scope, jobKey) {
   const key = String(env?.SUPABASE_PUBLISHABLE_KEY || "");
   if (!url.startsWith("https://") || !key || /service_role|secret/i.test(key)) throw new Error("Hearth Auth is not configured.");
   const query = new URLSearchParams({
-    environment: "eq.development",
+    environment: `eq.${scope.environment}`,
     household_id: `eq.${scope.householdId}`,
     idempotency_key: `eq.${jobKey}`,
     select: "id,member_id,idempotency_key,confirmation_id,identity_hash,result_revision,payload_json",
@@ -905,7 +930,9 @@ export async function handleEvidence(request, env) {
       : json({ ok: false, error: "origin" }, 403, cors);
     if (request.method !== "POST") return json({ ok: false, error: "method" }, 405, cors);
     try {
-      const config = activeConfig(env);
+      const token = String(request.headers.get("Authorization") || "").match(/^Evidence\s+([A-Za-z0-9_-]{40,80})$/)?.[1] || "";
+      const environment = token.startsWith("p_") ? "production" : token.startsWith("d_") ? "development" : "";
+      const config = activeConfig(env, environment);
       return json({ ok: true, capture: await capabilityUpload(request, env, config) }, 201, cors);
     } catch (error) {
       return json({ ok: false, error: String(error?.message || error) }, 400, cors);
@@ -917,16 +944,30 @@ export async function handleEvidence(request, env) {
   if (!allowed) return json({ ok: false, error: "origin" }, 403, cors);
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (url.pathname === EVIDENCE_STATUS_PATH && request.method === "GET") {
-    try {
-      const config = activeConfig(env);
-      await config.db.prepare("SELECT 1 AS ok FROM evidence_items LIMIT 1").first();
-      return json({ ok: true, available: true, environment: "development-only", rawStorage: "encrypted-private-r2", automation: "opt-in", productionAllowed: false }, 200, cors);
-    } catch (error) {
-      return json({ ok: true, available: false, environment: "development-only", productionAllowed: false, detail: String(error.message || error) }, 200, cors);
+    const states = {};
+    for (const environment of ["development", "production"]) {
+      try {
+        const config = activeConfig(env, environment);
+        await config.db.prepare("SELECT 1 AS ok FROM evidence_items LIMIT 1").first();
+        states[environment] = { available: true };
+      } catch (error) {
+        states[environment] = { available: false, detail: String(error.message || error) };
+      }
     }
+    const productionAllowed = String(env?.EVIDENCE_ALLOW_PRODUCTION || "").trim().toLowerCase() === "true";
+    return json({
+      ok: true,
+      available: states.development.available || states.production.available,
+      environment: productionAllowed ? "development-and-production" : "development-only",
+      rawStorage: "encrypted-private-r2",
+      automation: "opt-in",
+      productionAllowed,
+      environments: states,
+      ...(!states.development.available && !states.production.available ? { detail: states.development.detail } : {}),
+    }, 200, cors);
   }
   let config;
-  try { config = activeConfig(env); } catch (error) { return json({ ok: false, error: String(error.message || error) }, 503, cors); }
+  try { config = activeConfig(env, await routeEnvironment(request, url)); } catch (error) { return json({ ok: false, error: String(error.message || error) }, 503, cors); }
   try {
     if (url.pathname === "/work/evidence/captures" && request.method === "POST") return json({ ok: true, capture: await createCapture(request, env, config, url) }, 201, cors);
     if (url.pathname === "/work/evidence/captures" && request.method === "GET") return json({ ok: true, captures: await listEvidence(request, env, config, url) }, 200, cors);
@@ -1088,7 +1129,8 @@ async function reconcileIndependentScreenObservations(config, scope, canonicalSh
 }
 
 export async function processEvidenceQueue(batch, env) {
-  const config = activeConfig(env);
+  const productionQueue = String(env?.EVIDENCE_PRODUCTION_QUEUE_NAME || "hearth-evidence-derive-production");
+  const config = activeConfig(env, String(batch?.queue || "") === productionQueue ? "production" : "development");
   for (const message of batch.messages || []) {
     const evidenceId = String(message.body?.evidenceId || "");
     const revision = Number(message.body?.revision);
@@ -1104,7 +1146,7 @@ export async function processEvidenceQueue(batch, env) {
       if (row.object_key) await reserveR2Operation(config, "get");
       const object = row.object_key ? await config.raw.get(row.object_key) : null;
       if (!object) throw new Error("Evidence object is unavailable during derivation.");
-      const plaintext = await decryptRaw(env, {
+      const plaintext = await decryptRaw(config, {
         environment: row.environment, authUserId: row.auth_user_id, householdId: row.household_id, memberId: row.member_id,
       }, row, new Uint8Array(await object.arrayBuffer()));
       const derived = deriveEvidenceBytes({ bytes: plaintext, contentType: row.content_type, captureKind: row.capture_kind });

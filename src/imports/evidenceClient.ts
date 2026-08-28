@@ -73,7 +73,7 @@ async function bodyJson<T>(response: Response): Promise<T> {
 }
 
 async function session(scope: EvidenceScope, provider: SessionProvider): Promise<HearthSupabaseSession> {
-  if (scope.environment !== "development") throw new Error("Evidence Mesh is Development-only.");
+  if (scope.environment !== "development" && scope.environment !== "production") throw new Error("Evidence Mesh environment is invalid.");
   const value = await provider(scope.environment);
   if (!value) throw new Error("Continue with Google before using Evidence Mesh.");
   return value;
@@ -92,10 +92,12 @@ async function jsonRequest<T>(path: string, scope: EvidenceScope, init: RequestI
 }
 
 export async function readEvidenceStatus(fetcher: typeof fetch = fetch) {
-  const body = await bodyJson<{ ok: true; available: boolean; environment: string; productionAllowed: boolean; detail?: string }>(
+  const body = await bodyJson<{ ok: true; available: boolean; environment: "development-only" | "development-and-production"; productionAllowed: boolean; detail?: string; environments?: Record<string, { available: boolean; detail?: string }> }>(
     await fetcher(EVIDENCE_STATUS_PATH, { headers: { Accept: "application/json" } }),
   );
-  if (body.ok !== true || body.environment !== "development-only" || body.productionAllowed !== false) throw new Error("Evidence Mesh returned an unsafe status.");
+  const coherent = (body.environment === "development-only" && body.productionAllowed === false)
+    || (body.environment === "development-and-production" && body.productionAllowed === true);
+  if (body.ok !== true || !coherent) throw new Error("Evidence Mesh returned an unsafe status.");
   return body;
 }
 

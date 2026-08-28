@@ -1,14 +1,14 @@
 # 7shifts Evidence Mesh and deterministic reconciliation
 
-Status: local D-158/D-159 implementation on `codex/7shifts-evidence-mesh`. Risk: **Release**. The dedicated Development D1, private R2, Queue/DLQ, encryption key, both Evidence migrations, and an inert Worker deployment were completed under explicit approval on 2026-08-28. Every activation flag remains off. Email routing, extension/TestFlight distribution, Development capture/automation activation, real-evidence smoke, push, merge, and Production remain separately gated.
+Status: D-158/D-159 merged foundation plus D-160 full-release packet on `codex/evidence-full-release`. Risk: **Release**. Development and Production have separate Evidence D1/private R2/Queue/DLQ resources and wrapping keys; the Production Evidence and 7shifts schemas are applied. Development/Production capture and the read-only official adapter are enabled by the D-160 release config, while automation still requires an explicit member/job policy. Email remains disabled because this Cloudflare account has no Email Routing zone/domain. A real official provider smoke still requires a restaurant-administrator access token entered by the authenticated member.
 
 ## Data path
 
 `explicit capture → authenticated/quarantined Evidence Worker → encrypted member raw object → bounded derivation → canonical evidence bundle → eligible automation job → postWorkShift/reconcileWorkWeekFromEvidence → acceptHouseholdWrite → PGlite + authenticated continuity → Evidence receipt`
 
-The Evidence Worker has its own `EVIDENCE_DB`, private `EVIDENCE_RAW`, and `EVIDENCE_DERIVE`/DLQ design. It does not reuse D-155's `FLINKS_DB`, household snapshots, PGlite, or command events. `wrangler.jsonc` records the dedicated Development D1, R2, and Queue bindings while every activation flag stays hard-off; encryption and mail secrets never enter the file. The R2 bucket has no public development URL or custom domain.
+The Evidence Worker has distinct `EVIDENCE_DB`/`EVIDENCE_PRODUCTION_DB`, private `EVIDENCE_RAW`/`EVIDENCE_PRODUCTION_RAW`, and environment-specific Queue/DLQ bindings. It does not reuse D-155's `FLINKS_DB`, household snapshots, PGlite, or command events. Encryption and mail secrets never enter the file. Both R2 buckets are private with no public URL or custom domain.
 
-The Development vault has an application-enforced R2 ceiling well below Cloudflare's included allowance: 1 GiB stored, 100,000 objects, 10,000 puts per UTC month, and 100,000 gets per UTC month. Reservations happen in D1 before R2 is touched and fail closed. Deletion releases stored bytes; cleanup deletes are never blocked. These are safety ceilings, not an activation signal, and Cloudflare billing alerts remain a separate operational control.
+Each environment vault has an application-enforced R2 ceiling well below Cloudflare's included allowance: 1 GiB stored, 100,000 objects, 10,000 puts per UTC month, and 100,000 gets per UTC month. Reservations happen in that environment's D1 before its R2 is touched and fail closed. Deletion releases stored bytes; cleanup deletes are never blocked. These are safety ceilings, not an activation signal, and Cloudflare billing alerts remain a separate operational control.
 
 ## Deterministic extraction
 
@@ -18,7 +18,7 @@ Recognized observations preserve value, unit, source location, confidence, final
 
 ## Ownership and encryption
 
-Every authenticated route derives the Supabase/Google subject from the bearer JWT and resolves an active `continuity_memberships` row for the exact Development household/member. Clients cannot assert `auth_user_id`. Raw bytes use a random 256-bit data key and AES-GCM. The additional authenticated data binds environment, authenticated subject, household, member, evidence id, plaintext SHA-256, and cipher version. The data key is separately wrapped under versioned `EVIDENCE_KEK_V1`. Raw reads reauthorize, stream with `no-store`, and never return a public/presigned R2 URL. Delete nulls the wrapped key before deleting R2.
+Every authenticated route derives the Supabase/Google subject from the bearer JWT and resolves an active `continuity_memberships` row for the exact environment/household/member. Clients cannot assert `auth_user_id`. Raw bytes use a random 256-bit data key and AES-GCM. The additional authenticated data binds environment, authenticated subject, household, member, evidence id, plaintext SHA-256, and cipher version. The data key is separately wrapped under the environment-specific versioned Evidence key. Raw reads reauthorize, stream with `no-store`, and never return a public/presigned R2 URL. Delete nulls the wrapped key before deleting R2.
 
 Queue messages contain only `{ evidenceId, revision }`. Raw filenames, private calendar URLs, mail sender/recipient/subject/body, provider keys, tokens, names, notes, object keys, and hashes are never household/model facts. Raw evidence defaults to no expiry until the member exports/deletes it or a later approved retention policy changes.
 
@@ -29,7 +29,7 @@ Queue messages contain only `{ evidenceId, revision }`. Raw filenames, private c
 - iPhone companion: SwiftUI/Share Extension/App Intent scaffold accepts one selected file/image/text/URL, uses security-scoped access, Keychain cleanup, account-bound capability validation, nonce replay protection, and bounded URLSession upload. It has no Photos/Contacts/Mail/notification entitlement. Xcode/device/TestFlight proof requires macOS and a separate gate.
 - Email: an authenticated member may rotate a high-entropy alias only when the independent email flag/domain are configured. Cloudflare's trusted email event stores the complete bounded RFC822 encrypted and quarantined. From/To/headers/body/attachments are evidence, never identity. No remote URL is fetched.
 - OCR/vision: the existing local layout/OCR and disclosed provider paths remain independent. The selected artifact is retained only through the Evidence vault; the document client no longer sends its local filename. A screen cannot become eligible unless local and cloud extraction agree at high confidence on every material time/money field.
-- Official API: D-155 remains an optional administrator/company adapter. Its connector is not a prerequisite for employee-selected channels and stays separately disabled/Development-only.
+- Official API: D-155 remains an optional administrator/company adapter in either environment. It is read-only, exact-member/job mapped, separately encrypted per environment, and not a prerequisite for employee-selected channels. No provider call occurs until an authenticated member enters a restaurant-administrator token.
 
 ## Evidence and authority
 
@@ -57,11 +57,11 @@ Settled/closed periods do not reopen. The local packet deliberately routes them 
 
 Tool execution scopes internally for every call. Shift/tip tools can retain only the requesting member's legitimate legacy household-posted shifts; a `member` argument cannot reach partner Personal rows. All evidence bundles/digests are stripped before reduced confirmed shift facts reach tools or model prompts. Calendar projections additionally remove source-derived ids, provenance, notes flags, source timestamps, and capture metadata. Raw vault routes, identifiers, source paths, hashes, filenames, URLs, mail content, coworker names, and pending/quarantined rows have no Hercules contract.
 
-## Activation gates
+## D-160 release state
 
-1. Review/merge local code with zero P0/P1 and documented P2.
-2. **Completed inert:** provision Development D1/R2/Queue/DLQ plus `EVIDENCE_KEK_V1`; apply `migrations/evidence/0001_evidence_mesh.sql` and the fail-closed R2 ceiling in `0002_r2_budget_guard.sql` to the dedicated D1; deploy with every activation flag off.
-3. Synthetic PWA capture and vault attack tests; then an explicitly approved real member capture with automation still off.
-4. Separate approvals for extension distribution, email routing/domain, macOS build/device/TestFlight, and one-job Development automation.
-5. Prove multi-runner retry, full-week overtime correction, settlement/closed-period variance semantics, deletion/export, logs/cache, and rollback.
-6. Production remains hard-disabled until a new Release decision and Production-specific storage, secrets, retention, monitoring, incident response, and rollback proof.
+1. **Complete:** separate Development and Production D1/R2/Queue/DLQ resources, schemas, queue routing, ownership AAD, client scope, UI scope, and Worker secret names.
+2. **Complete locally:** synthetic capture, extraction, cross-member/environment denial, migration application, tamper/deletion, duplicate queue, accounting correction, Hercules stripping, TypeScript, and build proof.
+3. **Release config:** selected capture, official connector, Production Evidence, and Production continuity are enabled. Automation remains off until a member explicitly saves a job policy; no default policy is created.
+4. **External prerequisite:** add a Cloudflare-managed email domain/zone, then configure `EVIDENCE_EMAIL_DOMAIN` and enable Email Routing before setting `EVIDENCE_EMAIL_ENABLED=true`.
+5. **External prerequisite:** enter a valid restaurant-administrator 7shifts access token through Shift → Jobs before any official provider call or real provider smoke.
+6. **Post-deploy proof:** authenticated selected capture/list/derive/export/delete in both environments, exact status/binding inspection, then one explicitly chosen job's automation/retry/correction smoke. Any failure uses the global flags and per-job policy as kill switches.

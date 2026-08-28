@@ -64,16 +64,15 @@ function ScopedSevenShiftsConnectPanel({
   }, [activeJobs, jobId]);
 
   useEffect(() => {
-    if (environment !== "development") return;
     const controller = new AbortController();
     controllerRef.current = controller;
     void (async () => {
       try {
         const status = await readSevenShiftsStatus();
         if (controller.signal.aborted) return;
-        if (!status.available) {
+        if (!status.available || status.environments?.[environment]?.available === false) {
           setState("error");
-          setNotice(status.detail);
+          setNotice(status.environments?.[environment]?.detail || status.detail);
           return;
         }
         const existing = await listSevenShiftsConnections(scope, controller.signal);
@@ -100,9 +99,9 @@ function ScopedSevenShiftsConnectPanel({
     setNotice("");
     try {
       const status = await readSevenShiftsStatus();
-      if (!status.available) {
+      if (!status.available || status.environments?.[environment]?.available === false) {
         setState("error");
-        setNotice(status.detail);
+        setNotice(status.environments?.[environment]?.detail || status.detail);
         return;
       }
       const next = await probeSevenShifts(scope, token, controller.signal);
@@ -168,15 +167,6 @@ function ScopedSevenShiftsConnectPanel({
       setState("error");
       setNotice(caught instanceof Error ? caught.message : String(caught));
     }
-  }
-
-  if (environment !== "development") {
-    return (
-      <section className="card seven-shifts-panel">
-        <header><h2>7shifts</h2></header>
-        <p className="muted">7shifts is Development-only until Production hardening is approved.</p>
-      </section>
-    );
   }
 
   return (

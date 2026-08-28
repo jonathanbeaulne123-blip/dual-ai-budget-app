@@ -51,20 +51,23 @@ function supabaseConfig(env) {
   return { url, key };
 }
 
-function activeConfig(env) {
-  if (!enabled(env)) throw new Error("7shifts is not enabled for Development.");
-  if (String(env?.SEVENSHIFTS_ALLOW_PRODUCTION || "").trim().toLowerCase() === "true") {
+function activeConfig(env, environment = "development") {
+  if (!enabled(env)) throw new Error("7shifts is not enabled.");
+  if (environment !== "development" && environment !== "production") throw new Error("7shifts environment is invalid.");
+  const production = environment === "production";
+  if (production && String(env?.SEVENSHIFTS_ALLOW_PRODUCTION || "").trim().toLowerCase() !== "true") {
     throw new Error("7shifts Production activation is not permitted.");
   }
-  if (!env?.FLINKS_DB) throw new Error("7shifts encrypted connection storage is not configured.");
+  const db = production ? env?.SEVENSHIFTS_PRODUCTION_DB : env?.FLINKS_DB;
+  if (!db) throw new Error(`7shifts ${environment} encrypted connection storage is not configured.`);
   if (String(env?.SEVENSHIFTS_API_BASE_URL || "").replace(/\/$/, "") !== API_BASE) {
     throw new Error("7shifts API host is not configured.");
   }
-  for (const name of ["SEVENSHIFTS_CONNECTION_ENCRYPTION_KEY", "SEVENSHIFTS_DIGEST_KEY"]) {
-    if (String(env?.[name] || "").length < 24) throw new Error("7shifts secrets are not configured.");
-  }
+  const encryptionKey = String((production ? env?.SEVENSHIFTS_PRODUCTION_CONNECTION_ENCRYPTION_KEY : env?.SEVENSHIFTS_CONNECTION_ENCRYPTION_KEY) || "");
+  const digestKey = String((production ? env?.SEVENSHIFTS_PRODUCTION_DIGEST_KEY : env?.SEVENSHIFTS_DIGEST_KEY) || "");
+  if (encryptionKey.length < 24 || digestKey.length < 24) throw new Error(`7shifts ${environment} secrets are not configured.`);
   supabaseConfig(env);
-  return { db: env.FLINKS_DB };
+  return { db, environment, encryptionKey, digestKey };
 }
 
 export async function boundedText(stream, maximum, contentLength = null) {
@@ -94,11 +97,14 @@ async function readJson(request) {
   return value;
 }
 
-function scopeFrom(value) {
+function scopeFrom(value, env) {
   const environment = String(value?.environment || "");
   const householdId = String(value?.householdId || "").trim();
   const memberId = String(value?.memberId || "").trim();
-  if (environment !== "development") throw new Error("7shifts is Development-only.");
+  if (environment !== "development" && environment !== "production") throw new Error("7shifts environment is invalid.");
+  const productionAllowed = [env?.SEVENSHIFTS_ALLOW_PRODUCTION, env?.EVIDENCE_ALLOW_PRODUCTION]
+    .some((flag) => String(flag || "").trim().toLowerCase() === "true");
+  if (environment === "production" && !productionAllowed) throw new Error("Hearth Production data access is not permitted.");
   if (!/^[A-Za-z0-9_-]{3,100}$/.test(householdId) || !/^[A-Za-z0-9_-]{3,100}$/.test(memberId)) {
     throw new Error("Invalid Hearth member scope.");
   }
@@ -129,12 +135,12 @@ async function supabaseJson(env, path, token) {
 }
 
 export async function verifiedScope(request, env, input) {
-  const scope = scopeFrom(input);
+  const scope = scopeFrom(input, env);
   const accessToken = bearer(request);
   const user = await supabaseJson(env, "/auth/v1/user", accessToken);
   if (!user?.id) throw new Error("Continue with Google before connecting 7shifts.");
   const query = new URLSearchParams({
-    environment: "eq.development",
+    environment: `eq.${scope.environment}`,
     household_id: `eq.${scope.householdId}`,
     member_id: `eq.${scope.memberId}`,
     auth_user_id: `eq.${String(user.id)}`,
@@ -174,24 +180,24 @@ function ownership(scope, connectionId, keyVersion = 1) {
 async function aesKey(secret) {
   return crypto.subtle.importKey("raw", await crypto.subtle.digest("SHA-256", new TextEncoder().encode(secret)), "AES-GCM", false, ["encrypt", "decrypt"]);
 }
-async function sealPrivate(env, scope, connectionId, value, keyVersion = 1) {
+async function sealPrivate(config, scope, connectionId, value, keyVersion = 1) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const additionalData = new TextEncoder().encode(ownership(scope, connectionId, keyVersion));
   const ciphertext = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv, additionalData },
-    await aesKey(String(env.SEVENSHIFTS_CONNECTION_ENCRYPTION_KEY)),
+    await aesKey(config.encryptionKey),
     new TextEncoder().encode(JSON.stringify(value)),
   );
   return `v1.${keyVersion}.${base64Url(iv)}.${base64Url(new Uint8Array(ciphertext))}`;
 }
-async function unsealPrivate(env, scope, connectionId, sealed) {
+async function unsealPrivate(config, scope, connectionId, sealed) {
   const [version, keyVersionRaw, ivRaw, bodyRaw, extra] = String(sealed || "").split(".");
   const keyVersion = Number(keyVersionRaw);
   if (version !== "v1" || keyVersion !== 1 || !ivRaw || !bodyRaw || extra) throw new Error("Invalid 7shifts connection state.");
   try {
     const plaintext = await crypto.subtle.decrypt(
       { name: "AES-GCM", iv: fromBase64Url(ivRaw), additionalData: new TextEncoder().encode(ownership(scope, connectionId, keyVersion)) },
-      await aesKey(String(env.SEVENSHIFTS_CONNECTION_ENCRYPTION_KEY)),
+      await aesKey(config.encryptionKey),
       fromBase64Url(bodyRaw),
     );
     return JSON.parse(new TextDecoder().decode(plaintext));
@@ -200,8 +206,8 @@ async function unsealPrivate(env, scope, connectionId, sealed) {
   }
 }
 
-async function hmacHex(env, value) {
-  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(String(env.SEVENSHIFTS_DIGEST_KEY)), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+async function hmacHex(config, value) {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(config.digestKey), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   const digest = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(value)));
   return [...digest].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
@@ -271,7 +277,7 @@ async function discoverUsers(token, companyId) {
   return users.filter((user) => Number(user?.company_id) === companyId && user?.active !== false);
 }
 
-async function probeConnection(request, env, input) {
+async function probeConnection(request, env, config, input) {
   const scope = await verifiedScope(request, env, input);
   const token = accessTokenFrom(input);
   const company = await discoverCompany(token);
@@ -280,7 +286,7 @@ async function probeConnection(request, env, input) {
   return {
     companyName: sevenShiftsSafeLabel(company.name, 80, "7shifts"),
     users: await Promise.all(users.slice(0, 20).map(async (user) => ({
-      userDigest: `s7user_${await hmacHex(env, `${scope.authUserId}:${company.companyId}:${user.id}`)}`,
+      userDigest: `s7user_${await hmacHex(config, `${scope.authUserId}:${company.companyId}:${user.id}`)}`,
       displayName: sevenShiftsDisplayName(user),
     }))),
   };
@@ -297,13 +303,13 @@ async function connectAccount(request, env, config, input) {
   const users = await discoverUsers(token, company.companyId);
   const matched = [];
   for (const user of users) {
-    const digest = `s7user_${await hmacHex(env, `${scope.authUserId}:${company.companyId}:${user.id}`)}`;
+    const digest = `s7user_${await hmacHex(config, `${scope.authUserId}:${company.companyId}:${user.id}`)}`;
     if (digest === userDigest) matched.push(user);
   }
   if (matched.length !== 1) throw new Error("Choose which 7shifts profile is yours.");
   const connectionId = `s7c_${randomId()}`;
   const now = new Date().toISOString();
-  const sealed = await sealPrivate(env, scope, connectionId, {
+  const sealed = await sealPrivate(config, scope, connectionId, {
     accessToken: token,
     companyId: company.companyId,
     userId: Number(matched[0].id),
@@ -352,7 +358,7 @@ async function nameMap(url, token) {
 async function pullConnection(request, env, config, connectionId, input) {
   const scope = await verifiedScope(request, env, input);
   const row = await loadConnection(config, scope, connectionId);
-  const privateState = await unsealPrivate(env, scope, connectionId, row.sealed_private);
+  const privateState = await unsealPrivate(config, scope, connectionId, row.sealed_private);
   const token = String(privateState?.accessToken || "");
   const companyId = Number(privateState?.companyId);
   const userId = Number(privateState?.userId);
@@ -386,7 +392,7 @@ async function pullConnection(request, env, config, connectionId, input) {
     const startedAt = String(punch.clocked_in || "");
     if (!startedAt || Number.isNaN(Date.parse(startedAt))) continue;
     inboxPunches.push({
-      stablePunchId: `s7punch_${await hmacHex(env, punchOwnership(scope, companyId, userId, providerPunchId))}`,
+      stablePunchId: `s7punch_${await hmacHex(config, punchOwnership(scope, companyId, userId, providerPunchId))}`,
       date: sevenShiftsPunchDate(startedAt),
       startedAt,
       endedAt: hours.open ? null : String(punch.clocked_out),
@@ -424,7 +430,7 @@ async function pullConnection(request, env, config, connectionId, input) {
     payload: {
       provider: "7shifts",
       sourceName: sevenShiftsSafeLabel(row.company_label, 80, "7shifts"),
-      sourceHash: `s7pull_${await hmacHex(env, `${ownership(scope, connectionId)}:pull:${now}`)}`,
+      sourceHash: `s7pull_${await hmacHex(config, `${ownership(scope, connectionId)}:pull:${now}`)}`,
       jobId,
       punches: inboxPunches.slice(0, 200),
       coworkers,
@@ -448,6 +454,16 @@ function parseConnectionPath(pathname) {
   return { connectionId: match[1], action: match[2] || "session" };
 }
 
+async function routeEnvironment(request, url) {
+  const queryEnvironment = String(url.searchParams.get("environment") || "");
+  if (queryEnvironment) return queryEnvironment;
+  if ((request.headers.get("Content-Type") || "").toLowerCase().includes("application/json")) {
+    const input = await readJson(request.clone());
+    return String(input.environment || "");
+  }
+  throw new Error("7shifts environment is required.");
+}
+
 export async function handleSevenShifts(request, env) {
   const url = new URL(request.url);
   if (!url.pathname.startsWith(SEVENSHIFTS_PREFIX)) return null;
@@ -457,38 +473,36 @@ export async function handleSevenShifts(request, env) {
   if (!allowed) return json({ ok: false, error: "origin" }, 403, cors);
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (url.pathname === SEVENSHIFTS_STATUS_PATH && request.method === "GET") {
-    try {
-      const statusConfig = activeConfig(env);
-      await statusConfig.db.prepare("SELECT 1 AS ok FROM seven_shifts_connections LIMIT 1").first();
-      return json({
-        ok: true,
-        available: true,
-        phase: "sandbox-configured",
-        environment: "development-only",
-        providerCallsEnabled: true,
-        productionAllowed: false,
-        detail: "7shifts is configured for Development. Punches fill Timesheet drafts; Confirm still posts wages. Tips stay blank.",
-      }, 200, cors);
-    } catch (error) {
-      const lockedDetail = enabled(env)
-        ? `${String(error.message || error)} No 7shifts account was contacted.`
-        : "7shifts is installed as a Development Timesheet inbox. Activation still requires Worker secrets, the D1 table, and deploy approval.";
-      return json({
-        ok: true,
-        available: false,
-        phase: "scaffold",
-        environment: "development-only",
-        providerCallsEnabled: false,
-        productionAllowed: false,
-        detail: lockedDetail,
-      }, 200, cors);
+    const states = {};
+    for (const environment of ["development", "production"]) {
+      try {
+        const statusConfig = activeConfig(env, environment);
+        await statusConfig.db.prepare("SELECT 1 AS ok FROM seven_shifts_connections LIMIT 1").first();
+        states[environment] = { available: true };
+      } catch (error) {
+        states[environment] = { available: false, detail: String(error.message || error) };
+      }
     }
+    const productionAllowed = String(env?.SEVENSHIFTS_ALLOW_PRODUCTION || "").trim().toLowerCase() === "true";
+    const available = states.development.available || states.production.available;
+    return json({
+      ok: true,
+      available,
+      phase: available ? "sandbox-configured" : "scaffold",
+      environment: productionAllowed ? "development-and-production" : "development-only",
+      providerCallsEnabled: available,
+      productionAllowed,
+      environments: states,
+      detail: available
+        ? "7shifts is configured for authenticated read-only pulls. A restaurant administrator token is still required per connection."
+        : `${states.development.detail} No 7shifts account was contacted.`,
+    }, 200, cors);
   }
   let config;
-  try { config = activeConfig(env); } catch (error) { return json({ ok: false, error: String(error.message || error) }, 503, cors); }
+  try { config = activeConfig(env, await routeEnvironment(request, url)); } catch (error) { return json({ ok: false, error: String(error.message || error) }, 503, cors); }
   try {
     if (url.pathname === "/work/7shifts/probe" && request.method === "POST") {
-      return json({ ok: true, ...(await probeConnection(request, env, await readJson(request))) }, 200, cors);
+      return json({ ok: true, ...(await probeConnection(request, env, config, await readJson(request))) }, 200, cors);
     }
     if (url.pathname === "/work/7shifts/connections" && request.method === "POST") {
       return json({ ok: true, ...(await connectAccount(request, env, config, await readJson(request))) }, 201, cors);

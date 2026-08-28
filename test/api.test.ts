@@ -77,15 +77,21 @@ describe("Cloudflare static host pairing", () => {
     expect(envExample).not.toMatch(/VITE_OPENAI|VITE_ANTHROPIC/);
   });
 
-  it("acks disabled Evidence deliveries and declares only the dedicated Development queue", async () => {
+  it("acks disabled Evidence deliveries and declares isolated Development and Production queues", async () => {
     const worker = (await import("../workers/site.js")).default as {
       queue?: (batch: { messages: { ack: () => void; retry: () => void }[] }, env: Record<string, string>) => Promise<void>;
     };
     const config = JSON.parse(readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8")) as {
       queues?: { producers?: { binding: string; queue: string }[]; consumers?: { queue: string; dead_letter_queue: string }[] };
     };
-    expect(config.queues?.producers).toEqual([expect.objectContaining({ binding: "EVIDENCE_DERIVE", queue: "hearth-evidence-derive-development" })]);
-    expect(config.queues?.consumers).toEqual([expect.objectContaining({ queue: "hearth-evidence-derive-development", dead_letter_queue: "hearth-evidence-derive-dlq-development" })]);
+    expect(config.queues?.producers).toEqual([
+      expect.objectContaining({ binding: "EVIDENCE_DERIVE", queue: "hearth-evidence-derive-development" }),
+      expect.objectContaining({ binding: "EVIDENCE_PRODUCTION_DERIVE", queue: "hearth-evidence-derive-production" }),
+    ]);
+    expect(config.queues?.consumers).toEqual([
+      expect.objectContaining({ queue: "hearth-evidence-derive-development", dead_letter_queue: "hearth-evidence-derive-dlq-development" }),
+      expect.objectContaining({ queue: "hearth-evidence-derive-production", dead_letter_queue: "hearth-evidence-derive-dlq-production" }),
+    ]);
     expect(typeof worker.queue).toBe("function");
     const acked: string[] = [];
     await worker.queue?.({
@@ -107,6 +113,7 @@ describe("Cloudflare static host pairing", () => {
     expect(workflow).toMatch(/branches:\s*\[main\]/);
     expect(workflow).not.toContain("hearth-rebuild-cfde");
     expect(workflow).toContain("VITE_GOOGLE_CLIENT_ID");
+    expect(workflow).toContain('VITE_PRODUCTION_CONTINUITY: "1"');
     expect(workflow).toContain("::error::");
     expect(workflow).toContain("workflow_dispatch");
     expect(workflow).toContain("actions/checkout@v5");
