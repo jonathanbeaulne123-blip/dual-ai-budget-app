@@ -1,5 +1,41 @@
 # AI Task and Handoff Standard
 
+## Wide paper office (D-156) (2026-08-28)
+
+**Status:** Draft PR [#228](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/228) on `cursor/wide-paper-office-560d` (`e16e873`). Base `origin/main` `54c74dc`. **Not merged, not deployed, not live.** Risk: **Medium** (UX Dual Course; no money, Auth, or schema).
+
+**Household outcome:** On a laptop, Home feels like the phone kitchen — wax seals, paper stories, cream/pine/copper, Fraunces money — but it is a **two-column room**, not a stretched 2×2. A large month-net blotter and journal-true in/out bars use the extra space. The notebook stays open beside stories. Classic free-move desk remains behind Cabinets. Phone `<720px` stays Draft C. Milk/Confirm still post.
+
+**Budget delta (5):** `+2` — month net, wallet, bills, and Health become glanceable on a laptop without a new figure.
+
+**Engagement delta (3):** `+2` — the kitchen feels special at width; Hercules still wanders.
+
+**If they conflicted:** no invented CAD; tip spark is copper-badged **Projection**; widgets still never `postEntry`; if Post were covered, furniture would shrink. Kill criterion was **not** triggered.
+
+**What changed:** `OfficeWide` is the default wide Home. Cabinets **Paper office** / **Classic desk**. App column `min(1120px, 100%)`. Paper bars/spark from `monthSummary` / `tipWeather`. Light two-column CSS on Shift, Books wallet, Calendar, Plan. D-156 in living canon. Add-state CSS polish: freeze hero, dim notebook, pin focus ring.
+
+**Verification:**
+- `pnpm check` → **967 passed / 2 skipped**, build green (this SHA).
+- Focused `test/office-wide.test.ts` (mosaic ids, demo-household cents, fresh paper / saved-x/y classic).
+- Warmth fence: `1120px`, refuses `1280px`, Cabinets copy.
+- Read-only UX auditor: Dual Course pass; three CSS polish items landed in `e16e873`.
+- Independent verifier: claims 1–8 pass against `66cff63`; claim 9 (`pnpm check` 967/2) re-run here and green.
+- Visual, fictional Development demo kitchen only (`pnpm dev` → `http://localhost:5173`, Open the demo kitchen table): 320 / 390 Draft C; 720 OfficeWide (stacks under 900px); ~1100 two-column paper office; Classic toggle; Post/Add uncovered; Shift climate beside punch.
+
+**Data and environment disclosure:**
+- Development impact: none (layout `localStorage` cosmetics).
+- Production impact: none.
+- Network calls or data sent: none new.
+- MCP access: none.
+- Hosted rows/schema/secrets/deployments: none.
+- Real household or partner-personal data used: none. Demo kitchen only.
+
+**Remaining uncertainty:** Existing wide layouts with saved x/y keep Classic so a customized desk is not silently replaced. Fresh desks open paper. Two-column breathing room is the ~1100 face; 720–899px is still OfficeWide but stacked. Branch is behind current `main` by later Toast OCR work — rebase is Jonathan’s call, not this packet.
+
+**Next owner:** Jonathan — review laptop Home at ~1100px, then phone at 390. Do not merge until you are happy with the composed room. Do not treat as shipped or live.
+
+**Worksession:** [`worksessions/2026-08-28-wide-paper-office.md`](worksessions/2026-08-28-wide-paper-office.md)
+
 ## Tip-sheet transcript-first rethink (D-152) (2026-08-28)
 
 **Status:** Merged via [#227](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/227) onto `main` (`74abbaf`). Kitchen Worker **live** via Cloudflare Workers run `33131628794` (Deploy green). Risk: **Medium**. Not Production household data.

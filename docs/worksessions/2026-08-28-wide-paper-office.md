@@ -1,14 +1,14 @@
 # Hearth worksession — Wide paper office
 
-- **Status:** OPEN
+- **Status:** OPEN (reviewable draft PR; not merged)
 - **Opened:** 2026-08-28 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor (Grok)
 - **Repository:** jonathanbeaulne123-blip/dual-ai-budget-app
 - **Branch:** `cursor/wide-paper-office-560d`
-- **Baseline SHA:** `54c74dcbf53fbab694b9ca5cd08f57ff4acdd9d2` (`origin/main`)
-- **Head SHA:** (in progress)
-- **PR or issue:** draft PR this branch
+- **Baseline SHA:** `54c74dcbf53fbab694b9ca5cd08f57ff4acdd9d2` (`origin/main` at branch)
+- **Head SHA:** `e16e873b9c260bbc0a346a9f821b7dcb2dc8609f`
+- **PR or issue:** draft [#228](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/228)
 - **Risk:** Medium
 - **Decision owner:** Jonathan
 - **Environment impact:** none (UI cosmetics; layout localStorage only; no hosted schema, no Production)
@@ -29,9 +29,9 @@ On a laptop, Home feels like the phone kitchen — wax seals, paper stories, cre
 
 **Facts**
 
-- Wide Home is `.desk-wide` free-move canvas in `src/Office.tsx`. Phone Home is `OfficePhone` Draft C.
-- App column at ≥720px is `min(900px, 100%)` (D-082). Warmth fence test asserts that cap and refuses `1280px`.
-- Layout keys already split `phone` / `wide`. Widgets never `postEntry`.
+- Wide Home default is now `OfficeWide` (composed paper). Phone Home is still `OfficePhone` Draft C.
+- App column at ≥720px is `min(1120px, 100%)` (D-156). Warmth fence asserts that cap and refuses `1280px`.
+- Layout keys already split `phone` / `wide`. Widgets never `postEntry`. Classic `packWide` remains behind Cabinets.
 
 **Inferences**
 
@@ -56,24 +56,27 @@ On a laptop, Home feels like the phone kitchen — wax seals, paper stories, cre
 
 ## Acceptance evidence
 
-- [ ] `test/office-wide.test.ts` green; phone tests still green
-- [ ] Warmth fence updated for ~1120, still refuses 1280
-- [ ] `pnpm check` green
-- [ ] Visual 720 and ~1100; phone 320/390 unchanged
-- [ ] `hearth-ux-auditor` read-only pass
+- [x] `test/office-wide.test.ts` green; phone tests still green
+- [x] Warmth fence updated for ~1120, still refuses 1280
+- [x] `pnpm check` → **967 passed / 2 skipped**, build green
+- [x] Visual 720 and ~1100; phone 320/390 Draft C
+- [x] `hearth-ux-auditor` read-only pass (Add-state CSS polish in `e16e873`)
 
 ## Plan
 
 - [x] Open this worksession; draft D-156
-- [ ] Core mosaic + infographic helpers
-- [ ] `OfficeWide` shell + CSS
-- [ ] Classic desk opt-in
-- [ ] Wide tab CSS
-- [ ] Proof + handoff
+- [x] Core mosaic + infographic helpers
+- [x] `OfficeWide` shell + CSS
+- [x] Classic desk opt-in
+- [x] Wide tab CSS
+- [x] Proof + handoff
 
 ## Evidence log
 
-Record exact commands, results, visual widths, links, and current SHAs.
+- `pnpm check` at `e16e873`: 967 passed / 2 skipped; `dist` built in 5.32s.
+- Visual (demo kitchen, Development): 1100 two-column paper office; 720 OfficeWide; 390/320 Draft C; Classic toggle; Post pad uncovered. Demo clip `/opt/cursor/artifacts/wide_paper_office_demo.mp4` (~28s).
+- UX auditor: Dual Course kill criterion not triggered. Landed freeze-hero / dim-notebook / pin focus-ring.
+- Verifier: code/docs claims pass; handoff written this close.
 
 ## Decisions
 
@@ -81,8 +84,8 @@ D-156 — composed paper office is the default wide Home; Classic desk (packWide
 
 ## Remaining uncertainty
 
-Existing wide layouts with saved x/y keep Classic so a customized desk is not silently replaced. Fresh desks open paper.
+Existing wide layouts with saved x/y keep Classic so a customized desk is not silently replaced. Fresh desks open paper. Two-column breathing room is the ~1100 face; 720–899px stacks. Branch is behind later `main` Toast OCR work.
 
 ## Handoff
 
-See `docs/AI_HANDOFF.md` when the branch is reviewable. Not merged, not deployed, not live.
+See `docs/AI_HANDOFF.md`. Draft PR #228. Not merged, not deployed, not live.
