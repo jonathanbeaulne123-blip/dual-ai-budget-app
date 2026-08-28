@@ -1,13 +1,13 @@
 # Hearth worksession — Closeable kitchen notices
 
-- **Status:** OPEN (draft PR)
+- **Status:** CLOSED — release review passed on current `main`; merged locally for authorized push
 - **Opened:** 2026-08-28 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor (Grok)
 - **Repository:** jonathanbeaulne123-blip/dual-ai-budget-app
 - **Branch:** `cursor/closeable-kitchen-notices-560d`
-- **Baseline SHA:** `9cc1f67` (`origin/main`)
-- **Head SHA:** see git after this packet
+- **Baseline SHA:** `efbe5ed5118b0e6c2c942d318dd4e9643eb163d1` (`origin/main` at integration)
+- **Integrated merge SHA:** `5533ac3` on `codex/merge-safe-2026-08-28`
 - **PR or issue:** [#232](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/232)
 - **Risk:** Low–Medium (copy/UX; no money write, no schema)
 - **Decision owner:** Jonathan
@@ -54,7 +54,9 @@ When Google is signed in but not linked to the person on this kitchen, or when P
 - [x] Google mismatch copy names Link in More
 - [x] PGlite receipt copy names Reload / Sign out; still fail-closed
 - [x] Notices are small, closeable, and do not post money
-- [x] Focused tests + `pnpm check` (980 passed / 2 skipped at `6c58daa`)
+- [x] Focused tests on current main: 8/8 passed; TypeScript and production build passed
+- [x] Full `pnpm check` reached 1,026 passed / 2 failed / 2 skipped; both failures are unchanged baseline checks outside this diff (`companion-office-update` source matcher and Windows `bash` availability)
+- [x] `git diff --check`, AI-surface verification, and tracked-file/secret hygiene passed
 
 ## Plan
 
@@ -65,8 +67,8 @@ When Google is signed in but not linked to the person on this kitchen, or when P
 
 ## Remaining uncertainty
 
-Live kitchen still shows the old walls until this PR is merged and deployed. Linking Google is the real fix for the Import notice; copy only explains it.
+The GitHub `main` publish workflow may still need to complete after push. Linking Google is the real fix for the Import notice; copy only explains it.
 
 ## Handoff
 
-Next owner: Jonathan — review [#232](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/232). Not merged, not deployed, not live.
+Jonathan authorized merging and pushing all safe work. Codex integrated the exact reviewed branch onto current `main`; the remaining action is the guarded push and workflow observation. No schema, secrets, household data, or Production ledger mutation is part of this packet.
