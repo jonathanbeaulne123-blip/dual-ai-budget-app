@@ -286,6 +286,7 @@ import {
 } from "./commandProgress.ts";
 import { clearSyncAnchor, saveSyncAnchor } from "./syncAnchor.ts";
 import { SyncFreshnessStatus } from "./SyncFreshnessStatus.tsx";
+import { KitchenNotice } from "./KitchenNotice.tsx";
 import { SoftPresenceStatus } from "./SoftPresenceStatus.tsx";
 import {
   buildSoftPresenceDisplay,
@@ -2541,7 +2542,7 @@ export function App() {
                 onChange={(event) => setNewHouseholdDraft((current) => ({ ...current, personalLedgerName: event.target.value }))}
                 placeholder="My Books"
               />
-              {error && <p className="danger" role="alert">{error}</p>}
+              <KitchenNotice message={error} onDismiss={() => setError("")} />
               <button className="primary" type="submit" disabled={busy} style={{ width: "100%", marginTop: 12 }}>
                 {busy ? "Creating…" : "Create household"}
               </button>
@@ -2669,7 +2670,7 @@ export function App() {
                   )}
                 </section>
               )}
-              {error && <p className="danger" role="alert">{error}</p>}
+              <KitchenNotice message={error} onDismiss={() => setError("")} />
               {discoveredLedgers.length === 0 && (
                 <button className="ghost welcome-demo" onClick={() => persist(seedDemoHousehold({ today, environment }))}>
                   Open the demo kitchen table
@@ -2722,7 +2723,7 @@ export function App() {
               </button>
             );
           })}
-          {error && <p className="danger" role="alert">{error}</p>}
+          <KitchenNotice message={error} onDismiss={() => setError("")} />
           {household.members.filter((member) => member.active).map((member) => (
             <button
               key={member.id}
@@ -3238,6 +3239,13 @@ export function App() {
           void retryShareNow();
         }}
       />
+      {error && !adding ? (
+        <KitchenNotice
+          message={error}
+          onGoMore={() => goTab("more")}
+          onDismiss={() => setError("")}
+        />
+      ) : null}
       <SoftPresenceStatus display={softPresenceDisplay} />
       <CommandProgressStatus display={commandProgressDisplay} />
       {commandChrome?.chip && !syncChromeSuppression.hideChip && (
@@ -3496,6 +3504,7 @@ export function App() {
           onChange={(next, token) => persist(next, token)}
           onPayAccount={openPayCard}
           onAddToAccount={(account) => openAddFor(account)}
+          onGoMore={() => goTab("more")}
           onRemove={(transaction) => {
             const dollars = formatCad(transaction.amountCents);
             const summary = transaction.source === "shift"
@@ -3525,9 +3534,6 @@ export function App() {
               >
                 {busy ? "Starting over…" : "Start from scratch"}
               </button>
-              {error && (
-                <p className="danger" role="alert" style={{ marginTop: 8 }}>{error}</p>
-              )}
             </section>
           )}
           <section className="card">
@@ -4352,7 +4358,11 @@ export function App() {
                 )}
               </>
             )}
-            {error && <p className="danger" style={{ marginTop: 12 }}>{error}</p>}
+            <KitchenNotice
+              message={error}
+              onGoMore={() => { setAdding(false); goTab("more"); }}
+              onDismiss={() => setError("")}
+            />
             {confirm && (
               <div className="preview warn" role="alert" tabIndex={-1} ref={confirmPanelRef}>
                 <p>{confirm.message}</p>
@@ -5172,7 +5182,7 @@ function AddCategoryForm({ household, onSave }: { household: Household; onSave: 
           <option key={group.id} value={group.id}>{group.name}</option>
         ))}
       </select>
-      {error && <p className="muted">{error}</p>}
+      <KitchenNotice message={error} />
       <button className="primary" onClick={() => {
         try {
           const result = addCategory(household, { name, type: "expense", parentId, monthlyBudget: "0" });

@@ -8,6 +8,7 @@ import {
   type RecurrenceCadence,
   type RecurrenceKind,
 } from "./core/index.ts";
+import { KitchenNotice } from "./KitchenNotice.tsx";
 
 export type RepeatingDraft = {
   id?: string;
@@ -327,7 +328,7 @@ export function RepeatingForm(props: {
         {draft.kindLocked ? "You chose this kind." : "Guessed from the name and category — change it anytime."}
       </p>
 
-      {error && <p className="danger" role="alert">{error}</p>}
+      <KitchenNotice message={error} />
 
       <div className="chips" style={{ marginTop: 12 }}>
         <button

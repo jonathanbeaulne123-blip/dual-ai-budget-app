@@ -27,6 +27,7 @@ import {
   joinUrlFromInviteToken,
   supabaseAuthEnabled,
 } from "./auth/supabaseSession.ts";
+import { KitchenNotice } from "./KitchenNotice.tsx";
 import {
   authInviteIssueGate,
   inviteReasonMessage,
@@ -140,7 +141,7 @@ export function WelcomeJoin({
         </p>
       )}
       <p className="muted">{hostingHint(Boolean(cloud))}</p>
-      {error && <p className="danger">{error}</p>}
+      <KitchenNotice message={error} />
       <button className="primary" disabled={busy} onClick={() => void join()}>
         {authToken ? "Redeem invite" : "Join household"}
       </button>
@@ -435,7 +436,7 @@ export function PairingCard({
       {!syncFreshnessLine && syncState === "synced" && household.linked && (
         <p className="muted">Shared household is up to date.</p>
       )}
-      {error && !hideOwnerErrorWhileSharing && <p className="danger">{error}</p>}
+      <KitchenNotice message={hideOwnerErrorWhileSharing ? "" : error} />
       <details
         className="pairing-advanced"
         open={advancedOpen}

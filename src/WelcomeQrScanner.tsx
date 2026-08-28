@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import jsQR from "jsqr";
+import { KitchenNotice } from "./KitchenNotice.tsx";
 
 type DetectedBarcode = { rawValue?: string };
 type QrDetector = { detect(source: HTMLVideoElement): Promise<DetectedBarcode[]> };
@@ -135,7 +136,7 @@ export function WelcomeQrScanner({
         Camera joining is available on the mobile view. On your phone, open Hearth and choose
         <strong> Join with QR code</strong>. You can also scan with the phone's Camera app.
       </p>
-      {error && <p className="danger">{error}</p>}
+      <KitchenNotice message={error} />
       <button className="ghost" type="button" disabled={busy} onClick={() => { stopCamera(); onBack(); }}>
         Back
       </button>

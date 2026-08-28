@@ -15,6 +15,7 @@ import {
   type SevenShiftsProbeUser,
   type SevenShiftsScope,
 } from "./imports/sevenShiftsClient.ts";
+import { KitchenNotice } from "./KitchenNotice.tsx";
 import type { ParsedSevenShiftsBatch } from "./core/importInbox/sevenshifts.ts";
 
 type State = "idle" | "probing" | "connecting" | "ready" | "error";
@@ -71,6 +72,7 @@ function ScopedSevenShiftsConnectPanel({
         const status = await readSevenShiftsStatus();
         if (controller.signal.aborted) return;
         if (!status.available) {
+          setState("error");
           setNotice(status.detail);
           return;
         }
@@ -82,7 +84,10 @@ function ScopedSevenShiftsConnectPanel({
           setNotice("7shifts is connected. Fetch punches into Timesheet; tips stay blank.");
         }
       } catch (caught) {
-        if (!controller.signal.aborted) setNotice(caught instanceof Error ? caught.message : String(caught));
+        if (!controller.signal.aborted) {
+          setState("error");
+          setNotice(caught instanceof Error ? caught.message : String(caught));
+        }
       }
     })();
     return () => controller.abort();
@@ -96,7 +101,7 @@ function ScopedSevenShiftsConnectPanel({
     try {
       const status = await readSevenShiftsStatus();
       if (!status.available) {
-        setState("idle");
+        setState("error");
         setNotice(status.detail);
         return;
       }
@@ -184,7 +189,9 @@ function ScopedSevenShiftsConnectPanel({
         </div>
       </header>
       <p className="muted">Punches fill Timesheet hours and role. Tips are not in 7shifts — leave them blank, then Confirm. Co-workers are the restaurant roster, not household members.</p>
-      {notice && <p className="muted seven-shifts-status" role={state === "error" ? "alert" : "status"}>{notice}</p>}
+      {state === "error"
+        ? <KitchenNotice message={notice} onDismiss={() => setNotice("")} />
+        : notice ? <p className="muted seven-shifts-status" role="status">{notice}</p> : null}
 
       {tab === "connect" && (
         <>
