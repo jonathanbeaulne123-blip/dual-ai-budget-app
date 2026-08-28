@@ -2,7 +2,7 @@
 
 ## Tip-sheet transcript-first rethink (D-152) (2026-08-28)
 
-**Status:** PR branch `cursor/tip-sheet-transcript-first-403c`. Risk: **Medium**. Development.
+**Status:** Merged via [#227](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/227) onto `main` (`74abbaf`). Kitchen Worker **live** via Cloudflare Workers run `33131628794` (Deploy green). Risk: **Medium**. Not Production household data.
 
 **Household outcome:** Tip-sheet camera drafts Confirm with labeled Toast totals instead of blank/wrong fields. PDF conversion is **not** used (vision APIs are image-only).
 
@@ -14,7 +14,9 @@
 
 **Cost:** Default **Auto** avoids paid tokens when free Workers AI + POS parser draft enough. OpenAI chip still costs ~$0.02–0.04 when forced or when Auto falls back.
 
-**Next owner:** Merge/deploy. Hard-refresh → leave provider on **Auto** → tip sheet scan.
+**Verification:** `pnpm check` → **959 passed / 2 skipped**. Deploy `33131628794` success.
+
+**Next owner:** Jonathan — hard-refresh https://hearth-books.jonathan-beaulne123.workers.dev/ , Development, leave provider on **Auto**, tip sheet scan → Confirm review. Do not treat as Production household data.
 
 ## OpenAI tip-sheet 503 fix (D-152) (2026-08-27)
 
