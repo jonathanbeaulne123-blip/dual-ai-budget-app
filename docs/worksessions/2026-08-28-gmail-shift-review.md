@@ -87,6 +87,8 @@ Jonathan can explicitly connect Gmail read-only, import only genuine 7shifts mes
 - 2026-08-28: first real scrub exposed two activation defects. Google initially refused the request because `gmail.googleapis.com` was disabled for OAuth project `118841732569`; Jonathan's authenticated Google Cloud session enabled that single API. The next run discovered all 330 scoped messages.
 - 2026-08-28: overlapping live scrubs encrypted all 330 messages but one visible run stopped at 194 on the scoped Gmail-digest unique index. Remote read-only evidence counts then showed 330 encrypted captures, 321 stuck `deriving`, 3 `ready`, and 6 `ready_to_review`. Multipart plain-text/HTML copies were producing the same canonical derivative key, and the queue correctly refused the duplicate row but had no stale recovery path.
 - 2026-08-28: repair branch `codex/d163-gmail-dedupe` starts from `origin/main@341756d`. It treats a raced digest insert as the already-saved winner after deleting the orphan R2 object/reservation, coalesces same-message canonical records while retaining every source-located observation/drift fact, and lets a later scrub requeue only `ready`/`deriving` captures stale for at least five minutes. Focused Gmail/Evidence proof is 29/29 and TypeScript/diff integrity pass.
+- 2026-08-28: PR #241 merged as `63da0c937ed541bb3408447ca76c4ad4e9d36d21`; merged-main CI and Cloudflare build/deploy both passed. The authenticated recovery rechecked all 330 messages with 0 rejected and advanced 314 to `ready_to_review`, but 16 exhausted retries while still `deriving`.
+- 2026-08-28: live Worker error tracing identified `Exceeded CPU Limit` on multi-message Evidence Queue invocations. D-165 limits the Development consumer to one evidence item per invocation and adds a configuration regression assertion; the Production consumer configuration is unchanged.
 
 ## Decisions
 
@@ -98,8 +100,8 @@ Jonathan can explicitly connect Gmail read-only, import only genuine 7shifts mes
 ## Remaining uncertainty
 
 - Google may require restricted-scope verification before broader distribution because Hearth transmits Gmail-derived bytes to its encrypted Evidence service.
-- The local D-163 recovery patch still requires a separate push/merge/deploy release decision. After deployment, one authenticated Development scrub must requeue the 321 stale captures and prove their terminal state counts.
+- The D-165 one-message Development queue repair requires focused/full proof, merge/deploy, and a final authenticated idempotent scrub proving all 330 captures terminal.
 
 ## Handoff
 
-D-163's original release is live and all 330 matching Gmail messages are encrypted in Development, but the real smoke exposed a P1 retry/derivation defect. The clean-main repair is locally green and commit-ready; deployment and one authenticated recovery scrub remain. Cloudflare Email Routing remains disabled and unused.
+D-163's digest and canonical-derivative repair is live, and all 330 matching Gmail messages remain encrypted in Development. The authenticated recovery proved 314 complete and isolated the remaining 16 to Cloudflare's per-invocation CPU ceiling. D-165 narrows the Development Queue batch to one so those preserved captures can finish without altering Gmail permissions, raw data, Production, or money authority.
