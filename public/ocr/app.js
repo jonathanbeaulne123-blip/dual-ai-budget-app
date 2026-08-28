@@ -94,7 +94,9 @@
     ocrMeta: $("ocrMeta"),
     ocrText: $("ocrText"),
     ocrNote: $("ocrNote"),
+    ocrConfidence: $("ocrConfidence"),
     btnCopy: $("btnCopy"),
+    btnExportPacket: $("btnExportPacket"),
     slicesCard: $("slicesCard"),
     slicesList: $("slicesList"),
     guidanceCard: $("guidanceCard"),
@@ -141,6 +143,10 @@
     show(els.qualityCard, false);
     show(els.successCard, false);
     show(els.ocrCard, false);
+    if (els.ocrConfidence) {
+      els.ocrConfidence.innerHTML = "";
+      show(els.ocrConfidence, false);
+    }
     show(els.slicesCard, false);
     show(els.guidanceCard, false);
     show(els.multiCard, false);
@@ -210,8 +216,145 @@
 
   let lastSlicePack = { slices: [], ocrSlices: [] };
 
+  function confidenceBand(pct) {
+    if (pct >= 75) return "high";
+    if (pct >= 50) return "mid";
+    return "low";
+  }
+
+  function confidencePct(guide) {
+    if (!guide) return null;
+    if (typeof guide.confidence === "number") return guide.confidence;
+    if (typeof guide.overall === "number") return Math.round(guide.overall * 100);
+    return null;
+  }
+
+  function renderConfidenceBlock(guide) {
+    const wrap = document.createElement("div");
+    wrap.className = "confidence";
+    const pct = confidencePct(guide);
+    if (pct === null) return wrap;
+    const headline = document.createElement("p");
+    headline.className = `confidence-headline ${confidenceBand(pct)}`;
+    headline.textContent = `System confidence ${pct}%`;
+    const sub = document.createElement("p");
+    sub.className = "confidence-sub";
+    const bits = [];
+    if (typeof guide.text_confidence === "number") bits.push(`Text ${guide.text_confidence}%`);
+    if (guide.engine_confidence) bits.push(`Engine ${guide.engine_confidence}%`);
+    sub.textContent = bits.join(" · ") || "What the scorer thinks of this crop.";
+    const meter = document.createElement("div");
+    meter.className = "confidence-meter";
+    const fill = document.createElement("span");
+    fill.className = `confidence-fill ${confidenceBand(pct)}`;
+    fill.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+    meter.appendChild(fill);
+    wrap.append(headline, sub, meter);
+    const list = document.createElement("ul");
+    list.className = "confidence-cats";
+    (guide.categories || []).forEach((c) => {
+      if (c.applicable === false) return;
+      const cp = typeof c.confidence === "number" ? c.confidence : Math.round((Number(c.score) || 0) * 100);
+      const li = document.createElement("li");
+      const name = document.createElement("span");
+      name.className = "confidence-name";
+      name.textContent = String(c.id || "").replace(/_/g, " ");
+      const bar = document.createElement("span");
+      bar.className = "confidence-bar";
+      const inner = document.createElement("span");
+      inner.className = `confidence-fill ${confidenceBand(cp)}`;
+      inner.style.width = `${cp}%`;
+      bar.appendChild(inner);
+      const num = document.createElement("span");
+      num.className = `confidence-pct ${confidenceBand(cp)}`;
+      num.textContent = `${cp}%`;
+      li.append(name, bar, num);
+      list.appendChild(li);
+    });
+    wrap.appendChild(list);
+    return wrap;
+  }
+
+  function aggregateSliceGuides(slices) {
+    const rows = (slices || []).map((s) => s && s.guide).filter(Boolean);
+    if (!rows.length) return null;
+    const byId = new Map();
+    rows.forEach((g) => {
+      (g.categories || []).forEach((c) => {
+        if (!c || c.applicable === false) return;
+        const cur = byId.get(c.id) || { id: c.id, question: c.question, scores: [] };
+        cur.scores.push(Number(c.score) || 0);
+        byId.set(c.id, cur);
+      });
+    });
+    const categories = Array.from(byId.values()).map((row) => {
+      const score = row.scores.reduce((a, b) => a + b, 0) / row.scores.length;
+      return {
+        id: row.id,
+        question: row.question,
+        score,
+        confidence: Math.round(score * 100),
+        applicable: true,
+      };
+    });
+    const overall =
+      categories.length
+        ? categories.reduce((s, c) => s + c.score, 0) / categories.length
+        : rows.reduce((s, g) => s + (Number(g.overall) || 0), 0) / rows.length;
+    const confs = rows
+      .map((g) => (typeof g.confidence === "number" ? g.confidence : Math.round((Number(g.overall) || 0) * 100)))
+      .filter((n) => typeof n === "number");
+    const textCs = rows.map((g) => g.text_confidence).filter((n) => typeof n === "number");
+    const engCs = rows.map((g) => g.engine_confidence).filter((n) => typeof n === "number");
+    return {
+      overall,
+      confidence: confs.length ? Math.round(confs.reduce((a, b) => a + b, 0) / confs.length) : Math.round(overall * 100),
+      text_confidence: textCs.length ? Math.round(textCs.reduce((a, b) => a + b, 0) / textCs.length) : undefined,
+      engine_confidence: engCs.length ? Math.round(engCs.reduce((a, b) => a + b, 0) / engCs.length) : undefined,
+      categories,
+    };
+  }
+
+  function combinedGuide(ocr, text) {
+    if (ocr && ocr.guide && (ocr.guide.categories || typeof ocr.guide.confidence === "number")) {
+      return ocr.guide;
+    }
+    if (text && window.ToastGuide && typeof window.ToastGuide.scoreSnippet === "function") {
+      const scored = window.ToastGuide.scoreSnippet(text);
+      const slices = (ocr && ocr.slices) || [];
+      const engineVals = slices.map((p) => Number(p.mean_confidence) || 0).filter((n) => n > 0);
+      const engine01 = engineVals.length ? engineVals.reduce((a, b) => a + b, 0) / engineVals.length : 0;
+      if (typeof window.ToastGuide.withConfidence === "function") {
+        return window.ToastGuide.withConfidence(scored, engine01);
+      }
+      return scored;
+    }
+    if (ocr && ocr.slices) return aggregateSliceGuides(ocr.slices);
+    if (ocr && typeof ocr.confidence === "number") return { confidence: ocr.confidence, categories: [] };
+    return null;
+  }
+
+  function hideOcrConfidence() {
+    if (!els.ocrConfidence) return;
+    els.ocrConfidence.innerHTML = "";
+    show(els.ocrConfidence, false);
+  }
+
+  function showOcrConfidence(guide) {
+    if (!els.ocrConfidence) return;
+    els.ocrConfidence.innerHTML = "";
+    const pct = confidencePct(guide);
+    if (!guide || pct === null) {
+      show(els.ocrConfidence, false);
+      return;
+    }
+    els.ocrConfidence.appendChild(renderConfidenceBlock(guide));
+    show(els.ocrConfidence, true);
+  }
+
   function defaultGuidePrompts(guide) {
     const g = guide || {};
+    if (Array.isArray(g.prompts) && g.prompts.length) return g.prompts;
     return [
       { id: "letters", question: "Are the letters good?", good: !!g.letters_good },
       { id: "numbers", question: "Are the numbers good?", good: !!g.numbers_good },
@@ -226,12 +369,16 @@
     part.guide.prompts = prompts.map((p) =>
       p.id === axis ? Object.assign({}, p, { good }) : p
     );
+    const votes = {};
+    votes[axis] = good;
     const payload = {
       letters_good: axis === "letters" ? good : null,
-      numbers_good: axis === "numbers" ? good : null,
+      numbers_good: axis === "numbers" || axis === "money" ? good : null,
       format_good: axis === "format" ? good : null,
       before: part.raw_text || "",
       after: part.text || "",
+      votes,
+      scores: part.guide || {},
     };
     if (window.ToastGuide && typeof window.ToastGuide.record === "function") {
       window.ToastGuide.record(payload);
@@ -266,10 +413,13 @@
         pre.className = "slice-text";
         pre.textContent = part.text;
         fig.append(pre);
+        if (part.guide) fig.append(renderConfidenceBlock(part.guide));
         const guideBox = document.createElement("div");
         guideBox.className = "guide";
         const prompts = (part.guide && part.guide.prompts) || defaultGuidePrompts(part.guide);
-        prompts.forEach((prompt) => {
+        const primary = prompts.filter((p) => ["letters", "money", "numbers", "format"].includes(p.id));
+        const shown = primary.length ? primary : prompts.slice(0, 3);
+        shown.forEach((prompt) => {
           const row = document.createElement("div");
           row.className = "guide-row";
           const q = document.createElement("p");
@@ -301,6 +451,7 @@
   function renderOcr(ocr, stitched, formatted) {
     if (!ocr && !stitched && !formatted) {
       show(els.ocrCard, false);
+      hideOcrConfidence();
       return;
     }
     const status =
@@ -325,8 +476,10 @@
       els.ocrNote.textContent = nBlocks
         ? `Formatted into ${nBlocks} paragraph${nBlocks === 1 ? "" : "s"}. Line breaks from the page are kept.`
         : "Reading order, top to bottom. Overlapping slice lines and photo seams are kept once.";
+      showOcrConfidence(combinedGuide(ocr, text));
       show(els.ocrCard, true);
       show(els.btnCopy, true);
+      if (els.btnExportPacket) show(els.btnExportPacket, true);
       return;
     }
     els.ocrTitle.textContent = status === "empty" ? "No text found" : "Could not read text";
@@ -336,8 +489,10 @@
       status === "empty"
         ? "This photo passed the sharpness check, but OCR did not find words. Try a closer shot of the actual page."
         : "Quality check and slicing still ran. Text extract needs a working OCR engine on this device.";
-    show(els.ocrCard, true);
-    show(els.btnCopy, false);
+      show(els.ocrCard, true);
+      show(els.btnCopy, false);
+      if (els.btnExportPacket) show(els.btnExportPacket, false);
+      hideOcrConfidence();
   }
 
   async function copyOcrText() {
@@ -492,6 +647,9 @@
           status: merge.status || "ok",
           text: merge.text || "",
           message: merge.message || "",
+          guide: merge.guide || null,
+          confidence: merge.guide && typeof merge.guide.confidence === "number" ? merge.guide.confidence : null,
+          slices: [],
         },
         merge,
         body.formatted || null
@@ -657,6 +815,15 @@
   $("btnDone").addEventListener("click", () => submitBatch());
   $("btnReset").addEventListener("click", () => startOver());
   $("btnCopy").addEventListener("click", () => copyOcrText());
+  if ($("btnExportPacket")) {
+    $("btnExportPacket").addEventListener("click", () => {
+      if (window.ToastGuide && typeof window.ToastGuide.exportPacket === "function") {
+        window.ToastGuide.exportPacket();
+        return;
+      }
+      window.location.href = api("/api/guide/export");
+    });
+  }
   $("errorDismiss").addEventListener("click", () => clearError());
   $("btnLive").addEventListener("click", () => startLive());
   $("btnLiveClose").addEventListener("click", () => {

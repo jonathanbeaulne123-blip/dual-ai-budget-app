@@ -767,12 +767,16 @@
         const { data } = await worker.recognize(source);
         const raw = String(data.text || "").replace(/[ \t]+\n/g, "\n").trim();
         const lexed = applyLexicon(raw);
+        const conf = typeof data.confidence === "number" ? data.confidence / 100 : 0;
         const guided =
           window.ToastGuide && typeof window.ToastGuide.improve === "function"
-            ? window.ToastGuide.improve(lexed)
+            ? window.ToastGuide.improve(lexed, {
+                slice_index: sl.index,
+                cut_reason: sl.cut_reason,
+                engine_confidence: conf,
+              })
             : { text: lexed, guide: null };
         const text = guided.text || lexed;
-        const conf = typeof data.confidence === "number" ? data.confidence / 100 : 0;
         const docIndex = sl.document_index || 0;
         parts.push({
           slice_index: sl.index,
@@ -791,11 +795,17 @@
       const docTexts = Array.from(byDoc.keys())
         .sort((a, b) => a - b)
         .map((k) => (byDoc.get(k) || []).join("\n"));
-      const joined = applyLexicon(
-        window.ToastGuide && window.ToastGuide.improve
-          ? window.ToastGuide.improve(joinReceiptTexts(docTexts)).text
-          : joinReceiptTexts(docTexts)
-      );
+      const avgEngine =
+        parts.length
+          ? parts.reduce((s, p) => s + (p.mean_confidence || 0), 0) / parts.length
+          : 0;
+      const guidedJoined =
+        window.ToastGuide && typeof window.ToastGuide.improve === "function"
+          ? window.ToastGuide.improve(joinReceiptTexts(docTexts), {
+              engine_confidence: avgEngine,
+            })
+          : { text: joinReceiptTexts(docTexts), guide: null };
+      const joined = applyLexicon(guidedJoined.text);
       if (!joined) {
         return {
           status: "empty",
@@ -807,6 +817,16 @@
           message: "No text found in this photo. Try a closer, sharper shot of one receipt.",
         };
       }
+      const confs = parts
+        .map((p) => (p.guide && typeof p.guide.confidence === "number" ? p.guide.confidence : null))
+        .filter((n) => n !== null);
+      const fromSlices = confs.length
+        ? Math.round(confs.reduce((a, b) => a + b, 0) / confs.length)
+        : null;
+      const docConf =
+        guidedJoined.guide && typeof guidedJoined.guide.confidence === "number"
+          ? guidedJoined.guide.confidence
+          : fromSlices;
       return {
         status: "ok",
         phase: 3,
@@ -814,7 +834,11 @@
         text: joined,
         box_count: parts.filter((p) => p.text).length,
         slices: parts,
-        message: `${slices.length} crop${slices.length === 1 ? "" : "s"} read on this device.`,
+        confidence: docConf,
+        guide: guidedJoined.guide || null,
+        message:
+          `${slices.length} crop${slices.length === 1 ? "" : "s"} read on this device.` +
+          (docConf !== null ? ` System confidence ${docConf}%.` : ""),
       };
     } catch (err) {
       return unavailable(err && err.message ? String(err.message) : "On-device OCR failed.");
@@ -996,6 +1020,10 @@
       }
     });
     const hasText = !!String(mergedText || "").trim();
+    const mergeGuide =
+      hasText && window.ToastGuide && typeof window.ToastGuide.improve === "function"
+        ? window.ToastGuide.improve(mergedText).guide
+        : null;
     const formatted =
       window.ToastFormat && typeof window.ToastFormat.formatPlaintext === "function"
         ? window.ToastFormat.formatPlaintext(mergedText || "", "tesseract")
@@ -1009,6 +1037,8 @@
         status: hasText ? "ok" : "empty",
         phase: 4,
         text: mergedText || "",
+        guide: mergeGuide,
+        confidence: mergeGuide && typeof mergeGuide.confidence === "number" ? mergeGuide.confidence : null,
         message: hasText
           ? `Merged ${items.length} overlapping shots into one document.`
           : "No text found in these overlapping shots.",

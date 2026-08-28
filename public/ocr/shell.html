@@ -74,16 +74,18 @@
       <p class="card-kicker">Extracted text</p>
       <h2 id="ocrTitle">Readable text</h2>
       <p id="ocrMeta" class="hint"></p>
+      <div id="ocrConfidence" hidden></div>
       <pre id="ocrText" class="ocr-text"></pre>
       <div class="stack-btns">
         <button type="button" class="btn secondary" id="btnCopy">Copy text</button>
+        <button type="button" class="btn ghost" id="btnExportPacket">Export scoring packet</button>
       </div>
       <p class="phase-note" id="ocrNote"></p>
     </section>
 
     <section id="slicesCard" class="card" hidden>
       <p class="card-kicker">Snippets</p>
-      <p class="hint" id="guideHint">Each crop asks: are the letters good? are the numbers good? is the format good? Your answers train the next scan on this phone.</p>
+      <p class="hint" id="guideHint">Each crop shows system confidence (what the scorer thinks), then asks if letters, money, and format look right. Export the scoring packet to share it for diagnosis.</p>
       <div id="slicesList" class="slices"></div>
     </section>
 
