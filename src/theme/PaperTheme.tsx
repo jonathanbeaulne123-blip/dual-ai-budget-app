@@ -93,22 +93,30 @@ export function NotebookBody({
   onClose,
   children,
   panelId,
+  bare = false,
 }: {
   title: string;
   open: boolean;
   onClose: () => void;
   children: ReactNode;
   panelId: string;
+  bare?: boolean;
 }) {
   if (!open) return null;
   return (
-    <section className="hearth-notebook" aria-label={title}>
-      <header className="hearth-notebook-head">
-        <h3>{title}</h3>
-        <button type="button" className="hearth-notebook-close" onClick={onClose} aria-controls={panelId}>
-          Close
+    <section className={`hearth-notebook ${bare ? "is-bare" : ""}`} aria-label={title}>
+      {bare ? (
+        <button type="button" className="hearth-notebook-whisper" onClick={onClose} aria-label="Close" aria-controls={panelId}>
+          ×
         </button>
-      </header>
+      ) : (
+        <header className="hearth-notebook-head">
+          <h3>{title}</h3>
+          <button type="button" className="hearth-notebook-close" onClick={onClose} aria-controls={panelId}>
+            Close
+          </button>
+        </header>
+      )}
       <div className="hearth-notebook-body" id={panelId}>
         {children}
       </div>

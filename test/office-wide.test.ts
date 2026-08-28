@@ -12,6 +12,8 @@ import {
   tipWeekdaySpark,
   wideDrawerIds,
   wideMosaicIds,
+  wideMiniBrowserTabs,
+  wideInstrumentFullPage,
   WIDE_HERO_ID,
   WIDE_MOSAIC_LIMIT,
   applyPersonality,
@@ -34,6 +36,23 @@ describe("wide paper office mosaic", () => {
     expect(mosaic.length).toBeLessThanOrEqual(WIDE_MOSAIC_LIMIT);
     expect(wideDrawerIds(mosaic)).toContain("chalkboard");
     expect(wideDrawerIds(mosaic)).not.toContain("calculator");
+  });
+
+  it("puts phone nav into the compact mini-browser with leftover desk chips", () => {
+    const mosaic = wideMosaicIds({ hidden: [], lampLit: false });
+    const tabs = wideMiniBrowserTabs(wideDrawerIds(mosaic));
+    expect(tabs.map((tab) => tab.label).slice(0, 7)).toEqual([
+      "Home",
+      "Cal",
+      "Shift",
+      "Post",
+      "Plan",
+      "Books",
+      "More",
+    ]);
+    expect(tabs.some((tab) => tab.instrument === "chalkboard")).toBe(true);
+    expect(wideInstrumentFullPage("calendar")).toBe("calendar");
+    expect(wideInstrumentFullPage("chalkboard")).toBeNull();
   });
 
   it("reveals Health onto the mosaic when the lamp is lit even if it was hidden", () => {

@@ -263,6 +263,38 @@ button.hearth-paper-tile:focus-visible {
   padding: 14px 16px 16px;
   font-size: 0.8125rem;
 }
+.hearth-notebook.is-bare {
+  position: relative;
+  background: #24382c;
+  border-color: color-mix(in srgb, #1a2a20 70%, var(--line));
+}
+.hearth-notebook.is-bare .hearth-notebook-body {
+  padding: 0;
+  min-height: 280px;
+}
+.hearth-notebook-whisper {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 4;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 99px;
+  background: transparent;
+  color: rgba(231, 240, 228, 0.28);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.hearth-notebook-whisper:hover,
+.hearth-notebook-whisper:focus-visible {
+  color: rgba(231, 240, 228, 0.85);
+  outline: 1px solid rgba(231, 240, 228, 0.4);
+}
 
 /* ── Books mobile C ── */
 @media (max-width: 719px) {

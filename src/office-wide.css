@@ -57,8 +57,13 @@
 .office-wide-hero .hearth-paper-bars {
   margin-top: 8px;
 }
-.office-wide-notebook .hearth-notebook {
-  min-height: 220px;
+.office-wide-notebook.is-chalk .hearth-notebook {
+  min-height: 280px;
+}
+.office-wide-notebook.is-chalk .office-wide-notebook-inner {
+  position: relative;
+  min-height: 280px;
+  display: block;
 }
 .office-wide.is-adding .office-wide-notebook,
 .office-wide.is-adding .office-wide-seals,
@@ -72,37 +77,40 @@
   display: grid;
   gap: 10px;
 }
-.office-wide-drawer {
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--paper) 88%, var(--card));
-  padding: 8px 12px;
-}
-.office-wide-drawer summary {
-  min-height: 44px;
-  cursor: pointer;
-  font-size: 0.875rem;
-  color: var(--muted);
-}
-.office-wide-drawer-grid {
+.office-wide-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  padding: 8px 0 10px;
+  gap: 6px;
+  padding: 8px 4px 2px;
+  margin-top: 4px;
 }
-.office-wide .ph-chip {
+.office-wide-tab {
   min-height: 44px;
-  padding: 10px 12px;
-  background: var(--paper-2, var(--paper));
+  padding: 8px 12px;
   border: 1px dashed var(--line);
-  border-radius: 10px;
-  font-family: inherit;
-  font-size: 0.8125rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--paper) 88%, var(--card));
   color: var(--ink);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   cursor: pointer;
 }
-.office-wide .ph-chip b { font-weight: 600; }
-.office-wide .ph-chip:focus-visible { outline: 2px solid var(--pine); outline-offset: 2px; }
+.office-wide-tab.is-on {
+  border-style: solid;
+  border-color: var(--pine);
+  background: var(--paper);
+}
+.office-wide-tab.is-post {
+  background: color-mix(in srgb, var(--copper) 22%, var(--paper));
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--copper) 55%, var(--line));
+}
+.office-wide-tab:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
 .office-wide .ph-pin {
   justify-self: end;
   min-height: 44px;

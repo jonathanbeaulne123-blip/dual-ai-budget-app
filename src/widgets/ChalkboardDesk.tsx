@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import {
   detectChalkLetters,
+  eraseGlyphAt,
   hasChalkInk,
+  inkBounds,
   organizeChalkNotes,
+  reviseChalkInk,
   scribbleChalk,
   wipeChalk,
   weatherChip,
@@ -55,11 +58,15 @@ function ChalkCanvas({
   inkSeed,
   onInk,
   tall,
+  fill,
+  tool = "chalk",
 }: {
   disabled?: boolean;
   inkSeed?: ChalkInk | null;
   onInk: (ink: ChalkInk | null) => void;
   tall?: boolean;
+  fill?: boolean;
+  tool?: "chalk" | "eraser";
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const committed = useRef<ChalkStroke[]>(inkSeed?.strokes ?? []);
@@ -96,23 +103,24 @@ function ChalkCanvas({
     const frame = canvas.parentElement;
     const resize = () => {
       const width = Math.max(160, frame?.clientWidth ?? 240);
-      // Tall boards use a fixed aspect from width only — never parent height.
-      // Sizing from clientHeight + style.height caused a ResizeObserver growth loop while drawing.
-      const height = tall
-        ? Math.min(160, Math.max(110, Math.round(width * 0.42)))
-        : Math.round(width * 0.55);
+      const height = fill
+        ? Math.max(120, frame?.clientHeight ?? 180)
+        : tall
+          ? Math.min(160, Math.max(110, Math.round(width * 0.42)))
+          : Math.round(width * 0.55);
       canvas.width = Math.round(width * 2);
       canvas.height = Math.round(height * 2);
-      canvas.style.height = `${height}px`;
+      if (!fill) canvas.style.height = `${height}px`;
+      else canvas.style.height = "100%";
       redraw();
     };
     resize();
     const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver((entries) => {
       const entry = entries[0];
       if (!entry) return;
-      // Observe width only so chalk strokes / reading labels cannot grow the board.
       const nextWidth = Math.round(entry.contentRect.width);
-      if (nextWidth > 0) resize();
+      const nextHeight = Math.round(entry.contentRect.height);
+      if (nextWidth > 0 && (!fill || nextHeight > 0)) resize();
     });
     if (frame && observer) observer.observe(frame);
     window.addEventListener("resize", resize);
@@ -120,7 +128,7 @@ function ChalkCanvas({
       observer?.disconnect();
       window.removeEventListener("resize", resize);
     };
-  }, [tall]);
+  }, [tall, fill]);
 
   function pointFrom(event: PointerEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current;
@@ -135,17 +143,34 @@ function ChalkCanvas({
   return (
     <canvas
       ref={canvasRef}
-      className="chalk-canvas"
-      aria-label="Draw on the chalkboard"
+      className={`chalk-canvas ${fill ? "is-fill" : ""} ${tool === "eraser" ? "is-eraser" : ""}`}
+      aria-label={tool === "eraser" ? "Erase a chalk letter" : "Draw on the chalkboard"}
       onPointerDown={(event) => {
         if (disabled) return;
         event.currentTarget.setPointerCapture(event.pointerId);
         const point = pointFrom(event);
         if (!point) return;
+        if (tool === "eraser") {
+          committed.current = eraseGlyphAt({ w: canvasRef.current?.width ?? 320, h: canvasRef.current?.height ?? 160, strokes: committed.current }, point.x, point.y)?.strokes ?? [];
+          live.current = null;
+          redraw();
+          onInk(currentInk());
+          return;
+        }
         live.current = [point];
       }}
       onPointerMove={(event) => {
-        if (!live.current || disabled) return;
+        if (disabled) return;
+        if (tool === "eraser") {
+          if (event.buttons === 0 && !live.current) return;
+          const point = pointFrom(event);
+          if (!point) return;
+          committed.current = eraseGlyphAt({ w: canvasRef.current?.width ?? 320, h: canvasRef.current?.height ?? 160, strokes: committed.current }, point.x, point.y)?.strokes ?? committed.current;
+          redraw();
+          onInk(currentInk());
+          return;
+        }
+        if (!live.current) return;
         const point = pointFrom(event);
         if (!point) return;
         live.current = [...live.current, point];
@@ -243,6 +268,106 @@ function NoteThumb({
   );
 }
 
+function LiveChalkSurface({
+  notes,
+  busy,
+  slate,
+  onInk,
+  onSave,
+  onEraseNote,
+}: {
+  notes: ChalkNote[];
+  busy: boolean;
+  slate: number;
+  onInk: (ink: ChalkInk | null) => void;
+  onSave: (ink: ChalkInk) => void;
+  onEraseNote: (noteId: string, point: { x: number; y: number }) => void;
+}) {
+  const [tool, setTool] = useState<"chalk" | "eraser">("chalk");
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const drawn = useRef<ChalkInk | null>(null);
+  const inkNotes = notes.filter((note) => hasChalkInk(note.ink));
+  const textNotes = notes.filter((note) => !hasChalkInk(note.ink) && note.text);
+
+  function queueSave(next: ChalkInk | null) {
+    drawn.current = next;
+    onInk(next);
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    if (!next || !hasChalkInk(next)) return;
+    saveTimer.current = setTimeout(() => {
+      const payload = drawn.current;
+      if (payload && hasChalkInk(payload)) onSave(payload);
+    }, 500);
+  }
+
+  return (
+    <div className={`chalkboard-surface is-live ${tool === "eraser" ? "is-erasing" : ""}`}>
+      <div className="chalkboard-live-board">
+        {inkNotes.map((note) => {
+          const box = inkBounds(note.ink);
+          if (!box || !note.ink) return null;
+          const width = Math.max(8, (box.x1 - box.x0) * 55);
+          const height = Math.max(6, (box.y1 - box.y0) * 55);
+          return (
+            <button
+              key={note.id}
+              type="button"
+              className="chalk-stamp"
+              style={{
+                left: `${box.x0 * 100}%`,
+                top: `${box.y0 * 100}%`,
+                width: `${width}%`,
+                height: `${height}%`,
+              }}
+              aria-label={note.text ? `Saved chalk. ${note.text}` : "Saved chalk"}
+              onPointerDown={(event) => {
+                if (tool !== "eraser") return;
+                event.preventDefault();
+                event.stopPropagation();
+                const rect = event.currentTarget.getBoundingClientRect();
+                const nx = Math.min(1, Math.max(0, (event.clientX - rect.left) / Math.max(1, rect.width)));
+                const ny = Math.min(1, Math.max(0, (event.clientY - rect.top) / Math.max(1, rect.height)));
+                onEraseNote(note.id, {
+                  x: box.x0 + nx * (box.x1 - box.x0),
+                  y: box.y0 + ny * (box.y1 - box.y0),
+                });
+              }}
+            >
+              <StampCanvas ink={note.ink} />
+            </button>
+          );
+        })}
+        {textNotes.length > 0 && (
+          <ul className="chalk-text-stamps">
+            {textNotes.map((note) => (
+              <li key={note.id}>{note.text}</li>
+            ))}
+          </ul>
+        )}
+        <ChalkCanvas key={slate} disabled={busy} fill tool={tool} onInk={queueSave} />
+      </div>
+      <button
+        type="button"
+        className={`chalk-eraser ${tool === "eraser" ? "is-on" : ""}`}
+        aria-pressed={tool === "eraser"}
+        aria-label="Chalk eraser. Erases one letter at a time."
+        onClick={() => setTool((current) => (current === "eraser" ? "chalk" : "eraser"))}
+      >
+        eraser
+      </button>
+    </div>
+  );
+}
+
+function StampCanvas({ ink }: { ink: ChalkInk }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    paintInk(ref.current, ink, "#e7f0e4");
+  }, [ink]);
+  return <canvas ref={ref} className="chalk-stamp-canvas" width={160} height={90} aria-hidden="true" />;
+}
+
 export function ChalkboardBody({
   household,
   memberId,
@@ -252,6 +377,7 @@ export function ChalkboardBody({
   shrinkable = false,
   shrunk = false,
   onToggleShrink,
+  liveSurface = false,
 }: {
   household: Household;
   memberId: string;
@@ -261,6 +387,7 @@ export function ChalkboardBody({
   shrinkable?: boolean;
   shrunk?: boolean;
   onToggleShrink?: () => void;
+  liveSurface?: boolean;
 }) {
   const [draft, setDraft] = useState("");
   const [ink, setInk] = useState<ChalkInk | null>(null);
@@ -283,6 +410,24 @@ export function ChalkboardBody({
       return scribbleChalk(wiped.household, { text, author: memberId, ink: nextInk });
     });
     setExpandedId(null);
+  }
+
+  if (liveSurface) {
+    return (
+      <LiveChalkSurface
+        notes={notes}
+        slate={slate}
+        busy={busy}
+        onInk={setInk}
+        onSave={(nextInk) => saveNote("", nextInk)}
+        onEraseNote={(noteId, point) => {
+          const note = notes.find((row) => row.id === noteId);
+          if (!note?.ink) return;
+          const next = eraseGlyphAt(note.ink, point.x, point.y);
+          onCommand((current) => reviseChalkInk(current, noteId, next));
+        }}
+      />
+    );
   }
 
   if (shrinkable && shrunk) {
