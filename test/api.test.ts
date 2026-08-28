@@ -82,15 +82,15 @@ describe("Cloudflare static host pairing", () => {
       queue?: (batch: { messages: { ack: () => void; retry: () => void }[] }, env: Record<string, string>) => Promise<void>;
     };
     const config = JSON.parse(readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8")) as {
-      queues?: { producers?: { binding: string; queue: string }[]; consumers?: { queue: string; dead_letter_queue: string }[] };
+      queues?: { producers?: { binding: string; queue: string }[]; consumers?: { queue: string; dead_letter_queue: string; max_batch_size: number }[] };
     };
     expect(config.queues?.producers).toEqual([
       expect.objectContaining({ binding: "EVIDENCE_DERIVE", queue: "hearth-evidence-derive-development" }),
       expect.objectContaining({ binding: "EVIDENCE_PRODUCTION_DERIVE", queue: "hearth-evidence-derive-production" }),
     ]);
     expect(config.queues?.consumers).toEqual([
-      expect.objectContaining({ queue: "hearth-evidence-derive-development", dead_letter_queue: "hearth-evidence-derive-dlq-development" }),
-      expect.objectContaining({ queue: "hearth-evidence-derive-production", dead_letter_queue: "hearth-evidence-derive-dlq-production" }),
+      expect.objectContaining({ queue: "hearth-evidence-derive-development", dead_letter_queue: "hearth-evidence-derive-dlq-development", max_batch_size: 1 }),
+      expect.objectContaining({ queue: "hearth-evidence-derive-production", dead_letter_queue: "hearth-evidence-derive-dlq-production", max_batch_size: 10 }),
     ]);
     expect(typeof worker.queue).toBe("function");
     const acked: string[] = [];
