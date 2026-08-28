@@ -96,7 +96,7 @@ export function WorkShiftPage({
   onEndBreak: () => void;
   onChooseTimeline: (openShiftId: string) => void;
   onClockOut: () => void;
-  onConfirmShift: (input: PostWorkShiftInput) => void;
+  onConfirmShift: (input: PostWorkShiftInput, attendanceReview?: import("./core/index.ts").ShiftAttendanceReviewDraft | null) => void;
   duplicateConfirm?: { message: string } | null;
   onConfirmAnyway?: () => void;
   onDismissDuplicate?: () => void;
@@ -105,7 +105,7 @@ export function WorkShiftPage({
   onArchiveJob: (jobId: string) => void;
   onOpenCalendar: () => void;
   onSaveSevenShiftsSchedule?: (rows: import("./core/index.ts").SevenShiftsScheduledShift[], confirmedPersonalFeed?: boolean) => void;
-  onImportCoworkers?: (input: { jobId: string; locationName: string; rows: import("./imports/coworkerRosterDraft.ts").CoworkerRosterDraftRow[] }) => void;
+  onImportCoworkers?: (input: import("./imports/coworkerRosterDraft.ts").CoworkerRosterImportDraft) => void;
 }) {
   const [pane, setPane] = useState<ShiftPane>("today");
   const [sealCaption, setSealCaption] = useState<string | null>(null);
@@ -289,9 +289,9 @@ export function WorkShiftPage({
                   weatherGlassPrefill={weatherGlass}
                   scanWarnings={shiftScanWarnings}
                   onClearDraft={clearScanDraft}
-                  onConfirm={(input) => {
+                  onConfirm={(input, attendanceReview) => {
                     clearScanDraft();
-                    onConfirmShift(input);
+                    onConfirmShift(input, attendanceReview);
                   }}
                 />
               </>

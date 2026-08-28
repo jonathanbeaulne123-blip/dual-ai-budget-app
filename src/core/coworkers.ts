@@ -46,6 +46,38 @@ export type CoworkerAttendance = {
   updatedAt: string;
 };
 
+/** Owner-private published schedule context. It is outlook only, never worked time. */
+export type CoworkerSchedule = {
+  id: string;
+  ownerMemberId: string;
+  jobId: string;
+  coworkerId: string;
+  date: string;
+  scheduledStart: string | null;
+  scheduledEnd: string | null;
+  roleLabel: string;
+  /** Shift-instance key is valid only here; it can never become coworker identity. */
+  sourceScheduleKey: string;
+  observedAt: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CoworkerAttendanceDraft = {
+  coworkerId: string;
+  roleLabel?: string;
+  status: CoworkerAttendanceStatus;
+  scheduledStart?: string | null;
+  scheduledEnd?: string | null;
+};
+
+export type ShiftAttendanceReviewDraft = {
+  locationName: string;
+  rows: CoworkerAttendanceDraft[];
+  surpriseHelpers: string[];
+};
+
 export type CoworkerNameMatch =
   | { kind: "exact"; coworker: Coworker }
   | { kind: "suggested-last-name"; coworker: Coworker }
@@ -181,6 +213,65 @@ export function shapeCoworkerAttendance(value: unknown, fallbackIso: string, own
     if (!existing || shaped.updatedAt >= existing.updatedAt) byId.set(id, shaped);
   }
   return [...byId.values()].sort((left, right) => left.shiftId.localeCompare(right.shiftId) || left.coworkerId.localeCompare(right.coworkerId));
+}
+
+export function shapeCoworkerSchedules(value: unknown, fallbackIso: string, ownerMemberId?: string): CoworkerSchedule[] {
+  if (!Array.isArray(value)) return [];
+  const byId = new Map<string, CoworkerSchedule>();
+  for (const candidate of value.slice(0, 20_000)) {
+    if (!candidate || typeof candidate !== "object") continue;
+    const row = candidate as Partial<CoworkerSchedule>;
+    const id = text(row.id, 96);
+    const owner = text(row.ownerMemberId, 96);
+    const jobId = text(row.jobId, 96);
+    const coworkerId = text(row.coworkerId, 96);
+    const date = text(row.date, 10);
+    const sourceScheduleKey = text(row.sourceScheduleKey, 128);
+    if (!id || !owner || !jobId || !coworkerId || !/^\d{4}-\d{2}-\d{2}$/.test(date)
+      || !/^s7shift_[A-Za-z0-9_-]{20,112}$/.test(sourceScheduleKey)
+      || (ownerMemberId && owner !== ownerMemberId)) continue;
+    const start = row.scheduledStart ? (iso(row.scheduledStart, "") || null) : null;
+    const end = row.scheduledEnd ? (iso(row.scheduledEnd, "") || null) : null;
+    if (Boolean(start) !== Boolean(end) || (start && end && Date.parse(end) <= Date.parse(start))) continue;
+    const createdAt = iso(row.createdAt, fallbackIso);
+    const shaped: CoworkerSchedule = {
+      id,
+      ownerMemberId: owner,
+      jobId,
+      coworkerId,
+      date,
+      scheduledStart: start,
+      scheduledEnd: end,
+      roleLabel: text(row.roleLabel, 80),
+      sourceScheduleKey,
+      observedAt: iso(row.observedAt, createdAt),
+      active: row.active !== false,
+      createdAt,
+      updatedAt: iso(row.updatedAt, createdAt),
+    };
+    const existing = byId.get(id);
+    if (!existing || shaped.updatedAt >= existing.updatedAt) byId.set(id, shaped);
+  }
+  return [...byId.values()].sort((left, right) => left.date.localeCompare(right.date)
+    || String(left.scheduledStart).localeCompare(String(right.scheduledStart)) || left.id.localeCompare(right.id));
+}
+
+export function scheduledCoworkersForReview(
+  schedules: CoworkerSchedule[],
+  input: { ownerMemberId: string; jobId: string; date: string; startedAt?: string | null; endedAt?: string | null },
+): CoworkerSchedule[] {
+  const day = schedules.filter((row) => row.active
+    && row.ownerMemberId === input.ownerMemberId && row.jobId === input.jobId && row.date === input.date);
+  const start = Date.parse(String(input.startedAt ?? ""));
+  const end = Date.parse(String(input.endedAt ?? ""));
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return day;
+  const margin = 60 * 60 * 1000;
+  const overlapping = day.filter((row) => {
+    const rowStart = Date.parse(String(row.scheduledStart ?? ""));
+    const rowEnd = Date.parse(String(row.scheduledEnd ?? ""));
+    return !Number.isFinite(rowStart) || !Number.isFinite(rowEnd) || (rowEnd >= start - margin && rowStart <= end + margin);
+  });
+  return overlapping.length ? overlapping : day;
 }
 
 export function matchCoworkerName(

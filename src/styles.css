@@ -115,6 +115,11 @@ html, body {
 .work-shift-review { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--line); }
 .work-shift-review div { display: flex; justify-content: space-between; gap: 12px; padding: 12px; background: var(--paper); }
 .work-shift-review span { color: var(--muted); }
+.work-attendance-review { margin-top: 16px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+.work-attendance-list { display: grid; gap: 7px; margin: 10px 0; }
+.work-attendance-row { display: flex; align-items: center; gap: 10px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 10px; }
+.work-attendance-row input { width: 18px; height: 18px; }
+.work-surprise-helper { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 9px; align-items: end; margin-top: 12px; }
 .work-shift-footer { display: flex; justify-content: flex-end; gap: 8px; position: sticky; bottom: 0; padding: 12px 0 2px; background: linear-gradient(0deg, var(--paper) 70%, transparent); }
 .work-shift-empty { padding: 18px; border: 1px dashed var(--line); border-radius: 12px; }
 .work-shift-scan { display: grid; gap: 10px; margin-bottom: 8px; padding: 12px; border: 1px dashed var(--line); border-radius: 12px; }
@@ -213,6 +218,7 @@ html, body {
   .work-destinations,
   .work-shift-review { grid-template-columns: 1fr; }
   .work-shift-review div { padding: 10px; }
+  .work-surprise-helper { grid-template-columns: 1fr; }
   .work-history-row { grid-template-columns: minmax(0, 1fr) auto; }
   .work-history-money { grid-column: 1; text-align: left; padding-left: 18px; }
   .work-history-row > button, .work-history-row > .pill { grid-column: 2; grid-row: 1 / span 2; }

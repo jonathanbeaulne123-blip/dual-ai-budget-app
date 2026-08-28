@@ -965,6 +965,8 @@ export type Household = {
   coworkers?: import("./coworkers.ts").Coworker[];
   /** Private, non-financial attendance context for confirmed shifts. */
   coworkerAttendance?: import("./coworkers.ts").CoworkerAttendance[];
+  /** Private published coworker schedule observations; outlook only. */
+  coworkerSchedules?: import("./coworkers.ts").CoworkerSchedule[];
   recurrences: Recurrence[];
   appointments: Appointment[];
   claims: Claim[];
@@ -1065,6 +1067,7 @@ export type PersonalEnvelope = {
   sevenShiftsSchedules?: import("./sevenShiftsCalendar.ts").SevenShiftsScheduledShift[];
   coworkers?: import("./coworkers.ts").Coworker[];
   coworkerAttendance?: import("./coworkers.ts").CoworkerAttendance[];
+  coworkerSchedules?: import("./coworkers.ts").CoworkerSchedule[];
   /** Member-owned non-shared goals and their money facts. Optional for old replicas. */
   goals?: Goal[];
   goalContributions?: GoalContribution[];

@@ -65,6 +65,13 @@ export function undoLedgerConfirm(current: Household, token: UndoToken): CommitR
   next.goalPurchases = (next.goalPurchases ?? []).filter((row) => !dead.has(row.id));
   next.claims = (next.claims ?? []).filter((row) => !dead.has(row.id));
   next.sitDownSessions = (next.sitDownSessions ?? []).filter((row) => !dead.has(row.id));
+  // A visible Shift Confirm can also create private, non-financial workplace
+  // sidecars. Remove those posted records in the same local Undo result so a
+  // deleted shift never leaves attendance or a surprise helper orphaned until
+  // the next replica merge applies the tombstones.
+  next.coworkers = (next.coworkers ?? []).filter((row) => !dead.has(row.id));
+  next.coworkerAttendance = (next.coworkerAttendance ?? []).filter((row) => !dead.has(row.id));
+  next.coworkerSchedules = (next.coworkerSchedules ?? []).filter((row) => !dead.has(row.id));
 
   const afterCount =
     next.transactions.length

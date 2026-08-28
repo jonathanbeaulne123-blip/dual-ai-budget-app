@@ -6,12 +6,14 @@ import {
   dollarsFromCentsDigits,
   formatCad,
   previousWorkWeekHours,
+  scheduledCoworkersForReview,
   SHIFT_EVENT_TAGS,
   workedHoursFromOpenShift,
   workJobFingerprint,
   type Household,
   type OpenShift,
   type PostWorkShiftInput,
+  type ShiftAttendanceReviewDraft,
   type SevenShiftsTimesheetDraft,
   type ShiftEventTag,
   type Visibility,
@@ -82,7 +84,7 @@ export function WorkShiftFlow({
   punch: OpenShift | null;
   inboxDraft?: SevenShiftsTimesheetDraft | null;
   busy: boolean;
-  onConfirm: (input: PostWorkShiftInput) => void;
+  onConfirm: (input: PostWorkShiftInput, attendanceReview?: ShiftAttendanceReviewDraft | null) => void;
   /** OCR / scan draft — never posts alone; Confirm remains the money boundary. */
   initialDraft?: WorkShiftDraft | null;
   weatherGlassPrefill?: WeatherGlass | null;
@@ -179,7 +181,43 @@ export function WorkShiftFlow({
   const [cardVisibility, setCardVisibility] = useState<Visibility>(() => job?.defaults.cardTipsVisibility ?? "personal");
   const [tipOutVisibility, setTipOutVisibility] = useState<Visibility>(() => job?.defaults.tipOutVisibility ?? "personal");
   const [note, setNote] = useState(cameraDraft?.note ?? "");
+  const scheduleWindow = {
+    startedAt: inboxDraft?.startedAt ?? punch?.startedAt ?? null,
+    endedAt: inboxDraft?.endedAt ?? punch?.endedAt ?? null,
+  };
+  const scheduledRows = useMemo(() => scheduledCoworkersForReview(household.coworkerSchedules ?? [], {
+    ownerMemberId: memberId,
+    jobId: job?.id ?? "",
+    date,
+    ...scheduleWindow,
+  }), [household.coworkerSchedules, memberId, job?.id, date, scheduleWindow.startedAt, scheduleWindow.endedAt]);
+  const scheduledPeople = useMemo(() => {
+    const coworkers = new Map((household.coworkers ?? []).map((row) => [row.id, row]));
+    const byCoworker = new Map<string, { coworker: NonNullable<Household["coworkers"]>[number]; schedule: typeof scheduledRows[number] }>();
+    for (const schedule of scheduledRows) {
+      const coworker = coworkers.get(schedule.coworkerId);
+      if (coworker?.active && !coworker.mergedIntoCoworkerId) byCoworker.set(coworker.id, { coworker, schedule });
+    }
+    return [...byCoworker.values()].sort((left, right) => left.coworker.displayName.localeCompare(right.coworker.displayName));
+  }, [household.coworkers, scheduledRows]);
+  const scheduledPeopleKey = scheduledPeople.map((row) => [
+    row.coworker.id,
+    row.schedule.id,
+    row.schedule.updatedAt,
+    row.schedule.roleLabel,
+    row.schedule.scheduledStart ?? "",
+    row.schedule.scheduledEnd ?? "",
+  ].join(":")).join("|");
+  const [attendance, setAttendance] = useState<Record<string, "scheduled-assumed" | "user-confirmed-present" | "user-confirmed-absent">>({});
+  const [surpriseName, setSurpriseName] = useState("");
+  const [surpriseHelpers, setSurpriseHelpers] = useState<string[]>([]);
   const [stepError, setStepError] = useState("");
+
+  useEffect(() => {
+    setAttendance(Object.fromEntries(scheduledPeople.map((row) => [row.coworker.id, "scheduled-assumed"] as const)));
+    setSurpriseHelpers([]);
+    setSurpriseName("");
+  }, [scheduledPeopleKey, memberId, job?.id, date]);
 
   useEffect(() => {
     if (!inboxDraft) return;
@@ -275,6 +313,17 @@ export function WorkShiftFlow({
       return;
     }
     setStepError("");
+    const attendanceReview: ShiftAttendanceReviewDraft = {
+      locationName: job.locationName,
+      rows: scheduledPeople.map(({ coworker, schedule }) => ({
+        coworkerId: coworker.id,
+        roleLabel: schedule.roleLabel,
+        status: attendance[coworker.id] ?? "scheduled-assumed",
+        scheduledStart: schedule.scheduledStart,
+        scheduledEnd: schedule.scheduledEnd,
+      })),
+      surpriseHelpers,
+    };
     onConfirm({
       date,
       memberId,
@@ -303,7 +352,7 @@ export function WorkShiftFlow({
       settingsFingerprint: workJobFingerprint(job, role.id, date),
       createdBy: memberId,
       ...(inboxDraft?.punchDigest ? { sevenShiftsPunchDigest: inboxDraft.punchDigest } : {}),
-    });
+    }, attendanceReview);
   };
 
   return (
@@ -437,6 +486,43 @@ export function WorkShiftFlow({
             {role.tipped && <div><span>People on floor</span><strong>{staffingCount || "—"}</strong></div>}
             {role.tipped && <div><span>Event</span><strong>{EVENT_LABELS[eventTag]}</strong></div>}
           </div>
+          <section className="work-attendance-review" aria-label="Coworker attendance review">
+            <p className="kicker">Who was actually there?</p>
+            <h3>Scheduled coworkers</h3>
+            {scheduledPeople.length ? (
+              <div className="work-attendance-list">
+                {scheduledPeople.map(({ coworker, schedule }) => {
+                  const present = attendance[coworker.id] !== "user-confirmed-absent";
+                  return (
+                    <label key={coworker.id} className="work-attendance-row">
+                      <input
+                        type="checkbox"
+                        checked={present}
+                        onChange={(event) => setAttendance((current) => ({
+                          ...current,
+                          [coworker.id]: event.target.checked ? "user-confirmed-present" : "user-confirmed-absent",
+                        }))}
+                      />
+                      <span><strong>{coworker.displayName}</strong>{schedule.roleLabel ? ` · ${schedule.roleLabel}` : ""}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            ) : <p className="muted">No saved 7shifts schedule for this job and date. Attendance stays blank.</p>}
+            <div className="work-surprise-helper">
+              <label>Surprise helper<input value={surpriseName} maxLength={80} onChange={(event) => setSurpriseName(event.target.value)} placeholder="Name" /></label>
+              <button type="button" className="chip" disabled={!surpriseName.trim()} onClick={() => {
+                const name = surpriseName.replace(/\s+/g, " ").trim();
+                if (!name || surpriseHelpers.some((row) => row.toLocaleLowerCase("en-CA") === name.toLocaleLowerCase("en-CA"))) return;
+                setSurpriseHelpers((current) => [...current, name].slice(0, 50));
+                setSurpriseName("");
+              }}>Add helper</button>
+            </div>
+            {surpriseHelpers.length ? <div className="chips">{surpriseHelpers.map((name) => (
+              <button key={name} type="button" className="chip selected" onClick={() => setSurpriseHelpers((current) => current.filter((row) => row !== name))}>{name} · remove</button>
+            ))}</div> : null}
+            <p className="muted">Scheduled people start present. Turn off anyone absent. This private review never changes people-on-floor, wages, tips, or sales.</p>
+          </section>
           {calculation?.tipOuts.map((row) => <p className="muted" key={row.ruleId}>{row.label}: {formatCad(row.amountCents)} · {row.timing === "immediate" ? "paid from cash now" : row.timing === "deferred" ? "remind daily until paid" : "held from tip envelope"}</p>)}
           <p className="muted">Confirm posts earned wages to Wages owed, card tips to Card tips owed, and same-day cash tips to {household.accounts.find((account) => account.id === cashAccountId)?.name ?? "the chosen account"}. Payday prompts move owed money later.</p>
         </div>

@@ -41,13 +41,17 @@ import { shapeSevenShiftsSchedules, type SevenShiftsScheduledShift } from "./sev
 import {
   normalizeCoworkerLocation,
   normalizeCoworkerName,
+  matchCoworkerName,
   shapeCoworker,
   shapeCoworkerAttendance,
+  shapeCoworkerSchedules,
   type Coworker,
   type CoworkerAttendance,
   type CoworkerAttendanceStatus,
+  type CoworkerSchedule,
   type CoworkerObservedRole,
   type CoworkerSource,
+  type ShiftAttendanceReviewDraft,
 } from "./coworkers.ts";
 import {
   EMPTY_GOOGLE,
@@ -2814,7 +2818,14 @@ export function importCoworkerRoster(household: Household, input: {
   ownerMemberId: string;
   jobId: string;
   locationName: string;
-  rows: Array<{ displayName: string; roleLabel?: string; sourceIdentityKey: string | null; source: "seven-shifts-roster" | "seven-shifts-schedule" }>;
+  rows: Array<{
+    displayName: string;
+    roleLabel?: string;
+    sourceIdentityKey: string | null;
+    source: "seven-shifts-roster" | "seven-shifts-schedule";
+    scheduledWindows?: Array<{ sourceScheduleKey: string; date: string; scheduledStart: string | null; scheduledEnd: string | null; observedAt: string }>;
+  }>;
+  replaceScheduleRange?: { fromDate: string; toDate: string };
 }): CommitResult {
   const member = requireMember(household, input.ownerMemberId);
   const job = (household.workJobs ?? []).find((row) => row.id === input.jobId && row.active);
@@ -2826,6 +2837,15 @@ export function importCoworkerRoster(household: Household, input: {
   const next = cloneHousehold(household);
   const at = nowIso();
   const postedIds: string[] = [];
+  let identityCount = 0;
+  const replacement = input.replaceScheduleRange;
+  if (replacement) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(replacement.fromDate) || !/^\d{4}-\d{2}-\d{2}$/.test(replacement.toDate)
+      || replacement.toDate < replacement.fromDate) throw new ValidationError("Complete schedule range is invalid.");
+    const rangeDays = (Date.parse(`${replacement.toDate}T00:00:00Z`) - Date.parse(`${replacement.fromDate}T00:00:00Z`)) / 86_400_000;
+    if (!Number.isInteger(rangeDays) || rangeDays > 366) throw new ValidationError("Complete schedule range is too large.");
+  }
+  const capturedScheduleKeys = new Set<string>();
   const seen = new Set<string>();
   for (const row of input.rows) {
     const displayName = String(row.displayName || "").replace(/\s+/g, " ").trim();
@@ -2839,7 +2859,7 @@ export function importCoworkerRoster(household: Household, input: {
       throw new ValidationError("Roster contains an invalid source kind.");
     }
     const sourceKey = sourceIdentityKey ? `${row.source}:${sourceIdentityKey}` : `${row.source}:unbound:${normalizedName}`;
-    if (seen.has(sourceKey)) continue;
+    if (seen.has(sourceKey)) throw new ValidationError("Roster contains a duplicate protected source identity.");
     seen.add(sourceKey);
     const scoped = (next.coworkers ?? []).filter((item) => item.ownerMemberId === member.id
       && item.jobId === job.id
@@ -2875,9 +2895,65 @@ export function importCoworkerRoster(household: Household, input: {
     if (!shaped) throw new ValidationError("Roster contains invalid coworker details.");
     next.coworkers = [...(next.coworkers ?? []).filter((item) => item.id !== id), shaped];
     postedIds.push(id);
+    identityCount += 1;
+    const windows = row.scheduledWindows ?? [];
+    if (!Array.isArray(windows) || windows.length > 366) throw new ValidationError("Coworker schedule import is too large.");
+    for (const window of windows) {
+      const sourceScheduleKey = String(window.sourceScheduleKey || "").trim();
+      if (!/^s7shift_[A-Za-z0-9_-]{20,112}$/.test(sourceScheduleKey) || !/^\d{4}-\d{2}-\d{2}$/.test(window.date)) {
+        throw new ValidationError("Coworker schedule contains an invalid protected shift key or date.");
+      }
+      if (replacement && (window.date < replacement.fromDate || window.date > replacement.toDate)) {
+        throw new ValidationError("Complete schedule range does not cover every imported shift.");
+      }
+      capturedScheduleKeys.add(sourceScheduleKey);
+      const start = window.scheduledStart ? new Date(window.scheduledStart) : null;
+      const end = window.scheduledEnd ? new Date(window.scheduledEnd) : null;
+      if (Boolean(start) !== Boolean(end) || (start && end && (!Number.isFinite(start.valueOf()) || !Number.isFinite(end.valueOf()) || end <= start))) {
+        throw new ValidationError("Coworker schedule times must be a valid start/end pair.");
+      }
+      const existingSchedule = (next.coworkerSchedules ?? []).find((item) => item.ownerMemberId === member.id
+        && item.jobId === job.id && item.sourceScheduleKey === sourceScheduleKey);
+      const scheduleId = existingSchedule?.id || uniquePrefixedId("CWS", [
+        ...(next.coworkerSchedules ?? []).map((item) => item.id),
+        ...postedIds,
+      ]);
+      const [schedule] = shapeCoworkerSchedules([{
+        id: scheduleId,
+        ownerMemberId: member.id,
+        jobId: job.id,
+        coworkerId: id,
+        date: window.date,
+        scheduledStart: start?.toISOString() ?? null,
+        scheduledEnd: end?.toISOString() ?? null,
+        roleLabel,
+        sourceScheduleKey,
+        observedAt: window.observedAt,
+        active: true,
+        createdAt: existingSchedule?.createdAt ?? at,
+        updatedAt: at,
+      } satisfies CoworkerSchedule], at, member.id);
+      if (!schedule) throw new ValidationError("Coworker schedule contains invalid details.");
+      next.coworkerSchedules = [...(next.coworkerSchedules ?? []).filter((item) => item.id !== scheduleId), schedule];
+      postedIds.push(scheduleId);
+    }
+  }
+  if (replacement) {
+    if (capturedScheduleKeys.size === 0) {
+      throw new ValidationError("Complete schedule replacement needs at least one published shift.");
+    }
+    const omittedScheduleIds = (next.coworkerSchedules ?? []).filter((row) => row.ownerMemberId === member.id
+      && row.jobId === job.id && row.date >= replacement.fromDate && row.date <= replacement.toDate
+      && !capturedScheduleKeys.has(row.sourceScheduleKey)).map((row) => row.id);
+    if (omittedScheduleIds.length) {
+      const omitted = new Set(omittedScheduleIds);
+      next.coworkerSchedules = (next.coworkerSchedules ?? []).filter((row) => !omitted.has(row.id));
+      next.tombstones = mergeTombstones(next.tombstones, omittedScheduleIds.map((id) => ({ id, deletedAt: at })));
+      postedIds.push(...omittedScheduleIds);
+    }
   }
   if (!postedIds.length) throw new ValidationError("Roster did not contain a new or updated coworker.");
-  return commit(previous, next, "Import coworker roster", `Updated ${postedIds.length} private workplace ${postedIds.length === 1 ? "identity" : "identities"}`, postedIds);
+  return commit(previous, next, "Import coworker roster", `Updated ${identityCount} private workplace ${identityCount === 1 ? "identity" : "identities"}`, postedIds);
 }
 
 export type RecordCoworkerAttendanceInput = {
@@ -2951,6 +3027,69 @@ export function recordCoworkerAttendance(household: Household, input: RecordCowo
     ...replacements.map((row) => row.id),
     ...omittedIds,
   ]);
+}
+
+/** One visible Shift Confirm can atomically retain its reviewed, non-financial attendance sidecar. */
+export function postWorkShiftWithAttendanceReview(
+  household: Household,
+  input: PostWorkShiftInput,
+  review?: ShiftAttendanceReviewDraft | null,
+): CommitResult {
+  if (!review || (!review.rows.length && !review.surpriseHelpers.length)) return postWorkShift(household, input);
+  if (review.rows.length > 200 || review.surpriseHelpers.length > 50) throw new ValidationError("Attendance review is too large.");
+  const job = (household.workJobs ?? []).find((row) => row.id === input.jobId && row.active && row.memberId === input.memberId);
+  if (!job || normalizeCoworkerLocation(review.locationName) !== normalizeCoworkerLocation(job.locationName)) {
+    throw new ValidationError("Attendance review belongs to another job location.");
+  }
+  let staged = household;
+  const postedIds: string[] = [];
+  const warnings: string[] = [];
+  const rows = [...review.rows];
+  for (const rawName of review.surpriseHelpers) {
+    const match = matchCoworkerName(staged.coworkers ?? [], rawName, {
+      ownerMemberId: input.memberId,
+      jobId: input.jobId,
+      locationName: review.locationName,
+    });
+    if (match.kind === "ambiguous") throw new ValidationError("Surprise helper matches multiple coworkers and needs review.");
+    let coworkerId = match.kind === "exact" ? match.coworker.id : "";
+    if (!coworkerId) {
+      const helper = upsertCoworker(staged, {
+        ownerMemberId: input.memberId,
+        jobId: input.jobId,
+        locationName: review.locationName,
+        displayName: rawName,
+        source: "surprise-helper",
+        provisional: false,
+      });
+      staged = helper.household;
+      postedIds.push(...helper.postedIds);
+      warnings.push(...helper.warnings);
+      coworkerId = helper.postedIds.find((id) => id.startsWith("COW")) ?? "";
+      if (!coworkerId) throw new ValidationError("Surprise helper could not be retained.");
+    }
+    rows.push({ coworkerId, status: "surprise-helper" });
+  }
+  const shift = postWorkShift(staged, input);
+  const shiftId = shift.household.shifts.find((row) => shift.postedIds.includes(row.id))?.id;
+  if (!shiftId) throw new ValidationError("Confirmed shift did not return an attendance anchor.");
+  const attendance = recordCoworkerAttendance(shift.household, {
+    ownerMemberId: input.memberId,
+    shiftId,
+    rows,
+  });
+  const allIds = [...postedIds, ...shift.postedIds, ...attendance.postedIds];
+  return {
+    household: attendance.household,
+    warnings: [...warnings, ...shift.warnings, ...attendance.warnings],
+    postedIds: allIds,
+    undo: {
+      ...attendance.undo,
+      label: `${shift.undo.label}; attendance reviewed`,
+      snapshot: household,
+      postedIds: allIds,
+    },
+  };
 }
 
 export function reversePostedMoney(household: Household, transactionId: string, input: ActorInput = {}): CommitResult {

@@ -169,6 +169,7 @@ export function commandIdentityFacts(previous: Household | null, next: Household
   const fundConfigPosted = Boolean(next.householdFund && posted.has(next.householdFund.id));
   const coworkers = (next.coworkers ?? []).filter((row) => posted.has(row.id));
   const coworkerAttendance = (next.coworkerAttendance ?? []).filter((row) => posted.has(row.id));
+  const coworkerSchedules = (next.coworkerSchedules ?? []).filter((row) => posted.has(row.id));
   const tombstones = (next.tombstones ?? []).filter((row) => posted.has(row.id));
   return stable({
     householdId: next.householdId,
@@ -216,6 +217,7 @@ export function commandIdentityFacts(previous: Household | null, next: Household
     fundKittyAllocations,
     coworkers,
     coworkerAttendance,
+    coworkerSchedules: coworkerSchedules.map(({ sourceScheduleKey: _sourceScheduleKey, ...row }) => row),
     tombstones,
     // Private reconciliation and binding details never affect a shared command identity.
     fundPrivate: null,

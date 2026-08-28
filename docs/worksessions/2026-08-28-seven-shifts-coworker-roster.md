@@ -68,8 +68,8 @@ Jonathan can capture the employee-visible 7shifts roster and published schedule,
 - [x] Harden the companion and add explicit capture classification.
 - [x] Implement coworker identity, assignment, and matching contracts.
 - [x] Implement private roster/schedule derivation and Personal continuity.
-- [ ] Add attendance review UI and contextual covariates in a follow-up slice.
-- [ ] Verify, independently review, and prepare a handoff.
+- [x] Add attendance review UI and contextual covariates in follow-up D-168.
+- [x] Verify, independently review, and prepare the D-166 handoff.
 
 ## Evidence log
 
@@ -95,4 +95,4 @@ Jonathan can capture the employee-visible 7shifts roster and published schedule,
 
 ## Handoff
 
-Slice 1 is complete and independently verified locally. The OCR/shift review attendance screen remains the next implementation slice. Nothing has been pushed, merged, deployed, activated, or applied to hosted storage.
+Slice 1 passed independent review, merged in PR #245 as `7d74e527`, and was deployed as Worker version `2e63376d-4811-49f8-87e9-8aeb3553b6cd`. No schema, secret, feature-flag, or hosted-data mutation accompanied the code release. D-168 continues the OCR/shift attendance review on a fresh branch.

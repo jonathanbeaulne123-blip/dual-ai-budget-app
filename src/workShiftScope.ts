@@ -1,4 +1,4 @@
-import type { Environment, PostWorkShiftInput } from "./core/index.ts";
+import type { Environment, PostWorkShiftInput, ShiftAttendanceReviewDraft } from "./core/index.ts";
 
 export const WORK_SHIFT_SCOPE_ERROR = "That Timesheet draft belongs to another ledger or member. Pull it again.";
 
@@ -10,6 +10,7 @@ export type WorkShiftCommandScope = {
 
 export type ScopedWorkShiftInput = WorkShiftCommandScope & {
   input: PostWorkShiftInput;
+  attendanceReview?: ShiftAttendanceReviewDraft | null;
 };
 
 export function workShiftScopeMatches(
@@ -32,8 +33,8 @@ export function runScopedWorkShift<T>(
   currentMemberId: string | null | undefined,
   pending: ScopedWorkShiftInput,
   confirmDuplicate: boolean,
-  post: (input: PostWorkShiftInput) => T,
+  post: (input: PostWorkShiftInput, attendanceReview?: ShiftAttendanceReviewDraft | null) => T,
 ): T {
   if (!workShiftScopeMatches(current, currentMemberId, pending)) throw new Error(WORK_SHIFT_SCOPE_ERROR);
-  return post({ ...pending.input, confirmDuplicate });
+  return post({ ...pending.input, confirmDuplicate }, pending.attendanceReview);
 }
