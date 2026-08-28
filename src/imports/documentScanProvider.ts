@@ -1,10 +1,10 @@
 export type DocumentVisionProvider = "auto" | "workers-ai" | "openai" | "anthropic";
 
 export const DOCUMENT_VISION_PROVIDERS: Array<{ id: DocumentVisionProvider; label: string; hint: string }> = [
-  { id: "auto", label: "Auto", hint: "Best available for tip sheets" },
+  { id: "auto", label: "Auto", hint: "Free Workers AI first; paid vision only if the slip is still unreadable" },
   { id: "workers-ai", label: "Workers AI", hint: "Free Cloudflare vision" },
-  { id: "openai", label: "OpenAI", hint: "gpt-4o — strongest for dense slips" },
-  { id: "anthropic", label: "Anthropic", hint: "Claude vision fallback" },
+  { id: "openai", label: "OpenAI", hint: "gpt-4o — costs ~$0.02–0.04 per scan; use when Auto is not enough" },
+  { id: "anthropic", label: "Anthropic", hint: "Claude vision fallback (paid)" },
 ];
 
 const STORAGE_KEY = "hearth.documentVisionProvider.v1";

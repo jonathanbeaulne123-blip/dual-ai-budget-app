@@ -1,5 +1,21 @@
 # AI Task and Handoff Standard
 
+## Tip-sheet transcript-first rethink (D-152) (2026-08-28)
+
+**Status:** PR branch `cursor/tip-sheet-transcript-first-403c`. Risk: **Medium**. Development.
+
+**Household outcome:** Tip-sheet camera drafts Confirm with labeled Toast totals instead of blank/wrong fields. PDF conversion is **not** used (vision APIs are image-only).
+
+**Budget delta (5):** `+2` — labeled OCR wins; invent-nothing still never posts.
+
+**Engagement delta (3):** `+1` — clearer, more usable drafts after Clear Capture.
+
+**What changed:** Transcript-first prompt; coerce `shift-report` from tip-sheet hint + Toast OCR; field-level POS merge; tip-sheet contrast + high-quality JPEG prep; **Auto = free Workers AI first**, paid only when draft still weak.
+
+**Cost:** Default **Auto** avoids paid tokens when free Workers AI + POS parser draft enough. OpenAI chip still costs ~$0.02–0.04 when forced or when Auto falls back.
+
+**Next owner:** Merge/deploy. Hard-refresh → leave provider on **Auto** → tip sheet scan.
+
 ## OpenAI tip-sheet 503 fix (D-152) (2026-08-27)
 
 **Status:** Merged via [#226](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/226) onto `main` (`4ea186f`). Kitchen Worker **live** via Cloudflare Workers run `33128613418` (Deploy green). Risk: **Medium**. Not Production household data.
