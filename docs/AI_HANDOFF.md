@@ -1,5 +1,42 @@
 # AI Task and Handoff Standard
 
+## D-164 Shared Story and Personal Folio (2026-08-28)
+
+**Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7` @ `ee74045`. **Not merged, not deployed, not live.** Risk: **High** (ledger-mode privacy and financial presentation).
+
+**Household outcome:** Opening Shared Ledger feels like sitting down at the household table: what is true together, what changed, what needs a person, what is next, and why the view is trustworthy. Opening Personal Ledger feels like a private folio, not Shared with a filter. Desktop and iPad share one story/folio system at `>=720px`. iPhone keeps `OfficePhone` structure plus a purpose banner.
+
+**Budget delta (5):** `+4` — mode-safe projectors, Fund flow matching D-161, authority in the journey, route-wide Personal denial, persist/compile on the accepted snapshot.
+
+**Engagement delta (3):** `+3` — cooperative weekly/monthly paper story instead of disconnected Fund forms.
+
+**If they conflicted:** books win. No new Fund formulas, event kinds, or command authority. iPhone structural redesign refused. Ranking/spend comparison refused. Presentation clones cannot overwrite partner Personal rows.
+
+**What changed:**
+- `projectLedgerExperience` / `ledgerRouteContract` at the app boundary. Scoped household is read-only presentation. `booksHousehold` is the accepted snapshot.
+- Shared Story (now / flow / attention / change / next / trust) and Personal Folio at `>=720px`. Fund commands stay behind progressive disclosure. Phone gets `LedgerPurposeBanner` only.
+- `restoreAcceptedSnapshot` plus Books/Goals/Add writers so Shared `addGoal` and Personal close/rec cannot drop the other scope’s rows. Personal presentation txs compile only against remaining accounts.
+- Add/transfer/shift pickers use `pickerAccounts` from the scoped household. More Health renders redacted `integrityFindings`. Export fails closed when experience is not ok. HerculesPresence receives `herculesHousehold`.
+
+**Verification:**
+- Focused `test/ledger-experience.test.ts`, `test/ledger-story-ui.test.ts`, `test/ledger-story-dom.test.ts` green, including persist restore and Personal compile of demo seed.
+- `pnpm check` at `ee74045` → **1097 passed / 2 skipped**, `ai:verify` + build green.
+- Visual, fictional Development demo kitchen on localhost as Jonathan: Shared story at 1280 and ~768 (Fund free-to-spend, Bianca custody copy), Personal folio (not the Shared queue), Household Add shows shared accounts only (no Private bank ·••1234), Personal Books “My books” at $0, phone 390/320 keep OfficePhone + purpose banner.
+
+**Data and environment disclosure:**
+- Development impact: none (local/synthetic demo kitchen only)
+- Production impact: none
+- Network calls or data sent: none new
+- MCP access: none for household data
+- Hosted rows/schema/secrets/deployments: none
+- Real household or partner-personal data used: none. Demo/synthetic Development only.
+
+**Remaining uncertainty:** Demo seed has no `scope: personal` accounts, so Personal Books compile empty by design. Independent books/privacy/UX auditor results were requested on this SHA; treat this PR as draft until Jonathan reviews them. 820/1024/1440 stills were not captured as separate files; 1280, ~768, 390, and 320 were.
+
+**Next owner:** Jonathan — review [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244). Do not merge or deploy unless you ask.
+
+**Worksession:** [`worksessions/2026-08-28-shared-ledger-story-implementation.md`](worksessions/2026-08-28-shared-ledger-story-implementation.md)
+
 ## Closeable kitchen notices with 1–2 fix steps (2026-08-28)
 
 **Status:** Draft PR [#232](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/232) on `cursor/closeable-kitchen-notices-560d`. **Not merged, not deployed, not live.** Risk: **Low–Medium** (copy/UX; no money write, Auth, or schema).

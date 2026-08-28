@@ -1,14 +1,14 @@
 # Hearth worksession — Shared Ledger story implementation
 
-- **Status:** OPEN
+- **Status:** OPEN; draft PR ready for review
 - **Opened:** 2026-08-28 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `cursor/shared-ledger-story-aef7`
 - **Baseline SHA:** `871e6607b4bc6a5d653f9e9bbcc9131f9a07dc65`
-- **Head SHA:** (in progress)
-- **PR or issue:** none yet
+- **Head SHA:** `ee74045c372469c34b0c28b98f1adcbaef86eab4`
+- **PR or issue:** draft [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244)
 - **Risk:** High review gate (ledger-mode privacy and financial presentation)
 - **Decision owner:** Jonathan
 - **Environment impact:** none; local/synthetic Development only
@@ -19,19 +19,16 @@ Opening Shared Ledger feels like sitting down at the household table: what is tr
 
 ## Budget delta (5)
 
-`+4` planned — mode-safe projectors, Fund flow that matches D-161, authority in the journey, route-wide Personal denial.
+`+4` — mode-safe projectors, Fund flow that matches D-161, authority in the journey, route-wide Personal denial, persist/compile on the accepted snapshot.
 
 ## Engagement delta (3)
 
-`+3` planned — cooperative weekly/monthly paper story instead of disconnected Fund forms.
+`+3` — cooperative weekly/monthly paper story instead of disconnected Fund forms.
 
 ## Verified baseline
 
 - `origin/main` is `871e660` (merged D-164 design packet PR #242).
-- `displayHousehold` is still asymmetric: Shared Home/Books get `householdForView`; Personal receives the accepted full household.
-- Calendar, Shift, More, and JSON export receive the raw accepted household.
-- Fund glance sits above Office and is absent before setup. Fund panel is form-first.
-- `test/household-fund-ui.test.ts` still fences Fund out of the Office instrument model.
+- Implementation landed on this branch; P0 persist/privacy follow-up is in `4c1b27f` / `ee74045`.
 
 ## Scope
 
@@ -42,6 +39,7 @@ Opening Shared Ledger feels like sitting down at the household table: what is tr
 - Route-level mode openings for Books, Plan, Calendar, Shift, Accounts, More, Add/Confirm.
 - Progressive disclosure of existing Fund commands. No new money formulas.
 - Phone semantic labels only.
+- Presentation-only scoped household; writers on accepted snapshot.
 
 ### Out of scope
 
@@ -51,11 +49,11 @@ Opening Shared Ledger feels like sitting down at the household table: what is tr
 
 ## Acceptance evidence
 
-- [ ] Mode switch changes Home/Books purpose and next actions, not only figures.
-- [ ] Canonical Fund arithmetic through flow nodes.
-- [ ] Shared denial of Bianca’s private backing/recon facts.
-- [ ] Desktop/iPad story at 768/820/1024/1280/1440; phone 320/390 unchanged structurally.
-- [ ] Focused tests + `pnpm check`.
+- [x] Mode switch changes Home/Books purpose and next actions, not only figures.
+- [x] Canonical Fund arithmetic through flow nodes (focused tests).
+- [x] Shared denial of Bianca’s private backing/recon facts in projectors/export; Add pickers scoped.
+- [x] Desktop/iPad story at 1280 and ~768; phone 320/390 unchanged structurally (purpose banner only).
+- [x] Focused tests + `pnpm check` at `ee74045` (1097 passed / 2 skipped).
 
 ## Plan
 
@@ -66,33 +64,36 @@ Opening Shared Ledger feels like sitting down at the household table: what is tr
 - [x] Slice 3: Shared deep pages and Fund progressive disclosure.
 - [x] Slice 4: Personal Folio and privacy denial.
 - [x] Slice 5: phone semantic correction only.
-- [ ] Independent books/privacy and UX audits; handoff.
+- [x] P0 persist/privacy wiring after independent audit.
+- [ ] Jonathan review of draft PR; independent auditor notes on this SHA.
 
 ## Evidence log
 
 - 2026-08-28: branched `cursor/shared-ledger-story-aef7` from `origin/main@871e660`.
+- 2026-08-28: `6c8bb18` implement story/folio; `61f0ec5` restore Fund disclosure CSS.
+- 2026-08-28: `4c1b27f` persist/compile on accepted snapshot; scoped Add pickers; redacted Health; fail-closed export.
+- 2026-08-28: `ee74045` Plan `fundGoal` source fence.
+- 2026-08-28: `pnpm check` → 1097 passed / 2 skipped; build green.
+- 2026-08-28: localhost demo kitchen as Jonathan; Shared vs Personal visual proof.
 
 ## Decisions
 
 - Presentation uses `projectLedgerExperience` scoped household; commands and Health still run on the accepted snapshot.
 - Personal presentation accounts are member-owned `scope: personal` only; shared account catalog stays in Shared.
-- iPhone keeps Fund glance; wide Shared replaces it with the story room.
+- iPhone keeps Fund glance only when the Fund exists; wide Shared replaces it with the story room.
+- `restoreAcceptedSnapshot` is a persist safety net for presentation clones; close/rec/setBudget/addGoal still execute on `booksHousehold`.
 
 ## Phone audit (Slice 5)
 
-Semantic correction implemented: every tab, including phone Home, shows `LedgerPurposeBanner` with the active ledger purpose. The existing Fund glance remains phone-only (`is-phone-only`); wide Shared replaces it with the story room. `OfficePhone` structure, seals, mosaic count, notebook rule, and nav are unchanged.
-
-Recommendations not implemented (need new approval):
-
-- After Fund setup, a one-line Fund free-to-spend inside the existing phone story strip would couple Dual Course without a new instrument.
-- iPad Hercules/nav overlay collision is mitigated with story padding; a later OfficeWide z-index pass could still help.
-- Personal phone Home still uses OfficePhone atmosphere under the folio-less phone fence; that is intentional.
+Semantic correction implemented: every tab, including phone Home, shows `LedgerPurposeBanner` with the active ledger purpose. The existing Fund glance remains phone-only (`is-phone-only`) and is labeled Fund free-to-spend when the Fund exists; wide Shared replaces it with the story room. `OfficePhone` structure, seals, mosaic count, notebook rule, and nav are unchanged.
 
 ## Remaining uncertainty
 
 - A real multi-week Fund household has not been visually audited; tests use synthetic D-161 fixtures.
-- Quiet appointments use `sensitivity: "quiet"`; Shared hides them, Personal shows the member’s own.
+- Demo seed has no `scope: personal` accounts, so Personal Books compile empty.
+- 820/1024/1440 stills were not captured as separate files.
+- Independent books/privacy/UX auditor return on this exact SHA should be read before merge.
 
 ## Handoff
 
-Next owner: Cursor until the implementation PR is reviewable. Jonathan decides push-beyond-this-agent, merge, and deploy. Not merged, not deployed, not live.
+Next owner: Jonathan reviews draft PR #244. Not merged, not deployed, not live.
