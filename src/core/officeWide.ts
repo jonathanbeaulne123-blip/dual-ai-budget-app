@@ -110,7 +110,7 @@ export const WIDE_INSTRUMENT_TAB_LABEL: Partial<Record<InstrumentId, string>> = 
 /** Compact strip: phone nav items first, then leftover desk instruments. */
 export function wideMiniBrowserTabs(drawer: InstrumentId[]): WideMiniTab[] {
   const extras: WideMiniTab[] = drawer.map((id) => ({
-    id,
+    id: `desk-${id}`,
     label: WIDE_INSTRUMENT_TAB_LABEL[id] ?? id,
     kind: "instrument" as const,
     instrument: id,

@@ -52,6 +52,7 @@ describe("wide paper office mosaic", () => {
       "More",
     ]);
     expect(tabs.some((tab) => tab.instrument === "chalkboard")).toBe(true);
+    expect(new Set(tabs.map((tab) => tab.id)).size).toBe(tabs.length);
     expect(wideInstrumentFullPage("calendar")).toBe("calendar");
     expect(wideInstrumentFullPage("chalkboard")).toBeNull();
   });

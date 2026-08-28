@@ -108,8 +108,11 @@ function ChalkCanvas({
         : tall
           ? Math.min(160, Math.max(110, Math.round(width * 0.42)))
           : Math.round(width * 0.55);
-      canvas.width = Math.round(width * 2);
-      canvas.height = Math.round(height * 2);
+      const nextW = Math.round(width * 2);
+      const nextH = Math.round(height * 2);
+      if (canvas.width === nextW && canvas.height === nextH) return;
+      canvas.width = nextW;
+      canvas.height = nextH;
       if (!fill) canvas.style.height = `${height}px`;
       else canvas.style.height = "100%";
       redraw();

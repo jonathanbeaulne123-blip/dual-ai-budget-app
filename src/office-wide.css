@@ -67,7 +67,8 @@
 }
 .office-wide.is-adding .office-wide-notebook,
 .office-wide.is-adding .office-wide-seals,
-.office-wide.is-adding .office-wide-hero {
+.office-wide.is-adding .office-wide-hero,
+.office-wide.is-adding .office-wide-widgets {
   pointer-events: none;
 }
 .office-wide.is-adding .office-wide-notebook {

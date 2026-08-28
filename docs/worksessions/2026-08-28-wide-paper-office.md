@@ -7,7 +7,7 @@
 - **Repository:** jonathanbeaulne123-blip/dual-ai-budget-app
 - **Branch:** `cursor/wide-paper-office-560d`
 - **Baseline SHA:** `54c74dcbf53fbab694b9ca5cd08f57ff4acdd9d2` (`origin/main` at branch)
-- **Head SHA:** `afdff225be5b44372cfecd0105c28f02b85d1f3a`
+- **Head SHA:** (this packet; see git)
 - **PR or issue:** draft [#228](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/228)
 - **Risk:** Medium
 - **Decision owner:** Jonathan
@@ -74,7 +74,7 @@ On a laptop, Home feels like the phone kitchen — wax seals, paper stories, cre
 ## Evidence log
 
 - `pnpm check` at `e16e873`: 967 passed / 2 skipped; `dist` built in 5.32s.
-- Visual (demo kitchen, Development): 1100 two-column paper office; 720 OfficeWide; 390/320 Draft C; Classic toggle; Post pad uncovered. Demo clip `/opt/cursor/artifacts/wide_paper_office_demo.mp4` (~28s).
+- Visual (demo kitchen, Development): 1100 two-column paper office with Home/Cal/Shift/Post chips under Today's stories in the left column; Cal preview in the notebook; 390 Draft C fat nav. Demo stills under `/opt/cursor/artifacts/wide-paper-nav-mosaic.png` and `phone-390-fat-nav.png`.
 - UX auditor: Dual Course kill criterion not triggered. Landed freeze-hero / dim-notebook / pin focus-ring.
 - Verifier: code/docs claims pass; handoff written this close.
 

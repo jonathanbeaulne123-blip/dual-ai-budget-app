@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import {
   wideMiniBrowserTabs,
   type InstrumentId,
@@ -28,6 +28,10 @@ export function WideMiniBrowser({
 }) {
   const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tabs = wideMiniBrowserTabs(drawerIds);
+
+  useEffect(() => () => {
+    if (pending.current) clearTimeout(pending.current);
+  }, []);
 
   function fire(id: string, full: boolean) {
     if (pending.current) {
@@ -59,7 +63,11 @@ export function WideMiniBrowser({
             type="button"
             className={`office-wide-tab ${tab.kind === "post" ? "is-post" : ""} ${active ? "is-on" : ""}`}
             aria-current={active ? "page" : undefined}
-            aria-label={tab.kind === "post" ? "Post. Preview the pad, double-click for Add." : tab.label}
+            aria-label={
+              tab.kind === "post"
+                ? "Post. Preview the pad. Shift+Enter opens Add."
+                : `${tab.label}. Preview. Shift+Enter opens the page.`
+            }
             onClick={() => {
               if (pending.current) clearTimeout(pending.current);
               pending.current = setTimeout(() => fire(tab.id, false), CLICK_WAIT_MS);
@@ -67,6 +75,13 @@ export function WideMiniBrowser({
             onDoubleClick={(event) => {
               event.preventDefault();
               fire(tab.id, true);
+            }}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" && event.key !== " ") return;
+              if (event.shiftKey || event.ctrlKey || event.metaKey) {
+                event.preventDefault();
+                fire(tab.id, true);
+              }
             }}
           >
             {tab.label}

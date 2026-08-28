@@ -1,5 +1,39 @@
 # AI Task and Handoff Standard
 
+## Laptop nav in the smaller widgets column (D-156) (2026-08-28)
+
+**Status:** Draft PR [#228](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/228) on `cursor/wide-paper-office-560d`. Head after this packet. Base `origin/main` `54c74dc`. **Not merged, not deployed, not live.** Risk: **Medium** (UX Dual Course; no money, Auth, or schema).
+
+**Household outcome:** On a laptop, Home / Cal / Shift / Post / Plan / Books / More live in the **left mosaic column** under Today's stories, with leftover desk chips (Notes, Outfits, …). The fat phone nav and plus FAB are hidden at ≥720px. Single click previews in the notebook; double-click or Shift+Enter opens the page. Phone `<720px` keeps Draft C bottom nav.
+
+**Budget delta (5):** `+2` — glanceable month net / wallet / bills / Health unchanged; nav move is engagement.
+
+**Engagement delta (3):** `+2` — nav sits with the small widgets instead of a second bottom bar.
+
+**If they conflicted:** widgets still never `postEntry`; Post is a small chip, not a covering FAB.
+
+**What changed:** `WideMiniBrowser` moved into `office-wide-widgets` (left column). Unique `desk-` chip ids. Shift+Enter opens the full page. Live chalkboard still fills the notebook. Fat `.nav` stays phone-only.
+
+**Verification:**
+- Focused `test/office-wide.test.ts` + `test/desktop-office.test.ts` green (chips under mosaic; unique ids).
+- `pnpm check` at `0978af9` → **969 passed / 2 skipped**, build green. Follow-up commit is unique ids + keyboard Shift+Enter + Add freeze on the widget column.
+- Visual, fictional Development demo kitchen only: Paper office at ~1100 — chips wrap under Today's stories in the left column; Cal preview in the right notebook; no fat bottom nav. Phone ~390 keeps Home/Cal/Shift/+ /Plan/Books/More.
+- Read-only UX auditor: household job met; keyboard double-click gap addressed with Shift+Enter; remaining gaps 720 wrap, 280ms click wait.
+
+**Data and environment disclosure:**
+- Development impact: none (layout `localStorage` cosmetics).
+- Production impact: none.
+- Network calls or data sent: none new.
+- MCP access: none.
+- Hosted rows/schema/secrets/deployments: none.
+- Real household or partner-personal data used: none. Demo kitchen only.
+
+**Remaining uncertainty:** Saved x/y desks still open Classic (chip strip above the canvas). Fresh desks open paper. 720–899px stacks to one column so chips wrap under the mosaic. Branch is behind later Toast OCR work on `main`.
+
+**Next owner:** Jonathan — review laptop ~1100: chips should sit under Today's stories on the left, fat bar gone. Then phone 390 still has the seven-column nav. Do not merge until that looks right.
+
+**Worksession:** [`worksessions/2026-08-28-wide-paper-office.md`](worksessions/2026-08-28-wide-paper-office.md)
+
 ## Wide paper office (D-156) (2026-08-28)
 
 **Status:** Draft PR [#228](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/228) on `cursor/wide-paper-office-560d` (`afdff22`). Implementation `e16e873`; this handoff commit follows. Base `origin/main` `54c74dc`. **Not merged, not deployed, not live.** Risk: **Medium** (UX Dual Course; no money, Auth, or schema).
