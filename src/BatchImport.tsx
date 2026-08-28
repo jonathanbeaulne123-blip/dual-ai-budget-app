@@ -548,7 +548,7 @@ export function BatchImportCard({
         <input ref={cameraInput} hidden type="file" multiple accept="image/jpeg,image/png,image/webp" capture="environment" onChange={(event) => void importImages(event.target.files, event.target)} />
         <input ref={uploadInput} hidden type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={(event) => void importImages(event.target.files, event.target)} />
         {working && <p role="status">Reading and checking duplicates…</p>}
-        <KitchenNotice message={error && !open ? error : ""} />
+        <KitchenNotice message={error && !open ? error : ""} onGoMore={onGoMore} />
         {Object.values(driveReceipts).map((receipt) => (
           <div className={`import-drive-status ${receipt.ok ? "" : "warn"}`} key={receipt.sourceHash} role="status">
             <span>{receipt.detail}</span>
@@ -617,7 +617,7 @@ export function BatchImportCard({
             </div>
             <p className="muted">{TABS.find((item) => item.id === tier)?.hint}</p>
             {warnings.map((warning) => <p className="warn" key={warning}>{warning}</p>)}
-            <KitchenNotice message={error} />
+            <KitchenNotice message={error} onGoMore={onGoMore} />
             <section className="import-review-list">
               {visible.length ? visible.map((row) => (
                 <ImportReviewItem

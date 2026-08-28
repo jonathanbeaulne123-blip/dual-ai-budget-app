@@ -1,14 +1,14 @@
 # Hearth worksession — Closeable kitchen notices
 
-- **Status:** OPEN
+- **Status:** OPEN (draft PR)
 - **Opened:** 2026-08-28 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor (Grok)
 - **Repository:** jonathanbeaulne123-blip/dual-ai-budget-app
 - **Branch:** `cursor/closeable-kitchen-notices-560d`
 - **Baseline SHA:** `9cc1f67` (`origin/main`)
-- **Head SHA:** (this packet; see git)
-- **PR or issue:** draft on this branch
+- **Head SHA:** see git after this packet
+- **PR or issue:** [#232](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/232)
 - **Risk:** Low–Medium (copy/UX; no money write, no schema)
 - **Decision owner:** Jonathan
 - **Environment impact:** none (UI copy only; Development demo)
@@ -51,17 +51,17 @@ When Google is signed in but not linked to the person on this kitchen, or when P
 
 ## Acceptance evidence
 
-- [ ] Google mismatch copy names Link in More
-- [ ] PGlite receipt copy names Reload / Sign out; still fail-closed
-- [ ] Notices are small, closeable, and do not post money
-- [ ] Focused tests + `pnpm check`
+- [x] Google mismatch copy names Link in More
+- [x] PGlite receipt copy names Reload / Sign out; still fail-closed
+- [x] Notices are small, closeable, and do not post money
+- [x] Focused tests + `pnpm check` (980 passed / 2 skipped at `6c58daa`)
 
 ## Plan
 
 - [x] Map copy
 - [x] Wire KitchenNotice
-- [ ] Focused tests + check
-- [ ] Handoff + draft PR
+- [x] Focused tests + check
+- [x] Handoff + draft PR
 
 ## Remaining uncertainty
 
@@ -69,4 +69,4 @@ Live kitchen still shows the old walls until this PR is merged and deployed. Lin
 
 ## Handoff
 
-Next owner: Jonathan — review the draft PR. Do not merge/deploy unless asked.
+Next owner: Jonathan — review [#232](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/232). Not merged, not deployed, not live.
