@@ -79,11 +79,11 @@ function isSession(value: unknown): value is GoogleSession {
 }
 
 /** Continuity identity from a GIS session. Missing `identity` must not throw — welcome has no session, kitchen does. */
-export function continuityIdentityFromGoogle(
-  session: { identity?: { email?: string; subject?: string } | null } | null | undefined,
-): { email: string; subject: string } | null {
-  const email = typeof session?.identity?.email === "string" ? session.identity.email.trim() : "";
-  const subject = typeof session?.identity?.subject === "string" ? session.identity.subject.trim() : "";
+export function continuityIdentityFromGoogle(session: unknown): { email: string; subject: string } | null {
+  if (!session || typeof session !== "object") return null;
+  const identity = (session as { identity?: { email?: string; subject?: string } | null }).identity;
+  const email = typeof identity?.email === "string" ? identity.email.trim() : "";
+  const subject = typeof identity?.subject === "string" ? identity.subject.trim() : "";
   if (!email && !subject) return null;
   return { email, subject };
 }
