@@ -63,8 +63,8 @@
     fullPageFrac: 0.48,
     padPx: 8,
     padFrac: 0.03,
-    targetMin: 800,
-    maxScale: 3,
+    targetMin: 1100,
+    maxScale: 4.5,
     minCrop: 40,
     shortRatio: 0.55,
     minAlnum: 8,
@@ -630,9 +630,9 @@
   }
 
   function upscaleCanvas(src) {
-    const shortest = Math.min(src.width, src.height);
-    if (shortest >= D.targetMin) return src;
-    const scale = Math.min(D.maxScale, D.targetMin / shortest);
+    // Receipts are narrow; scale by width so glyphs get large enough for Tesseract.
+    if (src.width >= D.targetMin) return src;
+    const scale = Math.min(D.maxScale, D.targetMin / src.width);
     if (scale <= 1.05) return src;
     const out = document.createElement("canvas");
     out.width = Math.max(1, Math.round(src.width * scale));
@@ -664,6 +664,17 @@
     }
     ctx.putImageData(img, 0, 0);
     return canvas;
+  }
+
+  function pngFromCanvas(canvas) {
+    return canvas.toDataURL("image/png");
+  }
+
+  function applyLexicon(text) {
+    if (window.ToastLexicon && typeof window.ToastLexicon.correctText === "function") {
+      return window.ToastLexicon.correctText(text);
+    }
+    return text;
   }
 
   function joinReceiptTexts(texts) {
@@ -708,6 +719,7 @@
         document_index: extra && extra.document_index ? extra.document_index : 0,
         preview: jpegFromCanvas(enhanced, 1600, 0.9),
         processed_preview: jpegFromCanvas(enhanced, 1600, 0.9),
+        ocr_image: pngFromCanvas(enhanced),
       },
       extra || {}
     );
@@ -743,13 +755,17 @@
       worker = await Tesseract.createWorker("eng");
       const psm =
         (typeof Tesseract.PSM !== "undefined" && Tesseract.PSM.SINGLE_COLUMN) || "4";
-      await worker.setParameters({ tessedit_pageseg_mode: psm });
+      await worker.setParameters({
+        tessedit_pageseg_mode: psm,
+        preserve_interword_spaces: "1",
+        user_defined_dpi: "300",
+      });
       const parts = [];
       const byDoc = new Map();
       for (const sl of slices) {
-        const source = sl.preview || sl.processed_preview;
+        const source = sl.ocr_image || sl.preview || sl.processed_preview;
         const { data } = await worker.recognize(source);
-        const text = String(data.text || "").replace(/[ \t]+\n/g, "\n").trim();
+        const text = applyLexicon(String(data.text || "").replace(/[ \t]+\n/g, "\n").trim());
         const conf = typeof data.confidence === "number" ? data.confidence / 100 : 0;
         const docIndex = sl.document_index || 0;
         parts.push({
@@ -767,7 +783,7 @@
       const docTexts = Array.from(byDoc.keys())
         .sort((a, b) => a - b)
         .map((k) => (byDoc.get(k) || []).join("\n"));
-      const joined = joinReceiptTexts(docTexts);
+      const joined = applyLexicon(joinReceiptTexts(docTexts));
       if (!joined) {
         return {
           status: "empty",
@@ -899,6 +915,7 @@
           document_index: 0,
           preview: jpegFromCanvas(ocrCanvas, 1600, 0.9),
           processed_preview: jpegFromCanvas(ocrCanvas, 1600, 0.9),
+          ocr_image: pngFromCanvas(ocrCanvas),
         };
       });
     }
@@ -954,7 +971,9 @@
     const sorted = widths.slice().sort((a, b) => a - b);
     const median = sorted[Math.floor(sorted.length / 2)] || 1;
     const merger = window.ToastMerge && window.ToastMerge.mergeOverlappingTexts;
-    const mergedText = merger ? merger(texts, overlapHint) : texts.filter(Boolean).join("\n");
+    const mergedText = applyLexicon(
+      merger ? merger(texts, overlapHint) : texts.filter(Boolean).join("\n")
+    );
     const warnings = [];
     items.forEach((item) => {
       const delta = Math.abs(item.width - median) / median;
