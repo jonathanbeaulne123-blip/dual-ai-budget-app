@@ -3,6 +3,7 @@ import { ensureHouseholdShape } from "./sync.ts";
 import {
   commandIdentityHash,
   financialAuditHash,
+  financialAuditHashForScope,
   findReceipt,
   newConfirmationId,
   rememberReceipt,
@@ -20,6 +21,7 @@ import {
   shapeSharing,
 } from "./sharing.ts";
 import { autoResolveSharedConflict } from "./conflict.ts";
+import { assertHouseholdFundTransition } from "./householdFund.ts";
 import type { CommandReceipt, Household } from "./types.ts";
 import { NeedsConfirmationError } from "./types.ts";
 
@@ -160,6 +162,7 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       });
     }
 
+    assertHouseholdFundTransition(previous, candidate);
     assertAcceptableBooks(candidate);
 
     const bumped = (sameHousehold ? previous?.revision ?? 0 : candidate.revision ?? 0) + 1;
@@ -184,7 +187,19 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
     };
     accepted = rememberReceipt(accepted, receipt);
     accepted.booksAcceptedHash = await financialAuditHash(accepted);
-    accepted = rememberReceipt(accepted, { ...receipt, auditHash: accepted.booksAcceptedHash });
+    const actorMemberId = [
+      ...accepted.transactions.filter((row) => postedIds.includes(row.id)).map((row) => row.createdBy),
+      ...accepted.shifts.filter((row) => postedIds.includes(row.id)).map((row) => row.createdBy),
+      ...(accepted.fundEvents ?? []).filter((row) => postedIds.includes(row.id)).map((row) => row.createdBy),
+    ].find(Boolean) ?? accepted.members.find((member) => member.active)?.id ?? accepted.members[0]?.id ?? "MEM-001";
+    accepted = rememberReceipt(accepted, {
+      ...receipt,
+      auditHash: accepted.booksAcceptedHash,
+      scopedAuditHashes: {
+        shared: await financialAuditHashForScope(accepted, "shared", actorMemberId),
+        personal: await financialAuditHashForScope(accepted, "personal", actorMemberId),
+      },
+    });
 
     try {
       const status = await input.adapters.ingest(accepted);

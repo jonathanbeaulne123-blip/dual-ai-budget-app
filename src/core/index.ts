@@ -19,6 +19,7 @@ export * from "./budget.ts";
 export * from "./insights.ts";
 export * from "./goals.ts";
 export * from "./goalVault.ts";
+export * from "./householdFund.ts";
 export * from "./helpDesk.ts";
 export * from "./deskSync.ts";
 export * from "./commands.ts";

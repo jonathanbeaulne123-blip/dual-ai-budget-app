@@ -23,6 +23,9 @@ export type RepeatingDraft = {
   subcategoryId: string;
   kind: RecurrenceKind;
   kindLocked: boolean;
+  useHouseholdFund: boolean;
+  fundAmount: string;
+  fundDestinationAccountId: string;
 };
 
 const CADENCES: { id: RecurrenceCadence; label: string }[] = [
@@ -89,6 +92,9 @@ export function blankRepeatingDraft(household: Household, today: string): Repeat
     subcategoryId,
     kind: inferRecurrenceKind({ type, note, subcategoryName }),
     kindLocked: false,
+    useHouseholdFund: false,
+    fundAmount: "",
+    fundDestinationAccountId: accountId,
   };
 }
 
@@ -106,6 +112,11 @@ export function draftFromRecurrence(item: Recurrence): RepeatingDraft {
     subcategoryId: item.subcategoryId,
     kind: item.kind,
     kindLocked: true,
+    useHouseholdFund: Boolean(item.fundingDefault),
+    fundAmount: item.fundingDefault?.fundedCents === "full" || !item.fundingDefault
+      ? ""
+      : (item.fundingDefault.fundedCents / 100).toFixed(2),
+    fundDestinationAccountId: item.fundingDefault?.destinationAccountId ?? item.accountId,
   };
 }
 
@@ -113,7 +124,8 @@ export function repeatingConfirmSummary(draft: RepeatingDraft): string {
   const label = draft.note.trim() || "Repeating item";
   const amount = draft.amount.trim() ? formatCad(Math.round(Number(draft.amount) * 100) || 0) : "an amount";
   const verb = draft.id ? "Update" : "Add";
-  return `${verb} ${label}: ${amount} ${draft.cadence}, next ${draft.nextDate}. This saves a reminder; Mark paid still posts unless you choose to post below.`;
+  const fund = draft.useHouseholdFund ? " Household Fund reserve included; this still creates no money." : "";
+  return `${verb} ${label}: ${amount} ${draft.cadence}, next ${draft.nextDate}. This saves a reminder; Mark paid still posts unless you choose to post below.${fund}`;
 }
 
 export function RepeatingForm(props: {
@@ -311,6 +323,45 @@ export function RepeatingForm(props: {
             ))}
           </select>
         </>
+      )}
+
+      {draft.type === "expense" && household.householdFund && (
+        <section className="preview" aria-label="Household Fund recurring reserve">
+          <button
+            type="button"
+            className={`chip ${draft.useHouseholdFund ? "selected" : ""}`}
+            aria-pressed={draft.useHouseholdFund}
+            disabled={props.busy}
+            onClick={() => patch({ useHouseholdFund: !draft.useHouseholdFund })}
+          >
+            Reserve with Household Fund
+          </button>
+          <p className="muted">This reserves the upcoming bill; it does not create or move money.</p>
+          {draft.useHouseholdFund && (
+            <>
+              <label htmlFor="repeating-fund-amount">Funded amount (CAD, blank for full)</label>
+              <input
+                id="repeating-fund-amount"
+                inputMode="decimal"
+                value={draft.fundAmount}
+                placeholder={draft.amount || "Full amount"}
+                disabled={props.busy}
+                onChange={(event) => patch({ fundAmount: event.target.value })}
+              />
+              <label htmlFor="repeating-fund-destination">Settlement destination</label>
+              <select
+                id="repeating-fund-destination"
+                value={draft.fundDestinationAccountId}
+                disabled={props.busy}
+                onChange={(event) => patch({ fundDestinationAccountId: event.target.value })}
+              >
+                {accounts.filter((account) => account.scope !== "personal").map((account) => (
+                  <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>
+                ))}
+              </select>
+            </>
+          )}
+        </section>
       )}
 
       <label htmlFor="repeating-kind">Kind</label>

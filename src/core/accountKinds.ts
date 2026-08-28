@@ -157,6 +157,7 @@ export function shapeAccount(input: Partial<Account> & { id: string; name: strin
     currency: input.currency === CURRENCY ? CURRENCY : CURRENCY,
     active: input.active !== false,
     ownerMemberId: owner,
+    scope: input.scope === "personal" ? "personal" : "shared",
     institution: typeof input.institution === "string" ? input.institution.trim().slice(0, 32) : "",
     last4: typeof input.last4 === "string" ? input.last4.replace(/\D/g, "").slice(-4) : "",
     sortOrder: Number.isFinite(input.sortOrder) ? Number(input.sortOrder) : (index + 1) * 10,

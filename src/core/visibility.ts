@@ -118,6 +118,8 @@ export function householdForHerculesContext(
     : household.kitchen.hercules;
   return {
     ...scoped,
+    accounts: scoped.accounts.filter((account) => account.scope !== "personal"),
+    fundPrivate: { bankBindings: [], reconciliations: [] },
     shifts: scoped.shifts.map(shiftForHercules),
     sevenShiftsSchedules: (household.sevenShiftsSchedules ?? [])
       .filter((row) => row.memberId === memberId)
@@ -183,9 +185,15 @@ export function goalVisibleInView(goal: Goal, memberId: string, view: LedgerView
 export function householdForView(household: Household, memberId: string, view: LedgerView): Household {
   return {
     ...household,
+    accounts: (household.accounts ?? []).filter((account) => (
+      account.scope !== "personal" || (view === "personal" && account.ownerMemberId === memberId)
+    )),
     transactions: (household.transactions ?? []).filter((tx) => isVisibleInView(tx, memberId, view)),
     shifts: (household.shifts ?? []).filter((shift) => isVisibleInView(shift, memberId, view)),
     goals: (household.goals ?? []).filter((goal) => goalVisibleInView(goal, memberId, view)),
+    fundPrivate: view === "personal" && household.householdFund?.custodianMemberId === memberId
+      ? household.fundPrivate
+      : { bankBindings: [], reconciliations: [] },
   };
 }
 

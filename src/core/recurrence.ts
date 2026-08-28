@@ -84,6 +84,16 @@ export function shapeRecurrence(item: Recurrence, fallbackIso: string): Recurren
     origin: item.origin ?? "manual",
     reminderHoursBefore: item.reminderHoursBefore ?? DEFAULT_REMINDER_HOURS_BEFORE,
     googleSync: item.googleSync ?? {},
+    fundingDefault: item.fundingDefault && typeof item.fundingDefault === "object"
+      && typeof item.fundingDefault.fundId === "string"
+      && typeof item.fundingDefault.destinationAccountId === "string"
+      && (item.fundingDefault.fundedCents === "full" || (Number.isInteger(item.fundingDefault.fundedCents) && item.fundingDefault.fundedCents > 0))
+      ? {
+          fundId: item.fundingDefault.fundId,
+          destinationAccountId: item.fundingDefault.destinationAccountId,
+          fundedCents: item.fundingDefault.fundedCents,
+        }
+      : null,
     createdAt,
     updatedAt: item.updatedAt || createdAt,
     autoPost: item.autoPost === true,
