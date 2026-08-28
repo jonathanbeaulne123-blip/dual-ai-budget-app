@@ -7,6 +7,11 @@ const migration = [
   readFileSync(new URL("../migrations/evidence/0002_r2_budget_guard.sql", import.meta.url), "utf8"),
 ].join("\n");
 
+const productionMigration = [
+  readFileSync(new URL("../migrations/evidence-production/0001_evidence_mesh.sql", import.meta.url), "utf8"),
+  readFileSync(new URL("../migrations/evidence-production/0002_r2_budget_guard.sql", import.meta.url), "utf8"),
+].join("\n");
+
 describe("D-158 dedicated Evidence D1 migration", () => {
   it("applies cleanly and separates canonical authority observations from schema drift", () => {
     const db = new DatabaseSync(":memory:");
@@ -30,6 +35,19 @@ describe("D-158 dedicated Evidence D1 migration", () => {
         .get()).toMatchObject({ field_path: "punch.future_field", value_json: '"kept"' });
       expect(db.prepare("SELECT stored_bytes, object_count FROM evidence_r2_budget WHERE singleton = 1").get())
         .toMatchObject({ stored_bytes: 0, object_count: 0 });
+    } finally {
+      db.close();
+    }
+  });
+
+  it("applies the isolated Production schema and rejects Development rows", () => {
+    const db = new DatabaseSync(":memory:");
+    try {
+      db.exec(productionMigration);
+      const insert = db.prepare("INSERT INTO evidence_items (evidence_id, environment, auth_user_id, household_id, member_id, capture_kind, state, content_type, byte_length, plaintext_sha256, created_at, updated_at) VALUES (?, ?, 'auth-1', 'HH-TEST', 'MEM-001', 'selected-json', 'ready', 'application/json', 2, ?, '2026-08-28T00:00:00.000Z', '2026-08-28T00:00:00.000Z')") as unknown as { run: (...values: unknown[]) => unknown };
+      insert.run("evi_production_schema_0000000001", "production", "c".repeat(64));
+      expect(() => insert.run("evi_development_schema_000000001", "development", "d".repeat(64))).toThrow(/CHECK constraint failed/);
+      expect(db.prepare("SELECT environment FROM evidence_items").get()).toMatchObject({ environment: "production" });
     } finally {
       db.close();
     }

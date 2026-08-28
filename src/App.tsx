@@ -3076,12 +3076,12 @@ export function App() {
     if (evidenceAutomationRef.current || postingRef.current) return;
     const current = householdRef.current;
     const memberId = sessionRef.current?.memberId;
-    if (!current || !memberId || current.environment !== "development") return;
+    if (!current || !memberId) return;
     evidenceAutomationRef.current = true;
     const scope: EvidenceScope = { environment: current.environment, householdId: current.householdId, memberId };
     try {
       const status = await readEvidenceStatus(fetch);
-      if (!status.available) return;
+      if (!status.available || status.environments?.[scope.environment]?.available === false) return;
       for (let count = 0; count < 3; count += 1) {
         const job = await claimEvidenceAutomationJob(scope);
         if (!job) break;
@@ -3188,7 +3188,7 @@ export function App() {
   }
 
   useEffect(() => {
-    if (!household || !session?.memberId || environment !== "development" || booting) return;
+    if (!household || !session?.memberId || booting) return;
     const timer = window.setTimeout(() => { void processEvidenceAutomationJobs(); }, 750);
     const onWake = () => { if (document.visibilityState === "visible") void processEvidenceAutomationJobs(); };
     window.addEventListener("online", onWake);

@@ -32,6 +32,7 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_CONTINUITY_REALTIME: "1"
           VITE_CONTINUITY_COMMAND_LOG: "1"
+          VITE_PRODUCTION_CONTINUITY: "1"
         run: |
           . scripts/sanitize-cloudflare-env.sh
           if [ -z "$VITE_GOOGLE_CLIENT_ID" ]; then

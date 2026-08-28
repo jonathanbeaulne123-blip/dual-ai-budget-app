@@ -70,31 +70,12 @@ function ScopedWorkShiftWithSevenShifts({
     if (initialDraft) setDraft(null);
   }, [initialDraft]);
 
-  if (household.environment !== "development") {
-    return (
-      <WorkShiftFlow
-        key={flowKey}
-        household={household}
-        memberId={memberId}
-        today={today}
-        punch={punch}
-        busy={busy}
-        onConfirm={onConfirm}
-        initialDraft={initialDraft}
-        weatherGlassPrefill={weatherGlassPrefill}
-        scanWarnings={scanWarnings}
-        onClearDraft={onClearDraft}
-      />
-    );
-  }
-
   async function fetchPunches() {
     controllerRef.current?.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
     setNotice("");
     try {
-      if (household.environment !== "development") throw new Error("7shifts is Development-only.");
       const scope: SevenShiftsScope = { environment: household.environment, householdId: household.householdId, memberId };
       const connections = await listSevenShiftsConnections(scope, controller.signal);
       if (controller.signal.aborted) return;

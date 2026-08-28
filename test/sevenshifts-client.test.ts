@@ -23,6 +23,18 @@ describe("7shifts client", () => {
     }));
   });
 
+  it("accepts a coherent active Development-and-Production status", async () => {
+    await expect(readSevenShiftsStatus(async () => status({
+      available: true,
+      phase: "sandbox-configured",
+      environment: "development-and-production",
+      providerCallsEnabled: true,
+      productionAllowed: true,
+      environments: { development: { available: true }, production: { available: true } },
+      detail: "Configured for authenticated read-only pulls.",
+    }))).resolves.toMatchObject({ available: true, productionAllowed: true });
+  });
+
   it.each([
     ["unsuccessful", { ok: false }],
     ["wrong environment", { environment: "production" }],
@@ -43,15 +55,19 @@ describe("7shifts client", () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 
-  it("refuses Production scope in the client before any network call", async () => {
-    const fetcher = vi.fn();
+  it("sends an authenticated Production connection to the exact Production scope", async () => {
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => Response.json({
+      ok: true, connectionId: `s7c_${"a".repeat(24)}`, companyName: "Harbour", jobId: "JOB-1", state: "ready",
+    }, { status: 201, headers: { "Content-Type": "application/json" } }));
     await expect(connectSevenShifts(
       { environment: "production", householdId: "HH-TEST", memberId: "MEM-001" },
       { accessToken: "token-value-that-is-long-enough", userDigest: `s7user_${"a".repeat(64)}`, jobId: "JOB-1" },
       undefined,
       fetcher,
       async () => ({ accessToken: "jwt", refreshToken: "r", userId: "u", email: "a@b.c", googleSubject: "g", displayName: "T", expiresAt: Date.now() + 60_000 }),
-    )).rejects.toThrow(/Development-only/);
-    expect(fetcher).not.toHaveBeenCalled();
+    )).resolves.toMatchObject({ companyName: "Harbour", jobId: "JOB-1" });
+    const sent = JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body));
+    expect(sent).toMatchObject({ environment: "production", householdId: "HH-TEST", memberId: "MEM-001" });
+    expect(new Headers(fetcher.mock.calls[0]?.[1]?.headers).get("Authorization")).toBe("Bearer jwt");
   });
 });
