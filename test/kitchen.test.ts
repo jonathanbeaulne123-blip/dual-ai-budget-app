@@ -167,7 +167,7 @@ describe("daily kitchen cosmetics", () => {
     const src = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
     const sit = readFileSync(new URL("../src/SitDownGuide.tsx", import.meta.url), "utf8");
     expect(src).not.toMatch(/contributeToGoal\([^)]*["']50["']/);
-      expect(src).toMatch(/fundGoal\(household,/);
+    expect(src).toMatch(/fundGoal\(booksHousehold,/);
     expect(sit).toMatch(/formatCad\(row\.lastActualCents\)/);
     expect(sit).toMatch(/applySitDown\(household, preview\.sourceMonth, \{\}\)/);
   });
