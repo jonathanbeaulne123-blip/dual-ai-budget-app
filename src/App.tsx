@@ -2406,6 +2406,22 @@ export function App() {
     </>
   );
 
+  // Keep every App hook above the boot/welcome/session early returns. The
+  // automation runner itself is a hoisted function declaration below, so the
+  // effect can live here without changing its behavior.
+  useEffect(() => {
+    if (!household || !session?.memberId || booting) return;
+    const timer = window.setTimeout(() => { void processEvidenceAutomationJobs(); }, 750);
+    const onWake = () => { if (document.visibilityState === "visible") void processEvidenceAutomationJobs(); };
+    window.addEventListener("online", onWake);
+    document.addEventListener("visibilitychange", onWake);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("online", onWake);
+      document.removeEventListener("visibilitychange", onWake);
+    };
+  }, [booting, environment, household?.householdId, household?.revision, session?.memberId]);
+
   if (booting) {
     return (
       <>
@@ -3186,19 +3202,6 @@ export function App() {
       evidenceAutomationRef.current = false;
     }
   }
-
-  useEffect(() => {
-    if (!household || !session?.memberId || booting) return;
-    const timer = window.setTimeout(() => { void processEvidenceAutomationJobs(); }, 750);
-    const onWake = () => { if (document.visibilityState === "visible") void processEvidenceAutomationJobs(); };
-    window.addEventListener("online", onWake);
-    document.addEventListener("visibilitychange", onWake);
-    return () => {
-      window.clearTimeout(timer);
-      window.removeEventListener("online", onWake);
-      document.removeEventListener("visibilitychange", onWake);
-    };
-  }, [booting, environment, household?.householdId, household?.revision, session?.memberId]);
 
   function addPostLabel(): string {
     if (mode === "shift") {

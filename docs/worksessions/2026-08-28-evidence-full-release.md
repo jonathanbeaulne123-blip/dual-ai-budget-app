@@ -1,14 +1,14 @@
 # Hearth worksession — Evidence Mesh full release
 
-- **Status:** OPEN; IMPLEMENTED LOCALLY, HOSTED PREFLIGHT
+- **Status:** OPEN; FULL RELEASE LIVE, AUTHENTICATED DATA HOOKUPS PENDING
 - **Opened:** 2026-08-28 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `codex/evidence-full-release`
 - **Baseline SHA:** `4418c830e5fbfea422786663533d5e3f0b7d2b6d`
-- **Head SHA:** pending release commit
-- **PR or issue:** pending
+- **Head SHA:** `34091089005991c8a2ae8cc0054217c4d2f9aabd` (release), follow-up startup fix pending
+- **PR or issue:** #234 merged; startup-fix PR pending
 - **Risk:** Release
 - **Decision owner:** Jonathan
 - **Environment impact:** Development and Production
@@ -67,7 +67,7 @@ Release the complete member-owned 7shifts Evidence Mesh: real selected captures,
 - [x] Inventory live credentials, routes, resources, policy state, and Production refusal code.
 - [x] Implement and prove separate Production resource bindings and explicit activation controls.
 - [x] Reconcile email, official API, real capture, and automation prerequisites.
-- [ ] Push/merge the exact reviewed release packet.
+- [x] Push/merge the exact reviewed release packet.
 - [x] Provision and apply in gated order with rollback/kill-switch proof; deployment waits on the reviewed merge.
 - [ ] Run authenticated real-data smoke and record exact results.
 
@@ -80,6 +80,8 @@ Release the complete member-owned 7shifts Evidence Mesh: real selected captures,
 - 2026-08-28: Current-main reconciliation completed at `4418c83`, including the shared KitchenNotice changes in `SevenShiftsConnectPanel`. Focused post-reconcile set passed 41/41.
 - 2026-08-28: Dual-environment local D1/R2/Queue harness passed 3/3, focused Evidence/7shifts/accounting/privacy proof passed 111/111, TypeScript and AI verification passed, Vite/Hercules production builds passed, and Wrangler dry-run listed every Development/Production binding with activation flags on except email.
 - 2026-08-28: Full repository run completed 1,034 passed / 2 skipped / 2 unrelated known failures. `git diff --check 4418c83` passed with line-ending notices only.
+- 2026-08-28: PR #234 merged as `cd74d360c799ca8a07b0468595ba4bbefe2e57e1`; post-merge CI, Supabase Preview, Pages, and Workers Builds all passed. Live version `88425759-73a4-4d92-a550-7d961ac252cf` carries both environment planes, queues, and encryption-key bindings. Evidence and 7shifts are globally available in both environments; email alone remains disabled because no Email Routing zone exists.
+- 2026-08-28: The first real browser startup smoke caught React hook-order error #310: the D-157 wake effect sat below App's boot/welcome early returns. The effect was moved above every early return and an exact regression test was added. Focused UI/Evidence proof passed 24/24, TypeScript and AI verification passed, both production builds passed, and a built-app browser smoke reached the welcome screen with zero console errors. The full suite is now 1,035 passed / 2 skipped / the same 2 unrelated failures; hosted redeploy is pending the follow-up review/merge.
 
 ## Decisions
 
