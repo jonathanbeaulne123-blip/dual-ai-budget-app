@@ -2,7 +2,7 @@
 
 ## Wide paper office (D-156) (2026-08-28)
 
-**Status:** Draft PR [#228](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/228) on `cursor/wide-paper-office-560d` (`e16e873`). Base `origin/main` `54c74dc`. **Not merged, not deployed, not live.** Risk: **Medium** (UX Dual Course; no money, Auth, or schema).
+**Status:** Draft PR [#228](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/228) on `cursor/wide-paper-office-560d` (`afdff22`). Implementation `e16e873`; this handoff commit follows. Base `origin/main` `54c74dc`. **Not merged, not deployed, not live.** Risk: **Medium** (UX Dual Course; no money, Auth, or schema).
 
 **Household outcome:** On a laptop, Home feels like the phone kitchen — wax seals, paper stories, cream/pine/copper, Fraunces money — but it is a **two-column room**, not a stretched 2×2. A large month-net blotter and journal-true in/out bars use the extra space. The notebook stays open beside stories. Classic free-move desk remains behind Cabinets. Phone `<720px` stays Draft C. Milk/Confirm still post.
 

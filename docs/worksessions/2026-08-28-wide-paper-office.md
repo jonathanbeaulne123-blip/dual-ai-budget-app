@@ -7,7 +7,7 @@
 - **Repository:** jonathanbeaulne123-blip/dual-ai-budget-app
 - **Branch:** `cursor/wide-paper-office-560d`
 - **Baseline SHA:** `54c74dcbf53fbab694b9ca5cd08f57ff4acdd9d2` (`origin/main` at branch)
-- **Head SHA:** `e16e873b9c260bbc0a346a9f821b7dcb2dc8609f`
+- **Head SHA:** `afdff225be5b44372cfecd0105c28f02b85d1f3a`
 - **PR or issue:** draft [#228](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/228)
 - **Risk:** Medium
 - **Decision owner:** Jonathan

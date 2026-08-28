@@ -64,7 +64,7 @@ Only the currently open or just-closed worksession belongs here. Durable history
 
 | Worksession | State | Scope | Output |
 |---|---|---|---|
-| [2026-08-28 Wide paper office](worksessions/2026-08-28-wide-paper-office.md) | **OPEN; draft #228** | Default wide Home is composed paper office (D-156); Classic desk opt-in | Branch `cursor/wide-paper-office-560d` `e16e873`; not merged |
+| [2026-08-28 Wide paper office](worksessions/2026-08-28-wide-paper-office.md) | **OPEN; draft #228** | Default wide Home is composed paper office (D-156); Classic desk opt-in | Branch `cursor/wide-paper-office-560d` `afdff22`; not merged |
 | [2026-08-27 Native 7shifts Timesheet inbox](worksessions/2026-08-27-seven-shifts-inbox.md) | **RELEASE IN PROGRESS** | Development-only provider inbox integrated with Shift → Jobs and Timesheet review | D-155; two-stage inert then enabled release; Production refused |
 | [2026-08-27 Shift tab camera](worksessions/2026-08-27-shift-tab-camera.md) | **CLOSED; merged #217** | Tip-sheet camera on Shift Today | D-152 OCR on D-153 tab; live Worker `c942e55b`; Confirm still posts |
 | [2026-08-27 Durable roadmap site](worksessions/2026-08-27-roadmap-site.md) | **LOCAL; PUBLIC/NO-GUARD SELECTED; RELEASE PENDING** | Public read-only `/roadmap/`, additive evidence data, responsive and keyboard proof | D-154; [`ROADMAP_SITE.md`](ROADMAP_SITE.md); no push or deploy |
