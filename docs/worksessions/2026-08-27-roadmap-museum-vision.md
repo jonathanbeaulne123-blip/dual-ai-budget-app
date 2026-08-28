@@ -96,7 +96,7 @@ Jonathan can open one living roadmap that explains the full Hearth vision, shows
 
 ## Release review
 
-**APPROVED; final current-main verification in progress.** The complete diff is limited to the static roadmap, its focused test, museum/reference records, and living planning documentation. It changes no CAD arithmetic, journal path, Commands/Confirm behavior, environment boundary, Auth/RLS rule, Worker API, household state, schema, secret, or Production data. Jonathan approved push, merge to `main`, and the existing Cloudflare deployment on 2026-08-28.
+**APPROVED; final current-main verification in progress.** The complete diff is limited to the static roadmap, its focused test, museum/reference records, and living planning documentation. It changes no CAD arithmetic, journal path, Commands/Confirm behavior, environment boundary, Auth/RLS rule, Worker API, household state, schema, secret, or Production data. The two earlier unrelated baseline checks remain disclosed above and were not weakened. Jonathan approved push, merge to `main`, and the existing Cloudflare deployment on 2026-08-28.
 
 ## Handoff
 
