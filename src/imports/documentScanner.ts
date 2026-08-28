@@ -106,7 +106,6 @@ export async function scanFinancialDocument(
   const forcedProvider =
     options?.provider && options.provider !== "auto" ? options.provider : undefined;
   const payload = JSON.stringify({
-    fileName: compressed.fileName,
     mimeType: compressed.mimeType,
     imageDataUrl: `data:${compressed.mimeType};base64,${base64}`,
     ...(options?.documentHint ? { documentHint: options.documentHint } : {}),

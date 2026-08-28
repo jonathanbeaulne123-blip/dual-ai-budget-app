@@ -1,4 +1,4 @@
-import { TIMEZONE, todayKey, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
+import { TIMEZONE, addDays, todayKey, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { advanceCadence, DEFAULT_REMINDER_HOURS_BEFORE, EMPTY_CALENDAR, inferRecurrenceKind, normalizeRecurrenceCadence, shapeCalendar } from "./recurrence.ts";
 import { detectHabits, detectRhythms } from "./rhythm.ts";
 import { CURRENCY, parseWholeCents } from "./money.ts";
@@ -35,6 +35,9 @@ import { EMPTY_TICTACTOE, emptyHangman, hangmanMisses, hangmanWon, MAX_HANGMAN_M
 import { EMPTY_KITCHEN, MAX_CHALK_CHARS, MAX_CHALK_NOTES, MAX_COMPANION_NAME, MAX_HERCULES_CHAT_CHARS, MAX_HERCULES_CHATS, MAX_HERCULES_MEMORIES, MAX_HERCULES_MEMORY_CHARS, closedPeriodId, isCosmeticSlot, shapeKitchen } from "./kitchen.ts";
 import { detectChalkLetters, hasChalkInk, organizeNeatText, shapeChalkInk } from "./chalkLetters.ts";
 import { activeOpenShift, openShiftConflicts } from "./shiftClock.ts";
+import { assertSevenShiftsBundleMatchesShift, type SevenShiftsEvidenceBundle } from "./evidence.ts";
+import { automationPayrollWeekStart } from "./sevenShiftsAutomation.ts";
+import { shapeSevenShiftsSchedules, type SevenShiftsScheduledShift } from "./sevenShiftsCalendar.ts";
 import {
   EMPTY_GOOGLE,
   findActiveGoogleLink,
@@ -657,6 +660,11 @@ export type PostWorkShiftInput = {
   createdBy?: string;
   /** HMAC digest from the 7shifts Timesheet inbox. Exact duplicates refuse a second post. */
   sevenShiftsPunchDigest?: string;
+  /** Unified D-158/D-159 evidence. Every reference must bind to this exact member/job/shift. */
+  sevenShiftsEvidenceBundle?: SevenShiftsEvidenceBundle;
+  /** Removed pre-main packet fields retained only so direct/replayed legacy payloads fail explicitly. */
+  sevenShiftsEvidence?: unknown;
+  sevenShiftsScreenEvidence?: unknown;
 };
 
 /**
@@ -678,6 +686,12 @@ export function postWorkShift(household: Household, input: PostWorkShiftInput): 
 
   const workedHours = Number(input.workedHours);
   const paidBreakHours = Number(input.paidBreakHours || 0);
+  if (input.sevenShiftsEvidence !== undefined || input.sevenShiftsScreenEvidence !== undefined) {
+    if (input.sevenShiftsEvidence !== undefined && input.sevenShiftsScreenEvidence !== undefined) {
+      throw new ValidationError("A shift cannot attach separate 7shifts punch and screenshot evidence. Build one validated evidence bundle.");
+    }
+    throw new ValidationError("Legacy 7shifts evidence payloads are no longer accepted. Build one validated evidence bundle.");
+  }
   const salesByField = Object.fromEntries(Object.entries(input.salesByField ?? {}).map(([id, value]) => [id, optionalMoneyCents(value, "Sales")]));
   for (const field of job.salesFields.filter((row) => row.requirement === "required")) {
     if (!(field.id in salesByField)) throw new ValidationError(`Enter ${field.label} before confirming this shift.`);
@@ -711,10 +725,50 @@ export function postWorkShift(household: Household, input: PostWorkShiftInput): 
   const conflicts = openShiftConflicts(household.kitchen, member.id);
   if (conflicts.length > 1) throw new ValidationError("Two devices recorded an open shift for you. Choose the correct timeline before confirming pay.");
   const punchDigest = String(input.sevenShiftsPunchDigest || "").trim();
+  if (punchDigest && input.sevenShiftsEvidenceBundle) {
+    throw new ValidationError("A shift cannot attach both a legacy 7shifts digest and a unified evidence bundle.");
+  }
   if (punchDigest) {
     if (!/^s7punch_[a-f0-9]{64}$/.test(punchDigest)) throw new ValidationError("This 7shifts punch id is not valid.");
     const already = household.shifts.find((shift) => shift.sevenShiftsPunchDigest === punchDigest && !workShiftIsReversed(household, shift));
     if (already) throw new ValidationError("This 7shifts punch is already on the books.");
+  }
+  let sevenShiftsEvidenceBundle: SevenShiftsEvidenceBundle | undefined;
+  if (input.sevenShiftsEvidenceBundle) {
+    if (!input.startedAt || !input.endedAt) throw new ValidationError("7shifts evidence requires exact start and end times.");
+    try {
+      sevenShiftsEvidenceBundle = assertSevenShiftsBundleMatchesShift({
+        bundle: input.sevenShiftsEvidenceBundle,
+        environment: household.environment,
+        householdId: household.householdId,
+        memberId: member.id,
+        jobId: job.id,
+        date,
+        startedAt: input.startedAt,
+        endedAt: input.endedAt,
+        workedHours,
+        paidBreakHours,
+        roleId: role.id,
+        salesCents,
+        cashTipsCents,
+        cardTipsCents,
+        calculatedWagesCents: calculation.takeHomeWagesCents,
+        customersServed: covariates.customersServed,
+        staffingCount: covariates.staffingCount,
+        eventTag: covariates.eventTag,
+        weatherGlass: covariates.weatherGlass,
+      });
+    } catch (error) {
+      throw new ValidationError(error instanceof Error ? error.message : "7shifts evidence is invalid.");
+    }
+    const prior = household.shifts.find((shift) => (
+      shift.sevenShiftsEvidenceBundle?.canonicalShiftKey === sevenShiftsEvidenceBundle?.canonicalShiftKey
+      && !workShiftIsReversed(household, shift)
+    ));
+    if (prior?.sevenShiftsEvidenceBundle?.materialHash === sevenShiftsEvidenceBundle.materialHash) {
+      throw new ValidationError("This 7shifts evidence revision is already on the books.");
+    }
+    if (prior) throw new ValidationError("This 7shifts shift changed after posting. Reconcile it as a correction; Hearth will not overwrite history.");
   }
   const sameDay = household.shifts.filter((shift) => shift.memberId === member.id && shift.jobId === job.id && shift.date === date);
   if (sameDay.length && !input.confirmDuplicate) {
@@ -861,11 +915,128 @@ export function postWorkShift(household: Household, input: PostWorkShiftInput): 
     weatherGlass: covariates.weatherGlass,
     note: String(input.note || "").trim().slice(0, 500),
     ...(punchDigest ? { sevenShiftsPunchDigest: punchDigest } : {}),
+    ...(sevenShiftsEvidenceBundle ? { sevenShiftsEvidenceBundle } : {}),
   });
   const punch = activeOpenShift(next.kitchen, member.id);
   if (punch) next.kitchen.openShifts = next.kitchen.openShifts.map((row) => row.id === punch.id ? { ...row, status: "cleared", updatedAt: createdAt } : row);
   const warnings = calculation.cardTipsAfterTipOutCents < 0 ? ["Withheld tip-outs are greater than this shift's card tips; the job's owed balance may be negative."] : [];
   return commit(previous, next, "Confirm Work Shift", `${shiftId}: ${member.name} at ${job.name} on ${date}`, [shiftId, ...transactionIds], warnings);
+}
+
+export function refreshSevenShiftsSchedule(household: Household, input: {
+  memberId: string;
+  schedules: SevenShiftsScheduledShift[];
+  confirmedPersonalFeed?: boolean;
+  createdBy?: string;
+}): CommitResult {
+  const member = requireMember(household, input.memberId);
+  const actor = input.createdBy ?? input.memberId;
+  if (actor !== input.memberId) throw new ValidationError("A 7shifts schedule can only be saved by its Hearth member.");
+  requireMember(household, actor);
+  if (!Array.isArray(input.schedules) || input.schedules.length > 2_000) throw new ValidationError("7shifts schedule refresh is too large.");
+  const schedules = shapeSevenShiftsSchedules(input.schedules, input.memberId);
+  if (schedules.length !== input.schedules.length) throw new ValidationError("7shifts schedule contains invalid or cross-member rows.");
+  if (schedules.some((row) => row.selfMatch === "personal-feed-assertion") && input.confirmedPersonalFeed !== true) {
+    throw new ValidationError("Confirm that this unnamed calendar is the member's private 7shifts Calendar Sync feed before saving it.");
+  }
+  for (const row of schedules) {
+    if (row.jobId != null) {
+      const job = household.workJobs.find((item) => item.id === row.jobId && item.active && item.memberId === input.memberId);
+      if (!job || row.roleId == null || !job.roles.some((role) => role.id === row.roleId && role.active)) {
+        throw new ValidationError("7shifts schedule references an unavailable Hearth job or role.");
+      }
+    } else if (row.roleId != null) {
+      throw new ValidationError("7shifts schedule cannot retain a role without a member-owned job.");
+    }
+  }
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.sevenShiftsSchedules = [
+    ...(next.sevenShiftsSchedules ?? []).filter((row) => row.memberId !== input.memberId),
+    ...schedules,
+  ];
+  return commit(previous, next, "Refresh 7shifts schedule", `${member.name} saved ${schedules.length} published schedule shift${schedules.length === 1 ? "" : "s"} for outlook only`, schedules.map((row) => row.id), [
+    "Published schedule rows are projections only. They do not post hours, wages, tips, or money.",
+  ]);
+}
+
+export function reconcileWorkWeekFromEvidence(household: Household, input: {
+  memberId: string;
+  jobId: string;
+  payrollWeekStarts: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  replacements: PostWorkShiftInput[];
+  createdBy: string;
+}): CommitResult {
+  const member = requireMember(household, input.memberId);
+  if (input.createdBy !== member.id) throw new ValidationError("7shifts reconciliation must run as the evidence-owning member.");
+  const job = (household.workJobs ?? []).find((row) => row.id === input.jobId && row.memberId === member.id && row.active);
+  if (!job) throw new ValidationError("7shifts reconciliation needs this member's active mapped job.");
+  if (!Array.isArray(input.replacements) || !input.replacements.length || input.replacements.length > 14) {
+    throw new ValidationError("7shifts reconciliation must contain the complete affected payroll week.");
+  }
+  const dates = input.replacements.map((row) => parseDate(row.date));
+  const weekStart = automationPayrollWeekStart(dates[0]!, input.payrollWeekStarts);
+  const weekEnd = addDays(weekStart, 6);
+  if (dates.some((date) => date < weekStart || date > weekEnd)) throw new ValidationError("Every replacement must belong to one payroll week.");
+  const replacementKeys = new Set<string>();
+  for (const replacement of input.replacements) {
+    if (replacement.memberId !== member.id || replacement.jobId !== job.id || replacement.createdBy !== member.id || !replacement.sevenShiftsEvidenceBundle) {
+      throw new ValidationError("Every payroll-week replacement needs member-owned 7shifts evidence for the exact job.");
+    }
+    const key = replacement.sevenShiftsEvidenceBundle.canonicalShiftKey;
+    if (replacementKeys.has(key)) throw new ValidationError("7shifts reconciliation repeats a canonical shift.");
+    replacementKeys.add(key);
+    requireOpenPeriod(household, parseDate(replacement.date));
+  }
+  const originals = household.shifts
+    .filter((shift) => shift.memberId === member.id && shift.jobId === job.id && shift.date >= weekStart && shift.date <= weekEnd && shift.sevenShiftsEvidenceBundle && !workShiftIsReversed(household, shift))
+    .sort((left, right) => left.date.localeCompare(right.date) || String(left.startedAt).localeCompare(String(right.startedAt)) || left.id.localeCompare(right.id));
+  if (!originals.length) throw new ValidationError("There is no active evidence-backed payroll week to reconcile.");
+  if (originals.some((shift) => (shift.deferredTipOutPaidCents ?? 0) > 0)) throw new ValidationError("A settled tip-out keeps this payroll week in variance review.");
+  const receivableAccounts = new Set([job.wagesReceivableAccountId, job.cardTipsReceivableAccountId].filter(Boolean));
+  const hasLaterSettlement = household.transactions.some((transaction) => (
+    transaction.type === "transfer"
+    && transaction.source !== "reversal"
+    && transaction.date >= weekStart
+    && transaction.transferFromAccountId != null
+    && receivableAccounts.has(transaction.transferFromAccountId)
+  ));
+  if (hasLaterSettlement) throw new ValidationError("A settled wage or card-tip receivable keeps this payroll week in variance review.");
+  for (const original of originals) {
+    if (!replacementKeys.has(original.sevenShiftsEvidenceBundle!.canonicalShiftKey)) {
+      throw new ValidationError("Reconciliation must include every active evidence-backed shift in the affected payroll week so overtime is recalculated in order.");
+    }
+    requireOpenPeriod(household, original.date);
+  }
+
+  const previous = cloneHousehold(household);
+  let next = cloneHousehold(household);
+  const postedIds: string[] = [];
+  for (const original of originals) {
+    const firstTransactionId = original.transactionIds?.[0] ?? original.wagesTransactionId;
+    const reversed = reversePostedMoney(next, firstTransactionId, { createdBy: member.id, visibility: original.visibility });
+    next = reversed.household;
+    postedIds.push(...reversed.postedIds);
+  }
+  const replacements = [...input.replacements].sort((left, right) => left.date.localeCompare(right.date)
+    || String(left.startedAt).localeCompare(String(right.startedAt))
+    || left.sevenShiftsEvidenceBundle!.canonicalShiftKey.localeCompare(right.sevenShiftsEvidenceBundle!.canonicalShiftKey));
+  for (const replacement of replacements) {
+    const posted = postWorkShift(next, { ...replacement, confirmDuplicate: true, createdBy: member.id });
+    next = posted.household;
+    postedIds.push(...posted.postedIds);
+    const replacementId = posted.postedIds.find((id) => id.startsWith("SHIFT-"));
+    const original = originals.find((row) => row.sevenShiftsEvidenceBundle!.canonicalShiftKey === replacement.sevenShiftsEvidenceBundle!.canonicalShiftKey);
+    if (!replacementId || !original) throw new ValidationError("7shifts reconciliation could not link its replacement audit trail.");
+    next.shifts = next.shifts.map((shift) => shift.id === original.id
+      ? { ...shift, correctedByShiftId: replacementId, updatedAt: nowIso() }
+      : shift.id === replacementId
+        ? { ...shift, correctionOfShiftId: original.id, updatedAt: nowIso() }
+        : shift);
+  }
+  return commit(previous, next, "Reconcile 7shifts Work Week", `${member.name} reconciled ${originals.length} source-backed shift${originals.length === 1 ? "" : "s"} for ${weekStart} through ${weekEnd}`, postedIds, [
+    "Every original journal component remains with one exact reversal; replacements were recalculated chronologically for weekly overtime.",
+  ]);
 }
 
 export type WorkSettlementKind = "wages" | "card-tips";
@@ -2461,7 +2632,7 @@ export function reversePostedMoney(household: Household, transactionId: string, 
         reversalOfId: original.id,
         source: "reversal",
         createdBy: actor.createdBy,
-        visibility: actor.visibility,
+        visibility: shift ? original.visibility : actor.visibility,
       });
       next = posted.household;
       postedIds.push(...posted.postedIds);

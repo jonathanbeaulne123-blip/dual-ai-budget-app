@@ -45,7 +45,10 @@
     "FLINKS_REDIRECT_ORIGIN": "https://hearth-books.jonathan-beaulne123.workers.dev",
     "SEVENSHIFTS_ENABLED": "false",
     "SEVENSHIFTS_ALLOW_PRODUCTION": "false",
-    "SEVENSHIFTS_API_BASE_URL": "https://api.7shifts.com"
+    "SEVENSHIFTS_API_BASE_URL": "https://api.7shifts.com",
+    "EVIDENCE_ENABLED": "false",
+    "EVIDENCE_ALLOW_PRODUCTION": "false",
+    "EVIDENCE_EMAIL_ENABLED": "false"
   },
   "d1_databases": [
     {
@@ -53,6 +56,35 @@
       "database_name": "hearth-flinks-development",
       "database_id": "f01c81bd-db36-4715-a484-8f2f3bdad2a3",
       "migrations_dir": "migrations/flinks"
+    },
+    {
+      "binding": "EVIDENCE_DB",
+      "database_name": "hearth-evidence-development",
+      "database_id": "ed0134e4-c0fe-46b0-a22b-af7c5fe20de5",
+      "migrations_dir": "migrations/evidence"
     }
-  ]
+  ],
+  "r2_buckets": [
+    {
+      "binding": "EVIDENCE_RAW",
+      "bucket_name": "hearth-evidence-raw-development"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "EVIDENCE_DERIVE",
+        "queue": "hearth-evidence-derive-development"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "hearth-evidence-derive-development",
+        "max_batch_size": 10,
+        "max_batch_timeout": 5,
+        "max_retries": 3,
+        "dead_letter_queue": "hearth-evidence-derive-dlq-development"
+      }
+    ]
+  }
 }

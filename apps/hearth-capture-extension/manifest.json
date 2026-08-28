@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Hearth 7shifts Capture (Development)",
+  "version": "0.1.0",
+  "description": "Explicitly captures employee-visible 7shifts evidence for the signed-in Hearth member.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["https://app.7shifts.com/*", "https://hearth-books.jonathan-beaulne123.workers.dev/work/evidence/capability-upload"],
+  "action": {
+    "default_title": "Capture this 7shifts session",
+    "default_popup": "popup.html"
+  },
+  "background": { "service_worker": "service-worker.js", "type": "module" },
+  "content_scripts": [{
+    "matches": ["https://app.7shifts.com/*"],
+    "js": ["content.js"],
+    "run_at": "document_start",
+    "all_frames": false
+  }],
+  "web_accessible_resources": [{
+    "resources": ["page-bridge.js"],
+    "matches": ["https://app.7shifts.com/*"]
+  }]
+}

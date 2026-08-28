@@ -1,0 +1,403 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  parseSevenShiftsCalendar,
+  type AutomationPolicy,
+  type Household,
+  type SevenShiftsScheduledShift,
+} from "./core/index.ts";
+import {
+  deleteEvidence,
+  listEvidence,
+  listEvidenceAutomationPolicies,
+  listEvidenceBundles,
+  putEvidenceAutomationPolicy,
+  provisionEvidenceMailbox,
+  mintEvidenceCaptureCapability,
+  readEvidenceDerived,
+  readEvidenceRaw,
+  readEvidenceStatus,
+  readSevenShiftsCalendarEvidence,
+  uploadEvidence,
+  type EvidenceBundleSummary,
+  type EvidenceCaptureSummary,
+  type EvidenceDerivedDetail,
+  type EvidenceScope,
+} from "./imports/evidenceClient.ts";
+
+function captureKind(file: File): string {
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".ics") || file.type === "text/calendar") return "selected-ics";
+  if (name.endsWith(".csv") || file.type === "text/csv") return "selected-csv";
+  if (name.endsWith(".json") || file.type === "application/json") return "selected-json";
+  if (file.type === "application/pdf") return "pdf";
+  if (file.type.startsWith("image/")) return "screenshot";
+  return "ios-share";
+}
+
+function captureLabel(row: EvidenceCaptureSummary): string {
+  return row.captureKind.replace(/-/g, " ");
+}
+
+function displayEvidenceValue(value: unknown): string {
+  if (typeof value === "boolean") return value ? "yes" : "no";
+  if (value === null || value === undefined || value === "") return "blank";
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+function defaultPolicy(scope: EvidenceScope, jobId: string): AutomationPolicy {
+  return {
+    version: 1,
+    ...scope,
+    jobId,
+    enabled: false,
+    stableWindowHours: 24,
+    payrollWeekStarts: 0,
+    correctionHorizonDays: 60,
+    closedPeriodAction: "variance",
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export function SevenShiftsEvidenceCenter({
+  household,
+  memberId,
+  memberName,
+  today,
+  busy: parentBusy,
+  onSaveSchedule,
+}: {
+  household: Household;
+  memberId: string;
+  memberName: string;
+  today: string;
+  busy: boolean;
+  onSaveSchedule: (rows: SevenShiftsScheduledShift[], confirmedPersonalFeed?: boolean) => void;
+}) {
+  const scope = useMemo<EvidenceScope>(() => ({ environment: household.environment, householdId: household.householdId, memberId }), [household.environment, household.householdId, memberId]);
+  const scopeKey = `${scope.environment}:${scope.householdId}:${scope.memberId}`;
+  const controllerRef = useRef<AbortController | null>(null);
+  const [available, setAvailable] = useState(false);
+  const [detail, setDetail] = useState("Evidence Mesh is checking its Development gate.");
+  const [captures, setCaptures] = useState<EvidenceCaptureSummary[]>([]);
+  const [bundles, setBundles] = useState<EvidenceBundleSummary[]>([]);
+  const [policies, setPolicies] = useState<AutomationPolicy[]>([]);
+  const [selectedDerived, setSelectedDerived] = useState<EvidenceDerivedDetail | null>(null);
+  const [calendarUrl, setCalendarUrl] = useState("");
+  const [mailbox, setMailbox] = useState("");
+  const [extensionId, setExtensionId] = useState("");
+  const [pairingCode, setPairingCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    controllerRef.current?.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
+    setAvailable(false);
+    setCaptures([]);
+    setBundles([]);
+    setPolicies([]);
+    setSelectedDerived(null);
+    setError("");
+    setNotice("");
+    void (async () => {
+      try {
+        const status = await readEvidenceStatus(fetch);
+        if (controller.signal.aborted) return;
+        setAvailable(status.available);
+        setDetail(status.available ? "Encrypted member evidence vault ready in Development." : status.detail || "Evidence Mesh is installed but disabled.");
+        if (!status.available) return;
+        const [nextCaptures, nextBundles, nextPolicies] = await Promise.all([
+          listEvidence(scope, controller.signal),
+          listEvidenceBundles(scope, controller.signal),
+          listEvidenceAutomationPolicies(scope, controller.signal),
+        ]);
+        if (controller.signal.aborted) return;
+        setCaptures(nextCaptures);
+        setBundles(nextBundles);
+        setPolicies(nextPolicies);
+      } catch (caught) {
+        if (!controller.signal.aborted) setError(caught instanceof Error ? caught.message : String(caught));
+      }
+    })();
+    return () => controller.abort();
+  }, [scopeKey]);
+
+  async function refresh(signal?: AbortSignal) {
+    const [nextCaptures, nextBundles, nextPolicies] = await Promise.all([
+      listEvidence(scope, signal),
+      listEvidenceBundles(scope, signal),
+      listEvidenceAutomationPolicies(scope, signal),
+    ]);
+    setCaptures(nextCaptures);
+    setBundles(nextBundles);
+    setPolicies(nextPolicies);
+  }
+
+  async function chooseFile(file: File | null) {
+    if (!file || !available) return;
+    const controller = new AbortController();
+    controllerRef.current?.abort();
+    controllerRef.current = controller;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      if (captureKind(file) === "selected-ics") {
+        const source = await file.text();
+        if (controller.signal.aborted) return;
+        const parsed = parseSevenShiftsCalendar({
+          source,
+          sourceName: "selected-7shifts-calendar.ics",
+          memberId,
+          memberName,
+          jobs: (household.workJobs ?? []).filter((job) => job.active && job.memberId === memberId),
+          delivery: "selected-file",
+        });
+        if (parsed.requiresSelfAssertion && !window.confirm("This calendar does not name you. Save it only if it is your private 7shifts Calendar Sync feed.")) {
+          throw new Error("Calendar not saved because member ownership was not confirmed.");
+        }
+        onSaveSchedule(parsed.shifts, parsed.requiresSelfAssertion);
+      }
+      await uploadEvidence(scope, file, { captureKind: captureKind(file), contentType: file.type || "application/octet-stream" }, controller.signal);
+      if (controller.signal.aborted) return;
+      await refresh(controller.signal);
+      setNotice(captureKind(file) === "selected-ics"
+        ? "Calendar outlook saved and the selected source encrypted. It cannot post money."
+        : "Evidence encrypted and queued. Unknown source fields remain in the private raw object.");
+    } catch (caught) {
+      if (!controller.signal.aborted) setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      if (!controller.signal.aborted) setBusy(false);
+    }
+  }
+
+  async function readCalendar() {
+    const privateUrl = calendarUrl.trim();
+    if (!privateUrl || !available) return;
+    setCalendarUrl("");
+    const controller = new AbortController();
+    controllerRef.current?.abort();
+    controllerRef.current = controller;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const source = await readSevenShiftsCalendarEvidence(scope, privateUrl, controller.signal);
+      if (controller.signal.aborted) return;
+      const parsed = parseSevenShiftsCalendar({
+        source,
+        sourceName: "7shifts-personal-calendar.ics",
+        memberId,
+        memberName,
+        jobs: (household.workJobs ?? []).filter((job) => job.active && job.memberId === memberId),
+        delivery: "calendar-sync",
+      });
+      if (parsed.requiresSelfAssertion && !window.confirm("This calendar does not name you. Save it only if it is your private 7shifts Calendar Sync feed.")) {
+        throw new Error("Calendar not saved because member ownership was not confirmed.");
+      }
+      onSaveSchedule(parsed.shifts, parsed.requiresSelfAssertion);
+      setNotice(`${parsed.shifts.length} published schedule shift${parsed.shifts.length === 1 ? "" : "s"} staged as outlook only. The private link was discarded.`);
+    } catch (caught) {
+      if (!controller.signal.aborted) setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      if (!controller.signal.aborted) setBusy(false);
+    }
+  }
+
+  async function togglePolicy(jobId: string, enabled: boolean) {
+    const current = policies.find((row) => row.jobId === jobId) ?? defaultPolicy(scope, jobId);
+    setBusy(true);
+    setError("");
+    try {
+      const saved = await putEvidenceAutomationPolicy(scope, { ...current, enabled, updatedAt: new Date().toISOString() });
+      setPolicies((rows) => [...rows.filter((row) => row.jobId !== jobId), saved]);
+      setNotice(enabled
+        ? "Automation enabled for this exact job. Only eligible, unconflicted evidence can create a pending deterministic command."
+        : "Automation disabled for this job. Existing posted books are unchanged.");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function createMailbox() {
+    setBusy(true);
+    setError("");
+    try {
+      const created = await provisionEvidenceMailbox(scope);
+      setMailbox(created.address);
+      setNotice("A new private forwarding alias replaced any prior alias for this member.");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function pairExtension() {
+    const id = extensionId.trim().toLowerCase();
+    if (!/^[a-p]{32}$/.test(id)) { setError("Enter the 32-letter extension id shown by Chrome or Edge."); return; }
+    setBusy(true);
+    setError("");
+    setPairingCode("");
+    try {
+      const result = await mintEvidenceCaptureCapability(scope, { channel: "extension", origin: `chrome-extension://${id}`, byteLimit: 10 * 1024 * 1024 });
+      setPairingCode(result.capability);
+      setNotice("One-use pairing code created. It expires in five minutes and is not retained by Hearth.");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function exportRaw(row: EvidenceCaptureSummary) {
+    setBusy(true);
+    setError("");
+    try {
+      const blob = await readEvidenceRaw(scope, row.evidenceId);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `hearth-evidence-${row.evidenceId}`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function reviewDerived(row: EvidenceCaptureSummary) {
+    setBusy(true);
+    setError("");
+    try {
+      setSelectedDerived(await readEvidenceDerived(scope, row.evidenceId));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(row: EvidenceCaptureSummary) {
+    if (!window.confirm("Permanently destroy this evidence object's decryption key and raw bytes? Posted books remain.")) return;
+    setBusy(true);
+    setError("");
+    try {
+      await deleteEvidence(scope, row.evidenceId);
+      setCaptures((rows) => rows.filter((item) => item.evidenceId !== row.evidenceId));
+      setNotice("Evidence key destroyed and raw object deleted.");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const disabled = parentBusy || busy || !available;
+  const memberJobs = (household.workJobs ?? []).filter((job) => job.active && job.memberId === memberId);
+
+  return (
+    <section className="card" aria-label="7shifts Evidence Center">
+      <header>
+        <div>
+          <p className="kicker">D-158 · member evidence</p>
+          <h2>7shifts Evidence Center</h2>
+        </div>
+        <span className={`pill ${available ? "" : "proj"}`}>{available ? "Development ready" : "Disabled"}</span>
+      </header>
+      <p className="muted">{detail} Raw captures stay outside the household snapshot and books. Schedule rows remain outlook only.</p>
+      <p className="muted">Scope: {memberName} · {household.environment} · {today}</p>
+      {error ? <p className="error" role="alert">{error}</p> : null}
+      {notice ? <p className="preview" role="status">{notice}</p> : null}
+
+      <div className="stack-list">
+        <article>
+          <p className="kicker">Selected files and screens</p>
+          <h3>Add authorized evidence</h3>
+          <p className="muted">JSON, CSV, ICS, PDF, screenshots, and shared files up to 10 MB. Hearth encrypts the complete source before normalization.</p>
+          <label className="chip">
+            {busy ? "Working…" : "Choose evidence"}
+            <input type="file" hidden disabled={disabled} accept=".json,.csv,.ics,.pdf,image/jpeg,image/png,image/webp,application/json,text/csv,text/calendar,application/pdf" onChange={(event) => { void chooseFile(event.target.files?.[0] ?? null); event.currentTarget.value = ""; }} />
+          </label>
+        </article>
+
+        <article>
+          <p className="kicker">Published schedule</p>
+          <h3>Read my private Calendar Sync link</h3>
+          <input type="url" value={calendarUrl} autoComplete="off" spellCheck={false} disabled={parentBusy || !available} placeholder="https://…7shifts.com/…" onChange={(event) => {
+            controllerRef.current?.abort();
+            setBusy(false);
+            setCalendarUrl(event.target.value);
+          }} />
+          <button type="button" className="chip" disabled={disabled || !calendarUrl.trim()} onClick={() => { void readCalendar(); }}>Read once and discard link</button>
+          <p className="muted">Changing member, household, environment, link, or page cancels the in-flight reader.</p>
+        </article>
+        <article>
+          <p className="kicker">Forwarded reports</p>
+          <h3>Private evidence mailbox</h3>
+          <p className="muted">The full RFC822 message is encrypted and quarantined. Sender names, headers, HTML, and attachments are evidence only; remote content is never fetched.</p>
+          <button type="button" className="chip" disabled={disabled} onClick={() => { void createMailbox(); }}>{mailbox ? "Rotate alias" : "Create alias"}</button>
+          {mailbox ? <p><code>{mailbox}</code></p> : null}
+        </article>
+        <article>
+          <p className="kicker">Chrome / Edge companion</p>
+          <h3>Pair one selected capture</h3>
+          <input value={extensionId} disabled={disabled} autoComplete="off" spellCheck={false} placeholder="32-letter extension id" onChange={(event) => { setExtensionId(event.target.value); setPairingCode(""); }} />
+          <button type="button" className="chip" disabled={disabled || !extensionId.trim()} onClick={() => { void pairExtension(); }}>Create five-minute code</button>
+          {pairingCode ? <p><code>{pairingCode}</code></p> : null}
+          <p className="muted">Paste the code into the companion. It authorizes one bounded upload for this exact member and then burns itself.</p>
+        </article>
+      </div>
+
+      <hr />
+      <p className="kicker">D-159 · deterministic authority</p>
+      <h3>Automation by job</h3>
+      <p className="muted">Off by default. Approved structured evidence, stable punches, or independently cross-checked screens may create a pending command. Models, calendars, and email never do.</p>
+      <div className="stack-list" aria-label="7shifts automation policies">
+        {memberJobs.length ? memberJobs.map((job) => {
+          const policy = policies.find((row) => row.jobId === job.id);
+          return (
+            <label className="check-row" key={job.id}>
+              <input type="checkbox" checked={policy?.enabled === true} disabled={disabled} onChange={(event) => { void togglePolicy(job.id, event.target.checked); }} />
+              <span><strong>{job.name}</strong><br /><span className="muted">24h provisional stability · payroll-week correction · closed periods use variance review</span></span>
+            </label>
+          );
+        }) : <p className="muted">Create a member-owned Shift job before enabling automation.</p>}
+      </div>
+
+      <hr />
+      <header><h3>Encrypted captures</h3><span className="pill">{captures.length}</span></header>
+      {captures.length ? <div className="stack-list">{captures.map((row) => (
+        <article className="work-shift-history-row" key={row.evidenceId}>
+          <div><strong>{captureLabel(row)}</strong><p className="muted">{row.state.replace(/_/g, " ")} · {Math.ceil(row.byteLength / 1024)} KB · revision {row.revision}</p></div>
+          <div className="chips"><button type="button" className="chip" disabled={parentBusy || busy || !["ready_to_review", "bundled"].includes(row.state)} onClick={() => { void reviewDerived(row); }}>Review facts</button><button type="button" className="chip" disabled={parentBusy || busy} onClick={() => { void exportRaw(row); }}>Export raw</button><button type="button" className="chip danger" disabled={parentBusy || busy} onClick={() => { void remove(row); }}>Delete</button></div>
+        </article>
+      ))}</div> : <p className="muted">No encrypted evidence in this member scope.</p>}
+
+      {selectedDerived ? <article className="preview" aria-label="Extracted evidence facts">
+        <header><h3>Extracted facts</h3><button type="button" className="chip" onClick={() => setSelectedDerived(null)}>Close</button></header>
+        <p className="muted">{selectedDerived.observations.length} recognized fact{selectedDerived.observations.length === 1 ? "" : "s"} · {selectedDerived.schemaDrift.length} unrecognized field{selectedDerived.schemaDrift.length === 1 ? "" : "s"} preserved · {selectedDerived.state.replace(/_/g, " ")}</p>
+        {selectedDerived.observations.length ? <div className="stack-list">{selectedDerived.observations.map((item) => (
+          <p key={item.observationId}><strong>{item.field.replace(/([A-Z])/g, " $1").toLowerCase()}</strong>: {displayEvidenceValue(item.value)} <span className="muted">· {item.finality} · {item.conflictState}</span></p>
+        ))}</div> : <p className="muted">This source has no recognized shift facts yet. Its raw bytes are still retained.</p>}
+        {selectedDerived.schemaDrift.length ? <details><summary>Preserved unrecognized fields</summary><div className="stack-list">{selectedDerived.schemaDrift.map((item) => (
+          <p key={item.driftId}><strong>{item.fieldPath}</strong>: {displayEvidenceValue(item.value)}</p>
+        ))}</div></details> : null}
+      </article> : null}
+
+      <header><h3>Normalized bundles</h3><span className="pill">{bundles.length}</span></header>
+      {bundles.length ? <div className="stack-list">{bundles.map((row) => (
+        <article className="work-shift-history-row" key={row.bundleId}>
+          <div><strong>{row.bundle.startedAt.slice(0, 10)} · revision {row.bundle.revision}</strong><p className="muted">{row.state.replace(/_/g, " ")} · {row.bundle.evidence.length} source{row.bundle.evidence.length === 1 ? "" : "s"} · {row.bundle.observations.length} observations</p></div>
+        </article>
+      ))}</div> : <p className="muted">No normalized 7shifts bundles yet.</p>}
+    </section>
+  );
+}

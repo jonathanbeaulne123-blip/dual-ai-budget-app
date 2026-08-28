@@ -201,6 +201,20 @@
 
 **Next owner:** Jonathan — hard-refresh https://hearth-books.jonathan-beaulne123.workers.dev/ , Development pill, Shift tip sheet → try providers; confirm Capture stays disabled until clear. Do not treat as Production household data.
 
+## 7shifts Evidence Mesh and automation (D-158/D-159) (2026-08-28)
+
+**Status:** Local implementation on `codex/7shifts-evidence-mesh` reconciled to current `origin/main@9cc1f67`; local proof is complete. The dedicated Development D1, private R2, Queue/DLQ, `EVIDENCE_KEK_V1`, and migrations 0001/0002 are live and empty. Current Worker version `043d8324-998e-46f3-9a6d-16d2f2aee0d7` is deployed inert with every Evidence and 7shifts activation flag false. No push, merge, email route, distribution, activation, real evidence, or Production action.
+
+**Household outcome:** Shift → Evidence can accept explicit member files/screens, saved/private ICS, rotated forwarded-mail evidence, and paired browser/iPhone captures into an encrypted personal vault. Unified bundles retain every attributed observation and conflict. Automation is off by default; an exact member/job opt-in can post eligible evidence through ordinary `postWorkShift`/PGlite/continuity and reconcile a complete payroll week through exact reversals plus chronological replacements.
+
+**Budget delta (5):** `+5`. **Engagement delta (3):** `+3`. **Risk:** Release.
+
+**Hard boundaries:** D-158 storage is separate D1/private R2/Queue and default-disabled. Raw evidence never enters household snapshots, command events, PGlite, Hercules, or generic model payloads. Schedules/email/models never post. Deterministic command ids and receipts supply retry recovery. Closed/settled variance is review-only until a separately approved mapping. Production is refused.
+
+**Verification:** current-main roadmap + Toast OCR + Evidence/accounting/Hercules focus passed 17 files / 97 tests, and the dedicated disabled-queue regression passed separately. TypeScript, AI verify, production build, local D1 migration execution, Worker dry run, and diff check passed. The final full suite is 1015 passed / 2 skipped / 2 unchanged-baseline failures. Remote D1 reports no pending migrations and zero evidence items, bundles, jobs, bytes, objects, puts, or gets; R2 has no public URL or custom domain. Live `/work/evidence/status` and `/work/7shifts/status` both report unavailable/disabled and Production refused. iOS XCTest and physical-device proof remain macOS/TestFlight gates.
+
+**Canon:** [`SEVEN_SHIFTS_EVIDENCE.md`](SEVEN_SHIFTS_EVIDENCE.md) · [`worksessions/2026-08-28-seven-shifts-evidence-mesh.md`](worksessions/2026-08-28-seven-shifts-evidence-mesh.md)
+
 ## Native 7shifts Timesheet inbox (D-155) (2026-08-27)
 
 **Status:** Release branch `codex/d152-shifts-release`, based on current `main`; user-authorized two-stage Development release in progress. Risk: **Release**. Production provider access remains refused.

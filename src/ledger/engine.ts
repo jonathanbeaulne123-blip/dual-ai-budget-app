@@ -118,7 +118,11 @@ export function booksIntegrityFacts(household: Household) {
       paidBreakHours: shift.paidBreakHours ?? null,
       deferredTipOutCents: shift.deferredTipOutCents ?? null,
       deferredTipOutPaidCents: shift.deferredTipOutPaidCents ?? null,
+      correctedByShiftId: shift.correctedByShiftId ?? null,
+      correctionOfShiftId: shift.correctionOfShiftId ?? null,
       transactionIds: [...(shift.transactionIds ?? [])].sort(),
+      sevenShiftsPunchDigest: shift.sevenShiftsPunchDigest ?? null,
+      sevenShiftsEvidenceBundle: shift.sevenShiftsEvidenceBundle ?? null,
     })),
     goals: byId(household.goals).map((goal) => ({
       id: goal.id,

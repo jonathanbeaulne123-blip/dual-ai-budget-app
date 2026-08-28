@@ -34,6 +34,7 @@ import type { HerculesGroundedFact, HerculesNumberSource } from "./herculesProve
 import type { HerculesTalk } from "./herculesTalk.ts";
 import type { Account, Household, ShiftEventTag, Transaction } from "./types.ts";
 import { isShiftEventTag } from "./types.ts";
+import { householdForHerculesContext, householdForShiftReadTools } from "./visibility.ts";
 import {
   explainShiftYearSimulation,
   listTipShifts,
@@ -1454,19 +1455,23 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const member = resolveMember(household, memberQuery, context);
     if (memberQuery && !member) return empty(call, `I cannot match member “${memberQuery}” in this ledger.`);
     const memberId = tipOracleMemberId(context, member?.id);
-    const date = cleanDate(call.args.date) ?? addDays(today, 1);
-    const hours = Number(call.args.hours) || 0;
-    if (!(hours > 0)) return empty(call, "Tell me the shift length in hours for an outlook.");
+    const requestedDate = cleanDate(call.args.date);
+    const scheduled = (household.sevenShiftsSchedules ?? [])
+      .filter((row) => row.memberId === memberId && row.date >= today && (!requestedDate || row.date === requestedDate))
+      .sort((left, right) => left.startedAt.localeCompare(right.startedAt))[0];
+    const date = requestedDate ?? scheduled?.date ?? addDays(today, 1);
+    const hours = Number(call.args.hours) || (scheduled ? scheduled.scheduledMinutes / 60 : 0);
+    if (!(hours > 0)) return empty(call, "Tell me the shift length, or save your personal 7shifts calendar so I can read the published schedule.");
     const macroPrior = resolveMacroPrior(context, today);
     const outlook = shiftOutlook(household, {
       date,
       hours,
       meal: call.args.meal as TipMeal | undefined,
       weatherGlass: call.args.weatherGlass as WeatherGlass | undefined,
-      eventTag: isShiftEventTag(call.args.eventTag) ? call.args.eventTag as ShiftEventTag : undefined,
+      eventTag: isShiftEventTag(call.args.eventTag) ? call.args.eventTag as ShiftEventTag : scheduled?.eventTag,
       salesCents: cleanCents(call.args.salesCents),
       customersServed: Number.isInteger(Number(call.args.customersServed)) ? Number(call.args.customersServed) : undefined,
-      staffingCount: Number.isInteger(Number(call.args.staffingCount)) ? Number(call.args.staffingCount) : undefined,
+      staffingCount: Number.isInteger(Number(call.args.staffingCount)) ? Number(call.args.staffingCount) : scheduled?.staffingCount ?? undefined,
       memberId,
       macroPrior,
     });
@@ -1476,7 +1481,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
       callId: call.id,
       name: call.name,
       status: "ok",
-      sentence: `For a ${outlook.hours.toFixed(2)}h ${outlook.meal} on ${outlook.date}, I expect about ${formatCad(outlook.expectedTipCents)} net tips (${formatCad(outlook.lowTipCents)}–${formatCad(outlook.highTipCents)}) from ${outlook.similarShifts} similar posted shift${outlook.similarShifts === 1 ? "" : "s"}, combined soft factor ${((outlook.weatherFactor * outlook.eventFactor * outlook.covariateFactor * outlook.macroFactor)).toFixed(3)}. Projection only — Confirm still posts the real shift.`,
+      sentence: `For a ${outlook.hours.toFixed(2)}h ${outlook.meal} on ${outlook.date}${scheduled ? " from your saved published 7shifts schedule" : ""}, I expect about ${formatCad(outlook.expectedTipCents)} net tips (${formatCad(outlook.lowTipCents)}–${formatCad(outlook.highTipCents)}) from ${outlook.similarShifts} similar posted shift${outlook.similarShifts === 1 ? "" : "s"}, combined soft factor ${((outlook.weatherFactor * outlook.eventFactor * outlook.covariateFactor * outlook.macroFactor)).toFixed(3)}. Projection only — Confirm still posts the real shift.`,
       facts: [
         fact(call, 0, "Expected tips", formatCad(outlook.expectedTipCents), source, "projection"),
         fact(call, 1, "Low tips (p10)", formatCad(outlook.lowTipCents), source, "projection"),
@@ -1794,8 +1799,27 @@ function clipSentence(value: string, max = 260): string {
   return `${cut.slice(0, space > 80 ? space : max - 1)}…`;
 }
 
-function scopeHouseholdForTool(household: Household, _call: HerculesReadToolCall, _context: HerculesAskContext): Household {
-  return household;
+const SHIFT_READ_TOOLS = new Set<HerculesReadToolName>([
+  "shift_summary",
+  "tip_oracle",
+  "shift_outlook",
+  "tip_schedule_sim",
+  "tax_milk_plan",
+  "shift_year_simulation",
+  "explain_shift_simulation",
+  "list_shifts",
+]);
+
+function scopeHouseholdForTool(household: Household, call: HerculesReadToolCall, context: HerculesAskContext): Household {
+  if (SHIFT_READ_TOOLS.has(call.name)) {
+    return householdForShiftReadTools(
+      household,
+      context.memberId,
+      context.view,
+      cleanString(call.args.member),
+    );
+  }
+  return householdForHerculesContext(household, context.memberId, context.view);
 }
 
 export function executeHerculesReadToolPlan(

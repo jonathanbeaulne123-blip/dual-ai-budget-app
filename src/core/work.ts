@@ -10,6 +10,7 @@ import type {
   WorkTipOutRule,
   Household,
   Shift,
+  Transaction,
   Visibility,
 } from "./types.ts";
 import { ValidationError } from "./types.ts";
@@ -275,10 +276,33 @@ export function workShiftTransactionIds(shift: Shift): string[] {
     : [shift.wagesTransactionId, shift.tipsTransactionId].filter(Boolean);
 }
 
+function sortedSplitFacts(transaction: Transaction): Array<{ party: string; amountCents: number }> {
+  return transaction.splits
+    .map((split) => ({ party: split.party, amountCents: split.amountCents }))
+    .sort((left, right) => left.party.localeCompare(right.party) || left.amountCents - right.amountCents);
+}
+
+function isBalancedTransactionReversal(original: Transaction, reversal: Transaction): boolean {
+  return reversal.source === "reversal"
+    && reversal.reversalOfId === original.id
+    && reversal.type === original.type
+    && reversal.amountCents === original.amountCents
+    && reversal.accountId === original.accountId
+    && (reversal.categoryId ?? null) === (original.categoryId ?? null)
+    && (reversal.subcategoryId ?? null) === (original.subcategoryId ?? null)
+    && reversal.visibility === original.visibility
+    && JSON.stringify(sortedSplitFacts(reversal)) === JSON.stringify(sortedSplitFacts(original));
+}
+
 /** A corrected shift stays in the audit trail, but no longer drives pay, overtime, reports, or Calendar. */
 export function workShiftIsReversed(household: Household, shift: Shift): boolean {
   const ids = workShiftTransactionIds(shift);
-  return ids.length > 0 && ids.every((id) => household.transactions.some((transaction) => transaction.reversalOfId === id));
+  return ids.length > 0 && ids.every((id) => {
+    const original = household.transactions.find((transaction) => transaction.id === id);
+    if (!original) return false;
+    const reversals = household.transactions.filter((transaction) => transaction.reversalOfId === id);
+    return reversals.length === 1 && isBalancedTransactionReversal(original, reversals[0]!);
+  });
 }
 
 /** Hours already confirmed for this worker/job in the Toronto payroll week. */

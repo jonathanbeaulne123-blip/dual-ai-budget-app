@@ -10,6 +10,7 @@ import {
   postWorkShift,
   runHealthCheck,
   reversePostedMoney,
+  reconcileWorkWeekFromEvidence,
   settleWorkReceivable,
   payDeferredWorkTipOut,
   workOwedFacts,
@@ -21,8 +22,15 @@ import {
   upsertWorkJob,
   workJobFingerprint,
   workRateForDate,
+  workShiftIsReversed,
+  financialAuditFacts,
+  commandIdentityFacts,
+  sevenShiftsEvidenceMaterialHash,
+  shapeSevenShiftsEvidenceBundle,
+  type SevenShiftsEvidenceBundle,
   type WorkJob,
 } from "../src/core/index.ts";
+import { booksIntegrityFacts } from "../src/ledger/index.ts";
 
 function job(): WorkJob {
   return shapeWorkJob({
@@ -68,7 +76,168 @@ function job(): WorkJob {
   });
 }
 
+function evidenceBundle(householdId: string, jobId: string, revision = 1, marker = "first"): SevenShiftsEvidenceBundle {
+  const evidenceId = "evi_structured_authorized_capture_0001";
+  const bundle: SevenShiftsEvidenceBundle = {
+    version: 1,
+    provider: "7shifts",
+    canonicalShiftKey: "s7shift:company-worker-punch-0001",
+    providerSubjectKey: "s7subject:company-worker-0001",
+    environment: "development",
+    householdId,
+    memberId: "MEM-002",
+    jobId,
+    startedAt: "2026-08-31T13:00:00.000Z",
+    endedAt: "2026-08-31T17:30:00.000Z",
+    workedMinutes: 240,
+    paidBreakMinutes: 30,
+    revision,
+    state: "eligible",
+    evidence: [{
+      evidenceId,
+      environment: "development",
+      householdId,
+      memberId: "MEM-002",
+      sourceKind: "selected-json",
+      capturedAt: "2026-09-01T00:00:00.000Z",
+      observedAt: "2026-08-31T17:30:00.000Z",
+      providerResourceKind: "time_punch",
+      providerResourceId: "provider-punch-0001",
+      providerRevision: `provider-revision-${revision}`,
+      parserVersion: "d156-v1",
+      schemaFingerprint: "time-punch-schema-v1",
+      rawDigest: "a".repeat(64),
+      finality: "approved",
+      supersedesEvidenceId: null,
+    }],
+    observations: [
+      { evidenceId, field: "date", value: "2026-08-31", unit: "date", sourcePath: "data[0].clocked_in", confidenceBps: 10_000, finality: "approved", extraction: "structured", conflict: "clear" },
+      { evidenceId, field: "roleId", value: "ROLE-SERVER", unit: "identifier", sourcePath: "mapping.role", confidenceBps: 10_000, finality: "approved", extraction: "human", conflict: "clear" },
+      { evidenceId, field: "captureMarker", value: marker, unit: "text", sourcePath: "schema.marker", confidenceBps: 10_000, finality: "approved", extraction: "structured", conflict: "clear" },
+    ],
+    authority: {
+      workedMinutesEvidenceId: evidenceId,
+      paidBreakMinutesEvidenceId: evidenceId,
+      cashTipsEvidenceId: null,
+      cardTipsEvidenceId: null,
+      finalWagesEvidenceId: null,
+    },
+    conflicts: [],
+    materialHash: "",
+  };
+  bundle.materialHash = sevenShiftsEvidenceMaterialHash(bundle);
+  return shapeSevenShiftsEvidenceBundle(bundle);
+}
+
 describe("job-based shift foundation", () => {
+  it("rejects separate legacy 7shifts punch and screenshot evidence at the money boundary", () => {
+    const saved = upsertWorkJob(catalogHousehold(), { job: job() }).household;
+    const savedJob = saved.workJobs[0]!;
+    expect(() => postWorkShift(saved, {
+      date: "2026-08-31", memberId: "MEM-002", jobId: savedJob.id, roleId: "ROLE-SERVER",
+      workedHours: 4, paidBreakHours: 0.5, salesByField: { FOOD: 1000 }, cashTips: 50, cardTips: 100,
+      customersServed: 40, staffingCount: 4, eventTag: "regular", createdBy: "MEM-002",
+      sevenShiftsEvidence: { provenanceId: "legacy-punch" },
+      sevenShiftsScreenEvidence: { sourceHash: "legacy-screen" },
+    })).toThrow(/cannot attach separate 7shifts punch and screenshot evidence/i);
+  });
+
+  it("binds one multi-source evidence bundle to the exact shift and all integrity surfaces", () => {
+    const saved = upsertWorkJob(catalogHousehold(), { job: job() }).household;
+    const savedJob = saved.workJobs[0]!;
+    const bundle = evidenceBundle(saved.householdId, savedJob.id);
+    const input = {
+      date: "2026-08-31", memberId: "MEM-002", jobId: savedJob.id, roleId: "ROLE-SERVER",
+      workedHours: 4, paidBreakHours: 0.5, startedAt: bundle.startedAt, endedAt: bundle.endedAt,
+      salesByField: { FOOD: 1000 }, cashTips: 50, cardTips: 100, customersServed: 40,
+      staffingCount: 4, eventTag: "regular", createdBy: "MEM-002", confirmDuplicate: true,
+      sevenShiftsEvidenceBundle: bundle,
+    } as const;
+    const posted = postWorkShift(saved, input);
+    const shift = posted.household.shifts.at(-1)!;
+    expect(shift.sevenShiftsEvidenceBundle).toEqual(bundle);
+    expect(JSON.stringify(financialAuditFacts(posted.household))).toContain(bundle.materialHash);
+    expect(JSON.stringify(commandIdentityFacts(saved, posted.household, posted.postedIds))).toContain(bundle.materialHash);
+    expect(JSON.stringify(booksIntegrityFacts(posted.household))).toContain(bundle.materialHash);
+    expect(() => postWorkShift(posted.household, input)).toThrow(/already on the books/i);
+    expect(() => postWorkShift(posted.household, {
+      ...input,
+      sevenShiftsEvidenceBundle: evidenceBundle(saved.householdId, savedJob.id, 2, "changed"),
+    })).toThrow(/changed after posting/i);
+    expect(() => postWorkShift(saved, { ...input, workedHours: 3.5 })).toThrow(/minutes changed after capture/i);
+    const moneyAuthority = evidenceBundle(saved.householdId, savedJob.id);
+    moneyAuthority.observations.push({
+      evidenceId: moneyAuthority.evidence[0]!.evidenceId, field: "cashTipsCents", value: 4200, unit: "cad-cents",
+      sourcePath: "punch.tips.cash", confidenceBps: 10_000, finality: "approved", extraction: "structured", conflict: "clear",
+    });
+    moneyAuthority.authority.cashTipsEvidenceId = moneyAuthority.evidence[0]!.evidenceId;
+    moneyAuthority.materialHash = sevenShiftsEvidenceMaterialHash(moneyAuthority);
+    expect(() => postWorkShift(saved, { ...input, cashTips: 420, sevenShiftsEvidenceBundle: moneyAuthority })).toThrow(/cashTipsCents changed/i);
+  });
+
+  it("reconciles an evidence revision as one balanced payroll-week correction", () => {
+    const saved = upsertWorkJob(catalogHousehold(), { job: job() }).household;
+    const savedJob = saved.workJobs[0]!;
+    const first = evidenceBundle(saved.householdId, savedJob.id);
+    const posted = postWorkShift(saved, {
+      date: "2026-08-31", memberId: "MEM-002", jobId: savedJob.id, roleId: "ROLE-SERVER",
+      workedHours: 4, paidBreakHours: 0.5, startedAt: first.startedAt, endedAt: first.endedAt,
+      salesByField: { FOOD: 1000 }, cashTips: 50, cardTips: 100, customersServed: 40,
+      staffingCount: 4, eventTag: "regular", createdBy: "MEM-002", confirmDuplicate: true,
+      sevenShiftsEvidenceBundle: first,
+    }).household;
+    const original = posted.shifts.at(-1)!;
+    const revised = evidenceBundle(saved.householdId, savedJob.id, 2, "provider-correction");
+    const corrected = reconcileWorkWeekFromEvidence(posted, {
+      memberId: "MEM-002", jobId: savedJob.id, payrollWeekStarts: 1, createdBy: "MEM-002",
+      replacements: [{
+        date: "2026-08-31", memberId: "MEM-002", jobId: savedJob.id, roleId: "ROLE-SERVER",
+        workedHours: 4, paidBreakHours: 0.5, startedAt: revised.startedAt, endedAt: revised.endedAt,
+        salesByField: { FOOD: 1000 }, cashTips: 50, cardTips: 100, customersServed: 40,
+        staffingCount: 4, eventTag: "regular", createdBy: "MEM-002", sevenShiftsEvidenceBundle: revised,
+      }],
+    });
+    const replacement = corrected.household.shifts.find((shift) => shift.correctionOfShiftId === original.id)!;
+    expect(replacement.sevenShiftsEvidenceBundle?.revision).toBe(2);
+    expect(corrected.household.shifts.find((shift) => shift.id === original.id)?.correctedByShiftId).toBe(replacement.id);
+    expect(workShiftIsReversed(corrected.household, original)).toBe(true);
+    const correctionIdentity = JSON.stringify(commandIdentityFacts(posted, corrected.household, corrected.postedIds));
+    expect(correctionIdentity).toContain(original.id);
+    expect(correctionIdentity).toContain(replacement.id);
+    expect(JSON.stringify(booksIntegrityFacts(corrected.household))).toContain(`"correctedByShiftId":"${replacement.id}"`);
+    expect(trialBalance(compileHousehold(corrected.household)).inBalance).toBe(true);
+    expect(booksEquation(compileHousehold(corrected.household)).holds).toBe(true);
+
+    const duplicateReversal = structuredClone(corrected.household);
+    const firstReversal = duplicateReversal.transactions.find((tx) => tx.reversalOfId === original.transactionIds?.[0])!;
+    duplicateReversal.transactions.push({ ...firstReversal, id: `${firstReversal.id}-DUP` });
+    expect(workShiftIsReversed(duplicateReversal, original)).toBe(false);
+  });
+
+  it("routes a correction to variance review after wages or card tips have been settled", () => {
+    const saved = upsertWorkJob(catalogHousehold(), { job: job() }).household;
+    const savedJob = saved.workJobs[0]!;
+    const first = evidenceBundle(saved.householdId, savedJob.id);
+    const posted = postWorkShift(saved, {
+      date: "2026-08-31", memberId: "MEM-002", jobId: savedJob.id, roleId: "ROLE-SERVER",
+      workedHours: 4, paidBreakHours: 0.5, startedAt: first.startedAt, endedAt: first.endedAt,
+      salesByField: { FOOD: 1000 }, cashTips: 50, cardTips: 100, customersServed: 40,
+      staffingCount: 4, eventTag: "regular", createdBy: "MEM-002", confirmDuplicate: true, sevenShiftsEvidenceBundle: first,
+    }).household;
+    const settled = settleWorkReceivable(posted, {
+      jobId: savedJob.id, kind: "wages", date: "2026-08-31", amount: 60, accountId: "ACC-CHEQUING", createdBy: "MEM-002",
+    }).household;
+    const revised = evidenceBundle(saved.householdId, savedJob.id, 2, "settled-provider-correction");
+    expect(() => reconcileWorkWeekFromEvidence(settled, {
+      memberId: "MEM-002", jobId: savedJob.id, payrollWeekStarts: 1, createdBy: "MEM-002",
+      replacements: [{
+        date: "2026-08-31", memberId: "MEM-002", jobId: savedJob.id, roleId: "ROLE-SERVER",
+        workedHours: 4, paidBreakHours: 0.5, startedAt: revised.startedAt, endedAt: revised.endedAt,
+        salesByField: { FOOD: 1000 }, cashTips: 50, cardTips: 100, customersServed: 40,
+        staffingCount: 4, eventTag: "regular", createdBy: "MEM-002", sevenShiftsEvidenceBundle: revised,
+      }],
+    })).toThrow(/settled wage or card-tip receivable.*variance/i);
+  });
   it("keeps dated role rates and calculates direct or deduction-based take-home", () => {
     const role = job().roles[0]!;
     expect(workRateForDate(role, "2026-08-31").id).toBe("RATE-OLD");

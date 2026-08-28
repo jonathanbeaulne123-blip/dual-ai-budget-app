@@ -9,6 +9,7 @@ import {
 import { handleHerculesPro } from "./herculesPro.js";
 import { handleFlinks } from "./flinks.js";
 import { handleSevenShifts } from "./sevenshifts.js";
+import { handleEvidence, handleEvidenceEmail, processEvidenceQueue } from "./evidence.js";
 import { validateRigPayload, sanitizeRigSessionId } from "../src/herculesRig/validate.ts";
 import { enqueueRigCommands, pollRigCommands } from "./herculesRigQueue.js";
 import { mergeShiftDraftFromOcr, looksLikeEmployeeShiftReport } from "./shiftReportParse.js";
@@ -1481,6 +1482,8 @@ export default {
     const url = new URL(request.url);
     const toastOcr = await handleToastOcr(request, env);
     if (toastOcr) return toastOcr;
+    const evidence = await handleEvidence(request, env);
+    if (evidence) return evidence;
     const sevenshifts = await handleSevenShifts(request, env);
     if (sevenshifts) return sevenshifts;
     const flinks = await handleFlinks(request, env);
@@ -1558,11 +1561,19 @@ export default {
     });
   },
   /**
-   * Hearth does not use Cloudflare Queues. A leftover consumer registration on
-   * hearth-books blocked kitchen `wrangler deploy` with API 11001. Ack only;
-   * never post, never fetch household data.
+   * The Evidence queue is deliberate. While its Development activation switch
+   * is off, acknowledge any leftover delivery without reading evidence or
+   * retrying forever. Once explicitly enabled, use the bounded Evidence
+   * processor for this dedicated queue only.
    */
-  async queue(batch) {
-    for (const message of batch.messages) message.ack();
+  async queue(batch, env) {
+    if (String(env?.EVIDENCE_ENABLED || "").trim().toLowerCase() !== "true") {
+      for (const message of batch.messages || []) message.ack();
+      return;
+    }
+    await processEvidenceQueue(batch, env);
+  },
+  async email(message, env) {
+    await handleEvidenceEmail(message, env);
   },
 };
