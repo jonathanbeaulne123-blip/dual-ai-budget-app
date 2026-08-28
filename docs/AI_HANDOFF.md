@@ -1,8 +1,38 @@
 # AI Task and Handoff Standard
 
+## Kitchen queue handler so D-156 can publish (D-041) (2026-08-28)
+
+**Status:** Merged to `main` at `d067e56` (PR #228). Kitchen **deploy failed** Cloudflare Workers `33184620358` and Workers Builds `d6a7492e` with API **11001** (queue handler missing). Fix is on `cursor/fix-kitchen-queue-handler-560d`. Risk: **Medium** (Worker deploy path; no money, Auth, or schema).
+
+**Household outcome:** Unblock the already-approved kitchen publish of the wide paper office (fat nav + live chalkboard). Live kitchen still serves `index-BRjIx46v.js` (early D-156 from #229) until this handler lands.
+
+**Budget delta (5):** `+0` — plumbing only; the paper-office budget delta is unchanged.
+
+**Engagement delta (3):** `+0` — same.
+
+**If they conflicted:** books win; the handler only `ack()`s. It never `postEntry`, never fetches household rows, never talks to a model.
+
+**What changed:** `workers/site.js` exports a no-op `queue`. `wrangler.jsonc` still has **no** `queues` consumers. D-041 why-note records 11001.
+
+**Verification:** focused `test/api.test.ts` (queue acks; no consumer binding) + worker tests green. `pnpm check` next. Then merge to `main` and confirm Cloudflare Workers Deploy green. Live HTML must serve a bundle containing `hearth-notebook-whisper` / live chalkboard, not only `office-wide`.
+
+**Data and environment disclosure:**
+- Development impact: none
+- Production impact: none (kitchen Worker publish only; no Production household mutation)
+- Network calls or data sent: none new
+- MCP access: Cloudflare Workers Builds logs (read-only)
+- Hosted rows/schema/secrets: none. No Queue consumer added.
+- Real household or partner-personal data used: none
+
+**Remaining uncertainty:** Cloudflare may still have a leftover consumer registration on `hearth-books`. Dashboard cleanup (`wrangler queues consumer remove`) is Jonathan's if 11001 returns. Workers Builds still runs `versions upload` (preview), not kitchen `wrangler deploy`.
+
+**Next owner:** Merge this fix to `main` (Jonathan already approved kitchen publish), then hard-refresh https://hearth-books.jonathan-beaulne123.workers.dev/
+
+**Worksession:** [`worksessions/2026-08-28-wide-paper-office.md`](worksessions/2026-08-28-wide-paper-office.md)
+
 ## Keep chalkboard; restore screenshot nav (D-156) (2026-08-28)
 
-**Status:** Integrating `origin/main` (`fd7fff5`) into [#228](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/228) for kitchen publish. Jonathan approved push/merge/deploy. **Not merged, not deployed, not live until this packet lands on `main`.** Risk: **Medium** (UX Dual Course; no money, Auth, or schema).
+**Status:** Merged to `main` (`d067e56`) via [#228](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/228). **Not kitchen-live** — deploy `33184620358` failed 11001. Risk: **Medium** (UX Dual Course; no money, Auth, or schema).
 
 **Household outcome:** Laptop Home matches the attached paper-office screenshot: fat bottom nav (Home / Cal / Shift / plus / Plan / Books / More), POST / DUE / HEALTH seals, Today's stories, month blotter. The compact chip-strip nav is gone. Notes still open a live chalkboard in the notebook. Google welcome/sign-in files were not touched.
 

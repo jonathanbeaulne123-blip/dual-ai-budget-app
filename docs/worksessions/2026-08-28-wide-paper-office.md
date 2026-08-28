@@ -1,17 +1,17 @@
 # Hearth worksession — Wide paper office
 
-- **Status:** OPEN (reviewable draft PR; not merged)
+- **Status:** MERGED to `main` (`d067e56`); kitchen deploy blocked on Cloudflare 11001; queue-handler fix in flight
 - **Opened:** 2026-08-28 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor (Grok)
 - **Repository:** jonathanbeaulne123-blip/dual-ai-budget-app
-- **Branch:** `cursor/wide-paper-office-560d`
-- **Baseline SHA:** `54c74dcbf53fbab694b9ca5cd08f57ff4acdd9d2` (`origin/main` at branch)
+- **Branch:** `cursor/fix-kitchen-queue-handler-560d` (paper office already on `main`)
+- **Baseline SHA:** `d067e56` (`main` after #228)
 - **Head SHA:** (this packet; see git)
-- **PR or issue:** draft [#228](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/228)
+- **PR or issue:** [#228](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/228) merged; kitchen Workers `33184620358` failed
 - **Risk:** Medium
 - **Decision owner:** Jonathan
-- **Environment impact:** none (UI cosmetics; layout localStorage only; no hosted schema, no Production)
+- **Environment impact:** kitchen Worker publish only (no hosted schema, no Production household data)
 
 ## Household outcome
 
@@ -84,8 +84,8 @@ D-156 — composed paper office is the default wide Home; Classic desk (packWide
 
 ## Remaining uncertainty
 
-Existing wide layouts with saved x/y keep Classic so a customized desk is not silently replaced. Fresh desks open paper. Two-column breathing room is the ~1100 face; 720–899px stacks. Branch is behind later `main` Toast OCR work.
+Existing wide layouts with saved x/y keep Classic. Kitchen `wrangler deploy` of `d067e56` failed API 11001 (queue handler missing). Cloudflare may still have a leftover consumer on `hearth-books`.
 
 ## Handoff
 
-See `docs/AI_HANDOFF.md`. Draft PR #228. Not merged, not deployed, not live.
+See `docs/AI_HANDOFF.md`. `#228` is on `main`. Kitchen is not live until the no-op queue handler publishes.

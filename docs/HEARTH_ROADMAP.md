@@ -64,7 +64,7 @@ Only the currently open or just-closed worksession belongs here. Durable history
 
 | Worksession | State | Scope | Output |
 |---|---|---|---|
-| [2026-08-28 Wide paper office](worksessions/2026-08-28-wide-paper-office.md) | **OPEN; integrating #228 onto current main** | Live chalkboard + screenshot fat nav on the composed paper office (D-156) | Early paper office already kitchen-live via #229; this packet is chalkboard + fat nav |
+| [2026-08-28 Wide paper office](worksessions/2026-08-28-wide-paper-office.md) | **MERGED #228; kitchen blocked 11001** | Live chalkboard + screenshot fat nav on composed paper office (D-156) | `main@d067e56`; deploy `33184620358` failed; queue-handler fix in flight |
 | [2026-08-28 Merge and deploy what is safe](worksessions/2026-08-28-merge-safe.md) | **CLOSED; merged #229; kitchen live** | Merge only kitchen-safe work; hold 7shifts enablement and conflicting High drafts | Worker run `33146400613`; D-155 stays inert (`7403` D1 token) |
 | [2026-08-27 Native 7shifts Timesheet inbox](worksessions/2026-08-27-seven-shifts-inbox.md) | **RELEASE BLOCKED on D1 token** | Development-only provider inbox integrated with Shift → Jobs and Timesheet review | Inert on kitchen; setup run failed Cloudflare `7403`; Production refused |
 | [2026-08-27 Shift tab camera](worksessions/2026-08-27-shift-tab-camera.md) | **CLOSED; merged #217** | Tip-sheet camera on Shift Today | D-152 OCR on D-153 tab; live Worker `c942e55b`; Confirm still posts |
