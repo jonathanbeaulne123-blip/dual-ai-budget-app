@@ -8,7 +8,8 @@
 - **Branch:** `codex/household-fund`
 - **Baseline SHA:** `efbe5ed5118b0e6c2c942d318dd4e9643eb163d1`
 - **Implementation SHA:** `34f3ca2dc3d4aaf71b332482c297380da6d39152`
-- **PR or issue:** none
+- **Release integration SHA:** `95a403fb4b302950e9f7777914e348d0a7d3bec1`
+- **PR or issue:** #237
 - **Risk:** High for September money semantics; Release before October provider activation
 - **Decision owner:** Jonathan
 - **Environment impact:** local Development-shaped fixtures only
@@ -74,6 +75,8 @@ Give Jonathan and Bianca one truthful Hearth Household Fund for shared operating
 - 2026-08-28: `pnpm check` passed — AI surface verified, 156 test files passed / 1 live-only skipped, 1,049 tests passed / 2 live-only skipped, TypeScript and production build green.
 - 2026-08-28: independent books and privacy/trust reviewers report no remaining P0/P1. `git diff --check` and modified-file secret-pattern scan are clean.
 - 2026-08-28: Gemini Pro reviewed the complete patch for exact implementation SHA `34f3ca2dc3d4aaf71b332482c297380da6d39152`: `PASS`, no P0/P1 findings, and no required code change before push.
+- 2026-08-28: reconciled PR #237 with `main@3740c5c3c78f1f874c5b7ce38c1b572a6e465d06`. Preserved current-main Production Evidence hook behavior, both Books callbacks, and the Household Fund UI/commands; renumbered the Fund canon to D-161/D-162 because D-160 is now occupied.
+- 2026-08-28: release-integration proof passed — AI surface verified; 160 test files / 1 live-only skipped; 1,065 tests / 2 live-only skipped; TypeScript and production build green.
 - 2026-08-28: implementation sealed locally at `34f3ca2dc3d4aaf71b332482c297380da6d39152`; durable review packet: [`../briefs/HOUSEHOLD_FUND_HANDOFF_2026-08-28.md`](../briefs/HOUSEHOLD_FUND_HANDOFF_2026-08-28.md).
 
 ## Decisions

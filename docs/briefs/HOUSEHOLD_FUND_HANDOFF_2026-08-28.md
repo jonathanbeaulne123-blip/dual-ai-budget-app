@@ -7,7 +7,8 @@
 - **Branch:** `codex/household-fund`
 - **Base:** `origin/main@efbe5ed5118b0e6c2c942d318dd4e9643eb163d1`
 - **Implementation SHA:** `34f3ca2dc3d4aaf71b332482c297380da6d39152`
-- **PR:** none; local commit only; not pushed, merged, deployed, or live
+- **Release integration SHA:** `95a403fb4b302950e9f7777914e348d0a7d3bec1` against `main@3740c5c3c78f1f874c5b7ce38c1b572a6e465d06`
+- **PR:** #237; branch pushed; Jonathan approved merge and ordinary app deployment. D-162 provider activation remains blocked.
 - **Risk:** High for September financial meaning; Release before provider activation or daily-use switch
 - **Decision owner:** Jonathan
 - **External reviewer:** Gemini Pro reviewed the complete patch for the exact implementation SHA; Jonathan retains the push/release decision
@@ -50,6 +51,7 @@ September needs a zero-opening-balance rehearsal before October bank evidence ca
 - Focused root proof: 12 files / 75 tests passed.
 - Independent trust proof: 11 files / 76 tests passed; the former settlement-order race passed 10 repeated independent runs. Root also passed it 10 repeated runs.
 - Complete gate: `pnpm check` passed — AI surface verified; 156 test files passed / 1 live-only skipped; 1,049 tests passed / 2 live-only skipped; TypeScript and production build green.
+- Current-main release integration: AI surface verified; 160 test files passed / 1 live-only skipped; 1,065 tests passed / 2 live-only skipped; TypeScript and production build green. The only initial failures were missing Windows Bash/Python shims, then the same tests and build passed with the bundled runtimes.
 - Independent books and privacy/trust reviewers: no remaining P0/P1.
 - Gemini Pro exact-SHA review: `PASS`; no P0/P1 findings. Its only P2/P3 notes were that the month-end helper correctly avoids JavaScript date overflow and that extremely deep reversal chains could add projector overhead.
 - Browser proof on fictional local Development data: widths 320, 390, 720, 1100, and 1280; no horizontal overflow or console errors; Home disclosure and Fund route work; Bianca reconciliation is absent in Household view and present in Personal view; Fund form controls are labeled.
@@ -73,13 +75,13 @@ git diff --check efbe5ed5118b0e6c2c942d318dd4e9643eb163d1..34f3ca2dc3d4aaf71b332
 - **Environment:** fictional/local Development-shaped data only.
 - **Hosted mutations:** none.
 - **Schema:** local PGlite schema 3 only; no public Supabase table or remote migration added.
-- **Network:** local browser preview only. No Flinks, Supabase, model, deployment, or Production request was made.
+- **Network:** local browser preview plus a sanitized exact-implementation patch sent to Gemini for review. No household data, Flinks, Supabase, deployment, or Production request was involved in that review.
 - **Secrets:** none entered, printed, or committed.
 - **Real household or partner-Personal data:** none used in proof.
 
 ## Explicit non-scope and remaining gates
 
-- No live institution support check, Flinks credentials, provider smoke, remote migration, secrets, deploy, Production action, or daily-use switch occurred.
+- No live institution support check, Flinks credentials, provider smoke, remote migration, secrets, bank action, or daily-use switch occurred. Jonathan separately approved PR #237 merge and the ordinary app deployment; that approval does not activate D-162 bank connectivity.
 - Gemini exact-SHA review is complete. It requires no code change before push.
 - September's real two-phone weekly rehearsal and month close remain a household/device gate.
 - October must first verify Bianca's institution and savings support through the existing secure Flinks boundary. If unsupported, stop and return provider options; statement import does not satisfy the live-connection promise.
