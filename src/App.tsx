@@ -3230,6 +3230,7 @@ export function App() {
 
       {tab === "plan" && dashboard && (
         <>
+          <div className="plan-wide">
           <section className="hero">
             <div className="label">Plan vs actual</div>
             <div className="money">{formatCad(dashboard.month.netBudgetedCents)}</div>
@@ -3250,6 +3251,7 @@ export function App() {
               );
             })}
           </section>
+          </div>
           <SitDownGuide household={household} memberId={actorId} onApply={(next, token) => persist(next, token)} hidden={view === "personal"} />
           <Goals
             household={household}

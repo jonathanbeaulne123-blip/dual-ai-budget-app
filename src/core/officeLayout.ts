@@ -60,6 +60,9 @@ export type LayoutItem = {
   y?: number;
 };
 
+/** Wide Home face. Paper is the D-156 default; classic is the D-080 free-move canvas. */
+export type DeskFace = "paper" | "classic";
+
 export type OfficeLayout = {
   v: 2;
   items: LayoutItem[];
@@ -70,6 +73,8 @@ export type OfficeLayout = {
   pinned: InstrumentId[];
   /** Snapshot of x/y before expand-bump so close can reset. */
   restPositions: Partial<Record<InstrumentId, Point>>;
+  /** Wide only. Phone ignores this. Default paper unless a saved x/y desk exists. */
+  face?: DeskFace;
 };
 
 export const INSTRUMENT_LABEL: Record<InstrumentId, string> = {
@@ -238,7 +243,7 @@ export function applyPersonality(layout: OfficeLayout, key: Exclude<DeskPersonal
     if (seen.has(id)) continue;
     ordered.push({ id, hidden: !PINNED_INSTRUMENTS.includes(id) });
   }
-  return { ...layout, v: 2, items: ordered, expanded: null, pinned: [], restPositions: {} };
+  return { ...layout, v: 2, items: ordered, expanded: null, pinned: [], restPositions: {}, face: "classic" };
 }
 
 export function cycleInstrumentSize(id: InstrumentId, current: InstrumentSize): InstrumentSize {
@@ -320,6 +325,9 @@ export function parseOfficeLayout(raw: unknown): OfficeLayout {
       restPositions[id] = { x, y };
     }
   }
+  const explicitFace = record.face === "classic" || record.face === "paper" ? record.face : null;
+  const legacyPlaced = items.some((item) => item.x != null && item.y != null);
+  const face: DeskFace = explicitFace ?? (legacyPlaced ? "classic" : "paper");
   return {
     v: 2,
     items,
@@ -328,7 +336,16 @@ export function parseOfficeLayout(raw: unknown): OfficeLayout {
     windowMinimized: Boolean(record.windowMinimized),
     pinned,
     restPositions,
+    face,
   };
+}
+
+export function deskFaceOf(layout: OfficeLayout): DeskFace {
+  return layout.face === "classic" ? "classic" : "paper";
+}
+
+export function setDeskFace(layout: OfficeLayout, face: DeskFace): OfficeLayout {
+  return { ...layout, face };
 }
 
 export function loadOfficeLayout(

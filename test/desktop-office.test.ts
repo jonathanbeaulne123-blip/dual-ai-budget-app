@@ -78,11 +78,13 @@ describe("desktop warmth fence", () => {
     expect(office).toMatch(/\.instrument-name \{[\s\S]*font-family: var\(--display\)/);
     expect(office).toMatch(/font-size: 13px;/);
     expect(office).not.toMatch(/\.office \.instrument-name \{[\s\S]*font-size: 10px/);
-    expect(styles).toMatch(/max-width: min\(900px, 100%\)/);
+    expect(styles).toMatch(/max-width: min\(1120px, 100%\)/);
     expect(styles).not.toMatch(/1280px/);
     expect(office).not.toMatch(/always-open panel/);
     const cabinets = readFileSync("src/widgets/Cabinets.tsx", "utf8");
     expect(cabinets).toMatch(/Home theme/);
+    expect(cabinets).toMatch(/Paper office/);
+    expect(cabinets).toMatch(/Classic desk/);
     const instrument = readFileSync("src/widgets/Instrument.tsx", "utf8");
     expect(instrument).not.toMatch(/alwaysBody/);
   });

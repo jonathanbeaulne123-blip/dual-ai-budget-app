@@ -219,7 +219,7 @@ export function WorkShiftPage({
       </div>
 
       {pane === "today" && (
-        <div className="shift-panel" role="tabpanel" id="shift-panel-today" aria-labelledby="shift-tab-today">
+        <div className="shift-panel shift-today-wide" role="tabpanel" id="shift-panel-today" aria-labelledby="shift-tab-today">
           <section className="card shift-punch">
             <TimesheetBody
               household={household}

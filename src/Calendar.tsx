@@ -255,6 +255,7 @@ export function CalendarPage(props: {
 
       {pane === "board" && (
         <>
+          <div className="calendar-wide-board">
           <section className="card calendar-card">
             <header>
               <button className="chip" onClick={() => setMonthKey(shiftMonthKey(monthKey, -1))} aria-label="Previous month">‹</button>
@@ -328,6 +329,7 @@ export function CalendarPage(props: {
               ))}
             </section>
           )}
+          </div>
 
           <section className="card">
             <header>
