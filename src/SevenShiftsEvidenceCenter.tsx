@@ -23,7 +23,7 @@ import {
   type EvidenceScope,
 } from "./imports/evidenceClient.ts";
 import { importSevenShiftsFromGmail, type GmailSevenShiftsImportProgress } from "./google/gmailSevenShifts.ts";
-import { coworkerRosterDraft, type CoworkerRosterDraftRow } from "./imports/coworkerRosterDraft.ts";
+import { coworkerRosterDraft, type CoworkerRosterImportDraft } from "./imports/coworkerRosterDraft.ts";
 
 function captureKind(file: File): string {
   const name = file.name.toLowerCase();
@@ -75,7 +75,7 @@ export function SevenShiftsEvidenceCenter({
   today: string;
   busy: boolean;
   onSaveSchedule: (rows: SevenShiftsScheduledShift[], confirmedPersonalFeed?: boolean) => void;
-  onImportCoworkers?: (input: { jobId: string; locationName: string; rows: CoworkerRosterDraftRow[] }) => void;
+  onImportCoworkers?: (input: CoworkerRosterImportDraft) => void;
 }) {
   const scope = useMemo<EvidenceScope>(() => ({ environment: household.environment, householdId: household.householdId, memberId }), [household.environment, household.householdId, memberId]);
   const scopeKey = `${scope.environment}:${scope.householdId}:${scope.memberId}`;
@@ -91,6 +91,7 @@ export function SevenShiftsEvidenceCenter({
   const [extensionId, setExtensionId] = useState("");
   const [pairingCode, setPairingCode] = useState("");
   const [rosterJobId, setRosterJobId] = useState("");
+  const [replaceScheduleRange, setReplaceScheduleRange] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -104,6 +105,7 @@ export function SevenShiftsEvidenceCenter({
     setBundles([]);
     setPolicies([]);
     setSelectedDerived(null);
+    setReplaceScheduleRange(false);
     setError("");
     setNotice("");
     void (async () => {
@@ -296,6 +298,7 @@ export function SevenShiftsEvidenceCenter({
   async function reviewDerived(row: EvidenceCaptureSummary) {
     setBusy(true);
     setError("");
+    setReplaceScheduleRange(false);
     try {
       setSelectedDerived(await readEvidenceDerived(scope, row.evidenceId));
     } catch (caught) {
@@ -325,6 +328,10 @@ export function SevenShiftsEvidenceCenter({
   const rosterRows = coworkerRosterDraft(selectedDerived);
   const rosterResponseCount = rosterRows.filter((row) => row.source === "seven-shifts-roster").length;
   const scheduleObservationCount = rosterRows.length - rosterResponseCount;
+  const scheduleDates = rosterRows.flatMap((row) => row.scheduledWindows ?? []).map((row) => row.date).sort();
+  const scheduleRange = scheduleDates.length
+    ? { fromDate: scheduleDates[0]!, toDate: scheduleDates.at(-1)! }
+    : null;
   const rosterJob = memberJobs.find((job) => job.id === rosterJobId) ?? memberJobs[0];
 
   return (
@@ -407,7 +414,7 @@ export function SevenShiftsEvidenceCenter({
       ))}</div> : <p className="muted">No encrypted evidence in this member scope.</p>}
 
       {selectedDerived ? <article className="preview" aria-label="Extracted evidence facts">
-        <header><h3>Extracted facts</h3><button type="button" className="chip" onClick={() => setSelectedDerived(null)}>Close</button></header>
+        <header><h3>Extracted facts</h3><button type="button" className="chip" onClick={() => { setSelectedDerived(null); setReplaceScheduleRange(false); }}>Close</button></header>
         <p className="muted">{selectedDerived.observations.length} recognized fact{selectedDerived.observations.length === 1 ? "" : "s"} · {selectedDerived.schemaDrift.length} unrecognized field{selectedDerived.schemaDrift.length === 1 ? "" : "s"} preserved · {selectedDerived.state.replace(/_/g, " ")}</p>
         {rosterRows.length ? <div className="stack-list" aria-label="Coworker identity review">
           <p><strong>{rosterRows.length} coworker{rosterRows.length === 1 ? "" : "s"} found</strong></p>
@@ -417,9 +424,15 @@ export function SevenShiftsEvidenceCenter({
           </select></label>
           <div className="chips">{rosterRows.slice(0, 30).map((row, index) => <span className="chip" key={`${row.source}:${row.sourceIdentityKey ?? `${row.displayName}:${index}`}`}>{row.displayName}{row.roleLabel ? ` · ${row.roleLabel}` : ""}{row.source === "seven-shifts-schedule" ? ` · schedule${row.sourceIdentityKey ? "" : " · confirm identity"}` : ""}</span>)}</div>
           {rosterRows.length > 30 ? <p className="muted">And {rosterRows.length - 30} more.</p> : null}
+          {scheduleRange ? <label className="check-row"><input type="checkbox" checked={replaceScheduleRange} onChange={(event) => setReplaceScheduleRange(event.target.checked)} /> This capture is the complete published schedule from {scheduleRange.fromDate} through {scheduleRange.toDate}. Remove saved shifts missing from this range.</label> : null}
           <button type="button" className="primary" disabled={disabled || !rosterJob || !onImportCoworkers} onClick={() => {
             if (!rosterJob || !onImportCoworkers) return;
-            onImportCoworkers({ jobId: rosterJob.id, locationName: rosterJob.locationName, rows: rosterRows });
+            onImportCoworkers({
+              jobId: rosterJob.id,
+              locationName: rosterJob.locationName,
+              rows: rosterRows,
+              ...(replaceScheduleRange && scheduleRange ? { replaceScheduleRange: scheduleRange } : {}),
+            });
             setNotice(`${rosterRows.length} coworker ${rosterRows.length === 1 ? "identity" : "identities"} sent to the private roster.`);
           }}>Add coworker identities to this job</button>
         </div> : null}

@@ -14,6 +14,7 @@ import {
   seedDemoHousehold,
   splitForSync,
   trialBalance,
+  undoLedgerConfirm,
   upsertCoworker,
   type Coworker,
   type Shift,
@@ -232,6 +233,55 @@ describe("D-166 private coworker roster", () => {
     expect(JSON.stringify(commandIdentityFacts(household, changed.household, changed.postedIds))).not.toContain("s7shift_");
   });
 
+  it("retires missing schedule windows only after an explicit complete-range review and tombstones them across replicas", () => {
+    const household = seedDemoHousehold({ today: "2026-08-28", environment: "development" });
+    const job = household.workJobs.find((row) => row.memberId === "MEM-002")!;
+    const two = importCoworkerRoster(household, {
+      ownerMemberId: "MEM-002", jobId: job.id, locationName: job.locationName,
+      rows: [
+        {
+          displayName: "Alex Schedule", source: "seven-shifts-schedule", sourceIdentityKey: "s7subject_aaaaaaaaaaaaaaaaaaaa",
+          scheduledWindows: [{ sourceScheduleKey: "s7shift_aaaaaaaaaaaaaaaaaaaa", date: "2026-08-28", scheduledStart: "2026-08-28T18:00:00.000Z", scheduledEnd: "2026-08-29T02:00:00.000Z", observedAt: "2026-08-27T12:00:00.000Z" }],
+        },
+        {
+          displayName: "Taylor Cancelled", source: "seven-shifts-schedule", sourceIdentityKey: "s7subject_bbbbbbbbbbbbbbbbbbbb",
+          scheduledWindows: [{ sourceScheduleKey: "s7shift_bbbbbbbbbbbbbbbbbbbb", date: "2026-08-28", scheduledStart: "2026-08-28T19:00:00.000Z", scheduledEnd: "2026-08-29T01:00:00.000Z", observedAt: "2026-08-27T12:00:00.000Z" }],
+        },
+      ],
+    });
+    const stale = splitForSync(two.household, "MEM-002").personal;
+    const cancelledId = two.household.coworkerSchedules!.find((row) => row.sourceScheduleKey.includes("bbbb"))!.id;
+    const keptRow = {
+      displayName: "Alex Schedule", source: "seven-shifts-schedule" as const, sourceIdentityKey: "s7subject_aaaaaaaaaaaaaaaaaaaa",
+      scheduledWindows: [{ sourceScheduleKey: "s7shift_aaaaaaaaaaaaaaaaaaaa", date: "2026-08-28", scheduledStart: "2026-08-28T18:00:00.000Z", scheduledEnd: "2026-08-29T03:00:00.000Z", observedAt: "2026-08-28T12:00:00.000Z" }],
+    };
+    const additive = importCoworkerRoster(two.household, {
+      ownerMemberId: "MEM-002", jobId: job.id, locationName: job.locationName, rows: [keptRow],
+    });
+    expect(additive.household.coworkerSchedules).toHaveLength(2);
+    const replaced = importCoworkerRoster(two.household, {
+      ownerMemberId: "MEM-002", jobId: job.id, locationName: job.locationName, rows: [keptRow],
+      replaceScheduleRange: { fromDate: "2026-08-28", toDate: "2026-08-28" },
+    });
+    expect(replaced.household.coworkerSchedules).toMatchObject([{ sourceScheduleKey: "s7shift_aaaaaaaaaaaaaaaaaaaa", scheduledEnd: "2026-08-29T03:00:00.000Z" }]);
+    expect(replaced.household.tombstones).toEqual(expect.arrayContaining([expect.objectContaining({ id: cancelledId })]));
+    const merged = mergePersonal(stale, splitForSync(replaced.household, "MEM-002").personal);
+    expect(merged.coworkerSchedules).toHaveLength(1);
+    expect(merged.coworkerSchedules?.some((row) => row.id === cancelledId)).toBe(false);
+    expect(() => importCoworkerRoster(two.household, {
+      ownerMemberId: "MEM-002", jobId: job.id, locationName: job.locationName, rows: [keptRow],
+      replaceScheduleRange: { fromDate: "2026-08-29", toDate: "2026-08-29" },
+    })).toThrow(/does not cover every imported shift/i);
+    expect(() => importCoworkerRoster(two.household, {
+      ownerMemberId: "MEM-002", jobId: job.id, locationName: job.locationName, rows: [keptRow, keptRow],
+    })).toThrow(/duplicate protected source identity/i);
+    expect(() => importCoworkerRoster(two.household, {
+      ownerMemberId: "MEM-002", jobId: job.id, locationName: job.locationName,
+      rows: [{ displayName: "Roster only", roleLabel: "Server", sourceIdentityKey: "s7subject_cccccccccccccccccccc", source: "seven-shifts-roster" }],
+      replaceScheduleRange: { fromDate: "2026-08-28", toDate: "2026-08-28" },
+    })).toThrow(/needs at least one published shift/i);
+  });
+
   it("saves reviewed attendance and a surprise helper through the same visible Shift Confirm result", () => {
     const household = seedDemoHousehold({ today: "2026-08-27", environment: "development" });
     const job = household.workJobs.find((row) => row.memberId === "MEM-001" && row.active)!;
@@ -265,6 +315,12 @@ describe("D-166 private coworker roster", () => {
     expect(trialBalance(compileHousehold(result.household)).inBalance).toBe(true);
     expect(JSON.stringify(booksIntegrityFacts(result.household))).not.toContain("Surprise Helper");
     expect(JSON.stringify(booksIntegrityFacts(result.household))).not.toContain("s7shift_");
+    const undone = undoLedgerConfirm(result.household, result.undo);
+    expect(undone.household.shifts.some((row) => row.id === shift.id)).toBe(false);
+    expect(undone.household.coworkerAttendance?.some((row) => row.shiftId === shift.id)).toBe(false);
+    expect(undone.household.coworkers?.some((row) => row.displayName === "Surprise Helper")).toBe(false);
+    expect(undone.household.coworkers?.some((row) => row.id === coworker.id)).toBe(true);
+    expect(trialBalance(compileHousehold(undone.household)).inBalance).toBe(true);
   });
 
   it("reuses an exact surprise-helper identity and stops an ambiguous match atomically", () => {

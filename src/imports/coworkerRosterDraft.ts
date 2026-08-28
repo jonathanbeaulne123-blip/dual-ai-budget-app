@@ -15,6 +15,14 @@ export type CoworkerRosterDraftRow = {
   }>;
 };
 
+export type CoworkerRosterImportDraft = {
+  jobId: string;
+  locationName: string;
+  rows: CoworkerRosterDraftRow[];
+  /** Present only after the member says this capture is complete for the range. */
+  replaceScheduleRange?: { fromDate: string; toDate: string };
+};
+
 /** Reduces owner-read Evidence observations to a bounded roster review draft. */
 export function coworkerRosterDraft(detail: EvidenceDerivedDetail | null | undefined): CoworkerRosterDraftRow[] {
   if (!detail) return [];

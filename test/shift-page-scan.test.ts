@@ -211,12 +211,13 @@ describe("Shift Today camera draft", () => {
       }],
     }).household;
     let review: ShiftAttendanceReviewDraft | null | undefined;
+    const renderFlow = (nextHousehold = household) => createElement(WorkShiftFlow, {
+      household: nextHousehold, memberId: "MEM-001", today, punch: null, busy: false,
+      initialDraft: { workedHours: 6.25, sales: 250, cashTips: 40, cardTips: 55, customersServed: 28, staffingCount: 4 },
+      onConfirm: (_input, nextReview) => { review = nextReview; },
+    });
     act(() => {
-      root.render(createElement(WorkShiftFlow, {
-        household, memberId: "MEM-001", today, punch: null, busy: false,
-        initialDraft: { workedHours: 6.25, sales: 250, cashTips: 40, cardTips: 55, customersServed: 28, staffingCount: 4 },
-        onConfirm: (_input, nextReview) => { review = nextReview; },
-      }));
+      root.render(renderFlow());
     });
     const next = () => Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "Next");
     act(() => { next()!.click(); });
@@ -225,9 +226,24 @@ describe("Shift Today camera draft", () => {
     const attendance = container.querySelector('section[aria-label="Coworker attendance review"] input[type="checkbox"]') as HTMLInputElement;
     expect(attendance.checked).toBe(true);
     act(() => { attendance.click(); });
+    expect(attendance.checked).toBe(false);
+    const refreshed = {
+      ...household,
+      coworkerSchedules: household.coworkerSchedules?.map((row) => ({
+        ...row,
+        roleLabel: "Closer",
+        scheduledEnd: "2026-08-28T03:00:00.000Z",
+        updatedAt: "2026-08-27T13:00:00.000Z",
+      })),
+    };
+    act(() => { root.render(renderFlow(refreshed)); });
+    const refreshedAttendance = container.querySelector('section[aria-label="Coworker attendance review"] input[type="checkbox"]') as HTMLInputElement;
+    expect(refreshedAttendance.checked).toBe(true);
+    expect(container.textContent).toContain("Scheduled Coworker · Closer");
+    act(() => { refreshedAttendance.click(); });
     const confirm = Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "Confirm shift");
     act(() => { confirm!.click(); });
-    expect(review?.rows).toMatchObject([{ status: "user-confirmed-absent", roleLabel: "Support" }]);
+    expect(review?.rows).toMatchObject([{ status: "user-confirmed-absent", roleLabel: "Closer" }]);
   });
 
   it("adds and removes a surprise helper before the visible Confirm", () => {

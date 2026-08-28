@@ -2825,6 +2825,7 @@ export function importCoworkerRoster(household: Household, input: {
     source: "seven-shifts-roster" | "seven-shifts-schedule";
     scheduledWindows?: Array<{ sourceScheduleKey: string; date: string; scheduledStart: string | null; scheduledEnd: string | null; observedAt: string }>;
   }>;
+  replaceScheduleRange?: { fromDate: string; toDate: string };
 }): CommitResult {
   const member = requireMember(household, input.ownerMemberId);
   const job = (household.workJobs ?? []).find((row) => row.id === input.jobId && row.active);
@@ -2837,6 +2838,14 @@ export function importCoworkerRoster(household: Household, input: {
   const at = nowIso();
   const postedIds: string[] = [];
   let identityCount = 0;
+  const replacement = input.replaceScheduleRange;
+  if (replacement) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(replacement.fromDate) || !/^\d{4}-\d{2}-\d{2}$/.test(replacement.toDate)
+      || replacement.toDate < replacement.fromDate) throw new ValidationError("Complete schedule range is invalid.");
+    const rangeDays = (Date.parse(`${replacement.toDate}T00:00:00Z`) - Date.parse(`${replacement.fromDate}T00:00:00Z`)) / 86_400_000;
+    if (!Number.isInteger(rangeDays) || rangeDays > 366) throw new ValidationError("Complete schedule range is too large.");
+  }
+  const capturedScheduleKeys = new Set<string>();
   const seen = new Set<string>();
   for (const row of input.rows) {
     const displayName = String(row.displayName || "").replace(/\s+/g, " ").trim();
@@ -2850,7 +2859,7 @@ export function importCoworkerRoster(household: Household, input: {
       throw new ValidationError("Roster contains an invalid source kind.");
     }
     const sourceKey = sourceIdentityKey ? `${row.source}:${sourceIdentityKey}` : `${row.source}:unbound:${normalizedName}`;
-    if (seen.has(sourceKey)) continue;
+    if (seen.has(sourceKey)) throw new ValidationError("Roster contains a duplicate protected source identity.");
     seen.add(sourceKey);
     const scoped = (next.coworkers ?? []).filter((item) => item.ownerMemberId === member.id
       && item.jobId === job.id
@@ -2894,6 +2903,10 @@ export function importCoworkerRoster(household: Household, input: {
       if (!/^s7shift_[A-Za-z0-9_-]{20,112}$/.test(sourceScheduleKey) || !/^\d{4}-\d{2}-\d{2}$/.test(window.date)) {
         throw new ValidationError("Coworker schedule contains an invalid protected shift key or date.");
       }
+      if (replacement && (window.date < replacement.fromDate || window.date > replacement.toDate)) {
+        throw new ValidationError("Complete schedule range does not cover every imported shift.");
+      }
+      capturedScheduleKeys.add(sourceScheduleKey);
       const start = window.scheduledStart ? new Date(window.scheduledStart) : null;
       const end = window.scheduledEnd ? new Date(window.scheduledEnd) : null;
       if (Boolean(start) !== Boolean(end) || (start && end && (!Number.isFinite(start.valueOf()) || !Number.isFinite(end.valueOf()) || end <= start))) {
@@ -2923,6 +2936,20 @@ export function importCoworkerRoster(household: Household, input: {
       if (!schedule) throw new ValidationError("Coworker schedule contains invalid details.");
       next.coworkerSchedules = [...(next.coworkerSchedules ?? []).filter((item) => item.id !== scheduleId), schedule];
       postedIds.push(scheduleId);
+    }
+  }
+  if (replacement) {
+    if (capturedScheduleKeys.size === 0) {
+      throw new ValidationError("Complete schedule replacement needs at least one published shift.");
+    }
+    const omittedScheduleIds = (next.coworkerSchedules ?? []).filter((row) => row.ownerMemberId === member.id
+      && row.jobId === job.id && row.date >= replacement.fromDate && row.date <= replacement.toDate
+      && !capturedScheduleKeys.has(row.sourceScheduleKey)).map((row) => row.id);
+    if (omittedScheduleIds.length) {
+      const omitted = new Set(omittedScheduleIds);
+      next.coworkerSchedules = (next.coworkerSchedules ?? []).filter((row) => !omitted.has(row.id));
+      next.tombstones = mergeTombstones(next.tombstones, omittedScheduleIds.map((id) => ({ id, deletedAt: at })));
+      postedIds.push(...omittedScheduleIds);
     }
   }
   if (!postedIds.length) throw new ValidationError("Roster did not contain a new or updated coworker.");

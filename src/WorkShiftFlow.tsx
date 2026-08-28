@@ -200,7 +200,14 @@ export function WorkShiftFlow({
     }
     return [...byCoworker.values()].sort((left, right) => left.coworker.displayName.localeCompare(right.coworker.displayName));
   }, [household.coworkers, scheduledRows]);
-  const scheduledPeopleKey = scheduledPeople.map((row) => `${row.coworker.id}:${row.schedule.id}`).join("|");
+  const scheduledPeopleKey = scheduledPeople.map((row) => [
+    row.coworker.id,
+    row.schedule.id,
+    row.schedule.updatedAt,
+    row.schedule.roleLabel,
+    row.schedule.scheduledStart ?? "",
+    row.schedule.scheduledEnd ?? "",
+  ].join(":")).join("|");
   const [attendance, setAttendance] = useState<Record<string, "scheduled-assumed" | "user-confirmed-present" | "user-confirmed-absent">>({});
   const [surpriseName, setSurpriseName] = useState("");
   const [surpriseHelpers, setSurpriseHelpers] = useState<string[]>([]);

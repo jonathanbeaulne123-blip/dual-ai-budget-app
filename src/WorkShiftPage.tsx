@@ -105,7 +105,7 @@ export function WorkShiftPage({
   onArchiveJob: (jobId: string) => void;
   onOpenCalendar: () => void;
   onSaveSevenShiftsSchedule?: (rows: import("./core/index.ts").SevenShiftsScheduledShift[], confirmedPersonalFeed?: boolean) => void;
-  onImportCoworkers?: (input: { jobId: string; locationName: string; rows: import("./imports/coworkerRosterDraft.ts").CoworkerRosterDraftRow[] }) => void;
+  onImportCoworkers?: (input: import("./imports/coworkerRosterDraft.ts").CoworkerRosterImportDraft) => void;
 }) {
   const [pane, setPane] = useState<ShiftPane>("today");
   const [sealCaption, setSealCaption] = useState<string | null>(null);
