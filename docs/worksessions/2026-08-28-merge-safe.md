@@ -1,13 +1,13 @@
 # Hearth worksession — Merge and deploy what is safe
 
-- **Status:** OPEN
+- **Status:** CLOSED; merged #229; kitchen live `58b8bcd`
 - **Opened:** 2026-08-28 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor (Grok)
 - **Repository:** jonathanbeaulne123-blip/dual-ai-budget-app
 - **Branch:** `cursor/merge-safe-kitchen-4cf6`
 - **Baseline SHA:** `158e2b9e0589f552550cc453e4b9bf2f6545b7be` (`origin/main`)
-- **Head SHA:** `cb699f08e7056b01dd19dde0552e1350d208708c` (before this docs commit)
+- **Head SHA:** `58b8bcd9466be2159fb10774a9c19b03e604dd39` (`main`)
 - **PR or issue:** this branch; source [#228](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/228)
 - **Risk:** Medium (UI merge + kitchen deploy); Release items held
 - **Decision owner:** Jonathan (explicit: merge and deploy all that is safe)
@@ -60,8 +60,8 @@ Ship only kitchen-safe work that is already on current `main` or a clean, rebase
 
 - [x] `pnpm check` green on this branch (`967 passed / 2 skipped`)
 - [x] Visual 320/390/720/~1100: phone Draft C unchanged; wide paper office; Add/Confirm uncovered
-- [ ] Kitchen deploy of the merged SHA
-- [ ] 7shifts remains inert on the live Worker
+- [x] Kitchen deploy of the merged SHA (`33146400613` green; live bundle `index-Bi_R2L6I.js`)
+- [x] 7shifts remains inert on the live Worker
 
 ## Plan
 

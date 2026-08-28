@@ -64,8 +64,8 @@ Only the currently open or just-closed worksession belongs here. Durable history
 
 | Worksession | State | Scope | Output |
 |---|---|---|---|
-| [2026-08-28 Merge and deploy what is safe](worksessions/2026-08-28-merge-safe.md) | **CLOSING; D-156 merge** | Merge only kitchen-safe work; hold 7shifts enablement and conflicting High drafts | Visual 1100/720/390/320 pass; D-155 stays inert (`7403` D1 token) |
-| [2026-08-28 Wide paper office](worksessions/2026-08-28-wide-paper-office.md) | **PROOF; merge via safe kitchen branch** | Default wide Home is composed paper office (D-156); Classic desk opt-in | Source [#228](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/228); integration `cursor/merge-safe-kitchen-4cf6` |
+| [2026-08-28 Merge and deploy what is safe](worksessions/2026-08-28-merge-safe.md) | **CLOSED; merged #229; kitchen live** | Merge only kitchen-safe work; hold 7shifts enablement and conflicting High drafts | Worker run `33146400613`; D-155 stays inert (`7403` D1 token) |
+| [2026-08-28 Wide paper office](worksessions/2026-08-28-wide-paper-office.md) | **CLOSED; merged #229** | Default wide Home is composed paper office (D-156); Classic desk opt-in | Live kitchen `58b8bcd`; source also [#228](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/228) |
 | [2026-08-27 Native 7shifts Timesheet inbox](worksessions/2026-08-27-seven-shifts-inbox.md) | **RELEASE BLOCKED on D1 token** | Development-only provider inbox integrated with Shift → Jobs and Timesheet review | Inert on kitchen; setup run failed Cloudflare `7403`; Production refused |
 | [2026-08-27 Shift tab camera](worksessions/2026-08-27-shift-tab-camera.md) | **CLOSED; merged #217** | Tip-sheet camera on Shift Today | D-152 OCR on D-153 tab; live Worker `c942e55b`; Confirm still posts |
 | [2026-08-27 Durable roadmap site](worksessions/2026-08-27-roadmap-site.md) | **LOCAL; PUBLIC/NO-GUARD SELECTED; RELEASE PENDING** | Public read-only `/roadmap/`, additive evidence data, responsive and keyboard proof | D-154; [`ROADMAP_SITE.md`](ROADMAP_SITE.md); no push or deploy |
