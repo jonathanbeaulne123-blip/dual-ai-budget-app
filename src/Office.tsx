@@ -39,10 +39,12 @@ import {
   applyPersonality,
   buildDeskSyncPayload,
   cycleInstrumentSize,
+  deskFaceOf,
   instrumentIsOpen,
   toggleInstrumentPin,
   MAX_USER_PINS,
   packWide,
+  setDeskFace,
   sizeOf,
   bumpLayoutForExpand,
   collapseExpandedLayout,
@@ -71,6 +73,7 @@ import type { Dashboard } from "./core/insights.ts";
 import type { HearthTab } from "./core/hercules.ts";
 import type { Account, Category, CommitResult, UndoToken } from "./core/index.ts";
 import { OfficePhone } from "./OfficePhone.tsx";
+import { OfficeWide } from "./OfficeWide.tsx";
 import { OfficeWindow } from "./widgets/OfficeWindow.tsx";
 import { DeskItem } from "./widgets/DeskItem.tsx";
 import { BlotterBody, BlotterGlance } from "./widgets/Blotter.tsx";
@@ -828,8 +831,7 @@ export function Office({
     ),
   };
 
-  /* Mobile shell (< 720px). Wide falls through to the desk canvas below,
-     unchanged — see docs/CLAUDE_MOBILE_SHELL.md §1. */
+  /* Mobile shell (< 720px). Wide paper office is default; Classic desk is opt-in. */
   if (breakpoint === "phone") {
     return (
       <OfficePhone
@@ -848,12 +850,14 @@ export function Office({
     );
   }
 
+  const face = deskFaceOf(layout);
 
   return (
     <div
-      className={`office is-wide-room glass-${reading.glass} ${adding ? "is-adding" : ""} ${editing ? "is-editing" : ""} ${layout.expanded && layout.expanded !== "window" ? "is-wide-dim" : ""}`}
+      className={`office is-wide-room glass-${reading.glass} ${adding ? "is-adding" : ""} ${editing ? "is-editing" : ""} ${face === "classic" && layout.expanded && layout.expanded !== "window" ? "is-wide-dim" : ""}`}
       data-stock={look.stock}
       data-density={look.density}
+      data-face={face}
       style={{ ["--room-dim" as string]: String(room.roomDim), ["--room-cool" as string]: String(room.roomCool) }}
     >
       <OfficeWindow
@@ -863,21 +867,48 @@ export function Office({
         onToggle={cycleWindow}
       />
       <SillOverviewPlate overview={sill} compact={layout.windowMinimized} />
-      <div
-        ref={canvasRef}
-        className={`desk-canvas desk-wide ${dragging ? "is-grid" : ""}`}
-        style={{ minHeight: `${canvasHeight}px` }}
-      >
-        {rings.map((ring) => (
-          <div key={`${ring.id}-${ring.at}`} className="desk-ring" style={{ left: ring.x, top: ring.y }} />
-        ))}
-        {order.map((id, index) => renderers[id](index))}
-      </div>
+      {face === "paper" ? (
+        <OfficeWide
+          household={household} dashboard={dashboard}
+          layout={layout} onLayout={setLayout}
+          today={today} memberId={memberId} view={view} busy={busy} adding={adding}
+          form={form} mode={mode} error={error} categories={categories} postLabel={postLabel}
+          onForm={onForm} onPost={onPost} onMore={onMore} onMilk={onMilk} onCoffee={onCoffee}
+          onClockIn={onClockIn} onAbandonShift={onAbandonShift} onSignOut={onSignOut}
+          onStartBreak={onStartBreak} onEndBreak={onEndBreak}
+          onChooseShiftTimeline={onChooseShiftTimeline}
+          onFinishedShift={onFinishedShift} onPayCard={onPayCard} onOpenAccount={onOpenAccount}
+          onKitchen={onKitchen} onMarkPaid={onMarkPaid}
+          onAskSettle={onAskSettle} onAskStartJar={onAskStartJar} onSitDown={onSitDown}
+          onGo={onGo}
+        />
+      ) : (
+        <div
+          ref={canvasRef}
+          className={`desk-canvas desk-wide ${dragging ? "is-grid" : ""}`}
+          style={{ minHeight: `${canvasHeight}px` }}
+        >
+          {rings.map((ring) => (
+            <div key={`${ring.id}-${ring.at}`} className="desk-ring" style={{ left: ring.x, top: ring.y }} />
+          ))}
+          {order.map((id, index) => renderers[id](index))}
+        </div>
+      )}
       <Cabinets
         editing={editing}
         sheet={sheet}
         parkedCount={parked.length}
-        onToggleEdit={() => { setEditing((on) => !on); setSheet(null); }}
+        face={face}
+        onFace={(next) => {
+          setLayout((current) => setDeskFace(current, next));
+          if (next === "paper") setEditing(false);
+          setSheet(null);
+        }}
+        onToggleEdit={() => {
+          setLayout((current) => deskFaceOf(current) === "paper" ? setDeskFace(current, "classic") : current);
+          setEditing((on) => !on);
+          setSheet(null);
+        }}
         onSheet={setSheet}
       />
       {sheet === "desks" && (

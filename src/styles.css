@@ -211,8 +211,8 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
 }
 
 @media (min-width: 720px) {
-  /* Desk, not a hotel lobby. 900px fits L+M without the 1280 empty-wall look. */
-  .app { max-width: min(900px, 100%); }
+  /* Paper office, not a hotel lobby. 1120 fits two columns; 1280 empty-wall still refused. */
+  .app { max-width: min(1120px, 100%); }
 }
 
 .topbar {
@@ -2254,4 +2254,33 @@ input, select, textarea {
 }
 @media (prefers-reduced-motion: reduce) {
   .shift-climate-seal, .shift-saucer { transition: none; }
+}
+
+@media (min-width: 720px) {
+  .calendar-wide-board {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+    margin-bottom: 14px;
+  }
+  .plan-wide {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.85fr) minmax(0, 1.15fr);
+    gap: 14px;
+    align-items: start;
+    margin-bottom: 14px;
+  }
+  .wallet-tiles {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+  .shift-today-wide {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+  }
+  .shift-today-wide > :nth-child(3) {
+    grid-column: 1 / -1;
+  }
 }
