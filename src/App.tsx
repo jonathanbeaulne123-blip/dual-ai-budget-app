@@ -47,6 +47,7 @@ import {
   updateRecurrence,
   postShift,
   postWorkShift,
+  postWorkShiftWithAttendanceReview,
   refreshSevenShiftsSchedule,
   importCoworkerRoster,
   buildAutomatedWorkShiftInput,
@@ -329,7 +330,7 @@ import {
   loadGoogleSession,
 } from "./google/index.ts";
 import type { DiscoveredHousehold } from "./ledger/supabase.ts";
-import type { PostWorkShiftInput } from "./core/index.ts";
+import type { PostWorkShiftInput, ShiftAttendanceReviewDraft } from "./core/index.ts";
 
 type Tab = "home" | "plan" | "calendar" | "shift" | "ledger" | "more";
 type AddMode = "expense" | "income" | "shift" | "transfer";
@@ -3062,7 +3063,7 @@ export function App() {
     });
   }
 
-  function submitWorkShift(input: PostWorkShiftInput, confirmDuplicate = false) {
+  function submitWorkShift(input: PostWorkShiftInput, confirmDuplicate = false, attendanceReview?: ShiftAttendanceReviewDraft | null) {
     const current = householdRef.current;
     const currentMemberId = sessionRef.current?.memberId;
     const pending = confirmDuplicate
@@ -3073,6 +3074,7 @@ export function App() {
             environment: current.environment,
             householdId: current.householdId,
             memberId: currentMemberId,
+            attendanceReview,
           }
         : null;
     if (!workShiftScopeMatches(current, currentMemberId, pending)) {
@@ -3089,7 +3091,7 @@ export function App() {
           sessionRef.current?.memberId,
           pending,
           confirmDuplicate,
-          (safeInput) => postWorkShift(live, safeInput),
+          (safeInput, safeAttendanceReview) => postWorkShiftWithAttendanceReview(live, safeInput, safeAttendanceReview),
         );
       } catch (caught) {
         workShiftInputRef.current = null;
@@ -3495,7 +3497,7 @@ export function App() {
           onEndBreak={() => { void runKitchen((current) => endShiftBreak(current, { memberId: actorId })); }}
           onChooseTimeline={(keepId) => { void runKitchen((current) => chooseOpenShiftTimeline(current, { memberId: actorId, keepId })); }}
           onClockOut={clockOutStayOnShiftPage}
-          onConfirmShift={(input) => submitWorkShift(input)}
+          onConfirmShift={(input, attendanceReview) => submitWorkShift(input, false, attendanceReview)}
           duplicateConfirm={
             confirm
             && workShiftInputRef.current

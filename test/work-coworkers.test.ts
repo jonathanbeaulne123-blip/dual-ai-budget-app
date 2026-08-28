@@ -1,20 +1,26 @@
 import { describe, expect, it } from "vitest";
 import {
   commandIdentityFacts,
+  compileHousehold,
   financialAuditFacts,
   householdForAiDisclosure,
   importCoworkerRoster,
   matchCoworkerName,
   mergePersonal,
   normalizeCoworkerName,
+  postWorkShiftWithAttendanceReview,
   recordCoworkerAttendance,
+  scheduledCoworkersForReview,
   seedDemoHousehold,
   splitForSync,
+  trialBalance,
   upsertCoworker,
   type Coworker,
   type Shift,
+  type PostWorkShiftInput,
 } from "../src/core/index.ts";
 import { coworkerRosterDraft } from "../src/imports/coworkerRosterDraft.ts";
+import { booksIntegrityFacts } from "../src/ledger/engine.ts";
 
 function roster(): Coworker[] {
   const at = "2026-08-28T12:00:00.000Z";
@@ -182,5 +188,118 @@ describe("D-166 private coworker roster", () => {
       ownerMemberId: "MEM-002", jobId: job.id, locationName: job.locationName,
       rows: [{ displayName: "Direct Shift Key", source: "seven-shifts-schedule", sourceIdentityKey: "s7shift_cccccccccccccccccccc" }],
     })).toThrow(/invalid protected source identity/i);
+  });
+
+  it("stores published schedule windows only in Personal and preloads the overlapping coworker", () => {
+    const household = seedDemoHousehold({ today: "2026-08-28", environment: "development" });
+    const job = household.workJobs.find((row) => row.memberId === "MEM-002")!;
+    const imported = importCoworkerRoster(household, {
+      ownerMemberId: "MEM-002", jobId: job.id, locationName: job.locationName,
+      rows: [{
+        displayName: "Alex Schedule", roleLabel: "Support", source: "seven-shifts-schedule",
+        sourceIdentityKey: "s7subject_aaaaaaaaaaaaaaaaaaaa",
+        scheduledWindows: [{
+          sourceScheduleKey: "s7shift_aaaaaaaaaaaaaaaaaaaa", date: "2026-08-28",
+          scheduledStart: "2026-08-28T18:00:00.000Z", scheduledEnd: "2026-08-29T02:00:00.000Z",
+          observedAt: "2026-08-27T12:00:00.000Z",
+        }],
+      }],
+    });
+    expect(imported.household.coworkerSchedules).toMatchObject([{ date: "2026-08-28", roleLabel: "Support" }]);
+    expect(scheduledCoworkersForReview(imported.household.coworkerSchedules!, {
+      ownerMemberId: "MEM-002", jobId: job.id, date: "2026-08-28",
+      startedAt: "2026-08-28T20:00:00.000Z", endedAt: "2026-08-29T01:00:00.000Z",
+    })).toHaveLength(1);
+    const split = splitForSync(imported.household, "MEM-002");
+    expect("coworkerSchedules" in split.shared).toBe(false);
+    expect(split.personal.coworkerSchedules).toHaveLength(1);
+    expect(householdForAiDisclosure(imported.household, "MEM-002").coworkerSchedules).toEqual([]);
+    expect(JSON.stringify(commandIdentityFacts(household, imported.household, imported.postedIds))).not.toContain("s7shift_");
+    const changed = importCoworkerRoster(household, {
+      ownerMemberId: "MEM-002", jobId: job.id, locationName: job.locationName,
+      rows: [{
+        displayName: "Alex Schedule", roleLabel: "Support", source: "seven-shifts-schedule",
+        sourceIdentityKey: "s7subject_aaaaaaaaaaaaaaaaaaaa",
+        scheduledWindows: [{
+          sourceScheduleKey: "s7shift_aaaaaaaaaaaaaaaaaaaa", date: "2026-08-28",
+          scheduledStart: "2026-08-28T18:00:00.000Z", scheduledEnd: "2026-08-29T03:00:00.000Z",
+          observedAt: "2026-08-27T12:00:00.000Z",
+        }],
+      }],
+    });
+    expect(commandIdentityFacts(household, changed.household, changed.postedIds))
+      .not.toEqual(commandIdentityFacts(household, imported.household, imported.postedIds));
+    expect(JSON.stringify(commandIdentityFacts(household, changed.household, changed.postedIds))).not.toContain("s7shift_");
+  });
+
+  it("saves reviewed attendance and a surprise helper through the same visible Shift Confirm result", () => {
+    const household = seedDemoHousehold({ today: "2026-08-27", environment: "development" });
+    const job = household.workJobs.find((row) => row.memberId === "MEM-001" && row.active)!;
+    const role = job.roles.find((row) => row.active)!;
+    const added = upsertCoworker(household, {
+      ownerMemberId: "MEM-001", jobId: job.id, locationName: job.locationName, displayName: "Scheduled Person",
+    });
+    const coworker = added.household.coworkers![0]!;
+    const input: PostWorkShiftInput = {
+      date: "2026-08-27", memberId: "MEM-001", jobId: job.id, roleId: role.id,
+      workedHours: "6.25", paidBreakHours: "0", sales: "250",
+      salesByField: { [job.salesFields[0]!.id]: "250" }, cashTips: "40", cardTips: "55",
+      customersServed: 28, staffingCount: 4, eventTag: "regular",
+      cashTipsAccountId: job.defaults.cashTipsAccountId, wagesDepositAccountId: job.defaults.wagesDepositAccountId,
+      cardTipsDepositAccountId: job.defaults.cardTipsDepositAccountId, createdBy: "MEM-001",
+    };
+    const result = postWorkShiftWithAttendanceReview(added.household, input, {
+      locationName: job.locationName,
+      rows: [{ coworkerId: coworker.id, roleLabel: "Support", status: "user-confirmed-absent" }],
+      surpriseHelpers: ["Surprise Helper"],
+    });
+    const shift = result.household.shifts.find((row) => result.postedIds.includes(row.id))!;
+    expect(result.household.coworkerAttendance?.filter((row) => row.shiftId === shift.id)).toMatchObject([
+      { coworkerId: coworker.id, status: "user-confirmed-absent" },
+      { status: "surprise-helper" },
+    ]);
+    expect(result.household.coworkers?.find((row) => row.displayName === "Surprise Helper")).toMatchObject({ source: "surprise-helper" });
+    expect(result.undo.snapshot).toEqual(added.household);
+    expect(shift.staffingCount).toBe(4);
+    expect(result.household.transactions.every((row) => !String(row.sourceId ?? "").startsWith("COW"))).toBe(true);
+    expect(trialBalance(compileHousehold(result.household)).inBalance).toBe(true);
+    expect(JSON.stringify(booksIntegrityFacts(result.household))).not.toContain("Surprise Helper");
+    expect(JSON.stringify(booksIntegrityFacts(result.household))).not.toContain("s7shift_");
+  });
+
+  it("reuses an exact surprise-helper identity and stops an ambiguous match atomically", () => {
+    const household = seedDemoHousehold({ today: "2026-08-27", environment: "development" });
+    const job = household.workJobs.find((row) => row.memberId === "MEM-001" && row.active)!;
+    const role = job.roles.find((row) => row.active)!;
+    const input: PostWorkShiftInput = {
+      date: "2026-08-27", memberId: "MEM-001", jobId: job.id, roleId: role.id,
+      workedHours: "6.25", paidBreakHours: "0", sales: "250",
+      salesByField: { [job.salesFields[0]!.id]: "250" }, cashTips: "40", cardTips: "55",
+      customersServed: 28, staffingCount: 4, eventTag: "regular",
+      cashTipsAccountId: job.defaults.cashTipsAccountId, wagesDepositAccountId: job.defaults.wagesDepositAccountId,
+      cardTipsDepositAccountId: job.defaults.cardTipsDepositAccountId, createdBy: "MEM-001",
+    };
+    const first = upsertCoworker(household, {
+      ownerMemberId: "MEM-001", jobId: job.id, locationName: job.locationName, displayName: "Known Helper",
+    });
+    const knownId = first.household.coworkers![0]!.id;
+    const reused = postWorkShiftWithAttendanceReview(first.household, input, {
+      locationName: job.locationName, rows: [], surpriseHelpers: ["Known Helper"],
+    });
+    expect(reused.household.coworkers).toHaveLength(1);
+    expect(reused.household.coworkerAttendance).toMatchObject([{ coworkerId: knownId, status: "surprise-helper" }]);
+
+    const second = upsertCoworker(first.household, {
+      ownerMemberId: "MEM-001", jobId: job.id, locationName: job.locationName, displayName: "Known Helper",
+    });
+    const before = structuredClone(second.household);
+    expect(() => postWorkShiftWithAttendanceReview(second.household, input, {
+      locationName: job.locationName, rows: [], surpriseHelpers: ["Known Helper"],
+    })).toThrow(/multiple coworkers and needs review/i);
+    expect(second.household).toEqual(before);
+    expect(() => postWorkShiftWithAttendanceReview(first.household, input, {
+      locationName: "Another restaurant", rows: [], surpriseHelpers: ["Wrong Place"],
+    })).toThrow(/another job location/i);
+    expect(first.household.coworkers?.some((row) => row.displayName === "Wrong Place")).toBe(false);
   });
 });

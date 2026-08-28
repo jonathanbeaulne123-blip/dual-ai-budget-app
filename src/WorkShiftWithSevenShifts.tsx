@@ -5,6 +5,7 @@ import {
   type Household,
   type ParsedSevenShiftsBatch,
   type PostWorkShiftInput,
+  type ShiftAttendanceReviewDraft,
   type SevenShiftsTimesheetDraft,
 } from "./core/index.ts";
 import { listSevenShiftsConnections, pullSevenShiftsPunches, type SevenShiftsScope } from "./imports/sevenShiftsClient.ts";
@@ -16,7 +17,7 @@ type WorkShiftWithSevenShiftsProps = {
   today: string;
   punch: Parameters<typeof WorkShiftFlow>[0]["punch"];
   busy: boolean;
-  onConfirm: (input: PostWorkShiftInput) => void;
+  onConfirm: (input: PostWorkShiftInput, attendanceReview?: ShiftAttendanceReviewDraft | null) => void;
   initialDraft?: Parameters<typeof WorkShiftFlow>[0]["initialDraft"];
   weatherGlassPrefill?: Parameters<typeof WorkShiftFlow>[0]["weatherGlassPrefill"];
   scanWarnings?: string[];

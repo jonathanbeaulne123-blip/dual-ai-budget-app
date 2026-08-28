@@ -18,8 +18,13 @@ function pending(): ScopedWorkShiftInput {
 
 describe("Timesheet command scope", () => {
   it("invokes the posting command only while environment, household, and member still match", () => {
-    const post = vi.fn((input: PostWorkShiftInput) => input);
+    const post = vi.fn((input: PostWorkShiftInput, review = null) => ({ input, review }));
     const scoped = pending();
+    scoped.attendanceReview = {
+      locationName: "Capra's Kitchen",
+      rows: [{ coworkerId: "COW-001", status: "user-confirmed-absent" }],
+      surpriseHelpers: ["Surprise Helper"],
+    };
     expect(workShiftScopeMatches({ environment: "development", householdId: "HH-ONE" }, "MEM-001", scoped)).toBe(true);
     expect(runScopedWorkShift(
       { environment: "development", householdId: "HH-ONE" },
@@ -27,8 +32,12 @@ describe("Timesheet command scope", () => {
       scoped,
       true,
       post,
-    )).toEqual(expect.objectContaining({ memberId: "MEM-001", confirmDuplicate: true }));
+    )).toEqual({
+      input: expect.objectContaining({ memberId: "MEM-001", confirmDuplicate: true }),
+      review: scoped.attendanceReview,
+    });
     expect(post).toHaveBeenCalledTimes(1);
+    expect(post).toHaveBeenCalledWith(expect.objectContaining({ confirmDuplicate: true }), scoped.attendanceReview);
   });
 
   it("does not invoke posting after a ledger, member, or environment change", () => {

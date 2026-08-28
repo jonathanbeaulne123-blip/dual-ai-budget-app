@@ -66,6 +66,7 @@ Only the currently open or just-closed worksession belongs here. Durable history
 
 | Worksession | State | Scope | Output |
 |---|---|---|---|
+| [2026-08-28 Coworker attendance review](worksessions/2026-08-28-coworker-attendance-review.md) | **LOCAL PASS; SECOND REVIEW REQUIRED** | D-168 Personal schedule windows, OCR/shift attendance review, absence toggles, surprise helpers | 84 focused tests; full suite 1092 passed / 2 skipped / 1 unchanged Windows `bash` failure; builds and 320–1100px proof green; no push or deploy |
 | [2026-08-28 Shared Ledger story handoff](worksessions/2026-08-28-shared-ledger-story-handoff.md) | **CLOSED; CURSOR PACKET READY** | D-164 Shared-vs-Personal experience audit; desktop+iPad story system; iPhone fence | [`briefs/CURSOR_SHARED_LEDGER_STORY_HANDOFF_2026-08-28.md`](briefs/CURSOR_SHARED_LEDGER_STORY_HANDOFF_2026-08-28.md); no UI code, push, or deploy |
 | [2026-08-28 Household Fund](worksessions/2026-08-28-household-fund.md) | **PR #237; RELEASE APPROVED** | September zero-balance practice Fund plus disabled October read-only evidence boundary (D-161/D-162) | Reconciled onto current `main`; no hosted schema, provider connection, secret, remote migration, or bank action |
 | [2026-08-28 Wide paper office](worksessions/2026-08-28-wide-paper-office.md) | **MERGED #228; kitchen blocked 11001** | Live chalkboard + screenshot fat nav on composed paper office (D-156) | `main@d067e56`; deploy `33184620358` failed; queue-handler fix in flight |

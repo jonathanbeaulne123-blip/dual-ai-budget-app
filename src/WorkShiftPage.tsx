@@ -96,7 +96,7 @@ export function WorkShiftPage({
   onEndBreak: () => void;
   onChooseTimeline: (openShiftId: string) => void;
   onClockOut: () => void;
-  onConfirmShift: (input: PostWorkShiftInput) => void;
+  onConfirmShift: (input: PostWorkShiftInput, attendanceReview?: import("./core/index.ts").ShiftAttendanceReviewDraft | null) => void;
   duplicateConfirm?: { message: string } | null;
   onConfirmAnyway?: () => void;
   onDismissDuplicate?: () => void;
@@ -289,9 +289,9 @@ export function WorkShiftPage({
                   weatherGlassPrefill={weatherGlass}
                   scanWarnings={shiftScanWarnings}
                   onClearDraft={clearScanDraft}
-                  onConfirm={(input) => {
+                  onConfirm={(input, attendanceReview) => {
                     clearScanDraft();
-                    onConfirmShift(input);
+                    onConfirmShift(input, attendanceReview);
                   }}
                 />
               </>
