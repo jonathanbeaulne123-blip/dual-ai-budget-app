@@ -59,7 +59,7 @@ Ship only kitchen-safe work that is already on current `main` or a clean, rebase
 ## Acceptance evidence
 
 - [x] `pnpm check` green on this branch (`967 passed / 2 skipped`)
-- [ ] Visual 320/390/720/~1100: phone Draft C unchanged; wide paper office; Add/Confirm uncovered
+- [x] Visual 320/390/720/~1100: phone Draft C unchanged; wide paper office; Add/Confirm uncovered
 - [ ] Kitchen deploy of the merged SHA
 - [ ] 7shifts remains inert on the live Worker
 
@@ -74,7 +74,8 @@ Ship only kitchen-safe work that is already on current `main` or a clean, rebase
 
 - 2026-08-28: `origin/main@158e2b9` deploy success; `/roadmap/` 200; `/ocr/` 200; `/work/7shifts/status` inert.
 - 2026-08-28: local merge `cb699f0` = `158e2b9` + `cursor/wide-paper-office-560d`.
-- 2026-08-28: `pnpm check` → 967 passed / 2 skipped; production Vite + Hercules Pro UI build green.
+- 2026-08-28: Visual proof on `e95086c` preview: 1100 two-column paper office; 720 stacked paper; 390/320 OfficePhone; Add Post chrome unobstructed; Development label literal.
+- 2026-08-28: Rebased onto `origin/main@888c5cd` (Toast OCR embed/guide). Merge SHA follows.
 
 ## Decisions
 
