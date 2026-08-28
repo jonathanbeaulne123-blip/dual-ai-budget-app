@@ -400,12 +400,13 @@
     }
   }
 
-  async function prepare(file) {
+  async function prepare(file, opts) {
+    const forceExtract = !!(opts && opts.forceExtract);
     const canvas = await fileToCanvas(file, S.maxWidth);
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const quality = assess(imageData);
-    if (quality.state !== "OK") {
+    if (quality.state !== "OK" && !forceExtract) {
       return {
         state: quality.state,
         ok: false,
@@ -423,6 +424,8 @@
           slices: [],
           message: "Text extraction runs after a readable shot.",
         },
+        stitched: null,
+        formatted: null,
       };
     }
     const { gray, w, h } = toGray(imageData);
@@ -451,21 +454,34 @@
         processed_preview: jpegFromCanvas(enhanced.processed, 720, 0.78),
       };
     });
+    const ocr = await extractWithTesseract(slices);
+    const stitched =
+      window.ToastMerge && typeof window.ToastMerge.stitchSliceTexts === "function"
+        ? window.ToastMerge.stitchSliceTexts(ocr.slices || [], 0.2)
+        : null;
+    const blob = (stitched && stitched.text) || (ocr && ocr.text) || "";
+    const formatted =
+      window.ToastFormat && typeof window.ToastFormat.formatPlaintext === "function"
+        ? window.ToastFormat.formatPlaintext(blob, (ocr && ocr.engine) || "tesseract")
+        : null;
     return {
-      state: "OK",
-      ok: true,
+      state: quality.state === "OK" ? "OK" : quality.state,
+      ok: quality.state === "OK",
       quality,
       deskew_angle_deg: 0,
       source_shape: [h, w, 3],
-      guidance: null,
+      guidance: quality.state === "OK" ? null : guidance(quality.state),
       slices,
-      ocr: await extractWithTesseract(slices),
+      ocr,
+      stitched,
+      formatted,
     };
   }
 
   async function ingestMulti(files, overlapHint) {
     const items = [];
     const widths = [];
+    const texts = [];
     for (let i = 0; i < files.length; i += 1) {
       const canvas = await fileToCanvas(files[i], S.maxWidth);
       widths.push(canvas.width);
@@ -475,9 +491,17 @@
         height: canvas.height,
         preview: jpegFromCanvas(canvas, 720, 0.78),
       });
+      const prepared = await prepare(files[i], { forceExtract: true });
+      const text =
+        (prepared.stitched && prepared.stitched.text) ||
+        (prepared.ocr && prepared.ocr.text) ||
+        "";
+      texts.push(text);
     }
     const sorted = widths.slice().sort((a, b) => a - b);
     const median = sorted[Math.floor(sorted.length / 2)] || 1;
+    const merger = window.ToastMerge && window.ToastMerge.mergeOverlappingTexts;
+    const mergedText = merger ? merger(texts, overlapHint) : texts.filter(Boolean).join("\n");
     const warnings = [];
     items.forEach((item) => {
       const delta = Math.abs(item.width - median) / median;
@@ -487,16 +511,25 @@
         );
       }
     });
+    const hasText = !!String(mergedText || "").trim();
+    const formatted =
+      window.ToastFormat && typeof window.ToastFormat.formatPlaintext === "function"
+        ? window.ToastFormat.formatPlaintext(mergedText || "", "tesseract")
+        : null;
     return {
       count: items.length,
       overlap_hint: overlapHint,
       width_warnings: warnings,
       items,
       merge: {
-        status: "not_implemented",
+        status: hasText ? "ok" : "empty",
         phase: 4,
-        message: "Batch accepted. Merging overlapping shots into one document is Phase 4 and is not wired yet.",
+        text: mergedText || "",
+        message: hasText
+          ? `Merged ${items.length} overlapping shots into one document.`
+          : "No text found in these overlapping shots.",
       },
+      formatted,
     };
   }
 

@@ -67,7 +67,7 @@
       <p class="card-kicker">Ready to read</p>
       <h2>Slices look good</h2>
       <p id="successText"></p>
-      <p class="phase-note">Each slice is read on this phone at full resolution so a tall page is not crushed.</p>
+      <p class="phase-note">Each slice is read at full resolution. Line breaks and paragraphs are kept as they appear on the page.</p>
     </section>
 
     <section id="ocrCard" class="card success" hidden>
@@ -109,7 +109,7 @@
       <p class="card-kicker">Batch saved</p>
       <h2 id="batchTitle">Shots accepted</h2>
       <p id="batchMessage"></p>
-      <p class="phase-note">Merging overlapping shots into one document is Phase 4 and is not built yet. We did not invent a stitched page.</p>
+      <p class="phase-note">Overlapping shots are merged into one document. Paragraphs follow the gaps between lines.</p>
       <div id="batchThumbs" class="thumbs"></div>
       <ul id="batchWarnings" class="reasons"></ul>
     </section>
@@ -129,6 +129,8 @@
   <input id="nextLibraryInput" type="file" accept="image/*" hidden>
 
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+  <script src="/ocr/merge.js" defer></script>
+  <script src="/ocr/format.js" defer></script>
   <script src="/ocr/pipeline.js" defer></script>
   <script src="/ocr/app.js" defer></script>
 </body>

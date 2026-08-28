@@ -172,29 +172,44 @@
     show(els.slicesCard, slices.length > 0);
   }
 
-  function renderOcr(ocr) {
-    if (!ocr) {
+  function renderOcr(ocr, stitched, formatted) {
+    if (!ocr && !stitched && !formatted) {
       show(els.ocrCard, false);
       return;
     }
-    const status = ocr.status || "unavailable";
-    const text = ocr.text || "";
-    if (status === "ok" && text) {
+    const status =
+      (formatted && formatted.status) ||
+      (stitched && stitched.status) ||
+      (ocr && ocr.status) ||
+      "unavailable";
+    const text =
+      (formatted && formatted.text) ||
+      (stitched && stitched.text) ||
+      (ocr && ocr.text) ||
+      "";
+    if ((status === "ok" || stitched || formatted) && text) {
       els.ocrTitle.textContent = "Readable text";
       els.ocrText.textContent = text;
-      els.ocrMeta.textContent = ocr.message || "";
-      els.ocrNote.textContent = "Copied from the slices in order. Overlapping lines are dropped; full stitch of multi-shot captures is Phase 4.";
+      els.ocrMeta.textContent =
+        (formatted && formatted.message) ||
+        (stitched && stitched.message) ||
+        (ocr && ocr.message) ||
+        "";
+      const nBlocks = formatted && (formatted.block_count || (formatted.blocks || []).length);
+      els.ocrNote.textContent = nBlocks
+        ? `Formatted into ${nBlocks} paragraph${nBlocks === 1 ? "" : "s"}. Line breaks from the page are kept.`
+        : "Reading order, top to bottom. Overlapping slice lines and photo seams are kept once.";
       show(els.ocrCard, true);
       show(els.btnCopy, true);
       return;
     }
     els.ocrTitle.textContent = status === "empty" ? "No text found" : "Could not read text";
     els.ocrText.textContent = "";
-    els.ocrMeta.textContent = ocr.message || "";
+    els.ocrMeta.textContent = (ocr && ocr.message) || "";
     els.ocrNote.textContent =
       status === "empty"
         ? "This photo passed the sharpness check, but OCR did not find words. Try a closer shot of the actual page."
-        : "Quality check and slicing still ran. Text extract needs a working OCR engine on the laptop.";
+        : "Quality check and slicing still ran. Text extract needs a working OCR engine on this device.";
     show(els.ocrCard, true);
     show(els.btnCopy, false);
   }
@@ -301,7 +316,7 @@
       els.successText.textContent =
         `${body.slices.length} slice${body.slices.length === 1 ? "" : "s"} from a ${body.quality.width}×${body.quality.height} image.`;
       show(els.successCard, true);
-      renderOcr(body.ocr);
+      renderOcr(body.ocr, body.stitched, body.formatted);
       renderSlices(body.slices, (body.ocr && body.ocr.slices) || []);
       return;
     }
@@ -334,7 +349,24 @@
       li.textContent = w;
       els.batchWarnings.appendChild(li);
     });
+    const merge = body.merge || {};
+    (merge.warnings || []).forEach((w) => {
+      const li = document.createElement("li");
+      li.textContent = w;
+      els.batchWarnings.appendChild(li);
+    });
     show(els.batchCard, true);
+    if (merge.text || (body.formatted && body.formatted.text)) {
+      renderOcr(
+        {
+          status: merge.status || "ok",
+          text: merge.text || "",
+          message: merge.message || "",
+        },
+        merge,
+        body.formatted || null
+      );
+    }
   }
 
   async function postPrepare(file) {
@@ -382,7 +414,7 @@
   async function submitBatch() {
     if (batch.length < 2) return;
     clearError();
-    setBusy(true, "Saving the overlapping batch…");
+    setBusy(true, "Reading and merging overlapping shots…");
     if (ENGINE === "browser" && window.ToastPipeline) {
       try {
         const body = await window.ToastPipeline.ingestMulti(

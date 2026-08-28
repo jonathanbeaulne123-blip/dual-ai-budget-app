@@ -540,7 +540,7 @@ function exposeHerculesCompanionAsset(request, response) {
   });
 }
 
-/** Toast OCR PWA at /ocr — static assets + on-device Phase 1–3. Does not touch Hearth routes. */
+/** Toast OCR PWA at /ocr — static assets + on-device Phase 1–5. Does not touch Hearth routes. */
 async function handleToastOcr(request, env) {
   const url = new URL(request.url);
   const path = url.pathname;
@@ -559,8 +559,8 @@ async function handleToastOcr(request, env) {
         "1_quality": "ready",
         "2_slice": "ready",
         "3_ocr": "ready",
-        "4_merge": "stub",
-        "5_export": "stub",
+        "4_merge": "ready",
+        "5_export": "ready",
       },
     });
   }

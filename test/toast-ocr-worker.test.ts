@@ -19,6 +19,8 @@ describe("toast OCR mount at /ocr", () => {
     expect(body.phases["1_quality"]).toBe("ready");
     expect(body.phases["2_slice"]).toBe("ready");
     expect(body.phases["3_ocr"]).toBe("ready");
+    expect(body.phases["4_merge"]).toBe("ready");
+    expect(body.phases["5_export"]).toBe("ready");
     expect(assets.fetch).not.toHaveBeenCalled();
   });
 
