@@ -2,7 +2,7 @@
 
 ## Blank kitchen when loading a household (D-167) (2026-08-28)
 
-**Status:** Draft PR [#238](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/238) on `cursor/blank-household-google-boot-b30c` at `529b983`. **Not merged, not D-041 kitchen-live.** Risk: **Medium** (kitchen boot / Google identity / ErrorBoundary; no money write, schema, secrets, or Production). Jonathan later said the blank is **fixed**.
+**Status:** Merged to `main` at `1cb2044` via [#238](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/238). D-041 kitchen Worker deployed (run `33219013249`, version `8a6fe6a1-8e22-43d0-bc63-00fd3581cfd3`). **Live verified** on `https://hearth-books.jonathan-beaulne123.workers.dev/` — household Home paints; not an empty `#root`. Later `main` `#246` also deployed; current live JS `index-BHscUhUh.js` still contains the recovery chrome. Risk: **Medium** (kitchen boot / Google identity / ErrorBoundary; no money write, schema, secrets, or Production household mutation).
 
 **Household outcome:** Welcome still works. Opening a household must show the kitchen, not a blank `#root`. If a remaining kitchen throw escapes, paper recovery offers Reload, Sign out of Google, or Open welcome. Nothing is posted.
 
@@ -13,30 +13,31 @@
 **If they conflicted:** books win. Recovery never `postEntry`. Invalid Tip Tracker settings still fail at Confirm. Preview zeros on invalid present settings instead of painting catalog CAD.
 
 **What changed:**
-- PR **#235** (already on `origin/main` / live kitchen) moved the Evidence automation `useEffect` above `if (booting)` — that was the hook-count crash that only ran after household+session.
-- This PR adds defense: `continuityIdentityFromGoogle` (no `googleSession?.identity.email` throw), GIS tokens without identity are skipped, missing `shiftSettings` default on shape, kitchen preview uses `previewShiftAmounts`, App-level `KitchenErrorBoundary`, continuity replay returns when identity is missing.
+- PR **#235** moved the Evidence automation `useEffect` above `if (booting)` — that was the hook-count crash that only ran after household+session.
+- PR **#238** adds defense: `continuityIdentityFromGoogle` (no `googleSession?.identity.email` throw), GIS tokens without identity are skipped, missing `shiftSettings` default on shape, kitchen preview uses `previewShiftAmounts`, App-level `KitchenErrorBoundary`, continuity replay returns when identity is missing.
 
 **Verification:**
 - Focused `test/app-kitchen-boot.test.ts` (6 tests) green.
-- `pnpm check` at `529b983` → **1044 passed / 2 skipped**, `tsc` + Vite build green.
+- `pnpm check` at `529b983` → **1044 passed / 2 skipped**, `tsc` + Vite build green. `main` CI at `1cb2044` → **7 checks success**.
 - Independent books-auditor: **PASS WITH NOTES** (preview must not paint catalog CAD for invalid present settings — zeros now).
 - Independent privacy-auditor: **PASS WITH NOTES** (replay no longer sends empty identity).
 - Independent UX-auditor: **Dual Course PASS** (Sign out now also clears member session so recovery cannot loop).
 - Independent verifier: **CONDITIONAL** until this handoff and worksession close (addressed here).
 - Local Vite `127.0.0.1:5173`: demo household → “I am Jonathan” → kitchen at 390px, not blank. Broken GIS token without identity + reload still showed kitchen. 720px kitchen still painted.
-- Live kitchen `hearth-books.jonathan-beaulne123.workers.dev` (PR #235 bundle): household Home painted, not `#root` empty. Jonathan: “its fixed.”
+- Live kitchen after D-041: HTML `Cache-Control: no-store`. Bundle at deploy SHA `1cb2044` was `index-DXGA7AoE.js` with `The kitchen could not open` / `data-kitchen-recovery`. Browser: Bianca household Household Ledger paints (Home chrome, widgets, nav). No hook-order empty `#root`. Google OAuth popups were dismissed; nothing posted.
+- Current live kitchen (after later `#246` deploy) is `index-BHscUhUh.js` and still contains the same recovery copy.
 
 **Data and environment disclosure:**
 - Development impact: none (client boot/recovery only)
-- Production impact: none
+- Production impact: none (no Production household rows mutated)
 - Network calls or data sent: none new
 - MCP access: none for this packet
-- Hosted rows/schema/secrets/deployments: none. No merge, no D-041 publish.
-- Real household or partner-personal data used: none. Fictional Development demo catalog. Live screenshots are the public kitchen URL with fake `#access_token=not.a.jwt`, not a data source.
+- Hosted rows/schema/secrets: none. Kitchen Worker publish only (D-041), on Jonathan's explicit merge-and-deploy instruction.
+- Real household or partner-personal data used: none. Fictional Development demo catalog on the public kitchen URL.
 
-**Remaining uncertainty:** Live blank was the #235 hook-order crash. This PR’s ErrorBoundary / identity / shift defaults are **not** kitchen-live until merge + D-041. Localhost also logged `Maximum update depth exceeded` in `engine.ts` and Hercules rig `403` — kitchen still painted; those are separate. Calculator pad still uses strict `calcShiftAmounts`; invalid present settings would hit the new boundary, not a silent post.
+**Remaining uncertainty:** Localhost still logs `Maximum update depth exceeded` in `engine.ts` and Hercules `/hercules/rig/poll` 403s — kitchen still painted; those are separate. Calculator pad still uses strict `calcShiftAmounts`; invalid present settings would hit the new boundary, not a silent post. `#246` landed on `main` after this deploy; live JS hash changed, recovery chrome remains.
 
-**Next owner:** Jonathan — the blank household open is fixed on live (#235). Review whether to merge [#238](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/238) as extra boot hardening. Do not merge or deploy unless you ask.
+**Next owner:** Jonathan — household open is merged, deployed, and live-verified. Separate follow-ups: `engine.ts` update-depth, Hercules rig 403.
 
 **Worksession:** [`worksessions/2026-08-28-blank-household-boot.md`](worksessions/2026-08-28-blank-household-boot.md)
 
