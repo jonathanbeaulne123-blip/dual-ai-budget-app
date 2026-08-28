@@ -1,5 +1,5 @@
 /* Cache the phone shell only. API POSTs are never cached. */
-const CACHE = "toast-ocr-shell-v7";
+const CACHE = "toast-ocr-shell-v8";
 const scopePath = new URL(self.registration.scope).pathname.replace(/\/$/, "");
 const prefix = scopePath === "" || scopePath === "/" ? "" : scopePath;
 const ASSETS = prefix
@@ -11,6 +11,7 @@ const ASSETS = prefix
       `${prefix}/app.js`,
       `${prefix}/pipeline.js`,
       `${prefix}/lexicon.js`,
+      `${prefix}/guide.js`,
       `${prefix}/merge.js`,
       `${prefix}/format.js`,
       `${prefix}/manifest.json`,
@@ -22,6 +23,7 @@ const ASSETS = prefix
       "/static/app.js",
       "/static/pipeline.js",
       "/static/lexicon.js",
+      "/static/guide.js",
       "/static/merge.js",
       "/static/format.js",
       "/static/manifest.json",

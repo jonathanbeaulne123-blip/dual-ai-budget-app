@@ -82,7 +82,8 @@
     </section>
 
     <section id="slicesCard" class="card" hidden>
-      <p class="card-kicker">Smart slices</p>
+      <p class="card-kicker">Snippets</p>
+      <p class="hint" id="guideHint">Each crop asks: are the letters good? are the numbers good? is the format good? Your answers train the next scan on this phone.</p>
       <div id="slicesList" class="slices"></div>
     </section>
 
@@ -130,6 +131,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
   <script src="/ocr/lexicon.js" defer></script>
+  <script src="/ocr/guide.js" defer></script>
   <script src="/ocr/merge.js" defer></script>
   <script src="/ocr/format.js" defer></script>
   <script src="/ocr/pipeline.js" defer></script>

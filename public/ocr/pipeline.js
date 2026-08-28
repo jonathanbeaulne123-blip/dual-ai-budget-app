@@ -765,13 +765,21 @@
       for (const sl of slices) {
         const source = sl.ocr_image || sl.preview || sl.processed_preview;
         const { data } = await worker.recognize(source);
-        const text = applyLexicon(String(data.text || "").replace(/[ \t]+\n/g, "\n").trim());
+        const raw = String(data.text || "").replace(/[ \t]+\n/g, "\n").trim();
+        const lexed = applyLexicon(raw);
+        const guided =
+          window.ToastGuide && typeof window.ToastGuide.improve === "function"
+            ? window.ToastGuide.improve(lexed)
+            : { text: lexed, guide: null };
+        const text = guided.text || lexed;
         const conf = typeof data.confidence === "number" ? data.confidence / 100 : 0;
         const docIndex = sl.document_index || 0;
         parts.push({
           slice_index: sl.index,
           document_index: docIndex,
           text,
+          raw_text: raw,
+          guide: guided.guide || null,
           mean_confidence: Math.round(conf * 10000) / 10000,
           box_count: 0,
         });
@@ -783,7 +791,11 @@
       const docTexts = Array.from(byDoc.keys())
         .sort((a, b) => a - b)
         .map((k) => (byDoc.get(k) || []).join("\n"));
-      const joined = applyLexicon(joinReceiptTexts(docTexts));
+      const joined = applyLexicon(
+        window.ToastGuide && window.ToastGuide.improve
+          ? window.ToastGuide.improve(joinReceiptTexts(docTexts)).text
+          : joinReceiptTexts(docTexts)
+      );
       if (!joined) {
         return {
           status: "empty",
