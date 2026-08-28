@@ -3,6 +3,8 @@ import {
   INSTRUMENT_KIND,
   auditOpinion,
   blotterFacts,
+  buildPersonalLedgerStory,
+  buildSharedLedgerStory,
   cookOffScore,
   fallbackWeather,
   hourInToronto,
@@ -62,6 +64,7 @@ import {
   type DeskPersonality,
   type Environment,
   type Household,
+  type DateKey,
   type InstrumentId,
   type InstrumentSize,
   type OfficeBreakpoint,
@@ -74,6 +77,8 @@ import type { HearthTab } from "./core/hercules.ts";
 import type { Account, Category, CommitResult, UndoToken } from "./core/index.ts";
 import { OfficePhone } from "./OfficePhone.tsx";
 import { OfficeWide } from "./OfficeWide.tsx";
+import { SharedLedgerStory } from "./SharedLedgerStory.tsx";
+import { PersonalLedgerFolio } from "./PersonalLedgerFolio.tsx";
 import { OfficeWindow } from "./widgets/OfficeWindow.tsx";
 import { DeskItem } from "./widgets/DeskItem.tsx";
 import { BlotterBody, BlotterGlance } from "./widgets/Blotter.tsx";
@@ -147,6 +152,7 @@ export function Office({
   onAskStartJar,
   onSitDown,
   onGo,
+  integrityFindingCount = 0,
 }: {
   household: Household;
   dashboard: Dashboard;
@@ -154,6 +160,7 @@ export function Office({
   environment: Environment;
   memberId: string;
   view: "household" | "personal";
+  integrityFindingCount?: number;
   busy: boolean;
   clinkOn: boolean;
   adding: boolean;
@@ -316,6 +323,14 @@ export function Office({
   }, [environment, memberId]);
 
   const findings = useMemo(() => runHealthCheck(household), [household]);
+  const sharedStory = useMemo(
+    () => (view === "household" ? buildSharedLedgerStory(household, today as DateKey, { integrityFindingCount }) : null),
+    [household, today, view, integrityFindingCount],
+  );
+  const personalStory = useMemo(
+    () => (view === "personal" ? buildPersonalLedgerStory(household, memberId, today as DateKey) : null),
+    [household, memberId, today, view],
+  );
   const opinion = useMemo(() => auditOpinion(household), [household]);
   const wallet = useMemo(() => householdWallet(household, today), [household, today]);
   const streak = useMemo(() => shiftPostingStreak(household, today), [household, today]);
@@ -871,21 +886,40 @@ export function Office({
       />
       <SillOverviewPlate overview={sill} compact={layout.windowMinimized} />
       {face === "paper" ? (
-        <OfficeWide
-          household={household} dashboard={dashboard}
-          layout={layout} onLayout={setLayout}
-          today={today} memberId={memberId} view={view} busy={busy} adding={adding}
-          environment={environment} clinkOn={clinkOn}
-          form={form} mode={mode} error={error} categories={categories} postLabel={postLabel}
-          onForm={onForm} onPost={onPost} onMore={onMore} onMilk={onMilk} onCoffee={onCoffee}
-          onClockIn={onClockIn} onAbandonShift={onAbandonShift} onSignOut={onSignOut}
-          onStartBreak={onStartBreak} onEndBreak={onEndBreak}
-          onChooseShiftTimeline={onChooseShiftTimeline}
-          onFinishedShift={onFinishedShift} onPayCard={onPayCard} onOpenAccount={onOpenAccount}
-          onKitchen={onKitchen} onMarkPaid={onMarkPaid}
-          onAskSettle={onAskSettle} onAskStartJar={onAskStartJar} onSitDown={onSitDown}
-          onGo={onGo} onClinkOn={onClinkOn}
-        />
+        <>
+          {sharedStory ? (
+            <SharedLedgerStory
+              story={sharedStory}
+              onOpenFund={() => onGo("ledger")}
+              onOpenHealth={() => onGo("more")}
+            />
+          ) : null}
+          {personalStory ? (
+            <PersonalLedgerFolio
+              story={personalStory}
+              onOpenBooks={() => onGo("ledger")}
+              onOpenFund={() => onGo("ledger")}
+            />
+          ) : null}
+          <section className="ledger-story-office-secondary" aria-label="Also on this desk">
+            <h2>Also on this desk</h2>
+            <OfficeWide
+              household={household} dashboard={dashboard}
+              layout={layout} onLayout={setLayout}
+              today={today} memberId={memberId} view={view} busy={busy} adding={adding}
+              environment={environment} clinkOn={clinkOn}
+              form={form} mode={mode} error={error} categories={categories} postLabel={postLabel}
+              onForm={onForm} onPost={onPost} onMore={onMore} onMilk={onMilk} onCoffee={onCoffee}
+              onClockIn={onClockIn} onAbandonShift={onAbandonShift} onSignOut={onSignOut}
+              onStartBreak={onStartBreak} onEndBreak={onEndBreak}
+              onChooseShiftTimeline={onChooseShiftTimeline}
+              onFinishedShift={onFinishedShift} onPayCard={onPayCard} onOpenAccount={onOpenAccount}
+              onKitchen={onKitchen} onMarkPaid={onMarkPaid}
+              onAskSettle={onAskSettle} onAskStartJar={onAskStartJar} onSitDown={onSitDown}
+              onGo={onGo} onClinkOn={onClinkOn}
+            />
+          </section>
+        </>
       ) : (
         <div
           ref={canvasRef}

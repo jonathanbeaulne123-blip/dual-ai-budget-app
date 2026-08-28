@@ -96,7 +96,7 @@ export function BooksPage({
   onCommand: (command: (current: Household) => CommitResult) => void;
   onGoMore?: () => void;
 }) {
-  const [pane, setPane] = useState<Pane>("wallet");
+  const [pane, setPane] = useState<Pane>(view === "personal" ? "wallet" : "fund");
   const books = useMemo(() => compileHousehold(household), [household]);
   const trial = useMemo(() => trialBalance(books, { recognizedOnly: true }), [books]);
   const equation = useMemo(() => booksEquation(books), [books]);
@@ -130,10 +130,15 @@ export function BooksPage({
     setPane("wallet");
   }, [sourceFocus]);
 
+  useEffect(() => {
+    if (focusedAccountId || sourceFocus) return;
+    setPane(view === "personal" ? "wallet" : "fund");
+  }, [view, focusedAccountId, sourceFocus]);
+
   return (
     <div className="books-theme-c">
       <section className="hero">
-        <div className="label">Books · double-entry · CAD · {household.timezone}</div>
+        <div className="label">{view === "personal" ? "My books · double-entry · CAD" : "Household story · double-entry · CAD"} · {household.timezone}</div>
         <div className={`money ${equation.netWorthCents < 0 ? "negative" : ""}`}>{formatCad(equation.netWorthCents)}</div>
         <div className="sub">
           Net worth {equation.holds ? "equals" : "does not equal"} retained income {formatCad(equation.netIncomeCents)}
@@ -143,14 +148,16 @@ export function BooksPage({
           Hercules’s opinion: <strong>{opinion.kind}</strong> — {opinion.hercules}
         </p>
       </section>
-      <StoryStrip heading="Story">
+      <StoryStrip heading={view === "personal" ? "My books" : "Household story"}>
+        {(view === "household" || household.householdFund?.custodianMemberId === memberId) && (
         <PaperTile
           kind="Fund"
-          name="Household Fund"
+          name={view === "personal" ? "Private Fund check" : "Household Fund"}
           value={household.householdFund ? "Open the fund books" : "Set up at $0.00"}
           onClick={() => setPane("fund")}
           ariaLabel="Open the Hearth Household Fund books"
         />
+        )}
         <PaperTile
           kind="Books"
           name="Net worth"

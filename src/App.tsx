@@ -28,6 +28,8 @@ import {
   vaultReceiptBlurb,
   householdForView,
   ledgerNameForView,
+  ledgerRouteContract,
+  projectLedgerExperience,
   nameHouseholdLedgers,
   linkGoogleIdentity,
   assembleHousehold,
@@ -310,6 +312,7 @@ import {
 import { useDialog } from "./useDialog.ts";
 import { CalendarPage } from "./Calendar.tsx";
 import { Office } from "./Office.tsx";
+import { LedgerPurposeBanner } from "./LedgerPurposeBanner.tsx";
 import { HerculesPresence } from "./Hercules.tsx";
 import { HerculesProApproval, HerculesProPermissionsCard, herculesProAuthorizationRequest } from "./HerculesPro.tsx";
 import { CadPad } from "./CadPad.tsx";
@@ -1490,10 +1493,15 @@ export function App() {
     () => (personalSource && memberId ? householdForView(personalSource, memberId, view) : personalSource),
     [personalSource, memberId, view],
   );
+  const experience = useMemo(
+    () => (household && memberId ? projectLedgerExperience(household, memberId, view, today) : null),
+    [household, memberId, view, today],
+  );
+  const scopedHousehold = experience && experience.ok ? experience.scopedHousehold : visible;
   const findings = useMemo(() => (household ? runHealthCheck(household) : []), [household]);
   const dashboard = useMemo(
-    () => (visible ? buildDashboard(visible, today, now, findings.length) : null),
-    [visible, today, now, findings.length],
+    () => (scopedHousehold ? buildDashboard(scopedHousehold, today, now, findings.length) : null),
+    [scopedHousehold, today, now, findings.length],
   );
   const syncFreshnessDisplay = useMemo(() => {
     if (!household || !memberId) {
@@ -2780,7 +2788,7 @@ export function App() {
 
   const ledger = household;
   const actorId = session.memberId;
-  const displayHousehold = view === "household" && visible ? visible : household;
+  const displayHousehold = experience && experience.ok ? experience.scopedHousehold : household;
   const preserveCurrentPersonal = (next: Household) => {
     if (view !== "household") return next;
     const incoming = splitForSync(next, actorId);
@@ -3243,7 +3251,7 @@ export function App() {
   }
 
   return (
-    <div className="app">
+    <div className="app" data-ledger-mode={view} data-ledger-tab={tab}>
       <header className="topbar">
         <div className="brand">
           <img src="/hercules-mark.svg" alt="" />
@@ -3357,19 +3365,23 @@ export function App() {
           <button
             key={item}
             className={view === item ? "active" : ""}
+            aria-selected={view === item}
             onClick={() => rememberSession({ memberId: session.memberId, view: item, householdId: household.householdId })}
           >
             {ledgerNameForView(household, session.memberId, item)}
           </button>
         ))}
       </div>
+      {experience && experience.ok ? (
+        <LedgerPurposeBanner tab={tab} view={view} label={experience.label} />
+      ) : null}
 
       {tab === "home" && dashboard && (
         <>
-        {displayHousehold.householdFund && (() => {
+        {view === "household" && displayHousehold.householdFund && (() => {
           const fund = projectHouseholdFund(displayHousehold, today);
           return (
-            <section className="card household-fund-glance" aria-label="Hearth Household Fund">
+            <section className="card household-fund-glance is-phone-only" aria-label="Hearth Household Fund">
               <header><h2>Household Fund</h2><button className="ghost" type="button" onClick={() => goTab("ledger")}>Open Fund books</button></header>
               <div className="grid">
                 <div className="stat"><span>Operating</span><strong>{formatCad(fund.operatingBalanceCents)}</strong></div>
@@ -3388,6 +3400,7 @@ export function App() {
           environment={environment}
           memberId={session.memberId}
           view={view}
+          integrityFindingCount={experience && experience.ok ? experience.integrityFindings.length : findings.length}
           busy={busy}
           clinkOn={clinkOn}
           adding={adding}
@@ -3442,7 +3455,7 @@ export function App() {
         <>
           <div className="plan-wide">
           <section className="hero">
-            <div className="label">Plan vs actual</div>
+            <div className="label">{view === "household" ? "Household plan vs actual" : "My plan vs actual"}</div>
             <div className="money">{formatCad(dashboard.month.netBudgetedCents)}</div>
             <div className="sub">Budgeted net for {dashboard.monthLabel}</div>
           </section>
@@ -3464,9 +3477,9 @@ export function App() {
           </div>
           <SitDownGuide household={household} memberId={actorId} onApply={(next, token) => persist(next, token)} hidden={view === "personal"} />
           <Goals
-            household={household}
+            household={displayHousehold}
             createdBy={memberId}
-            goals={visible?.goals ?? household.goals}
+            goals={displayHousehold.goals}
             onChange={(next, token) => persist(next, token)}
             onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
           />
@@ -3475,7 +3488,8 @@ export function App() {
 
       {tab === "calendar" && (
         <CalendarPage
-          household={household}
+          household={displayHousehold}
+          view={view}
           today={today}
           environment={environment}
           memberId={session.memberId}
@@ -3498,7 +3512,8 @@ export function App() {
       {tab === "shift" && (
         <WorkShiftPage
           key={`${environment}:${household.householdId}:${session.memberId}`}
-          household={household}
+          household={experience && experience.ok ? experience.shiftHousehold : household}
+          view={view}
           memberId={session.memberId}
           memberName={household.members.find((member) => member.id === session.memberId)?.name ?? "You"}
           today={today}
@@ -3610,7 +3625,8 @@ export function App() {
             </button>
           </section>
           <section className="card">
-            <header><h2>Health</h2><span className={`pill ${findings.length ? "warn" : "good"}`}>{findings.length ? `${findings.length} findings` : "Clean"}</span></header>
+            <header><h2>{experience && experience.ok ? experience.integrityLabel : "Health"}</h2><span className={`pill ${findings.length ? "warn" : "good"}`}>{findings.length ? `${findings.length} findings` : "Clean"}</span></header>
+            <p className="muted">{view === "household" ? "This is the full-household books signal. It does not reveal Personal envelopes." : "Integrity still runs on the accepted household. Personal amounts stay in this folio."}</p>
             {findings.length === 0 ? <p className="muted">Ledger, splits, transfers, shifts, flags, and the books agree.</p> : (
               <ul className="health">{findings.map((finding) => <li key={finding.section + finding.message}><strong>{finding.section}.</strong> {finding.message}</li>)}</ul>
             )}
@@ -3847,9 +3863,11 @@ export function App() {
             <header><h2>Where the books live</h2></header>
             <p className="muted">
               Commands write PGlite books (<code>{STORAGE_EXPLAINER.books}</code>) and keep a snapshot in IndexedDB.
-              Personal rows are a filter. Export JSON for a copy.
+              Export follows the active ledger: Shared never includes Personal accounts, Personal rows, or private Fund reconciliation.
             </p>
-            <button className="primary" onClick={() => downloadJson(household)}>Export JSON snapshot</button>
+            <button className="primary" onClick={() => downloadJson(experience && experience.ok ? experience.exportHousehold : household)}>
+              {view === "personal" ? "Export this Personal folio" : "Export Shared snapshot"}
+            </button>
             <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setGuard({ kind: "stress-random" })}>Reload random data</button>
             <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setGuard({ kind: "stress-pretty" })}>Display pretty numbers</button>
             <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => {
@@ -4486,6 +4504,11 @@ export function App() {
               </div>
             )}
             {!(mode === "shift" && (shiftGate === "choose" || shiftGate === "clocked" || ((shiftGate === "signOut" || shiftGate === "finished") && household.workJobs.some((job) => job.active && job.memberId === actorId)))) && (
+              <>
+                <p className="muted" data-ledger-confirm-purpose>
+                  {experience && experience.ok ? `${experience.label}. ${ledgerRouteContract("home", view).heading}.` : null}
+                  {" "}Fund funding stays separate from Shared or Personal visibility.
+                </p>
               <button
                 className="primary post-big"
                 disabled={busy}
@@ -4493,6 +4516,7 @@ export function App() {
               >
                 {addPostLabel()}
               </button>
+              </>
             )}
           </div>
         </div>
@@ -5055,7 +5079,7 @@ export function App() {
               { label: "Health", run: () => goTab("more") },
               { label: "Google household bridge", run: () => goTab("more") },
               { label: "Ask Hercules", run: () => goTab("home") },
-              { label: "Export", run: () => downloadJson(household) },
+              { label: "Export", run: () => downloadJson(experience && experience.ok ? experience.exportHousehold : household) },
             ].map((item) => (
               <button key={item.label} onClick={() => { item.run(); setCommandOpen(false); }}>{item.label}</button>
             ))}

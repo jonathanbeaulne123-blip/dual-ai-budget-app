@@ -27,6 +27,7 @@ import {
   type DateKey,
   type Environment,
   type Household,
+  type LedgerView,
   type Recurrence,
   type VisitPostDraft,
   type WorkOwedFact,
@@ -81,6 +82,7 @@ function downloadIcs(household: Household, today: DateKey) {
 
 export function CalendarPage(props: {
   household: Household;
+  view?: LedgerView;
   today: DateKey;
   environment: Environment;
   memberId: string;
@@ -219,7 +221,7 @@ export function CalendarPage(props: {
     <>
       {pane !== "visits" && (
         <section className="hero calendar-hero">
-          <div className="label">Money dates · {board.monthLabel}</div>
+          <div className="label">{(props.view ?? "household") === "personal" ? "My dates" : "Household dates"} · {board.monthLabel}</div>
           <div className={`money ${board.weekPressure && board.weekPressure.outCents > board.weekPressure.inCents ? "negative" : ""}`}>
             {board.weekPressure ? formatCad(board.weekPressure.inCents - board.weekPressure.outCents) : formatCad(0)}
           </div>
@@ -227,6 +229,7 @@ export function CalendarPage(props: {
             This week on the board
             {due.length ? ` · ${due.length} due` : ""}
             {suggested.length ? ` · ${suggested.length} spotted in the ledger` : ""}
+            {(props.view ?? "household") === "personal" ? " · household standing dates stay labeled as shared" : ""}
           </div>
           <div className="calendar-hero-actions">
             <button className="ghost" onClick={props.onOpenPlan}>Open plan</button>

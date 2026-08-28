@@ -129,6 +129,8 @@ export function HouseholdFundPanel({
       </section>
 
       <section className="card">
+        <details open={Boolean(pending.length)}>
+          <summary>Propose or confirm a contribution</summary>
         <header><h2>Contributions</h2><span className="muted">A proposal never creates money</span></header>
         <label htmlFor="fund-contribution-amount">Amount (CAD)</label>
         <input id="fund-contribution-amount" inputMode="decimal" value={contributionAmount} onChange={(event) => setContributionAmount(event.target.value)} placeholder="250.00" />
@@ -141,10 +143,13 @@ export function HouseholdFundPanel({
             {isCustodian ? <button className="primary" type="button" onClick={() => onCommand((current) => confirmHouseholdFundContribution(current, { memberId, proposalEventId: event.id }))}>Confirm received</button> : <span className="muted">Waiting for Bianca</span>}
           </div>
         ))}
+        </details>
       </section>
 
       {isCustodian && (
         <section className="card">
+          <details>
+            <summary>Plan target and confirm a transfer</summary>
           <header><h2>Plan and transfer</h2><span className="muted">Bianca confirms clearing</span></header>
           <p className="muted">Suggested target from fund-backed spending, upcoming recurring bills, and the current buffer: {formatCad(suggestedTargetCents)}. A suggestion does not create money.</p>
           <label htmlFor="fund-monthly-target">Monthly target (CAD)</label>
@@ -191,11 +196,14 @@ export function HouseholdFundPanel({
             Confirm Transferred
           </button>
           <p className="muted">The default allocation clears the oldest unsettled items for this destination. Edit the amount to make a partial transfer.</p>
+          </details>
         </section>
       )}
 
       {isCustodian && view === "personal" && (
         <section className="card">
+          <details>
+            <summary>Private reconciliation (Personal envelope)</summary>
           <header><h2>Bianca’s private reconciliation</h2><span className="muted">Jonathan sees only whether it ties</span></header>
           <label htmlFor="fund-bank-total">Bianca’s savings total (CAD)</label>
           <input id="fund-bank-total" inputMode="decimal" value={bankTotal} onChange={(event) => setBankTotal(event.target.value)} />
@@ -212,11 +220,14 @@ export function HouseholdFundPanel({
             {privateSavings.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}
           </select>
           <button className="ghost" type="button" onClick={() => onCommand((current) => bindHouseholdFundBackingAccount(current, { memberId, accountId: backingAccount }))}>Save private backing account</button>
+          </details>
         </section>
       )}
 
       {isCustodian && (
         <section className="card">
+          <details>
+            <summary>Confirm a safe Kitty rollover</summary>
           <header><h2>Month-end Kitty rollover</h2><span className="muted">Safe surplus {formatCad(projection.safeRolloverCents)}</span></header>
           <p className="muted">No bank transfer occurs. Operating plus Kitty remains conserved.</p>
           <label htmlFor="fund-kitty-goal">Existing Kitty Bank</label>
@@ -227,6 +238,7 @@ export function HouseholdFundPanel({
           <label htmlFor="fund-kitty-amount">Rollover amount (CAD)</label>
           <input id="fund-kitty-amount" inputMode="decimal" value={kittyAmount} onChange={(event) => setKittyAmount(event.target.value)} />
           <button className="primary" type="button" onClick={() => onCommand((current) => allocateHouseholdFundSurplus(current, { memberId, date: today, allocations: [{ goalId: kittyGoal, amount: kittyAmount }] }))}>Confirm rollover once</button>
+          </details>
         </section>
       )}
 
