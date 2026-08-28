@@ -378,6 +378,7 @@
       if (opts.scores) last.scores = opts.scores;
     }
     saveMemory(data);
+    pushSharedSoon();
     return data;
   }
 
@@ -435,6 +436,15 @@
       },
       snippets: (mem.snippets || []).slice(-MAX_SNIPPETS),
       interpretation: interpret(mem),
+      for_agent: {
+        skill: "ocr-packet-teach",
+        instruction: "Merge proposed_token_fixes into TOKEN_FIXES in src/toast_ocr/ocr/lexicon.py and src/toast_ocr/web/static/lexicon.js. Keep Python and JS in sync. Never invent dollar amounts or dates. Do not change Hearth /documents/scan. Run pytest tests/test_lexicon.py tests/test_guide.py tests/test_learn.py.",
+        proposed_token_fixes: mem.letter_fixes || {},
+        weakest: interpret(mem).weakest,
+        summary: interpret(mem).summary,
+        do_not: ["invent money or dates", "call paid OCR APIs", "delete or replace Hearth", "edit /documents/scan Confirm path"],
+        files: ["src/toast_ocr/ocr/lexicon.py", "src/toast_ocr/web/static/lexicon.js"],
+      },
     };
   }
 
@@ -452,6 +462,93 @@
     return packet;
   }
 
+  function learnEndpoint() {
+    const base = (document.documentElement.dataset.base || "").replace(/\/$/, "");
+    const engine = document.documentElement.dataset.engine || "server";
+    return engine === "browser" ? `${base}/learn` : `${base}/api/learn`;
+  }
+
+  function deviceId() {
+    const key = "toast-ocr-device";
+    try {
+      let id = localStorage.getItem(key);
+      if (!id) {
+        id = (crypto.randomUUID && crypto.randomUUID()) || `d-${Date.now()}`;
+        localStorage.setItem(key, id);
+      }
+      return id;
+    } catch {
+      return "anon";
+    }
+  }
+
+  function ingestBrain(brain) {
+    if (!brain || typeof brain !== "object") return loadMemory();
+    const data = loadMemory();
+    const hive = brain.letter_fixes || {};
+    data.letter_fixes = Object.assign({}, data.letter_fixes || {}, hive);
+    saveMemory(data);
+    if (window.ToastLexicon && typeof window.ToastLexicon.addFixes === "function") {
+      window.ToastLexicon.addFixes(data.letter_fixes);
+    }
+    return data;
+  }
+
+  async function syncShared() {
+    try {
+      const res = await fetch(learnEndpoint(), { method: "GET" });
+      if (!res.ok) return null;
+      const brain = await res.json();
+      ingestBrain(brain);
+      return brain;
+    } catch {
+      return null;
+    }
+  }
+
+  let pushTimer = 0;
+  function pushSharedSoon() {
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(() => {
+      pushShared().catch(() => undefined);
+    }, 800);
+  }
+
+  async function pushShared() {
+    const mem = loadMemory();
+    const body = {
+      schema: "toast-ocr-learn.v1",
+      letter_fixes: mem.letter_fixes || {},
+      votes: mem.votes || {},
+      samples: mem.samples || 0,
+      device_id: deviceId(),
+      interpretation: interpret(mem),
+    };
+    const res = await fetch(learnEndpoint(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) return null;
+    const brain = await res.json();
+    ingestBrain(brain);
+    return brain;
+  }
+
+  async function copyForAgent() {
+    await syncShared();
+    const packet = buildPacket();
+    const text =
+      "Apply this OCR learn packet using skill ocr-packet-teach.\n\n" + JSON.stringify(packet, null, 2);
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      exportPacket();
+      return false;
+    }
+  }
+
   window.ToastGuide = {
     QUESTIONS,
     PRIMARY,
@@ -466,6 +563,10 @@
     interpret,
     buildPacket,
     exportPacket,
+    copyForAgent,
+    syncShared,
+    pushShared,
+    ingestBrain,
     withConfidence,
   };
 })();

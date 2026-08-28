@@ -556,6 +556,138 @@ function withToastOcrHeaders(response) {
   });
 }
 
+const OCR_LEARN_KEY = "ocr-learn-v1";
+const OCR_LEARN_CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+  ...TOAST_OCR_FRAME_HEADERS,
+};
+const OCR_POS_WORDS = new Set([
+  "EMPLOYEE", "SHIFT", "REPORT", "ACTIVITY", "SUMMARY", "BUSINESS", "TRENDS",
+  "HEADCOUNT", "TICKET", "TICKETS", "GROSS", "NET", "SALES", "REVENUE", "CLASS",
+  "DEPARTMENT", "CREDIT", "CARD", "PAYMENTS", "PAYMENT", "TOTAL", "TOTALS",
+  "TIPS", "TIP", "CASH", "EXCEPTIONS", "VOIDED", "ITEMS", "REFUNDS", "DISCOUNT",
+  "DISCOUNTS", "MERCHANT", "OWES", "RECEIVED", "EXPECTED", "TESTING", "FOOD",
+  "CLOCK", "HOURS", "OVERTIME", "REGULAR", "UNPAID", "BREAK", "PRINTED",
+  "STILL", "CLOCKED", "DRAWER", "PHYSICAL", "BANK", "TENDER", "COUNT",
+  "AVERAGE", "CLOSED", "OPEN", "TILL",
+]);
+const ocrLearnMem = { letter_fixes: {}, fix_counts: {}, votes: {}, samples: 0, devices: 0, updated_at: null, schema: "toast-ocr-learn.v1" };
+
+function sanitizeOcrFix(src, dst) {
+  const raw = `${src || ""}${dst || ""}`;
+  if (/\d/.test(raw)) return null;
+  const s = String(src || "").toUpperCase().replace(/[^A-Z]/g, "");
+  const d = String(dst || "").toUpperCase().replace(/[^A-Z]/g, "");
+  if (s.length < 3 || s.length > 16 || d.length < 2 || d.length > 24) return null;
+  if (s === d || OCR_POS_WORDS.has(s) || !OCR_POS_WORDS.has(d)) return null;
+  return [s, d];
+}
+
+function emptyOcrBrain() {
+  return { schema: "toast-ocr-learn.v1", letter_fixes: {}, fix_counts: {}, votes: {}, samples: 0, devices: 0, updated_at: null };
+}
+
+function mergeOcrBrain(base, incoming) {
+  const brain = emptyOcrBrain();
+  const src = base && typeof base === "object" ? base : {};
+  brain.samples = Number(src.samples || 0);
+  brain.devices = Number(src.devices || 0);
+  const counts = { ...(src.fix_counts || {}) };
+  const existingFixes = src.letter_fixes && typeof src.letter_fixes === "object" ? src.letter_fixes : {};
+  Object.keys(existingFixes).forEach((key) => {
+    const pair = sanitizeOcrFix(key, existingFixes[key]);
+    if (pair && !counts[pair[0]]) counts[pair[0]] = { to: pair[1], n: 1 };
+  });
+  const payload = incoming && typeof incoming === "object" ? incoming : {};
+  const incomingFixes = payload.letter_fixes && typeof payload.letter_fixes === "object" ? payload.letter_fixes : {};
+  Object.keys(incomingFixes).forEach((key) => {
+    const pair = sanitizeOcrFix(key, incomingFixes[key]);
+    if (!pair) return;
+    const [s, d] = pair;
+    const row = counts[s];
+    if (!row) counts[s] = { to: d, n: 1 };
+    else if (String(row.to || "").toUpperCase() === d) row.n = Number(row.n || 0) + 1;
+    else if (Number(row.n || 0) < 2) counts[s] = { to: d, n: 1 };
+  });
+  const votesIn = payload.votes && typeof payload.votes === "object" ? payload.votes : {};
+  const votes = { ...(src.votes || {}) };
+  Object.keys(votesIn).forEach((cid) => {
+    const val = votesIn[cid];
+    if (!val || typeof val !== "object") return;
+    const slot = votes[cid] || { good: 0, bad: 0 };
+    slot.good = Number(slot.good || 0) + Number(val.good || 0);
+    slot.bad = Number(slot.bad || 0) + Number(val.bad || 0);
+    votes[cid] = slot;
+  });
+  brain.fix_counts = counts;
+  brain.votes = votes;
+  brain.letter_fixes = {};
+  Object.keys(counts).forEach((key) => {
+    if (counts[key] && counts[key].to) brain.letter_fixes[key] = String(counts[key].to).toUpperCase();
+  });
+  const added = Object.keys(incomingFixes).length || Object.keys(votesIn).length;
+  brain.samples = brain.samples + (incoming ? (Number(payload.samples) || (added ? 1 : 0)) : 0);
+  if (incoming) brain.devices += 1;
+  brain.updated_at = new Date().toISOString();
+  return brain;
+}
+
+async function readOcrBrain(env) {
+  try {
+    const kv = env?.HERCULES_RATE;
+    if (kv && typeof kv.get === "function") {
+      const stored = await kv.get(OCR_LEARN_KEY, "json");
+      if (stored && typeof stored === "object") return stored;
+    }
+  } catch {
+    /* isolate memory */
+  }
+  return ocrLearnMem;
+}
+
+async function writeOcrBrain(env, brain) {
+  Object.assign(ocrLearnMem, brain);
+  try {
+    const kv = env?.HERCULES_RATE;
+    if (kv && typeof kv.put === "function") {
+      await kv.put(OCR_LEARN_KEY, JSON.stringify(brain));
+    }
+  } catch {
+    /* isolate memory is enough for this isolate */
+  }
+  return brain;
+}
+
+async function handleOcrLearn(request, env, path) {
+  if (path !== "/ocr/learn" && path !== "/ocr/api/learn") return null;
+  if (request.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: OCR_LEARN_CORS });
+  }
+  if (request.method === "GET") {
+    const brain = mergeOcrBrain(await readOcrBrain(env), null);
+    return json(brain, 200, OCR_LEARN_CORS);
+  }
+  if (request.method === "POST") {
+    let incoming = {};
+    try {
+      incoming = await request.json();
+    } catch {
+      incoming = {};
+    }
+    if (!incoming || typeof incoming !== "object") incoming = {};
+    const keys = Object.keys(incoming.letter_fixes || {});
+    if (keys.length > 80) {
+      return json({ error: "too_many_fixes" }, 400, OCR_LEARN_CORS);
+    }
+    const merged = mergeOcrBrain(await readOcrBrain(env), incoming);
+    await writeOcrBrain(env, merged);
+    return json(merged, 200, OCR_LEARN_CORS);
+  }
+  return json({ error: "method" }, 405, OCR_LEARN_CORS);
+}
+
 /** Toast OCR PWA at /ocr — static assets + on-device Phase 1–5. Does not touch Hearth routes. */
 async function handleToastOcr(request, env) {
   const url = new URL(request.url);
@@ -579,11 +711,15 @@ async function handleToastOcr(request, env) {
           "4_merge": "ready",
           "5_export": "ready",
         },
+        learn: "ready",
       },
       200,
       TOAST_OCR_FRAME_HEADERS,
     );
   }
+
+  const learn = await handleOcrLearn(request, env, path);
+  if (learn) return learn;
 
   const pythonOrigin = String(env?.TOAST_OCR_API_ORIGIN || "").trim().replace(/\/$/, "");
   if (pythonOrigin && path.startsWith("/ocr/api/")) {
