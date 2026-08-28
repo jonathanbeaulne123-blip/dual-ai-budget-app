@@ -7,7 +7,8 @@
 - **Repository:** `C:\Users\jonat\OneDrive\Documents\ChatGPT\Budget App`
 - **Branch:** `codex/roadmap-museum-history`
 - **Baseline SHA:** `86e811c3248f2a5aaa3e4a50d50e046b7cef3413` (`origin/main` at branch creation); rebased onto current `main` before release
-- **Head SHA:** `86e811c3248f2a5aaa3e4a50d50e046b7cef3413` before edits
+- **Starting head SHA:** `86e811c3248f2a5aaa3e4a50d50e046b7cef3413`
+- **Original implementation commit:** `2f140e8`; rebased implementation commit `d023a35`
 - **PR or issue:** none
 - **Risk:** Medium locally; Release if published
 - **Decision owner:** Jonathan
