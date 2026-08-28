@@ -52,10 +52,6 @@ import {
   EXPAND_SIZE,
   SIZE_HEIGHT,
   DESK_GUTTER,
-  wideDrawerIds,
-  wideInstrumentFullPage,
-  wideMosaicIds,
-  WIDE_HERO_ID,
   INSTRUMENT_LABEL,
   PERSONALITY_BLURB,
   PERSONALITY_DESK,
@@ -92,7 +88,6 @@ import { CookOffBody, CookOffGlance } from "./widgets/CookOffKettle.tsx";
 import { JarsBody, JarsGlance } from "./widgets/Jars.tsx";
 import { LampBody, LampGlance, lampAria } from "./widgets/Lamp.tsx";
 import { Cabinets, type DeskSheet } from "./widgets/Cabinets.tsx";
-import { WideMiniBrowser } from "./widgets/WideMiniBrowser.tsx";
 import { CalendarBody, CalendarGlance } from "./widgets/CalendarDesk.tsx";
 import { AppointmentsBody, AppointmentsGlance } from "./widgets/AppointmentsDesk.tsx";
 import { SillOverviewPlate } from "./widgets/SillOverview.tsx";
@@ -872,43 +867,11 @@ export function Office({
         onToggle={cycleWindow}
       />
       <SillOverviewPlate overview={sill} compact={layout.windowMinimized} />
-      {breakpoint === "wide" && face === "classic" && (
-        <WideMiniBrowser
-          currentTab="home"
-          drawerIds={wideDrawerIds(wideMosaicIds({ hidden: parked, lampLit, expanded: layout.expanded }))}
-          activeInstrument={layout.expanded && layout.expanded !== "window" ? layout.expanded : null}
-          onRoute={(tab, full) => {
-            if (tab === "home") return;
-            if (full) onGo(tab);
-            else {
-              const preview: Partial<Record<typeof tab, typeof WIDE_HERO_ID | "timesheet" | "calendar" | "jars" | "accounts" | "lamp">> = {
-                calendar: "calendar",
-                shift: "timesheet",
-                plan: "jars",
-                ledger: "accounts",
-                more: "lamp",
-              };
-              const id = preview[tab];
-              if (id) emitOfficeIntent({ type: "expand", id });
-            }
-          }}
-          onPost={(full) => {
-            if (full) onGo("add");
-            else emitOfficeIntent({ type: "expand", id: "calculator" });
-          }}
-          onInstrument={(id, full) => {
-            const page = wideInstrumentFullPage(id);
-            if (full && page) onGo(page);
-            else emitOfficeIntent({ type: "expand", id });
-          }}
-        />
-      )}
       {face === "paper" ? (
         <OfficeWide
           household={household} dashboard={dashboard}
           layout={layout} onLayout={setLayout}
           today={today} memberId={memberId} view={view} busy={busy} adding={adding}
-          environment={environment} clinkOn={clinkOn}
           form={form} mode={mode} error={error} categories={categories} postLabel={postLabel}
           onForm={onForm} onPost={onPost} onMore={onMore} onMilk={onMilk} onCoffee={onCoffee}
           onClockIn={onClockIn} onAbandonShift={onAbandonShift} onSignOut={onSignOut}
@@ -917,7 +880,7 @@ export function Office({
           onFinishedShift={onFinishedShift} onPayCard={onPayCard} onOpenAccount={onOpenAccount}
           onKitchen={onKitchen} onMarkPaid={onMarkPaid}
           onAskSettle={onAskSettle} onAskStartJar={onAskStartJar} onSitDown={onSitDown}
-          onGo={onGo} onClinkOn={onClinkOn}
+          onGo={onGo}
         />
       ) : (
         <div

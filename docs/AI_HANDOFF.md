@@ -1,5 +1,35 @@
 # AI Task and Handoff Standard
 
+## Keep chalkboard; restore screenshot nav (D-156) (2026-08-28)
+
+**Status:** Draft PR [#228](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/228) on `cursor/wide-paper-office-560d`. **Not merged, not deployed, not live.** Risk: **Medium** (UX Dual Course; no money, Auth, or schema).
+
+**Household outcome:** Laptop Home matches the attached paper-office screenshot: fat bottom nav (Home / Cal / Shift / plus / Plan / Books / More), POST / DUE / HEALTH seals, Today's stories, month blotter. The compact chip-strip nav is gone. Notes still open a live chalkboard in the notebook. Google welcome/sign-in files were not touched.
+
+**Budget delta (5):** `+2` — glanceable month net / wallet / bills / Health stay.
+
+**Engagement delta (3):** `+1` — chalkboard stays; nav goes back to the screenshot bar.
+
+**If they conflicted:** books win; widgets never `postEntry`; plus FAB stays the Add door.
+
+**What changed:** Withdrew `WideMiniBrowser` and `.app.is-wide` hiding of `.nav`. Restored **More on this desk**. Kept live chalkboard (`bare` notebook, letter eraser, auto-save stamps).
+
+**Verification:** focused office-wide / desktop-office / chalk-letters tests; then `pnpm check`. Visual: 1100 fat nav + seals; Notes chalkboard; 390 same Draft C nav.
+
+**Data and environment disclosure:**
+- Development impact: none
+- Production impact: none
+- Network calls or data sent: none new
+- MCP access: none
+- Hosted rows/schema/secrets/deployments: none
+- Real household or partner-personal data used: none. Demo kitchen only.
+
+**Remaining uncertainty:** Saved x/y desks still open Classic. This branch never carried a Google sign-in diff, so nothing Google was reverted here.
+
+**Next owner:** Jonathan — confirm laptop Home matches the screenshot (fat bar + plus, no chip strip), then Notes chalkboard, then Google welcome still as you left it.
+
+**Worksession:** [`worksessions/2026-08-28-wide-paper-office.md`](worksessions/2026-08-28-wide-paper-office.md)
+
 ## Laptop nav in the smaller widgets column (D-156) (2026-08-28)
 
 **Status:** Draft PR [#228](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/228) on `cursor/wide-paper-office-560d`. Head after this packet. Base `origin/main` `54c74dc`. **Not merged, not deployed, not live.** Risk: **Medium** (UX Dual Course; no money, Auth, or schema).

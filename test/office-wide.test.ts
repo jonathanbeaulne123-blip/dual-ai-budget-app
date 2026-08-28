@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   seedDemoHousehold,
@@ -13,8 +12,6 @@ import {
   tipWeekdaySpark,
   wideDrawerIds,
   wideMosaicIds,
-  wideMiniBrowserTabs,
-  wideInstrumentFullPage,
   WIDE_HERO_ID,
   WIDE_MOSAIC_LIMIT,
   applyPersonality,
@@ -37,34 +34,6 @@ describe("wide paper office mosaic", () => {
     expect(mosaic.length).toBeLessThanOrEqual(WIDE_MOSAIC_LIMIT);
     expect(wideDrawerIds(mosaic)).toContain("chalkboard");
     expect(wideDrawerIds(mosaic)).not.toContain("calculator");
-  });
-
-  it("puts phone nav into the compact mini-browser with leftover desk chips", () => {
-    const mosaic = wideMosaicIds({ hidden: [], lampLit: false });
-    const tabs = wideMiniBrowserTabs(wideDrawerIds(mosaic));
-    expect(tabs.map((tab) => tab.label).slice(0, 7)).toEqual([
-      "Home",
-      "Cal",
-      "Shift",
-      "Post",
-      "Plan",
-      "Books",
-      "More",
-    ]);
-    expect(tabs.some((tab) => tab.instrument === "chalkboard")).toBe(true);
-    expect(new Set(tabs.map((tab) => tab.id)).size).toBe(tabs.length);
-    expect(wideInstrumentFullPage("calendar")).toBe("calendar");
-    expect(wideInstrumentFullPage("chalkboard")).toBeNull();
-  });
-
-  it("keeps those chips in the left mosaic column, not under the whole desk", () => {
-    const source = readFileSync(new URL("../src/OfficeWide.tsx", import.meta.url), "utf8");
-    const widgets = source.indexOf('className="office-wide-widgets"');
-    const browser = source.indexOf("<WideMiniBrowser");
-    const right = source.indexOf('className="office-wide-right"');
-    expect(widgets).toBeGreaterThan(-1);
-    expect(browser).toBeGreaterThan(widgets);
-    expect(browser).toBeLessThan(right);
   });
 
   it("reveals Health onto the mosaic when the lamp is lit even if it was hidden", () => {

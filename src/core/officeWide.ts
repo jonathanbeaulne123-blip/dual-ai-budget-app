@@ -1,5 +1,4 @@
 import type { CategoryActual, MonthSummary } from "./budget.ts";
-import type { HearthTab } from "./hercules.ts";
 import type { TipWeather } from "./insights.ts";
 import type { InstrumentId, DeskFace } from "./officeLayout.ts";
 
@@ -73,59 +72,6 @@ export function wideDrawerIds(mosaic: InstrumentId[]): InstrumentId[] {
     ...WIDE_MOSAIC_FILL,
   ];
   return extras.filter((id, index) => extras.indexOf(id) === index && !shown.has(id));
-}
-
-export type WideMiniKind = "route" | "post" | "instrument";
-
-export type WideMiniTab = {
-  id: string;
-  label: string;
-  kind: WideMiniKind;
-  route?: Exclude<HearthTab, "add">;
-  instrument?: InstrumentId;
-};
-
-export const WIDE_NAV_TABS: readonly WideMiniTab[] = [
-  { id: "home", label: "Home", kind: "route", route: "home" },
-  { id: "calendar", label: "Cal", kind: "route", route: "calendar" },
-  { id: "shift", label: "Shift", kind: "route", route: "shift" },
-  { id: "post", label: "Post", kind: "post" },
-  { id: "plan", label: "Plan", kind: "route", route: "plan" },
-  { id: "ledger", label: "Books", kind: "route", route: "ledger" },
-  { id: "more", label: "More", kind: "route", route: "more" },
-];
-
-export const WIDE_INSTRUMENT_TAB_LABEL: Partial<Record<InstrumentId, string>> = {
-  chalkboard: "Notes",
-  wardrobe: "Outfits",
-  tictactoe: "Tac",
-  hangman: "Hangman",
-  accounts: "Accounts",
-  calendar: "Board",
-  postcard: "Sit-down",
-  appointments: "Visits",
-  cookoff: "Kitchen",
-};
-
-/** Compact strip: phone nav items first, then leftover desk instruments. */
-export function wideMiniBrowserTabs(drawer: InstrumentId[]): WideMiniTab[] {
-  const extras: WideMiniTab[] = drawer.map((id) => ({
-    id: `desk-${id}`,
-    label: WIDE_INSTRUMENT_TAB_LABEL[id] ?? id,
-    kind: "instrument" as const,
-    instrument: id,
-  }));
-  return [...WIDE_NAV_TABS, ...extras];
-}
-
-/** Double-click destination. Null means stay in the Home notebook. */
-export function wideInstrumentFullPage(id: InstrumentId): Exclude<HearthTab, "add"> | null {
-  if (id === "calendar" || id === "appointments") return "calendar";
-  if (id === "accounts") return "ledger";
-  if (id === "postcard") return "plan";
-  if (id === "timesheet") return "shift";
-  if (id === "lamp") return "more";
-  return null;
 }
 
 export function monthInOutBars(

@@ -17,7 +17,6 @@ import {
   walletWarn,
   wideDrawerIds,
   wideMosaicIds,
-  wideInstrumentFullPage,
   WIDE_HERO_ID,
   cookOffScore,
   sitDownPostcard,
@@ -43,7 +42,6 @@ import { PostcardBody, PostcardGlance } from "./widgets/Postcard.tsx";
 import { CookOffBody, CookOffGlance } from "./widgets/CookOffKettle.tsx";
 import { WardrobeBody, wardrobeGlance } from "./widgets/WardrobeDesk.tsx";
 import { HangmanBody, HangmanGlance, TicTacToeBody, TicTacToeGlance } from "./widgets/GamesDesk.tsx";
-import { WideMiniBrowser } from "./widgets/WideMiniBrowser.tsx";
 import { NotebookBody, PaperBars, PaperSpark, PaperTile, StoryStrip, WaxSeal } from "./theme/PaperTheme.tsx";
 import { useFurniture } from "./widgets/useFurniture.ts";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
@@ -372,7 +370,7 @@ export function OfficeWide({
               onClick={() => tapSeal("lamp")}
             />
           </div>
-          <div ref={mosaicRef} className="office-wide-widgets">
+          <div ref={mosaicRef}>
             <StoryStrip heading="Today's stories" className="office-wide-mosaic">
               {mosaicIds.map((id) => {
                 const spec = specs[id];
@@ -391,39 +389,6 @@ export function OfficeWide({
                 );
               })}
             </StoryStrip>
-            <WideMiniBrowser
-              currentTab="home"
-              drawerIds={drawer}
-              activeInstrument={openId === WIDE_HERO_ID ? null : openId}
-              onRoute={(tab, full) => {
-                if (tab === "home") {
-                  setExpanded(full ? null : WIDE_HERO_ID);
-                  return;
-                }
-                if (full) {
-                  onGo(tab);
-                  return;
-                }
-                const preview: Partial<Record<"calendar" | "shift" | "plan" | "ledger" | "more", InstrumentId>> = {
-                  calendar: "calendar",
-                  shift: "timesheet",
-                  plan: "jars",
-                  ledger: "accounts",
-                  more: "lamp",
-                };
-                const id = preview[tab];
-                if (id) onLayout(revealPhoneInstrument(layout, id));
-              }}
-              onPost={(full) => {
-                if (full) onGo("add");
-                else tapSeal("calculator");
-              }}
-              onInstrument={(id, full) => {
-                const page = wideInstrumentFullPage(id);
-                if (full && page) onGo(page);
-                else onLayout(revealPhoneInstrument(layout, id));
-              }}
-            />
           </div>
         </div>
 
@@ -471,6 +436,28 @@ export function OfficeWide({
           </div>
         </div>
       </div>
+
+      {drawer.length > 0 && (
+        <details className="office-wide-drawer">
+          <summary>
+            More on this desk
+            <span aria-hidden="true"> · </span>
+            {drawer.length}
+          </summary>
+          <div className="office-wide-drawer-grid">
+            {drawer.map((id) => (
+              <button
+                key={id}
+                type="button"
+                className="ph-chip"
+                onClick={() => onLayout(revealPhoneInstrument(layout, id))}
+              >
+                <b>{specs[id]?.name ?? id}</b>
+              </button>
+            ))}
+          </div>
+        </details>
+      )}
     </div>
   );
 }

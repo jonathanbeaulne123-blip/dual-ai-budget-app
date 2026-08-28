@@ -18,10 +18,6 @@ import {
   dollarsFromCentsDigits,
   emitOfficeIntent,
   formatCad,
-  WIDE_BREAKPOINT,
-  wideDrawerIds,
-  wideInstrumentFullPage,
-  wideMosaicIds,
   describeDeviceLabel,
   localDeviceId,
   touchHouseholdDevice,
@@ -296,7 +292,6 @@ import {
 import { useDialog } from "./useDialog.ts";
 import { CalendarPage } from "./Calendar.tsx";
 import { Office } from "./Office.tsx";
-import { WideMiniBrowser } from "./widgets/WideMiniBrowser.tsx";
 import { HerculesPresence } from "./Hercules.tsx";
 import { HerculesProApproval, HerculesProPermissionsCard, herculesProAuthorizationRequest } from "./HerculesPro.tsx";
 import { CadPad } from "./CadPad.tsx";
@@ -399,7 +394,6 @@ export function App() {
   const [household, setHousehold] = useState<Household | null>(null);
   const [booting, setBooting] = useState(true);
   const [tab, setTab] = useState<Tab>("home");
-  const [wideShell, setWideShell] = useState(() => typeof window !== "undefined" && window.innerWidth >= WIDE_BREAKPOINT);
   const [adding, setAdding] = useState(false);
   const workShiftInputRef = useRef<ScopedWorkShiftInput | null>(null);
   const shiftScanScopeRef = useRef(createShiftScanScope());
@@ -420,14 +414,6 @@ export function App() {
     setLocationBusy(false);
   };
   const addSheetRef = useDialog(adding, closeAdd);
-
-  useEffect(() => {
-    const mq = window.matchMedia(`(min-width: ${WIDE_BREAKPOINT}px)`);
-    const sync = () => setWideShell(mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, []);
 
   const [mode, setMode] = useState<AddMode>("expense");
   const [form, setForm] = useState(emptyForm);
@@ -3082,7 +3068,7 @@ export function App() {
   }
 
   return (
-    <div className={`app ${wideShell ? "is-wide" : ""}`}>
+    <div className="app">
       <header className="topbar">
         <div className="brand">
           <img src="/hercules-mark.svg" alt="" />
@@ -3184,24 +3170,6 @@ export function App() {
           </button>
         ))}
       </div>
-
-      {wideShell && tab !== "home" && !adding && household && (
-        <WideMiniBrowser
-          currentTab={tab}
-          drawerIds={wideDrawerIds(wideMosaicIds({ hidden: [], lampLit: false }))}
-          onRoute={(next) => goTab(next)}
-          onPost={() => openAddFor(null)}
-          onInstrument={(id, full) => {
-            const page = wideInstrumentFullPage(id);
-            if (full && page) {
-              goTab(page);
-              return;
-            }
-            goTab("home");
-            window.setTimeout(() => emitOfficeIntent({ type: "expand", id }), 0);
-          }}
-        />
-      )}
 
       {tab === "home" && dashboard && (
         <Office

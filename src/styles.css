@@ -212,8 +212,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
 
 @media (min-width: 720px) {
   /* Paper office, not a hotel lobby. 1120 fits two columns; 1280 empty-wall still refused. */
-  .app { max-width: min(1120px, 100%); padding-bottom: 28px; }
-  .app.is-wide > .nav { display: none; }
+  .app { max-width: min(1120px, 100%); }
 }
 
 .topbar {

@@ -57,6 +57,9 @@
 .office-wide-hero .hearth-paper-bars {
   margin-top: 8px;
 }
+.office-wide-notebook .hearth-notebook {
+  min-height: 220px;
+}
 .office-wide-notebook.is-chalk .hearth-notebook {
   min-height: 280px;
 }
@@ -67,8 +70,7 @@
 }
 .office-wide.is-adding .office-wide-notebook,
 .office-wide.is-adding .office-wide-seals,
-.office-wide.is-adding .office-wide-hero,
-.office-wide.is-adding .office-wide-widgets {
+.office-wide.is-adding .office-wide-hero {
   pointer-events: none;
 }
 .office-wide.is-adding .office-wide-notebook {
@@ -78,49 +80,37 @@
   display: grid;
   gap: 10px;
 }
-.office-wide-widgets {
-  display: grid;
-  gap: 12px;
-  min-width: 0;
+.office-wide-drawer {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--paper) 88%, var(--card));
+  padding: 8px 12px;
 }
-.office-wide-tabs {
+.office-wide-drawer summary {
+  min-height: 44px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.office-wide-drawer-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  padding: 0;
-  margin: 0;
+  gap: 8px;
+  padding: 8px 0 10px;
 }
-.office-wide-tab {
+.office-wide .ph-chip {
   min-height: 44px;
-  padding: 6px 10px;
+  padding: 10px 12px;
+  background: var(--paper-2, var(--paper));
   border: 1px dashed var(--line);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--paper) 88%, var(--card));
-  color: var(--ink);
+  border-radius: 10px;
   font-family: inherit;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-size: 0.8125rem;
+  color: var(--ink);
   cursor: pointer;
 }
-.office-wide-tab.is-on {
-  border-style: solid;
-  border-color: var(--pine);
-  background: var(--paper);
-}
-.office-wide-tab.is-post {
-  background: color-mix(in srgb, var(--copper) 22%, var(--paper));
-  border-style: solid;
-  border-color: color-mix(in srgb, var(--copper) 55%, var(--line));
-}
-.office-wide-tab:focus-visible {
-  outline: 2px solid var(--pine);
-  outline-offset: 2px;
-}
-.app > .office-wide-tabs,
-.office.is-wide-room > .office-wide-tabs {
-  margin: 0 0 12px;
-}
+.office-wide .ph-chip b { font-weight: 600; }
+.office-wide .ph-chip:focus-visible { outline: 2px solid var(--pine); outline-offset: 2px; }
 .office-wide .ph-pin {
   justify-self: end;
   min-height: 44px;
