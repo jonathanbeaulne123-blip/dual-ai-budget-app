@@ -1,5 +1,45 @@
 # AI Task and Handoff Standard
 
+## Blank kitchen when loading a household (D-161) (2026-08-28)
+
+**Status:** Draft PR [#238](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/238) on `cursor/blank-household-google-boot-b30c` at `529b983`. **Not merged, not D-041 kitchen-live.** Risk: **Medium** (kitchen boot / Google identity / ErrorBoundary; no money write, schema, secrets, or Production). Jonathan later said the blank is **fixed**.
+
+**Household outcome:** Welcome still works. Opening a household must show the kitchen, not a blank `#root`. If a remaining kitchen throw escapes, paper recovery offers Reload, Sign out of Google, or Open welcome. Nothing is posted.
+
+**Budget delta (5):** `+5` — a blank kitchen after household open makes the books unusable.
+
+**Engagement delta (3):** `+1` — paper recovery if another throw escapes.
+
+**If they conflicted:** books win. Recovery never `postEntry`. Invalid Tip Tracker settings still fail at Confirm. Preview zeros on invalid present settings instead of painting catalog CAD.
+
+**What changed:**
+- PR **#235** (already on `origin/main` / live kitchen) moved the Evidence automation `useEffect` above `if (booting)` — that was the hook-count crash that only ran after household+session.
+- This PR adds defense: `continuityIdentityFromGoogle` (no `googleSession?.identity.email` throw), GIS tokens without identity are skipped, missing `shiftSettings` default on shape, kitchen preview uses `previewShiftAmounts`, App-level `KitchenErrorBoundary`, continuity replay returns when identity is missing.
+
+**Verification:**
+- Focused `test/app-kitchen-boot.test.ts` (6 tests) green.
+- `pnpm check` at `529b983` → **1044 passed / 2 skipped**, `tsc` + Vite build green.
+- Independent books-auditor: **PASS WITH NOTES** (preview must not paint catalog CAD for invalid present settings — zeros now).
+- Independent privacy-auditor: **PASS WITH NOTES** (replay no longer sends empty identity).
+- Independent UX-auditor: **Dual Course PASS** (Sign out now also clears member session so recovery cannot loop).
+- Independent verifier: **CONDITIONAL** until this handoff and worksession close (addressed here).
+- Local Vite `127.0.0.1:5173`: demo household → “I am Jonathan” → kitchen at 390px, not blank. Broken GIS token without identity + reload still showed kitchen. 720px kitchen still painted.
+- Live kitchen `hearth-books.jonathan-beaulne123.workers.dev` (PR #235 bundle): household Home painted, not `#root` empty. Jonathan: “its fixed.”
+
+**Data and environment disclosure:**
+- Development impact: none (client boot/recovery only)
+- Production impact: none
+- Network calls or data sent: none new
+- MCP access: none for this packet
+- Hosted rows/schema/secrets/deployments: none. No merge, no D-041 publish.
+- Real household or partner-personal data used: none. Fictional Development demo catalog. Live screenshots are the public kitchen URL with fake `#access_token=not.a.jwt`, not a data source.
+
+**Remaining uncertainty:** Live blank was the #235 hook-order crash. This PR’s ErrorBoundary / identity / shift defaults are **not** kitchen-live until merge + D-041. Localhost also logged `Maximum update depth exceeded` in `engine.ts` and Hercules rig `403` — kitchen still painted; those are separate. Calculator pad still uses strict `calcShiftAmounts`; invalid present settings would hit the new boundary, not a silent post.
+
+**Next owner:** Jonathan — the blank household open is fixed on live (#235). Review whether to merge [#238](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/238) as extra boot hardening. Do not merge or deploy unless you ask.
+
+**Worksession:** [`worksessions/2026-08-28-blank-household-boot.md`](worksessions/2026-08-28-blank-household-boot.md)
+
 ## Closeable kitchen notices with 1–2 fix steps (2026-08-28)
 
 **Status:** Draft PR [#232](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/232) on `cursor/closeable-kitchen-notices-560d`. **Not merged, not deployed, not live.** Risk: **Low–Medium** (copy/UX; no money write, Auth, or schema).
