@@ -61,8 +61,12 @@
   min-height: 220px;
 }
 .office-wide.is-adding .office-wide-notebook,
-.office-wide.is-adding .office-wide-seals {
+.office-wide.is-adding .office-wide-seals,
+.office-wide.is-adding .office-wide-hero {
   pointer-events: none;
+}
+.office-wide.is-adding .office-wide-notebook {
+  opacity: 0.55;
 }
 .office-wide-notebook-inner {
   display: grid;
@@ -114,6 +118,10 @@
 .office-wide .ph-pin.is-on {
   border-color: var(--pine);
   color: var(--pine);
+}
+.office-wide .ph-pin:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
 }
 
 @media (max-width: 899px) {
