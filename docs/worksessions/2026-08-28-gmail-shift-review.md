@@ -1,13 +1,13 @@
 # Hearth worksession — Gmail 7shifts review and confirmed shift writing
 
-- **Status:** RELEASE APPROVED; PUSH/MIGRATION/DEPLOY IN PROGRESS
+- **Status:** CLOSED; MERGED #239; LIVE
 - **Opened:** 2026-08-28 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** Hearth / Budget App
 - **Branch:** `codex/gmail-shift-review`
 - **Baseline SHA:** `7e5dc88917e07dfb513d8bf578ac3f244377a78b` after current-main reconciliation
-- **Head SHA:** working tree
+- **Head SHA:** reviewed `51dd716`; merged `d85ba80`
 - **PR or issue:** D-163 (renumbered from local D-161 during current-main reconciliation)
 - **Risk:** Release
 - **Decision owner:** Jonathan
@@ -81,6 +81,9 @@ Jonathan can explicitly connect Gmail read-only, import only genuine 7shifts mes
 - 2026-08-28: post-rebase combined Gmail/Evidence/Hercules/books/Fund proof passed: 12 files, 78 tests. TypeScript, AI-surface verification, production app/Hercules UI build, Wrangler dry-run, and diff integrity passed.
 - 2026-08-28: post-rebase full suite completed with 1,071 passed and 2 skipped. The only failure is the unchanged Windows credential-scrubber subprocess environment in `test/api.test.ts`; D-163 does not modify that test or script.
 - 2026-08-28: Jonathan explicitly approved push, merge, Evidence migration 0003, and deployment. Cloudflare Email Routing remains out of scope and `EVIDENCE_EMAIL_ENABLED=false`.
+- 2026-08-28: PR #239 merged as `d85ba80f82c1625d2217e2ea72fd493ae4b9878c`. GitHub CI and Cloudflare Workers workflows both completed successfully.
+- 2026-08-28: `0003_gmail_capture_dedup.sql` applied successfully to isolated Development `EVIDENCE_DB` and Production `EVIDENCE_PRODUCTION_DB`; both migration ledgers now report no pending work and both databases expose the scoped unique digest index.
+- 2026-08-28: Worker version `f30b0c54-d83d-4c27-8778-14ca7c8f637c` deployed. Live status reports both Evidence environments available; the live bundle contains direct Gmail capture and no forwarding-alias UI. `EVIDENCE_EMAIL_ENABLED=false` remains deployed.
 
 ## Decisions
 
@@ -96,4 +99,4 @@ Jonathan can explicitly connect Gmail read-only, import only genuine 7shifts mes
 
 ## Handoff
 
-Implementation and current-main reconciliation are complete with no packet P0/P1 finding. Push, merge, both isolated Evidence 0003 migrations, and app/Worker deployment are explicitly approved and in progress. Jonathan's interactive Google consent remains the final step before a real Gmail import. Cloudflare Email Routing remains disabled and unused.
+D-163 is merged and live with no open packet P0/P1. Both isolated Evidence schemas are current and the exact merged SHA passed CI. Jonathan's interactive Google consent is the remaining user step before a real Gmail import. Cloudflare Email Routing remains disabled and unused.
