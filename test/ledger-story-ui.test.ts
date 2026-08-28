@@ -31,6 +31,21 @@ describe("D-164 ledger story UI fences", () => {
     expect(css).toContain("grid-template-areas");
   });
 
+  it("keeps writers on the accepted snapshot and Add pickers on the scoped list", () => {
+    expect(app).toContain("restoreAcceptedSnapshot");
+    expect(app).toContain("persistLedgerWrite");
+    expect(app).toContain("booksHousehold={household}");
+    expect(app).toContain("pickerAccounts");
+    expect(app).toContain("healthFindings");
+    expect(app).toContain("experience.herculesHousehold");
+    expect(app).toContain("Choose who is using this ledger before exporting.");
+    expect(app).toContain("Fund free-to-spend");
+    expect(books).toContain("booksHousehold = household");
+    expect(books).toContain("closeBooksMonth(booksHousehold");
+    expect(office).toContain("integrityFindings");
+    expect(office).not.toContain("runHealthCheck(household)");
+  });
+
   it("gives Calendar, Shift, and Books a mode contract", () => {
     expect(calendar).toContain("view?: LedgerView");
     expect(shift).toContain("view?: LedgerView");

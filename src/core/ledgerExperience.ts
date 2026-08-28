@@ -1,4 +1,4 @@
-import { COMPANION, JOINT, ValidationError, type Household, type LedgerView } from "./types.ts";
+import { COMPANION, JOINT, ValidationError, type Household, type LedgerView, type Transaction } from "./types.ts";
 import type { DateKey } from "./calendar.ts";
 import { ledgerNameForView } from "./ledgerNames.ts";
 import {
@@ -142,6 +142,60 @@ function memberName(household: Household, memberId: string): string {
   return household.members.find((member) => member.id === memberId)?.name ?? "This member";
 }
 
+function unionById<T extends { id: string }>(primary: T[], fallback: T[]): T[] {
+  const ids = new Set(primary.map((row) => row.id));
+  return [...primary, ...fallback.filter((row) => !ids.has(row.id))];
+}
+
+function transactionCompilesAgainstAccounts(tx: Transaction, accountIds: Set<string>): boolean {
+  if (!accountIds.has(tx.accountId)) return false;
+  if (tx.type === "transfer") {
+    if (tx.transferFromAccountId && !accountIds.has(tx.transferFromAccountId)) return false;
+    if (tx.transferToAccountId && !accountIds.has(tx.transferToAccountId)) return false;
+  }
+  return true;
+}
+
+/**
+ * Presentation clones may drop Personal accounts, partner rows, or both-visibility
+ * posts that still live on the accepted snapshot. Writers must never persist that
+ * subset. Restore missing identity rows onto `next` while keeping `next`'s mutations.
+ */
+export function restoreAcceptedSnapshot(accepted: Household, next: Household): Household {
+  if (next.householdId !== accepted.householdId || next.environment !== accepted.environment) {
+    return next;
+  }
+  const nextAccountIds = new Set(next.accounts.map((row) => row.id));
+  const nextTxIds = new Set(next.transactions.map((row) => row.id));
+  const nextGoalIds = new Set(next.goals.map((row) => row.id));
+  const missingAccounts = accepted.accounts.some((row) => !nextAccountIds.has(row.id));
+  const missingTx = accepted.transactions.some((row) => !nextTxIds.has(row.id));
+  const missingGoals = accepted.goals.some((row) => !nextGoalIds.has(row.id));
+  if (!missingAccounts && !missingTx && !missingGoals) return next;
+  const goals = unionById(next.goals, accepted.goals);
+  const goalIds = new Set(goals.map((goal) => goal.id));
+  return {
+    ...next,
+    accounts: unionById(next.accounts, accepted.accounts),
+    transactions: unionById(next.transactions, accepted.transactions),
+    shifts: unionById(next.shifts, accepted.shifts),
+    goals,
+    goalContributions: unionById(next.goalContributions ?? [], accepted.goalContributions ?? [])
+      .filter((row) => goalIds.has(row.goalId)),
+    goalPurchases: unionById(next.goalPurchases ?? [], accepted.goalPurchases ?? [])
+      .filter((row) => goalIds.has(row.goalId)),
+    recurrences: unionById(next.recurrences ?? [], accepted.recurrences ?? []),
+    appointments: unionById(next.appointments ?? [], accepted.appointments ?? []),
+    claims: unionById(next.claims ?? [], accepted.claims ?? []),
+    fundEvents: unionById(next.fundEvents ?? [], accepted.fundEvents ?? []),
+    sevenShiftsSchedules: unionById(next.sevenShiftsSchedules ?? [], accepted.sevenShiftsSchedules ?? []),
+    fundPrivate: {
+      bankBindings: unionById(next.fundPrivate?.bankBindings ?? [], accepted.fundPrivate?.bankBindings ?? []),
+      reconciliations: unionById(next.fundPrivate?.reconciliations ?? [], accepted.fundPrivate?.reconciliations ?? []),
+    },
+  };
+}
+
 function applyPresentationScope(household: Household, memberId: string, view: LedgerView): Household {
   const scoped = householdForView(household, memberId, view);
   const accounts = view === "personal"
@@ -159,7 +213,8 @@ function applyPresentationScope(household: Household, memberId: string, view: Le
     return item.memberId === memberId || item.memberId === JOINT || item.memberId === COMPANION;
   });
   const appointmentIds = new Set(appointments.map((item) => item.id));
-  const transactionIds = new Set(scoped.transactions.map((item) => item.id));
+  const transactions = scoped.transactions.filter((tx) => transactionCompilesAgainstAccounts(tx, accountIds));
+  const transactionIds = new Set(transactions.map((item) => item.id));
   const claims = (household.claims ?? []).filter((claim) => (
     claim.appointmentId
       ? appointmentIds.has(claim.appointmentId)
@@ -171,9 +226,20 @@ function applyPresentationScope(household: Household, memberId: string, view: Le
     recurrences,
     appointments,
     claims,
-    transactions: scoped.transactions.filter((tx) => (
-      view === "personal" || accountIds.has(tx.accountId) || !household.accounts.some((account) => account.id === tx.accountId && account.scope === "personal")
-    )),
+    transactions,
+  };
+}
+
+function sanitizeKitchen(household: Household, memberId: string): Household["kitchen"] {
+  const hercules = household.kitchen.hercules;
+  if (!hercules) return household.kitchen;
+  return {
+    ...household.kitchen,
+    hercules: {
+      ...hercules,
+      chats: [],
+      memories: (hercules.memories ?? []).filter((row) => row.createdBy === memberId),
+    },
   };
 }
 
@@ -182,10 +248,12 @@ function sanitizeExport(household: Household, memberId: string, view: LedgerView
   if (view === "household") {
     const shared = splitForSync(household, memberId).shared;
     const assembled = assembleHousehold(shared, null, { linked: household.linked });
-    return applyPresentationScope(assembled, memberId, "household");
+    const cleaned = applyPresentationScope(assembled, memberId, "household");
+    return { ...cleaned, kitchen: sanitizeKitchen(cleaned, memberId) };
   }
   return {
     ...scoped,
+    kitchen: sanitizeKitchen(scoped, memberId),
     fundPrivate: household.householdFund?.custodianMemberId === memberId
       ? scoped.fundPrivate
       : { bankBindings: [], reconciliations: [] },

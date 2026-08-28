@@ -29,6 +29,7 @@ const SECTIONS: { id: LedgerSection; label: string }[] = [
 
 export function LedgerPage({
   household,
+  writeHousehold = household,
   memberId,
   view,
   sourceFocus,
@@ -37,6 +38,7 @@ export function LedgerPage({
   onRemove,
 }: {
   household: Household;
+  writeHousehold?: Household;
   memberId: string;
   view: LedgerView;
   sourceFocus: HerculesNumberSource | null;
@@ -113,7 +115,7 @@ export function LedgerPage({
                   type="button"
                   className="chip"
                   onClick={() => {
-                    const result = markDuplicate(household, pair.left.id, true);
+                    const result = markDuplicate(writeHousehold, pair.left.id, true);
                     onChange(result.household, result.undo);
                   }}
                 >
@@ -123,7 +125,7 @@ export function LedgerPage({
                   type="button"
                   className="chip"
                   onClick={() => {
-                    const result = markDuplicate(household, pair.right.id, true);
+                    const result = markDuplicate(writeHousehold, pair.right.id, true);
                     onChange(result.household, result.undo);
                   }}
                 >
@@ -159,7 +161,7 @@ export function LedgerPage({
             household={household}
             transaction={tx}
             onToggleDuplicate={() => {
-              const result = markDuplicate(household, tx.id, !tx.isDuplicate);
+              const result = markDuplicate(writeHousehold, tx.id, !tx.isDuplicate);
               onChange(result.household, result.undo);
             }}
             onRemove={() => onRemove(tx)}

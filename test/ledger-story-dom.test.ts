@@ -39,6 +39,8 @@ describe("ledger story DOM", () => {
     expect(host.textContent).toContain("Fund free-to-spend");
     expect(host.textContent).toContain("not global safe-to-spend");
     expect(host.textContent).toContain("The money remains in Bianca’s savings. Hearth cannot move it.");
+    expect(host.querySelectorAll("h3").length).toBeGreaterThan(3);
+    expect(host.textContent).not.toContain("Who spent more");
     act(() => {
       root.render(createElement(PersonalLedgerFolio, {
         story: buildPersonalLedgerStory(personal.scopedHousehold, "MEM-002", "2026-09-01"),

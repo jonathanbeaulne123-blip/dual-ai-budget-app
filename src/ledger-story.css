@@ -40,7 +40,7 @@
   background: var(--card);
   box-shadow: var(--lift-0);
 }
-.ledger-story-sheet h2 {
+.ledger-story-sheet h3 {
   margin: 0 0 8px;
   font-family: var(--display);
   font-size: 1.35rem;

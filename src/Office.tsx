@@ -23,7 +23,6 @@ import {
   readTorontoWeather,
   loadPhonePlacePrefs,
   resolveRoom,
-  runHealthCheck,
   saveOfficeLayout,
   saveOfficeLook,
   saveOfficeRings,
@@ -65,6 +64,7 @@ import {
   type Environment,
   type Household,
   type DateKey,
+  type Finding,
   type InstrumentId,
   type InstrumentSize,
   type OfficeBreakpoint,
@@ -153,6 +153,7 @@ export function Office({
   onSitDown,
   onGo,
   integrityFindingCount = 0,
+  integrityFindings = [],
 }: {
   household: Household;
   dashboard: Dashboard;
@@ -161,6 +162,7 @@ export function Office({
   memberId: string;
   view: "household" | "personal";
   integrityFindingCount?: number;
+  integrityFindings?: Finding[];
   busy: boolean;
   clinkOn: boolean;
   adding: boolean;
@@ -322,7 +324,7 @@ export function Office({
     setLook(loadOfficeLook(environment, localStorage, memberId));
   }, [environment, memberId]);
 
-  const findings = useMemo(() => runHealthCheck(household), [household]);
+  const findings = integrityFindings;
   const sharedStory = useMemo(
     () => (view === "household" ? buildSharedLedgerStory(household, today as DateKey, { integrityFindingCount }) : null),
     [household, today, view, integrityFindingCount],

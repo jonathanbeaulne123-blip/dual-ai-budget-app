@@ -19,7 +19,7 @@ export function SharedLedgerStory({
     <section className="ledger-story-room" aria-label="Shared household story" data-ledger-story="shared">
       <article className="ledger-story-sheet ledger-story-opening">
         <p className="ledger-purpose-kicker">Now</p>
-        <h2>{opening.headline}</h2>
+        <h3>{opening.headline}</h3>
         <p>{opening.body}</p>
         <div className="ledger-story-stats" aria-label="Together right now">
           <div className="stat"><span>Operating</span><strong>{formatCad(opening.operatingBalanceCents)}</strong></div>
@@ -38,13 +38,14 @@ export function SharedLedgerStory({
 
       <article className="ledger-story-sheet ledger-story-flow" aria-label="How the shared pool moves">
         <p className="ledger-purpose-kicker">Flow</p>
-        <h2>How the shared pool moves</h2>
+        <h3>How the shared pool moves</h3>
         <ol className="ledger-flow-list">
           {story.flow.nodes.map((node) => (
             <li key={node.id} className={`ledger-flow-node is-${node.state}${node.empty ? " is-empty" : ""}`}>
               <span className="ledger-flow-label">{node.label}</span>
               <strong>{formatCad(node.cents)}</strong>
               <span className="muted">{node.empty ? "None yet" : node.source}</span>
+              {node.state === "deficit" ? <span>Shortfall — needs a top-up, not extra to spend.</span> : null}
             </li>
           ))}
         </ol>
@@ -53,7 +54,7 @@ export function SharedLedgerStory({
 
       <article className="ledger-story-sheet ledger-story-queue" aria-label="Who needs to do what">
         <p className="ledger-purpose-kicker">Attention</p>
-        <h2>Who needs to do what</h2>
+        <h3>Who needs to do what</h3>
         {story.queue.length === 0 ? (
           <p className="muted">Nothing is waiting on a person right now.</p>
         ) : (
@@ -77,7 +78,7 @@ export function SharedLedgerStory({
 
       <article className="ledger-story-sheet ledger-story-week" aria-label="This week’s household story">
         <p className="ledger-purpose-kicker">Change</p>
-        <h2>This week</h2>
+        <h3>This week</h3>
         {story.weekly.length === 0 ? (
           <p className="muted">No shared Fund events this week yet.</p>
         ) : (
@@ -96,7 +97,7 @@ export function SharedLedgerStory({
 
       <article className="ledger-story-sheet ledger-story-month" aria-label="This month’s household arc">
         <p className="ledger-purpose-kicker">Next</p>
-        <h2>This month</h2>
+        <h3>This month</h3>
         <div className="ledger-story-stats">
           <div className="stat"><span>Opening operating</span><strong>{formatCad(story.monthly.openingOperatingCents)}</strong></div>
           <div className="stat"><span>Confirmed contributions</span><strong>{formatCad(story.monthly.confirmedContributionsCents)}</strong></div>

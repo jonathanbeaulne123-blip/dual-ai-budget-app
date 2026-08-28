@@ -31,6 +31,7 @@ import { KitchenNotice } from "./KitchenNotice.tsx";
 
 export function WalletStrip({
   household,
+  writeHousehold = household,
   today,
   focusedId,
   memberId,
@@ -40,6 +41,7 @@ export function WalletStrip({
   onAdd,
 }: {
   household: Household;
+  writeHousehold?: Household;
   today: string;
   focusedId?: string | null;
   memberId?: string;
@@ -79,6 +81,7 @@ export function WalletStrip({
                   {expanded && memberId && onChange && onPay && onAdd && (
                     <AccountRoom
                       household={household}
+                      writeHousehold={writeHousehold}
                       accountId={tile.account.id}
                       today={today}
                       memberId={memberId}
@@ -131,6 +134,7 @@ function WalletTileButton({
 
 export function AccountRoom({
   household,
+  writeHousehold = household,
   accountId,
   today,
   memberId,
@@ -140,6 +144,7 @@ export function AccountRoom({
   embedded = false,
 }: {
   household: Household;
+  writeHousehold?: Household;
   accountId: string;
   today: string;
   memberId: string;
@@ -167,7 +172,7 @@ export function AccountRoom({
 
   function run(fn: (current: Household) => CommitResult) {
     try {
-      const result = fn(household);
+      const result = fn(writeHousehold);
       setError("");
       onChange(result.household, result.undo);
     } catch (caught) {
@@ -337,10 +342,12 @@ export function AccountRoom({
 
 export function AddAccountForm({
   household,
+  writeHousehold = household,
   memberId,
   onSave,
 }: {
   household: Household;
+  writeHousehold?: Household;
   memberId: string;
   onSave: (household: Household, undo?: UndoToken) => void;
 }) {
@@ -434,7 +441,7 @@ export function AddAccountForm({
         type="button"
         onClick={() => {
           try {
-            const result = addAccount(household, {
+            const result = addAccount(writeHousehold, {
               name,
               kind,
               institution,
@@ -465,6 +472,7 @@ export function AddAccountForm({
 
 export function WalletPane({
   household,
+  writeHousehold = household,
   today,
   memberId,
   focusedId,
@@ -474,6 +482,7 @@ export function WalletPane({
   onAdd,
 }: {
   household: Household;
+  writeHousehold?: Household;
   today: string;
   memberId: string;
   focusedId: string | null;
@@ -486,6 +495,7 @@ export function WalletPane({
     <>
       <WalletStrip
         household={household}
+        writeHousehold={writeHousehold}
         today={today}
         focusedId={focusedId}
         memberId={memberId}
@@ -494,7 +504,7 @@ export function WalletPane({
         onPay={onPay}
         onAdd={onAdd}
       />
-      <AddAccountForm household={household} memberId={memberId} onSave={onChange} />
+      <AddAccountForm household={household} writeHousehold={writeHousehold} memberId={memberId} onSave={onChange} />
     </>
   );
 }

@@ -2,16 +2,21 @@ import { describe, expect, it } from "vitest";
 import {
   HOUSEHOLD_FUND_ID,
   addAccount,
+  addGoal,
   bindHouseholdFundBackingAccount,
+  catalogHousehold,
+  closeBooksMonth,
+  compileHousehold,
   configureHouseholdFund,
   confirmHouseholdFundContribution,
-  catalogHousehold,
   findingsSafeForView,
   ledgerRouteContract,
   postEntry,
   projectLedgerExperience,
   proposeHouseholdFundContribution,
   recordHouseholdFundReconciliation,
+  restoreAcceptedSnapshot,
+  seedDemoHousehold,
   splitForSync,
 } from "../src/core/index.ts";
 
@@ -87,6 +92,38 @@ describe("projectLedgerExperience", () => {
     expect(jonathan.capabilities.canSeePrivateFundRecon).toBe(false);
     expect(JSON.stringify(jonathan.scopedHousehold)).not.toContain("Private bank");
     expect(JSON.stringify(jonathan.exportHousehold)).not.toContain("1234");
+  });
+
+  it("lets Personal presentation compile without the accepted Visa rows", () => {
+    const household = seedDemoHousehold({ today: DATE });
+    const personal = projectLedgerExperience(household, JONATHAN, "personal", DATE);
+    if (!personal.ok) throw new Error("expected ok");
+    expect(() => compileHousehold(personal.scopedHousehold)).not.toThrow();
+    expect(() => compileHousehold(personal.booksHousehold)).not.toThrow();
+    expect(personal.booksHousehold.transactions.length).toBeGreaterThan(personal.scopedHousehold.transactions.length);
+  });
+
+  it("restores partner Personal rows when a Shared presentation write is persisted", () => {
+    const { household, backingId } = withPrivateBacking();
+    const shared = projectLedgerExperience(household, JONATHAN, "household", DATE);
+    if (!shared.ok) throw new Error("expected ok");
+    expect(shared.scopedHousehold.accounts.some((row) => row.id === backingId)).toBe(false);
+    const posted = addGoal(shared.scopedHousehold, { name: "Trip jar", target: "100", shared: true });
+    expect(posted.household.accounts.some((row) => row.id === backingId)).toBe(false);
+    expect(posted.household.goals.some((goal) => goal.name === "Trip jar")).toBe(true);
+    const restored = restoreAcceptedSnapshot(shared.booksHousehold, posted.household);
+    expect(restored.accounts.some((row) => row.id === backingId)).toBe(true);
+    expect(restored.transactions.length).toBe(household.transactions.length);
+    expect(restored.goals.some((goal) => goal.name === "Trip jar")).toBe(true);
+  });
+
+  it("closes months from the accepted snapshot, not the Personal folio clone", () => {
+    const household = seedDemoHousehold({ today: DATE });
+    const personal = projectLedgerExperience(household, JONATHAN, "personal", DATE);
+    if (!personal.ok) throw new Error("expected ok");
+    const closed = closeBooksMonth(personal.booksHousehold, { monthKey: "2026-08", createdBy: JONATHAN });
+    expect(closed.household.transactions.length).toBe(household.transactions.length);
+    expect(closed.household.kitchen.books.closedMonths.some((row) => row.monthKey === "2026-08")).toBe(true);
   });
 
   it("keeps Health on the accepted books while redacting Personal facts from Shared findings", () => {

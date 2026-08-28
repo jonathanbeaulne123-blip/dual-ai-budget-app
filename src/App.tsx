@@ -30,6 +30,7 @@ import {
   ledgerNameForView,
   ledgerRouteContract,
   projectLedgerExperience,
+  restoreAcceptedSnapshot,
   nameHouseholdLedgers,
   linkGoogleIdentity,
   assembleHousehold,
@@ -2102,6 +2103,11 @@ export function App() {
     return enqueueWrite(() => commitHousehold(next, token, actorId, options));
   }
 
+  function persistLedgerWrite(next: Household, token?: UndoToken) {
+    const accepted = householdRef.current;
+    return persist(accepted ? restoreAcceptedSnapshot(accepted, next) : next, token);
+  }
+
   async function gateWithGoogle(options?: { record?: boolean }) {
     const current = householdRef.current;
     const who = session?.memberId;
@@ -2192,11 +2198,17 @@ export function App() {
         workShiftInputRef.current = null;
         setConfirm(null);
         setAdding(false);
+        const nextExperience = session?.memberId
+          ? projectLedgerExperience(result.household, session.memberId, view, today)
+          : null;
         setForm({
           ...emptyForm,
           date: today,
           visibility: defaultVisibilityForView(view),
-          ...addFormDefaults(result.household, focusedAccountId),
+          ...addFormDefaults(
+            nextExperience && nextExperience.ok ? nextExperience.scopedHousehold : result.household,
+            focusedAccountId,
+          ),
         });
         if (result.warnings.length) setError(result.warnings.join(" "));
         if (result.postedIds.some((id) => /^(TXN|SHF)/.test(id))) {
@@ -2789,6 +2801,8 @@ export function App() {
   const ledger = household;
   const actorId = session.memberId;
   const displayHousehold = experience && experience.ok ? experience.scopedHousehold : household;
+  const pickerAccounts = displayHousehold.accounts.filter((account) => account.active);
+  const healthFindings = experience && experience.ok ? experience.integrityFindings : [];
   const preserveCurrentPersonal = (next: Household) => {
     if (view !== "household") return next;
     const incoming = splitForSync(next, actorId);
@@ -2812,7 +2826,7 @@ export function App() {
     && ledger.workJobs.some((job) => job.active && job.memberId === actorId);
 
   const formForAccount = (accountId: string | null, extra: Partial<typeof emptyForm> = {}) => {
-    const defaults = addFormDefaults(ledger, accountId);
+    const defaults = addFormDefaults(displayHousehold, accountId);
     return {
       ...emptyFormForZone(booksZone),
       date: today,
@@ -2886,7 +2900,7 @@ export function App() {
   const openAddFor = (account: Account | null, nextMode?: AddMode) => {
     leaveDesk();
     const id = account?.id ?? focusedAccountId;
-    const defaults = addFormDefaults(ledger, id);
+    const defaults = addFormDefaults(displayHousehold, id);
     setFocusedAccountId(id);
     setMode(nextMode ?? defaults.suggestedMode);
     setAdding(true);
@@ -3387,7 +3401,7 @@ export function App() {
                 <div className="stat"><span>Operating</span><strong>{formatCad(fund.operatingBalanceCents)}</strong></div>
                 <div className="stat"><span>Transfer due</span><strong>{formatCad(fund.transferDueCents)}</strong></div>
                 <div className="stat"><span>Upcoming</span><strong>{formatCad(fund.upcomingReserveCents)}</strong></div>
-                <div className="stat"><span>{fund.topUpNeededCents ? "Top-up" : "Free"}</span><strong className={fund.topUpNeededCents ? "negative" : ""}>{formatCad(fund.topUpNeededCents || fund.freeToSpendCents)}</strong></div>
+                <div className="stat"><span>{fund.topUpNeededCents ? "Top-up needed" : "Fund free-to-spend"}</span><strong className={fund.topUpNeededCents ? "negative" : ""}>{formatCad(fund.topUpNeededCents || fund.freeToSpendCents)}</strong></div>
               </div>
               <p className="muted">The money remains in Bianca’s savings. Hearth cannot move it. Reconciliation: {fund.lastReconciledAt ? (fund.reconciliationTied ? "tied" : "needs review") : "not yet recorded"}.</p>
             </section>
@@ -3400,7 +3414,8 @@ export function App() {
           environment={environment}
           memberId={session.memberId}
           view={view}
-          integrityFindingCount={experience && experience.ok ? experience.integrityFindings.length : findings.length}
+          integrityFindingCount={experience && experience.ok ? experience.integrityFindings.length : 0}
+          integrityFindings={experience && experience.ok ? experience.integrityFindings : []}
           busy={busy}
           clinkOn={clinkOn}
           adding={adding}
@@ -3439,7 +3454,7 @@ export function App() {
           onMarkPaid={(recurrenceId, summary) => setGuard({ kind: "postRecurrence", recurrenceId, summary })}
           onAskSettle={(claimId, summary) => setGuard({ kind: "settleClaim", claimId, summary })}
           onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
-          onSitDown={(next, token) => persist(preserveCurrentPersonal(next), token)}
+          onSitDown={(next, token) => persistLedgerWrite(preserveCurrentPersonal(next), token)}
           onGo={(next) => {
             if (next === "add") {
               openAddFor(null);
@@ -3478,9 +3493,10 @@ export function App() {
           <SitDownGuide household={household} memberId={actorId} onApply={(next, token) => persist(next, token)} hidden={view === "personal"} />
           <Goals
             household={displayHousehold}
+            booksHousehold={household}
             createdBy={memberId}
             goals={displayHousehold.goals}
-            onChange={(next, token) => persist(next, token)}
+            onChange={(next, token) => persistLedgerWrite(next, token)}
             onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
           />
         </>
@@ -3565,6 +3581,7 @@ export function App() {
       {tab === "ledger" && (
         <BooksPage
           household={displayHousehold}
+          booksHousehold={household}
           memberId={session.memberId}
           view={view}
           booksStatus={booksStatus}
@@ -3572,7 +3589,7 @@ export function App() {
           sourceFocus={herculesSourceFocus}
           onFocusAccount={setFocusedAccountId}
           onClearSource={() => setHerculesSourceFocus(null)}
-          onChange={(next, token) => persist(preserveCurrentPersonal(next), token)}
+          onChange={(next, token) => persistLedgerWrite(preserveCurrentPersonal(next), token)}
           onCommand={(command) => { void run(command); }}
           onPayAccount={openPayCard}
           onAddToAccount={(account) => openAddFor(account)}
@@ -3625,10 +3642,10 @@ export function App() {
             </button>
           </section>
           <section className="card">
-            <header><h2>{experience && experience.ok ? experience.integrityLabel : "Health"}</h2><span className={`pill ${findings.length ? "warn" : "good"}`}>{findings.length ? `${findings.length} findings` : "Clean"}</span></header>
+            <header><h2>{experience && experience.ok ? experience.integrityLabel : "Health"}</h2><span className={`pill ${healthFindings.length ? "warn" : "good"}`}>{healthFindings.length ? `${healthFindings.length} findings` : "Clean"}</span></header>
             <p className="muted">{view === "household" ? "This is the full-household books signal. It does not reveal Personal envelopes." : "Integrity still runs on the accepted household. Personal amounts stay in this folio."}</p>
-            {findings.length === 0 ? <p className="muted">Ledger, splits, transfers, shifts, flags, and the books agree.</p> : (
-              <ul className="health">{findings.map((finding) => <li key={finding.section + finding.message}><strong>{finding.section}.</strong> {finding.message}</li>)}</ul>
+            {!(experience && experience.ok) ? <p className="muted">Choose who is using this ledger before reading Health.</p> : healthFindings.length === 0 ? <p className="muted">Ledger, splits, transfers, shifts, flags, and the books agree.</p> : (
+              <ul className="health">{healthFindings.map((finding) => <li key={finding.section + finding.message}><strong>{finding.section}.</strong> {finding.message}</li>)}</ul>
             )}
           </section>
           <section className="card">
@@ -3865,7 +3882,13 @@ export function App() {
               Commands write PGlite books (<code>{STORAGE_EXPLAINER.books}</code>) and keep a snapshot in IndexedDB.
               Export follows the active ledger: Shared never includes Personal accounts, Personal rows, or private Fund reconciliation.
             </p>
-            <button className="primary" onClick={() => downloadJson(experience && experience.ok ? experience.exportHousehold : household)}>
+            <button className="primary" onClick={() => {
+              if (!experience || !experience.ok) {
+                setError("Choose who is using this ledger before exporting.");
+                return;
+              }
+              downloadJson(experience.exportHousehold);
+            }}>
               {view === "personal" ? "Export this Personal folio" : "Export Shared snapshot"}
             </button>
             <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setGuard({ kind: "stress-random" })}>Reload random data</button>
@@ -4101,7 +4124,7 @@ export function App() {
                 )}
                 <label>Account</label>
                 <select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })}>
-                  {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
+                  {pickerAccounts.map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
                 </select>
                 <label>Note</label>
                 <input
@@ -4141,11 +4164,11 @@ export function App() {
                 />
                 <label>From</label>
                 <select value={form.fromAccountId} onChange={(event) => setForm({ ...form, fromAccountId: event.target.value })}>
-                  {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
+                  {pickerAccounts.map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
                 </select>
                 <label>To</label>
                 <select value={form.toAccountId} onChange={(event) => setForm({ ...form, toAccountId: event.target.value })}>
-                  {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
+                  {pickerAccounts.map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
                 </select>
                 <p className="muted">Not income. Not spend.</p>
               </>
@@ -4204,7 +4227,7 @@ export function App() {
                     />
                     <WorkShiftWithSevenShifts
                       key={`${environment}:${household.householdId}:${actorId}`}
-                      household={household}
+                      household={displayHousehold}
                       memberId={actorId}
                       today={workShiftDateRef.current}
                       punch={activeOpenShift(household.kitchen, actorId)}
@@ -4242,7 +4265,7 @@ export function App() {
                       </select>
                       <label>Account</label>
                       <select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })}>
-                        {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
+                        {pickerAccounts.map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
                       </select>
                       <CadPad
                         digits={centsDigitsFromDollars(form[field])}
@@ -4350,7 +4373,7 @@ export function App() {
                           useHouseholdFund: !form.useHouseholdFund,
                           fundedAmount: form.fundedAmount || form.amount,
                           fundDestinationAccountId: !form.useHouseholdFund
-                            && household.accounts.some((account) => account.id === form.accountId && account.scope !== "personal")
+                            && displayHousehold.accounts.some((account) => account.id === form.accountId && account.scope !== "personal")
                             ? form.accountId
                             : form.fundDestinationAccountId || "ACC-VISA",
                         })}
@@ -4364,7 +4387,7 @@ export function App() {
                         <input id="add-fund-amount" inputMode="decimal" value={form.fundedAmount} onChange={(event) => setForm({ ...form, fundedAmount: event.target.value })} placeholder={form.amount || "0.00"} />
                         <label htmlFor="add-fund-destination">Settlement destination</label>
                         <select id="add-fund-destination" value={form.fundDestinationAccountId} onChange={(event) => setForm({ ...form, fundDestinationAccountId: event.target.value })}>
-                          {household.accounts.filter((account) => account.active && account.scope !== "personal").map((account) => (
+                          {displayHousehold.accounts.filter((account) => account.active && account.scope !== "personal").map((account) => (
                             <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>
                           ))}
                         </select>
@@ -5079,7 +5102,13 @@ export function App() {
               { label: "Health", run: () => goTab("more") },
               { label: "Google household bridge", run: () => goTab("more") },
               { label: "Ask Hercules", run: () => goTab("home") },
-              { label: "Export", run: () => downloadJson(experience && experience.ok ? experience.exportHousehold : household) },
+              { label: "Export", run: () => {
+                if (!experience || !experience.ok) {
+                  setError("Choose who is using this ledger before exporting.");
+                  return;
+                }
+                downloadJson(experience.exportHousehold);
+              } },
             ].map((item) => (
               <button key={item.label} onClick={() => { item.run(); setCommandOpen(false); }}>{item.label}</button>
             ))}
@@ -5088,7 +5117,7 @@ export function App() {
       )}
 
       <HerculesPresence
-        household={household}
+        household={experience && experience.ok ? experience.herculesHousehold : displayHousehold}
         today={today}
         tab={tab}
         adding={adding}
@@ -5199,8 +5228,9 @@ export function App() {
   );
 }
 
-function Goals({ household, createdBy, goals, onChange, onAskStartJar }: {
+function Goals({ household, booksHousehold, createdBy, goals, onChange, onAskStartJar }: {
   household: Household;
+  booksHousehold: Household;
   createdBy: string;
   goals: Household["goals"];
   onChange: (household: Household, undo?: UndoToken) => void;
@@ -5234,11 +5264,11 @@ function Goals({ household, createdBy, goals, onChange, onAskStartJar }: {
             <div className="muted">{goal.shared ? "Shared" : "Personal filter only"} · {formatCad(goal.savedCents)} / {formatCad(goal.targetCents)}{describeGoalContributors(household, goal.id) ? ` · ${describeGoalContributors(household, goal.id)}` : ""}</div>
             {goalIsFull(goal) && buying === goal.id && (
               <PurchaseGoalSheet
-                household={household}
+                household={booksHousehold}
                 goalId={goal.id}
                 busy={false}
                 onCommand={(fn) => {
-                  const result = fn(household);
+                  const result = fn(booksHousehold);
                   onChange(result.household, result.undo);
                 }}
                 onClose={() => setBuying(null)}
@@ -5253,10 +5283,11 @@ function Goals({ household, createdBy, goals, onChange, onAskStartJar }: {
               onChange={(event) => setAmount(event.target.value)}
             />
             <button className="chip" onClick={() => {
-              const fromAccountId = household.accounts.find((account) => account.active && account.kind === "chequing")?.id
-                ?? household.accounts.find((account) => account.active)?.id;
+              const fromAccountId = booksHousehold.accounts.find((account) => account.active && account.kind === "chequing")?.id
+                ?? household.accounts.find((account) => account.active)?.id
+                ?? booksHousehold.accounts.find((account) => account.active)?.id;
               if (!fromAccountId) return;
-              const result = fundGoal(household, {
+              const result = fundGoal(booksHousehold, {
                 goalId: goal.id,
                 amount,
                 fromAccountId,
@@ -5288,7 +5319,7 @@ function Goals({ household, createdBy, goals, onChange, onAskStartJar }: {
       <input value={name} onChange={(event) => setName(event.target.value)} />
       <input value={target} onChange={(event) => setTarget(event.target.value)} />
       <button className="primary" onClick={() => {
-        const result = addGoal(household, { name, target, shared: true });
+        const result = addGoal(booksHousehold, { name, target, shared: true });
         onChange(result.household, result.undo);
       }}>Add shared goal</button>
     </section>

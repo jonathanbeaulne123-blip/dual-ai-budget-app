@@ -67,6 +67,7 @@ type Pane = (typeof PANES)[number]["id"];
 
 export function BooksPage({
   household,
+  booksHousehold = household,
   memberId,
   view,
   booksStatus,
@@ -82,6 +83,7 @@ export function BooksPage({
   onGoMore,
 }: {
   household: Household;
+  booksHousehold?: Household;
   memberId: string;
   view: LedgerView;
   booksStatus: BooksStatus | null;
@@ -100,11 +102,11 @@ export function BooksPage({
   const books = useMemo(() => compileHousehold(household), [household]);
   const trial = useMemo(() => trialBalance(books, { recognizedOnly: true }), [books]);
   const equation = useMemo(() => booksEquation(books), [books]);
-  const opinion = useMemo(() => auditOpinion(household), [household]);
+  const opinion = useMemo(() => auditOpinion(booksHousehold), [booksHousehold]);
   const wallet = useMemo(() => householdWallet(household, todayKey()), [household]);
   const today = todayKey();
   const monthKey = monthKeyFromDateKey(today);
-  const packMonth = closedMonthKeys(household).at(-1) ?? monthKey;
+  const packMonth = closedMonthKeys(booksHousehold).at(-1) ?? monthKey;
   const [accountId, setAccountId] = useState(focusedAccountId ?? household.accounts[0]?.id ?? books.chart[0]?.id ?? "");
   const register = useMemo(() => accountRegister(books, accountId), [books, accountId]);
   const [recDate, setRecDate] = useState(today);
@@ -239,6 +241,7 @@ export function BooksPage({
       {pane === "wallet" && (
         <WalletPane
           household={household}
+          writeHousehold={booksHousehold}
           today={today}
           memberId={memberId}
           focusedId={focusedAccountId}
@@ -257,6 +260,7 @@ export function BooksPage({
       {pane === "register" && (
         <LedgerPage
           household={household}
+          writeHousehold={booksHousehold}
           memberId={memberId}
           view={view}
           sourceFocus={sourceFocus?.route === "ledger" ? sourceFocus : null}
@@ -267,7 +271,7 @@ export function BooksPage({
       )}
       {pane === "import" && (
         <BatchImportCard
-          household={household}
+          household={booksHousehold}
           memberId={memberId}
           view={view}
           onCommit={(next, undo) => onChange(next, undo)}
@@ -355,7 +359,7 @@ export function BooksPage({
         </section>
       )}
       {pane === "statements" && (
-        <StatementsPane household={household} monthKey={monthKey} today={today} onChange={onChange} />
+        <StatementsPane household={household} writeHousehold={booksHousehold} monthKey={monthKey} today={today} onChange={onChange} />
       )}
       {pane === "rec" && (
         <section className="card">
@@ -380,7 +384,7 @@ export function BooksPage({
             type="button"
             onClick={() => {
               try {
-                const result = recordReconciliation(household, {
+                const result = recordReconciliation(booksHousehold, {
                   accountId,
                   statementDate: recDate,
                   statementAmount: recAmount,
@@ -408,12 +412,12 @@ export function BooksPage({
                 </tr>
               </thead>
               <tbody>
-                {household.kitchen.books.reconciliations.length === 0 ? (
+                {booksHousehold.kitchen.books.reconciliations.length === 0 ? (
                   <tr><td colSpan={5} className="muted">No recs yet.</td></tr>
-                ) : [...household.kitchen.books.reconciliations].reverse().map((row) => (
+                ) : [...booksHousehold.kitchen.books.reconciliations].reverse().map((row) => (
                   <tr key={row.id}>
                     <td>{row.statementDate}</td>
-                    <td>{household.accounts.find((account) => account.id === row.accountId)?.name ?? row.accountId}</td>
+                    <td>{booksHousehold.accounts.find((account) => account.id === row.accountId)?.name ?? row.accountId}</td>
                     <td className="num">{formatCad(row.statementCents)}</td>
                     <td className="num">{formatCad(row.bookCents)}</td>
                     <td className="num">{row.status === "tied" ? "tied" : formatCad(row.differenceCents)}</td>
@@ -439,7 +443,7 @@ export function BooksPage({
               type="button"
               onClick={() => {
                 try {
-                  const result = closeBooksMonth(household, { monthKey: shiftMonthKey(monthKey, -1), createdBy: memberId });
+                  const result = closeBooksMonth(booksHousehold, { monthKey: shiftMonthKey(monthKey, -1), createdBy: memberId });
                   setCloseError("");
                   onChange(result.household, result.undo);
                 } catch (caught) {
@@ -452,7 +456,7 @@ export function BooksPage({
             <button
               className="chip"
               type="button"
-              onClick={() => downloadText(booksFilename(books, "txt"), closePackageText(household, packMonth, today))}
+              onClick={() => downloadText(booksFilename(books, "txt"), closePackageText(booksHousehold, packMonth, today))}
             >
               Download close pack
             </button>
@@ -476,14 +480,14 @@ export function BooksPage({
             <button
               className="chip"
               type="button"
-              onClick={() => downloadText(`hearth-sitdown-${packMonth}.txt`, sitDownExportText(household, packMonth, today))}
+              onClick={() => downloadText(`hearth-sitdown-${packMonth}.txt`, sitDownExportText(booksHousehold, packMonth, today))}
             >
               Download sit-down workbook
             </button>
           </div>
-          {household.kitchen.books.closedMonths.length > 0 && (
+          {booksHousehold.kitchen.books.closedMonths.length > 0 && (
             <ul className="close-list">
-              {household.kitchen.books.closedMonths.map((row) => (
+              {booksHousehold.kitchen.books.closedMonths.map((row) => (
                 <li key={row.monthKey}>
                   <span>{row.monthKey} closed</span>
                   <button
@@ -491,7 +495,7 @@ export function BooksPage({
                     type="button"
                     onClick={() => {
                       try {
-                        const result = reopenBooksMonth(household, row.monthKey);
+                        const result = reopenBooksMonth(booksHousehold, row.monthKey);
                         setCloseError("");
                         onChange(result.household, result.undo);
                       } catch (caught) {
@@ -552,7 +556,7 @@ export function BooksPage({
         <button className="chip" onClick={() => downloadText(booksFilename(books, "csv"), booksJournalCsv(books, trial), "text/csv")}>
           Download journal CSV
         </button>
-        <button className="chip" onClick={() => downloadText(booksFilename(books, "txt"), closePackageText(household, packMonth, today))}>
+        <button className="chip" onClick={() => downloadText(booksFilename(books, "txt"), closePackageText(booksHousehold, packMonth, today))}>
           Download close pack
         </button>
       </div>
@@ -562,11 +566,13 @@ export function BooksPage({
 
 function StatementsPane({
   household,
+  writeHousehold = household,
   monthKey,
   today,
   onChange,
 }: {
   household: Household;
+  writeHousehold?: Household;
   monthKey: string;
   today: string;
   onChange: (household: Household, undo?: UndoToken) => void;
@@ -593,7 +599,7 @@ function StatementsPane({
 
   function saveBudgetEdit(subcategoryId: string) {
     try {
-      const result = setBudget(household, { monthKey, subcategoryId, amount: draft });
+      const result = setBudget(writeHousehold, { monthKey, subcategoryId, amount: draft });
       onChange(result.household, result.undo);
       cancelBudgetEdit();
     } catch (caught) {
