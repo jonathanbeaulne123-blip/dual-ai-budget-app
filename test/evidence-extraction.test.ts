@@ -86,6 +86,18 @@ describe("D-158 deterministic Evidence extraction", () => {
     expect(JSON.stringify(result)).not.toContain("tracker.example");
   });
 
+  it("extracts a 7shifts schedule email as outlook only", () => {
+    const email = [
+      "From: 7shifts <notifications@7shifts.com>", "To: member@example.test", "Subject: The schedule has been posted!", "Date: Sat, 22 Aug 2026 10:00:00 -0400",
+      "Content-Type: text/html", "", "<p>The schedule has been posted!</p><p>Thu, August 27 4:30 pm – 10:30 pm</p><p>Fri August 28, 2026 4:30 pm – 10:30 pm</p>",
+    ].join("\r\n");
+    const result = deriveEvidenceBytes({ captureKind: "gmail-7shifts-email", contentType: "message/rfc822", bytes: bytes(email) });
+    expect(result.records).toHaveLength(2);
+    expect(result.records.every((row: any) => row.kind === "schedule" && row.finality === "outlook" && row.workedMinutes === null)).toBe(true);
+    expect(field(result.records[0], "scheduledMinutes")?.value).toBe(360);
+    expect(result.records[0]?.observations.every((row: any) => row.extraction === "email" && row.finality === "outlook")).toBe(true);
+  });
+
   it("produces the same canonical seed for independent local/cloud screenshot extraction and exposes mismatches", () => {
     const shape = { shiftDraft: {
       artifact_digest: "artifact_1234567890", date: "2026-08-25",

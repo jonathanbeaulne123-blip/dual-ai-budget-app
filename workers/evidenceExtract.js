@@ -456,9 +456,65 @@ function reportRow(text) {
   };
 }
 
-function deriveText(text, captureKind, sourcePrefix = "source") {
+const EMAIL_MONTHS = new Map([
+  ["jan", 1], ["january", 1], ["feb", 2], ["february", 2], ["mar", 3], ["march", 3], ["apr", 4], ["april", 4],
+  ["may", 5], ["jun", 6], ["june", 6], ["jul", 7], ["july", 7], ["aug", 8], ["august", 8], ["sep", 9], ["sept", 9],
+  ["september", 9], ["oct", 10], ["october", 10], ["nov", 11], ["november", 11], ["dec", 12], ["december", 12],
+]);
+
+function scheduleEmailRecords(text, sourcePrefix, defaultYear = null) {
+  const normalized = text.replace(/&nbsp;|&#160;/gi, " ").replace(/&ndash;|&#8211;|&#x2013;/gi, "–").replace(/\s+/g, " ").trim();
+  if (!/schedule (?:has been )?posted|schedule update|upcoming shifts?/i.test(normalized)) return [];
+  const pattern = /\b(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?),?\s+(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(\d{1,2})(?:,)?(?:\s+(20\d{2}))?\s+(?:at\s+)?(\d{1,2}:\d{2}\s*(?:am|pm))\s*(?:-|–|—|to)\s*(\d{1,2}:\d{2}\s*(?:am|pm))/gi;
+  const records = [];
+  let match;
+  while ((match = pattern.exec(normalized)) && records.length < MAX_ROWS) {
+    const month = EMAIL_MONTHS.get(match[1].toLowerCase());
+    if (!month) continue;
+    const year = Number(match[3] || defaultYear);
+    if (!Number.isSafeInteger(year) || year < 2000 || year > 2100) continue;
+    const date = `${year}-${String(month).padStart(2, "0")}-${String(Number(match[2])).padStart(2, "0")}`;
+    const startedAt = torontoInstant(date, match[4]);
+    let endedAt = torontoInstant(date, match[5]);
+    if (startedAt && endedAt && Date.parse(endedAt) <= Date.parse(startedAt)) endedAt = new Date(Date.parse(endedAt) + 86_400_000).toISOString();
+    const scheduledMinutes = startedAt && endedAt ? minutesBetween(startedAt, endedAt) : null;
+    if (!startedAt || !endedAt || scheduledMinutes === null) continue;
+    const path = `${sourcePrefix}.schedule[${records.length}]`;
+    records.push({
+      kind: "schedule",
+      canonicalSeed: `email-schedule:${date}:${startedAt}:${endedAt}`,
+      rawSubject: null,
+      rawTenant: null,
+      rawLocation: null,
+      rawRole: null,
+      rawResource: null,
+      rawRevision: null,
+      startedAt,
+      endedAt,
+      workedMinutes: null,
+      paidBreakMinutes: 0,
+      observedAt: null,
+      finality: "outlook",
+      observations: [
+        observation("date", date, "date", `${path}.date`, "outlook", "email"),
+        observation("startedAt", startedAt, "iso-time", `${path}.start`, "outlook", "email"),
+        observation("endedAt", endedAt, "iso-time", `${path}.end`, "outlook", "email"),
+        observation("scheduledMinutes", scheduledMinutes, "minutes", `${path}.duration`, "outlook", "email"),
+      ].filter(Boolean),
+      drift: [],
+      schemaShape: { date: "string", startedAt: "string", endedAt: "string", scheduledMinutes: "number" },
+    });
+  }
+  return records;
+}
+
+function deriveText(text, captureKind, sourcePrefix = "source", context = {}) {
   const trimmed = text.trim();
   if (!trimmed) return { records: [], drift: [], warnings: ["Evidence text was empty after decoding."] };
+  if (captureKind === "email") {
+    const schedules = scheduleEmailRecords(trimmed, sourcePrefix, context.emailYear);
+    if (schedules.length) return { records: schedules, drift: [], warnings: [] };
+  }
   if (captureKind === "selected-ics" || captureKind === "calendar-sync" || /BEGIN:VCALENDAR/i.test(trimmed)) {
     return { records: parseIcs(trimmed), drift: [], warnings: [] };
   }
@@ -491,14 +547,17 @@ function deriveText(text, captureKind, sourcePrefix = "source") {
 export function deriveEvidenceBytes(input) {
   const captureKind = bounded(input.captureKind, 40);
   const contentType = bounded(input.contentType, 100).toLowerCase();
-  if (contentType === "message/rfc822" || captureKind === "email") {
+  if (contentType === "message/rfc822" || captureKind === "email" || captureKind === "gmail-7shifts-email") {
     const text = decodeText(input.bytes);
+    const messageHeaderEnd = text.search(/\r?\n\r?\n/);
+    const messageHeaders = parseHeaders(messageHeaderEnd >= 0 ? text.slice(0, messageHeaderEnd) : text);
+    const emailYear = Number(String(messageHeaders.date || "").match(/\b(20\d{2})\b/)?.[1] || 0) || null;
     const parts = mimeParts(text);
     const records = []; const drift = []; const warnings = [];
     for (const [index, part] of parts.entries()) {
       if (["application/json", "text/csv", "text/calendar", "text/plain", "text/html"].includes(part.contentType)) {
         try {
-          const result = deriveText(decodeText(part.bytes).replace(/<[^>]*>/g, " "), "email", `email.parts[${index}]`);
+          const result = deriveText(decodeText(part.bytes).replace(/<[^>]*>/g, " "), "email", `email.parts[${index}]`, { emailYear });
           records.push(...result.records.map((record) => ({ ...record, finality: record.finality === "outlook" ? "outlook" : "provisional", observations: record.observations.map((row) => ({ ...row, finality: row.finality === "outlook" ? "outlook" : "provisional", extraction: "email" })) })));
           drift.push(...result.drift); warnings.push(...result.warnings);
         } catch (error) { warnings.push(`Email part ${index + 1} was retained but not parsed: ${bounded(error?.message || error, 120)}`); }

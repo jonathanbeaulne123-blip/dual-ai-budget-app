@@ -7,6 +7,12 @@ import {
   herculesProWriteAllowed,
   prepareHerculesProTransaction,
 } from "../src/core/herculesProWrite.ts";
+import {
+  acceptPreparedHerculesProShift,
+  prepareHerculesProShift,
+} from "../src/core/herculesProShiftWrite.ts";
+import { shapeSevenShiftsEvidenceBundle } from "../src/core/evidence.ts";
+import { sevenShiftsAutomationEligibility } from "../src/core/sevenShiftsAutomation.ts";
 import { commandIdentityHash, financialAuditHash, findReceipt } from "../src/core/commandIdentity.ts";
 import { assertAcceptableBooks } from "../src/core/commandRuntime.ts";
 import { emptyPersonal, ensureHouseholdShape, overlayPersonalReplica, personalEnvelopeFromPayload, personalReplicaForMember, shapeHerculesProPermissions } from "../src/core/sync.ts";
@@ -519,6 +525,78 @@ function writeToolDefinitions(claims) {
   }];
 }
 
+function gmailShiftToolDefinitions() {
+  const readSecurity = [{ type: "oauth2", scopes: ["hearth.read"] }];
+  const writeSecurity = [{ type: "oauth2", scopes: ["hearth.read", "hearth.write"] }];
+  return [{
+    name: "scrub_my_7shifts_email",
+    title: "Review my imported 7shifts Gmail",
+    description: "Review only the reduced 7shifts facts that this member explicitly imported from Gmail into encrypted Hearth Evidence. It never receives a Gmail token or raw email, and email schedules remain outlook-only.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        from: { type: "string", pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        to: { type: "string", pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        limit: { type: "integer", minimum: 1, maximum: 100 },
+      },
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    securitySchemes: readSecurity,
+    _meta: { securitySchemes: readSecurity },
+  }, {
+    name: "shift_write_options",
+    title: "Review eligible worked shifts",
+    description: "List member-owned eligible worked-evidence candidates and return a short-lived opaque review token. Notification email and schedules are excluded. Read-only; use before preparing a shift.",
+    inputSchema: { type: "object", properties: { limit: { type: "integer", minimum: 1, maximum: 25 } }, additionalProperties: false },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    securitySchemes: readSecurity,
+    _meta: { securitySchemes: readSecurity },
+  }, {
+    name: "prepare_shift_from_evidence",
+    title: "Preview a worked shift",
+    description: "Run one eligible worked Evidence bundle through Hearth's ordinary job-rate, overtime, tip-out, receivable, command-identity, and double-entry checks. Writes nothing. Show the entire preview and wait for explicit confirmation before confirm_shift_from_evidence.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        reviewToken: { type: "string", minLength: 40, maxLength: 20000 },
+        cashTipsCents: { type: "integer", minimum: 0, maximum: 100000000 },
+        cardTipsCents: { type: "integer", minimum: 0, maximum: 100000000 },
+        salesCents: { type: "integer", minimum: 0, maximum: 1000000000 },
+        salesFields: {
+          type: "array", maxItems: 32,
+          items: { type: "object", properties: { fieldId: { type: "string", maxLength: 100 }, amountCents: { type: "integer", minimum: 0, maximum: 1000000000 } }, required: ["fieldId", "amountCents"], additionalProperties: false },
+        },
+        customersServed: { type: "integer", minimum: 0, maximum: 5000 },
+        staffingCount: { type: "integer", minimum: 1, maximum: 500 },
+        eventTag: { type: "string", enum: ["regular", "holiday", "sports", "festival", "private_party", "short_staffed", "vacation_cover", "illness_cover", "other"] },
+        weatherGlass: { type: "string", enum: ["clear", "rain", "snow", "night", "humid"] },
+      },
+      required: ["reviewToken"],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    securitySchemes: writeSecurity,
+    _meta: { securitySchemes: writeSecurity },
+  }, {
+    name: "confirm_shift_from_evidence",
+    title: "Confirm and post a worked shift",
+    description: "Post exactly one previously prepared worked shift. Consequential cloud write: call only after showing the complete shift, wages, tips, ledgers, warnings, and duplicate notice and receiving explicit confirmation in the current conversation.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        confirmationToken: { type: "string", minLength: 40, maxLength: 20000 },
+        confirmed: { type: "boolean", const: true },
+      },
+      required: ["confirmationToken", "confirmed"],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+    securitySchemes: writeSecurity,
+    _meta: { securitySchemes: writeSecurity },
+  }];
+}
+
 function companionToolDefinition() {
   const security = [{ type: "oauth2", scopes: ["hearth.read"] }];
   return {
@@ -602,7 +680,7 @@ function rigDispatchToolDefinition() {
 }
 
 function allToolDefinitions(claims) {
-  return [companionToolDefinition(), rigDispatchToolDefinition(), ...toolDefinitions(), ...writeToolDefinitions(claims)];
+  return [companionToolDefinition(), rigDispatchToolDefinition(), ...toolDefinitions(), ...gmailShiftToolDefinitions(), ...writeToolDefinitions(claims)];
 }
 
 function mcpSuccess(id, structuredContent) {
@@ -840,6 +918,162 @@ function unauthorized(request) {
   });
 }
 
+function evidenceDb(env, claims) {
+  if (String(env?.EVIDENCE_ENABLED || "").trim().toLowerCase() !== "true") throw new Error("Hearth Evidence is currently disabled.");
+  if (claims.environment === "production") {
+    if (String(env?.EVIDENCE_ALLOW_PRODUCTION || "").trim().toLowerCase() !== "true" || !env?.EVIDENCE_PRODUCTION_DB) {
+      throw new Error("Hearth Evidence Production is disabled.");
+    }
+    return env.EVIDENCE_PRODUCTION_DB;
+  }
+  if (claims.environment !== "development" || !env?.EVIDENCE_DB) throw new Error("Hearth Evidence Development is unavailable.");
+  return env.EVIDENCE_DB;
+}
+
+function boundedToolLimit(value, fallback, maximum) {
+  const parsed = Number(value ?? fallback);
+  return Number.isSafeInteger(parsed) ? Math.max(1, Math.min(maximum, parsed)) : fallback;
+}
+
+function dateArgument(value, label) {
+  const clean = String(value || "").trim();
+  if (clean && !/^\d{4}-\d{2}-\d{2}$/.test(clean)) throw new Error(`${label} must be YYYY-MM-DD.`);
+  return clean;
+}
+
+async function scrubImportedGmail(env, claims, args) {
+  const { books } = await loadBooks(env, claims);
+  const db = evidenceDb(env, claims);
+  const from = dateArgument(args?.from, "from");
+  const to = dateArgument(args?.to, "to");
+  if (from && to && from > to) throw new Error("from must not be after to.");
+  const limit = boundedToolLimit(args?.limit, 50, 100);
+  const scope = [claims.environment, claims.authUserId, claims.householdId, claims.memberId];
+  const capture = await db.prepare(
+    "SELECT COUNT(*) AS message_count, MAX(updated_at) AS last_imported_at FROM evidence_items WHERE environment = ? AND auth_user_id = ? AND household_id = ? AND member_id = ? AND capture_kind = 'gmail-7shifts-email' AND state != 'deleted'",
+  ).bind(...scope).first();
+  const observations = await db.prepare(
+    "SELECT o.canonical_shift_key, o.field_key, o.value_json, o.unit, o.finality, o.conflict_state FROM evidence_observations o JOIN evidence_items i ON i.evidence_id = o.evidence_id WHERE i.environment = ? AND i.auth_user_id = ? AND i.household_id = ? AND i.member_id = ? AND i.capture_kind = 'gmail-7shifts-email' AND i.state = 'ready_to_review' AND o.field_key IN ('date','startedAt','endedAt','scheduledMinutes','workedMinutes','paidBreakMinutes','cashTipsCents','cardTipsCents','totalTipsCents','reportedWagesCents','finalWagesCents','approved') ORDER BY i.updated_at DESC, o.canonical_shift_key, o.field_key LIMIT ?",
+  ).bind(...scope, limit * 16).all();
+  const groups = new Map();
+  for (const row of observations?.results || []) {
+    const group = groups.get(row.canonical_shift_key) || {};
+    let value = null;
+    try { value = JSON.parse(row.value_json); } catch { continue; }
+    group[row.field_key] = value;
+    group.finality = row.finality;
+    if (row.conflict_state === "conflicted") group.conflicted = true;
+    groups.set(row.canonical_shift_key, group);
+  }
+  const facts = [...groups.values()].filter((row) => {
+    const date = typeof row.date === "string" ? row.date : typeof row.startedAt === "string" ? row.startedAt.slice(0, 10) : "";
+    return (!from || date >= from) && (!to || date <= to);
+  }).slice(0, limit).map((row) => ({
+    date: row.date || null,
+    startedAt: row.startedAt || null,
+    endedAt: row.endedAt || null,
+    scheduledMinutes: Number.isSafeInteger(row.scheduledMinutes) ? row.scheduledMinutes : null,
+    workedMinutes: Number.isSafeInteger(row.workedMinutes) ? row.workedMinutes : null,
+    paidBreakMinutes: Number.isSafeInteger(row.paidBreakMinutes) ? row.paidBreakMinutes : null,
+    cashTipsCents: Number.isSafeInteger(row.cashTipsCents) ? row.cashTipsCents : null,
+    cardTipsCents: Number.isSafeInteger(row.cardTipsCents) ? row.cardTipsCents : null,
+    totalTipsCents: Number.isSafeInteger(row.totalTipsCents) ? row.totalTipsCents : null,
+    reportedWagesCents: Number.isSafeInteger(row.reportedWagesCents) ? row.reportedWagesCents : null,
+    finalWagesCents: Number.isSafeInteger(row.finalWagesCents) ? row.finalWagesCents : null,
+    approved: typeof row.approved === "boolean" ? row.approved : null,
+    finality: row.finality || "outlook",
+    conflicted: row.conflicted === true,
+    authority: "email-review-only",
+  }));
+  return {
+    usedTool: "scrub_my_7shifts_email",
+    ...booksIdentity(books, claims, "personal"),
+    importedMessageCount: Number(capture?.message_count || 0),
+    lastImportedAt: capture?.last_imported_at || null,
+    facts,
+    returned: facts.length,
+    scheduleAndNotificationEmailCannotPostMoney: true,
+    rawEmailIncluded: false,
+    readOnly: true,
+    postedNothing: true,
+    nextStep: Number(capture?.message_count || 0)
+      ? "Review these facts. Use shift_write_options only for separately eligible worked evidence."
+      : "Open Hearth Shift > Evidence and choose Connect Gmail and scrub, then ask again.",
+  };
+}
+
+async function eligibleShiftOptions(env, claims, books, args) {
+  const db = evidenceDb(env, claims);
+  const limit = boundedToolLimit(args?.limit, 10, 25);
+  const rows = await db.prepare(
+    "SELECT bundle_id, material_hash, sanitized_json FROM evidence_bundles WHERE environment = ? AND auth_user_id = ? AND household_id = ? AND member_id = ? AND state = 'eligible' ORDER BY updated_at DESC LIMIT ?",
+  ).bind(claims.environment, claims.authUserId, claims.householdId, claims.memberId, limit * 2).all();
+  const candidates = [];
+  for (const row of rows?.results || []) {
+    let bundle;
+    try { bundle = shapeSevenShiftsEvidenceBundle(JSON.parse(row.sanitized_json)); } catch { continue; }
+    const authority = bundle.evidence.find((item) => item.evidenceId === bundle.authority.workedMinutesEvidenceId);
+    if (!authority || ["email", "calendar-sync", "selected-ics"].includes(authority.sourceKind) || authority.finality === "outlook") continue;
+    const eligibility = sevenShiftsAutomationEligibility(bundle, {
+      version: 1, environment: bundle.environment, householdId: bundle.householdId, memberId: bundle.memberId, jobId: bundle.jobId,
+      enabled: true, stableWindowHours: 24, payrollWeekStarts: 0, correctionHorizonDays: 60, closedPeriodAction: "variance", updatedAt: new Date(0).toISOString(),
+    });
+    if (!eligibility.eligible) continue;
+    const job = books.workJobs.find((item) => item.id === bundle.jobId && item.active && item.memberId === claims.memberId);
+    const roleId = bundle.observations.find((item) => item.field === "roleId")?.value;
+    const role = job?.roles.find((item) => item.id === roleId && item.active);
+    if (!job || !role) continue;
+    const now = Math.floor(Date.now() / 1000);
+    const reviewToken = await sealPrivate(env, {
+      kind: "shift-candidate",
+      environment: claims.environment,
+      householdId: claims.householdId,
+      memberId: claims.memberId,
+      authUserId: claims.authUserId,
+      bundleId: row.bundle_id,
+      materialHash: row.material_hash,
+      iat: now,
+      exp: now + WRITE_PREVIEW_TTL_SECONDS,
+    });
+    const observationValue = (field) => bundle.observations.find((item) => item.field === field)?.value ?? null;
+    candidates.push({
+      reviewToken,
+      date: observationValue("date") || bundle.startedAt.slice(0, 10),
+      startedAt: bundle.startedAt,
+      endedAt: bundle.endedAt,
+      workedMinutes: bundle.workedMinutes,
+      paidBreakMinutes: bundle.paidBreakMinutes,
+      job: job.name,
+      role: role.name,
+      cashTipsCents: observationValue("cashTipsCents"),
+      cardTipsCents: observationValue("cardTipsCents"),
+      salesCents: observationValue("salesCents"),
+      salesFields: job.salesFields.filter((item) => item.requirement !== "off").map((item) => ({ fieldId: item.id, label: item.label, required: item.requirement === "required" })),
+      customersServed: observationValue("customersServed"),
+      staffingCount: observationValue("staffingCount"),
+      finality: authority.finality,
+      conflicts: bundle.conflicts.length,
+    });
+    if (candidates.length >= limit) break;
+  }
+  return { usedTool: "shift_write_options", ...booksIdentity(books, claims, "personal"), candidates, returned: candidates.length, readOnly: true, postedNothing: true };
+}
+
+async function loadEligibleShiftBundle(env, claims, token) {
+  const candidate = await unsealPrivate(env, String(token || ""), "shift-candidate");
+  if (!writeTokenMatchesClaims(candidate, claims)) throw new Error("This shift review belongs to a different Hearth member or household.");
+  const row = await evidenceDb(env, claims).prepare(
+    "SELECT material_hash, sanitized_json FROM evidence_bundles WHERE bundle_id = ? AND environment = ? AND auth_user_id = ? AND household_id = ? AND member_id = ? AND state = 'eligible' LIMIT 1",
+  ).bind(candidate.bundleId, claims.environment, claims.authUserId, claims.householdId, claims.memberId).first();
+  if (!row || row.material_hash !== candidate.materialHash) throw new Error("This worked evidence changed or is no longer eligible. Review the options again.");
+  return { bundleId: candidate.bundleId, bundle: shapeSevenShiftsEvidenceBundle(JSON.parse(row.sanitized_json)) };
+}
+
+function requireShiftPermissions(books, prepared) {
+  if (prepared.requiresPersonalWrite && !herculesProWriteAllowed(books, "personal")) throw new Error("Hercules Pro Personal writing is off in Hearth. Nothing was posted.");
+  if (prepared.requiresHouseholdWrite && !herculesProWriteAllowed(books, "household")) throw new Error("Hercules Pro Household writing is off in Hearth. Nothing was posted.");
+}
+
 async function accessClaims(request, env) {
   const match = request.headers.get("Authorization")?.match(/^Bearer\s+(.+)$/i);
   if (!match) return null;
@@ -870,7 +1104,7 @@ async function handleMcp(request, env) {
       capabilities: { tools: { listChanged: false }, resources: { listChanged: false } },
       serverInfo: { name: "hearth-hercules-pro", version: "0.3.4" },
       instructions: hasScope(claims, "hearth.write")
-        ? "Hercules is a grounded financial teacher. On the first user turn of every new conversation, your FIRST tool call MUST be summon_hercules before any accounting tool so the living 3D companion auto-loads and requests picture-in-picture. Do not wait for the person to ask to see him. Every tool result includes householdName (the custom household title people entered) and ledgerName (the custom shared or personal ledger label). Always identify the books by those display names, never by householdId or by the machine words Household/Personal alone. Read tools never change state. For a requested transaction, call prepare_transaction, show every preview field and duplicate warning, wait for the person's explicit confirmation, then and only then call confirm_transaction. Never infer consent or prepare a delete/payment."
+        ? "Hercules is a grounded financial teacher. On the first user turn of every new conversation, your FIRST tool call MUST be summon_hercules before any accounting tool so the living 3D companion auto-loads and requests picture-in-picture. Do not wait for the person to ask to see him. Every tool result includes householdName (the custom household title people entered) and ledgerName (the custom shared or personal ledger label). Always identify the books by those display names, never by householdId or by the machine words Household/Personal alone. Read tools never change state. For a requested transaction, call prepare_transaction, show every preview field and duplicate warning, wait for explicit confirmation, then and only then call confirm_transaction. For imported 7shifts mail, call scrub_my_7shifts_email. Email and schedules are outlook only. For a worked shift, call shift_write_options, then prepare_shift_from_evidence, show every preview field and warning, wait for explicit confirmation, then and only then call confirm_shift_from_evidence. Never infer consent or prepare a delete/payment."
         : "Hercules is a read-only financial teacher. On the first user turn of every new conversation, your FIRST tool call MUST be summon_hercules before any accounting tool so the living 3D companion auto-loads and requests picture-in-picture. Do not wait for the person to ask to see him. Every tool result includes householdName (the custom household title people entered) and ledgerName (the custom shared or personal ledger label). Always identify the books by those display names, never by householdId or by the machine words Household/Personal alone. Call tools for all current numbers. Never imply a write occurred.",
     } });
   }
@@ -902,6 +1136,142 @@ async function handleMcp(request, env) {
       if (name === "transaction_write_options") {
         const { books } = await loadBooks(env, claims);
         return mcpSuccess(rpc.id, { usedTool: name, ...writeOptions(books, args, claims) });
+      }
+      if (name === "scrub_my_7shifts_email") return mcpSuccess(rpc.id, await scrubImportedGmail(env, claims, args));
+      if (name === "shift_write_options") {
+        const { books } = await loadBooks(env, claims);
+        return mcpSuccess(rpc.id, await eligibleShiftOptions(env, claims, books, args));
+      }
+      if (name === "prepare_shift_from_evidence") {
+        if (!hasScope(claims, "hearth.write")) throw new Error("Reconnect Hercules Pro after enabling writing in Hearth.");
+        const { books } = await loadBooks(env, claims);
+        const selected = await loadEligibleShiftBundle(env, claims, args.reviewToken);
+        const overrides = {
+          cashTipsCents: args.cashTipsCents,
+          cardTipsCents: args.cardTipsCents,
+          salesCents: args.salesCents,
+          salesByFieldCents: Object.fromEntries((Array.isArray(args.salesFields) ? args.salesFields : []).map((row) => [String(row?.fieldId || ""), row?.amountCents])),
+          customersServed: args.customersServed,
+          staffingCount: args.staffingCount,
+          eventTag: args.eventTag,
+          weatherGlass: args.weatherGlass,
+        };
+        const prepared = await prepareHerculesProShift(books, claims.memberId, selected.bundle, overrides);
+        requireShiftPermissions(books, prepared);
+        const now = Math.floor(Date.now() / 1000);
+        const confirmationId = randomId();
+        const confirmationToken = await sealPrivate(env, {
+          kind: "shift-write-preview",
+          environment: claims.environment,
+          householdId: claims.householdId,
+          memberId: claims.memberId,
+          authUserId: claims.authUserId,
+          bundleId: selected.bundleId,
+          materialHash: prepared.bundle.materialHash,
+          overrides,
+          baseRevision: books.revision,
+          confirmationId,
+          identityHash: prepared.identityHash,
+          postedIds: prepared.postedIds,
+          postedTransactions: prepared.postedTransactions,
+          postedShift: prepared.postedShift,
+          publishView: prepared.publishView,
+          requiresPersonalWrite: prepared.requiresPersonalWrite,
+          requiresHouseholdWrite: prepared.requiresHouseholdWrite,
+          preview: prepared.preview,
+          iat: now,
+          exp: now + WRITE_PREVIEW_TTL_SECONDS,
+        });
+        return mcpSuccess(rpc.id, {
+          usedTool: name,
+          status: "confirmation-required",
+          preview: prepared.preview,
+          confirmationToken,
+          expiresInSeconds: WRITE_PREVIEW_TTL_SECONDS,
+          requiresExplicitConfirmation: true,
+          confirmationPrompt: `Post the reviewed ${prepared.preview.job} shift on ${prepared.preview.date}, recognizing ${prepared.preview.totalRecognized}?`,
+          postedNothing: true,
+          readOnly: true,
+        });
+      }
+      if (name === "confirm_shift_from_evidence") {
+        if (!hasScope(claims, "hearth.write")) throw new Error("Reconnect Hercules Pro after enabling writing in Hearth.");
+        if (args.confirmed !== true) throw new Error("Nothing was posted because explicit confirmation was not supplied.");
+        const preview = await unsealPrivate(env, String(args.confirmationToken || ""), "shift-write-preview");
+        if (!writeTokenMatchesClaims(preview, claims)) throw new Error("This shift confirmation belongs to a different Hearth member or household.");
+        const { books } = await loadBooks(env, claims);
+        requireShiftPermissions(books, preview);
+        const existingReceipt = findReceipt(books, preview.confirmationId);
+        if (existingReceipt) {
+          if (existingReceipt.identityHash !== preview.identityHash) throw new Error("Hearth found a mismatched shift confirmation receipt. Nothing else was posted.");
+          const transactionIds = new Set(books.transactions.map((row) => row.id));
+          const shiftIds = new Set(books.shifts.map((row) => row.id));
+          const missingTransactions = preview.postedTransactions.filter((row) => !transactionIds.has(row.id));
+          const missingShift = shiftIds.has(preview.postedShift.id) ? [] : [preview.postedShift];
+          if (preview.publishView === "personal" && (missingTransactions.length || missingShift.length)) {
+            const recovered = ensureHouseholdShape({
+              ...books,
+              transactions: [...books.transactions, ...missingTransactions],
+              shifts: [...books.shifts, ...missingShift],
+            });
+            assertAcceptableBooks(recovered);
+            const shared = herculesProSharedProjection(recovered, claims.memberId);
+            await publishConfirmedTransaction(env, claims, {
+              expectedRevision: preview.baseRevision,
+              shared,
+              personal: personalReplicaForMember(recovered, claims.memberId),
+              snapshotHash: await financialAuditHash(shared),
+              view: "personal",
+              confirmationId: preview.confirmationId,
+              identityHash: preview.identityHash,
+            });
+          }
+          return mcpSuccess(rpc.id, {
+            usedTool: name,
+            status: "posted-exactly-once",
+            duplicateConfirmation: true,
+            shiftId: preview.postedShift.id,
+            transactionIds: preview.postedTransactions.map((row) => row.id),
+            revision: existingReceipt.revision,
+            confirmationId: preview.confirmationId,
+            postedExactlyOnce: true,
+            postedNothing: false,
+            readOnly: false,
+          });
+        }
+        if (books.revision !== preview.baseRevision) throw new Error("The cloud ledger changed after the shift preview. Nothing was posted; prepare a fresh preview.");
+        const db = evidenceDb(env, claims);
+        const row = await db.prepare(
+          "SELECT material_hash, sanitized_json FROM evidence_bundles WHERE bundle_id = ? AND environment = ? AND auth_user_id = ? AND household_id = ? AND member_id = ? AND state = 'eligible' LIMIT 1",
+        ).bind(preview.bundleId, claims.environment, claims.authUserId, claims.householdId, claims.memberId).first();
+        if (!row || row.material_hash !== preview.materialHash) throw new Error("The worked evidence changed after the preview. Nothing was posted; review it again.");
+        const prepared = await prepareHerculesProShift(books, claims.memberId, shapeSevenShiftsEvidenceBundle(JSON.parse(row.sanitized_json)), preview.overrides);
+        requireShiftPermissions(books, prepared);
+        if (prepared.identityHash !== preview.identityHash || JSON.stringify(prepared.postedIds) !== JSON.stringify(preview.postedIds)) {
+          throw new Error("The reviewed shift changed after the preview. Nothing was posted; prepare a fresh preview.");
+        }
+        const accepted = await acceptPreparedHerculesProShift(books, prepared, claims.memberId, preview.confirmationId);
+        const published = await publishConfirmedTransaction(env, claims, {
+          expectedRevision: preview.baseRevision,
+          shared: accepted.sharedProjection,
+          personal: accepted.personalProjection,
+          snapshotHash: accepted.snapshotHash,
+          view: accepted.publishView,
+          confirmationId: accepted.receipt.confirmationId,
+          identityHash: accepted.receipt.identityHash,
+        });
+        return mcpSuccess(rpc.id, {
+          usedTool: name,
+          status: "posted-exactly-once",
+          duplicateConfirmation: published.duplicate === true,
+          shiftId: accepted.postedShift.id,
+          transactionIds: accepted.postedTransactions.map((row) => row.id),
+          revision: Number(published.revision),
+          confirmationId: accepted.receipt.confirmationId,
+          postedExactlyOnce: true,
+          postedNothing: false,
+          readOnly: false,
+        });
       }
       if (name === "prepare_transaction") {
         if (!hasScope(claims, "hearth.write")) throw new Error("Reconnect Hercules Pro after enabling writing in Hearth.");

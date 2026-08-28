@@ -24,6 +24,8 @@ import {
   workRateForDate,
   workShiftIsReversed,
   financialAuditFacts,
+  prepareHerculesProShift,
+  acceptPreparedHerculesProShift,
   commandIdentityFacts,
   sevenShiftsEvidenceMaterialHash,
   shapeSevenShiftsEvidenceBundle,
@@ -130,6 +132,36 @@ function evidenceBundle(householdId: string, jobId: string, revision = 1, marker
 }
 
 describe("job-based shift foundation", () => {
+  it("prepares then accepts an eligible Hercules shift through ordinary work books, while refusing email outlook", async () => {
+    const saved = upsertWorkJob(catalogHousehold(), { job: job() }).household;
+    const savedJob = saved.workJobs[0]!;
+    const bundle = evidenceBundle(saved.householdId, savedJob.id);
+    const prepared = await prepareHerculesProShift(saved, "MEM-002", bundle, {
+      salesByFieldCents: { FOOD: 100_000 },
+      cashTipsCents: 5_000,
+      cardTipsCents: 10_000,
+      customersServed: 40,
+      staffingCount: 4,
+      eventTag: "regular",
+    });
+    expect(saved.shifts).toHaveLength(0);
+    expect(prepared.candidate.shifts).toHaveLength(1);
+    expect(prepared.preview).toMatchObject({ workedMinutes: 240, paidBreakMinutes: 30, job: "Café Nola", role: "Server" });
+    expect(prepared.requiresPersonalWrite).toBe(true);
+    const accepted = await acceptPreparedHerculesProShift(saved, prepared, "MEM-002", "gmail-shift-confirmation-001", "2026-09-01T01:00:00.000Z");
+    expect(accepted.accepted.commandReceipts.at(-1)).toMatchObject({ commandKind: "hercules-pro-shift", confirmationId: "gmail-shift-confirmation-001" });
+    expect(accepted.personalProjection?.shifts).toHaveLength(1);
+    expect(accepted.accepted.booksAcceptedHash).toBeTruthy();
+    expect(trialBalance(compileHousehold(accepted.accepted)).inBalance).toBe(true);
+
+    const outlook = structuredClone(bundle);
+    outlook.evidence[0]!.sourceKind = "email";
+    outlook.evidence[0]!.finality = "outlook";
+    outlook.observations = outlook.observations.map((row) => ({ ...row, finality: "outlook", extraction: "email" as const }));
+    outlook.materialHash = sevenShiftsEvidenceMaterialHash(outlook);
+    await expect(prepareHerculesProShift(saved, "MEM-002", outlook, {})).rejects.toThrow(/cannot establish worked time or money/i);
+  });
+
   it("rejects separate legacy 7shifts punch and screenshot evidence at the money boundary", () => {
     const saved = upsertWorkJob(catalogHousehold(), { job: job() }).household;
     const savedJob = saved.workJobs[0]!;

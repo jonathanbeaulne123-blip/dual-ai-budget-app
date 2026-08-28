@@ -11,7 +11,6 @@ import {
   listEvidenceAutomationPolicies,
   listEvidenceBundles,
   putEvidenceAutomationPolicy,
-  provisionEvidenceMailbox,
   mintEvidenceCaptureCapability,
   readEvidenceDerived,
   readEvidenceRaw,
@@ -23,6 +22,7 @@ import {
   type EvidenceDerivedDetail,
   type EvidenceScope,
 } from "./imports/evidenceClient.ts";
+import { importSevenShiftsFromGmail, type GmailSevenShiftsImportProgress } from "./google/gmailSevenShifts.ts";
 
 function captureKind(file: File): string {
   const name = file.name.toLowerCase();
@@ -84,7 +84,7 @@ export function SevenShiftsEvidenceCenter({
   const [policies, setPolicies] = useState<AutomationPolicy[]>([]);
   const [selectedDerived, setSelectedDerived] = useState<EvidenceDerivedDetail | null>(null);
   const [calendarUrl, setCalendarUrl] = useState("");
-  const [mailbox, setMailbox] = useState("");
+  const [gmailProgress, setGmailProgress] = useState<GmailSevenShiftsImportProgress | null>(null);
   const [extensionId, setExtensionId] = useState("");
   const [pairingCode, setPairingCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -226,17 +226,31 @@ export function SevenShiftsEvidenceCenter({
     }
   }
 
-  async function createMailbox() {
+  async function importGmail() {
+    const controller = new AbortController();
+    controllerRef.current?.abort();
+    controllerRef.current = controller;
     setBusy(true);
     setError("");
+    setNotice("");
+    setGmailProgress({ discovered: 0, inspected: 0, imported: 0, duplicates: 0, rejected: 0 });
     try {
-      const created = await provisionEvidenceMailbox(scope);
-      setMailbox(created.address);
-      setNotice("A new private forwarding alias replaced any prior alias for this member.");
+      const loginHint = household.google?.links?.find((row) => row.active && row.memberId === memberId)?.email;
+      const result = await importSevenShiftsFromGmail({
+        scope,
+        loginHint,
+        after: "2024/01/01",
+        limit: 1_000,
+        signal: controller.signal,
+        onProgress: setGmailProgress,
+      });
+      if (controller.signal.aborted) return;
+      await refresh(controller.signal);
+      setNotice(`${result.imported} new 7shifts message${result.imported === 1 ? "" : "s"} encrypted; ${result.duplicates} already present; ${result.rejected} rejected. Email schedules remain outlook only.${result.truncated ? " The 1,000-message safety cap was reached." : ""}`);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
+      if (!controller.signal.aborted) setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
-      setBusy(false);
+      if (!controller.signal.aborted) setBusy(false);
     }
   }
 
@@ -342,11 +356,12 @@ export function SevenShiftsEvidenceCenter({
           <p className="muted">Changing member, household, environment, link, or page cancels the in-flight reader.</p>
         </article>
         <article>
-          <p className="kicker">Forwarded reports</p>
-          <h3>Private evidence mailbox</h3>
-          <p className="muted">The full RFC822 message is encrypted and quarantined. Sender names, headers, HTML, and attachments are evidence only; remote content is never fetched.</p>
-          <button type="button" className="chip" disabled={disabled} onClick={() => { void createMailbox(); }}>{mailbox ? "Rotate alias" : "Create alias"}</button>
-          {mailbox ? <p><code>{mailbox}</code></p> : null}
+          <p className="kicker">Direct Gmail · read-only</p>
+          <h3>Import my 7shifts mail</h3>
+          <p className="muted">Google shows the consent screen. Hearth searches only mail matching 7shifts, verifies the sender domain again, encrypts each raw message, and cannot send, delete, label, archive, or forward mail.</p>
+          <button type="button" className="chip" disabled={disabled} onClick={() => { void importGmail(); }}>{busy && gmailProgress ? "Scrubbing 7shifts mail…" : "Connect Gmail and scrub"}</button>
+          {gmailProgress ? <p className="muted">Found {gmailProgress.discovered} · checked {gmailProgress.inspected} · new {gmailProgress.imported} · already saved {gmailProgress.duplicates} · rejected {gmailProgress.rejected}</p> : null}
+          <p className="muted">The scan starts at January 1, 2024 and stops at 1,000 messages. Run it again safely; encrypted-message digests prevent duplicates.</p>
         </article>
         <article>
           <p className="kicker">Chrome / Edge companion</p>

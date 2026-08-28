@@ -48,6 +48,12 @@ class MemoryD1 {
               const row = db.items.find((item) => item.evidence_id === values[0]);
               return row ? { evidence_id: row.evidence_id, state: row.state, revision: row.revision } : null;
             }
+            if (sql.startsWith("SELECT evidence_id, state, capture_kind")) {
+              const row = db.items.find((item) => item.environment === values[0] && item.auth_user_id === values[1]
+                && item.household_id === values[2] && item.member_id === values[3]
+                && item.capture_kind === "gmail-7shifts-email" && item.plaintext_sha256 === values[4] && item.state !== "deleted");
+              return row ?? null;
+            }
             if (sql.startsWith("SELECT parser_version, schema_fingerprint")) {
               return db.derivatives.find((row) => row.evidence_id === values[0] && row.revision === values[1] && row.canonical_shift_key === values[2]) ?? null;
             }
@@ -502,6 +508,32 @@ describe("Evidence Mesh Worker", () => {
     expect(bindings.EVIDENCE_DB.r2Budget).toEqual({ stored_bytes: 0, object_count: 0 });
     const reread = await worker.fetch(request(`/work/evidence/captures/${capture.evidenceId}/raw?environment=development&householdId=HH-TEST&memberId=MEM-001`), bindings);
     expect(reread.status).toBe(404);
+  });
+
+  it("accepts only raw 7shifts Gmail and deduplicates a repeated scrub before R2", async () => {
+    const bindings = env();
+    vi.stubGlobal("fetch", authFetch());
+    const path = "/work/evidence/captures?environment=development&householdId=HH-TEST&memberId=MEM-001";
+    const goodRaw = ["From: 7shifts <notifications@7shifts.com>", "To: member@example.test", "Subject: Schedule", "", "Thu August 27, 2026 4:30 pm - 10:30 pm"].join("\r\n");
+    const upload = (raw: string) => worker.fetch(request(path, {
+      method: "POST",
+      headers: { Origin: kitchen, Authorization: "Bearer test-user-jwt", "Content-Type": "message/rfc822", "X-Evidence-Capture-Kind": "gmail-7shifts-email" },
+      body: raw,
+    }), bindings);
+    const first = await upload(goodRaw);
+    const second = await upload(goodRaw);
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(201);
+    const firstCapture = (await first.json() as any).capture;
+    const secondCapture = (await second.json() as any).capture;
+    expect(secondCapture).toMatchObject({ evidenceId: firstCapture.evidenceId, duplicate: true });
+    expect(bindings.EVIDENCE_DB.items).toHaveLength(1);
+    expect(bindings.EVIDENCE_RAW.objects.size).toBe(1);
+    expect(bindings.EVIDENCE_DERIVE.sent).toHaveLength(1);
+
+    const lookalike = await upload("From: alerts@7shifts.com.evil.test\r\n\r\nbody");
+    expect(lookalike.status).toBe(400);
+    expect(await lookalike.json()).toMatchObject({ error: expect.stringMatching(/not a 7shifts domain/i) });
   });
 
   it("fails closed before R2 when the Development storage or monthly operation budget is exhausted", async () => {
