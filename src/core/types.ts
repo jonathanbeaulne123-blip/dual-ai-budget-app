@@ -22,6 +22,7 @@ export type Member = {
 };
 
 export type AccountKind = "chequing" | "savings" | "credit" | "investment" | "other" | "receivable";
+export type AccountScope = "shared" | "personal";
 export type InvestmentVehicle = "tfsa" | "rrsp" | "fhsa" | "non-registered" | "crypto" | "other";
 
 export type CreditRewardRule = {
@@ -64,6 +65,8 @@ export type Account = {
   currency: Currency;
   active: boolean;
   ownerMemberId: string | typeof JOINT;
+  /** Legacy accounts shape to `shared`. Personal account metadata travels only in its owner's Personal envelope. */
+  scope?: AccountScope;
   institution: string;
   last4: string;
   sortOrder: number;
@@ -130,6 +133,8 @@ export type Transaction = {
   reviewed: boolean;
   createdBy: string;
   visibility: Visibility;
+  /** Independent of visibility. This allocates some or all of an expense/refund to the virtual Household Fund. */
+  funding?: HouseholdFundTransactionFunding;
   createdAt: string;
   updatedAt: string;
 };
@@ -354,6 +359,8 @@ export type Recurrence = {
   origin: RecurrenceOrigin;
   reminderHoursBefore: number;
   googleSync: RecurrenceGoogleSync;
+  /** A planning default only. Posting still requires the ordinary transaction Confirm boundary. */
+  fundingDefault?: HouseholdFundFundingDefault | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -700,6 +707,130 @@ export type GoalContribution = {
   updatedAt: string;
 };
 
+export type HouseholdFundMode = "practice" | "connected";
+
+export type HouseholdFundConfig = {
+  id: string;
+  name: string;
+  custodianMemberId: string;
+  mode: HouseholdFundMode;
+  openedOn: DateKey;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type HouseholdFundFundingDefault = {
+  fundId: string;
+  fundedCents: number | "full";
+  destinationAccountId: string;
+};
+
+export type HouseholdFundTransactionFunding = {
+  fundId: string;
+  fundedCents: number;
+  destinationAccountId: string;
+  /** Public clearing-position id; Personal transaction ids never enter Shared. */
+  positionId?: string;
+  /** The backing savings account paid directly; the same Confirm must also record a settlement. */
+  directDebit?: boolean;
+};
+
+export type HouseholdFundMonthPlan = {
+  id: string;
+  fundId: string;
+  monthKey: MonthKey;
+  targetCents: number;
+  bufferCents: number;
+  agreedByMemberIds: string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type HouseholdFundEventKind =
+  | "contribution-proposed"
+  | "contribution-confirmed"
+  | "purchase-funded"
+  | "refund-funded"
+  | "settlement-confirmed"
+  | "kitty-allocated"
+  | "kitty-released"
+  | "reconciliation-recorded"
+  | "bank-verified"
+  | "reversal";
+
+/** Immutable operational fact. Corrections append a reversal and replacement; old rows are never edited. */
+export type HouseholdFundEvent = {
+  id: string;
+  fundId: string;
+  kind: HouseholdFundEventKind;
+  amountCents: number;
+  date: DateKey;
+  createdBy: string;
+  confirmedByMemberId: string | null;
+  contributorMemberId: string | null;
+  destinationAccountId: string | null;
+  relatedEventId: string | null;
+  relatedTransactionIds: string[];
+  evidenceDigests: string[];
+  reconciliationTied: boolean | null;
+  note: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type HouseholdFundSettlementAllocation = {
+  id: string;
+  fundId: string;
+  eventId: string;
+  transactionId: string;
+  amountCents: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type HouseholdFundKittyAllocation = {
+  id: string;
+  fundId: string;
+  eventId: string;
+  goalId: string;
+  amountCents: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type HouseholdFundBankBinding = {
+  id: string;
+  fundId: string;
+  memberId: string;
+  provider: "manual" | "flinks";
+  accountId: string;
+  /** HMAC/provider-safe digest only; raw provider ids and credentials never enter the snapshot. */
+  accountDigest: string | null;
+  status: "manual" | "connected" | "revoked";
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type HouseholdFundPrivateReconciliation = {
+  id: string;
+  fundId: string;
+  memberId: string;
+  date: DateKey;
+  bankTotalCents: number;
+  operatingFundCents: number;
+  kittyCents: number;
+  personalRemainderCents: number;
+  differenceCents: number;
+  sharedEventId: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type HouseholdFundPrivateState = {
+  bankBindings: HouseholdFundBankBinding[];
+  reconciliations: HouseholdFundPrivateReconciliation[];
+};
+
 /** Soft presence of a kitchen phone that has touched the shared snapshot. Not Auth. */
 export type HouseholdDevice = {
   id: string;
@@ -773,6 +904,11 @@ export type CommandReceipt = {
   confirmationId: string;
   identityHash: string;
   auditHash: string;
+  /** Projection-specific hashes keep shared replay independent from member-private books. */
+  scopedAuditHashes?: {
+    shared: string;
+    personal: string;
+  };
   commandKind: string;
   postedIds: string[];
   revision: number;
@@ -825,6 +961,10 @@ export type Household = {
   shifts: Shift[];
   /** Sanitized member-personal published schedule projections; never worked time or money. */
   sevenShiftsSchedules?: import("./sevenShiftsCalendar.ts").SevenShiftsScheduledShift[];
+  /** Active member's private workplace directory; entries are never household members. */
+  coworkers?: import("./coworkers.ts").Coworker[];
+  /** Private, non-financial attendance context for confirmed shifts. */
+  coworkerAttendance?: import("./coworkers.ts").CoworkerAttendance[];
   recurrences: Recurrence[];
   appointments: Appointment[];
   claims: Claim[];
@@ -835,6 +975,13 @@ export type Household = {
   goals: Goal[];
   goalContributions: GoalContribution[];
   goalPurchases: GoalPurchase[];
+  householdFund?: HouseholdFundConfig | null;
+  fundMonthPlans?: HouseholdFundMonthPlan[];
+  fundEvents?: HouseholdFundEvent[];
+  fundSettlementAllocations?: HouseholdFundSettlementAllocation[];
+  fundKittyAllocations?: HouseholdFundKittyAllocation[];
+  /** Active member overlay only. `splitForSync` removes it from Shared. */
+  fundPrivate?: HouseholdFundPrivateState;
   budgetPlans: BudgetPlan[];
   sitDownSessions: SitDownSession[];
   activity: Activity[];
@@ -884,6 +1031,11 @@ export type SharedEnvelope = {
   goals: Goal[];
   goalContributions: GoalContribution[];
   goalPurchases: GoalPurchase[];
+  householdFund?: HouseholdFundConfig | null;
+  fundMonthPlans?: HouseholdFundMonthPlan[];
+  fundEvents?: HouseholdFundEvent[];
+  fundSettlementAllocations?: HouseholdFundSettlementAllocation[];
+  fundKittyAllocations?: HouseholdFundKittyAllocation[];
   budgetPlans: BudgetPlan[];
   sitDownSessions: SitDownSession[];
   activity: Activity[];
@@ -905,14 +1057,19 @@ export type SharedEnvelope = {
 export type PersonalEnvelope = {
   kind: "personal";
   memberId: string;
+  /** Member-owned account metadata. Legacy envelopes omit this collection. */
+  accounts?: Account[];
   lastCommittedAt: string | null;
   transactions: Transaction[];
   shifts: Shift[];
   sevenShiftsSchedules?: import("./sevenShiftsCalendar.ts").SevenShiftsScheduledShift[];
+  coworkers?: import("./coworkers.ts").Coworker[];
+  coworkerAttendance?: import("./coworkers.ts").CoworkerAttendance[];
   /** Member-owned non-shared goals and their money facts. Optional for old replicas. */
   goals?: Goal[];
   goalContributions?: GoalContribution[];
   goalPurchases?: GoalPurchase[];
+  fundPrivate?: HouseholdFundPrivateState;
   tombstones: Tombstone[];
   herculesProPermissions?: HerculesProPermissions;
 };

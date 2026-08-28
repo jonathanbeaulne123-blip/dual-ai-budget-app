@@ -11,6 +11,14 @@ import { assertReadOnlySelect } from "./queryGuard.ts";
 import { BOOKS_SCHEMA, BOOKS_SCHEMA_VERSION } from "./schema.ts";
 import { hostedTransportAllowed } from "../core/sharing.ts";
 import { pushSupabaseHousehold, probeSupabase } from "./supabase.ts";
+import {
+  shapeHouseholdFundConfig,
+  shapeHouseholdFundEvents,
+  shapeHouseholdFundKittyAllocations,
+  shapeHouseholdFundMonthPlans,
+  shapeHouseholdFundPrivate,
+  shapeHouseholdFundSettlementAllocations,
+} from "../core/householdFund.ts";
 
 export type HostedBooksMode = "local" | "opted-in" | "published" | "failed";
 
@@ -43,7 +51,7 @@ export function booksIdbName(environment: Environment): string {
   return `idb://hearth-books-${environment}`;
 }
 
-async function migrate(db: Queryable): Promise<void> {
+export async function migrateBooks(db: Queryable): Promise<void> {
   await db.exec(BOOKS_SCHEMA);
   const applied = await db.query<{ id: number }>("SELECT id FROM schema_migrations ORDER BY id");
   const have = new Set(applied.rows.map((row) => row.id));
@@ -58,13 +66,18 @@ async function migrate(db: Queryable): Promise<void> {
       ALTER TABLE households ADD CONSTRAINT households_timezone_nonempty CHECK (char_length(timezone) > 0);
     `);
     await db.query("INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)", [2, new Date().toISOString()]);
+    have.add(2);
+  }
+  if (!have.has(3)) {
+    // D-161: BOOKS_SCHEMA creates the Fund projection tables and adds account scope idempotently.
+    await db.query("INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)", [3, new Date().toISOString()]);
   }
 }
 
 export async function openMemoryBooks(): Promise<PGlite> {
   const { PGlite } = await import("@electric-sql/pglite");
   const db = await PGlite.create();
-  await migrate(db);
+  await migrateBooks(db);
   return db;
 }
 
@@ -74,7 +87,7 @@ export async function getBrowserBooks(environment: Environment = "development"):
   const { PGlite } = await import("@electric-sql/pglite");
   const persist = typeof indexedDB !== "undefined";
   const db = persist ? await PGlite.create(booksIdbName(environment)) : await PGlite.create();
-  await migrate(db);
+  await migrateBooks(db);
   browserDbs.set(environment, db);
   return db;
 }
@@ -427,10 +440,11 @@ async function writeBooks(db: Queryable, household: Household, compiled: Compile
     );
   }
   for (const account of compiled.chart) {
+    const sourceAccount = household.accounts.find((row) => row.id === account.bankAccountId);
     await db.query(
-      `INSERT INTO chart_accounts (id, household_id, code, name, account_type, normal_balance, source, bank_account_id, category_id, owner_member_id, active)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-      [account.id, compiled.householdId, account.code, account.name, account.accountType, account.normalBalance, account.source, account.bankAccountId ?? null, account.categoryId ?? null, account.ownerMemberId ?? null, account.active],
+      `INSERT INTO chart_accounts (id, household_id, code, name, account_type, normal_balance, source, bank_account_id, category_id, owner_member_id, scope, active)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+      [account.id, compiled.householdId, account.code, account.name, account.accountType, account.normalBalance, account.source, account.bankAccountId ?? null, account.categoryId ?? null, account.ownerMemberId ?? null, sourceAccount?.scope === "personal" ? "personal" : "shared", account.active],
     );
   }
   for (const entry of compiled.entries) {
@@ -487,6 +501,58 @@ async function writeBooks(db: Queryable, household: Household, compiled: Compile
       "INSERT INTO activity (id, household_id, at, action, summary) VALUES ($1,$2,$3,$4,$5)",
       [item.id, compiled.householdId, item.at, item.action, item.summary],
     );
+  }
+
+  const fund = shapeHouseholdFundConfig(household.householdFund);
+  if (fund) {
+    await db.query(
+      `INSERT INTO household_funds (id, household_id, name, custodian_member_id, mode, opened_on, created_at, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [fund.id, compiled.householdId, fund.name, fund.custodianMemberId, fund.mode, fund.openedOn, fund.createdAt, fund.updatedAt],
+    );
+    for (const plan of shapeHouseholdFundMonthPlans(household.fundMonthPlans)) {
+      await db.query(
+        `INSERT INTO fund_month_plans (id, household_id, fund_id, month_key, target_cents, buffer_cents, agreed_by_member_ids, created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        [plan.id, compiled.householdId, plan.fundId, plan.monthKey, plan.targetCents, plan.bufferCents, JSON.stringify(plan.agreedByMemberIds), plan.createdAt, plan.updatedAt],
+      );
+    }
+    for (const event of shapeHouseholdFundEvents(household.fundEvents)) {
+      await db.query(
+        `INSERT INTO fund_events (id, household_id, fund_id, kind, amount_cents, date_key, created_by, confirmed_by_member_id, contributor_member_id, destination_account_id, related_event_id, related_transaction_ids, evidence_digests, reconciliation_tied, note, created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+        [event.id, compiled.householdId, event.fundId, event.kind, event.amountCents, event.date, event.createdBy, event.confirmedByMemberId, event.contributorMemberId, event.destinationAccountId, event.relatedEventId, JSON.stringify(event.relatedTransactionIds), JSON.stringify(event.evidenceDigests), event.reconciliationTied, event.note, event.createdAt, event.updatedAt],
+      );
+    }
+    for (const allocation of shapeHouseholdFundSettlementAllocations(household.fundSettlementAllocations)) {
+      await db.query(
+        `INSERT INTO fund_settlement_allocations (id, household_id, fund_id, event_id, transaction_id, amount_cents, created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [allocation.id, compiled.householdId, allocation.fundId, allocation.eventId, allocation.transactionId, allocation.amountCents, allocation.createdAt, allocation.updatedAt],
+      );
+    }
+    for (const allocation of shapeHouseholdFundKittyAllocations(household.fundKittyAllocations)) {
+      await db.query(
+        `INSERT INTO fund_kitty_allocations (id, household_id, fund_id, event_id, goal_id, amount_cents, created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [allocation.id, compiled.householdId, allocation.fundId, allocation.eventId, allocation.goalId, allocation.amountCents, allocation.createdAt, allocation.updatedAt],
+      );
+    }
+    const privateState = shapeHouseholdFundPrivate(household.fundPrivate, fund.custodianMemberId);
+    for (const binding of privateState.bankBindings) {
+      await db.query(
+        `INSERT INTO fund_bank_bindings (id, household_id, fund_id, member_id, account_id, provider, status, account_digest, created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+        [binding.id, compiled.householdId, binding.fundId, binding.memberId, binding.accountId, binding.provider, binding.status, binding.accountDigest, binding.createdAt, binding.updatedAt],
+      );
+    }
+    for (const reconciliation of privateState.reconciliations) {
+      await db.query(
+        `INSERT INTO fund_private_reconciliations (id, household_id, fund_id, member_id, date_key, bank_total_cents, operating_fund_cents, kitty_cents, personal_remainder_cents, difference_cents, tied, shared_event_id, created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+        [reconciliation.id, compiled.householdId, reconciliation.fundId, reconciliation.memberId, reconciliation.date, reconciliation.bankTotalCents, reconciliation.operatingFundCents, reconciliation.kittyCents, reconciliation.personalRemainderCents, reconciliation.differenceCents, reconciliation.differenceCents === 0, reconciliation.sharedEventId, reconciliation.createdAt, reconciliation.updatedAt],
+      );
+    }
   }
 
   await db.query(

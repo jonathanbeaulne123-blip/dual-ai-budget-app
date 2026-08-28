@@ -40,6 +40,14 @@ export type AppendCommandRpcResult = {
 
 function inferLedgerScope(household: Household, postedIds: string[]): "shared" | "personal" {
   const posted = new Set(postedIds);
+  const changesSharedFund = Boolean(
+    (household.householdFund && posted.has(household.householdFund.id))
+    || (household.fundMonthPlans ?? []).some((row) => posted.has(row.id))
+    || (household.fundEvents ?? []).some((row) => posted.has(row.id))
+    || (household.fundSettlementAllocations ?? []).some((row) => posted.has(row.id))
+    || (household.fundKittyAllocations ?? []).some((row) => posted.has(row.id)),
+  );
+  if (changesSharedFund) return "shared";
   const rows = [
     ...household.transactions.filter((row) => posted.has(row.id)),
     ...household.shifts.filter((row) => posted.has(row.id)),
@@ -54,20 +62,21 @@ export function receiptToCommandRef(input: {
   baseRevision: number;
 }): ContinuityCommandRef {
   const { household, receipt, baseRevision } = input;
+  const ledgerScope = inferLedgerScope(household, receipt.postedIds);
   return {
     idempotencyKey: receipt.confirmationId,
     confirmationId: receipt.confirmationId,
     identityHash: receipt.identityHash,
     baseRevision,
     resultRevision: household.revision,
-    ledgerScope: inferLedgerScope(household, receipt.postedIds),
+    ledgerScope,
     commandType: receipt.commandKind,
     commandPayload: {
       confirmationId: receipt.confirmationId,
       identityHash: receipt.identityHash,
       commandKind: receipt.commandKind,
       postedIds: [...receipt.postedIds].sort(),
-      auditHash: receipt.auditHash,
+      auditHash: receipt.scopedAuditHashes?.[ledgerScope] ?? receipt.auditHash,
       revision: receipt.revision,
       acceptedAt: receipt.acceptedAt,
     },
@@ -113,6 +122,11 @@ export function compactedCommandPayload(
     ...(mergedFacts?.sitDownSessions ?? []).map((row) => row.id),
     ...(mergedFacts?.goalContributions ?? []).map((row) => row.id),
     ...(mergedFacts?.goalPurchases ?? []).map((row) => row.id),
+    ...(mergedFacts?.householdFund ? [mergedFacts.householdFund.id] : []),
+    ...(mergedFacts?.fundMonthPlans ?? []).map((row) => row.id),
+    ...(mergedFacts?.fundEvents ?? []).map((row) => row.id),
+    ...(mergedFacts?.fundSettlementAllocations ?? []).map((row) => row.id),
+    ...(mergedFacts?.fundKittyAllocations ?? []).map((row) => row.id),
     ...(mergedFacts?.tombstones ?? []).map((row) => row.id),
   ].sort();
   return {
@@ -170,6 +184,11 @@ function mergeMaterializationFacts(
     if (facts.goalPurchases?.length) {
       merged.goalPurchases = [...(merged.goalPurchases ?? []), ...facts.goalPurchases];
     }
+    if (facts.householdFund) merged.householdFund = facts.householdFund;
+    if (facts.fundMonthPlans?.length) merged.fundMonthPlans = [...(merged.fundMonthPlans ?? []), ...facts.fundMonthPlans];
+    if (facts.fundEvents?.length) merged.fundEvents = [...(merged.fundEvents ?? []), ...facts.fundEvents];
+    if (facts.fundSettlementAllocations?.length) merged.fundSettlementAllocations = [...(merged.fundSettlementAllocations ?? []), ...facts.fundSettlementAllocations];
+    if (facts.fundKittyAllocations?.length) merged.fundKittyAllocations = [...(merged.fundKittyAllocations ?? []), ...facts.fundKittyAllocations];
     if (facts.tombstones?.length) {
       merged.tombstones = [...(merged.tombstones ?? []), ...facts.tombstones];
     }

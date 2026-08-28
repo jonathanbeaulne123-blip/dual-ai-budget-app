@@ -326,7 +326,10 @@ export function Office({
   const lampLit = !lampIsDark(findings);
   const blotter = blotterFacts(dashboard, opinion, findings.length);
   const sill = useMemo(() => sillOverview(household, dashboard, today), [household, dashboard, today]);
-  const order = promoteRail(visibleInstruments(layout), room.promoted, lampLit);
+  const order = useMemo(
+    () => promoteRail(visibleInstruments(layout), room.promoted, lampLit),
+    [layout, room.promoted, lampLit],
+  );
   const inert = adding;
   const parked = layout.items.filter((item) => item.hidden).map((item) => item.id);
   const packed = useMemo(

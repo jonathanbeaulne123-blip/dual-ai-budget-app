@@ -19,6 +19,7 @@ class MemoryD1 {
   receipts: Row[] = [];
   r2Budget = { stored_bytes: 0, object_count: 0 };
   r2Monthly = new Map<string, { class_a_puts: number; class_b_gets: number }>();
+  gmailDigestForcedMisses = 0;
   sql: string[] = [];
 
   async batch(statements: Array<{ run: () => Promise<unknown> }>) {
@@ -47,6 +48,16 @@ class MemoryD1 {
             if (sql.startsWith("SELECT evidence_id, state, revision")) {
               const row = db.items.find((item) => item.evidence_id === values[0]);
               return row ? { evidence_id: row.evidence_id, state: row.state, revision: row.revision } : null;
+            }
+            if (sql.startsWith("SELECT evidence_id, state, capture_kind")) {
+              if (db.gmailDigestForcedMisses > 0) {
+                db.gmailDigestForcedMisses -= 1;
+                return null;
+              }
+              const row = db.items.find((item) => item.environment === values[0] && item.auth_user_id === values[1]
+                && item.household_id === values[2] && item.member_id === values[3]
+                && item.capture_kind === "gmail-7shifts-email" && item.plaintext_sha256 === values[4] && item.state !== "deleted");
+              return row ?? null;
             }
             if (sql.startsWith("SELECT parser_version, schema_fingerprint")) {
               return db.derivatives.find((row) => row.evidence_id === values[0] && row.revision === values[1] && row.canonical_shift_key === values[2]) ?? null;
@@ -174,6 +185,10 @@ class MemoryD1 {
               return { meta: { changes: 1 } };
             }
             if (sql.startsWith("INSERT INTO evidence_items")) {
+              const conflictingGmail = values[5] === "gmail-7shifts-email" && db.items.some((row) => row.environment === values[1]
+                && row.auth_user_id === values[2] && row.household_id === values[3] && row.member_id === values[4]
+                && row.capture_kind === values[5] && row.plaintext_sha256 === values[9] && row.state !== "deleted");
+              if (conflictingGmail) throw new Error("D1_ERROR: UNIQUE constraint failed: evidence_items scoped Gmail digest");
               db.items.push({
                 evidence_id: values[0], environment: values[1], auth_user_id: values[2], household_id: values[3], member_id: values[4],
                 capture_kind: values[5], state: values[6], content_type: values[7], byte_length: values[8], plaintext_sha256: values[9],
@@ -187,6 +202,9 @@ class MemoryD1 {
               return { meta: { changes: 1 } };
             }
             if (sql.startsWith("INSERT INTO evidence_derivatives")) {
+              if (db.derivatives.some((row) => row.evidence_id === values[0] && row.revision === values[1] && row.canonical_shift_key === values[2])) {
+                throw new Error("D1_ERROR: UNIQUE constraint failed: evidence_derivatives primary key");
+              }
               db.derivatives.push({ evidence_id: values[0], revision: values[1], canonical_shift_key: values[2], parser_version: values[3], schema_fingerprint: values[4], sanitized_json: values[5], created_at: values[6] });
               return { meta: { changes: 1 } };
             }
@@ -504,6 +522,107 @@ describe("Evidence Mesh Worker", () => {
     expect(reread.status).toBe(404);
   });
 
+  it("accepts only raw 7shifts Gmail and deduplicates a repeated scrub before R2", async () => {
+    const bindings = env();
+    vi.stubGlobal("fetch", authFetch());
+    const path = "/work/evidence/captures?environment=development&householdId=HH-TEST&memberId=MEM-001";
+    const goodRaw = ["From: 7shifts <notifications@7shifts.com>", "To: member@example.test", "Subject: Schedule", "", "Thu August 27, 2026 4:30 pm - 10:30 pm"].join("\r\n");
+    const upload = (raw: string) => worker.fetch(request(path, {
+      method: "POST",
+      headers: { Origin: kitchen, Authorization: "Bearer test-user-jwt", "Content-Type": "message/rfc822", "X-Evidence-Capture-Kind": "gmail-7shifts-email" },
+      body: raw,
+    }), bindings);
+    const first = await upload(goodRaw);
+    const second = await upload(goodRaw);
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(201);
+    const firstCapture = (await first.json() as any).capture;
+    const secondCapture = (await second.json() as any).capture;
+    expect(secondCapture).toMatchObject({ evidenceId: firstCapture.evidenceId, duplicate: true });
+    expect(bindings.EVIDENCE_DB.items).toHaveLength(1);
+    expect(bindings.EVIDENCE_RAW.objects.size).toBe(1);
+    expect(bindings.EVIDENCE_DERIVE.sent).toHaveLength(1);
+
+    const lookalike = await upload("From: alerts@7shifts.com.evil.test\r\n\r\nbody");
+    expect(lookalike.status).toBe(400);
+    expect(await lookalike.json()).toMatchObject({ error: expect.stringMatching(/not a 7shifts domain/i) });
+  });
+
+  it("recovers an overlapping Gmail digest insert as a duplicate and removes its orphan R2 reservation", async () => {
+    const bindings = env();
+    vi.stubGlobal("fetch", authFetch());
+    bindings.EVIDENCE_DB.gmailDigestForcedMisses = 2;
+    const path = "/work/evidence/captures?environment=development&householdId=HH-TEST&memberId=MEM-001";
+    const raw = "From: 7shifts <notifications@7shifts.com>\r\nTo: member@example.test\r\nSubject: Schedule\r\n\r\nShift details";
+    const upload = () => worker.fetch(request(path, {
+      method: "POST",
+      headers: { Origin: kitchen, Authorization: "Bearer test-user-jwt", "Content-Type": "message/rfc822", "X-Evidence-Capture-Kind": "gmail-7shifts-email" },
+      body: raw,
+    }), bindings);
+
+    const first = await upload();
+    const second = await upload();
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(201);
+    const firstCapture = (await first.json() as any).capture;
+    const secondCapture = (await second.json() as any).capture;
+    expect(secondCapture).toMatchObject({ evidenceId: firstCapture.evidenceId, duplicate: true });
+    expect(bindings.EVIDENCE_DB.items).toHaveLength(1);
+    expect(bindings.EVIDENCE_RAW.objects.size).toBe(1);
+    expect(bindings.EVIDENCE_DB.r2Budget.object_count).toBe(1);
+    expect(bindings.EVIDENCE_DERIVE.sent).toHaveLength(1);
+  });
+
+  it("requeues a stale Gmail derivation when a later scrub finds the existing encrypted message", async () => {
+    const bindings = env();
+    vi.stubGlobal("fetch", authFetch());
+    const path = "/work/evidence/captures?environment=development&householdId=HH-TEST&memberId=MEM-001";
+    const raw = "From: 7shifts <notifications@7shifts.com>\r\nTo: member@example.test\r\nSubject: Schedule\r\n\r\nShift details";
+    const upload = () => worker.fetch(request(path, {
+      method: "POST",
+      headers: { Origin: kitchen, Authorization: "Bearer test-user-jwt", "Content-Type": "message/rfc822", "X-Evidence-Capture-Kind": "gmail-7shifts-email" },
+      body: raw,
+    }), bindings);
+
+    const first = await upload();
+    const evidenceId = (await first.json() as any).capture.evidenceId;
+    bindings.EVIDENCE_DB.items[0]!.state = "deriving";
+    bindings.EVIDENCE_DB.items[0]!.updated_at = "2026-08-28T12:00:00.000Z";
+    const duplicate = await upload();
+    expect(await duplicate.json()).toMatchObject({ capture: { evidenceId, duplicate: true } });
+    expect(bindings.EVIDENCE_DERIVE.sent).toEqual([
+      { evidenceId, revision: 1 },
+      { evidenceId, revision: 1 },
+    ]);
+    expect(bindings.EVIDENCE_DB.audits.some((row: Row) => row.action === "derivation-requeued")).toBe(true);
+  });
+
+  it("coalesces repeated plain-text and HTML schedule parts into one derivative without dropping observations", async () => {
+    const bindings = env();
+    vi.stubGlobal("fetch", authFetch());
+    const schedule = "The schedule has been posted! Thu, August 27 4:30 pm – 10:30 pm";
+    const raw = [
+      "From: 7shifts <notifications@7shifts.com>", "To: member@example.test", "Subject: Schedule", "Date: Sat, 22 Aug 2026 10:00:00 -0400",
+      'Content-Type: multipart/alternative; boundary="same-shift"', "", "--same-shift", "Content-Type: text/plain", "", schedule,
+      "--same-shift", "Content-Type: text/html", "", `<p>${schedule}</p>`, "--same-shift--", "",
+    ].join("\r\n");
+    const uploaded = await worker.fetch(request("/work/evidence/captures?environment=development&householdId=HH-TEST&memberId=MEM-001", {
+      method: "POST",
+      headers: { Origin: kitchen, Authorization: "Bearer test-user-jwt", "Content-Type": "message/rfc822", "X-Evidence-Capture-Kind": "gmail-7shifts-email" },
+      body: raw,
+    }), bindings);
+    const evidenceId = (await uploaded.json() as any).capture.evidenceId;
+    const ack = vi.fn();
+    const retry = vi.fn();
+    await worker.queue({ messages: [{ body: { evidenceId, revision: 1 }, ack, retry }] } as any, bindings);
+
+    expect(bindings.EVIDENCE_DB.items[0]?.state).toBe("ready_to_review");
+    expect(bindings.EVIDENCE_DB.derivatives).toHaveLength(1);
+    expect(bindings.EVIDENCE_DB.observations.filter((row: Row) => row.field_key === "scheduledMinutes")).toHaveLength(2);
+    expect(ack).toHaveBeenCalledTimes(1);
+    expect(retry).not.toHaveBeenCalled();
+  });
+
   it("fails closed before R2 when the Development storage or monthly operation budget is exhausted", async () => {
     const bindings = env();
     vi.stubGlobal("fetch", authFetch());
@@ -562,7 +681,15 @@ describe("Evidence Mesh Worker", () => {
     const uploaded = await worker.fetch(request("/work/evidence/captures?environment=development&householdId=HH-TEST&memberId=MEM-001", {
       method: "POST",
       headers: { Origin: kitchen, Authorization: "Bearer test-user-jwt", "Content-Type": "application/json", "X-Evidence-Capture-Kind": "browser-structured" },
-      body: JSON.stringify({ data: [{ id: 1, user_id: 77, clocked_in: "2026-08-28T13:00:00Z", clocked_out: "2026-08-28T21:00:00Z", approved: true, unknown_future_flag: "kept" }] }),
+      body: JSON.stringify({
+        version: 1,
+        captureClass: "punch",
+        transport: "fetch",
+        path: "/api/v2/company/44/time_punches",
+        capturedAt: "2026-08-28T21:01:00.000Z",
+        contentType: "application/json",
+        body: { data: [{ id: 1, user_id: 77, clocked_in: "2026-08-28T13:00:00Z", clocked_out: "2026-08-28T21:00:00Z", approved: true, unknown_future_flag: "kept" }] },
+      }),
     }), bindings);
     const evidenceId = (await uploaded.json() as any).capture.evidenceId;
     const ack = vi.fn();

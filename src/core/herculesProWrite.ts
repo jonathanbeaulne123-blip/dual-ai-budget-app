@@ -1,5 +1,5 @@
 import { findAccountByRef, findSubcategoryByRef, requireAccount, requireSubcategory } from "./catalog.ts";
-import { commandIdentityHash, financialAuditHash, rememberReceipt } from "./commandIdentity.ts";
+import { commandIdentityHash, financialAuditHash, financialAuditHashForScope, rememberReceipt } from "./commandIdentity.ts";
 import { postEntry, postTransfer } from "./commands.ts";
 import { assertAcceptableBooks } from "./commandRuntime.ts";
 import { formatCad } from "./money.ts";
@@ -280,7 +280,14 @@ export async function acceptPreparedHerculesProTransaction(
   }, receipt);
   assertAcceptableBooks(accepted);
   accepted.booksAcceptedHash = await financialAuditHash(accepted);
-  accepted = rememberReceipt(accepted, { ...receipt, auditHash: accepted.booksAcceptedHash });
+  accepted = rememberReceipt(accepted, {
+    ...receipt,
+    auditHash: accepted.booksAcceptedHash,
+    scopedAuditHashes: {
+      shared: await financialAuditHashForScope(accepted, "shared", memberId),
+      personal: await financialAuditHashForScope(accepted, "personal", memberId),
+    },
+  });
   const finalReceipt = accepted.commandReceipts.find((row) => row.confirmationId === confirmationId)!;
   const sharedProjection = herculesProSharedProjection(accepted, memberId);
   return {

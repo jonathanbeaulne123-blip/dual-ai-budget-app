@@ -22,4 +22,7 @@ export type DeskForm = {
   eventTag: string;
   visibility: Visibility;
   occurredAt: string;
+  useHouseholdFund: boolean;
+  fundedAmount: string;
+  fundDestinationAccountId: string;
 };

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { bindHerculesRigEngine, createHerculesRigEngine, exposeHerculesRigConsole } from "./controller.ts";
 import type { HerculesRigEngine } from "./engine.ts";
 import type { HerculesRigCommand, HerculesRigMood, HerculesRigPose, RigEngineState } from "./types.ts";
@@ -49,13 +49,16 @@ export function HerculesRigProvider({
     engine.setMood(mood);
   }, [engine, mood]);
 
+  const dispatch = useCallback((command: HerculesRigCommand) => engine.dispatch(command), [engine]);
+  const playPose = useCallback((pose: HerculesRigPose, loop?: boolean) => engine.playPose(pose, loop), [engine]);
+  const setMood = useCallback((next: HerculesRigMood) => engine.setMood(next), [engine]);
   const value = useMemo<RigContextValue>(() => ({
     engine,
     state,
-    dispatch: (command) => engine.dispatch(command),
-    playPose: (pose, loop) => engine.playPose(pose, loop),
-    setMood: (next) => engine.setMood(next),
-  }), [engine, state]);
+    dispatch,
+    playPose,
+    setMood,
+  }), [engine, state, dispatch, playPose, setMood]);
 
   return <RigContext.Provider value={value}>{children}</RigContext.Provider>;
 }

@@ -11,7 +11,6 @@ import {
   listEvidenceAutomationPolicies,
   listEvidenceBundles,
   putEvidenceAutomationPolicy,
-  provisionEvidenceMailbox,
   mintEvidenceCaptureCapability,
   readEvidenceDerived,
   readEvidenceRaw,
@@ -23,6 +22,8 @@ import {
   type EvidenceDerivedDetail,
   type EvidenceScope,
 } from "./imports/evidenceClient.ts";
+import { importSevenShiftsFromGmail, type GmailSevenShiftsImportProgress } from "./google/gmailSevenShifts.ts";
+import { coworkerRosterDraft, type CoworkerRosterDraftRow } from "./imports/coworkerRosterDraft.ts";
 
 function captureKind(file: File): string {
   const name = file.name.toLowerCase();
@@ -66,6 +67,7 @@ export function SevenShiftsEvidenceCenter({
   today,
   busy: parentBusy,
   onSaveSchedule,
+  onImportCoworkers,
 }: {
   household: Household;
   memberId: string;
@@ -73,6 +75,7 @@ export function SevenShiftsEvidenceCenter({
   today: string;
   busy: boolean;
   onSaveSchedule: (rows: SevenShiftsScheduledShift[], confirmedPersonalFeed?: boolean) => void;
+  onImportCoworkers?: (input: { jobId: string; locationName: string; rows: CoworkerRosterDraftRow[] }) => void;
 }) {
   const scope = useMemo<EvidenceScope>(() => ({ environment: household.environment, householdId: household.householdId, memberId }), [household.environment, household.householdId, memberId]);
   const scopeKey = `${scope.environment}:${scope.householdId}:${scope.memberId}`;
@@ -84,9 +87,10 @@ export function SevenShiftsEvidenceCenter({
   const [policies, setPolicies] = useState<AutomationPolicy[]>([]);
   const [selectedDerived, setSelectedDerived] = useState<EvidenceDerivedDetail | null>(null);
   const [calendarUrl, setCalendarUrl] = useState("");
-  const [mailbox, setMailbox] = useState("");
+  const [gmailProgress, setGmailProgress] = useState<GmailSevenShiftsImportProgress | null>(null);
   const [extensionId, setExtensionId] = useState("");
   const [pairingCode, setPairingCode] = useState("");
+  const [rosterJobId, setRosterJobId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -226,17 +230,31 @@ export function SevenShiftsEvidenceCenter({
     }
   }
 
-  async function createMailbox() {
+  async function importGmail() {
+    const controller = new AbortController();
+    controllerRef.current?.abort();
+    controllerRef.current = controller;
     setBusy(true);
     setError("");
+    setNotice("");
+    setGmailProgress({ discovered: 0, inspected: 0, imported: 0, duplicates: 0, rejected: 0 });
     try {
-      const created = await provisionEvidenceMailbox(scope);
-      setMailbox(created.address);
-      setNotice("A new private forwarding alias replaced any prior alias for this member.");
+      const loginHint = household.google?.links?.find((row) => row.active && row.memberId === memberId)?.email;
+      const result = await importSevenShiftsFromGmail({
+        scope,
+        loginHint,
+        after: "2024/01/01",
+        limit: 1_000,
+        signal: controller.signal,
+        onProgress: setGmailProgress,
+      });
+      if (controller.signal.aborted) return;
+      await refresh(controller.signal);
+      setNotice(`${result.imported} new 7shifts message${result.imported === 1 ? "" : "s"} encrypted; ${result.duplicates} already present; ${result.rejected} rejected. Email schedules remain outlook only.${result.truncated ? " The 1,000-message safety cap was reached." : ""}`);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
+      if (!controller.signal.aborted) setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
-      setBusy(false);
+      if (!controller.signal.aborted) setBusy(false);
     }
   }
 
@@ -304,6 +322,10 @@ export function SevenShiftsEvidenceCenter({
 
   const disabled = parentBusy || busy || !available;
   const memberJobs = (household.workJobs ?? []).filter((job) => job.active && job.memberId === memberId);
+  const rosterRows = coworkerRosterDraft(selectedDerived);
+  const rosterResponseCount = rosterRows.filter((row) => row.source === "seven-shifts-roster").length;
+  const scheduleObservationCount = rosterRows.length - rosterResponseCount;
+  const rosterJob = memberJobs.find((job) => job.id === rosterJobId) ?? memberJobs[0];
 
   return (
     <section className="card" aria-label="7shifts Evidence Center">
@@ -342,11 +364,12 @@ export function SevenShiftsEvidenceCenter({
           <p className="muted">Changing member, household, environment, link, or page cancels the in-flight reader.</p>
         </article>
         <article>
-          <p className="kicker">Forwarded reports</p>
-          <h3>Private evidence mailbox</h3>
-          <p className="muted">The full RFC822 message is encrypted and quarantined. Sender names, headers, HTML, and attachments are evidence only; remote content is never fetched.</p>
-          <button type="button" className="chip" disabled={disabled} onClick={() => { void createMailbox(); }}>{mailbox ? "Rotate alias" : "Create alias"}</button>
-          {mailbox ? <p><code>{mailbox}</code></p> : null}
+          <p className="kicker">Direct Gmail · read-only</p>
+          <h3>Import my 7shifts mail</h3>
+          <p className="muted">Google shows the consent screen. Hearth searches only mail matching 7shifts, verifies the sender domain again, encrypts each raw message, and cannot send, delete, label, archive, or forward mail.</p>
+          <button type="button" className="chip" disabled={disabled} onClick={() => { void importGmail(); }}>{busy && gmailProgress ? "Scrubbing 7shifts mail…" : "Connect Gmail and scrub"}</button>
+          {gmailProgress ? <p className="muted">Found {gmailProgress.discovered} · checked {gmailProgress.inspected} · new {gmailProgress.imported} · already saved {gmailProgress.duplicates} · rejected {gmailProgress.rejected}</p> : null}
+          <p className="muted">The scan starts at January 1, 2024 and stops at 1,000 messages. Run it again safely; encrypted-message digests prevent duplicates.</p>
         </article>
         <article>
           <p className="kicker">Chrome / Edge companion</p>
@@ -386,6 +409,20 @@ export function SevenShiftsEvidenceCenter({
       {selectedDerived ? <article className="preview" aria-label="Extracted evidence facts">
         <header><h3>Extracted facts</h3><button type="button" className="chip" onClick={() => setSelectedDerived(null)}>Close</button></header>
         <p className="muted">{selectedDerived.observations.length} recognized fact{selectedDerived.observations.length === 1 ? "" : "s"} · {selectedDerived.schemaDrift.length} unrecognized field{selectedDerived.schemaDrift.length === 1 ? "" : "s"} preserved · {selectedDerived.state.replace(/_/g, " ")}</p>
+        {rosterRows.length ? <div className="stack-list" aria-label="Coworker identity review">
+          <p><strong>{rosterRows.length} coworker{rosterRows.length === 1 ? "" : "s"} found</strong></p>
+          <p className="muted">{rosterResponseCount ? `${rosterResponseCount} from a roster response` : ""}{rosterResponseCount && scheduleObservationCount ? " · " : ""}{scheduleObservationCount ? `${scheduleObservationCount} observed on published schedules` : ""}. These become private coworker IDs, not household members. Roles are observations for this job and location.</p>
+          <label>Job and location<select value={rosterJob?.id ?? ""} onChange={(event) => setRosterJobId(event.target.value)}>
+            {memberJobs.map((job) => <option key={job.id} value={job.id}>{job.name} · {job.locationName}</option>)}
+          </select></label>
+          <div className="chips">{rosterRows.slice(0, 30).map((row, index) => <span className="chip" key={`${row.source}:${row.sourceIdentityKey ?? `${row.displayName}:${index}`}`}>{row.displayName}{row.roleLabel ? ` · ${row.roleLabel}` : ""}{row.source === "seven-shifts-schedule" ? ` · schedule${row.sourceIdentityKey ? "" : " · confirm identity"}` : ""}</span>)}</div>
+          {rosterRows.length > 30 ? <p className="muted">And {rosterRows.length - 30} more.</p> : null}
+          <button type="button" className="primary" disabled={disabled || !rosterJob || !onImportCoworkers} onClick={() => {
+            if (!rosterJob || !onImportCoworkers) return;
+            onImportCoworkers({ jobId: rosterJob.id, locationName: rosterJob.locationName, rows: rosterRows });
+            setNotice(`${rosterRows.length} coworker ${rosterRows.length === 1 ? "identity" : "identities"} sent to the private roster.`);
+          }}>Add coworker identities to this job</button>
+        </div> : null}
         {selectedDerived.observations.length ? <div className="stack-list">{selectedDerived.observations.map((item) => (
           <p key={item.observationId}><strong>{item.field.replace(/([A-Z])/g, " $1").toLowerCase()}</strong>: {displayEvidenceValue(item.value)} <span className="muted">· {item.finality} · {item.conflictState}</span></p>
         ))}</div> : <p className="muted">This source has no recognized shift facts yet. Its raw bytes are still retained.</p>}

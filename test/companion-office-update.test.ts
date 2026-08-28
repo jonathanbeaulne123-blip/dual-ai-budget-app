@@ -65,7 +65,7 @@ describe("hercules usefulness and lessons", () => {
     expect(src).toMatch(/herculesTapIntent/);
     expect(src).toMatch(/if \(next === "open-help"\) openChatFromBeg\(\)/);
     expect(src).toMatch(/\^sit-down\|\^sit down\|\^leftover/);
-    expect(src).toMatch(/emitOfficeIntent\(\{ type: "expand", id: "postcard" \}\);\n\s*return false;/);
+    expect(src).toMatch(/emitOfficeIntent\(\{ type: "expand", id: "postcard" \}\);\r?\n\s*return false;/);
     expect(src).toMatch(/adding \? "loafing is-adding"/);
   });
 

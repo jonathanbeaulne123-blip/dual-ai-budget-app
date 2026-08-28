@@ -33,6 +33,42 @@
   --room-cool: 0;
 }
 
+.household-fund-glance,
+.household-fund-panel .card {
+  border-color: rgba(129, 82, 36, 0.34);
+}
+
+.household-fund-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.fund-disclosure {
+  padding: 10px 12px;
+  border: 1px solid rgba(129, 82, 36, 0.3);
+  border-radius: 10px;
+  background: rgba(255, 248, 225, 0.72);
+  font-weight: 650;
+}
+
+.fund-allocation-editor {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
+  border-radius: 10px;
+}
+
+.fund-allocation-editor .row {
+  align-items: center;
+}
+
+.fund-allocation-editor input {
+  flex: 0 0 8rem;
+  max-width: 8rem;
+}
+
 * { box-sizing: border-box; }
 html, body, #root { min-height: 100%; }
 html, body {
@@ -1468,6 +1504,16 @@ input, select, textarea {
 }
 .hercules-chat-form input { flex: 1; }
 .hercules-chat-form button { padding: 6px 10px; }
+.hercules-workplace-share {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 6px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.25;
+}
+.hercules-workplace-share input { width: auto; margin: 0; flex: 0 0 auto; }
 .hercules-dismiss {
   display: block;
   margin: 6px 0 0 auto;

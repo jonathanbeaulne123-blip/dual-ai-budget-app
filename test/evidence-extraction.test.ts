@@ -3,13 +3,22 @@ import { deriveEvidenceBytes, evidenceExtractionLimits } from "../workers/eviden
 
 const bytes = (value: string) => new TextEncoder().encode(value);
 const field = (record: any, name: string) => record.observations.find((row: any) => row.field === name);
+const browserBytes = (captureClass: string, path: string, body: unknown) => bytes(JSON.stringify({
+  version: 1,
+  captureClass,
+  transport: "fetch",
+  path,
+  capturedAt: "2026-08-28T12:00:00.000Z",
+  contentType: "application/json",
+  body,
+}));
 
 describe("D-158 deterministic Evidence extraction", () => {
   it("extracts official-shape punches, detailed money, breaks, approval, and schema drift", () => {
     const result = deriveEvidenceBytes({
       captureKind: "browser-structured",
       contentType: "application/json",
-      bytes: bytes(JSON.stringify({ data: [{
+      bytes: browserBytes("punch", "/api/v2/company/44/time_punches", { data: [{
         id: 991, company_id: 44, user_id: 77, location_id: 3, role_id: 5,
         clocked_in: "2026-08-28T13:00:00Z", clocked_out: "2026-08-28T21:00:00Z",
         breaks: [
@@ -19,7 +28,7 @@ describe("D-158 deterministic Evidence extraction", () => {
         approved: true, closed: true, cash_tips: "12.25", card_tips: "$84.50",
         declared_tips: "96.75", tip_out: "14.00", gross_pay: "160.00",
         regular_hours: 7, overtime_hours: 0, future_money_bucket: { amount: 9, code: "new" },
-      }] })),
+      }] }),
     });
     expect(result.parserVersion).toBe(evidenceExtractionLimits.parserVersion);
     expect(result.records).toHaveLength(1);
@@ -32,7 +41,60 @@ describe("D-158 deterministic Evidence extraction", () => {
     expect(field(record, "cardTipsCents")?.value).toBe(8450);
     expect(field(record, "finalWagesCents")?.value).toBe(16000);
     expect(field(record, "approved")?.value).toBe(true);
-    expect(record.drift).toContainEqual(expect.objectContaining({ path: "source.rows[0].future_money_bucket" }));
+    expect(record.drift).toContainEqual(expect.objectContaining({ path: "source.punch.rows[0].future_money_bucket" }));
+  });
+
+  it("extracts a bounded coworker roster without treating people as Hearth members", () => {
+    const result = deriveEvidenceBytes({
+      captureKind: "browser-structured",
+      contentType: "application/json",
+      bytes: browserBytes("roster", "/api/v2/company/44/employees", {
+        data: [{
+          company_id: 44,
+          location_id: 3,
+          employee: { id: 77, first_name: "Joséphine", last_name: "Di Nicola", future_badge: "trainer" },
+          role: { id: 5, name: "Support" },
+          future_roster_field: { value: "preserved" },
+        }],
+      }),
+    });
+    expect(result.records).toHaveLength(1);
+    const record = result.records[0]!;
+    expect(record.kind).toBe("coworker-roster");
+    expect(field(record, "coworkerName")?.value).toBe("Joséphine Di Nicola");
+    expect(field(record, "coworkerNormalizedName")?.value).toBe("josephine di nicola");
+    expect(field(record, "coworkerLastName")?.value).toBe("nicola");
+    expect(field(record, "observedRole")?.value).toBe("Support");
+    expect(record.workedMinutes).toBeNull();
+    expect(record.finality).toBe("outlook");
+    expect(record.drift).toContainEqual(expect.objectContaining({ path: "source.roster[0].future_roster_field" }));
+    expect(record.drift).toContainEqual(expect.objectContaining({ path: "source.roster[0].employee.future_badge", value: "trainer" }));
+    expect(JSON.stringify(record)).not.toContain("memberId");
+  });
+
+  it("extracts coworker schedule rows as outlook and never worked time", () => {
+    const result = deriveEvidenceBytes({
+      captureKind: "browser-structured",
+      contentType: "application/json",
+      bytes: browserBytes("published-schedule", "/api/v2/company/44/schedules", {
+        shifts: [{
+          id: 991,
+          company_id: 44,
+          location_id: 3,
+          employee: { id: 77, first_name: "Josephine", last_name: "Di Nicola" },
+          role: { id: 5, name: "Support" },
+          start: "2026-08-28T18:00:00-04:00",
+          end: "2026-08-28T22:30:00-04:00",
+        }],
+      }),
+    });
+    const record = result.records[0]!;
+    expect(record.kind).toBe("coworker-schedule");
+    expect(record.finality).toBe("outlook");
+    expect(record.workedMinutes).toBeNull();
+    expect(field(record, "scheduledMinutes")?.value).toBe(270);
+    expect(field(record, "coworkerName")?.value).toBe("Josephine Di Nicola");
+    expect(field(record, "observedRole")?.value).toBe("Support");
   });
 
   it("extracts employee Timesheet/Tip Report CSV without inferring identity from a name", () => {
@@ -84,6 +146,18 @@ describe("D-158 deterministic Evidence extraction", () => {
     expect(result.records[0]?.finality).toBe("provisional");
     expect(result.records[0]?.observations.every((row: any) => row.extraction === "email")).toBe(true);
     expect(JSON.stringify(result)).not.toContain("tracker.example");
+  });
+
+  it("extracts a 7shifts schedule email as outlook only", () => {
+    const email = [
+      "From: 7shifts <notifications@7shifts.com>", "To: member@example.test", "Subject: The schedule has been posted!", "Date: Sat, 22 Aug 2026 10:00:00 -0400",
+      "Content-Type: text/html", "", "<p>The schedule has been posted!</p><p>Thu, August 27 4:30 pm – 10:30 pm</p><p>Fri August 28, 2026 4:30 pm – 10:30 pm</p>",
+    ].join("\r\n");
+    const result = deriveEvidenceBytes({ captureKind: "gmail-7shifts-email", contentType: "message/rfc822", bytes: bytes(email) });
+    expect(result.records).toHaveLength(2);
+    expect(result.records.every((row: any) => row.kind === "schedule" && row.finality === "outlook" && row.workedMinutes === null)).toBe(true);
+    expect(field(result.records[0], "scheduledMinutes")?.value).toBe(360);
+    expect(result.records[0]?.observations.every((row: any) => row.extraction === "email" && row.finality === "outlook")).toBe(true);
   });
 
   it("produces the same canonical seed for independent local/cloud screenshot extraction and exposes mismatches", () => {

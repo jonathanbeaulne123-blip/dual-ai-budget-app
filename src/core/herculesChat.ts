@@ -5,7 +5,7 @@ import {
   type HerculesBriefing,
   type HerculesGrounded,
 } from "./herculesPersonality.ts";
-import type { HerculesLedgerExcerpt, HerculesNoticeView } from "./herculesPrivacy.ts";
+import type { HerculesLedgerExcerpt, HerculesNoticeView, HerculesWorkplaceContext } from "./herculesPrivacy.ts";
 import type { HerculesMemoryView } from "./herculesLedger.ts";
 import type { Environment } from "./types.ts";
 
@@ -27,6 +27,8 @@ export type HerculesChatRequest = {
   /** Pre-trimmed line excerpt; Worker prefers this over JSON blob. */
   ledgerLines?: string;
   figures?: string[];
+  /** Present only after the requesting owner opts in for this one model call. */
+  workplaceContext?: HerculesWorkplaceContext | null;
 };
 
 export type HerculesChatResult = {
@@ -109,6 +111,20 @@ export function herculesModelPayload(req: HerculesChatRequest): string {
     ledger: req.ledger ?? null,
     ledgerLines: req.ledgerLines ? String(req.ledgerLines).slice(0, 4500) : undefined,
     figures: (req.figures ?? []).slice(0, 80),
+    workplaceContext: req.workplaceContext ? {
+      scope: "requesting-member-selected",
+      coworkers: req.workplaceContext.coworkers.slice(0, 200).map((row) => ({
+        displayName: String(row.displayName).slice(0, 80),
+        jobName: String(row.jobName).slice(0, 80),
+        locationName: String(row.locationName).slice(0, 80),
+        observedRoles: row.observedRoles.slice(0, 16).map((role) => String(role).slice(0, 80)),
+        recentAttendance: row.recentAttendance.slice(0, 12).map((item) => ({
+          date: String(item.date).slice(0, 10),
+          status: String(item.status).slice(0, 32),
+          roleLabel: String(item.roleLabel).slice(0, 80),
+        })),
+      })),
+    } : null,
   });
 }
 

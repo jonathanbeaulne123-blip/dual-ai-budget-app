@@ -37,6 +37,7 @@ import {
   type LedgerView,
   type UndoToken,
   type Account,
+  type CommitResult,
   type HerculesNumberSource,
 } from "./core/index.ts";
 import { LedgerPage } from "./Ledger.tsx";
@@ -46,9 +47,11 @@ import { WalletPane } from "./Accounts.tsx";
 import { booksFilename, booksJournalCsv, booksSqlDump, downloadText } from "./ledger/export.ts";
 import { queryBooks, type BooksStatus } from "./ledger/engine.ts";
 import { assertReadOnlySelect } from "./ledger/queryGuard.ts";
+import { HouseholdFundPanel } from "./HouseholdFundPanel.tsx";
 
 const PANES = [
   { id: "wallet", label: "Wallet", blurb: "Net worth story: chequing → Goals savings → cards → investments. Touch a tile to open the room." },
+  { id: "fund", label: "Household Fund", blurb: "A shared operating subledger backed by Bianca’s savings. It is not a bank account and Hearth cannot move money." },
   { id: "register", label: "All activity", blurb: "Every posted row you can see in this view. Duplicate contrast lives here." },
   { id: "import", label: "Import", blurb: "QFX/OFX and selected document photos enter an inbox. Duplicate review and one final Confirm protect the books." },
   { id: "journal", label: "Journal", blurb: "Debit and credit lines compiled from the snapshot. The books engine." },
@@ -75,6 +78,7 @@ export function BooksPage({
   onRemove,
   onPayAccount,
   onAddToAccount,
+  onCommand,
   onGoMore,
 }: {
   household: Household;
@@ -89,6 +93,7 @@ export function BooksPage({
   onRemove: (transaction: Household["transactions"][number]) => void;
   onPayAccount: (account: Account) => void;
   onAddToAccount: (account: Account) => void;
+  onCommand: (command: (current: Household) => CommitResult) => void;
   onGoMore?: () => void;
 }) {
   const [pane, setPane] = useState<Pane>("wallet");
@@ -139,6 +144,13 @@ export function BooksPage({
         </p>
       </section>
       <StoryStrip heading="Story">
+        <PaperTile
+          kind="Fund"
+          name="Household Fund"
+          value={household.householdFund ? "Open the fund books" : "Set up at $0.00"}
+          onClick={() => setPane("fund")}
+          ariaLabel="Open the Hearth Household Fund books"
+        />
         <PaperTile
           kind="Books"
           name="Net worth"
@@ -231,6 +243,9 @@ export function BooksPage({
           onPay={onPayAccount}
           onAdd={onAddToAccount}
         />
+      )}
+      {pane === "fund" && (
+        <HouseholdFundPanel household={household} memberId={memberId} view={view} onCommand={onCommand} />
       )}
       {pane === "register" && (
         <LedgerPage

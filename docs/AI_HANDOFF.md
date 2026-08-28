@@ -1,6 +1,6 @@
 # AI Task and Handoff Standard
 
-## Blank kitchen when loading a household (D-161) (2026-08-28)
+## Blank kitchen when loading a household (D-167) (2026-08-28)
 
 **Status:** Draft PR [#238](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/238) on `cursor/blank-household-google-boot-b30c` at `529b983`. **Not merged, not D-041 kitchen-live.** Risk: **Medium** (kitchen boot / Google identity / ErrorBoundary; no money write, schema, secrets, or Production). Jonathan later said the blank is **fixed**.
 

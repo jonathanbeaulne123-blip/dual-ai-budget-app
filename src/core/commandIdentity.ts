@@ -38,6 +38,7 @@ export function financialAuditFacts(household: Household) {
       reversalOfId: tx.reversalOfId ?? null,
       source: tx.source,
       sourceId: tx.sourceId ?? null,
+      funding: tx.funding ?? null,
     })),
     shifts: byId(household.shifts).map((shift) => ({
       id: shift.id,
@@ -111,7 +112,46 @@ export function financialAuditFacts(household: Household) {
       wagesReceivableAccountId: job.wagesReceivableAccountId,
       cardTipsReceivableAccountId: job.cardTipsReceivableAccountId,
     })),
+    householdFund: household.householdFund ?? null,
+    fundMonthPlans: byId(household.fundMonthPlans ?? []),
+    fundEvents: byId(household.fundEvents ?? []),
+    fundSettlementAllocations: byId(household.fundSettlementAllocations ?? []),
+    fundKittyAllocations: byId(household.fundKittyAllocations ?? []),
+    fundPrivate: household.fundPrivate ?? null,
     tombstones: byId(household.tombstones).map((row) => ({ id: row.id, deletedAt: row.deletedAt })),
+  });
+}
+
+/** Financial facts visible to exactly one hosted ledger scope. */
+export function financialAuditFactsForScope(
+  household: Household,
+  scope: "shared" | "personal",
+  memberId: string,
+) {
+  const sharedGoalIds = new Set(household.goals.filter((goal) => goal.shared).map((goal) => goal.id));
+  const personalGoalIds = new Set(household.goals
+    .filter((goal) => !goal.shared && goal.ownerMemberId === memberId)
+    .map((goal) => goal.id));
+  const goalIds = scope === "shared" ? sharedGoalIds : personalGoalIds;
+  return financialAuditFacts({
+    ...household,
+    transactions: household.transactions.filter((row) => scope === "shared"
+      ? row.visibility !== "personal"
+      : row.visibility === "personal" && row.createdBy === memberId),
+    shifts: household.shifts.filter((row) => scope === "shared"
+      ? row.visibility !== "personal"
+      : row.visibility === "personal" && row.createdBy === memberId),
+    goalContributions: (household.goalContributions ?? []).filter((row) => goalIds.has(row.goalId)),
+    goalPurchases: (household.goalPurchases ?? []).filter((row) => goalIds.has(row.goalId)),
+    claims: scope === "shared" ? household.claims : [],
+    sitDownSessions: scope === "shared" ? household.sitDownSessions : [],
+    workJobs: scope === "shared" ? household.workJobs : [],
+    householdFund: scope === "shared" ? household.householdFund : null,
+    fundMonthPlans: scope === "shared" ? household.fundMonthPlans : [],
+    fundEvents: scope === "shared" ? household.fundEvents : [],
+    fundSettlementAllocations: scope === "shared" ? household.fundSettlementAllocations : [],
+    fundKittyAllocations: scope === "shared" ? household.fundKittyAllocations : [],
+    fundPrivate: scope === "personal" ? household.fundPrivate : { bankBindings: [], reconciliations: [] },
   });
 }
 
@@ -122,6 +162,14 @@ export function commandIdentityFacts(previous: Household | null, next: Household
     || Boolean(row.correctedByShiftId && posted.has(row.correctedByShiftId))
     || Boolean(row.correctionOfShiftId && posted.has(row.correctionOfShiftId)));
   const contributions = (next.goalContributions ?? []).filter((row) => posted.has(row.id));
+  const fundEvents = (next.fundEvents ?? []).filter((row) => posted.has(row.id));
+  const fundSettlementAllocations = (next.fundSettlementAllocations ?? []).filter((row) => posted.has(row.id));
+  const fundKittyAllocations = (next.fundKittyAllocations ?? []).filter((row) => posted.has(row.id));
+  const fundMonthPlans = (next.fundMonthPlans ?? []).filter((row) => posted.has(row.id));
+  const fundConfigPosted = Boolean(next.householdFund && posted.has(next.householdFund.id));
+  const coworkers = (next.coworkers ?? []).filter((row) => posted.has(row.id));
+  const coworkerAttendance = (next.coworkerAttendance ?? []).filter((row) => posted.has(row.id));
+  const tombstones = (next.tombstones ?? []).filter((row) => posted.has(row.id));
   return stable({
     householdId: next.householdId,
     environment: next.environment,
@@ -161,6 +209,16 @@ export function commandIdentityFacts(previous: Household | null, next: Household
       date: row.date,
       transferId: row.transferId ?? null,
     })),
+    householdFund: fundConfigPosted ? next.householdFund : null,
+    fundMonthPlans,
+    fundEvents,
+    fundSettlementAllocations,
+    fundKittyAllocations,
+    coworkers,
+    coworkerAttendance,
+    tombstones,
+    // Private reconciliation and binding details never affect a shared command identity.
+    fundPrivate: null,
   });
 }
 
@@ -181,6 +239,7 @@ function identityTransaction(tx: Transaction) {
     reversalOfId: tx.reversalOfId ?? null,
     source: tx.source,
     sourceId: tx.sourceId ?? null,
+    funding: tx.funding ?? null,
     note: tx.note,
     place: tx.place,
   };
@@ -194,6 +253,14 @@ export async function sha256Hex(value: unknown): Promise<string> {
 
 export async function financialAuditHash(household: Household): Promise<string> {
   return sha256Hex(financialAuditFacts(household));
+}
+
+export async function financialAuditHashForScope(
+  household: Household,
+  scope: "shared" | "personal",
+  memberId: string,
+): Promise<string> {
+  return sha256Hex(financialAuditFactsForScope(household, scope, memberId));
 }
 
 export async function commandIdentityHash(

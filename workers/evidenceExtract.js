@@ -4,11 +4,12 @@ const MAX_COLUMNS = 256;
 const MAX_MIME_PARTS = 32;
 const MAX_MIME_DEPTH = 4;
 const MAX_DRIFT_PER_RECORD = 128;
-const PARSER_VERSION = "hearth-s7-extract-v1";
+const PARSER_VERSION = "hearth-s7-extract-v2";
 
 const KNOWN_KEYS = new Set([
   "id", "uuid", "timepunchid", "timepunchuuid", "punchid", "timesheetid", "shiftid", "revision", "version", "updatedat", "modifiedat",
   "companyid", "tenantid", "locationid", "roleid", "departmentid", "user_id", "userid", "employeeid", "staffid", "employee", "employeename",
+  "name", "displayname", "fullname", "firstname", "lastname", "preferredname", "role", "rolename", "roles", "department", "employees", "users", "staff", "team", "roster",
   "date", "businessdate", "workdate", "clockedin", "clockedout", "punchin", "punchout", "start", "end", "starttime", "endtime", "startedat", "endedat",
   "breaks", "breakminutes", "paidbreakminutes", "unpaidbreakminutes", "totalbreakminutes", "paidbreaks", "unpaidbreaks",
   "hours", "totalhours", "workedhours", "workedminutes", "regularhours", "overtimehours", "holidayhours", "compliancehours",
@@ -218,11 +219,20 @@ function addMoney(observations, row, aliases, field, sourcePath, finalityValue, 
 
 function driftForRow(row, sourcePath) {
   const result = [];
-  for (const [name, value] of Object.entries(row || {})) {
-    if (KNOWN_KEYS.has(key(name))) continue;
-    result.push({ path: `${sourcePath}.${bounded(name, 80)}`, value: scalar(value), valueType: Array.isArray(value) ? "array" : value === null ? "null" : typeof value });
-    if (result.length >= MAX_DRIFT_PER_RECORD) break;
-  }
+  const visit = (value, path, depth) => {
+    if (!value || typeof value !== "object" || depth > 4 || result.length >= MAX_DRIFT_PER_RECORD) return;
+    const entries = Array.isArray(value) ? value.slice(0, 32).map((item, index) => [String(index), item]) : Object.entries(value);
+    for (const [name, item] of entries) {
+      if (result.length >= MAX_DRIFT_PER_RECORD) break;
+      const nextPath = Array.isArray(value) ? `${path}[${name}]` : `${path}.${bounded(name, 80)}`;
+      if (!Array.isArray(value) && !KNOWN_KEYS.has(key(name))) {
+        result.push({ path: nextPath, value: scalar(item), valueType: Array.isArray(item) ? "array" : item === null ? "null" : typeof item });
+        continue;
+      }
+      visit(item, nextPath, depth + 1);
+    }
+  };
+  visit(row, sourcePath, 0);
   return result;
 }
 
@@ -324,6 +334,177 @@ function candidateRows(value) {
     }
   }
   return [value];
+}
+
+function rowsForAliases(value, aliases) {
+  if (Array.isArray(value)) return value.filter((row) => row && typeof row === "object" && !Array.isArray(row)).slice(0, MAX_ROWS);
+  if (!value || typeof value !== "object") return [];
+  for (const alias of aliases) {
+    const found = find(value, [alias]).value;
+    if (Array.isArray(found)) return found.filter((row) => row && typeof row === "object" && !Array.isArray(row)).slice(0, MAX_ROWS);
+    if (found && typeof found === "object" && !Array.isArray(found)) {
+      const nested = rowsForAliases(found, aliases);
+      if (nested.length) return nested;
+    }
+  }
+  return [value];
+}
+
+function personContainer(row) {
+  const nested = find(row, ["employee", "user", "staff_member", "team_member"]).value;
+  return nested && typeof nested === "object" && !Array.isArray(nested) ? nested : row;
+}
+
+function displayName(row) {
+  const person = personContainer(row);
+  const direct = bounded(find(person, ["display_name", "full_name", "employee_name", "name"]).value, 80);
+  if (direct) return direct;
+  const first = bounded(find(person, ["preferred_name", "first_name", "firstname"]).value, 40);
+  const last = bounded(find(person, ["last_name", "lastname"]).value, 40);
+  return bounded(`${first} ${last}`, 80);
+}
+
+function normalizedName(value) {
+  return bounded(value, 80).normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("en-CA").replace(/[^a-z0-9' -]/g, "").replace(/\s+/g, " ").trim();
+}
+
+function roleFacts(row) {
+  const roleValue = find(row, ["role", "role_name", "position", "job_title", "department"]).value;
+  const nestedName = roleValue && typeof roleValue === "object" && !Array.isArray(roleValue)
+    ? find(roleValue, ["name", "role_name", "title"]).value
+    : roleValue;
+  const roleId = find(row, ["role_id"]).value ?? (roleValue && typeof roleValue === "object" ? find(roleValue, ["id", "role_id"]).value : undefined);
+  return { label: bounded(nestedName, 80) || null, id: roleId == null ? null : String(roleId) };
+}
+
+function scopeFacts(row) {
+  const person = personContainer(row);
+  const subject = find(person, ["id", "user_id", "employee_id", "staff_id", "uuid"]).value;
+  const tenant = find(row, ["company_id", "tenant_id"]).value;
+  const location = find(row, ["location_id"]).value;
+  return {
+    subject: subject == null ? null : String(subject),
+    tenant: tenant == null ? null : String(tenant),
+    location: location == null ? null : String(location),
+  };
+}
+
+function rosterRecord(row, sourcePath) {
+  const name = displayName(row);
+  const identityName = normalizedName(name);
+  const lastName = identityName.split(" ").filter(Boolean).at(-1) || null;
+  const scope = scopeFacts(row);
+  const role = roleFacts(row);
+  const observations = [
+    observation("coworkerName", name || null, "text", `${sourcePath}.name`, "outlook", "structured"),
+    observation("coworkerNormalizedName", identityName || null, "text", `${sourcePath}.name`, "outlook", "structured"),
+    observation("coworkerLastName", lastName, "text", `${sourcePath}.name`, "outlook", "structured"),
+    observation("observedRole", role.label, "text", `${sourcePath}.role`, "outlook", "structured"),
+  ].filter(Boolean);
+  return {
+    kind: "coworker-roster",
+    canonicalSeed: `coworker:${scope.tenant || "tenant"}:${scope.location || "location"}:${scope.subject || stableToken(JSON.stringify(row)) || identityName}`,
+    rawSubject: scope.subject,
+    rawTenant: scope.tenant,
+    rawLocation: scope.location,
+    rawRole: role.id,
+    rawResource: scope.subject,
+    rawRevision: String(find(row, ["revision", "version", "updated_at", "modified_at"]).value ?? "") || null,
+    startedAt: null,
+    endedAt: null,
+    workedMinutes: null,
+    paidBreakMinutes: 0,
+    observedAt: explicitInstant(find(row, ["updated_at", "modified_at"]).value),
+    finality: "outlook",
+    observations,
+    drift: driftForRow(row, sourcePath),
+    schemaShape: Object.fromEntries(Object.entries(row).map(([field, value]) => [field, Array.isArray(value) ? "array" : value === null ? "null" : typeof value])),
+  };
+}
+
+function roleCatalogRecord(row, sourcePath) {
+  const role = roleFacts(row);
+  const scope = scopeFacts(row);
+  const directId = find(row, ["id", "role_id", "uuid"]).value;
+  const rawRole = role.id || (directId == null ? null : String(directId));
+  return {
+    kind: "role-catalog",
+    canonicalSeed: `role:${scope.tenant || "tenant"}:${scope.location || "location"}:${rawRole || role.label || stableToken(JSON.stringify(row))}`,
+    rawSubject: null,
+    rawTenant: scope.tenant,
+    rawLocation: scope.location,
+    rawRole,
+    rawResource: rawRole,
+    rawRevision: String(find(row, ["revision", "version", "updated_at", "modified_at"]).value ?? "") || null,
+    startedAt: null,
+    endedAt: null,
+    workedMinutes: null,
+    paidBreakMinutes: 0,
+    observedAt: explicitInstant(find(row, ["updated_at", "modified_at"]).value),
+    finality: "outlook",
+    observations: [observation("observedRole", role.label, "text", `${sourcePath}.role`, "outlook", "structured")].filter(Boolean),
+    drift: driftForRow(row, sourcePath),
+    schemaShape: Object.fromEntries(Object.entries(row).map(([field, value]) => [field, Array.isArray(value) ? "array" : value === null ? "null" : typeof value])),
+  };
+}
+
+function scheduleRecord(row, sourcePath) {
+  const name = displayName(row);
+  const identityName = normalizedName(name);
+  const scope = scopeFacts(row);
+  const role = roleFacts(row);
+  const start = rowInstant(row, ["start", "started_at", "scheduled_start", "clock_in"], ["date", "business_date", "work_date"], ["start_time", "start time"]);
+  let end = rowInstant(row, ["end", "ended_at", "scheduled_end", "clock_out"], ["date", "business_date", "work_date"], ["end_time", "end time"]);
+  if (start.value && end.value && Date.parse(end.value) <= Date.parse(start.value)) end = { ...end, value: new Date(Date.parse(end.value) + 86_400_000).toISOString() };
+  const scheduledMinutes = start.value && end.value ? minutesBetween(start.value, end.value) : null;
+  const resource = find(row, ["id", "shift_id", "uuid"]).value;
+  return {
+    kind: "coworker-schedule",
+    canonicalSeed: `coworker-schedule:${scope.tenant || "tenant"}:${scope.location || "location"}:${scope.subject || identityName || "unbound"}:${resource ?? start.value ?? stableToken(JSON.stringify(row))}`,
+    rawSubject: scope.subject,
+    rawTenant: scope.tenant,
+    rawLocation: scope.location,
+    rawRole: role.id,
+    rawResource: resource == null ? null : String(resource),
+    rawRevision: String(find(row, ["revision", "version", "updated_at", "modified_at"]).value ?? "") || null,
+    startedAt: start.value,
+    endedAt: end.value,
+    workedMinutes: null,
+    paidBreakMinutes: 0,
+    observedAt: explicitInstant(find(row, ["updated_at", "modified_at"]).value),
+    finality: "outlook",
+    observations: [
+      observation("coworkerName", name || null, "text", `${sourcePath}.name`, "outlook", "structured"),
+      observation("coworkerNormalizedName", identityName || null, "text", `${sourcePath}.name`, "outlook", "structured"),
+      observation("observedRole", role.label, "text", `${sourcePath}.role`, "outlook", "structured"),
+      observation("date", start.value ? torontoDate(Date.parse(start.value)) : dateKey(find(row, ["date", "business_date", "work_date"]).value), "date", `${sourcePath}.date`, "outlook", "structured"),
+      observation("startedAt", start.value, "iso-time", `${sourcePath}.${start.path}`, "outlook", "structured"),
+      observation("endedAt", end.value, "iso-time", `${sourcePath}.${end.path}`, "outlook", "structured"),
+      observation("scheduledMinutes", scheduledMinutes, "minutes", `${sourcePath}.duration`, "outlook", "structured"),
+    ].filter(Boolean),
+    drift: driftForRow(row, sourcePath),
+    schemaShape: Object.fromEntries(Object.entries(row).map(([field, value]) => [field, Array.isArray(value) ? "array" : value === null ? "null" : typeof value])),
+  };
+}
+
+function browserStructured(text, sourcePrefix) {
+  const wrapper = JSON.parse(text);
+  if (!wrapper || wrapper.version !== 1 || typeof wrapper.path !== "string" || typeof wrapper.captureClass !== "string") {
+    throw new Error("Browser evidence is missing its bounded capture class.");
+  }
+  const body = wrapper.body;
+  const parsedBody = typeof body === "string" && /json/i.test(String(wrapper.contentType || "")) ? JSON.parse(body) : body;
+  if (wrapper.captureClass === "roster") {
+    return { records: rowsForAliases(parsedBody, ["employees", "users", "staff", "team", "roster", "data", "results", "items"]).map((row, index) => rosterRecord(row, `${sourcePrefix}.roster[${index}]`)), drift: [], warnings: [] };
+  }
+  if (wrapper.captureClass === "role-catalog") {
+    return { records: rowsForAliases(parsedBody, ["roles", "departments", "data", "results", "items"]).map((row, index) => roleCatalogRecord(row, `${sourcePrefix}.roles[${index}]`)), drift: [], warnings: [] };
+  }
+  if (wrapper.captureClass === "published-schedule") {
+    return { records: rowsForAliases(parsedBody, ["schedules", "shifts", "open_shifts", "trades", "data", "results", "items"]).map((row, index) => scheduleRecord(row, `${sourcePrefix}.schedule[${index}]`)), drift: [], warnings: [] };
+  }
+  const nestedText = typeof body === "string" ? body : JSON.stringify(body);
+  return deriveText(nestedText, /csv/i.test(String(wrapper.contentType || "")) ? "selected-csv" : "selected-json", `${sourcePrefix}.${bounded(wrapper.captureClass, 40)}`);
 }
 
 function parseCsv(text) {
@@ -456,9 +637,66 @@ function reportRow(text) {
   };
 }
 
-function deriveText(text, captureKind, sourcePrefix = "source") {
+const EMAIL_MONTHS = new Map([
+  ["jan", 1], ["january", 1], ["feb", 2], ["february", 2], ["mar", 3], ["march", 3], ["apr", 4], ["april", 4],
+  ["may", 5], ["jun", 6], ["june", 6], ["jul", 7], ["july", 7], ["aug", 8], ["august", 8], ["sep", 9], ["sept", 9],
+  ["september", 9], ["oct", 10], ["october", 10], ["nov", 11], ["november", 11], ["dec", 12], ["december", 12],
+]);
+
+function scheduleEmailRecords(text, sourcePrefix, defaultYear = null) {
+  const normalized = text.replace(/&nbsp;|&#160;/gi, " ").replace(/&ndash;|&#8211;|&#x2013;/gi, "–").replace(/\s+/g, " ").trim();
+  if (!/schedule (?:has been )?posted|schedule update|upcoming shifts?/i.test(normalized)) return [];
+  const pattern = /\b(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?),?\s+(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(\d{1,2})(?:,)?(?:\s+(20\d{2}))?\s+(?:at\s+)?(\d{1,2}:\d{2}\s*(?:am|pm))\s*(?:-|–|—|to)\s*(\d{1,2}:\d{2}\s*(?:am|pm))/gi;
+  const records = [];
+  let match;
+  while ((match = pattern.exec(normalized)) && records.length < MAX_ROWS) {
+    const month = EMAIL_MONTHS.get(match[1].toLowerCase());
+    if (!month) continue;
+    const year = Number(match[3] || defaultYear);
+    if (!Number.isSafeInteger(year) || year < 2000 || year > 2100) continue;
+    const date = `${year}-${String(month).padStart(2, "0")}-${String(Number(match[2])).padStart(2, "0")}`;
+    const startedAt = torontoInstant(date, match[4]);
+    let endedAt = torontoInstant(date, match[5]);
+    if (startedAt && endedAt && Date.parse(endedAt) <= Date.parse(startedAt)) endedAt = new Date(Date.parse(endedAt) + 86_400_000).toISOString();
+    const scheduledMinutes = startedAt && endedAt ? minutesBetween(startedAt, endedAt) : null;
+    if (!startedAt || !endedAt || scheduledMinutes === null) continue;
+    const path = `${sourcePrefix}.schedule[${records.length}]`;
+    records.push({
+      kind: "schedule",
+      canonicalSeed: `email-schedule:${date}:${startedAt}:${endedAt}`,
+      rawSubject: null,
+      rawTenant: null,
+      rawLocation: null,
+      rawRole: null,
+      rawResource: null,
+      rawRevision: null,
+      startedAt,
+      endedAt,
+      workedMinutes: null,
+      paidBreakMinutes: 0,
+      observedAt: null,
+      finality: "outlook",
+      observations: [
+        observation("date", date, "date", `${path}.date`, "outlook", "email"),
+        observation("startedAt", startedAt, "iso-time", `${path}.start`, "outlook", "email"),
+        observation("endedAt", endedAt, "iso-time", `${path}.end`, "outlook", "email"),
+        observation("scheduledMinutes", scheduledMinutes, "minutes", `${path}.duration`, "outlook", "email"),
+      ].filter(Boolean),
+      drift: [],
+      schemaShape: { date: "string", startedAt: "string", endedAt: "string", scheduledMinutes: "number" },
+    });
+  }
+  return records;
+}
+
+function deriveText(text, captureKind, sourcePrefix = "source", context = {}) {
   const trimmed = text.trim();
   if (!trimmed) return { records: [], drift: [], warnings: ["Evidence text was empty after decoding."] };
+  if (captureKind === "browser-structured") return browserStructured(trimmed, sourcePrefix);
+  if (captureKind === "email") {
+    const schedules = scheduleEmailRecords(trimmed, sourcePrefix, context.emailYear);
+    if (schedules.length) return { records: schedules, drift: [], warnings: [] };
+  }
   if (captureKind === "selected-ics" || captureKind === "calendar-sync" || /BEGIN:VCALENDAR/i.test(trimmed)) {
     return { records: parseIcs(trimmed), drift: [], warnings: [] };
   }
@@ -491,14 +729,17 @@ function deriveText(text, captureKind, sourcePrefix = "source") {
 export function deriveEvidenceBytes(input) {
   const captureKind = bounded(input.captureKind, 40);
   const contentType = bounded(input.contentType, 100).toLowerCase();
-  if (contentType === "message/rfc822" || captureKind === "email") {
+  if (contentType === "message/rfc822" || captureKind === "email" || captureKind === "gmail-7shifts-email") {
     const text = decodeText(input.bytes);
+    const messageHeaderEnd = text.search(/\r?\n\r?\n/);
+    const messageHeaders = parseHeaders(messageHeaderEnd >= 0 ? text.slice(0, messageHeaderEnd) : text);
+    const emailYear = Number(String(messageHeaders.date || "").match(/\b(20\d{2})\b/)?.[1] || 0) || null;
     const parts = mimeParts(text);
     const records = []; const drift = []; const warnings = [];
     for (const [index, part] of parts.entries()) {
       if (["application/json", "text/csv", "text/calendar", "text/plain", "text/html"].includes(part.contentType)) {
         try {
-          const result = deriveText(decodeText(part.bytes).replace(/<[^>]*>/g, " "), "email", `email.parts[${index}]`);
+          const result = deriveText(decodeText(part.bytes).replace(/<[^>]*>/g, " "), "email", `email.parts[${index}]`, { emailYear });
           records.push(...result.records.map((record) => ({ ...record, finality: record.finality === "outlook" ? "outlook" : "provisional", observations: record.observations.map((row) => ({ ...row, finality: row.finality === "outlook" ? "outlook" : "provisional", extraction: "email" })) })));
           drift.push(...result.drift); warnings.push(...result.warnings);
         } catch (error) { warnings.push(`Email part ${index + 1} was retained but not parsed: ${bounded(error?.message || error, 120)}`); }

@@ -337,9 +337,11 @@ export function AccountRoom({
 
 export function AddAccountForm({
   household,
+  memberId,
   onSave,
 }: {
   household: Household;
+  memberId: string;
   onSave: (household: Household, undo?: UndoToken) => void;
 }) {
   const [kind, setKind] = useState<AccountKind>("credit");
@@ -354,6 +356,7 @@ export function AddAccountForm({
   const [purpose, setPurpose] = useState<SavingsPurpose>("general");
   const [vehicle, setVehicle] = useState<InvestmentVehicle>("tfsa");
   const [error, setError] = useState("");
+  const [scope, setScope] = useState<"shared" | "personal">("shared");
 
   return (
     <section className="card">
@@ -362,6 +365,12 @@ export function AddAccountForm({
         <span className="muted">Expandable. Not a feed.</span>
       </header>
       <p className="muted">Chequing, savings, as many cards as you hold, investments, money owed to us, or Goals savings. Interest and cashback never auto-post.</p>
+      <label>Who can see this account?</label>
+      <div className="chips">
+        <button className={`chip ${scope === "shared" ? "selected" : ""}`} type="button" onClick={() => setScope("shared")}>Household</button>
+        <button className={`chip ${scope === "personal" ? "selected" : ""}`} type="button" onClick={() => setScope("personal")}>Only me</button>
+      </div>
+      <p className="muted">Personal account metadata, institution, last four digits, totals, and reconciliation stay in your Personal envelope.</p>
       <label>Kind</label>
       <div className="chips">
         {ACCOUNT_KINDS.map((item) => (
@@ -437,6 +446,8 @@ export function AddAccountForm({
               apyPercent: kind === "savings" ? apy : undefined,
               purpose: kind === "savings" ? purpose : undefined,
               vehicle: kind === "investment" ? vehicle : undefined,
+              scope,
+              ownerMemberId: scope === "personal" ? memberId : undefined,
             });
             setError("");
             setName("");
@@ -483,7 +494,7 @@ export function WalletPane({
         onPay={onPay}
         onAdd={onAdd}
       />
-      <AddAccountForm household={household} onSave={onChange} />
+      <AddAccountForm household={household} memberId={memberId} onSave={onChange} />
     </>
   );
 }

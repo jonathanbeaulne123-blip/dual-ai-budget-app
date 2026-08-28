@@ -82,6 +82,7 @@ export function WorkShiftPage({
   onArchiveJob,
   onOpenCalendar,
   onSaveSevenShiftsSchedule = () => undefined,
+  onImportCoworkers,
 }: {
   household: Household;
   memberId: string;
@@ -104,6 +105,7 @@ export function WorkShiftPage({
   onArchiveJob: (jobId: string) => void;
   onOpenCalendar: () => void;
   onSaveSevenShiftsSchedule?: (rows: import("./core/index.ts").SevenShiftsScheduledShift[], confirmedPersonalFeed?: boolean) => void;
+  onImportCoworkers?: (input: { jobId: string; locationName: string; rows: import("./imports/coworkerRosterDraft.ts").CoworkerRosterDraftRow[] }) => void;
 }) {
   const [pane, setPane] = useState<ShiftPane>("today");
   const [sealCaption, setSealCaption] = useState<string | null>(null);
@@ -458,6 +460,7 @@ export function WorkShiftPage({
             today={today}
             busy={busy}
             onSaveSchedule={onSaveSevenShiftsSchedule}
+            onImportCoworkers={onImportCoworkers}
           />
         </div>
       )}

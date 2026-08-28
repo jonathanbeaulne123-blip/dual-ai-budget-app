@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import {
   aiDisclosurePayloadLeaks,
   collectAllowedFigures,
@@ -12,6 +13,8 @@ import {
   seedDemoHousehold,
   talkHercules,
   todayKey,
+  upsertCoworker,
+  splitForSync,
 } from "../src/core/index.ts";
 
 const today = todayKey();
@@ -94,6 +97,47 @@ describe("member-scoped AI disclosure (D-115)", () => {
     const payload = herculesModelPayload(asMem001);
     expect(payload).toMatch(/haircut/i);
     expect(aiDisclosurePayloadLeaks(payload, household, "MEM-001")).toEqual([]);
+  });
+
+  it("shares only explicitly selected owner coworker facts for one personal model request", () => {
+    const base = seedDemoHousehold({ today, environment: "development" });
+    const job = base.workJobs.find((row) => row.memberId === "MEM-002")!;
+    const added = upsertCoworker(base, {
+      ownerMemberId: "MEM-002",
+      jobId: job.id,
+      locationName: job.locationName,
+      displayName: "Alex Lee",
+      source: "seven-shifts-roster",
+      sourceIdentityKey: "s7subject_aaaaaaaaaaaaaaaaaaaa",
+      observedRoles: [{ label: "Support", firstObservedAt: "2026-08-28T12:00:00.000Z", lastObservedAt: "2026-08-28T12:00:00.000Z" }],
+    }).household;
+    added.coworkers = [...added.coworkers!, {
+      ...added.coworkers![0]!, id: "COW-PARTNER-CANARY", ownerMemberId: "MEM-001", displayName: "Partner Private Canary",
+      normalizedName: "partner private canary", aliases: ["partner private canary"], sourceIdentityKey: "s7subject_bbbbbbbbbbbbbbbbbbbb",
+    }];
+    const briefing = herculesBriefing(added, "home", today);
+    const defaultRequest = composeHerculesChatRequest(added, "who worked", briefing, today, "MEM-002", "", { view: "personal" });
+    expect(defaultRequest.workplaceContext).toBeNull();
+    expect(herculesModelPayload(defaultRequest)).not.toMatch(/Alex Lee|Partner Private Canary/);
+
+    const selected = composeHerculesChatRequest(added, "who worked", briefing, today, "MEM-002", "", {
+      view: "personal",
+      coworkerIdsForModel: [added.coworkers![0]!.id, "COW-PARTNER-CANARY"],
+    });
+    expect(selected.workplaceContext?.coworkers).toMatchObject([{ displayName: "Alex Lee", observedRoles: ["Support"] }]);
+    const payload = herculesModelPayload(selected);
+    expect(payload).toContain("Alex Lee");
+    expect(payload).not.toContain("Partner Private Canary");
+    expect(payload).not.toContain("s7subject_");
+    expect(splitForSync(added, "MEM-002").shared.kitchen.hercules?.chats.some((row) => /Alex Lee/.test(row.text))).toBe(false);
+    expect(composeHerculesChatRequest(added, "who worked", briefing, today, "MEM-002", "", {
+      view: "household", coworkerIdsForModel: [added.coworkers![0]!.id],
+    }).workplaceContext).toBeNull();
+    const herculesUi = readFileSync(new URL("../src/Hercules.tsx", import.meta.url), "utf8");
+    expect(herculesUi).toContain("if (ephemeral) return;");
+    expect(herculesUi).toContain("function consumeWorkplaceRosterConsent");
+    expect(herculesUi).toMatch(/function speak[\s\S]*consumeWorkplaceRosterConsent\(\)[\s\S]*sendChat\(helpCmd\?\.prompt \?\? text, requestedCoworkerIds\)/);
+    expect(herculesUi).toMatch(/keepTalk\(message, result\.text,[\s\S]*coworkerIdsForModel\.length > 0\)/);
   });
 
   it("rebuilds grounded answers and allowed figures from the member projection", () => {

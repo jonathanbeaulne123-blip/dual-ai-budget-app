@@ -39,6 +39,17 @@ import { assertSevenShiftsBundleMatchesShift, type SevenShiftsEvidenceBundle } f
 import { automationPayrollWeekStart } from "./sevenShiftsAutomation.ts";
 import { shapeSevenShiftsSchedules, type SevenShiftsScheduledShift } from "./sevenShiftsCalendar.ts";
 import {
+  normalizeCoworkerLocation,
+  normalizeCoworkerName,
+  shapeCoworker,
+  shapeCoworkerAttendance,
+  type Coworker,
+  type CoworkerAttendance,
+  type CoworkerAttendanceStatus,
+  type CoworkerObservedRole,
+  type CoworkerSource,
+} from "./coworkers.ts";
+import {
   EMPTY_GOOGLE,
   findActiveGoogleLink,
   findActiveGoogleLinkByEmail,
@@ -81,6 +92,8 @@ import type {
   ChalkInk,
   CreditRewardRule,
   Household,
+  HouseholdFundFundingDefault,
+  HouseholdFundTransactionFunding,
   HerculesMemoryKind,
   HerculesTalkSource,
   InvestmentVehicle,
@@ -97,8 +110,23 @@ import type {
   UndoToken,
   Visibility,
   WorkJob,
+  AccountScope,
 } from "./types.ts";
 import { COMPANION, JOINT, NeedsConfirmationError, ValidationError, isShiftEventTag } from "./types.ts";
+import {
+  HOUSEHOLD_FUND_ID,
+  HOUSEHOLD_FUND_DIRECT_DESTINATION,
+  HOUSEHOLD_FUND_NAME,
+  matchHouseholdFundBankEvidence,
+  projectHouseholdFund,
+  shapeHouseholdFundConfig,
+  shapeHouseholdFundEvents,
+  shapeHouseholdFundKittyAllocations,
+  shapeHouseholdFundMonthPlans,
+  shapeHouseholdFundPrivate,
+  shapeHouseholdFundSettlementAllocations,
+  type HouseholdFundBankEvidence,
+} from "./householdFund.ts";
 
 export type ActorInput = {
   createdBy?: string;
@@ -119,6 +147,77 @@ function resolveActor(household: Household, input?: ActorInput, fallbackMemberId
   if (!createdBy) throw new ValidationError("Add a household member before posting.");
   requireMember(household, createdBy);
   return { createdBy, visibility };
+}
+
+function requireAccountScopeForWrite(household: Household, accountId: string, actor: { createdBy: string; visibility: Visibility }): void {
+  const account = requireAccount(household, accountId);
+  if (account.scope !== "personal") return;
+  if (account.ownerMemberId !== actor.createdBy || actor.visibility !== "personal") {
+    throw new ValidationError("A Personal account can only be used in its owner's Personal ledger.");
+  }
+}
+
+function resolveHouseholdFundFunding(
+  household: Household,
+  type: "expense" | "income" | "refund",
+  amountCents: number,
+  input: HouseholdFundTransactionFunding | undefined,
+  refundOfId?: string,
+): HouseholdFundTransactionFunding | undefined {
+  const inherited = !input && type === "refund" && refundOfId
+    ? household.transactions.find((tx) => tx.id === refundOfId)?.funding
+    : undefined;
+  const funding = input ?? (inherited ? { ...inherited, fundedCents: Math.min(amountCents, inherited.fundedCents) } : undefined);
+  if (!funding) return undefined;
+  const config = shapeHouseholdFundConfig(household.householdFund);
+  if (!config || funding.fundId !== config.id) throw new ValidationError("Set up the Hearth Household Fund before using it.");
+  if (type === "income") throw new ValidationError("Income cannot be spent from the Household Fund.");
+  if (funding.fundedCents === 0) return undefined;
+  if (!Number.isInteger(funding.fundedCents) || funding.fundedCents <= 0 || funding.fundedCents > amountCents) {
+    throw new ValidationError("Household Fund use must be positive CAD cents no greater than the transaction.");
+  }
+  const directDebit = funding.directDebit === true && funding.destinationAccountId === HOUSEHOLD_FUND_DIRECT_DESTINATION;
+  const destination = directDebit ? null : requireAccount(household, funding.destinationAccountId);
+  if (destination?.scope === "personal") throw new ValidationError("Choose a shared card or transfer destination for Household Fund clearing.");
+  return {
+    fundId: config.id,
+    fundedCents: funding.fundedCents,
+    destinationAccountId: destination?.id ?? HOUSEHOLD_FUND_DIRECT_DESTINATION,
+    ...(typeof funding.positionId === "string" && funding.positionId ? { positionId: funding.positionId } : {}),
+    ...(funding.directDebit === true ? { directDebit: true } : {}),
+  };
+}
+
+function resolveHouseholdFundFundingDefault(
+  household: Household,
+  type: "expense" | "income" | "transfer",
+  amountCents: number,
+  input: HouseholdFundFundingDefault | null | undefined,
+): HouseholdFundFundingDefault | null {
+  if (!input) return null;
+  if (type !== "expense") throw new ValidationError("Only recurring expenses can reserve the Household Fund.");
+  const fundedCents = input.fundedCents === "full" ? "full" : Math.round(Number(input.fundedCents));
+  const resolved = resolveHouseholdFundFunding(household, "expense", amountCents, {
+    fundId: input.fundId,
+    fundedCents: fundedCents === "full" ? amountCents : fundedCents,
+    destinationAccountId: input.destinationAccountId,
+  });
+  if (!resolved) return null;
+  const projection = projectHouseholdFund(household, todayKey());
+  if (projection.topUpNeededCents > 0) {
+    throw new ValidationError(`Top up the Household Fund by $${(projection.topUpNeededCents / 100).toFixed(2)} before adding a new planned commitment.`);
+  }
+  return { fundId: resolved.fundId, fundedCents, destinationAccountId: resolved.destinationAccountId };
+}
+
+function signedHouseholdFundDirection(household: Household, transactionId: string, stack = new Set<string>()): number {
+  if (stack.has(transactionId)) return 0;
+  const transaction = household.transactions.find((row) => row.id === transactionId);
+  if (!transaction?.funding) return 0;
+  if (transaction.reversalOfId) {
+    return -signedHouseholdFundDirection(household, transaction.reversalOfId, new Set(stack).add(transactionId));
+  }
+  return transaction.type === "refund" ? -1 : transaction.type === "expense" ? 1 : 0;
 }
 
 function commit(previous: Household, next: Household, action: string, summary: string, postedIds: string[], warnings: string[] = []): CommitResult {
@@ -167,6 +266,7 @@ function baseTx(household: Household, input: {
   createdAt: string;
   createdBy: string;
   visibility: Visibility;
+  funding?: HouseholdFundTransactionFunding;
 }): Transaction {
   const account = requireAccount(household, input.accountId);
   const location = shapeTransactionLocation(input.location);
@@ -206,6 +306,7 @@ function baseTx(household: Household, input: {
     reviewed: true,
     createdBy: input.createdBy,
     visibility: input.visibility,
+    ...(input.funding ? { funding: input.funding } : {}),
     createdAt: input.createdAt,
     updatedAt: input.createdAt,
   };
@@ -229,11 +330,13 @@ export function postEntry(household: Household, input: {
   sourceId?: string;
   createdBy?: string;
   visibility?: Visibility;
+  funding?: HouseholdFundTransactionFunding;
 }): CommitResult {
   requireTimezone(household);
   const date = parseDate(input.date);
   const amountCents = parseAmount(input.amount);
   const actor = resolveActor(household, input);
+  requireAccountScopeForWrite(household, input.accountId, actor);
   requireOpenPeriod(household, date);
   const subcategory = requireSubcategory(
     household,
@@ -241,6 +344,7 @@ export function postEntry(household: Household, input: {
     input.type === "refund" ? "expense" : input.type,
   );
   const splits = catalogValidateOwned(input.splits ?? jointSplit(amountCents), amountCents, household);
+  const funding = resolveHouseholdFundFunding(household, input.type, amountCents, input.funding, input.refundOfId);
   if (input.type === "refund" && input.refundOfId) {
     const original = household.transactions.find((tx) => tx.id === input.refundOfId);
     if (!original) throw new ValidationError("The original expense for this refund no longer exists.");
@@ -268,6 +372,7 @@ export function postEntry(household: Household, input: {
     createdAt,
     createdBy: actor.createdBy,
     visibility: actor.visibility,
+    funding,
   });
   const matches = findSimilarTransactions(next.transactions.filter((tx) => visibleForDuplicateScan(tx, actor.createdBy)), {
     date: draft.date,
@@ -285,8 +390,57 @@ export function postEntry(household: Household, input: {
   }
   draft.id = nextId(input.type === "income" ? "TXN-IN-" : input.type === "refund" ? "TXN-RF-" : "TXN-EX-", next.transactions.map((tx) => tx.id));
   next.transactions.push(draft);
+  const postedIds = [draft.id];
+  if (funding) {
+    const events = shapeHouseholdFundEvents(next.fundEvents);
+    const fundEventAt = nextFundEventAt(next);
+    const eventId = nextFundEventId(next);
+    const reversedDirection = input.reversalOfId ? -signedHouseholdFundDirection(household, input.reversalOfId) : 0;
+    const fundingEventKind = reversedDirection > 0 || (!input.reversalOfId && input.type !== "refund")
+      ? "purchase-funded"
+      : "refund-funded";
+    const relatedTransactionId = input.refundOfId ?? input.reversalOfId ?? null;
+    const relatedTransaction = relatedTransactionId
+      ? household.transactions.find((transaction) => transaction.id === relatedTransactionId)
+      : undefined;
+    const relatedPositionId = relatedTransaction?.funding?.positionId ?? relatedTransactionId;
+    const relatedFundingEvent = relatedPositionId
+      ? events.find((event) => (event.kind === "purchase-funded" || event.kind === "refund-funded") && event.relatedTransactionIds.includes(relatedPositionId))
+      : null;
+    const purchaseEvent = relatedFundingEvent?.kind === "purchase-funded"
+      ? relatedFundingEvent
+      : relatedFundingEvent?.relatedEventId
+        ? events.find((event) => event.id === relatedFundingEvent.relatedEventId && event.kind === "purchase-funded")
+        : null;
+    const positionTransactionId = purchaseEvent?.relatedTransactionIds[0]
+      ?? relatedPositionId
+      ?? (actor.visibility === "personal" ? eventId : draft.id);
+    draft.funding = { ...funding, positionId: positionTransactionId };
+    const publicRelatedIds = actor.visibility === "personal"
+      ? [positionTransactionId]
+      : [...new Set([positionTransactionId, draft.id])];
+    next.fundEvents = [...events, {
+      id: eventId,
+      fundId: funding.fundId,
+      kind: fundingEventKind,
+      amountCents: funding.fundedCents,
+      date,
+      createdBy: actor.createdBy,
+      confirmedByMemberId: null,
+      contributorMemberId: null,
+      destinationAccountId: funding.destinationAccountId,
+      relatedEventId: relatedFundingEvent?.id ?? null,
+      relatedTransactionIds: publicRelatedIds,
+      evidenceDigests: [],
+      reconciliationTied: null,
+      note: "",
+      createdAt: fundEventAt,
+      updatedAt: fundEventAt,
+    }];
+    postedIds.push(eventId);
+  }
   const warnings = matches.length ? ["Saved with a duplicate fingerprint. Review it when you have a moment."] : [];
-  return commit(previous, next, input.type === "income" ? "Add Income" : input.type === "refund" ? "Add Refund" : "Add Expense", `${draft.id}: ${input.type} $${(amountCents / 100).toFixed(2)} (${subcategory.name}) on ${date}`, [draft.id], warnings);
+  return commit(previous, next, input.type === "income" ? "Add Income" : input.type === "refund" ? "Add Refund" : "Add Expense", `${draft.id}: ${input.type} $${(amountCents / 100).toFixed(2)} (${subcategory.name}) on ${date}`, postedIds, warnings);
 }
 
 /** Books civil timezone is fixed to America/Toronto (D-126 Q2 C). Phone display zones are phone-local. */
@@ -328,6 +482,8 @@ export function postTransfer(household: Household, input: {
   const date = parseDate(input.date);
   const amountCents = parseAmount(input.amount);
   const actor = resolveActor(household, input);
+  requireAccountScopeForWrite(household, input.fromAccountId, actor);
+  requireAccountScopeForWrite(household, input.toAccountId, actor);
   requireOpenPeriod(household, date);
   if (input.fromAccountId === input.toAccountId) throw new ValidationError("Choose two different accounts to move money.");
   requireAccount(household, input.fromAccountId);
@@ -1420,6 +1576,7 @@ export function addAccount(household: Household, input: {
   name: string;
   kind: AccountKind | string;
   ownerMemberId?: string;
+  scope?: AccountScope;
   institution?: string;
   last4?: string;
   creditLimit?: string | number;
@@ -1437,6 +1594,9 @@ export function addAccount(household: Household, input: {
   if (name.length < 2) throw new ValidationError("Give the account a name with at least two letters.");
   const kind = normalizeAccountKind(input.kind);
   if (input.ownerMemberId && input.ownerMemberId !== "joint") requireMember(household, input.ownerMemberId);
+  if (input.scope === "personal" && (!input.ownerMemberId || input.ownerMemberId === JOINT)) {
+    throw new ValidationError("Choose the member who owns this Personal account.");
+  }
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const id = uniquePrefixedId(`ACC-${slug(name)}`, next.accounts.map((account) => account.id));
@@ -1458,6 +1618,7 @@ export function addAccount(household: Household, input: {
     currency: CURRENCY,
     active: true,
     ownerMemberId: input.ownerMemberId || "joint",
+    scope: input.scope === "personal" ? "personal" : "shared",
     institution: input.institution ?? "",
     last4: input.last4 ?? "",
     sortOrder: (next.accounts.reduce((max, account) => Math.max(max, account.sortOrder), 0) || 0) + 10,
@@ -1496,12 +1657,26 @@ export function updateAccount(household: Household, input: {
   apyPercent?: string | number;
   purpose?: SavingsPurpose;
   vehicle?: InvestmentVehicle;
+  ownerMemberId?: string;
+  scope?: AccountScope;
 }): CommitResult {
   requireTimezone(household);
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const account = next.accounts.find((row) => row.id === input.accountId);
   if (!account) throw new ValidationError("That account is gone.");
+  const nextOwner = input.ownerMemberId ?? account.ownerMemberId;
+  const nextScope = input.scope ?? account.scope ?? "shared";
+  if (nextOwner !== JOINT) requireMember(household, nextOwner);
+  if (nextScope === "personal" && nextOwner === JOINT) throw new ValidationError("A Personal account needs one member owner.");
+  if (account.scope !== "personal" && nextScope === "personal") {
+    const sharedUse = next.transactions.some((tx) => tx.accountId === account.id && tx.visibility !== "personal")
+      || next.recurrences.some((row) => row.accountId === account.id || row.transferToAccountId === account.id)
+      || next.transactions.some((tx) => tx.funding?.destinationAccountId === account.id);
+    if (sharedUse) throw new ValidationError("Move shared rows and plans off this account before making its metadata Personal.");
+  }
+  account.ownerMemberId = nextOwner;
+  account.scope = nextScope;
   if (input.name?.trim()) account.name = input.name.trim().slice(0, 40);
   if (input.institution !== undefined) account.institution = input.institution.trim().slice(0, 32);
   if (input.last4 !== undefined) account.last4 = input.last4.replace(/\D/g, "").slice(-4);
@@ -2209,8 +2384,10 @@ export function addRecurrence(household: Household, input: {
   kind?: RecurrenceKind;
   origin?: RecurrenceOrigin;
   reminderHoursBefore?: number;
+  fundingDefault?: HouseholdFundFundingDefault | null;
 }): CommitResult {
   const amountCents = parseAmount(input.amount);
+  const fundingDefault = resolveHouseholdFundFundingDefault(household, input.type, amountCents, input.fundingDefault);
   requireAccount(household, input.accountId);
   if (input.type === "transfer") {
     if (!input.transferToAccountId) throw new ValidationError("A transfer standing order needs a destination account.");
@@ -2253,6 +2430,7 @@ export function addRecurrence(household: Household, input: {
     origin: input.origin ?? "manual",
     reminderHoursBefore: input.reminderHoursBefore ?? DEFAULT_REMINDER_HOURS_BEFORE,
     googleSync: {},
+    fundingDefault,
     createdAt: at,
     updatedAt: at,
   });
@@ -2272,8 +2450,10 @@ export function updateRecurrence(household: Household, input: {
   note?: string;
   splits?: Split[];
   kind?: RecurrenceKind;
+  fundingDefault?: HouseholdFundFundingDefault | null;
 }): CommitResult {
   const amountCents = parseAmount(input.amount);
+  const fundingDefault = resolveHouseholdFundFundingDefault(household, input.type, amountCents, input.fundingDefault);
   requireAccount(household, input.accountId);
   if (input.type === "transfer") {
     if (!input.transferToAccountId) throw new ValidationError("A transfer standing order needs a destination account.");
@@ -2309,6 +2489,7 @@ export function updateRecurrence(household: Household, input: {
     note,
     subcategoryName: subcategory?.name ?? note,
   });
+  item.fundingDefault = fundingDefault;
   item.updatedAt = nowIso();
   return commit(previous, next, "Edit Recurring", `${note || "Recurring"} ${item.cadence}`, [item.id]);
 }
@@ -2414,6 +2595,11 @@ export function postOneRecurrence(
       confirmDuplicate: true,
       source: "recurring",
       sourceId: item.id,
+      funding: item.fundingDefault ? {
+        fundId: item.fundingDefault.fundId,
+        fundedCents: item.fundingDefault.fundedCents === "full" ? item.amountCents : item.fundingDefault.fundedCents,
+        destinationAccountId: item.fundingDefault.destinationAccountId,
+      } : undefined,
     });
     working = posted.household;
     postedIds.push(...posted.postedIds);
@@ -2569,6 +2755,204 @@ export function archiveWorkJob(household: Household, jobId: string): CommitResul
   return commit(previous, next, "Archive Job", `Archived ${existing.name}; shifts and owed balances remain`, []);
 }
 
+export type UpsertCoworkerInput = {
+  id?: string;
+  ownerMemberId: string;
+  jobId: string;
+  locationName: string;
+  displayName: string;
+  aliases?: string[];
+  observedRoles?: CoworkerObservedRole[];
+  source?: CoworkerSource;
+  sourceIdentityKey?: string | null;
+  active?: boolean;
+  provisional?: boolean;
+};
+
+/** Private workplace directory update. It never creates a Member or posts money. */
+export function upsertCoworker(household: Household, input: UpsertCoworkerInput): CommitResult {
+  const member = requireMember(household, input.ownerMemberId);
+  const job = (household.workJobs ?? []).find((row) => row.id === input.jobId && row.active);
+  if (!job || job.memberId !== member.id) throw new ValidationError("Choose an active job owned by this member.");
+  const displayName = String(input.displayName || "").replace(/\s+/g, " ").trim();
+  const locationName = String(input.locationName || "").replace(/\s+/g, " ").trim();
+  if (!displayName || displayName.length > 80) throw new ValidationError("Coworker name must be 1–80 characters.");
+  if (!locationName || locationName.length > 80) throw new ValidationError("Coworker location must be 1–80 characters.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nowIso();
+  const existing = input.id ? (next.coworkers ?? []).find((row) => row.id === input.id) : undefined;
+  if (existing && (existing.ownerMemberId !== member.id || existing.jobId !== job.id)) {
+    throw new ValidationError("That coworker belongs to another job or member.");
+  }
+  const normalizedName = normalizeCoworkerName(displayName);
+  const id = existing?.id || uniquePrefixedId("COW", (next.coworkers ?? []).map((row) => row.id));
+  const shaped = shapeCoworker({
+    ...existing,
+    ...input,
+    id,
+    ownerMemberId: member.id,
+    jobId: job.id,
+    displayName,
+    normalizedName,
+    locationName,
+    aliases: [...(existing?.aliases ?? []), ...(input.aliases ?? [])],
+    observedRoles: [...(existing?.observedRoles ?? []), ...(input.observedRoles ?? [])],
+    source: input.source ?? existing?.source ?? "manual",
+    sourceIdentityKey: input.sourceIdentityKey ?? existing?.sourceIdentityKey ?? null,
+    active: input.active ?? existing?.active ?? true,
+    provisional: input.provisional ?? existing?.provisional ?? false,
+    createdAt: existing?.createdAt ?? at,
+    updatedAt: at,
+  } satisfies Coworker, at);
+  if (!shaped) throw new ValidationError("Coworker details are invalid.");
+  next.coworkers = [...(next.coworkers ?? []).filter((row) => row.id !== id), shaped];
+  return commit(previous, next, existing ? "Edit coworker" : "Add coworker", "Updated the private workplace roster", [id]);
+}
+
+export function importCoworkerRoster(household: Household, input: {
+  ownerMemberId: string;
+  jobId: string;
+  locationName: string;
+  rows: Array<{ displayName: string; roleLabel?: string; sourceIdentityKey: string | null; source: "seven-shifts-roster" | "seven-shifts-schedule" }>;
+}): CommitResult {
+  const member = requireMember(household, input.ownerMemberId);
+  const job = (household.workJobs ?? []).find((row) => row.id === input.jobId && row.active);
+  if (!job || job.memberId !== member.id) throw new ValidationError("Choose an active job owned by this member.");
+  const locationName = String(input.locationName || "").replace(/\s+/g, " ").trim();
+  if (!locationName || locationName.length > 80) throw new ValidationError("Coworker location must be 1–80 characters.");
+  if (!Array.isArray(input.rows) || input.rows.length < 1 || input.rows.length > 500) throw new ValidationError("Roster import must contain 1–500 coworkers.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nowIso();
+  const postedIds: string[] = [];
+  const seen = new Set<string>();
+  for (const row of input.rows) {
+    const displayName = String(row.displayName || "").replace(/\s+/g, " ").trim();
+    const normalizedName = normalizeCoworkerName(displayName);
+    if (!displayName || displayName.length > 80 || !normalizedName) throw new ValidationError("Roster contains an invalid coworker name.");
+    const sourceIdentityKey = row.sourceIdentityKey ? String(row.sourceIdentityKey).trim() : null;
+    if (sourceIdentityKey && !/^s7subject_[A-Za-z0-9_-]{20,112}$/.test(sourceIdentityKey)) {
+      throw new ValidationError("Roster contains an invalid protected source identity.");
+    }
+    if (!(["seven-shifts-roster", "seven-shifts-schedule"] as const).includes(row.source)) {
+      throw new ValidationError("Roster contains an invalid source kind.");
+    }
+    const sourceKey = sourceIdentityKey ? `${row.source}:${sourceIdentityKey}` : `${row.source}:unbound:${normalizedName}`;
+    if (seen.has(sourceKey)) continue;
+    seen.add(sourceKey);
+    const scoped = (next.coworkers ?? []).filter((item) => item.ownerMemberId === member.id
+      && item.jobId === job.id
+      && normalizeCoworkerLocation(item.locationName) === normalizeCoworkerLocation(locationName));
+    const bySource = sourceIdentityKey ? scoped.find((item) => item.sourceIdentityKey === sourceIdentityKey) : undefined;
+    const exact = scoped.filter((item) => item.normalizedName === normalizedName || item.aliases.includes(normalizedName));
+    // A protected provider subject is authoritative. Name fallback is allowed
+    // only when it is unique and the prior row has no competing provider key.
+    if (!sourceIdentityKey && exact.length > 1) throw new ValidationError("Schedule name matches multiple coworkers and needs review.");
+    const existing = bySource ?? (!sourceIdentityKey && exact.length === 1 ? exact[0] : undefined);
+    const id = existing?.id || uniquePrefixedId("COW", [...(next.coworkers ?? []).map((item) => item.id), ...postedIds]);
+    const roleLabel = String(row.roleLabel || "").replace(/\s+/g, " ").trim().slice(0, 80);
+    const shaped = shapeCoworker({
+      ...existing,
+      id,
+      ownerMemberId: member.id,
+      jobId: job.id,
+      locationName,
+      displayName: existing?.displayName || displayName,
+      normalizedName: existing?.normalizedName || normalizedName,
+      aliases: [...(existing?.aliases ?? []), normalizedName],
+      observedRoles: [
+        ...(existing?.observedRoles ?? []),
+        ...(roleLabel ? [{ label: roleLabel, firstObservedAt: at, lastObservedAt: at }] : []),
+      ],
+      source: existing?.source ?? row.source,
+      sourceIdentityKey: existing?.sourceIdentityKey ?? sourceIdentityKey,
+      active: true,
+      provisional: existing?.provisional ?? !sourceIdentityKey,
+      createdAt: existing?.createdAt ?? at,
+      updatedAt: at,
+    } satisfies Coworker, at);
+    if (!shaped) throw new ValidationError("Roster contains invalid coworker details.");
+    next.coworkers = [...(next.coworkers ?? []).filter((item) => item.id !== id), shaped];
+    postedIds.push(id);
+  }
+  if (!postedIds.length) throw new ValidationError("Roster did not contain a new or updated coworker.");
+  return commit(previous, next, "Import coworker roster", `Updated ${postedIds.length} private workplace ${postedIds.length === 1 ? "identity" : "identities"}`, postedIds);
+}
+
+export type RecordCoworkerAttendanceInput = {
+  ownerMemberId: string;
+  shiftId: string;
+  rows: Array<{
+    coworkerId: string;
+    roleLabel?: string;
+    status: CoworkerAttendanceStatus;
+    scheduledStart?: string | null;
+    scheduledEnd?: string | null;
+  }>;
+};
+
+/** Replaces reviewed staffing context beside an already confirmed shift. */
+export function recordCoworkerAttendance(household: Household, input: RecordCoworkerAttendanceInput): CommitResult {
+  requireMember(household, input.ownerMemberId);
+  const shift = household.shifts.find((row) => row.id === input.shiftId);
+  if (!shift || shift.memberId !== input.ownerMemberId || shift.createdBy !== input.ownerMemberId || !shift.jobId) {
+    throw new ValidationError("Attendance can only be recorded for this member's confirmed job shift.");
+  }
+  if (!Array.isArray(input.rows) || input.rows.length > 200) throw new ValidationError("Attendance review is too large.");
+  const ids = new Set<string>();
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nowIso();
+  const replacements: CoworkerAttendance[] = [];
+  for (const row of input.rows) {
+    if (!["scheduled-assumed", "user-confirmed-present", "user-confirmed-absent", "surprise-helper"].includes(row.status)) {
+      throw new ValidationError("Attendance status is invalid.");
+    }
+    if (ids.has(row.coworkerId)) throw new ValidationError("Each coworker can appear once in a shift review.");
+    ids.add(row.coworkerId);
+    const coworker = (next.coworkers ?? []).find((item) => item.id === row.coworkerId && item.active);
+    if (!coworker || coworker.ownerMemberId !== input.ownerMemberId || coworker.jobId !== shift.jobId) {
+      throw new ValidationError("Attendance contains a coworker from another member or job.");
+    }
+    const existing = (next.coworkerAttendance ?? []).find((item) => item.shiftId === shift.id && item.coworkerId === coworker.id);
+    const start = row.scheduledStart ? new Date(row.scheduledStart) : null;
+    const end = row.scheduledEnd ? new Date(row.scheduledEnd) : null;
+    if (Boolean(start) !== Boolean(end) || (start && end && (!Number.isFinite(start.valueOf()) || !Number.isFinite(end.valueOf()) || end <= start))) {
+      throw new ValidationError("Scheduled attendance times must be a valid start/end pair.");
+    }
+    const id = existing?.id || uniquePrefixedId("ATT", [...(next.coworkerAttendance ?? []).map((item) => item.id), ...replacements.map((item) => item.id)]);
+    const [shaped] = shapeCoworkerAttendance([{
+      id,
+      ownerMemberId: input.ownerMemberId,
+      jobId: shift.jobId,
+      shiftId: shift.id,
+      coworkerId: coworker.id,
+      roleLabel: row.roleLabel ?? "",
+      status: row.status,
+      scheduledStart: start?.toISOString() ?? null,
+      scheduledEnd: end?.toISOString() ?? null,
+      createdAt: existing?.createdAt ?? at,
+      updatedAt: at,
+    }], at, input.ownerMemberId);
+    if (!shaped) throw new ValidationError("Attendance details are invalid.");
+    replacements.push(shaped);
+  }
+  const priorForShift = (next.coworkerAttendance ?? []).filter((row) => row.shiftId === shift.id
+    && row.ownerMemberId === input.ownerMemberId);
+  const replacementIds = new Set(replacements.map((row) => row.id));
+  const omittedIds = priorForShift.filter((row) => !replacementIds.has(row.id)).map((row) => row.id);
+  next.coworkerAttendance = [
+    ...(next.coworkerAttendance ?? []).filter((row) => row.shiftId !== shift.id || row.ownerMemberId !== input.ownerMemberId),
+    ...replacements,
+  ];
+  if (omittedIds.length) next.tombstones = mergeTombstones(next.tombstones, omittedIds.map((id) => ({ id, deletedAt: at })));
+  return commit(previous, next, "Review attendance", "Replaced private shift attendance", [
+    ...replacements.map((row) => row.id),
+    ...omittedIds,
+  ]);
+}
+
 export function reversePostedMoney(household: Household, transactionId: string, input: ActorInput = {}): CommitResult {
   const tx = household.transactions.find((item) => item.id === transactionId);
   if (!tx) throw new ValidationError("That row is already gone.");
@@ -2584,7 +2968,7 @@ export function reversePostedMoney(household: Household, transactionId: string, 
   }
   const date = todayKey();
   requireOpenPeriod(household, date);
-  const actor = resolveActor(household, input, tx.createdBy);
+  const actor = resolveActor(household, { ...input, visibility: input.visibility ?? tx.visibility }, tx.createdBy);
   const previous = cloneHousehold(household);
   let next = cloneHousehold(household);
   const postedIds: string[] = [];
@@ -2633,6 +3017,7 @@ export function reversePostedMoney(household: Household, transactionId: string, 
         source: "reversal",
         createdBy: actor.createdBy,
         visibility: shift ? original.visibility : actor.visibility,
+        funding: original.funding,
       });
       next = posted.household;
       postedIds.push(...posted.postedIds);
@@ -3873,6 +4258,477 @@ export function touchHouseholdDevice(household: Household, input: {
   };
 }
 
+function requireHouseholdFund(household: Household) {
+  const fund = shapeHouseholdFundConfig(household.householdFund);
+  if (!fund) throw new ValidationError("Set up the Hearth Household Fund first.");
+  return fund;
+}
+
+function requireFundCustodian(household: Household, memberId: string) {
+  const fund = requireHouseholdFund(household);
+  requireMember(household, memberId);
+  if (memberId !== fund.custodianMemberId) throw new ValidationError("Only the Household Fund custodian can confirm that action.");
+  return fund;
+}
+
+function nextFundEventId(household: Household): string {
+  return nextId("FUND-EVT-", shapeHouseholdFundEvents(household.fundEvents).map((row) => row.id), 4);
+}
+
+/** Preserve causal ledger order even when several confirmations share one clock millisecond. */
+function nextFundEventAt(household: Household): string {
+  const latest = shapeHouseholdFundEvents(household.fundEvents).reduce(
+    (max, event) => Math.max(max, Date.parse(event.createdAt) || 0),
+    0,
+  );
+  return new Date(Math.max(Date.now(), latest + 1)).toISOString();
+}
+
+export function configureHouseholdFund(household: Household, input: {
+  custodianMemberId: string;
+  openedOn: string;
+  createdBy: string;
+  name?: string;
+}): CommitResult {
+  requireTimezone(household);
+  if (shapeHouseholdFundConfig(household.householdFund)) throw new ValidationError("The Hearth Household Fund is already configured.");
+  requireMember(household, input.custodianMemberId);
+  requireMember(household, input.createdBy);
+  if (input.createdBy !== input.custodianMemberId) throw new ValidationError("The custodian must confirm the Household Fund setup.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nowIso();
+  next.householdFund = {
+    id: HOUSEHOLD_FUND_ID,
+    name: input.name?.trim().slice(0, 60) || HOUSEHOLD_FUND_NAME,
+    custodianMemberId: input.custodianMemberId,
+    mode: "practice",
+    openedOn: parseDate(input.openedOn),
+    createdAt: at,
+    updatedAt: at,
+  };
+  next.fundMonthPlans = [];
+  next.fundEvents = [];
+  next.fundSettlementAllocations = [];
+  next.fundKittyAllocations = [];
+  next.fundPrivate = { bankBindings: [], reconciliations: [] };
+  return commit(previous, next, "Household Fund", `Opened ${next.householdFund.name} at $0.00`, [next.householdFund.id]);
+}
+
+export function bindHouseholdFundBackingAccount(household: Household, input: {
+  memberId: string;
+  accountId: string;
+  provider?: "manual" | "flinks";
+  accountDigest?: string | null;
+  connected?: boolean;
+}): CommitResult {
+  const fund = requireFundCustodian(household, input.memberId);
+  const account = requireAccount(household, input.accountId);
+  if (account.scope !== "personal" || account.ownerMemberId !== input.memberId) {
+    throw new ValidationError("The backing savings account must be Bianca's Personal account metadata.");
+  }
+  if (account.kind !== "savings") throw new ValidationError("The Household Fund backing account must be savings.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const state = shapeHouseholdFundPrivate(next.fundPrivate, input.memberId);
+  const at = nowIso();
+  const id = `FUND-BANK-${fund.id}-${input.memberId}`;
+  const row = {
+    id,
+    fundId: fund.id,
+    memberId: input.memberId,
+    provider: input.provider === "flinks" ? "flinks" as const : "manual" as const,
+    accountId: account.id,
+    accountDigest: input.accountDigest?.trim() || null,
+    status: input.connected === true ? "connected" as const : "manual" as const,
+    createdAt: state.bankBindings.find((item) => item.id === id)?.createdAt ?? at,
+    updatedAt: at,
+  };
+  next.fundPrivate = { ...state, bankBindings: [...state.bankBindings.filter((item) => item.id !== id), row] };
+  return commit(previous, next, "Household Fund", "Updated the custodian-only backing account", [id]);
+}
+
+export function setHouseholdFundMonthPlan(household: Household, input: {
+  memberId: string;
+  monthKey: MonthKey;
+  target: string | number;
+  buffer?: string | number;
+  agreedByMemberIds?: string[];
+}): CommitResult {
+  const fund = requireFundCustodian(household, input.memberId);
+  if (!/^\d{4}-\d{2}$/.test(input.monthKey)) throw new ValidationError("Choose a valid funding month.");
+  const targetCents = parseWholeCents(input.target, "Monthly target", { allowZero: true });
+  const bufferCents = parseWholeCents(input.buffer ?? 0, "Fund buffer", { allowZero: true });
+  const agreedByMemberIds = [...new Set(input.agreedByMemberIds ?? [input.memberId])];
+  for (const memberId of agreedByMemberIds) requireMember(household, memberId);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const plans = shapeHouseholdFundMonthPlans(next.fundMonthPlans);
+  const id = `FUND-PLAN-${input.monthKey}`;
+  const at = nowIso();
+  const prior = plans.find((row) => row.id === id);
+  const plan = { id, fundId: fund.id, monthKey: input.monthKey, targetCents, bufferCents, agreedByMemberIds: agreedByMemberIds.sort(), createdAt: prior?.createdAt ?? at, updatedAt: at };
+  next.fundMonthPlans = [...plans.filter((row) => row.id !== id), plan];
+  return commit(previous, next, "Household Fund", `Agreed ${input.monthKey} target $${(targetCents / 100).toFixed(2)}`, [id]);
+}
+
+export function proposeHouseholdFundContribution(household: Household, input: {
+  memberId: string;
+  contributorMemberId: string;
+  amount: string | number;
+  date: string;
+  note?: string;
+}): CommitResult {
+  const fund = requireHouseholdFund(household);
+  requireMember(household, input.memberId);
+  requireMember(household, input.contributorMemberId);
+  const amountCents = parseAmount(input.amount);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nextFundEventAt(next);
+  const id = nextFundEventId(next);
+  next.fundEvents = [...shapeHouseholdFundEvents(next.fundEvents), {
+    id,
+    fundId: fund.id,
+    kind: "contribution-proposed",
+    amountCents,
+    date: parseDate(input.date),
+    createdBy: input.memberId,
+    confirmedByMemberId: null,
+    contributorMemberId: input.contributorMemberId,
+    destinationAccountId: null,
+    relatedEventId: null,
+    relatedTransactionIds: [],
+    evidenceDigests: [],
+    reconciliationTied: null,
+    note: input.note?.trim().slice(0, 180) || "",
+    createdAt: at,
+    updatedAt: at,
+  }];
+  return commit(previous, next, "Household Fund", `Proposed $${(amountCents / 100).toFixed(2)} contribution`, [id]);
+}
+
+export function confirmHouseholdFundContribution(household: Household, input: {
+  memberId: string;
+  proposalEventId: string;
+  date?: string;
+}): CommitResult {
+  const fund = requireFundCustodian(household, input.memberId);
+  const events = shapeHouseholdFundEvents(household.fundEvents);
+  const proposal = events.find((row) => row.id === input.proposalEventId && row.kind === "contribution-proposed");
+  if (!proposal) throw new ValidationError("That contribution proposal no longer exists.");
+  if (events.some((row) => row.kind === "contribution-confirmed" && row.relatedEventId === proposal.id)) {
+    throw new ValidationError("That contribution was already confirmed.");
+  }
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nextFundEventAt(next);
+  const id = nextFundEventId(next);
+  next.fundEvents = [...events, {
+    ...proposal,
+    id,
+    kind: "contribution-confirmed",
+    date: parseDate(input.date ?? proposal.date),
+    createdBy: input.memberId,
+    confirmedByMemberId: fund.custodianMemberId,
+    relatedEventId: proposal.id,
+    createdAt: at,
+    updatedAt: at,
+  }];
+  return commit(previous, next, "Household Fund", `Received $${(proposal.amountCents / 100).toFixed(2)} contribution`, [id]);
+}
+
+export function confirmHouseholdFundSettlement(household: Household, input: {
+  memberId: string;
+  amount: string | number;
+  destinationAccountId: string;
+  date: string;
+  allocations?: Array<{ transactionId: string; amount: string | number }>;
+  note?: string;
+}): CommitResult {
+  const fund = requireFundCustodian(household, input.memberId);
+  const isDirectDebit = input.destinationAccountId === HOUSEHOLD_FUND_DIRECT_DESTINATION;
+  const destination = isDirectDebit ? null : requireAccount(household, input.destinationAccountId);
+  if (destination?.scope === "personal") throw new ValidationError("Choose a shared settlement destination.");
+  const destinationId = destination?.id ?? HOUSEHOLD_FUND_DIRECT_DESTINATION;
+  const amountCents = parseAmount(input.amount);
+  const projection = projectHouseholdFund(household, parseDate(input.date));
+  if (amountCents > projection.operatingBalanceCents) throw new ValidationError("That transfer exceeds the confirmed Household Fund balance.");
+  const eligible = projection.transactionPositions
+    .filter((row) => row.destinationAccountId === destinationId && row.outstandingCents > 0)
+    .sort((left, right) => {
+      const leftDate = household.transactions.find((tx) => tx.id === left.transactionId)?.date ?? "";
+      const rightDate = household.transactions.find((tx) => tx.id === right.transactionId)?.date ?? "";
+      return leftDate.localeCompare(rightDate) || left.transactionId.localeCompare(right.transactionId);
+    });
+  if (amountCents > eligible.reduce((sum, row) => sum + row.outstandingCents, 0)) {
+    throw new ValidationError("That transfer exceeds the outstanding amount for this destination.");
+  }
+  let allocations: Array<{ transactionId: string; amountCents: number }>;
+  if (input.allocations?.length) {
+    allocations = input.allocations.map((row) => ({ transactionId: row.transactionId, amountCents: parseAmount(row.amount) }));
+    if (allocations.reduce((sum, row) => sum + row.amountCents, 0) !== amountCents) throw new ValidationError("Settlement allocations must equal the transfer amount.");
+    for (const row of allocations) {
+      const position = eligible.find((item) => item.transactionId === row.transactionId);
+      if (!position || row.amountCents > position.outstandingCents) throw new ValidationError("A settlement allocation exceeds that transaction's outstanding amount.");
+    }
+  } else {
+    allocations = [];
+    let remaining = amountCents;
+    for (const row of eligible) {
+      if (remaining <= 0) break;
+      const amount = Math.min(remaining, row.outstandingCents);
+      allocations.push({ transactionId: row.transactionId, amountCents: amount });
+      remaining -= amount;
+    }
+  }
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nextFundEventAt(next);
+  const id = nextFundEventId(next);
+  next.fundEvents = [...shapeHouseholdFundEvents(next.fundEvents), {
+    id, fundId: fund.id, kind: "settlement-confirmed", amountCents, date: parseDate(input.date),
+    createdBy: input.memberId, confirmedByMemberId: fund.custodianMemberId, contributorMemberId: null,
+    destinationAccountId: destinationId, relatedEventId: null,
+    relatedTransactionIds: allocations.map((row) => row.transactionId).sort(), evidenceDigests: [],
+    reconciliationTied: null, note: input.note?.trim().slice(0, 180) || "",
+    createdAt: at, updatedAt: at,
+  }];
+  const existing = shapeHouseholdFundSettlementAllocations(next.fundSettlementAllocations);
+  next.fundSettlementAllocations = [...existing, ...allocations.map((row, index) => ({
+    id: `${id}-A${index + 1}`,
+    fundId: fund.id,
+    eventId: id,
+    transactionId: row.transactionId,
+    amountCents: row.amountCents,
+    createdAt: at,
+    updatedAt: at,
+  }))];
+  return commit(previous, next, "Household Fund", isDirectDebit
+    ? `Confirmed $${(amountCents / 100).toFixed(2)} direct debit`
+    : `Transferred $${(amountCents / 100).toFixed(2)} to ${destination!.name}`, [id, ...next.fundSettlementAllocations.filter((row) => row.eventId === id).map((row) => row.id)]);
+}
+
+export function allocateHouseholdFundSurplus(household: Household, input: {
+  memberId: string;
+  date: string;
+  allocations: Array<{ goalId: string; amount: string | number }>;
+  note?: string;
+}): CommitResult {
+  const fund = requireFundCustodian(household, input.memberId);
+  const allocations = input.allocations.map((row) => ({ goalId: row.goalId, amountCents: parseAmount(row.amount) }));
+  const amountCents = allocations.reduce((sum, row) => sum + row.amountCents, 0);
+  if (!amountCents) throw new ValidationError("Choose a surplus amount to move into Kitty Banks.");
+  for (const row of allocations) {
+    if (!household.goals.some((goal) => goal.id === row.goalId && goal.shared && goal.status !== "retired")) {
+      throw new ValidationError("Kitty rollover can only use active shared goals.");
+    }
+  }
+  const projection = projectHouseholdFund(household, parseDate(input.date));
+  if (amountCents > projection.safeRolloverCents) throw new ValidationError("That rollover exceeds the safe surplus after transfers, bills, and buffer.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nextFundEventAt(next);
+  const id = nextFundEventId(next);
+  next.fundEvents = [...shapeHouseholdFundEvents(next.fundEvents), {
+    id, fundId: fund.id, kind: "kitty-allocated", amountCents, date: parseDate(input.date),
+    createdBy: input.memberId, confirmedByMemberId: fund.custodianMemberId, contributorMemberId: null,
+    destinationAccountId: null, relatedEventId: null, relatedTransactionIds: [], evidenceDigests: [],
+    reconciliationTied: null, note: input.note?.trim().slice(0, 180) || "Month-end rollover",
+    createdAt: at, updatedAt: at,
+  }];
+  next.fundKittyAllocations = [...shapeHouseholdFundKittyAllocations(next.fundKittyAllocations), ...allocations.map((row, index) => ({
+    id: `${id}-K${index + 1}`, fundId: fund.id, eventId: id, goalId: row.goalId,
+    amountCents: row.amountCents, createdAt: at, updatedAt: at,
+  }))];
+  return commit(previous, next, "Household Fund", `Rolled $${(amountCents / 100).toFixed(2)} into Kitty Banks`, [id, ...next.fundKittyAllocations.filter((row) => row.eventId === id).map((row) => row.id)]);
+}
+
+export function releaseHouseholdFundKitty(household: Household, input: {
+  memberId: string;
+  amount: string | number;
+  date: string;
+  note?: string;
+}): CommitResult {
+  const fund = requireFundCustodian(household, input.memberId);
+  const amountCents = parseAmount(input.amount, "Kitty release");
+  const projection = projectHouseholdFund(household, parseDate(input.date));
+  if (amountCents > projection.kittyCents) throw new ValidationError("That release exceeds the amount in Kitty Banks.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nextFundEventAt(next);
+  const id = nextFundEventId(next);
+  next.fundEvents = [...shapeHouseholdFundEvents(next.fundEvents), {
+    id, fundId: fund.id, kind: "kitty-released", amountCents, date: parseDate(input.date),
+    createdBy: input.memberId, confirmedByMemberId: fund.custodianMemberId, contributorMemberId: null,
+    destinationAccountId: null, relatedEventId: null, relatedTransactionIds: [], evidenceDigests: [],
+    reconciliationTied: null, note: input.note?.trim().slice(0, 180) || "Released from Kitty Banks",
+    createdAt: at, updatedAt: at,
+  }];
+  return commit(previous, next, "Household Fund", `Released $${(amountCents / 100).toFixed(2)} from Kitty Banks`, [id]);
+}
+
+/** One visible confirmation records a direct-debit expense and its matching fund settlement. */
+export function postHouseholdFundDirectDebit(household: Household, input: {
+  memberId: string;
+  date: string;
+  amount: string | number;
+  accountId: string;
+  subcategoryId: string;
+  note?: string;
+  place?: string;
+  splits?: Split[];
+  visibility?: Visibility;
+  confirmDuplicate?: boolean;
+}): CommitResult {
+  const fund = requireFundCustodian(household, input.memberId);
+  const amountCents = parseAmount(input.amount);
+  const source = requireAccount(household, input.accountId);
+  if (source.scope !== "personal" || source.ownerMemberId !== input.memberId || source.kind !== "savings") {
+    throw new ValidationError("A Household Fund direct debit must use Bianca’s Personal savings account.");
+  }
+  const posted = postEntry(household, {
+    date: input.date,
+    type: "expense",
+    amount: amountCents / 100,
+    accountId: input.accountId,
+    subcategoryId: input.subcategoryId,
+    note: input.note,
+    place: input.place,
+    splits: input.splits,
+    visibility: "personal",
+    createdBy: input.memberId,
+    confirmDuplicate: input.confirmDuplicate,
+    funding: { fundId: fund.id, fundedCents: amountCents, destinationAccountId: HOUSEHOLD_FUND_DIRECT_DESTINATION, directDebit: true },
+  });
+  const transactionId = posted.postedIds[0]!;
+  const settlementPositionId = posted.household.transactions.find((row) => row.id === transactionId)?.funding?.positionId ?? transactionId;
+  const settled = confirmHouseholdFundSettlement(posted.household, {
+    memberId: input.memberId,
+    amount: amountCents / 100,
+    destinationAccountId: HOUSEHOLD_FUND_DIRECT_DESTINATION,
+    date: input.date,
+    allocations: [{ transactionId: settlementPositionId, amount: amountCents / 100 }],
+    note: "Direct debit confirmed with the expense",
+  });
+  return {
+    household: settled.household,
+    warnings: [...posted.warnings, ...settled.warnings],
+    postedIds: [...posted.postedIds, ...settled.postedIds],
+    undo: { id: settled.undo.id, label: `Direct debit $${(amountCents / 100).toFixed(2)}`, snapshot: household, postedIds: [...posted.postedIds, ...settled.postedIds] },
+  };
+}
+
+export function recordHouseholdFundReconciliation(household: Household, input: {
+  memberId: string;
+  date: string;
+  bankTotal: string | number;
+  personalRemainder?: string | number;
+  note?: string;
+}): CommitResult {
+  const fund = requireFundCustodian(household, input.memberId);
+  const date = parseDate(input.date);
+  const bankTotalCents = parseWholeCents(input.bankTotal, "Savings balance", { allowZero: true });
+  const projection = projectHouseholdFund(household, date);
+  const computedPersonal = bankTotalCents - projection.operatingBalanceCents - projection.kittyCents;
+  const personalRemainderCents = input.personalRemainder === undefined
+    ? computedPersonal
+    : parseWholeCents(input.personalRemainder, "Personal remainder", { allowZero: true, allowNegative: true });
+  const differenceCents = computedPersonal - personalRemainderCents;
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nextFundEventAt(next);
+  const eventId = nextFundEventId(next);
+  next.fundEvents = [...shapeHouseholdFundEvents(next.fundEvents), {
+    id: eventId, fundId: fund.id, kind: "reconciliation-recorded", amountCents: 0, date,
+    createdBy: input.memberId, confirmedByMemberId: fund.custodianMemberId, contributorMemberId: null,
+    destinationAccountId: null, relatedEventId: null, relatedTransactionIds: [], evidenceDigests: [],
+    reconciliationTied: differenceCents === 0, note: input.note?.trim().slice(0, 180) || "Weekly reconciliation",
+    createdAt: at, updatedAt: at,
+  }];
+  const state = shapeHouseholdFundPrivate(next.fundPrivate, input.memberId);
+  const id = `FUND-REC-${eventId}`;
+  next.fundPrivate = { ...state, reconciliations: [...state.reconciliations, {
+    id, fundId: fund.id, memberId: input.memberId, date, bankTotalCents,
+    operatingFundCents: projection.operatingBalanceCents, kittyCents: projection.kittyCents,
+    personalRemainderCents, differenceCents, sharedEventId: eventId, createdAt: at, updatedAt: at,
+  }] };
+  return commit(previous, next, "Household Fund", differenceCents === 0 ? "Household Fund reconciliation tied" : `Household Fund reconciliation is off by $${(Math.abs(differenceCents) / 100).toFixed(2)}`, [eventId, id]);
+}
+
+export function reverseHouseholdFundEvent(household: Household, input: {
+  memberId: string;
+  eventId: string;
+  date: string;
+  reason: string;
+}): CommitResult {
+  const fund = requireFundCustodian(household, input.memberId);
+  const events = shapeHouseholdFundEvents(household.fundEvents);
+  const target = events.find((row) => row.id === input.eventId);
+  if (!target || target.kind === "reversal") throw new ValidationError("Choose an original Household Fund event to reverse.");
+  if (events.some((row) => row.kind === "reversal" && row.relatedEventId === target.id)) throw new ValidationError("That Household Fund event was already reversed.");
+  if (!input.reason.trim()) throw new ValidationError("Give the correction a reason.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nextFundEventAt(next);
+  const id = nextFundEventId(next);
+  next.fundEvents = [...events, {
+    id, fundId: fund.id, kind: "reversal", amountCents: target.amountCents, date: parseDate(input.date),
+    createdBy: input.memberId, confirmedByMemberId: fund.custodianMemberId, contributorMemberId: target.contributorMemberId,
+    destinationAccountId: target.destinationAccountId, relatedEventId: target.id,
+    relatedTransactionIds: [...target.relatedTransactionIds], evidenceDigests: [], reconciliationTied: null,
+    note: input.reason.trim().slice(0, 180), createdAt: at, updatedAt: at,
+  }];
+  return commit(previous, next, "Household Fund", `Reversed ${target.id}: ${input.reason.trim()}`, [id]);
+}
+
+export function activateHouseholdFundConnection(household: Household, input: { memberId: string }): CommitResult {
+  const fund = requireFundCustodian(household, input.memberId);
+  const binding = shapeHouseholdFundPrivate(household.fundPrivate, input.memberId).bankBindings
+    .find((row) => row.fundId === fund.id && row.provider === "flinks" && row.status === "connected" && row.accountDigest);
+  if (!binding) throw new ValidationError("Complete the approved read-only Flinks connection before enabling connected mode.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.householdFund = { ...fund, mode: "connected", updatedAt: nowIso() };
+  return commit(previous, next, "Household Fund", "Enabled read-only bank evidence", [fund.id]);
+}
+
+export function recordHouseholdFundBankVerification(household: Household, input: {
+  memberId: string;
+  evidence: HouseholdFundBankEvidence[];
+  selectedEventIds?: string[];
+  windowDays?: number;
+}): CommitResult {
+  const fund = requireFundCustodian(household, input.memberId);
+  if (fund.mode !== "connected") throw new ValidationError("Bank verification is disabled during September practice mode.");
+  const binding = shapeHouseholdFundPrivate(household.fundPrivate, input.memberId).bankBindings
+    .find((row) => row.fundId === fund.id && row.status === "connected" && row.accountDigest);
+  if (!binding?.accountDigest) throw new ValidationError("The read-only bank binding is unavailable.");
+  const match = matchHouseholdFundBankEvidence({ household, evidence: input.evidence, bindingAccountDigest: binding.accountDigest, selectedEventIds: input.selectedEventIds, windowDays: input.windowDays });
+  if (match.kind !== "exact") throw new ValidationError("Only one unique exact bank match can verify automatically. Review this evidence without posting.");
+  const matchedEvidenceIds = new Set(match.evidenceIds);
+  const matchedEvidence = input.evidence.filter((row) => matchedEvidenceIds.has(row.id));
+  const digests = [...new Set(matchedEvidence.map((row) => row.digest))].sort();
+  const existing = shapeHouseholdFundEvents(household.fundEvents);
+  if (existing.some((event) => event.kind === "bank-verified" && event.evidenceDigests.some((digest) => digests.includes(digest)))) {
+    throw new ValidationError("That bank evidence was already used.");
+  }
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nextFundEventAt(next);
+  const id = nextFundEventId(next);
+  const firstEvidence = matchedEvidence.slice().sort((left, right) => left.date.localeCompare(right.date))[0];
+  next.fundEvents = [...existing, {
+    id, fundId: fund.id, kind: "bank-verified", amountCents: match.amountCents, date: firstEvidence?.date ?? fund.openedOn,
+    createdBy: input.memberId, confirmedByMemberId: fund.custodianMemberId, contributorMemberId: null,
+    destinationAccountId: matchedEvidence.find((row) => row.destinationAccountId)?.destinationAccountId ?? null,
+    relatedEventId: match.eventIds.length === 1 ? match.eventIds[0]! : null,
+    relatedTransactionIds: [], evidenceDigests: digests, reconciliationTied: true,
+    note: `Exact ${match.direction} bank evidence`, createdAt: at, updatedAt: at,
+  }];
+  return commit(previous, next, "Household Fund", `Verified $${(match.amountCents / 100).toFixed(2)} against read-only bank evidence`, [id]);
+}
+
 export function emptyHousehold(environment: Household["environment"] = "development"): Household {
   return {
     version: 1,
@@ -3903,6 +4759,12 @@ export function emptyHousehold(environment: Household["environment"] = "developm
     goals: [],
     goalContributions: [],
     goalPurchases: [],
+    householdFund: null,
+    fundMonthPlans: [],
+    fundEvents: [],
+    fundSettlementAllocations: [],
+    fundKittyAllocations: [],
+    fundPrivate: { bankBindings: [], reconciliations: [] },
     budgetPlans: [],
     sitDownSessions: [],
     activity: [],
