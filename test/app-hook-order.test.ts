@@ -13,4 +13,12 @@ describe("App hook order", () => {
     expect(automationEffect).toBeGreaterThan(0);
     expect(automationEffect).toBeLessThan(bootGuard);
   });
+
+  it("exposes the selected environment and the opposite ledger from the live header", () => {
+    const source = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain('className={`pill ${environment === "production" ? "prod" : "dev"}`}');
+    expect(source).toContain('next: environment === "production" ? "development" : "production"');
+    expect(source).not.toContain('<span className="pill dev" aria-label="Development environment">Development</span>');
+  });
 });
