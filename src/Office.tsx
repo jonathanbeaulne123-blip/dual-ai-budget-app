@@ -872,6 +872,7 @@ export function Office({
           household={household} dashboard={dashboard}
           layout={layout} onLayout={setLayout}
           today={today} memberId={memberId} view={view} busy={busy} adding={adding}
+          environment={environment} clinkOn={clinkOn}
           form={form} mode={mode} error={error} categories={categories} postLabel={postLabel}
           onForm={onForm} onPost={onPost} onMore={onMore} onMilk={onMilk} onCoffee={onCoffee}
           onClockIn={onClockIn} onAbandonShift={onAbandonShift} onSignOut={onSignOut}
@@ -880,7 +881,7 @@ export function Office({
           onFinishedShift={onFinishedShift} onPayCard={onPayCard} onOpenAccount={onOpenAccount}
           onKitchen={onKitchen} onMarkPaid={onMarkPaid}
           onAskSettle={onAskSettle} onAskStartJar={onAskStartJar} onSitDown={onSitDown}
-          onGo={onGo}
+          onGo={onGo} onClinkOn={onClinkOn}
         />
       ) : (
         <div
