@@ -103,6 +103,8 @@ export function buildCommandEventFromReceipt(input: {
       ...ref.commandPayload,
       materializationFacts: extractMaterializationFacts(shaped, receipt.postedIds, {
         acceptedAt: receipt.acceptedAt,
+        ledgerScope: ref.ledgerScope,
+        memberId: input.memberId,
       }),
     },
     created_at: input.createdAt ?? receipt.acceptedAt,

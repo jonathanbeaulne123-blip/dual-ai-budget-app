@@ -1,4 +1,4 @@
-import { financialAuditHash } from "../core/commandIdentity.ts";
+import { financialAuditHash, financialAuditHashForScope } from "../core/commandIdentity.ts";
 import { recordConflict, resolveConflictChoice, unresolvedConflicts } from "../core/conflict.ts";
 import { rememberReceipt } from "../core/commandIdentity.ts";
 import { ensureHouseholdShape, mergeTombstones } from "../core/sync.ts";
@@ -8,6 +8,11 @@ import type {
   GoalContribution,
   GoalPurchase,
   Household,
+  HouseholdFundConfig,
+  HouseholdFundEvent,
+  HouseholdFundKittyAllocation,
+  HouseholdFundMonthPlan,
+  HouseholdFundSettlementAllocation,
   Shift,
   SitDownSession,
   Tombstone,
@@ -39,6 +44,11 @@ export type ContinuityMaterializationFacts = {
   sitDownSessions?: SitDownSession[];
   goalContributions?: GoalContribution[];
   goalPurchases?: GoalPurchase[];
+  householdFund?: HouseholdFundConfig;
+  fundMonthPlans?: HouseholdFundMonthPlan[];
+  fundEvents?: HouseholdFundEvent[];
+  fundSettlementAllocations?: HouseholdFundSettlementAllocation[];
+  fundKittyAllocations?: HouseholdFundKittyAllocation[];
   tombstones?: Tombstone[];
 };
 
@@ -144,6 +154,13 @@ function filterFactsForScope(
   if (facts.goalPurchases?.length) {
     scoped.goalPurchases = facts.goalPurchases.filter((row) => scopeAllowsRow(event, row));
   }
+  if (event.ledger_scope === "shared") {
+    if (facts.householdFund) scoped.householdFund = facts.householdFund;
+    if (facts.fundMonthPlans?.length) scoped.fundMonthPlans = facts.fundMonthPlans;
+    if (facts.fundEvents?.length) scoped.fundEvents = facts.fundEvents;
+    if (facts.fundSettlementAllocations?.length) scoped.fundSettlementAllocations = facts.fundSettlementAllocations;
+    if (facts.fundKittyAllocations?.length) scoped.fundKittyAllocations = facts.fundKittyAllocations;
+  }
   if (facts.tombstones?.length) {
     scoped.tombstones = facts.tombstones;
   }
@@ -186,6 +203,17 @@ export function extractMaterializationFacts(
   if (goalContributions.length) facts.goalContributions = goalContributions;
   const goalPurchases = (household.goalPurchases ?? []).filter((row) => posted.has(row.id) && allows(row));
   if (goalPurchases.length) facts.goalPurchases = goalPurchases;
+  if (scope !== "personal") {
+    if (household.householdFund && posted.has(household.householdFund.id)) facts.householdFund = household.householdFund;
+    const fundMonthPlans = (household.fundMonthPlans ?? []).filter((row) => posted.has(row.id));
+    if (fundMonthPlans.length) facts.fundMonthPlans = fundMonthPlans;
+    const fundEvents = (household.fundEvents ?? []).filter((row) => posted.has(row.id));
+    if (fundEvents.length) facts.fundEvents = fundEvents;
+    const fundSettlementAllocations = (household.fundSettlementAllocations ?? []).filter((row) => posted.has(row.id));
+    if (fundSettlementAllocations.length) facts.fundSettlementAllocations = fundSettlementAllocations;
+    const fundKittyAllocations = (household.fundKittyAllocations ?? []).filter((row) => posted.has(row.id));
+    if (fundKittyAllocations.length) facts.fundKittyAllocations = fundKittyAllocations;
+  }
   let tombstones = (household.tombstones ?? []).filter((row) => posted.has(row.id));
   if (!tombstones.length && !posted.size) {
     const marker = household.lastCommittedAt ?? options?.acceptedAt ?? null;
@@ -266,6 +294,23 @@ async function applyEvent(
     };
     return deferConflictingEvent(snapshot, remote);
   }
+  const fundEventResult = applyMoneyCollection(snapshot.fundEvents ?? [], facts.fundEvents, mergedTombstones);
+  if (fundEventResult.sameIdConflict) {
+    const remote = { ...snapshot, fundEvents: mergeRow(snapshot.fundEvents ?? [], facts.fundEvents), revision: event.result_revision };
+    return deferConflictingEvent(snapshot, remote);
+  }
+  const fundSettlementResult = applyMoneyCollection(snapshot.fundSettlementAllocations ?? [], facts.fundSettlementAllocations, mergedTombstones);
+  if (fundSettlementResult.sameIdConflict) {
+    const remote = { ...snapshot, fundSettlementAllocations: mergeRow(snapshot.fundSettlementAllocations ?? [], facts.fundSettlementAllocations), revision: event.result_revision };
+    return deferConflictingEvent(snapshot, remote);
+  }
+  const fundKittyResult = applyMoneyCollection(snapshot.fundKittyAllocations ?? [], facts.fundKittyAllocations, mergedTombstones);
+  if (fundKittyResult.sameIdConflict) {
+    const remote = { ...snapshot, fundKittyAllocations: mergeRow(snapshot.fundKittyAllocations ?? [], facts.fundKittyAllocations), revision: event.result_revision };
+    return deferConflictingEvent(snapshot, remote);
+  }
+  const planMap = rowMapsTo(snapshot.fundMonthPlans ?? []);
+  for (const plan of facts.fundMonthPlans ?? []) planMap.set(plan.id, plan);
 
   let next: Household = {
     ...snapshot,
@@ -278,10 +323,15 @@ async function applyEvent(
     sitDownSessions: sitDownResult.rows.filter((row) => !dead.has(row.id)),
     goalContributions: contributionResult.rows.filter((row) => !dead.has(row.id)),
     goalPurchases: purchaseResult.rows.filter((row) => !dead.has(row.id)),
+    householdFund: facts.householdFund ?? snapshot.householdFund,
+    fundMonthPlans: [...planMap.values()],
+    fundEvents: fundEventResult.rows.filter((row) => !dead.has(row.id)),
+    fundSettlementAllocations: fundSettlementResult.rows.filter((row) => !dead.has(row.id)),
+    fundKittyAllocations: fundKittyResult.rows.filter((row) => !dead.has(row.id)),
     tombstones: mergedTombstones,
   };
   next = rememberReceipt(next, receiptFromPayload(payload));
-  next.booksAcceptedHash = payload.auditHash || next.booksAcceptedHash;
+  next.booksAcceptedHash = await financialAuditHash(next);
   return next;
 }
 
@@ -308,6 +358,11 @@ export function catalogBaseFromSnapshot(tip: Household): Household {
     sitDownSessions: [],
     goalContributions: [],
     goalPurchases: [],
+    householdFund: null,
+    fundMonthPlans: [],
+    fundEvents: [],
+    fundSettlementAllocations: [],
+    fundKittyAllocations: [],
     tombstones: [],
     commandReceipts: [],
     conflicts: [],
@@ -439,7 +494,7 @@ export async function applyCommandEventLocally(input: {
   const candidate = await buildSnapshotFromEvents([event], local);
   const auditHash = event.payload_json.auditHash;
   if (auditHash) {
-    const recomputed = await financialAuditHash(candidate);
+    const recomputed = await financialAuditHashForScope(candidate, event.ledger_scope, event.member_id);
     if (recomputed !== auditHash) {
       return { ok: false, reason: "audit-hash-mismatch", fallback: true };
     }

@@ -39,6 +39,7 @@ import {
   padToDollars,
   parseAmount,
   percentSplits,
+  projectHouseholdFund,
   postDueRecurrences,
   postEntry,
   postOneRecurrence,
@@ -393,6 +394,9 @@ const emptyForm = {
   eventTag: "regular",
   visibility: "household" as Visibility,
   occurredAt: "" as string,
+  useHouseholdFund: false,
+  fundedAmount: "",
+  fundDestinationAccountId: "ACC-VISA",
 };
 
 function emptyFormForZone(timeZone: string) {
@@ -1475,11 +1479,16 @@ export function App() {
   const googleEntryAvailable = googleConfigured() || supabaseAuthEnabled();
   const memberId = session?.memberId ?? household?.members.find((member) => member.active)?.id ?? "";
   const view: LedgerView = session?.view ?? "household";
-  const personalSource = household && memberId && personalReplica?.memberId === memberId
-    && personalReplica.lastCommittedAt === household.lastCommittedAt
-    ? assembleHousehold(splitForSync(household, memberId).shared, personalReplica, { linked: household.linked })
-    : household;
-  const visible = personalSource && memberId ? householdForView(personalSource, memberId, view) : personalSource;
+  const personalSource = useMemo(() => (
+    household && memberId && personalReplica?.memberId === memberId
+      && personalReplica.lastCommittedAt === household.lastCommittedAt
+      ? assembleHousehold(splitForSync(household, memberId).shared, personalReplica, { linked: household.linked })
+      : household
+  ), [household, memberId, personalReplica]);
+  const visible = useMemo(
+    () => (personalSource && memberId ? householdForView(personalSource, memberId, view) : personalSource),
+    [personalSource, memberId, view],
+  );
   const findings = useMemo(() => (household ? runHealthCheck(household) : []), [household]);
   const dashboard = useMemo(
     () => (visible ? buildDashboard(visible, today, now, findings.length) : null),
@@ -2405,6 +2414,19 @@ export function App() {
     </>
   );
 
+  useEffect(() => {
+    if (!household || !session?.memberId || environment !== "development" || booting) return;
+    const timer = window.setTimeout(() => { void processEvidenceAutomationJobs(); }, 750);
+    const onWake = () => { if (document.visibilityState === "visible") void processEvidenceAutomationJobs(); };
+    window.addEventListener("online", onWake);
+    document.addEventListener("visibilitychange", onWake);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("online", onWake);
+      document.removeEventListener("visibilitychange", onWake);
+    };
+  }, [booting, environment, household?.householdId, household?.revision, session?.memberId]);
+
   if (booting) {
     return (
       <>
@@ -2754,6 +2776,15 @@ export function App() {
 
   const ledger = household;
   const actorId = session.memberId;
+  const displayHousehold = view === "household" && visible ? visible : household;
+  const preserveCurrentPersonal = (next: Household) => {
+    if (view !== "household") return next;
+    const incoming = splitForSync(next, actorId);
+    const current = splitForSync(household, actorId).personal;
+    const accounts = new Map(current.accounts?.map((account) => [account.id, account]) ?? []);
+    for (const account of incoming.personal.accounts ?? []) accounts.set(account.id, account);
+    return assembleHousehold(incoming.shared, { ...current, accounts: [...accounts.values()] }, { linked: household.linked });
+  };
   const googleStepUpExtra = googleConfigured() && memberNeedsGoogleStepUp(household, session.memberId)
     ? "Because your Google account is linked, Google will ask you to confirm it is you first."
     : undefined;
@@ -3031,6 +3062,13 @@ export function App() {
         confirmDuplicate: flags.confirmDuplicate,
         createdBy: actorId,
         visibility: form.visibility,
+        funding: form.useHouseholdFund && current.householdFund && mode === "expense"
+          ? {
+              fundId: current.householdFund.id,
+              fundedCents: parseAmount(form.fundedAmount || form.amount),
+              destinationAccountId: form.fundDestinationAccountId || form.accountId,
+            }
+          : undefined,
       });
     });
   }
@@ -3186,19 +3224,6 @@ export function App() {
     }
   }
 
-  useEffect(() => {
-    if (!household || !session?.memberId || environment !== "development" || booting) return;
-    const timer = window.setTimeout(() => { void processEvidenceAutomationJobs(); }, 750);
-    const onWake = () => { if (document.visibilityState === "visible") void processEvidenceAutomationJobs(); };
-    window.addEventListener("online", onWake);
-    document.addEventListener("visibilitychange", onWake);
-    return () => {
-      window.clearTimeout(timer);
-      window.removeEventListener("online", onWake);
-      document.removeEventListener("visibilitychange", onWake);
-    };
-  }, [booting, environment, household?.householdId, household?.revision, session?.memberId]);
-
   function addPostLabel(): string {
     if (mode === "shift") {
       if (shiftGate === "choose" || shiftGate === "clocked") return "Clock in";
@@ -3318,8 +3343,24 @@ export function App() {
       </div>
 
       {tab === "home" && dashboard && (
+        <>
+        {displayHousehold.householdFund && (() => {
+          const fund = projectHouseholdFund(displayHousehold, today);
+          return (
+            <section className="card household-fund-glance" aria-label="Hearth Household Fund">
+              <header><h2>Household Fund</h2><button className="ghost" type="button" onClick={() => goTab("ledger")}>Open Fund books</button></header>
+              <div className="grid">
+                <div className="stat"><span>Operating</span><strong>{formatCad(fund.operatingBalanceCents)}</strong></div>
+                <div className="stat"><span>Transfer due</span><strong>{formatCad(fund.transferDueCents)}</strong></div>
+                <div className="stat"><span>Upcoming</span><strong>{formatCad(fund.upcomingReserveCents)}</strong></div>
+                <div className="stat"><span>{fund.topUpNeededCents ? "Top-up" : "Free"}</span><strong className={fund.topUpNeededCents ? "negative" : ""}>{formatCad(fund.topUpNeededCents || fund.freeToSpendCents)}</strong></div>
+              </div>
+              <p className="muted">The money remains in Bianca’s savings. Hearth cannot move it. Reconciliation: {fund.lastReconciledAt ? (fund.reconciliationTied ? "tied" : "needs review") : "not yet recorded"}.</p>
+            </section>
+          );
+        })()}
         <Office
-          household={household}
+          household={displayHousehold}
           dashboard={dashboard}
           today={today}
           environment={environment}
@@ -3363,7 +3404,7 @@ export function App() {
           onMarkPaid={(recurrenceId, summary) => setGuard({ kind: "postRecurrence", recurrenceId, summary })}
           onAskSettle={(claimId, summary) => setGuard({ kind: "settleClaim", claimId, summary })}
           onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
-          onSitDown={(next, token) => persist(next, token)}
+          onSitDown={(next, token) => persist(preserveCurrentPersonal(next), token)}
           onGo={(next) => {
             if (next === "add") {
               openAddFor(null);
@@ -3372,6 +3413,7 @@ export function App() {
             goTab(next);
           }}
         />
+        </>
       )}
 
       {tab === "plan" && dashboard && (
@@ -3485,7 +3527,7 @@ export function App() {
 
       {tab === "ledger" && (
         <BooksPage
-          household={household}
+          household={displayHousehold}
           memberId={session.memberId}
           view={view}
           booksStatus={booksStatus}
@@ -3493,7 +3535,8 @@ export function App() {
           sourceFocus={herculesSourceFocus}
           onFocusAccount={setFocusedAccountId}
           onClearSource={() => setHerculesSourceFocus(null)}
-          onChange={(next, token) => persist(next, token)}
+          onChange={(next, token) => persist(preserveCurrentPersonal(next), token)}
+          onCommand={(command) => { void run(command); }}
           onPayAccount={openPayCard}
           onAddToAccount={(account) => openAddFor(account)}
           onRemove={(transaction) => {
@@ -4253,6 +4296,45 @@ export function App() {
                     </button>
                   ))}
                 </div>
+                {mode === "expense" && household.householdFund && (
+                  <section className="preview" aria-label="Household Fund allocation">
+                    <div className="row">
+                      <div>
+                        <strong>Use Household Fund</strong>
+                        <p className="muted">Separate from Shared or Personal visibility.</p>
+                      </div>
+                      <button
+                        type="button"
+                        className={`chip ${form.useHouseholdFund ? "selected" : ""}`}
+                        aria-pressed={form.useHouseholdFund}
+                        onClick={() => setForm({
+                          ...form,
+                          useHouseholdFund: !form.useHouseholdFund,
+                          fundedAmount: form.fundedAmount || form.amount,
+                          fundDestinationAccountId: !form.useHouseholdFund
+                            && household.accounts.some((account) => account.id === form.accountId && account.scope !== "personal")
+                            ? form.accountId
+                            : form.fundDestinationAccountId || "ACC-VISA",
+                        })}
+                      >
+                        {form.useHouseholdFund ? "Using Fund" : "Use Fund"}
+                      </button>
+                    </div>
+                    {form.useHouseholdFund && (
+                      <>
+                        <label htmlFor="add-fund-amount">Funded amount (CAD)</label>
+                        <input id="add-fund-amount" inputMode="decimal" value={form.fundedAmount} onChange={(event) => setForm({ ...form, fundedAmount: event.target.value })} placeholder={form.amount || "0.00"} />
+                        <label htmlFor="add-fund-destination">Settlement destination</label>
+                        <select id="add-fund-destination" value={form.fundDestinationAccountId} onChange={(event) => setForm({ ...form, fundDestinationAccountId: event.target.value })}>
+                          {household.accounts.filter((account) => account.active && account.scope !== "personal").map((account) => (
+                            <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>
+                          ))}
+                        </select>
+                        <p className="muted">Jonathan’s card purchases default to the selected card. Bianca can transfer a partial or full amount later.</p>
+                      </>
+                    )}
+                  </section>
+                )}
                 {mode !== "shift" && mode !== "transfer" && (
                   <>
                     <label>Place</label>
@@ -4734,9 +4816,16 @@ export function App() {
                 transferToAccountId: draft.type === "transfer" ? draft.transferToAccountId : null,
                 goalId: draft.type === "transfer" && draft.goalId ? draft.goalId : null,
                 subcategoryId: draft.type === "transfer" ? undefined : draft.subcategoryId,
-                note: draft.note.trim(),
-                kind: draft.kind,
-              };
+                 note: draft.note.trim(),
+                 kind: draft.kind,
+                 fundingDefault: draft.type === "expense" && draft.useHouseholdFund && current.householdFund
+                   ? {
+                       fundId: current.householdFund.id,
+                       fundedCents: draft.fundAmount.trim() ? Math.round(Number(draft.fundAmount) * 100) : "full" as const,
+                       destinationAccountId: draft.fundDestinationAccountId || draft.accountId,
+                     }
+                   : null,
+               };
               const saved = draft.id
                 ? updateRecurrence(current, { id: draft.id, ...input })
                 : addRecurrence(current, { ...input, origin: "manual" as const });

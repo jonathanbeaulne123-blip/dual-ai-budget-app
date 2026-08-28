@@ -1,4 +1,4 @@
-export const BOOKS_SCHEMA_VERSION = 2;
+export const BOOKS_SCHEMA_VERSION = 3;
 
 export const BOOKS_SCHEMA = `
 CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS chart_accounts (
   bank_account_id TEXT,
   category_id TEXT,
   owner_member_id TEXT,
+  scope TEXT NOT NULL DEFAULT 'shared' CHECK (scope IN ('shared', 'personal')),
   active BOOLEAN NOT NULL DEFAULT TRUE,
   UNIQUE (household_id, code)
 );
@@ -182,6 +183,111 @@ CREATE TABLE IF NOT EXISTS household_snapshots (
   updated_at TEXT NOT NULL
 );
 
+ALTER TABLE chart_accounts
+  ADD COLUMN IF NOT EXISTS scope TEXT NOT NULL DEFAULT 'shared' CHECK (scope IN ('shared', 'personal'));
+
+CREATE TABLE IF NOT EXISTS household_funds (
+  id TEXT PRIMARY KEY,
+  household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  custodian_member_id TEXT NOT NULL,
+  mode TEXT NOT NULL CHECK (mode IN ('practice', 'connected')),
+  opened_on TEXT NOT NULL CHECK (opened_on ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS fund_month_plans (
+  id TEXT PRIMARY KEY,
+  household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  fund_id TEXT NOT NULL REFERENCES household_funds(id) ON DELETE CASCADE,
+  month_key TEXT NOT NULL CHECK (month_key ~ '^[0-9]{4}-[0-9]{2}$'),
+  target_cents INTEGER NOT NULL CHECK (target_cents >= 0),
+  buffer_cents INTEGER NOT NULL CHECK (buffer_cents >= 0),
+  agreed_by_member_ids TEXT NOT NULL DEFAULT '[]',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE (fund_id, month_key)
+);
+
+CREATE TABLE IF NOT EXISTS fund_events (
+  id TEXT PRIMARY KEY,
+  household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  fund_id TEXT NOT NULL REFERENCES household_funds(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL CHECK (kind IN ('contribution-proposed','contribution-confirmed','purchase-funded','refund-funded','settlement-confirmed','kitty-allocated','kitty-released','reconciliation-recorded','bank-verified','reversal')),
+  amount_cents INTEGER NOT NULL CHECK (amount_cents >= 0),
+  date_key TEXT NOT NULL CHECK (date_key ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'),
+  created_by TEXT NOT NULL,
+  confirmed_by_member_id TEXT,
+  contributor_member_id TEXT,
+  destination_account_id TEXT,
+  related_event_id TEXT,
+  related_transaction_ids TEXT NOT NULL DEFAULT '[]',
+  evidence_digests TEXT NOT NULL DEFAULT '[]',
+  reconciliation_tied BOOLEAN,
+  note TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS fund_settlement_allocations (
+  id TEXT PRIMARY KEY,
+  household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  fund_id TEXT NOT NULL REFERENCES household_funds(id) ON DELETE CASCADE,
+  event_id TEXT NOT NULL REFERENCES fund_events(id) ON DELETE CASCADE,
+  transaction_id TEXT NOT NULL,
+  amount_cents INTEGER NOT NULL CHECK (amount_cents > 0),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE (event_id, transaction_id)
+);
+
+CREATE TABLE IF NOT EXISTS fund_kitty_allocations (
+  id TEXT PRIMARY KEY,
+  household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  fund_id TEXT NOT NULL REFERENCES household_funds(id) ON DELETE CASCADE,
+  event_id TEXT NOT NULL REFERENCES fund_events(id) ON DELETE CASCADE,
+  goal_id TEXT NOT NULL,
+  amount_cents INTEGER NOT NULL CHECK (amount_cents > 0),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE (event_id, goal_id)
+);
+
+CREATE TABLE IF NOT EXISTS fund_bank_bindings (
+  id TEXT PRIMARY KEY,
+  household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  fund_id TEXT NOT NULL REFERENCES household_funds(id) ON DELETE CASCADE,
+  member_id TEXT NOT NULL,
+  account_id TEXT NOT NULL,
+  provider TEXT NOT NULL CHECK (provider IN ('manual', 'flinks')),
+  status TEXT NOT NULL CHECK (status IN ('manual', 'connected', 'revoked')),
+  account_digest TEXT,
+  institution_label TEXT NOT NULL DEFAULT '',
+  account_label TEXT NOT NULL DEFAULT '',
+  last4 TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS fund_private_reconciliations (
+  id TEXT PRIMARY KEY,
+  household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  fund_id TEXT NOT NULL REFERENCES household_funds(id) ON DELETE CASCADE,
+  member_id TEXT NOT NULL,
+  date_key TEXT NOT NULL CHECK (date_key ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'),
+  bank_total_cents INTEGER NOT NULL CHECK (bank_total_cents >= 0),
+  operating_fund_cents INTEGER NOT NULL CHECK (operating_fund_cents >= 0),
+  kitty_cents INTEGER NOT NULL CHECK (kitty_cents >= 0),
+  personal_remainder_cents INTEGER NOT NULL,
+  difference_cents INTEGER NOT NULL,
+  tied BOOLEAN NOT NULL,
+  shared_event_id TEXT NOT NULL REFERENCES fund_events(id) ON DELETE CASCADE,
+  note TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS journal_entries_household_date ON journal_entries (household_id, date_key);
 CREATE INDEX IF NOT EXISTS journal_lines_account ON journal_lines (household_id, account_id);
 CREATE INDEX IF NOT EXISTS journal_lines_entry ON journal_lines (entry_id);
@@ -196,6 +302,17 @@ CREATE INDEX IF NOT EXISTS recurrences_household ON recurrences (household_id);
 CREATE INDEX IF NOT EXISTS activity_household ON activity (household_id);
 CREATE INDEX IF NOT EXISTS audit_revisions_household ON audit_revisions (household_id);
 CREATE UNIQUE INDEX IF NOT EXISTS household_snapshots_invite ON household_snapshots (invite_phrase, environment);
+CREATE INDEX IF NOT EXISTS household_funds_household ON household_funds (household_id);
+CREATE INDEX IF NOT EXISTS fund_month_plans_household_month ON fund_month_plans (household_id, month_key);
+CREATE INDEX IF NOT EXISTS fund_events_household_date ON fund_events (household_id, date_key);
+CREATE INDEX IF NOT EXISTS fund_events_fund_kind ON fund_events (fund_id, kind);
+CREATE INDEX IF NOT EXISTS fund_events_related_event ON fund_events (related_event_id);
+CREATE INDEX IF NOT EXISTS fund_settlement_event ON fund_settlement_allocations (event_id);
+CREATE INDEX IF NOT EXISTS fund_settlement_transaction ON fund_settlement_allocations (household_id, transaction_id);
+CREATE INDEX IF NOT EXISTS fund_kitty_event ON fund_kitty_allocations (event_id);
+CREATE INDEX IF NOT EXISTS fund_kitty_goal ON fund_kitty_allocations (household_id, goal_id);
+CREATE INDEX IF NOT EXISTS fund_bindings_member ON fund_bank_bindings (household_id, member_id);
+CREATE INDEX IF NOT EXISTS fund_reconciliations_member_date ON fund_private_reconciliations (household_id, member_id, date_key);
 
 CREATE OR REPLACE VIEW v_unbalanced_entries AS
 SELECT
