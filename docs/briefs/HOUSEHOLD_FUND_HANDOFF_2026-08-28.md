@@ -10,7 +10,7 @@
 - **PR:** none; local commit only; not pushed, merged, deployed, or live
 - **Risk:** High for September financial meaning; Release before provider activation or daily-use switch
 - **Decision owner:** Jonathan
-- **Target reviewer:** Gemini exact-SHA review when available, then Jonathan's push/release decision
+- **External reviewer:** Gemini Pro reviewed the complete patch for the exact implementation SHA; Jonathan retains the push/release decision
 
 ## Why now and Dual Course result
 
@@ -51,6 +51,7 @@ September needs a zero-opening-balance rehearsal before October bank evidence ca
 - Independent trust proof: 11 files / 76 tests passed; the former settlement-order race passed 10 repeated independent runs. Root also passed it 10 repeated runs.
 - Complete gate: `pnpm check` passed — AI surface verified; 156 test files passed / 1 live-only skipped; 1,049 tests passed / 2 live-only skipped; TypeScript and production build green.
 - Independent books and privacy/trust reviewers: no remaining P0/P1.
+- Gemini Pro exact-SHA review: `PASS`; no P0/P1 findings. Its only P2/P3 notes were that the month-end helper correctly avoids JavaScript date overflow and that extremely deep reversal chains could add projector overhead.
 - Browser proof on fictional local Development data: widths 320, 390, 720, 1100, and 1280; no horizontal overflow or console errors; Home disclosure and Fund route work; Bianca reconciliation is absent in Household view and present in Personal view; Fund form controls are labeled.
 - `git diff --check` and modified-file secret-pattern scan: clean.
 
@@ -79,7 +80,7 @@ git diff --check efbe5ed5118b0e6c2c942d318dd4e9643eb163d1..34f3ca2dc3d4aaf71b332
 ## Explicit non-scope and remaining gates
 
 - No live institution support check, Flinks credentials, provider smoke, remote migration, secrets, deploy, Production action, or daily-use switch occurred.
-- Gemini exact-SHA review is still required because no Gemini tool/runtime was available in this worksession.
+- Gemini exact-SHA review is complete. It requires no code change before push.
 - September's real two-phone weekly rehearsal and month close remain a household/device gate.
 - October must first verify Bianca's institution and savings support through the existing secure Flinks boundary. If unsupported, stop and return provider options; statement import does not satisfy the live-connection promise.
 - Immediately before secrets, remote migration, deployment, or Production, obtain Jonathan's explicit approval and run the Release review again.

@@ -73,6 +73,7 @@ Give Jonathan and Bianca one truthful Hearth Household Fund for shared operating
 - 2026-08-28: focused risk suite 12 files / 75 tests passed; independent trust suite 11 files / 76 tests passed; the causal settlement replay file passed 10 repeated root runs and 10 independent runs.
 - 2026-08-28: `pnpm check` passed — AI surface verified, 156 test files passed / 1 live-only skipped, 1,049 tests passed / 2 live-only skipped, TypeScript and production build green.
 - 2026-08-28: independent books and privacy/trust reviewers report no remaining P0/P1. `git diff --check` and modified-file secret-pattern scan are clean.
+- 2026-08-28: Gemini Pro reviewed the complete patch for exact implementation SHA `34f3ca2dc3d4aaf71b332482c297380da6d39152`: `PASS`, no P0/P1 findings, and no required code change before push.
 - 2026-08-28: implementation sealed locally at `34f3ca2dc3d4aaf71b332482c297380da6d39152`; durable review packet: [`../briefs/HOUSEHOLD_FUND_HANDOFF_2026-08-28.md`](../briefs/HOUSEHOLD_FUND_HANDOFF_2026-08-28.md).
 
 ## Decisions
@@ -84,7 +85,7 @@ Give Jonathan and Bianca one truthful Hearth Household Fund for shared operating
 ## Remaining uncertainty
 
 - Flinks support for Bianca's institution/account cannot be verified without the member's institution choice and an approved connected Development smoke.
-- Gemini exact-SHA review is not available in the current tool/runtime and therefore remains an explicit pre-push review gate.
+- Gemini exact-SHA review is complete. Jonathan's explicit push approval remains the only pre-push decision gate.
 - Real two-phone September rehearsal and October provider smoke remain household/device gates; no peer device had to remain online for local/offline replay proof.
 
 ## Handoff
