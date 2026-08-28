@@ -28,6 +28,7 @@ import type {
 import { belongsToSharedLedger, isPersonalOnly, parseVisibility } from "./visibility.ts";
 import { shapeLedgerNames } from "./ledgerNames.ts";
 import { shapeWorkJobs } from "./work.ts";
+import { shapeCoworkerAttendance, shapeCoworkers } from "./coworkers.ts";
 import { shapeSevenShiftsEvidenceBundle } from "./evidence.ts";
 import { shapeSevenShiftsSchedules } from "./sevenShiftsCalendar.ts";
 import {
@@ -224,6 +225,8 @@ export function ensureHouseholdShape(household: Household): Household {
         : {}),
     })),
     sevenShiftsSchedules: shapeSevenShiftsSchedules(household.sevenShiftsSchedules),
+    coworkers: shapeCoworkers(household.coworkers, fallbackIso),
+    coworkerAttendance: shapeCoworkerAttendance(household.coworkerAttendance, fallbackIso),
     commandReceipts: household.commandReceipts ?? [],
     sharing: shapeSharing(household),
     conflicts: household.conflicts ?? [],
@@ -243,6 +246,8 @@ export function emptyPersonal(memberId: string): PersonalEnvelope {
     accounts: [],
     shifts: [],
     sevenShiftsSchedules: [],
+    coworkers: [],
+    coworkerAttendance: [],
     goals: [],
     goalContributions: [],
     goalPurchases: [],
@@ -317,6 +322,8 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     transactions: personalTx,
     shifts: personalShifts,
     sevenShiftsSchedules: shaped.sevenShiftsSchedules?.filter((row) => row.memberId === memberId) ?? [],
+    coworkers: shapeCoworkers(shaped.coworkers, shaped.lastCommittedAt ?? MISSING_ISO, memberId),
+    coworkerAttendance: shapeCoworkerAttendance(shaped.coworkerAttendance, shaped.lastCommittedAt ?? MISSING_ISO, memberId),
     goals: personalGoals,
     goalContributions: shaped.goalContributions.filter((row) => personalGoalIds.has(row.goalId)),
     goalPurchases: shaped.goalPurchases.filter((row) => personalGoalIds.has(row.goalId)),
@@ -338,6 +345,8 @@ export function personalReplicaForMember(household: Household, memberId: string)
     transactions: personal.transactions.filter((tx) => tx.createdBy === memberId),
     shifts: personal.shifts.filter((shift) => shift.createdBy === memberId),
     sevenShiftsSchedules: shapeSevenShiftsSchedules(personal.sevenShiftsSchedules, memberId),
+    coworkers: shapeCoworkers(personal.coworkers, personal.lastCommittedAt ?? MISSING_ISO, memberId),
+    coworkerAttendance: shapeCoworkerAttendance(personal.coworkerAttendance, personal.lastCommittedAt ?? MISSING_ISO, memberId),
     goals: (personal.goals ?? []).filter((goal) => goal.ownerMemberId === memberId),
     accounts: shapeAccounts(personal.accounts, personal.lastCommittedAt ?? MISSING_ISO)
       .filter((account) => account.scope === "personal" && account.ownerMemberId === memberId),
@@ -371,6 +380,8 @@ export function personalEnvelopeFromPayload(
       ? row.shifts.filter((item) => item.createdBy === memberId && item.visibility === "personal")
       : [],
     sevenShiftsSchedules: shapeSevenShiftsSchedules(row.sevenShiftsSchedules, memberId),
+    coworkers: shapeCoworkers(row.coworkers, row.lastCommittedAt ?? MISSING_ISO, memberId),
+    coworkerAttendance: shapeCoworkerAttendance(row.coworkerAttendance, row.lastCommittedAt ?? MISSING_ISO, memberId),
     goals,
     goalContributions: Array.isArray(row.goalContributions)
       ? row.goalContributions.filter((item) => goalIds.has(item.goalId))
@@ -425,6 +436,14 @@ export function overlayPersonalReplica(
       ...(household.sevenShiftsSchedules ?? []).filter((item) => item.memberId !== memberId && !personalScheduleIds.has(item.id)),
       ...shapeSevenShiftsSchedules(personal.sevenShiftsSchedules, memberId),
     ],
+    coworkers: [
+      ...shapeCoworkers(household.coworkers, household.lastCommittedAt ?? MISSING_ISO).filter((item) => item.ownerMemberId !== memberId),
+      ...shapeCoworkers(personal.coworkers, personal.lastCommittedAt ?? MISSING_ISO, memberId),
+    ],
+    coworkerAttendance: [
+      ...shapeCoworkerAttendance(household.coworkerAttendance, household.lastCommittedAt ?? MISSING_ISO).filter((item) => item.ownerMemberId !== memberId),
+      ...shapeCoworkerAttendance(personal.coworkerAttendance, personal.lastCommittedAt ?? MISSING_ISO, memberId),
+    ],
     goals: [
       ...household.goals.filter((item) => !personalGoalIds.has(item.id) && (item.shared || item.ownerMemberId !== memberId)),
       ...personalGoals,
@@ -456,6 +475,8 @@ export function assembleHousehold(
   const personalTx = personal?.transactions ?? [];
   const personalShifts = personal?.shifts ?? [];
   const personalSchedules = shapeSevenShiftsSchedules(personal?.sevenShiftsSchedules, personal?.memberId);
+  const personalCoworkers = shapeCoworkers(personal?.coworkers, personal?.lastCommittedAt ?? MISSING_ISO, personal?.memberId);
+  const personalAttendance = shapeCoworkerAttendance(personal?.coworkerAttendance, personal?.lastCommittedAt ?? MISSING_ISO, personal?.memberId);
   const personalGoals = personal?.goals ?? [];
   const personalAccounts = personal?.accounts ?? [];
   const personalGoalContributions = personal?.goalContributions ?? [];
@@ -519,6 +540,8 @@ export function assembleHousehold(
     transactions: [...txById.values()],
     shifts: [...shiftById.values()],
     sevenShiftsSchedules: personalSchedules,
+    coworkers: personalCoworkers,
+    coworkerAttendance: personalAttendance,
     ...(personal?.herculesProPermissions
       ? { herculesProPermissions: personal.herculesProPermissions }
       : {}),
@@ -603,6 +626,16 @@ export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope
     accounts: mergeRecords(server.accounts ?? [], client.accounts ?? [], tombstones),
     shifts: mergeRecords(server.shifts, client.shifts, tombstones),
     sevenShiftsSchedules: shapeSevenShiftsSchedules(scheduleSource, client.memberId || server.memberId),
+    coworkers: mergeRecords(
+      shapeCoworkers(server.coworkers, server.lastCommittedAt ?? MISSING_ISO, server.memberId),
+      shapeCoworkers(client.coworkers, client.lastCommittedAt ?? MISSING_ISO, client.memberId),
+      tombstones,
+    ),
+    coworkerAttendance: mergeRecords(
+      shapeCoworkerAttendance(server.coworkerAttendance, server.lastCommittedAt ?? MISSING_ISO, server.memberId),
+      shapeCoworkerAttendance(client.coworkerAttendance, client.lastCommittedAt ?? MISSING_ISO, client.memberId),
+      tombstones,
+    ),
     goals: mergeRecords(server.goals ?? [], client.goals ?? [], tombstones),
     goalContributions: mergeRecords(server.goalContributions ?? [], client.goalContributions ?? [], tombstones),
     goalPurchases: mergeRecords(server.goalPurchases ?? [], client.goalPurchases ?? [], tombstones),

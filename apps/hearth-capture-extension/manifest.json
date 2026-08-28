@@ -12,12 +12,12 @@
   "background": { "service_worker": "service-worker.js", "type": "module" },
   "content_scripts": [{
     "matches": ["https://app.7shifts.com/*"],
-    "js": ["content.js"],
+    "js": ["capture-safety.js", "content.js"],
     "run_at": "document_start",
     "all_frames": false
   }],
   "web_accessible_resources": [{
-    "resources": ["page-bridge.js"],
+    "resources": ["capture-safety.js", "page-bridge.js"],
     "matches": ["https://app.7shifts.com/*"]
   }]
 }

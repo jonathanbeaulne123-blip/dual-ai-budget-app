@@ -72,6 +72,8 @@ export function householdForAiDisclosure(
     : desk;
   return {
     ...contextual,
+    coworkers: [],
+    coworkerAttendance: [],
     transactions,
     shifts,
     goals,
@@ -118,6 +120,8 @@ export function householdForHerculesContext(
     : household.kitchen.hercules;
   return {
     ...scoped,
+    coworkers: [],
+    coworkerAttendance: [],
     accounts: scoped.accounts.filter((account) => account.scope !== "personal"),
     fundPrivate: { bankBindings: [], reconciliations: [] },
     shifts: scoped.shifts.map(shiftForHercules),

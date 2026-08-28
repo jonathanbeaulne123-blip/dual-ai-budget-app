@@ -39,6 +39,17 @@ import { assertSevenShiftsBundleMatchesShift, type SevenShiftsEvidenceBundle } f
 import { automationPayrollWeekStart } from "./sevenShiftsAutomation.ts";
 import { shapeSevenShiftsSchedules, type SevenShiftsScheduledShift } from "./sevenShiftsCalendar.ts";
 import {
+  normalizeCoworkerLocation,
+  normalizeCoworkerName,
+  shapeCoworker,
+  shapeCoworkerAttendance,
+  type Coworker,
+  type CoworkerAttendance,
+  type CoworkerAttendanceStatus,
+  type CoworkerObservedRole,
+  type CoworkerSource,
+} from "./coworkers.ts";
+import {
   EMPTY_GOOGLE,
   findActiveGoogleLink,
   findActiveGoogleLinkByEmail,
@@ -2742,6 +2753,204 @@ export function archiveWorkJob(household: Household, jobId: string): CommitResul
   const at = nowIso();
   next.workJobs = (next.workJobs ?? []).map((job) => job.id === jobId ? { ...job, active: false, updatedAt: at } : job);
   return commit(previous, next, "Archive Job", `Archived ${existing.name}; shifts and owed balances remain`, []);
+}
+
+export type UpsertCoworkerInput = {
+  id?: string;
+  ownerMemberId: string;
+  jobId: string;
+  locationName: string;
+  displayName: string;
+  aliases?: string[];
+  observedRoles?: CoworkerObservedRole[];
+  source?: CoworkerSource;
+  sourceIdentityKey?: string | null;
+  active?: boolean;
+  provisional?: boolean;
+};
+
+/** Private workplace directory update. It never creates a Member or posts money. */
+export function upsertCoworker(household: Household, input: UpsertCoworkerInput): CommitResult {
+  const member = requireMember(household, input.ownerMemberId);
+  const job = (household.workJobs ?? []).find((row) => row.id === input.jobId && row.active);
+  if (!job || job.memberId !== member.id) throw new ValidationError("Choose an active job owned by this member.");
+  const displayName = String(input.displayName || "").replace(/\s+/g, " ").trim();
+  const locationName = String(input.locationName || "").replace(/\s+/g, " ").trim();
+  if (!displayName || displayName.length > 80) throw new ValidationError("Coworker name must be 1–80 characters.");
+  if (!locationName || locationName.length > 80) throw new ValidationError("Coworker location must be 1–80 characters.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nowIso();
+  const existing = input.id ? (next.coworkers ?? []).find((row) => row.id === input.id) : undefined;
+  if (existing && (existing.ownerMemberId !== member.id || existing.jobId !== job.id)) {
+    throw new ValidationError("That coworker belongs to another job or member.");
+  }
+  const normalizedName = normalizeCoworkerName(displayName);
+  const id = existing?.id || uniquePrefixedId("COW", (next.coworkers ?? []).map((row) => row.id));
+  const shaped = shapeCoworker({
+    ...existing,
+    ...input,
+    id,
+    ownerMemberId: member.id,
+    jobId: job.id,
+    displayName,
+    normalizedName,
+    locationName,
+    aliases: [...(existing?.aliases ?? []), ...(input.aliases ?? [])],
+    observedRoles: [...(existing?.observedRoles ?? []), ...(input.observedRoles ?? [])],
+    source: input.source ?? existing?.source ?? "manual",
+    sourceIdentityKey: input.sourceIdentityKey ?? existing?.sourceIdentityKey ?? null,
+    active: input.active ?? existing?.active ?? true,
+    provisional: input.provisional ?? existing?.provisional ?? false,
+    createdAt: existing?.createdAt ?? at,
+    updatedAt: at,
+  } satisfies Coworker, at);
+  if (!shaped) throw new ValidationError("Coworker details are invalid.");
+  next.coworkers = [...(next.coworkers ?? []).filter((row) => row.id !== id), shaped];
+  return commit(previous, next, existing ? "Edit coworker" : "Add coworker", "Updated the private workplace roster", [id]);
+}
+
+export function importCoworkerRoster(household: Household, input: {
+  ownerMemberId: string;
+  jobId: string;
+  locationName: string;
+  rows: Array<{ displayName: string; roleLabel?: string; sourceIdentityKey: string | null; source: "seven-shifts-roster" | "seven-shifts-schedule" }>;
+}): CommitResult {
+  const member = requireMember(household, input.ownerMemberId);
+  const job = (household.workJobs ?? []).find((row) => row.id === input.jobId && row.active);
+  if (!job || job.memberId !== member.id) throw new ValidationError("Choose an active job owned by this member.");
+  const locationName = String(input.locationName || "").replace(/\s+/g, " ").trim();
+  if (!locationName || locationName.length > 80) throw new ValidationError("Coworker location must be 1–80 characters.");
+  if (!Array.isArray(input.rows) || input.rows.length < 1 || input.rows.length > 500) throw new ValidationError("Roster import must contain 1–500 coworkers.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nowIso();
+  const postedIds: string[] = [];
+  const seen = new Set<string>();
+  for (const row of input.rows) {
+    const displayName = String(row.displayName || "").replace(/\s+/g, " ").trim();
+    const normalizedName = normalizeCoworkerName(displayName);
+    if (!displayName || displayName.length > 80 || !normalizedName) throw new ValidationError("Roster contains an invalid coworker name.");
+    const sourceIdentityKey = row.sourceIdentityKey ? String(row.sourceIdentityKey).trim() : null;
+    if (sourceIdentityKey && !/^s7subject_[A-Za-z0-9_-]{20,112}$/.test(sourceIdentityKey)) {
+      throw new ValidationError("Roster contains an invalid protected source identity.");
+    }
+    if (!(["seven-shifts-roster", "seven-shifts-schedule"] as const).includes(row.source)) {
+      throw new ValidationError("Roster contains an invalid source kind.");
+    }
+    const sourceKey = sourceIdentityKey ? `${row.source}:${sourceIdentityKey}` : `${row.source}:unbound:${normalizedName}`;
+    if (seen.has(sourceKey)) continue;
+    seen.add(sourceKey);
+    const scoped = (next.coworkers ?? []).filter((item) => item.ownerMemberId === member.id
+      && item.jobId === job.id
+      && normalizeCoworkerLocation(item.locationName) === normalizeCoworkerLocation(locationName));
+    const bySource = sourceIdentityKey ? scoped.find((item) => item.sourceIdentityKey === sourceIdentityKey) : undefined;
+    const exact = scoped.filter((item) => item.normalizedName === normalizedName || item.aliases.includes(normalizedName));
+    // A protected provider subject is authoritative. Name fallback is allowed
+    // only when it is unique and the prior row has no competing provider key.
+    if (!sourceIdentityKey && exact.length > 1) throw new ValidationError("Schedule name matches multiple coworkers and needs review.");
+    const existing = bySource ?? (!sourceIdentityKey && exact.length === 1 ? exact[0] : undefined);
+    const id = existing?.id || uniquePrefixedId("COW", [...(next.coworkers ?? []).map((item) => item.id), ...postedIds]);
+    const roleLabel = String(row.roleLabel || "").replace(/\s+/g, " ").trim().slice(0, 80);
+    const shaped = shapeCoworker({
+      ...existing,
+      id,
+      ownerMemberId: member.id,
+      jobId: job.id,
+      locationName,
+      displayName: existing?.displayName || displayName,
+      normalizedName: existing?.normalizedName || normalizedName,
+      aliases: [...(existing?.aliases ?? []), normalizedName],
+      observedRoles: [
+        ...(existing?.observedRoles ?? []),
+        ...(roleLabel ? [{ label: roleLabel, firstObservedAt: at, lastObservedAt: at }] : []),
+      ],
+      source: existing?.source ?? row.source,
+      sourceIdentityKey: existing?.sourceIdentityKey ?? sourceIdentityKey,
+      active: true,
+      provisional: existing?.provisional ?? !sourceIdentityKey,
+      createdAt: existing?.createdAt ?? at,
+      updatedAt: at,
+    } satisfies Coworker, at);
+    if (!shaped) throw new ValidationError("Roster contains invalid coworker details.");
+    next.coworkers = [...(next.coworkers ?? []).filter((item) => item.id !== id), shaped];
+    postedIds.push(id);
+  }
+  if (!postedIds.length) throw new ValidationError("Roster did not contain a new or updated coworker.");
+  return commit(previous, next, "Import coworker roster", `Updated ${postedIds.length} private workplace ${postedIds.length === 1 ? "identity" : "identities"}`, postedIds);
+}
+
+export type RecordCoworkerAttendanceInput = {
+  ownerMemberId: string;
+  shiftId: string;
+  rows: Array<{
+    coworkerId: string;
+    roleLabel?: string;
+    status: CoworkerAttendanceStatus;
+    scheduledStart?: string | null;
+    scheduledEnd?: string | null;
+  }>;
+};
+
+/** Replaces reviewed staffing context beside an already confirmed shift. */
+export function recordCoworkerAttendance(household: Household, input: RecordCoworkerAttendanceInput): CommitResult {
+  requireMember(household, input.ownerMemberId);
+  const shift = household.shifts.find((row) => row.id === input.shiftId);
+  if (!shift || shift.memberId !== input.ownerMemberId || shift.createdBy !== input.ownerMemberId || !shift.jobId) {
+    throw new ValidationError("Attendance can only be recorded for this member's confirmed job shift.");
+  }
+  if (!Array.isArray(input.rows) || input.rows.length > 200) throw new ValidationError("Attendance review is too large.");
+  const ids = new Set<string>();
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nowIso();
+  const replacements: CoworkerAttendance[] = [];
+  for (const row of input.rows) {
+    if (!["scheduled-assumed", "user-confirmed-present", "user-confirmed-absent", "surprise-helper"].includes(row.status)) {
+      throw new ValidationError("Attendance status is invalid.");
+    }
+    if (ids.has(row.coworkerId)) throw new ValidationError("Each coworker can appear once in a shift review.");
+    ids.add(row.coworkerId);
+    const coworker = (next.coworkers ?? []).find((item) => item.id === row.coworkerId && item.active);
+    if (!coworker || coworker.ownerMemberId !== input.ownerMemberId || coworker.jobId !== shift.jobId) {
+      throw new ValidationError("Attendance contains a coworker from another member or job.");
+    }
+    const existing = (next.coworkerAttendance ?? []).find((item) => item.shiftId === shift.id && item.coworkerId === coworker.id);
+    const start = row.scheduledStart ? new Date(row.scheduledStart) : null;
+    const end = row.scheduledEnd ? new Date(row.scheduledEnd) : null;
+    if (Boolean(start) !== Boolean(end) || (start && end && (!Number.isFinite(start.valueOf()) || !Number.isFinite(end.valueOf()) || end <= start))) {
+      throw new ValidationError("Scheduled attendance times must be a valid start/end pair.");
+    }
+    const id = existing?.id || uniquePrefixedId("ATT", [...(next.coworkerAttendance ?? []).map((item) => item.id), ...replacements.map((item) => item.id)]);
+    const [shaped] = shapeCoworkerAttendance([{
+      id,
+      ownerMemberId: input.ownerMemberId,
+      jobId: shift.jobId,
+      shiftId: shift.id,
+      coworkerId: coworker.id,
+      roleLabel: row.roleLabel ?? "",
+      status: row.status,
+      scheduledStart: start?.toISOString() ?? null,
+      scheduledEnd: end?.toISOString() ?? null,
+      createdAt: existing?.createdAt ?? at,
+      updatedAt: at,
+    }], at, input.ownerMemberId);
+    if (!shaped) throw new ValidationError("Attendance details are invalid.");
+    replacements.push(shaped);
+  }
+  const priorForShift = (next.coworkerAttendance ?? []).filter((row) => row.shiftId === shift.id
+    && row.ownerMemberId === input.ownerMemberId);
+  const replacementIds = new Set(replacements.map((row) => row.id));
+  const omittedIds = priorForShift.filter((row) => !replacementIds.has(row.id)).map((row) => row.id);
+  next.coworkerAttendance = [
+    ...(next.coworkerAttendance ?? []).filter((row) => row.shiftId !== shift.id || row.ownerMemberId !== input.ownerMemberId),
+    ...replacements,
+  ];
+  if (omittedIds.length) next.tombstones = mergeTombstones(next.tombstones, omittedIds.map((id) => ({ id, deletedAt: at })));
+  return commit(previous, next, "Review attendance", "Replaced private shift attendance", [
+    ...replacements.map((row) => row.id),
+    ...omittedIds,
+  ]);
 }
 
 export function reversePostedMoney(household: Household, transactionId: string, input: ActorInput = {}): CommitResult {

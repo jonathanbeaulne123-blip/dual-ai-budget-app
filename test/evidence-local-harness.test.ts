@@ -154,14 +154,20 @@ describe("local D1/R2/Queue Evidence smoke", () => {
 
   it("encrypts, derives, isolates, detects ciphertext tampering, and crypto-erases synthetic evidence", async () => {
     const plaintext = JSON.stringify({
-      data: [{
+      version: 1,
+      captureClass: "punch",
+      transport: "fetch",
+      path: "/api/v2/company/44/time_punches",
+      capturedAt: "2026-08-28T21:01:00.000Z",
+      contentType: "application/json",
+      body: { data: [{
         id: 7001,
         user_id: 77,
         clocked_in: "2026-08-28T13:00:00Z",
         clocked_out: "2026-08-28T21:00:00Z",
         approved: true,
         unknown_future_flag: "preserve-me",
-      }],
+      }] },
     });
     const upload = await mf.dispatchFetch(`${kitchen}/work/evidence/captures?${scope}`, {
       method: "POST",

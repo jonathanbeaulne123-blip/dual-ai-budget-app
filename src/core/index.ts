@@ -13,6 +13,7 @@ export * from "./splits.ts";
 export * from "./shift.ts";
 export * from "./work.ts";
 export * from "./workSettlement.ts";
+export * from "./coworkers.ts";
 export * from "./catalog.ts";
 export * from "./health.ts";
 export * from "./budget.ts";

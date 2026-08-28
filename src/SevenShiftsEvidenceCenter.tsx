@@ -23,6 +23,7 @@ import {
   type EvidenceScope,
 } from "./imports/evidenceClient.ts";
 import { importSevenShiftsFromGmail, type GmailSevenShiftsImportProgress } from "./google/gmailSevenShifts.ts";
+import { coworkerRosterDraft, type CoworkerRosterDraftRow } from "./imports/coworkerRosterDraft.ts";
 
 function captureKind(file: File): string {
   const name = file.name.toLowerCase();
@@ -66,6 +67,7 @@ export function SevenShiftsEvidenceCenter({
   today,
   busy: parentBusy,
   onSaveSchedule,
+  onImportCoworkers,
 }: {
   household: Household;
   memberId: string;
@@ -73,6 +75,7 @@ export function SevenShiftsEvidenceCenter({
   today: string;
   busy: boolean;
   onSaveSchedule: (rows: SevenShiftsScheduledShift[], confirmedPersonalFeed?: boolean) => void;
+  onImportCoworkers?: (input: { jobId: string; locationName: string; rows: CoworkerRosterDraftRow[] }) => void;
 }) {
   const scope = useMemo<EvidenceScope>(() => ({ environment: household.environment, householdId: household.householdId, memberId }), [household.environment, household.householdId, memberId]);
   const scopeKey = `${scope.environment}:${scope.householdId}:${scope.memberId}`;
@@ -87,6 +90,7 @@ export function SevenShiftsEvidenceCenter({
   const [gmailProgress, setGmailProgress] = useState<GmailSevenShiftsImportProgress | null>(null);
   const [extensionId, setExtensionId] = useState("");
   const [pairingCode, setPairingCode] = useState("");
+  const [rosterJobId, setRosterJobId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -318,6 +322,10 @@ export function SevenShiftsEvidenceCenter({
 
   const disabled = parentBusy || busy || !available;
   const memberJobs = (household.workJobs ?? []).filter((job) => job.active && job.memberId === memberId);
+  const rosterRows = coworkerRosterDraft(selectedDerived);
+  const rosterResponseCount = rosterRows.filter((row) => row.source === "seven-shifts-roster").length;
+  const scheduleObservationCount = rosterRows.length - rosterResponseCount;
+  const rosterJob = memberJobs.find((job) => job.id === rosterJobId) ?? memberJobs[0];
 
   return (
     <section className="card" aria-label="7shifts Evidence Center">
@@ -401,6 +409,20 @@ export function SevenShiftsEvidenceCenter({
       {selectedDerived ? <article className="preview" aria-label="Extracted evidence facts">
         <header><h3>Extracted facts</h3><button type="button" className="chip" onClick={() => setSelectedDerived(null)}>Close</button></header>
         <p className="muted">{selectedDerived.observations.length} recognized fact{selectedDerived.observations.length === 1 ? "" : "s"} · {selectedDerived.schemaDrift.length} unrecognized field{selectedDerived.schemaDrift.length === 1 ? "" : "s"} preserved · {selectedDerived.state.replace(/_/g, " ")}</p>
+        {rosterRows.length ? <div className="stack-list" aria-label="Coworker identity review">
+          <p><strong>{rosterRows.length} coworker{rosterRows.length === 1 ? "" : "s"} found</strong></p>
+          <p className="muted">{rosterResponseCount ? `${rosterResponseCount} from a roster response` : ""}{rosterResponseCount && scheduleObservationCount ? " · " : ""}{scheduleObservationCount ? `${scheduleObservationCount} observed on published schedules` : ""}. These become private coworker IDs, not household members. Roles are observations for this job and location.</p>
+          <label>Job and location<select value={rosterJob?.id ?? ""} onChange={(event) => setRosterJobId(event.target.value)}>
+            {memberJobs.map((job) => <option key={job.id} value={job.id}>{job.name} · {job.locationName}</option>)}
+          </select></label>
+          <div className="chips">{rosterRows.slice(0, 30).map((row, index) => <span className="chip" key={`${row.source}:${row.sourceIdentityKey ?? `${row.displayName}:${index}`}`}>{row.displayName}{row.roleLabel ? ` · ${row.roleLabel}` : ""}{row.source === "seven-shifts-schedule" ? ` · schedule${row.sourceIdentityKey ? "" : " · confirm identity"}` : ""}</span>)}</div>
+          {rosterRows.length > 30 ? <p className="muted">And {rosterRows.length - 30} more.</p> : null}
+          <button type="button" className="primary" disabled={disabled || !rosterJob || !onImportCoworkers} onClick={() => {
+            if (!rosterJob || !onImportCoworkers) return;
+            onImportCoworkers({ jobId: rosterJob.id, locationName: rosterJob.locationName, rows: rosterRows });
+            setNotice(`${rosterRows.length} coworker ${rosterRows.length === 1 ? "identity" : "identities"} sent to the private roster.`);
+          }}>Add coworker identities to this job</button>
+        </div> : null}
         {selectedDerived.observations.length ? <div className="stack-list">{selectedDerived.observations.map((item) => (
           <p key={item.observationId}><strong>{item.field.replace(/([A-Z])/g, " $1").toLowerCase()}</strong>: {displayEvidenceValue(item.value)} <span className="muted">· {item.finality} · {item.conflictState}</span></p>
         ))}</div> : <p className="muted">This source has no recognized shift facts yet. Its raw bytes are still retained.</p>}

@@ -48,6 +48,7 @@ import {
   postShift,
   postWorkShift,
   refreshSevenShiftsSchedule,
+  importCoworkerRoster,
   buildAutomatedWorkShiftInput,
   automationPayrollWeekStart,
   reconcileWorkWeekFromEvidence,
@@ -3542,6 +3543,12 @@ export function App() {
               createdBy: actorId,
               schedules,
               confirmedPersonalFeed,
+            }));
+          }}
+          onImportCoworkers={(input) => {
+            void run((current) => importCoworkerRoster(current, {
+              ownerMemberId: session.memberId,
+              ...input,
             }));
           }}
         />
