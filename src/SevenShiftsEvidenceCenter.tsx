@@ -78,7 +78,7 @@ export function SevenShiftsEvidenceCenter({
   const scopeKey = `${scope.environment}:${scope.householdId}:${scope.memberId}`;
   const controllerRef = useRef<AbortController | null>(null);
   const [available, setAvailable] = useState(false);
-  const [detail, setDetail] = useState("Evidence Mesh is checking its Development gate.");
+  const [detail, setDetail] = useState("Evidence Mesh is checking this environment gate.");
   const [captures, setCaptures] = useState<EvidenceCaptureSummary[]>([]);
   const [bundles, setBundles] = useState<EvidenceBundleSummary[]>([]);
   const [policies, setPolicies] = useState<AutomationPolicy[]>([]);
@@ -106,9 +106,11 @@ export function SevenShiftsEvidenceCenter({
       try {
         const status = await readEvidenceStatus(fetch);
         if (controller.signal.aborted) return;
-        setAvailable(status.available);
-        setDetail(status.available ? "Encrypted member evidence vault ready in Development." : status.detail || "Evidence Mesh is installed but disabled.");
-        if (!status.available) return;
+        const environmentStatus = status.environments?.[scope.environment];
+        const scopeAvailable = environmentStatus ? environmentStatus.available : status.available && scope.environment === "development";
+        setAvailable(scopeAvailable);
+        setDetail(scopeAvailable ? `Encrypted member evidence vault ready in ${scope.environment}.` : environmentStatus?.detail || status.detail || "Evidence Mesh is installed but disabled.");
+        if (!scopeAvailable) return;
         const [nextCaptures, nextBundles, nextPolicies] = await Promise.all([
           listEvidence(scope, controller.signal),
           listEvidenceBundles(scope, controller.signal),
@@ -310,7 +312,7 @@ export function SevenShiftsEvidenceCenter({
           <p className="kicker">D-158 · member evidence</p>
           <h2>7shifts Evidence Center</h2>
         </div>
-        <span className={`pill ${available ? "" : "proj"}`}>{available ? "Development ready" : "Disabled"}</span>
+        <span className={`pill ${available ? "" : "proj"}`}>{available ? `${household.environment === "production" ? "Production" : "Development"} ready` : "Disabled"}</span>
       </header>
       <p className="muted">{detail} Raw captures stay outside the household snapshot and books. Schedule rows remain outlook only.</p>
       <p className="muted">Scope: {memberName} · {household.environment} · {today}</p>

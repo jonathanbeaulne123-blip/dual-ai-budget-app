@@ -1,5 +1,40 @@
 # AI Task and Handoff Standard
 
+## Closeable kitchen notices with 1–2 fix steps (2026-08-28)
+
+**Status:** Draft PR [#232](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/232) on `cursor/closeable-kitchen-notices-560d`. **Not merged, not deployed, not live.** Risk: **Low–Medium** (copy/UX; no money write, Auth, or schema).
+
+**Household outcome:** The Import line “This Google account is not linked to that Hearth member.” means this Google session is signed in, but it is not the hosted membership row for the person currently on this kitchen. Bank connect stays refuse-closed. Kitchen errors now show as a small closeable chip (same size language as the sync chip): one problem, 1–2 fix steps, optional Open More / Reload, and ×.
+
+**Budget delta (5):** `+1` — can act on a blocked bank connect or books copy.
+
+**Engagement delta (3):** `+1` — not a wall of red.
+
+**If they conflicted:** books win; notices never `postEntry`. Google mismatch still refuses Flinks. A missing PGlite receipt still does not ingest.
+
+**What changed:** `humanizeKitchenNotice` maps engine/worker strings. `KitchenNotice` is a compact chip. Wired on Books status, Flinks/7shifts errors, App/welcome/Add, and other `.danger` paragraphs. Engine/worker copy is unchanged.
+
+**Verification:**
+- Focused `test/kitchen-notice.test.ts` + `test/flinks-connect-ui.test.ts` green.
+- `pnpm check` at `6c58daa` → **980 passed / 2 skipped**, build green. Follow-up commit threads `onGoMore` into BatchImport review notices.
+- Independent `hearth-ux-auditor`: Dual Course pass (conditional); asked for `onGoMore` on BatchImport slots — wired.
+- Independent `books-auditor`: PASS — fail-closed membership and receipt checks unchanged.
+- Visual, fictional Development demo kitchen on localhost: Import → Connect bank with Flinks shows “Sign in with Google before connecting a bank” chip with Open More and ×. Dismiss hides it. Open More goes to More.
+
+**Data and environment disclosure:**
+- Development impact: none (UI copy only)
+- Production impact: none
+- Network calls or data sent: none new
+- MCP access: none
+- Hosted rows/schema/secrets/deployments: none
+- Real household or partner-personal data used: none. Demo kitchen only. Live kitchen screenshot was the prompt, not a data source.
+
+**Remaining uncertainty:** Live kitchen still shows the old walls until merge + D-041 deploy. Linking Google in More is the real fix for the membership mismatch. Demo localhost showed the sign-in-first Flinks chip (no Google session), not the membership-mismatch string.
+
+**Next owner:** Jonathan — review [#232](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/232). Do not merge or deploy unless you ask.
+
+**Worksession:** [`worksessions/2026-08-28-closeable-kitchen-notices.md`](worksessions/2026-08-28-closeable-kitchen-notices.md)
+
 ## Kitchen queue handler so D-156 can publish (D-041) (2026-08-28)
 
 **Status:** Merged to `main` at `d067e56` (PR #228). Kitchen **deploy failed** Cloudflare Workers `33184620358` and Workers Builds `d6a7492e` with API **11001** (queue handler missing). Fix is on `cursor/fix-kitchen-queue-handler-560d`. Risk: **Medium** (Worker deploy path; no money, Auth, or schema).

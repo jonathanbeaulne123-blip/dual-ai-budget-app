@@ -14,9 +14,10 @@ export type SevenShiftsStatus = {
   ok: true;
   available: boolean;
   phase: "scaffold" | "sandbox-configured";
-  environment: "development-only";
+  environment: "development-only" | "development-and-production";
   providerCallsEnabled: boolean;
-  productionAllowed: false;
+  productionAllowed: boolean;
+  environments?: Record<string, { available: boolean; detail?: string }>;
   detail: string;
 };
 
@@ -57,7 +58,9 @@ async function responseJson<T>(response: Response): Promise<T> {
 function safeStatus(body: SevenShiftsStatus): SevenShiftsStatus {
   const inert = body.available === false && body.phase === "scaffold" && body.providerCallsEnabled === false;
   const active = body.available === true && body.phase === "sandbox-configured" && body.providerCallsEnabled === true;
-  if (body.ok !== true || body.environment !== "development-only" || body.productionAllowed !== false || !body.detail || (!inert && !active)) {
+  const coherent = (body.environment === "development-only" && body.productionAllowed === false)
+    || (body.environment === "development-and-production" && body.productionAllowed === true);
+  if (body.ok !== true || !coherent || !body.detail || (!inert && !active)) {
     throw new Error("7shifts setup returned an unsafe or invalid status.");
   }
   return body;
@@ -74,7 +77,7 @@ async function authenticatedRequest<T>(
   fetcher: typeof fetch,
   sessionProvider: SessionProvider,
 ): Promise<T> {
-  if (scope.environment !== "development") throw new Error("7shifts is Development-only.");
+  if (scope.environment !== "development" && scope.environment !== "production") throw new Error("7shifts environment is invalid.");
   const session = await sessionProvider(scope.environment);
   if (!session) throw new Error("Continue with Google before connecting 7shifts.");
   return responseJson<T>(await fetcher(path, {

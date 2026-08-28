@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { KitchenNotice } from "./KitchenNotice.tsx";
 import {
   WEEKDAY_SHORT,
   adoptRhythm,
@@ -495,7 +496,7 @@ export function CalendarPage(props: {
           {!configured && (
             <p className="muted">Add <code>VITE_GOOGLE_CLIENT_ID</code> to this build (Google Cloud web client, this site as an authorized origin). Until then, download the calendar file.</p>
           )}
-          {googleError && <p className="danger" style={{ marginTop: 12 }}>{googleError}</p>}
+          {googleError ? <KitchenNotice message={googleError} /> : null}
           <button className="primary" disabled={googleBusy || !calendarGoogleOn || !household.recurrences.some((item) => item.active)} onClick={() => void remindOnGoogle()}>
             {googleBusy ? "Talking to Google…" : "Write reminders to Google"}
           </button>

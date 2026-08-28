@@ -14,6 +14,10 @@ class FakeD1 {
     const db = this;
     db.preparedSql.push(sql);
     return {
+      async first() {
+        if (sql.includes("SELECT 1 AS ok")) return { ok: 1 };
+        return null;
+      },
       bind(...values: unknown[]) {
         return {
           async first() {
@@ -143,13 +147,14 @@ function sevenShiftsUpstream(options: {
   companyName?: string;
   roleName?: string;
   locationName?: string;
+  environment?: "development" | "production";
 } = {}) {
   return vi.fn(async (input: string | URL | Request, _init?: RequestInit) => {
     const url = String(input);
     if (url.endsWith("/auth/v1/user")) return json({ id: "auth-user-1", email: "member@example.com" });
     if (url.includes("/rest/v1/continuity_memberships?")) {
       return json(options.membershipRows ?? [{
-        environment: "development",
+        environment: options.environment ?? "development",
         household_id: "HH-TEST",
         member_id: "MEM-001",
         auth_user_id: "auth-user-1",
@@ -252,18 +257,46 @@ describe("7shifts Worker scaffold", () => {
     expect(upstream).not.toHaveBeenCalled();
   });
 
-  it("stays locked even if Production is flipped on", async () => {
+  it("reports Production unavailable until its separate database and keys are configured", async () => {
     const upstream = vi.fn();
     vi.stubGlobal("fetch", upstream);
     const response = await worker.fetch(request("/work/7shifts/status"), env(new FakeD1(), {
       SEVENSHIFTS_ALLOW_PRODUCTION: "true",
     }));
     expect(await response.json()).toEqual(expect.objectContaining({
-      available: false,
-      providerCallsEnabled: false,
-      productionAllowed: false,
+      available: true,
+      providerCallsEnabled: true,
+      productionAllowed: true,
+      environment: "development-and-production",
+      environments: expect.objectContaining({ production: expect.objectContaining({ available: false }) }),
     }));
     expect(upstream).not.toHaveBeenCalled();
+  });
+
+  it("uses exact Production membership and stores a Production connection only in the Production database", async () => {
+    const developmentDb = new FakeD1();
+    const productionDb = new FakeD1();
+    const upstream = sevenShiftsUpstream({ environment: "production" });
+    vi.stubGlobal("fetch", upstream);
+    const bindings = env(developmentDb, {
+      SEVENSHIFTS_ALLOW_PRODUCTION: "true",
+      SEVENSHIFTS_PRODUCTION_DB: productionDb,
+      SEVENSHIFTS_PRODUCTION_CONNECTION_ENCRYPTION_KEY: "production-encrypt-key-".repeat(2),
+      SEVENSHIFTS_PRODUCTION_DIGEST_KEY: "production-digest-key-".repeat(2),
+    });
+    const scope = { environment: "production", householdId: "HH-TEST", memberId: "MEM-001" };
+    const probed = await worker.fetch(api("/work/7shifts/probe", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...scope, accessToken: token }),
+    }), bindings);
+    expect(probed.status).toBe(200);
+    const probe = await probed.json() as { users: Array<{ userDigest: string }> };
+    const connected = await worker.fetch(api("/work/7shifts/connections", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...scope, accessToken: token, userDigest: probe.users[0]!.userDigest, jobId: "JOB-HARBOUR" }),
+    }), bindings);
+    expect(connected.status).toBe(201);
+    expect(productionDb.rows).toHaveLength(1);
+    expect(productionDb.rows[0]).toMatchObject({ environment: "production" });
+    expect(developmentDb.rows).toHaveLength(0);
   });
 
   it("rejects a foreign origin and requires a bearer before D1 or 7shifts", async () => {

@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const kitchen = "https://hearth-books.jonathan-beaulne123.workers.dev";
 const scope = "environment=development&householdId=HH-TEST&memberId=MEM-001";
+const productionScope = "environment=production&householdId=HH-TEST&memberId=MEM-001";
 
 let mf: Miniflare;
 
@@ -59,31 +60,40 @@ beforeAll(async () => {
     compatibilityDate: "2026-08-21",
     bindings: {
       EVIDENCE_ENABLED: "true",
-      EVIDENCE_ALLOW_PRODUCTION: "false",
+      EVIDENCE_ALLOW_PRODUCTION: "true",
       EVIDENCE_EMAIL_ENABLED: "false",
       EVIDENCE_KEK_V1: "local-only-evidence-key-material-for-synthetic-smoke",
+      EVIDENCE_PRODUCTION_KEK_V1: "local-only-production-key-material-for-synthetic-smoke",
+      EVIDENCE_PRODUCTION_QUEUE_NAME: "evidence-production-local-smoke",
       SEVENSHIFTS_ENABLED: "false",
       SEVENSHIFTS_ALLOW_PRODUCTION: "false",
       SUPABASE_URL: "https://supabase.test",
       SUPABASE_PUBLISHABLE_KEY: "publishable-local-test-key",
     },
-    d1Databases: { EVIDENCE_DB: "evidence-local-smoke" },
-    r2Buckets: { EVIDENCE_RAW: "evidence-local-smoke" },
-    queueProducers: { EVIDENCE_DERIVE: { queueName: "evidence-local-smoke" } },
-    queueConsumers: { "evidence-local-smoke": { maxBatchSize: 1, maxBatchTimeout: 1 } },
+    d1Databases: { EVIDENCE_DB: "evidence-local-smoke", EVIDENCE_PRODUCTION_DB: "evidence-production-local-smoke" },
+    r2Buckets: { EVIDENCE_RAW: "evidence-local-smoke", EVIDENCE_PRODUCTION_RAW: "evidence-production-local-smoke" },
+    queueProducers: {
+      EVIDENCE_DERIVE: { queueName: "evidence-local-smoke" },
+      EVIDENCE_PRODUCTION_DERIVE: { queueName: "evidence-production-local-smoke" },
+    },
+    queueConsumers: {
+      "evidence-local-smoke": { maxBatchSize: 1, maxBatchTimeout: 1 },
+      "evidence-production-local-smoke": { maxBatchSize: 1, maxBatchTimeout: 1 },
+    },
     outboundService: async (request) => {
       const url = new URL(request.url);
       const token = request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
       const authUserId = token === "owner-jwt" ? "auth-user-1" : "auth-user-2";
       if (url.pathname === "/auth/v1/user") return Response.json({ id: authUserId });
       if (url.pathname === "/rest/v1/continuity_memberships") {
+        const environment = url.searchParams.get("environment")?.replace(/^eq\./, "");
         const ownerMatch = authUserId === "auth-user-1"
-          && url.searchParams.get("environment") === "eq.development"
+          && (environment === "development" || environment === "production")
           && url.searchParams.get("household_id") === "eq.HH-TEST"
           && url.searchParams.get("member_id") === "eq.MEM-001"
           && url.searchParams.get("auth_user_id") === "eq.auth-user-1";
         return Response.json(ownerMatch ? [{
-          environment: "development",
+          environment,
           household_id: "HH-TEST",
           member_id: "MEM-001",
           auth_user_id: "auth-user-1",
@@ -98,6 +108,9 @@ beforeAll(async () => {
   const db = await mf.getD1Database("EVIDENCE_DB");
   await applyMigration(db, "../migrations/evidence/0001_evidence_mesh.sql");
   await applyMigration(db, "../migrations/evidence/0002_r2_budget_guard.sql");
+  const productionDb = await mf.getD1Database("EVIDENCE_PRODUCTION_DB");
+  await applyMigration(productionDb, "../migrations/evidence-production/0001_evidence_mesh.sql");
+  await applyMigration(productionDb, "../migrations/evidence-production/0002_r2_budget_guard.sql");
 }, 30_000);
 
 afterAll(async () => {
@@ -105,6 +118,40 @@ afterAll(async () => {
 });
 
 describe("local D1/R2/Queue Evidence smoke", () => {
+  it("keeps Production encryption, metadata, objects, and queue derivation isolated from Development", async () => {
+    const plaintext = JSON.stringify({ data: [{
+      id: 8001, user_id: 77, clocked_in: "2026-08-30T13:00:00Z", clocked_out: "2026-08-30T21:00:00Z", approved: true,
+    }] });
+    const upload = await mf.dispatchFetch(`${kitchen}/work/evidence/captures?${productionScope}`, {
+      method: "POST",
+      headers: { ...headers(), "Content-Type": "application/json", "X-Evidence-Capture-Kind": "selected-json" },
+      body: plaintext,
+    });
+    expect(upload.status).toBe(201);
+    const evidenceId = ((await upload.json()) as { capture: { evidenceId: string } }).capture.evidenceId;
+    const productionDb = await mf.getD1Database("EVIDENCE_PRODUCTION_DB");
+    const productionRow = await waitFor(async () => {
+      const current = await productionDb.prepare("SELECT environment, state, object_key FROM evidence_items WHERE evidence_id = ?")
+        .bind(evidenceId).first<Record<string, any>>();
+      return current?.state === "ready_to_review" ? current : null;
+    });
+    expect(productionRow.environment).toBe("production");
+    const developmentDb = await mf.getD1Database("EVIDENCE_DB");
+    expect(await developmentDb.prepare("SELECT evidence_id FROM evidence_items WHERE evidence_id = ?").bind(evidenceId).first()).toBeNull();
+    const productionBucket = await mf.getR2Bucket("EVIDENCE_PRODUCTION_RAW") as unknown as LocalR2Bucket;
+    const developmentBucket = await mf.getR2Bucket("EVIDENCE_RAW") as unknown as LocalR2Bucket;
+    expect(await productionBucket.get(String(productionRow.object_key))).not.toBeNull();
+    expect((await developmentBucket.list()).objects).toHaveLength(0);
+    const ownerRead = await mf.dispatchFetch(`${kitchen}/work/evidence/captures/${evidenceId}/raw?${productionScope}`, { headers: headers() });
+    expect(ownerRead.status).toBe(200);
+    expect(await ownerRead.text()).toBe(plaintext);
+    const wrongEnvironment = await mf.dispatchFetch(`${kitchen}/work/evidence/captures/${evidenceId}/raw?${scope}`, { headers: headers() });
+    expect(wrongEnvironment.status).toBe(404);
+    const removed = await mf.dispatchFetch(`${kitchen}/work/evidence/captures/${evidenceId}?${productionScope}`, { method: "DELETE", headers: headers() });
+    expect(removed.status).toBe(200);
+    expect((await productionBucket.list()).objects).toHaveLength(0);
+  }, 30_000);
+
   it("encrypts, derives, isolates, detects ciphertext tampering, and crypto-erases synthetic evidence", async () => {
     const plaintext = JSON.stringify({
       data: [{

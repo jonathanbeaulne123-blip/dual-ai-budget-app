@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { KitchenNotice } from "./KitchenNotice.tsx";
 import {
   ASK_SUGGESTIONS,
   accountOptionLabel,
@@ -78,6 +79,7 @@ export function BooksPage({
   onPayAccount,
   onAddToAccount,
   onCommand,
+  onGoMore,
 }: {
   household: Household;
   memberId: string;
@@ -92,6 +94,7 @@ export function BooksPage({
   onPayAccount: (account: Account) => void;
   onAddToAccount: (account: Account) => void;
   onCommand: (command: (current: Household) => CommitResult) => void;
+  onGoMore?: () => void;
 }) {
   const [pane, setPane] = useState<Pane>("wallet");
   const books = useMemo(() => compileHousehold(household), [household]);
@@ -183,20 +186,26 @@ export function BooksPage({
         <div className="stat"><span>Income</span><strong>{formatCad(equation.incomeCents)}</strong></div>
         <div className="stat"><span>Expenses</span><strong>{formatCad(equation.expenseCents)}</strong></div>
       </div>
-      {booksStatus && (
-        <p className={`muted ${booksStatus.ok ? "" : "danger"}`}>
-          {booksStatus.ok
-            ? `Postgres ${booksStatus.postgresVersion ?? "PGlite"} is holding ${booksStatus.entryCount} journal entries on this phone.`
-            : booksStatus.error || "The SQL books did not verify. The last valid snapshot on this phone is still saved."}
+      {booksStatus?.ok ? (
+        <p className="muted">
+          {`Postgres ${booksStatus.postgresVersion ?? "PGlite"} is holding ${booksStatus.entryCount} journal entries on this phone.`}
         </p>
-      )}
+      ) : booksStatus ? (
+        <KitchenNotice
+          message={booksStatus.error || "The SQL books did not verify. The last valid snapshot on this phone is still saved."}
+          onGoMore={onGoMore}
+        />
+      ) : null}
       {household.linked ? (
-        booksStatus?.hosted ? (
+        booksStatus?.hosted?.schema ? (
           <p className="muted">
-            {booksStatus.hosted.schema
-              ? `The shared snapshot is on Supabase (${booksStatus.hosted.project}). Phrase join is not encryption.`
-              : booksStatus.hosted.error || "This household is linked, but the hosted tables are not in the API yet."}
+            {`The shared snapshot is on Supabase (${booksStatus.hosted.project}). Phrase join is not encryption.`}
           </p>
+        ) : booksStatus?.hosted ? (
+          <KitchenNotice
+            message={booksStatus.hosted.error || "This household is linked, but the hosted tables are not in the API yet."}
+            onGoMore={onGoMore}
+          />
         ) : (
           <p className="muted">This household is linked. Sharing uses the reviewed transport path after a local accept.</p>
         )
@@ -255,6 +264,7 @@ export function BooksPage({
           memberId={memberId}
           view={view}
           onCommit={(next, undo) => onChange(next, undo)}
+          onGoMore={onGoMore}
         />
       )}
       {pane === "journal" && (
@@ -357,7 +367,7 @@ export function BooksPage({
           <input type="date" value={recDate} onChange={(event) => setRecDate(event.target.value)} />
           <label>Statement balance (CAD)</label>
           <input inputMode="decimal" value={recAmount} placeholder="0.00" onChange={(event) => setRecAmount(event.target.value)} />
-          {recError && <p className="danger">{recError}</p>}
+          <KitchenNotice message={recError} />
           <button
             className="primary"
             type="button"
@@ -415,7 +425,7 @@ export function BooksPage({
           </header>
           <p className="muted">{opinion.cpa}</p>
           <p className="muted">A closed month accepts no posts. Reopen if a receipt was forgotten. Reverse a row instead of deleting it. Mark paid on Calendar still Confirm-writes.</p>
-          {closeError && <p className="danger">{closeError}</p>}
+          <KitchenNotice message={closeError} />
           <div className="chips">
             <button
               className="chip"
@@ -641,7 +651,7 @@ function StatementsPane({
       <section className="card">
         <header><h2>Budget variance</h2></header>
         <p className="muted">Tap actual/budget to edit this month&apos;s plan. Actuals still come from posted rows.</p>
-        {budgetError && <p className="danger" role="alert">{budgetError}</p>}
+        <KitchenNotice message={budgetError} />
         {variance.length === 0 ? (
           <p className="muted">No budget plans or expense actuals this month yet.</p>
         ) : variance.map((row) => (
@@ -864,7 +874,7 @@ function AskBooks({ household }: { household: Household }) {
         }}
       />
       <button className="primary" disabled={busy || !question.trim()} onClick={() => void ask(question)}>Ask</button>
-      {error && <p className="danger">{error}</p>}
+      <KitchenNotice message={error} />
       <div className="ask-log">
         {log.map((item, index) => (
           <div key={`${item.you}-${index}`}>

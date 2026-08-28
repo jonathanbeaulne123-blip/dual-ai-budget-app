@@ -69,7 +69,7 @@ export async function migrateBooks(db: Queryable): Promise<void> {
     have.add(2);
   }
   if (!have.has(3)) {
-    // D-160: BOOKS_SCHEMA creates the Fund projection tables and adds account scope idempotently.
+    // D-161: BOOKS_SCHEMA creates the Fund projection tables and adds account scope idempotently.
     await db.query("INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)", [3, new Date().toISOString()]);
   }
 }

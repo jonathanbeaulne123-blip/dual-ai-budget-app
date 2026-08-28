@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { parseFlinksInbox, type Environment, type ParsedFlinksBatch } from "./core/index.ts";
+import { KitchenNotice } from "./KitchenNotice.tsx";
 import {
   clearLegacyFlinksLoginStorage,
   completeFlinksConnect,
@@ -23,6 +24,7 @@ export function FlinksConnectPanel({
   generation,
   disabled,
   onStage,
+  onGoMore,
 }: {
   environment: Environment;
   householdId: string;
@@ -31,6 +33,7 @@ export function FlinksConnectPanel({
   generation: number;
   disabled: boolean;
   onStage: (batch: ParsedFlinksBatch, expectedScopeKey: string, expectedGeneration: number, connectionId: string) => void;
+  onGoMore?: () => void;
 }) {
   const scope: FlinksScope = { environment, householdId, memberId };
   const [state, setState] = useState<State>("idle");
@@ -73,7 +76,7 @@ export function FlinksConnectPanel({
       const status = await readFlinksStatus();
       if (!stillCurrent(expected)) return;
       if (!status.available) {
-        setState("idle");
+        setState("error");
         setNotice(status.detail);
         return;
       }
@@ -200,7 +203,9 @@ export function FlinksConnectPanel({
       </button>
       {connectedId && ["ready", "polling"].includes(connectedState ?? "") && <button type="button" className="chip" disabled={disabled || state === "retrieving" || state === "revoking"} onClick={() => void refresh()}>{state === "retrieving" ? "Retrieving bank evidence…" : "Fetch posted transactions"}</button>}
       {connectedId && !session && <button type="button" className="ghost" disabled={state === "revoking"} onClick={() => void disconnect()}>{state === "revoking" ? "Disconnecting Flinks…" : "Disconnect Flinks"}</button>}
-      {notice && <p className="muted flinks-status" role={state === "error" ? "alert" : "status"}>{notice}</p>}
+      {state === "error"
+        ? <KitchenNotice message={notice} onGoMore={onGoMore} onDismiss={() => setNotice("")} />
+        : notice ? <p className="muted flinks-status" role="status">{notice}</p> : null}
       {session && (
         <div className="sheet flinks-connect" role="dialog" aria-modal="true" aria-labelledby="flinks-connect-title">
           <div className="sheet-inner">

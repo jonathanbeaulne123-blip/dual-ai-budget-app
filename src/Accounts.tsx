@@ -27,6 +27,7 @@ import {
   type UndoToken,
   type WalletTile,
 } from "./core/index.ts";
+import { KitchenNotice } from "./KitchenNotice.tsx";
 
 export function WalletStrip({
   household,
@@ -310,7 +311,7 @@ export function AccountRoom({
         </div>
       )}
 
-      {error && <p className="danger">{error}</p>}
+      <KitchenNotice message={error} />
 
       <header style={{ marginTop: 16 }}>
         <h3>Activity</h3>
@@ -427,7 +428,7 @@ export function AddAccountForm({
           </select>
         </>
       )}
-      {error && <p className="danger">{error}</p>}
+      <KitchenNotice message={error} />
       <button
         className="primary"
         type="button"

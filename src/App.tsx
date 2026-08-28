@@ -287,6 +287,7 @@ import {
 } from "./commandProgress.ts";
 import { clearSyncAnchor, saveSyncAnchor } from "./syncAnchor.ts";
 import { SyncFreshnessStatus } from "./SyncFreshnessStatus.tsx";
+import { KitchenNotice } from "./KitchenNotice.tsx";
 import { SoftPresenceStatus } from "./SoftPresenceStatus.tsx";
 import {
   buildSoftPresenceDisplay,
@@ -2414,8 +2415,11 @@ export function App() {
     </>
   );
 
+  // Keep every App hook above the boot/welcome/session early returns. The
+  // automation runner itself is a hoisted function declaration below, so the
+  // effect can live here without changing its behavior.
   useEffect(() => {
-    if (!household || !session?.memberId || environment !== "development" || booting) return;
+    if (!household || !session?.memberId || booting) return;
     const timer = window.setTimeout(() => { void processEvidenceAutomationJobs(); }, 750);
     const onWake = () => { if (document.visibilityState === "visible") void processEvidenceAutomationJobs(); };
     window.addEventListener("online", onWake);
@@ -2563,7 +2567,7 @@ export function App() {
                 onChange={(event) => setNewHouseholdDraft((current) => ({ ...current, personalLedgerName: event.target.value }))}
                 placeholder="My Books"
               />
-              {error && <p className="danger" role="alert">{error}</p>}
+              <KitchenNotice message={error} onDismiss={() => setError("")} />
               <button className="primary" type="submit" disabled={busy} style={{ width: "100%", marginTop: 12 }}>
                 {busy ? "Creating…" : "Create household"}
               </button>
@@ -2691,7 +2695,7 @@ export function App() {
                   )}
                 </section>
               )}
-              {error && <p className="danger" role="alert">{error}</p>}
+              <KitchenNotice message={error} onDismiss={() => setError("")} />
               {discoveredLedgers.length === 0 && (
                 <button className="ghost welcome-demo" onClick={() => persist(seedDemoHousehold({ today, environment }))}>
                   Open the demo kitchen table
@@ -2744,7 +2748,7 @@ export function App() {
               </button>
             );
           })}
-          {error && <p className="danger" role="alert">{error}</p>}
+          <KitchenNotice message={error} onDismiss={() => setError("")} />
           {household.members.filter((member) => member.active).map((member) => (
             <button
               key={member.id}
@@ -3113,12 +3117,12 @@ export function App() {
     if (evidenceAutomationRef.current || postingRef.current) return;
     const current = householdRef.current;
     const memberId = sessionRef.current?.memberId;
-    if (!current || !memberId || current.environment !== "development") return;
+    if (!current || !memberId) return;
     evidenceAutomationRef.current = true;
     const scope: EvidenceScope = { environment: current.environment, householdId: current.householdId, memberId };
     try {
       const status = await readEvidenceStatus(fetch);
-      if (!status.available) return;
+      if (!status.available || status.environments?.[scope.environment]?.available === false) return;
       for (let count = 0; count < 3; count += 1) {
         const job = await claimEvidenceAutomationJob(scope);
         if (!job) break;
@@ -3254,7 +3258,18 @@ export function App() {
             </p>
           </div>
         </div>
-        <span className="pill dev" aria-label="Development environment">Development</span>
+        <button
+          type="button"
+          className={`pill ${environment === "production" ? "prod" : "dev"}`}
+          aria-label={`${environment === "production" ? "Production" : "Development"} environment. Switch environment.`}
+          disabled={busy}
+          onClick={() => setGuard({
+            kind: "environment",
+            next: environment === "production" ? "development" : "production",
+          })}
+        >
+          {environment === "production" ? "Production" : "Development"}
+        </button>
       </header>
       <SyncFreshnessStatus
         display={syncFreshnessDisplay}
@@ -3263,6 +3278,13 @@ export function App() {
           void retryShareNow();
         }}
       />
+      {error && !adding ? (
+        <KitchenNotice
+          message={error}
+          onGoMore={() => goTab("more")}
+          onDismiss={() => setError("")}
+        />
+      ) : null}
       <SoftPresenceStatus display={softPresenceDisplay} />
       <CommandProgressStatus display={commandProgressDisplay} />
       {commandChrome?.chip && !syncChromeSuppression.hideChip && (
@@ -3539,6 +3561,7 @@ export function App() {
           onCommand={(command) => { void run(command); }}
           onPayAccount={openPayCard}
           onAddToAccount={(account) => openAddFor(account)}
+          onGoMore={() => goTab("more")}
           onRemove={(transaction) => {
             const dollars = formatCad(transaction.amountCents);
             const summary = transaction.source === "shift"
@@ -3568,9 +3591,6 @@ export function App() {
               >
                 {busy ? "Starting over…" : "Start from scratch"}
               </button>
-              {error && (
-                <p className="danger" role="alert" style={{ marginTop: 8 }}>{error}</p>
-              )}
             </section>
           )}
           <section className="card">
@@ -4434,7 +4454,11 @@ export function App() {
                 )}
               </>
             )}
-            {error && <p className="danger" style={{ marginTop: 12 }}>{error}</p>}
+            <KitchenNotice
+              message={error}
+              onGoMore={() => { setAdding(false); goTab("more"); }}
+              onDismiss={() => setError("")}
+            />
             {confirm && (
               <div className="preview warn" role="alert" tabIndex={-1} ref={confirmPanelRef}>
                 <p>{confirm.message}</p>
@@ -5261,7 +5285,7 @@ function AddCategoryForm({ household, onSave }: { household: Household; onSave: 
           <option key={group.id} value={group.id}>{group.name}</option>
         ))}
       </select>
-      {error && <p className="muted">{error}</p>}
+      <KitchenNotice message={error} />
       <button className="primary" onClick={() => {
         try {
           const result = addCategory(household, { name, type: "expense", parentId, monthlyBudget: "0" });

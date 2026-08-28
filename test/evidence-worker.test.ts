@@ -346,8 +346,9 @@ function authFetch(extra?: (url: URL, init?: RequestInit) => Response | Promise<
     if (url.pathname === "/rest/v1/continuity_memberships") {
       const member = url.searchParams.get("member_id")?.replace(/^eq\./, "");
       const household = url.searchParams.get("household_id")?.replace(/^eq\./, "");
+      const environment = url.searchParams.get("environment")?.replace(/^eq\./, "");
       return Response.json(member === "MEM-001" && household === "HH-TEST"
-        ? [{ environment: "development", household_id: "HH-TEST", member_id: "MEM-001", auth_user_id: "auth-user-1", role: "owner" }]
+        ? [{ environment, household_id: "HH-TEST", member_id: "MEM-001", auth_user_id: "auth-user-1", role: "owner" }]
         : []);
     }
     if (url.pathname === "/rest/v1/continuity_command_events") return Response.json([]);
@@ -414,14 +415,57 @@ function seedDerivative(db: MemoryD1, bundle: SevenShiftsEvidenceBundle) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("Evidence Mesh Worker", () => {
-  it("is installed but unavailable by default and refuses Production activation", async () => {
+  it("is unavailable when disabled and refuses an unprovisioned Production scope without disabling Development", async () => {
     const disabled = env({ EVIDENCE_ENABLED: "false" });
     const status = await worker.fetch(request("/work/evidence/status", { headers: { Origin: kitchen } }), disabled);
     expect(await status.json()).toMatchObject({ ok: true, available: false, environment: "development-only", productionAllowed: false });
     const unsafe = env({ EVIDENCE_ALLOW_PRODUCTION: "true" });
-    const active = await worker.fetch(request("/work/evidence/captures?environment=development&householdId=HH-TEST&memberId=MEM-001", { method: "GET" }), unsafe);
+    const active = await worker.fetch(request("/work/evidence/captures?environment=production&householdId=HH-TEST&memberId=MEM-001", { method: "GET" }), unsafe);
     expect(active.status).toBe(503);
-    expect(await active.json()).toMatchObject({ ok: false, error: expect.stringMatching(/Production activation is not permitted/i) });
+    expect(await active.json()).toMatchObject({ ok: false, error: expect.stringMatching(/production bindings are not configured/i) });
+    vi.stubGlobal("fetch", authFetch());
+    const development = await worker.fetch(request("/work/evidence/captures?environment=development&householdId=HH-TEST&memberId=MEM-001", { method: "GET" }), unsafe);
+    expect(development.status).toBe(200);
+  });
+
+  it("routes Production captures only to the separately keyed Production D1, R2, and Queue", async () => {
+    const productionDb = new MemoryD1();
+    const productionRaw = new MemoryR2();
+    const productionQueue = new MemoryQueue();
+    const bindings = env({
+      EVIDENCE_ALLOW_PRODUCTION: "true",
+      EVIDENCE_PRODUCTION_KEK_V1: "production-evidence-key-".repeat(3),
+      EVIDENCE_PRODUCTION_DB: productionDb,
+      EVIDENCE_PRODUCTION_RAW: productionRaw,
+      EVIDENCE_PRODUCTION_DERIVE: productionQueue,
+    });
+    vi.stubGlobal("fetch", authFetch());
+    const plaintext = new TextEncoder().encode('{"provider":"7shifts","production":true}');
+    const uploaded = await worker.fetch(request("/work/evidence/captures?environment=production&householdId=HH-TEST&memberId=MEM-001", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Evidence-Capture-Kind": "selected-json" },
+      body: plaintext,
+    }), bindings);
+    expect(uploaded.status).toBe(201);
+    const capture = (await uploaded.json() as any).capture;
+    expect(productionDb.items).toHaveLength(1);
+    expect(bindings.EVIDENCE_DB.items).toHaveLength(0);
+    expect(productionRaw.objects.size).toBe(1);
+    expect(bindings.EVIDENCE_RAW.objects.size).toBe(0);
+    expect(productionQueue.sent).toEqual([{ evidenceId: capture.evidenceId, revision: 1 }]);
+    const ack = vi.fn();
+    await worker.queue({
+      queue: "hearth-evidence-derive-production",
+      messages: [{ body: { evidenceId: capture.evidenceId, revision: 1 }, ack, retry: vi.fn() }],
+    } as any, bindings);
+    expect(ack).toHaveBeenCalledOnce();
+    expect(productionDb.items[0]?.state).toBe("ready_to_review");
+    expect(productionDb.derivatives).toHaveLength(1);
+    expect(bindings.EVIDENCE_DB.derivatives).toHaveLength(0);
+    const read = await worker.fetch(request(`/work/evidence/captures/${capture.evidenceId}/raw?environment=production&householdId=HH-TEST&memberId=MEM-001`), bindings);
+    expect(new Uint8Array(await read.arrayBuffer())).toEqual(plaintext);
+    const wrongEnvironment = await worker.fetch(request(`/work/evidence/captures/${capture.evidenceId}/raw?environment=development&householdId=HH-TEST&memberId=MEM-001`), bindings);
+    expect(wrongEnvironment.status).toBe(404);
   });
 
   it("encrypts a member-selected capture, queues only its opaque id, decrypts for its owner, and crypto-erases it", async () => {

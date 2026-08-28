@@ -15,6 +15,7 @@ import {
   type WorkTipOutRule,
 } from "./core/index.ts";
 import { SevenShiftsConnectPanel } from "./SevenShiftsConnectPanel.tsx";
+import { KitchenNotice } from "./KitchenNotice.tsx";
 
 const JOB_COLORS = ["#a85a3d", "#2f6b4f", "#4d7182", "#a57935", "#745d86"];
 
@@ -283,7 +284,7 @@ export function WorkJobsCard({ household, memberId, today, busy, onAskSave, onAr
           </div>
         </details>
       </div>
-      {error && <p className="danger" role="alert">{error}</p>}
+      <KitchenNotice message={error} />
       <div className="work-job-actions">
         {draft.id && draft.active && <button className="danger" type="button" onClick={() => onArchive(draft.id)}>Archive job</button>}
         <button className="primary" type="button" disabled={busy} onClick={() => {

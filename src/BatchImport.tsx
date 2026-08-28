@@ -28,6 +28,7 @@ import { ConfirmSheet } from "./Confirm.tsx";
 import { deleteDriveReceipt, uploadDriveReceipt, type DriveReceiptResult } from "./google/index.ts";
 import { scanFinancialDocument } from "./imports/documentScanner.ts";
 import { FlinksConnectPanel } from "./FlinksConnectPanel.tsx";
+import { KitchenNotice } from "./KitchenNotice.tsx";
 import { useDialog } from "./useDialog.ts";
 
 const TABS: Array<{ id: DuplicateTier; label: string; hint: string }> = [
@@ -125,11 +126,13 @@ export function BatchImportCard({
   memberId,
   view,
   onCommit,
+  onGoMore,
 }: {
   household: Household;
   memberId: string;
   view: LedgerView;
   onCommit: (household: Household, undo: UndoToken) => unknown | Promise<unknown>;
+  onGoMore?: () => void;
 }) {
   const bankInput = useRef<HTMLInputElement | null>(null);
   const cameraInput = useRef<HTMLInputElement | null>(null);
@@ -524,6 +527,7 @@ export function BatchImportCard({
           scopeKey={scopeKey}
           generation={scopeGenerationRef.current}
           disabled={working}
+          onGoMore={onGoMore}
           onStage={(batch, expectedScope, expectedGeneration) => {
             if (!scopeIsCurrent(expectedScope, expectedGeneration)) return;
             appendRows(batch.rows, batch.warnings);
@@ -544,7 +548,7 @@ export function BatchImportCard({
         <input ref={cameraInput} hidden type="file" multiple accept="image/jpeg,image/png,image/webp" capture="environment" onChange={(event) => void importImages(event.target.files, event.target)} />
         <input ref={uploadInput} hidden type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={(event) => void importImages(event.target.files, event.target)} />
         {working && <p role="status">Reading and checking duplicates…</p>}
-        {error && !open && <p className="danger" role="alert">{error}</p>}
+        <KitchenNotice message={error && !open ? error : ""} onGoMore={onGoMore} />
         {Object.values(driveReceipts).map((receipt) => (
           <div className={`import-drive-status ${receipt.ok ? "" : "warn"}`} key={receipt.sourceHash} role="status">
             <span>{receipt.detail}</span>
@@ -613,7 +617,7 @@ export function BatchImportCard({
             </div>
             <p className="muted">{TABS.find((item) => item.id === tier)?.hint}</p>
             {warnings.map((warning) => <p className="warn" key={warning}>{warning}</p>)}
-            {error && <p className="danger" role="alert">{error}</p>}
+            <KitchenNotice message={error} onGoMore={onGoMore} />
             <section className="import-review-list">
               {visible.length ? visible.map((row) => (
                 <ImportReviewItem

@@ -37,9 +37,9 @@ Give Jonathan and Bianca one truthful Hearth Household Fund for shared operating
 
 ### In scope
 
-- D-160 Household Fund data contracts, immutable event commands, projector, PGlite persistence/audit, Shared/Personal sync shaping, and synthetic tests.
+- D-161 Household Fund data contracts, immutable event commands, projector, PGlite persistence/audit, Shared/Personal sync shaping, and synthetic tests.
 - Home/Books/Add surfaces for balance, contributions, funded purchases, partial settlements, custodian reconciliation, and Kitty rollover.
-- D-161 provider-neutral exact/grouped bank evidence matching and a disabled October Flinks handoff boundary.
+- D-162 provider-neutral exact/grouped bank evidence matching and a disabled October Flinks handoff boundary.
 - Canon and evidence updates.
 
 ### Out of scope
@@ -63,7 +63,7 @@ Give Jonathan and Bianca one truthful Hearth Household Fund for shared operating
 - [x] Extend PGlite ingestion and command-log materialization.
 - [x] Add Household Fund UI and Personal custodian reconciliation.
 - [x] Add provider-neutral October matching behind disabled/read-only boundaries.
-- [x] Update D-160/D-161 canon and roadmap additively.
+- [x] Update D-161/D-162 canon and roadmap additively after current-main reconciliation.
 - [x] Run focused/full proof, independent review, local seal, and durable handoff.
 
 ## Evidence log

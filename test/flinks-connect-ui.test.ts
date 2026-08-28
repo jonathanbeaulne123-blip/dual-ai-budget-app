@@ -80,6 +80,33 @@ describe("Flinks Connect panel", () => {
     expect(container.textContent).toMatch(/staged for review/i);
   });
 
+  it("shows a closeable kitchen notice when Google is not linked to this member", async () => {
+    const onStage = vi.fn();
+    const onGoMore = vi.fn();
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const path = String(input);
+      if (path === "/bank/flinks/status") return new Response(JSON.stringify({ ok: true, available: true, phase: "sandbox-configured", environment: "development-only", providerCallsEnabled: true, productionAllowed: false, detail: "Configured" }), { status: 200, headers: { "Content-Type": "application/json" } });
+      if (path.startsWith("/bank/flinks/connections?")) return new Response(JSON.stringify({ ok: true, connections: [] }), { status: 200, headers: { "Content-Type": "application/json" } });
+      if (path === "/bank/flinks/sessions") {
+        return new Response(JSON.stringify({ error: "This Google account is not linked to that Hearth member." }), { status: 403, headers: { "Content-Type": "application/json" } });
+      }
+      throw new Error(`Unexpected request ${path}`);
+    });
+    vi.stubGlobal("fetch", fetcher);
+    act(() => root.render(createElement(FlinksConnectPanel, {
+      environment: "development", householdId: "HH-TEST", memberId: "MEM-001", scopeKey: "development|HH-TEST|MEM-001|household", generation: 0, disabled: false, onStage, onGoMore,
+    })));
+
+    act(() => (container.querySelector("button") as HTMLButtonElement).click());
+    await settleUntil(() => container.querySelector(".kitchen-notice") != null);
+    expect(container.textContent).toMatch(/not linked to the person on this kitchen/i);
+    expect(container.textContent).toMatch(/Google household bridge/i);
+    expect(container.querySelector(".flinks-status")).toBeNull();
+    act(() => (container.querySelector(".kitchen-notice__close") as HTMLButtonElement).click());
+    expect(container.querySelector(".kitchen-notice")).toBeNull();
+    expect(onStage).not.toHaveBeenCalled();
+  });
+
   it("lets an existing member-owned connection fetch posted evidence again", async () => {
     const onStage = vi.fn();
     const fetcher = vi.fn(async (input: RequestInfo | URL) => {

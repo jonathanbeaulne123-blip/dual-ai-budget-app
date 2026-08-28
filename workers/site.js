@@ -1716,13 +1716,15 @@ export default {
     });
   },
   /**
-   * The Evidence queue is deliberate. While its Development activation switch
-   * is off, acknowledge any leftover delivery without reading evidence or
-   * retrying forever. Once explicitly enabled, use the bounded Evidence
-   * processor for this dedicated queue only.
+   * Development and Production use distinct Evidence queues and storage.
+   * A disabled environment acknowledges leftover delivery without reading
+   * evidence or retrying forever; active deliveries use the bounded processor.
    */
   async queue(batch, env) {
-    if (String(env?.EVIDENCE_ENABLED || "").trim().toLowerCase() !== "true") {
+    const productionQueue = String(env?.EVIDENCE_PRODUCTION_QUEUE_NAME || "hearth-evidence-derive-production");
+    const productionDisabled = String(batch?.queue || "") === productionQueue
+      && String(env?.EVIDENCE_ALLOW_PRODUCTION || "").trim().toLowerCase() !== "true";
+    if (String(env?.EVIDENCE_ENABLED || "").trim().toLowerCase() !== "true" || productionDisabled) {
       for (const message of batch.messages || []) message.ack();
       return;
     }

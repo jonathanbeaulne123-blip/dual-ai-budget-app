@@ -15,6 +15,7 @@ import {
   type SevenShiftsProbeUser,
   type SevenShiftsScope,
 } from "./imports/sevenShiftsClient.ts";
+import { KitchenNotice } from "./KitchenNotice.tsx";
 import type { ParsedSevenShiftsBatch } from "./core/importInbox/sevenshifts.ts";
 
 type State = "idle" | "probing" | "connecting" | "ready" | "error";
@@ -63,15 +64,15 @@ function ScopedSevenShiftsConnectPanel({
   }, [activeJobs, jobId]);
 
   useEffect(() => {
-    if (environment !== "development") return;
     const controller = new AbortController();
     controllerRef.current = controller;
     void (async () => {
       try {
         const status = await readSevenShiftsStatus();
         if (controller.signal.aborted) return;
-        if (!status.available) {
-          setNotice(status.detail);
+        if (!status.available || status.environments?.[environment]?.available === false) {
+          setState("error");
+          setNotice(status.environments?.[environment]?.detail || status.detail);
           return;
         }
         const existing = await listSevenShiftsConnections(scope, controller.signal);
@@ -82,7 +83,10 @@ function ScopedSevenShiftsConnectPanel({
           setNotice("7shifts is connected. Fetch punches into Timesheet; tips stay blank.");
         }
       } catch (caught) {
-        if (!controller.signal.aborted) setNotice(caught instanceof Error ? caught.message : String(caught));
+        if (!controller.signal.aborted) {
+          setState("error");
+          setNotice(caught instanceof Error ? caught.message : String(caught));
+        }
       }
     })();
     return () => controller.abort();
@@ -95,9 +99,9 @@ function ScopedSevenShiftsConnectPanel({
     setNotice("");
     try {
       const status = await readSevenShiftsStatus();
-      if (!status.available) {
-        setState("idle");
-        setNotice(status.detail);
+      if (!status.available || status.environments?.[environment]?.available === false) {
+        setState("error");
+        setNotice(status.environments?.[environment]?.detail || status.detail);
         return;
       }
       const next = await probeSevenShifts(scope, token, controller.signal);
@@ -165,15 +169,6 @@ function ScopedSevenShiftsConnectPanel({
     }
   }
 
-  if (environment !== "development") {
-    return (
-      <section className="card seven-shifts-panel">
-        <header><h2>7shifts</h2></header>
-        <p className="muted">7shifts is Development-only until Production hardening is approved.</p>
-      </section>
-    );
-  }
-
   return (
     <section className="card seven-shifts-panel">
       <header>
@@ -184,7 +179,9 @@ function ScopedSevenShiftsConnectPanel({
         </div>
       </header>
       <p className="muted">Punches fill Timesheet hours and role. Tips are not in 7shifts — leave them blank, then Confirm. Co-workers are the restaurant roster, not household members.</p>
-      {notice && <p className="muted seven-shifts-status" role={state === "error" ? "alert" : "status"}>{notice}</p>}
+      {state === "error"
+        ? <KitchenNotice message={notice} onDismiss={() => setNotice("")} />
+        : notice ? <p className="muted seven-shifts-status" role="status">{notice}</p> : null}
 
       {tab === "connect" && (
         <>
