@@ -84,6 +84,9 @@ Jonathan can explicitly connect Gmail read-only, import only genuine 7shifts mes
 - 2026-08-28: PR #239 merged as `d85ba80f82c1625d2217e2ea72fd493ae4b9878c`. GitHub CI and Cloudflare Workers workflows both completed successfully.
 - 2026-08-28: `0003_gmail_capture_dedup.sql` applied successfully to isolated Development `EVIDENCE_DB` and Production `EVIDENCE_PRODUCTION_DB`; both migration ledgers now report no pending work and both databases expose the scoped unique digest index.
 - 2026-08-28: Worker version `f30b0c54-d83d-4c27-8778-14ca7c8f637c` deployed. Live status reports both Evidence environments available; the live bundle contains direct Gmail capture and no forwarding-alias UI. `EVIDENCE_EMAIL_ENABLED=false` remains deployed.
+- 2026-08-28: first real scrub exposed two activation defects. Google initially refused the request because `gmail.googleapis.com` was disabled for OAuth project `118841732569`; Jonathan's authenticated Google Cloud session enabled that single API. The next run discovered all 330 scoped messages.
+- 2026-08-28: overlapping live scrubs encrypted all 330 messages but one visible run stopped at 194 on the scoped Gmail-digest unique index. Remote read-only evidence counts then showed 330 encrypted captures, 321 stuck `deriving`, 3 `ready`, and 6 `ready_to_review`. Multipart plain-text/HTML copies were producing the same canonical derivative key, and the queue correctly refused the duplicate row but had no stale recovery path.
+- 2026-08-28: repair branch `codex/d163-gmail-dedupe` starts from `origin/main@341756d`. It treats a raced digest insert as the already-saved winner after deleting the orphan R2 object/reservation, coalesces same-message canonical records while retaining every source-located observation/drift fact, and lets a later scrub requeue only `ready`/`deriving` captures stale for at least five minutes. Focused Gmail/Evidence proof is 29/29 and TypeScript/diff integrity pass.
 
 ## Decisions
 
@@ -94,9 +97,9 @@ Jonathan can explicitly connect Gmail read-only, import only genuine 7shifts mes
 
 ## Remaining uncertainty
 
-- Jonathan must complete Google's Gmail read-only consent when the UI requests it.
 - Google may require restricted-scope verification before broader distribution because Hearth transmits Gmail-derived bytes to its encrypted Evidence service.
+- The local D-163 recovery patch still requires a separate push/merge/deploy release decision. After deployment, one authenticated Development scrub must requeue the 321 stale captures and prove their terminal state counts.
 
 ## Handoff
 
-D-163 is merged and live with no open packet P0/P1. Both isolated Evidence schemas are current and the exact merged SHA passed CI. Jonathan's interactive Google consent is the remaining user step before a real Gmail import. Cloudflare Email Routing remains disabled and unused.
+D-163's original release is live and all 330 matching Gmail messages are encrypted in Development, but the real smoke exposed a P1 retry/derivation defect. The clean-main repair is locally green and commit-ready; deployment and one authenticated recovery scrub remain. Cloudflare Email Routing remains disabled and unused.
