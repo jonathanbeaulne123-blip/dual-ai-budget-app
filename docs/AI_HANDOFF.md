@@ -1365,3 +1365,17 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 **Engagement delta (3):** none by design. Claude gets `src/claude/commandContract.ts` adapters/fixtures; OfficePhone/Hercules chrome were not edited.
 
 **Still required:** atomic hosted CAS/journal authority and an explicit Jonathan migration decision. Do not apply `002_snapshot_cas.sql` or Auth/RLS, deploy, contact the household project, or delete hosted rows without that approval.
+
+## Bianca Month-One rehearsal (D-168) (2026-08-28)
+
+**Status:** High-risk local implementation in isolated worktree `codex/bianca-month-one`; no push, merge, deploy, hosted schema, provider, Production, scaling, shift-intake, or real household entry. Home/More wiring waits for Cursor PR #244, followed by one clean rebase.
+
+**Household outcome:** Bianca and Jonathan rehearse four Toronto weeks using real Development Confirms, see `Tied` or `Needs attention` before exact proof, record where Bianca pauses or distrusts a number, acknowledge independently, and decide together whether Hearth is wanted next month.
+
+**Budget delta (5):** `+5` — opening truth, exact journal/equation checkpoints, accepted receipt gates, correction by reversal, reconciliation, and close.
+
+**Engagement delta (3):** `+3` — ten-minute weekly continuation, deterministic Hercules narration, ordinary playtest card, humane return/friction choices, and joint approval.
+
+**Verification:** focused opening/rehearsal/Fund suites **39/39**; TypeScript, AI-surface verification, and a Windows-native production build are green. Exact September 2026 golden assertions cover every cent, journal/trial/equation, Fund projection, receipt identity, and financial/checkpoint hash. Independent books review approved after fixes; component-level UX review approved with App integration still gated; independent verifier conditionally passed the isolated core. The final full run reached **1,095 passed / 2 skipped** with three unrelated failures: the API shell test cannot find `python3` in Git Bash, one Hercules rig timing sample repeated its midpoint, and a loaded stress test exceeded its 15-second timeout. The rig and stress suites both passed immediately in isolated rerun; the API test remains an environment-only alias failure.
+
+**Next owner:** Codex after #244 lands — rebase once, wire Home invitation/resume and More manage/report without a new nav item, then run two authenticated phone-width browser proof, full check/build/AI verification, Gemini review, and close the worksession. Jonathan remains the only owner who may approve a push or any launch/Production step.

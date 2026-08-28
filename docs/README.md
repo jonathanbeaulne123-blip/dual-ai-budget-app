@@ -41,6 +41,8 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [briefs/CLAUDE_SHARED_HOME_MONTH_INSTRUMENT_2026-08-31.md](briefs/CLAUDE_SHARED_HOME_MONTH_INSTRUMENT_2026-08-31.md) | **Claude (not implement):** grander swipable Fund-month instrument for the selling Shared Home; Cursor executes after Jonathan confirms |
 | [briefs/CODEX_D165_UX_MAIN_INTEGRATION_HANDOFF_2026-08-29.md](briefs/CODEX_D165_UX_MAIN_INTEGRATION_HANDOFF_2026-08-29.md) | **Consumed:** kitchen desk is D-173 on `main` via #252. Add slideshow from later `#244` commits is **D-181**. |
 | [briefs/CHATGPT_D164_INDEPENDENT_REVIEW_2026-08-29.md](briefs/CHATGPT_D164_INDEPENDENT_REVIEW_2026-08-29.md) | Paste-ready GPT-5 Pro prompt for independent D-164 Shared kitchen / Household table review (draft PR #244; not shipped) |
+| [briefs/BIANCA_MONTH_ONE_REHEARSAL_HANDOFF_2026-08-28.md](briefs/BIANCA_MONTH_ONE_REHEARSAL_HANDOFF_2026-08-28.md) | D-168 Development-only four-week rehearsal, exact golden month, Bianca playtest/friction gate, evidence, and no-launch handoff |
+| [briefs/CURSOR_ONBOARDING_FOUNDATION_PROMPT.md](briefs/CURSOR_ONBOARDING_FOUNDATION_PROMPT.md) | Bounded Cursor Slice A foundation prompt with multi-model review and no migration/provider overlap |
 | [OFFICE.md](OFFICE.md) | Office direction; reconcile with shipped Office/mobile state when stale |
 | [CLAUDE_DESKTOP_OFFICE.md](CLAUDE_DESKTOP_OFFICE.md) | Claude desktop-office prompt |
 | [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md) | Shipped phone Home prompt/history |

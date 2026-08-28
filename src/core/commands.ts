@@ -146,6 +146,15 @@ import {
   shapeHouseholdFundSettlementAllocations,
   type HouseholdFundBankEvidence,
 } from "./householdFund.ts";
+import {
+  buildOpeningTruthDraft,
+  hasOnlyOpeningCorrectionHistory,
+  hasPostedOpeningTruth,
+  householdHasAcceptedMoney,
+  openingBatchRows,
+  openingTruthReviewSummary,
+  type OpeningLineInput,
+} from "./openingTruth.ts";
 
 export type ActorInput = {
   createdBy?: string;
@@ -239,7 +248,7 @@ function signedHouseholdFundDirection(household: Household, transactionId: strin
   return transaction.type === "refund" ? -1 : transaction.type === "expense" ? 1 : 0;
 }
 
-function commit(previous: Household, next: Household, action: string, summary: string, postedIds: string[], warnings: string[] = []): CommitResult {
+function commit(previous: Household, next: Household, action: string, summary: string, postedIds: string[], warnings: string[] = [], commandKind?: string): CommitResult {
   requireTimezone(next);
   requireCadAccounts(next);
   next.transactions = refreshDuplicateFlags(next.transactions);
@@ -261,7 +270,7 @@ function commit(previous: Household, next: Household, action: string, summary: s
     household: next,
     warnings,
     postedIds,
-    undo: { id: activity.id, label: summary, snapshot: previous, postedIds: [...postedIds] },
+    undo: { id: activity.id, label: summary, snapshot: previous, postedIds: [...postedIds], ...(commandKind ? { commandKind } : {}) },
   };
 }
 
@@ -459,7 +468,83 @@ export function postEntry(household: Household, input: {
     postedIds.push(eventId);
   }
   const warnings = matches.length ? ["Saved with a duplicate fingerprint. Review it when you have a moment."] : [];
-  return commit(previous, next, input.type === "income" ? "Add Income" : input.type === "refund" ? "Add Refund" : "Add Expense", `${draft.id}: ${input.type} $${(amountCents / 100).toFixed(2)} (${subcategory.name}) on ${date}`, postedIds, warnings);
+  return commit(previous, next, input.type === "income" ? "Add Income" : input.type === "refund" ? "Add Refund" : "Add Expense", `${draft.id}: ${input.type} $${(amountCents / 100).toFixed(2)} (${subcategory.name}) on ${date}`, postedIds, warnings, "postEntry");
+}
+
+/**
+ * Posts existing account balances against Opening equity on one Toronto date.
+ * This is a balance-sheet batch: no income, expense, budget, cash-flow, shift,
+ * recurrence, or Household Fund event is created.
+ */
+export function postOpeningBalances(household: Household, input: {
+  asOfDate: string;
+  lines: OpeningLineInput[];
+  createdBy?: string;
+  /** Stable visible-Confirm key. Repeating it cannot post a second batch. */
+  confirmationId: string;
+}): CommitResult {
+  requireTimezone(household);
+  if (household.environment !== "development") {
+    throw new ValidationError("Opening truth rehearsal is Development only.");
+  }
+  const confirmationId = input.confirmationId.trim();
+  if (!confirmationId || confirmationId.length > 120) {
+    throw new ValidationError("Opening truth needs one valid Confirm identity.");
+  }
+  const actor = resolveActor(household, { createdBy: input.createdBy, visibility: "household" });
+  const draft = buildOpeningTruthDraft(household, {
+    asOfDate: input.asOfDate,
+    createdBy: actor.createdBy,
+    lines: input.lines,
+  });
+  requireOpenPeriod(household, draft.asOfDate);
+  const existing = openingBatchRows(household, confirmationId);
+  if (existing.length) {
+    return {
+      household,
+      warnings: ["Opening truth for this Confirm was already posted."],
+      postedIds: existing.map((transaction) => transaction.id),
+      undo: {
+        id: `OPEN-IDEMPOTENT-${confirmationId}`,
+        label: "Opening truth already posted",
+        snapshot: cloneHousehold(household),
+        postedIds: existing.map((transaction) => transaction.id),
+        commandKind: "postOpeningBalances",
+      },
+    };
+  }
+  if (hasPostedOpeningTruth(household)) {
+    throw new ValidationError("Opening truth is already posted. Reverse the complete opening batch before correcting it.");
+  }
+  if (householdHasAcceptedMoney(household) && !hasOnlyOpeningCorrectionHistory(household)) {
+    throw new ValidationError("Opening truth must be the first accepted money in a new Development household.");
+  }
+
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const createdAt = nowIso();
+  const postedIds: string[] = [];
+  for (const line of draft.lines) {
+    const row = baseTx(next, {
+      date: draft.asOfDate,
+      type: "opening",
+      amountCents: line.amountCents,
+      accountId: line.accountId,
+      categoryId: null,
+      subcategoryId: null,
+      note: `Opening - ${line.accountName}`,
+      splits: [{ party: line.ownerMemberId === JOINT ? JOINT : line.ownerMemberId, amountCents: line.amountCents }],
+      source: "opening",
+      sourceId: confirmationId,
+      createdAt,
+      createdBy: actor.createdBy,
+      visibility: line.visibility,
+    });
+    row.id = nextId("TXN-OP-", next.transactions.map((transaction) => transaction.id));
+    next.transactions.push(row);
+    postedIds.push(row.id);
+  }
+  return commit(previous, next, "Opening truth", openingTruthReviewSummary(draft), postedIds, [], "postOpeningBalances");
 }
 
 /** Books civil timezone is fixed to America/Toronto (D-126 Q2 C). Phone display zones are phone-local. */
@@ -565,7 +650,7 @@ export function postTransfer(household: Household, input: {
   inDraft.transferFromAccountId = input.fromAccountId;
   inDraft.transferToAccountId = input.toAccountId;
   next.transactions.push(outDraft, inDraft);
-  return commit(previous, next, "Transfer", `Moved $${(amountCents / 100).toFixed(2)} on ${date}`, [outDraft.id, inDraft.id]);
+  return commit(previous, next, "Transfer", `Moved $${(amountCents / 100).toFixed(2)} on ${date}`, [outDraft.id, inDraft.id], [], "postTransfer");
 }
 
 export function postShift(household: Household, input: {
@@ -3465,7 +3550,7 @@ export function postWorkShiftWithAttendanceReview(
   };
 }
 
-export function reversePostedMoney(household: Household, transactionId: string, input: ActorInput = {}): CommitResult {
+export function reversePostedMoney(household: Household, transactionId: string, input: ActorInput & { reversalDate?: string } = {}): CommitResult {
   const tx = household.transactions.find((item) => item.id === transactionId);
   if (!tx) throw new ValidationError("That row is already gone.");
   const pair = tx.transferPairId
@@ -3478,13 +3563,47 @@ export function reversePostedMoney(household: Household, transactionId: string, 
   if (household.transactions.some((item) => item.reversalOfId && watched.includes(item.reversalOfId))) {
     throw new ValidationError("Already reversed. Reverse the reversing entry if you meant to reinstate.");
   }
-  const date = todayKey();
+  const date = input.reversalDate ? parseDate(input.reversalDate) : todayKey();
   requireOpenPeriod(household, date);
   const actor = resolveActor(household, { ...input, visibility: input.visibility ?? tx.visibility }, tx.createdBy);
   const previous = cloneHousehold(household);
   let next = cloneHousehold(household);
   const postedIds: string[] = [];
   const dollars = `$${(tx.amountCents / 100).toFixed(2)}`;
+
+  if (tx.type === "opening") {
+    const originals = tx.sourceId ? openingBatchRows(next, tx.sourceId) : [tx];
+    if (!originals.length) throw new ValidationError("That opening batch is gone.");
+    if (originals.some((original) => next.transactions.some((row) => row.reversalOfId === original.id))) {
+      throw new ValidationError("That opening batch is already reversed.");
+    }
+    if (originals.some((original) => original.visibility === "personal" && original.createdBy !== actor.createdBy)) {
+      throw new ValidationError("Only the owner can reverse a batch containing Personal opening balances.");
+    }
+    const createdAt = nowIso();
+    for (const original of originals) {
+      const row = baseTx(next, {
+        date,
+        type: "opening",
+        amountCents: original.amountCents,
+        accountId: original.accountId,
+        categoryId: null,
+        subcategoryId: null,
+        note: `Reversal of ${original.id}`,
+        splits: original.splits,
+        source: "reversal",
+        sourceId: original.sourceId,
+        reversalOfId: original.id,
+        createdAt,
+        createdBy: actor.createdBy,
+        visibility: original.visibility,
+      });
+      row.id = nextId("TXN-OP-", next.transactions.map((item) => item.id));
+      next.transactions.push(row);
+      postedIds.push(row.id);
+    }
+    return commit(previous, next, "Reverse", `Reversed the complete opening batch from ${tx.date}`, postedIds);
+  }
 
   const shiftTransactionIds = shift?.transactionIds?.length
     ? shift.transactionIds
@@ -4855,7 +4974,7 @@ export function configureHouseholdFund(household: Household, input: {
   next.fundSettlementAllocations = [];
   next.fundKittyAllocations = [];
   next.fundPrivate = { bankBindings: [], reconciliations: [] };
-  return commit(previous, next, "Household Fund", `Opened ${next.householdFund.name} at $0.00`, [next.householdFund.id]);
+  return commit(previous, next, "Household Fund", `Opened ${next.householdFund.name} at $0.00`, [next.householdFund.id], [], "configureHouseholdFund");
 }
 
 export function bindHouseholdFundBackingAccount(household: Household, input: {
@@ -4978,7 +5097,7 @@ export function confirmHouseholdFundContribution(household: Household, input: {
     createdAt: at,
     updatedAt: at,
   }];
-  return commit(previous, next, "Household Fund", `Received $${(proposal.amountCents / 100).toFixed(2)} contribution`, [id]);
+  return commit(previous, next, "Household Fund", `Received $${(proposal.amountCents / 100).toFixed(2)} contribution`, [id], [], "confirmHouseholdFundContribution");
 }
 
 export function confirmHouseholdFundSettlement(household: Household, input: {
@@ -5049,7 +5168,7 @@ export function confirmHouseholdFundSettlement(household: Household, input: {
   }))];
   return commit(previous, next, "Household Fund", isDirectDebit
     ? `Confirmed $${(amountCents / 100).toFixed(2)} direct debit`
-    : `Transferred $${(amountCents / 100).toFixed(2)} to ${destination!.name}`, [id, ...next.fundSettlementAllocations.filter((row) => row.eventId === id).map((row) => row.id)]);
+    : `Transferred $${(amountCents / 100).toFixed(2)} to ${destination!.name}`, [id, ...next.fundSettlementAllocations.filter((row) => row.eventId === id).map((row) => row.id)], [], "confirmHouseholdFundSettlement");
 }
 
 export function allocateHouseholdFundSurplus(household: Household, input: {
@@ -5158,7 +5277,7 @@ export function postHouseholdFundDirectDebit(household: Household, input: {
     household: settled.household,
     warnings: [...posted.warnings, ...settled.warnings],
     postedIds: [...posted.postedIds, ...settled.postedIds],
-    undo: { id: settled.undo.id, label: `Direct debit $${(amountCents / 100).toFixed(2)}`, snapshot: household, postedIds: [...posted.postedIds, ...settled.postedIds] },
+    undo: { id: settled.undo.id, label: `Direct debit $${(amountCents / 100).toFixed(2)}`, snapshot: household, postedIds: [...posted.postedIds, ...settled.postedIds], commandKind: "postHouseholdFundDirectDebit" },
   };
 }
 
@@ -5196,7 +5315,7 @@ export function recordHouseholdFundReconciliation(household: Household, input: {
     operatingFundCents: projection.operatingBalanceCents, kittyCents: projection.kittyCents,
     personalRemainderCents, differenceCents, sharedEventId: eventId, createdAt: at, updatedAt: at,
   }] };
-  return commit(previous, next, "Household Fund", differenceCents === 0 ? "Household Fund reconciliation tied" : `Household Fund reconciliation is off by $${(Math.abs(differenceCents) / 100).toFixed(2)}`, [eventId, id]);
+  return commit(previous, next, "Household Fund", differenceCents === 0 ? "Household Fund reconciliation tied" : `Household Fund reconciliation is off by $${(Math.abs(differenceCents) / 100).toFixed(2)}`, [eventId, id], [], "recordHouseholdFundReconciliation");
 }
 
 export function reverseHouseholdFundEvent(household: Household, input: {

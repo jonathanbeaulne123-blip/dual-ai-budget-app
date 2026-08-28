@@ -86,6 +86,7 @@ export type BooksEquation = {
   liabilityCents: number;
   incomeCents: number;
   expenseCents: number;
+  openingEquityCents: number;
   netWorthCents: number;
   netIncomeCents: number;
   holds: boolean;
@@ -143,6 +144,16 @@ export function buildChart(household: Household): ChartAccount[] {
       active: account.active,
     });
   }
+
+  chart.push({
+    id: "EQ-OPENING",
+    code: takeCode(used, 3000),
+    name: "Opening equity",
+    accountType: "equity",
+    normalBalance: "credit",
+    source: "equity",
+    active: true,
+  });
 
   chart.push({
     id: "EQ-RETAINED",
@@ -229,6 +240,33 @@ function compileTransfer(household: Household, tx: Transaction, pair: Transactio
   });
 }
 
+function compileOpening(household: Household, tx: Transaction): JournalEntry | null {
+  if (tx.type !== "opening") throw new ValidationError(`${tx.id} is not an opening row.`);
+  if (tx.amountCents <= 0) return null;
+  const bank = household.accounts.find((account) => account.id === tx.accountId);
+  if (!bank) throw new ValidationError(`${tx.id} points at a missing opening account.`);
+  const liability = isLiabilityKind(normalizeAccountKind(bank.kind));
+  const direction = tx.reversalOfId ? -1 : 1;
+  const party = tx.splits[0]?.party || JOINT;
+  const lines: Omit<JournalLine, "id" | "lineNo">[] = [];
+  pushSigned(lines, bank.id, (liability ? -1 : 1) * tx.amountCents * direction, party, "");
+  pushSigned(lines, "EQ-OPENING", (liability ? 1 : -1) * tx.amountCents * direction, party, "");
+  return finishEntry({
+    id: `JE-${tx.id}`,
+    date: tx.date,
+    memo: tx.note || `Opening - ${bank.name}`,
+    place: tx.place,
+    source: tx.reversalOfId ? "reversal" : "opening",
+    sourceId: tx.sourceId,
+    originTransactionIds: [tx.id],
+    visibility: tx.visibility,
+    createdBy: tx.createdBy,
+    recognized: !tx.isDuplicate,
+    duplicateKey: tx.duplicateKey,
+    lines,
+  });
+}
+
 function compileDocument(tx: Transaction): JournalEntry | null {
   const pl = tx.subcategoryId ? plAccountId(tx.subcategoryId) : "";
   if (!pl) throw new ValidationError(`${tx.id} cannot post to the books: it has no category.`);
@@ -279,7 +317,10 @@ export function compileHousehold(household: Household): CompiledBooks {
   for (const tx of household.transactions) {
     if (seen.has(tx.id)) continue;
     let entry: JournalEntry | null = null;
-    if (tx.type === "transfer") {
+    if (tx.type === "opening") {
+      seen.add(tx.id);
+      entry = compileOpening(household, tx);
+    } else if (tx.type === "transfer") {
       const pair = tx.transferPairId
         ? transactionsById.get(tx.transferPairId)
         : undefined;
@@ -364,11 +405,13 @@ export function booksEquation(books: CompiledBooks): BooksEquation {
   let liabilityCents = 0;
   let incomeCents = 0;
   let expenseCents = 0;
+  let openingEquityCents = 0;
   for (const row of tb.rows) {
     if (row.accountType === "asset") assetCents += row.netCents;
     if (row.accountType === "liability") liabilityCents += -row.netCents;
     if (row.accountType === "income") incomeCents += -row.netCents;
     if (row.accountType === "expense") expenseCents += row.netCents;
+    if (row.accountType === "equity") openingEquityCents += -row.netCents;
   }
   const netWorthCents = assetCents - liabilityCents;
   const netIncomeCents = incomeCents - expenseCents;
@@ -377,9 +420,10 @@ export function booksEquation(books: CompiledBooks): BooksEquation {
     liabilityCents,
     incomeCents,
     expenseCents,
+    openingEquityCents,
     netWorthCents,
     netIncomeCents,
-    holds: netWorthCents === netIncomeCents,
+    holds: assetCents === liabilityCents + openingEquityCents + netIncomeCents,
   };
 }
 
@@ -433,7 +477,7 @@ export function booksFindings(household: Household): BooksFinding[] {
     if (!equation.holds) {
       findings.push({
         section: "Books",
-        message: `Net worth ${equation.netWorthCents} does not equal retained net income ${equation.netIncomeCents}.`,
+        message: `Net worth ${equation.netWorthCents} does not equal opening equity ${equation.openingEquityCents} plus retained net income ${equation.netIncomeCents}.`,
       });
     }
     const snapshot = snapshotPnL(household);

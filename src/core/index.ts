@@ -1,4 +1,4 @@
-export { TIMEZONE, DEFAULT_TIMEZONE, todayKey, hourInToronto, hourInZone, kitchenSeason, weekBounds, lastWeekBounds, isValidDateKey, isValidIanaTimeZone, dateKeyInZone, monthKeyFromDateKey, shiftMonthKey, addDays, formatDateLabel, formatMonthLabel, formatDayLabel, formatTorontoTime, formatZoneTime, formatZoneDateTime, daysInMonthKey, weekdaySunday0, WEEKDAY_SHORT } from "./calendar.ts";
+export { TIMEZONE, DEFAULT_TIMEZONE, todayKey, hourInToronto, hourInZone, kitchenSeason, weekBounds, lastWeekBounds, isValidDateKey, isValidIanaTimeZone, dateKeyInZone, monthKeyFromDateKey, parseDateKey, parseMonthKey, monthStartKey, monthEndKey, shiftMonthKey, addDays, formatDateLabel, formatMonthLabel, formatDayLabel, formatTorontoTime, formatZoneTime, formatZoneDateTime, daysInMonthKey, weekdaySunday0, WEEKDAY_SHORT } from "./calendar.ts";
 export type { DateKey, MonthKey, KitchenSeason } from "./calendar.ts";
 export * from "./timeZones.ts";
 export * from "./locationPrefs.ts";
@@ -23,6 +23,9 @@ export * from "./insights.ts";
 export * from "./goals.ts";
 export * from "./goalVault.ts";
 export * from "./householdFund.ts";
+export * from "./openingTruth.ts";
+export * from "./monthRehearsal.ts";
+export * from "./monthRehearsalPractice.ts";
 export * from "./helpDesk.ts";
 export * from "./deskSync.ts";
 export * from "./commands.ts";
