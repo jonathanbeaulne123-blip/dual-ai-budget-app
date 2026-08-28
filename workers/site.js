@@ -540,6 +540,45 @@ function exposeHerculesCompanionAsset(request, response) {
   });
 }
 
+/** Toast OCR PWA at /ocr — static assets + on-device Phase 1–2. Does not touch Hearth routes. */
+async function handleToastOcr(request, env) {
+  const url = new URL(request.url);
+  const path = url.pathname;
+  if (path !== "/ocr" && path !== "/ocr/" && !path.startsWith("/ocr/")) return null;
+
+  if (path === "/ocr") {
+    return Response.redirect(`${url.origin}/ocr/`, 302);
+  }
+
+  if (path === "/ocr/health" || path === "/ocr/api/health") {
+    return json({
+      status: "ok",
+      engine: "browser",
+      version: "0.1.0",
+      phases: {
+        "1_quality": "ready",
+        "2_slice": "ready",
+        "3_ocr": "stub",
+        "4_merge": "stub",
+        "5_export": "stub",
+      },
+    });
+  }
+
+  const pythonOrigin = String(env?.TOAST_OCR_API_ORIGIN || "").trim().replace(/\/$/, "");
+  if (pythonOrigin && path.startsWith("/ocr/api/")) {
+    const dest = new URL(path.slice("/ocr".length), `${pythonOrigin}/`);
+    dest.search = url.search;
+    return fetch(new Request(dest, request));
+  }
+
+  if (path === "/ocr/") {
+    url.pathname = "/ocr/index.html";
+    return env.ASSETS.fetch(new Request(url, request));
+  }
+  return env.ASSETS.fetch(request);
+}
+
 function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
@@ -1412,6 +1451,8 @@ async function herculesRigPoll(request, env) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const toastOcr = await handleToastOcr(request, env);
+    if (toastOcr) return toastOcr;
     const sevenshifts = await handleSevenShifts(request, env);
     if (sevenshifts) return sevenshifts;
     const flinks = await handleFlinks(request, env);

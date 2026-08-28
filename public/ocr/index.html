@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en" data-base="/ocr" data-engine="browser">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1a1612">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Toast OCR">
+  <title>Toast OCR</title>
+  <link rel="manifest" href="/ocr/manifest.json">
+  <link rel="icon" href="/ocr/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/ocr/icon.svg">
+  <link rel="stylesheet" href="/ocr/styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <p class="eyebrow">Toast OCR</p>
+      <h1>Scan a long page</h1>
+      <p class="lede">Photo a receipt, report, or tall screenshot. We’ll check if it’s readable, then slice it so nothing gets crushed.</p>
+    </header>
+
+    <div id="error" class="banner error" hidden>
+      <p id="errorText"></p>
+      <button type="button" class="btn ghost" id="errorDismiss">Dismiss</button>
+    </div>
+
+    <section id="busy" class="busy" hidden>
+      <div class="spinner" aria-hidden="true"></div>
+      <p id="busyLabel">Working…</p>
+    </section>
+
+    <section id="captureHome" class="card">
+      <p class="card-kicker">Single shot</p>
+      <p>Use the rear camera, or pick a screenshot from your camera roll. Hold the phone steady.</p>
+      <div class="stack-btns">
+        <button type="button" class="btn primary" id="btnCapture">Take photo</button>
+        <button type="button" class="btn secondary" id="btnLibrary">Choose from camera roll</button>
+        <button type="button" class="btn ghost" id="btnLive" hidden>Live camera (this device)</button>
+      </div>
+      <p class="hint" id="httpHint">This page is HTTPS. <strong>Take photo</strong> opens the phone camera.</p>
+    </section>
+
+    <section id="livePanel" class="card" hidden>
+      <video id="liveVideo" playsinline autoplay muted></video>
+      <div class="stack-btns">
+        <button type="button" class="btn primary" id="btnShutter">Capture frame</button>
+        <button type="button" class="btn ghost" id="btnLiveClose">Close camera</button>
+      </div>
+      <p class="hint" id="liveError" hidden></p>
+    </section>
+
+    <section id="previewCard" class="card" hidden>
+      <p class="card-kicker">Preview</p>
+      <img id="previewImg" alt="Captured page">
+    </section>
+
+    <section id="qualityCard" class="card" hidden>
+      <p class="card-kicker">Readability</p>
+      <p id="qualityState" class="state-pill"></p>
+      <p id="qualitySummary"></p>
+      <ul id="qualityReasons" class="reasons"></ul>
+    </section>
+
+    <section id="successCard" class="card success" hidden>
+      <p class="card-kicker">Ready to read</p>
+      <h2>Slices look good</h2>
+      <p id="successText"></p>
+      <p class="phase-note">Text extraction is coming in Phase 3. Nothing below is invented OCR — these are the image chunks the engine will read next.</p>
+    </section>
+
+    <section id="slicesCard" class="card" hidden>
+      <p class="card-kicker">Smart slices</p>
+      <div id="slicesList" class="slices"></div>
+    </section>
+
+    <section id="guidanceCard" class="card warn" hidden>
+      <p class="card-kicker">Need closer shots</p>
+      <h2 id="guidanceTitle">Take overlapping photos</h2>
+      <p id="guidanceMessage"></p>
+      <ol id="guidanceSteps" class="steps"></ol>
+    </section>
+
+    <section id="multiCard" class="card" hidden>
+      <p class="card-kicker">Multi-shot</p>
+      <p>Add photos top-to-bottom. About 20% of the previous shot should still be visible at the top of the next one.</p>
+      <div id="thumbs" class="thumbs"></div>
+      <div class="stack-btns">
+        <button type="button" class="btn primary" id="btnNextShot">Add next shot</button>
+        <button type="button" class="btn secondary" id="btnNextLibrary">Add from camera roll</button>
+        <button type="button" class="btn primary" id="btnDone" disabled>I’m done</button>
+      </div>
+      <p class="hint" id="multiHint">Need at least 2 shots.</p>
+    </section>
+
+    <section id="batchCard" class="card success" hidden>
+      <p class="card-kicker">Batch saved</p>
+      <h2 id="batchTitle">Shots accepted</h2>
+      <p id="batchMessage"></p>
+      <p class="phase-note">Merging overlapping shots into one document is Phase 4 and is not built yet. We did not invent a stitched page.</p>
+      <div id="batchThumbs" class="thumbs"></div>
+      <ul id="batchWarnings" class="reasons"></ul>
+    </section>
+
+    <div class="stack-btns footer-actions">
+      <button type="button" class="btn ghost" id="btnReset" hidden>Start over</button>
+    </div>
+
+    <footer class="foot">
+      <p id="footNote">Photos stay on this phone. Add to Home Screen from the browser share/menu.</p>
+    </footer>
+  </div>
+
+  <input id="captureInput" type="file" accept="image/*" capture="environment" hidden>
+  <input id="libraryInput" type="file" accept="image/*" hidden>
+  <input id="nextCaptureInput" type="file" accept="image/*" capture="environment" hidden>
+  <input id="nextLibraryInput" type="file" accept="image/*" hidden>
+
+  <script src="/ocr/pipeline.js" defer></script>
+  <script src="/ocr/app.js" defer></script>
+</body>
+</html>

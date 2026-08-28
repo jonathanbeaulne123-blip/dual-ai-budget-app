@@ -1,0 +1,259 @@
+:root {
+  --bg: #1a1612;
+  --bg-2: #241e18;
+  --paper: #f3ead8;
+  --ink: #1a1612;
+  --muted: #cbbba4;
+  --toast: #e08a3c;
+  --toast-dark: #c46b1e;
+  --ok: #3d7a4a;
+  --warn: #c47a2a;
+  --err: #b33b2a;
+  --radius: 16px;
+  --pad: 16px;
+  --tap: 52px;
+  --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--paper);
+  font-family: var(--font);
+  font-size: 17px;
+  line-height: 1.45;
+  min-height: 100%;
+}
+
+body {
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+.app {
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: 20px 16px 48px;
+}
+
+.top h1 {
+  margin: 0 0 8px;
+  font-size: 1.75rem;
+  letter-spacing: -0.03em;
+  font-weight: 700;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.72rem;
+  color: var(--toast);
+  font-weight: 700;
+}
+
+.lede, .hint, .foot p, .phase-note {
+  color: var(--muted);
+}
+
+.card {
+  background: var(--bg-2);
+  border: 1px solid #3a3229;
+  border-radius: var(--radius);
+  padding: var(--pad);
+  margin: 14px 0;
+}
+
+.card.success { border-color: #4a8a58; }
+.card.warn { border-color: var(--toast); }
+
+.card-kicker {
+  margin: 0 0 8px;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--toast);
+  font-weight: 700;
+}
+
+.card h2 {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+}
+
+.stack-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.btn {
+  min-height: var(--tap);
+  border: 0;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 650;
+  padding: 12px 16px;
+  width: 100%;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn.primary {
+  background: var(--toast);
+  color: var(--ink);
+}
+
+.btn.primary:active { background: var(--toast-dark); }
+
+.btn.secondary {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.btn.ghost {
+  background: transparent;
+  color: var(--paper);
+  border: 1px solid #5a4e42;
+}
+
+.hint { font-size: 0.9rem; margin: 12px 0 0; }
+.phase-note { font-size: 0.92rem; margin: 10px 0 0; }
+
+.banner.error {
+  background: #3a1c18;
+  border: 1px solid var(--err);
+  border-radius: var(--radius);
+  padding: var(--pad);
+  margin: 12px 0;
+}
+
+.busy {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: var(--bg-2);
+  border-radius: var(--radius);
+  margin: 12px 0;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #5a4e42;
+  border-top-color: var(--toast);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#previewImg, #liveVideo {
+  width: 100%;
+  border-radius: 12px;
+  background: #000;
+  display: block;
+  max-height: 50vh;
+  object-fit: contain;
+}
+
+.state-pill {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  background: #3a3229;
+}
+
+.state-pill.ok { background: #2a4a32; color: #b6e0bf; }
+.state-pill.bad { background: #4a2a18; color: #ffd2a8; }
+
+.reasons, .steps {
+  margin: 8px 0 0;
+  padding-left: 1.2rem;
+}
+
+.slices {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.slice {
+  background: #16120f;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.slice img { width: 100%; display: block; }
+
+.slice figcaption {
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.thumbs {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 8px 0 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.thumb {
+  flex: 0 0 auto;
+  width: 108px;
+  background: #16120f;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #3a3229;
+}
+
+.thumb img {
+  width: 108px;
+  height: 144px;
+  object-fit: cover;
+  display: block;
+}
+
+.thumb .meta {
+  padding: 6px 8px 8px;
+  font-size: 0.78rem;
+}
+
+.thumb-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.thumb-actions button {
+  flex: 1;
+  min-height: 40px;
+  border: 0;
+  background: #3a3229;
+  color: var(--paper);
+  font: inherit;
+  font-size: 0.85rem;
+  border-radius: 8px;
+}
+
+.foot {
+  margin-top: 28px;
+  font-size: 0.85rem;
+}
+
+.footer-actions { margin-top: 8px; }
+
+[hidden] { display: none !important; }
