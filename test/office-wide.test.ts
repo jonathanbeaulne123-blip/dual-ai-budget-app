@@ -57,6 +57,7 @@ describe("wide paper infographics", () => {
     expect(spend.every((row) => row.cents > 0)).toBe(true);
     const spark = tipWeekdaySpark(dashboard.tipWeather);
     expect(spark.length === 0 || spark.length === 7).toBe(true);
+    expect(spark.every((row) => Number.isInteger(row.cents) && row.cents >= 0)).toBe(true);
   });
 
   it("returns no bars when the month is empty", () => {

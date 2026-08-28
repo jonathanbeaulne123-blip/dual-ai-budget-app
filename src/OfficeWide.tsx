@@ -29,7 +29,7 @@ import { requestCalendarPane } from "./core/calendarIntent.ts";
 import { BlotterBody, BlotterGlance } from "./widgets/Blotter.tsx";
 import { CalculatorBody, CalculatorGlance } from "./widgets/CalculatorPad.tsx";
 import { TimesheetBody, TimesheetGlance } from "./widgets/Timesheet.tsx";
-import { ChalkboardBody } from "./widgets/ChalkboardDesk.tsx";
+import { ChalkboardBody, chalkboardGlance } from "./widgets/ChalkboardDesk.tsx";
 import { JarsBody, JarsGlance } from "./widgets/Jars.tsx";
 import { LampBody, LampGlance, lampAria } from "./widgets/Lamp.tsx";
 import { MailBody, MailGlance } from "./widgets/Mail.tsx";
@@ -185,7 +185,7 @@ export function OfficeWide({
             onChooseTimeline={onChooseShiftTimeline}
             onSignOut={onSignOut} onFinished={onFinishedShift}
           />
-          <PaperSpark points={tipSpark} />
+          <PaperSpark points={tipSpark} projection={false} />
         </>
       ),
     },
@@ -297,7 +297,7 @@ export function OfficeWide({
     chalkboard: {
       kind: "Notes",
       name: "Notes",
-      glance: <span>notes</span>,
+      glance: <span>{chalkboardGlance(household)}</span>,
       aria: "Notes.",
       body: <ChalkboardBody liveSurface household={household} memberId={memberId} busy={busy} onCommand={onKitchen} />,
     },

@@ -540,6 +540,22 @@ function exposeHerculesCompanionAsset(request, response) {
   });
 }
 
+const TOAST_OCR_FRAME_HEADERS = {
+  "Content-Security-Policy": "frame-ancestors *",
+  "Permissions-Policy": "camera=(self)",
+};
+
+function withToastOcrHeaders(response) {
+  const headers = new Headers(response.headers);
+  headers.set("Content-Security-Policy", TOAST_OCR_FRAME_HEADERS["Content-Security-Policy"]);
+  headers.set("Permissions-Policy", TOAST_OCR_FRAME_HEADERS["Permissions-Policy"]);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 /** Toast OCR PWA at /ocr — static assets + on-device Phase 1–5. Does not touch Hearth routes. */
 async function handleToastOcr(request, env) {
   const url = new URL(request.url);
@@ -547,22 +563,26 @@ async function handleToastOcr(request, env) {
   if (path !== "/ocr" && path !== "/ocr/" && !path.startsWith("/ocr/")) return null;
 
   if (path === "/ocr") {
-    return Response.redirect(`${url.origin}/ocr/`, 302);
+    return withToastOcrHeaders(Response.redirect(`${url.origin}/ocr/`, 302));
   }
 
   if (path === "/ocr/health" || path === "/ocr/api/health") {
-    return json({
-      status: "ok",
-      engine: "browser",
-      version: "0.1.0",
-      phases: {
-        "1_quality": "ready",
-        "2_slice": "ready",
-        "3_ocr": "ready",
-        "4_merge": "ready",
-        "5_export": "ready",
+    return json(
+      {
+        status: "ok",
+        engine: "browser",
+        version: "0.1.0",
+        phases: {
+          "1_quality": "ready",
+          "2_slice": "ready",
+          "3_ocr": "ready",
+          "4_merge": "ready",
+          "5_export": "ready",
+        },
       },
-    });
+      200,
+      TOAST_OCR_FRAME_HEADERS,
+    );
   }
 
   const pythonOrigin = String(env?.TOAST_OCR_API_ORIGIN || "").trim().replace(/\/$/, "");
@@ -579,9 +599,12 @@ async function handleToastOcr(request, env) {
     const headers = new Headers(res.headers);
     headers.set("Content-Type", "text/html; charset=utf-8");
     headers.set("Cache-Control", "no-store");
+    headers.set("Content-Security-Policy", TOAST_OCR_FRAME_HEADERS["Content-Security-Policy"]);
+    headers.set("Permissions-Policy", TOAST_OCR_FRAME_HEADERS["Permissions-Policy"]);
     return new Response(res.body, { status: res.status, headers });
   }
-  return env.ASSETS.fetch(request);
+  const asset = await env.ASSETS.fetch(request);
+  return withToastOcrHeaders(asset);
 }
 
 function json(data, status = 200, extraHeaders = {}) {

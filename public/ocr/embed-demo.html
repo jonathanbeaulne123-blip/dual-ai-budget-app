@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Toast OCR embed demo</title>
+  <style>
+    :root {
+      --bg: #f6f1e8;
+      --ink: #1a1612;
+      --muted: #6b5e50;
+      --paper: #fffdf8;
+      --line: #d9cbb8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.45;
+    }
+    main {
+      max-width: 52rem;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+      display: grid;
+      gap: 20px;
+    }
+    @media (min-width: 840px) {
+      main { grid-template-columns: 1.15fr 0.85fr; align-items: start; }
+    }
+    h1 { margin: 0 0 8px; font-size: 1.5rem; }
+    p { margin: 0 0 12px; color: var(--muted); }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 220px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      font: inherit;
+      background: var(--paper);
+    }
+    #toast-ocr {
+      min-height: 420px;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #1a1612;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section>
+      <h1>Scan into this form</h1>
+      <p>The widget on the right is an iframe. Photos stay in the frame; extracted text is posted back here.</p>
+      <div id="toast-ocr"></div>
+    </section>
+    <section>
+      <label for="receipt-notes">Receipt notes</label>
+      <textarea id="receipt-notes" placeholder="Extracted text lands here after a readable scan."></textarea>
+    </section>
+  </main>
+  <script src="embed.js" data-mount="#toast-ocr" data-fill="#receipt-notes"></script>
+</body>
+</html>

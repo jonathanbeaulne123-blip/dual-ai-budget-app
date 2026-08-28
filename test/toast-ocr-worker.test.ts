@@ -34,5 +34,44 @@ describe("toast OCR mount at /ocr", () => {
     const response = await worker.fetch(new Request(`${origin}/ocr/`), { ASSETS: assets });
     expect(response.status).toBe(200);
     expect(await response.text()).toBe("asset:/ocr/shell.html");
+    expect(response.headers.get("Content-Security-Policy")).toBe("frame-ancestors *");
+    expect(response.headers.get("Permissions-Policy")).toBe("camera=(self)");
+  });
+
+  it("ships the embed loader and postMessage bridge in public assets", async () => {
+    const { readFileSync } = await import("node:fs");
+    const embed = readFileSync(new URL("../public/ocr/embed.js", import.meta.url), "utf8");
+    expect(embed).toContain("ToastOcr");
+    expect(embed).toContain("function mount");
+    const app = readFileSync(new URL("../public/ocr/app.js", import.meta.url), "utf8");
+    expect(app).toContain("toast-ocr:result");
+    expect(app).toContain('params.get("embed")');
+    expect(app).toContain("classList.add(\"embed\")");
+  });
+
+  it("serves embed.js and allows foreign sites to frame /ocr assets", async () => {
+    const assets = {
+      fetch: vi.fn(async (request: Request) => {
+        const path = new URL(request.url).pathname;
+        if (path === "/ocr/embed.js") {
+          return new Response("window.ToastOcr={mount(){}}", {
+            status: 200,
+            headers: { "Content-Type": "application/javascript" },
+          });
+        }
+        return new Response(`asset:${path}`, { status: 200, headers: { "Content-Type": "text/html" } });
+      }),
+    };
+    const js = await worker.fetch(new Request(`${origin}/ocr/embed.js`), { ASSETS: assets });
+    expect(js.status).toBe(200);
+    expect(await js.text()).toContain("ToastOcr");
+    expect(js.headers.get("Content-Type")).toMatch(/javascript/);
+    expect(js.headers.get("Content-Security-Policy")).toBe("frame-ancestors *");
+    expect(js.headers.get("Permissions-Policy")).toBe("camera=(self)");
+
+    const demo = await worker.fetch(new Request(`${origin}/ocr/embed-demo.html`), { ASSETS: assets });
+    expect(demo.status).toBe(200);
+    expect(await demo.text()).toBe("asset:/ocr/embed-demo.html");
+    expect(demo.headers.get("Content-Security-Policy")).toBe("frame-ancestors *");
   });
 });

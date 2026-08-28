@@ -46,8 +46,15 @@
   text-align: left;
   cursor: pointer;
 }
+.office-wide.is-adding .office-wide-mosaic {
+  pointer-events: none;
+}
 .office-wide-hero-net {
   display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
   font-family: var(--display);
   font-size: clamp(1.8rem, 3.2vw, 2.6rem);
   font-weight: 600;

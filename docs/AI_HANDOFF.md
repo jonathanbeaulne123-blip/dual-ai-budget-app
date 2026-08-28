@@ -2,7 +2,7 @@
 
 ## Keep chalkboard; restore screenshot nav (D-156) (2026-08-28)
 
-**Status:** Draft PR [#228](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/228) on `cursor/wide-paper-office-560d`. **Not merged, not deployed, not live.** Risk: **Medium** (UX Dual Course; no money, Auth, or schema).
+**Status:** Integrating `origin/main` (`fd7fff5`) into [#228](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/228) for kitchen publish. Jonathan approved push/merge/deploy. **Not merged, not deployed, not live until this packet lands on `main`.** Risk: **Medium** (UX Dual Course; no money, Auth, or schema).
 
 **Household outcome:** Laptop Home matches the attached paper-office screenshot: fat bottom nav (Home / Cal / Shift / plus / Plan / Books / More), POST / DUE / HEALTH seals, Today's stories, month blotter. The compact chip-strip nav is gone. Notes still open a live chalkboard in the notebook. Google welcome/sign-in files were not touched.
 
@@ -99,6 +99,27 @@
 **Next owner:** Jonathan — review laptop Home at ~1100px, then phone at 390. Do not merge until you are happy with the composed room. Do not treat as shipped or live.
 
 **Worksession:** [`worksessions/2026-08-28-wide-paper-office.md`](worksessions/2026-08-28-wide-paper-office.md)
+
+## Merge and deploy what is safe (2026-08-28)
+
+**Status:** Merged via [#229](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/229) onto `main` (`58b8bcd`). Kitchen Worker **live** via Cloudflare Workers run `33146400613` (Deploy green). Bundle `index-Bi_R2L6I.js` contains `office-wide`. Risk: **Medium**. Not Production household data.
+
+**Household outcome:** Laptop Home is the composed paper office (D-156). 7shifts stays inert. Conflicting High/draft PRs stay unmerged.
+
+**Budget delta (5):** `+1` — laptop Home glance without new figures.
+
+**Engagement delta (3):** `+1` — composed wide paper office on the kitchen.
+
+**Safe / live:** `main@58b8bcd` deploy `33146400613`. Live 7shifts status still `available: false`, Production locked.
+
+**Held (not safe):**
+- D-155 enablement — setup `33116671903` failed Cloudflare API `7403`. `#214` superseded by `#220`/`#222`.
+- `#218` opening truth — High, CONFLICTING, draft.
+- `#216` onboarding, `#207` computer office, `#206` tenant journal, `#203` button inventory — CONFLICTING drafts.
+
+**Verification:** `pnpm check` **967 passed / 2 skipped**; `#229` CI `test` green; visual 1100/720/390/320 on demo Development; live JS includes `office-wide` / `Today's stories`.
+
+**Next owner:** Jonathan — hard-refresh https://hearth-books.jonathan-beaulne123.workers.dev/ on a laptop (~1100px) and a phone (390). Grant the GitHub Cloudflare token D1 access before any 7shifts enablement.
 
 ## Tip-sheet transcript-first rethink (D-152) (2026-08-28)
 
