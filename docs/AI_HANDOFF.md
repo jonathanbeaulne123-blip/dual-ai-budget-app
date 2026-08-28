@@ -203,7 +203,7 @@
 
 ## 7shifts Evidence Mesh and automation (D-158/D-159) (2026-08-28)
 
-**Status:** PR [#231](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/231) is authorized for push/merge and reconciled to `origin/main@4a7ea7e`; local proof is complete. The dedicated Development D1, private R2, Queue/DLQ, `EVIDENCE_KEK_V1`, and migrations 0001/0002 are live and empty. Current pre-merge Worker version `043d8324-998e-46f3-9a6d-16d2f2aee0d7` is inert with every Evidence and 7shifts activation flag false. No email route, distribution, activation, real evidence, or Production action.
+**Status:** [PR #231](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/231) merged at `main@e342ae9`; post-merge CI and Cloudflare Worker deployment passed. The dedicated Development D1, private R2, Queue/DLQ, `EVIDENCE_KEK_V1`, and migrations 0001/0002 are live and empty. Worker version `9a1606cd-a49c-4bef-9da5-c75468e62f5a` is inert with every Evidence and 7shifts activation flag false. No email route, distribution, activation, real evidence, or Production action.
 
 **Household outcome:** Shift → Evidence can accept explicit member files/screens, saved/private ICS, rotated forwarded-mail evidence, and paired browser/iPhone captures into an encrypted personal vault. Unified bundles retain every attributed observation and conflict. Automation is off by default; an exact member/job opt-in can post eligible evidence through ordinary `postWorkShift`/PGlite/continuity and reconcile a complete payroll week through exact reversals plus chronological replacements.
 
