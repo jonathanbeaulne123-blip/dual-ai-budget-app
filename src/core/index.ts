@@ -48,6 +48,7 @@ export * from "./hercules.ts";
 export * from "./herculesTalk.ts";
 export * from "./herculesProvenance.ts";
 export * from "./herculesProWrite.ts";
+export * from "./herculesProShiftWrite.ts";
 export * from "./herculesTools.ts";
 export * from "./tipScience.ts";
 export * from "./macroPriors.ts";

@@ -5,11 +5,13 @@ import { describe, expect, it } from "vitest";
 const migration = [
   readFileSync(new URL("../migrations/evidence/0001_evidence_mesh.sql", import.meta.url), "utf8"),
   readFileSync(new URL("../migrations/evidence/0002_r2_budget_guard.sql", import.meta.url), "utf8"),
+  readFileSync(new URL("../migrations/evidence/0003_gmail_capture_dedup.sql", import.meta.url), "utf8"),
 ].join("\n");
 
 const productionMigration = [
   readFileSync(new URL("../migrations/evidence-production/0001_evidence_mesh.sql", import.meta.url), "utf8"),
   readFileSync(new URL("../migrations/evidence-production/0002_r2_budget_guard.sql", import.meta.url), "utf8"),
+  readFileSync(new URL("../migrations/evidence-production/0003_gmail_capture_dedup.sql", import.meta.url), "utf8"),
 ].join("\n");
 
 describe("D-158 dedicated Evidence D1 migration", () => {
@@ -35,6 +37,8 @@ describe("D-158 dedicated Evidence D1 migration", () => {
         .get()).toMatchObject({ field_path: "punch.future_field", value_json: '"kept"' });
       expect(db.prepare("SELECT stored_bytes, object_count FROM evidence_r2_budget WHERE singleton = 1").get())
         .toMatchObject({ stored_bytes: 0, object_count: 0 });
+      expect(db.prepare("SELECT sql FROM sqlite_master WHERE type = 'index' AND name = 'evidence_items_gmail_digest'").get())
+        .toMatchObject({ sql: expect.stringContaining("gmail-7shifts-email") });
     } finally {
       db.close();
     }

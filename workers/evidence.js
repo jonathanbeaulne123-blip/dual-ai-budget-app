@@ -14,7 +14,7 @@ const R2_CLASS_A_PUT_BUDGET = 10_000;
 const R2_CLASS_B_GET_BUDGET = 100_000;
 const CAPTURE_KINDS = new Set([
   "browser-structured", "browser-dom", "selected-json", "selected-csv", "selected-ics",
-  "calendar-sync", "email", "screenshot", "pdf", "ios-share", "local-ocr", "cloud-vision",
+  "calendar-sync", "email", "gmail-7shifts-email", "screenshot", "pdf", "ios-share", "local-ocr", "cloud-vision",
 ]);
 const CONTENT_TYPES = new Set([
   "application/json", "text/csv", "text/calendar", "text/plain", "text/html", "application/pdf",
@@ -208,13 +208,45 @@ async function createCapture(request, env, config, url) {
   if (!CAPTURE_KINDS.has(captureKind)) throw new Error("Evidence capture kind is not supported.");
   if (!CONTENT_TYPES.has(contentType)) throw new Error("Evidence content type is not supported.");
   const bytes = await readBytes(request, MAX_BYTES);
+  if (captureKind === "gmail-7shifts-email") {
+    if (contentType !== "message/rfc822") throw new Error("Gmail 7shifts capture must be a raw RFC822 message.");
+    const headerText = new TextDecoder("utf-8", { fatal: false }).decode(bytes.slice(0, 64 * 1024));
+    const headerEnd = headerText.search(/\r?\n\r?\n/);
+    const headers = (headerEnd >= 0 ? headerText.slice(0, headerEnd) : headerText).replace(/\r?\n[ \t]+/g, " ");
+    const from = (headers.split(/\r?\n/).find((line) => /^from\s*:/i.test(line)) || "").replace(/^from\s*:/i, "").trim();
+    const mailbox = from.match(/<\s*[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@([A-Z0-9.-]+)\s*>/i)
+      || from.match(/^\s*[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@([A-Z0-9.-]+)\s*$/i);
+    const domain = mailbox?.[1]?.toLowerCase().replace(/\.$/, "") || "";
+    if (domain !== "7shifts.com" && !domain.endsWith(".7shifts.com")) {
+      throw new Error("Gmail message sender is not a 7shifts domain.");
+    }
+  }
   return storeCapture(env, config, scope, captureKind, contentType, bytes);
 }
 
 async function storeCapture(env, config, scope, captureKind, contentType, bytes, state = "ready") {
   if (!bytes.byteLength) throw new Error("Evidence capture is empty.");
-  const evidenceId = randomId("evi_");
   const digest = await sha256(bytes);
+  if (captureKind === "gmail-7shifts-email") {
+    const existing = await config.db.prepare(
+      "SELECT evidence_id, state, capture_kind, content_type, byte_length, revision, created_at, updated_at FROM evidence_items WHERE environment = ? AND auth_user_id = ? AND household_id = ? AND member_id = ? AND capture_kind = 'gmail-7shifts-email' AND plaintext_sha256 = ? AND state != 'deleted' ORDER BY created_at LIMIT 1",
+    ).bind(scope.environment, scope.authUserId, scope.householdId, scope.memberId, digest).first();
+    if (existing) {
+      await audit(config, scope, existing.evidence_id, "capture-deduplicated", existing.state);
+      return {
+        evidenceId: existing.evidence_id,
+        state: existing.state,
+        captureKind: existing.capture_kind,
+        contentType: existing.content_type,
+        byteLength: Number(existing.byte_length),
+        revision: Number(existing.revision),
+        capturedAt: existing.created_at,
+        updatedAt: existing.updated_at,
+        duplicate: true,
+      };
+    }
+  }
+  const evidenceId = randomId("evi_");
   const objectKey = `v1/${evidenceId}`;
   const encrypted = await encryptRaw(config, scope, evidenceId, digest, bytes);
   const now = new Date().toISOString();
@@ -237,7 +269,7 @@ async function storeCapture(env, config, scope, captureKind, contentType, bytes,
   }
   if (state === "ready" || state === "quarantined") await config.queue.send({ evidenceId, revision: 1 });
   await audit(config, scope, evidenceId, "capture", state);
-  return { evidenceId, state, captureKind, contentType, byteLength: bytes.byteLength, revision: 1, capturedAt: now };
+  return { evidenceId, state, captureKind, contentType, byteLength: bytes.byteLength, revision: 1, capturedAt: now, duplicate: false };
 }
 
 async function provisionMailbox(request, env, config) {
@@ -1059,7 +1091,7 @@ async function persistDerivation(config, row, derived) {
       endedAt: record.endedAt,
       workedMinutes: record.workedMinutes,
       paidBreakMinutes: record.paidBreakMinutes,
-      sourceKind: row.capture_kind,
+      sourceKind: row.capture_kind === "gmail-7shifts-email" ? "email" : row.capture_kind,
       observedAt: record.observedAt || row.created_at,
       providerResourceKind: record.kind,
       providerResourceId,

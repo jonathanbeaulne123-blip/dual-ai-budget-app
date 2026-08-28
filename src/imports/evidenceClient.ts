@@ -15,6 +15,7 @@ export type EvidenceCaptureSummary = {
   revision: number;
   capturedAt: string;
   updatedAt?: string;
+  duplicate?: boolean;
 };
 export type EvidenceBundleSummary = { bundleId: string; state: string; bundle: SevenShiftsEvidenceBundle; updatedAt: string };
 export type EvidenceDerivedDetail = {
