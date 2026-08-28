@@ -167,6 +167,9 @@ export function commandIdentityFacts(previous: Household | null, next: Household
   const fundKittyAllocations = (next.fundKittyAllocations ?? []).filter((row) => posted.has(row.id));
   const fundMonthPlans = (next.fundMonthPlans ?? []).filter((row) => posted.has(row.id));
   const fundConfigPosted = Boolean(next.householdFund && posted.has(next.householdFund.id));
+  const coworkers = (next.coworkers ?? []).filter((row) => posted.has(row.id));
+  const coworkerAttendance = (next.coworkerAttendance ?? []).filter((row) => posted.has(row.id));
+  const tombstones = (next.tombstones ?? []).filter((row) => posted.has(row.id));
   return stable({
     householdId: next.householdId,
     environment: next.environment,
@@ -211,6 +214,9 @@ export function commandIdentityFacts(previous: Household | null, next: Household
     fundEvents,
     fundSettlementAllocations,
     fundKittyAllocations,
+    coworkers,
+    coworkerAttendance,
+    tombstones,
     // Private reconciliation and binding details never affect a shared command identity.
     fundPrivate: null,
   });

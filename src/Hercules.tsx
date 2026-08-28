@@ -47,6 +47,7 @@ import {
   isInstrumentId,
   loadPhonePlacePrefs,
   householdForHerculesContext,
+  workplaceContextForAiDisclosure,
   CAT,
   NAV,
   WIDE_BREAKPOINT,
@@ -247,6 +248,15 @@ export function HerculesPresence({
   const [begging, setBegging] = useState(false);
   const [bagPlay, setBagPlay] = useState(false);
   const [question, setQuestion] = useState("");
+  const [shareWorkplaceRoster, setShareWorkplaceRoster] = useState(false);
+  const [ephemeralWorkplaceTurn, setEphemeralWorkplaceTurn] = useState(false);
+  const selectableWorkplaceCoworkerIds = useMemo(() => (household.coworkers ?? [])
+    .filter((row) => row.active && row.ownerMemberId === memberId)
+    .map((row) => row.id), [household.coworkers, memberId]);
+  useEffect(() => {
+    setShareWorkplaceRoster(false);
+    setEphemeralWorkplaceTurn(false);
+  }, [household.environment, household.householdId, memberId, view]);
   const [topic, setTopic] = useState("idle");
   const [purr, setPurr] = useState(false);
   const [turns, setTurns] = useState<HerculesChatTurn[]>(() =>
@@ -549,7 +559,10 @@ export function HerculesPresence({
     setTurns(ledgerChats(household).slice(-12).map((row) => ({ role: row.role, text: row.text })));
   }, [household, busy]);
 
-  function keepTalk(userText: string | undefined, herculesText: string, source: "journal" | "memory" | "local" | "ai", memory?: { kind: "note" | "payday" | "bill" | "habit" | "preference"; text: string; label: string } | null) {
+  function keepTalk(userText: string | undefined, herculesText: string, source: "journal" | "memory" | "local" | "ai", memory?: { kind: "note" | "payday" | "bill" | "habit" | "preference"; text: string; label: string } | null, ephemeral = false) {
+    // A one-reply workplace disclosure must not copy names from the model
+    // answer into the Shared kitchen chat ledger.
+    if (ephemeral) return;
     onLedger((current) => recordHerculesTalk(current, {
       author: memberId,
       userText,
@@ -594,6 +607,8 @@ export function HerculesPresence({
     setQuestion("");
     setBegging(false);
     setReplySource(null);
+    setShareWorkplaceRoster(false);
+    setEphemeralWorkplaceTurn(false);
     setTurns([]);
     if (phoneShell) setMobileFocus(false);
     if (focusedWidget) {
@@ -755,9 +770,18 @@ export function HerculesPresence({
     return false;
   }
 
+  function consumeWorkplaceRosterConsent(): string[] {
+    const selected = view === "personal" && shareWorkplaceRoster
+      ? selectableWorkplaceCoworkerIds
+      : [];
+    setShareWorkplaceRoster(false);
+    return selected;
+  }
+
   function speak(raw: string) {
     const text = raw.trim();
     if (!text || busy) return;
+    const requestedCoworkerIds = consumeWorkplaceRosterConsent();
     const helpCmd = matchHelpCommand(
       helpCommands({ tab: adding ? "add" : tab, instrument: currentInstrument(), household, today }),
       text,
@@ -778,12 +802,16 @@ export function HerculesPresence({
       setReplySource(null);
       return;
     }
-    void sendChat(helpCmd?.prompt ?? text);
+    void sendChat(helpCmd?.prompt ?? text, requestedCoworkerIds);
   }
 
-  async function sendChat(raw: string) {
+  async function sendChat(raw: string, preconsumedCoworkerIds?: string[]) {
     const message = raw.trim();
     if (!message || busy) return;
+    // Consume consent on every Send. `speak` passes its already-consumed value
+    // so suggested local replies cannot leak consent into a later turn.
+    const requestedCoworkerIds = preconsumedCoworkerIds ?? consumeWorkplaceRosterConsent();
+    setEphemeralWorkplaceTurn(false);
     const helpCmd = matchHelpCommand(
       helpCommands({ tab: adding ? "add" : tab, instrument: currentInstrument(), household, today }),
       message,
@@ -807,6 +835,8 @@ export function HerculesPresence({
       return;
     }
     setReplySource(null);
+    const coworkerIdsForModel = requestedCoworkerIds;
+    setEphemeralWorkplaceTurn(coworkerIdsForModel.length > 0);
     const grounded = plan.talk;
     const briefing = herculesBriefing(contextHousehold, page, today);
     const gen = chatGen.current + 1;
@@ -848,6 +878,7 @@ export function HerculesPresence({
           groundedAnswer.lesson,
           ...(groundedAnswer.facts ?? []).flatMap((item) => [item.label, item.value]),
         ),
+        workplaceContext: workplaceContextForAiDisclosure(household, memberId, coworkerIdsForModel),
       });
       if (!isCurrentHerculesReply(replyContext, {
         ...activeChatIdentity.current,
@@ -874,13 +905,14 @@ export function HerculesPresence({
       setMotion(answer.pose);
       setBusy(false);
       setReplySource(usedModelVoice ? "ai" : null);
-      keepTalk(message, answer.spoken, usedModelVoice ? "ai" : "journal");
+      keepTalk(message, answer.spoken, usedModelVoice ? "ai" : "journal", null, coworkerIdsForModel.length > 0);
       return;
     }
     const result = await chatHercules(
       composeHerculesChatRequest(household, message, briefing, today, memberId, topic, {
         shareCoordsWithModel: loadPhonePlacePrefs(household.environment).shareCoordsWithModel,
         view,
+        coworkerIdsForModel,
       }),
     );
     if (!isCurrentHerculesReply(replyContext, {
@@ -900,7 +932,7 @@ export function HerculesPresence({
     setMotion(grounded.pose === "sleep" ? "loaf" : grounded.pose);
     setBusy(false);
     setReplySource(result.source);
-    keepTalk(message, result.text, result.source === "ai" ? "ai" : "local");
+    keepTalk(message, result.text, result.source === "ai" ? "ai" : "local", null, coworkerIdsForModel.length > 0);
   }
 
   function onPointerDown(event: PointerEvent<HTMLButtonElement>) {
@@ -1052,6 +1084,17 @@ export function HerculesPresence({
     : talk?.fact?.source
       ? [{ id: `fact:${talk.fact.label}:${talk.fact.value}`, label: talk.fact.label, value: talk.fact.value, source: talk.fact.source, basis: "journal" as const }]
       : [];
+  const workplaceShareToggle = () => view === "personal" && selectableWorkplaceCoworkerIds.length > 0 ? (
+    <label className="hercules-workplace-share">
+      <input
+        type="checkbox"
+        checked={shareWorkplaceRoster}
+        disabled={busy}
+        onChange={(event) => setShareWorkplaceRoster(event.target.checked)}
+      />
+      <span>include my private workplace roster for this reply</span>
+    </label>
+  ) : null;
 
   return (
     <HerculesRigProvider mood={look.view.mood} reducedMotion={reducedMotion()}>
@@ -1080,6 +1123,8 @@ export function HerculesPresence({
             {busy && <p className="hercules-snippet cat">mrrp…</p>}
           </div>
           {open && (
+            <>
+            {workplaceShareToggle()}
             <form
               className="hercules-chat-form"
               onSubmit={(event) => {
@@ -1099,6 +1144,7 @@ export function HerculesPresence({
               />
               <button type="submit" disabled={busy || !question.trim()}>send</button>
             </form>
+            </>
           )}
         </div>
       )}
@@ -1178,6 +1224,7 @@ export function HerculesPresence({
                 ))}
               </div>
             )}
+            {workplaceShareToggle()}
             <form
               className="hercules-chat-form"
               onSubmit={(event) => {
@@ -1276,10 +1323,13 @@ export function HerculesPresence({
             <p className="hercules-spoken">{talk.spoken}</p>
           )}
           {!busy && talk.lesson && <p className="hercules-lesson">{talk.lesson}</p>}
-          {open && !busy && replySource && (
+          {open && !busy && ephemeralWorkplaceTurn && (
+            <p className="hercules-source">Private workplace roster used for this reply. This turn was not saved.</p>
+          )}
+          {open && !busy && !ephemeralWorkplaceTurn && replySource && (
             <p className="hercules-source">{replySource === "ai" ? "ai" : "on-device"}</p>
           )}
-          {open && !busy && !replySource && turns.some((turn) => turn.role === "user") && (
+          {open && !busy && !ephemeralWorkplaceTurn && !replySource && turns.some((turn) => turn.role === "user") && (
             <p className="hercules-source">Kept in the kitchen ledger. Same door as the books.</p>
           )}
           {!busy && groundedFacts.length > 0 && (
@@ -1322,6 +1372,7 @@ export function HerculesPresence({
                   ))}
                 </div>
               )}
+              {workplaceShareToggle()}
               <form
                 className="hercules-chat-form"
                 onSubmit={(event) => {

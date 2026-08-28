@@ -220,6 +220,56 @@ export function noticeViews(household: Household, today: DateKey): HerculesNotic
     }));
 }
 
+export type HerculesWorkplaceContext = {
+  scope: "requesting-member-selected";
+  coworkers: Array<{
+    displayName: string;
+    jobName: string;
+    locationName: string;
+    observedRoles: string[];
+    recentAttendance: Array<{ date: string; status: string; roleLabel: string }>;
+  }>;
+};
+
+/**
+ * Builds the separately consented, per-message workplace excerpt. Generic AI
+ * projections remain roster-free; only ids explicitly selected by the
+ * requesting owner can enter this reduced model payload.
+ */
+export function workplaceContextForAiDisclosure(
+  household: Household,
+  memberId: string,
+  selectedCoworkerIds: string[] = [],
+): HerculesWorkplaceContext | null {
+  const selected = new Set(selectedCoworkerIds.slice(0, 200).map(String));
+  if (!selected.size) return null;
+  const jobs = new Map((household.workJobs ?? []).filter((job) => job.memberId === memberId).map((job) => [job.id, job]));
+  const shifts = new Map((household.shifts ?? []).filter((shift) => shift.memberId === memberId).map((shift) => [shift.id, shift]));
+  const coworkers = (household.coworkers ?? [])
+    .filter((row) => row.active && row.ownerMemberId === memberId && selected.has(row.id) && jobs.has(row.jobId))
+    .slice(0, 200)
+    .map((row) => {
+      const job = jobs.get(row.jobId)!;
+      const recentAttendance = (household.coworkerAttendance ?? [])
+        .filter((item) => item.ownerMemberId === memberId && item.coworkerId === row.id && shifts.has(item.shiftId))
+        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+        .slice(0, 12)
+        .map((item) => ({
+          date: shifts.get(item.shiftId)!.date,
+          status: item.status,
+          roleLabel: item.roleLabel,
+        }));
+      return {
+        displayName: row.displayName,
+        jobName: job.name,
+        locationName: row.locationName,
+        observedRoles: row.observedRoles.map((role) => role.label).slice(0, 16),
+        recentAttendance,
+      };
+    });
+  return coworkers.length ? { scope: "requesting-member-selected", coworkers } : null;
+}
+
 export function composeHerculesChatRequest(
   household: Household,
   message: string,
@@ -227,7 +277,7 @@ export function composeHerculesChatRequest(
   today: DateKey,
   memberId: string,
   lastTopic = "",
-  options: { shareCoordsWithModel?: boolean; view?: LedgerView } = {},
+  options: { shareCoordsWithModel?: boolean; view?: LedgerView; coworkerIdsForModel?: string[] } = {},
 ): {
   message: string;
   briefing: HerculesBriefing;
@@ -238,6 +288,7 @@ export function composeHerculesChatRequest(
   ledger: HerculesLedgerExcerpt;
   ledgerLines: string;
   figures: string[];
+  workplaceContext: HerculesWorkplaceContext | null;
   /** Viewer used for the disclosure projection. Never a secret. */
   memberId: string;
 } {
@@ -262,6 +313,9 @@ export function composeHerculesChatRequest(
     scopedGrounded.fact?.value,
     ...(scopedGrounded.facts ?? []).map((fact) => fact.value),
   );
+  const workplaceContext = options.view === "personal"
+    ? workplaceContextForAiDisclosure(household, memberId, options.coworkerIdsForModel)
+    : null;
   return {
     message: scrubQuietText(message, secrets) || message.trim(),
     householdId: household.householdId,
@@ -289,6 +343,7 @@ export function composeHerculesChatRequest(
     ledger,
     ledgerLines: formatLedgerExcerptForModel(ledger),
     figures,
+    workplaceContext,
   };
 }
 

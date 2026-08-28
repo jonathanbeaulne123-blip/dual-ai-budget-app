@@ -1504,6 +1504,16 @@ input, select, textarea {
 }
 .hercules-chat-form input { flex: 1; }
 .hercules-chat-form button { padding: 6px 10px; }
+.hercules-workplace-share {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 6px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.25;
+}
+.hercules-workplace-share input { width: auto; margin: 0; flex: 0 0 auto; }
 .hercules-dismiss {
   display: block;
   margin: 6px 0 0 auto;
