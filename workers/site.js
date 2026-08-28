@@ -575,7 +575,7 @@ async function handleToastOcr(request, env) {
   if (path === "/ocr/" || path === "/ocr/index.html" || path === "/ocr/shell.html") {
     // Do not fetch /ocr/index.html from Assets: Cloudflare 307s that to /ocr/,
     // which would loop with the directory rewrite below.
-    const res = await env.ASSETS.fetch(new URL("/ocr/shell.html", url.origin));
+    const res = await env.ASSETS.fetch(new Request(new URL("/ocr/shell.html", url.origin)));
     const headers = new Headers(res.headers);
     headers.set("Content-Type", "text/html; charset=utf-8");
     headers.set("Cache-Control", "no-store");
