@@ -20,15 +20,15 @@ describe("toast OCR mount at /ocr", () => {
     expect(assets.fetch).not.toHaveBeenCalled();
   });
 
-  it("forwards /ocr/ to the OCR index asset", async () => {
+  it("forwards /ocr/ to the OCR shell asset", async () => {
     const assets = {
       fetch: vi.fn(async (request: Request) => {
         const path = new URL(request.url).pathname;
-        return new Response(path, { status: 200, headers: { "Content-Type": "text/html" } });
+        return new Response(`asset:${path}`, { status: 200, headers: { "Content-Type": "text/html" } });
       }),
     };
     const response = await worker.fetch(new Request(`${origin}/ocr/`), { ASSETS: assets });
     expect(response.status).toBe(200);
-    expect(await response.text()).toBe("/ocr/index.html");
+    expect(await response.text()).toBe("asset:/ocr/shell.html");
   });
 });
