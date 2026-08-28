@@ -7,6 +7,7 @@ import {
   confirmHouseholdFundContribution,
   confirmHouseholdFundSettlement,
   formatCad,
+  LEDGER_CUSTODY_DISCLOSURE,
   monthKeyFromDateKey,
   projectHouseholdFund,
   proposeHouseholdFundContribution,
@@ -103,7 +104,7 @@ export function HouseholdFundPanel({
       <section className="card household-fund-panel">
         <header><h2>Household Fund</h2><span className="muted">September practice · opens at $0.00</span></header>
         <p>Set aside part of Bianca’s existing savings as the shared operating pool. It is a Hearth subledger, not a bank account.</p>
-        <p className="muted">The money remains in Bianca’s savings. Hearth cannot hold, move, withdraw, or delete it.</p>
+        <p className="muted">{LEDGER_CUSTODY_DISCLOSURE}</p>
         {member?.name.toLowerCase().includes("bianca") ? (
           <button className="primary" type="button" onClick={() => onCommand((current) => configureHouseholdFund(current, { custodianMemberId: memberId, createdBy: memberId, openedOn: today }))}>
             Confirm $0.00 practice fund
@@ -122,7 +123,7 @@ export function HouseholdFundPanel({
           <div className="stat"><span>Operating balance</span><strong>{formatCad(projection.operatingBalanceCents)}</strong></div>
           <div className="stat"><span>Transfer due</span><strong>{formatCad(projection.transferDueCents)}</strong></div>
           <div className="stat"><span>Upcoming reserve</span><strong>{formatCad(projection.upcomingReserveCents)}</strong></div>
-          <div className="stat"><span>{projection.topUpNeededCents ? "Top-up needed" : "Free to spend"}</span><strong className={projection.topUpNeededCents ? "negative" : ""}>{formatCad(projection.topUpNeededCents || projection.freeToSpendCents)}</strong></div>
+          <div className="stat"><span>{projection.topUpNeededCents ? "Top-up needed" : "Fund free-to-spend"}</span><strong className={projection.topUpNeededCents ? "negative" : ""}>{formatCad(projection.topUpNeededCents || projection.freeToSpendCents)}</strong></div>
         </div>
         <div className="row"><span>Monthly target</span><strong>{formatCad(projection.targetProgressCents)} / {formatCad(projection.monthlyTargetCents)}</strong></div>
         <div className="row"><span>Reconciliation</span><strong>{projection.lastReconciledAt ? (projection.reconciliationTied ? "Tied" : "Needs review") : "Not yet reconciled"}</strong></div>

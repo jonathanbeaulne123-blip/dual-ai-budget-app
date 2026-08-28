@@ -25,6 +25,17 @@
   color: var(--ink);
   font-size: 0.95rem;
 }
+.ledger-story-stats .stat strong.negative,
+.household-fund-panel .stat strong.negative,
+.household-fund-glance .stat strong.negative {
+  color: var(--danger);
+}
+
+@media (max-width: 719px) {
+  .ledger-purpose-copy {
+    display: none;
+  }
+}
 
 .ledger-story-room {
   display: grid;

@@ -67,7 +67,7 @@ type Pane = (typeof PANES)[number]["id"];
 
 export function BooksPage({
   household,
-  booksHousehold = household,
+  booksHousehold,
   memberId,
   view,
   booksStatus,
@@ -83,7 +83,7 @@ export function BooksPage({
   onGoMore,
 }: {
   household: Household;
-  booksHousehold?: Household;
+  booksHousehold: Household;
   memberId: string;
   view: LedgerView;
   booksStatus: BooksStatus | null;
@@ -99,7 +99,7 @@ export function BooksPage({
   onGoMore?: () => void;
 }) {
   const [pane, setPane] = useState<Pane>(view === "personal" ? "wallet" : "fund");
-  const books = useMemo(() => compileHousehold(household), [household]);
+  const books = useMemo(() => compileHousehold(booksHousehold), [booksHousehold]);
   const trial = useMemo(() => trialBalance(books, { recognizedOnly: true }), [books]);
   const equation = useMemo(() => booksEquation(books), [books]);
   const opinion = useMemo(() => auditOpinion(booksHousehold), [booksHousehold]);
@@ -255,7 +255,7 @@ export function BooksPage({
         />
       )}
       {pane === "fund" && (
-        <HouseholdFundPanel household={household} memberId={memberId} view={view} onCommand={onCommand} />
+        <HouseholdFundPanel household={booksHousehold} memberId={memberId} view={view} onCommand={onCommand} />
       )}
       {pane === "register" && (
         <LedgerPage
@@ -359,7 +359,7 @@ export function BooksPage({
         </section>
       )}
       {pane === "statements" && (
-        <StatementsPane household={household} writeHousehold={booksHousehold} monthKey={monthKey} today={today} onChange={onChange} />
+        <StatementsPane household={booksHousehold} writeHousehold={booksHousehold} monthKey={monthKey} today={today} onChange={onChange} />
       )}
       {pane === "rec" && (
         <section className="card">
@@ -548,7 +548,7 @@ export function BooksPage({
           </div>
         </section>
       )}
-      {pane === "query" && <AskBooks household={household} />}
+      {pane === "query" && <AskBooks household={booksHousehold} />}
       <div className="chips" style={{ marginTop: 8 }}>
         <button className="chip" onClick={() => downloadText(booksFilename(books, "sql"), booksSqlDump(books), "application/sql")}>
           Download SQL

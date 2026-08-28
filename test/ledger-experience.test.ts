@@ -3,20 +3,25 @@ import {
   HOUSEHOLD_FUND_ID,
   addAccount,
   addGoal,
+  addRecurrence,
   bindHouseholdFundBackingAccount,
+  buildSharedLedgerStory,
   catalogHousehold,
   closeBooksMonth,
   compileHousehold,
   configureHouseholdFund,
   confirmHouseholdFundContribution,
+  creditCardView,
   findingsSafeForView,
   ledgerRouteContract,
   postEntry,
+  projectHouseholdFund,
   projectLedgerExperience,
   proposeHouseholdFundContribution,
   recordHouseholdFundReconciliation,
   restoreAcceptedSnapshot,
   seedDemoHousehold,
+  sitDownPreview,
   splitForSync,
 } from "../src/core/index.ts";
 
@@ -101,6 +106,69 @@ describe("projectLedgerExperience", () => {
     expect(() => compileHousehold(personal.scopedHousehold)).not.toThrow();
     expect(() => compileHousehold(personal.booksHousehold)).not.toThrow();
     expect(personal.booksHousehold.transactions.length).toBeGreaterThan(personal.scopedHousehold.transactions.length);
+  });
+
+  it("compiles Shared sit-down leftover and Visa owed from accepted books, not the presentation clone", () => {
+    let household = catalogHousehold();
+    household = postEntry(household, {
+      date: DATE,
+      type: "expense",
+      amount: 42,
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-LIFE-FUN",
+      note: "Haircut",
+      splits: [{ party: BIANCA, amountCents: 4200 }],
+      createdBy: BIANCA,
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+    household = postEntry(household, {
+      date: DATE,
+      type: "expense",
+      amount: 28.5,
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-LIFE-FUN",
+      note: "Gym drop-in",
+      splits: [{ party: JONATHAN, amountCents: 2850 }],
+      createdBy: JONATHAN,
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+    const shared = projectLedgerExperience(household, JONATHAN, "household", DATE);
+    if (!shared.ok) throw new Error("expected ok");
+    const visa = household.accounts.find((row) => row.id === "ACC-VISA");
+    const scopedVisa = shared.scopedHousehold.accounts.find((row) => row.id === "ACC-VISA");
+    if (!visa || !scopedVisa) throw new Error("expected Visa");
+    expect(creditCardView(shared.booksHousehold, visa, DATE).owedCents
+      - creditCardView(shared.scopedHousehold, scopedVisa, DATE).owedCents).toBe(7050);
+    const funSuggested = (books: typeof household) => (
+      sitDownPreview(books, "2026-09").rows.find((row) => row.subcategoryId === "SUB-LIFE-FUN")?.suggestedCents ?? 0
+    );
+    expect(funSuggested(shared.booksHousehold)).toBeGreaterThan(funSuggested(shared.scopedHousehold));
+    expect(compileHousehold(shared.booksHousehold).entries.length)
+      .toBeGreaterThan(compileHousehold(shared.scopedHousehold).entries.length);
+  });
+
+  it("reserves Fund-backed personal-scope recurrences on accepted books, not Shared presentation", () => {
+    const { household: seeded, backingId } = withPrivateBacking();
+    const household = addRecurrence(seeded, {
+      cadence: "monthly",
+      nextDate: DATE,
+      type: "expense",
+      amount: 50,
+      accountId: backingId,
+      subcategoryId: "SUB-LIFE-FUN",
+      note: "Personal Fund-backed",
+      fundingDefault: { fundId: HOUSEHOLD_FUND_ID, fundedCents: "full", destinationAccountId: "ACC-VISA" },
+    }).household;
+    const shared = projectLedgerExperience(household, JONATHAN, "household", DATE);
+    if (!shared.ok) throw new Error("expected ok");
+    const accepted = projectHouseholdFund(shared.booksHousehold, DATE);
+    const scoped = projectHouseholdFund(shared.scopedHousehold, DATE);
+    expect(accepted.upcomingReserveCents).toBe(5000);
+    expect(scoped.upcomingReserveCents).toBe(0);
+    expect(accepted.freeToSpendCents).toBe(scoped.freeToSpendCents - 5000);
+    expect(buildSharedLedgerStory(shared.booksHousehold, DATE).opening.upcomingReserveCents).toBe(5000);
   });
 
   it("restores partner Personal rows when a Shared presentation write is persisted", () => {

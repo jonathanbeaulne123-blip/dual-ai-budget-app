@@ -10,7 +10,6 @@ import {
   monthInOutBars,
   phoneDueBill,
   revealPhoneInstrument,
-  runHealthCheck,
   shiftPostingStreak,
   tipWeekdaySpark,
   toggleInstrumentPin,
@@ -21,7 +20,7 @@ import {
   cookOffScore,
   sitDownPostcard,
 } from "./core/index.ts";
-import type { Account, Category, CommitResult, Environment, Household, InstrumentId, OfficeLayout, UndoToken } from "./core/index.ts";
+import type { Account, Category, CommitResult, Environment, Finding, Household, InstrumentId, OfficeLayout, UndoToken } from "./core/index.ts";
 import type { Dashboard } from "./core/insights.ts";
 import type { HearthTab } from "./core/hercules.ts";
 import { requestCalendarPane } from "./core/calendarIntent.ts";
@@ -60,14 +59,15 @@ type Spec = {
  * seals + mosaic | hero blotter + side notebook. Not a stretched phone.
  */
 export function OfficeWide({
-  household, dashboard, layout, onLayout,
+  household, booksHousehold, dashboard, layout, onLayout,
   today, memberId, view, busy, adding, form, mode, error, categories, postLabel,
-  environment, clinkOn,
+  environment, clinkOn, integrityFindings = [],
   onForm, onPost, onMore, onMilk, onCoffee, onClockIn, onAbandonShift,
   onStartBreak, onEndBreak, onChooseShiftTimeline, onSignOut, onFinishedShift, onPayCard, onOpenAccount,
   onKitchen, onMarkPaid, onAskSettle, onAskStartJar, onSitDown, onGo, onClinkOn,
 }: {
   household: Household;
+  booksHousehold: Household;
   dashboard: Dashboard;
   layout: OfficeLayout;
   onLayout: (next: OfficeLayout) => void;
@@ -104,6 +104,7 @@ export function OfficeWide({
   onSitDown: (next: Household, token?: UndoToken) => void;
   onGo: (tab: HearthTab) => void;
   onClinkOn: (on: boolean) => void;
+  integrityFindings?: Finding[];
 }) {
   const sealsRef = useFurniture("wide-seals", "tray", true, false);
   const heroRef = useFurniture("blotter", "board", true, false);
@@ -111,10 +112,10 @@ export function OfficeWide({
   const noteRef = useFurniture("wide-notebook", "pad", true, false);
 
   const opinion = useMemo(() => auditOpinion(household), [household]);
-  const findings = useMemo(() => runHealthCheck(household), [household]);
+  const findings = integrityFindings;
   const streak = useMemo(() => shiftPostingStreak(household, today), [household, today]);
   const wallet = useMemo(() => householdWallet(household, today), [household, today]);
-  const postcard = useMemo(() => sitDownPostcard(household), [household]);
+  const postcard = useMemo(() => sitDownPostcard(booksHousehold), [booksHousehold]);
   const cook = useMemo(() => cookOffScore(household, today), [household, today]);
   const memberName = household.members.find((m) => m.id === memberId)?.name ?? "";
   const mailWarn = mailOverdue(dashboard, today);
@@ -285,7 +286,7 @@ export function OfficeWide({
       name: "Sit-down",
       glance: <PostcardGlance card={postcard} />,
       aria: "Sit-down.",
-      body: <PostcardBody household={household} card={postcard} viewPersonal={view === "personal"} onApply={onSitDown} />,
+      body: <PostcardBody household={booksHousehold} card={postcard} viewPersonal={view === "personal"} onApply={onSitDown} />,
     },
     cookoff: {
       kind: "Kitchen",

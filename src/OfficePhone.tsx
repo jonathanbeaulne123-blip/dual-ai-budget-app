@@ -12,11 +12,10 @@ import {
   instrumentIsOpen,
   revealPhoneInstrument,
   toggleInstrumentPin,
-  runHealthCheck,
   shiftPostingStreak,
   walletWarn,
 } from "./core/index.ts";
-import type { Household, Account, Category, CommitResult, InstrumentId, OfficeLayout, WeatherReading } from "./core/index.ts";
+import type { Household, Account, Category, CommitResult, Finding, InstrumentId, OfficeLayout, WeatherReading } from "./core/index.ts";
 import type { Dashboard } from "./core/insights.ts";
 import type { HearthTab } from "./core/hercules.ts";
 import type { SillOverview } from "./core/sillOverview.ts";
@@ -50,6 +49,7 @@ type Spec = {
 export function OfficePhone({
   household, dashboard, sill, reading, layout, onLayout,
   today, memberId, busy, adding, form, mode, error, categories, postLabel,
+  integrityFindings = [],
   onForm, onPost, onMore, onMilk, onCoffee, onClockIn, onAbandonShift,
   onStartBreak, onEndBreak, onChooseShiftTimeline, onSignOut, onFinishedShift, onPayCard, onOpenAccount,
   onKitchen, onMarkPaid, onGo,
@@ -86,10 +86,11 @@ export function OfficePhone({
   onKitchen: (fn: (current: Household) => CommitResult) => void;
   onMarkPaid: (recurrenceId: string, summary: string) => void;
   onGo: (tab: HearthTab) => void;
+  integrityFindings?: Finding[];
 }) {
   const [chalkOpen, setChalkOpen] = useState(false);
   const opinion = useMemo(() => auditOpinion(household), [household]);
-  const findings = useMemo(() => runHealthCheck(household), [household]);
+  const findings = integrityFindings;
   const streak = useMemo(() => shiftPostingStreak(household, today), [household, today]);
   const wallet = useMemo(() => householdWallet(household, today), [household, today]);
   const memberName = household.members.find((m) => m.id === memberId)?.name ?? "";

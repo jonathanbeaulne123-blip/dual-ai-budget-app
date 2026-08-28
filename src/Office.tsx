@@ -118,6 +118,7 @@ function useBreakpoint(): OfficeBreakpoint {
 
 export function Office({
   household,
+  booksHousehold,
   dashboard,
   today,
   environment,
@@ -156,6 +157,7 @@ export function Office({
   integrityFindings = [],
 }: {
   household: Household;
+  booksHousehold: Household;
   dashboard: Dashboard;
   today: string;
   environment: Environment;
@@ -326,8 +328,8 @@ export function Office({
 
   const findings = integrityFindings;
   const sharedStory = useMemo(
-    () => (view === "household" ? buildSharedLedgerStory(household, today as DateKey, { integrityFindingCount }) : null),
-    [household, today, view, integrityFindingCount],
+    () => (view === "household" ? buildSharedLedgerStory(booksHousehold, today as DateKey, { integrityFindingCount }) : null),
+    [booksHousehold, today, view, integrityFindingCount],
   );
   const personalStory = useMemo(
     () => (view === "personal" ? buildPersonalLedgerStory(household, memberId, today as DateKey) : null),
@@ -336,7 +338,7 @@ export function Office({
   const opinion = useMemo(() => auditOpinion(household), [household]);
   const wallet = useMemo(() => householdWallet(household, today), [household, today]);
   const streak = useMemo(() => shiftPostingStreak(household, today), [household, today]);
-  const postcard = useMemo(() => sitDownPostcard(household), [household]);
+  const postcard = useMemo(() => sitDownPostcard(booksHousehold), [booksHousehold]);
   const cook = useMemo(() => cookOffScore(household, today), [household, today]);
   const phase = kettlePhase(today, hourInToronto());
   const room = resolveRoom(phase, reading.glass);
@@ -757,7 +759,7 @@ export function Office({
       "Sit-down",
       <PostcardGlance card={postcard} />,
       `Sit-down. ${postcard.sentence}`,
-      <PostcardBody household={household} card={postcard} viewPersonal={view === "personal"} onApply={onSitDown} />,
+      <PostcardBody household={booksHousehold} card={postcard} viewPersonal={view === "personal"} onApply={onSitDown} />,
       { index, pair },
     ),
     cookoff: (index, pair) => frame(
@@ -860,6 +862,7 @@ export function Office({
         layout={layout} onLayout={setLayout}
         today={today} memberId={memberId} busy={busy} adding={adding}
         form={form} mode={mode} error={error} categories={categories} postLabel={postLabel}
+        integrityFindings={integrityFindings}
         onForm={onForm} onPost={onPost} onMore={onMore} onMilk={onMilk} onCoffee={onCoffee}
         onClockIn={onClockIn} onAbandonShift={onAbandonShift} onSignOut={onSignOut}
         onStartBreak={onStartBreak} onEndBreak={onEndBreak}
@@ -906,11 +909,12 @@ export function Office({
           <section className="ledger-story-office-secondary" aria-label="Also on this desk">
             <h2>Also on this desk</h2>
             <OfficeWide
-              household={household} dashboard={dashboard}
+              household={household} booksHousehold={booksHousehold} dashboard={dashboard}
               layout={layout} onLayout={setLayout}
               today={today} memberId={memberId} view={view} busy={busy} adding={adding}
               environment={environment} clinkOn={clinkOn}
               form={form} mode={mode} error={error} categories={categories} postLabel={postLabel}
+              integrityFindings={integrityFindings}
               onForm={onForm} onPost={onPost} onMore={onMore} onMilk={onMilk} onCoffee={onCoffee}
               onClockIn={onClockIn} onAbandonShift={onAbandonShift} onSignOut={onSignOut}
               onStartBreak={onStartBreak} onEndBreak={onEndBreak}

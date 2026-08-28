@@ -409,7 +409,7 @@ export function buildSharedLedgerStory(
     : {
         configured: false,
         headline: "Together, right now",
-        body: "The Household Fund is a shared operating subledger over Bianca’s existing savings. It opens at $0.00. Bianca confirms the opening. Hearth cannot hold, move, withdraw, or delete the money.",
+        body: `${LEDGER_CUSTODY_DISCLOSURE} The Household Fund is a shared operating subledger over Bianca’s existing savings. It opens at $0.00. Bianca confirms the opening.`,
         operatingBalanceCents: 0,
         transferDueCents: 0,
         transferCreditCents: 0,

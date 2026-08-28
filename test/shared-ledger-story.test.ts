@@ -236,6 +236,8 @@ describe("buildSharedLedgerStory", () => {
     const story = buildSharedLedgerStory(catalogHousehold(), DATE);
     expect(story.opening.configured).toBe(false);
     expect(story.opening.operatingBalanceCents).toBe(0);
+    expect(story.opening.body).toContain("The money remains in Bianca’s savings. Hearth cannot move it.");
+    expect(story.opening.body).not.toContain("cannot hold, move, withdraw, or delete");
     expect(story.queue.some((item) => item.kind === "setup-fund")).toBe(true);
   });
 });

@@ -73,7 +73,6 @@ import {
   dueRecurrencePreview,
   readClinkOn,
   requestCalendarPane,
-  runHealthCheck,
   seedDemoHousehold,
   seedStressHousehold,
   eraseDevelopmentData,
@@ -1499,10 +1498,9 @@ export function App() {
     [household, memberId, view, today],
   );
   const scopedHousehold = experience && experience.ok ? experience.scopedHousehold : visible;
-  const findings = useMemo(() => (household ? runHealthCheck(household) : []), [household]);
   const dashboard = useMemo(
-    () => (scopedHousehold ? buildDashboard(scopedHousehold, today, now, findings.length) : null),
-    [scopedHousehold, today, now, findings.length],
+    () => (scopedHousehold ? buildDashboard(scopedHousehold, today, now, experience && experience.ok ? experience.integrityFindings.length : 0) : null),
+    [scopedHousehold, today, now, experience],
   );
   const syncFreshnessDisplay = useMemo(() => {
     if (!household || !memberId) {
@@ -2801,7 +2799,9 @@ export function App() {
   const ledger = household;
   const actorId = session.memberId;
   const displayHousehold = experience && experience.ok ? experience.scopedHousehold : household;
-  const pickerAccounts = displayHousehold.accounts.filter((account) => account.active);
+  const pickerAccounts = experience && experience.ok
+    ? experience.scopedHousehold.accounts.filter((account) => account.active)
+    : [];
   const healthFindings = experience && experience.ok ? experience.integrityFindings : [];
   const preserveCurrentPersonal = (next: Household) => {
     if (view !== "household") return next;
@@ -3392,8 +3392,8 @@ export function App() {
 
       {tab === "home" && dashboard && (
         <>
-        {view === "household" && displayHousehold.householdFund && (() => {
-          const fund = projectHouseholdFund(displayHousehold, today);
+        {view === "household" && household.householdFund && (() => {
+          const fund = projectHouseholdFund(household, today);
           return (
             <section className="card household-fund-glance is-phone-only" aria-label="Hearth Household Fund">
               <header><h2>Household Fund</h2><button className="ghost" type="button" onClick={() => goTab("ledger")}>Open Fund books</button></header>
@@ -3409,6 +3409,7 @@ export function App() {
         })()}
         <Office
           household={displayHousehold}
+          booksHousehold={household}
           dashboard={dashboard}
           today={today}
           environment={environment}
