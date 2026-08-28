@@ -2,12 +2,12 @@
 
 - **Decision:** D-168 (renumbered from local D-167 after current `main` assigned D-167 to blank-household boot recovery)
 
-- **Status:** LOCAL PASS; SECOND REVIEW REQUIRED
+- **Status:** REVIEW FIXES VERIFIED; INDEPENDENT RE-REVIEW REQUIRED
 - **Opened:** 2026-08-28 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Branch:** `codex/d167-attendance-review`
-- **Baseline SHA:** `7d74e527c84462f9130e8202d3c9d71b831eb68d`
+- **Baseline SHA:** `1cb2044161d69a57cd8277080488620d74136a08`
 - **Risk:** High
 - **Environment impact:** none; local code only
 
@@ -35,17 +35,20 @@ After an OCR or shift-report draft, Jonathan sees the coworkers scheduled for th
 - Scheduled coworkers begin present and can be explicitly marked absent or present.
 - Surprise helpers are created as private workplace identities.
 - One visible Shift Confirm commits the ordinary work result and reviewed attendance in one household acceptance result.
+- Undo removes the confirmed shift and its private attendance/surprise-helper sidecars together, so no orphan context remains.
+- Partial schedule captures stay additive. A member-reviewed complete date range may retire omitted schedule windows; those removals carry Personal tombstones across replicas.
+- A refreshed schedule revision resets the attendance review even when its stable schedule id is unchanged.
 
 ## Evidence log
 
-- Final focused coworker, disclosure, Evidence extraction, Shift camera, sync, work-books, tip-covariate, and duplicate-retry proof: 84/84.
+- Final focused coworker, disclosure, Evidence extraction, Shift camera, sync, work-books, tip-covariate, duplicate-retry, Undo, and complete-range replacement proof: 97/97.
 - Command proof covers Personal-only schedule material, exact job/location attribution, exact surprise-helper reuse, ambiguous-name atomic refusal, attendance replacement/tombstones, duplicate retry, a balanced compiled journal, and exclusion from PGlite books-integrity facts.
 - Direct UI proof covers scheduled preload, explicit absence, empty schedule, surprise-helper add/remove, and the visible Confirm boundary.
 - Responsive local browser proof at 320/390/720/1100 found no horizontal overflow or console errors; keyboard Tab reaches Add helper. The existing reduced-motion rules remain intact.
-- Full repository suite: 1092 passed / 2 skipped / 1 unchanged Windows-only failure (`test/api.test.ts`, `spawnSync bash ENOENT`).
+- Full repository suite: 1099 passed / 2 skipped / 1 unchanged Windows-only failure (`test/api.test.ts`, `spawnSync bash ENOENT`).
 - TypeScript, AI surface verification, production Vite build, Hercules Pro UI build, missing-`_redirects` guard, diff check, secret scan, and artifact-name scan: pass.
 - Push, PR, merge, deployment, schema, secrets, feature flags, and hosted data: untouched.
 
 ## Remaining release gate
 
-High-risk review requires a second reviewer to inspect the exact committed SHA. After that PASS, Jonathan may separately authorize push, PR, merge, and deployment. No hosted migration or activation is needed for this slice.
+High-risk review requires the independent reviewers to inspect the exact reconciled fix SHA. Jonathan has authorized push and PR only after that PASS. Merge and deployment remain separate actions. No hosted migration or activation is needed for this slice.
