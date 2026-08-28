@@ -1002,9 +1002,13 @@ export function App() {
       if (live) setSyncState("syncing");
       try {
         const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
-        const identity: ContinuityIdentity = authSession
+        const identity: ContinuityIdentity | null = authSession
           ? { email: authSession.email, subject: authSession.googleSubject }
-          : continuityIdentityFromGoogle(googleSession) ?? { email: "", subject: "" };
+          : continuityIdentityFromGoogle(googleSession);
+        if (!identity || (!identity.email && !identity.subject)) {
+          if (live) setSyncState("idle");
+          return;
+        }
         const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
         const flushed = await flushContinuityOutbox({ environment, identity, config: cloudConfig });
         if (!live) return;

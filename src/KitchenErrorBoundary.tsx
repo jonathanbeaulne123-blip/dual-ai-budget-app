@@ -22,6 +22,12 @@ export function clearKitchenGoogleSessions(): void {
   }
 }
 
+/** Sign out of Google on this phone and return to welcome. Replicas stay. */
+export function signOutKitchenGoogle(): void {
+  clearKitchenGoogleSessions();
+  clearKitchenMemberSession();
+}
+
 /** Drops the remembered member so the next load is welcome, not a kitchen remount. Replicas stay. */
 export function clearKitchenMemberSession(): void {
   try {
@@ -56,7 +62,7 @@ export class KitchenErrorBoundary extends Component<Props, State> {
           <p className="kicker">On this device</p>
           <h1>The kitchen could not open</h1>
           <p>
-            Welcome still works. Opening this household hit a bug. Nothing was posted. Reload, sign out of Google on this phone, or go back to welcome.
+            Opening this household hit a bug. Nothing was posted. Reload, or sign out of Google. If it keeps happening, open welcome.
           </p>
           <button className="primary" type="button" onClick={() => window.location.reload()}>
             Reload
@@ -66,11 +72,11 @@ export class KitchenErrorBoundary extends Component<Props, State> {
             type="button"
             style={{ width: "100%", marginTop: 8 }}
             onClick={() => {
-              clearKitchenGoogleSessions();
+              signOutKitchenGoogle();
               window.location.reload();
             }}
           >
-            Sign out of Google and reload
+            Sign out of Google
           </button>
           <button
             className="ghost"

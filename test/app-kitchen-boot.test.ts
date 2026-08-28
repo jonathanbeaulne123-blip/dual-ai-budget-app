@@ -20,8 +20,8 @@ import {
 } from "../src/google/index.ts";
 import {
   clearKitchenGoogleSessions,
-  clearKitchenMemberSession,
   KitchenErrorBoundary,
+  signOutKitchenGoogle,
 } from "../src/KitchenErrorBoundary.tsx";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -84,6 +84,17 @@ describe("household kitchen boot", () => {
       ccTipsCents: 1500,
       hours: 5,
     }, stripped.shiftSettings)).not.toThrow();
+    const custom = ensureHouseholdShape({
+      ...catalogHousehold(),
+      shiftSettings: { ...catalogHousehold().shiftSettings, hourlyRateCents: 2000 },
+    });
+    expect(custom.shiftSettings.hourlyRateCents).toBe(2000);
+    expect(previewShiftAmounts({
+      salesCents: 0,
+      cashTipsCents: 0,
+      ccTipsCents: 0,
+      hours: 0,
+    }, { floorPct: -1, barPct: 0, barRoundCents: 0, ccPct: 0, hourlyRateCents: 0 }).wagesCents).toBe(0);
     expect(() => previewShiftAmounts({
       salesCents: 12500,
       cashTipsCents: 2000,
@@ -129,7 +140,7 @@ describe("KitchenErrorBoundary", () => {
     expect(recovery.textContent).toMatch(/Nothing was posted/i);
     expect([...container.querySelectorAll("button")].map((button) => button.textContent?.trim())).toEqual([
       "Reload",
-      "Sign out of Google and reload",
+      "Sign out of Google",
       "Open welcome",
     ]);
   });
@@ -146,7 +157,7 @@ describe("KitchenErrorBoundary", () => {
     expect(localStorage.getItem("hearth:v1:development:gcal:MEM-002")).toBeNull();
     expect(localStorage.getItem("hearth:household:v2:development:HH-1")).not.toBeNull();
     expect(localStorage.getItem("hearth:session:v1:development")).not.toBeNull();
-    clearKitchenMemberSession();
+    signOutKitchenGoogle();
     expect(localStorage.getItem("hearth:session:v1:development")).toBeNull();
     expect(localStorage.getItem("hearth:household:v2:development:HH-1")).not.toBeNull();
   });
