@@ -7,6 +7,7 @@ import {
   startSupabaseGoogleSignIn,
 } from "./auth/supabaseSession.ts";
 import { ConfirmSheet } from "./Confirm.tsx";
+import { KitchenNotice } from "./KitchenNotice.tsx";
 
 export function herculesProAuthorizationRequest(url = window.location.href): string | null {
   try {
@@ -158,8 +159,8 @@ export function HerculesProPermissionsCard({
         <p className="muted" style={{ marginTop: 10 }}>
           No delete, bill payment, card payment, transfer to a bank, settings change, or silent write tool is enabled. Turn either switch off to block new and already-prepared confirmations for that ledger.
         </p>
-        {environment === "production" ? <p className="danger">Production stays read-only until the September security cutover.</p> : null}
-        {error ? <p className="danger">{error}</p> : null}
+        {environment === "production" ? <p className="muted">Production stays read-only until the September security cutover.</p> : null}
+        <KitchenNotice message={error ?? ""} />
         <button className="ghost" style={{ width: "100%", marginTop: 8 }} type="button" onClick={launchHerculesPro}>
           Open / reconnect Hercules Pro ↗
         </button>

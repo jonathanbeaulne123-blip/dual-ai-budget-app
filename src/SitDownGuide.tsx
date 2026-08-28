@@ -25,6 +25,7 @@ import {
   type UndoToken,
 } from "./core/index.ts";
 import { downloadText } from "./ledger/export.ts";
+import { KitchenNotice } from "./KitchenNotice.tsx";
 import { googleConfigured, uploadSitDownWorkbook } from "./google/index.ts";
 
 export function SitDownGuide({
@@ -168,7 +169,7 @@ export function SitDownGuide({
           ))}
           <p className={plan.ok ? "muted" : "danger"}>{plan.reason}</p>
           {plan.overAllocatedCents > 0 && (
-            <p className="danger">Over-allocated by {formatCad(plan.overAllocatedCents)}. Nothing moves until this fits leftover.</p>
+            <KitchenNotice message={`Over-allocated by ${formatCad(plan.overAllocatedCents)}. Nothing moves until this fits leftover.`} />
           )}
           {trims.length > 0 && (
             <>

@@ -13,6 +13,7 @@ import {
   type Household,
   type ShiftSettings,
 } from "../core/index.ts";
+import { KitchenNotice } from "../KitchenNotice.tsx";
 import { useFurniture } from "./useFurniture.ts";
 import type { DeskForm, DeskMode } from "./deskTypes.ts";
 
@@ -157,7 +158,7 @@ export function CalculatorBody({
           <p className="muted">Transfer. Not spend.</p>
         </>
       )}
-      {error && <p className="danger" style={{ marginTop: 8 }}>{error}</p>}
+      <KitchenNotice message={error} />
       <div ref={postRef}>
         <button type="button" className="desk-post" disabled={busy} onClick={onPost}>{postLabel}</button>
       </div>

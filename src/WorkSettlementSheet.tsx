@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { CadPad } from "./CadPad.tsx";
 import { dollarsFromCentsDigits, formatCad, type Household, type WorkOwedFact } from "./core/index.ts";
+import { KitchenNotice } from "./KitchenNotice.tsx";
 
 export function WorkSettlementSheet({ household, fact, busy, onCancel, onConfirm }: {
   household: Household;
@@ -31,7 +32,7 @@ export function WorkSettlementSheet({ household, fact, busy, onCancel, onConfirm
           {cents < fact.amountCents && <p className="muted">The remaining {formatCad(fact.amountCents - cents)} stays open and Calendar will keep reminding you.</p>}
           {receiving && <p className="muted">This is a transfer from {fact.kind === "wages" ? "Wages owed" : "Card tips owed"}, not income again.</p>}
         </div>
-        {over && <p className="danger">The amount cannot be more than Hearth currently records as waiting.</p>}
+        {over ? <KitchenNotice message="The amount cannot be more than Hearth currently records as waiting." /> : null}
         <button type="button" className="primary post-big" disabled={busy || cents <= 0 || over || !accountId} onClick={() => onConfirm({ amount: dollarsFromCentsDigits(digits), accountId, date })}>Confirm {receiving ? "received" : "paid"}</button>
       </div>
     </div>
