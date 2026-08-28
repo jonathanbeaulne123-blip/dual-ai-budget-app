@@ -372,7 +372,7 @@ export function OfficeWide({
               onClick={() => tapSeal("lamp")}
             />
           </div>
-          <div ref={mosaicRef}>
+          <div ref={mosaicRef} className="office-wide-widgets">
             <StoryStrip heading="Today's stories" className="office-wide-mosaic">
               {mosaicIds.map((id) => {
                 const spec = specs[id];
@@ -391,6 +391,39 @@ export function OfficeWide({
                 );
               })}
             </StoryStrip>
+            <WideMiniBrowser
+              currentTab="home"
+              drawerIds={drawer}
+              activeInstrument={openId === WIDE_HERO_ID ? null : openId}
+              onRoute={(tab, full) => {
+                if (tab === "home") {
+                  setExpanded(full ? null : WIDE_HERO_ID);
+                  return;
+                }
+                if (full) {
+                  onGo(tab);
+                  return;
+                }
+                const preview: Partial<Record<"calendar" | "shift" | "plan" | "ledger" | "more", InstrumentId>> = {
+                  calendar: "calendar",
+                  shift: "timesheet",
+                  plan: "jars",
+                  ledger: "accounts",
+                  more: "lamp",
+                };
+                const id = preview[tab];
+                if (id) onLayout(revealPhoneInstrument(layout, id));
+              }}
+              onPost={(full) => {
+                if (full) onGo("add");
+                else tapSeal("calculator");
+              }}
+              onInstrument={(id, full) => {
+                const page = wideInstrumentFullPage(id);
+                if (full && page) onGo(page);
+                else onLayout(revealPhoneInstrument(layout, id));
+              }}
+            />
           </div>
         </div>
 
@@ -438,40 +471,6 @@ export function OfficeWide({
           </div>
         </div>
       </div>
-
-      <WideMiniBrowser
-        currentTab="home"
-        drawerIds={drawer}
-        activeInstrument={openId === WIDE_HERO_ID ? null : openId}
-        onRoute={(tab, full) => {
-          if (tab === "home") {
-            setExpanded(full ? null : WIDE_HERO_ID);
-            return;
-          }
-          if (full) {
-            onGo(tab);
-            return;
-          }
-          const preview: Partial<Record<"calendar" | "shift" | "plan" | "ledger" | "more", InstrumentId>> = {
-            calendar: "calendar",
-            shift: "timesheet",
-            plan: "jars",
-            ledger: "accounts",
-            more: "lamp",
-          };
-          const id = preview[tab];
-          if (id) onLayout(revealPhoneInstrument(layout, id));
-        }}
-        onPost={(full) => {
-          if (full) onGo("add");
-          else tapSeal("calculator");
-        }}
-        onInstrument={(id, full) => {
-          const page = wideInstrumentFullPage(id);
-          if (full && page) onGo(page);
-          else onLayout(revealPhoneInstrument(layout, id));
-        }}
-      />
     </div>
   );
 }

@@ -8,8 +8,8 @@ import {
 const CLICK_WAIT_MS = 280;
 
 /**
- * Compact chip strip that replaces the fat bottom nav on wide Home.
- * Single click previews; double click opens the full page.
+ * Compact chips that live in the wide paper office's smaller-widget column.
+ * Fat bottom `.nav` stays phone-only. Single click previews; double click opens the page.
  */
 export function WideMiniBrowser({
   currentTab,

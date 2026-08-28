@@ -88,6 +88,7 @@ describe("desktop warmth fence", () => {
     expect(cabinets).toMatch(/Classic desk/);
     const wideCss = readFileSync("src/office-wide.css", "utf8");
     expect(wideCss).toMatch(/office-wide-tabs/);
+    expect(wideCss).toMatch(/office-wide-widgets/);
     expect(wideCss).not.toMatch(/More on this desk/);
     const instrument = readFileSync("src/widgets/Instrument.tsx", "utf8");
     expect(instrument).not.toMatch(/alwaysBody/);

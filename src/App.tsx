@@ -3185,6 +3185,24 @@ export function App() {
         ))}
       </div>
 
+      {wideShell && tab !== "home" && !adding && household && (
+        <WideMiniBrowser
+          currentTab={tab}
+          drawerIds={wideDrawerIds(wideMosaicIds({ hidden: [], lampLit: false }))}
+          onRoute={(next) => goTab(next)}
+          onPost={() => openAddFor(null)}
+          onInstrument={(id, full) => {
+            const page = wideInstrumentFullPage(id);
+            if (full && page) {
+              goTab(page);
+              return;
+            }
+            goTab("home");
+            window.setTimeout(() => emitOfficeIntent({ type: "expand", id }), 0);
+          }}
+        />
+      )}
+
       {tab === "home" && dashboard && (
         <Office
           household={household}
@@ -4870,24 +4888,6 @@ export function App() {
         household={household}
         session={session}
       />
-
-      {wideShell && tab !== "home" && !adding && household && (
-        <WideMiniBrowser
-          currentTab={tab}
-          drawerIds={wideDrawerIds(wideMosaicIds({ hidden: [], lampLit: false }))}
-          onRoute={(next) => goTab(next)}
-          onPost={() => openAddFor(null)}
-          onInstrument={(id, full) => {
-            const page = wideInstrumentFullPage(id);
-            if (full && page) {
-              goTab(page);
-              return;
-            }
-            goTab("home");
-            window.setTimeout(() => emitOfficeIntent({ type: "expand", id }), 0);
-          }}
-        />
-      )}
 
       <nav className="nav" aria-label="Hearth">
         <button

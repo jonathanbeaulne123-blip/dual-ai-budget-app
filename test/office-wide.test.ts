@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   seedDemoHousehold,
@@ -53,6 +54,16 @@ describe("wide paper office mosaic", () => {
     expect(tabs.some((tab) => tab.instrument === "chalkboard")).toBe(true);
     expect(wideInstrumentFullPage("calendar")).toBe("calendar");
     expect(wideInstrumentFullPage("chalkboard")).toBeNull();
+  });
+
+  it("keeps those chips in the left mosaic column, not under the whole desk", () => {
+    const source = readFileSync(new URL("../src/OfficeWide.tsx", import.meta.url), "utf8");
+    const widgets = source.indexOf('className="office-wide-widgets"');
+    const browser = source.indexOf("<WideMiniBrowser");
+    const right = source.indexOf('className="office-wide-right"');
+    expect(widgets).toBeGreaterThan(-1);
+    expect(browser).toBeGreaterThan(widgets);
+    expect(browser).toBeLessThan(right);
   });
 
   it("reveals Health onto the mosaic when the lamp is lit even if it was hidden", () => {

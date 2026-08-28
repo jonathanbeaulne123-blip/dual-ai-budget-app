@@ -872,34 +872,6 @@ export function Office({
         onToggle={cycleWindow}
       />
       <SillOverviewPlate overview={sill} compact={layout.windowMinimized} />
-      {face === "paper" ? (
-        <OfficeWide
-          household={household} dashboard={dashboard}
-          layout={layout} onLayout={setLayout}
-          today={today} memberId={memberId} view={view} busy={busy} adding={adding}
-          environment={environment} clinkOn={clinkOn}
-          form={form} mode={mode} error={error} categories={categories} postLabel={postLabel}
-          onForm={onForm} onPost={onPost} onMore={onMore} onMilk={onMilk} onCoffee={onCoffee}
-          onClockIn={onClockIn} onAbandonShift={onAbandonShift} onSignOut={onSignOut}
-          onStartBreak={onStartBreak} onEndBreak={onEndBreak}
-          onChooseShiftTimeline={onChooseShiftTimeline}
-          onFinishedShift={onFinishedShift} onPayCard={onPayCard} onOpenAccount={onOpenAccount}
-          onKitchen={onKitchen} onMarkPaid={onMarkPaid}
-          onAskSettle={onAskSettle} onAskStartJar={onAskStartJar} onSitDown={onSitDown}
-          onGo={onGo} onClinkOn={onClinkOn}
-        />
-      ) : (
-        <div
-          ref={canvasRef}
-          className={`desk-canvas desk-wide ${dragging ? "is-grid" : ""}`}
-          style={{ minHeight: `${canvasHeight}px` }}
-        >
-          {rings.map((ring) => (
-            <div key={`${ring.id}-${ring.at}`} className="desk-ring" style={{ left: ring.x, top: ring.y }} />
-          ))}
-          {order.map((id, index) => renderers[id](index))}
-        </div>
-      )}
       {breakpoint === "wide" && face === "classic" && (
         <WideMiniBrowser
           currentTab="home"
@@ -930,6 +902,34 @@ export function Office({
             else emitOfficeIntent({ type: "expand", id });
           }}
         />
+      )}
+      {face === "paper" ? (
+        <OfficeWide
+          household={household} dashboard={dashboard}
+          layout={layout} onLayout={setLayout}
+          today={today} memberId={memberId} view={view} busy={busy} adding={adding}
+          environment={environment} clinkOn={clinkOn}
+          form={form} mode={mode} error={error} categories={categories} postLabel={postLabel}
+          onForm={onForm} onPost={onPost} onMore={onMore} onMilk={onMilk} onCoffee={onCoffee}
+          onClockIn={onClockIn} onAbandonShift={onAbandonShift} onSignOut={onSignOut}
+          onStartBreak={onStartBreak} onEndBreak={onEndBreak}
+          onChooseShiftTimeline={onChooseShiftTimeline}
+          onFinishedShift={onFinishedShift} onPayCard={onPayCard} onOpenAccount={onOpenAccount}
+          onKitchen={onKitchen} onMarkPaid={onMarkPaid}
+          onAskSettle={onAskSettle} onAskStartJar={onAskStartJar} onSitDown={onSitDown}
+          onGo={onGo} onClinkOn={onClinkOn}
+        />
+      ) : (
+        <div
+          ref={canvasRef}
+          className={`desk-canvas desk-wide ${dragging ? "is-grid" : ""}`}
+          style={{ minHeight: `${canvasHeight}px` }}
+        >
+          {rings.map((ring) => (
+            <div key={`${ring.id}-${ring.at}`} className="desk-ring" style={{ left: ring.x, top: ring.y }} />
+          ))}
+          {order.map((id, index) => renderers[id](index))}
+        </div>
       )}
       <Cabinets
         editing={editing}
