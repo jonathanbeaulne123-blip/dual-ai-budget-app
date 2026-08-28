@@ -1,0 +1,594 @@
+<!DOCTYPE html><script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Budget App Roadmap",
+  "schemaVersion": 1,
+  "description": "Roadmap/timeline for the household budgeting app project — 7 phases from the current spreadsheet data model through to a full app, feature checklists per phase, and the open bugs found in the spreadsheet audit that should be fixed first.",
+  "mcpTools": [],
+  "mcpServerNames": []
+}
+</script>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Budget App — Project Roadmap</title>
+<style>
+  :root { color-scheme: light; }
+
+  .viz-root {
+    --surface-1:      #fcfcfb;
+    --surface-2:      #f9f9f7;
+    --card:           #ffffff;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --border:         rgba(11,11,11,0.10);
+    --border-strong:  #c3c2b7;
+    --blue:           #2a78d6;
+    --good:           #0ca30c;
+    --good-bg:        #e6f6e6;
+    --warning:        #fab219;
+    --warning-bg:     #fff6e2;
+    --serious:        #ec835a;
+    --serious-bg:     #fdeee7;
+    --critical:       #d03b3b;
+    --critical-bg:    #fbe8e8;
+    --success-text:   #006300;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1:      #1a1a19;
+      --surface-2:      #0d0d0d;
+      --card:           #222221;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --border:         rgba(255,255,255,0.10);
+      --border-strong:  #383835;
+      --blue:           #3987e5;
+      --good:           #0ca30c;
+      --good-bg:        #123a16;
+      --warning:        #fab219;
+      --warning-bg:     #3a2c0a;
+      --serious:        #ec835a;
+      --serious-bg:     #3a2015;
+      --critical:       #e66767;
+      --critical-bg:    #3a1414;
+      --success-text:   #0ca30c;
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1:      #1a1a19;
+    --surface-2:      #0d0d0d;
+    --card:           #222221;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --border:         rgba(255,255,255,0.10);
+    --border-strong:  #383835;
+    --blue:           #3987e5;
+    --good:           #0ca30c;
+    --good-bg:        #123a16;
+    --warning:        #fab219;
+    --warning-bg:     #3a2c0a;
+    --serious:        #ec835a;
+    --serious-bg:     #3a2015;
+    --critical:       #e66767;
+    --critical-bg:    #3a1414;
+    --success-text:   #0ca30c;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--surface-2);
+  }
+  .viz-root { background: var(--surface-2); min-height: 100vh; }
+
+  .wrap { max-width: 980px; margin: 0 auto; padding: 32px 20px 80px; }
+
+  .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 28px; }
+  .titleblock h1 { margin: 0 0 6px; font-size: 26px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; }
+  .titleblock p { margin: 0; font-size: 14px; color: var(--text-secondary); }
+  .meta { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+  .theme-toggle {
+    border: 1px solid var(--border-strong);
+    background: var(--card);
+    color: var(--text-secondary);
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .theme-toggle:hover { border-color: var(--text-muted); }
+
+  /* Stat tiles */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); margin-bottom: 6px; }
+  .stat .value { font-size: 26px; font-weight: 700; color: var(--text-primary); font-variant-numeric: proportional-nums; }
+  .stat .sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+  /* Section headers */
+  .section-title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 36px 0 14px; display: flex; align-items: center; gap: 8px; }
+  .section-sub { font-size: 13px; color: var(--text-secondary); margin: -8px 0 16px; }
+
+  /* Issues panel */
+  .issues { display: flex; flex-direction: column; gap: 10px; }
+  .issue {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--critical);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .issue.serious-border { border-left-color: var(--serious); }
+  .issue.good-border { border-left-color: var(--good); }
+  .badge {
+    flex: 0 0 auto;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .badge.critical { background: var(--critical-bg); color: var(--critical); }
+  .badge.serious { background: var(--serious-bg); color: var(--serious); }
+  .badge.good { background: var(--good-bg); color: var(--good); }
+  .badge.warning { background: var(--warning-bg); color: #9a6b00; }
+  :root[data-theme="dark"] .badge.warning { color: var(--warning); }
+  @media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) .badge.warning { color: var(--warning); } }
+  .badge.planned { background: transparent; color: var(--text-muted); border: 1px solid var(--border-strong); }
+
+  .issue-body strong { display: block; font-size: 13.5px; color: var(--text-primary); margin-bottom: 3px; }
+  .issue-body span { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; }
+
+  /* Timeline / phases */
+  .timeline { position: relative; }
+  .phase {
+    position: relative;
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 16px;
+    margin-bottom: 4px;
+  }
+  .rail { display: flex; flex-direction: column; align-items: center; }
+  .dot {
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff;
+    flex: 0 0 auto;
+    border: 3px solid var(--surface-2);
+    box-shadow: 0 0 0 1px var(--border);
+  }
+  .dot.done { background: var(--good); }
+  .dot.next { background: var(--warning); color: #3a2c0a; }
+  .dot.planned { background: var(--border-strong); }
+  .line { width: 2px; flex: 1; background: var(--gridline); margin-top: 2px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 22px;
+  }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+  .card-head h3 { margin: 0; font-size: 15.5px; font-weight: 700; color: var(--text-primary); }
+  .phase-num { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+  .card-desc { font-size: 13px; color: var(--text-secondary); margin: 6px 0 12px; line-height: 1.5; }
+
+  .progress-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .progress-track { flex: 1; height: 6px; background: var(--gridline); border-radius: 999px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 999px; }
+  .progress-fill.done { background: var(--good); }
+  .progress-fill.next { background: var(--warning); }
+  .progress-fill.planned { background: var(--border-strong); }
+  .progress-pct { font-size: 11.5px; color: var(--text-muted); font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+
+  .feature-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; }
+  .feature-list li { font-size: 12.5px; color: var(--text-secondary); display: flex; gap: 7px; align-items: flex-start; line-height: 1.45; }
+  .feature-list li .mark { flex: 0 0 auto; width: 14px; height: 14px; margin-top: 1px; }
+  .feature-list li.done { color: var(--text-primary); }
+  .feature-list li.done .mark { color: var(--good); }
+  .feature-list li.open .mark { color: var(--text-muted); }
+
+  @media (max-width: 640px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .feature-list { grid-template-columns: 1fr; }
+  }
+
+  .footnote {
+    margin-top: 40px;
+    padding-top: 18px;
+    border-top: 1px solid var(--gridline);
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+<div class="viz-root">
+  <div class="wrap">
+
+    <div class="topbar">
+      <div class="titleblock">
+        <h1>Budget App — Project Roadmap</h1>
+        <p>From household spreadsheet to a real household finance app, for Jonathan &amp; Bianca.</p>
+        <div class="meta">Reflects the spreadsheet audit + a deep formula-level review of the live workbook · updated Aug 17, 2026</div>
+      </div>
+      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙 Dark mode</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="label">Phases complete</div>
+        <div class="value">1 <span style="font-size:14px;color:var(--text-muted);font-weight:500;">/ 9</span></div>
+        <div class="sub">Data architecture (Phase 0)</div>
+      </div>
+      <div class="stat">
+        <div class="label">Open issues</div>
+        <div class="value" style="color:var(--critical);">5</div>
+        <div class="sub">2 confirmed &amp; queued for delivery</div>
+      </div>
+      <div class="stat">
+        <div class="label">Current phase</div>
+        <div class="value" style="font-size:18px;">Fix Foundation</div>
+        <div class="sub">Phase 1 · 7 / 9 done</div>
+      </div>
+      <div class="stat">
+        <div class="label">Feature ideas logged</div>
+        <div class="value">57</div>
+        <div class="sub">Across all 9 phases</div>
+      </div>
+    </div>
+
+    <div class="section-title">📌 Reminders for Jonathan</div>
+    <div class="section-sub">Personal to-dos flagged during sessions — not code bugs, just things to go do by hand in the sheet.</div>
+    <div class="issues">
+      <div class="issue">
+        <span class="badge warning">To-do</span>
+        <div class="issue-body">
+          <strong>Recategorize fluctuating essentials &amp; recurring essentials</strong>
+          <span>Go through Categories and re-check the Fixed vs. Fluctuating (Income_Stability_Default) call on each essential — some are stale or were guessed wrong when Classify Fixed vs Fluctuating was first run. This matters because Monthly Budget Sit-Down treats "fixed" essentials as auto-copy-forward and "fluctuating" essentials as prompt-for-actual-spend, so a wrong label means the wrong behavior every month. See the Phase 1.6 idea below for making this a 1-2 click fix instead of a full re-run.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">⚠️ Fix first — before building more on top</div>
+    <div class="section-sub">Two of the original four defects are fixed. Three more turned up in a deep, formula-level review of the actual live workbook — the first one below is arguably the single most important finding of this whole project so far, since it means a flagship feature has been silently not doing what its own menu label says. The top two are now fully scoped, value-verified against the live workbook, and confirmed by Jonathan — queued for delivery, not yet applied (see the batching note below).</div>
+    <div class="issues">
+      <div class="issue">
+        <span class="badge warning">Critical · confirmed, queued</span>
+        <div class="issue-body">
+          <strong>Budget's "Budgeted" column is disconnected from Budget Plan for 15 of 18 expense categories</strong>
+          <span>Budget!C14:C27 and C31 (Rent, Gas, Electric, Groceries, and 10 more) are plain static numbers — not formulas — left over from before Budget Plan existed. Monthly Budget Sit-Down and the roll-forward tooling correctly write real numbers into Budget Plan every month, but the Budget page never reads any of it back for these rows, so it keeps showing stale figures typed in long ago (Electric's "$30,000/mo budget" is the tell). Re-verified directly against the live workbook's actual formula source on 2026-08-17: fix is the same live SUMIFS('Budget Plan'!...) pattern already used on C28. Confirmed impact for August 2026 — Rent $1,000→$3,300, Electric $30,000→$116, Debt $5→$250, Subscriptions $2→$460, and 11 more; Total Expenses Budgeted goes from a meaningless $34,264 to a real $6,546.50. Jonathan confirmed the fix; execution is batched with the item below into one end-of-session document edit (see note below).</span>
+        </div>
+      </div>
+      <div class="issue">
+        <span class="badge warning">Critical · confirmed, queued</span>
+        <div class="issue-body">
+          <strong>Hardcoded SUMIFS range bounds will silently start dropping data</strong>
+          <span>16 of 21 Budget category rows' Actual/Budgeted formulas (plus all 240 real formulas on Income History) bound their Transactions/Budget Plan lookups to a literal row count (<code>$5:$33</code>, <code>$5:$78</code>) frozen at whatever the row count happened to be when the original "fix Excel Table fragility" pass ran — not a real generous buffer. Currently dormant (Transactions has only 5 real rows today), but the next transaction that pushes past row 33 would quietly freeze every $33-bound Actual total — no error, just stale numbers that look fine. Re-verified directly against the live workbook's actual formula source on 2026-08-17 (exact cells: Budget!C6:C8, D6:D8, D14:D25, D31, and Income History!B6:C125). Jonathan confirmed the fix; execution is batched with the item above into one end-of-session document edit (see note below).</span>
+        </div>
+      </div>
+      <div class="issue good-border">
+        <span class="badge good">Plan set</span>
+        <div class="issue-body">
+          <strong>Document-edit delivery, going forward: batched at end of session</strong>
+          <span>Confirmed with Jonathan 2026-08-17: rather than delivering a separately-patched file per fix, all confirmed changes that actually touch the live workbook's content (starting with the two Findings above) get bundled and delivered together as one new spreadsheet near the end of a work session — verified via LibreOffice recalculation before delivery, same as prior document deliveries. Claude has no write access to the live Google Sheet, so this still arrives as a downloadable file / new Drive file, not an in-place edit.</span>
+        </div>
+      </div>
+      <div class="issue serious-border">
+        <span class="badge serious">Medium · new</span>
+        <div class="issue-body">
+          <strong>Add Category has no duplicate-name guard</strong>
+          <span>Categories already has two different Subcategory_IDs both displaying as "Cat Litter" — the exact class of drift Sync Category Names was built to clean up retroactively, now able to happen again going forward since nothing checks an existing name before creating a new one.</span>
+        </div>
+      </div>
+      <div class="issue">
+        <span class="badge critical">Critical</span>
+        <div class="issue-body">
+          <strong>"Household Safety Number" section is wired backwards</strong>
+          <span>Now at Budget rows 42–46 (row numbers drift as categories get added — worth addressing by label, not number, same as the tools already do). Asks "can steady income alone cover essentials?" but pulls the <em>variable</em>-income row (D7 = $425) instead of the fixed-income row (D6), compares it to <em>total</em> expenses (D30) instead of essential-only (D31), and flips the sign versus the identical metric five rows above it — currently reports a $9,010 "gap," a meaningless number. Still open.</span>
+        </div>
+      </div>
+      <div class="issue serious-border">
+        <span class="badge serious">Open</span>
+        <div class="issue-body">
+          <strong>Dashboard mislabel, now at row 31 (was B28)</strong>
+          <span>Labeled "Fixed-Income Coverage Gap (Budgeted)" but pulls Budget!C39 — total actual income minus total actual expenses, neither fixed-income-specific nor budgeted. Same category of hand-typed formula/label bug as the Household Safety Number section, found in the same audit pass.</span>
+        </div>
+      </div>
+      <div class="issue good-border">
+        <span class="badge good">Fixed</span>
+        <div class="issue-body">
+          <strong>Budget Plan only had rows for January 2026</strong>
+          <span>Fixed 2026-08-17 — Monthly Budget Sit-Down (fixed essentials copy silently, fluctuating essentials prompt for what was actually spent, discretionary left out on purpose) plus a one-time Classify Fixed vs Fluctuating setup replace the old "copy everything forward" approach entirely.</span>
+        </div>
+      </div>
+      <div class="issue good-border">
+        <span class="badge good">Fixed</span>
+        <div class="issue-body">
+          <strong>Budget month selector wasn't set to a real month</strong>
+          <span>Fixed 2026-08-17, twice over — a one-click Jump to Current Month tool, an end-of-Sit-Down offer to advance it, and a staleness warning in This Week Snapshot, then a deeper timezone bug found in that same fix. Confirmed still correctly set to August 2026 in tonight's review.</span>
+        </div>
+      </div>
+      <div class="issue good-border">
+        <span class="badge good">Fixed</span>
+        <div class="issue-body">
+          <strong>3 Dashboard labels were hardcoded instead of linked</strong>
+          <span>Fixed 2026-08-17, and generalized — Sync Category Names to Budget & Dashboard now live-links every category name on both sheets to the Categories sheet by ID. Verified working correctly in tonight's review (e.g. Dashboard!B6 resolves live to "Rent / Mortgage").</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">🗺️ Roadmap</div>
+    <div class="section-sub">Synthesized from the ChatGPT architecture conversation and the workbook audit, updated as this project's Claude session makes progress. Phase 0 is further along than the original conversation assumed — a prior pass already rebuilt the data model, which is why the plan starts at fixing what exists rather than a full rebuild.</div>
+
+    <div class="timeline">
+
+      <!-- Phase 0 -->
+      <div class="phase">
+        <div class="rail"><div class="dot done">✓</div><div class="line"></div></div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="phase-num">Phase 0</div>
+              <h3>Application-Ready Data Architecture</h3>
+            </div>
+            <span class="badge good">Done</span>
+          </div>
+          <p class="card-desc">Separate raw import data from the canonical ledger, from reference data, from budget storage, from presentation — so the workbook could migrate into a real database later without a rebuild.</p>
+          <div class="progress-row"><div class="progress-track"><div class="progress-fill done" style="width:100%"></div></div><div class="progress-pct">9 / 9</div></div>
+          <ul class="feature-list">
+            <li class="done"><span class="mark">●</span>Normalized transaction ledger with stable IDs</li>
+            <li class="done"><span class="mark">●</span>Raw import staging (Raw Transactions + Import Batches)</li>
+            <li class="done"><span class="mark">●</span>Master Categories table (hierarchical)</li>
+            <li class="done"><span class="mark">●</span>Accounts table</li>
+            <li class="done"><span class="mark">●</span>Household Members (people) table</li>
+            <li class="done"><span class="mark">●</span>Persistent Budget Plan (month + subcategory rows)</li>
+            <li class="done"><span class="mark">●</span>Duplicate detection fields (key, flag, adjudication)</li>
+            <li class="done"><span class="mark">●</span>Categorization Rules &amp; Recurring Transactions tables (schema ready, not yet populated)</li>
+            <li class="done"><span class="mark">●</span>Documented future-database mapping (Data Model Guide)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Phase 1 -->
+      <div class="phase">
+        <div class="rail"><div class="dot next">●</div><div class="line"></div></div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="phase-num">Phase 1</div>
+              <h3>Fix the Foundation</h3>
+            </div>
+            <span class="badge warning">In progress</span>
+          </div>
+          <p class="card-desc">Close out the real bugs and cosmetic drift, and make everyday use easy — matches the audit above.</p>
+          <div class="progress-row"><div class="progress-track"><div class="progress-fill next" style="width:78%"></div></div><div class="progress-pct">7 / 9</div></div>
+          <ul class="feature-list">
+            <li class="done"><span class="mark">●</span>Add Transaction quick-entry tool (Google Sheets popup form)</li>
+            <li class="done"><span class="mark">●</span>Add Category quick-entry tool (Google Sheets popup form)</li>
+            <li class="done"><span class="mark">●</span>Fixed Excel-Table formula fragility (plain ranges, verified identical output)</li>
+            <li class="done"><span class="mark">●</span>Monthly Budget Plan roll-forward (Sit-Down + Classify Fixed vs Fluctuating)</li>
+            <li class="done"><span class="mark">●</span>Keep the month selector correct (Jump to Current Month + staleness warnings + timezone fix)</li>
+            <li class="done"><span class="mark">●</span>Fix hardcoded Dashboard category labels (Sync Category Names; 2 rows still unmatched)</li>
+            <li class="done"><span class="mark">●</span>Auto-list new categories on Budget/Dashboard (built into Add Category)</li>
+            <li class="open"><span class="mark">○</span>Rewire the Household Safety Number section</li>
+            <li class="open"><span class="mark">○</span>Fix the Dashboard Coverage Gap mislabel</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Phase 1.5 -->
+      <div class="phase">
+        <div class="rail"><div class="dot next">●</div><div class="line"></div></div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="phase-num">Phase 1.5 · added mid-project, 2026-08-17</div>
+              <h3>Everyday-Use Tooling &amp; Code Health</h3>
+            </div>
+            <span class="badge warning">In progress</span>
+          </div>
+          <p class="card-desc">Not in the original plan — added once Phase 1's Apps Script tools needed everyday-use features and had to stay reliable as they grew. This is what's narrowing the gap between "spreadsheet + macros" and a real small-app backend.</p>
+          <div class="progress-row"><div class="progress-track"><div class="progress-fill next" style="width:75%"></div></div><div class="progress-pct">6 / 8</div></div>
+          <ul class="feature-list">
+            <li class="done"><span class="mark">●</span>View Category Spending (read-only weekly chart tool)</li>
+            <li class="done"><span class="mark">●</span>Refresh This Week Snapshot (10-stat weekly Dashboard panel)</li>
+            <li class="done"><span class="mark">●</span>Header-based column lookup (name-addressed, not hardcoded letters)</li>
+            <li class="done"><span class="mark">●</span>Show Version &amp; Diagnostics (version, timezone, layout check)</li>
+            <li class="done"><span class="mark">●</span>Change Log / audit trail (every write tool logs what happened)</li>
+            <li class="done"><span class="mark">●</span>Add Shift / Tip Tracker — tipped-employee income manager (v0.0.19, delivered, not yet pasted live)</li>
+            <li class="open"><span class="mark">○</span>Data Health Check (scan for orphaned IDs, name-mismatch drift)</li>
+            <li class="open"><span class="mark">○</span>Data dictionary tab (map of IDs, hidden columns, cross-sheet links)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Phase 1.6 -->
+      <div class="phase">
+        <div class="rail"><div class="dot next">●</div><div class="line"></div></div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="phase-num">Phase 1.6 · added 2026-08-17 (night), from a deep formula audit</div>
+              <h3>Formula &amp; Performance Hardening</h3>
+            </div>
+            <span class="badge warning">Not started</span>
+          </div>
+          <p class="card-desc">A direct uploaded copy of the live workbook let this pass read actual formula source (not just rendered values) for the first time. The headline finding: the spreadsheet's native formulas — not Code.gs — have their own version of the exact "fragility" bug the original audit fixed, just better hidden. These are all proposals; nothing here is built without a separate go-ahead.</p>
+          <div class="progress-row"><div class="progress-track"><div class="progress-fill planned" style="width:0%"></div></div><div class="progress-pct">0 / 10</div></div>
+          <ul class="feature-list">
+            <li class="open"><span class="mark">○</span>Wire Budget's expense "Budgeted" cells to Budget Plan via live SUMIFS, the same way Income rows already work</li>
+            <li class="open"><span class="mark">○</span>Bump every hardcoded SUMIFS/AVERAGEIF bound (Budget, Income History, Budget Plan refs) to the same generous convention Code.gs already uses</li>
+            <li class="open"><span class="mark">○</span>Add a formula-bound sanity check to Show Version &amp; Diagnostics</li>
+            <li class="open"><span class="mark">○</span>Duplicate-category-name guard in Add Category</li>
+            <li class="open"><span class="mark">○</span>Data-validation dropdowns on Budget's manually-typed columns, matching Transactions' existing discipline</li>
+            <li class="open"><span class="mark">○</span>Bring Income History under header-based lookup + diagnostics coverage</li>
+            <li class="open"><span class="mark">○</span>Right-size Income History (121 pre-built months of live formulas is 10 years of mostly-guaranteed-zero recalculation)</li>
+            <li class="open"><span class="mark">○</span>Range protection on formula/ID-helper columns, so an accidental manual overwrite fails loudly instead of silently</li>
+            <li class="open"><span class="mark">○</span>1-click Fixed/Fluctuating recategorize — add a Categories!Income_Stability_Default dropdown (instant, no dialog) <em>and/or</em> a rerunnable "Recategorize" quick-action that only lists categories flagged for review, instead of re-running the full one-time Classify tool</li>
+            <li class="open"><span class="mark">○</span>Rename Income's Category_ID from bare "INCOME" to "CAT-INCOME" for full naming consistency with every other top-level category — a real data migration, not a code change: needs a full audit of every Parent_Category_ID/formula/filter that references "INCOME" first, then one atomic, confirmed update. Deliberately deferred (see v0.0.19 note below) rather than bundled into a bug fix.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Phase 2 -->
+      <div class="phase">
+        <div class="rail"><div class="dot planned">●</div><div class="line"></div></div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="phase-num">Phase 2</div>
+              <h3>Financial Engine</h3>
+            </div>
+            <span class="badge planned">Planned</span>
+          </div>
+          <p class="card-desc">Turn the now-clean data into real dual-income financial logic, not just totals.</p>
+          <div class="progress-row"><div class="progress-track"><div class="progress-fill planned" style="width:0%"></div></div><div class="progress-pct">0 / 6</div></div>
+          <ul class="feature-list">
+            <li class="open"><span class="mark">○</span>Per-person income breakdown (Jonathan vs. Bianca %)</li>
+            <li class="open"><span class="mark">○</span>Conservative variable-income forecast</li>
+            <li class="open"><span class="mark">○</span>Essential vs. lifestyle vs. savings split (%)</li>
+            <li class="open"><span class="mark">○</span>Redesigned Household Safety Number</li>
+            <li class="open"><span class="mark">○</span>Turn on Categorization Rules (merchant → category)</li>
+            <li class="open"><span class="mark">○</span>Turn on Recurring Transactions (rent, subscriptions)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Phase 3 -->
+      <div class="phase">
+        <div class="rail"><div class="dot planned">●</div><div class="line"></div></div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="phase-num">Phase 3</div>
+              <h3>Dashboard 2.0</h3>
+            </div>
+            <span class="badge planned">Planned</span>
+          </div>
+          <p class="card-desc">Make the presentation layer feel like a financial cockpit instead of a table of numbers.</p>
+          <div class="progress-row"><div class="progress-track"><div class="progress-fill planned" style="width:0%"></div></div><div class="progress-pct">0 / 5</div></div>
+          <ul class="feature-list">
+            <li class="open"><span class="mark">○</span>Income / expense / net / savings-rate hero cards</li>
+            <li class="open"><span class="mark">○</span>Per-category budget health (on track / watch / over)</li>
+            <li class="open"><span class="mark">○</span>Spending pace (% budget used vs. % month elapsed)</li>
+            <li class="open"><span class="mark">○</span>Safe-to-spend per day</li>
+            <li class="open"><span class="mark">○</span>Visual polish pass (progress bars, status color)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Phase 4 -->
+      <div class="phase">
+        <div class="rail"><div class="dot planned">●</div><div class="line"></div></div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="phase-num">Phase 4</div>
+              <h3>Goals &amp; Fun</h3>
+            </div>
+            <span class="badge planned">Planned</span>
+          </div>
+          <p class="card-desc">The part that's actually in the project brief — vacation and savings goals — plus what makes Bianca want to open it. Currently the biggest gap between what's built and what this project is for.</p>
+          <div class="progress-row"><div class="progress-track"><div class="progress-fill planned" style="width:0%"></div></div><div class="progress-pct">0 / 3</div></div>
+          <ul class="feature-list">
+            <li class="open"><span class="mark">○</span>Goals sheet (vacation, emergency fund, target/saved/progress)</li>
+            <li class="open"><span class="mark">○</span>Auto-link savings transactions to goal progress</li>
+            <li class="open"><span class="mark">○</span>Monthly highlights (best category, streaks, wins)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Phase 5 -->
+      <div class="phase">
+        <div class="rail"><div class="dot planned">●</div><div class="line"></div></div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="phase-num">Phase 5</div>
+              <h3>Automation</h3>
+            </div>
+            <span class="badge planned">Future</span>
+          </div>
+          <p class="card-desc">The credit-card-scanning goal — real imports instead of typed rows.</p>
+          <div class="progress-row"><div class="progress-track"><div class="progress-fill planned" style="width:0%"></div></div><div class="progress-pct">0 / 4</div></div>
+          <ul class="feature-list">
+            <li class="open"><span class="mark">○</span>Bank / credit-card statement import pipeline</li>
+            <li class="open"><span class="mark">○</span>AI-assisted categorization with confidence scoring</li>
+            <li class="open"><span class="mark">○</span>Review inbox for low-confidence transactions</li>
+            <li class="open"><span class="mark">○</span>Refined duplicate-import detection</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Phase 6 -->
+      <div class="phase">
+        <div class="rail"><div class="dot planned">●</div></div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="phase-num">Phase 6</div>
+              <h3>The App</h3>
+            </div>
+            <span class="badge planned">Future</span>
+          </div>
+          <p class="card-desc">Once the workflow has been lived-in for a few months on the spreadsheet, graduate the proven schema into a real product.</p>
+          <div class="progress-row"><div class="progress-track"><div class="progress-fill planned" style="width:0%"></div></div><div class="progress-pct">0 / 4</div></div>
+          <ul class="feature-list">
+            <li class="open"><span class="mark">○</span>Migrate the (already-mapped) schema to a real database</li>
+            <li class="open"><span class="mark">○</span>Interactive web / mobile interface</li>
+            <li class="open"><span class="mark">○</span>Bank aggregation (Plaid or equivalent)</li>
+            <li class="open"><span class="mark">○</span>Natural-language assistant ("Can we afford a $1,200 trip?")</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="footnote">
+      Built from the workbook audit (Aug 16, 2026), the ChatGPT architecture conversation, this session's Apps Script tooling work, and a deep formula-level review of the live workbook. That review confirmed the two previously-open defects are still open (now precisely re-located at their current row numbers, since rows drift as categories get added) and surfaced three new findings: Budget's expense "Budgeted" column silently disconnected from the Budget Plan roll-forward tooling for almost every category, a critical range-bound bug that will start silently under-counting the moment the next transaction or Budget Plan row is added, and a duplicate-category-name gap. Full write-up lives in the "Budgeting App" Claude project's `code-review-2026-08-17.md` doc. <strong>Update 2026-08-17:</strong> the Drive connector's .xlsx export was confirmed to preserve real formula source (not just rendered values, as previously assumed) — this let the top two findings above be re-verified cell-by-cell against the actual live workbook and value-previewed for the current month, without needing a fresh file upload. Both are confirmed by Jonathan and scoped exactly; delivery is deliberately deferred and will be bundled with any other confirmed document edits into one new spreadsheet near the end of the work session, rather than shipped as separate one-off patches. Nothing in the live spreadsheet itself has been changed yet. A companion fresh copy of the workbook (same schema/formulas, no transaction history) was delivered separately as a file, not written back to Drive. A "Reminders for Jonathan" section tracks manual to-dos (starting with re-checking the Fixed vs. Fluctuating essentials classification) separately from code bugs, alongside a matching Phase 1.6 idea for making that recategorization a 1-2 click fix. <strong>Update 2026-08-17 (later):</strong> Add Shift / Tip Tracker — Jonathan's tipped-employee income manager (log Sales/Cash Tips/CC Tips/Hours per shift; auto-calculated tip-out at 6% of Sales to floor, 1% of Sales to bar rounded up to the nearest $5, and 2% of Credit Card Tips only; Wages = Hours × an editable hourly rate starting at $17.60) is built and delivered as Code.gs v0.0.18, with a new self-provisioning "Tip Tracker" settings sheet and a 3rd "Add Shift…" menu item that posts linked Wages/Tips rows straight into Transactions. Delivered as a file; not yet pasted into the live Apps Script project or tested end-to-end. <strong>Update 2026-08-17 (later still):</strong> Jonathan stress-tested Add Shift live and caught a real data-integrity bug — the two auto-created "Wages"/"Tips" subcategories had <code>Parent_Category_ID = "CAT-INCOME"</code>, a value that doesn't match any real Category_ID in the live Categories sheet. Direct inspection of that sheet showed the actual top-level Income category's ID is the bare string <code>"INCOME"</code> (an intentional, documented exception to the "CAT-" prefix used by every top-level Expense category) — meaning v0.0.17's earlier "fix" (which changed this from "INCOME" to "CAT-INCOME" based on legacy Transaction rows' derived reference fields) was itself wrong, sourced from an orphaned reference in the original migration rather than the authoritative Categories table. Reverted in <strong>v0.0.19</strong>: addCategory(), ensureIncomeSubcategory_(), and postShiftTransaction_() all now correctly use "INCOME". The two already-created live rows need a one-time manual correction (Categories!B41 and B42, "CAT-INCOME" → "INCOME"). A separate idea — actually renaming Income's real Category_ID to "CAT-INCOME" for full consistency — was captured instead of rushed, since that's a live-data migration requiring its own scoped audit; see the new Phase 1.6 item above.
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function toggleTheme() {
+    const root = document.documentElement;
+    const current = root.getAttribute('data-theme');
+    const btn = document.getElementById('themeToggle');
+    if (current === 'dark') {
+      root.setAttribute('data-theme', 'light');
+      btn.textContent = '🌙 Dark mode';
+    } else {
+      root.setAttribute('data-theme', 'dark');
+      btn.textContent = '☀️ Light mode';
+    }
+  }
+</script>
+</body>
+</html>

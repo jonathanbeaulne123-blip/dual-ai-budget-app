@@ -99,6 +99,46 @@
     return list;
   }
 
+  function renderVision() {
+    byId("vision-eyebrow").textContent = data.vision.eyebrow;
+    byId("vision-title").textContent = data.vision.title;
+
+    const story = [make("p", { className: "vision-lead", text: data.vision.lead })];
+    data.vision.paragraphs.forEach((paragraph) => story.push(make("p", { text: paragraph })));
+    replaceChildren(byId("vision-story"), story);
+
+    const principles = data.vision.principles.map((principle) => {
+      const card = make("article", { className: "vision-principle" });
+      card.append(
+        make("p", { className: "principle-label", text: principle.label }),
+        make("h3", { text: principle.title }),
+        make("p", { text: principle.detail }),
+      );
+      return card;
+    });
+    replaceChildren(byId("vision-principles"), principles);
+  }
+
+  function renderMilestones() {
+    const milestones = data.milestones.map((milestone) => {
+      const item = make("li", { className: "milestone" });
+      const date = make("div", { className: "milestone-date" });
+      date.append(
+        make("time", { text: milestone.display, attrs: { datetime: milestone.datetime } }),
+        make("span", { text: milestone.precision }),
+      );
+      const copy = make("div", { className: "milestone-copy" });
+      copy.append(
+        make("span", { className: "era-pill", text: milestone.era }),
+        make("h3", { text: milestone.title }),
+        make("p", { text: milestone.detail }),
+      );
+      item.append(date, copy);
+      return item;
+    });
+    replaceChildren(byId("milestone-list"), milestones);
+  }
+
   function renderLens(lens, activeButton) {
     const panel = byId("lens-panel");
     panel.className = `lens-panel tone-${lens.tone}`;
@@ -235,7 +275,7 @@
           make("a", {
             className: "source-link",
             text: "View benchmark source",
-            attrs: { href: source.url, target: "_blank", rel: "noreferrer" },
+            attrs: { href: source.url, target: "_blank", rel: "noopener noreferrer" },
           }),
         );
       }
@@ -313,24 +353,66 @@
     replaceChildren(byId("update-list"), updates);
   }
 
+  function renderMuseum() {
+    const exhibits = data.museum.map((exhibit) => {
+      const article = make("article", { className: "museum-exhibit", attrs: { "data-exhibit": exhibit.id } });
+      const head = make("div", { className: "museum-head" });
+      const identity = make("div");
+      identity.append(
+        make("p", { className: "exhibit-number", text: exhibit.exhibit }),
+        make("h3", { text: exhibit.title }),
+        make("p", { className: "museum-era", text: exhibit.era }),
+      );
+      const date = make("time", {
+        className: "museum-date",
+        text: exhibit.dateLabel,
+        attrs: { datetime: exhibit.date },
+      });
+      head.append(identity, date);
+
+      const status = make("p", { className: "museum-status", text: exhibit.status });
+      const provenance = make("p", { className: "museum-provenance" });
+      provenance.append(make("strong", { text: "Provenance: " }), document.createTextNode(exhibit.provenance));
+
+      const details = make("div", { className: "museum-details" });
+      const outline = make("details");
+      outline.append(make("summary", { text: "What this roadmap contained" }), makeList(exhibit.outline));
+      const changed = make("details");
+      changed.append(make("summary", { text: "What changed since" }), makeList(exhibit.changed));
+      details.append(outline, changed);
+
+      const source = make("a", {
+        className: "button museum-link",
+        text: exhibit.source.label,
+        attrs: { href: exhibit.source.url, target: "_blank", rel: "noopener noreferrer" },
+      });
+
+      article.append(head, status, make("p", { className: "museum-summary", text: exhibit.summary }), provenance, details, source);
+      return article;
+    });
+    replaceChildren(byId("museum-list"), exhibits);
+  }
+
   function renderSources() {
     const items = Object.values(data.sources).map((source) => {
       const item = make("li");
       item.append(make("a", {
         text: source.label,
-        attrs: { href: source.url, target: "_blank", rel: "noreferrer" },
+        attrs: { href: source.url, target: "_blank", rel: "noopener noreferrer" },
       }));
       return item;
     });
     replaceChildren(byId("source-list"), items);
   }
 
-  if (!data || data.schemaVersion !== 1) {
+  if (!data || data.schemaVersion !== 2) {
     renderFailure();
     return;
   }
 
   renderMeta();
+  renderVision();
+  renderMilestones();
   renderScorecards();
   renderLensTabs();
   renderEvidence();
@@ -339,5 +421,6 @@
   renderPhaseFilters();
   renderPriorities();
   renderUpdates();
+  renderMuseum();
   renderSources();
 })();

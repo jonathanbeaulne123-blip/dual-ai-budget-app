@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   catalogHousehold,
   detectChalkLetters,
+  eraseGlyphAt,
   inkFromText,
   mergeKitchen,
   neatenChalk,
@@ -40,5 +41,16 @@ describe("drawable chalkboard", () => {
     const merged = mergeKitchen(left.kitchen, right.kitchen, []);
     expect(merged.chalkboard.some((note) => note.ink && note.ink.strokes.length > 0)).toBe(true);
     expect(merged.chalkboard.map((note) => note.text).sort()).toEqual(["eggs", "oat milk"]);
+  });
+
+  it("erases one letter cluster without wiping the rest of the board", () => {
+    const milk = inkFromText("MILK");
+    const glyphs = milk.strokes;
+    expect(glyphs.length).toBeGreaterThan(1);
+    const first = glyphs[0]!.points[0]!;
+    const erased = eraseGlyphAt(milk, first.x, first.y);
+    expect(erased).not.toBeNull();
+    expect(erased!.strokes.length).toBeLessThan(milk.strokes.length);
+    expect(erased!.strokes.length).toBeGreaterThan(0);
   });
 });

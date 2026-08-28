@@ -21,7 +21,7 @@ import {
   cookOffScore,
   sitDownPostcard,
 } from "./core/index.ts";
-import type { Account, Category, CommitResult, Household, InstrumentId, OfficeLayout, UndoToken } from "./core/index.ts";
+import type { Account, Category, CommitResult, Environment, Household, InstrumentId, OfficeLayout, UndoToken } from "./core/index.ts";
 import type { Dashboard } from "./core/insights.ts";
 import type { HearthTab } from "./core/hercules.ts";
 import { requestCalendarPane } from "./core/calendarIntent.ts";
@@ -40,6 +40,8 @@ import { CalendarBody, CalendarGlance } from "./widgets/CalendarDesk.tsx";
 import { AppointmentsBody, AppointmentsGlance } from "./widgets/AppointmentsDesk.tsx";
 import { PostcardBody, PostcardGlance } from "./widgets/Postcard.tsx";
 import { CookOffBody, CookOffGlance } from "./widgets/CookOffKettle.tsx";
+import { WardrobeBody, wardrobeGlance } from "./widgets/WardrobeDesk.tsx";
+import { HangmanBody, HangmanGlance, TicTacToeBody, TicTacToeGlance } from "./widgets/GamesDesk.tsx";
 import { NotebookBody, PaperBars, PaperSpark, PaperTile, StoryStrip, WaxSeal } from "./theme/PaperTheme.tsx";
 import { useFurniture } from "./widgets/useFurniture.ts";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
@@ -60,9 +62,10 @@ type Spec = {
 export function OfficeWide({
   household, dashboard, layout, onLayout,
   today, memberId, view, busy, adding, form, mode, error, categories, postLabel,
+  environment, clinkOn,
   onForm, onPost, onMore, onMilk, onCoffee, onClockIn, onAbandonShift,
   onStartBreak, onEndBreak, onChooseShiftTimeline, onSignOut, onFinishedShift, onPayCard, onOpenAccount,
-  onKitchen, onMarkPaid, onAskSettle, onAskStartJar, onSitDown, onGo,
+  onKitchen, onMarkPaid, onAskSettle, onAskStartJar, onSitDown, onGo, onClinkOn,
 }: {
   household: Household;
   dashboard: Dashboard;
@@ -78,6 +81,8 @@ export function OfficeWide({
   error: string;
   categories: Category[];
   postLabel: string;
+  environment: Environment;
+  clinkOn: boolean;
   onForm: (next: DeskForm) => void;
   onPost: () => void;
   onMore: () => void;
@@ -98,6 +103,7 @@ export function OfficeWide({
   onAskStartJar: (appointmentId: string, summary: string) => void;
   onSitDown: (next: Household, token?: UndoToken) => void;
   onGo: (tab: HearthTab) => void;
+  onClinkOn: (on: boolean) => void;
 }) {
   const sealsRef = useFurniture("wide-seals", "tray", true, false);
   const heroRef = useFurniture("blotter", "board", true, false);
@@ -293,7 +299,38 @@ export function OfficeWide({
       name: "Notes",
       glance: <span>{chalkboardGlance(household)}</span>,
       aria: "Notes.",
-      body: <ChalkboardBody household={household} memberId={memberId} busy={busy} onCommand={onKitchen} />,
+      body: <ChalkboardBody liveSurface household={household} memberId={memberId} busy={busy} onCommand={onKitchen} />,
+    },
+    wardrobe: {
+      kind: "Outfits",
+      name: "Hercules outfits",
+      glance: <span>{wardrobeGlance(household, today)}</span>,
+      aria: "Hercules outfits.",
+      body: (
+        <WardrobeBody
+          household={household}
+          today={today}
+          busy={busy}
+          environment={environment}
+          clinkOn={clinkOn}
+          onClinkOn={onClinkOn}
+          onCommand={onKitchen}
+        />
+      ),
+    },
+    tictactoe: {
+      kind: "Game",
+      name: "Tic-tac-toe",
+      glance: <TicTacToeGlance household={household} />,
+      aria: "Tic-tac-toe.",
+      body: <TicTacToeBody household={household} memberId={memberId} busy={busy} onCommand={onKitchen} />,
+    },
+    hangman: {
+      kind: "Game",
+      name: "Hangman",
+      glance: <HangmanGlance household={household} />,
+      aria: "Hangman.",
+      body: <HangmanBody household={household} memberId={memberId} busy={busy} onCommand={onKitchen} />,
     },
   };
 
@@ -301,6 +338,7 @@ export function OfficeWide({
   const openId = expanded && expanded !== "window" ? (expanded as InstrumentId) : WIDE_HERO_ID;
   const openSpec = specs[openId] ?? heroSpec;
   const panelId = `wide-notebook-${openId}`;
+  const chalkOpen = openId === "chalkboard";
 
   return (
     <div className={`office-wide ${adding ? "is-adding" : ""}`}>
@@ -371,23 +409,26 @@ export function OfficeWide({
               </button>
             </div>
           )}
-          <div ref={noteRef} className={`office-wide-notebook ${adding ? "is-inert" : ""}`}>
+          <div ref={noteRef} className={`office-wide-notebook ${adding ? "is-inert" : ""} ${chalkOpen ? "is-chalk" : ""}`}>
             {openSpec && (
               <NotebookBody
                 title={openSpec.name}
                 open
+                bare={chalkOpen}
                 panelId={panelId}
                 onClose={() => setExpanded(null)}
               >
                 <div className="office-wide-notebook-inner">
-                  <button
-                    type="button"
-                    className={`ph-pin ${(layout.pinned ?? []).includes(openId) ? "is-on" : ""}`}
-                    onClick={() => onLayout(toggleInstrumentPin(layout, openId))}
-                    aria-label={(layout.pinned ?? []).includes(openId) ? `Unpin ${openSpec.name}` : `Pin ${openSpec.name} open`}
-                  >
-                    {(layout.pinned ?? []).includes(openId) ? "pinned" : "pin"}
-                  </button>
+                  {!chalkOpen && (
+                    <button
+                      type="button"
+                      className={`ph-pin ${(layout.pinned ?? []).includes(openId) ? "is-on" : ""}`}
+                      onClick={() => onLayout(toggleInstrumentPin(layout, openId))}
+                      aria-label={(layout.pinned ?? []).includes(openId) ? `Unpin ${openSpec.name}` : `Pin ${openSpec.name} open`}
+                    >
+                      {(layout.pinned ?? []).includes(openId) ? "pinned" : "pin"}
+                    </button>
+                  )}
                   {openSpec.body}
                 </div>
               </NotebookBody>

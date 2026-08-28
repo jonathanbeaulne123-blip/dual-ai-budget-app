@@ -2555,6 +2555,22 @@ export function wipeChalk(household: Household, id: string): CommitResult {
   return commit(previous, next, "Chalkboard", "Wiped a chalkboard note", []);
 }
 
+/** Replace a chalk note's ink after letter-erasing. Empty ink wipes the note. */
+export function reviseChalkInk(household: Household, id: string, ink: ChalkInk | null): CommitResult {
+  if (!hasChalkInk(ink)) return wipeChalk(household, id);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.kitchen = shapeKitchen(next.kitchen);
+  const note = next.kitchen.chalkboard.find((item) => item.id === id);
+  if (!note) throw new ValidationError("That scribble is already gone.");
+  const shaped = shapeChalkInk(ink);
+  note.ink = shaped;
+  const read = detectChalkLetters(shaped);
+  if (read) note.text = read.slice(0, MAX_CHALK_CHARS);
+  note.updatedAt = nowIso();
+  return commit(previous, next, "Chalkboard", "Erased chalk", []);
+}
+
 export function recordReconciliation(household: Household, input: {
   accountId: string;
   statementDate: string;

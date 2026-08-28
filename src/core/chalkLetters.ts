@@ -79,6 +79,48 @@ export function hasChalkInk(ink?: ChalkInk | null): boolean {
   return Boolean(ink && ink.strokes.length);
 }
 
+export type ChalkBounds = { x0: number; y0: number; x1: number; y1: number };
+
+/** Normalized bounding box of every stroke. */
+export function inkBounds(ink: ChalkInk | null | undefined): ChalkBounds | null {
+  const shaped = shapeChalkInk(ink ?? null);
+  if (!shaped) return null;
+  let x0 = 1;
+  let y0 = 1;
+  let x1 = 0;
+  let y1 = 0;
+  for (const stroke of shaped.strokes) {
+    for (const point of stroke.points) {
+      x0 = Math.min(x0, point.x);
+      y0 = Math.min(y0, point.y);
+      x1 = Math.max(x1, point.x);
+      y1 = Math.max(y1, point.y);
+    }
+  }
+  if (x1 <= x0 || y1 <= y0) return null;
+  return { x0, y0, x1, y1 };
+}
+
+function strokeHitsBox(stroke: ChalkStroke, box: GlyphBox, pad = 0.012): boolean {
+  return stroke.points.some(
+    (point) => point.x >= box.x0 - pad && point.x <= box.x1 + pad && point.y >= box.y0 - pad && point.y <= box.y1 + pad,
+  );
+}
+
+/** Wipe one letter-sized cluster under a board point. Leaves other letters. */
+export function eraseGlyphAt(ink: ChalkInk | null | undefined, x: number, y: number): ChalkInk | null {
+  const shaped = shapeChalkInk(ink ?? null);
+  if (!shaped) return null;
+  const glyphs = segmentChalkGlyphs(shaped);
+  const hit = glyphs.find(
+    (box) => x >= box.x0 - 0.012 && x <= box.x1 + 0.012 && y >= box.y0 - 0.012 && y <= box.y1 + 0.012,
+  );
+  if (!hit) return shaped;
+  const strokes = shaped.strokes.filter((stroke) => !strokeHitsBox(stroke, hit));
+  if (!strokes.length) return null;
+  return { w: shaped.w, h: shaped.h, strokes };
+}
+
 type GlyphBox = { x0: number; y0: number; x1: number; y1: number; points: ChalkPoint[] };
 
 function clusterByGap(items: GlyphBox[], axis: "x" | "y", minGap: number): GlyphBox[][] {

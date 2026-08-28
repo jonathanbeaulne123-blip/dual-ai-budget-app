@@ -1693,4 +1693,12 @@ export default {
       headers,
     });
   },
+  /**
+   * Hearth does not use Cloudflare Queues. A leftover consumer registration on
+   * hearth-books blocked kitchen `wrangler deploy` with API 11001. Ack only;
+   * never post, never fetch household data.
+   */
+  async queue(batch) {
+    for (const message of batch.messages) message.ack();
+  },
 };

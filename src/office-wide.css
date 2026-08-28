@@ -67,6 +67,14 @@
 .office-wide-notebook .hearth-notebook {
   min-height: 220px;
 }
+.office-wide-notebook.is-chalk .hearth-notebook {
+  min-height: 280px;
+}
+.office-wide-notebook.is-chalk .office-wide-notebook-inner {
+  position: relative;
+  min-height: 280px;
+  display: block;
+}
 .office-wide.is-adding .office-wide-notebook,
 .office-wide.is-adding .office-wide-seals,
 .office-wide.is-adding .office-wide-hero {
