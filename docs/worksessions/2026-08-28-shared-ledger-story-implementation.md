@@ -7,7 +7,7 @@
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `cursor/shared-ledger-story-aef7`
 - **Baseline SHA:** `871e6607b4bc6a5d653f9e9bbcc9131f9a07dc65`
-- **Head SHA:** `5b424f4bb6508a89d24ffea8291f0ec2bc1b65a4`
+- **Head SHA:** `dd4fe43d1c970c0383aa3e178b7a9b200145c585`
 - **PR or issue:** draft [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244)
 - **Risk:** High review gate (ledger-mode privacy and financial presentation)
 - **Decision owner:** Jonathan
@@ -53,7 +53,7 @@ Opening Shared Ledger feels like sitting down at the household table: what is tr
 - [x] Canonical Fund arithmetic through flow nodes (focused tests).
 - [x] Shared denial of Bianca’s private backing/recon facts in projectors/export; Add pickers scoped.
 - [x] Desktop/iPad story at 1280 and ~768; phone 320/390 unchanged structurally (purpose banner only).
-- [x] Focused tests + `pnpm check` at `5b424f4` (1099 passed / 2 skipped).
+- [x] Focused tests + `pnpm check` at `dd4fe43` (1100 passed / 2 skipped).
 - [x] Home sit-down, Shared Fund CAD, and Books journal compile from `booksHousehold`.
 
 ## Plan
@@ -66,7 +66,7 @@ Opening Shared Ledger feels like sitting down at the household table: what is tr
 - [x] Slice 4: Personal Folio and privacy denial.
 - [x] Slice 5: phone semantic correction only.
 - [x] P0 persist/privacy wiring after independent audit.
-- [x] Audit follow-up: Home sit-down / Fund CAD / Books journal on accepted books; Fund free-to-spend copy; purpose copy hidden below 720px.
+- [x] Audit follow-up: Home sit-down / Fund CAD / Books journal on accepted books; Fund free-to-spend copy; purpose copy hidden below 720px; Shared due Confirm posts visible ids only.
 - [ ] Jonathan review of draft PR; independent auditor notes on this SHA.
 
 ## Evidence log
@@ -77,8 +77,9 @@ Opening Shared Ledger feels like sitting down at the household table: what is tr
 - 2026-08-28: `ee74045` Plan `fundGoal` source fence.
 - 2026-08-28: `d2a4a93` docs handoff for draft PR #244.
 - 2026-08-28: `5b424f4` Home sit-down, Shared Fund CAD, Books journal on accepted books; Fund pane **Fund free-to-spend**; Office health from `integrityFindings`.
-- 2026-08-28: `pnpm check` at `5b424f4` → 1099 passed / 2 skipped; build green.
-- 2026-08-28: localhost demo kitchen as Jonathan; Shared vs Personal visual proof.
+- 2026-08-28: `dd4fe43` Shared due Confirm posts only visible recurrence ids; Personal Rec does not default to Shared chart.
+- 2026-08-28: `pnpm check` at `dd4fe43` → 1100 passed / 2 skipped; build green.
+- 2026-08-28: localhost demo kitchen as Jonathan; Shared Home 1280, Books Fund pane, phone 320 purpose heading.
 
 ## Decisions
 
@@ -96,7 +97,7 @@ Semantic correction implemented: every tab, including phone Home, shows `LedgerP
 - A real multi-week Fund household has not been visually audited; tests use synthetic D-161 fixtures.
 - Demo seed has no `scope: personal` accounts, so Personal Books compile empty.
 - 820/1024/1440 stills were not captured as separate files.
-- Independent books/privacy/UX auditor return on `5b424f4` should be read before merge (prior books FAIL was Home sit-down on the presentation clone).
+- Independent books re-audit after `5b424f4`: Home sit-down P0 cleared; remaining P1 was Shared due Confirm (fixed in `dd4fe43`). Privacy PASS on named gates; Shared Books can still show Personal-scope backing names. UX PASS.
 
 ## Handoff
 
