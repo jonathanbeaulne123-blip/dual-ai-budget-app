@@ -1,5 +1,29 @@
 # AI Task and Handoff Standard
 
+## Merge and deploy what is safe (2026-08-28)
+
+**Status:** Integration branch `cursor/merge-safe-kitchen-4cf6` (`cb699f0` = `origin/main@158e2b9` + D-156). Not yet merged to `main` at this note. Risk: **Medium** for D-156; **Release held** for 7shifts enablement. Not Production household data.
+
+**Household outcome:** Current kitchen `main` stays live. The only safe additional merge is the wide paper office (D-156) after proof. 7shifts stays inert. Conflicting High/draft PRs stay unmerged.
+
+**Budget delta (5):** `+1` — laptop Home glance without new figures.
+
+**Engagement delta (3):** `+1` — composed wide paper office on the kitchen after merge.
+
+**Safe / already live:** `origin/main@158e2b9` Cloudflare Workers run `33145404299` success. `/roadmap/` 200. `/ocr/` 200. 7shifts `/work/7shifts/status` `available: false`, Production locked.
+
+**Held (not safe):**
+- D-155 enablement — setup `33116671903` failed Cloudflare API `7403` (token cannot query Development D1). Secrets/table not proven. `#214` superseded by merged `#220`/`#222` and conflicts.
+- `#218` opening truth — High, CONFLICTING, draft.
+- `#216` onboarding foundation — CONFLICTING draft.
+- `#207` computer office — incomplete compositor, CONFLICTING draft.
+- `#206` tenant journal design — High architecture, CONFLICTING draft.
+- `#203` button inventory — Low docs, CONFLICTING (rebase separately).
+
+**Verification:** `pnpm check` on `cb699f0` → **967 passed / 2 skipped**, Vite + Hercules Pro build green.
+
+**Next owner:** This agent — visual 320/390/720/~1100, then merge D-156 to `main` so kitchen deploy runs. Jonathan — grant the GitHub Cloudflare token D1 access on `hearth-flinks-development` before any 7shifts enablement.
+
 ## Tip-sheet transcript-first rethink (D-152) (2026-08-28)
 
 **Status:** Merged via [#227](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/227) onto `main` (`74abbaf`). Kitchen Worker **live** via Cloudflare Workers run `33131628794` (Deploy green). Risk: **Medium**. Not Production household data.
