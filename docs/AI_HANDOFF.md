@@ -10,9 +10,11 @@
 
 **Engagement delta (3):** `+1` — clearer, more usable drafts after Clear Capture.
 
-**What changed:** Transcript-first prompt; coerce `shift-report` from tip-sheet hint + Toast OCR; field-level POS merge; tip-sheet contrast + high-quality JPEG prep.
+**What changed:** Transcript-first prompt; coerce `shift-report` from tip-sheet hint + Toast OCR; field-level POS merge; tip-sheet contrast + high-quality JPEG prep; **Auto = free Workers AI first**, paid only when draft still weak.
 
-**Next owner:** Review, then merge/deploy. Hard-refresh → OpenAI tip sheet → Confirm review.
+**Cost:** Default **Auto** avoids paid tokens when free Workers AI + POS parser draft enough. OpenAI chip still costs ~$0.02–0.04 when forced or when Auto falls back.
+
+**Next owner:** Merge/deploy. Hard-refresh → leave provider on **Auto** → tip sheet scan.
 
 ## OpenAI tip-sheet 503 fix (D-152) (2026-08-27)
 

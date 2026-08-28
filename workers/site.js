@@ -1147,33 +1147,47 @@ async function scanWorkersAi(env, imageDataUrl, documentHint) {
   return null;
 }
 
+/** How many core tip-sheet totals are present after sanitize (invent-nothing). */
+function tipSheetDraftStrength(shiftDraft) {
+  if (!shiftDraft || typeof shiftDraft !== "object") return 0;
+  return ["salesCents", "cardTipsCents", "workedHours", "customersServed"].filter((key) => shiftDraft[key] != null).length;
+}
+
+/** Auto mode accepts a tip-sheet scan when at least two core totals survived sanitize. */
+function tipSheetScanUsable(result) {
+  return Boolean(result && tipSheetDraftStrength(result.shiftDraft) >= 2);
+}
+
 async function scanOpenAI(env, imageDataUrl, documentHint) {
   if (!documentScanPaidAllowed(env)) return null;
   const key = String(env.OPENAI_API_KEY || "").trim();
   if (!key) return null;
-  // Dense POS tip sheets need a strong vision model; mini is too lossy for label mapping.
-  const model = String(env.DOCUMENT_SCAN_OPENAI_MODEL || env.OPENAI_MODEL || "gpt-4o").trim() || "gpt-4o";
+  const isShift = documentHint === "shift-report";
+  // Tip sheets: one json_object call, auto detail — transcript-first + POS parser do the accuracy work.
+  const model = isShift
+    ? (String(env.DOCUMENT_SCAN_OPENAI_MODEL || "gpt-4o").trim() || "gpt-4o")
+    : (String(env.DOCUMENT_SCAN_OPENAI_MODEL || env.OPENAI_MODEL || "gpt-4o").trim() || "gpt-4o");
   const messages = [
     { role: "system", content: DOCUMENT_SYSTEM },
     {
       role: "user",
       content: [
         { type: "text", text: documentScanUserText(documentHint) },
-        { type: "image_url", image_url: { url: imageDataUrl, detail: "high" } },
+        { type: "image_url", image_url: { url: imageDataUrl, detail: isShift ? "auto" : "high" } },
       ],
     },
   ];
-  // Prefer strict schema; fall back if OpenAI rejects the schema or returns empty content.
-  const formats = [
-    {
-      response_format: {
-        type: "json_schema",
-        json_schema: { name: "financial_document", strict: true, schema: DOCUMENT_SCHEMA },
-      },
-    },
-    { response_format: { type: "json_object" } },
-    {},
-  ];
+  const formats = isShift
+    ? [{ response_format: { type: "json_object" } }]
+    : [
+        {
+          response_format: {
+            type: "json_schema",
+            json_schema: { name: "financial_document", strict: true, schema: DOCUMENT_SCHEMA },
+          },
+        },
+        { response_format: { type: "json_object" } },
+      ];
   for (const format of formats) {
     try {
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -1182,7 +1196,7 @@ async function scanOpenAI(env, imageDataUrl, documentHint) {
         body: JSON.stringify({
           model,
           temperature: 0,
-          max_tokens: 4000,
+          max_tokens: isShift ? 2800 : 4000,
           messages,
           ...format,
         }),
@@ -1255,8 +1269,8 @@ async function scanDocument(request, env) {
 
   let result = null;
   let provider = "";
-  // Explicit provider choice (Shift tip-sheet chips) tries only that backend.
-  // Auto keeps prior order: tip sheets prefer paid vision first when allowed.
+  // Explicit provider choice tries only that backend.
+  // Auto: free Workers AI first for tip sheets; paid vision only when the draft is still weak.
   if (forcedProvider === "openai" || forcedProvider === "anthropic") {
     if (!documentScanPaidAllowed(env)) {
       return json({
@@ -1265,7 +1279,6 @@ async function scanDocument(request, env) {
       }, 503, cors);
     }
   }
-  const preferPaid = !forcedProvider && documentHint === "shift-report" && documentScanPaidAllowed(env);
   const attempts = forcedProvider
     ? [
         [
@@ -1277,26 +1290,24 @@ async function scanDocument(request, env) {
               : () => scanWorkersAi(env, imageDataUrl, documentHint),
         ],
       ]
-    : preferPaid
-      ? [
-          ["openai", () => scanOpenAI(env, imageDataUrl, documentHint)],
-          ["anthropic", () => scanAnthropic(env, imageDataUrl, documentHint)],
-          ["workers-ai", () => scanWorkersAi(env, imageDataUrl, documentHint)],
-        ]
-      : [
-          ["workers-ai", () => scanWorkersAi(env, imageDataUrl, documentHint)],
-          ["openai", () => scanOpenAI(env, imageDataUrl, documentHint)],
-          ["anthropic", () => scanAnthropic(env, imageDataUrl, documentHint)],
-        ];
+    : [
+        ["workers-ai", () => scanWorkersAi(env, imageDataUrl, documentHint)],
+        ["openai", () => scanOpenAI(env, imageDataUrl, documentHint)],
+        ["anthropic", () => scanAnthropic(env, imageDataUrl, documentHint)],
+      ];
   for (const [name, run] of attempts) {
     try {
-      result = await run();
-      if (result) {
-        provider = name;
-        break;
+      const candidate = await run();
+      if (!candidate) continue;
+      // Tip-sheet Auto: skip to the next provider instead of spending on a weak draft.
+      if (!forcedProvider && documentHint === "shift-report" && !tipSheetScanUsable(candidate)) {
+        continue;
       }
+      result = candidate;
+      provider = name;
+      break;
     } catch {
-      result = null;
+      // Try the next provider.
     }
   }
   if (!result) {

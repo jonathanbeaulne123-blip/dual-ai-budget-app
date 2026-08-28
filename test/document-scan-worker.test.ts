@@ -97,8 +97,8 @@ describe("document detection Worker", () => {
     });
     expect(response.status).toBe(200);
     expect((await response.json() as { provider: string }).provider).toBe("anthropic");
-    // OpenAI retries strict → json_object → plain before Anthropic.
-    expect(upstream.mock.calls.filter((call) => String(call[0]).includes("openai.com"))).toHaveLength(3);
+    // OpenAI tries strict schema, then json_object, before Anthropic.
+    expect(upstream.mock.calls.filter((call) => String(call[0]).includes("openai.com"))).toHaveLength(2);
     expect(upstream.mock.calls.filter((call) => String(call[0]).includes("anthropic.com"))).toHaveLength(1);
   });
 
@@ -394,26 +394,14 @@ describe("document detection Worker", () => {
     expect(upstream).not.toHaveBeenCalled();
   });
 
-  it("retries OpenAI with json_object when strict schema is rejected", async () => {
+  it("uses one json_object OpenAI call for forced tip-sheet scans", async () => {
     const upstream = vi.fn(async (_url: string, init?: RequestInit) => {
       const sent = JSON.parse(String(init?.body)) as {
-        response_format?: { type?: string; json_schema?: { schema?: { properties?: { shiftDraft?: unknown } } } };
+        response_format?: { type?: string };
+        max_tokens?: number;
       };
-      if (sent.response_format?.type === "json_schema") {
-        const shiftDraft = sent.response_format.json_schema?.schema?.properties?.shiftDraft as {
-          anyOf?: Array<{ required?: string[]; properties?: Record<string, unknown> }>;
-        };
-        const objectSchema = shiftDraft?.anyOf?.find((entry) => Array.isArray(entry.required));
-        expect(objectSchema?.required).toEqual(expect.arrayContaining([
-          "date", "workedHours", "salesCents", "foodSalesCents", "alcoholSalesCents",
-          "cashTipsCents", "cardTipsCents", "customersServed", "staffingCount", "eventTag",
-        ]));
-        expect(Object.keys(objectSchema?.properties || {}).sort()).toEqual([...(objectSchema?.required || [])].sort());
-        return new Response(JSON.stringify({
-          error: { message: "Invalid schema for response_format: missing required on shiftDraft properties." },
-        }), { status: 400, headers: { "Content-Type": "application/json" } });
-      }
       expect(sent.response_format).toEqual({ type: "json_object" });
+      expect(sent.max_tokens).toBe(2800);
       return new Response(JSON.stringify({
         choices: [{ message: { content: JSON.stringify({
           documentKind: "shift-report",
@@ -421,7 +409,6 @@ describe("document detection Worker", () => {
           accountLast4: "",
           rows: [],
           receiptNumbers: null,
-          // Keep OCR short so POS merge does not replace the model draft under test.
           ocrText: "shift",
           shiftDraft: {
             date: "2026-08-27",
@@ -467,7 +454,7 @@ describe("document detection Worker", () => {
       cardTipsCents: 2_000,
       customersServed: 12,
     });
-    expect(upstream).toHaveBeenCalledTimes(2);
+    expect(upstream).toHaveBeenCalledTimes(1);
   });
 
   it("coerces tip-sheet hint + Toast OCR into shift-report even when the model said receipt", async () => {
