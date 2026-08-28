@@ -67,7 +67,18 @@
       <p class="card-kicker">Ready to read</p>
       <h2>Slices look good</h2>
       <p id="successText"></p>
-      <p class="phase-note">Text extraction is coming in Phase 3. Nothing below is invented OCR — these are the image chunks the engine will read next.</p>
+      <p class="phase-note">Each slice is read on this phone at full resolution so a tall page is not crushed.</p>
+    </section>
+
+    <section id="ocrCard" class="card success" hidden>
+      <p class="card-kicker">Extracted text</p>
+      <h2 id="ocrTitle">Readable text</h2>
+      <p id="ocrMeta" class="hint"></p>
+      <pre id="ocrText" class="ocr-text"></pre>
+      <div class="stack-btns">
+        <button type="button" class="btn secondary" id="btnCopy">Copy text</button>
+      </div>
+      <p class="phase-note" id="ocrNote"></p>
     </section>
 
     <section id="slicesCard" class="card" hidden>
@@ -117,6 +128,7 @@
   <input id="nextCaptureInput" type="file" accept="image/*" capture="environment" hidden>
   <input id="nextLibraryInput" type="file" accept="image/*" hidden>
 
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
   <script src="/ocr/pipeline.js" defer></script>
   <script src="/ocr/app.js" defer></script>
 </body>

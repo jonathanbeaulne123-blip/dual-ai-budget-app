@@ -30,6 +30,12 @@
     qualityReasons: $("qualityReasons"),
     successCard: $("successCard"),
     successText: $("successText"),
+    ocrCard: $("ocrCard"),
+    ocrTitle: $("ocrTitle"),
+    ocrMeta: $("ocrMeta"),
+    ocrText: $("ocrText"),
+    ocrNote: $("ocrNote"),
+    btnCopy: $("btnCopy"),
     slicesCard: $("slicesCard"),
     slicesList: $("slicesList"),
     guidanceCard: $("guidanceCard"),
@@ -74,6 +80,7 @@
   function resetResults() {
     show(els.qualityCard, false);
     show(els.successCard, false);
+    show(els.ocrCard, false);
     show(els.slicesCard, false);
     show(els.guidanceCard, false);
     show(els.multiCard, false);
@@ -138,7 +145,11 @@
     show(els.qualityCard, true);
   }
 
-  function renderSlices(slices) {
+  function renderSlices(slices, ocrSlices) {
+    const byIndex = new Map();
+    (ocrSlices || []).forEach((part) => {
+      byIndex.set(part.slice_index, part);
+    });
     els.slicesList.innerHTML = "";
     slices.forEach((sl) => {
       const fig = document.createElement("figure");
@@ -149,9 +160,61 @@
       const cap = document.createElement("figcaption");
       cap.textContent = `#${sl.index + 1}  rows ${sl.content_y_start}–${sl.content_y_end}  (${sl.cut_reason.replaceAll("_", " ")})`;
       fig.append(img, cap);
+      const part = byIndex.get(sl.index);
+      if (part && part.text) {
+        const pre = document.createElement("pre");
+        pre.className = "slice-text";
+        pre.textContent = part.text;
+        fig.append(pre);
+      }
       els.slicesList.appendChild(fig);
     });
     show(els.slicesCard, slices.length > 0);
+  }
+
+  function renderOcr(ocr) {
+    if (!ocr) {
+      show(els.ocrCard, false);
+      return;
+    }
+    const status = ocr.status || "unavailable";
+    const text = ocr.text || "";
+    if (status === "ok" && text) {
+      els.ocrTitle.textContent = "Readable text";
+      els.ocrText.textContent = text;
+      els.ocrMeta.textContent = ocr.message || "";
+      els.ocrNote.textContent = "Copied from the slices in order. Overlapping lines are dropped; full stitch of multi-shot captures is Phase 4.";
+      show(els.ocrCard, true);
+      show(els.btnCopy, true);
+      return;
+    }
+    els.ocrTitle.textContent = status === "empty" ? "No text found" : "Could not read text";
+    els.ocrText.textContent = "";
+    els.ocrMeta.textContent = ocr.message || "";
+    els.ocrNote.textContent =
+      status === "empty"
+        ? "This photo passed the sharpness check, but OCR did not find words. Try a closer shot of the actual page."
+        : "Quality check and slicing still ran. Text extract needs a working OCR engine on the laptop.";
+    show(els.ocrCard, true);
+    show(els.btnCopy, false);
+  }
+
+  async function copyOcrText() {
+    const text = els.ocrText.textContent || "";
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      els.btnCopy.textContent = "Copied";
+      setTimeout(() => {
+        els.btnCopy.textContent = "Copy text";
+      }, 1600);
+    } catch {
+      const range = document.createRange();
+      range.selectNodeContents(els.ocrText);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
   }
 
   function renderGuidance(guidance) {
@@ -238,7 +301,8 @@
       els.successText.textContent =
         `${body.slices.length} slice${body.slices.length === 1 ? "" : "s"} from a ${body.quality.width}×${body.quality.height} image.`;
       show(els.successCard, true);
-      renderSlices(body.slices);
+      renderOcr(body.ocr);
+      renderSlices(body.slices, (body.ocr && body.ocr.slices) || []);
       return;
     }
     renderGuidance(body.guidance);
@@ -280,7 +344,7 @@
     show(els.livePanel, false);
     previewFile(file);
     show(els.btnReset, true);
-    setBusy(true, "Checking readability…");
+    setBusy(true, "Checking readability and reading text…");
     if (ENGINE === "browser" && window.ToastPipeline) {
       try {
         const body = await window.ToastPipeline.prepare(file);
@@ -422,6 +486,7 @@
   $("btnNextLibrary").addEventListener("click", () => nextLibraryInput.click());
   $("btnDone").addEventListener("click", () => submitBatch());
   $("btnReset").addEventListener("click", () => startOver());
+  $("btnCopy").addEventListener("click", () => copyOcrText());
   $("errorDismiss").addEventListener("click", () => clearError());
   $("btnLive").addEventListener("click", () => startLive());
   $("btnLiveClose").addEventListener("click", () => {

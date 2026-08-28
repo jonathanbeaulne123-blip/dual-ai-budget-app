@@ -17,6 +17,8 @@ describe("toast OCR mount at /ocr", () => {
     expect(body.status).toBe("ok");
     expect(body.engine).toBe("browser");
     expect(body.phases["1_quality"]).toBe("ready");
+    expect(body.phases["2_slice"]).toBe("ready");
+    expect(body.phases["3_ocr"]).toBe("ready");
     expect(assets.fetch).not.toHaveBeenCalled();
   });
 

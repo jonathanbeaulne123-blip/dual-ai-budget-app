@@ -336,6 +336,70 @@
     return out.toDataURL("image/jpeg", quality);
   }
 
+  async function extractWithTesseract(slices) {
+    const unavailable = (message) => ({
+      status: "unavailable",
+      phase: 3,
+      engine: "tesseract",
+      text: "",
+      box_count: 0,
+      slices: [],
+      message,
+    });
+    if (typeof Tesseract === "undefined") {
+      return unavailable("On-device OCR could not load. Refresh this HTTPS page, or use the laptop app.");
+    }
+    let worker;
+    try {
+      worker = await Tesseract.createWorker("eng");
+      const parts = [];
+      const texts = [];
+      for (const sl of slices) {
+        const { data } = await worker.recognize(sl.preview);
+        const text = String(data.text || "").replace(/[ \t]+\n/g, "\n").trim();
+        const conf = typeof data.confidence === "number" ? data.confidence / 100 : 0;
+        parts.push({
+          slice_index: sl.index,
+          text,
+          mean_confidence: Math.round(conf * 10000) / 10000,
+          box_count: 0,
+        });
+        if (text) texts.push(text);
+      }
+      const joined = texts.join("\n\n");
+      if (!joined) {
+        return {
+          status: "empty",
+          phase: 3,
+          engine: "tesseract",
+          text: "",
+          box_count: 0,
+          slices: parts,
+          message: "No text found in this photo. Try a closer, sharper shot of the page.",
+        };
+      }
+      return {
+        status: "ok",
+        phase: 3,
+        engine: "tesseract",
+        text: joined,
+        box_count: parts.filter((p) => p.text).length,
+        slices: parts,
+        message: `${slices.length} slice${slices.length === 1 ? "" : "s"} read on this device.`,
+      };
+    } catch (err) {
+      return unavailable(err && err.message ? String(err.message) : "On-device OCR failed.");
+    } finally {
+      if (worker) {
+        try {
+          await worker.terminate();
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  }
+
   async function prepare(file) {
     const canvas = await fileToCanvas(file, S.maxWidth);
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
@@ -351,9 +415,13 @@
         guidance: guidance(quality.state),
         slices: [],
         ocr: {
-          status: "not_implemented",
+          status: "skipped",
           phase: 3,
-          message: "Text extraction is Phase 3 and is not wired yet. These slices are what OCR will read next.",
+          engine: "tesseract",
+          text: "",
+          box_count: 0,
+          slices: [],
+          message: "Text extraction runs after a readable shot.",
         },
       };
     }
@@ -391,11 +459,7 @@
       source_shape: [h, w, 3],
       guidance: null,
       slices,
-      ocr: {
-        status: "not_implemented",
-        phase: 3,
-        message: "Text extraction is Phase 3 and is not wired yet. These slices are what OCR will read next.",
-      },
+      ocr: await extractWithTesseract(slices),
     };
   }
 

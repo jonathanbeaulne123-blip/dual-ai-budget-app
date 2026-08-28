@@ -198,10 +198,29 @@ body {
 
 .slice img { width: 100%; display: block; }
 
-.slice figcaption {
-  padding: 8px 10px;
-  font-size: 0.85rem;
-  color: var(--muted);
+.ocr-text {
+  margin: 12px 0 0;
+  padding: 12px;
+  background: #16120f;
+  border-radius: 12px;
+  color: var(--paper);
+  font: inherit;
+  font-size: 0.98rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.slice .slice-text {
+  margin: 0;
+  padding: 8px 10px 12px;
+  font-size: 0.9rem;
+  color: var(--paper);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .thumbs {
