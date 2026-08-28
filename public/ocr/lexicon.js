@@ -216,5 +216,18 @@
       .join("\n");
   }
 
-  window.ToastLexicon = { correctLine, correctText };
+  function addFixes(map) {
+    const allow = new Set(WORDS);
+    Object.keys(TOKEN_FIXES).forEach((k) => allow.add(TOKEN_FIXES[k]));
+    Object.keys(map || {}).forEach((src) => {
+      const s = String(src || "").toUpperCase().replace(/[^A-Z]/g, "");
+      const d = String(map[src] || "").toUpperCase().replace(/[^A-Z]/g, "");
+      if (s.length < 3 || s.length > 16 || s === d) return;
+      if (WORDS.indexOf(s) >= 0) return;
+      if (!allow.has(d)) return;
+      TOKEN_FIXES[s] = d;
+    });
+  }
+
+  window.ToastLexicon = { correctLine, correctText, addFixes, WORDS, TOKEN_FIXES };
 })();

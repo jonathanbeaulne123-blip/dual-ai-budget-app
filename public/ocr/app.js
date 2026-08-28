@@ -97,6 +97,7 @@
     ocrConfidence: $("ocrConfidence"),
     btnCopy: $("btnCopy"),
     btnExportPacket: $("btnExportPacket"),
+    btnCopyPacket: $("btnCopyPacket"),
     btnDownloadCrops: $("btnDownloadCrops"),
     btnAutoTeach: $("btnAutoTeach"),
     btnAutoTeachLast: $("btnAutoTeachLast"),
@@ -767,6 +768,7 @@
         setBusy(false);
         applyPrepareResult(body);
         if (body.teach) renderTeach(body.teach);
+        if (window.ToastGuide && window.ToastGuide.pushShared) window.ToastGuide.pushShared().catch(() => undefined);
       } catch (err) {
         setBusy(false);
         showError(err && err.message ? err.message : "Auto-teach failed.");
@@ -795,6 +797,7 @@
     }
     applyPrepareResult(body);
     if (body.teach) renderTeach(body.teach);
+    if (window.ToastGuide && window.ToastGuide.pushShared) window.ToastGuide.pushShared().catch(() => undefined);
   }
 
   function startAutoTeach() {
@@ -982,6 +985,20 @@
   $("btnDone").addEventListener("click", () => submitBatch());
   $("btnReset").addEventListener("click", () => startOver());
   $("btnCopy").addEventListener("click", () => copyOcrText());
+  if ($("btnCopyPacket")) {
+    $("btnCopyPacket").addEventListener("click", async () => {
+      const btn = $("btnCopyPacket");
+      if (window.ToastGuide && typeof window.ToastGuide.copyForAgent === "function") {
+        const ok = await window.ToastGuide.copyForAgent();
+        btn.textContent = ok ? "Copied for Cursor" : "Downloaded JSON";
+        setTimeout(() => {
+          btn.textContent = "Copy packet for Cursor";
+        }, 1800);
+        return;
+      }
+      window.location.href = api("/api/guide/export");
+    });
+  }
   if ($("btnExportPacket")) {
     $("btnExportPacket").addEventListener("click", () => {
       if (window.ToastGuide && typeof window.ToastGuide.exportPacket === "function") {
@@ -1066,5 +1083,8 @@
     navigator.serviceWorker.register(swUrl, { scope }).catch(() => {
       /* non-fatal: PWA install still works without a worker on some browsers */
     });
+  }
+  if (window.ToastGuide && typeof window.ToastGuide.syncShared === "function") {
+    window.ToastGuide.syncShared().catch(() => undefined);
   }
 })();

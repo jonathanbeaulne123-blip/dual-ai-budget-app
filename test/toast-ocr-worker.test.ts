@@ -21,6 +21,7 @@ describe("toast OCR mount at /ocr", () => {
     expect(body.phases["3_ocr"]).toBe("ready");
     expect(body.phases["4_merge"]).toBe("ready");
     expect(body.phases["5_export"]).toBe("ready");
+    expect(body.learn).toBe("ready");
     expect(assets.fetch).not.toHaveBeenCalled();
   });
 
@@ -73,5 +74,49 @@ describe("toast OCR mount at /ocr", () => {
     expect(demo.status).toBe(200);
     expect(await demo.text()).toBe("asset:/ocr/embed-demo.html");
     expect(demo.headers.get("Content-Security-Policy")).toBe("frame-ancestors *");
+  });
+
+  it("lets devices share sanitized letter maps at /ocr/learn", async () => {
+    const store = new Map<string, string>();
+    const env = {
+      ASSETS: { fetch: vi.fn() },
+      HERCULES_RATE: {
+        async get(key: string, type?: string) {
+          const raw = store.get(key);
+          if (!raw) return null;
+          return type === "json" ? JSON.parse(raw) : raw;
+        },
+        async put(key: string, value: string) {
+          store.set(key, value);
+        },
+      },
+    };
+    const denied = await worker.fetch(
+      new Request(`${origin}/ocr/learn`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ letter_fixes: { GROSS: "BROSS", "12.50": "TOTAL" } }),
+      }),
+      env,
+    );
+    expect(denied.status).toBe(200);
+    expect((await denied.json()).letter_fixes.GROSS).toBeUndefined();
+
+    const posted = await worker.fetch(
+      new Request(`${origin}/ocr/learn`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ letter_fixes: { BROSS: "GROSS" }, votes: { letters: { good: 1, bad: 0 } } }),
+      }),
+      env,
+    );
+    expect(posted.status).toBe(200);
+    expect((await posted.json()).letter_fixes.BROSS).toBe("GROSS");
+
+    const pulled = await worker.fetch(new Request(`${origin}/ocr/learn`), env);
+    expect(pulled.status).toBe(200);
+    const brain = await pulled.json();
+    expect(brain.letter_fixes.BROSS).toBe("GROSS");
+    expect(brain.schema).toBe("toast-ocr-learn.v1");
   });
 });
