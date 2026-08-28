@@ -208,7 +208,44 @@
     show(els.qualityCard, true);
   }
 
+  let lastSlicePack = { slices: [], ocrSlices: [] };
+
+  function defaultGuidePrompts(guide) {
+    const g = guide || {};
+    return [
+      { id: "letters", question: "Are the letters good?", good: !!g.letters_good },
+      { id: "numbers", question: "Are the numbers good?", good: !!g.numbers_good },
+      { id: "format", question: "Is the format good?", good: !!g.format_good },
+    ];
+  }
+
+  function teachSnippet(part, axis, good) {
+    if (!part.guide) part.guide = {};
+    part.guide[`${axis}_good`] = good;
+    const prompts = part.guide.prompts || defaultGuidePrompts(part.guide);
+    part.guide.prompts = prompts.map((p) =>
+      p.id === axis ? Object.assign({}, p, { good }) : p
+    );
+    const payload = {
+      letters_good: axis === "letters" ? good : null,
+      numbers_good: axis === "numbers" ? good : null,
+      format_good: axis === "format" ? good : null,
+      before: part.raw_text || "",
+      after: part.text || "",
+    };
+    if (window.ToastGuide && typeof window.ToastGuide.record === "function") {
+      window.ToastGuide.record(payload);
+    }
+    fetch(api("/api/guide"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }).catch(() => undefined);
+    renderSlices(lastSlicePack.slices, lastSlicePack.ocrSlices);
+  }
+
   function renderSlices(slices, ocrSlices) {
+    lastSlicePack = { slices: slices || [], ocrSlices: ocrSlices || [] };
     const byIndex = new Map();
     (ocrSlices || []).forEach((part) => {
       byIndex.set(part.slice_index, part);
@@ -219,7 +256,7 @@
       fig.className = "slice";
       const img = document.createElement("img");
       img.src = sl.preview;
-      img.alt = `Slice ${sl.index + 1}`;
+      img.alt = `Snippet ${sl.index + 1}`;
       const cap = document.createElement("figcaption");
       cap.textContent = `#${sl.index + 1}  rows ${sl.content_y_start}–${sl.content_y_end}  (${sl.cut_reason.replaceAll("_", " ")})`;
       fig.append(img, cap);
@@ -229,6 +266,32 @@
         pre.className = "slice-text";
         pre.textContent = part.text;
         fig.append(pre);
+        const guideBox = document.createElement("div");
+        guideBox.className = "guide";
+        const prompts = (part.guide && part.guide.prompts) || defaultGuidePrompts(part.guide);
+        prompts.forEach((prompt) => {
+          const row = document.createElement("div");
+          row.className = "guide-row";
+          const q = document.createElement("p");
+          q.className = "guide-q";
+          q.textContent = prompt.question;
+          const btns = document.createElement("div");
+          btns.className = "guide-btns";
+          const yes = document.createElement("button");
+          yes.type = "button";
+          yes.textContent = "Yes";
+          yes.className = prompt.good ? "on-good" : "";
+          yes.addEventListener("click", () => teachSnippet(part, prompt.id, true));
+          const no = document.createElement("button");
+          no.type = "button";
+          no.textContent = "No";
+          no.className = prompt.good === false ? "on-bad" : "";
+          no.addEventListener("click", () => teachSnippet(part, prompt.id, false));
+          btns.append(yes, no);
+          row.append(q, btns);
+          guideBox.appendChild(row);
+        });
+        fig.append(guideBox);
       }
       els.slicesList.appendChild(fig);
     });

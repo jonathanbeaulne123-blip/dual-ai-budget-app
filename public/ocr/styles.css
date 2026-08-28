@@ -223,6 +223,52 @@ body {
   overflow-wrap: anywhere;
 }
 
+.guide {
+  padding: 0 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.guide-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  justify-content: space-between;
+}
+
+.guide-q {
+  font-size: 0.88rem;
+  flex: 1 1 12rem;
+}
+
+.guide-btns {
+  display: flex;
+  gap: 6px;
+}
+
+.guide-btns button {
+  min-height: 40px;
+  min-width: 64px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid #3a3229;
+  background: #241e19;
+  color: inherit;
+  font: inherit;
+}
+
+.guide-btns button.on-good {
+  background: #2a4a32;
+  color: #b6e0bf;
+}
+
+.guide-btns button.on-bad {
+  background: #4a2a18;
+  color: #ffd2a8;
+}
+
 .thumbs {
   display: flex;
   gap: 10px;
