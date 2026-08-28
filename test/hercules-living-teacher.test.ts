@@ -78,14 +78,14 @@ describe("Hercules living teacher", () => {
     expect(plan.talk.facts?.[0]?.source).toMatchObject({ route: "ledger", view: "household", memberId: "MEM-002" });
   });
 
-  it("allows partner-personal questions in the personal ledger when tools can answer them", () => {
+  it("refuses partner-personal questions and tools cannot broaden the requester scope", () => {
     const household = seedDemoHousehold({ today, environment: "development" });
     const gate = gateHerculesQuestion(household, "did Jonathan overspend?", "MEM-001", "personal");
-    expect(gate.allow).toBe(true);
+    expect(gate).toMatchObject({ allow: false, reason: "partner-personal" });
     const run = executeHerculesReadToolPlan(household, {
       calls: [{ name: "spending_summary", args: { period: "this_week", member: "Jonathan" } }],
     }, today, { memberId: "MEM-001", view: "personal" });
-    expect(run.results[0]?.status).toBe("ok");
+    expect(run.results[0]?.status).toBe("empty");
   });
 
   it("uses own personal rows only in personal context and shared rows only in household context", () => {

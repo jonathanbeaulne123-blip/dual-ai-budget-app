@@ -56,9 +56,13 @@ export function financialAuditFacts(household: Household) {
       paidBreakHours: shift.paidBreakHours ?? null,
       deferredTipOutCents: shift.deferredTipOutCents ?? null,
       deferredTipOutPaidCents: shift.deferredTipOutPaidCents ?? null,
+      correctedByShiftId: shift.correctedByShiftId ?? null,
+      correctionOfShiftId: shift.correctionOfShiftId ?? null,
       transactionIds: [...(shift.transactionIds ?? [])].sort(),
       visibility: shift.visibility,
       createdBy: shift.createdBy,
+      sevenShiftsPunchDigest: shift.sevenShiftsPunchDigest ?? null,
+      sevenShiftsEvidenceBundle: shift.sevenShiftsEvidenceBundle ?? null,
     })),
     goalContributions: byId(household.goalContributions).map((row) => ({
       id: row.id,
@@ -114,7 +118,9 @@ export function financialAuditFacts(household: Household) {
 export function commandIdentityFacts(previous: Household | null, next: Household, postedIds: string[]) {
   const posted = new Set(postedIds);
   const tx = next.transactions.filter((row) => posted.has(row.id));
-  const shifts = next.shifts.filter((row) => posted.has(row.id));
+  const shifts = next.shifts.filter((row) => posted.has(row.id)
+    || Boolean(row.correctedByShiftId && posted.has(row.correctedByShiftId))
+    || Boolean(row.correctionOfShiftId && posted.has(row.correctionOfShiftId)));
   const contributions = (next.goalContributions ?? []).filter((row) => posted.has(row.id));
   return stable({
     householdId: next.householdId,
@@ -139,9 +145,13 @@ export function commandIdentityFacts(previous: Household | null, next: Household
       paidBreakHours: shift.paidBreakHours ?? null,
       deferredTipOutCents: shift.deferredTipOutCents ?? null,
       deferredTipOutPaidCents: shift.deferredTipOutPaidCents ?? null,
+      correctedByShiftId: shift.correctedByShiftId ?? null,
+      correctionOfShiftId: shift.correctionOfShiftId ?? null,
       transactionIds: [...(shift.transactionIds ?? [])].sort(),
       visibility: shift.visibility,
       createdBy: shift.createdBy,
+      sevenShiftsPunchDigest: shift.sevenShiftsPunchDigest ?? null,
+      sevenShiftsEvidenceBundle: shift.sevenShiftsEvidenceBundle ?? null,
     })),
     goalContributions: contributions.map((row) => ({
       id: row.id,

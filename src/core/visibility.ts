@@ -2,6 +2,15 @@ import { COMPANION, JOINT, type Goal, type Household, type LedgerView, type Shif
 
 export const VISIBILITIES: Visibility[] = ["household", "personal", "both"];
 
+function shiftForHercules(shift: Shift): Shift {
+  const {
+    sevenShiftsPunchDigest: _sevenShiftsPunchDigest,
+    sevenShiftsEvidenceBundle: _sevenShiftsEvidenceBundle,
+    ...safe
+  } = shift;
+  return safe;
+}
+
 export function parseVisibility(value: unknown): Visibility {
   if (value === "household" || value === "personal" || value === "both") return value;
   return "household";
@@ -50,7 +59,7 @@ export function householdForAiDisclosure(
       const { location: _coords, ...rest } = tx;
       return rest;
     });
-  const shifts = contextual.shifts;
+  const shifts = contextual.shifts.map(shiftForHercules);
   const goals = contextual.goals;
   const desk = contextual.kitchen.hercules;
   const hercules = desk
@@ -109,6 +118,23 @@ export function householdForHerculesContext(
     : household.kitchen.hercules;
   return {
     ...scoped,
+    shifts: scoped.shifts.map(shiftForHercules),
+    sevenShiftsSchedules: (household.sevenShiftsSchedules ?? [])
+      .filter((row) => row.memberId === memberId)
+      .map((row) => {
+        const {
+          id: _id,
+          provenanceId: _provenanceId,
+          sequence: _sequence,
+          sourceUpdatedAt: _sourceUpdatedAt,
+          notesPresent: _notesPresent,
+          selfMatch: _selfMatch,
+          createdAt: _createdAt,
+          updatedAt: _updatedAt,
+          ...reduced
+        } = row;
+        return reduced;
+      }) as Household["sevenShiftsSchedules"],
     appointments,
     claims,
     kitchen: { ...household.kitchen, hercules },
@@ -121,9 +147,9 @@ export type HerculesQuestionGate =
 
 /** Text classification only chooses the ledger boundary; it never extracts CAD. */
 export function gateHerculesQuestion(
-  _household: Household,
+  household: Household,
   question: string,
-  _memberId: string,
+  memberId: string,
   view: LedgerView,
 ): HerculesQuestionGate {
   const q = question.toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9\s]/g, " ");
@@ -132,6 +158,18 @@ export function gateHerculesQuestion(
       allow: false,
       reason: "wrong-ledger",
       spoken: "That belongs in your personal ledger. Switch there and ask me again; I won't mix it into the household books.",
+    };
+  }
+  if (view === "personal") {
+    const partnerNamed = (household.members ?? []).some((member) => {
+      if (!member.active || member.id === memberId) return false;
+      const names = member.name.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter((name) => name.length >= 3);
+      return names.some((name) => new RegExp(`\\b${name}\\b`).test(q));
+    });
+    if (partnerNamed) return {
+      allow: false,
+      reason: "partner-personal",
+      spoken: "I can only read your personal ledger here. Ask about shared household rows in the household ledger.",
     };
   }
   return { allow: true };
@@ -177,7 +215,7 @@ export function householdForShiftReadTools(
   if (!ownShiftIds.size) return contextual;
   const merged = new Map(contextual.shifts.map((shift) => [shift.id, shift]));
   for (const shift of household.shifts ?? []) {
-    if (ownShiftIds.has(shift.id)) merged.set(shift.id, shift);
+    if (ownShiftIds.has(shift.id)) merged.set(shift.id, shiftForHercules(shift));
   }
   return { ...contextual, shifts: [...merged.values()] };
 }

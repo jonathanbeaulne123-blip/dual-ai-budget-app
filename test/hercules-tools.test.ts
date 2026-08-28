@@ -265,7 +265,7 @@ describe("Hercules read-only tool brain", () => {
     expect(household).toEqual(before);
   });
 
-  it("can read partner rows and accounts when the task requires them", () => {
+  it("keeps partner Personal money out of direct read-tool execution", () => {
     let household = catalogHousehold("development");
     household.accounts.push({
       ...household.accounts[0]!,
@@ -300,13 +300,14 @@ describe("Hercules read-only tool brain", () => {
     const own = executeHerculesReadToolPlan(household, {
       calls: [{ name: "spending_summary", args: { period: "this_week" } }],
     }, today, { memberId: "MEM-001", view: "personal" });
-    expect(own.talk.spoken).toContain("$1024.00");
-    expect(own.talk.facts?.some((row) => row.value === "$1024.00")).toBe(true);
+    expect(own.talk.spoken).toContain("$25.00");
+    expect(own.talk.facts?.some((row) => row.value === "$25.00")).toBe(true);
+    expect(own.talk.facts?.some((row) => row.value === "$999.00")).toBe(false);
 
     const partnerRequest = executeHerculesReadToolPlan(household, {
       calls: [{ name: "spending_summary", args: { period: "this_week", member: "Jonathan" } }],
     }, today, { memberId: "MEM-001", view: "personal" });
-    expect(partnerRequest.talk.facts?.some((row) => row.value === "$999.00")).toBe(true);
+    expect(partnerRequest.talk.facts?.some((row) => row.value === "$999.00")).toBe(false);
 
     const partnerAccount = executeHerculesReadToolPlan(household, {
       calls: [
@@ -316,8 +317,7 @@ describe("Hercules read-only tool brain", () => {
         { name: "trial_balance", args: {} },
       ],
     }, today, { memberId: "MEM-001", view: "personal" });
-    expect(partnerAccount.results[0]?.status).toBe("ok");
-    expect(partnerAccount.results.flatMap((result) => result.facts).some((row) => row.label.includes("Partner Vault"))).toBe(true);
+    expect(partnerAccount.results.flatMap((result) => result.facts).some((row) => row.value === "$999.00")).toBe(false);
   });
 
   it("finds exact posted rows and gives each one a transaction provenance id", () => {

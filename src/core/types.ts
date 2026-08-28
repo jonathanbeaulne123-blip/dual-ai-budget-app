@@ -1,5 +1,6 @@
 import type { Currency } from "./money.ts";
 import type { DateKey, MonthKey } from "./calendar.ts";
+import type { SevenShiftsEvidenceBundle } from "./evidence.ts";
 
 export type Environment = "development" | "production";
 export type TransactionType = "expense" | "income" | "transfer" | "refund";
@@ -324,6 +325,8 @@ export type Shift = {
   note?: string;
   /** HMAC digest of a 7shifts time punch. Provenance only; never a token or wage. */
   sevenShiftsPunchDigest?: string;
+  /** Versioned, multi-source member evidence accepted at the work-command boundary. */
+  sevenShiftsEvidenceBundle?: SevenShiftsEvidenceBundle;
 };
 
 export type RecurrenceCadence = "daily" | "weekly" | "biweekly" | "monthly";
@@ -820,6 +823,8 @@ export type Household = {
   categories: Category[];
   transactions: Transaction[];
   shifts: Shift[];
+  /** Sanitized member-personal published schedule projections; never worked time or money. */
+  sevenShiftsSchedules?: import("./sevenShiftsCalendar.ts").SevenShiftsScheduledShift[];
   recurrences: Recurrence[];
   appointments: Appointment[];
   claims: Claim[];
@@ -903,6 +908,7 @@ export type PersonalEnvelope = {
   lastCommittedAt: string | null;
   transactions: Transaction[];
   shifts: Shift[];
+  sevenShiftsSchedules?: import("./sevenShiftsCalendar.ts").SevenShiftsScheduledShift[];
   /** Member-owned non-shared goals and their money facts. Optional for old replicas. */
   goals?: Goal[];
   goalContributions?: GoalContribution[];

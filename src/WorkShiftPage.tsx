@@ -28,9 +28,10 @@ import { WorkReportCard, downloadWorkReportCsv } from "./WorkReport.tsx";
 import type { WorkShiftDraft } from "./WorkShiftFlow.tsx";
 import { WorkShiftWithSevenShifts } from "./WorkShiftWithSevenShifts.tsx";
 import { WorkShiftHistoryCard } from "./WorkShiftHistory.tsx";
+import { SevenShiftsEvidenceCenter } from "./SevenShiftsEvidenceCenter.tsx";
 import { createShiftScanScope } from "./shiftScanScope.ts";
 
-type ShiftPane = "today" | "report" | "jobs";
+type ShiftPane = "today" | "report" | "jobs" | "evidence";
 
 function LoafMark() {
   return (
@@ -80,6 +81,7 @@ export function WorkShiftPage({
   onAskSaveJob,
   onArchiveJob,
   onOpenCalendar,
+  onSaveSevenShiftsSchedule = () => undefined,
 }: {
   household: Household;
   memberId: string;
@@ -101,6 +103,7 @@ export function WorkShiftPage({
   onAskSaveJob: (job: WorkJob, summary: string) => void;
   onArchiveJob: (jobId: string) => void;
   onOpenCalendar: () => void;
+  onSaveSevenShiftsSchedule?: (rows: import("./core/index.ts").SevenShiftsScheduledShift[], confirmedPersonalFeed?: boolean) => void;
 }) {
   const [pane, setPane] = useState<ShiftPane>("today");
   const [sealCaption, setSealCaption] = useState<string | null>(null);
@@ -192,7 +195,7 @@ export function WorkShiftPage({
   return (
     <div className="shift-page">
       <div className="tabs" role="tablist" aria-label="Shift panes">
-        {(["today", "report", "jobs"] as const).map((id) => (
+        {(["today", "report", "jobs", "evidence"] as const).map((id) => (
           <button
             key={id}
             type="button"
@@ -204,7 +207,7 @@ export function WorkShiftPage({
             className={pane === id ? "active" : ""}
             onClick={() => setPane(id)}
             onKeyDown={(event) => {
-              const order = ["today", "report", "jobs"] as const;
+              const order = ["today", "report", "jobs", "evidence"] as const;
               const index = order.indexOf(id);
               if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
               event.preventDefault();
@@ -213,7 +216,7 @@ export function WorkShiftPage({
               window.requestAnimationFrame(() => document.getElementById(`shift-tab-${next}`)?.focus());
             }}
           >
-            {id === "today" ? "Today" : id === "report" ? "Report" : "Jobs"}
+            {id === "today" ? "Today" : id === "report" ? "Report" : id === "jobs" ? "Jobs" : "Evidence"}
           </button>
         ))}
       </div>
@@ -443,6 +446,19 @@ export function WorkShiftPage({
           onAskSave={onAskSaveJob}
           onArchive={onArchiveJob}
         />
+        </div>
+      )}
+
+      {pane === "evidence" && (
+        <div className="shift-panel" role="tabpanel" id="shift-panel-evidence" aria-labelledby="shift-tab-evidence">
+          <SevenShiftsEvidenceCenter
+            household={household}
+            memberId={memberId}
+            memberName={memberName}
+            today={today}
+            busy={busy}
+            onSaveSchedule={onSaveSevenShiftsSchedule}
+          />
         </div>
       )}
     </div>

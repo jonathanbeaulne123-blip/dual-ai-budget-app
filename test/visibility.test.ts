@@ -9,7 +9,7 @@ import {
   personalReplicaForMember,
   splitForSync,
 } from "../src/core/sync.ts";
-import { householdForShiftReadTools, householdForView } from "../src/core/visibility.ts";
+import { householdForHerculesContext, householdForShiftReadTools, householdForView } from "../src/core/visibility.ts";
 import { executeHerculesReadToolPlan } from "../src/core/herculesTools.ts";
 
 function grocery(createdBy: string, visibility: "household" | "personal" | "both", note: string, amount = "12.00") {
@@ -159,6 +159,38 @@ describe("household and personal visibility", () => {
     }, "2026-08-18", { memberId: "MEM-002", view: "personal" });
     expect(run.results[0]?.status).toBe("ok");
     expect(run.results[0]?.sentence).toMatch(/1 posted shift/i);
+  });
+
+  it("strips all 7shifts evidence references before Hercules receives confirmed shift facts", () => {
+    const posted = postShift(catalogHousehold(), {
+      date: "2026-08-18", memberId: "MEM-002", accountId: "ACC-CASH", sales: "100.00", hours: "4.00",
+      createdBy: "MEM-002", visibility: "personal", confirmDuplicate: true, customersServed: 10, staffingCount: 2, eventTag: "regular",
+    }).household;
+    posted.shifts[0]!.sevenShiftsPunchDigest = "a".repeat(64);
+    posted.shifts[0]!.sevenShiftsEvidenceBundle = { materialHash: "raw-private-hash", evidence: [{ evidenceId: "raw-private-object" }] } as never;
+    const projected = householdForHerculesContext(posted, "MEM-002", "personal");
+    const serialized = JSON.stringify(projected);
+    expect(serialized).not.toContain("sevenShiftsEvidenceBundle");
+    expect(serialized).not.toContain("sevenShiftsPunchDigest");
+    expect(serialized).not.toContain("raw-private-hash");
+    expect(projected.shifts).toHaveLength(1);
+  });
+
+  it("reduces published schedule rows before Hercules so source identity never reaches a model or tool", () => {
+    const household = catalogHousehold();
+    household.sevenShiftsSchedules = [{
+      id: "7SC-private-uid-hash", provenanceId: "7shifts-calendar:private-uid-hash", memberId: "MEM-002", source: "7shifts-calendar",
+      startedAt: "2026-08-29T21:00:00.000Z", endedAt: "2026-08-30T02:00:00.000Z", date: "2026-08-29", scheduledMinutes: 300,
+      jobId: null, roleId: null, eventTag: "regular", staffingCount: 3, staffingSource: "calendar-overlap", delivery: "selected-file",
+      selfMatch: "member-name", notesPresent: true, sequence: 4, sourceUpdatedAt: "2026-08-28T00:00:00.000Z",
+      createdAt: "2026-08-28T00:00:00.000Z", updatedAt: "2026-08-28T00:00:00.000Z",
+    }];
+    const serialized = JSON.stringify(householdForHerculesContext(household, "MEM-002", "personal"));
+    expect(serialized).not.toContain("private-uid-hash");
+    expect(serialized).not.toContain("provenanceId");
+    expect(serialized).not.toContain("sourceUpdatedAt");
+    expect(serialized).toContain('"scheduledMinutes":300');
+    expect(serialized).toContain('"staffingCount":3');
   });
 
   it("overlays hosted personal shifts onto the shared cloud snapshot", () => {

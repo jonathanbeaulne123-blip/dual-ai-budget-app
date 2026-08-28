@@ -77,14 +77,15 @@ describe("Cloudflare static host pairing", () => {
     expect(envExample).not.toMatch(/VITE_OPENAI|VITE_ANTHROPIC/);
   });
 
-  it("acks leftover Cloudflare Queue deliveries without declaring a consumer", async () => {
+  it("acks disabled Evidence deliveries and declares only the dedicated Development queue", async () => {
     const worker = (await import("../workers/site.js")).default as {
-      queue?: (batch: { messages: { ack: () => void; retry: () => void }[] }) => Promise<void>;
+      queue?: (batch: { messages: { ack: () => void; retry: () => void }[] }, env: Record<string, string>) => Promise<void>;
     };
     const config = JSON.parse(readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8")) as {
-      queues?: unknown;
+      queues?: { producers?: { binding: string; queue: string }[]; consumers?: { queue: string; dead_letter_queue: string }[] };
     };
-    expect(config.queues).toBeUndefined();
+    expect(config.queues?.producers).toEqual([expect.objectContaining({ binding: "EVIDENCE_DERIVE", queue: "hearth-evidence-derive-development" })]);
+    expect(config.queues?.consumers).toEqual([expect.objectContaining({ queue: "hearth-evidence-derive-development", dead_letter_queue: "hearth-evidence-derive-dlq-development" })]);
     expect(typeof worker.queue).toBe("function");
     const acked: string[] = [];
     await worker.queue?.({
@@ -94,7 +95,7 @@ describe("Cloudflare static host pairing", () => {
           throw new Error("queue handler must not retry leftover messages");
         },
       }],
-    });
+    }, { EVIDENCE_ENABLED: "false" });
     expect(acked).toEqual(["ok"]);
   });
 

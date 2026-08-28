@@ -28,6 +28,8 @@ import type {
 import { belongsToSharedLedger, isPersonalOnly, parseVisibility } from "./visibility.ts";
 import { shapeLedgerNames } from "./ledgerNames.ts";
 import { shapeWorkJobs } from "./work.ts";
+import { shapeSevenShiftsEvidenceBundle } from "./evidence.ts";
+import { shapeSevenShiftsSchedules } from "./sevenShiftsCalendar.ts";
 
 export type { PersonalEnvelope, SharedEnvelope };
 
@@ -194,7 +196,11 @@ export function ensureHouseholdShape(household: Household): Household {
       visibility: parseVisibility(shift.visibility),
       createdBy: shift.createdBy || shift.memberId || fallback,
       updatedAt: shift.updatedAt ?? shift.createdAt,
+      ...(shift.sevenShiftsEvidenceBundle
+        ? { sevenShiftsEvidenceBundle: shapeSevenShiftsEvidenceBundle(shift.sevenShiftsEvidenceBundle) }
+        : {}),
     })),
+    sevenShiftsSchedules: shapeSevenShiftsSchedules(household.sevenShiftsSchedules),
     commandReceipts: household.commandReceipts ?? [],
     sharing: shapeSharing(household),
     conflicts: household.conflicts ?? [],
@@ -212,6 +218,7 @@ export function emptyPersonal(memberId: string): PersonalEnvelope {
     lastCommittedAt: null,
     transactions: [],
     shifts: [],
+    sevenShiftsSchedules: [],
     goals: [],
     goalContributions: [],
     goalPurchases: [],
@@ -276,6 +283,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     lastCommittedAt: shaped.lastCommittedAt,
     transactions: personalTx,
     shifts: personalShifts,
+    sevenShiftsSchedules: shaped.sevenShiftsSchedules?.filter((row) => row.memberId === memberId) ?? [],
     goals: personalGoals,
     goalContributions: shaped.goalContributions.filter((row) => personalGoalIds.has(row.goalId)),
     goalPurchases: shaped.goalPurchases.filter((row) => personalGoalIds.has(row.goalId)),
@@ -293,6 +301,7 @@ export function personalReplicaForMember(household: Household, memberId: string)
     ...personal,
     transactions: personal.transactions.filter((tx) => tx.createdBy === memberId),
     shifts: personal.shifts.filter((shift) => shift.createdBy === memberId),
+    sevenShiftsSchedules: shapeSevenShiftsSchedules(personal.sevenShiftsSchedules, memberId),
     goals: (personal.goals ?? []).filter((goal) => goal.ownerMemberId === memberId),
     goalContributions: personal.goalContributions ?? [],
     goalPurchases: personal.goalPurchases ?? [],
@@ -319,6 +328,7 @@ export function personalEnvelopeFromPayload(
     shifts: Array.isArray(row.shifts)
       ? row.shifts.filter((item) => item.createdBy === memberId && item.visibility === "personal")
       : [],
+    sevenShiftsSchedules: shapeSevenShiftsSchedules(row.sevenShiftsSchedules, memberId),
     goals,
     goalContributions: Array.isArray(row.goalContributions)
       ? row.goalContributions.filter((item) => goalIds.has(item.goalId))
@@ -342,6 +352,7 @@ export function overlayPersonalReplica(
   if (!personal || personal.kind !== "personal" || personal.memberId !== memberId) return household;
   const personalTransactionIds = new Set(personal.transactions.map((item) => item.id));
   const personalShiftIds = new Set(personal.shifts.map((item) => item.id));
+  const personalScheduleIds = new Set((personal.sevenShiftsSchedules ?? []).map((item) => item.id));
   const personalGoals = personal.goals ?? [];
   const personalGoalIds = new Set(personalGoals.map((item) => item.id));
   const tombstones = new Map(household.tombstones.map((item) => [item.id, item]));
@@ -362,6 +373,10 @@ export function overlayPersonalReplica(
         (item.visibility === "personal" && item.createdBy === memberId) || personalShiftIds.has(item.id)
       )),
       ...personal.shifts,
+    ],
+    sevenShiftsSchedules: [
+      ...(household.sevenShiftsSchedules ?? []).filter((item) => item.memberId !== memberId && !personalScheduleIds.has(item.id)),
+      ...shapeSevenShiftsSchedules(personal.sevenShiftsSchedules, memberId),
     ],
     goals: [
       ...household.goals.filter((item) => !personalGoalIds.has(item.id) && (item.shared || item.ownerMemberId !== memberId)),
@@ -392,6 +407,7 @@ export function assembleHousehold(
 ): Household {
   const personalTx = personal?.transactions ?? [];
   const personalShifts = personal?.shifts ?? [];
+  const personalSchedules = shapeSevenShiftsSchedules(personal?.sevenShiftsSchedules, personal?.memberId);
   const personalGoals = personal?.goals ?? [];
   const personalGoalContributions = personal?.goalContributions ?? [];
   const personalGoalPurchases = personal?.goalPurchases ?? [];
@@ -447,6 +463,7 @@ export function assembleHousehold(
     lastCommittedAt: laterIso(shared.lastCommittedAt, personal?.lastCommittedAt ?? null),
     transactions: [...txById.values()],
     shifts: [...shiftById.values()],
+    sevenShiftsSchedules: personalSchedules,
     ...(personal?.herculesProPermissions
       ? { herculesProPermissions: personal.herculesProPermissions }
       : {}),
@@ -507,12 +524,18 @@ export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope
   const herculesProPermissions = clientPermissionAt >= serverPermissionAt
     ? client.herculesProPermissions ?? server.herculesProPermissions
     : server.herculesProPermissions ?? client.herculesProPermissions;
+  const scheduleSource = Object.prototype.hasOwnProperty.call(newer, "sevenShiftsSchedules")
+    ? newer.sevenShiftsSchedules
+    : newer === client
+      ? server.sevenShiftsSchedules
+      : client.sevenShiftsSchedules;
   return {
     kind: "personal",
     memberId: client.memberId || server.memberId,
     lastCommittedAt: newer.lastCommittedAt,
     transactions: mergeRecords(server.transactions, client.transactions, tombstones),
     shifts: mergeRecords(server.shifts, client.shifts, tombstones),
+    sevenShiftsSchedules: shapeSevenShiftsSchedules(scheduleSource, client.memberId || server.memberId),
     goals: mergeRecords(server.goals ?? [], client.goals ?? [], tombstones),
     goalContributions: mergeRecords(server.goalContributions ?? [], client.goalContributions ?? [], tombstones),
     goalPurchases: mergeRecords(server.goalPurchases ?? [], client.goalPurchases ?? [], tombstones),

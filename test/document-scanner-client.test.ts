@@ -19,6 +19,20 @@ const result = {
 };
 
 describe("document scanner client", () => {
+  it("does not send the selected local filename to a vision provider", async () => {
+    const original = globalThis.createImageBitmap;
+    // Force the non-DOM byte path used by the test environment.
+    Object.defineProperty(globalThis, "createImageBitmap", { configurable: true, value: undefined });
+    const file = new File([new Uint8Array([1, 2, 3])], "private-employee-timesheet.png", { type: "image/png" });
+    let body = "";
+    await scanFinancialDocument(file, async (_input, init) => {
+      body = String(init?.body || "");
+      return Response.json({ ok: true, result: { documentType: "unknown", merchant: null, date: null, totalCents: null, subtotalCents: null, taxCents: null, currency: "CAD", accountLast4: null, statementStart: null, statementEnd: null, paymentDueDate: null, minimumPaymentCents: null, lines: [], confidence: 0, warnings: [] } });
+    });
+    expect(body).not.toContain("private-employee-timesheet");
+    expect(JSON.parse(body)).not.toHaveProperty("fileName");
+    Object.defineProperty(globalThis, "createImageBitmap", { configurable: true, value: original });
+  });
   it("submits a selected image exactly once and returns stable image provenance", async () => {
     const fetcher = vi.fn(async (url: string | URL | Request) => {
       expect(String(url)).toBe("/documents/scan");

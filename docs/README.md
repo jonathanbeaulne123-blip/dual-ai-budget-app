@@ -20,6 +20,7 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [STRATEGY.md](STRATEGY.md) | Dual Course vision: family-office books (weight 5) and companion/interactables (weight 3) |
 | [PROJECT_CHARTER.md](PROJECT_CHARTER.md) | Who Hearth is for and what success looks like |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Ledger, books, UI, and how the two courses couple |
+| [SEVEN_SHIFTS_EVIDENCE.md](SEVEN_SHIFTS_EVIDENCE.md) | D-158/D-159 encrypted capture mesh, deterministic extraction, evidence authority, automation, companion boundaries, and activation gates |
 | [BATCH_IMPORTS.md](BATCH_IMPORTS.md) | QFX/OFX and selected document-image inbox, duplicate lanes, Confirm boundary, provider and release truth |
 | [DECISIONS.md](DECISIONS.md) | Living decision log |
 | [AI_OPERATING_MODEL.md](AI_OPERATING_MODEL.md) | Codex, Cursor, and Claude roles, routing, evidence, authority, and context budget |

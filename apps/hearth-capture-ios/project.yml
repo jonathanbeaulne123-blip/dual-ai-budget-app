@@ -1,0 +1,36 @@
+name: HearthCapture
+options:
+  deploymentTarget:
+    iOS: "17.0"
+settings:
+  base:
+    PRODUCT_BUNDLE_IDENTIFIER: com.hearth.capture.dev
+    SWIFT_VERSION: 5.10
+targets:
+  HearthCapture:
+    type: application
+    platform: iOS
+    sources: [HearthCapture]
+    settings:
+      base:
+        CODE_SIGN_ENTITLEMENTS: HearthCapture/HearthCapture.entitlements
+    info:
+      path: HearthCapture/Info.plist
+  HearthShare:
+    type: app-extension
+    platform: iOS
+    sources: [HearthShare]
+    dependencies:
+      - target: HearthCapture
+        embed: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.hearth.capture.dev.share
+        CODE_SIGN_ENTITLEMENTS: HearthShare/HearthShare.entitlements
+    info:
+      path: HearthShare/Info.plist
+  HearthCaptureTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [HearthCaptureTests]
+    dependencies: [{target: HearthCapture}]

@@ -1,0 +1,15 @@
+name: Hearth Capture iOS
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ["apps/hearth-capture-ios/**", ".github/workflows/hearth-capture-ios.yml"]
+jobs:
+  test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen
+      - working-directory: apps/hearth-capture-ios
+        run: xcodegen generate
+      - working-directory: apps/hearth-capture-ios
+        run: xcodebuild test -project HearthCapture.xcodeproj -scheme HearthCaptureTests -destination 'platform=iOS Simulator,name=iPhone 16 Pro' CODE_SIGNING_ALLOWED=NO

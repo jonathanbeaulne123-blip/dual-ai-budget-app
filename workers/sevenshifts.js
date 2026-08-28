@@ -19,7 +19,7 @@ function json(body, status = 200, headers = {}) {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store", ...headers } });
 }
 
-function requestOrigin(request, url, requireOrigin = false) {
+export function requestOrigin(request, url, requireOrigin = false) {
   if (request.headers.get("Origin")) return resolveChatOrigin(request);
   if (
     requireOrigin
@@ -30,7 +30,7 @@ function requestOrigin(request, url, requireOrigin = false) {
   return requireOrigin ? { allowed: false, origin: null } : { allowed: isAllowedKitchenHost(url.hostname), origin: null };
 }
 
-function corsHeaders(origin, active = false) {
+export function corsHeaders(origin, active = false) {
   if (!origin) return {};
   return {
     "Access-Control-Allow-Origin": origin,
@@ -67,7 +67,7 @@ function activeConfig(env) {
   return { db: env.FLINKS_DB };
 }
 
-async function boundedText(stream, maximum, contentLength = null) {
+export async function boundedText(stream, maximum, contentLength = null) {
   if (Number(contentLength || 0) > maximum) throw new Error("7shifts response is too large.");
   if (!stream) return "";
   const reader = stream.getReader();
@@ -128,7 +128,7 @@ async function supabaseJson(env, path, token) {
   return body;
 }
 
-async function verifiedScope(request, env, input) {
+export async function verifiedScope(request, env, input) {
   const scope = scopeFrom(input);
   const accessToken = bearer(request);
   const user = await supabaseJson(env, "/auth/v1/user", accessToken);

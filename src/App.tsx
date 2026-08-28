@@ -46,6 +46,13 @@ import {
   updateRecurrence,
   postShift,
   postWorkShift,
+  refreshSevenShiftsSchedule,
+  buildAutomatedWorkShiftInput,
+  automationPayrollWeekStart,
+  reconcileWorkWeekFromEvidence,
+  addDays,
+  workShiftIsReversed,
+  findReceipt,
   postTransfer,
   postVisit,
   settleClaim,
@@ -249,6 +256,15 @@ import { loadDocumentVisionProvider } from "./imports/documentScanProvider.ts";
 import { scanShiftReportFile } from "./imports/shiftReportDraft.ts";
 import { WorkShiftWithSevenShifts } from "./WorkShiftWithSevenShifts.tsx";
 import { createShiftScanScope } from "./shiftScanScope.ts";
+import {
+  acknowledgeEvidenceAutomationJob,
+  claimEvidenceAutomationJob,
+  failEvidenceAutomationJob,
+  listEvidenceBundles,
+  readEvidenceStatus,
+  validateEvidenceAutomationJob,
+  type EvidenceScope,
+} from "./imports/evidenceClient.ts";
 import {
   runScopedWorkShift,
   workShiftScopeMatches,
@@ -483,6 +499,7 @@ export function App() {
   historyRef.current = history;
   const confirmationRef = useRef<string | null>(null);
   const postingRef = useRef(false);
+  const evidenceAutomationRef = useRef(false);
   const workShiftDateRef = useRef(todayKey());
   const duePreviewOffered = useRef<string | null>(null);
   const [workShiftDraft, setWorkShiftDraft] = useState<WorkShiftDraft | null>(null);
@@ -1830,12 +1847,13 @@ export function App() {
     next: Household,
     token?: UndoToken,
     actorId?: string,
-    options?: { forceFlush?: boolean },
+    options?: { forceFlush?: boolean; confirmationId?: string },
   ): Promise<CommandOutcome | null> {
     setBusy(true);
     const previous = householdRef.current;
-    const confirmationId = confirmationRef.current ?? newConfirmationId();
-    confirmationRef.current = confirmationId;
+    const explicitConfirmationId = options?.confirmationId;
+    const confirmationId = explicitConfirmationId ?? confirmationRef.current ?? newConfirmationId();
+    if (!explicitConfirmationId) confirmationRef.current = confirmationId;
     const ledgerWrite = isLedgerWrite(token);
     const memberId = actorId ?? session?.memberId;
     const shareCapable = Boolean(previous?.linked && hostedContinuityAllowed(environment) && memberId);
@@ -1893,7 +1911,7 @@ export function App() {
             : undefined,
         }),
       });
-      if (outcome.postedExactlyOnce || (outcome.postedNothing && !outcome.retryable)) {
+      if (!explicitConfirmationId && (outcome.postedExactlyOnce || (outcome.postedNothing && !outcome.retryable))) {
         confirmationRef.current = null;
       }
       // A rejected first-household write has no last valid Household to return.
@@ -3053,6 +3071,134 @@ export function App() {
     });
   }
 
+  async function processEvidenceAutomationJobs(): Promise<void> {
+    if (evidenceAutomationRef.current || postingRef.current) return;
+    const current = householdRef.current;
+    const memberId = sessionRef.current?.memberId;
+    if (!current || !memberId || current.environment !== "development") return;
+    evidenceAutomationRef.current = true;
+    const scope: EvidenceScope = { environment: current.environment, householdId: current.householdId, memberId };
+    try {
+      const status = await readEvidenceStatus(fetch);
+      if (!status.available) return;
+      for (let count = 0; count < 3; count += 1) {
+        const job = await claimEvidenceAutomationJob(scope);
+        if (!job) break;
+        try {
+          const live = householdRef.current;
+          const liveMember = sessionRef.current?.memberId;
+          if (!live || live.environment !== scope.environment || live.householdId !== scope.householdId || liveMember !== scope.memberId) {
+            await failEvidenceAutomationJob(scope, job, "runner-scope-changed", false);
+            break;
+          }
+          const existingReceipt = findReceipt(live, job.jobKey);
+          if (existingReceipt) {
+            await acknowledgeEvidenceAutomationJob(scope, job, {
+              jobKey: job.jobKey,
+              bundleRevision: job.bundle.revision,
+              commandEventId: existingReceipt.confirmationId,
+              confirmationId: existingReceipt.confirmationId,
+              resultRevision: existingReceipt.revision,
+              identityHash: existingReceipt.identityHash,
+              auditHash: existingReceipt.auditHash,
+              reversalIds: existingReceipt.postedIds.filter((id) => id.startsWith("REV")),
+              replacementShiftIds: existingReceipt.postedIds.filter((id) => id.startsWith("SHIFT-")),
+              acknowledgedAt: new Date().toISOString(),
+            });
+            continue;
+          }
+          const validation = await validateEvidenceAutomationJob(scope, job);
+          if (validation.materialHash !== job.bundle.materialHash || validation.actionKind !== job.actionKind) {
+            await failEvidenceAutomationJob(scope, job, "job-changed-before-post", false);
+            continue;
+          }
+          let result: CommitResult;
+          if (job.actionKind === "post") {
+            result = postWorkShift(live, buildAutomatedWorkShiftInput(job.bundle, job.policy, memberId));
+          } else if (job.actionKind === "reconcile_week") {
+            const bundleRows = await listEvidenceBundles(scope);
+            const dateObservation = job.bundle.observations.find((row) => row.field === "date")?.value;
+            if (typeof dateObservation !== "string") throw new ValidationError("Reconciliation evidence has no Toronto date.");
+            const weekStart = automationPayrollWeekStart(dateObservation as import("./core/index.ts").DateKey, job.policy.payrollWeekStarts);
+            const weekEnd = addDays(weekStart, 6);
+            const active = live.shifts.filter((shift) => shift.memberId === memberId && shift.jobId === job.policy.jobId
+              && shift.date >= weekStart && shift.date <= weekEnd && shift.sevenShiftsEvidenceBundle && !workShiftIsReversed(live, shift));
+            const latest = new Map<string, typeof job.bundle>();
+            for (const row of [...bundleRows.map((item) => item.bundle), job.bundle]) {
+              if (row.jobId !== job.policy.jobId || row.memberId !== memberId || row.state !== "eligible") continue;
+              const prior = latest.get(row.canonicalShiftKey);
+              if (!prior || prior.revision < row.revision) latest.set(row.canonicalShiftKey, row);
+            }
+            const replacements = active.map((shift) => {
+              const source = latest.get(shift.sevenShiftsEvidenceBundle!.canonicalShiftKey);
+              if (!source) throw new ValidationError("The complete affected payroll week is not available for deterministic reconciliation.");
+              return buildAutomatedWorkShiftInput(source, job.policy, memberId);
+            });
+            result = reconcileWorkWeekFromEvidence(live, {
+              memberId,
+              jobId: job.policy.jobId,
+              payrollWeekStarts: job.policy.payrollWeekStarts,
+              replacements,
+              createdBy: memberId,
+            });
+          } else {
+            await failEvidenceAutomationJob(scope, job, "closed-period-variance-review-required", true);
+            continue;
+          }
+          const outcome = await commitHousehold(result.household, result.undo, memberId, {
+            forceFlush: true,
+            confirmationId: job.jobKey,
+          });
+          if (!outcome?.postedExactlyOnce || !outcome.identityHash) {
+            await failEvidenceAutomationJob(scope, job, outcome?.errorClass ?? "command-not-accepted", outcome?.retryable !== true);
+            if (outcome?.retryable) break;
+            continue;
+          }
+          await acknowledgeEvidenceAutomationJob(scope, job, {
+            jobKey: job.jobKey,
+            bundleRevision: job.bundle.revision,
+            commandEventId: outcome.duplicateOfReceiptId ?? outcome.confirmationId,
+            confirmationId: outcome.confirmationId,
+            resultRevision: outcome.revision,
+            identityHash: outcome.identityHash,
+            auditHash: outcome.household.booksAcceptedHash ?? "",
+            reversalIds: outcome.postedIds.filter((id) => id.startsWith("REV")),
+            replacementShiftIds: outcome.postedIds.filter((id) => id.startsWith("SHIFT-")),
+            acknowledgedAt: new Date().toISOString(),
+          });
+        } catch (caught) {
+          const waitingForPriorReceipt = job.actionKind === "post" && caught instanceof ValidationError && /changed after posting/i.test(caught.message);
+          const code = waitingForPriorReceipt
+            ? "prior-receipt-not-yet-recovered"
+            : caught instanceof NeedsConfirmationError
+            ? "material-duplicate-requires-review"
+            : caught instanceof ValidationError
+              ? "validation-rejected"
+              : "runner-failed";
+          await failEvidenceAutomationJob(scope, job, code, code !== "runner-failed" && !waitingForPriorReceipt).catch(() => undefined);
+          if (code === "runner-failed") break;
+        }
+      }
+    } catch {
+      // A disabled, offline, or unauthenticated Evidence Worker never affects manual Shift.
+    } finally {
+      evidenceAutomationRef.current = false;
+    }
+  }
+
+  useEffect(() => {
+    if (!household || !session?.memberId || environment !== "development" || booting) return;
+    const timer = window.setTimeout(() => { void processEvidenceAutomationJobs(); }, 750);
+    const onWake = () => { if (document.visibilityState === "visible") void processEvidenceAutomationJobs(); };
+    window.addEventListener("online", onWake);
+    document.addEventListener("visibilitychange", onWake);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("online", onWake);
+      document.removeEventListener("visibilitychange", onWake);
+    };
+  }, [booting, environment, household?.householdId, household?.revision, session?.memberId]);
+
   function addPostLabel(): string {
     if (mode === "shift") {
       if (shiftGate === "choose" || shiftGate === "clocked") return "Clock in";
@@ -3326,6 +3472,14 @@ export function App() {
           onAskSaveJob={(job, summary) => setGuard({ kind: "saveWorkJob", job, summary })}
           onArchiveJob={(jobId) => { void run((current) => archiveWorkJob(current, jobId)); }}
           onOpenCalendar={() => goTab("calendar")}
+          onSaveSevenShiftsSchedule={(schedules, confirmedPersonalFeed) => {
+            void run((current) => refreshSevenShiftsSchedule(current, {
+              memberId: session.memberId,
+              createdBy: actorId,
+              schedules,
+              confirmedPersonalFeed,
+            }));
+          }}
         />
       )}
 

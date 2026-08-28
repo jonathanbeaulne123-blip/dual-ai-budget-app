@@ -119,4 +119,40 @@ describe("toast OCR mount at /ocr", () => {
     expect(brain.letter_fixes.BROSS).toBe("GROSS");
     expect(brain.schema).toBe("toast-ocr-learn.v1");
   });
+
+  it("rejects foreign origins before shared OCR learning can write", async () => {
+    const put = vi.fn();
+    const env = {
+      ASSETS: { fetch: vi.fn() },
+      HERCULES_RATE: { get: vi.fn(async () => null), put },
+    };
+    const response = await worker.fetch(
+      new Request(`${origin}/ocr/learn`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Origin: "https://evil.example" },
+        body: JSON.stringify({ letter_fixes: { BROSS: "GROSS" } }),
+      }),
+      env,
+    );
+    expect(response.status).toBe(403);
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe("https://evil.example");
+    expect(put).not.toHaveBeenCalled();
+  });
+
+  it("reflects an exact allowed origin for shared OCR learning", async () => {
+    const env = {
+      ASSETS: { fetch: vi.fn() },
+      HERCULES_RATE: { get: vi.fn(async () => null), put: vi.fn() },
+    };
+    const response = await worker.fetch(
+      new Request(`${origin}/ocr/learn`, {
+        method: "OPTIONS",
+        headers: { Origin: origin },
+      }),
+      env,
+    );
+    expect(response.status).toBe(204);
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe(origin);
+    expect(response.headers.get("Vary")).toBe("Origin");
+  });
 });
