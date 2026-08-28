@@ -38,6 +38,18 @@ export function shiftSettingsFingerprint(settings: ShiftSettings): string {
   return ["v1-cent-rounded", normalized.floorPct, normalized.barPct, normalized.barRoundCents, normalized.ccPct, normalized.hourlyRateCents].join("|");
 }
 
+/** Kitchen preview only. Missing or invalid Tip Tracker settings must not blank the household. Posting still uses `calcShiftAmounts`. */
+export function previewShiftAmounts(
+  input: { salesCents: number; cashTipsCents: number; ccTipsCents: number; hours: number },
+  settings?: ShiftSettings | null,
+): ReturnType<typeof calcShiftAmounts> {
+  try {
+    return calcShiftAmounts(input, settings ?? DEFAULT_SHIFT_SETTINGS);
+  } catch {
+    return calcShiftAmounts(input, DEFAULT_SHIFT_SETTINGS);
+  }
+}
+
 export function calcShiftAmounts(
   input: { salesCents: number; cashTipsCents: number; ccTipsCents: number; hours: number },
   settings: ShiftSettings,

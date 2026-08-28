@@ -286,7 +286,7 @@ export async function connectGoogle(input: {
   const previous = loadGoogleSession(input.environment, input.memberId);
   const access = await requestGoogleAccess({
     services,
-    loginHint: input.loginHint || previous?.identity.email,
+    loginHint: input.loginHint || previous?.identity?.email,
     stepUp: input.stepUp,
     selectAccount: input.selectAccount,
   });
@@ -324,10 +324,10 @@ export async function withGoogle<T>(input: {
       environment: input.environment,
       memberId: input.memberId,
       services,
-      loginHint: input.loginHint || session?.identity.email,
+      loginHint: input.loginHint || session?.identity?.email,
       stepUp: input.stepUp,
     });
-  } else if (session && services.includes("identity") && (!session.identity.email || !session.identity.subject)) {
+  } else if (session && services.includes("identity") && (!session.identity?.email || !session.identity?.subject)) {
     session = await hydrateSession({
       memberId: input.memberId,
       accessToken: session.accessToken,

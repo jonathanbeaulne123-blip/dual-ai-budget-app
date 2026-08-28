@@ -30,6 +30,7 @@ import { shapeLedgerNames } from "./ledgerNames.ts";
 import { shapeWorkJobs } from "./work.ts";
 import { shapeSevenShiftsEvidenceBundle } from "./evidence.ts";
 import { shapeSevenShiftsSchedules } from "./sevenShiftsCalendar.ts";
+import { DEFAULT_SHIFT_SETTINGS } from "./shift.ts";
 
 export type { PersonalEnvelope, SharedEnvelope };
 
@@ -201,6 +202,9 @@ export function ensureHouseholdShape(household: Household): Household {
         : {}),
     })),
     sevenShiftsSchedules: shapeSevenShiftsSchedules(household.sevenShiftsSchedules),
+    shiftSettings: household.shiftSettings && typeof household.shiftSettings === "object"
+      ? household.shiftSettings
+      : { ...DEFAULT_SHIFT_SETTINGS },
     commandReceipts: household.commandReceipts ?? [],
     sharing: shapeSharing(household),
     conflicts: household.conflicts ?? [],

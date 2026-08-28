@@ -57,10 +57,10 @@ export function DailyHearth({
           <h2>Notes</h2>
           <span>Silly, one-off, not money</span>
         </header>
-        {household.kitchen.chalkboard.length === 0 ? (
+        {(household.kitchen?.chalkboard ?? []).length === 0 ? (
           <p className="chalk-empty">Blank slate. Dare: {dailyDare(today)}</p>
         ) : (
-          household.kitchen.chalkboard.map((note) => (
+          (household.kitchen?.chalkboard ?? []).map((note) => (
             <div className="chalk-note" key={note.id}>
               <p>{note.text}</p>
               <div className="chalk-actions">

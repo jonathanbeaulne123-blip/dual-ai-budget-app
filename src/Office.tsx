@@ -294,14 +294,14 @@ export function Office({
   }, [breakpoint, deskWidth]);
 
   useEffect(() => {
-    if (!household.google.enabledServices.includes("drive")) return;
+    if (!household.google?.enabledServices?.includes("drive")) return;
     const timer = window.setTimeout(() => {
       const phone = breakpoint === "phone" ? layout : loadOfficeLayout(environment, "phone", localStorage, memberId);
       const wide = breakpoint === "wide" ? layout : loadOfficeLayout(environment, "wide", localStorage, memberId);
       void pushDeskAppearance({
         environment,
         memberId,
-        enabledServices: household.google.enabledServices,
+        enabledServices: household.google?.enabledServices ?? [],
         payload: buildDeskSyncPayload({ look, phone, wide }),
         storage: localStorage,
       }).then((result) => {
@@ -309,7 +309,7 @@ export function Office({
       });
     }, 2500);
     return () => window.clearTimeout(timer);
-  }, [look, layout.items, layout.pinned, layout.minimized, layout.windowMinimized, environment, memberId, breakpoint, household.google.enabledServices]);
+  }, [look, layout.items, layout.pinned, layout.minimized, layout.windowMinimized, environment, memberId, breakpoint, household.google?.enabledServices]);
 
   useEffect(() => {
     setLook(loadOfficeLook(environment, localStorage, memberId));
@@ -977,7 +977,7 @@ export function Office({
                 void pushDeskAppearance({
                   environment,
                   memberId,
-                  enabledServices: household.google.enabledServices,
+                  enabledServices: household.google?.enabledServices ?? [],
                   payload: buildDeskSyncPayload({ look, phone, wide }),
                   storage: localStorage,
                 }).then((result) => setDeskNote(result.detail));
@@ -992,7 +992,7 @@ export function Office({
                 void pullDeskAppearance({
                   environment,
                   memberId,
-                  enabledServices: household.google.enabledServices,
+                  enabledServices: household.google?.enabledServices ?? [],
                   storage: localStorage,
                 }).then((result) => {
                   setDeskNote(result.detail);

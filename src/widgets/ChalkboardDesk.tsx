@@ -18,7 +18,7 @@ import {
 } from "../core/index.ts";
 
 export function chalkboardGlance(household: Household): string {
-  const notes = organizeChalkNotes(household.kitchen.chalkboard);
+  const notes = organizeChalkNotes(household.kitchen?.chalkboard ?? []);
   if (!notes.length) return "chalk";
   return notes.slice(0, 2).map((note) => note.text || "drawing").join(" · ");
 }
@@ -397,7 +397,7 @@ export function ChalkboardBody({
   const [slate, setSlate] = useState(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const memberName = household.members.find((member) => member.id === memberId)?.name ?? "You";
-  const notes = organizeChalkNotes(household.kitchen.chalkboard);
+  const notes = organizeChalkNotes(household.kitchen?.chalkboard ?? []);
   const preview = ink ? detectChalkLetters(ink) : "";
 
   function saveNote(text: string, nextInk: ChalkInk | null) {

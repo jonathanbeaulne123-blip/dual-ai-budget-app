@@ -57,9 +57,9 @@ export function saveGoogleAccount(environment: Environment, account: GoogleAccou
     grantedScopes: previous?.grantedScopes?.length ? previous.grantedScopes : [...CALENDAR_GOOGLE_SCOPES],
     identity: {
       email: account.email,
-      subject: previous?.identity.subject ?? "",
-      displayName: previous?.identity.displayName ?? "",
-      picture: previous?.identity.picture,
+      subject: previous?.identity?.subject ?? "",
+      displayName: previous?.identity?.displayName ?? "",
+      picture: previous?.identity?.picture,
     },
     calendarId: account.calendarId,
   });

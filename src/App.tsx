@@ -7,7 +7,7 @@ import {
   addFormDefaults,
   addGoal,
   buildDashboard,
-  calcShiftAmounts,
+  previewShiftAmounts,
   catalogHousehold,
   centsDigitsFromDollars,
   fundGoal,
@@ -321,6 +321,7 @@ import {
   adoptGoogleSession,
   confirmWithGoogleIfLinked,
   connectGoogle,
+  continuityIdentityFromGoogle,
   disconnectGoogle,
   googleConfigured,
   loadGoogleSession,
@@ -560,11 +561,9 @@ export function App() {
     try {
       const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
       const google = loadGoogleSession(environment, who);
-      const identity: ContinuityIdentity | null = authSession
-        ? { email: authSession.email, subject: authSession.googleSubject }
-        : google?.identity
-          ? { email: google.identity.email, subject: google.identity.subject }
-          : null;
+        const identity: ContinuityIdentity | null = authSession
+          ? { email: authSession.email, subject: authSession.googleSubject }
+          : continuityIdentityFromGoogle(google);
       if (!identity || (!identity.email && !identity.subject)) {
         setError("Sign in with Google before retrying share.");
         setTab("more");
@@ -883,9 +882,7 @@ export function App() {
         const authSession = supabaseAuthEnabled() ? loadSupabaseSession(environment) : null;
         const identity: ContinuityIdentity | null = authSession
           ? { email: authSession.email, subject: authSession.googleSubject }
-          : googleSession?.identity
-            ? { email: googleSession.identity.email, subject: googleSession.identity.subject }
-            : null;
+          : continuityIdentityFromGoogle(googleSession);
         if (identity) {
           next = markPendingTransport({
             ...next,
@@ -968,7 +965,7 @@ export function App() {
     if (!memberId) return;
     const googleSession = loadGoogleSession(environment, memberId);
     const storedAuthSession = loadSupabaseSession(environment);
-    if (!storedAuthSession && !googleSession?.identity.email && !googleSession?.identity.subject) return;
+    if (!storedAuthSession && !continuityIdentityFromGoogle(googleSession)) return;
     let live = true;
     const coordinator = createContinuityCoordinator();
     const resumeGate = createContinuityResumeGate();
@@ -981,9 +978,7 @@ export function App() {
       const authSession = supabaseAuthEnabled() ? loadSupabaseSession(environment) : null;
       const continuityIdentity: ContinuityIdentity | null = authSession
         ? { email: authSession.email, subject: authSession.googleSubject }
-        : googleSession?.identity
-          ? { email: googleSession.identity.email, subject: googleSession.identity.subject }
-          : null;
+        : continuityIdentityFromGoogle(googleSession);
       const accepted = await acceptHouseholdWrite({
         previous,
         candidate,
@@ -1009,10 +1004,7 @@ export function App() {
         const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
         const identity: ContinuityIdentity = authSession
           ? { email: authSession.email, subject: authSession.googleSubject }
-          : {
-              email: googleSession?.identity.email ?? "",
-              subject: googleSession?.identity.subject ?? "",
-            };
+          : continuityIdentityFromGoogle(googleSession) ?? { email: "", subject: "" };
         const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
         const flushed = await flushContinuityOutbox({ environment, identity, config: cloudConfig });
         if (!live) return;
@@ -1446,9 +1438,7 @@ export function App() {
         const google = loadGoogleSession(environment, memberId);
         const identity = authSession
           ? { email: authSession.email, subject: authSession.googleSubject }
-          : google?.identity
-            ? { email: google.identity.email, subject: google.identity.subject }
-            : null;
+          : continuityIdentityFromGoogle(google);
         if (!identity) {
           if (live) setIsHouseholdOwner(false);
           return;
@@ -1568,9 +1558,7 @@ export function App() {
     const authSession = supabaseAuthEnabled() ? loadSupabaseSession(environment) : null;
     const identity: ContinuityIdentity | null = authSession
       ? { email: authSession.email, subject: authSession.googleSubject }
-      : googleSession?.identity
-        ? { email: googleSession.identity.email, subject: googleSession.identity.subject }
-        : null;
+      : continuityIdentityFromGoogle(googleSession);
     if (!identity) return;
     next = markPendingTransport({
       ...next,
@@ -1638,16 +1626,12 @@ export function App() {
     try {
       const candidate = await selectHouseholdReplica(environment, householdId, session?.memberId);
       const currentGoogle = session?.memberId ? loadGoogleSession(environment, session.memberId) : null;
-      const googleMember = currentGoogle?.identity
-        ? continuityMemberId(candidate, currentGoogle.identity)
-        : null;
+      const continuityIdentity = continuityIdentityFromGoogle(currentGoogle);
+      const googleMember = continuityIdentity ? continuityMemberId(candidate, continuityIdentity) : null;
       const nextMemberId = googleMember
         ?? (candidate.members.some((member) => member.id === session?.memberId && member.active) ? session?.memberId : undefined)
         ?? candidate.members.find((member) => member.active)?.id;
       if (!nextMemberId) throw new Error("That ledger has no active household member.");
-      const continuityIdentity = currentGoogle?.identity
-        ? { email: currentGoogle.identity.email, subject: currentGoogle.identity.subject }
-        : null;
       // Replica navigation is not a money command: ingest + hash verify without bumping revision.
       const { status } = await ingestHouseholdBooks(candidate);
       if (!status.ok) throw new Error(status.error || "Those books could not be opened on this device.");
@@ -1680,9 +1664,7 @@ export function App() {
       : found.household;
     const googleSession = loadGoogleSession(environment, found.memberId)
       ?? loadGoogleSession(environment, "__welcome__");
-    const continuityIdentity = googleSession?.identity
-      ? { email: googleSession.identity.email, subject: googleSession.identity.subject }
-      : null;
+    const continuityIdentity = continuityIdentityFromGoogle(googleSession);
     const accepted = await acceptHouseholdWrite({
       previous,
       candidate,
@@ -1874,9 +1856,7 @@ export function App() {
       const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
       const continuityIdentity: ContinuityIdentity | null = authSession
         ? { email: authSession.email, subject: authSession.googleSubject }
-        : googleSession?.identity
-          ? { email: googleSession.identity.email, subject: googleSession.identity.subject }
-          : null;
+        : continuityIdentityFromGoogle(googleSession);
       const automaticContinuity = Boolean(
         continuityIdentity &&
         memberId &&
@@ -2775,7 +2755,7 @@ export function App() {
     ? "Because your Google account is linked, Google will ask you to confirm it is you first."
     : undefined;
   const categories = ledger.categories.filter((category) => category.recordType === "category" && category.active && category.transactionType === (mode === "income" ? "income" : "expense"));
-  const shiftPreview = calcShiftAmounts({
+  const shiftPreview = previewShiftAmounts({
     salesCents: Math.round(Number(form.sales || 0) * 100) || 0,
     cashTipsCents: Math.round(Number(form.cashTips || 0) * 100) || 0,
     ccTipsCents: Math.round(Number(form.ccTips || 0) * 100) || 0,
@@ -4559,9 +4539,7 @@ export function App() {
                   const googleSession = loadGoogleSession(environment, who);
                   const continuityIdentity: ContinuityIdentity | null = authSession
                     ? { email: authSession.email, subject: authSession.googleSubject }
-                    : googleSession?.identity
-                      ? { email: googleSession.identity.email, subject: googleSession.identity.subject }
-                      : null;
+                    : continuityIdentityFromGoogle(googleSession);
                   if (continuityIdentity) {
                     const flushed = await flushContinuityOutbox({
                       environment,
@@ -4614,9 +4592,7 @@ export function App() {
                   const googleSession = loadGoogleSession(environment, who);
                   const continuityIdentity: ContinuityIdentity | null = authSession
                     ? { email: authSession.email, subject: authSession.googleSubject }
-                    : googleSession?.identity
-                      ? { email: googleSession.identity.email, subject: googleSession.identity.subject }
-                      : null;
+                    : continuityIdentityFromGoogle(googleSession);
                   if (continuityIdentity) {
                     const flushed = await flushContinuityOutbox({
                       environment,
