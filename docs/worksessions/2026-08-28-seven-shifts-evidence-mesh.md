@@ -6,9 +6,9 @@
 - **Assignee or AI:** Codex
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `codex/7shifts-evidence-mesh`
-- **Baseline SHA:** `9cc1f67` (current `origin/main` after live roadmap museum reconciliation)
-- **Head SHA:** `9cc1f67` plus the local dirty packet
-- **PR or issue:** none
+- **Baseline SHA:** `4a7ea7e` (current `origin/main` after Toast OCR device-hive reconciliation)
+- **Head SHA:** PR #231 branch tip
+- **PR or issue:** [#231](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/231)
 - **Risk:** Release
 - **Decision owner:** Jonathan
 - **Environment impact:** Development code and inert infrastructure definitions only
@@ -46,7 +46,7 @@ Hearth can retain and reconcile the 7shifts evidence an employee can deliberatel
 
 ### Out of scope
 
-- Push, PR creation, merge, email-domain activation, store/TestFlight publication, Production, or meaningful household data.
+- Email-domain activation, store/TestFlight publication, Production, or meaningful household data.
 - Password, cookie, bearer-token, or unauthorized-account capture.
 - Model or Hercules command authority.
 
@@ -61,7 +61,7 @@ Hearth can retain and reconcile the 7shifts evidence an employee can deliberatel
 - [x] Deterministic Queue extraction handles official JSON/CSV, ICS outlook, timesheet/tip report text, bounded MIME/attachments, independent local/cloud screen facts, and schema drift without granting money authority.
 - [x] Enabled deterministic automation remains fail-closed on conflict and uses ordinary work calculation/acceptance.
 - [x] Corrections preserve exact reversals and payroll-week overtime meaning.
-- [x] Focused tests, TypeScript, AI verification, production build, Worker dry run, and diff check pass. The final full suite is 1015 passed / 2 skipped / 2 unchanged-baseline failures, so the aggregate `pnpm check` is not represented as green.
+- [x] Focused tests, TypeScript, AI verification, production build, Worker dry run, and diff check pass. After reconciling `origin/main@4a7ea7e`, the full suite is 1018 passed / 2 skipped / 2 unchanged-baseline failures, so the aggregate `pnpm check` is not represented as green.
 - [x] Development D1, Queue, DLQ, and both Evidence migrations are live and empty.
 - [x] R2 safety guard is proven at 1 GiB stored / 10k puts / 100k gets monthly.
 - [x] R2 subscription and private bucket, encryption secret, and inert deployment completed; live status proves every activation flag remains off.
@@ -96,6 +96,7 @@ Hearth can retain and reconcile the 7shifts evidence an employee can deliberatel
 - 2026-08-28: generated a random 64-byte `EVIDENCE_KEK_V1` directly into Wrangler without printing or writing it to the repository. `wrangler secret list` confirms only its name/type.
 - 2026-08-28: deployed the inert Worker, attached the key, reconciled the packet to the latest main, rebuilt, and deployed the exact reconciled artifact. Current version `043d8324-998e-46f3-9a6d-16d2f2aee0d7` is 100%. Live Evidence and 7shifts status routes both report unavailable/disabled, Development-only, and Production refused; all five activation flags remain false.
 - 2026-08-28: three independent books, privacy, and Worker/UI reviews reported no open P0, P1, or P2 findings after provenance, revision-race, settlement, migration, calendar, iOS-header, and acknowledgement-recovery fixes.
+- 2026-08-28: Jonathan authorized push and merge. PR #231 was reconciled with `origin/main@4a7ea7e`; Toast OCR shared learning's wildcard cross-origin write surface was replaced with exact Hearth/preview/local origin checks. Joint proof passed 93/93, TypeScript, AI verify, build, Worker dry run, and focused API guards; full suite was 1018 passed / 2 skipped / 2 unchanged-baseline failures.
 
 ## Decisions
 
@@ -106,8 +107,8 @@ Hearth can retain and reconcile the 7shifts evidence an employee can deliberatel
 ## Remaining uncertainty
 
 - Native iPhone compilation and physical-device proof require macOS/Xcode and Apple signing; this Windows packet can provide source, project definition, fixtures, and CI configuration but cannot claim device proof.
-- Email routing, real Development evidence, automation activation, macOS/iPhone proof, push, merge, and Production still require their separate gates.
+- Email routing, real Development evidence, automation activation, macOS/iPhone proof, and Production still require their separate gates.
 
 ## Handoff
 
-Local implementation, proof, and the approved inert Development infrastructure gate are complete. The exact packet is staged but uncommitted on `codex/7shifts-evidence-mesh`. Nothing was pushed, merged, activated for capture/automation, or applied to Production. Jonathan remains the decision owner for each later release gate.
+Local implementation, proof, and the approved inert Development infrastructure gate are complete. PR #231 is push/merge authorized. Capture and automation remain inactive, and nothing was applied to Production. Jonathan remains the decision owner for each later release gate.

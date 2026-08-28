@@ -3,12 +3,12 @@
 ## Decision
 
 - **Branch:** `codex/7shifts-evidence-mesh`
-- **Exact base:** `9cc1f67595510ae9d0deaa98d77be1e629f8e5fb`
+- **Exact base:** `4a7ea7e18468caee8c1c6efac8750af98d03011a`
 - **Risk:** Release
 - **Budget delta (5):** `+5`
 - **Engagement delta (3):** `+3`
 - **Recommended commit title:** `Add encrypted 7shifts evidence mesh and deterministic reconciliation`
-- **Push/merge/deploy:** no push or merge is authorized by this packet. Development infrastructure/deploy is authorized only as the inert, hard-off gate recorded below. Production is prohibited.
+- **Push/merge/deploy:** Jonathan authorized PR #231 push and merge on 2026-08-28. The automatic `main` deployment must remain inert; Production and capture/automation activation are prohibited.
 
 Main assigns D-156 to Wide Home and D-157 to the roadmap museum. The stale evidence draft's useful behavior was manually rebuilt and renumbered as D-158 (Evidence Mesh) and D-159 (opt-in deterministic work authority); no stale-packet cherry-pick is part of this change.
 
@@ -25,14 +25,14 @@ Main assigns D-156 to Wide Home and D-157 to the roadmap museum. The stale evide
 
 ## Proof
 
-- Current-main reconciliation: `HEAD` and `origin/main` were both `9cc1f67` before final staging; the shared Worker entrypoint retains Toast OCR, the live roadmap/museum, disabled-queue acknowledgement, and Evidence handlers.
-- Focused current-main proof: 17 files / 97 tests passed, including roadmap, Toast OCR, vault/capability/email/extension/iOS/migration/extraction, automation, calendar, work, visibility, Hercules, document scan, and Evidence UI; the dedicated disabled-queue assertion also passed separately.
-- Full repository: 1015 passed / 2 skipped / 2 failed. The two failures are baseline-only: Windows child-Python discovery in `test/api.test.ts` and the unchanged Companion Office source-shape assertion. Neither failing test nor `src/Hercules.tsx` differs from the exact base.
+- Current-main reconciliation: the branch merged `origin/main@4a7ea7e`; the shared Worker entrypoint retains Toast OCR, the live roadmap/museum, disabled-queue acknowledgement, and Evidence handlers. Reconciliation also replaced Toast OCR learning's wildcard CORS with exact Hearth/preview/local origin checks.
+- Focused current-main proof: 16 files / 93 tests passed, including Toast OCR, vault/capability/email/extension/iOS/migration/extraction, automation, calendar, work, visibility, Hercules, document scan, and Evidence UI; the dedicated disabled-queue and Worker CORS assertions also passed separately.
+- Full repository: 1018 passed / 2 skipped / 2 failed. The two failures are baseline-only: Windows `spawnSync bash ENOENT` in `test/api.test.ts` and the unchanged Companion Office source-shape assertion. Neither failure is caused by D-158/D-159.
 - `pnpm exec tsc --noEmit`: passed.
 - `pnpm ai:verify`: passed.
 - `pnpm build`: passed.
 - `wrangler deploy --dry-run --assets=./dist`: passed with the exact Development D1/R2/Queue bindings and all activation flags false.
-- `git diff --check 9cc1f67...`: passed.
+- `git diff --check 4a7ea7e...`: passed.
 - The Evidence migration executes in `node:sqlite`, including the exact canonical-shift observation query and separate schema-drift table.
 - Native iOS XCTest/device signing remains a macOS/TestFlight gate; Windows tests prove source contract and required upload headers only.
 
@@ -69,4 +69,4 @@ Raw bytes and source metadata stay outside household snapshots, PGlite, command 
 
 ### Release gates still open
 
-Review the staged file list; resolve or document any P2; complete synthetic Development vault smoke with automation off; separately approve extension/email/iPhone distribution, real evidence, one-job automation, push, merge, and every Production step.
+Complete synthetic Development vault smoke with automation off; separately approve extension/email/iPhone distribution, real evidence, one-job automation, and every Production step.

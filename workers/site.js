@@ -3,6 +3,7 @@
 import {
   checkChatRateLimit,
   corsHeaders,
+  isAllowedKitchenHost,
   rigCorsHeaders,
   resolveChatOrigin,
 } from "./herculesGuard.js";
@@ -558,12 +559,28 @@ function withToastOcrHeaders(response) {
 }
 
 const OCR_LEARN_KEY = "ocr-learn-v1";
-const OCR_LEARN_CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-  ...TOAST_OCR_FRAME_HEADERS,
-};
+
+function ocrLearnCors(request) {
+  const origin = request.headers.get("Origin");
+  if (!origin) {
+    try {
+      return {
+        allowed: isAllowedKitchenHost(new URL(request.url).hostname),
+        headers: TOAST_OCR_FRAME_HEADERS,
+      };
+    } catch {
+      return { allowed: false, headers: TOAST_OCR_FRAME_HEADERS };
+    }
+  }
+  const resolved = resolveChatOrigin(request);
+  return {
+    allowed: resolved.allowed,
+    headers: {
+      ...rigCorsHeaders(resolved.origin),
+      ...TOAST_OCR_FRAME_HEADERS,
+    },
+  };
+}
 const OCR_POS_WORDS = new Set([
   "EMPLOYEE", "SHIFT", "REPORT", "ACTIVITY", "SUMMARY", "BUSINESS", "TRENDS",
   "HEADCOUNT", "TICKET", "TICKETS", "GROSS", "NET", "SALES", "REVENUE", "CLASS",
@@ -663,12 +680,14 @@ async function writeOcrBrain(env, brain) {
 
 async function handleOcrLearn(request, env, path) {
   if (path !== "/ocr/learn" && path !== "/ocr/api/learn") return null;
+  const cors = ocrLearnCors(request);
+  if (!cors.allowed) return json({ error: "origin" }, 403, cors.headers);
   if (request.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: OCR_LEARN_CORS });
+    return new Response(null, { status: 204, headers: cors.headers });
   }
   if (request.method === "GET") {
     const brain = mergeOcrBrain(await readOcrBrain(env), null);
-    return json(brain, 200, OCR_LEARN_CORS);
+    return json(brain, 200, cors.headers);
   }
   if (request.method === "POST") {
     let incoming = {};
@@ -680,13 +699,13 @@ async function handleOcrLearn(request, env, path) {
     if (!incoming || typeof incoming !== "object") incoming = {};
     const keys = Object.keys(incoming.letter_fixes || {});
     if (keys.length > 80) {
-      return json({ error: "too_many_fixes" }, 400, OCR_LEARN_CORS);
+      return json({ error: "too_many_fixes" }, 400, cors.headers);
     }
     const merged = mergeOcrBrain(await readOcrBrain(env), incoming);
     await writeOcrBrain(env, merged);
-    return json(merged, 200, OCR_LEARN_CORS);
+    return json(merged, 200, cors.headers);
   }
-  return json({ error: "method" }, 405, OCR_LEARN_CORS);
+  return json({ error: "method" }, 405, cors.headers);
 }
 
 /** Toast OCR PWA at /ocr — static assets + on-device Phase 1–5. Does not touch Hearth routes. */
