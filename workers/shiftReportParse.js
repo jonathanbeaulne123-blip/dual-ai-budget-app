@@ -45,6 +45,22 @@ function normalizeDate(raw) {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
+/** True when OCR transcript looks like a Toast / close-out tip sheet. */
+export function looksLikeEmployeeShiftReport(ocrText) {
+  const compact = String(ocrText || "").replace(/\s+/g, " ");
+  if (compact.length < 24) return false;
+  const hits = [
+    /EMPLOYEE\s+SHIFT\s+REPORT/i,
+    /TIP\s+SUMMARY/i,
+    /NET\s+SALES/i,
+    /GROSS\s+SALES/i,
+    /\bHEADCOUNT\b/i,
+    /MERCHANT\s+OWES\s+EMPLOYEE/i,
+    /TOTAL\s+PAID\s+HOURS/i,
+  ].filter((pattern) => pattern.test(compact)).length;
+  return hits >= 2;
+}
+
 /**
  * @param {string} ocrText
  * @returns {{ draft: Record<string, number|string>|null, warnings: string[], confidence: "high"|"medium"|"low" }}
@@ -53,7 +69,7 @@ export function parsePosEmployeeShiftReport(ocrText) {
   const text = String(ocrText || "").replace(/\r/g, "\n");
   const compact = text.replace(/[ \t]+/g, " ");
   const warnings = [];
-  if (!/EMPLOYEE\s+SHIFT\s+REPORT|TIP\s+SUMMARY|NET\s+SALES|GROSS\s+SALES|HEADCOUNT/i.test(compact)) {
+  if (!looksLikeEmployeeShiftReport(compact) && !/EMPLOYEE\s+SHIFT\s+REPORT|TIP\s+SUMMARY|NET\s+SALES|GROSS\s+SALES|HEADCOUNT/i.test(compact)) {
     return { draft: null, warnings: ["OCR text did not look like an Employee Shift Report."], confidence: "low" };
   }
 
@@ -139,28 +155,34 @@ export function parsePosEmployeeShiftReport(ocrText) {
 }
 
 /**
- * Prefer deterministic POS parse over model shiftDraft when OCR text is strong.
+ * Merge model shiftDraft with labeled POS parse.
+ * Labeled OCR fields always win for keys they matched; model-only keys (e.g. staffingCount)
+ * are kept. Never wipe a whole model draft when the parser only matched a subset.
  */
 export function mergeShiftDraftFromOcr(modelDraft, ocrText) {
   const parsed = parsePosEmployeeShiftReport(ocrText);
+  const model = modelDraft && typeof modelDraft === "object" ? { ...modelDraft } : null;
   if (!parsed.draft) {
     return {
-      draft: modelDraft && Object.keys(modelDraft).length ? modelDraft : null,
+      draft: model && Object.keys(model).length ? model : null,
       warnings: parsed.warnings,
-      source: modelDraft ? "model" : "none",
+      source: model ? "model" : "none",
     };
   }
-  if (parsed.confidence === "high" || parsed.confidence === "medium") {
-    return { draft: parsed.draft, warnings: parsed.warnings, source: "pos-parser" };
-  }
-  // Low confidence: fill only missing model fields from parser.
-  const merged = { ...(modelDraft || {}) };
+
+  const merged = { ...(model || {}) };
   for (const [key, value] of Object.entries(parsed.draft)) {
-    if (merged[key] == null) merged[key] = value;
+    if (value != null) merged[key] = value;
   }
+
+  const hadModel = Boolean(model && Object.keys(model).length);
+  let source = "pos-parser";
+  if (hadModel && parsed.confidence === "low") source = "model+pos-parser";
+  else if (hadModel) source = "pos-parser+model";
+
   return {
     draft: Object.keys(merged).length ? merged : null,
     warnings: parsed.warnings,
-    source: modelDraft ? "model+pos-parser" : "pos-parser",
+    source,
   };
 }

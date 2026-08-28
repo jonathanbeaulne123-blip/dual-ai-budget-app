@@ -212,8 +212,9 @@ describe("document detection Worker", () => {
 
   it("sanitizes shift-report drafts, drops OCR notes, and honors documentHint", async () => {
     const run = vi.fn(async (_model: string, input: { messages?: Array<{ content?: string }> }) => {
-      expect(JSON.stringify(input.messages)).toMatch(/Prefer documentKind shift-report/i);
+      expect(JSON.stringify(input.messages)).toMatch(/Set documentKind to shift-report|documentKind to shift-report/i);
       expect(JSON.stringify(input.messages)).toMatch(/Shift → Today/i);
+      expect(JSON.stringify(input.messages)).toMatch(/Priority 1: fill ocrText/i);
       expect(JSON.stringify(input.messages)).not.toMatch(/from Timesheet/i);
       return {
         response: {
@@ -467,5 +468,74 @@ describe("document detection Worker", () => {
       customersServed: 12,
     });
     expect(upstream).toHaveBeenCalledTimes(2);
+  });
+
+  it("coerces tip-sheet hint + Toast OCR into shift-report even when the model said receipt", async () => {
+    const toastOcr = `
+EMPLOYEE SHIFT REPORT
+Clock In: 08/27/2026 04:00PM
+Total Paid Hours 5.00 HR
+BUSINESS TRENDS
+Headcount 22
+Net Sales $250.00
+TIP SUMMARY
+Debit Tips 2 $40.00
+Cash Tips 0 $0.00
+Total Tips 2 $40.00
+`;
+    const upstream = vi.fn(async () => new Response(JSON.stringify({
+      choices: [{ message: { content: JSON.stringify({
+        documentKind: "receipt",
+        currency: "CAD",
+        accountLast4: "",
+        rows: [{
+          date: "2026-08-27", amountCents: 25000, direction: "debit", typeHint: "expense",
+          merchant: "Toast", description: "wrong", reference: "", confidence: 50,
+        }],
+        receiptNumbers: null,
+        ocrText: toastOcr,
+        shiftDraft: {
+          date: null,
+          workedHours: null,
+          salesCents: null,
+          foodSalesCents: null,
+          alcoholSalesCents: null,
+          cashTipsCents: null,
+          cardTipsCents: null,
+          customersServed: null,
+          staffingCount: null,
+          eventTag: null,
+        },
+        warnings: [],
+      }) } }],
+    }), { status: 200, headers: { "Content-Type": "application/json" } }));
+    vi.stubGlobal("fetch", upstream);
+    const response = await worker.fetch(new Request(`${origin}/documents/scan`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: origin },
+      body: JSON.stringify({
+        fileName: "tips.jpg",
+        mimeType: "image/jpeg",
+        imageDataUrl: "data:image/jpeg;base64,AA==",
+        documentHint: "shift-report",
+        provider: "openai",
+      }),
+    }), {
+      OPENAI_API_KEY: "scan-key",
+      DOCUMENT_SCAN_ALLOW_PAID: "true",
+      ASSETS: { fetch: vi.fn() },
+    });
+    expect(response.status).toBe(200);
+    const body = await response.json() as {
+      provider: string;
+      result: { documentKind: string; rows: unknown[]; shiftDraft: Record<string, number | string> };
+    };
+    expect(body.provider).toBe("openai");
+    expect(body.result.documentKind).toBe("shift-report");
+    expect(body.result.rows).toEqual([]);
+    expect(body.result.shiftDraft.salesCents).toBe(25_000);
+    expect(body.result.shiftDraft.cardTipsCents).toBe(4_000);
+    expect(body.result.shiftDraft.customersServed).toBe(22);
+    expect(body.result.shiftDraft.workedHours).toBe(5);
   });
 });

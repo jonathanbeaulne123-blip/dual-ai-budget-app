@@ -11,7 +11,7 @@ import { handleFlinks } from "./flinks.js";
 import { handleSevenShifts } from "./sevenshifts.js";
 import { validateRigPayload, sanitizeRigSessionId } from "../src/herculesRig/validate.ts";
 import { enqueueRigCommands, pollRigCommands } from "./herculesRigQueue.js";
-import { mergeShiftDraftFromOcr } from "./shiftReportParse.js";
+import { mergeShiftDraftFromOcr, looksLikeEmployeeShiftReport } from "./shiftReportParse.js";
 
 const HTML_PATH = /(?:^\/$|\.html(?:$|\?))/i;
 const HERCULES_COMPANION_ASSETS = new Set([
@@ -991,14 +991,24 @@ function redactFinancialIdentifiers(value, max) {
   return clip(redacted, max);
 }
 
-function sanitizeDocumentResult(value) {
+function sanitizeDocumentResult(value, options = {}) {
   if (!value || typeof value !== "object") return null;
+  const documentHint = String(options.documentHint || "").trim().toLowerCase();
   const kinds = new Set(["bank-statement", "credit-card-statement", "bill", "receipt", "shift-report", "unknown"]);
   const directions = new Set(["debit", "credit", "unknown"]);
   const typeHints = new Set(["expense", "income", "refund", "transfer", "unknown"]);
   const eventTags = new Set(["regular", "holiday", "sports", "festival", "private_party", "short_staffed", "vacation_cover", "illness_cover", "other"]);
   const normalizedDocumentKind = String(value.documentKind || "").trim().toLowerCase();
-  const documentKind = kinds.has(normalizedDocumentKind) ? normalizedDocumentKind : "unknown";
+  let documentKind = kinds.has(normalizedDocumentKind) ? normalizedDocumentKind : "unknown";
+  const rawOcr = clip(String(value.ocrText || ""), 12000);
+  const shiftHint = documentHint === "shift-report";
+  // Tip-sheet camera always aims at Confirm drafts. Prefer shift-report when the
+  // transcript looks like Toast / close-out, even if the model guessed receipt.
+  if (shiftHint && documentKind !== "shift-report") {
+    if (looksLikeEmployeeShiftReport(rawOcr) || (value.shiftDraft && typeof value.shiftDraft === "object")) {
+      documentKind = "shift-report";
+    }
+  }
   const rows = documentKind === "shift-report" ? [] : Array.isArray(value.rows) ? value.rows.slice(0, 250).map((row) => ({
     date: clip(row?.date, 10),
     amountCents: Number.isSafeInteger(Number(row?.amountCents)) ? Math.abs(Number(row.amountCents)) : 0,
@@ -1032,7 +1042,7 @@ function sanitizeDocumentResult(value) {
   } : null;
   const shiftInput = value.shiftDraft && typeof value.shiftDraft === "object" ? value.shiftDraft : null;
   const optionalShiftCents = (amount) => optionalMoneyCents(amount);
-  const shiftDraft = documentKind === "shift-report" && shiftInput ? (() => {
+  const shiftDraft = (documentKind === "shift-report" || shiftHint) && shiftInput ? (() => {
     const draft = {};
     const date = normalizeShiftDraftDate(shiftInput.date);
     if (date) draft.date = date;
@@ -1066,34 +1076,43 @@ function sanitizeDocumentResult(value) {
   const warnings = documentKind === "receipt"
     ? []
     : Array.isArray(value.warnings) ? value.warnings.slice(0, 20).map((item) => redactFinancialIdentifiers(item, 180)).filter(Boolean) : [];
-  const ocrText = documentKind === "shift-report"
-    ? clip(String(value.ocrText || ""), 12000)
-    : "";
+  // Keep OCR when this was a tip-sheet capture even if kind coercion is still pending.
+  const ocrText = (documentKind === "shift-report" || shiftHint) ? rawOcr : "";
   let finalShiftDraft = shiftDraft;
-  if (documentKind === "shift-report" && ocrText.length >= 40) {
+  let finalKind = documentKind;
+  if ((finalKind === "shift-report" || shiftHint) && ocrText.length >= 40) {
     const merged = mergeShiftDraftFromOcr(shiftDraft, ocrText);
     finalShiftDraft = merged.draft;
+    if (shiftHint && looksLikeEmployeeShiftReport(ocrText)) finalKind = "shift-report";
     for (const warning of merged.warnings) {
       if (warning && warnings.length < 20) warnings.push(redactFinancialIdentifiers(warning, 180));
     }
-    if (merged.source === "pos-parser" && warnings.length < 20) {
+    if ((merged.source === "pos-parser" || merged.source === "pos-parser+model") && warnings.length < 20) {
       warnings.push("Totals checked against Employee Shift Report labels.");
     }
   }
+  // Tip-sheet hint with usable draft/OCR should never leave as receipt/unknown.
+  if (shiftHint && finalShiftDraft && finalKind !== "shift-report") finalKind = "shift-report";
   return {
-    documentKind,
+    documentKind: finalKind === "shift-report" ? "shift-report" : finalKind,
     currency: clip(value.currency || "CAD", 8).toUpperCase(),
     accountLast4: String(value.accountLast4 || "").replace(/\D/g, "").slice(-4),
-    rows,
-    receiptNumbers,
+    rows: finalKind === "shift-report" ? [] : rows,
+    receiptNumbers: finalKind === "shift-report" ? null : receiptNumbers,
     ...(finalShiftDraft ? { shiftDraft: finalShiftDraft } : {}),
-    warnings,
+    warnings: finalKind === "receipt" ? [] : warnings,
   };
 }
 
 function documentScanUserText(documentHint) {
   if (documentHint === "shift-report") {
-    return "This photo was taken from Shift → Today to draft a shift Confirm. Prefer documentKind shift-report for EMPLOYEE SHIFT REPORT / tip sheet / close-out. Fill ocrText with a near-complete transcript of readable labels and amounts. Map Tip Summary Debit+Credit tips to cardTipsCents, Cash Tips to cashTipsCents, Net/Gross Sales to salesCents, Food class to foodSalesCents, Liquor+Beverage+Wine to alcoholSalesCents, BUSINESS TRENDS Headcount to customersServed (not staffingCount), Total Paid Hours to workedHours, Clock In date to YYYY-MM-DD. Omit staffingCount unless floor staff count is explicit. Never invent amounts or coworker names. Return only the schema.";
+    return [
+      "This photo was taken from Shift → Today to draft a shift Confirm.",
+      "Set documentKind to shift-report for EMPLOYEE SHIFT REPORT / tip sheet / close-out photos.",
+      "Priority 1: fill ocrText with a near-complete line-by-line transcript of every readable label and amount (Clock In/Out, Total Paid Hours, Headcount, Gross/Net Sales, Food/Liquor/Beverage/Wine, Tip Summary Debit/Amex/Visa/Mastercard/Cash/Total Tips, Merchant Owes Employee). Preserve numbers exactly as printed.",
+      "Priority 2: map only clearly labeled amounts into shiftDraft cents fields (dollars×100 integers). Tip Summary Debit+Amex+Visa+Mastercard (+Credit when brand lines absent) → cardTipsCents; Cash Tips → cashTipsCents; Net/Gross Sales → salesCents; Food → foodSalesCents; Liquor+Beverage+Wine → alcoholSalesCents; BUSINESS TRENDS Headcount → customersServed (never staffingCount); Total Paid Hours → workedHours; Clock In date → YYYY-MM-DD.",
+      "Omit staffingCount unless floor staff / # servers is explicit. Never invent amounts or coworker names. Prefer null over a guess. Return only the schema.",
+    ].join(" ");
   }
   return "Extract the selected document. Return only the requested JSON schema.";
 }
@@ -1118,7 +1137,7 @@ async function scanWorkersAi(env, imageDataUrl, documentHint) {
         if (useSchema) input.response_format = { type: "json_schema", json_schema: DOCUMENT_SCHEMA };
         const output = await env.AI.run(model, input);
         const candidate = output?.response ?? output?.result?.response ?? output?.choices?.[0]?.message?.content;
-        const sanitized = sanitizeDocumentResult(typeof candidate === "string" ? parseModelJson(candidate) : candidate);
+        const sanitized = sanitizeDocumentResult(typeof candidate === "string" ? parseModelJson(candidate) : candidate, { documentHint });
         if (sanitized) return sanitized;
       } catch {
         // Try the next schema/model combination.
@@ -1171,7 +1190,7 @@ async function scanOpenAI(env, imageDataUrl, documentHint) {
       if (!response.ok) continue;
       const data = await response.json();
       const content = data?.choices?.[0]?.message?.content;
-      const sanitized = sanitizeDocumentResult(parseModelJson(content));
+      const sanitized = sanitizeDocumentResult(parseModelJson(content), { documentHint });
       if (sanitized) return sanitized;
     } catch {
       // Try the next response_format.
@@ -1207,7 +1226,7 @@ async function scanAnthropic(env, imageDataUrl, documentHint) {
   if (!response.ok) return null;
   const data = await response.json();
   const text = Array.isArray(data?.content) ? data.content.find((item) => item?.type === "text")?.text : "";
-  return sanitizeDocumentResult(parseModelJson(text));
+  return sanitizeDocumentResult(parseModelJson(text), { documentHint });
 }
 
 async function scanDocument(request, env) {

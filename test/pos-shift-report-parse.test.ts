@@ -57,7 +57,7 @@ describe("Toast Employee Shift Report parser", () => {
     expect(parsed.draft?.cardTipsCents).not.toBe(9_174);
   });
 
-  it("overrides a wrong model draft when OCR text is strong", () => {
+  it("overrides wrong model money fields from strong OCR without wiping model-only keys", () => {
     const merged = mergeShiftDraftFromOcr({
       date: "2026-01-01",
       workedHours: 9.99,
@@ -65,11 +65,15 @@ describe("Toast Employee Shift Report parser", () => {
       cashTipsCents: 999,
       cardTipsCents: 1,
       customersServed: 2,
+      staffingCount: 4,
+      eventTag: "sports",
     }, TOAST_OCR);
-    expect(merged.source).toBe("pos-parser");
+    expect(merged.source).toBe("pos-parser+model");
     expect(merged.draft?.salesCents).toBe(58_601);
     expect(merged.draft?.cardTipsCents).toBe(13_102);
     expect(merged.draft?.customersServed).toBe(17);
+    expect(merged.draft?.staffingCount).toBe(4);
+    expect(merged.draft?.eventTag).toBe("sports");
   });
 });
 

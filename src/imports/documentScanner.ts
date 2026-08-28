@@ -1,5 +1,6 @@
 import { stableImportHash, type VisionDocumentResult } from "../core/index.ts";
 import type { DocumentVisionProvider } from "./documentScanProvider.ts";
+import { prepareTipSheetImage } from "./tipSheetImagePrep.ts";
 
 export const DOCUMENT_SCAN_PATH = "/documents/scan";
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -91,7 +92,11 @@ export async function scanFinancialDocument(
   if (!ALLOWED_IMAGE_TYPES.has(file.type)) throw new Error("Use a JPEG, PNG, or WebP photo.");
   if (file.size <= 0) throw new Error("That image is empty.");
   if (file.size > MAX_IMAGE_BYTES) throw new Error("That image is larger than 10 MB. Crop it to the document and try again.");
-  const compressed = await compressDocumentImage(file);
+  // Tip sheets: contrast + higher-quality JPEG. Receipts keep the smaller compress path.
+  // PDF wrappers are not used — vision providers here only accept image data URLs.
+  const compressed = options?.documentHint === "shift-report"
+    ? await prepareTipSheetImage(file)
+    : await compressDocumentImage(file);
   if (compressed.bytes.byteLength <= 0) throw new Error("That image is empty.");
   if (compressed.bytes.byteLength > MAX_IMAGE_BYTES) {
     throw new Error("That image is still larger than 10 MB after compression. Crop closer to the tip sheet and try again.");
