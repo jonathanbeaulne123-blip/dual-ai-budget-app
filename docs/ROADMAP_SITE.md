@@ -6,6 +6,8 @@
 
 Jonathan selected **public access with no privacy or login guard** on 2026-08-27 because the roadmap's people and data are synthetic. The permanent address is `https://hearth-books.jonathan-beaulne123.workers.dev/roadmap/`; the initial D-154 release is live. Every later update still requires the ordinary reviewed push and GitHub-to-Cloudflare deployment gate.
 
+The D-157 vision, journey, and two-exhibit museum expansion was approved and published on 2026-08-28 at `455f1ab` through Cloudflare run `33185717271`. Live proof retained 10 canonical phases, added exactly 2 historical exhibits and 17 journey milestones, and kept the frozen August 17 artifact directly reachable under `/roadmap/museum/`.
+
 The site is a communication artifact, not a ledger surface. It does not load household records, Supabase, authentication state, local storage, analytics, or model endpoints.
 
 ## Structure

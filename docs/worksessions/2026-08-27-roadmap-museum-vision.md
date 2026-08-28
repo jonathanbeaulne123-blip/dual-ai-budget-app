@@ -1,6 +1,6 @@
 # Hearth worksession — roadmap museum and project vision
 
-- **Status:** RELEASE APPROVED 2026-08-28 — rebasing and publishing
+- **Status:** CLOSED — PUBLIC/LIVE 2026-08-28
 - **Opened:** 2026-08-27 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -8,8 +8,8 @@
 - **Branch:** `codex/roadmap-museum-history`
 - **Baseline SHA:** `86e811c3248f2a5aaa3e4a50d50e046b7cef3413` (`origin/main` at branch creation); rebased onto current `main` before release
 - **Starting head SHA:** `86e811c3248f2a5aaa3e4a50d50e046b7cef3413`
-- **Original implementation commit:** `2f140e8`; rebased implementation commit `d023a35`
-- **PR or issue:** none
+- **Original implementation commit:** `2f140e8`; released current-main head `455f1ab`
+- **PR or issue:** direct reviewed main advance after explicit approval; Cloudflare run `33185717271`
 - **Risk:** Medium locally; Release if published
 - **Decision owner:** Jonathan
 - **Environment impact:** public read-only roadmap only if separately approved; no household runtime, schema, secrets, or data mutation
@@ -83,6 +83,10 @@ Jonathan can open one living roadmap that explains the full Hearth vision, shows
 - 2026-08-27: source and museum HTML SHA-256 both equal `77F6F08AFE98BAFB2908F9D35486D1B4A345781DFBA1B939370B64840B92281C`.
 - 2026-08-27: read-only final reviewers found no museum-separation, provenance, accessibility, canonical-contamination, or vision-claim blocker. The timeline review supplied exact commit seconds, now retained semantically while the UI states it is shown to the minute.
 - 2026-08-27: all 14 semantic repository timestamps were rechecked against their Git commits after conversion to `America/Toronto`.
+- 2026-08-28: Jonathan explicitly approved the public roadmap museum release.
+- 2026-08-28: rebased over current `main`, resolving the newly claimed desktop decision as D-156 and assigning the museum the next unique id D-157; both histories were preserved.
+- 2026-08-28: focused roadmap tests passed 8/8, TypeScript passed, production-equivalent Vite and Hercules Pro builds passed, and the frozen artifact still matched the supplied source at SHA-256 `77F6F08AFE98BAFB2908F9D35486D1B4A345781DFBA1B939370B64840B92281C`.
+- 2026-08-28: Cloudflare run `33185717271` succeeded for `455f1ab`. Live proof: `/roadmap` returns one 307 to `/roadmap/`; the canonical route and frozen exhibit return 200; rendered counts are 2 exhibits, 10 phases, 17 milestones, 4 vision principles, 6 scores, 6 gates, and 3 additive updates; 390 px has no horizontal overflow; console errors are empty.
 
 ## Decisions
 
@@ -96,8 +100,8 @@ Jonathan can open one living roadmap that explains the full Hearth vision, shows
 
 ## Release review
 
-**APPROVED; final current-main verification in progress.** The complete diff is limited to the static roadmap, its focused test, museum/reference records, and living planning documentation. It changes no CAD arithmetic, journal path, Commands/Confirm behavior, environment boundary, Auth/RLS rule, Worker API, household state, schema, secret, or Production data. The two earlier unrelated baseline checks remain disclosed above and were not weakened. Jonathan approved push, merge to `main`, and the existing Cloudflare deployment on 2026-08-28.
+**PASS; RELEASED.** The complete diff is limited to the static roadmap, its focused test, museum/reference records, and living planning documentation. It changes no CAD arithmetic, journal path, Commands/Confirm behavior, environment boundary, Auth/RLS rule, Worker API, household state, schema, secret, or Production data. The two unrelated repository-wide baseline failures remain disclosed above and were not weakened. Jonathan approved the release on 2026-08-28; Cloudflare run `33185717271` succeeded and the live route passed browser and HTTP proof.
 
 ## Handoff
 
-Current state is release-approved and being rebased onto current `main` for final verification and publication. No Production data or schema action is involved.
+The roadmap museum release is public and live at `https://hearth-books.jonathan-beaulne123.workers.dev/roadmap/`. No Production data or schema action was involved. Next roadmap additions must remain additive and pass the same evidence, canonical-separation, and explicit release gates.
