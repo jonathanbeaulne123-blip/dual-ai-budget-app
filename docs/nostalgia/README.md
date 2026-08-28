@@ -23,5 +23,6 @@ Sheets-era material (clasp, Phases 0–5, Apps Script) stays in [../reference/](
 | [HERCULES.md](HERCULES.md) | Companion research dump and launch essay |
 | [AUDIT_OFFICE.md](AUDIT_OFFICE.md) | Investor-visible GL launch essay |
 | [ACCOUNTS.md](ACCOUNTS.md) | Accounts Floor launch essay |
+| [HEARTH_ROADMAP_2026-08-23.md](HEARTH_ROADMAP_2026-08-23.md) | Aug 23 “Big Thinking” Hearth roadmap, preserved as a curated dated exhibit |
 
 Living how-to for shipped surfaces: [../HERCULES.md](../HERCULES.md), [../AUDIT_OFFICE.md](../AUDIT_OFFICE.md), [../ACCOUNTS.md](../ACCOUNTS.md).

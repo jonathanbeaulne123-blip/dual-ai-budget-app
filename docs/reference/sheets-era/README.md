@@ -35,6 +35,7 @@ A functional Sheets test build is targeted for September 1, 2026. Non-code long-
 
 ## Start here
 
+- [Aug 17 project-roadmap museum exhibit](ROADMAP_2026-08-17.md)
 - [Project charter](docs/PROJECT_CHARTER.md)
 - [Current baseline](docs/BASELINE.md)
 - [Architecture](docs/ARCHITECTURE.md)

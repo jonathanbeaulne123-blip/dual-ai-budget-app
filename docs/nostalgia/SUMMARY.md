@@ -6,6 +6,15 @@ Living law: [../STRATEGY.md](../STRATEGY.md).
 
 ---
 
+## Two dated roadmap exhibits
+
+- **Aug 17, 2026 — Budget App project roadmap.** The original Sheets / Apps Script application is preserved under [reference/sheets-era/ROADMAP_2026-08-17.md](../reference/sheets-era/ROADMAP_2026-08-17.md). It imagined “The App” as the last phase.
+- **Aug 23, 2026 — Hearth Roadmap, Big Thinking.** [HEARTH_ROADMAP_2026-08-23.md](HEARTH_ROADMAP_2026-08-23.md) preserves the first systems-level map that connected trust gates, two phones, family-office controls, Hercules, and long-horizon rails.
+
+Both are museum exhibits. Neither is the maintained plan.
+
+---
+
 ## Sheets era (through `v0.0.31`)
 
 Google Sheets + Apps Script. Git tag `sheets-v0.0.31`. Full snapshot: [../reference/sheets-era/](../reference/sheets-era/).

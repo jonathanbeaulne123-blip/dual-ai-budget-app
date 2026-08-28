@@ -1,18 +1,56 @@
 window.HEARTH_ROADMAP_DATA = Object.freeze({
-  schemaVersion: 1,
+  schemaVersion: 2,
   meta: {
-    title: "Hearth product health and investor roadmap",
+    title: "Hearth living roadmap and museum",
     shortTitle: "Hearth roadmap",
     lastUpdated: "2026-08-27",
     auditAsOf: "August 27, 2026",
     auditBaseline: "main@93df0ec",
-    siteBaseline: "main@001fa6c",
+    siteBaseline: "main@86e811c",
     classification: "Pre-traction",
     posture: "Design-partner validation",
     access: "Public",
-    summary: "Hearth is a credible technical and product asset, not yet a demonstrated business. Protect the accounting kernel, complete first trustworthy value, and replace unknown business rows with measured cohorts before expanding scope.",
-    disclosure: "This site is a dated planning and evidence artifact. Scores are audit judgments. External benchmarks are context, not achieved Hearth performance.",
+    summary: "Hearth is building a household general ledger two people can trust—and a companion kitchen that makes the books a habit. The living roadmap protects that vision with proof gates; the museum shows how far the project has travelled.",
+    disclosure: "The living sections follow current canon. Audit scores are dated judgments, external benchmarks are context rather than achieved performance, and museum exhibits are frozen history—not instructions or current status.",
   },
+
+  vision: {
+    eyebrow: "The product in full",
+    title: "A household general ledger people want to open",
+    lead: "Hearth is a Canada-first household general ledger and companion kitchen for two people. It makes the ordinary work of money—capturing a grocery, understanding a card payment, correcting a mistake, reconciling an account, and sitting down together each month—truthful enough to trust and warm enough to return to.",
+    paragraphs: [
+      "The books come first: CAD stored as integer cents, Toronto civil dates, balanced double-entry, explicit corrections, and a trial balance that refuses to lie. That is Course A, the family office, weighted 5.",
+      "Course B, weighted 3, is the companion kitchen: Hercules, rituals, education, the chalkboard, wallet objects, and a calmer way to make the household habit stick. It is not a second product or ledger. Hercules may explain, celebrate, and invite; he never posts money, hides financial truth, ranks partners, or turns care into shame.",
+      "Hearth is phone-first for capture and action, while desktop is the household office for review and planning. Google sign-in opens a person's personal ledger and household memberships on any supported device; no phone or computer is the host. Cloud continuity is the durable cross-device target and Development path, while PGlite validates the books on each device and supports offline work.",
+      "The ambition is not ‘AI budgeting.’ It is a trustworthy shared household operating system where a companion makes financial literacy and monthly care more human without taking financial authority. The product remains pre-traction: expansion, acquisition, or capital waits for independent households to activate, return, recover, and pay without founder rescue.",
+    ],
+    principles: [
+      { label: "Books · 5", title: "Family-office truth", detail: "CAD cents, Toronto dates, double-entry, explicit Confirm, corrections, reconciliation, and audit evidence." },
+      { label: "Kitchen · 3", title: "Habit with boundaries", detail: "Hercules and rituals teach and celebrate the work. They never post, shame, compare partners, or become a second ledger." },
+      { label: "Any device", title: "No device is the host", detail: "Google membership reveals the right ledgers; cloud continuity is the durable cross-device target and Development path, and PGlite is the validated offline replica." },
+      { label: "Build posture", title: "Proof before expansion", detail: "React and TypeScript, PGlite, Supabase continuity, and Cloudflare delivery—measured first with design partners, not pitch claims." },
+    ],
+  },
+
+  milestones: [
+    { datetime: "2026-08-16", display: "Aug 16", precision: "Date recorded in artifact", era: "Sheets", title: "Workbook audit begins", detail: "The first roadmap later names this formula-level workbook audit as its starting evidence." },
+    { datetime: "2026-08-17", display: "Aug 17", precision: "Artifact date · time unrecorded", era: "Sheets", title: "Original Budget App roadmap", detail: "A spreadsheet-first nine-phase map records formula hardening, monthly sit-down tooling, goals, automation, and a future app." },
+    { datetime: "2026-08-18T23:21:49-04:00", display: "Aug 18 · 11:21 PM", precision: "Git timestamp · shown to minute", era: "Sheets", title: "Final Sheets-era workflow slice", detail: "Add Shift v0.0.31 completes the proven Apps Script delivery line before the product rebuild." },
+    { datetime: "2026-08-20T22:18:28-04:00", display: "Aug 20 · 10:18 PM", precision: "Git timestamp · shown to minute", era: "Hearth", title: "Budget App becomes Hearth", detail: "The repository begins the phone-first React and TypeScript rebuild instead of waiting for ‘The App’ as a distant phase." },
+    { datetime: "2026-08-21T01:13:53-04:00", display: "Aug 21 · 1:13 AM", precision: "Git timestamp · shown to minute", era: "Books", title: "Double-entry PGlite books", detail: "Household money starts compiling into a PostgreSQL journal with explicit accounting invariants." },
+    { datetime: "2026-08-22T01:05:25-04:00", display: "Aug 22 · 1:05 AM", precision: "Git timestamp · shown to minute", era: "Platform", title: "Cloudflare main-to-production delivery", detail: "The kitchen adopts its durable Workers + Assets release path from GitHub main." },
+    { datetime: "2026-08-22T02:28:20-04:00", display: "Aug 22 · 2:28 AM", precision: "Git timestamp · shown to minute", era: "Kitchen", title: "Hercules becomes the product face", detail: "The Maine Coon companion and kitchen rituals establish an engagement layer that never gains money authority." },
+    { datetime: "2026-08-22T05:51:25-04:00", display: "Aug 22 · 5:51 AM", precision: "Git timestamp · shown to minute", era: "Vision", title: "Dual Course becomes product law", detail: "Family-office books receive weight 5, companion and interactables weight 3, and the books win every conflict." },
+    { datetime: "2026-08-22T16:58:58-04:00", display: "Aug 22 · 4:58 PM", precision: "Git timestamp · shown to minute", era: "Experience", title: "September Office ships", detail: "Phone capture and desktop household-office review become deliberately different jobs over the same books." },
+    { datetime: "2026-08-23", display: "Aug 23", precision: "Artifact label · time unrecorded", era: "Vision", title: "Big Thinking Hearth roadmap", detail: "The second museum map connects trust gates, two phones, Auth/RLS, family-office controls, Hercules, settlement, regulated rails, and platform shape." },
+    { datetime: "2026-08-23T16:42:54-04:00", display: "Aug 23 · 4:42 PM", precision: "Git timestamp · shown to minute", era: "Hercules", title: "Grounded model boundary", detail: "Model-first chat, a bounded ledger excerpt, and Worker locks expand explanation without allowing the model to post." },
+    { datetime: "2026-08-24T01:49:46-04:00", display: "Aug 24 · 1:49 AM", precision: "Git timestamp · shown to minute", era: "Planning", title: "First living roadmap merges", detail: "A source-backed, gates-first roadmap replaces overlapping historical maps as the maintained plan." },
+    { datetime: "2026-08-24T18:24:16-04:00", display: "Aug 24 · 6:24 PM", precision: "Git timestamp · shown to minute", era: "Continuity", title: "Cloud continuity and CAS/outbox foundations", detail: "Google discovery, member scopes, PGlite acceptance, hosted compare-and-swap, and durable replay make ‘no device host’ concrete." },
+    { datetime: "2026-08-25T09:45:50-04:00", display: "Aug 25 · 9:45 AM", precision: "Git timestamp · shown to minute", era: "Trust", title: "Deny-by-default Auth/RLS applied", detail: "Anonymous household REST access is revoked and hosted continuity becomes membership-bound in Development." },
+    { datetime: "2026-08-26T20:21:45-04:00", display: "Aug 26 · 8:21 PM", precision: "Git timestamp · shown to minute", era: "Continuity", title: "Two-phone Realtime proof", detail: "Atomic shared and personal continuity plus Realtime pass the recorded two-phone smoke." },
+    { datetime: "2026-08-27T15:02:54-04:00", display: "Aug 27 · 3:02 PM", precision: "Git timestamp · shown to minute", era: "Kitchen", title: "Shift tab merges live", detail: "Shift work becomes a first-class kitchen surface while imported or scanned evidence remains review-before-post." },
+    { datetime: "2026-08-27T15:56:20-04:00", display: "Aug 27 · 3:56 PM", precision: "Git timestamp · shown to minute", era: "Roadmap", title: "Public roadmap verified live", detail: "The interactive, evidence-bounded roadmap reaches its permanent Cloudflare route after live routing verification." },
+  ],
 
   scorecards: [
     {
@@ -337,6 +375,77 @@ window.HEARTH_ROADMAP_DATA = Object.freeze({
       title: "Durable roadmap website foundation",
       detail: "Separated content from rendering and added a read-only, responsive route designed for additive project updates.",
     },
+    {
+      date: "2026-08-27",
+      title: "Living vision, milestone timeline, and roadmap museum",
+      detail: "Added the full Dual Course product promise, evidence-backed project times, and separate frozen exhibits for the August 17 Sheets map and August 23 big-thinking map without changing canonical phase counts.",
+    },
+  ],
+
+  museum: [
+    {
+      id: "sheets-2026-08-17",
+      date: "2026-08-17",
+      dateLabel: "August 17, 2026",
+      exhibit: "Exhibit 01",
+      title: "Budget App — Project Roadmap",
+      era: "Google Sheets + Apps Script",
+      status: "Frozen historical artifact · superseded as planning input",
+      provenance: "Original HTML application supplied by Jonathan. It identifies an August 16 workbook audit and says it was updated August 17; no trustworthy wall-clock time is recorded.",
+      summary: "The first map treated the spreadsheet as the proving ground and ‘The App’ as Phase 6. It captured the project’s earliest durable instincts: normalized data, honest formulas, monthly planning, shift income, goals, imports, and a future natural-language assistant.",
+      outline: [
+        "Phase 0 — Application-Ready Data Architecture",
+        "Phase 1 — Fix the Foundation",
+        "Phase 1.5 — Everyday-Use Tooling & Code Health",
+        "Phase 1.6 — Formula & Performance Hardening",
+        "Phase 2 — Financial Engine",
+        "Phase 3 — Dashboard 2.0",
+        "Phase 4 — Goals & Fun",
+        "Phase 5 — Automation",
+        "Phase 6 — The App",
+      ],
+      changed: [
+        "The app arrived three days later as Hearth instead of waiting for the spreadsheet roadmap to finish.",
+        "The normalized ledger instinct became command-shaped, double-entry PGlite books rather than a direct workbook migration.",
+        "Shift tracking, monthly sit-down, goals, dashboard context, imports, and an assistant all survived in reshaped form.",
+        "Sheets and clasp became reference material; they are no longer the runtime or planning authority.",
+      ],
+      source: {
+        label: "Open the frozen August 17 application",
+        url: "./museum/2026-08-17-sheets-era-roadmap.html",
+      },
+    },
+    {
+      id: "big-thinking-2026-08-23",
+      date: "2026-08-23",
+      dateLabel: "August 23, 2026",
+      exhibit: "Exhibit 02",
+      title: "Hearth Roadmap — Big Thinking",
+      era: "First systems-level Hearth map",
+      status: "Frozen curated exhibit · superseded as planning input",
+      provenance: "Claude artifact supplied by Jonathan, labelled ‘Audited 2026-08-23 (Toronto)’ at baseline main@75574e4. The source is a hosted private artifact, so this public exhibit is a curator summary rather than a reconstructed chat transcript.",
+      summary: "This was the moment the project’s ambition became legible as one system: protect the books, make two phones boring, bind cloud access to identity, grow into family-office controls, and use Hercules and household rhythm without weakening financial truth.",
+      outline: [
+        "Contain trust leaks and reconcile the delivery surface",
+        "Complete the Bianca-ready local monthly loop",
+        "Make two phones boring and lossless",
+        "Auth + RLS and explicit cloud consent",
+        "Reconciliation and safe intake",
+        "Family-office-grade controls",
+        "Learning, Hercules, and ambient household rhythm",
+        "Settlement, cards, regulated rails, and other households—explicitly gated",
+      ],
+      changed: [
+        "Its stop-ship concerns drove fail-closed acceptance, zero-network unlinked behavior, member-scoped AI disclosure, CAS/outbox, and environment binding.",
+        "Auth/RLS, member-personal scopes, atomic continuity, and Realtime moved from gates into Development evidence within days.",
+        "Dual Course remained the durable vision, while dated chapter-style statuses moved into the museum.",
+        "The current roadmap adds product-health, accessibility, investor, design-partner, and unit-economics gates that this map did not measure.",
+      ],
+      source: {
+        label: "Open the original Claude artifact (access may be required)",
+        url: "https://claude.ai/code/artifact/4950ec46-7ac8-4efd-93ef-2df89f608ccd",
+      },
+    },
   ],
 
   sources: {
@@ -363,6 +472,14 @@ window.HEARTH_ROADMAP_DATA = Object.freeze({
     audit: {
       label: "Hearth — full dated product-health audit",
       url: "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/main/docs/PRODUCT_HEALTH_AND_VIABILITY_AUDIT_2026-08-27.md",
+    },
+    strategy: {
+      label: "Hearth — living Dual Course strategy",
+      url: "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/main/docs/STRATEGY.md",
+    },
+    continuity: {
+      label: "Hearth — Google-account cloud continuity promise",
+      url: "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/main/docs/CLOUD_CONTINUITY.md",
     },
   },
 });
