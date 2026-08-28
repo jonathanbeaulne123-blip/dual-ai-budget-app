@@ -101,4 +101,4 @@ Semantic correction implemented: every tab, including phone Home, shows `LedgerP
 
 ## Handoff
 
-Next owner: Jonathan reviews draft PR #244. Not merged, not deployed, not live.
+Next owner: Jonathan opens this branch’s kitchen from the agent reply’s trycloudflare URL (or Cursor Desktop `http://127.0.0.1:5173/` with this agent tab active). Not merged, not deployed, not the live kitchen. Vite allows `.trycloudflare.com` so the public tunnel is not blocked.

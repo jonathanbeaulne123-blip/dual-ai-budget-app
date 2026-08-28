@@ -32,6 +32,9 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    // Cloud Agent quick tunnels (trycloudflare.com) so Jonathan can click a URL
+    // without publishing the live kitchen. Localhost stays allowed by default.
+    allowedHosts: [".trycloudflare.com"],
     proxy: {
       "/hercules/chat": {
         target: "https://hearth-books.jonathan-beaulne123.workers.dev",

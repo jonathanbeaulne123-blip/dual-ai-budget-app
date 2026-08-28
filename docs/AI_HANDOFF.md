@@ -35,7 +35,7 @@
 
 **Remaining uncertainty:** Demo seed has no `scope: personal` accounts, so Personal Books compile empty by design. Demo Visa can be paid off so owed may be $0 even when personal-visibility lines exist; the $70.50 owed proof uses a catalog fixture. Ask SQL / Import mapping / close-pack export still run on accepted books (bank truth; Dual Course). Shared Books can still list Personal-scope backing **names** (not last4) because journal compiles accepted books. 820/1024/1440 stills were not captured as separate files.
 
-**Next owner:** Jonathan — review [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244). Do not merge or deploy unless you ask.
+**Next owner:** Jonathan — click the trycloudflare URL in the latest agent reply (this branch’s Vite, not the live kitchen). Then: Open the demo kitchen table → I am Jonathan. On Cursor Desktop, the same kitchen is `http://127.0.0.1:5173/` while this agent tab is active. Do not merge or deploy unless you ask.
 
 **Worksession:** [`worksessions/2026-08-28-shared-ledger-story-implementation.md`](worksessions/2026-08-28-shared-ledger-story-implementation.md)
 
