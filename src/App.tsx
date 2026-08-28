@@ -368,7 +368,7 @@ type Guard =
   | { kind: "postRecurrence"; recurrenceId: string; summary: string }
   | { kind: "saveRepeating"; draft: RepeatingDraft; summary: string }
   | { kind: "saveWorkJob"; job: WorkJob; summary: string }
-  | { kind: "postDueAll"; summary: string }
+  | { kind: "postDueAll"; summary: string; recurrenceIds: string[] }
   | { kind: "postVisit"; draft: VisitPostDraft; summary: string }
   | { kind: "settleClaim"; claimId: string; summary: string }
   | { kind: "writeOffClaim"; claimId: string; summary: string }
@@ -1632,11 +1632,12 @@ export function App() {
     if (duePreviewOffered.current === previewKey) return;
     if (duePreviewDismissed(environment, household.householdId, today)) return;
 
-    const rows = dueRecurrencePreview(household, today);
+    if (!experience || !experience.ok) return;
+    const rows = dueRecurrencePreview(experience.scopedHousehold, today);
     if (!rows.length) return;
     duePreviewOffered.current = previewKey;
     setGuard({ kind: "duePreview", rows });
-  }, [adding, booting, environment, guard, household, today]);
+  }, [adding, booting, environment, experience, guard, household, today]);
 
   function rememberSession(next: Session) {
     const remembered = { ...next, householdId: next.householdId ?? householdRef.current?.householdId };
@@ -3513,7 +3514,7 @@ export function App() {
           busy={busy}
           onCommand={(fn) => { void run(fn); }}
           onAskPost={(recurrenceId, summary) => setGuard({ kind: "postRecurrence", recurrenceId, summary })}
-          onAskPostDue={(_count, summary) => setGuard({ kind: "postDueAll", summary })}
+          onAskPostDue={(recurrenceIds, summary) => setGuard({ kind: "postDueAll", summary, recurrenceIds })}
           onAskSaveRepeating={(draft, summary) => {
             setSaveRepeatingPostFirst(false);
             setGuard({ kind: "saveRepeating", draft, summary });
@@ -3895,11 +3896,14 @@ export function App() {
             <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setGuard({ kind: "stress-random" })}>Reload random data</button>
             <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setGuard({ kind: "stress-pretty" })}>Display pretty numbers</button>
             <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => {
-              const due = household.recurrences.filter((item) => item.active && item.nextDate <= today).length;
+              const due = experience && experience.ok
+                ? experience.scopedHousehold.recurrences.filter((item) => item.active && item.nextDate <= today)
+                : [];
               setGuard({
                 kind: "postDueAll",
-                summary: due
-                  ? `This posts ${due} due repeating ${due === 1 ? "item" : "items"} into the books.`
+                recurrenceIds: due.map((item) => item.id),
+                summary: due.length
+                  ? `This posts ${due.length} due repeating ${due.length === 1 ? "item" : "items"} into the books.`
                   : "Nothing is due today. Open Calendar to see what is coming.",
               });
             }}>Post due recurring</button>
@@ -4837,6 +4841,7 @@ export function App() {
             dismissDuePreview(environment, household.householdId, today);
             setGuard({
               kind: "postDueAll",
+              recurrenceIds: rows.map((row) => row.recurrenceId),
               summary: `This posts ${rows.length} due repeating ${rows.length === 1 ? "item" : "items"} into the books.`,
             });
           }}
@@ -4932,8 +4937,9 @@ export function App() {
           busy={busy}
           onCancel={() => setGuard(null)}
           onConfirm={() => {
+            const ids = guard.recurrenceIds;
             setGuard(null);
-            void run((current) => postDueRecurrences(current, today));
+            void run((current) => postDueRecurrences(current, today, ids));
           }}
         />
       )}

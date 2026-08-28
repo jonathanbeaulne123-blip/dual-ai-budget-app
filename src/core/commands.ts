@@ -2627,11 +2627,14 @@ export function setRecurrenceGoogleSync(
   );
 }
 
-export function postDueRecurrences(household: Household, today: DateKey): CommitResult {
+export function postDueRecurrences(household: Household, today: DateKey, recurrenceIds?: string[]): CommitResult {
   const previous = cloneHousehold(household);
   let next = cloneHousehold(household);
   const postedIds: string[] = [];
-  const due = next.recurrences.filter((item) => item.active && item.nextDate <= today);
+  const selected = recurrenceIds
+    ? recurrenceIds.map((id) => next.recurrences.find((item) => item.id === id)).filter((item): item is Recurrence => Boolean(item))
+    : next.recurrences.filter((item) => item.active && item.nextDate <= today);
+  const due = selected.filter((item) => item.active && item.nextDate <= today);
   if (!due.length) throw new ValidationError("Nothing is due today.");
   for (const item of due) {
     const result = postOneRecurrence(next, item.id, today);

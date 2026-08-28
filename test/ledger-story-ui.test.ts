@@ -50,6 +50,9 @@ describe("D-164 ledger story UI fences", () => {
     expect(books).not.toContain("compileHousehold(household)");
     expect(books).toContain("HouseholdFundPanel household={booksHousehold}");
     expect(books).toContain("closeBooksMonth(booksHousehold");
+    expect(books).not.toContain("books.chart[0]");
+    expect(app).toContain("postDueRecurrences(current, today, ids)");
+    expect(app).toContain("recurrenceIds");
     expect(office).toContain("integrityFindings");
     expect(office).toContain("buildSharedLedgerStory(booksHousehold");
     expect(office).toContain("PostcardBody household={booksHousehold}");

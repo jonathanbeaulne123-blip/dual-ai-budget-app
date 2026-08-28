@@ -89,7 +89,7 @@ export function CalendarPage(props: {
   busy: boolean;
   onCommand: (fn: (current: Household) => CommitResult) => void;
   onAskPost: (recurrenceId: string, summary: string) => void;
-  onAskPostDue: (count: number, summary: string) => void;
+  onAskPostDue: (recurrenceIds: string[], summary: string) => void;
   onAskSaveRepeating: (draft: RepeatingDraft, summary: string) => void;
   onAskVisit: (draft: VisitPostDraft, summary: string) => void;
   onAskSettle: (claimId: string, summary: string) => void;
@@ -234,7 +234,7 @@ export function CalendarPage(props: {
           <div className="calendar-hero-actions">
             <button className="ghost" onClick={props.onOpenPlan}>Open plan</button>
             {due.length > 0 && (
-              <button className="ghost" onClick={() => props.onAskPostDue(due.length, `This posts ${due.length} due repeating ${due.length === 1 ? "item" : "items"} into the books.`)}>
+              <button className="ghost" onClick={() => props.onAskPostDue(due.map((item) => item.id), `This posts ${due.length} due repeating ${due.length === 1 ? "item" : "items"} into the books.`)}>
                 Mark due paid
               </button>
             )}

@@ -15,6 +15,7 @@ import {
   findingsSafeForView,
   ledgerRouteContract,
   postEntry,
+  postDueRecurrences,
   projectHouseholdFund,
   projectLedgerExperience,
   proposeHouseholdFundContribution,
@@ -169,6 +170,39 @@ describe("projectLedgerExperience", () => {
     expect(scoped.upcomingReserveCents).toBe(0);
     expect(accepted.freeToSpendCents).toBe(scoped.freeToSpendCents - 5000);
     expect(buildSharedLedgerStory(shared.booksHousehold, DATE).opening.upcomingReserveCents).toBe(5000);
+  });
+
+  it("posts only Shared-visible due recurrences so a hidden Personal row cannot void Confirm", () => {
+    const { household: seeded, backingId } = withPrivateBacking();
+    let household = addRecurrence(seeded, {
+      cadence: "monthly",
+      nextDate: DATE,
+      type: "expense",
+      amount: 10,
+      accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-LIFE-FUN",
+      note: "Shared due",
+    }).household;
+    household = addRecurrence(household, {
+      cadence: "monthly",
+      nextDate: DATE,
+      type: "expense",
+      amount: 50,
+      accountId: backingId,
+      subcategoryId: "SUB-LIFE-FUN",
+      note: "Personal Fund-backed",
+      fundingDefault: { fundId: HOUSEHOLD_FUND_ID, fundedCents: "full", destinationAccountId: "ACC-VISA" },
+    }).household;
+    const shared = projectLedgerExperience(household, JONATHAN, "household", DATE);
+    if (!shared.ok) throw new Error("expected ok");
+    const visibleIds = shared.scopedHousehold.recurrences
+      .filter((item) => item.active && item.nextDate <= DATE)
+      .map((item) => item.id);
+    expect(visibleIds.length).toBeGreaterThan(0);
+    expect(() => postDueRecurrences(shared.booksHousehold, DATE)).toThrow(/Personal account/);
+    const posted = postDueRecurrences(shared.booksHousehold, DATE, visibleIds);
+    expect(posted.postedIds.length).toBeGreaterThan(0);
+    expect(posted.household.recurrences.find((item) => item.accountId === backingId)?.nextDate).toBe(DATE);
   });
 
   it("restores partner Personal rows when a Shared presentation write is persisted", () => {
