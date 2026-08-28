@@ -105,7 +105,7 @@ export function NotebookBody({
     <section className="hearth-notebook" aria-label={title}>
       <header className="hearth-notebook-head">
         <h3>{title}</h3>
-        <button type="button" className="hearth-notebook-close" onClick={onClose} aria-controls={panelId}>
+        <button type="button" className="hearth-notebook-close" onClick={onClose} aria-controls={panelId} aria-expanded={true}>
           Close
         </button>
       </header>
@@ -172,11 +172,11 @@ export function PaperBars({
   );
 }
 
-/** Weekday spark from posted tip cents. Copper-badge as a projection. */
+/** Weekday spark from posted tip cents. Opt in to a Projection pill only for forward ranges. */
 export function PaperSpark({
   points,
   empty = "No posted tips in the last four weeks.",
-  projection = true,
+  projection = false,
 }: {
   points: PaperSparkPoint[];
   empty?: string;
