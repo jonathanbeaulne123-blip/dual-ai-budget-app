@@ -1,13 +1,13 @@
 # Hearth worksession — 7shifts evidence mesh and automation
 
-- **Status:** INERT DEVELOPMENT VAULT DEPLOYED; ALL ACTIVATION FLAGS OFF
+- **Status:** MERGED #231; INERT DEVELOPMENT VAULT LIVE; ALL ACTIVATION FLAGS OFF
 - **Opened:** 2026-08-28 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `codex/7shifts-evidence-mesh`
 - **Baseline SHA:** `4a7ea7e` (current `origin/main` after Toast OCR device-hive reconciliation)
-- **Head SHA:** PR #231 branch tip
+- **Head SHA:** `e342ae9067d4a548489430435f0255f4985dcb41` (merged `main`)
 - **PR or issue:** [#231](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/231)
 - **Risk:** Release
 - **Decision owner:** Jonathan
@@ -111,4 +111,4 @@ Hearth can retain and reconcile the 7shifts evidence an employee can deliberatel
 
 ## Handoff
 
-Local implementation, proof, and the approved inert Development infrastructure gate are complete. PR #231 is push/merge authorized. Capture and automation remain inactive, and nothing was applied to Production. Jonathan remains the decision owner for each later release gate.
+Implementation, proof, and the inert Development infrastructure gate are complete and merged through PR #231. Post-merge CI and the automatic Cloudflare Worker deployment passed; Worker version `9a1606cd-a49c-4bef-9da5-c75468e62f5a` is live with all five activation flags false. Capture and automation remain inactive, and nothing was applied to Production. Jonathan remains the decision owner for each later release gate.
