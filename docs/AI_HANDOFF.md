@@ -1,5 +1,21 @@
 # AI Task and Handoff Standard
 
+## OpenAI tip-sheet 503 fix (D-152) (2026-08-27)
+
+**Status:** Shipping on `cursor/fix-openai-tip-scan-403c`. Risk: **Medium**. Development kitchen.
+
+**Household outcome:** Choosing OpenAI for tip-sheet scan drafts Confirm again instead of failing with “OpenAI could not read that tip sheet.”
+
+**Budget delta (5):** `+1` — paid vision path works for dense slips again.
+
+**Engagement delta (3):** `+1` — provider chip matches real behavior.
+
+**Root cause:** OpenAI `strict: true` rejected `shiftDraft` (properties without matching `required`). Schema now null-unions every tip field under `required`; `scanOpenAI` retries `json_object` / plain JSON if strict is refused.
+
+**Verification:** `pnpm check` → **955 passed / 2 skipped**.
+
+**Next owner:** Merge/deploy, hard-refresh, Shift tip sheet → OpenAI → retake; Confirm still posts.
+
 ## Tip-sheet provider choice + clarity-gated camera (D-152) (2026-08-27)
 
 **Status:** Merged via [#225](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/225) onto `main` (`94f8cd0`). Kitchen Worker **live** via Cloudflare Workers run `33124596368` (Deploy green). Risk: **Medium**. Not Production household data.

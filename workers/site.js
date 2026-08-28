@@ -893,23 +893,45 @@ const DOCUMENT_SCHEMA = {
         },
       ],
     },
+    // OpenAI strict structured outputs require every property key in `required`.
+    // Optional tip-sheet fields are emulated with null unions (not omitted keys).
     shiftDraft: {
       anyOf: [
         { type: "null" },
         {
           type: "object",
           additionalProperties: false,
+          required: [
+            "date",
+            "workedHours",
+            "salesCents",
+            "foodSalesCents",
+            "alcoholSalesCents",
+            "cashTipsCents",
+            "cardTipsCents",
+            "customersServed",
+            "staffingCount",
+            "eventTag",
+          ],
           properties: {
-            date: { type: "string" },
-            workedHours: { type: "number" },
-            salesCents: { type: "integer" },
-            foodSalesCents: { type: "integer" },
-            alcoholSalesCents: { type: "integer" },
-            cashTipsCents: { type: "integer" },
-            cardTipsCents: { type: "integer" },
-            customersServed: { type: "integer" },
-            staffingCount: { type: "integer" },
-            eventTag: { type: "string", enum: ["regular", "holiday", "sports", "festival", "private_party", "short_staffed", "vacation_cover", "illness_cover", "other"] },
+            date: { anyOf: [{ type: "string" }, { type: "null" }] },
+            workedHours: { anyOf: [{ type: "number" }, { type: "null" }] },
+            salesCents: { anyOf: [{ type: "integer" }, { type: "null" }] },
+            foodSalesCents: { anyOf: [{ type: "integer" }, { type: "null" }] },
+            alcoholSalesCents: { anyOf: [{ type: "integer" }, { type: "null" }] },
+            cashTipsCents: { anyOf: [{ type: "integer" }, { type: "null" }] },
+            cardTipsCents: { anyOf: [{ type: "integer" }, { type: "null" }] },
+            customersServed: { anyOf: [{ type: "integer" }, { type: "null" }] },
+            staffingCount: { anyOf: [{ type: "integer" }, { type: "null" }] },
+            eventTag: {
+              anyOf: [
+                {
+                  type: "string",
+                  enum: ["regular", "holiday", "sports", "festival", "private_party", "short_staffed", "vacation_cover", "illness_cover", "other"],
+                },
+                { type: "null" },
+              ],
+            },
           },
         },
       ],
@@ -1112,32 +1134,50 @@ async function scanOpenAI(env, imageDataUrl, documentHint) {
   if (!key) return null;
   // Dense POS tip sheets need a strong vision model; mini is too lossy for label mapping.
   const model = String(env.DOCUMENT_SCAN_OPENAI_MODEL || env.OPENAI_MODEL || "gpt-4o").trim() || "gpt-4o";
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model,
-      temperature: 0,
-      max_tokens: 4000,
+  const messages = [
+    { role: "system", content: DOCUMENT_SYSTEM },
+    {
+      role: "user",
+      content: [
+        { type: "text", text: documentScanUserText(documentHint) },
+        { type: "image_url", image_url: { url: imageDataUrl, detail: "high" } },
+      ],
+    },
+  ];
+  // Prefer strict schema; fall back if OpenAI rejects the schema or returns empty content.
+  const formats = [
+    {
       response_format: {
         type: "json_schema",
         json_schema: { name: "financial_document", strict: true, schema: DOCUMENT_SCHEMA },
       },
-      messages: [
-        { role: "system", content: DOCUMENT_SYSTEM },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: documentScanUserText(documentHint) },
-            { type: "image_url", image_url: { url: imageDataUrl, detail: "high" } },
-          ],
-        },
-      ],
-    }),
-  });
-  if (!response.ok) return null;
-  const data = await response.json();
-  return sanitizeDocumentResult(parseModelJson(data?.choices?.[0]?.message?.content));
+    },
+    { response_format: { type: "json_object" } },
+    {},
+  ];
+  for (const format of formats) {
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model,
+          temperature: 0,
+          max_tokens: 4000,
+          messages,
+          ...format,
+        }),
+      });
+      if (!response.ok) continue;
+      const data = await response.json();
+      const content = data?.choices?.[0]?.message?.content;
+      const sanitized = sanitizeDocumentResult(parseModelJson(content));
+      if (sanitized) return sanitized;
+    } catch {
+      // Try the next response_format.
+    }
+  }
+  return null;
 }
 
 async function scanAnthropic(env, imageDataUrl, documentHint) {
