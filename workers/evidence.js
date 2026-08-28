@@ -12,6 +12,7 @@ const R2_STORAGE_BUDGET_BYTES = 1024 * 1024 * 1024;
 const R2_OBJECT_BUDGET = 100_000;
 const R2_CLASS_A_PUT_BUDGET = 10_000;
 const R2_CLASS_B_GET_BUDGET = 100_000;
+const DERIVATION_STALE_MS = 5 * 60 * 1000;
 const CAPTURE_KINDS = new Set([
   "browser-structured", "browser-dom", "selected-json", "selected-csv", "selected-ics",
   "calendar-sync", "email", "gmail-7shifts-email", "screenshot", "pdf", "ios-share", "local-ocr", "cloud-vision",
@@ -224,27 +225,40 @@ async function createCapture(request, env, config, url) {
   return storeCapture(env, config, scope, captureKind, contentType, bytes);
 }
 
+async function findGmailCapture(config, scope, digest) {
+  return config.db.prepare(
+    "SELECT evidence_id, state, capture_kind, content_type, byte_length, revision, created_at, updated_at FROM evidence_items WHERE environment = ? AND auth_user_id = ? AND household_id = ? AND member_id = ? AND capture_kind = 'gmail-7shifts-email' AND plaintext_sha256 = ? AND state != 'deleted' ORDER BY created_at LIMIT 1",
+  ).bind(scope.environment, scope.authUserId, scope.householdId, scope.memberId, digest).first();
+}
+
+async function gmailDuplicateResult(config, scope, existing) {
+  await audit(config, scope, existing.evidence_id, "capture-deduplicated", existing.state);
+  const updatedAt = Date.parse(String(existing.updated_at || ""));
+  if (["ready", "deriving"].includes(existing.state)
+    && Number.isFinite(updatedAt)
+    && Date.now() - updatedAt >= DERIVATION_STALE_MS) {
+    await config.queue.send({ evidenceId: existing.evidence_id, revision: Number(existing.revision) });
+    await audit(config, scope, existing.evidence_id, "derivation-requeued", existing.state);
+  }
+  return {
+    evidenceId: existing.evidence_id,
+    state: existing.state,
+    captureKind: existing.capture_kind,
+    contentType: existing.content_type,
+    byteLength: Number(existing.byte_length),
+    revision: Number(existing.revision),
+    capturedAt: existing.created_at,
+    updatedAt: existing.updated_at,
+    duplicate: true,
+  };
+}
+
 async function storeCapture(env, config, scope, captureKind, contentType, bytes, state = "ready") {
   if (!bytes.byteLength) throw new Error("Evidence capture is empty.");
   const digest = await sha256(bytes);
   if (captureKind === "gmail-7shifts-email") {
-    const existing = await config.db.prepare(
-      "SELECT evidence_id, state, capture_kind, content_type, byte_length, revision, created_at, updated_at FROM evidence_items WHERE environment = ? AND auth_user_id = ? AND household_id = ? AND member_id = ? AND capture_kind = 'gmail-7shifts-email' AND plaintext_sha256 = ? AND state != 'deleted' ORDER BY created_at LIMIT 1",
-    ).bind(scope.environment, scope.authUserId, scope.householdId, scope.memberId, digest).first();
-    if (existing) {
-      await audit(config, scope, existing.evidence_id, "capture-deduplicated", existing.state);
-      return {
-        evidenceId: existing.evidence_id,
-        state: existing.state,
-        captureKind: existing.capture_kind,
-        contentType: existing.content_type,
-        byteLength: Number(existing.byte_length),
-        revision: Number(existing.revision),
-        capturedAt: existing.created_at,
-        updatedAt: existing.updated_at,
-        duplicate: true,
-      };
-    }
+    const existing = await findGmailCapture(config, scope, digest);
+    if (existing) return gmailDuplicateResult(config, scope, existing);
   }
   const evidenceId = randomId("evi_");
   const objectKey = `v1/${evidenceId}`;
@@ -265,6 +279,14 @@ async function storeCapture(env, config, scope, captureKind, contentType, bytes,
   } catch (error) {
     await config.raw.delete(objectKey);
     await releaseR2Storage(config, bytes.byteLength);
+    // The digest lookup above is an optimization, not the authority. Two
+    // overlapping scrubs can both miss it before the unique D1 index chooses a
+    // winner. Recover that race as an idempotent duplicate after removing this
+    // request's unreferenced R2 object and storage reservation.
+    if (captureKind === "gmail-7shifts-email") {
+      const existing = await findGmailCapture(config, scope, digest);
+      if (existing) return gmailDuplicateResult(config, scope, existing);
+    }
     throw error;
   }
   if (state === "ready" || state === "quarantined") await config.queue.send({ evidenceId, revision: 1 });
@@ -1069,7 +1091,24 @@ async function persistDerivation(config, row, derived) {
     config.db.prepare("DELETE FROM evidence_schema_drift WHERE evidence_id = ? AND revision = ?").bind(row.evidence_id, row.revision),
   ];
   const canonicalKeys = [];
+  // Multipart mail commonly repeats the same shift in text/plain and
+  // text/html. One Evidence item has one derivative per canonical shift, while
+  // every source-located observation and drift fact remains preserved.
+  const recordsByCanonicalSeed = new Map();
   for (const record of derived.records) {
+    const existing = recordsByCanonicalSeed.get(record.canonicalSeed);
+    if (!existing) {
+      recordsByCanonicalSeed.set(record.canonicalSeed, {
+        ...record,
+        observations: [...record.observations],
+        drift: [...record.drift],
+      });
+      continue;
+    }
+    existing.observations.push(...record.observations);
+    existing.drift.push(...record.drift);
+  }
+  for (const record of recordsByCanonicalSeed.values()) {
     const canonicalShiftKey = `s7shift_${await sha256(new TextEncoder().encode(record.canonicalSeed))}`;
     const providerSubjectKey = record.rawSubject
       ? await protectedProviderKey("s7subject", record.rawSubject)
