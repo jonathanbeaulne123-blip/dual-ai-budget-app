@@ -344,3 +344,88 @@ button.hearth-paper-tile:focus-visible {
     border: 2px solid CanvasText;
   }
 }
+
+/* ── paper infographics (D-156) ── */
+.hearth-paper-bars,
+.hearth-paper-spark {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+.hearth-paper-caption {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.hearth-paper-bar-row {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+.hearth-paper-bar-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.hearth-paper-bar-track {
+  display: block;
+  height: 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--paper-2) 80%, var(--line));
+  overflow: hidden;
+}
+.hearth-paper-bar-track i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  min-width: 0;
+  transition: width 0.28s ease;
+}
+.hearth-paper-bar-track i.tone-pine { background: var(--pine); }
+.hearth-paper-bar-track i.tone-copper { background: var(--copper); }
+.hearth-paper-bar-track i.tone-ink { background: color-mix(in srgb, var(--ink) 55%, var(--pine)); }
+.hearth-paper-bar-value {
+  font-family: var(--display);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+.hearth-paper-spark .pill.proj {
+  justify-self: start;
+  background: color-mix(in srgb, var(--copper) 12%, var(--card));
+  color: var(--ink);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.hearth-paper-spark-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  min-height: 64px;
+}
+.hearth-paper-spark-col {
+  flex: 1;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+}
+.hearth-paper-spark-stem {
+  width: 10px;
+  border-radius: 6px 6px 2px 2px;
+  background: color-mix(in srgb, var(--copper) 70%, var(--gold));
+}
+.hearth-paper-spark-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.hearth-paper-empty { margin: 8px 0 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hearth-paper-bar-track i {
+    transition: none;
+  }
+}

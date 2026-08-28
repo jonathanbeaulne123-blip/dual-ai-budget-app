@@ -1,0 +1,136 @@
+/* Wide paper office (D-156) — composed, not a stretched phone. */
+
+.office-wide {
+  display: grid;
+  gap: 16px;
+  margin-top: 8px;
+}
+.office-wide-desk {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 18px;
+  align-items: start;
+}
+.office-wide-left,
+.office-wide-right {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.office-wide-seals .hearth-wax-seal {
+  min-height: 88px;
+  padding: 16px 10px;
+}
+.office-wide-seals .hearth-seal-value {
+  font-size: 1.2rem;
+}
+.office-wide-mosaic .hearth-story-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.office-wide-mosaic .hearth-paper-tile {
+  min-height: 96px;
+  padding: 12px 14px;
+}
+.office-wide-mosaic .hearth-tile-value {
+  font-size: 1.25rem;
+  white-space: normal;
+}
+.office-wide-hero-wrap {
+  min-width: 0;
+}
+.office-wide-hero {
+  width: 100%;
+  min-height: 180px;
+  padding: 16px 18px 14px;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+.office-wide-hero-net {
+  display: block;
+  font-family: var(--display);
+  font-size: clamp(1.8rem, 3.2vw, 2.6rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+.office-wide-hero .hearth-paper-bars {
+  margin-top: 8px;
+}
+.office-wide-notebook .hearth-notebook {
+  min-height: 220px;
+}
+.office-wide.is-adding .office-wide-notebook,
+.office-wide.is-adding .office-wide-seals {
+  pointer-events: none;
+}
+.office-wide-notebook-inner {
+  display: grid;
+  gap: 10px;
+}
+.office-wide-drawer {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--paper) 88%, var(--card));
+  padding: 8px 12px;
+}
+.office-wide-drawer summary {
+  min-height: 44px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.office-wide-drawer-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0 10px;
+}
+.office-wide .ph-chip {
+  min-height: 44px;
+  padding: 10px 12px;
+  background: var(--paper-2, var(--paper));
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  color: var(--ink);
+  cursor: pointer;
+}
+.office-wide .ph-chip b { font-weight: 600; }
+.office-wide .ph-chip:focus-visible { outline: 2px solid var(--pine); outline-offset: 2px; }
+.office-wide .ph-pin {
+  justify-self: end;
+  min-height: 44px;
+  min-width: 44px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--muted);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.office-wide .ph-pin.is-on {
+  border-color: var(--pine);
+  color: var(--pine);
+}
+
+@media (max-width: 899px) {
+  .office-wide-desk {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .office-wide-hero,
+  .office-wide-mosaic .hearth-paper-tile {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .office-wide-hero {
+    border: 2px solid CanvasText;
+  }
+}
