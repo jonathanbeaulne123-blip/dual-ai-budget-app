@@ -1,13 +1,13 @@
 # Hearth worksession — Household Fund
 
-- **Status:** READY FOR LOCAL SEAL
+- **Status:** CLOSED — local implementation review-ready; Release gates remain
 - **Opened:** 2026-08-28 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `codex/household-fund`
 - **Baseline SHA:** `efbe5ed5118b0e6c2c942d318dd4e9643eb163d1`
-- **Head SHA:** local working tree; not committed
+- **Implementation SHA:** `34f3ca2dc3d4aaf71b332482c297380da6d39152`
 - **PR or issue:** none
 - **Risk:** High for September money semantics; Release before October provider activation
 - **Decision owner:** Jonathan
@@ -64,7 +64,7 @@ Give Jonathan and Bianca one truthful Hearth Household Fund for shared operating
 - [x] Add Household Fund UI and Personal custodian reconciliation.
 - [x] Add provider-neutral October matching behind disabled/read-only boundaries.
 - [x] Update D-160/D-161 canon and roadmap additively.
-- [x] Run focused/full proof and independent review; local seal and handoff remain.
+- [x] Run focused/full proof, independent review, local seal, and durable handoff.
 
 ## Evidence log
 
@@ -73,6 +73,7 @@ Give Jonathan and Bianca one truthful Hearth Household Fund for shared operating
 - 2026-08-28: focused risk suite 12 files / 75 tests passed; independent trust suite 11 files / 76 tests passed; the causal settlement replay file passed 10 repeated root runs and 10 independent runs.
 - 2026-08-28: `pnpm check` passed — AI surface verified, 156 test files passed / 1 live-only skipped, 1,049 tests passed / 2 live-only skipped, TypeScript and production build green.
 - 2026-08-28: independent books and privacy/trust reviewers report no remaining P0/P1. `git diff --check` and modified-file secret-pattern scan are clean.
+- 2026-08-28: implementation sealed locally at `34f3ca2dc3d4aaf71b332482c297380da6d39152`; durable review packet: [`../briefs/HOUSEHOLD_FUND_HANDOFF_2026-08-28.md`](../briefs/HOUSEHOLD_FUND_HANDOFF_2026-08-28.md).
 
 ## Decisions
 
