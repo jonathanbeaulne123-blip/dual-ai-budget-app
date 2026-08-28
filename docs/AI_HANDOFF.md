@@ -2,7 +2,7 @@
 
 ## OpenAI tip-sheet 503 fix (D-152) (2026-08-27)
 
-**Status:** Shipping on `cursor/fix-openai-tip-scan-403c`. Risk: **Medium**. Development kitchen.
+**Status:** Merged via [#226](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/226) onto `main` (`4ea186f`). Kitchen Worker **live** via Cloudflare Workers run `33128613418` (Deploy green). Risk: **Medium**. Not Production household data.
 
 **Household outcome:** Choosing OpenAI for tip-sheet scan drafts Confirm again instead of failing with “OpenAI could not read that tip sheet.”
 
@@ -12,9 +12,9 @@
 
 **Root cause:** OpenAI `strict: true` rejected `shiftDraft` (properties without matching `required`). Schema now null-unions every tip field under `required`; `scanOpenAI` retries `json_object` / plain JSON if strict is refused.
 
-**Verification:** `pnpm check` → **955 passed / 2 skipped**.
+**Verification:** `pnpm check` → **955 passed / 2 skipped**. Deploy `33128613418` success.
 
-**Next owner:** Merge/deploy, hard-refresh, Shift tip sheet → OpenAI → retake; Confirm still posts.
+**Next owner:** Jonathan — hard-refresh https://hearth-books.jonathan-beaulne123.workers.dev/ , Development, Shift tip sheet → OpenAI → retake. Confirm still posts. Do not treat as Production household data.
 
 ## Tip-sheet provider choice + clarity-gated camera (D-152) (2026-08-27)
 
