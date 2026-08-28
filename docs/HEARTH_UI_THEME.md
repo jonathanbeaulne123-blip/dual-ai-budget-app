@@ -4,15 +4,15 @@
 > **Use when:** any AI adds or restyles UI on Home, Calendar, Books, Plan, Add-in-room, or Hercules chrome.  
 > **Does not change:** money meaning, Commands, Confirm boundary, Auth/RLS, hosted schema.
 
-Hearth is **one product, two UI branches, one theme kernel** (D-079 / D-080 / D-082).
+Hearth is **one product, two UI branches, one theme kernel** (D-079 / D-080 / D-082 / **D-156**).
 
 | Branch | Breakpoint | Shell name | Direction |
 |---|---|---|---|
 | **Mobile** | `< 720px` | `OfficePhone` + tab pages | **Draft C ★** — hybrid seals, story strip, notebook expand |
-| **Desktop / wide** | `≥ 720px` | `Office` desk + tab pages in same **room** | **Draft D ★** — first mock's stylized desk room **plus** Hercules wander **pathing** |
+| **Desktop / wide** | `≥ 720px` | `OfficeWide` paper office (default) + opt-in Classic desk | **Draft D ★ + D-156** — same room (window, wander) with phone C grammar composed as a two-column paper office; free-move canvas is Classic desk |
 
 **Theme is shared.** Tokens, fonts, paper grammar, Hercules identity (Maine Coon), Dual Course gates.  
-**Layout is not shared.** Never shrink desktop to phone or stretch phone to desktop.
+**Layout is not shared.** Never shrink desktop to phone or stretch phone C onto a free-move grid. Compose the grammar at width.
 
 Mockup evidence lives under `/opt/cursor/artifacts/` and in PR [#117](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/117).
 
@@ -49,18 +49,17 @@ Borrow from **A** (glance simplicity inside tiles) and **B** (stack overlap dept
 
 **Mobile Books / Calendar / Plan:** same **paper family** as Home C (seals or soft pills for sub-nav, hero card, story scraps, optional notebook expand). Not a cold separate app skin.
 
-### Desktop — Draft D synthesis
+### Desktop — Draft D synthesis (D-156)
 
-Combine two mockup intents:
+Default wide Home is a **composed paper office**: phone C seals + story mosaic + notebook, laid out as two columns with a hero blotter and paper infographics. Combine two mockup intents for atmosphere:
 
 | From | Keep |
 |---|---|
-| **First Draft D** (`ux_mock_draft_d_wide_paper_desk`) | Stylized room: rainy window, wooden desk, paper instruments as **objects** (envelope, wallet, notepad calculator), watercolor warmth, sentence-case names, material tints |
-| **Round-2 wander** (`ux_mock_d2_desktop_hercules_wander`) | Hercules **pathing**: visible wander trail, perch targets on instruments, ever-present cat using wide space |
+| **First Draft D** (`ux_mock_draft_d_wide_paper_desk`) | Stylized room: rainy window, wooden desk, watercolor warmth, sentence-case names |
+| **Round-2 wander** (`ux_mock_d2_desktop_hercules_wander`) | Hercules **pathing**: visible wander trail, perch targets on paper objects |
+| **Phone C grammar** | Seals, mosaic, notebook — composed at width, not stretched 2×2 |
 
-**Incremental softness:** slightly dreamier watercolor margin, faint cartoony doodles (cloud, raindrop, coin) — **do not** change layout grid, instrument catalog, or nav structure.
-
-Desktop **Calendar** and **Books** tabs render **inside the same room** (window glimpse, desk surface, paper grammar) — see round-2 desktop mocks.
+Free-move packing, S/M/L, Edit Desk, and personalities remain **Classic desk** (Cabinets). Desktop **Calendar** and **Books** tabs stay in the same room (window glimpse, paper grammar) and may use extra width.
 
 ### Hercules — two behaviors, one cat
 
@@ -237,7 +236,7 @@ Before opening a PR that touches UI:
 | Area | Files |
 |---|---|
 | Mobile Home | `src/OfficePhone.tsx`, `src/office-phone.css`, `src/core/officePhone.ts` |
-| Desktop Home | `src/Office.tsx`, `src/office.css`, `src/core/officeLayout.ts` |
+| Desktop Home | `src/OfficeWide.tsx`, `src/Office.tsx` (Classic desk), `src/office-wide.css`, `src/office.css`, `src/core/officeWide.ts`, `src/core/officeLayout.ts` |
 | Widget bodies | `src/widgets/*.tsx` |
 | Books | `src/Books.tsx`, `src/styles.css` (`.books-story-tile`, `.wallet-tile`, `.hero`) |
 | Calendar | `src/Calendar.tsx` |
@@ -262,7 +261,7 @@ Before opening a PR that touches UI:
 When implementation lands, record in `DECISIONS.md`:
 
 - **Mobile Home** = Draft C shell (seals + story + notebook expand)  
-- **Desktop Home** = Draft D stylized room + wander pathing  
+- **Desktop Home** = Draft D room + D-156 composed paper office (Classic desk opt-in)  
 - **Hercules mobile** = Duolingo focus/unfocus  
 - **Hercules desktop** = ever-present wanderer  
 - **Shared** = paper tile grammar across Home / Books / Calendar tabs  

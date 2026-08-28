@@ -1,6 +1,6 @@
 # The September Office
 
-**Two UI branches (D-079 / D-080 / D-082):** Mobile (`< 720px`) is glance + one-tap via `OfficePhone`. Desktop/wide (`≥ 720px`) is this office — unique desks, sizes, Edit Desk, without turning Home into a dashboard. Current Claude prompt: [CLAUDE_DESKTOP_OFFICE.md](CLAUDE_DESKTOP_OFFICE.md). Mobile record: [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md).
+**Two UI branches (D-079 / D-080 / D-082 / D-156):** Mobile (`< 720px`) is glance + one-tap via `OfficePhone`. Desktop/wide (`≥ 720px`) default is the **composed paper office** (`OfficeWide`): seals, 2×3 mosaic, hero blotter, side notebook, journal-true infographics, rainy window. Unique desks, sizes, and Edit Desk remain as opt-in **Classic desk**. Current Claude prompt: [CLAUDE_DESKTOP_OFFICE.md](CLAUDE_DESKTOP_OFFICE.md). Mobile record: [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md).
 
 **The product face for September testing:** Home is a lived-in Toronto office. Rain on the glass. A desk of true instruments. Hercules on the furniture. Deep Books and Calendar still exist for people who want to dive.
 
