@@ -3,8 +3,67 @@
 (() => {
   const BASE = (document.documentElement.dataset.base || "").replace(/\/$/, "");
   const ENGINE = document.documentElement.dataset.engine || "server";
+  const params = new URLSearchParams(location.search);
+  const EMBED = params.get("embed") === "1" || document.documentElement.dataset.embed === "1";
   const api = (path) => `${BASE}${path}`;
   const $ = (id) => document.getElementById(id);
+
+  function parentOrigin() {
+    const raw = params.get("parent") || "";
+    if (!raw) return "*";
+    try {
+      const parsed = new URL(raw);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return "*";
+      return parsed.origin;
+    } catch {
+      return "*";
+    }
+  }
+
+  /** @type {object | null} */
+  let lastQuality = null;
+  /** @type {string | null} */
+  let lastState = null;
+  let resettingFromParent = false;
+
+  function postToParent(type, extra) {
+    if (!EMBED || window.parent === window) return;
+    const payload = Object.assign({ type }, extra || {});
+    try {
+      window.parent.postMessage(payload, parentOrigin());
+    } catch {
+      /* ignore blocked postMessage */
+    }
+  }
+
+  function qualitySummary(quality) {
+    if (!quality || typeof quality !== "object") return null;
+    return {
+      score: typeof quality.score === "number" ? quality.score : null,
+      width: quality.width || null,
+      height: quality.height || null,
+    };
+  }
+
+  function notifyResult(ocr, stitched, formatted) {
+    const text =
+      (formatted && formatted.text) ||
+      (stitched && stitched.text) ||
+      (ocr && ocr.text) ||
+      "";
+    if (!String(text).trim()) return;
+    const blocks = ((formatted && formatted.blocks) || []).map((block) => ({
+      kind: block.kind || "paragraph",
+      text: block.text || "",
+      line_count: block.line_count || 0,
+    }));
+    postToParent("toast-ocr:result", {
+      text,
+      blocks,
+      state: lastState,
+      quality: qualitySummary(lastQuality),
+    });
+  }
 
   const captureInput = $("captureInput");
   const libraryInput = $("libraryInput");
@@ -71,6 +130,7 @@
   function showError(message) {
     els.errorText.textContent = message;
     show(els.error, true);
+    postToParent("toast-ocr:error", { message: String(message || "") });
   }
 
   function clearError() {
@@ -92,6 +152,8 @@
     stopLive();
     batch.forEach((item) => URL.revokeObjectURL(item.url));
     batch = [];
+    lastQuality = null;
+    lastState = null;
     renderThumbs();
     resetResults();
     show(els.captureHome, true);
@@ -101,6 +163,7 @@
     libraryInput.value = "";
     nextCaptureInput.value = "";
     nextLibraryInput.value = "";
+    if (EMBED && !resettingFromParent) postToParent("toast-ocr:reset");
   }
 
   function previewFile(file) {
@@ -311,6 +374,8 @@
   }
 
   function applyPrepareResult(body) {
+    lastQuality = body.quality || null;
+    lastState = body.state || null;
     renderQuality(body.quality || {}, body.state);
     if (body.ok && body.slices && body.slices.length) {
       els.successText.textContent =
@@ -318,6 +383,7 @@
       show(els.successCard, true);
       renderOcr(body.ocr, body.stitched, body.formatted);
       renderSlices(body.slices, (body.ocr && body.ocr.slices) || []);
+      notifyResult(body.ocr, body.stitched, body.formatted);
       return;
     }
     renderGuidance(body.guidance);
@@ -357,11 +423,20 @@
     });
     show(els.batchCard, true);
     if (merge.text || (body.formatted && body.formatted.text)) {
+      lastState = lastState || "OK";
       renderOcr(
         {
           status: merge.status || "ok",
           text: merge.text || "",
           message: merge.message || "",
+        },
+        merge,
+        body.formatted || null
+      );
+      notifyResult(
+        {
+          status: merge.status || "ok",
+          text: merge.text || "",
         },
         merge,
         body.formatted || null
@@ -540,12 +615,43 @@
   if (ENGINE === "browser") {
     const foot = $("footNote");
     if (foot) {
-      foot.textContent =
-        "Photos stay on this phone. Quality check and slicing run here — no laptop required. Add to Home Screen from the share menu.";
+      foot.textContent = EMBED
+        ? "Photos stay on this device. Extracted text is sent to the page that embedded this scanner."
+        : "Photos stay on this phone. Quality check and slicing run here — no laptop required. Add to Home Screen from the share menu.";
     }
   }
 
-  if ("serviceWorker" in navigator) {
+  if (EMBED) {
+    document.documentElement.classList.add("embed");
+    const appRoot = document.querySelector(".app");
+    const sendResize = () => {
+      const height = Math.ceil(
+        (appRoot && appRoot.getBoundingClientRect().height) ||
+          document.documentElement.scrollHeight ||
+          420
+      );
+      postToParent("toast-ocr:resize", { height });
+    };
+    if (typeof ResizeObserver !== "undefined" && appRoot) {
+      new ResizeObserver(() => sendResize()).observe(appRoot);
+    }
+    window.addEventListener("load", sendResize);
+    sendResize();
+    postToParent("toast-ocr:ready");
+    window.addEventListener("message", (event) => {
+      if (event.source !== window.parent) return;
+      const allowed = parentOrigin();
+      if (allowed !== "*" && event.origin !== allowed) return;
+      const data = event.data;
+      if (!data || data.type !== "toast-ocr:reset") return;
+      resettingFromParent = true;
+      try {
+        startOver();
+      } finally {
+        resettingFromParent = false;
+      }
+    });
+  } else if ("serviceWorker" in navigator) {
     const swUrl = BASE ? `${BASE}/sw.js` : "/sw.js";
     const scope = BASE ? `${BASE}/` : "/";
     navigator.serviceWorker.register(swUrl, { scope }).catch(() => {
