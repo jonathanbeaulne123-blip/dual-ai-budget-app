@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-base="/ocr" data-engine="browser">
 <head>
   <meta charset="utf-8">
@@ -18,7 +18,7 @@
     <header class="top">
       <p class="eyebrow">Toast OCR</p>
       <h1>Scan a long page</h1>
-      <p class="lede">Photo a receipt, report, or tall screenshot. We’ll check if it’s readable, then slice it so nothing gets crushed.</p>
+      <p class="lede">Photo a receipt, report, or tall screenshot. Weâ€™ll check if itâ€™s readable, then slice it so nothing gets crushed.</p>
     </header>
 
     <div id="error" class="banner error" hidden>
@@ -28,7 +28,7 @@
 
     <section id="busy" class="busy" hidden>
       <div class="spinner" aria-hidden="true"></div>
-      <p id="busyLabel">Working…</p>
+      <p id="busyLabel">Workingâ€¦</p>
     </section>
 
     <section id="captureHome" class="card">
@@ -38,6 +38,7 @@
         <button type="button" class="btn primary" id="btnCapture">Take photo</button>
         <button type="button" class="btn secondary" id="btnLibrary">Choose from camera roll</button>
         <button type="button" class="btn ghost" id="btnLive" hidden>Live camera (this device)</button>
+        <button type="button" class="btn ghost" id="btnAutoTeach">Auto-teach</button>
       </div>
       <p class="hint" id="httpHint">This page is HTTPS. <strong>Take photo</strong> opens the phone camera.</p>
     </section>
@@ -79,8 +80,19 @@
       <div class="stack-btns">
         <button type="button" class="btn secondary" id="btnCopy">Copy text</button>
         <button type="button" class="btn ghost" id="btnExportPacket">Export scoring packet</button>
+        <button type="button" class="btn ghost" id="btnDownloadCrops">Download parsed images</button>
+        <button type="button" class="btn ghost" id="btnAutoTeachLast">Auto-teach this photo</button>
       </div>
       <p class="phase-note" id="ocrNote"></p>
+    </section>
+
+    <section id="teachCard" class="card" hidden>
+      <p class="card-kicker">Auto-teach</p>
+      <h2 id="teachTitle">Self-review</h2>
+      <p id="teachMeta" class="hint"></p>
+      <ul id="teachLog" class="teach-log"></ul>
+      <div id="teachGrid" class="teach-grid"></div>
+      <p class="phase-note">Each tile is a crop or zoom the parser used. Download the ZIP if you need the image files.</p>
     </section>
 
     <section id="slicesCard" class="card" hidden>
@@ -103,7 +115,7 @@
       <div class="stack-btns">
         <button type="button" class="btn primary" id="btnNextShot">Add next shot</button>
         <button type="button" class="btn secondary" id="btnNextLibrary">Add from camera roll</button>
-        <button type="button" class="btn primary" id="btnDone" disabled>I’m done</button>
+        <button type="button" class="btn primary" id="btnDone" disabled>Iâ€™m done</button>
       </div>
       <p class="hint" id="multiHint">Need at least 2 shots.</p>
     </section>
@@ -137,6 +149,8 @@
   <script src="/ocr/merge.js" defer></script>
   <script src="/ocr/format.js" defer></script>
   <script src="/ocr/pipeline.js" defer></script>
+  <script src="/ocr/autoteach.js" defer></script>
   <script src="/ocr/app.js" defer></script>
 </body>
 </html>
+

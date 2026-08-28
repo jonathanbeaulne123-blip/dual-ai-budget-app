@@ -97,6 +97,14 @@
     ocrConfidence: $("ocrConfidence"),
     btnCopy: $("btnCopy"),
     btnExportPacket: $("btnExportPacket"),
+    btnDownloadCrops: $("btnDownloadCrops"),
+    btnAutoTeach: $("btnAutoTeach"),
+    btnAutoTeachLast: $("btnAutoTeachLast"),
+    teachCard: $("teachCard"),
+    teachTitle: $("teachTitle"),
+    teachMeta: $("teachMeta"),
+    teachLog: $("teachLog"),
+    teachGrid: $("teachGrid"),
     slicesCard: $("slicesCard"),
     slicesList: $("slicesList"),
     guidanceCard: $("guidanceCard"),
@@ -119,6 +127,11 @@
   let batch = [];
   /** @type {MediaStream | null} */
   let liveStream = null;
+  /** @type {File | null} */
+  let lastFile = null;
+  /** @type {object | null} */
+  let lastTeach = null;
+  let teachPending = false;
 
   function show(el, on = true) {
     el.hidden = !on;
@@ -152,6 +165,7 @@
     show(els.multiCard, false);
     show(els.batchCard, false);
     show(els.previewCard, false);
+    if (els.teachCard) show(els.teachCard, false);
   }
 
   function startOver() {
@@ -160,6 +174,9 @@
     batch = [];
     lastQuality = null;
     lastState = null;
+    lastFile = null;
+    lastTeach = null;
+    teachPending = false;
     renderThumbs();
     resetResults();
     show(els.captureHome, true);
@@ -173,6 +190,7 @@
   }
 
   function previewFile(file) {
+    lastFile = file;
     const url = URL.createObjectURL(file);
     els.previewImg.onload = () => URL.revokeObjectURL(url);
     els.previewImg.src = url;
@@ -405,7 +423,7 @@
       img.src = sl.preview;
       img.alt = `Snippet ${sl.index + 1}`;
       const cap = document.createElement("figcaption");
-      cap.textContent = `#${sl.index + 1}  rows ${sl.content_y_start}–${sl.content_y_end}  (${sl.cut_reason.replaceAll("_", " ")})`;
+      cap.textContent = `#${sl.index + 1}  ${(sl.cut_reason || "slice").replaceAll("_", " ")}`;
       fig.append(img, cap);
       const part = byIndex.get(sl.index);
       if (part && part.text) {
@@ -446,6 +464,65 @@
       els.slicesList.appendChild(fig);
     });
     show(els.slicesCard, slices.length > 0);
+    showDownloadButtons(slices.length > 0 || !!lastTeach);
+  }
+
+  function showDownloadButtons(on) {
+    if (els.btnDownloadCrops) show(els.btnDownloadCrops, on);
+    if (els.btnAutoTeachLast) show(els.btnAutoTeachLast, !!lastFile);
+  }
+
+  function renderTeach(teach) {
+    lastTeach = teach || null;
+    if (!els.teachCard) return;
+    if (!teach || !teach.crops || !teach.crops.length) {
+      show(els.teachCard, false);
+      return;
+    }
+    if (els.teachTitle) {
+      els.teachTitle.textContent = `${teach.crop_count || teach.crops.length} parse crops`;
+    }
+    if (els.teachMeta) {
+      const learned = teach.learned_fixes ? Object.keys(teach.learned_fixes).length : 0;
+      els.teachMeta.textContent =
+        (teach.message || `Parsed ${teach.crops.length} crops.`) +
+        (learned ? ` Learned ${learned} letter map${learned === 1 ? "" : "s"}.` : "");
+    }
+    if (els.teachLog) {
+      els.teachLog.innerHTML = "";
+      (teach.log || []).forEach((row) => {
+        const li = document.createElement("li");
+        const focus = row.focus ? `${row.focus}: ` : "";
+        const delta =
+          typeof row.before === "number" && typeof row.after === "number"
+            ? ` (${row.before}% → ${row.after}%)`
+            : "";
+        li.textContent = `${focus}${row.wrong || "weak read"} → ${row.action || "zoom"}${delta}`;
+        els.teachLog.appendChild(li);
+      });
+      if (!(teach.log || []).length) {
+        const li = document.createElement("li");
+        li.textContent = "No weak category needed a second zoom. Crops are still saved for download.";
+        els.teachLog.appendChild(li);
+      }
+    }
+    if (els.teachGrid) {
+      els.teachGrid.innerHTML = "";
+      teach.crops.forEach((crop) => {
+        const fig = document.createElement("figure");
+        const pct = typeof crop.confidence === "number" ? crop.confidence : 0;
+        fig.className = `teach-tile ${confidenceBand(pct)}`;
+        const img = document.createElement("img");
+        img.src = crop.preview || crop.image_jpeg || "";
+        img.alt = crop.reason || "crop";
+        const cap = document.createElement("figcaption");
+        cap.textContent = `${String(crop.reason || "crop").replaceAll("_", " ")} · ${pct}%`;
+        fig.append(img, cap);
+        els.teachGrid.appendChild(fig);
+      });
+    }
+    show(els.teachCard, true);
+    showDownloadButtons(true);
   }
 
   function renderOcr(ocr, stitched, formatted) {
@@ -600,7 +677,16 @@
         `${body.slices.length} slice${body.slices.length === 1 ? "" : "s"} from a ${body.quality.width}×${body.quality.height} image.`;
       show(els.successCard, true);
       renderOcr(body.ocr, body.stitched, body.formatted);
-      renderSlices(body.slices, (body.ocr && body.ocr.slices) || []);
+      const ocrSlices = (body.ocr && body.ocr.slices) || [];
+      if (body.teach) {
+        renderTeach(body.teach);
+        const zoomed = (body.slices || []).filter((sl) => /zoom|retry/.test(String(sl.cut_reason || "")));
+        const shown = zoomed.length ? zoomed.slice(0, 8) : (body.slices || []).slice(0, 6);
+        const idxs = new Set(shown.map((s) => s.index));
+        renderSlices(shown, ocrSlices.filter((p) => idxs.has(p.slice_index)));
+      } else {
+        renderSlices(body.slices, ocrSlices);
+      }
       notifyResult(body.ocr, body.stitched, body.formatted);
       return;
     }
@@ -662,6 +748,87 @@
         merge,
         body.formatted || null
       );
+    }
+  }
+
+  async function postAutoTeach(file) {
+    clearError();
+    resetResults();
+    show(els.captureHome, false);
+    show(els.livePanel, false);
+    previewFile(file);
+    show(els.btnReset, true);
+    setBusy(true, "Auto-teach: planning 30–50 crops…");
+    if (ENGINE === "browser" && window.ToastAutoTeach && window.ToastAutoTeach.autoTeach) {
+      try {
+        const body = await window.ToastAutoTeach.autoTeach(file, {
+          onProgress: (p) => setBusy(true, p.message || `Auto-teach ${p.index}/${p.total}`),
+        });
+        setBusy(false);
+        applyPrepareResult(body);
+        if (body.teach) renderTeach(body.teach);
+      } catch (err) {
+        setBusy(false);
+        showError(err && err.message ? err.message : "Auto-teach failed.");
+        show(els.captureHome, true);
+      }
+      return;
+    }
+    const fd = new FormData();
+    fd.append("file", file, file.name || "capture.jpg");
+    let res;
+    try {
+      res = await fetch(api("/api/auto-teach"), { method: "POST", body: fd });
+    } catch (err) {
+      setBusy(false);
+      showError(networkFailMessage(err));
+      show(els.captureHome, true);
+      return;
+    }
+    const body = await parseJson(res);
+    setBusy(false);
+    if (!res.ok) {
+      const detail = body.detail || body.error || `Server error (${res.status})`;
+      showError(typeof detail === "string" ? detail : JSON.stringify(detail));
+      show(els.captureHome, true);
+      return;
+    }
+    applyPrepareResult(body);
+    if (body.teach) renderTeach(body.teach);
+  }
+
+  function startAutoTeach() {
+    if (lastFile) {
+      postAutoTeach(lastFile);
+      return;
+    }
+    teachPending = true;
+    captureInput.click();
+  }
+
+  function downloadParsedImages() {
+    if (lastTeach && window.ToastAutoTeach && window.ToastAutoTeach.downloadCropsZip) {
+      window.ToastAutoTeach.downloadCropsZip(lastTeach);
+      return;
+    }
+    if (window.ToastAutoTeach && window.ToastAutoTeach.downloadSliceZip) {
+      window.ToastAutoTeach.downloadSliceZip(lastSlicePack.slices, lastSlicePack.ocrSlices);
+      return;
+    }
+    if (lastFile && ENGINE !== "browser") {
+      const fd = new FormData();
+      fd.append("file", lastFile, lastFile.name || "capture.jpg");
+      fetch(api("/api/auto-teach/zip"), { method: "POST", body: fd })
+        .then((res) => res.blob())
+        .then((blob) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "toast-ocr-parsed-crops.zip";
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 800);
+        })
+        .catch((err) => showError(networkFailMessage(err)));
     }
   }
 
@@ -824,6 +991,9 @@
       window.location.href = api("/api/guide/export");
     });
   }
+  if ($("btnAutoTeach")) $("btnAutoTeach").addEventListener("click", () => startAutoTeach());
+  if ($("btnAutoTeachLast")) $("btnAutoTeachLast").addEventListener("click", () => startAutoTeach());
+  if ($("btnDownloadCrops")) $("btnDownloadCrops").addEventListener("click", () => downloadParsedImages());
   $("errorDismiss").addEventListener("click", () => clearError());
   $("btnLive").addEventListener("click", () => startLive());
   $("btnLiveClose").addEventListener("click", () => {
@@ -832,8 +1002,17 @@
   });
   $("btnShutter").addEventListener("click", () => captureLiveFrame());
 
-  onFileInput(captureInput, postPrepare);
-  onFileInput(libraryInput, postPrepare);
+  function onCaptureFile(file) {
+    if (teachPending) {
+      teachPending = false;
+      postAutoTeach(file);
+      return;
+    }
+    postPrepare(file);
+  }
+
+  onFileInput(captureInput, onCaptureFile);
+  onFileInput(libraryInput, onCaptureFile);
   onFileInput(nextCaptureInput, addShot);
   onFileInput(nextLibraryInput, addShot);
 

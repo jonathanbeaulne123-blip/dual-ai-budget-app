@@ -1047,5 +1047,19 @@
     };
   }
 
-  window.ToastPipeline = { prepare, ingestMulti, assess, detectDocuments, isGarbage };
+  window.ToastPipeline = {
+    prepare,
+    ingestMulti,
+    assess,
+    detectDocuments,
+    isGarbage,
+    fileToCanvas,
+    cropCanvas,
+    upscaleCanvas,
+    contrastGrayCanvas,
+    jpegFromCanvas,
+    pngFromCanvas,
+    toGray,
+    inkProjection,
+  };
 })();

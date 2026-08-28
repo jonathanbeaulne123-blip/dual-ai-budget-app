@@ -442,4 +442,46 @@ html.embed .ocr-text {
   max-height: 28vh;
 }
 
+.teach-log {
+  margin: 8px 0 12px;
+  padding-left: 1.1rem;
+  color: #d7cbb8;
+}
+
+.teach-log li {
+  margin: 0 0 6px;
+}
+
+.teach-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 8px;
+}
+
+.teach-tile {
+  margin: 0;
+  background: #16120f;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #3a3229;
+}
+
+.teach-tile img {
+  width: 100%;
+  height: 72px;
+  object-fit: cover;
+  display: block;
+}
+
+.teach-tile figcaption {
+  padding: 4px 6px 6px;
+  font-size: 0.68rem;
+  line-height: 1.25;
+  color: #b9a994;
+}
+
+.teach-tile.high { border-color: #3d7a4a; }
+.teach-tile.mid { border-color: #c9a227; }
+.teach-tile.low { border-color: #d46a2c; }
+
 [hidden] { display: none !important; }
