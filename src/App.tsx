@@ -3233,7 +3233,18 @@ export function App() {
             </p>
           </div>
         </div>
-        <span className="pill dev" aria-label="Development environment">Development</span>
+        <button
+          type="button"
+          className={`pill ${environment === "production" ? "prod" : "dev"}`}
+          aria-label={`${environment === "production" ? "Production" : "Development"} environment. Switch environment.`}
+          disabled={busy}
+          onClick={() => setGuard({
+            kind: "environment",
+            next: environment === "production" ? "development" : "production",
+          })}
+        >
+          {environment === "production" ? "Production" : "Development"}
+        </button>
       </header>
       <SyncFreshnessStatus
         display={syncFreshnessDisplay}
