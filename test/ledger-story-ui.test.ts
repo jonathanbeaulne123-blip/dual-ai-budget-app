@@ -133,5 +133,8 @@ describe("D-164 ledger story UI fences", () => {
     expect(hercules).toContain("hercules-pro-quiet");
     expect(hercules).toContain("helpAsked");
     expect(hercules).not.toContain("Use Hercules Pro");
+    expect(books).toContain("askHercules(household, text, todayKey(), { memberId, view })");
+    expect(kitty).toContain("amountFor(goalId)");
+    expect(kitty).toContain("amounts[goalId]");
   });
 });

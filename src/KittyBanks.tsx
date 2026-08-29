@@ -44,7 +44,7 @@ export function KittyBanks({
 }) {
   const [name, setName] = useState("New bank");
   const [target, setTarget] = useState("500");
-  const [amount, setAmount] = useState("25");
+  const [amounts, setAmounts] = useState<Record<string, string>>({});
   const [buying, setBuying] = useState<string | null>(null);
   const today = todayKey();
   const live = kittyBanksInView(household, view, createdBy);
@@ -55,6 +55,10 @@ export function KittyBanks({
   const proposals = shared ? upcomingVisitProposals(household, today) : [];
   const manage = surface === "plan";
 
+  function amountFor(goalId: string): string {
+    return amounts[goalId] ?? "25";
+  }
+
   function contribute(goalId: string) {
     const fromAccountId = booksHousehold.accounts.find((account) => account.active && account.kind === "chequing")?.id
       ?? household.accounts.find((account) => account.active)?.id
@@ -62,7 +66,7 @@ export function KittyBanks({
     if (!fromAccountId) return;
     onCommand((current) => fundGoal(current, {
       goalId,
-      amount,
+      amount: amountFor(goalId),
       fromAccountId,
       createdBy,
     }));
@@ -110,8 +114,8 @@ export function KittyBanks({
                 <input
                   inputMode="decimal"
                   aria-label={`Contribution for ${goal.name}`}
-                  value={amount}
-                  onChange={(event) => setAmount(event.target.value)}
+                  value={amountFor(goal.id)}
+                  onChange={(event) => setAmounts((current) => ({ ...current, [goal.id]: event.target.value }))}
                 />
                 <button type="button" className="chip" disabled={busy} onClick={() => contribute(goal.id)}>
                   {goalStatus(goal) === "unfunded" ? "Fund bank" : "+ add"}

@@ -590,7 +590,7 @@ export function BooksPage({
           </div>
         </section>
       )}
-      {pane === "query" && <AskBooks household={booksHousehold} />}
+      {pane === "query" && <AskBooks household={booksHousehold} memberId={memberId} view={view} />}
       {(!sharedTable || isAuditPane) ? (
       <div className="chips" style={{ marginTop: 8 }}>
         <button className="chip" onClick={() => downloadText(booksFilename(books, "sql"), booksSqlDump(books), "application/sql")}>
@@ -897,7 +897,15 @@ function looksLikeSql(text: string): boolean {
   }
 }
 
-function AskBooks({ household }: { household: Household }) {
+function AskBooks({
+  household,
+  memberId,
+  view,
+}: {
+  household: Household;
+  memberId: string;
+  view: LedgerView;
+}) {
   const [question, setQuestion] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -921,7 +929,7 @@ function AskBooks({ household }: { household: Household }) {
         setLog((current) => [...current, { you: text, sentence: `Ran a read-only query. ${result.rows.length} row${result.rows.length === 1 ? "" : "s"}.`, rows: [] }].slice(-8));
         return;
       }
-      const answer = askHercules(household, text, todayKey());
+      const answer = askHercules(household, text, todayKey(), { memberId, view });
       setLog((current) => [...current, { you: text, sentence: answer.sentence, rows: answer.rows, sql: answer.sql }].slice(-8));
       setColumns([]);
       setSqlRows([]);
@@ -956,7 +964,10 @@ function AskBooks({ household }: { household: Household }) {
       </header>
       <p className="muted">Or tap the cat. This pane is for longer questions and read-only SQL.</p>
       <div className="chips">
-        {ASK_SUGGESTIONS.slice(0, 6).map((item) => (
+        {(view === "personal"
+          ? ASK_SUGGESTIONS.filter((item) => !/leftover|sit-down/i.test(item))
+          : ASK_SUGGESTIONS
+        ).slice(0, 6).map((item) => (
           <button key={item} className="chip" type="button" disabled={busy} onClick={() => void ask(item)}>{item}</button>
         ))}
       </div>
