@@ -187,7 +187,7 @@ export function BooksPage({
         <section className="hero">
           <div className="label">My books · CAD · {household.timezone}</div>
           <div className={`money ${equation.netWorthCents < 0 ? "negative" : ""}`}>{formatCad(equation.netWorthCents)}</div>
-          <div className="sub">My Personal position in this folio. Partner Personal rows stay out.</div>
+          <div className="sub">Listed accounts in this folio are mine. The figure is accepted-books position, not a partner-hidden envelope.</div>
           {!trial.inBalance ? (
             <p className="opinion-banner adverse">
               Trial is off. Open Audit before treating the journal as closed.
@@ -233,7 +233,6 @@ export function BooksPage({
               ...(showFundPane ? [{ id: "fund" as const, label: "Fund" }] : []),
               { id: "wallet", label: "Wallet" },
               { id: "register", label: "Activity" },
-              { id: "import", label: "Import" },
             ]
           : [
               { id: "wallet", label: "Wallet" },
@@ -303,7 +302,7 @@ export function BooksPage({
           if (!next && isAuditPane) setPane("fund");
         }}
       >
-        <summary>{sharedTable ? "Audit office — journal, trial, statements" : "Audit office"}</summary>
+        <summary {...(sharedTable ? {} : { tabIndex: -1 })}>{sharedTable ? "Audit office — journal, trial, statements" : "Audit office"}</summary>
         {sharedTable ? (
           <>
             <p className="muted">The journal still exists. This is how Hearth proves the books — not the shared table opening.</p>

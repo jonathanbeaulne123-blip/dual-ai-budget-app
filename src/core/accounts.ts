@@ -356,9 +356,14 @@ export function householdWallet(household: Household, today: DateKey): Household
 
 const TABLE_STORY_KINDS: AccountKind[] = ["chequing", "savings", "credit"];
 
-/** Shared kitchen-table instruments. Fund is a separate tile. Investments stay in Wallet / Audit. */
+/** Shared kitchen-table instruments. Fund is a separate tile. Everyday HIS and investments stay in Wallet / Audit. */
 export function householdTableStory(wallet: HouseholdWallet): HouseholdWallet["story"] {
-  return wallet.story.filter((group) => TABLE_STORY_KINDS.includes(group.kind));
+  return wallet.story.flatMap((group) => {
+    if (!TABLE_STORY_KINDS.includes(group.kind)) return [];
+    if (group.kind !== "savings") return [group];
+    const tiles = group.tiles.filter((tile) => tile.account.savings?.purpose === "goals");
+    return tiles.length ? [{ ...group, tiles }] : [];
+  });
 }
 
 export function accountActivity(household: Household, accountId: string): Transaction[] {

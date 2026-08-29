@@ -390,6 +390,21 @@ button.hearth-paper-tile:focus-visible {
 .books-audit-office > summary::-webkit-details-marker {
   display: none;
 }
+.books-audit-office > summary::before {
+  content: "▸";
+  color: var(--muted);
+  margin-right: 8px;
+}
+.books-audit-office[open] > summary::before {
+  content: "▾";
+}
+.books-audit-office > summary:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
+.books-audit-office .tabs button {
+  min-height: 44px;
+}
 .books-audit-office.is-folio {
   margin-top: 12px;
   border: none;
@@ -402,6 +417,9 @@ button.hearth-paper-tile:focus-visible {
   font-weight: 500;
   min-height: 0;
   margin-bottom: 4px;
+}
+.books-audit-office.is-folio > summary::before {
+  content: none;
 }
 
 @media (min-width: 720px) {

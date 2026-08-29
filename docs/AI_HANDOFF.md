@@ -19,7 +19,10 @@
 - More door and command palette: “Household table” / “Open the household table”. Home story trust button matches.
 - PGlite / hosted storage notes move into Shared Audit, not the table opening.
 
-**Verification:** pending focused tests + `pnpm check` + visual on this SHA after commit.
+**Verification:**
+- Focused `test/ledger-story-ui.test.ts`, `test/accounts.test.ts`, `test/ledger-experience.test.ts`, `test/household-fund-ui.test.ts`, `test/ledger-story-dom.test.ts`, `test/office-wide.test.ts` green (39 passed).
+- `pnpm check` at `53799f9` → **1102 passed / 2 skipped**, `ai:verify` + `tsc --noEmit` + Vite build green. Follow-up a11y/goals-strip commit pending same gate.
+- Visual, fictional Development demo as Jonathan: Shared Household table hero **$12,234.19** cash (not $13,789.50 net worth); On the table = Fund / Chequing / Goal savings / Credit cards, no Investments tile; Audit collapsed then Trial in balance; Personal My books still **$13,789.50**.
 
 **Data and environment disclosure:**
 - Development impact: none (local/synthetic demo kitchen only)
@@ -29,7 +32,7 @@
 - Hosted rows/schema/secrets/deployments: none
 - Real household or partner-personal data used: none. Demo/synthetic Development only.
 
-**Remaining uncertainty:** Wallet pane on Shared still shows investments (Accounts Floor). Personal Plan still lists household categories. Demo has no personal-scope accounts.
+**Remaining uncertainty:** Wallet pane on Shared still shows investments (Accounts Floor). Shared table CAD still compiles from the scoped presentation clone (pre-existing D-164); Audit compiles accepted books. Personal hero is still accepted `booksEquation` with honest copy. Shared Import still receives `booksHousehold` for Confirm writes. Demo has no personal-scope accounts.
 
 **Next owner:** Jonathan — review Shared Household table vs Personal My books. Do not merge, rebase, or deploy unless you ask.
 
