@@ -301,9 +301,13 @@ export function CalendarPage(props: {
               <header>
                 <h2>{formatDayLabel(selectedDay.date)}</h2>
                 <span className="muted">
-                  {selectedDay.inCents ? `${formatCad(selectedDay.inCents)} in` : ""}
-                  {selectedDay.inCents && selectedDay.outCents ? " · " : ""}
-                  {selectedDay.outCents ? `${formatCad(selectedDay.outCents)} out` : selectedDay.items.length ? "on the board" : "quiet"}
+                  {[
+                    selectedDay.inCents ? `${formatCad(selectedDay.inCents)} in` : "",
+                    selectedDay.outCents ? `${formatCad(selectedDay.outCents)} out` : "",
+                    !selectedDay.inCents && !selectedDay.outCents
+                      ? (selectedDay.items.length ? "on the board" : "quiet")
+                      : "",
+                  ].filter(Boolean).join(" · ")}
                 </span>
               </header>
               {selectedDay.items.length === 0 ? (

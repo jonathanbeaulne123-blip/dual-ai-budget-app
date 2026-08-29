@@ -21,7 +21,10 @@
 - Sit-down Act 1 tiles collapse; leftover gets paper bars.
 - Goals vault stays on Plan. Kitty Banks is the existing Fund surplus path, not a new product.
 
-**Verification:** pending focused tests + `pnpm check` after this commit.
+**Verification:**
+- Focused `test/ledger-story-ui.test.ts`, `test/office-wide.test.ts`, `test/ledger-experience.test.ts`, `test/ledger-story-dom.test.ts`, `test/household-fund-ui.test.ts`, `test/kitchen.test.ts` green.
+- `pnpm check` at `ad48fad` → **1102 passed / 2 skipped**, `ai:verify` + `tsc --noEmit` + Vite build green.
+- Visual, fictional Development demo kitchen on localhost as Jonathan: Shared Home mosaic + notebook (no stacked story room); Shared nav Home/Cal/+/Plan/More; More → Journal and Fund opens household cash (Fund not set up), not net worth; Calendar week facts on the month card; Plan leftover bars + Kitty Banks door + editable categories; Personal Plan nav includes Shift; OfficePhone at 390/320 keeps seals + stories.
 
 **Data and environment disclosure:**
 - Development impact: none (local/synthetic demo kitchen only)
@@ -31,9 +34,9 @@
 - Hosted rows/schema/secrets/deployments: none
 - Real household or partner-personal data used: none. Demo/synthetic Development only.
 
-**Remaining uncertainty:** Demo seed has no `scope: personal` accounts, so Personal Books compile empty by design. Kitty Banks does not yet replace the Goals card. Home `overflow: hidden` at `>=720px` may clip tall sill/window chrome.
+**Remaining uncertainty:** Demo seed has no `scope: personal` accounts, so Personal Books compile empty by design. Kitty Banks does not yet replace the Goals card. Home `overflow: hidden` at `>=720px` may clip tall sill/window chrome. Personal Plan still lists household category rows (Rent, Bianca pay) because month summary is not a Personal-only budget projector. Calendar day copy “inon the board” is fixed in the follow-up commit. Independent books/privacy/UX auditors were launched on this pass; treat their notes as review, not merge authority.
 
-**Next owner:** Jonathan — review Shared Home, Books-from-More, Calendar, Plan on a laptop width. Do not merge or deploy unless you ask.
+**Next owner:** Jonathan — review Shared Home, Books-from-More, Calendar, Plan on a laptop width. Do not merge, rebase, or deploy unless you ask.
 
 **Worksession:** [`worksessions/2026-08-28-shared-ledger-story-implementation.md`](worksessions/2026-08-28-shared-ledger-story-implementation.md)
 
