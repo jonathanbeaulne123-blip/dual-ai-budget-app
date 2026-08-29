@@ -372,7 +372,11 @@ async function mintCompanionRegistration(request, env, config) {
   const input = await readJson(request);
   const scope = await verifiedScope(request, env, input);
   const origin = capabilityOrigin("extension", input.origin);
-  const label = boundedText(input.label || "Chrome 7shifts companion", 80);
+  const label = String(input.label || "Chrome 7shifts companion")
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80) || "Chrome 7shifts companion";
   const registrationId = randomId("cmp_");
   const token = `${scope.environment === "production" ? "pcomp" : "dcomp"}_${base64Url(crypto.getRandomValues(new Uint8Array(32)))}`;
   const tokenHash = await sha256(new TextEncoder().encode(token));
