@@ -7,7 +7,7 @@
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `cursor/shared-ledger-story-aef7`
 - **Baseline SHA:** `2526af1`
-- **Head SHA:** `ec69d1e`
+- **Head SHA:** `bb69daf`
 - **PR or issue:** draft [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244)
 - **Risk:** High (ledger-mode presentation, Home CAD seals, Personal account floor)
 - **Decision owner:** Jonathan
@@ -53,7 +53,7 @@ Shared Home is one pool plus Kitty Banks as sub-accounts. Personal Books is the 
 - [x] Home leftover CAD equals posted income − posted expenses for that ledger; unpaid bills do not enter Money out.
 - [x] Kitty Banks step 0 / 10% / 100% are visually distinct; contribute uses Confirm.
 - [x] Focused tests + `pnpm check` (1114 passed / 2 skipped at `0ed5651`).
-- [ ] Visual proof at 320 / 390 / 720 / ~1100.
+- [x] Visual proof at 320 / 390 / 720 / ~1100.
 
 ## Plan
 
@@ -65,7 +65,7 @@ Shared Home is one pool plus Kitty Banks as sub-accounts. Personal Books is the 
 ## Evidence log
 
 - 2026-08-29: Jonathan confirm after locking Personal floor, leftover formula, and fat banks.
-- 2026-08-29: `ec69d1e` auditor follow-up: leftover Plan tap, floor Activity, hole not pending, reduced-motion, Confirm names source account.
+- 2026-08-29: `bb69daf` docs + visual proof. `pnpm check` **1114 passed / 2 skipped**.
 
 ## Remaining uncertainty
 
