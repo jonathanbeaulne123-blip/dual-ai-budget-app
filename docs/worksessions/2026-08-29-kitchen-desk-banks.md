@@ -7,7 +7,7 @@
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `cursor/shared-ledger-story-aef7`
 - **Baseline SHA:** `2526af1`
-- **Head SHA:** `bb69daf`
+- **Head SHA:** `af1413f`
 - **PR or issue:** draft [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244)
 - **Risk:** High (ledger-mode presentation, Home CAD seals, Personal account floor)
 - **Decision owner:** Jonathan
@@ -52,8 +52,8 @@ Shared Home is one pool plus Kitty Banks as sub-accounts. Personal Books is the 
 - [x] Personal Books lists joint + own rooms; partner-personal denied; balances include household-visibility posts to shared rooms.
 - [x] Home leftover CAD equals posted income − posted expenses for that ledger; unpaid bills do not enter Money out.
 - [x] Kitty Banks step 0 / 10% / 100% are visually distinct; contribute uses Confirm.
-- [x] Focused tests + `pnpm check` (1114 passed / 2 skipped at `0ed5651`).
-- [x] Visual proof at 320 / 390 / 720 / ~1100.
+- [x] Focused tests + `pnpm check` (1115 passed / 2 skipped at `af1413f`).
+- [x] Visual proof at 320 / 390 / 720 / ~1100 (recaptured Shared Home, Personal Books, Plan Confirm, OfficePhone seals on this pass).
 
 ## Plan
 
@@ -66,6 +66,7 @@ Shared Home is one pool plus Kitty Banks as sub-accounts. Personal Books is the 
 
 - 2026-08-29: Jonathan confirm after locking Personal floor, leftover formula, and fat banks.
 - 2026-08-29: `bb69daf` docs + visual proof. `pnpm check` **1114 passed / 2 skipped**.
+- 2026-08-29: `1a3d006` floor clone denial + Confirm on room interest. `af1413f` partner-goal floor test. `pnpm check` **1115 passed / 2 skipped**.
 
 ## Remaining uncertainty
 

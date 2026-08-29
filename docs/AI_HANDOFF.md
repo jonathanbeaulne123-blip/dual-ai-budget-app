@@ -2,7 +2,7 @@
 
 ## D-165 Kitchen desk, Personal books floor, leftover spend (2026-08-29)
 
-**Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7` @ `bb69daf`. **Not merged, not deployed, not live.** Risk: **High** (ledger-mode financial presentation; leftover CAD; Personal account journal).
+**Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7` @ `af1413f`. **Not merged, not deployed, not live.** Risk: **High** (ledger-mode financial presentation; leftover CAD; Personal account journal).
 
 **Household outcome:** Shared Home is one pool plus Kitty Banks as sub-accounts. Personal Books is the serious account floor (household-visible rooms plus mine, never partner-personal). Home seals are posted Money in, posted expenses Money out, and leftover spend for Kitty Banks after the month. Fat paper banks grow at 10% of `savedCents`. Setup forms collapse.
 
@@ -24,10 +24,10 @@
 - Drawer holds Paper/Classic/Edit/Desks/Home theme. Window temp stays in the glass. Calendar colours by kind; second tap grows detail. Shift posted bubbles sit under Tip climate.
 
 **Verification:**
-- Focused: `pnpm exec vitest run test/ledger-experience.test.ts test/kitty-banks.test.ts test/office-wide.test.ts test/ledger-story-ui.test.ts test/desktop-office.test.ts test/office-phone.test.ts` → **51 passed**.
-- `pnpm check` at `0ed5651` and `bb69daf` → **1114 passed / 2 skipped**, `ai:verify` + `tsc --noEmit` + Vite build green.
-- Visual, fictional Development demo as Jonathan: Shared Home ~1100 three columns + leftover spend seals; Personal Books rooms (chequing, Visa, TFSA); OfficePhone 390/320 same three labels; Plan Confirm this bank; calendar second-tap list; Shift bubbles under Tip climate. Video `kitchen-desk-d165-demo.mp4`.
-- Independent books **CONDITIONAL** at `0ed5651` (P1 Activity used scoped view — closed in `ec69d1e`; P1 interest chips on joint rooms disclosed). Privacy **CONDITIONAL** (hero/Audit/Ask stay accepted books by D-164 integrity copy). UX **CONDITIONAL** (leftover is not sit-down leftover by Jonathan’s lock; Plan tap + reduced-motion + 44px close closed). Trust **CONDITIONAL** (same leftover lock; AskBooks=`booksHousehold` is pre-existing vs this packet). Verifier **CONDITIONAL** at `bb69daf` (core law in code; visual files and `pnpm check` claimed by implementer — check rerun green at `bb69daf`).
+- Focused: `pnpm exec vitest run test/ledger-experience.test.ts` → **16 passed**, including partner-personal goal/recurrence denial on the floor clone. `test/kitty-banks.test.ts`, `test/office-wide.test.ts`, `test/ledger-story-ui.test.ts` also green.
+- `pnpm check` at `af1413f` → **1115 passed / 2 skipped**, `ai:verify` + `tsc --noEmit` + Vite build green.
+- Visual, fictional Development demo as Jonathan on running Vite: Shared Home ~1100 three columns + leftover spend $2,557.84 = $5,404.04 − $2,846.20; Personal Books rooms (Everyday chequing, Visa, Mastercard, TFSA) and collapsed Open an account; Personal Home ~1100 same three seal labels with Kitty Banks as goals; OfficePhone 390/320 same three labels; Plan **Confirm this bank** from Everyday chequing (cancelled). Calendar second-tap and Shift bubbles remain from this branch’s earlier D-165 captures.
+- Independent books **CONDITIONAL** at `0ed5651` (P1 Activity used scoped view — closed in `ec69d1e`; P1 interest chips on joint rooms — closed in `1a3d006` Confirm). Privacy **CONDITIONAL** (hero/Audit/Ask stay accepted books by D-164 integrity copy). UX **CONDITIONAL** (leftover is not sit-down leftover by Jonathan’s lock; Plan tap + reduced-motion + 44px close closed). Trust **CONDITIONAL** (same leftover lock; AskBooks=`booksHousehold` is pre-existing vs this packet). Verifier **CONDITIONAL** at `bb69daf`; `pnpm check` re-proven at `af1413f`.
 
 **Data and environment disclosure:**
 - Development impact: none (local/synthetic demo kitchen only)
@@ -37,9 +37,9 @@
 - Hosted rows/schema/secrets/deployments: none
 - Real household or partner-personal data used: none. Demo/synthetic Development only.
 
-**Remaining uncertainty:** Sit-down leftover stays a different number; the seal sub-copy is posted in minus posted expenses so the two are not homonyms. Personal Home seals still use scoped personal+both, not the Books floor journal. Personal hero, Audit, Ask, and SQL stay on accepted `booksHousehold` (integrity, with honest copy). Joint Visa interest/rewards chips on the Personal floor still post without a new Confirm sheet (pre-existing AccountRoom). GCal overlay can still tint by member. Demo personal-scope accounts remain thin. iPhone mosaic structure is unchanged except seal labels. Do not rebase onto later `main` unless asked.
+**Remaining uncertainty:** Sit-down leftover stays a different number; the seal sub-copy is posted in minus posted expenses so the two are not homonyms. Personal Home seals still use scoped personal+both, not the Books floor journal. Personal hero, Audit, Ask, and SQL stay on accepted `booksHousehold` (integrity, with honest copy). GCal overlay can still tint by member. Demo personal-scope accounts remain thin. iPhone mosaic structure is unchanged except seal labels. Do not rebase onto later `main` unless asked.
 
-**Next owner:** Jonathan — review Shared Home three columns + leftover spend, Personal Books rooms (joint chequing/Visa/TFSA), fat Kitty Banks, and Confirm on Fund bank. Do not merge, rebase, or deploy unless you ask.
+**Next owner:** Jonathan — review Shared Home three columns + leftover spend, Personal Books rooms (joint chequing/Visa/TFSA), fat Kitty Banks, Confirm on Fund bank, and Confirm on room interest. Do not merge, rebase, or deploy unless you ask.
 
 **Worksession:** [`worksessions/2026-08-29-kitchen-desk-banks.md`](worksessions/2026-08-29-kitchen-desk-banks.md)
 
