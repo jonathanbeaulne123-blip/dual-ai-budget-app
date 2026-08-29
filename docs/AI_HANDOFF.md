@@ -1,5 +1,42 @@
 # AI Task and Handoff Standard
 
+## D-164 Shared kitchen composition (2026-08-28)
+
+**Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7`. **Not merged, not deployed, not live.** Risk: **High** (ledger-mode privacy and financial presentation).
+
+**Household outcome:** Shared Ledger is the household table: Fund, calendar, plan, and story-in-the-notebook. Personal Ledger keeps Shift and a private folio. Shared Books is a deep Fund/journal/Audit room, not a net-worth landing. Kitty Banks stays D-161 (surplus into existing shared goals); the Plan Goals vault is not deleted.
+
+**Budget delta (5):** `+4` — same books, clearer Shared vs Personal jobs, Fund-first Shared Books, sit-down leftover graph, editable Plan categories via `setBudget` / `addCategory`.
+
+**Engagement delta (3):** `+3` — laptop-width desk, story tiles on the mosaic, Calendar as the board, nav that matches the job.
+
+**If they conflicted:** books win. No new Fund formulas. Trial off still surfaces. Posted category actuals stay when a plan is zeroed. iPhone `OfficePhone` structure unchanged.
+
+**What changed:**
+- Wide Home: story/folio live in OfficeWide mosaic + notebook; no stacked “Also on this desk” room. Laptop `>=1100px` uses three desk columns and a wider `.app`.
+- Shared primary nav: Home · Cal · + · Plan · More. Personal keeps Shift. Books is More → Journal and Fund.
+- Shared Books opens on Fund operating / household cash, not net worth, trial-in-balance, or P&L stats. Audit panes remain.
+- Calendar hero facts move onto the month board. Purpose banner only on Plan and More.
+- Plan left column: sit-down + Kitty door + Goals. Categories add/adjust/zero on the right.
+- Sit-down Act 1 tiles collapse; leftover gets paper bars.
+- Goals vault stays on Plan. Kitty Banks is the existing Fund surplus path, not a new product.
+
+**Verification:** pending focused tests + `pnpm check` after this commit.
+
+**Data and environment disclosure:**
+- Development impact: none (local/synthetic demo kitchen only)
+- Production impact: none
+- Network calls or data sent: none new
+- MCP access: none for household data
+- Hosted rows/schema/secrets/deployments: none
+- Real household or partner-personal data used: none. Demo/synthetic Development only.
+
+**Remaining uncertainty:** Demo seed has no `scope: personal` accounts, so Personal Books compile empty by design. Kitty Banks does not yet replace the Goals card. Home `overflow: hidden` at `>=720px` may clip tall sill/window chrome.
+
+**Next owner:** Jonathan — review Shared Home, Books-from-More, Calendar, Plan on a laptop width. Do not merge or deploy unless you ask.
+
+**Worksession:** [`worksessions/2026-08-28-shared-ledger-story-implementation.md`](worksessions/2026-08-28-shared-ledger-story-implementation.md)
+
 ## D-164 Shared Story and Personal Folio (2026-08-28)
 
 **Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7` @ `dd4fe43`. **Not merged, not deployed, not live.** Risk: **High** (ledger-mode privacy and financial presentation).

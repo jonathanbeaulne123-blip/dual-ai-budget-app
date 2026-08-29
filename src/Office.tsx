@@ -77,8 +77,6 @@ import type { HearthTab } from "./core/hercules.ts";
 import type { Account, Category, CommitResult, UndoToken } from "./core/index.ts";
 import { OfficePhone } from "./OfficePhone.tsx";
 import { OfficeWide } from "./OfficeWide.tsx";
-import { SharedLedgerStory } from "./SharedLedgerStory.tsx";
-import { PersonalLedgerFolio } from "./PersonalLedgerFolio.tsx";
 import { OfficeWindow } from "./widgets/OfficeWindow.tsx";
 import { DeskItem } from "./widgets/DeskItem.tsx";
 import { BlotterBody, BlotterGlance } from "./widgets/Blotter.tsx";
@@ -891,41 +889,24 @@ export function Office({
       />
       <SillOverviewPlate overview={sill} compact={layout.windowMinimized} />
       {face === "paper" ? (
-        <>
-          {sharedStory ? (
-            <SharedLedgerStory
-              story={sharedStory}
-              onOpenFund={() => onGo("ledger")}
-              onOpenHealth={() => onGo("more")}
-            />
-          ) : null}
-          {personalStory ? (
-            <PersonalLedgerFolio
-              story={personalStory}
-              onOpenBooks={() => onGo("ledger")}
-              onOpenFund={() => onGo("ledger")}
-            />
-          ) : null}
-          <section className="ledger-story-office-secondary" aria-label="Also on this desk">
-            <h2>Also on this desk</h2>
-            <OfficeWide
-              household={household} booksHousehold={booksHousehold} dashboard={dashboard}
-              layout={layout} onLayout={setLayout}
-              today={today} memberId={memberId} view={view} busy={busy} adding={adding}
-              environment={environment} clinkOn={clinkOn}
-              form={form} mode={mode} error={error} categories={categories} postLabel={postLabel}
-              integrityFindings={integrityFindings}
-              onForm={onForm} onPost={onPost} onMore={onMore} onMilk={onMilk} onCoffee={onCoffee}
-              onClockIn={onClockIn} onAbandonShift={onAbandonShift} onSignOut={onSignOut}
-              onStartBreak={onStartBreak} onEndBreak={onEndBreak}
-              onChooseShiftTimeline={onChooseShiftTimeline}
-              onFinishedShift={onFinishedShift} onPayCard={onPayCard} onOpenAccount={onOpenAccount}
-              onKitchen={onKitchen} onMarkPaid={onMarkPaid}
-              onAskSettle={onAskSettle} onAskStartJar={onAskStartJar} onSitDown={onSitDown}
-              onGo={onGo} onClinkOn={onClinkOn}
-            />
-          </section>
-        </>
+        <OfficeWide
+          household={household} booksHousehold={booksHousehold} dashboard={dashboard}
+          layout={layout} onLayout={setLayout}
+          today={today} memberId={memberId} view={view} busy={busy} adding={adding}
+          environment={environment} clinkOn={clinkOn}
+          form={form} mode={mode} error={error} categories={categories} postLabel={postLabel}
+          integrityFindings={integrityFindings}
+          sharedStory={sharedStory}
+          personalStory={personalStory}
+          onForm={onForm} onPost={onPost} onMore={onMore} onMilk={onMilk} onCoffee={onCoffee}
+          onClockIn={onClockIn} onAbandonShift={onAbandonShift} onSignOut={onSignOut}
+          onStartBreak={onStartBreak} onEndBreak={onEndBreak}
+          onChooseShiftTimeline={onChooseShiftTimeline}
+          onFinishedShift={onFinishedShift} onPayCard={onPayCard} onOpenAccount={onOpenAccount}
+          onKitchen={onKitchen} onMarkPaid={onMarkPaid}
+          onAskSettle={onAskSettle} onAskStartJar={onAskStartJar} onSitDown={onSitDown}
+          onGo={onGo} onClinkOn={onClinkOn}
+        />
       ) : (
         <div
           ref={canvasRef}

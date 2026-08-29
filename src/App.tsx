@@ -29,8 +29,11 @@ import {
   householdForView,
   ledgerNameForView,
   ledgerRouteContract,
+  kitchenPrimaryNav,
+  showsLedgerPurposeBanner,
   projectLedgerExperience,
   restoreAcceptedSnapshot,
+  setBudget,
   nameHouseholdLedgers,
   linkGoogleIdentity,
   assembleHousehold,
@@ -80,6 +83,7 @@ import {
   archiveWorkJob,
   upsertWorkJob,
   todayKey,
+  monthKeyFromDateKey,
   TIMEZONE,
   formatZoneDateTime,
   formatZoneTime,
@@ -133,10 +137,12 @@ import {
   type Household,
   type PersonalEnvelope,
   type LedgerView,
+  type MonthKey,
   type Split,
   type UndoToken,
   type Visibility,
   type Account,
+  type CategoryActual,
   type VisitPostDraft,
   type TransactionLocation,
   type HerculesNumberSource,
@@ -3381,13 +3387,16 @@ export function App() {
             key={item}
             className={view === item ? "active" : ""}
             aria-selected={view === item}
-            onClick={() => rememberSession({ memberId: session.memberId, view: item, householdId: household.householdId })}
+            onClick={() => {
+              if (item === "household" && tab === "shift") goTab("home");
+              rememberSession({ memberId: session.memberId, view: item, householdId: household.householdId });
+            }}
           >
             {ledgerNameForView(household, session.memberId, item)}
           </button>
         ))}
       </div>
-      {experience && experience.ok ? (
+      {experience && experience.ok && showsLedgerPurposeBanner(tab) ? (
         <LedgerPurposeBanner tab={tab} view={view} label={experience.label} />
       ) : null}
 
@@ -3471,28 +3480,22 @@ export function App() {
       {tab === "plan" && dashboard && (
         <>
           <div className="plan-wide">
+          <div className="plan-wide-lead">
           <section className="hero">
             <div className="label">{view === "household" ? "Household plan vs actual" : "My plan vs actual"}</div>
             <div className="money">{formatCad(dashboard.month.netBudgetedCents)}</div>
             <div className="sub">Budgeted net for {dashboard.monthLabel}</div>
           </section>
-          <section className="card">
-            <header><h2>Categories</h2></header>
-            {dashboard.month.categories.filter((row) => row.budgetedCents || row.actualCents).map((row) => {
-              const pct = row.budgetedCents ? Math.min(140, (row.actualCents / row.budgetedCents) * 100) : 0;
-              return (
-                <div key={row.subcategoryId} style={{ marginBottom: 10 }}>
-                  <div className="row">
-                    <span>{row.name}</span>
-                    <span>{formatCad(row.actualCents)} / {formatCad(row.budgetedCents)}</span>
-                  </div>
-                  <div className="bar"><i className={pct > 100 ? "over" : ""} style={{ width: `${Math.min(pct, 100)}%` }} /></div>
-                </div>
-              );
-            })}
-          </section>
-          </div>
           <SitDownGuide household={household} memberId={actorId} onApply={(next, token) => persist(next, token)} hidden={view === "personal"} />
+          {view === "household" ? (
+            <section className="card">
+              <header><h2>Kitty Banks</h2></header>
+              <p className="muted">
+                Fund surplus rolls into existing shared goals. Hearth cannot move Bianca’s savings. This is D-161, not a new envelope system.
+              </p>
+              <button className="primary" type="button" onClick={() => goTab("ledger")}>Open Fund kitty</button>
+            </section>
+          ) : null}
           <Goals
             household={displayHousehold}
             booksHousehold={household}
@@ -3501,6 +3504,14 @@ export function App() {
             onChange={(next, token) => persistLedgerWrite(next, token)}
             onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
           />
+          </div>
+          <PlanCategories
+            household={household}
+            rows={dashboard.month.categories}
+            monthKey={monthKeyFromDateKey(today)}
+            onSave={(next, token) => persist(next, token)}
+          />
+          </div>
         </>
       )}
 
@@ -3641,6 +3652,17 @@ export function App() {
               onClick={requestClearThisPhone}
             >
               Sign out
+            </button>
+          </section>
+          <section className="card">
+            <header><h2>Journal and Fund</h2></header>
+            <p className="muted">
+              {view === "household"
+                ? "Household table books: Fund, cash and credit, then the journal. Trial and statements stay in Audit."
+                : "My books: Personal accounts and activity. Partner Personal rows stay out."}
+            </p>
+            <button className="primary" type="button" onClick={() => goTab("ledger")}>
+              {view === "household" ? "Open household table books" : "Open my books"}
             </button>
           </section>
           <section className="card">
@@ -5184,7 +5206,8 @@ export function App() {
         session={session}
       />
 
-      <nav className="nav" aria-label="Hearth">
+      <nav className="nav" data-ledger-nav={view === "household" ? "shared" : "personal"} aria-label="Hearth">
+        {kitchenPrimaryNav(view).includes("home") && (
         <button
           className={tab === "home" && !adding ? "active" : ""}
           aria-current={tab === "home" && !adding ? "page" : undefined}
@@ -5192,6 +5215,8 @@ export function App() {
         >
           Home
         </button>
+        )}
+        {kitchenPrimaryNav(view).includes("calendar") && (
         <button
           className={tab === "calendar" ? "active" : ""}
           aria-current={tab === "calendar" ? "page" : undefined}
@@ -5200,6 +5225,8 @@ export function App() {
         >
           Cal
         </button>
+        )}
+        {kitchenPrimaryNav(view).includes("shift") && (
         <button
           className={tab === "shift" ? "active" : ""}
           aria-current={tab === "shift" ? "page" : undefined}
@@ -5208,7 +5235,9 @@ export function App() {
         >
           Shift
         </button>
+        )}
         <button className="fab" type="button" aria-label="Add money" onClick={() => openAddFor(null)}>+</button>
+        {kitchenPrimaryNav(view).includes("plan") && (
         <button
           className={tab === "plan" ? "active" : ""}
           aria-current={tab === "plan" ? "page" : undefined}
@@ -5216,13 +5245,8 @@ export function App() {
         >
           Plan
         </button>
-        <button
-          className={tab === "ledger" ? "active" : ""}
-          aria-current={tab === "ledger" ? "page" : undefined}
-          onClick={() => goTab("ledger")}
-        >
-          Books
-        </button>
+        )}
+        {kitchenPrimaryNav(view).includes("more") && (
         <button
           className={tab === "more" ? "active" : ""}
           aria-current={tab === "more" ? "page" : undefined}
@@ -5230,6 +5254,7 @@ export function App() {
         >
           More
         </button>
+        )}
       </nav>
     </div>
   );
@@ -5255,6 +5280,7 @@ function Goals({ household, booksHousehold, createdBy, goals, onChange, onAskSta
     <section className="card">
       <header><h2>Goals in this view</h2></header>
       <p className="muted">{vaultReceiptBlurb(household, today)}</p>
+      <p className="muted">Kitty Banks (Fund surplus into existing shared goals) lives on Fund books. This list still starts and funds pigs.</p>
       {proposals.map((proposal) => (
         <div className="row" key={proposal.appointmentId}>
           <div>
@@ -5333,13 +5359,100 @@ function Goals({ household, booksHousehold, createdBy, goals, onChange, onAskSta
   );
 }
 
-function AddCategoryForm({ household, onSave }: { household: Household; onSave: (household: Household, undo?: UndoToken) => void }) {
+function PlanCategories({
+  household,
+  rows,
+  monthKey,
+  onSave,
+}: {
+  household: Household;
+  rows: CategoryActual[];
+  monthKey: MonthKey;
+  onSave: (household: Household, undo?: UndoToken) => void;
+}) {
+  const [editId, setEditId] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const [error, setError] = useState("");
+  const visible = rows.filter((row) => row.budgetedCents || row.actualCents);
+  function saveBudget(subcategoryId: string, amount: string) {
+    try {
+      const result = setBudget(household, { monthKey, subcategoryId, amount });
+      onSave(result.household, result.undo);
+      setEditId(null);
+      setError("");
+    } catch (caught) {
+      setError(caught instanceof ValidationError ? caught.message : String(caught));
+    }
+  }
+  return (
+    <section className="card">
+      <header><h2>Categories</h2></header>
+      <p className="muted">Add or adjust this month’s plan here. Posted actuals stay. Zeroing a budget does not hide history.</p>
+      <KitchenNotice message={error} />
+      {visible.length === 0 ? <p className="muted">No budget plans or expense actuals this month yet.</p> : visible.map((row) => {
+        const pct = row.budgetedCents ? Math.min(140, (row.actualCents / row.budgetedCents) * 100) : 0;
+        return (
+          <div key={row.subcategoryId} style={{ marginBottom: 10 }}>
+            <div className="row">
+              <span>{row.name}</span>
+              {editId === row.subcategoryId ? (
+                <span className="budget-edit">
+                  <span className="muted">{formatCad(row.actualCents)} /</span>
+                  <input
+                    inputMode="decimal"
+                    value={draft}
+                    autoFocus
+                    aria-label={`Budget for ${row.name} in ${monthKey}`}
+                    onChange={(event) => setDraft(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape") setEditId(null);
+                      if (event.key === "Enter") saveBudget(row.subcategoryId, draft);
+                    }}
+                  />
+                  <button type="button" className="chip" onClick={() => saveBudget(row.subcategoryId, draft)}>Save</button>
+                  <button type="button" className="chip quiet" onClick={() => setEditId(null)}>Cancel</button>
+                </span>
+              ) : (
+                <span className="chips">
+                  <button
+                    type="button"
+                    className={`ghost budget-edit-trigger ${row.budgetedCents && row.actualCents > row.budgetedCents ? "over" : ""}`}
+                    aria-label={`Edit ${row.name} budget. Actual ${formatCad(row.actualCents)}, budget ${formatCad(row.budgetedCents)}`}
+                    onClick={() => {
+                      setEditId(row.subcategoryId);
+                      setDraft(row.budgetedCents ? (row.budgetedCents / 100).toFixed(2) : "");
+                      setError("");
+                    }}
+                  >
+                    {formatCad(row.actualCents)} / {formatCad(row.budgetedCents)}
+                  </button>
+                  <button
+                    type="button"
+                    className="chip quiet"
+                    disabled={!row.budgetedCents}
+                    onClick={() => saveBudget(row.subcategoryId, "0")}
+                  >
+                    Zero plan
+                  </button>
+                </span>
+              )}
+            </div>
+            <div className="bar"><i className={pct > 100 ? "over" : ""} style={{ width: `${Math.min(pct, 100)}%` }} /></div>
+          </div>
+        );
+      })}
+      <AddCategoryForm household={household} onSave={onSave} embedded />
+    </section>
+  );
+}
+
+function AddCategoryForm({ household, onSave, embedded }: { household: Household; onSave: (household: Household, undo?: UndoToken) => void; embedded?: boolean }) {
   const [name, setName] = useState("");
   const [parentId, setParentId] = useState("CAT-LIFE");
   const [error, setError] = useState("");
-  return (
-    <section className="card">
-      <header><h2>Add category</h2></header>
+  const body = (
+    <>
+      {embedded ? <h3>Add category</h3> : <header><h2>Add category</h2></header>}
       <p className="muted">Same commit bar as money: one save creates the category and can seed this month’s budget.</p>
       <input value={name} placeholder="Name" onChange={(event) => setName(event.target.value)} />
       <select value={parentId} onChange={(event) => setParentId(event.target.value)}>
@@ -5358,6 +5471,12 @@ function AddCategoryForm({ household, onSave }: { household: Household; onSave: 
           setError(caught instanceof ValidationError ? caught.message : String(caught));
         }
       }}>Save category</button>
+    </>
+  );
+  if (embedded) return <div className="plan-add-category">{body}</div>;
+  return (
+    <section className="card">
+      {body}
     </section>
   );
 }

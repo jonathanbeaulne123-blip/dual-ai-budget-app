@@ -60,6 +60,19 @@ export type LedgerExperienceFailure = {
 const SHARED_PURPOSE = "Coordinate the household: what is true together, what changed, what needs a person, what is next, and why this view is trustworthy.";
 const PERSONAL_PURPOSE = "Understand and manage my private position: what is mine, what moved, my obligations and goals, what I chose to share, and what stays private.";
 
+export type KitchenPrimaryNavId = "home" | "calendar" | "shift" | "plan" | "more";
+
+/** Shared Home owns household books; Shift is a Personal work room. Books stays a deep page from Home/More. */
+export function kitchenPrimaryNav(view: LedgerView): KitchenPrimaryNavId[] {
+  if (view === "household") return ["home", "calendar", "plan", "more"];
+  return ["home", "calendar", "shift", "plan", "more"];
+}
+
+/** Home, Calendar, Shift, and Books already carry their own heading. Do not stack a second purpose card. */
+export function showsLedgerPurposeBanner(tab: LedgerTab): boolean {
+  return tab === "plan" || tab === "more";
+}
+
 export function ledgerRouteContract(tab: LedgerTab, view: LedgerView): LedgerRouteContract {
   const shared = view === "household";
   if (tab === "home") {
@@ -77,9 +90,9 @@ export function ledgerRouteContract(tab: LedgerTab, view: LedgerView): LedgerRou
     return {
       tab,
       view,
-      heading: shared ? "Household story" : "My books",
+      heading: shared ? "Household table books" : "My books",
       purpose: shared
-        ? "Shared books: household accounts, the Fund story, and statements for this ledger."
+        ? "Fund, household cash and credit, and the journal. Trial, statements, and net worth live in Audit — not the shared table opening."
         : "My books: this member’s Personal accounts and activity. Partner Personal rows stay out.",
       projector: shared ? "shared" : "personal",
       memberSpecific: false,

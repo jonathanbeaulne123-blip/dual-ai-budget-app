@@ -26,6 +26,54 @@ export const WIDE_MOSAIC_FILL: readonly InstrumentId[] = [
 
 export const WIDE_MOSAIC_LIMIT = 6;
 
+/** Shared/Personal story tiles live on the paper mosaic, not as a second stacked room. */
+export const SHARED_STORY_TILES = ["now", "attention", "change"] as const;
+export const PERSONAL_STORY_TILES = ["mine", "position", "movement"] as const;
+export type LedgerStoryTileId =
+  | (typeof SHARED_STORY_TILES)[number]
+  | (typeof PERSONAL_STORY_TILES)[number];
+export type PaperHomeMosaicItem =
+  | { slot: "story"; id: LedgerStoryTileId }
+  | { slot: "instrument"; id: InstrumentId };
+
+export function isLedgerStoryTileId(value: string): value is LedgerStoryTileId {
+  return (SHARED_STORY_TILES as readonly string[]).includes(value)
+    || (PERSONAL_STORY_TILES as readonly string[]).includes(value);
+}
+
+/** Shared Home: household jobs. Personal Home: worker and folio jobs. */
+export const SHARED_DESK_PREF: readonly InstrumentId[] = ["wallet", "mail", "claims", "jars", "postcard", "lamp"];
+export const PERSONAL_DESK_PREF: readonly InstrumentId[] = ["timesheet", "wallet", "jars", "mail", "accounts", "lamp"];
+
+/** Six Home tiles: three ledger-purpose scraps, then three desk instruments. */
+export function paperHomeMosaic(input: {
+  view: "household" | "personal";
+  hidden: Iterable<InstrumentId>;
+  lampLit: boolean;
+  expanded?: InstrumentId | "window" | null;
+}): PaperHomeMosaicItem[] {
+  const storyIds = input.view === "personal" ? PERSONAL_STORY_TILES : SHARED_STORY_TILES;
+  const items: PaperHomeMosaicItem[] = storyIds.map((id) => ({ slot: "story" as const, id }));
+  const remaining = Math.max(0, WIDE_MOSAIC_LIMIT - items.length);
+  const hidden = input.hidden instanceof Set ? input.hidden : new Set(input.hidden);
+  const pref = input.view === "personal" ? PERSONAL_DESK_PREF : SHARED_DESK_PREF;
+  const fill: InstrumentId[] = [];
+  const take = (id: InstrumentId) => {
+    if (fill.length >= remaining) return;
+    if (fill.includes(id)) return;
+    if (id === WIDE_HERO_ID || id === "calculator" || id === "chalkboard") return;
+    if (hidden.has(id) && !(id === "lamp" && input.lampLit)) return;
+    fill.push(id);
+  };
+  if (input.lampLit) take("lamp");
+  for (const id of pref) take(id);
+  const guest = input.expanded;
+  if (guest && guest !== "window") take(guest);
+  for (const id of WIDE_MOSAIC_FILL) take(id);
+  for (const id of fill.slice(0, remaining)) items.push({ slot: "instrument", id });
+  return items.slice(0, WIDE_MOSAIC_LIMIT);
+}
+
 export type PaperBarTone = "pine" | "copper" | "ink";
 
 export type PaperBarRow = {

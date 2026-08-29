@@ -218,30 +218,7 @@ export function CalendarPage(props: {
   }
 
   return (
-    <>
-      {pane !== "visits" && (
-        <section className="hero calendar-hero">
-          <div className="label">{(props.view ?? "household") === "personal" ? "My dates" : "Household dates"} · {board.monthLabel}</div>
-          <div className={`money ${board.weekPressure && board.weekPressure.outCents > board.weekPressure.inCents ? "negative" : ""}`}>
-            {board.weekPressure ? formatCad(board.weekPressure.inCents - board.weekPressure.outCents) : formatCad(0)}
-          </div>
-          <div className="sub">
-            This week on the board
-            {due.length ? ` · ${due.length} due` : ""}
-            {suggested.length ? ` · ${suggested.length} spotted in the ledger` : ""}
-            {(props.view ?? "household") === "personal" ? " · household standing dates stay labeled as shared" : ""}
-          </div>
-          <div className="calendar-hero-actions">
-            <button className="ghost" onClick={props.onOpenPlan}>Open plan</button>
-            {due.length > 0 && (
-              <button className="ghost" onClick={() => props.onAskPostDue(due.map((item) => item.id), `This posts ${due.length} due repeating ${due.length === 1 ? "item" : "items"} into the books.`)}>
-                Mark due paid
-              </button>
-            )}
-          </div>
-        </section>
-      )}
-
+    <div className="calendar-stage" data-calendar-view={props.view ?? "household"}>
       {pane !== "visits" && board.clashes[0] && (
         <article className="pulse-banner warn">{describeClash(board.clashes[0])}</article>
       )}
@@ -266,6 +243,27 @@ export function CalendarPage(props: {
               <h2>{board.monthLabel}</h2>
               <button className="chip" onClick={() => setMonthKey(shiftMonthKey(monthKey, 1))} aria-label="Next month">›</button>
             </header>
+            <div className="calendar-board-dock">
+              <p className="calendar-week-net">
+                {(props.view ?? "household") === "personal" ? "My dates" : "Household dates"}
+                {" · this week "}
+                {board.weekPressure ? formatCad(board.weekPressure.inCents - board.weekPressure.outCents) : formatCad(0)}
+                {due.length ? ` · ${due.length} due` : ""}
+                {suggested.length ? ` · ${suggested.length} spotted` : ""}
+              </p>
+              <div className="calendar-hero-actions">
+                <button className="ghost" type="button" onClick={props.onOpenPlan}>Open plan</button>
+                {due.length > 0 && (
+                  <button
+                    className="ghost"
+                    type="button"
+                    onClick={() => props.onAskPostDue(due.map((item) => item.id), `This posts ${due.length} due repeating ${due.length === 1 ? "item" : "items"} into the books.`)}
+                  >
+                    Mark due paid
+                  </button>
+                )}
+              </div>
+            </div>
             <div className="cal-weekdays">
               {WEEKDAY_SHORT.map((label) => <span key={label}>{label}</span>)}
             </div>
@@ -525,7 +523,7 @@ export function CalendarPage(props: {
           }}
         />
       )}
-    </>
+    </div>
   );
 }
 

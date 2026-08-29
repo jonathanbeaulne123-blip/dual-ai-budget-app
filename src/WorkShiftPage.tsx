@@ -196,12 +196,7 @@ export function WorkShiftPage({
   }
 
   return (
-    <div className="shift-page">
-      <p className="muted" data-shift-mode={view}>
-        {view === "personal"
-          ? "Shift is worker-centered. This Personal room is your work story."
-          : "Shift is worker-centered, not a general Shared ledger page. Shared mode shows shared or both posted outcomes only."}
-      </p>
+    <div className="shift-page" data-shift-mode={view} aria-label={view === "personal" ? "Shift is worker-centered. This Personal room is your work story." : "Shift is worker-centered, not a general Shared ledger page."}>
       <div className="tabs" role="tablist" aria-label="Shift panes">
         {(["today", "report", "jobs", "evidence"] as const).map((id) => (
           <button

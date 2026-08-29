@@ -8,6 +8,7 @@ import {
   monthInOutBars,
   parseOfficeLayout,
   paperBarPercents,
+  paperHomeMosaic,
   setDeskFace,
   tipWeekdaySpark,
   wideDrawerIds,
@@ -25,6 +26,16 @@ describe("wide paper office mosaic", () => {
     expect(mosaic).not.toContain("calculator");
     expect(mosaic).not.toContain("chalkboard");
     expect(mosaic).toEqual(["wallet", "mail", "timesheet", "jars", "lamp", "claims"]);
+  });
+
+  it("puts Shared story tiles on the paper mosaic instead of a second stacked room", () => {
+    const shared = paperHomeMosaic({ view: "household", hidden: [], lampLit: false });
+    expect(shared).toHaveLength(WIDE_MOSAIC_LIMIT);
+    expect(shared.filter((item) => item.slot === "story").map((item) => item.id)).toEqual(["now", "attention", "change"]);
+    expect(shared.some((item) => item.slot === "instrument" && item.id === "timesheet")).toBe(false);
+    const personal = paperHomeMosaic({ view: "personal", hidden: [], lampLit: false });
+    expect(personal.filter((item) => item.slot === "story").map((item) => item.id)).toEqual(["mine", "position", "movement"]);
+    expect(personal.some((item) => item.slot === "instrument" && item.id === "timesheet")).toBe(true);
   });
 
   it("guest-appends an expanded fill instrument without dropping the pad off-desk", () => {

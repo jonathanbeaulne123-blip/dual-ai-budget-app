@@ -85,12 +85,14 @@ Opening Shared Ledger feels like sitting down at the household table: what is tr
 
 - Presentation uses `projectLedgerExperience` scoped household; commands and Health still run on the accepted snapshot.
 - Personal presentation accounts are member-owned `scope: personal` only; shared account catalog stays in Shared.
-- iPhone keeps Fund glance only when the Fund exists; wide Shared replaces it with the story room.
+- iPhone keeps Fund glance only when the Fund exists; wide Shared puts story tiles on the desk mosaic and the notebook, not a second stacked paper room.
 - `restoreAcceptedSnapshot` is a persist safety net for presentation clones; close/rec/setBudget/addGoal still execute on `booksHousehold`.
+- Shared Books is not a general-ledger landing: Fund operating + household cash/credit open the page; trial/statements/net worth stay in Audit. Books is a deep page from More, not Shared primary nav.
+- Kitty Banks remains D-161 (Fund surplus into existing shared goals). Plan still lists the Goals vault until Jonathan confirms a replacement.
 
 ## Phone audit (Slice 5)
 
-Semantic correction implemented: every tab, including phone Home, shows `LedgerPurposeBanner` with the active ledger purpose. The existing Fund glance remains phone-only (`is-phone-only`) and is labeled Fund free-to-spend when the Fund exists; wide Shared replaces it with the story room. `OfficePhone` structure, seals, mosaic count, notebook rule, and nav are unchanged.
+Semantic correction implemented: Plan and More still show `LedgerPurposeBanner`. Home, Calendar, Shift, and Books carry their own heading so the purpose card does not steal the fold. The existing Fund glance remains phone-only (`is-phone-only`) and is labeled Fund free-to-spend when the Fund exists. `OfficePhone` structure, seals, mosaic count, and notebook rule stay; App-level nav follows Shared vs Personal jobs (no Shift/Books on Shared primary).
 
 ## Remaining uncertainty
 

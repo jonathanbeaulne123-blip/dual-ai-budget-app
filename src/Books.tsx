@@ -19,6 +19,8 @@ import {
   formatCad,
   householdWallet,
   herculesLedgerSourcePane,
+  LEDGER_CUSTODY_DISCLOSURE,
+  projectHouseholdFund,
   incomeStatement,
   liquidityWatch,
   likelyMiscoded,
@@ -50,7 +52,7 @@ import { assertReadOnlySelect } from "./ledger/queryGuard.ts";
 import { HouseholdFundPanel } from "./HouseholdFundPanel.tsx";
 
 const PANES = [
-  { id: "wallet", label: "Wallet", blurb: "Net worth story: chequing → Goals savings → cards → investments. Touch a tile to open the room." },
+  { id: "wallet", label: "Wallet", blurb: "Household cash, Goals savings, cards, and investments. Touch a tile to open the room." },
   { id: "fund", label: "Household Fund", blurb: "A shared operating subledger backed by Bianca’s savings. It is not a bank account and Hearth cannot move money." },
   { id: "register", label: "All activity", blurb: "Every posted row you can see in this view. Duplicate contrast lives here." },
   { id: "import", label: "Import", blurb: "QFX/OFX and selected document photos enter an inbox. Duplicate review and one final Confirm protect the books." },
@@ -62,6 +64,9 @@ const PANES = [
   { id: "accounts", label: "Chart", blurb: "Every account on the chart of accounts." },
   { id: "query", label: "Ask", blurb: "Read-only SQL and Ask the books. Hercules answers from the journal." },
 ] as const;
+
+const TABLE_PANE_IDS = ["fund", "wallet", "register", "import"] as const;
+const AUDIT_PANE_IDS = ["journal", "trial", "statements", "rec", "close", "accounts", "query"] as const;
 
 type Pane = (typeof PANES)[number]["id"];
 
@@ -104,7 +109,17 @@ export function BooksPage({
   const equation = useMemo(() => booksEquation(books), [books]);
   const opinion = useMemo(() => auditOpinion(booksHousehold), [booksHousehold]);
   const wallet = useMemo(() => householdWallet(household, todayKey()), [household]);
+  const fundProjection = useMemo(() => projectHouseholdFund(booksHousehold, todayKey()), [booksHousehold]);
   const today = todayKey();
+  const sharedTable = view === "household";
+  const showFundPane = sharedTable || booksHousehold.householdFund?.custodianMemberId === memberId;
+  const tablePanes = PANES.filter((item) => (
+    (TABLE_PANE_IDS as readonly string[]).includes(item.id)
+    && (item.id !== "fund" || showFundPane)
+  ));
+  const auditPanes = PANES.filter((item) => (AUDIT_PANE_IDS as readonly string[]).includes(item.id));
+  const fundConfigured = Boolean(booksHousehold.householdFund);
+  const sharedLeadCents = fundConfigured ? fundProjection.operatingBalanceCents : wallet.cashCents;
   const monthKey = monthKeyFromDateKey(today);
   const packMonth = closedMonthKeys(booksHousehold).at(-1) ?? monthKey;
   const [accountId, setAccountId] = useState(
@@ -142,39 +157,44 @@ export function BooksPage({
   }, [view, focusedAccountId, sourceFocus]);
 
   return (
-    <div className="books-theme-c">
-      <section className="hero">
-        <div className="label">{view === "personal" ? "My books · double-entry · CAD" : "Household story · double-entry · CAD"} · {household.timezone}</div>
-        <div className={`money ${equation.netWorthCents < 0 ? "negative" : ""}`}>{formatCad(equation.netWorthCents)}</div>
-        <div className="sub">
-          Net worth {equation.holds ? "equals" : "does not equal"} retained income {formatCad(equation.netIncomeCents)}
-          {trial.inBalance ? " · trial balance in balance" : " · trial balance is off"}
-        </div>
-        <p className={`opinion-banner ${opinion.kind}`}>
-          Hercules’s opinion: <strong>{opinion.kind}</strong> — {opinion.hercules}
-        </p>
-      </section>
-      <StoryStrip heading={view === "personal" ? "My books" : "Household story"}>
-        {(view === "household" || household.householdFund?.custodianMemberId === memberId) && (
+    <div className="books-theme-c" data-books-face={sharedTable ? "household-table" : "personal-folio"}>
+      {sharedTable ? (
+        <section className="hero">
+          <div className="label">Household table · CAD · {household.timezone}</div>
+          <div className={`money ${sharedLeadCents < 0 ? "negative" : ""}`}>{formatCad(sharedLeadCents)}</div>
+          <div className="sub">
+            {fundConfigured
+              ? `Fund operating. Kitty ${formatCad(fundProjection.kittyCents)}. ${LEDGER_CUSTODY_DISCLOSURE}`
+              : "Fund is not set up. This opening is household cash, not a net-worth statement."}
+          </div>
+          {!trial.inBalance ? (
+            <p className="opinion-banner adverse">
+              Trial is off. Open Audit before treating the journal as closed.
+            </p>
+          ) : null}
+        </section>
+      ) : (
+        <section className="hero">
+          <div className="label">My books · CAD · {household.timezone}</div>
+          <div className={`money ${equation.netWorthCents < 0 ? "negative" : ""}`}>{formatCad(equation.netWorthCents)}</div>
+          <div className="sub">My Personal position in this folio. Partner Personal rows stay out.</div>
+          {!trial.inBalance ? (
+            <p className="opinion-banner adverse">
+              Trial is off. Open Audit before treating the journal as closed.
+            </p>
+          ) : null}
+        </section>
+      )}
+      <StoryStrip heading={sharedTable ? "Together now" : "My accounts"}>
+        {showFundPane && (
         <PaperTile
           kind="Fund"
           name={view === "personal" ? "Private Fund check" : "Household Fund"}
-          value={household.householdFund ? "Open the fund books" : "Set up at $0.00"}
+          value={household.householdFund ? formatCad(fundProjection.operatingBalanceCents) : "Set up at $0.00"}
           onClick={() => setPane("fund")}
           ariaLabel="Open the Hearth Household Fund books"
         />
         )}
-        <PaperTile
-          kind="Books"
-          name="Net worth"
-          value={
-            <strong className={equation.netWorthCents < 0 ? "negative" : ""}>
-              {formatCad(equation.netWorthCents)}
-            </strong>
-          }
-          onClick={() => setPane("wallet")}
-          ariaLabel={`Net worth ${formatCad(equation.netWorthCents)}`}
-        />
         {wallet.story.map((group) => (
           <PaperTile
             key={group.kind}
@@ -193,12 +213,6 @@ export function BooksPage({
           />
         ))}
       </StoryStrip>
-      <div className="grid">
-        <div className="stat"><span>Assets</span><strong>{formatCad(equation.assetCents)}</strong></div>
-        <div className="stat"><span>Liabilities</span><strong>{formatCad(equation.liabilityCents)}</strong></div>
-        <div className="stat"><span>Income</span><strong>{formatCad(equation.incomeCents)}</strong></div>
-        <div className="stat"><span>Expenses</span><strong>{formatCad(equation.expenseCents)}</strong></div>
-      </div>
       {booksStatus?.ok ? (
         <p className="muted">
           {`Postgres ${booksStatus.postgresVersion ?? "PGlite"} is holding ${booksStatus.entryCount} journal entries on this phone.`}
@@ -226,16 +240,31 @@ export function BooksPage({
         <p className="muted">This household stays on this phone until a signed-in Google member shares it. A Hearth Pass does not upload.</p>
       )}
       <PaneSeals
-        items={[
-          { id: "wallet", label: "Wallet" },
-          { id: "register", label: "Activity" },
-          { id: "close", label: "Close month" },
-        ]}
+        items={sharedTable
+          ? [
+              { id: "fund", label: "Fund" },
+              { id: "wallet", label: "Wallet" },
+              { id: "register", label: "Activity" },
+            ]
+          : [
+              { id: "wallet", label: "Wallet" },
+              { id: "register", label: "Activity" },
+              { id: "close", label: "Close month" },
+            ]}
         active={pane}
         onPick={(id) => setPane(id as Pane)}
       />
-      <div className="tabs">
-        {PANES.map((item) => (
+      <p className="muted">{sharedTable ? "Household table" : "My folio"}</p>
+      <div className="tabs" role="tablist" aria-label={sharedTable ? "Household table books" : "My books"}>
+        {tablePanes.map((item) => (
+          <button key={item.id} className={pane === item.id ? "active" : ""} onClick={() => setPane(item.id)}>
+            {item.label}
+          </button>
+        ))}
+      </div>
+      <p className="muted">Audit office</p>
+      <div className="tabs" role="tablist" aria-label="Audit office">
+        {auditPanes.map((item) => (
           <button key={item.id} className={pane === item.id ? "active" : ""} onClick={() => setPane(item.id)}>
             {item.label}
           </button>

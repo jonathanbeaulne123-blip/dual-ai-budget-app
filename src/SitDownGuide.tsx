@@ -26,6 +26,7 @@ import {
 } from "./core/index.ts";
 import { downloadText } from "./ledger/export.ts";
 import { KitchenNotice } from "./KitchenNotice.tsx";
+import { PaperBars } from "./theme/PaperTheme.tsx";
 import { googleConfigured, uploadSitDownWorkbook } from "./google/index.ts";
 
 export function SitDownGuide({
@@ -89,9 +90,13 @@ export function SitDownGuide({
         <>
           <p className="sit-q">What went well.</p>
           <p className="muted">Not a grade. Hercules can read these out loud. He still never posts.</p>
-          {positives.map((fact) => (
-            <FactRow key={fact.id} household={household} fact={fact} open={openFact === fact.id} onToggle={() => setOpenFact(openFact === fact.id ? null : fact.id)} />
-          ))}
+          <LeftoverMath leftover={leftover} />
+          <details className="sit-act1-well">
+            <summary>What went well — tap to open the tiles</summary>
+            {positives.map((fact) => (
+              <FactRow key={fact.id} household={household} fact={fact} open={openFact === fact.id} onToggle={() => setOpenFact(openFact === fact.id ? null : fact.id)} />
+            ))}
+          </details>
           <div className="chips">
             <button
               className="primary"
@@ -300,6 +305,15 @@ export function SitDownGuide({
 function LeftoverMath({ leftover }: { leftover: ReturnType<typeof leftoverProjection> }) {
   return (
     <div className="sit-math">
+      <PaperBars
+        rows={[
+          { label: "Cash-like", cents: leftover.cashLikeCents, tone: "pine" },
+          { label: "Bills 30d", cents: leftover.billsNext30Cents, tone: "copper" },
+          { label: "Leftover", cents: leftover.leftoverCents, tone: leftover.leftoverCents > 0 ? "ink" : "copper" },
+        ]}
+        caption="Cash versus bills. Leftover is not month net."
+        empty="No cash-like or bills to graph yet."
+      />
       <div className="row"><span>Cash-like</span><span>{formatCad(leftover.cashLikeCents)}</span></div>
       <div className="row"><span>− Bills next 30 days</span><span>{formatCad(leftover.billsNext30Cents)}</span></div>
       <div className="row"><span>− Card minimums</span><span>{formatCad(leftover.minPaymentsCents)}</span></div>

@@ -254,8 +254,28 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
 }
 
 @media (min-width: 720px) {
-  /* Paper office, not a hotel lobby. 1120 fits two columns; 1280 empty-wall still refused. */
+  /* Paper office, not a hotel lobby. 1120 fits two columns until laptop width. */
   .app { max-width: min(1120px, 100%); }
+}
+
+@media (min-width: 1100px) {
+  .app { max-width: min(1680px, calc(100% - 24px)); }
+}
+
+@media (min-width: 720px) {
+  .app[data-ledger-tab="home"] {
+    max-height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .app[data-ledger-tab="home"] .office.is-wide-room {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 .topbar {
@@ -445,6 +465,12 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 56px 1fr 1fr 1fr;
   padding: 6px 4px env(safe-area-inset-bottom);
+}
+.nav[data-ledger-nav="shared"] {
+  grid-template-columns: 1fr 1fr 56px 1fr 1fr;
+}
+.nav[data-ledger-nav="personal"] {
+  grid-template-columns: 1fr 1fr 1fr 56px 1fr 1fr;
 }
 .nav button {
   border: 0;
@@ -1174,6 +1200,19 @@ input, select, textarea {
   flex-wrap: wrap;
 }
 .calendar-hero-actions .ghost { width: auto; padding: 8px 12px; }
+.calendar-board-dock {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 0 10px;
+}
+.calendar-week-net {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
 .pulse-banner {
   background: var(--card);
   border: 1px solid #e4b4a4;
@@ -1802,6 +1841,18 @@ input, select, textarea {
   margin: 8px 0 12px;
 }
 .sit-guide .chips { margin-top: 8px; }
+.sit-act1-well {
+  margin: 8px 0 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+}
+.sit-act1-well summary {
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 600;
+}
 .sit-math {
   margin: 8px 0 14px;
   padding: 10px 12px;
@@ -2393,12 +2444,25 @@ input, select, textarea {
     align-items: start;
     margin-bottom: 14px;
   }
+  .app[data-ledger-tab="calendar"] .calendar-stage {
+    min-height: calc(100dvh - var(--nav) - 120px);
+  }
+  .calendar-card .cal-day {
+    min-height: 88px;
+  }
+  .calendar-card .cal-day .num { font-size: 15px; }
   .plan-wide {
     display: grid;
-    grid-template-columns: minmax(220px, 0.85fr) minmax(0, 1.15fr);
+    grid-template-columns: minmax(280px, 1fr) minmax(0, 1.05fr);
     gap: 14px;
     align-items: start;
     margin-bottom: 14px;
+  }
+  .plan-wide-lead {
+    display: grid;
+    gap: 14px;
+    min-width: 0;
+    align-content: start;
   }
   .wallet-tiles {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));

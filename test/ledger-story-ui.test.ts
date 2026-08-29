@@ -10,20 +10,26 @@ const calendar = readFileSync(new URL("../src/Calendar.tsx", import.meta.url), "
 const shift = readFileSync(new URL("../src/WorkShiftPage.tsx", import.meta.url), "utf8");
 const css = readFileSync(new URL("../src/ledger-story.css", import.meta.url), "utf8");
 const panel = readFileSync(new URL("../src/HouseholdFundPanel.tsx", import.meta.url), "utf8");
+const experience = readFileSync(new URL("../src/core/ledgerExperience.ts", import.meta.url), "utf8");
 
 describe("D-164 ledger story UI fences", () => {
-  it("routes every tab through projectLedgerExperience and a visible purpose banner", () => {
+  it("routes every tab through projectLedgerExperience and a mode-aware purpose banner", () => {
     expect(app).toContain("projectLedgerExperience");
     expect(app).toContain("<LedgerPurposeBanner");
+    expect(app).toContain("showsLedgerPurposeBanner(tab)");
     expect(app).toContain("data-ledger-mode={view}");
     expect(app).toContain("experience.exportHousehold");
     expect(app).toContain("data-ledger-confirm-purpose");
+    expect(experience).toContain("showsLedgerPurposeBanner");
   });
 
-  it("makes Shared Story the wide paper primary and keeps OfficePhone structurally unchanged", () => {
-    expect(office).toContain("<SharedLedgerStory");
-    expect(office).toContain("<PersonalLedgerFolio");
-    expect(office).toContain("Also on this desk");
+  it("folds Shared Story into the wide notebook and keeps OfficePhone structurally unchanged", () => {
+    expect(office).toContain("sharedStory={sharedStory}");
+    expect(office).toContain("personalStory={personalStory}");
+    expect(office).not.toContain("Also on this desk");
+    expect(officeWide).toContain("<SharedLedgerStory");
+    expect(officeWide).toContain("<PersonalLedgerFolio");
+    expect(officeWide).toContain("paperHomeMosaic");
     expect(officePhone).not.toContain("SharedLedgerStory");
     expect(officePhone).not.toContain("Fund free-to-spend");
     expect(officePhone).not.toContain("runHealthCheck");
@@ -66,10 +72,22 @@ describe("D-164 ledger story UI fences", () => {
 
   it("gives Calendar, Shift, and Books a mode contract", () => {
     expect(calendar).toContain("view?: LedgerView");
+    expect(calendar).toContain("calendar-stage");
+    expect(calendar).not.toContain("hero calendar-hero");
     expect(shift).toContain("view?: LedgerView");
     expect(shift).toContain("worker-centered");
-    expect(books).toContain("Household story");
+    expect(books).toContain("Household table");
     expect(books).toContain("My books");
+    expect(books).toContain("Audit office");
+    expect(books).not.toContain("Household story · double-entry");
     expect(panel).toContain("<summary>Propose or confirm a contribution</summary>");
+  });
+
+  it("keeps Books off Shared primary nav and doors it from More", () => {
+    expect(app).toContain("kitchenPrimaryNav(view)");
+    expect(app).toContain("Open household table books");
+    expect(app).toContain('data-ledger-nav={view === "household" ? "shared" : "personal"}');
+    expect(experience).toContain('return ["home", "calendar", "plan", "more"]');
+    expect(experience).toContain('return ["home", "calendar", "shift", "plan", "more"]');
   });
 });
