@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { formatCad } from "../core/money.ts";
 import { paperBarPercents, type PaperBarRow, type PaperSparkPoint } from "../core/officeWide.ts";
 
@@ -7,6 +7,7 @@ export function PaperTile({
   kind,
   name,
   value,
+  figure,
   warn,
   active,
   onClick,
@@ -15,6 +16,7 @@ export function PaperTile({
   kind?: string;
   name: string;
   value: ReactNode;
+  figure?: ReactNode;
   warn?: boolean;
   active?: boolean;
   onClick?: () => void;
@@ -24,7 +26,7 @@ export function PaperTile({
   return (
     <Tag
       type={onClick ? "button" : undefined}
-      className={`hearth-paper-tile ${warn ? "is-warn" : ""} ${active ? "is-active" : ""}`}
+      className={`hearth-paper-tile ${warn ? "is-warn" : ""} ${active ? "is-active" : ""} ${figure ? "has-figure" : ""}`}
       onClick={onClick}
       aria-label={ariaLabel ?? `${name}. ${typeof value === "string" ? value : ""}`}
       aria-pressed={onClick ? active : undefined}
@@ -32,6 +34,7 @@ export function PaperTile({
       {kind && <span className="hearth-tile-kind">{kind}</span>}
       <span className="hearth-tile-name">{name}</span>
       <span className="hearth-tile-value">{value}</span>
+      {figure ? <div className="hearth-tile-figure">{figure}</div> : null}
     </Tag>
   );
 }
@@ -129,13 +132,15 @@ export function PaneSeals({
   items,
   active,
   onPick,
+  ariaLabel = "Books panes",
 }: {
   items: { id: string; label: string }[];
   active: string;
   onPick: (id: string) => void;
+  ariaLabel?: string;
 }) {
   return (
-    <div className="hearth-pane-seals" role="tablist" aria-label="Books panes">
+    <div className="hearth-pane-seals" role="tablist" aria-label={ariaLabel}>
       {items.map((item) => (
         <button
           key={item.id}
@@ -149,6 +154,44 @@ export function PaneSeals({
         </button>
       ))}
     </div>
+  );
+}
+
+/** Setup forms and secondary chrome. Primary lists stay open. */
+export function CollapsibleCard({
+  title,
+  hint,
+  defaultOpen = false,
+  open,
+  onToggle,
+  children,
+  className,
+}: {
+  title: string;
+  hint?: string;
+  defaultOpen?: boolean;
+  open?: boolean;
+  onToggle?: (open: boolean) => void;
+  children: ReactNode;
+  className?: string;
+}) {
+  const controlled = open !== undefined;
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
+  return (
+    <details
+      className={`card hearth-collapse ${className ?? ""}`.trim()}
+      open={controlled ? open : uncontrolledOpen}
+      onToggle={(event) => {
+        if (!controlled) setUncontrolledOpen(event.currentTarget.open);
+        onToggle?.(event.currentTarget.open);
+      }}
+    >
+      <summary>
+        <span className="hearth-collapse-title">{title}</span>
+        {hint ? <span className="muted">{hint}</span> : null}
+      </summary>
+      <div className="hearth-collapse-body">{children}</div>
+    </details>
   );
 }
 

@@ -1,22 +1,21 @@
 import { useMemo, useState, type ReactNode } from "react";
 import {
   auditOpinion,
-  formatDateLabel,
+  formatCad,
   householdWallet,
   mailOverdue,
   phoneDeskKey,
   phoneDrawerIds,
-  phoneDueBill,
   phoneRailOrder,
   phoneStoryIds,
   instrumentIsOpen,
   revealPhoneInstrument,
+  deskMonthSeals,
   toggleInstrumentPin,
-  runHealthCheck,
   shiftPostingStreak,
   walletWarn,
 } from "./core/index.ts";
-import type { Household, Account, Category, CommitResult, InstrumentId, OfficeLayout, WeatherReading } from "./core/index.ts";
+import type { Household, Account, Category, CommitResult, Finding, InstrumentId, OfficeLayout, WeatherReading } from "./core/index.ts";
 import type { Dashboard } from "./core/insights.ts";
 import type { HearthTab } from "./core/hercules.ts";
 import type { SillOverview } from "./core/sillOverview.ts";
@@ -50,6 +49,7 @@ type Spec = {
 export function OfficePhone({
   household, dashboard, sill, reading, layout, onLayout,
   today, memberId, busy, adding, form, mode, error, categories, postLabel,
+  integrityFindings = [],
   onForm, onPost, onMore, onMilk, onCoffee, onClockIn, onAbandonShift,
   onStartBreak, onEndBreak, onChooseShiftTimeline, onSignOut, onFinishedShift, onPayCard, onOpenAccount,
   onKitchen, onMarkPaid, onGo,
@@ -86,10 +86,11 @@ export function OfficePhone({
   onKitchen: (fn: (current: Household) => CommitResult) => void;
   onMarkPaid: (recurrenceId: string, summary: string) => void;
   onGo: (tab: HearthTab) => void;
+  integrityFindings?: Finding[];
 }) {
   const [chalkOpen, setChalkOpen] = useState(false);
   const opinion = useMemo(() => auditOpinion(household), [household]);
-  const findings = useMemo(() => runHealthCheck(household), [household]);
+  const findings = integrityFindings;
   const streak = useMemo(() => shiftPostingStreak(household, today), [household, today]);
   const wallet = useMemo(() => householdWallet(household, today), [household, today]);
   const memberName = household.members.find((m) => m.id === memberId)?.name ?? "";
@@ -118,9 +119,7 @@ export function OfficePhone({
   const setExpanded = (id: InstrumentId | null) =>
     onLayout({ ...layout, expanded: expanded === id ? null : id });
 
-  const postedToday = household.transactions.some((tx) => tx.date === today);
-  const bill = phoneDueBill(dashboard.upcoming);
-  const closeNeeds = findings.length > 0;
+  const seals = deskMonthSeals(dashboard.month);
 
   function tapSeal(go: InstrumentId) {
     onLayout(revealPhoneInstrument(layout, go));
@@ -224,28 +223,28 @@ export function OfficePhone({
 
       <div className="hearth-wax-seals ph-seals" role="group" aria-label="Desk seals">
         <WaxSeal
-          label="Post"
+          label="Money in"
           tone="post"
-          pending={!postedToday}
-          value={postedToday ? "—" : "Add"}
-          sub={postedToday ? "posted today" : "nothing yet today"}
-          onClick={() => tapSeal("calculator")}
+          pending={seals.inCents === 0}
+          value={formatCad(seals.inCents)}
+          sub="posted income this month"
+          onClick={() => tapSeal("blotter")}
         />
         <WaxSeal
-          label="Due"
+          label="Money out"
           tone="due"
-          pending={Boolean(bill)}
-          value={bill ? bill.title : "—"}
-          sub={bill ? formatDateLabel(bill.date) : "nothing near"}
-          onClick={() => tapSeal("mail")}
+          pending={seals.outCents === 0}
+          value={formatCad(seals.outCents)}
+          sub="posted expenses only"
+          onClick={() => tapSeal("blotter")}
         />
         <WaxSeal
-          label="Health"
+          label="Leftover spend"
           tone="close"
-          pending={closeNeeds}
-          value={closeNeeds ? String(findings.length) : "—"}
-          sub={closeNeeds ? "needs you" : "books agree"}
-          onClick={() => tapSeal("lamp")}
+          value={formatCad(seals.leftoverCents)}
+          sub="posted in minus posted expenses"
+          pending={seals.inCents === 0 && seals.outCents === 0}
+          onClick={() => onGo("plan")}
         />
       </div>
 

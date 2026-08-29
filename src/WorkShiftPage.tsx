@@ -11,12 +11,15 @@ import {
   shiftPostingStreak,
   shiftReportGlance,
   shiftSaucerBoard,
+  shiftEarningsTracker,
   type Environment,
   type Household,
+  type LedgerView,
   type PostWorkShiftInput,
   type Shift,
   type ShiftEnvelope,
   type ShiftOutcome,
+  type ShiftEarningsPeriod,
   type WeatherGlass,
   type WorkJob,
   statusForEnvelopeAt,
@@ -86,6 +89,7 @@ function FloorLampRings() {
 
 export function WorkShiftPage({
   household,
+  view = "household",
   memberId,
   memberName,
   today,
@@ -111,6 +115,7 @@ export function WorkShiftPage({
   onRefreshShiftEnvelopes,
 }: {
   household: Household;
+  view?: LedgerView;
   memberId: string;
   memberName: string;
   today: string;
@@ -138,6 +143,7 @@ export function WorkShiftPage({
   const [pane, setPane] = useState<ShiftPane>("today");
   const [sealCaption, setSealCaption] = useState<string | null>(null);
   const [period, setPeriod] = useState<"month" | "all">("month");
+  const [earningsPeriod, setEarningsPeriod] = useState<ShiftEarningsPeriod>("month");
   const [breakdown, setBreakdown] = useState(false);
   const [weatherGlass, setWeatherGlass] = useState<WeatherGlass | undefined>(undefined);
   const [finishedReview, setFinishedReview] = useState(false);
@@ -227,6 +233,10 @@ export function WorkShiftPage({
     [household, today, memberId, weatherGlass, preview],
   );
   const saucers = useMemo(() => shiftSaucerBoard(household, today, memberId), [household, today, memberId]);
+  const earnings = useMemo(
+    () => shiftEarningsTracker(household, today, memberId, earningsPeriod),
+    [household, today, memberId, earningsPeriod],
+  );
   const oracle = useMemo(() => shiftFloorOracle(household, today, memberId), [household, today, memberId]);
   const report = useMemo(() => shiftReportGlance(household, today, memberId, period), [household, today, memberId, period]);
 
@@ -337,7 +347,7 @@ export function WorkShiftPage({
   }
 
   return (
-    <div className="shift-page">
+    <div className="shift-page" data-shift-mode={view} aria-label={view === "personal" ? "Shift is worker-centered. This Personal room is your work story." : "Shift is worker-centered, not a general Shared ledger page."}>
       <div className="tabs" role="tablist" aria-label="Shift panes">
         {(["today", "report", "jobs", "evidence"] as const).map((id) => (
           <button
@@ -367,52 +377,6 @@ export function WorkShiftPage({
 
       {pane === "today" && (
         <div className="shift-panel shift-today-wide" role="tabpanel" id="shift-panel-today" aria-labelledby="shift-tab-today">
-          <section className="card shift-envelope-mail" aria-label="Shift envelopes">
-            <header>
-              <h2><span aria-hidden="true">✉</span> Shift mail</h2>
-              <div className="chips"><span className="pill">{pendingEnvelopeCount} pending</span><button type="button" className="chip" disabled={busy || mailRefreshBusy} onClick={() => { void refreshShiftMail(); }}>{mailRefreshBusy ? "Checking…" : "Check 7shifts mail"}</button></div>
-            </header>
-            {mailRefreshMessage ? <p className="muted" role="status">{mailRefreshMessage}</p> : null}
-            <p className="muted">Schedules arrive early. Worked time waits for 7shifts. Only the open Confirm form can post money.</p>
-            {envelopes.length ? (
-              <div className="shift-envelope-list">
-                {envelopes.slice(0, 12).map((envelope) => (
-                  <button
-                    type="button"
-                    key={envelope.id}
-                    className={`shift-envelope-row${selectedEnvelopeId === envelope.id ? " selected" : ""}`}
-                    onClick={() => setSelectedEnvelopeId((current) => current === envelope.id ? null : envelope.id)}
-                    aria-expanded={selectedEnvelopeId === envelope.id}
-                  >
-                    <span aria-hidden="true">{["confirmed", "corrected"].includes(envelope.status) ? "✓" : "✉"}</span>
-                    <span><strong>{envelope.date}</strong><small>{envelope.roleLabel || household.workJobs.find((job) => job.id === envelope.jobId)?.roles.find((role) => role.id === envelope.roleId)?.name || "Shift"}</small></span>
-                    <span>{ENVELOPE_STATUS_LABEL[envelope.status]}</span>
-                  </button>
-                ))}
-              </div>
-            ) : <p className="muted">No captured schedule yet. The manual clock and Shift form still work.</p>}
-            {selectedEnvelope ? (
-              <div className="shift-envelope-open" role="region" aria-label={`${selectedEnvelope.date} shift envelope`}>
-                <strong>{ENVELOPE_STATUS_LABEL[selectedEnvelope.status]}</strong>
-                <p>{new Date(selectedEnvelope.scheduledStart).toLocaleString([], { timeZone: selectedEnvelope.timezone, weekday: "short", hour: "numeric", minute: "2-digit" })}–{new Date(selectedEnvelope.scheduledEnd).toLocaleTimeString([], { timeZone: selectedEnvelope.timezone, hour: "numeric", minute: "2-digit" })}</p>
-                {selectedEnvelope.conflicts.length ? <p className="error">This envelope has source conflicts and needs review.</p> : null}
-                {selectedEnvelope.status === "worked_ready" ? (
-                  <button type="button" className="primary" disabled={busy || !selectedEnvelope.actualEnd} onClick={() => openWorkedEnvelope(selectedEnvelope)}>Open Confirm form</button>
-                ) : selectedEnvelope.status === "needs_review" ? (() => {
-                  const original = household.shifts.find((shift) => shift.shiftBible?.id === selectedEnvelope.confirmedBibleId);
-                  const transactionId = original ? workShiftTransactionIds(original)[0] : null;
-                  return original && transactionId
-                    ? <><p className="error">7shifts changed this confirmed shift. Correct creates an exact reversal, then reopens this envelope for one visible replacement Confirm.</p><button type="button" className="primary" disabled={busy} onClick={() => onCorrect(original, transactionId)}>Correct this Bible</button></>
-                    : <p className="error">Worked evidence is not approved/final or its prior Bible is unavailable. Nothing can post from this envelope.</p>;
-                })()
-                : ["cut", "called_off", "traded_away"].includes(selectedEnvelope.status) && !selectedEnvelope.confirmedBibleId ? (
-                  <button type="button" className="primary" disabled={busy} onClick={() => onConfirmEnvelopeOutcome?.(selectedEnvelope.id, selectedEnvelope.status as Exclude<ShiftOutcome, "worked">)}>Confirm {ENVELOPE_STATUS_LABEL[selectedEnvelope.status].toLowerCase()}</button>
-                ) : selectedEnvelope.status === "awaiting_punch" ? (
-                  <p className="muted">Scheduled time is outlook only. Hearth will offer Confirm after actual clock-out facts arrive.</p>
-                ) : null}
-              </div>
-            ) : null}
-          </section>
           <section className="card shift-punch">
             <TimesheetBody
               household={household}
@@ -509,6 +473,83 @@ export function WorkShiftPage({
               ))}
             </div>
             {sealCaption ? <p className="shift-preview-caption">{sealCaption}</p> : null}
+            <p className="muted">Posted {earnings.label}. Not a projection.</p>
+            <div className="chips" role="group" aria-label="Posted earnings range">
+              {(["week", "month", "year"] as const).map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  className={`chip ${earningsPeriod === item ? "selected" : ""}`}
+                  aria-pressed={earningsPeriod === item}
+                  onClick={() => setEarningsPeriod(item)}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+            <div className="shift-earn-bubbles" role="group" aria-label="Posted cash tips, card tips, and wages">
+              {([
+                { label: "Cash tips", cents: earnings.cashTipsCents, tone: "pine" },
+                { label: "Card tips", cents: earnings.cardTipsCents, tone: "ink" },
+                { label: "Wages", cents: earnings.wagesCents, tone: "copper" },
+              ] as const).map((bubble) => (
+                <div
+                  key={bubble.label}
+                  className={`shift-earn-bubble tone-${bubble.tone}${bubble.cents === 0 ? " is-empty" : ""}`}
+                >
+                  <span className="shift-earn-bubble-label">{bubble.label}</span>
+                  <strong>{bubble.cents === 0 ? "" : formatCad(bubble.cents)}</strong>
+                </div>
+              ))}
+            </div>
+            <div className="row"><strong>Take-home</strong><strong>{formatCad(earnings.takeHomeCents)}</strong></div>
+          </section>
+
+          <section className="card shift-envelope-mail" aria-label="Shift envelopes">
+            <header>
+              <h2><span aria-hidden="true">✉</span> Shift mail</h2>
+              <div className="chips"><span className="pill">{pendingEnvelopeCount} pending</span><button type="button" className="chip" disabled={busy || mailRefreshBusy} onClick={() => { void refreshShiftMail(); }}>{mailRefreshBusy ? "Checking…" : "Check 7shifts mail"}</button></div>
+            </header>
+            {mailRefreshMessage ? <p className="muted" role="status">{mailRefreshMessage}</p> : null}
+            <p className="muted">Schedules arrive early. Worked time waits for 7shifts. Only the open Confirm form can post money.</p>
+            {envelopes.length ? (
+              <div className="shift-envelope-list">
+                {envelopes.slice(0, 12).map((envelope) => (
+                  <button
+                    type="button"
+                    key={envelope.id}
+                    className={`shift-envelope-row${selectedEnvelopeId === envelope.id ? " selected" : ""}`}
+                    onClick={() => setSelectedEnvelopeId((current) => current === envelope.id ? null : envelope.id)}
+                    aria-expanded={selectedEnvelopeId === envelope.id}
+                  >
+                    <span aria-hidden="true">{["confirmed", "corrected"].includes(envelope.status) ? "✓" : "✉"}</span>
+                    <span><strong>{envelope.date}</strong><small>{envelope.roleLabel || household.workJobs.find((job) => job.id === envelope.jobId)?.roles.find((role) => role.id === envelope.roleId)?.name || "Shift"}</small></span>
+                    <span>{ENVELOPE_STATUS_LABEL[envelope.status]}</span>
+                  </button>
+                ))}
+              </div>
+            ) : <p className="muted">No captured schedule yet. The manual clock and Shift form still work.</p>}
+            {selectedEnvelope ? (
+              <div className="shift-envelope-open" role="region" aria-label={`${selectedEnvelope.date} shift envelope`}>
+                <strong>{ENVELOPE_STATUS_LABEL[selectedEnvelope.status]}</strong>
+                <p>{new Date(selectedEnvelope.scheduledStart).toLocaleString([], { timeZone: selectedEnvelope.timezone, weekday: "short", hour: "numeric", minute: "2-digit" })}–{new Date(selectedEnvelope.scheduledEnd).toLocaleTimeString([], { timeZone: selectedEnvelope.timezone, hour: "numeric", minute: "2-digit" })}</p>
+                {selectedEnvelope.conflicts.length ? <p className="error">This envelope has source conflicts and needs review.</p> : null}
+                {selectedEnvelope.status === "worked_ready" ? (
+                  <button type="button" className="primary" disabled={busy || !selectedEnvelope.actualEnd} onClick={() => openWorkedEnvelope(selectedEnvelope)}>Open Confirm form</button>
+                ) : selectedEnvelope.status === "needs_review" ? (() => {
+                  const original = household.shifts.find((shift) => shift.shiftBible?.id === selectedEnvelope.confirmedBibleId);
+                  const transactionId = original ? workShiftTransactionIds(original)[0] : null;
+                  return original && transactionId
+                    ? <><p className="error">7shifts changed this confirmed shift. Correct creates an exact reversal, then reopens this envelope for one visible replacement Confirm.</p><button type="button" className="primary" disabled={busy} onClick={() => onCorrect(original, transactionId)}>Correct this Bible</button></>
+                    : <p className="error">Worked evidence is not approved/final or its prior Bible is unavailable. Nothing can post from this envelope.</p>;
+                })()
+                : ["cut", "called_off", "traded_away"].includes(selectedEnvelope.status) && !selectedEnvelope.confirmedBibleId ? (
+                  <button type="button" className="primary" disabled={busy} onClick={() => onConfirmEnvelopeOutcome?.(selectedEnvelope.id, selectedEnvelope.status as Exclude<ShiftOutcome, "worked">)}>Confirm {ENVELOPE_STATUS_LABEL[selectedEnvelope.status].toLowerCase()}</button>
+                ) : selectedEnvelope.status === "awaiting_punch" ? (
+                  <p className="muted">Scheduled time is outlook only. Hearth will offer Confirm after actual clock-out facts arrive.</p>
+                ) : null}
+              </div>
+            ) : null}
           </section>
 
           <WorkShiftHistoryCard
@@ -523,10 +564,12 @@ export function WorkShiftPage({
 
           <section className="card shift-saucers">
             <header>
-              <h2>Saucers</h2>
+              <h2>Posted earnings</h2>
               <span className="pill">{saucers.pill}</span>
             </header>
-            <p className="muted">Last 28 days. A filled saucer is a posted shift date. Gaps are days off — never a broken streak.</p>
+            <p className="muted">
+              Last 28 nights on the counter. A filled cup is a posted shift date. Gaps are days off — never a broken streak. Confirm still posts.
+            </p>
             <div className="shift-saucer-sill" role="img" aria-label={`${saucers.streakCount} posted dates on the last 28 days`}>
               {saucers.days.map((day) => (
                 <div key={day.date} className="shift-saucer-cell">
@@ -535,6 +578,7 @@ export function WorkShiftPage({
                 </div>
               ))}
             </div>
+            <p className="muted">{earnings.shiftCount} posted night{earnings.shiftCount === 1 ? "" : "s"} · {earnings.hours.toFixed(1)} h.</p>
           </section>
 
           <section className="card shift-lamp">

@@ -29,6 +29,8 @@ const SECTIONS: { id: LedgerSection; label: string }[] = [
 
 export function LedgerPage({
   household,
+  writeHousehold = household,
+  presentedTransactions = false,
   memberId,
   view,
   sourceFocus,
@@ -37,6 +39,8 @@ export function LedgerPage({
   onRemove,
 }: {
   household: Household;
+  writeHousehold?: Household;
+  presentedTransactions?: boolean;
   memberId: string;
   view: LedgerView;
   sourceFocus: HerculesNumberSource | null;
@@ -48,8 +52,10 @@ export function LedgerPage({
   const [query, setQuery] = useState("");
   const [showContrast, setShowContrast] = useState(true);
   const visible = useMemo(
-    () => household.transactions.filter((tx) => isVisibleInView(tx, memberId, view)),
-    [household.transactions, memberId, view],
+    () => presentedTransactions
+      ? household.transactions
+      : household.transactions.filter((tx) => isVisibleInView(tx, memberId, view)),
+    [household.transactions, memberId, view, presentedTransactions],
   );
   const sourceRows = useMemo(() => {
     return transactionsForHerculesSource(visible, sourceFocus);
@@ -113,7 +119,7 @@ export function LedgerPage({
                   type="button"
                   className="chip"
                   onClick={() => {
-                    const result = markDuplicate(household, pair.left.id, true);
+                    const result = markDuplicate(writeHousehold, pair.left.id, true);
                     onChange(result.household, result.undo);
                   }}
                 >
@@ -123,7 +129,7 @@ export function LedgerPage({
                   type="button"
                   className="chip"
                   onClick={() => {
-                    const result = markDuplicate(household, pair.right.id, true);
+                    const result = markDuplicate(writeHousehold, pair.right.id, true);
                     onChange(result.household, result.undo);
                   }}
                 >
@@ -159,7 +165,7 @@ export function LedgerPage({
             household={household}
             transaction={tx}
             onToggleDuplicate={() => {
-              const result = markDuplicate(household, tx.id, !tx.isDuplicate);
+              const result = markDuplicate(writeHousehold, tx.id, !tx.isDuplicate);
               onChange(result.household, result.undo);
             }}
             onRemove={() => onRemove(tx)}

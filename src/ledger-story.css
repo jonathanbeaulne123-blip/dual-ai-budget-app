@@ -1,0 +1,209 @@
+/* D-164 Shared Story / Personal Folio — desktop and iPad at >=720px. Phone uses purpose banner only. */
+
+.ledger-purpose-banner {
+  margin: 8px 12px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--paper) 92%, var(--card));
+}
+.ledger-purpose-kicker {
+  margin: 0 0 4px;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ledger-purpose-heading {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+.ledger-purpose-copy {
+  margin: 6px 0 0;
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+.ledger-story-stats .stat strong.negative,
+.household-fund-panel .stat strong.negative,
+.household-fund-glance .stat strong.negative {
+  color: var(--danger);
+}
+
+@media (max-width: 719px) {
+  .ledger-purpose-copy {
+    display: none;
+  }
+}
+
+.ledger-story-room {
+  display: grid;
+  gap: 14px;
+  margin: 8px 0 16px;
+  padding-bottom: calc(var(--nav) + 96px);
+}
+.ledger-story-sheet {
+  min-width: 0;
+  padding: 16px 16px 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: var(--lift-0);
+}
+.ledger-story-sheet h3 {
+  margin: 0 0 8px;
+  font-family: var(--display);
+  font-size: 1.35rem;
+}
+.ledger-story-stats,
+.ledger-flow-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ledger-flow-node,
+.ledger-story-stats .stat {
+  display: grid;
+  gap: 4px;
+  min-height: 72px;
+  padding: 10px 12px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+.ledger-flow-node.is-top-up,
+.ledger-flow-node.is-deficit {
+  border-color: var(--danger);
+}
+.ledger-flow-node.is-credit {
+  border-color: var(--pine);
+}
+.ledger-flow-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.ledger-action-queue,
+.ledger-week-ribbon,
+.ledger-folio-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ledger-action-item {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  min-height: 44px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper-2);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ledger-action-item:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
+.ledger-week-ribbon li,
+.ledger-folio-list li {
+  display: grid;
+  gap: 2px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.ledger-story-trust {
+  border-style: solid;
+  border-color: rgba(129, 82, 36, 0.34);
+}
+.ledger-story-office-secondary {
+  margin: 0 0 calc(var(--nav) + 24px);
+  padding: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--paper) 80%, transparent);
+}
+.ledger-story-office-secondary > h2 {
+  margin: 0 0 8px;
+  font-family: var(--display);
+  font-size: 1.05rem;
+}
+
+.ledger-folio-room {
+  grid-template-columns: 1fr;
+}
+.ledger-folio-room .ledger-story-sheet {
+  background: color-mix(in srgb, var(--paper) 55%, var(--card));
+}
+
+@media (min-width: 720px) {
+  .household-fund-glance.is-phone-only {
+    display: none;
+  }
+  .ledger-story-room {
+    grid-template-columns: minmax(0, 1fr);
+    padding-bottom: 24px;
+  }
+}
+
+/* Portrait tablet: designed reading sequence, not source-order collapse of two desktop columns. */
+@media (min-width: 720px) and (max-width: 899px) {
+  .ledger-story-room {
+    grid-template-areas:
+      "opening"
+      "flow"
+      "queue"
+      "week"
+      "month"
+      "trust";
+  }
+  .ledger-story-opening { grid-area: opening; }
+  .ledger-story-flow { grid-area: flow; }
+  .ledger-story-queue { grid-area: queue; }
+  .ledger-story-week { grid-area: week; }
+  .ledger-story-month { grid-area: month; }
+  .ledger-story-trust { grid-area: trust; }
+  .ledger-story-stats,
+  .ledger-flow-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 900px) {
+  .ledger-story-room {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr);
+    grid-template-areas:
+      "opening week"
+      "flow month"
+      "queue trust";
+    align-items: start;
+  }
+  .ledger-story-opening { grid-area: opening; }
+  .ledger-story-flow { grid-area: flow; }
+  .ledger-story-queue { grid-area: queue; }
+  .ledger-story-week { grid-area: week; }
+  .ledger-story-month { grid-area: month; }
+  .ledger-story-trust { grid-area: trust; }
+}
+
+@media (min-width: 900px) {
+  .ledger-folio-room.ledger-story-room {
+    grid-template-columns: 1fr;
+    grid-template-areas: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ledger-action-item,
+  .ledger-flow-node {
+    transition: none;
+  }
+}

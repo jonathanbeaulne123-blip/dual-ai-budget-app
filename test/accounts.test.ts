@@ -10,6 +10,7 @@ import {
   creditCardView,
   ensureHouseholdShape,
   householdWallet,
+  householdTableStory,
   isCosmeticUnlocked,
   markInvestmentValue,
   normalizeAccountKind,
@@ -161,6 +162,11 @@ describe("The Accounts Floor", () => {
     const wallet = householdWallet(household, today);
     expect(wallet.groups.map((group) => group.kind)).toEqual(["chequing", "savings", "credit", "investment", "receivable", "other"]);
     expect(wallet.tiles.some((tile) => tile.account.id === "ACC-MC")).toBe(true);
+    expect(householdTableStory(wallet).map((group) => group.kind)).toEqual(["chequing", "savings", "credit"]);
+    expect(wallet.story.map((group) => group.kind)).toContain("investment");
+    const tableSavings = householdTableStory(wallet).find((group) => group.kind === "savings");
+    expect(tableSavings?.tiles.every((tile) => tile.account.savings?.purpose === "goals")).toBe(true);
+    expect(tableSavings?.tiles.some((tile) => tile.account.id === "ACC-SAVINGS")).toBe(false);
     const books = compileHousehold(household);
     expect(trialBalance(books).inBalance).toBe(true);
     expect(booksEquation(books).holds).toBe(true);

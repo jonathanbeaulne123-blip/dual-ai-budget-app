@@ -30,6 +30,9 @@ export function OfficeWindow({
         {!minimized && (
           <div className="chalk-glass" aria-hidden="true">
             <p className="chalk-glass-line">{reading.sentence}</p>
+            {reading.celsius != null && !reading.sentence.includes("°") ? (
+              <p className="chalk-glass-line">{chip.celsiusLabel}</p>
+            ) : null}
           </div>
         )}
         {reading.glass === "clear" && <span className="cloud-drift" aria-hidden="true" />}
@@ -53,11 +56,7 @@ export function OfficeWindow({
           <p className="season">{reading.season === "none" ? "Ordinary season" : reading.season}</p>
         </div>
       )}
-      <div ref={sill} className={`office-sill ${stale ? "is-stale" : ""}`}>
-        <span className="office-sill-weather" aria-hidden="true">
-          {chip.emoji} {chip.celsiusLabel}
-        </span>
-      </div>
+      <div ref={sill} className={`office-sill ${stale ? "is-stale" : ""}`} />
     </section>
   );
 }

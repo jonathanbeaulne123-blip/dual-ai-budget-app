@@ -7,6 +7,7 @@ import {
   confirmHouseholdFundContribution,
   confirmHouseholdFundSettlement,
   formatCad,
+  LEDGER_CUSTODY_DISCLOSURE,
   monthKeyFromDateKey,
   projectHouseholdFund,
   proposeHouseholdFundContribution,
@@ -103,7 +104,7 @@ export function HouseholdFundPanel({
       <section className="card household-fund-panel">
         <header><h2>Household Fund</h2><span className="muted">September practice · opens at $0.00</span></header>
         <p>Set aside part of Bianca’s existing savings as the shared operating pool. It is a Hearth subledger, not a bank account.</p>
-        <p className="muted">The money remains in Bianca’s savings. Hearth cannot hold, move, withdraw, or delete it.</p>
+        <p className="muted">{LEDGER_CUSTODY_DISCLOSURE}</p>
         {member?.name.toLowerCase().includes("bianca") ? (
           <button className="primary" type="button" onClick={() => onCommand((current) => configureHouseholdFund(current, { custodianMemberId: memberId, createdBy: memberId, openedOn: today }))}>
             Confirm $0.00 practice fund
@@ -122,13 +123,15 @@ export function HouseholdFundPanel({
           <div className="stat"><span>Operating balance</span><strong>{formatCad(projection.operatingBalanceCents)}</strong></div>
           <div className="stat"><span>Transfer due</span><strong>{formatCad(projection.transferDueCents)}</strong></div>
           <div className="stat"><span>Upcoming reserve</span><strong>{formatCad(projection.upcomingReserveCents)}</strong></div>
-          <div className="stat"><span>{projection.topUpNeededCents ? "Top-up needed" : "Free to spend"}</span><strong className={projection.topUpNeededCents ? "negative" : ""}>{formatCad(projection.topUpNeededCents || projection.freeToSpendCents)}</strong></div>
+          <div className="stat"><span>{projection.topUpNeededCents ? "Top-up needed" : "Fund free-to-spend"}</span><strong className={projection.topUpNeededCents ? "negative" : ""}>{formatCad(projection.topUpNeededCents || projection.freeToSpendCents)}</strong></div>
         </div>
         <div className="row"><span>Monthly target</span><strong>{formatCad(projection.targetProgressCents)} / {formatCad(projection.monthlyTargetCents)}</strong></div>
         <div className="row"><span>Reconciliation</span><strong>{projection.lastReconciledAt ? (projection.reconciliationTied ? "Tied" : "Needs review") : "Not yet reconciled"}</strong></div>
       </section>
 
       <section className="card">
+        <details open={Boolean(pending.length)}>
+          <summary>Propose or confirm a contribution</summary>
         <header><h2>Contributions</h2><span className="muted">A proposal never creates money</span></header>
         <label htmlFor="fund-contribution-amount">Amount (CAD)</label>
         <input id="fund-contribution-amount" inputMode="decimal" value={contributionAmount} onChange={(event) => setContributionAmount(event.target.value)} placeholder="250.00" />
@@ -141,10 +144,13 @@ export function HouseholdFundPanel({
             {isCustodian ? <button className="primary" type="button" onClick={() => onCommand((current) => confirmHouseholdFundContribution(current, { memberId, proposalEventId: event.id }))}>Confirm received</button> : <span className="muted">Waiting for Bianca</span>}
           </div>
         ))}
+        </details>
       </section>
 
       {isCustodian && (
         <section className="card">
+          <details>
+            <summary>Plan target and confirm a transfer</summary>
           <header><h2>Plan and transfer</h2><span className="muted">Bianca confirms clearing</span></header>
           <p className="muted">Suggested target from fund-backed spending, upcoming recurring bills, and the current buffer: {formatCad(suggestedTargetCents)}. A suggestion does not create money.</p>
           <label htmlFor="fund-monthly-target">Monthly target (CAD)</label>
@@ -191,11 +197,14 @@ export function HouseholdFundPanel({
             Confirm Transferred
           </button>
           <p className="muted">The default allocation clears the oldest unsettled items for this destination. Edit the amount to make a partial transfer.</p>
+          </details>
         </section>
       )}
 
       {isCustodian && view === "personal" && (
         <section className="card">
+          <details>
+            <summary>Private reconciliation (Personal envelope)</summary>
           <header><h2>Bianca’s private reconciliation</h2><span className="muted">Jonathan sees only whether it ties</span></header>
           <label htmlFor="fund-bank-total">Bianca’s savings total (CAD)</label>
           <input id="fund-bank-total" inputMode="decimal" value={bankTotal} onChange={(event) => setBankTotal(event.target.value)} />
@@ -212,11 +221,14 @@ export function HouseholdFundPanel({
             {privateSavings.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}
           </select>
           <button className="ghost" type="button" onClick={() => onCommand((current) => bindHouseholdFundBackingAccount(current, { memberId, accountId: backingAccount }))}>Save private backing account</button>
+          </details>
         </section>
       )}
 
       {isCustodian && (
         <section className="card">
+          <details>
+            <summary>Confirm a safe Kitty rollover</summary>
           <header><h2>Month-end Kitty rollover</h2><span className="muted">Safe surplus {formatCad(projection.safeRolloverCents)}</span></header>
           <p className="muted">No bank transfer occurs. Operating plus Kitty remains conserved.</p>
           <label htmlFor="fund-kitty-goal">Existing Kitty Bank</label>
@@ -227,6 +239,7 @@ export function HouseholdFundPanel({
           <label htmlFor="fund-kitty-amount">Rollover amount (CAD)</label>
           <input id="fund-kitty-amount" inputMode="decimal" value={kittyAmount} onChange={(event) => setKittyAmount(event.target.value)} />
           <button className="primary" type="button" onClick={() => onCommand((current) => allocateHouseholdFundSurplus(current, { memberId, date: today, allocations: [{ goalId: kittyGoal, amount: kittyAmount }] }))}>Confirm rollover once</button>
+          </details>
         </section>
       )}
 

@@ -18,13 +18,17 @@ import {
   compileHousehold,
   formatCad,
   householdWallet,
+  householdTableStory,
   herculesLedgerSourcePane,
+  LEDGER_CUSTODY_DISCLOSURE,
+  projectHouseholdFund,
   incomeStatement,
   liquidityWatch,
   likelyMiscoded,
   categoryName,
   monthKeyFromDateKey,
   notesToFinancialStatements,
+  personalBooksFloor,
   recordReconciliation,
   reopenBooksMonth,
   setBudget,
@@ -33,6 +37,7 @@ import {
   statementOfChangesInEquity,
   todayKey,
   trialBalance,
+  walletForListedAccounts,
   type Household,
   type LedgerView,
   type UndoToken,
@@ -41,16 +46,17 @@ import {
   type HerculesNumberSource,
 } from "./core/index.ts";
 import { LedgerPage } from "./Ledger.tsx";
-import { PaneSeals, PaperTile, StoryStrip } from "./theme/PaperTheme.tsx";
+import { PaneSeals, PaperTile, StoryStrip, CollapsibleCard } from "./theme/PaperTheme.tsx";
 import { BatchImportCard } from "./BatchImport.tsx";
 import { WalletPane } from "./Accounts.tsx";
 import { booksFilename, booksJournalCsv, booksSqlDump, downloadText } from "./ledger/export.ts";
 import { queryBooks, type BooksStatus } from "./ledger/engine.ts";
 import { assertReadOnlySelect } from "./ledger/queryGuard.ts";
 import { HouseholdFundPanel } from "./HouseholdFundPanel.tsx";
+import { KittyBanks } from "./KittyBanks.tsx";
 
 const PANES = [
-  { id: "wallet", label: "Wallet", blurb: "Net worth story: chequing → Goals savings → cards → investments. Touch a tile to open the room." },
+  { id: "wallet", label: "Wallet", blurb: "Household cash, Goals savings, cards, and investments. Touch a tile to open the room." },
   { id: "fund", label: "Household Fund", blurb: "A shared operating subledger backed by Bianca’s savings. It is not a bank account and Hearth cannot move money." },
   { id: "register", label: "All activity", blurb: "Every posted row you can see in this view. Duplicate contrast lives here." },
   { id: "import", label: "Import", blurb: "QFX/OFX and selected document photos enter an inbox. Duplicate review and one final Confirm protect the books." },
@@ -63,10 +69,14 @@ const PANES = [
   { id: "query", label: "Ask", blurb: "Read-only SQL and Ask the books. Hercules answers from the journal." },
 ] as const;
 
+const TABLE_PANE_IDS = ["fund", "wallet", "register", "import"] as const;
+const AUDIT_PANE_IDS = ["journal", "trial", "statements", "rec", "close", "accounts", "query"] as const;
+
 type Pane = (typeof PANES)[number]["id"];
 
 export function BooksPage({
   household,
+  booksHousehold,
   memberId,
   view,
   booksStatus,
@@ -82,6 +92,7 @@ export function BooksPage({
   onGoMore,
 }: {
   household: Household;
+  booksHousehold: Household;
   memberId: string;
   view: LedgerView;
   booksStatus: BooksStatus | null;
@@ -96,16 +107,42 @@ export function BooksPage({
   onCommand: (command: (current: Household) => CommitResult) => void;
   onGoMore?: () => void;
 }) {
-  const [pane, setPane] = useState<Pane>("wallet");
-  const books = useMemo(() => compileHousehold(household), [household]);
+  const [pane, setPane] = useState<Pane>(view === "personal" ? "wallet" : "fund");
+  const books = useMemo(() => compileHousehold(booksHousehold), [booksHousehold]);
   const trial = useMemo(() => trialBalance(books, { recognizedOnly: true }), [books]);
   const equation = useMemo(() => booksEquation(books), [books]);
-  const opinion = useMemo(() => auditOpinion(household), [household]);
-  const wallet = useMemo(() => householdWallet(household, todayKey()), [household]);
+  const opinion = useMemo(() => auditOpinion(booksHousehold), [booksHousehold]);
   const today = todayKey();
+  const sharedTable = view === "household";
+  const walletHousehold = sharedTable ? household : personalBooksFloor(booksHousehold, memberId);
+  const wallet = useMemo(() => (
+    sharedTable
+      ? householdWallet(walletHousehold, today)
+      : walletForListedAccounts(
+        booksHousehold,
+        walletHousehold.accounts.map((account) => account.id),
+        today,
+      )
+  ), [sharedTable, walletHousehold, booksHousehold, today]);
+  const fundProjection = useMemo(() => projectHouseholdFund(booksHousehold, today), [booksHousehold, today]);
+  const showFundPane = sharedTable || booksHousehold.householdFund?.custodianMemberId === memberId;
+  const tableStory = sharedTable ? householdTableStory(wallet) : wallet.story;
+  const isAuditPane = (AUDIT_PANE_IDS as readonly string[]).includes(pane);
+  const [auditOpen, setAuditOpen] = useState(!trial.inBalance);
+  const tablePanes = PANES.filter((item) => (
+    (TABLE_PANE_IDS as readonly string[]).includes(item.id)
+    && (item.id !== "fund" || showFundPane)
+  ));
+  const auditPanes = PANES.filter((item) => (AUDIT_PANE_IDS as readonly string[]).includes(item.id));
+  const fundConfigured = Boolean(booksHousehold.householdFund);
+  const sharedLeadCents = fundConfigured ? fundProjection.operatingBalanceCents : wallet.cashCents;
   const monthKey = monthKeyFromDateKey(today);
-  const packMonth = closedMonthKeys(household).at(-1) ?? monthKey;
-  const [accountId, setAccountId] = useState(focusedAccountId ?? household.accounts[0]?.id ?? books.chart[0]?.id ?? "");
+  const packMonth = closedMonthKeys(booksHousehold).at(-1) ?? monthKey;
+  const [accountId, setAccountId] = useState(
+    focusedAccountId && household.accounts.some((account) => account.id === focusedAccountId)
+      ? focusedAccountId
+      : household.accounts.find((account) => account.active)?.id ?? "",
+  );
   const register = useMemo(() => accountRegister(books, accountId), [books, accountId]);
   const [recDate, setRecDate] = useState(today);
   const [recAmount, setRecAmount] = useState("");
@@ -115,8 +152,8 @@ export function BooksPage({
   useEffect(() => {
     if (!focusedAccountId) return;
     setAccountId(focusedAccountId);
-    setPane("wallet");
-  }, [focusedAccountId]);
+    setPane(view === "household" ? "register" : "wallet");
+  }, [focusedAccountId, view]);
 
   useEffect(() => {
     if (sourceFocus?.route !== "ledger") return;
@@ -130,42 +167,60 @@ export function BooksPage({
     setPane("wallet");
   }, [sourceFocus]);
 
+  useEffect(() => {
+    if (focusedAccountId || sourceFocus) return;
+    setPane(view === "personal" ? "wallet" : "fund");
+    setAuditOpen(view !== "household");
+  }, [view, focusedAccountId, sourceFocus]);
+
+  useEffect(() => {
+    if (!trial.inBalance || isAuditPane) setAuditOpen(true);
+  }, [trial.inBalance, isAuditPane]);
+
   return (
-    <div className="books-theme-c">
-      <section className="hero">
-        <div className="label">Books · double-entry · CAD · {household.timezone}</div>
-        <div className={`money ${equation.netWorthCents < 0 ? "negative" : ""}`}>{formatCad(equation.netWorthCents)}</div>
-        <div className="sub">
-          Net worth {equation.holds ? "equals" : "does not equal"} retained income {formatCad(equation.netIncomeCents)}
-          {trial.inBalance ? " · trial balance in balance" : " · trial balance is off"}
-        </div>
-        <p className={`opinion-banner ${opinion.kind}`}>
-          Hercules’s opinion: <strong>{opinion.kind}</strong> — {opinion.hercules}
-        </p>
-      </section>
-      <StoryStrip heading="Story">
+    <div className={`books-theme-c${sharedTable ? "" : " books-floor"}`} data-books-face={sharedTable ? "household-table" : "personal-folio"}>
+      {sharedTable ? (
+        <section className="hero">
+          <div className="label">Household table · CAD · {household.timezone}</div>
+          <div className={`money ${sharedLeadCents < 0 ? "negative" : ""}`}>{formatCad(sharedLeadCents)}</div>
+          <div className="sub">
+            {fundConfigured
+              ? `Fund operating. Kitty ${formatCad(fundProjection.kittyCents)}. ${LEDGER_CUSTODY_DISCLOSURE}`
+              : "Fund is not set up. This is household cash on the table — not net worth, not a P&L."}
+          </div>
+          <p className="muted books-table-job">Shared Fund, cash, and cards. Net worth, trial, and statements stay in Audit.</p>
+          {!trial.inBalance ? (
+            <p className="opinion-banner adverse">
+              Trial is off. Open Audit before treating the journal as closed.
+            </p>
+          ) : null}
+        </section>
+      ) : (
+        <section className="hero">
+          <div className="label">My books · CAD · {household.timezone}</div>
+          <div className={`money ${equation.netWorthCents < 0 ? "negative" : ""}`}>{formatCad(equation.netWorthCents)}</div>
+          <div className="sub">Rooms I can manage. Partner-personal rooms stay off this floor. The figure is accepted-books position, not a partner-hidden envelope.</div>
+          {!trial.inBalance ? (
+            <p className="opinion-banner adverse">
+              Trial is off. Open Audit before treating the journal as closed.
+            </p>
+          ) : null}
+        </section>
+      )}
+      <StoryStrip heading={sharedTable ? "On the table" : "My accounts"}>
+        {showFundPane && (
         <PaperTile
           kind="Fund"
-          name="Household Fund"
-          value={household.householdFund ? "Open the fund books" : "Set up at $0.00"}
+          name={view === "personal" ? "Private Fund check" : "Household Fund"}
+          value={household.householdFund ? formatCad(fundProjection.operatingBalanceCents) : "Set up at $0.00"}
           onClick={() => setPane("fund")}
-          ariaLabel="Open the Hearth Household Fund books"
+          ariaLabel="Open the Hearth Household Fund"
         />
-        <PaperTile
-          kind="Books"
-          name="Net worth"
-          value={
-            <strong className={equation.netWorthCents < 0 ? "negative" : ""}>
-              {formatCad(equation.netWorthCents)}
-            </strong>
-          }
-          onClick={() => setPane("wallet")}
-          ariaLabel={`Net worth ${formatCad(equation.netWorthCents)}`}
-        />
-        {wallet.story.map((group) => (
+        )}
+        {tableStory.map((group) => (
           <PaperTile
             key={group.kind}
-            kind="Books"
+            kind={sharedTable ? "Table" : "Books"}
             name={group.kind === "savings" ? "Goal savings" : group.label}
             value={formatCad(group.tiles.reduce((sum, tile) => sum + tile.displayCents, 0))}
             onClick={() => {
@@ -180,58 +235,57 @@ export function BooksPage({
           />
         ))}
       </StoryStrip>
-      <div className="grid">
-        <div className="stat"><span>Assets</span><strong>{formatCad(equation.assetCents)}</strong></div>
-        <div className="stat"><span>Liabilities</span><strong>{formatCad(equation.liabilityCents)}</strong></div>
-        <div className="stat"><span>Income</span><strong>{formatCad(equation.incomeCents)}</strong></div>
-        <div className="stat"><span>Expenses</span><strong>{formatCad(equation.expenseCents)}</strong></div>
-      </div>
-      {booksStatus?.ok ? (
-        <p className="muted">
-          {`Postgres ${booksStatus.postgresVersion ?? "PGlite"} is holding ${booksStatus.entryCount} journal entries on this phone.`}
-        </p>
-      ) : booksStatus ? (
-        <KitchenNotice
-          message={booksStatus.error || "The SQL books did not verify. The last valid snapshot on this phone is still saved."}
-          onGoMore={onGoMore}
-        />
+      {!sharedTable ? (
+        <CollapsibleCard title="On this phone" hint="Storage and sharing" defaultOpen={false}>
+          <BooksStorageNotes household={household} booksStatus={booksStatus} onGoMore={onGoMore} />
+        </CollapsibleCard>
       ) : null}
-      {household.linked ? (
-        booksStatus?.hosted?.schema ? (
-          <p className="muted">
-            {`The shared snapshot is on Supabase (${booksStatus.hosted.project}). Phrase join is not encryption.`}
-          </p>
-        ) : booksStatus?.hosted ? (
-          <KitchenNotice
-            message={booksStatus.hosted.error || "This household is linked, but the hosted tables are not in the API yet."}
-            onGoMore={onGoMore}
-          />
-        ) : (
-          <p className="muted">This household is linked. Sharing uses the reviewed transport path after a local accept.</p>
-        )
-      ) : (
-        <p className="muted">This household stays on this phone until a signed-in Google member shares it. A Hearth Pass does not upload.</p>
-      )}
       <PaneSeals
-        items={[
-          { id: "wallet", label: "Wallet" },
-          { id: "register", label: "Activity" },
-          { id: "close", label: "Close month" },
-        ]}
+        ariaLabel={sharedTable ? "Household table rooms" : "My books rooms"}
+        items={sharedTable
+          ? [
+              ...(showFundPane ? [{ id: "fund" as const, label: "Fund" }] : []),
+              { id: "wallet", label: "Wallet" },
+              { id: "register", label: "Activity" },
+            ]
+          : [
+              { id: "wallet", label: "Wallet" },
+              { id: "register", label: "Activity" },
+              { id: "close", label: "Close month" },
+            ]}
         active={pane}
         onPick={(id) => setPane(id as Pane)}
       />
-      <div className="tabs">
-        {PANES.map((item) => (
+      <div className="tabs" role="tablist" aria-label={sharedTable ? "Household table" : "My books"} data-books-tabs="table">
+        {tablePanes.map((item) => (
           <button key={item.id} className={pane === item.id ? "active" : ""} onClick={() => setPane(item.id)}>
             {item.label}
           </button>
         ))}
       </div>
-      <p className="muted books-pane-blurb">{PANES.find((item) => item.id === pane)?.blurb}</p>
-      {pane === "wallet" && (
+      {!isAuditPane ? (
+        <p className="muted books-pane-blurb">{PANES.find((item) => item.id === pane)?.blurb}</p>
+      ) : null}
+      {pane === "wallet" && sharedTable && (
+        <>
+          <section className="card">
+            <header><h2>Shared pool</h2></header>
+            <p>Shared is one account. Kitty Banks are the sub-accounts. Room-by-room management lives on My books.</p>
+          </section>
+          <KittyBanks
+            household={household}
+            booksHousehold={booksHousehold}
+            view="household"
+            createdBy={memberId}
+            surface="home"
+            onCommand={onCommand}
+          />
+        </>
+      )}
+      {pane === "wallet" && !sharedTable && (
         <WalletPane
-          household={household}
+          household={walletHousehold}
+          writeHousehold={booksHousehold}
           today={today}
           memberId={memberId}
           focusedId={focusedAccountId}
@@ -245,11 +299,13 @@ export function BooksPage({
         />
       )}
       {pane === "fund" && (
-        <HouseholdFundPanel household={household} memberId={memberId} view={view} onCommand={onCommand} />
+        <HouseholdFundPanel household={booksHousehold} memberId={memberId} view={view} onCommand={onCommand} />
       )}
       {pane === "register" && (
         <LedgerPage
-          household={household}
+          household={sharedTable ? household : walletHousehold}
+          writeHousehold={booksHousehold}
+          presentedTransactions={!sharedTable}
           memberId={memberId}
           view={view}
           sourceFocus={sourceFocus?.route === "ledger" ? sourceFocus : null}
@@ -260,13 +316,39 @@ export function BooksPage({
       )}
       {pane === "import" && (
         <BatchImportCard
-          household={household}
+          household={booksHousehold}
           memberId={memberId}
           view={view}
           onCommit={(next, undo) => onChange(next, undo)}
           onGoMore={onGoMore}
         />
       )}
+      <details
+        className="books-audit-office"
+        open={auditOpen}
+        onToggle={(event) => {
+          const next = event.currentTarget.open;
+          setAuditOpen(next);
+          if (!next && isAuditPane) setPane(sharedTable ? "fund" : "wallet");
+        }}
+      >
+        <summary>Audit office — journal, trial, statements</summary>
+        {sharedTable ? (
+          <>
+            <p className="muted">The journal still exists. This is how Hearth proves the books — not the shared table opening.</p>
+            <BooksStorageNotes household={household} booksStatus={booksStatus} onGoMore={onGoMore} />
+          </>
+        ) : null}
+        <div className="tabs" role="tablist" aria-label="Audit office" data-books-tabs="audit">
+          {auditPanes.map((item) => (
+            <button key={item.id} className={pane === item.id ? "active" : ""} onClick={() => setPane(item.id)}>
+              {item.label}
+            </button>
+          ))}
+        </div>
+        {isAuditPane ? (
+          <p className="muted books-pane-blurb">{PANES.find((item) => item.id === pane)?.blurb}</p>
+        ) : null}
       {pane === "journal" && (
         <section className="card">
           <header>
@@ -348,7 +430,7 @@ export function BooksPage({
         </section>
       )}
       {pane === "statements" && (
-        <StatementsPane household={household} monthKey={monthKey} today={today} onChange={onChange} />
+        <StatementsPane household={booksHousehold} writeHousehold={booksHousehold} monthKey={monthKey} today={today} onChange={onChange} />
       )}
       {pane === "rec" && (
         <section className="card">
@@ -371,9 +453,10 @@ export function BooksPage({
           <button
             className="primary"
             type="button"
+            disabled={!accountId}
             onClick={() => {
               try {
-                const result = recordReconciliation(household, {
+                const result = recordReconciliation(booksHousehold, {
                   accountId,
                   statementDate: recDate,
                   statementAmount: recAmount,
@@ -401,12 +484,12 @@ export function BooksPage({
                 </tr>
               </thead>
               <tbody>
-                {household.kitchen.books.reconciliations.length === 0 ? (
+                {booksHousehold.kitchen.books.reconciliations.length === 0 ? (
                   <tr><td colSpan={5} className="muted">No recs yet.</td></tr>
-                ) : [...household.kitchen.books.reconciliations].reverse().map((row) => (
+                ) : [...booksHousehold.kitchen.books.reconciliations].reverse().map((row) => (
                   <tr key={row.id}>
                     <td>{row.statementDate}</td>
-                    <td>{household.accounts.find((account) => account.id === row.accountId)?.name ?? row.accountId}</td>
+                    <td>{booksHousehold.accounts.find((account) => account.id === row.accountId)?.name ?? row.accountId}</td>
                     <td className="num">{formatCad(row.statementCents)}</td>
                     <td className="num">{formatCad(row.bookCents)}</td>
                     <td className="num">{row.status === "tied" ? "tied" : formatCad(row.differenceCents)}</td>
@@ -432,7 +515,7 @@ export function BooksPage({
               type="button"
               onClick={() => {
                 try {
-                  const result = closeBooksMonth(household, { monthKey: shiftMonthKey(monthKey, -1), createdBy: memberId });
+                  const result = closeBooksMonth(booksHousehold, { monthKey: shiftMonthKey(monthKey, -1), createdBy: memberId });
                   setCloseError("");
                   onChange(result.household, result.undo);
                 } catch (caught) {
@@ -445,7 +528,7 @@ export function BooksPage({
             <button
               className="chip"
               type="button"
-              onClick={() => downloadText(booksFilename(books, "txt"), closePackageText(household, packMonth, today))}
+              onClick={() => downloadText(booksFilename(books, "txt"), closePackageText(booksHousehold, packMonth, today))}
             >
               Download close pack
             </button>
@@ -469,14 +552,14 @@ export function BooksPage({
             <button
               className="chip"
               type="button"
-              onClick={() => downloadText(`hearth-sitdown-${packMonth}.txt`, sitDownExportText(household, packMonth, today))}
+              onClick={() => downloadText(`hearth-sitdown-${packMonth}.txt`, sitDownExportText(booksHousehold, packMonth, today))}
             >
               Download sit-down workbook
             </button>
           </div>
-          {household.kitchen.books.closedMonths.length > 0 && (
+          {booksHousehold.kitchen.books.closedMonths.length > 0 && (
             <ul className="close-list">
-              {household.kitchen.books.closedMonths.map((row) => (
+              {booksHousehold.kitchen.books.closedMonths.map((row) => (
                 <li key={row.monthKey}>
                   <span>{row.monthKey} closed</span>
                   <button
@@ -484,7 +567,7 @@ export function BooksPage({
                     type="button"
                     onClick={() => {
                       try {
-                        const result = reopenBooksMonth(household, row.monthKey);
+                        const result = reopenBooksMonth(booksHousehold, row.monthKey);
                         setCloseError("");
                         onChange(result.household, result.undo);
                       } catch (caught) {
@@ -537,7 +620,8 @@ export function BooksPage({
           </div>
         </section>
       )}
-      {pane === "query" && <AskBooks household={household} />}
+      {pane === "query" && <AskBooks household={booksHousehold} memberId={memberId} view={view} />}
+      {(!sharedTable || isAuditPane) ? (
       <div className="chips" style={{ marginTop: 8 }}>
         <button className="chip" onClick={() => downloadText(booksFilename(books, "sql"), booksSqlDump(books), "application/sql")}>
           Download SQL
@@ -545,21 +629,66 @@ export function BooksPage({
         <button className="chip" onClick={() => downloadText(booksFilename(books, "csv"), booksJournalCsv(books, trial), "text/csv")}>
           Download journal CSV
         </button>
-        <button className="chip" onClick={() => downloadText(booksFilename(books, "txt"), closePackageText(household, packMonth, today))}>
+        <button className="chip" onClick={() => downloadText(booksFilename(books, "txt"), closePackageText(booksHousehold, packMonth, today))}>
           Download close pack
         </button>
       </div>
+      ) : null}
+      </details>
     </div>
+  );
+}
+
+function BooksStorageNotes({
+  household,
+  booksStatus,
+  onGoMore,
+}: {
+  household: Household;
+  booksStatus: BooksStatus | null;
+  onGoMore?: () => void;
+}) {
+  return (
+    <>
+      {booksStatus?.ok ? (
+        <p className="muted">
+          {`Postgres ${booksStatus.postgresVersion ?? "PGlite"} is holding ${booksStatus.entryCount} journal entries on this phone.`}
+        </p>
+      ) : booksStatus ? (
+        <KitchenNotice
+          message={booksStatus.error || "The SQL books did not verify. The last valid snapshot on this phone is still saved."}
+          onGoMore={onGoMore}
+        />
+      ) : null}
+      {household.linked ? (
+        booksStatus?.hosted?.schema ? (
+          <p className="muted">
+            {`The shared snapshot is on Supabase (${booksStatus.hosted.project}). Phrase join is not encryption.`}
+          </p>
+        ) : booksStatus?.hosted ? (
+          <KitchenNotice
+            message={booksStatus.hosted.error || "This household is linked, but the hosted tables are not in the API yet."}
+            onGoMore={onGoMore}
+          />
+        ) : (
+          <p className="muted">This household is linked. Sharing uses the reviewed transport path after a local accept.</p>
+        )
+      ) : (
+        <p className="muted">This household stays on this phone until a signed-in Google member shares it. A Hearth Pass does not upload.</p>
+      )}
+    </>
   );
 }
 
 function StatementsPane({
   household,
+  writeHousehold = household,
   monthKey,
   today,
   onChange,
 }: {
   household: Household;
+  writeHousehold?: Household;
   monthKey: string;
   today: string;
   onChange: (household: Household, undo?: UndoToken) => void;
@@ -586,7 +715,7 @@ function StatementsPane({
 
   function saveBudgetEdit(subcategoryId: string) {
     try {
-      const result = setBudget(household, { monthKey, subcategoryId, amount: draft });
+      const result = setBudget(writeHousehold, { monthKey, subcategoryId, amount: draft });
       onChange(result.household, result.undo);
       cancelBudgetEdit();
     } catch (caught) {
@@ -705,15 +834,14 @@ function StatementsPane({
           </div>
         ))}
       </section>
-      <section className="card">
-        <header><h2>Notes to the financial statements</h2></header>
+      <CollapsibleCard title="Notes to the financial statements" hint="Accounting notes" defaultOpen={false}>
         {notes.map((note) => (
           <div className="statement-note" key={note.id}>
             <strong>{note.title}</strong>
             <p className="muted">{note.body}</p>
           </div>
         ))}
-      </section>
+      </CollapsibleCard>
     </>
   );
 }
@@ -798,7 +926,15 @@ function looksLikeSql(text: string): boolean {
   }
 }
 
-function AskBooks({ household }: { household: Household }) {
+function AskBooks({
+  household,
+  memberId,
+  view,
+}: {
+  household: Household;
+  memberId: string;
+  view: LedgerView;
+}) {
   const [question, setQuestion] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -822,7 +958,7 @@ function AskBooks({ household }: { household: Household }) {
         setLog((current) => [...current, { you: text, sentence: `Ran a read-only query. ${result.rows.length} row${result.rows.length === 1 ? "" : "s"}.`, rows: [] }].slice(-8));
         return;
       }
-      const answer = askHercules(household, text, todayKey());
+      const answer = askHercules(household, text, todayKey(), { memberId, view });
       setLog((current) => [...current, { you: text, sentence: answer.sentence, rows: answer.rows, sql: answer.sql }].slice(-8));
       setColumns([]);
       setSqlRows([]);
@@ -857,7 +993,10 @@ function AskBooks({ household }: { household: Household }) {
       </header>
       <p className="muted">Or tap the cat. This pane is for longer questions and read-only SQL.</p>
       <div className="chips">
-        {ASK_SUGGESTIONS.slice(0, 6).map((item) => (
+        {(view === "personal"
+          ? ASK_SUGGESTIONS.filter((item) => !/leftover|sit-down/i.test(item))
+          : ASK_SUGGESTIONS
+        ).slice(0, 6).map((item) => (
           <button key={item} className="chip" type="button" disabled={busy} onClick={() => void ask(item)}>{item}</button>
         ))}
       </div>

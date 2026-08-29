@@ -245,6 +245,7 @@ export function HerculesPresence({
   const [motion, setMotion] = useState<HerculesPose>("loaf");
   const [talk, setTalk] = useState<HerculesTalk | null>(null);
   const [open, setOpen] = useState(false);
+  const [helpAsked, setHelpAsked] = useState(false);
   const [begging, setBegging] = useState(false);
   const [bagPlay, setBagPlay] = useState(false);
   const [question, setQuestion] = useState("");
@@ -602,6 +603,7 @@ export function HerculesPresence({
   function closeChat() {
     chatGen.current += 1;
     setOpen(false);
+    setHelpAsked(false);
     setTalk(null);
     setBusy(false);
     setQuestion("");
@@ -673,7 +675,7 @@ export function HerculesPresence({
     setBegging(false);
     const page = adding ? "add" : tab;
     const instrument = currentInstrument();
-    const help = openHelpState({ tab: page, instrument, household: contextHousehold, today });
+    const help = openHelpState({ tab: page, instrument, household: contextHousehold, today, view });
     const lesson = firstRunLesson(`page:${page}`, surface.lesson);
     applyTalk({
       spoken: help.spoken,
@@ -783,7 +785,7 @@ export function HerculesPresence({
     if (!text || busy) return;
     const requestedCoworkerIds = consumeWorkplaceRosterConsent();
     const helpCmd = matchHelpCommand(
-      helpCommands({ tab: adding ? "add" : tab, instrument: currentInstrument(), household, today }),
+      helpCommands({ tab: adding ? "add" : tab, instrument: currentInstrument(), household, today, view }),
       text,
     );
     if (helpCmd) applyHelpNav(helpCmd);
@@ -813,7 +815,7 @@ export function HerculesPresence({
     const requestedCoworkerIds = preconsumedCoworkerIds ?? consumeWorkplaceRosterConsent();
     setEphemeralWorkplaceTurn(false);
     const helpCmd = matchHelpCommand(
-      helpCommands({ tab: adding ? "add" : tab, instrument: currentInstrument(), household, today }),
+      helpCommands({ tab: adding ? "add" : tab, instrument: currentInstrument(), household, today, view }),
       message,
     );
     if (helpCmd) applyHelpNav(helpCmd);
@@ -1295,7 +1297,8 @@ export function HerculesPresence({
               onClick={() => {
                 const page = adding ? "add" : tab;
                 const instrument = currentInstrument();
-                const help = openHelpState({ tab: page, instrument, household: contextHousehold, today });
+                const help = openHelpState({ tab: page, instrument, household: contextHousehold, today, view });
+                setHelpAsked(true);
                 applyTalk({
                   spoken: help.spoken,
                   lesson: null,
@@ -1322,7 +1325,7 @@ export function HerculesPresence({
           ) : (
             <p className="hercules-spoken">{talk.spoken}</p>
           )}
-          {!busy && talk.lesson && <p className="hercules-lesson">{talk.lesson}</p>}
+          {open && !busy && talk.lesson && <p className="hercules-lesson">{talk.lesson}</p>}
           {open && !busy && ephemeralWorkplaceTurn && (
             <p className="hercules-source">Private workplace roster used for this reply. This turn was not saved.</p>
           )}
@@ -1332,40 +1335,12 @@ export function HerculesPresence({
           {open && !busy && !ephemeralWorkplaceTurn && !replySource && turns.some((turn) => turn.role === "user") && (
             <p className="hercules-source">Kept in the kitchen ledger. Same door as the books.</p>
           )}
-          {!busy && groundedFacts.length > 0 && (
-            <div className="hercules-grounded-facts" aria-label="Numbers pulled from the books">
-              {groundedFacts.slice(0, 5).map((fact) => (
-                <button
-                  key={fact.id}
-                  type="button"
-                  className="hercules-grounded-fact"
-                  onClick={() => {
-                    closeChat();
-                    onOpenSource(fact.source);
-                  }}
-                  aria-label={`${fact.label}: ${fact.value}. ${fact.source.label}`}
-                >
-                  <span>{fact.label}</span>
-                  <strong>{fact.value}</strong>
-                  <small>{fact.basis === "projection" ? "calculated" : "from books"} · open</small>
-                </button>
-              ))}
-            </div>
-          )}
-          {!busy && groundedFacts.length === 0 && talk.fact && (
+          {open && !busy && groundedFacts.length === 0 && talk.fact && (
             <p className="hercules-fact"><span>{talk.fact.label}</span> {talk.fact.value}</p>
           )}
           {open && !begging && (
             <>
-              <button
-                type="button"
-                className="hercules-pro-launch"
-                onClick={launchHerculesPro}
-                title="Optional ChatGPT companion. Free Hercules stays available here."
-              >
-                Use Hercules Pro ↗
-              </button>
-              {!busy && (
+              {!busy && helpAsked && (
                 <div className="hercules-replies">
                   {talk.replies.map((item) => (
                     <button key={item} type="button" onClick={() => speak(item)}>{item}</button>
@@ -1392,6 +1367,14 @@ export function HerculesPresence({
                 />
                 <button type="submit" disabled={busy || !question.trim()}>send</button>
               </form>
+              <button
+                type="button"
+                className="hercules-pro-quiet"
+                onClick={launchHerculesPro}
+                title="Optional ChatGPT companion. Free Hercules stays available here."
+              >
+                Hercules Pro
+              </button>
             </>
           )}
           <button className="hercules-dismiss" type="button" onClick={closeChat}>
