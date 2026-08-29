@@ -354,6 +354,47 @@ export function householdWallet(household: Household, today: DateKey): Household
   };
 }
 
+/** Listed rooms only; CAD compiles from accepted books, not a filtered clone. */
+export function walletForListedAccounts(
+  booksHousehold: Household,
+  listedAccountIds: Iterable<string>,
+  today: DateKey,
+): HouseholdWallet {
+  const ids = new Set(listedAccountIds);
+  const wallet = householdWallet(booksHousehold, today);
+  const tiles = wallet.tiles.filter((tile) => ids.has(tile.account.id));
+  const groups = wallet.groups
+    .map((group) => ({ ...group, tiles: group.tiles.filter((tile) => ids.has(tile.account.id)) }))
+    .filter((group) => group.tiles.length);
+  const story = wallet.story
+    .map((group) => ({ ...group, tiles: group.tiles.filter((tile) => ids.has(tile.account.id)) }))
+    .filter((group) => group.tiles.length);
+  const cashCents = sumCents(tiles.filter((tile) => isCashLikeKind(tile.kind)).map((tile) => tile.balanceCents));
+  const owedCents = sumCents(tiles.filter((tile) => isCreditKind(tile.kind)).map((tile) => Math.max(0, tile.balanceCents)));
+  const receivableCents = sumCents(tiles.filter((tile) => isReceivableKind(tile.kind)).map((tile) => tile.balanceCents));
+  const investedCostCents = sumCents(tiles.filter((tile) => isInvestmentKind(tile.kind)).map((tile) => tile.balanceCents));
+  const markedValues = tiles
+    .filter((tile) => tile.investment?.markedValueCents != null)
+    .map((tile) => tile.investment!.markedValueCents!);
+  const investedMarkedCents = markedValues.length ? sumCents(markedValues) : null;
+  const hottestCard = tiles
+    .map((tile) => tile.credit)
+    .filter((row): row is CreditCardView => Boolean(row))
+    .sort((left, right) => (right.utilization ?? 0) - (left.utilization ?? 0))[0] ?? null;
+  return {
+    tiles,
+    groups,
+    story,
+    cashCents,
+    owedCents,
+    receivableCents,
+    investedCostCents,
+    investedMarkedCents,
+    netWorthCents: cashCents + investedCostCents + receivableCents - owedCents,
+    hottestCard,
+  };
+}
+
 const TABLE_STORY_KINDS: AccountKind[] = ["chequing", "savings", "credit"];
 
 /** Shared kitchen-table instruments. Fund is a separate tile. Everyday HIS and investments stay in Wallet / Audit. */

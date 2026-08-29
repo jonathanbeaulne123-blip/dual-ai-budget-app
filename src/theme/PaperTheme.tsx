@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { formatCad } from "../core/money.ts";
 import { paperBarPercents, type PaperBarRow, type PaperSparkPoint } from "../core/officeWide.ts";
 
@@ -176,11 +176,15 @@ export function CollapsibleCard({
   className?: string;
 }) {
   const controlled = open !== undefined;
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
   return (
     <details
       className={`card hearth-collapse ${className ?? ""}`.trim()}
-      {...(controlled ? { open } : { defaultOpen })}
-      onToggle={(event) => onToggle?.(event.currentTarget.open)}
+      open={controlled ? open : uncontrolledOpen}
+      onToggle={(event) => {
+        if (!controlled) setUncontrolledOpen(event.currentTarget.open);
+        onToggle?.(event.currentTarget.open);
+      }}
     >
       <summary>
         <span className="hearth-collapse-title">{title}</span>

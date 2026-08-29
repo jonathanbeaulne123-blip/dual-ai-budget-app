@@ -12,7 +12,7 @@ import {
   formatApr,
   formatCad,
   formatDateLabel,
-  householdWallet,
+  walletForListedAccounts,
   markInvestmentValue,
   postCardInterest,
   postCardRewards,
@@ -52,7 +52,10 @@ export function WalletStrip({
   onPay?: (account: Account) => void;
   onAdd?: (account: Account) => void;
 }) {
-  const wallet = useMemo(() => householdWallet(household, today), [household, today]);
+  const wallet = useMemo(
+    () => walletForListedAccounts(writeHousehold, household.accounts.map((account) => account.id), today),
+    [household, writeHousehold, today],
+  );
   return (
     <section className="wallet-strip">
       <header>
@@ -155,8 +158,12 @@ export function AccountRoom({
   onAdd: (account: Account) => void;
   embedded?: boolean;
 }) {
-  const account = household.accounts.find((row) => row.id === accountId);
-  const wallet = useMemo(() => householdWallet(household, today), [household, today]);
+  const account = household.accounts.find((row) => row.id === accountId)
+    ?? writeHousehold.accounts.find((row) => row.id === accountId);
+  const wallet = useMemo(
+    () => walletForListedAccounts(writeHousehold, [accountId], today),
+    [writeHousehold, accountId, today],
+  );
   const tile = wallet.tiles.find((row) => row.account.id === accountId);
   const activity = useMemo(() => accountActivity(household, accountId).slice(0, 24), [household, accountId]);
   const [error, setError] = useState("");

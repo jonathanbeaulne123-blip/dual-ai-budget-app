@@ -217,7 +217,7 @@ export function KittyBanks({
         <CollapsibleCard
           title={shared ? "Add shared bank" : "Add personal bank"}
           hint="New goal. Not a second envelope."
-          defaultOpen={live.length === 0}
+          defaultOpen={false}
         >
           <label htmlFor="kitty-new-bank-name">New bank</label>
           <input id="kitty-new-bank-name" value={name} onChange={(event) => setName(event.target.value)} aria-label="New bank name" />

@@ -98,7 +98,11 @@ describe("D-164 ledger story UI fences", () => {
   it("keeps Books off Shared primary nav and doors it from More", () => {
     expect(app).toContain("kitchenPrimaryNav(view)");
     expect(books).toContain("accepted-books position");
+    expect(books).toContain("not a partner-hidden envelope");
+    expect(books).not.toContain("Partner-personal stays out");
     expect(books).not.toContain("Partner Personal rows stay out");
+    expect(books).toContain("walletForListedAccounts");
+    expect(accountsUi).toContain("walletForListedAccounts");
     expect(app).not.toContain("Partner Personal rows stay out");
     expect(app).not.toContain("Open household table books");
     expect(app).not.toContain("Journal and Fund");
@@ -139,7 +143,7 @@ describe("D-164 ledger story UI fences", () => {
     expect(books).toContain("askHercules(household, text, todayKey(), { memberId, view })");
     expect(kitty).toContain("function amountFor");
     expect(kitty).toContain("amounts[goalId]");
-    expect(kitty).toContain("<ConfirmSheet");
+    expect(kitty).toContain("defaultOpen={false}");
     expect(kitty).toContain("data-kitty-step");
     expect(kitty).toContain("paper-bank");
     expect(books).toContain("personalBooksFloor(booksHousehold, memberId)");

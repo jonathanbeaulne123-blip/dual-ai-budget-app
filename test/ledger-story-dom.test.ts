@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { SharedLedgerStory } from "../src/SharedLedgerStory.tsx";
 import { PersonalLedgerFolio } from "../src/PersonalLedgerFolio.tsx";
 import { LedgerPurposeBanner } from "../src/LedgerPurposeBanner.tsx";
+import { CollapsibleCard } from "../src/theme/PaperTheme.tsx";
 import {
   buildPersonalLedgerStory,
   buildSharedLedgerStory,
@@ -59,6 +60,18 @@ describe("ledger story DOM", () => {
       }));
     });
     expect(host.textContent).toContain("Household calendar");
+    act(() => {
+      root.render(createElement(CollapsibleCard, {
+        title: "Add personal bank",
+        hint: "New goal. Not a second envelope.",
+        defaultOpen: false,
+        children: createElement("input", { "aria-label": "New bank name" }),
+      }));
+    });
+    const details = host.querySelector("details");
+    expect(details).toBeTruthy();
+    expect(details?.open).toBe(false);
+    expect(details?.getAttribute("defaultOpen")).toBeNull();
     act(() => root.unmount());
     host.remove();
   });

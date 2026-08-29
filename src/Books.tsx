@@ -37,6 +37,7 @@ import {
   statementOfChangesInEquity,
   todayKey,
   trialBalance,
+  walletForListedAccounts,
   type Household,
   type LedgerView,
   type UndoToken,
@@ -114,7 +115,15 @@ export function BooksPage({
   const today = todayKey();
   const sharedTable = view === "household";
   const walletHousehold = sharedTable ? household : personalBooksFloor(booksHousehold, memberId);
-  const wallet = useMemo(() => householdWallet(walletHousehold, today), [walletHousehold, today]);
+  const wallet = useMemo(() => (
+    sharedTable
+      ? householdWallet(walletHousehold, today)
+      : walletForListedAccounts(
+        booksHousehold,
+        walletHousehold.accounts.map((account) => account.id),
+        today,
+      )
+  ), [sharedTable, walletHousehold, booksHousehold, today]);
   const fundProjection = useMemo(() => projectHouseholdFund(booksHousehold, today), [booksHousehold, today]);
   const showFundPane = sharedTable || booksHousehold.householdFund?.custodianMemberId === memberId;
   const tableStory = sharedTable ? householdTableStory(wallet) : wallet.story;
@@ -143,8 +152,8 @@ export function BooksPage({
   useEffect(() => {
     if (!focusedAccountId) return;
     setAccountId(focusedAccountId);
-    setPane("wallet");
-  }, [focusedAccountId]);
+    setPane(view === "household" ? "register" : "wallet");
+  }, [focusedAccountId, view]);
 
   useEffect(() => {
     if (sourceFocus?.route !== "ledger") return;
@@ -190,7 +199,7 @@ export function BooksPage({
         <section className="hero">
           <div className="label">My books · CAD · {household.timezone}</div>
           <div className={`money ${equation.netWorthCents < 0 ? "negative" : ""}`}>{formatCad(equation.netWorthCents)}</div>
-          <div className="sub">Rooms I can manage. Partner-personal stays out. The figure is accepted-books position.</div>
+          <div className="sub">Rooms I can manage. Partner-personal rooms stay off this floor. The figure is accepted-books position, not a partner-hidden envelope.</div>
           {!trial.inBalance ? (
             <p className="opinion-banner adverse">
               Trial is off. Open Audit before treating the journal as closed.

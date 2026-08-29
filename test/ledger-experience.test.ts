@@ -16,6 +16,7 @@ import {
   kitchenPrimaryNav,
   ledgerRouteContract,
   personalBooksFloor,
+  postCardInterest,
   postEntry,
   JOINT,
   postDueRecurrences,
@@ -27,6 +28,7 @@ import {
   seedDemoHousehold,
   sitDownPreview,
   splitForSync,
+  walletForListedAccounts,
 } from "../src/core/index.ts";
 
 const BIANCA = "MEM-001";
@@ -196,6 +198,52 @@ describe("projectLedgerExperience", () => {
     expect(demoFloor.accounts.some((row) => row.id === "ACC-CHEQUING")).toBe(true);
     expect(demoFloor.accounts.some((row) => row.id === "ACC-VISA")).toBe(true);
     expect(demoFloor.accounts.some((row) => row.id === "ACC-TFSA" && row.institution === "Wealthsimple")).toBe(true);
+  });
+
+  it("keeps Personal Books room CAD and interest Confirm on accepted books, not the floor clone", () => {
+    const postedOn = "2026-08-15";
+    let household = catalogHousehold();
+    household = postEntry(household, {
+      date: postedOn,
+      type: "expense",
+      amount: 500,
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-LIFE-FUN",
+      note: "Shared dinner",
+      splits: [{ party: JOINT, amountCents: 50_000 }],
+      createdBy: BIANCA,
+      visibility: "household",
+      confirmDuplicate: true,
+    }).household;
+    household = postEntry(household, {
+      date: postedOn,
+      type: "expense",
+      amount: 400,
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-LIFE-FUN",
+      note: "Bianca secret",
+      splits: [{ party: BIANCA, amountCents: 40_000 }],
+      createdBy: BIANCA,
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+    const visa = household.accounts.find((row) => row.id === "ACC-VISA");
+    if (!visa) throw new Error("expected Visa");
+    const floor = personalBooksFloor(household, JONATHAN);
+    const accepted = creditCardView(household, visa, DATE);
+    const clone = creditCardView(floor, visa, DATE);
+    expect(clone.owedCents).toBeLessThan(accepted.owedCents);
+    expect(accepted.estimatedInterestCents).toBeGreaterThan(0);
+    expect(clone.estimatedInterestCents).not.toBe(accepted.estimatedInterestCents);
+    const listed = walletForListedAccounts(household, floor.accounts.map((account) => account.id), DATE);
+    const tile = listed.tiles.find((row) => row.account.id === "ACC-VISA");
+    expect(tile?.credit?.owedCents).toBe(accepted.owedCents);
+    expect(tile?.credit?.estimatedInterestCents).toBe(accepted.estimatedInterestCents);
+    expect(listed.tiles.some((row) => row.account.scope === "personal" && row.account.ownerMemberId === BIANCA)).toBe(false);
+    const posted = postCardInterest(household, { accountId: "ACC-VISA", date: DATE, createdBy: JONATHAN, confirmDuplicate: true });
+    expect(posted.postedIds.length).toBeGreaterThan(0);
+    const interest = posted.household.transactions.find((tx) => tx.id === posted.postedIds[0]);
+    expect(interest?.amountCents).toBe(accepted.estimatedInterestCents);
   });
 
   it("lets Personal presentation compile without the accepted Visa rows", () => {
