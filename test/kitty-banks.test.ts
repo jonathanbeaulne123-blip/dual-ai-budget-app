@@ -37,5 +37,7 @@ describe("Kitty Banks", () => {
     expect(kittyBanksInView(next, "personal").some((goal) => goal.name === "Headphones")).toBe(true);
     expect(kittyBanksInView(next, "household").some((goal) => goal.name === "Headphones")).toBe(false);
     expect(kittyBanksInView(next, "personal").length).toBe(before + 1);
+    expect(kittyBanksInView(seeded, "personal", "MEM-002").every((goal) => goal.ownerMemberId === "MEM-002")).toBe(true);
+    expect(kittyBanksInView(seeded, "personal", "MEM-002").some((goal) => goal.name === "Bianca trip fund")).toBe(false);
   });
 });

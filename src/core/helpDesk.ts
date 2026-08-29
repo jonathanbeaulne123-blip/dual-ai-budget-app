@@ -8,7 +8,7 @@ import { monthKeyFromDateKey, type DateKey } from "./calendar.ts";
 import { upcomingVisitBoard } from "./appointments.ts";
 import type { HearthTab } from "./hercules.ts";
 import type { InstrumentId } from "./officeLayout.ts";
-import type { Household } from "./types.ts";
+import type { Household, LedgerView } from "./types.ts";
 
 /**
  * Event language that should open Calendar on the wide desk.
@@ -49,18 +49,20 @@ export function helpCommands(input: {
   instrument: InstrumentId | "window" | null;
   household: Household;
   today: DateKey;
+  view?: LedgerView;
 }): HelpCommand[] {
-  const { tab, instrument, household, today } = input;
+  const { tab, instrument, household, today, view = "household" } = input;
   const leftover = leftoverProjection(household, today);
-  const rows: HelpCommand[] = [
-    {
+  const rows: HelpCommand[] = [];
+  if (view !== "personal") {
+    rows.push({
       id: "leftover",
       label: leftover.leftoverCents ? `Leftover ${formatCad(leftover.leftoverCents)}` : "Leftover?",
       prompt: "Leftover?",
       go: "plan",
       expand: "postcard",
-    },
-  ];
+    });
+  }
 
   const bill = buildMonthBoard(household, monthKeyFromDateKey(today), today).upcoming.find(isOutgoingBill);
   if (bill) {
@@ -115,8 +117,9 @@ export function helpCommands(input: {
 
   const chips = instrument
     ? herculesInstrumentSurface(instrument, household, today).chips
-    : herculesPageSurface(tab, household, today).chips;
+    : herculesPageSurface(tab, household, today, new Date(), { memberId: household.members[0]?.id ?? "", view }).chips;
   for (const [index, label] of chips.entries()) {
+    if (view === "personal" && /leftover/i.test(label)) continue;
     rows.push({
       id: `chip-${index}`,
       label,
@@ -148,10 +151,11 @@ export function openHelpState(input: {
   instrument: InstrumentId | "window" | null;
   household: Household;
   today: DateKey;
+  view?: LedgerView;
 }): { spoken: string; replies: string[]; commands: HelpCommand[] } {
   const commands = helpCommands(input);
   return {
-    spoken: helpIntro(input.tab, input.instrument, input.household, input.today),
+    spoken: helpIntro(input.tab, input.instrument, input.household, input.today, input.view),
     replies: commands.map((row) => row.label),
     commands,
   };
@@ -163,6 +167,7 @@ export function helpIntro(
   instrument: InstrumentId | "window" | null,
   household: Household,
   today: DateKey,
+  view: LedgerView = "household",
 ): string {
   const leftover = leftoverProjection(household, today);
   const bill = buildMonthBoard(household, monthKeyFromDateKey(today), today).upcoming.find(isOutgoingBill);
@@ -171,7 +176,9 @@ export function helpIntro(
   const vault = goalsVaultAccount(household);
   const parts: string[] = [];
 
-  if (instrument === "jars" || tab === "plan") {
+  if (view === "personal") {
+    parts.push("Leftover assignment lives on Shared.");
+  } else if (instrument === "jars" || tab === "plan") {
     parts.push(vaultReceiptBlurb(household, today));
   } else if (leftover.leftoverCents > 0) {
     parts.push(`Leftover is ${formatCad(leftover.leftoverCents)} after bills and card mins.`);
@@ -192,7 +199,7 @@ export function helpIntro(
   if (!parts.length) {
     const surface = instrument
       ? herculesInstrumentSurface(instrument, household, today)
-      : herculesPageSurface(tab, household, today);
+      : herculesPageSurface(tab, household, today, new Date(), { memberId: household.members[0]?.id ?? "", view });
     return surface.spoken;
   }
   return parts.slice(0, 3).join(" ");

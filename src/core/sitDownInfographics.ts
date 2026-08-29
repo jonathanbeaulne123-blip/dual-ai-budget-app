@@ -45,6 +45,8 @@ export function sitDownInfographicDeck(input: {
   household: Household;
   dashboard: Dashboard;
   today: DateKey;
+  leftover?: LeftoverProjection | null;
+  memberId?: string;
 }): SitDownChart[] {
   const month = input.dashboard.month;
   const inOut = monthInOutBars(month);
@@ -72,7 +74,7 @@ export function sitDownInfographicDeck(input: {
 
   if (input.view === "personal") {
     const wallet = householdWallet(input.household, input.today);
-    const banks = kittyBanksInView(input.household, "personal");
+    const banks = kittyBanksInView(input.household, "personal", input.memberId);
     const walletChart: SitDownChart = {
       id: "wallet",
       caption: "Cash and cards on this folio.",
@@ -102,24 +104,24 @@ export function sitDownInfographicDeck(input: {
     return [flow, topSpend, walletChart, bankChart].filter((chart) => chart.rows.length > 0 || chart.id === "month-flow");
   }
 
-  const leftover = leftoverProjection(input.household, input.today);
+  const leftover = input.leftover ?? leftoverProjection(input.household, input.today);
   const fund = projectHouseholdFund(input.household, input.today);
-  const banks = kittyBanksInView(input.household, "household");
+  const banks = kittyBanksInView(input.household, "household", input.memberId);
   const fundChart: SitDownChart | null = fund.configured
     ? {
       id: "fund",
       caption: "Household Fund. Operating plus Kitty stays conserved.",
       rows: [
         { label: "Operating", cents: fund.operatingBalanceCents, tone: "pine" },
-        { label: "Kitty", cents: fund.kittyCents, tone: "ink" },
+        { label: "Fund kitty", cents: fund.kittyCents, tone: "ink" },
         { label: "Transfer due", cents: fund.transferDueCents, tone: "copper" },
       ],
       lines: [
         { label: "Operating", cents: fund.operatingBalanceCents },
-        { label: "Kitty Banks", cents: fund.kittyCents },
+        { label: "Fund kitty", cents: fund.kittyCents },
         { label: "Transfer due", cents: fund.transferDueCents, strong: fund.transferDueCents > 0 },
       ],
-      note: "The money remains in Bianca’s savings. Hearth cannot move it.",
+      note: "Fund kitty is surplus rolled into existing shared goals. The money remains in Bianca’s savings. Hearth cannot move it.",
       empty: "Fund is not set up yet.",
     }
     : null;

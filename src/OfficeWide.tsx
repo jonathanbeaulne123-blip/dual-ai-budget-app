@@ -321,7 +321,7 @@ export function OfficeWide({
       name: "Sit-down",
       glance: <PostcardGlance card={postcard} />,
       aria: "Sit-down.",
-      body: <PostcardBody household={booksHousehold} displayHousehold={household} dashboard={dashboard} view={view} card={postcard} onApply={onSitDown} />,
+      body: <PostcardBody household={booksHousehold} displayHousehold={household} dashboard={dashboard} view={view} memberId={memberId} card={postcard} onApply={onSitDown} />,
     },
     cookoff: {
       kind: "Kitchen",
@@ -388,7 +388,7 @@ export function OfficeWide({
 
   function storyTile(id: LedgerStoryTileId): { kind: string; name: string; glance: ReactNode; figure?: ReactNode; aria: string; warn?: boolean } {
     if (id === "now") {
-      const banks = kittyBanksInView(household, "household");
+      const banks = kittyBanksInView(household, "household", memberId);
       const glance = kittyBankGlance(banks);
       const bars = kittyBankBars(banks);
       return {
@@ -414,9 +414,9 @@ export function OfficeWide({
       return {
         kind: "Change",
         name: "This month",
-        glance: `Kitty ${formatCad(kitty)}`,
+        glance: `Fund kitty ${formatCad(kitty)}`,
         figure: inOut.length ? <PaperBars rows={inOut} empty="" caption="In and out" /> : undefined,
-        aria: `Change. Kitty ${formatCad(kitty)}.`,
+        aria: `Change. Fund kitty ${formatCad(kitty)}.`,
       };
     }
     if (id === "mine") {

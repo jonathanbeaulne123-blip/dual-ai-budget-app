@@ -329,5 +329,15 @@ describe("sit-down infographic deck", () => {
     expect(personal.every((chart) => chart.id !== "leftover")).toBe(true);
     expect(personal.some((chart) => chart.id === "month-flow")).toBe(true);
     expect(personal.every((chart) => !/household leftover/i.test(chart.note))).toBe(true);
+    const booksLeftover = leftoverProjection(household, today);
+    const overridden = sitDownInfographicDeck({
+      view: "household",
+      household,
+      dashboard,
+      today,
+      leftover: { ...booksLeftover, leftoverCents: 12345, cashLikeCents: 12345, billsNext30Cents: 0, minPaymentsCents: 0, shortfallCents: 0 },
+    });
+    expect(overridden[0]?.id).toBe("leftover");
+    expect(overridden[0]?.lines.find((line) => line.strong)?.cents).toBe(12345);
   });
 });

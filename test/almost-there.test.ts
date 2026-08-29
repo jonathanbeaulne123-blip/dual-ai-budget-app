@@ -165,6 +165,12 @@ describe("Hercules help desk and calendar intent", () => {
     const intro = helpIntro("home", "jars", household, today);
     expect(intro.toLowerCase()).not.toMatch(/this is what i do/);
     expect(openHelpState({ tab: "calendar", instrument: "calendar", household, today }).replies.length).toBeGreaterThan(0);
+    const personalHelp = helpCommands({ tab: "plan", instrument: null, household, today, view: "personal" });
+    expect(personalHelp.some((row) => /leftover/i.test(row.label))).toBe(false);
+    const personalJars = helpCommands({ tab: "home", instrument: "jars", household, today, view: "personal" });
+    expect(personalJars.some((row) => /leftover/i.test(row.label))).toBe(false);
+    expect(helpIntro("plan", null, household, today, "personal")).toMatch(/Shared/);
+    expect(helpIntro("plan", null, household, today, "personal")).not.toMatch(/\$\d/);
   });
 
   it("keeps the chat bubble off an examined widget", () => {

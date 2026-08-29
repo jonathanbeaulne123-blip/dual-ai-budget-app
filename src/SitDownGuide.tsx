@@ -68,10 +68,12 @@ export function SitDownGuide({
     () => sitDownInfographicDeck({
       view,
       household: displayHousehold ?? household,
+      leftover: view === "household" ? leftover : null,
+      memberId,
       dashboard,
       today,
     }),
-    [view, displayHousehold, household, dashboard, today],
+    [view, displayHousehold, household, leftover, memberId, dashboard, today],
   );
 
   function persistSession(nextAct: 1 | 2 | 3, nextSlices = slices) {
@@ -329,7 +331,7 @@ function SitDownCharts({ charts }: { charts: SitDownChart[] }) {
   const chart = charts[safeIndex];
   if (!chart) return null;
   return (
-    <div className="sit-math sit-charts" data-sit-chart={chart.id}>
+    <div className="sit-math sit-charts" data-sit-chart={chart.id} aria-live="polite">
       <PaperBars rows={chart.rows} caption={chart.caption} empty={chart.empty} />
       {chart.lines.map((line) => (
         <div className="row" key={line.label}>

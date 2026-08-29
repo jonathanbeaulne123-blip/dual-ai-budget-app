@@ -660,7 +660,7 @@ export function HerculesPresence({
     setBegging(false);
     const page = adding ? "add" : tab;
     const instrument = currentInstrument();
-    const help = openHelpState({ tab: page, instrument, household: contextHousehold, today });
+    const help = openHelpState({ tab: page, instrument, household: contextHousehold, today, view });
     const lesson = firstRunLesson(`page:${page}`, surface.lesson);
     applyTalk({
       spoken: help.spoken,
@@ -761,7 +761,7 @@ export function HerculesPresence({
     const text = raw.trim();
     if (!text || busy) return;
     const helpCmd = matchHelpCommand(
-      helpCommands({ tab: adding ? "add" : tab, instrument: currentInstrument(), household, today }),
+      helpCommands({ tab: adding ? "add" : tab, instrument: currentInstrument(), household, today, view }),
       text,
     );
     if (helpCmd) applyHelpNav(helpCmd);
@@ -787,7 +787,7 @@ export function HerculesPresence({
     const message = raw.trim();
     if (!message || busy) return;
     const helpCmd = matchHelpCommand(
-      helpCommands({ tab: adding ? "add" : tab, instrument: currentInstrument(), household, today }),
+      helpCommands({ tab: adding ? "add" : tab, instrument: currentInstrument(), household, today, view }),
       message,
     );
     if (helpCmd) applyHelpNav(helpCmd);
@@ -1250,7 +1250,7 @@ export function HerculesPresence({
               onClick={() => {
                 const page = adding ? "add" : tab;
                 const instrument = currentInstrument();
-                const help = openHelpState({ tab: page, instrument, household: contextHousehold, today });
+                const help = openHelpState({ tab: page, instrument, household: contextHousehold, today, view });
                 setHelpAsked(true);
                 applyTalk({
                   spoken: help.spoken,

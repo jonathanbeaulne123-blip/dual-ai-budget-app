@@ -1,11 +1,18 @@
 import { formatCad } from "./money.ts";
 import { openGoals } from "./goalVault.ts";
+import { goalVisibleInView } from "./visibility.ts";
 import type { PaperBarRow } from "./officeWide.ts";
 import type { Goal, Household, LedgerView } from "./types.ts";
 
 /** Existing goals shown as Kitty Banks. Shared Fund surplus (D-161) uses shared goals only. */
-export function kittyBanksInView(household: Pick<Household, "goals">, view: LedgerView): Goal[] {
-  return openGoals(household).filter((goal) => (view === "household" ? goal.shared : !goal.shared));
+export function kittyBanksInView(
+  household: Pick<Household, "goals">,
+  view: LedgerView,
+  memberId?: string,
+): Goal[] {
+  return openGoals(household).filter((goal) => (
+    memberId ? goalVisibleInView(goal, memberId, view) : (view === "household" ? goal.shared : !goal.shared)
+  ));
 }
 
 export function kittyBankGlance(goals: Goal[]): { cents: number; count: number; label: string } {

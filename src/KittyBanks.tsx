@@ -47,7 +47,7 @@ export function KittyBanks({
   const [amount, setAmount] = useState("25");
   const [buying, setBuying] = useState<string | null>(null);
   const today = todayKey();
-  const live = kittyBanksInView(household, view);
+  const live = kittyBanksInView(household, view, createdBy);
   const retired = retiredGoals({ goals: household.goals }).filter((goal) => (
     view === "household" ? goal.shared : !goal.shared
   ));
@@ -80,7 +80,7 @@ export function KittyBanks({
           Personal banks on this folio. They are existing goals, paper-named. Fund surplus does not land here.
         </p>
       )}
-      {manage ? <p className="muted">{vaultReceiptBlurb(household, today)}</p> : null}
+      {manage && shared ? <p className="muted">{vaultReceiptBlurb(household, today)}</p> : null}
       {live.length === 0 ? (
         <p className="muted">{shared ? "No shared banks yet." : "No personal banks yet."}</p>
       ) : live.map((goal) => {
@@ -164,8 +164,8 @@ export function KittyBanks({
       )}
       {manage ? (
         <>
-          <label>New bank</label>
-          <input value={name} onChange={(event) => setName(event.target.value)} aria-label="New bank name" />
+          <label htmlFor="kitty-new-bank-name">New bank</label>
+          <input id="kitty-new-bank-name" value={name} onChange={(event) => setName(event.target.value)} aria-label="New bank name" />
           <input value={target} onChange={(event) => setTarget(event.target.value)} aria-label="New bank target" />
           <button
             type="button"

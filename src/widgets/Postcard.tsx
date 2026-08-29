@@ -14,6 +14,7 @@ export function PostcardBody({
   displayHousehold,
   dashboard,
   view,
+  memberId,
   card,
   onApply,
 }: {
@@ -21,6 +22,7 @@ export function PostcardBody({
   displayHousehold?: Household;
   dashboard: Dashboard;
   view: LedgerView;
+  memberId?: string;
   card: SitDownPostcard;
   onApply: (next: Household, token?: UndoToken) => void;
 }) {
@@ -33,6 +35,7 @@ export function PostcardBody({
       displayHousehold={displayHousehold ?? household}
       dashboard={dashboard}
       view={view}
+      memberId={memberId}
       onApply={onApply}
     />
   );

@@ -66,8 +66,10 @@ describe("D-164 ledger story UI fences", () => {
     expect(office).toContain("integrityFindings");
     expect(office).toContain("buildSharedLedgerStory(booksHousehold");
     expect(office).toContain("PostcardBody household={booksHousehold}");
+    expect(office).toContain("memberId={memberId} card={postcard}");
     expect(office).not.toContain("runHealthCheck(household)");
     expect(officeWide).toContain("PostcardBody household={booksHousehold}");
+    expect(officeWide).toContain("memberId={memberId} card={postcard}");
     expect(officeWide).not.toContain("runHealthCheck");
     expect(panel).toContain("Fund free-to-spend");
     expect(panel).toContain("LEDGER_CUSTODY_DISCLOSURE");

@@ -221,11 +221,18 @@ export function askBooks(
   }
 
   if (/\b(leftover|sitdown|sit-?down|safe to assign|what can we move)\b/.test(q)) {
+    if (context.view === "personal") {
+      return {
+        kind: "answer",
+        sentence: "Leftover assignment lives on Shared. Confirm still posts there. I won't recite leftover CAD on this folio.",
+        rows: [{ label: "Leftover", value: "On Shared" }],
+      };
+    }
     const leftover = leftoverProjection(household, today);
     return {
       kind: "answer",
       sentence: leftover.leftoverCents
-        ? `Sit-down leftover is ${formatCad(leftover.leftoverCents)}. ${leftover.formula} Month net is not leftover. Confirm parks goal cash in Goals savings. Hercules never does.`
+        ? `Sit-down leftover is ${formatCad(leftover.leftoverCents)}. ${leftover.formula} Month net is not leftover. Confirm parks goal cash in Kitty Banks. Hercules never does.`
         : leftover.shortfallCents
           ? `Nothing to move. ${leftover.formula} Sit-down still runs. It does not invent CAD.`
           : leftover.formula,
@@ -234,7 +241,7 @@ export function askBooks(
         { label: "Bills next 30 days", value: formatCad(leftover.billsNext30Cents) },
         { label: "Card minimums", value: formatCad(leftover.minPaymentsCents) },
         { label: "Leftover", value: formatCad(leftover.leftoverCents) },
-        { label: "Parks in", value: "Goals savings" },
+        { label: "Parks in", value: "Kitty Banks" },
       ],
     };
   }

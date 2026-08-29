@@ -30,6 +30,10 @@ describe("page-true Hercules", () => {
     expect(calendar.chips.join(" ")).toMatch(/bill|owed|jar/i);
     expect(plan.placeholder).toMatch(/plan/i);
     expect(plan.chips.join(" ")).toMatch(/Leftover/i);
+    const personalPlan = herculesPageSurface("plan", household, today, new Date(), { memberId: household.members[0]!.id, view: "personal" });
+    expect(personalPlan.chips.join(" ")).not.toMatch(/Leftover/i);
+    expect(personalPlan.fact?.label).not.toBe("Leftover");
+    expect(herculesIdle(household, "plan", today, new Date(), { memberId: household.members[0]!.id, view: "personal" }).fact?.label).not.toBe("Leftover");
     expect(herculesIdle(household, "ledger", today).spoken).toMatch(/fieldwork|journal/i);
     expect(herculesIdle(household, "plan", today).replies.join(" ")).toMatch(/Sit-down|Groceries/i);
   });

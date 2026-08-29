@@ -13,7 +13,7 @@ import {
 import { formatCad } from "./money.ts";
 import type { BooksAsk, HerculesAskContext } from "./askBooks.ts";
 import { herculesFactId, type HerculesGroundedFact, type HerculesNumberSource } from "./herculesProvenance.ts";
-import type { Household } from "./types.ts";
+import type { Household, LedgerView } from "./types.ts";
 import { householdWallet } from "./accounts.ts";
 import { claimsTraySentence, outstandingClaims, upcomingVisitProposals } from "./appointments.ts";
 import { bubbleNotice, deskNotices } from "./notices.ts";
@@ -93,7 +93,7 @@ function poseFromMood(mood: CompanionMood, celebrating: boolean): HerculesPose {
   return "loaf";
 }
 
-function repliesFor(mood: CompanionMood, tab: HearthTab, topic: string): string[] {
+function repliesFor(mood: CompanionMood, tab: HearthTab, topic: string, view: LedgerView = "household"): string[] {
   if (topic === "identity") return ["Opinion?", "Scratch — say hi"];
   if (topic === "opinion") return ["Working capital?", "Balance sheet"];
   if (topic === "fieldwork") return ["Opinion?", "Policies?"];
@@ -115,7 +115,7 @@ function repliesFor(mood: CompanionMood, tab: HearthTab, topic: string): string[
   if (mood === "restless") return ["Which bill?", "What now?"];
   if (tab === "calendar") return ["Which bill?", "What's owed?", "Start this goal"];
   if (tab === "ledger") return ["Opinion?", "Working capital?"];
-  if (tab === "plan") return ["Sit-down?", "Leftover?", "We good?"];
+  if (tab === "plan") return view === "personal" ? ["Sit-down?", "We good?"] : ["Sit-down?", "Leftover?", "We good?"];
   if (tab === "more") return ["Health", "What broke?", "We good?"];
   return ["We good?", "What now?", "Groceries"];
 }
@@ -167,7 +167,7 @@ export function talkFromAsk(
     lesson: null,
     fact: oneFact(ask.rows),
     facts,
-    replies: repliesFor(mood, tab, topic).slice(0, 3),
+    replies: repliesFor(mood, tab, topic, context.view).slice(0, 3),
     pose: poseFromMood(mood, five.yes),
     topic,
     attention: herculesNeedsCheck(household, today),
@@ -179,6 +179,7 @@ export function herculesIdle(
   tab: HearthTab,
   today: DateKey,
   now = new Date(),
+  context: HerculesAskContext = { memberId: household.members[0]?.id ?? "", view: "household" },
 ): HerculesTalk {
   const view = describeCompanion(household, today);
   const five = groceryHighFive(household, today);
@@ -258,20 +259,20 @@ export function herculesIdle(
       spoken = "I'm here. Scratch — say hi — or ask a number.";
     }
   } else {
-    const surface = herculesPageSurface(tab, household, today, now);
+    const surface = herculesPageSurface(tab, household, today, now, context);
     spoken = clip(surface.spoken);
     lesson = surface.lesson;
     topic = tab;
   }
 
-  const surface = herculesPageSurface(tab, household, today, now);
+  const surface = herculesPageSurface(tab, household, today, now, context);
   const topicReplies = topic !== "idle" && topic !== "morning" && topic !== "recap" && topic !== "high-five";
   return {
     spoken,
     lesson,
     fact: surface.fact,
     replies: (topicReplies || five.yes || view.mood === "hiding" || view.mood === "restless" || !surface.chips.length
-      ? repliesFor(view.mood, tab, topic)
+      ? repliesFor(view.mood, tab, topic, context.view)
       : surface.chips
     ).slice(0, 3),
     pose,
@@ -293,7 +294,7 @@ export function talkHercules(
   const name = view.name;
 
   if (!q || q === "scratch" || q === "hey" || q === "mrrp") {
-    const idle = herculesIdle(household, tab, today);
+    const idle = herculesIdle(household, tab, today, new Date(), context);
     idle.spoken = q === "scratch" ? "Prrrp. Still your cat. Still not a ledger." : idle.spoken;
     idle.pose = q === "scratch" ? "loaf" : idle.pose;
     return idle;
@@ -414,8 +415,12 @@ export function talkHercules(
     lesson = "If I'm hiding, start at Health. If I'm loafing, you're fine.";
   } else if (/postcard|sit-?down|sit down|leftover/.test(q)) {
     topic = "postcard";
-    const card = sitDownPostcard(household);
-    lesson = card.ready ? "Month close lives on Notes (the chalkboard) if you pin it." : "Leftover is cash-like minus bills and card mins. Confirm still moves.";
+    if (context.view === "personal") {
+      lesson = "Leftover assignment lives on Shared. Confirm still posts there.";
+    } else {
+      const card = sitDownPostcard(household);
+      lesson = card.ready ? "Month close lives on Notes (the chalkboard) if you pin it." : "Leftover is cash-like minus bills and card mins. Confirm still moves.";
+    }
   } else if (/recap|envelope/.test(q)) {
     topic = "recap";
     lesson = "Screenshot the bubble. Don't screenshot a lecture.";
