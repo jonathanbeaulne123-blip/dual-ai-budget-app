@@ -3659,7 +3659,7 @@ export function App() {
             <p className="muted">
               {view === "household"
                 ? "Fund, cash, and cards you share. Net worth, trial, and statements stay in Audit, behind this door."
-                : "My books: Personal accounts and activity. Partner Personal rows stay out."}
+                : "Listed accounts in this folio are mine. The figure on My books is accepted-books position."}
             </p>
             <button className="primary" type="button" onClick={() => goTab("ledger")}>
               {view === "household" ? "Open the household table" : "Open my books"}

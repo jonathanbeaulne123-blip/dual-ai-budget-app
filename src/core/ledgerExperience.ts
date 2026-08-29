@@ -93,7 +93,7 @@ export function ledgerRouteContract(tab: LedgerTab, view: LedgerView): LedgerRou
       heading: shared ? "Household table" : "My books",
       purpose: shared
         ? "Fund, household cash, and cards. Net worth, trial, and statements stay in Audit — not the shared table opening."
-        : "My books: this member’s Personal accounts and activity. Partner Personal rows stay out.",
+        : "My books: this member’s listed Personal accounts. The opening figure is accepted-books position, not a partner-hidden envelope.",
       projector: shared ? "shared" : "personal",
       memberSpecific: false,
       commandsExposed: ["recordReconciliation", "closeBooksMonth"],
