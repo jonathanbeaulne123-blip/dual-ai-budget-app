@@ -89,6 +89,7 @@ Opening Shared Ledger feels like sitting down at the household table: what is tr
 - iPhone keeps Fund glance only when the Fund exists; wide Shared puts story tiles on the desk mosaic and the notebook, not a second stacked paper room.
 - `restoreAcceptedSnapshot` is a persist safety net for presentation clones; close/rec/setBudget/addGoal still execute on `booksHousehold`.
 - Shared Books is not a general-ledger landing: Fund operating + household cash/credit open the page; trial/statements/net worth stay in Audit. Books is a deep page from More, not Shared primary nav.
+- Shared keeps the deep room as **Household table**, not Books: table tiles are Fund, chequing, goal savings, and cards; investments stay in Wallet/Audit; Shared Audit is a closed disclosure. Personal still opens on net worth / My books.
 - Kitty Banks remains D-161 (Fund surplus into existing shared goals). Plan still lists the Goals vault until Jonathan confirms a replacement.
 
 ## Phone audit (Slice 5)

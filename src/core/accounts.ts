@@ -323,7 +323,7 @@ export function householdWallet(household: Household, today: DateKey): Household
     }))
     .filter((group) => group.tiles.length);
 
-  /** Story order for Books: net worth strip → chequing → goal savings → credit → investments. */
+  /** Story order for Personal Books: chequing → goal savings → credit → investments. Shared uses householdTableStory. */
   const storyOrder: AccountKind[] = ["chequing", "savings", "credit", "investment"];
   const story = storyOrder
     .map((kind) => groups.find((group) => group.kind === kind))
@@ -352,6 +352,13 @@ export function householdWallet(household: Household, today: DateKey): Household
     netWorthCents: cashCents + investedCostCents + receivableCents - owedCents,
     hottestCard,
   };
+}
+
+const TABLE_STORY_KINDS: AccountKind[] = ["chequing", "savings", "credit"];
+
+/** Shared kitchen-table instruments. Fund is a separate tile. Investments stay in Wallet / Audit. */
+export function householdTableStory(wallet: HouseholdWallet): HouseholdWallet["story"] {
+  return wallet.story.filter((group) => TABLE_STORY_KINDS.includes(group.kind));
 }
 
 export function accountActivity(household: Household, accountId: string): Transaction[] {

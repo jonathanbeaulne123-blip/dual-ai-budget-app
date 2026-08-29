@@ -1,5 +1,40 @@
 # AI Task and Handoff Standard
 
+## D-164 Shared Household table (not Books) (2026-08-28)
+
+**Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7`. **Not merged, not deployed, not live.** Risk: **High** (ledger-mode financial presentation).
+
+**Household outcome:** Shared keeps a deep **Household table** room (Fund, cash, cards, activity, import). It does not keep a Shared “Books / household story / double-entry / net worth / P&L” landing. Personal still opens **My books** on position. Audit (journal, trial, statements, rec, close) stays on Shared behind a closed disclosure.
+
+**Budget delta (5):** `+3` — same journal; Shared opening is operating cash/Fund, not household net worth or income vs expenses.
+
+**Engagement delta (3):** `+2` — Shared page job matches the kitchen table; Audit remains one tap away.
+
+**If they conflicted:** books win. Trial-off still opens Audit and banners. No new Fund formulas. Wallet still lists investments as D-047 accounts; they are not kitchen-table tiles.
+
+**What changed:**
+- Shared hero: Fund operating or household cash. Copy states this is not net worth or a P&L.
+- On-the-table strip: Fund, chequing, goal savings, cards. Investments stay in Wallet / Audit.
+- Shared Audit office is a collapsed `<details>` (journal, trial, statements, rec, close, chart, ask). Personal Audit stays open.
+- More door and command palette: “Household table” / “Open the household table”. Home story trust button matches.
+- PGlite / hosted storage notes move into Shared Audit, not the table opening.
+
+**Verification:** pending focused tests + `pnpm check` + visual on this SHA after commit.
+
+**Data and environment disclosure:**
+- Development impact: none (local/synthetic demo kitchen only)
+- Production impact: none
+- Network calls or data sent: none new
+- MCP access: none for household data
+- Hosted rows/schema/secrets/deployments: none
+- Real household or partner-personal data used: none. Demo/synthetic Development only.
+
+**Remaining uncertainty:** Wallet pane on Shared still shows investments (Accounts Floor). Personal Plan still lists household categories. Demo has no personal-scope accounts.
+
+**Next owner:** Jonathan — review Shared Household table vs Personal My books. Do not merge, rebase, or deploy unless you ask.
+
+**Worksession:** [`worksessions/2026-08-28-shared-ledger-story-implementation.md`](worksessions/2026-08-28-shared-ledger-story-implementation.md)
+
 ## D-164 Shared kitchen composition (2026-08-28)
 
 **Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7`. **Not merged, not deployed, not live.** Risk: **High** (ledger-mode privacy and financial presentation).

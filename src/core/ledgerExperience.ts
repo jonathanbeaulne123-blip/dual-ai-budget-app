@@ -62,7 +62,7 @@ const PERSONAL_PURPOSE = "Understand and manage my private position: what is min
 
 export type KitchenPrimaryNavId = "home" | "calendar" | "shift" | "plan" | "more";
 
-/** Shared Home owns household books; Shift is a Personal work room. Books stays a deep page from Home/More. */
+/** Shared Home owns the kitchen table; Shift is a Personal work room. Household table / Books stays a deep page from More. */
 export function kitchenPrimaryNav(view: LedgerView): KitchenPrimaryNavId[] {
   if (view === "household") return ["home", "calendar", "plan", "more"];
   return ["home", "calendar", "shift", "plan", "more"];
@@ -90,9 +90,9 @@ export function ledgerRouteContract(tab: LedgerTab, view: LedgerView): LedgerRou
     return {
       tab,
       view,
-      heading: shared ? "Household table books" : "My books",
+      heading: shared ? "Household table" : "My books",
       purpose: shared
-        ? "Fund, household cash and credit, and the journal. Trial, statements, and net worth live in Audit — not the shared table opening."
+        ? "Fund, household cash, and cards. Net worth, trial, and statements stay in Audit — not the shared table opening."
         : "My books: this member’s Personal accounts and activity. Partner Personal rows stay out.",
       projector: shared ? "shared" : "personal",
       memberSpecific: false,

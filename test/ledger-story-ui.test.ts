@@ -78,14 +78,20 @@ describe("D-164 ledger story UI fences", () => {
     expect(shift).toContain("worker-centered");
     expect(books).toContain("Household table");
     expect(books).toContain("My books");
-    expect(books).toContain("Audit office");
+    expect(books).toContain("On the table");
+    expect(books).toContain("householdTableStory");
+    expect(books).toContain("books-audit-office");
+    expect(books).not.toContain("Together now");
     expect(books).not.toContain("Household story · double-entry");
+    expect(books).not.toContain("kind=\"Books\"");
     expect(panel).toContain("<summary>Propose or confirm a contribution</summary>");
   });
 
   it("keeps Books off Shared primary nav and doors it from More", () => {
     expect(app).toContain("kitchenPrimaryNav(view)");
-    expect(app).toContain("Open household table books");
+    expect(app).toContain("Open the household table");
+    expect(app).not.toContain("Open household table books");
+    expect(app).not.toContain("Journal and Fund");
     expect(app).toContain('data-ledger-nav={view === "household" ? "shared" : "personal"}');
     expect(experience).toContain('return ["home", "calendar", "plan", "more"]');
     expect(experience).toContain('return ["home", "calendar", "shift", "plan", "more"]');

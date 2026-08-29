@@ -18,6 +18,7 @@ import {
   compileHousehold,
   formatCad,
   householdWallet,
+  householdTableStory,
   herculesLedgerSourcePane,
   LEDGER_CUSTODY_DISCLOSURE,
   projectHouseholdFund,
@@ -113,6 +114,9 @@ export function BooksPage({
   const today = todayKey();
   const sharedTable = view === "household";
   const showFundPane = sharedTable || booksHousehold.householdFund?.custodianMemberId === memberId;
+  const tableStory = sharedTable ? householdTableStory(wallet) : wallet.story;
+  const isAuditPane = (AUDIT_PANE_IDS as readonly string[]).includes(pane);
+  const [auditOpen, setAuditOpen] = useState(!trial.inBalance);
   const tablePanes = PANES.filter((item) => (
     (TABLE_PANE_IDS as readonly string[]).includes(item.id)
     && (item.id !== "fund" || showFundPane)
@@ -154,7 +158,12 @@ export function BooksPage({
   useEffect(() => {
     if (focusedAccountId || sourceFocus) return;
     setPane(view === "personal" ? "wallet" : "fund");
+    setAuditOpen(view !== "household");
   }, [view, focusedAccountId, sourceFocus]);
+
+  useEffect(() => {
+    if (!trial.inBalance || isAuditPane) setAuditOpen(true);
+  }, [trial.inBalance, isAuditPane]);
 
   return (
     <div className="books-theme-c" data-books-face={sharedTable ? "household-table" : "personal-folio"}>
@@ -165,8 +174,9 @@ export function BooksPage({
           <div className="sub">
             {fundConfigured
               ? `Fund operating. Kitty ${formatCad(fundProjection.kittyCents)}. ${LEDGER_CUSTODY_DISCLOSURE}`
-              : "Fund is not set up. This opening is household cash, not a net-worth statement."}
+              : "Fund is not set up. This is household cash on the table — not net worth, not a P&L."}
           </div>
+          <p className="muted books-table-job">Shared Fund, cash, and cards. Net worth, trial, and statements stay in Audit.</p>
           {!trial.inBalance ? (
             <p className="opinion-banner adverse">
               Trial is off. Open Audit before treating the journal as closed.
@@ -185,20 +195,20 @@ export function BooksPage({
           ) : null}
         </section>
       )}
-      <StoryStrip heading={sharedTable ? "Together now" : "My accounts"}>
+      <StoryStrip heading={sharedTable ? "On the table" : "My accounts"}>
         {showFundPane && (
         <PaperTile
           kind="Fund"
           name={view === "personal" ? "Private Fund check" : "Household Fund"}
           value={household.householdFund ? formatCad(fundProjection.operatingBalanceCents) : "Set up at $0.00"}
           onClick={() => setPane("fund")}
-          ariaLabel="Open the Hearth Household Fund books"
+          ariaLabel="Open the Hearth Household Fund"
         />
         )}
-        {wallet.story.map((group) => (
+        {tableStory.map((group) => (
           <PaperTile
             key={group.kind}
-            kind="Books"
+            kind={sharedTable ? "Table" : "Books"}
             name={group.kind === "savings" ? "Goal savings" : group.label}
             value={formatCad(group.tiles.reduce((sum, tile) => sum + tile.displayCents, 0))}
             onClick={() => {
@@ -213,38 +223,17 @@ export function BooksPage({
           />
         ))}
       </StoryStrip>
-      {booksStatus?.ok ? (
-        <p className="muted">
-          {`Postgres ${booksStatus.postgresVersion ?? "PGlite"} is holding ${booksStatus.entryCount} journal entries on this phone.`}
-        </p>
-      ) : booksStatus ? (
-        <KitchenNotice
-          message={booksStatus.error || "The SQL books did not verify. The last valid snapshot on this phone is still saved."}
-          onGoMore={onGoMore}
-        />
+      {!sharedTable ? (
+        <BooksStorageNotes household={household} booksStatus={booksStatus} onGoMore={onGoMore} />
       ) : null}
-      {household.linked ? (
-        booksStatus?.hosted?.schema ? (
-          <p className="muted">
-            {`The shared snapshot is on Supabase (${booksStatus.hosted.project}). Phrase join is not encryption.`}
-          </p>
-        ) : booksStatus?.hosted ? (
-          <KitchenNotice
-            message={booksStatus.hosted.error || "This household is linked, but the hosted tables are not in the API yet."}
-            onGoMore={onGoMore}
-          />
-        ) : (
-          <p className="muted">This household is linked. Sharing uses the reviewed transport path after a local accept.</p>
-        )
-      ) : (
-        <p className="muted">This household stays on this phone until a signed-in Google member shares it. A Hearth Pass does not upload.</p>
-      )}
       <PaneSeals
+        ariaLabel={sharedTable ? "Household table rooms" : "My books rooms"}
         items={sharedTable
           ? [
-              { id: "fund", label: "Fund" },
+              ...(showFundPane ? [{ id: "fund" as const, label: "Fund" }] : []),
               { id: "wallet", label: "Wallet" },
               { id: "register", label: "Activity" },
+              { id: "import", label: "Import" },
             ]
           : [
               { id: "wallet", label: "Wallet" },
@@ -254,23 +243,16 @@ export function BooksPage({
         active={pane}
         onPick={(id) => setPane(id as Pane)}
       />
-      <p className="muted">{sharedTable ? "Household table" : "My folio"}</p>
-      <div className="tabs" role="tablist" aria-label={sharedTable ? "Household table books" : "My books"}>
+      <div className="tabs" role="tablist" aria-label={sharedTable ? "Household table" : "My books"} data-books-tabs="table">
         {tablePanes.map((item) => (
           <button key={item.id} className={pane === item.id ? "active" : ""} onClick={() => setPane(item.id)}>
             {item.label}
           </button>
         ))}
       </div>
-      <p className="muted">Audit office</p>
-      <div className="tabs" role="tablist" aria-label="Audit office">
-        {auditPanes.map((item) => (
-          <button key={item.id} className={pane === item.id ? "active" : ""} onClick={() => setPane(item.id)}>
-            {item.label}
-          </button>
-        ))}
-      </div>
-      <p className="muted books-pane-blurb">{PANES.find((item) => item.id === pane)?.blurb}</p>
+      {!isAuditPane ? (
+        <p className="muted books-pane-blurb">{PANES.find((item) => item.id === pane)?.blurb}</p>
+      ) : null}
       {pane === "wallet" && (
         <WalletPane
           household={household}
@@ -311,6 +293,33 @@ export function BooksPage({
           onGoMore={onGoMore}
         />
       )}
+      <details
+        className={`books-audit-office${sharedTable ? "" : " is-folio"}`}
+        open={sharedTable ? auditOpen : true}
+        onToggle={(event) => {
+          if (!sharedTable) return;
+          const next = event.currentTarget.open;
+          setAuditOpen(next);
+          if (!next && isAuditPane) setPane("fund");
+        }}
+      >
+        <summary>{sharedTable ? "Audit office — journal, trial, statements" : "Audit office"}</summary>
+        {sharedTable ? (
+          <>
+            <p className="muted">The journal still exists. This is how Hearth proves the books — not the shared table opening.</p>
+            <BooksStorageNotes household={household} booksStatus={booksStatus} onGoMore={onGoMore} />
+          </>
+        ) : null}
+        <div className="tabs" role="tablist" aria-label="Audit office" data-books-tabs="audit">
+          {auditPanes.map((item) => (
+            <button key={item.id} className={pane === item.id ? "active" : ""} onClick={() => setPane(item.id)}>
+              {item.label}
+            </button>
+          ))}
+        </div>
+        {isAuditPane ? (
+          <p className="muted books-pane-blurb">{PANES.find((item) => item.id === pane)?.blurb}</p>
+        ) : null}
       {pane === "journal" && (
         <section className="card">
           <header>
@@ -583,6 +592,7 @@ export function BooksPage({
         </section>
       )}
       {pane === "query" && <AskBooks household={booksHousehold} />}
+      {(!sharedTable || isAuditPane) ? (
       <div className="chips" style={{ marginTop: 8 }}>
         <button className="chip" onClick={() => downloadText(booksFilename(books, "sql"), booksSqlDump(books), "application/sql")}>
           Download SQL
@@ -594,7 +604,50 @@ export function BooksPage({
           Download close pack
         </button>
       </div>
+      ) : null}
+      </details>
     </div>
+  );
+}
+
+function BooksStorageNotes({
+  household,
+  booksStatus,
+  onGoMore,
+}: {
+  household: Household;
+  booksStatus: BooksStatus | null;
+  onGoMore?: () => void;
+}) {
+  return (
+    <>
+      {booksStatus?.ok ? (
+        <p className="muted">
+          {`Postgres ${booksStatus.postgresVersion ?? "PGlite"} is holding ${booksStatus.entryCount} journal entries on this phone.`}
+        </p>
+      ) : booksStatus ? (
+        <KitchenNotice
+          message={booksStatus.error || "The SQL books did not verify. The last valid snapshot on this phone is still saved."}
+          onGoMore={onGoMore}
+        />
+      ) : null}
+      {household.linked ? (
+        booksStatus?.hosted?.schema ? (
+          <p className="muted">
+            {`The shared snapshot is on Supabase (${booksStatus.hosted.project}). Phrase join is not encryption.`}
+          </p>
+        ) : booksStatus?.hosted ? (
+          <KitchenNotice
+            message={booksStatus.hosted.error || "This household is linked, but the hosted tables are not in the API yet."}
+            onGoMore={onGoMore}
+          />
+        ) : (
+          <p className="muted">This household is linked. Sharing uses the reviewed transport path after a local accept.</p>
+        )
+      ) : (
+        <p className="muted">This household stays on this phone until a signed-in Google member shares it. A Hearth Pass does not upload.</p>
+      )}
+    </>
   );
 }
 

@@ -129,13 +129,15 @@ export function PaneSeals({
   items,
   active,
   onPick,
+  ariaLabel = "Books panes",
 }: {
   items: { id: string; label: string }[];
   active: string;
   onPick: (id: string) => void;
+  ariaLabel?: string;
 }) {
   return (
-    <div className="hearth-pane-seals" role="tablist" aria-label="Books panes">
+    <div className="hearth-pane-seals" role="tablist" aria-label={ariaLabel}>
       {items.map((item) => (
         <button
           key={item.id}

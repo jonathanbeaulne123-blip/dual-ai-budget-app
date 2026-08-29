@@ -328,6 +328,12 @@ button.hearth-paper-tile:focus-visible {
   .books-theme-c .books-pane-blurb {
     display: none;
   }
+  .books-theme-c .books-audit-office .tabs {
+    display: flex;
+  }
+  .books-theme-c .books-audit-office .books-pane-blurb {
+    display: block;
+  }
 }
 
 .hearth-pane-seals {
@@ -357,6 +363,51 @@ button.hearth-paper-tile:focus-visible {
 .hearth-pane-seal:focus-visible {
   outline: 2px solid var(--pine);
   outline-offset: 2px;
+}
+
+.books-table-job {
+  margin: 8px 0 0;
+  max-width: 42rem;
+}
+
+.books-audit-office {
+  margin-top: 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--paper) 88%, var(--card));
+  padding: 8px 12px 12px;
+}
+.books-audit-office > summary {
+  min-height: 44px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink);
+  list-style: none;
+  display: flex;
+  align-items: center;
+}
+.books-audit-office > summary::-webkit-details-marker {
+  display: none;
+}
+.books-audit-office.is-folio {
+  margin-top: 12px;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+.books-audit-office.is-folio > summary {
+  pointer-events: none;
+  color: var(--muted);
+  font-weight: 500;
+  min-height: 0;
+  margin-bottom: 4px;
+}
+
+@media (min-width: 720px) {
+  .books-theme-c[data-books-face="household-table"] .hearth-pane-seals {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

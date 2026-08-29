@@ -3406,7 +3406,7 @@ export function App() {
           const fund = projectHouseholdFund(household, today);
           return (
             <section className="card household-fund-glance is-phone-only" aria-label="Hearth Household Fund">
-              <header><h2>Household Fund</h2><button className="ghost" type="button" onClick={() => goTab("ledger")}>Open Fund books</button></header>
+              <header><h2>Household Fund</h2><button className="ghost" type="button" onClick={() => goTab("ledger")}>Open Fund</button></header>
               <div className="grid">
                 <div className="stat"><span>Operating</span><strong>{formatCad(fund.operatingBalanceCents)}</strong></div>
                 <div className="stat"><span>Transfer due</span><strong>{formatCad(fund.transferDueCents)}</strong></div>
@@ -3655,14 +3655,14 @@ export function App() {
             </button>
           </section>
           <section className="card">
-            <header><h2>Journal and Fund</h2></header>
+            <header><h2>{view === "household" ? "Household table" : "My books"}</h2></header>
             <p className="muted">
               {view === "household"
-                ? "Household table books: Fund, cash and credit, then the journal. Trial and statements stay in Audit."
+                ? "Fund, cash, and cards you share. Net worth, trial, and statements stay in Audit, behind this door."
                 : "My books: Personal accounts and activity. Partner Personal rows stay out."}
             </p>
             <button className="primary" type="button" onClick={() => goTab("ledger")}>
-              {view === "household" ? "Open household table books" : "Open my books"}
+              {view === "household" ? "Open the household table" : "Open my books"}
             </button>
           </section>
           <section className="card">
@@ -5127,7 +5127,7 @@ export function App() {
               { label: "Calendar", run: () => goTab("calendar") },
               { label: "Shift", run: () => goTab("shift") },
               { label: "Plan", run: () => goTab("plan") },
-              { label: "Books", run: () => goTab("ledger") },
+              { label: view === "household" ? "Household table" : "My books", run: () => goTab("ledger") },
               { label: "Health", run: () => goTab("more") },
               { label: "Google household bridge", run: () => goTab("more") },
               { label: "Ask Hercules", run: () => goTab("home") },

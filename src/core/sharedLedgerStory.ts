@@ -434,7 +434,7 @@ export function buildSharedLedgerStory(
       pendingProposalCount: pendingCount,
       environment: projectedShared.environment,
       lastCommittedAt: projectedShared.lastCommittedAt,
-      auditLabel: "Open Fund books",
+      auditLabel: "Open the household table",
     },
   };
 }
