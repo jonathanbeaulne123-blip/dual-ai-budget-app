@@ -5,29 +5,27 @@ import {
   ValidationError,
   addCategory,
   addFormDefaults,
-  addGoal,
   buildDashboard,
   previewShiftAmounts,
   catalogHousehold,
   centsDigitsFromDollars,
-  fundGoal,
   createWriteQueue,
   creditCardView,
   defaultVisibilityForView,
-  describeGoalContributors,
   dollarsFromCentsDigits,
   emitOfficeIntent,
   formatCad,
   describeDeviceLabel,
   localDeviceId,
   touchHouseholdDevice,
-  goalIsFull,
-  goalStatus,
-  openGoals,
-  retiredGoals,
-  vaultReceiptBlurb,
   householdForView,
   ledgerNameForView,
+  ledgerRouteContract,
+  kitchenPrimaryNav,
+  showsLedgerPurposeBanner,
+  projectLedgerExperience,
+  restoreAcceptedSnapshot,
+  setBudget,
   nameHouseholdLedgers,
   linkGoogleIdentity,
   assembleHousehold,
@@ -58,7 +56,6 @@ import {
   settleClaim,
   writeOffClaim,
   acceptVisitGoal,
-  upcomingVisitProposals,
   acceptPresetNotice,
   addPreset,
   archivePreset,
@@ -70,7 +67,6 @@ import {
   readClinkOn,
   requestShiftEnvelope,
   requestCalendarPane,
-  runHealthCheck,
   seedDemoHousehold,
   seedStressHousehold,
   eraseDevelopmentData,
@@ -78,6 +74,7 @@ import {
   archiveWorkJob,
   upsertWorkJob,
   todayKey,
+  monthKeyFromDateKey,
   TIMEZONE,
   formatZoneDateTime,
   formatZoneTime,
@@ -132,10 +129,12 @@ import {
   type Household,
   type PersonalEnvelope,
   type LedgerView,
+  type MonthKey,
   type Split,
   type UndoToken,
   type Visibility,
   type Account,
+  type CategoryActual,
   type VisitPostDraft,
   type TransactionLocation,
   type HerculesNumberSource,
@@ -248,6 +247,7 @@ import { PairingCard, WelcomeJoin } from "./Pairing.tsx";
 import { WelcomeQrScanner } from "./WelcomeQrScanner.tsx";
 import { inviteReasonMessage, redeemHouseholdInvite, bindGoogleMemberships, leaveOrDeleteHousehold, resetDevelopmentHouseholds } from "./ledger/householdInvites.ts";
 import { BooksPage } from "./Books.tsx";
+import { CollapsibleCard } from "./theme/PaperTheme.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
 import type { RepeatingDraft } from "./RepeatingForm.tsx";
 import type { WorkShiftDraft } from "./WorkShiftFlow.tsx";
@@ -303,12 +303,13 @@ import {
 import { useDialog } from "./useDialog.ts";
 import { CalendarPage } from "./Calendar.tsx";
 import { Office } from "./Office.tsx";
+import { LedgerPurposeBanner } from "./LedgerPurposeBanner.tsx";
 import { HerculesPresence } from "./Hercules.tsx";
 import { HerculesProApproval, HerculesProPermissionsCard, herculesProAuthorizationRequest } from "./HerculesPro.tsx";
 import { CadPad } from "./CadPad.tsx";
 import { PresetChip } from "./widgets/PresetChip.tsx";
 import { SitDownGuide } from "./SitDownGuide.tsx";
-import { PurchaseGoalSheet } from "./widgets/Jars.tsx";
+import { KittyBanks } from "./KittyBanks.tsx";
 import { playClink } from "./clink.ts";
 import { GoogleBridgeCard } from "./GoogleBridge.tsx";
 import {
@@ -359,7 +360,7 @@ type Guard =
   | { kind: "postRecurrence"; recurrenceId: string; summary: string }
   | { kind: "saveRepeating"; draft: RepeatingDraft; summary: string }
   | { kind: "saveWorkJob"; job: WorkJob; summary: string }
-  | { kind: "postDueAll"; summary: string }
+  | { kind: "postDueAll"; summary: string; recurrenceIds: string[] }
   | { kind: "postVisit"; draft: VisitPostDraft; summary: string }
   | { kind: "settleClaim"; claimId: string; summary: string }
   | { kind: "writeOffClaim"; claimId: string; summary: string }
@@ -1516,10 +1517,14 @@ export function App() {
     () => (personalSource && memberId ? householdForView(personalSource, memberId, view) : personalSource),
     [personalSource, memberId, view],
   );
-  const findings = useMemo(() => (household ? runHealthCheck(household) : []), [household]);
+  const experience = useMemo(
+    () => (household && memberId ? projectLedgerExperience(household, memberId, view, today) : null),
+    [household, memberId, view, today],
+  );
+  const scopedHousehold = experience && experience.ok ? experience.scopedHousehold : visible;
   const dashboard = useMemo(
-    () => (visible ? buildDashboard(visible, today, now, findings.length) : null),
-    [visible, today, now, findings.length],
+    () => (scopedHousehold ? buildDashboard(scopedHousehold, today, now, experience && experience.ok ? experience.integrityFindings.length : 0) : null),
+    [scopedHousehold, today, now, experience],
   );
   const syncFreshnessDisplay = useMemo(() => {
     if (!household || !memberId) {
@@ -1649,11 +1654,12 @@ export function App() {
     if (duePreviewOffered.current === previewKey) return;
     if (duePreviewDismissed(environment, household.householdId, today)) return;
 
-    const rows = dueRecurrencePreview(household, today);
+    if (!experience || !experience.ok) return;
+    const rows = dueRecurrencePreview(experience.scopedHousehold, today);
     if (!rows.length) return;
     duePreviewOffered.current = previewKey;
     setGuard({ kind: "duePreview", rows });
-  }, [adding, booting, environment, guard, household, today]);
+  }, [adding, booting, environment, experience, guard, household, today]);
 
   function rememberSession(next: Session) {
     const remembered = { ...next, householdId: next.householdId ?? householdRef.current?.householdId };
@@ -2110,6 +2116,11 @@ export function App() {
     return enqueueWrite(() => commitHousehold(next, token, actorId, options));
   }
 
+  function persistLedgerWrite(next: Household, token?: UndoToken) {
+    const accepted = householdRef.current;
+    return persist(accepted ? restoreAcceptedSnapshot(accepted, next) : next, token);
+  }
+
   async function gateWithGoogle(options?: { record?: boolean }) {
     const current = householdRef.current;
     const who = session?.memberId;
@@ -2200,11 +2211,17 @@ export function App() {
         workShiftInputRef.current = null;
         setConfirm(null);
         setAdding(false);
+        const nextExperience = session?.memberId
+          ? projectLedgerExperience(result.household, session.memberId, view, today)
+          : null;
         setForm({
           ...emptyForm,
           date: today,
           visibility: defaultVisibilityForView(view),
-          ...addFormDefaults(result.household, focusedAccountId),
+          ...addFormDefaults(
+            nextExperience && nextExperience.ok ? nextExperience.scopedHousehold : result.household,
+            focusedAccountId,
+          ),
         });
         if (result.warnings.length) setError(result.warnings.join(" "));
         if (result.postedIds.some((id) => /^(TXN|SHF)/.test(id))) {
@@ -2788,7 +2805,11 @@ export function App() {
 
   const ledger = household;
   const actorId = session.memberId;
-  const displayHousehold = view === "household" && visible ? visible : household;
+  const displayHousehold = experience && experience.ok ? experience.scopedHousehold : household;
+  const pickerAccounts = experience && experience.ok
+    ? experience.scopedHousehold.accounts.filter((account) => account.active)
+    : [];
+  const healthFindings = experience && experience.ok ? experience.integrityFindings : [];
   const preserveCurrentPersonal = (next: Household) => {
     if (view !== "household") return next;
     const incoming = splitForSync(next, actorId);
@@ -2812,7 +2833,7 @@ export function App() {
     && ledger.workJobs.some((job) => job.active && job.memberId === actorId);
 
   const formForAccount = (accountId: string | null, extra: Partial<typeof emptyForm> = {}) => {
-    const defaults = addFormDefaults(ledger, accountId);
+    const defaults = addFormDefaults(displayHousehold, accountId);
     return {
       ...emptyFormForZone(booksZone),
       date: today,
@@ -2886,7 +2907,7 @@ export function App() {
   const openAddFor = (account: Account | null, nextMode?: AddMode) => {
     leaveDesk();
     const id = account?.id ?? focusedAccountId;
-    const defaults = addFormDefaults(ledger, id);
+    const defaults = addFormDefaults(displayHousehold, id);
     setFocusedAccountId(id);
     setMode(nextMode ?? defaults.suggestedMode);
     setAdding(true);
@@ -3139,7 +3160,7 @@ export function App() {
   }
 
   return (
-    <div className="app">
+    <div className="app" data-ledger-mode={view} data-ledger-tab={tab}>
       <header className="topbar">
         <div className="brand">
           <img src="/hercules-mark.svg" alt="" />
@@ -3253,25 +3274,32 @@ export function App() {
           <button
             key={item}
             className={view === item ? "active" : ""}
-            onClick={() => rememberSession({ memberId: session.memberId, view: item, householdId: household.householdId })}
+            aria-selected={view === item}
+            onClick={() => {
+              if (item === "household" && tab === "shift") goTab("home");
+              rememberSession({ memberId: session.memberId, view: item, householdId: household.householdId });
+            }}
           >
             {ledgerNameForView(household, session.memberId, item)}
           </button>
         ))}
       </div>
+      {experience && experience.ok && showsLedgerPurposeBanner(tab) ? (
+        <LedgerPurposeBanner tab={tab} view={view} label={experience.label} />
+      ) : null}
 
       {tab === "home" && dashboard && (
         <>
-        {displayHousehold.householdFund && (() => {
-          const fund = projectHouseholdFund(displayHousehold, today);
+        {view === "household" && household.householdFund && (() => {
+          const fund = projectHouseholdFund(household, today);
           return (
-            <section className="card household-fund-glance" aria-label="Hearth Household Fund">
-              <header><h2>Household Fund</h2><button className="ghost" type="button" onClick={() => goTab("ledger")}>Open Fund books</button></header>
+            <section className="card household-fund-glance is-phone-only" aria-label="Hearth Household Fund">
+              <header><h2>Household Fund</h2><button className="ghost" type="button" onClick={() => goTab("ledger")}>Open Fund</button></header>
               <div className="grid">
                 <div className="stat"><span>Operating</span><strong>{formatCad(fund.operatingBalanceCents)}</strong></div>
                 <div className="stat"><span>Transfer due</span><strong>{formatCad(fund.transferDueCents)}</strong></div>
                 <div className="stat"><span>Upcoming</span><strong>{formatCad(fund.upcomingReserveCents)}</strong></div>
-                <div className="stat"><span>{fund.topUpNeededCents ? "Top-up" : "Free"}</span><strong className={fund.topUpNeededCents ? "negative" : ""}>{formatCad(fund.topUpNeededCents || fund.freeToSpendCents)}</strong></div>
+                <div className="stat"><span>{fund.topUpNeededCents ? "Top-up needed" : "Fund free-to-spend"}</span><strong className={fund.topUpNeededCents ? "negative" : ""}>{formatCad(fund.topUpNeededCents || fund.freeToSpendCents)}</strong></div>
               </div>
               <p className="muted">The money remains in Bianca’s savings. Hearth cannot move it. Reconciliation: {fund.lastReconciledAt ? (fund.reconciliationTied ? "tied" : "needs review") : "not yet recorded"}.</p>
             </section>
@@ -3279,11 +3307,14 @@ export function App() {
         })()}
         <Office
           household={displayHousehold}
+          booksHousehold={household}
           dashboard={dashboard}
           today={today}
           environment={environment}
           memberId={session.memberId}
           view={view}
+          integrityFindingCount={experience && experience.ok ? experience.integrityFindings.length : 0}
+          integrityFindings={experience && experience.ok ? experience.integrityFindings : []}
           busy={busy}
           clinkOn={clinkOn}
           adding={adding}
@@ -3322,7 +3353,7 @@ export function App() {
           onMarkPaid={(recurrenceId, summary) => setGuard({ kind: "postRecurrence", recurrenceId, summary })}
           onAskSettle={(claimId, summary) => setGuard({ kind: "settleClaim", claimId, summary })}
           onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
-          onSitDown={(next, token) => persist(preserveCurrentPersonal(next), token)}
+          onSitDown={(next, token) => persistLedgerWrite(preserveCurrentPersonal(next), token)}
           onGo={(next) => {
             if (next === "add") {
               openAddFor(null);
@@ -3337,48 +3368,53 @@ export function App() {
       {tab === "plan" && dashboard && (
         <>
           <div className="plan-wide">
+          <div className="plan-wide-lead">
           <section className="hero">
-            <div className="label">Plan vs actual</div>
+            <div className="label">{view === "household" ? "Household plan vs actual" : "My plan vs actual"}</div>
             <div className="money">{formatCad(dashboard.month.netBudgetedCents)}</div>
             <div className="sub">Budgeted net for {dashboard.monthLabel}</div>
           </section>
-          <section className="card">
-            <header><h2>Categories</h2></header>
-            {dashboard.month.categories.filter((row) => row.budgetedCents || row.actualCents).map((row) => {
-              const pct = row.budgetedCents ? Math.min(140, (row.actualCents / row.budgetedCents) * 100) : 0;
-              return (
-                <div key={row.subcategoryId} style={{ marginBottom: 10 }}>
-                  <div className="row">
-                    <span>{row.name}</span>
-                    <span>{formatCad(row.actualCents)} / {formatCad(row.budgetedCents)}</span>
-                  </div>
-                  <div className="bar"><i className={pct > 100 ? "over" : ""} style={{ width: `${Math.min(pct, 100)}%` }} /></div>
-                </div>
-              );
-            })}
-          </section>
-          </div>
-          <SitDownGuide household={household} memberId={actorId} onApply={(next, token) => persist(next, token)} hidden={view === "personal"} />
-          <Goals
+          <SitDownGuide
             household={household}
-            createdBy={memberId}
-            goals={visible?.goals ?? household.goals}
-            onChange={(next, token) => persist(next, token)}
-            onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
+            displayHousehold={displayHousehold}
+            dashboard={dashboard}
+            view={view}
+            memberId={actorId}
+            onApply={(next, token) => persist(next, token)}
           />
+          <KittyBanks
+            household={displayHousehold}
+            booksHousehold={household}
+            view={view}
+            createdBy={memberId}
+            busy={busy}
+            surface="plan"
+            onCommand={(fn) => { void runKitchen(fn); }}
+            onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
+            onShowHome={() => goTab("home")}
+          />
+          </div>
+          <PlanCategories
+            household={household}
+            rows={dashboard.month.categories}
+            monthKey={monthKeyFromDateKey(today)}
+            onSave={(next, token) => persist(next, token)}
+          />
+          </div>
         </>
       )}
 
       {tab === "calendar" && (
         <CalendarPage
-          household={household}
+          household={displayHousehold}
+          view={view}
           today={today}
           environment={environment}
           memberId={session.memberId}
           busy={busy}
           onCommand={(fn) => { void run(fn); }}
           onAskPost={(recurrenceId, summary) => setGuard({ kind: "postRecurrence", recurrenceId, summary })}
-          onAskPostDue={(_count, summary) => setGuard({ kind: "postDueAll", summary })}
+          onAskPostDue={(recurrenceIds, summary) => setGuard({ kind: "postDueAll", summary, recurrenceIds })}
           onAskSaveRepeating={(draft, summary) => {
             setSaveRepeatingPostFirst(false);
             setGuard({ kind: "saveRepeating", draft, summary });
@@ -3398,7 +3434,8 @@ export function App() {
       {tab === "shift" && (
         <WorkShiftPage
           key={`${environment}:${household.householdId}:${session.memberId}`}
-          household={household}
+          household={experience && experience.ok ? experience.shiftHousehold : household}
+          view={view}
           memberId={session.memberId}
           memberName={household.members.find((member) => member.id === session.memberId)?.name ?? "You"}
           today={today}
@@ -3474,6 +3511,7 @@ export function App() {
       {tab === "ledger" && (
         <BooksPage
           household={displayHousehold}
+          booksHousehold={household}
           memberId={session.memberId}
           view={view}
           booksStatus={booksStatus}
@@ -3481,7 +3519,7 @@ export function App() {
           sourceFocus={herculesSourceFocus}
           onFocusAccount={setFocusedAccountId}
           onClearSource={() => setHerculesSourceFocus(null)}
-          onChange={(next, token) => persist(preserveCurrentPersonal(next), token)}
+          onChange={(next, token) => persistLedgerWrite(preserveCurrentPersonal(next), token)}
           onCommand={(command) => { void run(command); }}
           onPayAccount={openPayCard}
           onAddToAccount={(account) => openAddFor(account)}
@@ -3534,9 +3572,21 @@ export function App() {
             </button>
           </section>
           <section className="card">
-            <header><h2>Health</h2><span className={`pill ${findings.length ? "warn" : "good"}`}>{findings.length ? `${findings.length} findings` : "Clean"}</span></header>
-            {findings.length === 0 ? <p className="muted">Ledger, splits, transfers, shifts, flags, and the books agree.</p> : (
-              <ul className="health">{findings.map((finding) => <li key={finding.section + finding.message}><strong>{finding.section}.</strong> {finding.message}</li>)}</ul>
+            <header><h2>{view === "household" ? "Household table" : "My books"}</h2></header>
+            <p className="muted">
+              {view === "household"
+                ? "Fund, cash, and cards you share. Net worth, trial, and statements stay in Audit, behind this door."
+                : "Listed accounts in this folio are mine. The figure on My books is accepted-books position."}
+            </p>
+            <button className="primary" type="button" onClick={() => goTab("ledger")}>
+              {view === "household" ? "Open the household table" : "Open my books"}
+            </button>
+          </section>
+          <section className="card">
+            <header><h2>{experience && experience.ok ? experience.integrityLabel : "Health"}</h2><span className={`pill ${healthFindings.length ? "warn" : "good"}`}>{healthFindings.length ? `${healthFindings.length} findings` : "Clean"}</span></header>
+            <p className="muted">{view === "household" ? "This is the full-household books signal. It does not reveal Personal envelopes." : "Integrity still runs on the accepted household. Personal amounts stay in this folio."}</p>
+            {!(experience && experience.ok) ? <p className="muted">Choose who is using this ledger before reading Health.</p> : healthFindings.length === 0 ? <p className="muted">Ledger, splits, transfers, shifts, flags, and the books agree.</p> : (
+              <ul className="health">{healthFindings.map((finding) => <li key={finding.section + finding.message}><strong>{finding.section}.</strong> {finding.message}</li>)}</ul>
             )}
           </section>
           <section className="card">
@@ -3771,19 +3821,30 @@ export function App() {
             <header><h2>Where the books live</h2></header>
             <p className="muted">
               Commands write PGlite books (<code>{STORAGE_EXPLAINER.books}</code>) and keep a snapshot in IndexedDB.
-              Personal rows are a filter. Export JSON for a copy.
+              Export follows the active ledger: Shared never includes Personal accounts, Personal rows, or private Fund reconciliation.
             </p>
-            <button className="primary" onClick={() => downloadJson(household)}>Export JSON snapshot</button>
+            <button className="primary" onClick={() => {
+              if (!experience || !experience.ok) {
+                setError("Choose who is using this ledger before exporting.");
+                return;
+              }
+              downloadJson(experience.exportHousehold);
+            }}>
+              {view === "personal" ? "Export this Personal folio" : "Export Shared snapshot"}
+            </button>
             {environment === "development" && (<>
               <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setGuard({ kind: "stress-random" })}>Reload random data</button>
               <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setGuard({ kind: "stress-pretty" })}>Display pretty numbers</button>
             </>)}
             <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => {
-              const due = household.recurrences.filter((item) => item.active && item.nextDate <= today).length;
+              const due = experience && experience.ok
+                ? experience.scopedHousehold.recurrences.filter((item) => item.active && item.nextDate <= today)
+                : [];
               setGuard({
                 kind: "postDueAll",
-                summary: due
-                  ? `This posts ${due} due repeating ${due === 1 ? "item" : "items"} into the books.`
+                recurrenceIds: due.map((item) => item.id),
+                summary: due.length
+                  ? `This posts ${due.length} due repeating ${due.length === 1 ? "item" : "items"} into the books.`
                   : "Nothing is due today. Open Calendar to see what is coming.",
               });
             }}>Post due recurring</button>
@@ -4009,7 +4070,7 @@ export function App() {
                 )}
                 <label>Account</label>
                 <select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })}>
-                  {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
+                  {pickerAccounts.map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
                 </select>
                 <label>Note</label>
                 <input
@@ -4049,11 +4110,11 @@ export function App() {
                 />
                 <label>From</label>
                 <select value={form.fromAccountId} onChange={(event) => setForm({ ...form, fromAccountId: event.target.value })}>
-                  {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
+                  {pickerAccounts.map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
                 </select>
                 <label>To</label>
                 <select value={form.toAccountId} onChange={(event) => setForm({ ...form, toAccountId: event.target.value })}>
-                  {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
+                  {pickerAccounts.map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
                 </select>
                 <p className="muted">Not income. Not spend.</p>
               </>
@@ -4112,7 +4173,7 @@ export function App() {
                     />
                     <WorkShiftWithSevenShifts
                       key={`${environment}:${household.householdId}:${actorId}`}
-                      household={household}
+                      household={displayHousehold}
                       memberId={actorId}
                       today={workShiftDateRef.current}
                       punch={activeOpenShift(household.kitchen, actorId)}
@@ -4150,7 +4211,7 @@ export function App() {
                       </select>
                       <label>Account</label>
                       <select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })}>
-                        {household.accounts.filter((a) => a.active).map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
+                        {pickerAccounts.map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
                       </select>
                       <CadPad
                         digits={centsDigitsFromDollars(form[field])}
@@ -4258,7 +4319,7 @@ export function App() {
                           useHouseholdFund: !form.useHouseholdFund,
                           fundedAmount: form.fundedAmount || form.amount,
                           fundDestinationAccountId: !form.useHouseholdFund
-                            && household.accounts.some((account) => account.id === form.accountId && account.scope !== "personal")
+                            && displayHousehold.accounts.some((account) => account.id === form.accountId && account.scope !== "personal")
                             ? form.accountId
                             : form.fundDestinationAccountId || "ACC-VISA",
                         })}
@@ -4272,7 +4333,7 @@ export function App() {
                         <input id="add-fund-amount" inputMode="decimal" value={form.fundedAmount} onChange={(event) => setForm({ ...form, fundedAmount: event.target.value })} placeholder={form.amount || "0.00"} />
                         <label htmlFor="add-fund-destination">Settlement destination</label>
                         <select id="add-fund-destination" value={form.fundDestinationAccountId} onChange={(event) => setForm({ ...form, fundDestinationAccountId: event.target.value })}>
-                          {household.accounts.filter((account) => account.active && account.scope !== "personal").map((account) => (
+                          {displayHousehold.accounts.filter((account) => account.active && account.scope !== "personal").map((account) => (
                             <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>
                           ))}
                         </select>
@@ -4412,6 +4473,11 @@ export function App() {
               </div>
             )}
             {!(mode === "shift" && (shiftGate === "choose" || shiftGate === "clocked" || ((shiftGate === "signOut" || shiftGate === "finished") && household.workJobs.some((job) => job.active && job.memberId === actorId)))) && (
+              <>
+                <p className="muted" data-ledger-confirm-purpose>
+                  {experience && experience.ok ? `${experience.label}. ${ledgerRouteContract("home", view).heading}.` : null}
+                  {" "}Fund funding stays separate from Shared or Personal visibility.
+                </p>
               <button
                 className="primary post-big"
                 disabled={busy}
@@ -4419,6 +4485,7 @@ export function App() {
               >
                 {addPostLabel()}
               </button>
+              </>
             )}
           </div>
         </div>
@@ -4718,6 +4785,7 @@ export function App() {
             dismissDuePreview(environment, household.householdId, today);
             setGuard({
               kind: "postDueAll",
+              recurrenceIds: rows.map((row) => row.recurrenceId),
               summary: `This posts ${rows.length} due repeating ${rows.length === 1 ? "item" : "items"} into the books.`,
             });
           }}
@@ -4813,8 +4881,9 @@ export function App() {
           busy={busy}
           onCancel={() => setGuard(null)}
           onConfirm={() => {
+            const ids = guard.recurrenceIds;
             setGuard(null);
-            void run((current) => postDueRecurrences(current, today));
+            void run((current) => postDueRecurrences(current, today, ids));
           }}
         />
       )}
@@ -4980,11 +5049,17 @@ export function App() {
               { label: "Calendar", run: () => goTab("calendar") },
               { label: "Shift", run: () => goTab("shift") },
               { label: "Plan", run: () => goTab("plan") },
-              { label: "Books", run: () => goTab("ledger") },
+              { label: view === "household" ? "Household table" : "My books", run: () => goTab("ledger") },
               { label: "Health", run: () => goTab("more") },
               { label: "Google household bridge", run: () => goTab("more") },
               { label: "Ask Hercules", run: () => goTab("home") },
-              { label: "Export", run: () => downloadJson(household) },
+              { label: "Export", run: () => {
+                if (!experience || !experience.ok) {
+                  setError("Choose who is using this ledger before exporting.");
+                  return;
+                }
+                downloadJson(experience.exportHousehold);
+              } },
             ].map((item) => (
               <button key={item.label} onClick={() => { item.run(); setCommandOpen(false); }}>{item.label}</button>
             ))}
@@ -4993,7 +5068,7 @@ export function App() {
       )}
 
       <HerculesPresence
-        household={household}
+        household={experience && experience.ok ? experience.herculesHousehold : displayHousehold}
         today={today}
         tab={tab}
         adding={adding}
@@ -5053,7 +5128,8 @@ export function App() {
         session={session}
       />
 
-      <nav className="nav" aria-label="Hearth">
+      <nav className="nav" data-ledger-nav={view === "household" ? "shared" : "personal"} aria-label="Hearth">
+        {kitchenPrimaryNav(view).includes("home") && (
         <button
           className={tab === "home" && !adding ? "active" : ""}
           aria-current={tab === "home" && !adding ? "page" : undefined}
@@ -5061,6 +5137,8 @@ export function App() {
         >
           Home
         </button>
+        )}
+        {kitchenPrimaryNav(view).includes("calendar") && (
         <button
           className={tab === "calendar" ? "active" : ""}
           aria-current={tab === "calendar" ? "page" : undefined}
@@ -5069,6 +5147,8 @@ export function App() {
         >
           Cal
         </button>
+        )}
+        {kitchenPrimaryNav(view).includes("shift") && (
         <button
           className={tab === "shift" ? "active" : ""}
           aria-current={tab === "shift" ? "page" : undefined}
@@ -5077,7 +5157,9 @@ export function App() {
         >
           Shift
         </button>
+        )}
         <button className="fab" type="button" aria-label="Add money" onClick={() => openAddFor(null)}>+</button>
+        {kitchenPrimaryNav(view).includes("plan") && (
         <button
           className={tab === "plan" ? "active" : ""}
           aria-current={tab === "plan" ? "page" : undefined}
@@ -5085,6 +5167,8 @@ export function App() {
         >
           Plan
         </button>
+        )}
+        {kitchenPrimaryNav(view).includes("ledger") && (
         <button
           className={tab === "ledger" ? "active" : ""}
           aria-current={tab === "ledger" ? "page" : undefined}
@@ -5092,6 +5176,8 @@ export function App() {
         >
           Books
         </button>
+        )}
+        {kitchenPrimaryNav(view).includes("more") && (
         <button
           className={tab === "more" ? "active" : ""}
           aria-current={tab === "more" ? "page" : undefined}
@@ -5099,114 +5185,107 @@ export function App() {
         >
           More
         </button>
+        )}
       </nav>
     </div>
   );
 }
 
-function Goals({ household, createdBy, goals, onChange, onAskStartJar }: {
+function PlanCategories({
+  household,
+  rows,
+  monthKey,
+  onSave,
+}: {
   household: Household;
-  createdBy: string;
-  goals: Household["goals"];
-  onChange: (household: Household, undo?: UndoToken) => void;
-  onAskStartJar: (appointmentId: string, summary: string) => void;
+  rows: CategoryActual[];
+  monthKey: MonthKey;
+  onSave: (household: Household, undo?: UndoToken) => void;
 }) {
-  const [name, setName] = useState("New goal");
-  const [target, setTarget] = useState("500");
-  const [amount, setAmount] = useState("25");
-  const [buying, setBuying] = useState<string | null>(null);
-  const proposals = upcomingVisitProposals(household, todayKey());
-  const live = openGoals({ goals });
-  const retired = retiredGoals({ goals });
-  const today = todayKey();
+  const [editId, setEditId] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const [error, setError] = useState("");
+  const visible = rows.filter((row) => row.budgetedCents || row.actualCents);
+  function saveBudget(subcategoryId: string, amount: string) {
+    try {
+      const result = setBudget(household, { monthKey, subcategoryId, amount });
+      onSave(result.household, result.undo);
+      setEditId(null);
+      setError("");
+    } catch (caught) {
+      setError(caught instanceof ValidationError ? caught.message : String(caught));
+    }
+  }
   return (
     <section className="card">
-      <header><h2>Goals in this view</h2></header>
-      <p className="muted">{vaultReceiptBlurb(household, today)}</p>
-      {proposals.map((proposal) => (
-        <div className="row" key={proposal.appointmentId}>
-          <div>
-            <strong>{proposal.title}</strong>
-            <div className="muted">{proposal.hercules}</div>
-          </div>
-          <button className="chip selected" onClick={() => onAskStartJar(proposal.appointmentId, `${proposal.hercules} This creates a shared goal. Hercules does not write it.`)}>Start this goal</button>
-        </div>
-      ))}
-      {live.map((goal) => (
-        <div className="row" key={goal.id}>
-          <div>
-            <strong>{goal.name}</strong>
-            <div className="muted">{goal.shared ? "Shared" : "Personal filter only"} · {formatCad(goal.savedCents)} / {formatCad(goal.targetCents)}{describeGoalContributors(household, goal.id) ? ` · ${describeGoalContributors(household, goal.id)}` : ""}</div>
-            {goalIsFull(goal) && buying === goal.id && (
-              <PurchaseGoalSheet
-                household={household}
-                goalId={goal.id}
-                busy={false}
-                onCommand={(fn) => {
-                  const result = fn(household);
-                  onChange(result.household, result.undo);
-                }}
-                onClose={() => setBuying(null)}
-              />
-            )}
-          </div>
-          <div className="goal-add">
-            <input
-              inputMode="decimal"
-              aria-label={`Contribution for ${goal.name}`}
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-            />
-            <button className="chip" onClick={() => {
-              const fromAccountId = household.accounts.find((account) => account.active && account.kind === "chequing")?.id
-                ?? household.accounts.find((account) => account.active)?.id;
-              if (!fromAccountId) return;
-              const result = fundGoal(household, {
-                goalId: goal.id,
-                amount,
-                fromAccountId,
-                createdBy,
-              });
-              onChange(result.household, result.undo);
-            }}>{goalStatus(goal) === "unfunded" ? "Fund goal" : "+ add"}</button>
-            {goalIsFull(goal) && (
-              <button className="primary" onClick={() => setBuying(goal.id)}>Mark purchased</button>
-            )}
-          </div>
-        </div>
-      ))}
-      {retired.length > 0 && (
-        <div className="retirement-home">
-          <h3>Completed goals</h3>
-          <p className="muted">Goals you marked purchased. The contribution rows and the purchase expense stay on the books.</p>
-          {retired.map((goal) => (
-            <div className="row" key={goal.id}>
-              <div>
-                <strong>{goal.name}</strong>
-                <div className="muted">Accomplished · saved {formatCad(goal.savedCents)}</div>
-              </div>
+      <header><h2>Categories</h2></header>
+      <p className="muted">Add or adjust this month’s plan here. Posted actuals stay. Zeroing a budget does not hide history.</p>
+      <KitchenNotice message={error} />
+      {visible.length === 0 ? <p className="muted">No budget plans or expense actuals this month yet.</p> : visible.map((row) => {
+        const pct = row.budgetedCents ? Math.min(140, (row.actualCents / row.budgetedCents) * 100) : 0;
+        return (
+          <div key={row.subcategoryId} style={{ marginBottom: 10 }}>
+            <div className="row">
+              <span>{row.name}</span>
+              {editId === row.subcategoryId ? (
+                <span className="budget-edit">
+                  <span className="muted">{formatCad(row.actualCents)} /</span>
+                  <input
+                    inputMode="decimal"
+                    value={draft}
+                    autoFocus
+                    aria-label={`Budget for ${row.name} in ${monthKey}`}
+                    onChange={(event) => setDraft(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape") setEditId(null);
+                      if (event.key === "Enter") saveBudget(row.subcategoryId, draft);
+                    }}
+                  />
+                  <button type="button" className="chip" onClick={() => saveBudget(row.subcategoryId, draft)}>Save</button>
+                  <button type="button" className="chip quiet" onClick={() => setEditId(null)}>Cancel</button>
+                </span>
+              ) : (
+                <span className="chips">
+                  <button
+                    type="button"
+                    className={`budget-edit-trigger ${row.budgetedCents && row.actualCents > row.budgetedCents ? "over" : ""}`}
+                    aria-label={`Edit ${row.name} budget. Actual ${formatCad(row.actualCents)}, budget ${formatCad(row.budgetedCents)}`}
+                    onClick={() => {
+                      setEditId(row.subcategoryId);
+                      setDraft(row.budgetedCents ? (row.budgetedCents / 100).toFixed(2) : "");
+                      setError("");
+                    }}
+                  >
+                    {formatCad(row.actualCents)} / {formatCad(row.budgetedCents)}
+                  </button>
+                  <button
+                    type="button"
+                    className="budget-remove"
+                    disabled={!row.budgetedCents}
+                    aria-label={`Remove ${row.name} plan`}
+                    onClick={() => saveBudget(row.subcategoryId, "0")}
+                  >
+                    ×
+                  </button>
+                </span>
+              )}
             </div>
-          ))}
-        </div>
-      )}
-      <label>New goal</label>
-      <input value={name} onChange={(event) => setName(event.target.value)} />
-      <input value={target} onChange={(event) => setTarget(event.target.value)} />
-      <button className="primary" onClick={() => {
-        const result = addGoal(household, { name, target, shared: true });
-        onChange(result.household, result.undo);
-      }}>Add shared goal</button>
+            <div className="bar"><i className={pct > 100 ? "over" : ""} style={{ width: `${Math.min(pct, 100)}%` }} /></div>
+          </div>
+        );
+      })}
+      <AddCategoryForm household={household} onSave={onSave} embedded />
     </section>
   );
 }
 
-function AddCategoryForm({ household, onSave }: { household: Household; onSave: (household: Household, undo?: UndoToken) => void }) {
+function AddCategoryForm({ household, onSave, embedded }: { household: Household; onSave: (household: Household, undo?: UndoToken) => void; embedded?: boolean }) {
   const [name, setName] = useState("");
   const [parentId, setParentId] = useState("CAT-LIFE");
   const [error, setError] = useState("");
-  return (
-    <section className="card">
-      <header><h2>Add category</h2></header>
+  const body = (
+    <>
+      {embedded ? <h3>Add category</h3> : <header><h2>Add category</h2></header>}
       <p className="muted">Same commit bar as money: one save creates the category and can seed this month’s budget.</p>
       <input value={name} placeholder="Name" onChange={(event) => setName(event.target.value)} />
       <select value={parentId} onChange={(event) => setParentId(event.target.value)}>
@@ -5225,6 +5304,18 @@ function AddCategoryForm({ household, onSave }: { household: Household; onSave: 
           setError(caught instanceof ValidationError ? caught.message : String(caught));
         }
       }}>Save category</button>
+    </>
+  );
+  if (embedded) {
+    return (
+      <CollapsibleCard title="Add category" hint="Same commit as money" defaultOpen={false} className="plan-add-category">
+        {body}
+      </CollapsibleCard>
+    );
+  }
+  return (
+    <section className="card">
+      {body}
     </section>
   );
 }

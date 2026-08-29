@@ -1,7 +1,10 @@
 import {
   addDays,
   calendarDaysBetween,
+  formatMonthLabel,
+  monthKeyFromDateKey,
   weekdaySunday0,
+  weekBounds,
   WEEKDAY_SHORT,
   type DateKey,
 } from "./calendar.ts";
@@ -52,6 +55,24 @@ export type ShiftSaucerDay = {
   date: DateKey;
   filled: boolean;
   latest: boolean;
+  cashTipsCents: number;
+  cardTipsCents: number;
+  wagesCents: number;
+};
+
+export type ShiftEarningsPeriod = "week" | "month" | "year";
+
+export type ShiftEarningsTracker = {
+  period: ShiftEarningsPeriod;
+  from: DateKey;
+  to: DateKey;
+  label: string;
+  shiftCount: number;
+  hours: number;
+  cashTipsCents: number;
+  cardTipsCents: number;
+  wagesCents: number;
+  takeHomeCents: number;
 };
 
 export type ShiftSaucerBoard = {
@@ -156,6 +177,57 @@ export function postedShiftDates(household: Household, memberId?: string): DateK
   return [...dates].sort();
 }
 
+function postedShiftsOn(household: Household, date: DateKey, memberId?: string) {
+  return household.shifts.filter((shift) => {
+    if (memberId && shift.memberId !== memberId) return false;
+    if (workShiftIsReversed(household, shift)) return false;
+    return shift.date === date;
+  });
+}
+
+export function shiftEarningsRange(today: DateKey, period: ShiftEarningsPeriod): { from: DateKey; to: DateKey; label: string } {
+  if (period === "week") {
+    const week = weekBounds(today);
+    return { from: week.start, to: today, label: "This week" };
+  }
+  if (period === "month") {
+    return { from: `${today.slice(0, 7)}-01` as DateKey, to: today, label: formatMonthLabel(monthKeyFromDateKey(today)) };
+  }
+  return { from: `${today.slice(0, 4)}-01-01` as DateKey, to: today, label: today.slice(0, 4) };
+}
+
+/** Posted cash tips, card tips, and take-home wages for the signed-in worker. Confirm still posts. */
+export function shiftEarningsTracker(
+  household: Household,
+  today: DateKey,
+  memberId: string,
+  period: ShiftEarningsPeriod,
+): ShiftEarningsTracker {
+  const range = shiftEarningsRange(today, period);
+  const shifts = household.shifts.filter((shift) => (
+    shift.memberId === memberId
+    && shift.date >= range.from
+    && shift.date <= range.to
+    && !workShiftIsReversed(household, shift)
+  ));
+  const cashTipsCents = shifts.reduce((sum, shift) => sum + shift.cashTipsCents, 0);
+  const cardTipsCents = shifts.reduce((sum, shift) => sum + shift.ccTipsCents, 0);
+  const wagesCents = shifts.reduce((sum, shift) => sum + shift.wagesCents, 0);
+  const netTipsCents = shifts.reduce((sum, shift) => sum + shift.netTipsCents, 0);
+  return {
+    period,
+    from: range.from,
+    to: range.to,
+    label: range.label,
+    shiftCount: shifts.length,
+    hours: shifts.reduce((sum, shift) => sum + shift.hours, 0),
+    cashTipsCents,
+    cardTipsCents,
+    wagesCents,
+    takeHomeCents: wagesCents + netTipsCents,
+  };
+}
+
 export function shiftClimateSeals(
   household: Household,
   today: DateKey,
@@ -234,10 +306,14 @@ export function shiftSaucerBoard(
   const days: ShiftSaucerDay[] = [];
   for (let offset = 0; offset < SHIFT_SAUCER_DAYS; offset += 1) {
     const date = addDays(start, offset);
+    const dayShifts = postedShiftsOn(household, date, memberId);
     days.push({
       date,
       filled: postedSet.has(date),
       latest: latestDate === date,
+      cashTipsCents: dayShifts.reduce((sum, shift) => sum + shift.cashTipsCents, 0),
+      cardTipsCents: dayShifts.reduce((sum, shift) => sum + shift.ccTipsCents, 0),
+      wagesCents: dayShifts.reduce((sum, shift) => sum + shift.wagesCents, 0),
     });
   }
   return {

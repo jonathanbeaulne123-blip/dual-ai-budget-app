@@ -27,6 +27,7 @@ import {
   type DateKey,
   type Environment,
   type Household,
+  type LedgerView,
   type Recurrence,
   type VisitPostDraft,
   type WorkOwedFact,
@@ -82,13 +83,14 @@ function downloadIcs(household: Household, today: DateKey) {
 
 export function CalendarPage(props: {
   household: Household;
+  view?: LedgerView;
   today: DateKey;
   environment: Environment;
   memberId: string;
   busy: boolean;
   onCommand: (fn: (current: Household) => CommitResult) => void;
   onAskPost: (recurrenceId: string, summary: string) => void;
-  onAskPostDue: (count: number, summary: string) => void;
+  onAskPostDue: (recurrenceIds: string[], summary: string) => void;
   onAskSaveRepeating: (draft: RepeatingDraft, summary: string) => void;
   onAskVisit: (draft: VisitPostDraft, summary: string) => void;
   onAskSettle: (claimId: string, summary: string) => void;
@@ -100,6 +102,7 @@ export function CalendarPage(props: {
   const { household, today, environment } = props;
   const [monthKey, setMonthKey] = useState(() => monthKeyFromDateKey(today));
   const [selected, setSelected] = useState<DateKey>(today);
+  const [dayOpen, setDayOpen] = useState(false);
   const [pane, setPane] = useState<Pane>("board");
   const [accounts, setAccounts] = useState<GoogleAccount[]>([]);
   const [googleBusy, setGoogleBusy] = useState(false);
@@ -218,29 +221,7 @@ export function CalendarPage(props: {
   }
 
   return (
-    <>
-      {pane !== "visits" && (
-        <section className="hero calendar-hero">
-          <div className="label">Money dates · {board.monthLabel}</div>
-          <div className={`money ${board.weekPressure && board.weekPressure.outCents > board.weekPressure.inCents ? "negative" : ""}`}>
-            {board.weekPressure ? formatCad(board.weekPressure.inCents - board.weekPressure.outCents) : formatCad(0)}
-          </div>
-          <div className="sub">
-            This week on the board
-            {due.length ? ` · ${due.length} due` : ""}
-            {suggested.length ? ` · ${suggested.length} spotted in the ledger` : ""}
-          </div>
-          <div className="calendar-hero-actions">
-            <button className="ghost" onClick={props.onOpenPlan}>Open plan</button>
-            {due.length > 0 && (
-              <button className="ghost" onClick={() => props.onAskPostDue(due.length, `This posts ${due.length} due repeating ${due.length === 1 ? "item" : "items"} into the books.`)}>
-                Mark due paid
-              </button>
-            )}
-          </div>
-        </section>
-      )}
-
+    <div className="calendar-stage" data-calendar-view={props.view ?? "household"}>
       {pane !== "visits" && board.clashes[0] && (
         <article className="pulse-banner warn">{describeClash(board.clashes[0])}</article>
       )}
@@ -258,18 +239,42 @@ export function CalendarPage(props: {
 
       {pane === "board" && (
         <>
-          <div className="calendar-wide-board">
+          <div className="calendar-board-stack">
           <section className="card calendar-card">
             <header>
               <button className="chip" onClick={() => setMonthKey(shiftMonthKey(monthKey, -1))} aria-label="Previous month">‹</button>
               <h2>{board.monthLabel}</h2>
               <button className="chip" onClick={() => setMonthKey(shiftMonthKey(monthKey, 1))} aria-label="Next month">›</button>
             </header>
+            <div className="calendar-board-dock">
+              <p className="calendar-week-net">
+                {(props.view ?? "household") === "personal" ? "My dates" : "Household dates"}
+                {" · this week "}
+                {board.weekPressure ? formatCad(board.weekPressure.inCents - board.weekPressure.outCents) : formatCad(0)}
+                {due.length ? ` · ${due.length} due` : ""}
+                {suggested.length ? ` · ${suggested.length} spotted` : ""}
+              </p>
+              <div className="calendar-hero-actions">
+                <button className="ghost" type="button" onClick={props.onOpenPlan}>Open plan</button>
+                {due.length > 0 && (
+                  <button
+                    className="ghost"
+                    type="button"
+                    onClick={() => props.onAskPostDue(due.map((item) => item.id), `This posts ${due.length} due repeating ${due.length === 1 ? "item" : "items"} into the books.`)}
+                  >
+                    Mark due paid
+                  </button>
+                )}
+              </div>
+            </div>
             <div className="cal-weekdays">
               {WEEKDAY_SHORT.map((label) => <span key={label}>{label}</span>)}
             </div>
             <div className="cal-grid">
-              {board.days.map((day) => (
+              {board.days.map((day) => {
+                const shown = day.items.slice(0, 3);
+                const extra = day.items.length - shown.length;
+                return (
                 <button
                   key={day.date}
                   className={[
@@ -277,34 +282,47 @@ export function CalendarPage(props: {
                     day.inMonth ? "" : "outside",
                     day.isToday ? "today" : "",
                     selected === day.date ? "selected" : "",
+                    selected === day.date && dayOpen ? "is-open" : "",
                     day.heat > 0.55 ? "hot" : "",
                   ].join(" ")}
-                  onClick={() => setSelected(day.date)}
+                  onClick={() => {
+                    if (selected === day.date) setDayOpen((open) => !open);
+                    else {
+                      setSelected(day.date);
+                      setDayOpen(false);
+                    }
+                  }}
+                  aria-expanded={selected === day.date ? dayOpen : undefined}
                   style={day.heat ? { background: `rgba(196, 92, 38, ${0.06 + day.heat * 0.22})` } : undefined}
                 >
                   <span className="num">{Number(day.date.slice(8))}</span>
-                  <span className="dots">
-                    {day.items.slice(0, 3).map((item) => (
-                      <i
-                        key={item.id}
-                        className={item.direction}
-                        style={item.memberColor ? { background: item.memberColor } : undefined}
-                      />
+                  <span className="cal-titles">
+                    {shown.map((item) => (
+                      <span key={item.id} className={`cal-title ${item.direction} kind-${item.kind}`} title={item.title}>{item.title}</span>
                     ))}
+                    {extra > 0 ? <span className="cal-title more">+{extra}</span> : null}
                   </span>
                 </button>
-              ))}
+                );
+              })}
             </div>
           </section>
 
-          {selectedDay && (
+          {selectedDay && !dayOpen ? (
+            <p className="muted">Tap {formatDayLabel(selectedDay.date)} again for the day’s list.</p>
+          ) : null}
+          {selectedDay && dayOpen && (
             <section className="card">
               <header>
                 <h2>{formatDayLabel(selectedDay.date)}</h2>
                 <span className="muted">
-                  {selectedDay.inCents ? `${formatCad(selectedDay.inCents)} in` : ""}
-                  {selectedDay.inCents && selectedDay.outCents ? " · " : ""}
-                  {selectedDay.outCents ? `${formatCad(selectedDay.outCents)} out` : selectedDay.items.length ? "on the board" : "quiet"}
+                  {[
+                    selectedDay.inCents ? `${formatCad(selectedDay.inCents)} in` : "",
+                    selectedDay.outCents ? `${formatCad(selectedDay.outCents)} out` : "",
+                    !selectedDay.inCents && !selectedDay.outCents
+                      ? (selectedDay.items.length ? "on the board" : "quiet")
+                      : "",
+                  ].filter(Boolean).join(" · ")}
                 </span>
               </header>
               {selectedDay.items.length === 0 ? (
@@ -336,11 +354,11 @@ export function CalendarPage(props: {
           )}
           </div>
 
-          <section className="card">
-            <header>
-              <h2>Coming up</h2>
-              <span className="muted">21 days</span>
-            </header>
+          <details className="card hearth-collapse">
+            <summary>
+              <span className="hearth-collapse-title">Coming up</span>
+              <span className="muted">{board.upcoming.length} in 21 days</span>
+            </summary>
             {board.upcoming.length === 0 ? (
               <p className="muted">Quiet three weeks.</p>
             ) : board.upcoming.map((item) => (
@@ -352,7 +370,7 @@ export function CalendarPage(props: {
                 <span className={item.direction === "out" ? "right" : "muted"}>{formatCad(item.amountCents)}</span>
               </div>
             ))}
-          </section>
+          </details>
         </>
       )}
 
@@ -526,7 +544,7 @@ export function CalendarPage(props: {
           }}
         />
       )}
-    </>
+    </div>
   );
 }
 

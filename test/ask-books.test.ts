@@ -51,6 +51,23 @@ describe("ask the books", () => {
     const help = askBooks(catalogHousehold(), "drop table journal_entries", "2026-08-21");
     expect(help.kind).toBe("help");
   });
+
+  it("refuses leftover CAD on Personal and parks Shared leftover in Kitty Banks", () => {
+    const household = seedDemoHousehold({ today: "2026-08-21", environment: "development" });
+    const memberId = household.members[0]!.id;
+    const shared = askBooks(household, "Leftover?", "2026-08-21", { memberId, view: "household" });
+    expect(shared.kind).toBe("answer");
+    expect(shared.sentence).toMatch(/leftover/i);
+    expect(shared.rows.some((row) => row.label === "Leftover" && /\$/.test(row.value))).toBe(true);
+    expect(shared.rows.some((row) => row.label === "Parks in" && /Kitty Banks/i.test(row.value))).toBe(true);
+    expect(shared.rows.some((row) => /Goals savings/i.test(row.value))).toBe(false);
+
+    const personal = askBooks(household, "Leftover?", "2026-08-21", { memberId, view: "personal" });
+    expect(personal.sentence).toMatch(/Shared/);
+    expect(personal.sentence).not.toMatch(/\$\d/);
+    expect(personal.rows.every((row) => !/\$/.test(row.value))).toBe(true);
+    expect(askBooks(household, "safe to assign", "2026-08-21", { memberId, view: "personal" }).sentence).not.toMatch(/\$\d/);
+  });
 });
 
 describe("books storage names", () => {

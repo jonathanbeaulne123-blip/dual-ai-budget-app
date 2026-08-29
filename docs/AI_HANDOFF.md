@@ -1,5 +1,48 @@
 # AI Task and Handoff Standard
 
+## Kitchen desk + current main integration (D-164–D-173) (2026-08-29)
+
+**Status:** Integrated and independently verified locally on `codex/kitchen-desk-integration` from exact `origin/main@4b2f40064b526541ef7a20d6e99fc99ca5647baa` plus UX head `ed708dc358ed808fbc5a9ec89b6c95bdb9a55a60`. Merge commit `f1daa78bfc1bfc7df3967b597f7af9e3675ff352`; verified implementation `ca8c84a108f9310a3426cf122c51258009963213`. **Not pushed, merged, deployed, or live.** Risk: **High**.
+
+**Household outcome:** Shared Home remains the composed cream-paper desk with seals, mosaic, stage, and Kitty Banks. Personal Books remains the serious accepted-books account floor. Current-main Shift mail, attendance, Evidence, confirmed Bibles, boot recovery, and concrete companion labels stay in the same organism. Shift mail sits below Tip climate and posted cash/card/wage bubbles; it does not become Home furniture.
+
+**Budget delta (5):** `+5` — accepted-books CAD, posted in/out leftover, partner-personal denial, visible Confirm, and D-172 collection-only automation survive one integrated kitchen.
+
+**Engagement delta (3):** `+2` — current-main Shift instruments inherit the existing paper grammar without a new skin or iPhone redesign.
+
+**If they conflicted:** books won. The integration preserved current-main boot/privacy/Confirm boundaries, PR #244's Home/Books/Kitty grammar, and moved only the Shift notebook and the tablet breakpoint needed to satisfy the locked layout.
+
+**What changed:**
+- Merged the exact UX lineage into a fresh current-main branch without rebasing or force-pushing PR #244.
+- Kept D-165 Evidence Queue through D-172 Shift-envelope law and renumbered the kitchen-desk law to D-173.
+- Combined `projectLedgerExperience`, Personal Books floor, accepted-snapshot export/writes, Kitty Banks, desk seals, Calendar kind colour, Hercules leftover fence, current-main coworker disclosure, D-167 ErrorBoundary/identity defense, Shift envelopes/attendance/Evidence/Bibles, and concrete capture labels.
+- Placed Shift mail after Tip climate and posted cash/card/wage bubbles. No Evidence/coworker/envelope surface was added to Shared Home or Personal Books.
+- Initial books/privacy review found that Personal Audit, Ask, and downloads still compiled the accepted household. The repair adds one adversarially tested `booksPresentationFloor`: Shared gets household/both only; Personal gets household/both plus the signed-in member's rooms. All Books read/export surfaces use it; accepted books remain write-only authority. Device-wide Power SQL is withheld from scoped floors.
+- Books re-review then caught Import Confirm building from the presentation clone, which could discard hidden regular reconciliation rows. `BatchImportCard` now separates `household` (scoped review) from `writeHousehold` (accepted command source), with Shared and Personal regression proof that partner reconciliation survives Confirm.
+- UX review's only P2 is closed with a scoped 44 px minimum touch target for Shift tabs.
+- Fixed a merge-exposed specificity bug so Shared Home stacks at 720–899 px and becomes three columns only at `>=900px`.
+
+**Verification so far:**
+- Integrated focused gate before final placement: 10 files / 67 tests passed.
+- Post-placement/breakpoint gate: 10 relevant files / 67 tests passed plus `test/ledger-story-ui.test.ts` 6/6 after the new breakpoint assertion. React test-environment `act(...)` warnings remain non-failing baseline noise.
+- Full `pnpm check`: AI surface passed; aggregate tests reached **1176 passed / 2 skipped / 2 failed**. `test/api.test.ts` failed because Windows lacked `bash`; with Git Bash plus the bundled Python exposed, it passed **8/8**. `test/hercules-rig.test.ts` sampled the same walk angle twice, then passed **10/10** on isolated rerun; its test and engine blobs are byte-identical to `origin/main`.
+- Windows-equivalent build gate: `tsc --noEmit`, Vite build, Hercules Pro UI build, and no `dist/_redirects` all passed.
+- Browser proof with fictional Development demo only: 1100 px three-column desk; 720 px stacked `seals → mosaic → stage → banks`; 390/320 px `OfficePhone`; no horizontal overflow; correct three seal labels; Personal Books accepted-position hero; Shift mail after posted bubbles; keyboard focus ring 2 px pine on a 52×69 px control; zero console errors.
+
+**Data and environment disclosure:**
+- Development impact: local synthetic/demo browser state only.
+- Production impact: none.
+- Network calls or data sent: package install/download resolution and localhost only; no provider, Supabase, Gmail, 7shifts, or household-data call.
+- MCP access: local in-app browser only; no household connector or database MCP.
+- Hosted rows / schema / secrets / deployments: none.
+- Real household or partner-personal data used: none.
+
+**Verification:** Books, privacy, UX, and trust report no open P0–P2 on the verified implementation. The verifier found no P0–P2 and classified only its missing-`bash` runner as conditional; the final aggregate with Git Bash and bundled Python exposed closes that environment condition: 175 files passed / 1 skipped, 1182 tests passed / 2 skipped, plus TypeScript, Vite, Hercules Pro UI, and `_redirects` absence.
+
+**Next owner:** Jonathan for the push/draft-PR decision. Codex did not push, merge, deploy, or call this live.
+
+**Worksession:** [`worksessions/2026-08-29-kitchen-desk-main-integration.md`](worksessions/2026-08-29-kitchen-desk-main-integration.md)
+
 ## Blank kitchen when loading a household (D-167) (2026-08-28)
 
 **Status:** Draft PR [#238](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/238) on `cursor/blank-household-google-boot-b30c` at `529b983`. **Not merged, not D-041 kitchen-live.** Risk: **Medium** (kitchen boot / Google identity / ErrorBoundary; no money write, schema, secrets, or Production). Jonathan later said the blank is **fixed**.
@@ -39,6 +82,211 @@
 **Next owner:** Jonathan — the blank household open is fixed on live (#235). Review whether to merge [#238](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/238) as extra boot hardening. Do not merge or deploy unless you ask.
 
 **Worksession:** [`worksessions/2026-08-28-blank-household-boot.md`](worksessions/2026-08-28-blank-household-boot.md)
+## D-173 Kitchen desk, Personal books floor, leftover spend (2026-08-29)
+
+**Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7` @ `af1413f`. **Not merged, not deployed, not live.** Risk: **High** (ledger-mode financial presentation; leftover CAD; Personal account journal).
+
+**Household outcome:** Shared Home is one pool plus Kitty Banks as sub-accounts. Personal Books is the serious account floor (household-visible rooms plus mine, never partner-personal). Home seals are posted Money in, posted expenses Money out, and leftover spend for Kitty Banks after the month. Fat paper banks grow at 10% of `savedCents`. Setup forms collapse.
+
+**Budget delta (5):** `+4` — honest Personal rooms, posted in/out leftover (not sit-down leftover), Fund bank Confirm.
+
+**Engagement delta (3):** `+3` — 3-column desk, fat banks, collapsible chrome, kind-coloured calendar.
+
+**If they conflicted:** books win. Personal Home/Hercules stay on `scopedHousehold`. Leftover spend is posted in − posted expenses and must not share a label with sit-down leftover. No new Fund formulas. Widgets still never `postEntry`. Confirm still posts money.
+
+**What changed:**
+- `personalBooksFloor(household, memberId)` for Personal Books tiles only. Home/dashboard/Hercules/export unchanged.
+- `deskMonthSeals` from `incomeActualCents` / `expenseActualCents`. Unpaid recurrences stay out of Money out.
+- Wide Home: mosaic \| stage \| Kitty Banks on Shared and Personal. Seals: Money in / Money out / Leftover spend (`posted in minus posted expenses`). A hole is not a pending empty seal. Both desks open Plan from leftover spend.
+- Personal Books Activity uses the floor journal (`presentedTransactions`), not a second `isVisibleInView` pass. Audit/hero/Ask stay on accepted `booksHousehold`.
+- iPhone `OfficePhone`: same three seal labels; leftover tap opens Plan; mosaic structure otherwise unchanged.
+- Shared Wallet: Shared pool card + Kitty Banks, not a room list.
+- Kitty Banks: SVG fatness by `kittyBankStep`; Fund contribute gated by ConfirmSheet; source account is never partner-personal.
+- AccountRoom interest/rewards posts use Confirm now that joint rooms live on Personal Books. Room CAD and Confirm amounts compile from accepted books for listed rooms; Activity stays the floor journal.
+- `CollapsibleCard` uses real `open` state (React ignores `defaultOpen` on `<details>`). Add-bank stays closed.
+- Drawer holds Paper/Classic/Edit/Desks/Home theme. Window temp stays in the glass. Calendar colours by kind; second tap grows detail. Shift posted bubbles sit under Tip climate.
+
+**Verification:**
+- Focused: `pnpm exec vitest run test/ledger-experience.test.ts test/ledger-story-ui.test.ts test/ledger-story-dom.test.ts` → green, including accepted Visa CAD / interest Confirm vs floor clone, and `CollapsibleCard` closed by default.
+- `pnpm check` at `af1413f` → **1115 passed / 2 skipped**. Re-run after this follow-up.
+- Visual recapture as Jonathan on Vite at `af1413f`: Shared Home leftover $2,557.84 = $5,404.04 − $2,846.20; Personal Books rooms; Plan Confirm this bank (cancelled); OfficePhone 390/320 seals.
+- Independent at `af1413f`: books **FAIL** (P0 Confirm CAD from floor clone — closed here); trust **reject** (same P1 + hero copy + `defaultOpen` noop — closed here); privacy **CONDITIONAL** (no P0/P1 on floor; Audit/Ask/SQL stay accepted books by integrity); UX **conditional PASS** (H-1 empty Add-bank open — closed to always closed; H-2 3-col from 900px not 720); verifier **CONDITIONAL PASS**.
+
+**Data and environment disclosure:**
+- Development impact: none (local/synthetic demo kitchen only)
+- Production impact: none
+- Network calls or data sent: none new
+- MCP access: none for household data
+- Hosted rows/schema/secrets/deployments: none
+- Real household or partner-personal data used: none. Demo/synthetic Development only.
+
+**Remaining uncertainty:** Sit-down leftover stays a different number. Personal Home seals still use scoped personal+both. Personal hero, Audit, Ask, and SQL stay on accepted `booksHousehold` with copy that the figure is accepted-books position, not a partner-hidden envelope. Wide 3-column desk is `>=900px`; 720–899 stacks. GCal overlay can still tint by member. Do not rebase onto later `main` unless asked.
+
+**Next owner:** Jonathan — review Shared Home three columns + leftover spend, Personal Books rooms (joint chequing/Visa/TFSA), fat Kitty Banks, Confirm on Fund bank, and Confirm on room interest. Do not merge, rebase, or deploy unless you ask.
+
+**Worksession:** [`worksessions/2026-08-29-kitchen-desk-banks.md`](worksessions/2026-08-29-kitchen-desk-banks.md)
+
+## D-164 Kitchen notes (Kitty Banks, sit-down charts, Home desk) (2026-08-29)
+
+**Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7` @ `dc00c39`. **Not merged, not deployed, not live.** Risk: **High** (ledger-mode financial presentation).
+
+**Household outcome:** Shared Home is six glance tiles plus a notebook (no Month blotter hero). Shared Now is **Kitty Banks** — existing shared goals that receive Fund surplus (D-161), not a new envelope. Plan Goals is replaced by Kitty Banks on Shared and Personal. Sit-down cycles paper charts; leftover assignment stays on Shared. Calendar cells show titles. Personal nav keeps Books. Home can scroll. Hercules uses a cream bubble and does not dump chips over the mosaic. Shift saucers expand into posted cash/card/wage totals.
+
+**Budget delta (5):** `+3` — honest Shared vs Personal banks, $0 plan remove, posted shift earnings.
+
+**Engagement delta (3):** `+3` — Home desk, paper banks, sit-down charts, cream talk.
+
+**If they conflicted:** books and the mosaic win. Hercules chips and the grounded-fact grid no longer cover Home. Leftover Confirm stays household-only. No new Fund formulas. Widgets still never `postEntry`.
+
+**What changed:**
+- Shared wide Home: `is-shared-home` two-column mosaic | notebook; blotter lives in More on this desk.
+- Shared Now tile/notebook: Kitty Banks fill bars + CAD; Attention and Change stay story panels. Change tile says **Fund kitty**, not “Kitty Banks.”
+- Plan: one `KittyBanks` surface (visibility via `goalVisibleInView` when `memberId` is passed). Door card “Open Fund kitty” and `Goals` vault removed. Contribution amount is per bank.
+- Sit-down: `sitDownInfographicDeck` carousel; Shared leftover CAD comes from books `leftoverProjection`; Personal gets folio charts + muted leftover-on-Shared line. Chart dots are 44×44.
+- Plan amounts are borderless; × removes a $0 plan (`setBudget` `allowZero`).
+- Calendar: full-width board, titles in cells, item list below.
+- Home `>=720px`: `overflow-y: auto`; window shrinks on short `dvh`.
+- Personal nav: Home · Cal · Shift · + · Plan · Books · More.
+- Hercules overlay: opaque cream bubble; closed = spoken + ok; chips only after How can I help.
+- Personal leftover CAD: gated on help chips, Plan overlay, typed Ask, `planHerculesTurn`, and Books Ask (`askHercules(..., { memberId, view })`). Parks-in copy is Kitty Banks.
+- Shift: 28 posted cups plus week/month/year cash tips, card tips, and wages.
+
+**Verification:**
+- Focused leftover/kitchen tests green (`test/ask-books.test.ts`, `test/hercules.test.ts`, `test/sitdown.test.ts`, `test/kitty-banks.test.ts`, `test/ledger-story-ui.test.ts`, plus Plan/Shift/nav fences).
+- `pnpm check` at `1e3d31b` and `dc00c39` → **1109 passed / 2 skipped**, `ai:verify` + `tsc --noEmit` + Vite build green.
+- Visual, fictional Development demo kitchen as Jonathan: Shared Home ~1100 six tiles + Kitty Banks notebook; Shared Plan leftover paper + Kitty Banks + ×; Calendar cell titles; Personal 7-button nav; Shift posted cash/card/wages; OfficePhone 390 structure unchanged. Walkthrough video `kitchen_shared_personal_walkthrough.mp4` (41s).
+- Independent books/privacy/UX/verifier on `1e3d31b`. Privacy P1 (Books Ask leftover CAD) closed in `dc00c39`. Verifier PASS on leftover-CAD checklist at `1e3d31b`.
+
+**Data and environment disclosure:**
+- Development impact: none (local/synthetic demo kitchen only)
+- Production impact: none
+- Network calls or data sent: none new
+- MCP access: none for household data
+- Hosted rows/schema/secrets/deployments: none
+- Real household or partner-personal data used: none. Demo/synthetic Development only.
+
+**Remaining uncertainty:** Demo seed has few `scope: personal` accounts, so Personal folio/wallet charts may be thin. Plan Kitty **Fund bank** still posts via `fundGoal` without a Confirm sheet (books auditor P1; not expanded here). Afford/food Ask can still recite cash-like CAD on Personal (not leftover assignment). Personal `sitDownPostcard` / “we closed” can still name leftover cents. iPhone `OfficePhone` structure is unchanged. Do not rebase onto later `main` unless asked.
+
+**Next owner:** Jonathan — review Shared Home, Plan Kitty Banks, Calendar, Shift earnings, and Personal Books nav on a laptop width. Do not merge, rebase, or deploy unless you ask.
+
+**Worksession:** [`worksessions/2026-08-28-shared-ledger-story-implementation.md`](worksessions/2026-08-28-shared-ledger-story-implementation.md)
+
+## D-164 Shared Household table (not Books) (2026-08-28)
+
+**Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7` @ `2033d28`. **Not merged, not deployed, not live.** Risk: **High** (ledger-mode financial presentation).
+
+**Household outcome:** Shared keeps a deep **Household table** room (Fund, cash, cards, activity, import). It does not keep a Shared “Books / household story / double-entry / net worth / P&L” landing. Personal still opens **My books** on position. Audit (journal, trial, statements, rec, close) stays on Shared behind a closed disclosure.
+
+**Budget delta (5):** `+3` — same journal; Shared opening is operating cash/Fund, not household net worth or income vs expenses.
+
+**Engagement delta (3):** `+2` — Shared page job matches the kitchen table; Audit remains one tap away.
+
+**If they conflicted:** books win. Trial-off still opens Audit and banners. No new Fund formulas. Wallet still lists investments as D-047 accounts; they are not kitchen-table tiles.
+
+**What changed:**
+- Shared hero: Fund operating or household cash. Copy states this is not net worth or a P&L.
+- On-the-table strip: Fund, chequing, goal savings, cards. Investments stay in Wallet / Audit.
+- Shared Audit office is a collapsed `<details>` (journal, trial, statements, rec, close, chart, ask). Personal Audit stays open.
+- More door and command palette: “Household table” / “Open the household table”. Home story trust button matches.
+- PGlite / hosted storage notes move into Shared Audit, not the table opening.
+
+**Verification:**
+- Focused `test/ledger-story-ui.test.ts` and `test/accounts.test.ts` green, including goals-only table strip and honest Personal copy fences.
+- `pnpm check` at `53799f9` and `2033d28` → **1102 passed / 2 skipped**, `ai:verify` + `tsc --noEmit` + Vite build green. A parallel `e91bb68` run had two unrelated flakes (`hercules-rig` walk tick, `stress-seed` 15s timeout); both passed on rerun.
+- Visual, fictional Development demo as Jonathan: Shared Household table hero **$12,234.19** cash (not $13,789.50 net worth); On the table Goal savings **$1,940.00** (pigs vault, not $3,440 with HIS); Audit Trial in balance; Personal My books **$13,789.50** with accepted-books copy.
+
+**Data and environment disclosure:**
+- Development impact: none (local/synthetic demo kitchen only)
+- Production impact: none
+- Network calls or data sent: none new
+- MCP access: none for household data
+- Hosted rows/schema/secrets/deployments: none
+- Real household or partner-personal data used: none. Demo/synthetic Development only.
+
+**Remaining uncertainty:** Wallet pane on Shared still shows investments (Accounts Floor). Shared table CAD still compiles from the scoped presentation clone (pre-existing D-164); Audit compiles accepted books. Personal hero is still accepted `booksEquation` with honest copy. Shared Import still receives `booksHousehold` for Confirm writes. Demo has no personal-scope accounts.
+
+**Next owner:** Jonathan — independent ChatGPT review using [`briefs/CHATGPT_D164_INDEPENDENT_REVIEW_2026-08-29.md`](briefs/CHATGPT_D164_INDEPENDENT_REVIEW_2026-08-29.md). Model: **GPT-5 Pro**. Do not merge, rebase, or deploy unless you ask.
+
+**Worksession:** [`worksessions/2026-08-28-shared-ledger-story-implementation.md`](worksessions/2026-08-28-shared-ledger-story-implementation.md)
+
+## D-164 Shared kitchen composition (2026-08-28)
+
+**Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7`. **Not merged, not deployed, not live.** Risk: **High** (ledger-mode privacy and financial presentation).
+
+**Household outcome:** Shared Ledger is the household table: Fund, calendar, plan, and story-in-the-notebook. Personal Ledger keeps Shift and a private folio. Shared Books is a deep Fund/journal/Audit room, not a net-worth landing. Kitty Banks stays D-161 (surplus into existing shared goals); the Plan Goals vault is not deleted.
+
+**Budget delta (5):** `+4` — same books, clearer Shared vs Personal jobs, Fund-first Shared Books, sit-down leftover graph, editable Plan categories via `setBudget` / `addCategory`.
+
+**Engagement delta (3):** `+3` — laptop-width desk, story tiles on the mosaic, Calendar as the board, nav that matches the job.
+
+**If they conflicted:** books win. No new Fund formulas. Trial off still surfaces. Posted category actuals stay when a plan is zeroed. iPhone `OfficePhone` structure unchanged.
+
+**What changed:**
+- Wide Home: story/folio live in OfficeWide mosaic + notebook; no stacked “Also on this desk” room. Laptop `>=1100px` uses three desk columns and a wider `.app`.
+- Shared primary nav: Home · Cal · + · Plan · More. Personal keeps Shift. Books is More → Journal and Fund.
+- Shared Books opens on Fund operating / household cash, not net worth, trial-in-balance, or P&L stats. Audit panes remain.
+- Calendar hero facts move onto the month board. Purpose banner only on Plan and More.
+- Plan left column: sit-down + Kitty door + Goals. Categories add/adjust/zero on the right.
+- Sit-down Act 1 tiles collapse; leftover gets paper bars.
+- Goals vault stays on Plan. Kitty Banks is the existing Fund surplus path, not a new product.
+
+**Verification:**
+- Focused `test/ledger-story-ui.test.ts`, `test/office-wide.test.ts`, `test/ledger-experience.test.ts`, `test/ledger-story-dom.test.ts`, `test/household-fund-ui.test.ts`, `test/kitchen.test.ts` green.
+- `pnpm check` at `ad48fad` → **1102 passed / 2 skipped**, `ai:verify` + `tsc --noEmit` + Vite build green.
+- Visual, fictional Development demo kitchen on localhost as Jonathan: Shared Home mosaic + notebook (no stacked story room); Shared nav Home/Cal/+/Plan/More; More → Journal and Fund opens household cash (Fund not set up), not net worth; Calendar week facts on the month card; Plan leftover bars + Kitty Banks door + editable categories; Personal Plan nav includes Shift; OfficePhone at 390/320 keeps seals + stories.
+
+**Data and environment disclosure:**
+- Development impact: none (local/synthetic demo kitchen only)
+- Production impact: none
+- Network calls or data sent: none new
+- MCP access: none for household data
+- Hosted rows/schema/secrets/deployments: none
+- Real household or partner-personal data used: none. Demo/synthetic Development only.
+
+**Remaining uncertainty:** Demo seed has no `scope: personal` accounts, so Personal Books compile empty by design. Kitty Banks does not yet replace the Goals card. Home `overflow: hidden` at `>=720px` may clip tall sill/window chrome. Personal Plan still lists household category rows (Rent, Bianca pay) because month summary is not a Personal-only budget projector. Calendar day copy “inon the board” is fixed in the follow-up commit. Independent books/privacy/UX auditors were launched on this pass; treat their notes as review, not merge authority.
+
+**Next owner:** Jonathan — review Shared Home, Books-from-More, Calendar, Plan on a laptop width. Do not merge, rebase, or deploy unless you ask.
+
+**Worksession:** [`worksessions/2026-08-28-shared-ledger-story-implementation.md`](worksessions/2026-08-28-shared-ledger-story-implementation.md)
+
+## D-164 Shared Story and Personal Folio (2026-08-28)
+
+**Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7` @ `dd4fe43`. **Not merged, not deployed, not live.** Risk: **High** (ledger-mode privacy and financial presentation).
+
+**Household outcome:** Opening Shared Ledger feels like sitting down at the household table: what is true together, what changed, what needs a person, what is next, and why the view is trustworthy. Opening Personal Ledger feels like a private folio, not Shared with a filter. Desktop and iPad share one story/folio system at `>=720px`. iPhone keeps `OfficePhone` structure plus a purpose banner.
+
+**Budget delta (5):** `+4` — mode-safe projectors, Fund flow matching D-161, authority in the journey, route-wide Personal denial, persist/compile on the accepted snapshot.
+
+**Engagement delta (3):** `+3` — cooperative weekly/monthly paper story instead of disconnected Fund forms.
+
+**If they conflicted:** books win. No new Fund formulas, event kinds, or command authority. iPhone structural redesign refused. Ranking/spend comparison refused. Presentation clones cannot overwrite partner Personal rows or choose leftover / Fund CAD.
+
+**What changed:**
+- `projectLedgerExperience` / `ledgerRouteContract` at the app boundary. Scoped household is read-only presentation. `booksHousehold` is the accepted snapshot.
+- Shared Story (now / flow / attention / change / next / trust) and Personal Folio at `>=720px`. Fund commands stay behind progressive disclosure. Phone gets `LedgerPurposeBanner` heading; purpose copy hides below 720px.
+- `restoreAcceptedSnapshot` plus Books/Goals/Add writers so Shared `addGoal` and Personal close/rec cannot drop the other scope’s rows. Personal presentation txs compile only against remaining accounts.
+- Home sit-down / lock, Shared Story Fund CAD, phone Fund glance, Fund pane, and Books journal/trial/statements compile from `booksHousehold`. Register/wallet stay scoped. Add pickers fail closed when experience is not ok. Office lamp uses redacted `integrityFindings`.
+- Shared Confirm “Mark due paid” posts only the due ids the current view showed (`postDueRecurrences(..., ids)`). A hidden Personal-scope standing order can no longer throw and void visible household posts. Personal Rec no longer defaults to a Shared chart account.
+- Fund pane label is **Fund free-to-spend**. Unconfigured copy uses `LEDGER_CUSTODY_DISCLOSURE` plus setup, without replacing that sentence. Story deficit figures use `--danger`.
+
+**Verification:**
+- Focused `test/ledger-experience.test.ts`, `test/ledger-story-ui.test.ts`, `test/ledger-story-dom.test.ts`, `test/shared-ledger-story.test.ts` green, including Visa owed $70.50 / sit-down preview on accepted vs scoped, Fund reserve on personal-scope recurrences, and Shared due Confirm posting only visible ids.
+- `pnpm check` at `dd4fe43` → **1100 passed / 2 skipped**, `ai:verify` + build green.
+- Visual, fictional Development demo kitchen on localhost as Jonathan: Shared Home 1280 (Fund free-to-spend + Bianca custody), unconfigured Books Fund pane (same custody sentence), phone 320 purpose heading without the long purpose paragraph.
+
+**Data and environment disclosure:**
+- Development impact: none (local/synthetic demo kitchen only)
+- Production impact: none
+- Network calls or data sent: none new
+- MCP access: none for household data
+- Hosted rows/schema/secrets/deployments: none
+- Real household or partner-personal data used: none. Demo/synthetic Development only.
+
+**Remaining uncertainty:** Demo seed has no `scope: personal` accounts, so Personal Books compile empty by design. Demo Visa can be paid off so owed may be $0 even when personal-visibility lines exist; the $70.50 owed proof uses a catalog fixture. Ask SQL / Import mapping / close-pack export still run on accepted books (bank truth; Dual Course). Shared Books can still list Personal-scope backing **names** (not last4) because journal compiles accepted books. 820/1024/1440 stills were not captured as separate files.
+
+**Next owner:** Jonathan — click the trycloudflare URL in the latest agent reply (this branch’s Vite, not the live kitchen). Then: Open the demo kitchen table → I am Jonathan. On Cursor Desktop, the same kitchen is `http://127.0.0.1:5173/` while this agent tab is active. Do not merge or deploy unless you ask.
+
+**Worksession:** [`worksessions/2026-08-28-shared-ledger-story-implementation.md`](worksessions/2026-08-28-shared-ledger-story-implementation.md)
 
 ## Closeable kitchen notices with 1–2 fix steps (2026-08-28)
 

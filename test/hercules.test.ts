@@ -411,6 +411,15 @@ describe("The Hercules Update", () => {
     expect(leftover.source).toBe("journal");
     expect(leftover.talk.spoken).toMatch(/\$|leftover|cash-like/i);
 
+    const personalLeftover = planHerculesTurn(household, "Leftover?", today, "plan", "", {
+      memberId: household.members[0]!.id,
+      view: "personal",
+    });
+    expect(personalLeftover.talk.spoken).toMatch(/Shared/);
+    expect(personalLeftover.talk.spoken).not.toMatch(/\$\d/);
+    expect(personalLeftover.talk.fact?.value).not.toMatch(/\$/);
+    expect(personalLeftover.talk.replies.join(" ")).not.toMatch(/Leftover/i);
+
     const surface = herculesPageSurface("home", household, today);
     expect(surface.chips.join(" ")).toMatch(/Mastercard|Visa/);
   });

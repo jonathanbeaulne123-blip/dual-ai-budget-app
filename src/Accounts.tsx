@@ -12,7 +12,7 @@ import {
   formatApr,
   formatCad,
   formatDateLabel,
-  householdWallet,
+  walletForListedAccounts,
   markInvestmentValue,
   postCardInterest,
   postCardRewards,
@@ -28,9 +28,12 @@ import {
   type WalletTile,
 } from "./core/index.ts";
 import { KitchenNotice } from "./KitchenNotice.tsx";
+import { ConfirmSheet } from "./Confirm.tsx";
+import { CollapsibleCard } from "./theme/PaperTheme.tsx";
 
 export function WalletStrip({
   household,
+  writeHousehold = household,
   today,
   focusedId,
   memberId,
@@ -40,6 +43,7 @@ export function WalletStrip({
   onAdd,
 }: {
   household: Household;
+  writeHousehold?: Household;
   today: string;
   focusedId?: string | null;
   memberId?: string;
@@ -48,7 +52,10 @@ export function WalletStrip({
   onPay?: (account: Account) => void;
   onAdd?: (account: Account) => void;
 }) {
-  const wallet = useMemo(() => householdWallet(household, today), [household, today]);
+  const wallet = useMemo(
+    () => walletForListedAccounts(writeHousehold, household.accounts.map((account) => account.id), today),
+    [household, writeHousehold, today],
+  );
   return (
     <section className="wallet-strip">
       <header>
@@ -79,6 +86,7 @@ export function WalletStrip({
                   {expanded && memberId && onChange && onPay && onAdd && (
                     <AccountRoom
                       household={household}
+                      writeHousehold={writeHousehold}
                       accountId={tile.account.id}
                       today={today}
                       memberId={memberId}
@@ -131,6 +139,7 @@ function WalletTileButton({
 
 export function AccountRoom({
   household,
+  writeHousehold = household,
   accountId,
   today,
   memberId,
@@ -140,6 +149,7 @@ export function AccountRoom({
   embedded = false,
 }: {
   household: Household;
+  writeHousehold?: Household;
   accountId: string;
   today: string;
   memberId: string;
@@ -148,11 +158,21 @@ export function AccountRoom({
   onAdd: (account: Account) => void;
   embedded?: boolean;
 }) {
-  const account = household.accounts.find((row) => row.id === accountId);
-  const wallet = useMemo(() => householdWallet(household, today), [household, today]);
+  const account = household.accounts.find((row) => row.id === accountId)
+    ?? writeHousehold.accounts.find((row) => row.id === accountId);
+  const wallet = useMemo(
+    () => walletForListedAccounts(writeHousehold, [accountId], today),
+    [writeHousehold, accountId, today],
+  );
   const tile = wallet.tiles.find((row) => row.account.id === accountId);
   const activity = useMemo(() => accountActivity(household, accountId).slice(0, 24), [household, accountId]);
   const [error, setError] = useState("");
+  const [pendingPost, setPendingPost] = useState<
+    | { kind: "card-interest" }
+    | { kind: "card-rewards"; as: "statement-credit" | "deposit" }
+    | { kind: "savings-interest" }
+    | null
+  >(null);
   const [mark, setMark] = useState("");
   const [terms, setTerms] = useState({
     limit: "",
@@ -167,7 +187,7 @@ export function AccountRoom({
 
   function run(fn: (current: Household) => CommitResult) {
     try {
-      const result = fn(household);
+      const result = fn(writeHousehold);
       setError("");
       onChange(result.household, result.undo);
     } catch (caught) {
@@ -211,13 +231,13 @@ export function AccountRoom({
           <div className="chips">
             <button className="chip" type="button" onClick={() => onPay(account)}>Pay this card</button>
             <button className="chip" type="button" onClick={() => onAdd(account)}>Add on this card</button>
-            <button className="chip" type="button" onClick={() => run((current) => postCardInterest(current, { accountId: account.id, createdBy: memberId }))}>
+            <button className="chip" type="button" onClick={() => setPendingPost({ kind: "card-interest" })}>
               Post estimated interest
             </button>
-            <button className="chip" type="button" onClick={() => run((current) => postCardRewards(current, { accountId: account.id, as: "statement-credit", createdBy: memberId }))}>
+            <button className="chip" type="button" onClick={() => setPendingPost({ kind: "card-rewards", as: "statement-credit" })}>
               Post {credit.rewardsName} to card
             </button>
-            <button className="chip" type="button" onClick={() => run((current) => postCardRewards(current, { accountId: account.id, as: "deposit", createdBy: memberId }))}>
+            <button className="chip" type="button" onClick={() => setPendingPost({ kind: "card-rewards", as: "deposit" })}>
               Deposit {credit.rewardsName}
             </button>
           </div>
@@ -273,7 +293,7 @@ export function AccountRoom({
           </p>
           <div className="chips">
             <button className="chip" type="button" onClick={() => onAdd(account)}>Move in</button>
-            <button className="chip" type="button" onClick={() => run((current) => postSavingsInterest(current, { accountId: account.id, createdBy: memberId }))}>
+            <button className="chip" type="button" onClick={() => setPendingPost({ kind: "savings-interest" })}>
               Post estimated interest
             </button>
           </div>
@@ -331,16 +351,46 @@ export function AccountRoom({
           Archive this account
         </button>
       )}
+      {pendingPost ? (
+        <ConfirmSheet
+          title="Confirm this post"
+          body={
+            pendingPost.kind === "card-interest"
+              ? `Post estimated interest of ${formatCad(credit?.estimatedInterestCents ?? 0)} on ${account.name}.`
+              : pendingPost.kind === "savings-interest"
+                ? `Post estimated interest of ${formatCad(savings?.estimatedMonthlyInterestCents ?? 0)} on ${account.name}.`
+                : pendingPost.as === "deposit"
+                  ? `Deposit ${credit?.rewardsName ?? "rewards"} from ${account.name} into cash.`
+                  : `Post ${credit?.rewardsName ?? "rewards"} to ${account.name} as a statement credit.`
+          }
+          extra="Confirm writes this into the journal. Interest and cashback never post themselves."
+          confirmLabel="Confirm"
+          onCancel={() => setPendingPost(null)}
+          onConfirm={() => {
+            const next = pendingPost;
+            setPendingPost(null);
+            if (next.kind === "card-interest") {
+              run((current) => postCardInterest(current, { accountId: account.id, createdBy: memberId }));
+            } else if (next.kind === "savings-interest") {
+              run((current) => postSavingsInterest(current, { accountId: account.id, createdBy: memberId }));
+            } else {
+              run((current) => postCardRewards(current, { accountId: account.id, as: next.as, createdBy: memberId }));
+            }
+          }}
+        />
+      ) : null}
     </section>
   );
 }
 
 export function AddAccountForm({
   household,
+  writeHousehold = household,
   memberId,
   onSave,
 }: {
   household: Household;
+  writeHousehold?: Household;
   memberId: string;
   onSave: (household: Household, undo?: UndoToken) => void;
 }) {
@@ -357,13 +407,15 @@ export function AddAccountForm({
   const [vehicle, setVehicle] = useState<InvestmentVehicle>("tfsa");
   const [error, setError] = useState("");
   const [scope, setScope] = useState<"shared" | "personal">("shared");
+  const [open, setOpen] = useState(false);
 
   return (
-    <section className="card">
-      <header>
-        <h2>Open an account</h2>
-        <span className="muted">Expandable. Not a feed.</span>
-      </header>
+    <CollapsibleCard
+      title="Open an account"
+      hint="Chequing, cards, investments"
+      open={open}
+      onToggle={setOpen}
+    >
       <p className="muted">Chequing, savings, as many cards as you hold, investments, money owed to us, or Goals savings. Interest and cashback never auto-post.</p>
       <label>Who can see this account?</label>
       <div className="chips">
@@ -434,7 +486,7 @@ export function AddAccountForm({
         type="button"
         onClick={() => {
           try {
-            const result = addAccount(household, {
+            const result = addAccount(writeHousehold, {
               name,
               kind,
               institution,
@@ -451,6 +503,7 @@ export function AddAccountForm({
             });
             setError("");
             setName("");
+            setOpen(false);
             onSave(result.household, result.undo);
           } catch (caught) {
             setError(caught instanceof Error ? caught.message : String(caught));
@@ -459,12 +512,13 @@ export function AddAccountForm({
       >
         Open {ACCOUNT_KIND_LABEL[kind].toLowerCase()}
       </button>
-    </section>
+    </CollapsibleCard>
   );
 }
 
 export function WalletPane({
   household,
+  writeHousehold = household,
   today,
   memberId,
   focusedId,
@@ -474,6 +528,7 @@ export function WalletPane({
   onAdd,
 }: {
   household: Household;
+  writeHousehold?: Household;
   today: string;
   memberId: string;
   focusedId: string | null;
@@ -486,6 +541,7 @@ export function WalletPane({
     <>
       <WalletStrip
         household={household}
+        writeHousehold={writeHousehold}
         today={today}
         focusedId={focusedId}
         memberId={memberId}
@@ -494,7 +550,7 @@ export function WalletPane({
         onPay={onPay}
         onAdd={onAdd}
       />
-      <AddAccountForm household={household} memberId={memberId} onSave={onChange} />
+      <AddAccountForm household={household} writeHousehold={writeHousehold} memberId={memberId} onSave={onChange} />
     </>
   );
 }

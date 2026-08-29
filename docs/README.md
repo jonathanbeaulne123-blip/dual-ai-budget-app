@@ -35,7 +35,7 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [HERCULES_PRO_CAPABILITIES.md](HERCULES_PRO_CAPABILITIES.md) | Full inventory of Hercules Pro tools, calculations, and packs |
 | [ONBOARDING_UPDATE.md](ONBOARDING_UPDATE.md) | Four-part Hercules-led onboarding plan, button/feature audit, Bianca journey, scripts, architecture direction, and gates |
 | [ONBOARDING_PART2_STORYBOARD.md](ONBOARDING_PART2_STORYBOARD.md) | Locked phone/desktop routes, focus camera, dialogue, Practice scenarios, failure recovery, implementation slices, and D-129 exception |
-| [briefs/CURSOR_ONBOARDING_FOUNDATION_PROMPT.md](briefs/CURSOR_ONBOARDING_FOUNDATION_PROMPT.md) | Bounded Cursor Slice A foundation prompt with multi-model review and no migration/provider overlap |
+| [briefs/CHATGPT_D164_INDEPENDENT_REVIEW_2026-08-29.md](briefs/CHATGPT_D164_INDEPENDENT_REVIEW_2026-08-29.md) | Paste-ready GPT-5 Pro prompt for independent D-164 Shared kitchen / Household table review (draft PR #244; not shipped) |
 | [OFFICE.md](OFFICE.md) | Office direction; reconcile with shipped Office/mobile state when stale |
 | [CLAUDE_DESKTOP_OFFICE.md](CLAUDE_DESKTOP_OFFICE.md) | Claude desktop-office prompt |
 | [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md) | Shipped phone Home prompt/history |

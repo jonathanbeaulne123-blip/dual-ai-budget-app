@@ -1,27 +1,33 @@
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, useEffect, type ReactNode } from "react";
 import {
   auditOpinion,
   categorySpendBars,
   claimsOverdue,
-  formatDateLabel,
+  formatCad,
   householdWallet,
   instrumentIsOpen,
+  isLedgerStoryTileId,
   mailOverdue,
   monthInOutBars,
-  phoneDueBill,
+  paperHomeMosaic,
   revealPhoneInstrument,
-  runHealthCheck,
   shiftPostingStreak,
+  kittyBankBars,
+  kittyBankGlance,
+  kittyBanksInView,
+  deskMonthSeals,
   tipWeekdaySpark,
   toggleInstrumentPin,
   walletWarn,
   wideDrawerIds,
-  wideMosaicIds,
-  WIDE_HERO_ID,
   cookOffScore,
   sitDownPostcard,
+  type LedgerStoryTileId,
+  type PaperHomeMosaicItem,
+  type PersonalLedgerStory as PersonalLedgerStoryModel,
+  type SharedLedgerStory as SharedLedgerStoryModel,
 } from "./core/index.ts";
-import type { Account, Category, CommitResult, Environment, Household, InstrumentId, OfficeLayout, UndoToken } from "./core/index.ts";
+import type { Account, Category, CommitResult, Environment, Finding, Household, InstrumentId, OfficeLayout, UndoToken } from "./core/index.ts";
 import type { Dashboard } from "./core/insights.ts";
 import type { HearthTab } from "./core/hercules.ts";
 import { requestCalendarPane } from "./core/calendarIntent.ts";
@@ -43,6 +49,9 @@ import { CookOffBody, CookOffGlance } from "./widgets/CookOffKettle.tsx";
 import { WardrobeBody, wardrobeGlance } from "./widgets/WardrobeDesk.tsx";
 import { HangmanBody, HangmanGlance, TicTacToeBody, TicTacToeGlance } from "./widgets/GamesDesk.tsx";
 import { NotebookBody, PaperBars, PaperSpark, PaperTile, StoryStrip, WaxSeal } from "./theme/PaperTheme.tsx";
+import { SharedLedgerStory } from "./SharedLedgerStory.tsx";
+import { PersonalLedgerFolio } from "./PersonalLedgerFolio.tsx";
+import { KittyBanks } from "./KittyBanks.tsx";
 import { useFurniture } from "./widgets/useFurniture.ts";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
 
@@ -56,18 +65,20 @@ type Spec = {
 };
 
 /**
- * OfficeWide — composed paper office (≥720px). Draft C grammar in two columns:
- * seals + mosaic | hero blotter + side notebook. Not a stretched phone.
+ * OfficeWide — composed paper office (≥720px).
+ * Seals span; mosaic | hero | notebook at laptop width. Story lives in the notebook.
  */
 export function OfficeWide({
-  household, dashboard, layout, onLayout,
+  household, booksHousehold, dashboard, layout, onLayout,
   today, memberId, view, busy, adding, form, mode, error, categories, postLabel,
-  environment, clinkOn,
+  environment, clinkOn, integrityFindings = [],
+  sharedStory = null, personalStory = null,
   onForm, onPost, onMore, onMilk, onCoffee, onClockIn, onAbandonShift,
   onStartBreak, onEndBreak, onChooseShiftTimeline, onSignOut, onFinishedShift, onPayCard, onOpenAccount,
   onKitchen, onMarkPaid, onAskSettle, onAskStartJar, onSitDown, onGo, onClinkOn,
 }: {
   household: Household;
+  booksHousehold: Household;
   dashboard: Dashboard;
   layout: OfficeLayout;
   onLayout: (next: OfficeLayout) => void;
@@ -104,17 +115,22 @@ export function OfficeWide({
   onSitDown: (next: Household, token?: UndoToken) => void;
   onGo: (tab: HearthTab) => void;
   onClinkOn: (on: boolean) => void;
+  integrityFindings?: Finding[];
+  sharedStory?: SharedLedgerStoryModel | null;
+  personalStory?: PersonalLedgerStoryModel | null;
 }) {
   const sealsRef = useFurniture("wide-seals", "tray", true, false);
   const heroRef = useFurniture("blotter", "board", true, false);
   const mosaicRef = useFurniture("wide-mosaic", "card", true, false);
   const noteRef = useFurniture("wide-notebook", "pad", true, false);
+  const defaultStory: LedgerStoryTileId | null = null;
+  const [storyPanel, setStoryPanel] = useState<LedgerStoryTileId | null>(defaultStory);
 
   const opinion = useMemo(() => auditOpinion(household), [household]);
-  const findings = useMemo(() => runHealthCheck(household), [household]);
+  const findings = integrityFindings;
   const streak = useMemo(() => shiftPostingStreak(household, today), [household, today]);
   const wallet = useMemo(() => householdWallet(household, today), [household, today]);
-  const postcard = useMemo(() => sitDownPostcard(household), [household]);
+  const postcard = useMemo(() => sitDownPostcard(booksHousehold), [booksHousehold]);
   const cook = useMemo(() => cookOffScore(household, today), [household, today]);
   const memberName = household.members.find((m) => m.id === memberId)?.name ?? "";
   const mailWarn = mailOverdue(dashboard, today);
@@ -125,23 +141,47 @@ export function OfficeWide({
     () => new Set(layout.items.filter((item) => item.hidden).map((item) => item.id)),
     [layout.items],
   );
-  const mosaicIds = wideMosaicIds({ hidden, lampLit, expanded: layout.expanded });
-  const drawer = wideDrawerIds(mosaicIds);
+  const mosaicItems = paperHomeMosaic({ view, hidden, lampLit, expanded: layout.expanded });
+  const mosaicInstrumentIds = mosaicItems
+    .filter((item): item is Extract<PaperHomeMosaicItem, { slot: "instrument" }> => item.slot === "instrument")
+    .map((item) => item.id);
+  const drawer = wideDrawerIds(mosaicInstrumentIds, { includeHero: false });
 
   const expanded = layout.expanded;
-  const setExpanded = (id: InstrumentId | null) =>
-    onLayout({ ...layout, expanded: expanded === id ? null : id });
 
-  const postedToday = household.transactions.some((tx) => tx.date === today);
-  const bill = phoneDueBill(dashboard.upcoming);
-  const closeNeeds = findings.length > 0;
-  const inOut = monthInOutBars(dashboard.month);
+  useEffect(() => {
+    setStoryPanel(null);
+  }, [view]);
+
+  function openStory(id: LedgerStoryTileId) {
+    if (id === "now") {
+      setStoryPanel(null);
+      if (layout.expanded && layout.expanded !== "window") {
+        onLayout({ ...layout, expanded: null });
+      }
+      return;
+    }
+    setStoryPanel(id);
+    if (layout.expanded && layout.expanded !== "window") {
+      onLayout({ ...layout, expanded: null });
+    }
+  }
+
+  function openInstrument(id: InstrumentId) {
+    setStoryPanel(null);
+    onLayout({ ...layout, expanded: layout.expanded === id ? null : id });
+  }
+
   const spend = categorySpendBars(dashboard.month.categories);
+  const inOut = monthInOutBars(dashboard.month);
   const tipSpark = tipWeekdaySpark(dashboard.tipWeather);
 
   function tapSeal(go: InstrumentId) {
+    setStoryPanel(null);
     onLayout(revealPhoneInstrument(layout, go));
   }
+
+  const seals = deskMonthSeals(dashboard.month);
 
   const specs: Partial<Record<InstrumentId, Spec>> = {
     blotter: {
@@ -285,7 +325,7 @@ export function OfficeWide({
       name: "Sit-down",
       glance: <PostcardGlance card={postcard} />,
       aria: "Sit-down.",
-      body: <PostcardBody household={household} card={postcard} viewPersonal={view === "personal"} onApply={onSitDown} />,
+      body: <PostcardBody household={booksHousehold} displayHousehold={household} dashboard={dashboard} view={view} memberId={memberId} card={postcard} onApply={onSitDown} />,
     },
     cookoff: {
       kind: "Kitchen",
@@ -334,92 +374,176 @@ export function OfficeWide({
     },
   };
 
-  const heroSpec = specs[WIDE_HERO_ID];
-  const openId = expanded && expanded !== "window" ? (expanded as InstrumentId) : WIDE_HERO_ID;
-  const openSpec = specs[openId] ?? heroSpec;
-  const panelId = `wide-notebook-${openId}`;
+  const notebookIsStory = Boolean(storyPanel) && storyPanel !== "now";
+  const openId = notebookIsStory
+    ? null
+    : (expanded && expanded !== "window" ? (expanded as InstrumentId) : null);
+  const openSpec = openId ? specs[openId] : null;
+  const panelId = notebookIsStory ? `wide-notebook-story-${storyPanel}` : `wide-notebook-${openId ?? "blotter"}`;
   const chalkOpen = openId === "chalkboard";
+  const storyTitle = storyPanel === "now" ? "Kitty Banks"
+    : storyPanel === "attention" ? "Attention"
+    : storyPanel === "change" ? "Change"
+    : storyPanel === "mine" ? "Mine"
+    : storyPanel === "position" ? "Position"
+    : storyPanel === "movement" ? "Movement"
+    : "Story";
+
+  function storyTile(id: LedgerStoryTileId): { kind: string; name: string; glance: ReactNode; figure?: ReactNode; aria: string; warn?: boolean } {
+    if (id === "now") {
+      const banks = kittyBanksInView(household, "household", memberId);
+      const glance = kittyBankGlance(banks);
+      const bars = kittyBankBars(banks);
+      return {
+        kind: "Now",
+        name: "Kitty Banks",
+        glance: glance.label,
+        figure: bars.length ? <PaperBars rows={bars} empty="" /> : undefined,
+        aria: `Now. Kitty Banks. ${glance.label}.`,
+      };
+    }
+    if (id === "attention") {
+      const waiting = sharedStory?.queue.length ?? 0;
+      return {
+        kind: "Attention",
+        name: "Needs someone",
+        glance: waiting ? `${waiting} waiting` : "Clear",
+        aria: waiting ? `Attention. ${waiting} items need a person.` : "Attention. Nothing is waiting.",
+        warn: waiting > 0,
+      };
+    }
+    if (id === "change") {
+      const kitty = sharedStory?.monthly.kittyCents ?? 0;
+      return {
+        kind: "Change",
+        name: "This month",
+        glance: `Fund kitty ${formatCad(kitty)}`,
+        figure: inOut.length ? <PaperBars rows={inOut} empty="" caption="In and out" /> : undefined,
+        aria: `Change. Fund kitty ${formatCad(kitty)}.`,
+      };
+    }
+    if (id === "mine") {
+      return {
+        kind: "Mine",
+        name: "My folio",
+        glance: personalStory?.headline ?? "Personal",
+        aria: personalStory?.headline ?? "Mine.",
+      };
+    }
+    if (id === "position") {
+      const count = personalStory?.position.length ?? 0;
+      return {
+        kind: "Position",
+        name: "My accounts",
+        glance: count ? `${count} accounts` : "None yet",
+        aria: "Position. My Personal accounts.",
+      };
+    }
+    const moved = personalStory?.activity[0];
+    return {
+      kind: "Movement",
+      name: "In and out",
+      glance: moved ? formatCad(moved.amountCents) : "Quiet",
+      aria: "Movement. What came in or went out.",
+    };
+  }
 
   return (
-    <div className={`office-wide ${adding ? "is-adding" : ""}`}>
+    <div className={`office-wide ${adding ? "is-adding" : ""} ${view === "household" ? "is-shared-home" : ""}`}>
       <div className="office-wide-desk">
-        <div className="office-wide-left">
-          <div ref={sealsRef} className="hearth-wax-seals office-wide-seals" role="group" aria-label="Desk seals">
-            <WaxSeal
-              label="Post"
-              tone="post"
-              pending={!postedToday}
-              value={postedToday ? "—" : "Add"}
-              sub={postedToday ? "posted today" : "nothing yet today"}
-              onClick={() => tapSeal("calculator")}
-            />
-            <WaxSeal
-              label="Due"
-              tone="due"
-              pending={Boolean(bill)}
-              value={bill ? bill.title : "—"}
-              sub={bill ? formatDateLabel(bill.date) : "nothing near"}
-              onClick={() => tapSeal("mail")}
-            />
-            <WaxSeal
-              label="Health"
-              tone="close"
-              pending={closeNeeds}
-              value={closeNeeds ? String(findings.length) : "—"}
-              sub={closeNeeds ? "needs you" : "books agree"}
-              onClick={() => tapSeal("lamp")}
-            />
-          </div>
-          <div ref={mosaicRef}>
-            <StoryStrip heading="Today's stories" className="office-wide-mosaic">
-              {mosaicIds.map((id) => {
-                const spec = specs[id];
-                if (!spec) return null;
+        <div ref={sealsRef} className="hearth-wax-seals office-wide-seals" role="group" aria-label="Desk seals">
+          <WaxSeal
+            label="Money in"
+            tone="post"
+            pending={seals.inCents === 0}
+            value={formatCad(seals.inCents)}
+            sub="posted income this month"
+            onClick={() => tapSeal("blotter")}
+          />
+          <WaxSeal
+            label="Money out"
+            tone="due"
+            pending={seals.outCents === 0}
+            value={formatCad(seals.outCents)}
+            sub="posted expenses only"
+            onClick={() => tapSeal("blotter")}
+          />
+          <WaxSeal
+            label="Leftover spend"
+            tone="close"
+            value={formatCad(seals.leftoverCents)}
+            sub="posted in minus posted expenses"
+            pending={seals.inCents === 0 && seals.outCents === 0}
+            onClick={() => onGo("plan")}
+          />
+        </div>
+        <div ref={mosaicRef} className="office-wide-mosaic-wrap">
+          <StoryStrip heading="Today's stories" className="office-wide-mosaic">
+            {mosaicItems.map((item) => {
+              if (item.slot === "story") {
+                const tile = storyTile(item.id);
                 return (
                   <PaperTile
-                    key={id}
-                    kind={spec.kind}
-                    name={spec.name}
-                    value={spec.glance}
-                    warn={spec.warn}
-                    active={instrumentIsOpen(layout, id)}
-                    onClick={() => setExpanded(id)}
-                    ariaLabel={spec.aria}
+                    key={`story-${item.id}`}
+                    kind={tile.kind}
+                    name={tile.name}
+                    value={tile.glance}
+                    figure={tile.figure}
+                    warn={tile.warn}
+                    active={item.id === "now" ? !openId && !notebookIsStory : storyPanel === item.id}
+                    onClick={() => openStory(item.id)}
+                    ariaLabel={tile.aria}
                   />
                 );
-              })}
-            </StoryStrip>
-          </div>
+              }
+              const spec = specs[item.id];
+              if (!spec) return null;
+              return (
+                <PaperTile
+                  key={item.id}
+                  kind={spec.kind}
+                  name={spec.name}
+                  value={spec.glance}
+                  warn={spec.warn}
+                  active={!notebookIsStory && instrumentIsOpen(layout, item.id)}
+                  onClick={() => openInstrument(item.id)}
+                  ariaLabel={spec.aria}
+                />
+              );
+            })}
+          </StoryStrip>
         </div>
-
-        <div className="office-wide-right">
-          {heroSpec && (
-            <div ref={heroRef} className="office-wide-hero-wrap">
-              <button
-                type="button"
-                className={`office-wide-hero hearth-paper-tile ${instrumentIsOpen(layout, WIDE_HERO_ID) ? "is-active" : ""}`}
-                onClick={() => setExpanded(WIDE_HERO_ID)}
-                aria-label={heroSpec.aria}
-                aria-pressed={instrumentIsOpen(layout, WIDE_HERO_ID)}
-              >
-                <span className="hearth-tile-kind">{heroSpec.kind}</span>
-                <span className="hearth-tile-name">{dashboard.monthLabel}</span>
-                <span className="office-wide-hero-net">{heroSpec.glance}</span>
-                <PaperBars rows={inOut} empty="Nothing posted this month yet." caption="In and out" />
-              </button>
-            </div>
-          )}
-          <div ref={noteRef} className={`office-wide-notebook ${adding ? "is-inert" : ""} ${chalkOpen ? "is-chalk" : ""}`}>
-            {openSpec && (
-              <NotebookBody
-                title={openSpec.name}
-                open
-                bare={chalkOpen}
-                panelId={panelId}
-                onClose={() => setExpanded(null)}
-              >
-                <div className="office-wide-notebook-inner">
-                  {!chalkOpen && (
+        <div ref={heroRef} className={`office-wide-stage ${adding ? "is-inert" : ""} ${chalkOpen ? "is-chalk" : ""}`}>
+          <NotebookBody
+            title={notebookIsStory ? storyTitle : (openSpec?.name ?? "Desk")}
+            open
+            bare={chalkOpen}
+            panelId={panelId}
+            onClose={() => {
+              setStoryPanel(null);
+              if (layout.expanded && layout.expanded !== "window") {
+                onLayout({ ...layout, expanded: null });
+              }
+            }}
+          >
+            <div className="office-wide-notebook-inner">
+              {notebookIsStory && sharedStory && view === "household" && isLedgerStoryTileId(storyPanel ?? "") ? (
+                <SharedLedgerStory
+                  story={sharedStory}
+                  panel={storyPanel === "attention" || storyPanel === "change" ? storyPanel : "attention"}
+                  onOpenFund={() => onGo("ledger")}
+                  onOpenHealth={() => onGo("more")}
+                />
+              ) : notebookIsStory && personalStory && view === "personal" ? (
+                <PersonalLedgerFolio
+                  story={personalStory}
+                  panel={storyPanel === "position" || storyPanel === "movement" || storyPanel === "mine" ? storyPanel : "mine"}
+                  onOpenBooks={() => onGo("ledger")}
+                  onOpenFund={() => onGo("ledger")}
+                />
+              ) : openSpec ? (
+                <>
+                  {!chalkOpen && openId ? (
                     <button
                       type="button"
                       className={`ph-pin ${(layout.pinned ?? []).includes(openId) ? "is-on" : ""}`}
@@ -428,12 +552,27 @@ export function OfficeWide({
                     >
                       {(layout.pinned ?? []).includes(openId) ? "pinned" : "pin"}
                     </button>
-                  )}
+                  ) : null}
                   {openSpec.body}
-                </div>
-              </NotebookBody>
-            )}
-          </div>
+                </>
+              ) : (
+                <p className="muted">Touch a tile. Kitty Banks stay on the right.</p>
+              )}
+            </div>
+          </NotebookBody>
+        </div>
+        <div ref={noteRef} className="office-wide-notebook office-wide-banks">
+          <KittyBanks
+            household={household}
+            booksHousehold={booksHousehold}
+            view={view}
+            createdBy={memberId}
+            busy={busy}
+            surface="home"
+            onCommand={onKitchen}
+            onAskStartJar={onAskStartJar}
+            onOpenPlan={() => onGo("plan")}
+          />
         </div>
       </div>
 
@@ -450,7 +589,10 @@ export function OfficeWide({
                 key={id}
                 type="button"
                 className="ph-chip"
-                onClick={() => onLayout(revealPhoneInstrument(layout, id))}
+                onClick={() => {
+                  setStoryPanel(null);
+                  onLayout(revealPhoneInstrument(layout, id));
+                }}
               >
                 <b>{specs[id]?.name ?? id}</b>
               </button>

@@ -114,6 +114,18 @@ button.hearth-paper-tile:focus-visible {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.hearth-tile-figure {
+  width: 100%;
+  min-width: 0;
+  margin-top: 4px;
+}
+.hearth-tile-figure .hearth-paper-bars {
+  margin: 0;
+}
+.hearth-tile-figure .hearth-paper-caption {
+  font-size: 10px;
+  margin: 0 0 4px;
+}
 
 /* ── wax seal ── */
 .hearth-wax-seals,
@@ -277,10 +289,10 @@ button.hearth-paper-tile:focus-visible {
   top: 6px;
   right: 8px;
   z-index: 4;
-  width: 22px;
-  height: 22px;
-  min-width: 22px;
-  min-height: 22px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0;
   border: 0;
   border-radius: 99px;
@@ -328,6 +340,12 @@ button.hearth-paper-tile:focus-visible {
   .books-theme-c .books-pane-blurb {
     display: none;
   }
+  .books-theme-c .books-audit-office .tabs {
+    display: flex;
+  }
+  .books-theme-c .books-audit-office .books-pane-blurb {
+    display: block;
+  }
 }
 
 .hearth-pane-seals {
@@ -359,10 +377,126 @@ button.hearth-paper-tile:focus-visible {
   outline-offset: 2px;
 }
 
+.books-table-job {
+  margin: 8px 0 0;
+  max-width: 42rem;
+}
+
+.books-audit-office {
+  margin-top: 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--paper) 88%, var(--card));
+  padding: 8px 12px 12px;
+}
+.books-audit-office > summary {
+  min-height: 44px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink);
+  list-style: none;
+  display: flex;
+  align-items: center;
+}
+.books-audit-office > summary::-webkit-details-marker {
+  display: none;
+}
+.books-audit-office > summary::before {
+  content: "▸";
+  color: var(--muted);
+  margin-right: 8px;
+}
+.books-audit-office[open] > summary::before {
+  content: "▾";
+}
+.books-audit-office > summary:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
+.books-audit-office .tabs button {
+  min-height: 44px;
+}
+.books-audit-office.is-folio {
+  margin-top: 12px;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+.books-audit-office.is-folio > summary {
+  pointer-events: auto;
+  color: var(--ink);
+  font-weight: 600;
+  min-height: 44px;
+  margin-bottom: 4px;
+  cursor: pointer;
+}
+.books-audit-office.is-folio > summary::before {
+  content: "▸";
+}
+.books-audit-office.is-folio[open] > summary::before {
+  content: "▾";
+}
+
+.hearth-collapse > summary {
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.hearth-collapse > summary::-webkit-details-marker {
+  display: none;
+}
+.hearth-collapse > summary::before {
+  content: "▸";
+  color: var(--muted);
+  margin-right: 8px;
+}
+.hearth-collapse[open] > summary::before {
+  content: "▾";
+}
+.hearth-collapse-title {
+  font-family: var(--font);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.hearth-collapse > summary:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
+
+.books-floor .wallet-tile {
+  border-radius: 10px;
+  box-shadow: none;
+  background: #fff;
+  min-height: 96px;
+}
+.books-floor .wallet-tile-money,
+.books-floor .hero .money {
+  font-family: var(--font);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+.books-floor .wallet-tile-kind {
+  letter-spacing: 0.04em;
+}
+
+@media (min-width: 720px) {
+  .books-theme-c[data-books-face="household-table"] .hearth-pane-seals {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hearth-paper-tile,
   .hearth-wax-seal {
     transition: none;
+  }
+  .hearth-wax-seal:active {
+    transform: none;
   }
 }
 

@@ -7,6 +7,7 @@ import { buildMonthBoard, isOutgoingBill } from "./board.ts";
 import { activeOpenShift, previewHoursLabel } from "./shiftClock.ts";
 import { herculesPageBrief, kettlePhase, type HearthTab } from "./hercules.ts";
 import { leftoverProjection } from "./sitDown.ts";
+import { kittyBankGlance, kittyBanksInView } from "./kittyBanks.ts";
 import { shiftFloorOracle } from "./shiftGlance.ts";
 import type { Household } from "./types.ts";
 import type { LedgerView } from "./types.ts";
@@ -67,10 +68,21 @@ export function herculesPageSurface(
   }
 
   if (tab === "plan") {
+    if (context.view === "personal") {
+      const banks = kittyBankGlance(kittyBanksInView(household, "personal", context.memberId));
+      return {
+        tab,
+        spoken,
+        lesson: "Leftover assignment lives on Shared. Confirm still posts there.",
+        chips: ["Sit-down?", "We good?"],
+        placeholder: "ask about the plan…",
+        fact: { label: "Kitty Banks", value: banks.label, source: { route: "plan", view: "personal", surface: "postcard", label: "Open Kitty Banks" } },
+      };
+    }
     return {
       tab,
       spoken,
-      lesson: "Leftover is cash-like minus bills and card mins. Confirm parks goal cash in Goals savings.",
+      lesson: "Leftover is cash-like minus bills and card mins. Confirm parks goal cash in Kitty Banks.",
       chips: ["Sit-down?", "Leftover?", "We good?"],
       placeholder: "ask about the plan…",
       fact: { label: "Leftover", value: formatCad(leftover.leftoverCents), source: { route: "plan", view: context.view, surface: "postcard", label: "Open the sit-down calculation" } },

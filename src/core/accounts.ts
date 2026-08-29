@@ -323,7 +323,7 @@ export function householdWallet(household: Household, today: DateKey): Household
     }))
     .filter((group) => group.tiles.length);
 
-  /** Story order for Books: net worth strip → chequing → goal savings → credit → investments. */
+  /** Story order for Personal Books: chequing → goal savings → credit → investments. Shared uses householdTableStory. */
   const storyOrder: AccountKind[] = ["chequing", "savings", "credit", "investment"];
   const story = storyOrder
     .map((kind) => groups.find((group) => group.kind === kind))
@@ -352,6 +352,59 @@ export function householdWallet(household: Household, today: DateKey): Household
     netWorthCents: cashCents + investedCostCents + receivableCents - owedCents,
     hottestCard,
   };
+}
+
+/** Listed rooms only; CAD compiles from accepted books, not a filtered clone. */
+export function walletForListedAccounts(
+  booksHousehold: Household,
+  listedAccountIds: Iterable<string>,
+  today: DateKey,
+): HouseholdWallet {
+  const ids = new Set(listedAccountIds);
+  const wallet = householdWallet(booksHousehold, today);
+  const tiles = wallet.tiles.filter((tile) => ids.has(tile.account.id));
+  const groups = wallet.groups
+    .map((group) => ({ ...group, tiles: group.tiles.filter((tile) => ids.has(tile.account.id)) }))
+    .filter((group) => group.tiles.length);
+  const story = wallet.story
+    .map((group) => ({ ...group, tiles: group.tiles.filter((tile) => ids.has(tile.account.id)) }))
+    .filter((group) => group.tiles.length);
+  const cashCents = sumCents(tiles.filter((tile) => isCashLikeKind(tile.kind)).map((tile) => tile.balanceCents));
+  const owedCents = sumCents(tiles.filter((tile) => isCreditKind(tile.kind)).map((tile) => Math.max(0, tile.balanceCents)));
+  const receivableCents = sumCents(tiles.filter((tile) => isReceivableKind(tile.kind)).map((tile) => tile.balanceCents));
+  const investedCostCents = sumCents(tiles.filter((tile) => isInvestmentKind(tile.kind)).map((tile) => tile.balanceCents));
+  const markedValues = tiles
+    .filter((tile) => tile.investment?.markedValueCents != null)
+    .map((tile) => tile.investment!.markedValueCents!);
+  const investedMarkedCents = markedValues.length ? sumCents(markedValues) : null;
+  const hottestCard = tiles
+    .map((tile) => tile.credit)
+    .filter((row): row is CreditCardView => Boolean(row))
+    .sort((left, right) => (right.utilization ?? 0) - (left.utilization ?? 0))[0] ?? null;
+  return {
+    tiles,
+    groups,
+    story,
+    cashCents,
+    owedCents,
+    receivableCents,
+    investedCostCents,
+    investedMarkedCents,
+    netWorthCents: cashCents + investedCostCents + receivableCents - owedCents,
+    hottestCard,
+  };
+}
+
+const TABLE_STORY_KINDS: AccountKind[] = ["chequing", "savings", "credit"];
+
+/** Shared kitchen-table instruments. Fund is a separate tile. Everyday HIS and investments stay in Wallet / Audit. */
+export function householdTableStory(wallet: HouseholdWallet): HouseholdWallet["story"] {
+  return wallet.story.flatMap((group) => {
+    if (!TABLE_STORY_KINDS.includes(group.kind)) return [];
+    if (group.kind !== "savings") return [group];
+    const tiles = group.tiles.filter((tile) => tile.account.savings?.purpose === "goals");
+    return tiles.length ? [{ ...group, tiles }] : [];
+  });
 }
 
 export function accountActivity(household: Household, accountId: string): Transaction[] {

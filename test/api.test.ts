@@ -40,6 +40,7 @@ describe("Cloudflare static host pairing", () => {
     expect(pkg).toContain("test ! -e dist/_redirects");
     const vite = readFileSync(new URL("../vite.config.ts", import.meta.url), "utf8");
     expect(vite).toContain("emptyOutDir: true");
+    expect(vite).toContain('allowedHosts: [".trycloudflare.com"]');
   });
 
   it("does not keep a Netlify function or blob host in the working tree", () => {

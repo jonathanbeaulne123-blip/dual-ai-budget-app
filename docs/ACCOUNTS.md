@@ -2,6 +2,8 @@
 
 **The object is the account:** tap chequing, a card, savings, or the TFSA, then see that account’s activity the way a bank app works.
 
+**D-173:** Personal Books is that floor — household-visible rooms plus this member’s rooms, never partner-personal. Shared is one pool; Kitty Banks are sub-accounts of the pool, not a second room list.
+
 Mint taught envelopes glued to a feed. YNAB taught a Visa that pretends to be a budget. Hearth already knew a card payment is a transfer (D-016). This floor makes **the financial account** — not the category — how Jonathan and Bianca touch the books.
 
 Laws: [DECISIONS.md](DECISIONS.md) D-016 / D-022 / D-047. Strategy: [STRATEGY.md](STRATEGY.md). Museum essay: [nostalgia/ACCOUNTS.md](nostalgia/ACCOUNTS.md).

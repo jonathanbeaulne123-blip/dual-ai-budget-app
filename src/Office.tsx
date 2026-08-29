@@ -3,6 +3,8 @@ import {
   INSTRUMENT_KIND,
   auditOpinion,
   blotterFacts,
+  buildPersonalLedgerStory,
+  buildSharedLedgerStory,
   cookOffScore,
   fallbackWeather,
   hourInToronto,
@@ -21,7 +23,6 @@ import {
   readTorontoWeather,
   loadPhonePlacePrefs,
   resolveRoom,
-  runHealthCheck,
   saveOfficeLayout,
   saveOfficeLook,
   saveOfficeRings,
@@ -62,6 +63,8 @@ import {
   type DeskPersonality,
   type Environment,
   type Household,
+  type DateKey,
+  type Finding,
   type InstrumentId,
   type InstrumentSize,
   type OfficeBreakpoint,
@@ -113,6 +116,7 @@ function useBreakpoint(): OfficeBreakpoint {
 
 export function Office({
   household,
+  booksHousehold,
   dashboard,
   today,
   environment,
@@ -147,13 +151,18 @@ export function Office({
   onAskStartJar,
   onSitDown,
   onGo,
+  integrityFindingCount = 0,
+  integrityFindings = [],
 }: {
   household: Household;
+  booksHousehold: Household;
   dashboard: Dashboard;
   today: string;
   environment: Environment;
   memberId: string;
   view: "household" | "personal";
+  integrityFindingCount?: number;
+  integrityFindings?: Finding[];
   busy: boolean;
   clinkOn: boolean;
   adding: boolean;
@@ -315,11 +324,19 @@ export function Office({
     setLook(loadOfficeLook(environment, localStorage, memberId));
   }, [environment, memberId]);
 
-  const findings = useMemo(() => runHealthCheck(household), [household]);
+  const findings = integrityFindings;
+  const sharedStory = useMemo(
+    () => (view === "household" ? buildSharedLedgerStory(booksHousehold, today as DateKey, { integrityFindingCount }) : null),
+    [booksHousehold, today, view, integrityFindingCount],
+  );
+  const personalStory = useMemo(
+    () => (view === "personal" ? buildPersonalLedgerStory(household, memberId, today as DateKey) : null),
+    [household, memberId, today, view],
+  );
   const opinion = useMemo(() => auditOpinion(household), [household]);
   const wallet = useMemo(() => householdWallet(household, today), [household, today]);
   const streak = useMemo(() => shiftPostingStreak(household, today), [household, today]);
-  const postcard = useMemo(() => sitDownPostcard(household), [household]);
+  const postcard = useMemo(() => sitDownPostcard(booksHousehold), [booksHousehold]);
   const cook = useMemo(() => cookOffScore(household, today), [household, today]);
   const phase = kettlePhase(today, hourInToronto());
   const room = resolveRoom(phase, reading.glass);
@@ -740,7 +757,7 @@ export function Office({
       "Sit-down",
       <PostcardGlance card={postcard} />,
       `Sit-down. ${postcard.sentence}`,
-      <PostcardBody household={household} card={postcard} viewPersonal={view === "personal"} onApply={onSitDown} />,
+      <PostcardBody household={booksHousehold} displayHousehold={household} dashboard={dashboard} view={view} memberId={memberId} card={postcard} onApply={onSitDown} />,
       { index, pair },
     ),
     cookoff: (index, pair) => frame(
@@ -843,6 +860,7 @@ export function Office({
         layout={layout} onLayout={setLayout}
         today={today} memberId={memberId} busy={busy} adding={adding}
         form={form} mode={mode} error={error} categories={categories} postLabel={postLabel}
+        integrityFindings={integrityFindings}
         onForm={onForm} onPost={onPost} onMore={onMore} onMilk={onMilk} onCoffee={onCoffee}
         onClockIn={onClockIn} onAbandonShift={onAbandonShift} onSignOut={onSignOut}
         onStartBreak={onStartBreak} onEndBreak={onEndBreak}
@@ -872,11 +890,14 @@ export function Office({
       <SillOverviewPlate overview={sill} compact={layout.windowMinimized} />
       {face === "paper" ? (
         <OfficeWide
-          household={household} dashboard={dashboard}
+          household={household} booksHousehold={booksHousehold} dashboard={dashboard}
           layout={layout} onLayout={setLayout}
           today={today} memberId={memberId} view={view} busy={busy} adding={adding}
           environment={environment} clinkOn={clinkOn}
           form={form} mode={mode} error={error} categories={categories} postLabel={postLabel}
+          integrityFindings={integrityFindings}
+          sharedStory={sharedStory}
+          personalStory={personalStory}
           onForm={onForm} onPost={onPost} onMore={onMore} onMilk={onMilk} onCoffee={onCoffee}
           onClockIn={onClockIn} onAbandonShift={onAbandonShift} onSignOut={onSignOut}
           onStartBreak={onStartBreak} onEndBreak={onEndBreak}
@@ -1016,7 +1037,48 @@ export function Office({
       )}
       {sheet === "drawer" && (
         <div className="desk-sheet">
-          <h3>Drawer — parked instruments, one tap back onto the desk</h3>
+          <h3>Drawer</h3>
+          <div className="desk-stock-row">
+            <button
+              type="button"
+              className={`desk-stock ${face !== "classic" ? "is-on" : ""}`}
+              onClick={() => {
+                setLayout((current) => setDeskFace(current, "paper"));
+                setEditing(false);
+              }}
+            >
+              Paper office
+            </button>
+            <button
+              type="button"
+              className={`desk-stock ${face === "classic" ? "is-on" : ""}`}
+              onClick={() => setLayout((current) => setDeskFace(current, "classic"))}
+            >
+              Classic desk
+            </button>
+            <button
+              type="button"
+              className={`desk-stock ${editing ? "is-on" : ""}`}
+              onClick={() => {
+                setLayout((current) => deskFaceOf(current) === "paper" ? setDeskFace(current, "classic") : current);
+                setEditing((on) => !on);
+              }}
+            >
+              {editing ? "Done" : "Edit desk"}
+            </button>
+            <button type="button" className="desk-stock" onClick={() => setSheet("desks")}>
+              Desks
+            </button>
+            <button type="button" className="desk-stock" onClick={() => setSheet("look")}>
+              Home theme
+            </button>
+            {face === "classic" && (
+              <button type="button" className="desk-stock" onClick={() => emitOfficeIntent({ type: "tidy" })}>
+                Straighten
+              </button>
+            )}
+          </div>
+          <h3>Parked instruments</h3>
           {parked.length === 0 ? (
             <p className="muted">Nothing parked. The desk has it all.</p>
           ) : (

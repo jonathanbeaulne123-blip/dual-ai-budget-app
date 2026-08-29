@@ -7,16 +7,25 @@
 }
 .office-wide-desk {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr) minmax(0, 0.95fr);
+  grid-template-areas:
+    "seals seals seals"
+    "mosaic stage banks";
   gap: 18px;
   align-items: start;
+  min-height: 0;
 }
-.office-wide-left,
-.office-wide-right {
-  display: grid;
-  gap: 14px;
-  min-width: 0;
+.office-wide.is-shared-home .office-wide-desk {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr) minmax(0, 0.95fr);
+  grid-template-areas:
+    "seals seals seals"
+    "mosaic stage banks";
 }
+.office-wide-seals { grid-area: seals; }
+.office-wide-mosaic-wrap { grid-area: mosaic; min-width: 0; }
+.office-wide-hero-wrap,
+.office-wide-stage { grid-area: stage; min-width: 0; min-height: 0; overflow: auto; }
+.office-wide-notebook { grid-area: banks; min-width: 0; min-height: 0; overflow: auto; }
 .office-wide-seals .hearth-wax-seal {
   min-height: 88px;
   padding: 16px 10px;
@@ -31,9 +40,16 @@
   min-height: 96px;
   padding: 12px 14px;
 }
+.office-wide-mosaic .hearth-paper-tile.has-figure {
+  min-height: 132px;
+}
 .office-wide-mosaic .hearth-tile-value {
   font-size: 1.25rem;
   white-space: normal;
+}
+.office-wide-mosaic .hearth-tile-figure .hearth-paper-bar-label,
+.office-wide-mosaic .hearth-tile-figure .hearth-paper-bar-value {
+  font-size: 10px;
 }
 .office-wide-hero-wrap {
   min-width: 0;
@@ -82,6 +98,14 @@
 }
 .office-wide.is-adding .office-wide-notebook {
   opacity: 0.55;
+}
+.office-wide-notebook .ledger-story-room {
+  margin: 0;
+  gap: 10px;
+  padding-bottom: 0;
+}
+.office-wide-notebook .ledger-story-sheet {
+  padding: 12px 14px;
 }
 .office-wide-notebook-inner {
   display: grid;
@@ -139,9 +163,37 @@
   outline-offset: 2px;
 }
 
+@media (min-width: 1100px) {
+  .office-wide-desk {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.05fr) minmax(0, 1fr);
+    grid-template-areas:
+      "seals seals seals"
+      "mosaic stage banks";
+  }
+  .office-wide.is-shared-home .office-wide-desk {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.05fr) minmax(0, 1fr);
+    grid-template-areas:
+      "seals seals seals"
+      "mosaic stage banks";
+  }
+}
+
 @media (max-width: 899px) {
   .office-wide-desk {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "seals"
+      "mosaic"
+      "stage"
+      "banks";
+  }
+  .office-wide.is-shared-home .office-wide-desk {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "seals"
+      "mosaic"
+      "stage"
+      "banks";
   }
 }
 

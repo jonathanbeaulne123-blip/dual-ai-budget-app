@@ -15,7 +15,7 @@ describe("Household Fund experience fences", () => {
   });
 
   it("adds a Home glance and dedicated books pane without changing the phone instrument model", () => {
-    expect(app).toContain('className="card household-fund-glance"');
+    expect(app).toContain("household-fund-glance");
     expect(books).toContain('{ id: "fund", label: "Household Fund"');
     expect(books).toContain("<HouseholdFundPanel");
     expect(app).not.toContain('emitOfficeIntent({ type: "expand", id: "fund"');
