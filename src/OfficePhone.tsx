@@ -1,16 +1,16 @@
 import { useMemo, useState, type ReactNode } from "react";
 import {
   auditOpinion,
-  formatDateLabel,
+  formatCad,
   householdWallet,
   mailOverdue,
   phoneDeskKey,
   phoneDrawerIds,
-  phoneDueBill,
   phoneRailOrder,
   phoneStoryIds,
   instrumentIsOpen,
   revealPhoneInstrument,
+  deskMonthSeals,
   toggleInstrumentPin,
   shiftPostingStreak,
   walletWarn,
@@ -119,9 +119,7 @@ export function OfficePhone({
   const setExpanded = (id: InstrumentId | null) =>
     onLayout({ ...layout, expanded: expanded === id ? null : id });
 
-  const postedToday = household.transactions.some((tx) => tx.date === today);
-  const bill = phoneDueBill(dashboard.upcoming);
-  const closeNeeds = findings.length > 0;
+  const seals = deskMonthSeals(dashboard.month);
 
   function tapSeal(go: InstrumentId) {
     onLayout(revealPhoneInstrument(layout, go));
@@ -225,28 +223,28 @@ export function OfficePhone({
 
       <div className="hearth-wax-seals ph-seals" role="group" aria-label="Desk seals">
         <WaxSeal
-          label="Post"
+          label="Money in"
           tone="post"
-          pending={!postedToday}
-          value={postedToday ? "—" : "Add"}
-          sub={postedToday ? "posted today" : "nothing yet today"}
-          onClick={() => tapSeal("calculator")}
+          pending={seals.inCents === 0}
+          value={formatCad(seals.inCents)}
+          sub="posted income this month"
+          onClick={() => tapSeal("blotter")}
         />
         <WaxSeal
-          label="Due"
+          label="Money out"
           tone="due"
-          pending={Boolean(bill)}
-          value={bill ? bill.title : "—"}
-          sub={bill ? formatDateLabel(bill.date) : "nothing near"}
-          onClick={() => tapSeal("mail")}
+          pending={seals.outCents === 0}
+          value={formatCad(seals.outCents)}
+          sub="posted expenses only"
+          onClick={() => tapSeal("blotter")}
         />
         <WaxSeal
-          label="Health"
+          label="Leftover spend"
           tone="close"
-          pending={closeNeeds}
-          value={closeNeeds ? String(findings.length) : "—"}
-          sub={closeNeeds ? "needs you" : "books agree"}
-          onClick={() => tapSeal("lamp")}
+          pending={seals.leftoverCents <= 0}
+          value={formatCad(seals.leftoverCents)}
+          sub="for Kitty Banks after the month"
+          onClick={() => onGo("plan")}
         />
       </div>
 

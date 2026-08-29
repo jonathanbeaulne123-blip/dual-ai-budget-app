@@ -28,6 +28,7 @@ import {
   categoryName,
   monthKeyFromDateKey,
   notesToFinancialStatements,
+  personalBooksFloor,
   recordReconciliation,
   reopenBooksMonth,
   setBudget,
@@ -44,13 +45,14 @@ import {
   type HerculesNumberSource,
 } from "./core/index.ts";
 import { LedgerPage } from "./Ledger.tsx";
-import { PaneSeals, PaperTile, StoryStrip } from "./theme/PaperTheme.tsx";
+import { PaneSeals, PaperTile, StoryStrip, CollapsibleCard } from "./theme/PaperTheme.tsx";
 import { BatchImportCard } from "./BatchImport.tsx";
 import { WalletPane } from "./Accounts.tsx";
 import { booksFilename, booksJournalCsv, booksSqlDump, downloadText } from "./ledger/export.ts";
 import { queryBooks, type BooksStatus } from "./ledger/engine.ts";
 import { assertReadOnlySelect } from "./ledger/queryGuard.ts";
 import { HouseholdFundPanel } from "./HouseholdFundPanel.tsx";
+import { KittyBanks } from "./KittyBanks.tsx";
 
 const PANES = [
   { id: "wallet", label: "Wallet", blurb: "Household cash, Goals savings, cards, and investments. Touch a tile to open the room." },
@@ -109,10 +111,11 @@ export function BooksPage({
   const trial = useMemo(() => trialBalance(books, { recognizedOnly: true }), [books]);
   const equation = useMemo(() => booksEquation(books), [books]);
   const opinion = useMemo(() => auditOpinion(booksHousehold), [booksHousehold]);
-  const wallet = useMemo(() => householdWallet(household, todayKey()), [household]);
-  const fundProjection = useMemo(() => projectHouseholdFund(booksHousehold, todayKey()), [booksHousehold]);
   const today = todayKey();
   const sharedTable = view === "household";
+  const walletHousehold = sharedTable ? household : personalBooksFloor(booksHousehold, memberId);
+  const wallet = useMemo(() => householdWallet(walletHousehold, today), [walletHousehold, today]);
+  const fundProjection = useMemo(() => projectHouseholdFund(booksHousehold, today), [booksHousehold, today]);
   const showFundPane = sharedTable || booksHousehold.householdFund?.custodianMemberId === memberId;
   const tableStory = sharedTable ? householdTableStory(wallet) : wallet.story;
   const isAuditPane = (AUDIT_PANE_IDS as readonly string[]).includes(pane);
@@ -166,7 +169,7 @@ export function BooksPage({
   }, [trial.inBalance, isAuditPane]);
 
   return (
-    <div className="books-theme-c" data-books-face={sharedTable ? "household-table" : "personal-folio"}>
+    <div className={`books-theme-c${sharedTable ? "" : " books-floor"}`} data-books-face={sharedTable ? "household-table" : "personal-folio"}>
       {sharedTable ? (
         <section className="hero">
           <div className="label">Household table · CAD · {household.timezone}</div>
@@ -187,7 +190,7 @@ export function BooksPage({
         <section className="hero">
           <div className="label">My books · CAD · {household.timezone}</div>
           <div className={`money ${equation.netWorthCents < 0 ? "negative" : ""}`}>{formatCad(equation.netWorthCents)}</div>
-          <div className="sub">Listed accounts in this folio are mine. The figure is accepted-books position, not a partner-hidden envelope.</div>
+          <div className="sub">Rooms I can manage. Partner-personal stays out. The figure is accepted-books position.</div>
           {!trial.inBalance ? (
             <p className="opinion-banner adverse">
               Trial is off. Open Audit before treating the journal as closed.
@@ -224,7 +227,9 @@ export function BooksPage({
         ))}
       </StoryStrip>
       {!sharedTable ? (
-        <BooksStorageNotes household={household} booksStatus={booksStatus} onGoMore={onGoMore} />
+        <CollapsibleCard title="On this phone" hint="Storage and sharing" defaultOpen={false}>
+          <BooksStorageNotes household={household} booksStatus={booksStatus} onGoMore={onGoMore} />
+        </CollapsibleCard>
       ) : null}
       <PaneSeals
         ariaLabel={sharedTable ? "Household table rooms" : "My books rooms"}
@@ -252,9 +257,25 @@ export function BooksPage({
       {!isAuditPane ? (
         <p className="muted books-pane-blurb">{PANES.find((item) => item.id === pane)?.blurb}</p>
       ) : null}
-      {pane === "wallet" && (
+      {pane === "wallet" && sharedTable && (
+        <>
+          <section className="card">
+            <header><h2>Shared pool</h2></header>
+            <p>Shared is one account. Kitty Banks are the sub-accounts. Room-by-room management lives on My books.</p>
+          </section>
+          <KittyBanks
+            household={household}
+            booksHousehold={booksHousehold}
+            view="household"
+            createdBy={memberId}
+            surface="home"
+            onCommand={onCommand}
+          />
+        </>
+      )}
+      {pane === "wallet" && !sharedTable && (
         <WalletPane
-          household={household}
+          household={walletHousehold}
           writeHousehold={booksHousehold}
           today={today}
           memberId={memberId}
@@ -293,16 +314,15 @@ export function BooksPage({
         />
       )}
       <details
-        className={`books-audit-office${sharedTable ? "" : " is-folio"}`}
-        open={sharedTable ? auditOpen : true}
+        className="books-audit-office"
+        open={auditOpen}
         onToggle={(event) => {
-          if (!sharedTable) return;
           const next = event.currentTarget.open;
           setAuditOpen(next);
-          if (!next && isAuditPane) setPane("fund");
+          if (!next && isAuditPane) setPane(sharedTable ? "fund" : "wallet");
         }}
       >
-        <summary {...(sharedTable ? {} : { tabIndex: -1 })}>{sharedTable ? "Audit office — journal, trial, statements" : "Audit office"}</summary>
+        <summary>Audit office — journal, trial, statements</summary>
         {sharedTable ? (
           <>
             <p className="muted">The journal still exists. This is how Hearth proves the books — not the shared table opening.</p>
@@ -804,15 +824,14 @@ function StatementsPane({
           </div>
         ))}
       </section>
-      <section className="card">
-        <header><h2>Notes to the financial statements</h2></header>
+      <CollapsibleCard title="Notes to the financial statements" hint="Accounting notes" defaultOpen={false}>
         {notes.map((note) => (
           <div className="statement-note" key={note.id}>
             <strong>{note.title}</strong>
             <p className="muted">{note.body}</p>
           </div>
         ))}
-      </section>
+      </CollapsibleCard>
     </>
   );
 }

@@ -157,6 +157,40 @@ export function PaneSeals({
   );
 }
 
+/** Setup forms and secondary chrome. Primary lists stay open. */
+export function CollapsibleCard({
+  title,
+  hint,
+  defaultOpen = false,
+  open,
+  onToggle,
+  children,
+  className,
+}: {
+  title: string;
+  hint?: string;
+  defaultOpen?: boolean;
+  open?: boolean;
+  onToggle?: (open: boolean) => void;
+  children: ReactNode;
+  className?: string;
+}) {
+  const controlled = open !== undefined;
+  return (
+    <details
+      className={`card hearth-collapse ${className ?? ""}`.trim()}
+      {...(controlled ? { open } : { defaultOpen })}
+      onToggle={(event) => onToggle?.(event.currentTarget.open)}
+    >
+      <summary>
+        <span className="hearth-collapse-title">{title}</span>
+        {hint ? <span className="muted">{hint}</span> : null}
+      </summary>
+      <div className="hearth-collapse-body">{children}</div>
+    </details>
+  );
+}
+
 /** Horizontal paper bars from journal-true cents. Never invents CAD. */
 export function PaperBars({
   rows,

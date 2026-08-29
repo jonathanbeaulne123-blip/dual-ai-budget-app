@@ -30,6 +30,14 @@ export function kittyBankFill(goal: Pick<Goal, "savedCents" | "targetCents">): n
   return Math.max(0, Math.min(1, goal.savedCents / goal.targetCents));
 }
 
+/** 0 = skinny empty outline. 1–10 = each 10% of target from savedCents. */
+export function kittyBankStep(goal: Pick<Goal, "savedCents" | "targetCents">): number {
+  const fill = kittyBankFill(goal);
+  if (fill <= 0) return 0;
+  if (fill >= 1) return 10;
+  return Math.min(9, Math.floor(fill * 10));
+}
+
 export function kittyBankBars(goals: Goal[], limit = 4): PaperBarRow[] {
   return goals.slice(0, limit).map((goal) => ({
     label: goal.name,

@@ -5,6 +5,7 @@ import {
   householdForHerculesContext,
   householdForShiftReadTools,
   householdForView,
+  parseVisibility,
 } from "./visibility.ts";
 import { assembleHousehold, splitForSync } from "./sync.ts";
 import { runHealthCheck, type Finding } from "./health.ts";
@@ -207,6 +208,25 @@ export function restoreAcceptedSnapshot(accepted: Household, next: Household): H
       reconciliations: unionById(next.fundPrivate?.reconciliations ?? [], accepted.fundPrivate?.reconciliations ?? []),
     },
   };
+}
+
+/**
+ * Personal Books floor: household-visible rooms plus this member’s personal rooms.
+ * Partner-personal accounts stay out. Journal includes household/both posts that
+ * compile against listed rooms, plus this member’s personal posts. Hercules and
+ * Home seals keep using `scopedHousehold` (personal+both only).
+ */
+export function personalBooksFloor(household: Household, memberId: string): Household {
+  const accounts = household.accounts.filter((account) => (
+    account.scope !== "personal" || account.ownerMemberId === memberId
+  ));
+  const accountIds = new Set(accounts.map((account) => account.id));
+  const transactions = household.transactions.filter((tx) => {
+    if (!transactionCompilesAgainstAccounts(tx, accountIds)) return false;
+    if (parseVisibility(tx.visibility) === "personal") return tx.createdBy === memberId;
+    return true;
+  });
+  return { ...household, accounts, transactions };
 }
 
 function applyPresentationScope(household: Household, memberId: string, view: LedgerView): Household {

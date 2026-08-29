@@ -15,7 +15,9 @@ import {
   findingsSafeForView,
   kitchenPrimaryNav,
   ledgerRouteContract,
+  personalBooksFloor,
   postEntry,
+  JOINT,
   postDueRecurrences,
   projectHouseholdFund,
   projectLedgerExperience,
@@ -99,6 +101,58 @@ describe("projectLedgerExperience", () => {
     expect(jonathan.capabilities.canSeePrivateFundRecon).toBe(false);
     expect(JSON.stringify(jonathan.scopedHousehold)).not.toContain("Private bank");
     expect(JSON.stringify(jonathan.exportHousehold)).not.toContain("1234");
+  });
+
+  it("gives Personal Books household-visible rooms without partner-personal envelopes", () => {
+    const { household, backingId } = withPrivateBacking();
+    const floor = personalBooksFloor(household, JONATHAN);
+    expect(floor.accounts.some((row) => row.id === "ACC-CHEQUING" || row.kind === "chequing")).toBe(true);
+    expect(floor.accounts.some((row) => row.id === backingId)).toBe(false);
+    expect(floor.accounts.some((row) => row.scope === "personal" && row.ownerMemberId === BIANCA)).toBe(false);
+    const experience = projectLedgerExperience(household, JONATHAN, "personal", DATE);
+    if (!experience.ok) throw new Error("expected ok");
+    expect(experience.scopedHousehold.accounts.some((row) => row.id === backingId)).toBe(false);
+    expect(experience.scopedHousehold.accounts.some((row) => row.scope !== "personal")).toBe(false);
+  });
+
+  it("lets Personal Books include household-visibility posts on shared rooms", () => {
+    let household = catalogHousehold();
+    household = postEntry(household, {
+      date: DATE,
+      type: "expense",
+      amount: 40,
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-LIFE-FUN",
+      note: "Shared dinner",
+      splits: [{ party: JOINT, amountCents: 4000 }],
+      createdBy: BIANCA,
+      visibility: "household",
+      confirmDuplicate: true,
+    }).household;
+    household = postEntry(household, {
+      date: DATE,
+      type: "expense",
+      amount: 12,
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-LIFE-FUN",
+      note: "Bianca secret",
+      splits: [{ party: BIANCA, amountCents: 1200 }],
+      createdBy: BIANCA,
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+    const floor = personalBooksFloor(household, JONATHAN);
+    expect(floor.accounts.some((row) => row.id === "ACC-VISA")).toBe(true);
+    expect(floor.transactions.some((tx) => tx.note === "Shared dinner")).toBe(true);
+    expect(floor.transactions.some((tx) => tx.note === "Bianca secret")).toBe(false);
+    const scoped = projectLedgerExperience(household, JONATHAN, "personal", DATE);
+    if (!scoped.ok) throw new Error("expected ok");
+    expect(scoped.scopedHousehold.transactions.some((tx) => tx.note === "Shared dinner")).toBe(false);
+    const demo = seedDemoHousehold({ today: DATE });
+    const demoFloor = personalBooksFloor(demo, JONATHAN);
+    expect(demoFloor.accounts.some((row) => row.id === "ACC-CHEQUING")).toBe(true);
+    expect(demoFloor.accounts.some((row) => row.id === "ACC-VISA")).toBe(true);
+    expect(demoFloor.accounts.some((row) => row.id === "ACC-TFSA" && row.institution === "Wealthsimple")).toBe(true);
   });
 
   it("lets Personal presentation compile without the accepted Visa rows", () => {

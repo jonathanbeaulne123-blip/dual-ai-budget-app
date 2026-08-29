@@ -246,6 +246,7 @@ import { PairingCard, WelcomeJoin } from "./Pairing.tsx";
 import { WelcomeQrScanner } from "./WelcomeQrScanner.tsx";
 import { inviteReasonMessage, redeemHouseholdInvite, bindGoogleMemberships, leaveOrDeleteHousehold, resetDevelopmentHouseholds } from "./ledger/householdInvites.ts";
 import { BooksPage } from "./Books.tsx";
+import { CollapsibleCard } from "./theme/PaperTheme.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
 import type { RepeatingDraft } from "./RepeatingForm.tsx";
 import type { WorkShiftDraft } from "./WorkShiftFlow.tsx";
@@ -5376,7 +5377,13 @@ function AddCategoryForm({ household, onSave, embedded }: { household: Household
       }}>Save category</button>
     </>
   );
-  if (embedded) return <div className="plan-add-category">{body}</div>;
+  if (embedded) {
+    return (
+      <CollapsibleCard title="Add category" hint="Same commit as money" defaultOpen={false} className="plan-add-category">
+        {body}
+      </CollapsibleCard>
+    );
+  }
   return (
     <section className="card">
       {body}

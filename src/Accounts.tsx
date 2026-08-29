@@ -28,6 +28,7 @@ import {
   type WalletTile,
 } from "./core/index.ts";
 import { KitchenNotice } from "./KitchenNotice.tsx";
+import { CollapsibleCard } from "./theme/PaperTheme.tsx";
 
 export function WalletStrip({
   household,
@@ -364,13 +365,15 @@ export function AddAccountForm({
   const [vehicle, setVehicle] = useState<InvestmentVehicle>("tfsa");
   const [error, setError] = useState("");
   const [scope, setScope] = useState<"shared" | "personal">("shared");
+  const [open, setOpen] = useState(false);
 
   return (
-    <section className="card">
-      <header>
-        <h2>Open an account</h2>
-        <span className="muted">Expandable. Not a feed.</span>
-      </header>
+    <CollapsibleCard
+      title="Open an account"
+      hint="Chequing, cards, investments"
+      open={open}
+      onToggle={setOpen}
+    >
       <p className="muted">Chequing, savings, as many cards as you hold, investments, money owed to us, or Goals savings. Interest and cashback never auto-post.</p>
       <label>Who can see this account?</label>
       <div className="chips">
@@ -458,6 +461,7 @@ export function AddAccountForm({
             });
             setError("");
             setName("");
+            setOpen(false);
             onSave(result.household, result.undo);
           } catch (caught) {
             setError(caught instanceof Error ? caught.message : String(caught));
@@ -466,7 +470,7 @@ export function AddAccountForm({
       >
         Open {ACCOUNT_KIND_LABEL[kind].toLowerCase()}
       </button>
-    </section>
+    </CollapsibleCard>
   );
 }
 

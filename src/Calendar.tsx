@@ -100,6 +100,7 @@ export function CalendarPage(props: {
   const { household, today, environment } = props;
   const [monthKey, setMonthKey] = useState(() => monthKeyFromDateKey(today));
   const [selected, setSelected] = useState<DateKey>(today);
+  const [dayOpen, setDayOpen] = useState(false);
   const [pane, setPane] = useState<Pane>("board");
   const [accounts, setAccounts] = useState<GoogleAccount[]>([]);
   const [googleBusy, setGoogleBusy] = useState(false);
@@ -279,15 +280,23 @@ export function CalendarPage(props: {
                     day.inMonth ? "" : "outside",
                     day.isToday ? "today" : "",
                     selected === day.date ? "selected" : "",
+                    selected === day.date && dayOpen ? "is-open" : "",
                     day.heat > 0.55 ? "hot" : "",
                   ].join(" ")}
-                  onClick={() => setSelected(day.date)}
+                  onClick={() => {
+                    if (selected === day.date) setDayOpen((open) => !open);
+                    else {
+                      setSelected(day.date);
+                      setDayOpen(false);
+                    }
+                  }}
+                  aria-expanded={selected === day.date ? dayOpen : undefined}
                   style={day.heat ? { background: `rgba(196, 92, 38, ${0.06 + day.heat * 0.22})` } : undefined}
                 >
                   <span className="num">{Number(day.date.slice(8))}</span>
                   <span className="cal-titles">
                     {shown.map((item) => (
-                      <span key={item.id} className={`cal-title ${item.direction}`} title={item.title}>{item.title}</span>
+                      <span key={item.id} className={`cal-title ${item.direction} kind-${item.kind}`} title={item.title}>{item.title}</span>
                     ))}
                     {extra > 0 ? <span className="cal-title more">+{extra}</span> : null}
                   </span>
@@ -297,7 +306,10 @@ export function CalendarPage(props: {
             </div>
           </section>
 
-          {selectedDay && (
+          {selectedDay && !dayOpen ? (
+            <p className="muted">Tap {formatDayLabel(selectedDay.date)} again for the day’s list.</p>
+          ) : null}
+          {selectedDay && dayOpen && (
             <section className="card">
               <header>
                 <h2>{formatDayLabel(selectedDay.date)}</h2>
@@ -338,11 +350,11 @@ export function CalendarPage(props: {
           )}
           </div>
 
-          <section className="card">
-            <header>
-              <h2>Coming up</h2>
-              <span className="muted">21 days</span>
-            </header>
+          <details className="card hearth-collapse">
+            <summary>
+              <span className="hearth-collapse-title">Coming up</span>
+              <span className="muted">{board.upcoming.length} in 21 days</span>
+            </summary>
             {board.upcoming.length === 0 ? (
               <p className="muted">Quiet three weeks.</p>
             ) : board.upcoming.map((item) => (
@@ -354,7 +366,7 @@ export function CalendarPage(props: {
                 <span className={item.direction === "out" ? "right" : "muted"}>{formatCad(item.amountCents)}</span>
               </div>
             ))}
-          </section>
+          </details>
         </>
       )}
 

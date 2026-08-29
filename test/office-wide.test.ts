@@ -1,10 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
   seedDemoHousehold,
+  addRecurrence,
   buildDashboard,
+  catalogHousehold,
   categorySpendBars,
   defaultLayout,
   deskFaceOf,
+  deskMonthSeals,
+  leftoverProjection,
+  monthKeyFromDateKey,
+  monthSummary,
   monthInOutBars,
   parseOfficeLayout,
   paperBarPercents,
@@ -76,6 +82,39 @@ describe("wide paper infographics", () => {
   it("returns no bars when the month is empty", () => {
     expect(monthInOutBars({ incomeActualCents: 0, expenseActualCents: 0 })).toEqual([]);
     expect(paperBarPercents([])).toEqual([]);
+  });
+
+  it("computes leftover spend from posted income minus posted expenses, including a hole", () => {
+    expect(deskMonthSeals({ incomeActualCents: 0, expenseActualCents: 0 })).toEqual({
+      inCents: 0,
+      outCents: 0,
+      leftoverCents: 0,
+    });
+    expect(deskMonthSeals({ incomeActualCents: 50_000, expenseActualCents: 12_000 })).toEqual({
+      inCents: 50_000,
+      outCents: 12_000,
+      leftoverCents: 38_000,
+    });
+    expect(deskMonthSeals({ incomeActualCents: 10_000, expenseActualCents: 40_000 }).leftoverCents).toBe(-30_000);
+  });
+
+  it("keeps unpaid repeating bills out of Money out and leftover spend", () => {
+    const today = "2026-09-01";
+    let household = catalogHousehold();
+    household = addRecurrence(household, {
+      cadence: "monthly",
+      nextDate: today,
+      type: "expense",
+      amount: 1800,
+      accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-HOUSING-RENT",
+      note: "Rent",
+    }).household;
+    const month = monthSummary(household, monthKeyFromDateKey(today));
+    const seals = deskMonthSeals(month);
+    expect(seals.outCents).toBe(0);
+    expect(seals.leftoverCents).toBe(seals.inCents);
+    expect(leftoverProjection(household, today).billsNext30Cents).toBeGreaterThan(0);
   });
 });
 

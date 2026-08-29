@@ -1306,6 +1306,14 @@ input, select, textarea {
 }
 .cal-title.out { color: var(--copper); }
 .cal-title.in { color: var(--pine-2); }
+.cal-title.kind-paycheck, .cal-title.kind-work-pay { color: #6b4e12; }
+.cal-title.kind-subscription { color: var(--pine-2); }
+.cal-title.kind-bill, .cal-title.kind-detected { color: var(--danger); }
+.cal-title.kind-shift, .cal-title.kind-work-tip { color: #3a4a6b; }
+.cal-title.kind-google { color: #243c6b; }
+.cal-title.kind-visit { color: #5a2d6b; }
+.cal-title.kind-claim { color: #1d4a3a; }
+.cal-title.kind-work-tipout { color: #6b3a2a; }
 .cal-title.more { color: var(--muted); font-weight: 700; }
 .kind-pill {
   display: inline-block;
@@ -1700,29 +1708,78 @@ input, select, textarea {
 .sitdown-row { font-size: 13px; }
 .goal-add { display: flex; gap: 8px; align-items: center; }
 .goal-add input { width: 88px; padding: 8px; }
+.kitty-banks-shelf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 20px;
+  align-items: end;
+  padding: 8px 0 16px;
+}
 .kitty-bank {
   display: grid;
-  gap: 6px;
-  padding: 10px 0 12px;
-  border-bottom: 1px dashed var(--line);
+  justify-items: center;
+  gap: 8px;
+  width: min(100%, 160px);
+  padding: 8px 4px 12px;
+  border: none;
+}
+.kitty-bank-copy {
+  text-align: center;
+  min-width: 0;
+}
+.kitty-bank-copy strong {
+  display: block;
+  font-size: 0.95rem;
 }
 .kitty-bank-pct {
   font-variant-numeric: tabular-nums;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
 }
-.kitty-bank-fill {
-  height: 10px;
-  border-radius: 99px;
-  background: color-mix(in srgb, var(--line) 55%, var(--paper));
-  overflow: hidden;
+.paper-bank {
+  display: grid;
+  justify-items: center;
+  color: var(--ink);
 }
-.kitty-bank-fill > i {
-  display: block;
-  height: 100%;
-  background: var(--pine);
-  border-radius: inherit;
+.paper-bank-shape {
+  width: calc(52px + var(--kitty-step, 0) * 7.6px);
+  height: calc(64px + var(--kitty-step, 0) * 5.6px);
+  overflow: visible;
+}
+.paper-bank-body {
+  fill: color-mix(in srgb, var(--card) 82%, var(--gold));
+  stroke: var(--ink);
+  stroke-width: 1.6;
+}
+.paper-bank[data-kitty-step="0"] .paper-bank-body {
+  fill: none;
+  stroke-dasharray: 4 3;
+}
+.paper-bank-lid {
+  fill: color-mix(in srgb, var(--paper) 70%, var(--gold));
+  stroke: var(--ink);
+  stroke-width: 1.4;
+}
+.paper-bank-slip {
+  fill: color-mix(in srgb, var(--pine) 18%, var(--card));
+  stroke: var(--pine);
+  stroke-width: 0.8;
+}
+.paper-bank-coin {
+  fill: var(--gold);
+  stroke: #8a6a2a;
+  stroke-width: 0.7;
+}
+.kitty-bank .goal-add {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .paper-bank-shape { transition: none; }
+}
+.paper-bank-shape {
+  transition: width 220ms ease, height 220ms ease;
 }
 
 @media (max-width: 520px) {
@@ -2436,7 +2493,44 @@ input, select, textarea {
   background: rgba(255, 250, 242, 0.55);
   transform: rotate(18deg);
 }
-.shift-climate-seal .d { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9; }
+.shift-earn-bubbles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+  margin: 12px 0 8px;
+}
+.shift-earn-bubble {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: 2px;
+  padding: 10px;
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+.shift-earn-bubble.tone-pine { background: radial-gradient(circle at 32% 28%, #d7ebe0, #8fad86 72%); }
+.shift-earn-bubble.tone-ink { background: radial-gradient(circle at 32% 28%, #efe6d4, #c4b396 72%); }
+.shift-earn-bubble.tone-copper { background: radial-gradient(circle at 32% 28%, #f0d2c4, #c45c26 78%); color: #fffaf2; }
+.shift-earn-bubble.is-empty {
+  background: none;
+  box-shadow: none;
+  border: 2px dashed var(--line);
+  color: var(--muted);
+}
+.shift-earn-bubble-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.shift-earn-bubble strong {
+  font-family: var(--font);
+  font-size: 13px;
+}
 .shift-climate-seal .m { font-family: var(--display); font-size: 13px; font-weight: 600; line-height: 1; }
 .shift-climate-seal .s { font-size: 9px; opacity: 0.88; }
 .shift-climate-seal:focus-visible {

@@ -4,6 +4,7 @@ import {
   kittyBankBars,
   kittyBankFill,
   kittyBankGlance,
+  kittyBankStep,
   kittyBanksInView,
   seedDemoHousehold,
 } from "../src/core/index.ts";
@@ -23,6 +24,16 @@ describe("Kitty Banks", () => {
     expect(kittyBankFill(shared[0]!)).toBeGreaterThan(0);
     expect(kittyBankFill(shared[0]!)).toBeLessThanOrEqual(1);
     expect(kittyBankBars(shared)[0]?.cents).toBe(shared[0]!.savedCents);
+  });
+
+  it("maps savedCents into distinct 10% fatness steps", () => {
+    expect(kittyBankStep({ savedCents: 0, targetCents: 10000 })).toBe(0);
+    expect(kittyBankStep({ savedCents: 999, targetCents: 10000 })).toBe(0);
+    expect(kittyBankStep({ savedCents: 1000, targetCents: 10000 })).toBe(1);
+    expect(kittyBankStep({ savedCents: 5000, targetCents: 10000 })).toBe(5);
+    expect(kittyBankStep({ savedCents: 9999, targetCents: 10000 })).toBe(9);
+    expect(kittyBankStep({ savedCents: 10000, targetCents: 10000 })).toBe(10);
+    expect(kittyBankStep({ savedCents: 12000, targetCents: 10000 })).toBe(10);
   });
 
   it("does not invent a second envelope when adding a personal bank", () => {

@@ -7,25 +7,25 @@
 }
 .office-wide-desk {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr) minmax(0, 0.95fr);
   grid-template-areas:
-    "seals seals"
-    "mosaic hero"
-    "mosaic notebook";
+    "seals seals seals"
+    "mosaic stage banks";
   gap: 18px;
   align-items: start;
   min-height: 0;
 }
 .office-wide.is-shared-home .office-wide-desk {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr) minmax(0, 0.95fr);
   grid-template-areas:
-    "seals seals"
-    "mosaic notebook";
+    "seals seals seals"
+    "mosaic stage banks";
 }
 .office-wide-seals { grid-area: seals; }
 .office-wide-mosaic-wrap { grid-area: mosaic; min-width: 0; }
-.office-wide-hero-wrap { grid-area: hero; min-width: 0; }
-.office-wide-notebook { grid-area: notebook; min-width: 0; min-height: 0; overflow: auto; }
+.office-wide-hero-wrap,
+.office-wide-stage { grid-area: stage; min-width: 0; min-height: 0; overflow: auto; }
+.office-wide-notebook { grid-area: banks; min-width: 0; min-height: 0; overflow: auto; }
 .office-wide-seals .hearth-wax-seal {
   min-height: 88px;
   padding: 16px 10px;
@@ -165,16 +165,16 @@
 
 @media (min-width: 1100px) {
   .office-wide-desk {
-    grid-template-columns: minmax(0, 0.95fr) minmax(0, 0.85fr) minmax(0, 1.2fr);
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.05fr) minmax(0, 1fr);
     grid-template-areas:
       "seals seals seals"
-      "mosaic hero notebook";
+      "mosaic stage banks";
   }
   .office-wide.is-shared-home .office-wide-desk {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.05fr) minmax(0, 1fr);
     grid-template-areas:
-      "seals seals"
-      "mosaic notebook";
+      "seals seals seals"
+      "mosaic stage banks";
   }
 }
 
@@ -184,14 +184,15 @@
     grid-template-areas:
       "seals"
       "mosaic"
-      "hero"
-      "notebook";
+      "stage"
+      "banks";
   }
   .office-wide.is-shared-home .office-wide-desk {
     grid-template-areas:
       "seals"
       "mosaic"
-      "notebook";
+      "stage"
+      "banks";
   }
 }
 

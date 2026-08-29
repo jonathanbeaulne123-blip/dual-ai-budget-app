@@ -24,7 +24,7 @@ import {
 import { loadDocumentVisionProvider } from "./imports/documentScanProvider.ts";
 import { scanShiftReportFile } from "./imports/shiftReportDraft.ts";
 import { ShiftReportScanBar } from "./ShiftReportScan.tsx";
-import { PaperBars, PaperTile } from "./theme/PaperTheme.tsx";
+import { PaperTile } from "./theme/PaperTheme.tsx";
 import { TimesheetBody } from "./widgets/Timesheet.tsx";
 import { WorkJobsCard } from "./WorkJobs.tsx";
 import { WorkReportCard, downloadWorkReportCsv } from "./WorkReport.tsx";
@@ -329,6 +329,36 @@ export function WorkShiftPage({
               ))}
             </div>
             {sealCaption ? <p className="shift-preview-caption">{sealCaption}</p> : null}
+            <p className="muted">Posted {earnings.label}. Not a projection.</p>
+            <div className="chips" role="group" aria-label="Posted earnings range">
+              {(["week", "month", "year"] as const).map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  className={`chip ${earningsPeriod === item ? "selected" : ""}`}
+                  aria-pressed={earningsPeriod === item}
+                  onClick={() => setEarningsPeriod(item)}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+            <div className="shift-earn-bubbles" role="group" aria-label="Posted cash tips, card tips, and wages">
+              {([
+                { label: "Cash tips", cents: earnings.cashTipsCents, tone: "pine" },
+                { label: "Card tips", cents: earnings.cardTipsCents, tone: "ink" },
+                { label: "Wages", cents: earnings.wagesCents, tone: "copper" },
+              ] as const).map((bubble) => (
+                <div
+                  key={bubble.label}
+                  className={`shift-earn-bubble tone-${bubble.tone}${bubble.cents === 0 ? " is-empty" : ""}`}
+                >
+                  <span className="shift-earn-bubble-label">{bubble.label}</span>
+                  <strong>{bubble.cents === 0 ? "" : formatCad(bubble.cents)}</strong>
+                </div>
+              ))}
+            </div>
+            <div className="row"><strong>Take-home</strong><strong>{formatCad(earnings.takeHomeCents)}</strong></div>
           </section>
 
           <WorkShiftHistoryCard
@@ -357,33 +387,7 @@ export function WorkShiftPage({
                 </div>
               ))}
             </div>
-            <div className="chips" role="group" aria-label="Earnings range">
-              {(["week", "month", "year"] as const).map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  className={`chip ${earningsPeriod === item ? "selected" : ""}`}
-                  aria-pressed={earningsPeriod === item}
-                  onClick={() => setEarningsPeriod(item)}
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-            <PaperBars
-              caption={`${earnings.label} · posted`}
-              empty="No posted shifts in this range yet."
-              rows={earnings.shiftCount ? [
-                { label: "Cash tips", cents: earnings.cashTipsCents, tone: "pine" as const },
-                { label: "Card tips", cents: earnings.cardTipsCents, tone: "ink" as const },
-                { label: "Wages", cents: earnings.wagesCents, tone: "copper" as const },
-              ] : []}
-            />
-            <div className="row"><span>Cash tips</span><strong>{formatCad(earnings.cashTipsCents)}</strong></div>
-            <div className="row"><span>Card tips</span><strong>{formatCad(earnings.cardTipsCents)}</strong></div>
-            <div className="row"><span>Wages</span><strong>{formatCad(earnings.wagesCents)}</strong></div>
-            <div className="row"><strong>Take-home</strong><strong>{formatCad(earnings.takeHomeCents)}</strong></div>
-            <p className="muted">{earnings.shiftCount} posted night{earnings.shiftCount === 1 ? "" : "s"} · {earnings.hours.toFixed(1)} h. Not a projection.</p>
+            <p className="muted">{earnings.shiftCount} posted night{earnings.shiftCount === 1 ? "" : "s"} · {earnings.hours.toFixed(1)} h.</p>
           </section>
 
           <section className="card shift-lamp">

@@ -1037,7 +1037,48 @@ export function Office({
       )}
       {sheet === "drawer" && (
         <div className="desk-sheet">
-          <h3>Drawer — parked instruments, one tap back onto the desk</h3>
+          <h3>Drawer</h3>
+          <div className="desk-stock-row">
+            <button
+              type="button"
+              className={`desk-stock ${face !== "classic" ? "is-on" : ""}`}
+              onClick={() => {
+                setLayout((current) => setDeskFace(current, "paper"));
+                setEditing(false);
+              }}
+            >
+              Paper office
+            </button>
+            <button
+              type="button"
+              className={`desk-stock ${face === "classic" ? "is-on" : ""}`}
+              onClick={() => setLayout((current) => setDeskFace(current, "classic"))}
+            >
+              Classic desk
+            </button>
+            <button
+              type="button"
+              className={`desk-stock ${editing ? "is-on" : ""}`}
+              onClick={() => {
+                setLayout((current) => deskFaceOf(current) === "paper" ? setDeskFace(current, "classic") : current);
+                setEditing((on) => !on);
+              }}
+            >
+              {editing ? "Done" : "Edit desk"}
+            </button>
+            <button type="button" className="desk-stock" onClick={() => setSheet("desks")}>
+              Desks
+            </button>
+            <button type="button" className="desk-stock" onClick={() => setSheet("look")}>
+              Home theme
+            </button>
+            {face === "classic" && (
+              <button type="button" className="desk-stock" onClick={() => emitOfficeIntent({ type: "tidy" })}>
+                Straighten
+              </button>
+            )}
+          </div>
+          <h3>Parked instruments</h3>
           {parked.length === 0 ? (
             <p className="muted">Nothing parked. The desk has it all.</p>
           ) : (

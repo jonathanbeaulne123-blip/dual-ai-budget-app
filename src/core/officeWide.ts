@@ -124,6 +124,23 @@ export function wideDrawerIds(mosaic: InstrumentId[], options?: { includeHero?: 
   return extras.filter((id, index) => extras.indexOf(id) === index && !shown.has(id));
 }
 
+/** Posted Money in / Money out / leftover spend. Unpaid bills never enter. */
+export type DeskMonthSeals = {
+  inCents: number;
+  outCents: number;
+  leftoverCents: number;
+};
+
+export function deskMonthSeals(
+  month: Pick<MonthSummary, "incomeActualCents" | "expenseActualCents">,
+): DeskMonthSeals {
+  return {
+    inCents: month.incomeActualCents,
+    outCents: month.expenseActualCents,
+    leftoverCents: month.incomeActualCents - month.expenseActualCents,
+  };
+}
+
 export function monthInOutBars(
   month: Pick<MonthSummary, "incomeActualCents" | "expenseActualCents">,
 ): PaperBarRow[] {
