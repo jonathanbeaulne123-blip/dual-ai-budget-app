@@ -6,6 +6,7 @@ const office = readFileSync(new URL("../src/Office.tsx", import.meta.url), "utf8
 const officePhone = readFileSync(new URL("../src/OfficePhone.tsx", import.meta.url), "utf8");
 const officeWide = readFileSync(new URL("../src/OfficeWide.tsx", import.meta.url), "utf8");
 const books = readFileSync(new URL("../src/Books.tsx", import.meta.url), "utf8");
+const batchImport = readFileSync(new URL("../src/BatchImport.tsx", import.meta.url), "utf8");
 const ledger = readFileSync(new URL("../src/Ledger.tsx", import.meta.url), "utf8");
 const calendar = readFileSync(new URL("../src/Calendar.tsx", import.meta.url), "utf8");
 const shift = readFileSync(new URL("../src/WorkShiftPage.tsx", import.meta.url), "utf8");
@@ -68,6 +69,8 @@ describe("D-164 ledger story UI fences", () => {
     expect(books).toContain("closeBooksMonth(booksHousehold");
     expect(books).toContain("StatementsPane household={auditHousehold} writeHousehold={booksHousehold}");
     expect(books).toContain("AskBooks household={auditHousehold}");
+    expect(books).toContain("writeHousehold={booksHousehold}");
+    expect(batchImport).toContain("buildBatchImport({ household: writeHousehold");
     expect(books).not.toContain("queryBooks(");
     expect(books).toContain("Power SQL stays off scoped floors");
     expect(books).not.toContain("Run query");

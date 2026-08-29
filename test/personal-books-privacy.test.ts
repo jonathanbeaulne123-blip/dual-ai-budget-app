@@ -9,13 +9,16 @@ import {
   addGoal,
   askHercules,
   booksPresentationFloor,
+  buildBatchImport,
   catalogHousehold,
   closePackageText,
   compileHousehold,
   postEntry,
+  prepareImportRows,
   recordReconciliation,
   sitDownExportText,
   trialBalance,
+  type ImportedSourceRow,
 } from "../src/core/index.ts";
 import { booksJournalCsv, booksSqlDump } from "../src/ledger/export.ts";
 
@@ -96,6 +99,29 @@ function exportPacket(household: ReturnType<typeof catalogHousehold>): string {
   ].join("\n---\n");
 }
 
+function importedRow(): ImportedSourceRow {
+  return {
+    id: "IMP-BOOKS-FLOOR",
+    sourceKind: "ofx",
+    sourceName: "books-floor.ofx",
+    sourceHash: "books-floor-hash",
+    provenanceId: "ofx:books-floor:accepted-write",
+    documentKind: "bank-statement",
+    accountRef: "shared-chequing",
+    accountLast4: "4821",
+    currency: "CAD",
+    date: DATE,
+    amountCents: 1234,
+    signedAmountCents: -1234,
+    suggestedType: "expense",
+    bankType: "DEBIT",
+    note: "Scoped import accepted-write proof",
+    place: "Fixture market",
+    fitId: "books-floor-fit",
+    extractionConfidence: null,
+  };
+}
+
 describe("Books presentation privacy", () => {
   it("keeps partner-personal accounts, posts, goals, and reconciliations out of Personal Audit and exports", () => {
     const { household, partnerAccount, ownAccount } = privacyScenario();
@@ -172,5 +198,18 @@ describe("Books presentation privacy", () => {
     expect(host.textContent).toContain("Power SQL stays off scoped floors");
     act(() => root.unmount());
     host.remove();
+  });
+
+  it("uses the scoped floor for Import review and the accepted snapshot for Confirm", () => {
+    for (const view of ["household", "personal"] as const) {
+      const { household, partnerAccount } = privacyScenario();
+      const floor = booksPresentationFloor(household, JONATHAN, view);
+      const rows = prepareImportRows({ household: floor, memberId: JONATHAN, view, rows: [importedRow()] });
+      rows[0]!.accountId = "ACC-CHEQUING";
+      rows[0]!.subcategoryId = "SUB-FOOD-GROCERIES";
+      const result = buildBatchImport({ household, memberId: JONATHAN, rows });
+      expect(result.household.kitchen.books.reconciliations.some((row) => row.accountId === partnerAccount.id)).toBe(true);
+      expect(result.household.transactions.some((row) => row.sourceId === "ofx:books-floor:accepted-write")).toBe(true);
+    }
   });
 });

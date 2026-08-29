@@ -18,6 +18,7 @@
 - Combined `projectLedgerExperience`, Personal Books floor, accepted-snapshot export/writes, Kitty Banks, desk seals, Calendar kind colour, Hercules leftover fence, current-main coworker disclosure, D-167 ErrorBoundary/identity defense, Shift envelopes/attendance/Evidence/Bibles, and concrete capture labels.
 - Placed Shift mail after Tip climate and posted cash/card/wage bubbles. No Evidence/coworker/envelope surface was added to Shared Home or Personal Books.
 - Initial books/privacy review found that Personal Audit, Ask, and downloads still compiled the accepted household. The repair adds one adversarially tested `booksPresentationFloor`: Shared gets household/both only; Personal gets household/both plus the signed-in member's rooms. All Books read/export surfaces use it; accepted books remain write-only authority. Device-wide Power SQL is withheld from scoped floors.
+- Books re-review then caught Import Confirm building from the presentation clone, which could discard hidden regular reconciliation rows. `BatchImportCard` now separates `household` (scoped review) from `writeHousehold` (accepted command source), with Shared and Personal regression proof that partner reconciliation survives Confirm.
 - UX review's only P2 is closed with a scoped 44 px minimum touch target for Shift tabs.
 - Fixed a merge-exposed specificity bug so Shared Home stacks at 720–899 px and becomes three columns only at `>=900px`.
 

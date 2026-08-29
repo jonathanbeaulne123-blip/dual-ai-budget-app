@@ -123,12 +123,15 @@ async function readBankFile(file: File): Promise<string> {
 
 export function BatchImportCard({
   household,
+  writeHousehold = household,
   memberId,
   view,
   onCommit,
   onGoMore,
 }: {
   household: Household;
+  /** Accepted snapshot used only after the visible review reaches Confirm. */
+  writeHousehold?: Household;
   memberId: string;
   view: LedgerView;
   onCommit: (household: Household, undo: UndoToken) => unknown | Promise<unknown>;
@@ -473,7 +476,7 @@ export function BatchImportCard({
       if (reconciliationBlocked || unresolved || incomplete) throw new Error("Finish every reconciliation issue before Confirm.");
       if (!scopeIsCurrent(startedScope, startedGeneration)) throw new Error("The active books changed. Re-import into the current ledger.");
       if (kept > 0) {
-        const result = buildBatchImport({ household, memberId, rows: effectiveRows });
+        const result = buildBatchImport({ household: writeHousehold, memberId, rows: effectiveRows });
         const outcome = await onCommit(result.household, result.undo);
         if (outcome === null) throw new Error("The books did not accept this batch. The staged review is still open.");
         if (outcome && typeof outcome === "object" && "ok" in outcome && outcome.ok === false) {

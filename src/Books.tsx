@@ -323,6 +323,7 @@ export function BooksPage({
       {pane === "import" && (
         <BatchImportCard
           household={auditHousehold}
+          writeHousehold={booksHousehold}
           memberId={memberId}
           view={view}
           onCommit={(next, undo) => onChange(next, undo)}

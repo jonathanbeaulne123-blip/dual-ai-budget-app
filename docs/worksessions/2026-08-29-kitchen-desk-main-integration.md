@@ -79,6 +79,7 @@ Jonathan and Bianca open one kitchen: Shared Home keeps the composed paper desk 
 - Build: `tsc --noEmit`, Vite, Hercules Pro UI, and `_redirects` absence passed through Windows-equivalent commands.
 - Browser: 1100 px three columns; 720 px one-column stack; 390/320 px OfficePhone; zero horizontal overflow or console errors; Shift mail follows Tip climate and posted earnings; keyboard focus outline is visible.
 - Initial independent review: books and privacy failed the merge commit because Personal Audit/Ask/downloads read `booksHousehold`; UX passed the vibe lock with one P2 for Shift tab height. Repair routes every Books read/export surface through `booksPresentationFloor`, disables device-wide Power SQL on scoped floors, adds partner account/note/goal/reconciliation DOM/export canaries, and gives Shift tabs 44 px height. Focused repair gate: 5 files / 34 tests passed; TypeScript passed.
+- Books re-review found one remaining accepted-snapshot loss path: Batch Import Confirm built its command from the partial review clone. The follow-up gives Batch Import separate scoped-read and accepted-write inputs and proves, in both ledger modes, that a hidden partner reconciliation survives the imported transaction.
 
 ## Decisions
 
