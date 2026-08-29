@@ -1,6 +1,6 @@
 # Hearth worksession — Kitchen desk and current main integration
 
-- **Status:** OPEN
+- **Status:** CLOSED — integrated and independently verified locally
 - **Opened:** 2026-08-29 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex (GPT), single integration writer
@@ -8,7 +8,7 @@
 - **Branch:** `codex/kitchen-desk-integration`
 - **Baseline SHA:** `4b2f40064b526541ef7a20d6e99fc99ca5647baa`
 - **Integration merge SHA:** `f1daa78bfc1bfc7df3967b597f7af9e3675ff352`
-- **Head SHA:** pending books/privacy repair commit
+- **Verified implementation SHA:** `ca8c84a108f9310a3426cf122c51258009963213`
 - **PR or issue:** UX source draft PR #244; new integration PR pending
 - **Risk:** High
 - **Decision owner:** Jonathan
@@ -56,7 +56,7 @@ Jonathan and Bianca open one kitchen: Shared Home keeps the composed paper desk 
 - [x] Blank household open cannot clear `#root`; companion labels remain concrete.
 - [x] Focused tests, AI surface, TypeScript, and builds pass. Full pre-review-repair `pnpm check` is green with the required Windows runtime path.
 - [x] 320 / 390 / 720 / about 1100 plus keyboard, focus, reduced-motion source, loading, empty, error, and offline test evidence is current.
-- [ ] Independent books, privacy, UX, trust, and verifier reviews complete on the integrated SHA.
+- [x] Independent books, privacy, UX, trust, and verifier reviews complete on the integrated SHA.
 
 ## Plan
 
@@ -66,8 +66,8 @@ Jonathan and Bianca open one kitchen: Shared Home keeps the composed paper desk 
 - [x] Verify and repair integration regressions only.
 - [x] Commit the integrated tree, then run independent reviews on that exact SHA.
 - [x] Close the initial books/privacy projection finding and UX touch-target note with tests.
-- [ ] Re-run books/privacy/trust/verifier on the final exact SHA.
-- [ ] Update evidence, handoff, and draft PR state.
+- [x] Re-run books/privacy/trust/verifier on the final exact SHA.
+- [x] Update evidence and handoff. Draft PR remains blocked on Jonathan's push authorization.
 
 ## Evidence log
 
@@ -80,6 +80,7 @@ Jonathan and Bianca open one kitchen: Shared Home keeps the composed paper desk 
 - Browser: 1100 px three columns; 720 px one-column stack; 390/320 px OfficePhone; zero horizontal overflow or console errors; Shift mail follows Tip climate and posted earnings; keyboard focus outline is visible.
 - Initial independent review: books and privacy failed the merge commit because Personal Audit/Ask/downloads read `booksHousehold`; UX passed the vibe lock with one P2 for Shift tab height. Repair routes every Books read/export surface through `booksPresentationFloor`, disables device-wide Power SQL on scoped floors, adds partner account/note/goal/reconciliation DOM/export canaries, and gives Shift tabs 44 px height. Focused repair gate: 5 files / 34 tests passed; TypeScript passed.
 - Books re-review found one remaining accepted-snapshot loss path: Batch Import Confirm built its command from the partial review clone. The follow-up gives Batch Import separate scoped-read and accepted-write inputs and proves, in both ledger modes, that a hidden partner reconciliation survives the imported transaction.
+- Final independent results on `ca8c84a`: books PASS; privacy PASS; UX PASS; trust PASS; verifier CONDITIONAL PASS with no P0–P2. The verifier's only condition was `bash` unavailable in its Windows review shell. The final root `pnpm check` exposed Git Bash and bundled Python and passed: 175 files / 1 skipped, 1182 tests / 2 skipped, plus the complete build.
 
 ## Decisions
 
@@ -89,7 +90,7 @@ Jonathan and Bianca open one kitchen: Shared Home keeps the composed paper desk 
 
 ## Remaining uncertainty
 
-Current integrated test and visual evidence is pending. No claim from PR #244 or pre-merge `main` will be reused as current proof.
+Live Production and provider state remain out of scope. The branch is local only; no push, draft PR, merge, deploy, schema, secret, or household-data action occurred.
 
 ## Handoff
 

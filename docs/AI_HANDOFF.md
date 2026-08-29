@@ -2,7 +2,7 @@
 
 ## Kitchen desk + current main integration (D-164–D-173) (2026-08-29)
 
-**Status:** Integrated locally on `codex/kitchen-desk-integration` from exact `origin/main@4b2f40064b526541ef7a20d6e99fc99ca5647baa` plus UX head `ed708dc358ed808fbc5a9ec89b6c95bdb9a55a60`. Merge commit `f1daa78bfc1bfc7df3967b597f7af9e3675ff352`; books/privacy repair pending final review SHA. **Not pushed, merged, deployed, or live.** Risk: **High**.
+**Status:** Integrated and independently verified locally on `codex/kitchen-desk-integration` from exact `origin/main@4b2f40064b526541ef7a20d6e99fc99ca5647baa` plus UX head `ed708dc358ed808fbc5a9ec89b6c95bdb9a55a60`. Merge commit `f1daa78bfc1bfc7df3967b597f7af9e3675ff352`; verified implementation `ca8c84a108f9310a3426cf122c51258009963213`. **Not pushed, merged, deployed, or live.** Risk: **High**.
 
 **Household outcome:** Shared Home remains the composed cream-paper desk with seals, mosaic, stage, and Kitty Banks. Personal Books remains the serious accepted-books account floor. Current-main Shift mail, attendance, Evidence, confirmed Bibles, boot recovery, and concrete companion labels stay in the same organism. Shift mail sits below Tip climate and posted cash/card/wage bubbles; it does not become Home furniture.
 
@@ -37,9 +37,9 @@
 - Hosted rows / schema / secrets / deployments: none.
 - Real household or partner-personal data used: none.
 
-**Remaining uncertainty:** Books/privacy must re-review the repair, then trust and verifier must review the final exact SHA. A full pre-repair `pnpm check` passed with the repository's required shell/runtime exposed: 174 files passed / 1 skipped, 1178 tests passed / 2 skipped, plus build. Final post-repair aggregate is pending.
+**Verification:** Books, privacy, UX, and trust report no open P0–P2 on the verified implementation. The verifier found no P0–P2 and classified only its missing-`bash` runner as conditional; the final aggregate with Git Bash and bundled Python exposed closes that environment condition: 175 files passed / 1 skipped, 1182 tests passed / 2 skipped, plus TypeScript, Vite, Hercules Pro UI, and `_redirects` absence.
 
-**Next owner:** Independent reviewers, then Jonathan for the merge decision. Codex does not push, merge, deploy, or call this live without Jonathan's explicit approval.
+**Next owner:** Jonathan for the push/draft-PR decision. Codex did not push, merge, deploy, or call this live.
 
 **Worksession:** [`worksessions/2026-08-29-kitchen-desk-main-integration.md`](worksessions/2026-08-29-kitchen-desk-main-integration.md)
 
