@@ -7,7 +7,7 @@
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `cursor/shared-ledger-story-aef7`
 - **Baseline SHA:** `871e6607b4bc6a5d653f9e9bbcc9131f9a07dc65`
-- **Head SHA:** `2033d2885b786fdc698bb2b42c13a35fa9f55dfc` (Shared Household table; honest Personal copy)
+- **Head SHA:** `3f4e9b5bde4fb496908f7f34d51e97fdee3cdc72` (Shared Household table; honest Personal copy; ChatGPT review packet follows)
 - **PR or issue:** draft [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244)
 - **Risk:** High review gate (ledger-mode privacy and financial presentation)
 - **Decision owner:** Jonathan
@@ -80,7 +80,7 @@ Opening Shared Ledger feels like sitting down at the household table: what is tr
 - 2026-08-28: `dd4fe43` Shared due Confirm posts only visible recurrence ids; Personal Rec does not default to Shared chart.
 - 2026-08-28: `pnpm check` at `dd4fe43` → 1100 passed / 2 skipped; build green.
 - 2026-08-28: localhost demo kitchen as Jonathan; Shared Home 1280, Books Fund pane, phone 320 purpose heading.
-- 2026-08-28: `2033d28` honest Personal copy; `pnpm check` → 1102 passed / 2 skipped. Visual Goal savings $1940 pigs-only; Shared hero $12234.19 cash.
+- 2026-08-29: ChatGPT independent-review packet [`briefs/CHATGPT_D164_INDEPENDENT_REVIEW_2026-08-29.md`](../briefs/CHATGPT_D164_INDEPENDENT_REVIEW_2026-08-29.md). Model: GPT-5 Pro. Not a merge/deploy gate by itself.
 
 ## Decisions
 
@@ -105,4 +105,4 @@ Semantic correction implemented: Plan and More still show `LedgerPurposeBanner`.
 
 ## Handoff
 
-Next owner: Jonathan opens this branch’s kitchen from the agent reply’s trycloudflare URL (or Cursor Desktop `http://127.0.0.1:5173/` with this agent tab active). Not merged, not deployed, not the live kitchen. Vite allows `.trycloudflare.com` so the public tunnel is not blocked.
+Next owner: Jonathan runs the GPT-5 Pro independent review from [`briefs/CHATGPT_D164_INDEPENDENT_REVIEW_2026-08-29.md`](../briefs/CHATGPT_D164_INDEPENDENT_REVIEW_2026-08-29.md). Branch kitchen is not the live Worker. Not merged, not deployed.
