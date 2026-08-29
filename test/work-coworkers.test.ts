@@ -233,6 +233,31 @@ describe("D-166 private coworker roster", () => {
     expect(JSON.stringify(commandIdentityFacts(household, changed.household, changed.postedIds))).not.toContain("s7shift_");
   });
 
+  it("keeps an open-ended CL shift as dated outlook without inventing an end time", () => {
+    const household = seedDemoHousehold({ today: "2026-08-28", environment: "development" });
+    const job = household.workJobs.find((row) => row.memberId === "MEM-002")!;
+    const imported = importCoworkerRoster(household, {
+      ownerMemberId: "MEM-002", jobId: job.id, locationName: job.locationName,
+      replaceScheduleRange: { fromDate: "2026-08-28", toDate: "2026-08-28" },
+      rows: [{
+        displayName: "Open End", roleLabel: "Server", source: "seven-shifts-schedule",
+        sourceIdentityKey: "s7subject_openendedaaaaaaaaaaa",
+        scheduledWindows: [{
+          sourceScheduleKey: "s7shift_openendedaaaaaaaaaaaa", date: "2026-08-28",
+          scheduledStart: "2026-08-28T20:30:00.000Z", scheduledEnd: null,
+          observedAt: "2026-08-27T12:00:00.000Z",
+        }],
+      }],
+    });
+    expect(imported.household.coworkerSchedules).toMatchObject([{
+      date: "2026-08-28", scheduledStart: null, scheduledEnd: null, roleLabel: "Server",
+    }]);
+    expect(scheduledCoworkersForReview(imported.household.coworkerSchedules!, {
+      ownerMemberId: "MEM-002", jobId: job.id, date: "2026-08-28",
+      startedAt: "2026-08-28T20:00:00.000Z", endedAt: "2026-08-29T02:00:00.000Z",
+    })).toHaveLength(1);
+  });
+
   it("retires missing schedule windows only after an explicit complete-range review and tombstones them across replicas", () => {
     const household = seedDemoHousehold({ today: "2026-08-28", environment: "development" });
     const job = household.workJobs.find((row) => row.memberId === "MEM-002")!;

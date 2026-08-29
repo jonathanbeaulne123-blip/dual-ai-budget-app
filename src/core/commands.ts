@@ -3266,9 +3266,13 @@ export function importCoworkerRoster(household: Household, input: {
         throw new ValidationError("Complete schedule range does not cover every imported shift.");
       }
       capturedScheduleKeys.add(sourceScheduleKey);
-      const start = window.scheduledStart ? new Date(window.scheduledStart) : null;
-      const end = window.scheduledEnd ? new Date(window.scheduledEnd) : null;
-      if (Boolean(start) !== Boolean(end) || (start && end && (!Number.isFinite(start.valueOf()) || !Number.isFinite(end.valueOf()) || end <= start))) {
+      const hasCompleteWindow = Boolean(window.scheduledStart) && Boolean(window.scheduledEnd);
+      // 7shifts can publish an open-ended "CL" shift with only its start. Keep
+      // the dated coworker outlook, while leaving the time window wholly
+      // unknown; the original one-sided fact remains in encrypted Evidence.
+      const start = hasCompleteWindow ? new Date(window.scheduledStart!) : null;
+      const end = hasCompleteWindow ? new Date(window.scheduledEnd!) : null;
+      if (start && end && (!Number.isFinite(start.valueOf()) || !Number.isFinite(end.valueOf()) || end <= start)) {
         throw new ValidationError("Coworker schedule times must be a valid start/end pair.");
       }
       const existingSchedule = (next.coworkerSchedules ?? []).find((item) => item.ownerMemberId === member.id
