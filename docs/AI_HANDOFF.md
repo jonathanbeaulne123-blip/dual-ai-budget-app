@@ -2,7 +2,7 @@
 
 ## Kitchen desk + current main integration (D-164–D-173) (2026-08-29)
 
-**Status:** Integrated locally on `codex/kitchen-desk-integration` from exact `origin/main@4b2f40064b526541ef7a20d6e99fc99ca5647baa` plus UX head `ed708dc358ed808fbc5a9ec89b6c95bdb9a55a60`. Review SHA pending commit. **Not pushed, merged, deployed, or live.** Risk: **High**.
+**Status:** Integrated locally on `codex/kitchen-desk-integration` from exact `origin/main@4b2f40064b526541ef7a20d6e99fc99ca5647baa` plus UX head `ed708dc358ed808fbc5a9ec89b6c95bdb9a55a60`. Merge commit `f1daa78bfc1bfc7df3967b597f7af9e3675ff352`; books/privacy repair pending final review SHA. **Not pushed, merged, deployed, or live.** Risk: **High**.
 
 **Household outcome:** Shared Home remains the composed cream-paper desk with seals, mosaic, stage, and Kitty Banks. Personal Books remains the serious accepted-books account floor. Current-main Shift mail, attendance, Evidence, confirmed Bibles, boot recovery, and concrete companion labels stay in the same organism. Shift mail sits below Tip climate and posted cash/card/wage bubbles; it does not become Home furniture.
 
@@ -17,6 +17,8 @@
 - Kept D-165 Evidence Queue through D-172 Shift-envelope law and renumbered the kitchen-desk law to D-173.
 - Combined `projectLedgerExperience`, Personal Books floor, accepted-snapshot export/writes, Kitty Banks, desk seals, Calendar kind colour, Hercules leftover fence, current-main coworker disclosure, D-167 ErrorBoundary/identity defense, Shift envelopes/attendance/Evidence/Bibles, and concrete capture labels.
 - Placed Shift mail after Tip climate and posted cash/card/wage bubbles. No Evidence/coworker/envelope surface was added to Shared Home or Personal Books.
+- Initial books/privacy review found that Personal Audit, Ask, and downloads still compiled the accepted household. The repair adds one adversarially tested `booksPresentationFloor`: Shared gets household/both only; Personal gets household/both plus the signed-in member's rooms. All Books read/export surfaces use it; accepted books remain write-only authority. Device-wide Power SQL is withheld from scoped floors.
+- UX review's only P2 is closed with a scoped 44 px minimum touch target for Shift tabs.
 - Fixed a merge-exposed specificity bug so Shared Home stacks at 720–899 px and becomes three columns only at `>=900px`.
 
 **Verification so far:**
@@ -34,7 +36,7 @@
 - Hosted rows / schema / secrets / deployments: none.
 - Real household or partner-personal data used: none.
 
-**Remaining uncertainty:** Independent books, privacy, UX vibe-lock, trust, and verifier reviews must run on the committed integration SHA. The aggregate `pnpm check` does not report green because its default Windows shell lacked `bash` and the unchanged rig test is sampling-sensitive; both failing assertions passed under their relevant reruns.
+**Remaining uncertainty:** Books/privacy must re-review the repair, then trust and verifier must review the final exact SHA. A full pre-repair `pnpm check` passed with the repository's required shell/runtime exposed: 174 files passed / 1 skipped, 1178 tests passed / 2 skipped, plus build. Final post-repair aggregate is pending.
 
 **Next owner:** Independent reviewers, then Jonathan for the merge decision. Codex does not push, merge, deploy, or call this live without Jonathan's explicit approval.
 

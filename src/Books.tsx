@@ -8,7 +8,6 @@ import {
   askHercules,
   auditOpinion,
   balanceSheet,
-  booksEquation,
   budgetVariance,
   cashFlowStatement,
   closeBooksMonth,
@@ -28,7 +27,7 @@ import {
   categoryName,
   monthKeyFromDateKey,
   notesToFinancialStatements,
-  personalBooksFloor,
+  booksPresentationFloor,
   recordReconciliation,
   reopenBooksMonth,
   setBudget,
@@ -50,8 +49,7 @@ import { PaneSeals, PaperTile, StoryStrip, CollapsibleCard } from "./theme/Paper
 import { BatchImportCard } from "./BatchImport.tsx";
 import { WalletPane } from "./Accounts.tsx";
 import { booksFilename, booksJournalCsv, booksSqlDump, downloadText } from "./ledger/export.ts";
-import { queryBooks, type BooksStatus } from "./ledger/engine.ts";
-import { assertReadOnlySelect } from "./ledger/queryGuard.ts";
+import type { BooksStatus } from "./ledger/engine.ts";
 import { HouseholdFundPanel } from "./HouseholdFundPanel.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 
@@ -66,7 +64,7 @@ const PANES = [
   { id: "rec", label: "Reconcile", blurb: "Tie a statement figure to the books. Never posts money by itself." },
   { id: "close", label: "Close pack", blurb: "Hard month lock. Reopen is explicit. Groceries in the open month still posts." },
   { id: "accounts", label: "Chart", blurb: "Every account on the chart of accounts." },
-  { id: "query", label: "Ask", blurb: "Read-only SQL and Ask the books. Hercules answers from the journal." },
+  { id: "query", label: "Ask", blurb: "Ask the books. Hercules answers from the journal visible on this floor." },
 ] as const;
 
 const TABLE_PANE_IDS = ["fund", "wallet", "register", "import"] as const;
@@ -108,13 +106,15 @@ export function BooksPage({
   onGoMore?: () => void;
 }) {
   const [pane, setPane] = useState<Pane>(view === "personal" ? "wallet" : "fund");
-  const books = useMemo(() => compileHousehold(booksHousehold), [booksHousehold]);
-  const trial = useMemo(() => trialBalance(books, { recognizedOnly: true }), [books]);
-  const equation = useMemo(() => booksEquation(books), [books]);
-  const opinion = useMemo(() => auditOpinion(booksHousehold), [booksHousehold]);
-  const today = todayKey();
   const sharedTable = view === "household";
-  const walletHousehold = sharedTable ? household : personalBooksFloor(booksHousehold, memberId);
+  const auditHousehold = useMemo(() => (
+    booksPresentationFloor(booksHousehold, memberId, view)
+  ), [booksHousehold, memberId, view]);
+  const books = useMemo(() => compileHousehold(auditHousehold), [auditHousehold]);
+  const trial = useMemo(() => trialBalance(books, { recognizedOnly: true }), [books]);
+  const opinion = useMemo(() => auditOpinion(auditHousehold), [auditHousehold]);
+  const today = todayKey();
+  const walletHousehold = auditHousehold;
   const wallet = useMemo(() => (
     sharedTable
       ? householdWallet(walletHousehold, today)
@@ -137,11 +137,11 @@ export function BooksPage({
   const fundConfigured = Boolean(booksHousehold.householdFund);
   const sharedLeadCents = fundConfigured ? fundProjection.operatingBalanceCents : wallet.cashCents;
   const monthKey = monthKeyFromDateKey(today);
-  const packMonth = closedMonthKeys(booksHousehold).at(-1) ?? monthKey;
+  const packMonth = closedMonthKeys(auditHousehold).at(-1) ?? monthKey;
   const [accountId, setAccountId] = useState(
-    focusedAccountId && household.accounts.some((account) => account.id === focusedAccountId)
+    focusedAccountId && auditHousehold.accounts.some((account) => account.id === focusedAccountId)
       ? focusedAccountId
-      : household.accounts.find((account) => account.active)?.id ?? "",
+      : auditHousehold.accounts.find((account) => account.active)?.id ?? "",
   );
   const register = useMemo(() => accountRegister(books, accountId), [books, accountId]);
   const [recDate, setRecDate] = useState(today);
@@ -151,9 +151,15 @@ export function BooksPage({
 
   useEffect(() => {
     if (!focusedAccountId) return;
+    if (!auditHousehold.accounts.some((account) => account.id === focusedAccountId)) return;
     setAccountId(focusedAccountId);
     setPane(view === "household" ? "register" : "wallet");
-  }, [focusedAccountId, view]);
+  }, [auditHousehold, focusedAccountId, view]);
+
+  useEffect(() => {
+    if (auditHousehold.accounts.some((account) => account.id === accountId)) return;
+    setAccountId(auditHousehold.accounts.find((account) => account.active)?.id ?? "");
+  }, [accountId, auditHousehold]);
 
   useEffect(() => {
     if (sourceFocus?.route !== "ledger") return;
@@ -198,7 +204,7 @@ export function BooksPage({
       ) : (
         <section className="hero">
           <div className="label">My books · CAD · {household.timezone}</div>
-          <div className={`money ${equation.netWorthCents < 0 ? "negative" : ""}`}>{formatCad(equation.netWorthCents)}</div>
+          <div className={`money ${wallet.netWorthCents < 0 ? "negative" : ""}`}>{formatCad(wallet.netWorthCents)}</div>
           <div className="sub">Rooms I can manage. Partner-personal rooms stay off this floor. The figure is accepted-books position, not a partner-hidden envelope.</div>
           {!trial.inBalance ? (
             <p className="opinion-banner adverse">
@@ -316,7 +322,7 @@ export function BooksPage({
       )}
       {pane === "import" && (
         <BatchImportCard
-          household={booksHousehold}
+          household={auditHousehold}
           memberId={memberId}
           view={view}
           onCommit={(next, undo) => onChange(next, undo)}
@@ -430,7 +436,7 @@ export function BooksPage({
         </section>
       )}
       {pane === "statements" && (
-        <StatementsPane household={booksHousehold} writeHousehold={booksHousehold} monthKey={monthKey} today={today} onChange={onChange} />
+        <StatementsPane household={auditHousehold} writeHousehold={booksHousehold} monthKey={monthKey} today={today} onChange={onChange} />
       )}
       {pane === "rec" && (
         <section className="card">
@@ -441,7 +447,7 @@ export function BooksPage({
           <p className="muted">Ending balance from the statement. Nothing posts.</p>
           <label>Account</label>
           <select value={accountId} onChange={(event) => setAccountId(event.target.value)}>
-            {household.accounts.filter((account) => account.active).map((account) => (
+            {auditHousehold.accounts.filter((account) => account.active).map((account) => (
               <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>
             ))}
           </select>
@@ -484,12 +490,12 @@ export function BooksPage({
                 </tr>
               </thead>
               <tbody>
-                {booksHousehold.kitchen.books.reconciliations.length === 0 ? (
+                {auditHousehold.kitchen.books.reconciliations.length === 0 ? (
                   <tr><td colSpan={5} className="muted">No recs yet.</td></tr>
-                ) : [...booksHousehold.kitchen.books.reconciliations].reverse().map((row) => (
+                ) : [...auditHousehold.kitchen.books.reconciliations].reverse().map((row) => (
                   <tr key={row.id}>
                     <td>{row.statementDate}</td>
-                    <td>{booksHousehold.accounts.find((account) => account.id === row.accountId)?.name ?? row.accountId}</td>
+                    <td>{auditHousehold.accounts.find((account) => account.id === row.accountId)?.name ?? row.accountId}</td>
                     <td className="num">{formatCad(row.statementCents)}</td>
                     <td className="num">{formatCad(row.bookCents)}</td>
                     <td className="num">{row.status === "tied" ? "tied" : formatCad(row.differenceCents)}</td>
@@ -528,20 +534,20 @@ export function BooksPage({
             <button
               className="chip"
               type="button"
-              onClick={() => downloadText(booksFilename(books, "txt"), closePackageText(booksHousehold, packMonth, today))}
+              onClick={() => downloadText(booksFilename(books, "txt"), closePackageText(auditHousehold, packMonth, today))}
             >
               Download close pack
             </button>
           </div>
-          {likelyMiscoded(household, monthKey).length > 0 && (
+          {likelyMiscoded(auditHousehold, monthKey).length > 0 && (
             <div>
               <p className="muted">Likely miscoded — guessed from merchant tokens. Confirm still recodes. Nothing auto-posts.</p>
-              {likelyMiscoded(household, monthKey).map((row) => {
-                const tx = household.transactions.find((item) => item.id === row.transactionId);
+              {likelyMiscoded(auditHousehold, monthKey).map((row) => {
+                const tx = auditHousehold.transactions.find((item) => item.id === row.transactionId);
                 if (!tx) return null;
                 return (
                   <div className="row" key={row.transactionId}>
-                    <span>{tx.note || tx.place} · {categoryName(household, tx.subcategoryId)}</span>
+                    <span>{tx.note || tx.place} · {categoryName(auditHousehold, tx.subcategoryId)}</span>
                     <span className="muted">guess {row.guessed.name}</span>
                   </div>
                 );
@@ -552,14 +558,14 @@ export function BooksPage({
             <button
               className="chip"
               type="button"
-              onClick={() => downloadText(`hearth-sitdown-${packMonth}.txt`, sitDownExportText(booksHousehold, packMonth, today))}
+              onClick={() => downloadText(`hearth-sitdown-${packMonth}.txt`, sitDownExportText(auditHousehold, packMonth, today))}
             >
               Download sit-down workbook
             </button>
           </div>
-          {booksHousehold.kitchen.books.closedMonths.length > 0 && (
+          {auditHousehold.kitchen.books.closedMonths.length > 0 && (
             <ul className="close-list">
-              {booksHousehold.kitchen.books.closedMonths.map((row) => (
+              {auditHousehold.kitchen.books.closedMonths.map((row) => (
                 <li key={row.monthKey}>
                   <span>{row.monthKey} closed</span>
                   <button
@@ -620,7 +626,7 @@ export function BooksPage({
           </div>
         </section>
       )}
-      {pane === "query" && <AskBooks household={booksHousehold} memberId={memberId} view={view} />}
+      {pane === "query" && <AskBooks household={auditHousehold} memberId={memberId} view={view} />}
       {(!sharedTable || isAuditPane) ? (
       <div className="chips" style={{ marginTop: 8 }}>
         <button className="chip" onClick={() => downloadText(booksFilename(books, "sql"), booksSqlDump(books), "application/sql")}>
@@ -629,7 +635,7 @@ export function BooksPage({
         <button className="chip" onClick={() => downloadText(booksFilename(books, "csv"), booksJournalCsv(books, trial), "text/csv")}>
           Download journal CSV
         </button>
-        <button className="chip" onClick={() => downloadText(booksFilename(books, "txt"), closePackageText(booksHousehold, packMonth, today))}>
+        <button className="chip" onClick={() => downloadText(booksFilename(books, "txt"), closePackageText(auditHousehold, packMonth, today))}>
           Download close pack
         </button>
       </div>
@@ -917,15 +923,6 @@ function JournalBlock({
   );
 }
 
-function looksLikeSql(text: string): boolean {
-  try {
-    assertReadOnlySelect(text);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function AskBooks({
   household,
   memberId,
@@ -938,48 +935,19 @@ function AskBooks({
   const [question, setQuestion] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [columns, setColumns] = useState<string[]>([]);
-  const [sqlRows, setSqlRows] = useState<Record<string, unknown>[]>([]);
   const [log, setLog] = useState<{ you: string; sentence: string; rows: { label: string; value: string }[]; sql?: string }[]>([]);
-  const [showPower, setShowPower] = useState(false);
-  const [sql, setSql] = useState("SELECT code, name, account_type, debit_cents, credit_cents FROM v_trial_balance ORDER BY code;");
 
-  async function ask(raw: string) {
+  function ask(raw: string) {
     const text = raw.trim();
     if (!text) return;
     setBusy(true);
     setError("");
     setQuestion("");
     try {
-      if (looksLikeSql(text)) {
-        const result = await queryBooks(text, household.environment);
-        setColumns(result.columns);
-        setSqlRows(result.rows);
-        setLog((current) => [...current, { you: text, sentence: `Ran a read-only query. ${result.rows.length} row${result.rows.length === 1 ? "" : "s"}.`, rows: [] }].slice(-8));
-        return;
-      }
       const answer = askHercules(household, text, todayKey(), { memberId, view });
       setLog((current) => [...current, { you: text, sentence: answer.sentence, rows: answer.rows, sql: answer.sql }].slice(-8));
-      setColumns([]);
-      setSqlRows([]);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function runPower() {
-    setBusy(true);
-    setError("");
-    try {
-      const result = await queryBooks(sql, household.environment);
-      setColumns(result.columns);
-      setSqlRows(result.rows);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
-      setColumns([]);
-      setSqlRows([]);
     } finally {
       setBusy(false);
     }
@@ -997,7 +965,7 @@ function AskBooks({
           ? ASK_SUGGESTIONS.filter((item) => !/leftover|sit-down/i.test(item))
           : ASK_SUGGESTIONS
         ).slice(0, 6).map((item) => (
-          <button key={item} className="chip" type="button" disabled={busy} onClick={() => void ask(item)}>{item}</button>
+          <button key={item} className="chip" type="button" disabled={busy} onClick={() => ask(item)}>{item}</button>
         ))}
       </div>
       <label>Question</label>
@@ -1008,11 +976,11 @@ function AskBooks({
         onKeyDown={(event) => {
           if (event.key === "Enter") {
             event.preventDefault();
-            void ask(question);
+            ask(question);
           }
         }}
       />
-      <button className="primary" disabled={busy || !question.trim()} onClick={() => void ask(question)}>Ask</button>
+      <button className="primary" disabled={busy || !question.trim()} onClick={() => ask(question)}>Ask</button>
       <KitchenNotice message={error} />
       <div className="ask-log">
         {log.map((item, index) => (
@@ -1028,39 +996,7 @@ function AskBooks({
           </div>
         ))}
       </div>
-      {columns.length > 0 && (
-        <div className="books-scroll">
-          <table className="books-table">
-            <thead>
-              <tr>{columns.map((column) => <th key={column}>{column}</th>)}</tr>
-            </thead>
-            <tbody>
-              {sqlRows.map((row, index) => (
-                <tr key={index}>
-                  {columns.map((column) => <td key={column}>{formatCell(row[column])}</td>)}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      <button className="ghost" type="button" onClick={() => setShowPower((value) => !value)}>
-        {showPower ? "Hide power SQL" : "Power SQL"}
-      </button>
-      {showPower && (
-        <div className="power-sql">
-          <p className="muted">Read-only SELECT against this phone’s Postgres. Writes are refused.</p>
-          <textarea className="sql-input" value={sql} onChange={(event) => setSql(event.target.value)} rows={5} spellCheck={false} />
-          <button className="primary" disabled={busy} onClick={() => void runPower()}>Run query</button>
-        </div>
-      )}
+      <p className="muted">Power SQL stays off scoped floors because the device database also contains rooms that are not visible here.</p>
     </section>
   );
-}
-
-function formatCell(value: unknown): string {
-  if (value === null || value === undefined) return "";
-  if (typeof value === "number") return String(value);
-  if (typeof value === "boolean") return value ? "true" : "false";
-  return String(value);
 }

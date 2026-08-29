@@ -60,10 +60,17 @@ describe("D-164 ledger story UI fences", () => {
     expect(app).toContain("experience.herculesHousehold");
     expect(app).toContain("Choose who is using this ledger before exporting.");
     expect(app).toContain("Fund free-to-spend");
-    expect(books).toContain("compileHousehold(booksHousehold)");
+    expect(books).toContain("booksPresentationFloor(booksHousehold, memberId, view)");
+    expect(books).toContain("compileHousehold(auditHousehold)");
+    expect(books).not.toContain("compileHousehold(booksHousehold)");
     expect(books).not.toContain("compileHousehold(household)");
     expect(books).toContain("HouseholdFundPanel household={booksHousehold}");
     expect(books).toContain("closeBooksMonth(booksHousehold");
+    expect(books).toContain("StatementsPane household={auditHousehold} writeHousehold={booksHousehold}");
+    expect(books).toContain("AskBooks household={auditHousehold}");
+    expect(books).not.toContain("queryBooks(");
+    expect(books).toContain("Power SQL stays off scoped floors");
+    expect(books).not.toContain("Run query");
     expect(books).not.toContain("books.chart[0]");
     expect(app).toContain("postDueRecurrences(current, today, ids)");
     expect(app).toContain("recurrenceIds");
@@ -138,6 +145,7 @@ describe("D-164 ledger story UI fences", () => {
     expect(shift).toContain("Posted earnings");
     expect(shift).toContain("shiftEarningsTracker");
     expect(styles).toContain("overflow-y: auto");
+    expect(styles).toContain(".shift-page .tabs button { min-height: 44px; }");
     expect(styles).toMatch(/\.hercules-bubble \{[\s\S]*background: var\(--card\)/);
     expect(hercules).toContain("hercules-pro-quiet");
     expect(hercules).toContain("helpAsked");
@@ -148,7 +156,7 @@ describe("D-164 ledger story UI fences", () => {
     expect(kitty).toContain("defaultOpen={false}");
     expect(kitty).toContain("data-kitty-step");
     expect(kitty).toContain("paper-bank");
-    expect(books).toContain("personalBooksFloor(booksHousehold, memberId)");
+    expect(books).toContain("booksPresentationFloor(booksHousehold, memberId, view)");
     expect(books).toContain("books-floor");
     expect(books).toContain("Shared is one account");
     expect(officeWide).toContain("posted in minus posted expenses");

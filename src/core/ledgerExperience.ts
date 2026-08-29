@@ -211,36 +211,81 @@ export function restoreAcceptedSnapshot(accepted: Household, next: Household): H
 }
 
 /**
- * Personal Books floor: household-visible rooms plus this member’s personal rooms.
- * Partner-personal accounts stay out. Journal includes household/both posts that
- * compile against listed rooms, plus this member’s personal posts. Hercules and
- * Home seals keep using `scopedHousehold` (personal+both only).
+ * Books presentation floor. Shared receives household/both books. Personal adds
+ * this member's rooms while excluding every partner-personal account and row.
+ * The accepted snapshot remains the write authority; this clone is read/export
+ * input only.
  */
-export function personalBooksFloor(household: Household, memberId: string): Household {
-  const accounts = household.accounts.filter((account) => (
-    account.scope !== "personal" || account.ownerMemberId === memberId
-  ));
+export function booksPresentationFloor(
+  household: Household,
+  memberId: string,
+  view: LedgerView,
+): Household {
+  const contextual = householdForHerculesContext(household, memberId, view);
+  const accounts = household.accounts.filter((account) => view === "household"
+    ? account.scope !== "personal"
+    : account.scope !== "personal" || account.ownerMemberId === memberId);
   const accountIds = new Set(accounts.map((account) => account.id));
   const transactions = household.transactions.filter((tx) => {
     if (!transactionCompilesAgainstAccounts(tx, accountIds)) return false;
-    if (parseVisibility(tx.visibility) === "personal") return tx.createdBy === memberId;
-    return true;
+    if (parseVisibility(tx.visibility) === "personal") return view === "personal" && tx.createdBy === memberId;
+    return view === "personal" || parseVisibility(tx.visibility) !== "personal";
   });
   const recurrences = (household.recurrences ?? []).filter((row) => accountIds.has(row.accountId));
-  const goals = household.goals.filter((goal) => goal.shared || goal.ownerMemberId === memberId);
+  const goals = household.goals.filter((goal) => view === "household"
+    ? goal.shared
+    : goal.shared || goal.ownerMemberId === memberId);
   const goalIds = new Set(goals.map((goal) => goal.id));
-  const custodian = household.householdFund?.custodianMemberId === memberId;
+  const appointmentIds = new Set(contextual.appointments.map((item) => item.id));
+  const transactionIds = new Set(transactions.map((item) => item.id));
+  const claims = (household.claims ?? []).filter((claim) => claim.appointmentId
+    ? appointmentIds.has(claim.appointmentId)
+    : transactionIds.has(claim.expenseTransactionId));
+  const custodian = view === "personal" && household.householdFund?.custodianMemberId === memberId;
   return {
-    ...household,
+    ...contextual,
     accounts,
     transactions,
     recurrences,
+    presets: (household.presets ?? []).filter((preset) => (
+      accountIds.has(preset.accountId) && parseVisibility(preset.visibility) !== "personal"
+    )),
     goals,
+    claims,
     goalContributions: (household.goalContributions ?? []).filter((row) => goalIds.has(row.goalId)),
+    kitchen: {
+      ...contextual.kitchen,
+      books: {
+        ...contextual.kitchen.books,
+        reconciliations: (household.kitchen.books?.reconciliations ?? [])
+          .filter((row) => accountIds.has(row.accountId)),
+      },
+    },
+    ledgerNames: {
+      ...contextual.ledgerNames,
+      personal: view === "personal"
+        ? Object.fromEntries(Object.entries(contextual.ledgerNames.personal).filter(([id]) => id === memberId))
+        : {},
+    },
+    google: {
+      ...contextual.google,
+      links: (contextual.google.links ?? []).filter((row) => row.memberId === memberId),
+    },
+    activity: [],
+    devices: [],
+    sitDownSessions: [],
+    tombstones: [],
+    commandReceipts: [],
+    conflicts: [],
     fundPrivate: custodian
       ? household.fundPrivate
       : { bankBindings: [], reconciliations: [] },
   };
+}
+
+/** Personal Books includes household-visible rooms plus this member's rooms. */
+export function personalBooksFloor(household: Household, memberId: string): Household {
+  return booksPresentationFloor(household, memberId, "personal");
 }
 
 function applyPresentationScope(household: Household, memberId: string, view: LedgerView): Household {
