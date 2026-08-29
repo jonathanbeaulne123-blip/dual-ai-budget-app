@@ -1,6 +1,6 @@
 # Hearth worksession — shift intake P1 hardening
 
-- **Status:** ACCEPTANCE PROVED — ready for commit/release review
+- **Status:** RELEASED — pushed and kitchen live
 - **Opened:** 2026-08-28 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -85,4 +85,4 @@ The repository's existing bash-spawn test cannot execute on this Windows host. I
 
 ## Handoff
 
-Local dirty D-169/D-170 implementation is acceptance-proved on baseline `d87e2dee28113542ae07005f3907cb425566f6f9`. It is ready for explicit staging and commit/release review. No push, merge, deployment, hosted mutation, or Production change occurred.
+The hardened D-169/D-170 packet passed independent books, privacy, and Worker/UI review with no open P0/P1/P2. Commit `57c5537ee676c3c80c1d94340eb0662e34e462c1` was pushed and deployed as Worker version `f4876180-0819-4972-aab0-c99d269d007d`. No schema, secret, provider, or household-data mutation occurred.

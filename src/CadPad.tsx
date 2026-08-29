@@ -8,19 +8,23 @@ export function CadPad({
   label,
   unit = "cad",
   maxCents,
+  emptyDisplay,
 }: {
   digits: string;
   onDigits: (next: string) => void;
   label: string;
   unit?: "cad" | "hours";
   maxCents?: number;
+  emptyDisplay?: string;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const cap = maxCents ?? (unit === "hours" ? 2400 : 99_999_999);
   const cents = Number(digits || "0");
-  const display = unit === "hours"
-    ? `${dollarsFromCentsDigits(digits)} h`
-    : formatCad(cents);
+  const display = digits === "" && emptyDisplay
+    ? emptyDisplay
+    : unit === "hours"
+      ? `${dollarsFromCentsDigits(digits)} h`
+      : formatCad(cents);
 
   useEffect(() => {
     const el = root.current;

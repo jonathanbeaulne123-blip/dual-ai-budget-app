@@ -26,6 +26,7 @@ import {
 } from "./imports/evidenceClient.ts";
 import { importSevenShiftsFromGmail, type GmailSevenShiftsImportProgress } from "./google/gmailSevenShifts.ts";
 import { coworkerRosterDraft, type CoworkerRosterImportDraft } from "./imports/coworkerRosterDraft.ts";
+import { approvedPunchShiftDrafts, type ApprovedPunchShiftDraft } from "./imports/evidenceShiftDraft.ts";
 
 function captureKind(file: File): string {
   const name = file.name.toLowerCase();
@@ -71,6 +72,7 @@ export function SevenShiftsEvidenceCenter({
   busy: parentBusy,
   onSaveSchedule,
   onImportCoworkers,
+  onUseShiftDraft,
 }: {
   household: Household;
   memberId: string;
@@ -79,6 +81,7 @@ export function SevenShiftsEvidenceCenter({
   busy: boolean;
   onSaveSchedule: (rows: SevenShiftsScheduledShift[], confirmedPersonalFeed?: boolean) => void;
   onImportCoworkers?: (input: CoworkerRosterImportDraft) => void;
+  onUseShiftDraft?: (candidate: ApprovedPunchShiftDraft) => void;
 }) {
   const scope = useMemo<EvidenceScope>(() => ({ environment: household.environment, householdId: household.householdId, memberId }), [household.environment, household.householdId, memberId]);
   const scopeKey = `${scope.environment}:${scope.householdId}:${scope.memberId}`;
@@ -344,6 +347,10 @@ export function SevenShiftsEvidenceCenter({
   const disabled = parentBusy || busy || !available;
   const memberJobs = (household.workJobs ?? []).filter((job) => job.active && job.memberId === memberId);
   const rosterRows = coworkerRosterDraft(selectedDerived);
+  const punchDrafts = approvedPunchShiftDrafts(selectedDerived, memberJobs.map((job) => ({
+    jobId: job.id,
+    activeRoleIds: job.roles.filter((role) => role.active).map((role) => role.id),
+  })));
   const rosterResponseCount = rosterRows.filter((row) => row.source === "seven-shifts-roster").length;
   const scheduleObservationCount = rosterRows.length - rosterResponseCount;
   const scheduleDates = rosterRows.flatMap((row) => row.scheduledWindows ?? []).map((row) => row.date).sort();
@@ -427,6 +434,16 @@ export function SevenShiftsEvidenceCenter({
       {selectedDerived ? <article ref={reviewRef} tabIndex={-1} className="preview" aria-label="Extracted evidence facts">
         <header><h3>Extracted facts</h3><button type="button" className="chip" onClick={() => { setSelectedDerived(null); setReplaceScheduleRange(false); }}>Close</button></header>
         <p className="muted">{selectedDerived.observations.length} recognized fact{selectedDerived.observations.length === 1 ? "" : "s"} · {selectedDerived.schemaDrift.length} unrecognized field{selectedDerived.schemaDrift.length === 1 ? "" : "s"} preserved · {selectedDerived.state.replace(/_/g, " ")}</p>
+        {punchDrafts.length ? <div className="stack-list" aria-label="Approved punch Shift drafts">
+          <p><strong>{punchDrafts.length} approved worked punch{punchDrafts.length === 1 ? "" : "es"}</strong></p>
+          <p className="muted">Use one to prefill Shift review. Tips, sales, covers, and staffing stay blank; this action never posts.</p>
+          {punchDrafts.map((candidate) => (
+            <article className="work-shift-history-row" key={candidate.canonicalShiftKey}>
+              <div><strong>{candidate.draft.date} · {Number(candidate.draft.workedHours).toFixed(2)} h</strong><p className="muted">{candidate.finality}{candidate.missingPaidBreak ? " · paid break missing" : ` · ${Number(candidate.draft.paidBreakHours).toFixed(2)} h paid break`}</p></div>
+              <button type="button" className="primary" disabled={disabled || !onUseShiftDraft} onClick={() => onUseShiftDraft?.(candidate)}>Use as Shift draft</button>
+            </article>
+          ))}
+        </div> : null}
         {rosterRows.length ? <div className="stack-list" aria-label="Coworker identity review">
           <p><strong>{rosterRows.length} coworker{rosterRows.length === 1 ? "" : "s"} found</strong></p>
           <p className="muted">{rosterResponseCount ? `${rosterResponseCount} from a roster response` : ""}{rosterResponseCount && scheduleObservationCount ? " · " : ""}{scheduleObservationCount ? `${scheduleObservationCount} observed on published schedules` : ""}. These become private coworker IDs, not household members. Roles are observations for this job and location.</p>

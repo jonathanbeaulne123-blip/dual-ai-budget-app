@@ -1,6 +1,6 @@
 # Hearth worksession — real 7shifts visible schedule capture
 
-- **Status:** ACCEPTANCE PROVED — ready for independent review
+- **Status:** RELEASED — pushed and kitchen live
 - **Opened:** 2026-08-28 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -83,4 +83,4 @@ Jonathan can explicitly capture the employee-visible 7shifts week grid into his 
 
 ## Handoff
 
-The D-169 acceptance smoke is complete. Next owner is an independent reviewer of the exact local diff; push, merge, and deploy remain separate decisions.
+Independent books, privacy, and Worker/UI review passed with no open P0/P1/P2. Commit `57c5537ee676c3c80c1d94340eb0662e34e462c1` was pushed to `codex/d169-visible-schedule-capture` and deployed as Worker version `f4876180-0819-4972-aab0-c99d269d007d`; the kitchen returned HTTP 200. The follow-up approved-punch draft is a separate branch and release decision.

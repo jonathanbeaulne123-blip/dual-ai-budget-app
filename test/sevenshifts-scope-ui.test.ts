@@ -258,9 +258,19 @@ describe("7shifts Timesheet scope boundary", () => {
     expect(container.querySelector(".cad-pad-label")?.textContent).toBe("Second sales");
     const one = Array.from(container.querySelectorAll(".cad-pad-keys button")).find((button) => button.getAttribute("aria-label") === "1") as HTMLButtonElement;
     act(() => one.click());
+    const enterZero = (label: string) => {
+      const choice = Array.from(container.querySelectorAll("button")).find((button) => button.textContent?.startsWith(`${label} ·`)) as HTMLButtonElement;
+      act(() => choice.click());
+      const pad = Array.from(container.querySelectorAll<HTMLElement>(".cad-pad")).find((row) => row.textContent?.includes(label))!;
+      const zero = Array.from(pad.querySelectorAll("button")).find((button) => button.getAttribute("aria-label") === "0") as HTMLButtonElement;
+      act(() => zero.click());
+    };
+    enterZero("Cash tips");
+    enterZero("Card tips");
     const customers = Array.from(container.querySelectorAll("input")).find((input) => input.parentElement?.textContent?.includes("Customers served")) as HTMLInputElement;
+    const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
     act(() => {
-      customers.value = "12";
+      valueSetter.call(customers, "12");
       customers.dispatchEvent(new Event("input", { bubbles: true }));
       customers.dispatchEvent(new Event("change", { bubbles: true }));
     });

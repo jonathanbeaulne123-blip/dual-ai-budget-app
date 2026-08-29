@@ -235,6 +235,22 @@ describe("job-based shift foundation", () => {
     expect(() => postWorkShift(saved, { ...input, paidBreakHours: 0, sevenShiftsEvidenceBundle: missingBreak })).toThrow(/paidBreakMinutes requires an explicit evidence authority/i);
   });
 
+  it("requires explicit break, sales, and tip zeroes at the ordinary work boundary", () => {
+    const saved = upsertWorkJob(catalogHousehold(), { job: job() }).household;
+    const savedJob = saved.workJobs[0]!;
+    const base = {
+      date: "2026-08-30", memberId: "MEM-002", jobId: savedJob.id, roleId: "ROLE-SERVER",
+      workedHours: 4, paidBreakHours: 0, salesByField: { FOOD: 0 }, cashTips: 0, cardTips: 0,
+      customersServed: 0, staffingCount: 4, eventTag: "regular", createdBy: "MEM-002", confirmDuplicate: true,
+    };
+    expect(() => postWorkShift(saved, { ...base, paidBreakHours: undefined })).toThrow(/paid-break hours, including 0/i);
+    expect(() => postWorkShift(saved, { ...base, salesByField: {} })).toThrow(/Food, including 0/i);
+    expect(() => postWorkShift(saved, { ...base, cashTips: undefined })).toThrow(/cash tips, including 0/i);
+    expect(() => postWorkShift(saved, { ...base, cardTips: undefined })).toThrow(/card tips, including 0/i);
+    const posted = postWorkShift(saved, base);
+    expect(posted.household.shifts.at(-1)).toMatchObject({ salesCents: 0, cashTipsCents: 0, ccTipsCents: 0, paidBreakHours: 0 });
+  });
+
   it("reconciles an evidence revision as one balanced payroll-week correction", () => {
     const saved = upsertWorkJob(catalogHousehold(), { job: job() }).household;
     const savedJob = saved.workJobs[0]!;
@@ -392,6 +408,7 @@ describe("job-based shift foundation", () => {
       jobId: savedJob.id,
       roleId: "ROLE-SERVER",
       workedHours: 5,
+      paidBreakHours: 0,
       salesByField: { FOOD: 800 },
       cashTips: 40,
       cardTips: 90,
@@ -423,7 +440,7 @@ describe("job-based shift foundation", () => {
     const savedJob = saved.workJobs[0]!;
     const posted = postWorkShift(saved, {
       date: "2026-08-31", memberId: "MEM-002", jobId: savedJob.id, roleId: "ROLE-SERVER",
-      workedHours: 4, salesByField: { FOOD: 500 }, cashTips: 25, cardTips: 75,
+      workedHours: 4, paidBreakHours: 0, salesByField: { FOOD: 500 }, cashTips: 25, cardTips: 75,
       cashTipsAccountId: "ACC-CASH", confirmDuplicate: true, createdBy: "MEM-002",
     
       customersServed: 40,
@@ -446,7 +463,7 @@ describe("job-based shift foundation", () => {
     const savedJob = saved.workJobs[0]!;
     const posted = postWorkShift(saved, {
       date: "2026-08-31", memberId: "MEM-002", jobId: savedJob.id, roleId: "ROLE-SERVER",
-      workedHours: 4, salesByField: { FOOD: 500 }, cashTips: 25, cardTips: 75,
+      workedHours: 4, paidBreakHours: 0, salesByField: { FOOD: 500 }, cashTips: 25, cardTips: 75,
       cashTipsAccountId: "ACC-CASH", confirmDuplicate: true, createdBy: "MEM-002",
     
       customersServed: 40,
@@ -473,7 +490,7 @@ describe("job-based shift foundation", () => {
     const savedJob = saved.workJobs[0]!;
     const posted = postWorkShift(saved, {
       date: "2026-08-31", memberId: "MEM-002", jobId: savedJob.id, roleId: "ROLE-SERVER",
-      workedHours: 4, salesByField: { FOOD: 500 }, cashTips: 25, cardTips: 75,
+      workedHours: 4, paidBreakHours: 0, salesByField: { FOOD: 500 }, cashTips: 25, cardTips: 75,
       cashTipsAccountId: "ACC-CASH", confirmDuplicate: true, createdBy: "MEM-002",
     
       customersServed: 40,

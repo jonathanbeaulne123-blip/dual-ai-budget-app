@@ -716,7 +716,7 @@ describe("Evidence Mesh Worker", () => {
         path: "/api/v2/company/44/time_punches",
         capturedAt: "2026-08-28T21:01:00.000Z",
         contentType: "application/json",
-        body: { data: [{ id: 1, user_id: 77, clocked_in: "2026-08-28T13:00:00Z", clocked_out: "2026-08-28T21:00:00Z", approved: true, unknown_future_flag: "kept" }] },
+        body: { data: [{ id: 1, user_id: 77, clocked_in: "2026-08-28T13:00:00Z", clocked_out: "2026-08-28T21:00:00Z", breaks: [], approved: true, unknown_future_flag: "kept" }] },
       }),
     }), bindings);
     const evidenceId = (await uploaded.json() as any).capture.evidenceId;

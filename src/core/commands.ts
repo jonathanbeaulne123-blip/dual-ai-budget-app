@@ -585,7 +585,7 @@ export function postShift(household: Household, input: {
   }
   const tippedLegacy = parsed.cashTipsCents > 0 || parsed.ccTipsCents > 0 || parsed.salesCents > 0;
   const covariates = tippedLegacy
-    ? parseTippedShiftCovariates(input, { requireSales: true, salesCents: parsed.salesCents })
+    ? parseTippedShiftCovariates(input, { requireSales: true, hasExplicitSales: hasExplicitValue(input.sales) })
     : parseOptionalShiftCovariates(input);
   const amounts = calcShiftAmounts(parsed, settings);
   const previous = cloneHousehold(household);
@@ -670,6 +670,10 @@ function optionalMoneyCents(value: string | number | undefined, label: string): 
   return parseAmount(value, label);
 }
 
+function hasExplicitValue(value: unknown): boolean {
+  return value !== undefined && value !== null && (typeof value !== "string" || value.trim() !== "");
+}
+
 type ShiftCovariateFields = {
   customersServed?: number;
   staffingCount?: number;
@@ -714,9 +718,9 @@ function parseTippedShiftCovariates(input: {
   staffingCount?: string | number;
   eventTag?: string;
   weatherGlass?: string;
-}, opts: { requireSales: boolean; salesCents: number }): Required<Pick<ShiftCovariateFields, "customersServed" | "staffingCount" | "eventTag">> & Pick<ShiftCovariateFields, "weatherGlass"> {
-  if (opts.requireSales && !(opts.salesCents > 0)) {
-    throw new ValidationError("Enter sales before confirming a tipped shift.");
+}, opts: { requireSales: boolean; hasExplicitSales: boolean }): Required<Pick<ShiftCovariateFields, "customersServed" | "staffingCount" | "eventTag">> & Pick<ShiftCovariateFields, "weatherGlass"> {
+  if (opts.requireSales && !opts.hasExplicitSales) {
+    throw new ValidationError("Enter sales, including 0 when sales were zero, before confirming a tipped shift.");
   }
   return {
     customersServed: parseRequiredInteger(input.customersServed, "Customers served", 0, 5000),
@@ -845,26 +849,33 @@ export function postWorkShift(household: Household, input: PostWorkShiftInput): 
   if (role.tipped && !job.cardTipsReceivableAccountId) throw new ValidationError("This tipped job needs a Card tips owed account. Edit the job once to repair it.");
 
   const workedHours = Number(input.workedHours);
-  const paidBreakHours = Number(input.paidBreakHours || 0);
+  if (!hasExplicitValue(input.paidBreakHours)) throw new ValidationError("Enter paid-break hours, including 0 when there was no paid break.");
+  const paidBreakHours = Number(input.paidBreakHours);
   if (input.sevenShiftsEvidence !== undefined || input.sevenShiftsScreenEvidence !== undefined) {
     if (input.sevenShiftsEvidence !== undefined && input.sevenShiftsScreenEvidence !== undefined) {
       throw new ValidationError("A shift cannot attach separate 7shifts punch and screenshot evidence. Build one validated evidence bundle.");
     }
     throw new ValidationError("Legacy 7shifts evidence payloads are no longer accepted. Build one validated evidence bundle.");
   }
-  const salesByField = Object.fromEntries(Object.entries(input.salesByField ?? {}).map(([id, value]) => [id, optionalMoneyCents(value, "Sales")]));
+  const inputSalesByField = input.salesByField ?? {};
   for (const field of job.salesFields.filter((row) => row.requirement === "required")) {
-    if (!(field.id in salesByField)) throw new ValidationError(`Enter ${field.label} before confirming this shift.`);
+    if (!hasExplicitValue(inputSalesByField[field.id])) throw new ValidationError(`Enter ${field.label}, including 0 when it was zero, before confirming this shift.`);
   }
+  const salesByField = Object.fromEntries(Object.entries(inputSalesByField)
+    .filter(([, value]) => hasExplicitValue(value))
+    .map(([id, value]) => [id, optionalMoneyCents(value, "Sales")]));
   const fieldSalesCents = Object.values(salesByField).reduce((sum, value) => sum + value, 0);
-  const salesCents = fieldSalesCents || optionalMoneyCents(input.sales, "Sales");
+  const hasExplicitSales = Object.keys(salesByField).length > 0 || hasExplicitValue(input.sales);
+  const salesCents = Object.keys(salesByField).length > 0 ? fieldSalesCents : optionalMoneyCents(input.sales, "Sales");
+  if (role.tipped && !hasExplicitValue(input.cashTips)) throw new ValidationError("Enter cash tips, including 0 when there were none.");
+  if (role.tipped && !hasExplicitValue(input.cardTips)) throw new ValidationError("Enter card tips, including 0 when there were none.");
   const cashTipsCents = optionalMoneyCents(input.cashTips, "Cash tips");
   const cardTipsCents = optionalMoneyCents(input.cardTips, "Card tips");
   if (!role.tipped && (cashTipsCents || cardTipsCents)) throw new ValidationError(`${role.name} is not configured as a tipped role.`);
   const covariates = role.tipped
     ? parseTippedShiftCovariates(input, {
       requireSales: job.salesFields.some((field) => field.requirement !== "off"),
-      salesCents,
+      hasExplicitSales,
     })
     : parseOptionalShiftCovariates(input);
 

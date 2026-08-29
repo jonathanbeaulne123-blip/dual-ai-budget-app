@@ -30,6 +30,7 @@ import { WorkShiftWithSevenShifts } from "./WorkShiftWithSevenShifts.tsx";
 import { WorkShiftHistoryCard } from "./WorkShiftHistory.tsx";
 import { SevenShiftsEvidenceCenter } from "./SevenShiftsEvidenceCenter.tsx";
 import { createShiftScanScope } from "./shiftScanScope.ts";
+import type { ApprovedPunchShiftDraft } from "./imports/evidenceShiftDraft.ts";
 
 type ShiftPane = "today" | "report" | "jobs" | "evidence";
 
@@ -461,6 +462,16 @@ export function WorkShiftPage({
             busy={busy}
             onSaveSchedule={onSaveSevenShiftsSchedule}
             onImportCoworkers={onImportCoworkers}
+            onUseShiftDraft={(candidate: ApprovedPunchShiftDraft) => {
+              shiftScanScopeRef.current.cancel();
+              setWorkShiftDraft(candidate.draft);
+              setShiftScanWarnings(candidate.missingPaidBreak ? ["7shifts did not state paid-break minutes. Enter 0 only when there was no paid break."] : []);
+              setShiftScanError("");
+              setShiftsWhenReviewOpened(household.shifts.filter((shift) => shift.memberId === memberId).length);
+              setFinishedReview(true);
+              setPane("today");
+              window.requestAnimationFrame(() => document.getElementById("shift-tab-today")?.focus());
+            }}
           />
         </div>
       )}

@@ -1,6 +1,6 @@
 # Hearth worksession — real 7shifts visible timesheet capture
 
-- **Status:** ACCEPTANCE PROVED — ready for independent review
+- **Status:** RELEASED — pushed and kitchen live
 - **Opened:** 2026-08-28 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -57,4 +57,4 @@ Jonathan can select a visible 7shifts My Timesheets pay period and capture its e
 
 ## Handoff
 
-D-170 local implementation and real Development smoke are complete. Next owner is an independent reviewer of the exact dirty packet. Push, merge, and deploy remain separate decisions.
+D-170 passed independent books, privacy, and Worker/UI review with no open P0/P1/P2. Commit `57c5537ee676c3c80c1d94340eb0662e34e462c1` was pushed to `codex/d169-visible-schedule-capture` and deployed as Worker version `f4876180-0819-4972-aab0-c99d269d007d`; the kitchen returned HTTP 200. The approved-punch Shift-draft handoff is tracked separately.

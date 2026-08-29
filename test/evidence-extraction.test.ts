@@ -132,8 +132,35 @@ describe("D-158 deterministic Evidence extraction", () => {
     expect(field(record, "startedAt")?.value).toBe("2026-08-15T20:30:00.000Z");
     expect(field(record, "endedAt")?.value).toBe("2026-08-16T02:31:00.000Z");
     expect(field(record, "approved")?.value).toBe(true);
+    expect(record.paidBreakMinutes).toBeNull();
+    expect(field(record, "paidBreakMinutes")).toBeUndefined();
     expect(field(record, "reportedWagesCents")).toBeUndefined();
     expect(field(record, "finalWagesCents")).toBeUndefined();
+  });
+
+  it("parses explicit break labels while preserving an unlabeled duration as unknown", () => {
+    const derive = (breaksLabel: string | null) => deriveEvidenceBytes({
+      captureKind: "browser-structured",
+      contentType: "application/json",
+      bytes: browserBytes("punch", "/my_timesheets", { timesheets: [{
+        date: "2026-08-15", start_time: "4:30 pm", end_time: "10:30 pm",
+        breaks_label: breaksLabel, hours: 5.5, approval_status: "Approved", closed: true,
+      }] }),
+    }).records[0]!;
+    const none = derive("No breaks");
+    expect(none.paidBreakMinutes).toBe(0);
+    expect(field(none, "paidBreakMinutes")?.value).toBe(0);
+    expect(field(none, "unpaidBreakMinutes")?.value).toBe(0);
+
+    const labelled = derive("15 min paid / 30 min unpaid");
+    expect(labelled.paidBreakMinutes).toBe(15);
+    expect(field(labelled, "unpaidBreakMinutes")?.value).toBe(30);
+
+    const ambiguous = derive("30 min");
+    expect(ambiguous.paidBreakMinutes).toBeNull();
+    expect(field(ambiguous, "paidBreakMinutes")).toBeUndefined();
+    expect(field(ambiguous, "unpaidBreakMinutes")).toBeUndefined();
+    expect(field(ambiguous, "breakLabel")?.value).toBe("30 min");
   });
 
   it("extracts employee Timesheet/Tip Report CSV without inferring identity from a name", () => {

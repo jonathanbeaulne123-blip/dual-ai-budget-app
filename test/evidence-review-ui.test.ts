@@ -27,8 +27,22 @@ vi.mock("../src/imports/evidenceClient.ts", () => ({
     state: "ready_to_review",
     parserVersion: "hearth-s7-extract-v2",
     schemaFingerprint: "fixture",
-    derivatives: [],
-    observations: [{ observationId: "obs-1", canonicalShiftKey: "shift-1", field: "workedMinutes", value: 361, unit: "minutes", sourceLocation: "timesheet.hours", confidenceBps: 10_000, finality: "final", extractionMethod: "structured", conflictState: "clear", createdAt: "2026-08-29T01:18:34.956Z" }],
+    derivatives: [{
+      canonicalShiftKey: "shift-1", parserVersion: "hearth-s7-extract-v2", schemaFingerprint: "fixture",
+      facts: { version: 1, mappingState: "mapped", bundleFacts: {
+        canonicalShiftKey: "shift-1", providerSubjectKey: "s7subject_abcdefghijklmnopqrstuvwxyz",
+        providerResourceKind: "worked-shift", jobId: "JOB-HARBOUR",
+        startedAt: "2026-08-15T20:30:00.000Z", endedAt: "2026-08-16T02:31:00.000Z",
+        workedMinutes: 361, paidBreakMinutes: null, finality: "final",
+      } }, createdAt: "2026-08-29T01:18:34.956Z",
+    }],
+    observations: [
+      ["approved", true, "boolean"],
+      ["date", "2026-08-15", "date"],
+      ["startedAt", "2026-08-15T20:30:00.000Z", "iso-time"],
+      ["endedAt", "2026-08-16T02:31:00.000Z", "iso-time"],
+      ["workedMinutes", 361, "minutes"],
+    ].map(([field, value, unit], index) => ({ observationId: `obs-${index}`, canonicalShiftKey: "shift-1", field, value, unit, sourceLocation: `timesheet.${field}`, confidenceBps: 10_000, finality: "final", extractionMethod: "structured", conflictState: "clear", createdAt: "2026-08-29T01:18:34.956Z" })),
     schemaDrift: [],
   })),
   deleteEvidence: vi.fn(),
@@ -77,5 +91,41 @@ describe("Evidence derived review placement", () => {
     expect(panel?.textContent).toContain("worked minutes");
     expect(document.activeElement).toBe(panel);
     expect(panel && firstCapture && Boolean(panel.compareDocumentPosition(firstCapture) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+  });
+
+  it("offers an approved punch as a Shift draft without posting it", async () => {
+    const household = seedDemoHousehold({ today: "2026-08-28", environment: "development" });
+    household.workJobs = [{
+      id: "JOB-HARBOUR", memberId: "MEM-001", name: "Harbour", color: "#a85a3d", active: true,
+      timezone: "America/Toronto", locationName: "Toronto", gpsEnabled: false,
+      roles: [{ id: "ROLE-SERVER", name: "Server", tipped: true, active: true, rates: [], createdAt: "", updatedAt: "" }],
+      paidBreakRate: "role", paidBreakHourlyRateCents: 0, overtimeEnabled: false, overtimeWeeklyThresholdHours: 44, overtimeMultiplier: 1.5,
+      tipOutRules: [], salesFields: [],
+      paySchedule: { cadence: "biweekly", anchorDate: "2026-01-02", weekday: 5, monthDays: [15, 30], customDates: [], reminderTime: "09:00" },
+      tipSchedule: { cadence: "weekly", anchorDate: "2026-01-02", weekday: 5, monthDays: [15, 30], customDates: [], reminderTime: "09:00" },
+      tipWeekStartsOn: 1,
+      defaults: { wagesVisibility: "personal", cashTipsVisibility: "personal", cardTipsVisibility: "personal", tipOutVisibility: "personal", wagesDepositAccountId: "", cashTipsAccountId: "", cardTipsDepositAccountId: "" },
+      wagesReceivableAccountId: "", cardTipsReceivableAccountId: "", note: "", createdAt: "", updatedAt: "",
+    }];
+    const used: unknown[] = [];
+    await act(async () => {
+      root.render(createElement(SevenShiftsEvidenceCenter, {
+        household, memberId: "MEM-001", memberName: "Bianca", today: "2026-08-28", busy: false,
+        onSaveSchedule: () => {},
+        onUseShiftDraft: (candidate: unknown) => used.push(candidate),
+      }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    const review = Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "Review facts")!;
+    await act(async () => {
+      review.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    const use = Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "Use as Shift draft")!;
+    expect(use).toBeTruthy();
+    expect(container.textContent).toContain("paid break missing");
+    act(() => use.click());
+    expect(used).toHaveLength(1);
+    expect(used[0]).toMatchObject({ missingPaidBreak: true, draft: { workedHours: 6.02 } });
   });
 });
