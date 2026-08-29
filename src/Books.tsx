@@ -294,8 +294,9 @@ export function BooksPage({
       )}
       {pane === "register" && (
         <LedgerPage
-          household={household}
+          household={sharedTable ? household : walletHousehold}
           writeHousehold={booksHousehold}
+          presentedTransactions={!sharedTable}
           memberId={memberId}
           view={view}
           sourceFocus={sourceFocus?.route === "ledger" ? sourceFocus : null}

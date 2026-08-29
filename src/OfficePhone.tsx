@@ -241,9 +241,9 @@ export function OfficePhone({
         <WaxSeal
           label="Leftover spend"
           tone="close"
-          pending={seals.leftoverCents <= 0}
           value={formatCad(seals.leftoverCents)}
-          sub="for Kitty Banks after the month"
+          sub="posted in minus posted expenses"
+          pending={seals.inCents === 0 && seals.outCents === 0}
           onClick={() => onGo("plan")}
         />
       </div>

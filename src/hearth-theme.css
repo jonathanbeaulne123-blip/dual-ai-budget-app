@@ -289,10 +289,10 @@ button.hearth-paper-tile:focus-visible {
   top: 6px;
   right: 8px;
   z-index: 4;
-  width: 22px;
-  height: 22px;
-  min-width: 22px;
-  min-height: 22px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0;
   border: 0;
   border-radius: 99px;

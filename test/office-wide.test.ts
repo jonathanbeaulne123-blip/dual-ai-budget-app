@@ -4,6 +4,7 @@ import {
   addRecurrence,
   buildDashboard,
   catalogHousehold,
+  postEntry,
   categorySpendBars,
   defaultLayout,
   deskFaceOf,
@@ -101,6 +102,15 @@ describe("wide paper infographics", () => {
   it("keeps unpaid repeating bills out of Money out and leftover spend", () => {
     const today = "2026-09-01";
     let household = catalogHousehold();
+    household = postEntry(household, {
+      date: today,
+      type: "income",
+      amount: 2000,
+      accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-INCOME-BIANCA",
+      note: "Pay",
+      confirmDuplicate: true,
+    }).household;
     household = addRecurrence(household, {
       cadence: "monthly",
       nextDate: today,
@@ -115,6 +125,7 @@ describe("wide paper infographics", () => {
     expect(seals.outCents).toBe(0);
     expect(seals.leftoverCents).toBe(seals.inCents);
     expect(leftoverProjection(household, today).billsNext30Cents).toBeGreaterThan(0);
+    expect(leftoverProjection(household, today).leftoverCents).not.toBe(seals.leftoverCents);
   });
 });
 

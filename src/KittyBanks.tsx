@@ -243,7 +243,7 @@ export function KittyBanks({
       {pending ? (
         <ConfirmSheet
           title="Confirm this bank"
-          body={`Post ${pending.amount} CAD into ${pending.name}. This writes a transfer from chequing into the goal.`}
+          body={`Post ${pending.amount} CAD into ${pending.name} from ${booksHousehold.accounts.find((account) => account.id === pending.fromAccountId)?.name ?? "the source account"}. This writes a transfer into the goal.`}
           extra="Kitty Banks are existing goals. Confirm is the money boundary."
           confirmLabel="Confirm"
           busy={busy}

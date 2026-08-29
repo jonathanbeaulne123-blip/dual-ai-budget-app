@@ -6,6 +6,7 @@ const office = readFileSync(new URL("../src/Office.tsx", import.meta.url), "utf8
 const officePhone = readFileSync(new URL("../src/OfficePhone.tsx", import.meta.url), "utf8");
 const officeWide = readFileSync(new URL("../src/OfficeWide.tsx", import.meta.url), "utf8");
 const books = readFileSync(new URL("../src/Books.tsx", import.meta.url), "utf8");
+const ledger = readFileSync(new URL("../src/Ledger.tsx", import.meta.url), "utf8");
 const calendar = readFileSync(new URL("../src/Calendar.tsx", import.meta.url), "utf8");
 const shift = readFileSync(new URL("../src/WorkShiftPage.tsx", import.meta.url), "utf8");
 const css = readFileSync(new URL("../src/ledger-story.css", import.meta.url), "utf8");
@@ -143,8 +144,10 @@ describe("D-164 ledger story UI fences", () => {
     expect(books).toContain("personalBooksFloor(booksHousehold, memberId)");
     expect(books).toContain("books-floor");
     expect(books).toContain("Shared is one account");
-    expect(officeWide).toContain("office-wide-banks");
-    expect(officeWide).toContain("Money in");
+    expect(officeWide).toContain("posted in minus posted expenses");
+    expect(officeWide).toContain("onGo(\"plan\")");
+    expect(books).toContain("presentedTransactions={!sharedTable}");
+    expect(ledger).toContain("presentedTransactions");
     expect(officePhone).toContain("Leftover spend");
     expect(officePhone).toContain('onGo("plan")');
     expect(calendar).toContain("dayOpen");

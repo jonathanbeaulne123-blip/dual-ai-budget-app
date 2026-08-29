@@ -1775,11 +1775,11 @@ input, select, textarea {
   flex-wrap: wrap;
   justify-content: center;
 }
-@media (prefers-reduced-motion: reduce) {
-  .paper-bank-shape { transition: none; }
-}
 .paper-bank-shape {
   transition: width 220ms ease, height 220ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .paper-bank-shape { transition: none; }
 }
 
 @media (max-width: 520px) {

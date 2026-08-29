@@ -30,6 +30,7 @@ const SECTIONS: { id: LedgerSection; label: string }[] = [
 export function LedgerPage({
   household,
   writeHousehold = household,
+  presentedTransactions = false,
   memberId,
   view,
   sourceFocus,
@@ -39,6 +40,7 @@ export function LedgerPage({
 }: {
   household: Household;
   writeHousehold?: Household;
+  presentedTransactions?: boolean;
   memberId: string;
   view: LedgerView;
   sourceFocus: HerculesNumberSource | null;
@@ -50,8 +52,10 @@ export function LedgerPage({
   const [query, setQuery] = useState("");
   const [showContrast, setShowContrast] = useState(true);
   const visible = useMemo(
-    () => household.transactions.filter((tx) => isVisibleInView(tx, memberId, view)),
-    [household.transactions, memberId, view],
+    () => presentedTransactions
+      ? household.transactions
+      : household.transactions.filter((tx) => isVisibleInView(tx, memberId, view)),
+    [household.transactions, memberId, view, presentedTransactions],
   );
   const sourceRows = useMemo(() => {
     return transactionsForHerculesSource(visible, sourceFocus);
