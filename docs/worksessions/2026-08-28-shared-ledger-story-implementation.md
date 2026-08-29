@@ -7,7 +7,7 @@
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `cursor/shared-ledger-story-aef7`
 - **Baseline SHA:** `871e6607b4bc6a5d653f9e9bbcc9131f9a07dc65`
-- **Head SHA:** `ad48fad396dc6d9026cf2dee54d97ea656e87859` (kitchen composition; calendar day-label spacing may follow)
+- **Head SHA:** `2033d2885b786fdc698bb2b42c13a35fa9f55dfc` (Shared Household table; honest Personal copy)
 - **PR or issue:** draft [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244)
 - **Risk:** High review gate (ledger-mode privacy and financial presentation)
 - **Decision owner:** Jonathan
@@ -80,7 +80,7 @@ Opening Shared Ledger feels like sitting down at the household table: what is tr
 - 2026-08-28: `dd4fe43` Shared due Confirm posts only visible recurrence ids; Personal Rec does not default to Shared chart.
 - 2026-08-28: `pnpm check` at `dd4fe43` → 1100 passed / 2 skipped; build green.
 - 2026-08-28: localhost demo kitchen as Jonathan; Shared Home 1280, Books Fund pane, phone 320 purpose heading.
-- 2026-08-28: `53799f9` Shared Household table — drop Books/net-worth landing; Audit collapsed. `pnpm check` → 1102 passed / 2 skipped. Visual: Shared hero $12234.19 cash, not $13789.50.
+- 2026-08-28: `2033d28` honest Personal copy; `pnpm check` → 1102 passed / 2 skipped. Visual Goal savings $1940 pigs-only; Shared hero $12234.19 cash.
 
 ## Decisions
 

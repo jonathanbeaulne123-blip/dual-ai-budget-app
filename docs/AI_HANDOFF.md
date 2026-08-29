@@ -2,7 +2,7 @@
 
 ## D-164 Shared Household table (not Books) (2026-08-28)
 
-**Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7`. **Not merged, not deployed, not live.** Risk: **High** (ledger-mode financial presentation).
+**Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7` @ `2033d28`. **Not merged, not deployed, not live.** Risk: **High** (ledger-mode financial presentation).
 
 **Household outcome:** Shared keeps a deep **Household table** room (Fund, cash, cards, activity, import). It does not keep a Shared “Books / household story / double-entry / net worth / P&L” landing. Personal still opens **My books** on position. Audit (journal, trial, statements, rec, close) stays on Shared behind a closed disclosure.
 
@@ -20,9 +20,9 @@
 - PGlite / hosted storage notes move into Shared Audit, not the table opening.
 
 **Verification:**
-- Focused `test/ledger-story-ui.test.ts`, `test/accounts.test.ts`, `test/ledger-experience.test.ts`, `test/household-fund-ui.test.ts`, `test/ledger-story-dom.test.ts`, `test/office-wide.test.ts` green (39 passed).
-- `pnpm check` at `53799f9` → **1102 passed / 2 skipped**, `ai:verify` + `tsc --noEmit` + Vite build green. Follow-up a11y/goals-strip commit pending same gate.
-- Visual, fictional Development demo as Jonathan: Shared Household table hero **$12,234.19** cash (not $13,789.50 net worth); On the table = Fund / Chequing / Goal savings / Credit cards, no Investments tile; Audit collapsed then Trial in balance; Personal My books still **$13,789.50**.
+- Focused `test/ledger-story-ui.test.ts` and `test/accounts.test.ts` green, including goals-only table strip and honest Personal copy fences.
+- `pnpm check` at `53799f9` and `2033d28` → **1102 passed / 2 skipped**, `ai:verify` + `tsc --noEmit` + Vite build green. A parallel `e91bb68` run had two unrelated flakes (`hercules-rig` walk tick, `stress-seed` 15s timeout); both passed on rerun.
+- Visual, fictional Development demo as Jonathan: Shared Household table hero **$12,234.19** cash (not $13,789.50 net worth); On the table Goal savings **$1,940.00** (pigs vault, not $3,440 with HIS); Audit Trial in balance; Personal My books **$13,789.50** with accepted-books copy.
 
 **Data and environment disclosure:**
 - Development impact: none (local/synthetic demo kitchen only)

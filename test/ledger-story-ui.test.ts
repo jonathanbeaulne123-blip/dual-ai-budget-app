@@ -89,7 +89,9 @@ describe("D-164 ledger story UI fences", () => {
 
   it("keeps Books off Shared primary nav and doors it from More", () => {
     expect(app).toContain("kitchenPrimaryNav(view)");
-    expect(app).toContain("Open the household table");
+    expect(books).toContain("accepted-books position");
+    expect(books).not.toContain("Partner Personal rows stay out");
+    expect(app).not.toContain("Partner Personal rows stay out");
     expect(app).not.toContain("Open household table books");
     expect(app).not.toContain("Journal and Fund");
     expect(app).toContain('data-ledger-nav={view === "household" ? "shared" : "personal"}');
