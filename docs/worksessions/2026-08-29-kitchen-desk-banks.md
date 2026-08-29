@@ -1,13 +1,13 @@
 # Hearth worksession — Kitchen desk, Personal books floor, Kitty Banks
 
-- **Status:** OPEN
+- **Status:** CLOSED; IMPLEMENTATION COMPLETE ON #244; AWAITING CODEX INTEGRATION
 - **Opened:** 2026-08-29 (`America/Toronto`)
 - **Owner:** Jonathan
-- **Assignee or AI:** Cursor
+- **Assignee or AI:** Cursor (implementation); Codex (merge onto `main`)
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `cursor/shared-ledger-story-aef7`
 - **Baseline SHA:** `2526af1`
-- **Head SHA:** `af1413f`
+- **Head SHA:** `ed708dc`
 - **PR or issue:** draft [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244)
 - **Risk:** High (ledger-mode presentation, Home CAD seals, Personal account floor)
 - **Decision owner:** Jonathan
@@ -52,7 +52,7 @@ Shared Home is one pool plus Kitty Banks as sub-accounts. Personal Books is the 
 - [x] Personal Books lists joint + own rooms; partner-personal denied; balances include household-visibility posts to shared rooms.
 - [x] Home leftover CAD equals posted income − posted expenses for that ledger; unpaid bills do not enter Money out.
 - [x] Kitty Banks step 0 / 10% / 100% are visually distinct; contribute uses Confirm.
-- [x] Focused tests + `pnpm check` (1115 passed / 2 skipped at `af1413f`).
+- [x] Focused tests + `pnpm check` (1116 passed / 2 skipped at `ed708dc`).
 - [x] Visual proof at 320 / 390 / 720 / ~1100 (recaptured Shared Home, Personal Books, Plan Confirm, OfficePhone seals on this pass).
 
 ## Plan
@@ -67,6 +67,8 @@ Shared Home is one pool plus Kitty Banks as sub-accounts. Personal Books is the 
 - 2026-08-29: Jonathan confirm after locking Personal floor, leftover formula, and fat banks.
 - 2026-08-29: `bb69daf` docs + visual proof. `pnpm check` **1114 passed / 2 skipped**.
 - 2026-08-29: `1a3d006` floor clone denial + Confirm on room interest. `af1413f` partner-goal floor test. `pnpm check` **1115 passed / 2 skipped**.
+- 2026-08-29: `ed708dc` accepted-books Confirm CAD. `pnpm check` **1116 passed / 2 skipped**.
+- 2026-08-29: Jonathan asked for a Codex merge packet so GPT’s `main` work and this desk become one organism without restyling. Packet: [`briefs/CODEX_D165_UX_MAIN_INTEGRATION_HANDOFF_2026-08-29.md`](../briefs/CODEX_D165_UX_MAIN_INTEGRATION_HANDOFF_2026-08-29.md). Kitchen-desk D-165 on this branch collides with `main` D-165; integrator re-homes as D-173.
 
 ## Remaining uncertainty
 
@@ -74,4 +76,4 @@ Sit-down leftover (`cash-like − bills − mins`) stays a different number. Per
 
 ## Handoff
 
-Not merged, not deployed, not live. Next owner: Jonathan review on draft PR #244.
+Not merged, not deployed, not live. Implementation on `#244` @ `ed708dc` is complete. Next owner: **Codex** — [`briefs/CODEX_D165_UX_MAIN_INTEGRATION_HANDOFF_2026-08-29.md`](../briefs/CODEX_D165_UX_MAIN_INTEGRATION_HANDOFF_2026-08-29.md).

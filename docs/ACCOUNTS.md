@@ -2,7 +2,7 @@
 
 **The object is the account:** tap chequing, a card, savings, or the TFSA, then see that account’s activity the way a bank app works.
 
-**D-165:** Personal Books is that floor — household-visible rooms plus this member’s rooms, never partner-personal. Shared is one pool; Kitty Banks are sub-accounts of the pool, not a second room list.
+**D-165 (this branch / PR #244):** Personal Books is that floor — household-visible rooms plus this member’s rooms, never partner-personal. Shared is one pool; Kitty Banks are sub-accounts of the pool, not a second room list. On current `main`, D-165 is Evidence queue batching; Codex integration re-homes this floor law as **D-173**. Do not change the floor meaning.
 
 Mint taught envelopes glued to a feed. YNAB taught a Visa that pretends to be a budget. Hearth already knew a card payment is a transfer (D-016). This floor makes **the financial account** — not the category — how Jonathan and Bianca touch the books.
 

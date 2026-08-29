@@ -1,8 +1,45 @@
 # AI Task and Handoff Standard
 
+## Codex integration packet — kitchen desk UX + current `main` (2026-08-29)
+
+**Status:** Packet on draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) @ `ed708dc`. **Not merged, not deployed, not live.** Risk: **High** (ledger-mode presentation + Shift/Evidence/boot merge + D-165 ID collision).
+
+**Household outcome:** One kitchen: Cursor’s desk grammar (Shared pool, Personal Books floor, leftover spend, fat banks) plus Codex’s current `main` Shift/Evidence/companion/boot work (D-166–D-172, blank `#root` defense, PR #251 labels). GPT may place Shift instruments; it may not restyle the desk.
+
+**Budget delta (5):** `+5` — one organism that keeps leftover spend, accepted-books Confirm CAD, and D-172 Confirm-only posting.
+
+**Engagement delta (3):** `+2` — envelopes and Evidence sit in the paper Shift room; they do not replace Home.
+
+**If they conflicted:** books win. Cut new chrome before changing leftover meaning, exposing partner-personal rooms, posting without Confirm, or replacing wax seals / fat banks / cream Hercules.
+
+**What changed:** Durable Codex contract [`briefs/CODEX_D165_UX_MAIN_INTEGRATION_HANDOFF_2026-08-29.md`](briefs/CODEX_D165_UX_MAIN_INTEGRATION_HANDOFF_2026-08-29.md). No UI merge in this packet.
+
+**Exact SHAs at packet time:**
+- UX `#244` `cursor/shared-ledger-story-aef7` @ `ed708dc358ed808fbc5a9ec89b6c95bdb9a55a60`
+- `origin/main` @ `4b2f40064b526541ef7a20d6e99fc99ca5647baa` (re-fetch before branching)
+- Merge-base `871e6607b4bc6a5d653f9e9bbcc9131f9a07dc65`
+
+**Mandatory ID repair:** `#244` D-165 kitchen desk collides with `main` D-165 Evidence queue batch. Integrator keeps `main` D-165–D-172 and re-homes kitchen-desk law as **D-173**.
+
+**Verification:** Packet SHAs and overlap files verified with `git fetch origin main`, `git merge-base`, and `comm` on both diffs. No `pnpm check` in this docs-only pass (last UX gate: **1116 passed / 2 skipped** at `ed708dc`).
+
+**Data and environment disclosure:**
+- Development impact: none (docs only)
+- Production impact: none
+- Network calls or data sent: GitHub fetch only
+- MCP access: none for household data
+- Hosted rows/schema/secrets/deployments: none
+- Real household or partner-personal data used: none
+
+**Remaining uncertainty:** `main` may move past `4b2f400` before Codex branches; the packet says land on the then-current tip. Visual proof of the *integrated* kitchen does not exist until Codex merges.
+
+**Next owner:** Codex — follow the brief; new branch from current `origin/main`; merge `#244`; vibe lock; `pnpm check`; independent audits; new draft PR. Do not merge or deploy unless Jonathan asks.
+
+**Worksession:** [`worksessions/2026-08-29-codex-ux-main-integration.md`](worksessions/2026-08-29-codex-ux-main-integration.md)
+
 ## D-165 Kitchen desk, Personal books floor, leftover spend (2026-08-29)
 
-**Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7` @ `af1413f`. **Not merged, not deployed, not live.** Risk: **High** (ledger-mode financial presentation; leftover CAD; Personal account journal).
+**Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7` @ `ed708dc`. **Not merged, not deployed, not live.** Risk: **High** (ledger-mode financial presentation; leftover CAD; Personal account journal). Integration onto current `main` is a separate Codex packet (D-173 after ID repair).
 
 **Household outcome:** Shared Home is one pool plus Kitty Banks as sub-accounts. Personal Books is the serious account floor (household-visible rooms plus mine, never partner-personal). Home seals are posted Money in, posted expenses Money out, and leftover spend for Kitty Banks after the month. Fat paper banks grow at 10% of `savedCents`. Setup forms collapse.
 
@@ -38,9 +75,9 @@
 - Hosted rows/schema/secrets/deployments: none
 - Real household or partner-personal data used: none. Demo/synthetic Development only.
 
-**Remaining uncertainty:** Sit-down leftover stays a different number. Personal Home seals still use scoped personal+both. Personal hero, Audit, Ask, and SQL stay on accepted `booksHousehold` with copy that the figure is accepted-books position, not a partner-hidden envelope. Wide 3-column desk is `>=900px`; 720–899 stacks. GCal overlay can still tint by member. Do not rebase onto later `main` unless asked.
+**Remaining uncertainty:** Sit-down leftover stays a different number. Personal Home seals still use scoped personal+both. Personal hero, Audit, Ask, and SQL stay on accepted `booksHousehold` with copy that the figure is accepted-books position, not a partner-hidden envelope. Wide 3-column desk is `>=900px`; 720–899 stacks. GCal overlay can still tint by member. Kitchen-desk law is D-165 **on this branch only**; `origin/main` already used D-165 for Evidence queue — Codex integration renumbers this law to D-173.
 
-**Next owner:** Jonathan — review Shared Home three columns + leftover spend, Personal Books rooms (joint chequing/Visa/TFSA), fat Kitty Banks, Confirm on Fund bank, and Confirm on room interest. Do not merge, rebase, or deploy unless you ask.
+**Next owner:** Codex for merge onto current `main` via [`briefs/CODEX_D165_UX_MAIN_INTEGRATION_HANDOFF_2026-08-29.md`](briefs/CODEX_D165_UX_MAIN_INTEGRATION_HANDOFF_2026-08-29.md). Jonathan reviews the integrated PR. Do not merge, rebase `#244`, or deploy unless Jonathan asks.
 
 **Worksession:** [`worksessions/2026-08-29-kitchen-desk-banks.md`](worksessions/2026-08-29-kitchen-desk-banks.md)
 
