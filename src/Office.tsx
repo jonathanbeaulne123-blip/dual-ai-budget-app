@@ -757,7 +757,7 @@ export function Office({
       "Sit-down",
       <PostcardGlance card={postcard} />,
       `Sit-down. ${postcard.sentence}`,
-      <PostcardBody household={booksHousehold} card={postcard} viewPersonal={view === "personal"} onApply={onSitDown} />,
+      <PostcardBody household={booksHousehold} displayHousehold={household} dashboard={dashboard} view={view} card={postcard} onApply={onSitDown} />,
       { index, pair },
     ),
     cookoff: (index, pair) => frame(

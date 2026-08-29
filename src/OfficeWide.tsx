@@ -14,6 +14,9 @@ import {
   phoneDueBill,
   revealPhoneInstrument,
   shiftPostingStreak,
+  kittyBankBars,
+  kittyBankGlance,
+  kittyBanksInView,
   tipWeekdaySpark,
   toggleInstrumentPin,
   walletWarn,
@@ -50,6 +53,7 @@ import { HangmanBody, HangmanGlance, TicTacToeBody, TicTacToeGlance } from "./wi
 import { NotebookBody, PaperBars, PaperSpark, PaperTile, StoryStrip, WaxSeal } from "./theme/PaperTheme.tsx";
 import { SharedLedgerStory } from "./SharedLedgerStory.tsx";
 import { PersonalLedgerFolio } from "./PersonalLedgerFolio.tsx";
+import { KittyBanks } from "./KittyBanks.tsx";
 import { useFurniture } from "./widgets/useFurniture.ts";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
 
@@ -143,7 +147,7 @@ export function OfficeWide({
   const mosaicInstrumentIds = mosaicItems
     .filter((item): item is Extract<PaperHomeMosaicItem, { slot: "instrument" }> => item.slot === "instrument")
     .map((item) => item.id);
-  const drawer = wideDrawerIds(mosaicInstrumentIds);
+  const drawer = wideDrawerIds(mosaicInstrumentIds, { includeHero: view !== "household" });
 
   const expanded = layout.expanded;
 
@@ -317,7 +321,7 @@ export function OfficeWide({
       name: "Sit-down",
       glance: <PostcardGlance card={postcard} />,
       aria: "Sit-down.",
-      body: <PostcardBody household={booksHousehold} card={postcard} viewPersonal={view === "personal"} onApply={onSitDown} />,
+      body: <PostcardBody household={booksHousehold} displayHousehold={household} dashboard={dashboard} view={view} card={postcard} onApply={onSitDown} />,
     },
     cookoff: {
       kind: "Kitchen",
@@ -374,7 +378,7 @@ export function OfficeWide({
   const openSpec = openId ? (specs[openId] ?? heroSpec) : null;
   const panelId = notebookIsStory ? `wide-notebook-story-${storyPanel}` : `wide-notebook-${openId ?? "blotter"}`;
   const chalkOpen = openId === "chalkboard";
-  const storyTitle = storyPanel === "now" ? "Now"
+  const storyTitle = storyPanel === "now" ? "Kitty Banks"
     : storyPanel === "attention" ? "Attention"
     : storyPanel === "change" ? "Change"
     : storyPanel === "mine" ? "Mine"
@@ -382,14 +386,17 @@ export function OfficeWide({
     : storyPanel === "movement" ? "Movement"
     : "Story";
 
-  function storyTile(id: LedgerStoryTileId): { kind: string; name: string; glance: ReactNode; aria: string; warn?: boolean } {
+  function storyTile(id: LedgerStoryTileId): { kind: string; name: string; glance: ReactNode; figure?: ReactNode; aria: string; warn?: boolean } {
     if (id === "now") {
-      const operating = sharedStory?.opening.operatingBalanceCents ?? 0;
+      const banks = kittyBanksInView(household, "household");
+      const glance = kittyBankGlance(banks);
+      const bars = kittyBankBars(banks);
       return {
         kind: "Now",
-        name: "Together",
-        glance: formatCad(operating),
-        aria: `Now. Fund operating ${formatCad(operating)}.`,
+        name: "Kitty Banks",
+        glance: glance.label,
+        figure: bars.length ? <PaperBars rows={bars} empty="" /> : undefined,
+        aria: `Now. Kitty Banks. ${glance.label}.`,
       };
     }
     if (id === "attention") {
@@ -408,6 +415,7 @@ export function OfficeWide({
         kind: "Change",
         name: "This month",
         glance: `Kitty ${formatCad(kitty)}`,
+        figure: inOut.length ? <PaperBars rows={inOut} empty="" caption="In and out" /> : undefined,
         aria: `Change. Kitty ${formatCad(kitty)}.`,
       };
     }
@@ -438,7 +446,7 @@ export function OfficeWide({
   }
 
   return (
-    <div className={`office-wide ${adding ? "is-adding" : ""}`}>
+    <div className={`office-wide ${adding ? "is-adding" : ""} ${view === "household" ? "is-shared-home" : ""}`}>
       <div className="office-wide-desk">
         <div ref={sealsRef} className="hearth-wax-seals office-wide-seals" role="group" aria-label="Desk seals">
           <WaxSeal
@@ -477,6 +485,7 @@ export function OfficeWide({
                     kind={tile.kind}
                     name={tile.name}
                     value={tile.glance}
+                    figure={tile.figure}
                     warn={tile.warn}
                     active={storyPanel === item.id}
                     onClick={() => openStory(item.id)}
@@ -501,7 +510,7 @@ export function OfficeWide({
             })}
           </StoryStrip>
         </div>
-        {heroSpec && (
+        {heroSpec && view !== "household" && (
           <div ref={heroRef} className="office-wide-hero-wrap">
             <button
               type="button"
@@ -531,10 +540,22 @@ export function OfficeWide({
             }}
           >
             <div className="office-wide-notebook-inner">
-              {notebookIsStory && sharedStory && view === "household" && isLedgerStoryTileId(storyPanel ?? "") ? (
+              {notebookIsStory && view === "household" && storyPanel === "now" ? (
+                <KittyBanks
+                  household={household}
+                  booksHousehold={booksHousehold}
+                  view="household"
+                  createdBy={memberId}
+                  busy={busy}
+                  surface="home"
+                  onCommand={onKitchen}
+                  onAskStartJar={onAskStartJar}
+                  onOpenPlan={() => onGo("plan")}
+                />
+              ) : notebookIsStory && sharedStory && view === "household" && isLedgerStoryTileId(storyPanel ?? "") ? (
                 <SharedLedgerStory
                   story={sharedStory}
-                  panel={storyPanel === "attention" || storyPanel === "change" || storyPanel === "now" ? storyPanel : "now"}
+                  panel={storyPanel === "attention" || storyPanel === "change" ? storyPanel : "attention"}
                   onOpenFund={() => onGo("ledger")}
                   onOpenHealth={() => onGo("more")}
                 />
@@ -578,7 +599,10 @@ export function OfficeWide({
                 key={id}
                 type="button"
                 className="ph-chip"
-                onClick={() => onLayout(revealPhoneInstrument(layout, id))}
+                onClick={() => {
+                  setStoryPanel(null);
+                  onLayout(revealPhoneInstrument(layout, id));
+                }}
               >
                 <b>{specs[id]?.name ?? id}</b>
               </button>

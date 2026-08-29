@@ -45,6 +45,8 @@ describe("wide paper office mosaic", () => {
     expect(mosaic.length).toBeLessThanOrEqual(WIDE_MOSAIC_LIMIT);
     expect(wideDrawerIds(mosaic)).toContain("chalkboard");
     expect(wideDrawerIds(mosaic)).not.toContain("calculator");
+    expect(wideDrawerIds(mosaic)).not.toContain(WIDE_HERO_ID);
+    expect(wideDrawerIds(mosaic, { includeHero: false })).toContain(WIDE_HERO_ID);
   });
 
   it("reveals Health onto the mosaic when the lamp is lit even if it was hidden", () => {

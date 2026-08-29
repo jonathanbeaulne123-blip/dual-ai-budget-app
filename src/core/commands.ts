@@ -1487,7 +1487,7 @@ function seedBudgetPlan(household: Household, monthKey: MonthKey, category: Cate
 
 export function setBudget(household: Household, input: { monthKey: MonthKey; subcategoryId: string; amount: string | number }): CommitResult {
   requireTimezone(household);
-  const amountCents = parseAmount(input.amount, "Budgeted amount");
+  const amountCents = parseMoneyCents(input.amount, "Budgeted amount", { allowZero: true });
   const category = requireSubcategory(household, input.subcategoryId);
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);

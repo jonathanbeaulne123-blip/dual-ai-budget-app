@@ -5,27 +5,19 @@ import {
   ValidationError,
   addCategory,
   addFormDefaults,
-  addGoal,
   buildDashboard,
   calcShiftAmounts,
   catalogHousehold,
   centsDigitsFromDollars,
-  fundGoal,
   createWriteQueue,
   creditCardView,
   defaultVisibilityForView,
-  describeGoalContributors,
   dollarsFromCentsDigits,
   emitOfficeIntent,
   formatCad,
   describeDeviceLabel,
   localDeviceId,
   touchHouseholdDevice,
-  goalIsFull,
-  goalStatus,
-  openGoals,
-  retiredGoals,
-  vaultReceiptBlurb,
   householdForView,
   ledgerNameForView,
   ledgerRouteContract,
@@ -65,7 +57,6 @@ import {
   settleClaim,
   writeOffClaim,
   acceptVisitGoal,
-  upcomingVisitProposals,
   acceptPresetNotice,
   addPreset,
   archivePreset,
@@ -324,7 +315,7 @@ import { HerculesProApproval, HerculesProPermissionsCard, herculesProAuthorizati
 import { CadPad } from "./CadPad.tsx";
 import { PresetChip } from "./widgets/PresetChip.tsx";
 import { SitDownGuide } from "./SitDownGuide.tsx";
-import { PurchaseGoalSheet } from "./widgets/Jars.tsx";
+import { KittyBanks } from "./KittyBanks.tsx";
 import { playClink } from "./clink.ts";
 import { GoogleBridgeCard } from "./GoogleBridge.tsx";
 import {
@@ -3486,23 +3477,24 @@ export function App() {
             <div className="money">{formatCad(dashboard.month.netBudgetedCents)}</div>
             <div className="sub">Budgeted net for {dashboard.monthLabel}</div>
           </section>
-          <SitDownGuide household={household} memberId={actorId} onApply={(next, token) => persist(next, token)} hidden={view === "personal"} />
-          {view === "household" ? (
-            <section className="card">
-              <header><h2>Kitty Banks</h2></header>
-              <p className="muted">
-                Fund surplus rolls into existing shared goals. Hearth cannot move Bianca’s savings. This is D-161, not a new envelope system.
-              </p>
-              <button className="primary" type="button" onClick={() => goTab("ledger")}>Open Fund kitty</button>
-            </section>
-          ) : null}
-          <Goals
+          <SitDownGuide
+            household={household}
+            displayHousehold={displayHousehold}
+            dashboard={dashboard}
+            view={view}
+            memberId={actorId}
+            onApply={(next, token) => persist(next, token)}
+          />
+          <KittyBanks
             household={displayHousehold}
             booksHousehold={household}
+            view={view}
             createdBy={memberId}
-            goals={displayHousehold.goals}
-            onChange={(next, token) => persistLedgerWrite(next, token)}
+            busy={busy}
+            surface="plan"
+            onCommand={(fn) => { void runKitchen(fn); }}
             onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
+            onShowHome={() => goTab("home")}
           />
           </div>
           <PlanCategories
@@ -5246,6 +5238,15 @@ export function App() {
           Plan
         </button>
         )}
+        {kitchenPrimaryNav(view).includes("ledger") && (
+        <button
+          className={tab === "ledger" ? "active" : ""}
+          aria-current={tab === "ledger" ? "page" : undefined}
+          onClick={() => goTab("ledger")}
+        >
+          Books
+        </button>
+        )}
         {kitchenPrimaryNav(view).includes("more") && (
         <button
           className={tab === "more" ? "active" : ""}
@@ -5257,105 +5258,6 @@ export function App() {
         )}
       </nav>
     </div>
-  );
-}
-
-function Goals({ household, booksHousehold, createdBy, goals, onChange, onAskStartJar }: {
-  household: Household;
-  booksHousehold: Household;
-  createdBy: string;
-  goals: Household["goals"];
-  onChange: (household: Household, undo?: UndoToken) => void;
-  onAskStartJar: (appointmentId: string, summary: string) => void;
-}) {
-  const [name, setName] = useState("New goal");
-  const [target, setTarget] = useState("500");
-  const [amount, setAmount] = useState("25");
-  const [buying, setBuying] = useState<string | null>(null);
-  const proposals = upcomingVisitProposals(household, todayKey());
-  const live = openGoals({ goals });
-  const retired = retiredGoals({ goals });
-  const today = todayKey();
-  return (
-    <section className="card">
-      <header><h2>Goals in this view</h2></header>
-      <p className="muted">{vaultReceiptBlurb(household, today)}</p>
-      <p className="muted">Kitty Banks (Fund surplus into existing shared goals) lives on Fund books. This list still starts and funds pigs.</p>
-      {proposals.map((proposal) => (
-        <div className="row" key={proposal.appointmentId}>
-          <div>
-            <strong>{proposal.title}</strong>
-            <div className="muted">{proposal.hercules}</div>
-          </div>
-          <button className="chip selected" onClick={() => onAskStartJar(proposal.appointmentId, `${proposal.hercules} This creates a shared goal. Hercules does not write it.`)}>Start this goal</button>
-        </div>
-      ))}
-      {live.map((goal) => (
-        <div className="row" key={goal.id}>
-          <div>
-            <strong>{goal.name}</strong>
-            <div className="muted">{goal.shared ? "Shared" : "Personal filter only"} · {formatCad(goal.savedCents)} / {formatCad(goal.targetCents)}{describeGoalContributors(household, goal.id) ? ` · ${describeGoalContributors(household, goal.id)}` : ""}</div>
-            {goalIsFull(goal) && buying === goal.id && (
-              <PurchaseGoalSheet
-                household={booksHousehold}
-                goalId={goal.id}
-                busy={false}
-                onCommand={(fn) => {
-                  const result = fn(booksHousehold);
-                  onChange(result.household, result.undo);
-                }}
-                onClose={() => setBuying(null)}
-              />
-            )}
-          </div>
-          <div className="goal-add">
-            <input
-              inputMode="decimal"
-              aria-label={`Contribution for ${goal.name}`}
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-            />
-            <button className="chip" onClick={() => {
-              const fromAccountId = booksHousehold.accounts.find((account) => account.active && account.kind === "chequing")?.id
-                ?? household.accounts.find((account) => account.active)?.id
-                ?? booksHousehold.accounts.find((account) => account.active)?.id;
-              if (!fromAccountId) return;
-              const result = fundGoal(booksHousehold, {
-                goalId: goal.id,
-                amount,
-                fromAccountId,
-                createdBy,
-              });
-              onChange(result.household, result.undo);
-            }}>{goalStatus(goal) === "unfunded" ? "Fund goal" : "+ add"}</button>
-            {goalIsFull(goal) && (
-              <button className="primary" onClick={() => setBuying(goal.id)}>Mark purchased</button>
-            )}
-          </div>
-        </div>
-      ))}
-      {retired.length > 0 && (
-        <div className="retirement-home">
-          <h3>Completed goals</h3>
-          <p className="muted">Goals you marked purchased. The contribution rows and the purchase expense stay on the books.</p>
-          {retired.map((goal) => (
-            <div className="row" key={goal.id}>
-              <div>
-                <strong>{goal.name}</strong>
-                <div className="muted">Accomplished · saved {formatCad(goal.savedCents)}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      <label>New goal</label>
-      <input value={name} onChange={(event) => setName(event.target.value)} />
-      <input value={target} onChange={(event) => setTarget(event.target.value)} />
-      <button className="primary" onClick={() => {
-        const result = addGoal(booksHousehold, { name, target, shared: true });
-        onChange(result.household, result.undo);
-      }}>Add shared goal</button>
-    </section>
   );
 }
 
@@ -5416,7 +5318,7 @@ function PlanCategories({
                 <span className="chips">
                   <button
                     type="button"
-                    className={`ghost budget-edit-trigger ${row.budgetedCents && row.actualCents > row.budgetedCents ? "over" : ""}`}
+                    className={`budget-edit-trigger ${row.budgetedCents && row.actualCents > row.budgetedCents ? "over" : ""}`}
                     aria-label={`Edit ${row.name} budget. Actual ${formatCad(row.actualCents)}, budget ${formatCad(row.budgetedCents)}`}
                     onClick={() => {
                       setEditId(row.subcategoryId);
@@ -5428,11 +5330,12 @@ function PlanCategories({
                   </button>
                   <button
                     type="button"
-                    className="chip quiet"
+                    className="budget-remove"
                     disabled={!row.budgetedCents}
+                    aria-label={`Remove ${row.name} plan`}
                     onClick={() => saveBudget(row.subcategoryId, "0")}
                   >
-                    Zero plan
+                    ×
                   </button>
                 </span>
               )}

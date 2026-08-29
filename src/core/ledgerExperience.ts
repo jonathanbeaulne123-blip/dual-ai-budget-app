@@ -60,12 +60,12 @@ export type LedgerExperienceFailure = {
 const SHARED_PURPOSE = "Coordinate the household: what is true together, what changed, what needs a person, what is next, and why this view is trustworthy.";
 const PERSONAL_PURPOSE = "Understand and manage my private position: what is mine, what moved, my obligations and goals, what I chose to share, and what stays private.";
 
-export type KitchenPrimaryNavId = "home" | "calendar" | "shift" | "plan" | "more";
+export type KitchenPrimaryNavId = "home" | "calendar" | "shift" | "ledger" | "plan" | "more";
 
-/** Shared Home owns the kitchen table; Shift is a Personal work room. Household table / Books stays a deep page from More. */
+/** Shared Home owns the kitchen table; Shift and Books stay on Personal primary nav. Household table stays a deep page from More. */
 export function kitchenPrimaryNav(view: LedgerView): KitchenPrimaryNavId[] {
   if (view === "household") return ["home", "calendar", "plan", "more"];
-  return ["home", "calendar", "shift", "plan", "more"];
+  return ["home", "calendar", "shift", "ledger", "plan", "more"];
 }
 
 /** Home, Calendar, Shift, and Books already carry their own heading. Do not stack a second purpose card. */

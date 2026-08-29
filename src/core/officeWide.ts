@@ -110,9 +110,11 @@ export function wideMosaicIds(input: {
   return picked.slice(0, WIDE_MOSAIC_LIMIT);
 }
 
-export function wideDrawerIds(mosaic: InstrumentId[]): InstrumentId[] {
-  const shown = new Set<InstrumentId>([WIDE_HERO_ID, "calculator", ...mosaic]);
+export function wideDrawerIds(mosaic: InstrumentId[], options?: { includeHero?: boolean }): InstrumentId[] {
+  const shown = new Set<InstrumentId>(["calculator", ...mosaic]);
+  if (options?.includeHero !== false) shown.add(WIDE_HERO_ID);
   const extras: InstrumentId[] = [
+    WIDE_HERO_ID,
     "chalkboard",
     "wardrobe",
     "tictactoe",

@@ -114,6 +114,18 @@ button.hearth-paper-tile:focus-visible {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.hearth-tile-figure {
+  width: 100%;
+  min-width: 0;
+  margin-top: 4px;
+}
+.hearth-tile-figure .hearth-paper-bars {
+  margin: 0;
+}
+.hearth-tile-figure .hearth-paper-caption {
+  font-size: 10px;
+  margin: 0 0 4px;
+}
 
 /* ── wax seal ── */
 .hearth-wax-seals,

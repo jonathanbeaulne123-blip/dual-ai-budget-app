@@ -88,6 +88,8 @@ export * from "./allocate.ts";
 export * from "./autoCode.ts";
 export * from "./importInbox/index.ts";
 export * from "./sitDown.ts";
+export * from "./sitDownInfographics.ts";
+export * from "./kittyBanks.ts";
 export * from "./stressSeed.ts";
 export { createWriteQueue } from "./writeQueue.ts";
 export { formatInviteCode, normalizeInviteCode, randomHouseholdId, randomInviteCode } from "./ids.ts";

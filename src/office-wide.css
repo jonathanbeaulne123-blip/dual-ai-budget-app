@@ -16,6 +16,12 @@
   align-items: start;
   min-height: 0;
 }
+.office-wide.is-shared-home .office-wide-desk {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  grid-template-areas:
+    "seals seals"
+    "mosaic notebook";
+}
 .office-wide-seals { grid-area: seals; }
 .office-wide-mosaic-wrap { grid-area: mosaic; min-width: 0; }
 .office-wide-hero-wrap { grid-area: hero; min-width: 0; }
@@ -34,9 +40,16 @@
   min-height: 96px;
   padding: 12px 14px;
 }
+.office-wide-mosaic .hearth-paper-tile.has-figure {
+  min-height: 132px;
+}
 .office-wide-mosaic .hearth-tile-value {
   font-size: 1.25rem;
   white-space: normal;
+}
+.office-wide-mosaic .hearth-tile-figure .hearth-paper-bar-label,
+.office-wide-mosaic .hearth-tile-figure .hearth-paper-bar-value {
+  font-size: 10px;
 }
 .office-wide-hero-wrap {
   min-width: 0;
@@ -157,6 +170,12 @@
       "seals seals seals"
       "mosaic hero notebook";
   }
+  .office-wide.is-shared-home .office-wide-desk {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    grid-template-areas:
+      "seals seals"
+      "mosaic notebook";
+  }
 }
 
 @media (max-width: 899px) {
@@ -166,6 +185,12 @@
       "seals"
       "mosaic"
       "hero"
+      "notebook";
+  }
+  .office-wide.is-shared-home .office-wide-desk {
+    grid-template-areas:
+      "seals"
+      "mosaic"
       "notebook";
   }
 }

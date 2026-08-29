@@ -9,6 +9,10 @@ const books = readFileSync(new URL("../src/Books.tsx", import.meta.url), "utf8")
 const calendar = readFileSync(new URL("../src/Calendar.tsx", import.meta.url), "utf8");
 const shift = readFileSync(new URL("../src/WorkShiftPage.tsx", import.meta.url), "utf8");
 const css = readFileSync(new URL("../src/ledger-story.css", import.meta.url), "utf8");
+const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+const hercules = readFileSync(new URL("../src/Hercules.tsx", import.meta.url), "utf8");
+const kitty = readFileSync(new URL("../src/KittyBanks.tsx", import.meta.url), "utf8");
+const sit = readFileSync(new URL("../src/SitDownGuide.tsx", import.meta.url), "utf8");
 const panel = readFileSync(new URL("../src/HouseholdFundPanel.tsx", import.meta.url), "utf8");
 const experience = readFileSync(new URL("../src/core/ledgerExperience.ts", import.meta.url), "utf8");
 
@@ -96,6 +100,36 @@ describe("D-164 ledger story UI fences", () => {
     expect(app).not.toContain("Journal and Fund");
     expect(app).toContain('data-ledger-nav={view === "household" ? "shared" : "personal"}');
     expect(experience).toContain('return ["home", "calendar", "plan", "more"]');
-    expect(experience).toContain('return ["home", "calendar", "shift", "plan", "more"]');
+    expect(experience).toContain('return ["home", "calendar", "shift", "ledger", "plan", "more"]');
+    expect(app).toMatch(/>\s*Books\s*</);
+    expect(styles).toContain(".nav[data-ledger-nav=\"personal\"]");
+    expect(styles).toMatch(/\.nav\[data-ledger-nav="personal"\] \{\s*grid-template-columns: 1fr 1fr 1fr 56px 1fr 1fr 1fr;/);
+  });
+
+  it("replaces Plan Goals with Kitty Banks and keeps Shared Home as six tiles plus notebook", () => {
+    expect(app).toContain("<KittyBanks");
+    expect(app).not.toContain("Goals in this view");
+    expect(app).not.toContain("Open Fund kitty");
+    expect(app).not.toContain("Zero plan");
+    expect(app).toContain("budget-remove");
+    expect(kitty).toContain("Kitty Banks");
+    expect(kitty).toContain("not a new envelope");
+    expect(officeWide).toContain("is-shared-home");
+    expect(officeWide).toContain("<KittyBanks");
+    expect(officeWide).toContain('view !== "household"');
+    expect(calendar).toContain("cal-titles");
+    expect(calendar).toContain("cal-title");
+    expect(calendar).toContain("calendar-board-stack");
+    expect(calendar).not.toContain("calendar-wide-board");
+    expect(sit).toContain("sitDownInfographicDeck");
+    expect(sit).toContain("Leftover assignment lives on Shared");
+    expect(sit).not.toContain("Household view plans for both of you.");
+    expect(shift).toContain("Posted earnings");
+    expect(shift).toContain("shiftEarningsTracker");
+    expect(styles).toContain("overflow-y: auto");
+    expect(styles).toMatch(/\.hercules-bubble \{[\s\S]*background: var\(--card\)/);
+    expect(hercules).toContain("hercules-pro-quiet");
+    expect(hercules).toContain("helpAsked");
+    expect(hercules).not.toContain("Use Hercules Pro");
   });
 });

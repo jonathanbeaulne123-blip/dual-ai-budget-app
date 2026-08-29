@@ -4,6 +4,7 @@ import {
   allocateLeftover,
   lastRemainderSplit,
   leftoverProjection,
+  buildDashboard,
   catalogHousehold,
   closeBooksMonth,
   compileHousehold,
@@ -17,6 +18,7 @@ import {
   seedDemoHousehold,
   sitDownAnomalies,
   sitDownExportText,
+  sitDownInfographicDeck,
   sitDownWorkbookCsv,
   suggestCategory,
   trialBalance,
@@ -313,5 +315,19 @@ describe("Drive sit-down export", () => {
     expect(result.ok).toBe(true);
     expect(result.fileId).toBe("file-sitdown-1");
     resetGoogleEngineForTests();
+  });
+});
+
+describe("sit-down infographic deck", () => {
+  it("keeps household leftover off Personal and cycles posted paper charts", () => {
+    const household = seedDemoHousehold({ environment: "development", today });
+    const dashboard = buildDashboard(household, today, new Date("2026-08-21T16:00:00Z"));
+    const shared = sitDownInfographicDeck({ view: "household", household, dashboard, today });
+    const personal = sitDownInfographicDeck({ view: "personal", household, dashboard, today });
+    expect(shared[0]?.id).toBe("leftover");
+    expect(shared.some((chart) => chart.id === "fund" || chart.id === "banks")).toBe(true);
+    expect(personal.every((chart) => chart.id !== "leftover")).toBe(true);
+    expect(personal.some((chart) => chart.id === "month-flow")).toBe(true);
+    expect(personal.every((chart) => !/household leftover/i.test(chart.note))).toBe(true);
   });
 });

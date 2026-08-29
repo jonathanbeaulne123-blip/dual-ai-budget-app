@@ -13,6 +13,7 @@ import {
   shiftOracleChipTalk,
   shiftReportGlance,
   shiftSaucerBoard,
+  shiftEarningsTracker,
   workReportFacts,
 } from "../src/core/index.ts";
 
@@ -66,6 +67,21 @@ describe("shift glance projections", () => {
     expect(shiftOracleChipTalk(household, "Tonight?", today, memberId)?.spoken).toMatch(/projection|off the cadence|nights like this/i);
     expect(shiftOracleChipTalk(household, "Protect or chase?", today, memberId)?.spoken).toMatch(/protect|chase|even/i);
     expect(shiftOracleChipTalk(household, "Tax milk?", today, memberId)?.spoken).toMatch(/educational|tax milk/i);
+  });
+
+  it("sums posted cash tips, card tips, and wages for week, month, and year", () => {
+    const household = seedDemoHousehold({ today, environment: "development" });
+    const month = shiftEarningsTracker(household, today, memberId, "month");
+    const week = shiftEarningsTracker(household, today, memberId, "week");
+    const year = shiftEarningsTracker(household, today, memberId, "year");
+    expect(month.cashTipsCents + month.cardTipsCents + month.wagesCents).toBeGreaterThan(0);
+    expect(month.takeHomeCents).toBeGreaterThanOrEqual(month.wagesCents);
+    expect(week.from <= week.to).toBe(true);
+    expect(year.from.endsWith("-01-01")).toBe(true);
+    expect(year.shiftCount).toBeGreaterThanOrEqual(month.shiftCount);
+    const board = shiftSaucerBoard(household, today, memberId);
+    expect(board.days).toHaveLength(28);
+    expect(board.days.every((day) => Number.isInteger(day.cashTipsCents))).toBe(true);
   });
 });
 

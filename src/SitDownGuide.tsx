@@ -15,15 +15,19 @@ import {
   saveSitDownSession,
   sitDownExportText,
   sitDownFacts,
+  sitDownInfographicDeck,
   sitDownPreview,
   sitDownWorkbookCsv,
   shiftMonthKey,
   todayKey,
   type AllocationSlice,
   type Household,
+  type LedgerView,
+  type SitDownChart,
   type SitDownFact,
   type UndoToken,
 } from "./core/index.ts";
+import type { Dashboard } from "./core/insights.ts";
 import { downloadText } from "./ledger/export.ts";
 import { KitchenNotice } from "./KitchenNotice.tsx";
 import { PaperBars } from "./theme/PaperTheme.tsx";
@@ -31,13 +35,17 @@ import { googleConfigured, uploadSitDownWorkbook } from "./google/index.ts";
 
 export function SitDownGuide({
   household,
+  displayHousehold,
+  dashboard,
+  view = "household",
   onApply,
-  hidden,
   memberId,
 }: {
   household: Household;
+  displayHousehold?: Household;
+  dashboard: Dashboard;
+  view?: LedgerView;
   onApply: (household: Household, undo?: UndoToken) => void;
-  hidden?: boolean;
   memberId?: string;
 }) {
   const today = todayKey();
@@ -56,15 +64,15 @@ export function SitDownGuide({
   const closeKey = shiftMonthKey(monthKey, -1);
   const positives = facts.filter((fact) => fact.act === 1);
   const information = facts.filter((fact) => fact.act === 2);
-
-  if (hidden) {
-    return (
-      <section className="card">
-        <header><h2>Sit-down</h2></header>
-        <p className="muted">Household view plans for both of you.</p>
-      </section>
-    );
-  }
+  const charts = useMemo(
+    () => sitDownInfographicDeck({
+      view,
+      household: displayHousehold ?? household,
+      dashboard,
+      today,
+    }),
+    [view, displayHousehold, household, dashboard, today],
+  );
 
   function persistSession(nextAct: 1 | 2 | 3, nextSlices = slices) {
     const result = saveSitDownSession(household, {
@@ -80,6 +88,19 @@ export function SitDownGuide({
     setSlices((current) => current.map((slice) => (slice.id === id ? { ...slice, ...patch } : slice)));
   }
 
+  if (view === "personal") {
+    return (
+      <section className="card sit-guide" data-sit-view="personal">
+        <header>
+          <h2>Sit-down</h2>
+          <span className="muted">{formatMonthLabel(monthKey)}</span>
+        </header>
+        <SitDownCharts charts={charts} />
+        <p className="muted">Leftover assignment lives on Shared. Confirm still posts there. These charts are posted actuals on this folio.</p>
+      </section>
+    );
+  }
+
   return (
     <section className="card sit-guide">
       <header>
@@ -90,7 +111,7 @@ export function SitDownGuide({
         <>
           <p className="sit-q">What went well.</p>
           <p className="muted">Not a grade. Hercules can read these out loud. He still never posts.</p>
-          <LeftoverMath leftover={leftover} />
+          <SitDownCharts charts={charts} />
           <details className="sit-act1-well">
             <summary>What went well — tap to open the tiles</summary>
             {positives.map((fact) => (
@@ -114,7 +135,7 @@ export function SitDownGuide({
       {act === 2 && (
         <>
           <p className="sit-q">The same view a CPA and a kid can share.</p>
-          <LeftoverMath leftover={leftover} />
+          <SitDownCharts charts={charts} />
           {information.map((fact) => (
             <FactRow key={fact.id} household={household} fact={fact} open={openFact === fact.id} onToggle={() => setOpenFact(openFact === fact.id ? null : fact.id)} />
           ))}
@@ -137,9 +158,9 @@ export function SitDownGuide({
         <>
           <p className="sit-q">Where leftover goes.</p>
           <p className="muted">
-            Plan first. One Confirm turns it into transfers you already have — goals park in Goals savings; card paydown is a transfer. Hercules never moves a dollar.
+            Plan first. One Confirm turns it into transfers you already have — goals park in Kitty Banks; card paydown is a transfer. Hercules never moves a dollar.
           </p>
-          <LeftoverMath leftover={leftover} />
+          <SitDownCharts charts={charts} />
           {!leftover.leftoverCents && (
             <p className="muted">Nothing to move. The arithmetic is the lesson, not invented CAD.</p>
           )}
@@ -302,26 +323,51 @@ export function SitDownGuide({
   );
 }
 
-function LeftoverMath({ leftover }: { leftover: ReturnType<typeof leftoverProjection> }) {
+function SitDownCharts({ charts }: { charts: SitDownChart[] }) {
+  const [index, setIndex] = useState(0);
+  const safeIndex = charts.length ? index % charts.length : 0;
+  const chart = charts[safeIndex];
+  if (!chart) return null;
   return (
-    <div className="sit-math">
-      <PaperBars
-        rows={[
-          { label: "Cash-like", cents: leftover.cashLikeCents, tone: "pine" },
-          { label: "Bills 30d", cents: leftover.billsNext30Cents, tone: "copper" },
-          { label: "Leftover", cents: leftover.leftoverCents, tone: leftover.leftoverCents > 0 ? "ink" : "copper" },
-        ]}
-        caption="Cash versus bills. Leftover is not month net."
-        empty="No cash-like or bills to graph yet."
-      />
-      <div className="row"><span>Cash-like</span><span>{formatCad(leftover.cashLikeCents)}</span></div>
-      <div className="row"><span>− Bills next 30 days</span><span>{formatCad(leftover.billsNext30Cents)}</span></div>
-      <div className="row"><span>− Card minimums</span><span>{formatCad(leftover.minPaymentsCents)}</span></div>
-      <div className="row"><strong>Leftover</strong><strong>{formatCad(leftover.leftoverCents)}</strong></div>
-      <p className="muted">If leftover is positive, Confirm parks goal cash in Goals savings — not month net, not everyday HIS. Each goal tracks its share of that account.</p>
-      {leftover.shortfallCents > 0 && (
-        <p className="muted">Shortfall {formatCad(leftover.shortfallCents)}. Do not invent CAD to fill it.</p>
-      )}
+    <div className="sit-math sit-charts" data-sit-chart={chart.id}>
+      <PaperBars rows={chart.rows} caption={chart.caption} empty={chart.empty} />
+      {chart.lines.map((line) => (
+        <div className="row" key={line.label}>
+          {line.strong ? <strong>{line.label}</strong> : <span>{line.label}</span>}
+          {line.strong ? <strong>{formatCad(line.cents)}</strong> : <span>{formatCad(line.cents)}</span>}
+        </div>
+      ))}
+      <p className="muted">{chart.note}</p>
+      {charts.length > 1 ? (
+        <div className="sit-chart-nav" role="group" aria-label="Sit-down charts">
+          <button
+            type="button"
+            className="chip"
+            aria-label="Previous chart"
+            onClick={() => setIndex((current) => (current + charts.length - 1) % charts.length)}
+          >
+            ‹
+          </button>
+          {charts.map((item, itemIndex) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`sit-chart-dot ${itemIndex === safeIndex ? "is-on" : ""}`}
+              aria-label={item.caption}
+              aria-pressed={itemIndex === safeIndex}
+              onClick={() => setIndex(itemIndex)}
+            />
+          ))}
+          <button
+            type="button"
+            className="chip"
+            aria-label="Next chart"
+            onClick={() => setIndex((current) => (current + 1) % charts.length)}
+          >
+            ›
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

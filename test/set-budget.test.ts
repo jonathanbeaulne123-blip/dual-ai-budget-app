@@ -52,4 +52,19 @@ describe("setBudget command", () => {
     ).toThrow(/Budgeted amount/);
     expect(household.budgetPlans).toEqual(catalogHousehold().budgetPlans);
   });
+
+  it("allows a $0 plan so Remove can clear the budget without hiding history", () => {
+    let household = setBudget(catalogHousehold(), {
+      monthKey,
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      amount: "650",
+    }).household;
+    household = setBudget(household, {
+      monthKey,
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      amount: "0",
+    }).household;
+    const groceries = monthSummary(household, monthKey).categories.find((row) => row.subcategoryId === "SUB-FOOD-GROCERIES");
+    expect(groceries?.budgetedCents).toBe(0);
+  });
 });

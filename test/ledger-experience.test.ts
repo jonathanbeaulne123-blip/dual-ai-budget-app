@@ -280,7 +280,7 @@ describe("ledgerRouteContract", () => {
     expect(ledgerRouteContract("shift", "household").purpose).toMatch(/worker-centered/i);
     expect(ledgerRouteContract("ledger", "household").heading).toMatch(/Household table/i);
     expect(kitchenPrimaryNav("household")).toEqual(["home", "calendar", "plan", "more"]);
-    expect(kitchenPrimaryNav("personal")).toEqual(["home", "calendar", "shift", "plan", "more"]);
+    expect(kitchenPrimaryNav("personal")).toEqual(["home", "calendar", "shift", "ledger", "plan", "more"]);
   });
 });
 

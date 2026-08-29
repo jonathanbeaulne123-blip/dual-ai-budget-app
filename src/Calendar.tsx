@@ -236,7 +236,7 @@ export function CalendarPage(props: {
 
       {pane === "board" && (
         <>
-          <div className="calendar-wide-board">
+          <div className="calendar-board-stack">
           <section className="card calendar-card">
             <header>
               <button className="chip" onClick={() => setMonthKey(shiftMonthKey(monthKey, -1))} aria-label="Previous month">‹</button>
@@ -268,7 +268,10 @@ export function CalendarPage(props: {
               {WEEKDAY_SHORT.map((label) => <span key={label}>{label}</span>)}
             </div>
             <div className="cal-grid">
-              {board.days.map((day) => (
+              {board.days.map((day) => {
+                const shown = day.items.slice(0, 3);
+                const extra = day.items.length - shown.length;
+                return (
                 <button
                   key={day.date}
                   className={[
@@ -282,17 +285,15 @@ export function CalendarPage(props: {
                   style={day.heat ? { background: `rgba(196, 92, 38, ${0.06 + day.heat * 0.22})` } : undefined}
                 >
                   <span className="num">{Number(day.date.slice(8))}</span>
-                  <span className="dots">
-                    {day.items.slice(0, 3).map((item) => (
-                      <i
-                        key={item.id}
-                        className={item.direction}
-                        style={item.memberColor ? { background: item.memberColor } : undefined}
-                      />
+                  <span className="cal-titles">
+                    {shown.map((item) => (
+                      <span key={item.id} className={`cal-title ${item.direction}`} title={item.title}>{item.title}</span>
                     ))}
+                    {extra > 0 ? <span className="cal-title more">+{extra}</span> : null}
                   </span>
                 </button>
-              ))}
+                );
+              })}
             </div>
           </section>
 

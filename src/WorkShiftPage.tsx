@@ -11,18 +11,20 @@ import {
   shiftPostingStreak,
   shiftReportGlance,
   shiftSaucerBoard,
+  shiftEarningsTracker,
   type Environment,
   type Household,
   type LedgerView,
   type PostWorkShiftInput,
   type Shift,
+  type ShiftEarningsPeriod,
   type WeatherGlass,
   type WorkJob,
 } from "./core/index.ts";
 import { loadDocumentVisionProvider } from "./imports/documentScanProvider.ts";
 import { scanShiftReportFile } from "./imports/shiftReportDraft.ts";
 import { ShiftReportScanBar } from "./ShiftReportScan.tsx";
-import { PaperTile } from "./theme/PaperTheme.tsx";
+import { PaperBars, PaperTile } from "./theme/PaperTheme.tsx";
 import { TimesheetBody } from "./widgets/Timesheet.tsx";
 import { WorkJobsCard } from "./WorkJobs.tsx";
 import { WorkReportCard, downloadWorkReportCsv } from "./WorkReport.tsx";
@@ -111,6 +113,7 @@ export function WorkShiftPage({
   const [pane, setPane] = useState<ShiftPane>("today");
   const [sealCaption, setSealCaption] = useState<string | null>(null);
   const [period, setPeriod] = useState<"month" | "all">("month");
+  const [earningsPeriod, setEarningsPeriod] = useState<ShiftEarningsPeriod>("month");
   const [breakdown, setBreakdown] = useState(false);
   const [weatherGlass, setWeatherGlass] = useState<WeatherGlass | undefined>(undefined);
   const [finishedReview, setFinishedReview] = useState(false);
@@ -146,6 +149,10 @@ export function WorkShiftPage({
     [household, today, memberId, weatherGlass, preview],
   );
   const saucers = useMemo(() => shiftSaucerBoard(household, today, memberId), [household, today, memberId]);
+  const earnings = useMemo(
+    () => shiftEarningsTracker(household, today, memberId, earningsPeriod),
+    [household, today, memberId, earningsPeriod],
+  );
   const oracle = useMemo(() => shiftFloorOracle(household, today, memberId), [household, today, memberId]);
   const report = useMemo(() => shiftReportGlance(household, today, memberId, period), [household, today, memberId, period]);
 
@@ -336,10 +343,12 @@ export function WorkShiftPage({
 
           <section className="card shift-saucers">
             <header>
-              <h2>Saucers</h2>
+              <h2>Posted earnings</h2>
               <span className="pill">{saucers.pill}</span>
             </header>
-            <p className="muted">Last 28 days. A filled saucer is a posted shift date. Gaps are days off — never a broken streak.</p>
+            <p className="muted">
+              Last 28 nights on the counter. A filled cup is a posted shift date. Gaps are days off — never a broken streak. Confirm still posts.
+            </p>
             <div className="shift-saucer-sill" role="img" aria-label={`${saucers.streakCount} posted dates on the last 28 days`}>
               {saucers.days.map((day) => (
                 <div key={day.date} className="shift-saucer-cell">
@@ -348,6 +357,33 @@ export function WorkShiftPage({
                 </div>
               ))}
             </div>
+            <div className="chips" role="group" aria-label="Earnings range">
+              {(["week", "month", "year"] as const).map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  className={`chip ${earningsPeriod === item ? "selected" : ""}`}
+                  aria-pressed={earningsPeriod === item}
+                  onClick={() => setEarningsPeriod(item)}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+            <PaperBars
+              caption={`${earnings.label} · posted`}
+              empty="No posted shifts in this range yet."
+              rows={earnings.shiftCount ? [
+                { label: "Cash tips", cents: earnings.cashTipsCents, tone: "pine" as const },
+                { label: "Card tips", cents: earnings.cardTipsCents, tone: "ink" as const },
+                { label: "Wages", cents: earnings.wagesCents, tone: "copper" as const },
+              ] : []}
+            />
+            <div className="row"><span>Cash tips</span><strong>{formatCad(earnings.cashTipsCents)}</strong></div>
+            <div className="row"><span>Card tips</span><strong>{formatCad(earnings.cardTipsCents)}</strong></div>
+            <div className="row"><span>Wages</span><strong>{formatCad(earnings.wagesCents)}</strong></div>
+            <div className="row"><strong>Take-home</strong><strong>{formatCad(earnings.takeHomeCents)}</strong></div>
+            <p className="muted">{earnings.shiftCount} posted night{earnings.shiftCount === 1 ? "" : "s"} · {earnings.hours.toFixed(1)} h. Not a projection.</p>
           </section>
 
           <section className="card shift-lamp">
