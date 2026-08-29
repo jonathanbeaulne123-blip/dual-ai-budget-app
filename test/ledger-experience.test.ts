@@ -119,6 +119,40 @@ describe("projectLedgerExperience", () => {
     expect(experience.scopedHousehold.accounts.some((row) => row.scope !== "personal")).toBe(false);
   });
 
+  it("keeps partner-personal goals and recurrences off the Personal Books floor clone", () => {
+    let { household, backingId } = withPrivateBacking();
+    household = addGoal(household, {
+      name: "Bianca secret trip",
+      target: 400,
+      shared: false,
+      ownerMemberId: BIANCA,
+    }).household;
+    household = addGoal(household, {
+      name: "Jonathan bike",
+      target: 200,
+      shared: false,
+      ownerMemberId: JONATHAN,
+    }).household;
+    household = addRecurrence(household, {
+      cadence: "monthly",
+      nextDate: DATE,
+      type: "expense",
+      amount: 15,
+      accountId: backingId,
+      subcategoryId: "SUB-LIFE-FUN",
+      note: "Bianca secret due",
+    }).household;
+    const floor = personalBooksFloor(household, JONATHAN);
+    expect(floor.goals.some((goal) => goal.name === "Bianca secret trip")).toBe(false);
+    expect(floor.goals.some((goal) => goal.name === "Jonathan bike")).toBe(true);
+    expect(floor.goals.some((goal) => goal.shared)).toBe(true);
+    expect(floor.recurrences.some((row) => row.note === "Bianca secret due")).toBe(false);
+    expect(floor.recurrences.some((row) => row.accountId === backingId)).toBe(false);
+    expect(floor.goalContributions.some((row) => (
+      household.goals.find((goal) => goal.id === row.goalId)?.name === "Bianca secret trip"
+    ))).toBe(false);
+  });
+
   it("lets Personal Books include household-visibility posts on shared rooms", () => {
     let household = catalogHousehold();
     household = postEntry(household, {
