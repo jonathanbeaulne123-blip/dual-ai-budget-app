@@ -7,7 +7,7 @@
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `cursor/shared-ledger-story-aef7`
 - **Baseline SHA:** `871e6607b4bc6a5d653f9e9bbcc9131f9a07dc65`
-- **Head SHA:** `3f4e9b5bde4fb496908f7f34d51e97fdee3cdc72` (Shared Household table; honest Personal copy; ChatGPT review packet follows)
+- **Head SHA:** `dc00c39` (D-164 kitchen notes + leftover CAD fence; docs SHA follows this line)
 - **PR or issue:** draft [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244)
 - **Risk:** High review gate (ledger-mode privacy and financial presentation)
 - **Decision owner:** Jonathan
@@ -81,6 +81,11 @@ Opening Shared Ledger feels like sitting down at the household table: what is tr
 - 2026-08-28: `pnpm check` at `dd4fe43` → 1100 passed / 2 skipped; build green.
 - 2026-08-28: localhost demo kitchen as Jonathan; Shared Home 1280, Books Fund pane, phone 320 purpose heading.
 - 2026-08-29: ChatGPT independent-review packet [`briefs/CHATGPT_D164_INDEPENDENT_REVIEW_2026-08-29.md`](../briefs/CHATGPT_D164_INDEPENDENT_REVIEW_2026-08-29.md). Model: GPT-5 Pro. Not a merge/deploy gate by itself.
+- 2026-08-29: Jonathan confirmed kitchen notes. `82a4ae9` implements Kitty Banks (replaces Plan Goals), Shared Home without Month hero, sit-down chart cycling, Calendar cell titles, Personal Books nav, Home scroll, Hercules cream bubble, Shift posted earnings.
+- 2026-08-29: `pnpm check` at `82a4ae9` → **1108 passed / 2 skipped**; build green.
+- 2026-08-29: `1e3d31b` leftover CAD off Personal Ask/help/overlay; sit-down leftover from books; `goalVisibleInView`; `pnpm check` **1109 passed / 2 skipped**.
+- 2026-08-29: `dc00c39` Books Ask passes `{ memberId, view }`; per-bank Kitty contribution amounts; `pnpm check` **1109 passed / 2 skipped**.
+- 2026-08-29: Visual walk (demo kitchen as Jonathan): Shared Home 1100, Plan Kitty Banks, Calendar titles, Personal Books nav, Shift posted earnings, OfficePhone 390. Video `kitchen_shared_personal_walkthrough.mp4`.
 
 ## Decisions
 
@@ -90,7 +95,7 @@ Opening Shared Ledger feels like sitting down at the household table: what is tr
 - `restoreAcceptedSnapshot` is a persist safety net for presentation clones; close/rec/setBudget/addGoal still execute on `booksHousehold`.
 - Shared Books is not a general-ledger landing: Fund operating + household cash/credit open the page; trial/statements/net worth stay in Audit. Books is a deep page from More, not Shared primary nav.
 - Shared keeps the deep room as **Household table**, not Books: table tiles are Fund, chequing, goal savings, and cards; investments stay in Wallet/Audit; Shared Audit is a closed disclosure. Personal still opens on net worth / My books.
-- Kitty Banks remains D-161 (Fund surplus into existing shared goals). Plan still lists the Goals vault until Jonathan confirms a replacement.
+- Kitty Banks remains D-161 (Fund surplus into existing shared goals). Jonathan confirmed Plan Goals is replaced by Kitty Banks on Shared and Personal.
 
 ## Phone audit (Slice 5)
 
@@ -99,10 +104,12 @@ Semantic correction implemented: Plan and More still show `LedgerPurposeBanner`.
 ## Remaining uncertainty
 
 - A real multi-week Fund household has not been visually audited; tests use synthetic D-161 fixtures.
-- Demo seed has no `scope: personal` accounts, so Personal Books compile empty.
-- 820/1024/1440 stills were not captured as separate files.
-- Independent books re-audit after `5b424f4`: Home sit-down P0 cleared; remaining P1 was Shared due Confirm (fixed in `dd4fe43`). Privacy PASS on named gates; Shared Books can still show Personal-scope backing names. UX PASS.
+- Demo seed has few `scope: personal` accounts, so Personal folio/wallet charts may be thin.
+- Plan Kitty **Fund bank** posts via `fundGoal` without a Confirm sheet (books auditor P1).
+- Afford/food Ask can still recite cash-like CAD on Personal; leftover assignment questions are gated.
+- Independent leftover-CAD re-audit after `dc00c39` (Books Ask fence) was not a second privacy pass.
+- Do not rebase onto later `main` unless Jonathan asks.
 
 ## Handoff
 
-Next owner: Jonathan runs the GPT-5 Pro independent review from [`briefs/CHATGPT_D164_INDEPENDENT_REVIEW_2026-08-29.md`](../briefs/CHATGPT_D164_INDEPENDENT_REVIEW_2026-08-29.md). Branch kitchen is not the live Worker. Not merged, not deployed.
+Next owner: Jonathan reviews the confirmed kitchen notes on draft PR #244 (`dc00c39`). Branch kitchen is not the live Worker. Not merged, not deployed. Do not rebase onto later `main` unless asked.

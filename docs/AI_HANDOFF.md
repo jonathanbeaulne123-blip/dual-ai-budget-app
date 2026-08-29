@@ -1,5 +1,50 @@
 # AI Task and Handoff Standard
 
+## D-164 Kitchen notes (Kitty Banks, sit-down charts, Home desk) (2026-08-29)
+
+**Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7` @ `dc00c39`. **Not merged, not deployed, not live.** Risk: **High** (ledger-mode financial presentation).
+
+**Household outcome:** Shared Home is six glance tiles plus a notebook (no Month blotter hero). Shared Now is **Kitty Banks** — existing shared goals that receive Fund surplus (D-161), not a new envelope. Plan Goals is replaced by Kitty Banks on Shared and Personal. Sit-down cycles paper charts; leftover assignment stays on Shared. Calendar cells show titles. Personal nav keeps Books. Home can scroll. Hercules uses a cream bubble and does not dump chips over the mosaic. Shift saucers expand into posted cash/card/wage totals.
+
+**Budget delta (5):** `+3` — honest Shared vs Personal banks, $0 plan remove, posted shift earnings.
+
+**Engagement delta (3):** `+3` — Home desk, paper banks, sit-down charts, cream talk.
+
+**If they conflicted:** books and the mosaic win. Hercules chips and the grounded-fact grid no longer cover Home. Leftover Confirm stays household-only. No new Fund formulas. Widgets still never `postEntry`.
+
+**What changed:**
+- Shared wide Home: `is-shared-home` two-column mosaic | notebook; blotter lives in More on this desk.
+- Shared Now tile/notebook: Kitty Banks fill bars + CAD; Attention and Change stay story panels. Change tile says **Fund kitty**, not “Kitty Banks.”
+- Plan: one `KittyBanks` surface (visibility via `goalVisibleInView` when `memberId` is passed). Door card “Open Fund kitty” and `Goals` vault removed. Contribution amount is per bank.
+- Sit-down: `sitDownInfographicDeck` carousel; Shared leftover CAD comes from books `leftoverProjection`; Personal gets folio charts + muted leftover-on-Shared line. Chart dots are 44×44.
+- Plan amounts are borderless; × removes a $0 plan (`setBudget` `allowZero`).
+- Calendar: full-width board, titles in cells, item list below.
+- Home `>=720px`: `overflow-y: auto`; window shrinks on short `dvh`.
+- Personal nav: Home · Cal · Shift · + · Plan · Books · More.
+- Hercules overlay: opaque cream bubble; closed = spoken + ok; chips only after How can I help.
+- Personal leftover CAD: gated on help chips, Plan overlay, typed Ask, `planHerculesTurn`, and Books Ask (`askHercules(..., { memberId, view })`). Parks-in copy is Kitty Banks.
+- Shift: 28 posted cups plus week/month/year cash tips, card tips, and wages.
+
+**Verification:**
+- Focused leftover/kitchen tests green (`test/ask-books.test.ts`, `test/hercules.test.ts`, `test/sitdown.test.ts`, `test/kitty-banks.test.ts`, `test/ledger-story-ui.test.ts`, plus Plan/Shift/nav fences).
+- `pnpm check` at `1e3d31b` and `dc00c39` → **1109 passed / 2 skipped**, `ai:verify` + `tsc --noEmit` + Vite build green.
+- Visual, fictional Development demo kitchen as Jonathan: Shared Home ~1100 six tiles + Kitty Banks notebook; Shared Plan leftover paper + Kitty Banks + ×; Calendar cell titles; Personal 7-button nav; Shift posted cash/card/wages; OfficePhone 390 structure unchanged. Walkthrough video `kitchen_shared_personal_walkthrough.mp4` (41s).
+- Independent books/privacy/UX/verifier on `1e3d31b`. Privacy P1 (Books Ask leftover CAD) closed in `dc00c39`. Verifier PASS on leftover-CAD checklist at `1e3d31b`.
+
+**Data and environment disclosure:**
+- Development impact: none (local/synthetic demo kitchen only)
+- Production impact: none
+- Network calls or data sent: none new
+- MCP access: none for household data
+- Hosted rows/schema/secrets/deployments: none
+- Real household or partner-personal data used: none. Demo/synthetic Development only.
+
+**Remaining uncertainty:** Demo seed has few `scope: personal` accounts, so Personal folio/wallet charts may be thin. Plan Kitty **Fund bank** still posts via `fundGoal` without a Confirm sheet (books auditor P1; not expanded here). Afford/food Ask can still recite cash-like CAD on Personal (not leftover assignment). Personal `sitDownPostcard` / “we closed” can still name leftover cents. iPhone `OfficePhone` structure is unchanged. Do not rebase onto later `main` unless asked.
+
+**Next owner:** Jonathan — review Shared Home, Plan Kitty Banks, Calendar, Shift earnings, and Personal Books nav on a laptop width. Do not merge, rebase, or deploy unless you ask.
+
+**Worksession:** [`worksessions/2026-08-28-shared-ledger-story-implementation.md`](worksessions/2026-08-28-shared-ledger-story-implementation.md)
+
 ## D-164 Shared Household table (not Books) (2026-08-28)
 
 **Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7` @ `2033d28`. **Not merged, not deployed, not live.** Risk: **High** (ledger-mode financial presentation).
