@@ -39,6 +39,21 @@ import { assertSevenShiftsBundleMatchesShift, type SevenShiftsEvidenceBundle } f
 import { automationPayrollWeekStart } from "./sevenShiftsAutomation.ts";
 import { shapeSevenShiftsSchedules, type SevenShiftsScheduledShift } from "./sevenShiftsCalendar.ts";
 import {
+  bibleForNonWorkOutcome,
+  bibleFromConfirmedShift,
+  shiftBibleMaterialHash,
+  mergeScheduleEnvelopes,
+  shapeShiftEnvelope,
+  shapeShiftWeatherContext,
+  type ShiftBibleAttendance,
+  type ShiftBible,
+  type ShiftBibleDraft,
+  type ShiftOutcome,
+  type ShiftEnvelopeEvidenceProposal,
+  type ShiftEnvelope,
+  type ShiftWeatherContext,
+} from "./shiftEnvelope.ts";
+import {
   normalizeCoworkerLocation,
   normalizeCoworkerName,
   matchCoworkerName,
@@ -829,6 +844,14 @@ export type PostWorkShiftInput = {
   /** Removed pre-main packet fields retained only so direct/replayed legacy payloads fail explicitly. */
   sevenShiftsEvidence?: unknown;
   sevenShiftsScreenEvidence?: unknown;
+  /** Existing member-personal D-172 envelope. It can prefill, but never bypasses this command. */
+  shiftEnvelopeId?: string;
+  /** Reviewed context sealed beside the financial Shift on visible Confirm. */
+  shiftBibleDraft?: ShiftBibleDraft;
+  /** Internal composite input after surprise helpers have been resolved to private IDs. */
+  shiftBibleAttendance?: ShiftBibleAttendance[];
+  /** The same id later used by the authenticated command-log acceptance. */
+  confirmationId?: string;
 };
 
 /**
@@ -844,6 +867,22 @@ export function postWorkShift(household: Household, input: PostWorkShiftInput): 
   if (!job) throw new ValidationError("Choose one of this worker's active jobs.");
   const role = job.roles.find((row) => row.id === input.roleId && row.active);
   if (!role) throw new ValidationError("Choose an active role for this job.");
+  const shiftEnvelope = input.shiftEnvelopeId
+    ? shapeShiftEnvelope((household.shiftEnvelopes ?? []).find((row) => row.id === input.shiftEnvelopeId), member.id)
+    : null;
+  if (input.shiftEnvelopeId && !shiftEnvelope) throw new ValidationError("That shift envelope is unavailable or belongs to another member.");
+  if (shiftEnvelope) {
+    if (shiftEnvelope.jobId !== job.id || shiftEnvelope.roleId !== role.id || shiftEnvelope.date !== date) {
+      throw new ValidationError("That shift envelope belongs to another date, job, or role.");
+    }
+    if (shiftEnvelope.status !== "worked_ready") {
+      throw new ValidationError("Only a worked-ready envelope can become a financial shift. Schedule outlook never proves worked time.");
+    }
+    if (!["approved", "final"].includes(shiftEnvelope.approvalState) || !["approved", "final"].includes(shiftEnvelope.sourceFinality)) {
+      throw new ValidationError("Worked time must be approved or final before it can open the financial Confirm form.");
+    }
+    if (shiftEnvelope.conflicts.length) throw new ValidationError("Resolve the shift envelope conflicts before confirming money.");
+  }
   requireOpenPeriod(household, date);
   requireAccount(household, job.wagesReceivableAccountId);
   if (role.tipped && !job.cardTipsReceivableAccountId) throw new ValidationError("This tipped job needs a Card tips owed account. Edit the job once to repair it.");
@@ -851,6 +890,11 @@ export function postWorkShift(household: Household, input: PostWorkShiftInput): 
   const workedHours = Number(input.workedHours);
   if (!hasExplicitValue(input.paidBreakHours)) throw new ValidationError("Enter paid-break hours, including 0 when there was no paid break.");
   const paidBreakHours = Number(input.paidBreakHours);
+  if (shiftEnvelope?.workedMinutes != null && Math.round(workedHours * 60) !== shiftEnvelope.workedMinutes) {
+    throw new ValidationError("Worked hours changed from the selected 7shifts envelope. Open a reviewed correction instead of silently changing the source.");
+  }
+  if (shiftEnvelope?.actualStart && input.startedAt !== shiftEnvelope.actualStart) throw new ValidationError("Clock-in time changed from the selected 7shifts envelope.");
+  if (shiftEnvelope?.actualEnd && input.endedAt !== shiftEnvelope.actualEnd) throw new ValidationError("Clock-out time changed from the selected 7shifts envelope.");
   if (input.sevenShiftsEvidence !== undefined || input.sevenShiftsScreenEvidence !== undefined) {
     if (input.sevenShiftsEvidence !== undefined && input.sevenShiftsScreenEvidence !== undefined) {
       throw new ValidationError("A shift cannot attach separate 7shifts punch and screenshot evidence. Build one validated evidence bundle.");
@@ -1038,7 +1082,7 @@ export function postWorkShift(household: Household, input: PostWorkShiftInput): 
   if (!transactionIds.length) throw new ValidationError("This shift has no wages or tips to post.");
 
   const primaryTipsId = cashTipsTransactionId || cardTipsTransactionId;
-  next.shifts.push({
+  const confirmedShift: import("./types.ts").Shift = {
     id: shiftId,
     date,
     memberId: member.id,
@@ -1093,17 +1137,75 @@ export function postWorkShift(household: Household, input: PostWorkShiftInput): 
     note: String(input.note || "").trim().slice(0, 500),
     ...(punchDigest ? { sevenShiftsPunchDigest: punchDigest } : {}),
     ...(sevenShiftsEvidenceBundle ? { sevenShiftsEvidenceBundle } : {}),
-  });
+  };
+  if (shiftEnvelope) {
+    if (!input.shiftBibleDraft || input.shiftBibleDraft.envelopeId !== shiftEnvelope.id) {
+      throw new ValidationError("Review the shift envelope before confirming its Bible.");
+    }
+    if (!input.confirmationId || !/^[A-Za-z0-9._:-]{8,180}$/.test(input.confirmationId)) {
+      throw new ValidationError("Shift Bible confirmation identity is missing.");
+    }
+    try {
+      const authorityAt = createdAt;
+      const explicitAuthority = [
+        ["salesCents", hasExplicitSales, salesCents],
+        ["cashTipsCents", hasExplicitValue(input.cashTips), cashTipsCents],
+        ["cardTipsCents", hasExplicitValue(input.cardTips), cardTipsCents],
+        ["customersServed", hasExplicitValue(input.customersServed), covariates.customersServed],
+        ["staffingCount", hasExplicitValue(input.staffingCount), covariates.staffingCount],
+      ].map(([field, explicit, value]) => ({
+        field: String(field),
+        source: "manual" as const,
+        observedAt: authorityAt,
+        finality: "user_confirmed" as const,
+        presence: explicit ? (Number(value) === 0 ? "explicit_zero" as const : "present" as const) : "missing" as const,
+      }));
+      confirmedShift.shiftBible = bibleFromConfirmedShift({
+        householdId: next.householdId,
+        environment: next.environment,
+        shift: confirmedShift,
+        envelope: shiftEnvelope,
+        draft: { ...input.shiftBibleDraft, authority: [...(input.shiftBibleDraft.authority ?? []), ...explicitAuthority] },
+        attendance: input.shiftBibleAttendance ?? [],
+        confirmationId: input.confirmationId,
+        createdAt,
+      });
+      if (input.shiftBibleDraft.correctionOfBibleId) {
+        const originalIndex = next.shifts.findIndex((row) => row.memberId === member.id && row.shiftBible?.id === input.shiftBibleDraft!.correctionOfBibleId);
+        const original = originalIndex >= 0 ? next.shifts[originalIndex]! : null;
+        if (!original?.shiftBible || !workShiftIsReversed(next, original) || original.jobId !== job.id) {
+          throw new ValidationError("The prior Shift Bible is not an exactly reversed shift for this job.");
+        }
+        confirmedShift.correctionOfShiftId = original.id;
+        const priorWithoutHash = { ...original.shiftBible, correctedByBibleId: confirmedShift.shiftBible.id, updatedAt: createdAt };
+        delete (priorWithoutHash as Partial<ShiftBible>).materialHash;
+        next.shifts[originalIndex] = {
+          ...original,
+          correctedByShiftId: shiftId,
+          updatedAt: createdAt,
+          shiftBible: { ...priorWithoutHash, materialHash: shiftBibleMaterialHash(priorWithoutHash as Omit<ShiftBible, "materialHash">) },
+        };
+      }
+    } catch (error) {
+      throw new ValidationError(error instanceof Error ? error.message : "Shift Bible could not be sealed.");
+    }
+    next.shiftEnvelopes = (next.shiftEnvelopes ?? []).map((row) => row.id === shiftEnvelope.id
+      ? { ...row, status: "confirmed", confirmedBibleId: confirmedShift.shiftBible!.id, updatedAt: createdAt }
+      : row);
+  }
+  next.shifts.push(confirmedShift);
   const punch = activeOpenShift(next.kitchen, member.id);
   if (punch) next.kitchen.openShifts = next.kitchen.openShifts.map((row) => row.id === punch.id ? { ...row, status: "cleared", updatedAt: createdAt } : row);
   const warnings = calculation.cardTipsAfterTipOutCents < 0 ? ["Withheld tip-outs are greater than this shift's card tips; the job's owed balance may be negative."] : [];
-  return commit(previous, next, "Confirm Work Shift", `${shiftId}: ${member.name} at ${job.name} on ${date}`, [shiftId, ...transactionIds], warnings);
+  return commit(previous, next, "Confirm Work Shift", `${shiftId}: ${member.name} at ${job.name} on ${date}`, [shiftId, ...(confirmedShift.shiftBible ? [confirmedShift.shiftBible.id] : []), ...transactionIds], warnings);
 }
 
 export function refreshSevenShiftsSchedule(household: Household, input: {
   memberId: string;
   schedules: SevenShiftsScheduledShift[];
   confirmedPersonalFeed?: boolean;
+  /** Only a capture explicitly reviewed as complete may classify omitted rows as cut. */
+  completeRange?: { startDate: DateKey; endDate: DateKey } | null;
   createdBy?: string;
 }): CommitResult {
   const member = requireMember(household, input.memberId);
@@ -1132,8 +1234,248 @@ export function refreshSevenShiftsSchedule(household: Household, input: {
     ...(next.sevenShiftsSchedules ?? []).filter((row) => row.memberId !== input.memberId),
     ...schedules,
   ];
-  return commit(previous, next, "Refresh 7shifts schedule", `${member.name} saved ${schedules.length} published schedule shift${schedules.length === 1 ? "" : "s"} for outlook only`, schedules.map((row) => row.id), [
+  const observedAt = nowIso();
+  if (input.completeRange) {
+    if (input.completeRange.startDate > input.completeRange.endDate || input.completeRange.startDate.length !== 10 || input.completeRange.endDate.length !== 10) {
+      throw new ValidationError("Complete schedule range is invalid.");
+    }
+    if (schedules.some((row) => row.date < input.completeRange!.startDate || row.date > input.completeRange!.endDate)) {
+      throw new ValidationError("Every complete-range schedule row must fall inside the reviewed range.");
+    }
+  }
+  next.shiftEnvelopes = mergeScheduleEnvelopes({
+    existing: next.shiftEnvelopes ?? [],
+    schedules,
+    householdId: next.householdId,
+    environment: next.environment,
+    memberId: member.id,
+    jobs: next.workJobs,
+    observedAt,
+    completeRange: input.completeRange,
+  });
+  return commit(previous, next, "Refresh 7shifts schedule", `${member.name} saved ${schedules.length} published schedule shift${schedules.length === 1 ? "" : "s"} for outlook only`, [...schedules.map((row) => row.id), ...(next.shiftEnvelopes ?? []).filter((row) => row.memberId === member.id).map((row) => row.id)], [
     "Published schedule rows are projections only. They do not post hours, wages, tips, or money.",
+  ]);
+}
+
+export function refreshShiftEnvelopesFromEvidence(household: Household, input: {
+  memberId: string;
+  createdBy: string;
+  proposals: ShiftEnvelopeEvidenceProposal[];
+}): CommitResult {
+  const member = requireMember(household, input.memberId);
+  if (input.createdBy !== member.id) throw new ValidationError("Only the evidence owner can refresh Shift mail.");
+  if (!Array.isArray(input.proposals) || input.proposals.length > 500) throw new ValidationError("Shift mail refresh is too large.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const rows = [...(next.shiftEnvelopes ?? [])];
+  const touched = new Set<string>();
+  const seen = new Set<string>();
+  const capturedScheduleKeys = new Set(input.proposals.filter((row) => row.kind === "coworker-schedule" && row.source === "seven_shifts_schedule").map((row) => row.canonicalShiftKey));
+  const completeWindows = input.proposals.filter((row) => row.kind === "schedule-window" && row.completeRange);
+  for (const proposal of input.proposals) {
+    const proposalKey = `${proposal.kind}:${proposal.canonicalShiftKey}`;
+    if (seen.has(proposalKey)) continue;
+    seen.add(proposalKey);
+    const job = next.workJobs.find((row) => row.id === proposal.jobId && row.memberId === member.id && row.active);
+    const role = job?.roles.find((row) => row.id === proposal.roleId && row.active);
+    if (!job || !role || !/^s7shift_[a-f0-9]{64}$/.test(proposal.canonicalShiftKey)
+      || !/^\d{4}-\d{2}-\d{2}$/.test(proposal.date) || Number.isNaN(Date.parse(proposal.startedAt))
+      || Number.isNaN(Date.parse(proposal.endedAt)) || proposal.endedAt <= proposal.startedAt
+      || Number.isNaN(Date.parse(proposal.observedAt))) continue;
+    if (proposal.kind === "schedule-window") continue;
+    if (proposal.kind === "coworker-schedule") {
+      let index = rows.findIndex((row) => row.memberId === member.id && row.canonicalShiftKey === proposal.canonicalShiftKey);
+      if (index < 0 && proposal.source === "seven_shifts_email") {
+        const matches = rows.map((row, rowIndex) => ({ row, rowIndex })).filter(({ row }) => row.memberId === member.id && row.jobId === job.id
+          && row.date === proposal.date && row.scheduledStart === proposal.startedAt && row.scheduledEnd === proposal.endedAt);
+        if (matches.length === 1) index = matches[0]!.rowIndex;
+      }
+      const existing = index >= 0 ? rows[index] : null;
+      if (existing?.confirmedBibleId || (existing && existing.lastObservedAt >= proposal.observedAt)) continue;
+      const id = existing?.id ?? uniquePrefixedId("ENV-", rows.map((row) => row.id));
+      rows[index >= 0 ? index : rows.length] = {
+        id, environment: next.environment, householdId: next.householdId, memberId: member.id,
+        canonicalShiftKey: proposal.canonicalShiftKey, jobId: job.id, roleId: role.id, roleLabel: role.name,
+        locationName: job.locationName, timezone: TIMEZONE, date: proposal.date,
+        scheduledStart: proposal.startedAt, scheduledEnd: proposal.endedAt,
+        actualStart: existing?.actualStart ?? null, actualEnd: existing?.actualEnd ?? null,
+        workedMinutes: existing?.workedMinutes ?? null, paidBreakMinutes: existing?.paidBreakMinutes ?? null,
+        unpaidBreakMinutes: existing?.unpaidBreakMinutes ?? null, approvalState: existing?.approvalState ?? "unknown",
+        status: proposal.statusHint ?? (existing?.status === "picked_up" ? "picked_up" : "upcoming"),
+        sourceCategories: [...new Set([...(existing?.sourceCategories ?? []), proposal.source])],
+        authority: [
+          ...(existing?.authority ?? []).filter((row) => !["scheduledStart", "scheduledEnd", "roleId", "jobId"].includes(row.field)),
+          ...["scheduledStart", "scheduledEnd", "roleId", "jobId"].map((field) => ({ field, source: proposal.source, observedAt: proposal.observedAt, finality: proposal.finality, presence: "present" as const })),
+        ],
+        conflicts: existing?.conflicts ?? [], lastObservedAt: proposal.observedAt, sourceFinality: proposal.finality,
+        confirmedBibleId: existing?.confirmedBibleId ?? null, createdAt: existing?.createdAt ?? proposal.observedAt, updatedAt: proposal.observedAt,
+      };
+      touched.add(id);
+      continue;
+    }
+    const candidates = rows.filter((row) => row.memberId === member.id && row.jobId === job.id && row.date === proposal.date
+      && Math.abs(Date.parse(row.scheduledStart) - Date.parse(proposal.startedAt)) <= 18 * 60 * 60_000);
+    const exact = rows.find((row) => row.memberId === member.id && row.canonicalShiftKey === proposal.canonicalShiftKey);
+    const envelope = exact ?? (candidates.length === 1 ? candidates[0] : null);
+    if (envelope && envelope.lastObservedAt >= proposal.observedAt) continue;
+    const id = envelope?.id ?? uniquePrefixedId("ENV-", rows.map((row) => row.id));
+    const changedAfterConfirm = Boolean(envelope?.confirmedBibleId && (envelope.actualStart !== proposal.startedAt
+      || envelope.actualEnd !== proposal.endedAt || envelope.workedMinutes !== proposal.workedMinutes
+      || envelope.paidBreakMinutes !== proposal.paidBreakMinutes || envelope.unpaidBreakMinutes !== proposal.unpaidBreakMinutes));
+    const updated: ShiftEnvelope = {
+      id, environment: next.environment, householdId: next.householdId, memberId: member.id,
+      canonicalShiftKey: envelope?.canonicalShiftKey ?? proposal.canonicalShiftKey, jobId: job.id, roleId: role.id,
+      roleLabel: role.name, locationName: job.locationName, timezone: TIMEZONE, date: proposal.date,
+      scheduledStart: envelope?.scheduledStart ?? proposal.startedAt, scheduledEnd: envelope?.scheduledEnd ?? proposal.endedAt,
+      actualStart: proposal.startedAt, actualEnd: proposal.endedAt, workedMinutes: proposal.workedMinutes,
+      paidBreakMinutes: proposal.paidBreakMinutes, unpaidBreakMinutes: proposal.unpaidBreakMinutes,
+      approvalState: proposal.finality === "final" ? "final" as const : proposal.finality === "approved" ? "approved" as const : "unapproved" as const,
+      status: changedAfterConfirm
+        ? "needs_review" as const
+        : envelope?.confirmedBibleId
+          ? "confirmed" as const
+          : ["approved", "final"].includes(proposal.finality)
+            ? "worked_ready" as const
+            : "needs_review" as const,
+      sourceCategories: [...new Set([...(envelope?.sourceCategories ?? []), proposal.source])],
+      authority: [
+        ...(envelope?.authority ?? []).filter((row) => !["actualStart", "actualEnd", "workedMinutes", "paidBreakMinutes", "unpaidBreakMinutes", "approvalState"].includes(row.field)),
+        ...["actualStart", "actualEnd", "workedMinutes", "approvalState"].map((field) => ({ field, source: proposal.source, observedAt: proposal.observedAt, finality: proposal.finality, presence: "present" as const })),
+        { field: "paidBreakMinutes", source: proposal.source, observedAt: proposal.observedAt, finality: proposal.finality, presence: proposal.paidBreakMinutes == null ? "missing" as const : proposal.paidBreakMinutes === 0 ? "explicit_zero" as const : "present" as const },
+        { field: "unpaidBreakMinutes", source: proposal.source, observedAt: proposal.observedAt, finality: proposal.finality, presence: proposal.unpaidBreakMinutes == null ? "missing" as const : proposal.unpaidBreakMinutes === 0 ? "explicit_zero" as const : "present" as const },
+      ],
+      conflicts: candidates.length > 1 && !exact ? ["More than one schedule could match this worked row."] : envelope?.conflicts ?? [],
+      lastObservedAt: proposal.observedAt, sourceFinality: proposal.finality, confirmedBibleId: envelope?.confirmedBibleId ?? null,
+      createdAt: envelope?.createdAt ?? proposal.observedAt, updatedAt: proposal.observedAt,
+    };
+    const index = rows.findIndex((row) => row.id === id);
+    rows[index >= 0 ? index : rows.length] = updated;
+    touched.add(id);
+  }
+  for (const window of completeWindows) {
+    const range = window.completeRange!;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(range.startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(range.endDate) || range.startDate > range.endDate) continue;
+    for (let index = 0; index < rows.length; index += 1) {
+      const row = rows[index];
+      if (!row) continue;
+      if (row.memberId !== member.id || row.jobId !== window.jobId || row.date < range.startDate || row.date > range.endDate
+        || row.confirmedBibleId || capturedScheduleKeys.has(row.canonicalShiftKey)
+        || !row.sourceCategories.includes("seven_shifts_schedule") || row.lastObservedAt > window.observedAt) continue;
+      rows[index] = {
+        ...row,
+        status: "cut",
+        sourceCategories: [...new Set([...row.sourceCategories, "seven_shifts_schedule" as const])],
+        authority: [...row.authority.filter((fact) => fact.field !== "outcome"), {
+          field: "outcome", source: "seven_shifts_schedule", observedAt: window.observedAt, finality: "outlook", presence: "present",
+        }],
+        lastObservedAt: window.observedAt,
+        updatedAt: window.observedAt,
+      };
+      touched.add(row.id);
+    }
+  }
+  next.shiftEnvelopes = rows;
+  return commit(previous, next, "Refresh Shift mail", `${member.name} refreshed ${touched.size} shift envelope${touched.size === 1 ? "" : "s"} from bounded 7shifts facts`, [...touched], [
+    "This refresh is nonfinancial. It cannot post hours, wages, tips, sales, corrections, or journal rows.",
+  ]);
+}
+
+/** Visible, non-money confirmation for a cut, employee call-out, or traded-away shift. */
+export function confirmShiftEnvelopeOutcome(household: Household, input: {
+  memberId: string;
+  envelopeId: string;
+  outcome: Exclude<ShiftOutcome, "worked">;
+  confirmationId: string;
+  createdBy: string;
+}): CommitResult {
+  const member = requireMember(household, input.memberId);
+  if (input.createdBy !== member.id) throw new ValidationError("Only the envelope owner can confirm a shift outcome.");
+  if (!["cut", "called_off", "traded_away"].includes(input.outcome)) throw new ValidationError("Choose cut, called off, or traded away.");
+  const envelope = shapeShiftEnvelope((household.shiftEnvelopes ?? []).find((row) => row.id === input.envelopeId), member.id);
+  if (!envelope) throw new ValidationError("That shift envelope is unavailable.");
+  if (envelope.confirmedBibleId) throw new ValidationError("That shift already has a confirmed Bible.");
+  if (!envelope.jobId || !envelope.roleId) throw new ValidationError("Map this envelope to a job and role first.");
+  if (!/^[A-Za-z0-9._:-]{8,180}$/.test(input.confirmationId)) throw new ValidationError("Outcome confirmation identity is missing.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nowIso();
+  const bibleId = nextId("BIBLE-", [
+    ...(next.shiftBibles ?? []).map((row) => row.id),
+    ...next.shifts.flatMap((row) => row.shiftBible ? [row.shiftBible.id] : []),
+  ]);
+  const bible = bibleForNonWorkOutcome({ id: bibleId, envelope, outcome: input.outcome, confirmationId: input.confirmationId, confirmedAt: at });
+  next.shiftBibles = [...(next.shiftBibles ?? []), bible];
+  next.shiftEnvelopes = (next.shiftEnvelopes ?? []).map((row) => row.id === envelope.id
+    ? { ...row, status: "confirmed", confirmedBibleId: bible.id, updatedAt: at }
+    : row);
+  return commit(previous, next, "Confirm Shift Outcome", `${member.name} confirmed a non-work shift outcome`, [bible.id, envelope.id], [
+    "This outcome records no hours, wages, sales, tips, or journal money.",
+  ]);
+}
+
+/** Append-only, nonfinancial context revision for a previously confirmed Bible. */
+export function appendShiftBibleWeather(household: Household, input: {
+  memberId: string;
+  bibleId: string;
+  weather: ShiftWeatherContext;
+  createdBy: string;
+}): CommitResult {
+  const member = requireMember(household, input.memberId);
+  const weather = shapeShiftWeatherContext(input.weather);
+  if (input.createdBy !== member.id || !weather || weather.state !== "complete" || !weather.fetchedAt) throw new ValidationError("Completed historical weather must be added by the Bible owner.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const standaloneIndex = (next.shiftBibles ?? []).findIndex((row) => row.id === input.bibleId && row.memberId === member.id);
+  const shiftIndex = next.shifts.findIndex((row) => row.memberId === member.id && row.shiftBible?.id === input.bibleId);
+  const current = shiftIndex >= 0 ? next.shifts[shiftIndex]!.shiftBible! : standaloneIndex >= 0 ? next.shiftBibles![standaloneIndex]! : null;
+  if (!current || !current.actualStart || !current.actualEnd) throw new ValidationError("That worked Shift Bible is unavailable.");
+  if (weather.intervalStartedAt !== current.actualStart || weather.intervalEndedAt !== current.actualEnd) throw new ValidationError("Historical weather interval does not match the worked shift.");
+  const at = nowIso();
+  const withoutHash = {
+    ...current,
+    revision: current.revision + 1,
+    revisionHistory: [...current.revisionHistory, {
+      revision: current.revision,
+      materialHash: current.materialHash,
+      weather: current.weather,
+      authority: current.authority,
+      updatedAt: current.updatedAt,
+    }],
+    weather,
+    authority: [...current.authority.filter((row) => row.field !== "weather"), {
+      field: "weather", source: "weather" as const, observedAt: weather.fetchedAt, finality: "final" as const, presence: "present" as const,
+    }],
+    updatedAt: at,
+  };
+  const revised = { ...withoutHash, materialHash: shiftBibleMaterialHash(withoutHash) };
+  if (shiftIndex >= 0) next.shifts[shiftIndex] = { ...next.shifts[shiftIndex]!, shiftBible: revised };
+  else next.shiftBibles![standaloneIndex] = revised;
+  return commit(previous, next, "Add Shift weather", `${member.name} added historical weather to a confirmed Shift Bible`, [current.id], [
+    "This context revision does not add, reverse, or change journal money.",
+  ]);
+}
+
+export function retireResolvedShiftEnvelope(household: Household, input: {
+  memberId: string;
+  envelopeId: string;
+  bibleId: string;
+  createdBy: string;
+}): CommitResult {
+  const member = requireMember(household, input.memberId);
+  if (input.createdBy !== member.id) throw new ValidationError("Only the envelope owner can retire resolved Shift mail.");
+  const envelope = shapeShiftEnvelope((household.shiftEnvelopes ?? []).find((row) => row.id === input.envelopeId), member.id);
+  if (!envelope || envelope.confirmedBibleId !== input.bibleId || envelope.status !== "confirmed") throw new ValidationError("Only a sealed confirmed envelope can be retired.");
+  const bibleExists = household.shifts.some((row) => row.memberId === member.id && row.shiftBible?.id === input.bibleId)
+    || (household.shiftBibles ?? []).some((row) => row.memberId === member.id && row.id === input.bibleId);
+  if (!bibleExists) throw new ValidationError("The permanent Shift Bible is missing.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nowIso();
+  next.shiftEnvelopes = (next.shiftEnvelopes ?? []).filter((row) => row.id !== envelope.id);
+  next.tombstones = mergeTombstones(next.tombstones, [{ id: envelope.id, deletedAt: at }]);
+  return commit(previous, next, "Archive resolved Shift mail", `${member.name} archived a resolved shift envelope after its Bible was sealed`, [envelope.id], [
+    "The permanent Shift Bible and any linked financial journal remain unchanged.",
   ]);
 }
 
@@ -3052,7 +3394,9 @@ export function postWorkShiftWithAttendanceReview(
   input: PostWorkShiftInput,
   review?: ShiftAttendanceReviewDraft | null,
 ): CommitResult {
-  if (!review || (!review.rows.length && !review.surpriseHelpers.length)) return postWorkShift(household, input);
+  if (!review || (!review.rows.length && !review.surpriseHelpers.length)) {
+    return postWorkShift(household, { ...input, shiftBibleAttendance: [] });
+  }
   if (review.rows.length > 200 || review.surpriseHelpers.length > 50) throw new ValidationError("Attendance review is too large.");
   const job = (household.workJobs ?? []).find((row) => row.id === input.jobId && row.active && row.memberId === input.memberId);
   if (!job || normalizeCoworkerLocation(review.locationName) !== normalizeCoworkerLocation(job.locationName)) {
@@ -3087,7 +3431,12 @@ export function postWorkShiftWithAttendanceReview(
     }
     rows.push({ coworkerId, status: "surprise-helper" });
   }
-  const shift = postWorkShift(staged, input);
+  const shiftBibleAttendance: ShiftBibleAttendance[] = rows.map((row) => ({
+    coworkerId: row.coworkerId,
+    status: row.status,
+    roleLabel: row.roleLabel?.trim().slice(0, 80) || null,
+  }));
+  const shift = postWorkShift(staged, { ...input, shiftBibleAttendance });
   const shiftId = shift.household.shifts.find((row) => shift.postedIds.includes(row.id))?.id;
   if (!shiftId) throw new ValidationError("Confirmed shift did not return an attendance anchor.");
   const attendance = recordCoworkerAttendance(shift.household, {
@@ -3186,6 +3535,37 @@ export function reversePostedMoney(household: Household, transactionId: string, 
       ? `Reversed ${tx.date} transfer ${dollars}`
       : `Reversed ${tx.date} ${tx.type} ${dollars}`;
   return commit(previous, next, "Reverse", label, postedIds);
+}
+
+/** Reverse one confirmed Bible shift and reopen its exact envelope for the visible replacement Confirm. */
+export function beginShiftBibleCorrection(household: Household, transactionId: string, input: ActorInput = {}): CommitResult {
+  const transaction = household.transactions.find((row) => row.id === transactionId && row.source === "shift" && row.sourceId);
+  const shift = transaction?.sourceId ? household.shifts.find((row) => row.id === transaction.sourceId) : null;
+  if (!transaction || !shift?.shiftBible) throw new ValidationError("That correction is not linked to a confirmed Shift Bible.");
+  const envelope = shapeShiftEnvelope((household.shiftEnvelopes ?? []).find((row) => row.id === shift.shiftBible!.envelopeId), shift.memberId);
+  if (!envelope || envelope.confirmedBibleId !== shift.shiftBible.id) throw new ValidationError("The confirmed Shift Bible envelope is unavailable.");
+  requireOpenPeriod(household, shift.date);
+  const job = household.workJobs.find((row) => row.id === shift.jobId && row.memberId === shift.memberId);
+  if (!job) throw new ValidationError("The Shift Bible job is unavailable.");
+  const receivableAccounts = new Set([job.wagesReceivableAccountId, job.cardTipsReceivableAccountId].filter(Boolean));
+  if ((shift.deferredTipOutPaidCents ?? 0) > 0 || household.transactions.some((row) => row.type === "transfer" && row.source !== "reversal"
+    && row.date >= shift.date && row.transferFromAccountId && receivableAccounts.has(row.transferFromAccountId))) {
+    throw new ValidationError("This shift has settled wage, card-tip, or deferred-tip-out money. Record a reviewed current-period variance instead of reopening it.");
+  }
+  if (job.overtimeEnabled && household.shifts.some((row) => row.id !== shift.id && row.memberId === shift.memberId && row.jobId === shift.jobId
+    && row.date > shift.date && row.date <= addDays(shift.date, 6) && !workShiftIsReversed(household, row))) {
+    throw new ValidationError("A later shift may depend on this shift for weekly overtime. Reconcile the complete payroll week instead of replacing one shift.");
+  }
+  const reversed = reversePostedMoney(household, transactionId, input);
+  const next = cloneHousehold(reversed.household);
+  next.shiftEnvelopes = (next.shiftEnvelopes ?? []).map((row) => row.id === envelope.id ? {
+    ...row,
+    status: ["approved", "final"].includes(row.sourceFinality) ? "worked_ready" : "needs_review",
+    // Retain the prior id until replacement so the new Bible can link the exact chain.
+    confirmedBibleId: shift.shiftBible!.id,
+    updatedAt: nowIso(),
+  } : row);
+  return { ...reversed, household: next, warnings: [...reversed.warnings, "The old Bible remains linked to its balanced reversal until the visible replacement is confirmed."] };
 }
 
 /**

@@ -1,15 +1,19 @@
 {
   "manifest_version": 3,
   "name": "Hearth 7shifts Capture (Development)",
-  "version": "0.1.0",
-  "description": "Explicitly captures employee-visible 7shifts evidence for the signed-in Hearth member.",
-  "permissions": ["activeTab", "scripting", "storage"],
-  "host_permissions": ["https://app.7shifts.com/*", "https://hearth-books.jonathan-beaulne123.workers.dev/work/evidence/capability-upload"],
+  "version": "0.2.0",
+  "description": "Captures fixed employee-visible 7shifts schedule, timesheet, and optional read-only Gmail projections while Chrome is running.",
+  "permissions": ["activeTab", "scripting", "storage", "alarms", "tabs", "identity"],
+  "host_permissions": ["https://app.7shifts.com/*", "https://www.googleapis.com/*", "https://gmail.googleapis.com/*", "https://hearth-books.jonathan-beaulne123.workers.dev/work/evidence/*"],
   "action": {
     "default_title": "Capture this 7shifts session",
     "default_popup": "popup.html"
   },
   "background": { "service_worker": "service-worker.js", "type": "module" },
+  "oauth2": {
+    "client_id": "118841732569-0p8gsn92d96jcci9dh5so0svtf64c73f.apps.googleusercontent.com",
+    "scopes": ["https://www.googleapis.com/auth/gmail.readonly"]
+  },
   "content_scripts": [{
     "matches": ["https://app.7shifts.com/*"],
     "js": ["capture-safety.js", "content.js"],

@@ -16,9 +16,10 @@ import { appointmentPublicTitle, claimExpectedLandingDate, claimRemainingCents, 
 import { detectRhythms, type Rhythm } from "./rhythm.ts";
 import { workOwedFactsInRange, type WorkOwedFact } from "./workSettlement.ts";
 import { workShiftIsReversed } from "./work.ts";
+import { statusForEnvelopeAt } from "./shiftEnvelope.ts";
 import type { Household, Recurrence, RecurrenceKind } from "./types.ts";
 
-export type BoardKind = RecurrenceKind | "shift" | "google" | "detected" | "visit" | "claim" | "work-pay" | "work-tip" | "work-tipout";
+export type BoardKind = RecurrenceKind | "shift" | "shift-envelope" | "google" | "detected" | "visit" | "claim" | "work-pay" | "work-tip" | "work-tipout";
 
 export type OverlayEvent = {
   id: string;
@@ -36,7 +37,7 @@ export type BoardItem = {
   amountCents: number;
   direction: "in" | "out" | "work" | "busy";
   kind: BoardKind;
-  source: "recurrence" | "rhythm" | "shift" | "google" | "appointment" | "claim" | "work-settlement";
+  source: "recurrence" | "rhythm" | "shift" | "shift-envelope" | "google" | "appointment" | "claim" | "work-settlement";
   recurrenceId?: string;
   appointmentId?: string;
   rhythmKey?: string;
@@ -44,6 +45,7 @@ export type BoardItem = {
   memberColor?: string;
   workJobId?: string;
   workSettlementKind?: WorkOwedFact["kind"];
+  shiftEnvelopeId?: string;
   due: boolean;
 };
 
@@ -174,6 +176,37 @@ export function buildMonthBoard(
       memberId: shift.memberId,
       memberColor: job?.color ?? member?.color,
       due: false,
+    });
+  }
+
+  for (const envelope of household.shiftEnvelopes ?? []) {
+    if (!inInclusiveRange(envelope.date, gridStart, gridEnd)) continue;
+    const workedShift = household.shifts.find((row) => row.shiftBible?.envelopeId === envelope.id && !workShiftIsReversed(household, row));
+    if (workedShift) continue;
+    const outcomeBible = (household.shiftBibles ?? []).find((row) => row.envelopeId === envelope.id && !row.correctedByBibleId);
+    const status = outcomeBible?.outcome ?? statusForEnvelopeAt(envelope);
+    const job = household.workJobs.find((row) => row.id === envelope.jobId);
+    const role = job?.roles.find((row) => row.id === envelope.roleId);
+    const label = status === "called_off" ? "Called off"
+      : status === "traded_away" ? "Traded away"
+        : status === "cut" ? "Cut"
+          : status === "awaiting_punch" ? "Awaiting 7shifts"
+            : status === "worked_ready" ? "Worked — needs Confirm"
+              : status === "needs_review" ? "Changed — needs review"
+                : status === "picked_up" ? "Picked up"
+                  : "Upcoming";
+    items.push({
+      id: `envelope:${envelope.id}`,
+      date: envelope.date,
+      title: `${job?.name ?? "Shift"}${role ? ` · ${role.name}` : ""} · ${label}`,
+      amountCents: 0,
+      direction: "busy",
+      kind: "shift-envelope",
+      source: "shift-envelope",
+      memberId: envelope.memberId,
+      memberColor: job?.color ?? household.members.find((row) => row.id === envelope.memberId)?.color,
+      shiftEnvelopeId: envelope.id,
+      due: ["awaiting_punch", "worked_ready", "needs_review"].includes(status),
     });
   }
 

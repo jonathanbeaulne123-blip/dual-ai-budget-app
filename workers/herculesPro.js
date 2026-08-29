@@ -547,7 +547,7 @@ function gmailShiftToolDefinitions() {
   }, {
     name: "shift_write_options",
     title: "Review eligible worked shifts",
-    description: "List member-owned eligible worked-evidence candidates and return a short-lived opaque review token. Notification email and schedules are excluded. Read-only; use before preparing a shift.",
+    description: "List member-owned eligible worked-evidence candidates so Hercules can explain what is ready. Notification email and schedules are excluded. Read-only; the person must open the visible Shift screen to confirm money.",
     inputSchema: { type: "object", properties: { limit: { type: "integer", minimum: 1, maximum: 25 } }, additionalProperties: false },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     securitySchemes: readSecurity,
@@ -594,7 +594,7 @@ function gmailShiftToolDefinitions() {
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
     securitySchemes: writeSecurity,
     _meta: { securitySchemes: writeSecurity },
-  }];
+  }].filter((tool) => !["prepare_shift_from_evidence", "confirm_shift_from_evidence"].includes(tool.name));
 }
 
 function companionToolDefinition() {
@@ -1104,7 +1104,7 @@ async function handleMcp(request, env) {
       capabilities: { tools: { listChanged: false }, resources: { listChanged: false } },
       serverInfo: { name: "hearth-hercules-pro", version: "0.3.4" },
       instructions: hasScope(claims, "hearth.write")
-        ? "Hercules is a grounded financial teacher. On the first user turn of every new conversation, your FIRST tool call MUST be summon_hercules before any accounting tool so the living 3D companion auto-loads and requests picture-in-picture. Do not wait for the person to ask to see him. Every tool result includes householdName (the custom household title people entered) and ledgerName (the custom shared or personal ledger label). Always identify the books by those display names, never by householdId or by the machine words Household/Personal alone. Read tools never change state. For a requested transaction, call prepare_transaction, show every preview field and duplicate warning, wait for explicit confirmation, then and only then call confirm_transaction. For imported 7shifts mail, call scrub_my_7shifts_email. Email and schedules are outlook only. For a worked shift, call shift_write_options, then prepare_shift_from_evidence, show every preview field and warning, wait for explicit confirmation, then and only then call confirm_shift_from_evidence. Never infer consent or prepare a delete/payment."
+        ? "Hercules is a grounded financial teacher. On the first user turn of every new conversation, your FIRST tool call MUST be summon_hercules before any accounting tool so the living 3D companion auto-loads and requests picture-in-picture. Do not wait for the person to ask to see him. Every tool result includes householdName (the custom household title people entered) and ledgerName (the custom shared or personal ledger label). Always identify the books by those display names, never by householdId or by the machine words Household/Personal alone. Read tools never change state. For a requested transaction, call prepare_transaction, show every preview field and duplicate warning, wait for explicit confirmation, then and only then call confirm_transaction. For imported 7shifts mail, call scrub_my_7shifts_email. Email and schedules are outlook only. For worked evidence, shift_write_options may explain what is ready, but only the visible Shift screen may confirm or correct money. Never call or claim a model-side shift writer. Never infer consent or prepare a delete/payment."
         : "Hercules is a read-only financial teacher. On the first user turn of every new conversation, your FIRST tool call MUST be summon_hercules before any accounting tool so the living 3D companion auto-loads and requests picture-in-picture. Do not wait for the person to ask to see him. Every tool result includes householdName (the custom household title people entered) and ledgerName (the custom shared or personal ledger label). Always identify the books by those display names, never by householdId or by the machine words Household/Personal alone. Call tools for all current numbers. Never imply a write occurred.",
     } });
   }
@@ -1127,6 +1127,9 @@ async function handleMcp(request, env) {
     const name = String(rpc.params?.name || "");
     const args = rpc.params?.arguments && typeof rpc.params.arguments === "object" ? rpc.params.arguments : {};
     try {
+      if (name === "prepare_shift_from_evidence" || name === "confirm_shift_from_evidence") {
+        throw new Error("D-172 keeps worked-shift money on the visible Shift screen. Hercules can review eligible evidence but cannot prepare or post it.");
+      }
       if (name === "summon_hercules") {
         const { books } = await loadBooks(env, claims);
         const view = args.ledger === "household" ? "household" : "personal";

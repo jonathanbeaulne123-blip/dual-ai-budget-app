@@ -114,10 +114,10 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list" }),
     }), env);
     const listed = await tools.json() as { result: { tools: Array<{ name: string; annotations: { readOnlyHint: boolean }; _meta?: { ui?: { resourceUri?: string } } }> } };
-    // companion + rig + TOOL_CATALOG + Gmail/shift review + transaction writes.
-    expect(listed.result.tools).toHaveLength(74);
-    expect(listed.result.tools.filter((tool) => tool.annotations.readOnlyHint)).toHaveLength(72);
-    expect(listed.result.tools.filter((tool) => !["confirm_transaction", "confirm_shift_from_evidence"].includes(tool.name)).every((tool) => tool.annotations.readOnlyHint)).toBe(true);
+    // D-172 keeps only read-side Gmail/shift review; the visible Shift screen is the sole worked-money writer.
+    expect(listed.result.tools).toHaveLength(72);
+    expect(listed.result.tools.filter((tool) => tool.annotations.readOnlyHint)).toHaveLength(71);
+    expect(listed.result.tools.filter((tool) => tool.name !== "confirm_transaction").every((tool) => tool.annotations.readOnlyHint)).toBe(true);
     const names = listed.result.tools.map((tool) => tool.name);
     expect(names).toEqual(expect.arrayContaining([
       "ledger_context",
@@ -132,11 +132,10 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       "confirm_transaction",
       "scrub_my_7shifts_email",
       "shift_write_options",
-      "prepare_shift_from_evidence",
-      "confirm_shift_from_evidence",
     ]));
     expect(listed.result.tools.find((tool) => tool.name === "confirm_transaction")?.annotations.readOnlyHint).toBe(false);
-    expect(listed.result.tools.find((tool) => tool.name === "confirm_shift_from_evidence")?.annotations.readOnlyHint).toBe(false);
+    expect(names).not.toContain("prepare_shift_from_evidence");
+    expect(names).not.toContain("confirm_shift_from_evidence");
     expect(listed.result.tools.find((tool) => tool.name === "shift_year_simulation")?.annotations.readOnlyHint).toBe(true);
     expect(listed.result.tools.some((tool) => /^(?:post|delete|pay|transfer)(?:_|$)/.test(tool.name))).toBe(false);
     expect(listed.result.tools.some((tool) => tool.name === "tip_oracle")).toBe(true);
@@ -512,7 +511,7 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 20, method: "tools/list" }),
     }), env);
     const listed = await listedResponse.json() as { result: { tools: Array<{ name: string; annotations: { readOnlyHint: boolean; destructiveHint: boolean } }> } };
-    expect(listed.result.tools).toHaveLength(74);
+    expect(listed.result.tools).toHaveLength(72);
     expect(listed.result.tools.find((tool) => tool.name === "confirm_transaction")?.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: true });
     expect(listed.result.tools.some((tool) => tool.name === "year_review")).toBe(true);
     expect(listed.result.tools.some((tool) => tool.name === "shift_year_simulation")).toBe(true);

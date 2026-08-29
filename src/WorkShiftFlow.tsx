@@ -16,6 +16,7 @@ import {
   type ShiftAttendanceReviewDraft,
   type SevenShiftsTimesheetDraft,
   type ShiftEventTag,
+  type ShiftBibleDraft,
   type Visibility,
   type WeatherGlass,
 } from "./core/index.ts";
@@ -41,7 +42,7 @@ const EVENT_LABELS: Record<ShiftEventTag, string> = {
 };
 
 export type WorkShiftDraft = {
-  sourceKind?: "camera" | "seven-shifts-approved-punch";
+  sourceKind?: "camera" | "seven-shifts-approved-punch" | "shift-envelope";
   sourceLabel?: string;
   date?: string;
   jobId?: string;
@@ -50,6 +51,7 @@ export type WorkShiftDraft = {
   endedAt?: string | null;
   workedHours?: string | number;
   paidBreakHours?: string | number;
+  unpaidBreakHours?: string | number;
   sales?: string | number;
   /** Optional POS class totals keyed by label (Food / Alcohol). Never invents a split. */
   salesByField?: Record<string, string | number>;
@@ -60,6 +62,8 @@ export type WorkShiftDraft = {
   eventTag?: ShiftEventTag;
   weatherGlass?: WeatherGlass;
   note?: string;
+  shiftEnvelopeId?: string;
+  shiftBibleDraft?: ShiftBibleDraft;
 };
 
 function dollars(digits: string): string {
@@ -140,6 +144,7 @@ export function WorkShiftFlow({
   const punchHours = punch ? workedHoursFromOpenShift(punch) : null;
   const [hoursDigits, setHoursDigits] = useState(() => asDigitsFromDollars(inboxDraft?.workedHours ?? cameraDraft?.workedHours ?? punchHours?.workedHours ?? 0) || centsDigitsFromDollars("0"));
   const [paidBreakDigits, setPaidBreakDigits] = useState(() => asExplicitDigitsFromDollars(inboxDraft?.paidBreakHours ?? cameraDraft?.paidBreakHours ?? punchHours?.paidBreakHours));
+  const [unpaidBreakDigits, setUnpaidBreakDigits] = useState(() => asExplicitDigitsFromDollars(cameraDraft?.unpaidBreakHours));
   const [hoursTouched, setHoursTouched] = useState(Boolean(cameraDraft?.workedHours != null));
   const draftSalesFields = job?.salesFields.filter((field) => field.requirement !== "off") ?? [];
   const [money, setMoney] = useState<Record<string, string>>(() => {
@@ -316,6 +321,7 @@ export function WorkShiftFlow({
   const validateTimeStep = (): string | null => {
     if (!(Number(dollars(hoursDigits)) > 0)) return "Enter actual working hours before continuing.";
     if (paidBreakDigits === "") return "Enter paid-break hours, including 0 when there was no paid break.";
+    if (cameraDraft?.shiftEnvelopeId && unpaidBreakDigits === "") return "Enter unpaid-break hours, including 0 when there was no unpaid break.";
     return null;
   };
 
@@ -384,6 +390,13 @@ export function WorkShiftFlow({
       settingsFingerprint: workJobFingerprint(job, role.id, date),
       createdBy: memberId,
       ...(inboxDraft?.punchDigest ? { sevenShiftsPunchDigest: inboxDraft.punchDigest } : {}),
+      ...(cameraDraft?.shiftEnvelopeId ? {
+        shiftEnvelopeId: cameraDraft.shiftEnvelopeId,
+        shiftBibleDraft: {
+          ...cameraDraft.shiftBibleDraft!,
+          unpaidBreakMinutes: Math.round(Number(dollars(unpaidBreakDigits)) * 60),
+        },
+      } : {}),
     }, attendanceReview);
   };
 
@@ -426,6 +439,7 @@ export function WorkShiftFlow({
           <div className="work-shift-pad-grid">
             <CadPad digits={hoursDigits} onDigits={(digits) => { setHoursTouched(true); setHoursDigits(digits); }} label="Actual working hours" unit="hours" emptyDisplay="Not entered" />
             <CadPad digits={paidBreakDigits} onDigits={(digits) => { setHoursTouched(true); setPaidBreakDigits(digits); }} label="Paid-break hours" unit="hours" emptyDisplay="Not entered" />
+            {cameraDraft?.shiftEnvelopeId ? <CadPad digits={unpaidBreakDigits} onDigits={setUnpaidBreakDigits} label="Unpaid-break hours" unit="hours" emptyDisplay="Not entered" /> : null}
           </div>
           <p className="muted">Unpaid breaks are excluded. Paid breaks stay visible as their own income category.</p>
           {stepError ? <p className="error" role="alert">{stepError}</p> : null}
@@ -513,6 +527,7 @@ export function WorkShiftFlow({
           <div className="work-shift-review">
             <div><span>Working hours</span><strong>{dollars(hoursDigits)} h</strong></div>
             <div><span>Paid break</span><strong>{dollars(paidBreakDigits)} h</strong></div>
+            {cameraDraft?.shiftEnvelopeId ? <div><span>Unpaid break</span><strong>{dollars(unpaidBreakDigits)} h</strong></div> : null}
             <div><span>Gross wages</span><strong>{calculation ? formatCad(calculation.grossWagesCents) : "—"}</strong></div>
             <div><span>Expected take-home wages</span><strong>{calculation ? formatCad(calculation.takeHomeWagesCents) : "—"}</strong></div>
             <div><span>Tips before tip-outs</span><strong>{calculation ? formatCad(calculation.tipsBeforeTipOutCents) : "—"}</strong></div>

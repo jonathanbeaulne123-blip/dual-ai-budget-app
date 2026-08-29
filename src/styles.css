@@ -124,6 +124,28 @@ html, body {
 .work-shift-empty { padding: 18px; border: 1px dashed var(--line); border-radius: 12px; }
 .work-shift-scan { display: grid; gap: 10px; margin-bottom: 8px; padding: 12px; border: 1px dashed var(--line); border-radius: 12px; }
 .work-shift-scan .import-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.shift-envelope-mail { display: grid; gap: 10px; }
+.shift-envelope-mail header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.shift-envelope-list { display: grid; gap: 7px; }
+.shift-envelope-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+}
+.shift-envelope-row.selected { border-color: var(--copper); background: color-mix(in srgb, var(--copper) 8%, var(--paper)); }
+.shift-envelope-row span:nth-child(2) { display: grid; min-width: 0; }
+.shift-envelope-row small { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shift-envelope-row span:last-child { color: var(--muted); font-size: 12px; text-align: right; }
+.shift-envelope-open { padding: 12px; border-left: 3px solid var(--copper); background: color-mix(in srgb, var(--copper) 7%, var(--paper)); border-radius: 0 12px 12px 0; }
 .work-shift-scan-provider { display: grid; gap: 6px; }
 .work-shift-scan-provider .chips { margin-top: 0; }
 .doc-camera-overlay {
@@ -2418,7 +2440,10 @@ input, select, textarea {
     gap: 14px;
     align-items: start;
   }
-  .shift-today-wide > :nth-child(3) {
+  .shift-envelope-mail { grid-column: 1 / -1; }
+  .shift-today-wide > :nth-child(4) {
     grid-column: 1 / -1;
   }
 }
+.work-bible-detail { grid-column: 1 / -1; display: grid; gap: 6px; padding: 12px; border: 1px solid rgba(122, 86, 48, .25); border-radius: 12px; background: rgba(255, 250, 240, .7); }
+.work-bible-detail p { margin: 0; }

@@ -221,7 +221,7 @@ describe("D-158 deterministic Evidence extraction", () => {
     ].join("\r\n");
     const result = deriveEvidenceBytes({ captureKind: "gmail-7shifts-email", contentType: "message/rfc822", bytes: bytes(email) });
     expect(result.records).toHaveLength(2);
-    expect(result.records.every((row: any) => row.kind === "schedule" && row.finality === "outlook" && row.workedMinutes === null)).toBe(true);
+    expect(result.records.every((row: any) => row.kind === "coworker-schedule" && row.ownerAsserted === true && row.finality === "outlook" && row.workedMinutes === null)).toBe(true);
     expect(field(result.records[0], "scheduledMinutes")?.value).toBe(360);
     expect(result.records[0]?.observations.every((row: any) => row.extraction === "email" && row.finality === "outlook")).toBe(true);
   });

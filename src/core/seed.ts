@@ -5,6 +5,7 @@ import { emptyCreditDesk, shapeAccounts } from "./accountKinds.ts";
 import { COMPANION, JOINT, type Category, type Household, type WorkJob } from "./types.ts";
 import { jointSplit, equalSplits } from "./splits.ts";
 import { shapeWorkJob } from "./work.ts";
+import { shiftBibleMaterialHash, type ShiftBible } from "./shiftEnvelope.ts";
 
 function mulberry32(seed: number) {
   return function random() {
@@ -670,6 +671,37 @@ export function seedDemoHousehold(options?: { today?: DateKey; environment?: Hou
     note: "Demo Timesheet job so Bianca can punch and scan on Shift Today.",
   } satisfies WorkJob, demoJobAt);
   household = upsertWorkJob(household, { job: biancaDemoJob }).household;
+
+  // Development's random-data button is a D-172 rehearsal, not a legacy
+  // bypass. Give every generated shift a sealed synthetic Bible so Tip Science
+  // exercises the same durable record it uses for real confirmed shifts.
+  household.shifts = household.shifts.map((shift) => {
+    if (shift.shiftBible) return shift;
+    const demoJob = household.workJobs.find((job) => job.memberId === shift.memberId && job.name === "Demo Bistro");
+    const demoRole = demoJob?.roles.find((role) => role.active);
+    if (!demoJob || !demoRole) return shift;
+    const actualStart = `${shift.date}T21:00:00.000Z`;
+    const actualEnd = new Date(Date.parse(actualStart) + Math.round(shift.hours * 60) * 60_000).toISOString();
+    const at = shift.updatedAt ?? shift.createdAt;
+    const base: Omit<ShiftBible, "materialHash"> = {
+      id: `BIBLE-DEMO-${shift.id}`, version: 1, revision: 1, environment: household.environment,
+      householdId: household.householdId, memberId: shift.memberId, envelopeId: `ENV-DEMO-${shift.id}`,
+      outcome: "worked", jobId: demoJob.id, roleId: demoRole.id, locationName: demoJob.locationName,
+      timezone: TIMEZONE, scheduledStart: actualStart, scheduledEnd: actualEnd, actualStart, actualEnd,
+      workedMinutes: Math.round(shift.hours * 60), paidBreakMinutes: 0, unpaidBreakMinutes: 0,
+      approvalState: "user_confirmed", scheduleDifferenceMinutes: 0, cashTipsCents: shift.cashTipsCents,
+      cardTipsCents: shift.ccTipsCents, salesCents: shift.salesCents, salesByField: {},
+      customersServed: shift.customersServed ?? null, staffingCount: shift.staffingCount ?? null,
+      grossWagesCents: shift.wagesCents, netTipsCents: shift.netTipsCents, tipOutCents: 0, attendance: [],
+      weather: null, weatherGlass: shift.weatherGlass ?? null, eventTag: shift.eventTag ?? null, contextFacts: [], revisionHistory: [],
+      authority: ["workedMinutes", "cashTipsCents", "cardTipsCents", "salesCents", "customersServed", "staffingCount"].map((field) => ({
+        field, source: "manual" as const, observedAt: at, finality: "user_confirmed" as const, presence: "present" as const,
+      })),
+      linkedShiftId: shift.id, commandConfirmationId: `demo:${shift.id}`, correctionOfBibleId: null, correctedByBibleId: null,
+      confirmedAt: at, createdAt: at, updatedAt: at,
+    };
+    return { ...shift, jobId: demoJob.id, roleId: demoRole.id, shiftBible: { ...base, materialHash: shiftBibleMaterialHash(base) } };
+  });
 
   return household;
 }

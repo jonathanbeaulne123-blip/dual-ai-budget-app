@@ -50,11 +50,15 @@
     "FLINKS_CONNECT_BASE_URL": "https://toolbox-iframe.private.fin.ag",
     "FLINKS_REDIRECT_ORIGIN": "https://hearth-books.jonathan-beaulne123.workers.dev",
     "SEVENSHIFTS_ENABLED": "true",
-    "SEVENSHIFTS_ALLOW_PRODUCTION": "true",
+    "SEVENSHIFTS_ALLOW_PRODUCTION": "false",
     "SEVENSHIFTS_API_BASE_URL": "https://api.7shifts.com",
     "EVIDENCE_ENABLED": "true",
-    "EVIDENCE_ALLOW_PRODUCTION": "true",
+    "EVIDENCE_ALLOW_PRODUCTION": "false",
+    "EVIDENCE_AUTOMATION_ENABLED": "false",
     "EVIDENCE_EMAIL_ENABLED": "false",
+    "EVIDENCE_COMPANION_ENABLED": "false",
+    "EVIDENCE_GMAIL_COMPANION_ENABLED": "false",
+    "EVIDENCE_RETENTION_ENABLED": "false",
     "EVIDENCE_PRODUCTION_QUEUE_NAME": "hearth-evidence-derive-production"
   },
   "d1_databases": [
@@ -120,5 +124,6 @@
         "dead_letter_queue": "hearth-evidence-derive-dlq-production"
       }
     ]
-  }
+  },
+  "triggers": { "crons": ["17 9 * * *"] }
 }

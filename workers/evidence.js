@@ -33,6 +33,18 @@ function enabled(env) {
   return String(env?.EVIDENCE_ENABLED || "").trim().toLowerCase() === "true";
 }
 
+function automationEnabled(env) {
+  return String(env?.EVIDENCE_AUTOMATION_ENABLED || "").trim().toLowerCase() === "true";
+}
+
+function companionEnabled(env) {
+  return String(env?.EVIDENCE_COMPANION_ENABLED || "").trim().toLowerCase() === "true";
+}
+
+function retentionEnabled(env) {
+  return String(env?.EVIDENCE_RETENTION_ENABLED || "").trim().toLowerCase() === "true";
+}
+
 function activeConfig(env, environment = "development") {
   if (!enabled(env)) throw new Error("Evidence Mesh is not enabled.");
   if (environment !== "development" && environment !== "production") throw new Error("Evidence environment is invalid.");
@@ -202,6 +214,18 @@ async function reserveR2Operation(config, operation) {
   if (!reserved?.meta?.changes) throw new Error("Evidence monthly storage-operation safety limit reached. Capture stays paused until next month or an explicit budget review.");
 }
 
+function assertSevenShiftsGmailMessage(bytes, contentType) {
+  if (contentType !== "message/rfc822") throw new Error("Gmail 7shifts capture must be a raw RFC822 message.");
+  const headerText = new TextDecoder("utf-8", { fatal: false }).decode(bytes.slice(0, 64 * 1024));
+  const headerEnd = headerText.search(/\r?\n\r?\n/);
+  const headers = (headerEnd >= 0 ? headerText.slice(0, headerEnd) : headerText).replace(/\r?\n[ \t]+/g, " ");
+  const from = (headers.split(/\r?\n/).find((line) => /^from\s*:/i.test(line)) || "").replace(/^from\s*:/i, "").trim();
+  const mailbox = from.match(/<\s*[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@([A-Z0-9.-]+)\s*>/i)
+    || from.match(/^\s*[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@([A-Z0-9.-]+)\s*$/i);
+  const domain = mailbox?.[1]?.toLowerCase().replace(/\.$/, "") || "";
+  if (domain !== "7shifts.com" && !domain.endsWith(".7shifts.com")) throw new Error("Gmail message sender is not a 7shifts domain.");
+}
+
 async function createCapture(request, env, config, url) {
   const scope = await verifiedScope(request, env, queryScope(url));
   const captureKind = String(request.headers.get("X-Evidence-Capture-Kind") || "").trim();
@@ -209,19 +233,7 @@ async function createCapture(request, env, config, url) {
   if (!CAPTURE_KINDS.has(captureKind)) throw new Error("Evidence capture kind is not supported.");
   if (!CONTENT_TYPES.has(contentType)) throw new Error("Evidence content type is not supported.");
   const bytes = await readBytes(request, MAX_BYTES);
-  if (captureKind === "gmail-7shifts-email") {
-    if (contentType !== "message/rfc822") throw new Error("Gmail 7shifts capture must be a raw RFC822 message.");
-    const headerText = new TextDecoder("utf-8", { fatal: false }).decode(bytes.slice(0, 64 * 1024));
-    const headerEnd = headerText.search(/\r?\n\r?\n/);
-    const headers = (headerEnd >= 0 ? headerText.slice(0, headerEnd) : headerText).replace(/\r?\n[ \t]+/g, " ");
-    const from = (headers.split(/\r?\n/).find((line) => /^from\s*:/i.test(line)) || "").replace(/^from\s*:/i, "").trim();
-    const mailbox = from.match(/<\s*[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@([A-Z0-9.-]+)\s*>/i)
-      || from.match(/^\s*[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@([A-Z0-9.-]+)\s*$/i);
-    const domain = mailbox?.[1]?.toLowerCase().replace(/\.$/, "") || "";
-    if (domain !== "7shifts.com" && !domain.endsWith(".7shifts.com")) {
-      throw new Error("Gmail message sender is not a 7shifts domain.");
-    }
-  }
+  if (captureKind === "gmail-7shifts-email") assertSevenShiftsGmailMessage(bytes, contentType);
   return storeCapture(env, config, scope, captureKind, contentType, bytes);
 }
 
@@ -353,6 +365,176 @@ async function capabilityUpload(request, env, config) {
   const bytes = await readBytes(request, Math.min(MAX_BYTES, Number(row.byte_limit)));
   const scope = { environment: row.environment, authUserId: row.auth_user_id, householdId: row.household_id, memberId: row.member_id };
   return storeCapture(env, config, scope, captureKind, contentType, bytes);
+}
+
+async function mintCompanionRegistration(request, env, config) {
+  if (!companionEnabled(env)) throw new Error("Autonomous companion registration is disabled.");
+  const input = await readJson(request);
+  const scope = await verifiedScope(request, env, input);
+  const origin = capabilityOrigin("extension", input.origin);
+  const label = boundedText(input.label || "Chrome 7shifts companion", 80);
+  const registrationId = randomId("cmp_");
+  const token = `${scope.environment === "production" ? "pcomp" : "dcomp"}_${base64Url(crypto.getRandomValues(new Uint8Array(32)))}`;
+  const tokenHash = await sha256(new TextEncoder().encode(token));
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60_000).toISOString();
+  await config.db.prepare("INSERT INTO evidence_companion_registrations (registration_id, token_hash, environment, auth_user_id, household_id, member_id, origin, label, active, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)")
+    .bind(registrationId, tokenHash, scope.environment, scope.authUserId, scope.householdId, scope.memberId, origin, label, expiresAt, now.toISOString()).run();
+  return { registrationId, token, origin, label, expiresAt, authority: "capture-only" };
+}
+
+async function listCompanionRegistrations(request, env, config, url) {
+  const scope = await verifiedScope(request, env, queryScope(url));
+  const result = await config.db.prepare("SELECT registration_id, origin, label, active, expires_at, last_used_at, created_at, revoked_at FROM evidence_companion_registrations WHERE environment = ? AND auth_user_id = ? AND household_id = ? AND member_id = ? ORDER BY created_at DESC LIMIT 20")
+    .bind(scope.environment, scope.authUserId, scope.householdId, scope.memberId).all();
+  return result?.results || [];
+}
+
+async function revokeCompanionRegistration(request, env, config, registrationId) {
+  const scope = await verifiedScope(request, env, queryScope(new URL(request.url)));
+  const at = new Date().toISOString();
+  const result = await config.db.prepare("UPDATE evidence_companion_registrations SET active = 0, revoked_at = ? WHERE registration_id = ? AND environment = ? AND auth_user_id = ? AND household_id = ? AND member_id = ? AND active = 1")
+    .bind(at, registrationId, scope.environment, scope.authUserId, scope.householdId, scope.memberId).run();
+  if (!result?.meta?.changes) throw new Error("Companion registration is unavailable or already revoked.");
+  return { ok: true, registrationId, revokedAt: at };
+}
+
+function exactKeys(value, allowed, required = allowed) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const keys = Object.keys(value);
+  return keys.every((key) => allowed.includes(key)) && required.every((key) => keys.includes(key));
+}
+
+function boundedProjectionText(value, maximum) {
+  return value === null || (typeof value === "string" && value.length <= maximum && !/[\u0000-\u001f\u007f]/.test(value));
+}
+
+function validClock(value) {
+  return value === null || /^(?:[1-9]|1[0-2]):[0-5][0-9] (?:am|pm)$/.test(String(value));
+}
+
+export function validCompanionProjection(bytes) {
+  let wrapper;
+  try { wrapper = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)); } catch { return false; }
+  const commonKeys = ["version", "captureClass", "transport", "path", "capturedAt", "contentType", "body", "accountBinding"];
+  const isPunch = wrapper?.captureClass === "punch";
+  const allowed = isPunch ? [...commonKeys, "selectionKind"] : commonKeys;
+  if (!exactKeys(wrapper, allowed, allowed) || wrapper.version !== 1 || wrapper.transport !== "fetch" || wrapper.contentType !== "application/json") return false;
+  if (isPunch && wrapper.selectionKind !== "visible-timesheet-v1") return false;
+  if (!isPunch && wrapper.captureClass !== "published-schedule") return false;
+  if (typeof wrapper.capturedAt !== "string" || Number.isNaN(Date.parse(wrapper.capturedAt)) || Math.abs(Date.now() - Date.parse(wrapper.capturedAt)) > 7 * 24 * 60 * 60_000) return false;
+  if (!exactKeys(wrapper.accountBinding, ["normalizedSelf", "subjectKey", "locationKey"]) || !/^[a-z0-9' -]{1,80}$/.test(wrapper.accountBinding.normalizedSelf)
+    || !/^employee:[A-Za-z0-9_-]{1,80}$/.test(wrapper.accountBinding.subjectKey)
+    || !/^location:[0-9]{1,20}$/.test(wrapper.accountBinding.locationKey)) return false;
+  if (isPunch ? !/^\/my[_-]?timesheets?\/?$/i.test(wrapper.path) : !/^\/location\/[0-9]{1,20}\/schedule\/\d{4}-\d{2}-\d{2}(?:\/|$)/.test(wrapper.path)) return false;
+  if (typeof wrapper.body !== "string" || wrapper.body.length > 280_000) return false;
+  let body;
+  try { body = JSON.parse(wrapper.body); } catch { return false; }
+  if (isPunch) {
+    if (!exactKeys(body, ["timesheets"]) || !Array.isArray(body.timesheets) || !body.timesheets.length || body.timesheets.length > 100) return false;
+    return body.timesheets.every((row) => exactKeys(row, ["provider_employee_id", "provider_location_id", "date", "location_name", "role_name", "start_time", "end_time", "breaks_label", "hours", "approval_status", "closed"])
+      && `employee:${row.provider_employee_id}` === wrapper.accountBinding.subjectKey
+      && `location:${row.provider_location_id}` === wrapper.accountBinding.locationKey
+      && /^\d{4}-\d{2}-\d{2}$/.test(row.date) && boundedProjectionText(row.location_name, 80) && boundedProjectionText(row.role_name, 80)
+      && validClock(row.start_time) && validClock(row.end_time) && boundedProjectionText(row.breaks_label, 120)
+      && (row.hours === null || (typeof row.hours === "number" && row.hours >= 0 && row.hours <= 36))
+      && boundedProjectionText(row.approval_status, 80) && typeof row.closed === "boolean");
+  }
+  if (!exactKeys(body, ["shifts", "self_row_visible", "complete_range"]) || body.self_row_visible !== true || !Array.isArray(body.shifts) || !body.shifts.length || body.shifts.length > 500
+    || !exactKeys(body.complete_range, ["from_date", "to_date"]) || !/^\d{4}-\d{2}-\d{2}$/.test(body.complete_range.from_date)
+    || !/^\d{4}-\d{2}-\d{2}$/.test(body.complete_range.to_date)) return false;
+  const validRows = body.shifts.every((row) => exactKeys(row, ["employee", "hearth_self", "date", "role", "station", "start_time", "end_time", "provider_location_id"])
+    && exactKeys(row.employee, ["display_name", "provider_employee_id"]) && boundedProjectionText(row.employee.display_name, 80)
+    && (row.employee.provider_employee_id === null || /^[A-Za-z0-9_-]{1,80}$/.test(row.employee.provider_employee_id)) && typeof row.hearth_self === "boolean"
+    && /^\d{4}-\d{2}-\d{2}$/.test(row.date) && boundedProjectionText(row.role, 80) && boundedProjectionText(row.station, 80)
+    && validClock(row.start_time) && validClock(row.end_time) && String(row.provider_location_id) === wrapper.accountBinding.locationKey.slice(9));
+  const selfRows = body.shifts.filter((row) => row.hearth_self === true);
+  return validRows && selfRows.length > 0 && selfRows.every((row) => `employee:${row.employee.provider_employee_id}` === wrapper.accountBinding.subjectKey);
+}
+
+async function companionUpload(request, env, config) {
+  if (!companionEnabled(env)) throw new Error("Autonomous companion capture is disabled.");
+  const match = String(request.headers.get("Authorization") || "").match(/^Companion ([A-Za-z0-9_-]{40,96})$/);
+  if (!match) throw new Error("Companion registration is missing.");
+  const tokenHash = await sha256(new TextEncoder().encode(match[1]));
+  const now = new Date().toISOString();
+  const row = await config.db.prepare("SELECT * FROM evidence_companion_registrations WHERE token_hash = ? AND active = 1 AND revoked_at IS NULL AND expires_at > ? LIMIT 1")
+    .bind(tokenHash, now).first();
+  if (!row) throw new Error("Companion registration is expired or revoked.");
+  if (String(request.headers.get("Origin") || "") !== row.origin) throw new Error("Companion origin does not match its registration.");
+  const captureKind = String(request.headers.get("X-Evidence-Capture-Kind") || "");
+  const contentType = String(request.headers.get("Content-Type") || "").split(";", 1)[0].toLowerCase();
+  const structured = captureKind === "browser-structured" && contentType === "application/json";
+  const gmail = captureKind === "gmail-7shifts-email" && contentType === "message/rfc822"
+    && String(env?.EVIDENCE_GMAIL_COMPANION_ENABLED || "").trim().toLowerCase() === "true";
+  if (!structured && !gmail) throw new Error("Autonomous companion accepts only fixed 7shifts projections and explicitly enabled 7shifts Gmail messages.");
+  const bytes = await readBytes(request, Math.min(MAX_JSON_BYTES, 2 * 1024 * 1024));
+  if (structured && !validCompanionProjection(bytes)) throw new Error("Autonomous capture did not match Hearth's exact published-schedule or visible-timesheet projection.");
+  if (gmail) assertSevenShiftsGmailMessage(bytes, contentType);
+  await config.db.prepare("UPDATE evidence_companion_registrations SET last_used_at = ? WHERE registration_id = ? AND active = 1")
+    .bind(now, row.registration_id).run();
+  const scope = { environment: row.environment, authUserId: row.auth_user_id, householdId: row.household_id, memberId: row.member_id };
+  return storeCapture(env, config, scope, captureKind, contentType, bytes);
+}
+
+async function sealBibleEvidence(request, env, config) {
+  if (!retentionEnabled(env)) throw new Error("Evidence retention sealing is disabled.");
+  const input = await readJson(request);
+  const scope = await verifiedScope(request, env, input);
+  const bibleId = String(input.bibleId || "");
+  const canonicalShiftKey = String(input.canonicalShiftKey || "");
+  if (!/^BIBLE-[A-Za-z0-9_-]{8,120}$/.test(bibleId) || !/^s7shift_[a-f0-9]{32,64}$/.test(canonicalShiftKey)) throw new Error("Bible retention binding is invalid.");
+  const resolvedAt = new Date(String(input.confirmedAt || ""));
+  if (Number.isNaN(resolvedAt.getTime()) || resolvedAt.getTime() > Date.now() + 5 * 60_000) throw new Error("Bible confirmation time is invalid.");
+  const purgeAfter = new Date(resolvedAt.getTime() + 7 * 24 * 60 * 60_000).toISOString();
+  const result = await config.db.prepare("UPDATE evidence_items SET bible_id = ?, resolved_at = ?, purge_after = ?, updated_at = ? WHERE environment = ? AND auth_user_id = ? AND household_id = ? AND member_id = ? AND state != 'deleted' AND evidence_id IN (SELECT evidence_id FROM evidence_derivatives WHERE canonical_shift_key = ?)")
+    .bind(bibleId, resolvedAt.toISOString(), purgeAfter, new Date().toISOString(), scope.environment, scope.authUserId, scope.householdId, scope.memberId, canonicalShiftKey).run();
+  return { bibleId, canonicalShiftKey, purgeAfter, sourceCount: Number(result?.meta?.changes || 0) };
+}
+
+async function purgeEvidenceRow(config, row, now) {
+  // Cryptographic deletion is first: once the wrapped DEK is cleared, any
+  // orphaned R2 bytes are unreadable even if a later physical delete fails.
+  const erased = await config.db.prepare("UPDATE evidence_items SET state = 'failed', wrapped_dek = NULL, nonce_manifest = NULL, updated_at = ? WHERE evidence_id = ? AND environment = ? AND auth_user_id = ? AND household_id = ? AND member_id = ? AND purged_at IS NULL")
+    .bind(now, row.evidence_id, row.environment, row.auth_user_id, row.household_id, row.member_id).run();
+  if (!erased?.meta?.changes) return false;
+  if (row.object_key) await config.raw.delete(row.object_key);
+  const canonicalRows = await config.db.prepare("SELECT canonical_shift_key FROM evidence_derivatives WHERE evidence_id = ?").bind(row.evidence_id).all();
+  const statements = [
+    config.db.prepare("DELETE FROM evidence_observations WHERE evidence_id = ?").bind(row.evidence_id),
+    config.db.prepare("DELETE FROM evidence_schema_drift WHERE evidence_id = ?").bind(row.evidence_id),
+    config.db.prepare("DELETE FROM evidence_derivatives WHERE evidence_id = ?").bind(row.evidence_id),
+  ];
+  for (const canonical of canonicalRows?.results || []) {
+    statements.push(config.db.prepare("DELETE FROM evidence_conflicts WHERE environment = ? AND auth_user_id = ? AND household_id = ? AND member_id = ? AND canonical_shift_key = ?")
+      .bind(row.environment, row.auth_user_id, row.household_id, row.member_id, canonical.canonical_shift_key));
+    statements.push(config.db.prepare("DELETE FROM evidence_bundles WHERE environment = ? AND auth_user_id = ? AND household_id = ? AND member_id = ? AND canonical_shift_key = ? AND updated_at <= ?")
+      .bind(row.environment, row.auth_user_id, row.household_id, row.member_id, canonical.canonical_shift_key, row.resolved_at));
+  }
+  // The minimal audit below intentionally carries no evidence id, digest,
+  // filename, source path, provider key, or raw-object metadata. Removing the
+  // item row makes the sealed Bible—not a retained plaintext digest—the only
+  // durable shift record.
+  statements.push(config.db.prepare("DELETE FROM evidence_items WHERE evidence_id = ? AND environment = ? AND auth_user_id = ? AND household_id = ? AND member_id = ? AND wrapped_dek IS NULL")
+    .bind(row.evidence_id, row.environment, row.auth_user_id, row.household_id, row.member_id));
+  statements.push(config.db.prepare("INSERT INTO evidence_access_audit (audit_id, environment, auth_user_id, household_id, member_id, evidence_id, action, outcome, created_at) VALUES (?, ?, ?, ?, ?, NULL, 'purge', 'crypto-erased', ?)")
+    .bind(randomId("eva_"), row.environment, row.auth_user_id, row.household_id, row.member_id, now));
+  await config.db.batch(statements);
+  return true;
+}
+
+export async function purgeDueEvidence(env) {
+  if (!enabled(env) || !retentionEnabled(env)) return { purged: 0 };
+  let purged = 0;
+  for (const environment of ["development", "production"]) {
+    let config;
+    try { config = activeConfig(env, environment); } catch { continue; }
+    const now = new Date().toISOString();
+    const rows = await config.db.prepare("SELECT * FROM evidence_items WHERE environment = ? AND purge_after IS NOT NULL AND purge_after <= ? AND purged_at IS NULL AND state != 'deleted' ORDER BY purge_after LIMIT 50")
+      .bind(environment, now).all();
+    for (const row of rows?.results || []) if (await purgeEvidenceRow(config, row, now)) purged += 1;
+  }
+  return { purged };
 }
 
 async function readStreamBytes(stream, maximum) {
@@ -812,9 +994,9 @@ async function putBundle(request, env, config) {
       "INSERT INTO evidence_bundles (bundle_id, environment, auth_user_id, household_id, member_id, canonical_shift_key, revision, state, material_hash, sanitized_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ).bind(storedBundleId, scope.environment, scope.authUserId, scope.householdId, scope.memberId, bundle.canonicalShiftKey, bundle.revision, state, bundle.materialHash, JSON.stringify(bundle), now, now).run();
   }
-  const policyRow = await config.db.prepare(
+  const policyRow = automationEnabled(env) ? await config.db.prepare(
     "SELECT policy_json FROM evidence_automation_policies WHERE environment = ? AND auth_user_id = ? AND household_id = ? AND member_id = ? AND job_id = ? AND enabled = 1 LIMIT 1",
-  ).bind(scope.environment, scope.authUserId, scope.householdId, scope.memberId, bundle.jobId).first();
+  ).bind(scope.environment, scope.authUserId, scope.householdId, scope.memberId, bundle.jobId).first() : null;
   let jobKey = null;
   let eligibility = null;
   if (policyRow) {
@@ -999,6 +1181,22 @@ export async function handleEvidence(request, env) {
       return json({ ok: false, error: String(error?.message || error) }, 400, cors);
     }
   }
+  if (url.pathname === "/work/evidence/companion-upload") {
+    const origin = String(request.headers.get("Origin") || "");
+    const cors = capabilityCors(origin);
+    if (request.method === "OPTIONS") return /^chrome-extension:\/\/[a-p]{32}$/.test(origin)
+      ? new Response(null, { status: 204, headers: cors })
+      : json({ ok: false, error: "origin" }, 403, cors);
+    if (request.method !== "POST") return json({ ok: false, error: "method" }, 405, cors);
+    try {
+      const token = String(request.headers.get("Authorization") || "").match(/^Companion\s+([A-Za-z0-9_-]{40,96})$/)?.[1] || "";
+      const environment = token.startsWith("pcomp_") ? "production" : token.startsWith("dcomp_") ? "development" : "";
+      const config = activeConfig(env, environment);
+      return json({ ok: true, capture: await companionUpload(request, env, config) }, 201, cors);
+    } catch (error) {
+      return json({ ok: false, error: String(error?.message || error) }, 400, cors);
+    }
+  }
   const active = url.pathname !== EVIDENCE_STATUS_PATH;
   const { allowed, origin } = requestOrigin(request, url, active);
   const cors = corsHeaders(origin, active);
@@ -1021,7 +1219,7 @@ export async function handleEvidence(request, env) {
       available: states.development.available || states.production.available,
       environment: productionAllowed ? "development-and-production" : "development-only",
       rawStorage: "encrypted-private-r2",
-      automation: "opt-in",
+      automation: "disabled-visible-confirm-only",
       productionAllowed,
       environments: states,
       ...(!states.development.available && !states.production.available ? { detail: states.development.detail } : {}),
@@ -1034,15 +1232,18 @@ export async function handleEvidence(request, env) {
     if (url.pathname === "/work/evidence/captures" && request.method === "GET") return json({ ok: true, captures: await listEvidence(request, env, config, url) }, 200, cors);
     if (url.pathname === "/work/evidence/calendar/read" && request.method === "POST") return json({ ok: true, ...(await readCalendar(request, env)) }, 200, cors);
     if (url.pathname === "/work/evidence/capabilities" && request.method === "POST") return json({ ok: true, ...(await mintCaptureCapability(request, env, config)) }, 201, cors);
+    if (url.pathname === "/work/evidence/companion/registrations" && request.method === "POST") return json({ ok: true, registration: await mintCompanionRegistration(request, env, config) }, 201, cors);
+    if (url.pathname === "/work/evidence/companion/registrations" && request.method === "GET") return json({ ok: true, registrations: await listCompanionRegistrations(request, env, config, url) }, 200, cors);
+    const registrationMatch = url.pathname.match(/^\/work\/evidence\/companion\/registrations\/([A-Za-z0-9_-]{20,120})$/);
+    if (registrationMatch && request.method === "DELETE") return json(await revokeCompanionRegistration(request, env, config, registrationMatch[1]), 200, cors);
+    if (url.pathname === "/work/evidence/retention/seal" && request.method === "POST") return json({ ok: true, retention: await sealBibleEvidence(request, env, config) }, 200, cors);
+    if (url.pathname === "/work/evidence/mappings/owner" && request.method === "POST") return json({ ok: true, mapping: await upsertOwnerJobMapping(request, env, config) }, 200, cors);
     if (url.pathname === "/work/evidence/email/alias" && request.method === "POST") return json({ ok: true, ...(await provisionMailbox(request, env, config)) }, 201, cors);
-    if (url.pathname === "/work/evidence/automation/policies" && request.method === "PUT") return json({ ok: true, policy: await putPolicy(request, env, config) }, 200, cors);
+    if (url.pathname === "/work/evidence/automation/policies" && request.method === "PUT") return json({ ok: false, error: "D-172 visible Confirm is the only money authority. Evidence automation is disabled." }, 409, cors);
     if (url.pathname === "/work/evidence/automation/policies" && request.method === "GET") return json({ ok: true, policies: await listPolicies(request, env, config, url) }, 200, cors);
     if (url.pathname === "/work/evidence/bundles" && request.method === "POST") return json({ ok: true, ...(await putBundle(request, env, config)) }, 201, cors);
     if (url.pathname === "/work/evidence/bundles" && request.method === "GET") return json({ ok: true, bundles: await listBundles(request, env, config, url) }, 200, cors);
-    if (url.pathname === "/work/evidence/automation/jobs/claim" && request.method === "POST") return json({ ok: true, job: await claimJob(request, env, config) }, 200, cors);
-    if (url.pathname === "/work/evidence/automation/jobs/validate" && request.method === "POST") return json({ ok: true, ...(await validateClaimedJob(request, env, config)) }, 200, cors);
-    if (url.pathname === "/work/evidence/automation/jobs/ack" && request.method === "POST") return json(await acknowledgeJob(request, env, config), 200, cors);
-    if (url.pathname === "/work/evidence/automation/jobs/fail" && request.method === "POST") return json(await failJob(request, env, config), 200, cors);
+    if (url.pathname.startsWith("/work/evidence/automation/jobs/") && request.method === "POST") return json({ ok: false, error: "D-172 background jobs cannot post money." }, 409, cors);
     const path = evidencePath(url.pathname);
     if (path?.action === "raw" && request.method === "GET") return await readRaw(request, env, config, url, path.evidenceId);
     if (path?.action === "derived" && request.method === "GET") return json({ ok: true, derived: await readDerived(request, env, config, url, path.evidenceId) }, 200, cors);
@@ -1064,7 +1265,7 @@ async function protectedProviderKey(prefix, value) {
 }
 
 async function mappingForDerivedRecord(config, scope, record, providerSubjectKey, at) {
-  if (!record.rawSubject) return null;
+  if (!record.rawSubject && !record.ownerAsserted) return null;
   const result = await config.db.prepare(
     "SELECT m.hearth_job_id, m.hearth_role_id, m.provider_location_key, m.provider_role_key FROM evidence_provider_identities i JOIN evidence_job_mappings m ON m.identity_id = i.identity_id WHERE i.environment = ? AND i.auth_user_id = ? AND i.household_id = ? AND i.member_id = ? AND i.provider = '7shifts' AND i.provider_subject_key = ? AND i.state = 'active' AND m.effective_from <= ? AND (m.effective_to IS NULL OR m.effective_to >= ?) ORDER BY m.mapping_version DESC LIMIT 32",
   ).bind(scope.environment, scope.authUserId, scope.householdId, scope.memberId, providerSubjectKey, at, at).all();
@@ -1073,6 +1274,46 @@ async function mappingForDerivedRecord(config, scope, record, providerSubjectKey
   const matches = (result?.results || []).filter((row) => (!row.provider_location_key || row.provider_location_key === locationKey)
     && (!row.provider_role_key || row.provider_role_key === roleKey));
   return matches.length === 1 ? matches[0] : null;
+}
+
+async function upsertOwnerJobMapping(request, env, config) {
+  const input = await readJson(request);
+  const scope = await verifiedScope(request, env, input);
+  const jobId = String(input.jobId || "").trim();
+  const roleId = String(input.roleId || "").trim();
+  const evidenceId = String(input.evidenceId || "").trim();
+  const canonicalShiftKey = String(input.canonicalShiftKey || "").trim();
+  if (!/^[A-Za-z0-9_-]{3,100}$/.test(jobId) || !/^[A-Za-z0-9_-]{3,100}$/.test(roleId)
+    || !/^evi_[A-Za-z0-9_-]{20,120}$/.test(evidenceId) || !/^s7shift_[a-f0-9]{32,64}$/.test(canonicalShiftKey)) {
+    throw new Error("Owner mapping needs an exact Hearth job and one reviewed 7shifts employee record.");
+  }
+  const source = await config.db.prepare(
+    "SELECT d.sanitized_json FROM evidence_derivatives d JOIN evidence_items e ON e.evidence_id = d.evidence_id WHERE d.evidence_id = ? AND d.canonical_shift_key = ? AND e.environment = ? AND e.auth_user_id = ? AND e.household_id = ? AND e.member_id = ? AND e.state <> 'deleted' LIMIT 1",
+  ).bind(evidenceId, canonicalShiftKey, scope.environment, scope.authUserId, scope.householdId, scope.memberId).first();
+  let sourceFacts;
+  try { sourceFacts = JSON.parse(String(source?.sanitized_json || "")).bundleFacts; } catch { sourceFacts = null; }
+  const providerSubjectKey = String(sourceFacts?.providerSubjectKey || "");
+  const providerLocationKey = String(sourceFacts?.providerLocationKey || "");
+  const providerRoleKey = String(sourceFacts?.providerRoleKey || "");
+  if (sourceFacts?.ownerAsserted !== true || !/^s7subject_[a-f0-9]{64}$/.test(providerSubjectKey)
+    || !/^s7location_[a-f0-9]{64}$/.test(providerLocationKey) || !/^s7role_[a-f0-9]{64}$/.test(providerRoleKey)) {
+    throw new Error("Reviewed evidence does not contain one stable owner, location, and role binding.");
+  }
+  const providerTenantKey = await protectedProviderKey("s7tenant", `${scope.householdId}:${scope.memberId}`);
+  const now = new Date().toISOString();
+  const identityId = `evi_${await sha256(new TextEncoder().encode(`${scope.environment}:${scope.authUserId}:${scope.householdId}:${scope.memberId}:${providerSubjectKey}`))}`;
+  await config.db.prepare("INSERT INTO evidence_provider_identities (identity_id, environment, auth_user_id, household_id, member_id, provider, provider_tenant_key, provider_subject_key, state, bound_at, updated_at) VALUES (?, ?, ?, ?, ?, '7shifts', ?, ?, 'active', ?, ?) ON CONFLICT(identity_id) DO UPDATE SET state = 'active', updated_at = excluded.updated_at")
+    .bind(identityId, scope.environment, scope.authUserId, scope.householdId, scope.memberId, providerTenantKey, providerSubjectKey, now, now).run();
+  const versionRow = await config.db.prepare("SELECT COALESCE(MAX(mapping_version), 0) AS version FROM evidence_job_mappings WHERE identity_id = ?")
+    .bind(identityId).first();
+  const mappingVersion = Math.max(1, Number(versionRow?.version || 0) + 1);
+  const previousDay = new Date(Date.parse(`${now.slice(0, 10)}T00:00:00.000Z`) - 86_400_000).toISOString().slice(0, 10);
+  await config.db.prepare("UPDATE evidence_job_mappings SET effective_to = ? WHERE identity_id = ? AND provider_location_key = ? AND provider_role_key = ? AND effective_to IS NULL")
+    .bind(previousDay, identityId, providerLocationKey, providerRoleKey).run();
+  const mappingId = randomId("evm_");
+  await config.db.prepare("INSERT INTO evidence_job_mappings (mapping_id, identity_id, provider_location_key, provider_role_key, hearth_job_id, hearth_role_id, effective_from, effective_to, mapping_version, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)")
+    .bind(mappingId, identityId, providerLocationKey, providerRoleKey, jobId, roleId, now.slice(0, 10), mappingVersion, now).run();
+  return { mappingId, jobId, roleId, state: "active" };
 }
 
 function driftValue(value) {
@@ -1119,7 +1360,11 @@ async function persistDerivation(config, row, derived) {
     const canonicalShiftKey = `s7shift_${await sha256(new TextEncoder().encode(record.canonicalSeed))}`;
     const providerSubjectKey = record.rawSubject
       ? await protectedProviderKey("s7subject", record.rawSubject)
-      : `s7subject_unbound_${await sha256(new TextEncoder().encode(`${scope.authUserId}:${canonicalShiftKey}`))}`;
+      : record.ownerAsserted
+        ? await protectedProviderKey("s7subject", `hearth-owner:${scope.authUserId}`)
+        : `s7subject_unbound_${await sha256(new TextEncoder().encode(`${scope.authUserId}:${canonicalShiftKey}`))}`;
+    const providerLocationKey = await protectedProviderKey("s7location", record.rawLocation);
+    const providerRoleKey = await protectedProviderKey("s7role", record.rawRole);
     const mapping = await mappingForDerivedRecord(config, scope, record, providerSubjectKey, (record.startedAt || row.created_at).slice(0, 10));
     const providerResourceId = await protectedProviderKey("s7resource", record.rawResource);
     const providerRevision = await protectedProviderKey("s7revision", record.rawRevision);
@@ -1132,6 +1377,8 @@ async function persistDerivation(config, row, derived) {
     const bundleFacts = {
       canonicalShiftKey,
       providerSubjectKey,
+      providerLocationKey,
+      providerRoleKey,
       jobId: mapping?.hearth_job_id || null,
       startedAt: record.startedAt,
       endedAt: record.endedAt,
@@ -1144,6 +1391,7 @@ async function persistDerivation(config, row, derived) {
       providerRevision,
       finality: record.finality,
       supersedesEvidenceId: null,
+      ownerAsserted: record.ownerAsserted === true,
     };
     const sanitized = {
       version: 1,

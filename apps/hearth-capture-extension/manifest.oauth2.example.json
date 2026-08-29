@@ -1,0 +1,6 @@
+{
+  "oauth2": {
+    "client_id": "CREATE_A_CHROME_EXTENSION_OAUTH_CLIENT.apps.googleusercontent.com",
+    "scopes": ["https://www.googleapis.com/auth/gmail.readonly"]
+  }
+}

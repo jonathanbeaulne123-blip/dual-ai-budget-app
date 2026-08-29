@@ -64,6 +64,7 @@ export function financialAuditFacts(household: Household) {
       createdBy: shift.createdBy,
       sevenShiftsPunchDigest: shift.sevenShiftsPunchDigest ?? null,
       sevenShiftsEvidenceBundle: shift.sevenShiftsEvidenceBundle ?? null,
+      shiftBible: shift.shiftBible ?? null,
     })),
     goalContributions: byId(household.goalContributions).map((row) => ({
       id: row.id,
@@ -170,6 +171,8 @@ export function commandIdentityFacts(previous: Household | null, next: Household
   const coworkers = (next.coworkers ?? []).filter((row) => posted.has(row.id));
   const coworkerAttendance = (next.coworkerAttendance ?? []).filter((row) => posted.has(row.id));
   const coworkerSchedules = (next.coworkerSchedules ?? []).filter((row) => posted.has(row.id));
+  const shiftEnvelopes = (next.shiftEnvelopes ?? []).filter((row) => posted.has(row.id));
+  const shiftBibles = (next.shiftBibles ?? []).filter((row) => posted.has(row.id));
   const tombstones = (next.tombstones ?? []).filter((row) => posted.has(row.id));
   return stable({
     householdId: next.householdId,
@@ -201,6 +204,7 @@ export function commandIdentityFacts(previous: Household | null, next: Household
       createdBy: shift.createdBy,
       sevenShiftsPunchDigest: shift.sevenShiftsPunchDigest ?? null,
       sevenShiftsEvidenceBundle: shift.sevenShiftsEvidenceBundle ?? null,
+      shiftBible: shift.shiftBible ?? null,
     })),
     goalContributions: contributions.map((row) => ({
       id: row.id,
@@ -218,6 +222,8 @@ export function commandIdentityFacts(previous: Household | null, next: Household
     coworkers,
     coworkerAttendance,
     coworkerSchedules: coworkerSchedules.map(({ sourceScheduleKey: _sourceScheduleKey, ...row }) => row),
+    shiftEnvelopes,
+    shiftBibles,
     tombstones,
     // Private reconciliation and binding details never affect a shared command identity.
     fundPrivate: null,

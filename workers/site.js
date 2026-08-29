@@ -10,7 +10,7 @@ import {
 import { handleHerculesPro } from "./herculesPro.js";
 import { handleFlinks } from "./flinks.js";
 import { handleSevenShifts } from "./sevenshifts.js";
-import { handleEvidence, handleEvidenceEmail, processEvidenceQueue } from "./evidence.js";
+import { handleEvidence, handleEvidenceEmail, processEvidenceQueue, purgeDueEvidence } from "./evidence.js";
 import { validateRigPayload, sanitizeRigSessionId } from "../src/herculesRig/validate.ts";
 import { enqueueRigCommands, pollRigCommands } from "./herculesRigQueue.js";
 import { mergeShiftDraftFromOcr, looksLikeEmployeeShiftReport } from "./shiftReportParse.js";
@@ -1749,5 +1749,8 @@ export default {
   },
   async email(message, env) {
     await handleEvidenceEmail(message, env);
+  },
+  async scheduled(_controller, env, context) {
+    context.waitUntil(purgeDueEvidence(env));
   },
 };

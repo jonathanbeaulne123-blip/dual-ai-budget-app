@@ -21,6 +21,10 @@ vi.mock("../src/imports/evidenceClient.ts", () => ({
   listEvidence: vi.fn(async () => captures),
   listEvidenceBundles: vi.fn(async () => []),
   listEvidenceAutomationPolicies: vi.fn(async () => []),
+  listEvidenceCompanions: vi.fn(async () => []),
+  registerEvidenceCompanion: vi.fn(),
+  revokeEvidenceCompanion: vi.fn(),
+  mapEvidenceOwnerJob: vi.fn(),
   readEvidenceDerived: vi.fn(async (_scope, evidenceId) => ({
     evidenceId,
     revision: 1,

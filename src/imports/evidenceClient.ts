@@ -18,6 +18,16 @@ export type EvidenceCaptureSummary = {
   duplicate?: boolean;
 };
 export type EvidenceBundleSummary = { bundleId: string; state: string; bundle: SevenShiftsEvidenceBundle; updatedAt: string };
+export type EvidenceCompanionRegistration = {
+  registrationId: string;
+  origin: string;
+  label: string;
+  active?: boolean;
+  expiresAt: string;
+  lastUsedAt?: string | null;
+  createdAt?: string;
+  revokedAt?: string | null;
+};
 export type EvidenceDerivedDetail = {
   evidenceId: string;
   revision: number;
@@ -222,6 +232,50 @@ export async function mintEvidenceCaptureCapability(
   return jsonRequest("/work/evidence/capabilities", scope, {
     method: "POST", signal, body: JSON.stringify({ ...scope, ...input }),
   }, fetcher, provider);
+}
+
+export async function registerEvidenceCompanion(
+  scope: EvidenceScope,
+  input: { origin: string; label?: string },
+  signal?: AbortSignal,
+  fetcher: typeof fetch = fetch,
+  provider: SessionProvider = ensureSupabaseSession,
+): Promise<EvidenceCompanionRegistration & { token: string; authority: "capture-only" }> {
+  const result = await jsonRequest<{ ok: true; registration: EvidenceCompanionRegistration & { token: string; authority: "capture-only" } }>("/work/evidence/companion/registrations", scope, {
+    method: "POST", signal, body: JSON.stringify({ ...scope, ...input }),
+  }, fetcher, provider);
+  return result.registration;
+}
+
+export async function listEvidenceCompanions(scope: EvidenceScope, signal?: AbortSignal, fetcher: typeof fetch = fetch, provider: SessionProvider = ensureSupabaseSession): Promise<EvidenceCompanionRegistration[]> {
+  const result = await jsonRequest<{ ok: true; registrations: Array<Record<string, unknown>> }>(`/work/evidence/companion/registrations?${query(scope)}`, scope, { method: "GET", signal }, fetcher, provider);
+  return (result.registrations ?? []).map((row) => ({
+    registrationId: String(row.registration_id ?? row.registrationId ?? ""),
+    origin: String(row.origin ?? ""),
+    label: String(row.label ?? ""),
+    active: row.active === 1 || row.active === true,
+    expiresAt: String(row.expires_at ?? row.expiresAt ?? ""),
+    lastUsedAt: row.last_used_at == null ? null : String(row.last_used_at),
+    createdAt: String(row.created_at ?? ""),
+    revokedAt: row.revoked_at == null ? null : String(row.revoked_at),
+  })).filter((row) => row.registrationId && row.origin && row.expiresAt);
+}
+
+export async function revokeEvidenceCompanion(scope: EvidenceScope, registrationId: string, signal?: AbortSignal, fetcher: typeof fetch = fetch, provider: SessionProvider = ensureSupabaseSession) {
+  return jsonRequest(`/work/evidence/companion/registrations/${encodeURIComponent(registrationId)}?${query(scope)}`, scope, { method: "DELETE", signal }, fetcher, provider);
+}
+
+export async function sealShiftBibleEvidence(scope: EvidenceScope, input: { bibleId: string; canonicalShiftKey: string; confirmedAt: string }, signal?: AbortSignal, fetcher: typeof fetch = fetch, provider: SessionProvider = ensureSupabaseSession) {
+  return jsonRequest<{ ok: true; retention: { bibleId: string; canonicalShiftKey: string; purgeAfter: string; sourceCount: number } }>("/work/evidence/retention/seal", scope, {
+    method: "POST", signal, body: JSON.stringify({ ...scope, ...input }),
+  }, fetcher, provider);
+}
+
+export async function mapEvidenceOwnerJob(scope: EvidenceScope, input: { jobId: string; roleId: string; evidenceId: string; canonicalShiftKey: string }, signal?: AbortSignal, fetcher: typeof fetch = fetch, provider: SessionProvider = ensureSupabaseSession) {
+  const result = await jsonRequest<{ ok: true; mapping: { mappingId: string; jobId: string; roleId: string; state: "active" } }>("/work/evidence/mappings/owner", scope, {
+    method: "POST", signal, body: JSON.stringify({ ...scope, ...input }),
+  }, fetcher, provider);
+  return result.mapping;
 }
 
 export async function putEvidenceAutomationPolicy(

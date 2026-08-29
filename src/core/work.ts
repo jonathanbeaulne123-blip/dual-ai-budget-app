@@ -176,6 +176,12 @@ export function shapeWorkJob(input: WorkJob, fallbackIso = EPOCH_ISO): WorkJob {
     timezone: String(input?.timezone || TIMEZONE).slice(0, 64),
     locationName: String(input?.locationName || "").trim().slice(0, 80),
     gpsEnabled: Boolean(input?.gpsEnabled),
+    locationLatitude: typeof input?.locationLatitude === "number" && Number.isFinite(input.locationLatitude) && input.locationLatitude >= -90 && input.locationLatitude <= 90
+      ? Math.round(input.locationLatitude * 100) / 100
+      : null,
+    locationLongitude: typeof input?.locationLongitude === "number" && Number.isFinite(input.locationLongitude) && input.locationLongitude >= -180 && input.locationLongitude <= 180
+      ? Math.round(input.locationLongitude * 100) / 100
+      : null,
     roles,
     paidBreakRate: input?.paidBreakRate === "custom" ? "custom" : "role",
     paidBreakHourlyRateCents: cents(input?.paidBreakHourlyRateCents),

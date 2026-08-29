@@ -40,7 +40,8 @@ describe("7shifts Evidence Center surface", () => {
     await act(async () => { evidence!.click(); });
     expect(container.textContent).toContain("7shifts Evidence Center");
     expect(container.textContent).toContain("Disabled");
-    expect(container.textContent).toContain("Automation by job");
+    expect(container.textContent).toContain("Autonomous collection, human Confirm");
+    expect(container.textContent).not.toContain("Automation by job");
     expect(container.textContent).toContain("Direct Gmail · read-only");
     expect(container.textContent).toContain("Connect Gmail and scrub");
     expect(container.textContent).not.toContain("Private evidence mailbox");

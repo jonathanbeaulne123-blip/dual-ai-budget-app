@@ -15,8 +15,16 @@ import {
   type Household,
   type PostWorkShiftInput,
   type Shift,
+  type ShiftEnvelope,
+  type ShiftOutcome,
   type WeatherGlass,
   type WorkJob,
+  statusForEnvelopeAt,
+  takeShiftEnvelopeIntent,
+  historicalWeatherGlass,
+  readHistoricalShiftWeather,
+  pendingHistoricalWeather,
+  workShiftTransactionIds,
 } from "./core/index.ts";
 import { loadDocumentVisionProvider } from "./imports/documentScanProvider.ts";
 import { scanShiftReportFile } from "./imports/shiftReportDraft.ts";
@@ -31,8 +39,23 @@ import { WorkShiftHistoryCard } from "./WorkShiftHistory.tsx";
 import { SevenShiftsEvidenceCenter } from "./SevenShiftsEvidenceCenter.tsx";
 import { createShiftScanScope } from "./shiftScanScope.ts";
 import type { ApprovedPunchShiftDraft } from "./imports/evidenceShiftDraft.ts";
+import { listEvidence, readEvidenceDerived } from "./imports/evidenceClient.ts";
+import { evidenceEnvelopeProposals } from "./imports/evidenceEnvelopeDraft.ts";
 
 type ShiftPane = "today" | "report" | "jobs" | "evidence";
+
+const ENVELOPE_STATUS_LABEL: Record<ShiftEnvelope["status"], string> = {
+  upcoming: "Upcoming",
+  picked_up: "Picked up",
+  traded_away: "Traded away",
+  cut: "Cut",
+  called_off: "Called off",
+  awaiting_punch: "Awaiting 7shifts",
+  worked_ready: "Worked — needs Confirm",
+  needs_review: "Changed — needs review",
+  confirmed: "Confirmed worked",
+  corrected: "Corrected",
+};
 
 function LoafMark() {
   return (
@@ -84,6 +107,8 @@ export function WorkShiftPage({
   onOpenCalendar,
   onSaveSevenShiftsSchedule = () => undefined,
   onImportCoworkers,
+  onConfirmEnvelopeOutcome,
+  onRefreshShiftEnvelopes,
 }: {
   household: Household;
   memberId: string;
@@ -107,6 +132,8 @@ export function WorkShiftPage({
   onOpenCalendar: () => void;
   onSaveSevenShiftsSchedule?: (rows: import("./core/index.ts").SevenShiftsScheduledShift[], confirmedPersonalFeed?: boolean) => void;
   onImportCoworkers?: (input: import("./imports/coworkerRosterDraft.ts").CoworkerRosterImportDraft) => void;
+  onConfirmEnvelopeOutcome?: (envelopeId: string, outcome: Exclude<ShiftOutcome, "worked">) => void;
+  onRefreshShiftEnvelopes?: (proposals: import("./core/index.ts").ShiftEnvelopeEvidenceProposal[]) => void;
 }) {
   const [pane, setPane] = useState<ShiftPane>("today");
   const [sealCaption, setSealCaption] = useState<string | null>(null);
@@ -119,10 +146,19 @@ export function WorkShiftPage({
   const [shiftScanBusy, setShiftScanBusy] = useState(false);
   const [shiftScanError, setShiftScanError] = useState("");
   const [shiftScanWarnings, setShiftScanWarnings] = useState<string[]>([]);
+  const [selectedEnvelopeId, setSelectedEnvelopeId] = useState<string | null>(null);
+  const [mailRefreshBusy, setMailRefreshBusy] = useState(false);
+  const [mailRefreshMessage, setMailRefreshMessage] = useState("");
   const shiftScanScopeRef = useRef(createShiftScanScope());
   const streak = useMemo(() => shiftPostingStreak(household, today), [household, today]);
   const punch = useMemo(() => activeOpenShift(household.kitchen, memberId), [household.kitchen, memberId]);
   const reviewing = punch?.status === "confirming" || finishedReview;
+  const envelopes = useMemo(() => (household.shiftEnvelopes ?? [])
+    .filter((row) => row.memberId === memberId)
+    .map((row) => ({ ...row, status: statusForEnvelopeAt(row) }))
+    .sort((left, right) => left.scheduledStart.localeCompare(right.scheduledStart)), [household.shiftEnvelopes, memberId]);
+  const selectedEnvelope = envelopes.find((row) => row.id === selectedEnvelopeId) ?? null;
+  const pendingEnvelopeCount = envelopes.filter((row) => !["confirmed", "corrected"].includes(row.status)).length;
 
   useEffect(() => {
     const storage = typeof localStorage === "undefined" ? undefined : localStorage;
@@ -132,6 +168,51 @@ export function WorkShiftPage({
   }, [environment, today]);
 
   useEffect(() => () => shiftScanScopeRef.current.cancel(), []);
+
+  useEffect(() => {
+    const takeIntent = () => {
+      const envelopeId = takeShiftEnvelopeIntent();
+      if (!envelopeId || !envelopes.some((row) => row.id === envelopeId)) return;
+      setSelectedEnvelopeId(envelopeId);
+    };
+    takeIntent();
+    window.addEventListener("hearth:shift-envelope-intent", takeIntent);
+    return () => window.removeEventListener("hearth:shift-envelope-intent", takeIntent);
+  }, [envelopes]);
+
+  async function refreshShiftMail() {
+    if (!onRefreshShiftEnvelopes || mailRefreshBusy) return;
+    setMailRefreshBusy(true);
+    setMailRefreshMessage("");
+    try {
+      const scope = { environment, householdId: household.householdId, memberId };
+      const captures = (await listEvidence(scope)).filter((row) => ["ready_to_review", "bundled"].includes(row.state)).slice(0, 100);
+      const results = await Promise.allSettled(captures.map((row) => readEvidenceDerived(scope, row.evidenceId)));
+      const proposals = evidenceEnvelopeProposals(results.flatMap((row) => row.status === "fulfilled" ? [row.value] : []), household.workJobs);
+      const stamp = proposals.map((row) => `${row.kind}:${row.canonicalShiftKey}:${row.observedAt}`).sort().join("|");
+      const stampKey = `hearth:shift-mail-refresh:${environment}:${household.householdId}:${memberId}`;
+      if (proposals.length && sessionStorage.getItem(stampKey) !== stamp) {
+        onRefreshShiftEnvelopes(proposals);
+        sessionStorage.setItem(stampKey, stamp);
+      }
+      setMailRefreshMessage(proposals.length ? `${proposals.length} bounded 7shifts update${proposals.length === 1 ? "" : "s"} checked.` : "No new mapped 7shifts shifts yet.");
+    } catch (caught) {
+      setMailRefreshMessage(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setMailRefreshBusy(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!onRefreshShiftEnvelopes) return;
+    const wake = () => { void refreshShiftMail(); };
+    wake();
+    window.addEventListener("online", wake);
+    window.addEventListener("focus", wake);
+    const timer = window.setInterval(wake, 15 * 60_000);
+    return () => { window.removeEventListener("online", wake); window.removeEventListener("focus", wake); window.clearInterval(timer); };
+  // Refresh only when the authenticated member scope changes; ordinary household commits must not create a polling loop.
+  }, [environment, household.householdId, memberId]);
 
   const preview = useMemo(
     () => shiftLivePreview(household, today, { memberId, weatherGlass }),
@@ -195,6 +276,66 @@ export function WorkShiftPage({
     setShiftScanError("");
   }
 
+  function openWorkedEnvelope(envelope: ShiftEnvelope) {
+    if (!envelope.actualStart || !envelope.actualEnd || envelope.workedMinutes == null || !envelope.jobId || !envelope.roleId) return;
+    shiftScanScopeRef.current.cancel();
+    const job = household.workJobs.find((row) => row.id === envelope.jobId && row.memberId === memberId);
+    const draft: WorkShiftDraft = {
+      sourceKind: "shift-envelope",
+      sourceLabel: "the autonomous 7shifts envelope",
+      date: envelope.date,
+      jobId: envelope.jobId,
+      roleId: envelope.roleId,
+      startedAt: envelope.actualStart,
+      endedAt: envelope.actualEnd,
+      workedHours: envelope.workedMinutes / 60,
+      paidBreakHours: envelope.paidBreakMinutes == null ? undefined : envelope.paidBreakMinutes / 60,
+      unpaidBreakHours: envelope.unpaidBreakMinutes == null ? undefined : envelope.unpaidBreakMinutes / 60,
+      shiftEnvelopeId: envelope.id,
+      shiftBibleDraft: {
+        envelopeId: envelope.id,
+        scheduledStart: envelope.scheduledStart,
+        scheduledEnd: envelope.scheduledEnd,
+        unpaidBreakMinutes: envelope.unpaidBreakMinutes,
+        approvalState: envelope.approvalState,
+        authority: envelope.authority,
+        weather: pendingHistoricalWeather({
+          latitude: job?.locationLatitude ?? null,
+          longitude: job?.locationLongitude ?? null,
+          startedAt: envelope.actualStart,
+          endedAt: envelope.actualEnd,
+        }),
+        correctionOfBibleId: envelope.confirmedBibleId,
+      },
+    };
+    setWorkShiftDraft(draft);
+    setShiftScanWarnings([
+      "7shifts supplied worked time. Tips, sales, restaurant covers, and floor headcount remain blank until explicitly scanned or entered.",
+    ]);
+    setShiftScanError("");
+    setShiftsWhenReviewOpened(household.shifts.filter((shift) => shift.memberId === memberId).length);
+    setFinishedReview(true);
+    setSelectedEnvelopeId(envelope.id);
+    void readHistoricalShiftWeather({
+      latitude: job?.locationLatitude,
+      longitude: job?.locationLongitude,
+      startedAt: envelope.actualStart,
+      endedAt: envelope.actualEnd,
+    }).then((weather) => {
+      setWorkShiftDraft((current) => current?.shiftEnvelopeId === envelope.id ? {
+        ...current,
+        weatherGlass: historicalWeatherGlass(weather) ?? current.weatherGlass,
+        shiftBibleDraft: current.shiftBibleDraft ? {
+          ...current.shiftBibleDraft,
+          weather,
+          authority: weather.state === "complete"
+            ? [...(current.shiftBibleDraft.authority ?? []), { field: "weather", source: "weather", observedAt: weather.fetchedAt!, finality: "final", presence: "present" }]
+            : current.shiftBibleDraft.authority,
+        } : current.shiftBibleDraft,
+      } : current);
+    });
+  }
+
   return (
     <div className="shift-page">
       <div className="tabs" role="tablist" aria-label="Shift panes">
@@ -226,6 +367,52 @@ export function WorkShiftPage({
 
       {pane === "today" && (
         <div className="shift-panel shift-today-wide" role="tabpanel" id="shift-panel-today" aria-labelledby="shift-tab-today">
+          <section className="card shift-envelope-mail" aria-label="Shift envelopes">
+            <header>
+              <h2><span aria-hidden="true">✉</span> Shift mail</h2>
+              <div className="chips"><span className="pill">{pendingEnvelopeCount} pending</span><button type="button" className="chip" disabled={busy || mailRefreshBusy} onClick={() => { void refreshShiftMail(); }}>{mailRefreshBusy ? "Checking…" : "Check 7shifts mail"}</button></div>
+            </header>
+            {mailRefreshMessage ? <p className="muted" role="status">{mailRefreshMessage}</p> : null}
+            <p className="muted">Schedules arrive early. Worked time waits for 7shifts. Only the open Confirm form can post money.</p>
+            {envelopes.length ? (
+              <div className="shift-envelope-list">
+                {envelopes.slice(0, 12).map((envelope) => (
+                  <button
+                    type="button"
+                    key={envelope.id}
+                    className={`shift-envelope-row${selectedEnvelopeId === envelope.id ? " selected" : ""}`}
+                    onClick={() => setSelectedEnvelopeId((current) => current === envelope.id ? null : envelope.id)}
+                    aria-expanded={selectedEnvelopeId === envelope.id}
+                  >
+                    <span aria-hidden="true">{["confirmed", "corrected"].includes(envelope.status) ? "✓" : "✉"}</span>
+                    <span><strong>{envelope.date}</strong><small>{envelope.roleLabel || household.workJobs.find((job) => job.id === envelope.jobId)?.roles.find((role) => role.id === envelope.roleId)?.name || "Shift"}</small></span>
+                    <span>{ENVELOPE_STATUS_LABEL[envelope.status]}</span>
+                  </button>
+                ))}
+              </div>
+            ) : <p className="muted">No captured schedule yet. The manual clock and Shift form still work.</p>}
+            {selectedEnvelope ? (
+              <div className="shift-envelope-open" role="region" aria-label={`${selectedEnvelope.date} shift envelope`}>
+                <strong>{ENVELOPE_STATUS_LABEL[selectedEnvelope.status]}</strong>
+                <p>{new Date(selectedEnvelope.scheduledStart).toLocaleString([], { timeZone: selectedEnvelope.timezone, weekday: "short", hour: "numeric", minute: "2-digit" })}–{new Date(selectedEnvelope.scheduledEnd).toLocaleTimeString([], { timeZone: selectedEnvelope.timezone, hour: "numeric", minute: "2-digit" })}</p>
+                {selectedEnvelope.conflicts.length ? <p className="error">This envelope has source conflicts and needs review.</p> : null}
+                {selectedEnvelope.status === "worked_ready" ? (
+                  <button type="button" className="primary" disabled={busy || !selectedEnvelope.actualEnd} onClick={() => openWorkedEnvelope(selectedEnvelope)}>Open Confirm form</button>
+                ) : selectedEnvelope.status === "needs_review" ? (() => {
+                  const original = household.shifts.find((shift) => shift.shiftBible?.id === selectedEnvelope.confirmedBibleId);
+                  const transactionId = original ? workShiftTransactionIds(original)[0] : null;
+                  return original && transactionId
+                    ? <><p className="error">7shifts changed this confirmed shift. Correct creates an exact reversal, then reopens this envelope for one visible replacement Confirm.</p><button type="button" className="primary" disabled={busy} onClick={() => onCorrect(original, transactionId)}>Correct this Bible</button></>
+                    : <p className="error">Worked evidence is not approved/final or its prior Bible is unavailable. Nothing can post from this envelope.</p>;
+                })()
+                : ["cut", "called_off", "traded_away"].includes(selectedEnvelope.status) && !selectedEnvelope.confirmedBibleId ? (
+                  <button type="button" className="primary" disabled={busy} onClick={() => onConfirmEnvelopeOutcome?.(selectedEnvelope.id, selectedEnvelope.status as Exclude<ShiftOutcome, "worked">)}>Confirm {ENVELOPE_STATUS_LABEL[selectedEnvelope.status].toLowerCase()}</button>
+                ) : selectedEnvelope.status === "awaiting_punch" ? (
+                  <p className="muted">Scheduled time is outlook only. Hearth will offer Confirm after actual clock-out facts arrive.</p>
+                ) : null}
+              </div>
+            ) : null}
+          </section>
           <section className="card shift-punch">
             <TimesheetBody
               household={household}

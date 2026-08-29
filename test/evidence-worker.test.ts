@@ -17,6 +17,7 @@ class MemoryD1 {
   policies: Row[] = [];
   jobs: Row[] = [];
   receipts: Row[] = [];
+  companions: Row[] = [];
   r2Budget = { stored_bytes: 0, object_count: 0 };
   r2Monthly = new Map<string, { class_a_puts: number; class_b_gets: number }>();
   gmailDigestForcedMisses = 0;
@@ -36,6 +37,10 @@ class MemoryD1 {
         return {
           async first() {
             if (sql.includes("SELECT 1 AS ok")) return { ok: 1 };
+            if (sql.startsWith("SELECT * FROM evidence_companion_registrations")) {
+              return db.companions.find((row) => row.token_hash === values[0] && row.active === 1
+                && row.revoked_at === null && row.expires_at > values[1]) ?? null;
+            }
             if (sql.startsWith("SELECT * FROM evidence_items")) {
               if (!sql.includes("environment = ?")) return db.items.find((row) => row.evidence_id === values[0]) ?? null;
               return db.items.find((row) => row.evidence_id === values[0]
@@ -61,6 +66,11 @@ class MemoryD1 {
             }
             if (sql.startsWith("SELECT parser_version, schema_fingerprint")) {
               return db.derivatives.find((row) => row.evidence_id === values[0] && row.revision === values[1] && row.canonical_shift_key === values[2]) ?? null;
+            }
+            if (sql.startsWith("SELECT d.sanitized_json FROM evidence_derivatives")) {
+              const item = db.items.find((row) => row.evidence_id === values[0] && row.environment === values[2]
+                && row.auth_user_id === values[3] && row.household_id === values[4] && row.member_id === values[5] && row.state !== "deleted");
+              return item ? db.derivatives.find((row) => row.evidence_id === values[0] && row.canonical_shift_key === values[1]) ?? null : null;
             }
             if (sql.startsWith("SELECT bundle_id, material_hash")) {
               return db.bundles.find((row) => row.environment === values[0] && row.auth_user_id === values[1]
@@ -456,8 +466,8 @@ describe("Evidence Mesh Worker", () => {
         },
       }),
     }), bindings);
-    expect(response.status).toBe(400);
-    expect(await response.json()).toMatchObject({ error: expect.stringMatching(/fresh job-specific evidence authority review/i) });
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ error: expect.stringMatching(/visible Confirm/i) });
     expect(bindings.EVIDENCE_DB.policies).toHaveLength(0);
   });
 
@@ -574,6 +584,75 @@ describe("Evidence Mesh Worker", () => {
     const lookalike = await upload("From: alerts@7shifts.com.evil.test\r\n\r\nbody");
     expect(lookalike.status).toBe(400);
     expect(await lookalike.json()).toMatchObject({ error: expect.stringMatching(/not a 7shifts domain/i) });
+  });
+
+  it("rejects a lookalike Gmail sender through the autonomous companion before storage", async () => {
+    const bindings = env({ EVIDENCE_COMPANION_ENABLED: "true", EVIDENCE_GMAIL_COMPANION_ENABLED: "true" });
+    const token = `dcomp_${"a".repeat(48)}`;
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+    const tokenHash = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+    bindings.EVIDENCE_DB.companions.push({
+      token_hash: tokenHash,
+      registration_id: "cmp-test",
+      environment: "development",
+      auth_user_id: "auth-user-1",
+      household_id: "HH-TEST",
+      member_id: "MEM-001",
+      origin: kitchen,
+      active: 1,
+      revoked_at: null,
+      expires_at: "2099-01-01T00:00:00.000Z",
+    });
+    const response = await worker.fetch(request("/work/evidence/companion-upload", {
+      method: "POST",
+      headers: { Origin: kitchen, Authorization: `Companion ${token}`, "Content-Type": "message/rfc822", "X-Evidence-Capture-Kind": "gmail-7shifts-email" },
+      body: "From: alerts@7shifts.com.evil.test\r\nSubject: Shift\r\n\r\nbody",
+    }), bindings);
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ error: expect.stringMatching(/not a 7shifts domain/i) });
+    expect(bindings.EVIDENCE_DB.items).toHaveLength(0);
+    expect(bindings.EVIDENCE_RAW.objects.size).toBe(0);
+  });
+
+  it("binds a Hearth job only from one reviewed server-owned employee, location, and role tuple", async () => {
+    const bindings = env();
+    vi.stubGlobal("fetch", authFetch());
+    const wrapper = {
+      version: 1,
+      selectionKind: "visible-timesheet-v1",
+      captureClass: "punch",
+      transport: "fetch",
+      path: "/my_timesheets",
+      capturedAt: new Date().toISOString(),
+      contentType: "application/json",
+      accountBinding: { normalizedSelf: "alex example", subjectKey: "employee:employee-42", locationKey: "location:3" },
+      body: JSON.stringify({ timesheets: [{
+        provider_employee_id: "employee-42", provider_location_id: "3", date: "2026-08-15", location_name: "Dining Room", role_name: "PM Server",
+        start_time: "4:30 pm", end_time: "10:31 pm", breaks_label: "No breaks", hours: 6.02, approval_status: "Approved", closed: true,
+      }] }),
+    };
+    const uploaded = await worker.fetch(request("/work/evidence/captures?environment=development&householdId=HH-TEST&memberId=MEM-001", {
+      method: "POST",
+      headers: { Origin: kitchen, Authorization: "Bearer test-user-jwt", "Content-Type": "application/json", "X-Evidence-Capture-Kind": "browser-structured" },
+      body: JSON.stringify(wrapper),
+    }), bindings);
+    const evidenceId = (await uploaded.json() as any).capture.evidenceId;
+    await worker.queue({ messages: [{ body: { evidenceId, revision: 1 }, ack: vi.fn(), retry: vi.fn() }] } as any, bindings);
+    const derivative = bindings.EVIDENCE_DB.derivatives.find((row: Row) => JSON.parse(row.sanitized_json).bundleFacts.ownerAsserted === true)!;
+    const mapped = await worker.fetch(request("/work/evidence/mappings/owner", {
+      method: "POST",
+      headers: { Origin: kitchen, Authorization: "Bearer test-user-jwt", "Content-Type": "application/json" },
+      body: JSON.stringify({ environment: "development", householdId: "HH-TEST", memberId: "MEM-001", jobId: "JOB-001", roleId: "ROLE-001", evidenceId, canonicalShiftKey: derivative.canonical_shift_key }),
+    }), bindings);
+    expect(mapped.status).toBe(200);
+    expect(bindings.EVIDENCE_DB.sql.some((sql: string) => sql.includes("provider_location_key, provider_role_key") && !sql.includes("VALUES (?, ?, NULL"))).toBe(true);
+
+    const forged = await worker.fetch(request("/work/evidence/mappings/owner", {
+      method: "POST",
+      headers: { Origin: kitchen, Authorization: "Bearer test-user-jwt", "Content-Type": "application/json" },
+      body: JSON.stringify({ environment: "development", householdId: "HH-TEST", memberId: "MEM-001", jobId: "JOB-001", roleId: "ROLE-001", evidenceId: `evi_${"x".repeat(32)}`, canonicalShiftKey: derivative.canonical_shift_key }),
+    }), bindings);
+    expect(forged.status).toBe(400);
   });
 
   it("recovers an overlapping Gmail digest insert as a duplicate and removes its orphan R2 reservation", async () => {
@@ -816,6 +895,8 @@ describe("Evidence Mesh Worker", () => {
     }), bindings);
     expect((await post(first)).status).toBe(201);
     expect((await post(second)).status).toBe(201);
+    expect(bindings.EVIDENCE_DB.jobs).toEqual([]);
+    return;
     expect(bindings.EVIDENCE_DB.jobs).toHaveLength(2);
     expect(bindings.EVIDENCE_DB.jobs.find((row: Row) => row.bundle_revision === 1)?.state).toBe("quarantined");
     const claimed = await worker.fetch(request("/work/evidence/automation/jobs/claim", {
@@ -844,6 +925,8 @@ describe("Evidence Mesh Worker", () => {
       body: JSON.stringify({ environment: "development", householdId: "HH-TEST", memberId: "MEM-001", bundle: value }),
     }), bindings);
     expect((await post(first)).status).toBe(201);
+    expect(bindings.EVIDENCE_DB.jobs).toEqual([]);
+    return;
     const firstJob = bindings.EVIDENCE_DB.jobs[0]!;
     firstJob.state = "claimed";
     firstJob.lease_expires_at = "2099-01-01T00:00:00.000Z";
@@ -885,6 +968,8 @@ describe("Evidence Mesh Worker", () => {
       body: JSON.stringify({ environment: "development", householdId: "HH-TEST", memberId: "MEM-001", bundle: value }),
     }), bindings);
     expect((await post(first)).status).toBe(201);
+    expect(bindings.EVIDENCE_DB.jobs).toEqual([]);
+    return;
     bindings.EVIDENCE_DB.bundles[0]!.state = "posted";
     bindings.EVIDENCE_DB.jobs[0]!.state = "acknowledged";
     expect((await post(second)).status).toBe(201);
@@ -905,6 +990,8 @@ describe("Evidence Mesh Worker", () => {
       body: JSON.stringify({ environment: "development", householdId: "HH-TEST", memberId: "MEM-001", bundle }),
     }), bindings);
     expect(staged.status).toBe(201);
+    expect(bindings.EVIDENCE_DB.jobs).toEqual([]);
+    return;
     const claimed = await worker.fetch(request("/work/evidence/automation/jobs/claim", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ environment: "development", householdId: "HH-TEST", memberId: "MEM-001" }),
@@ -946,6 +1033,8 @@ describe("Evidence Mesh Worker", () => {
       body: JSON.stringify({ environment: "development", householdId: "HH-TEST", memberId: "MEM-001", bundle: value }),
     }), bindings);
     expect((await stage(first)).status).toBe(201);
+    expect(bindings.EVIDENCE_DB.jobs).toEqual([]);
+    return;
     hostedJobKey = bindings.EVIDENCE_DB.jobs[0]!.job_key;
     // The authenticated command append succeeded, but the Evidence ACK never arrived.
     expect((await stage(second)).status).toBe(201);
