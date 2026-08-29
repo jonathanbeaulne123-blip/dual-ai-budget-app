@@ -1,6 +1,6 @@
 # Hearth worksession — approved punch Shift draft
 
-- **Status:** RELEASE AUTHORIZED — push and deploy in progress
+- **Status:** RELEASED — pushed and kitchen live
 - **Opened:** 2026-08-28 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -71,6 +71,7 @@ An approved employee-visible 7shifts punch can become an editable Shift draft wi
 - Independent books review: PASS, no P0/P1/P2.
 - Independent privacy/attribution review: PASS after requiring one exact mapped, bound provider subject and current-member job; no P0/P1/P2.
 - Independent Worker/UI review: PASS after the documentation-status P2 was closed; no P0/P1/P2.
+- Exact application commit `021b61e8ea968ff490d52b24eca550b7a64ee089` was pushed to `codex/d171-approved-punch-shift-draft` and deployed as Worker version `3407ba4c-5e0c-4954-bbda-c215ceda8e07`; the kitchen returned HTTP 200.
 
 ## Remaining uncertainty
 
@@ -78,4 +79,4 @@ An approved employee-visible 7shifts punch can become an editable Shift draft wi
 
 ## Handoff
 
-Local implementation and acceptance proof are complete. Jonathan authorized push and deployment on 2026-08-28. No schema, secret, provider, or household-data mutation is part of this release.
+D-171 is pushed and live. No schema, secret, provider, or household-data mutation occurred. The branch remains separate from `main`; merge is a separate decision.
