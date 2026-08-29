@@ -24,9 +24,15 @@ function bundle(finality: "provisional" | "approved" = "approved"): SevenShiftsE
     observations: [
       { evidenceId, field: "date", value: "2026-08-28", unit: "date", sourcePath: "punch.business_date", confidenceBps: 10_000, finality, extraction: "structured", conflict: "clear" },
       { evidenceId, field: "roleId", value: "ROLE-SERVER", unit: "identifier", sourcePath: "mapping.role", confidenceBps: 10_000, finality, extraction: "human", conflict: "clear" },
+      { evidenceId, field: "workedMinutes", value: 285, unit: "minutes", sourcePath: "punch.worked", confidenceBps: 10_000, finality, extraction: "structured", conflict: "clear" },
+      { evidenceId, field: "paidBreakMinutes", value: 15, unit: "minutes", sourcePath: "punch.breaks.paid", confidenceBps: 10_000, finality, extraction: "structured", conflict: "clear" },
       { evidenceId, field: "cashTipsCents", value: 4200, unit: "cad-cents", sourcePath: "tips.cash", confidenceBps: 10_000, finality, extraction: "structured", conflict: "clear" },
+      { evidenceId, field: "cardTipsCents", value: 0, unit: "cad-cents", sourcePath: "tips.card", confidenceBps: 10_000, finality, extraction: "structured", conflict: "clear" },
+      { evidenceId, field: "salesCents", value: 65000, unit: "cad-cents", sourcePath: "sales.total", confidenceBps: 10_000, finality, extraction: "structured", conflict: "clear" },
+      { evidenceId, field: "customersServed", value: 40, unit: "count", sourcePath: "report.customers", confidenceBps: 10_000, finality, extraction: "structured", conflict: "clear" },
+      { evidenceId, field: "staffingCount", value: 4, unit: "count", sourcePath: "report.staffing", confidenceBps: 10_000, finality, extraction: "structured", conflict: "clear" },
     ],
-    authority: { workedMinutesEvidenceId: evidenceId, paidBreakMinutesEvidenceId: evidenceId, cashTipsEvidenceId: evidenceId, cardTipsEvidenceId: null, finalWagesEvidenceId: null },
+    authority: { workedMinutesEvidenceId: evidenceId, paidBreakMinutesEvidenceId: evidenceId, cashTipsEvidenceId: evidenceId, cardTipsEvidenceId: evidenceId, finalWagesEvidenceId: null },
     conflicts: [], materialHash: "",
   };
   row.materialHash = sevenShiftsEvidenceMaterialHash(row);
@@ -34,7 +40,7 @@ function bundle(finality: "provisional" | "approved" = "approved"): SevenShiftsE
 }
 
 function policy(): AutomationPolicy {
-  return { version: 1, environment: "development", householdId: "HH-TEST", memberId: "MEM-002", jobId: "JOB-CAFE", enabled: true, stableWindowHours: 24, payrollWeekStarts: 1, correctionHorizonDays: 60, closedPeriodAction: "variance", updatedAt: "2026-08-29T03:00:00.000Z" };
+  return { version: 1, environment: "development", householdId: "HH-TEST", memberId: "MEM-002", jobId: "JOB-CAFE", enabled: true, requiredEvidenceFields: ["date", "roleId", "workedMinutes", "paidBreakMinutes", "salesCents", "cashTipsCents", "cardTipsCents", "customersServed", "staffingCount"], stableWindowHours: 24, payrollWeekStarts: 1, correctionHorizonDays: 60, closedPeriodAction: "variance", updatedAt: "2026-08-29T03:00:00.000Z" };
 }
 
 describe("D-159 deterministic automation", () => {
@@ -62,5 +68,14 @@ describe("D-159 deterministic automation", () => {
     expect(sevenShiftsAutomationEligibility(bundle(), { ...policy(), enabled: false }).eligible).toBe(false);
     const screen = bundle(); screen.evidence[0]!.sourceKind = "screenshot"; screen.materialHash = sevenShiftsEvidenceMaterialHash(screen);
     expect(sevenShiftsAutomationEligibility(screen, policy())).toMatchObject({ eligible: false, tier: "blocked" });
+  });
+
+  it("blocks an incomplete bundle before an automation job can be claimed", () => {
+    const incomplete = bundle();
+    incomplete.observations = incomplete.observations.filter((row) => row.field !== "cardTipsCents");
+    incomplete.authority.cardTipsEvidenceId = null;
+    incomplete.materialHash = sevenShiftsEvidenceMaterialHash(incomplete);
+    expect(sevenShiftsAutomationEligibility(incomplete, policy())).toMatchObject({ eligible: false, tier: "blocked" });
+    expect(sevenShiftsAutomationEligibility(bundle(), { ...policy(), requiredEvidenceFields: ["date", "roleId", "workedMinutes", "paidBreakMinutes"] })).toMatchObject({ eligible: false, tier: "blocked" });
   });
 });

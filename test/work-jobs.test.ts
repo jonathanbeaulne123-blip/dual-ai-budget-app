@@ -114,14 +114,21 @@ function evidenceBundle(householdId: string, jobId: string, revision = 1, marker
     }],
     observations: [
       { evidenceId, field: "date", value: "2026-08-31", unit: "date", sourcePath: "data[0].clocked_in", confidenceBps: 10_000, finality: "approved", extraction: "structured", conflict: "clear" },
+      { evidenceId, field: "workedMinutes", value: 240, unit: "minutes", sourcePath: "data[0].worked_minutes", confidenceBps: 10_000, finality: "approved", extraction: "structured", conflict: "clear" },
+      { evidenceId, field: "paidBreakMinutes", value: 30, unit: "minutes", sourcePath: "data[0].paid_break_minutes", confidenceBps: 10_000, finality: "approved", extraction: "structured", conflict: "clear" },
       { evidenceId, field: "roleId", value: "ROLE-SERVER", unit: "identifier", sourcePath: "mapping.role", confidenceBps: 10_000, finality: "approved", extraction: "human", conflict: "clear" },
+      { evidenceId, field: "salesCents", value: 100_000, unit: "cad-cents", sourcePath: "report.sales", confidenceBps: 10_000, finality: "approved", extraction: "structured", conflict: "clear" },
+      { evidenceId, field: "cashTipsCents", value: 5_000, unit: "cad-cents", sourcePath: "report.tips.cash", confidenceBps: 10_000, finality: "approved", extraction: "structured", conflict: "clear" },
+      { evidenceId, field: "cardTipsCents", value: 10_000, unit: "cad-cents", sourcePath: "report.tips.card", confidenceBps: 10_000, finality: "approved", extraction: "structured", conflict: "clear" },
+      { evidenceId, field: "customersServed", value: 40, unit: "count", sourcePath: "report.customers", confidenceBps: 10_000, finality: "approved", extraction: "structured", conflict: "clear" },
+      { evidenceId, field: "staffingCount", value: 4, unit: "count", sourcePath: "report.staffing", confidenceBps: 10_000, finality: "approved", extraction: "structured", conflict: "clear" },
       { evidenceId, field: "captureMarker", value: marker, unit: "text", sourcePath: "schema.marker", confidenceBps: 10_000, finality: "approved", extraction: "structured", conflict: "clear" },
     ],
     authority: {
       workedMinutesEvidenceId: evidenceId,
       paidBreakMinutesEvidenceId: evidenceId,
-      cashTipsEvidenceId: null,
-      cardTipsEvidenceId: null,
+      cashTipsEvidenceId: evidenceId,
+      cardTipsEvidenceId: evidenceId,
       finalWagesEvidenceId: null,
     },
     conflicts: [],
@@ -198,13 +205,34 @@ describe("job-based shift foundation", () => {
     })).toThrow(/changed after posting/i);
     expect(() => postWorkShift(saved, { ...input, workedHours: 3.5 })).toThrow(/minutes changed after capture/i);
     const moneyAuthority = evidenceBundle(saved.householdId, savedJob.id);
-    moneyAuthority.observations.push({
-      evidenceId: moneyAuthority.evidence[0]!.evidenceId, field: "cashTipsCents", value: 4200, unit: "cad-cents",
-      sourcePath: "punch.tips.cash", confidenceBps: 10_000, finality: "approved", extraction: "structured", conflict: "clear",
-    });
-    moneyAuthority.authority.cashTipsEvidenceId = moneyAuthority.evidence[0]!.evidenceId;
+    moneyAuthority.observations = moneyAuthority.observations.map((row) => row.field === "cashTipsCents" ? { ...row, value: 4200 } : row);
     moneyAuthority.materialHash = sevenShiftsEvidenceMaterialHash(moneyAuthority);
     expect(() => postWorkShift(saved, { ...input, cashTips: 420, sevenShiftsEvidenceBundle: moneyAuthority })).toThrow(/cashTipsCents changed/i);
+  });
+
+  it("requires explicit zero authority instead of turning missing evidence into zero", () => {
+    const saved = upsertWorkJob(catalogHousehold(), { job: job() }).household;
+    const savedJob = saved.workJobs[0]!;
+    const bundle = evidenceBundle(saved.householdId, savedJob.id);
+    const input = {
+      date: "2026-08-31", memberId: "MEM-002", jobId: savedJob.id, roleId: "ROLE-SERVER",
+      workedHours: 4, paidBreakHours: 0.5, startedAt: bundle.startedAt, endedAt: bundle.endedAt,
+      salesByField: { FOOD: 1000 }, cashTips: 50, cardTips: 100, customersServed: 40,
+      staffingCount: 4, eventTag: "regular", createdBy: "MEM-002", confirmDuplicate: true,
+      sevenShiftsEvidenceBundle: bundle,
+    } as const;
+    const missingCard = structuredClone(bundle);
+    missingCard.observations = missingCard.observations.filter((row) => row.field !== "cardTipsCents");
+    missingCard.authority.cardTipsEvidenceId = null;
+    missingCard.materialHash = sevenShiftsEvidenceMaterialHash(missingCard);
+    expect(() => postWorkShift(saved, { ...input, cardTips: 0, sevenShiftsEvidenceBundle: missingCard })).toThrow(/cardTipsCents requires an explicit evidence authority/i);
+
+    const missingBreak = structuredClone(bundle);
+    missingBreak.observations = missingBreak.observations.filter((row) => row.field !== "paidBreakMinutes");
+    missingBreak.authority.paidBreakMinutesEvidenceId = null;
+    missingBreak.paidBreakMinutes = 0;
+    missingBreak.materialHash = sevenShiftsEvidenceMaterialHash(missingBreak);
+    expect(() => postWorkShift(saved, { ...input, paidBreakHours: 0, sevenShiftsEvidenceBundle: missingBreak })).toThrow(/paidBreakMinutes requires an explicit evidence authority/i);
   });
 
   it("reconciles an evidence revision as one balanced payroll-week correction", () => {

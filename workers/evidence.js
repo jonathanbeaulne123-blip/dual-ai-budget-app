@@ -1,5 +1,5 @@
 import { shapeSevenShiftsEvidenceBundle } from "../src/core/evidence.ts";
-import { sevenShiftsAutomationEligibility, sevenShiftsAutomationJobKey } from "../src/core/sevenShiftsAutomation.ts";
+import { AUTOMATION_EVIDENCE_FIELDS, sevenShiftsAutomationEligibility, sevenShiftsAutomationJobKey } from "../src/core/sevenShiftsAutomation.ts";
 import { boundedText, corsHeaders, requestOrigin, verifiedScope } from "./sevenshifts.js";
 import { deriveEvidenceBytes } from "./evidenceExtract.js";
 
@@ -587,6 +587,12 @@ function shapePolicy(raw, scope) {
   const stableWindowHours = Math.max(1, Math.min(168, Math.round(Number(raw.stableWindowHours) || 24)));
   const correctionHorizonDays = Math.max(1, Math.min(366, Math.round(Number(raw.correctionHorizonDays) || 60)));
   const payrollWeekStarts = Math.max(0, Math.min(6, Math.round(Number(raw.payrollWeekStarts) || 0)));
+  const requiredEvidenceFields = Array.isArray(raw.requiredEvidenceFields)
+    ? [...new Set(raw.requiredEvidenceFields.map((field) => String(field)).filter((field) => AUTOMATION_EVIDENCE_FIELDS.includes(field)))]
+    : [];
+  if (raw.enabled === true && !AUTOMATION_EVIDENCE_FIELDS.every((field) => requiredEvidenceFields.includes(field))) {
+    throw new Error("Enabled automation needs a fresh job-specific evidence authority review.");
+  }
   return {
     version: 1,
     environment: scope.environment,
@@ -594,6 +600,7 @@ function shapePolicy(raw, scope) {
     memberId: scope.memberId,
     jobId,
     enabled: raw.enabled === true,
+    requiredEvidenceFields,
     stableWindowHours,
     payrollWeekStarts,
     correctionHorizonDays,

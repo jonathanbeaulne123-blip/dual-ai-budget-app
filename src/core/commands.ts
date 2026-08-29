@@ -913,6 +913,12 @@ export function postWorkShift(household: Household, input: PostWorkShiftInput): 
         cashTipsCents,
         cardTipsCents,
         calculatedWagesCents: calculation.takeHomeWagesCents,
+        requireTipAuthority: role.tipped,
+        requireSalesAuthority: role.tipped && (
+          job.salesFields.some((field) => field.requirement !== "off")
+          || job.tipOutRules.some((rule) => rule.active && rule.basis === "total-sales")
+        ),
+        requireTippedCovariateAuthority: role.tipped,
         customersServed: covariates.customersServed,
         staffingCount: covariates.staffingCount,
         eventTag: covariates.eventTag,

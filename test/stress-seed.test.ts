@@ -25,6 +25,15 @@ const realistic = seedStressHousehold({
 });
 
 describe("Development stress data controls", () => {
+  it("refuses to replace Production books with fictional fixture data", () => {
+    expect(() => seedStressHousehold({
+      today: TODAY,
+      environment: "production",
+      seed: 1,
+      numberStyle: "realistic",
+    })).toThrow(/Development-only.*Production books/i);
+  });
+
   it("builds a valid twelve-month household across the major product surfaces", () => {
     expect(household.transactions.length).toBeGreaterThan(500);
     expect(household.shifts.length).toBeGreaterThan(90);

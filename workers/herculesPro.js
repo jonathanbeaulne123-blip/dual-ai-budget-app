@@ -1016,7 +1016,7 @@ async function eligibleShiftOptions(env, claims, books, args) {
     if (!authority || ["email", "calendar-sync", "selected-ics"].includes(authority.sourceKind) || authority.finality === "outlook") continue;
     const eligibility = sevenShiftsAutomationEligibility(bundle, {
       version: 1, environment: bundle.environment, householdId: bundle.householdId, memberId: bundle.memberId, jobId: bundle.jobId,
-      enabled: true, stableWindowHours: 24, payrollWeekStarts: 0, correctionHorizonDays: 60, closedPeriodAction: "variance", updatedAt: new Date(0).toISOString(),
+      enabled: true, requiredEvidenceFields: ["date", "roleId", "workedMinutes", "paidBreakMinutes", "salesCents", "cashTipsCents", "cardTipsCents", "customersServed", "staffingCount"], stableWindowHours: 24, payrollWeekStarts: 0, correctionHorizonDays: 60, closedPeriodAction: "variance", updatedAt: new Date(0).toISOString(),
     });
     if (!eligibility.eligible) continue;
     const job = books.workJobs.find((item) => item.id === bundle.jobId && item.active && item.memberId === claims.memberId);

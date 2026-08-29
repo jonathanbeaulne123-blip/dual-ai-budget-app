@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   parseSevenShiftsCalendar,
+  automationRequiredEvidenceFieldsForJob,
   type AutomationPolicy,
   type Household,
   type SevenShiftsScheduledShift,
+  type WorkJob,
 } from "./core/index.ts";
 import {
   deleteEvidence,
@@ -46,12 +48,13 @@ function displayEvidenceValue(value: unknown): string {
   return String(value);
 }
 
-function defaultPolicy(scope: EvidenceScope, jobId: string): AutomationPolicy {
+function defaultPolicy(scope: EvidenceScope, job: WorkJob): AutomationPolicy {
   return {
     version: 1,
     ...scope,
-    jobId,
+    jobId: job.id,
     enabled: false,
+    requiredEvidenceFields: automationRequiredEvidenceFieldsForJob(job),
     stableWindowHours: 24,
     payrollWeekStarts: 0,
     correctionHorizonDays: 60,
@@ -80,6 +83,7 @@ export function SevenShiftsEvidenceCenter({
   const scope = useMemo<EvidenceScope>(() => ({ environment: household.environment, householdId: household.householdId, memberId }), [household.environment, household.householdId, memberId]);
   const scopeKey = `${scope.environment}:${scope.householdId}:${scope.memberId}`;
   const controllerRef = useRef<AbortController | null>(null);
+  const reviewRef = useRef<HTMLElement | null>(null);
   const [available, setAvailable] = useState(false);
   const [detail, setDetail] = useState("Evidence Mesh is checking this environment gate.");
   const [captures, setCaptures] = useState<EvidenceCaptureSummary[]>([]);
@@ -95,6 +99,10 @@ export function SevenShiftsEvidenceCenter({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    if (selectedDerived) reviewRef.current?.focus();
+  }, [selectedDerived?.evidenceId, selectedDerived?.revision]);
 
   useEffect(() => {
     controllerRef.current?.abort();
@@ -216,11 +224,21 @@ export function SevenShiftsEvidenceCenter({
   }
 
   async function togglePolicy(jobId: string, enabled: boolean) {
-    const current = policies.find((row) => row.jobId === jobId) ?? defaultPolicy(scope, jobId);
+    const job = (household.workJobs ?? []).find((row) => row.id === jobId && row.active && row.memberId === memberId);
+    if (!job) {
+      setError("Choose an active job before changing automation.");
+      return;
+    }
+    const current = policies.find((row) => row.jobId === jobId) ?? defaultPolicy(scope, job);
     setBusy(true);
     setError("");
     try {
-      const saved = await putEvidenceAutomationPolicy(scope, { ...current, enabled, updatedAt: new Date().toISOString() });
+      const saved = await putEvidenceAutomationPolicy(scope, {
+        ...current,
+        enabled,
+        requiredEvidenceFields: automationRequiredEvidenceFieldsForJob(job),
+        updatedAt: new Date().toISOString(),
+      });
       setPolicies((rows) => [...rows.filter((row) => row.jobId !== jobId), saved]);
       setNotice(enabled
         ? "Automation enabled for this exact job. Only eligible, unconflicted evidence can create a pending deterministic command."
@@ -406,14 +424,7 @@ export function SevenShiftsEvidenceCenter({
 
       <hr />
       <header><h3>Encrypted captures</h3><span className="pill">{captures.length}</span></header>
-      {captures.length ? <div className="stack-list">{captures.map((row) => (
-        <article className="work-shift-history-row" key={row.evidenceId}>
-          <div><strong>{captureLabel(row)}</strong><p className="muted">{row.state.replace(/_/g, " ")} · {Math.ceil(row.byteLength / 1024)} KB · revision {row.revision}</p></div>
-          <div className="chips"><button type="button" className="chip" disabled={parentBusy || busy || !["ready_to_review", "bundled"].includes(row.state)} onClick={() => { void reviewDerived(row); }}>Review facts</button><button type="button" className="chip" disabled={parentBusy || busy} onClick={() => { void exportRaw(row); }}>Export raw</button><button type="button" className="chip danger" disabled={parentBusy || busy} onClick={() => { void remove(row); }}>Delete</button></div>
-        </article>
-      ))}</div> : <p className="muted">No encrypted evidence in this member scope.</p>}
-
-      {selectedDerived ? <article className="preview" aria-label="Extracted evidence facts">
+      {selectedDerived ? <article ref={reviewRef} tabIndex={-1} className="preview" aria-label="Extracted evidence facts">
         <header><h3>Extracted facts</h3><button type="button" className="chip" onClick={() => { setSelectedDerived(null); setReplaceScheduleRange(false); }}>Close</button></header>
         <p className="muted">{selectedDerived.observations.length} recognized fact{selectedDerived.observations.length === 1 ? "" : "s"} · {selectedDerived.schemaDrift.length} unrecognized field{selectedDerived.schemaDrift.length === 1 ? "" : "s"} preserved · {selectedDerived.state.replace(/_/g, " ")}</p>
         {rosterRows.length ? <div className="stack-list" aria-label="Coworker identity review">
@@ -443,6 +454,12 @@ export function SevenShiftsEvidenceCenter({
           <p key={item.driftId}><strong>{item.fieldPath}</strong>: {displayEvidenceValue(item.value)}</p>
         ))}</div></details> : null}
       </article> : null}
+      {captures.length ? <div className="stack-list">{captures.map((row) => (
+        <article className="work-shift-history-row" key={row.evidenceId}>
+          <div><strong>{captureLabel(row)}</strong><p className="muted">{row.state.replace(/_/g, " ")} · {Math.ceil(row.byteLength / 1024)} KB · revision {row.revision}</p></div>
+          <div className="chips"><button type="button" className="chip" disabled={parentBusy || busy || !["ready_to_review", "bundled"].includes(row.state)} onClick={() => { void reviewDerived(row); }}>Review facts</button><button type="button" className="chip" disabled={parentBusy || busy} onClick={() => { void exportRaw(row); }}>Export raw</button><button type="button" className="chip danger" disabled={parentBusy || busy} onClick={() => { void remove(row); }}>Delete</button></div>
+        </article>
+      ))}</div> : <p className="muted">No encrypted evidence in this member scope.</p>}
 
       <header><h3>Normalized bundles</h3><span className="pill">{bundles.length}</span></header>
       {bundles.length ? <div className="stack-list">{bundles.map((row) => (

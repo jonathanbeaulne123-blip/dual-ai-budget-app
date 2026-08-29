@@ -1279,6 +1279,7 @@ function sanitizeDocumentResult(value, options = {}) {
   } : null;
   const shiftInput = value.shiftDraft && typeof value.shiftDraft === "object" ? value.shiftDraft : null;
   const optionalShiftCents = (amount) => optionalMoneyCents(amount);
+  let shiftTipSplitIncomplete = false;
   const shiftDraft = (documentKind === "shift-report" || shiftHint) && shiftInput ? (() => {
     const draft = {};
     const date = normalizeShiftDraftDate(shiftInput.date);
@@ -1295,11 +1296,10 @@ function sanitizeDocumentResult(value, options = {}) {
       const cents = optionalShiftCents(shiftInput[field]);
       if (cents != null && cents <= maximum) draft[field] = cents;
     }
-    // Coerce common POS slips that only print total tips + cash tips.
+    // A total is comparison evidence only. Never infer a missing cash/card split.
     if (draft.cardTipsCents == null) {
       const totalTips = optionalShiftCents(shiftInput.totalTipsCents ?? shiftInput.totalTips);
-      const cash = draft.cashTipsCents ?? optionalShiftCents(shiftInput.cashTipsCents) ?? 0;
-      if (totalTips != null && totalTips >= cash) draft.cardTipsCents = totalTips - cash;
+      if (totalTips != null) shiftTipSplitIncomplete = true;
     }
     const customers = optionalShiftCents(shiftInput.customersServed ?? shiftInput.headcount);
     if (customers != null && customers <= 5000) draft.customersServed = customers;
@@ -1313,6 +1313,9 @@ function sanitizeDocumentResult(value, options = {}) {
   const warnings = documentKind === "receipt"
     ? []
     : Array.isArray(value.warnings) ? value.warnings.slice(0, 20).map((item) => redactFinancialIdentifiers(item, 180)).filter(Boolean) : [];
+  if (shiftTipSplitIncomplete && warnings.length < 20) {
+    warnings.push("Total tips were visible but card tips were not separately labeled, so Hearth left card tips blank for review.");
+  }
   // Keep OCR when this was a tip-sheet capture even if kind coercion is still pending.
   const ocrText = (documentKind === "shift-report" || shiftHint) ? rawOcr : "";
   let finalShiftDraft = shiftDraft;

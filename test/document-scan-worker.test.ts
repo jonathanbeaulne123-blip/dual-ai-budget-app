@@ -317,7 +317,7 @@ describe("document detection Worker", () => {
       }),
     }), { AI: { run }, ASSETS: { fetch: vi.fn() } });
     expect(response.status).toBe(200);
-    const body = await response.json() as { result: { shiftDraft?: Record<string, unknown> } };
+    const body = await response.json() as { result: { shiftDraft?: Record<string, unknown>; warnings: string[] } };
     expect(body.result.shiftDraft).toEqual({
       date: "2026-08-20",
       workedHours: 2.05,
@@ -325,11 +325,48 @@ describe("document detection Worker", () => {
       foodSalesCents: 48_601,
       alcoholSalesCents: 10_000,
       cashTipsCents: 0,
-      cardTipsCents: 13_102,
       customersServed: 17,
     });
+    expect(body.result.warnings).toContain("Total tips were visible but card tips were not separately labeled, so Hearth left card tips blank for review.");
     expect(body.result.shiftDraft).not.toHaveProperty("note");
     expect(body.result.shiftDraft).not.toHaveProperty("staffingCount");
+  });
+
+  it("does not turn a total tip amount into card tips when cash tips are absent", async () => {
+    const run = vi.fn(async () => ({
+      response: {
+        documentKind: "shift-report",
+        currency: "CAD",
+        accountLast4: "",
+        rows: [],
+        receiptNumbers: null,
+        shiftDraft: {
+          date: "08/20/2026",
+          workedHours: 2.05,
+          salesCents: "586.01",
+          cashTipsCents: "99.99",
+          cardTipsCents: "131.02",
+          totalTipsCents: "131.02",
+        },
+        ocrText: "EMPLOYEE SHIFT REPORT\nClock In: 08/20/2026 04:17PM\nClock Out: 08/20/2026 06:21PM\nTotal Paid Hours 2.05 HR\nTIP SUMMARY\nTotal Tips 7 $131.02",
+        warnings: [],
+      },
+    }));
+    const response = await worker.fetch(new Request(`${origin}/documents/scan`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: origin },
+      body: JSON.stringify({
+        fileName: "employee-shift-report.jpg",
+        mimeType: "image/jpeg",
+        imageDataUrl: "data:image/jpeg;base64,AA==",
+        documentHint: "shift-report",
+      }),
+    }), { AI: { run }, ASSETS: { fetch: vi.fn() } });
+    expect(response.status).toBe(200);
+    const body = await response.json() as { result: { shiftDraft?: Record<string, unknown>; warnings: string[] } };
+    expect(body.result.shiftDraft).not.toHaveProperty("cashTipsCents");
+    expect(body.result.shiftDraft).not.toHaveProperty("cardTipsCents");
+    expect(body.result.warnings).toContain("Total Tips was visible but Card Tips was not separately labeled; left card tips blank.");
   });
 
   it("honors an explicit provider and does not fall through to another backend", async () => {

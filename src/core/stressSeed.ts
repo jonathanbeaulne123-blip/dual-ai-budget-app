@@ -331,6 +331,9 @@ export function preserveContinuityForStressSeed(current: Household, stress: Hous
 
 /** A dense but valid twelve-month household for Development and visual demos. */
 export function seedStressHousehold(options: StressSeedOptions): Household {
+  if ((options.environment ?? "development") !== "development") {
+    throw new Error("Fictional stress data is Development-only and cannot replace Production books.");
+  }
   const style = options.numberStyle ?? "realistic";
   const random = mulberry32(options.seed ?? 20260825);
   const today = options.today;

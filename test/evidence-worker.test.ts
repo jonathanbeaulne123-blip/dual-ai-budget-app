@@ -397,9 +397,15 @@ function derivedBundle(revision = 1, suffix = "0001"): SevenShiftsEvidenceBundle
     observations: [
       { evidenceId, field: "date", value: "2026-08-28", unit: "date", sourcePath: "punch.business_date", confidenceBps: 10_000, finality: "approved", extraction: "structured", conflict: "clear" },
       { evidenceId, field: "roleId", value: "ROLE-SERVER", unit: "identifier", sourcePath: "mapping.role", confidenceBps: 10_000, finality: "approved", extraction: "human", conflict: "clear" },
+      { evidenceId, field: "workedMinutes", value: 285, unit: "minutes", sourcePath: "punch.worked", confidenceBps: 10_000, finality: "approved", extraction: "structured", conflict: "clear" },
+      { evidenceId, field: "paidBreakMinutes", value: 15, unit: "minutes", sourcePath: "punch.breaks.paid", confidenceBps: 10_000, finality: "approved", extraction: "structured", conflict: "clear" },
       { evidenceId, field: "cashTipsCents", value: 4200, unit: "cad-cents", sourcePath: "punch.tips.cash", confidenceBps: 10_000, finality: "approved", extraction: "structured", conflict: "clear" },
+      { evidenceId, field: "cardTipsCents", value: 0, unit: "cad-cents", sourcePath: "punch.tips.card", confidenceBps: 10_000, finality: "approved", extraction: "structured", conflict: "clear" },
+      { evidenceId, field: "salesCents", value: 65000, unit: "cad-cents", sourcePath: "report.sales", confidenceBps: 10_000, finality: "approved", extraction: "structured", conflict: "clear" },
+      { evidenceId, field: "customersServed", value: 40, unit: "count", sourcePath: "report.customers", confidenceBps: 10_000, finality: "approved", extraction: "structured", conflict: "clear" },
+      { evidenceId, field: "staffingCount", value: 4, unit: "count", sourcePath: "report.staffing", confidenceBps: 10_000, finality: "approved", extraction: "structured", conflict: "clear" },
     ],
-    authority: { workedMinutesEvidenceId: evidenceId, paidBreakMinutesEvidenceId: evidenceId, cashTipsEvidenceId: evidenceId, cardTipsEvidenceId: null, finalWagesEvidenceId: null },
+    authority: { workedMinutesEvidenceId: evidenceId, paidBreakMinutesEvidenceId: evidenceId, cashTipsEvidenceId: evidenceId, cardTipsEvidenceId: evidenceId, finalWagesEvidenceId: null },
     conflicts: [], materialHash: "",
   };
   bundle.materialHash = sevenShiftsEvidenceMaterialHash(bundle);
@@ -433,6 +439,28 @@ function seedDerivative(db: MemoryD1, bundle: SevenShiftsEvidenceBundle) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("Evidence Mesh Worker", () => {
+  it("rejects a direct enabled policy that omits the server minimum authority set", async () => {
+    const bindings = env();
+    vi.stubGlobal("fetch", authFetch());
+    const response = await worker.fetch(request("/work/evidence/automation/policies", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        environment: "development",
+        householdId: "HH-TEST",
+        memberId: "MEM-001",
+        policy: {
+          jobId: "JOB-CAFE",
+          enabled: true,
+          requiredEvidenceFields: ["date", "roleId", "workedMinutes", "paidBreakMinutes"],
+        },
+      }),
+    }), bindings);
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ error: expect.stringMatching(/fresh job-specific evidence authority review/i) });
+    expect(bindings.EVIDENCE_DB.policies).toHaveLength(0);
+  });
+
   it("is unavailable when disabled and refuses an unprovisioned Production scope without disabling Development", async () => {
     const disabled = env({ EVIDENCE_ENABLED: "false" });
     const status = await worker.fetch(request("/work/evidence/status", { headers: { Origin: kitchen } }), disabled);
@@ -774,7 +802,7 @@ describe("Evidence Mesh Worker", () => {
     vi.stubGlobal("fetch", authFetch());
     bindings.EVIDENCE_DB.policies.push({
       environment: "development", auth_user_id: "auth-user-1", household_id: "HH-TEST", member_id: "MEM-001", job_id: "JOB-CAFE", enabled: 1,
-      policy_json: JSON.stringify({ version: 1, environment: "development", householdId: "HH-TEST", memberId: "MEM-001", jobId: "JOB-CAFE", enabled: true, stableWindowHours: 24, payrollWeekStarts: 1, correctionHorizonDays: 60, closedPeriodAction: "variance", updatedAt: new Date().toISOString() }),
+      policy_json: JSON.stringify({ version: 1, environment: "development", householdId: "HH-TEST", memberId: "MEM-001", jobId: "JOB-CAFE", enabled: true, requiredEvidenceFields: ["date", "roleId", "workedMinutes", "paidBreakMinutes", "salesCents", "cashTipsCents", "cardTipsCents", "customersServed", "staffingCount"], stableWindowHours: 24, payrollWeekStarts: 1, correctionHorizonDays: 60, closedPeriodAction: "variance", updatedAt: new Date().toISOString() }),
     });
     const first = derivedBundle(1, "0001");
     const second = derivedBundle(2, "0002");
@@ -803,7 +831,7 @@ describe("Evidence Mesh Worker", () => {
     vi.stubGlobal("fetch", authFetch());
     bindings.EVIDENCE_DB.policies.push({
       environment: "development", auth_user_id: "auth-user-1", household_id: "HH-TEST", member_id: "MEM-001", job_id: "JOB-CAFE", enabled: 1,
-      policy_json: JSON.stringify({ version: 1, environment: "development", householdId: "HH-TEST", memberId: "MEM-001", jobId: "JOB-CAFE", enabled: true, stableWindowHours: 24, payrollWeekStarts: 1, correctionHorizonDays: 60, closedPeriodAction: "variance", updatedAt: new Date().toISOString() }),
+      policy_json: JSON.stringify({ version: 1, environment: "development", householdId: "HH-TEST", memberId: "MEM-001", jobId: "JOB-CAFE", enabled: true, requiredEvidenceFields: ["date", "roleId", "workedMinutes", "paidBreakMinutes", "salesCents", "cashTipsCents", "cardTipsCents", "customersServed", "staffingCount"], stableWindowHours: 24, payrollWeekStarts: 1, correctionHorizonDays: 60, closedPeriodAction: "variance", updatedAt: new Date().toISOString() }),
     });
     const first = derivedBundle(1, "1001");
     const second = derivedBundle(2, "1002");
@@ -836,7 +864,7 @@ describe("Evidence Mesh Worker", () => {
     vi.stubGlobal("fetch", authFetch());
     bindings.EVIDENCE_DB.policies.push({
       environment: "development", auth_user_id: "auth-user-1", household_id: "HH-TEST", member_id: "MEM-001", job_id: "JOB-CAFE", enabled: 1,
-      policy_json: JSON.stringify({ version: 1, environment: "development", householdId: "HH-TEST", memberId: "MEM-001", jobId: "JOB-CAFE", enabled: true, stableWindowHours: 24, payrollWeekStarts: 1, correctionHorizonDays: 1, closedPeriodAction: "variance", updatedAt: new Date().toISOString() }),
+      policy_json: JSON.stringify({ version: 1, environment: "development", householdId: "HH-TEST", memberId: "MEM-001", jobId: "JOB-CAFE", enabled: true, requiredEvidenceFields: ["date", "roleId", "workedMinutes", "paidBreakMinutes", "salesCents", "cashTipsCents", "cardTipsCents", "customersServed", "staffingCount"], stableWindowHours: 24, payrollWeekStarts: 1, correctionHorizonDays: 1, closedPeriodAction: "variance", updatedAt: new Date().toISOString() }),
     });
     const old = (revision: number, suffix: string) => {
       const value = derivedBundle(revision, suffix);
@@ -868,7 +896,7 @@ describe("Evidence Mesh Worker", () => {
     vi.stubGlobal("fetch", authFetch());
     bindings.EVIDENCE_DB.policies.push({
       environment: "development", auth_user_id: "auth-user-1", household_id: "HH-TEST", member_id: "MEM-001", job_id: "JOB-CAFE", enabled: 1,
-      policy_json: JSON.stringify({ version: 1, environment: "development", householdId: "HH-TEST", memberId: "MEM-001", jobId: "JOB-CAFE", enabled: true, stableWindowHours: 24, payrollWeekStarts: 1, correctionHorizonDays: 60, closedPeriodAction: "variance", updatedAt: new Date().toISOString() }),
+      policy_json: JSON.stringify({ version: 1, environment: "development", householdId: "HH-TEST", memberId: "MEM-001", jobId: "JOB-CAFE", enabled: true, requiredEvidenceFields: ["date", "roleId", "workedMinutes", "paidBreakMinutes", "salesCents", "cashTipsCents", "cardTipsCents", "customersServed", "staffingCount"], stableWindowHours: 24, payrollWeekStarts: 1, correctionHorizonDays: 60, closedPeriodAction: "variance", updatedAt: new Date().toISOString() }),
     });
     const bundle = derivedBundle(1, "3001");
     seedDerivative(bindings.EVIDENCE_DB, bundle);
@@ -905,7 +933,7 @@ describe("Evidence Mesh Worker", () => {
     }));
     bindings.EVIDENCE_DB.policies.push({
       environment: "development", auth_user_id: "auth-user-1", household_id: "HH-TEST", member_id: "MEM-001", job_id: "JOB-CAFE", enabled: 1,
-      policy_json: JSON.stringify({ version: 1, environment: "development", householdId: "HH-TEST", memberId: "MEM-001", jobId: "JOB-CAFE", enabled: true, stableWindowHours: 24, payrollWeekStarts: 1, correctionHorizonDays: 60, closedPeriodAction: "variance", updatedAt: new Date().toISOString() }),
+      policy_json: JSON.stringify({ version: 1, environment: "development", householdId: "HH-TEST", memberId: "MEM-001", jobId: "JOB-CAFE", enabled: true, requiredEvidenceFields: ["date", "roleId", "workedMinutes", "paidBreakMinutes", "salesCents", "cashTipsCents", "cardTipsCents", "customersServed", "staffingCount"], stableWindowHours: 24, payrollWeekStarts: 1, correctionHorizonDays: 60, closedPeriodAction: "variance", updatedAt: new Date().toISOString() }),
     });
     const first = derivedBundle(1, "4001");
     const second = derivedBundle(2, "4002");

@@ -97,6 +97,45 @@ describe("D-158 deterministic Evidence extraction", () => {
     expect(field(record, "observedRole")?.value).toBe("Support");
   });
 
+  it("extracts the fixed visible-grid projection while keeping closing time unknown", () => {
+    const result = deriveEvidenceBytes({
+      captureKind: "browser-structured",
+      contentType: "application/json",
+      bytes: browserBytes("published-schedule", "/location/3/schedule/2026-08-24", {
+        shifts: [
+          { employee: { display_name: "Alex Example" }, date: "2026-08-24", role: "Support", station: "Closer", start_time: "6:00 pm", end_time: "10:30 pm" },
+          { employee: { display_name: "Alex Example" }, date: "2026-08-25", role: "Manager", station: null, start_time: "10:00 am", end_time: null },
+        ],
+      }),
+    });
+    expect(result.records).toHaveLength(2);
+    expect(result.records[0]).toMatchObject({ kind: "coworker-schedule", finality: "outlook", workedMinutes: null });
+    expect(field(result.records[0], "coworkerName")?.value).toBe("Alex Example");
+    expect(field(result.records[0], "scheduledMinutes")?.value).toBe(270);
+    expect(result.records[1]).toMatchObject({ kind: "coworker-schedule", finality: "outlook", workedMinutes: null, endedAt: null });
+    expect(field(result.records[1], "date")?.value).toBe("2026-08-25");
+    expect(field(result.records[1], "startedAt")?.value).toBe("2026-08-25T14:00:00.000Z");
+  });
+
+  it("extracts the fixed visible My Timesheets projection as approved worked time without wage authority", () => {
+    const result = deriveEvidenceBytes({
+      captureKind: "browser-structured",
+      contentType: "application/json",
+      bytes: browserBytes("punch", "/my_timesheets", { timesheets: [{
+        date: "2026-08-15", location_name: "Dining Room", role_name: "PM Server", start_time: "4:30 pm", end_time: "10:31 pm",
+        breaks_label: null, hours: 6.02, approval_status: "Approved", closed: true,
+      }] }),
+    });
+    const record = result.records[0]!;
+    expect(record).toMatchObject({ kind: "worked-shift", finality: "final", workedMinutes: 361 });
+    expect(field(record, "date")?.value).toBe("2026-08-15");
+    expect(field(record, "startedAt")?.value).toBe("2026-08-15T20:30:00.000Z");
+    expect(field(record, "endedAt")?.value).toBe("2026-08-16T02:31:00.000Z");
+    expect(field(record, "approved")?.value).toBe(true);
+    expect(field(record, "reportedWagesCents")).toBeUndefined();
+    expect(field(record, "finalWagesCents")).toBeUndefined();
+  });
+
   it("extracts employee Timesheet/Tip Report CSV without inferring identity from a name", () => {
     const csv = [
       "Employee,Date,Clock In,Clock Out,Total Hours,Paid Break Minutes,Cash Tips,Card Tips,Declared Tips,Tip Out,Gross Pay,Approval Status,Location ID,Role ID,New Report Field",
