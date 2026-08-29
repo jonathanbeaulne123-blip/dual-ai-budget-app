@@ -33,7 +33,7 @@ Related: [AI_HANDOFF.md](../AI_HANDOFF.md) · [worksession](../worksessions/2026
 - Repo: `jonathanbeaulne123-blip/dual-ai-budget-app`
 - Branch: `cursor/shared-ledger-story-aef7`
 - Base: `origin/main` @ `871e6607b4bc6a5d653f9e9bbcc9131f9a07dc65` (do not rebase onto later `main` unless Jonathan asks; PR is dirty vs current GitHub `main`)
-- Review against branch tip at or after `3f4e9b5bde4fb496908f7f34d51e97fdee3cdc72`
+- Review against branch tip at or after `12111e4284ac8d9453bb3fa48dcc174840c34a98` (this packet)
 - Draft PR #244 — **not merged, not deployed, not live**
 - Risk: **High**
 - Decision owner: Jonathan
@@ -60,7 +60,7 @@ Hearth is Dual Course: family-office books weigh 5; Hercules and interactables w
 - Repo: jonathanbeaulne123-blip/dual-ai-budget-app (private)
 - Branch: cursor/shared-ledger-story-aef7
 - Base: origin/main @ 871e6607b4bc6a5d653f9e9bbcc9131f9a07dc65
-- Review SHA: branch tip at or after 3f4e9b5bde4fb496908f7f34d51e97fdee3cdc72
+- Review SHA: branch tip at or after 12111e4284ac8d9453bb3fa48dcc174840c34a98
 - Draft PR #244 — not merged, not deployed, not the live kitchen
 - Do not rebase onto later main unless Jonathan asks
 
