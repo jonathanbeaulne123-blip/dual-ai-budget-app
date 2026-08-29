@@ -155,6 +155,14 @@ class MemoryD1 {
             return { results: [] };
           },
           async run() {
+            if (sql.startsWith("INSERT INTO evidence_companion_registrations")) {
+              db.companions.push({
+                registration_id: values[0], token_hash: values[1], environment: values[2], auth_user_id: values[3],
+                household_id: values[4], member_id: values[5], origin: values[6], label: values[7], active: 1,
+                expires_at: values[8], created_at: values[9], revoked_at: null,
+              });
+              return { meta: { changes: 1 } };
+            }
             if (sql.startsWith("INSERT OR IGNORE INTO evidence_r2_budget")) return { meta: { changes: 0 } };
             if (sql.startsWith("UPDATE evidence_r2_budget SET stored_bytes = stored_bytes +")) {
               const allowed = db.r2Budget.stored_bytes + values[0] <= values[3] && db.r2Budget.object_count + 1 <= values[4];
@@ -612,6 +620,28 @@ describe("Evidence Mesh Worker", () => {
     expect(await response.json()).toMatchObject({ error: expect.stringMatching(/not a 7shifts domain/i) });
     expect(bindings.EVIDENCE_DB.items).toHaveLength(0);
     expect(bindings.EVIDENCE_RAW.objects.size).toBe(0);
+  });
+
+  it("stores a concrete bounded label when minting an autonomous companion registration", async () => {
+    const bindings = env({ EVIDENCE_COMPANION_ENABLED: "true" });
+    vi.stubGlobal("fetch", authFetch());
+    const response = await worker.fetch(request("/work/evidence/companion/registrations", {
+      method: "POST",
+      headers: { Origin: kitchen, Authorization: "Bearer test-user-jwt", "Content-Type": "application/json" },
+      body: JSON.stringify({
+        environment: "development",
+        householdId: "HH-TEST",
+        memberId: "MEM-001",
+        origin: "chrome-extension://deddlafofoddkacaedocpmnkaocbkjij",
+        label: `  Jonathan\n${"capture ".repeat(20)}  `,
+      }),
+    }), bindings);
+    expect(response.status).toBe(201);
+    const body = await response.json() as any;
+    expect(body.registration).toMatchObject({ authority: "capture-only", label: expect.any(String) });
+    expect(body.registration.label.length).toBeLessThanOrEqual(80);
+    expect(bindings.EVIDENCE_DB.companions[0].label).toBe(body.registration.label);
+    expect(bindings.EVIDENCE_DB.companions[0].label).not.toBeInstanceOf(Promise);
   });
 
   it("binds a Hearth job only from one reviewed server-owned employee, location, and role tuple", async () => {
