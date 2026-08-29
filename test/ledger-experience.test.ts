@@ -133,6 +133,11 @@ describe("projectLedgerExperience", () => {
       shared: false,
       ownerMemberId: JONATHAN,
     }).household;
+    household = addGoal(household, {
+      name: "Shared trip",
+      target: 800,
+      shared: true,
+    }).household;
     household = addRecurrence(household, {
       cadence: "monthly",
       nextDate: DATE,
@@ -145,7 +150,7 @@ describe("projectLedgerExperience", () => {
     const floor = personalBooksFloor(household, JONATHAN);
     expect(floor.goals.some((goal) => goal.name === "Bianca secret trip")).toBe(false);
     expect(floor.goals.some((goal) => goal.name === "Jonathan bike")).toBe(true);
-    expect(floor.goals.some((goal) => goal.shared)).toBe(true);
+    expect(floor.goals.some((goal) => goal.name === "Shared trip" && goal.shared)).toBe(true);
     expect(floor.recurrences.some((row) => row.note === "Bianca secret due")).toBe(false);
     expect(floor.recurrences.some((row) => row.accountId === backingId)).toBe(false);
     expect(floor.goalContributions.some((row) => (
