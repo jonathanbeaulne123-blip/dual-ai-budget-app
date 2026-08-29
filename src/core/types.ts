@@ -231,6 +231,9 @@ export type WorkJob = {
   timezone: string;
   locationName: string;
   gpsEnabled: boolean;
+  /** One rounded workplace pin for historical weather. Never a per-shift GPS trail. */
+  locationLatitude?: number | null;
+  locationLongitude?: number | null;
   roles: WorkRole[];
   paidBreakRate: "role" | "custom";
   paidBreakHourlyRateCents: number;
@@ -332,6 +335,8 @@ export type Shift = {
   sevenShiftsPunchDigest?: string;
   /** Versioned, multi-source member evidence accepted at the work-command boundary. */
   sevenShiftsEvidenceBundle?: SevenShiftsEvidenceBundle;
+  /** D-172 permanent, member-reviewed Tip Science record for this posted shift. */
+  shiftBible?: import("./shiftEnvelope.ts").ShiftBible;
 };
 
 export type RecurrenceCadence = "daily" | "weekly" | "biweekly" | "monthly";
@@ -967,6 +972,10 @@ export type Household = {
   coworkerAttendance?: import("./coworkers.ts").CoworkerAttendance[];
   /** Private published coworker schedule observations; outlook only. */
   coworkerSchedules?: import("./coworkers.ts").CoworkerSchedule[];
+  /** Temporary member-personal schedule/work proposals. Never money authority. */
+  shiftEnvelopes?: import("./shiftEnvelope.ts").ShiftEnvelope[];
+  /** Non-work outcomes. Worked Bibles are embedded in their financial Shift. */
+  shiftBibles?: import("./shiftEnvelope.ts").ShiftBible[];
   recurrences: Recurrence[];
   appointments: Appointment[];
   claims: Claim[];
@@ -1068,6 +1077,8 @@ export type PersonalEnvelope = {
   coworkers?: import("./coworkers.ts").Coworker[];
   coworkerAttendance?: import("./coworkers.ts").CoworkerAttendance[];
   coworkerSchedules?: import("./coworkers.ts").CoworkerSchedule[];
+  shiftEnvelopes?: import("./shiftEnvelope.ts").ShiftEnvelope[];
+  shiftBibles?: import("./shiftEnvelope.ts").ShiftBible[];
   /** Member-owned non-shared goals and their money facts. Optional for old replicas. */
   goals?: Goal[];
   goalContributions?: GoalContribution[];

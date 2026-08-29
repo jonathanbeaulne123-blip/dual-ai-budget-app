@@ -6,8 +6,14 @@ function shiftForHercules(shift: Shift): Shift {
   const {
     sevenShiftsPunchDigest: _sevenShiftsPunchDigest,
     sevenShiftsEvidenceBundle: _sevenShiftsEvidenceBundle,
+    shiftBible: _shiftBible,
     ...safe
   } = shift;
+  return safe;
+}
+
+function shiftForConfirmedToolFacts(shift: Shift): Shift {
+  const { sevenShiftsPunchDigest: _digest, sevenShiftsEvidenceBundle: _evidence, ...safe } = shift;
   return safe;
 }
 
@@ -75,6 +81,8 @@ export function householdForAiDisclosure(
     coworkers: [],
     coworkerAttendance: [],
     coworkerSchedules: [],
+    shiftEnvelopes: [],
+    shiftBibles: [],
     transactions,
     shifts,
     goals,
@@ -124,6 +132,8 @@ export function householdForHerculesContext(
     coworkers: [],
     coworkerAttendance: [],
     coworkerSchedules: [],
+    shiftEnvelopes: [],
+    shiftBibles: [],
     accounts: scoped.accounts.filter((account) => account.scope !== "personal"),
     fundPrivate: { bankBindings: [], reconciliations: [] },
     shifts: scoped.shifts.map(shiftForHercules),
@@ -214,7 +224,6 @@ export function householdForShiftReadTools(
   memberQuery?: string,
 ): Household {
   const contextual = householdForHerculesContext(household, memberId, view);
-  if (view !== "personal") return contextual;
   const needle = memberQuery?.trim().toLowerCase();
   if (needle && needle !== "me") {
     const self = household.members.find((member) => member.id === memberId);
@@ -229,7 +238,7 @@ export function householdForShiftReadTools(
   if (!ownShiftIds.size) return contextual;
   const merged = new Map(contextual.shifts.map((shift) => [shift.id, shift]));
   for (const shift of household.shifts ?? []) {
-    if (ownShiftIds.has(shift.id)) merged.set(shift.id, shiftForHercules(shift));
+    if (ownShiftIds.has(shift.id)) merged.set(shift.id, shiftForConfirmedToolFacts(shift));
   }
   return { ...contextual, shifts: [...merged.values()] };
 }

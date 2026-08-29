@@ -57,6 +57,52 @@ describe("Toast Employee Shift Report parser", () => {
     expect(parsed.draft?.cardTipsCents).not.toBe(9_174);
   });
 
+  it("keeps card tips blank when only a total is labeled", () => {
+    const parsed = parsePosEmployeeShiftReport(`
+EMPLOYEE SHIFT REPORT
+Clock In: 08/20/2026 04:17PM
+Clock Out: 08/20/2026 06:21PM
+Total Paid Hours 2.05 HR
+TIP SUMMARY
+Total Tips 7 $131.02
+`);
+    expect(parsed.draft).not.toHaveProperty("cashTipsCents");
+    expect(parsed.draft).not.toHaveProperty("cardTipsCents");
+    expect(parsed.warnings).toContain("Total Tips was visible but Card Tips was not separately labeled; left card tips blank.");
+  });
+
+  it("does not calculate card tips from total minus cash or Merchant Owes Employee", () => {
+    const parsed = parsePosEmployeeShiftReport(`
+EMPLOYEE SHIFT REPORT
+Clock In: 08/20/2026 04:17PM
+Clock Out: 08/20/2026 06:21PM
+Total Paid Hours 2.05 HR
+TIP SUMMARY
+Cash Tips 1 $20.00
+Total Tips 7 $131.02
+EMPLOYEE BANK SUMMARY
+Merchant Owes Employee $111.02
+`);
+    expect(parsed.draft?.cashTipsCents).toBe(2_000);
+    expect(parsed.draft).not.toHaveProperty("cardTipsCents");
+    expect(parsed.warnings).toContain("Total Tips was visible but Card Tips was not separately labeled; left card tips blank.");
+    expect(parsed.warnings).toContain("Merchant Owes Employee was visible but is not a labeled Card Tips amount; left card tips blank.");
+  });
+
+  it("removes model-invented tip sides when labeled OCR does not contain them", () => {
+    const merged = mergeShiftDraftFromOcr({ cashTipsCents: 999, cardTipsCents: 13_102, staffingCount: 4 }, `
+EMPLOYEE SHIFT REPORT
+Clock In: 08/20/2026 04:17PM
+Clock Out: 08/20/2026 06:21PM
+Total Paid Hours 2.05 HR
+TIP SUMMARY
+Total Tips 7 $131.02
+`);
+    expect(merged.draft).not.toHaveProperty("cashTipsCents");
+    expect(merged.draft).not.toHaveProperty("cardTipsCents");
+    expect(merged.draft?.staffingCount).toBe(4);
+  });
+
   it("overrides wrong model money fields from strong OCR without wiping model-only keys", () => {
     const merged = mergeShiftDraftFromOcr({
       date: "2026-01-01",

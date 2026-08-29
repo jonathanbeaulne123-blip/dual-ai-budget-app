@@ -11,7 +11,7 @@ const KNOWN_KEYS = new Set([
   "companyid", "tenantid", "locationid", "roleid", "departmentid", "user_id", "userid", "employeeid", "staffid", "employee", "employeename",
   "name", "displayname", "fullname", "firstname", "lastname", "preferredname", "role", "rolename", "roles", "department", "employees", "users", "staff", "team", "roster",
   "date", "businessdate", "workdate", "clockedin", "clockedout", "punchin", "punchout", "start", "end", "starttime", "endtime", "startedat", "endedat",
-  "breaks", "breakminutes", "paidbreakminutes", "unpaidbreakminutes", "totalbreakminutes", "paidbreaks", "unpaidbreaks",
+  "breaks", "breakslabel", "breakminutes", "paidbreakminutes", "unpaidbreakminutes", "totalbreakminutes", "paidbreaks", "unpaidbreaks",
   "hours", "totalhours", "workedhours", "workedminutes", "regularhours", "overtimehours", "holidayhours", "compliancehours",
   "approved", "isapproved", "approvalstatus", "status", "closed", "isclosed", "final", "deleted", "isdeleted", "flags", "modifications", "auto_clocked_out", "autoclockedout",
   "tips", "cashtips", "cardtips", "credittips", "totaltips", "declaredtips", "withheldcardtips", "gratuity", "tipin", "tipout", "earnedtips",
@@ -162,26 +162,56 @@ function minutesBetween(startedAt, endedAt) {
 
 function breakFacts(row, stopAt) {
   const breaks = find(row, ["breaks"]).value;
-  let paid = 0; let unpaid = 0;
+  let paid = null; let unpaid = null;
   if (Array.isArray(breaks)) {
+    let paidTotal = 0; let unpaidTotal = 0; let paidKnown = true; let unpaidKnown = true;
     for (const item of breaks.slice(0, 32)) {
-      if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+      if (!item || typeof item !== "object" || Array.isArray(item)) { paidKnown = false; unpaidKnown = false; continue; }
       const start = explicitInstant(find(item, ["clocked_in", "start", "started_at"]).value);
       const end = explicitInstant(find(item, ["clocked_out", "end", "ended_at"]).value) || stopAt;
       const duration = start && end ? minutesBetween(start, end) : integer(find(item, ["minutes", "duration_minutes", "duration"]).value, 0, 24 * 60);
-      if (duration === null) continue;
+      if (duration === null) { paidKnown = false; unpaidKnown = false; continue; }
       const paidFlag = find(item, ["paid", "is_paid", "break_type"]).value;
-      const isPaid = paidFlag === true || /paid/i.test(String(paidFlag || "")) && !/unpaid/i.test(String(paidFlag || ""));
-      if (isPaid) paid += duration; else unpaid += duration;
+      const paidText = String(paidFlag ?? "").toLowerCase();
+      if (paidFlag === true || (/\bpaid\b/.test(paidText) && !/\bunpaid\b/.test(paidText))) paidTotal += duration;
+      else if (paidFlag === false || /\bunpaid\b/.test(paidText)) unpaidTotal += duration;
+      else { paidKnown = false; unpaidKnown = false; }
     }
+    if (paidKnown) paid = paidTotal;
+    if (unpaidKnown) unpaid = unpaidTotal;
   }
   const directPaid = integer(find(row, ["paid_break_minutes", "paid breaks", "paid_breaks"]).value, 0, 24 * 60);
   const directUnpaid = integer(find(row, ["unpaid_break_minutes", "unpaid breaks", "unpaid_breaks"]).value, 0, 24 * 60);
   const total = integer(find(row, ["break_minutes", "total_break_minutes", "breaks minutes"]).value, 0, 24 * 60);
   if (directPaid !== null) paid = directPaid;
   if (directUnpaid !== null) unpaid = directUnpaid;
-  else if (total !== null) unpaid = Math.max(0, total - paid);
-  return { paid, unpaid };
+  const labelFound = find(row, ["breaks_label", "break label"]);
+  const label = bounded(labelFound.value, 120) || null;
+  if (label) {
+    const normalized = label.toLowerCase().replace(/[–—]/g, "-").trim();
+    if (/^(?:none|no\s+breaks?|0(?:\.0+)?(?:\s*(?:m|min(?:ute)?s?|h|hr|hrs|hours?))?)$/.test(normalized)) {
+      paid = 0; unpaid = 0;
+    } else {
+      const pieces = normalized.split(/\s*(?:,|;|\+|\/|\band\b)\s*/).filter(Boolean);
+      let labelPaid = 0; let labelUnpaid = 0; let anyPaid = false; let anyUnpaid = false; let ambiguous = false;
+      for (const piece of pieces) {
+        const duration = piece.match(/(?:(\d+)\s*[x×]\s*)?(\d+(?:\.\d+)?)\s*(m|min(?:ute)?s?|h|hr|hrs|hours?)\b/);
+        if (!duration) { ambiguous = true; continue; }
+        const multiplier = Number(duration[1] || 1);
+        const amount = Number(duration[2]);
+        const minutes = Math.round(multiplier * amount * (/^h/.test(duration[3]) ? 60 : 1));
+        if (!Number.isSafeInteger(minutes) || minutes < 0 || minutes > 24 * 60) { ambiguous = true; continue; }
+        if (/\bunpaid\b/.test(piece)) { labelUnpaid += minutes; anyUnpaid = true; }
+        else if (/\bpaid\b/.test(piece)) { labelPaid += minutes; anyPaid = true; }
+        else ambiguous = true;
+      }
+      if (!ambiguous && (anyPaid || anyUnpaid)) {
+        paid = labelPaid;
+        unpaid = labelUnpaid;
+      }
+    }
+  }
+  return { paid, unpaid, total, label, labelPath: labelFound.name };
 }
 
 function finality(row, endedAt) {
@@ -244,7 +274,11 @@ function normalizeStructuredRow(row, sourcePath, captureKind) {
   const breaks = breakFacts(row, end.value);
   const explicitMinutes = integer(find(row, ["worked_minutes"]).value, 0, 36 * 60);
   const hours = numberValue(find(row, ["worked_hours", "total_hours", "hours"]).value);
-  const workedMinutes = explicitMinutes ?? (hours !== null && hours >= 0 && hours <= 36 ? Math.round(hours * 60) : elapsed !== null ? Math.max(0, elapsed - breaks.paid - breaks.unpaid) : null);
+  const workedMinutes = explicitMinutes ?? (hours !== null && hours >= 0 && hours <= 36
+    ? Math.round(hours * 60)
+    : elapsed !== null && breaks.paid !== null && breaks.unpaid !== null
+      ? Math.max(0, elapsed - breaks.paid - breaks.unpaid)
+      : null);
   const date = dateKey(find(row, ["date", "business_date", "work_date"]).value)
     || (start.value ? torontoDate(Date.parse(start.value)) : null);
   const finalityValue = finality(row, end.value);
@@ -256,6 +290,10 @@ function normalizeStructuredRow(row, sourcePath, captureKind) {
   observations.push(observation("workedMinutes", workedMinutes, "minutes", `${sourcePath}.worked`, finalityValue, extraction));
   observations.push(observation("paidBreakMinutes", breaks.paid, "minutes", `${sourcePath}.breaks.paid`, finalityValue, extraction));
   observations.push(observation("unpaidBreakMinutes", breaks.unpaid, "minutes", `${sourcePath}.breaks.unpaid`, finalityValue, extraction));
+  observations.push(observation("totalBreakMinutes", breaks.total, "minutes", `${sourcePath}.breaks.total`, finalityValue, extraction));
+  observations.push(observation("breakLabel", breaks.label, "text", `${sourcePath}.${breaks.labelPath || "breaks_label"}`, finalityValue, extraction));
+  observations.push(observation("observedRole", bounded(find(row, ["role_name", "role"]).value, 80) || null, "text", `${sourcePath}.role_name`, finalityValue, extraction));
+  observations.push(observation("observedLocation", bounded(find(row, ["location_name", "location"]).value, 120) || null, "text", `${sourcePath}.location_name`, finalityValue, extraction));
   const regularHours = numberValue(find(row, ["regular_hours"]).value);
   const overtimeHours = numberValue(find(row, ["overtime_hours"]).value);
   const holidayHours = numberValue(find(row, ["holiday_hours"]).value);
@@ -294,8 +332,8 @@ function normalizeStructuredRow(row, sourcePath, captureKind) {
   if (flags !== undefined) observations.push(observation("providerFlags", bounded(JSON.stringify(flags), 500), "text", `${sourcePath}.flags`, finalityValue, extraction));
   const rawSubject = find(row, ["user_id", "employee_id", "staff_id"]).value;
   const rawTenant = find(row, ["company_id", "tenant_id"]).value;
-  const rawLocation = find(row, ["location_id"]).value;
-  const rawRole = find(row, ["role_id"]).value;
+  const rawLocation = find(row, ["location_id", "provider_location_id", "location_name"]).value;
+  const rawRole = find(row, ["role_id", "role_name", "role"]).value;
   const rawResource = find(row, ["id", "time_punch_id", "time_punch_uuid", "punch_id", "timesheet_id", "shift_id", "uuid"]).value;
   const revision = find(row, ["revision", "version", "updated_at", "modified_at"]).value;
   const artifactDigest = bounded(find(row, ["artifact_digest", "source_artifact_digest"]).value, 128) || null;
@@ -379,9 +417,9 @@ function roleFacts(row) {
 
 function scopeFacts(row) {
   const person = personContainer(row);
-  const subject = find(person, ["id", "user_id", "employee_id", "staff_id", "uuid"]).value;
+  const subject = find(person, ["id", "user_id", "employee_id", "provider_employee_id", "staff_id", "uuid"]).value;
   const tenant = find(row, ["company_id", "tenant_id"]).value;
-  const location = find(row, ["location_id"]).value;
+  const location = find(row, ["location_id", "provider_location_id", "location_name"]).value;
   return {
     subject: subject == null ? null : String(subject),
     tenant: tenant == null ? null : String(tenant),
@@ -407,7 +445,7 @@ function rosterRecord(row, sourcePath) {
     rawSubject: scope.subject,
     rawTenant: scope.tenant,
     rawLocation: scope.location,
-    rawRole: role.id,
+    rawRole: role.id || role.label,
     rawResource: scope.subject,
     rawRevision: String(find(row, ["revision", "version", "updated_at", "modified_at"]).value ?? "") || null,
     startedAt: null,
@@ -464,9 +502,10 @@ function scheduleRecord(row, sourcePath) {
     rawSubject: scope.subject,
     rawTenant: scope.tenant,
     rawLocation: scope.location,
-    rawRole: role.id,
+    rawRole: role.id || role.label,
     rawResource: resource == null ? null : String(resource),
     rawRevision: String(find(row, ["revision", "version", "updated_at", "modified_at"]).value ?? "") || null,
+    ownerAsserted: row.hearth_self === true,
     startedAt: start.value,
     endedAt: end.value,
     workedMinutes: null,
@@ -501,10 +540,34 @@ function browserStructured(text, sourcePrefix) {
     return { records: rowsForAliases(parsedBody, ["roles", "departments", "data", "results", "items"]).map((row, index) => roleCatalogRecord(row, `${sourcePrefix}.roles[${index}]`)), drift: [], warnings: [] };
   }
   if (wrapper.captureClass === "published-schedule") {
-    return { records: rowsForAliases(parsedBody, ["schedules", "shifts", "open_shifts", "trades", "data", "results", "items"]).map((row, index) => scheduleRecord(row, `${sourcePrefix}.schedule[${index}]`)), drift: [], warnings: [] };
+    const records = rowsForAliases(parsedBody, ["schedules", "shifts", "open_shifts", "trades", "data", "results", "items"]).map((row, index) => scheduleRecord(row, `${sourcePrefix}.schedule[${index}]`));
+    const fromDate = dateKey(parsedBody?.complete_range?.from_date);
+    const toDate = dateKey(parsedBody?.complete_range?.to_date);
+    if (fromDate && toDate && fromDate <= toDate) records.push({
+      kind: "schedule-window",
+      canonicalSeed: `schedule-window:${fromDate}:${toDate}`,
+      ownerAsserted: true,
+      rawSubject: null, rawTenant: null, rawLocation: null, rawRole: null, rawResource: `${fromDate}:${toDate}`, rawRevision: wrapper.capturedAt || null,
+      startedAt: torontoInstant(fromDate, "12:00 am"), endedAt: torontoInstant(toDate, "11:59 pm"), workedMinutes: null, paidBreakMinutes: null,
+      observedAt: explicitInstant(wrapper.capturedAt), finality: "outlook",
+      observations: [
+        observation("completeRangeStart", fromDate, "date", `${sourcePrefix}.complete_range.from_date`, "outlook", "structured"),
+        observation("completeRangeEnd", toDate, "date", `${sourcePrefix}.complete_range.to_date`, "outlook", "structured"),
+      ],
+      drift: [], schemaShape: { completeRangeStart: "string", completeRangeEnd: "string" },
+    });
+    return { records, drift: [], warnings: [] };
   }
   const nestedText = typeof body === "string" ? body : JSON.stringify(body);
-  return deriveText(nestedText, /csv/i.test(String(wrapper.contentType || "")) ? "selected-csv" : "selected-json", `${sourcePrefix}.${bounded(wrapper.captureClass, 40)}`);
+  const derived = deriveText(nestedText, /csv/i.test(String(wrapper.contentType || "")) ? "selected-csv" : "selected-json", `${sourcePrefix}.${bounded(wrapper.captureClass, 40)}`);
+  if (wrapper.captureClass === "punch" && wrapper.selectionKind === "visible-timesheet-v1" && /^\/my[_-]?timesheets?\/?$/i.test(wrapper.path)) {
+    const rawSubject = /^employee:[A-Za-z0-9_-]{1,80}$/.test(String(wrapper.accountBinding?.subjectKey || ""))
+      ? String(wrapper.accountBinding.subjectKey).slice(9) : null;
+    const rawLocation = /^location:[0-9]{1,20}$/.test(String(wrapper.accountBinding?.locationKey || ""))
+      ? String(wrapper.accountBinding.locationKey).slice(9) : null;
+    derived.records = derived.records.map((record) => ({ ...record, ownerAsserted: true, rawSubject, rawLocation }));
+  }
+  return derived;
 }
 
 function parseCsv(text) {
@@ -645,7 +708,12 @@ const EMAIL_MONTHS = new Map([
 
 function scheduleEmailRecords(text, sourcePrefix, defaultYear = null) {
   const normalized = text.replace(/&nbsp;|&#160;/gi, " ").replace(/&ndash;|&#8211;|&#x2013;/gi, "–").replace(/\s+/g, " ").trim();
-  if (!/schedule (?:has been )?posted|schedule update|upcoming shifts?/i.test(normalized)) return [];
+  if (!/schedule (?:has been )?posted|schedule update|upcoming shifts?|shift (?:trade|change|removed|cancelled)|called out/i.test(normalized)) return [];
+  const outcome = /\byou (?:have )?called out\b|\byour call[- ]?out\b/i.test(normalized) ? "called_off"
+    : /\byour shift (?:has been |was )?(?:removed|cancelled)\b/i.test(normalized) ? "cut"
+      : /\byour shift (?:trade|giveaway) (?:has been |was )?accepted\b|\bsomeone (?:has )?picked up your shift\b/i.test(normalized) ? "traded_away"
+        : /\byou (?:have )?(?:picked up|accepted) (?:a |the )?shift\b/i.test(normalized) ? "picked_up"
+          : null;
   const pattern = /\b(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?),?\s+(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(\d{1,2})(?:,)?(?:\s+(20\d{2}))?\s+(?:at\s+)?(\d{1,2}:\d{2}\s*(?:am|pm))\s*(?:-|–|—|to)\s*(\d{1,2}:\d{2}\s*(?:am|pm))/gi;
   const records = [];
   let match;
@@ -662,8 +730,9 @@ function scheduleEmailRecords(text, sourcePrefix, defaultYear = null) {
     if (!startedAt || !endedAt || scheduledMinutes === null) continue;
     const path = `${sourcePrefix}.schedule[${records.length}]`;
     records.push({
-      kind: "schedule",
+      kind: "coworker-schedule",
       canonicalSeed: `email-schedule:${date}:${startedAt}:${endedAt}`,
+      ownerAsserted: true,
       rawSubject: null,
       rawTenant: null,
       rawLocation: null,
@@ -681,9 +750,10 @@ function scheduleEmailRecords(text, sourcePrefix, defaultYear = null) {
         observation("startedAt", startedAt, "iso-time", `${path}.start`, "outlook", "email"),
         observation("endedAt", endedAt, "iso-time", `${path}.end`, "outlook", "email"),
         observation("scheduledMinutes", scheduledMinutes, "minutes", `${path}.duration`, "outlook", "email"),
+        outcome ? observation("scheduleOutcome", outcome, "status", `${path}.outcome`, "outlook", "email") : null,
       ].filter(Boolean),
       drift: [],
-      schemaShape: { date: "string", startedAt: "string", endedAt: "string", scheduledMinutes: "number" },
+      schemaShape: { date: "string", startedAt: "string", endedAt: "string", scheduledMinutes: "number", ...(outcome ? { scheduleOutcome: "string" } : {}) },
     });
   }
   return records;

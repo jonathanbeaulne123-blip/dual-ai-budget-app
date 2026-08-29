@@ -1,7 +1,13 @@
 import type { PostWorkShiftInput } from "./commands.ts";
 import { addDays, weekdaySunday0, type DateKey } from "./calendar.ts";
 import { shapeSevenShiftsEvidenceBundle, type EvidenceObservation, type SevenShiftsEvidenceBundle } from "./evidence.ts";
-import type { Environment, ShiftEventTag, Visibility } from "./types.ts";
+import type { Environment, ShiftEventTag, Visibility, WorkJob } from "./types.ts";
+
+export const AUTOMATION_EVIDENCE_FIELDS = [
+  "date", "roleId", "workedMinutes", "paidBreakMinutes", "salesCents",
+  "cashTipsCents", "cardTipsCents", "customersServed", "staffingCount",
+] as const;
+export type AutomationEvidenceField = (typeof AUTOMATION_EVIDENCE_FIELDS)[number];
 
 export type AutomationPolicy = {
   version: 1;
@@ -10,6 +16,7 @@ export type AutomationPolicy = {
   memberId: string;
   jobId: string;
   enabled: boolean;
+  requiredEvidenceFields: AutomationEvidenceField[];
   stableWindowHours: number;
   payrollWeekStarts: 0 | 1 | 2 | 3 | 4 | 5 | 6;
   correctionHorizonDays: number;
@@ -20,6 +27,14 @@ export type AutomationPolicy = {
   tipOutVisibility?: Visibility;
   updatedAt: string;
 };
+
+export function automationRequiredEvidenceFieldsForJob(job: WorkJob): AutomationEvidenceField[] {
+  void job;
+  // The Evidence Worker cannot trust a client-authored description of the job.
+  // Automatic claiming therefore uses one conservative provider-neutral minimum;
+  // partial/non-tipped evidence remains available through ordinary Shift review.
+  return [...AUTOMATION_EVIDENCE_FIELDS];
+}
 
 export type AutomationActionKind = "post" | "reconcile_week" | "variance";
 
@@ -85,6 +100,24 @@ export function sevenShiftsAutomationEligibility(
   }
   if (bundle.state !== "eligible" || bundle.conflicts.length || bundle.observations.some((item) => item.conflict === "conflicted")) {
     return { eligible: false, eligibleAt: null, reason: "Evidence is quarantined or conflicted.", tier: "blocked" };
+  }
+  const requiredFields = Array.isArray(policy.requiredEvidenceFields) ? policy.requiredEvidenceFields : [];
+  if (!AUTOMATION_EVIDENCE_FIELDS.every((field) => requiredFields.includes(field)) || requiredFields.some((field) => !AUTOMATION_EVIDENCE_FIELDS.includes(field))) {
+    return { eligible: false, eligibleAt: null, reason: "Automation policy needs a fresh job-specific evidence authority review.", tier: "blocked" };
+  }
+  const authorityFor = (field: AutomationEvidenceField): string | null | undefined => ({
+    workedMinutes: bundle.authority.workedMinutesEvidenceId,
+    paidBreakMinutes: bundle.authority.paidBreakMinutesEvidenceId,
+    cashTipsCents: bundle.authority.cashTipsEvidenceId,
+    cardTipsCents: bundle.authority.cardTipsEvidenceId,
+  } as Partial<Record<AutomationEvidenceField, string | null>>)[field];
+  const missingFields = requiredFields.filter((field) => {
+    const authorityId = authorityFor(field);
+    if (["workedMinutes", "paidBreakMinutes", "cashTipsCents", "cardTipsCents"].includes(field) && !authorityId) return true;
+    return !bundle.observations.some((item) => item.field === field && (!authorityId || item.evidenceId === authorityId) && item.conflict !== "conflicted");
+  });
+  if (missingFields.length) {
+    return { eligible: false, eligibleAt: null, reason: `Evidence still needs authoritative ${missingFields.join(", ")}.`, tier: "blocked" };
   }
   const authority = evidenceFor(bundle, bundle.authority.workedMinutesEvidenceId);
   if (!authority || ["calendar-sync", "selected-ics", "email"].includes(authority.sourceKind)) {

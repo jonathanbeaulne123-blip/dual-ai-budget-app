@@ -116,6 +116,7 @@ function explicitPolicy(bundle: SevenShiftsEvidenceBundle): AutomationPolicy {
     memberId: bundle.memberId,
     jobId: bundle.jobId,
     enabled: true,
+    requiredEvidenceFields: ["date", "roleId", "workedMinutes", "paidBreakMinutes", "salesCents", "cashTipsCents", "cardTipsCents", "customersServed", "staffingCount"],
     stableWindowHours: 24,
     payrollWeekStarts: 0,
     correctionHorizonDays: 60,

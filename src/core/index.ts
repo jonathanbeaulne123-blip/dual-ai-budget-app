@@ -8,6 +8,8 @@ export * from "./types.ts";
 export * from "./evidence.ts";
 export * from "./sevenShiftsCalendar.ts";
 export * from "./sevenShiftsAutomation.ts";
+export * from "./shiftEnvelope.ts";
+export * from "./shiftEnvelopeIntent.ts";
 export * from "./duplicate.ts";
 export * from "./splits.ts";
 export * from "./shift.ts";

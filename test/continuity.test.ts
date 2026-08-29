@@ -471,6 +471,7 @@ describe("Google-account continuity", () => {
       jobId: savedJob.id,
       roleId: "ROLE-SERVER",
       workedHours: 5,
+      paidBreakHours: 0,
       salesByField: { FOOD: 1200 },
       cashTips: 40,
       cardTips: 80,

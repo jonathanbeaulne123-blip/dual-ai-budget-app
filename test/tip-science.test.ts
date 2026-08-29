@@ -128,7 +128,7 @@ describe("Hercules Shift Oracle tip science", () => {
         { name: "tax_milk_plan", args: { tipCents: 22000, taxRateBps: 2500 } },
         { name: "post_entry", args: { amountCents: 1 } },
       ],
-    }, today, { memberId: "MEM-001", view: "household" });
+    }, today, { memberId: "MEM-002", view: "household" });
     expect(household).toEqual(before);
     expect(run.results.map((result) => result.name)).toEqual([
       "tip_oracle", "shift_outlook", "tip_schedule_sim", "tax_milk_plan",

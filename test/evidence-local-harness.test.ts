@@ -165,6 +165,7 @@ describe("local D1/R2/Queue Evidence smoke", () => {
         user_id: 77,
         clocked_in: "2026-08-28T13:00:00Z",
         clocked_out: "2026-08-28T21:00:00Z",
+        breaks: [],
         approved: true,
         unknown_future_flag: "preserve-me",
       }] },

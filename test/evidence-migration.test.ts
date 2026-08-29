@@ -6,13 +6,16 @@ const migration = [
   readFileSync(new URL("../migrations/evidence/0001_evidence_mesh.sql", import.meta.url), "utf8"),
   readFileSync(new URL("../migrations/evidence/0002_r2_budget_guard.sql", import.meta.url), "utf8"),
   readFileSync(new URL("../migrations/evidence/0003_gmail_capture_dedup.sql", import.meta.url), "utf8"),
+  readFileSync(new URL("../migrations/evidence/0004_shift_envelope_retention.sql", import.meta.url), "utf8"),
 ].join("\n");
 
 const productionMigration = [
   readFileSync(new URL("../migrations/evidence-production/0001_evidence_mesh.sql", import.meta.url), "utf8"),
   readFileSync(new URL("../migrations/evidence-production/0002_r2_budget_guard.sql", import.meta.url), "utf8"),
   readFileSync(new URL("../migrations/evidence-production/0003_gmail_capture_dedup.sql", import.meta.url), "utf8"),
+  readFileSync(new URL("../migrations/evidence-production/0004_shift_envelope_retention.sql", import.meta.url), "utf8"),
 ].join("\n");
+const evidenceWorker = readFileSync(new URL("../workers/evidence.js", import.meta.url), "utf8");
 
 describe("D-158 dedicated Evidence D1 migration", () => {
   it("applies cleanly and separates canonical authority observations from schema drift", () => {
@@ -39,6 +42,10 @@ describe("D-158 dedicated Evidence D1 migration", () => {
         .toMatchObject({ stored_bytes: 0, object_count: 0 });
       expect(db.prepare("SELECT sql FROM sqlite_master WHERE type = 'index' AND name = 'evidence_items_gmail_digest'").get())
         .toMatchObject({ sql: expect.stringContaining("gmail-7shifts-email") });
+      expect(db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'evidence_companion_registrations'").get())
+        .toMatchObject({ sql: expect.stringContaining("token_hash") });
+      expect(db.prepare("SELECT sql FROM sqlite_master WHERE type = 'index' AND name = 'evidence_items_purge_due'").get())
+        .toMatchObject({ sql: expect.stringContaining("purge_after") });
     } finally {
       db.close();
     }
@@ -55,5 +62,11 @@ describe("D-158 dedicated Evidence D1 migration", () => {
     } finally {
       db.close();
     }
+  });
+
+  it("purges the item digest and object metadata after crypto erasure, retaining only a content-free audit", () => {
+    expect(evidenceWorker).toContain("DELETE FROM evidence_items WHERE evidence_id = ?");
+    expect(evidenceWorker).toContain("evidence_id, action, outcome, created_at) VALUES (?, ?, ?, ?, ?, NULL, 'purge', 'crypto-erased'");
+    expect(evidenceWorker).not.toContain("'purge', 'crypto-erased', plaintext_sha256");
   });
 });

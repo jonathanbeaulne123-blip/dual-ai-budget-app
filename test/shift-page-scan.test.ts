@@ -147,6 +147,7 @@ describe("Shift Today camera draft", () => {
         busy: false,
         initialDraft: {
           workedHours: 6.25,
+          paidBreakHours: 0,
           sales: 250,
           cashTips: 40,
           cardTips: 55,
@@ -213,7 +214,7 @@ describe("Shift Today camera draft", () => {
     let review: ShiftAttendanceReviewDraft | null | undefined;
     const renderFlow = (nextHousehold = household) => createElement(WorkShiftFlow, {
       household: nextHousehold, memberId: "MEM-001", today, punch: null, busy: false,
-      initialDraft: { workedHours: 6.25, sales: 250, cashTips: 40, cardTips: 55, customersServed: 28, staffingCount: 4 },
+      initialDraft: { workedHours: 6.25, paidBreakHours: 0, sales: 250, cashTips: 40, cardTips: 55, customersServed: 28, staffingCount: 4 },
       onConfirm: (_input, nextReview) => { review = nextReview; },
     });
     act(() => {
@@ -252,7 +253,7 @@ describe("Shift Today camera draft", () => {
     act(() => {
       root.render(createElement(WorkShiftFlow, {
         household, memberId: "MEM-001", today, punch: null, busy: false,
-        initialDraft: { workedHours: 6.25, sales: 250, cashTips: 40, cardTips: 55, customersServed: 28, staffingCount: 4 },
+        initialDraft: { workedHours: 6.25, paidBreakHours: 0, sales: 250, cashTips: 40, cardTips: 55, customersServed: 28, staffingCount: 4 },
         onConfirm: (_input, nextReview) => { review = nextReview; },
       }));
     });
@@ -282,5 +283,40 @@ describe("Shift Today camera draft", () => {
     const confirm = Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "Confirm shift")!;
     act(() => { confirm.click(); });
     expect(review?.surpriseHelpers).toEqual(["Surprise Helper"]);
+  });
+
+  it("opens an approved punch at time review with tips blank and requires an explicit break zero", () => {
+    const household = seedDemoHousehold({ today, environment: "development" });
+    let confirmed = 0;
+    act(() => {
+      root.render(createElement(WorkShiftFlow, {
+        household, memberId: "MEM-001", today, punch: null, busy: false,
+        initialDraft: {
+          sourceKind: "seven-shifts-approved-punch",
+          sourceLabel: "approved 7shifts punch",
+          date: today,
+          startedAt: "2026-08-27T20:30:00.000Z",
+          endedAt: "2026-08-28T02:31:00.000Z",
+          workedHours: 6.02,
+        },
+        onConfirm: () => { confirmed += 1; },
+      }));
+    });
+    expect(container.textContent).toContain("Draft from approved 7shifts punch");
+    expect(container.textContent).toContain("Check the 7shifts clock");
+    expect(container.textContent).toContain("Tips and other money stay blank");
+    const next = () => Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "Next")!;
+    act(() => next().click());
+    expect(container.textContent).toContain("Enter paid-break hours, including 0");
+    const breakPad = Array.from(container.querySelectorAll<HTMLElement>(".cad-pad")).find((pad) => pad.textContent?.includes("Paid-break hours"))!;
+    const zero = Array.from(breakPad.querySelectorAll("button")).find((button) => button.getAttribute("aria-label") === "0")!;
+    act(() => zero.click());
+    act(() => next().click());
+    expect(container.textContent).toContain("Sales and tips");
+    expect(container.textContent).toContain("left cash and card tips empty on purpose");
+    expect(container.textContent).toContain("Cash tips · Missing");
+    expect(container.textContent).toContain("Card tips · Missing");
+    expect(confirmed).toBe(0);
+    expect(Array.from(container.querySelectorAll("button")).some((button) => button.textContent === "Confirm shift")).toBe(false);
   });
 });

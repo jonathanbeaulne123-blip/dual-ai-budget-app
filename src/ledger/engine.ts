@@ -136,6 +136,7 @@ export function booksIntegrityFacts(household: Household) {
       transactionIds: [...(shift.transactionIds ?? [])].sort(),
       sevenShiftsPunchDigest: shift.sevenShiftsPunchDigest ?? null,
       sevenShiftsEvidenceBundle: shift.sevenShiftsEvidenceBundle ?? null,
+      shiftBible: shift.shiftBible ?? null,
     })),
     goals: byId(household.goals).map((goal) => ({
       id: goal.id,

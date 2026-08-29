@@ -46,16 +46,13 @@ import {
   addRecurrence,
   updateRecurrence,
   postShift,
-  postWorkShift,
   postWorkShiftWithAttendanceReview,
+  confirmShiftEnvelopeOutcome,
+  appendShiftBibleWeather,
+  readHistoricalShiftWeather,
   refreshSevenShiftsSchedule,
+  refreshShiftEnvelopesFromEvidence,
   importCoworkerRoster,
-  buildAutomatedWorkShiftInput,
-  automationPayrollWeekStart,
-  reconcileWorkWeekFromEvidence,
-  addDays,
-  workShiftIsReversed,
-  findReceipt,
   postTransfer,
   postVisit,
   settleClaim,
@@ -71,6 +68,7 @@ import {
   duePreviewDismissed,
   dueRecurrencePreview,
   readClinkOn,
+  requestShiftEnvelope,
   requestCalendarPane,
   runHealthCheck,
   seedDemoHousehold,
@@ -100,6 +98,7 @@ import {
   listRestorePoints,
   restoreConfirmBody,
   reversePostedMoney,
+  beginShiftBibleCorrection,
   autoResolveSharedConflict,
   canAbsorbDisjointSharedMoney,
   absorbDisjointSharedMoney,
@@ -259,15 +258,7 @@ import { loadDocumentVisionProvider } from "./imports/documentScanProvider.ts";
 import { scanShiftReportFile } from "./imports/shiftReportDraft.ts";
 import { WorkShiftWithSevenShifts } from "./WorkShiftWithSevenShifts.tsx";
 import { createShiftScanScope } from "./shiftScanScope.ts";
-import {
-  acknowledgeEvidenceAutomationJob,
-  claimEvidenceAutomationJob,
-  failEvidenceAutomationJob,
-  listEvidenceBundles,
-  readEvidenceStatus,
-  validateEvidenceAutomationJob,
-  type EvidenceScope,
-} from "./imports/evidenceClient.ts";
+import { sealShiftBibleEvidence } from "./imports/evidenceClient.ts";
 import {
   runScopedWorkShift,
   workShiftScopeMatches,
@@ -503,11 +494,50 @@ export function App() {
   const enqueueWrite = useMemo(() => createWriteQueue(), []);
   const householdRef = useRef<Household | null>(household);
   householdRef.current = household;
+
+  useEffect(() => {
+    if (!household || !session?.memberId) return;
+    const scope = { environment: household.environment, householdId: household.householdId, memberId: session.memberId };
+    const envelopes = new Map((household.shiftEnvelopes ?? []).map((row) => [row.id, row]));
+    const bibles = [
+      ...household.shifts.flatMap((row) => row.memberId === session.memberId && row.shiftBible ? [row.shiftBible] : []),
+      ...(household.shiftBibles ?? []).filter((row) => row.memberId === session.memberId),
+    ];
+    for (const bible of bibles) {
+      const envelope = envelopes.get(bible.envelopeId);
+      if (!envelope || !/^s7shift_[a-f0-9]{64}$/.test(envelope.canonicalShiftKey)) continue;
+      const storageKey = `hearth:evidence-sealed:${scope.environment}:${scope.householdId}:${scope.memberId}:${bible.id}:${bible.revision}`;
+      if (sessionStorage.getItem(storageKey) === "1") continue;
+      void sealShiftBibleEvidence(scope, { bibleId: bible.id, canonicalShiftKey: envelope.canonicalShiftKey, confirmedAt: bible.confirmedAt })
+        .then(() => {
+          sessionStorage.setItem(storageKey, "1");
+        })
+        .catch(() => undefined);
+    }
+  }, [household?.environment, household?.householdId, household?.shifts, household?.shiftBibles, household?.shiftEnvelopes, session?.memberId]);
+
+  useEffect(() => {
+    if (!household || !session?.memberId) return;
+    const pending = household.shifts.flatMap((shift) => shift.memberId === session.memberId && shift.shiftBible?.outcome === "worked"
+      && shift.shiftBible.weather?.state === "pending" && shift.shiftBible.actualStart && shift.shiftBible.actualEnd ? [{ shift, bible: shift.shiftBible }] : []);
+    for (const { shift, bible } of pending) {
+      const job = household.workJobs.find((row) => row.id === shift.jobId && row.memberId === session.memberId);
+      if (job?.locationLatitude == null || job.locationLongitude == null) continue;
+      const key = `hearth:weather-backfill:${household.environment}:${household.householdId}:${bible.id}:${bible.revision}`;
+      if (sessionStorage.getItem(key) === "running") continue;
+      sessionStorage.setItem(key, "running");
+      void readHistoricalShiftWeather({ latitude: job.locationLatitude, longitude: job.locationLongitude, startedAt: bible.actualStart!, endedAt: bible.actualEnd! })
+        .then((weather) => {
+          if (weather.state !== "complete") { sessionStorage.removeItem(key); return; }
+          return run((current) => appendShiftBibleWeather(current, { memberId: session.memberId, bibleId: bible.id, weather, createdBy: session.memberId }));
+        })
+        .catch(() => sessionStorage.removeItem(key));
+    }
+  }, [household?.environment, household?.householdId, household?.shifts, household?.workJobs, session?.memberId]);
   const historyRef = useRef(history);
   historyRef.current = history;
   const confirmationRef = useRef<string | null>(null);
   const postingRef = useRef(false);
-  const evidenceAutomationRef = useRef(false);
   const workShiftDateRef = useRef(todayKey());
   const duePreviewOffered = useRef<string | null>(null);
   const [workShiftDraft, setWorkShiftDraft] = useState<WorkShiftDraft | null>(null);
@@ -2401,20 +2431,12 @@ export function App() {
     </>
   );
 
-  // Keep every App hook above the boot/welcome/session early returns. The
-  // automation runner itself is a hoisted function declaration below, so the
-  // effect can live here without changing its behavior.
+  // D-172 supersedes D-159 for this intake path: background evidence can fill
+  // an envelope, but only the visible Shift form can call the money command.
   useEffect(() => {
-    if (!household || !session?.memberId || booting) return;
-    const timer = window.setTimeout(() => { void processEvidenceAutomationJobs(); }, 750);
-    const onWake = () => { if (document.visibilityState === "visible") void processEvidenceAutomationJobs(); };
-    window.addEventListener("online", onWake);
-    document.addEventListener("visibilitychange", onWake);
-    return () => {
-      window.clearTimeout(timer);
-      window.removeEventListener("online", onWake);
-      document.removeEventListener("visibilitychange", onWake);
-    };
+    void booting;
+    void household;
+    void session;
   }, [booting, environment, household?.householdId, household?.revision, session?.memberId]);
 
   if (booting) {
@@ -3066,11 +3088,13 @@ export function App() {
   function submitWorkShift(input: PostWorkShiftInput, confirmDuplicate = false, attendanceReview?: ShiftAttendanceReviewDraft | null) {
     const current = householdRef.current;
     const currentMemberId = sessionRef.current?.memberId;
+    const shiftConfirmationId = confirmationRef.current ?? newConfirmationId();
+    if (!confirmationRef.current) confirmationRef.current = shiftConfirmationId;
     const pending = confirmDuplicate
       ? workShiftInputRef.current
       : current && currentMemberId
         ? {
-            input,
+            input: { ...input, confirmationId: shiftConfirmationId },
             environment: current.environment,
             householdId: current.householdId,
             memberId: currentMemberId,
@@ -3098,121 +3122,6 @@ export function App() {
         throw caught;
       }
     });
-  }
-
-  async function processEvidenceAutomationJobs(): Promise<void> {
-    if (evidenceAutomationRef.current || postingRef.current) return;
-    const current = householdRef.current;
-    const memberId = sessionRef.current?.memberId;
-    if (!current || !memberId) return;
-    evidenceAutomationRef.current = true;
-    const scope: EvidenceScope = { environment: current.environment, householdId: current.householdId, memberId };
-    try {
-      const status = await readEvidenceStatus(fetch);
-      if (!status.available || status.environments?.[scope.environment]?.available === false) return;
-      for (let count = 0; count < 3; count += 1) {
-        const job = await claimEvidenceAutomationJob(scope);
-        if (!job) break;
-        try {
-          const live = householdRef.current;
-          const liveMember = sessionRef.current?.memberId;
-          if (!live || live.environment !== scope.environment || live.householdId !== scope.householdId || liveMember !== scope.memberId) {
-            await failEvidenceAutomationJob(scope, job, "runner-scope-changed", false);
-            break;
-          }
-          const existingReceipt = findReceipt(live, job.jobKey);
-          if (existingReceipt) {
-            await acknowledgeEvidenceAutomationJob(scope, job, {
-              jobKey: job.jobKey,
-              bundleRevision: job.bundle.revision,
-              commandEventId: existingReceipt.confirmationId,
-              confirmationId: existingReceipt.confirmationId,
-              resultRevision: existingReceipt.revision,
-              identityHash: existingReceipt.identityHash,
-              auditHash: existingReceipt.auditHash,
-              reversalIds: existingReceipt.postedIds.filter((id) => id.startsWith("REV")),
-              replacementShiftIds: existingReceipt.postedIds.filter((id) => id.startsWith("SHIFT-")),
-              acknowledgedAt: new Date().toISOString(),
-            });
-            continue;
-          }
-          const validation = await validateEvidenceAutomationJob(scope, job);
-          if (validation.materialHash !== job.bundle.materialHash || validation.actionKind !== job.actionKind) {
-            await failEvidenceAutomationJob(scope, job, "job-changed-before-post", false);
-            continue;
-          }
-          let result: CommitResult;
-          if (job.actionKind === "post") {
-            result = postWorkShift(live, buildAutomatedWorkShiftInput(job.bundle, job.policy, memberId));
-          } else if (job.actionKind === "reconcile_week") {
-            const bundleRows = await listEvidenceBundles(scope);
-            const dateObservation = job.bundle.observations.find((row) => row.field === "date")?.value;
-            if (typeof dateObservation !== "string") throw new ValidationError("Reconciliation evidence has no Toronto date.");
-            const weekStart = automationPayrollWeekStart(dateObservation as import("./core/index.ts").DateKey, job.policy.payrollWeekStarts);
-            const weekEnd = addDays(weekStart, 6);
-            const active = live.shifts.filter((shift) => shift.memberId === memberId && shift.jobId === job.policy.jobId
-              && shift.date >= weekStart && shift.date <= weekEnd && shift.sevenShiftsEvidenceBundle && !workShiftIsReversed(live, shift));
-            const latest = new Map<string, typeof job.bundle>();
-            for (const row of [...bundleRows.map((item) => item.bundle), job.bundle]) {
-              if (row.jobId !== job.policy.jobId || row.memberId !== memberId || row.state !== "eligible") continue;
-              const prior = latest.get(row.canonicalShiftKey);
-              if (!prior || prior.revision < row.revision) latest.set(row.canonicalShiftKey, row);
-            }
-            const replacements = active.map((shift) => {
-              const source = latest.get(shift.sevenShiftsEvidenceBundle!.canonicalShiftKey);
-              if (!source) throw new ValidationError("The complete affected payroll week is not available for deterministic reconciliation.");
-              return buildAutomatedWorkShiftInput(source, job.policy, memberId);
-            });
-            result = reconcileWorkWeekFromEvidence(live, {
-              memberId,
-              jobId: job.policy.jobId,
-              payrollWeekStarts: job.policy.payrollWeekStarts,
-              replacements,
-              createdBy: memberId,
-            });
-          } else {
-            await failEvidenceAutomationJob(scope, job, "closed-period-variance-review-required", true);
-            continue;
-          }
-          const outcome = await commitHousehold(result.household, result.undo, memberId, {
-            forceFlush: true,
-            confirmationId: job.jobKey,
-          });
-          if (!outcome?.postedExactlyOnce || !outcome.identityHash) {
-            await failEvidenceAutomationJob(scope, job, outcome?.errorClass ?? "command-not-accepted", outcome?.retryable !== true);
-            if (outcome?.retryable) break;
-            continue;
-          }
-          await acknowledgeEvidenceAutomationJob(scope, job, {
-            jobKey: job.jobKey,
-            bundleRevision: job.bundle.revision,
-            commandEventId: outcome.duplicateOfReceiptId ?? outcome.confirmationId,
-            confirmationId: outcome.confirmationId,
-            resultRevision: outcome.revision,
-            identityHash: outcome.identityHash,
-            auditHash: outcome.household.booksAcceptedHash ?? "",
-            reversalIds: outcome.postedIds.filter((id) => id.startsWith("REV")),
-            replacementShiftIds: outcome.postedIds.filter((id) => id.startsWith("SHIFT-")),
-            acknowledgedAt: new Date().toISOString(),
-          });
-        } catch (caught) {
-          const waitingForPriorReceipt = job.actionKind === "post" && caught instanceof ValidationError && /changed after posting/i.test(caught.message);
-          const code = waitingForPriorReceipt
-            ? "prior-receipt-not-yet-recovered"
-            : caught instanceof NeedsConfirmationError
-            ? "material-duplicate-requires-review"
-            : caught instanceof ValidationError
-              ? "validation-rejected"
-              : "runner-failed";
-          await failEvidenceAutomationJob(scope, job, code, code !== "runner-failed" && !waitingForPriorReceipt).catch(() => undefined);
-          if (code === "runner-failed") break;
-        }
-      }
-    } catch {
-      // A disabled, offline, or unauthenticated Evidence Worker never affects manual Shift.
-    } finally {
-      evidenceAutomationRef.current = false;
-    }
   }
 
   function addPostLabel(): string {
@@ -3479,6 +3388,10 @@ export function App() {
           onAskWriteOff={(claimId, summary) => setGuard({ kind: "writeOffClaim", claimId, summary })}
           onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
           onOpenPlan={() => goTab("plan")}
+          onOpenShiftEnvelope={(envelopeId) => {
+            requestShiftEnvelope(envelopeId);
+            goTab("shift");
+          }}
         />
       )}
 
@@ -3535,6 +3448,24 @@ export function App() {
             void run((current) => importCoworkerRoster(current, {
               ownerMemberId: session.memberId,
               ...input,
+            }));
+          }}
+          onConfirmEnvelopeOutcome={(envelopeId, outcome) => {
+            const confirmationId = newConfirmationId();
+            confirmationRef.current = confirmationId;
+            void run((current) => confirmShiftEnvelopeOutcome(current, {
+              memberId: session.memberId,
+              envelopeId,
+              outcome,
+              confirmationId,
+              createdBy: actorId,
+            }));
+          }}
+          onRefreshShiftEnvelopes={(proposals) => {
+            void run((current) => refreshShiftEnvelopesFromEvidence(current, {
+              memberId: session.memberId,
+              createdBy: actorId,
+              proposals,
             }));
           }}
         />
@@ -3843,8 +3774,10 @@ export function App() {
               Personal rows are a filter. Export JSON for a copy.
             </p>
             <button className="primary" onClick={() => downloadJson(household)}>Export JSON snapshot</button>
-            <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setGuard({ kind: "stress-random" })}>Reload random data</button>
-            <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setGuard({ kind: "stress-pretty" })}>Display pretty numbers</button>
+            {environment === "development" && (<>
+              <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setGuard({ kind: "stress-random" })}>Reload random data</button>
+              <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setGuard({ kind: "stress-pretty" })}>Display pretty numbers</button>
+            </>)}
             <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => {
               const due = household.recurrences.filter((item) => item.active && item.nextDate <= today).length;
               setGuard({
@@ -4604,7 +4537,7 @@ export function App() {
           }}
         />
       )}
-      {guard?.kind === "stress-random" && (
+      {environment === "development" && guard?.kind === "stress-random" && (
         <ConfirmSheet
           title="Reload randomized stress data?"
           body={`This replaces the ${environment} ledger activity with twelve months of fictional CAD covering weighted harbour shifts (weather, location, full tip/sales forms), wages, tips, expenses, bills, imported rows, transfers, appointments, claims, goals, budgets, presets, card balances, and money owed. In Development it keeps this household’s Google link and membership so Hercules Pro can still read the fixture after sync. Tip shifts are posted for the member signed in on this phone.`}
@@ -4657,7 +4590,7 @@ export function App() {
           }}
         />
       )}
-      {guard?.kind === "stress-pretty" && (
+      {environment === "development" && guard?.kind === "stress-pretty" && (
         <ConfirmSheet
           title="Display a fresh pretty-number household?"
           body={`This replaces the ${environment} ledger activity with a twelve-month fictional household. Amounts are deliberately rounded into clean, presentation-friendly values while the same weather-weighted harbour shifts, location stamps, bills, imports, appointments, claims, goals, budgets, and owed balances remain testable. In Development it keeps this household’s Google link and membership for Hercules Pro. Tip shifts go to the member signed in on this phone.`}
@@ -4758,8 +4691,15 @@ export function App() {
           onConfirm={() => {
             const { shift, transactionId } = guard;
             setGuard(null);
-            void run((current) => reversePostedMoney(current, transactionId, { createdBy: actorId }))
-              .then(() => beginFinishedShift(shift.date));
+            void run((current) => shift.shiftBible
+              ? beginShiftBibleCorrection(current, transactionId, { createdBy: actorId })
+              : reversePostedMoney(current, transactionId, { createdBy: actorId }))
+              .then(() => {
+                if (shift.shiftBible) {
+                  requestShiftEnvelope(shift.shiftBible.envelopeId);
+                  window.dispatchEvent(new Event("hearth:shift-envelope-intent"));
+                } else beginFinishedShift(shift.date);
+              });
           }}
         />
       )}

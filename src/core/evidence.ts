@@ -276,6 +276,9 @@ export function assertSevenShiftsBundleMatchesShift(input: {
   cashTipsCents: number;
   cardTipsCents: number;
   calculatedWagesCents: number;
+  requireTipAuthority: boolean;
+  requireSalesAuthority: boolean;
+  requireTippedCovariateAuthority: boolean;
   customersServed?: number;
   staffingCount?: number;
   eventTag?: string;
@@ -293,23 +296,33 @@ export function assertSevenShiftsBundleMatchesShift(input: {
   if (Math.round(input.workedHours * 60) !== bundle.workedMinutes || Math.round(input.paidBreakHours * 60) !== bundle.paidBreakMinutes) {
     throw new Error("7shifts evidence minutes changed after capture.");
   }
-  const exactObservation = (field: string, expected: string | number | undefined, evidenceId?: string | null) => {
+  const exactObservation = (
+    field: string,
+    expected: string | number | undefined,
+    evidenceId?: string | null,
+    required = false,
+  ) => {
+    if (required && !evidenceId && ["workedMinutes", "paidBreakMinutes", "cashTipsCents", "cardTipsCents"].includes(field)) {
+      throw new Error(`7shifts ${field} requires an explicit evidence authority, including for zero.`);
+    }
     const rows = bundle.observations.filter((row) => row.field === field && (!evidenceId || row.evidenceId === evidenceId));
     if (!rows.length) {
-      if (evidenceId) throw new Error(`7shifts ${field} authority has no matching observation.`);
+      if (evidenceId || required) throw new Error(`7shifts ${field} authority has no matching observation.`);
       return;
     }
     if (expected === undefined || rows.some((row) => row.conflict === "conflicted" || row.value !== expected)) {
       throw new Error(`7shifts ${field} changed after evidence authority was selected.`);
     }
   };
-  exactObservation("roleId", input.roleId);
-  exactObservation("salesCents", input.salesCents);
-  exactObservation("cashTipsCents", input.cashTipsCents, bundle.authority.cashTipsEvidenceId);
-  exactObservation("cardTipsCents", input.cardTipsCents, bundle.authority.cardTipsEvidenceId);
+  exactObservation("workedMinutes", bundle.workedMinutes, bundle.authority.workedMinutesEvidenceId, true);
+  exactObservation("paidBreakMinutes", bundle.paidBreakMinutes, bundle.authority.paidBreakMinutesEvidenceId, true);
+  exactObservation("roleId", input.roleId, undefined, true);
+  exactObservation("salesCents", input.salesCents, undefined, input.requireSalesAuthority);
+  exactObservation("cashTipsCents", input.cashTipsCents, bundle.authority.cashTipsEvidenceId, input.requireTipAuthority);
+  exactObservation("cardTipsCents", input.cardTipsCents, bundle.authority.cardTipsEvidenceId, input.requireTipAuthority);
   exactObservation("finalWagesCents", input.calculatedWagesCents, bundle.authority.finalWagesEvidenceId);
-  exactObservation("customersServed", input.customersServed);
-  exactObservation("staffingCount", input.staffingCount);
+  exactObservation("customersServed", input.customersServed, undefined, input.requireTippedCovariateAuthority);
+  exactObservation("staffingCount", input.staffingCount, undefined, input.requireTippedCovariateAuthority);
   exactObservation("eventTag", input.eventTag);
   exactObservation("weatherGlass", input.weatherGlass);
   return bundle;

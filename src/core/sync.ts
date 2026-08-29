@@ -31,6 +31,8 @@ import { shapeWorkJobs } from "./work.ts";
 import { shapeCoworkerAttendance, shapeCoworkers, shapeCoworkerSchedules } from "./coworkers.ts";
 import { shapeSevenShiftsEvidenceBundle } from "./evidence.ts";
 import { shapeSevenShiftsSchedules } from "./sevenShiftsCalendar.ts";
+import { shapeShiftBible, shapeShiftBibles, shapeShiftEnvelopes } from "./shiftEnvelope.ts";
+import type { ShiftBible } from "./shiftEnvelope.ts";
 import { DEFAULT_SHIFT_SETTINGS } from "./shift.ts";
 import {
   shapeHouseholdFundConfig,
@@ -42,6 +44,45 @@ import {
 } from "./householdFund.ts";
 
 export type { PersonalEnvelope, SharedEnvelope };
+
+function withoutPrivateShiftBible(shift: Shift): Shift {
+  if (!shift.shiftBible) return shift;
+  const { shiftBible: _privateBible, ...sharedShift } = shift;
+  return sharedShift;
+}
+
+function uniqueShiftBibles(rows: ShiftBible[]): ShiftBible[] {
+  const byId = new Map<string, ShiftBible>();
+  for (const row of rows) {
+    const existing = byId.get(row.id);
+    if (!existing || row.revision >= existing.revision) byId.set(row.id, row);
+  }
+  return [...byId.values()];
+}
+
+function personalShiftBibles(household: Household, memberId: string): ShiftBible[] {
+  return uniqueShiftBibles([
+    ...shapeShiftBibles(household.shiftBibles, memberId),
+    ...household.shifts.flatMap((shift) => {
+      const bible = shift.memberId === memberId ? shapeShiftBible(shift.shiftBible, memberId) : undefined;
+      return bible ? [bible] : [];
+    }),
+  ]);
+}
+
+function attachPrivateShiftBibles(shifts: Shift[], bibles: ShiftBible[], memberId: string): Shift[] {
+  const byShiftId = new Map(
+    bibles
+      .filter((bible) => bible.memberId === memberId && bible.linkedShiftId && !bible.correctedByBibleId)
+      .sort((left, right) => left.revision - right.revision)
+      .map((bible) => [bible.linkedShiftId as string, bible]),
+  );
+  return shifts.map((shift) => {
+    const sharedSafe = withoutPrivateShiftBible(shift);
+    const bible = shift.memberId === memberId ? byShiftId.get(shift.id) : undefined;
+    return bible ? { ...sharedSafe, shiftBible: bible } : sharedSafe;
+  });
+}
 
 export function shapeHerculesProPermissions(value: unknown): HerculesProPermissions {
   const input = value && typeof value === "object" ? value as Partial<HerculesProPermissions> : {};
@@ -216,15 +257,18 @@ export function ensureHouseholdShape(household: Household): Household {
       createdBy: tx.createdBy || fallback,
       updatedAt: tx.updatedAt ?? tx.createdAt,
     })),
-    shifts: household.shifts.map((shift) => ({
-      ...shift,
-      visibility: parseVisibility(shift.visibility),
-      createdBy: shift.createdBy || shift.memberId || fallback,
-      updatedAt: shift.updatedAt ?? shift.createdAt,
-      ...(shift.sevenShiftsEvidenceBundle
-        ? { sevenShiftsEvidenceBundle: shapeSevenShiftsEvidenceBundle(shift.sevenShiftsEvidenceBundle) }
-        : {}),
-    })),
+    shifts: household.shifts.map((shift) => {
+      const { shiftBible: rawBible, sevenShiftsEvidenceBundle: rawEvidence, ...rest } = shift;
+      const shiftBible = shapeShiftBible(rawBible, shift.memberId);
+      return {
+        ...rest,
+        visibility: parseVisibility(shift.visibility),
+        createdBy: shift.createdBy || shift.memberId || fallback,
+        updatedAt: shift.updatedAt ?? shift.createdAt,
+        ...(rawEvidence ? { sevenShiftsEvidenceBundle: shapeSevenShiftsEvidenceBundle(rawEvidence) } : {}),
+        ...(shiftBible ? { shiftBible } : {}),
+      };
+    }),
     sevenShiftsSchedules: shapeSevenShiftsSchedules(household.sevenShiftsSchedules),
     coworkers: shapeCoworkers(household.coworkers, fallbackIso),
     coworkerAttendance: shapeCoworkerAttendance(household.coworkerAttendance, fallbackIso),
@@ -232,6 +276,8 @@ export function ensureHouseholdShape(household: Household): Household {
       ? household.shiftSettings
       : { ...DEFAULT_SHIFT_SETTINGS },
     coworkerSchedules: shapeCoworkerSchedules(household.coworkerSchedules, fallbackIso),
+    shiftEnvelopes: shapeShiftEnvelopes(household.shiftEnvelopes),
+    shiftBibles: shapeShiftBibles(household.shiftBibles),
     commandReceipts: household.commandReceipts ?? [],
     sharing: shapeSharing(household),
     conflicts: household.conflicts ?? [],
@@ -254,6 +300,8 @@ export function emptyPersonal(memberId: string): PersonalEnvelope {
     coworkers: [],
     coworkerAttendance: [],
     coworkerSchedules: [],
+    shiftEnvelopes: [],
+    shiftBibles: [],
     goals: [],
     goalContributions: [],
     goalPurchases: [],
@@ -271,8 +319,9 @@ export function splitForSync(household: Household, memberId: string): { shared: 
   const shaped = ensureHouseholdShape(household);
   const sharedTx = shaped.transactions.filter((tx) => belongsToSharedLedger(tx));
   const personalTx = shaped.transactions.filter((tx) => isPersonalOnly(tx));
-  const sharedShifts = shaped.shifts.filter((shift) => belongsToSharedLedger(shift));
-  const personalShifts = shaped.shifts.filter((shift) => isPersonalOnly(shift));
+  const sharedShifts = shaped.shifts.filter((shift) => belongsToSharedLedger(shift)).map(withoutPrivateShiftBible);
+  const personalShifts = shaped.shifts.filter((shift) => isPersonalOnly(shift)).map(withoutPrivateShiftBible);
+  const memberShiftBibles = personalShiftBibles(shaped, memberId);
   const sharedGoals = shaped.goals.filter((goal) => goal.shared);
   const personalGoals = shaped.goals.filter((goal) => !goal.shared && goal.ownerMemberId === memberId);
   const sharedGoalIds = new Set(sharedGoals.map((goal) => goal.id));
@@ -331,6 +380,8 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     coworkers: shapeCoworkers(shaped.coworkers, shaped.lastCommittedAt ?? MISSING_ISO, memberId),
     coworkerAttendance: shapeCoworkerAttendance(shaped.coworkerAttendance, shaped.lastCommittedAt ?? MISSING_ISO, memberId),
     coworkerSchedules: shapeCoworkerSchedules(shaped.coworkerSchedules, shaped.lastCommittedAt ?? MISSING_ISO, memberId),
+    shiftEnvelopes: shapeShiftEnvelopes(shaped.shiftEnvelopes, memberId),
+    shiftBibles: memberShiftBibles,
     goals: personalGoals,
     goalContributions: shaped.goalContributions.filter((row) => personalGoalIds.has(row.goalId)),
     goalPurchases: shaped.goalPurchases.filter((row) => personalGoalIds.has(row.goalId)),
@@ -355,6 +406,8 @@ export function personalReplicaForMember(household: Household, memberId: string)
     coworkers: shapeCoworkers(personal.coworkers, personal.lastCommittedAt ?? MISSING_ISO, memberId),
     coworkerAttendance: shapeCoworkerAttendance(personal.coworkerAttendance, personal.lastCommittedAt ?? MISSING_ISO, memberId),
     coworkerSchedules: shapeCoworkerSchedules(personal.coworkerSchedules, personal.lastCommittedAt ?? MISSING_ISO, memberId),
+    shiftEnvelopes: shapeShiftEnvelopes(personal.shiftEnvelopes, memberId),
+    shiftBibles: shapeShiftBibles(personal.shiftBibles, memberId),
     goals: (personal.goals ?? []).filter((goal) => goal.ownerMemberId === memberId),
     accounts: shapeAccounts(personal.accounts, personal.lastCommittedAt ?? MISSING_ISO)
       .filter((account) => account.scope === "personal" && account.ownerMemberId === memberId),
@@ -391,6 +444,8 @@ export function personalEnvelopeFromPayload(
     coworkers: shapeCoworkers(row.coworkers, row.lastCommittedAt ?? MISSING_ISO, memberId),
     coworkerAttendance: shapeCoworkerAttendance(row.coworkerAttendance, row.lastCommittedAt ?? MISSING_ISO, memberId),
     coworkerSchedules: shapeCoworkerSchedules(row.coworkerSchedules, row.lastCommittedAt ?? MISSING_ISO, memberId),
+    shiftEnvelopes: shapeShiftEnvelopes(row.shiftEnvelopes, memberId),
+    shiftBibles: shapeShiftBibles(row.shiftBibles, memberId),
     goals,
     goalContributions: Array.isArray(row.goalContributions)
       ? row.goalContributions.filter((item) => goalIds.has(item.goalId))
@@ -423,6 +478,13 @@ export function overlayPersonalReplica(
     const existing = tombstones.get(item.id);
     if (!existing || item.deletedAt >= existing.deletedAt) tombstones.set(item.id, item);
   }
+  const memberBibles = shapeShiftBibles(personal.shiftBibles, memberId);
+  const overlaidShifts = attachPrivateShiftBibles([
+    ...household.shifts.filter((item) => !(
+      (item.visibility === "personal" && item.createdBy === memberId) || personalShiftIds.has(item.id)
+    )),
+    ...personal.shifts,
+  ], memberBibles, memberId);
   return ensureHouseholdShape({
     ...household,
     transactions: [
@@ -435,12 +497,7 @@ export function overlayPersonalReplica(
       ...household.accounts.filter((item) => !(item.scope === "personal" && item.ownerMemberId === memberId)),
       ...(personal.accounts ?? []),
     ],
-    shifts: [
-      ...household.shifts.filter((item) => !(
-        (item.visibility === "personal" && item.createdBy === memberId) || personalShiftIds.has(item.id)
-      )),
-      ...personal.shifts,
-    ],
+    shifts: overlaidShifts,
     sevenShiftsSchedules: [
       ...(household.sevenShiftsSchedules ?? []).filter((item) => item.memberId !== memberId && !personalScheduleIds.has(item.id)),
       ...shapeSevenShiftsSchedules(personal.sevenShiftsSchedules, memberId),
@@ -456,6 +513,14 @@ export function overlayPersonalReplica(
     coworkerSchedules: [
       ...shapeCoworkerSchedules(household.coworkerSchedules, household.lastCommittedAt ?? MISSING_ISO).filter((item) => item.ownerMemberId !== memberId),
       ...shapeCoworkerSchedules(personal.coworkerSchedules, personal.lastCommittedAt ?? MISSING_ISO, memberId),
+    ],
+    shiftEnvelopes: [
+      ...shapeShiftEnvelopes(household.shiftEnvelopes).filter((item) => item.memberId !== memberId),
+      ...shapeShiftEnvelopes(personal.shiftEnvelopes, memberId),
+    ],
+    shiftBibles: [
+      ...shapeShiftBibles(household.shiftBibles).filter((item) => item.memberId !== memberId),
+      ...memberBibles.filter((item) => !item.linkedShiftId || Boolean(item.correctedByBibleId)),
     ],
     goals: [
       ...household.goals.filter((item) => !personalGoalIds.has(item.id) && (item.shared || item.ownerMemberId !== memberId)),
@@ -491,6 +556,8 @@ export function assembleHousehold(
   const personalCoworkers = shapeCoworkers(personal?.coworkers, personal?.lastCommittedAt ?? MISSING_ISO, personal?.memberId);
   const personalAttendance = shapeCoworkerAttendance(personal?.coworkerAttendance, personal?.lastCommittedAt ?? MISSING_ISO, personal?.memberId);
   const personalCoworkerSchedules = shapeCoworkerSchedules(personal?.coworkerSchedules, personal?.lastCommittedAt ?? MISSING_ISO, personal?.memberId);
+  const personalShiftEnvelopes = shapeShiftEnvelopes(personal?.shiftEnvelopes, personal?.memberId);
+  const personalShiftBibles = shapeShiftBibles(personal?.shiftBibles, personal?.memberId);
   const personalGoals = personal?.goals ?? [];
   const personalAccounts = personal?.accounts ?? [];
   const personalGoalContributions = personal?.goalContributions ?? [];
@@ -552,11 +619,15 @@ export function assembleHousehold(
     shiftSettings: shared.shiftSettings,
     lastCommittedAt: laterIso(shared.lastCommittedAt, personal?.lastCommittedAt ?? null),
     transactions: [...txById.values()],
-    shifts: [...shiftById.values()],
+    shifts: personal?.memberId
+      ? attachPrivateShiftBibles([...shiftById.values()], personalShiftBibles, personal.memberId)
+      : [...shiftById.values()].map(withoutPrivateShiftBible),
     sevenShiftsSchedules: personalSchedules,
     coworkers: personalCoworkers,
     coworkerAttendance: personalAttendance,
     coworkerSchedules: personalCoworkerSchedules,
+    shiftEnvelopes: personalShiftEnvelopes,
+    shiftBibles: personalShiftBibles.filter((item) => !item.linkedShiftId || Boolean(item.correctedByBibleId)),
     ...(personal?.herculesProPermissions
       ? { herculesProPermissions: personal.herculesProPermissions }
       : {}),
@@ -654,6 +725,16 @@ export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope
     coworkerSchedules: mergeRecords(
       shapeCoworkerSchedules(server.coworkerSchedules, server.lastCommittedAt ?? MISSING_ISO, server.memberId),
       shapeCoworkerSchedules(client.coworkerSchedules, client.lastCommittedAt ?? MISSING_ISO, client.memberId),
+      tombstones,
+    ),
+    shiftEnvelopes: mergeRecords(
+      shapeShiftEnvelopes(server.shiftEnvelopes, server.memberId),
+      shapeShiftEnvelopes(client.shiftEnvelopes, client.memberId),
+      tombstones,
+    ),
+    shiftBibles: mergeRecords(
+      shapeShiftBibles(server.shiftBibles, server.memberId),
+      shapeShiftBibles(client.shiftBibles, client.memberId),
       tombstones,
     ),
     goals: mergeRecords(server.goals ?? [], client.goals ?? [], tombstones),

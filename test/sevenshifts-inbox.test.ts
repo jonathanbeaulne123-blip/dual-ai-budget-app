@@ -225,13 +225,13 @@ describe("7shifts Timesheet inbox", () => {
     expect(parsed.warnings.join(" ")).toMatch(/still clocked/i);
   });
 
-  it("posts wages from a 7shifts draft with empty tips and refuses the same punch twice", () => {
+  it("requires reviewed zero tips before posting a 7shifts draft and refuses the same punch twice", () => {
     const saved = upsertWorkJob(catalogHousehold(), { job: job() }).household;
     const savedJob = saved.workJobs[0]!;
     const draft = parseSevenShiftsInbox(payload({ jobId: savedJob.id }), saved.workJobs).drafts[0]!;
     expect(draft.cashTips).toBe("");
     expect(draft.cardTips).toBe("");
-    const posted = postWorkShift(saved, {
+    const base = {
       date: draft.date,
       memberId: "MEM-002",
       jobId: draft.jobId,
@@ -246,7 +246,9 @@ describe("7shifts Timesheet inbox", () => {
       cashTipsAccountId: "ACC-CASH",
       sevenShiftsPunchDigest: draft.punchDigest,
       createdBy: "MEM-002",
-    });
+    };
+    expect(() => postWorkShift(saved, base)).toThrow(/cash tips, including 0/i);
+    const posted = postWorkShift(saved, { ...base, cashTips: 0, cardTips: 0 });
     const shift = posted.household.shifts.at(-1)!;
     expect(shift.sevenShiftsPunchDigest).toBe(PUNCH);
     expect(shift.cashTipsCents).toBe(0);
@@ -266,8 +268,8 @@ describe("7shifts Timesheet inbox", () => {
       roleId: draft.roleId,
       workedHours: 1,
       paidBreakHours: 0,
-      cashTips: "",
-      cardTips: "",
+      cashTips: 0,
+      cardTips: 0,
       customersServed: 0,
       staffingCount: 1,
       eventTag: "regular",
@@ -282,8 +284,8 @@ describe("7shifts Timesheet inbox", () => {
       roleId: draft.roleId,
       workedHours: draft.workedHours,
       paidBreakHours: draft.paidBreakHours,
-      cashTips: "",
-      cardTips: "",
+      cashTips: 0,
+      cardTips: 0,
       customersServed: 0,
       staffingCount: 1,
       eventTag: "regular",

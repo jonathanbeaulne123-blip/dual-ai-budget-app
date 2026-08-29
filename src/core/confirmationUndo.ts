@@ -27,6 +27,9 @@ export function undoLedgerConfirm(current: Household, token: UndoToken): CommitR
   const dead = new Set(postedIds);
   const at = nowIso();
   const actor = token.actorMemberId;
+  const undoneBibles = current.shifts
+    .filter((shift) => dead.has(shift.id) && shift.shiftBible)
+    .map((shift) => shift.shiftBible!);
 
   for (const id of postedIds) {
     if (current.transactions.some((row) => row.reversalOfId === id)) {
@@ -72,6 +75,18 @@ export function undoLedgerConfirm(current: Household, token: UndoToken): CommitR
   next.coworkers = (next.coworkers ?? []).filter((row) => !dead.has(row.id));
   next.coworkerAttendance = (next.coworkerAttendance ?? []).filter((row) => !dead.has(row.id));
   next.coworkerSchedules = (next.coworkerSchedules ?? []).filter((row) => !dead.has(row.id));
+  next.shiftBibles = (next.shiftBibles ?? []).filter((row) => !dead.has(row.id));
+  const reopenedByEnvelope = new Map(undoneBibles.map((bible) => [bible.envelopeId, bible]));
+  next.shiftEnvelopes = (next.shiftEnvelopes ?? []).map((envelope) => {
+    const bible = reopenedByEnvelope.get(envelope.id);
+    if (!bible || envelope.confirmedBibleId !== bible.id) return envelope;
+    return {
+      ...envelope,
+      status: ["approved", "final"].includes(envelope.sourceFinality) ? "worked_ready" : "needs_review",
+      confirmedBibleId: null,
+      updatedAt: at,
+    };
+  });
 
   const afterCount =
     next.transactions.length

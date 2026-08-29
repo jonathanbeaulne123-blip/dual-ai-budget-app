@@ -59,6 +59,7 @@ function kindLabel(kind: string): string {
   if (kind === "subscription") return "Sub";
   if (kind === "detected") return "New";
   if (kind === "shift") return "Shift";
+  if (kind === "shift-envelope") return "✉ Shift";
   if (kind === "google") return "GCal";
   if (kind === "claim") return "Owed";
   if (kind === "work-pay") return "Pay";
@@ -94,6 +95,7 @@ export function CalendarPage(props: {
   onAskWriteOff: (claimId: string, summary: string) => void;
   onAskStartJar: (appointmentId: string, summary: string) => void;
   onOpenPlan: () => void;
+  onOpenShiftEnvelope: (envelopeId: string) => void;
 }) {
   const { household, today, environment } = props;
   const [monthKey, setMonthKey] = useState(() => monthKeyFromDateKey(today));
@@ -326,6 +328,8 @@ export function CalendarPage(props: {
                   onAskVisit={props.onAskVisit}
                   workSettlementId={item.source === "work-settlement" ? item.id : undefined}
                   onAskWork={(id) => setWorkSettlement(workFacts.find((fact) => fact.id === id) ?? null)}
+                  shiftEnvelopeId={item.shiftEnvelopeId}
+                  onOpenShiftEnvelope={props.onOpenShiftEnvelope}
                 />
               ))}
             </section>
@@ -535,6 +539,7 @@ function DayRow(props: {
   appointmentId?: string;
   rhythmKey?: string;
   workSettlementId?: string;
+  shiftEnvelopeId?: string;
   date: DateKey;
   today: DateKey;
   household: Household;
@@ -543,6 +548,7 @@ function DayRow(props: {
   onAskPost: (recurrenceId: string, summary: string) => void;
   onAskVisit: (draft: VisitPostDraft, summary: string) => void;
   onAskWork: (id: string) => void;
+  onOpenShiftEnvelope: (envelopeId: string) => void;
 }) {
   const rec = props.recurrenceId ? props.household.recurrences.find((item) => item.id === props.recurrenceId) : undefined;
   const visit = props.appointmentId ? props.household.appointments.find((item) => item.id === props.appointmentId) : undefined;
@@ -580,6 +586,9 @@ function DayRow(props: {
         )}
         {props.workSettlementId && props.due && (
           <button className="chip selected" disabled={props.busy} onClick={() => props.onAskWork(props.workSettlementId!)}>Confirm</button>
+        )}
+        {props.shiftEnvelopeId && (
+          <button className="chip selected" disabled={props.busy} onClick={() => props.onOpenShiftEnvelope(props.shiftEnvelopeId!)}>Open</button>
         )}
       </span>
     </div>

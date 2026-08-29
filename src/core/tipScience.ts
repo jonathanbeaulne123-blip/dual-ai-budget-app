@@ -181,7 +181,8 @@ export function activeTipShifts(household: Household, memberId?: string): Shift[
     .filter((shift) => {
       if (memberId && shift.memberId !== memberId) return false;
       if (workShiftIsReversed(household, shift)) return false;
-      return shift.hours > 0;
+      if (!shift.shiftBible || shift.shiftBible.outcome !== "worked" || shift.shiftBible.correctedByBibleId) return false;
+      return shift.shiftBible.workedMinutes != null && shift.shiftBible.workedMinutes > 0;
     })
     .slice()
     .sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
@@ -189,24 +190,28 @@ export function activeTipShifts(household: Household, memberId?: string): Shift[
 
 export function observeTipShifts(household: Household, memberId?: string): TipShiftObservation[] {
   return activeTipShifts(household, memberId).map((shift) => {
-    const tipPerHourCents = Math.round(shift.netTipsCents / shift.hours);
-    const wagePerHourCents = Math.round(shift.wagesCents / shift.hours);
-    const salesCents = Math.max(0, Math.round(shift.salesCents || 0));
-    const customersServed = typeof shift.customersServed === "number" && Number.isInteger(shift.customersServed)
-      ? shift.customersServed
+    const bible = shift.shiftBible!;
+    const hours = bible.workedMinutes! / 60;
+    const netTipsCents = bible.netTipsCents ?? 0;
+    const wagesCents = bible.grossWagesCents ?? 0;
+    const tipPerHourCents = Math.round(netTipsCents / hours);
+    const wagePerHourCents = Math.round(wagesCents / hours);
+    const salesCents = Math.max(0, Math.round(bible.salesCents ?? 0));
+    const customersServed = typeof bible.customersServed === "number" && Number.isInteger(bible.customersServed)
+      ? bible.customersServed
       : null;
-    const staffingCount = typeof shift.staffingCount === "number" && Number.isInteger(shift.staffingCount)
-      ? shift.staffingCount
+    const staffingCount = typeof bible.staffingCount === "number" && Number.isInteger(bible.staffingCount)
+      ? bible.staffingCount
       : null;
-    const tipPctBps = salesCents > 0 ? Math.round((shift.netTipsCents * 10_000) / salesCents) : null;
+    const tipPctBps = salesCents > 0 ? Math.round((netTipsCents * 10_000) / salesCents) : null;
     const tipsPerCoverCents = customersServed && customersServed > 0
-      ? Math.round(shift.netTipsCents / customersServed)
+      ? Math.round(netTipsCents / customersServed)
       : null;
     const salesPerCoverCents = customersServed && customersServed > 0
       ? Math.round(salesCents / customersServed)
       : null;
-    const tipsPerStaffHour = staffingCount && staffingCount > 0 && shift.hours > 0
-      ? Math.round(shift.netTipsCents / (staffingCount * shift.hours))
+    const tipsPerStaffHour = staffingCount && staffingCount > 0 && hours > 0
+      ? Math.round(netTipsCents / (staffingCount * hours))
       : null;
     return {
       shiftId: shift.id,
@@ -214,10 +219,10 @@ export function observeTipShifts(household: Household, memberId?: string): TipSh
       memberId: shift.memberId,
       weekday: weekdaySunday0(shift.date),
       meal: inferTipMeal(shift),
-      hours: shift.hours,
-      netTipsCents: shift.netTipsCents,
+      hours,
+      netTipsCents,
       tipPerHourCents,
-      wagesCents: shift.wagesCents,
+      wagesCents,
       wagePerHourCents,
       season: kitchenSeason(shift.date),
       salesCents,
@@ -227,10 +232,10 @@ export function observeTipShifts(household: Household, memberId?: string): TipSh
       salesPerCoverCents,
       staffingCount,
       tipsPerStaffHour,
-      eventTag: shift.eventTag ?? "regular",
+      eventTag: bible?.eventTag ?? shift.eventTag ?? "regular",
       jobId: shift.jobId,
       roleId: shift.roleId,
-      weatherGlass: shift.weatherGlass,
+      weatherGlass: bible?.weatherGlass ?? shift.weatherGlass,
     };
   });
 }

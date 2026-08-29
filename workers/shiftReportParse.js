@@ -63,7 +63,7 @@ export function looksLikeEmployeeShiftReport(ocrText) {
 
 /**
  * @param {string} ocrText
- * @returns {{ draft: Record<string, number|string>|null, warnings: string[], confidence: "high"|"medium"|"low" }}
+ * @returns {{ draft: Record<string, number|string>|null, warnings: string[], confidence: "high"|"medium"|"low", tipLabels?: { section: boolean, cash: boolean, card: boolean } }}
  */
 export function parsePosEmployeeShiftReport(ocrText) {
   const text = String(ocrText || "").replace(/\r/g, "\n");
@@ -108,17 +108,23 @@ export function parsePosEmployeeShiftReport(ocrText) {
   const cashTips = matchMoney(tipBlock, [/Cash\s+Tips?\s*[^\n$]{0,20}\$?\s*([0-9,]+\.[0-9]{2})/i]);
   if (cashTips != null) draft.cashTipsCents = cashTips;
 
-  const debitTips = matchMoney(tipBlock, [/Debit\s+Tips?\s*[^\n$]{0,20}\$?\s*([0-9,]+\.[0-9]{2})/i]) ?? 0;
-  const amexTips = matchMoney(tipBlock, [/Amex\s+Tips?\s*[^\n$]{0,20}\$?\s*([0-9,]+\.[0-9]{2})/i]) ?? 0;
-  const visaTips = matchMoney(tipBlock, [/Visa\s+Tips?\s*[^\n$]{0,20}\$?\s*([0-9,]+\.[0-9]{2})/i]) ?? 0;
-  const mcTips = matchMoney(tipBlock, [/(?:Mastercard|Master\s*Card)\s+Tips?\s*[^\n$]{0,20}\$?\s*([0-9,]+\.[0-9]{2})/i]) ?? 0;
+  const debitTipsValue = matchMoney(tipBlock, [/Debit\s+Tips?\s*[^\n$]{0,20}\$?\s*([0-9,]+\.[0-9]{2})/i]);
+  const amexTipsValue = matchMoney(tipBlock, [/Amex\s+Tips?\s*[^\n$]{0,20}\$?\s*([0-9,]+\.[0-9]{2})/i]);
+  const visaTipsValue = matchMoney(tipBlock, [/Visa\s+Tips?\s*[^\n$]{0,20}\$?\s*([0-9,]+\.[0-9]{2})/i]);
+  const mcTipsValue = matchMoney(tipBlock, [/(?:Mastercard|Master\s*Card)\s+Tips?\s*[^\n$]{0,20}\$?\s*([0-9,]+\.[0-9]{2})/i]);
   const creditTips = matchMoney(tipBlock, [/Credit\s+Tips?\s*[^\n$]{0,20}\$?\s*([0-9,]+\.[0-9]{2})/i]);
+  const cardLabelSeen = [debitTipsValue, amexTipsValue, visaTipsValue, mcTipsValue, creditTips].some((value) => value != null);
+  const debitTips = debitTipsValue ?? 0;
+  const amexTips = amexTipsValue ?? 0;
+  const visaTips = visaTipsValue ?? 0;
+  const mcTips = mcTipsValue ?? 0;
   const cardFromParts = debitTips + amexTips + visaTips + mcTips + (creditTips != null && amexTips + visaTips + mcTips === 0 ? creditTips : 0);
   const totalTips = matchMoney(tipBlock, [/Total\s+Tips?\s*[^\n$]{0,20}\$?\s*([0-9,]+\.[0-9]{2})/i]);
-  if (cardFromParts > 0) {
+  const tipLabels = { section: /TIP\s+SUMMARY|Cash\s+Tips?|Debit\s+Tips?|Credit\s+Tips?|Amex\s+Tips?|Visa\s+Tips?|Master(?:card|\s*Card)\s+Tips?|Total\s+Tips?/i.test(compact), cash: cashTips != null, card: cardLabelSeen };
+  if (cardLabelSeen) {
     draft.cardTipsCents = cardFromParts;
   } else if (totalTips != null) {
-    draft.cardTipsCents = Math.max(0, totalTips - (draft.cashTipsCents ?? 0));
+    warnings.push("Total Tips was visible but Card Tips was not separately labeled; left card tips blank.");
   }
 
   if (totalTips != null && draft.cashTipsCents != null && draft.cardTipsCents != null) {
@@ -130,8 +136,8 @@ export function parsePosEmployeeShiftReport(ocrText) {
 
   // Prefer Tip Summary; ignore Credit Card Payments "Total Tips" which is often incomplete.
   const owes = matchMoney(compact, [/Merchant\s+Owes\s+Employee\s*[:=]?\s*\$?\s*([0-9,]+\.[0-9]{2})/i]);
-  if (owes != null && draft.cardTipsCents == null && (draft.cashTipsCents ?? 0) === 0) {
-    draft.cardTipsCents = owes;
+  if (owes != null && draft.cardTipsCents == null) {
+    warnings.push("Merchant Owes Employee was visible but is not a labeled Card Tips amount; left card tips blank.");
   }
 
   const headcountStrict = compact.match(/\bHeadcount\s*[:=]?\s*([0-9]+)/i);
@@ -148,10 +154,10 @@ export function parsePosEmployeeShiftReport(ocrText) {
   }
 
   const keys = Object.keys(draft);
-  if (!keys.length) return { draft: null, warnings, confidence: "low" };
+  if (!keys.length) return { draft: null, warnings, confidence: "low", tipLabels };
   const strong = ["salesCents", "cardTipsCents", "workedHours", "customersServed"].filter((key) => draft[key] != null).length;
   const confidence = strong >= 3 ? "high" : strong >= 2 ? "medium" : "low";
-  return { draft, warnings, confidence };
+  return { draft, warnings, confidence, tipLabels };
 }
 
 /**
@@ -162,6 +168,10 @@ export function parsePosEmployeeShiftReport(ocrText) {
 export function mergeShiftDraftFromOcr(modelDraft, ocrText) {
   const parsed = parsePosEmployeeShiftReport(ocrText);
   const model = modelDraft && typeof modelDraft === "object" ? { ...modelDraft } : null;
+  if (model && parsed.tipLabels?.section) {
+    if (!parsed.tipLabels.cash) delete model.cashTipsCents;
+    if (!parsed.tipLabels.card) delete model.cardTipsCents;
+  }
   if (!parsed.draft) {
     return {
       draft: model && Object.keys(model).length ? model : null,

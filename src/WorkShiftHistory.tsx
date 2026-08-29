@@ -11,6 +11,7 @@ export function WorkShiftHistoryCard({ household, memberId, busy, onCorrect, ini
   intro?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [openBibleId, setOpenBibleId] = useState<string | null>(null);
   const peek = Math.max(1, initialVisible);
   const shifts = [...household.shifts]
     .filter((shift) => shift.memberId === memberId)
@@ -33,7 +34,18 @@ export function WorkShiftHistoryCard({ household, memberId, busy, onCorrect, ini
               <div><strong>{job?.name ?? "Legacy shift"}{role ? ` · ${role.name}` : ""}</strong><span>{formatDateLabel(shift.date)} · {shift.hours.toFixed(2)} h{shift.paidBreakHours ? ` + ${shift.paidBreakHours.toFixed(2)} paid break` : ""}</span></div>
             </div>
             <div className="work-history-money"><strong>{formatCad(shift.wagesCents + shift.netTipsCents)}</strong><span>{formatCad(shift.wagesCents)} wages · {formatCad(shift.netTipsCents)} tips</span></div>
-            {reversed ? <span className="pill">replaced</span> : ids[0] ? <button type="button" className="chip" disabled={busy} onClick={() => onCorrect(shift, ids[0]!)}>Correct</button> : null}
+            {shift.shiftBible ? <button type="button" className="chip" aria-expanded={openBibleId === shift.shiftBible.id} onClick={() => setOpenBibleId((current) => current === shift.shiftBible!.id ? null : shift.shiftBible!.id)}>Open Bible</button> : null}
+            {reversed ? <span className="pill">replaced</span> : !shift.shiftBible && ids[0] ? <button type="button" className="chip" disabled={busy} onClick={() => onCorrect(shift, ids[0]!)}>Correct</button> : null}
+            {shift.shiftBible && openBibleId === shift.shiftBible.id ? (
+              <div className="work-bible-detail" role="region" aria-label={`${shift.date} confirmed Shift Bible`}>
+                <p><strong>Actual:</strong> {shift.shiftBible.actualStart ? new Date(shift.shiftBible.actualStart).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "missing"}–{shift.shiftBible.actualEnd ? new Date(shift.shiftBible.actualEnd).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "missing"} · {shift.shiftBible.workedMinutes == null ? "missing hours" : `${(shift.shiftBible.workedMinutes / 60).toFixed(2)} h`}</p>
+                <p><strong>Breaks:</strong> {shift.shiftBible.paidBreakMinutes == null ? "paid missing" : `${shift.shiftBible.paidBreakMinutes} paid min`} · {shift.shiftBible.unpaidBreakMinutes == null ? "unpaid missing" : `${shift.shiftBible.unpaidBreakMinutes} unpaid min`}</p>
+                <p><strong>Tips / sales:</strong> {shift.shiftBible.cashTipsCents == null ? "cash missing" : `${formatCad(shift.shiftBible.cashTipsCents)} cash`} · {shift.shiftBible.cardTipsCents == null ? "card missing" : `${formatCad(shift.shiftBible.cardTipsCents)} card`} · {shift.shiftBible.salesCents == null ? "sales missing" : `${formatCad(shift.shiftBible.salesCents)} sales`}</p>
+                <p><strong>Context:</strong> {shift.shiftBible.customersServed == null ? "covers missing" : `${shift.shiftBible.customersServed} covers`} · {shift.shiftBible.staffingCount == null ? "staffing missing" : `${shift.shiftBible.staffingCount} staff`} · weather {shift.shiftBible.weather?.state ?? "missing"}</p>
+                <p className="muted">Bible revision {shift.shiftBible.revision}. Context backfills append a revision. Financial edits use an exact reversal and replacement.</p>
+                {!reversed && ids[0] ? <button type="button" className="primary" disabled={busy} onClick={() => onCorrect(shift, ids[0]!)}>Correct this Bible</button> : null}
+              </div>
+            ) : null}
           </article>
         );
       })}

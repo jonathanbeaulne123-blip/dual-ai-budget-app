@@ -78,6 +78,8 @@ function blankJob(household: Household, memberId: string, today: string): WorkJo
     timezone: TIMEZONE,
     locationName: "",
     gpsEnabled: false,
+    locationLatitude: null,
+    locationLongitude: null,
     roles: [newRole(today)],
     paidBreakRate: "role",
     paidBreakHourlyRateCents: 0,
@@ -277,6 +279,24 @@ export function WorkJobsCard({ household, memberId, today, busy, onAskSave, onAr
             <label>Location (optional)<input value={draft.locationName} onChange={(event) => setDraft({ ...draft, locationName: event.target.value })} /></label>
             <label>Timezone<input value={draft.timezone} onChange={(event) => setDraft({ ...draft, timezone: event.target.value })} /></label>
             <label className="work-check"><input type="checkbox" checked={draft.gpsEnabled} onChange={(event) => setDraft({ ...draft, gpsEnabled: event.target.checked })} /> Use GPS when available</label>
+            <div>
+              <button type="button" className="chip" onClick={() => {
+                if (!navigator.geolocation) {
+                  setError("This browser cannot place the workplace pin.");
+                  return;
+                }
+                navigator.geolocation.getCurrentPosition((position) => {
+                  setDraft((current) => current ? ({
+                    ...current,
+                    gpsEnabled: true,
+                    locationLatitude: Math.round(position.coords.latitude * 100) / 100,
+                    locationLongitude: Math.round(position.coords.longitude * 100) / 100,
+                  }) : current);
+                  setError("");
+                }, () => setError("Location permission was not granted. You can leave weather context off."), { enableHighAccuracy: false, maximumAge: 300_000, timeout: 8_000 });
+              }}>Place workplace weather pin</button>
+              <p className="muted">{draft.locationLatitude != null && draft.locationLongitude != null ? `Rounded pin ${draft.locationLatitude.toFixed(2)}, ${draft.locationLongitude.toFixed(2)}` : "One rounded workplace pin; Hearth never keeps a shift-by-shift GPS trail."}</p>
+            </div>
             <label>Wages deposit<select value={draft.defaults.wagesDepositAccountId} onChange={(event) => setDraft({ ...draft, defaults: { ...draft.defaults, wagesDepositAccountId: event.target.value } })}>{cashAccounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select></label>
             <label>Cash tips<select value={draft.defaults.cashTipsAccountId} onChange={(event) => setDraft({ ...draft, defaults: { ...draft.defaults, cashTipsAccountId: event.target.value } })}>{cashAccounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select></label>
             <label>Card-tip payout<select value={draft.defaults.cardTipsDepositAccountId} onChange={(event) => setDraft({ ...draft, defaults: { ...draft.defaults, cardTipsDepositAccountId: event.target.value } })}>{cashAccounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select></label>

@@ -55,10 +55,13 @@
     return CREDENTIAL_TEXT.test(body) ? null : body;
   }
 
-  function sanitizeVisibleResponsePayload(payload) {
+  function sanitizeVisibleResponsePayload(payload, options = {}) {
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
     const path = typeof payload.path === "string" ? payload.path : "";
-    const captureClass = classify7shiftsPath(path);
+    const selectedTimesheet = options.allowSelectedTimesheet === true
+      && payload.selectionKind === "visible-timesheet-v1"
+      && /^\/my_timesheets\/?$/i.test(path);
+    const captureClass = selectedTimesheet ? "punch" : classify7shiftsPath(path);
     if (!captureClass || payload.captureClass !== captureClass) return null;
     const contentType = String(payload.contentType || "").slice(0, 120);
     if (!/json|csv|calendar|text\//i.test(contentType)) return null;
@@ -67,6 +70,7 @@
     return {
       version: 1,
       captureClass,
+      ...(selectedTimesheet ? { selectionKind: "visible-timesheet-v1" } : {}),
       transport: payload.transport === "xhr" ? "xhr" : "fetch",
       path,
       capturedAt: typeof payload.capturedAt === "string" ? payload.capturedAt : new Date().toISOString(),

@@ -16,6 +16,7 @@ import {
   type ShiftAttendanceReviewDraft,
   type SevenShiftsTimesheetDraft,
   type ShiftEventTag,
+  type ShiftBibleDraft,
   type Visibility,
   type WeatherGlass,
 } from "./core/index.ts";
@@ -41,9 +42,16 @@ const EVENT_LABELS: Record<ShiftEventTag, string> = {
 };
 
 export type WorkShiftDraft = {
+  sourceKind?: "camera" | "seven-shifts-approved-punch" | "shift-envelope";
+  sourceLabel?: string;
   date?: string;
+  jobId?: string;
+  roleId?: string;
+  startedAt?: string | null;
+  endedAt?: string | null;
   workedHours?: string | number;
   paidBreakHours?: string | number;
+  unpaidBreakHours?: string | number;
   sales?: string | number;
   /** Optional POS class totals keyed by label (Food / Alcohol). Never invents a split. */
   salesByField?: Record<string, string | number>;
@@ -54,6 +62,8 @@ export type WorkShiftDraft = {
   eventTag?: ShiftEventTag;
   weatherGlass?: WeatherGlass;
   note?: string;
+  shiftEnvelopeId?: string;
+  shiftBibleDraft?: ShiftBibleDraft;
 };
 
 function dollars(digits: string): string {
@@ -63,6 +73,17 @@ function dollars(digits: string): string {
 function asDigitsFromDollars(value: string | number | undefined): string {
   if (value == null || value === "") return "";
   return centsDigitsFromDollars(String(value));
+}
+
+function asExplicitDigitsFromDollars(value: string | number | undefined): string {
+  if (value == null || value === "") return "";
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) return "";
+  return parsed === 0 ? "0" : centsDigitsFromDollars(String(parsed));
+}
+
+function explicitMoneyValue(digits: string | undefined): string | undefined {
+  return digits == null || digits === "" ? undefined : dollars(digits);
 }
 
 export function WorkShiftFlow({
@@ -93,6 +114,7 @@ export function WorkShiftFlow({
 }) {
   const jobs = useMemo(() => (household.workJobs ?? []).filter((job) => job.active && job.memberId === memberId), [household.workJobs, memberId]);
   const cameraDraft = inboxDraft ? null : initialDraft;
+  const approvedPunchDraft = cameraDraft?.sourceKind === "seven-shifts-approved-punch";
   const inboxDraftVersion = inboxDraft
     ? JSON.stringify([
         inboxDraft.punchDigest,
@@ -113,23 +135,24 @@ export function WorkShiftFlow({
       || cameraDraft.customersServed != null
       || cameraDraft.workedHours != null),
   );
-  const [step, setStep] = useState(() => (hasDraftTotals ? 1 : 0));
+  const [step, setStep] = useState(() => (hasDraftTotals && !approvedPunchDraft ? 1 : 0));
   const [date, setDate] = useState(inboxDraft?.date ?? cameraDraft?.date ?? today);
-  const [jobId, setJobId] = useState(() => inboxDraft?.jobId || jobs[0]?.id || "");
+  const [jobId, setJobId] = useState(() => inboxDraft?.jobId || cameraDraft?.jobId || jobs[0]?.id || "");
   const job = jobs.find((row) => row.id === jobId) ?? jobs[0];
-  const [roleId, setRoleId] = useState(() => inboxDraft?.roleId || job?.roles.find((role) => role.active)?.id || "");
+  const [roleId, setRoleId] = useState(() => inboxDraft?.roleId || cameraDraft?.roleId || job?.roles.find((role) => role.active)?.id || "");
   const role = job?.roles.find((row) => row.id === roleId && row.active) ?? job?.roles.find((row) => row.active);
   const punchHours = punch ? workedHoursFromOpenShift(punch) : null;
   const [hoursDigits, setHoursDigits] = useState(() => asDigitsFromDollars(inboxDraft?.workedHours ?? cameraDraft?.workedHours ?? punchHours?.workedHours ?? 0) || centsDigitsFromDollars("0"));
-  const [paidBreakDigits, setPaidBreakDigits] = useState(() => asDigitsFromDollars(inboxDraft?.paidBreakHours ?? cameraDraft?.paidBreakHours ?? punchHours?.paidBreakHours ?? 0) || centsDigitsFromDollars("0"));
+  const [paidBreakDigits, setPaidBreakDigits] = useState(() => asExplicitDigitsFromDollars(inboxDraft?.paidBreakHours ?? cameraDraft?.paidBreakHours ?? punchHours?.paidBreakHours));
+  const [unpaidBreakDigits, setUnpaidBreakDigits] = useState(() => asExplicitDigitsFromDollars(cameraDraft?.unpaidBreakHours));
   const [hoursTouched, setHoursTouched] = useState(Boolean(cameraDraft?.workedHours != null));
   const draftSalesFields = job?.salesFields.filter((field) => field.requirement !== "off") ?? [];
   const [money, setMoney] = useState<Record<string, string>>(() => {
-    const salesDigits = asDigitsFromDollars(cameraDraft?.sales);
+    const salesDigits = asExplicitDigitsFromDollars(cameraDraft?.sales);
     const next: Record<string, string> = {
       sales: "",
-      cashTips: asDigitsFromDollars(cameraDraft?.cashTips),
-      cardTips: asDigitsFromDollars(cameraDraft?.cardTips),
+      cashTips: asExplicitDigitsFromDollars(cameraDraft?.cashTips),
+      cardTips: asExplicitDigitsFromDollars(cameraDraft?.cardTips),
     };
     const classDraft = cameraDraft?.salesByField ?? {};
     let matchedClass = false;
@@ -138,7 +161,7 @@ export function WorkShiftFlow({
         || field.id.toLowerCase().includes(label.toLowerCase())
         || label.toLowerCase().includes(field.label.toLowerCase()));
       if (key == null) continue;
-      const digits = asDigitsFromDollars(classDraft[key]);
+      const digits = asExplicitDigitsFromDollars(classDraft[key]);
       if (!digits) continue;
       next[`sales:${field.id}`] = digits;
       matchedClass = true;
@@ -182,8 +205,8 @@ export function WorkShiftFlow({
   const [tipOutVisibility, setTipOutVisibility] = useState<Visibility>(() => job?.defaults.tipOutVisibility ?? "personal");
   const [note, setNote] = useState(cameraDraft?.note ?? "");
   const scheduleWindow = {
-    startedAt: inboxDraft?.startedAt ?? punch?.startedAt ?? null,
-    endedAt: inboxDraft?.endedAt ?? punch?.endedAt ?? null,
+    startedAt: inboxDraft?.startedAt ?? cameraDraft?.startedAt ?? punch?.startedAt ?? null,
+    endedAt: inboxDraft?.endedAt ?? cameraDraft?.endedAt ?? punch?.endedAt ?? null,
   };
   const scheduledRows = useMemo(() => scheduledCoworkersForReview(household.coworkerSchedules ?? [], {
     ownerMemberId: memberId,
@@ -225,7 +248,7 @@ export function WorkShiftFlow({
     setJobId(inboxDraft.jobId);
     setRoleId(inboxDraft.roleId);
     setHoursDigits(centsDigitsFromDollars(String(inboxDraft.workedHours)));
-    setPaidBreakDigits(centsDigitsFromDollars(String(inboxDraft.paidBreakHours)));
+    setPaidBreakDigits(asExplicitDigitsFromDollars(inboxDraft.paidBreakHours));
     setHoursTouched(false);
     setMoney((current) => ({ ...current, cashTips: "", cardTips: "" }));
     setStep(0);
@@ -293,11 +316,23 @@ export function WorkShiftFlow({
     : [{ id: "sales", label: "Sales" }];
   if (role.tipped) moneyChoices.push({ id: "cashTips", label: "Cash tips" }, { id: "cardTips", label: "Card tips" });
   const selectedMoney = money[activeMoney] ?? "";
-  const canContinue = Number(dollars(hoursDigits)) + Number(dollars(paidBreakDigits)) > 0;
+  const canContinue = Number(dollars(hoursDigits)) > 0;
+
+  const validateTimeStep = (): string | null => {
+    if (!(Number(dollars(hoursDigits)) > 0)) return "Enter actual working hours before continuing.";
+    if (paidBreakDigits === "") return "Enter paid-break hours, including 0 when there was no paid break.";
+    if (cameraDraft?.shiftEnvelopeId && unpaidBreakDigits === "") return "Enter unpaid-break hours, including 0 when there was no unpaid break.";
+    return null;
+  };
 
   const validateSalesStep = (): string | null => {
     if (!role.tipped) return null;
-    if (salesFields.length && !(salesCents > 0)) return "Enter sales before confirming a tipped shift.";
+    const missingRequiredSales = salesFields.find((field) => field.requirement === "required" && (money[`sales:${field.id}`] ?? "") === "");
+    if (missingRequiredSales) return `Enter ${missingRequiredSales.label}, including 0 when it was zero.`;
+    if (salesFields.length && salesFields.every((field) => (money[`sales:${field.id}`] ?? "") === "")) return "Enter sales, including 0 when sales were zero.";
+    if (money.cashTips === "") return "Enter cash tips, including 0 when there were none.";
+    if (money.cardTips === "") return "Enter card tips, including 0 when there were none.";
+    if (customersServed.trim() === "") return "Enter customers served, including 0 when there were none.";
     const covers = Number(customersServed);
     if (!Number.isInteger(covers) || covers < 0 || covers > 5000) return "Enter customers served (0–5000).";
     const staff = Number(staffingCount);
@@ -330,12 +365,15 @@ export function WorkShiftFlow({
       jobId: job.id,
       roleId: role.id,
       workedHours: dollars(hoursDigits),
-      paidBreakHours: dollars(paidBreakDigits),
-      sales: dollars(money.sales ?? ""),
-      salesByField: Object.fromEntries(salesFields.map((field) => [field.id, dollars(money[`sales:${field.id}`] ?? "")])),
-      cashTips: dollars(money.cashTips ?? ""),
-      cardTips: dollars(money.cardTips ?? ""),
-      customersServed: role.tipped ? Number(customersServed) : undefined,
+      paidBreakHours: explicitMoneyValue(paidBreakDigits),
+      sales: explicitMoneyValue(money.sales),
+      salesByField: Object.fromEntries(salesFields.flatMap((field) => {
+        const value = explicitMoneyValue(money[`sales:${field.id}`]);
+        return value === undefined ? [] : [[field.id, value]];
+      })),
+      cashTips: explicitMoneyValue(money.cashTips),
+      cardTips: explicitMoneyValue(money.cardTips),
+      customersServed: role.tipped && customersServed.trim() !== "" ? Number(customersServed) : undefined,
       staffingCount: role.tipped ? Number(staffingCount) : undefined,
       eventTag: role.tipped ? eventTag : undefined,
       weatherGlass: weatherGlass || undefined,
@@ -346,12 +384,19 @@ export function WorkShiftFlow({
       cashTipsVisibility: cashVisibility,
       cardTipsVisibility: cardVisibility,
       tipOutVisibility,
-      startedAt: inboxDraft?.startedAt ?? punch?.startedAt ?? null,
-      endedAt: inboxDraft?.endedAt ?? punch?.endedAt ?? null,
+      startedAt: inboxDraft?.startedAt ?? cameraDraft?.startedAt ?? punch?.startedAt ?? null,
+      endedAt: inboxDraft?.endedAt ?? cameraDraft?.endedAt ?? punch?.endedAt ?? null,
       note,
       settingsFingerprint: workJobFingerprint(job, role.id, date),
       createdBy: memberId,
       ...(inboxDraft?.punchDigest ? { sevenShiftsPunchDigest: inboxDraft.punchDigest } : {}),
+      ...(cameraDraft?.shiftEnvelopeId ? {
+        shiftEnvelopeId: cameraDraft.shiftEnvelopeId,
+        shiftBibleDraft: {
+          ...cameraDraft.shiftBibleDraft!,
+          unpaidBreakMinutes: Math.round(Number(dollars(unpaidBreakDigits)) * 60),
+        },
+      } : {}),
     }, attendanceReview);
   };
 
@@ -359,14 +404,15 @@ export function WorkShiftFlow({
     <section className="work-shift-flow" aria-label="Confirm work shift">
       {cameraDraft && (
         <div className="work-shift-draft-banner" role="status">
-          <p className="kicker">Draft from camera</p>
-          <p>Review every figure before Confirm. Scan never posts money.</p>
+          <p className="kicker">{approvedPunchDraft ? "Draft from approved 7shifts punch" : "Draft from camera"}</p>
+          <p>{approvedPunchDraft ? "Date, clock, and worked hours were prefilled. Tips and other money stay blank. Review all four steps; only Confirm posts." : "Review every figure before Confirm. Scan never posts money."}</p>
+          {approvedPunchDraft && cameraDraft.paidBreakHours == null ? <p className="muted">7shifts did not state paid-break minutes. Enter 0 only if there was no paid break.</p> : null}
           {cameraDraft.sales != null && salesFields.length > 1 && !cameraDraft.salesByField && (
             <p className="muted">Camera saw a sales total — enter it across {salesFields.map((field) => field.label).join(" / ")} yourself. Hearth will not invent a split.</p>
           )}
           {(scanWarnings ?? []).slice(0, 4).map((warning) => <p className="muted" key={warning}>{warning}</p>)}
           {onClearDraft && (
-            <button type="button" className="chip" disabled={busy} onClick={onClearDraft}>Clear scan draft</button>
+            <button type="button" className="chip" disabled={busy} onClick={onClearDraft}>Clear draft</button>
           )}
         </div>
       )}
@@ -380,20 +426,23 @@ export function WorkShiftFlow({
 
       {step === 0 && (
         <div className="work-shift-step">
-          <p className="kicker">{inboxDraft ? "7shifts draft" : punch ? "Timesheet review" : "Already off"}</p>
-          <h2>{inboxDraft ? "Check the 7shifts clock" : punch ? "Check the clock" : "Which shift did you work?"}</h2>
+          <p className="kicker">{inboxDraft || approvedPunchDraft ? "7shifts draft" : punch ? "Timesheet review" : "Already off"}</p>
+          <h2>{inboxDraft || approvedPunchDraft ? "Check the 7shifts clock" : punch ? "Check the clock" : "Which shift did you work?"}</h2>
           <div className="work-shift-grid two">
             <label>Shift date<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label>
             <label>Job<select value={job.id} onChange={(event) => setJobId(event.target.value)}>{jobs.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}</select></label>
             <label>Role<select value={role.id} onChange={(event) => setRoleId(event.target.value)}>{job.roles.filter((row) => row.active).map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}</select></label>
           </div>
           {inboxDraft && <p className="muted">7shifts filled hours and role from {inboxDraft.sourceLabel}. Cash and card tips stay blank — 7shifts does not track them. Enter tips on the next step, then Confirm still posts.</p>}
+          {approvedPunchDraft && <p className="muted">7shifts filled date, clock, and worked hours from {cameraDraft.sourceLabel ?? "an approved punch"}. Cash and card tips stay blank. Confirm remains the only writer.</p>}
           {punch && !inboxDraft && <p className="muted">Clocked {new Date(punch.startedAt).toLocaleTimeString([], { timeZone: "America/Toronto", hour: "numeric", minute: "2-digit" })}{punch.endedAt ? `–${new Date(punch.endedAt).toLocaleTimeString([], { timeZone: "America/Toronto", hour: "numeric", minute: "2-digit" })}` : ""}. Edit the totals below before Confirm if the clock was wrong.</p>}
           <div className="work-shift-pad-grid">
-            <CadPad digits={hoursDigits} onDigits={(digits) => { setHoursTouched(true); setHoursDigits(digits); }} label="Actual working hours" unit="hours" />
-            <CadPad digits={paidBreakDigits} onDigits={(digits) => { setHoursTouched(true); setPaidBreakDigits(digits); }} label="Paid-break hours" unit="hours" />
+            <CadPad digits={hoursDigits} onDigits={(digits) => { setHoursTouched(true); setHoursDigits(digits); }} label="Actual working hours" unit="hours" emptyDisplay="Not entered" />
+            <CadPad digits={paidBreakDigits} onDigits={(digits) => { setHoursTouched(true); setPaidBreakDigits(digits); }} label="Paid-break hours" unit="hours" emptyDisplay="Not entered" />
+            {cameraDraft?.shiftEnvelopeId ? <CadPad digits={unpaidBreakDigits} onDigits={setUnpaidBreakDigits} label="Unpaid-break hours" unit="hours" emptyDisplay="Not entered" /> : null}
           </div>
           <p className="muted">Unpaid breaks are excluded. Paid breaks stay visible as their own income category.</p>
+          {stepError ? <p className="error" role="alert">{stepError}</p> : null}
         </div>
       )}
 
@@ -402,10 +451,10 @@ export function WorkShiftFlow({
           <p className="kicker">{job.name} · {role.name}</p>
           <h2>Sales and tips</h2>
           <div className="chips work-shift-metrics">
-            {moneyChoices.map((choice) => <button key={choice.id} type="button" className={`chip ${activeMoney === choice.id ? "selected" : ""}`} onClick={() => setActiveMoney(choice.id)}>{choice.label} · {formatCad(Number(money[choice.id] || 0))}</button>)}
+            {moneyChoices.map((choice) => <button key={choice.id} type="button" className={`chip ${activeMoney === choice.id ? "selected" : ""}`} onClick={() => setActiveMoney(choice.id)}>{choice.label} · {money[choice.id] === "" || money[choice.id] == null ? "Missing" : formatCad(Number(money[choice.id]))}</button>)}
           </div>
-          <CadPad digits={selectedMoney} onDigits={(digits) => setMoney((current) => ({ ...current, [activeMoney]: digits }))} label={moneyChoices.find((choice) => choice.id === activeMoney)?.label ?? "Amount"} />
-          {inboxDraft && <p className="muted">7shifts left cash and card tips empty on purpose.</p>}
+          <CadPad digits={selectedMoney} onDigits={(digits) => setMoney((current) => ({ ...current, [activeMoney]: digits }))} label={moneyChoices.find((choice) => choice.id === activeMoney)?.label ?? "Amount"} emptyDisplay="Not entered" />
+          {(inboxDraft || approvedPunchDraft) && <p className="muted">7shifts left cash and card tips empty on purpose. Tap 0 for a side only when zero is true.</p>}
           {role.tipped && (
             <div className="work-shift-grid two" style={{ marginTop: "1rem" }}>
               <label>
@@ -478,6 +527,7 @@ export function WorkShiftFlow({
           <div className="work-shift-review">
             <div><span>Working hours</span><strong>{dollars(hoursDigits)} h</strong></div>
             <div><span>Paid break</span><strong>{dollars(paidBreakDigits)} h</strong></div>
+            {cameraDraft?.shiftEnvelopeId ? <div><span>Unpaid break</span><strong>{dollars(unpaidBreakDigits)} h</strong></div> : null}
             <div><span>Gross wages</span><strong>{calculation ? formatCad(calculation.grossWagesCents) : "—"}</strong></div>
             <div><span>Expected take-home wages</span><strong>{calculation ? formatCad(calculation.takeHomeWagesCents) : "—"}</strong></div>
             <div><span>Tips before tip-outs</span><strong>{calculation ? formatCad(calculation.tipsBeforeTipOutCents) : "—"}</strong></div>
@@ -536,6 +586,14 @@ export function WorkShiftFlow({
             className="primary"
             disabled={busy || (step === 0 && !canContinue)}
             onClick={() => {
+              if (step === 0) {
+                const error = validateTimeStep();
+                if (error) {
+                  setStepError(error);
+                  return;
+                }
+                setStepError("");
+              }
               if (step === 1) {
                 const error = validateSalesStep();
                 if (error) {
