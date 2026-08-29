@@ -226,7 +226,21 @@ export function personalBooksFloor(household: Household, memberId: string): Hous
     if (parseVisibility(tx.visibility) === "personal") return tx.createdBy === memberId;
     return true;
   });
-  return { ...household, accounts, transactions };
+  const recurrences = (household.recurrences ?? []).filter((row) => accountIds.has(row.accountId));
+  const goals = household.goals.filter((goal) => goal.shared || goal.ownerMemberId === memberId);
+  const goalIds = new Set(goals.map((goal) => goal.id));
+  const custodian = household.householdFund?.custodianMemberId === memberId;
+  return {
+    ...household,
+    accounts,
+    transactions,
+    recurrences,
+    goals,
+    goalContributions: (household.goalContributions ?? []).filter((row) => goalIds.has(row.goalId)),
+    fundPrivate: custodian
+      ? household.fundPrivate
+      : { bankBindings: [], reconciliations: [] },
+  };
 }
 
 function applyPresentationScope(household: Household, memberId: string, view: LedgerView): Household {

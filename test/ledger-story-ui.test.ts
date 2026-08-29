@@ -16,6 +16,7 @@ const kitty = readFileSync(new URL("../src/KittyBanks.tsx", import.meta.url), "u
 const sit = readFileSync(new URL("../src/SitDownGuide.tsx", import.meta.url), "utf8");
 const panel = readFileSync(new URL("../src/HouseholdFundPanel.tsx", import.meta.url), "utf8");
 const experience = readFileSync(new URL("../src/core/ledgerExperience.ts", import.meta.url), "utf8");
+const accountsUi = readFileSync(new URL("../src/Accounts.tsx", import.meta.url), "utf8");
 
 describe("D-164 ledger story UI fences", () => {
   it("routes every tab through projectLedgerExperience and a mode-aware purpose banner", () => {
@@ -153,5 +154,8 @@ describe("D-164 ledger story UI fences", () => {
     expect(calendar).toContain("dayOpen");
     expect(calendar).toContain("kind-${item.kind}");
     expect(shift).toContain("shift-earn-bubbles");
+    expect(accountsUi).toContain("setPendingPost");
+    expect(accountsUi).toContain("<ConfirmSheet");
+    expect(kitty).toContain("account.scope !== \"personal\"");
   });
 });

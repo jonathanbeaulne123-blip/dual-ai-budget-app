@@ -108,9 +108,12 @@ export function KittyBanks({
   }
 
   function requestContribute(goal: Goal) {
-    const fromAccountId = booksHousehold.accounts.find((account) => account.active && account.kind === "chequing")?.id
-      ?? household.accounts.find((account) => account.active)?.id
-      ?? booksHousehold.accounts.find((account) => account.active)?.id;
+    const allowed = (account: Household["accounts"][number]) => (
+      account.active && (account.scope !== "personal" || account.ownerMemberId === createdBy)
+    );
+    const fromAccountId = booksHousehold.accounts.find((account) => allowed(account) && account.kind === "chequing")?.id
+      ?? household.accounts.find((account) => allowed(account) && account.kind === "chequing")?.id
+      ?? booksHousehold.accounts.find((account) => allowed(account))?.id;
     if (!fromAccountId) return;
     setPending({
       goalId: goal.id,
@@ -243,7 +246,11 @@ export function KittyBanks({
       {pending ? (
         <ConfirmSheet
           title="Confirm this bank"
-          body={`Post ${pending.amount} CAD into ${pending.name} from ${booksHousehold.accounts.find((account) => account.id === pending.fromAccountId)?.name ?? "the source account"}. This writes a transfer into the goal.`}
+          body={`Post ${pending.amount} CAD into ${pending.name} from ${
+            household.accounts.find((account) => account.id === pending.fromAccountId)?.name
+            ?? booksHousehold.accounts.find((account) => account.id === pending.fromAccountId)?.name
+            ?? "the source account"
+          }. This writes a transfer into the goal.`}
           extra="Kitty Banks are existing goals. Confirm is the money boundary."
           confirmLabel="Confirm"
           busy={busy}

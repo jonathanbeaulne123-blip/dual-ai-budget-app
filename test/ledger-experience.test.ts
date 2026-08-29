@@ -109,6 +109,10 @@ describe("projectLedgerExperience", () => {
     expect(floor.accounts.some((row) => row.id === "ACC-CHEQUING" || row.kind === "chequing")).toBe(true);
     expect(floor.accounts.some((row) => row.id === backingId)).toBe(false);
     expect(floor.accounts.some((row) => row.scope === "personal" && row.ownerMemberId === BIANCA)).toBe(false);
+    expect(floor.fundPrivate?.reconciliations ?? []).toEqual([]);
+    expect(JSON.stringify(floor)).not.toContain("Private bank");
+    expect(JSON.stringify(floor)).not.toContain("bankTotalCents");
+    expect(JSON.stringify(floor)).not.toContain("1234");
     const experience = projectLedgerExperience(household, JONATHAN, "personal", DATE);
     if (!experience.ok) throw new Error("expected ok");
     expect(experience.scopedHousehold.accounts.some((row) => row.id === backingId)).toBe(false);

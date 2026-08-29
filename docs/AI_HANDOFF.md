@@ -19,7 +19,8 @@
 - Personal Books Activity uses the floor journal (`presentedTransactions`), not a second `isVisibleInView` pass. Audit/hero/Ask stay on accepted `booksHousehold`.
 - iPhone `OfficePhone`: same three seal labels; leftover tap opens Plan; mosaic structure otherwise unchanged.
 - Shared Wallet: Shared pool card + Kitty Banks, not a room list.
-- Kitty Banks: SVG fatness by `kittyBankStep`; Fund contribute gated by ConfirmSheet.
+- Kitty Banks: SVG fatness by `kittyBankStep`; Fund contribute gated by ConfirmSheet; source account is never partner-personal.
+- AccountRoom interest/rewards posts use Confirm now that joint rooms live on Personal Books.
 - Drawer holds Paper/Classic/Edit/Desks/Home theme. Window temp stays in the glass. Calendar colours by kind; second tap grows detail. Shift posted bubbles sit under Tip climate.
 
 **Verification:**

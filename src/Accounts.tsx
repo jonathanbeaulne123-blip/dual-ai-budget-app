@@ -28,6 +28,7 @@ import {
   type WalletTile,
 } from "./core/index.ts";
 import { KitchenNotice } from "./KitchenNotice.tsx";
+import { ConfirmSheet } from "./Confirm.tsx";
 import { CollapsibleCard } from "./theme/PaperTheme.tsx";
 
 export function WalletStrip({
@@ -159,6 +160,12 @@ export function AccountRoom({
   const tile = wallet.tiles.find((row) => row.account.id === accountId);
   const activity = useMemo(() => accountActivity(household, accountId).slice(0, 24), [household, accountId]);
   const [error, setError] = useState("");
+  const [pendingPost, setPendingPost] = useState<
+    | { kind: "card-interest" }
+    | { kind: "card-rewards"; as: "statement-credit" | "deposit" }
+    | { kind: "savings-interest" }
+    | null
+  >(null);
   const [mark, setMark] = useState("");
   const [terms, setTerms] = useState({
     limit: "",
@@ -217,13 +224,13 @@ export function AccountRoom({
           <div className="chips">
             <button className="chip" type="button" onClick={() => onPay(account)}>Pay this card</button>
             <button className="chip" type="button" onClick={() => onAdd(account)}>Add on this card</button>
-            <button className="chip" type="button" onClick={() => run((current) => postCardInterest(current, { accountId: account.id, createdBy: memberId }))}>
+            <button className="chip" type="button" onClick={() => setPendingPost({ kind: "card-interest" })}>
               Post estimated interest
             </button>
-            <button className="chip" type="button" onClick={() => run((current) => postCardRewards(current, { accountId: account.id, as: "statement-credit", createdBy: memberId }))}>
+            <button className="chip" type="button" onClick={() => setPendingPost({ kind: "card-rewards", as: "statement-credit" })}>
               Post {credit.rewardsName} to card
             </button>
-            <button className="chip" type="button" onClick={() => run((current) => postCardRewards(current, { accountId: account.id, as: "deposit", createdBy: memberId }))}>
+            <button className="chip" type="button" onClick={() => setPendingPost({ kind: "card-rewards", as: "deposit" })}>
               Deposit {credit.rewardsName}
             </button>
           </div>
@@ -279,7 +286,7 @@ export function AccountRoom({
           </p>
           <div className="chips">
             <button className="chip" type="button" onClick={() => onAdd(account)}>Move in</button>
-            <button className="chip" type="button" onClick={() => run((current) => postSavingsInterest(current, { accountId: account.id, createdBy: memberId }))}>
+            <button className="chip" type="button" onClick={() => setPendingPost({ kind: "savings-interest" })}>
               Post estimated interest
             </button>
           </div>
@@ -337,6 +344,34 @@ export function AccountRoom({
           Archive this account
         </button>
       )}
+      {pendingPost ? (
+        <ConfirmSheet
+          title="Confirm this post"
+          body={
+            pendingPost.kind === "card-interest"
+              ? `Post estimated interest of ${formatCad(credit?.estimatedInterestCents ?? 0)} on ${account.name}.`
+              : pendingPost.kind === "savings-interest"
+                ? `Post estimated interest of ${formatCad(savings?.estimatedMonthlyInterestCents ?? 0)} on ${account.name}.`
+                : pendingPost.as === "deposit"
+                  ? `Deposit ${credit?.rewardsName ?? "rewards"} from ${account.name} into cash.`
+                  : `Post ${credit?.rewardsName ?? "rewards"} to ${account.name} as a statement credit.`
+          }
+          extra="Confirm writes this into the journal. Interest and cashback never post themselves."
+          confirmLabel="Confirm"
+          onCancel={() => setPendingPost(null)}
+          onConfirm={() => {
+            const next = pendingPost;
+            setPendingPost(null);
+            if (next.kind === "card-interest") {
+              run((current) => postCardInterest(current, { accountId: account.id, createdBy: memberId }));
+            } else if (next.kind === "savings-interest") {
+              run((current) => postSavingsInterest(current, { accountId: account.id, createdBy: memberId }));
+            } else {
+              run((current) => postCardRewards(current, { accountId: account.id, as: next.as, createdBy: memberId }));
+            }
+          }}
+        />
+      ) : null}
     </section>
   );
 }
