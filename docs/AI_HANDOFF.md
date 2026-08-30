@@ -1,5 +1,21 @@
 # AI Task and Handoff Standard
 
+## D-174 Shared Money program canon (2026-08-29)
+
+**Status:** Local SF-00 implementation and focused verification on `codex/shared-money-program` from exact `origin/main@c7c2d56b84f069d8bffcecdbac8c8dcf72b9c405`. **Not pushed, merged, deployed, activated, or live.** Risk: **Release** (company direction; documentation/test slice has no runtime authority).
+
+**Household outcome:** Hearth now has one execution index for becoming a partner-backed Canadian joint-account company for Jonathan and Bianca while preserving private personal accounts and current Confirm law.
+
+**Budget delta (5):** actual `0`; program potential `+5`. **Engagement delta (3):** actual `0`; program potential `+2`. Books win: D-172 remains current law, D-161 remains virtual, and D-162 remains disabled/read-only.
+
+**What changed:** D-174, canonical phases and exit gates, SF-00 through SF-05 packets, worksession, roadmap/index pointers, and structural safety tests. No runtime code, schema, provider, secret, bank credential, money movement, Production, or real household data.
+
+**Verification:** focused structural test 3/3; AI surface passed; `git diff --check` passed; Vite production build passed. Aggregate Vitest did not complete or emit output in more than three minutes and was terminated. Direct TypeScript reached the unchanged evidence harness with unresolved `miniflare` under the temporary worktree's junctioned dependency store, plus its consequent implicit-`any`; full `pnpm check` is therefore **not green** pending a proper local install and rerun.
+
+**Next owner:** independent SF-00 verification, then the AI assigned SF-01. Jonathan approval is required before push/PR and separately before any external mutation.
+
+**Worksession:** [`worksessions/2026-08-29-shared-money-program.md`](worksessions/2026-08-29-shared-money-program.md)
+
 ## Kitchen desk + current main integration (D-164–D-173) (2026-08-29)
 
 **Status:** Integrated and independently verified locally on `codex/kitchen-desk-integration` from exact `origin/main@4b2f40064b526541ef7a20d6e99fc99ca5647baa` plus UX head `ed708dc358ed808fbc5a9ec89b6c95bdb9a55a60`. Merge commit `f1daa78bfc1bfc7df3967b597f7af9e3675ff352`; verified implementation `ca8c84a108f9310a3426cf122c51258009963213`. **Not pushed, merged, deployed, or live.** Risk: **High**.

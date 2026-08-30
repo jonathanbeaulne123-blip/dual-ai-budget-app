@@ -1,7 +1,7 @@
 # Hearth living roadmap
 
 > **Product:** Hearth — Jonathan and Bianca's household budget and family office  
-> **Roadmap baseline:** `main@462063c` (command states + ledger naming merged), audited 2026-08-24 (Toronto)  
+> **Roadmap baseline:** `main@c7c2d56` (current clean baseline for D-174 program canon), reconciled 2026-08-29 (Toronto)
 > **Canonical order:** latest explicit instruction → `docs/CLOUD_CONTINUITY.md` → `docs/DECISIONS.md` → `docs/STRATEGY.md` → `docs/ARCHITECTURE.md` → this roadmap  
 > **Purpose:** one maintained view of what shipped, what is true now, what comes next, what remains gated, and how every major choice serves the Dual Course.
 
@@ -17,7 +17,7 @@ This is a living planning document, not an authority to deploy, mutate productio
 - **Course B — shared engagement, Hercules, learning, delight, and interactables — has weight 3.**
 - Course A wins any conflict. Engagement earns its place by making correct financial habits easier; it never edits, hides, or posts money.
 - Commands are the money boundary. UI state, AI output, OCR, bank feeds, calendar data, widgets, weather, and Hercules are proposals or displays only, except D-137's narrowly typed ChatGPT path: the model may prepare one command, but only a member opt-in plus a separately confirmed sealed preview can invoke the atomic write boundary.
-- Only a visible user **Confirm** may post a financial command. D-172 disables D-159 automatic posting: 7shifts, Gmail, OCR, AI, schedules, and background jobs may collect and prefill, but cannot write money. Reversal/repost corrects mistakes; financial history is not silently rewritten.
+- Only a visible user **Confirm** may currently post a financial command. D-172 disables D-159 automatic posting: 7shifts, Gmail, OCR, AI, schedules, and background jobs may collect and prefill, but cannot write money. D-174 describes a future gated rail where an exact settled event may match a confirmed action or dual-approved standing rule; it creates no current exception. Reversal/repost corrects mistakes; financial history is not silently rewritten.
 - CAD is stored as integer cents. Toronto is the household time zone. Posted activity must remain double-entry and auditable.
 - Development is not production. Production writes, deployments, migrations, and record cleanup require Jonathan's explicit approval.
 - Google sign-in is the seamless entry and recovery identity. A signed-in person must be able to open their personal ledger and every household ledger they belong to from any device without another device remaining online.
@@ -45,6 +45,7 @@ Checkboxes show work state, not product value: `[x]` is shipped on the named bas
 
 | Area | Audited truth | Decision now | Proof needed to change status |
 |---|---|---|---|
+| Priority-one Shared Money program | D-174 locks the direction: partner-backed Canadian joint account, Jonathan and Bianca first, shared bills/goals plus private accounts, equal co-owner routine authority with guardrails. No banking capability ships from the decision. | **ACTIVE — SF-00 DOCS ONLY:** execute Phase 0 trust packets in [`briefs/shared-money/`](briefs/shared-money/README.md). D-172, D-161, and D-162 remain unchanged. | SF-01–SF-05 pass; then each later phase earns its own packet, evidence, and Release gate. |
 | Environment isolation | Env + household + invite binding shipped (#121/#126/#127). Google subject + member match are required on automatic discovery/pull/persist/outbox when a continuity identity is present (D-146). Phrase/Pass remain recovery without Google. | **SHIPPED for Phase 0 tuple:** adversarial tests reject wrong Google subject and identity-mismatched outbox flush with zero fetch. | Keep canaries green; Create/invite smoke still open separately. |
 | Local books | Confirm writes pass `acceptHouseholdWrite`: validate → PGlite → verify canonical hash → persist → transport. Pulled Development snapshots pass PGlite acceptance before becoming active, and conflicts keep both sides. Restore failure after successful ingest remains honestly `recovery-available`, not proven rollback. | **ACTIVE:** keep the local command boundary closed while hosted authority and two-device interleavings are built. | Failure and same-count/different-facts tests stay green; recovery and conflict outcomes never celebrate an uncertain write. |
 | Google-account cloud continuity | Development has exact-subject discovery, automatic accepted-command transport, a durable compacting outbox, multi-household switching, and member-personal replicas (D-114 / D-117 / D-143 / D-147). Sync **target feel** is **100–500 ms** partner visibility via Tier 1 Realtime + atomic SQL ([`SYNC_ARCHITECTURE.md`](SYNC_ARCHITECTURE.md), D-149); today’s primary path is 4 s poll fallback. | **ACTIVE:** execute Tier 1 slices T1-S1…T1-S6, then Tier 2 command-log; no device is the host. | Tier 1 two-browser proof + atomic Migration 012; fresh device off/old device off read/write; offline outbox convergence. |
@@ -66,6 +67,7 @@ Only the currently open or just-closed worksession belongs here. Durable history
 
 | Worksession | State | Scope | Output |
 |---|---|---|---|
+| [2026-08-29 Shared Money program](worksessions/2026-08-29-shared-money-program.md) | **OPEN; SF-00 IMPLEMENTATION** | D-174 program canon and exact Phase 0 trust packets | [`briefs/shared-money/`](briefs/shared-money/README.md); docs/tests only; no provider, schema, Production, push, merge, or deploy |
 | [2026-08-28 Coworker attendance review](worksessions/2026-08-28-coworker-attendance-review.md) | **REVIEW FIXES VERIFIED; RE-REVIEW REQUIRED** | D-168 Personal schedule windows, OCR/shift attendance review, absence toggles, surprise helpers | Reconciled to current `main`; 97 focused tests; full suite 1099 passed / 2 skipped / 1 unchanged Windows `bash` failure; builds green; no push or deploy |
 | [2026-08-28 Shared Ledger story handoff](worksessions/2026-08-28-shared-ledger-story-handoff.md) | **CLOSED; CURSOR PACKET READY** | D-164 Shared-vs-Personal experience audit; desktop+iPad story system; iPhone fence | [`briefs/CURSOR_SHARED_LEDGER_STORY_HANDOFF_2026-08-28.md`](briefs/CURSOR_SHARED_LEDGER_STORY_HANDOFF_2026-08-28.md); no UI code, push, or deploy |
 | [2026-08-29 Kitchen desk, Personal books floor, Kitty Banks](worksessions/2026-08-29-kitchen-desk-banks.md) | **INTEGRATED LOCALLY; PR #244 STILL OPEN** | D-173: one Shared pool, Personal account floor, leftover spend seals, fat banks | Brought into `codex/kitchen-desk-integration`; no schema, provider, secret, push, merge, or deploy |
