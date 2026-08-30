@@ -7,7 +7,7 @@
 - **Repository:** `C:\Users\jonat\OneDrive\Documents\ChatGPT\Budget App\tmp\hearth-hercules-p0`
 - **Branch:** `codex/hercules-p0-cpu`
 - **Baseline SHA:** `fd1b27d4d76ce78690beffc26eb7283a6cc2638c`
-- **Head SHA:** `fd1b27d4d76ce78690beffc26eb7283a6cc2638c`
+- **Verified implementation commit:** `c3450f7d93d7e7eae0cac222e99a5be213770ffd` (before documentation-only amend)
 - **PR or issue:** none supplied
 - **Risk:** Medium
 - **Decision owner:** Jonathan
