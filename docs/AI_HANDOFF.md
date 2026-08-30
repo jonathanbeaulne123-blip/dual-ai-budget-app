@@ -2,7 +2,7 @@
 
 ## SF-02 Shared Money membership and device access (2026-08-30)
 
-**Status:** Implemented locally on `codex/shared-money-program` from exact SF-01 `eceb5ebaeb3db8d8494c0870579cc463859e8619`. Migration **017 is unapplied**. **Not pushed, merged, deployed, hosted, activated, or live.** Risk: **Release**.
+**Status:** Implemented and pushed as a release candidate on `codex/shared-money-program` from exact SF-01 `eceb5ebaeb3db8d8494c0870579cc463859e8619`. Migration **017 is unapplied**. **Not merged, deployed, hosted, activated, or live.** Risk: **Release**.
 
 **Household outcome:** Jonathan and Bianca can be independently authenticated equal co-owners, inspect sanitized Auth access, remove devices, leave safely, and recover without turning soft presence or a UI filter into authority.
 
@@ -10,9 +10,9 @@
 
 **What changed:** D-176; local migration 017; co-owner/member invitations; Supabase JWT `session_id` capture; live-session plus non-revoked-device membership gates; RPC-only device registration/list/revoke; metadata-only access audit; ordinary-member revoke; voluntary leave/last-owner protection; Auth phone identity lock; explicit offline/rejoin consequences; tests and canonical evidence.
 
-**Verification:** final focused SF-02/Auth gate passed **6 files / 54 tests**; `tsc --noEmit`, Vite production build (359 modules), Hercules Pro UI build, no-`dist/_redirects`, and diff check passed. Independent privacy review is PASS; books/authority review is CONDITIONAL PASS only on the unapplied migration and hosted proof. Full `pnpm check` retains two unrelated Windows/baseline runner failures, recorded without concealment in [`worksessions/2026-08-30-shared-money-sf02.md`](worksessions/2026-08-30-shared-money-sf02.md).
+**Verification:** final focused SF-02/Auth gate passed **6 files / 54 tests**; `tsc --noEmit`, Vite production build (359 modules), Hercules Pro UI build, no-`dist/_redirects`, and diff check passed. Independent privacy review is PASS; books/authority review is CONDITIONAL PASS only on the unapplied migration and hosted proof. Fresh full `pnpm check`: **1,222 passed / 2 skipped / 1 failed**; the sole failure is the unchanged Windows Git-Bash/Python token-sanitizer harness. Exact evidence is recorded in [`worksessions/2026-08-30-shared-money-sf02.md`](worksessions/2026-08-30-shared-money-sf02.md).
 
-**Environment/data:** local source, SQL packet, tests, and docs only. No Supabase CLI was available; no schema was generated or applied remotely. No hosted row, household data, secret, provider, Production, push, merge, or deploy action.
+**Environment/data:** source, SQL packet, tests, and docs were pushed only to remote branch `codex/shared-money-program`. No Supabase CLI was available; no schema was generated or applied remotely. No hosted row, household data, secret, provider, Production, merge, or deploy action.
 
 **Open Release gate:** migration 017 review/rollback plus separate Development apply approval, then synthetic email/replay/anon/wrong-household/revoke/reconnect/two-browser/RLS and 390/720/1100 accessibility proof. Do not call SF-02 runtime-complete before that evidence.
 

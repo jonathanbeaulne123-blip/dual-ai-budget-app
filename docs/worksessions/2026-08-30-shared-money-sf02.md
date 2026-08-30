@@ -74,7 +74,7 @@ Jonathan and Bianca can use independent Google identities as equal co-owners, se
 - 2026-08-30: final focused gate passed 6 files / 54 tests: Shared Money membership, access UI, invite chrome/discovery, Auth session, and Supabase connection contracts.
 - 2026-08-30: `pnpm exec tsc --noEmit`, Vite production build (359 modules), Hercules Pro UI build, no-`dist/_redirects`, and `git diff --check` passed.
 - 2026-08-30: semantic access-panel coverage passed at 320/390/720/1100 px in jsdom. This proves control/copy presence and focusability, not rendered visual or assistive-technology behavior.
-- 2026-08-30: full `pnpm check` is not green on this Windows host: the unchanged API sanitizer harness cannot execute a working `python3` through Git Bash, and an unrelated generated-ID privacy sentinel failed nondeterministically; that story passed 7/7 on immediate isolated rerun. No SF-02 focused failure remained.
+- 2026-08-30: fresh release `pnpm check` reached 1,222 passed / 2 skipped / 1 failed. The sole failure is the unchanged API sanitizer harness because Git Bash cannot execute a working `python3` on this Windows host. No SF-02 focused failure remained.
 - 2026-08-30: two independent read-only reviews closed eight stop-ship findings during implementation: last-owner concurrency, client-chosen device-ID collision, current-device local cleanup, Personal-snapshot reassignment, stale-invite role escalation, private audit execution, legacy six-argument invite compatibility, and reset-session bypass.
 - 2026-08-30: final privacy verdict PASS with no P0–P2 findings. Final books/authority verdict CONDITIONAL PASS with no P0–P2 findings; its only conditions are the deliberately unapplied migration and hosted/two-browser proof.
 
@@ -94,4 +94,4 @@ Jonathan and Bianca can use independent Google identities as equal co-owners, se
 
 ## Handoff
 
-Codex completed the local implementation and proof. Jonathan remains the owner for any push/PR, migration application, Development hosted smoke, merge, deploy, or Production decision. The next action is a separately authorized disposable-Development migration 017 apply and hosted smoke; only after that gate should SF-03 begin.
+Codex completed the implementation, proof, and requested release-candidate branch push. Jonathan remains the owner for any PR, migration application, Development hosted smoke, merge, deploy, or Production decision. The next action is a separately authorized disposable-Development migration 017 apply and hosted smoke; only after that gate should merge/deploy or SF-03 begin.
