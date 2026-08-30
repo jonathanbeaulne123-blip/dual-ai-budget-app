@@ -1,8 +1,8 @@
 # SF-04 — Opening truth
 
-**Target AI:** ledger/onboarding implementer with independent books review  
-**Baseline:** accepted SF-03 head  
-**Risk:** Release  
+**Target AI:** ledger/onboarding implementer with independent books review
+**Baseline:** accepted SF-03 head
+**Risk:** Release
 **Deltas:** budget `+5`; engagement `+1`
 
 ## Outcome

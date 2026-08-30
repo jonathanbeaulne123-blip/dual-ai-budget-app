@@ -1,8 +1,8 @@
 # SF-03 — Continuity completion
 
-**Target AI:** sync/ledger implementer  
-**Baseline:** accepted SF-02 head  
-**Risk:** Release  
+**Target AI:** sync/ledger implementer
+**Baseline:** accepted SF-02 head
+**Risk:** Release
 **Deltas:** budget `+3`; engagement `+1`
 
 ## Outcome

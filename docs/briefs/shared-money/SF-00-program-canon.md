@@ -1,9 +1,9 @@
 # SF-00 — Program canon
 
-**Target AI:** Codex coordinator or documentation implementer  
+**Target AI:** Codex coordinator or documentation implementer
 **Exact baseline:** `origin/main@54096553825bdaa331dca26c2dc963d754e1c583`
-**Risk:** Release (direction); runtime impact none  
-**Budget delta (5):** actual `0`, program potential `+5`  
+**Risk:** Release (direction); runtime impact none
+**Budget delta (5):** actual `0`, program potential `+5`
 **Engagement delta (3):** actual `0`, program potential `+2`
 
 ## Objective

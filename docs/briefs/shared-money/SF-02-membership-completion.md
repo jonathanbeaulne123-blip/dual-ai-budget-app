@@ -1,8 +1,8 @@
 # SF-02 — Membership completion
 
-**Target AI:** identity/continuity implementer  
-**Baseline:** accepted SF-01 head  
-**Risk:** Release  
+**Target AI:** identity/continuity implementer
+**Baseline:** accepted SF-01 head
+**Risk:** Release
 **Deltas:** budget `+2`; engagement `+1`
 
 ## Outcome

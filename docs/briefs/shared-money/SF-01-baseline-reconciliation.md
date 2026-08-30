@@ -1,8 +1,8 @@
 # SF-01 — Baseline reconciliation
 
-**Target AI:** read-heavy verifier  
-**Baseline:** exact accepted SF-00 head; rebase onto current `origin/main` if it moved  
-**Risk:** High  
+**Target AI:** read-heavy verifier
+**Baseline:** exact accepted SF-00 head; rebase onto current `origin/main` if it moved
+**Risk:** High
 **Deltas:** budget `+1`; engagement `0`
 
 ## Objective

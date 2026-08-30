@@ -1,8 +1,8 @@
 # SF-05 — Fail-closed acceptance audit
 
-**Target AI:** independent verifier; not the primary SF-02–SF-04 writer  
-**Baseline:** exact candidate Phase 0 head  
-**Risk:** Release  
+**Target AI:** independent verifier; not the primary SF-02–SF-04 writer
+**Baseline:** exact candidate Phase 0 head
+**Risk:** Release
 **Deltas:** budget `+1`; engagement `0`
 
 ## Objective
