@@ -45,6 +45,8 @@ type Queryable = {
   exec: PGlite["exec"];
 };
 
+type BooksDatabase = Pick<PGlite, "query" | "exec" | "transaction" | "close">;
+
 type InsertValue = string | number | boolean | null;
 
 /**
@@ -76,7 +78,7 @@ async function insertRows(
   }
 }
 
-let browserDbs = new Map<string, PGlite>();
+let browserDbs = new Map<string, BooksDatabase>();
 
 export function booksIdbName(environment: Environment): string {
   return `idb://hearth-books-${environment}`;
@@ -112,15 +114,51 @@ export async function openMemoryBooks(): Promise<PGlite> {
   return db;
 }
 
-export async function getBrowserBooks(environment: Environment = "development"): Promise<PGlite> {
+export async function getBrowserBooks(environment: Environment = "development"): Promise<BooksDatabase> {
   const existing = browserDbs.get(environment);
   if (existing) return existing;
-  const { PGlite } = await import("@electric-sql/pglite");
   const persist = typeof indexedDB !== "undefined";
-  const db = persist ? await PGlite.create(booksIdbName(environment)) : await PGlite.create();
+  const canUseWorker = persist
+    && typeof window !== "undefined"
+    && typeof Worker !== "undefined"
+    && typeof BroadcastChannel !== "undefined"
+    && typeof navigator !== "undefined"
+    && "locks" in navigator;
+  const db: BooksDatabase = canUseWorker
+    ? await (async () => {
+        const [{ PGliteWorker }] = await Promise.all([
+          import("@electric-sql/pglite/worker"),
+        ]);
+        return PGliteWorker.create(
+          new Worker(new URL("./pglite.worker.ts", import.meta.url), { type: "module", name: `hearth-books-${environment}` }),
+          { dataDir: booksIdbName(environment), id: `hearth-books-${environment}` },
+        );
+      })()
+    : await (async () => {
+        const { PGlite } = await import("@electric-sql/pglite");
+        return persist ? PGlite.create(booksIdbName(environment)) : PGlite.create();
+      })();
   await migrateBooks(db);
   browserDbs.set(environment, db);
   return db;
+}
+
+async function reopenBrowserBooks(environment: Environment): Promise<BooksDatabase> {
+  const existing = browserDbs.get(environment);
+  browserDbs.delete(environment);
+  if (existing) {
+    try {
+      await existing.close();
+    } catch {
+      /* A lost worker leader may already have closed this handle. */
+    }
+  }
+  return getBrowserBooks(environment);
+}
+
+function isLeaderChangedError(caught: unknown): boolean {
+  return caught instanceof Error
+    && (caught.name === "LeaderChangedError" || /leader changed/i.test(caught.message));
 }
 
 function byId<T extends { id: string }>(rows: T[]): T[] {
@@ -286,7 +324,7 @@ function assertBalanced(compiled: CompiledBooks, household: Household): {
   return { equation, tb };
 }
 
-export async function ingestBooks(db: PGlite, household: Household, compiled = compileHousehold(household)): Promise<BooksStatus> {
+export async function ingestBooks(db: BooksDatabase, household: Household, compiled = compileHousehold(household)): Promise<BooksStatus> {
   return db.transaction((tx) => writeBooks(tx, household, compiled));
 }
 
@@ -326,15 +364,18 @@ export async function wipeBrowserBooks(environment: Environment): Promise<void> 
   await deleteIndexedDatabase(name);
 }
 
-export async function inspectBrowserBooks(household: Household): Promise<{
+type BooksInspection = {
   ok: boolean;
   issue?: BooksRecoveryIssue;
   message: string;
   entryCount: number;
-}> {
+};
+
+async function inspectBrowserBooksAttempt(household: Household, retryLeaderChange: boolean): Promise<BooksInspection> {
   try {
     const db = await getBrowserBooks(household.environment);
-    const version = await db.query<{ id: number }>("SELECT id FROM schema_migrations ORDER BY id");
+    return await db.transaction(async (tx) => {
+    const version = await tx.query<{ id: number }>("SELECT id FROM schema_migrations ORDER BY id");
     if (version.rows.length === 0) {
       return {
         ok: false,
@@ -352,8 +393,8 @@ export async function inspectBrowserBooks(household: Household): Promise<{
       };
     }
     const compiled = compileHousehold(household);
-    const existing = await db.query<{ id: string }>("SELECT id FROM households WHERE id = $1", [household.householdId]);
-    const entries = await db.query<{ n: number }>(
+    const existing = await tx.query<{ id: string }>("SELECT id FROM households WHERE id = $1", [household.householdId]);
+    const entries = await tx.query<{ n: number }>(
       "SELECT count(*)::int AS n FROM journal_entries WHERE household_id = $1",
       [household.householdId],
     );
@@ -366,23 +407,23 @@ export async function inspectBrowserBooks(household: Household): Promise<{
         entryCount,
       };
     }
-    const acceptedRevision = await db.query<{ snapshot_hash: string }>(
+    const acceptedRevision = await tx.query<{ snapshot_hash: string }>(
       `SELECT snapshot_hash
        FROM audit_revisions
-       WHERE household_id = $1 AND revision = $2
+       WHERE household_id = $1
        ORDER BY at DESC
        LIMIT 1`,
-      [household.householdId, household.revision],
+      [household.householdId],
     );
     if (existing.rows.length > 0 && acceptedRevision.rows.length === 0) {
       return {
         ok: false,
         issue: "interrupted-transaction",
-        message: "PGlite has no acceptance receipt for this snapshot revision. Nothing was discarded.",
+        message: "PGlite has no acceptance receipt for this financial snapshot. Nothing was discarded.",
         entryCount,
       };
     }
-    const unbalanced = await db.query<{ entry_id: string }>(
+    const unbalanced = await tx.query<{ entry_id: string }>(
       "SELECT entry_id FROM v_unbalanced_entries WHERE household_id = $1",
       [household.householdId],
     );
@@ -412,7 +453,16 @@ export async function inspectBrowserBooks(household: Household): Promise<{
       };
     }
     return { ok: true, message: "PGlite agrees with the household snapshot.", entryCount };
+    });
   } catch (caught) {
+    if (retryLeaderChange && isLeaderChangedError(caught)) {
+      try {
+        await reopenBrowserBooks(household.environment);
+        return inspectBrowserBooksAttempt(household, false);
+      } catch (retryCaught) {
+        caught = retryCaught;
+      }
+    }
     const message = caught instanceof Error ? caught.message : "The books engine could not be inspected.";
     const issue: BooksRecoveryIssue = /migration/i.test(message)
       ? "incomplete-migration"
@@ -597,9 +647,30 @@ async function writeBooks(db: Queryable, household: Household, compiled: Compile
 /** Local books only. Never calls hosted REST. */
 export async function ingestHouseholdBooks(household: Household): Promise<{ compiled: CompiledBooks; status: BooksStatus }> {
   const compiled = compileHousehold(household);
-  const db = await getBrowserBooks(household.environment);
-  const status = await ingestBooks(db, household, compiled);
-  return { compiled, status };
+  try {
+    const db = await getBrowserBooks(household.environment);
+    const status = await ingestBooks(db, household, compiled);
+    return { compiled, status };
+  } catch (caught) {
+    if (!isLeaderChangedError(caught)) throw caught;
+    await reopenBrowserBooks(household.environment);
+    const inspection = await inspectBrowserBooks(household);
+    if (!inspection.ok) throw caught;
+    return {
+      compiled,
+      status: {
+        ok: true,
+        engine: "pglite",
+        entryCount: inspection.entryCount,
+        inBalance: true,
+        equationHolds: true,
+      },
+    };
+  }
+}
+
+export async function inspectBrowserBooks(household: Household): Promise<BooksInspection> {
+  return inspectBrowserBooksAttempt(household, true);
 }
 
 export async function restoreHouseholdBooks(household: Household): Promise<void> {

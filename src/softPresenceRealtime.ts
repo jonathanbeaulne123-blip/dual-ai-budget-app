@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Environment } from "./core/types.ts";
-import { continuityRealtimeAllowed, continuityRealtimeEnabled } from "./continuityRealtime.ts";
+import { softPresenceRealtimeEnabled } from "./continuityRealtimePolicy.ts";
 import type { SoftPresenceLiveRow } from "./softPresence.ts";
 
 export type SoftPresenceTrackPayload = {
@@ -35,12 +35,7 @@ export type SoftPresenceRealtimeDeps = {
   ) => PresenceClientHandle;
 };
 
-export function softPresenceRealtimeEnabled(
-  environment: Environment,
-  enabled = continuityRealtimeEnabled(),
-): boolean {
-  return enabled && continuityRealtimeAllowed(environment);
-}
+export { softPresenceRealtimeEnabled } from "./continuityRealtimePolicy.ts";
 
 function rowsFromPresenceState(state: Record<string, SoftPresenceTrackPayload[] | undefined>): SoftPresenceLiveRow[] {
   const rows: SoftPresenceLiveRow[] = [];

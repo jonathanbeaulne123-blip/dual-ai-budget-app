@@ -65,11 +65,13 @@ export function HerculesProPermissionsCard({
   household,
   session,
   onChanged,
+  disabled = false,
 }: {
   environment: Environment;
   household: Household;
   session: Session;
   onChanged?: (permissions: HerculesProPermissions) => void;
+  disabled?: boolean;
 }) {
   const [permissions, setPermissions] = useState<HerculesProPermissions>(
     household.herculesProPermissions ?? DISABLED_PERMISSIONS,
@@ -80,6 +82,10 @@ export function HerculesProPermissionsCard({
   const [pendingEnable, setPendingEnable] = useState<"personal" | "household" | null>(null);
 
   useEffect(() => {
+    if (disabled) {
+      setLoading(false);
+      return undefined;
+    }
     let live = true;
     setLoading(true);
     setError("");
@@ -97,7 +103,7 @@ export function HerculesProPermissionsCard({
       if (live) setLoading(false);
     });
     return () => { live = false; };
-  }, [environment, household.householdId, session.memberId]);
+  }, [disabled, environment, household.householdId, session.memberId]);
 
   async function save(next: Pick<HerculesProPermissions, "personalWrite" | "householdWrite">): Promise<void> {
     setSaving(true);
@@ -142,7 +148,7 @@ export function HerculesProPermissionsCard({
           <input
             type="checkbox"
             checked={permissions.personalWrite}
-            disabled={loading || saving || environment === "production"}
+            disabled={disabled || loading || saving || environment === "production"}
             onChange={(event) => choose("personal", event.target.checked)}
           />
           {" "}Allow {memberName} to post to their Personal ledger from ChatGPT
@@ -151,7 +157,7 @@ export function HerculesProPermissionsCard({
           <input
             type="checkbox"
             checked={permissions.householdWrite}
-            disabled={loading || saving || environment === "production"}
+            disabled={disabled || loading || saving || environment === "production"}
             onChange={(event) => choose("household", event.target.checked)}
           />
           {" "}Allow {memberName} to post to the shared Household ledger from ChatGPT

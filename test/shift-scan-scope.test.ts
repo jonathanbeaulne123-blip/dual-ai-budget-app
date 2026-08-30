@@ -23,7 +23,8 @@ describe("shift camera scope", () => {
     const page = readFileSync(new URL("../src/WorkShiftPage.tsx", import.meta.url), "utf8");
     expect(app).toContain("shiftScanScopeRef.current.cancel()");
     expect(app).toContain("scanShiftReportFile(file, fetch, scan.signal, loadDocumentVisionProvider())");
-    expect(app.match(/if \(!scan\.isCurrent\(\)\) return;/g)).toHaveLength(2);
+    // App rechecks once after the lazy import boundary and around the async scan.
+    expect(app.match(/if \(!scan\.isCurrent\(\)\) return;/g)).toHaveLength(3);
     expect(app).toContain("setWorkShiftDraft(null)");
     expect(app).toContain("setShiftScanWarnings([])");
     expect(page).toContain("shiftScanScopeRef.current.cancel()");

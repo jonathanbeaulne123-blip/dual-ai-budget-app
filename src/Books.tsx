@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, useEffect, useMemo, useState } from "react";
 import { KitchenNotice } from "./KitchenNotice.tsx";
 import {
   ASK_SUGGESTIONS,
@@ -46,12 +46,14 @@ import {
 } from "./core/index.ts";
 import { LedgerPage } from "./Ledger.tsx";
 import { PaneSeals, PaperTile, StoryStrip, CollapsibleCard } from "./theme/PaperTheme.tsx";
-import { BatchImportCard } from "./BatchImport.tsx";
 import { WalletPane } from "./Accounts.tsx";
 import { booksFilename, booksJournalCsv, booksSqlDump, downloadText } from "./ledger/export.ts";
 import type { BooksStatus } from "./ledger/engine.ts";
 import { HouseholdFundPanel } from "./HouseholdFundPanel.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
+import { DeferredSurface } from "./deferredSurfaces.tsx";
+
+const DeferredBatchImportCard = lazy(() => import("./BatchImport.tsx").then((module) => ({ default: module.BatchImportCard })));
 
 const PANES = [
   { id: "wallet", label: "Wallet", blurb: "Household cash, Goals savings, cards, and investments. Touch a tile to open the room." },
@@ -321,7 +323,8 @@ export function BooksPage({
         />
       )}
       {pane === "import" && (
-        <BatchImportCard
+        <DeferredSurface label="Import">
+        <DeferredBatchImportCard
           household={auditHousehold}
           writeHousehold={booksHousehold}
           memberId={memberId}
@@ -329,6 +332,7 @@ export function BooksPage({
           onCommit={(next, undo) => onChange(next, undo)}
           onGoMore={onGoMore}
         />
+        </DeferredSurface>
       )}
       <details
         className="books-audit-office"

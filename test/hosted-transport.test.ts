@@ -133,6 +133,29 @@ describe("D-110 local-first sharing", () => {
     expect(inspection.entryCount).toBe(posted.transactions.length);
   });
 
+  it("reuses the latest matching financial receipt for a metadata-only revision", async () => {
+    await resetBrowserBooksForTests();
+    const accepted = catalogHousehold();
+    await ingestHouseholdBooks(accepted);
+    const metadataOnly = {
+      ...accepted,
+      revision: accepted.revision + 1,
+      devices: [{
+        id: "device-startup-p1",
+        label: "Kitchen tablet",
+        memberId: "MEM-002",
+        environment: "development" as const,
+        seenAt: "2026-08-30T12:00:00.000Z",
+        updatedAt: "2026-08-30T12:00:00.000Z",
+        active: true,
+      }],
+    };
+
+    const inspection = await inspectBrowserBooks(metadataOnly);
+    expect(inspection.ok, inspection.message).toBe(true);
+    expect(inspection.entryCount).toBe(accepted.transactions.length);
+  });
+
   it("acceptHouseholdWrite verifies PGlite against the canonical financial hash; entry count alone never accepts", async () => {
     await resetBrowserBooksForTests();
     const { acceptHouseholdWrite } = await import("../src/core/commandRuntime.ts");

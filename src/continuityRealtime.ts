@@ -2,54 +2,20 @@ import { createClient } from "@supabase/supabase-js";
 import type { Environment } from "./core/types.ts";
 import { continuityCommandLogEnabled } from "./ledger/continuityCommandLog.ts";
 import {
+  continuityRealtimeEnabled,
+  type ContinuityRealtimeStatus,
+} from "./continuityRealtimePolicy.ts";
+export {
+  canAttachContinuityRealtime,
+  continuityRealtimeAllowed,
+  continuityRealtimeEnabled,
+  shouldUsePollFallback,
+  type ContinuityRealtimeStatus,
+} from "./continuityRealtimePolicy.ts";
+import {
   parseContinuityCommandEventRow,
   type ContinuityCommandEvent,
 } from "./ledger/materializeSnapshotFromEvents.ts";
-
-/** Supabase Realtime channel status — poll runs when this is not SUBSCRIBED. */
-export type ContinuityRealtimeStatus =
-  | "SUBSCRIBED"
-  | "TIMED_OUT"
-  | "CLOSED"
-  | "CHANNEL_ERROR"
-  | "JOINING";
-
-export function continuityRealtimeEnabled(): boolean {
-  return String(import.meta.env.VITE_CONTINUITY_REALTIME || "") === "1";
-}
-
-/** True when the 4 s REST poll should run (feature off or Realtime disconnected). */
-export function shouldUsePollFallback(
-  status: ContinuityRealtimeStatus | null,
-  enabled = continuityRealtimeEnabled(),
-): boolean {
-  if (!enabled) return true;
-  return status !== "SUBSCRIBED";
-}
-
-/** Tier 1/2 Realtime matches Migration 012 — Development only until October cutover. */
-export function continuityRealtimeAllowed(environment: Environment): boolean {
-  return environment === "development";
-}
-
-export function canAttachContinuityRealtime(input: {
-  enabled?: boolean;
-  commandLogEnabled?: boolean;
-  authSessionPresent: boolean;
-  membershipResolved: boolean;
-  hostedAllowed: boolean;
-  hasHousehold: boolean;
-  environment: Environment;
-}): boolean {
-  const snapshotRealtime = input.enabled ?? continuityRealtimeEnabled();
-  const commandLog = input.commandLogEnabled ?? continuityCommandLogEnabled();
-  if (!snapshotRealtime && !commandLog) return false;
-  return continuityRealtimeAllowed(input.environment)
-    && input.authSessionPresent
-    && input.membershipResolved
-    && input.hostedAllowed
-    && input.hasHousehold;
-}
 
 export type AttachContinuityRealtimeInput = {
   supabaseUrl: string;

@@ -146,13 +146,14 @@ import {
   listHouseholdReplicas,
   loadHousehold,
   loadPersonalReplica,
+  peekHousehold,
   saveHousehold,
   selectHouseholdReplica,
   type HouseholdReplicaSummary,
 } from "./storage.ts";
 import { wipeLocalDevelopmentCopies } from "./resetDevelopmentLocal.ts";
 import { clearSession, loadSession, saveSession, type Session } from "./session.ts";
-import { joinSharedHousehold, reconcileHousehold, reconcileHouseholdSnapshots } from "./api.ts";
+import { joinSharedHousehold, pullSharedHousehold, reconcileHouseholdSnapshots } from "./api.ts";
 import { acceptHouseholdWrite, classifyCommandError, newConfirmationId, isLedgerWrite } from "./core/index.ts";
 import type { WriteAdapters } from "./core/commandRuntime.ts";
 import { ingestHouseholdBooks, inspectBrowserBooks, restoreHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
@@ -170,11 +171,11 @@ import {
   reconnectPollDelayMs,
 } from "./continuityResume.ts";
 import {
-  attachContinuityRealtime,
   canAttachContinuityRealtime,
   shouldUsePollFallback,
+  softPresenceRealtimeEnabled,
   type ContinuityRealtimeStatus,
-} from "./continuityRealtime.ts";
+} from "./continuityRealtimePolicy.ts";
 import { continuityRealtimeTransportEnabled } from "./continuityRealtimePolicy.ts";
 import { continuityCommandLogEnabled } from "./ledger/continuityCommandLog.ts";
 import {
@@ -243,20 +244,12 @@ function makeBooksAdapters(input: {
 }
 import { inviteFromLocation } from "./core/invite.ts";
 import { authInviteFromLocation, authInviteTokenFromText, isAuthInviteToken, savePendingAuthInvite, loadPendingAuthInvite, clearPendingAuthInvite } from "./core/authInvite.ts";
-import { PairingCard, WelcomeJoin } from "./Pairing.tsx";
-import { WelcomeQrScanner } from "./WelcomeQrScanner.tsx";
 import { inviteReasonMessage, redeemHouseholdInvite, bindGoogleMemberships, leaveOrDeleteHousehold, resetDevelopmentHouseholds } from "./ledger/householdInvites.ts";
-import { BooksPage } from "./Books.tsx";
 import { CollapsibleCard } from "./theme/PaperTheme.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
 import type { RepeatingDraft } from "./RepeatingForm.tsx";
 import type { WorkShiftDraft } from "./WorkShiftFlow.tsx";
-import { WorkShiftPage } from "./WorkShiftPage.tsx";
 import { resolveDuplicateRetry } from "./shiftDuplicateRetry.ts";
-import { ShiftReportScanBar } from "./ShiftReportScan.tsx";
-import { loadDocumentVisionProvider } from "./imports/documentScanProvider.ts";
-import { scanShiftReportFile } from "./imports/shiftReportDraft.ts";
-import { WorkShiftWithSevenShifts } from "./WorkShiftWithSevenShifts.tsx";
 import { createShiftScanScope } from "./shiftScanScope.ts";
 import { sealShiftBibleEvidence } from "./imports/evidenceClient.ts";
 import {
@@ -291,7 +284,6 @@ import {
   SOFT_PRESENCE_TOUCH_THROTTLE_MS,
   type SoftPresenceLiveRow,
 } from "./softPresence.ts";
-import { attachSoftPresenceRealtime, softPresenceRealtimeEnabled } from "./softPresenceRealtime.ts";
 import { buildSyncFreshness, sharedHouseholdFreshnessCopy, suppressesCommandSyncChrome } from "./syncFreshness.ts";
 import {
   recentChangesEmptyCopy,
@@ -301,8 +293,6 @@ import {
   restorePointsHeaderPill,
 } from "./recentChangesCopy.ts";
 import { useDialog } from "./useDialog.ts";
-import { CalendarPage } from "./Calendar.tsx";
-import { Office } from "./Office.tsx";
 import { LedgerPurposeBanner } from "./LedgerPurposeBanner.tsx";
 import { HerculesPresence } from "./Hercules.tsx";
 import { HerculesProApproval, HerculesProPermissionsCard, herculesProAuthorizationRequest } from "./HerculesPro.tsx";
@@ -323,6 +313,29 @@ import {
 } from "./google/index.ts";
 import type { DiscoveredHousehold } from "./ledger/supabase.ts";
 import type { PostWorkShiftInput, ShiftAttendanceReviewDraft } from "./core/index.ts";
+import {
+  DeferredBooksPage,
+  DeferredCalendarPage,
+  DeferredOffice,
+  DeferredPairingCard,
+  DeferredShiftReportScanBar,
+  DeferredSurface,
+  DeferredWelcomeJoin,
+  DeferredWelcomeQrScanner,
+  DeferredWorkShiftPage,
+  DeferredWorkShiftWithSevenShifts,
+  loadBooksSurface,
+  loadCalendarSurface,
+  loadOfficeSurface,
+  loadWorkShiftSurface,
+} from "./deferredSurfaces.tsx";
+import {
+  booksWriteGate,
+  knownMetadataUpdateAllowed,
+  readinessForHousehold,
+  type BooksReadiness,
+  type BooksWriteGate,
+} from "./startup/booksReadiness.ts";
 
 type Tab = "home" | "plan" | "calendar" | "shift" | "ledger" | "more";
 type AddMode = "expense" | "income" | "shift" | "transfer";
@@ -405,10 +418,19 @@ function emptyFormForZone(timeZone: string) {
 }
 
 export function App() {
-  const [environment, setEnvironment] = useState<Environment>("development");
+  const [initialStartup] = useState(() => {
+    const environment: Environment = "development";
+    const session = loadSession(environment);
+    return {
+      environment,
+      session,
+      household: peekHousehold(environment, session?.householdId),
+    };
+  });
+  const [environment, setEnvironment] = useState<Environment>(initialStartup.environment);
   const [herculesProRequest] = useState(() => herculesProAuthorizationRequest());
-  const [household, setHousehold] = useState<Household | null>(null);
-  const [booting, setBooting] = useState(true);
+  const [household, setHousehold] = useState<Household | null>(initialStartup.household);
+  const [booting, setBooting] = useState(!initialStartup.household);
   const [pendingDemo, setPendingDemo] = useState<Household | null>(null);
   const [pendingDemoMemberId, setPendingDemoMemberId] = useState<string | null>(null);
   const pendingDemoAcceptanceRef = useRef<Promise<CommandOutcome | null> | null>(null);
@@ -439,7 +461,7 @@ export function App() {
   const [form, setForm] = useState(emptyForm);
   const [focusedAccountId, setFocusedAccountId] = useState<string | null>(null);
   const [herculesSourceFocus, setHerculesSourceFocus] = useState<HerculesNumberSource | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busyState, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [confirm, setConfirm] = useState<NeedsConfirmationError | null>(null);
   const [toast, setToast] = useState<UndoToken | null>(null);
@@ -450,7 +472,7 @@ export function App() {
   const [commandOpen, setCommandOpen] = useState(false);
   const [splitPercents, setSplitPercents] = useState<Record<string, number>>({ "MEM-001": 50, "MEM-002": 50 });
   const [now] = useState(() => new Date());
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<Session | null>(initialStartup.session);
   const sessionRef = useRef<Session | null>(session);
   sessionRef.current = session;
   const [replicas, setReplicas] = useState<HouseholdReplicaSummary[]>([]);
@@ -481,6 +503,19 @@ export function App() {
     personalMemberId: "MEM-001",
   });
   const [booksStatus, setBooksStatus] = useState<BooksStatus | null>(null);
+  const [validationAttempt, setValidationAttempt] = useState(0);
+  const startupGenerationRef = useRef(0);
+  const [booksReadiness, setBooksReadiness] = useState<BooksReadiness>(() => (
+    initialStartup.household
+      ? readinessForHousehold("validating", 0, initialStartup.household)
+      : { phase: "loading-cache", generation: 0 }
+  ));
+  const activeBooksGate: BooksWriteGate = booksWriteGate(booksReadiness, household);
+  const busy = busyState || Boolean(household && !activeBooksGate.ready);
+  const booksReadinessRef = useRef(booksReadiness);
+  booksReadinessRef.current = booksReadiness;
+  const booksGateRef = useRef(activeBooksGate);
+  booksGateRef.current = activeBooksGate;
   const [spark, setSpark] = useState(false);
   const [visorPop, setVisorPop] = useState(false);
   const [clinkOn, setClinkOn] = useState(false);
@@ -500,8 +535,64 @@ export function App() {
   const householdRef = useRef<Household | null>(household);
   householdRef.current = household;
 
+  function adoptAcceptedHousehold(next: Household, statusOverride?: BooksStatus): void {
+    householdRef.current = next;
+    setHousehold(next);
+    const status = statusOverride ?? booksReadinessRef.current.status;
+    const ready = readinessForHousehold(
+      "ready",
+      startupGenerationRef.current,
+      next,
+      status ? { status: { ...status, entryCount: next.transactions.length } } : {},
+    );
+    booksReadinessRef.current = ready;
+    booksGateRef.current = booksWriteGate(ready, next);
+    setBooksReadiness(ready);
+  }
+
+  /**
+   * Carry a proven financial receipt across transport/presence/permission
+   * metadata only. These callers must not change transactions, shifts, Fund
+   * financial facts, or any other material included by financialAuditHash.
+   */
+  function adoptKnownMetadataHousehold(
+    next: Household,
+    expectedCurrentRevision = next.revision,
+  ): boolean {
+    const current = booksReadinessRef.current;
+    const live = householdRef.current;
+    if (
+      current.phase !== "ready"
+      || current.environment !== next.environment
+      || current.householdId !== next.householdId
+      || !live
+      || !knownMetadataUpdateAllowed(live, next, expectedCurrentRevision)
+    ) {
+      return false;
+    }
+    adoptAcceptedHousehold(next, current.status);
+    return true;
+  }
+
+  async function persistKnownMetadataHousehold(
+    update: (current: Household) => Household | null,
+  ): Promise<Household | null> {
+    return enqueueWrite(async () => {
+      const current = householdRef.current;
+      if (!current || !booksGateRef.current.ready) return null;
+      const next = update(current);
+      if (!next) return null;
+      if (!knownMetadataUpdateAllowed(current, next, current.revision)) return null;
+      await saveHousehold(next, {
+        operatingEnvironment: next.environment,
+        memberId: session?.memberId,
+      });
+      return adoptKnownMetadataHousehold(next, current.revision) ? next : null;
+    });
+  }
+
   useEffect(() => {
-    if (!household || !session?.memberId) return;
+    if (!household || !session?.memberId || !activeBooksGate.ready) return;
     const scope = { environment: household.environment, householdId: household.householdId, memberId: session.memberId };
     const envelopes = new Map((household.shiftEnvelopes ?? []).map((row) => [row.id, row]));
     const bibles = [
@@ -519,10 +610,10 @@ export function App() {
         })
         .catch(() => undefined);
     }
-  }, [household?.environment, household?.householdId, household?.shifts, household?.shiftBibles, household?.shiftEnvelopes, session?.memberId]);
+  }, [household?.environment, household?.householdId, household?.shifts, household?.shiftBibles, household?.shiftEnvelopes, session?.memberId, activeBooksGate.ready]);
 
   useEffect(() => {
-    if (!household || !session?.memberId) return;
+    if (!household || !session?.memberId || !activeBooksGate.ready) return;
     const pending = household.shifts.flatMap((shift) => shift.memberId === session.memberId && shift.shiftBible?.outcome === "worked"
       && shift.shiftBible.weather?.state === "pending" && shift.shiftBible.actualStart && shift.shiftBible.actualEnd ? [{ shift, bible: shift.shiftBible }] : []);
     for (const { shift, bible } of pending) {
@@ -538,7 +629,7 @@ export function App() {
         })
         .catch(() => sessionStorage.removeItem(key));
     }
-  }, [household?.environment, household?.householdId, household?.shifts, household?.workJobs, session?.memberId]);
+  }, [household?.environment, household?.householdId, household?.shifts, household?.workJobs, session?.memberId, activeBooksGate.ready]);
   const historyRef = useRef(history);
   historyRef.current = history;
   const confirmationRef = useRef<string | null>(null);
@@ -557,6 +648,11 @@ export function App() {
     setShiftScanError("");
     setShiftScanWarnings([]);
     try {
+      const [{ scanShiftReportFile }, { loadDocumentVisionProvider }] = await Promise.all([
+        import("./imports/shiftReportDraft.ts"),
+        import("./imports/documentScanProvider.ts"),
+      ]);
+      if (!scan.isCurrent()) return;
       const mapped = await scanShiftReportFile(file, fetch, scan.signal, loadDocumentVisionProvider());
       if (!scan.isCurrent()) return;
       if (!mapped.draft) {
@@ -629,8 +725,7 @@ export function App() {
       if (flushed.synchronized > 0) {
         const synced = markSynchronized(current);
         await saveHousehold(synced, { operatingEnvironment: environment, memberId: who });
-        householdRef.current = synced;
-        setHousehold(synced);
+        adoptKnownMetadataHousehold(synced);
         setSyncState("synced");
         setCommandChrome(null);
         setError("");
@@ -645,8 +740,7 @@ export function App() {
       );
       const pending = markPendingTransport(current, pendingMessage);
       await saveHousehold(pending, { operatingEnvironment: environment, memberId: who });
-      householdRef.current = pending;
-      setHousehold(pending);
+      adoptKnownMetadataHousehold(pending);
       setSyncState(typeof navigator !== "undefined" && !navigator.onLine ? "syncing" : "error");
       setError(pendingMessage);
       setCommandChrome(renderCommandSurface(
@@ -770,104 +864,207 @@ export function App() {
 
   useEffect(() => {
     let live = true;
-    setBooting(true);
+    const generation = startupGenerationRef.current + 1;
+    startupGenerationRef.current = generation;
     const loadedSession = loadSession(environment);
     sessionRef.current = loadedSession;
     setSession(loadedSession);
+    setBooksStatus(null);
+    setGuard(null);
+    const fastCandidate = peekHousehold(environment, loadedSession?.householdId);
+    if (fastCandidate) {
+      householdRef.current = fastCandidate;
+      setHousehold(fastCandidate);
+      const validating = readinessForHousehold("validating", generation, fastCandidate);
+      booksReadinessRef.current = validating;
+      booksGateRef.current = booksWriteGate(validating, fastCandidate);
+      setBooksReadiness(validating);
+      setHistory(loadedSession?.memberId
+        ? loadUndoHistory(environment, fastCandidate.householdId, loadedSession.memberId, fastCandidate)
+        : []);
+      setBooting(false);
+      performance.mark?.("hearth:cached-shell-ready");
+    } else {
+      householdRef.current = null;
+      setHousehold(null);
+      const loading: BooksReadiness = { phase: "loading-cache", generation };
+      booksReadinessRef.current = loading;
+      booksGateRef.current = booksWriteGate(loading, null);
+      setBooksReadiness(loading);
+      setHistory([]);
+      setBooting(true);
+    }
     void hydrateContinuityOutbox(environment);
-    loadHousehold(environment, loadedSession?.householdId, loadedSession?.memberId).then(async (loaded) => {
-      if (!live) return;
-      let current = loaded;
-      if (loaded?.linked && loadedSession?.memberId) {
-        try {
-          const reconciled = await reconcileHousehold(loaded, loadedSession.memberId);
-          if (!live) return;
+    void listHouseholdReplicas(environment).then((items) => {
+      if (live && startupGenerationRef.current === generation) setReplicas(items);
+    });
+
+    const scheduledFrames: number[] = [];
+    const scheduledTimers: number[] = [];
+    const stillCurrent = (candidate: Household) => (
+      live
+      && startupGenerationRef.current === generation
+      && candidate.environment === environment
+      && householdRef.current?.householdId === candidate.householdId
+      && householdRef.current?.revision === candidate.revision
+    );
+    const publishReadiness = (next: BooksReadiness, candidate: Household | null) => {
+      if (!live || startupGenerationRef.current !== generation) return;
+      booksReadinessRef.current = next;
+      booksGateRef.current = booksWriteGate(next, candidate);
+      setBooksReadiness(next);
+    };
+    const publishReady = (candidate: Household, status: BooksStatus) => {
+      if (!stillCurrent(candidate)) return false;
+      setBooksStatus(status);
+      publishReadiness(readinessForHousehold("ready", generation, candidate, { status }), candidate);
+      return true;
+    };
+    const publishBlocked = (
+      candidate: Household,
+      message: string,
+      entryCount: number,
+      issue?: import("./ledger/engine.ts").BooksRecoveryIssue,
+    ) => {
+      if (!stillCurrent(candidate)) return;
+      const status: BooksStatus = {
+        ok: false,
+        engine: "pglite",
+        entryCount,
+        inBalance: false,
+        equationHolds: false,
+        error: message,
+      };
+      setBooksStatus(status);
+      publishReadiness(readinessForHousehold("blocked", generation, candidate, { status, issue, message }), candidate);
+    };
+
+    const reconcileAfterValidation = (candidate: Household) => {
+      if (!candidate.linked || !loadedSession?.memberId || !stillCurrent(candidate)) return;
+      performance.mark?.("hearth:startup-reconcile-start");
+      void pullSharedHousehold(candidate.inviteCode, loadedSession.memberId, candidate.environment)
+        .then((remote) => enqueueWrite(async () => {
+          if (!live || startupGenerationRef.current !== generation) return;
+          const current = householdRef.current;
+          if (
+            !current
+            || current.environment !== candidate.environment
+            || current.householdId !== candidate.householdId
+          ) return;
+          const reconciled = await reconcileHouseholdSnapshots(current, remote, loadedSession.memberId);
           const accepted = await acceptHouseholdWrite({
-            previous: loaded,
+            previous: current,
             candidate: reconciled,
-            confirmationId: `reconcile-${loaded.householdId}-${reconciled.revision}`,
+            confirmationId: `reconcile-${current.householdId}-${reconciled.revision}`,
             commandKind: "boot-reconcile",
             postedIds: [],
-            adapters: makeBooksAdapters({
-              environment,
-              memberId: loadedSession.memberId,
-            }),
+            adapters: makeBooksAdapters({ environment, memberId: loadedSession.memberId }),
           });
-          if (!live) return;
-          current = accepted.household;
-          if (!accepted.ok && accepted.userMessage) setError(accepted.userMessage);
-        } catch {
-          if (!live) return;
+          if (!live || startupGenerationRef.current !== generation) return;
+          if (!accepted.ok) {
+            if (accepted.userMessage) setError(accepted.userMessage);
+            return;
+          }
+          householdRef.current = accepted.household;
+          setHousehold(accepted.household);
+          const status: BooksStatus = {
+            ok: true,
+            engine: "pglite+supabase",
+            entryCount: accepted.household.transactions.length,
+            inBalance: true,
+            equationHolds: true,
+          };
+          setBooksStatus(status);
+          publishReadiness(readinessForHousehold("ready", generation, accepted.household, { status }), accepted.household);
+          performance.mark?.("hearth:startup-reconcile-end");
+        }))
+        .catch(() => {
+          if (
+            live
+            && startupGenerationRef.current === generation
+            && householdRef.current?.householdId === candidate.householdId
+          ) setSyncState("error");
+        });
+    };
+
+    const validate = async (candidate: Household) => {
+      if (!stillCurrent(candidate)) return;
+      performance.mark?.("hearth:books-validation-start");
+      try {
+        let inspection = await inspectBrowserBooks(candidate);
+        if (!stillCurrent(candidate)) return;
+        if (inspection.issue === "missing-schema" || inspection.issue === "incomplete-migration") {
+          await ingestHouseholdBooks(candidate);
+          if (!stillCurrent(candidate)) return;
+          inspection = await inspectBrowserBooks(candidate);
         }
+        if (!inspection.ok) {
+          publishBlocked(candidate, inspection.message, inspection.entryCount, inspection.issue);
+          return;
+        }
+        const status: BooksStatus = {
+          ok: true,
+          engine: "pglite",
+          entryCount: inspection.entryCount,
+          inBalance: true,
+          equationHolds: true,
+        };
+        if (publishReady(candidate, status)) {
+          performance.mark?.("hearth:books-validation-end");
+          reconcileAfterValidation(candidate);
+        }
+      } catch (caught) {
+        publishBlocked(candidate, caught instanceof Error ? caught.message : String(caught), 0);
       }
-      setHousehold(current);
-      if (current && loadedSession?.memberId) {
-        setHistory(loadUndoHistory(environment, current.householdId, loadedSession.memberId, current));
-      } else {
+    };
+
+    const scheduleValidation = (candidate: Household) => {
+      const start = () => {
+        const timer = window.setTimeout(() => { void validate(candidate); }, 0);
+        scheduledTimers.push(timer);
+      };
+      if (typeof window.requestAnimationFrame !== "function") {
+        start();
+        return;
+      }
+      const first = window.requestAnimationFrame(() => {
+        const second = window.requestAnimationFrame(start);
+        scheduledFrames.push(second);
+      });
+      scheduledFrames.push(first);
+    };
+
+    void loadHousehold(environment, loadedSession?.householdId, loadedSession?.memberId).then((loaded) => {
+      if (!live || startupGenerationRef.current !== generation) return;
+      if (!loaded) {
+        householdRef.current = null;
+        setHousehold(null);
         setHistory([]);
+        setBooting(false);
+        return;
       }
-      void listHouseholdReplicas(environment).then((items) => { if (live) setReplicas(items); });
-      if (current) {
-        void inspectBrowserBooks(current)
-          .then(async (inspection) => {
-            if (!live) return;
-            if (inspection.ok) {
-              setBooksStatus({
-                ok: true,
-                engine: "pglite",
-                entryCount: inspection.entryCount,
-                inBalance: true,
-                equationHolds: true,
-              });
-              return;
-            }
-            if (
-              inspection.issue === "missing-schema" ||
-              inspection.issue === "incomplete-migration"
-            ) {
-              try {
-                const { status } = await ingestHouseholdBooks(current);
-                if (live) setBooksStatus(status);
-              } catch (caught) {
-                if (!live) return;
-                setBooksStatus({
-                  ok: false,
-                  engine: "pglite",
-                  entryCount: inspection.entryCount,
-                  inBalance: false,
-                  equationHolds: false,
-                  error: caught instanceof Error ? caught.message : inspection.message,
-                });
-              }
-              return;
-            }
-            // projection-mismatch / interrupted-transaction / invalid-stored-data: fail closed.
-            // Do not silently re-ingest mismatched money JSON into PGlite.
-            setBooksStatus({
-              ok: false,
-              engine: "pglite",
-              entryCount: inspection.entryCount,
-              inBalance: false,
-              equationHolds: false,
-              error: inspection.message,
-            });
-          })
-          .catch((caught) => {
-            if (!live) return;
-            setBooksStatus({
-              ok: false,
-              engine: "pglite",
-              entryCount: 0,
-              inBalance: false,
-              equationHolds: false,
-              error: caught instanceof Error ? caught.message : String(caught),
-            });
-          });
-      }
+      householdRef.current = loaded;
+      setHousehold(loaded);
+      setHistory(loadedSession?.memberId
+        ? loadUndoHistory(environment, loaded.householdId, loadedSession.memberId, loaded)
+        : []);
+      const validating = readinessForHousehold("validating", generation, loaded);
+      publishReadiness(validating, loaded);
       setBooting(false);
+      performance.mark?.("hearth:cached-shell-committed");
+      scheduleValidation(loaded);
+    }).catch((caught) => {
+      if (!live || startupGenerationRef.current !== generation) return;
+      setBooting(false);
+      setError(caught instanceof Error ? caught.message : String(caught));
     });
-    return () => { live = false; };
-  }, [environment]);
+
+    return () => {
+      live = false;
+      for (const frame of scheduledFrames) window.cancelAnimationFrame(frame);
+      for (const timer of scheduledTimers) window.clearTimeout(timer);
+    };
+  }, [environment, validationAttempt]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -886,7 +1083,7 @@ export function App() {
   }, [environment]);
 
   useEffect(() => {
-    if (!household) return;
+    if (!household || !activeBooksGate.ready) return;
     touchVisitSpark(environment, todayKey());
     setClinkOn(readClinkOn(environment));
     const memberId = session?.memberId ?? null;
@@ -901,66 +1098,23 @@ export function App() {
     }
     const now = Date.now();
     if (now - softPresenceTouchAtRef.current < SOFT_PRESENCE_TOUCH_THROTTLE_MS) return;
-    const deviceId = localDeviceId();
     try {
       softPresenceTouchAtRef.current = now;
-      const touched = touchHouseholdDevice(household, {
-        deviceId,
+      void persistKnownMetadataHousehold((current) => touchHouseholdDevice(current, {
+        deviceId: localDeviceId(),
         label: describeDeviceLabel(),
         memberId,
-      });
-      let next = touched.household;
-      const who = memberId ?? undefined;
-      void saveHousehold(next, { operatingEnvironment: environment, memberId: who }).then(() => {
-        if (householdRef.current?.householdId === next.householdId) {
-          householdRef.current = next;
-          setHousehold(next);
-        }
-      });
-      // Durable soft presence rides the next continuity flush when linked + signed in.
-      if (next.linked && hostedContinuityAllowed(environment) && memberId) {
-        const googleSession = loadGoogleSession(environment, memberId);
-        const authSession = supabaseAuthEnabled() ? loadSupabaseSession(environment) : null;
-        const identity: ContinuityIdentity | null = authSession
-          ? { email: authSession.email, subject: authSession.googleSubject }
-          : continuityIdentityFromGoogle(googleSession);
-        if (identity) {
-          next = markPendingTransport({
-            ...next,
-            revision: (next.revision ?? 0) + 1,
-          });
-          void saveHousehold(next, { operatingEnvironment: environment, memberId: who }).then(() => {
-            if (householdRef.current?.householdId === next.householdId) {
-              householdRef.current = next;
-              setHousehold(next);
-            }
-          });
-          const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
-          void transportHouseholdWithOutbox({
-            household: next,
-            identity,
-            expectedRevision: next.baseRevision ?? (next.revision - 1),
-            confirmationId: `presence-${next.householdId}-${deviceId}-${now}`,
-            config: cloudConfig,
-            flush: true,
-          }).then(async (pushed) => {
-            if (!pushed.ok) return;
-            const synced = markSynchronized(next);
-            await saveHousehold(synced, { operatingEnvironment: environment, memberId: who });
-            if (householdRef.current?.householdId === synced.householdId) {
-              householdRef.current = synced;
-              setHousehold(synced);
-            }
-          }).catch(() => undefined);
-        }
-      }
+      }).household);
+      // Realtime advertises the live device immediately. Durable device metadata
+      // rides the next ordinary continuity write instead of creating its own
+      // revision, PGlite acceptance, and network flush during startup.
     } catch {
       /* soft presence only */
     }
-  }, [environment, household?.householdId, session?.memberId, softPresenceOptOut]);
+  }, [environment, household?.householdId, session?.memberId, softPresenceOptOut, activeBooksGate.ready]);
 
   useEffect(() => {
-    if (!household || !session?.memberId) {
+    if (!household || !session?.memberId || !activeBooksGate.ready) {
       setSoftPresenceLive([]);
       return;
     }
@@ -980,30 +1134,38 @@ export function App() {
       environment,
       optedOut: softPresenceOptOut,
     });
-    const detach = attachSoftPresenceRealtime({
-      supabaseUrl: authConfig.supabaseUrl,
-      publishableKey: authConfig.publishableKey,
-      accessToken: authSession.accessToken,
-      householdId: household.householdId,
-      environment,
-      track: advertise
-        ? {
-            memberId: session.memberId,
-            deviceId: localDeviceId(),
-            seenAt: new Date().toISOString(),
-          }
-        : null,
-      onPresence: (rows) => setSoftPresenceLive(rows),
+    let live = true;
+    let detach: (() => void) | null = null;
+    void import("./softPresenceRealtime.ts").then(({ attachSoftPresenceRealtime }) => {
+      if (!live) return;
+      detach = attachSoftPresenceRealtime({
+        supabaseUrl: authConfig.supabaseUrl,
+        publishableKey: authConfig.publishableKey,
+        accessToken: authSession.accessToken,
+        householdId: household.householdId,
+        environment,
+        track: advertise
+          ? {
+              memberId: session.memberId,
+              deviceId: localDeviceId(),
+              seenAt: new Date().toISOString(),
+            }
+          : null,
+        onPresence: (rows) => setSoftPresenceLive(rows),
+      });
+    }).catch(() => {
+      if (live) setSoftPresenceLive([]);
     });
     return () => {
-      detach();
+      live = false;
+      detach?.();
       setSoftPresenceLive([]);
     };
-  }, [environment, household?.householdId, session?.memberId, softPresenceOptOut]);
+  }, [environment, household?.householdId, session?.memberId, softPresenceOptOut, activeBooksGate.ready]);
 
   useEffect(() => {
     const memberId = session?.memberId;
-    if (!memberId) return;
+    if (!memberId || !activeBooksGate.ready) return;
     const googleSession = loadGoogleSession(environment, memberId);
     const storedAuthSession = loadSupabaseSession(environment);
     if (!storedAuthSession && !continuityIdentityFromGoogle(googleSession)) return;
@@ -1033,8 +1195,7 @@ export function App() {
         }),
       });
       if (!live) return accepted;
-      householdRef.current = accepted.household;
-      setHousehold(accepted.household);
+      adoptAcceptedHousehold(accepted.household);
       if (!accepted.ok && accepted.userMessage) setError(accepted.userMessage);
       return accepted;
     };
@@ -1089,8 +1250,7 @@ export function App() {
               if (pushed.ok) {
                 const synced = markSynchronized(ready);
                 await saveHousehold(synced, { operatingEnvironment: environment, memberId });
-                householdRef.current = synced;
-                setHousehold(synced);
+                adoptKnownMetadataHousehold(synced);
                 setSyncState("synced");
                 return;
               }
@@ -1128,8 +1288,7 @@ export function App() {
             if (pushed.ok) {
               const synced = markSynchronized(ready);
               await saveHousehold(synced, { operatingEnvironment: environment, memberId });
-              householdRef.current = synced;
-              setHousehold(synced);
+              adoptKnownMetadataHousehold(synced);
               setSyncState("synced");
               return;
             }
@@ -1153,8 +1312,7 @@ export function App() {
           current = markSynchronized(current);
           await saveHousehold(current, { operatingEnvironment: environment, memberId });
           if (live) {
-            householdRef.current = current;
-            setHousehold(current);
+            adoptKnownMetadataHousehold(current);
           }
         }
 
@@ -1244,8 +1402,7 @@ export function App() {
             if (pushed.ok) {
               const synced = markSynchronized(ready);
               await saveHousehold(synced, { operatingEnvironment: environment, memberId });
-              householdRef.current = synced;
-              setHousehold(synced);
+              adoptKnownMetadataHousehold(synced);
             } else if (pushed.errorClass === "conflict-detected" && pushed.remote) {
               const resolved = await autoResolveSharedConflict(ready, pushed.remote, memberId, "local");
               await acceptReplayCandidate(
@@ -1359,6 +1516,8 @@ export function App() {
         return "applied";
       };
 
+      const { attachContinuityRealtime } = await import("./continuityRealtime.ts");
+      if (!live) return;
       detachRealtime = attachContinuityRealtime({
         supabaseUrl: authConfig.supabaseUrl,
         publishableKey: authConfig.publishableKey,
@@ -1399,7 +1558,11 @@ export function App() {
         },
       });
     };
-    void setupRealtime();
+    void setupRealtime().catch(() => {
+      if (!live) return;
+      realtimeStatusRef.current = null;
+      setRealtimeStatus(null);
+    });
 
     const realtimeOn = continuityRealtimeTransportEnabled();
     // Tick often enough to honor backoff without a fixed 4s heartbeat when unhealthy.
@@ -1442,12 +1605,12 @@ export function App() {
       document.removeEventListener("visibilitychange", onVisibility);
       window.clearInterval(timer);
     };
-  }, [environment, session?.memberId, household?.householdId]);
+  }, [environment, session?.memberId, household?.householdId, activeBooksGate.ready]);
 
   useEffect(() => {
     let live = true;
     const memberId = session?.memberId;
-    if (!household || !memberId) {
+    if (!household || !memberId || !activeBooksGate.ready) {
       setPersonalReplica(null);
       return () => { live = false; };
     }
@@ -1463,7 +1626,7 @@ export function App() {
       if (live) setError(caught instanceof Error ? caught.message : String(caught));
     });
     return () => { live = false; };
-  }, [environment, household?.householdId, household?.revision, session?.memberId]);
+  }, [environment, household?.householdId, household?.revision, session?.memberId, activeBooksGate.ready]);
 
   useEffect(() => {
     setPlacePrefs(loadPhonePlacePrefs(environment));
@@ -1592,51 +1755,19 @@ export function App() {
     setSoftPresenceOptOut(environment, nextOptOut);
     setSoftPresenceOptOutState(nextOptOut);
     if (!household || !session?.memberId) return;
-    const deviceId = localDeviceId();
+    if (!booksGateRef.current.ready) {
+      setError(booksGateRef.current.reason || "The local journal is still validating.");
+      return;
+    }
     const memberId = session.memberId;
-    let next = nextOptOut
-      ? { ...household, devices: deactivateLocalDevice(household.devices ?? [], deviceId) }
-      : touchHouseholdDevice(household, {
-          deviceId,
+    softPresenceTouchAtRef.current = Date.now();
+    void persistKnownMetadataHousehold((current) => nextOptOut
+      ? { ...current, devices: deactivateLocalDevice(current.devices ?? [], localDeviceId()) }
+      : touchHouseholdDevice(current, {
+          deviceId: localDeviceId(),
           label: describeDeviceLabel(),
           memberId,
-        }).household;
-    void saveHousehold(next, { operatingEnvironment: environment, memberId }).then(() => {
-      if (householdRef.current?.householdId === next.householdId) {
-        householdRef.current = next;
-        setHousehold(next);
-      }
-    });
-    if (!next.linked || !hostedContinuityAllowed(environment)) return;
-    const googleSession = loadGoogleSession(environment, memberId);
-    const authSession = supabaseAuthEnabled() ? loadSupabaseSession(environment) : null;
-    const identity: ContinuityIdentity | null = authSession
-      ? { email: authSession.email, subject: authSession.googleSubject }
-      : continuityIdentityFromGoogle(googleSession);
-    if (!identity) return;
-    next = markPendingTransport({
-      ...next,
-      revision: (next.revision ?? 0) + 1,
-    });
-    softPresenceTouchAtRef.current = Date.now();
-    void saveHousehold(next, { operatingEnvironment: environment, memberId });
-    const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
-    void transportHouseholdWithOutbox({
-      household: next,
-      identity,
-      expectedRevision: next.baseRevision ?? (next.revision - 1),
-      confirmationId: `presence-opt-${next.householdId}-${deviceId}-${Date.now()}`,
-      config: cloudConfig,
-      flush: true,
-    }).then(async (pushed) => {
-      if (!pushed.ok) return;
-      const synced = markSynchronized(next);
-      await saveHousehold(synced, { operatingEnvironment: environment, memberId });
-      if (householdRef.current?.householdId === synced.householdId) {
-        householdRef.current = synced;
-        setHousehold(synced);
-      }
-    }).catch(() => undefined);
+        }).household);
   }
 
   useEffect(() => {
@@ -1651,7 +1782,7 @@ export function App() {
   }, [household?.householdId]);
 
   useEffect(() => {
-    if (booting || !household || adding || guard) return;
+    if (booting || !household || !activeBooksGate.ready || adding || guard) return;
     if (unresolvedConflicts(household).length > 0) return;
 
     const previewKey = `${environment}:${household.householdId}:${today}`;
@@ -1663,7 +1794,7 @@ export function App() {
     if (!rows.length) return;
     duePreviewOffered.current = previewKey;
     setGuard({ kind: "duePreview", rows });
-  }, [adding, booting, environment, experience, guard, household, today]);
+  }, [adding, booting, environment, experience, guard, household, today, activeBooksGate.ready]);
 
   function rememberSession(next: Session) {
     const remembered = { ...next, householdId: next.householdId ?? householdRef.current?.householdId };
@@ -1699,8 +1830,7 @@ export function App() {
         continuityIdentity: continuityIdentity ?? undefined,
       });
       closeAdd();
-      householdRef.current = candidate;
-      setHousehold(candidate);
+      adoptAcceptedHousehold(candidate, status);
       rememberSession({ memberId: nextMemberId, view: session?.view ?? "household", householdId });
       setBooksStatus(status);
       setHistory(loadUndoHistory(environment, householdId, nextMemberId, candidate));
@@ -1737,7 +1867,13 @@ export function App() {
     if (!adopted && !loadSupabaseSession(environment)) {
       throw new Error("Google signed in, but this device could not keep the session.");
     }
-    setHousehold(accepted.household);
+    adoptAcceptedHousehold(accepted.household, {
+      ok: true,
+      engine: "pglite+supabase",
+      entryCount: accepted.household.transactions.length,
+      inBalance: true,
+      equationHolds: true,
+    });
     rememberSession({ memberId: found.memberId, view: "household", householdId: accepted.household.householdId });
     setDiscoveredLedgers([]);
     setSyncState("synced");
@@ -1887,8 +2023,12 @@ export function App() {
     actorId?: string,
     options?: { forceFlush?: boolean; confirmationId?: string },
   ): Promise<CommandOutcome | null> {
-    setBusy(true);
     const previous = householdRef.current;
+    if (previous && !booksGateRef.current.ready) {
+      setError(booksGateRef.current.reason || "The local journal must finish validating before anything can change.");
+      return null;
+    }
+    setBusy(true);
     const explicitConfirmationId = options?.confirmationId;
     const confirmationId = explicitConfirmationId ?? confirmationRef.current ?? newConfirmationId();
     if (!explicitConfirmationId) confirmationRef.current = confirmationId;
@@ -1974,16 +2114,15 @@ export function App() {
         if (who) {
           void appendRestorePoint(outcome.household, who).then(async (withPoint) => {
             if (withPoint === outcome.household) return;
-            // Host the newest tip: bump revision and enqueue so partners see Restore points.
-            const pending = markPendingTransport({
-              ...withPoint,
-              revision: withPoint.revision + 1,
-            });
-            await saveHousehold(pending, { operatingEnvironment: environment, memberId: who });
-            if (householdRef.current?.householdId === pending.householdId) {
-              householdRef.current = pending;
-              setHousehold(pending);
-            }
+            // Commit only if the synchronized source is still current. A user
+            // post that wins this race must never be replaced by an old tip.
+            const pending = await persistKnownMetadataHousehold((current) => (
+              current.householdId === outcome.household.householdId
+              && current.revision === outcome.household.revision
+                ? markPendingTransport({ ...withPoint, revision: withPoint.revision + 1 })
+                : null
+            ));
+            if (!pending) return;
             if (continuityIdentity && cloudConfig) {
               void transportHouseholdWithOutbox({
                 household: pending,
@@ -1994,12 +2133,11 @@ export function App() {
                 flush: true,
               }).then(async (pushed) => {
                 if (!pushed.ok) return;
-                const synced = markSynchronized(pending);
-                await saveHousehold(synced, { operatingEnvironment: environment, memberId: who });
-                if (householdRef.current?.householdId === synced.householdId) {
-                  householdRef.current = synced;
-                  setHousehold(synced);
-                }
+                await persistKnownMetadataHousehold((current) => (
+                  current.householdId === pending.householdId && current.revision === pending.revision
+                    ? markSynchronized(current)
+                    : null
+                ));
               }).catch(() => undefined);
             }
           }).catch(() => undefined);
@@ -2021,13 +2159,12 @@ export function App() {
               try {
                 const withPoint = await appendRestorePoint(synced, who);
                 if (withPoint !== synced) {
-                  const pending = markPendingTransport({
-                    ...withPoint,
-                    revision: withPoint.revision + 1,
-                  });
-                  await saveHousehold(pending, { operatingEnvironment: environment, memberId: who });
-                  householdRef.current = pending;
-                  setHousehold(pending);
+                  const pending = await persistKnownMetadataHousehold((current) => (
+                    current.householdId === synced.householdId && current.revision === synced.revision
+                      ? markPendingTransport({ ...withPoint, revision: withPoint.revision + 1 })
+                      : null
+                  ));
+                  if (!pending) return;
                   const tipPush = await transportHouseholdWithOutbox({
                     household: pending,
                     identity: continuityIdentity,
@@ -2037,7 +2174,13 @@ export function App() {
                     flush: true,
                   });
                   if (tipPush.ok) {
-                    synced = markSynchronized(pending);
+                    const acceptedSync = await persistKnownMetadataHousehold((current) => (
+                      current.householdId === pending.householdId && current.revision === pending.revision
+                        ? markSynchronized(current)
+                        : null
+                    ));
+                    if (!acceptedSync) return;
+                    synced = acceptedSync;
                   } else {
                     setSyncState("syncing");
                     return;
@@ -2047,9 +2190,14 @@ export function App() {
                 /* restore tip is best-effort */
               }
             }
+            const finalized = await persistKnownMetadataHousehold((current) => (
+              current.householdId === synced.householdId && current.revision === synced.revision
+                ? markSynchronized(current)
+                : null
+            ));
+            if (!finalized) return;
+            synced = finalized;
             saveSyncAnchor(environment, synced);
-            await saveHousehold(synced, { operatingEnvironment: environment, memberId: who });
-            setHousehold(synced);
             setSyncState("synced");
             setCommandProgressPhase("cloud-ack");
             setCommandChrome(renderCommandChrome(COMMAND_SURFACE_FIXTURES.synchronized, {
@@ -2087,14 +2235,19 @@ export function App() {
       else if (outcome.kind === "conflict-needs-attention") setSyncState("syncing");
       else if (outcome.ok) setSyncState("idle");
       if (outcome.ok) {
-        setBooksStatus({
+        const status: BooksStatus = {
           ok: true,
           engine: outcome.kind === "synchronized" ? "pglite+supabase" : "pglite",
           entryCount: outcome.household.transactions.length,
           inBalance: true,
           equationHolds: true,
           error: outcome.kind === "pending-transport" ? outcome.userMessage ?? undefined : undefined,
-        });
+        };
+        setBooksStatus(status);
+        const ready = readinessForHousehold("ready", startupGenerationRef.current, outcome.household, { status });
+        booksReadinessRef.current = ready;
+        booksGateRef.current = booksWriteGate(ready, outcome.household);
+        setBooksReadiness(ready);
       } else {
         setBooksStatus({
           ok: false,
@@ -2568,7 +2721,8 @@ export function App() {
             Two phones. One journal. CAD. Toronto civil books. Each phone keeps its own clock. Hercules loafs while you post groceries.
           </p>
           {welcomeMode === "join" ? (
-            <WelcomeJoin
+            <DeferredSurface label="Join Hearth">
+            <DeferredWelcomeJoin
               error={error}
               busy={busy}
               environment={environment}
@@ -2583,8 +2737,10 @@ export function App() {
               }}
               onBack={() => { setWelcomeMode("home"); setError(""); }}
             />
+            </DeferredSurface>
           ) : welcomeMode === "qr" ? (
-            <WelcomeQrScanner
+            <DeferredSurface label="QR scanner">
+            <DeferredWelcomeQrScanner
               busy={busy}
               error={error}
               onError={setError}
@@ -2600,6 +2756,7 @@ export function App() {
               }}
               onBack={() => { setWelcomeMode("home"); setError(""); }}
             />
+            </DeferredSurface>
           ) : welcomeMode === "new" ? (
             <form onSubmit={async (event) => {
               event.preventDefault();
@@ -3027,7 +3184,21 @@ export function App() {
     collapseSavedOffice(environment, localStorage);
   }
 
+  function preloadTab(next: Tab) {
+    const load = next === "home"
+      ? loadOfficeSurface
+      : next === "calendar"
+        ? loadCalendarSurface
+        : next === "shift"
+          ? loadWorkShiftSurface
+          : next === "ledger"
+            ? loadBooksSurface
+            : null;
+    if (load) void load().catch(() => undefined);
+  }
+
   function goTab(next: Tab) {
+    preloadTab(next);
     leaveDesk();
     setTab(next);
     closeAdd();
@@ -3241,7 +3412,7 @@ export function App() {
   }
 
   return (
-    <div className="app" data-ledger-mode={view} data-ledger-tab={tab}>
+    <div className="app" data-ledger-mode={view} data-ledger-tab={tab} data-books-readiness={booksReadiness.phase}>
       <header className="topbar">
         <div className="brand">
           <img src="/hercules-mark.svg" alt="" />
@@ -3276,6 +3447,28 @@ export function App() {
           void retryShareNow();
         }}
       />
+      {!activeBooksGate.ready && (
+        <div
+          className={`command-banner command-banner--${booksReadiness.phase === "blocked" ? "danger" : "warning"}`}
+          role={booksReadiness.phase === "blocked" ? "alert" : "status"}
+          aria-live="polite"
+          data-books-validation-status
+        >
+          <div>
+            <strong>{booksReadiness.phase === "blocked" ? "Books need attention" : "Validating the local journal…"}</strong>
+            <p className="muted">{activeBooksGate.reason}</p>
+          </div>
+          {booksReadiness.phase === "blocked" && (
+            <button
+              type="button"
+              className="ghost command-banner__action"
+              onClick={() => setValidationAttempt((attempt) => attempt + 1)}
+            >
+              Retry validation
+            </button>
+          )}
+        </div>
+      )}
       {error && !adding ? (
         <KitchenNotice
           message={error}
@@ -3386,7 +3579,8 @@ export function App() {
             </section>
           );
         })()}
-        <Office
+        <DeferredSurface label="Office">
+        <DeferredOffice
           household={displayHousehold}
           booksHousehold={household}
           dashboard={dashboard}
@@ -3443,6 +3637,7 @@ export function App() {
             goTab(next);
           }}
         />
+        </DeferredSurface>
         </>
       )}
 
@@ -3486,7 +3681,8 @@ export function App() {
       )}
 
       {tab === "calendar" && (
-        <CalendarPage
+        <DeferredSurface label="Calendar">
+        <DeferredCalendarPage
           household={displayHousehold}
           view={view}
           today={today}
@@ -3510,10 +3706,12 @@ export function App() {
             goTab("shift");
           }}
         />
+        </DeferredSurface>
       )}
 
       {tab === "shift" && (
-        <WorkShiftPage
+        <DeferredSurface label="Shift room">
+        <DeferredWorkShiftPage
           key={`${environment}:${household.householdId}:${session.memberId}`}
           household={experience && experience.ok ? experience.shiftHousehold : household}
           view={view}
@@ -3587,10 +3785,12 @@ export function App() {
             }));
           }}
         />
+        </DeferredSurface>
       )}
 
       {tab === "ledger" && (
-        <BooksPage
+        <DeferredSurface label="Books">
+        <DeferredBooksPage
           household={displayHousehold}
           booksHousehold={household}
           memberId={session.memberId}
@@ -3615,6 +3815,7 @@ export function App() {
             setGuard({ kind: "remove", transactionId: transaction.id, summary });
           }}
         />
+        </DeferredSurface>
       )}
 
       {tab === "more" && (
@@ -3746,7 +3947,8 @@ export function App() {
               <p className="muted">Everyone can see restore points. Only an owner can Restore.</p>
             ) : null}
           </section>
-          <PairingCard
+          <DeferredSurface label="Pairing">
+          <DeferredPairingCard
             household={household}
             memberId={session.memberId}
             error={error}
@@ -3763,6 +3965,7 @@ export function App() {
             softPresenceOptedOut={softPresenceOptOut}
             onSoftPresenceOptOut={applySoftPresenceOptOut}
           />
+          </DeferredSurface>
           <GoogleBridgeCard
             household={household}
             environment={environment}
@@ -3776,18 +3979,23 @@ export function App() {
             environment={environment}
             household={household}
             session={session}
+            disabled={!activeBooksGate.ready}
             onChanged={(permissions) => {
-              const nextHousehold = { ...household, herculesProPermissions: permissions };
-              setHousehold(nextHousehold);
-              setPersonalReplica((current) => {
-                const base = current?.memberId === session.memberId
-                  ? current
-                  : splitForSync(household, session.memberId).personal;
-                return { ...base, herculesProPermissions: permissions };
-              });
-              void saveHousehold(nextHousehold, {
-                operatingEnvironment: environment,
-                memberId: session.memberId,
+              if (!booksGateRef.current.ready) {
+                setError(booksGateRef.current.reason || "The local journal is still validating.");
+                return;
+              }
+              void persistKnownMetadataHousehold((current) => ({
+                ...current,
+                herculesProPermissions: permissions,
+              })).then((accepted) => {
+                if (!accepted) return;
+                setPersonalReplica((current) => {
+                  const base = current?.memberId === session.memberId
+                    ? current
+                    : splitForSync(accepted, session.memberId).personal;
+                  return { ...base, herculesProPermissions: permissions };
+                });
               }).catch((caught) => setError(caught instanceof Error ? caught.message : String(caught)));
             }}
           />
@@ -4246,13 +4454,16 @@ export function App() {
                 })()}
                 {(shiftGate === "signOut" || shiftGate === "finished") && household.workJobs.some((job) => job.active && job.memberId === actorId) && (
                   <>
-                    <ShiftReportScanBar
+                    <DeferredSurface label="Tip sheet camera">
+                    <DeferredShiftReportScanBar
                       busy={busy}
                       scanBusy={shiftScanBusy}
                       error={shiftScanError}
                       onFile={(file) => { void applyShiftReportScan(file); }}
                     />
-                    <WorkShiftWithSevenShifts
+                    </DeferredSurface>
+                    <DeferredSurface label="Timesheet">
+                    <DeferredWorkShiftWithSevenShifts
                       key={`${environment}:${household.householdId}:${actorId}`}
                       household={displayHousehold}
                       memberId={actorId}
@@ -4272,6 +4483,7 @@ export function App() {
                         submitWorkShift(input);
                       }}
                     />
+                    </DeferredSurface>
                   </>
                 )}
                 {(shiftGate === "signOut" || shiftGate === "finished") && !household.workJobs.some((job) => job.active && job.memberId === actorId) && (() => {
@@ -5214,6 +5426,8 @@ export function App() {
         <button
           className={tab === "home" && !adding ? "active" : ""}
           aria-current={tab === "home" && !adding ? "page" : undefined}
+          onPointerEnter={() => preloadTab("home")}
+          onFocus={() => preloadTab("home")}
           onClick={() => goTab("home")}
         >
           Home
@@ -5224,6 +5438,8 @@ export function App() {
           className={tab === "calendar" ? "active" : ""}
           aria-current={tab === "calendar" ? "page" : undefined}
           aria-label="Calendar"
+          onPointerEnter={() => preloadTab("calendar")}
+          onFocus={() => preloadTab("calendar")}
           onClick={() => goTab("calendar")}
         >
           Cal
@@ -5234,6 +5450,8 @@ export function App() {
           className={tab === "shift" ? "active" : ""}
           aria-current={tab === "shift" ? "page" : undefined}
           aria-label="Shifts"
+          onPointerEnter={() => preloadTab("shift")}
+          onFocus={() => preloadTab("shift")}
           onClick={() => goTab("shift")}
         >
           Shift
@@ -5253,6 +5471,8 @@ export function App() {
         <button
           className={tab === "ledger" ? "active" : ""}
           aria-current={tab === "ledger" ? "page" : undefined}
+          onPointerEnter={() => preloadTab("ledger")}
+          onFocus={() => preloadTab("ledger")}
           onClick={() => goTab("ledger")}
         >
           Books

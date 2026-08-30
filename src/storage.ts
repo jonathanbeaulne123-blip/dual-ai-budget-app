@@ -138,6 +138,22 @@ export function activeHouseholdId(environment: Environment): string | null {
   try { return localStorage.getItem(activeKey(environment)); } catch { return null; }
 }
 
+/**
+ * Fast, read-only startup candidate. This deliberately avoids IndexedDB and
+ * never rewrites storage; loadHousehold remains the durable newest-replica
+ * selector. Callers must keep the result read-only until PGlite validation.
+ */
+export function peekHousehold(environment: Environment, householdId?: string | null): Household | null {
+  const selectedId = householdId ?? activeHouseholdId(environment);
+  const selected = selectedId ? localGet<Household>(householdKey(environment, selectedId)) : null;
+  const legacy = selected ?? localGet<Household>(LEGACY_PREFIX + environment);
+  if (!legacy) return null;
+  const migrated = migrate(legacy);
+  if (migrated.environment !== environment) return null;
+  if (selectedId && migrated.householdId !== selectedId) return null;
+  return migrated;
+}
+
 export async function listHouseholdReplicas(environment: Environment): Promise<HouseholdReplicaSummary[]> {
   const catalog = readCatalog(environment);
   if (catalog.length) return catalog;

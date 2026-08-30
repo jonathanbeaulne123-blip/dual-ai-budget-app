@@ -96,7 +96,7 @@ describe("Shift tab wiring", () => {
     expect(app).toMatch(/aria-label="Calendar"/);
     expect(app).toMatch(/aria-label="Shifts"/);
     expect(app).toMatch(/tab === "shift"/);
-    expect(app).toMatch(/<WorkShiftPage/);
+    expect(app).toMatch(/<DeferredWorkShiftPage/);
     expect(app).not.toMatch(/<WorkJobsCard/);
     expect(app).not.toMatch(/<WorkShiftHistoryCard/);
     expect(app).not.toMatch(/<WorkReportCard/);
