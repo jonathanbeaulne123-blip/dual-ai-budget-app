@@ -6,8 +6,8 @@
 - **Assignee or AI:** Codex coordinator; one implementation owner per packet
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `codex/shared-money-program`
-- **Baseline SHA:** `c7c2d56b84f069d8bffcecdbac8c8dcf72b9c405`
-- **Head SHA:** local working tree; record the exact SHA in every packet handoff
+- **Baseline SHA:** `54096553825bdaa331dca26c2dc963d754e1c583`
+- **Head SHA:** `ce20d53ab74aa2cacfe9885b6f02b9093d436ee1` before this evidence-only closeout amendment
 - **PR or issue:** none
 - **Risk:** Release
 - **Decision owner:** Jonathan
@@ -58,7 +58,7 @@ Inference:
 - [x] One canonical program index defines phases, packets, dependencies, gates, and stop conditions.
 - [x] SF-01 through SF-05 are independently executable from the exact baseline.
 - [x] Structural tests enforce the most important safety statements.
-- [x] Focused tests and the incomplete aggregate-gate result are recorded honestly.
+- [x] Focused tests and the red aggregate-gate result are recorded honestly.
 
 ## Plan
 
@@ -74,13 +74,14 @@ Inference:
 ## Evidence log
 
 - `git status --short --branch` in the original checkout showed unrelated edits and untracked files; no work was written there.
-- Clean worktree created from `origin/main@c7c2d56b84f069d8bffcecdbac8c8dcf72b9c405` on `codex/shared-money-program`.
+- Clean worktree created from `origin/main@c7c2d56b84f069d8bffcecdbac8c8dcf72b9c405` on `codex/shared-money-program`, then rebased without conflict onto `origin/main@54096553825bdaa331dca26c2dc963d754e1c583`.
 - `test/shared-money-program.test.ts`: 3/3 passed after correcting two test/packet wording mismatches.
 - `node scripts/verify-ai-surface.mjs`: passed (41 required files and proof gate).
 - `git diff --check`: passed.
-- Aggregate `vitest run` produced no output or completion for more than three minutes and was terminated; it is not green.
-- Direct TypeScript check reached environment/dependency errors in unchanged `test/evidence-local-harness.test.ts`: unresolved `miniflare` and a consequent implicit-`any`. The temporary worktree was using the original checkout's junctioned dependency store.
-- Direct Vite production build passed: 355 modules transformed. Existing PGlite externalization/eval and chunk-size warnings remain.
+- The first aggregate run through a dependency junction produced no completion and was terminated. A proper isolated offline install then succeeded from the local pnpm store and removed that setup ambiguity.
+- Real `pnpm check` on current main plus SF-00 ran for 248 seconds. AI surface passed; the suite had two failures unrelated to the docs/test diff: `test/api.test.ts` could not run its Bash/Python sanitizer correctly on Windows, and `test/hercules-pro.test.ts` persistently returned an empty Personal shift summary where its fixture expects one posted shift. The Hercules failure reproduced in isolation; SF-00 remained 3/3 green beside it. Build did not run inside `pnpm check` because tests failed.
+- The earlier unresolved-`miniflare` TypeScript condition disappeared under the proper install; `test/evidence-local-harness.test.ts` passed 3/3 in the aggregate run.
+- Current-baseline focused SF-00 test passed 3/3; `tsc --noEmit`, Vite production build (356 modules), Hercules Pro UI build, and `_redirects` absence passed. Existing PGlite externalization/eval and chunk-size warnings remain.
 - No network, provider, Supabase, household-data, secret, Production, push, merge, or deploy action is authorized by this worksession.
 
 ## Decisions
@@ -99,4 +100,4 @@ Banking partner, legal structure, AML/KYC allocation, safeguarding, dispute oper
 
 ## Handoff
 
-Next owner: independent SF-00 review, then the AI assigned SF-01. SF-02 is the first runtime packet. Work is local documentation plus a structural test on a clean branch. Nothing is pushed, merged, deployed, activated, or manually verified as a banking capability. Reconcile onto current `origin/main` and rerun the aggregate gate before review.
+Next owner: independent SF-00 review, then the AI assigned SF-01. SF-02 is the first runtime packet. Work is local documentation plus a structural test on a clean branch. Nothing is pushed, merged, deployed, activated, or manually verified as a banking capability. The two aggregate failures remain outside this packet and must not be called green.

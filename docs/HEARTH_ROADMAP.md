@@ -1,7 +1,7 @@
 # Hearth living roadmap
 
 > **Product:** Hearth — Jonathan and Bianca's household budget and family office  
-> **Roadmap baseline:** `main@c7c2d56` (current clean baseline for D-174 program canon), reconciled 2026-08-29 (Toronto)
+> **Roadmap baseline:** `main@5409655` (current clean baseline for D-174 program canon), reconciled 2026-08-30 (Toronto)
 > **Canonical order:** latest explicit instruction → `docs/CLOUD_CONTINUITY.md` → `docs/DECISIONS.md` → `docs/STRATEGY.md` → `docs/ARCHITECTURE.md` → this roadmap  
 > **Purpose:** one maintained view of what shipped, what is true now, what comes next, what remains gated, and how every major choice serves the Dual Course.
 
@@ -67,7 +67,7 @@ Only the currently open or just-closed worksession belongs here. Durable history
 
 | Worksession | State | Scope | Output |
 |---|---|---|---|
-| [2026-08-29 Shared Money program](worksessions/2026-08-29-shared-money-program.md) | **OPEN; SF-00 IMPLEMENTATION** | D-174 program canon and exact Phase 0 trust packets | [`briefs/shared-money/`](briefs/shared-money/README.md); docs/tests only; no provider, schema, Production, push, merge, or deploy |
+| [2026-08-29 Shared Money program](worksessions/2026-08-29-shared-money-program.md) | **OPEN; SF-00 IMPLEMENTED** | D-174 program canon and exact Phase 0 trust packets | [`briefs/shared-money/`](briefs/shared-money/README.md); focused proof green; aggregate gate has two unrelated current-main/Windows failures; no provider, schema, Production, push, merge, or deploy |
 | [2026-08-28 Coworker attendance review](worksessions/2026-08-28-coworker-attendance-review.md) | **REVIEW FIXES VERIFIED; RE-REVIEW REQUIRED** | D-168 Personal schedule windows, OCR/shift attendance review, absence toggles, surprise helpers | Reconciled to current `main`; 97 focused tests; full suite 1099 passed / 2 skipped / 1 unchanged Windows `bash` failure; builds green; no push or deploy |
 | [2026-08-28 Shared Ledger story handoff](worksessions/2026-08-28-shared-ledger-story-handoff.md) | **CLOSED; CURSOR PACKET READY** | D-164 Shared-vs-Personal experience audit; desktop+iPad story system; iPhone fence | [`briefs/CURSOR_SHARED_LEDGER_STORY_HANDOFF_2026-08-28.md`](briefs/CURSOR_SHARED_LEDGER_STORY_HANDOFF_2026-08-28.md); no UI code, push, or deploy |
 | [2026-08-29 Kitchen desk, Personal books floor, Kitty Banks](worksessions/2026-08-29-kitchen-desk-banks.md) | **INTEGRATED LOCALLY; PR #244 STILL OPEN** | D-173: one Shared pool, Personal account floor, leftover spend seals, fat banks | Brought into `codex/kitchen-desk-integration`; no schema, provider, secret, push, merge, or deploy |

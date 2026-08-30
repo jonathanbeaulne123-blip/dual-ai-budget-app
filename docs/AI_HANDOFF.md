@@ -2,7 +2,7 @@
 
 ## D-174 Shared Money program canon (2026-08-29)
 
-**Status:** Local SF-00 implementation and focused verification on `codex/shared-money-program` from exact `origin/main@c7c2d56b84f069d8bffcecdbac8c8dcf72b9c405`. **Not pushed, merged, deployed, activated, or live.** Risk: **Release** (company direction; documentation/test slice has no runtime authority).
+**Status:** Local SF-00 implementation and focused verification on `codex/shared-money-program`, rebased without conflict onto exact `origin/main@54096553825bdaa331dca26c2dc963d754e1c583`. **Not pushed, merged, deployed, activated, or live.** Risk: **Release** (company direction; documentation/test slice has no runtime authority).
 
 **Household outcome:** Hearth now has one execution index for becoming a partner-backed Canadian joint-account company for Jonathan and Bianca while preserving private personal accounts and current Confirm law.
 
@@ -10,7 +10,7 @@
 
 **What changed:** D-174, canonical phases and exit gates, SF-00 through SF-05 packets, worksession, roadmap/index pointers, and structural safety tests. No runtime code, schema, provider, secret, bank credential, money movement, Production, or real household data.
 
-**Verification:** focused structural test 3/3; AI surface passed; `git diff --check` passed; Vite production build passed. Aggregate Vitest did not complete or emit output in more than three minutes and was terminated. Direct TypeScript reached the unchanged evidence harness with unresolved `miniflare` under the temporary worktree's junctioned dependency store, plus its consequent implicit-`any`; full `pnpm check` is therefore **not green** pending a proper local install and rerun.
+**Verification:** focused structural test 3/3; AI surface and `git diff --check` passed. A proper isolated offline dependency install succeeded. Real `pnpm check` ran for 248 seconds and is **not green**: the Windows Bash/Python sanitizer harness failed in `test/api.test.ts`, and the unchanged Hercules Pro Personal-shift fixture persistently returned `empty` rather than `ok`. The latter reproduced in isolation while SF-00 passed beside it. The earlier junction-caused `miniflare` condition disappeared and the Evidence local harness passed. Current-baseline `tsc --noEmit`, Vite production build, Hercules Pro UI build, and `_redirects` absence passed.
 
 **Next owner:** independent SF-00 verification, then the AI assigned SF-01. Jonathan approval is required before push/PR and separately before any external mutation.
 
