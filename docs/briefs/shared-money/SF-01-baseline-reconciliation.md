@@ -30,3 +30,14 @@ Run focused doc/contract tests and `pnpm check`. Disclose all network calls and 
 ## Stop conditions
 
 Stop on baseline drift, ambiguous environment, secret exposure, or conflicting current decisions. Escalate to Jonathan only if the conflict changes product authority.
+
+## Result — 2026-08-30
+
+Implemented against `origin/main@9376c30ba5db55c920d15ce3feacb65dedae5733`:
+
+- human baseline: [`SHARED_MONEY_BASELINE.md`](../../SHARED_MONEY_BASELINE.md)
+- machine baseline: [`shared-money-baseline.json`](../../shared-money-baseline.json)
+- living-canon corrections: continuity, Auth/RLS, batch imports, roadmap, decision/program wording, and code comment
+- contradiction guards: `test/shared-money-baseline.test.ts`
+
+No network call, live data read, provider action, schema change, secret change, Production mutation, deployment, merge, or push was performed. SF-02 is next and must consume this baseline.

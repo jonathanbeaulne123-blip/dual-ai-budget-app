@@ -1,9 +1,10 @@
 import type { Environment } from "../core/types.ts";
 
 /**
- * Production hosted continuity stays off until Jonathan enables it after export,
- * privileged membership seed, and Personal destination decisions (D-123 path B).
- * Development remains open for the disposable-data window.
+ * Production hosted continuity is a build-time gate. The current Pages workflow
+ * bakes it on, which exposes only the authenticated, membership-scoped REST path;
+ * that is not Production-readiness proof. Production Realtime remains refused by
+ * continuityRealtimePolicy. Development remains the proven continuity environment.
  */
 export function productionContinuityEnabled(): boolean {
   return String(import.meta.env.VITE_PRODUCTION_CONTINUITY || "") === "1";

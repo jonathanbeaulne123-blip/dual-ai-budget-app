@@ -1,12 +1,30 @@
 # AI Task and Handoff Standard
 
+## SF-01 Shared Money baseline reconciliation (2026-08-30)
+
+**Status:** Implemented locally on `codex/shared-money-program` against exact `origin/main@9376c30ba5db55c920d15ce3feacb65dedae5733`. **Not pushed, merged, deployed, activated, or live.** Risk: **High** (truth/governance; no financial behavior change).
+
+**Household outcome:** every Shared Money prerequisite now has one Development-versus-Production truth row, end-to-end trace, owner, rollback, proof, and explicit unknowns. This prevents future AIs from mistaking a flag, migration file, virtual Fund, or roadmap decision for a working bank capability.
+
+**Budget delta (5):** `+1` through reconciled money-authority and continuity truth. **Engagement delta (3):** `0`; no household interaction changed.
+
+**What changed:** added [`SHARED_MONEY_BASELINE.md`](SHARED_MONEY_BASELINE.md) and [`shared-money-baseline.json`](shared-money-baseline.json); corrected stale continuity, membership, import, Fund/provider, roadmap, and policy-comment claims; added contradiction tests for D-161, D-162, D-172, D-174, environments, flags, and baseline completeness. D-172 remains current financial-write law; D-161 remains virtual; D-162 Fund-specific connected evidence remains read-only and Release-gated.
+
+**Verification:** SF-01 focused **2 files / 7 tests** passed; after fixing one aggregate-discovered doc-contract wording mismatch, affected focused proof passed **3 files / 15 tests**. AI surface, `tsc --noEmit`, Vite production build (359 modules), Hercules Pro UI build, no-`_redirects`, and `git diff --check` passed. Full `pnpm check` is **not green** on Windows: `test/api.test.ts` invokes unavailable `bash` (`spawnSync bash ENOENT`). Its first run also caught the now-repaired wording mismatch; aggregate was not rerun after that narrow fix. The literal `pnpm build` wrapper likewise starts with Unix `rm`; its equivalent build steps passed.
+
+**Environment/data:** documentation, one code comment, and tests only. No network call, live-data read, provider, schema, secret, Production, bank, household-data, push, merge, or deploy action.
+
+**Next owner:** run SF-02 from the reconciled baseline. Jonathan approval remains required before push/PR and separately before any external mutation.
+
+**Worksession:** [`worksessions/2026-08-29-shared-money-program.md`](worksessions/2026-08-29-shared-money-program.md)
+
 ## D-174 Shared Money program canon (2026-08-29)
 
 **Status:** Local SF-00 implementation and focused verification on `codex/shared-money-program`, rebased without conflict onto exact `origin/main@54096553825bdaa331dca26c2dc963d754e1c583`. **Not pushed, merged, deployed, activated, or live.** Risk: **Release** (company direction; documentation/test slice has no runtime authority).
 
 **Household outcome:** Hearth now has one execution index for becoming a partner-backed Canadian joint-account company for Jonathan and Bianca while preserving private personal accounts and current Confirm law.
 
-**Budget delta (5):** actual `0`; program potential `+5`. **Engagement delta (3):** actual `0`; program potential `+2`. Books win: D-172 remains current law, D-161 remains virtual, and D-162 remains disabled/read-only.
+**Budget delta (5):** actual `0`; program potential `+5`. **Engagement delta (3):** actual `0`; program potential `+2`. Books win: D-172 remains current law, D-161 remains virtual, and D-162 Fund-specific connected evidence remains read-only/Release-gated.
 
 **What changed:** D-174, canonical phases and exit gates, SF-00 through SF-05 packets, worksession, roadmap/index pointers, and structural safety tests. No runtime code, schema, provider, secret, bank credential, money movement, Production, or real household data.
 

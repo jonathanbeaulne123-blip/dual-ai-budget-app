@@ -1,8 +1,8 @@
 # Auth + membership RLS cutover (D-123)
 
-> **Live status (2026-08-25):** 004, 005, D-126 `007`, SELECT bridge `008`, and deny-by-default cutover **`006` applied** (Jonathan paste; policy proof `hearth_households_select`). Empty Production household previously deleted. Google Auth live. Path B NOTICE + ceiling 1 was in force at apply. Smoke Create / invite / anon denial still recommended.
+> **Reconciled live status (2026-08-30):** deny-by-default `006` applied; 004, 005, D-126 `007`, SELECT bridge `008`, bind `010`, atomic continuity `012`, command log `013`, Realtime `014`, lifecycle `015`, and Development reset `016` are also recorded applied. Empty Production household was deleted. Google Auth and QR two-device invite smoke passed. Email/revoke and the complete signed-in create/anonymous/wrong-household lifecycle smoke remain open.
 >
-> **2026-08-26 addendum (D-143):** Migration **010** `hearth_bind_google_memberships` is live — anon `EXECUTE` returns HTTP 401 permission denied for the function (not missing-RPC). Anon SELECT on `households` / `household_snapshots` / `continuity_memberships` remains 401. Client automatic transport now requires continuity membership identity; `linked` alone no longer publishes. Signed-in Create / email / QR redeem smoke still needs Jonathan’s Google session.
+> **2026-08-26 addendum (D-143):** Migration **010** `hearth_bind_google_memberships` is live — anon `EXECUTE` returns HTTP 401 permission denied for the function (not missing-RPC). Anon SELECT on `households` / `household_snapshots` / `continuity_memberships` remains 401. Client automatic transport now requires continuity membership identity; `linked` alone no longer publishes. The later QR smoke is recorded in [`AUTH_INVITE_SMOKE.md`](AUTH_INVITE_SMOKE.md); broader signed-in lifecycle proof remains open.
 
 ## Goal
 
@@ -62,35 +62,35 @@ Because the checks occur before policy replacement inside one transaction, a fai
 |---|---|---|---|---|---|
 | anon | deny | deny | deny | deny | deny |
 | authenticated, no membership | deny | deny | deny | bounded Create/Redeem RPC only | deny |
-| owner, matching environment | read + CAS RPC | read/write | deny | bounded Invite/Revoke RPC | deny |
-| member, matching environment | read + CAS RPC | read/write | deny | redeem only | deny |
+| owner, matching environment | read + CAS RPC | read/write | deny | bounded Invite/Revoke; Development delete/reset RPC | direct deny; bounded Development RPC only |
+| member, matching environment | read + CAS RPC | read/write | deny | redeem or leave RPC | direct deny; leave deactivates membership |
 | wrong environment or revoked | deny | deny | deny | deny | deny |
 
-## Next cutover runbook (006 not performed)
+## Applied cutover record and remaining smoke
 
 Independent of Auth/RLS: D-126 `007_household_timezone_iana.sql` is **applied** (2026-08-25). Hosted CHECK allows nonempty IANA; the app kernel still requires Toronto for books civil (Q2 C). That packet does not close the anon bridge.
 
 **Path B lock (Jonathan 2026-08-25):** full shared-project cutover is approved *in principle*. Live preflight the same day: migrations `2,4,5,7`; empty Production household with Personal 0/0/0; zero memberships; zero `auth.users`. Jonathan then ordered delete of that empty Production household, Google Auth setup, apply of SELECT bridge `008`, and **postpone** of the 006 Production-abort NOTICE/apply until those three finish.
 
-**Client readiness (branch packet):** Production discovery/transport is implemented behind `VITE_PRODUCTION_CONTINUITY=1` (off by default). Named policy `hostedContinuityAllowed` gates App + transport. Production never bulk-scans snapshots and never mints membership rows from the publishable key. Shared pushes with a continuity identity always publish the Personal-stripped projection (RPC and legacy). Unprojected phrase/`linked` transport stays Development-only. Revert-to-last-sync stays Development-only.
+**Client readiness:** Production discovery/transport is implemented behind `VITE_PRODUCTION_CONTINUITY=1`; the current Pages workflow bakes that flag on. Named policy `hostedContinuityAllowed` gates App + transport. This is a code-path fact, not Production runtime proof: Production Realtime remains refused and lifecycle/restore/write smoke is open. Production never bulk-scans snapshots and never mints membership rows from the publishable key. Shared pushes with a continuity identity always publish the Personal-stripped projection (RPC and legacy). Unprojected phrase/`linked` transport and Revert-to-last-sync stay Development-only.
 
-**Mandatory sequence now (Jonathan)**
+**Applied sequence and remaining smoke (Jonathan)**
 
 1. ~~Delete empty Production household~~ — done
 2. ~~Configure Google Auth~~ — done
 3. ~~Apply 008~~ — done
 4. ~~Apply 006~~ — done (policy proof: `hearth_households_select`)
 5. Smoke on Auth-enabled kitchen: Continue with Google → open/create household → offline outbox → anon denial (publishable key alone must not read household rows) → wrong-household denial
-6. Optional: Bianca Continue with Google; email/QR invite chrome still a follow-up
+6. QR two-device invite is complete; Bianca email/revoke lifecycle and the remaining negative matrix are follow-ups
 
 Rollback if needed: [`sql/009_rollback_006.sql`](sql/009_rollback_006.sql) on Jonathan’s explicit order only.
 
 ## Remaining live rehearsal requirements
 
-- Rehearse 006 against a disposable PostgreSQL/Supabase clone; repository tests verify structure and pure behavior but are not a substitute for real RLS semantics.
+- Rehearse the applied RLS and rollback contract against a disposable PostgreSQL/Supabase clone before Production household re-entry; repository tests are not a substitute for real RLS semantics.
 - Verify provider redirect configuration and token refresh in two browsers.
-- Visible email/QR invitation chrome is on `main` (PR #105). Follow-up: scannable QR + bind-on-discover (`010`) on `cursor/auth-discover-qr-f375`. Signed-in issue/redeem smoke still needs Jonathan’s Google session after 010 paste.
-- Confirm PITR / backups on the shared project before apply.
+- Visible email/QR invitation chrome, scannable QR, and bind-on-discover are on `main`; the QR two-device smoke passed. Email/revoke lifecycle smoke still needs the household sessions.
+- Confirm PITR / backups on the shared project before Production household use or any further schema apply.
 ## Secrets
 
 The browser uses a publishable key plus the signed-in user's JWT. Never place database passwords, model keys, or a Supabase secret/service-role key in `VITE_*`. GIS tokens may remain for Calendar/Drive, but they are not the books credential.

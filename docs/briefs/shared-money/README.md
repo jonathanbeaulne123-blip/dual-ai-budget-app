@@ -14,7 +14,7 @@ This is Hearth's canonical execution index for becoming a partner-backed Canadia
 
 ## Current law
 
-D-172 remains the current financial-write boundary. Nothing in this program authorizes background ledger posting, provider activation, bank credentials, money movement, Production mutation, or card issuance. D-161's Household Fund remains a virtual operating subledger. D-162 remains disabled, read-only provider evidence. A later decision and Release packet must explicitly authorize any change.
+D-172 remains the current financial-write boundary. Nothing in this program authorizes background ledger posting, provider activation, bank credentials, money movement, Production mutation, or card issuance. D-161's Household Fund remains a virtual operating subledger. Development provider evidence exists under D-148; D-162 keeps Fund-specific connected evidence read-only and Release-gated. A later decision and Release packet must explicitly authorize any authority change.
 
 ## Five planes
 
@@ -48,7 +48,7 @@ No plane may impersonate another. A notification is not approval. Evidence is no
 Phase 0 is executable now:
 
 - [SF-00 — Program canon](SF-00-program-canon.md)
-- [SF-01 — Baseline reconciliation](SF-01-baseline-reconciliation.md)
+- [SF-01 — Baseline reconciliation](SF-01-baseline-reconciliation.md) — implemented; outputs: [`SHARED_MONEY_BASELINE.md`](../../SHARED_MONEY_BASELINE.md) and [`shared-money-baseline.json`](../../shared-money-baseline.json)
 - [SF-02 — Membership completion](SF-02-membership-completion.md)
 - [SF-03 — Continuity completion](SF-03-continuity-completion.md)
 - [SF-04 — Opening truth](SF-04-opening-truth.md)

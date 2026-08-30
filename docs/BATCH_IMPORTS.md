@@ -63,7 +63,7 @@ Excluding an old posted row sets its reviewed duplicate flag. It is never physic
 - Drive upload occurs only after the books accept the batch. A Drive failure does not roll back accepted money; the in-memory original remains available for a retry during that session.
 - Drive deletion is a separate explicit action and never deletes or reverses ledger money. OAuth tokens, Drive ids, raw image bytes, and receipt arithmetic never enter the household continuity snapshot.
 
-The earlier batch-review build at commit `fd70869` was deployed to the Development kitchen on 2026-08-25 through GitHub Actions run `32893244966`, with Jonathan's explicit approval. Cloudflare reported Worker version `f49569d8-412d-428e-acd3-e5d07da968df`. D-137 reconciliation and receipt-number extraction are local branch work and are **not deployed**.
+The earlier D-130 batch-review build at commit `fd70869` was deployed to the Development kitchen on 2026-08-25 through GitHub Actions run `32893244966`, with Jonathan's explicit approval. Cloudflare reported Worker version `f49569d8-412d-428e-acd3-e5d07da968df`. The exact reconciliation work was renumbered **D-141** after duplicate D-137 assignments and is present on current `main` (`f9e8170`). SF-01 did not verify the currently served bundle, so this document does not call D-141 live.
 
 ## Failure and recovery
 
@@ -87,5 +87,5 @@ The earlier batch-review build at commit `fd70869` was deployed to the Developme
 
 ## Remaining release actions
 
-1. Open the reviewed D-137 reconciliation PR, await CI, and merge only after review; deployment still requires separate authorization.
+1. Verify the current served bundle contains D-141 and run the synthetic combined QFX + receipt UI smoke before making a live claim; any new deployment still requires separate authorization.
 2. Include batch intake in the comprehensive pre-September audit. PDF ingestion, persistent draft inboxes, and connected bank feeds remain separate work.
