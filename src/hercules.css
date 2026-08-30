@@ -240,7 +240,9 @@
 .herc-rig-driven .herc-eye,
 .herc-rig-driven .herc-eye-shut {
   animation: none !important;
-  transition: transform 48ms linear, opacity 48ms linear;
+  transition:
+    transform var(--herc-rig-transition-ms, 48ms) linear,
+    opacity var(--herc-rig-transition-ms, 48ms) linear;
 }
 
 .herc-rig-driven.herc-mood-glowing .herc-tail,

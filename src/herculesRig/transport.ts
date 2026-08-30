@@ -2,6 +2,16 @@ import type { HerculesRigCommand } from "./types.ts";
 import { HERCULES_RIG_PATH, HERCULES_RIG_POLL_PATH } from "./validate.ts";
 
 const RIG_SESSION_KEY = "hearth.rig.session";
+const RIG_SESSION_ACTIVE_EVENT = "hearth:rig-session-active";
+
+function storedRigSessionId(): string | null {
+  if (typeof sessionStorage === "undefined") return null;
+  try {
+    return sessionStorage.getItem(RIG_SESSION_KEY);
+  } catch {
+    return null;
+  }
+}
 
 export type RigQueueEntry = {
   id: string;
@@ -11,13 +21,14 @@ export type RigQueueEntry = {
 
 export function rigSessionId(): string {
   if (typeof sessionStorage === "undefined") return "dev-rig-session";
-  let id = sessionStorage.getItem(RIG_SESSION_KEY);
+  let id = storedRigSessionId();
   if (!id) {
     id = (typeof crypto !== "undefined" && crypto.randomUUID
       ? crypto.randomUUID().replace(/-/g, "")
       : `rig${Math.random().toString(36).slice(2)}`).slice(0, 32);
     sessionStorage.setItem(RIG_SESSION_KEY, id);
   }
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(RIG_SESSION_ACTIVE_EVENT));
   return id;
 }
 
@@ -55,8 +66,9 @@ export function startHerculesRigPoller(
   if (typeof window === "undefined") return () => {};
   let since = Date.now() - 500;
   let busy = false;
+  let enabled = Boolean(storedRigSessionId());
   const tick = async () => {
-    if (busy || document.hidden) return;
+    if (!enabled || busy || document.hidden) return;
     busy = true;
     try {
       const entries = await pollHerculesRigQueue(since);
@@ -71,9 +83,15 @@ export function startHerculesRigPoller(
   void tick();
   const id = window.setInterval(() => { void tick(); }, intervalMs);
   const onFocus = () => { void tick(); };
+  const onSessionActive = () => {
+    enabled = true;
+    void tick();
+  };
   window.addEventListener("focus", onFocus);
+  window.addEventListener(RIG_SESSION_ACTIVE_EVENT, onSessionActive);
   return () => {
     window.clearInterval(id);
     window.removeEventListener("focus", onFocus);
+    window.removeEventListener(RIG_SESSION_ACTIVE_EVENT, onSessionActive);
   };
 }

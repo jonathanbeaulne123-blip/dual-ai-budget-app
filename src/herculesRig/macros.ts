@@ -2,6 +2,8 @@ import type { InstrumentId } from "../core/officeLayout.ts";
 import type { HerculesRigCommand } from "./types.ts";
 import { registerRigClip } from "./registry.ts";
 
+export const IDLE_FLY_POUNCE_CLIP_ID = "idle-fly-pounce";
+
 /** Per-instrument expand macros — layered on top of playPose from herculesInstrumentSurface. */
 export const EXPAND_RIG_MACROS: Partial<Record<InstrumentId | "window", HerculesRigCommand[]>> = {
   window: [
@@ -68,6 +70,17 @@ export function installRigMacroClips(): void {
       { t: 0.35, parts: { ears: { rotate: -18, scaleY: 0.78 } } },
       { t: 0.7, parts: { ears: { rotate: 10, scaleY: 0.92 } } },
       { t: 1, parts: { ears: { rotate: 0, scaleY: 1 } } },
+    ],
+  });
+  registerRigClip({
+    id: IDLE_FLY_POUNCE_CLIP_ID,
+    label: "Idle fly pounce",
+    durationMs: 650,
+    keyframes: [
+      { t: 0, parts: { root: { translateX: 0, translateY: 0, scaleY: 1 }, head: { rotate: 0 }, tail: { rotate: -12 } } },
+      { t: 0.18, parts: { root: { translateX: 3, translateY: 3, scaleY: 0.9 }, head: { rotate: -6, translateY: -2 }, legs: { translateY: -4 }, tail: { rotate: -34 } } },
+      { t: 0.58, parts: { root: { translateX: -8, translateY: -13, scaleY: 1.06 }, head: { rotate: -9, translateY: -4 }, legFront: { rotate: -42, translateY: -12 }, tail: { rotate: -48 } } },
+      { t: 1, parts: { root: { translateX: 0, translateY: 0, scaleY: 1 }, head: { rotate: 0 }, legFront: { rotate: 0, translateY: 0 }, tail: { rotate: -8 } } },
     ],
   });
 }

@@ -21,7 +21,7 @@ export {
   listRigClips,
   installBuiltinClips,
 } from "./registry.ts";
-export { HerculesRigEngine, createHerculesRigEngine } from "./engine.ts";
+export { HerculesRigEngine, createHerculesRigEngine, type RigEngineDiagnostics, type RigVisibilityProfile } from "./engine.ts";
 export {
   bindHerculesRigEngine,
   getHerculesRigEngine,
@@ -38,7 +38,14 @@ export {
   startHerculesRigPoller,
 } from "./transport.ts";
 export { validateRigCommands, validateRigPayload, sanitizeRigSessionId, HERCULES_RIG_PATH, HERCULES_RIG_POLL_PATH } from "./validate.ts";
-export { EXPAND_RIG_MACROS, expandRigMacro } from "./macros.ts";
+export { EXPAND_RIG_MACROS, IDLE_FLY_POUNCE_CLIP_ID, expandRigMacro } from "./macros.ts";
+export {
+  HUMAN_IDLE_FLY_CHASE_MS,
+  IDLE_FLY_CAPTURE_AT_MS,
+  IDLE_FLY_POUNCE_MS,
+  idleFlyPounceLanding,
+  type FlyPoint,
+} from "./idleChase.ts";
 export {
   BUDGET_CHAT_TRIGGERS,
   CAT_CHAT_TRIGGERS,

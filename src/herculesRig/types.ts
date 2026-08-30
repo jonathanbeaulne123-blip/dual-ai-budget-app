@@ -68,6 +68,8 @@ export type RigEngineState = {
   clipId: string | null;
   parts: RigSnapshot;
   reducedMotion: boolean;
+  motionMode: "paused" | "ambient" | "reaction";
+  transitionMs: number;
 };
 
 export type RigListener = (state: RigEngineState) => void;

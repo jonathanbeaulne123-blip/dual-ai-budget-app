@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { bindHerculesRigEngine, createHerculesRigEngine, exposeHerculesRigConsole } from "./controller.ts";
-import type { HerculesRigEngine } from "./engine.ts";
+import type { HerculesRigEngine, RigVisibilityProfile } from "./engine.ts";
 import type { HerculesRigCommand, HerculesRigMood, HerculesRigPose, RigEngineState } from "./types.ts";
 import { startHerculesRigPoller } from "./transport.ts";
 import "./macros.ts";
@@ -19,10 +19,12 @@ export function HerculesRigProvider({
   children,
   mood = "content",
   reducedMotion = false,
+  visibilityProfile = "full",
 }: {
   children: ReactNode;
   mood?: HerculesRigMood;
   reducedMotion?: boolean;
+  visibilityProfile?: RigVisibilityProfile;
 }) {
   const engine = useMemo(() => createHerculesRigEngine(), []);
   const [state, setState] = useState<RigEngineState>(() => engine.getState());
@@ -44,6 +46,15 @@ export function HerculesRigProvider({
   useEffect(() => {
     engine.setReducedMotion(reducedMotion);
   }, [engine, reducedMotion]);
+
+  useEffect(() => {
+    const applyVisibility = () => {
+      engine.setVisibilityProfile(document.hidden ? "hidden" : visibilityProfile);
+    };
+    applyVisibility();
+    document.addEventListener("visibilitychange", applyVisibility);
+    return () => document.removeEventListener("visibilitychange", applyVisibility);
+  }, [engine, visibilityProfile]);
 
   useEffect(() => {
     engine.setMood(mood);

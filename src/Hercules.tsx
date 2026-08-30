@@ -73,6 +73,10 @@ import {
   expandRigMacro,
   dispatchChatRigTriggers,
   dispatchHerculesRig,
+  HUMAN_IDLE_FLY_CHASE_MS,
+  IDLE_FLY_CAPTURE_AT_MS,
+  IDLE_FLY_POUNCE_CLIP_ID,
+  idleFlyPounceLanding,
   type HerculesRigPose,
 } from "./herculesRig/index.ts";
 import {
@@ -131,6 +135,7 @@ export function HerculesPortrait({
   size = "live",
   flip = false,
   rigSnapshot,
+  rigTransitionMs,
 }: {
   mood: CompanionMood;
   hat: string | null;
@@ -141,11 +146,12 @@ export function HerculesPortrait({
   size?: "stage" | "live" | number;
   flip?: boolean;
   rigSnapshot?: import("./herculesRig/types.ts").RigSnapshot;
+  rigTransitionMs?: number;
 }) {
   const px = typeof size === "number" ? size : size === "stage" ? 120 : 96;
   return (
     <div className={`hercules-stage size-${size} mood-${mood}`} aria-hidden="true">
-      <HerculesFigure pose={pose} mood={mood} size={px} flip={flip} rigSnapshot={rigSnapshot}>
+      <HerculesFigure pose={pose} mood={mood} size={px} flip={flip} rigSnapshot={rigSnapshot} rigTransitionMs={rigTransitionMs}>
         <HerculesDress hat={hat} chain={chain} house={house} collar={collar} />
       </HerculesFigure>
       {pose === "sleep" && <span className="hercules-zzz">z</span>}
@@ -178,7 +184,7 @@ function HerculesRigBridge({
 
 function HerculesLivePortrait(props: Parameters<typeof HerculesPortrait>[0]) {
   const { state } = useHerculesRig();
-  return <HerculesPortrait {...props} rigSnapshot={state.parts} />;
+  return <HerculesPortrait {...props} rigSnapshot={state.parts} rigTransitionMs={state.transitionMs} />;
 }
 
 function HerculesOfficeRigBridge({ expandId }: { expandId: InstrumentId | "window" | null }) {
@@ -268,10 +274,13 @@ export function HerculesPresence({
   const [busy, setBusy] = useState(false);
   const [replySource, setReplySource] = useState<"ai" | "local" | null>(null);
   const [fly, setFly] = useState<{ x: number; y: number } | null>(null);
+  const flyRef = useRef<{ x: number; y: number } | null>(fly);
+  flyRef.current = fly;
   const [desktopFly, setDesktopFly] = useState(() => typeof window !== "undefined" && window.innerWidth >= WIDE_BREAKPOINT);
   const [mobileFocus, setMobileFocus] = useState(false);
   const phoneShell = !desktopFly;
   const [deadFlies, setDeadFlies] = useState(0);
+  const [flyPouncing, setFlyPouncing] = useState(false);
   const [perchPlay, setPerchPlay] = useState(false);
   const perchPlayFor = useRef<string | null>(null);
   const drag = useRef<{ x: number; y: number; px: number; py: number; moved: boolean; lastX: number; lastY: number; caughtFly: boolean } | null>(null);
@@ -296,6 +305,9 @@ export function HerculesPresence({
   const logRef = useRef<HTMLDivElement | null>(null);
   const perchedOn = useRef<string | null>(null);
   const lastAttack = useRef(0);
+  const idlePounceAction = useRef<() => boolean>(() => false);
+  const idlePounceCaptureTimer = useRef<number | null>(null);
+  const idleCaptureAllowed = useRef(false);
   const lastBump = useRef<{ id: string; at: number } | null>(null);
   const bubbleRef = useRef<HTMLDivElement | null>(null);
   const [bubbleSize, setBubbleSize] = useState({ w: 228, h: 96 });
@@ -304,19 +316,128 @@ export function HerculesPresence({
   const showTalk = Boolean((open || talk || begging) && !adding && talk && !(proposal && !open && !begging) && !showWidgetSnippets);
   const hideLiveCat = phoneShell && !mobileFocus;
   const focusShellOpen = phoneShell && mobileFocus && !adding;
+  idleCaptureAllowed.current = !(
+    typeof document === "undefined"
+    || document.hidden
+    || !desktopFly
+    || adding
+    || pinned
+    || open
+    || mobileFocus
+    || focusedWidget
+    || showProposal
+    || drag.current
+    || reducedMotion()
+  );
 
-  function catchFly() {
-    if (!desktopFly || !fly) return;
-    setFly(null);
+  function catchFly(expected = flyRef.current): boolean {
+    const current = flyRef.current;
+    if (!desktopFly || !current || !expected || current.x !== expected.x || current.y !== expected.y) return false;
     setDeadFlies((count) => count + 1);
     const viewport = { w: window.innerWidth, h: window.innerHeight };
-    setFly(wanderFly(viewport, NAV, Math.random, herculesLitterRect(viewport, NAV)));
+    const next = wanderFly(viewport, NAV, Math.random, herculesLitterRect(viewport, NAV));
+    flyRef.current = next;
+    setFly(next);
+    return true;
   }
 
   function automaticPoint(point: { x: number; y: number }): { x: number; y: number } {
     if (!desktopFly) return point;
     return keepHerculesOutOfLitter(point, { w: window.innerWidth, h: window.innerHeight }, CAT, NAV);
   }
+
+  idlePounceAction.current = () => {
+    const targetFly = flyRef.current;
+    if (
+      document.hidden
+      || !desktopFly
+      || !targetFly
+      || adding
+      || pinned
+      || open
+      || mobileFocus
+      || focusedWidget
+      || showProposal
+      || drag.current
+      || reducedMotion()
+    ) return false;
+    const viewport = { w: window.innerWidth, h: window.innerHeight };
+    const landing = automaticPoint(idleFlyPounceLanding(pos, targetFly, viewport, CAT, NAV));
+    lastAttack.current = Date.now();
+    setFlyPouncing(true);
+    setFlip(landing.x >= pos.x);
+    setPos(landing);
+    dispatchHerculesRig({ type: "playClip", clipId: IDLE_FLY_POUNCE_CLIP_ID, loop: false });
+    if (idlePounceCaptureTimer.current != null) window.clearTimeout(idlePounceCaptureTimer.current);
+    idlePounceCaptureTimer.current = window.setTimeout(() => {
+      idlePounceCaptureTimer.current = null;
+      setFlyPouncing(false);
+      const currentFly = flyRef.current;
+      if (!document.hidden && idleCaptureAllowed.current && currentFly && herculesOverFly(landing, currentFly, CAT)) catchFly(currentFly);
+    }, IDLE_FLY_CAPTURE_AT_MS);
+    return true;
+  };
+
+  useEffect(() => {
+    let timer: number | null = null;
+    let usedThisIdlePeriod = false;
+    let lastPointerMoveAt = 0;
+    const clear = () => {
+      if (timer != null) window.clearTimeout(timer);
+      timer = null;
+    };
+    const schedule = (delay = HUMAN_IDLE_FLY_CHASE_MS) => {
+      clear();
+      if (document.hidden || usedThisIdlePeriod) return;
+      timer = window.setTimeout(() => {
+        timer = null;
+        if (idlePounceAction.current()) {
+          usedThisIdlePeriod = true;
+          return;
+        }
+        schedule(1_000);
+      }, delay);
+    };
+    const markHumanActivity = () => {
+      if (idlePounceCaptureTimer.current != null) {
+        window.clearTimeout(idlePounceCaptureTimer.current);
+        idlePounceCaptureTimer.current = null;
+        setFlyPouncing(false);
+      }
+      usedThisIdlePeriod = false;
+      schedule();
+    };
+    const onPointerMove = () => {
+      const now = Date.now();
+      if (now - lastPointerMoveAt < 750) return;
+      lastPointerMoveAt = now;
+      markHumanActivity();
+    };
+    const onVisibility = () => {
+      if (document.hidden) {
+        clear();
+        if (idlePounceCaptureTimer.current != null) window.clearTimeout(idlePounceCaptureTimer.current);
+        idlePounceCaptureTimer.current = null;
+        setFlyPouncing(false);
+      } else markHumanActivity();
+    };
+    window.addEventListener("pointerdown", markHumanActivity, { passive: true });
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    window.addEventListener("keydown", markHumanActivity);
+    window.addEventListener("wheel", markHumanActivity, { passive: true });
+    document.addEventListener("visibilitychange", onVisibility);
+    schedule();
+    return () => {
+      clear();
+      if (idlePounceCaptureTimer.current != null) window.clearTimeout(idlePounceCaptureTimer.current);
+      idlePounceCaptureTimer.current = null;
+      window.removeEventListener("pointerdown", markHumanActivity);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("keydown", markHumanActivity);
+      window.removeEventListener("wheel", markHumanActivity);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
 
   useLayoutEffect(() => {
     const node = bubbleRef.current;
@@ -470,11 +591,6 @@ export function HerculesPresence({
           setTalk({ spoken: "mrrp", lesson: null, fact: null, replies: [], pose: "attack", topic: "attack", attention: false });
           window.setTimeout(() => setTalk((current) => (current?.topic === "attack" ? null : current)), 1800);
         }
-        return;
-      }
-      if (fly && !reducedMotion() && (phase === 0 || phase === 3) && Date.now() - lastAttack.current > 45_000) {
-        lastAttack.current = Date.now();
-        catchFly();
         return;
       }
       if (phase === 0 || phase === 3) {
@@ -1099,7 +1215,11 @@ export function HerculesPresence({
   ) : null;
 
   return (
-    <HerculesRigProvider mood={look.view.mood} reducedMotion={reducedMotion()}>
+    <HerculesRigProvider
+      mood={look.view.mood}
+      reducedMotion={reducedMotion()}
+      visibilityProfile={phoneShell ? (adding ? "hidden" : "compact") : "full"}
+    >
       <HerculesRigBridge mood={look.view.mood} pose={pose} begging={begging} bagPlay={bagPlay} chatRigUntilRef={chatRigUntilRef} />
       <HerculesOfficeRigBridge expandId={tab === "home" ? focusedWidget : null} />
     <div className={`hercules-world ${hideLiveCat ? "is-phone-compact" : ""} ${focusShellOpen ? "is-focus-open" : ""} ${desktopFly ? "is-desktop-wander" : ""}`} aria-live="polite">
@@ -1157,7 +1277,7 @@ export function HerculesPresence({
           aria-label={`Talk to ${look.view.name}. Opens focus mode.`}
           onClick={openMobileFocus}
         >
-          <HerculesPortrait
+          <HerculesLivePortrait
             mood={look.view.mood}
             hat={look.hat}
             chain={look.chain}
@@ -1395,6 +1515,7 @@ export function HerculesPresence({
           attention || begging ? "needs-you" : "",
           begging ? "is-begging" : "",
           bagPlay ? "is-bag" : "",
+          flyPouncing ? "is-fly-pouncing" : "",
           `useful-${usefulness.light}`,
           adding ? "loafing is-adding" : "",
           pinned ? "pinned" : "",

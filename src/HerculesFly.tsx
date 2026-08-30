@@ -87,7 +87,7 @@ export function HerculesLitterBox({ deadFlies }: {
   deadFlies: number;
 }) {
   return (
-    <div className="herc-litter" aria-label={`Hercules's litter box. ${deadFlies} dead ${deadFlies === 1 ? "fly" : "flies"}.`}>
+    <div className="herc-litter" role="status" aria-live="polite" aria-label={`Hercules's litter box. ${deadFlies} dead ${deadFlies === 1 ? "fly" : "flies"}.`}>
       <span className="herc-litter-rim" aria-hidden="true" />
       <div className="herc-dead-fly-pile" aria-hidden="true">
         {Array.from({ length: deadFlies }, (_, index) => (

@@ -35,6 +35,7 @@ export function HerculesFigure({
   title,
   children,
   rigSnapshot,
+  rigTransitionMs,
 }: {
   pose?: HerculesFigurePose;
   mood?: HerculesFigureMood;
@@ -46,6 +47,8 @@ export function HerculesFigure({
   children?: ReactNode;
   /** When set, per-part transforms come from the rig engine instead of CSS pose classes. */
   rigSnapshot?: RigSnapshot;
+  /** Browser interpolation window between engine-issued snapshots. */
+  rigTransitionMs?: number;
 }) {
   const uid = useId().replace(/:/g, "");
   const bodyClip = `hercBodyClip-${uid}`;
@@ -56,6 +59,9 @@ export function HerculesFigure({
     ? rigRootClassName(mood, true)
     : `herc herc-pose-${pose} herc-mood-${mood}`;
   const rootStyle = rigDriven && styles ? part("root", styles) : undefined;
+  const rigStyle = rootStyle
+    ? ({ ...rootStyle, ["--herc-rig-transition-ms" as string]: `${rigTransitionMs ?? 48}ms` } as CSSProperties)
+    : undefined;
   const bagOpacity = rigDriven && rigSnapshot?.bag.opacity != null ? rigSnapshot.bag.opacity : undefined;
 
   return (
@@ -68,7 +74,7 @@ export function HerculesFigure({
         width="100%"
         height="100%"
         className={rootClass}
-        style={rootStyle}
+        style={rigStyle}
         role={title ? "img" : undefined}
         aria-label={title}
         aria-hidden={title ? undefined : true}
