@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import worker from "../workers/site.js";
 import { herculesProTest } from "../workers/herculesPro.js";
-import { catalogHousehold, postShift, seedDemoHousehold } from "../src/core/index.ts";
+import { catalogHousehold, postShift, seedDemoHousehold, todayKey } from "../src/core/index.ts";
 import { assembleHousehold, personalReplicaForMember, splitForSync } from "../src/core/sync.ts";
 
 const origin = "https://hearth-books.jonathan-beaulne123.workers.dev";
@@ -277,7 +277,7 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
   it("reads personal-envelope shifts from split hosted snapshots through MCP", async () => {
     let household = catalogHousehold();
     household = postShift(household, {
-      date: "2026-08-25",
+      date: todayKey(),
       memberId: "MEM-002",
       accountId: "ACC-CASH",
       sales: "120.00",

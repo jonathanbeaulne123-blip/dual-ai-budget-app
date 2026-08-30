@@ -69,7 +69,7 @@ Room changes and Hercules reactions feel immediate; autonomous life remains boun
 - Focused books/storage/command gate: 4 files, 43 tests passed; the PGlite replacement and rollback tests passed.
 - Post-review focused gate: App fast entry + books + Fund PGlite, 3 files / 16 tests passed; TypeScript passed.
 - Manual `pnpm check` equivalent passed: AI surface, TypeScript, Vite production build, Hercules Pro UI build, and no `dist/_redirects`.
-- Aggregate `pnpm test` completed with two failures reproduced outside this patch: the known Windows `bash`/Python harness dependency and the existing Hercules Pro personal-envelope fixture. All changed-surface tests passed.
+- Aggregate `pnpm test` initially exposed the known Windows `bash`/Python harness dependency and a Hercules Pro `this_week` fixture whose hard-coded August 25 date expired at the Sunday boundary. The release follow-up uses Hearth's Toronto civil `todayKey()` for that fixture; all changed-surface tests passed.
 - Independent books audit: PASS WITH NOTES; transaction boundary, ordering, parameter ceiling, rollback, and privacy preserved. Follow-up is an explicit later-batch rollback fixture.
 - Independent UX audit: PASS after rapid-double-click guarding and failure-path proof were added.
 - Independent verifier: PASS; 33 focused tests, manual production build equivalent, no tracked secret/workbook/export, and clean diff.
