@@ -21,18 +21,18 @@
     },
     {
       "id": "membership",
-      "status": "local-sf02-release-gated",
+      "status": "verified-development-sf02",
       "trace": "Pairing/App -> Google JWT session_id registration -> co-owner/member issue/redeem/access/revoke/leave RPC -> RLS membership; no journal post",
       "flags": ["VITE_SUPABASE_AUTH_ENABLED"],
-      "migrations": ["006 applied", "010 applied", "015 applied", "016 applied", "017 local and unapplied"],
+      "migrations": ["006 applied", "010 applied", "015 applied", "016 applied", "017 applied 2026-08-30"],
       "tests": ["test/auth-invite-chrome.test.ts", "test/auth-membership-authority.test.ts", "test/shared-money-membership.test.ts", "docs/AUTH_INVITE_SMOKE.md"],
-      "development": "QR historical proof; local SF-02 co-owner/member, session device inventory/revoke, leave, last-owner, audit, and Auth identity lock implemented; 017 unapplied and hosted smoke open",
-      "production": "no SF-02 runtime proof; 017 unapplied; delete/reset refused",
+      "development": "Migration 017 applied; two-principal transactional hosted authority matrix passed and rolled back; semantic access UI passed at 320/390/720/1100",
+      "production": "schema present with 0 Production households at apply; no Production identity/recovery runtime proof; delete/reset refused",
       "owner": "co-owner for devices and ordinary members; each member for own leave/device; Jonathan for migration and Production",
-      "proofDate": "2026-08-30 local SF-02 focused proof; 2026-08-26 QR two-device runtime proof",
+      "proofDate": "2026-08-30 SF-02 focused and hosted authority proof; 2026-08-26 QR two-device runtime proof",
       "staleDocumentation": ["HEARTH_ROADMAP live-apply, revoke-UI, and leave wording corrected"],
-      "rollback": "do not apply 017; after an approved apply use reviewed SQL rollback, preserve local replicas, and never conflate leave with Development delete",
-      "unknowns": ["hosted 017 RLS behavior", "email/replay/anon/wrong-household/revoke lifecycle smoke", "two-browser and 390/720/1100 accessibility proof"]
+      "rollback": "use reviewed SQL rollback only if needed, preserve local replicas, and never conflate leave with Development delete",
+      "unknowns": ["live-origin rendered sign-in/access-panel proof", "keyboard and screen-reader proof", "full two-device recovery client journey", "Production identity/recovery smoke"]
     },
     {
       "id": "continuity",

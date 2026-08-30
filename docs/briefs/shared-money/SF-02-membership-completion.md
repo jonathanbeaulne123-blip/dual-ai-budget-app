@@ -38,9 +38,9 @@ Focused unit/integration tests, two-browser Development smoke with synthetic dat
 
 Any partner-personal leak, stale authorization after revoke, orphaned household, cross-environment call, or unreviewed remote migration is stop-ship.
 
-## Local implementation result — 2026-08-30
+## Development verification result — 2026-08-30
 
-**Status:** implemented and focused-tested locally on `codex/shared-money-program`; migration 017 is **unapplied**. Not pushed, merged, deployed, hosted, or live.
+**Status:** implemented on `codex/shared-money-program`; migration 017 is **applied to disposable Development** and its hosted authority smoke passed. Merge/deploy and live-origin client verification remain.
 
 - Co-owner is the default invite role; ordinary member is explicit.
 - Co-owners manage devices and ordinary members, cannot silently remove another co-owner, and cannot leave as the last owner.
@@ -50,6 +50,6 @@ Any partner-personal leak, stale authorization after revoke, orphaned household,
 - Auth-enabled phones are locked to the Google-bound member. Existing household device rows remain visibly labelled soft presence, not Auth.
 - Offline limitation is explicit: server revoke blocks cloud reads/writes and replay, but Hearth cannot erase a replica already cached while the phone is offline.
 
-**Local proof:** final focused proof passed 6 files / 54 tests across membership, access UI, invite/discovery, Auth session, and Supabase connection contracts. TypeScript, production-build equivalents, diff check, and independent privacy/books reviews passed within their recorded local scope. The full Windows aggregate retains unrelated sanitizer-runner and nondeterministic generated-ID failures; exact evidence and isolated rerun results are in the SF-02 worksession.
+**Proof:** final focused proof passed 6 files / 59 tests across membership, access UI, invite/discovery, Auth session, and Supabase connection contracts. TypeScript, production-build equivalents, diff check, and independent privacy/books reviews passed. The committed migration file (SHA-256 `6fd14ecde4755e346d8c46f510ea787d2f99a3a49bd98101f1ab66ce5b8839c1`) applied successfully. A transactional hosted smoke using two distinct existing Google principals passed invite/replay/replacement, RLS isolation, device/member revoke, Personal-seat reuse denial, last-owner/leave, audit redaction, and anon/private-schema denial, then rolled back. Postflight counts were 2 Development households, 0 Production households, and 0 synthetic/session/audit smoke rows.
 
-**Open Release proof:** separately approved migration 017 Development apply; email, expired/replayed, anonymous, wrong-household, revoke/reconnect, former-member outbox, two-browser, RLS/REST, and 390/720/1100 visual/accessibility smoke. These open items prevent a runtime-complete or shipped claim.
+**Open Release proof:** merge/deploy plus live-origin Google configuration and signed-in access-panel verification. Semantic 320/390/720/1100 control/copy/focusability tests passed; rendered keyboard, screen-reader, and full two-device recovery proof remain follow-through.

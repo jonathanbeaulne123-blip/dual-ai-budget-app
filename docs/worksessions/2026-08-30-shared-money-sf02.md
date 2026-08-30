@@ -1,6 +1,6 @@
 # Hearth worksession — Shared Money SF-02 identity and household access
 
-- **Status:** CLOSED — local implementation complete; Release/runtime gate remains open
+- **Status:** CLOSED — Development authority verified; merge/deploy gate in progress
 - **Opened:** 2026-08-30 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -11,7 +11,7 @@
 - **PR or issue:** none
 - **Risk:** Release
 - **Decision owner:** Jonathan
-- **Environment impact:** local implementation for Development; migration unapplied
+- **Environment impact:** migration 017 applied to disposable Development; hosted smoke rolled back; 0 Production households at apply
 
 ## Household outcome
 
@@ -32,7 +32,7 @@ Jonathan and Bianca can use independent Google identities as equal co-owners, se
 - Existing revoke and leave paths do not provide co-owner lifecycle, authenticated device inventory, or immediate per-device server denial.
 - Existing `HouseholdDevice` rows are soft presence and are not Auth authority.
 - Supabase access tokens can remain usable until their encoded expiry after sign-out; the JWT `session_id` maps to `auth.sessions.id`, so SF-02 must validate and gate that session server-side.
-- Supabase CLI is unavailable in this checkout. Migration 017 will be authored and tested locally but not applied.
+- Supabase CLI is unavailable in this checkout. Migration 017 was therefore applied through the authenticated Supabase SQL editor only after Jonathan's explicit authorization.
 
 ## Scope
 
@@ -46,7 +46,7 @@ Jonathan and Bianca can use independent Google identities as equal co-owners, se
 
 ### Out of scope
 
-- Applying migration 017, hosted smoke, Production, deploy, secrets, provider activation, bank feeds, cards, or money movement.
+- Production data, secrets, provider activation, bank feeds, cards, or money movement.
 - Remote erasure of data already cached on an offline device.
 - Supabase dashboard configuration or global Auth session termination.
 
@@ -71,12 +71,17 @@ Jonathan and Bianca can use independent Google identities as equal co-owners, se
 
 - 2026-08-30: `supabase --version` and `pnpm exec supabase --version` are unavailable; no migration was generated or applied through the CLI.
 - 2026-08-30: official Supabase Auth/RLS documentation refreshed before design; `session_id` is the server-verifiable session handle, while sign-out alone does not retroactively invalidate an already-issued access token.
-- 2026-08-30: final focused gate passed 6 files / 54 tests: Shared Money membership, access UI, invite chrome/discovery, Auth session, and Supabase connection contracts.
+- 2026-08-30: final focused gate passed 6 files / 59 tests: Shared Money membership, access UI, invite chrome/discovery, Auth session, and Supabase connection contracts.
 - 2026-08-30: `pnpm exec tsc --noEmit`, Vite production build (359 modules), Hercules Pro UI build, no-`dist/_redirects`, and `git diff --check` passed.
 - 2026-08-30: semantic access-panel coverage passed at 320/390/720/1100 px in jsdom. This proves control/copy presence and focusability, not rendered visual or assistive-technology behavior.
 - 2026-08-30: fresh release `pnpm check` reached 1,222 passed / 2 skipped / 1 failed. The sole failure is the unchanged API sanitizer harness because Git Bash cannot execute a working `python3` on this Windows host. No SF-02 focused failure remained.
 - 2026-08-30: two independent read-only reviews closed eight stop-ship findings during implementation: last-owner concurrency, client-chosen device-ID collision, current-device local cleanup, Personal-snapshot reassignment, stale-invite role escalation, private audit execution, legacy six-argument invite compatibility, and reset-session bypass.
-- 2026-08-30: final privacy verdict PASS with no P0–P2 findings. Final books/authority verdict CONDITIONAL PASS with no P0–P2 findings; its only conditions are the deliberately unapplied migration and hosted/two-browser proof.
+- 2026-08-30: final privacy verdict PASS with no P0–P2 findings. Final books/authority review found no P0–P2 code findings; its migration/hosted conditions were subsequently satisfied by the authorized apply and authority smoke.
+- 2026-08-30: Jonathan explicitly authorized migration 017 apply to disposable Development, hosted smoke, and merge/deploy if green.
+- 2026-08-30: preflight found migration history through 016, 2 Development households, 0 Production households, and no 017 tables. The exact committed migration (33,216 bytes; 718 lines; SHA-256 `6fd14ecde4755e346d8c46f510ea787d2f99a3a49bd98101f1ab66ce5b8839c1`) applied successfully.
+- 2026-08-30: postflight proved migration 017 recorded, RLS enabled, anon/direct-table access denied, public authenticated RPC execution present, and authenticated private `identity_audit` execution denied.
+- 2026-08-30: a transactional hosted smoke using two distinct existing Google principals returned `SF02_HOSTED_SMOKE_PASS`. It covered device registration, wrong-household/RLS isolation, co-owner QR accept/replay, sanitized access inventory, co-owner protection, stale-invite replacement, Personal-seat reuse denial, wrong-email denial, device/member revoke, revoked-session denial, last-owner block, safe leave, former-owner denial, audit redaction, and anonymous/private-schema denial.
+- 2026-08-30: the smoke ended with `ROLLBACK`. Cleanup proof: 2 Development households, 0 Production households, 0 synthetic households, 0 registered sessions, and 0 audit events. Security Advisor refreshed with 0 errors and 18 expected guarded `SECURITY DEFINER` warnings.
 
 ## Decisions
 
@@ -87,11 +92,10 @@ Jonathan and Bianca can use independent Google identities as equal co-owners, se
 
 ## Remaining uncertainty
 
-- Hosted REST/RLS and two-browser Development smoke require explicit approval to apply migration 017 and are not evidence available in this local packet.
 - Supabase project Auth session settings and access-token lifetime remain external configuration to inspect at release time.
-- Migration 017 has not been parsed or exercised by a local Postgres/Supabase runtime because neither Supabase CLI nor a local Postgres/container runtime is available here.
-- Rendered 390/720/1100 visual, keyboard, screen-reader, and two-device recovery behavior remain runtime evidence, not local source-contract evidence.
+- The hosted authority matrix used two distinct live principals/sessions, but it was transactional SQL rather than a rendered two-browser client journey.
+- Rendered 390/720/1100 visual, keyboard, screen-reader, and full two-device recovery behavior remain runtime evidence; semantic 320/390/720/1100 focus/control/copy coverage passed.
 
 ## Handoff
 
-Codex completed the implementation, proof, and requested release-candidate branch push. Jonathan remains the owner for any PR, migration application, Development hosted smoke, merge, deploy, or Production decision. The next action is a separately authorized disposable-Development migration 017 apply and hosted smoke; only after that gate should merge/deploy or SF-03 begin.
+Codex completed the implementation, migration apply, hosted authority proof, cleanup proof, and release-candidate branch push. Jonathan authorized merge/deploy after the green smoke. The remaining action is fast-forward merge, deploy, and live-origin verification; SF-03 follows that gate.

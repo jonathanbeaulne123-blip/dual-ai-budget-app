@@ -16,7 +16,7 @@ The product is not yet a shared bank account app. Opening truth is absent; Produ
 | Capability | Current status | Development truth | Production truth | Nearest blocker |
 | --- | --- | --- | --- | --- |
 | Identity | Partial | Google Auth and exact-subject bind recorded live | Build path exists; identity/recovery runtime unverified | Complete signed-in lifecycle and negative smoke |
-| Membership | Local SF-02 implementation; Release-gated | QR historical proof plus local co-owner/member, device/session revoke, leave, last-owner, identity-lock, and audit code; migration 017 unapplied | No SF-02 runtime proof; migration 017 unapplied | Approved Development apply, email/replay/anon/wrong-household/revoke/two-browser/a11y smoke |
+| Membership | SF-02 Development-verified; deploy-gated | Migration 017 applied; two-principal hosted authority matrix passed and rolled back; semantic access UI passed at 320/390/720/1100 | Schema present with 0 Production households at apply; no Production identity/recovery proof | Merge/deploy, live-origin sign-in/access panel, rendered keyboard/screen-reader proof |
 | Continuity | Verified in Development | Atomic Shared+Personal, Realtime, command log, freshness, G6, and two-phone latency evidence | REST build gate is on; Realtime is code-refused; no Production smoke | Production restore/write/security Release packet |
 | Opening truth | Absent | No accepted opening-books command | Absent | SF-04 semantics, UX, journal, provenance, and correction proof |
 | Batch imports | Current-main, review-only | D-130 live history; D-141 code on current main; current served bundle unverified | Selected-file review only; no feed or credentials | Verify served bundle and combined import smoke |
@@ -30,7 +30,7 @@ The product is not yet a shared bank account app. Opening truth is absent; Produ
 
 `App` and the Supabase Google session establish an environment-scoped JWT. `Pairing` and membership clients call owner/member RPCs for issue, redeem, revoke, leave, delete, or Development reset. Applied migrations 006, 010, 015, and 016 bind access to authenticated membership and RLS. None of these paths posts a journal entry.
 
-Recorded proof remains narrower than the available code. The two-device QR flow passed historically. SF-02 now implements co-owner/ordinary-member invitations, session-backed device inventory and revoke, protected co-owner/last-owner transitions, voluntary leave/rejoin consequences, metadata-only access audit, and an Auth phone identity lock. Migration 017 is not applied, so email/replay/revoke, the complete anonymous/wrong-household matrix, two-browser behavior, and visual/accessibility smoke remain open runtime evidence. Development delete/reset remains separate and explicitly refused in Production.
+The two-device QR flow passed historically. SF-02 implements co-owner/ordinary-member invitations, session-backed device inventory and revoke, protected co-owner/last-owner transitions, voluntary leave/rejoin consequences, metadata-only access audit, and an Auth phone identity lock. Migration 017 is applied, and a transactional hosted smoke with two distinct Google principals passed invite replacement/replay, anonymous and wrong-household denial, RLS isolation, device/member revoke, Personal-seat reuse denial, leave/last-owner behavior, and sanitized audit before rolling back all synthetic state. Semantic access-panel tests passed at 320/390/720/1100 px. Rendered live-origin, keyboard, screen-reader, and full two-device recovery remain narrower runtime evidence. Development delete/reset remains separate and explicitly refused in Production.
 
 ### Continuity
 
@@ -80,6 +80,6 @@ D-172 supersedes D-159 automatic posting. `EVIDENCE_AUTOMATION_ENABLED=false`, a
 - Staged imports can be discarded before Confirm. Confirmed mistakes use reversal/repost.
 - Unknowns remain explicit in the machine-readable matrix; they are not inferred from adjacent code or older deployment history.
 
-## SF-02 local result and next gate
+## SF-02 Development result and next gate
 
-SF-02 is implemented locally without widening financial-write authority. It is not shipped, applied, hosted, or live. The next gate is a separately approved disposable-Development migration 017 apply plus email/replay/anon/wrong-household/revoke/two-browser and 390/720/1100 accessibility proof. Only after that proof may SF-02 be called runtime-complete; the next feature packet is **SF-03 — consented attention and notification fabric**.
+SF-02 is implemented and its hosted Development authority matrix is verified without widening financial-write authority. Migration 017 was applied while the shared project contained 2 Development and 0 Production households; the smoke left 0 synthetic households, 0 registered sessions, and 0 audit events. The final release gate is the already-authorized merge/deploy plus live-origin Google configuration and signed-in access-panel verification. Rendered keyboard and screen-reader evidence remains explicit follow-through, not a reason to overstate the transactional authority smoke. The next feature packet is **SF-03 — consented attention and notification fabric**.

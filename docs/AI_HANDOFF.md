@@ -2,7 +2,7 @@
 
 ## SF-02 Shared Money membership and device access (2026-08-30)
 
-**Status:** Implemented and pushed as a release candidate on `codex/shared-money-program` from exact SF-01 `eceb5ebaeb3db8d8494c0870579cc463859e8619`. Migration **017 is unapplied**. **Not merged, deployed, hosted, activated, or live.** Risk: **Release**.
+**Status:** Release candidate on `codex/shared-money-program` from exact SF-01 `eceb5ebaeb3db8d8494c0870579cc463859e8619`. Migration **017 is applied to disposable Development** and the hosted authority smoke passed. Merge/deploy and live-client verification remain in progress. Risk: **Release**.
 
 **Household outcome:** Jonathan and Bianca can be independently authenticated equal co-owners, inspect sanitized Auth access, remove devices, leave safely, and recover without turning soft presence or a UI filter into authority.
 
@@ -10,13 +10,13 @@
 
 **What changed:** D-176; local migration 017; co-owner/member invitations; Supabase JWT `session_id` capture; live-session plus non-revoked-device membership gates; RPC-only device registration/list/revoke; metadata-only access audit; ordinary-member revoke; voluntary leave/last-owner protection; Auth phone identity lock; explicit offline/rejoin consequences; tests and canonical evidence.
 
-**Verification:** final focused SF-02/Auth gate passed **6 files / 54 tests**; `tsc --noEmit`, Vite production build (359 modules), Hercules Pro UI build, no-`dist/_redirects`, and diff check passed. Independent privacy review is PASS; books/authority review is CONDITIONAL PASS only on the unapplied migration and hosted proof. Fresh full `pnpm check`: **1,222 passed / 2 skipped / 1 failed**; the sole failure is the unchanged Windows Git-Bash/Python token-sanitizer harness. Exact evidence is recorded in [`worksessions/2026-08-30-shared-money-sf02.md`](worksessions/2026-08-30-shared-money-sf02.md).
+**Verification:** final focused SF-02/Auth gate passed **6 files / 59 tests**; `tsc --noEmit`, Vite production build (359 modules), Hercules Pro UI build, no-`dist/_redirects`, and diff check passed. Migration 017 was applied from SHA-256 `6fd14ecde4755e346d8c46f510ea787d2f99a3a49bd98101f1ab66ce5b8839c1`. A transactional hosted smoke using two distinct existing Google principals passed invite/replay/replacement, RLS isolation, session registration/revoke, member revoke, Personal-seat reuse denial, last-owner/leave, sanitized audit, and anonymous/private-schema denial, then rolled back. Security Advisor reported 0 errors; its 18 warnings are the intentional guarded `SECURITY DEFINER` RPC surface. Exact evidence is recorded in [`worksessions/2026-08-30-shared-money-sf02.md`](worksessions/2026-08-30-shared-money-sf02.md).
 
-**Environment/data:** source, SQL packet, tests, and docs were pushed only to remote branch `codex/shared-money-program`. No Supabase CLI was available; no schema was generated or applied remotely. No hosted row, household data, secret, provider, Production, merge, or deploy action.
+**Environment/data:** the shared Supabase project had 2 Development and 0 Production households at apply. The schema apply was project-wide, but no Production household data existed or changed. The smoke used synthetic rows inside one transaction and ended with `ROLLBACK`; postflight counts were 0 synthetic households, 0 registered sessions, and 0 audit events.
 
-**Open Release gate:** migration 017 review/rollback plus separate Development apply approval, then synthetic email/replay/anon/wrong-household/revoke/reconnect/two-browser/RLS and 390/720/1100 accessibility proof. Do not call SF-02 runtime-complete before that evidence.
+**Open Release gate:** merge/deploy plus live-origin Google configuration and signed-in access-panel verification. Semantic access-panel coverage passed at 320/390/720/1100 px; rendered browser, keyboard, and screen-reader proof remains narrower than the hosted authority proof.
 
-**Next owner:** Jonathan for whether to authorize the disposable-Development apply/smoke. After SF-02 runtime proof, the next feature packet is SF-03.
+**Next owner:** Codex for the already-authorized merge, deploy, and live-origin smoke. After that gate, the next feature packet is SF-03.
 
 **Worksession:** [`worksessions/2026-08-30-shared-money-sf02.md`](worksessions/2026-08-30-shared-money-sf02.md)
 
