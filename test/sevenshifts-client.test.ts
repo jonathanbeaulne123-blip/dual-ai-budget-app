@@ -64,7 +64,7 @@ describe("7shifts client", () => {
       { accessToken: "token-value-that-is-long-enough", userDigest: `s7user_${"a".repeat(64)}`, jobId: "JOB-1" },
       undefined,
       fetcher,
-      async () => ({ accessToken: "jwt", refreshToken: "r", userId: "u", email: "a@b.c", googleSubject: "g", displayName: "T", expiresAt: Date.now() + 60_000 }),
+      async () => ({ accessToken: "jwt", refreshToken: "r", userId: "u", sessionId: "66666666-6666-4666-8666-666666666666", email: "a@b.c", googleSubject: "g", displayName: "T", expiresAt: Date.now() + 60_000 }),
     )).resolves.toMatchObject({ companyName: "Harbour", jobId: "JOB-1" });
     const sent = JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body));
     expect(sent).toMatchObject({ environment: "production", householdId: "HH-TEST", memberId: "MEM-001" });

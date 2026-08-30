@@ -16,7 +16,7 @@ The product is not yet a shared bank account app. Opening truth is absent; Produ
 | Capability | Current status | Development truth | Production truth | Nearest blocker |
 | --- | --- | --- | --- | --- |
 | Identity | Partial | Google Auth and exact-subject bind recorded live | Build path exists; identity/recovery runtime unverified | Complete signed-in lifecycle and negative smoke |
-| Membership | Partial | QR passed; issue/redeem/revoke/leave/delete/reset code exists | Member leave exists; delete/reset refuse Production; lifecycle unverified | Email/revoke smoke, device/session revoke, last-owner recovery |
+| Membership | Local SF-02 implementation; Release-gated | QR historical proof plus local co-owner/member, device/session revoke, leave, last-owner, identity-lock, and audit code; migration 017 unapplied | No SF-02 runtime proof; migration 017 unapplied | Approved Development apply, email/replay/anon/wrong-household/revoke/two-browser/a11y smoke |
 | Continuity | Verified in Development | Atomic Shared+Personal, Realtime, command log, freshness, G6, and two-phone latency evidence | REST build gate is on; Realtime is code-refused; no Production smoke | Production restore/write/security Release packet |
 | Opening truth | Absent | No accepted opening-books command | Absent | SF-04 semantics, UX, journal, provenance, and correction proof |
 | Batch imports | Current-main, review-only | D-130 live history; D-141 code on current main; current served bundle unverified | Selected-file review only; no feed or credentials | Verify served bundle and combined import smoke |
@@ -30,7 +30,7 @@ The product is not yet a shared bank account app. Opening truth is absent; Produ
 
 `App` and the Supabase Google session establish an environment-scoped JWT. `Pairing` and membership clients call owner/member RPCs for issue, redeem, revoke, leave, delete, or Development reset. Applied migrations 006, 010, 015, and 016 bind access to authenticated membership and RLS. None of these paths posts a journal entry.
 
-Recorded proof is narrower than the available code. The two-device QR flow passed. Email and revoke lifecycle smoke, the complete anonymous/wrong-household matrix, device/session inventory and revoke, and last-owner transfer/recovery remain open. A member can leave through `hearth_leave_household`; owner delete and bulk reset are explicitly refused in Production.
+Recorded proof remains narrower than the available code. The two-device QR flow passed historically. SF-02 now implements co-owner/ordinary-member invitations, session-backed device inventory and revoke, protected co-owner/last-owner transitions, voluntary leave/rejoin consequences, metadata-only access audit, and an Auth phone identity lock. Migration 017 is not applied, so email/replay/revoke, the complete anonymous/wrong-household matrix, two-browser behavior, and visual/accessibility smoke remain open runtime evidence. Development delete/reset remains separate and explicitly refused in Production.
 
 ### Continuity
 
@@ -80,6 +80,6 @@ D-172 supersedes D-159 automatic posting. `EVIDENCE_AUTOMATION_ENABLED=false`, a
 - Staged imports can be discarded before Confirm. Confirmed mistakes use reversal/repost.
 - Unknowns remain explicit in the machine-readable matrix; they are not inferred from adjacent code or older deployment history.
 
-## SF-01 exit and next packet
+## SF-02 local result and next gate
 
-SF-01 closes when this baseline, its contradiction tests, the living canon corrections, and verification evidence agree. The next packet is **SF-02 — identity, membership, consent, recovery, and separation architecture**. It must consume this baseline without widening financial-write authority.
+SF-02 is implemented locally without widening financial-write authority. It is not shipped, applied, hosted, or live. The next gate is a separately approved disposable-Development migration 017 apply plus email/replay/anon/wrong-household/revoke/two-browser and 390/720/1100 accessibility proof. Only after that proof may SF-02 be called runtime-complete; the next feature packet is **SF-03 — consented attention and notification fabric**.

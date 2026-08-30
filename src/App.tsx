@@ -244,7 +244,15 @@ function makeBooksAdapters(input: {
 }
 import { inviteFromLocation } from "./core/invite.ts";
 import { authInviteFromLocation, authInviteTokenFromText, isAuthInviteToken, savePendingAuthInvite, loadPendingAuthInvite, clearPendingAuthInvite } from "./core/authInvite.ts";
-import { inviteReasonMessage, redeemHouseholdInvite, bindGoogleMemberships, leaveOrDeleteHousehold, resetDevelopmentHouseholds } from "./ledger/householdInvites.ts";
+import {
+  bindGoogleMemberships,
+  inviteReasonMessage,
+  leaveHousehold,
+  leaveOrDeleteHousehold,
+  redeemHouseholdInvite,
+  registerCurrentHouseholdDevice,
+  resetDevelopmentHouseholds,
+} from "./ledger/householdInvites.ts";
 import { CollapsibleCard } from "./theme/PaperTheme.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
 import type { RepeatingDraft } from "./RepeatingForm.tsx";
@@ -808,6 +816,35 @@ export function App() {
     setSupabaseAuthReturned(false);
     void continueWithGoogle();
   }, [supabaseAuthReturned]);
+
+  useEffect(() => {
+    if (!supabaseAuthEnabled() || !household || !session) return;
+    let cancelled = false;
+    void (async () => {
+      const authSession = await ensureSupabaseSession(environment);
+      if (!authSession || cancelled) return;
+      const config = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
+      const registered = await registerCurrentHouseholdDevice({
+        environment,
+        deviceId: localDeviceId(),
+        deviceLabel: describeDeviceLabel(),
+        config,
+      });
+      if (cancelled || registered.ok) return;
+      setSyncState("error");
+      setError(inviteReasonMessage(registered.reason));
+      if (registered.reason === "device-revoked" || registered.reason === "session-not-live") {
+        clearContinuityOutboxForHousehold(environment, household.householdId);
+        clearSupabaseSession(environment);
+      }
+    })().catch((caught) => {
+      if (!cancelled) {
+        setSyncState("error");
+        setError(caught instanceof Error ? caught.message : String(caught));
+      }
+    });
+    return () => { cancelled = true; };
+  }, [environment, household?.householdId, session?.memberId]);
 
   useEffect(() => {
     const stored = loadPendingAuthInvite();
@@ -1911,6 +1948,13 @@ export function App() {
     if (redeemed.environment !== environment) {
       setEnvironment(redeemed.environment);
     }
+    const registered = await registerCurrentHouseholdDevice({
+      environment: redeemed.environment,
+      deviceId: localDeviceId(),
+      deviceLabel: describeDeviceLabel(),
+      config: cloudConfig,
+    });
+    if (!registered.ok) throw new Error(inviteReasonMessage(registered.reason));
     const identity = { email: authSession.email, subject: authSession.googleSubject };
     const found = await discoverContinuityMemberships(identity, redeemed.environment, cloudConfig);
     const match = found.find((row) => row.household.householdId === redeemed.householdId)
@@ -1947,6 +1991,13 @@ export function App() {
           return;
         }
         cloudConfig = authenticatedSupabaseConfig(cloudConfig, authSession);
+        const registered = await registerCurrentHouseholdDevice({
+          environment,
+          deviceId: localDeviceId(),
+          deviceLabel: describeDeviceLabel(),
+          config: cloudConfig,
+        });
+        if (!registered.ok) throw new Error(inviteReasonMessage(registered.reason));
         identity = { email: authSession.email, subject: authSession.googleSubject };
         identityDetails = {
           ...identity,
@@ -1984,6 +2035,13 @@ export function App() {
       if (!found.length && supabaseAuthEnabled() && cloudConfig?.accessToken) {
         const bound = await bindGoogleMemberships({ environment, config: cloudConfig });
         if (bound.ok && bound.bound > 0) {
+          const registered = await registerCurrentHouseholdDevice({
+            environment,
+            deviceId: localDeviceId(),
+            deviceLabel: describeDeviceLabel(),
+            config: cloudConfig,
+          });
+          if (!registered.ok) throw new Error(inviteReasonMessage(registered.reason));
           found = await discoverContinuityMemberships(identity, environment, cloudConfig);
         } else if (!bound.ok && bound.reason === "bind-rpc-missing") {
           throw new Error(
@@ -2500,6 +2558,7 @@ export function App() {
     memberId: string;
     role: "owner" | "member" | null;
     name: string;
+    mode?: "leave";
   }): Promise<void> {
     setBusy(true);
     try {
@@ -2508,12 +2567,14 @@ export function App() {
         throw new Error("Continue with Google before deleting a household.");
       }
       const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
-      const result = await leaveOrDeleteHousehold({
-        environment,
-        householdId: input.householdId,
-        role: input.role,
-        config: cloudConfig,
-      });
+      const result = input.mode === "leave"
+        ? await leaveHousehold({ environment, householdId: input.householdId, config: cloudConfig })
+        : await leaveOrDeleteHousehold({
+          environment,
+          householdId: input.householdId,
+          role: input.role,
+          config: cloudConfig,
+        });
       if (!result.ok) {
         throw new Error(inviteReasonMessage(result.reason));
       }
@@ -3964,6 +4025,20 @@ export function App() {
             onBeforeSensitive={() => gateWithGoogle({ record: true })}
             softPresenceOptedOut={softPresenceOptOut}
             onSoftPresenceOptOut={applySoftPresenceOptOut}
+            onLeaveHousehold={async () => {
+              await removeHouseholdFromDevice({
+                householdId: household.householdId,
+                memberId: session.memberId,
+                role: isHouseholdOwner ? "owner" : "member",
+                name: household.name,
+                mode: "leave",
+              });
+            }}
+            onCurrentDeviceRevoked={() => {
+              clearContinuityOutboxForHousehold(environment, household.householdId);
+              clearSupabaseSession(environment);
+              setSyncState("error");
+            }}
           />
           </DeferredSurface>
           <GoogleBridgeCard
@@ -4003,20 +4078,30 @@ export function App() {
             <header><h2>This phone</h2></header>
             <p className="muted">
               You are {household.members.find((member) => member.id === session.memberId)?.name}.
-              Household vs personal is a filter, not a lock.
+              {supabaseAuthEnabled()
+                ? " Google Auth locks this phone to that member; household and personal views remain presentation scopes."
+                : " Household vs personal is a filter, not a lock."}
             </p>
-            <label>This phone is</label>
-            <div className="chips">
-              {household.members.filter((member) => member.active).map((member) => (
-                <button
-                  key={member.id}
-                  className={`chip ${session.memberId === member.id ? "selected" : ""}`}
-                  onClick={() => rememberSession({ memberId: member.id, view })}
-                >
-                  {member.name}
-                </button>
-              ))}
-            </div>
+            {supabaseAuthEnabled() ? (
+              <p className="muted">
+                To use a different member identity, sign out and Continue with that person&apos;s Google account.
+              </p>
+            ) : (
+              <>
+                <label>This phone is</label>
+                <div className="chips">
+                  {household.members.filter((member) => member.active).map((member) => (
+                    <button
+                      key={member.id}
+                      className={`chip ${session.memberId === member.id ? "selected" : ""}`}
+                      onClick={() => rememberSession({ memberId: member.id, view })}
+                    >
+                      {member.name}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
             <p className="muted" style={{ marginTop: 12 }}>
               Sign out clears Google and Auth tokens on this phone only. The cloud household stays.
               Native Keychain storage is a later release note — web builds keep tokens in localStorage until then.

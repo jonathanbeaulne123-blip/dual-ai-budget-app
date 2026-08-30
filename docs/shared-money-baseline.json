@@ -21,18 +21,18 @@
     },
     {
       "id": "membership",
-      "status": "partial",
-      "trace": "Pairing/App -> issue/redeem/revoke/leave/delete/reset RPC -> RLS membership; no journal post",
+      "status": "local-sf02-release-gated",
+      "trace": "Pairing/App -> Google JWT session_id registration -> co-owner/member issue/redeem/access/revoke/leave RPC -> RLS membership; no journal post",
       "flags": ["VITE_SUPABASE_AUTH_ENABLED"],
-      "migrations": ["006 applied", "010 applied", "015 applied", "016 applied"],
-      "tests": ["test/auth-invite-chrome.test.ts", "test/auth-membership-authority.test.ts", "docs/AUTH_INVITE_SMOKE.md"],
-      "development": "QR passed; email/revoke smoke open; leave/delete/reset code and applied RPCs exist",
-      "production": "member leave RPC exists; owner delete/reset refused; lifecycle unverified",
-      "owner": "household owner for invite/revoke; member for leave; Jonathan for Production",
-      "proofDate": "2026-08-26 QR two-device smoke",
+      "migrations": ["006 applied", "010 applied", "015 applied", "016 applied", "017 local and unapplied"],
+      "tests": ["test/auth-invite-chrome.test.ts", "test/auth-membership-authority.test.ts", "test/shared-money-membership.test.ts", "docs/AUTH_INVITE_SMOKE.md"],
+      "development": "QR historical proof; local SF-02 co-owner/member, session device inventory/revoke, leave, last-owner, audit, and Auth identity lock implemented; 017 unapplied and hosted smoke open",
+      "production": "no SF-02 runtime proof; 017 unapplied; delete/reset refused",
+      "owner": "co-owner for devices and ordinary members; each member for own leave/device; Jonathan for migration and Production",
+      "proofDate": "2026-08-30 local SF-02 focused proof; 2026-08-26 QR two-device runtime proof",
       "staleDocumentation": ["HEARTH_ROADMAP live-apply, revoke-UI, and leave wording corrected"],
-      "rollback": "revoke/leave deactivates membership; Development delete/reset is explicit",
-      "unknowns": ["device/session revoke", "last-owner transfer/recovery", "email/revoke lifecycle smoke"]
+      "rollback": "do not apply 017; after an approved apply use reviewed SQL rollback, preserve local replicas, and never conflate leave with Development delete",
+      "unknowns": ["hosted 017 RLS behavior", "email/replay/anon/wrong-household/revoke lifecycle smoke", "two-browser and 390/720/1100 accessibility proof"]
     },
     {
       "id": "continuity",

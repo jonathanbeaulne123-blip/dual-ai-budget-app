@@ -72,7 +72,7 @@ describe("Flinks scaffold client", () => {
       { environment: "development", householdId: "HH-TEST", memberId: "MEM-001" },
       undefined,
       fetcher,
-      async () => ({ accessToken: "jwt", refreshToken: "refresh", userId: "user", email: "test@example.com", googleSubject: "google", displayName: "Test", expiresAt: Date.now() + 60_000 }),
+      async () => ({ accessToken: "jwt", refreshToken: "refresh", userId: "user", sessionId: "55555555-5555-4555-8555-555555555555", email: "test@example.com", googleSubject: "google", displayName: "Test", expiresAt: Date.now() + 60_000 }),
     )).resolves.toEqual(expect.objectContaining({ connectionId: "connection_12345678901234567890" }));
     expect(fetcher).toHaveBeenCalledWith("/bank/flinks/sessions", expect.objectContaining({
       method: "POST",

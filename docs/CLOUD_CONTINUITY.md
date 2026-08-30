@@ -2,9 +2,11 @@
 
 > **Accepted product direction — 2026-08-24.** This file supersedes language that describes hosted sync as optional publishing, a three-word phrase as the normal access model, or one phone as the durable home of the ledger.
 
-## Implementation status — D-114 continuity, D-117 scopes, D-122 CAS, D-123 repair, D-149 T1 atomic push
+## Implementation status — D-114 continuity, D-117 scopes, D-122 CAS, D-123 repair, D-149 T1 atomic push, D-176 local access controls
 
 The working continuity slices are implemented. Migrations **002, 003, 004, 005, 006, 007, 008, 010, 012, 013, 014, 015, and 016** are recorded applied in the shared Supabase project; Development command-log and Realtime proof specifically depend on **013** and **014**. Migration **012** (`publish_continuity_snapshot`) is **applied on Development** (2026-08-26) for Auth-signed-in continuity. Migration **014** (Realtime publication) is **applied on Development** (2026-08-26):
+
+**SF-02 / D-176 boundary:** migration **017 is local and unapplied**. Its release packet adds co-owner invites, a session-id-backed Auth device registry, sanitized access inventory, device/member revocation, safe leave/last-owner rules, and metadata-only identity audit. Existing snapshot `household.devices` remains non-authoritative soft presence. On apply, cloud membership checks also require a live Supabase `auth.sessions` row and, once registered, a non-revoked matching session. The server can deny a revoked device immediately; it cannot erase an offline browser's cached replica. Hosted RLS/REST and two-browser evidence are therefore still open.
 
 - **Continue with Google** is available even when a fresh device has no local household;
 - Development discovers memberships through Auth JWT / continuity membership rows (legacy open snapshot scan remains only when membership tables are missing);

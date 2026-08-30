@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   formatInvitePhrase,
   isValidInviteToken,
@@ -32,9 +32,15 @@ import {
   authInviteIssueGate,
   inviteReasonMessage,
   issueHouseholdInvite,
+  listHouseholdAccess,
+  registerCurrentHouseholdDevice,
+  revokeHouseholdDevice,
+  revokeHouseholdMember,
+  type HouseholdAccess,
   type ContinuitySyncUiState,
   type InviteKind,
   type IssueInviteResult,
+  type MembershipRole,
 } from "./ledger/householdInvites.ts";
 import { pushSupabaseHousehold, readSupabaseConfig } from "./ledger/supabase.ts";
 import { AuthJoinQr } from "./AuthJoinQr.tsx";
@@ -192,6 +198,7 @@ function AuthInviteChrome({
   const invitees = household.members.filter((member) => member.active && member.id !== memberId);
   const [targetMemberId, setTargetMemberId] = useState(invitees[0]?.id ?? "");
   const [email, setEmail] = useState("");
+  const [role, setRole] = useState<MembershipRole>("owner");
   const [issued, setIssued] = useState<IssueInviteResult & { ok: true } | null>(null);
   const issueGate = authInviteIssueGate({
     syncState,
@@ -217,6 +224,7 @@ function AuthInviteChrome({
         targetMemberId,
         kind,
         invitedEmail: kind === "email" ? email : null,
+        role,
         config,
       });
       if (!result.ok) throw new Error(inviteReasonMessage(result.reason));
@@ -277,6 +285,19 @@ function AuthInviteChrome({
         autoCorrect="off"
         disabled={issueBlocked}
       />
+      <label htmlFor="auth-invite-role">Household access</label>
+      <select
+        id="auth-invite-role"
+        value={role}
+        onChange={(event) => setRole(event.target.value === "member" ? "member" : "owner")}
+        disabled={issueBlocked}
+      >
+        <option value="owner">Co-owner — equal routine authority</option>
+        <option value="member">Member — owner-managed access</option>
+      </select>
+      <p className="muted">
+        Co-owners can manage devices and ordinary members. One co-owner cannot silently remove another.
+      </p>
       <p className="muted" id="auth-invite-wait" role="status" aria-atomic="true">
         {issueGate.message ?? ""}
       </p>
@@ -301,7 +322,7 @@ function AuthInviteChrome({
       {issued && (
         <div className="auth-invite-issued">
           <p>
-            {issued.kind === "email" ? "Email" : "QR"} invite ready. Partner opens the camera,
+            {issued.kind === "email" ? "Email" : "QR"} {issued.role === "owner" ? "co-owner" : "member"} invite ready. Partner opens the camera,
             scans this code, Continues with Google — no household required beforehand.
           </p>
           <AuthJoinQr joinUrl={absoluteJoin} />
@@ -311,6 +332,191 @@ function AuthInviteChrome({
         </div>
       )}
     </div>
+  );
+}
+
+function HouseholdAccessPanel({
+  household,
+  busy,
+  onBusy,
+  onError,
+  onLeaveHousehold,
+  onCurrentDeviceRevoked,
+}: {
+  household: Household;
+  busy: boolean;
+  onBusy: (value: boolean) => void;
+  onError: (value: string) => void;
+  onLeaveHousehold?: () => Promise<void>;
+  onCurrentDeviceRevoked?: () => void;
+}) {
+  const [access, setAccess] = useState<HouseholdAccess | null>(null);
+
+  async function refresh() {
+    if (!supabaseAuthEnabled()) return;
+    const session = await ensureSupabaseSession(household.environment);
+    const config = authenticatedSupabaseConfig(readSupabaseConfig(), session);
+    if (!session || !config?.accessToken) return;
+    const registered = await registerCurrentHouseholdDevice({
+      environment: household.environment,
+      deviceId: localDeviceId(),
+      deviceLabel: describeDeviceLabel(),
+      config,
+    });
+    if (!registered.ok) {
+      onError(inviteReasonMessage(registered.reason));
+      return;
+    }
+    const result = await listHouseholdAccess({
+      environment: household.environment,
+      householdId: household.householdId,
+      config,
+    });
+    if (!result.ok) {
+      onError(inviteReasonMessage(result.reason));
+      return;
+    }
+    setAccess(result.access);
+  }
+
+  useEffect(() => {
+    void refresh();
+    // household revision changes do not alter Auth access; identity is the key.
+  }, [household.environment, household.householdId]);
+
+  async function revokeDevice(accessId: string, current: boolean) {
+    const warning = current
+      ? "Remove this signed-in device now? Cloud access will stop immediately after the server confirms."
+      : "Remove this device? Its cloud reads and queued writes will be denied on reconnect.";
+    if (!window.confirm(warning)) return;
+    onBusy(true);
+    onError("");
+    try {
+      const session = await ensureSupabaseSession(household.environment);
+      const config = authenticatedSupabaseConfig(readSupabaseConfig(), session);
+      const result = await revokeHouseholdDevice({
+        environment: household.environment,
+        householdId: household.householdId,
+        accessId,
+        config,
+      });
+      if (!result.ok) throw new Error(inviteReasonMessage(result.reason));
+      if (current) {
+        onCurrentDeviceRevoked?.();
+        onError("This device no longer has cloud access. Sign out and Continue with Google for a fresh session.");
+        return;
+      }
+      await refresh();
+    } catch (caught) {
+      onError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      onBusy(false);
+    }
+  }
+
+  async function revokeMember(memberId: string) {
+    if (!window.confirm("Remove this member? Their cloud access and queued writes will stop. Rejoining needs a fresh invite.")) return;
+    onBusy(true);
+    onError("");
+    try {
+      const session = await ensureSupabaseSession(household.environment);
+      const config = authenticatedSupabaseConfig(readSupabaseConfig(), session);
+      const result = await revokeHouseholdMember({
+        environment: household.environment,
+        householdId: household.householdId,
+        memberId,
+        config,
+      });
+      if (!result.ok) throw new Error(inviteReasonMessage(result.reason));
+      await refresh();
+    } catch (caught) {
+      onError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      onBusy(false);
+    }
+  }
+
+  if (!supabaseAuthEnabled()) return null;
+  const ownerCount = access?.members.filter((member) => member.role === "owner").length ?? 0;
+  const mayLeave = access?.currentRole !== "owner" || ownerCount > 1;
+
+  return (
+    <section className="household-access" aria-labelledby="household-access-heading">
+      <header>
+        <h3 id="household-access-heading">Household access</h3>
+        <button className="chip" type="button" disabled={busy} onClick={() => void refresh()}>Refresh</button>
+      </header>
+      <p className="muted">
+        Authenticated access only. No balances, transactions, Google subjects, emails, or tokens appear here.
+      </p>
+      {!access ? <p className="muted">Loading authenticated devices…</p> : (
+        <>
+          <ul className="access-members">
+            {access.members.map((member) => (
+              <li key={member.memberId}>
+                <strong>{member.displayName}</strong> · {member.role === "owner" ? "co-owner" : "member"}
+                {member.memberId === access.currentMemberId ? <span className="pill good">you</span> : null}
+                {access.currentRole === "owner" && member.role === "member" && member.memberId !== access.currentMemberId ? (
+                  <button type="button" className="chip" disabled={busy} onClick={() => void revokeMember(member.memberId)}>Remove member</button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+          <h4>Signed-in devices</h4>
+          {access.devices.length === 0 ? <p className="muted">No registered Auth devices yet.</p> : (
+            <ul className="access-devices">
+              {access.devices.map((device) => {
+                const owner = access.members.find((member) => member.memberId === device.memberId);
+                const canRevoke = access.currentRole === "owner" || device.memberId === access.currentMemberId;
+                return (
+                  <li key={device.accessId}>
+                    <strong>{device.deviceLabel}</strong> · {owner?.displayName ?? "Household member"}
+                    {device.current ? <span className="pill good">this session</span> : null}
+                    <span className="muted"> · seen {device.lastSeenAt.slice(0, 16).replace("T", " ")} UTC</span>
+                    {canRevoke ? (
+                      <button type="button" className="chip" disabled={busy} onClick={() => void revokeDevice(device.accessId, device.current)}>
+                        Remove device
+                      </button>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <p className="muted">
+            Removing access blocks Hearth cloud reads and writes. It cannot erase books already cached while a device is offline.
+          </p>
+          {access.audit.length > 0 ? (
+            <details>
+              <summary>Recent access activity</summary>
+              <ul className="access-audit">
+                {access.audit.slice(0, 8).map((event, index) => (
+                  <li key={`${event.occurredAt}:${event.action}:${index}`}>
+                    {event.action.replaceAll("-", " ")}
+                    <span className="muted"> · {event.occurredAt.slice(0, 16).replace("T", " ")} UTC</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ) : null}
+          {onLeaveHousehold ? (
+            <button
+              type="button"
+              className="ghost"
+              disabled={busy || !mayLeave}
+              title={mayLeave ? undefined : "Add another co-owner before the last owner leaves."}
+              onClick={() => {
+                if (!window.confirm("Leave this household? Cloud access ends, queued changes will not replay, this phone's local copy will be cleared, and rejoining needs a fresh invite.")) return;
+                void onLeaveHousehold();
+              }}
+            >
+              Leave household
+            </button>
+          ) : null}
+          {!mayLeave ? <p className="muted">Add another co-owner before the last owner leaves.</p> : null}
+        </>
+      )}
+    </section>
   );
 }
 
@@ -330,6 +536,8 @@ export function PairingCard({
   onBeforeSensitive,
   softPresenceOptedOut = false,
   onSoftPresenceOptOut,
+  onLeaveHousehold,
+  onCurrentDeviceRevoked,
 }: {
   household: Household;
   memberId: string;
@@ -340,6 +548,8 @@ export function PairingCard({
   inviteInput: string;
   softPresenceOptedOut?: boolean;
   onSoftPresenceOptOut?: (optedOut: boolean) => void;
+  onLeaveHousehold?: () => Promise<void>;
+  onCurrentDeviceRevoked?: () => void;
   onInviteInput: (value: string) => void;
   onHousehold: (household: Household) => Promise<void>;
   onError: (value: string) => void;
@@ -415,6 +625,14 @@ export function PairingCard({
         syncState={syncState}
         onError={onError}
         onBusy={onBusy}
+      />
+      <HouseholdAccessPanel
+        household={household}
+        busy={busy}
+        onBusy={onBusy}
+        onError={onError}
+        onLeaveHousehold={onLeaveHousehold}
+        onCurrentDeviceRevoked={onCurrentDeviceRevoked}
       />
       {!supabaseAuthEnabled() && (
         <>

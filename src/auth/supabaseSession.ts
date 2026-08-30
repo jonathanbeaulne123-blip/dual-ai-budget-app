@@ -7,6 +7,8 @@ export type HearthSupabaseSession = {
   refreshToken: string;
   providerToken?: string;
   userId: string;
+  /** Supabase JWT session_id; migration 017 uses it for device revocation. */
+  sessionId: string;
   email: string;
   googleSubject: string;
   displayName: string;
@@ -68,7 +70,7 @@ function isSession(value: unknown): value is HearthSupabaseSession {
   if (!value || typeof value !== "object") return false;
   const row = value as Partial<HearthSupabaseSession>;
   return Boolean(
-    row.accessToken && row.refreshToken && row.userId && row.email
+    row.accessToken && row.refreshToken && row.userId && row.sessionId && row.email
     && Number.isFinite(row.expiresAt),
   );
 }
@@ -103,6 +105,7 @@ function decodeBase64Url(value: string): string {
 
 type JwtPayload = {
   sub?: string;
+  session_id?: string;
   email?: string;
   exp?: number;
   user_metadata?: Record<string, unknown>;
@@ -126,13 +129,17 @@ function sessionFromTokenPayload(input: {
   const jwt = decodeSupabaseJwt(input.accessToken);
   const metadata = input.user?.user_metadata ?? jwt.user_metadata ?? {};
   const userId = input.user?.id || jwt.sub || "";
+  const sessionId = String(jwt.session_id || "");
   const email = String(input.user?.email || jwt.email || metadata.email || "").trim().toLowerCase();
-  if (!userId || !email) throw new Error("Supabase did not return a usable Google identity.");
+  if (!userId || !sessionId || !email) {
+    throw new Error("Supabase did not return a usable Google session identity.");
+  }
   return {
     accessToken: input.accessToken,
     refreshToken: input.refreshToken,
     providerToken: input.providerToken,
     userId,
+    sessionId,
     email,
     googleSubject: String(metadata.provider_id || metadata.sub || ""),
     displayName: String(metadata.full_name || metadata.name || "").trim(),
