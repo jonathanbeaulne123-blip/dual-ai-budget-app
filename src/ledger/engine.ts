@@ -45,6 +45,37 @@ type Queryable = {
   exec: PGlite["exec"];
 };
 
+type InsertValue = string | number | boolean | null;
+
+/**
+ * PGlite pays a meaningful WASM/IndexedDB boundary cost per query. Keep the
+ * accepted snapshot rebuild transactional, but cross that boundary in bounded
+ * batches instead of once per ledger row.
+ */
+async function insertRows(
+  db: Queryable,
+  table: string,
+  columns: string[],
+  rows: InsertValue[][],
+  batchSize = 250,
+): Promise<void> {
+  if (!rows.length) return;
+  for (let offset = 0; offset < rows.length; offset += batchSize) {
+    const batch = rows.slice(offset, offset + batchSize);
+    const values: InsertValue[] = [];
+    const tuples = batch.map((row, rowIndex) => {
+      if (row.length !== columns.length) throw new Error(`Invalid ${table} projection row.`);
+      values.push(...row);
+      const base = rowIndex * columns.length;
+      return `(${columns.map((_, columnIndex) => `$${base + columnIndex + 1}`).join(",")})`;
+    });
+    await db.query(
+      `INSERT INTO ${table} (${columns.join(",")}) VALUES ${tuples.join(",")}`,
+      values,
+    );
+  }
+}
+
 let browserDbs = new Map<string, PGlite>();
 
 export function booksIdbName(environment: Environment): string {
@@ -427,82 +458,40 @@ async function writeBooks(db: Queryable, household: Household, compiled: Compile
       compiled.lastCommittedAt,
     ],
   );
-  for (const member of compiled.members) {
-    await db.query(
-      "INSERT INTO members (id, household_id, name, color, active) VALUES ($1,$2,$3,$4,$5)",
-      [member.id, compiled.householdId, member.name, member.color, member.active],
-    );
-  }
-  for (const category of compiled.categories) {
-    await db.query(
-      `INSERT INTO categories (id, household_id, parent_id, record_type, name, transaction_type, essential, income_stability, active, sort_order)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-      [category.id, compiled.householdId, category.parentId, category.recordType, category.name, category.transactionType, category.essential, category.incomeStability, category.active, category.sortOrder],
-    );
-  }
-  for (const account of compiled.chart) {
-    const sourceAccount = household.accounts.find((row) => row.id === account.bankAccountId);
-    await db.query(
-      `INSERT INTO chart_accounts (id, household_id, code, name, account_type, normal_balance, source, bank_account_id, category_id, owner_member_id, scope, active)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
-      [account.id, compiled.householdId, account.code, account.name, account.accountType, account.normalBalance, account.source, account.bankAccountId ?? null, account.categoryId ?? null, account.ownerMemberId ?? null, sourceAccount?.scope === "personal" ? "personal" : "shared", account.active],
-    );
-  }
-  for (const entry of compiled.entries) {
-    await db.query(
-      `INSERT INTO journal_entries (id, household_id, date_key, memo, place, source, source_id, visibility, created_by, recognized, duplicate_key, origin_ids)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
-      [entry.id, compiled.householdId, entry.date, entry.memo, entry.place, entry.source, entry.sourceId ?? null, entry.visibility, entry.createdBy, entry.recognized, entry.duplicateKey, JSON.stringify(entry.originTransactionIds)],
-    );
-    for (const line of entry.lines) {
-      await db.query(
-        `INSERT INTO journal_lines (id, household_id, entry_id, line_no, account_id, debit_cents, credit_cents, party_id, note)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-        [line.id, compiled.householdId, entry.id, line.lineNo, line.accountId, line.debitCents, line.creditCents, line.partyId, line.note],
-      );
-    }
-  }
-  for (const tx of household.transactions) {
-    await db.query(
-      `INSERT INTO source_transactions (id, household_id, date_key, type, amount_cents, account_id, subcategory_id, note, place, visibility, created_by, is_duplicate, payload)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
-      [tx.id, compiled.householdId, tx.date, tx.type, tx.amountCents, tx.accountId, tx.subcategoryId, tx.note, tx.place, tx.visibility, tx.createdBy, tx.isDuplicate, JSON.stringify(tx)],
-    );
-  }
-  for (const shift of compiled.shifts) {
-    await db.query(
-      `INSERT INTO shifts (id, household_id, date_key, member_id, account_id, sales_cents, cash_tips_cents, cc_tips_cents, hours, net_tips_cents, wages_cents, visibility, created_by, payload)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
-      [shift.id, compiled.householdId, shift.date, shift.memberId, shift.accountId, shift.salesCents, shift.cashTipsCents, shift.ccTipsCents, shift.hours, shift.netTipsCents, shift.wagesCents, shift.visibility, shift.createdBy, JSON.stringify(shift)],
-    );
-  }
-  for (const goal of compiled.goals) {
-    await db.query(
-      `INSERT INTO goals (id, household_id, name, target_cents, saved_cents, deadline, shared, owner_member_id, subcategory_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-      [goal.id, compiled.householdId, goal.name, goal.targetCents, goal.savedCents, goal.deadline, goal.shared, goal.ownerMemberId, goal.subcategoryId],
-    );
-  }
-  for (const plan of compiled.budgetPlans) {
-    await db.query(
-      `INSERT INTO budget_plans (id, household_id, month_key, subcategory_id, amount_cents, essential, income_stability, active)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-      [plan.id, compiled.householdId, plan.monthKey, plan.subcategoryId, plan.amountCents, plan.essential, plan.incomeStability, plan.active],
-    );
-  }
-  for (const recurrence of compiled.recurrences) {
-    await db.query(
-      `INSERT INTO recurrences (id, household_id, cadence, next_date, type, amount_cents, account_id, subcategory_id, note, active, auto_post)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-      [recurrence.id, compiled.householdId, recurrence.cadence, recurrence.nextDate, recurrence.type, recurrence.amountCents, recurrence.accountId, recurrence.subcategoryId, recurrence.note, recurrence.active, recurrence.autoPost],
-    );
-  }
-  for (const item of compiled.activity) {
-    await db.query(
-      "INSERT INTO activity (id, household_id, at, action, summary) VALUES ($1,$2,$3,$4,$5)",
-      [item.id, compiled.householdId, item.at, item.action, item.summary],
-    );
-  }
+  await insertRows(db, "members", ["id", "household_id", "name", "color", "active"], compiled.members.map((member) => [
+    member.id, compiled.householdId, member.name, member.color, member.active,
+  ]));
+  await insertRows(db, "categories", ["id", "household_id", "parent_id", "record_type", "name", "transaction_type", "essential", "income_stability", "active", "sort_order"], compiled.categories.map((category) => [
+    category.id, compiled.householdId, category.parentId, category.recordType, category.name, category.transactionType, category.essential, category.incomeStability, category.active, category.sortOrder,
+  ]));
+  const sourceAccounts = new Map(household.accounts.map((account) => [account.id, account]));
+  await insertRows(db, "chart_accounts", ["id", "household_id", "code", "name", "account_type", "normal_balance", "source", "bank_account_id", "category_id", "owner_member_id", "scope", "active"], compiled.chart.map((account) => [
+    account.id, compiled.householdId, account.code, account.name, account.accountType, account.normalBalance, account.source, account.bankAccountId ?? null, account.categoryId ?? null, account.ownerMemberId ?? null, sourceAccounts.get(account.bankAccountId ?? "")?.scope === "personal" ? "personal" : "shared", account.active,
+  ]));
+  await insertRows(db, "journal_entries", ["id", "household_id", "date_key", "memo", "place", "source", "source_id", "visibility", "created_by", "recognized", "duplicate_key", "origin_ids"], compiled.entries.map((entry) => [
+    entry.id, compiled.householdId, entry.date, entry.memo, entry.place, entry.source, entry.sourceId ?? null, entry.visibility, entry.createdBy, entry.recognized, entry.duplicateKey, JSON.stringify(entry.originTransactionIds),
+  ]));
+  await insertRows(db, "journal_lines", ["id", "household_id", "entry_id", "line_no", "account_id", "debit_cents", "credit_cents", "party_id", "note"], compiled.entries.flatMap((entry) => entry.lines.map((line) => [
+    line.id, compiled.householdId, entry.id, line.lineNo, line.accountId, line.debitCents, line.creditCents, line.partyId, line.note,
+  ])));
+  await insertRows(db, "source_transactions", ["id", "household_id", "date_key", "type", "amount_cents", "account_id", "subcategory_id", "note", "place", "visibility", "created_by", "is_duplicate", "payload"], household.transactions.map((tx) => [
+    tx.id, compiled.householdId, tx.date, tx.type, tx.amountCents, tx.accountId, tx.subcategoryId, tx.note, tx.place, tx.visibility, tx.createdBy, tx.isDuplicate, JSON.stringify(tx),
+  ]));
+  await insertRows(db, "shifts", ["id", "household_id", "date_key", "member_id", "account_id", "sales_cents", "cash_tips_cents", "cc_tips_cents", "hours", "net_tips_cents", "wages_cents", "visibility", "created_by", "payload"], compiled.shifts.map((shift) => [
+    shift.id, compiled.householdId, shift.date, shift.memberId, shift.accountId, shift.salesCents, shift.cashTipsCents, shift.ccTipsCents, shift.hours, shift.netTipsCents, shift.wagesCents, shift.visibility, shift.createdBy, JSON.stringify(shift),
+  ]));
+  await insertRows(db, "goals", ["id", "household_id", "name", "target_cents", "saved_cents", "deadline", "shared", "owner_member_id", "subcategory_id"], compiled.goals.map((goal) => [
+    goal.id, compiled.householdId, goal.name, goal.targetCents, goal.savedCents, goal.deadline, goal.shared, goal.ownerMemberId, goal.subcategoryId,
+  ]));
+  await insertRows(db, "budget_plans", ["id", "household_id", "month_key", "subcategory_id", "amount_cents", "essential", "income_stability", "active"], compiled.budgetPlans.map((plan) => [
+    plan.id, compiled.householdId, plan.monthKey, plan.subcategoryId, plan.amountCents, plan.essential, plan.incomeStability, plan.active,
+  ]));
+  await insertRows(db, "recurrences", ["id", "household_id", "cadence", "next_date", "type", "amount_cents", "account_id", "subcategory_id", "note", "active", "auto_post"], compiled.recurrences.map((recurrence) => [
+    recurrence.id, compiled.householdId, recurrence.cadence, recurrence.nextDate, recurrence.type, recurrence.amountCents, recurrence.accountId, recurrence.subcategoryId, recurrence.note, recurrence.active, recurrence.autoPost,
+  ]));
+  await insertRows(db, "activity", ["id", "household_id", "at", "action", "summary"], compiled.activity.map((item) => [
+    item.id, compiled.householdId, item.at, item.action, item.summary,
+  ]));
 
   const fund = shapeHouseholdFundConfig(household.householdFund);
   if (fund) {

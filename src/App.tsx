@@ -409,6 +409,10 @@ export function App() {
   const [herculesProRequest] = useState(() => herculesProAuthorizationRequest());
   const [household, setHousehold] = useState<Household | null>(null);
   const [booting, setBooting] = useState(true);
+  const [pendingDemo, setPendingDemo] = useState<Household | null>(null);
+  const [pendingDemoMemberId, setPendingDemoMemberId] = useState<string | null>(null);
+  const pendingDemoAcceptanceRef = useRef<Promise<CommandOutcome | null> | null>(null);
+  const pendingDemoFramesRef = useRef<number[]>([]);
   const [tab, setTab] = useState<Tab>("home");
   const [adding, setAdding] = useState(false);
   const workShiftInputRef = useRef<ScopedWorkShiftInput | null>(null);
@@ -2116,6 +2120,55 @@ export function App() {
     return enqueueWrite(() => commitHousehold(next, token, actorId, options));
   }
 
+  function scheduleDemoAcceptance(): Promise<CommandOutcome | null> {
+    if (pendingDemoAcceptanceRef.current) return pendingDemoAcceptanceRef.current;
+    const task = new Promise<CommandOutcome | null>((resolve) => {
+      const firstFrame = window.requestAnimationFrame(() => {
+        const secondFrame = window.requestAnimationFrame(() => {
+          pendingDemoFramesRef.current = [];
+          const next = seedDemoHousehold({ today, environment });
+          void persist(next).then(resolve);
+        });
+        pendingDemoFramesRef.current = [secondFrame];
+      });
+      pendingDemoFramesRef.current = [firstFrame];
+    });
+    pendingDemoAcceptanceRef.current = task;
+    void task.then((outcome) => {
+      if (!outcome?.ok) {
+        pendingDemoAcceptanceRef.current = null;
+        setPendingDemoMemberId(null);
+        return;
+      }
+      setPendingDemo(null);
+    });
+    return task;
+  }
+
+  function openDemoTable(): void {
+    if (pendingDemoAcceptanceRef.current) return;
+    setError("");
+    setPendingDemo(catalogHousehold(environment));
+    setPendingDemoMemberId(null);
+    void scheduleDemoAcceptance();
+  }
+
+  async function enterPendingDemo(memberId: string): Promise<void> {
+    const candidate = pendingDemo;
+    if (!candidate || pendingDemoMemberId) return;
+    setPendingDemoMemberId(memberId);
+    const outcome = await scheduleDemoAcceptance();
+    if (!outcome?.ok) return;
+    householdRef.current = outcome.household;
+    const nextSession = { memberId, view: "household" as const, householdId: outcome.household.householdId };
+    rememberSession(nextSession);
+  }
+
+  useEffect(() => () => {
+    for (const frame of pendingDemoFramesRef.current) window.cancelAnimationFrame(frame);
+    pendingDemoFramesRef.current = [];
+  }, []);
+
   function persistLedgerWrite(next: Household, token?: UndoToken) {
     const accepted = householdRef.current;
     return persist(accepted ? restoreAcceptedSnapshot(accepted, next) : next, token);
@@ -2470,6 +2523,34 @@ export function App() {
     );
   }
 
+  if (!household && pendingDemo) {
+    return (
+      <div className="welcome">
+        <div className="welcome-card">
+          <p className="kicker">Demo kitchen</p>
+          <h1>Choose yourself</h1>
+          <p>Hearth is here. The books are opening safely behind this table.</p>
+          <KitchenNotice message={error} onDismiss={() => setError("")} />
+          {pendingDemo.members.filter((member) => member.active).map((member) => (
+            <button
+              key={member.id}
+              className="primary"
+              style={{ marginTop: 8 }}
+              disabled={pendingDemoMemberId !== null}
+              onClick={() => void enterPendingDemo(member.id)}
+            >
+              {pendingDemoMemberId === member.id ? `Opening for ${member.name}…` : `I am ${member.name}`}
+            </button>
+          ))}
+          <p className="muted" role="status" aria-live="polite">
+            {pendingDemoMemberId ? "Validating the local journal before entering…" : "You can choose now; money actions stay locked until validation finishes."}
+          </p>
+        </div>
+        <HerculesProApproval authorizationRequest={herculesProRequest} environment={environment} household={null} session={null} />
+      </div>
+    );
+  }
+
   if (!household) {
     const welcomeSignedIn = Boolean(
       welcomeIdentity
@@ -2722,7 +2803,7 @@ export function App() {
               )}
               <KitchenNotice message={error} onDismiss={() => setError("")} />
               {discoveredLedgers.length === 0 && (
-                <button className="ghost welcome-demo" onClick={() => persist(seedDemoHousehold({ today, environment }))}>
+                <button className="ghost welcome-demo" onClick={openDemoTable}>
                   Open the demo kitchen table
                 </button>
               )}
