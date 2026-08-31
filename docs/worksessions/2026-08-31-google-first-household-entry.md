@@ -1,13 +1,13 @@
 # Hearth worksession — Google-first household entry
 
-- **Status:** CLOSED — local implementation complete; Development release remains conditional
+- **Status:** CLOSED — deployed to Development; live canary verification open
 - **Opened:** 2026-08-31 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `codex/google-first-household-entry`
 - **Baseline SHA:** `1d82a57976af006d0fcf8683d6920a6277738e40`
-- **Head SHA:** staged local candidate on `1d82a57976af006d0fcf8683d6920a6277738e40` (no commit, push, merge, or deployment)
+- **Head SHA:** implementation and deployed UI `244bc67c21df389e22b5aa0dd764c5e1d4bf68c7`
 - **PR or issue:** none
 - **Risk:** Release
 - **Decision owner:** Jonathan
@@ -78,6 +78,10 @@ Jonathan and Bianca enter Hearth through one Google-first door, see every author
 - 2026-08-31: the complete Vitest run reached 1,305 passing, 3 skipped, and one host-only failure in `test/api.test.ts` because Windows could not spawn `bash`. `pnpm check` therefore stopped before its build phase; the equivalent Windows build stages passed separately.
 - 2026-08-31: browser checks at 320, 390, 720, and 1100 px found no horizontal overflow. The active 320 px header rendered member, household, and device-local date/time; the welcome, join, recovery, and household-card surfaces were inspected locally.
 - 2026-08-31: `git diff --check` passed; changed-file scans found no credential/private artifact, migration, workflow, Worker, Supabase, Production flag, or hosted-data change.
+- 2026-08-31: Jonathan gave fresh action-time approval to push, merge, and deploy. The reviewed branch was committed as `244bc67c21df389e22b5aa0dd764c5e1d4bf68c7`, pushed, and fast-forwarded to `main` from baseline `1d82a57976af006d0fcf8683d6920a6277738e40`.
+- 2026-08-31: Cloudflare Workers run `33421668573` built and deployed exact `244bc67c21df389e22b5aa0dd764c5e1d4bf68c7` successfully. Its Build and Deploy steps both passed with Production continuity still baked off.
+- 2026-08-31: main CI run `33421668514` completed successfully against exact `244bc67c21df389e22b5aa0dd764c5e1d4bf68c7`, including the Linux `pnpm check` path that the local Windows host could not execute completely.
+- 2026-08-31: the live Development kitchen served asset `assets/index-BNpHpc0J.js`, which contained the new chooser, Google door, and Advanced recovery copy. The signed-in live page rendered `Jonathan · The Stress-Test Household · Aug 31, 2026, 1:52 p.m.` with no browser-console errors.
 
 ## Decisions
 
@@ -92,4 +96,4 @@ Jonathan and Bianca enter Hearth through one Google-first door, see every author
 
 ## Handoff
 
-Current state is a staged local implementation candidate. No commit, push, merge, deployment, hosted mutation, schema change, or Production change occurred. The next action is Jonathan's fresh action-time decision for a Development-only push/merge/deploy; after deployment, the live OAuth, two-account invitation/QR, stale-invite escape, assistive-technology, and two-device canary checks remain mandatory before the canary is called stable.
+Current state is deployed Development code at `244bc67c21df389e22b5aa0dd764c5e1d4bf68c7`. No hosted-data mutation, schema change, secret change, or Production-continuity change occurred. The live OAuth, two-account invitation/QR, stale-invite escape, assistive-technology, and two-device canary checks remain mandatory before the canary is called stable.
