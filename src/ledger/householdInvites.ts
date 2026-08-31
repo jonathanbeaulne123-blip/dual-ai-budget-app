@@ -173,6 +173,8 @@ export function inviteReasonMessage(reason: string): string {
       return "You already belong to this household as someone else.";
     case "target-unavailable":
       return "That seat is already taken.";
+    case "house-full":
+      return "This house is full. Both available seats already have Google accounts assigned.";
     case "not-found-owner-or-self":
       return "Could not revoke that member.";
     case "bad-kind":
@@ -214,6 +216,10 @@ export function inviteReasonMessage(reason: string): string {
     default:
       return reason ? `Invite failed (${reason}).` : "Invite failed.";
   }
+}
+
+export function isFullHouseInviteReason(reason: string): boolean {
+  return reason === "house-full";
 }
 
 export async function issueHouseholdInvite(input: {

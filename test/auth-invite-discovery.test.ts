@@ -15,6 +15,7 @@ import { discoverContinuityMemberships } from "../src/continuity.ts";
 import { ingestBooks, openMemoryBooks, resetBrowserBooksForTests } from "../src/ledger/engine.ts";
 import { redeemHouseholdInvite } from "../src/ledger/householdInvites.ts";
 import type { SupabaseConfig } from "../src/ledger/supabase.ts";
+import { discoveredHouseholdForTarget } from "../src/HouseholdEntryCard.tsx";
 
 const HEX64 = "b".repeat(64);
 const partnerIdentity = { email: "partner@gmail.com", subject: "google-sub-partner" };
@@ -65,6 +66,7 @@ type MockState = {
   }>;
   snapshot: Household;
   redeemCount: number;
+  redeemMemberId?: string;
 };
 
 function mockInviteDiscoveryFetch(state: MockState) {
@@ -96,7 +98,7 @@ function mockInviteDiscoveryFetch(state: MockState) {
         ok: true,
         duplicate,
         role: "member",
-        member_id: "MEM-002",
+        member_id: state.redeemMemberId ?? "MEM-002",
         household_id: "HH-PARTNER-INVITE",
         environment: "development",
       });
@@ -146,8 +148,10 @@ async function redeemAndDiscover(token: string, config: SupabaseConfig) {
   const redeemed = await redeemHouseholdInvite({ environment: "development", inviteToken: token, config });
   if (!redeemed.ok) return { redeemed, found: [], match: undefined };
   const found = await discoverContinuityMemberships(partnerIdentity, redeemed.environment, config);
-  const match = found.find((row) => row.household.householdId === redeemed.householdId)
-    ?? (redeemed.memberId ? found.find((row) => row.memberId === redeemed.memberId) : undefined);
+  const match = discoveredHouseholdForTarget(found, {
+    householdId: redeemed.householdId,
+    memberId: redeemed.memberId ?? null,
+  });
   return { redeemed, found, match };
 }
 
@@ -195,6 +199,27 @@ describe("Auth QR invite discovery contract", () => {
     expect(state.redeemCount).toBe(2);
     expect(second.match?.household.householdId).toBe("HH-PARTNER-INVITE");
     expect(second.match?.memberId).toBe("MEM-002");
+  });
+
+  it("fails closed when discovery has the household but not the exact redeemed member", async () => {
+    const state: MockState = {
+      memberships: [],
+      snapshot: partnerInviteHousehold(),
+      redeemCount: 0,
+      redeemMemberId: "MEM-001",
+    };
+    vi.stubGlobal("fetch", mockInviteDiscoveryFetch(state));
+
+    const { redeemed, found, match } = await redeemAndDiscover(HEX64, authConfig);
+
+    expect(redeemed).toMatchObject({
+      ok: true,
+      householdId: "HH-PARTNER-INVITE",
+      memberId: "MEM-001",
+    });
+    expect(found).toHaveLength(1);
+    expect(found[0]?.memberId).toBe("MEM-002");
+    expect(match).toBeNull();
   });
 
   it("clears a retained pending invite once discovery succeeds (no Continue-with-Google loop)", async () => {
