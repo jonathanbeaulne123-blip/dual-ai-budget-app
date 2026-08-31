@@ -7,7 +7,7 @@
 - **Repository:** `C:\Users\jonat\OneDrive\Documents\ChatGPT\Budget App - Hercules Provider Marker`
 - **Branch:** `codex/hercules-provider-marker`
 - **Baseline SHA:** `b44396912823b62c4f6bde025f7e0699651f330d` (`origin/main`)
-- **Head SHA:** `68e56049e6db8f8cdfc33ca883ccdc0cd4cbd8eb` (implementation before this release record)
+- **Reviewed implementation SHA:** `94cb69521cc2bba38eaf3395952b4717bb6356b4` (includes the sanitizer-truthfulness fix and regression; later release-record commits are documentation-only)
 - **PR or issue:** none
 - **Risk:** Release — GitHub `main` and Development kitchen deployment
 - **Decision owner:** Jonathan
@@ -52,7 +52,7 @@ After Hercules answers, a tiny source marker names the responder: Gemini, Groq, 
 - [x] Phone and desktop marker slots exist and retain the existing quiet source style at 10 px.
 - [x] Context switches and local-only answers clear or replace stale provider state.
 - [x] Focused provider/marker/context checks and exact-head build pass.
-- [ ] Independent exact-head release review passes.
+- [x] Independent implementation review found no remaining P0–P3 after the sanitizer-truthfulness fix.
 - [ ] Branch and `main` are pushed without secrets or private artifacts.
 - [ ] GitHub CI and Cloudflare deployment pass; live kitchen response remains healthy.
 
@@ -70,6 +70,7 @@ After Hercules answers, a tiny source marker names the responder: Gemini, Groq, 
 - Full `pnpm test` completed `1,378` passing, `3` skipped, and one host-only failure: `test/api.test.ts` could not spawn `bash` on Windows (`spawnSync bash ENOENT`). No product, provider, UI, privacy, or financial test failed; this is recorded as not fully green.
 - After rebasing onto `b443969`, exact-head provider/marker/context plus the newly landed PGlite view proof passed `38/38`; `pnpm ai:verify`, TypeScript, Vite production build, Hercules Pro UI build, `_redirects` absence, and diff hygiene passed.
 - Independent review found that a tool-path model label could survive even when sanitization restored the deterministic journal wording. The marker now uses a tested display-decision helper and appears only when the displayed reply actually uses that provider result; ordinary local fallback still names On-device.
+- Fixed implementation `94cb69521cc2bba38eaf3395952b4717bb6356b4` passed `36/36` modified focused checks and TypeScript locally; independent review passed `47/47` focused checks and found no remaining P0–P3 issue.
 
 ## Decisions
 
