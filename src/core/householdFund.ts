@@ -365,7 +365,17 @@ export function projectHouseholdFund(household: Household, today: DateKey): Hous
   const bufferCents = plan?.bufferCents ?? 0;
   const freeToSpendCents = operatingBalanceCents - transferDueCents + transferCreditCents - upcomingReserveCents;
   const topUpNeededCents = Math.max(0, -freeToSpendCents);
-  const reconciliations = events.filter((event) => event.kind === "reconciliation-recorded").sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+  // A reconciliation is dated by the civil day it covers, not the moment it was
+  // typed. Sorting and reporting on createdAt made a check recorded for the 23rd
+  // read as today's, and made the weekly staleness check unable to ever fire.
+  const reconciliations = events
+    .filter((event) => event.kind === "reconciliation-recorded")
+    .sort((left, right) => right.date.localeCompare(left.date) || right.createdAt.localeCompare(left.createdAt));
+  // "Monthly target" is a per-month plan, so its progress is this month's
+  // confirmed contributions — not every contribution ever made to the Fund.
+  const monthContributionsCents = events
+    .filter((event) => event.kind === "contribution-confirmed" && monthKeyFromDateKey(event.date) === monthKeyFromDateKey(today))
+    .reduce((sum, event) => sum + event.amountCents, 0);
   return {
     configured: true,
     operatingBalanceCents,
@@ -381,8 +391,8 @@ export function projectHouseholdFund(household: Household, today: DateKey): Hous
     safeRolloverCents: Math.max(0, freeToSpendCents - bufferCents),
     kittyCents,
     monthlyTargetCents: plan?.targetCents ?? 0,
-    targetProgressCents: Math.min(plan?.targetCents ?? confirmedContributionsCents, confirmedContributionsCents),
-    lastReconciledAt: reconciliations[0]?.createdAt ?? null,
+    targetProgressCents: Math.min(plan?.targetCents ?? monthContributionsCents, monthContributionsCents),
+    lastReconciledAt: reconciliations[0]?.date ?? null,
     reconciliationTied: reconciliations[0]?.reconciliationTied ?? null,
     transactionPositions: [...positions.values()].sort((left, right) => left.transactionId.localeCompare(right.transactionId)),
     destinationPositions,

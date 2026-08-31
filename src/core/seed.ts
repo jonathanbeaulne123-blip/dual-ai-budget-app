@@ -1,6 +1,7 @@
 import { addDays, monthKeyFromDateKey, shiftMonthKey, todayKey, TIMEZONE, type DateKey } from "./calendar.ts";
 import { DEFAULT_SHIFT_SETTINGS } from "./shift.ts";
-import { emptyHousehold, postEntry, postShift, postTransfer, addGoal, addRecurrence, setBudget, contributeToGoal, scribbleChalk, markInvestmentValue, addAppointment, postVisit, upsertWorkJob } from "./commands.ts";
+import { emptyHousehold, postEntry, postShift, postTransfer, addGoal, addRecurrence, setBudget, contributeToGoal, scribbleChalk, markInvestmentValue, addAppointment, postVisit, upsertWorkJob, configureHouseholdFund, setHouseholdFundMonthPlan, proposeHouseholdFundContribution, confirmHouseholdFundContribution, confirmHouseholdFundSettlement, allocateHouseholdFundSurplus, recordHouseholdFundReconciliation } from "./commands.ts";
+import { HOUSEHOLD_FUND_ID, projectHouseholdFund } from "./householdFund.ts";
 import { emptyCreditDesk, shapeAccounts } from "./accountKinds.ts";
 import { COMPANION, JOINT, type Category, type Household, type WorkJob } from "./types.ts";
 import { jointSplit, equalSplits } from "./splits.ts";
@@ -447,7 +448,7 @@ export function seedDemoHousehold(options?: { today?: DateKey; environment?: Hou
     shared: true,
     deadline: `${shiftMonthKey(monthKeyFromDateKey(today), 6)}-01`,
   }).household;
-  household = contributeToGoal(household, household.goals[0]!.id, 1600, { markFunded: true }).household;
+  household = contributeToGoal(household, household.goals.find((goal) => goal.name === "Emergency buffer")!.id, 1600, { markFunded: true }).household;
   household = postTransfer(household, {
     date: today,
     amount: 1600,
@@ -457,13 +458,25 @@ export function seedDemoHousehold(options?: { today?: DateKey; environment?: Hou
     confirmDuplicate: true,
   }).household;
   household = addGoal(household, {
+    name: "Newfoundland, October",
+    target: 4200,
+    shared: true,
+    deadline: `${shiftMonthKey(monthKeyFromDateKey(today), 2)}-01`,
+  }).household;
+  household = addGoal(household, {
+    name: "Hercules · vet fund",
+    target: 600,
+    shared: true,
+    deadline: `${shiftMonthKey(monthKeyFromDateKey(today), 8)}-01`,
+  }).household;
+  household = addGoal(household, {
     name: "Bianca trip fund",
     target: 1200,
     shared: false,
     ownerMemberId: "MEM-001",
     deadline: `${shiftMonthKey(monthKeyFromDateKey(today), 4)}-01`,
   }).household;
-  household = contributeToGoal(household, household.goals[1]!.id, 340, { markFunded: true }).household;
+  household = contributeToGoal(household, household.goals.find((goal) => goal.name === "Bianca trip fund")!.id, 340, { markFunded: true }).household;
   household = postTransfer(household, {
     date: today,
     amount: 340,
@@ -672,6 +685,8 @@ export function seedDemoHousehold(options?: { today?: DateKey; environment?: Hou
   } satisfies WorkJob, demoJobAt);
   household = upsertWorkJob(household, { job: biancaDemoJob }).household;
 
+  household = seedHouseholdFund(household, today);
+
   // Development's random-data button is a D-172 rehearsal, not a legacy
   // bypass. Give every generated shift a sealed synthetic Bible so Tip Science
   // exercises the same durable record it uses for real confirmed shifts.
@@ -704,4 +719,173 @@ export function seedDemoHousehold(options?: { today?: DateKey; environment?: Hou
   });
 
   return household;
+}
+
+/**
+ * A month of Household Fund life for the Development kitchen, so the Shared Home
+ * Month Spread has a course to draw instead of an empty staff.
+ *
+ * Every step goes through the real command, so the custody rules hold: a
+ * proposal never creates money, the custodian confirms, a settlement can never
+ * exceed the confirmed balance or the outstanding claim, and a Kitty rollover
+ * can never exceed the safe surplus. Fictional amounts, Development only.
+ */
+function seedHouseholdFund(input: Household, today: DateKey): Household {
+  const BIANCA = "MEM-001";
+  const JONATHAN = "MEM-002";
+  const sharedGoals = input.goals.filter((goal) => goal.shared && goal.status !== "retired");
+  const sharedGoalId = sharedGoals[0]?.id;
+  if (!sharedGoalId) return input;
+
+  const monthKey = monthKeyFromDateKey(today);
+  const previousKey = shiftMonthKey(monthKey, -1);
+  const on = (key: string, dayOfMonth: number): DateKey => `${key}-${String(dayOfMonth).padStart(2, "0")}`;
+  const past = (date: DateKey) => date <= today;
+
+  let household = configureHouseholdFund(input, {
+    custodianMemberId: BIANCA,
+    openedOn: on(previousKey, 1),
+    createdBy: BIANCA,
+  }).household;
+
+  const contribute = (contributorMemberId: string, amount: number, date: DateKey, confirm = true) => {
+    if (!past(date)) return;
+    const proposal = proposeHouseholdFundContribution(household, {
+      memberId: contributorMemberId,
+      contributorMemberId,
+      amount,
+      date,
+    });
+    household = proposal.household;
+    if (!confirm) return;
+    household = confirmHouseholdFundContribution(household, {
+      memberId: BIANCA,
+      proposalEventId: proposal.postedIds[0]!,
+    }).household;
+  };
+
+  const buy = (amount: number, date: DateKey, note: string): string | null => {
+    if (!past(date)) return null;
+    const posted = postEntry(household, {
+      date,
+      type: "expense",
+      amount,
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note,
+      createdBy: JONATHAN,
+      visibility: "household",
+      confirmDuplicate: true,
+      funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: Math.round(amount * 100), destinationAccountId: "ACC-VISA" },
+    });
+    household = posted.household;
+    return posted.postedIds[0] ?? null;
+  };
+
+  const settle = (amount: number, date: DateKey) => {
+    if (!past(date)) return;
+    household = confirmHouseholdFundSettlement(household, {
+      memberId: BIANCA,
+      amount,
+      destinationAccountId: "ACC-VISA",
+      date,
+    }).household;
+  };
+
+  // Last month, so this month opens with something already standing.
+  contribute(BIANCA, 1700, on(previousKey, 2));
+  contribute(JONATHAN, 1065, on(previousKey, 12));
+  buy(660, on(previousKey, 14), "Shared groceries");
+  settle(660, on(previousKey, 20));
+  if (past(on(previousKey, 26))) {
+    household = allocateHouseholdFundSurplus(household, {
+      memberId: BIANCA,
+      date: on(previousKey, 26),
+      allocations: [{ goalId: sharedGoalId, amount: 865 }],
+      note: "Month-end rollover",
+    }).household;
+  }
+
+  // This month.
+  contribute(BIANCA, 1600, on(monthKey, 1));
+  buy(612.4, on(monthKey, 4), "Shared groceries");
+  settle(480, on(monthKey, 6));
+  contribute(JONATHAN, 900, on(monthKey, 8));
+  buy(388.75, on(monthKey, 9), "Household supplies");
+  buy(520, on(monthKey, 15), "Shared groceries");
+  settle(600, on(monthKey, 16));
+  if (past(on(monthKey, 18))) {
+    household = allocateHouseholdFundSurplus(household, {
+      memberId: BIANCA,
+      date: on(monthKey, 18),
+      allocations: sharedGoals.length >= 3
+        ? [
+          { goalId: sharedGoals[0]!.id, amount: 240 },
+          { goalId: sharedGoals[1]!.id, amount: 120 },
+          { goalId: sharedGoals[2]!.id, amount: 60 },
+        ]
+        : [{ goalId: sharedGoalId, amount: 420 }],
+      note: "Surplus into the shared banks",
+    }).household;
+  }
+  buy(540.25, on(monthKey, 21), "Shared groceries");
+  contribute(JONATHAN, 760, on(monthKey, 22));
+  const lastPurchaseId = buy(84.2, on(monthKey, 24), "Shared groceries");
+  settle(820, on(monthKey, 25));
+  if (lastPurchaseId && past(on(monthKey, 26))) {
+    household = postEntry(household, {
+      date: on(monthKey, 26),
+      type: "refund",
+      amount: 86.4,
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      refundOfId: lastPurchaseId,
+      note: "Returned groceries",
+      createdBy: JONATHAN,
+      visibility: "household",
+      confirmDuplicate: true,
+    }).household;
+  }
+
+  // One proposal still waiting on the custodian — a proposal never creates money.
+  contribute(JONATHAN, 340, on(monthKey, 23), false);
+
+  household = setHouseholdFundMonthPlan(household, {
+    memberId: BIANCA,
+    monthKey,
+    target: 3400,
+    buffer: 1500,
+  }).household;
+
+  const reconciledOn = addDays(today, -4);
+  if (past(reconciledOn) && reconciledOn >= on(monthKey, 1)) {
+    household = recordHouseholdFundReconciliation(household, {
+      memberId: BIANCA,
+      date: reconciledOn,
+      bankTotal: (projectedTotal(household, reconciledOn) / 100).toFixed(2),
+      note: "Weekly shared check",
+    }).household;
+  }
+
+  const billDay = addDays(today, 1);
+  if (monthKeyFromDateKey(billDay) === monthKey) {
+    household = addRecurrence(household, {
+      cadence: "monthly",
+      nextDate: billDay,
+      type: "expense",
+      amount: 164,
+      accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-HOUSING-GAS",
+      note: "Household gas",
+      fundingDefault: { fundId: HOUSEHOLD_FUND_ID, fundedCents: "full", destinationAccountId: "ACC-CHEQUING" },
+    }).household;
+  }
+
+  return household;
+}
+
+/** Operating plus Kitty, so the seeded reconciliation ties by construction. */
+function projectedTotal(household: Household, date: DateKey): number {
+  const projection = projectHouseholdFund(household, date);
+  return projection.operatingBalanceCents + projection.kittyCents;
 }

@@ -2,6 +2,7 @@ import { formatCad } from "./money.ts";
 import { openGoals } from "./goalVault.ts";
 import { goalVisibleInView } from "./visibility.ts";
 import type { PaperBarRow } from "./officeWide.ts";
+import { activeHouseholdFundEvents, shapeHouseholdFundKittyAllocations } from "./householdFund.ts";
 import type { Goal, Household, LedgerView } from "./types.ts";
 
 /** Existing goals shown as Kitty Banks. Shared Fund surplus (D-161) uses shared goals only. */
@@ -44,4 +45,34 @@ export function kittyBankBars(goals: Goal[], limit = 4): PaperBarRow[] {
     cents: Math.max(0, goal.savedCents),
     tone: "ink",
   }));
+}
+
+/**
+ * What the Household Fund has rolled into each shared bank.
+ *
+ * D-161: a Kitty rollover is a claim recorded against a named shared goal, not
+ * a transfer into it — `goal.savedCents` is untouched by design, which is why a
+ * rollover was previously invisible on the shelf. This reads the allocation
+ * records so the shelf can SAY what the Fund rolled without pretending the
+ * money moved. A release is a lump against the Kitty as a whole and is never
+ * attributed to one bank, so it is reported separately rather than guessed at.
+ */
+export function fundRolloverByGoal(
+  household: Pick<Household, "fundEvents" | "fundKittyAllocations">,
+): { byGoalId: Record<string, number>; allocatedCents: number; releasedCents: number } {
+  const events = activeHouseholdFundEvents(household as Pick<Household, "fundEvents">);
+  const activeAllocationEventIds = new Set(
+    events.filter((event) => event.kind === "kitty-allocated").map((event) => event.id),
+  );
+  const byGoalId: Record<string, number> = {};
+  let allocatedCents = 0;
+  for (const allocation of shapeHouseholdFundKittyAllocations(household.fundKittyAllocations)) {
+    if (!activeAllocationEventIds.has(allocation.eventId)) continue;
+    byGoalId[allocation.goalId] = (byGoalId[allocation.goalId] ?? 0) + allocation.amountCents;
+    allocatedCents += allocation.amountCents;
+  }
+  const releasedCents = events
+    .filter((event) => event.kind === "kitty-released")
+    .reduce((sum, event) => sum + event.amountCents, 0);
+  return { byGoalId, allocatedCents, releasedCents };
 }

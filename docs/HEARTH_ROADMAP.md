@@ -68,6 +68,7 @@ Only the currently open or just-closed worksession belongs here. Durable history
 
 | Worksession | State | Scope | Output |
 |---|---|---|---|
+| [2026-08-31 Month Spread](worksessions/2026-08-31-month-spread.md) | **OPEN; MERGING #259** | Shared Home centre instrument (Standing / Course / Docket) plus member contribution bars; F-2/F-3 Fund projection corrections | Integrating `origin/main@1650910`; Jonathan explicit 2026-08-31: merge push deploy |
 | [2026-08-31 Bianca Month mainline catch-up](worksessions/2026-08-31-bianca-month-mainline.md) | **DEVELOPMENT CODE RELEASED; REHEARSAL OPEN** | D-183 current App/books/command-sync trial contract | `main@4af0413`; no hosted mutation or Production; two-phone/four-week proof pending |
 | [2026-08-31 Hercules provider fallback release](worksessions/2026-08-31-hercules-provider-fallback-release.md) | **CLOSED; MERGED TO MAIN; GITHUB DEPLOYED** | Ordinary synthetic chat Gemini → Groq → OpenAI → Workers AI; Worker-only Gemini/Groq secrets | D-184; runtime `d131571`; OpenAI paid gate off |
 | [2026-08-31 Merge FAB + Add slideshow and deploy](worksessions/2026-08-31-merge-deploy-add-slideshow.md) | **OPEN; RELEASE** | Integrate #244 FAB/Add slideshow onto current `main` as D-181, then merge/push/deploy | Jonathan explicit 2026-08-31: merge push deploy |

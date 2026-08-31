@@ -1,5 +1,25 @@
 # AI Task and Handoff Standard
 
+## The Month Spread — Shared Home centre (2026-08-31)
+
+**Status:** PR [#259](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/259) on `cursor/month-spread-shared-home-04e5`, integrating `origin/main@1650910`. Jonathan ordered **merge, push, and deploy** 2026-08-31 after Paper office proof of the Standing bars. Risk: **High** (presentation plus F-2/F-3 projection corrections). **Not yet merged, not yet live** until this merge lands and Cloudflare Workers on `main` is verified.
+
+**Household outcome:** Shared Home's centre is the month as one sheet — Standing, Course, Docket. Standing names each person's confirmed Fund contributions this month (demo Bianca `$1,600.00`, Jonathan `$1,660.00`). Seals, mosaic, Kitty Banks, FAB, and Add slideshow stay.
+
+**Budget delta (5):** `+3` Spread / `+1` bars. **Engagement delta (3):** `+3` / `+1`. Books won: proposals off the bar; both fills pine; Course from `booksHousehold`; Docket never posts.
+
+**What changed:** `sharedMonthCourse` plus Month Spread; F-1 Kitty rollover as a claim; F-2 reconciliation covering `date`; F-3 monthly target = this month's confirmed contributions; Standing `contributionsByMember` paper bars; Course compiled from accepted books. Worksession: [`worksessions/2026-08-31-month-spread.md`](worksessions/2026-08-31-month-spread.md).
+
+**Verification:**
+- Focused `test/month-spread.test.ts`: **33 passed**.
+- `pnpm check` on `4b58785`: **1315 passed / 3 skipped**. Merge onto `1650910` re-runs the gate before publish.
+- Live Paper office: Bianca `$1,600.00`, Jonathan `$1,660.00`; Fund free-to-spend `$2,018.60` ≠ leftover-spend `$498.64`. Artifacts `month_spread_contrib_bars_1440.png` / `_1100.png` / `_720.png` / `month_spread_contrib_bars_demo.mp4`.
+- Books **PASS WITH NOTES**; UX `role="group"` **PASS**; security review no medium+ findings. F-2/F-3 are projector-only.
+
+**Environment/data:** fictional Development demo seed. No Production household mutation, hosted schema, or secrets. Kitchen publish is D-041 `wrangler deploy` from `main`.
+
+**Next owner:** this session merges to `main` and verifies `https://hearth-books.jonathan-beaulne123.workers.dev/`.
+
 ## D-181 Add slideshow + FAB onto current main (2026-08-31)
 
 **Status:** Integration `3b0598c` on `cursor/add-slideshow-main-aef7` (plus unused-`shiftStep` follow-up). Base `origin/main@683910bc19f067ed5a9f4adee394f6026cda0899`. Jonathan ordered **merge, push, and deploy**. Risk: **Release**. Kitchen-desk D-173 already shipped via #252.
@@ -49,6 +69,7 @@
 **Open pilot gate:** run the full two-account matrix with at least 100 new Shared event samples at `<=500 ms p95`, then complete the fourteen-day disposable Development rehearsal. Do not claim “Docs-like Development sync proven for Jonathan and Bianca” before every exit criterion passes. On money loss, duplicate, invalid books, privacy/cross-environment leak, or false Synced state, stop sharing and preserve replicas/outboxes.
 
 **Worksession:** [`worksessions/2026-08-31-google-docs-sync-pilot.md`](worksessions/2026-08-31-google-docs-sync-pilot.md)
+
 
 ## SF-02 Shared Money membership and device access (2026-08-30)
 
