@@ -29,6 +29,10 @@ export type HerculesChatRequest = {
   figures?: string[];
   /** Present only after the requesting owner opts in for this one model call. */
   workplaceContext?: HerculesWorkplaceContext | null;
+  /** Full credential-free financial/context snapshot for the authorized synthetic Development route. */
+  fullSyntheticContext?: string;
+  dataClassification?: "synthetic";
+  environment?: Environment;
 };
 
 export type HerculesChatResult = {
@@ -136,6 +140,11 @@ export function herculesModelPayload(req: HerculesChatRequest): string {
     })),
     ledger: req.ledger ?? null,
     ledgerLines: req.ledgerLines ? String(req.ledgerLines).slice(0, 4500) : undefined,
+    fullSyntheticContext: req.dataClassification === "synthetic" && req.fullSyntheticContext
+      ? String(req.fullSyntheticContext).slice(0, 900000)
+      : undefined,
+    dataClassification: req.dataClassification,
+    environment: req.environment,
     figures: (req.figures ?? []).slice(0, 80),
     workplaceContext: req.workplaceContext ? {
       scope: "requesting-member-selected",
@@ -166,7 +175,7 @@ export async function chatHercules(
   const fetchFn = deps?.fetch ?? (typeof fetch === "function" ? fetch : undefined);
   if (!fetchFn || !req.message.trim()) return local();
 
-  const timeoutMs = deps?.timeoutMs ?? 9000;
+  const timeoutMs = deps?.timeoutMs ?? 35000;
   const body = herculesModelPayload(req);
 
   for (const url of chatUrls()) {

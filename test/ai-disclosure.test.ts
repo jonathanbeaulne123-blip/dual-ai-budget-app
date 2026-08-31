@@ -20,6 +20,14 @@ import {
 const today = todayKey();
 
 describe("member-scoped AI disclosure (D-115)", () => {
+  function boundedPayload(request: ReturnType<typeof composeHerculesChatRequest>) {
+    return herculesModelPayload({
+      ...request,
+      fullSyntheticContext: undefined,
+      dataClassification: undefined,
+    });
+  }
+
   it("projects partner personal money and memories out of the household slice", () => {
     let household = seedDemoHousehold({ today, environment: "development" });
     household = recordHerculesTalk(household, {
@@ -80,10 +88,14 @@ describe("member-scoped AI disclosure (D-115)", () => {
     expect(asMem001.ledger.recent.some((row) => /yacht daydream/i.test(row.note))).toBe(false);
     expect(asMem001.memberId).toBe("MEM-001");
 
+    const bounded = boundedPayload(asMem001);
+    expect(bounded).not.toMatch(/yacht daydream/i);
+    expect(bounded).not.toMatch(/777\.77/);
+    expect(aiDisclosurePayloadLeaks(bounded, household, "MEM-001")).toEqual([]);
     const payload = herculesModelPayload(asMem001);
-    expect(payload).not.toMatch(/yacht daydream/i);
-    expect(payload).not.toMatch(/777\.77/);
-    expect(aiDisclosurePayloadLeaks(payload, household, "MEM-001")).toEqual([]);
+    expect(payload).toMatch(/yacht daydream/i);
+    expect(payload).toMatch(/777\.77/);
+    expect(asMem001.dataClassification).toBe("synthetic");
   });
 
   it("keeps own personal rows and both-visibility rows visible to the viewer", () => {
@@ -94,7 +106,7 @@ describe("member-scoped AI disclosure (D-115)", () => {
     expect(asMem001.ledger.recent.some((row) => /haircut/i.test(row.note))).toBe(true);
     expect(asMem001.ledger.recent.some((row) => /saturday coffee/i.test(row.note))).toBe(true);
     expect(formatCad(4200)).toMatch(/42/);
-    const payload = herculesModelPayload(asMem001);
+    const payload = boundedPayload(asMem001);
     expect(payload).toMatch(/haircut/i);
     expect(aiDisclosurePayloadLeaks(payload, household, "MEM-001")).toEqual([]);
   });
@@ -118,7 +130,8 @@ describe("member-scoped AI disclosure (D-115)", () => {
     const briefing = herculesBriefing(added, "home", today);
     const defaultRequest = composeHerculesChatRequest(added, "who worked", briefing, today, "MEM-002", "", { view: "personal" });
     expect(defaultRequest.workplaceContext).toBeNull();
-    expect(herculesModelPayload(defaultRequest)).not.toMatch(/Alex Lee|Partner Private Canary/);
+    expect(boundedPayload(defaultRequest)).not.toMatch(/Alex Lee|Partner Private Canary/);
+    expect(herculesModelPayload(defaultRequest)).toMatch(/Alex Lee|Partner Private Canary/);
 
     const selected = composeHerculesChatRequest(added, "who worked", briefing, today, "MEM-002", "", {
       view: "personal",
@@ -127,7 +140,7 @@ describe("member-scoped AI disclosure (D-115)", () => {
     expect(selected.workplaceContext?.coworkers).toMatchObject([{ displayName: "Alex Lee", observedRoles: ["Support"] }]);
     const payload = herculesModelPayload(selected);
     expect(payload).toContain("Alex Lee");
-    expect(payload).not.toContain("Partner Private Canary");
+    expect(payload).toContain("Partner Private Canary");
     expect(payload).not.toContain("s7subject_");
     expect(splitForSync(added, "MEM-002").shared.kitchen.hercules?.chats.some((row) => /Alex Lee/.test(row.text))).toBe(false);
     expect(composeHerculesChatRequest(added, "who worked", briefing, today, "MEM-002", "", {
@@ -185,5 +198,30 @@ describe("member-scoped AI disclosure (D-115)", () => {
     expect(fullOnlyFigures.length).toBeGreaterThan(0);
     expect(request.figures).toEqual(scopedFigures);
     expect(request.figures).not.toEqual(expect.arrayContaining(fullOnlyFigures));
+  });
+
+  it("shares the credential-free full snapshot only for synthetic Development", () => {
+    const development = seedDemoHousehold({ today, environment: "development" });
+    const request = composeHerculesChatRequest(
+      development,
+      "explain our whole synthetic picture",
+      herculesBriefing(development, "home", today),
+      today,
+      "MEM-001",
+    );
+    expect(request.dataClassification).toBe("synthetic");
+    expect(request.fullSyntheticContext).toMatch(/gym drop-in|haircut/i);
+    expect(request.fullSyntheticContext).not.toMatch(/inviteCode|sourceIdentityKey|s7subject_|password|authorization|commandReceipts/i);
+
+    const production = seedDemoHousehold({ today, environment: "production" });
+    const productionRequest = composeHerculesChatRequest(
+      production,
+      "explain our books",
+      herculesBriefing(production, "home", today),
+      today,
+      "MEM-001",
+    );
+    expect(productionRequest.fullSyntheticContext).toBeUndefined();
+    expect(productionRequest.dataClassification).toBeUndefined();
   });
 });

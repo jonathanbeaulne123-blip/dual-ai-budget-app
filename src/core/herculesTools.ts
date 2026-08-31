@@ -722,8 +722,13 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const end = addDays(today, horizon);
     const rows = household.recurrences.filter((row) => row.active && row.type === "expense" && row.nextDate >= today && row.nextDate <= end).sort((a, b) => a.nextDate.localeCompare(b.nextDate));
     if (!rows.length) return empty(call, `No repeating bills are due in the next ${horizon} days.`);
-    const facts = rows.slice(0, 8).map((row, index) => fact(call, index, `${row.nextDate} · ${row.note || "Repeating item"}`, formatCad(row.amountCents), { route: "calendar", view: context.view, surface: "calendar", recurrenceId: row.id, from: row.nextDate, to: row.nextDate, label: "Open this repeating item" }));
-    return { callId: call.id, name: call.name, status: "ok", sentence: `${rows.length} repeating item${rows.length === 1 ? " is" : "s are"} due in the next ${horizon} days.`, facts };
+    const totalCents = rows.reduce((sum, row) => sum + row.amountCents, 0);
+    const totalSource: HerculesNumberSource = { route: "calendar", view: context.view, surface: "calendar", from: today, to: end, label: "Open scheduled bills" };
+    const facts = [
+      fact(call, 0, "Scheduled bills total", formatCad(totalCents), totalSource, "projection"),
+      ...rows.slice(0, 7).map((row, index) => fact(call, index + 1, `${row.nextDate} · ${row.note || "Repeating item"}`, formatCad(row.amountCents), { route: "calendar", view: context.view, surface: "calendar", recurrenceId: row.id, from: row.nextDate, to: row.nextDate, label: "Open this repeating item" }, "projection")),
+    ];
+    return { callId: call.id, name: call.name, status: "ok", sentence: `${rows.length} repeating item${rows.length === 1 ? " is" : "s are"} due in the next ${horizon} days, totaling ${formatCad(totalCents)}.`, facts };
   }
 
   if (call.name === "shift_summary") {

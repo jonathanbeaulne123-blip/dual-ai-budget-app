@@ -17,6 +17,7 @@ const CATEGORY_LIMIT = 12;
 const CLAIM_LIMIT = 8;
 const VISIT_LIMIT = 6;
 const NOTICE_LIMIT = 8;
+const FULL_SYNTHETIC_CONTEXT_LIMIT = 900_000;
 
 export type QuietSecrets = {
   titles: string[];
@@ -40,6 +41,53 @@ export type HerculesNoticeView = {
   cad: string | null;
   action: HerculesNotice["action"];
 };
+
+const MODEL_OPERATIONAL_KEYS = new Set([
+  "inviteCode",
+  "linked",
+  "revision",
+  "baseRevision",
+  "booksAcceptedHash",
+  "tombstones",
+  "devices",
+  "google",
+  "lastCommittedAt",
+  "commandReceipts",
+  "sharing",
+  "conflicts",
+  "restorePoints",
+  "herculesProPermissions",
+  "coverageDigest",
+  "fixtureHashSha256",
+]);
+
+function modelSafeSyntheticValue(value: unknown, key = ""): unknown {
+  if (typeof value === "number" && /Cents$/.test(key)) return formatCad(value);
+  if (value == null || typeof value === "string" || typeof value === "number" || typeof value === "boolean") return value;
+  if (Array.isArray(value)) return value.map((item) => modelSafeSyntheticValue(item));
+  if (typeof value !== "object") return undefined;
+  const output: Record<string, unknown> = {};
+  for (const [childKey, childValue] of Object.entries(value)) {
+    if (MODEL_OPERATIONAL_KEYS.has(childKey) || /(?:password|secret|token|credential|authorization|cookie|nonce|hash|digest|identitykey)/i.test(childKey)) continue;
+    const safe = modelSafeSyntheticValue(childValue, childKey);
+    if (safe !== undefined) output[childKey] = safe;
+  }
+  return output;
+}
+
+/**
+ * Authorized synthetic-Development context for the provider chain's deep read pass.
+ * Operational sync/auth fields and credential-shaped keys never enter it;
+ * every cents field is rendered as CAD so the grounded-figure clamp remains
+ * capable of rejecting an unapproved amount in model speech.
+ */
+export function formatFullSyntheticContextForModel(household: Household): string {
+  if (household.environment !== "development") return "";
+  const safe = modelSafeSyntheticValue(household);
+  const serialized = JSON.stringify(safe);
+  if (serialized.length <= FULL_SYNTHETIC_CONTEXT_LIMIT) return serialized;
+  return `${serialized.slice(0, FULL_SYNTHETIC_CONTEXT_LIMIT - 24)}\n[context truncated]`;
+}
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -289,6 +337,9 @@ export function composeHerculesChatRequest(
   ledgerLines: string;
   figures: string[];
   workplaceContext: HerculesWorkplaceContext | null;
+  fullSyntheticContext?: string;
+  dataClassification?: "synthetic";
+  environment: Household["environment"];
   /** Viewer used for the disclosure projection. Never a secret. */
   memberId: string;
 } {
@@ -344,6 +395,11 @@ export function composeHerculesChatRequest(
     ledgerLines: formatLedgerExcerptForModel(ledger),
     figures,
     workplaceContext,
+    fullSyntheticContext: household.environment === "development"
+      ? formatFullSyntheticContextForModel(household)
+      : undefined,
+    dataClassification: household.environment === "development" ? "synthetic" : undefined,
+    environment: household.environment,
   };
 }
 
