@@ -1,5 +1,37 @@
 # AI Task and Handoff Standard
 
+## D-181 Add slideshow + FAB onto current main (2026-08-31)
+
+**Status:** Integration `3b0598c` on `cursor/add-slideshow-main-aef7` (plus unused-`shiftStep` follow-up). Base `origin/main@683910bc19f067ed5a9f4adee394f6026cda0899`. Jonathan ordered **merge, push, and deploy**. Risk: **Release**. Kitchen-desk D-173 already shipped via #252.
+
+**Household outcome:** Live kitchen `+` opens Shift / Income / Expense / Transfer. Add is unique cashpad prompt slideshows. Confirm still posts. Slideshow never `postEntry`.
+
+**Budget delta (5):** `+3` — calmer posting; accepted-books account tiles; Confirm remains the write.
+
+**Engagement delta (3):** `+3` — unique ceremonies instead of one dense sheet.
+
+**If they conflicted:** books win. Cut flourish before auto-posting or hiding Confirm. Pictures stay on this phone.
+
+**What changed:** Merged `#244` unique commits onto current `main`. Kept `main` D-165–D-180 (Shared Money stays D-174). Renumbered Add slideshow **D-181**. Shift jobs panel uses D-175 deferred surfaces. Clocked hours use D-178 `ShiftElapsedHint`. CadPad keeps `emptyDisplay` and giant Enter. D-175 startup tests walk to `[data-add-confirm]`.
+
+**Verification:**
+- Focused: `pnpm exec vitest run test/add-slideshow.test.ts test/add-slideshow-ui.test.ts test/household-fund-ui.test.ts test/ledger-story-ui.test.ts test/fab-speed-dial.test.ts test/app-kitchen-boot.test.ts test/app-startup-p1.test.ts` → pass.
+- Full `pnpm test` at `3b0598c` (before unused-`shiftStep` tsc fix): **1297 passed / 3 skipped**.
+- `pnpm ai:verify` + `tsc --noEmit` + Vite production build (373 modules) + Hercules Pro UI after removing unused `shiftStep`.
+- Independent books **PASS** (no P0/P1; P3 hours emptyDisplay closed). Privacy **no P0/P1**. Trust P0 (startup Post selector) closed by walking to Confirm.
+
+**Data and environment disclosure:**
+- Development impact: kitchen URL after D-041 deploy
+- Production impact: none (no Production household mutation, schema, or secrets)
+- Network calls or data sent: GitHub fetch/push; Cloudflare `wrangler deploy` via Actions on `main`
+- MCP access: none for household data
+- Hosted rows/schema/secrets: none until the authorized kitchen deploy
+- Real household or partner-personal data used: none
+
+**Next owner:** this session merges to `main` and verifies `https://hearth-books.jonathan-beaulne123.workers.dev/`.
+
+**Worksession:** [`worksessions/2026-08-31-merge-deploy-add-slideshow.md`](worksessions/2026-08-31-merge-deploy-add-slideshow.md)
+
 ## D-180 ledger-native sync pilot (2026-08-31)
 
 **Status:** Development release merged through [PR #256](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/256) as exact `main@e9c5127594a9fd4e6d8b203f19db57cc4b31390a` and deployed by successful Cloudflare run [`33403561188`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33403561188). **Not activated for daily use or proven through the live matrix or fourteen-day rehearsal.** The implementation was built from freshly fetched `origin/main@2a984fd3346dc0b57d0e7b6a17702c18b82596d3`; the original dirty `codex/roadmap-site` checkout remained untouched.
@@ -154,49 +186,6 @@
 **Next owner:** Jonathan — the blank household open is fixed on live (#235). Review whether to merge [#238](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/238) as extra boot hardening. Do not merge or deploy unless you ask.
 
 **Worksession:** [`worksessions/2026-08-28-blank-household-boot.md`](worksessions/2026-08-28-blank-household-boot.md)
-## D-173 Kitchen desk, Personal books floor, leftover spend (2026-08-29)
-
-**Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7` @ `af1413f`. **Not merged, not deployed, not live.** Risk: **High** (ledger-mode financial presentation; leftover CAD; Personal account journal).
-
-**Household outcome:** Shared Home is one pool plus Kitty Banks as sub-accounts. Personal Books is the serious account floor (household-visible rooms plus mine, never partner-personal). Home seals are posted Money in, posted expenses Money out, and leftover spend for Kitty Banks after the month. Fat paper banks grow at 10% of `savedCents`. Setup forms collapse.
-
-**Budget delta (5):** `+4` — honest Personal rooms, posted in/out leftover (not sit-down leftover), Fund bank Confirm.
-
-**Engagement delta (3):** `+3` — 3-column desk, fat banks, collapsible chrome, kind-coloured calendar.
-
-**If they conflicted:** books win. Personal Home/Hercules stay on `scopedHousehold`. Leftover spend is posted in − posted expenses and must not share a label with sit-down leftover. No new Fund formulas. Widgets still never `postEntry`. Confirm still posts money.
-
-**What changed:**
-- `personalBooksFloor(household, memberId)` for Personal Books tiles only. Home/dashboard/Hercules/export unchanged.
-- `deskMonthSeals` from `incomeActualCents` / `expenseActualCents`. Unpaid recurrences stay out of Money out.
-- Wide Home: mosaic \| stage \| Kitty Banks on Shared and Personal. Seals: Money in / Money out / Leftover spend (`posted in minus posted expenses`). A hole is not a pending empty seal. Both desks open Plan from leftover spend.
-- Personal Books Activity uses the floor journal (`presentedTransactions`), not a second `isVisibleInView` pass. Audit/hero/Ask stay on accepted `booksHousehold`.
-- iPhone `OfficePhone`: same three seal labels; leftover tap opens Plan; mosaic structure otherwise unchanged.
-- Shared Wallet: Shared pool card + Kitty Banks, not a room list.
-- Kitty Banks: SVG fatness by `kittyBankStep`; Fund contribute gated by ConfirmSheet; source account is never partner-personal.
-- AccountRoom interest/rewards posts use Confirm now that joint rooms live on Personal Books. Room CAD and Confirm amounts compile from accepted books for listed rooms; Activity stays the floor journal.
-- `CollapsibleCard` uses real `open` state (React ignores `defaultOpen` on `<details>`). Add-bank stays closed.
-- Drawer holds Paper/Classic/Edit/Desks/Home theme. Window temp stays in the glass. Calendar colours by kind; second tap grows detail. Shift posted bubbles sit under Tip climate.
-
-**Verification:**
-- Focused: `pnpm exec vitest run test/ledger-experience.test.ts test/ledger-story-ui.test.ts test/ledger-story-dom.test.ts` → green, including accepted Visa CAD / interest Confirm vs floor clone, and `CollapsibleCard` closed by default.
-- `pnpm check` at `af1413f` → **1115 passed / 2 skipped**. Re-run after this follow-up.
-- Visual recapture as Jonathan on Vite at `af1413f`: Shared Home leftover $2,557.84 = $5,404.04 − $2,846.20; Personal Books rooms; Plan Confirm this bank (cancelled); OfficePhone 390/320 seals.
-- Independent at `af1413f`: books **FAIL** (P0 Confirm CAD from floor clone — closed here); trust **reject** (same P1 + hero copy + `defaultOpen` noop — closed here); privacy **CONDITIONAL** (no P0/P1 on floor; Audit/Ask/SQL stay accepted books by integrity); UX **conditional PASS** (H-1 empty Add-bank open — closed to always closed; H-2 3-col from 900px not 720); verifier **CONDITIONAL PASS**.
-
-**Data and environment disclosure:**
-- Development impact: none (local/synthetic demo kitchen only)
-- Production impact: none
-- Network calls or data sent: none new
-- MCP access: none for household data
-- Hosted rows/schema/secrets/deployments: none
-- Real household or partner-personal data used: none. Demo/synthetic Development only.
-
-**Remaining uncertainty:** Sit-down leftover stays a different number. Personal Home seals still use scoped personal+both. Personal hero, Audit, Ask, and SQL stay on accepted `booksHousehold` with copy that the figure is accepted-books position, not a partner-hidden envelope. Wide 3-column desk is `>=900px`; 720–899 stacks. GCal overlay can still tint by member. Do not rebase onto later `main` unless asked.
-
-**Next owner:** Jonathan — review Shared Home three columns + leftover spend, Personal Books rooms (joint chequing/Visa/TFSA), fat Kitty Banks, Confirm on Fund bank, and Confirm on room interest. Do not merge, rebase, or deploy unless you ask.
-
-**Worksession:** [`worksessions/2026-08-29-kitchen-desk-banks.md`](worksessions/2026-08-29-kitchen-desk-banks.md)
 
 ## D-164 Kitchen notes (Kitty Banks, sit-down charts, Home desk) (2026-08-29)
 

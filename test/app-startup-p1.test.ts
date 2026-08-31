@@ -100,6 +100,36 @@ function button(label: string): HTMLButtonElement {
   return match as HTMLButtonElement;
 }
 
+function tapPad(container: HTMLElement, label: string): void {
+  const key = [...container.querySelectorAll(".cad-pad-keys button")].find((item) => item.getAttribute("aria-label") === label) as HTMLButtonElement | undefined;
+  if (!key) throw new Error(`Missing pad key ${label}`);
+  act(() => { key.click(); });
+}
+
+function openExpenseSlideshow(): void {
+  act(() => button("Add money").click());
+  act(() => button("Add expense").click());
+}
+
+function walkExpenseToConfirm(container: HTMLElement): HTMLButtonElement {
+  tapPad(container, "1");
+  const enter = [...container.querySelectorAll("button")].find((item) => item.textContent === "Enter") as HTMLButtonElement | undefined;
+  if (!enter) throw new Error("Missing Enter");
+  act(() => { enter.click(); });
+  const groceries = [...container.querySelectorAll("button.chip")].find((item) => item.textContent === "Groceries") as HTMLButtonElement | undefined;
+  if (!groceries) throw new Error("Missing Groceries");
+  act(() => { groceries.click(); });
+  const visa = [...container.querySelectorAll(".wallet-tile")].find((item) => item.textContent?.includes("Visa")) as HTMLButtonElement | undefined;
+  if (!visa) throw new Error("Missing Visa tile");
+  act(() => { visa.click(); });
+  const skip = [...container.querySelectorAll("button")].find((item) => item.textContent === "Skip") as HTMLButtonElement | undefined;
+  if (!skip) throw new Error("Missing Skip");
+  act(() => { skip.click(); });
+  const confirm = container.querySelector("[data-add-confirm]") as HTMLButtonElement | null;
+  if (!confirm) throw new Error("Missing Confirm");
+  return confirm;
+}
+
 async function startValidation(): Promise<void> {
   await act(async () => {
     await new Promise((resolve) => setTimeout(resolve, 60));
@@ -175,8 +205,9 @@ describe("cached-shell startup books gate", () => {
     expect(startup.inspectCalls).toBe(0);
     expect(startup.reconcileCalls).toBe(0);
 
-    act(() => button("Add money").click());
-    expect(button("Post").disabled).toBe(true);
+    openExpenseSlideshow();
+    const confirmWhileValidating = walkExpenseToConfirm(container);
+    expect(confirmWhileValidating.disabled).toBe(true);
 
     await startValidation();
     expect(startup.inspectCalls).toBe(1);
@@ -188,12 +219,12 @@ describe("cached-shell startup books gate", () => {
     });
 
     expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull();
-    expect(button("Post").disabled).toBe(false);
+    const confirmReady = container.querySelector("[data-add-confirm]") as HTMLButtonElement;
+    expect(confirmReady.disabled).toBe(false);
     expect(startup.reconcileCalls).toBe(1);
 
     const savesBeforePost = startup.saveCalls;
-    act(() => button("1").click());
-    act(() => (container.querySelector("button.post-big") as HTMLButtonElement).click());
+    act(() => { confirmReady.click(); });
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 100)); });
     expect(startup.saveCalls).toBeGreaterThan(savesBeforePost);
     expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).toBeNull();
@@ -219,8 +250,8 @@ describe("cached-shell startup books gate", () => {
     expect(button("Retry validation")).not.toBeNull();
     expect(startup.ingestCalls).toBe(0);
     expect(startup.reconcileCalls).toBe(0);
-    act(() => button("Add money").click());
-    expect(button("Post").disabled).toBe(true);
+    openExpenseSlideshow();
+    expect(walkExpenseToConfirm(container).disabled).toBe(true);
   });
 
   it("repairs only a missing schema and opens after the repaired projection validates", async () => {

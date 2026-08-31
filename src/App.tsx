@@ -3,7 +3,6 @@ import {
   JOINT,
   NeedsConfirmationError,
   ValidationError,
-  addCategory,
   addFormDefaults,
   buildDashboard,
   previewShiftAmounts,
@@ -12,7 +11,6 @@ import {
   createWriteQueue,
   creditCardView,
   defaultVisibilityForView,
-  dollarsFromCentsDigits,
   emitOfficeIntent,
   formatCad,
   describeDeviceLabel,
@@ -31,10 +29,8 @@ import {
   assembleHousehold,
   splitForSync,
   householdWallet,
-  accountOptionLabel,
   jointSplit,
   memberNeedsGoogleStepUp,
-  padToDollars,
   parseAmount,
   percentSplits,
   projectHouseholdFund,
@@ -59,7 +55,6 @@ import {
   acceptPresetNotice,
   addPreset,
   archivePreset,
-  activePresets,
   dismissNotice,
   dismissDuePreview,
   duePreviewDismissed,
@@ -79,8 +74,6 @@ import {
   todayKey,
   monthKeyFromDateKey,
   TIMEZONE,
-  formatZoneDateTime,
-  formatZoneTime,
   detectDeviceTimeZone,
   COMMON_TIME_ZONES,
   formatZoneLabel,
@@ -107,9 +100,6 @@ import {
   makeConflictBundle,
   markSynchronized,
   markPendingTransport,
-  suggestCategory,
-  shouldPrefillCategory,
-  suggestSplit,
   clockInShift,
   chooseOpenShiftTimeline,
   clockOutShift,
@@ -117,13 +107,9 @@ import {
   endShiftBreak,
   abandonOpenShift,
   activeOpenShift,
-  ceremonyFields,
-  ceremonyCopy,
   collapseSavedOffice,
   formatPreviewHours,
-  isLastCeremonyStep,
   previewHoursQuarter,
-  shiftFieldLabel,
   type ShiftGate,
   type Shift,
   type WorkJob,
@@ -275,7 +261,6 @@ import {
   registerCurrentHouseholdDevice,
   resetDevelopmentHouseholds,
 } from "./ledger/householdInvites.ts";
-import { CollapsibleCard } from "./theme/PaperTheme.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
 import type { RepeatingDraft } from "./RepeatingForm.tsx";
 import type { WorkShiftDraft } from "./WorkShiftFlow.tsx";
@@ -326,10 +311,11 @@ import {
 import { useDialog } from "./useDialog.ts";
 import { LedgerPurposeBanner } from "./LedgerPurposeBanner.tsx";
 import { HerculesPresence } from "./Hercules.tsx";
-import { ShiftElapsedHint } from "./ShiftElapsedHint.tsx";
 import { HerculesProApproval, HerculesProPermissionsCard, herculesProAuthorizationRequest } from "./HerculesPro.tsx";
-import { CadPad } from "./CadPad.tsx";
-import { PresetChip } from "./widgets/PresetChip.tsx";
+import { AddSlideshow, type AddFormFields, type AddMode } from "./AddSlideshow.tsx";
+import { AddCategoryForm } from "./AddCategoryForm.tsx";
+import { defaultSubcategoryForMode } from "./addSlideshow.ts";
+import { FabSpeedDial } from "./FabSpeedDial.tsx";
 import { SitDownGuide } from "./SitDownGuide.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { playClink } from "./clink.ts";
@@ -371,7 +357,6 @@ import {
 } from "./startup/booksReadiness.ts";
 
 type Tab = "home" | "plan" | "calendar" | "shift" | "ledger" | "more";
-type AddMode = "expense" | "income" | "shift" | "transfer";
 type WelcomeGoogleIntent = "create" | "login";
 type WelcomeIdentity = ContinuityIdentity & { displayName: string; grantedScopes: string[] };
 const WELCOME_GOOGLE_INTENT_KEY = "hearth:welcome-google-intent:v1";
@@ -415,7 +400,7 @@ type Guard =
   | { kind: "restorePoint"; pointId: string; summary: string }
   | { kind: "delete-household"; householdId: string; name: string; memberId: string; role: "owner" | "member" | null };
 
-const emptyForm = {
+const emptyForm: AddFormFields = {
   date: todayKey(),
   amount: "",
   accountId: "ACC-VISA",
@@ -469,6 +454,8 @@ export function App() {
   const pendingDemoFramesRef = useRef<number[]>([]);
   const [tab, setTab] = useState<Tab>("home");
   const [adding, setAdding] = useState(false);
+  const [addSlide, setAddSlide] = useState(0);
+  const [fabOpen, setFabOpen] = useState(false);
   const workShiftInputRef = useRef<ScopedWorkShiftInput | null>(null);
   const shiftScanScopeRef = useRef(createShiftScanScope());
   const confirmPanelRef = useRef<HTMLDivElement | null>(null);
@@ -482,6 +469,7 @@ export function App() {
     setShiftScanError("");
     setShiftScanWarnings([]);
     setAdding(false);
+    setAddSlide(0);
     setConfirm(null);
     setError("");
     setDraftLocation(undefined);
@@ -556,7 +544,6 @@ export function App() {
   const [clinkOn, setClinkOn] = useState(false);
   const [addDetails, setAddDetails] = useState(false);
   const [shiftGate, setShiftGate] = useState<ShiftGate>("choose");
-  const [shiftStep, setShiftStep] = useState(0);
   const [hoursDirty, setHoursDirty] = useState(false);
   const [draftLocation, setDraftLocation] = useState<TransactionLocation | undefined>(undefined);
   const [locationBusy, setLocationBusy] = useState(false);
@@ -3498,9 +3485,6 @@ export function App() {
     ccTipsCents: Math.round(Number(form.ccTips || 0) * 100) || 0,
     hours: Number(form.hours || 0) || 0,
   }, ledger.shiftSettings);
-  const guidedWorkShift = mode === "shift"
-    && (shiftGate === "signOut" || shiftGate === "finished")
-    && ledger.workJobs.some((job) => job.active && job.memberId === actorId);
 
   const formForAccount = (accountId: string | null, extra: Partial<typeof emptyForm> = {}) => {
     const defaults = addFormDefaults(displayHousehold, accountId);
@@ -3581,6 +3565,7 @@ export function App() {
     setFocusedAccountId(id);
     setMode(nextMode ?? defaults.suggestedMode);
     setAdding(true);
+    setAddSlide(0);
     setAddDetails(false);
     setError("");
     setConfirm(null);
@@ -3597,7 +3582,6 @@ export function App() {
     if ((nextMode ?? defaults.suggestedMode) === "shift") {
       const punch = activeOpenShift(ledger.kitchen, actorId);
       setShiftGate(punch ? "clocked" : "choose");
-      setShiftStep(0);
       setForm(formForAccount(id, {
         hours: punch ? formatPreviewHours(previewHoursQuarter(punch.startedAt)) : "",
         sales: "0",
@@ -3608,8 +3592,22 @@ export function App() {
       setHoursDirty(false);
       return;
     }
-    setForm(formForAccount(id));
+    setForm(formForAccount(id, {
+        subcategoryId: defaultSubcategoryForMode(nextMode ?? defaults.suggestedMode),
+      }));
   };
+
+  function switchAddMode(item: AddMode) {
+    setMode(item);
+    setAddSlide(0);
+    setCategoryTouched(false);
+    setCodingHint("");
+    setForm((current) => ({ ...current, subcategoryId: defaultSubcategoryForMode(item) }));
+    if (item === "shift") {
+      const punch = activeOpenShift(ledger.kitchen, actorId);
+      setShiftGate(punch ? "clocked" : "choose");
+    }
+  }
 
   function leaveDesk() {
     emitOfficeIntent({ type: "collapse" });
@@ -3643,11 +3641,11 @@ export function App() {
     if (punch?.status === "open") void runKitchen((current) => clockOutShift(current, { memberId: actorId }));
     setMode("shift");
     setAdding(true);
+    setAddSlide(0);
     setAddDetails(false);
     setError("");
     setConfirm(null);
     setShiftGate("signOut");
-    setShiftStep(0);
     setHoursDirty(false);
     setForm(formForAccount(null, {
       hours: punch ? formatPreviewHours(previewHoursQuarter(punch.startedAt)) : "",
@@ -3671,21 +3669,12 @@ export function App() {
     workShiftDateRef.current = initialDate;
     setMode("shift");
     setAdding(true);
+    setAddSlide(0);
     setAddDetails(false);
     setError("");
     setConfirm(null);
     setShiftGate("finished");
-    setShiftStep(0);
     setForm(formForAccount(null, { hours: "", sales: "0", cashTips: "0", ccTips: "0" }));
-  }
-
-  function shiftAdvance() {
-    const fields = ceremonyFields(shiftGate);
-    if (!isLastCeremonyStep(shiftGate, shiftStep)) {
-      setShiftStep((step) => Math.min(step + 1, Math.max(0, fields.length - 1)));
-      return;
-    }
-    submit();
   }
 
   const openPayCard = (account: Account) => {
@@ -3695,6 +3684,7 @@ export function App() {
     setFocusedAccountId(account.id);
     setMode("transfer");
     setAdding(true);
+    setAddSlide(0);
     setAddDetails(false);
     setError("");
     setConfirm(null);
@@ -3830,10 +3820,7 @@ export function App() {
   }
 
   function addPostLabel(): string {
-    if (mode === "shift") {
-      if (shiftGate === "choose" || shiftGate === "clocked") return "Clock in";
-      return isLastCeremonyStep(shiftGate, shiftStep) ? "Post shift" : "Next";
-    }
+    if (mode === "shift") return "Post shift";
     const digits = centsDigitsFromDollars(form.amount);
     const money = digits ? formatCad(Number(digits)) : "";
     if (mode === "transfer") return money ? `Move ${money}` : "Move money";
@@ -4707,603 +4694,133 @@ export function App() {
       )}
 
       {adding && (
-        <div
-          className="sheet"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="add-sheet-title"
-          ref={addSheetRef}
-        >
-          <div className="sheet-inner">
-            <div className="topbar">
-              <h1 id="add-sheet-title">Add</h1>
-              <button className="ghost" type="button" data-autofocus onClick={closeAdd}>Close</button>
-            </div>
-            <div className="tabs">
-              {(["expense", "income", "shift", "transfer"] as AddMode[]).map((item) => (
-                <button
-                  key={item}
-                  className={mode === item ? "active" : ""}
-                  onClick={() => {
-                    setMode(item);
-                    if (item === "shift") {
-                      const punch = activeOpenShift(household.kitchen, actorId);
-                      setShiftGate(punch ? "clocked" : "choose");
-                      setShiftStep(0);
-                    }
-                  }}
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-            {mode !== "shift" && mode !== "transfer" && (
-              <>
-                <CadPad
-                  digits={centsDigitsFromDollars(form.amount)}
-                  onDigits={(digits) => setForm({ ...form, amount: padToDollars(digits) })}
-                  label="Amount"
-                />
-                {mode === "expense" && (
-                  <div className="chips">
-                    {activePresets(household).map((preset) => (
-                      <PresetChip
-                        key={preset.id}
-                        note={preset.note}
-                        subcategoryId={preset.subcategoryId}
-                        categories={household.categories}
-                        selected={presetId === preset.id}
-                        onClick={() => {
-                          setPresetId(preset.id);
-                          setForm({
-                            ...form,
-                            note: preset.note,
-                            place: preset.place,
-                            subcategoryId: preset.subcategoryId,
-                            accountId: preset.accountId,
-                            amount: preset.amountCents > 0 ? (preset.amountCents / 100).toFixed(2) : form.amount,
-                            visibility: preset.visibility,
-                          });
-                        }}
-                      />
-                    ))}
-                    <button
-                      type="button"
-                      className={`chip ${form.note === "Groceries" && presetId == null ? "selected" : ""}`}
-                      onClick={() => {
-                        setPresetId(null);
-                        setCategoryTouched(true);
-                        setForm({ ...form, note: "Groceries", subcategoryId: "SUB-FOOD-GROCERIES" });
-                      }}
-                    >
-                      Groceries
-                    </button>
-                    <button
-                      type="button"
-                      className={`chip ${form.note === "Coffee" && presetId == null ? "selected" : ""}`}
-                      onClick={() => {
-                        setPresetId(null);
-                        setCategoryTouched(true);
-                        setForm({ ...form, note: "Coffee", subcategoryId: "SUB-FOOD-COFFEE" });
-                      }}
-                    >
-                      Coffee
-                    </button>
-                    <button
-                      type="button"
-                      className="chip"
-                      onClick={() => {
-                        if (!form.note.trim() && !form.subcategoryId) return;
-                        let amountBit = "Amount stays on the pad";
-                        try {
-                          if (form.amount) amountBit = formatCad(parseAmount(form.amount));
-                        } catch {
-                          amountBit = "Amount stays on the pad";
-                        }
-                        setGuard({
-                          kind: "addPreset",
-                          summary: `Save ${form.note.trim() || "this line"} as a preset (${amountBit}). It does not post money.`,
-                        });
-                      }}
-                    >
-                      Save as preset
-                    </button>
-                    {presetId && (
-                      <button
-                        type="button"
-                        className="chip"
-                        onClick={() => {
-                          const id = presetId;
-                          setPresetId(null);
-                          void run((current) => archivePreset(current, id));
-                        }}
-                      >
-                        Forget preset
-                      </button>
-                    )}
-                  </div>
-                )}
-                <label>Category</label>
-                <div className="chips">
-                  {categories.map((category) => (
-                    <button key={category.id} className={`chip ${form.subcategoryId === category.id ? "selected" : ""}`} onClick={() => { setCategoryTouched(true); setForm({ ...form, subcategoryId: category.id }); }}>
-                      {category.name}
-                    </button>
-                  ))}
-                </div>
-                <label>Who</label>
-                <div className="chips">
-                  {[
-                    { id: JOINT, name: "Joint" },
-                    ...household.members.filter((m) => m.active).map((m) => ({ id: m.id, name: m.name })),
-                    { id: "split", name: "Split %" },
-                  ].map((who) => (
-                    <button key={who.id} className={`chip ${form.who === who.id ? "selected" : ""}`} onClick={() => setForm({ ...form, who: who.id })}>{who.name}</button>
-                  ))}
-                </div>
-                {form.who === "split" && (
-                  <div className="split-card">
-                    <p className="muted">Shares fill to 100%.</p>
-                    {household.members.filter((member) => member.active).map((member) => {
-                      const percent = splitPercents[member.id] ?? 0;
-                      let share = "";
-                      try {
-                        if (form.amount) share = formatCad(Math.round(parseAmount(form.amount) * percent / 100));
-                      } catch {
-                        share = "";
-                      }
-                      return (
-                        <div className="row" key={member.id}>
-                          <span>{member.name}</span>
-                          <span>
-                            <input
-                              type="number"
-                              min={0}
-                              max={100}
-                              step={1}
-                              value={percent}
-                              onChange={(event) => setMemberPercent(member.id, Number(event.target.value))}
-                            /> %
-                            <span className="muted"> {share}</span>
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                <label>Account</label>
-                <select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })}>
-                  {pickerAccounts.map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
-                </select>
-                <label>Note</label>
-                <input
-                  value={form.note}
-                  onChange={(event) => {
-                    const note = event.target.value;
-                    const next = { ...form, note };
-                    if (!categoryTouched && (mode === "expense" || mode === "income")) {
-                      const guess = suggestCategory(household, note, form.place);
-                      if (shouldPrefillCategory(guess) && guess) {
-                        next.subcategoryId = guess.subcategoryId;
-                        let hint = `Guessed ${guess.name}. Confirm still writes.`;
-                        try {
-                          if (form.amount) {
-                            const split = suggestSplit(household, note, form.place, parseAmount(form.amount));
-                            if (split && split.confidence >= 0.55) hint += ` Usually ${split.label}.`;
-                          }
-                        } catch {
-                          // Pad empty until they type an amount.
-                        }
-                        setCodingHint(hint);
-                      }
-                    }
-                    setForm(next);
-                  }}
-                  placeholder="Groceries, rent…"
-                />
-                {codingHint && <p className="muted">{codingHint}</p>}
-              </>
-            )}
-            {mode === "transfer" && (
-              <>
-                <CadPad
-                  digits={centsDigitsFromDollars(form.amount)}
-                  onDigits={(digits) => setForm({ ...form, amount: padToDollars(digits) })}
-                  label="Move"
-                />
-                <label>From</label>
-                <select value={form.fromAccountId} onChange={(event) => setForm({ ...form, fromAccountId: event.target.value })}>
-                  {pickerAccounts.map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
-                </select>
-                <label>To</label>
-                <select value={form.toAccountId} onChange={(event) => setForm({ ...form, toAccountId: event.target.value })}>
-                  {pickerAccounts.map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
-                </select>
-                <p className="muted">Not income. Not spend.</p>
-              </>
-            )}
-            {mode === "shift" && (
-              <>
-                {shiftGate === "choose" && (
-                  <>
-                    <p className="muted">{ceremonyCopy("choose").hint}</p>
-                    <label>Who is working</label>
-                    <select value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value })}>
-                      {household.members.filter((m) => m.active).map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
-                    </select>
-                    <button
-                      type="button"
-                      className="primary post-big"
-                      disabled={busy}
-                      onClick={() => {
-                        void runKitchen((current) => clockInShift(current, { memberId: form.memberId }));
-                        setAdding(false);
-                      }}
-                    >
-                      Clock in
-                    </button>
-                    <button type="button" className="chip" onClick={() => beginFinishedShift()}>Already off? Post a finished shift</button>
-                  </>
-                )}
-                {shiftGate === "clocked" && (() => {
-                  const punch = activeOpenShift(household.kitchen, actorId);
-                  return (
-                    <>
-                      <p>{ceremonyCopy("clocked").title}</p>
-                      {punch ? <ShiftElapsedHint startedAt={punch.startedAt} /> : <p className="muted">{ceremonyCopy("clocked").hint}</p>}
-                      <button type="button" className="primary post-big" onClick={beginSignOut}>Sign out</button>
-                      <button
-                        type="button"
-                        className="chip"
-                        disabled={busy}
-                        onClick={() => {
-                          void runKitchen((current) => abandonOpenShift(current, { memberId: actorId }));
-                          setAdding(false);
-                        }}
-                      >
-                        Never mind
-                      </button>
-                    </>
-                  );
-                })()}
-                {(shiftGate === "signOut" || shiftGate === "finished") && household.workJobs.some((job) => job.active && job.memberId === actorId) && (
-                  <>
-                    <DeferredSurface label="Tip sheet camera">
-                    <DeferredShiftReportScanBar
-                      busy={busy}
-                      scanBusy={shiftScanBusy}
-                      error={shiftScanError}
-                      onFile={(file) => { void applyShiftReportScan(file); }}
-                    />
-                    </DeferredSurface>
-                    <DeferredSurface label="Timesheet">
-                    <DeferredWorkShiftWithSevenShifts
-                      key={`${environment}:${household.householdId}:${actorId}`}
-                      household={displayHousehold}
-                      memberId={actorId}
-                      today={workShiftDateRef.current}
-                      punch={activeOpenShift(household.kitchen, actorId)}
-                      busy={busy || shiftScanBusy}
-                      initialDraft={workShiftDraft}
-                      scanWarnings={shiftScanWarnings}
-                      onClearDraft={() => {
-                        setWorkShiftDraft(null);
-                        setShiftScanWarnings([]);
-                        setShiftScanError("");
-                      }}
-                      onConfirm={(input) => {
-                        setWorkShiftDraft(null);
-                        setShiftScanWarnings([]);
-                        submitWorkShift(input);
-                      }}
-                    />
-                    </DeferredSurface>
-                  </>
-                )}
-                {(shiftGate === "signOut" || shiftGate === "finished") && !household.workJobs.some((job) => job.active && job.memberId === actorId) && (() => {
-                  const fields = ceremonyFields(shiftGate);
-                  const field = fields[shiftStep] ?? "hours";
-                  const copy = ceremonyCopy(shiftGate, field);
-                  const punch = activeOpenShift(household.kitchen, actorId);
-                  return (
-                    <>
-                      <p>{copy.title}</p>
-                      <p className="muted">{copy.hint}</p>
-                      {shiftGate === "signOut" && field === "hours" && punch && (
-                        <ShiftElapsedHint
-                          startedAt={punch.startedAt}
-                          prefix="Live preview: "
-                          onQuarterHours={(hours) => {
-                            if (hoursDirty) return;
-                            const formatted = formatPreviewHours(hours);
-                            setForm((current) => current.hours === formatted ? current : { ...current, hours: formatted });
-                          }}
-                        />
-                      )}
-                      <label>Who worked</label>
-                      <select value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value })}>
-                        {household.members.filter((m) => m.active).map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
-                      </select>
-                      <label>Account</label>
-                      <select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })}>
-                        {pickerAccounts.map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
-                      </select>
-                      <CadPad
-                        digits={centsDigitsFromDollars(form[field])}
-                        onDigits={(digits) => {
-                          if (field === "hours") setHoursDirty(true);
-                          setForm({
-                            ...form,
-                            [field]: dollarsFromCentsDigits(digits),
-                          });
-                        }}
-                        label={shiftFieldLabel(field)}
-                        unit={field === "hours" ? "hours" : "cad"}
-                      />
-                      {field === "sales" && (
-                        <div className="work-shift-grid two">
-                          <label>
-                            Customers served
-                            <input
-                              type="number"
-                              inputMode="numeric"
-                              min={0}
-                              max={5000}
-                              value={form.customersServed}
-                              onChange={(event) => setForm({ ...form, customersServed: event.target.value })}
-                            />
-                          </label>
-                          <label>
-                            People on floor
-                            <input
-                              type="number"
-                              inputMode="numeric"
-                              min={1}
-                              max={200}
-                              value={form.staffingCount}
-                              onChange={(event) => setForm({ ...form, staffingCount: event.target.value })}
-                            />
-                          </label>
-                          <label>
-                            Event tag
-                            <select value={form.eventTag} onChange={(event) => setForm({ ...form, eventTag: event.target.value })}>
-                              <option value="regular">Regular</option>
-                              <option value="holiday">Holiday</option>
-                              <option value="sports">Sports</option>
-                              <option value="festival">Festival</option>
-                              <option value="private_party">Private party</option>
-                              <option value="short_staffed">Short-staffed</option>
-                              <option value="vacation_cover">Vacation cover</option>
-                              <option value="illness_cover">Illness cover</option>
-                              <option value="other">Other</option>
-                            </select>
-                          </label>
-                        </div>
-                      )}
-                      {field !== "hours" && (
-                        <div className={`preview ${shiftPreview.netTipsCents < 0 ? "warn" : ""}`}>
-                          <div className="row"><span>Net tips</span><span>{formatCad(shiftPreview.netTipsCents)}</span></div>
-                          <div className="row"><span>Wages</span><span>{Number(form.hours) > 0 ? formatCad(shiftPreview.wagesCents) : "wait for hours"}</span></div>
-                          <p className="muted">Same math that posts. Hours are a preview until Confirm.</p>
-                        </div>
-                      )}
-                      {shiftStep > 0 && (
-                        <button type="button" className="chip" onClick={() => setShiftStep((step) => Math.max(0, step - 1))}>Back</button>
-                      )}
-                    </>
-                  );
-                })()}
-              </>
-            )}
-            {!guidedWorkShift && <button type="button" className="chip" onClick={() => setAddDetails((open) => !open)}>
-              {addDetails ? "Hide details" : "Date & place"}
-            </button>}
-            {!guidedWorkShift && addDetails && (
-              <>
-                <label>Date</label>
-                <input type="date" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} />
-                <label>Save to</label>
-                <div className="chips">
-                  {([
-                    { id: "household" as Visibility, name: "Shared" },
-                    { id: "personal" as Visibility, name: "Personal" },
-                    { id: "both" as Visibility, name: "Both" },
-                  ]).map((item) => (
-                    <button
-                      key={item.id}
-                      className={`chip ${form.visibility === item.id ? "selected" : ""}`}
-                      onClick={() => setForm({ ...form, visibility: item.id })}
-                    >
-                      {item.name}
-                    </button>
-                  ))}
-                </div>
-                {mode === "expense" && household.householdFund && (
-                  <section className="preview" aria-label="Household Fund allocation">
-                    <div className="row">
-                      <div>
-                        <strong>Use Household Fund</strong>
-                        <p className="muted">Separate from Shared or Personal visibility.</p>
-                      </div>
-                      <button
-                        type="button"
-                        className={`chip ${form.useHouseholdFund ? "selected" : ""}`}
-                        aria-pressed={form.useHouseholdFund}
-                        onClick={() => setForm({
-                          ...form,
-                          useHouseholdFund: !form.useHouseholdFund,
-                          fundedAmount: form.fundedAmount || form.amount,
-                          fundDestinationAccountId: !form.useHouseholdFund
-                            && displayHousehold.accounts.some((account) => account.id === form.accountId && account.scope !== "personal")
-                            ? form.accountId
-                            : form.fundDestinationAccountId || "ACC-VISA",
-                        })}
-                      >
-                        {form.useHouseholdFund ? "Using Fund" : "Use Fund"}
-                      </button>
-                    </div>
-                    {form.useHouseholdFund && (
-                      <>
-                        <label htmlFor="add-fund-amount">Funded amount (CAD)</label>
-                        <input id="add-fund-amount" inputMode="decimal" value={form.fundedAmount} onChange={(event) => setForm({ ...form, fundedAmount: event.target.value })} placeholder={form.amount || "0.00"} />
-                        <label htmlFor="add-fund-destination">Settlement destination</label>
-                        <select id="add-fund-destination" value={form.fundDestinationAccountId} onChange={(event) => setForm({ ...form, fundDestinationAccountId: event.target.value })}>
-                          {displayHousehold.accounts.filter((account) => account.active && account.scope !== "personal").map((account) => (
-                            <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>
-                          ))}
-                        </select>
-                        <p className="muted">Jonathan’s card purchases default to the selected card. Bianca can transfer a partial or full amount later.</p>
-                      </>
-                    )}
-                  </section>
-                )}
-                {mode !== "shift" && mode !== "transfer" && (
-                  <>
-                    <label>Place</label>
-                    <input
-                      value={form.place}
-                      onChange={(event) => {
-                        const place = event.target.value;
-                        const next = { ...form, place };
-                        if (!categoryTouched && (mode === "expense" || mode === "income")) {
-                          const guess = suggestCategory(household, form.note, place);
-                          if (shouldPrefillCategory(guess) && guess) {
-                            next.subcategoryId = guess.subcategoryId;
-                            setCodingHint(`Guessed ${guess.name}. Confirm still writes.`);
-                          }
-                        }
-                        setForm(next);
-                      }}
-                      placeholder="No Frills…"
-                    />
-                    {showLocationPrompt && !placePrefs.locationAllowed && (
-                      <div className="preview" style={{ marginTop: 8 }} role="dialog" aria-label="Location services">
-                        <p>Allow location on this phone so Add can stamp real time and place?</p>
-                        <div className="chips">
-                          <button
-                            type="button"
-                            className="chip selected"
-                            onClick={() => {
-                              setPlacePrefs(savePhonePlacePrefs(environment, { locationAllowed: true, addPromptSeen: true }));
-                              setShowLocationPrompt(false);
-                            }}
-                          >
-                            Allow
-                          </button>
-                          <button
-                            type="button"
-                            className="chip"
-                            onClick={() => {
-                              setPlacePrefs(savePhonePlacePrefs(environment, { addPromptSeen: true }));
-                              setShowLocationPrompt(false);
-                            }}
-                          >
-                            Not now
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    <div className="chips" style={{ marginTop: 8 }}>
-                      <button
-                        type="button"
-                        className={`chip ${placePrefs.stampTime ? "selected" : ""}`}
-                        disabled={busy || !placePrefs.locationAllowed}
-                        onClick={() => setPlacePrefs(savePhonePlacePrefs(environment, { stampTime: !placePrefs.stampTime }))}
-                      >
-                        Stamp time
-                      </button>
-                      <button
-                        type="button"
-                        className={`chip ${placePrefs.stampCoords ? "selected" : ""}`}
-                        disabled={busy || !placePrefs.locationAllowed}
-                        onClick={() => setPlacePrefs(savePhonePlacePrefs(environment, { stampCoords: !placePrefs.stampCoords }))}
-                      >
-                        Stamp place
-                      </button>
-                      <button
-                        type="button"
-                        className="chip"
-                        disabled={busy || locationBusy || !placePrefs.locationAllowed || (!placePrefs.stampTime && !placePrefs.stampCoords)}
-                        onClick={applyConfiguredStamps}
-                      >
-                        {locationBusy ? "Locating…" : "Use now"}
-                      </button>
-                      {(draftLocation || form.occurredAt) && (
-                        <button type="button" className="chip" disabled={busy || locationBusy} onClick={clearLocationStamp}>
-                          Clear stamp
-                        </button>
-                      )}
-                    </div>
-                    {(form.occurredAt || draftLocation) && (
-                      <p className="muted" style={{ marginTop: 8 }}>
-                        {form.occurredAt ? formatZoneDateTime(form.occurredAt, displayZone) : formatZoneTime(new Date(), displayZone)}
-                        {draftLocation ? ` · ${locationLabel(draftLocation)}` : ""}
-                        {" · Confirm still posts"}
-                      </p>
-                    )}
-                    {!placePrefs.locationAllowed && !showLocationPrompt && (
-                      <p className="muted" style={{ marginTop: 8 }}>
-                        Location is off. Enable it in More → Clock &amp; place.
-                      </p>
-                    )}
-                  </>
-                )}
-                {mode === "transfer" && (
-                  <>
-                    <label>Note</label>
-                    <input value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} />
-                  </>
-                )}
-              </>
-            )}
-            <KitchenNotice
-              message={error}
-              onGoMore={() => { setAdding(false); goTab("more"); }}
-              onDismiss={() => setError("")}
-            />
-            {confirm && (
-              <div className="preview warn" role="alert" tabIndex={-1} ref={confirmPanelRef}>
-                <p>{confirm.message}</p>
-                {confirm.matches.map((tx) => (
-                  <div className="row" key={tx.id}>
-                    <span>{tx.date} · {tx.place || tx.note || tx.type}</span>
-                    <span>{formatCad(tx.amountCents)}</span>
-                  </div>
-                ))}
-                <button className="primary" onClick={() => {
-                  const pending = workShiftInputRef.current;
-                  const plan = resolveDuplicateRetry({
-                    pendingWorkShift: pending?.input ?? null,
-                    confirmCode: confirm.code,
-                    tab,
-                  });
-                  if (plan.kind === "work-shift" && pending) {
-                    submitWorkShift(pending.input, true);
-                  } else {
-                    submit({ confirmDuplicate: true });
-                  }
-                }}>
-                  Add anyway
-                </button>
-              </div>
-            )}
-            {!(mode === "shift" && (shiftGate === "choose" || shiftGate === "clocked" || ((shiftGate === "signOut" || shiftGate === "finished") && household.workJobs.some((job) => job.active && job.memberId === actorId)))) && (
-              <>
-                <p className="muted" data-ledger-confirm-purpose>
-                  {experience && experience.ok ? `${experience.label}. ${ledgerRouteContract("home", view).heading}.` : null}
-                  {" "}Fund funding stays separate from Shared or Personal visibility.
-                </p>
-              <button
-                className="primary post-big"
-                disabled={busy}
-                onClick={() => (mode === "shift" ? shiftAdvance() : submit())}
-              >
-                {addPostLabel()}
-              </button>
-              </>
-            )}
-          </div>
-        </div>
+        <AddSlideshow
+          sheetRef={addSheetRef}
+          mode={mode}
+          onSwitchMode={switchAddMode}
+          form={form}
+          setForm={setForm}
+          household={household}
+          booksHousehold={household}
+          pickerAccounts={pickerAccounts}
+          categories={categories}
+          today={today}
+          slideIndex={addSlide}
+          onSlideIndex={setAddSlide}
+          shiftGate={shiftGate}
+          hasWorkJobs={household.workJobs.some((job) => job.active && job.memberId === actorId)}
+          shiftJobsPanel={(
+            <>
+              <DeferredSurface label="Tip sheet camera">
+              <DeferredShiftReportScanBar
+                busy={busy}
+                scanBusy={shiftScanBusy}
+                error={shiftScanError}
+                onFile={(file) => { void applyShiftReportScan(file); }}
+              />
+              </DeferredSurface>
+              <DeferredSurface label="Timesheet">
+              <DeferredWorkShiftWithSevenShifts
+                key={`${environment}:${household.householdId}:${actorId}`}
+                household={displayHousehold}
+                memberId={actorId}
+                today={workShiftDateRef.current}
+                punch={activeOpenShift(household.kitchen, actorId)}
+                busy={busy || shiftScanBusy}
+                initialDraft={workShiftDraft}
+                scanWarnings={shiftScanWarnings}
+                onClearDraft={() => {
+                  setWorkShiftDraft(null);
+                  setShiftScanWarnings([]);
+                  setShiftScanError("");
+                }}
+                onConfirm={(input) => {
+                  setWorkShiftDraft(null);
+                  setShiftScanWarnings([]);
+                  submitWorkShift(input);
+                }}
+              />
+              </DeferredSurface>
+            </>
+          )}
+          shiftPreview={shiftPreview}
+          onHoursDirty={() => setHoursDirty(true)}
+          hoursDirty={hoursDirty}
+          onClockIn={() => {
+            void runKitchen((current) => clockInShift(current, { memberId: form.memberId }));
+            setAdding(false);
+          }}
+          onAlreadyOff={() => beginFinishedShift()}
+          onSignOut={beginSignOut}
+          onNeverMind={() => {
+            void runKitchen((current) => abandonOpenShift(current, { memberId: actorId }));
+            setAdding(false);
+          }}
+          punchStartedAt={activeOpenShift(household.kitchen, actorId)?.startedAt}
+          busy={busy}
+          error={error}
+          onDismissError={() => setError("")}
+          onGoMore={() => { setAdding(false); goTab("more"); }}
+          confirm={confirm}
+          confirmPanelRef={confirmPanelRef}
+          onConfirmAnyway={() => {
+            const pending = workShiftInputRef.current;
+            const plan = resolveDuplicateRetry({
+              pendingWorkShift: pending?.input ?? null,
+              confirmCode: confirm?.code ?? null,
+              tab,
+            });
+            if (plan.kind === "work-shift" && pending) {
+              submitWorkShift(pending.input, true);
+            } else {
+              submit({ confirmDuplicate: true });
+            }
+          }}
+          postLabel={addPostLabel()}
+          onPost={() => submit()}
+          onClose={closeAdd}
+          persistCategory={(next, token) => persist(next, token)}
+          presetId={presetId}
+          onPresetId={setPresetId}
+          onSavePreset={() => {
+            if (!form.note.trim() && !form.subcategoryId) return;
+            let amountBit = "Amount stays on the pad";
+            try {
+              if (form.amount) amountBit = formatCad(parseAmount(form.amount));
+            } catch {
+              amountBit = "Amount stays on the pad";
+            }
+            setGuard({
+              kind: "addPreset",
+              summary: `Save ${form.note.trim() || "this line"} as a preset (${amountBit}). It does not post money.`,
+            });
+          }}
+          onForgetPreset={() => {
+            const id = presetId;
+            if (!id) return;
+            setPresetId(null);
+            void run((current) => archivePreset(current, id));
+          }}
+          categoryTouched={categoryTouched}
+          onCategoryTouched={() => setCategoryTouched(true)}
+          codingHint={codingHint}
+          onCodingHint={setCodingHint}
+          splitPercents={splitPercents}
+          onMemberPercent={setMemberPercent}
+          addDetails={addDetails}
+          onAddDetails={setAddDetails}
+          placePrefs={placePrefs}
+          onPlacePrefs={setPlacePrefs}
+          environment={environment}
+          showLocationPrompt={showLocationPrompt}
+          onShowLocationPrompt={setShowLocationPrompt}
+          locationBusy={locationBusy}
+          applyConfiguredStamps={applyConfiguredStamps}
+          clearLocationStamp={clearLocationStamp}
+          draftLocation={draftLocation}
+          displayZone={displayZone}
+          experienceLine={experience && experience.ok ? `${experience.label}. ${ledgerRouteContract("home", view).heading}.` : ""}
+        />
       )}
 
       {guard?.kind === "erase-development" && (
@@ -5884,7 +5401,7 @@ export function App() {
         session={session}
       />
 
-      <nav className="nav" data-ledger-nav={view === "household" ? "shared" : "personal"} aria-label="Hearth">
+      <nav className={`nav${fabOpen ? " is-fab-open" : ""}`} data-ledger-nav={view === "household" ? "shared" : "personal"} aria-label="Hearth">
         {kitchenPrimaryNav(view).includes("home") && (
         <button
           className={tab === "home" && !adding ? "active" : ""}
@@ -5920,7 +5437,11 @@ export function App() {
           Shift
         </button>
         )}
-        <button className="fab" type="button" aria-label="Add money" onClick={() => openAddFor(null)}>+</button>
+        <FabSpeedDial
+          closed={adding}
+          onOpenChange={setFabOpen}
+          onPick={(nextMode) => openAddFor(null, nextMode)}
+        />
         {kitchenPrimaryNav(view).includes("plan") && (
         <button
           className={tab === "plan" ? "active" : ""}
@@ -6039,47 +5560,6 @@ function PlanCategories({
         );
       })}
       <AddCategoryForm household={household} onSave={onSave} embedded />
-    </section>
-  );
-}
-
-function AddCategoryForm({ household, onSave, embedded }: { household: Household; onSave: (household: Household, undo?: UndoToken) => void; embedded?: boolean }) {
-  const [name, setName] = useState("");
-  const [parentId, setParentId] = useState("CAT-LIFE");
-  const [error, setError] = useState("");
-  const body = (
-    <>
-      {embedded ? <h3>Add category</h3> : <header><h2>Add category</h2></header>}
-      <p className="muted">Same commit bar as money: one save creates the category and can seed this month’s budget.</p>
-      <input value={name} placeholder="Name" onChange={(event) => setName(event.target.value)} />
-      <select value={parentId} onChange={(event) => setParentId(event.target.value)}>
-        {household.categories.filter((c) => c.recordType === "group" && c.transactionType === "expense").map((group) => (
-          <option key={group.id} value={group.id}>{group.name}</option>
-        ))}
-      </select>
-      <KitchenNotice message={error} />
-      <button className="primary" onClick={() => {
-        try {
-          const result = addCategory(household, { name, type: "expense", parentId, monthlyBudget: "0" });
-          onSave(result.household, result.undo);
-          setName("");
-          setError("");
-        } catch (caught) {
-          setError(caught instanceof ValidationError ? caught.message : String(caught));
-        }
-      }}>Save category</button>
-    </>
-  );
-  if (embedded) {
-    return (
-      <CollapsibleCard title="Add category" hint="Same commit as money" defaultOpen={false} className="plan-add-category">
-        {body}
-      </CollapsibleCard>
-    );
-  }
-  return (
-    <section className="card">
-      {body}
     </section>
   );
 }
