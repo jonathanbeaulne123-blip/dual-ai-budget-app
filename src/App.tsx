@@ -544,7 +544,6 @@ export function App() {
   const [clinkOn, setClinkOn] = useState(false);
   const [addDetails, setAddDetails] = useState(false);
   const [shiftGate, setShiftGate] = useState<ShiftGate>("choose");
-  const [shiftStep, setShiftStep] = useState(0);
   const [hoursDirty, setHoursDirty] = useState(false);
   const [draftLocation, setDraftLocation] = useState<TransactionLocation | undefined>(undefined);
   const [locationBusy, setLocationBusy] = useState(false);
@@ -3583,7 +3582,6 @@ export function App() {
     if ((nextMode ?? defaults.suggestedMode) === "shift") {
       const punch = activeOpenShift(ledger.kitchen, actorId);
       setShiftGate(punch ? "clocked" : "choose");
-      setShiftStep(0);
       setForm(formForAccount(id, {
         hours: punch ? formatPreviewHours(previewHoursQuarter(punch.startedAt)) : "",
         sales: "0",
@@ -3608,7 +3606,6 @@ export function App() {
     if (item === "shift") {
       const punch = activeOpenShift(ledger.kitchen, actorId);
       setShiftGate(punch ? "clocked" : "choose");
-      setShiftStep(0);
     }
   }
 
@@ -3649,7 +3646,6 @@ export function App() {
     setError("");
     setConfirm(null);
     setShiftGate("signOut");
-    setShiftStep(0);
     setHoursDirty(false);
     setForm(formForAccount(null, {
       hours: punch ? formatPreviewHours(previewHoursQuarter(punch.startedAt)) : "",
@@ -3678,7 +3674,6 @@ export function App() {
     setError("");
     setConfirm(null);
     setShiftGate("finished");
-    setShiftStep(0);
     setForm(formForAccount(null, { hours: "", sales: "0", cashTips: "0", ccTips: "0" }));
   }
 

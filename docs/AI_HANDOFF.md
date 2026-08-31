@@ -2,7 +2,7 @@
 
 ## D-181 Add slideshow + FAB onto current main (2026-08-31)
 
-**Status:** Integration on `cursor/add-slideshow-main-aef7` from exact `origin/main@e9c5127594a9fd4e6d8b203f19db57cc4b31390a` plus `#244` @ `4c51a016c07494dda0a29922b3345c4705f77b62`. Jonathan ordered **merge, push, and deploy**. Risk: **Release** (kitchen `wrangler deploy`). Kitchen-desk D-173 already shipped via #252; this packet is FAB + Add slideshow only.
+**Status:** Integration `3b0598c` on `cursor/add-slideshow-main-aef7` (plus unused-`shiftStep` follow-up). Base `origin/main@683910bc19f067ed5a9f4adee394f6026cda0899`. Jonathan ordered **merge, push, and deploy**. Risk: **Release**. Kitchen-desk D-173 already shipped via #252.
 
 **Household outcome:** Live kitchen `+` opens Shift / Income / Expense / Transfer. Add is unique cashpad prompt slideshows. Confirm still posts. Slideshow never `postEntry`.
 
@@ -12,19 +12,23 @@
 
 **If they conflicted:** books win. Cut flourish before auto-posting or hiding Confirm. Pictures stay on this phone.
 
-**What changed:** Merged `#244` unique commits onto current `main`. Kept `main` D-165–D-180 (Shared Money stays D-174). Renumbered Add slideshow **D-181**. Shift jobs panel uses D-175 deferred surfaces. Clocked hours use D-178 `ShiftElapsedHint` (local tick; quarter-hour pad update). CadPad keeps `emptyDisplay` and giant Enter.
+**What changed:** Merged `#244` unique commits onto current `main`. Kept `main` D-165–D-180 (Shared Money stays D-174). Renumbered Add slideshow **D-181**. Shift jobs panel uses D-175 deferred surfaces. Clocked hours use D-178 `ShiftElapsedHint`. CadPad keeps `emptyDisplay` and giant Enter. D-175 startup tests walk to `[data-add-confirm]`.
 
-**Verification:** pending `pnpm check` on the integration SHA. Do not copy `#244`’s 1123.
+**Verification:**
+- Focused: `pnpm exec vitest run test/add-slideshow.test.ts test/add-slideshow-ui.test.ts test/household-fund-ui.test.ts test/ledger-story-ui.test.ts test/fab-speed-dial.test.ts test/app-kitchen-boot.test.ts test/app-startup-p1.test.ts` → pass.
+- Full `pnpm test` at `3b0598c` (before unused-`shiftStep` tsc fix): **1297 passed / 3 skipped**.
+- `pnpm ai:verify` + `tsc --noEmit` + Vite production build (373 modules) + Hercules Pro UI after removing unused `shiftStep`.
+- Independent books **PASS** (no P0/P1; P3 hours emptyDisplay closed). Privacy **no P0/P1**. Trust P0 (startup Post selector) closed by walking to Confirm.
 
 **Data and environment disclosure:**
 - Development impact: kitchen URL after D-041 deploy
 - Production impact: none (no Production household mutation, schema, or secrets)
 - Network calls or data sent: GitHub fetch/push; Cloudflare `wrangler deploy` via Actions on `main`
 - MCP access: none for household data
-- Hosted rows/schema/secrets: none
+- Hosted rows/schema/secrets: none until the authorized kitchen deploy
 - Real household or partner-personal data used: none
 
-**Next owner:** this session completes merge/push/deploy, then Jonathan walks Expense from `+` on the live kitchen.
+**Next owner:** this session merges to `main` and verifies `https://hearth-books.jonathan-beaulne123.workers.dev/`.
 
 **Worksession:** [`worksessions/2026-08-31-merge-deploy-add-slideshow.md`](worksessions/2026-08-31-merge-deploy-add-slideshow.md)
 
