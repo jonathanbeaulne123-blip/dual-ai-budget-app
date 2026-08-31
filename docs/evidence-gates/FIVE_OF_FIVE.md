@@ -31,8 +31,8 @@ The structured named-human attestation prevents the claim from changing after re
 Use [`browser-journeys.json`](browser-journeys.json) as the versioned journey manifest. Run both the task and recovery journey at 320, 390, 430, 720, and 1100 CSS px. Each run records:
 
 - viewport width and height, completed steps, passed assertions, deadline outcome, and screenshot;
-- complete console, network, and timeout capture, including explicit capture-complete booleans when the arrays are empty;
-- hands-on overflow, keyboard path, visible focus, accessible name/order, 200% zoom/text, and reduced-motion results.
+- complete console, all-origin failed/HTTP-error request, and timeout capture, including explicit capture-complete booleans when the arrays are empty;
+- hands-on overflow and keyboard-path results, plus an automated record of actual Tab traversal, computed accessible names, tab-to-panel ARIA linkage, focus visibility, measured text growth and key-content bounds at 200%, and normal-versus-reduced motion behavior.
 
 If the current browser tooling cannot capture one of those channels, mark it incomplete. Do not infer success from silence.
 
@@ -42,7 +42,7 @@ Install the pinned Chromium runtime once per workstation, start the exact build 
 
 `pnpm quality:browser -- --origin http://127.0.0.1:4173 --feature public-roadmap`
 
-The collector writes ignored screenshots, axe reports, runtime-channel results, responsive checks, 200% text-resize evidence, and reduced-motion evidence under `artifacts/browser-evidence/`. Its report is always `claimable: false`: automation does not replace Production deployment proof, privacy review, hands-on review, or named-human acceptance.
+The collector is deliberately limited to manifest entries marked `public-no-household` and refuses cross-origin journey routes. It strips query/fragment data from captured URLs and redacts common authorization, token, email, and secret forms before persisting diagnostics. It writes ignored screenshots, full axe violation reports, runtime-channel results, responsive checks, measured 200% text-resize evidence, and normal/reduced-motion comparisons under `artifacts/browser-evidence/`. Serious/critical axe violations fail the automated run; moderate/minor findings remain visible for human review. `:focus-visible` is only an automated signal, so discernibility and contrast still require hands-on review. The report is always `claimable: false`: automation does not replace Production deployment proof, privacy review, hands-on review, or named-human acceptance. Private household journeys need a separately approved redacted collector before they can enter this contract.
 
 ## Synthetic harness proof
 

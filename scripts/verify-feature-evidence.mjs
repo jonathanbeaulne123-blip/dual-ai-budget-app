@@ -439,7 +439,7 @@ export async function evaluateFeatureEvidence({
     if ((capture?.timeouts?.length ?? 0) > 0) issues.push(issue("JOURNEY_TIMEOUT", `Browser run ${key} captured a timeout.`, linkedDimensions));
     const manual = run?.manual;
     if (!manual?.observer || !manual?.noHorizontalOverflow || !manual?.keyboardPathPass || !manual?.focusVisible
-      || !manual?.accessibleNameOrderPass || !manual?.zoom200Pass || !manual?.reducedMotionPass) {
+      || !manual?.keyboardFocusOrderPass || !manual?.zoom200Pass || !manual?.reducedMotionPass) {
       issues.push(issue("RESPONSIVE_A11Y_FAIL", `Browser run ${key} lacks complete hands-on responsive/accessibility proof.`, ["responsiveAccessibility"]));
     }
     const screenshot = artifacts.get(run?.screenshotArtifactId);

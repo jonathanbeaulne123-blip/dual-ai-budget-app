@@ -25,6 +25,7 @@
     {
       "id": "public-roadmap",
       "label": "Public roadmap",
+      "dataClass": "public-no-household",
       "journeys": [
         {
           "id": "roadmap-task",

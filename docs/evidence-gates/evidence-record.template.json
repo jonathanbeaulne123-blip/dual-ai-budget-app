@@ -65,7 +65,7 @@
         "noHorizontalOverflow": false,
         "keyboardPathPass": false,
         "focusVisible": false,
-        "accessibleNameOrderPass": false,
+        "keyboardFocusOrderPass": false,
         "zoom200Pass": false,
         "reducedMotionPass": false
       }

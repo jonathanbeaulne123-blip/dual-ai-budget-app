@@ -137,7 +137,7 @@ function greenFixture(fixture = true) {
           noHorizontalOverflow: true,
           keyboardPathPass: true,
           focusVisible: true,
-          accessibleNameOrderPass: true,
+          keyboardFocusOrderPass: true,
           zoom200Pass: true,
           reducedMotionPass: true,
         },

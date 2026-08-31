@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   parseCollectorArgs,
+  redactDiagnosticText,
+  reducedMotionBehaviorPass,
   resolveCollectorOutput,
   seriousAxeViolations,
+  validatePublicFeature,
 } from "../scripts/collect-browser-evidence.mjs";
 
 describe("browser evidence collector", () => {
@@ -31,5 +34,45 @@ describe("browser evidence collector", () => {
       { impact: "serious" },
       { impact: "critical" },
     ])).toEqual([{ impact: "serious" }, { impact: "critical" }]);
+  });
+
+  it("redacts sensitive diagnostic fragments and URL query data", () => {
+    const redacted = redactDiagnosticText(
+      "GET https://example.test/path?member=private Bearer abc123 name@example.test token-abcdefghijklmnop",
+    );
+    expect(redacted).toBe("GET https://example.test/path Bearer [redacted] [redacted-email] [redacted-secret]");
+  });
+
+  it("accepts only same-origin public journeys", () => {
+    const safe = {
+      id: "public-roadmap",
+      dataClass: "public-no-household",
+      journeys: [{ id: "task", route: "/roadmap/" }],
+    };
+    expect(() => validatePublicFeature(safe, "https://hearth.example")).not.toThrow();
+    expect(() => validatePublicFeature({ ...safe, dataClass: "household" }, "https://hearth.example"))
+      .toThrow(/public-only/);
+    expect(() => validatePublicFeature({
+      ...safe,
+      journeys: [{ id: "task", route: "https://other.example/roadmap/" }],
+    }, "https://hearth.example")).toThrow(/collector origin/);
+  });
+
+  it("fails a page that keeps substantial motion under reduced motion", () => {
+    expect(reducedMotionBehaviorPass(
+      { maxSeconds: 1, activeElements: 4 },
+      { maxSeconds: 1, activeElements: 4 },
+      true,
+    )).toBe(false);
+    expect(reducedMotionBehaviorPass(
+      { maxSeconds: 1, activeElements: 4 },
+      { maxSeconds: 0.00001, activeElements: 4 },
+      true,
+    )).toBe(true);
+    expect(reducedMotionBehaviorPass(
+      { maxSeconds: 0, activeElements: 0 },
+      { maxSeconds: 0.00001, activeElements: 4 },
+      true,
+    )).toBe(true);
   });
 });

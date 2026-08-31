@@ -65,30 +65,39 @@ async function sha256(path) {
   return createHash("sha256").update(await readFile(path)).digest("hex");
 }
 
-function sameOrigin(url, origin) {
+function diagnosticUrl(value) {
   try {
-    return new URL(url).origin === new URL(origin).origin;
+    const url = new URL(value);
+    return `${url.origin}${url.pathname}`;
   } catch {
-    return false;
+    return "[invalid-url]";
   }
 }
 
-function installRuntimeCapture(page, origin) {
+export function redactDiagnosticText(value) {
+  return String(value)
+    .replace(/https?:\/\/[^\s"'<>]+/gi, (match) => diagnosticUrl(match))
+    .replace(/\bBearer\s+\S+/gi, "Bearer [redacted]")
+    .replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, "[redacted-jwt]")
+    .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[redacted-email]")
+    .replace(/\b(?:sk|key|token|secret)[-_][A-Za-z0-9_-]{12,}\b/gi, "[redacted-secret]");
+}
+
+function installRuntimeCapture(page) {
   const consoleErrors = [];
   const networkErrors = [];
   const timeouts = [];
 
   page.on("console", (message) => {
-    if (message.type() === "error") consoleErrors.push(message.text());
+    if (message.type() === "error") consoleErrors.push(redactDiagnosticText(message.text()));
   });
-  page.on("pageerror", (error) => consoleErrors.push(error.message));
+  page.on("pageerror", (error) => consoleErrors.push(redactDiagnosticText(error.message)));
   page.on("requestfailed", (request) => {
-    if (!sameOrigin(request.url(), origin)) return;
-    networkErrors.push(`${request.method()} ${request.url()} ${request.failure()?.errorText ?? "request failed"}`);
+    networkErrors.push(`${request.method()} ${diagnosticUrl(request.url())} ${redactDiagnosticText(request.failure()?.errorText ?? "request failed")}`);
   });
   page.on("response", (response) => {
-    if (response.status() < 400 || !sameOrigin(response.url(), origin)) return;
-    networkErrors.push(`${response.request().method()} ${response.url()} HTTP ${response.status()}`);
+    if (response.status() < 400) return;
+    networkErrors.push(`${response.request().method()} ${diagnosticUrl(response.url())} HTTP ${response.status()}`);
   });
 
   return { consoleErrors, networkErrors, timeouts };
@@ -111,37 +120,153 @@ async function focusIsVisible(page) {
   });
 }
 
-async function accessibleTabOrderPass(page) {
-  return page.evaluate(() => {
-    const lens = [...document.querySelectorAll("#lens-tabs [role='tab']")];
-    const gates = [...document.querySelectorAll("#gate-tabs [role='tab']")];
-    const named = [...lens, ...gates].every((node) => Boolean(node.getAttribute("aria-label") || node.textContent?.trim()));
-    return named && lens.length > 1 && gates.length > 1
-      && lens.every((node) => node instanceof HTMLButtonElement)
-      && gates.every((node) => node instanceof HTMLButtonElement);
+async function captureKeyboardFocusOrder(page) {
+  await page.evaluate(() => {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    document.body.setAttribute("tabindex", "-1");
+    document.body.focus();
   });
+
+  const order = [];
+  for (let index = 0; index < 40; index += 1) {
+    await page.keyboard.press("Tab");
+    const entry = await page.evaluate(() => {
+      const active = document.activeElement;
+      if (!(active instanceof HTMLElement)) return null;
+      const group = active.closest("#lens-tabs") ? "lens"
+        : active.closest("#gate-tabs") ? "gate"
+          : "other";
+      return {
+        tag: active.tagName.toLowerCase(),
+        id: active.id || null,
+        role: active.getAttribute("role"),
+        group,
+        name: (active.getAttribute("aria-label") || active.textContent || "").trim(),
+        controls: active.getAttribute("aria-controls"),
+        focusVisible: active.matches(":focus-visible"),
+      };
+    });
+    if (!entry) continue;
+    const focused = page.locator(":focus");
+    entry.ariaSnapshot = await focused.ariaSnapshot().catch(() => "");
+    entry.controlsValid = await page.evaluate((controls) => {
+      if (!controls) return false;
+      const panel = document.getElementById(controls);
+      return panel?.getAttribute("role") === "tabpanel"
+        && panel.getAttribute("aria-labelledby") === document.activeElement?.id;
+    }, entry.controls);
+    order.push(entry);
+    if (order.filter((item) => item.group === "lens").length >= 1
+      && order.filter((item) => item.group === "gate").length >= 1) break;
+  }
+  await page.evaluate(() => document.body.removeAttribute("tabindex"));
+
+  const lensIndex = order.findIndex((entry) => entry.group === "lens");
+  const gateIndex = order.findIndex((entry) => entry.group === "gate");
+  const tabs = order.filter((entry) => entry.group === "lens" || entry.group === "gate");
+  const pass = lensIndex >= 0
+    && gateIndex > lensIndex
+    && tabs.every((entry) => entry.tag === "button"
+      && entry.role === "tab"
+      && entry.name.length > 0
+      && entry.ariaSnapshot.includes(entry.name)
+      && entry.controlsValid
+      && entry.focusVisible);
+  return { pass, order };
 }
 
 async function verifyTextZoom(page) {
   const result = await page.evaluate(() => {
     const root = document.documentElement;
     const previous = root.style.fontSize;
+    const keyNodes = [document.querySelector("h1"), document.querySelector("#lens-tabs [role='tab']"), document.querySelector("#gate-tabs [role='tab']")]
+      .filter((node) => node instanceof HTMLElement);
+    const before = {
+      rootFontPx: Number.parseFloat(getComputedStyle(root).fontSize),
+      keyFontPx: keyNodes.map((node) => Number.parseFloat(getComputedStyle(node).fontSize)),
+    };
     root.style.fontSize = "200%";
-    const title = document.querySelector("h1");
-    const titleBox = title?.getBoundingClientRect();
-    const pass = root.scrollWidth <= root.clientWidth + 1
-      && Boolean(titleBox && titleBox.width > 0 && titleBox.height > 0);
+    const boxes = keyNodes.map((node) => {
+      const box = node.getBoundingClientRect();
+      const renderedAndHorizontallyReachable = box.width > 0
+        && box.height > 0
+        && box.right > 0
+        && box.left < window.innerWidth;
+      return {
+        left: box.left,
+        right: box.right,
+        top: box.top,
+        bottom: box.bottom,
+        width: box.width,
+        height: box.height,
+        renderedAndHorizontallyReachable,
+      };
+    });
+    const after = {
+      rootFontPx: Number.parseFloat(getComputedStyle(root).fontSize),
+      keyFontPx: keyNodes.map((node) => Number.parseFloat(getComputedStyle(node).fontSize)),
+    };
+    const pass = after.rootFontPx >= before.rootFontPx * 1.95
+      && after.keyFontPx.every((size, index) => size >= before.keyFontPx[index] * 1.1)
+      && root.scrollWidth <= root.clientWidth + 1
+      && boxes.every((box) => box.renderedAndHorizontallyReachable);
     root.style.fontSize = previous;
-    return pass;
+    return {
+      pass,
+      before,
+      after,
+      keyBounds: boxes,
+      keyBoundsPass: boxes.every((box) => box.renderedAndHorizontallyReachable),
+    };
   });
-  return { pass: result, method: "root-font-size-200-percent" };
+  return { ...result, method: "root-font-size-200-percent-with-key-content-bounds" };
+}
+
+async function motionSnapshot(page) {
+  return page.evaluate(() => {
+    const seconds = (value) => value.split(",").map((part) => {
+      const item = part.trim();
+      if (item.endsWith("ms")) return Number.parseFloat(item) / 1000;
+      if (item.endsWith("s")) return Number.parseFloat(item);
+      return 0;
+    });
+    let maxSeconds = 0;
+    let activeElements = 0;
+    for (const element of document.querySelectorAll("*")) {
+      const style = getComputedStyle(element);
+      const durations = [...seconds(style.animationDuration), ...seconds(style.transitionDuration)];
+      const elementMax = Math.max(0, ...durations);
+      if (elementMax > 0) activeElements += 1;
+      maxSeconds = Math.max(maxSeconds, elementMax);
+    }
+    return { maxSeconds, activeElements };
+  });
 }
 
 async function verifyReducedMotion(page) {
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  const pass = await page.evaluate(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   await page.emulateMedia({ reducedMotion: "no-preference" });
-  return pass;
+  const normal = await motionSnapshot(page);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const reduced = await motionSnapshot(page);
+  const mediaMatches = await page.evaluate(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  return {
+    pass: reducedMotionBehaviorPass(normal, reduced, mediaMatches),
+    mediaMatches,
+    normal,
+    reduced,
+  };
+}
+
+export function reducedMotionBehaviorPass(normal, reduced, mediaMatches) {
+  if (!mediaMatches) return false;
+  const negligibleSeconds = 0.001;
+  if (normal.activeElements === 0 || normal.maxSeconds <= negligibleSeconds) {
+    return reduced.maxSeconds <= negligibleSeconds;
+  }
+  return reduced.maxSeconds <= normal.maxSeconds
+    && reduced.activeElements <= normal.activeElements
+    && (reduced.maxSeconds < normal.maxSeconds || reduced.activeElements < normal.activeElements);
 }
 
 async function exerciseTaskJourney(page) {
@@ -188,7 +313,7 @@ async function runJourney({ browser, origin, journey, width, outputDirectory, so
   });
   const page = await context.newPage();
   page.setDefaultTimeout(journey.timeoutMs);
-  const capture = installRuntimeCapture(page, origin);
+  const capture = installRuntimeCapture(page);
   const startedAt = new Date();
   const url = new URL(journey.route, origin).toString();
   let status = "pass";
@@ -196,12 +321,16 @@ async function runJourney({ browser, origin, journey, width, outputDirectory, so
   let passedAssertions = 0;
   let keyboardPathPass = false;
   let focusVisible = false;
-  let accessibleNameOrderPass = false;
+  let focusOrderPass = false;
+  let focusOrder = [];
   let zoom200Pass = false;
   let zoomMethod = "not-run";
+  let zoomEvidence = null;
   let reducedMotionPass = false;
+  let reducedMotionEvidence = null;
   let overflowPass = false;
   let axeViolations = [];
+  let allAxeViolations = [];
 
   try {
     const response = await page.goto(url, { waitUntil: "networkidle", timeout: journey.timeoutMs });
@@ -214,16 +343,22 @@ async function runJourney({ browser, origin, journey, width, outputDirectory, so
     completedSteps = journey.steps.length;
 
     focusVisible = await focusIsVisible(page);
-    accessibleNameOrderPass = await accessibleTabOrderPass(page);
+    const focusEvidence = await captureKeyboardFocusOrder(page);
+    focusOrderPass = focusEvidence.pass;
+    focusOrder = focusEvidence.order;
     overflowPass = await noHorizontalOverflow(page);
     const zoom = await verifyTextZoom(page);
     zoom200Pass = zoom.pass;
     zoomMethod = zoom.method;
-    reducedMotionPass = await verifyReducedMotion(page);
+    zoomEvidence = zoom;
+    const reducedMotion = await verifyReducedMotion(page);
+    reducedMotionPass = reducedMotion.pass;
+    reducedMotionEvidence = reducedMotion;
 
     const axe = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
-    axeViolations = seriousAxeViolations(axe.violations);
-    if (!overflowPass || !focusVisible || !accessibleNameOrderPass || !zoom200Pass || !reducedMotionPass || axeViolations.length > 0) {
+    allAxeViolations = axe.violations;
+    axeViolations = seriousAxeViolations(allAxeViolations);
+    if (!overflowPass || !focusVisible || !focusOrderPass || !zoom200Pass || !reducedMotionPass || axeViolations.length > 0) {
       status = "fail";
     } else {
       passedAssertions = journey.assertions.length;
@@ -231,21 +366,38 @@ async function runJourney({ browser, origin, journey, width, outputDirectory, so
   } catch (error) {
     status = "fail";
     const message = error instanceof Error ? error.message : String(error);
-    if (/timeout/i.test(message)) capture.timeouts.push(message);
-    else capture.consoleErrors.push(`journey: ${message}`);
+    if (/timeout/i.test(message)) capture.timeouts.push(redactDiagnosticText(message));
+    else capture.consoleErrors.push(`journey: ${redactDiagnosticText(message)}`);
   }
 
   if (capture.consoleErrors.length > 0 || capture.networkErrors.length > 0 || capture.timeouts.length > 0) status = "fail";
 
-  const contentViewport = await page.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight }));
-  const devicePixelRatio = await page.evaluate(() => window.devicePixelRatio);
+  let contentViewport = null;
+  let devicePixelRatio = null;
+  try {
+    contentViewport = await page.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight }));
+    devicePixelRatio = await page.evaluate(() => window.devicePixelRatio);
+  } catch (error) {
+    status = "fail";
+    capture.consoleErrors.push(`post-journey: ${redactDiagnosticText(error instanceof Error ? error.message : String(error))}`);
+  }
   const baseName = `${journey.id}-${width}`;
   const screenshotPath = resolve(outputDirectory, `${baseName}.png`);
   const axePath = resolve(outputDirectory, `${baseName}-axe.json`);
-  await page.screenshot({ path: screenshotPath, fullPage: false });
-  await writeFile(axePath, `${JSON.stringify({ violations: axeViolations }, null, 2)}\n`, "utf8");
+  let screenshotCaptured = false;
+  try {
+    await page.screenshot({ path: screenshotPath, fullPage: false });
+    screenshotCaptured = true;
+  } catch (error) {
+    status = "fail";
+    capture.consoleErrors.push(`screenshot: ${redactDiagnosticText(error instanceof Error ? error.message : String(error))}`);
+  }
+  await writeFile(axePath, `${JSON.stringify({ violations: allAxeViolations, seriousOrCritical: axeViolations }, null, 2)}\n`, "utf8");
   const completedAt = new Date();
-  await context.close();
+  await context.close().catch((error) => {
+    status = "fail";
+    capture.consoleErrors.push(`context-close: ${redactDiagnosticText(error instanceof Error ? error.message : String(error))}`);
+  });
 
   const screenshotId = `${baseName}-screenshot`;
   const axeId = `${baseName}-axe`;
@@ -264,7 +416,7 @@ async function runJourney({ browser, origin, journey, width, outputDirectory, so
       status,
       completedSteps,
       passedAssertions,
-      screenshotArtifactId: screenshotId,
+      screenshotArtifactId: screenshotCaptured ? screenshotId : null,
       capture: {
         consoleComplete: true,
         networkComplete: true,
@@ -278,18 +430,22 @@ async function runJourney({ browser, origin, journey, width, outputDirectory, so
         noHorizontalOverflow: overflowPass,
         keyboardPathPass,
         focusVisible,
-        accessibleNameOrderPass,
+        keyboardFocusOrderPass: focusOrderPass,
+        focusOrder,
         zoom200Pass,
         zoomMethod,
+        zoomEvidence,
         reducedMotionPass,
+        reducedMotionEvidence,
       },
       axe: {
         reportArtifactId: axeId,
+        totalViolations: allAxeViolations.length,
         seriousOrCriticalViolations: axeViolations.length,
       },
     },
     artifacts: [
-      {
+      ...(screenshotCaptured ? [{
         id: screenshotId,
         kind: "screenshot",
         path: `${baseName}.png`,
@@ -298,7 +454,7 @@ async function runJourney({ browser, origin, journey, width, outputDirectory, so
         sourceSha,
         environmentId,
         capturedAt: completedAt.toISOString(),
-      },
+      }] : []),
       {
         id: axeId,
         kind: "accessibility-report",
@@ -322,6 +478,7 @@ export async function collectBrowserEvidence(options) {
   const manifest = JSON.parse(await readFile(resolve(options.manifestPath), "utf8"));
   const feature = manifest.features?.find((entry) => entry.id === options.featureId);
   if (!feature) throw new Error(`Feature ${options.featureId} is not in the browser journey manifest.`);
+  validatePublicFeature(feature, origin);
 
   const date = torontoDate();
   const outputDirectory = resolveCollectorOutput(options.outputPath, `${date}-${feature.id}-${sourceSha}`);
@@ -363,6 +520,19 @@ export async function collectBrowserEvidence(options) {
   const reportPath = resolve(outputDirectory, "browser-evidence.json");
   await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
   return { report, reportPath };
+}
+
+export function validatePublicFeature(feature, origin) {
+  if (feature.dataClass !== "public-no-household") {
+    throw new Error(`Feature ${feature.id} is not approved for this public-only collector.`);
+  }
+  if (!Array.isArray(feature.journeys) || feature.journeys.length === 0) {
+    throw new Error(`Feature ${feature.id} must define at least one public journey.`);
+  }
+  for (const journey of feature.journeys) {
+    const journeyUrl = new URL(journey.route, origin);
+    if (journeyUrl.origin !== origin) throw new Error(`Journey ${journey.id} must stay on the collector origin.`);
+  }
 }
 
 async function main() {
