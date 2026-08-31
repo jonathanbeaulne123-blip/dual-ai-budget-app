@@ -1,14 +1,14 @@
 # Hearth worksession — Desk plates on Shared and Personal Home
 
-- **Status:** OPEN
+- **Status:** OPEN; DRAFT PR #260 — not merged, not deployed, not live
 - **Opened:** 2026-08-31 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor (landing Claude's unbuilt third slice onto current `main`)
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/desk-plates-shared-home-021f`
 - **Baseline SHA:** `7d4e19361a455112d2532fa8f81271b26a4db349` (`origin/main`)
-- **Head SHA:** (in progress)
-- **PR or issue:** (draft after first commit)
+- **Head SHA:** `f248d44`
+- **PR or issue:** draft [#260](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/260)
 - **Risk:** High (presentation of Home mosaic; no new Fund math)
 - **Decision owner:** Jonathan
 - **Environment impact:** none — fictional Development demo for proof; no Production, hosted mutation, schema, or secrets
@@ -66,36 +66,43 @@ Inferences:
 
 ## Acceptance evidence
 
-- [ ] 19 focused plate tests green
-- [ ] `pnpm check` green on this HEAD
-- [ ] Browser: single-click, double-click, handle, keyboard; 320/390/720/1100
-- [ ] Independent UX auditor
-- [ ] Draft PR targeting `main`; not merged, not deployed, not live
+- [x] 20 focused plate tests plus 1 DOM interaction test green
+- [x] `pnpm check` green on `f248d44` — **1402 passed / 3 skipped**
+- [x] Browser: single-click, double-click, handle, keyboard; 320/390/720/1100/1440
+- [x] Independent UX auditor — PASS WITH NOTES; F-1/N-1/N-2 repaired on this HEAD
+- [x] Draft PR targeting `main`; not merged, not deployed, not live
 
 ## Plan
 
 - [x] Record baseline from `origin/main`.
-- [ ] Implement primitives, models, UI, CSS, tests.
-- [ ] Wire OfficeWide; keep Spread, seals, Kitty.
-- [ ] Focused tests, then `pnpm check`.
-- [ ] Draft PR, then browser proof.
-- [ ] UX auditor + handoff.
+- [x] Implement primitives, models, UI, CSS, tests.
+- [x] Wire OfficeWide; keep Spread, seals, Kitty.
+- [x] Focused tests, then `pnpm check`.
+- [x] Draft PR, then browser proof.
+- [x] UX auditor + handoff.
 
 ## Evidence log
 
 - 2026-08-31: branched `cursor/desk-plates-shared-home-021f` from `origin/main@7d4e193`.
+- 2026-08-31: rebuilt Claude's unbuilt third slice on current `main`. Draft PR #260.
+- 2026-08-31: focused plates 20 passed; DOM click/handle/dblclick 1 passed.
+- 2026-08-31: `pnpm check` **1402 passed / 3 skipped**; Vite + Hercules Pro UI green.
+- 2026-08-31: live demo as Jonathan on `http://127.0.0.1:5173/`. Shared plates: Rent tomorrow, Visa 34% with 30% mark drawn, Hygienist owed $180, three shared banks, Therapy Friday, no findings. Click due plate → enlarged stage; Close → Spread; handle → Next bill cabinet (Rent + Spotify); Personal floor six plates. Artifacts under `/opt/cursor/artifacts/`.
+- 2026-08-31: UX auditor PASS WITH NOTES. Repaired invalid `aria-pressed`, duplicate empty tally copy, and "stay on the right" at stacked widths. Enlarged plate takes focus.
+- 2026-08-31: Verifier PASS WITH NOTES. No P0/P1. Docs commit closes the P2 “handoff not on the PR” note.
 
 ## Decisions
 
 - Rebuild commit 3 onto current `main`; do not `git am` the three-commit packet.
-- Keep F-4 banks-below-<1200 so the Course stays readable at 1100px. Mosaic becomes 460px for the 2×3 plate grid. This is the only layout expansion; explained in the handoff.
+- Keep F-4 banks-below-<1200 so the Course stays readable at 1100px. Mosaic becomes 460px for the 2×3 plate grid. This is the only layout expansion.
 - Mosaic tiles `now` / `attention` / `change` leave Shared Home because they *are* the Spread's three registers. `SharedLedgerStory.tsx` stays in the tree for existing tests; OfficeWide Home no longer opens those panels from the mosaic.
 
 ## Remaining uncertainty
 
-- Forced-colors and reduced-motion still need a live DevTools pass.
-- Jonathan still owns whether Kitty banks should ever *hold* rolled surplus (F-1 product).
+- Forced-colors and reduced-motion CSS exist; live Chrome Rendering emulation was not completed.
+- `paperHomeMosaic` still encodes the old story tile ids for Classic/helper tests; OfficeWide no longer calls it.
+- Personal empty plates (no wallet rooms / no personal bank) are honest for the Personal floor, not a Shared leak.
 
 ## Handoff
 
-In progress. Local branch only until the first commit is pushed.
+Next owner: Jonathan. Draft PR #260 on `cursor/desk-plates-shared-home-021f` @ `f248d44`. **Not merged, not deployed, not live.** Do not merge unless Jonathan asks.

@@ -1,5 +1,38 @@
 # AI Task and Handoff Standard
 
+## Desk plates — Shared and Personal Home mosaic (2026-08-31)
+
+**Status:** Draft PR [#260](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/260) on `cursor/desk-plates-shared-home-021f` @ `f248d44`. Base `origin/main@7d4e193`. **Not merged, not deployed, not live.** Risk: **High** presentation. No Production household mutation, hosted schema, or secrets.
+
+**Household outcome:** The six wide Home mosaic tiles on each floor are desk plates: a household question, a verdict sentence, one of six primitives, a footing, and a cabinet handle. Single click puts the plate on the stage in place of the Month Spread. Double-click and the handle open the existing instrument. Close returns to the Spread. Display only.
+
+**Budget delta (5):** `+3` — mosaic answers household questions from existing selectors instead of repeating the Spread.
+
+**Engagement delta (3):** `+3` — laptop open-to desk is a 2×3 instrument strip.
+
+**If they conflicted:** books won. Shared plates never reintroduce `now` / `attention` / `change`. Pair uses one scale. Empty states are prose. Cabinet handle stays wherever double-click exists. No `goal.savedCents` writes. iPhone mosaic untouched.
+
+**What changed:** `src/core/plates.ts`, `src/core/deskPlates.ts`, `src/DeskPlates.tsx`, `src/desk-plates.css`; OfficeWide mosaic wiring; Shared Home mosaic column 460px below 1200px while F-4 still drops the Kitty shelf under the stage; ≥1200 uses `1.15fr | 1.75fr | 0.72fr`. Follow-up: `aria-current` on the plate, one empty sentence, stacked-width copy, DOM click/handle/dblclick test. Worksession: [`worksessions/2026-08-31-desk-plates.md`](worksessions/2026-08-31-desk-plates.md).
+
+**Verification:**
+- Focused `test/desk-plates.test.ts` **20 passed** plus `test/desk-plates-dom.test.ts` **1 passed**. Related Spread/ledger-story fences green.
+- `pnpm check` on `f248d44`: **1402 passed / 3 skipped**; `tsc --noEmit` and Vite + Hercules Pro UI build green.
+- Independent UX audit: **PASS WITH NOTES** after F-1 (`aria-pressed` → `aria-current`), N-1 (duplicate empty), N-2 (right-side copy). Remaining: live forced-colors / reduced-motion DevTools.
+- Independent verifier: **PASS WITH NOTES**. No P0/P1. P2 was this handoff still uncommitted on the PR; this docs commit closes that. Remaining P3: empty mosaic still echoes `verdict` in `.desk-plate-empty` when they are the same sentence; OfficeWide close/keyboard not jsdom-tested; Cloudflare preview is not the kitchen.
+- Browser on fictional Development demo: click / close / handle / double-click / keyboard / Personal floor; viewports 320 / 390 / 720 / 1100 / 1440.
+
+**Uncertainty:** Forced-colors and reduced-motion CSS exist; live Chrome Rendering emulation was not completed. `paperHomeMosaic` still encodes old story tile ids for Classic/helper tests; OfficeWide no longer calls it. Personal empty plates (no wallet rooms / no personal bank) are honest for the Personal floor, not a Shared leak.
+
+**Data and environment disclosure:**
+- Development impact: local Vite proof only; kitchen URL unchanged
+- Production impact: none
+- Network calls or data sent: GitHub push of this branch/PR
+- MCP access: none for household data
+- Hosted rows/schema/secrets/deployments: none
+- Real household or partner-personal data used: none (fictional Development demo seed)
+
+**Next owner:** Jonathan. Review draft #260 on a wide Paper office Home. Do not merge unless you ask.
+
 ## The Month Spread — Shared Home centre (2026-08-31)
 
 **Status:** Merged [#259](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/259) as `main@d648258`. Canon record `main@ed852a8`. Kitchen deploys Cloudflare Workers [`33432365828`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33432365828) (merge) and [`33432832963`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33432832963) (docs record) both **success**. Current Worker version `2488cac3-f052-48a9-8200-65d5ee848f4b`. Live bundle still `Office-BBr3Ic0W.js` with Standing bars and “A proposal is not on the bar.” **Merged and kitchen-published.** Risk was **High** (presentation plus F-2/F-3). No Production household mutation, hosted schema, or secrets.
