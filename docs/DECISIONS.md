@@ -172,6 +172,8 @@ Older Sheets-era rows, including superseded ones such as “stay on Sheets until
 
 **Why-notes (docs rebuild, 2026-08-22)**
 
+- **D-177 Development canary activation (2026-08-31):** Jonathan explicitly directed the faster PGlite path through Development after the five-stage repair manual was reconciled and human checks were treated as complete. The release candidate bakes `VITE_PGLITE_INCREMENTAL_DEV=1` into the Cloudflare build and asserts it beside `VITE_PRODUCTION_CONTINUITY=0`. The runtime still requires `environment === "development"`; Production remains on the full transactional rebuild even if an internal caller requests incremental ingest. This changes no financial meaning, schema, hosted data, secrets, provider setting, or Production continuity. Roll back by removing or zeroing the Development flag and redeploying.
+
 - **D-022** still says seed data includes chequing, Visa, and cash. That is the original defect name (hidden first-active-account). Catalog kinds are D-047; `cash` migrates to `other`. We did not rewrite the seed sentence so the bug D-022 prevents stays searchable.
 - **Rings and Chapters** are not deleted as *ideas*. They are retired as *indexes of the future*. Shipped rituals (chalkboard, cook-off, sit-down postcard, spectacles, wallet tiles) remain product.
 - **Charter “out of scope until the core is boring”** is replaced by unbounded Dual Course vision plus engineering gates. Why: the core is already a general ledger; pretending bank rails are unthinkable was how the old maps went stale, and pretending they are next-week work was how they got dangerous. Auth + RLS still comes first.
