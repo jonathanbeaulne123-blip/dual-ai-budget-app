@@ -14,7 +14,10 @@
 
 **What changed:** `AddSlideshow` + `addSlideshow.ts` step model. FAB gap `10px` → `22px`. Add category form is inline on the category slide. Account picker uses wallet tiles. Shift clock-in / jobs Confirm kept.
 
-**Verification:** Focused tests in progress; see worksession.
+**Verification:**
+- Focused: `pnpm exec vitest run test/add-slideshow.test.ts test/add-slideshow-ui.test.ts test/household-fund-ui.test.ts test/ledger-story-ui.test.ts test/fab-speed-dial.test.ts` → pass.
+- Full `pnpm test` at `2156fe8` before fund-fence fix: **1122 passed / 2 skipped**, plus 1 pre-existing `hercules-pro` `this_week` empty on 2026-08-31 and 1 fence that still looked for Fund copy in `App.tsx` (moved to `AddSlideshow`; closed in the follow-up commit).
+- Visual, fictional Development demo as Jonathan: Expense 5-slide walk $12.50 Groceries Visa to Confirm without posting; unique Income / Transfer / Shift first prompts; FAB lifted. Proof in `/opt/cursor/artifacts/`.
 
 **Data and environment disclosure:**
 - Development impact: none (UI)

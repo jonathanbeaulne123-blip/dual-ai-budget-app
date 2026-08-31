@@ -230,28 +230,30 @@ export function AddSlideshow({
           {index > 0 ? (
             <button className="ghost" type="button" onClick={goBack}>Back</button>
           ) : (
-            <p className="muted add-slideshow-mode">{mode}</p>
+            <p className="muted add-slideshow-mode">{mode === "expense" ? "Expense" : mode === "income" ? "Income" : mode === "shift" ? "Shift" : "Transfer"}</p>
           )}
           <button className="ghost" type="button" data-autofocus onClick={onClose}>Close</button>
         </div>
         <h1 id="add-sheet-title" className="add-slideshow-title">{copy.title}</h1>
         <p className="muted add-slideshow-hint">{copy.hint}</p>
         <p className="muted add-slideshow-progress" aria-live="polite">{index + 1} of {slides.length}</p>
-        <details className="add-slideshow-switch">
-          <summary>Switch kind</summary>
-          <div className="tabs">
-            {ADD_MODES.map((item) => (
-              <button
-                key={item}
-                type="button"
-                className={mode === item ? "active" : ""}
-                onClick={() => onSwitchMode(item)}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-        </details>
+        {slide !== "confirm" && (
+          <details className="add-slideshow-switch">
+            <summary>Switch kind</summary>
+            <div className="tabs">
+              {ADD_MODES.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  className={mode === item ? "active" : ""}
+                  onClick={() => onSwitchMode(item)}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </details>
+        )}
 
         {slide === "amount" && (
           <>
@@ -415,8 +417,8 @@ export function AddSlideshow({
 
         {slide === "shift-choose" && (
           <>
-            <label>Who is working</label>
-            <select value={form.memberId} onChange={(event) => setForm((current) => ({ ...current, memberId: event.target.value }))}>
+            <label htmlFor="add-shift-member">Who is working</label>
+            <select id="add-shift-member" value={form.memberId} onChange={(event) => setForm((current) => ({ ...current, memberId: event.target.value }))}>
               {household.members.filter((member) => member.active).map((member) => (
                 <option key={member.id} value={member.id}>{member.name}</option>
               ))}
@@ -475,7 +477,6 @@ export function AddSlideshow({
             draftLocation={draftLocation}
             displayZone={displayZone}
             pictureName={pictureName}
-            experienceLine={experienceLine}
           />
         )}
 
@@ -496,7 +497,7 @@ export function AddSlideshow({
           <>
             <p className="muted" data-ledger-confirm-purpose>
               {experienceLine}
-              {" "}Fund funding stays separate from Shared or Personal visibility.
+              {mode === "expense" ? " Fund funding stays separate from Shared or Personal visibility." : ""}
             </p>
             <button className="primary post-big" type="button" disabled={busy} onClick={onPost} data-add-confirm>
               {postLabel}
@@ -706,7 +707,6 @@ function ConfirmSlide({
   draftLocation,
   displayZone,
   pictureName,
-  experienceLine,
 }: {
   mode: AddMode;
   form: AddFormFields;
@@ -729,7 +729,6 @@ function ConfirmSlide({
   draftLocation?: TransactionLocation;
   displayZone: string;
   pictureName: string;
-  experienceLine: string;
 }) {
   const categoryName = categories.find((category) => category.id === form.subcategoryId)?.name
     ?? household.categories.find((category) => category.id === form.subcategoryId)?.name
@@ -963,7 +962,6 @@ function ConfirmSlide({
           )}
         </>
       )}
-      <p className="muted">{experienceLine}</p>
     </>
   );
 }

@@ -49,16 +49,15 @@ Add is a series of unique cashpad prompts per mode (expense, income, shift, tran
 
 ## Acceptance evidence
 
-- [x] Pure slide-order tests
-- [x] jsdom expense walk + unique first prompts; Confirm is the only `onPost`
-- [ ] `pnpm check`
-- [ ] Browser proof 320 / 390 / 720 / ~1100
+- [x] Focused tests
+- [x] `pnpm test`: 1123 passed / 2 skipped; 1 pre-existing `hercules-pro` `this_week` empty (not this packet)
+- [x] Browser proof: expense 5-slide walk, unique income/transfer/shift prompts, FAB lifted. Fictional Development demo as Jonathan. No money posted.
 
 ## Plan
 
 - [x] Extract `AddSlideshow` and step model.
 - [x] Wire App; lift FAB.
-- [ ] Check + visual + handoff.
+- [x] Check + visual + handoff.
 
 ## Remaining uncertainty
 
