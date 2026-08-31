@@ -646,6 +646,7 @@ function ShiftPadSlide({
         onEnter={onEnter}
         enterLabel={copy.enterLabel}
         enterDisabled={!canAdvance}
+        emptyDisplay={field === "hours" ? "Not entered" : undefined}
       />
       {field === "sales" && (
         <div className="work-shift-grid two">
