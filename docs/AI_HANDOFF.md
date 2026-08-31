@@ -10,7 +10,7 @@
 
 **Budget delta (5):** `+3`. **Engagement delta (3):** `+3`. Books won on shared Course scale, empty-staff-on-untied-drawing, and rollover-as-claim (not a second envelope).
 
-**What changed:** Claude's local two-commit packet, applied onto current `main` (kitchen desk already shipped via #252). Presentation commits plus an isolated F-2/F-3 money-projection commit. Worksession: [`worksessions/2026-08-31-month-spread.md`](worksessions/2026-08-31-month-spread.md).
+**What changed:** Claude's local two-commit packet, applied onto `origin/main@2a984fd`. Presentation commits plus an isolated F-2/F-3 money-projection commit. Follow-up: Course now compiles from `booksHousehold` so Standing and Course cannot print two free-to-spend figures. Worksession: [`worksessions/2026-08-31-month-spread.md`](worksessions/2026-08-31-month-spread.md).
 
 **Verification:**
 - Focused: 8 files / **74 passed**.
@@ -20,7 +20,7 @@
 
 **Environment/data:** fictional Development demo seed only. No Production, network household calls, MCP household access, hosted schema, secrets, or real household data. trycloudflare preview is a Cloud Agent tunnel, not D-041 kitchen publish.
 
-**Next owner:** Jonathan. Open the demo link. Books-review F-2/F-3 (`d737dd6`) before merge. Do not merge unless Jonathan asks.
+**Next owner:** Jonathan. Open the demo link. Books-review F-2/F-3 (`d737dd6`) before merge. Rebase onto current `main` before merge. Do not merge unless Jonathan asks.
 
 ## SF-02 Shared Money membership and device access (2026-08-30)
 

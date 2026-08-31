@@ -110,10 +110,14 @@
 }
 .office-wide.is-adding .office-wide-notebook,
 .office-wide.is-adding .office-wide-seals,
-.office-wide.is-adding .office-wide-hero {
+.office-wide.is-adding .office-wide-hero,
+.office-wide.is-adding .office-wide-stage,
+.office-wide-stage.is-inert {
   pointer-events: none;
 }
-.office-wide.is-adding .office-wide-notebook {
+.office-wide.is-adding .office-wide-notebook,
+.office-wide.is-adding .office-wide-stage,
+.office-wide-stage.is-inert {
   opacity: 0.55;
 }
 .office-wide-notebook .ledger-story-room {

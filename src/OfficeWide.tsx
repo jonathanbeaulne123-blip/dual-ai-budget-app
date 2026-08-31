@@ -135,7 +135,7 @@ export function OfficeWide({
   const postcard = useMemo(() => sitDownPostcard(booksHousehold), [booksHousehold]);
   const cook = useMemo(() => cookOffScore(household, today), [household, today]);
   const memberName = household.members.find((m) => m.id === memberId)?.name ?? "";
-  const course = useMemo(() => sharedMonthCourse(household, today), [household, today]);
+  const course = useMemo(() => sharedMonthCourse(booksHousehold, today), [booksHousehold, today]);
   const nameOf = (id: string | null | undefined) => (
     id ? household.members.find((member) => member.id === id)?.name ?? "A member" : "A member"
   );

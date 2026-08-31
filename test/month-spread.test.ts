@@ -2,6 +2,10 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   COURSE_VIEW,
+  HOUSEHOLD_FUND_ID,
+  addAccount,
+  addRecurrence,
+  bindHouseholdFundBackingAccount,
   buildSharedLedgerStory,
   catalogHousehold,
   configureHouseholdFund,
@@ -13,15 +17,17 @@ import {
   dayOfDateKey,
   fundRolloverByGoal,
   projectHouseholdFund,
+  projectLedgerExperience,
   recordHouseholdFundReconciliation,
   seedDemoHousehold,
   sharedActionQueue,
   sharedMonthCourse,
-  HOUSEHOLD_FUND_ID,
 } from "../src/core/index.ts";
 
 const TODAY = "2026-08-27";
 const BIANCA = "MEM-001";
+const JONATHAN = "MEM-002";
+const RESERVE_DATE = "2026-09-01";
 
 const spread = readFileSync(new URL("../src/MonthSpread.tsx", import.meta.url), "utf8");
 const officeWide = readFileSync(new URL("../src/OfficeWide.tsx", import.meta.url), "utf8");
@@ -64,6 +70,50 @@ describe("sharedMonthCourse ties to the Fund projection", () => {
       expect(point.event?.kind === "purchase-funded" || point.event?.kind === "refund-funded").toBe(false);
     }
     expect(claimDates.size).toBeGreaterThan(0);
+  });
+
+  it("draws Course free-to-spend from accepted books, not Shared presentation", () => {
+    let household = configureHouseholdFund(catalogHousehold(), {
+      custodianMemberId: BIANCA,
+      openedOn: RESERVE_DATE,
+      createdBy: BIANCA,
+    }).household;
+    household = addAccount(household, {
+      name: "Bianca savings backing",
+      kind: "savings",
+      ownerMemberId: BIANCA,
+      scope: "personal",
+      institution: "Private bank",
+      last4: "1234",
+    }).household;
+    const backing = household.accounts.find((row) => row.name === "Bianca savings backing")!;
+    household = bindHouseholdFundBackingAccount(household, { memberId: BIANCA, accountId: backing.id }).household;
+    household = recordHouseholdFundReconciliation(household, {
+      memberId: BIANCA,
+      date: RESERVE_DATE,
+      bankTotal: "2500",
+      personalRemainder: "2500",
+    }).household;
+    household = addRecurrence(household, {
+      cadence: "monthly",
+      nextDate: RESERVE_DATE,
+      type: "expense",
+      amount: 50,
+      accountId: backing.id,
+      subcategoryId: "SUB-LIFE-FUN",
+      note: "Personal Fund-backed",
+      fundingDefault: { fundId: HOUSEHOLD_FUND_ID, fundedCents: "full", destinationAccountId: "ACC-VISA" },
+    }).household;
+    const shared = projectLedgerExperience(household, JONATHAN, "household", RESERVE_DATE);
+    if (!shared.ok) throw new Error("expected ok");
+    const story = buildSharedLedgerStory(shared.booksHousehold, RESERVE_DATE);
+    const course = sharedMonthCourse(shared.booksHousehold, RESERVE_DATE);
+    const scopedCourse = sharedMonthCourse(shared.scopedHousehold, RESERVE_DATE);
+    expect(course.freeToSpendCents).toBe(story.opening.freeToSpendCents);
+    expect(course.upcomingReserveCents).toBe(story.opening.upcomingReserveCents);
+    expect(course.upcomingReserveCents).toBe(5000);
+    expect(scopedCourse.upcomingReserveCents).toBe(0);
+    expect(scopedCourse.freeToSpendCents).not.toBe(story.opening.freeToSpendCents);
   });
 });
 
@@ -186,7 +236,8 @@ describe("Month Spread fences", () => {
   it("is the Shared Home centre and does not evict the story panels", () => {
     expect(officeWide).toContain("<MonthSpread");
     expect(officeWide).toContain("<SharedLedgerStory");
-    expect(officeWide).toContain("sharedMonthCourse(household, today)");
+    expect(officeWide).toContain("sharedMonthCourse(booksHousehold, today)");
+    expect(officeWide).not.toContain("sharedMonthCourse(household, today)");
     expect(main).toContain('import "./month-spread.css";');
   });
 
@@ -214,6 +265,8 @@ describe("Month Spread fences", () => {
 
   it("gives the drawing a prose alternative and a keyboard path", () => {
     expect(spread).toContain("courseAria(course, monthLabel)");
+    expect(spread).toContain('role="figure"');
+    expect(spread).toContain('role="button"');
     expect(spread).toContain("tabIndex={0}");
     expect(spread).toContain('aria-live="polite"');
     expect(css).toContain(".ms-event:focus-visible .ms-dot");
@@ -252,7 +305,7 @@ describe("F-1 · a Kitty rollover is visible on the shelf", () => {
     expect(bank).toBeTruthy();
     // D-161: the rollover is a claim recorded against the bank, never a deposit into it.
     expect(bank!.savedCents).not.toBe(rollover.byGoalId[bank!.id]);
-    expect(kitty).toContain("fundRolloverByGoal");
+    expect(kitty).toContain("fundRolloverByGoal(booksHousehold)");
     expect(kitty).toContain("The cash stays in the shared pool.");
   });
 

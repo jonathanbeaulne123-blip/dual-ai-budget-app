@@ -242,7 +242,7 @@ export function MonthSpread({
             <svg
               className="ms-course-svg"
               viewBox={`0 0 ${COURSE_VIEW.width} ${drawable ? COURSE_VIEW.height : 132}`}
-              role="img"
+              role="figure"
               aria-label={courseAria(course, monthLabel)}
             >
               <defs>
@@ -278,23 +278,19 @@ export function MonthSpread({
                     const x = courseX(dayOfDateKey(claim.date), days);
                     const h = claimTickHeight(claim.amountCents);
                     const up = claim.kind === "purchase-funded";
+                    const body = up
+                      ? `Fund-backed purchase ${formatCad(claim.amountCents)} — recorded, not yet cleared. It does not move the operating pool; it becomes a transfer due.`
+                      : `Fund-backed refund ${formatCad(claim.amountCents)} — a credit back against the claims.`;
+                    const readout = { when: dayLabel(claim.date), body };
                     return (
                       <g
                         key={claim.id}
                         className="ms-event"
+                        role="button"
                         tabIndex={0}
-                        onMouseEnter={() => setReadout({
-                          when: dayLabel(claim.date),
-                          body: up
-                            ? `Fund-backed purchase ${formatCad(claim.amountCents)} — recorded, not yet cleared. It does not move the operating pool; it becomes a transfer due.`
-                            : `Fund-backed refund ${formatCad(claim.amountCents)} — a credit back against the claims.`,
-                        })}
-                        onFocus={() => setReadout({
-                          when: dayLabel(claim.date),
-                          body: up
-                            ? `Fund-backed purchase ${formatCad(claim.amountCents)} — recorded, not yet cleared. It does not move the operating pool; it becomes a transfer due.`
-                            : `Fund-backed refund ${formatCad(claim.amountCents)} — a credit back against the claims.`,
-                        })}
+                        aria-label={body}
+                        onMouseEnter={() => setReadout(readout)}
+                        onFocus={() => setReadout(readout)}
                         onMouseLeave={() => setReadout(null)}
                         onBlur={() => setReadout(null)}
                       >
@@ -387,7 +383,9 @@ export function MonthSpread({
                       <g
                         key={point.event?.id ?? point.date}
                         className="ms-event"
+                        role="button"
                         tabIndex={0}
+                        aria-label={sentence.body}
                         onMouseEnter={() => setReadout(sentence)}
                         onFocus={() => setReadout(sentence)}
                         onMouseLeave={() => setReadout(null)}

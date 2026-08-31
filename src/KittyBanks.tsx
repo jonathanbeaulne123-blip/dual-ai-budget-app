@@ -100,7 +100,7 @@ export function KittyBanks({
     view === "household" ? goal.shared : !goal.shared
   ));
   const shared = view === "household";
-  const rollover = fundRolloverByGoal(household);
+  const rollover = fundRolloverByGoal(booksHousehold);
   const proposals = shared ? upcomingVisitProposals(household, today) : [];
   const manage = surface === "plan";
   const role = shared ? "subaccount" : "goal";
