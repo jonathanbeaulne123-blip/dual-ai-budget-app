@@ -1,8 +1,8 @@
 # AI Task and Handoff Standard
 
-## D-186 founding-household rehearsal preflight (2026-08-31)
+## D-187 founding-household rehearsal preflight (2026-08-31)
 
-**Status:** Local Release-risk implementation on `codex/founding-household-preflight` from exact merged baseline `main@201a449cb99251c8a66eb3b282d950305752d1f1`. Not pushed, merged, deployed, or used to start the real rehearsal.
+**Status:** Local Release-risk implementation on `codex/founding-household-preflight`, refreshed onto exact `origin/main@acf1d6797ed28dc60885f51dc4dbc88d93b5681a`. Not pushed, merged, deployed, or used to start the real rehearsal.
 
 **Household outcome:** Jonathan and Bianca cannot start or replay `Our month` until the current browser has downloaded a private Development backup, selected it again, proven it is the exact current balanced snapshot, and recorded the four named-human preparation acknowledgements. A changed household revision closes the gate again.
 
@@ -10,7 +10,7 @@
 
 **What changed:** `verifyCurrentHouseholdRecovery` reuses the ordinary import validator, requires matching Development wrapper/embedded environments and household id, compares the financial audit hash, and compares a canonical full-snapshot SHA-256. It returns metadata only and performs no persistence or transport. `RehearsalPreflight` holds the proof and acknowledgements in React session state, announces download/error/status changes, and gates initial Start plus both replay routes. An interactive jsdom test proves upload-before-download stays blocked, fresh download/reselection plus all checks unlocks Start, revision change relocks it, and a mismatched wrapper error is announced.
 
-**Verification so far:** focused recovery/Month/mainline/full-App proof passed **5 files / 30 tests**; the repaired interactive recovery/UI gate passed **3 files / 15 tests**; TypeScript and `git diff --check` passed. Independent trust/release, UX/accessibility, and verification re-reviews report no remaining P0–P2. The clean exact-SHA aggregate remains the final local closure step.
+**Verification so far:** focused recovery/Month/mainline/full-App proof passed **5 files / 30 tests**; the repaired interactive recovery/UI gate passed **3 files / 15 tests**; TypeScript and `git diff --check` passed. Independent trust/release, UX/accessibility, and verification re-reviews report no remaining P0–P2. The pre-refresh candidate also passed AI-surface verification, **211 passed / 2 skipped files and 1,407 passed / 3 skipped tests**, TypeScript, the Vite Production build, Hercules Pro UI build, and redirect guard. Because `main` advanced during that run, the clean exact-SHA aggregate is being repeated after the conflict-free rebase before local closure.
 
 **Environment/data disclosure:** local Development code and fictional tests only. The feature handles a user-selected private household export in browser memory, then discards it; it does not commit the file, send it to an AI/model, upload it, persist it, invoke continuity, access Supabase, alter schema/secrets/providers, touch Production, or create real rehearsal evidence.
 

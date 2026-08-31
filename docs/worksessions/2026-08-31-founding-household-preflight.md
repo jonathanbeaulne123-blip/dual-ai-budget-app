@@ -6,8 +6,8 @@
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/founding-household-preflight`
-- **Baseline SHA:** `201a449cb99251c8a66eb3b282d950305752d1f1`
-- **Head SHA:** `201a449cb99251c8a66eb3b282d950305752d1f1`
+- **Baseline SHA:** `acf1d6797ed28dc60885f51dc4dbc88d93b5681a`
+- **Head SHA:** refreshed implementation candidate pending final evidence-record commit
 - **PR or issue:** Gap-closing Program 1 preparation; no PR yet
 - **Risk:** Release
 - **Decision owner:** Jonathan
@@ -84,6 +84,7 @@ Inference:
 - 2026-08-31: independent review identified and the implementation repaired three release-gate bypasses: both replay routes now share the preflight, wrapper and embedded environments must match, and a fresh download in the current session is required before reselect can unlock readiness. UX review also required visible file errors and download status; both are now announced.
 - 2026-08-31: repaired interactive UI/recovery proof passed 3 files / 15 tests. The interactive path proves upload-before-download remains blocked, fresh download clears prior proof, exact reselect plus all acknowledgements unlocks Start, revision change relocks it, and a mismatched environment is announced.
 - 2026-08-31: final independent trust/release, UX/accessibility, and verification re-reviews reported no remaining P0, P1, or P2 finding. Independent focused verification passed 7 files / 33 tests plus TypeScript.
+- 2026-08-31: the pre-refresh candidate passed the full Windows gate: AI-surface verification, 211 passed / 2 skipped files, 1,407 passed / 3 skipped tests, TypeScript, the Vite Production build, Hercules Pro UI build, and redirect guard. `origin/main` advanced during the run; the candidate rebased without conflict onto `acf1d6797ed28dc60885f51dc4dbc88d93b5681a`, and its decision number moved from D-186 to D-187 to preserve the newly merged D-186 continuity decision.
 
 ## Decisions
 
