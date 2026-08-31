@@ -1,5 +1,4 @@
 import { financialAuditHash, financialAuditHashForScope, sha256Hex } from "../core/commandIdentity.ts";
-import { recordConflict } from "../core/conflict.ts";
 import { rememberReceipt } from "../core/commandIdentity.ts";
 import { mergeMonthRehearsals, shapeMonthRehearsals } from "../core/monthRehearsal.ts";
 import { ensureHouseholdShape, mergeTombstones } from "../core/sync.ts";
@@ -67,6 +66,7 @@ export type ContinuityCommandEventPayload = ContinuityCommandRef["commandPayload
 };
 
 type MoneyRow = { id: string };
+const IMMUTABLE_ROW_DIVERGENCE = "immutable-row-divergence";
 
 function sortEvents(events: ContinuityCommandEvent[]): ContinuityCommandEvent[] {
   return [...events].sort((left, right) => (
@@ -84,18 +84,58 @@ function applyMoneyCollection<T extends MoneyRow>(
   existing: T[],
   incoming: T[] | undefined,
   tombstones: Tombstone[],
-): { rows: T[]; sameIdConflict: boolean } {
-  if (!incoming?.length) return { rows: existing, sameIdConflict: false };
+): T[] {
+  if (!incoming?.length) return existing;
   const dead = new Set(tombstones.map((row) => row.id));
   const map = rowMapsTo(existing.filter((row) => !dead.has(row.id)));
   for (const row of incoming) {
-    const previous = map.get(row.id);
-    if (previous && JSON.stringify(previous) !== JSON.stringify(row)) {
-      return { rows: existing, sameIdConflict: true };
-    }
-    if (!previous) map.set(row.id, row);
+    // Events reach this function in canonical hosted order. The later event is
+    // therefore authoritative for a same-id row; distinct ids remain additive.
+    map.set(row.id, row);
   }
-  return { rows: [...map.values()], sameIdConflict: false };
+  return [...map.values()];
+}
+
+function applyTransactions(
+  existing: Transaction[],
+  incoming: Transaction[] | undefined,
+  tombstones: Tombstone[],
+): Transaction[] {
+  if (!incoming?.length) return existing;
+  const reversedIds = new Set(
+    [...existing, ...incoming]
+      .map((row) => row.reversalOfId)
+      .filter((id): id is string => Boolean(id)),
+  );
+  const protectedIncoming = incoming.filter((row) => {
+    if (!reversedIds.has(row.id)) return true;
+    const acceptedOriginal = existing.find((candidate) => candidate.id === row.id);
+    if (acceptedOriginal && JSON.stringify(acceptedOriginal) !== JSON.stringify(row)) {
+      throw new Error(IMMUTABLE_ROW_DIVERGENCE);
+    }
+    return true;
+  });
+  return applyMoneyCollection(existing, protectedIncoming, tombstones);
+}
+
+function applyAppendOnlyCollection<T extends MoneyRow>(
+  existing: T[],
+  incoming: T[] | undefined,
+  tombstones: Tombstone[],
+): T[] {
+  if (!incoming?.length) return existing;
+  const accepted = new Map(existing.map((row) => [row.id, row]));
+  for (const row of incoming) {
+    const acceptedRow = accepted.get(row.id);
+    if (acceptedRow && JSON.stringify(acceptedRow) !== JSON.stringify(row)) {
+      throw new Error(IMMUTABLE_ROW_DIVERGENCE);
+    }
+  }
+  return applyMoneyCollection(
+    existing,
+    incoming,
+    tombstones,
+  );
 }
 
 function receiptFromPayload(payload: ContinuityCommandEventPayload): CommandReceipt {
@@ -278,10 +318,6 @@ export function extractMaterializationFacts(
   return facts;
 }
 
-async function deferConflictingEvent(snapshot: Household, remote: Household): Promise<Household> {
-  return recordConflict(snapshot, remote, false);
-}
-
 async function applyEvent(
   snapshot: Household,
   event: ContinuityCommandEvent,
@@ -291,67 +327,17 @@ async function applyEvent(
   const mergedTombstones = mergeTombstones(snapshot.tombstones, facts.tombstones);
   const dead = new Set(mergedTombstones.map((row) => row.id));
 
-  const txResult = applyMoneyCollection(snapshot.transactions, facts.transactions, mergedTombstones);
-  if (txResult.sameIdConflict) {
-    const remote = {
-      ...snapshot,
-      transactions: mergeRow(snapshot.transactions, facts.transactions),
-      revision: event.result_revision,
-    };
-    return deferConflictingEvent(snapshot, remote);
-  }
-  const shiftResult = applyMoneyCollection(snapshot.shifts, facts.shifts, mergedTombstones);
-  if (shiftResult.sameIdConflict) {
-    const remote = { ...snapshot, shifts: mergeRow(snapshot.shifts, facts.shifts), revision: event.result_revision };
-    return deferConflictingEvent(snapshot, remote);
-  }
-  const claimResult = applyMoneyCollection(snapshot.claims ?? [], facts.claims, mergedTombstones);
-  if (claimResult.sameIdConflict) {
-    const remote = { ...snapshot, claims: mergeRow(snapshot.claims ?? [], facts.claims), revision: event.result_revision };
-    return deferConflictingEvent(snapshot, remote);
-  }
-  const sitDownResult = applyMoneyCollection(snapshot.sitDownSessions ?? [], facts.sitDownSessions, mergedTombstones);
-  if (sitDownResult.sameIdConflict) {
-    const remote = {
-      ...snapshot,
-      sitDownSessions: mergeRow(snapshot.sitDownSessions ?? [], facts.sitDownSessions),
-      revision: event.result_revision,
-    };
-    return deferConflictingEvent(snapshot, remote);
-  }
-  const contributionResult = applyMoneyCollection(snapshot.goalContributions ?? [], facts.goalContributions, mergedTombstones);
-  if (contributionResult.sameIdConflict) {
-    const remote = {
-      ...snapshot,
-      goalContributions: mergeRow(snapshot.goalContributions ?? [], facts.goalContributions),
-      revision: event.result_revision,
-    };
-    return deferConflictingEvent(snapshot, remote);
-  }
-  const purchaseResult = applyMoneyCollection(snapshot.goalPurchases ?? [], facts.goalPurchases, mergedTombstones);
-  if (purchaseResult.sameIdConflict) {
-    const remote = {
-      ...snapshot,
-      goalPurchases: mergeRow(snapshot.goalPurchases ?? [], facts.goalPurchases),
-      revision: event.result_revision,
-    };
-    return deferConflictingEvent(snapshot, remote);
-  }
-  const fundEventResult = applyMoneyCollection(snapshot.fundEvents ?? [], facts.fundEvents, mergedTombstones);
-  if (fundEventResult.sameIdConflict) {
-    const remote = { ...snapshot, fundEvents: mergeRow(snapshot.fundEvents ?? [], facts.fundEvents), revision: event.result_revision };
-    return deferConflictingEvent(snapshot, remote);
-  }
-  const fundSettlementResult = applyMoneyCollection(snapshot.fundSettlementAllocations ?? [], facts.fundSettlementAllocations, mergedTombstones);
-  if (fundSettlementResult.sameIdConflict) {
-    const remote = { ...snapshot, fundSettlementAllocations: mergeRow(snapshot.fundSettlementAllocations ?? [], facts.fundSettlementAllocations), revision: event.result_revision };
-    return deferConflictingEvent(snapshot, remote);
-  }
-  const fundKittyResult = applyMoneyCollection(snapshot.fundKittyAllocations ?? [], facts.fundKittyAllocations, mergedTombstones);
-  if (fundKittyResult.sameIdConflict) {
-    const remote = { ...snapshot, fundKittyAllocations: mergeRow(snapshot.fundKittyAllocations ?? [], facts.fundKittyAllocations), revision: event.result_revision };
-    return deferConflictingEvent(snapshot, remote);
-  }
+  // Reversals are immutable audit facts. Once one has been accepted, a delayed
+  // same-id edit cannot rewrite the original amount that the reversal cancels.
+  const transactions = applyTransactions(snapshot.transactions, facts.transactions, mergedTombstones);
+  const shifts = applyMoneyCollection(snapshot.shifts, facts.shifts, mergedTombstones);
+  const claims = applyMoneyCollection(snapshot.claims ?? [], facts.claims, mergedTombstones);
+  const sitDownSessions = applyMoneyCollection(snapshot.sitDownSessions ?? [], facts.sitDownSessions, mergedTombstones);
+  const goalContributions = applyAppendOnlyCollection(snapshot.goalContributions ?? [], facts.goalContributions, mergedTombstones);
+  const goalPurchases = applyAppendOnlyCollection(snapshot.goalPurchases ?? [], facts.goalPurchases, mergedTombstones);
+  const fundEvents = applyAppendOnlyCollection(snapshot.fundEvents ?? [], facts.fundEvents, mergedTombstones);
+  const fundSettlementAllocations = applyAppendOnlyCollection(snapshot.fundSettlementAllocations ?? [], facts.fundSettlementAllocations, mergedTombstones);
+  const fundKittyAllocations = applyAppendOnlyCollection(snapshot.fundKittyAllocations ?? [], facts.fundKittyAllocations, mergedTombstones);
   const planMap = rowMapsTo(snapshot.fundMonthPlans ?? []);
   for (const plan of facts.fundMonthPlans ?? []) planMap.set(plan.id, plan);
 
@@ -360,17 +346,17 @@ async function applyEvent(
     revision: event.result_revision,
     baseRevision: Math.max(snapshot.baseRevision ?? 0, event.base_revision),
     lastCommittedAt: payload.acceptedAt || snapshot.lastCommittedAt,
-    transactions: txResult.rows.filter((row) => !dead.has(row.id)),
-    shifts: shiftResult.rows.filter((row) => !dead.has(row.id)),
-    claims: claimResult.rows.filter((row) => !dead.has(row.id)),
-    sitDownSessions: sitDownResult.rows.filter((row) => !dead.has(row.id)),
-    goalContributions: contributionResult.rows.filter((row) => !dead.has(row.id)),
-    goalPurchases: purchaseResult.rows.filter((row) => !dead.has(row.id)),
+    transactions: transactions.filter((row) => !dead.has(row.id)),
+    shifts: shifts.filter((row) => !dead.has(row.id)),
+    claims: claims.filter((row) => !dead.has(row.id)),
+    sitDownSessions: sitDownSessions.filter((row) => !dead.has(row.id)),
+    goalContributions: goalContributions.filter((row) => !dead.has(row.id)),
+    goalPurchases: goalPurchases.filter((row) => !dead.has(row.id)),
     householdFund: facts.householdFund ?? snapshot.householdFund,
     fundMonthPlans: [...planMap.values()],
-    fundEvents: fundEventResult.rows.filter((row) => !dead.has(row.id)),
-    fundSettlementAllocations: fundSettlementResult.rows.filter((row) => !dead.has(row.id)),
-    fundKittyAllocations: fundKittyResult.rows.filter((row) => !dead.has(row.id)),
+    fundEvents: fundEvents.filter((row) => !dead.has(row.id)),
+    fundSettlementAllocations: fundSettlementAllocations.filter((row) => !dead.has(row.id)),
+    fundKittyAllocations: fundKittyAllocations.filter((row) => !dead.has(row.id)),
     monthRehearsals: mergeMonthRehearsals(
       shapeMonthRehearsals(snapshot.monthRehearsals),
       shapeMonthRehearsals(facts.monthRehearsals),
@@ -380,12 +366,6 @@ async function applyEvent(
   next = rememberReceipt(next, receiptFromPayload(payload));
   next.booksAcceptedHash = await financialAuditHash(next);
   return next;
-}
-
-function mergeRow<T extends MoneyRow>(existing: T[], incoming: T[] | undefined): T[] {
-  const map = rowMapsTo(existing);
-  for (const row of incoming ?? []) map.set(row.id, row);
-  return [...map.values()];
 }
 
 /**
@@ -550,30 +530,19 @@ export async function applyCommandEventLocally(input: {
     }
   }
 
-  const priorConflictIds = new Set((local.conflicts ?? []).map((row) => row.id));
-  const candidate = await buildSnapshotFromEvents([event], local);
-  const retainedNewConflict = (candidate.conflicts ?? []).find(
-    (row) => !row.resolved && !priorConflictIds.has(row.id),
-  );
+  let candidate: Household;
+  try {
+    candidate = await buildSnapshotFromEvents([event], local);
+  } catch (error) {
+    if (error instanceof Error && error.message === IMMUTABLE_ROW_DIVERGENCE) {
+      return { ok: false, reason: IMMUTABLE_ROW_DIVERGENCE, fallback: true };
+    }
+    throw error;
+  }
   const auditHash = event.payload_json.auditHash;
   if (auditHash) {
     const recomputed = await financialAuditHashForScope(candidate, event.ledger_scope, event.member_id);
     if (recomputed !== auditHash) {
-      // A genuine same-fact collision keeps the already accepted local branch as
-      // the active books and stores the remote branch inside the new conflict.
-      // The hosted hash therefore describes the preserved remote branch until a
-      // person chooses a side. App still sends this candidate through PGlite and
-      // acceptHouseholdWrite before it becomes the local replica.
-      if (retainedNewConflict) {
-        const preservedRemoteHash = await financialAuditHashForScope(
-          retainedNewConflict.remoteSnapshot,
-          event.ledger_scope,
-          event.member_id,
-        );
-        if (preservedRemoteHash === auditHash) {
-          return { ok: true, household: candidate, duplicate: false };
-        }
-      }
       return { ok: false, reason: "audit-hash-mismatch", fallback: true };
     }
   }

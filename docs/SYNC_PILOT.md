@@ -1,6 +1,6 @@
 # Ledger-native “Google Docs feel” Development pilot
 
-> **Status — 2026-08-31:** the pilot implementation is merged through [PR #256](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/256) as exact `main@e9c5127594a9fd4e6d8b203f19db57cc4b31390a` and deployed to the Development kitchen. It is **not activated for daily use or proven through the live matrix or fourteen-day rehearsal**.
+> **Status — 2026-08-31:** the D-180 pilot is deployed, while D-186 automatic reconciliation is release-authorized and being reconciled onto current main. The combined behavior is **not yet proven through the live signed-in matrix or fourteen-day rehearsal**.
 
 ## Entry and household-identity repair — Development deployed
 
@@ -10,7 +10,7 @@ This repair reuses the existing membership and snapshot contracts. It adds no mi
 
 ## Claim boundary
 
-This is a Development-only Jonathan/Bianca rehearsal of ledger-native command sync. It is not literal field co-editing, a promise that every collision is automatic, a Production-readiness claim, or permission to make Hearth the sole household record.
+This is a Development-only Jonathan/Bianca rehearsal of ledger-native command sync. It is not literal character-by-character field co-editing, a Production-readiness claim, or permission to make Hearth the sole household record. D-186 makes ordinary collision recovery automatic: distinct ids remain additive and the later accepted same-id entry wins without a whole-snapshot chooser.
 
 The claim earned only after every exit criterion passes is:
 
@@ -80,7 +80,8 @@ Use Jonathan and Bianca's separate Google accounts on actual supported devices. 
 - Jonathan Shared post; Bianca Shared post; each partner sees the accepted result.
 - Jonathan Personal post and Bianca Personal post; the other account cannot see either event.
 - Concurrent disjoint Shared posts converge automatically.
-- An intentional same-fact divergent edit preserves both versions and opens human resolution; choosing a version converges both devices.
+- An intentional same-id divergent edit converges automatically to the later accepted entry on both devices, with no blocking chooser.
+- A delayed same-id edit after an accepted reversal does not rewrite the reversed original; correction remains reversal plus replacement.
 - Both devices work offline, queue accepted work, reconnect, and converge without a duplicate.
 - Background then foreground; network loss then recovery; Realtime failure displays fallback/polling honestly and later recovers.
 - Duplicate and out-of-order event delivery applies each command once.
@@ -115,7 +116,7 @@ All must be true:
 
 - zero silent loss, duplicate financial posts, invalid books, cross-member Personal disclosure, cross-environment access, or false Synced states;
 - both devices converge after offline work, restart, and old-device-off recovery;
-- every intentional same-fact collision has a clear human resolution path;
+- every intentional same-id collision converges automatically to the later accepted entry without losing distinct ids or changing an accepted reversal;
 - at least 100 Shared samples meet the 500 ms p95 gate with honest fallback behavior;
 - no open P0/P1 sync, privacy, accounting, or recovery finding remains after the fourteen-day rehearsal.
 

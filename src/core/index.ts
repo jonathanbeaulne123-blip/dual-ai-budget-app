@@ -143,6 +143,8 @@ export {
   canAutoMergeConflict,
   canAbsorbDisjointSharedMoney,
   absorbDisjointSharedMoney,
+  mergeSharedLastEntryWins,
+  resolveStoredConflictsLastEntryWins,
   countDifferingSharedTransactionIds,
   describeSharedConflictImpact,
   moneyFactsChanged,

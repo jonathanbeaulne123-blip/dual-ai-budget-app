@@ -54,12 +54,12 @@ describe("renderCommandChrome", () => {
     expect(quota.banner?.actionLabel).toBe("Retry now");
   });
 
-  it("maps a same-fact conflict to the blocking review sheet", () => {
+  it("maps a legacy same-fact state to background retry without a chooser", () => {
     const conflict = renderCommandChrome(COMMAND_SURFACE_FIXTURES["conflict-needs-attention"]);
-    expect(conflict.banner?.blocking).toBe(true);
-    expect(conflict.banner?.actionLabel).toBe("Review conflict");
-    expect(conflict.liveAnnouncement).toMatch(/review/i);
-    expect(conflict.chip?.primary).toBe("Needs attention");
+    expect(conflict.banner?.blocking).toBeUndefined();
+    expect(conflict.banner?.actionLabel).toBe("Retry now");
+    expect(conflict.liveAnnouncement).toMatch(/background/i);
+    expect(conflict.chip?.primary).toBe("Waiting to share");
   });
 
   it("shows recovery banner without success toast", () => {

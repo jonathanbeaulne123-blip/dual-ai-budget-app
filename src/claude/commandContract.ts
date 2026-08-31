@@ -168,7 +168,7 @@ export const COMMAND_SURFACE_FIXTURES: Record<
     revision: 4,
     sharingMode: "conflicted",
     errorClass: "conflict-detected",
-    userMessage: "This phone and the shared copy both have new work. Nothing was overwritten.",
+    userMessage: "Saved here. Hearth is applying the latest accepted entries and will retry sharing.",
     retryable: true,
     postedExactlyOnce: true,
     postedNothing: false,

@@ -4,9 +4,11 @@ import {
   canAbsorbDisjointSharedMoney,
   canAutoMergeConflict,
   catalogHousehold,
+  mergeSharedLastEntryWins,
   postEntry,
-  resolveConflictChoice,
   recordConflict,
+  reversePostedMoney,
+  resolveStoredConflictsLastEntryWins,
 } from "../src/core/index.ts";
 import {
   activeMemberCountHint,
@@ -19,6 +21,7 @@ import {
   clearContinuityOutboxConflictBlocks,
   continuityBackoffMs,
   createMemoryContinuityStore,
+  flushContinuityOutbox,
   listContinuityOutbox,
   setContinuityStore,
   transportHouseholdWithOutbox,
@@ -210,9 +213,212 @@ describe("disjoint shared money absorb", () => {
     };
     expect(canAbsorbDisjointSharedMoney(local, remote)).toBe(false);
   });
+
+  it("keeps distinct rows and lets the canonical later side win one same-id row", () => {
+    const base = { ...catalogHousehold(), revision: 3, baseRevision: 3, linked: true };
+    const first = postEntry(base, {
+      date: "2026-08-25",
+      type: "expense",
+      amount: "10.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Original coffee",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    }).household;
+    const txId = first.transactions.at(-1)!.id;
+    const localOnly = postEntry(first, {
+      date: "2026-08-25",
+      type: "expense",
+      amount: "4.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Local milk",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    }).household;
+    const remoteOnly = postEntry(first, {
+      date: "2026-08-25",
+      type: "expense",
+      amount: "6.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Remote bread",
+      createdBy: "MEM-002",
+      confirmDuplicate: true,
+    }).household;
+    const sameTimestamp = first.transactions.find((row) => row.id === txId)!.updatedAt;
+    const local = {
+      ...localOnly,
+      revision: 4,
+      baseRevision: 3,
+      transactions: localOnly.transactions.map((row) => row.id === txId
+        ? { ...row, amountCents: 1100, note: "Local correction", updatedAt: sameTimestamp }
+        : row),
+    };
+    const remote = {
+      ...remoteOnly,
+      revision: 5,
+      baseRevision: 5,
+      transactions: remoteOnly.transactions.map((row) => row.id === txId
+        ? { ...row, amountCents: 1200, note: "Remote correction", updatedAt: sameTimestamp }
+        : row),
+    };
+
+    const merged = mergeSharedLastEntryWins(local, remote, "MEM-001", "remote");
+    expect(merged.transactions.some((row) => row.note === "Local milk")).toBe(true);
+    expect(merged.transactions.some((row) => row.note === "Remote bread")).toBe(true);
+    expect(merged.transactions.find((row) => row.id === txId)?.note).toBe("Remote correction");
+    expect(merged.conflicts?.some((row) => !row.resolved)).toBe(false);
+    expect(merged.sharing?.mode).toBe("pending-transport");
+    expect(merged.baseRevision).toBe(5);
+  });
+
+  it("uses an accepted receipt delta instead of a skewed device clock for a rebased same-id entry", () => {
+    const posted = postEntry(catalogHousehold(), {
+      date: "2026-08-25",
+      type: "expense",
+      amount: "10.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Original",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    }).household;
+    const txId = posted.transactions.at(-1)!.id;
+    const local = {
+      ...posted,
+      revision: 5,
+      baseRevision: 4,
+      transactions: posted.transactions.map((row) => row.id === txId
+        ? { ...row, note: "Last accepted locally", amountCents: 1100, updatedAt: "2026-08-25T09:00:00.000Z" }
+        : row),
+      commandReceipts: [{
+        confirmationId: "local-last",
+        identityHash: "local-last",
+        auditHash: "local-last",
+        commandKind: "postEntry",
+        postedIds: [txId],
+        revision: 5,
+        acceptedAt: "2026-08-25T12:00:00.000Z",
+      }],
+    };
+    const remote = {
+      ...posted,
+      revision: 6,
+      baseRevision: 6,
+      transactions: posted.transactions.map((row) => row.id === txId
+        ? { ...row, note: "Earlier cloud value with a fast clock", amountCents: 1200, updatedAt: "2026-08-25T15:00:00.000Z" }
+        : row),
+    };
+
+    const merged = mergeSharedLastEntryWins(local, remote, "MEM-001", "local");
+    expect(merged.transactions.find((row) => row.id === txId)?.note).toBe("Last accepted locally");
+  });
+
+  it("uses receipt revision order when both replicas changed the same id", () => {
+    const posted = postEntry(catalogHousehold(), {
+      date: "2026-08-25",
+      type: "expense",
+      amount: "10.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Original",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    }).household;
+    const txId = posted.transactions.at(-1)!.id;
+    const receipt = (confirmationId: string, revision: number, acceptedAt: string) => ({
+      confirmationId,
+      identityHash: confirmationId,
+      auditHash: confirmationId,
+      commandKind: "postEntry",
+      postedIds: [txId],
+      revision,
+      acceptedAt,
+    });
+    const local = {
+      ...posted,
+      revision: 6,
+      transactions: posted.transactions.map((row) => row.id === txId ? { ...row, note: "Local earlier receipt" } : row),
+      commandReceipts: [receipt("local-edit", 6, "2026-08-25T12:00:00.000Z")],
+    };
+    const remote = {
+      ...posted,
+      revision: 7,
+      baseRevision: 7,
+      transactions: posted.transactions.map((row) => row.id === txId ? { ...row, note: "Remote later receipt" } : row),
+      commandReceipts: [receipt("remote-edit", 7, "2026-08-25T12:01:00.000Z")],
+    };
+
+    const merged = mergeSharedLastEntryWins(local, remote, "MEM-001", "local");
+    expect(merged.transactions.find((row) => row.id === txId)?.note).toBe("Remote later receipt");
+  });
+
+  it("never resurrects a tombstoned original while protecting reversal history", () => {
+    const posted = postEntry(catalogHousehold(), {
+      date: "2026-08-25",
+      type: "expense",
+      amount: "10.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Reversed original",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    }).household;
+    const txId = posted.transactions.at(-1)!.id;
+    const reversed = reversePostedMoney(posted, txId, { createdBy: "MEM-001" }).household;
+    const tombstone = { id: txId, deletedAt: "2026-08-25T16:00:00.000Z" };
+    const local = {
+      ...reversed,
+      revision: 7,
+      baseRevision: 6,
+      transactions: reversed.transactions.filter((row) => row.id !== txId),
+      tombstones: [...(reversed.tombstones ?? []), tombstone],
+    };
+    const remote = { ...reversed, revision: 6, baseRevision: 6 };
+
+    const merged = mergeSharedLastEntryWins(local, remote, "MEM-001", "local");
+    expect(merged.transactions.some((row) => row.id === txId)).toBe(false);
+    expect(merged.transactions.some((row) => row.reversalOfId === txId)).toBe(true);
+  });
 });
 
 describe("post-conflict outbox resume", () => {
+  it("replays a conflict-blocked legacy row so it can be rebased automatically", async () => {
+    setContinuityStore(createMemoryContinuityStore());
+    const household = { ...googleHousehold(), revision: 4, baseRevision: 3, linked: true };
+    const remote = { ...household, revision: 5, baseRevision: 5 };
+    let casCalls = 0;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("households?select=id")) return response([]);
+      if (url.includes("rpc/publish_household_snapshot")) {
+        casCalls += 1;
+        return response({
+          ok: false,
+          conflict: true,
+          reason: "stale-revision",
+          remote_revision: remote.revision,
+          remote_payload: JSON.stringify(remote),
+        });
+      }
+      if (url.includes("continuity_memberships?select=household_id")) return response([]);
+      return response(null, 201);
+    }));
+
+    await transportHouseholdWithOutbox({
+      household,
+      identity,
+      expectedRevision: 3,
+      confirmationId: "legacy-blocked",
+      config,
+    });
+    expect(listContinuityOutbox("development")[0]?.blockedByConflict).toBe(true);
+    await flushContinuityOutbox({ environment: "development", identity, config });
+    expect(casCalls).toBe(2);
+  });
+
   it("clears conflict blocks so force flush can run again", async () => {
     setContinuityStore(createMemoryContinuityStore());
     const household = { ...googleHousehold(), revision: 4, baseRevision: 3, linked: true };
@@ -267,14 +473,32 @@ describe("post-conflict outbox resume", () => {
     expect(listContinuityOutbox("development")[0]?.expectedRevision).toBe(5);
   });
 
-  it("resolveConflictChoice keeps both sides available for explicit choose", async () => {
-    const local = { ...catalogHousehold(), revision: 4, baseRevision: 3, linked: true };
-    const remote = { ...catalogHousehold(), revision: 5, baseRevision: 5, linked: true };
+  it("upgrades a persisted conflict without reopening a chooser", async () => {
+    const base = postEntry(catalogHousehold(), {
+      date: "2026-08-25",
+      type: "expense",
+      amount: "10.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Phone correction",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    }).household;
+    const txId = base.transactions.at(-1)!.id;
+    const local = { ...base, revision: 4, baseRevision: 3, linked: true };
+    const remote = {
+      ...base,
+      revision: 5,
+      baseRevision: 5,
+      linked: true,
+      transactions: base.transactions.map((row) => row.id === txId
+        ? { ...row, amountCents: 1200, note: "Cloud correction", updatedAt: row.updatedAt }
+        : row),
+    };
     const conflicted = await recordConflict(local, remote, false);
-    const open = (conflicted.conflicts ?? []).find((row) => !row.resolved);
-    expect(open).toBeTruthy();
-    const chosen = resolveConflictChoice(conflicted, open!.id, "remote");
-    expect(chosen.conflicts?.every((row) => row.resolved)).toBe(true);
-    expect(chosen.revision).toBe(5);
+    const resolved = resolveStoredConflictsLastEntryWins(conflicted, "MEM-001");
+    expect(resolved.conflicts?.every((row) => row.resolved)).toBe(true);
+    expect(resolved.transactions.find((row) => row.id === txId)?.note).toBe("Phone correction");
+    expect(resolved.sharing?.mode).toBe("pending-transport");
   });
 });

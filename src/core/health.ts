@@ -235,13 +235,13 @@ export function runHealthCheck(household: Household): Finding[] {
 
   const unresolved = (household.conflicts ?? []).filter((row) => !row.resolved);
   if (unresolved.length) {
-    flag("Sync", "This phone and the shared copy both have new work. Nothing was overwritten.");
+    flag("Sync", "Hearth is applying the latest accepted entries and will retry sharing automatically.");
   }
   if (household.sharing?.mode === "pending-transport" || household.sharing?.pending) {
     flag("Sync", household.sharing.lastError || "Saved on this phone. Sharing can retry from More.");
   }
   if (household.sharing?.mode === "conflicted") {
-    flag("Sync", household.sharing.lastError || "A shared write conflict is waiting. It will not disappear after refresh.");
+    flag("Sync", household.sharing.lastError || "Sharing is catching up. Hearth will reconcile the latest entries automatically.");
   }
   if (household.sharing?.mode === "transport-error" || household.sharing?.mode === "disconnected") {
     flag("Sync", household.sharing.lastError || "The shared copy could not be reached. Local books are still here.");

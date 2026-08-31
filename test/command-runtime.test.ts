@@ -473,7 +473,7 @@ describe("atomic household writes", () => {
     expect(outcome.retryable).toBe(true);
   });
 
-  it("preserves a divergent same-fact stale write for explicit review", async () => {
+  it("rebases a divergent same-fact stale write without explicit review", async () => {
     const previous = { ...catalogHousehold(), linked: true, revision: 3, baseRevision: 3 };
     const posted = postEntry(previous, grocery("Collision"));
     const txId = posted.postedIds[0]!;
@@ -502,13 +502,12 @@ describe("atomic household writes", () => {
       transportRequested: true,
       adapters: store.adapters,
     });
-    expect(result.kind).toBe("conflict-needs-attention");
-    expect(result.sharingMode).toBe("conflicted");
-    expect(result.recoveryAvailable).toBe(true);
-    const open = result.household.conflicts?.find((row) => !row.resolved);
-    expect(open?.localSnapshot.transactions.find((row) => row.id === txId)?.amountCents).not.toBe(
-      open?.remoteSnapshot.transactions.find((row) => row.id === txId)?.amountCents,
-    );
+    expect(result.kind).toBe("pending-transport");
+    expect(result.sharingMode).toBe("pending-transport");
+    expect(result.retryable).toBe(true);
+    expect(result.recoveryAvailable).toBe(false);
+    expect(result.household.conflicts?.some((row) => !row.resolved)).toBe(false);
+    expect(result.household.transactions.find((row) => row.id === txId)?.note).toBe("Collision");
   });
 
   it("does not auto-merge when claims money differs", () => {

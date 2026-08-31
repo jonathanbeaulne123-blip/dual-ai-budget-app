@@ -107,8 +107,8 @@ function chipForSharingMode(state: CommandSurfaceState, ctx: CommandChromeContex
   }
   if (mode === "conflicted" || state.kind === "conflict-needs-attention") {
     return {
-      primary: "Needs attention",
-      actionLabel: "Review",
+      primary: "Waiting to share",
+      actionLabel: "Retry now",
       tone: "warning",
     };
   }
@@ -184,18 +184,17 @@ export function renderCommandChrome(state: CommandSurfaceState, ctx: CommandChro
     return {
       chip: chipForSharingMode(state, ctx),
       banner: {
-        primary: "Two versions need review.",
-        secondary: "Both financial versions are preserved. Choose one before sharing continues.",
-        actionLabel: "Review conflict",
-        blocking: true,
+        primary: "Saved here. Sharing is catching up.",
+        secondary: "Hearth will apply the latest accepted entry and retry automatically.",
+        actionLabel: "Retry now",
         tone: "warning",
       },
       toast: posted
-        ? undoableToast(postedPrimary(ctx.amountLabel), "Both versions are preserved for review.", ctx)
+        ? undoableToast(postedPrimary(ctx.amountLabel), "Sharing in the background.", ctx)
         : null,
       liveAnnouncement: posted && ctx.ledgerWrite !== false
-        ? `${postedPrimary(ctx.amountLabel)}. Two versions need review.`
-        : "Two versions need review.",
+        ? `${postedPrimary(ctx.amountLabel)}. Sharing in the background.`
+        : "Sharing in the background.",
     };
   }
 
