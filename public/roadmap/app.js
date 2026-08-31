@@ -185,6 +185,17 @@
     });
   }
 
+  function bindActivationKeys(container, buttons, activate) {
+    container.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      const current = buttons.indexOf(document.activeElement);
+      if (current < 0) return;
+
+      event.preventDefault();
+      activate(current);
+    });
+  }
+
   function renderLensTabs() {
     const container = byId("lens-tabs");
     const buttons = data.lenses.map((lens, index) => make("button", {
@@ -205,6 +216,7 @@
     });
     buttons.forEach((button, index) => button.addEventListener("click", () => activate(index)));
     bindArrowKeys(container, buttons, activate);
+    bindActivationKeys(container, buttons, activate);
     activate(0);
   }
 
@@ -261,6 +273,7 @@
     });
     buttons.forEach((button, index) => button.addEventListener("click", () => activate(index)));
     bindArrowKeys(container, buttons, activate);
+    bindActivationKeys(container, buttons, activate);
     activate(0);
   }
 

@@ -1,5 +1,23 @@
 # AI Task and Handoff Standard
 
+## D-185 gap-closing evidence foundation (2026-08-31)
+
+**Status:** Local Release-risk candidate on `codex/gap-closing-foundation`, rebased onto `origin/main@aa56f373ab62dbfec1dfa744e6c8b3606caee4c7`. **Not pushed, merged, deployed, or presented as Production evidence.**
+
+**Household outcome:** Jonathan and Bianca get a fail-closed five-dimension release gate plus repeatable browser evidence for the public roadmap task/recovery journeys. Roadmap tabs now activate with Enter and Space as well as arrow/Home/End keys. The public-only collector covers 320/390/430/720/1100 px, screenshots, redacted console/page errors, all-origin network failures, timeouts, overflow, actual keyboard focus order and tab-panel semantics, full axe findings, measured 200% text growth/content bounds, and normal-versus-reduced motion behavior.
+
+**Budget delta (5):** `+3` through evidence that refuses to call a money/privacy/recovery claim complete when artifacts are stale, mismatched, synthetic, local-only, or missing human acceptance. **Engagement delta (3):** `+2` through real-browser keyboard, focus, responsive, zoom, and reduced-motion proof. No money meaning, posting, continuity, Auth, or hosted authority changed.
+
+**What changed:** D-185/P0-03 evidence contracts and evaluator were reconciled onto current main; browser collection uses Playwright plus axe and writes only ignored, hash-linked local artifacts; the public-roadmap tablist explicitly accepts Enter/Space; and `check:windows` discovers the bundled Bash, real Python, Node, and pnpm runtimes without weakening `pnpm check`. Browser reports are permanently `claimable: false`; exact clean deployment, live-origin evidence, privacy review, hands-on review, and a named human remain required for any literal `5/5`.
+
+**Verification:** focused gate/collector/roadmap tests passed **3 files / 30 tests**, including deliberate redaction, private/cross-origin refusal, and reduced-motion red fixtures. The latest runtime-bearing exact tip passed AI-surface verification, **210 passed / 2 skipped files and 1,403 passed / 3 skipped tests**, TypeScript, the 383-module Vite production build, Hercules Pro UI build, and the no-`dist/_redirects` guard. Its ignored browser report passed **10/10** public-roadmap task/recovery runs over all five widths with zero serious/critical axe findings, console/page errors, all-origin network failures, timeouts, overflow failures, focus-order failures, text-resize failures, or reduced-motion failures and remains `claimable: false`. The implementation content is now `110337c` after the final clean rebase over the upstream documentation-only closeout; the exact final branch SHA and repeated focused/browser receipts are reported in the external handoff because a commit cannot contain its own SHA. Existing React act, PGlite browser-external/eval, and chunk-size warnings remain unchanged.
+
+**Data and environment disclosure:** local static synthetic/public-roadmap content only. No real household amounts, descriptions, identities, partner-personal data, credentials, model input, MCP household access, hosted rows, schema, secrets, provider settings, Production, push, merge, or deploy action. Browser artifacts remain ignored under `artifacts/browser-evidence/`.
+
+**Open gates:** Program 0's local evidence foundation is closed. Program 1–6 still require elapsed Jonathan/Bianca rehearsal, two-device evidence, access/security work, Production approval, and later design-partner consent; none is implied by this packet.
+
+**Worksession:** [`worksessions/2026-08-31-gap-closing-evidence-foundation.md`](worksessions/2026-08-31-gap-closing-evidence-foundation.md)
+
 ## The Month Spread — Shared Home centre (2026-08-31)
 
 **Status:** Merged [#259](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/259) as `main@d648258`. Canon record `main@ed852a8`. Kitchen deploys Cloudflare Workers [`33432365828`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33432365828) (merge) and [`33432832963`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33432832963) (docs record) both **success**. Current Worker version `2488cac3-f052-48a9-8200-65d5ee848f4b`. Live bundle still `Office-BBr3Ic0W.js` with Standing bars and “A proposal is not on the bar.” **Merged and kitchen-published.** Risk was **High** (presentation plus F-2/F-3). No Production household mutation, hosted schema, or secrets.

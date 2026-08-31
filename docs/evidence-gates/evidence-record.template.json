@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "template": true,
+  "fixture": false,
+  "runId": "2026-08-30-feature-id",
+  "evidenceDate": "2026-08-30",
+  "featureId": "public-roadmap",
+  "timeZone": "America/Toronto",
+  "sourceSha": "0000000000000000000000000000000000000000",
+  "startedAt": "2026-08-30T12:00:00.000Z",
+  "completedAt": "2026-08-30T12:15:00.000Z",
+  "environment": {
+    "kind": "production",
+    "origin": "https://example.invalid",
+    "deploymentId": "replace-with-provider-deployment-id",
+    "buildId": "replace-with-build-or-workflow-id",
+    "privacyScope": "environment+household+member+view:public-no-household"
+  },
+  "dimensions": {
+    "truth": { "status": "pending", "evidenceIds": [] },
+    "taskCompletion": { "status": "pending", "evidenceIds": [] },
+    "recovery": { "status": "pending", "evidenceIds": [] },
+    "responsiveAccessibility": { "status": "pending", "evidenceIds": [] },
+    "productionEvidence": { "status": "pending", "evidenceIds": [] }
+  },
+  "truthGuardrails": [],
+  "artifacts": [
+    {
+      "id": "replace-me",
+      "kind": "test-report",
+      "path": "reports/replace-me.txt",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "sourceSha": "0000000000000000000000000000000000000000",
+      "environmentId": "production|https://example.invalid|replace-with-provider-deployment-id|replace-with-build-or-workflow-id|environment+household+member+view:public-no-household",
+      "capturedAt": "2026-08-30T12:05:00.000Z",
+      "expiresAt": "2026-08-31T12:05:00.000Z"
+    }
+  ],
+  "browserRuns": [
+    {
+      "journeyId": "roadmap-task",
+      "sourceSha": "0000000000000000000000000000000000000000",
+      "environmentId": "production|https://example.invalid|replace-with-provider-deployment-id|replace-with-build-or-workflow-id|environment+household+member+view:public-no-household",
+      "viewport": { "width": 320, "height": 800 },
+      "contentViewport": { "width": 305, "height": 760 },
+      "devicePixelRatio": 1,
+      "startedAt": "2026-08-30T12:01:00.000Z",
+      "completedAt": "2026-08-30T12:01:01.000Z",
+      "durationMs": 1000,
+      "timeoutMs": 10000,
+      "status": "pending",
+      "completedSteps": 0,
+      "passedAssertions": 0,
+      "screenshotArtifactId": "replace-me",
+      "capture": {
+        "consoleComplete": false,
+        "networkComplete": false,
+        "timeoutsComplete": false,
+        "consoleErrors": [],
+        "networkErrors": [],
+        "timeouts": []
+      },
+      "manual": {
+        "observer": "",
+        "noHorizontalOverflow": false,
+        "keyboardPathPass": false,
+        "focusVisible": false,
+        "keyboardFocusOrderPass": false,
+        "zoom200Pass": false,
+        "reducedMotionPass": false
+      }
+    }
+  ],
+  "production": {
+    "deploymentId": "replace-with-provider-deployment-id",
+    "deployedSha": "0000000000000000000000000000000000000000",
+    "origin": "https://example.invalid",
+    "deploymentArtifactId": "replace-me",
+    "liveSmokeArtifactId": "replace-me"
+  },
+  "redaction": {
+    "complete": false,
+    "findings": ["Template values must be replaced and reviewed."],
+    "artifactId": "replace-me"
+  },
+  "humanAcceptance": {
+    "accepted": false,
+    "role": "human",
+    "acceptedBy": "",
+    "acceptedAt": "",
+    "attestationArtifactId": "replace-me",
+    "reviewedEvidenceIds": []
+  }
+}
