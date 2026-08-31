@@ -2,7 +2,7 @@
 
 ## FAB speed dial — Shift, Income, Expense, Transfer (2026-08-31)
 
-**Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7`. **Not merged, not deployed, not live.** Risk: **Low–Medium** (nav chrome; Add routing only; no money write).
+**Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7` @ `ba752c2`. **Not merged, not deployed, not live.** Risk: **Low–Medium** (nav chrome; Add routing only; no money write).
 
 **Household outcome:** The nav `+` opens a vertical paper speed dial: Shift, Income, Expense, Transfer. Each action opens the existing Add sheet on that mode. Confirm still posts. Shared Home still has no Shift tab; Shift is reachable from `+`.
 
@@ -14,7 +14,10 @@
 
 **What changed:** `FabSpeedDial` on the existing FAB. First tap opens the dial; a mode tap calls `openAddFor(null, mode)`. Escape / scrim / × close. Add sheet still has the four tabs. Expense is not auto-opened from `+`.
 
-**Verification:** focused `test/fab-speed-dial.test.ts` + nav fence. `pnpm check` next on this SHA.
+**Verification:**
+- Focused: `pnpm exec vitest run test/fab-speed-dial.test.ts test/ledger-story-ui.test.ts` → 9 passed.
+- `pnpm check` at `77842cc`: **1117 passed / 2 skipped**, plus 1 FAB jsdom URL fail (closed in `ba752c2`) and 1 pre-existing `hercules-pro` `this_week` empty on 2026-08-31 vs posted `2026-08-25` (not this packet).
+- Visual, fictional Development demo as Jonathan: `+` opens Shift / Income / Expense / Transfer; each opens the matching Add sheet; Escape closes. Proof at ~1100 and 390.
 
 **Data and environment disclosure:**
 - Development impact: none (UI routing)

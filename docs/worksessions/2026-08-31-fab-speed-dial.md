@@ -7,7 +7,7 @@
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `cursor/shared-ledger-story-aef7`
 - **Baseline SHA:** `e6851ba`
-- **Head SHA:** pending
+- **Head SHA:** `ba752c2`
 - **PR or issue:** draft [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244)
 - **Risk:** Low–Medium
 - **Decision owner:** Jonathan
@@ -40,8 +40,8 @@ Nav `+` fans out Shift, Income, Expense, and Transfer into the existing Add shee
 ## Acceptance evidence
 
 - [x] Focused DOM tests: open, pick expense, Escape, closed-when-adding, no postEntry in the dial.
-- [ ] `pnpm check`
-- [ ] Visual: Shared Home `+` → four actions → Add expense.
+- [x] `pnpm check` (FAB tests green; unrelated hercules-pro this_week empty on 2026-08-31)
+- [x] Visual: Shared Home `+` → four actions → Add expense/shift/transfer/income; Escape closes. 1100 + 390.
 
 ## Plan
 
