@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { OpeningTruthCard } from "./OpeningTruthCard.tsx";
 import {
   BIANCA_APPROVAL_STATEMENT,
@@ -14,6 +14,7 @@ import {
   formatCad,
   formatMonthLabel,
   linkRehearsalReceipt,
+  makeHouseholdExport,
   monthKeyFromDateKey,
   monthRehearsalReport,
   parseDateKey,
@@ -23,6 +24,8 @@ import {
   shiftMonthKey,
   startMonthRehearsal,
   startRehearsalTask,
+  verifyCurrentHouseholdRecovery,
+  type CurrentHouseholdRecoveryProof,
   type DateKey,
   type Household,
   type MonthKey,
@@ -40,6 +43,15 @@ const OUTCOME_LABELS: Array<{ id: MonthRehearsalFrictionOutcome; label: string }
   { id: "distrusted-number", label: "Distrusted a number" },
   { id: "stopped", label: "Stopped" },
 ];
+
+const REHEARSAL_PREFLIGHT_ACKNOWLEDGEMENTS = [
+  { id: "access", label: "We each use our own Google account, and Household access lists both people and both current phones." },
+  { id: "environment", label: "Both phones show Development, and we recorded the deployed build from its release receipt." },
+  { id: "privacy", label: "Real amounts and descriptions stay out of screenshots, diagnostics, AI/model input, committed files, and support notes." },
+  { id: "stop", label: "We agreed on one ten-minute weekly sit-down and will stop for imbalance, privacy leakage, duplication, loss, or a false Synced state." },
+] as const;
+
+type RehearsalPreflightAcknowledgement = typeof REHEARSAL_PREFLIGHT_ACKNOWLEDGEMENTS[number]["id"];
 
 function suggestedMonth(today: DateKey): MonthKey {
   const month = monthKeyFromDateKey(today);
@@ -59,6 +71,78 @@ function downloadText(name: string, text: string, type: string) {
   link.download = name;
   link.click();
   URL.revokeObjectURL(href);
+}
+
+function RehearsalPreflight({
+  household,
+  today,
+  onReadyChange,
+}: {
+  household: Household;
+  today: DateKey;
+  onReadyChange: (ready: boolean) => void;
+}) {
+  const [recoveryProof, setRecoveryProof] = useState<CurrentHouseholdRecoveryProof | null>(null);
+  const [acknowledgements, setAcknowledgements] = useState<Record<RehearsalPreflightAcknowledgement, boolean>>({
+    access: false,
+    environment: false,
+    privacy: false,
+    stop: false,
+  });
+  const [busy, setBusy] = useState("");
+  const [error, setError] = useState("");
+  const [downloaded, setDownloaded] = useState(false);
+  const recoveryProofIsCurrent = Boolean(
+    recoveryProof
+    && recoveryProof.environment === household.environment
+    && recoveryProof.revision === household.revision
+    && recoveryProof.lastCommittedAt === household.lastCommittedAt,
+  );
+  const ready = downloaded
+    && recoveryProofIsCurrent
+    && REHEARSAL_PREFLIGHT_ACKNOWLEDGEMENTS.every((item) => acknowledgements[item.id]);
+
+  useEffect(() => {
+    onReadyChange(ready);
+    return () => onReadyChange(false);
+  }, [onReadyChange, ready]);
+
+  const apply = async (key: string, action: () => unknown | Promise<unknown>) => {
+    setBusy(key);
+    setError("");
+    try { await action(); } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)); } finally { setBusy(""); }
+  };
+
+  return <section className="month-preflight" aria-labelledby="month-preflight-heading">
+    <p className="eyebrow">Private Development preparation</p>
+    <h3 id="month-preflight-heading">Prove recovery before week 1</h3>
+    <p>The backup contains the household books. Keep it private and local. Hearth checks the file without importing it or changing this kitchen.</p>
+    <ol>
+      <li><button type="button" className="secondary" disabled={Boolean(busy)} onClick={() => void apply("download-backup", async () => {
+        const file = await makeHouseholdExport(household);
+        setRecoveryProof(null);
+        setDownloaded(true);
+        downloadText(`hearth-development-rehearsal-backup-${today}.json`, JSON.stringify(file), "application/json");
+      })}>{busy === "download-backup" ? "Preparing…" : "1. Download private backup"}</button></li>
+      <li><label className="month-file-check">2. Select that backup again<input type="file" accept="application/json,.json" disabled={Boolean(busy)} onChange={(event) => {
+        const file = event.currentTarget.files?.[0];
+        void apply("verify-backup", async () => {
+          if (!file) throw new Error("Choose the private backup you just downloaded.");
+          const proof = await verifyCurrentHouseholdRecovery(await file.text(), household);
+          setRecoveryProof(proof);
+        });
+      }} /></label></li>
+    </ol>
+    {downloaded && !recoveryProof ? <p className="month-disclosure" role="status">Backup downloaded. Select that private file above to prove it reopens.</p> : null}
+    {error ? <p className="month-error" role="alert">{error}</p> : null}
+    <p className={`month-preflight-status ${recoveryProofIsCurrent ? "good" : "attention"}`} role="status">
+      {recoveryProofIsCurrent ? "Recovery check passed for the exact current Development snapshot." : recoveryProof ? "The household changed. Download and verify a fresh backup." : "Recovery check still required."}
+    </p>
+    <fieldset><legend>At the table, confirm together</legend>
+      {REHEARSAL_PREFLIGHT_ACKNOWLEDGEMENTS.map((item) => <label key={item.id} className="month-preflight-check"><input type="checkbox" checked={acknowledgements[item.id]} onChange={(event) => setAcknowledgements((current) => ({ ...current, [item.id]: event.target.checked }))} /> <span>{item.label}</span></label>)}
+    </fieldset>
+    <p className="month-disclosure">These acknowledgements stay in this browser session. They are not uploaded, added to the household snapshot, or sent to Hercules.</p>
+  </section>;
 }
 
 function statusLabel(status: string) {
@@ -101,6 +185,7 @@ export function MonthRehearsalPanel({ household, memberId, today, onApply, onOpe
   const [receiptChoiceByTask, setReceiptChoiceByTask] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const [preflightReady, setPreflightReady] = useState(false);
   const reportTarget = rehearsal ?? archived;
   const isParticipant = Boolean(reportTarget && (memberId === reportTarget.biancaParticipantId || memberId === reportTarget.jonathanPartnerId));
   const report = useMemo(() => reportTarget && isParticipant && activeRows.length <= 1 ? monthRehearsalReport(household, reportTarget.id, memberId) : null, [household, reportTarget, isParticipant, memberId, activeRows.length]);
@@ -123,7 +208,9 @@ export function MonthRehearsalPanel({ household, memberId, today, onApply, onOpe
     if (surface === "manage" && archived && report) return <section className="month-card" aria-label="Archived month rehearsal">
       <header className="month-card-header"><div><p className="eyebrow">Our month · archived</p><h2>{formatMonthLabel(archived.monthKey)}</h2></div><span className="month-proof-pill good">Read only</span></header>
       <p>The rehearsal is archived. Your Development household and its books remain usable.</p>
-      <p>This export contains the clarity and friction notes shared between the two participants.</p><div className="month-actions"><button type="button" className="secondary" onClick={() => downloadText(`our-month-${archived.monthKey}.txt`, report.human, "text/plain")}>Download readable report</button><button type="button" className="secondary" onClick={() => downloadText(`our-month-${archived.monthKey}.json`, report.json, "application/json")}>Download JSON</button><button type="button" className="primary" onClick={() => void apply("replay-archived", async () => {
+      <p>This export contains the clarity and friction notes shared between the two participants.</p>
+      <RehearsalPreflight household={household} today={today} onReadyChange={setPreflightReady} />
+      <div className="month-actions"><button type="button" className="secondary" onClick={() => downloadText(`our-month-${archived.monthKey}.txt`, report.human, "text/plain")}>Download readable report</button><button type="button" className="secondary" onClick={() => downloadText(`our-month-${archived.monthKey}.json`, report.json, "application/json")}>Download JSON</button><button type="button" className="primary" disabled={!preflightReady || Boolean(busy)} onClick={() => void apply("replay-archived", async () => {
         const result = startMonthRehearsal(household, { monthKey: archived.monthKey, biancaParticipantId: archived.biancaParticipantId, jonathanPartnerId: archived.jonathanPartnerId, startedByMemberId: memberId });
         await onApply(result.household, result.undo);
       })}>Replay this month</button></div>
@@ -131,6 +218,7 @@ export function MonthRehearsalPanel({ household, memberId, today, onApply, onOpe
     </section>;
     if (!empty || dismissed) return null;
     const canStart = Boolean(biancaParticipantId && jonathanPartnerId && biancaParticipantId !== jonathanPartnerId && (memberId === biancaParticipantId || memberId === jonathanPartnerId));
+    const canStartPrepared = canStart && preflightReady;
     return <aside className="month-invite" aria-label="Start our month">
       <button className="month-dismiss" type="button" aria-label="Dismiss Start our month" onClick={() => void apply("dismiss", async () => {
         const result = dismissNotice(household, inviteKey);
@@ -146,7 +234,9 @@ export function MonthRehearsalPanel({ household, memberId, today, onApply, onOpe
       </div>
       <p>Each person reviews and acknowledges only from their own signed-in phone.</p>
       {!canStart ? <p className="month-error">Choose two different participants, including the person using this phone.</p> : null}
-      <button type="button" className="primary" disabled={!canStart || Boolean(busy)} onClick={() => void apply("start", async () => {
+      <RehearsalPreflight household={household} today={today} onReadyChange={setPreflightReady} />
+      {!canStartPrepared ? <p className="month-error">Finish the recovery check and every preparation acknowledgement before starting.</p> : null}
+      <button type="button" className="primary" disabled={!canStartPrepared || Boolean(busy)} onClick={() => void apply("start", async () => {
         const result = startMonthRehearsal(household, {
           monthKey,
           biancaParticipantId,
@@ -271,7 +361,8 @@ export function MonthRehearsalPanel({ household, memberId, today, onApply, onOpe
         })}>{rehearsal.jonathanCountersignature ? "Jonathan countersigned" : "Jonathan: We reviewed it"}</button></> : null}
         <p>Approval archives this rehearsal only. It does not enable Production, providers, scaling, or launch.</p>
       </section> : null}
-      <footer className="month-manage"><p>This export contains the clarity and friction notes shared between the two participants.</p><button type="button" className="secondary" onClick={() => report && downloadText(`our-month-${rehearsal.monthKey}.txt`, report.human, "text/plain")}>Download readable report</button><button type="button" className="secondary" onClick={() => report && downloadText(`our-month-${rehearsal.monthKey}.json`, report.json, "application/json")}>Download JSON</button><button type="button" className="secondary" onClick={() => void apply("replay", async () => {
+      <details className="month-replay-preflight"><summary>Prepare to replay this rehearsal</summary><RehearsalPreflight household={household} today={today} onReadyChange={setPreflightReady} /></details>
+      <footer className="month-manage"><p>This export contains the clarity and friction notes shared between the two participants.</p><button type="button" className="secondary" onClick={() => report && downloadText(`our-month-${rehearsal.monthKey}.txt`, report.human, "text/plain")}>Download readable report</button><button type="button" className="secondary" onClick={() => report && downloadText(`our-month-${rehearsal.monthKey}.json`, report.json, "application/json")}>Download JSON</button><button type="button" className="secondary" disabled={!preflightReady || Boolean(busy)} onClick={() => void apply("replay", async () => {
         if (!globalThis.confirm("Replay this rehearsal from the beginning? Your money and books will not change.")) return;
         const archivedResult = archiveMonthRehearsal(household, { rehearsalId: rehearsal.id, memberId });
         const replay = startMonthRehearsal(archivedResult.household, { monthKey: rehearsal.monthKey, biancaParticipantId: rehearsal.biancaParticipantId, jonathanPartnerId: rehearsal.jonathanPartnerId, startedByMemberId: memberId });

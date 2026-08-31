@@ -2,7 +2,7 @@ import { booksEquation, compileHousehold, trialBalance } from "./journal.ts";
 import { assertEnvironmentMatch } from "./environmentIsolation.ts";
 import { ensureHouseholdShape } from "./sync.ts";
 import { ValidationError, type Environment, type Household } from "./types.ts";
-import { financialAuditHash } from "./commandIdentity.ts";
+import { financialAuditHash, sha256Hex } from "./commandIdentity.ts";
 import { shapeSharing } from "./sharing.ts";
 
 export const HOUSEHOLD_EXPORT_KIND = "hearth-household-export" as const;
@@ -31,6 +31,24 @@ export type RecoveryReport = {
   equationHolds: boolean;
   issues: string[];
 };
+
+export type CurrentHouseholdRecoveryProof = {
+  environment: "development";
+  revision: number;
+  lastCommittedAt: string | null;
+  booksHash: string;
+  snapshotHash: string;
+};
+
+function canonicalRecoveryValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalRecoveryValue);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, child]) => [key, canonicalRecoveryValue(child)]),
+  );
+}
 
 export function redactedDiagnostics(household: Household, extras?: Partial<RecoveryReport>): RecoveryReport {
   const compiled = compileHousehold(household);
@@ -142,6 +160,48 @@ export async function validateHouseholdImport(
   return {
     household: { ...household, booksAcceptedHash: hash },
     report: redactedDiagnostics(household, { booksHash: hash, ok: true }),
+  };
+}
+
+/**
+ * Proves that a person reselected the exact current Development export without
+ * importing it, persisting it, or invoking continuity. The returned fields are
+ * safe status metadata; the private household file remains local to the user.
+ */
+export async function verifyCurrentHouseholdRecovery(
+  raw: string,
+  currentHousehold: Household,
+): Promise<CurrentHouseholdRecoveryProof> {
+  if (currentHousehold.environment !== "development") {
+    throw new ValidationError("The founding-household rehearsal can verify recovery only in Development.");
+  }
+  const current = ensureHouseholdShape(currentHousehold);
+  const file = parseHouseholdExport(raw);
+  if (file.environment !== "development" || file.environment !== file.household.environment) {
+    throw new ValidationError("That backup's environment label does not match this Development household. The live household was left alone.");
+  }
+  if (!file.booksHash || !file.exportedAt) {
+    throw new ValidationError("Choose the new private backup downloaded for this rehearsal. Older recovery files cannot unlock Start.");
+  }
+  const validated = await validateHouseholdImport(raw, "development", { confirm: true });
+  if (validated.household.householdId !== current.householdId) {
+    throw new ValidationError("That backup belongs to a different household. The live household was left alone.");
+  }
+  const currentBooksHash = await financialAuditHash(current);
+  if (validated.report.booksHash !== currentBooksHash) {
+    throw new ValidationError("That backup is not the current accepted books. Download a fresh private backup and try again.");
+  }
+  const currentSnapshotHash = await sha256Hex(canonicalRecoveryValue(current));
+  const fileSnapshotHash = await sha256Hex(canonicalRecoveryValue(file.household));
+  if (fileSnapshotHash !== currentSnapshotHash) {
+    throw new ValidationError("That backup is not the exact current household snapshot. Download a fresh private backup and try again.");
+  }
+  return {
+    environment: "development",
+    revision: current.revision,
+    lastCommittedAt: current.lastCommittedAt,
+    booksHash: currentBooksHash,
+    snapshotHash: currentSnapshotHash,
   };
 }
 

@@ -10,6 +10,7 @@ import {
   redactedDiagnostics,
   booksRecoveryAdvice,
   validateHouseholdImport,
+  verifyCurrentHouseholdRecovery,
 } from "../src/core/index.ts";
 
 describe("recovery import/export", () => {
@@ -96,5 +97,58 @@ describe("recovery import/export", () => {
     const file = await makeHouseholdExport(catalogHousehold());
     const raw = JSON.stringify({ ...file, schemaVersion: 99 });
     await expect(validateHouseholdImport(raw, "development", { confirm: true })).rejects.toThrow(/schema/);
+  });
+
+  it("proves an exact current Development backup without replacing the live household", async () => {
+    const current = postEntry(catalogHousehold("development"), {
+      date: "2026-08-31",
+      type: "expense",
+      amount: "4.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Private rehearsal value",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    }).household;
+    const before = structuredClone(current);
+    const file = await makeHouseholdExport(current);
+    const proof = await verifyCurrentHouseholdRecovery(JSON.stringify(file), current);
+    expect(proof).toMatchObject({
+      environment: "development",
+      revision: current.revision,
+      lastCommittedAt: current.lastCommittedAt,
+      booksHash: file.booksHash,
+    });
+    expect(proof.snapshotHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(current).toEqual(before);
+    expect(JSON.stringify(proof)).not.toMatch(/Private rehearsal value|transactions|amountCents/);
+  });
+
+  it("refuses a stale, different-household, or Production backup for rehearsal Start", async () => {
+    const current = catalogHousehold("development");
+    const staleFile = await makeHouseholdExport(current);
+    const changed = postEntry(current, {
+      date: "2026-08-31",
+      type: "expense",
+      amount: "4.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Changed after backup",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    }).household;
+    await expect(verifyCurrentHouseholdRecovery(JSON.stringify(staleFile), changed)).rejects.toThrow(/not the current accepted books|not the exact current/);
+
+    const other = { ...structuredClone(current), householdId: "HH-OTHER" };
+    const otherFile = await makeHouseholdExport(other);
+    await expect(verifyCurrentHouseholdRecovery(JSON.stringify(otherFile), current)).rejects.toThrow(/different household/);
+
+    const production = { ...structuredClone(current), environment: "production" as const };
+    const productionFile = await makeHouseholdExport(production);
+    await expect(verifyCurrentHouseholdRecovery(JSON.stringify(productionFile), current)).rejects.toThrow(/Production|development household/i);
+    await expect(verifyCurrentHouseholdRecovery(JSON.stringify(productionFile), production)).rejects.toThrow(/only in Development/);
+
+    const mislabeled = { ...await makeHouseholdExport(current), environment: "production" as const };
+    await expect(verifyCurrentHouseholdRecovery(JSON.stringify(mislabeled), current)).rejects.toThrow(/environment label/);
   });
 });
