@@ -7,7 +7,7 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/month-spread-shared-home-04e5`
 - **Baseline SHA:** `2a984fd3346dc0b57d0e7b6a17702c18b82596d3` (`origin/main`)
-- **Head SHA:** `bee43b9efc074c1f0918e6b46bdfde29f1aec0a5` (docs follow this line)
+- **Head SHA:** `4a2fe6912670dfe9212d0dd3e6a688c5b779c46c` (docs follow this line; a viewport-proof follow-up may sit on top)
 - **PR or issue:** draft [#259](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/259)
 - **Risk:** High (presentation of Shared Home plus two `projectHouseholdFund` figure corrections)
 - **Decision owner:** Jonathan for merge/deploy; independent books review required for F-2/F-3 before merge
@@ -70,9 +70,10 @@ Inferences:
 - [x] Focused `test/month-spread.test.ts` plus related Fund/seed/rhythm tests — **74 passed / 0 failed** (8 files)
 - [x] `pnpm check` — AI surface verified; **1311 passed / 3 skipped**; `tsc --noEmit` + Vite + Hercules Pro UI build green
 - [x] Live Shared Home on the fictional Development demo kitchen: Month Spread is the centre; docket navigates; Development pill and custody disclosure present
-- [ ] Independent books review of F-2/F-3 before merge (auditors launched; merge still gated)
-- [ ] Forced-colors and `prefers-reduced-motion` live exercise
+- [ ] Independent books review of F-2/F-3 before merge (auditors relaunched this turn; merge still gated on Jonathan)
+- [ ] Forced-colors and `prefers-reduced-motion` live DevTools emulation (CSS is in `src/month-spread.css`; automation could not set Chrome Rendering dropdowns)
 - [x] Docket does not post; Confirm remains the writer
+- [x] Viewport proof: wide Spread; ~1100 shelf under stage (F-4); 720 OfficeWide Spread after scroll; 390/320 OfficePhone, Add unobstructed
 
 ## Plan
 
@@ -93,14 +94,16 @@ Inferences:
 - 2026-08-31: `pnpm check` green — 194 files passed / 2 skipped; 1311 tests passed / 3 skipped; Vite 369 modules.
 - 2026-08-31: live demo via `pnpm dev` + trycloudflare (not the kitchen URL, not a D-041 deploy). Open the demo kitchen table as Jonathan. Observed: Standing lede `$2,018.60` Fund free-to-spend vs seals leftover `$498.64`; monthly target `$3,260.00 of $3,400.00`; docket click opened Household Fund and did not post; colophon custody + `development`; no console errors.
 - Today is 2026-08-31, so the seeded next-day Fund bill falls in September and reserved reads `$0.00` — that is the month boundary, not a regression.
+- 2026-08-31 (same VM, finish pass): Shared Home re-opened at `http://127.0.0.1:5174/` as Jonathan. Standing `$2018.60`, leftover-spend `$498.64`, monthly target `$3260 of $3400`, TIED 27 August, Kitty conserved `$1285.00`, transfer due `$161.40`. Docket click still opens Household Fund and does not post. Artifacts: `month_spread_1440_shared_home.png`, `month_spread_1100_shelf_below.png`, `month_spread_720_spread_visible.png`, `month_spread_390_phone_home.png`, `month_spread_320_phone_home.png`, `month_spread_docket_navigates_to_fund.png`, `month_spread_shared_home_demo.mp4` (reviewed: login → Spread → docket → Fund, no post).
+- Demo tunnel still serving: https://galaxy-tech-selecting-reporting.trycloudflare.com
 
 ## Remaining uncertainty
 
-- Exact 320/390/1100 CSS viewports were not independently device-metriced; live proof used a desktop window, a narrowed window (~700–900), and a DevTools-squeezed mobile column. No page-level horizontal overflow in those states.
-- Forced-colors and reduced-motion were not live-exercised.
+- Forced-colors and reduced-motion CSS exist (`src/month-spread.css`); live Chrome Rendering emulation was not completed by automation.
 - Attention and Change mosaic tiles still open panels the Spread absorbs — catalog question for Jonathan.
 - Hero framing leads on Fund free-to-spend, not operating balance.
 - trycloudflare demo dies when this agent VM stops. It is not `hearth-books` and must not be called live.
+- Independent books/trust/UX/privacy/verifier subagents were relaunched this turn; merge remains gated on Jonathan's books review of F-2/F-3 regardless of their close.
 
 ## Handoff
 
