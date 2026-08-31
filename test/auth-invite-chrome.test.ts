@@ -10,6 +10,7 @@ import {
 import {
   authInviteIssueGate,
   inviteReasonMessage,
+  isFullHouseInviteReason,
   issueHouseholdInvite,
   redeemHouseholdInvite,
   bindGoogleMemberships,
@@ -129,6 +130,14 @@ describe("household invite RPC client", () => {
       environment: "development",
     });
     vi.unstubAllGlobals();
+  });
+
+  it("requires the server-confirmed two-seat result for the full-house path", () => {
+    expect(isFullHouseInviteReason("house-full")).toBe(true);
+    expect(isFullHouseInviteReason("target-unavailable")).toBe(false);
+    expect(isFullHouseInviteReason("not-pending")).toBe(false);
+    expect(isFullHouseInviteReason("expired")).toBe(false);
+    expect(inviteReasonMessage("house-full")).toMatch(/house is full/i);
   });
 
   it("refuses RPC without a JWT", async () => {
@@ -352,5 +361,15 @@ describe("Auth join QR", () => {
     expect(migration).toMatch(/auth\.uid\(\)/);
     expect(migration).not.toMatch(/service_role/);
     expect(migration).not.toMatch(/DELETE FROM public\.households\s+WHERE environment = 'production'/);
+  });
+
+  it("ships migration 018 with a bounded full-house reason and closed grants", () => {
+    const migration = readFileSync("supabase/migrations/018_qr_invite_full_house.sql", "utf8");
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.hearth_redeem_invite/);
+    expect(migration).toMatch(/bound_member_count >= 2 THEN 'house-full'/);
+    expect(migration).toMatch(/REVOKE ALL ON FUNCTION public\.hearth_redeem_invite\(text, text\) FROM PUBLIC, anon/);
+    expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.hearth_redeem_invite\(text, text\) TO authenticated/);
+    expect(migration).toMatch(/VALUES \(18,/);
+    expect(migration).not.toMatch(/service_role/);
   });
 });

@@ -101,8 +101,8 @@ export type RestoreEligibility =
   };
 
 /**
- * Q8 A: refuse Restore while dual-use is unresolved (open conflict / conflicted
- * sharing). Once synchronized, owner may Restore; later shared posts leave after Confirm.
+ * Refuse Restore while automatic reconciliation is still pending. Once sharing
+ * settles, an owner may Restore; later shared posts leave after Confirm.
  */
 export function canRestorePoint(
   household: Household,
@@ -123,7 +123,7 @@ export function canRestorePoint(
     return {
       ok: false,
       code: "open-conflict",
-      message: "Finish the open conflict first, then Restore.",
+      message: "Wait while Hearth reconciles the latest entries, then Restore.",
     };
   }
   if (household.sharing?.mode === "pending-transport" || household.sharing?.pending) {

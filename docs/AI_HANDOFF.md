@@ -51,6 +51,20 @@
 
 **Worksession:** [`worksessions/2026-08-31-gap-closing-evidence-foundation.md`](worksessions/2026-08-31-gap-closing-evidence-foundation.md)
 
+## D-186 automatic last-entry-wins reconciliation (2026-08-31)
+
+**Status:** Release review **PASS** on runtime candidate `aa774baed47183dd4ca4a3ee66a21d0a1c0c9447`, rebased onto `origin/main@201a449cb99251c8a66eb3b282d950305752d1f1`. Jonathan authorized commit, push, merge, and Development kitchen publication on 2026-08-31. Live household use, schema, hosted rows, secrets, and Production are not authorized.
+
+**Household outcome:** the “Two versions need review” snapshot chooser is removed. Distinct entries from both phones remain; the later accepted same-id entry wins automatically; old saved conflicts and blocked retries self-heal in the background. Accepted reversals stay immutable.
+
+**Budget delta (5):** `+4` — no whole-ledger discard decision, while PGlite, double-entry, scope, audit hash, idempotency, and reversal history stay authoritative. **Engagement delta (3):** `+3` — ordinary recovery is quiet and a sharing delay remains a non-blocking Retry/background state.
+
+**What changed:** ordered command replay now applies later same-id facts; snapshot recovery uses existing record-level recency and an explicit canonical tie-break; persisted conflicts are upgraded; old conflict-blocked outbox rows retry; the modal and its review copy are gone. Worksession: [`worksessions/2026-08-31-last-entry-wins-sync.md`](worksessions/2026-08-31-last-entry-wins-sync.md).
+
+**Verification:** current-main focused sync/accounting/recovery gate **78 passed**. Exact `pnpm check` passed: AI surface verified, **1,410 passed / 3 skipped / 0 failed**, TypeScript clean, kitchen production build complete, Hercules Pro UI build complete, and no-redirect guard passed. Independent exact-head verifier passed 12 focused files / 119 tests plus TypeScript; independent money/trust review and release review both returned **PASS; no P0/P1**. `git diff --check` passed. Existing Vite/PGlite bundle warnings and React test `act(...)` warnings remain non-failing and outside this packet.
+
+**Next owner:** Codex completes the authorized current-main release and exact Development verification. A live signed-in two-device rehearsal remains a separate evidence gate.
+
 ## The Month Spread — Shared Home centre (2026-08-31)
 
 **Status:** Merged [#259](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/259) as `main@d648258`. Canon record `main@ed852a8`. Kitchen deploys Cloudflare Workers [`33432365828`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33432365828) (merge) and [`33432832963`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33432832963) (docs record) both **success**. Current Worker version `2488cac3-f052-48a9-8200-65d5ee848f4b`. Live bundle still `Office-BBr3Ic0W.js` with Standing bars and “A proposal is not on the bar.” **Merged and kitchen-published.** Risk was **High** (presentation plus F-2/F-3). No Production household mutation, hosted schema, or secrets.

@@ -179,6 +179,7 @@ export function buildSupabaseGoogleAuthorizeUrl(
   config: HearthAuthConfig,
   environment: Environment,
   returnUrl: string,
+  options: { selectAccount?: boolean } = {},
 ): string {
   assertPublishableKey(config.publishableKey);
   const redirect = new URL(returnUrl);
@@ -187,6 +188,7 @@ export function buildSupabaseGoogleAuthorizeUrl(
   url.searchParams.set("provider", "google");
   url.searchParams.set("scopes", REQUIRED_GOOGLE_ACCOUNT_SCOPES);
   url.searchParams.set("redirect_to", redirect.toString());
+  if (options.selectAccount) url.searchParams.set("prompt", "select_account");
   return url.toString();
 }
 
@@ -195,6 +197,7 @@ export function startSupabaseGoogleSignIn(
   returnUrl = window.location.href,
   config = readHearthAuthConfig(),
   navigate: (url: string) => void = (url) => window.location.assign(url),
+  options: { selectAccount?: boolean } = {},
 ): boolean {
   if (!config) throw new Error("Supabase Google sign-in is not enabled in this build.");
   if (authRedirectEnvironment && Date.now() - authRedirectStartedAt < AUTH_REDIRECT_LATCH_MS) return false;
@@ -207,7 +210,7 @@ export function startSupabaseGoogleSignIn(
     authRedirectResetTimer = null;
   }, AUTH_REDIRECT_LATCH_MS);
   try {
-    navigate(buildSupabaseGoogleAuthorizeUrl(config, environment, returnUrl));
+    navigate(buildSupabaseGoogleAuthorizeUrl(config, environment, returnUrl, options));
     if (typeof window !== "undefined") {
       window.addEventListener("pageshow", resetAuthRedirectLatch, { once: true });
     }

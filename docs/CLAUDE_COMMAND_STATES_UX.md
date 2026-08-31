@@ -1,5 +1,7 @@
 # Claude UX — Command, continuity, conflict, and recovery states
 
+> **D-186 supersession (2026-08-31):** no conflict chooser, comparison sheet, or Review action may render. Legacy conflict state names below are transport compatibility only and present as automatic **Waiting to share / Retry now** recovery.
+
 > **Role:** Claude design lead (UX, accessibility, responsible retention).  
 > **Baseline:** `main@462063c` — **SHIPPED** as [PR #76](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/76) (2026-08-24, Toronto).  
 > **Implementation:** Cursor Cloud Agent (GPT), parallel Slice A+B; worksession [`2026-08-24-command-states-slice-ab.md`](worksessions/2026-08-24-command-states-slice-ab.md).  
@@ -36,7 +38,7 @@ Jonathan approves product, Production, and money-semantic decisions. Cursor impl
 | `rejected-no-write` | false | false | true | false | false | unchanged | none |
 | `retryable-failure` | false | false | true | true | false | unchanged | none |
 | `permanent-validation-failure` | false | false | true | false | false | unchanged | none |
-| `conflict-needs-attention` | true | true | false | true | true | accepted locally | stale remote; both kept |
+| `conflict-needs-attention` | true | true | false | true | true | accepted locally | legacy stale marker; automatic rebase pending |
 | `recovery-available` | false | false | false* | true | true | uncertain | uncertain |
 
 \*When `recovery-available`, both posting flags may be false (persist failed after ingest and restore failed). UI must not pick “posted” or “not posted” alone — show recovery path.
@@ -50,7 +52,7 @@ Jonathan approves product, Production, and money-semantic decisions. Cursor impl
 | `books-unavailable` | `retryable-failure` | PGlite/engine could not accept |
 | `persist-failed` | `retryable-failure` or `recovery-available` | Engine may have accepted; snapshot save failed |
 | `pending-transport` | `pending-transport` | Local accept OK; share incomplete |
-| `conflict-detected` | `conflict-needs-attention` | Remote revision stale; both sides kept |
+| `conflict-detected` | `conflict-needs-attention` | Remote revision stale; automatic rebase and retry |
 | `disconnected` | `pending-transport` | Offline; local accept OK |
 
 ### 2.3 Sharing mode (`SharingMode`) — display only
@@ -65,7 +67,7 @@ Sharing mode mirrors household.sharing.mode after the write. It **annotates** tr
 | `linked` | Linked, not yet synchronized this session | **Linked** | “Up to date” |
 | `pending-transport` | Outbox / transport retry | **Waiting to share** | “Bianca can see it now” |
 | `synchronized` | CAS matched | **Up to date** | “Instant on all devices” (honest: “when they open Hearth”) |
-| `conflicted` | Open conflict record | **Needs attention** | “Merged automatically” unless auto-merge proof exists |
+| `conflicted` | Legacy open conflict record during upgrade | **Waiting to share** | “Review”, “choose”, or “Synced” before acknowledgement |
 | `disconnected` | Network down with pending | **Offline** | “Lost” |
 | `transport-error` | Hosted error with pending | **Share paused** | “Not saved locally” when postedExactlyOnce |
 
@@ -121,17 +123,17 @@ Copy uses Toronto plain language. `{amount}`, `{note}`, `{member}`, `{ledger}`, 
 
 **Honest freshness:** “Up to date on this phone” — not “every device live right now”.
 
-### 3.5 Conflict requiring attention (`conflict-needs-attention`)
+### 3.5 Legacy stale-write recovery (`conflict-needs-attention`)
 
 | Surface | Primary | Secondary | Action |
 |---|---|---|---|
-| Banner (blocking) | Both copies kept. | This phone and the cloud each have new work. Nothing was overwritten. | Review conflict |
-| Header chip | Needs attention | · conflict | Review |
-| Conflict sheet | Two snapshots | Left: this phone rev {n}. Right: cloud rev {m}. | Export bundle |
-| Confirm follow-up | Posted on this phone | Share is paused until you choose. | Open conflict |
-| Audit | Local post visible | Conflict id {id} open | — |
+| Banner (non-blocking) | Saved here. | Hearth is applying the latest accepted entries. | Retry now |
+| Header chip | Waiting to share | · retrying | Retry now |
+| Snapshot chooser | Never rendered | Reconciliation is record-level and automatic. | — |
+| Confirm follow-up | Posted on this phone | Sharing will retry in the background. | — |
+| Audit | Local post visible | Automatic rebase pending | — |
 
-**Retry rule:** `wait-for-human-conflict` — no silent retry, no last-write-wins button without explicit Compare → Choose flow (product TBD; see §10).
+**Retry rule (D-186):** the legacy state maps to automatic rebase plus `retry-same-confirmation`; no person chooses a whole snapshot.
 
 **Auto-merge success:** If runtime returns `accepted-local` after auto-merge, show neutral toast “Merged compatible changes” — only when code proof exists; do not infer from UI timing.
 
@@ -179,7 +181,7 @@ Copy uses Toronto plain language. `{amount}`, `{note}`, `{member}`, `{ledger}`, 
 
 **Switcher copy:** “Household” / “Personal” — subtitle: “Filter, not a separate cloud ledger.”
 
-**Partner privacy:** In personal view, never show partner personal amounts in banners/toasts. Conflict review shows shared snapshot diff; personal rows remain member-scoped in presentation (D-105 gate).
+**Partner privacy:** In personal view, never show partner personal amounts in banners/toasts. Automatic reconciliation remains member-scoped and never renders a snapshot diff.
 
 ### 3.9 Scope: Development vs Production
 
@@ -209,7 +211,7 @@ flowchart TD
   I --> J{CommandOutcome}
   J -->|synchronized| K[Up to date chip]
   J -->|pending-transport| L[Waiting to share]
-  J -->|conflict| M[Needs attention]
+  J -->|legacy conflict| M[Waiting to share + automatic rebase]
 ```
 
 | Step | Primary copy | Secondary | Must not say |
@@ -256,7 +258,7 @@ flowchart TD
   S --> O{CommandUiKind}
   O -->|accepted-local / synchronized| T[Success toast + close Add]
   O -->|pending-transport| T2[Success toast + persistent banner]
-  O -->|conflict-needs-attention| B[Conflict banner + keep Add closed]
+  O -->|conflict-needs-attention| B[Waiting-to-share banner + automatic rebase]
   O -->|rejected-* / retryable| E[Inline error + keep Add open]
   O -->|recovery-available| R[Recovery banner blocks new Confirm]
 ```
@@ -272,7 +274,7 @@ flowchart TD
   V -->|yes| M{Merge result}
   M -->|sync| U[Header: Up to date]
   M -->|pending| W[Header: Waiting to share]
-  M -->|conflict| N[Header: Needs attention]
+  M -->|legacy conflict| N[Header: Waiting to share]
 ```
 
 ### 4.3 Ledger switcher (multi-household D-114)
@@ -313,7 +315,7 @@ Design tokens: existing `:root` in `src/styles.css` — pine `#1a3d32`, paper `#
 └──────────────────────────────┘
 ```
 
-**320 constraints:** banner actions stack below copy; ledger switcher label hides (“Ledger ▾” only); conflict sheet uses vertical tabs (This phone / Cloud).
+**320 constraints:** banner actions stack below copy; ledger switcher label hides (“Ledger ▾” only); no snapshot comparison sheet exists.
 
 ### 5.2 Phone primary — 390×844
 
@@ -346,11 +348,11 @@ At `720px` (`WIDE_BREAKPOINT`), shell switches to Office wide — **command stat
 │ [ Up to date · Beaulne Demo ]                            │
 ├──────────────────────────────────────────────────────────┤
 │  Household | Personal          │  canvas │  side detail  │
-│  (no second sync truth)        │  desk   │  conflict/tr │
+│  (no second sync truth)        │  desk   │  retry/truth │
 └──────────────────────────────────────────────────────────┘
 ```
 
-Conflict review at 720+: side-by-side snapshot cards; export actions in footer.
+Legacy stale-write recovery at 720+: the same compact Waiting-to-share strip; never side-by-side snapshot cards.
 
 ### 5.4 Desktop office — ~1100px
 
@@ -379,7 +381,7 @@ Conflict review at 720+: side-by-side snapshot cards; export actions in footer.
 |---|---|
 | Add sheet open | focus first interactive; trap until Close |
 | Confirm modal | trap; initial focus Confirm; Esc → Cancel |
-| Conflict sheet | tab order: summary → This phone → Cloud → Export → Dismiss |
+| Legacy stale-write state | one status message plus optional Retry; no dialog or focus trap |
 | Banner actions | keyboard activatable; visible focus ring 2px brass |
 | Ledger switcher | native `<select>` or listbox with arrow keys |
 
@@ -390,11 +392,11 @@ Conflict review at 720+: side-by-side snapshot cards; export actions in footer.
 | `saving` | “Saving.” polite |
 | success + synchronized | “Posted {amount}. Up to date.” polite |
 | pending-transport | “Posted {amount}. Waiting to share.” assertive |
-| conflict | “Conflict. Both copies kept. Review required.” assertive |
+| legacy conflict | “Saved here. Sharing is catching up.” polite |
 | rejected | “Not posted. {userMessage}” assertive |
 | recovery | “Recovery needed. Do not confirm again.” assertive |
 
-Use `aria-live="polite"` for success; `assertive` for conflict/recovery/validation.
+Use `aria-live="polite"` for success and automatic sharing recovery; reserve `assertive` for validation or uncertain recovery.
 
 **Do not** rely on toast alone for failures — inline + live region.
 
@@ -412,7 +414,7 @@ Use `aria-live="polite"` for success; `assertive` for conflict/recovery/validati
 | Offline | post allowed locally | transport messages | outbox retry |
 | Demo | “Sample data” chip | — | reset env guard |
 | PGlite down | block Post | books-unavailable copy | rebuild from snapshot per `booksRecoveryAdvice` |
-| Conflict | — | banner | export `ConflictBundle` |
+| Legacy conflict | — | non-blocking Waiting-to-share banner | automatic rebase; optional Retry |
 
 ### 6.5 Touch targets
 
@@ -443,7 +445,7 @@ Current: Add sheet (`App.tsx` `adding`), Confirm via `NeedsConfirmationError` + 
 | success kinds | close |
 | validation failures | stay open, focus first invalid field |
 | pending-transport / synchronized | close (post succeeded locally) |
-| conflict | close post, open conflict |
+| legacy conflict | close post, keep books usable, reconcile automatically |
 | recovery | close post, open recovery |
 
 ### 7.4 Accessibility upgrades (Confirm.tsx)
@@ -467,7 +469,7 @@ Today `App.tsx` sets `syncState` `"error"` for pending-transport — **incorrect
 | Ledger switcher | below header if `replicas.length > 1` | D-114 catalog |
 | Scope tabs | header stack | view personal/household |
 | Sync chip | header stack | `sharingMode` + outbox |
-| Persistent banner | below header | conflict / pending / recovery |
+| Persistent banner | below header | waiting-to-share / pending / recovery |
 | Ephemeral toast | bottom above nav | success + undo |
 | Inline error | Add sheet / field | validation |
 
@@ -483,7 +485,7 @@ Today `App.tsx` sets `syncState` `"error"` for pending-transport — **incorrect
 - [ ] `guaranteesPostedNothing()` gates all success visuals
 - [ ] `guaranteesPostedExactlyOnce()` required for “Posted” copy
 - [ ] `recovery-available` blocks new Confirm with same flow
-- [ ] `retryRuleFor()` drives Retry vs Conflict vs Recovery buttons
+- [ ] `retryRuleFor()` drives Retry vs Recovery; legacy conflict never creates a chooser
 - [ ] Duplicate receipt shows neutral reuse, not double post
 
 ### 9.2 Copy and trust
@@ -498,15 +500,15 @@ Today `App.tsx` sets `syncState` `"error"` for pending-transport — **incorrect
 
 - [ ] 320px no horizontal scroll; 44px targets
 - [ ] Confirm/Add focus trap + restore
-- [ ] Live regions for conflict/recovery/failure
+- [ ] Live regions for automatic sharing recovery/failure
 - [ ] Reduced motion respects `prefers-reduced-motion`
 - [ ] Keyboard path for Add → Confirm → Undo
 
 ### 9.4 Visual evidence required from Cursor
 
-- [ ] Screenshots at 320, 390, 720, ~1100 for: pending, synchronized, conflict, rejected, recovery
+- [ ] Screenshots at 320, 390, 720, ~1100 for: pending, synchronized, legacy retry, rejected, recovery
 - [ ] Playwright or manual script using `COMMAND_SURFACE_FIXTURES`
-- [ ] VoiceOver or NVDA spot-check on Confirm + conflict banner
+- [ ] VoiceOver or NVDA spot-check on Confirm + Waiting-to-share banner
 
 ### 9.5 Non-scope (must not change)
 
@@ -524,11 +526,11 @@ Jonathan still owns any **keep-this-side merge**. Cursor may ship the UI default
 
 | # | Question | Implementation default | Tag |
 |---|---|---|---|
-| 1 | Conflict: export vs in-app choose | Review + export bundle only. No Keep-this-phone merge button. | **Jonathan** to add choose |
+| 1 | Stale snapshot recovery | Automatic record-level reconciliation; no chooser or comparison sheet. | **Resolved by D-186** |
 | 2 | Pending banner always vs quiet | Chip always; banner only offline / failed retry / blocked | **UI default** |
 | 3 | Undo “this phone”? | `Undo (this phone)` unless last outcome was `synchronized` | **UI default** |
 | 4 | Auto-merge toast? | Silence. Optional Audit line: goal jars combined, journals matched | **UI default** |
-| 5 | Personal rows in conflict UI? | Shared-only on screen; full bundle only in local export | **UI default** |
+| 5 | Personal rows in reconciliation UI? | No snapshot contents are rendered; automatic merge retains only the active member's Personal envelope. | **D-186** |
 | 6 | Prefill Add after reverse? | Yes — draft at Review; Confirm still required | **UI default** (epic §5.5) |
 | 7 | Multi-ledger: remember vs ask? | Remember `session.householdId`; picker when unknown | **Already true** |
 | 8 | Production pill: block vs browse? | Keep pill as local switch; no Production discovery/REST | **Already true** |
@@ -567,4 +569,4 @@ Jonathan still owns any **keep-this-side merge**. Cursor may ship the UI default
 | Cursor brief | `docs/briefs/CURSOR_COMMAND_STATES_UX.md` |
 | Viewport screenshots | `/opt/cursor/artifacts/command_states_*.png` |
 
-**Next owner:** Cursor — implement `renderCommandSurface` plus salvaged Add/Confirm a11y (not the stale Phase 1 patch). Codex — audit against checklist §9 and `CommandUiKind` only. Jonathan — only needed for in-app conflict *choose* (question 1).
+**Next owner:** Cursor — preserve `renderCommandSurface` plus salvaged Add/Confirm a11y. Codex — audit against checklist §9 and `CommandUiKind` only. No conflict-choice decision remains.

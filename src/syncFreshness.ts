@@ -169,7 +169,7 @@ export function buildSyncFreshness(input: SyncFreshnessInput): SyncFreshnessDisp
   let tone: SyncFreshnessDisplay["tone"] = "neutral";
 
   if (mode === "conflicted" || input.hasOpenConflict) {
-    transportPrimary = "Needs attention";
+    transportPrimary = "Waiting to share";
     tone = "warning";
   } else if (mode === "pending-transport") {
     transportPrimary = input.offline
@@ -191,7 +191,7 @@ export function buildSyncFreshness(input: SyncFreshnessInput): SyncFreshnessDisp
     sourceLine,
   ].filter(Boolean);
 
-  // True same-fact financial conflicts preserve both copies for explicit review.
+  // Legacy conflict markers are a retry state, never a request to choose a copy.
   let actionLabel: string | null = null;
   let actionKind: SyncFreshnessActionKind | null = null;
   if (
@@ -204,7 +204,7 @@ export function buildSyncFreshness(input: SyncFreshnessInput): SyncFreshnessDisp
       && (input.offline || household.sharing?.lastError || !showPendingHint)
     )
   ) {
-    actionLabel = input.hasOpenConflict || mode === "conflicted" ? "Review conflict" : "Retry now";
+    actionLabel = "Retry now";
     actionKind = "retry";
   }
 

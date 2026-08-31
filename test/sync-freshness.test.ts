@@ -191,7 +191,7 @@ describe("buildSyncFreshness", () => {
     expect(display.visible).toBe(false);
   });
 
-  it("marks conflict as blocking synced label", () => {
+  it("maps a legacy conflict marker to non-blocking retry copy", () => {
     const household = markPendingTransport(baseHousehold(), "conflict");
     const display = buildSyncFreshness({
       household: { ...household, sharing: { ...household.sharing, mode: "conflicted" } },
@@ -206,11 +206,11 @@ describe("buildSyncFreshness", () => {
       now: NOW,
     });
 
-    expect(display.transportPrimary).toBe("Needs attention");
+    expect(display.transportPrimary).toBe("Waiting to share");
     expect(display.blocksSyncedLabel).toBe(true);
     expect(display.tone).toBe("warning");
     expect(display.actionKind).toBe("retry");
-    expect(display.actionLabel).toBe("Review conflict");
+    expect(display.actionLabel).toBe("Retry now");
   });
 
   it("offers retry on unhealthy pending transport", () => {
@@ -385,7 +385,8 @@ describe("sync freshness preview artifact", () => {
     expect(html).toContain("Checking every 4 s");
     expect(html).toContain("Sharing…");
     expect(html).toContain("Offline · waiting to share");
-    expect(html).toContain("Needs attention");
+    expect(html).toContain("Waiting to share");
+    expect(html).not.toContain("Review conflict");
     expect(html).toContain("sync-freshness__action");
   });
 });

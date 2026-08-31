@@ -779,10 +779,9 @@ export async function flushContinuityOutbox(input: {
   }
   const result: ContinuityFlushResult = { synchronized: 0, pending: 0, deferred: 0, conflicts: [] };
   for (const item of items) {
-    if (item.blockedByConflict) {
-      result.pending += 1;
-      continue;
-    }
+    // Older builds persisted stale-revision rows as permanently blocked. The
+    // current client must replay them so App can rebase the queued entry onto
+    // the hosted tip and settle it without a phone-versus-cloud chooser.
     if (!isDue(item, input.force === true)) {
       result.deferred += 1;
       result.pending += 1;

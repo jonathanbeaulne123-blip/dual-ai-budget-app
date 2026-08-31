@@ -17,7 +17,7 @@ Adapter: `src/claude/commandContract.ts`. Fixtures: `COMMAND_SURFACE_FIXTURES`. 
 | `rejected-no-write` | Validation or policy refused the command. | yes | no | no |
 | `retryable-failure` | Books or disk failed before accept. Previous household is live. | yes | no | same confirmation id |
 | `permanent-validation-failure` | Unbalanced or invalid command. | yes | no | no |
-| `conflict-needs-attention` | Local accept happened. Hosted write was refused as stale. Both sides are kept. | no | yes | human conflict, not silent retry |
+| `conflict-needs-attention` | Legacy name for a stale hosted write while automatic rebase/retry is pending. | no | yes | automatic rebase, same confirmation |
 | `recovery-available` | Accept did not stick, or books accepted while snapshot save/restore failed. | only if `postedNothing` | only if `postedExactlyOnce` | open recovery |
 
 ## User-safe fields
@@ -30,7 +30,7 @@ Do not render: implementation exceptions, SQL, secrets, partner `personal` rows,
 
 - `postedNothing === true` and `postedExactlyOnce === false` means the previous valid household is unchanged.
 - `postedExactlyOnce === true` and `postedNothing === false` means this confirmation id posted once. Repeating it must reuse the receipt.
-- `conflict-needs-attention` does not disappear after refresh. Both snapshots stay on the conflict record.
+- A legacy `conflict-needs-attention` marker is upgraded on load, reconciled record by record, and retried without a snapshot chooser.
 - If persist fails after ingest and books restore also fails, `postedNothing` and `postedExactlyOnce` are both false. Recovery is available. Do not Confirm again with a new id.
 - Sharing mode `local` means zero household REST from this write.
 
@@ -40,5 +40,5 @@ Use `retryRuleFor(state)`:
 
 - `do-not-retry` — change the command or stop.
 - `retry-same-confirmation` — send the same `confirmationId`.
-- `wait-for-human-conflict` — show both sides; do not last-write-wins.
+- `wait-for-human-conflict` — legacy enum value only; D-186 presentation must route it to automatic rebase/retry and never render a chooser.
 - `open-recovery` — export/diagnostics; do not reset Production from Development.

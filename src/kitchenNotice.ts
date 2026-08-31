@@ -120,8 +120,8 @@ export function humanizeKitchenNotice(raw: string): KitchenNoticeCopy {
   if (match(text, /another phone posted a newer household snapshot/i)) {
     return {
       id: "stale-revision",
-      primary: "Another device saved a newer household snapshot.",
-      steps: "More → Retry now. Keep this phone only if you posted last here.",
+      primary: "Another device saved newer work.",
+      steps: "Hearth will combine the latest accepted entries automatically. You can keep working or tap Retry now.",
       tone: "warning",
       action: { kind: "more", label: "Open More" },
     };

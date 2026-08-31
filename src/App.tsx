@@ -96,9 +96,8 @@ import {
   autoResolveSharedConflict,
   canAbsorbDisjointSharedMoney,
   absorbDisjointSharedMoney,
-  resolveConflictChoice,
+  resolveStoredConflictsLastEntryWins,
   unresolvedConflicts,
-  makeConflictBundle,
   markSynchronized,
   markPendingTransport,
   clockInShift,
@@ -135,6 +134,7 @@ import {
 import {
   STORAGE_EXPLAINER,
   clearHousehold,
+  deactivateHouseholdSelection,
   downloadJson,
   listHouseholdReplicas,
   loadHousehold,
@@ -257,6 +257,7 @@ import { authInviteFromLocation, authInviteTokenFromText, isAuthInviteToken, sav
 import {
   bindGoogleMemberships,
   inviteReasonMessage,
+  isFullHouseInviteReason,
   leaveHousehold,
   leaveOrDeleteHousehold,
   redeemHouseholdInvite,
@@ -284,7 +285,6 @@ import {
   type ScopedWorkShiftInput,
 } from "./workShiftScope.ts";
 import { DuePreviewSheet } from "./DuePreviewSheet.tsx";
-import { ConflictResolution } from "./ConflictResolution.tsx";
 import {
   renderCommandChrome,
   renderCommandSurface,
@@ -518,7 +518,6 @@ export function App() {
     revision: number;
   } | null>(null);
   const [commandChrome, setCommandChrome] = useState<CommandChromeResult | null>(null);
-  const [showConflictSheet, setShowConflictSheet] = useState(false);
   const [commandProgressPhase, setCommandProgressPhase] = useState<CommandProgressPhase>("idle");
   const [softPresenceLive, setSoftPresenceLive] = useState<SoftPresenceLiveRow[]>([]);
   const [softPresenceOptOut, setSoftPresenceOptOutState] = useState(() => isSoftPresenceOptedOut("development"));
@@ -528,6 +527,7 @@ export function App() {
   const [supabaseAuthReturned, setSupabaseAuthReturned] = useState(false);
   const [inviteInput, setInviteInput] = useState("");
   const [pendingAuthInvite, setPendingAuthInvite] = useState<string | null>(null);
+  const [fullHouseInvite, setFullHouseInvite] = useState<{ email: string } | null>(null);
   const [inviteFlowState, setInviteFlowState] = useState<InviteFlowState>("idle");
   const [highlightedHouseholdId, setHighlightedHouseholdId] = useState<string | null>(null);
   const [welcomeMode, setWelcomeMode] = useState<"home" | "join" | "qr" | "new">("home");
@@ -761,9 +761,48 @@ export function App() {
         expectedRevision: current.baseRevision ?? 0,
         confirmationId: `retry-share-${current.householdId}-${current.revision}`,
       });
-      if (flushed.conflicts[0]) {
-        setSyncState("error");
-        setError(flushed.conflicts[0].message);
+      const retryConflict = flushed.conflicts[0];
+      if (retryConflict) {
+        const resolved = await autoResolveSharedConflict(current, retryConflict.remote, who, "local");
+        const accepted = await acceptHouseholdWrite({
+          previous: current,
+          candidate: resolved,
+          confirmationId: `retry-reconcile-${current.householdId}-${retryConflict.remote.revision}`,
+          commandKind: "outbox-resolve",
+          postedIds: [],
+          adapters: makeBooksAdapters({ environment, memberId: who, continuityIdentity: identity }),
+        });
+        if (!accepted.ok) {
+          setSyncState("error");
+          setError(accepted.userMessage || retryConflict.message);
+          return;
+        }
+        adoptAcceptedHousehold(accepted.household);
+        clearContinuityOutboxConflictBlocks({
+          environment,
+          identity,
+          householdId: accepted.household.householdId,
+          expectedRevision: retryConflict.remote.revision,
+        });
+        const retried = await transportHouseholdWithOutbox({
+          household: accepted.household,
+          identity,
+          expectedRevision: retryConflict.remote.revision,
+          confirmationId: `retry-share-${accepted.household.householdId}-${accepted.household.revision}`,
+          config: cloudConfig,
+          flush: true,
+        });
+        if (retried.ok) {
+          const synced = markSynchronized(accepted.household);
+          await saveHousehold(synced, { operatingEnvironment: environment, memberId: who });
+          adoptKnownMetadataHousehold(synced);
+          setSyncState("synced");
+          setCommandChrome(null);
+          setError("");
+        } else {
+          setSyncState("syncing");
+          setError("");
+        }
         return;
       }
       if (flushed.synchronized > 0) {
@@ -918,6 +957,14 @@ export function App() {
       if (url.pathname === "/join") url.pathname = "/";
       const next = url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : "") + url.hash;
       window.history.replaceState({}, "", next);
+      if (supabaseAuthEnabled() && hostedContinuityAllowed(env)) {
+        try {
+          startQrInviteGoogleSignIn(authInvite.token, env);
+        } catch (caught) {
+          setInviteFlowState("error");
+          setError(caught instanceof Error ? caught.message : String(caught));
+        }
+      }
       return;
     }
     const token = inviteFromLocation(window.location.href);
@@ -939,7 +986,10 @@ export function App() {
     setSession(loadedSession);
     setBooksStatus(null);
     setGuard(null);
-    const fastCandidate = peekHousehold(environment, loadedSession?.householdId);
+    const fastStored = peekHousehold(environment, loadedSession?.householdId);
+    const fastCandidate = fastStored && loadedSession?.memberId
+      ? resolveStoredConflictsLastEntryWins(fastStored, loadedSession.memberId)
+      : fastStored;
     if (fastCandidate) {
       householdRef.current = fastCandidate;
       setHousehold(fastCandidate);
@@ -1102,7 +1152,7 @@ export function App() {
       scheduledFrames.push(first);
     };
 
-    void loadHousehold(environment, loadedSession?.householdId, loadedSession?.memberId).then((loaded) => {
+    void loadHousehold(environment, loadedSession?.householdId, loadedSession?.memberId).then(async (loaded) => {
       if (!live || startupGenerationRef.current !== generation) return;
       if (!loaded) {
         householdRef.current = null;
@@ -1111,16 +1161,22 @@ export function App() {
         setBooting(false);
         return;
       }
-      householdRef.current = loaded;
-      setHousehold(loaded);
+      const ready = loadedSession?.memberId
+        ? resolveStoredConflictsLastEntryWins(loaded, loadedSession.memberId)
+        : loaded;
+      if (ready !== loaded) {
+        await saveHousehold(ready, { operatingEnvironment: environment, memberId: loadedSession?.memberId });
+      }
+      householdRef.current = ready;
+      setHousehold(ready);
       setHistory(loadedSession?.memberId
-        ? loadUndoHistory(environment, loaded.householdId, loadedSession.memberId, loaded)
+        ? loadUndoHistory(environment, ready.householdId, loadedSession.memberId, ready)
         : []);
-      const validating = readinessForHousehold("validating", generation, loaded);
-      publishReadiness(validating, loaded);
+      const validating = readinessForHousehold("validating", generation, ready);
+      publishReadiness(validating, ready);
       setBooting(false);
       performance.mark?.("hearth:cached-shell-committed");
-      scheduleValidation(loaded);
+      scheduleValidation(ready);
     }).catch((caught) => {
       if (!live || startupGenerationRef.current !== generation) return;
       setBooting(false);
@@ -1250,9 +1306,10 @@ export function App() {
       const continuityIdentity: ContinuityIdentity | null = authSession
         ? { email: authSession.email, subject: authSession.googleSubject }
         : continuityIdentityFromGoogle(googleSession);
+      const reconciledCandidate = resolveStoredConflictsLastEntryWins(candidate, memberId);
       const accepted = await acceptHouseholdWrite({
         previous,
-        candidate,
+        candidate: reconciledCandidate,
         confirmationId,
         commandKind,
         postedIds: [],
@@ -1265,8 +1322,7 @@ export function App() {
       if (!live) return accepted;
       adoptAcceptedHousehold(accepted.household);
       if (unresolvedConflicts(accepted.household).length > 0) {
-        setShowConflictSheet(true);
-        setSyncState("error");
+        setSyncState("syncing");
       }
       if (!accepted.ok && accepted.userMessage) setError(accepted.userMessage);
       return accepted;
@@ -1295,6 +1351,15 @@ export function App() {
           return;
         }
         const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
+        const currentForReplay = householdRef.current;
+        const hasQueuedHousehold = currentForReplay
+          ? listContinuityOutbox(environment).some((item) => item.householdId === currentForReplay.householdId)
+          : false;
+        const shouldSeedPending = Boolean(
+          currentForReplay
+          && currentForReplay.sharing?.mode === "pending-transport"
+          && !hasQueuedHousehold,
+        );
         const flushed = await flushContinuityOutbox({
           environment,
           identity,
@@ -1303,6 +1368,12 @@ export function App() {
           authenticatedIdentity: authSession
             ? { email: authSession.email, subject: authSession.googleSubject }
             : null,
+          force: shouldSeedPending,
+          liveHousehold: shouldSeedPending && currentForReplay ? currentForReplay : undefined,
+          expectedRevision: shouldSeedPending ? currentForReplay?.baseRevision : undefined,
+          confirmationId: shouldSeedPending && currentForReplay
+            ? `auto-reconcile-${currentForReplay.householdId}-${currentForReplay.revision}`
+            : undefined,
         });
         if (!live) return;
         const conflict = flushed.conflicts[0];
@@ -1362,9 +1433,8 @@ export function App() {
             }
             const ready = accepted.household;
             if (unresolvedConflicts(ready).length > 0) {
-              setSyncState("error");
-              setShowConflictSheet(true);
-              setError("Two versions differ on the same financial fact. Both are preserved for review.");
+              setSyncState("syncing");
+              setError("Saved here. Hearth is reconciling the latest entry in the background.");
               return;
             }
             clearContinuityOutboxConflictBlocks({
@@ -1519,8 +1589,7 @@ export function App() {
                 "outbox-resolve",
               );
               if (acceptedConflict && unresolvedConflicts(acceptedConflict.household).length > 0) {
-                setShowConflictSheet(true);
-                setSyncState("error");
+                setSyncState("syncing");
               } else {
                 setSyncState("syncing");
               }
@@ -1656,8 +1725,7 @@ export function App() {
             sourceAcceptedAt: event.payload_json.acceptedAt,
           });
           if (live) {
-            setShowConflictSheet(true);
-            setSyncState("error");
+            setSyncState("syncing");
           }
           return "applied";
         }
@@ -2092,9 +2160,12 @@ export function App() {
     setToast(null);
   }
 
-  async function openDiscoveredLedger(target: HouseholdEntryTarget): Promise<void> {
+  async function openDiscoveredLedger(
+    target: HouseholdEntryTarget,
+    source: DiscoveredHousehold[] = discoveredLedgers,
+  ): Promise<void> {
     if (openingHouseholdRef.current) return;
-    const found = discoveredHouseholdForTarget(discoveredLedgers, target);
+    const found = discoveredHouseholdForTarget(source, target);
     if (!found) throw new Error("That household card is out of date. Refresh your Google households and try again.");
     const openingKey = `${found.household.householdId}:${found.memberId}`;
     openingHouseholdRef.current = openingKey;
@@ -2152,6 +2223,25 @@ export function App() {
     }
   }
 
+  function startQrInviteGoogleSignIn(token: string, inviteEnvironment: Environment = environment): void {
+    savePendingAuthInvite({ token, environment: inviteEnvironment });
+    setInviteInput(token);
+    setPendingAuthInvite(token);
+    setInviteFlowState("awaiting-google");
+    setWelcomeMode("join");
+    rememberWelcomeGoogleIntent("login");
+    if (inviteEnvironment !== environment) setEnvironment(inviteEnvironment);
+    clearGoogleSessions(inviteEnvironment);
+    clearSupabaseSession(inviteEnvironment);
+    startSupabaseGoogleSignIn(
+      inviteEnvironment,
+      window.location.href,
+      readHearthAuthConfig(),
+      (url) => window.location.assign(url),
+      { selectAccount: true },
+    );
+  }
+
   async function redeemAuthInviteToken(token: string): Promise<void> {
     savePendingAuthInvite({ token, environment });
     setPendingAuthInvite(token);
@@ -2180,6 +2270,12 @@ export function App() {
         config: cloudConfig,
       });
       if (!redeemed.ok) {
+        if (isFullHouseInviteReason(redeemed.reason)) {
+          setInviteFlowState("idle");
+          setError("");
+          setFullHouseInvite({ email: authSession.email });
+          return;
+        }
         throw new Error(inviteReasonMessage(redeemed.reason));
       }
       if (redeemed.environment !== environment) {
@@ -2195,10 +2291,10 @@ export function App() {
       if (!registered.ok) throw new Error(inviteReasonMessage(registered.reason));
       const identity = { email: authSession.email, subject: authSession.googleSubject };
       const found = await discoverContinuityMemberships(identity, environment, cloudConfig);
-      const match = found.find((row) => row.household.householdId === redeemed.householdId)
-        ?? (redeemed.memberId
-          ? found.find((row) => row.memberId === redeemed.memberId)
-          : undefined);
+      const match = discoveredHouseholdForTarget(found, {
+        householdId: redeemed.householdId,
+        memberId: redeemed.memberId ?? null,
+      });
       if (!match) {
         throw new Error("Invitation accepted, but the household list did not refresh. Try the invitation again; redemption is safe to repeat.");
       }
@@ -2208,11 +2304,15 @@ export function App() {
         grantedScopes: ["openid", "email", "profile"],
       });
       setDiscoveredLedgers(found);
-      setHighlightedHouseholdId(match.household.householdId);
+      await openDiscoveredLedger({
+        householdId: match.household.householdId,
+        memberId: match.memberId,
+      }, found);
+      setHighlightedHouseholdId(null);
       setPendingAuthInvite(null);
       clearPendingAuthInvite();
       rememberWelcomeGoogleIntent(null);
-      setInviteFlowState("ready");
+      setInviteFlowState("idle");
       setWelcomeMode("home");
       setError("");
     } catch (caught) {
@@ -2462,7 +2562,7 @@ export function App() {
           pendingCount,
           transport: "outbox",
         });
-        setShowConflictSheet(true);
+        setSyncState("syncing");
       }
       if (outcome.kind === "synchronized") {
         saveSyncAnchor(environment, outcome.household);
@@ -2778,41 +2878,6 @@ export function App() {
     }
   }
 
-  async function resolveConflictSide(side: "local" | "remote") {
-    const current = householdRef.current;
-    const who = session?.memberId;
-    if (!current || !who) return;
-    const open = unresolvedConflicts(current)[0];
-    if (!open) {
-      setShowConflictSheet(false);
-      return;
-    }
-    try {
-      const next = resolveConflictChoice(current, open.id, side);
-      const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
-      const google = loadGoogleSession(environment, who);
-      const identity: ContinuityIdentity | null = authSession
-        ? { email: authSession.email, subject: authSession.googleSubject }
-        : continuityIdentityFromGoogle(google);
-      if (identity) {
-        clearContinuityOutboxConflictBlocks({
-          environment,
-          identity,
-          householdId: next.householdId,
-          expectedRevision: next.baseRevision ?? Math.max(0, next.revision - 1),
-        });
-      }
-      const accepted = await commitHousehold(next, undefined, who, {
-        confirmationId: `conflict-choice-${open.id}-${side}`,
-      });
-      if (!accepted?.ok || unresolvedConflicts(accepted.household).length > 0) return;
-      setShowConflictSheet(false);
-      setError("");
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
-    }
-  }
-
   function run(fn: (current: Household) => CommitResult) {
     if (postingRef.current) return Promise.resolve();
     postingRef.current = true;
@@ -2995,7 +3060,47 @@ export function App() {
     setInviteFlowState("awaiting-google");
     setWelcomeMode("join");
     if (token) savePendingAuthInvite({ token, environment });
-    startSupabaseGoogleSignIn(environment);
+    startSupabaseGoogleSignIn(
+      environment,
+      window.location.href,
+      readHearthAuthConfig(),
+      (url) => window.location.assign(url),
+      { selectAccount: true },
+    );
+  }
+
+  async function returnToGoogleEntryAfterFullHouse(): Promise<void> {
+    setBusy(true);
+    try {
+      clearGoogleSessions(environment);
+      clearSupabaseSession(environment);
+      clearSession(environment);
+      clearPendingAuthInvite();
+      rememberWelcomeGoogleIntent(null);
+      startupGenerationRef.current += 1;
+      await deactivateHouseholdSelection(environment);
+      closeAdd();
+      householdRef.current = null;
+      sessionRef.current = null;
+      setHousehold(null);
+      setSession(null);
+      setHistory([]);
+      setPersonalReplica(null);
+      setWelcomeIdentity(null);
+      setDiscoveredLedgers([]);
+      setHighlightedHouseholdId(null);
+      setPendingAuthInvite(null);
+      setInviteInput("");
+      setInviteFlowState("idle");
+      setWelcomeMode("home");
+      setError("");
+      setBooting(false);
+      window.history.replaceState({}, "", "/");
+      setFullHouseInvite(null);
+      window.location.replace("/");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function promptDeleteDiscoveredHousehold(found: DiscoveredHousehold): Promise<void> {
@@ -3197,6 +3302,29 @@ export function App() {
     void session;
   }, [booting, environment, household?.householdId, household?.revision, session?.memberId]);
 
+  if (fullHouseInvite) {
+    return (
+      <div className="welcome">
+        <div className="welcome-card">
+          <p className="kicker">Household access</p>
+          <img src="/hercules-mark.svg" alt="" />
+          <h1>This house is full</h1>
+          <p>Both available seats already have Google accounts assigned to this household.</p>
+          <p className="muted">You signed in as {fullHouseInvite.email}. Nothing was changed in the household or in this phone’s saved ledger.</p>
+          <button
+            className="primary"
+            type="button"
+            autoFocus
+            disabled={busy}
+            onClick={() => void returnToGoogleEntryAfterFullHouse()}
+          >
+            {busy ? "Returning…" : "Back to Google sign-in"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (booting) {
     return (
       <>
@@ -3285,10 +3413,7 @@ export function App() {
               onDetected={async (raw) => {
                 const token = authInviteTokenFromText(raw);
                 if (token) {
-                  setInviteInput(token);
-                  setPendingAuthInvite(token);
-                  setInviteFlowState("awaiting-google");
-                  await redeemAuthInviteToken(token);
+                  startQrInviteGoogleSignIn(token);
                   return;
                 }
                 setInviteInput(raw);
@@ -3986,10 +4111,7 @@ export function App() {
       <SyncFreshnessStatus
         display={syncFreshnessDisplay}
         busy={busy}
-        onAction={() => {
-          if (unresolvedConflicts(household).length > 0) setShowConflictSheet(true);
-          else void retryShareNow();
-        }}
+        onAction={() => void retryShareNow()}
       />
       {!activeBooksGate.ready && (
         <div
@@ -4037,7 +4159,6 @@ export function App() {
               onClick={() => {
                 const label = commandChrome.chip?.actionLabel;
                 if (label === "Retry now" || label === "Retry") void retryShareNow();
-                else if (label === "Review") setShowConflictSheet(true);
               }}
             >
               {commandChrome.chip.actionLabel}
@@ -4062,7 +4183,6 @@ export function App() {
               onClick={() => {
                 const label = commandChrome.banner?.actionLabel;
                 if (label === "Retry" || label === "Retry now") void retryShareNow();
-                else if (label === "Review conflict") setShowConflictSheet(true);
                 else if (label === "Review pending") setTab("more");
                 else if (label === "Open recovery") setTab("more");
               }}
@@ -5427,29 +5547,6 @@ export function App() {
             </button>
           )}
         </div>
-      )}
-
-      {showConflictSheet && unresolvedConflicts(household).length > 0 && (
-        <ConflictResolution
-          household={household}
-          busy={busy}
-          onChoose={(side) => void resolveConflictSide(side)}
-          onExport={() => {
-            try {
-              const bundle = makeConflictBundle(household);
-              const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" });
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement("a");
-              link.href = url;
-              link.download = `hearth-conflict-${household.householdId}.json`;
-              link.click();
-              URL.revokeObjectURL(url);
-            } catch (caught) {
-              setError(caught instanceof Error ? caught.message : String(caught));
-            }
-          }}
-          onDismiss={() => setShowConflictSheet(false)}
-        />
       )}
 
       {commandOpen && (
