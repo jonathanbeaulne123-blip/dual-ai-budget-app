@@ -6,8 +6,8 @@
 - **Assignee or AI:** Codex
 - **Repository:** `C:\Users\jonat\OneDrive\Documents\ChatGPT\Budget App-sync-pilot`
 - **Branch:** `codex/google-docs-sync-pilot`
-- **Baseline SHA:** `3e48bcc3ca3919d8663c2f1ab1dfbd5a5cfda7cf`
-- **Head SHA:** `3e48bcc3ca3919d8663c2f1ab1dfbd5a5cfda7cf`
+- **Baseline SHA:** `2a984fd3346dc0b57d0e7b6a17702c18b82596d3`
+- **Implementation SHA:** `c228464c4f4636afc8c39bde5949d6c0650a548a`
 - **PR or issue:** none
 - **Risk:** Release
 - **Decision owner:** Jonathan
@@ -27,7 +27,7 @@ Jonathan and Bianca can rehearse ordinary shared and Personal ledger work on two
 
 ## Verified baseline
 
-- Fresh `origin/main` was fetched on 2026-08-31 and pinned at `3e48bcc3ca3919d8663c2f1ab1dfbd5a5cfda7cf`; the original dirty `codex/roadmap-site` checkout remains untouched.
+- A clean worktree was opened from freshly fetched current main and rebased as `main` advanced during verification; the final exact base is `2a984fd3346dc0b57d0e7b6a17702c18b82596d3`. The original dirty `codex/roadmap-site` checkout remains untouched.
 - Current main already contains atomic Migration 012 transport, Migration 013 command events, Development Realtime 014, T1-S6 freshness UI, member-keyed open shifts, and Migration 017 session/device access controls.
 - Canon records Development migration 017 applied and a rolled-back two-principal authority smoke.
 - Before this packet, the Pages workflow baked `VITE_PRODUCTION_CONTINUITY=1`; D-180 changes the proposed pilot artifact to `0`.
@@ -68,16 +68,17 @@ Jonathan and Bianca can rehearse ordinary shared and Personal ledger work on two
 
 ## Evidence log
 
-- `git fetch origin --prune`; `origin/main` resolved to `3e48bcc3ca3919d8663c2f1ab1dfbd5a5cfda7cf`.
+- Final `git fetch origin --prune`; `origin/main` resolved to `2a984fd3346dc0b57d0e7b6a17702c18b82596d3`. The only last-step delta was the Google Auth containment worksession evidence; the runtime Auth release had already passed the rebased gate.
 - Clean worktree created at `C:\Users\jonat\OneDrive\Documents\ChatGPT\Budget App-sync-pilot` on `codex/google-docs-sync-pilot`.
-- Read-only GitHub Actions inspection found successful main deployment run `33363534036` at exact SHA `3e48bcc3ca3919d8663c2f1ab1dfbd5a5cfda7cf`.
+- Read-only GitHub Actions inspection found successful main deployment run `33371466781` at exact SHA `2a984fd3346dc0b57d0e7b6a17702c18b82596d3`.
 - Read-only Supabase dashboard inspection found migrations 001–017 and `continuity_command_events`, `continuity_personal_snapshots`, and `household_snapshots` in `supabase_realtime`.
 - Pre-change focused continuity baseline: 22 files / 186 tests passed. An intermediate focused command/conflict/diagnostic proof passed 8 files / 71 tests.
 - Final current-diff sync/Auth/recovery/books/UI gate: **30 files / 265 tests passed**.
-- Exact `pnpm test`: **192 files passed / 2 skipped; 1,273 tests passed / 3 skipped**. The first aggregate run found the repository sanitizer's Windows `python3` command assumption; the helper now selects a working `python3` or `python`, `test/api.test.ts` passed, and the exact full suite rerun is green.
-- `pnpm ai:verify`: **41 required AI files verified**. `pnpm exec tsc --noEmit`, pilot-flagged `pnpm build` (**367 modules** plus Hercules Pro UI), and `git diff --check` passed. Existing PGlite externalization/eval and large-chunk build warnings remain warnings, not new failures.
+- Exact current-main `pnpm test`: **194 files passed / 2 skipped; 1,289 tests passed / 3 skipped**. The first aggregate run found the repository sanitizer's Windows `python3` command assumption; the helper now selects a working `python3` or `python`, `test/api.test.ts` passed, and the exact full suite rerun is green.
+- `pnpm ai:verify`: **41 required AI files verified**. `pnpm exec tsc --noEmit`, pilot-flagged `pnpm build` (**368 modules** plus Hercules Pro UI), and `git diff --check` passed. Existing PGlite externalization/eval and large-chunk build warnings remain warnings, not new failures.
 - Semantic Pairing/access proof passed at **320 / 390 / 720 / 1100 px** and exercised Copy sync diagnostic/status at each width. A local browser spot-check expanded Advanced recovery and successfully copied a zero-sample sanitized Development bundle; no hosted request or provider mutation was required.
 - Final repair proof: Production/privacy gate **10 files / 86 tests**; representative genuine-remote-hash conflict/realtime gate **5 files / 47 tests**. A forged remote hash still fails closed.
+- Current-main Google Auth containment integration proof: **15 files / 137 tests**, including Auth session, Google GIS scope, invite/discovery, Production denial, diagnostics, freshness, two-browser, Realtime, materialization, and command runtime.
 - Independent books review **PASS**, trust review **PASS** (independent 5 files / 28 tests), and release code re-review **PASS** (independent 5 files / 39 tests); no open P0–P2. Release review's sole evidence-count note is corrected above.
 - No schema apply, hosted row or provider-setting mutation, household-data mutation, Production action, push, merge, or deployment performed.
 

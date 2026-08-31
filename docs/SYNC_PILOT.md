@@ -1,6 +1,6 @@
 # Ledger-native “Google Docs feel” Development pilot
 
-> **Status — 2026-08-31:** the pilot implementation and local proof packet are prepared on `codex/google-docs-sync-pilot` from exact `origin/main@3e48bcc3ca3919d8663c2f1ab1dfbd5a5cfda7cf`. It is **not pushed, merged, deployed, activated for daily use, or proven through the live matrix or fourteen-day rehearsal**.
+> **Status — 2026-08-31:** the pilot implementation and local proof packet are prepared on `codex/google-docs-sync-pilot` from exact `origin/main@2a984fd3346dc0b57d0e7b6a17702c18b82596d3`. It is **not pushed, merged, deployed, activated for daily use, or proven through the live matrix or fourteen-day rehearsal**.
 
 ## Claim boundary
 
@@ -49,7 +49,7 @@ Snapshots are reserved for first household creation, initial device catch-up, a 
 5. Read the Realtime publication without changing it. Required continuity tables are `continuity_command_events`, `continuity_personal_snapshots`, and `household_snapshots`.
 6. Use only disposable, non-critical Development rehearsal information. Keep an independent record; Hearth cannot be the sole record during this pilot.
 
-On 2026-08-31, the read-only preflight found GitHub Actions run `33363534036` successfully deployed exact main SHA `3e48bcc3ca3919d8663c2f1ab1dfbd5a5cfda7cf`. The Supabase dashboard showed migrations 001–017 and the three required Realtime tables. This proves inventory only. It does not prove this unmerged pilot build or authorize a hosted change.
+On 2026-08-31, the read-only preflight found GitHub Actions run `33371466781` successfully deployed exact main SHA `2a984fd3346dc0b57d0e7b6a17702c18b82596d3`. The Supabase dashboard showed migrations 001–017 and the three required Realtime tables. This proves current-main inventory only. It does not prove this unmerged pilot build or authorize a hosted change.
 
 ## Automated gate
 
