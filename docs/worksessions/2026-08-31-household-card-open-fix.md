@@ -1,13 +1,13 @@
 # Hearth worksession — household card opening repair
 
-- **Status:** CLOSED — local repair verified; Development release pending
+- **Status:** CLOSED — Development deployed; live two-household canary pending
 - **Opened:** 2026-08-31 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `codex/household-card-open-fix`
 - **Baseline SHA:** `da7fe2e2b079d88a8d88e934f0641be932654b86`
-- **Head SHA:** working tree
+- **Head SHA:** `0f03497087d98a4b1c50bd2a3a9b80b1fc64b04b` (released code commit)
 - **PR or issue:** none
 - **Risk:** Release
 - **Decision owner:** Jonathan
@@ -68,11 +68,14 @@ Selecting a household card opens the household and member seat named by that exa
 - 2026-08-31: fresh `git fetch origin main`; clean baseline confirmed at `da7fe2e2b079d88a8d88e934f0641be932654b86`.
 - 2026-08-31: live Development session rendered the D-182 identity header; no destructive or hosted action was taken during inspection.
 - 2026-08-31: corrected card target contract renders and reports the exact household/member pair; stale, wrong-member, missing-member, and missing-household targets are refused.
-- 2026-08-31: focused post-correction proof passed 90 tests across card entry, invites, freshness, environment isolation, Production continuity, replicas, and books.
-- 2026-08-31: full Vitest run passed 1,308 tests in 198 files; one test failed only because Windows cannot launch its required Unix `bash` executable. Two live-only files and three tests remained intentionally skipped.
+- 2026-08-31: after rebasing cleanly onto `origin/main@189ba9785c32b86177c8e8b00eaf990d1cf6c465`, focused proof passed 112 tests across card entry, invites, freshness, environment isolation, Production continuity, replicas, books, privacy, and Month-One coexistence.
+- 2026-08-31: the exact rebased full Vitest run passed 1,336 tests in 204 files; one test failed only because Windows cannot launch its required Unix `bash` executable. Two live-only files and three tests remained intentionally skipped.
 - 2026-08-31: `tsc --noEmit`, the Vite production build, Hercules Pro UI build, `dist/_redirects` absence, and `git diff --check` passed.
 - 2026-08-31: books audit passed (53 focused tests), trust/privacy audit passed after strict null-member refusal (30 focused tests), and independent release verification passed (57 focused tests plus type check).
 - 2026-08-31: no schema, hosted row, secret, environment flag, Production-continuity, ledger command, or sync transport change was made. No push, merge, or deployment was performed.
+- 2026-08-31: Jonathan gave fresh action-time push/merge/Development-deploy approval. Branch `codex/household-card-open-fix` and `main` were pushed at released code commit `0f03497087d98a4b1c50bd2a3a9b80b1fc64b04b`.
+- 2026-08-31: main CI `33428186193` and Cloudflare Workers deployment `33428186207` completed successfully. The live JavaScript exposed the exact stale-card, accepted-household mismatch, and card-target data markers; the signed-in Development page retained the member · household · local-time header.
+- 2026-08-31: live inspection found a PGlite warning about renaming `v_net_worth.net_worth_cents` to `equity_cents`. The repair diff does not touch schema or ledger engine; this traces to the separately merged Month-One mainline and remains a separate follow-up. No financial or hosted-data repair was attempted inside this release.
 
 ## Decisions
 
@@ -85,4 +88,4 @@ Selecting a household card opens the household and member seat named by that exa
 
 ## Handoff
 
-Local repair is complete and independently reviewed. Jonathan retains the next action-time push, merge, and Development deployment decision, plus all Production, schema, secret, and hosted-data decisions.
+The exact-target repair is merged and deployed to Development. A live two-authorized-household click-through remains the canary action, and the separately observed PGlite view-upgrade warning needs its own bounded repair review. Jonathan retains all Production, schema, secret, and hosted-data decisions.
