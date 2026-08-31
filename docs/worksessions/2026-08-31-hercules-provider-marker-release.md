@@ -1,6 +1,6 @@
 # Hearth worksession — Hercules provider marker release
 
-- **Status:** OPEN — RELEASE REVIEW
+- **Status:** CLOSED — MERGED TO MAIN; DEVELOPMENT DEPLOYED
 - **Opened:** 2026-08-31 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -53,16 +53,16 @@ After Hercules answers, a tiny source marker names the responder: Gemini, Groq, 
 - [x] Context switches and local-only answers clear or replace stale provider state.
 - [x] Focused provider/marker/context checks and exact-head build pass.
 - [x] Independent implementation review found no remaining P0–P3 after the sanitizer-truthfulness fix.
-- [ ] Branch and `main` are pushed without secrets or private artifacts.
-- [ ] GitHub CI and Cloudflare deployment pass; live kitchen response remains healthy.
+- [x] Branch and `main` are pushed without secrets or private artifacts.
+- [x] GitHub CI and Cloudflare deployment pass; live kitchen response remains healthy.
 
 ## Plan
 
 - [x] Implement the smallest UI/provider-result slice on a clean branch.
 - [x] Run focused, full-suite, TypeScript, AI-surface, and production-build proof.
-- [ ] Seal and independently review the exact release head.
-- [ ] Push branch and fast-forward `main` after confirming remote ancestry.
-- [ ] Verify workflows and live Development behavior.
+- [x] Seal and independently review the exact release head.
+- [x] Push branch and fast-forward `main` after confirming remote ancestry.
+- [x] Verify workflows and live Development behavior.
 
 ## Evidence log
 
@@ -71,6 +71,9 @@ After Hercules answers, a tiny source marker names the responder: Gemini, Groq, 
 - After rebasing onto `b443969`, exact-head provider/marker/context plus the newly landed PGlite view proof passed `38/38`; `pnpm ai:verify`, TypeScript, Vite production build, Hercules Pro UI build, `_redirects` absence, and diff hygiene passed.
 - Independent review found that a tool-path model label could survive even when sanitization restored the deterministic journal wording. The marker now uses a tested display-decision helper and appears only when the displayed reply actually uses that provider result; ordinary local fallback still names On-device.
 - Fixed implementation `94cb69521cc2bba38eaf3395952b4717bb6356b4` passed `36/36` modified focused checks and TypeScript locally; independent review passed `47/47` focused checks and found no remaining P0–P3 issue.
+- Exact pre-push release head `7d4e19361a455112d2532fa8f81271b26a4db349` passed `1,381` tests with `3` skipped and `0` failed, plus AI-surface, TypeScript, production-build, Hercules Pro UI, `_redirects`, diff-hygiene, secret, and private-artifact checks. Independent exact-head review returned PASS with no P0–P2 finding.
+- The release branch and `main` were pushed at `7d4e193`. GitHub CI run `33437411715` and Cloudflare Workers run `33437411710` both completed successfully for that exact SHA.
+- A live synthetic Development chat returned a Groq reply and visibly rendered `Groq` through the deployed marker. Computed live styling was `10px`, uppercase, and `0.72` opacity; the browser error log was empty. This also proved the displayed provider follows the actual fallback responder rather than claiming Gemini by default.
 
 ## Decisions
 
@@ -80,8 +83,8 @@ After Hercules answers, a tiny source marker names the responder: Gemini, Groq, 
 
 ## Remaining uncertainty
 
-- A live provider response proves the route and label payload, while the checked UI tests prove both render slots; browser-visible text still requires the deployed bundle and an in-app chat smoke.
+- The exact responder can vary by provider availability. The marker truthfully names the provider that supplied the displayed reply; it does not promise that Gemini will answer every prompt.
 
 ## Handoff
 
-Codex owns the clean release branch and authorized Development release. Jonathan owns any future Production or non-synthetic provider decision.
+Release closed. Hercules now shows the tiny truthful responder marker in the deployed Development kitchen. Jonathan owns any future Production or provider-policy decision.

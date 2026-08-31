@@ -117,6 +117,20 @@ describe("roadmap website", () => {
     expect(document.body.textContent).toContain("Other households and platform shape");
   });
 
+  it("activates lens and evidence tabs with Enter and Space", () => {
+    const dom = renderRoadmap();
+    const lensTabs = [...dom.window.document.querySelectorAll<HTMLButtonElement>("#lens-tabs [role='tab']")];
+    const gateTabs = [...dom.window.document.querySelectorAll<HTMLButtonElement>("#gate-tabs [role='tab']")];
+
+    lensTabs[1]?.focus();
+    lensTabs[1]?.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    expect(lensTabs[1]?.getAttribute("aria-selected")).toBe("true");
+
+    gateTabs[1]?.focus();
+    gateTabs[1]?.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: " ", bubbles: true }));
+    expect(gateTabs[1]?.getAttribute("aria-selected")).toBe("true");
+  });
+
   it("stays read-only and independent from household runtime state", () => {
     const runtime = `${dataScript}\n${appScript}`;
     expect(runtime).not.toMatch(/\bfetch\s*\(/);
