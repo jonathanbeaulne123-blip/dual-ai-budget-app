@@ -7,7 +7,7 @@
 - **Repository:** `C:\Users\jonat\OneDrive\Documents\ChatGPT\Budget App - D169 Provider Release`
 - **Branch:** `codex/hercules-provider-fallback-release`
 - **Baseline SHA:** `f47a2232d8e818f30562dbee347a630ac1632aeb` (`origin/main` after final pre-merge refresh)
-- **Head SHA:** `1650910ebe9c9a8343b580116f69807a0d42c9f4` (merged and GitHub-deployed release record; runtime commit `d131571205f9cddad19fecff440e1eb359da2b00`)
+- **Reviewed runtime SHA:** `d131571205f9cddad19fecff440e1eb359da2b00` (merged through release record `1650910ebe9c9a8343b580116f69807a0d42c9f4`; later closeout commits are documentation-only)
 - **PR or issue:** none
 - **Risk:** Release — external provider secrets plus live Development Worker routing
 - **Decision owner:** Jonathan
