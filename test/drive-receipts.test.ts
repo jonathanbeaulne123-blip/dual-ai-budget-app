@@ -21,6 +21,7 @@ describe("private Drive receipt evidence", () => {
     setGoogleTokenStore(createMemoryTokenStore());
     saveGoogleSession("development", {
       memberId: "MEM-002",
+      householdId: "HH-TEST",
       accessToken: "drive-token",
       expiresAt: Date.now() + 3_600_000,
       grantedScopes: scopesForServices(["drive"]),
@@ -52,6 +53,7 @@ describe("private Drive receipt evidence", () => {
     const uploaded = await uploadDriveReceipt({
       environment: "development",
       memberId: "MEM-002",
+      householdId: "HH-TEST",
       enabledServices: ["identity", "drive"],
       file,
       sourceHash: "source-123",
@@ -66,6 +68,7 @@ describe("private Drive receipt evidence", () => {
     const deleted = await deleteDriveReceipt({
       environment: "development",
       memberId: "MEM-002",
+      householdId: "HH-TEST",
       enabledServices: ["identity", "drive"],
       sourceHash: "source-123",
     });
@@ -78,6 +81,7 @@ describe("private Drive receipt evidence", () => {
     const result = await uploadDriveReceipt({
       environment: "development",
       memberId: "MEM-002",
+      householdId: "HH-TEST",
       enabledServices: ["identity", "drive"],
       file: new File(["image"], "shop.jpg", { type: "image/jpeg" }),
       sourceHash: "source-failed",

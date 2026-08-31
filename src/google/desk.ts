@@ -48,8 +48,11 @@ async function findDeskFileId(token: string, fetchFn: typeof import("./engine.ts
 export async function pushDeskAppearance(input: {
   environment: Environment;
   memberId: string;
+  householdId: string;
   enabledServices?: Iterable<string>;
   payload: DeskSyncPayload;
+  /** Set only from an explicit Save desk click. Automatic persistence stays silent. */
+  interactive?: boolean;
   storage?: { getItem(key: string): string | null; setItem(key: string, value: string): void };
 }): Promise<DeskSyncResult> {
   try {
@@ -58,8 +61,10 @@ export async function pushDeskAppearance(input: {
     const fileId = await withGoogle({
       environment: input.environment,
       memberId: input.memberId,
+      householdId: input.householdId,
       services: ["drive"],
       enabledServices: input.enabledServices,
+      interactive: input.interactive,
       fn: async (ctx) => {
         let id = known || await findDeskFileId(ctx.session.accessToken, ctx.fetch);
         if (id) {
@@ -117,7 +122,10 @@ export async function pushDeskAppearance(input: {
 export async function pullDeskAppearance(input: {
   environment: Environment;
   memberId: string;
+  householdId: string;
   enabledServices?: Iterable<string>;
+  /** Set only from an explicit Pull previous desk click. */
+  interactive?: boolean;
   storage?: { getItem(key: string): string | null; setItem(key: string, value: string): void };
 }): Promise<DeskSyncResult> {
   try {
@@ -125,8 +133,10 @@ export async function pullDeskAppearance(input: {
     const result = await withGoogle({
       environment: input.environment,
       memberId: input.memberId,
+      householdId: input.householdId,
       services: ["drive"],
       enabledServices: input.enabledServices,
+      interactive: input.interactive,
       fn: async (ctx) => {
         const id = known || await findDeskFileId(ctx.session.accessToken, ctx.fetch);
         if (!id) return { id: "", payload: null as DeskSyncPayload | null };

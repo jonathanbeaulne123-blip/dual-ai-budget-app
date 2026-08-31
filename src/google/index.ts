@@ -42,6 +42,7 @@ export { pushDeskAppearance, pullDeskAppearance, type DeskSyncResult } from "./d
 export {
   adoptGoogleSession,
   clearGoogleSession,
+  clearGoogleSessions,
   continuityIdentityFromGoogle,
   createMemoryTokenStore,
   googleTokenKey,

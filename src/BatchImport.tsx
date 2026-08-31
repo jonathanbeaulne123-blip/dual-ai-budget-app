@@ -429,6 +429,7 @@ export function BatchImportCard({
     const result = await uploadDriveReceipt({
       environment: household.environment,
       memberId,
+      householdId: household.householdId,
       enabledServices: shapeGoogle(household.google).enabledServices,
       file,
       sourceHash,
@@ -455,6 +456,7 @@ export function BatchImportCard({
     const result = await deleteDriveReceipt({
       environment: household.environment,
       memberId,
+      householdId: household.householdId,
       enabledServices: shapeGoogle(household.google).enabledServices,
       sourceHash,
     });

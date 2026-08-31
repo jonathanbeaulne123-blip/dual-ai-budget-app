@@ -52,6 +52,7 @@ import {
   type RepeatingDraft,
 } from "./RepeatingForm.tsx";
 import { WorkSettlementSheet } from "./WorkSettlementSheet.tsx";
+import { useAsyncScope } from "./asyncScope.ts";
 
 type Pane = CalendarPane;
 
@@ -110,6 +111,8 @@ export function CalendarPage(props: {
   const [overlays, setOverlays] = useState<OverlayEvent[]>([]);
   const [repeatingDraft, setRepeatingDraft] = useState<RepeatingDraft | null>(null);
   const [workSettlement, setWorkSettlement] = useState<WorkOwedFact | null>(null);
+  const scopeKey = `${environment}:${household.householdId}:${props.memberId}`;
+  const asyncScope = useAsyncScope(scopeKey);
 
   const board = useMemo(
     () => buildMonthBoard(household, monthKey, today, overlays),
@@ -123,12 +126,16 @@ export function CalendarPage(props: {
   const calendarGoogleOn = household.google.enabledServices.includes("calendar");
 
   function refreshAccounts() {
-    setAccounts(loadGoogleAccounts(environment, household.members.filter((member) => member.active).map((member) => member.id)));
+    setAccounts(loadGoogleAccounts(
+      environment,
+      household.members.filter((member) => member.active).map((member) => member.id),
+      household.householdId,
+    ));
   }
 
   useEffect(() => {
     refreshAccounts();
-  }, [environment, household.members]);
+  }, [environment, household.householdId, household.members]);
 
   useEffect(() => {
     const next = takeCalendarPane(localStorage);
@@ -147,6 +154,7 @@ export function CalendarPage(props: {
     setGoogleBusy(true);
     void listGoogleOverlays({
       environment,
+      householdId: household.householdId,
       accounts,
       memberColor: (memberId) => household.members.find((member) => member.id === memberId)?.color ?? "#2f6b4f",
       from,
@@ -163,18 +171,21 @@ export function CalendarPage(props: {
       if (live) setGoogleBusy(false);
     });
     return () => { live = false; };
-  }, [accounts, environment, monthKey, household.members, calendarGoogleOn, household.google.enabledServices]);
+  }, [accounts, environment, household.householdId, monthKey, household.members, calendarGoogleOn, household.google.enabledServices]);
 
   async function connectMember(memberId: string) {
+    const startedScope = asyncScope.capture();
     setGoogleBusy(true);
     setGoogleError("");
     try {
       const session = await connectGoogle({
         memberId,
         environment,
+        householdId: household.householdId,
         services: ["identity", "calendar"],
         enabledServices: household.google.enabledServices,
       });
+      if (!asyncScope.isCurrent(startedScope)) return;
       props.onCommand((current) => linkGoogleIdentity(current, {
         memberId,
         email: session.identity.email,
@@ -184,13 +195,14 @@ export function CalendarPage(props: {
       }));
       refreshAccounts();
     } catch (caught) {
-      setGoogleError(caught instanceof Error ? caught.message : String(caught));
+      if (asyncScope.isCurrent(startedScope)) setGoogleError(caught instanceof Error ? caught.message : String(caught));
     } finally {
-      setGoogleBusy(false);
+      if (asyncScope.isCurrent(startedScope)) setGoogleBusy(false);
     }
   }
 
   async function remindOnGoogle() {
+    const startedScope = asyncScope.capture();
     if (!accounts.length) {
       setPane("google");
       setGoogleError("Connect a Google account first, or download the .ics file.");
@@ -203,20 +215,23 @@ export function CalendarPage(props: {
       for (const account of accounts) {
         const written = await upsertHearthReminders({
           environment,
+          householdId: household.householdId,
           account,
           recurrences: household.recurrences,
           titleFor: (item) => item.note.trim() || household.categories.find((row) => row.id === item.subcategoryId)?.name || "Bill",
           enabledServices: household.google.enabledServices,
         });
+        if (!asyncScope.isCurrent(startedScope)) return;
         patches.push(...written);
       }
+      if (!asyncScope.isCurrent(startedScope)) return;
       if (patches.length) {
         props.onCommand((current) => setRecurrenceGoogleSync(current, patches));
       }
     } catch (caught) {
-      setGoogleError(caught instanceof Error ? caught.message : String(caught));
+      if (asyncScope.isCurrent(startedScope)) setGoogleError(caught instanceof Error ? caught.message : String(caught));
     } finally {
-      setGoogleBusy(false);
+      if (asyncScope.isCurrent(startedScope)) setGoogleBusy(false);
     }
   }
 
@@ -495,7 +510,7 @@ export function CalendarPage(props: {
                 </span>
                 {account ? (
                   <button className="chip" onClick={() => {
-                    disconnectGoogleAccount(environment, member.id);
+                    disconnectGoogleAccount(environment, member.id, household.householdId);
                     if (findActiveGoogleLink(household, member.id)) {
                       props.onCommand((current) => unlinkGoogleIdentity(current, member.id));
                     }

@@ -119,6 +119,7 @@ async function uploadReceiptBytes(ctx: GoogleCallContext, input: {
 export async function uploadDriveReceipt(input: {
   environment: Environment;
   memberId: string;
+  householdId: string;
   enabledServices?: Iterable<string>;
   file: File;
   sourceHash: string;
@@ -128,8 +129,10 @@ export async function uploadDriveReceipt(input: {
     const result = await withGoogle({
       environment: input.environment,
       memberId: input.memberId,
+      householdId: input.householdId,
       services: ["drive"],
       enabledServices: input.enabledServices,
+      interactive: true,
       fn: async (ctx) => {
         const existing = await findCreatedFile(ctx, { property: "hearthSourceHash", value: input.sourceHash });
         if (existing) return existing;
@@ -169,6 +172,7 @@ export async function uploadDriveReceipt(input: {
 export async function deleteDriveReceipt(input: {
   environment: Environment;
   memberId: string;
+  householdId: string;
   enabledServices?: Iterable<string>;
   sourceHash: string;
 }): Promise<DriveReceiptResult> {
@@ -176,8 +180,10 @@ export async function deleteDriveReceipt(input: {
     const deleted = await withGoogle({
       environment: input.environment,
       memberId: input.memberId,
+      householdId: input.householdId,
       services: ["drive"],
       enabledServices: input.enabledServices,
+      interactive: true,
       fn: async (ctx) => {
         const file = await findCreatedFile(ctx, { property: "hearthSourceHash", value: input.sourceHash });
         if (!file) return false;
@@ -203,6 +209,7 @@ export async function deleteDriveReceipt(input: {
 export async function uploadSitDownWorkbook(input: {
   environment: Environment;
   memberId: string;
+  householdId: string;
   enabledServices?: Iterable<string>;
   name: string;
   csv: string;
@@ -211,8 +218,10 @@ export async function uploadSitDownWorkbook(input: {
     const fileId = await withGoogle({
       environment: input.environment,
       memberId: input.memberId,
+      householdId: input.householdId,
       services: ["drive"],
       enabledServices: input.enabledServices,
+      interactive: true,
       fn: async (ctx) => {
         const boundary = "hearth_sitdown";
         const metadata = JSON.stringify({

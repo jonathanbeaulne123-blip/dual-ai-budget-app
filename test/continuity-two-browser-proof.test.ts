@@ -1,4 +1,5 @@
 import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createTwoClientSyncHarness,
@@ -15,8 +16,10 @@ import {
 import { listContinuityOutbox, setContinuityStore } from "../src/continuity.ts";
 import { decodeJsonPayload } from "../src/ledger/snapshotPayload.ts";
 import type { Household } from "../src/core/types.ts";
+import { hearthArtifactDir } from "./artifact-dir.ts";
 
-const EVIDENCE_PATH = "/opt/cursor/artifacts/t1-s5-latency-evidence.json";
+const ARTIFACT_DIR = hearthArtifactDir();
+const EVIDENCE_PATH = join(ARTIFACT_DIR, "t1-s5-latency-evidence.json");
 
 afterEach(() => {
   setContinuityStore(null);
@@ -29,7 +32,7 @@ describe("T1-S5 two-client partner visibility (Tier 1 gate G4)", () => {
     vi.stubGlobal("fetch", stubFetchAgainstHostedCas(harness.host));
 
     const evidence = await runPartnerVisibilitySamples(harness, T1_S5_SAMPLE_COUNT);
-    mkdirSync("/opt/cursor/artifacts", { recursive: true });
+    mkdirSync(ARTIFACT_DIR, { recursive: true });
     writeFileSync(EVIDENCE_PATH, `${JSON.stringify(evidence, null, 2)}\n`, "utf8");
 
     expect(evidence.sampleCount).toBe(T1_S5_SAMPLE_COUNT);

@@ -11,6 +11,7 @@ import {
   sharedHouseholdFreshnessCopy,
   suppressesCommandSyncChrome,
 } from "../src/syncFreshness.ts";
+import { hearthArtifactDir } from "./artifact-dir.ts";
 
 const NOW = new Date("2026-08-26T18:00:00.000Z");
 const TWO_MIN_AGO = "2026-08-26T17:58:00.000Z";
@@ -377,7 +378,7 @@ describe("sync freshness preview artifact", () => {
 
     const body = states.map(([label, display]) => `<section><h2>${label}</h2>${renderRow(display)}</section>`).join("");
     const html = `<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>T1-S6 freshness</title><style>${css}body{max-width:390px;margin:0 auto;padding:18px;font-family:system-ui,sans-serif}@media(min-width:720px){body{max-width:900px}}h2{font-size:12px;text-transform:uppercase;color:#666}</style></head><body>${body}</body></html>`;
-    const outDir = "/opt/cursor/artifacts";
+    const outDir = hearthArtifactDir();
     mkdirSync(outDir, { recursive: true });
     writeFileSync(join(outDir, "t1-s6-freshness-preview.html"), html);
     expect(html).toContain("sync-freshness--live");

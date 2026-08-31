@@ -310,6 +310,7 @@ export function Office({
       void pushDeskAppearance({
         environment,
         memberId,
+        householdId: household.householdId,
         enabledServices: household.google?.enabledServices ?? [],
         payload: buildDeskSyncPayload({ look, phone, wide }),
         storage: localStorage,
@@ -318,7 +319,7 @@ export function Office({
       });
     }, 2500);
     return () => window.clearTimeout(timer);
-  }, [look, layout.items, layout.pinned, layout.minimized, layout.windowMinimized, environment, memberId, breakpoint, household.google?.enabledServices]);
+  }, [look, layout.items, layout.pinned, layout.minimized, layout.windowMinimized, environment, memberId, breakpoint, household.householdId, household.google?.enabledServices]);
 
   useEffect(() => {
     setLook(loadOfficeLook(environment, localStorage, memberId));
@@ -1001,8 +1002,10 @@ export function Office({
                 void pushDeskAppearance({
                   environment,
                   memberId,
+                  householdId: household.householdId,
                   enabledServices: household.google?.enabledServices ?? [],
                   payload: buildDeskSyncPayload({ look, phone, wide }),
+                  interactive: true,
                   storage: localStorage,
                 }).then((result) => setDeskNote(result.detail));
               }}
@@ -1016,7 +1019,9 @@ export function Office({
                 void pullDeskAppearance({
                   environment,
                   memberId,
+                  householdId: household.householdId,
                   enabledServices: household.google?.enabledServices ?? [],
+                  interactive: true,
                   storage: localStorage,
                 }).then((result) => {
                   setDeskNote(result.detail);

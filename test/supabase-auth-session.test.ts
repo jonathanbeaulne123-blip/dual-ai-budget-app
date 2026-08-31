@@ -6,12 +6,15 @@ import {
   buildSupabaseGoogleAuthorizeUrl,
   clearSupabaseSession,
   consumeSupabaseAuthRedirect,
+  ensureSupabaseSession,
   joinUrlFromInviteToken,
   loadSupabaseSession,
   readHearthAuthConfig,
+  resetSupabaseAuthConcurrencyForTests,
   refreshSupabaseSession,
   saveSupabaseSession,
   setSupabaseSessionStore,
+  startSupabaseGoogleSignIn,
   supabaseAuthEnabled,
   supabaseSessionMatchesGoogleIdentity,
   supabaseSessionFresh,
@@ -39,6 +42,8 @@ const config = { supabaseUrl: "https://example.supabase.co", publishableKey: "sb
 
 afterEach(() => {
   setSupabaseSessionStore(null);
+  resetSupabaseAuthConcurrencyForTests();
+  vi.useRealTimers();
   vi.unstubAllEnvs();
 });
 
@@ -116,6 +121,112 @@ describe("Supabase Auth browser session", () => {
       vi.fn(async () => new Response("no", { status: 401 })) as typeof fetch,
     )).rejects.toThrow(/session expired/i);
     expect(loadSupabaseSession("development")).toBeNull();
+  });
+
+  it("shares one expired-session refresh across concurrent background callers", async () => {
+    setSupabaseSessionStore(memoryStore());
+    const old: HearthSupabaseSession = {
+      accessToken: jwt({ sub: "old", session_id: "11111111-1111-4111-8111-111111111111", email: "old@example.com", exp: 1 }),
+      refreshToken: "refresh-old",
+      userId: "old",
+      sessionId: "11111111-1111-4111-8111-111111111111",
+      email: "old@example.com",
+      googleSubject: "sub-old",
+      displayName: "Old",
+      expiresAt: 1_000,
+    };
+    saveSupabaseSession("development", old);
+    let release!: (response: Response) => void;
+    const pending = new Promise<Response>((resolve) => { release = resolve; });
+    const fetcher = vi.fn(() => pending) as unknown as typeof fetch;
+
+    const first = ensureSupabaseSession("development", config, fetcher);
+    const second = ensureSupabaseSession("development", config, fetcher);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    release(new Response(JSON.stringify({
+      access_token: jwt({ sub: "auth-user-1", session_id: "22222222-2222-4222-8222-222222222222", email: "new@example.com", exp: 2_000_000_000 }),
+      refresh_token: "refresh-new",
+      user: { id: "auth-user-1", email: "new@example.com" },
+    }), { status: 200, headers: { "content-type": "application/json" } }));
+
+    const [left, right] = await Promise.all([first, second]);
+    expect(left?.refreshToken).toBe("refresh-new");
+    expect(right?.refreshToken).toBe("refresh-new");
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not resurrect a session that was cleared while refresh was in flight", async () => {
+    setSupabaseSessionStore(memoryStore());
+    const old: HearthSupabaseSession = {
+      accessToken: jwt({ sub: "old", session_id: "11111111-1111-4111-8111-111111111111", email: "old@example.com", exp: 1 }),
+      refreshToken: "refresh-old",
+      userId: "old",
+      sessionId: "11111111-1111-4111-8111-111111111111",
+      email: "old@example.com",
+      googleSubject: "sub-old",
+      displayName: "Old",
+      expiresAt: 1_000,
+    };
+    saveSupabaseSession("development", old);
+    let release!: (response: Response) => void;
+    const pending = new Promise<Response>((resolve) => { release = resolve; });
+    const refreshing = refreshSupabaseSession(
+      "development",
+      old,
+      config,
+      vi.fn(() => pending) as unknown as typeof fetch,
+    );
+    clearSupabaseSession("development");
+    release(new Response(JSON.stringify({
+      access_token: jwt({ sub: "auth-user-1", session_id: "22222222-2222-4222-8222-222222222222", email: "new@example.com", exp: 2_000_000_000 }),
+      refresh_token: "refresh-new",
+      user: { id: "auth-user-1", email: "new@example.com" },
+    }), { status: 200, headers: { "content-type": "application/json" } }));
+
+    await expect(refreshing).rejects.toThrow(/session changed/i);
+    expect(loadSupabaseSession("development")).toBeNull();
+  });
+
+  it.each(["server", "network"] as const)("keeps a newer session when an older refresh loses by %s", async (failure) => {
+    setSupabaseSessionStore(memoryStore());
+    const old: HearthSupabaseSession = {
+      accessToken: "access-old",
+      refreshToken: "refresh-old",
+      userId: "old",
+      sessionId: "11111111-1111-4111-8111-111111111111",
+      email: "old@example.com",
+      googleSubject: "sub-old",
+      displayName: "Old",
+      expiresAt: 1_000,
+    };
+    const newer = { ...old, accessToken: "access-new", refreshToken: "refresh-new", expiresAt: Date.now() + 3_600_000 };
+    saveSupabaseSession("development", old);
+    let release!: (response: Response) => void;
+    let fail!: (reason: Error) => void;
+    const pending = new Promise<Response>((resolve, reject) => { release = resolve; fail = reject; });
+    const refreshing = refreshSupabaseSession(
+      "development",
+      old,
+      config,
+      vi.fn(() => pending) as unknown as typeof fetch,
+    );
+    saveSupabaseSession("development", newer);
+    if (failure === "server") release(new Response("expired old refresh", { status: 401 }));
+    else fail(new Error("network left"));
+
+    await expect(refreshing).resolves.toEqual(newer);
+    expect(loadSupabaseSession("development")).toEqual(newer);
+  });
+
+  it("allows only one Supabase Google redirect per page and releases its latch", async () => {
+    vi.useFakeTimers();
+    const navigate = vi.fn();
+    expect(startSupabaseGoogleSignIn("development", "https://kitchen.example", config, navigate)).toBe(true);
+    expect(startSupabaseGoogleSignIn("development", "https://kitchen.example", config, navigate)).toBe(false);
+    expect(navigate).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(15_001);
+    expect(startSupabaseGoogleSignIn("development", "https://kitchen.example", config, navigate)).toBe(true);
+    expect(navigate).toHaveBeenCalledTimes(2);
   });
 
   it("uses the user JWT for REST and refuses secret/service-role keys", () => {

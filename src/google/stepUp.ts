@@ -18,8 +18,10 @@ export async function confirmWithGoogleIfLinked(input: {
   const session = await withGoogle({
     environment: input.environment,
     memberId: input.memberId,
+    householdId: input.household.householdId,
     services: ["identity"],
     stepUp: true,
+    interactive: true,
     loginHint: link.email,
     fn: async (ctx) => ctx.session,
   });

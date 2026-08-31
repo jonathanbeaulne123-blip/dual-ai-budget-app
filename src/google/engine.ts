@@ -4,6 +4,7 @@ import type { Environment } from "../core/types.ts";
 import { parseGrantedScopes, scopeString, scopesForServices } from "./scopes.ts";
 import {
   clearGoogleSession,
+  googleCredentialEpoch,
   loadGoogleSession,
   saveGoogleSession,
   tokenFresh,
@@ -14,6 +15,7 @@ export type { GoogleSession } from "./tokens.ts";
 export {
   adoptGoogleSession,
   clearGoogleSession,
+  clearGoogleSessions,
   createMemoryTokenStore,
   googleTokenKey,
   legacyGcalKey,
@@ -81,6 +83,8 @@ type HttpFetch = (input: string, init?: RequestInit) => Promise<Response>;
 let clientIdOverride: string | undefined;
 let tokenRequester: GoogleTokenRequester | null = null;
 let httpFetch: HttpFetch = (input, init) => fetch(input, init);
+let activeAccessRequest: { key: string; promise: Promise<GoogleAccessResponse> } | null = null;
+let gisLoadPromise: Promise<GoogleIdentityApi> | null = null;
 
 export function setGoogleClientIdForTests(id: string | undefined): void {
   clientIdOverride = id;
@@ -107,6 +111,8 @@ export function resetGoogleEngineForTests(): void {
   clientIdOverride = undefined;
   tokenRequester = null;
   httpFetch = (input, init) => fetch(input, init);
+  activeAccessRequest = null;
+  gisLoadPromise = null;
 }
 
 function friendlyGoogleError(body: string, status: number): string {
@@ -146,43 +152,94 @@ export async function googleApiFetch<T>(token: string, url: string, init?: Reque
 async function loadGis(): Promise<GoogleIdentityApi> {
   if (typeof window === "undefined") throw new Error("Google Identity is not available in this environment.");
   if (window.google?.accounts?.oauth2) return window.google;
-  await new Promise<void>((resolve, reject) => {
-    const existing = document.querySelector<HTMLScriptElement>("script[data-hearth-gis]");
-    if (existing) {
-      existing.addEventListener("load", () => resolve());
-      existing.addEventListener("error", () => reject(new Error("Google Identity failed to load.")));
-      return;
+  if (gisLoadPromise) return gisLoadPromise;
+  const pending = new Promise<GoogleIdentityApi>((resolve, reject) => {
+    let script = document.querySelector<HTMLScriptElement>("script[data-hearth-gis]");
+    if (script?.dataset.hearthGisState === "failed") {
+      script.remove();
+      script = null;
     }
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.dataset.hearthGis = "1";
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Google Identity failed to load."));
-    document.head.appendChild(script);
+    if (!script) {
+      script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.dataset.hearthGis = "1";
+      script.dataset.hearthGisState = "loading";
+      document.head.appendChild(script);
+    }
+    const target = script;
+    let settled = false;
+    const finish = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      target.removeEventListener("load", onLoad);
+      target.removeEventListener("error", onError);
+      fn();
+    };
+    const fail = (message: string) => finish(() => {
+      target.dataset.hearthGisState = "failed";
+      target.remove();
+      reject(new Error(message));
+    });
+    const onLoad = () => finish(() => {
+      if (!window.google?.accounts?.oauth2) {
+        target.dataset.hearthGisState = "failed";
+        target.remove();
+        reject(new Error("Google Identity is not available in this browser."));
+        return;
+      }
+      target.dataset.hearthGisState = "ready";
+      resolve(window.google);
+    });
+    const onError = () => fail("Google Identity failed to load.");
+    target.addEventListener("load", onLoad);
+    target.addEventListener("error", onError);
+    const timeout = window.setTimeout(() => fail("Google Identity took too long to load. Check the connection and try again."), 15_000);
+    if (window.google?.accounts?.oauth2) onLoad();
   });
-  if (!window.google?.accounts?.oauth2) throw new Error("Google Identity is not available in this browser.");
-  return window.google;
+  gisLoadPromise = pending;
+  try {
+    return await pending;
+  } finally {
+    if (gisLoadPromise === pending) gisLoadPromise = null;
+  }
 }
 
 const defaultRequester: GoogleTokenRequester = async (input) => {
-  const gis = await loadGis();
   return new Promise((resolve, reject) => {
-    const client = gis.accounts.oauth2.initTokenClient({
-      client_id: input.clientId,
-      scope: input.scope,
-      hint: input.hint,
-      include_granted_scopes: true,
-      callback: (response) => {
-        if (!response.access_token) {
-          reject(new Error(response.error || "Google did not return an access token."));
-          return;
-        }
-        resolve(response);
-      },
-      error_callback: (error) => reject(new Error(error.message || "Google sign-in was cancelled.")),
-    });
-    client.requestAccessToken({ prompt: input.prompt });
+    let settled = false;
+    const finish = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      fn();
+    };
+    const timeout = window.setTimeout(() => {
+      finish(() => reject(new Error("Google sign-in did not finish. Close the Google window and try once more.")));
+    }, 60_000);
+    void loadGis().then((gis) => {
+      if (settled) return;
+      const client = gis.accounts.oauth2.initTokenClient({
+        client_id: input.clientId,
+        scope: input.scope,
+        hint: input.hint,
+        include_granted_scopes: true,
+        callback: (response) => {
+          if (!response.access_token) {
+            finish(() => reject(new Error(response.error || "Google did not return an access token.")));
+            return;
+          }
+          finish(() => resolve(response));
+        },
+        error_callback: (error) => finish(() => reject(new Error(error.message || "Google sign-in was cancelled."))),
+      });
+      try {
+        client.requestAccessToken({ prompt: input.prompt });
+      } catch (caught) {
+        finish(() => reject(caught instanceof Error ? caught : new Error(String(caught))));
+      }
+    }).catch((caught) => finish(() => reject(caught instanceof Error ? caught : new Error(String(caught)))));
   });
 };
 
@@ -191,6 +248,8 @@ export async function requestGoogleAccess(input: {
   loginHint?: string;
   stepUp?: boolean;
   selectAccount?: boolean;
+  /** Prevent one member's prompt result from being adopted by another member. */
+  requestOwner?: string;
 }): Promise<{ accessToken: string; expiresAt: number; grantedScopes: string[] }> {
   const clientId = googleClientId();
   if (!clientId) {
@@ -205,13 +264,33 @@ export async function requestGoogleAccess(input: {
       : input.loginHint
         ? ""
         : "select_account";
-  const requester = tokenRequester ?? defaultRequester;
-  const response = await requester({
+  const request = {
     clientId,
     scope,
     hint: input.loginHint,
     prompt,
-  });
+  };
+  const requestKey = JSON.stringify({ ...request, requestOwner: input.requestOwner });
+  if (activeAccessRequest) {
+    if (activeAccessRequest.key === requestKey) return finishGoogleAccess(await activeAccessRequest.promise, requested);
+    throw new Error("A Google sign-in window is already open. Finish or close it before asking for another account.");
+  }
+  const requester = tokenRequester ?? defaultRequester;
+  const promise = requester(request);
+  activeAccessRequest = { key: requestKey, promise };
+  let response: GoogleAccessResponse;
+  try {
+    response = await promise;
+  } finally {
+    if (activeAccessRequest?.promise === promise) activeAccessRequest = null;
+  }
+  return finishGoogleAccess(response, requested);
+}
+
+function finishGoogleAccess(
+  response: GoogleAccessResponse,
+  requested: GoogleService[],
+): { accessToken: string; expiresAt: number; grantedScopes: string[] } {
   if (!response.access_token) {
     throw new Error(response.error || "Google did not return an access token.");
   }
@@ -224,6 +303,7 @@ export async function requestGoogleAccess(input: {
 
 async function hydrateSession(access: {
   memberId: string;
+  householdId?: string;
   accessToken: string;
   expiresAt: number;
   grantedScopes: string[];
@@ -257,6 +337,7 @@ async function hydrateSession(access: {
   }
   return {
     memberId: access.memberId,
+    householdId: access.householdId,
     accessToken: access.accessToken,
     expiresAt: access.expiresAt,
     grantedScopes: [...new Set([...(access.previous?.grantedScopes ?? []), ...access.grantedScopes])],
@@ -274,6 +355,7 @@ function needsNewToken(session: GoogleSession | null, services: GoogleService[],
 export async function connectGoogle(input: {
   environment: Environment;
   memberId: string;
+  householdId?: string;
   services: GoogleService[];
   enabledServices?: Iterable<string>;
   loginHint?: string;
@@ -283,59 +365,77 @@ export async function connectGoogle(input: {
   const services = input.enabledServices
     ? assertServicesAllowed(input.enabledServices, input.services)
     : uniqueGoogleServices(input.services);
-  const previous = loadGoogleSession(input.environment, input.memberId);
+  const previous = loadGoogleSession(input.environment, input.memberId, input.householdId);
+  const credentialEpoch = googleCredentialEpoch(input.environment);
   const access = await requestGoogleAccess({
     services,
     loginHint: input.loginHint || previous?.identity?.email,
     stepUp: input.stepUp,
     selectAccount: input.selectAccount,
+    requestOwner: `${input.environment}:${input.householdId ?? "welcome"}:${input.memberId}`,
   });
   const session = await hydrateSession({
     memberId: input.memberId,
+    householdId: input.householdId,
     accessToken: access.accessToken,
     expiresAt: access.expiresAt,
     grantedScopes: access.grantedScopes,
     previous,
     services,
   });
+  if (googleCredentialEpoch(input.environment) !== credentialEpoch) {
+    throw new Error("The Google session was cleared while sign-in was open. Nothing was saved.");
+  }
   saveGoogleSession(input.environment, session);
   return session;
 }
 
-export function disconnectGoogle(environment: Environment, memberId: string): void {
-  clearGoogleSession(environment, memberId);
+export function disconnectGoogle(environment: Environment, memberId: string, householdId?: string): void {
+  clearGoogleSession(environment, memberId, householdId);
 }
 
 export async function withGoogle<T>(input: {
   environment: Environment;
   memberId: string;
+  householdId?: string;
   services: GoogleService[];
   enabledServices?: Iterable<string>;
   loginHint?: string;
   stepUp?: boolean;
+  /** Only explicit click/tap handlers may allow Google to open account UI. */
+  interactive?: boolean;
   fn: (ctx: GoogleCallContext) => Promise<T>;
 }): Promise<T> {
   const services = input.enabledServices
     ? assertServicesAllowed(input.enabledServices, input.services)
     : uniqueGoogleServices(input.services);
-  let session = loadGoogleSession(input.environment, input.memberId);
+  let session = loadGoogleSession(input.environment, input.memberId, input.householdId);
   if (needsNewToken(session, services, input.stepUp)) {
+    if (!input.interactive) {
+      throw new Error("Google needs to reconnect. Use a Google connect or sync button; Hearth will not open sign-in from the background.");
+    }
     session = await connectGoogle({
       environment: input.environment,
       memberId: input.memberId,
+      householdId: input.householdId,
       services,
       loginHint: input.loginHint || session?.identity?.email,
       stepUp: input.stepUp,
     });
-  } else if (session && services.includes("identity") && (!session.identity?.email || !session.identity?.subject)) {
+  } else if (session && services.includes("identity") && (!session.identity.email || !session.identity.subject)) {
+    const credentialEpoch = googleCredentialEpoch(input.environment);
     session = await hydrateSession({
       memberId: input.memberId,
+      householdId: input.householdId,
       accessToken: session.accessToken,
       expiresAt: session.expiresAt,
       grantedScopes: session.grantedScopes,
       previous: session,
       services,
     });
+    if (googleCredentialEpoch(input.environment) !== credentialEpoch) {
+      throw new Error("The Google session was cleared while its profile was refreshing. Nothing was saved.");
+    }
     saveGoogleSession(input.environment, session);
   }
   if (!session) throw new Error("Google sign-in did not finish.");
@@ -397,14 +497,17 @@ async function pingService(service: GoogleService, token: string): Promise<strin
 export async function syncGoogleSuite(input: {
   environment: Environment;
   memberId: string;
+  householdId: string;
   enabledServices: Iterable<string>;
 }): Promise<GoogleSuitePing[]> {
   const enabled = uniqueGoogleServices(input.enabledServices);
   return withGoogle({
     environment: input.environment,
     memberId: input.memberId,
+    householdId: input.householdId,
     services: enabled,
     enabledServices: enabled,
+    interactive: true,
     fn: async (ctx) => {
       const pings: GoogleSuitePing[] = [];
       for (const service of enabled) {
