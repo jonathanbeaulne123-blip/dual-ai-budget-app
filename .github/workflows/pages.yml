@@ -27,22 +27,24 @@ jobs:
       - name: Build
         env:
           VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID || secrets.VITE_GOOGLE_CLIENT_ID }}
-          VITE_SUPABASE_AUTH_ENABLED: ${{ vars.VITE_SUPABASE_AUTH_ENABLED }}
+          VITE_SUPABASE_AUTH_ENABLED: "1"
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_CONTINUITY_REALTIME: "1"
           VITE_CONTINUITY_COMMAND_LOG: "1"
-          VITE_PRODUCTION_CONTINUITY: "1"
+          VITE_PRODUCTION_CONTINUITY: "0"
+          VITE_SYNC_PILOT_DIAGNOSTICS: "1"
         run: |
           . scripts/sanitize-cloudflare-env.sh
           if [ -z "$VITE_GOOGLE_CLIENT_ID" ]; then
             echo "::warning::VITE_GOOGLE_CLIENT_ID is empty, so this kitchen build ships without Google sign-in. Add the public web client ID as a GitHub Actions variable (not a client secret)."
           fi
-          if [ "$VITE_SUPABASE_AUTH_ENABLED" = "1" ]; then
-            echo "Supabase Auth Google door is ON for this kitchen build (VITE_SUPABASE_AUTH_ENABLED=1)."
-          else
-            echo "::notice::Supabase Auth Google door is OFF. Set Actions variable VITE_SUPABASE_AUTH_ENABLED=1 to enable Continue with Google → auth.users."
-          fi
+          test "$VITE_SUPABASE_AUTH_ENABLED" = "1"
+          test "$VITE_CONTINUITY_REALTIME" = "1"
+          test "$VITE_CONTINUITY_COMMAND_LOG" = "1"
+          test "$VITE_PRODUCTION_CONTINUITY" = "0"
+          test "$VITE_SYNC_PILOT_DIAGNOSTICS" = "1"
+          echo "Development pilot boundary verified: Auth, Realtime, command log, and privacy-safe diagnostics ON; Production continuity OFF."
           if [ "$VITE_CONTINUITY_COMMAND_LOG" = "1" ]; then
             echo "Tier 2 command-log transport is ON for this kitchen build (VITE_CONTINUITY_COMMAND_LOG=1; requires Migration 013)."
           fi

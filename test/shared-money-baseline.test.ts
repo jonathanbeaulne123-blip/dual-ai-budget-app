@@ -48,7 +48,7 @@ describe("SF-01 Shared Money capability truth", () => {
     ];
 
     expect(baseline.schemaVersion).toBe(1);
-    expect(baseline.baseline).toBe("origin/main@9376c30ba5db55c920d15ce3feacb65dedae5733");
+    expect(baseline.baseline).toBe("D-180 pilot branch from origin/main@3e48bcc3ca3919d8663c2f1ab1dfbd5a5cfda7cf");
     expect(baseline.evidenceRule).toContain("A flag is not runtime proof");
     expect(baseline.capabilities.map(({ id }) => id)).toEqual(expected);
     expect(new Set(expected).size).toBe(expected.length);
@@ -105,11 +105,12 @@ describe("SF-01 Shared Money capability truth", () => {
     const realtimePolicy = read("src/continuityRealtimePolicy.ts");
     const continuity = baseline.capabilities.find(({ id }) => id === "continuity");
 
-    expect(workflow).toContain('VITE_PRODUCTION_CONTINUITY: "1"');
+    expect(workflow).toContain('VITE_PRODUCTION_CONTINUITY: "0"');
+    expect(workflow).toContain('VITE_SYNC_PILOT_DIAGNOSTICS: "1"');
     expect(realtimePolicy).toContain('return environment === "development"');
     expect(continuity?.development).toContain("<=500 ms p95");
-    expect(continuity?.production).toContain("REST build gate is on");
-    expect(continuity?.production).toContain("Realtime remains code-blocked");
+    expect(continuity?.production).toContain("pilot workflow gate is off");
+    expect(continuity?.production).toContain("refuses discovery/transport/Realtime");
   });
 
   it("rejects the stale capability claims SF-01 corrected", () => {

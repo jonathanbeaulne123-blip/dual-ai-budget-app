@@ -108,7 +108,7 @@ describe("household invite RPC client", () => {
       ok: false,
       reason: "email-mismatch",
     }), { status: 200 })));
-    const mismatch = await redeemHouseholdInvite({ inviteToken: HEX64, config });
+    const mismatch = await redeemHouseholdInvite({ environment: "development", inviteToken: HEX64, config });
     expect(mismatch).toEqual({ ok: false, reason: "email-mismatch" });
 
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
@@ -119,7 +119,7 @@ describe("household invite RPC client", () => {
       household_id: "HH-1",
       environment: "development",
     }), { status: 200 })));
-    const ok = await redeemHouseholdInvite({ inviteToken: HEX64, config });
+    const ok = await redeemHouseholdInvite({ environment: "development", inviteToken: HEX64, config });
     expect(ok).toEqual({
       ok: true,
       duplicate: false,
@@ -164,7 +164,7 @@ describe("household invite RPC client", () => {
       message: "Could not find the function public.hearth_bind_google_memberships",
       code: "PGRST202",
     }), { status: 404 })));
-    const missing = await bindGoogleMemberships({ config });
+    const missing = await bindGoogleMemberships({ environment: "development", config });
     expect(missing).toEqual({ ok: false, reason: "bind-rpc-missing" });
     vi.unstubAllGlobals();
   });

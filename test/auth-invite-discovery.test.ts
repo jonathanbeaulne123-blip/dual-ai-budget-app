@@ -143,7 +143,7 @@ function mockInviteDiscoveryFetch(state: MockState) {
 
 /** Mirrors App.tsx redeem + discover match without mounting the full kitchen. */
 async function redeemAndDiscover(token: string, config: SupabaseConfig) {
-  const redeemed = await redeemHouseholdInvite({ inviteToken: token, config });
+  const redeemed = await redeemHouseholdInvite({ environment: "development", inviteToken: token, config });
   if (!redeemed.ok) return { redeemed, found: [], match: undefined };
   const found = await discoverContinuityMemberships(partnerIdentity, redeemed.environment, config);
   const match = found.find((row) => row.household.householdId === redeemed.householdId)

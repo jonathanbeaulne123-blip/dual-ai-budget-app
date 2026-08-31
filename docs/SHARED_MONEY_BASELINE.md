@@ -1,6 +1,6 @@
 # Shared Money capability baseline
 
-> **SF-01 result:** reconciled against `origin/main@9376c30ba5db55c920d15ce3feacb65dedae5733` on 2026-08-30 (Toronto).
+> **SF-01 result:** originally reconciled on 2026-08-30; continuity truth updated for the local D-180 pilot from exact `origin/main@3e48bcc3ca3919d8663c2f1ab1dfbd5a5cfda7cf` on 2026-08-31 (Toronto).
 >
 > **Machine-readable companion:** [`shared-money-baseline.json`](shared-money-baseline.json).
 > **Evidence rule:** “shipped” requires current-main code and tests plus named runtime evidence for a hosted or live claim. A flag, migration file, or historical deployment is not by itself current runtime proof.
@@ -11,13 +11,13 @@ This baseline separates what Hearth can prove today from D-174’s future Shared
 
 Hearth already has a strong local books and Development continuity spine: visible Confirm, typed commands, balanced PGlite journals, durable local persistence/outbox, authenticated membership-scoped transport, atomic Shared plus Personal publication, Development Realtime, and command-log support. The recorded Development two-phone Realtime smoke met the 100–500 ms target, and G6/T1-S6 evidence is complete.
 
-The product is not yet a shared bank account app. Opening truth is absent; Production continuity has no runtime proof; membership recovery and device/session controls are incomplete; current D-141 import code has not been verified in the currently served bundle; D-162 Fund-specific connected evidence remains read-only and Release-gated; notifications have no consented delivery fabric; and D-172 still requires visible Confirm for every financial write.
+The product is not yet a shared bank account app. Opening truth is absent; Production continuity has no runtime proof; D-180's complete two-account matrix and fourteen-day rehearsal are still open; current D-141 import code has not been verified in the currently served bundle; D-162 Fund-specific connected evidence remains read-only and Release-gated; notifications have no consented delivery fabric; and D-172 still requires visible Confirm for every financial write.
 
 | Capability | Current status | Development truth | Production truth | Nearest blocker |
 | --- | --- | --- | --- | --- |
 | Identity | Partial | Google Auth and exact-subject bind recorded live | Build path exists; identity/recovery runtime unverified | Complete signed-in lifecycle and negative smoke |
 | Membership | SF-02 Development-verified; deploy-gated | Migration 017 applied; two-principal hosted authority matrix passed and rolled back; semantic access UI passed at 320/390/720/1100 | Schema present with 0 Production households at apply; no Production identity/recovery proof | Merge/deploy, live-origin sign-in/access panel, rendered keyboard/screen-reader proof |
-| Continuity | Verified in Development | Atomic Shared+Personal, Realtime, command log, freshness, G6, and two-phone latency evidence | REST build gate is on; Realtime is code-refused; no Production smoke | Production restore/write/security Release packet |
+| Continuity | D-180 implemented locally; live pilot gate open | Command-normal path, explicit same-fact review, redacted diagnostic, historical Realtime/G6 evidence; new 100-event matrix and fourteen-day rehearsal pending | Pilot build gate is off; discovery/transport/Realtime refused; no Production smoke | Approved Development deploy, full live matrix, fourteen-day exit gate |
 | Opening truth | Absent | No accepted opening-books command | Absent | SF-04 semantics, UX, journal, provenance, and correction proof |
 | Batch imports | Current-main, review-only | D-130 live history; D-141 code on current main; current served bundle unverified | Selected-file review only; no feed or credentials | Verify served bundle and combined import smoke |
 | Household Fund / connected evidence | Practice plus read-only evidence | D-161 Fund and D-148 Flinks inbox recorded live; D-162 Fund-specific use gated | Fund remains virtual; Flinks refused | Institution support, exact-match privacy proof, separate Release approval |
@@ -38,9 +38,9 @@ The accepted path is:
 
 `visible Confirm -> typed command -> PGlite journal/hash -> durable local snapshot/outbox -> migration 012 atomic snapshot or migration 013 command event -> Development Realtime 014 -> inbound PGlite acceptance`.
 
-Development has recorded atomic Shared+Personal, Realtime, command-log, freshness, G6, and two-phone latency evidence. Four-second polling remains a fallback, not the primary Development path.
+Development has recorded atomic Shared+Personal, Realtime, command-log, freshness, G6, and historical two-phone latency evidence. D-180 makes command events the normal pilot path and reserves snapshots for creation, catch-up, revision gaps, and integrity repair. Four-second polling remains a fallback, not the primary Development path. True same-fact divergence preserves both versions for explicit review.
 
-The GitHub deployment workflow currently bakes `VITE_PRODUCTION_CONTINUITY=1`. That enables the authenticated membership-scoped Production REST code path; it does not establish Production readiness or runtime success. `continuityRealtimePolicy` still refuses Production Realtime, and no Production restore/write smoke is recorded.
+The local D-180 deployment workflow bakes Google Auth, Development Realtime, and command log on while baking `VITE_PRODUCTION_CONTINUITY=0`. The runtime policy refuses all Production continuity and pilot diagnostics. This branch is not deployed, and no Production restore/write smoke is recorded. The exact live matrix and rehearsal are in [`SYNC_PILOT.md`](SYNC_PILOT.md).
 
 ### Opening truth
 

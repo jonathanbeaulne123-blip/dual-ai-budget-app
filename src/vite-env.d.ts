@@ -7,6 +7,8 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_AUTH_ENABLED?: string;
   readonly VITE_CONTINUITY_REALTIME?: string;
   readonly VITE_CONTINUITY_COMMAND_LOG?: string;
+  readonly VITE_PRODUCTION_CONTINUITY?: string;
+  readonly VITE_SYNC_PILOT_DIAGNOSTICS?: string;
   readonly VITE_HERCULES_PRO_URL?: string;
   readonly VITE_GOOGLE_CLIENT_ID?: string;
 }

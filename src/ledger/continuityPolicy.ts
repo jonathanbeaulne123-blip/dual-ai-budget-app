@@ -1,10 +1,10 @@
 import type { Environment } from "../core/types.ts";
 
 /**
- * Production hosted continuity is a build-time gate. The current Pages workflow
- * bakes it on, which exposes only the authenticated, membership-scoped REST path;
- * that is not Production-readiness proof. Production Realtime remains refused by
- * continuityRealtimePolicy. Development remains the proven continuity environment.
+ * Production hosted continuity is a build-time gate. The Jonathan/Bianca
+ * Docs-feel pilot deliberately bakes it off; a later Production Auth/RLS and
+ * provider proof packet must explicitly enable it. Production Realtime remains
+ * refused by continuityRealtimePolicy.
  */
 export function productionContinuityEnabled(): boolean {
   return String(import.meta.env.VITE_PRODUCTION_CONTINUITY || "") === "1";

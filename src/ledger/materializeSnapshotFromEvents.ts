@@ -1,5 +1,5 @@
 import { financialAuditHash, financialAuditHashForScope } from "../core/commandIdentity.ts";
-import { recordConflict, resolveConflictChoice, unresolvedConflicts } from "../core/conflict.ts";
+import { recordConflict } from "../core/conflict.ts";
 import { rememberReceipt } from "../core/commandIdentity.ts";
 import { ensureHouseholdShape, mergeTombstones } from "../core/sync.ts";
 import type {
@@ -233,10 +233,7 @@ export function extractMaterializationFacts(
 }
 
 async function deferConflictingEvent(snapshot: Household, remote: Household): Promise<Household> {
-  const conflicted = await recordConflict(snapshot, remote, false);
-  const open = unresolvedConflicts(conflicted)[0];
-  if (!open) return snapshot;
-  return resolveConflictChoice(conflicted, open.id, "local");
+  return recordConflict(snapshot, remote, false);
 }
 
 async function applyEvent(
@@ -491,11 +488,30 @@ export async function applyCommandEventLocally(input: {
     return { ok: false, reason: "missing-materialization-facts", fallback: true };
   }
 
+  const priorConflictIds = new Set((local.conflicts ?? []).map((row) => row.id));
   const candidate = await buildSnapshotFromEvents([event], local);
+  const retainedNewConflict = (candidate.conflicts ?? []).find(
+    (row) => !row.resolved && !priorConflictIds.has(row.id),
+  );
   const auditHash = event.payload_json.auditHash;
   if (auditHash) {
     const recomputed = await financialAuditHashForScope(candidate, event.ledger_scope, event.member_id);
     if (recomputed !== auditHash) {
+      // A genuine same-fact collision keeps the already accepted local branch as
+      // the active books and stores the remote branch inside the new conflict.
+      // The hosted hash therefore describes the preserved remote branch until a
+      // person chooses a side. App still sends this candidate through PGlite and
+      // acceptHouseholdWrite before it becomes the local replica.
+      if (retainedNewConflict) {
+        const preservedRemoteHash = await financialAuditHashForScope(
+          retainedNewConflict.remoteSnapshot,
+          event.ledger_scope,
+          event.member_id,
+        );
+        if (preservedRemoteHash === auditHash) {
+          return { ok: true, household: candidate, duplicate: false };
+        }
+      }
       return { ok: false, reason: "audit-hash-mismatch", fallback: true };
     }
   }

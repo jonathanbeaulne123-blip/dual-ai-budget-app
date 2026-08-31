@@ -102,7 +102,9 @@ import {
   autoResolveSharedConflict,
   canAbsorbDisjointSharedMoney,
   absorbDisjointSharedMoney,
+  resolveConflictChoice,
   unresolvedConflicts,
+  makeConflictBundle,
   markSynchronized,
   markPendingTransport,
   suggestCategory,
@@ -212,6 +214,13 @@ import {
   type ContinuityIdentity,
 } from "./continuity.ts";
 import { afterNextPaint } from "./nextPaint.ts";
+import {
+  copySyncPilotDiagnostic,
+  recordSyncPilotTrace,
+  syncPilotDiagnosticsEnabled,
+  type SyncPilotTracePhase,
+  type SyncPilotTransport,
+} from "./syncPilotDiagnostics.ts";
 
 function makeBooksAdapters(input: {
   environment: import("./core/types.ts").Environment;
@@ -280,6 +289,7 @@ import {
   type ScopedWorkShiftInput,
 } from "./workShiftScope.ts";
 import { DuePreviewSheet } from "./DuePreviewSheet.tsx";
+import { ConflictResolution } from "./ConflictResolution.tsx";
 import {
   renderCommandChrome,
   renderCommandSurface,
@@ -509,6 +519,7 @@ export function App() {
     revision: number;
   } | null>(null);
   const [commandChrome, setCommandChrome] = useState<CommandChromeResult | null>(null);
+  const [showConflictSheet, setShowConflictSheet] = useState(false);
   const [commandProgressPhase, setCommandProgressPhase] = useState<CommandProgressPhase>("idle");
   const [softPresenceLive, setSoftPresenceLive] = useState<SoftPresenceLiveRow[]>([]);
   const [softPresenceOptOut, setSoftPresenceOptOutState] = useState(() => isSoftPresenceOptedOut("development"));
@@ -842,7 +853,7 @@ export function App() {
   }, [supabaseAuthReturned]);
 
   useEffect(() => {
-    if (!supabaseAuthEnabled() || !household || !session) return;
+    if (!supabaseAuthEnabled() || !hostedContinuityAllowed(environment) || !household || !session) return;
     let cancelled = false;
     void (async () => {
       const authSession = await ensureSupabaseSession(environment);
@@ -1240,6 +1251,10 @@ export function App() {
       });
       if (!live) return accepted;
       adoptAcceptedHousehold(accepted.household);
+      if (unresolvedConflicts(accepted.household).length > 0) {
+        setShowConflictSheet(true);
+        setSyncState("error");
+      }
       if (!accepted.ok && accepted.userMessage) setError(accepted.userMessage);
       return accepted;
     };
@@ -1255,6 +1270,7 @@ export function App() {
           supabaseAuthEnabled()
           && (!authSession || !expectedIdentity || !supabaseSessionMatchesGoogleIdentity(authSession, expectedIdentity))
         ) {
+          traceSyncPilot("auth-blocked", { transport: "outbox" });
           if (live) setSyncState("idle");
           return;
         }
@@ -1332,6 +1348,12 @@ export function App() {
               return;
             }
             const ready = accepted.household;
+            if (unresolvedConflicts(ready).length > 0) {
+              setSyncState("error");
+              setShowConflictSheet(true);
+              setError("Two versions differ on the same financial fact. Both are preserved for review.");
+              return;
+            }
             clearContinuityOutboxConflictBlocks({
               environment,
               identity,
@@ -1373,6 +1395,12 @@ export function App() {
         if (flushed.synchronized > 0 && current) {
           current = markSynchronized(current);
           await saveHousehold(current, { operatingEnvironment: environment, memberId });
+          traceSyncPilot("cloud-ack", {
+            household: current,
+            revision: current.revision,
+            pendingCount: flushed.pending,
+            transport: "outbox",
+          });
           if (live) {
             adoptKnownMetadataHousehold(current);
           }
@@ -1441,6 +1469,11 @@ export function App() {
             setError(accepted?.userMessage || "Could not accept the shared household.");
             return;
           }
+          traceSyncPilot(unresolvedConflicts(accepted.household).length > 0 ? "conflict" : "snapshot-applied", {
+            household: accepted.household,
+            revision: remoteRevision,
+            transport: source === "poll" ? "poll" : "snapshot-realtime",
+          });
           coordinator.recordAccept(current.householdId, remoteRevision);
           if (live) {
             setLastReconcile({
@@ -1467,12 +1500,17 @@ export function App() {
               adoptKnownMetadataHousehold(synced);
             } else if (pushed.errorClass === "conflict-detected" && pushed.remote) {
               const resolved = await autoResolveSharedConflict(ready, pushed.remote, memberId, "local");
-              await acceptReplayCandidate(
+              const acceptedConflict = await acceptReplayCandidate(
                 resolved,
                 `live-absorb-resolve-${ready.householdId}-${pushed.remote.revision}`,
                 "outbox-resolve",
               );
-              setSyncState("syncing");
+              if (acceptedConflict && unresolvedConflicts(acceptedConflict.household).length > 0) {
+                setShowConflictSheet(true);
+                setSyncState("error");
+              } else {
+                setSyncState("syncing");
+              }
               return;
             } else {
               setSyncState("syncing");
@@ -1563,17 +1601,60 @@ export function App() {
       const tryApplyCommandEvent = async (event: ContinuityCommandEvent): Promise<"applied" | "duplicate" | "ignored" | "fallback"> => {
         const current = householdRef.current;
         if (!current) return "ignored";
+        traceSyncPilot("realtime-received", {
+          household: current,
+          confirmationId: event.confirmation_id,
+          revision: event.result_revision,
+          transport: "command-realtime",
+        });
         const applied = await applyCommandEventLocally({ local: current, event, memberId });
         if (!applied.ok) {
+          if (applied.fallback) {
+            traceSyncPilot("poll-fallback", {
+              household: current,
+              confirmationId: event.confirmation_id,
+              revision: event.result_revision,
+              transport: "poll",
+            });
+          }
           return applied.fallback ? "fallback" : "ignored";
         }
-        if (applied.duplicate) return "duplicate";
+        if (applied.duplicate) {
+          traceSyncPilot("duplicate", {
+            household: current,
+            confirmationId: event.confirmation_id,
+            revision: event.result_revision,
+            transport: "command-realtime",
+          });
+          return "duplicate";
+        }
         const accepted = await acceptReplayCandidate(
           applied.household,
           `continuity-cmd-${event.confirmation_id || event.idempotency_key}`,
           event.command_type,
         );
         if (!accepted?.ok) return "fallback";
+        if (unresolvedConflicts(accepted.household).length > 0) {
+          traceSyncPilot("conflict", {
+            household: accepted.household,
+            confirmationId: event.confirmation_id,
+            revision: event.result_revision,
+            transport: "command-realtime",
+            sourceAcceptedAt: event.payload_json.acceptedAt,
+          });
+          if (live) {
+            setShowConflictSheet(true);
+            setSyncState("error");
+          }
+          return "applied";
+        }
+        traceSyncPilot("remote-accepted", {
+          household: accepted.household,
+          confirmationId: event.confirmation_id,
+          revision: event.result_revision,
+          transport: "command-realtime",
+          sourceAcceptedAt: event.payload_json.acceptedAt,
+        });
         if (live) setSyncState("synced");
         return "applied";
       };
@@ -1608,6 +1689,7 @@ export function App() {
             hasSession: Boolean(memberId),
             hasHousehold: Boolean(householdRef.current),
           })) return;
+          traceSyncPilot("snapshot-signal", { transport: "snapshot-realtime" });
           scheduleReplay("realtime");
         },
         onStatusChange: (status) => {
@@ -1656,6 +1738,7 @@ export function App() {
       } else {
         consecutiveUnhealthyPolls = 0;
       }
+      traceSyncPilot("poll-fallback", { transport: "poll" });
       scheduleReplay("poll");
     }, 1_000);
     return () => {
@@ -2041,6 +2124,9 @@ export function App() {
     if (!supabaseAuthEnabled()) {
       throw new Error("Auth invites need an Auth-enabled kitchen build.");
     }
+    if (!hostedContinuityAllowed(environment)) {
+      throw new Error(inviteReasonMessage("continuity-disabled"));
+    }
     savePendingAuthInvite({ token, environment });
     setPendingAuthInvite(token);
     let authSession = await ensureSupabaseSession(environment);
@@ -2052,6 +2138,7 @@ export function App() {
     }
     const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
     const redeemed = await redeemHouseholdInvite({
+      environment,
       inviteToken: token,
       displayName: authSession.displayName,
       config: cloudConfig,
@@ -2103,6 +2190,9 @@ export function App() {
           rememberWelcomeGoogleIntent(welcomeIntent);
           startSupabaseGoogleSignIn(environment);
           return;
+        }
+        if (!hostedContinuityAllowed(environment)) {
+          throw new Error(inviteReasonMessage("continuity-disabled"));
         }
         cloudConfig = authenticatedSupabaseConfig(cloudConfig, authSession);
         const registered = await registerCurrentHouseholdDevice({
@@ -2288,6 +2378,43 @@ export function App() {
       });
       setCommandChrome(chrome);
       setCommandProgressPhase(commandProgressPhaseAfterOutcome(outcome, transportRequested));
+      if (outcome.ok) {
+        traceSyncPilot("local-accepted", {
+          household: outcome.household,
+          confirmationId,
+          revision: outcome.revision,
+          pendingCount,
+          transport: "local",
+        });
+      }
+      if (pendingCount > 0) {
+        traceSyncPilot("outbox-enqueued", {
+          household: outcome.household,
+          confirmationId,
+          revision: outcome.revision,
+          pendingCount,
+          transport: "outbox",
+        });
+      }
+      if (outcome.kind === "synchronized") {
+        traceSyncPilot("cloud-ack", {
+          household: outcome.household,
+          confirmationId,
+          revision: outcome.revision,
+          pendingCount,
+          transport: "outbox",
+        });
+      }
+      if (outcome.kind === "conflict-needs-attention" || unresolvedConflicts(outcome.household).length > 0) {
+        traceSyncPilot("conflict", {
+          household: outcome.household,
+          confirmationId,
+          revision: outcome.revision,
+          pendingCount,
+          transport: "outbox",
+        });
+        setShowConflictSheet(true);
+      }
       if (outcome.kind === "synchronized") {
         saveSyncAnchor(environment, outcome.household);
         const who = memberId;
@@ -2404,6 +2531,13 @@ export function App() {
             synced = finalized;
             saveSyncAnchor(environment, synced);
             setSyncState("synced");
+            traceSyncPilot("cloud-ack", {
+              household: synced,
+              confirmationId,
+              revision: synced.revision,
+              pendingCount: 0,
+              transport: "outbox",
+            });
             setCommandProgressPhase("cloud-ack");
             setCommandChrome(renderCommandChrome(COMMAND_SURFACE_FIXTURES.synchronized, {
               amountLabel: lastAmountLabelRef.current,
@@ -2437,7 +2571,7 @@ export function App() {
       }
       if (outcome.kind === "synchronized") setSyncState("synced");
       else if (outcome.kind === "pending-transport") setSyncState("syncing");
-      else if (outcome.kind === "conflict-needs-attention") setSyncState("syncing");
+      else if (outcome.kind === "conflict-needs-attention") setSyncState("error");
       else if (outcome.ok) setSyncState("idle");
       if (outcome.ok) {
         const status: BooksStatus = {
@@ -2595,6 +2729,41 @@ export function App() {
     }
   }
 
+  async function resolveConflictSide(side: "local" | "remote") {
+    const current = householdRef.current;
+    const who = session?.memberId;
+    if (!current || !who) return;
+    const open = unresolvedConflicts(current)[0];
+    if (!open) {
+      setShowConflictSheet(false);
+      return;
+    }
+    try {
+      const next = resolveConflictChoice(current, open.id, side);
+      const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
+      const google = loadGoogleSession(environment, who);
+      const identity: ContinuityIdentity | null = authSession
+        ? { email: authSession.email, subject: authSession.googleSubject }
+        : continuityIdentityFromGoogle(google);
+      if (identity) {
+        clearContinuityOutboxConflictBlocks({
+          environment,
+          identity,
+          householdId: next.householdId,
+          expectedRevision: next.baseRevision ?? Math.max(0, next.revision - 1),
+        });
+      }
+      const accepted = await commitHousehold(next, undefined, who, {
+        confirmationId: `conflict-choice-${open.id}-${side}`,
+      });
+      if (!accepted?.ok || unresolvedConflicts(accepted.household).length > 0) return;
+      setShowConflictSheet(false);
+      setError("");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }
+
   function run(fn: (current: Household) => CommitResult) {
     if (postingRef.current) return Promise.resolve();
     postingRef.current = true;
@@ -2688,6 +2857,57 @@ export function App() {
 
   function requestClearThisPhone() {
     setGuard({ kind: "clear-this-phone" });
+  }
+
+  async function copyPilotSyncDiagnostic(): Promise<string> {
+    const current = householdRef.current;
+    const who = sessionRef.current?.memberId;
+    if (!current || !who || !syncPilotDiagnosticsEnabled(environment)) {
+      throw new Error("Sync diagnostics are available only in the Development pilot build.");
+    }
+    const bundle = await copySyncPilotDiagnostic({
+      environment,
+      householdId: current.householdId,
+      memberId: who,
+      deviceId: localDeviceId(),
+      revision: current.revision,
+      pendingCount: listContinuityOutbox(environment).filter((item) => item.householdId === current.householdId).length,
+      syncState,
+      realtimeStatus,
+      offline,
+      freshnessMode: syncFreshnessDisplay.transportMode,
+    });
+    if (!bundle) throw new Error("This build did not enable the Development sync diagnostic.");
+    const p95 = bundle.latency.p95Ms == null ? "no receiving samples yet" : `p95 ${bundle.latency.p95Ms} ms`;
+    return `Copied privacy-safe sync diagnostic · ${bundle.latency.sampleCount} receiving samples · ${p95}.`;
+  }
+
+  function traceSyncPilot(
+    phase: SyncPilotTracePhase,
+    details?: {
+      household?: Household | null;
+      confirmationId?: string | null;
+      revision?: number | null;
+      pendingCount?: number | null;
+      transport?: SyncPilotTransport | null;
+      sourceAcceptedAt?: string | null;
+    },
+  ): void {
+    const current = details?.household ?? householdRef.current;
+    const who = sessionRef.current?.memberId;
+    if (!current || !who || !syncPilotDiagnosticsEnabled(environment)) return;
+    void recordSyncPilotTrace({
+      environment,
+      phase,
+      householdId: current.householdId,
+      memberId: who,
+      deviceId: localDeviceId(),
+      confirmationId: details?.confirmationId,
+      revision: details?.revision ?? current.revision,
+      pendingCount: details?.pendingCount,
+      transport: details?.transport,
+      sourceAcceptedAt: details?.sourceAcceptedAt,
+    }).catch(() => undefined);
   }
 
   function signOutWelcomeGoogle() {
@@ -3656,7 +3876,8 @@ export function App() {
         display={syncFreshnessDisplay}
         busy={busy}
         onAction={() => {
-          void retryShareNow();
+          if (unresolvedConflicts(household).length > 0) setShowConflictSheet(true);
+          else void retryShareNow();
         }}
       />
       {!activeBooksGate.ready && (
@@ -3705,6 +3926,7 @@ export function App() {
               onClick={() => {
                 const label = commandChrome.chip?.actionLabel;
                 if (label === "Retry now" || label === "Retry") void retryShareNow();
+                else if (label === "Review") setShowConflictSheet(true);
               }}
             >
               {commandChrome.chip.actionLabel}
@@ -3729,6 +3951,7 @@ export function App() {
               onClick={() => {
                 const label = commandChrome.banner?.actionLabel;
                 if (label === "Retry" || label === "Retry now") void retryShareNow();
+                else if (label === "Review conflict") setShowConflictSheet(true);
                 else if (label === "Review pending") setTab("more");
                 else if (label === "Open recovery") setTab("more");
               }}
@@ -4176,6 +4399,7 @@ export function App() {
             onBeforeSensitive={() => gateWithGoogle({ record: true })}
             softPresenceOptedOut={softPresenceOptOut}
             onSoftPresenceOptOut={applySoftPresenceOptOut}
+            onCopySyncDiagnostic={syncPilotDiagnosticsEnabled(environment) ? copyPilotSyncDiagnostic : undefined}
             onLeaveHousehold={async () => {
               await removeHouseholdFromDevice({
                 householdId: household.householdId,
@@ -4186,6 +4410,7 @@ export function App() {
               });
             }}
             onCurrentDeviceRevoked={() => {
+              traceSyncPilot("auth-blocked", { household, transport: "outbox" });
               clearContinuityOutboxForHousehold(environment, household.householdId);
               clearSupabaseSession(environment);
               setSyncState("error");
@@ -5543,6 +5768,28 @@ export function App() {
         </div>
       )}
 
+      {showConflictSheet && unresolvedConflicts(household).length > 0 && (
+        <ConflictResolution
+          household={household}
+          busy={busy}
+          onChoose={(side) => void resolveConflictSide(side)}
+          onExport={() => {
+            try {
+              const bundle = makeConflictBundle(household);
+              const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement("a");
+              link.href = url;
+              link.download = `hearth-conflict-${household.householdId}.json`;
+              link.click();
+              URL.revokeObjectURL(url);
+            } catch (caught) {
+              setError(caught instanceof Error ? caught.message : String(caught));
+            }
+          }}
+          onDismiss={() => setShowConflictSheet(false)}
+        />
+      )}
 
       {commandOpen && (
         <div className="cmdk" onClick={() => setCommandOpen(false)}>
