@@ -8,6 +8,7 @@ import "./office-phone.css";
 import "./office-wide.css";
 import "./ledger-story.css";
 import "./month-spread.css";
+import "./desk-plates.css";
 import "./hearth-theme.css";
 import "./hercules.css";
 
