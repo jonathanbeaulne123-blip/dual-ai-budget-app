@@ -8,6 +8,7 @@
 - **Branch:** `codex/bianca-month-one`
 - **Baseline SHA:** `1d82a57976af006d0fcf8683d6920a6277738e40`
 - **Recovery ref:** `codex/bianca-month-one-pre-main-20260831`
+- **Implementation SHA:** `3a5875f`
 - **Risk:** High
 - **Decision:** D-182
 - **Environment impact:** Development only
@@ -65,7 +66,7 @@ Bianca's four-week rehearsal stays inside the Hearth Jonathan and Bianca actuall
 
 - Local command-log replay proves the current event contract, not authenticated hosted transport on two real phones.
 - The client materialization SHA detects corruption but is not a server authority signature. An authenticated participant with a deliberately compromised client could recompute it; closing that requires separately authorized server-side validation/signing work.
-- The final exact local commit is pending.
+- Implementation is committed locally at `3a5875f`; no remote action has occurred.
 
 ## Handoff
 

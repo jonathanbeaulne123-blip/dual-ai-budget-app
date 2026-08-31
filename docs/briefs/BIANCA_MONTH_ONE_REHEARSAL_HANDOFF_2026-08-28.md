@@ -7,7 +7,7 @@
 - Dual Course: Budget `+5`; Engagement `+3`.
 - Branch: `codex/bianca-month-one` in the isolated `Budget App - Bianca Month One` worktree.
 - Current mainline baseline: `1d82a57976af006d0fcf8683d6920a6277738e40`; the prior local head is retained on `codex/bianca-month-one-pre-main-20260831` for recovery.
-- Current implementation: locally rebased `codex/bianca-month-one`, with full-App and D-180 command-event regressions added; exact final SHA is recorded after verification.
+- Current implementation: `3a5875f` on locally rebased `codex/bianca-month-one`, with full-App and D-180 command-event regressions plus receiver hardening.
 - No push, merge, deploy, hosted migration, provider, Production, scaling, shift-intake, product launch, or real household values without Jonathan's separate approval.
 
 ## Implemented behavior
