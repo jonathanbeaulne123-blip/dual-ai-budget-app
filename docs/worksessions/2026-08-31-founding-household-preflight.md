@@ -6,8 +6,8 @@
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/founding-household-preflight`
-- **Baseline SHA:** `c75d72eef323f1af211c42da440090730363b6f4`
-- **Verified runtime candidate SHA:** `5db7140ee53298efc1de9413f99779a9f77eec5a`
+- **Baseline SHA:** `2690c577aaad3c0b03f01ab33c403ef07c8fe65c`
+- **Verified runtime candidate SHA:** `6372c8d` (runtime/test tree identical to fully checked `5db7140ee53298efc1de9413f99779a9f77eec5a`)
 - **PR or issue:** Gap-closing Program 1 preparation; Jonathan authorized rebase, merge, and deploy on 2026-08-31
 - **Risk:** Release
 - **Decision owner:** Jonathan
@@ -88,6 +88,7 @@ Inference:
 - 2026-08-31: exact refreshed candidate `e81c208930dff9be00c84c416d6d426b8adf700e` passed the repeated full Windows gate: AI-surface verification, 212 passed / 2 skipped files, 1,414 passed / 3 skipped tests, TypeScript, the Vite Production build, Hercules Pro UI build, and redirect guard. Existing non-failing React `act`, PGlite browser-external/eval, and chunk-size warnings were unchanged.
 - 2026-08-31: Jonathan authorized rebase, merge, and Development deployment. The three-commit D-187 branch rebased onto `origin/main@c75d72eef323f1af211c42da440090730363b6f4`; runtime code merged without conflict, while the append-heavy handoff and decision history preserved both newer mainline records and D-187.
 - 2026-08-31: exact rebased runtime candidate `5db7140ee53298efc1de9413f99779a9f77eec5a` passed the full Windows gate: AI-surface verification, 214 passed / 2 skipped files, 1,442 passed / 3 skipped tests, TypeScript, the Vite Production build, Hercules Pro UI build, and redirect guard. Focused combined proof passed 16 files / 131 tests across recovery, Month, startup, D-186 sync, QR/Auth/storage, and Shared Home desk plates.
+- 2026-08-31: the branch rebased again onto docs-only `origin/main@2690c577aaad3c0b03f01ab33c403ef07c8fe65c`; runtime/test candidate `6372c8d` is byte-identical to fully checked `5db7140ee53298efc1de9413f99779a9f77eec5a`.
 
 ## Decisions
 
