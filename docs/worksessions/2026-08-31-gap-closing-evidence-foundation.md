@@ -8,7 +8,7 @@
 - **Branch:** `codex/gap-closing-foundation`
 - **Baseline SHA:** `aa56f373ab62dbfec1dfa744e6c8b3606caee4c7`
 - **Head SHA:** implementation content `110337c` after final rebase; exact closeout tip is recorded in the external handoff because this record cannot contain its own commit SHA
-- **PR or issue:** Gap-closing Program 0; no PR created
+- **PR or issue:** [PR #261](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/261)
 - **Risk:** Release
 - **Decision owner:** Jonathan
 - **Environment impact:** local Development verification only
@@ -87,6 +87,8 @@ Inference:
 - 2026-08-31: clean implementation `e9bcb2ac6d86c359d068fb1290d72b87a2911310` passed AI verification, 209 passed / 2 skipped files and 1,400 passed / 3 skipped tests, TypeScript, the 383-module Vite production build, Hercules Pro UI, and redirect guard. Its ignored browser report passed 10/10 runs with zero failed runtime/accessibility channel and remains explicitly non-claimable.
 - 2026-08-31: final remote refresh found four new Hercules provider-marker commits; the clean packet rebased without conflict onto `origin/main@7d4e19361a455112d2532fa8f81271b26a4db349`. Pre-rebase proof is superseded by the repeated exact-tip receipts in the external handoff.
 - 2026-08-31: after the exact aggregate and browser rerun, the documentation-only Hercules closeout advanced `main` once more. The packet rebased cleanly onto `origin/main@aa56f373ab62dbfec1dfa744e6c8b3606caee4c7`; the latest runtime-bearing tip had already passed 210 files / 1,403 tests plus builds, and the final post-rebase focused/browser receipts are reported externally.
+- 2026-08-31: after approval, exact head `eb920e52a5f9016ab4ad5819a728c232f50f09fb` passed both GitHub test jobs and merged through PR #261 as `main@201a449cb99251c8a66eb3b282d950305752d1f1`.
+- 2026-08-31: Cloudflare build `520f0603-0ea5-4b73-bbc4-fd0afb03bd3e` deployed Worker version `2e7934fd-16dd-4de7-ae9f-eb349e54ab94`; live `/roadmap/app.js` normalized SHA-256 `8de2164d35ad2d05580778fa7e65fb837c253e190ea53a75bb9e7b77f1043129` matched the merged repository asset.
 
 ## Decisions
 
@@ -100,4 +102,4 @@ Inference:
 
 ## Handoff
 
-Closed locally. Next owner is Jonathan for approval to push/open review; no push, merge, deploy, schema, secret, provider, Production, or design-partner action occurred.
+Merged and deployed after Jonathan's explicit approval. No schema, secret, provider-setting, Production household, or design-partner action occurred. Program 1 begins in the separate `codex/founding-household-preflight` worksession.

@@ -1,5 +1,23 @@
 # AI Task and Handoff Standard
 
+## D-187 founding-household rehearsal preflight (2026-08-31)
+
+**Status:** Release-ready Development candidate on `codex/founding-household-preflight`, rebased onto exact `origin/main@2690c577aaad3c0b03f01ab33c403ef07c8fe65c`. Jonathan authorized rebase, merge, and deploy on 2026-08-31. The real rehearsal has not started, and Production remains out of scope.
+
+**Household outcome:** Jonathan and Bianca cannot start or replay `Our month` until the current browser has downloaded a private Development backup, selected it again, proven it is the exact current balanced snapshot, and recorded the four named-human preparation acknowledgements. A changed household revision closes the gate again.
+
+**Dual Course:** Budget `+4` through exact recovery-before-start and visible stop conditions. Engagement `+2` through one calm preparation card inside the existing D-183 Month surface. Confirm, PGlite acceptance, money meaning, and the four-week workflow are unchanged.
+
+**What changed:** `verifyCurrentHouseholdRecovery` reuses the ordinary import validator, requires matching Development wrapper/embedded environments and household id, compares the financial audit hash, and compares a canonical full-snapshot SHA-256. It returns metadata only and performs no persistence or transport. `RehearsalPreflight` holds the proof and acknowledgements in React session state, announces download/error/status changes, and gates initial Start plus both replay routes. An interactive jsdom test proves upload-before-download stays blocked, fresh download/reselection plus all checks unlocks Start, revision change relocks it, and a mismatched wrapper error is announced.
+
+**Verification:** exact rebased runtime candidate `6372c8d` is runtime/test-tree identical to fully checked candidate `5db7140ee53298efc1de9413f99779a9f77eec5a`, which passed AI-surface verification, **214 passed / 2 skipped files and 1,442 passed / 3 skipped tests**, TypeScript, the Vite Production build, Hercules Pro UI build, and redirect guard. The combined D-187, D-186 sync, QR/Auth/storage, startup, and Shared Home integration proof passed **16 files / 131 tests**. Independent trust/release, UX/accessibility, and verification re-reviews report no remaining P0–P2. Existing React `act`, PGlite browser-external/eval, and chunk-size warnings remain non-failing and unchanged.
+
+**Environment/data disclosure:** local Development code and fictional tests only. The feature handles a user-selected private household export in browser memory, then discards it; it does not commit the file, send it to an AI/model, upload it, persist it, invoke continuity, access Supabase, alter schema/secrets/providers, touch Production, or create real rehearsal evidence.
+
+**Open gates:** real separate Google identities, Household access/device inventory, the deployed build receipt, Personal isolation, the actual private backup file, weekly cadence, and stop agreement remain named-human Development evidence. Programs 1–6 and their elapsed-time gates remain open.
+
+**Worksession:** [`worksessions/2026-08-31-founding-household-preflight.md`](worksessions/2026-08-31-founding-household-preflight.md)
+
 ## Desk plates — Shared and Personal Home mosaic (2026-08-31)
 
 **Status:** Merged [#260](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/260) as `main@c75d72e`. Kitchen Cloudflare Workers [`33447063786`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33447063786) **success**. Worker version `e57b4a67-fbbb-45a2-b57c-043cda197101`. Live `index-BZnOtUHs.js` → lazy `Office-C6krQOJZ.js` with `desk-plate`, “What is due next”, “What the cards are doing”, `scope!=="personal"`, and Standing. CSS `index-D8gcAel_.css` has `.desk-plate-handle`. HTML `Cache-Control: no-store`. **Merged and kitchen-published.** Risk was **High** presentation, then Release because Jonathan ordered merge/deploy. No Production household mutation, hosted schema, or secrets. Migration 018 was already on `main` from #263; this session did not apply schema.

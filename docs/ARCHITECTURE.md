@@ -82,6 +82,8 @@ Browser controls are usability. Commands throw `ValidationError` before mutating
 
 **Feature evidence gate (D-185 / P0-03):** `5/5` is derived from five equal dimensions: truth, task completion, recovery, responsive/accessibility, and Production evidence. The gate accepts only fresh, hash-linked artifacts from one clean 40-character Git SHA and concrete environment identity, including hands-on task and recovery journeys at 320/390/430/720/1100 px with complete console/network/timeout capture. Local tests and synthetic fixtures can verify the evaluator but cannot earn a feature claim. The literal `5/5` label remains unavailable until a human reviews every current evidence item after capture.
 
+**Founding-household rehearsal preflight (D-187):** the Development `Our month` Start/replay UI requires a fresh local household export to be downloaded and selected again. The candidate passes the existing environment, balance, equation, and financial-audit import validation plus an exact canonical full-snapshot hash comparison, but it is never persisted or transported. Readiness is React session state only and becomes false when the accepted household revision changes. Account/device, build, privacy, cadence, and stop-rule checkboxes are human acknowledgements; the authoritative member/device inventory remains Household access.
+
 ## Environments
 
 Development is the default local ledger. Production is a second named snapshot on the same device. They cannot be confused by workbook title; the pill in the top bar is the environment and asks before switching.
