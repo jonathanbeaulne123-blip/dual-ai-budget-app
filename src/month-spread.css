@@ -157,6 +157,48 @@
 .ms-gauge i { display: block; height: 100%; background: var(--pine); }
 .ms-note { font-size: 0.75rem; line-height: 1.45; color: var(--muted); }
 
+/* Member contribution bars — one Fund, two (or more) people, same pine as the target gauge. */
+.ms-contrib {
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  min-width: 0;
+}
+.ms-contrib-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  align-items: baseline;
+}
+.ms-contrib-name {
+  font-size: 0.75rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ms-contrib-value {
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums lining-nums;
+  white-space: nowrap;
+}
+.ms-contrib-track {
+  grid-column: 1 / -1;
+  display: block;
+  height: 8px;
+  border-radius: 3px;
+  background: var(--paper-2);
+  overflow: hidden;
+}
+.ms-contrib-track i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--pine);
+  min-width: 0;
+}
+
 /* ---------- II · Course ---------- */
 .ms-plate {
   border: 1px solid var(--line);
@@ -336,6 +378,7 @@
 @media (max-width: 1099px) {
   .ms-standing { grid-template-columns: minmax(0, 1fr); }
   .ms-assay { grid-template-columns: minmax(0, 200px) minmax(0, 1fr); display: grid; align-items: start; }
+  .ms-contrib { grid-column: 1 / -1; }
 }
 @media (max-width: 719px) {
   .ms-register { padding: 14px 14px 14px 28px; }
@@ -347,6 +390,7 @@
 @media (forced-colors: active) {
   .ms-slip, .ms-plate, .month-spread { border-color: CanvasText; }
   .ms-stamp { border-color: CanvasText; color: CanvasText; }
+  .ms-contrib-track i, .ms-gauge i { background: CanvasText; }
 }
 
 /* Kitty Banks — what the Fund rolled in, said without pretending the cash moved (D-161). */

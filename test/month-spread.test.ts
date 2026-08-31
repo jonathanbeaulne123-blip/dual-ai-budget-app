@@ -18,6 +18,7 @@ import {
   fundRolloverByGoal,
   projectHouseholdFund,
   projectLedgerExperience,
+  proposeHouseholdFundContribution,
   recordHouseholdFundReconciliation,
   seedDemoHousehold,
   sharedActionQueue,
@@ -367,6 +368,50 @@ describe("F-3 · a monthly target is measured against this month", () => {
     expect(projection.confirmedContributionsCents).toBeGreaterThan(monthConfirmed);
     expect(projection.targetProgressCents).toBe(monthConfirmed);
     expect(projection.targetProgressCents).toBeLessThanOrEqual(projection.monthlyTargetCents);
+  });
+});
+
+describe("Standing contribution bars name each person's confirmed month", () => {
+  it("splits this month's confirmed Fund contributions onto Bianca and Jonathan", () => {
+    const household = demo();
+    const course = sharedMonthCourse(household, TODAY);
+    const projection = projectHouseholdFund(household, TODAY);
+    const bianca = course.contributionsByMember.find((row) => row.memberId === BIANCA);
+    const jonathan = course.contributionsByMember.find((row) => row.memberId === JONATHAN);
+    expect(course.contributionsByMember).toHaveLength(2);
+    expect(bianca?.cents).toBe(160_000);
+    expect(jonathan?.cents).toBe(90_000 + 76_000);
+    expect((bianca?.cents ?? 0) + (jonathan?.cents ?? 0)).toBe(projection.targetProgressCents);
+    expect((bianca?.cents ?? 0) + (jonathan?.cents ?? 0)).toBe(326_000);
+  });
+
+  it("leaves last month's contributions and an unconfirmed proposal off the bars", () => {
+    const household = demo();
+    const course = sharedMonthCourse(household, TODAY);
+    const jonathan = course.contributionsByMember.find((row) => row.memberId === JONATHAN);
+    // Last month Jonathan put in $1,065; this month $900 + $760. A $340 proposal waits.
+    expect(jonathan?.cents).toBe(166_000);
+    expect(jonathan?.cents).not.toBe(166_000 + 106_500);
+    expect(jonathan?.cents).not.toBe(166_000 + 34_000);
+    const pending = proposeHouseholdFundContribution(household, {
+      memberId: JONATHAN,
+      contributorMemberId: JONATHAN,
+      amount: 50,
+      date: TODAY,
+    }).household;
+    expect(sharedMonthCourse(pending, TODAY).contributionsByMember.find((row) => row.memberId === JONATHAN)?.cents).toBe(166_000);
+  });
+
+  it("hides the bars until the Fund is open, and draws them from names plus CAD", () => {
+    const unopened = sharedMonthCourse(catalogHousehold(), TODAY);
+    expect(unopened.configured).toBe(false);
+    expect(unopened.contributionsByMember.every((row) => row.cents === 0)).toBe(true);
+    expect(spread).toContain("MemberContribBars");
+    expect(spread).toContain("course.configured");
+    expect(spread).toContain("A proposal is not on the bar");
+    expect(spread).not.toContain("PaperTheme");
+    expect(css).toContain(".ms-contrib");
+    expect(css).toContain("background: var(--pine)");
   });
 });
 

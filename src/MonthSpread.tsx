@@ -42,6 +42,40 @@ function reconciliationWord(tied: boolean | null, lastReconciledAt: string | nul
   return tied ? "Tied" : "Needs review";
 }
 
+/** Two (or more) paper bars for this month's confirmed Fund contributions. Proposals stay off the bar. */
+function MemberContribBars({
+  rows,
+  targetCents,
+  nameOf,
+}: {
+  rows: SharedMonthCourse["contributionsByMember"];
+  targetCents: number;
+  nameOf: (memberId: string | null | undefined) => string;
+}) {
+  if (rows.length === 0) return null;
+  const maxCents = Math.max(targetCents, ...rows.map((row) => row.cents), 1);
+  const spoken = rows.map((row) => `${nameOf(row.memberId)} ${formatCad(row.cents)}`).join(". ");
+  return (
+    <div
+      className="ms-contrib"
+      role="img"
+      aria-label={`Confirmed contributions this month. ${spoken}. A proposal does not count until the custodian confirms.`}
+    >
+      <span className="ms-key">This month</span>
+      {rows.map((row) => (
+        <div key={row.memberId} className="ms-contrib-row">
+          <span className="ms-contrib-name">{nameOf(row.memberId)}</span>
+          <span className="ms-contrib-value">{formatCad(row.cents)}</span>
+          <span className="ms-contrib-track" aria-hidden="true">
+            <i style={{ width: `${Math.min(100, (row.cents / maxCents) * 100)}%` }} />
+          </span>
+        </div>
+      ))}
+      <span className="ms-note">Confirmed this month. A proposal is not on the bar.</span>
+    </div>
+  );
+}
+
 /** A label sits on its own scrap of paper so it never fights the drawing under it. */
 function Chip({ x, y, text, tone, anchorEnd = false }: {
   x: number; y: number; text: string; tone: string; anchorEnd?: boolean;
@@ -230,6 +264,13 @@ export function MonthSpread({
                   : "Target met. Every contribution here was proposed by one of you and confirmed by the custodian."}
               </span>
             </div>
+          ) : null}
+          {course.configured ? (
+            <MemberContribBars
+              rows={course.contributionsByMember}
+              targetCents={opening.monthlyTargetCents}
+              nameOf={nameOf}
+            />
           ) : null}
         </div>
       </section>

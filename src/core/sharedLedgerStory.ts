@@ -1,5 +1,6 @@
 import type { DateKey } from "./calendar.ts";
 import { daysInMonthKey, monthEndKey, monthKeyFromDateKey, monthStartKey, weekBounds } from "./calendar.ts";
+import { activeMembers } from "./catalog.ts";
 import {
   activeHouseholdFundEvents,
   projectHouseholdFund,
@@ -495,6 +496,8 @@ export type SharedMonthCourse = {
   conservationCents: number;
   weekStart: DateKey;
   weekEnd: DateKey;
+  /** Confirmed Fund contributions this month, one row per active member. Proposals do not count. */
+  contributionsByMember: { memberId: string; cents: number }[];
 };
 
 /** Signed effect of one event on the operating pool. Mirrors projectHouseholdFund exactly. */
@@ -567,6 +570,18 @@ export function sharedMonthCourse(household: Household, today: DateKey): SharedM
   const tiesToProjection = !projection.configured
     || (allOperating === projection.operatingBalanceCents && allKitty === projection.kittyCents);
 
+  const monthKeyNow = monthKey;
+  const contributionsByMember = activeMembers(household).map((member) => ({
+    memberId: member.id,
+    cents: events
+      .filter((event) => (
+        event.kind === "contribution-confirmed"
+        && event.contributorMemberId === member.id
+        && monthKeyFromDateKey(event.date) === monthKeyNow
+      ))
+      .reduce((sum, event) => sum + event.amountCents, 0),
+  }));
+
   return {
     configured: projection.configured,
     tiesToProjection,
@@ -591,5 +606,6 @@ export function sharedMonthCourse(household: Household, today: DateKey): SharedM
     conservationCents: projection.operatingBalanceCents + projection.kittyCents,
     weekStart: week.start,
     weekEnd: week.end,
+    contributionsByMember,
   };
 }
