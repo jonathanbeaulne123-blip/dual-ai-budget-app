@@ -1,6 +1,6 @@
 # Hearth worksession — ledger-native Google Docs feel pilot
 
-- **Status:** LOCAL RELEASE PACKET VERIFIED; LIVE PILOT PENDING
+- **Status:** DEVELOPMENT RELEASE AUTHORIZED; PUSH/DEPLOY IN PROGRESS; LIVE PILOT PENDING
 - **Opened:** 2026-08-31 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -45,7 +45,12 @@ Jonathan and Bianca can rehearse ordinary shared and Personal ledger work on two
 
 ### Out of scope
 
-- Production continuity or Realtime, schema/migration changes, provider/secret changes, hosted row changes, literal field-level co-editing, Broadcast migration, bank feeds, automatic money posting, push, merge, or deploy.
+- Production continuity or Realtime, schema/migration changes, provider/secret changes, hosted row changes, literal field-level co-editing, Broadcast migration, bank feeds, automatic money posting, or daily-use activation.
+
+### Release authorization extension
+
+- After the local packet and independent reviews passed, Jonathan explicitly approved the previously requested GitHub push, merge, and Development deployment on 2026-08-31.
+- This approval does not authorize Production, schema, secrets, hosted household mutations, or the “Docs-like Development sync proven” claim.
 
 ## Acceptance evidence
 
@@ -56,6 +61,7 @@ Jonathan and Bianca can rehearse ordinary shared and Personal ledger work on two
 - [x] New-device/join storage and failed-persistence proof preserve the last accepted local household; live failed-fetch/recovery remains in the two-device matrix.
 - [x] Focused tests, `pnpm test`, `pnpm ai:verify`, typecheck/build, and `git diff --check` are recorded.
 - [x] Independent books/trust reviews and final Hearth verification/release review complete; no open P0–P2.
+- [ ] Push the exact reviewed branch, merge through GitHub, and verify the deployed SHA and baked Development-only flags.
 - [ ] Live two-device matrix and 14-day rehearsal remain explicitly pending until Jonathan runs them after an approved deploy.
 
 ## Plan
@@ -80,6 +86,7 @@ Jonathan and Bianca can rehearse ordinary shared and Personal ledger work on two
 - Final repair proof: Production/privacy gate **10 files / 86 tests**; representative genuine-remote-hash conflict/realtime gate **5 files / 47 tests**. A forged remote hash still fails closed.
 - Current-main Google Auth containment integration proof: **15 files / 137 tests**, including Auth session, Google GIS scope, invite/discovery, Production denial, diagnostics, freshness, two-browser, Realtime, materialization, and command runtime.
 - Independent books review **PASS**, trust review **PASS** (independent 5 files / 28 tests), and release code re-review **PASS** (independent 5 files / 39 tests); no open P0–P2. Release review's sole evidence-count note is corrected above.
+- Jonathan explicitly authorized push, merge, and Development deployment after the verified local handoff. The live matrix and daily-use decision remain separately gated.
 - No schema apply, hosted row or provider-setting mutation, household-data mutation, Production action, push, merge, or deployment performed.
 
 ## Decisions
@@ -95,4 +102,4 @@ Jonathan and Bianca can rehearse ordinary shared and Personal ledger work on two
 
 ## Handoff
 
-Codex owns the local implementation and proof packet. Jonathan remains the only owner of push, merge, deployment, hosted access, and the daily-use decision.
+Codex owns the authorized Development GitHub release and deployed-SHA verification. Jonathan remains the only owner of hosted household access, the live two-device rehearsal, and the daily-use decision.
