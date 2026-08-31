@@ -1,13 +1,13 @@
 # Hearth worksession — Hercules provider fallback release
 
-- **Status:** CLOSED — DIRECT DEVELOPMENT DEPLOYED; MAIN SYNC OPEN
+- **Status:** CLOSED — MERGED TO MAIN; GITHUB DEPLOYED
 - **Opened:** 2026-08-31 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `C:\Users\jonat\OneDrive\Documents\ChatGPT\Budget App - D169 Provider Release`
 - **Branch:** `codex/hercules-provider-fallback-release`
-- **Baseline SHA:** `189ba9785c32b86177c8e8b00eaf990d1cf6c465` (`origin/main` after pre-deploy refresh)
-- **Head SHA:** `f55e45c986f88b209309f2faecb9601fae12a946` (reviewed and deployed source commit)
+- **Baseline SHA:** `f47a2232d8e818f30562dbee347a630ac1632aeb` (`origin/main` after final pre-merge refresh)
+- **Head SHA:** `1650910ebe9c9a8343b580116f69807a0d42c9f4` (merged and GitHub-deployed release record; runtime commit `d131571205f9cddad19fecff440e1eb359da2b00`)
 - **PR or issue:** none
 - **Risk:** Release — external provider secrets plus live Development Worker routing
 - **Decision owner:** Jonathan
@@ -27,8 +27,8 @@ Ordinary in-app Hercules tries Gemini, then Groq, skips unconfigured OpenAI, the
 
 ## Verified baseline
 
-- Clean dedicated worktree refreshed onto exact `origin/main@189ba9785c32b86177c8e8b00eaf990d1cf6c465` before release sealing.
-- Current ordinary chat order is Workers AI → opted-in OpenAI → opted-in Anthropic.
+- Clean dedicated worktree refreshed onto exact `origin/main@f47a2232d8e818f30562dbee347a630ac1632aeb` before final review and main sync.
+- Pre-change ordinary chat order was Workers AI → opted-in OpenAI → opted-in Anthropic.
 - Jonathan explicitly stated every provider payload is synthetic test data and authorized external processing of the normal bounded `/hercules/chat` prompt for full Gemini/Groq integration without OpenAI.
 - Every external chat hop stays fail-closed unless deployment config explicitly opts into external providers and attests the testing environment classification `synthetic`; secret presence alone is insufficient. This is a deployment attestation backed by Jonathan's scope authorization, not request-content detection.
 - Gemini and Groq user-scope credentials are present. No local OpenAI credential was available; secret-name inspection found an older Worker-side `OPENAI_API_KEY`, but `HERCULES_ALLOW_PAID_PROVIDERS=false` keeps it inert for ordinary chat. No secret value was printed or inspected.
@@ -43,12 +43,12 @@ Ordinary in-app Hercules tries Gemini, then Groq, skips unconfigured OpenAI, the
 - Checked-in deployment config records `HERCULES_ALLOW_EXTERNAL_PROVIDERS=true` and `HERCULES_EXTERNAL_DATA_CLASSIFICATION=synthetic`; any other classification keeps every ordinary external chat hop inert. OpenAI additionally retains its paid-provider gate.
 - Server-only Gemini/Groq secrets, public model names, and 1.8-second third-party attempt deadlines.
 - Provider order, timeout, malformed/empty response, sanitizer, disclosure, and configuration tests.
-- D-184 living decision/docs, release review, Worker secret installation, direct Development Worker deployment, and synthetic smoke.
+- D-184 living decision/docs, release review, Worker secret installation, Development Worker deployment, Git `main` sync, and synthetic smoke.
 
 ### Out of scope
 
 - Planner, document scanning, Hercules Pro, accounting, commands, schema, hosted rows, Production continuity/data, OpenAI key creation, and household mutation.
-- Git push/merge unless Jonathan separately requests it.
+- Non-synthetic or Production data processing and any household mutation.
 
 ## Acceptance evidence
 
@@ -67,6 +67,7 @@ Ordinary in-app Hercules tries Gemini, then Groq, skips unconfigured OpenAI, the
 - [x] Run focused/full proof and independent Release review.
 - [x] Install Gemini/Groq Worker secrets without exposing values.
 - [x] Deploy the exact reviewed candidate and run a synthetic live smoke.
+- [x] Rebase onto current `main`, obtain an exact-head independent pass, push/merge, and verify both GitHub workflows plus the live route.
 
 ## Evidence log
 
@@ -79,6 +80,9 @@ Ordinary in-app Hercules tries Gemini, then Groq, skips unconfigured OpenAI, the
 - Initial secret installation failed closed because Cloudflare's newest stored version was not active. The reviewed source then deployed as Worker version `6193baaa-5f77-4169-996a-7c9d0266b2a9`; subsequent secret-change deployments were `c26207e0-8a9e-40ef-8dfc-e5263a39287a` and final active `3fd01f32-5f22-4557-95e8-81318e920020`.
 - Secret-name metadata confirms `GEMINI_API_KEY` and `GROQ_API_KEY` in Worker secret storage. Values never entered source, docs, logs, snapshots, or chat.
 - Live synthetic `POST /hercules/chat` returned HTTP 200 with truthful provider `gemini`. A separate live synthetic Groq request returned HTTP 200 with `finish_reason=stop`; deterministic Worker tests prove automatic Gemini-failure → Groq fallthrough. No debug override was added to force a live app failure.
+- After a fresh full `pnpm check` passed (`206` files passed, `2` skipped; `1,344` tests passed, `3` skipped, `0` failed; TypeScript, Vite production build, Hercules Pro UI, and `_redirects` gate green), independent exact-head review returned PASS. The release rebased cleanly onto `origin/main@f47a2232d8e818f30562dbee347a630ac1632aeb` and fast-forwarded `main` to `1650910ebe9c9a8343b580116f69807a0d42c9f4`.
+- GitHub CI run `33429616699` and Cloudflare Workers run `33429616590` both completed successfully for exact main `1650910ebe9c9a8343b580116f69807a0d42c9f4`. Cloudflare activated Worker version `9886a685-0ce6-4807-b657-51b99c77fffb`.
+- Fresh post-main-deploy synthetic smoke returned HTTP 200 with truthful provider `groq`, proving live app-level Gemini → Groq fallthrough without a debug override. The root route also returned HTTP 200 with `Cache-Control: no-store`.
 
 ## Decisions
 
@@ -88,9 +92,9 @@ Ordinary in-app Hercules tries Gemini, then Groq, skips unconfigured OpenAI, the
 
 ## Remaining uncertainty
 
-- Live Gemini and Groq availability were proven with synthetic requests; live app-level forced Groq fallthrough was not induced because no public debug override or temporary broken Gemini configuration was acceptable.
-- A direct deployment without a matching Git push can later be replaced by the next `main` deployment; this must be disclosed.
+- Gemini availability or quota can vary, so Groq may truthfully serve a request when the first hop is unavailable; this is the intended sequential fallback behavior.
+- Non-synthetic or Production use remains outside this release authorization.
 
 ## Handoff
 
-Codex owns the clean local candidate and bounded Development release. Jonathan owns any later push/merge and any non-synthetic or Production use.
+The release is merged to `main`, both GitHub workflows passed, and the live Development Worker was smoke-tested. Jonathan retains authority over any later non-synthetic or Production use.
