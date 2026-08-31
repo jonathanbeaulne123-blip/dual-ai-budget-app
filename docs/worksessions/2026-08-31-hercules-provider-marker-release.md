@@ -69,6 +69,7 @@ After Hercules answers, a tiny source marker names the responder: Gemini, Groq, 
 - Pre-rebase focused marker/Hercules proof passed `28/28`; provider-chain-inclusive proof passed `33/33`; TypeScript passed.
 - Full `pnpm test` completed `1,378` passing, `3` skipped, and one host-only failure: `test/api.test.ts` could not spawn `bash` on Windows (`spawnSync bash ENOENT`). No product, provider, UI, privacy, or financial test failed; this is recorded as not fully green.
 - After rebasing onto `b443969`, exact-head provider/marker/context plus the newly landed PGlite view proof passed `38/38`; `pnpm ai:verify`, TypeScript, Vite production build, Hercules Pro UI build, `_redirects` absence, and diff hygiene passed.
+- Independent review found that a tool-path model label could survive even when sanitization restored the deterministic journal wording. The marker now uses a tested display-decision helper and appears only when the displayed reply actually uses that provider result; ordinary local fallback still names On-device.
 
 ## Decisions
 

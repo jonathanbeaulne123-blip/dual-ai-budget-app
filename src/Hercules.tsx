@@ -17,6 +17,7 @@ import {
   herculesMutters,
   herculesNeedsCheck,
   herculesPageSurface,
+  herculesProviderForDisplayedReply,
   herculesProviderLabel,
   herculesInstrumentSurface,
   herculesTapIntent,
@@ -1039,7 +1040,7 @@ export function HerculesPresence({
       }
       setMotion(answer.pose);
       setBusy(false);
-      setReplyProvider(voiced.source === "ai" ? voiced.provider : null);
+      setReplyProvider(herculesProviderForDisplayedReply(voiced, usedModelVoice));
       keepTalk(message, answer.spoken, usedModelVoice ? "ai" : "journal", null, coworkerIdsForModel.length > 0);
       return;
     }
@@ -1066,7 +1067,7 @@ export function HerculesPresence({
     }
     setMotion(grounded.pose === "sleep" ? "loaf" : grounded.pose);
     setBusy(false);
-    setReplyProvider(result.provider);
+    setReplyProvider(herculesProviderForDisplayedReply(result));
     keepTalk(message, result.text, result.source === "ai" ? "ai" : "local", null, coworkerIdsForModel.length > 0);
   }
 

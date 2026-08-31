@@ -48,6 +48,13 @@ export function herculesProviderLabel(provider: HerculesChatProvider): string {
   return "AI";
 }
 
+export function herculesProviderForDisplayedReply(
+  result: HerculesChatResult,
+  displayedReplyUsesResult = true,
+): HerculesChatProvider | null {
+  return displayedReplyUsesResult ? result.provider : null;
+}
+
 export type HerculesReplyContext = {
   environment: Environment;
   householdId: string;
