@@ -20,7 +20,7 @@
 
 ## D-186 automatic last-entry-wins reconciliation (2026-08-31)
 
-**Status:** High-risk implementation and independent review complete on `codex/last-entry-wins`; Jonathan authorized commit, push, merge, and Development kitchen publication on 2026-08-31. The candidate is being reconciled onto current `origin/main@201a449cb99251c8a66eb3b282d950305752d1f1`. Live household use, schema, hosted rows, secrets, and Production are not authorized.
+**Status:** Release review **PASS** on runtime candidate `aa774baed47183dd4ca4a3ee66a21d0a1c0c9447`, rebased onto `origin/main@201a449cb99251c8a66eb3b282d950305752d1f1`. Jonathan authorized commit, push, merge, and Development kitchen publication on 2026-08-31. Live household use, schema, hosted rows, secrets, and Production are not authorized.
 
 **Household outcome:** the “Two versions need review” snapshot chooser is removed. Distinct entries from both phones remain; the later accepted same-id entry wins automatically; old saved conflicts and blocked retries self-heal in the background. Accepted reversals stay immutable.
 
@@ -28,7 +28,7 @@
 
 **What changed:** ordered command replay now applies later same-id facts; snapshot recovery uses existing record-level recency and an explicit canonical tie-break; persisted conflicts are upgraded; old conflict-blocked outbox rows retry; the modal and its review copy are gone. Worksession: [`worksessions/2026-08-31-last-entry-wins-sync.md`](worksessions/2026-08-31-last-entry-wins-sync.md).
 
-**Verification:** final focused sync/accounting/recovery gate **124 passed**. Exact `pnpm check` passed: AI surface verified, **1,385 passed / 3 skipped / 0 failed**, TypeScript clean, and production build complete. Independent money/trust and end-to-end verification both returned **PASS; no P0/P1**. `git diff --check` passed. Existing Vite/PGlite bundle warnings and React test `act(...)` warnings remain non-failing and outside this packet.
+**Verification:** current-main focused sync/accounting/recovery gate **78 passed**. Exact `pnpm check` passed: AI surface verified, **1,410 passed / 3 skipped / 0 failed**, TypeScript clean, kitchen production build complete, Hercules Pro UI build complete, and no-redirect guard passed. Independent exact-head verifier passed 12 focused files / 119 tests plus TypeScript; independent money/trust review and release review both returned **PASS; no P0/P1**. `git diff --check` passed. Existing Vite/PGlite bundle warnings and React test `act(...)` warnings remain non-failing and outside this packet.
 
 **Next owner:** Codex completes the authorized current-main release and exact Development verification. A live signed-in two-device rehearsal remains a separate evidence gate.
 

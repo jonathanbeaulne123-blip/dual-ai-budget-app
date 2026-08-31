@@ -1,13 +1,13 @@
 # Hearth worksession — Last-entry-wins sync
 
-- **Status:** REOPENED — Development release authorized; current-main rebase in progress
+- **Status:** RELEASE REVIEW PASS — Development publication in progress
 - **Opened:** 2026-08-31 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `codex/last-entry-wins`
 - **Baseline SHA:** `b44396912823b62c4f6bde025f7e0699651f330d`
-- **Head SHA:** working tree
+- **Reviewed runtime SHA:** `aa774baed47183dd4ca4a3ee66a21d0a1c0c9447`
 - **PR or issue:** none
 - **Risk:** High
 - **Decision owner:** Jonathan
@@ -46,7 +46,7 @@ Two valid device histories reconcile in the background. The later accepted versi
 
 ### Out of scope
 
-- Production continuity enablement, schema changes, hosted-row mutation, deployment, or secrets.
+- Production continuity enablement, schema changes, hosted-row mutation, Production deployment, or secrets.
 - Literal character-by-character co-editing.
 - Removing exports, command receipts, reversal history, tombstones, or PGlite validation.
 - Changing Confirm authority or allowing Realtime/Hercules to create money.
@@ -69,17 +69,20 @@ Two valid device histories reconcile in the background. The later accepted versi
 - [x] Remove blocking conflict UI and stale review actions.
 - [x] Update living canon and decision record.
 - [x] Run focused and full verification.
-- [x] Record independent review and close the worksession.
+- [x] Rebase onto current main and repeat exact-head verification.
+- [x] Obtain independent money/trust and end-to-end release review PASS.
+- [ ] Push, merge, publish the Development kitchen, and verify the exact live asset.
 
 ## Evidence log
 
 - Clean worktree created from freshly fetched `origin/main`; the dirty `codex/roadmap-site` checkout was not modified.
 - Jonathan explicitly authorized release after the local verified handoff. This authorizes commit, push, merge, and Development kitchen publication only; schema, hosted-row, secret, and Production changes remain out of scope.
-- Release fetch found `origin/main@201a449cb99251c8a66eb3b282d950305752d1f1`, 13 commits ahead of the verified baseline. Current main now owns D-185 for the P0-03 evidence gate, so this packet will be renumbered D-186 during rebase.
-- Focused final gate: 12 files, 124 tests passed; TypeScript clean.
-- Exact `pnpm check`: AI surface verified; 208 test files passed / 2 skipped; 1,385 tests passed / 3 skipped / 0 failed; TypeScript and production build passed.
-- Independent money/trust re-review: PASS, no P0/P1. Independent end-to-end verification: PASS, no P0/P1.
-- `git diff --check`: passed. No secret, schema, hosted-row, Production, push, merge, or deployment action occurred.
+- Release fetch found `origin/main@201a449cb99251c8a66eb3b282d950305752d1f1`, 13 commits ahead of the verified baseline. Current main owns D-185 for the P0-03 evidence gate; this packet was renumbered D-186 during the clean rebase.
+- Pre-rebase focused gate: 12 files, 124 tests passed; TypeScript clean.
+- Current-main focused gate: 7 files, 78 tests passed.
+- Exact rebased `pnpm check`: AI surface verified; 211 test files passed / 2 skipped; 1,410 tests passed / 3 skipped / 0 failed; TypeScript, kitchen production build, Hercules Pro UI build, and no-redirect guard passed.
+- Independent exact-head verifier: PASS, no P0/P1; 12 focused files / 119 tests, TypeScript, and `git diff --check` passed. Independent exact-head money/trust audit: PASS, no P0/P1.
+- Release review: PASS on runtime candidate `aa774baed47183dd4ca4a3ee66a21d0a1c0c9447` against `origin/main@201a449cb99251c8a66eb3b282d950305752d1f1`. No secret, schema, hosted-row, or Production-continuity file changed.
 
 ## Decisions
 
@@ -92,4 +95,4 @@ Two valid device histories reconcile in the background. The later accepted versi
 
 ## Handoff
 
-Local implementation and verification are complete. Jonathan separately decides push, merge, Development deployment, or any live household test.
+Local implementation, current-main verification, independent review, and release review are complete. Jonathan authorized push, merge, and Development kitchen publication. Live signed-in two-device use remains a separate evidence gate.
