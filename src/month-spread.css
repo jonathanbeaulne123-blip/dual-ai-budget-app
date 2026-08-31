@@ -165,6 +165,17 @@
   padding: 10px 10px 6px;
 }
 .ms-course-scroll { overflow-x: auto; }
+/* Below 900px the Course keeps full-size type and scrolls inside its own plate
+   rather than shrinking labels under 10px. Say so, so the drag is discoverable. */
+.ms-course-hint { display: none; }
+@media (max-width: 899px) {
+  .ms-course-hint {
+    display: block;
+    margin: 6px 0 0;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+}
 .ms-course-svg { display: block; width: 100%; min-width: 660px; height: auto; }
 
 .ms-chip-bed { fill: var(--card); opacity: 0.9; }
@@ -336,4 +347,13 @@
 @media (forced-colors: active) {
   .ms-slip, .ms-plate, .month-spread { border-color: CanvasText; }
   .ms-stamp { border-color: CanvasText; color: CanvasText; }
+}
+
+/* Kitty Banks — what the Fund rolled in, said without pretending the cash moved (D-161). */
+.kitty-bank-rolled {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--muted);
 }

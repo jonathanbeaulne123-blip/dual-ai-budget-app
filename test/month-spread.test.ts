@@ -11,9 +11,11 @@ import {
   courseX,
   coursePaths,
   dayOfDateKey,
+  fundRolloverByGoal,
   projectHouseholdFund,
   seedDemoHousehold,
   sharedMonthCourse,
+  HOUSEHOLD_FUND_ID,
 } from "../src/core/index.ts";
 
 const TODAY = "2026-08-27";
@@ -23,6 +25,7 @@ const spread = readFileSync(new URL("../src/MonthSpread.tsx", import.meta.url), 
 const officeWide = readFileSync(new URL("../src/OfficeWide.tsx", import.meta.url), "utf8");
 const css = readFileSync(new URL("../src/month-spread.css", import.meta.url), "utf8");
 const main = readFileSync(new URL("../src/main.tsx", import.meta.url), "utf8");
+const kitty = readFileSync(new URL("../src/KittyBanks.tsx", import.meta.url), "utf8");
 
 function demo(today = TODAY) {
   return seedDemoHousehold({ environment: "development", today });
@@ -224,5 +227,50 @@ describe("Month Spread fences", () => {
     expect(css).toContain("--ms-river: var(--pine)");
     expect(css).toContain("var(--felt)");
     expect(css).not.toMatch(/#[0-9a-fA-F]{6}/);
+  });
+});
+
+describe("F-1 · a Kitty rollover is visible on the shelf", () => {
+  it("reports what the Fund rolled into each named shared bank", () => {
+    const household = demo();
+    const rollover = fundRolloverByGoal(household);
+    const shared = household.goals.filter((goal) => goal.shared && goal.status !== "retired");
+    expect(rollover.allocatedCents).toBe(projectHouseholdFund(household, TODAY).kittyCents);
+    expect(Object.keys(rollover.byGoalId).length).toBeGreaterThan(1);
+    for (const goalId of Object.keys(rollover.byGoalId)) {
+      expect(shared.some((goal) => goal.id === goalId)).toBe(true);
+    }
+    expect(Object.values(rollover.byGoalId).reduce((sum, cents) => sum + cents, 0)).toBe(rollover.allocatedCents);
+  });
+
+  it("does not pretend the cash moved into the goal", () => {
+    const household = demo();
+    const rollover = fundRolloverByGoal(household);
+    const bank = household.goals.find((goal) => goal.shared && rollover.byGoalId[goal.id]);
+    expect(bank).toBeTruthy();
+    // D-161: the rollover is a claim recorded against the bank, never a deposit into it.
+    expect(bank!.savedCents).not.toBe(rollover.byGoalId[bank!.id]);
+    expect(kitty).toContain("fundRolloverByGoal");
+    expect(kitty).toContain("The cash stays in the shared pool.");
+  });
+
+  it("never attributes a release to one bank", () => {
+    const household = demo();
+    const rollover = fundRolloverByGoal(household);
+    expect(rollover.releasedCents).toBe(0);
+    expect(kitty).toContain("released back to the pool and is not held against one bank");
+  });
+});
+
+describe("F-5 · demo seeding cannot silently break a neighbour", () => {
+  it("keeps the seeded Fund-backed bill on a category with no posted history", () => {
+    const household = demo();
+    const bill = household.recurrences.find((recurrence) => recurrence.fundingDefault?.fundId === HOUSEHOLD_FUND_ID);
+    expect(bill).toBeTruthy();
+    // A recurrence marks its category's rhythm "tracked". Seeding one on a
+    // category that already has posted rows flips a rhythm assertion two
+    // subsystems away, which is exactly how this broke the first time.
+    const posted = household.transactions.filter((tx) => tx.subcategoryId === bill!.subcategoryId);
+    expect(posted).toHaveLength(0);
   });
 });

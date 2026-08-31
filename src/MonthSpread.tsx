@@ -46,7 +46,7 @@ function reconciliationWord(tied: boolean | null, lastReconciledAt: string | nul
 function Chip({ x, y, text, tone, anchorEnd = false }: {
   x: number; y: number; text: string; tone: string; anchorEnd?: boolean;
 }) {
-  const width = text.length * 6.35 + 10;
+  const width = text.length * 6.6 + 12;
   return (
     <g>
       <rect
@@ -447,6 +447,7 @@ export function MonthSpread({
             </svg>
           </div>
         </div>
+        <p className="ms-course-hint">Drag the month sideways to see the rest of it.</p>
         <p className="ms-legend" aria-hidden="true">
           <span><i className="ms-swatch is-operating" /> Operating pool</span>
           <span><i className="ms-swatch is-kitty" /> Kitty, below the line</span>

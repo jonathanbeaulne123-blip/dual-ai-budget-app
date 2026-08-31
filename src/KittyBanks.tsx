@@ -4,6 +4,7 @@ import {
   describeGoalContributors,
   formatCad,
   fundGoal,
+  fundRolloverByGoal,
   goalIsFull,
   goalStatus,
   kittyBankFill,
@@ -99,6 +100,7 @@ export function KittyBanks({
     view === "household" ? goal.shared : !goal.shared
   ));
   const shared = view === "household";
+  const rollover = fundRolloverByGoal(household);
   const proposals = shared ? upcomingVisitProposals(household, today) : [];
   const manage = surface === "plan";
   const role = shared ? "subaccount" : "goal";
@@ -135,6 +137,14 @@ export function KittyBanks({
           Personal goals on this folio. Fund surplus does not land here.
         </p>
       )}
+      {shared && rollover.allocatedCents > 0 ? (
+        <p className="muted">
+          Fund surplus rolled here: {formatCad(rollover.allocatedCents)}
+          {rollover.releasedCents > 0
+            ? `, of which ${formatCad(rollover.releasedCents)} has since been released back to the pool and is not held against one bank.`
+            : "."}
+        </p>
+      ) : null}
       {manage && shared ? <p className="muted">{vaultReceiptBlurb(household, today)}</p> : null}
       {live.length === 0 ? (
         <p className="muted">{shared ? "No shared banks yet." : "No personal banks yet."}</p>
@@ -153,6 +163,11 @@ export function KittyBanks({
                     {contributors ? ` · ${contributors}` : ""}
                   </div>
                   <span className="kitty-bank-pct">{fill}% · {shared ? "sub-account" : "goal"}</span>
+                  {shared && rollover.byGoalId[goal.id] ? (
+                    <span className="kitty-bank-rolled">
+                      Fund has rolled {formatCad(rollover.byGoalId[goal.id]!)} into this bank. The cash stays in the shared pool.
+                    </span>
+                  ) : null}
                 </div>
                 {manage ? (
                   <div className="goal-add">

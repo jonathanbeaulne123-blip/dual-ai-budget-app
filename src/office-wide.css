@@ -16,12 +16,21 @@
   min-height: 0;
 }
 /* Shared Home puts the Month Spread at the centre, so the stage takes the width
-   the drawing needs. The mosaic and the Kitty Banks shelf keep their roles. */
+   the drawing needs. The mosaic and the Kitty Banks shelf keep their roles.
+   Below 1200px the shelf drops beneath the stage rather than squeezing the
+   Course into a scrolling box — 1100px is an evidence width and the month has
+   to be readable there without a sideways drag. */
 .office-wide.is-shared-home .office-wide-desk {
-  grid-template-columns: minmax(0, 0.62fr) minmax(0, 2.05fr) minmax(0, 0.8fr);
+  grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
   grid-template-areas:
-    "seals seals seals"
-    "mosaic stage banks";
+    "seals seals"
+    "mosaic stage"
+    "banks banks";
+}
+.office-wide.is-shared-home .office-wide-banks .kitty-banks-shelf {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
 }
 .office-wide.is-shared-home .office-wide-stage { overflow: visible; }
 .office-wide.is-shared-home .office-wide-mosaic .hearth-story-grid {
@@ -178,11 +187,17 @@
       "seals seals seals"
       "mosaic stage banks";
   }
+}
+
+@media (min-width: 1200px) {
   .office-wide.is-shared-home .office-wide-desk {
     grid-template-columns: minmax(0, 0.58fr) minmax(0, 2.2fr) minmax(0, 0.78fr);
     grid-template-areas:
       "seals seals seals"
       "mosaic stage banks";
+  }
+  .office-wide.is-shared-home .office-wide-banks .kitty-banks-shelf {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
