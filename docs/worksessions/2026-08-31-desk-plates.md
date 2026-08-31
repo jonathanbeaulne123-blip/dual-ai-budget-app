@@ -1,17 +1,17 @@
 # Hearth worksession — Desk plates on Shared and Personal Home
 
-- **Status:** OPEN; DRAFT PR #260 — not merged, not deployed, not live
+- **Status:** CLOSED; MERGED #260; KITCHEN PUBLISHED
 - **Opened:** 2026-08-31 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor (landing Claude's unbuilt third slice onto current `main`)
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
-- **Branch:** `cursor/desk-plates-shared-home-021f`
-- **Baseline SHA:** `7d4e19361a455112d2532fa8f81271b26a4db349` (`origin/main`)
-- **Head SHA:** `f248d44`
-- **PR or issue:** draft [#260](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/260)
-- **Risk:** High (presentation of Home mosaic; no new Fund math)
-- **Decision owner:** Jonathan
-- **Environment impact:** none — fictional Development demo for proof; no Production, hosted mutation, schema, or secrets
+- **Branch:** `main` (from `cursor/desk-plates-shared-home-021f`)
+- **Baseline SHA:** `7d4e19361a455112d2532fa8f81271b26a4db349` (cut); merged through `origin/main@34c2c57` (D-186)
+- **Head SHA:** `c75d72eef323f1af211c42da440090730363b6f4` (merge of #260)
+- **PR or issue:** merged [#260](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/260)
+- **Risk:** High presentation, then Release because Jonathan ordered merge/deploy
+- **Decision owner:** Jonathan ordered push/merge/deploy 2026-08-31
+- **Environment impact:** Development kitchen URL via `hearth-books` `wrangler deploy`. No Production, hosted mutation, schema apply, or secrets
 
 ## Household outcome
 
@@ -27,82 +27,63 @@ The six Home mosaic tiles on each wide floor become desk plates: a kicker in hou
 
 ## If they conflicted
 
-Books win. Plates never invent a drawing, never label Fund free-to-spend as "safe to spend", never say "kitty" on Shared, and never write `goal.savedCents`. The cabinet handle stays wherever double-click exists.
+Books win. Plates never invent a drawing, never label Fund free-to-spend as "safe to spend", never say "kitty" on Shared, and never write `goal.savedCents`. The cabinet handle stays wherever double-click exists. Shared `cards` never names a personal-scope card.
 
 ## Verified baseline
 
 Facts:
 
-- Month Spread (commits 1–2 of Claude's packet) is already on `main` via #259. `src/core/monthSpread.ts`, `src/MonthSpread.tsx`, and `test/month-spread.test.ts` are present.
-- Desk-plate files from the packet are absent: no `plates.ts`, `deskPlates.ts`, `DeskPlates.tsx`, `desk-plates.css`, or `test/desk-plates.test.ts`.
-- Wide Shared Home mosaic is still `now` / `attention` / `change` plus three instruments via `paperHomeMosaic`.
-- Packet patch `~/Downloads/month-spread.patch` is not in this environment. Rebuild to spec on current `main`.
-- F-4 already drops the Kitty shelf under the stage below 1200px so 1100px does not inner-scroll the Course.
-
-Inferences:
-
-- Applying Claude's three-commit patch onto `cursor/shared-ledger-story-aef7` would replay shipped work onto a stale base. Rebuild slice 3 only.
-- Keep F-4 (banks below <1200). Give the mosaic the packet's 460px so a 2×3 plate grid fits. At ≥1200 use the packet's `1.15fr | 1.75fr | 0.72fr`.
+- Month Spread (commits 1–2 of Claude's packet) is already on `main` via #259.
+- Desk-plate files from the packet were absent at the cut; rebuilt on current `main`.
+- Trust review found Shared `cards` reading unscoped `booksHousehold` could name a partner-personal card. Fenced before merge.
+- `origin/main` moved through D-185 and D-186 while the branch was open; both were merged in before kitchen publish.
 
 ## Scope
 
 ### In scope
 
-- Six plate primitives in `src/core/plates.ts`.
-- Twelve plate models in `src/core/deskPlates.ts` over existing selectors.
-- `DeskPlates.tsx` + `desk-plates.css` (no hex literals).
-- OfficeWide mosaic wiring: click / double-click / handle; Spread remains Shared default.
-- Focused tests in `test/desk-plates.test.ts`.
-- `is-shared-home` mosaic column width for the 2×3 grid.
+- Six plate primitives, twelve plate models, OfficeWide wiring, plate CSS, focused tests.
+- Partner-personal card fence.
+- Merge to current `main` and D-041 kitchen deploy after Jonathan's order.
 
 ### Out of scope
 
-- New Fund event kinds, envelopes, schema, or `goal.savedCents` writes.
-- Restyling wax seals or Kitty Banks words/styling.
-- Giving the Course a second Kitty scale.
-- Reopening F-2/F-3.
+- New Fund event kinds, envelopes, schema apply, or `goal.savedCents` writes.
+- Restyling wax seals or Kitty Banks.
 - iPhone `OfficePhone` mosaic.
-- Merge, deploy, Production, hosted mutation, secrets.
+- Production household mutation or secrets.
 
 ## Acceptance evidence
 
-- [x] 20 focused plate tests plus 1 DOM interaction test green
-- [x] `pnpm check` green on `f248d44` — **1402 passed / 3 skipped**
+- [x] 21 focused plate tests plus 1 DOM interaction test green
+- [x] `pnpm check` on D-185-integrated tree **1425 passed / 3 skipped**
+- [x] After D-186 merge: plates + Bianca startup/rehearsal **27 passed**; `tsc --noEmit` green
 - [x] Browser: single-click, double-click, handle, keyboard; 320/390/720/1100/1440
-- [x] Independent UX auditor — PASS WITH NOTES; F-1/N-1/N-2 repaired on this HEAD
-- [x] Draft PR targeting `main`; not merged, not deployed, not live
-
-## Plan
-
-- [x] Record baseline from `origin/main`.
-- [x] Implement primitives, models, UI, CSS, tests.
-- [x] Wire OfficeWide; keep Spread, seals, Kitty.
-- [x] Focused tests, then `pnpm check`.
-- [x] Draft PR, then browser proof.
-- [x] UX auditor + handoff.
+- [x] Independent UX auditor — PASS WITH NOTES; F-1/N-1/N-2 repaired
+- [x] Personal-card leak fenced; canary green
+- [x] Merged #260; kitchen `wrangler deploy` verified HTTP 200 with live `Office-C6krQOJZ.js`
 
 ## Evidence log
 
 - 2026-08-31: branched `cursor/desk-plates-shared-home-021f` from `origin/main@7d4e193`.
-- 2026-08-31: rebuilt Claude's unbuilt third slice on current `main`. Draft PR #260.
-- 2026-08-31: focused plates 20 passed; DOM click/handle/dblclick 1 passed.
-- 2026-08-31: `pnpm check` **1402 passed / 3 skipped**; Vite + Hercules Pro UI green.
-- 2026-08-31: live demo as Jonathan on `http://127.0.0.1:5173/`. Shared plates: Rent tomorrow, Visa 34% with 30% mark drawn, Hygienist owed $180, three shared banks, Therapy Friday, no findings. Click due plate → enlarged stage; Close → Spread; handle → Next bill cabinet (Rent + Spotify); Personal floor six plates. Artifacts under `/opt/cursor/artifacts/`.
-- 2026-08-31: UX auditor PASS WITH NOTES. Repaired invalid `aria-pressed`, duplicate empty tally copy, and "stay on the right" at stacked widths. Enlarged plate takes focus.
-- 2026-08-31: Verifier PASS WITH NOTES. No P0/P1. Docs commit closes the P2 “handoff not on the PR” note.
+- 2026-08-31: rebuilt Claude's unbuilt third slice. Draft then ready PR #260.
+- 2026-08-31: `pnpm check` **1425 passed / 3 skipped** after D-185 merge.
+- 2026-08-31: trust review FAIL on partner-personal cards; fenced `scope !== "personal"`.
+- 2026-08-31: Jonathan: “push merge deploy”. Merged through D-186. Push `main@c75d72e`.
+- 2026-08-31: Cloudflare Workers [`33447063786`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33447063786) success. Worker `e57b4a67-fbbb-45a2-b57c-043cda197101`. Live HTML `Cache-Control: no-store`; `index-BZnOtUHs.js` → `Office-C6krQOJZ.js` with plate kickers and the personal-scope fence.
 
 ## Decisions
 
 - Rebuild commit 3 onto current `main`; do not `git am` the three-commit packet.
-- Keep F-4 banks-below-<1200 so the Course stays readable at 1100px. Mosaic becomes 460px for the 2×3 plate grid. This is the only layout expansion.
-- Mosaic tiles `now` / `attention` / `change` leave Shared Home because they *are* the Spread's three registers. `SharedLedgerStory.tsx` stays in the tree for existing tests; OfficeWide Home no longer opens those panels from the mosaic.
+- Keep F-4 banks-below-<1200. Mosaic is 460px at that width so the 2×3 grid fits.
+- Mosaic tiles `now` / `attention` / `change` leave Shared Home because they *are* the Spread's three registers.
+- Shared `cards` must ignore personal-scope accounts even when the caller passes `booksHousehold`.
 
 ## Remaining uncertainty
 
 - Forced-colors and reduced-motion CSS exist; live Chrome Rendering emulation was not completed.
 - `paperHomeMosaic` still encodes the old story tile ids for Classic/helper tests; OfficeWide no longer calls it.
-- Personal empty plates (no wallet rooms / no personal bank) are honest for the Personal floor, not a Shared leak.
 
 ## Handoff
 
-Next owner: Jonathan. Draft PR #260 on `cursor/desk-plates-shared-home-021f` @ `f248d44`. **Not merged, not deployed, not live.** Do not merge unless Jonathan asks.
+Next owner: Jonathan. Hard-refresh `https://hearth-books.jonathan-beaulne123.workers.dev/` on a wide Paper office Home. **Merged and kitchen-published.** Not Production. Do not treat a Cloudflare preview alias as the kitchen.
