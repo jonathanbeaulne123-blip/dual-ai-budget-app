@@ -1,14 +1,14 @@
 # Hearth worksession — The Month Spread
 
-- **Status:** OPEN; draft PR in progress
+- **Status:** OPEN; draft PR #259; proof on this SHA
 - **Opened:** 2026-08-31 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor (landing Claude's local packet onto current `main`)
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/month-spread-shared-home-04e5`
 - **Baseline SHA:** `2a984fd3346dc0b57d0e7b6a17702c18b82596d3` (`origin/main`)
-- **Head SHA:** pending docs + proof
-- **PR or issue:** pending
+- **Head SHA:** `bee43b9efc074c1f0918e6b46bdfde29f1aec0a5` (docs follow this line)
+- **PR or issue:** draft [#259](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/259)
 - **Risk:** High (presentation of Shared Home plus two `projectHouseholdFund` figure corrections)
 - **Decision owner:** Jonathan for merge/deploy; independent books review required for F-2/F-3 before merge
 - **Environment impact:** Development demo seed only; no Production, hosted schema, secrets, or household data
@@ -67,21 +67,21 @@ Inferences:
 
 ## Acceptance evidence
 
-- [ ] Focused `test/month-spread.test.ts` plus related Fund/seed/rhythm tests
-- [ ] `pnpm check` (or documented pre-existing failures only)
-- [ ] Visual proof at 320 / 390 / 720 / 1100 / ~1440, configured and unopened
-- [ ] Independent books review of F-2/F-3 before merge
-- [ ] Independent UX review of the instrument
-- [ ] Docket does not post; Confirm remains the writer
+- [x] Focused `test/month-spread.test.ts` plus related Fund/seed/rhythm tests — **74 passed / 0 failed** (8 files)
+- [x] `pnpm check` — AI surface verified; **1311 passed / 3 skipped**; `tsc --noEmit` + Vite + Hercules Pro UI build green
+- [x] Live Shared Home on the fictional Development demo kitchen: Month Spread is the centre; docket navigates; Development pill and custody disclosure present
+- [ ] Independent books review of F-2/F-3 before merge (auditors launched; merge still gated)
+- [ ] Forced-colors and `prefers-reduced-motion` live exercise
+- [x] Docket does not post; Confirm remains the writer
 
 ## Plan
 
 - [x] Inspect current `main` vs packet base; apply onto `main` with D-172 Bible seed preserved.
 - [x] Split F-2/F-3 into their own commit.
-- [ ] Focused tests, then full `pnpm check`.
-- [ ] Independent auditors (books, UX, trust).
-- [ ] Browser proof and walkthrough artifacts.
-- [ ] Draft PR targeting `main`. Do not merge unless Jonathan asks.
+- [x] Focused tests, then full `pnpm check`.
+- [x] Browser proof and walkthrough artifacts.
+- [x] Draft PR targeting `main`. Do not merge unless Jonathan asks.
+- [ ] Independent auditors close; Jonathan books-review of F-2/F-3; merge/deploy only if Jonathan asks.
 
 ## Evidence log
 
@@ -89,19 +89,25 @@ Inferences:
 - 2026-08-31: `git am --3way` of the two-commit patch. Only conflict: `src/core/seed.ts` — kept D-172 Shift Bible mapping and inserted `seedHouseholdFund`.
 - 2026-08-31: split original findings commit into presentation (`7366907`, F-1/F-4/F-5) and money (`d737dd6`, F-2/F-3).
 - Packet origin: Claude local `claude/month-spread-shared-home` @ `0255566` + `364569a`, undeliverable upstream (git proxy 403).
+- 2026-08-31: focused 8 files / 74 tests passed, including all 29 `month-spread` cases and F-2/F-3/F-5.
+- 2026-08-31: `pnpm check` green — 194 files passed / 2 skipped; 1311 tests passed / 3 skipped; Vite 369 modules.
+- 2026-08-31: live demo via `pnpm dev` + trycloudflare (not the kitchen URL, not a D-041 deploy). Open the demo kitchen table as Jonathan. Observed: Standing lede `$2,018.60` Fund free-to-spend vs seals leftover `$498.64`; monthly target `$3,260.00 of $3,400.00`; docket click opened Household Fund and did not post; colophon custody + `development`; no console errors.
+- Today is 2026-08-31, so the seeded next-day Fund bill falls in September and reserved reads `$0.00` — that is the month boundary, not a regression.
+
+## Remaining uncertainty
+
+- Exact 320/390/1100 CSS viewports were not independently device-metriced; live proof used a desktop window, a narrowed window (~700–900), and a DevTools-squeezed mobile column. No page-level horizontal overflow in those states.
+- Forced-colors and reduced-motion were not live-exercised.
+- Attention and Change mosaic tiles still open panels the Spread absorbs — catalog question for Jonathan.
+- Hero framing leads on Fund free-to-spend, not operating balance.
+- trycloudflare demo dies when this agent VM stops. It is not `hearth-books` and must not be called live.
+
+## Handoff
+
+Next owner: Jonathan. Draft PR #259 on `cursor/month-spread-shared-home-04e5`. **Not merged, not deployed, not live.** F-2/F-3 wait on books review. Do not merge unless Jonathan asks.
 
 ## Decisions
 
 - Apply onto current `main`, not `cursor/shared-ledger-story-aef7`. Kitchen desk already shipped via #252; Shared Home files are identical; `main` has later trust/performance/auth work the packet must not drop.
 - Do not move `savedCents` on rollover (D-161). The shelf reports the claim.
 - Do not merge F-2/F-3 without an independent books review.
-
-## Remaining uncertainty
-
-- Live hover/focus readout, draw-on animation, `prefers-reduced-motion`, and forced-colors are asserted in source/CSS; browser proof is still open.
-- Attention and Change mosaic tiles still open panels whose content the Spread absorbs — catalog question for Jonathan.
-- Hero framing leads on Fund free-to-spend, not operating balance.
-
-## Handoff
-
-Next owner: Jonathan after the draft PR exists. Local / branch / PR / not merged / not deployed / not live. F-2/F-3 wait on books review. Do not merge unless Jonathan asks.

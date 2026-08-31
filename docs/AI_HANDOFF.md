@@ -2,7 +2,7 @@
 
 ## The Month Spread — Shared Home centre instrument (2026-08-31)
 
-**Status:** On `cursor/month-spread-shared-home-04e5` from exact `origin/main@2a984fd`. Draft PR pending proof. **Not merged, not deployed, not live.** Risk: **High** (presentation, plus two isolated `projectHouseholdFund` figure corrections).
+**Status:** Draft PR [#259](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/259) on `cursor/month-spread-shared-home-04e5` from exact `origin/main@2a984fd`. Head at docs follow-up. **Not merged, not deployed, not live.** Risk: **High** (presentation, plus two isolated `projectHouseholdFund` figure corrections).
 
 **Household outcome:** Shared Home's centre is the month as one instrument — Standing, Course, Docket — instead of the placeholder sentence. Seals, mosaic, and Kitty Banks keep their words and arithmetic.
 
@@ -10,11 +10,14 @@
 
 **What changed:** Claude's local two-commit packet, applied onto current `main` (kitchen desk already shipped via #252). Presentation commits plus an isolated F-2/F-3 money-projection commit. Worksession: [`worksessions/2026-08-31-month-spread.md`](worksessions/2026-08-31-month-spread.md).
 
-**Verification:** in progress on this branch. Do not treat the originating session's `ba752c2` suite numbers as proof here.
+**Verification:**
+- Focused: 8 files / **74 passed**.
+- `pnpm check`: AI surface verified; **1311 passed / 3 skipped**; `tsc` + Vite (369 modules) + Hercules Pro UI build green.
+- Live fictional Development demo kitchen: Month Spread is the centre; Standing `$2,018.60` Fund free-to-spend vs leftover-spend seal `$498.64`; monthly target `$3,260.00 of $3,400.00`; docket click opened Household Fund and did not post; custody disclosure and `development` pill on the face; no console errors.
 
-**Environment/data:** fictional Development demo seed only. No Production, network household calls, MCP, hosted schema, secrets, or real household data.
+**Environment/data:** fictional Development demo seed only. No Production, network household calls, MCP household access, hosted schema, secrets, or real household data. trycloudflare preview is a Cloud Agent tunnel, not D-041 kitchen publish.
 
-**Next owner:** Jonathan after the draft PR and books review of F-2/F-3. Do not merge unless Jonathan asks.
+**Next owner:** Jonathan. Look at Shared Home on the demo tunnel or PR. Books-review F-2/F-3 before merge. Do not merge unless Jonathan asks.
 
 ## SF-02 Shared Money membership and device access (2026-08-30)
 
