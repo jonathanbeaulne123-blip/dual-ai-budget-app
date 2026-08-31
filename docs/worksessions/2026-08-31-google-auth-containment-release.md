@@ -1,14 +1,14 @@
 # Hearth worksession — Google auth containment release
 
-- **Status:** READY — local release review PASS; hosted checks pending
+- **Status:** CLOSED — merged, deployed, and live-smoked
 - **Opened:** 2026-08-31 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/reconciliation-salvage-audit`
 - **Baseline SHA:** `3e48bcc3ca3919d8663c2f1ab1dfbd5a5cfda7cf`
-- **Head SHA:** `ab64ca198c3278efe05ccff3210060165f8c5f3e` (locally reviewed code/test candidate; exact merge SHA pending)
-- **PR or issue:** pending
+- **Head SHA:** `e0069cc3230eae311d22fd5fd2c701fd4e58fd10` (merge commit; reviewed branch SHA `83a53974fe28966058652d7051f3f6aafe89319a`)
+- **PR or issue:** [#254](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/254)
 - **Risk:** Release (Google/Auth identity and kitchen deployment; no money semantics)
 - **Decision owner:** Jonathan — explicitly authorized push, merge, and deployment
 - **Environment impact:** Cloudflare kitchen Worker and static assets; no hosted ledger/schema/data mutation
@@ -54,17 +54,17 @@ Background refresh, startup, Calendar, Drive, desk, and delayed UI work cannot u
 - [x] `git diff --check`, TypeScript, production build, and Wrangler dry-run pass.
 - [x] `pnpm check` passes: 1,282 tests passed, 3 skipped, then the production build passed.
 - [x] No secret, `.env`, workbook, chat export, private artifact, or household payload is tracked.
-- [ ] Branch CI and pull-request Cloudflare build pass for the exact release SHA.
-- [ ] Reviewed commit merges to `main`; `main` CI and Cloudflare deployment pass.
-- [ ] Live kitchen and non-mutating status routes return expected responses without enabling providers or touching household data.
+- [x] Branch CI and pull-request Cloudflare build pass for the exact release SHA.
+- [x] Reviewed commit merges to `main`; `main` CI and Cloudflare deployment pass.
+- [x] Live kitchen and non-mutating status routes return expected responses without enabling Production providers or touching household data.
 
 ## Plan
 
 - [x] Rebase the salvage branch onto current `origin/main` and preserve the synthetic demo suite.
 - [x] Run the Hearth release review gate and close any finding.
-- [ ] Push, open the PR, wait for hosted checks, and merge.
-- [ ] Observe the production Worker deploy and smoke the live app.
-- [ ] Close this worksession with exact evidence and rollback.
+- [x] Push, open the PR, wait for hosted checks, and merge.
+- [x] Observe the production Worker deploy and smoke the live app.
+- [x] Close this worksession with exact evidence and rollback.
 
 ## Evidence log
 
@@ -75,6 +75,10 @@ Background refresh, startup, Calendar, Drive, desk, and delayed UI work cannot u
 - 2026-08-31: the first full gate passed 1,280 tests and exposed only two test-only writes to hard-coded `/opt/cursor/artifacts`. Replaced that environment-specific destination with `HEARTH_ARTIFACTS_DIR` when supplied, otherwise an OS temporary directory. The two affected files then passed 26 tests in isolation.
 - 2026-08-31: repaired `pnpm check` passed end to end: AI surface verification; 1,282 tests passed / 3 skipped across 195 files; and the production build completed. Existing React test `act(...)` and PGlite/chunk warnings remain non-failing.
 - 2026-08-31: Hearth release review result is **PASS for push and hosted review**. Merge remains contingent on the exact pushed SHA passing branch CI and the pull-request Cloudflare build.
+- 2026-08-31: pushed reviewed branch SHA `83a53974fe28966058652d7051f3f6aafe89319a` and opened PR [#254](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/254). Push CI [33369789515](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33369789515), PR CI [33369835312](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33369835312), PR Cloudflare build [33369835456](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33369835456), and Cloudflare Workers Builds all passed; Supabase Preview was correctly skipped on the PR.
+- 2026-08-31: PR #254 merged at `2026-08-31T07:52:53Z` as `e0069cc3230eae311d22fd5fd2c701fd4e58fd10`. Main CI [33370332503](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33370332503) and the production Cloudflare workflow [33370332494](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33370332494) passed.
+- 2026-08-31: Cloudflare deployment `1d16a16e-a42e-448e-a8eb-ca7af17ba0c5` became the 100% Worker version at `2026-08-31T07:53:42.995Z`. The live app, roadmap, Evidence status, 7shifts status, and Flinks status returned HTTP 200. The entry bundle `/assets/index-X6VQTFBc.js` contains both the background-auth containment copy and current Demo Suite; the document title is `Hearth — Hercules in the kitchen`; root HTML remains `cache-control: no-store`.
+- 2026-08-31: live status responses remain Development-only. Evidence automation is disabled and Production is refused; 7shifts and Flinks Production access are refused. No provider flag, credential, schema, hosted data, or household content changed during release.
 
 ## Decisions
 
@@ -83,11 +87,10 @@ Background refresh, startup, Calendar, Drive, desk, and delayed UI work cannot u
 - No schema/data/secret/provider action is required for this code-only release.
 - Test proof output defaults to an OS temporary directory so local and GitHub runners can execute the same gate. `HEARTH_ARTIFACTS_DIR=/opt/cursor/artifacts` retains the previous visual-proof destination where that directory is available.
 
-## Remaining uncertainty
+## Known live-test limit
 
-- Hosted CI and deployment state do not exist until the branch is pushed and merged.
-- Live signed-in Google behavior needs a person with an existing Google session; this release can non-destructively verify route/build health and containment tests, but it will not inspect Google or household content.
+- Live signed-in Google behavior needs a person with an existing Google session. This release deliberately did not inspect Google, Drive, email, bank, or household content; the concurrency and scope behavior is covered by focused and full automated proof.
 
 ## Handoff
 
-Codex owns the bounded release through live smoke under Jonathan's explicit approval. Jonathan remains the decision owner for any newly discovered action that would change schema, secrets, provider flags, or household data.
+Release complete. The Google/Auth containment slice is on `main`, the production Worker is healthy, and no follow-up action is waiting on Jonathan. Rollback is the ordinary reviewed revert of PR #254; no schema or data rollback is required.
