@@ -319,14 +319,15 @@ function mergeReceipts(local: Household, remote: Household): Household["commandR
 }
 
 /**
- * Resolve a shared conflict without blocking UI. Tries disjoint absorb and safe auto-merge
- * first; when money rows still diverge on the same id, picks `prefer` deterministically.
+ * Reconcile a stale shared write without losing either side. Disjoint additions and
+ * non-money catalog drift still merge automatically. A true shared-money divergence
+ * remains unresolved for the existing human conflict sheet.
  */
 export async function autoResolveSharedConflict(
   local: Household,
   remote: Household,
   memberId: string,
-  prefer: "local" | "remote" = "local",
+  _prefer: "local" | "remote" = "local",
 ): Promise<Household> {
   if (canAbsorbDisjointSharedMoney(local, remote)) {
     return absorbDisjointSharedMoney(local, remote, memberId);
@@ -349,12 +350,7 @@ export async function autoResolveSharedConflict(
       baseRevision: Math.min(local.baseRevision ?? 0, remote.baseRevision ?? 0, remote.revision),
     });
   }
-  const conflicted = await recordConflict(local, remote, false);
-  const open = unresolvedConflicts(conflicted)[0];
-  if (!open) {
-    return markPendingTransport(local, "Sync is retrying in the background.");
-  }
-  return resolveConflictChoice(conflicted, open.id, prefer);
+  return recordConflict(local, remote, false);
 }
 
 /**

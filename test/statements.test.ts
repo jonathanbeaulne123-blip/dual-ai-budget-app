@@ -118,7 +118,8 @@ describe("Audit Office", () => {
       statementAmount: book / 100,
       createdBy: "MEM-001",
     });
-    expect(rec.postedIds).toEqual([]);
+    expect(rec.postedIds).toEqual([rec.household.kitchen.books.reconciliations[0]!.id]);
+    expect(rec.undo.commandKind).toBe("recordReconciliation");
     expect(rec.household.transactions).toHaveLength(household.transactions.length);
     expect(rec.household.kitchen.books.reconciliations[0]?.status).toBe("tied");
     expect(isCosmeticUnlocked(rec.household, specs, today)).toBe(true);

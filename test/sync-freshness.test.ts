@@ -210,7 +210,7 @@ describe("buildSyncFreshness", () => {
     expect(display.blocksSyncedLabel).toBe(true);
     expect(display.tone).toBe("warning");
     expect(display.actionKind).toBe("retry");
-    expect(display.actionLabel).toBe("Retry now");
+    expect(display.actionLabel).toBe("Review conflict");
   });
 
   it("offers retry on unhealthy pending transport", () => {

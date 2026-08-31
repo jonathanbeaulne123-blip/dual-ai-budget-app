@@ -262,6 +262,16 @@ export async function migrateBooks(db: Queryable): Promise<void> {
     // Existing receipts intentionally remain unproved so Startup P1 performs one
     // full rebuild from the cached household before incremental mode can engage.
     await db.query("INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)", [4, new Date().toISOString()]);
+    have.add(4);
+  }
+  if (!have.has(5)) {
+    // D-183: truthful opening rows are a balance-sheet source transaction, not P&L.
+    await db.exec(`
+      ALTER TABLE source_transactions DROP CONSTRAINT IF EXISTS source_transactions_type_check;
+      ALTER TABLE source_transactions ADD CONSTRAINT source_transactions_type_check
+        CHECK (type IN ('expense', 'income', 'transfer', 'refund', 'opening'));
+    `);
+    await db.query("INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)", [5, new Date().toISOString()]);
   }
 }
 
@@ -845,10 +855,11 @@ async function writeBooks(db: Queryable, household: Household, compiled: Compile
   const sqlEquation = await db.query<{
     net_worth_cents: number;
     net_income_cents: number;
-  }>("SELECT net_worth_cents, net_income_cents FROM v_net_worth WHERE household_id = $1", [compiled.householdId]);
+    equity_cents: number;
+  }>("SELECT net_worth_cents, net_income_cents, equity_cents FROM v_net_worth WHERE household_id = $1", [compiled.householdId]);
   const row = sqlEquation.rows[0];
   const sqlHolds = row
-    ? Number(row.net_worth_cents) === Number(row.net_income_cents)
+    ? Number(row.net_worth_cents) === Number(row.equity_cents) + Number(row.net_income_cents)
     : equation.holds;
   if (!tb.inBalance || !equation.holds || !sqlHolds) {
     throw new UnbalancedBooksError("The accounting equation does not hold after ingest. Nothing was posted.");

@@ -23,10 +23,10 @@ Apply missing SQL from `supabase/migrations/` in the [Supabase SQL Editor](https
 
 ## Cleanup before a fresh run
 
-When prior test households clutter **Login with Google**:
+When prior test households clutter the Google household chooser:
 
 1. Hard-refresh the kitchen.
-2. **Login with Google** (owner or joiner).
+2. **Continue with Google** (owner or joiner).
 3. **Live `main` kitchen:** tap **Start from scratch** (Development welcome or More) and confirm **Delete all Development households**, or tap **Delete** on each owned household (migration **015**).
 4. Owner bulk delete (016) removes the cloud rows you own; member-only seats are left. This phone’s Development copies are cleared. Google stays signed in and **Create household** opens.
 
@@ -41,16 +41,16 @@ Migration **016** (`hearth_reset_development_households`) is applied. **Start fr
 ### Device A — owner
 
 1. Open kitchen → **Development** pill.
-2. **Create household with Google** (or open an existing empty Development household you own).
+2. **Continue with Google**, then **Create household** (or open an existing empty Development household you own).
 3. **More → Invite** → choose partner roster member → **QR invite**.
 4. Show QR (or copy join URL: `/join?invite=<64-hex>&env=development`).
 
 ### Device B — joiner (partner)
 
 1. Open kitchen → **Development** pill.
-2. **Join with QR code** (or paste join URL).
+2. Open the invitation link or choose **Join household → Scan invitation QR code**.
 3. **Continue with Google** with the **invited** Google account (not the owner’s).
-4. Confirm redeem succeeds and the household opens — not the discovery error, not an infinite pending-invite loop.
+4. Confirm redeem succeeds, the authorized household chooser returns, and the invited household is highlighted as ready to open — not the discovery error and not an infinite pending-invite loop.
 
 ### Pass criteria
 
@@ -59,7 +59,7 @@ Migration **016** (`hearth_reset_development_households`) is applied. **Start fr
 - [ ] Immediate discovery returns the **exact** household and member seat.
 - [ ] Duplicate redeem / retry is **idempotent** (no error loop).
 - [ ] Pending invite clears after success (re-opening kitchen does not force redeem again).
-- [ ] Opened books pass **PGlite acceptance** (household loads; balances sane; no hash rejection toast).
+- [ ] The joined household opens only after the person chooses it, then passes **PGlite acceptance** (balances sane; no hash rejection toast).
 - [ ] Wrong Google account, wrong environment, or wrong member seat are **rejected** (spot-check one negative if time allows).
 
 ### Optional second leg (continuity)

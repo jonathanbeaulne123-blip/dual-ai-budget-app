@@ -7,8 +7,10 @@ import {
   postEntry,
 } from "../src/core/index.ts";
 import { undoLedgerConfirm } from "../src/core/confirmationUndo.ts";
+import { financialAuditHashForScope } from "../src/core/commandIdentity.ts";
 import { receiptToCommandRef } from "../src/ledger/continuityCommandLog.ts";
 import {
+  applyCommandEventLocally,
   buildSnapshotFromEvents,
   catalogBaseFromSnapshot,
   extractMaterializationFacts,
@@ -198,7 +200,7 @@ describe("T2-S3 materialized snapshot builder", () => {
     expect(materialized.transactions.some((row) => row.id === posted.postedIds[0])).toBe(false);
   });
 
-  it("auto-resolves same-row diverge on incoming command instead of silent LWW", async () => {
+  it("preserves same-row diverge for explicit resolution instead of silent LWW", async () => {
     const previous = googleHousehold();
     const posted = postEntry(previous, grocery("conflict row", "8.00"));
     const txId = posted.postedIds[0]!;
@@ -220,20 +222,31 @@ describe("T2-S3 materialized snapshot builder", () => {
       ...posted.household.transactions.find((row) => row.id === txId)!,
       amountCents: 999,
       note: "different amount",
+      splits: [{ party: "joint" as const, amountCents: 999 }],
     };
+    const remoteAccepted = {
+      ...accepted.household,
+      revision: accepted.household.revision + 1,
+      transactions: accepted.household.transactions.map((row) => (row.id === txId ? divergent : row)),
+    };
+    const remoteAuditHash = await financialAuditHashForScope(remoteAccepted, "shared", identity.memberId);
+    expect(remoteAuditHash).not.toBe(
+      await financialAuditHashForScope(accepted.household, "shared", identity.memberId),
+    );
     const conflictEvent: ContinuityCommandEvent = {
       ...baseEvent,
       id: "evt-conflict",
       idempotency_key: "conflict-remote",
       confirmation_id: "conflict-remote",
       identity_hash: "remote-hash",
-      base_revision: posted.household.revision,
-      result_revision: posted.household.revision + 1,
+      base_revision: accepted.household.revision,
+      result_revision: accepted.household.revision + 1,
       payload_json: {
         ...baseEvent.payload_json,
         confirmationId: "conflict-remote",
         identityHash: "remote-hash",
-        revision: posted.household.revision + 1,
+        auditHash: remoteAuditHash,
+        revision: accepted.household.revision + 1,
         materializationFacts: { transactions: [divergent] },
       },
       created_at: "2026-08-26T12:02:00.000Z",
@@ -243,10 +256,37 @@ describe("T2-S3 materialized snapshot builder", () => {
       [baseEvent, conflictEvent],
       catalogBaseFromSnapshot(previous),
     );
-    expect(materialized.conflicts?.some((row) => row.resolved)).toBe(true);
+    const open = materialized.conflicts?.find((row) => !row.resolved);
+    expect(open).toBeDefined();
+    expect(open?.remoteSnapshot.transactions.find((row) => row.id === txId)?.amountCents).toBe(999);
     expect(materialized.transactions.find((row) => row.id === txId)?.amountCents).toBe(
       posted.household.transactions.find((row) => row.id === txId)?.amountCents,
     );
+
+    const direct = await applyCommandEventLocally({
+      local: accepted.household,
+      event: conflictEvent,
+      memberId: identity.memberId,
+    });
+    expect(direct.ok).toBe(true);
+    if (!direct.ok) throw new Error("same-row collision should be retained for review");
+    expect(direct.duplicate).toBe(false);
+    expect(direct.household.transactions.find((row) => row.id === txId)?.amountCents).toBe(800);
+    expect(
+      direct.household.conflicts
+        ?.find((row) => !row.resolved)
+        ?.remoteSnapshot.transactions.find((row) => row.id === txId)?.amountCents,
+    ).toBe(999);
+
+    const forged = await applyCommandEventLocally({
+      local: accepted.household,
+      event: {
+        ...conflictEvent,
+        payload_json: { ...conflictEvent.payload_json, auditHash: "0".repeat(64) },
+      },
+      memberId: identity.memberId,
+    });
+    expect(forged).toEqual({ ok: false, reason: "audit-hash-mismatch", fallback: true });
   });
 
   it("extractMaterializationFacts stays bounded to posted ids", () => {

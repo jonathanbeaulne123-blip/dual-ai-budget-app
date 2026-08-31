@@ -12,6 +12,7 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md) | Google-account access from any device, cloud/PGlite roles, the disposable-data window, and the late-September security milestone |
 | [SYNC_ARCHITECTURE.md](SYNC_ARCHITECTURE.md) | **Tiered sync plan (D-149):** 100–500 ms Realtime push, atomic SQL, command-log, slice prompts under [`briefs/sync/`](briefs/sync/README.md) |
 | [SYNC_REALTIME_SMOKE.md](SYNC_REALTIME_SMOKE.md) | **Two-phone Realtime latency smoke** (D-149 T1 G4); Jonathan pass 2026-08-27 |
+| [SYNC_PILOT.md](SYNC_PILOT.md) | **D-180 Development-only ledger-native pilot:** exact build boundary, live two-account matrix, 100-event latency gate, fourteen-day rehearsal, and stop/rollback rules |
 | [briefs/shared-money/](briefs/shared-money/README.md) | **D-174 priority-one Shared Money program:** partner-backed account direction, current-law boundary, phased gates, and exact Phase 0 AI packets |
 | [SHARED_MONEY_BASELINE.md](SHARED_MONEY_BASELINE.md) | **SF-01 current capability truth:** human matrix across identity, membership, continuity, opening truth, imports, Fund, notifications, and writes; machine companion in [`shared-money-baseline.json`](shared-money-baseline.json) |
 | [ROADMAP_SITE.md](ROADMAP_SITE.md) | **D-154/D-157 public living roadmap + museum:** indexable `/roadmap/`, current vision, evidence gates, dated journey, historical exhibits, additive protocol, and deployment gate |
@@ -37,7 +38,11 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [HERCULES_PRO_CAPABILITIES.md](HERCULES_PRO_CAPABILITIES.md) | Full inventory of Hercules Pro tools, calculations, and packs |
 | [ONBOARDING_UPDATE.md](ONBOARDING_UPDATE.md) | Four-part Hercules-led onboarding plan, button/feature audit, Bianca journey, scripts, architecture direction, and gates |
 | [ONBOARDING_PART2_STORYBOARD.md](ONBOARDING_PART2_STORYBOARD.md) | Locked phone/desktop routes, focus camera, dialogue, Practice scenarios, failure recovery, implementation slices, and D-129 exception |
+| [briefs/CLAUDE_SHARED_HOME_MONTH_INSTRUMENT_2026-08-31.md](briefs/CLAUDE_SHARED_HOME_MONTH_INSTRUMENT_2026-08-31.md) | **Claude (not implement):** grander swipable Fund-month instrument for the selling Shared Home; Cursor executes after Jonathan confirms |
+| [briefs/CODEX_D165_UX_MAIN_INTEGRATION_HANDOFF_2026-08-29.md](briefs/CODEX_D165_UX_MAIN_INTEGRATION_HANDOFF_2026-08-29.md) | **Consumed:** kitchen desk is D-173 on `main` via #252. Add slideshow from later `#244` commits is **D-181**. |
 | [briefs/CHATGPT_D164_INDEPENDENT_REVIEW_2026-08-29.md](briefs/CHATGPT_D164_INDEPENDENT_REVIEW_2026-08-29.md) | Paste-ready GPT-5 Pro prompt for independent D-164 Shared kitchen / Household table review (draft PR #244; not shipped) |
+| [briefs/BIANCA_MONTH_ONE_REHEARSAL_HANDOFF_2026-08-28.md](briefs/BIANCA_MONTH_ONE_REHEARSAL_HANDOFF_2026-08-28.md) | D-183 Development-only four-week rehearsal, exact golden month, mainline App/command-sync contract, Bianca playtest/friction gate, evidence, and no-launch handoff |
+| [briefs/CURSOR_ONBOARDING_FOUNDATION_PROMPT.md](briefs/CURSOR_ONBOARDING_FOUNDATION_PROMPT.md) | Bounded Cursor Slice A foundation prompt with multi-model review and no migration/provider overlap |
 | [OFFICE.md](OFFICE.md) | Office direction; reconcile with shipped Office/mobile state when stale |
 | [CLAUDE_DESKTOP_OFFICE.md](CLAUDE_DESKTOP_OFFICE.md) | Claude desktop-office prompt |
 | [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md) | Shipped phone Home prompt/history |

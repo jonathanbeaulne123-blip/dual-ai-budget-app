@@ -20,15 +20,28 @@ describe("Cloudflare static host pairing", () => {
       account_id: string;
       main: string;
       assets: { directory: string; not_found_handling: string; run_worker_first?: unknown };
-      vars?: { OPENAI_MODEL?: string; ANTHROPIC_MODEL?: string };
+      vars?: {
+        GEMINI_MODEL?: string;
+        GROQ_MODEL?: string;
+        OPENAI_MODEL?: string;
+        ANTHROPIC_MODEL?: string;
+        HERCULES_CHAT_PROVIDER_TIMEOUT_MS?: string;
+        HERCULES_ALLOW_EXTERNAL_PROVIDERS?: string;
+        HERCULES_EXTERNAL_DATA_CLASSIFICATION?: string;
+      };
     };
     expect(config.account_id).toBe("7dfdfbba3053d8b857cbc359e0761c00");
     expect(config.main).toBe("workers/site.js");
     expect(config.assets.directory).toBe("./dist");
     expect(config.assets.not_found_handling).toBe("single-page-application");
     expect(config.assets.run_worker_first).toBe(true);
+    expect(config.vars?.GEMINI_MODEL).toBe("gemini-3.1-flash-lite");
+    expect(config.vars?.GROQ_MODEL).toBe("openai/gpt-oss-120b");
     expect(config.vars?.OPENAI_MODEL).toBe("gpt-4o-mini");
     expect(config.vars?.ANTHROPIC_MODEL).toBe("claude-haiku-4-5");
+    expect(config.vars?.HERCULES_CHAT_PROVIDER_TIMEOUT_MS).toBe("1800");
+    expect(config.vars?.HERCULES_ALLOW_EXTERNAL_PROVIDERS).toBe("true");
+    expect(config.vars?.HERCULES_EXTERNAL_DATA_CLASSIFICATION).toBe("synthetic");
   });
 
   it("does not ship a catch-all _redirects file that Cloudflare Workers rejects", () => {
@@ -59,6 +72,10 @@ describe("Cloudflare static host pairing", () => {
     expect(worker).toMatch(/text\/html/);
     expect(worker).toContain("api.openai.com");
     expect(worker).toContain("api.anthropic.com");
+    expect(worker).toContain("generativelanguage.googleapis.com");
+    expect(worker).toContain("api.groq.com");
+    expect(worker).toContain("env.GEMINI_API_KEY");
+    expect(worker).toContain("env.GROQ_API_KEY");
     expect(worker).toContain("env.OPENAI_API_KEY");
     expect(worker).toContain("env.ANTHROPIC_API_KEY");
     expect(worker).toContain("LEDGER MEMORY LABELS");
@@ -74,8 +91,10 @@ describe("Cloudflare static host pairing", () => {
     expect(worker).not.toContain("VITE_ANTHROPIC");
     const envExample = readFileSync(new URL("../.env.example", import.meta.url), "utf8");
     expect(envExample).toMatch(/third-party keys are allowed/i);
+    expect(envExample).toContain("wrangler secret put GEMINI_API_KEY");
+    expect(envExample).toContain("wrangler secret put GROQ_API_KEY");
     expect(envExample).toContain("wrangler secret put OPENAI_API_KEY");
-    expect(envExample).not.toMatch(/VITE_OPENAI|VITE_ANTHROPIC/);
+    expect(envExample).not.toMatch(/VITE_GEMINI|VITE_GROQ|VITE_OPENAI|VITE_ANTHROPIC/);
   });
 
   it("acks disabled Evidence deliveries and declares isolated Development and Production queues", async () => {
@@ -114,7 +133,11 @@ describe("Cloudflare static host pairing", () => {
     expect(workflow).toMatch(/branches:\s*\[main\]/);
     expect(workflow).not.toContain("hearth-rebuild-cfde");
     expect(workflow).toContain("VITE_GOOGLE_CLIENT_ID");
-    expect(workflow).toContain('VITE_PRODUCTION_CONTINUITY: "1"');
+    expect(workflow).toContain('VITE_SUPABASE_AUTH_ENABLED: "1"');
+    expect(workflow).toContain('VITE_CONTINUITY_REALTIME: "1"');
+    expect(workflow).toContain('VITE_CONTINUITY_COMMAND_LOG: "1"');
+    expect(workflow).toContain('VITE_PRODUCTION_CONTINUITY: "0"');
+    expect(workflow).toContain('VITE_SYNC_PILOT_DIAGNOSTICS: "1"');
     expect(workflow).toContain("::error::");
     expect(workflow).toContain("workflow_dispatch");
     expect(workflow).toContain("actions/checkout@v5");

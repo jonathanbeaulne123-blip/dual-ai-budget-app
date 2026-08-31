@@ -1,4 +1,4 @@
-export const BOOKS_SCHEMA_VERSION = 4;
+export const BOOKS_SCHEMA_VERSION = 5;
 
 export const BOOKS_SCHEMA = `
 CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS source_transactions (
   id TEXT PRIMARY KEY,
   household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
   date_key TEXT NOT NULL,
-  type TEXT NOT NULL CHECK (type IN ('expense', 'income', 'transfer', 'refund')),
+  type TEXT NOT NULL CHECK (type IN ('expense', 'income', 'transfer', 'refund', 'opening')),
   amount_cents INTEGER NOT NULL,
   account_id TEXT NOT NULL,
   subcategory_id TEXT,
@@ -396,6 +396,7 @@ SELECT
   SUM(CASE WHEN account_type = 'liability' THEN -net_cents ELSE 0 END) AS liability_cents,
   SUM(CASE WHEN account_type = 'income' THEN -net_cents ELSE 0 END) AS income_cents,
   SUM(CASE WHEN account_type = 'expense' THEN net_cents ELSE 0 END) AS expense_cents,
+  SUM(CASE WHEN account_type = 'equity' THEN -net_cents ELSE 0 END) AS equity_cents,
   SUM(CASE WHEN account_type = 'asset' THEN net_cents WHEN account_type = 'liability' THEN net_cents ELSE 0 END) AS net_worth_cents,
   SUM(CASE WHEN account_type = 'income' THEN -net_cents WHEN account_type = 'expense' THEN -net_cents ELSE 0 END) AS net_income_cents
 FROM v_trial_balance

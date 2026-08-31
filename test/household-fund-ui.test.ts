@@ -2,14 +2,15 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
+const addSlideshow = readFileSync(new URL("../src/AddSlideshow.tsx", import.meta.url), "utf8");
 const books = readFileSync(new URL("../src/Books.tsx", import.meta.url), "utf8");
 const panel = readFileSync(new URL("../src/HouseholdFundPanel.tsx", import.meta.url), "utf8");
 const accounts = readFileSync(new URL("../src/Accounts.tsx", import.meta.url), "utf8");
 
 describe("Household Fund experience fences", () => {
   it("keeps funding separate from transaction visibility on Confirm", () => {
-    expect(app).toContain("Use Household Fund");
-    expect(app).toContain("Separate from Shared or Personal visibility");
+    expect(addSlideshow).toContain("Use Household Fund");
+    expect(addSlideshow).toContain("Separate from Shared or Personal visibility");
     expect(app).toContain("fundedCents: parseAmount(form.fundedAmount || form.amount)");
     expect(app).toContain("destinationAccountId: form.fundDestinationAccountId || form.accountId");
   });

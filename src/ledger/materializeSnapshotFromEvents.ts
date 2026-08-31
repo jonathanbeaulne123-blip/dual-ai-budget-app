@@ -1,6 +1,7 @@
-import { financialAuditHash, financialAuditHashForScope } from "../core/commandIdentity.ts";
-import { recordConflict, resolveConflictChoice, unresolvedConflicts } from "../core/conflict.ts";
+import { financialAuditHash, financialAuditHashForScope, sha256Hex } from "../core/commandIdentity.ts";
+import { recordConflict } from "../core/conflict.ts";
 import { rememberReceipt } from "../core/commandIdentity.ts";
+import { mergeMonthRehearsals, shapeMonthRehearsals } from "../core/monthRehearsal.ts";
 import { ensureHouseholdShape, mergeTombstones } from "../core/sync.ts";
 import type {
   Claim,
@@ -13,6 +14,7 @@ import type {
   HouseholdFundKittyAllocation,
   HouseholdFundMonthPlan,
   HouseholdFundSettlementAllocation,
+  MonthRehearsal,
   Shift,
   SitDownSession,
   Tombstone,
@@ -49,6 +51,7 @@ export type ContinuityMaterializationFacts = {
   fundEvents?: HouseholdFundEvent[];
   fundSettlementAllocations?: HouseholdFundSettlementAllocation[];
   fundKittyAllocations?: HouseholdFundKittyAllocation[];
+  monthRehearsals?: MonthRehearsal[];
   tombstones?: Tombstone[];
 };
 
@@ -100,11 +103,49 @@ function receiptFromPayload(payload: ContinuityCommandEventPayload): CommandRece
     confirmationId: payload.confirmationId,
     identityHash: payload.identityHash,
     auditHash: payload.auditHash,
+    materializationHash: payload.materializationHash,
     commandKind: payload.commandKind,
     postedIds: [...payload.postedIds],
     revision: payload.revision,
     acceptedAt: payload.acceptedAt,
   };
+}
+
+function eventDeclaresMonthRehearsalUpdate(event: ContinuityCommandEvent): boolean {
+  if (event.payload_json.commandKind !== event.command_type) return false;
+  return event.command_type === "updateMonthRehearsal"
+    || event.payload_json.compactedCommands?.some(
+      (row) => row.commandKind === "updateMonthRehearsal" && row.ledgerScope === "shared",
+    ) === true;
+}
+
+function actorMayApplyMonthRehearsals(
+  local: Household,
+  event: ContinuityCommandEvent,
+  incoming: MonthRehearsal[],
+): boolean {
+  if (event.environment !== "development" || event.ledger_scope !== "shared") return false;
+  if (!eventDeclaresMonthRehearsalUpdate(event)) return false;
+  const memberIds = new Set(local.members.filter((row) => row.active).map((row) => row.id));
+  const existingById = new Map((local.monthRehearsals ?? []).map((row) => [row.id, row]));
+  for (const rehearsal of incoming) {
+    const existing = existingById.get(rehearsal.id);
+    if (existing && JSON.stringify(existing) === JSON.stringify(rehearsal)) continue;
+    if (existing) {
+      if (existing.biancaParticipantId !== rehearsal.biancaParticipantId
+        || existing.jonathanPartnerId !== rehearsal.jonathanPartnerId) return false;
+      if (event.member_id !== existing.biancaParticipantId
+        && event.member_id !== existing.jonathanPartnerId) return false;
+      continue;
+    }
+    if (rehearsal.biancaParticipantId === rehearsal.jonathanPartnerId
+      || !memberIds.has(rehearsal.biancaParticipantId)
+      || !memberIds.has(rehearsal.jonathanPartnerId)
+      || rehearsal.startedByMemberId !== event.member_id
+      || (event.member_id !== rehearsal.biancaParticipantId
+        && event.member_id !== rehearsal.jonathanPartnerId)) return false;
+  }
+  return true;
 }
 
 function alreadyApplied(snapshot: Household, event: ContinuityCommandEvent): boolean {
@@ -160,6 +201,7 @@ function filterFactsForScope(
     if (facts.fundEvents?.length) scoped.fundEvents = facts.fundEvents;
     if (facts.fundSettlementAllocations?.length) scoped.fundSettlementAllocations = facts.fundSettlementAllocations;
     if (facts.fundKittyAllocations?.length) scoped.fundKittyAllocations = facts.fundKittyAllocations;
+    if (facts.monthRehearsals?.length) scoped.monthRehearsals = shapeMonthRehearsals(facts.monthRehearsals);
   }
   if (facts.tombstones?.length) {
     scoped.tombstones = facts.tombstones;
@@ -175,6 +217,7 @@ export function extractMaterializationFacts(
     acceptedAt?: string;
     ledgerScope?: "shared" | "personal";
     memberId?: string;
+    commandKind?: string;
   },
 ): ContinuityMaterializationFacts {
   const posted = new Set(postedIds.filter(Boolean));
@@ -213,6 +256,9 @@ export function extractMaterializationFacts(
     if (fundSettlementAllocations.length) facts.fundSettlementAllocations = fundSettlementAllocations;
     const fundKittyAllocations = (household.fundKittyAllocations ?? []).filter((row) => posted.has(row.id));
     if (fundKittyAllocations.length) facts.fundKittyAllocations = fundKittyAllocations;
+    if (options?.commandKind === "updateMonthRehearsal") {
+      facts.monthRehearsals = shapeMonthRehearsals(household.monthRehearsals);
+    }
   }
   let tombstones = (household.tombstones ?? []).filter((row) => posted.has(row.id));
   if (!tombstones.length && !posted.size) {
@@ -233,10 +279,7 @@ export function extractMaterializationFacts(
 }
 
 async function deferConflictingEvent(snapshot: Household, remote: Household): Promise<Household> {
-  const conflicted = await recordConflict(snapshot, remote, false);
-  const open = unresolvedConflicts(conflicted)[0];
-  if (!open) return snapshot;
-  return resolveConflictChoice(conflicted, open.id, "local");
+  return recordConflict(snapshot, remote, false);
 }
 
 async function applyEvent(
@@ -328,6 +371,10 @@ async function applyEvent(
     fundEvents: fundEventResult.rows.filter((row) => !dead.has(row.id)),
     fundSettlementAllocations: fundSettlementResult.rows.filter((row) => !dead.has(row.id)),
     fundKittyAllocations: fundKittyResult.rows.filter((row) => !dead.has(row.id)),
+    monthRehearsals: mergeMonthRehearsals(
+      shapeMonthRehearsals(snapshot.monthRehearsals),
+      shapeMonthRehearsals(facts.monthRehearsals),
+    ),
     tombstones: mergedTombstones,
   };
   next = rememberReceipt(next, receiptFromPayload(payload));
@@ -490,12 +537,43 @@ export async function applyCommandEventLocally(input: {
   if (!event.payload_json.materializationFacts) {
     return { ok: false, reason: "missing-materialization-facts", fallback: true };
   }
+  const incomingRehearsals = shapeMonthRehearsals(
+    event.payload_json.materializationFacts.monthRehearsals,
+  );
+  if (incomingRehearsals.length) {
+    if (!actorMayApplyMonthRehearsals(local, event, incomingRehearsals)) {
+      return { ok: false, reason: "month-rehearsal-authority-mismatch", fallback: true };
+    }
+    if (!event.payload_json.materializationHash
+      || await sha256Hex(incomingRehearsals) !== event.payload_json.materializationHash) {
+      return { ok: false, reason: "materialization-hash-mismatch", fallback: true };
+    }
+  }
 
+  const priorConflictIds = new Set((local.conflicts ?? []).map((row) => row.id));
   const candidate = await buildSnapshotFromEvents([event], local);
+  const retainedNewConflict = (candidate.conflicts ?? []).find(
+    (row) => !row.resolved && !priorConflictIds.has(row.id),
+  );
   const auditHash = event.payload_json.auditHash;
   if (auditHash) {
     const recomputed = await financialAuditHashForScope(candidate, event.ledger_scope, event.member_id);
     if (recomputed !== auditHash) {
+      // A genuine same-fact collision keeps the already accepted local branch as
+      // the active books and stores the remote branch inside the new conflict.
+      // The hosted hash therefore describes the preserved remote branch until a
+      // person chooses a side. App still sends this candidate through PGlite and
+      // acceptHouseholdWrite before it becomes the local replica.
+      if (retainedNewConflict) {
+        const preservedRemoteHash = await financialAuditHashForScope(
+          retainedNewConflict.remoteSnapshot,
+          event.ledger_scope,
+          event.member_id,
+        );
+        if (preservedRemoteHash === auditHash) {
+          return { ok: true, household: candidate, duplicate: false };
+        }
+      }
       return { ok: false, reason: "audit-hash-mismatch", fallback: true };
     }
   }

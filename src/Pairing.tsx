@@ -43,7 +43,9 @@ import {
   type MembershipRole,
 } from "./ledger/householdInvites.ts";
 import { pushSupabaseHousehold, readSupabaseConfig } from "./ledger/supabase.ts";
+import { hostedContinuityAllowed } from "./ledger/continuityPolicy.ts";
 import { AuthJoinQr } from "./AuthJoinQr.tsx";
+import { inviteFlowMessage, type InviteFlowState } from "./HouseholdEntryCard.tsx";
 
 function downloadPass(household: Household) {
   const pass = makeHearthPass(household);
@@ -71,6 +73,17 @@ async function shareInvite(household: Household) {
   await navigator.clipboard?.writeText(`${text}\n${url}`);
 }
 
+/**
+ * Keep older phrase/recovery QR codes usable after Google invitations became
+ * the primary join path. Auth invitations stay in the Google field; only
+ * recognized legacy values are handed to Advanced recovery.
+ */
+export function legacyRecoveryInputFromInvite(value: string): string {
+  const raw = value.trim();
+  if (!raw || authInviteTokenFromText(raw)) return "";
+  return raw.startsWith("{") || isValidInviteToken(raw) ? raw : "";
+}
+
 export function WelcomeJoin({
   error,
   busy,
@@ -81,6 +94,9 @@ export function WelcomeJoin({
   onBusy,
   onJoined,
   onRedeemAuthInvite,
+  inviteFlowState = "idle",
+  onScanQr,
+  onUseAnotherGoogle,
   onBack,
 }: {
   error: string;
@@ -93,27 +109,48 @@ export function WelcomeJoin({
   onJoined: (household: Household) => Promise<void>;
   /** Auth/RLS one-time invite (email/QR). Phrase path stays separate. */
   onRedeemAuthInvite?: (token: string) => Promise<void>;
+  inviteFlowState?: InviteFlowState;
+  onScanQr?: () => void;
+  onUseAnotherGoogle?: () => void;
   onBack: () => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [cloud, setCloud] = useState<boolean | null>(null);
+  const [recoveryInput, setRecoveryInput] = useState("");
   const authToken = authInviteTokenFromText(inviteInput) || (isAuthInviteToken(inviteInput.trim()) ? inviteInput.trim().toLowerCase() : "");
 
-  async function join() {
+  useEffect(() => {
+    setRecoveryInput(legacyRecoveryInputFromInvite(inviteInput));
+  }, [inviteInput]);
+
+  async function redeemGoogleInvite() {
     onBusy(true);
     onError("");
     try {
       const raw = inviteInput.trim();
-      if (raw.startsWith("{")) {
-        await onJoined(joinFromPastedSecret(raw, null, undefined, environment));
-        return;
-      }
       const token = authInviteTokenFromText(raw);
       if (token) {
         if (!onRedeemAuthInvite) {
-          throw new Error("Continue with Google, then open this invite link again.");
+          throw new Error("Continue with Google to accept this invitation.");
         }
         await onRedeemAuthInvite(token);
+        return;
+      }
+      throw new Error("Paste the Google invitation link you received, or scan its QR code.");
+    } catch (caught) {
+      onError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      onBusy(false);
+    }
+  }
+
+  async function recoverLegacyHousehold() {
+    onBusy(true);
+    onError("");
+    try {
+      const raw = recoveryInput.trim();
+      if (raw.startsWith("{")) {
+        await onJoined(joinFromPastedSecret(raw, null, undefined, environment));
         return;
       }
       const live = cloud ?? await cloudBooksLive();
@@ -122,7 +159,7 @@ export function WelcomeJoin({
         await onJoined(await joinSharedHousehold(raw, undefined, environment));
         return;
       }
-      throw new Error("Paste an invite link, type the three-word household code, or import a Hearth Pass.");
+      throw new Error("Enter the three-word recovery code, paste a recovery secret, or import a Hearth Pass.");
     } catch (caught) {
       onError(caught instanceof Error ? caught.message : String(caught));
     } finally {
@@ -131,29 +168,53 @@ export function WelcomeJoin({
   }
 
   return (
-    <>
-      <label>3-word household code or invite link</label>
+    <section className="welcome-join" aria-labelledby="welcome-join-title">
+      <p className="kicker">Google invitation</p>
+      <h2 id="welcome-join-title">Join a household</h2>
+      <p className="muted">Open the invitation link you received. Hearth will keep it safe while Google confirms who you are.</p>
+      <label htmlFor="welcome-google-invite">Invitation link</label>
       <input
+        id="welcome-google-invite"
         value={inviteInput}
         onChange={(event) => onInviteInput(event.target.value)}
-        placeholder={supabaseAuthEnabled() ? "Invite link or cedar lantern kite" : "cedar lantern kite"}
+        placeholder="https://…/join?invite=…"
         autoCapitalize="none"
         autoCorrect="off"
       />
-      {supabaseAuthEnabled() && (
-        <p className="muted">
-          Email and QR invites need Continue with Google. You do not need a household first —
-          scan or open the invite, then sign in. A three-word phrase is not Auth.
-        </p>
-      )}
-      <p className="muted">{hostingHint(Boolean(cloud))}</p>
+      <p className="welcome-join__status" role="status" aria-live="polite" aria-busy={inviteFlowState === "redeeming" || inviteFlowState === "refreshing"}>
+        {inviteFlowMessage(inviteFlowState)}
+      </p>
       <KitchenNotice message={error} />
-      <button className="primary" disabled={busy} onClick={() => void join()}>
-        {authToken ? "Redeem invite" : "Join household"}
+      <button className="primary welcome-join__primary" disabled={busy || !authToken} onClick={() => void redeemGoogleInvite()}>
+        {inviteFlowState === "awaiting-google" ? "Continue with Google" : inviteFlowState === "redeeming" ? "Accepting invitation…" : inviteFlowState === "refreshing" ? "Refreshing households…" : inviteFlowState === "error" ? "Try invitation again" : "Accept invitation"}
       </button>
-      <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => fileRef.current?.click()}>
-        Import Hearth Pass
-      </button>
+      {onScanQr && <button className="ghost welcome-join__secondary" type="button" disabled={busy} onClick={onScanQr}>Scan invitation QR code</button>}
+      {inviteFlowState === "error" && onUseAnotherGoogle && (
+        <button className="ghost welcome-join__secondary" type="button" disabled={busy} onClick={onUseAnotherGoogle}>
+          Sign out and try another Google account
+        </button>
+      )}
+
+      <details className="welcome-recovery">
+        <summary>Advanced recovery</summary>
+        <p className="muted">Three-word codes and Hearth Pass files are older recovery tools. Google invitations are the normal way to join.</p>
+        <label htmlFor="welcome-recovery-code">Three-word code or recovery secret</label>
+        <input
+          id="welcome-recovery-code"
+          value={recoveryInput}
+          onChange={(event) => setRecoveryInput(event.target.value)}
+          placeholder="cedar lantern kite"
+          autoCapitalize="none"
+          autoCorrect="off"
+        />
+        <p className="muted">{hostingHint(Boolean(cloud))}</p>
+        <button className="ghost welcome-join__secondary" type="button" disabled={busy || !recoveryInput.trim()} onClick={() => void recoverLegacyHousehold()}>
+          Use recovery code
+        </button>
+        <button className="ghost welcome-join__secondary" type="button" disabled={busy} onClick={() => fileRef.current?.click()}>
+          Import Hearth Pass
+        </button>
+      </details>
       <input
         ref={fileRef}
         type="file"
@@ -175,8 +236,8 @@ export function WelcomeJoin({
           });
         }}
       />
-      <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={onBack}>Back</button>
-    </>
+      <button className="ghost welcome-join__secondary" type="button" disabled={busy} onClick={onBack}>Back to households</button>
+    </section>
   );
 }
 
@@ -211,6 +272,7 @@ function AuthInviteChrome({
     onError("");
     setIssued(null);
     try {
+      if (!hostedContinuityAllowed(household.environment)) throw new Error(inviteReasonMessage("continuity-disabled"));
       if (!issueGate.ready) throw new Error(issueGate.message ?? "Wait until this household finishes sharing.");
       if (!targetMemberId) throw new Error("Choose who this invite is for.");
       const session = await ensureSupabaseSession(household.environment);
@@ -243,6 +305,14 @@ function AuthInviteChrome({
   }
 
   if (!supabaseAuthEnabled()) return null;
+  if (!hostedContinuityAllowed(household.environment)) {
+    return (
+      <div className="auth-invite">
+        <h3>Invite with Google</h3>
+        <p className="muted">Production cloud continuity is unavailable in this Development pilot.</p>
+      </div>
+    );
+  }
   if (invitees.length === 0) {
     return (
       <div className="auth-invite">
@@ -353,7 +423,7 @@ function HouseholdAccessPanel({
   const [access, setAccess] = useState<HouseholdAccess | null>(null);
 
   async function refresh() {
-    if (!supabaseAuthEnabled()) return;
+    if (!supabaseAuthEnabled() || !hostedContinuityAllowed(household.environment)) return;
     const session = await ensureSupabaseSession(household.environment);
     const config = authenticatedSupabaseConfig(readSupabaseConfig(), session);
     if (!session || !config?.accessToken) return;
@@ -436,7 +506,7 @@ function HouseholdAccessPanel({
     }
   }
 
-  if (!supabaseAuthEnabled()) return null;
+  if (!supabaseAuthEnabled() || !hostedContinuityAllowed(household.environment)) return null;
   const ownerCount = access?.members.filter((member) => member.role === "owner").length ?? 0;
   const mayLeave = access?.currentRole !== "owner" || ownerCount > 1;
 
@@ -538,6 +608,7 @@ export function PairingCard({
   onSoftPresenceOptOut,
   onLeaveHousehold,
   onCurrentDeviceRevoked,
+  onCopySyncDiagnostic,
 }: {
   household: Household;
   memberId: string;
@@ -550,6 +621,7 @@ export function PairingCard({
   onSoftPresenceOptOut?: (optedOut: boolean) => void;
   onLeaveHousehold?: () => Promise<void>;
   onCurrentDeviceRevoked?: () => void;
+  onCopySyncDiagnostic?: () => Promise<string>;
   onInviteInput: (value: string) => void;
   onHousehold: (household: Household) => Promise<void>;
   onError: (value: string) => void;
@@ -560,6 +632,7 @@ export function PairingCard({
   const fileRef = useRef<HTMLInputElement>(null);
   const [cloudLive, setCloudLive] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [diagnosticStatus, setDiagnosticStatus] = useState("");
   const phrase = formatInvitePhrase(household.inviteCode);
   const url = typeof window !== "undefined" ? joinUrlFor(household.inviteCode, window.location.origin) : "";
   const status = pairingStatusLabel(household, { authEnabled: supabaseAuthEnabled() });
@@ -669,6 +742,27 @@ export function PairingCard({
         <p className="muted">
           Prefer Continue with Google. Legacy publish is Auth-off Development recovery only and does not replace membership continuity.
         </p>
+        {onCopySyncDiagnostic && (
+          <>
+            <button
+              type="button"
+              className="ghost"
+              style={{ width: "100%", marginTop: 8 }}
+              disabled={busy}
+              onClick={() => {
+                setDiagnosticStatus("");
+                void onCopySyncDiagnostic()
+                  .then(setDiagnosticStatus)
+                  .catch((caught) => setDiagnosticStatus(caught instanceof Error ? caught.message : String(caught)));
+              }}
+            >
+              Copy sync diagnostic
+            </button>
+            <p className="muted" role="status" aria-live="polite">
+              {diagnosticStatus || "Development only. Copies hashed identifiers, revisions, queue state, and timing — never ledger facts or credentials."}
+            </p>
+          </>
+        )}
         <div className="device-list">
           <h3>Devices on this household</h3>
           <p className="muted">

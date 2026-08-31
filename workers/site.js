@@ -1,5 +1,7 @@
-// Third-party keys are allowed (D-045): OPENAI_API_KEY / ANTHROPIC_API_KEY via
-// `wrangler secret put`. Never VITE_. Workers AI is the fallback when no vendor secret answers.
+// Third-party keys are allowed (D-045): GEMINI_API_KEY / GROQ_API_KEY /
+// OPENAI_API_KEY / ANTHROPIC_API_KEY via `wrangler secret put`. Never VITE_.
+// D-184 ordinary chat has a bounded provider chain; planner and scan keep their
+// existing D-135 routing.
 import {
   checkChatRateLimit,
   corsHeaders,
@@ -60,11 +62,13 @@ UNTRUSTED DATA:
 
 Use the briefing for mood, page, and audit opinion. Use GROUNDED JOURNAL and FIGURES as the only source of dollar facts. Use ON-DEVICE NOTICES when they ask what you noticed.`;
 
-// Free-eligible Workers AI models are the default. External vendor keys remain
-// inert for chat unless the deployer explicitly opts into paid providers.
+// Free-eligible Workers AI models are the fail-closed default. Gemini and Groq
+// require an explicit external-provider opt-in plus a synthetic classification;
+// OpenAI additionally requires the paid-provider opt-in. Keys alone are inert.
 // Document scan may use paid vision when DOCUMENT_SCAN_ALLOW_PAID is true.
 const FREE_TEXT_MODELS = ["@cf/google/gemma-4-26b-a4b-it", "@cf/meta/llama-3.1-8b-instruct"];
 const FREE_VISION_MODEL = "@cf/google/gemma-4-26b-a4b-it";
+const DEFAULT_CHAT_PROVIDER_TIMEOUT_MS = 1800;
 const FREE_VISION_MODELS = [
   "@cf/google/gemma-4-26b-a4b-it",
   "@cf/meta/llama-3.2-11b-vision-instruct",
@@ -73,6 +77,28 @@ const FREE_VISION_MODELS = [
 
 function paidProvidersAllowed(env) {
   return String(env?.HERCULES_ALLOW_PAID_PROVIDERS || "").trim().toLowerCase() === "true";
+}
+
+function externalChatProvidersAllowed(env) {
+  const optedIn = String(env?.HERCULES_ALLOW_EXTERNAL_PROVIDERS || "").trim().toLowerCase() === "true";
+  const classification = String(env?.HERCULES_EXTERNAL_DATA_CLASSIFICATION || "").trim().toLowerCase();
+  return optedIn && classification === "synthetic";
+}
+
+function chatProviderTimeoutMs(env) {
+  const configured = Number.parseInt(String(env?.HERCULES_CHAT_PROVIDER_TIMEOUT_MS || ""), 10);
+  if (!Number.isFinite(configured)) return DEFAULT_CHAT_PROVIDER_TIMEOUT_MS;
+  return Math.min(5000, Math.max(500, configured));
+}
+
+async function fetchChatProvider(env, url, init) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), chatProviderTimeoutMs(env));
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function documentScanPaidAllowed(env) {
@@ -892,11 +918,12 @@ function buildPrompt(body) {
 }
 
 async function chatOpenAI(env, messages) {
+  if (!externalChatProvidersAllowed(env)) return "";
   if (!paidProvidersAllowed(env)) return "";
   const key = String(env.OPENAI_API_KEY || "").trim();
   if (!key) return "";
   const model = String(env.OPENAI_MODEL || "gpt-4o-mini").trim() || "gpt-4o-mini";
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+  const res = await fetchChatProvider(env, "https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${key}`,
@@ -914,34 +941,63 @@ async function chatOpenAI(env, messages) {
   return String(data?.choices?.[0]?.message?.content || "").trim();
 }
 
-async function chatAnthropic(env, messages) {
-  if (!paidProvidersAllowed(env)) return "";
-  const key = String(env.ANTHROPIC_API_KEY || "").trim();
+async function chatGemini(env, messages) {
+  if (!externalChatProvidersAllowed(env)) return "";
+  const key = String(env.GEMINI_API_KEY || "").trim();
   if (!key) return "";
-  const model = String(env.ANTHROPIC_MODEL || "claude-haiku-4-5").trim() || "claude-haiku-4-5";
+  const model = String(env.GEMINI_MODEL || "gemini-3.1-flash-lite").trim() || "gemini-3.1-flash-lite";
   const system = messages.filter((row) => row.role === "system").map((row) => row.content).join("\n\n");
-  const chat = messages
+  const contents = messages
     .filter((row) => row.role === "user" || row.role === "assistant")
-    .map((row) => ({ role: row.role, content: row.content }));
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    .map((row) => ({
+      role: row.role === "assistant" ? "model" : "user",
+      parts: [{ text: row.content }],
+    }));
+  const res = await fetchChatProvider(
+    env,
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+    {
+      method: "POST",
+      headers: {
+        "x-goog-api-key": key,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: system }] },
+        contents: contents.length ? contents : [{ role: "user", parts: [{ text: "mrrp" }] }],
+        generationConfig: { maxOutputTokens: 160, temperature: 0.55 },
+      }),
+    },
+  );
+  if (!res.ok) return "";
+  const data = await res.json();
+  const parts = data?.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(parts)) return "";
+  return parts.map((part) => (typeof part?.text === "string" ? part.text : "")).join("").trim();
+}
+
+async function chatGroq(env, messages) {
+  if (!externalChatProvidersAllowed(env)) return "";
+  const key = String(env.GROQ_API_KEY || "").trim();
+  if (!key) return "";
+  const model = String(env.GROQ_MODEL || "openai/gpt-oss-120b").trim() || "openai/gpt-oss-120b";
+  const body = {
+    model,
+    max_completion_tokens: 256,
+    messages,
+  };
+  if (/gpt-oss/i.test(model)) body.reasoning_effort = "low";
+  const res = await fetchChatProvider(env, "https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
-      "x-api-key": key,
-      "anthropic-version": "2023-06-01",
+      Authorization: `Bearer ${key}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      model,
-      max_tokens: 160,
-      temperature: 0.55,
-      system,
-      messages: chat.length ? chat : [{ role: "user", content: "mrrp" }],
-    }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) return "";
   const data = await res.json();
-  const block = Array.isArray(data?.content) ? data.content.find((item) => item?.type === "text") : null;
-  return String(block?.text || "").trim();
+  return String(data?.choices?.[0]?.message?.content || "").trim();
 }
 
 async function chatWorkersAi(env, messages) {
@@ -982,24 +1038,19 @@ async function herculesChat(request, env) {
 
   let reply = "";
   let provider = "";
-  try {
-    reply = await chatWorkersAi(env, prompt.openai);
-    if (reply) provider = "workers-ai";
-  } catch {
-    reply = "";
-  }
-  if (!reply) {
+  const providers = [
+    ["gemini", () => chatGemini(env, prompt.openai)],
+    ["groq", () => chatGroq(env, prompt.openai)],
+    ["openai", () => chatOpenAI(env, prompt.openai)],
+    ["workers-ai", () => chatWorkersAi(env, prompt.openai)],
+  ];
+  for (const [candidate, attempt] of providers) {
     try {
-      reply = await chatOpenAI(env, prompt.openai);
-      if (reply) provider = "openai";
-    } catch {
-      reply = "";
-    }
-  }
-  if (!reply) {
-    try {
-      reply = await chatAnthropic(env, prompt.openai);
-      if (reply) provider = "anthropic";
+      reply = await attempt();
+      if (reply) {
+        provider = candidate;
+        break;
+      }
     } catch {
       reply = "";
     }

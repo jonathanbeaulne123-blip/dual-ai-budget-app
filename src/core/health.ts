@@ -84,6 +84,15 @@ export function runHealthCheck(household: Household): Finding[] {
         flag("Transactions", `${tx.id} has a missing category.`, tx.id);
       }
     }
+    if (tx.type === "opening") {
+      if (tx.subcategoryId || tx.categoryId) {
+        flag("Transactions", `${tx.id} opening row must not carry an income or expense category.`, tx.id);
+      }
+      if (tx.source !== "opening" && tx.source !== "reversal") {
+        flag("Transactions", `${tx.id} opening row has the wrong source.`, tx.id);
+      }
+      if (!tx.sourceId) flag("Transactions", `${tx.id} opening row is missing its Confirm identity.`, tx.id);
+    }
     const splitTotal = tx.splits.reduce((sum, split) => sum + split.amountCents, 0);
     if (splitTotal !== tx.amountCents) flag("Transactions", `${tx.id} ownership splits do not add up.`, tx.id);
     for (const split of tx.splits) {

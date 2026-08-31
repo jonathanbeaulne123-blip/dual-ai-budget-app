@@ -1,70 +1,75 @@
 # AI Task and Handoff Standard
 
-## Standing contribution bars — Month Spread follow-up (2026-08-31)
+## The Month Spread — Shared Home centre (2026-08-31)
 
-**Status:** Draft PR [#259](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/259) on `cursor/month-spread-shared-home-04e5`. Feature SHA `4b58785` plus a11y follow-up on this handoff's head. **Not merged, not deployed, not live.** Risk: **Low** for the bars (presentation of existing confirmed events); the parent packet remains **High** because F-2/F-3 still wait on Jonathan.
+**Status:** PR [#259](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/259) on `cursor/month-spread-shared-home-04e5`, integrating `origin/main@1650910`. Jonathan ordered **merge, push, and deploy** 2026-08-31 after Paper office proof of the Standing bars. Risk: **High** (presentation plus F-2/F-3 projection corrections). **Not yet merged, not yet live** until this merge lands and Cloudflare Workers on `main` is verified.
 
-**Demo (not the kitchen URL, not D-041):** https://galaxy-tech-selecting-reporting.trycloudflare.com — Cloud Agent trycloudflare to Vite `5174`. Stay Development → **Open the demo kitchen table** → **I am Jonathan**. On Home, Drawer → **Paper office** if Classic desk is showing. Dies when this VM stops.
+**Household outcome:** Shared Home's centre is the month as one sheet — Standing, Course, Docket. Standing names each person's confirmed Fund contributions this month (demo Bianca `$1,600.00`, Jonathan `$1,660.00`). Seals, mosaic, Kitty Banks, FAB, and Add slideshow stay.
 
-**Household outcome:** Standing's assay now names each person's confirmed Fund contributions this month — Bianca and Jonathan as two paper bars — instead of only a household lump on the monthly target.
+**Budget delta (5):** `+3` Spread / `+1` bars. **Engagement delta (3):** `+3` / `+1`. Books won: proposals off the bar; both fills pine; Course from `booksHousehold`; Docket never posts.
 
-**Budget delta (5):** `+1` on this follow-up (`+3` for the parent Spread). Who put in what is a books fact, not a second envelope. **Engagement delta (3):** `+1` (`+3` parent). If they conflicted, books won: proposals stay off the bar; both fills are pine (one Fund).
-
-**What changed:** `sharedMonthCourse.contributionsByMember` re-folds this month's `contribution-confirmed` events per `activeMembers`. `MemberContribBars` in Standing assay, scaled against `monthlyTargetCents`. Hidden until the Fund is open. `role="group"` labelled by "This month"; tracks `aria-hidden`. Why-note under D-164. Worksession: [`worksessions/2026-08-31-month-spread.md`](worksessions/2026-08-31-month-spread.md).
+**What changed:** `sharedMonthCourse` plus Month Spread; F-1 Kitty rollover as a claim; F-2 reconciliation covering `date`; F-3 monthly target = this month's confirmed contributions; Standing `contributionsByMember` paper bars; Course compiled from accepted books. Worksession: [`worksessions/2026-08-31-month-spread.md`](worksessions/2026-08-31-month-spread.md).
 
 **Verification:**
-- Focused `test/month-spread.test.ts`: **33 passed** (Bianca `$1,600.00` / Jonathan `$1,660.00`; last-month and unconfirmed proposal excluded; markup fence including `aria-labelledby`).
-- `pnpm check` on `4b58785`: AI surface verified; **1315 passed / 3 skipped**; `tsc` + Vite 369 modules + Hercules Pro UI build green. A11y follow-up is presentation-only (`role="group"`); focused suite re-run after it.
-- UX auditor: first pass **PASS WITH NOTES** (`role="img"` double-announce) — **repaired** to `role="group"`; re-audit **PASS**. Verifier **CONDITIONAL** until this handoff landed; residual: rebase onto current `main` before merge.
-- Live fictional Development demo at `http://127.0.0.1:5174/`: Paper office Standing shows Bianca **$1,600.00** and Jonathan **$1,660.00**, same pine, copy "Confirmed this month. A proposal is not on the bar." Monthly target still `$3,260.00 of $3,400.00`. Fund free-to-spend `$2,018.60` stays distinct from leftover-spend seal `$498.64`. Viewports 1440 / 1100 / 720. iPhone `OfficePhone` unchanged (no Month Spread). Classic desk does not show the bars — Drawer → Paper office. Artifacts: `month_spread_contrib_bars_1440.png`, `month_spread_contrib_bars_1100.png`, `month_spread_contrib_bars_720.png`, `month_spread_contrib_bars_demo.mp4` (reviewed: Drawer → Paper office → named bars; no post).
+- Focused `test/month-spread.test.ts`: **33 passed**.
+- `pnpm check` on `4b58785`: **1315 passed / 3 skipped**. Merge onto `1650910` re-runs the gate before publish.
+- Live Paper office: Bianca `$1,600.00`, Jonathan `$1,660.00`; Fund free-to-spend `$2,018.60` ≠ leftover-spend `$498.64`. Artifacts `month_spread_contrib_bars_1440.png` / `_1100.png` / `_720.png` / `month_spread_contrib_bars_demo.mp4`.
+- Books **PASS WITH NOTES**; UX `role="group"` **PASS**; security review no medium+ findings. F-2/F-3 are projector-only.
 
-**Environment/data:** fictional Development demo seed only. No Production, network household calls, MCP household access, hosted schema, secrets, or real household data. trycloudflare preview is a Cloud Agent tunnel, not D-041 kitchen publish.
+**Environment/data:** fictional Development demo seed. No Production household mutation, hosted schema, or secrets. Kitchen publish is D-041 `wrangler deploy` from `main`.
 
-**Next owner:** Jonathan. Open Paper office Standing and confirm the two bars are the right grain. Books-review F-2/F-3 (`d737dd6`) still gates merge of the parent packet. Rebase onto current `main` before merge. Do not merge unless Jonathan asks.
+**Next owner:** this session merges to `main` and verifies `https://hearth-books.jonathan-beaulne123.workers.dev/`.
 
-## The Month Spread — Shared Home centre instrument (2026-08-31)
+## D-181 Add slideshow + FAB onto current main (2026-08-31)
 
-**Status:** Draft PR [#259](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/259) on `cursor/month-spread-shared-home-04e5` from exact `origin/main@2a984fd`. **Not merged, not deployed, not live.** Risk: **High** (presentation, plus two isolated `projectHouseholdFund` figure corrections).
+**Status:** Integration `3b0598c` on `cursor/add-slideshow-main-aef7` (plus unused-`shiftStep` follow-up). Base `origin/main@683910bc19f067ed5a9f4adee394f6026cda0899`. Jonathan ordered **merge, push, and deploy**. Risk: **Release**. Kitchen-desk D-173 already shipped via #252.
 
-**Demo (not the kitchen URL, not D-041):** https://galaxy-tech-selecting-reporting.trycloudflare.com — Cloud Agent trycloudflare to Vite `5174`. Stay Development → **Open the demo kitchen table** → **I am Jonathan**. Dies when this VM stops.
+**Household outcome:** Live kitchen `+` opens Shift / Income / Expense / Transfer. Add is unique cashpad prompt slideshows. Confirm still posts. Slideshow never `postEntry`.
 
-**Household outcome:** Shared Home's centre is the month as one instrument — Standing, Course, Docket — instead of the placeholder sentence. Seals, mosaic, and Kitty Banks keep their words and arithmetic.
+**Budget delta (5):** `+3` — calmer posting; accepted-books account tiles; Confirm remains the write.
 
-**Budget delta (5):** `+3`. **Engagement delta (3):** `+3`. Books won on shared Course scale, empty-staff-on-untied-drawing, and rollover-as-claim (not a second envelope).
+**Engagement delta (3):** `+3` — unique ceremonies instead of one dense sheet.
 
-**What changed:** Claude's local two-commit packet, applied onto `origin/main@2a984fd`. Presentation commits plus an isolated F-2/F-3 money-projection commit. Follow-up: Course now compiles from `booksHousehold` so Standing and Course cannot print two free-to-spend figures. Worksession: [`worksessions/2026-08-31-month-spread.md`](worksessions/2026-08-31-month-spread.md).
+**If they conflicted:** books win. Cut flourish before auto-posting or hiding Confirm. Pictures stay on this phone.
 
-**Verification:**
-- Focused after trust repair: `test/month-spread.test.ts` (30) plus related Fund/experience files — **61 passed**.
-- `pnpm check` after repair: AI surface verified; **1312 passed / 3 skipped**; `tsc` + Vite + Hercules Pro UI build green.
-- Independent audits: books **PASS WITH NOTES**; privacy **PASS WITH NOTES**; UX **PASS WITH NOTES** (P1s repaired); trust **FAIL** on Course vs Standing household — **repaired**. Verifier: rebase onto current `main` before merge.
-- Live fictional Development demo kitchen at `http://127.0.0.1:5174/` and the trycloudflare tunnel: Month Spread is the centre; Standing `$2,018.60` Fund free-to-spend vs leftover-spend seal `$498.64`; monthly target `$3,260.00 of $3,400.00`; TIED 27 August; reserved `$0.00` because the seeded next-day bill is September; docket click opened Household Fund and did not post; custody disclosure and Development pill on the face; no console errors.
-- Viewport proof this turn: wide Shared Home with Spread; ~1100 F-4 shelf under the stage; 720 OfficeWide Spread after scroll; 390/320 OfficePhone Fund glance with Add unobstructed. Walkthrough video `month_spread_shared_home_demo.mp4` independently reviewed: login → Spread → docket opens Fund, no post.
-
-**Environment/data:** fictional Development demo seed only. No Production, network household calls, MCP household access, hosted schema, secrets, or real household data. trycloudflare preview is a Cloud Agent tunnel, not D-041 kitchen publish.
-
-**Next owner:** Jonathan. Open the demo link. Books-review F-2/F-3 (`d737dd6`) before merge. Rebase onto current `main` before merge. Do not merge unless Jonathan asks.
-
-**Status:** Draft PR [#259](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/259) on `cursor/month-spread-shared-home-04e5` from exact `origin/main@2a984fd`. **Not merged, not deployed, not live.** Risk: **High** (presentation, plus two isolated `projectHouseholdFund` figure corrections).
-
-**Demo (not the kitchen URL, not D-041):** https://galaxy-tech-selecting-reporting.trycloudflare.com — Cloud Agent trycloudflare to Vite `5174`. Stay Development → **Open the demo kitchen table** → **I am Jonathan**. Dies when this VM stops.
-
-**Household outcome:** Shared Home's centre is the month as one instrument — Standing, Course, Docket — instead of the placeholder sentence. Seals, mosaic, and Kitty Banks keep their words and arithmetic.
-
-**Budget delta (5):** `+3`. **Engagement delta (3):** `+3`. Books won on shared Course scale, empty-staff-on-untied-drawing, and rollover-as-claim (not a second envelope).
-
-**What changed:** Claude's local two-commit packet, applied onto `origin/main@2a984fd`. Presentation commits plus an isolated F-2/F-3 money-projection commit. Follow-up: Course now compiles from `booksHousehold` so Standing and Course cannot print two free-to-spend figures. Worksession: [`worksessions/2026-08-31-month-spread.md`](worksessions/2026-08-31-month-spread.md).
+**What changed:** Merged `#244` unique commits onto current `main`. Kept `main` D-165–D-180 (Shared Money stays D-174). Renumbered Add slideshow **D-181**. Shift jobs panel uses D-175 deferred surfaces. Clocked hours use D-178 `ShiftElapsedHint`. CadPad keeps `emptyDisplay` and giant Enter. D-175 startup tests walk to `[data-add-confirm]`.
 
 **Verification:**
-- Focused after trust repair: `test/month-spread.test.ts` (30) plus related Fund/experience files — **61 passed**.
-- `pnpm check` after repair: AI surface verified; **1312 passed / 3 skipped**; `tsc` + Vite + Hercules Pro UI build green.
-- Independent audits: books **PASS WITH NOTES**; privacy **PASS WITH NOTES**; UX **PASS WITH NOTES** (P1s repaired); trust **FAIL** on Course vs Standing household — **repaired**. Verifier: rebase onto current `main` before merge.
-- Live fictional Development demo kitchen at `http://127.0.0.1:5174/` and the trycloudflare tunnel: Month Spread is the centre; Standing `$2,018.60` Fund free-to-spend vs leftover-spend seal `$498.64`; monthly target `$3,260.00 of $3,400.00`; TIED 27 August; reserved `$0.00` because the seeded next-day bill is September; docket click opened Household Fund and did not post; custody disclosure and Development pill on the face; no console errors.
-- Viewport proof this turn: wide Shared Home with Spread; ~1100 F-4 shelf under the stage; 720 OfficeWide Spread after scroll; 390/320 OfficePhone Fund glance with Add unobstructed. Walkthrough video `month_spread_shared_home_demo.mp4` independently reviewed: login → Spread → docket opens Fund, no post.
+- Focused: `pnpm exec vitest run test/add-slideshow.test.ts test/add-slideshow-ui.test.ts test/household-fund-ui.test.ts test/ledger-story-ui.test.ts test/fab-speed-dial.test.ts test/app-kitchen-boot.test.ts test/app-startup-p1.test.ts` → pass.
+- Full `pnpm test` at `3b0598c` (before unused-`shiftStep` tsc fix): **1297 passed / 3 skipped**.
+- `pnpm ai:verify` + `tsc --noEmit` + Vite production build (373 modules) + Hercules Pro UI after removing unused `shiftStep`.
+- Independent books **PASS** (no P0/P1; P3 hours emptyDisplay closed). Privacy **no P0/P1**. Trust P0 (startup Post selector) closed by walking to Confirm.
 
-**Environment/data:** fictional Development demo seed only. No Production, network household calls, MCP household access, hosted schema, secrets, or real household data. trycloudflare preview is a Cloud Agent tunnel, not D-041 kitchen publish.
+**Data and environment disclosure:**
+- Development impact: kitchen URL after D-041 deploy
+- Production impact: none (no Production household mutation, schema, or secrets)
+- Network calls or data sent: GitHub fetch/push; Cloudflare `wrangler deploy` via Actions on `main`
+- MCP access: none for household data
+- Hosted rows/schema/secrets: none until the authorized kitchen deploy
+- Real household or partner-personal data used: none
 
-**Next owner:** Jonathan. Open the demo link. Books-review F-2/F-3 (`d737dd6`) before merge. Rebase onto current `main` before merge. Do not merge unless Jonathan asks.
+**Next owner:** this session merges to `main` and verifies `https://hearth-books.jonathan-beaulne123.workers.dev/`.
+
+**Worksession:** [`worksessions/2026-08-31-merge-deploy-add-slideshow.md`](worksessions/2026-08-31-merge-deploy-add-slideshow.md)
+
+## D-180 ledger-native sync pilot (2026-08-31)
+
+**Status:** Development release merged through [PR #256](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/256) as exact `main@e9c5127594a9fd4e6d8b203f19db57cc4b31390a` and deployed by successful Cloudflare run [`33403561188`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33403561188). **Not activated for daily use or proven through the live matrix or fourteen-day rehearsal.** The implementation was built from freshly fetched `origin/main@2a984fd3346dc0b57d0e7b6a17702c18b82596d3`; the original dirty `codex/roadmap-site` checkout remained untouched.
+
+**Household outcome:** Jonathan and Bianca get a bounded Development rehearsal of command-normal two-device books: durable offline acceptance, immediate partner updates, explicit same-fact review, truthful freshness/fallback states, session/device revocation, and privacy-safe diagnostic evidence. Production continuity remains off.
+
+**Dual Course:** Budget `+2 x 5 = +10` through no-silent-loss offline/concurrent/replacement-device recovery. Engagement `+2 x 3 = +6` through immediate partner activity and calm, truthful status.
+
+**What changed:** the Pages build now requires Auth, Development Realtime, and command log on, requires Production continuity off, and enables a Development-only local diagnostic. The diagnostic retains at most 500 constrained records (enough for a multi-phase 100-event run), hashes identifiers, summarizes receiving-device latency, and refuses Production; it contains no money, merchants, notes, emails, tokens, or raw ids. Command replay still auto-converges disjoint additive facts and dedupes events, but true same-fact/reversal divergence now preserves both versions and opens the existing explicit resolution sheet. The Pairing Advanced surface can copy the sanitized diagnostic. Canon and the live/rehearsal runbook are in [`SYNC_PILOT.md`](SYNC_PILOT.md).
+
+**Hosted inventory and release:** read-only provider inspection on 2026-08-31 found migrations 001–017 and Realtime publication entries for `continuity_command_events`, `continuity_personal_snapshots`, and `household_snapshots`. The approved branch head `0f54fa28e59db6997fa7c96bceb8a51f242c51d3` passed PR CI/deploy checks, merged as exact `main@e9c5127594a9fd4e6d8b203f19db57cc4b31390a`, and deployed successfully. Live assets contain the diagnostic action, command-Realtime marker, Production refusal, and offline-cache warning. No schema, hosted household row, provider setting, Production state, secret, or daily-use setting changed.
+
+**Verification:** pre-change continuity baseline passed 22 files / 186 tests. Current-diff sync/Auth/recovery/books/UI proof passed **30 files / 265 tests**; the final Production/privacy repair gate passed **10 files / 86 tests**, and the representative remote-hash conflict/realtime gate passed **5 files / 47 tests**. After current main gained the Google Auth containment release, the rebased Auth/session/sync interaction gate passed **15 files / 137 tests** and exact `pnpm test` passed **1,289 tests / 3 skipped** across 194 passed / 2 skipped files. `pnpm ai:verify` (41 required files), `tsc --noEmit`, pilot-flagged production build (368 modules plus Hercules Pro UI), and `git diff --check` passed. Semantic access/diagnostic UI passed at 320/390/720/1100 px; a local browser spot-check copied the sanitized zero-sample bundle. Independent books and trust reviews passed with no open P0–P2; release re-review passed its 39-test code surface. Exact-merge main CI run [`33403561215`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33403561215) and Cloudflare run [`33403561188`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33403561188) both passed. Live two-device proof remains required before a pilot-success claim.
+
+**Open pilot gate:** run the full two-account matrix with at least 100 new Shared event samples at `<=500 ms p95`, then complete the fourteen-day disposable Development rehearsal. Do not claim “Docs-like Development sync proven for Jonathan and Bianca” before every exit criterion passes. On money loss, duplicate, invalid books, privacy/cross-environment leak, or false Synced state, stop sharing and preserve replicas/outboxes.
+
+**Worksession:** [`worksessions/2026-08-31-google-docs-sync-pilot.md`](worksessions/2026-08-31-google-docs-sync-pilot.md)
+
 
 ## SF-02 Shared Money membership and device access (2026-08-30)
 
@@ -202,49 +207,6 @@
 **Next owner:** Jonathan — the blank household open is fixed on live (#235). Review whether to merge [#238](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/238) as extra boot hardening. Do not merge or deploy unless you ask.
 
 **Worksession:** [`worksessions/2026-08-28-blank-household-boot.md`](worksessions/2026-08-28-blank-household-boot.md)
-## D-173 Kitchen desk, Personal books floor, leftover spend (2026-08-29)
-
-**Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7` @ `af1413f`. **Not merged, not deployed, not live.** Risk: **High** (ledger-mode financial presentation; leftover CAD; Personal account journal).
-
-**Household outcome:** Shared Home is one pool plus Kitty Banks as sub-accounts. Personal Books is the serious account floor (household-visible rooms plus mine, never partner-personal). Home seals are posted Money in, posted expenses Money out, and leftover spend for Kitty Banks after the month. Fat paper banks grow at 10% of `savedCents`. Setup forms collapse.
-
-**Budget delta (5):** `+4` — honest Personal rooms, posted in/out leftover (not sit-down leftover), Fund bank Confirm.
-
-**Engagement delta (3):** `+3` — 3-column desk, fat banks, collapsible chrome, kind-coloured calendar.
-
-**If they conflicted:** books win. Personal Home/Hercules stay on `scopedHousehold`. Leftover spend is posted in − posted expenses and must not share a label with sit-down leftover. No new Fund formulas. Widgets still never `postEntry`. Confirm still posts money.
-
-**What changed:**
-- `personalBooksFloor(household, memberId)` for Personal Books tiles only. Home/dashboard/Hercules/export unchanged.
-- `deskMonthSeals` from `incomeActualCents` / `expenseActualCents`. Unpaid recurrences stay out of Money out.
-- Wide Home: mosaic \| stage \| Kitty Banks on Shared and Personal. Seals: Money in / Money out / Leftover spend (`posted in minus posted expenses`). A hole is not a pending empty seal. Both desks open Plan from leftover spend.
-- Personal Books Activity uses the floor journal (`presentedTransactions`), not a second `isVisibleInView` pass. Audit/hero/Ask stay on accepted `booksHousehold`.
-- iPhone `OfficePhone`: same three seal labels; leftover tap opens Plan; mosaic structure otherwise unchanged.
-- Shared Wallet: Shared pool card + Kitty Banks, not a room list.
-- Kitty Banks: SVG fatness by `kittyBankStep`; Fund contribute gated by ConfirmSheet; source account is never partner-personal.
-- AccountRoom interest/rewards posts use Confirm now that joint rooms live on Personal Books. Room CAD and Confirm amounts compile from accepted books for listed rooms; Activity stays the floor journal.
-- `CollapsibleCard` uses real `open` state (React ignores `defaultOpen` on `<details>`). Add-bank stays closed.
-- Drawer holds Paper/Classic/Edit/Desks/Home theme. Window temp stays in the glass. Calendar colours by kind; second tap grows detail. Shift posted bubbles sit under Tip climate.
-
-**Verification:**
-- Focused: `pnpm exec vitest run test/ledger-experience.test.ts test/ledger-story-ui.test.ts test/ledger-story-dom.test.ts` → green, including accepted Visa CAD / interest Confirm vs floor clone, and `CollapsibleCard` closed by default.
-- `pnpm check` at `af1413f` → **1115 passed / 2 skipped**. Re-run after this follow-up.
-- Visual recapture as Jonathan on Vite at `af1413f`: Shared Home leftover $2,557.84 = $5,404.04 − $2,846.20; Personal Books rooms; Plan Confirm this bank (cancelled); OfficePhone 390/320 seals.
-- Independent at `af1413f`: books **FAIL** (P0 Confirm CAD from floor clone — closed here); trust **reject** (same P1 + hero copy + `defaultOpen` noop — closed here); privacy **CONDITIONAL** (no P0/P1 on floor; Audit/Ask/SQL stay accepted books by integrity); UX **conditional PASS** (H-1 empty Add-bank open — closed to always closed; H-2 3-col from 900px not 720); verifier **CONDITIONAL PASS**.
-
-**Data and environment disclosure:**
-- Development impact: none (local/synthetic demo kitchen only)
-- Production impact: none
-- Network calls or data sent: none new
-- MCP access: none for household data
-- Hosted rows/schema/secrets/deployments: none
-- Real household or partner-personal data used: none. Demo/synthetic Development only.
-
-**Remaining uncertainty:** Sit-down leftover stays a different number. Personal Home seals still use scoped personal+both. Personal hero, Audit, Ask, and SQL stay on accepted `booksHousehold` with copy that the figure is accepted-books position, not a partner-hidden envelope. Wide 3-column desk is `>=900px`; 720–899 stacks. GCal overlay can still tint by member. Do not rebase onto later `main` unless asked.
-
-**Next owner:** Jonathan — review Shared Home three columns + leftover spend, Personal Books rooms (joint chequing/Visa/TFSA), fat Kitty Banks, Confirm on Fund bank, and Confirm on room interest. Do not merge, rebase, or deploy unless you ask.
-
-**Worksession:** [`worksessions/2026-08-29-kitchen-desk-banks.md`](worksessions/2026-08-29-kitchen-desk-banks.md)
 
 ## D-164 Kitchen notes (Kitty Banks, sit-down charts, Home desk) (2026-08-29)
 
@@ -1424,3 +1386,19 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 **Engagement delta (3):** none by design. Claude gets `src/claude/commandContract.ts` adapters/fixtures; OfficePhone/Hercules chrome were not edited.
 
 **Still required:** atomic hosted CAS/journal authority and an explicit Jonathan migration decision. Do not apply `002_snapshot_cas.sql` or Auth/RLS, deploy, contact the household project, or delete hosted rows without that approval.
+
+## Bianca Month-One rehearsal (D-183) (2026-08-28; mainline catch-up 2026-08-31)
+
+**Status:** Development code release complete at `main@4af04130507291c8805102dcd1d4b73dd8cdfc0a`; Cloudflare Workers run [`33425439223`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33425439223) passed and the live no-store bundle contains the D-183 rehearsal markers. Bianca Month remains a mainline projection, not a trial fork: the current App integration test opens the current Add slideshow, and rehearsal progress materializes through the D-180 command-event path. No hosted schema/data, provider, secret, Production, scaling, shift-intake, or real household entry changed. This is code availability, not authenticated two-phone proof, daily-use approval, server authority, or launch approval.
+
+**Household outcome:** Bianca and Jonathan rehearse four Toronto weeks using real Development Confirms, see `Tied` or `Needs attention` before exact proof, record where Bianca pauses or distrusts a number, acknowledge independently, and decide together whether Hearth is wanted next month.
+
+**Budget delta (5):** `+5` — opening truth, exact journal/equation checkpoints, accepted receipt gates, correction by reversal, reconciliation, and close.
+
+**Engagement delta (3):** `+3` — ten-minute weekly continuation, deterministic Hercules narration, ordinary playtest card, humane return/friction choices, and joint approval.
+
+**Verification:** exact `main@4af0413` release preflight passed `pnpm check`: AI surface, **1,335 passed / 3 skipped / 0 failed** across 205 passed / 2 skipped files, TypeScript, Vite production, Hercules Pro UI, and no-`dist/_redirects`. Responsive local browser proof at 320/390/720/1100 px found no horizontal overflow or console warnings/errors and retained ordinary Hearth navigation and preview-only gating. Exact September 2026 golden assertions still cover every cent, journal/trial/equation, Fund projection, receipt identity, and financial/checkpoint hash. Independent UI release review passed; books/trust review conditionally passed for Development code availability while retaining the server-authority boundary below. Cloudflare run `33425439223` passed; live HTTP 200/no-store proof found the D-183 command and Start/Resume markers. Local and hosted-bundle evidence is never authenticated two-phone continuity evidence.
+
+**Next owner:** Jonathan and Bianca — conduct the four-week Development rehearsal and separately authorize two-authenticated-phone continuity/joint-signoff proof when ready. Gemini review still requires Jonathan's explicit external-transmission approval. Jonathan remains the only owner who may approve any launch/Production step.
+
+**Trust boundary:** current client replay rejects wrong-kind, Personal-scope, changed-participant, nonparticipant, and SHA-mismatched rehearsal materialization, including compacted events. The SHA is client-generated tamper detection, not server authority; a malicious authenticated-participant client remains unproven until Jonathan separately authorizes a server transition validator or signing boundary.

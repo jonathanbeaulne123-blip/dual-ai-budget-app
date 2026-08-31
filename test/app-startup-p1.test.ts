@@ -2,7 +2,7 @@
 import { act, createElement, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { catalogHousehold, type Household } from "../src/core/index.ts";
+import { catalogHousehold, startMonthRehearsal, type Household } from "../src/core/index.ts";
 
 type Inspection = {
   ok: boolean;
@@ -100,6 +100,36 @@ function button(label: string): HTMLButtonElement {
   return match as HTMLButtonElement;
 }
 
+function tapPad(container: HTMLElement, label: string): void {
+  const key = [...container.querySelectorAll(".cad-pad-keys button")].find((item) => item.getAttribute("aria-label") === label) as HTMLButtonElement | undefined;
+  if (!key) throw new Error(`Missing pad key ${label}`);
+  act(() => { key.click(); });
+}
+
+function openExpenseSlideshow(): void {
+  act(() => button("Add money").click());
+  act(() => button("Add expense").click());
+}
+
+function walkExpenseToConfirm(container: HTMLElement): HTMLButtonElement {
+  tapPad(container, "1");
+  const enter = [...container.querySelectorAll("button")].find((item) => item.textContent === "Enter") as HTMLButtonElement | undefined;
+  if (!enter) throw new Error("Missing Enter");
+  act(() => { enter.click(); });
+  const groceries = [...container.querySelectorAll("button.chip")].find((item) => item.textContent === "Groceries") as HTMLButtonElement | undefined;
+  if (!groceries) throw new Error("Missing Groceries");
+  act(() => { groceries.click(); });
+  const visa = [...container.querySelectorAll(".wallet-tile")].find((item) => item.textContent?.includes("Visa")) as HTMLButtonElement | undefined;
+  if (!visa) throw new Error("Missing Visa tile");
+  act(() => { visa.click(); });
+  const skip = [...container.querySelectorAll("button")].find((item) => item.textContent === "Skip") as HTMLButtonElement | undefined;
+  if (!skip) throw new Error("Missing Skip");
+  act(() => { skip.click(); });
+  const confirm = container.querySelector("[data-add-confirm]") as HTMLButtonElement | null;
+  if (!confirm) throw new Error("Missing Confirm");
+  return confirm;
+}
+
 async function startValidation(): Promise<void> {
   await act(async () => {
     await new Promise((resolve) => setTimeout(resolve, 60));
@@ -175,8 +205,9 @@ describe("cached-shell startup books gate", () => {
     expect(startup.inspectCalls).toBe(0);
     expect(startup.reconcileCalls).toBe(0);
 
-    act(() => button("Add money").click());
-    expect(button("Post").disabled).toBe(true);
+    openExpenseSlideshow();
+    const confirmWhileValidating = walkExpenseToConfirm(container);
+    expect(confirmWhileValidating.disabled).toBe(true);
 
     await startValidation();
     expect(startup.inspectCalls).toBe(1);
@@ -188,12 +219,12 @@ describe("cached-shell startup books gate", () => {
     });
 
     expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull();
-    expect(button("Post").disabled).toBe(false);
+    const confirmReady = container.querySelector("[data-add-confirm]") as HTMLButtonElement;
+    expect(confirmReady.disabled).toBe(false);
     expect(startup.reconcileCalls).toBe(1);
 
     const savesBeforePost = startup.saveCalls;
-    act(() => button("1").click());
-    act(() => (container.querySelector("button.post-big") as HTMLButtonElement).click());
+    act(() => { confirmReady.click(); });
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 100)); });
     expect(startup.saveCalls).toBeGreaterThan(savesBeforePost);
     expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).toBeNull();
@@ -219,8 +250,8 @@ describe("cached-shell startup books gate", () => {
     expect(button("Retry validation")).not.toBeNull();
     expect(startup.ingestCalls).toBe(0);
     expect(startup.reconcileCalls).toBe(0);
-    act(() => button("Add money").click());
-    expect(button("Post").disabled).toBe(true);
+    openExpenseSlideshow();
+    expect(walkExpenseToConfirm(container).disabled).toBe(true);
   });
 
   it("repairs only a missing schema and opens after the repaired projection validates", async () => {
@@ -239,5 +270,44 @@ describe("cached-shell startup books gate", () => {
     expect(startup.ingestCalls).toBe(1);
     expect(startup.inspectCalls).toBe(2);
     expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull();
+  });
+
+  it("keeps Bianca Month inside the current App and opens the current income slideshow", async () => {
+    startup.cached = startMonthRehearsal(startup.cached!, {
+      monthKey: "2026-08",
+      biancaParticipantId: "MEM-001",
+      jonathanPartnerId: "MEM-002",
+      startedByMemberId: "MEM-001",
+      now: "2026-08-01T12:00:00.000Z",
+    }).household;
+    startup.inspections.push(Promise.resolve({
+      ok: true,
+      message: "PGlite agrees.",
+      entryCount: startup.cached.transactions.length,
+    }));
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await settleUi();
+
+    const month = container.querySelector("[aria-label='Our month']");
+    expect(month).not.toBeNull();
+    act(() => button("Resume our month").click());
+    const weekOne = [...container.querySelectorAll(".month-week-tabs button")]
+      .find((item) => item.textContent?.includes("Week 1")) as HTMLButtonElement | undefined;
+    if (!weekOne) throw new Error("Missing Bianca Month week one");
+    act(() => weekOne.click());
+    const incomeTask = [...container.querySelectorAll(".month-task-list > li")]
+      .find((item) => item.querySelector("h3")?.textContent === "Add income that arrived");
+    const start = incomeTask?.querySelector("button.primary") as HTMLButtonElement | null;
+    if (!start) throw new Error("Missing Bianca Month income Start");
+    act(() => start.click());
+    await settleUi(180);
+
+    expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).not.toBeNull();
+    expect(container.textContent).toContain("How much came in?");
   });
 });

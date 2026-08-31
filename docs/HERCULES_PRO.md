@@ -97,7 +97,7 @@ These steps document the live Development setup completed on August 25, 2026.
 
 Do **not** use Welcome → Open the demo kitchen table for Pro — demo/empty/Pass make zero household REST calls.
 
-1. Development pill. Sign in with Google and **Create household with Google** (or open an existing linked Development household). Confirm so membership + snapshot exist.
+1. Development pill. **Continue with Google**, then create a household or open an existing linked Development household. Confirm so membership + snapshot exist.
 2. Stay on the member who should own tip history (Jonathan / `MEM-002` is the default tip earner when you create as that person; Reload posts tip shifts for whoever is signed in on this phone).
 3. More → **Reload random data** (or pretty numbers). Confirm. Development Reload **keeps** this household id, invite, Google links, revision, and members while replacing activity with ~twelve months of weather-weighted harbour shifts, then **force-flushes** the shared cloud snapshot so Hercules Pro can read the same shifts as the Work report.
 4. If Pairing still shows pending/conflict after Reload, tap **Retry now** and wait until quiet. Work report on the phone is local; Pro only sees the hosted snapshot.

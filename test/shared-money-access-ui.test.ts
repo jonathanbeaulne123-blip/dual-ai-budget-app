@@ -103,6 +103,7 @@ describe("SF-02 household access UI", () => {
     const household = catalogHousehold();
     const onLeaveHousehold = vi.fn(async () => {});
     const onCurrentDeviceRevoked = vi.fn();
+    const onCopySyncDiagnostic = vi.fn(async () => "Copied privacy-safe sync diagnostic · 100 receiving samples · p95 420 ms.");
     act(() => root.render(createElement(PairingCard, {
       household,
       memberId: "MEM-001",
@@ -117,6 +118,7 @@ describe("SF-02 household access UI", () => {
       onSyncState: vi.fn(),
       onLeaveHousehold,
       onCurrentDeviceRevoked,
+      onCopySyncDiagnostic,
     })));
     await settleUntil(() => container.textContent?.includes("Safari on iPhone") === true);
 
@@ -127,6 +129,14 @@ describe("SF-02 household access UI", () => {
     expect(panel.textContent).toMatch(/Recent access activity/i);
     expect(panel.textContent).toMatch(/cannot erase books already cached/i);
     expect([...panel.querySelectorAll("button")].every((button) => button.type === "button")).toBe(true);
+
+    const diagnostic = [...container.querySelectorAll("button")]
+      .find((button) => button.textContent === "Copy sync diagnostic") as HTMLButtonElement;
+    expect(diagnostic.type).toBe("button");
+    expect(diagnostic.parentElement?.textContent).toMatch(/never ledger facts or credentials/i);
+    act(() => diagnostic.click());
+    await settleUntil(() => container.textContent?.includes("p95 420 ms") === true);
+    expect(onCopySyncDiagnostic).toHaveBeenCalledTimes(1);
 
     const currentRemove = [...panel.querySelectorAll("button")]
       .find((button) => button.textContent === "Remove device") as HTMLButtonElement;

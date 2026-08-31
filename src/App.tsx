@@ -3,7 +3,6 @@ import {
   JOINT,
   NeedsConfirmationError,
   ValidationError,
-  addCategory,
   addFormDefaults,
   buildDashboard,
   previewShiftAmounts,
@@ -12,7 +11,6 @@ import {
   createWriteQueue,
   creditCardView,
   defaultVisibilityForView,
-  dollarsFromCentsDigits,
   emitOfficeIntent,
   formatCad,
   describeDeviceLabel,
@@ -31,10 +29,8 @@ import {
   assembleHousehold,
   splitForSync,
   householdWallet,
-  accountOptionLabel,
   jointSplit,
   memberNeedsGoogleStepUp,
-  padToDollars,
   parseAmount,
   percentSplits,
   projectHouseholdFund,
@@ -59,7 +55,6 @@ import {
   acceptPresetNotice,
   addPreset,
   archivePreset,
-  activePresets,
   dismissNotice,
   dismissDuePreview,
   duePreviewDismissed,
@@ -79,11 +74,10 @@ import {
   todayKey,
   monthKeyFromDateKey,
   TIMEZONE,
-  formatZoneDateTime,
-  formatZoneTime,
   detectDeviceTimeZone,
   COMMON_TIME_ZONES,
   formatZoneLabel,
+  formatZoneDateTime,
   loadPhonePlacePrefs,
   savePhonePlacePrefs,
   locationLabel,
@@ -102,12 +96,11 @@ import {
   autoResolveSharedConflict,
   canAbsorbDisjointSharedMoney,
   absorbDisjointSharedMoney,
+  resolveConflictChoice,
   unresolvedConflicts,
+  makeConflictBundle,
   markSynchronized,
   markPendingTransport,
-  suggestCategory,
-  shouldPrefillCategory,
-  suggestSplit,
   clockInShift,
   chooseOpenShiftTimeline,
   clockOutShift,
@@ -115,13 +108,9 @@ import {
   endShiftBreak,
   abandonOpenShift,
   activeOpenShift,
-  ceremonyFields,
-  ceremonyCopy,
   collapseSavedOffice,
   formatPreviewHours,
-  isLastCeremonyStep,
   previewHoursQuarter,
-  shiftFieldLabel,
   type ShiftGate,
   type Shift,
   type WorkJob,
@@ -132,6 +121,7 @@ import {
   type PersonalEnvelope,
   type LedgerView,
   type MonthKey,
+  type MonthRehearsalTaskId,
   type Split,
   type UndoToken,
   type Visibility,
@@ -212,6 +202,13 @@ import {
   type ContinuityIdentity,
 } from "./continuity.ts";
 import { afterNextPaint } from "./nextPaint.ts";
+import {
+  copySyncPilotDiagnostic,
+  recordSyncPilotTrace,
+  syncPilotDiagnosticsEnabled,
+  type SyncPilotTracePhase,
+  type SyncPilotTransport,
+} from "./syncPilotDiagnostics.ts";
 
 function makeBooksAdapters(input: {
   environment: import("./core/types.ts").Environment;
@@ -266,11 +263,18 @@ import {
   registerCurrentHouseholdDevice,
   resetDevelopmentHouseholds,
 } from "./ledger/householdInvites.ts";
-import { CollapsibleCard } from "./theme/PaperTheme.tsx";
 import { ConfirmSheet } from "./Confirm.tsx";
 import type { RepeatingDraft } from "./RepeatingForm.tsx";
 import type { WorkShiftDraft } from "./WorkShiftFlow.tsx";
 import { resolveDuplicateRetry } from "./shiftDuplicateRetry.ts";
+import {
+  HouseholdEntryCard,
+  discoveredHouseholdForTarget,
+  discoveredHouseholdCardModels,
+  replicaHouseholdCardModels,
+  type HouseholdEntryTarget,
+  type InviteFlowState,
+} from "./HouseholdEntryCard.tsx";
 import { createShiftScanScope } from "./shiftScanScope.ts";
 import { sealShiftBibleEvidence } from "./imports/evidenceClient.ts";
 import {
@@ -280,6 +284,7 @@ import {
   type ScopedWorkShiftInput,
 } from "./workShiftScope.ts";
 import { DuePreviewSheet } from "./DuePreviewSheet.tsx";
+import { ConflictResolution } from "./ConflictResolution.tsx";
 import {
   renderCommandChrome,
   renderCommandSurface,
@@ -316,12 +321,14 @@ import {
 import { useDialog } from "./useDialog.ts";
 import { LedgerPurposeBanner } from "./LedgerPurposeBanner.tsx";
 import { HerculesPresence } from "./Hercules.tsx";
-import { ShiftElapsedHint } from "./ShiftElapsedHint.tsx";
 import { HerculesProApproval, HerculesProPermissionsCard, herculesProAuthorizationRequest } from "./HerculesPro.tsx";
-import { CadPad } from "./CadPad.tsx";
-import { PresetChip } from "./widgets/PresetChip.tsx";
+import { AddSlideshow, type AddFormFields, type AddMode } from "./AddSlideshow.tsx";
+import { AddCategoryForm } from "./AddCategoryForm.tsx";
+import { defaultSubcategoryForMode } from "./addSlideshow.ts";
+import { FabSpeedDial } from "./FabSpeedDial.tsx";
 import { SitDownGuide } from "./SitDownGuide.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
+import { MonthRehearsalPanel } from "./MonthRehearsalPanel.tsx";
 import { playClink } from "./clink.ts";
 import { GoogleBridgeCard } from "./GoogleBridge.tsx";
 import {
@@ -361,7 +368,6 @@ import {
 } from "./startup/booksReadiness.ts";
 
 type Tab = "home" | "plan" | "calendar" | "shift" | "ledger" | "more";
-type AddMode = "expense" | "income" | "shift" | "transfer";
 type WelcomeGoogleIntent = "create" | "login";
 type WelcomeIdentity = ContinuityIdentity & { displayName: string; grantedScopes: string[] };
 const WELCOME_GOOGLE_INTENT_KEY = "hearth:welcome-google-intent:v1";
@@ -405,7 +411,7 @@ type Guard =
   | { kind: "restorePoint"; pointId: string; summary: string }
   | { kind: "delete-household"; householdId: string; name: string; memberId: string; role: "owner" | "member" | null };
 
-const emptyForm = {
+const emptyForm: AddFormFields = {
   date: todayKey(),
   amount: "",
   accountId: "ACC-VISA",
@@ -459,6 +465,8 @@ export function App() {
   const pendingDemoFramesRef = useRef<number[]>([]);
   const [tab, setTab] = useState<Tab>("home");
   const [adding, setAdding] = useState(false);
+  const [addSlide, setAddSlide] = useState(0);
+  const [fabOpen, setFabOpen] = useState(false);
   const workShiftInputRef = useRef<ScopedWorkShiftInput | null>(null);
   const shiftScanScopeRef = useRef(createShiftScanScope());
   const confirmPanelRef = useRef<HTMLDivElement | null>(null);
@@ -472,6 +480,7 @@ export function App() {
     setShiftScanError("");
     setShiftScanWarnings([]);
     setAdding(false);
+    setAddSlide(0);
     setConfirm(null);
     setError("");
     setDraftLocation(undefined);
@@ -495,7 +504,7 @@ export function App() {
   const [saveRepeatingPostFirst, setSaveRepeatingPostFirst] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   const [splitPercents, setSplitPercents] = useState<Record<string, number>>({ "MEM-001": 50, "MEM-002": 50 });
-  const [now] = useState(() => new Date());
+  const [now, setNow] = useState(() => new Date());
   const [session, setSession] = useState<Session | null>(initialStartup.session);
   const sessionRef = useRef<Session | null>(session);
   sessionRef.current = session;
@@ -509,6 +518,7 @@ export function App() {
     revision: number;
   } | null>(null);
   const [commandChrome, setCommandChrome] = useState<CommandChromeResult | null>(null);
+  const [showConflictSheet, setShowConflictSheet] = useState(false);
   const [commandProgressPhase, setCommandProgressPhase] = useState<CommandProgressPhase>("idle");
   const [softPresenceLive, setSoftPresenceLive] = useState<SoftPresenceLiveRow[]>([]);
   const [softPresenceOptOut, setSoftPresenceOptOutState] = useState(() => isSoftPresenceOptedOut("development"));
@@ -518,6 +528,8 @@ export function App() {
   const [supabaseAuthReturned, setSupabaseAuthReturned] = useState(false);
   const [inviteInput, setInviteInput] = useState("");
   const [pendingAuthInvite, setPendingAuthInvite] = useState<string | null>(null);
+  const [inviteFlowState, setInviteFlowState] = useState<InviteFlowState>("idle");
+  const [highlightedHouseholdId, setHighlightedHouseholdId] = useState<string | null>(null);
   const [welcomeMode, setWelcomeMode] = useState<"home" | "join" | "qr" | "new">("home");
   const [welcomeIdentity, setWelcomeIdentity] = useState<WelcomeIdentity | null>(null);
   const [newHouseholdDraft, setNewHouseholdDraft] = useState({
@@ -545,7 +557,6 @@ export function App() {
   const [clinkOn, setClinkOn] = useState(false);
   const [addDetails, setAddDetails] = useState(false);
   const [shiftGate, setShiftGate] = useState<ShiftGate>("choose");
-  const [shiftStep, setShiftStep] = useState(0);
   const [hoursDirty, setHoursDirty] = useState(false);
   const [draftLocation, setDraftLocation] = useState<TransactionLocation | undefined>(undefined);
   const [locationBusy, setLocationBusy] = useState(false);
@@ -557,6 +568,7 @@ export function App() {
   const enqueueWrite = useMemo(() => createWriteQueue(), []);
   const householdRef = useRef<Household | null>(household);
   householdRef.current = household;
+  const openingHouseholdRef = useRef<string | null>(null);
 
   function adoptAcceptedHousehold(next: Household, statusOverride?: BooksStatus): void {
     householdRef.current = next;
@@ -821,6 +833,16 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    const refreshClock = () => setNow(new Date());
+    const interval = window.setInterval(refreshClock, 30_000);
+    document.addEventListener("visibilitychange", refreshClock);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refreshClock);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!confirm) return;
     setToast(null);
     confirmPanelRef.current?.focus();
@@ -842,7 +864,7 @@ export function App() {
   }, [supabaseAuthReturned]);
 
   useEffect(() => {
-    if (!supabaseAuthEnabled() || !household || !session) return;
+    if (!supabaseAuthEnabled() || !hostedContinuityAllowed(environment) || !household || !session) return;
     let cancelled = false;
     void (async () => {
       const authSession = await ensureSupabaseSession(environment);
@@ -875,6 +897,7 @@ export function App() {
     if (stored) {
       setPendingAuthInvite(stored.token);
       setInviteInput(stored.token);
+      setInviteFlowState("awaiting-google");
       if (stored.environment !== environment) setEnvironment(stored.environment);
       setWelcomeMode("join");
     }
@@ -883,6 +906,7 @@ export function App() {
       const env = authInvite.environment ?? environment;
       setInviteInput(authInvite.token);
       setPendingAuthInvite(authInvite.token);
+      setInviteFlowState("awaiting-google");
       savePendingAuthInvite({ token: authInvite.token, environment: env });
       if (authInvite.environment && authInvite.environment !== environment) {
         setEnvironment(authInvite.environment);
@@ -1240,6 +1264,10 @@ export function App() {
       });
       if (!live) return accepted;
       adoptAcceptedHousehold(accepted.household);
+      if (unresolvedConflicts(accepted.household).length > 0) {
+        setShowConflictSheet(true);
+        setSyncState("error");
+      }
       if (!accepted.ok && accepted.userMessage) setError(accepted.userMessage);
       return accepted;
     };
@@ -1255,6 +1283,7 @@ export function App() {
           supabaseAuthEnabled()
           && (!authSession || !expectedIdentity || !supabaseSessionMatchesGoogleIdentity(authSession, expectedIdentity))
         ) {
+          traceSyncPilot("auth-blocked", { transport: "outbox" });
           if (live) setSyncState("idle");
           return;
         }
@@ -1332,6 +1361,12 @@ export function App() {
               return;
             }
             const ready = accepted.household;
+            if (unresolvedConflicts(ready).length > 0) {
+              setSyncState("error");
+              setShowConflictSheet(true);
+              setError("Two versions differ on the same financial fact. Both are preserved for review.");
+              return;
+            }
             clearContinuityOutboxConflictBlocks({
               environment,
               identity,
@@ -1373,6 +1408,12 @@ export function App() {
         if (flushed.synchronized > 0 && current) {
           current = markSynchronized(current);
           await saveHousehold(current, { operatingEnvironment: environment, memberId });
+          traceSyncPilot("cloud-ack", {
+            household: current,
+            revision: current.revision,
+            pendingCount: flushed.pending,
+            transport: "outbox",
+          });
           if (live) {
             adoptKnownMetadataHousehold(current);
           }
@@ -1441,6 +1482,11 @@ export function App() {
             setError(accepted?.userMessage || "Could not accept the shared household.");
             return;
           }
+          traceSyncPilot(unresolvedConflicts(accepted.household).length > 0 ? "conflict" : "snapshot-applied", {
+            household: accepted.household,
+            revision: remoteRevision,
+            transport: source === "poll" ? "poll" : "snapshot-realtime",
+          });
           coordinator.recordAccept(current.householdId, remoteRevision);
           if (live) {
             setLastReconcile({
@@ -1467,12 +1513,17 @@ export function App() {
               adoptKnownMetadataHousehold(synced);
             } else if (pushed.errorClass === "conflict-detected" && pushed.remote) {
               const resolved = await autoResolveSharedConflict(ready, pushed.remote, memberId, "local");
-              await acceptReplayCandidate(
+              const acceptedConflict = await acceptReplayCandidate(
                 resolved,
                 `live-absorb-resolve-${ready.householdId}-${pushed.remote.revision}`,
                 "outbox-resolve",
               );
-              setSyncState("syncing");
+              if (acceptedConflict && unresolvedConflicts(acceptedConflict.household).length > 0) {
+                setShowConflictSheet(true);
+                setSyncState("error");
+              } else {
+                setSyncState("syncing");
+              }
               return;
             } else {
               setSyncState("syncing");
@@ -1563,17 +1614,60 @@ export function App() {
       const tryApplyCommandEvent = async (event: ContinuityCommandEvent): Promise<"applied" | "duplicate" | "ignored" | "fallback"> => {
         const current = householdRef.current;
         if (!current) return "ignored";
+        traceSyncPilot("realtime-received", {
+          household: current,
+          confirmationId: event.confirmation_id,
+          revision: event.result_revision,
+          transport: "command-realtime",
+        });
         const applied = await applyCommandEventLocally({ local: current, event, memberId });
         if (!applied.ok) {
+          if (applied.fallback) {
+            traceSyncPilot("poll-fallback", {
+              household: current,
+              confirmationId: event.confirmation_id,
+              revision: event.result_revision,
+              transport: "poll",
+            });
+          }
           return applied.fallback ? "fallback" : "ignored";
         }
-        if (applied.duplicate) return "duplicate";
+        if (applied.duplicate) {
+          traceSyncPilot("duplicate", {
+            household: current,
+            confirmationId: event.confirmation_id,
+            revision: event.result_revision,
+            transport: "command-realtime",
+          });
+          return "duplicate";
+        }
         const accepted = await acceptReplayCandidate(
           applied.household,
           `continuity-cmd-${event.confirmation_id || event.idempotency_key}`,
           event.command_type,
         );
         if (!accepted?.ok) return "fallback";
+        if (unresolvedConflicts(accepted.household).length > 0) {
+          traceSyncPilot("conflict", {
+            household: accepted.household,
+            confirmationId: event.confirmation_id,
+            revision: event.result_revision,
+            transport: "command-realtime",
+            sourceAcceptedAt: event.payload_json.acceptedAt,
+          });
+          if (live) {
+            setShowConflictSheet(true);
+            setSyncState("error");
+          }
+          return "applied";
+        }
+        traceSyncPilot("remote-accepted", {
+          household: accepted.household,
+          confirmationId: event.confirmation_id,
+          revision: event.result_revision,
+          transport: "command-realtime",
+          sourceAcceptedAt: event.payload_json.acceptedAt,
+        });
         if (live) setSyncState("synced");
         return "applied";
       };
@@ -1608,6 +1702,7 @@ export function App() {
             hasSession: Boolean(memberId),
             hasHousehold: Boolean(householdRef.current),
           })) return;
+          traceSyncPilot("snapshot-signal", { transport: "snapshot-realtime" });
           scheduleReplay("realtime");
         },
         onStatusChange: (status) => {
@@ -1656,6 +1751,7 @@ export function App() {
       } else {
         consecutiveUnhealthyPolls = 0;
       }
+      traceSyncPilot("poll-fallback", { transport: "poll" });
       scheduleReplay("poll");
     }, 1_000);
     return () => {
@@ -1869,6 +1965,8 @@ export function App() {
 
   async function switchLedger(householdId: string): Promise<void> {
     if (!householdId || householdId === householdRef.current?.householdId) return;
+    if (openingHouseholdRef.current) return;
+    openingHouseholdRef.current = householdId;
     setBusy(true);
     setError("");
     try {
@@ -1902,6 +2000,7 @@ export function App() {
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
+      if (openingHouseholdRef.current === householdId) openingHouseholdRef.current = null;
       setBusy(false);
     }
   }
@@ -1993,94 +2092,133 @@ export function App() {
     setToast(null);
   }
 
-  async function openDiscoveredLedger(found: DiscoveredHousehold): Promise<void> {
-    const previous = householdRef.current;
-    const candidate = previous?.householdId === found.household.householdId
-      ? await reconcileHouseholdSnapshots(previous, found.household, found.memberId)
-      : found.household;
-    const googleSession = loadGoogleSession(environment, found.memberId, candidate.householdId)
-      ?? loadGoogleSession(environment, "__welcome__");
-    const continuityIdentity = continuityIdentityFromGoogle(googleSession);
-    const accepted = await acceptHouseholdWrite({
-      previous,
-      candidate,
-      confirmationId: `discover-${found.household.householdId}-${found.household.revision}`,
-      commandKind: "google-discovery",
-      postedIds: [],
-      adapters: makeBooksAdapters({
-        environment,
-        memberId: found.memberId,
-        continuityIdentity,
-      }),
-    });
-    if (!accepted.ok) throw new Error(accepted.userMessage || "Those cloud books could not be accepted on this device.");
-    const adopted = adoptGoogleSession(environment, "__welcome__", found.memberId, accepted.household.householdId);
-    if (!adopted && !loadSupabaseSession(environment)) {
-      throw new Error("Google signed in, but this device could not keep the session.");
+  async function openDiscoveredLedger(target: HouseholdEntryTarget): Promise<void> {
+    if (openingHouseholdRef.current) return;
+    const found = discoveredHouseholdForTarget(discoveredLedgers, target);
+    if (!found) throw new Error("That household card is out of date. Refresh your Google households and try again.");
+    const openingKey = `${found.household.householdId}:${found.memberId}`;
+    openingHouseholdRef.current = openingKey;
+    setBusy(true);
+    setError("");
+    try {
+      const previous = householdRef.current;
+      const candidate = previous?.householdId === found.household.householdId
+        ? await reconcileHouseholdSnapshots(previous, found.household, found.memberId)
+        : found.household;
+      const googleSession = loadGoogleSession(environment, found.memberId, candidate.householdId)
+        ?? loadGoogleSession(environment, "__welcome__");
+      const continuityIdentity = continuityIdentityFromGoogle(googleSession);
+      const accepted = await acceptHouseholdWrite({
+        previous,
+        candidate,
+        confirmationId: `discover-${found.household.householdId}-${found.household.revision}`,
+        commandKind: "google-discovery",
+        postedIds: [],
+        adapters: makeBooksAdapters({
+          environment,
+          memberId: found.memberId,
+          continuityIdentity,
+        }),
+      });
+      if (!accepted.ok) throw new Error(accepted.userMessage || "Those cloud books could not be accepted on this device.");
+      if (accepted.household.householdId !== target.householdId) {
+        throw new Error("The accepted books did not match the household card you selected.");
+      }
+      const adopted = adoptGoogleSession(environment, "__welcome__", found.memberId, accepted.household.householdId);
+      if (!adopted && !loadSupabaseSession(environment)) {
+        throw new Error("Google signed in, but this device could not keep the session.");
+      }
+      adoptAcceptedHousehold(accepted.household, {
+        ok: true,
+        engine: "pglite+supabase",
+        entryCount: accepted.household.transactions.length,
+        inBalance: true,
+        equationHolds: true,
+      });
+      rememberSession({ memberId: found.memberId, view: "household", householdId: accepted.household.householdId });
+      setReplicas(await listHouseholdReplicas(environment));
+      setDiscoveredLedgers([]);
+      setSyncState("synced");
+      setBooksStatus({
+        ok: true,
+        engine: "pglite+supabase",
+        entryCount: accepted.household.transactions.length,
+        inBalance: true,
+        equationHolds: true,
+      });
+    } finally {
+      if (openingHouseholdRef.current === openingKey) openingHouseholdRef.current = null;
+      setBusy(false);
     }
-    adoptAcceptedHousehold(accepted.household, {
-      ok: true,
-      engine: "pglite+supabase",
-      entryCount: accepted.household.transactions.length,
-      inBalance: true,
-      equationHolds: true,
-    });
-    rememberSession({ memberId: found.memberId, view: "household", householdId: accepted.household.householdId });
-    setDiscoveredLedgers([]);
-    setSyncState("synced");
-    setBooksStatus({
-      ok: true,
-      engine: "pglite+supabase",
-      entryCount: accepted.household.transactions.length,
-      inBalance: true,
-      equationHolds: true,
-    });
   }
 
   async function redeemAuthInviteToken(token: string): Promise<void> {
-    if (!supabaseAuthEnabled()) {
-      throw new Error("Auth invites need an Auth-enabled kitchen build.");
-    }
     savePendingAuthInvite({ token, environment });
     setPendingAuthInvite(token);
-    let authSession = await ensureSupabaseSession(environment);
-    if (!authSession) {
-      setInviteInput(token);
-      setWelcomeMode("join");
-      startSupabaseGoogleSignIn(environment);
-      return;
+    setInviteInput(token);
+    setWelcomeMode("join");
+    try {
+      if (!supabaseAuthEnabled()) {
+        throw new Error("Auth invites need an Auth-enabled kitchen build.");
+      }
+      if (!hostedContinuityAllowed(environment)) {
+        throw new Error(inviteReasonMessage("continuity-disabled"));
+      }
+      const authSession = await ensureSupabaseSession(environment);
+      if (!authSession) {
+        setInviteFlowState("awaiting-google");
+        rememberWelcomeGoogleIntent("login");
+        startSupabaseGoogleSignIn(environment);
+        return;
+      }
+      setInviteFlowState("redeeming");
+      const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
+      const redeemed = await redeemHouseholdInvite({
+        environment,
+        inviteToken: token,
+        displayName: authSession.displayName,
+        config: cloudConfig,
+      });
+      if (!redeemed.ok) {
+        throw new Error(inviteReasonMessage(redeemed.reason));
+      }
+      if (redeemed.environment !== environment) {
+        throw new Error(`This invitation belongs to ${redeemed.environment}. Switch to that environment and try again.`);
+      }
+      setInviteFlowState("refreshing");
+      const registered = await registerCurrentHouseholdDevice({
+        environment,
+        deviceId: localDeviceId(),
+        deviceLabel: describeDeviceLabel(),
+        config: cloudConfig,
+      });
+      if (!registered.ok) throw new Error(inviteReasonMessage(registered.reason));
+      const identity = { email: authSession.email, subject: authSession.googleSubject };
+      const found = await discoverContinuityMemberships(identity, environment, cloudConfig);
+      const match = found.find((row) => row.household.householdId === redeemed.householdId)
+        ?? (redeemed.memberId
+          ? found.find((row) => row.memberId === redeemed.memberId)
+          : undefined);
+      if (!match) {
+        throw new Error("Invitation accepted, but the household list did not refresh. Try the invitation again; redemption is safe to repeat.");
+      }
+      setWelcomeIdentity({
+        ...identity,
+        displayName: authSession.displayName,
+        grantedScopes: ["openid", "email", "profile"],
+      });
+      setDiscoveredLedgers(found);
+      setHighlightedHouseholdId(match.household.householdId);
+      setPendingAuthInvite(null);
+      clearPendingAuthInvite();
+      rememberWelcomeGoogleIntent(null);
+      setInviteFlowState("ready");
+      setWelcomeMode("home");
+      setError("");
+    } catch (caught) {
+      setInviteFlowState("error");
+      throw caught;
     }
-    const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
-    const redeemed = await redeemHouseholdInvite({
-      inviteToken: token,
-      displayName: authSession.displayName,
-      config: cloudConfig,
-    });
-    if (!redeemed.ok) {
-      throw new Error(inviteReasonMessage(redeemed.reason));
-    }
-    if (redeemed.environment !== environment) {
-      setEnvironment(redeemed.environment);
-    }
-    const registered = await registerCurrentHouseholdDevice({
-      environment: redeemed.environment,
-      deviceId: localDeviceId(),
-      deviceLabel: describeDeviceLabel(),
-      config: cloudConfig,
-    });
-    if (!registered.ok) throw new Error(inviteReasonMessage(registered.reason));
-    const identity = { email: authSession.email, subject: authSession.googleSubject };
-    const found = await discoverContinuityMemberships(identity, redeemed.environment, cloudConfig);
-    const match = found.find((row) => row.household.householdId === redeemed.householdId)
-      ?? (redeemed.memberId
-        ? found.find((row) => row.memberId === redeemed.memberId)
-        : undefined);
-    if (!match) {
-      throw new Error("Invite accepted, but this device could not open the household yet. Try Continue with Google.");
-    }
-    setPendingAuthInvite(null);
-    clearPendingAuthInvite();
-    await openDiscoveredLedger(match);
   }
 
   async function continueWithGoogle(intent?: WelcomeGoogleIntent): Promise<void> {
@@ -2103,6 +2241,9 @@ export function App() {
           rememberWelcomeGoogleIntent(welcomeIntent);
           startSupabaseGoogleSignIn(environment);
           return;
+        }
+        if (!hostedContinuityAllowed(environment)) {
+          throw new Error(inviteReasonMessage("continuity-disabled"));
         }
         cloudConfig = authenticatedSupabaseConfig(cloudConfig, authSession);
         const registered = await registerCurrentHouseholdDevice({
@@ -2139,12 +2280,6 @@ export function App() {
           grantedScopes: googleSession.grantedScopes,
         };
       }
-      if (welcomeIntent === "create") {
-        rememberWelcomeGoogleIntent(null);
-        setWelcomeIdentity(identityDetails);
-        setWelcomeMode("new");
-        return;
-      }
       let found = await discoverContinuityMemberships(identity, environment, cloudConfig);
       if (!found.length && supabaseAuthEnabled() && cloudConfig?.accessToken) {
         const bound = await bindGoogleMemberships({ environment, config: cloudConfig });
@@ -2175,14 +2310,18 @@ export function App() {
           );
         }
         setWelcomeIdentity(identityDetails);
-        setWelcomeMode("new");
+        setDiscoveredLedgers([]);
+        setWelcomeMode(welcomeIntent === "create" ? "new" : "home");
         return;
       }
-      const only = found[0];
       rememberWelcomeGoogleIntent(null);
-      if (found.length === 1 && only) await openDiscoveredLedger(only);
-      else setDiscoveredLedgers(found);
+      setWelcomeIdentity(identityDetails);
+      setHighlightedHouseholdId(null);
+      setInviteFlowState("idle");
+      setWelcomeMode(welcomeIntent === "create" ? "new" : "home");
+      setDiscoveredLedgers(found);
     } catch (caught) {
+      if (pendingAuthInvite || loadPendingAuthInvite()) setInviteFlowState("error");
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
       setBusy(false);
@@ -2248,7 +2387,7 @@ export function App() {
         previous,
         candidate: next,
         confirmationId,
-        commandKind: token?.label ?? "commit",
+        commandKind: token?.commandKind ?? token?.label ?? "commit",
         postedIds: token?.postedIds ?? [],
         transportRequested,
         adapters: makeBooksAdapters({
@@ -2288,6 +2427,43 @@ export function App() {
       });
       setCommandChrome(chrome);
       setCommandProgressPhase(commandProgressPhaseAfterOutcome(outcome, transportRequested));
+      if (outcome.ok) {
+        traceSyncPilot("local-accepted", {
+          household: outcome.household,
+          confirmationId,
+          revision: outcome.revision,
+          pendingCount,
+          transport: "local",
+        });
+      }
+      if (pendingCount > 0) {
+        traceSyncPilot("outbox-enqueued", {
+          household: outcome.household,
+          confirmationId,
+          revision: outcome.revision,
+          pendingCount,
+          transport: "outbox",
+        });
+      }
+      if (outcome.kind === "synchronized") {
+        traceSyncPilot("cloud-ack", {
+          household: outcome.household,
+          confirmationId,
+          revision: outcome.revision,
+          pendingCount,
+          transport: "outbox",
+        });
+      }
+      if (outcome.kind === "conflict-needs-attention" || unresolvedConflicts(outcome.household).length > 0) {
+        traceSyncPilot("conflict", {
+          household: outcome.household,
+          confirmationId,
+          revision: outcome.revision,
+          pendingCount,
+          transport: "outbox",
+        });
+        setShowConflictSheet(true);
+      }
       if (outcome.kind === "synchronized") {
         saveSyncAnchor(environment, outcome.household);
         const who = memberId;
@@ -2404,6 +2580,13 @@ export function App() {
             synced = finalized;
             saveSyncAnchor(environment, synced);
             setSyncState("synced");
+            traceSyncPilot("cloud-ack", {
+              household: synced,
+              confirmationId,
+              revision: synced.revision,
+              pendingCount: 0,
+              transport: "outbox",
+            });
             setCommandProgressPhase("cloud-ack");
             setCommandChrome(renderCommandChrome(COMMAND_SURFACE_FIXTURES.synchronized, {
               amountLabel: lastAmountLabelRef.current,
@@ -2437,7 +2620,7 @@ export function App() {
       }
       if (outcome.kind === "synchronized") setSyncState("synced");
       else if (outcome.kind === "pending-transport") setSyncState("syncing");
-      else if (outcome.kind === "conflict-needs-attention") setSyncState("syncing");
+      else if (outcome.kind === "conflict-needs-attention") setSyncState("error");
       else if (outcome.ok) setSyncState("idle");
       if (outcome.ok) {
         const status: BooksStatus = {
@@ -2595,6 +2778,41 @@ export function App() {
     }
   }
 
+  async function resolveConflictSide(side: "local" | "remote") {
+    const current = householdRef.current;
+    const who = session?.memberId;
+    if (!current || !who) return;
+    const open = unresolvedConflicts(current)[0];
+    if (!open) {
+      setShowConflictSheet(false);
+      return;
+    }
+    try {
+      const next = resolveConflictChoice(current, open.id, side);
+      const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
+      const google = loadGoogleSession(environment, who);
+      const identity: ContinuityIdentity | null = authSession
+        ? { email: authSession.email, subject: authSession.googleSubject }
+        : continuityIdentityFromGoogle(google);
+      if (identity) {
+        clearContinuityOutboxConflictBlocks({
+          environment,
+          identity,
+          householdId: next.householdId,
+          expectedRevision: next.baseRevision ?? Math.max(0, next.revision - 1),
+        });
+      }
+      const accepted = await commitHousehold(next, undefined, who, {
+        confirmationId: `conflict-choice-${open.id}-${side}`,
+      });
+      if (!accepted?.ok || unresolvedConflicts(accepted.household).length > 0) return;
+      setShowConflictSheet(false);
+      setError("");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }
+
   function run(fn: (current: Household) => CommitResult) {
     if (postingRef.current) return Promise.resolve();
     postingRef.current = true;
@@ -2690,14 +2908,123 @@ export function App() {
     setGuard({ kind: "clear-this-phone" });
   }
 
+  async function copyPilotSyncDiagnostic(): Promise<string> {
+    const current = householdRef.current;
+    const who = sessionRef.current?.memberId;
+    if (!current || !who || !syncPilotDiagnosticsEnabled(environment)) {
+      throw new Error("Sync diagnostics are available only in the Development pilot build.");
+    }
+    const bundle = await copySyncPilotDiagnostic({
+      environment,
+      householdId: current.householdId,
+      memberId: who,
+      deviceId: localDeviceId(),
+      revision: current.revision,
+      pendingCount: listContinuityOutbox(environment).filter((item) => item.householdId === current.householdId).length,
+      syncState,
+      realtimeStatus,
+      offline,
+      freshnessMode: syncFreshnessDisplay.transportMode,
+    });
+    if (!bundle) throw new Error("This build did not enable the Development sync diagnostic.");
+    const p95 = bundle.latency.p95Ms == null ? "no receiving samples yet" : `p95 ${bundle.latency.p95Ms} ms`;
+    return `Copied privacy-safe sync diagnostic · ${bundle.latency.sampleCount} receiving samples · ${p95}.`;
+  }
+
+  function traceSyncPilot(
+    phase: SyncPilotTracePhase,
+    details?: {
+      household?: Household | null;
+      confirmationId?: string | null;
+      revision?: number | null;
+      pendingCount?: number | null;
+      transport?: SyncPilotTransport | null;
+      sourceAcceptedAt?: string | null;
+    },
+  ): void {
+    const current = details?.household ?? householdRef.current;
+    const who = sessionRef.current?.memberId;
+    if (!current || !who || !syncPilotDiagnosticsEnabled(environment)) return;
+    void recordSyncPilotTrace({
+      environment,
+      phase,
+      householdId: current.householdId,
+      memberId: who,
+      deviceId: localDeviceId(),
+      confirmationId: details?.confirmationId,
+      revision: details?.revision ?? current.revision,
+      pendingCount: details?.pendingCount,
+      transport: details?.transport,
+      sourceAcceptedAt: details?.sourceAcceptedAt,
+    }).catch(() => undefined);
+  }
+
   function signOutWelcomeGoogle() {
     clearGoogleSessions(environment);
     clearSupabaseSession(environment);
     rememberWelcomeGoogleIntent(null);
     setWelcomeIdentity(null);
     setDiscoveredLedgers([]);
+    setHighlightedHouseholdId(null);
+    setInviteFlowState("idle");
+    setPendingAuthInvite(null);
+    setInviteInput("");
+    clearPendingAuthInvite();
     setWelcomeMode("home");
     setError("");
+  }
+
+  function dismissWelcomeJoin() {
+    setPendingAuthInvite(null);
+    setInviteInput("");
+    clearPendingAuthInvite();
+    setInviteFlowState("idle");
+    setWelcomeMode("home");
+    setError("");
+  }
+
+  function tryInviteWithAnotherGoogleAccount() {
+    const token = pendingAuthInvite ?? loadPendingAuthInvite()?.token ?? authInviteTokenFromText(inviteInput);
+    clearGoogleSessions(environment);
+    clearSupabaseSession(environment);
+    rememberWelcomeGoogleIntent("login");
+    setWelcomeIdentity(null);
+    setDiscoveredLedgers([]);
+    setHighlightedHouseholdId(null);
+    setError("");
+    setInviteFlowState("awaiting-google");
+    setWelcomeMode("join");
+    if (token) savePendingAuthInvite({ token, environment });
+    startSupabaseGoogleSignIn(environment);
+  }
+
+  async function promptDeleteDiscoveredHousehold(found: DiscoveredHousehold): Promise<void> {
+    setBusy(true);
+    setError("");
+    try {
+      const authSession = await ensureSupabaseSession(environment);
+      if (!authSession) throw new Error("Continue with Google before deleting a household.");
+      const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
+      const identity = { email: authSession.email, subject: authSession.googleSubject };
+      const role = await fetchContinuityMembershipRole({
+        householdId: found.household.householdId,
+        memberId: found.memberId,
+        identity,
+        environment,
+        config: cloudConfig,
+      });
+      setGuard({
+        kind: "delete-household",
+        householdId: found.household.householdId,
+        name: found.household.name,
+        memberId: found.memberId,
+        role,
+      });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function removeHouseholdFromDevice(input: {
@@ -2919,15 +3246,15 @@ export function App() {
       || loadGoogleSession(environment, "__welcome__")
       || loadSupabaseSession(environment),
     );
+    const householdCards = discoveredHouseholdCardModels(discoveredLedgers, now, displayZone);
+    const foundById = new Map(discoveredLedgers.map((found) => [found.household.householdId, found]));
     return (
       <div className="welcome">
-        <div className="welcome-card">
+        <div className="welcome-card" data-welcome-mode={welcomeMode}>
           <p className="kicker">CAD · Toronto books · two people</p>
           <img src="/hercules-mark.svg" alt="" />
           <h1>Hearth</h1>
-          <p>
-            Two phones. One journal. CAD. Toronto civil books. Each phone keeps its own clock. Hercules loafs while you post groceries.
-          </p>
+          <p>Come home to the right books on every device. Google confirms who you are; Hearth confirms which households belong to you.</p>
           {welcomeMode === "join" ? (
             <DeferredSurface label="Join Hearth">
             <DeferredWelcomeJoin
@@ -2943,7 +3270,10 @@ export function App() {
                 setPendingAuthInvite(token);
                 await redeemAuthInviteToken(token);
               }}
-              onBack={() => { setWelcomeMode("home"); setError(""); }}
+              inviteFlowState={inviteFlowState}
+              onScanQr={() => { setWelcomeMode("qr"); setError(""); }}
+              onUseAnotherGoogle={tryInviteWithAnotherGoogleAccount}
+              onBack={dismissWelcomeJoin}
             />
             </DeferredSurface>
           ) : welcomeMode === "qr" ? (
@@ -2956,6 +3286,8 @@ export function App() {
                 const token = authInviteTokenFromText(raw);
                 if (token) {
                   setInviteInput(token);
+                  setPendingAuthInvite(token);
+                  setInviteFlowState("awaiting-google");
                   await redeemAuthInviteToken(token);
                   return;
                 }
@@ -3005,7 +3337,8 @@ export function App() {
                 setError(caught instanceof Error ? caught.message : String(caught));
               }
             }}>
-              <p className="kicker">Create household with Google</p>
+              <p className="kicker">New household</p>
+              <h2>Create a household</h2>
               <p className="muted">Signed in as {welcomeIdentity?.email || "Google account"}. Name the household and its ledgers.</p>
               <label htmlFor="new-household-name">Household name</label>
               <input
@@ -3047,7 +3380,7 @@ export function App() {
                 {busy ? "Creating…" : "Create household"}
               </button>
               <button className="ghost" type="button" style={{ width: "100%", marginTop: 8 }} onClick={() => { setWelcomeMode("home"); setError(""); }}>
-                Back
+                Back to households
               </button>
               {welcomeSignedIn && (
                 <button className="ghost" type="button" style={{ width: "100%", marginTop: 8 }} disabled={busy} onClick={() => signOutWelcomeGoogle()}>
@@ -3057,129 +3390,93 @@ export function App() {
             </form>
           ) : (
             <>
-              {discoveredLedgers.length === 0 ? <>
-                <div className="welcome-entry-grid" aria-label="Ways to enter Hearth">
-                <button className="welcome-entry" disabled={busy || !googleEntryAvailable} onClick={() => void continueWithGoogle("create")}>
-                  <strong>Create household with Google</strong>
-                  <span>Sign in, name a household, then enter its shared ledger.</span>
-                </button>
-                <button className="welcome-entry" disabled={busy || !googleEntryAvailable} onClick={() => void continueWithGoogle("login")}>
-                  <strong>{busy ? "Finding your ledgers…" : "Login with Google"}</strong>
-                  <span>See your households, choose one, and open its shared ledger.</span>
-                </button>
-                <button className="welcome-entry" disabled={busy} onClick={() => { setWelcomeMode("qr"); setError(""); }}>
-                  <strong>Join with QR code</strong>
-                  <span>On mobile, open the camera and scan a household invite.</span>
-                </button>
-                </div>
+              {!welcomeSignedIn ? (
+                <section className="welcome-google-first" aria-labelledby="welcome-google-title">
+                  <h2 id="welcome-google-title">Your household books, wherever you are</h2>
+                  <button className="primary welcome-google-first__button" disabled={busy || !googleEntryAvailable} onClick={() => void continueWithGoogle("login")}>
+                    {busy ? "Finding your households…" : "Continue with Google"}
+                  </button>
+                  <p className="muted">One private account door. No phone has to stay online as the host.</p>
                 {!googleEntryAvailable && (
-                  <p className="muted">Google sign-in is not configured in this build. QR and received invite links remain available.</p>
+                    <p className="muted" role="status">Google sign-in is not configured in this build. Advanced recovery remains available.</p>
                 )}
-                {environment === "development" && (
-                  <>
-                    <p className="kicker" id="start-from-scratch-home">Wipe leftover test households</p>
-                    <button
-                      className="danger"
-                      type="button"
-                      aria-describedby="start-from-scratch-home"
-                      disabled={busy}
-                      onClick={() => setGuard({ kind: "reset-development" })}
-                    >
-                      {busy ? "Starting over…" : "Start from scratch"}
-                    </button>
-                  </>
-                )}
-              </> : (
+                  <button className="ghost welcome-google-first__recovery" type="button" disabled={busy} onClick={() => { setWelcomeMode("join"); setError(""); }}>
+                    I have an invitation or recovery code
+                  </button>
+                </section>
+              ) : (
                 <section className="welcome-household-list">
                   <p className="kicker">Your Google households</p>
-                  <h2>Which household are you entering?</h2>
-                  {discoveredLedgers.map((found) => {
-                    const member = found.household.members.find((item) => item.id === found.memberId);
-                    return (
-                      <div key={found.household.householdId} className="welcome-household-row">
-                        <button
-                          className="primary"
-                          disabled={busy}
-                          onClick={() => void openDiscoveredLedger(found).catch((caught) => {
+                  <h2>Choose your household</h2>
+                  <p className="muted">Signed in as {welcomeIdentity?.email || loadSupabaseSession(environment)?.email || "Google account"}.</p>
+                  {householdCards.length === 0 && (
+                    <div className="welcome-household-empty" role="status">
+                      <strong>No households yet</strong>
+                      <span>Create one here, or accept an invitation from another household.</span>
+                    </div>
+                  )}
+                  <div className="welcome-household-grid">
+                    {householdCards.map((model) => {
+                      const found = foundById.get(model.householdId);
+                      if (!found) return null;
+                      return (
+                        <HouseholdEntryCard
+                          key={model.householdId}
+                          model={model}
+                          busy={busy}
+                          highlighted={model.householdId === highlightedHouseholdId}
+                          onOpen={(target) => void openDiscoveredLedger(target).catch((caught) => {
                             setError(caught instanceof Error ? caught.message : String(caught));
                           })}
-                        >
-                          {found.household.name} · {member?.name ?? "me"}
-                        </button>
-                        {environment === "development" && (
-                          <button
-                            className="danger ghost"
-                            disabled={busy}
-                            onClick={() => {
-                              void (async () => {
-                                setBusy(true);
-                                try {
-                                  const authSession = await ensureSupabaseSession(environment);
-                                  if (!authSession) {
-                                    throw new Error("Continue with Google before deleting a household.");
-                                  }
-                                  const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
-                                  const identity = { email: authSession.email, subject: authSession.googleSubject };
-                                  const role = await fetchContinuityMembershipRole({
-                                    householdId: found.household.householdId,
-                                    memberId: found.memberId,
-                                    identity,
-                                    environment,
-                                    config: cloudConfig,
-                                  });
-                                  setGuard({
-                                    kind: "delete-household",
-                                    householdId: found.household.householdId,
-                                    name: found.household.name,
-                                    memberId: found.memberId,
-                                    role,
-                                  });
-                                } catch (caught) {
-                                  setError(caught instanceof Error ? caught.message : String(caught));
-                                } finally {
-                                  setBusy(false);
-                                }
-                              })();
-                            }}
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
+                          actions={environment === "development" ? (
+                            <details className="household-entry-card__menu">
+                              <summary>Household options</summary>
+                              <button className="danger ghost" type="button" disabled={busy} onClick={() => void promptDeleteDiscoveredHousehold(found)}>
+                                Delete Development household
+                              </button>
+                            </details>
+                          ) : undefined}
+                        />
+                      );
+                    })}
+                  </div>
+                  {inviteFlowState === "ready" && <p className="welcome-invite-ready" role="status">Invitation accepted. Choose the highlighted household when you are ready.</p>}
+                  <div className="welcome-signed-actions" aria-label="Household actions">
+                    <button className="primary" type="button" disabled={busy} onClick={() => { setWelcomeMode("new"); setError(""); }}>
+                      Create household
+                    </button>
+                    <button className="ghost" type="button" disabled={busy} onClick={() => { setWelcomeMode("join"); setError(""); setInviteFlowState(pendingAuthInvite ? "awaiting-google" : "idle"); }}>
+                      Join household
+                    </button>
+                  </div>
                   {environment === "development" && (
-                    <>
-                      <p className="kicker" id="start-from-scratch-list">Wipe leftover test households</p>
-                      <button
-                        className="danger"
-                        type="button"
-                        aria-describedby="start-from-scratch-list"
-                        disabled={busy}
-                        onClick={() => setGuard({ kind: "reset-development" })}
-                      >
+                    <details className="welcome-danger-zone">
+                      <summary>Development reset tools</summary>
+                      <p className="muted" id="start-from-scratch-list">This removes disposable Development households. It is not an opening action.</p>
+                      <button className="danger" type="button" aria-describedby="start-from-scratch-list" disabled={busy} onClick={() => setGuard({ kind: "reset-development" })}>
                         {busy ? "Starting over…" : "Start from scratch"}
                       </button>
-                    </>
+                    </details>
                   )}
-                  <button className="ghost" disabled={busy} onClick={() => setDiscoveredLedgers([])}>Back</button>
-                  {welcomeSignedIn && (
-                    <button className="ghost" disabled={busy} onClick={() => signOutWelcomeGoogle()}>
-                      Sign out of Google
-                    </button>
-                  )}
+                  <button className="ghost welcome-sign-out" type="button" disabled={busy} onClick={() => signOutWelcomeGoogle()}>
+                    Sign out of Google
+                  </button>
                 </section>
               )}
               <KitchenNotice message={error} onDismiss={() => setError("")} />
-              {discoveredLedgers.length === 0 && (
+              {!welcomeSignedIn && (
                 <button className="ghost welcome-demo" onClick={openDemoTable}>
                   Open the demo kitchen table
                 </button>
               )}
-              {welcomeSignedIn && welcomeMode === "home" && discoveredLedgers.length === 0 && (
-                <button className="ghost" type="button" style={{ width: "100%", marginTop: 8 }} disabled={busy} onClick={() => signOutWelcomeGoogle()}>
-                  Sign out of Google
-                </button>
+              {!welcomeSignedIn && environment === "development" && (
+                <details className="welcome-danger-zone">
+                  <summary>Development reset tools</summary>
+                  <p className="muted" id="start-from-scratch-home">Remove leftover disposable test households only.</p>
+                  <button className="danger" type="button" aria-describedby="start-from-scratch-home" disabled={busy} onClick={() => setGuard({ kind: "reset-development" })}>
+                    {busy ? "Starting over…" : "Start from scratch"}
+                  </button>
+                </details>
               )}
             </>
           )}
@@ -3191,6 +3488,8 @@ export function App() {
   }
 
   if (!session) {
+    const signedOutHouseholdCards = discoveredHouseholdCardModels(discoveredLedgers, now, displayZone);
+    const signedOutFoundById = new Map(discoveredLedgers.map((found) => [found.household.householdId, found]));
     return (
       <div className="welcome">
         <div className="welcome-card">
@@ -3207,22 +3506,23 @@ export function App() {
               Continue with Google
             </button>
           )}
-          {discoveredLedgers.map((found) => {
-            const member = found.household.members.find((item) => item.id === found.memberId);
-            return (
-              <button
-                key={found.household.householdId}
-                className="ghost"
-                style={{ width: "100%", marginBottom: 8 }}
-                disabled={busy}
-                onClick={() => void openDiscoveredLedger(found).catch((caught) => {
-                  setError(caught instanceof Error ? caught.message : String(caught));
-                })}
-              >
-                Open {found.household.name} as {member?.name ?? "me"}
-              </button>
-            );
-          })}
+          <div className="welcome-household-grid">
+            {signedOutHouseholdCards.map((model) => {
+              const found = signedOutFoundById.get(model.householdId);
+              if (!found) return null;
+              return (
+                <HouseholdEntryCard
+                  key={model.householdId}
+                  model={model}
+                  busy={busy}
+                  highlighted={model.householdId === highlightedHouseholdId}
+                  onOpen={(target) => void openDiscoveredLedger(target).catch((caught) => {
+                    setError(caught instanceof Error ? caught.message : String(caught));
+                  })}
+                />
+              );
+            })}
+          </div>
           <KitchenNotice message={error} onDismiss={() => setError("")} />
           {household.members.filter((member) => member.active).map((member) => (
             <button
@@ -3278,9 +3578,6 @@ export function App() {
     ccTipsCents: Math.round(Number(form.ccTips || 0) * 100) || 0,
     hours: Number(form.hours || 0) || 0,
   }, ledger.shiftSettings);
-  const guidedWorkShift = mode === "shift"
-    && (shiftGate === "signOut" || shiftGate === "finished")
-    && ledger.workJobs.some((job) => job.active && job.memberId === actorId);
 
   const formForAccount = (accountId: string | null, extra: Partial<typeof emptyForm> = {}) => {
     const defaults = addFormDefaults(displayHousehold, accountId);
@@ -3361,6 +3658,7 @@ export function App() {
     setFocusedAccountId(id);
     setMode(nextMode ?? defaults.suggestedMode);
     setAdding(true);
+    setAddSlide(0);
     setAddDetails(false);
     setError("");
     setConfirm(null);
@@ -3377,7 +3675,6 @@ export function App() {
     if ((nextMode ?? defaults.suggestedMode) === "shift") {
       const punch = activeOpenShift(ledger.kitchen, actorId);
       setShiftGate(punch ? "clocked" : "choose");
-      setShiftStep(0);
       setForm(formForAccount(id, {
         hours: punch ? formatPreviewHours(previewHoursQuarter(punch.startedAt)) : "",
         sales: "0",
@@ -3388,8 +3685,22 @@ export function App() {
       setHoursDirty(false);
       return;
     }
-    setForm(formForAccount(id));
+    setForm(formForAccount(id, {
+        subcategoryId: defaultSubcategoryForMode(nextMode ?? defaults.suggestedMode),
+      }));
   };
+
+  function switchAddMode(item: AddMode) {
+    setMode(item);
+    setAddSlide(0);
+    setCategoryTouched(false);
+    setCodingHint("");
+    setForm((current) => ({ ...current, subcategoryId: defaultSubcategoryForMode(item) }));
+    if (item === "shift") {
+      const punch = activeOpenShift(ledger.kitchen, actorId);
+      setShiftGate(punch ? "clocked" : "choose");
+    }
+  }
 
   function leaveDesk() {
     emitOfficeIntent({ type: "collapse" });
@@ -3423,11 +3734,11 @@ export function App() {
     if (punch?.status === "open") void runKitchen((current) => clockOutShift(current, { memberId: actorId }));
     setMode("shift");
     setAdding(true);
+    setAddSlide(0);
     setAddDetails(false);
     setError("");
     setConfirm(null);
     setShiftGate("signOut");
-    setShiftStep(0);
     setHoursDirty(false);
     setForm(formForAccount(null, {
       hours: punch ? formatPreviewHours(previewHoursQuarter(punch.startedAt)) : "",
@@ -3451,21 +3762,12 @@ export function App() {
     workShiftDateRef.current = initialDate;
     setMode("shift");
     setAdding(true);
+    setAddSlide(0);
     setAddDetails(false);
     setError("");
     setConfirm(null);
     setShiftGate("finished");
-    setShiftStep(0);
     setForm(formForAccount(null, { hours: "", sales: "0", cashTips: "0", ccTips: "0" }));
-  }
-
-  function shiftAdvance() {
-    const fields = ceremonyFields(shiftGate);
-    if (!isLastCeremonyStep(shiftGate, shiftStep)) {
-      setShiftStep((step) => Math.min(step + 1, Math.max(0, fields.length - 1)));
-      return;
-    }
-    submit();
   }
 
   const openPayCard = (account: Account) => {
@@ -3475,6 +3777,7 @@ export function App() {
     setFocusedAccountId(account.id);
     setMode("transfer");
     setAdding(true);
+    setAddSlide(0);
     setAddDetails(false);
     setError("");
     setConfirm(null);
@@ -3482,6 +3785,37 @@ export function App() {
       amount: amount ? (amount / 100).toFixed(2) : "",
       note: `${account.name} payment`,
     }));
+  };
+
+  const openMonthRehearsalTask = (taskId: MonthRehearsalTaskId) => {
+    if (taskId === "income") {
+      openAddFor(null, "income");
+      return;
+    }
+    if (taskId === "groceries") {
+      openAddFor(null, "expense");
+      setForm((current) => ({ ...current, note: "Groceries", subcategoryId: "SUB-FOOD-GROCERIES" }));
+      return;
+    }
+    if (taskId === "bills") {
+      openAddFor(null, "expense");
+      setForm((current) => ({ ...current, note: "Bill", subcategoryId: "SUB-HOUSING-RENT" }));
+      return;
+    }
+    if (taskId === "shared-fund-purchase") {
+      openAddFor(null, "expense");
+      setForm((current) => ({ ...current, note: "Shared purchase", useHouseholdFund: true }));
+      return;
+    }
+    if (taskId === "card-payment") {
+      const card = household.accounts.find((account) => account.active && account.kind === "credit");
+      if (card) openPayCard(card);
+      else goTab("ledger");
+      return;
+    }
+    // Fund, refund, reconciliation, review, and close already have guarded
+    // routes in Books. The rehearsal points there but never confirms for them.
+    goTab("ledger");
   };
 
   const openWallet = (accountId: string) => {
@@ -3610,10 +3944,7 @@ export function App() {
   }
 
   function addPostLabel(): string {
-    if (mode === "shift") {
-      if (shiftGate === "choose" || shiftGate === "clocked") return "Clock in";
-      return isLastCeremonyStep(shiftGate, shiftStep) ? "Post shift" : "Next";
-    }
+    if (mode === "shift") return "Post shift";
     const digits = centsDigitsFromDollars(form.amount);
     const money = digits ? formatCad(Number(digits)) : "";
     if (mode === "transfer") return money ? `Move ${money}` : "Move money";
@@ -3630,12 +3961,12 @@ export function App() {
           <img src="/hercules-mark.svg" alt="" />
           <div>
             <h1>Hearth</h1>
-            <p>
-              {household.members.find((member) => member.id === session.memberId)?.name}
+            <p className="brand__identity" aria-label="Current member, household, and device time">
+              <span>{household.members.find((member) => member.id === session.memberId)?.name ?? "Member"}</span>
               {" · "}
-              {view === "personal" ? "personal" : "household"}
+              <span>{household.name}</span>
               {" · "}
-              {today}
+              <time dateTime={now.toISOString()}>{formatZoneDateTime(now, displayZone)}</time>
             </p>
           </div>
         </div>
@@ -3656,7 +3987,8 @@ export function App() {
         display={syncFreshnessDisplay}
         busy={busy}
         onAction={() => {
-          void retryShareNow();
+          if (unresolvedConflicts(household).length > 0) setShowConflictSheet(true);
+          else void retryShareNow();
         }}
       />
       {!activeBooksGate.ready && (
@@ -3705,6 +4037,7 @@ export function App() {
               onClick={() => {
                 const label = commandChrome.chip?.actionLabel;
                 if (label === "Retry now" || label === "Retry") void retryShareNow();
+                else if (label === "Review") setShowConflictSheet(true);
               }}
             >
               {commandChrome.chip.actionLabel}
@@ -3729,6 +4062,7 @@ export function App() {
               onClick={() => {
                 const label = commandChrome.banner?.actionLabel;
                 if (label === "Retry" || label === "Retry now") void retryShareNow();
+                else if (label === "Review conflict") setShowConflictSheet(true);
                 else if (label === "Review pending") setTab("more");
                 else if (label === "Open recovery") setTab("more");
               }}
@@ -3739,21 +4073,21 @@ export function App() {
         </div>
       )}
       {replicas.length > 1 && (
-        <label className="ledger-switcher">
-          <span>Open ledger</span>
-          <select
-            aria-label="Open another ledger"
-            value={household.householdId}
-            disabled={busy}
-            onChange={(event) => void switchLedger(event.target.value)}
-          >
-            {replicas.map((replica) => (
-              <option key={replica.householdId} value={replica.householdId}>
-                {replica.name} · revision {replica.revision}
-              </option>
+        <details className="ledger-switcher">
+          <summary>Switch household</summary>
+          <p className="muted">Households available on this device. Google membership remains the authority for hosted access.</p>
+          <div className="ledger-switcher__grid">
+            {replicaHouseholdCardModels(replicas, now, displayZone).map((model) => (
+              <HouseholdEntryCard
+                key={model.householdId}
+                model={model}
+                busy={busy}
+                current={model.householdId === household.householdId}
+                onOpen={(target) => void switchLedger(target.householdId)}
+              />
             ))}
-          </select>
-        </label>
+          </div>
+        </details>
       )}
       <div className="view-switch" role="tablist" aria-label="Ledger view">
         {(["household", "personal"] as LedgerView[]).map((item) => (
@@ -3791,6 +4125,16 @@ export function App() {
             </section>
           );
         })()}
+        {view === "household" ? (
+          <MonthRehearsalPanel
+            household={household}
+            memberId={session.memberId}
+            today={today}
+            surface="home"
+            onApply={(next, token) => persistLedgerWrite(preserveCurrentPersonal(next), token)}
+            onOpenTask={openMonthRehearsalTask}
+          />
+        ) : null}
         <DeferredSurface label="Office">
         <DeferredOffice
           household={displayHousehold}
@@ -4032,6 +4376,16 @@ export function App() {
 
       {tab === "more" && (
         <>
+          {view === "household" ? (
+            <MonthRehearsalPanel
+              household={household}
+              memberId={session.memberId}
+              today={today}
+              surface="manage"
+              onApply={(next, token) => persistLedgerWrite(preserveCurrentPersonal(next), token)}
+              onOpenTask={openMonthRehearsalTask}
+            />
+          ) : null}
           {environment === "development" && (
             <section className="card">
               <header><h2>Start from scratch</h2></header>
@@ -4176,6 +4530,7 @@ export function App() {
             onBeforeSensitive={() => gateWithGoogle({ record: true })}
             softPresenceOptedOut={softPresenceOptOut}
             onSoftPresenceOptOut={applySoftPresenceOptOut}
+            onCopySyncDiagnostic={syncPilotDiagnosticsEnabled(environment) ? copyPilotSyncDiagnostic : undefined}
             onLeaveHousehold={async () => {
               await removeHouseholdFromDevice({
                 householdId: household.householdId,
@@ -4186,6 +4541,7 @@ export function App() {
               });
             }}
             onCurrentDeviceRevoked={() => {
+              traceSyncPilot("auth-blocked", { household, transport: "outbox" });
               clearContinuityOutboxForHousehold(environment, household.householdId);
               clearSupabaseSession(environment);
               setSyncState("error");
@@ -4482,603 +4838,133 @@ export function App() {
       )}
 
       {adding && (
-        <div
-          className="sheet"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="add-sheet-title"
-          ref={addSheetRef}
-        >
-          <div className="sheet-inner">
-            <div className="topbar">
-              <h1 id="add-sheet-title">Add</h1>
-              <button className="ghost" type="button" data-autofocus onClick={closeAdd}>Close</button>
-            </div>
-            <div className="tabs">
-              {(["expense", "income", "shift", "transfer"] as AddMode[]).map((item) => (
-                <button
-                  key={item}
-                  className={mode === item ? "active" : ""}
-                  onClick={() => {
-                    setMode(item);
-                    if (item === "shift") {
-                      const punch = activeOpenShift(household.kitchen, actorId);
-                      setShiftGate(punch ? "clocked" : "choose");
-                      setShiftStep(0);
-                    }
-                  }}
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-            {mode !== "shift" && mode !== "transfer" && (
-              <>
-                <CadPad
-                  digits={centsDigitsFromDollars(form.amount)}
-                  onDigits={(digits) => setForm({ ...form, amount: padToDollars(digits) })}
-                  label="Amount"
-                />
-                {mode === "expense" && (
-                  <div className="chips">
-                    {activePresets(household).map((preset) => (
-                      <PresetChip
-                        key={preset.id}
-                        note={preset.note}
-                        subcategoryId={preset.subcategoryId}
-                        categories={household.categories}
-                        selected={presetId === preset.id}
-                        onClick={() => {
-                          setPresetId(preset.id);
-                          setForm({
-                            ...form,
-                            note: preset.note,
-                            place: preset.place,
-                            subcategoryId: preset.subcategoryId,
-                            accountId: preset.accountId,
-                            amount: preset.amountCents > 0 ? (preset.amountCents / 100).toFixed(2) : form.amount,
-                            visibility: preset.visibility,
-                          });
-                        }}
-                      />
-                    ))}
-                    <button
-                      type="button"
-                      className={`chip ${form.note === "Groceries" && presetId == null ? "selected" : ""}`}
-                      onClick={() => {
-                        setPresetId(null);
-                        setCategoryTouched(true);
-                        setForm({ ...form, note: "Groceries", subcategoryId: "SUB-FOOD-GROCERIES" });
-                      }}
-                    >
-                      Groceries
-                    </button>
-                    <button
-                      type="button"
-                      className={`chip ${form.note === "Coffee" && presetId == null ? "selected" : ""}`}
-                      onClick={() => {
-                        setPresetId(null);
-                        setCategoryTouched(true);
-                        setForm({ ...form, note: "Coffee", subcategoryId: "SUB-FOOD-COFFEE" });
-                      }}
-                    >
-                      Coffee
-                    </button>
-                    <button
-                      type="button"
-                      className="chip"
-                      onClick={() => {
-                        if (!form.note.trim() && !form.subcategoryId) return;
-                        let amountBit = "Amount stays on the pad";
-                        try {
-                          if (form.amount) amountBit = formatCad(parseAmount(form.amount));
-                        } catch {
-                          amountBit = "Amount stays on the pad";
-                        }
-                        setGuard({
-                          kind: "addPreset",
-                          summary: `Save ${form.note.trim() || "this line"} as a preset (${amountBit}). It does not post money.`,
-                        });
-                      }}
-                    >
-                      Save as preset
-                    </button>
-                    {presetId && (
-                      <button
-                        type="button"
-                        className="chip"
-                        onClick={() => {
-                          const id = presetId;
-                          setPresetId(null);
-                          void run((current) => archivePreset(current, id));
-                        }}
-                      >
-                        Forget preset
-                      </button>
-                    )}
-                  </div>
-                )}
-                <label>Category</label>
-                <div className="chips">
-                  {categories.map((category) => (
-                    <button key={category.id} className={`chip ${form.subcategoryId === category.id ? "selected" : ""}`} onClick={() => { setCategoryTouched(true); setForm({ ...form, subcategoryId: category.id }); }}>
-                      {category.name}
-                    </button>
-                  ))}
-                </div>
-                <label>Who</label>
-                <div className="chips">
-                  {[
-                    { id: JOINT, name: "Joint" },
-                    ...household.members.filter((m) => m.active).map((m) => ({ id: m.id, name: m.name })),
-                    { id: "split", name: "Split %" },
-                  ].map((who) => (
-                    <button key={who.id} className={`chip ${form.who === who.id ? "selected" : ""}`} onClick={() => setForm({ ...form, who: who.id })}>{who.name}</button>
-                  ))}
-                </div>
-                {form.who === "split" && (
-                  <div className="split-card">
-                    <p className="muted">Shares fill to 100%.</p>
-                    {household.members.filter((member) => member.active).map((member) => {
-                      const percent = splitPercents[member.id] ?? 0;
-                      let share = "";
-                      try {
-                        if (form.amount) share = formatCad(Math.round(parseAmount(form.amount) * percent / 100));
-                      } catch {
-                        share = "";
-                      }
-                      return (
-                        <div className="row" key={member.id}>
-                          <span>{member.name}</span>
-                          <span>
-                            <input
-                              type="number"
-                              min={0}
-                              max={100}
-                              step={1}
-                              value={percent}
-                              onChange={(event) => setMemberPercent(member.id, Number(event.target.value))}
-                            /> %
-                            <span className="muted"> {share}</span>
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                <label>Account</label>
-                <select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })}>
-                  {pickerAccounts.map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
-                </select>
-                <label>Note</label>
-                <input
-                  value={form.note}
-                  onChange={(event) => {
-                    const note = event.target.value;
-                    const next = { ...form, note };
-                    if (!categoryTouched && (mode === "expense" || mode === "income")) {
-                      const guess = suggestCategory(household, note, form.place);
-                      if (shouldPrefillCategory(guess) && guess) {
-                        next.subcategoryId = guess.subcategoryId;
-                        let hint = `Guessed ${guess.name}. Confirm still writes.`;
-                        try {
-                          if (form.amount) {
-                            const split = suggestSplit(household, note, form.place, parseAmount(form.amount));
-                            if (split && split.confidence >= 0.55) hint += ` Usually ${split.label}.`;
-                          }
-                        } catch {
-                          // Pad empty until they type an amount.
-                        }
-                        setCodingHint(hint);
-                      }
-                    }
-                    setForm(next);
-                  }}
-                  placeholder="Groceries, rent…"
-                />
-                {codingHint && <p className="muted">{codingHint}</p>}
-              </>
-            )}
-            {mode === "transfer" && (
-              <>
-                <CadPad
-                  digits={centsDigitsFromDollars(form.amount)}
-                  onDigits={(digits) => setForm({ ...form, amount: padToDollars(digits) })}
-                  label="Move"
-                />
-                <label>From</label>
-                <select value={form.fromAccountId} onChange={(event) => setForm({ ...form, fromAccountId: event.target.value })}>
-                  {pickerAccounts.map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
-                </select>
-                <label>To</label>
-                <select value={form.toAccountId} onChange={(event) => setForm({ ...form, toAccountId: event.target.value })}>
-                  {pickerAccounts.map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
-                </select>
-                <p className="muted">Not income. Not spend.</p>
-              </>
-            )}
-            {mode === "shift" && (
-              <>
-                {shiftGate === "choose" && (
-                  <>
-                    <p className="muted">{ceremonyCopy("choose").hint}</p>
-                    <label>Who is working</label>
-                    <select value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value })}>
-                      {household.members.filter((m) => m.active).map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
-                    </select>
-                    <button
-                      type="button"
-                      className="primary post-big"
-                      disabled={busy}
-                      onClick={() => {
-                        void runKitchen((current) => clockInShift(current, { memberId: form.memberId }));
-                        setAdding(false);
-                      }}
-                    >
-                      Clock in
-                    </button>
-                    <button type="button" className="chip" onClick={() => beginFinishedShift()}>Already off? Post a finished shift</button>
-                  </>
-                )}
-                {shiftGate === "clocked" && (() => {
-                  const punch = activeOpenShift(household.kitchen, actorId);
-                  return (
-                    <>
-                      <p>{ceremonyCopy("clocked").title}</p>
-                      {punch ? <ShiftElapsedHint startedAt={punch.startedAt} /> : <p className="muted">{ceremonyCopy("clocked").hint}</p>}
-                      <button type="button" className="primary post-big" onClick={beginSignOut}>Sign out</button>
-                      <button
-                        type="button"
-                        className="chip"
-                        disabled={busy}
-                        onClick={() => {
-                          void runKitchen((current) => abandonOpenShift(current, { memberId: actorId }));
-                          setAdding(false);
-                        }}
-                      >
-                        Never mind
-                      </button>
-                    </>
-                  );
-                })()}
-                {(shiftGate === "signOut" || shiftGate === "finished") && household.workJobs.some((job) => job.active && job.memberId === actorId) && (
-                  <>
-                    <DeferredSurface label="Tip sheet camera">
-                    <DeferredShiftReportScanBar
-                      busy={busy}
-                      scanBusy={shiftScanBusy}
-                      error={shiftScanError}
-                      onFile={(file) => { void applyShiftReportScan(file); }}
-                    />
-                    </DeferredSurface>
-                    <DeferredSurface label="Timesheet">
-                    <DeferredWorkShiftWithSevenShifts
-                      key={`${environment}:${household.householdId}:${actorId}`}
-                      household={displayHousehold}
-                      memberId={actorId}
-                      today={workShiftDateRef.current}
-                      punch={activeOpenShift(household.kitchen, actorId)}
-                      busy={busy || shiftScanBusy}
-                      initialDraft={workShiftDraft}
-                      scanWarnings={shiftScanWarnings}
-                      onClearDraft={() => {
-                        setWorkShiftDraft(null);
-                        setShiftScanWarnings([]);
-                        setShiftScanError("");
-                      }}
-                      onConfirm={(input) => {
-                        setWorkShiftDraft(null);
-                        setShiftScanWarnings([]);
-                        submitWorkShift(input);
-                      }}
-                    />
-                    </DeferredSurface>
-                  </>
-                )}
-                {(shiftGate === "signOut" || shiftGate === "finished") && !household.workJobs.some((job) => job.active && job.memberId === actorId) && (() => {
-                  const fields = ceremonyFields(shiftGate);
-                  const field = fields[shiftStep] ?? "hours";
-                  const copy = ceremonyCopy(shiftGate, field);
-                  const punch = activeOpenShift(household.kitchen, actorId);
-                  return (
-                    <>
-                      <p>{copy.title}</p>
-                      <p className="muted">{copy.hint}</p>
-                      {shiftGate === "signOut" && field === "hours" && punch && (
-                        <ShiftElapsedHint
-                          startedAt={punch.startedAt}
-                          prefix="Live preview: "
-                          onQuarterHours={(hours) => {
-                            if (hoursDirty) return;
-                            const formatted = formatPreviewHours(hours);
-                            setForm((current) => current.hours === formatted ? current : { ...current, hours: formatted });
-                          }}
-                        />
-                      )}
-                      <label>Who worked</label>
-                      <select value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value })}>
-                        {household.members.filter((m) => m.active).map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
-                      </select>
-                      <label>Account</label>
-                      <select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })}>
-                        {pickerAccounts.map((account) => <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>)}
-                      </select>
-                      <CadPad
-                        digits={centsDigitsFromDollars(form[field])}
-                        onDigits={(digits) => {
-                          if (field === "hours") setHoursDirty(true);
-                          setForm({
-                            ...form,
-                            [field]: dollarsFromCentsDigits(digits),
-                          });
-                        }}
-                        label={shiftFieldLabel(field)}
-                        unit={field === "hours" ? "hours" : "cad"}
-                      />
-                      {field === "sales" && (
-                        <div className="work-shift-grid two">
-                          <label>
-                            Customers served
-                            <input
-                              type="number"
-                              inputMode="numeric"
-                              min={0}
-                              max={5000}
-                              value={form.customersServed}
-                              onChange={(event) => setForm({ ...form, customersServed: event.target.value })}
-                            />
-                          </label>
-                          <label>
-                            People on floor
-                            <input
-                              type="number"
-                              inputMode="numeric"
-                              min={1}
-                              max={200}
-                              value={form.staffingCount}
-                              onChange={(event) => setForm({ ...form, staffingCount: event.target.value })}
-                            />
-                          </label>
-                          <label>
-                            Event tag
-                            <select value={form.eventTag} onChange={(event) => setForm({ ...form, eventTag: event.target.value })}>
-                              <option value="regular">Regular</option>
-                              <option value="holiday">Holiday</option>
-                              <option value="sports">Sports</option>
-                              <option value="festival">Festival</option>
-                              <option value="private_party">Private party</option>
-                              <option value="short_staffed">Short-staffed</option>
-                              <option value="vacation_cover">Vacation cover</option>
-                              <option value="illness_cover">Illness cover</option>
-                              <option value="other">Other</option>
-                            </select>
-                          </label>
-                        </div>
-                      )}
-                      {field !== "hours" && (
-                        <div className={`preview ${shiftPreview.netTipsCents < 0 ? "warn" : ""}`}>
-                          <div className="row"><span>Net tips</span><span>{formatCad(shiftPreview.netTipsCents)}</span></div>
-                          <div className="row"><span>Wages</span><span>{Number(form.hours) > 0 ? formatCad(shiftPreview.wagesCents) : "wait for hours"}</span></div>
-                          <p className="muted">Same math that posts. Hours are a preview until Confirm.</p>
-                        </div>
-                      )}
-                      {shiftStep > 0 && (
-                        <button type="button" className="chip" onClick={() => setShiftStep((step) => Math.max(0, step - 1))}>Back</button>
-                      )}
-                    </>
-                  );
-                })()}
-              </>
-            )}
-            {!guidedWorkShift && <button type="button" className="chip" onClick={() => setAddDetails((open) => !open)}>
-              {addDetails ? "Hide details" : "Date & place"}
-            </button>}
-            {!guidedWorkShift && addDetails && (
-              <>
-                <label>Date</label>
-                <input type="date" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} />
-                <label>Save to</label>
-                <div className="chips">
-                  {([
-                    { id: "household" as Visibility, name: "Shared" },
-                    { id: "personal" as Visibility, name: "Personal" },
-                    { id: "both" as Visibility, name: "Both" },
-                  ]).map((item) => (
-                    <button
-                      key={item.id}
-                      className={`chip ${form.visibility === item.id ? "selected" : ""}`}
-                      onClick={() => setForm({ ...form, visibility: item.id })}
-                    >
-                      {item.name}
-                    </button>
-                  ))}
-                </div>
-                {mode === "expense" && household.householdFund && (
-                  <section className="preview" aria-label="Household Fund allocation">
-                    <div className="row">
-                      <div>
-                        <strong>Use Household Fund</strong>
-                        <p className="muted">Separate from Shared or Personal visibility.</p>
-                      </div>
-                      <button
-                        type="button"
-                        className={`chip ${form.useHouseholdFund ? "selected" : ""}`}
-                        aria-pressed={form.useHouseholdFund}
-                        onClick={() => setForm({
-                          ...form,
-                          useHouseholdFund: !form.useHouseholdFund,
-                          fundedAmount: form.fundedAmount || form.amount,
-                          fundDestinationAccountId: !form.useHouseholdFund
-                            && displayHousehold.accounts.some((account) => account.id === form.accountId && account.scope !== "personal")
-                            ? form.accountId
-                            : form.fundDestinationAccountId || "ACC-VISA",
-                        })}
-                      >
-                        {form.useHouseholdFund ? "Using Fund" : "Use Fund"}
-                      </button>
-                    </div>
-                    {form.useHouseholdFund && (
-                      <>
-                        <label htmlFor="add-fund-amount">Funded amount (CAD)</label>
-                        <input id="add-fund-amount" inputMode="decimal" value={form.fundedAmount} onChange={(event) => setForm({ ...form, fundedAmount: event.target.value })} placeholder={form.amount || "0.00"} />
-                        <label htmlFor="add-fund-destination">Settlement destination</label>
-                        <select id="add-fund-destination" value={form.fundDestinationAccountId} onChange={(event) => setForm({ ...form, fundDestinationAccountId: event.target.value })}>
-                          {displayHousehold.accounts.filter((account) => account.active && account.scope !== "personal").map((account) => (
-                            <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>
-                          ))}
-                        </select>
-                        <p className="muted">Jonathan’s card purchases default to the selected card. Bianca can transfer a partial or full amount later.</p>
-                      </>
-                    )}
-                  </section>
-                )}
-                {mode !== "shift" && mode !== "transfer" && (
-                  <>
-                    <label>Place</label>
-                    <input
-                      value={form.place}
-                      onChange={(event) => {
-                        const place = event.target.value;
-                        const next = { ...form, place };
-                        if (!categoryTouched && (mode === "expense" || mode === "income")) {
-                          const guess = suggestCategory(household, form.note, place);
-                          if (shouldPrefillCategory(guess) && guess) {
-                            next.subcategoryId = guess.subcategoryId;
-                            setCodingHint(`Guessed ${guess.name}. Confirm still writes.`);
-                          }
-                        }
-                        setForm(next);
-                      }}
-                      placeholder="No Frills…"
-                    />
-                    {showLocationPrompt && !placePrefs.locationAllowed && (
-                      <div className="preview" style={{ marginTop: 8 }} role="dialog" aria-label="Location services">
-                        <p>Allow location on this phone so Add can stamp real time and place?</p>
-                        <div className="chips">
-                          <button
-                            type="button"
-                            className="chip selected"
-                            onClick={() => {
-                              setPlacePrefs(savePhonePlacePrefs(environment, { locationAllowed: true, addPromptSeen: true }));
-                              setShowLocationPrompt(false);
-                            }}
-                          >
-                            Allow
-                          </button>
-                          <button
-                            type="button"
-                            className="chip"
-                            onClick={() => {
-                              setPlacePrefs(savePhonePlacePrefs(environment, { addPromptSeen: true }));
-                              setShowLocationPrompt(false);
-                            }}
-                          >
-                            Not now
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    <div className="chips" style={{ marginTop: 8 }}>
-                      <button
-                        type="button"
-                        className={`chip ${placePrefs.stampTime ? "selected" : ""}`}
-                        disabled={busy || !placePrefs.locationAllowed}
-                        onClick={() => setPlacePrefs(savePhonePlacePrefs(environment, { stampTime: !placePrefs.stampTime }))}
-                      >
-                        Stamp time
-                      </button>
-                      <button
-                        type="button"
-                        className={`chip ${placePrefs.stampCoords ? "selected" : ""}`}
-                        disabled={busy || !placePrefs.locationAllowed}
-                        onClick={() => setPlacePrefs(savePhonePlacePrefs(environment, { stampCoords: !placePrefs.stampCoords }))}
-                      >
-                        Stamp place
-                      </button>
-                      <button
-                        type="button"
-                        className="chip"
-                        disabled={busy || locationBusy || !placePrefs.locationAllowed || (!placePrefs.stampTime && !placePrefs.stampCoords)}
-                        onClick={applyConfiguredStamps}
-                      >
-                        {locationBusy ? "Locating…" : "Use now"}
-                      </button>
-                      {(draftLocation || form.occurredAt) && (
-                        <button type="button" className="chip" disabled={busy || locationBusy} onClick={clearLocationStamp}>
-                          Clear stamp
-                        </button>
-                      )}
-                    </div>
-                    {(form.occurredAt || draftLocation) && (
-                      <p className="muted" style={{ marginTop: 8 }}>
-                        {form.occurredAt ? formatZoneDateTime(form.occurredAt, displayZone) : formatZoneTime(new Date(), displayZone)}
-                        {draftLocation ? ` · ${locationLabel(draftLocation)}` : ""}
-                        {" · Confirm still posts"}
-                      </p>
-                    )}
-                    {!placePrefs.locationAllowed && !showLocationPrompt && (
-                      <p className="muted" style={{ marginTop: 8 }}>
-                        Location is off. Enable it in More → Clock &amp; place.
-                      </p>
-                    )}
-                  </>
-                )}
-                {mode === "transfer" && (
-                  <>
-                    <label>Note</label>
-                    <input value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} />
-                  </>
-                )}
-              </>
-            )}
-            <KitchenNotice
-              message={error}
-              onGoMore={() => { setAdding(false); goTab("more"); }}
-              onDismiss={() => setError("")}
-            />
-            {confirm && (
-              <div className="preview warn" role="alert" tabIndex={-1} ref={confirmPanelRef}>
-                <p>{confirm.message}</p>
-                {confirm.matches.map((tx) => (
-                  <div className="row" key={tx.id}>
-                    <span>{tx.date} · {tx.place || tx.note || tx.type}</span>
-                    <span>{formatCad(tx.amountCents)}</span>
-                  </div>
-                ))}
-                <button className="primary" onClick={() => {
-                  const pending = workShiftInputRef.current;
-                  const plan = resolveDuplicateRetry({
-                    pendingWorkShift: pending?.input ?? null,
-                    confirmCode: confirm.code,
-                    tab,
-                  });
-                  if (plan.kind === "work-shift" && pending) {
-                    submitWorkShift(pending.input, true);
-                  } else {
-                    submit({ confirmDuplicate: true });
-                  }
-                }}>
-                  Add anyway
-                </button>
-              </div>
-            )}
-            {!(mode === "shift" && (shiftGate === "choose" || shiftGate === "clocked" || ((shiftGate === "signOut" || shiftGate === "finished") && household.workJobs.some((job) => job.active && job.memberId === actorId)))) && (
-              <>
-                <p className="muted" data-ledger-confirm-purpose>
-                  {experience && experience.ok ? `${experience.label}. ${ledgerRouteContract("home", view).heading}.` : null}
-                  {" "}Fund funding stays separate from Shared or Personal visibility.
-                </p>
-              <button
-                className="primary post-big"
-                disabled={busy}
-                onClick={() => (mode === "shift" ? shiftAdvance() : submit())}
-              >
-                {addPostLabel()}
-              </button>
-              </>
-            )}
-          </div>
-        </div>
+        <AddSlideshow
+          sheetRef={addSheetRef}
+          mode={mode}
+          onSwitchMode={switchAddMode}
+          form={form}
+          setForm={setForm}
+          household={household}
+          booksHousehold={household}
+          pickerAccounts={pickerAccounts}
+          categories={categories}
+          today={today}
+          slideIndex={addSlide}
+          onSlideIndex={setAddSlide}
+          shiftGate={shiftGate}
+          hasWorkJobs={household.workJobs.some((job) => job.active && job.memberId === actorId)}
+          shiftJobsPanel={(
+            <>
+              <DeferredSurface label="Tip sheet camera">
+              <DeferredShiftReportScanBar
+                busy={busy}
+                scanBusy={shiftScanBusy}
+                error={shiftScanError}
+                onFile={(file) => { void applyShiftReportScan(file); }}
+              />
+              </DeferredSurface>
+              <DeferredSurface label="Timesheet">
+              <DeferredWorkShiftWithSevenShifts
+                key={`${environment}:${household.householdId}:${actorId}`}
+                household={displayHousehold}
+                memberId={actorId}
+                today={workShiftDateRef.current}
+                punch={activeOpenShift(household.kitchen, actorId)}
+                busy={busy || shiftScanBusy}
+                initialDraft={workShiftDraft}
+                scanWarnings={shiftScanWarnings}
+                onClearDraft={() => {
+                  setWorkShiftDraft(null);
+                  setShiftScanWarnings([]);
+                  setShiftScanError("");
+                }}
+                onConfirm={(input) => {
+                  setWorkShiftDraft(null);
+                  setShiftScanWarnings([]);
+                  submitWorkShift(input);
+                }}
+              />
+              </DeferredSurface>
+            </>
+          )}
+          shiftPreview={shiftPreview}
+          onHoursDirty={() => setHoursDirty(true)}
+          hoursDirty={hoursDirty}
+          onClockIn={() => {
+            void runKitchen((current) => clockInShift(current, { memberId: form.memberId }));
+            setAdding(false);
+          }}
+          onAlreadyOff={() => beginFinishedShift()}
+          onSignOut={beginSignOut}
+          onNeverMind={() => {
+            void runKitchen((current) => abandonOpenShift(current, { memberId: actorId }));
+            setAdding(false);
+          }}
+          punchStartedAt={activeOpenShift(household.kitchen, actorId)?.startedAt}
+          busy={busy}
+          error={error}
+          onDismissError={() => setError("")}
+          onGoMore={() => { setAdding(false); goTab("more"); }}
+          confirm={confirm}
+          confirmPanelRef={confirmPanelRef}
+          onConfirmAnyway={() => {
+            const pending = workShiftInputRef.current;
+            const plan = resolveDuplicateRetry({
+              pendingWorkShift: pending?.input ?? null,
+              confirmCode: confirm?.code ?? null,
+              tab,
+            });
+            if (plan.kind === "work-shift" && pending) {
+              submitWorkShift(pending.input, true);
+            } else {
+              submit({ confirmDuplicate: true });
+            }
+          }}
+          postLabel={addPostLabel()}
+          onPost={() => submit()}
+          onClose={closeAdd}
+          persistCategory={(next, token) => persist(next, token)}
+          presetId={presetId}
+          onPresetId={setPresetId}
+          onSavePreset={() => {
+            if (!form.note.trim() && !form.subcategoryId) return;
+            let amountBit = "Amount stays on the pad";
+            try {
+              if (form.amount) amountBit = formatCad(parseAmount(form.amount));
+            } catch {
+              amountBit = "Amount stays on the pad";
+            }
+            setGuard({
+              kind: "addPreset",
+              summary: `Save ${form.note.trim() || "this line"} as a preset (${amountBit}). It does not post money.`,
+            });
+          }}
+          onForgetPreset={() => {
+            const id = presetId;
+            if (!id) return;
+            setPresetId(null);
+            void run((current) => archivePreset(current, id));
+          }}
+          categoryTouched={categoryTouched}
+          onCategoryTouched={() => setCategoryTouched(true)}
+          codingHint={codingHint}
+          onCodingHint={setCodingHint}
+          splitPercents={splitPercents}
+          onMemberPercent={setMemberPercent}
+          addDetails={addDetails}
+          onAddDetails={setAddDetails}
+          placePrefs={placePrefs}
+          onPlacePrefs={setPlacePrefs}
+          environment={environment}
+          showLocationPrompt={showLocationPrompt}
+          onShowLocationPrompt={setShowLocationPrompt}
+          locationBusy={locationBusy}
+          applyConfiguredStamps={applyConfiguredStamps}
+          clearLocationStamp={clearLocationStamp}
+          draftLocation={draftLocation}
+          displayZone={displayZone}
+          experienceLine={experience && experience.ok ? `${experience.label}. ${ledgerRouteContract("home", view).heading}.` : ""}
+        />
       )}
 
       {guard?.kind === "erase-development" && (
@@ -5543,6 +5429,28 @@ export function App() {
         </div>
       )}
 
+      {showConflictSheet && unresolvedConflicts(household).length > 0 && (
+        <ConflictResolution
+          household={household}
+          busy={busy}
+          onChoose={(side) => void resolveConflictSide(side)}
+          onExport={() => {
+            try {
+              const bundle = makeConflictBundle(household);
+              const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement("a");
+              link.href = url;
+              link.download = `hearth-conflict-${household.householdId}.json`;
+              link.click();
+              URL.revokeObjectURL(url);
+            } catch (caught) {
+              setError(caught instanceof Error ? caught.message : String(caught));
+            }
+          }}
+          onDismiss={() => setShowConflictSheet(false)}
+        />
+      )}
 
       {commandOpen && (
         <div className="cmdk" onClick={() => setCommandOpen(false)}>
@@ -5637,7 +5545,7 @@ export function App() {
         session={session}
       />
 
-      <nav className="nav" data-ledger-nav={view === "household" ? "shared" : "personal"} aria-label="Hearth">
+      <nav className={`nav${fabOpen ? " is-fab-open" : ""}`} data-ledger-nav={view === "household" ? "shared" : "personal"} aria-label="Hearth">
         {kitchenPrimaryNav(view).includes("home") && (
         <button
           className={tab === "home" && !adding ? "active" : ""}
@@ -5673,7 +5581,11 @@ export function App() {
           Shift
         </button>
         )}
-        <button className="fab" type="button" aria-label="Add money" onClick={() => openAddFor(null)}>+</button>
+        <FabSpeedDial
+          closed={adding}
+          onOpenChange={setFabOpen}
+          onPick={(nextMode) => openAddFor(null, nextMode)}
+        />
         {kitchenPrimaryNav(view).includes("plan") && (
         <button
           className={tab === "plan" ? "active" : ""}
@@ -5792,47 +5704,6 @@ function PlanCategories({
         );
       })}
       <AddCategoryForm household={household} onSave={onSave} embedded />
-    </section>
-  );
-}
-
-function AddCategoryForm({ household, onSave, embedded }: { household: Household; onSave: (household: Household, undo?: UndoToken) => void; embedded?: boolean }) {
-  const [name, setName] = useState("");
-  const [parentId, setParentId] = useState("CAT-LIFE");
-  const [error, setError] = useState("");
-  const body = (
-    <>
-      {embedded ? <h3>Add category</h3> : <header><h2>Add category</h2></header>}
-      <p className="muted">Same commit bar as money: one save creates the category and can seed this month’s budget.</p>
-      <input value={name} placeholder="Name" onChange={(event) => setName(event.target.value)} />
-      <select value={parentId} onChange={(event) => setParentId(event.target.value)}>
-        {household.categories.filter((c) => c.recordType === "group" && c.transactionType === "expense").map((group) => (
-          <option key={group.id} value={group.id}>{group.name}</option>
-        ))}
-      </select>
-      <KitchenNotice message={error} />
-      <button className="primary" onClick={() => {
-        try {
-          const result = addCategory(household, { name, type: "expense", parentId, monthlyBudget: "0" });
-          onSave(result.household, result.undo);
-          setName("");
-          setError("");
-        } catch (caught) {
-          setError(caught instanceof ValidationError ? caught.message : String(caught));
-        }
-      }}>Save category</button>
-    </>
-  );
-  if (embedded) {
-    return (
-      <CollapsibleCard title="Add category" hint="Same commit as money" defaultOpen={false} className="plan-add-category">
-        {body}
-      </CollapsibleCard>
-    );
-  }
-  return (
-    <section className="card">
-      {body}
     </section>
   );
 }

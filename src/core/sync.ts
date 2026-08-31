@@ -15,6 +15,7 @@ import type {
   Activity,
   BudgetPlan,
   Category,
+  CommandReceipt,
   Household,
   Member,
   PersonalEnvelope,
@@ -43,6 +44,7 @@ import {
   shapeHouseholdFundPrivate,
   shapeHouseholdFundSettlementAllocations,
 } from "./householdFund.ts";
+import { mergeMonthRehearsals, shapeMonthRehearsals } from "./monthRehearsal.ts";
 
 export type { PersonalEnvelope, SharedEnvelope };
 
@@ -152,6 +154,20 @@ export function mergeRecords<T extends { id: string; updatedAt: string }>(
   return [...map.values()];
 }
 
+function mergeCommandReceipts(server: CommandReceipt[] = [], client: CommandReceipt[] = []): CommandReceipt[] {
+  const rows = new Map<string, CommandReceipt>();
+  for (const receipt of [...server, ...client]) {
+    const existing = rows.get(receipt.confirmationId);
+    if (!existing
+      || receipt.revision > existing.revision
+      || (receipt.revision === existing.revision && receipt.acceptedAt > existing.acceptedAt)
+      || (receipt.revision === existing.revision && receipt.acceptedAt === existing.acceptedAt && JSON.stringify(receipt) > JSON.stringify(existing))) {
+      rows.set(receipt.confirmationId, receipt);
+    }
+  }
+  return [...rows.values()].sort((left, right) => left.confirmationId.localeCompare(right.confirmationId));
+}
+
 function laterIso(left: string | null, right: string | null): string | null {
   if (!left) return right;
   if (!right) return left;
@@ -259,6 +275,7 @@ export function ensureHouseholdShape(household: Household): Household {
     fundSettlementAllocations: shapeHouseholdFundSettlementAllocations(household.fundSettlementAllocations),
     fundKittyAllocations: shapeHouseholdFundKittyAllocations(household.fundKittyAllocations),
     fundPrivate: shapeHouseholdFundPrivate(household.fundPrivate),
+    monthRehearsals: shapeMonthRehearsals(household.monthRehearsals),
     transactions: household.transactions.map((tx) => ({
       ...tx,
       place: tx.place ?? "",
@@ -391,6 +408,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     fundEvents: shaped.fundEvents ?? [],
     fundSettlementAllocations: shaped.fundSettlementAllocations ?? [],
     fundKittyAllocations: shaped.fundKittyAllocations ?? [],
+    monthRehearsals: shaped.monthRehearsals ?? [],
     budgetPlans: shaped.budgetPlans,
     sitDownSessions: shaped.sitDownSessions,
     activity: sharedActivity,
@@ -647,6 +665,7 @@ export function assembleHousehold(
     fundEvents: shared.fundEvents ?? [],
     fundSettlementAllocations: shared.fundSettlementAllocations ?? [],
     fundKittyAllocations: shared.fundKittyAllocations ?? [],
+    monthRehearsals: shapeMonthRehearsals(shared.monthRehearsals),
     fundPrivate: shapeHouseholdFundPrivate(personal?.fundPrivate, personal?.memberId),
     budgetPlans: shared.budgetPlans,
     sitDownSessions: shared.sitDownSessions ?? [],
@@ -713,6 +732,10 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     fundEvents: mergeRecords(server.fundEvents ?? [], client.fundEvents ?? [], tombstones),
     fundSettlementAllocations: mergeRecords(server.fundSettlementAllocations ?? [], client.fundSettlementAllocations ?? [], tombstones),
     fundKittyAllocations: mergeRecords(server.fundKittyAllocations ?? [], client.fundKittyAllocations ?? [], tombstones),
+    monthRehearsals: mergeMonthRehearsals(
+      shapeMonthRehearsals(server.monthRehearsals),
+      shapeMonthRehearsals(client.monthRehearsals),
+    ),
     budgetPlans: mergeRecords(server.budgetPlans, client.budgetPlans, tombstones),
     sitDownSessions: mergeRecords(shapeSitDownSessions(server.sitDownSessions), shapeSitDownSessions(client.sitDownSessions), tombstones),
     activity: mergeRecords(server.activity, client.activity, []).sort((left, right) => left.at.localeCompare(right.at)).slice(-200),
@@ -728,6 +751,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     shifts: mergeRecords(server.shifts, client.shifts, tombstones),
     tombstones,
     syntheticFixture: mergeSyntheticFixture(server, client),
+    commandReceipts: mergeCommandReceipts(server.commandReceipts, client.commandReceipts),
   };
 }
 

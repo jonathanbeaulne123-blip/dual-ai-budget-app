@@ -2,16 +2,13 @@
 
 Google is Hearth's account-entry and recovery identity. The accepted target is simple: sign in on any device and see your personal ledger plus every household ledger you belong to, even when the old device is off. Google also connects Calendar and, when enabled, Drive, Contacts, Gmail, and Sheets. It is **not** a bank and **never** posts money.
 
-## First-time entry choices
+## First-time entry
 
-The empty-device screen exposes three focused paths instead of one ambiguous Continue button:
+The empty-device screen has one account door: **Continue with Google**. After authentication, Hearth always shows the authorized household chooser, including when there is only one membership. From that chooser, the person may open a household, create one, or join one.
 
-1. **Create household with Google** — sign in first, name the household/shared/Personal ledgers, then create the Google-owned cloud household and enter its shared ledger.
-2. **Login with Google** — sign in, list the household memberships returned for that exact identity, then choose the household to open.
-3. **Join with QR code** — mobile opens its rear camera and reads the existing Auth invite QR. Desktop explains that camera join is mobile-only. QR redemption still requires Google Auth; the QR is not a substitute identity.
-Existing three-word codes and pasted Auth/legacy invite links remain supported for deep links, QR fallback, and compatibility, but are not advertised as another first-screen choice. Hearth has no three-letter-code protocol; do not invent one in UI copy or treat a short routing code as authentication.
+Google invitation links and their QR codes are the normal join path. The pending token survives the Google redirect, redemption refreshes discovery, and the joined household is highlighted for an explicit Open action. Existing three-word codes, recovery secrets, and Hearth Pass files remain under **Advanced recovery**. They are not authentication and are not the primary account model.
 
-The demo remains a secondary Development exploration path, not one of the three real-account choices.
+Every chooser card shows the household, the matching member, and `lastCommittedAt` as both a relative counter and exact device-local time. The demo remains a secondary Development exploration path.
 
 The D-114 slice provides automatic Development household discovery and durable outbox replay alongside legacy phrase/`linked` transport. Migration 003 is applied, so D-117 dedicated hosted personal-ledger storage and server-side memberships are live in Development. Each device keeps its own token/session. Tokens never enter the ledger snapshot, outbox, or Git, and Development and Production stay separate. Atomic CAS and secured Production remain.
 
@@ -38,11 +35,11 @@ The same Google email cannot be linked to both people.
 
 1. Open Hearth and choose **Continue with Google**.
 2. Tap **Continue with Google**.
-3. Sign in. Development discovers every hosted household snapshot containing that exact Google subject and asks which ledger to open when there is more than one.
+3. Sign in. Development discovers every authorized membership for that exact Google subject and always shows the household chooser.
 4. Pulled books are validated in PGlite before Hearth opens them.
 5. Work normally. Offline accepted writes retry on launch, focus, and reconnection.
 
-Current limitations: Production discovery waits for Auth/RLS. Development keeps an open disposable fallback and still uses snapshot CAS rather than a hosted journal. Applied migration 003 provides hosted member Personal snapshots; the repaired client projects Personal transactions, shifts, and private goals out of the shared cloud snapshot and overlays only the signed-in member's Personal envelope. Supabase Auth bearer wiring exists behind `VITE_SUPABASE_AUTH_ENABLED=1`. Migrations 004/005 are applied, but Google provider configuration and project-wide cutover 006 remain incomplete. Because one Production household shares this Supabase project, a Development-only 006 rehearsal requires a separate project.
+Current limitations: Production continuity remains disabled. Development Auth/RLS and membership migrations are applied, command events are the normal shared path, and Personal projection remains member-only; however, the complete live two-account matrix, 100-event latency gate, and fourteen-day rehearsal are still open. A deployed build is not yet a daily-use proof.
 
 ### 3. Extra calendar sync
 

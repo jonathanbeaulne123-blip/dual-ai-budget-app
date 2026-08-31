@@ -7,6 +7,7 @@ import {
   findReceipt,
   newConfirmationId,
   rememberReceipt,
+  sha256Hex,
 } from "./commandIdentity.ts";
 import {
   BooksRejectedError,
@@ -20,7 +21,7 @@ import {
   markSynchronized,
   shapeSharing,
 } from "./sharing.ts";
-import { autoResolveSharedConflict } from "./conflict.ts";
+import { autoResolveSharedConflict, unresolvedConflicts } from "./conflict.ts";
 import { assertHouseholdFundTransition } from "./householdFund.ts";
 import type { CommandReceipt, Household } from "./types.ts";
 import { NeedsConfirmationError } from "./types.ts";
@@ -190,6 +191,9 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       identityHash,
       auditHash: "",
       commandKind: input.commandKind ?? "commit",
+      materializationHash: input.commandKind === "updateMonthRehearsal"
+        ? await sha256Hex(accepted.monthRehearsals ?? [])
+        : undefined,
       postedIds,
       revision,
       acceptedAt,
@@ -287,6 +291,26 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       return uncertainRecoveryOutcome(previous, confirmationId, persistError);
     }
 
+    if (unresolvedConflicts(accepted).length > 0) {
+      return outcome({
+        kind: "conflict-needs-attention",
+        household: accepted,
+        previous,
+        postedIds,
+        confirmationId,
+        identityHash,
+        revision,
+        sharingMode: "conflicted",
+        errorClass: "conflict-detected",
+        userMessage: "This phone and the shared copy differ on the same financial fact. Both versions are preserved for review.",
+        retryable: false,
+        recoveryAvailable: true,
+        ok: true,
+        postedExactlyOnce: true,
+        postedNothing: false,
+      });
+    }
+
     const transportAllowed = input.transportRequested === true;
     if (!transportAllowed || !input.adapters.transport) {
       return outcome({
@@ -350,10 +374,10 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       }
       if (transported.errorClass === "conflict-detected" && transported.remote) {
         const memberId = accepted.members.find((member) => member.active)?.id ?? accepted.members[0]?.id ?? "MEM-001";
-        const resolved = await autoResolveSharedConflict(accepted, transported.remote, memberId, "local");
+        const reconciled = await autoResolveSharedConflict(accepted, transported.remote, memberId, "local");
         try {
-          const status = await input.adapters.ingest(resolved);
-          if (!status.ok) throw new Error("auto-resolve ingest refused");
+          const status = await input.adapters.ingest(reconciled);
+          if (!status.ok) throw new Error("conflict reconciliation ingest refused");
         } catch {
           const pending = markPendingTransport(accepted, "Saved on this phone. Sharing will retry.");
           try {
@@ -380,7 +404,7 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
           });
         }
         try {
-          await input.adapters.persist(resolved);
+          await input.adapters.persist(reconciled);
         } catch {
           const pending = markPendingTransport(accepted, "Saved on this phone. Sharing will retry.");
           try {
@@ -406,8 +430,27 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
             postedNothing: false,
           });
         }
-        const sharing = deriveSharing(resolved);
-        const syncedHousehold = sharing.mode === "synchronized" ? markSynchronized(resolved) : resolved;
+        if (unresolvedConflicts(reconciled).length > 0) {
+          return outcome({
+            kind: "conflict-needs-attention",
+            household: reconciled,
+            previous,
+            postedIds,
+            confirmationId,
+            identityHash,
+            revision: reconciled.revision,
+            sharingMode: "conflicted",
+            errorClass: "conflict-detected",
+            userMessage: "This phone and the shared copy differ on the same financial fact. Both versions are preserved for review.",
+            retryable: false,
+            recoveryAvailable: true,
+            ok: true,
+            postedExactlyOnce: true,
+            postedNothing: false,
+          });
+        }
+        const sharing = deriveSharing(reconciled);
+        const syncedHousehold = sharing.mode === "synchronized" ? markSynchronized(reconciled) : reconciled;
         return outcome({
           kind: sharing.mode === "synchronized"
             ? "synchronized"
@@ -419,7 +462,7 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
           postedIds,
           confirmationId,
           identityHash,
-          revision: resolved.revision,
+          revision: reconciled.revision,
           sharingMode: sharing.mode,
           errorClass: sharing.mode === "pending-transport" ? "pending-transport" : null,
           userMessage: sharing.mode === "pending-transport" ? "Saved on this phone. Sharing in the background." : null,

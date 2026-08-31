@@ -50,11 +50,13 @@ The boundary is deliberately narrow:
 - every displayed amount is a typed `HerculesNumberSource` card that routes to the supplying account, transaction, category, member, recurrence, shift, goal, or claim surface;
 - a missing/failed planner falls through to the existing guarded chat/local answer. Off-topic cat talk does not wait for the planner.
 
-Workers AI is first and uses constrained JSON. OpenAI Responses (`store: false`) and Anthropic remain available only when `HERCULES_ALLOW_PAID_PROVIDERS=true`; the checked-in default is `false`. All provider output is sanitized again on the Worker and again on the phone. This is model-planned retrieval, not model authority: arithmetic and scope remain deterministic on-device.
+Planning remains Workers-AI-first and uses constrained JSON. D-184 changes only ordinary in-app chat, and only under the explicit external-provider plus `synthetic` classification gate: configured Gemini → configured Groq → opted-in OpenAI → Workers AI. OpenAI and Anthropic remain available only when `HERCULES_ALLOW_PAID_PROVIDERS=true`; the checked-in default is `false`, and Anthropic is no longer an ordinary-chat hop. Every chat attempt receives the same already-bounded prompt, and all provider output is sanitized again on the Worker and again on the phone. This is model-planned retrieval and provider-resilient voice, not model authority: arithmetic and scope remain deterministic on-device.
 
-### Brain v2 free-depth — zero-surprise-spend policy (D-135)
+### Brain v2 free-depth and ordinary-chat failover (D-135 / D-184)
 
 The free route tries Cloudflare's free-plan eligible `@cf/google/gemma-4-26b-a4b-it`, then the smaller `@cf/meta/llama-3.1-8b-instruct`. The same binding now attempts selected receipt/bill/statement vision before any paid vendor. The Worker never calls OpenAI or Anthropic merely because an old secret happens to exist.
+
+Ordinary chat is the narrow D-184 exception. Every external chat hop remains inert unless the deployment explicitly sets both `HERCULES_ALLOW_EXTERNAL_PROVIDERS=true` and `HERCULES_EXTERNAL_DATA_CLASSIFICATION=synthetic`; keys alone do not activate them. This is a deployment attestation backed by Jonathan's explicit authorization for the normal bounded `/hercules/chat` prompt in this synthetic testing environment, not an inference about prompt sensitivity. With that gate open, a configured `GEMINI_API_KEY` activates Gemini first and configured `GROQ_API_KEY` activates Groq second. OpenAI remains third and still additionally requires both its secret and `HERCULES_ALLOW_PAID_PROVIDERS=true`; the Workers AI pair remains the final server fallback. Third-party fetches time out independently and the chain never races providers. Google unpaid-service data-use terms and Groq retention controls were disclosed before authorization.
 
 After deterministic tools answer, one small second Workers AI pass may rewrite only that grounded answer in Hercules's voice. It receives no extra journal dump and cannot replace the typed facts or source links. If planning, vision, or voice is unavailable, the deterministic/local result survives.
 

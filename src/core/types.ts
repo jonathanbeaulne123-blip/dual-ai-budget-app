@@ -3,7 +3,7 @@ import type { DateKey, MonthKey } from "./calendar.ts";
 import type { SevenShiftsEvidenceBundle } from "./evidence.ts";
 
 export type Environment = "development" | "production";
-export type TransactionType = "expense" | "income" | "transfer" | "refund";
+export type TransactionType = "expense" | "income" | "transfer" | "refund" | "opening";
 export type IncomeStability = "fixed" | "variable";
 export type PartyId = string; // member id or "joint"
 export const JOINT = "joint" as const;
@@ -125,7 +125,7 @@ export type Transaction = {
   transferToAccountId?: string;
   refundOfId?: string;
   reversalOfId?: string;
-  source: "manual" | "shift" | "recurring" | "import" | "visit" | "reversal";
+  source: "manual" | "shift" | "recurring" | "import" | "visit" | "reversal" | "opening";
   sourceId?: string;
   duplicateKey: string;
   potentialDuplicate: boolean;
@@ -836,6 +836,154 @@ export type HouseholdFundPrivateState = {
   reconciliations: HouseholdFundPrivateReconciliation[];
 };
 
+export type MonthRehearsalStatus = "active" | "approved" | "archived";
+export type MonthRehearsalTaskStatus = "not-started" | "in-progress" | "linked" | "skipped" | "complete";
+export type MonthRehearsalFrictionOutcome =
+  | "clear"
+  | "hesitated"
+  | "needed-help"
+  | "distrusted-number"
+  | "stopped";
+
+export type MonthRehearsalTaskId =
+  | "opening-truth"
+  | "income"
+  | "groceries"
+  | "fund-setup"
+  | "fund-contribution"
+  | "shared-fund-purchase"
+  | "bills"
+  | "card-payment"
+  | "fund-partial-settlement"
+  | "refund"
+  | "correction-practice"
+  | "account-reconciliation"
+  | "fund-final-settlement"
+  | "fund-reconciliation"
+  | "month-review"
+  | "month-close";
+
+export type MonthRehearsalReceiptKind =
+  | "command"
+  | "fund-event"
+  | "reconciliation"
+  | "month-close"
+  | "practice"
+  | "review";
+
+export type MonthRehearsalLinkedReceipt = {
+  id: string;
+  taskId: MonthRehearsalTaskId;
+  kind: MonthRehearsalReceiptKind;
+  receiptId: string;
+  postedIds: string[];
+  financialAuditHash: string | null;
+  linkedByMemberId: string;
+  linkedAt: string;
+  updatedAt: string;
+};
+
+export type MonthRehearsalAttempt = {
+  id: string;
+  taskId: MonthRehearsalTaskId;
+  startedByMemberId: string;
+  startedAt: string;
+  finishedAt: string | null;
+  elapsedSeconds: number | null;
+  outcome: MonthRehearsalFrictionOutcome | null;
+  note: string;
+  updatedAt: string;
+};
+
+export type MonthRehearsalSkip = {
+  memberId: string;
+  reason: "did-not-happen";
+  recordedAt: string;
+  updatedAt: string;
+};
+
+export type MonthRehearsalTaskProgress = {
+  id: string;
+  taskId: MonthRehearsalTaskId;
+  week: 1 | 2 | 3 | 4;
+  required: boolean;
+  allowDidNotHappen: boolean;
+  status: MonthRehearsalTaskStatus;
+  receipt: MonthRehearsalLinkedReceipt | null;
+  skip: MonthRehearsalSkip | null;
+  attempts: MonthRehearsalAttempt[];
+  updatedAt: string;
+};
+
+export type MonthRehearsalCheckpointSnapshot = {
+  id: string;
+  week: 1 | 2 | 3 | 4;
+  periodStart: DateKey;
+  periodEnd: DateKey;
+  status: "tied" | "needs-attention";
+  reasons: string[];
+  accountBalancesCents: Record<string, number>;
+  assetCents: number;
+  liabilityCents: number;
+  openingEquityCents: number;
+  netIncomeCents: number;
+  journalEntryCount: number;
+  totalDebitCents: number;
+  totalCreditCents: number;
+  fundOperatingCents: number;
+  fundDueCents: number;
+  fundFreeCents: number;
+  linkedReceiptIds: string[];
+  financialAuditHash: string;
+  evaluatedAt: string;
+  updatedAt: string;
+};
+
+export type MonthRehearsalAcknowledgement = {
+  id: string;
+  week: 1 | 2 | 3 | 4;
+  memberId: string;
+  checkpointId: string;
+  checkpointFinancialAuditHash: string;
+  acknowledgedAt: string;
+  updatedAt: string;
+};
+
+export type MonthRehearsalWeekProgress = {
+  id: string;
+  week: 1 | 2 | 3 | 4;
+  startsOn: DateKey;
+  endsOn: DateKey;
+  tasks: MonthRehearsalTaskProgress[];
+  checkpoint: MonthRehearsalCheckpointSnapshot | null;
+  acknowledgements: MonthRehearsalAcknowledgement[];
+  updatedAt: string;
+};
+
+export type MonthRehearsalMemberApproval = {
+  memberId: string;
+  statement: string;
+  signedAt: string;
+  updatedAt: string;
+};
+
+export type MonthRehearsal = {
+  version: 1;
+  id: string;
+  monthKey: MonthKey;
+  biancaParticipantId: string;
+  jonathanPartnerId: string;
+  status: MonthRehearsalStatus;
+  weeks: MonthRehearsalWeekProgress[];
+  biancaApproval: MonthRehearsalMemberApproval | null;
+  jonathanCountersignature: MonthRehearsalMemberApproval | null;
+  startedAt: string;
+  startedByMemberId: string;
+  approvedAt: string | null;
+  archivedAt: string | null;
+  updatedAt: string;
+};
+
 /** Soft presence of a kitchen phone that has touched the shared snapshot. Not Auth. */
 export type HouseholdDevice = {
   id: string;
@@ -914,6 +1062,8 @@ export type CommandReceipt = {
     shared: string;
     personal: string;
   };
+  /** Integrity proof for bounded non-financial facts carried by command continuity. */
+  materializationHash?: string;
   commandKind: string;
   postedIds: string[];
   revision: number;
@@ -1008,6 +1158,8 @@ export type Household = {
   fundKittyAllocations?: HouseholdFundKittyAllocation[];
   /** Active member overlay only. `splitForSync` removes it from Shared. */
   fundPrivate?: HouseholdFundPrivateState;
+  /** D-183 Development-only shared ritual metadata. Never journal or model context. */
+  monthRehearsals?: MonthRehearsal[];
   budgetPlans: BudgetPlan[];
   sitDownSessions: SitDownSession[];
   activity: Activity[];
@@ -1064,6 +1216,8 @@ export type SharedEnvelope = {
   fundEvents?: HouseholdFundEvent[];
   fundSettlementAllocations?: HouseholdFundSettlementAllocation[];
   fundKittyAllocations?: HouseholdFundKittyAllocation[];
+  /** D-183 shared ritual metadata; omitted from financial hashes and Personal envelopes. */
+  monthRehearsals?: MonthRehearsal[];
   budgetPlans: BudgetPlan[];
   sitDownSessions: SitDownSession[];
   activity: Activity[];
@@ -1133,6 +1287,8 @@ export type UndoToken = {
   label: string;
   snapshot: Household;
   postedIds: string[];
+  /** Stable machine identity for accepted-command receipts; never derive this from the human label. */
+  commandKind?: string;
   /** Member who posted the Confirm — LIFO Undo is per member. */
   actorMemberId?: string;
 };

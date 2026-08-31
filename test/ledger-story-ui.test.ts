@@ -19,6 +19,7 @@ const sit = readFileSync(new URL("../src/SitDownGuide.tsx", import.meta.url), "u
 const panel = readFileSync(new URL("../src/HouseholdFundPanel.tsx", import.meta.url), "utf8");
 const experience = readFileSync(new URL("../src/core/ledgerExperience.ts", import.meta.url), "utf8");
 const accountsUi = readFileSync(new URL("../src/Accounts.tsx", import.meta.url), "utf8");
+const addSlideshow = readFileSync(new URL("../src/AddSlideshow.tsx", import.meta.url), "utf8");
 
 describe("D-164 ledger story UI fences", () => {
   it("routes every tab through projectLedgerExperience and a mode-aware purpose banner", () => {
@@ -27,7 +28,11 @@ describe("D-164 ledger story UI fences", () => {
     expect(app).toContain("showsLedgerPurposeBanner(tab)");
     expect(app).toContain("data-ledger-mode={view}");
     expect(app).toContain("experience.exportHousehold");
-    expect(app).toContain("data-ledger-confirm-purpose");
+    expect(app).toContain("<AddSlideshow");
+    expect(addSlideshow).toContain("data-ledger-confirm-purpose");
+    expect(addSlideshow).not.toContain("postEntry");
+    expect(addSlideshow).not.toContain("postTransfer");
+    expect(addSlideshow).not.toContain("postWorkShift");
     expect(experience).toContain("showsLedgerPurposeBanner");
   });
 
@@ -109,6 +114,13 @@ describe("D-164 ledger story UI fences", () => {
 
   it("keeps Books off Shared primary nav and doors it from More", () => {
     expect(app).toContain("kitchenPrimaryNav(view)");
+    expect(app).toContain("<FabSpeedDial");
+    expect(app).toContain("onPick={(nextMode) => openAddFor(null, nextMode)}");
+    expect(styles).toContain("flex-direction: column-reverse");
+    expect(styles).toContain("bottom: calc(100% + 22px)");
+    const fab = readFileSync(new URL("../src/FabSpeedDial.tsx", import.meta.url), "utf8");
+    expect(fab).not.toContain("postEntry");
+    expect(fab).not.toContain("postWorkShift");
     expect(books).toContain("accepted-books position");
     expect(books).toContain("not a partner-hidden envelope");
     expect(books).not.toContain("Partner-personal stays out");
