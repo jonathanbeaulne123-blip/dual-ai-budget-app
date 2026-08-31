@@ -36,6 +36,14 @@ Use [`browser-journeys.json`](browser-journeys.json) as the versioned journey ma
 
 If the current browser tooling cannot capture one of those channels, mark it incomplete. Do not infer success from silence.
 
+Install the pinned Chromium runtime once per workstation, start the exact build or live origin being inspected, then collect automated real-browser evidence:
+
+`pnpm exec playwright install chromium`
+
+`pnpm quality:browser -- --origin http://127.0.0.1:4173 --feature public-roadmap`
+
+The collector writes ignored screenshots, axe reports, runtime-channel results, responsive checks, 200% text-resize evidence, and reduced-motion evidence under `artifacts/browser-evidence/`. Its report is always `claimable: false`: automation does not replace Production deployment proof, privacy review, hands-on review, or named-human acceptance.
+
 ## Synthetic harness proof
 
 The unit suite evaluates one all-green feature fixture and one deliberately red feature fixture with a stale SHA, missing 430 px run, console error, network 503, timeout, and missing human acceptance. A green fixture can report `fixturePassed`; it is permanently `claimable: false` and can never emit `5/5`.
