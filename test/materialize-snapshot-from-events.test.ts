@@ -200,7 +200,7 @@ describe("T2-S3 materialized snapshot builder", () => {
     expect(materialized.transactions.some((row) => row.id === posted.postedIds[0])).toBe(false);
   });
 
-  it("preserves same-row diverge for explicit resolution instead of silent LWW", async () => {
+  it("applies the later ordered same-row event without opening a chooser", async () => {
     const previous = googleHousehold();
     const posted = postEntry(previous, grocery("conflict row", "8.00"));
     const txId = posted.postedIds[0]!;
@@ -256,12 +256,8 @@ describe("T2-S3 materialized snapshot builder", () => {
       [baseEvent, conflictEvent],
       catalogBaseFromSnapshot(previous),
     );
-    const open = materialized.conflicts?.find((row) => !row.resolved);
-    expect(open).toBeDefined();
-    expect(open?.remoteSnapshot.transactions.find((row) => row.id === txId)?.amountCents).toBe(999);
-    expect(materialized.transactions.find((row) => row.id === txId)?.amountCents).toBe(
-      posted.household.transactions.find((row) => row.id === txId)?.amountCents,
-    );
+    expect(materialized.conflicts?.some((row) => !row.resolved)).toBe(false);
+    expect(materialized.transactions.find((row) => row.id === txId)?.amountCents).toBe(999);
 
     const direct = await applyCommandEventLocally({
       local: accepted.household,
@@ -269,14 +265,10 @@ describe("T2-S3 materialized snapshot builder", () => {
       memberId: identity.memberId,
     });
     expect(direct.ok).toBe(true);
-    if (!direct.ok) throw new Error("same-row collision should be retained for review");
+    if (!direct.ok) throw new Error("later same-row event should apply");
     expect(direct.duplicate).toBe(false);
-    expect(direct.household.transactions.find((row) => row.id === txId)?.amountCents).toBe(800);
-    expect(
-      direct.household.conflicts
-        ?.find((row) => !row.resolved)
-        ?.remoteSnapshot.transactions.find((row) => row.id === txId)?.amountCents,
-    ).toBe(999);
+    expect(direct.household.transactions.find((row) => row.id === txId)?.amountCents).toBe(999);
+    expect(direct.household.conflicts?.some((row) => !row.resolved)).toBe(false);
 
     const forged = await applyCommandEventLocally({
       local: accepted.household,
@@ -287,6 +279,48 @@ describe("T2-S3 materialized snapshot builder", () => {
       memberId: identity.memberId,
     });
     expect(forged).toEqual({ ok: false, reason: "audit-hash-mismatch", fallback: true });
+  });
+
+  it("requests snapshot fallback for a changed append-only id even without an audit hash", async () => {
+    const local = googleHousehold();
+    const contribution = {
+      id: "GOAL-CONTRIB-IMMUTABLE",
+      goalId: "GOAL-IMMUTABLE",
+      memberId: identity.memberId,
+      amountCents: 500,
+      date: "2026-08-25" as const,
+      transferId: null,
+      createdAt: "2026-08-25T12:00:00.000Z",
+      updatedAt: "2026-08-25T12:00:00.000Z",
+    };
+    const withContribution = { ...local, goalContributions: [contribution] };
+    const event: ContinuityCommandEvent = {
+      id: "evt-immutable-rewrite",
+      environment: local.environment,
+      household_id: local.householdId,
+      member_id: identity.memberId,
+      idempotency_key: "immutable-rewrite",
+      confirmation_id: "immutable-rewrite",
+      identity_hash: "immutable-rewrite",
+      base_revision: local.revision,
+      result_revision: local.revision + 1,
+      ledger_scope: "shared",
+      command_type: "postEntry",
+      payload_json: {
+        confirmationId: "immutable-rewrite",
+        identityHash: "immutable-rewrite",
+        commandKind: "postEntry",
+        postedIds: [contribution.id],
+        auditHash: "",
+        revision: local.revision + 1,
+        acceptedAt: "2026-08-25T12:01:00.000Z",
+        materializationFacts: { goalContributions: [{ ...contribution, amountCents: 900 }] },
+      },
+      created_at: "2026-08-25T12:01:00.000Z",
+    };
+
+    const result = await applyCommandEventLocally({ local: withContribution, event, memberId: identity.memberId });
+    expect(result).toEqual({ ok: false, reason: "immutable-row-divergence", fallback: true });
   });
 
   it("extractMaterializationFacts stays bounded to posted ids", () => {

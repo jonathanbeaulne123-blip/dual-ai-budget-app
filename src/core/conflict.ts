@@ -1,5 +1,5 @@
 import { cloneHousehold } from "./household.ts";
-import { assembleHousehold, ensureHouseholdShape, mergeRecords, mergeTombstones, splitForSync } from "./sync.ts";
+import { assembleHousehold, ensureHouseholdShape, mergeRecords, mergeShared, mergeTombstones, splitForSync } from "./sync.ts";
 import { applyGoalSavings } from "./goals.ts";
 import { financialAuditHash } from "./commandIdentity.ts";
 import { nextId } from "./ids.ts";
@@ -75,8 +75,8 @@ function idContentConflict<T extends { id: string }>(left: T[] = [], right: T[] 
 
 /**
  * True when both sides only added different shared money rows (no same-id edits),
- * tombstones agree, and shared catalogs/budgets match. Safe to union without the
- * conflict sheet — never silent LWW on the same id.
+ * tombstones agree, and shared catalogs/budgets match. This fast path can union
+ * immediately; same-id rows use the ordered reconciliation path below.
  */
 export function canAbsorbDisjointSharedMoney(local: Household, remote: Household): boolean {
   if (local.householdId !== remote.householdId) return false;
@@ -161,6 +161,131 @@ export function absorbDisjointSharedMoney(
     revision,
     baseRevision: tip,
   });
+}
+
+/**
+ * Reconcile two accepted replicas at record granularity. The caller identifies
+ * which side is later in the canonical command order; `updatedAt` decides each
+ * same-id row and that later side wins an exact timestamp tie. Distinct ids are
+ * always retained. This is the snapshot recovery equivalent of applying ordered
+ * command events and must still pass acceptHouseholdWrite/PGlite before adoption.
+ */
+export function mergeSharedLastEntryWins(
+  local: Household,
+  remote: Household,
+  memberId: string,
+  prefer: "local" | "remote",
+): Household {
+  if (local.householdId !== remote.householdId) {
+    throw new Error("Those books belong to different households.");
+  }
+  if (local.environment !== remote.environment) {
+    throw new Error("Those books belong to different Development/Production environments.");
+  }
+  const localParts = splitForSync(local, memberId);
+  const remoteParts = splitForSync(remote, memberId);
+  const shared = prefer === "local"
+    ? mergeShared(remoteParts.shared, localParts.shared)
+    : mergeShared(localParts.shared, remoteParts.shared);
+  const tip = Math.max(local.revision, remote.revision);
+  const resolvedConflicts = [...(local.conflicts ?? []), ...(remote.conflicts ?? [])]
+    .map((row) => ({ ...row, resolved: true }))
+    .filter((row, index, rows) => rows.findIndex((item) => item.id === row.id) === index)
+    .slice(-20);
+  const assembled = assembleHousehold(
+    { ...shared, revision: tip + 1 },
+    localParts.personal,
+    { linked: local.linked === true || remote.linked === true },
+  );
+  const receiptOrderedTransactions = applyReceiptOrder(
+    assembled.transactions,
+    localParts.shared.transactions,
+    remoteParts.shared.transactions,
+    local,
+    remote,
+    prefer,
+    shared.tombstones,
+  );
+  return markPendingTransport(ensureHouseholdShape({
+    ...assembled,
+    revision: tip + 1,
+    baseRevision: remote.revision,
+    transactions: preserveReversedOriginals(
+      receiptOrderedTransactions,
+      localParts.shared.transactions,
+      remoteParts.shared.transactions,
+      prefer,
+      shared.tombstones,
+    ),
+    shifts: applyReceiptOrder(
+      assembled.shifts,
+      localParts.shared.shifts,
+      remoteParts.shared.shifts,
+      local,
+      remote,
+      prefer,
+      shared.tombstones,
+    ),
+    claims: applyReceiptOrder(
+      assembled.claims ?? [],
+      localParts.shared.claims ?? [],
+      remoteParts.shared.claims ?? [],
+      local,
+      remote,
+      prefer,
+      shared.tombstones,
+    ),
+    sitDownSessions: applyReceiptOrder(
+      assembled.sitDownSessions ?? [],
+      localParts.shared.sitDownSessions ?? [],
+      remoteParts.shared.sitDownSessions ?? [],
+      local,
+      remote,
+      prefer,
+      shared.tombstones,
+    ),
+    goalContributions: preserveHostedImmutableRows(
+      assembled.goalContributions ?? [],
+      remoteParts.shared.goalContributions ?? [],
+      shared.tombstones,
+    ),
+    goalPurchases: preserveHostedImmutableRows(
+      assembled.goalPurchases ?? [],
+      remoteParts.shared.goalPurchases ?? [],
+      shared.tombstones,
+    ),
+    fundEvents: preserveHostedImmutableRows(
+      assembled.fundEvents ?? [],
+      remoteParts.shared.fundEvents ?? [],
+      shared.tombstones,
+    ),
+    fundSettlementAllocations: preserveHostedImmutableRows(
+      assembled.fundSettlementAllocations ?? [],
+      remoteParts.shared.fundSettlementAllocations ?? [],
+      shared.tombstones,
+    ),
+    fundKittyAllocations: preserveHostedImmutableRows(
+      assembled.fundKittyAllocations ?? [],
+      remoteParts.shared.fundKittyAllocations ?? [],
+      shared.tombstones,
+    ),
+    conflicts: resolvedConflicts,
+    commandReceipts: mergeReceipts(local, remote),
+  }));
+}
+
+/** Upgrade an old persisted conflict record without reopening a chooser. */
+export function resolveStoredConflictsLastEntryWins(
+  household: Household,
+  memberId: string,
+): Household {
+  const open = unresolvedConflicts(household)
+    .sort((left, right) => left.detectedAt.localeCompare(right.detectedAt) || left.id.localeCompare(right.id));
+  if (!open.length) return household;
+  return open.reduce(
+    (current, conflict) => mergeSharedLastEntryWins(current, conflict.remoteSnapshot, memberId, "local"),
+    household,
+  );
 }
 
 export function autoMergeSafe(local: Household, remote: Household): Household {
@@ -270,7 +395,7 @@ function onlySideCents(
   return { onlyLeft, onlyRight };
 }
 
-/** Human-readable shared impact for the conflict sheet (Personal excluded). */
+/** Human-readable shared impact retained only for legacy local export (Personal excluded). */
 export function describeSharedConflictImpact(local: Household, remote: Household): SharedConflictImpact {
   const localTx = sharedTransactions(local);
   const remoteTx = sharedTransactions(remote);
@@ -318,39 +443,112 @@ function mergeReceipts(local: Household, remote: Household): Household["commandR
   );
 }
 
-/**
- * Reconcile a stale shared write without losing either side. Disjoint additions and
- * non-money catalog drift still merge automatically. A true shared-money divergence
- * remains unresolved for the existing human conflict sheet.
- */
+/** Reconcile a stale shared write without blocking the household on a chooser. */
 export async function autoResolveSharedConflict(
   local: Household,
   remote: Household,
   memberId: string,
-  _prefer: "local" | "remote" = "local",
+  prefer: "local" | "remote" = "local",
 ): Promise<Household> {
-  if (canAbsorbDisjointSharedMoney(local, remote)) {
-    return absorbDisjointSharedMoney(local, remote, memberId);
+  return mergeSharedLastEntryWins(local, remote, memberId, prefer);
+}
+
+function preserveReversedOriginals(
+  merged: Transaction[],
+  local: Transaction[],
+  remote: Transaction[],
+  prefer: "local" | "remote",
+  tombstones: Tombstone[],
+): Transaction[] {
+  const byId = new Map(merged.map((row) => [row.id, row]));
+  const dead = new Set(tombstones.map((row) => row.id));
+  const candidates = prefer === "local" ? [...remote, ...local] : [...local, ...remote];
+  for (const reversal of merged) {
+    if (!reversal.reversalOfId) continue;
+    if (dead.has(reversal.reversalOfId)) {
+      byId.delete(reversal.reversalOfId);
+      continue;
+    }
+    const eligible = candidates.filter((row) => (
+      row.id === reversal.reversalOfId
+      && row.updatedAt <= reversal.createdAt
+    ));
+    if (!eligible.length) continue;
+    const original = eligible.reduce((winner, row) => (
+      row.updatedAt >= winner.updatedAt ? row : winner
+    ));
+    byId.set(original.id, original);
   }
-  if (canAutoMergeConflict(local, remote)) {
-    const merged = autoMergeSafe(local, remote);
-    const tip = Math.max(local.revision, remote.revision);
-    return markPendingTransport({
-      ...merged,
-      revision: tip + 1,
-      baseRevision: Math.max(local.baseRevision ?? 0, remote.revision),
-    });
+  return [...byId.values()];
+}
+
+function applyReceiptOrder<T extends { id: string; updatedAt: string }>(
+  merged: T[],
+  localRows: T[],
+  remoteRows: T[],
+  local: Household,
+  remote: Household,
+  prefer: "local" | "remote",
+  tombstones: Tombstone[],
+): T[] {
+  const dead = new Set(tombstones.map((row) => row.id));
+  const localById = new Map(localRows.map((row) => [row.id, row]));
+  const remoteById = new Map(remoteRows.map((row) => [row.id, row]));
+  const localReceipts = new Set((local.commandReceipts ?? []).map((row) => row.confirmationId));
+  const remoteReceipts = new Set((remote.commandReceipts ?? []).map((row) => row.confirmationId));
+  const localPosted = new Set(
+    (local.commandReceipts ?? [])
+      .filter((row) => !remoteReceipts.has(row.confirmationId))
+      .flatMap((row) => row.postedIds),
+  );
+  const remotePosted = new Set(
+    (remote.commandReceipts ?? [])
+      .filter((row) => !localReceipts.has(row.confirmationId))
+      .flatMap((row) => row.postedIds),
+  );
+  const latestReceiptFor = (household: Household, otherReceipts: Set<string>, id: string) => (
+    (household.commandReceipts ?? [])
+      .filter((row) => !otherReceipts.has(row.confirmationId) && row.postedIds.includes(id))
+      .sort((left, right) => (
+        left.revision - right.revision
+        || left.acceptedAt.localeCompare(right.acceptedAt)
+        || left.confirmationId.localeCompare(right.confirmationId)
+      ))
+      .at(-1)
+  );
+  const byId = new Map(merged.filter((row) => !dead.has(row.id)).map((row) => [row.id, row]));
+  for (const id of new Set([...localPosted, ...remotePosted])) {
+    if (dead.has(id)) continue;
+    const localRow = localById.get(id);
+    const remoteRow = remoteById.get(id);
+    if (!localRow || !remoteRow) continue;
+    if (localPosted.has(id) && !remotePosted.has(id)) byId.set(id, localRow);
+    else if (remotePosted.has(id) && !localPosted.has(id)) byId.set(id, remoteRow);
+    else {
+      const localReceipt = latestReceiptFor(local, remoteReceipts, id);
+      const remoteReceipt = latestReceiptFor(remote, localReceipts, id);
+      const receiptOrder = (localReceipt?.revision ?? -1) - (remoteReceipt?.revision ?? -1)
+        || (localReceipt?.acceptedAt ?? "").localeCompare(remoteReceipt?.acceptedAt ?? "")
+        || (localReceipt?.confirmationId ?? "").localeCompare(remoteReceipt?.confirmationId ?? "");
+      byId.set(id, receiptOrder === 0
+        ? (prefer === "local" ? localRow : remoteRow)
+        : (receiptOrder > 0 ? localRow : remoteRow));
+    }
   }
-  if (!moneyFactsChanged(local, remote)) {
-    const merged = autoMergeSafe(local, remote);
-    const tip = Math.max(local.revision, remote.revision);
-    return markPendingTransport({
-      ...merged,
-      revision: tip + 1,
-      baseRevision: Math.min(local.baseRevision ?? 0, remote.baseRevision ?? 0, remote.revision),
-    });
+  return [...byId.values()];
+}
+
+function preserveHostedImmutableRows<T extends { id: string }>(
+  merged: T[],
+  remoteRows: T[],
+  tombstones: Tombstone[],
+): T[] {
+  const dead = new Set(tombstones.map((row) => row.id));
+  const byId = new Map(merged.filter((row) => !dead.has(row.id)).map((row) => [row.id, row]));
+  for (const row of remoteRows) {
+    if (!dead.has(row.id) && byId.has(row.id)) byId.set(row.id, row);
   }
-  return recordConflict(local, remote, false);
+  return [...byId.values()];
 }
 
 /**

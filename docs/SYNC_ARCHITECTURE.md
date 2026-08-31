@@ -24,7 +24,7 @@ Imagine the household budget is **two shared notebooks** on a **cloud fridge**:
 **Rules that never change:**
 
 - Only a person tapping **Confirm** posts money. Hercules, weather, and widgets never write in the notebooks.
-- If two people edit the **same line** differently, Hearth shows a **conflict sheet** — no silent “last phone wins.”
+- If two people edit the **same line**, the later accepted entry wins automatically. Distinct lines remain additive, and accepted reversals remain immutable.
 - If the cloud is unreachable, your phone keeps a **to-send pile** (outbox) and shares when it can.
 - No phone is the “host.” Turning Jonathan’s phone off does not lock Bianca out.
 
@@ -37,11 +37,11 @@ Imagine the household budget is **two shared notebooks** on a **cloud fridge**:
 | Partner visibility lag up to **4 s** (8 s at scale) | `LIVE_PULL_INTERVAL_MS = 4_000` in `src/continuityLivePull.ts`; visibility-aware REST poll | **Tier 1** — Supabase Realtime push |
 | Personal + Shared often **two network trips**; partial failure can leave scopes inconsistent | `pushSupabaseHousehold` sequential Shared then Personal; D-147 treats Personal fail after Shared CAS as pending | **Tier 1** — Migration **012** atomic SQL |
 | Whole JSON snapshot transport on every confirm | D-145 slim outbox reduced local quota pain; hosted payload still full snapshot | **Tier 2** — command-log primary |
-| Concurrent edits to the **same** money row still need explicit conflict | Disjoint shared rows auto-absorb (live-pull PR); same-base divergence → conflict sheet | **Tier 2** — append-only command convergence |
+| Concurrent edits to the **same** money row must converge without a chooser | Ordered command events; snapshot recovery uses record-level `updatedAt` with a deterministic tie-break | **Tier 2** — append-only command convergence |
 | Undo that restores whole snapshot can clobber partner work | `docs/worksessions/2026-08-25-live-pull-dual-use.md` item 5 | **Tier 2** — confirmation-scoped undo |
 | 100 open kitchens on poll alone is chatty | Live-pull worksession scale table | **Tier 1** Realtime + **Tier 3** channel hygiene |
 
-**Non-goals (explicit):** bank feeds, Interac, issued cards, Sheets/clasp revival, service-role keys in the browser, silent last-writer-wins, or calling sync “shipped” before two-browser proof on disposable Development.
+**Non-goals (explicit):** bank feeds, Interac, issued cards, Sheets/clasp revival, service-role keys in the browser, whole-snapshot replacement, or calling sync “shipped” before two-browser proof on disposable Development.
 
 ---
 
@@ -57,7 +57,7 @@ These survive every tier. A slice that violates one is **stop-ship**.
 6. **Honest sync UI.** Never “Saved to cloud” when outbox pending, Personal failed after Shared, or conflict blocked.
 7. **Development first; Production gated.** Disposable Development through 2026-09-30; Production cutover requires Jonathan approval and October-grade Auth/RLS proof.
 8. **Idempotent delivery.** Duplicate Realtime events, duplicate POSTs, and offline replay must not double-post money.
-9. **Conflict is visible.** Same-row money divergence opens the conflict sheet; disjoint shared money may absorb quietly (current behavior retained until Tier 2 proves command-level interleaving).
+9. **Reconciliation is automatic and truthful.** Distinct ids remain additive; the later accepted same-id entry wins; reversals cannot be rewritten. Pending or failed transport remains visible without blocking the books.
 10. **Books win (Dual Course 5:3).** Faster sync serves trustworthy books; it never trades audit trail for speed.
 
 ---
@@ -242,7 +242,7 @@ Every tier adds rows; none delete prior proofs.
 |---|---|---|---|
 | A posts shared, B open | ≤ 500 ms visible | same | two-browser / Playwright |
 | A offline, B posts, A reconnect | outbox + pull | command replay | fault harness |
-| Same txn edited both sides | conflict sheet | conflict sheet | deterministic IDs |
+| Same txn edited both sides | deterministic record merge | later ordered event wins | deterministic IDs + ordered replay |
 | Disjoint shared txns | quiet absorb | event interleave | merge tests |
 | Personal scope isolation | member overlay | personal events only | privacy auditor |
 | Duplicate Realtime delivery | idempotent merge | idempotent append | injected dup events |

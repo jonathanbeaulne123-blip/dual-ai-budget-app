@@ -141,7 +141,7 @@ describe("T2-S5 command-log interleaving harness", () => {
     expect(tip.transactions.some((row) => row.note === "Device B bread")).toBe(true);
   });
 
-  it("same-row diverge preserves both versions for explicit resolution", async () => {
+  it("same-row divergence applies the later ordered event", async () => {
     const catalog = twoMemberHousehold();
     const store = createMemoryCommandLogStore();
     const postA = expense(catalog, "Conflict row", "8.00", memberA);
@@ -186,13 +186,11 @@ describe("T2-S5 command-log interleaving harness", () => {
     appendHostedCommandEvent(store, conflictEvent);
 
     const tip = await materializeCommandLogTip(catalog, store);
-    const open = tip.conflicts?.find((row) => !row.resolved);
-    expect(open).toBeDefined();
-    expect(open?.remoteSnapshot.transactions.find((row) => row.id === txId)?.amountCents).toBe(999);
-    expect(tip.transactions.find((row) => row.id === txId)?.amountCents).toBe(800);
+    expect(tip.conflicts?.some((row) => !row.resolved)).toBe(false);
+    expect(tip.transactions.find((row) => row.id === txId)?.amountCents).toBe(999);
   });
 
-  it("reversal vs edit keeps both journal versions open for human resolution", async () => {
+  it("falls back instead of rewriting a reversed original or opening a chooser", async () => {
     const catalog = twoMemberHousehold();
     const store = createMemoryCommandLogStore();
     const postA = expense(catalog, "Reversal target", "6.00", memberA);
@@ -249,9 +247,7 @@ describe("T2-S5 command-log interleaving harness", () => {
     };
     appendHostedCommandEvent(store, editAttempt);
 
-    const tip = await materializeCommandLogTip(catalog, store);
-    expect(tip.transactions.some((row) => row.reversalOfId === txId)).toBe(true);
-    expect(tip.conflicts?.some((row) => !row.resolved)).toBe(true);
+    await expect(materializeCommandLogTip(catalog, store)).rejects.toThrow(/immutable-row-divergence/);
   });
 
   it("personal then shared interleave keeps partner shared hash clean", async () => {
