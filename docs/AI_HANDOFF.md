@@ -2,23 +2,23 @@
 
 ## The Month Spread — Shared Home centre (2026-08-31)
 
-**Status:** PR [#259](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/259) on `cursor/month-spread-shared-home-04e5`, integrating `origin/main@1650910`. Jonathan ordered **merge, push, and deploy** 2026-08-31 after Paper office proof of the Standing bars. Risk: **High** (presentation plus F-2/F-3 projection corrections). **Not yet merged, not yet live** until this merge lands and Cloudflare Workers on `main` is verified.
+**Status:** Merged [#259](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/259) as `main@d648258`. Kitchen deploy Cloudflare Workers [`33432365828`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33432365828) **success**. Worker version `0a5b30da-5e3c-4b8e-a3da-43529c13001c`. Live bundle `Office-BBr3Ic0W.js` contains Standing bars and “A proposal is not on the bar.” **Merged and kitchen-published.** Risk was **High** (presentation plus F-2/F-3). No Production household mutation, hosted schema, or secrets.
 
 **Household outcome:** Shared Home's centre is the month as one sheet — Standing, Course, Docket. Standing names each person's confirmed Fund contributions this month (demo Bianca `$1,600.00`, Jonathan `$1,660.00`). Seals, mosaic, Kitty Banks, FAB, and Add slideshow stay.
 
 **Budget delta (5):** `+3` Spread / `+1` bars. **Engagement delta (3):** `+3` / `+1`. Books won: proposals off the bar; both fills pine; Course from `booksHousehold`; Docket never posts.
 
-**What changed:** `sharedMonthCourse` plus Month Spread; F-1 Kitty rollover as a claim; F-2 reconciliation covering `date`; F-3 monthly target = this month's confirmed contributions; Standing `contributionsByMember` paper bars; Course compiled from accepted books. Worksession: [`worksessions/2026-08-31-month-spread.md`](worksessions/2026-08-31-month-spread.md).
+**What changed:** `sharedMonthCourse` plus Month Spread; F-1 Kitty rollover as a claim; F-2 reconciliation covering `date`; F-3 monthly target = this month's confirmed contributions; Standing `contributionsByMember` paper bars; Course compiled from accepted books. Integrated `origin/main` through D-184 before merge. Worksession: [`worksessions/2026-08-31-month-spread.md`](worksessions/2026-08-31-month-spread.md).
 
 **Verification:**
-- Focused `test/month-spread.test.ts`: **33 passed**.
-- `pnpm check` on `4b58785`: **1315 passed / 3 skipped**. Merge onto `1650910` re-runs the gate before publish.
-- Live Paper office: Bianca `$1,600.00`, Jonathan `$1,660.00`; Fund free-to-spend `$2,018.60` ≠ leftover-spend `$498.64`. Artifacts `month_spread_contrib_bars_1440.png` / `_1100.png` / `_720.png` / `month_spread_contrib_bars_demo.mp4`.
-- Books **PASS WITH NOTES**; UX `role="group"` **PASS**; security review no medium+ findings. F-2/F-3 are projector-only.
+- Focused `test/month-spread.test.ts`: **33 passed**. After integrating `main@1650910`, focused Spread+Add **60 passed**; `pnpm check` **1377 passed / 3 skipped**.
+- Kitchen HTML `https://hearth-books.jonathan-beaulne123.workers.dev/` serves `index-DQXFR0dT.js` → lazy `Office-BBr3Ic0W.js` with `ms-contrib`, `I · Standing`, Bianca/Jonathan bar copy.
+- Pre-merge Paper office demo: Bianca `$1,600.00`, Jonathan `$1,660.00`; Fund free-to-spend `$2,018.60` ≠ leftover-spend `$498.64`.
+- Books **PASS WITH NOTES**; UX `role="group"` **PASS**; security review no medium+ findings.
 
-**Environment/data:** fictional Development demo seed. No Production household mutation, hosted schema, or secrets. Kitchen publish is D-041 `wrangler deploy` from `main`.
+**Environment/data:** fictional Development demo seed for local proof. Kitchen publish is D-041 `wrangler deploy` of the SPA. No Production household rows, schema, or secrets changed.
 
-**Next owner:** this session merges to `main` and verifies `https://hearth-books.jonathan-beaulne123.workers.dev/`.
+**Next owner:** Jonathan. Open the live kitchen on a wide Paper office Home and confirm Standing bars. Classic desk still needs Drawer → Paper office. iPhone Home is unchanged.
 
 ## D-181 Add slideshow + FAB onto current main (2026-08-31)
 

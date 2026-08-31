@@ -1,17 +1,17 @@
 # Hearth worksession — The Month Spread
 
-- **Status:** OPEN; draft PR #259; Standing contribution bars on this SHA
+- **Status:** CLOSED; MERGED #259; KITCHEN PUBLISHED
 - **Opened:** 2026-08-31 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor (landing Claude's local packet onto current `main`)
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
-- **Branch:** `cursor/month-spread-shared-home-04e5`
-- **Baseline SHA:** `2a984fd3346dc0b57d0e7b6a17702c18b82596d3` (`origin/main`)
-- **Head SHA:** `4b5878502d9d76d1d85c46fa9d3edc619d7326f8` (Standing bars; a11y/docs follow-ups sit on top)
-- **PR or issue:** draft [#259](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/259)
+- **Branch:** `main` (from `cursor/month-spread-shared-home-04e5`)
+- **Baseline SHA:** `2a984fd3346dc0b57d0e7b6a17702c18b82596d3` (cut); merged through `origin/main@d9529e5` (D-184 docs)
+- **Head SHA:** `d648258e5c1d55a5af9c2c2e6962d46eb8bd09e7` (merge commit)
+- **PR or issue:** merged [#259](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/259)
 - **Risk:** High (presentation of Shared Home plus two `projectHouseholdFund` figure corrections)
-- **Decision owner:** Jonathan for merge/deploy; independent books review required for F-2/F-3 before merge
-- **Environment impact:** Development demo seed only; no Production, hosted schema, secrets, or household data
+- **Decision owner:** Jonathan ordered merge/push/deploy 2026-08-31
+- **Environment impact:** Development demo seed for proof; kitchen SPA published via D-041; no Production household mutation, hosted schema, or secrets
 
 ## Household outcome
 
