@@ -7,11 +7,11 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/qr-auto-match`
 - **Baseline SHA:** `201a449cb99251c8a66eb3b282d950305752d1f1`
-- **Head SHA:** local branch commit (not pushed)
+- **Head SHA:** local branch commit (release evidence update pending)
 - **PR or issue:** none
 - **Risk:** Release (Google Auth household-entry boundary plus a forward Auth RPC migration)
 - **Decision owner:** Jonathan
-- **Environment impact:** client code plus shared Auth RPC schema if separately approved; Production continuity remains disabled
+- **Environment impact:** shared Auth RPC migration 018 applied after Jonathan's approval; client deployment pending; Production continuity remains disabled
 
 ## Household outcome
 
@@ -81,18 +81,20 @@ Scanning a valid household QR opens the Google account chooser. The chosen Googl
 - 2026-08-31: Rebased over clean `origin/main@201a449`; focused QR/Auth/replica proof passed 74/74 plus TypeScript.
 - 2026-08-31: Full Vitest proof passed 210 files / 1,409 tests with 2 files / 3 tests skipped by their existing gates; `ai:verify` and the production build also passed. On Windows, the build needed Git Bash plus a temporary untracked pnpm shim for the repository's POSIX script; the shim was removed and the candidate returned clean.
 - 2026-08-31: Independent Auth/privacy, client UX, and release reviewers reported no remaining P0–P3 findings after exact household+member matching and identity-free full-house copy were enforced.
+- 2026-08-31: Jonathan explicitly approved both hosted migration application and push/merge/deploy. Migration 018 source SHA-256 `22b1641e014acfab39e256f517c08163a102ceda910824a17867d9c15813c80e` was applied in Supabase SQL Editor to project `tykhocwacaxwquhynkok`; the editor returned `Success. No rows returned`.
+- 2026-08-31: Read-only postflight confirmed migration id 18, `SECURITY DEFINER`, `search_path=""`, the bounded `house-full` branch, authenticated execute `true`, and anon execute `false`.
 
 ## Decisions
 
 - QR invitation entry is a narrow exception to D-182 chooser-first behavior. Ordinary sign-in remains chooser-first.
 - The QR never trusts a typed/display email as authority. The live Google identity plus server invite redemption remain authoritative.
 - “Full” derives from the server's locked count of two active Google-bound seats, not client-side household guessing. An occupied target with another open seat remains a distinct invite error because QR authority stays exact-seat.
-- Migration 018 replaces only the existing redeem RPC so a consumed invitation can return the bounded `house-full` reason without exposing either member's identity. It is source-only until Jonathan separately approves hosted application.
+- Migration 018 replaces only the existing redeem RPC so a consumed invitation can return the bounded `house-full` reason without exposing either member's identity. Jonathan approved and the migration was applied to the shared Supabase project on 2026-08-31; no household rows were changed during apply.
 - Returning to Google entry deactivates only the device's current selection; the named local replica remains stored.
 
 ## Remaining uncertainty
 
-- A real two-account Google redirect cannot be completed in local automated tests. Release remains blocked on Jonathan-authorized deployment plus a live Development canary.
+- A real two-account Google redirect cannot be completed in local automated tests. Push/merge/deploy and a live Development canary remain.
 
 ## Handoff
 
