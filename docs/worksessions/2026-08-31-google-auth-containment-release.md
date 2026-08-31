@@ -7,7 +7,7 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/reconciliation-salvage-audit`
 - **Baseline SHA:** `3e48bcc3ca3919d8663c2f1ab1dfbd5a5cfda7cf`
-- **Head SHA:** pending release-record commit
+- **Head SHA:** `ab64ca198c3278efe05ccff3210060165f8c5f3e` (locally reviewed code/test candidate; exact merge SHA pending)
 - **PR or issue:** pending
 - **Risk:** Release (Google/Auth identity and kitchen deployment; no money semantics)
 - **Decision owner:** Jonathan — explicitly authorized push, merge, and deployment
