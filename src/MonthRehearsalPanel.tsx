@@ -112,7 +112,11 @@ export function MonthRehearsalPanel({ household, memberId, today, onApply, onOpe
   };
 
   if (household.environment !== "development") return null;
-  if (activeRows.length > 1) return <section className="month-card" role="alert"><p className="eyebrow">Our month needs attention</p><h2>Two phones started different versions</h2><p>No rehearsal action or approval can continue until one version is archived. Your books have not changed.</p><div className="month-conflict-list">{activeRows.filter((row) => memberId === row.biancaParticipantId || memberId === row.jonathanPartnerId).map((row) => <div key={row.id}><span>{formatMonthLabel(row.monthKey)} · started {row.startedAt.slice(0, 10)}</span><button type="button" className="secondary" disabled={Boolean(busy)} onClick={() => void apply(`resolve-${row.id}`, async () => { const result = archiveMonthRehearsal(household, { rehearsalId: row.id, memberId }); await onApply(result.household, result.undo); })}>Archive this version</button></div>)}</div></section>;
+  if (activeRows.length > 1) {
+    const participantRows = activeRows.filter((row) => memberId === row.biancaParticipantId || memberId === row.jonathanPartnerId);
+    if (!participantRows.length) return null;
+    return <section className="month-card" role="alert"><p className="eyebrow">Our month needs attention</p><h2>Two phones started different versions</h2><p>No rehearsal action or approval can continue until one version is archived. Your books have not changed.</p><div className="month-conflict-list">{participantRows.map((row) => <div key={row.id}><span>{formatMonthLabel(row.monthKey)} · started {row.startedAt.slice(0, 10)}</span><button type="button" className="secondary" disabled={Boolean(busy)} onClick={() => void apply(`resolve-${row.id}`, async () => { const result = archiveMonthRehearsal(household, { rehearsalId: row.id, memberId }); await onApply(result.household, result.undo); })}>Archive this version</button></div>)}</div></section>;
+  }
   if (reportTarget && !isParticipant) return null;
 
   if (!rehearsal) {
@@ -164,7 +168,7 @@ export function MonthRehearsalPanel({ household, memberId, today, onApply, onOpe
     const result = startRehearsalTask(household, { rehearsalId: rehearsal.id, taskId, memberId, today });
     await onApply(result.household, result.undo);
     if (taskId === "opening-truth") setOpeningTaskId(taskId);
-    else onOpenTask?.(taskId);
+    else if (taskId !== "correction-practice" && taskId !== "month-review") onOpenTask?.(taskId);
   };
 
   const linkSuggested = async (taskId: MonthRehearsalTaskId, suggestionIndex: number) => {

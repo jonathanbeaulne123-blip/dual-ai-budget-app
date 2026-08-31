@@ -3832,7 +3832,9 @@ export function recordReconciliation(household: Household, input: {
     differenceCents === 0
       ? `${account.name} tied at ${statementDate}`
       : `${account.name} off by $${(Math.abs(differenceCents) / 100).toFixed(2)} at ${statementDate}`,
+    [id],
     [],
+    "recordReconciliation",
   );
 }
 
@@ -3850,7 +3852,8 @@ export function closeBooksMonth(household: Household, input: { monthKey: MonthKe
     ...next.kitchen.books.closedMonths,
     { id: closedPeriodId(input.monthKey), monthKey: input.monthKey, closedAt: nowIso(), closedBy: actor.createdBy },
   ];
-  return commit(previous, next, "Close month", `Closed ${input.monthKey}. That month accepts no new posts until you reopen it.`, []);
+  const periodId = closedPeriodId(input.monthKey);
+  return commit(previous, next, "Close month", `Closed ${input.monthKey}. That month accepts no new posts until you reopen it.`, [periodId], [], "closeBooksMonth");
 }
 
 export function reopenBooksMonth(household: Household, monthKey: MonthKey): CommitResult {

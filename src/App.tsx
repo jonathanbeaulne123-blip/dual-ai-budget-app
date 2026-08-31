@@ -121,6 +121,7 @@ import {
   type PersonalEnvelope,
   type LedgerView,
   type MonthKey,
+  type MonthRehearsalTaskId,
   type Split,
   type UndoToken,
   type Visibility,
@@ -325,6 +326,7 @@ import { defaultSubcategoryForMode } from "./addSlideshow.ts";
 import { FabSpeedDial } from "./FabSpeedDial.tsx";
 import { SitDownGuide } from "./SitDownGuide.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
+import { MonthRehearsalPanel } from "./MonthRehearsalPanel.tsx";
 import { playClink } from "./clink.ts";
 import { GoogleBridgeCard } from "./GoogleBridge.tsx";
 import {
@@ -2363,7 +2365,7 @@ export function App() {
         previous,
         candidate: next,
         confirmationId,
-        commandKind: token?.label ?? "commit",
+        commandKind: token?.commandKind ?? token?.label ?? "commit",
         postedIds: token?.postedIds ?? [],
         transportRequested,
         adapters: makeBooksAdapters({
@@ -3763,6 +3765,37 @@ export function App() {
     }));
   };
 
+  const openMonthRehearsalTask = (taskId: MonthRehearsalTaskId) => {
+    if (taskId === "income") {
+      openAddFor(null, "income");
+      return;
+    }
+    if (taskId === "groceries") {
+      openAddFor(null, "expense");
+      setForm((current) => ({ ...current, note: "Groceries", subcategoryId: "SUB-FOOD-GROCERIES" }));
+      return;
+    }
+    if (taskId === "bills") {
+      openAddFor(null, "expense");
+      setForm((current) => ({ ...current, note: "Bill", subcategoryId: "SUB-HOUSING-RENT" }));
+      return;
+    }
+    if (taskId === "shared-fund-purchase") {
+      openAddFor(null, "expense");
+      setForm((current) => ({ ...current, note: "Shared purchase", useHouseholdFund: true }));
+      return;
+    }
+    if (taskId === "card-payment") {
+      const card = household.accounts.find((account) => account.active && account.kind === "credit");
+      if (card) openPayCard(card);
+      else goTab("ledger");
+      return;
+    }
+    // Fund, refund, reconciliation, review, and close already have guarded
+    // routes in Books. The rehearsal points there but never confirms for them.
+    goTab("ledger");
+  };
+
   const openWallet = (accountId: string) => {
     setFocusedAccountId(accountId);
     goTab("ledger");
@@ -4070,6 +4103,16 @@ export function App() {
             </section>
           );
         })()}
+        {view === "household" ? (
+          <MonthRehearsalPanel
+            household={household}
+            memberId={session.memberId}
+            today={today}
+            surface="home"
+            onApply={(next, token) => persistLedgerWrite(preserveCurrentPersonal(next), token)}
+            onOpenTask={openMonthRehearsalTask}
+          />
+        ) : null}
         <DeferredSurface label="Office">
         <DeferredOffice
           household={displayHousehold}
@@ -4311,6 +4354,16 @@ export function App() {
 
       {tab === "more" && (
         <>
+          {view === "household" ? (
+            <MonthRehearsalPanel
+              household={household}
+              memberId={session.memberId}
+              today={today}
+              surface="manage"
+              onApply={(next, token) => persistLedgerWrite(preserveCurrentPersonal(next), token)}
+              onOpenTask={openMonthRehearsalTask}
+            />
+          ) : null}
           {environment === "development" && (
             <section className="card">
               <header><h2>Start from scratch</h2></header>

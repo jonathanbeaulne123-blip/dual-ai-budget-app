@@ -422,7 +422,7 @@ function requireReceiptArtifact(household: Household, rehearsal: MonthRehearsal,
     }
     if (task.taskId === "fund-reconciliation" && event.reconciliationTied !== true) throw new ValidationError("The Fund reconciliation must tie.");
     if (!inWeek(event.date)) throw new ValidationError("That Fund receipt belongs to a different rehearsal week.");
-    return { postedIds: [event.id], auditHash: receipt?.auditHash ?? null };
+    return { postedIds: [event.id], auditHash: acceptedReceipt.auditHash || null };
   }
   if (input.kind === "reconciliation") {
     const proofIds = new Set([input.receiptId, ...postedIds]);
@@ -443,12 +443,23 @@ function requireReceiptArtifact(household: Household, rehearsal: MonthRehearsal,
     if (requiredAccountIds.some((accountId) => !tiedAccountIds.has(accountId))) {
       throw new ValidationError("Reconcile every active shared account used in the month so far.");
     }
-    return { postedIds: tied.map((row) => row.id).sort(), auditHash: null };
+    const acceptedReceipts = tied.map((row) => household.commandReceipts.find((candidate) =>
+      candidate.commandKind === "recordReconciliation" && candidate.postedIds.includes(row.id),
+    ));
+    if (acceptedReceipts.some((candidate) => !candidate)) {
+      throw new ValidationError("Link reconciliations from their accepted real Confirms.");
+    }
+    const selectedReceipt = acceptedReceipts.find((candidate) => candidate?.postedIds.includes(input.receiptId)) ?? acceptedReceipts[0];
+    return { postedIds: tied.map((row) => row.id).sort(), auditHash: selectedReceipt?.auditHash || null };
   }
   if (input.kind === "month-close") {
     const row = household.kitchen.books.closedMonths.find((item) => item.id === input.receiptId && item.monthKey === rehearsal.monthKey);
     if (!row) throw new ValidationError("Link the closed rehearsal month.");
-    return { postedIds: [], auditHash: null };
+    const acceptedReceipt = household.commandReceipts.find((candidate) =>
+      candidate.commandKind === "closeBooksMonth" && candidate.postedIds.includes(row.id),
+    );
+    if (!acceptedReceipt) throw new ValidationError("Link the month close from its accepted real Confirm.");
+    return { postedIds: [row.id], auditHash: acceptedReceipt.auditHash || null };
   }
   if (input.kind === "practice") throw new ValidationError("Run the isolated correction practice from this rehearsal so Hearth can verify it.");
   if (input.kind === "review" && input.receiptId !== `REVIEW-${rehearsal.monthKey}-TOGETHER`) throw new ValidationError("Finish the human month review first.");
@@ -581,7 +592,7 @@ export function rehearsalReceiptSuggestions(household: Household, input: {
   }
   if (definition.receiptKinds.includes("month-close")) {
     const closed = household.kitchen.books.closedMonths.find((row) => row.monthKey === rehearsal.monthKey);
-    if (closed) candidates.push({ kind: "month-close", receiptId: closed.id, postedIds: [], summary: `${rehearsal.monthKey} closed`, date: closed.closedAt.slice(0, 10) as DateKey, amountCents: null, accountName: "Books" });
+    if (closed) candidates.push({ kind: "month-close", receiptId: closed.id, postedIds: [closed.id], summary: `${rehearsal.monthKey} closed`, date: closed.closedAt.slice(0, 10) as DateKey, amountCents: null, accountName: "Books" });
   }
   const valid: MonthRehearsalReceiptSuggestion[] = [];
   for (const candidate of candidates) {

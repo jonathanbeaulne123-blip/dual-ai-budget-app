@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   archiveMonthRehearsal,
   assembleHousehold,
+  bookBalanceAsOf,
   catalogHousehold,
+  closeBooksMonth,
   completeRehearsalCorrectionPractice,
   financialAuditHash,
   householdForAiDisclosure,
@@ -11,6 +13,7 @@ import {
   monthRehearsalReport,
   postEntry,
   postTransfer,
+  recordReconciliation,
   recordRehearsalOutcome,
   runMonthRehearsalCorrectionPractice,
   splitForSync,
@@ -209,6 +212,70 @@ describe("Bianca month rehearsal core", () => {
     household = savingsTransfer.household;
     household.commandReceipts.push(receipt("C-SAVINGS-TRANSFER", "postTransfer", savingsTransfer.postedIds));
     expect(() => linkRehearsalReceipt(household, { rehearsalId, taskId: "card-payment", memberId: BIANCA, today: "2026-09-09", kind: "command", receiptId: "C-SAVINGS-TRANSFER" })).toThrow(/credit account/i);
+  });
+
+  it("requires accepted Confirms for every account reconciliation and for month close", () => {
+    let { household, rehearsalId } = started();
+    household = startRehearsalTask(household, {
+      rehearsalId, taskId: "account-reconciliation", memberId: BIANCA, today: "2026-09-21", now: "2026-09-21T10:00:00Z",
+    }).household;
+    household = postEntry(household, {
+      date: "2026-09-01", type: "expense", amount: 10, accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-FOOD-GROCERIES", createdBy: BIANCA, confirmDuplicate: true,
+    }).household;
+    const accountIds = [...new Set(household.transactions
+      .filter((row) => row.date <= "2026-09-21" && row.visibility !== "personal")
+      .map((row) => row.accountId))]
+      .filter((accountId) => household.accounts.some((account) => account.id === accountId && account.active && account.scope !== "personal"));
+    const reconciliationIds: string[] = [];
+    for (const accountId of accountIds) {
+      const result = recordReconciliation(household, {
+        accountId,
+        statementDate: "2026-09-21",
+        statementAmount: bookBalanceAsOf(household, accountId, "2026-09-21") / 100,
+        createdBy: BIANCA,
+      });
+      expect(result.undo.commandKind).toBe("recordReconciliation");
+      expect(result.postedIds).toHaveLength(1);
+      reconciliationIds.push(result.postedIds[0]!);
+      household = result.household;
+    }
+    expect(() => linkRehearsalReceipt(household, {
+      rehearsalId, taskId: "account-reconciliation", memberId: BIANCA, today: "2026-09-21",
+      kind: "reconciliation", receiptId: reconciliationIds[0]!, postedIds: reconciliationIds,
+    })).toThrow(/accepted real Confirms/i);
+    household.commandReceipts.push(...reconciliationIds.map((id, index) => ({
+      confirmationId: `C-REC-${index}`, commandKind: "recordReconciliation", postedIds: [id],
+      identityHash: `IDENTITY-REC-${index}`, auditHash: `AUDIT-REC-${index}`, revision: index + 1,
+      acceptedAt: `2026-09-21T10:0${index}:30.000Z`,
+    })));
+    household = linkRehearsalReceipt(household, {
+      rehearsalId, taskId: "account-reconciliation", memberId: BIANCA, today: "2026-09-21",
+      kind: "reconciliation", receiptId: reconciliationIds[0]!, postedIds: reconciliationIds,
+    }).household;
+
+    household = startRehearsalTask(household, {
+      rehearsalId, taskId: "month-close", memberId: JONATHAN, today: "2026-09-30", now: "2026-09-30T10:00:00Z",
+    }).household;
+    const close = closeBooksMonth(household, { monthKey: "2026-09", createdBy: JONATHAN });
+    expect(close.undo.commandKind).toBe("closeBooksMonth");
+    expect(close.postedIds).toEqual(["CLOSE-2026-09"]);
+    household = close.household;
+    expect(() => linkRehearsalReceipt(household, {
+      rehearsalId, taskId: "month-close", memberId: JONATHAN, today: "2026-09-30",
+      kind: "month-close", receiptId: "CLOSE-2026-09",
+    })).toThrow(/accepted real Confirm/i);
+    household.commandReceipts.push({
+      confirmationId: "C-CLOSE", commandKind: "closeBooksMonth", postedIds: close.postedIds,
+      identityHash: "IDENTITY-CLOSE", auditHash: "AUDIT-CLOSE", revision: 10,
+      acceptedAt: "2026-09-30T10:00:30.000Z",
+    });
+    expect(linkRehearsalReceipt(household, {
+      rehearsalId, taskId: "month-close", memberId: JONATHAN, today: "2026-09-30",
+      kind: "month-close", receiptId: "CLOSE-2026-09",
+    }).household.monthRehearsals![0]!.weeks[3]!.tasks.find((row) => row.taskId === "month-close")!.receipt).toMatchObject({
+      postedIds: ["CLOSE-2026-09"], financialAuditHash: "AUDIT-CLOSE",
+    });
   });
 
   it("identifies every money-affecting task as receipt-bound", () => {

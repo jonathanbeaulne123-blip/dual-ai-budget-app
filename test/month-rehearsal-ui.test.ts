@@ -63,4 +63,33 @@ describe("Bianca month rehearsal UI", () => {
     expect(panelSource).toContain("This export contains the clarity and friction notes");
     expect(css).toContain("@media(max-width:520px)");
   });
+
+  it("mounts only on the Household Home and More surfaces without adding navigation", () => {
+    const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
+    expect(app).toContain('import { MonthRehearsalPanel } from "./MonthRehearsalPanel.tsx"');
+    expect(app.match(/<MonthRehearsalPanel/g)).toHaveLength(2);
+    expect(app).toMatch(/tab === "home"[\s\S]*view === "household"[\s\S]*surface="home"/);
+    expect(app).toMatch(/tab === "more"[\s\S]*view === "household"[\s\S]*surface="manage"/);
+    expect(app).toContain("persistLedgerWrite(preserveCurrentPersonal(next), token)");
+    expect(app).toContain("token?.commandKind ?? token?.label ?? \"commit\"");
+    expect(app).not.toMatch(/<button[^>]*>Our month<\/button>/);
+  });
+
+  it("does not disclose a conflicting rehearsal to another household member", () => {
+    const started = startMonthRehearsal(emptyDevelopment(), {
+      monthKey: "2026-09",
+      biancaParticipantId: "MEM-001",
+      jonathanPartnerId: "MEM-002",
+      startedByMemberId: "MEM-001",
+      now: "2026-08-28T16:00:00Z",
+    }).household;
+    started.monthRehearsals!.push({ ...structuredClone(started.monthRehearsals![0]!), id: "REHEARSAL-CONFLICT" });
+    started.members.push({ id: "MEM-003", name: "Guest", color: "#555555", active: true, updatedAt: "2026-01-01T00:00:00.000Z" });
+    expect(renderToStaticMarkup(createElement(MonthRehearsalPanel, {
+      household: started, memberId: "MEM-003", today: "2026-09-01", onApply: () => undefined,
+    }))).toBe("");
+    expect(renderToStaticMarkup(createElement(MonthRehearsalPanel, {
+      household: started, memberId: "MEM-001", today: "2026-09-01", onApply: () => undefined,
+    }))).toContain("Two phones started different versions");
+  });
 });
