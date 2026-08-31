@@ -6,8 +6,8 @@
 - Risk: High.
 - Dual Course: Budget `+5`; Engagement `+3`.
 - Branch: `codex/bianca-month-one` in the isolated `Budget App - Bianca Month One` worktree.
-- Current mainline baseline: `244bc67c21df389e22b5aa0dd764c5e1d4bf68c7`; prior heads are retained on `codex/bianca-month-one-pre-main-20260831` and `codex/bianca-month-one-pre-release-20260831`.
-- Current implementation: rebased commit `dc4abd8` on `codex/bianca-month-one`, with full-App and D-180 command-event regressions plus receiver hardening; release-review documentation follows on the branch.
+- Current mainline baseline: `da7fe2e2b079d88a8d88e934f0641be932654b86`; prior release heads are retained on named recovery refs.
+- Current implementation: rebased commit `bb6fb0c` on `codex/bianca-month-one`, with full-App and D-180 command-event regressions plus receiver hardening; release-review documentation follows on the branch.
 - No push, merge, deploy, hosted migration, provider, Production, scaling, shift-intake, product launch, or real household values without Jonathan's separate approval.
 
 ## Implemented behavior

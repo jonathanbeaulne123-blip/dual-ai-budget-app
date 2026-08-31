@@ -6,9 +6,9 @@
 - **Assignee or AI:** Codex
 - **Repository:** Hearth
 - **Branch:** `codex/bianca-month-one`
-- **Baseline SHA:** current `origin/main` at `244bc67c21df389e22b5aa0dd764c5e1d4bf68c7`
-- **Recovery refs:** `codex/bianca-month-one-pre-main-20260831`; pre-release `codex/bianca-month-one-pre-release-20260831`
-- **Rebased implementation SHA:** `dc4abd8`
+- **Baseline SHA:** current `origin/main` at `da7fe2e2b079d88a8d88e934f0641be932654b86`
+- **Recovery refs:** `codex/bianca-month-one-pre-main-20260831`; `codex/bianca-month-one-pre-release-20260831`; `codex/bianca-month-one-pre-release2-20260831`
+- **Rebased implementation SHA:** `bb6fb0c`
 - **Risk:** High
 - **Decision:** D-183
 - **Environment impact:** Development only
@@ -39,7 +39,7 @@ Bianca's four-week rehearsal stays inside the Hearth Jonathan and Bianca actuall
 
 ## Acceptance
 
-- [x] Branch is based on current `origin/main@244bc67`; both former heads have recoverable named refs.
+- [x] Branch is based on current `origin/main@da7fe2e`; each former release head has a recoverable named ref.
 - [x] An active Bianca rehearsal mounts inside the actual current `App` and opens the current income Add slideshow.
 - [x] Rehearsal start/progress replays to a partner device through current command events.
 - [x] Rehearsal commits keep `postedIds: []` and do not change the financial audit hash.
@@ -54,6 +54,7 @@ Bianca's four-week rehearsal stays inside the Hearth Jonathan and Bianca actuall
 
 - 2026-08-31: fetched current main at `1d82a57976af006d0fcf8683d6920a6277738e40`, created `codex/bianca-month-one-pre-main-20260831`, and rebased the working branch. The only conflict preserved both current synthetic-fixture merge and rehearsal command-receipt merge.
 - 2026-08-31: release-time fetch found Google-first household entry at `origin/main@244bc67`. A second recovery ref was created and the five Bianca commits rebased cleanly with no conflicts. The combined entry/Bianca focused suite passed **96/96 across 16 files** and TypeScript passed before the decision-collision repair.
+- 2026-08-31: independent release review caught the D-182 collision; Bianca moved uniquely to D-183. Before release, remote `main` advanced to the D-182 Development proof at `da7fe2e`; a third recovery ref was created and the six commits rebased cleanly.
 - 2026-08-31: post-rebase focused rehearsal/opening/continuity/App/Add run passed **57/57 across nine files**; TypeScript passed.
 - 2026-08-31: after adding current App and D-180 command-event contracts, the focused materialization/App run passed **30/30 across five files**; TypeScript passed.
 - 2026-08-31: expanded current-main focused verification passed **83/83 across 14 files**; AI-surface verification passed.
@@ -67,7 +68,7 @@ Bianca's four-week rehearsal stays inside the Hearth Jonathan and Bianca actuall
 
 - Local command-log replay proves the current event contract, not authenticated hosted transport on two real phones.
 - The client materialization SHA detects corruption but is not a server authority signature. An authenticated participant with a deliberately compromised client could recompute it; closing that requires separately authorized server-side validation/signing work.
-- The rebased implementation is committed locally at `dc4abd8`; release-review documentation follows on the branch. No remote action has occurred.
+- The final rebased implementation is committed locally at `bb6fb0c`; release-review documentation follows on the branch. No remote action has occurred.
 
 ## Handoff
 
