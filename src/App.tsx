@@ -77,6 +77,7 @@ import {
   detectDeviceTimeZone,
   COMMON_TIME_ZONES,
   formatZoneLabel,
+  formatZoneDateTime,
   loadPhonePlacePrefs,
   savePhonePlacePrefs,
   locationLabel,
@@ -265,6 +266,12 @@ import { ConfirmSheet } from "./Confirm.tsx";
 import type { RepeatingDraft } from "./RepeatingForm.tsx";
 import type { WorkShiftDraft } from "./WorkShiftFlow.tsx";
 import { resolveDuplicateRetry } from "./shiftDuplicateRetry.ts";
+import {
+  HouseholdEntryCard,
+  discoveredHouseholdCardModels,
+  replicaHouseholdCardModels,
+  type InviteFlowState,
+} from "./HouseholdEntryCard.tsx";
 import { createShiftScanScope } from "./shiftScanScope.ts";
 import { sealShiftBibleEvidence } from "./imports/evidenceClient.ts";
 import {
@@ -493,7 +500,7 @@ export function App() {
   const [saveRepeatingPostFirst, setSaveRepeatingPostFirst] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   const [splitPercents, setSplitPercents] = useState<Record<string, number>>({ "MEM-001": 50, "MEM-002": 50 });
-  const [now] = useState(() => new Date());
+  const [now, setNow] = useState(() => new Date());
   const [session, setSession] = useState<Session | null>(initialStartup.session);
   const sessionRef = useRef<Session | null>(session);
   sessionRef.current = session;
@@ -517,6 +524,8 @@ export function App() {
   const [supabaseAuthReturned, setSupabaseAuthReturned] = useState(false);
   const [inviteInput, setInviteInput] = useState("");
   const [pendingAuthInvite, setPendingAuthInvite] = useState<string | null>(null);
+  const [inviteFlowState, setInviteFlowState] = useState<InviteFlowState>("idle");
+  const [highlightedHouseholdId, setHighlightedHouseholdId] = useState<string | null>(null);
   const [welcomeMode, setWelcomeMode] = useState<"home" | "join" | "qr" | "new">("home");
   const [welcomeIdentity, setWelcomeIdentity] = useState<WelcomeIdentity | null>(null);
   const [newHouseholdDraft, setNewHouseholdDraft] = useState({
@@ -819,6 +828,16 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    const refreshClock = () => setNow(new Date());
+    const interval = window.setInterval(refreshClock, 30_000);
+    document.addEventListener("visibilitychange", refreshClock);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refreshClock);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!confirm) return;
     setToast(null);
     confirmPanelRef.current?.focus();
@@ -873,6 +892,7 @@ export function App() {
     if (stored) {
       setPendingAuthInvite(stored.token);
       setInviteInput(stored.token);
+      setInviteFlowState("awaiting-google");
       if (stored.environment !== environment) setEnvironment(stored.environment);
       setWelcomeMode("join");
     }
@@ -881,6 +901,7 @@ export function App() {
       const env = authInvite.environment ?? environment;
       setInviteInput(authInvite.token);
       setPendingAuthInvite(authInvite.token);
+      setInviteFlowState("awaiting-google");
       savePendingAuthInvite({ token: authInvite.token, environment: env });
       if (authInvite.environment && authInvite.environment !== environment) {
         setEnvironment(authInvite.environment);
@@ -2108,53 +2129,72 @@ export function App() {
   }
 
   async function redeemAuthInviteToken(token: string): Promise<void> {
-    if (!supabaseAuthEnabled()) {
-      throw new Error("Auth invites need an Auth-enabled kitchen build.");
-    }
-    if (!hostedContinuityAllowed(environment)) {
-      throw new Error(inviteReasonMessage("continuity-disabled"));
-    }
     savePendingAuthInvite({ token, environment });
     setPendingAuthInvite(token);
-    let authSession = await ensureSupabaseSession(environment);
-    if (!authSession) {
-      setInviteInput(token);
-      setWelcomeMode("join");
-      startSupabaseGoogleSignIn(environment);
-      return;
+    setInviteInput(token);
+    setWelcomeMode("join");
+    try {
+      if (!supabaseAuthEnabled()) {
+        throw new Error("Auth invites need an Auth-enabled kitchen build.");
+      }
+      if (!hostedContinuityAllowed(environment)) {
+        throw new Error(inviteReasonMessage("continuity-disabled"));
+      }
+      const authSession = await ensureSupabaseSession(environment);
+      if (!authSession) {
+        setInviteFlowState("awaiting-google");
+        rememberWelcomeGoogleIntent("login");
+        startSupabaseGoogleSignIn(environment);
+        return;
+      }
+      setInviteFlowState("redeeming");
+      const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
+      const redeemed = await redeemHouseholdInvite({
+        environment,
+        inviteToken: token,
+        displayName: authSession.displayName,
+        config: cloudConfig,
+      });
+      if (!redeemed.ok) {
+        throw new Error(inviteReasonMessage(redeemed.reason));
+      }
+      if (redeemed.environment !== environment) {
+        throw new Error(`This invitation belongs to ${redeemed.environment}. Switch to that environment and try again.`);
+      }
+      setInviteFlowState("refreshing");
+      const registered = await registerCurrentHouseholdDevice({
+        environment,
+        deviceId: localDeviceId(),
+        deviceLabel: describeDeviceLabel(),
+        config: cloudConfig,
+      });
+      if (!registered.ok) throw new Error(inviteReasonMessage(registered.reason));
+      const identity = { email: authSession.email, subject: authSession.googleSubject };
+      const found = await discoverContinuityMemberships(identity, environment, cloudConfig);
+      const match = found.find((row) => row.household.householdId === redeemed.householdId)
+        ?? (redeemed.memberId
+          ? found.find((row) => row.memberId === redeemed.memberId)
+          : undefined);
+      if (!match) {
+        throw new Error("Invitation accepted, but the household list did not refresh. Try the invitation again; redemption is safe to repeat.");
+      }
+      setWelcomeIdentity({
+        ...identity,
+        displayName: authSession.displayName,
+        grantedScopes: ["openid", "email", "profile"],
+      });
+      setDiscoveredLedgers(found);
+      setHighlightedHouseholdId(match.household.householdId);
+      setPendingAuthInvite(null);
+      clearPendingAuthInvite();
+      rememberWelcomeGoogleIntent(null);
+      setInviteFlowState("ready");
+      setWelcomeMode("home");
+      setError("");
+    } catch (caught) {
+      setInviteFlowState("error");
+      throw caught;
     }
-    const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
-    const redeemed = await redeemHouseholdInvite({
-      environment,
-      inviteToken: token,
-      displayName: authSession.displayName,
-      config: cloudConfig,
-    });
-    if (!redeemed.ok) {
-      throw new Error(inviteReasonMessage(redeemed.reason));
-    }
-    if (redeemed.environment !== environment) {
-      setEnvironment(redeemed.environment);
-    }
-    const registered = await registerCurrentHouseholdDevice({
-      environment: redeemed.environment,
-      deviceId: localDeviceId(),
-      deviceLabel: describeDeviceLabel(),
-      config: cloudConfig,
-    });
-    if (!registered.ok) throw new Error(inviteReasonMessage(registered.reason));
-    const identity = { email: authSession.email, subject: authSession.googleSubject };
-    const found = await discoverContinuityMemberships(identity, redeemed.environment, cloudConfig);
-    const match = found.find((row) => row.household.householdId === redeemed.householdId)
-      ?? (redeemed.memberId
-        ? found.find((row) => row.memberId === redeemed.memberId)
-        : undefined);
-    if (!match) {
-      throw new Error("Invite accepted, but this device could not open the household yet. Try Continue with Google.");
-    }
-    setPendingAuthInvite(null);
-    clearPendingAuthInvite();
-    await openDiscoveredLedger(match);
   }
 
   async function continueWithGoogle(intent?: WelcomeGoogleIntent): Promise<void> {
@@ -2216,12 +2256,6 @@ export function App() {
           grantedScopes: googleSession.grantedScopes,
         };
       }
-      if (welcomeIntent === "create") {
-        rememberWelcomeGoogleIntent(null);
-        setWelcomeIdentity(identityDetails);
-        setWelcomeMode("new");
-        return;
-      }
       let found = await discoverContinuityMemberships(identity, environment, cloudConfig);
       if (!found.length && supabaseAuthEnabled() && cloudConfig?.accessToken) {
         const bound = await bindGoogleMemberships({ environment, config: cloudConfig });
@@ -2252,14 +2286,18 @@ export function App() {
           );
         }
         setWelcomeIdentity(identityDetails);
-        setWelcomeMode("new");
+        setDiscoveredLedgers([]);
+        setWelcomeMode(welcomeIntent === "create" ? "new" : "home");
         return;
       }
-      const only = found[0];
       rememberWelcomeGoogleIntent(null);
-      if (found.length === 1 && only) await openDiscoveredLedger(only);
-      else setDiscoveredLedgers(found);
+      setWelcomeIdentity(identityDetails);
+      setHighlightedHouseholdId(null);
+      setInviteFlowState("idle");
+      setWelcomeMode(welcomeIntent === "create" ? "new" : "home");
+      setDiscoveredLedgers(found);
     } catch (caught) {
+      if (pendingAuthInvite || loadPendingAuthInvite()) setInviteFlowState("error");
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
       setBusy(false);
@@ -2903,8 +2941,66 @@ export function App() {
     rememberWelcomeGoogleIntent(null);
     setWelcomeIdentity(null);
     setDiscoveredLedgers([]);
+    setHighlightedHouseholdId(null);
+    setInviteFlowState("idle");
+    setPendingAuthInvite(null);
+    setInviteInput("");
+    clearPendingAuthInvite();
     setWelcomeMode("home");
     setError("");
+  }
+
+  function dismissWelcomeJoin() {
+    setPendingAuthInvite(null);
+    setInviteInput("");
+    clearPendingAuthInvite();
+    setInviteFlowState("idle");
+    setWelcomeMode("home");
+    setError("");
+  }
+
+  function tryInviteWithAnotherGoogleAccount() {
+    const token = pendingAuthInvite ?? loadPendingAuthInvite()?.token ?? authInviteTokenFromText(inviteInput);
+    clearGoogleSessions(environment);
+    clearSupabaseSession(environment);
+    rememberWelcomeGoogleIntent("login");
+    setWelcomeIdentity(null);
+    setDiscoveredLedgers([]);
+    setHighlightedHouseholdId(null);
+    setError("");
+    setInviteFlowState("awaiting-google");
+    setWelcomeMode("join");
+    if (token) savePendingAuthInvite({ token, environment });
+    startSupabaseGoogleSignIn(environment);
+  }
+
+  async function promptDeleteDiscoveredHousehold(found: DiscoveredHousehold): Promise<void> {
+    setBusy(true);
+    setError("");
+    try {
+      const authSession = await ensureSupabaseSession(environment);
+      if (!authSession) throw new Error("Continue with Google before deleting a household.");
+      const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
+      const identity = { email: authSession.email, subject: authSession.googleSubject };
+      const role = await fetchContinuityMembershipRole({
+        householdId: found.household.householdId,
+        memberId: found.memberId,
+        identity,
+        environment,
+        config: cloudConfig,
+      });
+      setGuard({
+        kind: "delete-household",
+        householdId: found.household.householdId,
+        name: found.household.name,
+        memberId: found.memberId,
+        role,
+      });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function removeHouseholdFromDevice(input: {
@@ -3126,15 +3222,15 @@ export function App() {
       || loadGoogleSession(environment, "__welcome__")
       || loadSupabaseSession(environment),
     );
+    const householdCards = discoveredHouseholdCardModels(discoveredLedgers, now, displayZone);
+    const foundById = new Map(discoveredLedgers.map((found) => [found.household.householdId, found]));
     return (
       <div className="welcome">
-        <div className="welcome-card">
+        <div className="welcome-card" data-welcome-mode={welcomeMode}>
           <p className="kicker">CAD · Toronto books · two people</p>
           <img src="/hercules-mark.svg" alt="" />
           <h1>Hearth</h1>
-          <p>
-            Two phones. One journal. CAD. Toronto civil books. Each phone keeps its own clock. Hercules loafs while you post groceries.
-          </p>
+          <p>Come home to the right books on every device. Google confirms who you are; Hearth confirms which households belong to you.</p>
           {welcomeMode === "join" ? (
             <DeferredSurface label="Join Hearth">
             <DeferredWelcomeJoin
@@ -3150,7 +3246,10 @@ export function App() {
                 setPendingAuthInvite(token);
                 await redeemAuthInviteToken(token);
               }}
-              onBack={() => { setWelcomeMode("home"); setError(""); }}
+              inviteFlowState={inviteFlowState}
+              onScanQr={() => { setWelcomeMode("qr"); setError(""); }}
+              onUseAnotherGoogle={tryInviteWithAnotherGoogleAccount}
+              onBack={dismissWelcomeJoin}
             />
             </DeferredSurface>
           ) : welcomeMode === "qr" ? (
@@ -3163,6 +3262,8 @@ export function App() {
                 const token = authInviteTokenFromText(raw);
                 if (token) {
                   setInviteInput(token);
+                  setPendingAuthInvite(token);
+                  setInviteFlowState("awaiting-google");
                   await redeemAuthInviteToken(token);
                   return;
                 }
@@ -3212,7 +3313,8 @@ export function App() {
                 setError(caught instanceof Error ? caught.message : String(caught));
               }
             }}>
-              <p className="kicker">Create household with Google</p>
+              <p className="kicker">New household</p>
+              <h2>Create a household</h2>
               <p className="muted">Signed in as {welcomeIdentity?.email || "Google account"}. Name the household and its ledgers.</p>
               <label htmlFor="new-household-name">Household name</label>
               <input
@@ -3254,7 +3356,7 @@ export function App() {
                 {busy ? "Creating…" : "Create household"}
               </button>
               <button className="ghost" type="button" style={{ width: "100%", marginTop: 8 }} onClick={() => { setWelcomeMode("home"); setError(""); }}>
-                Back
+                Back to households
               </button>
               {welcomeSignedIn && (
                 <button className="ghost" type="button" style={{ width: "100%", marginTop: 8 }} disabled={busy} onClick={() => signOutWelcomeGoogle()}>
@@ -3264,129 +3366,93 @@ export function App() {
             </form>
           ) : (
             <>
-              {discoveredLedgers.length === 0 ? <>
-                <div className="welcome-entry-grid" aria-label="Ways to enter Hearth">
-                <button className="welcome-entry" disabled={busy || !googleEntryAvailable} onClick={() => void continueWithGoogle("create")}>
-                  <strong>Create household with Google</strong>
-                  <span>Sign in, name a household, then enter its shared ledger.</span>
-                </button>
-                <button className="welcome-entry" disabled={busy || !googleEntryAvailable} onClick={() => void continueWithGoogle("login")}>
-                  <strong>{busy ? "Finding your ledgers…" : "Login with Google"}</strong>
-                  <span>See your households, choose one, and open its shared ledger.</span>
-                </button>
-                <button className="welcome-entry" disabled={busy} onClick={() => { setWelcomeMode("qr"); setError(""); }}>
-                  <strong>Join with QR code</strong>
-                  <span>On mobile, open the camera and scan a household invite.</span>
-                </button>
-                </div>
+              {!welcomeSignedIn ? (
+                <section className="welcome-google-first" aria-labelledby="welcome-google-title">
+                  <h2 id="welcome-google-title">Your household books, wherever you are</h2>
+                  <button className="primary welcome-google-first__button" disabled={busy || !googleEntryAvailable} onClick={() => void continueWithGoogle("login")}>
+                    {busy ? "Finding your households…" : "Continue with Google"}
+                  </button>
+                  <p className="muted">One private account door. No phone has to stay online as the host.</p>
                 {!googleEntryAvailable && (
-                  <p className="muted">Google sign-in is not configured in this build. QR and received invite links remain available.</p>
+                    <p className="muted" role="status">Google sign-in is not configured in this build. Advanced recovery remains available.</p>
                 )}
-                {environment === "development" && (
-                  <>
-                    <p className="kicker" id="start-from-scratch-home">Wipe leftover test households</p>
-                    <button
-                      className="danger"
-                      type="button"
-                      aria-describedby="start-from-scratch-home"
-                      disabled={busy}
-                      onClick={() => setGuard({ kind: "reset-development" })}
-                    >
-                      {busy ? "Starting over…" : "Start from scratch"}
-                    </button>
-                  </>
-                )}
-              </> : (
+                  <button className="ghost welcome-google-first__recovery" type="button" disabled={busy} onClick={() => { setWelcomeMode("join"); setError(""); }}>
+                    I have an invitation or recovery code
+                  </button>
+                </section>
+              ) : (
                 <section className="welcome-household-list">
                   <p className="kicker">Your Google households</p>
-                  <h2>Which household are you entering?</h2>
-                  {discoveredLedgers.map((found) => {
-                    const member = found.household.members.find((item) => item.id === found.memberId);
-                    return (
-                      <div key={found.household.householdId} className="welcome-household-row">
-                        <button
-                          className="primary"
-                          disabled={busy}
-                          onClick={() => void openDiscoveredLedger(found).catch((caught) => {
+                  <h2>Choose your household</h2>
+                  <p className="muted">Signed in as {welcomeIdentity?.email || loadSupabaseSession(environment)?.email || "Google account"}.</p>
+                  {householdCards.length === 0 && (
+                    <div className="welcome-household-empty" role="status">
+                      <strong>No households yet</strong>
+                      <span>Create one here, or accept an invitation from another household.</span>
+                    </div>
+                  )}
+                  <div className="welcome-household-grid">
+                    {householdCards.map((model) => {
+                      const found = foundById.get(model.householdId);
+                      if (!found) return null;
+                      return (
+                        <HouseholdEntryCard
+                          key={model.householdId}
+                          model={model}
+                          busy={busy}
+                          highlighted={model.householdId === highlightedHouseholdId}
+                          onOpen={() => void openDiscoveredLedger(found).catch((caught) => {
                             setError(caught instanceof Error ? caught.message : String(caught));
                           })}
-                        >
-                          {found.household.name} · {member?.name ?? "me"}
-                        </button>
-                        {environment === "development" && (
-                          <button
-                            className="danger ghost"
-                            disabled={busy}
-                            onClick={() => {
-                              void (async () => {
-                                setBusy(true);
-                                try {
-                                  const authSession = await ensureSupabaseSession(environment);
-                                  if (!authSession) {
-                                    throw new Error("Continue with Google before deleting a household.");
-                                  }
-                                  const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
-                                  const identity = { email: authSession.email, subject: authSession.googleSubject };
-                                  const role = await fetchContinuityMembershipRole({
-                                    householdId: found.household.householdId,
-                                    memberId: found.memberId,
-                                    identity,
-                                    environment,
-                                    config: cloudConfig,
-                                  });
-                                  setGuard({
-                                    kind: "delete-household",
-                                    householdId: found.household.householdId,
-                                    name: found.household.name,
-                                    memberId: found.memberId,
-                                    role,
-                                  });
-                                } catch (caught) {
-                                  setError(caught instanceof Error ? caught.message : String(caught));
-                                } finally {
-                                  setBusy(false);
-                                }
-                              })();
-                            }}
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
+                          actions={environment === "development" ? (
+                            <details className="household-entry-card__menu">
+                              <summary>Household options</summary>
+                              <button className="danger ghost" type="button" disabled={busy} onClick={() => void promptDeleteDiscoveredHousehold(found)}>
+                                Delete Development household
+                              </button>
+                            </details>
+                          ) : undefined}
+                        />
+                      );
+                    })}
+                  </div>
+                  {inviteFlowState === "ready" && <p className="welcome-invite-ready" role="status">Invitation accepted. Choose the highlighted household when you are ready.</p>}
+                  <div className="welcome-signed-actions" aria-label="Household actions">
+                    <button className="primary" type="button" disabled={busy} onClick={() => { setWelcomeMode("new"); setError(""); }}>
+                      Create household
+                    </button>
+                    <button className="ghost" type="button" disabled={busy} onClick={() => { setWelcomeMode("join"); setError(""); setInviteFlowState(pendingAuthInvite ? "awaiting-google" : "idle"); }}>
+                      Join household
+                    </button>
+                  </div>
                   {environment === "development" && (
-                    <>
-                      <p className="kicker" id="start-from-scratch-list">Wipe leftover test households</p>
-                      <button
-                        className="danger"
-                        type="button"
-                        aria-describedby="start-from-scratch-list"
-                        disabled={busy}
-                        onClick={() => setGuard({ kind: "reset-development" })}
-                      >
+                    <details className="welcome-danger-zone">
+                      <summary>Development reset tools</summary>
+                      <p className="muted" id="start-from-scratch-list">This removes disposable Development households. It is not an opening action.</p>
+                      <button className="danger" type="button" aria-describedby="start-from-scratch-list" disabled={busy} onClick={() => setGuard({ kind: "reset-development" })}>
                         {busy ? "Starting over…" : "Start from scratch"}
                       </button>
-                    </>
+                    </details>
                   )}
-                  <button className="ghost" disabled={busy} onClick={() => setDiscoveredLedgers([])}>Back</button>
-                  {welcomeSignedIn && (
-                    <button className="ghost" disabled={busy} onClick={() => signOutWelcomeGoogle()}>
-                      Sign out of Google
-                    </button>
-                  )}
+                  <button className="ghost welcome-sign-out" type="button" disabled={busy} onClick={() => signOutWelcomeGoogle()}>
+                    Sign out of Google
+                  </button>
                 </section>
               )}
               <KitchenNotice message={error} onDismiss={() => setError("")} />
-              {discoveredLedgers.length === 0 && (
+              {!welcomeSignedIn && (
                 <button className="ghost welcome-demo" onClick={openDemoTable}>
                   Open the demo kitchen table
                 </button>
               )}
-              {welcomeSignedIn && welcomeMode === "home" && discoveredLedgers.length === 0 && (
-                <button className="ghost" type="button" style={{ width: "100%", marginTop: 8 }} disabled={busy} onClick={() => signOutWelcomeGoogle()}>
-                  Sign out of Google
-                </button>
+              {!welcomeSignedIn && environment === "development" && (
+                <details className="welcome-danger-zone">
+                  <summary>Development reset tools</summary>
+                  <p className="muted" id="start-from-scratch-home">Remove leftover disposable test households only.</p>
+                  <button className="danger" type="button" aria-describedby="start-from-scratch-home" disabled={busy} onClick={() => setGuard({ kind: "reset-development" })}>
+                    {busy ? "Starting over…" : "Start from scratch"}
+                  </button>
+                </details>
               )}
             </>
           )}
@@ -3398,6 +3464,8 @@ export function App() {
   }
 
   if (!session) {
+    const signedOutHouseholdCards = discoveredHouseholdCardModels(discoveredLedgers, now, displayZone);
+    const signedOutFoundById = new Map(discoveredLedgers.map((found) => [found.household.householdId, found]));
     return (
       <div className="welcome">
         <div className="welcome-card">
@@ -3414,22 +3482,23 @@ export function App() {
               Continue with Google
             </button>
           )}
-          {discoveredLedgers.map((found) => {
-            const member = found.household.members.find((item) => item.id === found.memberId);
-            return (
-              <button
-                key={found.household.householdId}
-                className="ghost"
-                style={{ width: "100%", marginBottom: 8 }}
-                disabled={busy}
-                onClick={() => void openDiscoveredLedger(found).catch((caught) => {
-                  setError(caught instanceof Error ? caught.message : String(caught));
-                })}
-              >
-                Open {found.household.name} as {member?.name ?? "me"}
-              </button>
-            );
-          })}
+          <div className="welcome-household-grid">
+            {signedOutHouseholdCards.map((model) => {
+              const found = signedOutFoundById.get(model.householdId);
+              if (!found) return null;
+              return (
+                <HouseholdEntryCard
+                  key={model.householdId}
+                  model={model}
+                  busy={busy}
+                  highlighted={model.householdId === highlightedHouseholdId}
+                  onOpen={() => void openDiscoveredLedger(found).catch((caught) => {
+                    setError(caught instanceof Error ? caught.message : String(caught));
+                  })}
+                />
+              );
+            })}
+          </div>
           <KitchenNotice message={error} onDismiss={() => setError("")} />
           {household.members.filter((member) => member.active).map((member) => (
             <button
@@ -3837,12 +3906,12 @@ export function App() {
           <img src="/hercules-mark.svg" alt="" />
           <div>
             <h1>Hearth</h1>
-            <p>
-              {household.members.find((member) => member.id === session.memberId)?.name}
+            <p className="brand__identity" aria-label="Current member, household, and device time">
+              <span>{household.members.find((member) => member.id === session.memberId)?.name ?? "Member"}</span>
               {" · "}
-              {view === "personal" ? "personal" : "household"}
+              <span>{household.name}</span>
               {" · "}
-              {today}
+              <time dateTime={now.toISOString()}>{formatZoneDateTime(now, displayZone)}</time>
             </p>
           </div>
         </div>
@@ -3949,21 +4018,21 @@ export function App() {
         </div>
       )}
       {replicas.length > 1 && (
-        <label className="ledger-switcher">
-          <span>Open ledger</span>
-          <select
-            aria-label="Open another ledger"
-            value={household.householdId}
-            disabled={busy}
-            onChange={(event) => void switchLedger(event.target.value)}
-          >
-            {replicas.map((replica) => (
-              <option key={replica.householdId} value={replica.householdId}>
-                {replica.name} · revision {replica.revision}
-              </option>
+        <details className="ledger-switcher">
+          <summary>Switch household</summary>
+          <p className="muted">Households available on this device. Google membership remains the authority for hosted access.</p>
+          <div className="ledger-switcher__grid">
+            {replicaHouseholdCardModels(replicas, now, displayZone).map((model) => (
+              <HouseholdEntryCard
+                key={model.householdId}
+                model={model}
+                busy={busy}
+                current={model.householdId === household.householdId}
+                onOpen={() => void switchLedger(model.householdId)}
+              />
             ))}
-          </select>
-        </label>
+          </div>
+        </details>
       )}
       <div className="view-switch" role="tablist" aria-label="Ledger view">
         {(["household", "personal"] as LedgerView[]).map((item) => (

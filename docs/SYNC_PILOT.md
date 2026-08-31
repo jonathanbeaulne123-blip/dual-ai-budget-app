@@ -2,6 +2,12 @@
 
 > **Status — 2026-08-31:** the pilot implementation is merged through [PR #256](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/256) as exact `main@e9c5127594a9fd4e6d8b203f19db57cc4b31390a` and deployed to the Development kitchen. It is **not activated for daily use or proven through the live matrix or fourteen-day rehearsal**.
 
+## Entry and household-identity repair — local candidate
+
+D-182 adds the human entry layer needed before the live matrix: one Google account door, an authorized-household chooser even for a single result, honest accepted-edit timestamps on every household card, invitation/QR redirect recovery, and a member · household · device-time header. A successful invite refreshes and highlights the joined household for an explicit Open action instead of silently changing ledgers. Phrase and Hearth Pass entry remain under Advanced recovery.
+
+This repair reuses the existing membership and snapshot contracts. It adds no migration, hosted API, secret, Production flag, or hosted-data mutation. It is local on `codex/google-first-household-entry`; independent Release review, push, merge, deployment, live OAuth/invite proof, and the rehearsal remain open.
+
 ## Claim boundary
 
 This is a Development-only Jonathan/Bianca rehearsal of ledger-native command sync. It is not literal field co-editing, a promise that every collision is automatic, a Production-readiness claim, or permission to make Hearth the sole household record.

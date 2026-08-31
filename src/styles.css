@@ -314,11 +314,15 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
   gap: 12px;
   margin-bottom: 18px;
 }
-.brand { display: flex; align-items: center; gap: 10px; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand > div { min-width: 0; }
 .brand img { width: 36px; height: 36px; border-radius: 10px; }
 .welcome-card img { width: 72px; height: 72px; }
 .brand h1 { font-size: 22px; }
 .brand p { margin: 0; color: var(--muted); font-size: 12px; }
+.brand__identity { display: block; max-width: min(72vw, 720px); line-height: 1.35; }
+.brand__identity span,
+.brand__identity time { overflow-wrap: anywhere; }
 
 .pill {
   border: 1px solid var(--line);
@@ -1099,7 +1103,7 @@ input, select, textarea {
 .conflict-actions button { min-height: 44px; }
 .welcome { min-height: 100dvh; display: grid; place-items: center; padding: 24px; }
 .welcome-card {
-  max-width: 440px;
+  width: min(100%, 620px);
   background: var(--card);
   border-radius: 28px;
   padding: 28px;
@@ -1109,36 +1113,102 @@ input, select, textarea {
 }
 .welcome-card img { width: 72px; height: 72px; border-radius: 20px; }
 .welcome-card p { color: var(--muted); line-height: 1.5; }
-.welcome-entry-grid {
+.welcome-card h1 { margin-bottom: 6px; }
+.welcome-card h2 { font-family: var(--display); }
+.welcome-google-first {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin: 18px 0 12px;
-  text-align: left;
+  gap: 12px;
+  margin-top: 22px;
 }
-.welcome-entry {
-  min-height: 112px;
-  padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--paper);
-  color: var(--ink);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 6px;
-}
-.welcome-entry strong { font-family: var(--display); font-size: 1rem; }
-.welcome-entry span { color: var(--muted); font-size: 0.82rem; line-height: 1.35; }
-.welcome-entry:disabled { opacity: 0.48; }
+.welcome-google-first h2 { margin: 0; font-size: clamp(1.25rem, 4vw, 1.7rem); }
+.welcome-google-first__button { width: 100%; min-height: 52px; font-size: 1rem; }
+.welcome-google-first__recovery { width: 100%; }
 .welcome-demo { width: 100%; margin-top: 10px; }
-.welcome-household-list { display: grid; gap: 10px; margin-top: 18px; }
-.welcome-household-list h2 { margin: 0 0 4px; }
-.welcome-household-list button { width: 100%; }
-.welcome-household-row { display: grid; gap: 8px; }
-.welcome-household-row .primary { width: 100%; }
-.welcome-household-row .danger.ghost { width: 100%; }
+.welcome-household-list { display: grid; gap: 12px; margin-top: 18px; text-align: left; }
+.welcome-household-list h2 { margin: 0; text-align: center; }
+.welcome-household-list > .kicker,
+.welcome-household-list > .muted { margin: 0; text-align: center; }
+.welcome-household-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.welcome-household-empty {
+  display: grid;
+  gap: 5px;
+  padding: 18px;
+  border: 1px dashed var(--line);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--paper) 72%, transparent);
+  text-align: center;
+}
+.welcome-household-empty span { color: var(--muted); font-size: 0.9rem; }
+.household-entry-card {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--card) 94%, white), var(--paper));
+  box-shadow: var(--lift-0);
+}
+.household-entry-card--highlighted {
+  border-color: var(--copper);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--copper) 18%, transparent), var(--lift-1);
+}
+.household-entry-card--current { border-color: var(--pine); }
+.household-entry-card__ready {
+  margin: 0;
+  color: var(--pine) !important;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.household-entry-card__open {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px 10px;
+  width: 100%;
+  min-height: 138px;
+  padding: 14px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.household-entry-card__open:hover:not(:disabled) { background: color-mix(in srgb, var(--copper) 7%, transparent); }
+.household-entry-card__open:focus-visible { outline: 3px solid color-mix(in srgb, var(--copper) 58%, white); outline-offset: 2px; }
+.household-entry-card__open:disabled { cursor: default; opacity: 1; }
+.household-entry-card__name { grid-column: 1 / -1; font-family: var(--display); font-size: 1.1rem; font-weight: 700; overflow-wrap: anywhere; }
+.household-entry-card__member { grid-column: 1 / -1; color: var(--muted); font-size: 0.82rem; }
+.household-entry-card__relative { align-self: end; color: var(--pine); font-size: 0.84rem; font-weight: 750; }
+.household-entry-card__exact { grid-column: 1 / -1; color: var(--muted); font-size: 0.76rem; }
+.household-entry-card__action { grid-column: 2; grid-row: 3; align-self: end; color: var(--copper); font-size: 0.78rem; font-weight: 750; }
+.household-entry-card__actions { border-top: 1px solid var(--line); padding: 4px 6px 2px; }
+.household-entry-card__menu summary { min-height: 38px; display: grid; align-items: center; color: var(--muted); cursor: pointer; font-size: 0.78rem; }
+.household-entry-card__menu button { width: 100%; margin-top: 6px; }
+.welcome-signed-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.welcome-signed-actions button { width: 100%; min-height: 46px; }
+.welcome-invite-ready { margin: 0; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--pine) 9%, var(--card)); color: var(--pine) !important; text-align: center; font-weight: 650; }
+.welcome-sign-out { width: 100%; }
+.welcome-danger-zone,
+.welcome-recovery { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; text-align: left; }
+.welcome-danger-zone summary,
+.welcome-recovery summary { min-height: 44px; display: grid; align-items: center; color: var(--muted); cursor: pointer; font-weight: 650; }
+.welcome-danger-zone button { width: 100%; }
+.welcome-join { display: grid; gap: 10px; margin-top: 18px; text-align: left; }
+.welcome-join h2 { margin: 0; text-align: center; }
+.welcome-join > .kicker,
+.welcome-join > .muted { margin: 0; text-align: center; }
+.welcome-join__status { margin: 0; padding: 10px 12px; border-radius: 12px; background: var(--paper); text-align: center; font-size: 0.86rem; }
+.welcome-join__primary,
+.welcome-join__secondary { width: 100%; min-height: 44px; }
 .welcome-qr { display: grid; gap: 12px; }
 .welcome-qr__video {
   display: block;
@@ -1154,8 +1224,9 @@ input, select, textarea {
 @media (max-width: 719px) {
   .welcome { padding: 14px; }
   .welcome-card { width: 100%; padding: 22px; }
-  .welcome-entry-grid { grid-template-columns: 1fr; }
-  .welcome-entry { min-height: 88px; }
+  .welcome-household-grid { grid-template-columns: 1fr; }
+  .welcome-signed-actions { grid-template-columns: 1fr; }
+  .household-entry-card__open { min-height: 126px; }
   .mobile-qr-action { display: block; }
   .desktop-qr-note { display: none; }
 }
@@ -1165,24 +1236,18 @@ input, select, textarea {
   margin: -6px 0 16px;
 }
 .ledger-switcher {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
   margin: -6px 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--card) 86%, transparent);
   color: var(--muted);
   font-size: 12px;
   font-weight: 600;
 }
-.ledger-switcher select {
-  min-width: 0;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--card);
-  padding: 9px 12px;
-  color: var(--ink);
-  font: inherit;
-}
+.ledger-switcher > summary { min-height: 38px; display: grid; align-items: center; cursor: pointer; color: var(--ink); }
+.ledger-switcher > p { margin: 4px 0 10px; }
+.ledger-switcher__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 10px; }
 .view-switch button {
   flex: 1;
   border-radius: 999px;
