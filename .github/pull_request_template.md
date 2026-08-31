@@ -27,6 +27,7 @@ Describe the result for Jonathan and Bianca, not only files.
 ## Acceptance evidence
 
 - [ ] Every acceptance criterion maps to current code, a current test result, or named manual evidence
+- [ ] Any `5/5` claim links a passing P0-03 record for this exact SHA/environment with human acceptance; otherwise no `5/5` label is shown
 - [ ] Focused tests for changed invariants pass
 - [ ] `pnpm check` passes
 - [ ] Complete diff reviewed for sensitive or unintended files

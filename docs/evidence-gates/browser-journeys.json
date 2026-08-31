@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "timeZone": "America/Toronto",
+  "maxEvidenceAgeHours": 24,
+  "requiredViewports": [320, 390, 430, 720, 1100],
+  "dimensions": [
+    { "id": "truth", "label": "Truth", "weight": 1 },
+    { "id": "taskCompletion", "label": "Task completion", "weight": 1 },
+    { "id": "recovery", "label": "Recovery", "weight": 1 },
+    { "id": "responsiveAccessibility", "label": "Responsive and accessibility", "weight": 1 },
+    { "id": "productionEvidence", "label": "Production evidence", "weight": 1 }
+  ],
+  "guardrails": [
+    { "id": "cad-integer-cents", "source": "docs/ARCHITECTURE.md#data-model-rules" },
+    { "id": "toronto-civil-dates", "source": "docs/ARCHITECTURE.md#data-model-rules" },
+    { "id": "balanced-double-entry", "source": "docs/ARCHITECTURE.md#layers" },
+    { "id": "reversal-repost-history", "source": "docs/STRATEGY.md" },
+    { "id": "final-confirm-accept-household-write", "source": "src/core/commandRuntime.ts" },
+    { "id": "privacy-scope-environment-household-member-view", "source": "src/core/visibility.ts" },
+    { "id": "monotonic-generation-delayed-work", "source": "docs/ARCHITECTURE.md" },
+    { "id": "development-production-separation", "source": "docs/CLOUD_CONTINUITY.md" },
+    { "id": "external-data-proposal-only", "source": "docs/ARCHITECTURE.md#shift-boundary" }
+  ],
+  "features": [
+    {
+      "id": "public-roadmap",
+      "label": "Public roadmap",
+      "journeys": [
+        {
+          "id": "roadmap-task",
+          "purpose": "task",
+          "route": "/roadmap/",
+          "timeoutMs": 10000,
+          "steps": [
+            "Open the roadmap directly.",
+            "Confirm the current verdict and evidence-gate controls are readable.",
+            "Use one lens tab and one gate tab with keyboard input.",
+            "Return to the first tab without losing focus visibility."
+          ],
+          "assertions": [
+            "The roadmap title and current status render.",
+            "Both selected tabs expose the correct selected state.",
+            "No content is clipped or hidden by horizontal overflow."
+          ]
+        },
+        {
+          "id": "roadmap-recovery",
+          "purpose": "recovery",
+          "route": "/roadmap/",
+          "timeoutMs": 10000,
+          "steps": [
+            "Reload the direct roadmap URL.",
+            "Wait for the page to settle without a redirect loop or blank state.",
+            "Re-open a lens tab after reload."
+          ],
+          "assertions": [
+            "Direct reload returns the roadmap rather than an error page.",
+            "The controls remain operable after recovery.",
+            "No console, network, or journey timeout error is captured."
+          ]
+        }
+      ]
+    }
+  ]
+}

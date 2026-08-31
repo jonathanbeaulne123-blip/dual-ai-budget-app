@@ -15,6 +15,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:evidence:local": "vitest run test/evidence-local-harness.test.ts",
+    "quality:5of5": "node scripts/verify-feature-evidence.mjs evaluate --manifest docs/evidence-gates/browser-journeys.json",
     "test:watch": "vitest",
     "ai:verify": "node scripts/verify-ai-surface.mjs",
     "check": "pnpm ai:verify && pnpm test && pnpm build",
