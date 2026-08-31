@@ -473,6 +473,44 @@ describe("atomic household writes", () => {
     expect(outcome.retryable).toBe(true);
   });
 
+  it("preserves a divergent same-fact stale write for explicit review", async () => {
+    const previous = { ...catalogHousehold(), linked: true, revision: 3, baseRevision: 3 };
+    const posted = postEntry(previous, grocery("Collision"));
+    const txId = posted.postedIds[0]!;
+    const remote = {
+      ...posted.household,
+      linked: true,
+      revision: 4,
+      baseRevision: 3,
+      transactions: posted.household.transactions.map((row) => (
+        row.id === txId ? { ...row, amountCents: row.amountCents + 100, note: "Divergent collision" } : row
+      )),
+    };
+    const store = memoryAdapters({
+      transport: async () => ({
+        ok: false,
+        errorClass: "conflict-detected",
+        remote,
+        message: "stale",
+      }),
+    });
+    const result = await acceptHouseholdWrite({
+      previous,
+      candidate: { ...posted.household, linked: true },
+      confirmationId: "confirm-divergent-conflict",
+      postedIds: posted.postedIds,
+      transportRequested: true,
+      adapters: store.adapters,
+    });
+    expect(result.kind).toBe("conflict-needs-attention");
+    expect(result.sharingMode).toBe("conflicted");
+    expect(result.recoveryAvailable).toBe(true);
+    const open = result.household.conflicts?.find((row) => !row.resolved);
+    expect(open?.localSnapshot.transactions.find((row) => row.id === txId)?.amountCents).not.toBe(
+      open?.remoteSnapshot.transactions.find((row) => row.id === txId)?.amountCents,
+    );
+  });
+
   it("does not auto-merge when claims money differs", () => {
     const local = catalogHousehold();
     const remote: Household = {

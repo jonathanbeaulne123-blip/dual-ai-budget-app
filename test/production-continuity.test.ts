@@ -3,6 +3,17 @@ import { catalogHousehold, linkGoogleIdentity, postEntry } from "../src/core/ind
 import type { Household } from "../src/core/types.ts";
 import { pushSupabaseHousehold } from "../src/ledger/supabase.ts";
 import { decodeJsonPayload } from "../src/ledger/snapshotPayload.ts";
+import {
+  bindGoogleMemberships,
+  issueHouseholdInvite,
+  leaveHousehold,
+  leaveOrDeleteHousehold,
+  listHouseholdAccess,
+  redeemHouseholdInvite,
+  registerCurrentHouseholdDevice,
+  revokeHouseholdDevice,
+  revokeHouseholdMember,
+} from "../src/ledger/householdInvites.ts";
 import { readFileSync } from "node:fs";
 
 const config = { url: "https://continuity.example.supabase.co", key: "sb_publishable_test" };
@@ -41,6 +52,26 @@ describe("Production continuity safety", () => {
       { expectedRevision: 1, continuityIdentity: identity },
     );
     expect(result.skipped).toBe(true);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("makes zero Production membership/session RPCs in the Development pilot", async () => {
+    vi.stubEnv("VITE_PRODUCTION_CONTINUITY", "");
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    const authConfig = { ...config, accessToken: "member-jwt" };
+    const calls = await Promise.all([
+      issueHouseholdInvite({ environment: "production", householdId: "HH-P", targetMemberId: "MEM-2", kind: "qr", config: authConfig }),
+      redeemHouseholdInvite({ environment: "production", inviteToken: "a".repeat(64), config: authConfig }),
+      revokeHouseholdMember({ environment: "production", householdId: "HH-P", memberId: "MEM-2", config: authConfig }),
+      registerCurrentHouseholdDevice({ environment: "production", deviceId: "DEV-P", deviceLabel: "Production phone", config: authConfig }),
+      listHouseholdAccess({ environment: "production", householdId: "HH-P", config: authConfig }),
+      revokeHouseholdDevice({ environment: "production", householdId: "HH-P", accessId: "11111111-1111-4111-8111-111111111111", config: authConfig }),
+      leaveHousehold({ environment: "production", householdId: "HH-P", config: authConfig }),
+      leaveOrDeleteHousehold({ environment: "production", householdId: "HH-P", role: "member", config: authConfig }),
+      bindGoogleMemberships({ environment: "production", config: authConfig }),
+    ]);
+    expect(calls).toEqual(calls.map(() => ({ ok: false, reason: "continuity-disabled" })));
     expect(fetch).not.toHaveBeenCalled();
   });
 

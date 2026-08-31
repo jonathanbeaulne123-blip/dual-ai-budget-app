@@ -191,7 +191,7 @@ export function buildSyncFreshness(input: SyncFreshnessInput): SyncFreshnessDisp
     sourceLine,
   ].filter(Boolean);
 
-  // Conflicts auto-resolve (#194); freshness action is always Retry, never a Review sheet.
+  // True same-fact financial conflicts preserve both copies for explicit review.
   let actionLabel: string | null = null;
   let actionKind: SyncFreshnessActionKind | null = null;
   if (
@@ -204,7 +204,7 @@ export function buildSyncFreshness(input: SyncFreshnessInput): SyncFreshnessDisp
       && (input.offline || household.sharing?.lastError || !showPendingHint)
     )
   ) {
-    actionLabel = "Retry now";
+    actionLabel = input.hasOpenConflict || mode === "conflicted" ? "Review conflict" : "Retry now";
     actionKind = "retry";
   }
 

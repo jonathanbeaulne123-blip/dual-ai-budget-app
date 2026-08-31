@@ -4,6 +4,7 @@
  */
 import type { Environment } from "../core/types.ts";
 import type { GoogleIdentitySelector } from "../core/google.ts";
+import { hostedContinuityAllowed } from "./continuityPolicy.ts";
 import type { ContinuityMembershipSummary, SupabaseConfig } from "./supabase.ts";
 import { listActiveContinuityMemberships, readSupabaseConfig } from "./supabase.ts";
 
@@ -178,6 +179,8 @@ export function inviteReasonMessage(reason: string): string {
       return "Invite must be email or QR.";
     case "production-blocked":
       return "Production households cannot be deleted from the kitchen.";
+    case "continuity-disabled":
+      return "Production cloud continuity is unavailable in this Development pilot.";
     case "not-member":
       return "You are not an active member of that household.";
     case "session-not-live":
@@ -223,6 +226,7 @@ export async function issueHouseholdInvite(input: {
   ttlHours?: number;
   config?: SupabaseConfig | null;
 }): Promise<IssueInviteResult> {
+  if (!hostedContinuityAllowed(input.environment)) return { ok: false, reason: "continuity-disabled" };
   const config = input.config ?? readSupabaseConfig();
   if (!config?.accessToken) {
     return { ok: false, reason: "unauthenticated" };
@@ -256,10 +260,12 @@ export async function issueHouseholdInvite(input: {
 }
 
 export async function redeemHouseholdInvite(input: {
+  environment: Environment;
   inviteToken: string;
   displayName?: string;
   config?: SupabaseConfig | null;
 }): Promise<RedeemInviteResult> {
+  if (!hostedContinuityAllowed(input.environment)) return { ok: false, reason: "continuity-disabled" };
   const config = input.config ?? readSupabaseConfig();
   if (!config?.accessToken) {
     return { ok: false, reason: "unauthenticated" };
@@ -293,6 +299,7 @@ export async function revokeHouseholdMember(input: {
   memberId: string;
   config?: SupabaseConfig | null;
 }): Promise<RevokeMemberResult> {
+  if (!hostedContinuityAllowed(input.environment)) return { ok: false, reason: "continuity-disabled" };
   const config = input.config ?? readSupabaseConfig();
   if (!config?.accessToken) {
     return { ok: false, reason: "unauthenticated" };
@@ -324,6 +331,7 @@ export async function registerCurrentHouseholdDevice(input: {
   deviceLabel: string;
   config?: SupabaseConfig | null;
 }): Promise<RegisterDeviceResult> {
+  if (!hostedContinuityAllowed(input.environment)) return { ok: false, reason: "continuity-disabled" };
   const config = input.config ?? readSupabaseConfig();
   if (!config?.accessToken) return { ok: false, reason: "unauthenticated" };
   const result = await rpc(config, "hearth_register_current_device", {
@@ -390,6 +398,7 @@ export async function listHouseholdAccess(input: {
   householdId: string;
   config?: SupabaseConfig | null;
 }): Promise<HouseholdAccessResult> {
+  if (!hostedContinuityAllowed(input.environment)) return { ok: false, reason: "continuity-disabled" };
   const config = input.config ?? readSupabaseConfig();
   if (!config?.accessToken) return { ok: false, reason: "unauthenticated" };
   const result = await rpc(config, "hearth_list_household_access", {
@@ -421,6 +430,7 @@ export async function revokeHouseholdDevice(input: {
   accessId: string;
   config?: SupabaseConfig | null;
 }): Promise<RevokeMemberResult> {
+  if (!hostedContinuityAllowed(input.environment)) return { ok: false, reason: "continuity-disabled" };
   const config = input.config ?? readSupabaseConfig();
   if (!config?.accessToken) return { ok: false, reason: "unauthenticated" };
   const result = await rpc(config, "hearth_revoke_device", {
@@ -444,6 +454,7 @@ export async function leaveHousehold(input: {
   householdId: string;
   config?: SupabaseConfig | null;
 }): Promise<LeaveHouseholdResult> {
+  if (!hostedContinuityAllowed(input.environment)) return { ok: false, reason: "continuity-disabled" };
   const config = input.config ?? readSupabaseConfig();
   if (!config?.accessToken) return { ok: false, reason: "unauthenticated" };
   const result = await rpc(config, "hearth_leave_household", {
@@ -464,6 +475,7 @@ export async function leaveOrDeleteHousehold(input: {
   role: "owner" | "member" | null;
   config?: SupabaseConfig | null;
 }): Promise<LeaveHouseholdResult> {
+  if (!hostedContinuityAllowed(input.environment)) return { ok: false, reason: "continuity-disabled" };
   const config = input.config ?? readSupabaseConfig();
   if (!config?.accessToken) {
     return { ok: false, reason: "unauthenticated" };
@@ -565,15 +577,16 @@ export async function resetDevelopmentHouseholds(input: {
 
 /** Bind caller's Google identity onto matching continuity_memberships (migration 010). */
 export async function bindGoogleMemberships(input: {
-  environment?: Environment | null;
+  environment: Environment;
   config?: SupabaseConfig | null;
 }): Promise<BindMembershipsResult> {
+  if (!hostedContinuityAllowed(input.environment)) return { ok: false, reason: "continuity-disabled" };
   const config = input.config ?? readSupabaseConfig();
   if (!config?.accessToken) {
     return { ok: false, reason: "unauthenticated" };
   }
   const result = await rpc(config, "hearth_bind_google_memberships", {
-    p_environment: input.environment ?? null,
+    p_environment: input.environment,
   });
   if (!result.ok) {
     const message = messageOf(result.body);

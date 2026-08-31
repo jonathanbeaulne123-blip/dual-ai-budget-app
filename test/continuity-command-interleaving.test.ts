@@ -141,7 +141,7 @@ describe("T2-S5 command-log interleaving harness", () => {
     expect(tip.transactions.some((row) => row.note === "Device B bread")).toBe(true);
   });
 
-  it("same-row diverge auto-resolves on incoming command instead of silent LWW", async () => {
+  it("same-row diverge preserves both versions for explicit resolution", async () => {
     const catalog = twoMemberHousehold();
     const store = createMemoryCommandLogStore();
     const postA = expense(catalog, "Conflict row", "8.00", memberA);
@@ -186,11 +186,13 @@ describe("T2-S5 command-log interleaving harness", () => {
     appendHostedCommandEvent(store, conflictEvent);
 
     const tip = await materializeCommandLogTip(catalog, store);
-    expect(tip.conflicts?.some((row) => row.resolved)).toBe(true);
+    const open = tip.conflicts?.find((row) => !row.resolved);
+    expect(open).toBeDefined();
+    expect(open?.remoteSnapshot.transactions.find((row) => row.id === txId)?.amountCents).toBe(999);
     expect(tip.transactions.find((row) => row.id === txId)?.amountCents).toBe(800);
   });
 
-  it("reversal vs edit keeps journal facts and auto-resolves duplicate-id edit", async () => {
+  it("reversal vs edit keeps both journal versions open for human resolution", async () => {
     const catalog = twoMemberHousehold();
     const store = createMemoryCommandLogStore();
     const postA = expense(catalog, "Reversal target", "6.00", memberA);
@@ -249,7 +251,7 @@ describe("T2-S5 command-log interleaving harness", () => {
 
     const tip = await materializeCommandLogTip(catalog, store);
     expect(tip.transactions.some((row) => row.reversalOfId === txId)).toBe(true);
-    expect(tip.conflicts?.some((row) => row.resolved)).toBe(true);
+    expect(tip.conflicts?.some((row) => !row.resolved)).toBe(true);
   });
 
   it("personal then shared interleave keeps partner shared hash clean", async () => {

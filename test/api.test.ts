@@ -114,7 +114,11 @@ describe("Cloudflare static host pairing", () => {
     expect(workflow).toMatch(/branches:\s*\[main\]/);
     expect(workflow).not.toContain("hearth-rebuild-cfde");
     expect(workflow).toContain("VITE_GOOGLE_CLIENT_ID");
-    expect(workflow).toContain('VITE_PRODUCTION_CONTINUITY: "1"');
+    expect(workflow).toContain('VITE_SUPABASE_AUTH_ENABLED: "1"');
+    expect(workflow).toContain('VITE_CONTINUITY_REALTIME: "1"');
+    expect(workflow).toContain('VITE_CONTINUITY_COMMAND_LOG: "1"');
+    expect(workflow).toContain('VITE_PRODUCTION_CONTINUITY: "0"');
+    expect(workflow).toContain('VITE_SYNC_PILOT_DIAGNOSTICS: "1"');
     expect(workflow).toContain("::error::");
     expect(workflow).toContain("workflow_dispatch");
     expect(workflow).toContain("actions/checkout@v5");

@@ -12,6 +12,7 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md) | Google-account access from any device, cloud/PGlite roles, the disposable-data window, and the late-September security milestone |
 | [SYNC_ARCHITECTURE.md](SYNC_ARCHITECTURE.md) | **Tiered sync plan (D-149):** 100–500 ms Realtime push, atomic SQL, command-log, slice prompts under [`briefs/sync/`](briefs/sync/README.md) |
 | [SYNC_REALTIME_SMOKE.md](SYNC_REALTIME_SMOKE.md) | **Two-phone Realtime latency smoke** (D-149 T1 G4); Jonathan pass 2026-08-27 |
+| [SYNC_PILOT.md](SYNC_PILOT.md) | **D-180 Development-only ledger-native pilot:** exact build boundary, live two-account matrix, 100-event latency gate, fourteen-day rehearsal, and stop/rollback rules |
 | [briefs/shared-money/](briefs/shared-money/README.md) | **D-174 priority-one Shared Money program:** partner-backed account direction, current-law boundary, phased gates, and exact Phase 0 AI packets |
 | [SHARED_MONEY_BASELINE.md](SHARED_MONEY_BASELINE.md) | **SF-01 current capability truth:** human matrix across identity, membership, continuity, opening truth, imports, Fund, notifications, and writes; machine companion in [`shared-money-baseline.json`](shared-money-baseline.json) |
 | [ROADMAP_SITE.md](ROADMAP_SITE.md) | **D-154/D-157 public living roadmap + museum:** indexable `/roadmap/`, current vision, evidence gates, dated journey, historical exhibits, additive protocol, and deployment gate |
