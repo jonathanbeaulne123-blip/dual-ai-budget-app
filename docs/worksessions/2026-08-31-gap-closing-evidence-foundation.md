@@ -6,8 +6,8 @@
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/gap-closing-foundation`
-- **Baseline SHA:** `7d4e19361a455112d2532fa8f81271b26a4db349`
-- **Head SHA:** implementation content `86a20a0` after final rebase; exact closeout tip is recorded in the external handoff because this record cannot contain its own commit SHA
+- **Baseline SHA:** `aa56f373ab62dbfec1dfa744e6c8b3606caee4c7`
+- **Head SHA:** implementation content `110337c` after final rebase; exact closeout tip is recorded in the external handoff because this record cannot contain its own commit SHA
 - **PR or issue:** Gap-closing Program 0; no PR created
 - **Risk:** Release
 - **Decision owner:** Jonathan
@@ -86,6 +86,7 @@ Inference:
 - 2026-08-31: independent UX/accessibility, trust/release, and verifier re-reviews found no remaining P0, P1, or P2 issue; all recommend closure after the clean exact-SHA aggregate rerun.
 - 2026-08-31: clean implementation `e9bcb2ac6d86c359d068fb1290d72b87a2911310` passed AI verification, 209 passed / 2 skipped files and 1,400 passed / 3 skipped tests, TypeScript, the 383-module Vite production build, Hercules Pro UI, and redirect guard. Its ignored browser report passed 10/10 runs with zero failed runtime/accessibility channel and remains explicitly non-claimable.
 - 2026-08-31: final remote refresh found four new Hercules provider-marker commits; the clean packet rebased without conflict onto `origin/main@7d4e19361a455112d2532fa8f81271b26a4db349`. Pre-rebase proof is superseded by the repeated exact-tip receipts in the external handoff.
+- 2026-08-31: after the exact aggregate and browser rerun, the documentation-only Hercules closeout advanced `main` once more. The packet rebased cleanly onto `origin/main@aa56f373ab62dbfec1dfa744e6c8b3606caee4c7`; the latest runtime-bearing tip had already passed 210 files / 1,403 tests plus builds, and the final post-rebase focused/browser receipts are reported externally.
 
 ## Decisions
 
