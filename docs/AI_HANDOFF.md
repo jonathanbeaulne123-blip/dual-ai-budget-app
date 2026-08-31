@@ -1,6 +1,49 @@
 # AI Task and Handoff Standard
 
+## Standing contribution bars — Month Spread follow-up (2026-08-31)
+
+**Status:** Draft PR [#259](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/259) on `cursor/month-spread-shared-home-04e5`. Feature SHA `4b58785` plus a11y follow-up on this handoff's head. **Not merged, not deployed, not live.** Risk: **Low** for the bars (presentation of existing confirmed events); the parent packet remains **High** because F-2/F-3 still wait on Jonathan.
+
+**Demo (not the kitchen URL, not D-041):** https://galaxy-tech-selecting-reporting.trycloudflare.com — Cloud Agent trycloudflare to Vite `5174`. Stay Development → **Open the demo kitchen table** → **I am Jonathan**. On Home, Drawer → **Paper office** if Classic desk is showing. Dies when this VM stops.
+
+**Household outcome:** Standing's assay now names each person's confirmed Fund contributions this month — Bianca and Jonathan as two paper bars — instead of only a household lump on the monthly target.
+
+**Budget delta (5):** `+1` on this follow-up (`+3` for the parent Spread). Who put in what is a books fact, not a second envelope. **Engagement delta (3):** `+1` (`+3` parent). If they conflicted, books won: proposals stay off the bar; both fills are pine (one Fund).
+
+**What changed:** `sharedMonthCourse.contributionsByMember` re-folds this month's `contribution-confirmed` events per `activeMembers`. `MemberContribBars` in Standing assay, scaled against `monthlyTargetCents`. Hidden until the Fund is open. `role="group"` labelled by "This month"; tracks `aria-hidden`. Why-note under D-164. Worksession: [`worksessions/2026-08-31-month-spread.md`](worksessions/2026-08-31-month-spread.md).
+
+**Verification:**
+- Focused `test/month-spread.test.ts`: **33 passed** (Bianca `$1,600.00` / Jonathan `$1,660.00`; last-month and unconfirmed proposal excluded; markup fence including `aria-labelledby`).
+- `pnpm check` on `4b58785`: AI surface verified; **1315 passed / 3 skipped**; `tsc` + Vite 369 modules + Hercules Pro UI build green. A11y follow-up is presentation-only (`role="group"`); focused suite re-run after it.
+- UX auditor: first pass **PASS WITH NOTES** (`role="img"` double-announce) — **repaired** to `role="group"`; re-audit **PASS**. Verifier **CONDITIONAL** until this handoff landed; residual: rebase onto current `main` before merge.
+- Live fictional Development demo at `http://127.0.0.1:5174/`: Paper office Standing shows Bianca **$1,600.00** and Jonathan **$1,660.00**, same pine, copy "Confirmed this month. A proposal is not on the bar." Monthly target still `$3,260.00 of $3,400.00`. Fund free-to-spend `$2,018.60` stays distinct from leftover-spend seal `$498.64`. Viewports 1440 / 1100 / 720. iPhone `OfficePhone` unchanged (no Month Spread). Classic desk does not show the bars — Drawer → Paper office. Artifacts: `month_spread_contrib_bars_1440.png`, `month_spread_contrib_bars_1100.png`, `month_spread_contrib_bars_720.png`, `month_spread_contrib_bars_demo.mp4` (reviewed: Drawer → Paper office → named bars; no post).
+
+**Environment/data:** fictional Development demo seed only. No Production, network household calls, MCP household access, hosted schema, secrets, or real household data. trycloudflare preview is a Cloud Agent tunnel, not D-041 kitchen publish.
+
+**Next owner:** Jonathan. Open Paper office Standing and confirm the two bars are the right grain. Books-review F-2/F-3 (`d737dd6`) still gates merge of the parent packet. Rebase onto current `main` before merge. Do not merge unless Jonathan asks.
+
 ## The Month Spread — Shared Home centre instrument (2026-08-31)
+
+**Status:** Draft PR [#259](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/259) on `cursor/month-spread-shared-home-04e5` from exact `origin/main@2a984fd`. **Not merged, not deployed, not live.** Risk: **High** (presentation, plus two isolated `projectHouseholdFund` figure corrections).
+
+**Demo (not the kitchen URL, not D-041):** https://galaxy-tech-selecting-reporting.trycloudflare.com — Cloud Agent trycloudflare to Vite `5174`. Stay Development → **Open the demo kitchen table** → **I am Jonathan**. Dies when this VM stops.
+
+**Household outcome:** Shared Home's centre is the month as one instrument — Standing, Course, Docket — instead of the placeholder sentence. Seals, mosaic, and Kitty Banks keep their words and arithmetic.
+
+**Budget delta (5):** `+3`. **Engagement delta (3):** `+3`. Books won on shared Course scale, empty-staff-on-untied-drawing, and rollover-as-claim (not a second envelope).
+
+**What changed:** Claude's local two-commit packet, applied onto `origin/main@2a984fd`. Presentation commits plus an isolated F-2/F-3 money-projection commit. Follow-up: Course now compiles from `booksHousehold` so Standing and Course cannot print two free-to-spend figures. Worksession: [`worksessions/2026-08-31-month-spread.md`](worksessions/2026-08-31-month-spread.md).
+
+**Verification:**
+- Focused after trust repair: `test/month-spread.test.ts` (30) plus related Fund/experience files — **61 passed**.
+- `pnpm check` after repair: AI surface verified; **1312 passed / 3 skipped**; `tsc` + Vite + Hercules Pro UI build green.
+- Independent audits: books **PASS WITH NOTES**; privacy **PASS WITH NOTES**; UX **PASS WITH NOTES** (P1s repaired); trust **FAIL** on Course vs Standing household — **repaired**. Verifier: rebase onto current `main` before merge.
+- Live fictional Development demo kitchen at `http://127.0.0.1:5174/` and the trycloudflare tunnel: Month Spread is the centre; Standing `$2,018.60` Fund free-to-spend vs leftover-spend seal `$498.64`; monthly target `$3,260.00 of $3,400.00`; TIED 27 August; reserved `$0.00` because the seeded next-day bill is September; docket click opened Household Fund and did not post; custody disclosure and Development pill on the face; no console errors.
+- Viewport proof this turn: wide Shared Home with Spread; ~1100 F-4 shelf under the stage; 720 OfficeWide Spread after scroll; 390/320 OfficePhone Fund glance with Add unobstructed. Walkthrough video `month_spread_shared_home_demo.mp4` independently reviewed: login → Spread → docket opens Fund, no post.
+
+**Environment/data:** fictional Development demo seed only. No Production, network household calls, MCP household access, hosted schema, secrets, or real household data. trycloudflare preview is a Cloud Agent tunnel, not D-041 kitchen publish.
+
+**Next owner:** Jonathan. Open the demo link. Books-review F-2/F-3 (`d737dd6`) before merge. Rebase onto current `main` before merge. Do not merge unless Jonathan asks.
 
 **Status:** Draft PR [#259](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/259) on `cursor/month-spread-shared-home-04e5` from exact `origin/main@2a984fd`. **Not merged, not deployed, not live.** Risk: **High** (presentation, plus two isolated `projectHouseholdFund` figure corrections).
 

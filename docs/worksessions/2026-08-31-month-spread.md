@@ -1,13 +1,13 @@
 # Hearth worksession — The Month Spread
 
-- **Status:** OPEN; draft PR #259; proof on this SHA
+- **Status:** OPEN; draft PR #259; Standing contribution bars on this SHA
 - **Opened:** 2026-08-31 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor (landing Claude's local packet onto current `main`)
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/month-spread-shared-home-04e5`
 - **Baseline SHA:** `2a984fd3346dc0b57d0e7b6a17702c18b82596d3` (`origin/main`)
-- **Head SHA:** `4a2fe6912670dfe9212d0dd3e6a688c5b779c46c` (docs follow this line; a viewport-proof follow-up may sit on top)
+- **Head SHA:** `4b5878502d9d76d1d85c46fa9d3edc619d7326f8` (Standing bars; a11y/docs follow-ups sit on top)
 - **PR or issue:** draft [#259](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/259)
 - **Risk:** High (presentation of Shared Home plus two `projectHouseholdFund` figure corrections)
 - **Decision owner:** Jonathan for merge/deploy; independent books review required for F-2/F-3 before merge
@@ -98,6 +98,7 @@ Inferences:
 - 2026-08-31 (same VM, finish pass): Shared Home re-opened at `http://127.0.0.1:5174/` as Jonathan. Standing `$2018.60`, leftover-spend `$498.64`, monthly target `$3260 of $3400`, TIED 27 August, Kitty conserved `$1285.00`, transfer due `$161.40`. Docket click still opens Household Fund and does not post. Artifacts: `month_spread_1440_shared_home.png`, `month_spread_1100_shelf_below.png`, `month_spread_720_spread_visible.png`, `month_spread_390_phone_home.png`, `month_spread_320_phone_home.png`, `month_spread_docket_navigates_to_fund.png`, `month_spread_shared_home_demo.mp4` (reviewed: login → Spread → docket → Fund, no post).
 - 2026-08-31 (auditor fold): Independent books **PASS WITH NOTES** (F-2/F-3 projector-only; P2 covering-day vs later-typed older week). Privacy **PASS WITH NOTES**. UX **PASS WITH NOTES** (P1 SVG `role="img"` vs `tabIndex`, dead `is-inert`). Trust **FAIL** until Course used the same household as Standing. Verifier: rebase onto current `main` before merge; do not force-push this branch in this session.
 - 2026-08-31 (trust repair): `sharedMonthCourse(booksHousehold, today)` so Register I and II share accepted books. Test: Fund-backed personal-scope recurrence leaves `course.freeToSpendCents === story.opening.freeToSpendCents` while the scoped clone still omits the reserve. Course SVG `role="figure"` with named keyboard markers. Add pad now pointer-locks the stage. Kitty rollover claim reads `booksHousehold`. Focused 3 files / 61 passed.
+- 2026-08-31 (Standing contribution bars): Jonathan asked for a simple bar graph of member contributions in Standing's assay. `contributionsByMember` re-folds this month's `contribution-confirmed` events. Live Paper office: Bianca `$1,600.00`, Jonathan `$1,660.00`, both pine, scaled against `$3,400.00`. Proposals off the bar. `pnpm check` on `4b58785`: **1315 passed / 3 skipped**. UX `role="img"` note repaired to `role="group"`. Artifacts: `month_spread_contrib_bars_1440.png`, `_1100.png`, `_720.png`, `month_spread_contrib_bars_demo.mp4`. Classic desk does not show the Spread — Drawer → Paper office.
 
 ## Remaining uncertainty
 
