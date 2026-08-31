@@ -396,9 +396,9 @@ SELECT
   SUM(CASE WHEN account_type = 'liability' THEN -net_cents ELSE 0 END) AS liability_cents,
   SUM(CASE WHEN account_type = 'income' THEN -net_cents ELSE 0 END) AS income_cents,
   SUM(CASE WHEN account_type = 'expense' THEN net_cents ELSE 0 END) AS expense_cents,
-  SUM(CASE WHEN account_type = 'equity' THEN -net_cents ELSE 0 END) AS equity_cents,
   SUM(CASE WHEN account_type = 'asset' THEN net_cents WHEN account_type = 'liability' THEN net_cents ELSE 0 END) AS net_worth_cents,
-  SUM(CASE WHEN account_type = 'income' THEN -net_cents WHEN account_type = 'expense' THEN -net_cents ELSE 0 END) AS net_income_cents
+  SUM(CASE WHEN account_type = 'income' THEN -net_cents WHEN account_type = 'expense' THEN -net_cents ELSE 0 END) AS net_income_cents,
+  SUM(CASE WHEN account_type = 'equity' THEN -net_cents ELSE 0 END) AS equity_cents
 FROM v_trial_balance
 GROUP BY household_id;
 

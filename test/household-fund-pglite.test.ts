@@ -11,6 +11,7 @@ import {
 } from "../src/core/index.ts";
 import { hashBooksSnapshot, ingestBooks, migrateBooks, openMemoryBooks } from "../src/ledger/engine.ts";
 import { compileHousehold } from "../src/core/journal.ts";
+import { BOOKS_SCHEMA } from "../src/ledger/schema.ts";
 
 describe("Household Fund PGlite projection", () => {
   it("persists constrained shared events and custodian-only reconciliation facts without creating a chart account", async () => {
@@ -107,6 +108,76 @@ describe("Household Fund PGlite projection", () => {
       expect((await db.query<{ table_name: string }>("SELECT table_name FROM information_schema.tables WHERE table_name IN ('household_funds','fund_events','fund_settlement_allocations','fund_private_reconciliations') ORDER BY table_name")).rows.map((row) => row.table_name)).toEqual([
         "fund_events", "fund_private_reconciliations", "fund_settlement_allocations", "household_funds",
       ]);
+    } finally {
+      await db.close();
+    }
+  }, 30_000);
+
+  it("appends equity to a persisted net-worth view without discarding accepted journal rows", async () => {
+    const { PGlite } = await import("@electric-sql/pglite");
+    const db = await PGlite.create();
+    const legacyBooksSchema = BOOKS_SCHEMA
+      .replace(/^\s*SUM\(CASE WHEN account_type = 'equity' THEN -net_cents ELSE 0 END\) AS equity_cents,?\r?\n/m, "")
+      .replace(/AS net_income_cents,\r?\n/, "AS net_income_cents\n")
+      .replace("'expense', 'income', 'transfer', 'refund', 'opening'", "'expense', 'income', 'transfer', 'refund'");
+    try {
+      expect(legacyBooksSchema).not.toContain("AS equity_cents");
+      await db.exec(legacyBooksSchema);
+      await db.exec(`
+        INSERT INTO schema_migrations (id, applied_at) VALUES
+          (1, '2026-08-01T00:00:00.000Z'),
+          (2, '2026-08-02T00:00:00.000Z'),
+          (3, '2026-08-03T00:00:00.000Z'),
+          (4, '2026-08-04T00:00:00.000Z');
+        INSERT INTO households (id,name,timezone,currency,environment,invite_phrase)
+          VALUES ('HH-LEGACY-VIEW','Existing books','America/Toronto','CAD','development','LEGACY-VIEW');
+        INSERT INTO chart_accounts (id,household_id,code,name,account_type,normal_balance,source)
+          VALUES
+            ('CA-LEGACY-CASH','HH-LEGACY-VIEW','1000','Existing cash','asset','debit','bank'),
+            ('CA-LEGACY-EQUITY','HH-LEGACY-VIEW','3000','Opening equity','equity','credit','equity');
+        INSERT INTO journal_entries (id,household_id,date_key,memo,source,visibility,created_by)
+          VALUES ('JE-LEGACY','HH-LEGACY-VIEW','2026-08-01','Existing opening','opening','household','MEM-001');
+        INSERT INTO journal_lines (id,household_id,entry_id,line_no,account_id,debit_cents,credit_cents,party_id)
+          VALUES
+            ('JL-LEGACY-1','HH-LEGACY-VIEW','JE-LEGACY',1,'CA-LEGACY-CASH',12345,0,'MEM-001'),
+            ('JL-LEGACY-2','HH-LEGACY-VIEW','JE-LEGACY',2,'CA-LEGACY-EQUITY',0,12345,'MEM-001');
+      `);
+
+      const beforeColumns = await db.query<{ column_name: string }>(`
+        SELECT column_name FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'v_net_worth'
+        ORDER BY ordinal_position
+      `);
+      expect(beforeColumns.rows.map((row) => row.column_name)).toEqual([
+        "household_id", "asset_cents", "liability_cents", "income_cents", "expense_cents",
+        "net_worth_cents", "net_income_cents",
+      ]);
+
+      await migrateBooks(db);
+
+      const afterColumns = await db.query<{ column_name: string }>(`
+        SELECT column_name FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'v_net_worth'
+        ORDER BY ordinal_position
+      `);
+      expect(afterColumns.rows.map((row) => row.column_name)).toEqual([
+        "household_id", "asset_cents", "liability_cents", "income_cents", "expense_cents",
+        "net_worth_cents", "net_income_cents", "equity_cents",
+      ]);
+      expect((await db.query("SELECT id, name FROM households WHERE id = 'HH-LEGACY-VIEW'")).rows)
+        .toEqual([{ id: "HH-LEGACY-VIEW", name: "Existing books" }]);
+      expect((await db.query("SELECT id FROM journal_lines WHERE entry_id = 'JE-LEGACY' ORDER BY line_no")).rows)
+        .toEqual([{ id: "JL-LEGACY-1" }, { id: "JL-LEGACY-2" }]);
+      const equation = await db.query<{ net_worth_cents: number; net_income_cents: number; equity_cents: number }>(
+        "SELECT net_worth_cents, net_income_cents, equity_cents FROM v_net_worth WHERE household_id = 'HH-LEGACY-VIEW'",
+      );
+      expect(equation.rows.map((row) => ({
+        net_worth_cents: Number(row.net_worth_cents),
+        net_income_cents: Number(row.net_income_cents),
+        equity_cents: Number(row.equity_cents),
+      }))).toEqual([{ net_worth_cents: 12345, net_income_cents: 0, equity_cents: 12345 }]);
+      expect((await db.query("SELECT id FROM schema_migrations ORDER BY id")).rows)
+        .toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }]);
     } finally {
       await db.close();
     }
