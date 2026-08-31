@@ -7,7 +7,7 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/reconciliation-salvage-audit`
 - **Baseline SHA:** `e19acf09c35c26bda1dba9d01e4806a315e223ab`
-- **Head SHA:** `e19acf09c35c26bda1dba9d01e4806a315e223ab`
+- **Head SHA:** `73628d09f7044f50fd6c19afa458a6785f2e47fe` (salvage implementation; this evidence update follows)
 - **PR or issue:** none
 - **Risk:** High
 - **Decision owner:** Jonathan for removal of any feature or user-facing behavior; Codex for duplicate/generated/stale implementation classification
