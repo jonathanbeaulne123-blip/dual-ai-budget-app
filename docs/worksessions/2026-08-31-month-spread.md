@@ -7,7 +7,7 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `main` (from `cursor/month-spread-shared-home-04e5`)
 - **Baseline SHA:** `2a984fd3346dc0b57d0e7b6a17702c18b82596d3` (cut); merged through `origin/main@d9529e5` (D-184 docs)
-- **Head SHA:** `d648258e5c1d55a5af9c2c2e6962d46eb8bd09e7` (merge commit)
+- **Head SHA:** `ed852a83c2b77a22a7025b87cd0522779ac693c8` (docs record of kitchen publish; merge commit `d648258e5c1d55a5af9c2c2e6962d46eb8bd09e7`)
 - **PR or issue:** merged [#259](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/259)
 - **Risk:** High (presentation of Shared Home plus two `projectHouseholdFund` figure corrections)
 - **Decision owner:** Jonathan ordered merge/push/deploy 2026-08-31

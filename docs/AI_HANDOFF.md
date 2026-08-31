@@ -2,7 +2,7 @@
 
 ## The Month Spread — Shared Home centre (2026-08-31)
 
-**Status:** Merged [#259](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/259) as `main@d648258`. Kitchen deploy Cloudflare Workers [`33432365828`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33432365828) **success**. Worker version `0a5b30da-5e3c-4b8e-a3da-43529c13001c`. Live bundle `Office-BBr3Ic0W.js` contains Standing bars and “A proposal is not on the bar.” **Merged and kitchen-published.** Risk was **High** (presentation plus F-2/F-3). No Production household mutation, hosted schema, or secrets.
+**Status:** Merged [#259](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/259) as `main@d648258`. Canon record `main@ed852a8`. Kitchen deploys Cloudflare Workers [`33432365828`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33432365828) (merge) and [`33432832963`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33432832963) (docs record) both **success**. Current Worker version `2488cac3-f052-48a9-8200-65d5ee848f4b`. Live bundle still `Office-BBr3Ic0W.js` with Standing bars and “A proposal is not on the bar.” **Merged and kitchen-published.** Risk was **High** (presentation plus F-2/F-3). No Production household mutation, hosted schema, or secrets.
 
 **Household outcome:** Shared Home's centre is the month as one sheet — Standing, Course, Docket. Standing names each person's confirmed Fund contributions this month (demo Bianca `$1,600.00`, Jonathan `$1,660.00`). Seals, mosaic, Kitty Banks, FAB, and Add slideshow stay.
 
@@ -12,7 +12,7 @@
 
 **Verification:**
 - Focused `test/month-spread.test.ts`: **33 passed**. After integrating `main@1650910`, focused Spread+Add **60 passed**; `pnpm check` **1377 passed / 3 skipped**.
-- Kitchen HTML `https://hearth-books.jonathan-beaulne123.workers.dev/` serves `index-DQXFR0dT.js` → lazy `Office-BBr3Ic0W.js` with `ms-contrib`, `I · Standing`, Bianca/Jonathan bar copy.
+- Kitchen HTML `https://hearth-books.jonathan-beaulne123.workers.dev/` after the docs-record deploy still serves `index-DQXFR0dT.js` → lazy `Office-BBr3Ic0W.js` with `ms-contrib`, `I · Standing`, `II · Course`, `III · Docket`, and “A proposal is not on the bar.” CSS `index-CsctdKPv.css` has `ms-contrib`. HTML `Cache-Control: no-store`.
 - Pre-merge Paper office demo: Bianca `$1,600.00`, Jonathan `$1,660.00`; Fund free-to-spend `$2,018.60` ≠ leftover-spend `$498.64`.
 - Books **PASS WITH NOTES**; UX `role="group"` **PASS**; security review no medium+ findings.
 
