@@ -5,6 +5,7 @@ import {
   PERSONAL_PLATE_IDS,
   PLATE_VIEW,
   SHARED_PLATE_IDS,
+  addAccount,
   buildDashboard,
   catalogHousehold,
   fillLevel,
@@ -14,6 +15,7 @@ import {
   pairScale,
   personalPlates,
   plateWhen,
+  postEntry,
   runHealthCheck,
   seedDemoHousehold,
   sharedPlates,
@@ -249,6 +251,42 @@ describe("plate interaction and materials", () => {
     expect(officeWide).toContain("closeStage");
     expect(officeWide).toContain("setActivePlateId(null)");
     expect(officeWide).toContain("active={spreadIsStage ? false : activePlateId === plate.id}");
+  });
+});
+
+describe("shared plates stay on the household projection", () => {
+  it("never names a partner-personal card on Shared Home, even from unscoped books", () => {
+    const BIANCA = "MEM-001";
+    const CANARY = "Bianca private Amex";
+    let household = demo();
+    household = addAccount(household, {
+      name: CANARY,
+      kind: "credit",
+      ownerMemberId: BIANCA,
+      scope: "personal",
+      creditLimit: "1000",
+    }).household;
+    const amex = household.accounts.find((account) => account.name === CANARY);
+    if (!amex) throw new Error("expected personal card");
+    household = postEntry(household, {
+      date: TODAY,
+      type: "expense",
+      amount: "910",
+      accountId: amex.id,
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      confirmDuplicate: true,
+      createdBy: BIANCA,
+      visibility: "personal",
+    }).household;
+    const dashboard = buildDashboard(household, TODAY, new Date(`${TODAY}T16:00:00Z`));
+    const shared = sharedPlates({ household, dashboard, today: TODAY, findings: [] });
+    const cards = shared.find((plate) => plate.id === "cards")!;
+    const blob = `${cards.verdict} ${cards.footing} ${cards.empty ?? ""} ${cards.figure.primitive === "gauge" ? cards.figure.label : ""}`;
+    expect(blob).not.toContain(CANARY);
+    expect(blob).not.toContain("Amex");
+    expect(blob).not.toContain(amex.id);
+    expect(cards.verdict).toMatch(/Visa is at 34% of its limit/);
+    expect(models).toContain('account.scope !== "personal"');
   });
 });
 

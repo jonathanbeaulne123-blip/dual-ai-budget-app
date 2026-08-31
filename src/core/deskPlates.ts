@@ -122,7 +122,9 @@ export function sharedPlates(input: {
   const findings = input.findings ?? runHealthCheck(household);
   const dueItems = dashboard.upcoming.filter((item) => item.direction === "out" && inWindow(item.date, today, 29));
   const nextDue = dueItems[0] ?? null;
-  const cards = household.accounts.filter((account) => account.active && isCreditKind(account.kind));
+  const cards = household.accounts.filter((account) => (
+    account.active && isCreditKind(account.kind) && account.scope !== "personal"
+  ));
   const cardViews = cards.map((account) => creditCardView(household, account, today));
   const hottest = [...cardViews].sort((left, right) => (right.utilization ?? 0) - (left.utilization ?? 0))[0] ?? null;
   const claims = outstandingClaims(household);
