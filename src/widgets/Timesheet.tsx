@@ -19,9 +19,10 @@ export function TimesheetGlance({ household, streak, memberId }: { household: Ho
   const punch = activeOpenShift(household.kitchen, memberId);
   const [, setTick] = useState(0);
   useEffect(() => {
+    if (!punch || punch.endedAt || punch.status !== "open") return;
     const id = window.setInterval(() => setTick((n) => n + 1), 1_000);
     return () => window.clearInterval(id);
-  }, [punch?.startedAt]);
+  }, [punch?.startedAt, punch?.endedAt, punch?.status]);
   if (punch?.status === "confirming") return <span>{formatPreviewHours(openShiftElapsedHours(punch))} h · review</span>;
   if (punch) return <span>{formatPreviewHours(openShiftElapsedHours(punch))} h · live</span>;
   if (timesheetEmpty(streak, household.kitchen, memberId)) return <span>clock</span>;
@@ -71,9 +72,22 @@ export function TimesheetBody({
   const conflicts = openShiftConflicts(household.kitchen, memberId);
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 1_000);
-    return () => window.clearInterval(id);
-  }, []);
+    setNow(new Date());
+    if (punch && !punch.endedAt && punch.status === "open") {
+      const id = window.setInterval(() => setNow(new Date()), 1_000);
+      return () => window.clearInterval(id);
+    }
+    let interval: number | null = null;
+    const delay = 60_000 - (Date.now() % 60_000) + 1;
+    const first = window.setTimeout(() => {
+      setNow(new Date());
+      interval = window.setInterval(() => setNow(new Date()), 60_000);
+    }, delay);
+    return () => {
+      window.clearTimeout(first);
+      if (interval != null) window.clearInterval(interval);
+    };
+  }, [punch?.startedAt, punch?.endedAt, punch?.status]);
   const span = todayShiftSpan(household, today, now.getTime(), memberId);
   const previewSpan = punch && previewHours ? previewClockSpan(punch.startedAt, previewHours) : null;
   const hours = punch ? workedHoursFromOpenShift(punch, now.getTime()) : null;

@@ -30,22 +30,31 @@ export function useFurniture(
         rect: { x: rect.left, y: rect.top, w: rect.width, h: rect.height },
       });
     };
-    publish();
-    const observer = new ResizeObserver(publish);
-    observer.observe(node);
-    window.addEventListener("scroll", publish, true);
-    window.addEventListener("resize", publish);
-    let raf = 0;
-    const tick = () => {
-      publish();
-      raf = window.requestAnimationFrame(tick);
+    let publishFrame = 0;
+    const schedulePublish = () => {
+      if (publishFrame) return;
+      publishFrame = window.requestAnimationFrame(() => {
+        publishFrame = 0;
+        publish();
+      });
     };
-    if (live) raf = window.requestAnimationFrame(tick);
+    publish();
+    const observer = new ResizeObserver(schedulePublish);
+    observer.observe(node);
+    window.addEventListener("scroll", schedulePublish, true);
+    window.addEventListener("resize", schedulePublish);
+    let liveFrame = 0;
+    const tick = () => {
+      schedulePublish();
+      liveFrame = window.requestAnimationFrame(tick);
+    };
+    if (live) liveFrame = window.requestAnimationFrame(tick);
     return () => {
       observer.disconnect();
-      window.removeEventListener("scroll", publish, true);
-      window.removeEventListener("resize", publish);
-      if (raf) window.cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", schedulePublish, true);
+      window.removeEventListener("resize", schedulePublish);
+      if (publishFrame) window.cancelAnimationFrame(publishFrame);
+      if (liveFrame) window.cancelAnimationFrame(liveFrame);
       unpublishFurniture(id);
     };
   }, [id, kind, perchable, warn, enabled, live, seat]);

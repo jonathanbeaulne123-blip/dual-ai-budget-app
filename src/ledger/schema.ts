@@ -1,4 +1,4 @@
-export const BOOKS_SCHEMA_VERSION = 3;
+export const BOOKS_SCHEMA_VERSION = 4;
 
 export const BOOKS_SCHEMA = `
 CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -169,11 +169,15 @@ CREATE TABLE IF NOT EXISTS audit_revisions (
   revision INTEGER NOT NULL,
   at TEXT NOT NULL,
   snapshot_hash TEXT NOT NULL,
+  projection_hash TEXT,
   entry_count INTEGER NOT NULL,
   debit_cents INTEGER NOT NULL,
   credit_cents INTEGER NOT NULL,
   in_balance BOOLEAN NOT NULL
 );
+
+ALTER TABLE audit_revisions
+  ADD COLUMN IF NOT EXISTS projection_hash TEXT;
 
 CREATE TABLE IF NOT EXISTS household_snapshots (
   household_id TEXT PRIMARY KEY REFERENCES households(id) ON DELETE CASCADE,

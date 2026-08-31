@@ -117,7 +117,6 @@ import {
   collapseSavedOffice,
   formatPreviewHours,
   isLastCeremonyStep,
-  previewHoursLabel,
   previewHoursQuarter,
   shiftFieldLabel,
   type ShiftGate,
@@ -192,6 +191,7 @@ import {
   readHearthAuthConfig,
   startSupabaseGoogleSignIn,
   supabaseAuthEnabled,
+  supabaseSessionMatchesGoogleIdentity,
 } from "./auth/supabaseSession.ts";
 import {
   clearContinuityOutboxConflictBlocks,
@@ -207,6 +207,7 @@ import {
   transportHouseholdWithOutbox,
   type ContinuityIdentity,
 } from "./continuity.ts";
+import { afterNextPaint } from "./nextPaint.ts";
 
 function makeBooksAdapters(input: {
   environment: import("./core/types.ts").Environment;
@@ -220,17 +221,24 @@ function makeBooksAdapters(input: {
       memberId: input.memberId,
       continuityIdentity: input.continuityIdentity ?? undefined,
     }),
-    ingest: async (household) => {
+    ingest: async (household, artifact) => {
       try {
-        const { status } = await ingestHouseholdBooks(household);
+        const { status } = await ingestHouseholdBooks(household, {
+          compiled: artifact?.compiled,
+          previous: artifact?.previous,
+          auditHash: artifact?.auditHash,
+        });
         return { ok: status.ok, error: status.error };
       } catch (error) {
         return { ok: false, error: error instanceof Error ? error.message : String(error) };
       }
     },
-    verifyBooks: async (household) => {
+    verifyBooks: async (household, artifact) => {
       try {
-        const inspection = await inspectBrowserBooks(household);
+        const inspection = await inspectBrowserBooks(household, {
+          compiled: artifact?.compiled,
+          expectedAuditHash: artifact?.auditHash,
+        });
         return { ok: inspection.ok, error: inspection.ok ? undefined : inspection.message };
       } catch (caught) {
         return { ok: false, error: caught instanceof Error ? caught.message : String(caught) };
@@ -242,6 +250,7 @@ function makeBooksAdapters(input: {
     transport: input.transport,
   };
 }
+
 import { inviteFromLocation } from "./core/invite.ts";
 import { authInviteFromLocation, authInviteTokenFromText, isAuthInviteToken, savePendingAuthInvite, loadPendingAuthInvite, clearPendingAuthInvite } from "./core/authInvite.ts";
 import {
@@ -303,6 +312,7 @@ import {
 import { useDialog } from "./useDialog.ts";
 import { LedgerPurposeBanner } from "./LedgerPurposeBanner.tsx";
 import { HerculesPresence } from "./Hercules.tsx";
+import { ShiftElapsedHint } from "./ShiftElapsedHint.tsx";
 import { HerculesProApproval, HerculesProPermissionsCard, herculesProAuthorizationRequest } from "./HerculesPro.tsx";
 import { CadPad } from "./CadPad.tsx";
 import { PresetChip } from "./widgets/PresetChip.tsx";
@@ -530,7 +540,6 @@ export function App() {
   const [addDetails, setAddDetails] = useState(false);
   const [shiftGate, setShiftGate] = useState<ShiftGate>("choose");
   const [shiftStep, setShiftStep] = useState(0);
-  const [shiftTick, setShiftTick] = useState(0);
   const [hoursDirty, setHoursDirty] = useState(false);
   const [draftLocation, setDraftLocation] = useState<TransactionLocation | undefined>(undefined);
   const [locationBusy, setLocationBusy] = useState(false);
@@ -706,6 +715,11 @@ export function App() {
     try {
       const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
       const google = loadGoogleSession(environment, who);
+      if (supabaseAuthEnabled() && !authSession) {
+        setError("Your secure session needs Google sign-in before Hearth can retry sharing.");
+        setTab("more");
+        return;
+      }
         const identity: ContinuityIdentity | null = authSession
           ? { email: authSession.email, subject: authSession.googleSubject }
           : continuityIdentityFromGoogle(google);
@@ -720,6 +734,10 @@ export function App() {
         environment,
         identity,
         config: cloudConfig,
+        requireAuthenticatedSession: supabaseAuthEnabled(),
+        authenticatedIdentity: authSession
+          ? { email: authSession.email, subject: authSession.googleSubject }
+          : null,
         force: true,
         liveHousehold: current,
         expectedRevision: current.baseRevision ?? 0,
@@ -881,23 +899,6 @@ export function App() {
     const next = url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : "") + url.hash;
     window.history.replaceState({}, "", next);
   }, []);
-
-  useEffect(() => {
-    const punch = household && session ? activeOpenShift(household.kitchen, session.memberId) : null;
-    const watching = Boolean(punch) && (shiftGate === "clocked" || (shiftGate === "signOut" && shiftStep === 0));
-    if (!watching) return;
-    const id = window.setInterval(() => setShiftTick((n) => n + 1), 1_000);
-    return () => window.clearInterval(id);
-  }, [household, session?.memberId, shiftGate, shiftStep]);
-
-  useEffect(() => {
-    const punch = household && session ? activeOpenShift(household.kitchen, session.memberId) : null;
-    if (!punch) return;
-    if (hoursDirty) return;
-    if (shiftGate !== "clocked" && !(shiftGate === "signOut" && shiftStep === 0)) return;
-    const hours = formatPreviewHours(previewHoursQuarter(punch.startedAt));
-    setForm((current) => (current.hours === hours ? current : { ...current, hours }));
-  }, [household, session?.memberId, shiftGate, shiftStep, shiftTick, hoursDirty]);
 
   useEffect(() => {
     let live = true;
@@ -1241,6 +1242,16 @@ export function App() {
       if (live) setSyncState("syncing");
       try {
         const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
+        const expectedIdentity: ContinuityIdentity | null = storedAuthSession
+          ? { email: storedAuthSession.email, subject: storedAuthSession.googleSubject }
+          : continuityIdentityFromGoogle(googleSession);
+        if (
+          supabaseAuthEnabled()
+          && (!authSession || !expectedIdentity || !supabaseSessionMatchesGoogleIdentity(authSession, expectedIdentity))
+        ) {
+          if (live) setSyncState("idle");
+          return;
+        }
         const identity: ContinuityIdentity | null = authSession
           ? { email: authSession.email, subject: authSession.googleSubject }
           : continuityIdentityFromGoogle(googleSession);
@@ -1249,7 +1260,15 @@ export function App() {
           return;
         }
         const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
-        const flushed = await flushContinuityOutbox({ environment, identity, config: cloudConfig });
+        const flushed = await flushContinuityOutbox({
+          environment,
+          identity,
+          config: cloudConfig,
+          requireAuthenticatedSession: supabaseAuthEnabled(),
+          authenticatedIdentity: authSession
+            ? { email: authSession.email, subject: authSession.googleSubject }
+            : null,
+        });
         if (!live) return;
         const conflict = flushed.conflicts[0];
         if (conflict) {
@@ -2103,12 +2122,19 @@ export function App() {
     } else {
       setCommandProgressPhase("idle");
     }
+    if (ledgerWrite) await afterNextPaint();
     try {
       const googleSession = memberId ? loadGoogleSession(environment, memberId) : null;
-      const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
+      const authRequired = supabaseAuthEnabled();
+      const cachedAuthSession = authRequired ? loadSupabaseSession(environment) : null;
+      const authSession = options?.forceFlush === true && authRequired
+        ? await ensureSupabaseSession(environment)
+        : cachedAuthSession;
       const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
-      const continuityIdentity: ContinuityIdentity | null = authSession
-        ? { email: authSession.email, subject: authSession.googleSubject }
+      const continuityIdentity: ContinuityIdentity | null = authRequired
+        ? authSession
+          ? { email: authSession.email, subject: authSession.googleSubject }
+          : null
         : continuityIdentityFromGoogle(googleSession);
       const automaticContinuity = Boolean(
         continuityIdentity &&
@@ -2119,9 +2145,10 @@ export function App() {
         ),
       );
       const transportRequested = hostedContinuityAllowed(environment) && automaticContinuity;
-      // Kitchen/UX: enqueue only, flush in background. Ledger: flush immediately (sync-on-write).
-      // Stress Reload forces an immediate flush so Hercules Pro can read the new harbour shifts.
-      const flushTransport = ledgerWrite || options?.forceFlush === true;
+      // Local PGlite + durable device storage + durable outbox are the Confirm boundary.
+      // Cloud acknowledgement follows in the background. Stress Reload may still force
+      // an immediate flush so Hercules Pro can read the new harbour shifts.
+      const flushTransport = options?.forceFlush === true;
       const outcome = await acceptHouseholdWrite({
         previous,
         candidate: next,
@@ -2206,8 +2233,33 @@ export function App() {
         continuityIdentity &&
         (outcome.kind === "synchronized" || outcome.kind === "pending-transport" || !flushTransport)
       ) {
-        void flushContinuityOutbox({ environment, identity: continuityIdentity, config: cloudConfig })
-          .then(async (flushed) => {
+        void (async () => {
+          const authRequired = supabaseAuthEnabled();
+          const refreshed = authRequired
+            ? await ensureSupabaseSession(environment)
+            : null;
+          if (
+            authRequired
+            && (!refreshed || !supabaseSessionMatchesGoogleIdentity(refreshed, continuityIdentity))
+          ) {
+            return null;
+          }
+          const refreshedConfig = authenticatedSupabaseConfig(readSupabaseConfig(), refreshed);
+          const refreshedIdentity: ContinuityIdentity = refreshed
+            ? { email: refreshed.email, subject: refreshed.googleSubject }
+            : continuityIdentity;
+          const flushed = await flushContinuityOutbox({
+            environment,
+            identity: refreshedIdentity,
+            config: refreshedConfig,
+            requireAuthenticatedSession: authRequired,
+            authenticatedIdentity: refreshedIdentity,
+          });
+          return { flushed, refreshedConfig };
+        })()
+          .then(async (result) => {
+            if (!result) return;
+            const { flushed, refreshedConfig } = result;
             if (flushed.synchronized <= 0) return;
             const current = householdRef.current;
             if (!current || current.householdId !== outcome.household.householdId) return;
@@ -2228,7 +2280,7 @@ export function App() {
                     identity: continuityIdentity,
                     expectedRevision: pending.baseRevision ?? synced.revision,
                     confirmationId: `restore-tip-${pending.householdId}-${pending.revision}`,
-                    config: cloudConfig,
+                    config: refreshedConfig,
                     flush: true,
                   });
                   if (tipPush.ok) {
@@ -4521,7 +4573,7 @@ export function App() {
                   return (
                     <>
                       <p>{ceremonyCopy("clocked").title}</p>
-                      <p className="muted">{punch ? previewHoursLabel(punch.startedAt) : ceremonyCopy("clocked").hint}{shiftTick ? "" : ""}</p>
+                      {punch ? <ShiftElapsedHint startedAt={punch.startedAt} /> : <p className="muted">{ceremonyCopy("clocked").hint}</p>}
                       <button type="button" className="primary post-big" onClick={beginSignOut}>Sign out</button>
                       <button
                         type="button"
@@ -4581,7 +4633,15 @@ export function App() {
                       <p>{copy.title}</p>
                       <p className="muted">{copy.hint}</p>
                       {shiftGate === "signOut" && field === "hours" && punch && (
-                        <p className="muted">Live preview: {previewHoursLabel(punch.startedAt)}</p>
+                        <ShiftElapsedHint
+                          startedAt={punch.startedAt}
+                          prefix="Live preview: "
+                          onQuarterHours={(hours) => {
+                            if (hoursDirty) return;
+                            const formatted = formatPreviewHours(hours);
+                            setForm((current) => current.hours === formatted ? current : { ...current, hours: formatted });
+                          }}
+                        />
                       )}
                       <label>Who worked</label>
                       <select value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value })}>
@@ -5018,6 +5078,10 @@ export function App() {
                       environment,
                       identity: continuityIdentity,
                       config: authenticatedSupabaseConfig(readSupabaseConfig(), authSession),
+                      requireAuthenticatedSession: supabaseAuthEnabled(),
+                      authenticatedIdentity: authSession
+                        ? { email: authSession.email, subject: authSession.googleSubject }
+                        : null,
                     });
                     if (flushed.conflicts[0]) {
                       setError(flushed.conflicts[0].message);
@@ -5071,6 +5135,10 @@ export function App() {
                       environment,
                       identity: continuityIdentity,
                       config: authenticatedSupabaseConfig(readSupabaseConfig(), authSession),
+                      requireAuthenticatedSession: supabaseAuthEnabled(),
+                      authenticatedIdentity: authSession
+                        ? { email: authSession.email, subject: authSession.googleSubject }
+                        : null,
                     });
                     if (flushed.conflicts[0]) {
                       setError(flushed.conflicts[0].message);
@@ -5452,6 +5520,7 @@ export function App() {
         adding={adding}
         visorPop={visorPop}
         spark={spark}
+        activityBlocked={Boolean(adding || confirm || guard || commandOpen)}
         memberId={session.memberId}
         view={view}
         onGo={(next) => {

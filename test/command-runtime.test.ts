@@ -73,6 +73,43 @@ describe("atomic household writes", () => {
     expect(compileHousehold(outcome.household).entries.length).toBeGreaterThan(0);
   });
 
+  it("threads one accepted compiled artifact through ingest and verification", async () => {
+    const previous = catalogHousehold();
+    const posted = postEntry(previous, grocery("Artifact milk"));
+    let ingestCompiled: ReturnType<typeof compileHousehold> | undefined;
+    let verifyCompiled: ReturnType<typeof compileHousehold> | undefined;
+    let ingestHash: string | undefined;
+    let verifyHash: string | undefined;
+    const adapters: WriteAdapters = {
+      persist: async () => undefined,
+      ingest: async (_household, artifact) => {
+        ingestCompiled = artifact?.compiled;
+        ingestHash = artifact?.auditHash;
+        expect(artifact?.previous?.householdId).toBe(previous.householdId);
+        return { ok: true };
+      },
+      verifyBooks: async (_household, artifact) => {
+        verifyCompiled = artifact?.compiled;
+        verifyHash = artifact?.auditHash;
+        return { ok: true };
+      },
+    };
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: posted.household,
+      confirmationId: "confirm-artifact",
+      postedIds: posted.postedIds,
+      adapters,
+    });
+
+    expect(outcome.ok).toBe(true);
+    expect(ingestCompiled).toBe(verifyCompiled);
+    expect(ingestHash).toBe(verifyHash);
+    expect(ingestHash).toBe(outcome.household.booksAcceptedHash);
+    expect(ingestCompiled?.revision).toBe(outcome.revision);
+    expect(ingestCompiled?.entries.some((entry) => entry.memo === "Artifact milk")).toBe(true);
+  });
+
   it("restores previous PGlite books when post-ingest hash verify fails", async () => {
     const previous = catalogHousehold();
     const posted = postEntry(previous, grocery("Milk"));

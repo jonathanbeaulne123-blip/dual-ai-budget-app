@@ -9,6 +9,23 @@ import { catalogHousehold } from "../src/core/index.ts";
 
 let container: HTMLDivElement;
 let root: Root;
+let household: ReturnType<typeof catalogHousehold>;
+
+function renderHercules(options: { tab?: "home" | "ledger"; activityBlocked?: boolean } = {}) {
+  act(() => root.render(createElement(HerculesPresence, {
+    household,
+    today: "2026-08-30",
+    tab: options.tab ?? "home",
+    adding: false,
+    activityBlocked: options.activityBlocked,
+    memberId: household.members[0]!.id,
+    view: "household",
+    onOpenAdd: vi.fn(),
+    onGo: vi.fn(),
+    onLedger: vi.fn(),
+    onOpenSource: vi.fn(),
+  })));
+}
 
 function litterLabel(): string | null {
   return container.querySelector(".herc-litter")?.getAttribute("aria-label") ?? null;
@@ -31,19 +48,8 @@ beforeEach(() => {
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
-  const household = catalogHousehold();
-  act(() => root.render(createElement(HerculesPresence, {
-    household,
-    today: "2026-08-30",
-    tab: "ledger",
-    adding: false,
-    memberId: household.members[0]!.id,
-    view: "household",
-    onOpenAdd: vi.fn(),
-    onGo: vi.fn(),
-    onLedger: vi.fn(),
-    onOpenSource: vi.fn(),
-  })));
+  household = catalogHousehold();
+  renderHercules();
 });
 
 afterEach(() => {
@@ -74,5 +80,49 @@ describe("Hercules human-idle fly pounce", () => {
     await advance(500);
     expect(container.querySelector(".hercules-live")?.classList.contains("is-fly-pouncing")).toBe(false);
     expect(litterLabel()).toContain("0 dead flies");
+  });
+
+  it("keeps secondary rooms quiet and restarts the Home idle chase when Home returns", async () => {
+    renderHercules({ tab: "ledger" });
+    expect(litterLabel()).toBeNull();
+    await advance(12_000);
+    expect(container.querySelector(".hercules-live")?.classList.contains("is-fly-pouncing")).toBe(false);
+
+    renderHercules({ tab: "home" });
+    expect(litterLabel()).toContain("0 dead flies");
+    await advance(10_000);
+    expect(container.querySelector(".hercules-live")?.classList.contains("is-fly-pouncing")).toBe(true);
+  });
+
+  it("pauses autonomous Home activity behind a consequential sheet", async () => {
+    renderHercules({ activityBlocked: true });
+    expect(litterLabel()).toBeNull();
+    await advance(12_000);
+    expect(container.querySelector(".hercules-live")?.classList.contains("is-fly-pouncing")).toBe(false);
+
+    renderHercules({ activityBlocked: false });
+    expect(litterLabel()).toContain("0 dead flies");
+    await advance(10_000);
+    expect(container.querySelector(".hercules-live")?.classList.contains("is-fly-pouncing")).toBe(true);
+  });
+
+  it("does not schedule idle-pounce retries on phone or under reduced motion", () => {
+    act(() => root.unmount());
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 390 });
+    root = createRoot(container);
+    const timerSpy = vi.spyOn(window, "setTimeout");
+    renderHercules();
+    expect(timerSpy.mock.calls.some(([, delay]) => delay === 10_000 || delay === 1_000)).toBe(false);
+
+    act(() => root.unmount());
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 1366 });
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+    });
+    root = createRoot(container);
+    timerSpy.mockClear();
+    renderHercules();
+    expect(timerSpy.mock.calls.some(([, delay]) => delay === 10_000 || delay === 1_000)).toBe(false);
   });
 });

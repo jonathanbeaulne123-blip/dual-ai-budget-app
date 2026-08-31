@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { catalogHousehold, postEntry, postTransfer, postShift, markDuplicate } from "../src/core/index.ts";
 import {
   booksEquation,
@@ -7,11 +7,41 @@ import {
   trialBalance,
 } from "../src/core/journal.ts";
 import { seedDemoHousehold } from "../src/core/seed.ts";
-import { hashBooksSnapshot, ingestBooks, openMemoryBooks } from "../src/ledger/engine.ts";
+import { getBrowserBooks, hashBooksSnapshot, incrementalBooksEnabled, ingestBooks, openMemoryBooks, resetBrowserBooksForTests } from "../src/ledger/engine.ts";
 import { assertReadOnlySelect } from "../src/ledger/queryGuard.ts";
 import { booksSqlDump } from "../src/ledger/export.ts";
 
 describe("double-entry books", () => {
+  it("keeps the incremental canary default-off and permanently off in Production", () => {
+    vi.stubEnv("VITE_PGLITE_INCREMENTAL_DEV", "");
+    expect(incrementalBooksEnabled("development")).toBe(false);
+    vi.stubEnv("VITE_PGLITE_INCREMENTAL_DEV", "1");
+    expect(incrementalBooksEnabled("development")).toBe(true);
+    expect(incrementalBooksEnabled("production")).toBe(false);
+    vi.unstubAllEnvs();
+  });
+
+  it("forces the full writer path when a Production caller explicitly requests incremental ingest", async () => {
+    const base = catalogHousehold();
+    let previous = { ...base, environment: "production" as const };
+    previous = { ...previous, booksAcceptedHash: await hashBooksSnapshot(previous) };
+    const nextDraft = { ...previous, revision: previous.revision + 1, name: "Production stays full" };
+    const next = { ...nextDraft, booksAcceptedHash: await hashBooksSnapshot(nextDraft) };
+    const db = await openMemoryBooks();
+    try {
+      await ingestBooks(db, previous);
+      const status = await ingestBooks(db, next, compileHousehold(next), {
+        previous,
+        incremental: true,
+      });
+      expect(status.writeMode).toBe("full");
+      expect(status.compactionReason).toBe("production-full-path");
+      expect((await db.query<{ environment: string; name: string }>("SELECT environment, name FROM households")).rows)
+        .toEqual([{ environment: "production", name: "Production stays full" }]);
+    } finally {
+      await db.close();
+    }
+  }, 30_000);
   it("posts an expense as a debit to the category and a credit to the card", () => {
     const posted = postEntry(catalogHousehold(), {
       date: "2026-08-18",
@@ -140,6 +170,19 @@ describe("read-only SQL console", () => {
 });
 
 describe("Postgres books engine", () => {
+  it("coalesces concurrent opens for the same environment", async () => {
+    await resetBrowserBooksForTests();
+    try {
+      const [left, right] = await Promise.all([
+        getBrowserBooks("development"),
+        getBrowserBooks("development"),
+      ]);
+      expect(left).toBe(right);
+    } finally {
+      await resetBrowserBooksForTests();
+    }
+  }, 30_000);
+
   it("ingests a household into PGlite and the SQL trial balance matches the compiler", async () => {
     const household = postEntry(catalogHousehold(), {
       date: "2026-08-18",
@@ -245,6 +288,266 @@ describe("Postgres books engine", () => {
       expect(households.rows).toEqual([{ id: "HH-ACCEPTED" }]);
       expect(journal.rows).toEqual([{ household_id: "HH-ACCEPTED" }]);
       expect(audit.rows).toEqual([{ snapshot_hash: await hashBooksSnapshot(accepted) }]);
+    } finally {
+      await db.close();
+    }
+  }, 30_000);
+
+  it("applies a same-household delta and matches a clean full rebuild", async () => {
+    let previous = catalogHousehold();
+    previous = {
+      ...previous,
+      booksAcceptedHash: await hashBooksSnapshot(previous),
+    };
+    const posted = postEntry(previous, {
+      date: "2026-08-26",
+      type: "expense",
+      amount: "12.50",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Incremental milk",
+    }).household;
+    const next = {
+      ...posted,
+      members: posted.members.map((member) => member.id === "MEM-001" ? { ...member, name: "Jonathan updated" } : member),
+      categories: posted.categories.map((category, index) => index === 0 ? { ...category, name: `${category.name} updated` } : category),
+      accounts: posted.accounts.map((account) => account.id === "ACC-VISA" ? { ...account, name: "Visa updated" } : account),
+      revision: previous.revision + 1,
+      lastCommittedAt: "2026-08-26T12:00:00.000Z",
+      booksAcceptedHash: await hashBooksSnapshot(posted),
+    };
+    const incremental = await openMemoryBooks();
+    const rebuilt = await openMemoryBooks();
+    try {
+      await ingestBooks(incremental, previous);
+      const status = await ingestBooks(incremental, next, compileHousehold(next), {
+        previous,
+        previousCompiled: compileHousehold(previous),
+        incremental: true,
+      });
+      await ingestBooks(rebuilt, next);
+      expect(status.writeMode).toBe("incremental");
+      expect(status.changedRowCount).toBeGreaterThan(0);
+
+      const comparisons = [
+        "households", "members", "categories", "chart_accounts", "journal_entries", "journal_lines",
+        "source_transactions", "shifts", "goals", "budget_plans", "recurrences", "activity",
+        "household_funds", "fund_month_plans", "fund_events", "fund_settlement_allocations",
+        "fund_kitty_allocations", "fund_bank_bindings", "fund_private_reconciliations",
+      ];
+      for (const table of comparisons) {
+        const left = await incremental.query(`SELECT * FROM ${table} ORDER BY 1`);
+        const right = await rebuilt.query(`SELECT * FROM ${table} ORDER BY 1`);
+        expect(left.rows, table).toEqual(right.rows);
+      }
+      const leftSnapshot = await incremental.query("SELECT household_id, invite_phrase, environment, payload FROM household_snapshots");
+      const rightSnapshot = await rebuilt.query("SELECT household_id, invite_phrase, environment, payload FROM household_snapshots");
+      expect(leftSnapshot.rows).toEqual(rightSnapshot.rows);
+      for (const view of ["v_journal", "v_trial_balance", "v_income_statement", "v_net_worth", "v_catalog", "v_unbalanced_entries"]) {
+        const leftViews = await incremental.query(`SELECT * FROM ${view} ORDER BY 1, 2`);
+        const rightViews = await rebuilt.query(`SELECT * FROM ${view} ORDER BY 1, 2`);
+        expect(leftViews.rows, view).toEqual(rightViews.rows);
+      }
+      const latest = await incremental.query<{ snapshot_hash: string; revision: number }>(
+        "SELECT snapshot_hash, revision FROM audit_revisions ORDER BY revision DESC LIMIT 1",
+      );
+      expect(latest.rows).toEqual([{ snapshot_hash: await hashBooksSnapshot(next), revision: next.revision }]);
+    } finally {
+      await incremental.close();
+      await rebuilt.close();
+    }
+  }, 30_000);
+
+  it("rolls back partial incremental deletes and refuses a mismatched previous receipt", async () => {
+    let previous = postEntry(catalogHousehold(), {
+      date: "2026-08-26",
+      type: "expense",
+      amount: "9.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-COFFEE",
+      note: "Keep me",
+    }).household;
+    previous = { ...previous, booksAcceptedHash: await hashBooksSnapshot(previous) };
+    const db = await openMemoryBooks();
+    try {
+      await ingestBooks(db, previous);
+      const invalid = {
+        ...previous,
+        revision: previous.revision + 1,
+        timezone: "",
+        transactions: [],
+      };
+      await expect(ingestBooks(db, invalid, compileHousehold(invalid), {
+        previous,
+        incremental: true,
+      })).rejects.toThrow();
+      expect((await db.query("SELECT id FROM source_transactions")).rows).toHaveLength(1);
+      expect((await db.query<{ snapshot_hash: string }>("SELECT snapshot_hash FROM audit_revisions")).rows)
+        .toEqual([{ snapshot_hash: previous.booksAcceptedHash }]);
+
+      await db.query("UPDATE audit_revisions SET snapshot_hash = 'tampered'");
+      const next = { ...previous, revision: previous.revision + 1, name: "Changed" };
+      await expect(ingestBooks(db, next, compileHousehold(next), {
+        previous,
+        incremental: true,
+      })).rejects.toThrow(/receipt does not match/i);
+      expect((await db.query<{ name: string }>("SELECT name FROM households")).rows[0]?.name).toBe(previous.name);
+    } finally {
+      await db.close();
+    }
+  }, 30_000);
+
+  it("rolls back completed delta deletes and earlier upserts when a later upsert fails", async () => {
+    let previous = postEntry(catalogHousehold(), {
+      date: "2026-08-26",
+      type: "expense",
+      amount: "9.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-COFFEE",
+      note: "Update me",
+    }).household;
+    previous = postEntry(previous, {
+      date: "2026-08-27",
+      type: "expense",
+      amount: "7.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-COFFEE",
+      note: "Delete me",
+    }).household;
+    previous = { ...previous, booksAcceptedHash: await hashBooksSnapshot(previous) };
+    const retained = previous.transactions[0]!;
+    const nextDraft = {
+      ...previous,
+      revision: previous.revision + 1,
+      name: "Must roll back",
+      transactions: [{ ...retained, note: "Trigger the later upsert" }],
+    };
+    const next = { ...nextDraft, booksAcceptedHash: await hashBooksSnapshot(nextDraft) };
+    const db = await openMemoryBooks();
+    try {
+      await ingestBooks(db, previous);
+      await db.exec(`
+        CREATE FUNCTION hearth_test_fail_source_upsert() RETURNS trigger LANGUAGE plpgsql AS $$
+        BEGIN
+          RAISE EXCEPTION 'forced source upsert failure';
+        END;
+        $$;
+        CREATE TRIGGER hearth_test_fail_source_upsert
+          BEFORE INSERT OR UPDATE ON source_transactions
+          FOR EACH ROW EXECUTE FUNCTION hearth_test_fail_source_upsert();
+      `);
+
+      await expect(ingestBooks(db, next, compileHousehold(next), {
+        previous,
+        incremental: true,
+      })).rejects.toThrow(/forced source upsert failure/i);
+
+      expect((await db.query<{ name: string }>("SELECT name FROM households")).rows)
+        .toEqual([{ name: previous.name }]);
+      expect((await db.query<{ id: string; note: string }>("SELECT id, note FROM source_transactions ORDER BY id")).rows)
+        .toEqual(previous.transactions
+          .map((transaction) => ({ id: transaction.id, note: transaction.note }))
+          .sort((left, right) => left.id.localeCompare(right.id)));
+      expect((await db.query<{ snapshot_hash: string }>("SELECT snapshot_hash FROM audit_revisions")).rows)
+        .toEqual([{ snapshot_hash: previous.booksAcceptedHash }]);
+    } finally {
+      await db.close();
+    }
+  }, 30_000);
+
+  it("deletes removed journal and source rows through the incremental path", async () => {
+    let previous = postEntry(catalogHousehold(), {
+      date: "2026-08-26",
+      type: "expense",
+      amount: "9.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-COFFEE",
+      note: "Remove me",
+    }).household;
+    previous = { ...previous, booksAcceptedHash: await hashBooksSnapshot(previous) };
+    const nextDraft = { ...previous, revision: previous.revision + 1, transactions: [] };
+    const next = { ...nextDraft, booksAcceptedHash: await hashBooksSnapshot(nextDraft) };
+    const db = await openMemoryBooks();
+    try {
+      await ingestBooks(db, previous);
+      const status = await ingestBooks(db, next, compileHousehold(next), { previous, incremental: true });
+      expect(status.writeMode).toBe("incremental");
+      expect((await db.query("SELECT id FROM source_transactions")).rows).toEqual([]);
+      expect((await db.query("SELECT id FROM journal_entries")).rows).toEqual([]);
+      expect((await db.query("SELECT id FROM journal_lines")).rows).toEqual([]);
+      expect((await db.query("SELECT * FROM v_unbalanced_entries")).rows).toEqual([]);
+    } finally {
+      await db.close();
+    }
+  }, 30_000);
+
+  it("rejects a delta when any materialized SQL row changed after its receipt", async () => {
+    let previous = catalogHousehold();
+    previous = { ...previous, booksAcceptedHash: await hashBooksSnapshot(previous) };
+    const db = await openMemoryBooks();
+    try {
+      await ingestBooks(db, previous);
+      await db.query(
+        "INSERT INTO activity (id, household_id, at, action, summary) VALUES ($1,$2,$3,$4,$5)",
+        ["ACT-STALE", previous.householdId, "2026-08-26T12:00:00.000Z", "stale", "must not survive"],
+      );
+      const next = { ...previous, revision: previous.revision + 1, name: "Must reject" };
+      await expect(ingestBooks(db, next, compileHousehold(next), {
+        previous,
+        incremental: true,
+      })).rejects.toThrow(/projection changed after its receipt/i);
+      expect((await db.query<{ name: string }>("SELECT name FROM households")).rows[0]?.name).toBe(previous.name);
+      expect((await db.query("SELECT id FROM activity WHERE id = 'ACT-STALE'")).rows).toHaveLength(1);
+      expect((await db.query("SELECT id FROM audit_revisions")).rows).toHaveLength(1);
+    } finally {
+      await db.close();
+    }
+  }, 30_000);
+
+  it("forces a full rebuild when a legacy receipt has no projection proof", async () => {
+    let previous = catalogHousehold();
+    previous = { ...previous, booksAcceptedHash: await hashBooksSnapshot(previous) };
+    const db = await openMemoryBooks();
+    try {
+      await ingestBooks(db, previous);
+      await db.query("UPDATE audit_revisions SET projection_hash = NULL");
+      const next = { ...previous, revision: previous.revision + 1, name: "Re-anchored" };
+      const status = await ingestBooks(db, next, compileHousehold(next), {
+        previous,
+        incremental: true,
+      });
+      expect(status.writeMode).toBe("full");
+      expect(status.compactionReason).toBe("untrusted-previous");
+      expect((await db.query<{ projection_hash: string }>("SELECT projection_hash FROM audit_revisions")).rows[0]?.projection_hash).toMatch(/^[a-f0-9]{32}$/);
+    } finally {
+      await db.close();
+    }
+  }, 30_000);
+
+  it("periodically compacts incremental receipts with the full rebuild path", async () => {
+    let previous = catalogHousehold();
+    previous = { ...previous, booksAcceptedHash: await hashBooksSnapshot(previous) };
+    const db = await openMemoryBooks();
+    try {
+      await ingestBooks(db, previous);
+      const anchored = await db.query<{ projection_hash: string }>(
+        "SELECT projection_hash FROM audit_revisions ORDER BY revision DESC LIMIT 1",
+      );
+      const projectionHash = anchored.rows[0]!.projection_hash;
+      for (let receipt = 2; receipt <= 64; receipt += 1) {
+        await db.query(
+          "INSERT INTO audit_revisions (id, household_id, revision, at, snapshot_hash, projection_hash, entry_count, debit_cents, credit_cents, in_balance) VALUES ($1,$2,$3,$4,$5,$6,0,0,0,true)",
+          [`TEST-${receipt}`, previous.householdId, previous.revision, `2020-01-01T00:00:${String(receipt % 60).padStart(2, "0")}.000Z`, previous.booksAcceptedHash, projectionHash],
+        );
+      }
+      const next = { ...previous, revision: previous.revision + 1, name: "Compacted" };
+      const status = await ingestBooks(db, next, compileHousehold(next), {
+        previous,
+        incremental: true,
+      });
+      expect(status.writeMode).toBe("full");
+      expect(status.compactionReason).toBe("periodic-compaction");
+      expect((await db.query("SELECT id FROM audit_revisions")).rows).toHaveLength(1);
     } finally {
       await db.close();
     }

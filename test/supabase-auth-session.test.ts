@@ -13,6 +13,7 @@ import {
   saveSupabaseSession,
   setSupabaseSessionStore,
   supabaseAuthEnabled,
+  supabaseSessionMatchesGoogleIdentity,
   supabaseSessionFresh,
   type HearthSupabaseSession,
 } from "../src/auth/supabaseSession.ts";
@@ -136,5 +137,7 @@ describe("Supabase Auth browser session", () => {
     expect(() => assertPublishableKey("service_role-secret")).toThrow(/must never ship/i);
     expect(joinUrlFromInviteToken("https://kitchen.example", "raw-token", "development"))
       .toBe("https://kitchen.example/join?invite=raw-token&env=development");
+    expect(supabaseSessionMatchesGoogleIdentity(session, { subject: "sub-1", email: "a@example.com" })).toBe(true);
+    expect(supabaseSessionMatchesGoogleIdentity(session, { subject: "different-subject", email: "a@example.com" })).toBe(false);
   });
 });

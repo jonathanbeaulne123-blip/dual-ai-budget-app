@@ -203,6 +203,7 @@ export function HerculesPresence({
   adding,
   visorPop,
   spark,
+  activityBlocked = false,
   memberId,
   view,
   onOpenAdd,
@@ -220,6 +221,8 @@ export function HerculesPresence({
   adding: boolean;
   visorPop?: boolean;
   spark?: boolean;
+  /** Consequential sheets/palettes keep Hercules visible but pause autonomous work. */
+  activityBlocked?: boolean;
   memberId: string;
   view: LedgerView;
   onOpenAdd: (note?: string) => void;
@@ -246,6 +249,8 @@ export function HerculesPresence({
     [adding, tab, contextHousehold, today, memberId, view],
   );
   const [pos, setPos] = useState({ x: 12, y: 120 });
+  const posRef = useRef(pos);
+  posRef.current = pos;
   const [flip, setFlip] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [motion, setMotion] = useState<HerculesPose>("loaf");
@@ -316,11 +321,13 @@ export function HerculesPresence({
   const showTalk = Boolean((open || talk || begging) && !adding && talk && !(proposal && !open && !begging) && !showWidgetSnippets);
   const hideLiveCat = phoneShell && !mobileFocus;
   const focusShellOpen = phoneShell && mobileFocus && !adding;
+  const autonomyBlocked = adding || activityBlocked;
+  const homeAutonomy = tab === "home" && !autonomyBlocked;
   idleCaptureAllowed.current = !(
     typeof document === "undefined"
     || document.hidden
     || !desktopFly
-    || adding
+    || !homeAutonomy
     || pinned
     || open
     || mobileFocus
@@ -352,7 +359,7 @@ export function HerculesPresence({
       document.hidden
       || !desktopFly
       || !targetFly
-      || adding
+      || !homeAutonomy
       || pinned
       || open
       || mobileFocus
@@ -379,6 +386,7 @@ export function HerculesPresence({
   };
 
   useEffect(() => {
+    if (!homeAutonomy || !desktopFly || reducedMotion()) return;
     let timer: number | null = null;
     let usedThisIdlePeriod = false;
     let lastPointerMoveAt = 0;
@@ -388,7 +396,7 @@ export function HerculesPresence({
     };
     const schedule = (delay = HUMAN_IDLE_FLY_CHASE_MS) => {
       clear();
-      if (document.hidden || usedThisIdlePeriod) return;
+      if (document.hidden || usedThisIdlePeriod || !desktopFly || reducedMotion()) return;
       timer = window.setTimeout(() => {
         timer = null;
         if (idlePounceAction.current()) {
@@ -437,7 +445,7 @@ export function HerculesPresence({
       window.removeEventListener("wheel", markHumanActivity);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, []);
+  }, [desktopFly, homeAutonomy]);
 
   useLayoutEffect(() => {
     const node = bubbleRef.current;
@@ -473,22 +481,7 @@ export function HerculesPresence({
   }, []);
 
   useEffect(() => {
-    if (!desktopFly || adding || pinned || open || mobileFocus || reducedMotion()) return;
-    const hop = () => {
-      const next = furnitureLand(false, look.view.mood, today);
-      perchedOn.current = next.on;
-      setFlip(next.faceRight);
-      setPos(automaticPoint({ x: next.x, y: next.y }));
-      setMotion("walk");
-      window.setTimeout(() => setMotion(next.pose === "loaf" ? "loaf" : next.pose), 900);
-    };
-    hop();
-    const id = window.setInterval(hop, 5400);
-    return () => window.clearInterval(id);
-  }, [desktopFly, adding, pinned, open, mobileFocus, look.view.mood, today]);
-
-  useEffect(() => {
-    if (adding || reducedMotion() || !desktopFly) {
+    if (!homeAutonomy || reducedMotion() || !desktopFly) {
       setFly(null);
       return;
     }
@@ -499,9 +492,10 @@ export function HerculesPresence({
     hop();
     const id = window.setInterval(hop, 2800);
     return () => window.clearInterval(id);
-  }, [adding, tab, desktopFly]);
+  }, [homeAutonomy, desktopFly]);
 
   useEffect(() => {
+    if (!homeAutonomy) return;
     return subscribeOfficeIntent((intent) => {
       if (intent.type === "collapse") {
         setPerchPlay(false);
@@ -513,7 +507,7 @@ export function HerculesPresence({
         setTurns([]);
         return;
       }
-      if (intent.type !== "expand" || adding) return;
+      if (intent.type !== "expand" || autonomyBlocked) return;
       if (perchPlayFor.current && perchPlayFor.current !== intent.id) {
         setPerchPlay(false);
       }
@@ -537,7 +531,7 @@ export function HerculesPresence({
       const surface = herculesInstrumentSurface(intent.id, contextHousehold, today);
       setMotion(surface.pose);
     });
-  }, [contextHousehold, today, adding, tab]);
+  }, [contextHousehold, today, autonomyBlocked, homeAutonomy]);
 
   useEffect(() => {
     if (visorPop) {
@@ -548,11 +542,19 @@ export function HerculesPresence({
   }, [visorPop]);
 
   useEffect(() => {
-    if (open || pinned || adding || drag.current) return;
+    if (!homeAutonomy || open || pinned || drag.current) return;
+    const pending = new Set<number>();
+    const later = (callback: () => void, delay: number) => {
+      const timer = window.setTimeout(() => {
+        pending.delete(timer);
+        callback();
+      }, delay);
+      pending.add(timer);
+    };
     const id = window.setInterval(() => {
       idleAt.current += 1;
       const phase = idleAt.current % 6;
-      const here = pos;
+      const here = posRef.current;
       if (look.view.mood === "restless") {
         setMotion("pace");
         const next = furnitureLand(false, look.view.mood, today);
@@ -572,7 +574,7 @@ export function HerculesPresence({
           setPos(automaticPoint({ x: stand.x, y: stand.y }));
           if (!open) {
             setTalk({ spoken: "mrrp", lesson: null, fact: null, replies: [], pose: "attack", topic: "attack", attention: false });
-            window.setTimeout(() => setTalk((current) => (current?.topic === "attack" ? null : current)), 1800);
+            later(() => setTalk((current) => (current?.topic === "attack" ? null : current)), 1800);
           }
           return;
         }
@@ -589,7 +591,7 @@ export function HerculesPresence({
         setPos(automaticPoint({ x: stand.x, y: stand.y }));
         if (!open) {
           setTalk({ spoken: "mrrp", lesson: null, fact: null, replies: [], pose: "attack", topic: "attack", attention: false });
-          window.setTimeout(() => setTalk((current) => (current?.topic === "attack" ? null : current)), 1800);
+          later(() => setTalk((current) => (current?.topic === "attack" ? null : current)), 1800);
         }
         return;
       }
@@ -608,19 +610,23 @@ export function HerculesPresence({
         if (reducedMotion()) {
           setMotion(landing);
         } else {
-          window.setTimeout(() => setMotion(landing), 950);
+          later(() => setMotion(landing), 950);
         }
       } else if (phase === 1) setMotion(look.view.mood === "glowing" || look.view.mood === "content" ? "lick" : "wash");
       else if (phase === 2) setMotion("stretch");
       else if (phase >= 4 && look.view.mood === "glowing") setMotion("sleep");
       else setMotion("perch");
     }, 9000);
-    return () => window.clearInterval(id);
-  }, [open, pinned, adding, look.view.mood, pos.x, pos.y, today, fly]);
+    return () => {
+      window.clearInterval(id);
+      for (const timer of pending) window.clearTimeout(timer);
+    };
+  }, [homeAutonomy, open, pinned, look.view.mood, today]);
 
   useEffect(() => {
+    if (!homeAutonomy) return;
     return subscribeFurniture(() => {
-      if (pinned || adding || open || drag.current) return;
+      if (pinned || autonomyBlocked || open || drag.current) return;
       const on = perchedOn.current;
       if (!on) return;
       const item = listFurniture().find((row) => row.id === on);
@@ -636,22 +642,31 @@ export function HerculesPresence({
         y: Math.max(6, item.rect.y - CAT + 12),
       }));
     });
-  }, [pinned, adding, open, look.view.mood, today]);
+  }, [homeAutonomy, pinned, autonomyBlocked, open, look.view.mood, today]);
 
   useEffect(() => {
-    if (adding || open || !mutters || proposal || (tab === "home" && !focusedWidget)) return;
-    const id = window.setInterval(() => {
+    if (autonomyBlocked || open || !mutters || proposal || (tab === "home" && !focusedWidget)) return;
+    let clearTalkTimer: number | null = null;
+    let mutterTimer: number | null = null;
+    const schedule = () => {
       const now = Date.now();
-      if (now - mutterAt.current < 45000) return;
-      mutterAt.current = now;
-      const idle = herculesIdle(household, tab, today);
-      setTalk(idle);
-      setTopic(idle.topic);
-      setMotion(idle.pose);
-      window.setTimeout(() => setTalk((current) => (current === idle ? null : current)), 5000);
-    }, 16000);
-    return () => window.clearInterval(id);
-  }, [adding, open, mutters, household, tab, today, proposal]);
+      const delay = Math.max(1_000, 45_000 - (now - mutterAt.current));
+      mutterTimer = window.setTimeout(() => {
+        mutterAt.current = Date.now();
+        const idle = herculesIdle(household, tab, today);
+        setTalk(idle);
+        setTopic(idle.topic);
+        setMotion(idle.pose);
+        clearTalkTimer = window.setTimeout(() => setTalk((current) => (current === idle ? null : current)), 5_000);
+        schedule();
+      }, delay);
+    };
+    schedule();
+    return () => {
+      if (mutterTimer != null) window.clearTimeout(mutterTimer);
+      if (clearTalkTimer != null) window.clearTimeout(clearTalkTimer);
+    };
+  }, [autonomyBlocked, open, mutters, household, tab, today, proposal]);
 
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
@@ -1218,15 +1233,15 @@ export function HerculesPresence({
     <HerculesRigProvider
       mood={look.view.mood}
       reducedMotion={reducedMotion()}
-      visibilityProfile={phoneShell ? (adding ? "hidden" : "compact") : "full"}
+      visibilityProfile={autonomyBlocked ? "hidden" : phoneShell || tab !== "home" ? "compact" : "full"}
     >
       <HerculesRigBridge mood={look.view.mood} pose={pose} begging={begging} bagPlay={bagPlay} chatRigUntilRef={chatRigUntilRef} />
       <HerculesOfficeRigBridge expandId={tab === "home" ? focusedWidget : null} />
-    <div className={`hercules-world ${hideLiveCat ? "is-phone-compact" : ""} ${focusShellOpen ? "is-focus-open" : ""} ${desktopFly ? "is-desktop-wander" : ""}`} aria-live="polite">
-      {desktopFly && !adding && !reducedMotion() && (
+    <div className={`hercules-world ${hideLiveCat ? "is-phone-compact" : ""} ${focusShellOpen ? "is-focus-open" : ""} ${desktopFly && homeAutonomy ? "is-desktop-wander" : ""}`} aria-live="polite">
+      {desktopFly && homeAutonomy && !reducedMotion() && (
         <HerculesLitterBox deadFlies={deadFlies} />
       )}
-      <HerculesFly x={fly?.x ?? 0} y={fly?.y ?? 0} hidden={!desktopFly || !fly || adding || reducedMotion()} />
+      <HerculesFly x={fly?.x ?? 0} y={fly?.y ?? 0} hidden={!desktopFly || !fly || !homeAutonomy || reducedMotion()} />
       {showWidgetSnippets && (
         <div
           ref={bubbleRef}

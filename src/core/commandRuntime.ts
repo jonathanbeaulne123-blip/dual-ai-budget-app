@@ -24,8 +24,14 @@ import { autoResolveSharedConflict } from "./conflict.ts";
 import { assertHouseholdFundTransition } from "./householdFund.ts";
 import type { CommandReceipt, Household } from "./types.ts";
 import { NeedsConfirmationError } from "./types.ts";
+import { measureHearth, measureHearthSync } from "../performanceMetrics.ts";
 
 export type BooksAcceptStatus = { ok: boolean; error?: string };
+
+export type AcceptedBooksArtifact = {
+  compiled: CompiledBooks;
+  auditHash: string;
+};
 
 export type TransportResult =
   | { ok: true; remoteRevision?: number }
@@ -33,9 +39,9 @@ export type TransportResult =
 
 export type WriteAdapters = {
   persist: (household: Household) => Promise<void>;
-  ingest: (household: Household) => Promise<BooksAcceptStatus>;
+  ingest: (household: Household, artifact?: AcceptedBooksArtifact & { previous: Household | null }) => Promise<BooksAcceptStatus>;
   /** Optional post-ingest PGlite/canonical-hash check. Fail closed when provided and not ok. */
-  verifyBooks?: (household: Household) => Promise<BooksAcceptStatus>;
+  verifyBooks?: (household: Household, artifact?: AcceptedBooksArtifact) => Promise<BooksAcceptStatus>;
   restoreIngest?: (household: Household) => Promise<void>;
   transport?: (household: Household, expectedRevision: number) => Promise<TransportResult>;
 };
@@ -163,7 +169,10 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
     }
 
     assertHouseholdFundTransition(previous, candidate);
-    assertAcceptableBooks(candidate);
+    const candidateCompiled = measureHearthSync(
+      "hearth:command:compile",
+      () => assertAcceptableBooks(candidate),
+    );
 
     const bumped = (sameHousehold ? previous?.revision ?? 0 : candidate.revision ?? 0) + 1;
     // Continuity absorb / conflict-local may already set tip+1 above previous+1.
@@ -200,9 +209,20 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
         personal: await financialAuditHashForScope(accepted, "personal", actorMemberId),
       },
     });
+    const acceptedArtifact: AcceptedBooksArtifact = {
+      compiled: {
+        ...candidateCompiled,
+        revision: accepted.revision,
+        lastCommittedAt: accepted.lastCommittedAt,
+      },
+      auditHash: accepted.booksAcceptedHash!,
+    };
 
     try {
-      const status = await input.adapters.ingest(accepted);
+      const status = await measureHearth(
+        "hearth:command:books-ingest",
+        () => input.adapters.ingest(accepted, { ...acceptedArtifact, previous }),
+      );
       if (!status.ok) {
         const message = status.error || "PGlite rejected the journal. Nothing was posted.";
         const errorClass = /unbalanced|trial balance|accounting equation/i.test(message)
@@ -211,7 +231,10 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
         throw new BooksRejectedError(message, errorClass);
       }
       if (input.adapters.verifyBooks) {
-        const verified = await input.adapters.verifyBooks(accepted);
+        const verified = await measureHearth(
+          "hearth:command:books-verify",
+          () => input.adapters.verifyBooks!(accepted, acceptedArtifact),
+        );
         if (!verified.ok) {
           throw new BooksRejectedError(
             verified.error || "PGlite and the snapshot hash do not agree. Nothing was posted.",
@@ -247,7 +270,7 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
     }
 
     try {
-      await input.adapters.persist(accepted);
+      await measureHearth("hearth:command:persist", () => input.adapters.persist(accepted));
     } catch {
       const persistError = new BooksRejectedError(
         "The last valid household is still here. This phone could not save the new snapshot.",

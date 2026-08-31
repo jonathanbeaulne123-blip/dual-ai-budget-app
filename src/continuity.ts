@@ -55,6 +55,8 @@ export type ContinuityOutboxItem = {
   expectedRevision: number;
   /** Tip revision of the books this queue entry intends to publish. */
   tipRevision: number;
+  /** Immutable enqueue generation used for compare-and-remove acknowledgements. */
+  generation?: string;
   confirmationIds: string[];
   /** Memory-only tip snapshot. Omitted from durable LS/IDB. */
   snapshot?: Household;
@@ -96,6 +98,7 @@ let storeOverride: ContinuityStore | null = null;
 let nowOverride: (() => number) | null = null;
 /** Survives localStorage quota failures so Retry can still flush this session. */
 const memoryOutbox = new Map<Environment, ContinuityOutboxItem[]>();
+const durableWriteTails = new Map<Environment, Promise<void>>();
 
 function browserStore(): ContinuityStore | null {
   if (storeOverride) return storeOverride;
@@ -201,6 +204,8 @@ function normalizeOutboxItem(item: ContinuityOutboxItem): ContinuityOutboxItem {
   return {
     ...item,
     tipRevision,
+    generation: item.generation
+      ?? `${tipRevision}:${item.updatedAt}:${(item.confirmationIds ?? []).join("|")}`,
     transportKind: item.transportKind ?? (item.commandRefs?.length ? "command-ref" : "snapshot-tip"),
     commandRefs: Array.isArray(item.commandRefs) ? item.commandRefs : undefined,
     snapshot: item.snapshot ? ensureHouseholdShape(item.snapshot) : undefined,
@@ -271,29 +276,35 @@ function read(environment: Environment): ContinuityOutboxItem[] {
   return mem;
 }
 
-function writeLocalDurable(environment: Environment, durable: ContinuityOutboxDurable[]): void {
+function writeLocalDurable(environment: Environment, durable: ContinuityOutboxDurable[]): boolean {
   const store = browserStore();
-  if (!store) return;
+  if (!store) return false;
   try {
     if (durable.length) store.setItem(key(environment), JSON.stringify(durable));
     else store.removeItem(key(environment));
+    return true;
   } catch (caught) {
-    if (isStorageQuotaError(caught)) return;
+    if (isStorageQuotaError(caught)) return false;
     throw new Error(humanizeContinuityError(caught));
   }
 }
 
 /** IDB-first durable persist; LS holds the same slim metadata when space allows. */
 async function persistDurableOutbox(environment: Environment, durable: ContinuityOutboxDurable[]): Promise<void> {
+  let persisted = false;
   try {
     await idbWriteOutbox(environment, durable);
+    persisted = true;
   } catch {
     /* IndexedDB may be unavailable in private mode; LS + memory still hold the tip pointer. */
   }
   try {
-    writeLocalDurable(environment, durable);
+    persisted = writeLocalDurable(environment, durable) || persisted;
   } catch {
     /* Quota on slim metadata is rare; memory + IDB remain authoritative. */
+  }
+  if (durable.length && !persisted) {
+    throw new Error(STORAGE_QUOTA_MESSAGE);
   }
 }
 
@@ -304,9 +315,18 @@ function write(environment: Environment, items: ContinuityOutboxItem[]): void {
     // Tests inject a sync store and read it immediately — write slim LS first.
     writeLocalDurable(environment, durable);
     void idbWriteOutbox(environment, durable).catch(() => undefined);
+    durableWriteTails.set(environment, Promise.resolve());
     return;
   }
-  void persistDurableOutbox(environment, durable);
+  const previous = durableWriteTails.get(environment) ?? Promise.resolve();
+  const next = previous.catch(() => undefined).then(() => persistDurableOutbox(environment, durable));
+  void next.catch(() => undefined);
+  durableWriteTails.set(environment, next);
+}
+
+/** Confirm waits for its slim outbox pointer, never for the network. */
+export async function awaitContinuityOutboxDurable(environment: Environment): Promise<void> {
+  await (durableWriteTails.get(environment) ?? Promise.resolve());
 }
 
 /** Load a durable IndexedDB outbox when localStorage was emptied by quota. */
@@ -337,6 +357,7 @@ function sameIdentity(left: ContinuityIdentity, right: ContinuityIdentity): bool
 export function setContinuityStore(store: ContinuityStore | null): void {
   storeOverride = store;
   memoryOutbox.clear();
+  durableWriteTails.clear();
 }
 
 export function setContinuityNow(now: (() => number) | null): void {
@@ -474,6 +495,7 @@ export function enqueueContinuitySnapshot(input: {
     },
     expectedRevision: existing?.expectedRevision ?? input.expectedRevision,
     tipRevision: snapshot.revision,
+    generation: `${snapshot.revision}:${now}:${[...new Set([...(existing?.confirmationIds ?? []), input.confirmationId].filter(Boolean))].join("|")}`,
     confirmationIds: [...new Set([...(existing?.confirmationIds ?? []), input.confirmationId].filter(Boolean))],
     transportKind: useCommandRefs && mergedCommandRefs?.length ? "command-ref" : "snapshot-tip",
     commandRefs: mergedCommandRefs,
@@ -491,8 +513,16 @@ export function enqueueContinuitySnapshot(input: {
   return item;
 }
 
+function sameOutboxGeneration(left: ContinuityOutboxItem, right: ContinuityOutboxItem): boolean {
+  return left.id === right.id
+    && left.tipRevision === right.tipRevision
+    && left.generation === right.generation;
+}
+
 function replaceItem(item: ContinuityOutboxItem): void {
   const items = read(item.environment);
+  const current = items.find((row) => row.id === item.id);
+  if (!current || !sameOutboxGeneration(current, item)) return;
   write(item.environment, [...items.filter((row) => row.id !== item.id), item]);
 }
 
@@ -500,7 +530,7 @@ function replaceItem(item: ContinuityOutboxItem): void {
 export function acknowledgeContinuityOutboxItem(item: ContinuityOutboxItem): void {
   write(
     item.environment,
-    read(item.environment).filter((row) => row.id !== item.id),
+    read(item.environment).filter((row) => !sameOutboxGeneration(row, item)),
   );
 }
 
@@ -670,6 +700,7 @@ export async function transportHouseholdWithOutbox(input: {
   let item: ContinuityOutboxItem;
   try {
     item = enqueueContinuitySnapshot(input);
+    await awaitContinuityOutboxDurable(item.environment);
   } catch (caught) {
     return {
       ok: false,
@@ -701,6 +732,9 @@ export async function flushContinuityOutbox(input: {
   environment: Environment;
   identity: ContinuityIdentity;
   config?: SupabaseConfig | null;
+  /** Auth deployments fail closed before reading or sending any financial tip. */
+  requireAuthenticatedSession?: boolean;
+  authenticatedIdentity?: ContinuityIdentity | null;
   /** Bypass nextAttemptAt backoff (manual retry / tests). Conflicts still stay blocked. */
   force?: boolean;
   /**
@@ -712,6 +746,22 @@ export async function flushContinuityOutbox(input: {
   expectedRevision?: number;
   confirmationId?: string;
 }): Promise<ContinuityFlushResult> {
+  if (
+    input.requireAuthenticatedSession
+    && (
+      !input.config?.accessToken
+      || !input.config.authUserId
+      || !input.authenticatedIdentity
+      || !sameIdentity(input.identity, input.authenticatedIdentity)
+    )
+  ) {
+    return {
+      synchronized: 0,
+      pending: read(input.environment).filter((item) => sameIdentity(item.identity, input.identity)).length,
+      deferred: 0,
+      conflicts: [],
+    };
+  }
   await hydrateContinuityOutbox(input.environment);
   let items = read(input.environment).filter((item) => sameIdentity(item.identity, input.identity));
   if (!items.length && input.liveHousehold && input.force) {

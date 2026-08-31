@@ -15,6 +15,7 @@ import {
   hostedTransportAllowed,
 } from "../src/ledger/supabase.ts";
 import {
+  getBrowserBooks,
   ingestHouseholdBooks,
   inspectBrowserBooks,
   resetBrowserBooksForTests,
@@ -131,6 +132,31 @@ describe("D-110 local-first sharing", () => {
     expect(inspection.ok).toBe(false);
     expect(inspection.issue, inspection.message).toBe("projection-mismatch");
     expect(inspection.entryCount).toBe(posted.transactions.length);
+  });
+
+  it("detects a changed non-journal SQL row against the v4 projection receipt", async () => {
+    await resetBrowserBooksForTests();
+    const household = catalogHousehold();
+    await ingestHouseholdBooks(household);
+    const db = await getBrowserBooks("development");
+    await db.query(
+      "INSERT INTO activity (id, household_id, at, action, summary) VALUES ($1,$2,$3,$4,$5)",
+      ["ACT-TAMPER", household.householdId, "2026-08-30T12:00:00.000Z", "tamper", "extra row"],
+    );
+    const inspection = await inspectBrowserBooks(household);
+    expect(inspection.ok).toBe(false);
+    expect(inspection.issue, inspection.message).toBe("projection-mismatch");
+  });
+
+  it("marks a legacy receipt without projection proof for Startup P1 repair", async () => {
+    await resetBrowserBooksForTests();
+    const household = catalogHousehold();
+    await ingestHouseholdBooks(household);
+    const db = await getBrowserBooks("development");
+    await db.query("UPDATE audit_revisions SET projection_hash = NULL");
+    const inspection = await inspectBrowserBooks(household);
+    expect(inspection.ok).toBe(false);
+    expect(inspection.issue, inspection.message).toBe("incomplete-migration");
   });
 
   it("reuses the latest matching financial receipt for a metadata-only revision", async () => {

@@ -32,7 +32,7 @@ export type RigEngineDiagnostics = {
 const REACTION_FPS = 24;
 const AMBIENT_FPS = 8;
 const RESTLESS_FPS = 12;
-const QUIET_FPS = 6;
+const QUIET_FPS = 2;
 const REACTION_LEASE_MS = 8_000;
 const TRANSFORM_EPSILON = 0.01;
 

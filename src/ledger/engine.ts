@@ -11,6 +11,7 @@ import { assertReadOnlySelect } from "./queryGuard.ts";
 import { BOOKS_SCHEMA, BOOKS_SCHEMA_VERSION } from "./schema.ts";
 import { hostedTransportAllowed } from "../core/sharing.ts";
 import { pushSupabaseHousehold, probeSupabase } from "./supabase.ts";
+import { measureHearth } from "../performanceMetrics.ts";
 import {
   shapeHouseholdFundConfig,
   shapeHouseholdFundEvents,
@@ -29,6 +30,9 @@ export type BooksStatus = {
   entryCount: number;
   inBalance: boolean;
   equationHolds: boolean;
+  writeMode?: "full" | "incremental";
+  changedRowCount?: number;
+  compactionReason?: "first-ingest" | "household-switch" | "untrusted-previous" | "large-delta" | "periodic-compaction" | "incremental-disabled" | "production-full-path";
   error?: string;
   hosted?: {
     provider: "supabase";
@@ -48,6 +52,83 @@ type Queryable = {
 type BooksDatabase = Pick<PGlite, "query" | "exec" | "transaction" | "close">;
 
 type InsertValue = string | number | boolean | null;
+
+type ProjectionTable = {
+  table: string;
+  keyColumn: string;
+  columns: string[];
+  rows: InsertValue[][];
+};
+
+type ProjectionDelta = {
+  changedRowCount: number;
+  priorRowCount: number;
+  deletes: Map<string, InsertValue[]>;
+  upserts: Map<string, InsertValue[][]>;
+};
+
+export type BooksIngestOptions = {
+  previous?: Household | null;
+  previousCompiled?: CompiledBooks;
+  incremental?: boolean;
+  /** Canonical hash already computed by the accepted-write boundary. */
+  auditHash?: string;
+};
+
+const INCREMENTAL_COMPACTION_RECEIPTS = 64;
+const INCREMENTAL_MAX_CHANGED_ROWS = 1_000;
+const INCREMENTAL_MIN_CHANGED_ROWS = 32;
+const INCREMENTAL_CHANGED_RATIO = 0.25;
+
+const PROJECTION_DIGEST_TABLES = [
+  ["households", "id", "id"],
+  ["members", "id", "household_id"],
+  ["categories", "id", "household_id"],
+  ["chart_accounts", "id", "household_id"],
+  ["journal_entries", "id", "household_id"],
+  ["journal_lines", "id", "household_id"],
+  ["source_transactions", "id", "household_id"],
+  ["shifts", "id", "household_id"],
+  ["goals", "id", "household_id"],
+  ["budget_plans", "id", "household_id"],
+  ["recurrences", "id", "household_id"],
+  ["activity", "id", "household_id"],
+  ["household_funds", "id", "household_id"],
+  ["fund_month_plans", "id", "household_id"],
+  ["fund_events", "id", "household_id"],
+  ["fund_settlement_allocations", "id", "household_id"],
+  ["fund_kitty_allocations", "id", "household_id"],
+  ["fund_bank_bindings", "id", "household_id"],
+  ["fund_private_reconciliations", "id", "household_id"],
+  ["household_snapshots", "household_id", "household_id"],
+] as const;
+
+/**
+ * Digest the actual materialized SQL projection, not the source JSON. A v4
+ * receipt anchors this value after a full rebuild; every later delta verifies
+ * the live tables against that anchor before changing a row.
+ */
+function projectionDigestExpression(householdParameter = "$1"): string {
+  const parts = PROJECTION_DIGEST_TABLES.flatMap(([table, keyColumn, householdColumn]) => [
+    `'${table}'`,
+    `COALESCE((
+      SELECT string_agg(md5(to_jsonb(p)::text), ',' ORDER BY p.${keyColumn})
+      FROM ${table} p
+      WHERE p.${householdColumn} = ${householdParameter}
+    ), '')`,
+  ]);
+  return `md5(concat_ws('|', ${parts.join(", ")}))`;
+}
+
+async function actualProjectionHash(db: Queryable, householdId: string): Promise<string> {
+  const result = await db.query<{ projection_hash: string }>(
+    `SELECT ${projectionDigestExpression("$1")} AS projection_hash`,
+    [householdId],
+  );
+  const digest = result.rows[0]?.projection_hash;
+  if (!digest) throw new Error("PGlite could not prove the materialized books projection.");
+  return digest;
+}
 
 /**
  * PGlite pays a meaningful WASM/IndexedDB boundary cost per query. Keep the
@@ -78,10 +159,80 @@ async function insertRows(
   }
 }
 
+async function upsertRows(
+  db: Queryable,
+  table: string,
+  columns: string[],
+  rows: InsertValue[][],
+  batchSize = 250,
+): Promise<void> {
+  if (!rows.length) return;
+  const assignments = columns.slice(1).map((column) => `${column}=EXCLUDED.${column}`).join(",");
+  for (let offset = 0; offset < rows.length; offset += batchSize) {
+    const batch = rows.slice(offset, offset + batchSize);
+    const values: InsertValue[] = [];
+    const tuples = batch.map((row, rowIndex) => {
+      if (row.length !== columns.length) throw new Error(`Invalid ${table} projection row.`);
+      values.push(...row);
+      const base = rowIndex * columns.length;
+      return `(${columns.map((_, columnIndex) => `$${base + columnIndex + 1}`).join(",")})`;
+    });
+    await db.query(
+      `INSERT INTO ${table} (${columns.join(",")}) VALUES ${tuples.join(",")} ON CONFLICT (${columns[0]}) DO UPDATE SET ${assignments}`,
+      values,
+    );
+  }
+}
+
+async function deleteRows(
+  db: Queryable,
+  table: string,
+  keyColumn: string,
+  keys: InsertValue[],
+  batchSize = 250,
+): Promise<void> {
+  for (let offset = 0; offset < keys.length; offset += batchSize) {
+    const batch = keys.slice(offset, offset + batchSize);
+    if (!batch.length) continue;
+    await db.query(
+      `DELETE FROM ${table} WHERE ${keyColumn} IN (${batch.map((_, index) => `$${index + 1}`).join(",")})`,
+      batch,
+    );
+  }
+}
+
 let browserDbs = new Map<string, BooksDatabase>();
+let browserDbOpenings = new Map<string, Promise<BooksDatabase>>();
+const compiledBooksCache = new Map<string, CompiledBooks>();
+
+function compiledCacheKey(household: Household): string | null {
+  return household.booksAcceptedHash
+    ? `${household.environment}:${household.householdId}:${household.revision}:${household.booksAcceptedHash}`
+    : null;
+}
+
+function rememberCompiledBooks(household: Household, compiled: CompiledBooks): void {
+  const key = compiledCacheKey(household);
+  if (!key) return;
+  compiledBooksCache.set(key, compiled);
+  while (compiledBooksCache.size > 4) {
+    const oldest = compiledBooksCache.keys().next().value as string | undefined;
+    if (!oldest) break;
+    compiledBooksCache.delete(oldest);
+  }
+}
+
+function recalledCompiledBooks(household: Household): CompiledBooks | undefined {
+  const key = compiledCacheKey(household);
+  return key ? compiledBooksCache.get(key) : undefined;
+}
 
 export function booksIdbName(environment: Environment): string {
   return `idb://hearth-books-${environment}`;
+}
+
+export function incrementalBooksEnabled(environment: Environment): boolean {
+  return environment === "development" && String(import.meta.env.VITE_PGLITE_INCREMENTAL_DEV ?? "0") === "1";
 }
 
 export async function migrateBooks(db: Queryable): Promise<void> {
@@ -104,6 +255,13 @@ export async function migrateBooks(db: Queryable): Promise<void> {
   if (!have.has(3)) {
     // D-161: BOOKS_SCHEMA creates the Fund projection tables and adds account scope idempotently.
     await db.query("INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)", [3, new Date().toISOString()]);
+    have.add(3);
+  }
+  if (!have.has(4)) {
+    // D-176: v4 receipts prove the exact materialized SQL projection before deltas.
+    // Existing receipts intentionally remain unproved so Startup P1 performs one
+    // full rebuild from the cached household before incremental mode can engage.
+    await db.query("INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)", [4, new Date().toISOString()]);
   }
 }
 
@@ -117,35 +275,55 @@ export async function openMemoryBooks(): Promise<PGlite> {
 export async function getBrowserBooks(environment: Environment = "development"): Promise<BooksDatabase> {
   const existing = browserDbs.get(environment);
   if (existing) return existing;
-  const persist = typeof indexedDB !== "undefined";
-  const canUseWorker = persist
-    && typeof window !== "undefined"
-    && typeof Worker !== "undefined"
-    && typeof BroadcastChannel !== "undefined"
-    && typeof navigator !== "undefined"
-    && "locks" in navigator;
-  const db: BooksDatabase = canUseWorker
-    ? await (async () => {
-        const [{ PGliteWorker }] = await Promise.all([
-          import("@electric-sql/pglite/worker"),
-        ]);
-        return PGliteWorker.create(
-          new Worker(new URL("./pglite.worker.ts", import.meta.url), { type: "module", name: `hearth-books-${environment}` }),
-          { dataDir: booksIdbName(environment), id: `hearth-books-${environment}` },
-        );
-      })()
-    : await (async () => {
-        const { PGlite } = await import("@electric-sql/pglite");
-        return persist ? PGlite.create(booksIdbName(environment)) : PGlite.create();
-      })();
-  await migrateBooks(db);
-  browserDbs.set(environment, db);
-  return db;
+  const opening = browserDbOpenings.get(environment);
+  if (opening) return opening;
+  let nextOpening!: Promise<BooksDatabase>;
+  nextOpening = measureHearth("hearth:books:open-migrate", async () => {
+    const persist = typeof indexedDB !== "undefined";
+    const canUseWorker = persist
+      && typeof window !== "undefined"
+      && typeof Worker !== "undefined"
+      && typeof BroadcastChannel !== "undefined"
+      && typeof navigator !== "undefined"
+      && "locks" in navigator;
+    const db: BooksDatabase = canUseWorker
+      ? await (async () => {
+          const [{ PGliteWorker }] = await Promise.all([
+            import("@electric-sql/pglite/worker"),
+          ]);
+          return PGliteWorker.create(
+            new Worker(new URL("./pglite.worker.ts", import.meta.url), { type: "module", name: `hearth-books-${environment}` }),
+            { dataDir: booksIdbName(environment), id: `hearth-books-${environment}` },
+          );
+        })()
+      : await (async () => {
+          const { PGlite } = await import("@electric-sql/pglite");
+          return persist ? PGlite.create(booksIdbName(environment)) : PGlite.create();
+        })();
+    await migrateBooks(db);
+    if (browserDbOpenings.get(environment) !== nextOpening) {
+      await db.close().catch(() => undefined);
+      throw new Error("The books engine opening was retired before it became active.");
+    }
+    browserDbs.set(environment, db);
+    return db;
+  });
+  browserDbOpenings.set(environment, nextOpening);
+  try {
+    return await nextOpening;
+  } finally {
+    if (browserDbOpenings.get(environment) === nextOpening) browserDbOpenings.delete(environment);
+  }
 }
 
 async function reopenBrowserBooks(environment: Environment): Promise<BooksDatabase> {
+  const opening = browserDbOpenings.get(environment);
+  browserDbOpenings.delete(environment);
   const existing = browserDbs.get(environment);
   browserDbs.delete(environment);
+  if (opening) {
+    try { await opening; } catch { /* retired opening */ }
+  }
   if (existing) {
     try {
       await existing.close();
@@ -324,11 +502,19 @@ function assertBalanced(compiled: CompiledBooks, household: Household): {
   return { equation, tb };
 }
 
-export async function ingestBooks(db: BooksDatabase, household: Household, compiled = compileHousehold(household)): Promise<BooksStatus> {
-  return db.transaction((tx) => writeBooks(tx, household, compiled));
+export async function ingestBooks(
+  db: BooksDatabase,
+  household: Household,
+  compiled = compileHousehold(household),
+  options: BooksIngestOptions = {},
+): Promise<BooksStatus> {
+  return db.transaction((tx) => writeBooks(tx, household, compiled, options));
 }
 
 export async function resetBrowserBooksForTests(): Promise<void> {
+  const openings = [...browserDbOpenings.values()];
+  browserDbOpenings = new Map();
+  await Promise.allSettled(openings);
   for (const db of browserDbs.values()) {
     try {
       await db.close();
@@ -337,6 +523,7 @@ export async function resetBrowserBooksForTests(): Promise<void> {
     }
   }
   browserDbs = new Map();
+  compiledBooksCache.clear();
 }
 
 function deleteIndexedDatabase(name: string): Promise<void> {
@@ -351,6 +538,11 @@ function deleteIndexedDatabase(name: string): Promise<void> {
 
 /** Close and drop the PGlite IDB for one environment so a new household starts empty. */
 export async function wipeBrowserBooks(environment: Environment): Promise<void> {
+  const opening = browserDbOpenings.get(environment);
+  browserDbOpenings.delete(environment);
+  if (opening) {
+    try { await opening; } catch { /* retired opening */ }
+  }
   const existing = browserDbs.get(environment);
   if (existing) {
     try {
@@ -371,12 +563,37 @@ type BooksInspection = {
   entryCount: number;
 };
 
-async function inspectBrowserBooksAttempt(household: Household, retryLeaderChange: boolean): Promise<BooksInspection> {
+async function inspectBrowserBooksAttempt(
+  household: Household,
+  retryLeaderChange: boolean,
+  options: { compiled?: CompiledBooks; expectedAuditHash?: string } = {},
+): Promise<BooksInspection> {
   try {
     const db = await getBrowserBooks(household.environment);
-    return await db.transaction(async (tx) => {
-    const version = await tx.query<{ id: number }>("SELECT id FROM schema_migrations ORDER BY id");
-    if (version.rows.length === 0) {
+    return await measureHearth("hearth:books:inspect", () => db.transaction(async (tx) => {
+    const status = await tx.query<{
+      schema_initialized: boolean;
+      schema_current: boolean;
+      household_present: boolean;
+      entry_count: number;
+      snapshot_hash: string | null;
+      projection_hash: string | null;
+      actual_projection_hash: string;
+      unbalanced: boolean;
+    }>(
+      `SELECT
+         EXISTS (SELECT 1 FROM schema_migrations) AS schema_initialized,
+         EXISTS (SELECT 1 FROM schema_migrations WHERE id = $2) AS schema_current,
+         EXISTS (SELECT 1 FROM households WHERE id = $1) AS household_present,
+         (SELECT count(*)::int FROM journal_entries WHERE household_id = $1) AS entry_count,
+         (SELECT snapshot_hash FROM audit_revisions WHERE household_id = $1 ORDER BY revision DESC, at DESC LIMIT 1) AS snapshot_hash,
+         (SELECT projection_hash FROM audit_revisions WHERE household_id = $1 ORDER BY revision DESC, at DESC LIMIT 1) AS projection_hash,
+         ${projectionDigestExpression("$1")} AS actual_projection_hash,
+         EXISTS (SELECT 1 FROM v_unbalanced_entries WHERE household_id = $1) AS unbalanced`,
+      [household.householdId, BOOKS_SCHEMA_VERSION],
+    );
+    const projection = status.rows[0];
+    if (!projection?.schema_initialized) {
       return {
         ok: false,
         issue: "missing-schema",
@@ -384,7 +601,7 @@ async function inspectBrowserBooksAttempt(household: Household, retryLeaderChang
         entryCount: 0,
       };
     }
-    if (!version.rows.some((row) => row.id === BOOKS_SCHEMA_VERSION)) {
+    if (!projection.schema_current) {
       return {
         ok: false,
         issue: "incomplete-migration",
@@ -392,14 +609,9 @@ async function inspectBrowserBooksAttempt(household: Household, retryLeaderChang
         entryCount: 0,
       };
     }
-    const compiled = compileHousehold(household);
-    const existing = await tx.query<{ id: string }>("SELECT id FROM households WHERE id = $1", [household.householdId]);
-    const entries = await tx.query<{ n: number }>(
-      "SELECT count(*)::int AS n FROM journal_entries WHERE household_id = $1",
-      [household.householdId],
-    );
-    const entryCount = Number(entries.rows[0]?.n ?? 0);
-    if (existing.rows.length === 0 && compiled.entries.length > 0) {
+    const compiled = options.compiled ?? compileHousehold(household);
+    const entryCount = Number(projection.entry_count ?? 0);
+    if (!projection.household_present && compiled.entries.length > 0) {
       return {
         ok: false,
         issue: "interrupted-transaction",
@@ -407,15 +619,7 @@ async function inspectBrowserBooksAttempt(household: Household, retryLeaderChang
         entryCount,
       };
     }
-    const acceptedRevision = await tx.query<{ snapshot_hash: string }>(
-      `SELECT snapshot_hash
-       FROM audit_revisions
-       WHERE household_id = $1
-       ORDER BY at DESC
-       LIMIT 1`,
-      [household.householdId],
-    );
-    if (existing.rows.length > 0 && acceptedRevision.rows.length === 0) {
+    if (projection.household_present && !projection.snapshot_hash) {
       return {
         ok: false,
         issue: "interrupted-transaction",
@@ -423,11 +627,15 @@ async function inspectBrowserBooksAttempt(household: Household, retryLeaderChang
         entryCount,
       };
     }
-    const unbalanced = await tx.query<{ entry_id: string }>(
-      "SELECT entry_id FROM v_unbalanced_entries WHERE household_id = $1",
-      [household.householdId],
-    );
-    if (unbalanced.rows.length) {
+    if (projection.household_present && !projection.projection_hash) {
+      return {
+        ok: false,
+        issue: "incomplete-migration",
+        message: "PGlite needs one verified full rebuild before fast local updates can resume.",
+        entryCount,
+      };
+    }
+    if (projection.unbalanced) {
       return {
         ok: false,
         issue: "invalid-stored-data",
@@ -443,8 +651,9 @@ async function inspectBrowserBooksAttempt(household: Household, retryLeaderChang
         entryCount,
       };
     }
-    const acceptedHash = acceptedRevision.rows[0]?.snapshot_hash;
-    if (acceptedHash && acceptedHash !== (await hashBooksSnapshot(household))) {
+    const acceptedHash = projection.snapshot_hash;
+    const expectedAuditHash = options.expectedAuditHash ?? await hashBooksSnapshot(household);
+    if (acceptedHash && acceptedHash !== expectedAuditHash) {
       return {
         ok: false,
         issue: "projection-mismatch",
@@ -452,13 +661,21 @@ async function inspectBrowserBooksAttempt(household: Household, retryLeaderChang
         entryCount,
       };
     }
+    if (projection.projection_hash && projection.projection_hash !== projection.actual_projection_hash) {
+      return {
+        ok: false,
+        issue: "projection-mismatch",
+        message: "The accepted PGlite projection changed after its receipt. Recovery is available.",
+        entryCount,
+      };
+    }
     return { ok: true, message: "PGlite agrees with the household snapshot.", entryCount };
-    });
+    }));
   } catch (caught) {
     if (retryLeaderChange && isLeaderChangedError(caught)) {
       try {
         await reopenBrowserBooks(household.environment);
-        return inspectBrowserBooksAttempt(household, false);
+        return inspectBrowserBooksAttempt(household, false, options);
       } catch (retryCaught) {
         caught = retryCaught;
       }
@@ -475,131 +692,150 @@ async function inspectBrowserBooksAttempt(household: Household, retryLeaderChang
   }
 }
 
-async function writeBooks(db: Queryable, household: Household, compiled: CompiledBooks): Promise<BooksStatus> {
-  const { equation, tb } = assertBalanced(compiled, household);
-  // One PGlite database represents the active ledger for an environment. Hearth
-  // catalog/member/account ids are household-local (for example MEM-001), while
-  // the SQL schema uses simple primary keys. Clear the previously active books
-  // before compiling another replica so switching households cannot collide.
-  // The durable inactive replicas remain in src/storage.ts and are re-ingested
-  // through this same transaction when selected.
-  // PGlite's IndexedDB filesystem persists a PostgreSQL relation as one
-  // serialized browser value. DELETE leaves the previous full-snapshot pages
-  // in that relation, so switching away from a large ledger can make the next
-  // flush exceed Chromium's 127 MiB value ceiling even when the new household
-  // is empty. This projection is rebuilt in full and TRUNCATE is transactional
-  // in PostgreSQL, so CASCADE releases the old relation files without weakening
-  // rollback or touching the durable JSON/cloud household replicas.
-  // audit_revisions intentionally has no household FK, so include it explicitly;
-  // otherwise an A -> B -> A switch collides with A's prior revision id.
-  await db.query("TRUNCATE TABLE audit_revisions, households CASCADE");
-  await db.query(
-    `INSERT INTO households (id, name, timezone, currency, environment, invite_phrase, linked, revision, last_committed_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-    [
-      compiled.householdId,
-      compiled.name,
-      compiled.timezone,
-      compiled.currency,
-      compiled.environment,
-      compiled.invitePhrase,
-      compiled.linked,
-      compiled.revision,
-      compiled.lastCommittedAt,
-    ],
-  );
-  await insertRows(db, "members", ["id", "household_id", "name", "color", "active"], compiled.members.map((member) => [
-    member.id, compiled.householdId, member.name, member.color, member.active,
-  ]));
-  await insertRows(db, "categories", ["id", "household_id", "parent_id", "record_type", "name", "transaction_type", "essential", "income_stability", "active", "sort_order"], compiled.categories.map((category) => [
-    category.id, compiled.householdId, category.parentId, category.recordType, category.name, category.transactionType, category.essential, category.incomeStability, category.active, category.sortOrder,
-  ]));
+function projectBooksTables(household: Household, compiled: CompiledBooks, snapshotUpdatedAt: string): ProjectionTable[] {
   const sourceAccounts = new Map(household.accounts.map((account) => [account.id, account]));
-  await insertRows(db, "chart_accounts", ["id", "household_id", "code", "name", "account_type", "normal_balance", "source", "bank_account_id", "category_id", "owner_member_id", "scope", "active"], compiled.chart.map((account) => [
-    account.id, compiled.householdId, account.code, account.name, account.accountType, account.normalBalance, account.source, account.bankAccountId ?? null, account.categoryId ?? null, account.ownerMemberId ?? null, sourceAccounts.get(account.bankAccountId ?? "")?.scope === "personal" ? "personal" : "shared", account.active,
-  ]));
-  await insertRows(db, "journal_entries", ["id", "household_id", "date_key", "memo", "place", "source", "source_id", "visibility", "created_by", "recognized", "duplicate_key", "origin_ids"], compiled.entries.map((entry) => [
-    entry.id, compiled.householdId, entry.date, entry.memo, entry.place, entry.source, entry.sourceId ?? null, entry.visibility, entry.createdBy, entry.recognized, entry.duplicateKey, JSON.stringify(entry.originTransactionIds),
-  ]));
-  await insertRows(db, "journal_lines", ["id", "household_id", "entry_id", "line_no", "account_id", "debit_cents", "credit_cents", "party_id", "note"], compiled.entries.flatMap((entry) => entry.lines.map((line) => [
-    line.id, compiled.householdId, entry.id, line.lineNo, line.accountId, line.debitCents, line.creditCents, line.partyId, line.note,
-  ])));
-  await insertRows(db, "source_transactions", ["id", "household_id", "date_key", "type", "amount_cents", "account_id", "subcategory_id", "note", "place", "visibility", "created_by", "is_duplicate", "payload"], household.transactions.map((tx) => [
-    tx.id, compiled.householdId, tx.date, tx.type, tx.amountCents, tx.accountId, tx.subcategoryId, tx.note, tx.place, tx.visibility, tx.createdBy, tx.isDuplicate, JSON.stringify(tx),
-  ]));
-  await insertRows(db, "shifts", ["id", "household_id", "date_key", "member_id", "account_id", "sales_cents", "cash_tips_cents", "cc_tips_cents", "hours", "net_tips_cents", "wages_cents", "visibility", "created_by", "payload"], compiled.shifts.map((shift) => [
-    shift.id, compiled.householdId, shift.date, shift.memberId, shift.accountId, shift.salesCents, shift.cashTipsCents, shift.ccTipsCents, shift.hours, shift.netTipsCents, shift.wagesCents, shift.visibility, shift.createdBy, JSON.stringify(shift),
-  ]));
-  await insertRows(db, "goals", ["id", "household_id", "name", "target_cents", "saved_cents", "deadline", "shared", "owner_member_id", "subcategory_id"], compiled.goals.map((goal) => [
-    goal.id, compiled.householdId, goal.name, goal.targetCents, goal.savedCents, goal.deadline, goal.shared, goal.ownerMemberId, goal.subcategoryId,
-  ]));
-  await insertRows(db, "budget_plans", ["id", "household_id", "month_key", "subcategory_id", "amount_cents", "essential", "income_stability", "active"], compiled.budgetPlans.map((plan) => [
-    plan.id, compiled.householdId, plan.monthKey, plan.subcategoryId, plan.amountCents, plan.essential, plan.incomeStability, plan.active,
-  ]));
-  await insertRows(db, "recurrences", ["id", "household_id", "cadence", "next_date", "type", "amount_cents", "account_id", "subcategory_id", "note", "active", "auto_post"], compiled.recurrences.map((recurrence) => [
-    recurrence.id, compiled.householdId, recurrence.cadence, recurrence.nextDate, recurrence.type, recurrence.amountCents, recurrence.accountId, recurrence.subcategoryId, recurrence.note, recurrence.active, recurrence.autoPost,
-  ]));
-  await insertRows(db, "activity", ["id", "household_id", "at", "action", "summary"], compiled.activity.map((item) => [
-    item.id, compiled.householdId, item.at, item.action, item.summary,
-  ]));
-
   const fund = shapeHouseholdFundConfig(household.householdFund);
-  if (fund) {
-    await db.query(
-      `INSERT INTO household_funds (id, household_id, name, custodian_member_id, mode, opened_on, created_at, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-      [fund.id, compiled.householdId, fund.name, fund.custodianMemberId, fund.mode, fund.openedOn, fund.createdAt, fund.updatedAt],
+  const privateState = fund ? shapeHouseholdFundPrivate(household.fundPrivate, fund.custodianMemberId) : null;
+  return [
+    { table: "households", keyColumn: "id", columns: ["id", "name", "timezone", "currency", "environment", "invite_phrase", "linked", "revision", "last_committed_at"], rows: [[compiled.householdId, compiled.name, compiled.timezone, compiled.currency, compiled.environment, compiled.invitePhrase, compiled.linked, compiled.revision, compiled.lastCommittedAt]] },
+    { table: "members", keyColumn: "id", columns: ["id", "household_id", "name", "color", "active"], rows: compiled.members.map((member) => [member.id, compiled.householdId, member.name, member.color, member.active]) },
+    { table: "categories", keyColumn: "id", columns: ["id", "household_id", "parent_id", "record_type", "name", "transaction_type", "essential", "income_stability", "active", "sort_order"], rows: compiled.categories.map((category) => [category.id, compiled.householdId, category.parentId, category.recordType, category.name, category.transactionType, category.essential, category.incomeStability, category.active, category.sortOrder]) },
+    { table: "chart_accounts", keyColumn: "id", columns: ["id", "household_id", "code", "name", "account_type", "normal_balance", "source", "bank_account_id", "category_id", "owner_member_id", "scope", "active"], rows: compiled.chart.map((account) => [account.id, compiled.householdId, account.code, account.name, account.accountType, account.normalBalance, account.source, account.bankAccountId ?? null, account.categoryId ?? null, account.ownerMemberId ?? null, sourceAccounts.get(account.bankAccountId ?? "")?.scope === "personal" ? "personal" : "shared", account.active]) },
+    { table: "journal_entries", keyColumn: "id", columns: ["id", "household_id", "date_key", "memo", "place", "source", "source_id", "visibility", "created_by", "recognized", "duplicate_key", "origin_ids"], rows: compiled.entries.map((entry) => [entry.id, compiled.householdId, entry.date, entry.memo, entry.place, entry.source, entry.sourceId ?? null, entry.visibility, entry.createdBy, entry.recognized, entry.duplicateKey, JSON.stringify(entry.originTransactionIds)]) },
+    { table: "journal_lines", keyColumn: "id", columns: ["id", "household_id", "entry_id", "line_no", "account_id", "debit_cents", "credit_cents", "party_id", "note"], rows: compiled.entries.flatMap((entry) => entry.lines.map((line) => [line.id, compiled.householdId, entry.id, line.lineNo, line.accountId, line.debitCents, line.creditCents, line.partyId, line.note])) },
+    { table: "source_transactions", keyColumn: "id", columns: ["id", "household_id", "date_key", "type", "amount_cents", "account_id", "subcategory_id", "note", "place", "visibility", "created_by", "is_duplicate", "payload"], rows: household.transactions.map((tx) => [tx.id, compiled.householdId, tx.date, tx.type, tx.amountCents, tx.accountId, tx.subcategoryId, tx.note, tx.place, tx.visibility, tx.createdBy, tx.isDuplicate, JSON.stringify(tx)]) },
+    { table: "shifts", keyColumn: "id", columns: ["id", "household_id", "date_key", "member_id", "account_id", "sales_cents", "cash_tips_cents", "cc_tips_cents", "hours", "net_tips_cents", "wages_cents", "visibility", "created_by", "payload"], rows: compiled.shifts.map((shift) => [shift.id, compiled.householdId, shift.date, shift.memberId, shift.accountId, shift.salesCents, shift.cashTipsCents, shift.ccTipsCents, shift.hours, shift.netTipsCents, shift.wagesCents, shift.visibility, shift.createdBy, JSON.stringify(shift)]) },
+    { table: "goals", keyColumn: "id", columns: ["id", "household_id", "name", "target_cents", "saved_cents", "deadline", "shared", "owner_member_id", "subcategory_id"], rows: compiled.goals.map((goal) => [goal.id, compiled.householdId, goal.name, goal.targetCents, goal.savedCents, goal.deadline, goal.shared, goal.ownerMemberId, goal.subcategoryId]) },
+    { table: "budget_plans", keyColumn: "id", columns: ["id", "household_id", "month_key", "subcategory_id", "amount_cents", "essential", "income_stability", "active"], rows: compiled.budgetPlans.map((plan) => [plan.id, compiled.householdId, plan.monthKey, plan.subcategoryId, plan.amountCents, plan.essential, plan.incomeStability, plan.active]) },
+    { table: "recurrences", keyColumn: "id", columns: ["id", "household_id", "cadence", "next_date", "type", "amount_cents", "account_id", "subcategory_id", "note", "active", "auto_post"], rows: compiled.recurrences.map((recurrence) => [recurrence.id, compiled.householdId, recurrence.cadence, recurrence.nextDate, recurrence.type, recurrence.amountCents, recurrence.accountId, recurrence.subcategoryId, recurrence.note, recurrence.active, recurrence.autoPost]) },
+    { table: "activity", keyColumn: "id", columns: ["id", "household_id", "at", "action", "summary"], rows: compiled.activity.map((item) => [item.id, compiled.householdId, item.at, item.action, item.summary]) },
+    { table: "household_funds", keyColumn: "id", columns: ["id", "household_id", "name", "custodian_member_id", "mode", "opened_on", "created_at", "updated_at"], rows: fund ? [[fund.id, compiled.householdId, fund.name, fund.custodianMemberId, fund.mode, fund.openedOn, fund.createdAt, fund.updatedAt]] : [] },
+    { table: "fund_month_plans", keyColumn: "id", columns: ["id", "household_id", "fund_id", "month_key", "target_cents", "buffer_cents", "agreed_by_member_ids", "created_at", "updated_at"], rows: fund ? shapeHouseholdFundMonthPlans(household.fundMonthPlans).map((plan) => [plan.id, compiled.householdId, plan.fundId, plan.monthKey, plan.targetCents, plan.bufferCents, JSON.stringify(plan.agreedByMemberIds), plan.createdAt, plan.updatedAt]) : [] },
+    { table: "fund_events", keyColumn: "id", columns: ["id", "household_id", "fund_id", "kind", "amount_cents", "date_key", "created_by", "confirmed_by_member_id", "contributor_member_id", "destination_account_id", "related_event_id", "related_transaction_ids", "evidence_digests", "reconciliation_tied", "note", "created_at", "updated_at"], rows: fund ? shapeHouseholdFundEvents(household.fundEvents).map((event) => [event.id, compiled.householdId, event.fundId, event.kind, event.amountCents, event.date, event.createdBy, event.confirmedByMemberId, event.contributorMemberId, event.destinationAccountId, event.relatedEventId, JSON.stringify(event.relatedTransactionIds), JSON.stringify(event.evidenceDigests), event.reconciliationTied, event.note, event.createdAt, event.updatedAt]) : [] },
+    { table: "fund_settlement_allocations", keyColumn: "id", columns: ["id", "household_id", "fund_id", "event_id", "transaction_id", "amount_cents", "created_at", "updated_at"], rows: fund ? shapeHouseholdFundSettlementAllocations(household.fundSettlementAllocations).map((allocation) => [allocation.id, compiled.householdId, allocation.fundId, allocation.eventId, allocation.transactionId, allocation.amountCents, allocation.createdAt, allocation.updatedAt]) : [] },
+    { table: "fund_kitty_allocations", keyColumn: "id", columns: ["id", "household_id", "fund_id", "event_id", "goal_id", "amount_cents", "created_at", "updated_at"], rows: fund ? shapeHouseholdFundKittyAllocations(household.fundKittyAllocations).map((allocation) => [allocation.id, compiled.householdId, allocation.fundId, allocation.eventId, allocation.goalId, allocation.amountCents, allocation.createdAt, allocation.updatedAt]) : [] },
+    { table: "fund_bank_bindings", keyColumn: "id", columns: ["id", "household_id", "fund_id", "member_id", "account_id", "provider", "status", "account_digest", "created_at", "updated_at"], rows: fund && privateState ? privateState.bankBindings.map((binding) => [binding.id, compiled.householdId, binding.fundId, binding.memberId, binding.accountId, binding.provider, binding.status, binding.accountDigest, binding.createdAt, binding.updatedAt]) : [] },
+    { table: "fund_private_reconciliations", keyColumn: "id", columns: ["id", "household_id", "fund_id", "member_id", "date_key", "bank_total_cents", "operating_fund_cents", "kitty_cents", "personal_remainder_cents", "difference_cents", "tied", "shared_event_id", "created_at", "updated_at"], rows: fund && privateState ? privateState.reconciliations.map((reconciliation) => [reconciliation.id, compiled.householdId, reconciliation.fundId, reconciliation.memberId, reconciliation.date, reconciliation.bankTotalCents, reconciliation.operatingFundCents, reconciliation.kittyCents, reconciliation.personalRemainderCents, reconciliation.differenceCents, reconciliation.differenceCents === 0, reconciliation.sharedEventId, reconciliation.createdAt, reconciliation.updatedAt]) : [] },
+    { table: "household_snapshots", keyColumn: "household_id", columns: ["household_id", "invite_phrase", "environment", "payload", "updated_at"], rows: [[compiled.householdId, compiled.invitePhrase, compiled.environment, JSON.stringify(household), snapshotUpdatedAt]] },
+  ];
+}
+
+function rowsEqual(left: InsertValue[], right: InsertValue[]): boolean {
+  return left.length === right.length && left.every((value, index) => Object.is(value, right[index]));
+}
+
+function projectionDelta(previous: ProjectionTable[], next: ProjectionTable[]): ProjectionDelta {
+  const deletes = new Map<string, InsertValue[]>();
+  const upserts = new Map<string, InsertValue[][]>();
+  let changedRowCount = 0;
+  let priorRowCount = 0;
+  for (const nextTable of next) {
+    const previousTable = previous.find((table) => table.table === nextTable.table);
+    if (!previousTable) throw new Error(`Missing previous ${nextTable.table} projection.`);
+    priorRowCount += previousTable.rows.length;
+    const previousRows = new Map(previousTable.rows.map((row) => [String(row[0]), row]));
+    const nextRows = new Map(nextTable.rows.map((row) => [String(row[0]), row]));
+    const removed = previousTable.rows.filter((row) => !nextRows.has(String(row[0]))).map((row) => row[0]!);
+    const changed = nextTable.rows.filter((row) => {
+      const before = previousRows.get(String(row[0]));
+      return !before || !rowsEqual(before, row);
+    });
+    if (removed.length) deletes.set(nextTable.table, removed);
+    if (changed.length) upserts.set(nextTable.table, changed);
+    changedRowCount += removed.length + changed.length;
+  }
+  return { changedRowCount, priorRowCount, deletes, upserts };
+}
+
+async function writeFullProjection(db: Queryable, tables: ProjectionTable[]): Promise<void> {
+  await db.query("TRUNCATE TABLE audit_revisions, households CASCADE");
+  for (const table of tables) await insertRows(db, table.table, table.columns, table.rows);
+}
+
+async function writeIncrementalProjection(db: Queryable, tables: ProjectionTable[], delta: ProjectionDelta): Promise<void> {
+  for (const table of [...tables].reverse()) {
+    await deleteRows(db, table.table, table.keyColumn, delta.deletes.get(table.table) ?? []);
+  }
+  for (const table of tables) {
+    await upsertRows(db, table.table, table.columns, delta.upserts.get(table.table) ?? []);
+  }
+}
+
+async function writeBooks(db: Queryable, household: Household, compiled: CompiledBooks, options: BooksIngestOptions = {}): Promise<BooksStatus> {
+  const { equation, tb } = assertBalanced(compiled, household);
+  const snapshotUpdatedAt = new Date().toISOString();
+  const tables = projectBooksTables(household, compiled, snapshotUpdatedAt);
+  let writeMode: "full" | "incremental" = "full";
+  let changedRowCount = tables.reduce((sum, table) => sum + table.rows.length, 0);
+  const incrementalAllowed = options.incremental === true && household.environment === "development";
+  let compactionReason: BooksStatus["compactionReason"] = household.environment === "production" && options.incremental
+    ? "production-full-path"
+    : options.incremental === false
+      ? "incremental-disabled"
+      : "untrusted-previous";
+
+  if (
+    incrementalAllowed
+    && options.previous
+    && options.previous.householdId === household.householdId
+    && options.previous.booksAcceptedHash
+  ) {
+    const current = await db.query<{
+      id: string;
+      revision: number;
+      snapshot_hash: string;
+      projection_hash: string | null;
+      actual_projection_hash: string;
+      receipts: number;
+    }>(
+      `SELECT h.id, h.revision,
+              COALESCE((SELECT ar.snapshot_hash FROM audit_revisions ar WHERE ar.household_id = h.id ORDER BY ar.revision DESC, ar.at DESC LIMIT 1), '') AS snapshot_hash,
+              (SELECT ar.projection_hash FROM audit_revisions ar WHERE ar.household_id = h.id ORDER BY ar.revision DESC, ar.at DESC LIMIT 1) AS projection_hash,
+              ${projectionDigestExpression("h.id")} AS actual_projection_hash,
+              (SELECT count(*)::int FROM audit_revisions ar WHERE ar.household_id = h.id) AS receipts
+       FROM households h
+       WHERE h.id = $1`,
+      [household.householdId],
     );
-    for (const plan of shapeHouseholdFundMonthPlans(household.fundMonthPlans)) {
-      await db.query(
-        `INSERT INTO fund_month_plans (id, household_id, fund_id, month_key, target_cents, buffer_cents, agreed_by_member_ids, created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-        [plan.id, compiled.householdId, plan.fundId, plan.monthKey, plan.targetCents, plan.bufferCents, JSON.stringify(plan.agreedByMemberIds), plan.createdAt, plan.updatedAt],
-      );
+    const tip = current.rows[0];
+    if (tip) {
+      if (Number(tip.revision) !== options.previous.revision || tip.snapshot_hash !== options.previous.booksAcceptedHash) {
+        throw new Error("The accepted PGlite receipt does not match the previous household revision and hash.");
+      }
+      if (tip.projection_hash) {
+        if (tip.projection_hash !== tip.actual_projection_hash) {
+          throw new Error("The accepted PGlite projection changed after its receipt. Nothing was posted.");
+        }
+        const previousCompiled = options.previousCompiled
+          ?? recalledCompiledBooks(options.previous)
+          ?? compileHousehold(options.previous);
+        const previousTables = projectBooksTables(options.previous, previousCompiled, options.previous.lastCommittedAt ?? snapshotUpdatedAt);
+        const delta = projectionDelta(previousTables, tables);
+        changedRowCount = delta.changedRowCount;
+        const changeLimit = Math.min(
+          INCREMENTAL_MAX_CHANGED_ROWS,
+          Math.max(INCREMENTAL_MIN_CHANGED_ROWS, Math.ceil(delta.priorRowCount * INCREMENTAL_CHANGED_RATIO)),
+        );
+        if (Number(tip.receipts) >= INCREMENTAL_COMPACTION_RECEIPTS) {
+          compactionReason = "periodic-compaction";
+        } else if (delta.changedRowCount > changeLimit) {
+          compactionReason = "large-delta";
+        } else {
+          await writeIncrementalProjection(db, tables, delta);
+          writeMode = "incremental";
+          compactionReason = undefined;
+        }
+      }
+    } else {
+      compactionReason = "first-ingest";
     }
-    for (const event of shapeHouseholdFundEvents(household.fundEvents)) {
-      await db.query(
-        `INSERT INTO fund_events (id, household_id, fund_id, kind, amount_cents, date_key, created_by, confirmed_by_member_id, contributor_member_id, destination_account_id, related_event_id, related_transaction_ids, evidence_digests, reconciliation_tied, note, created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
-        [event.id, compiled.householdId, event.fundId, event.kind, event.amountCents, event.date, event.createdBy, event.confirmedByMemberId, event.contributorMemberId, event.destinationAccountId, event.relatedEventId, JSON.stringify(event.relatedTransactionIds), JSON.stringify(event.evidenceDigests), event.reconciliationTied, event.note, event.createdAt, event.updatedAt],
-      );
-    }
-    for (const allocation of shapeHouseholdFundSettlementAllocations(household.fundSettlementAllocations)) {
-      await db.query(
-        `INSERT INTO fund_settlement_allocations (id, household_id, fund_id, event_id, transaction_id, amount_cents, created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-        [allocation.id, compiled.householdId, allocation.fundId, allocation.eventId, allocation.transactionId, allocation.amountCents, allocation.createdAt, allocation.updatedAt],
-      );
-    }
-    for (const allocation of shapeHouseholdFundKittyAllocations(household.fundKittyAllocations)) {
-      await db.query(
-        `INSERT INTO fund_kitty_allocations (id, household_id, fund_id, event_id, goal_id, amount_cents, created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-        [allocation.id, compiled.householdId, allocation.fundId, allocation.eventId, allocation.goalId, allocation.amountCents, allocation.createdAt, allocation.updatedAt],
-      );
-    }
-    const privateState = shapeHouseholdFundPrivate(household.fundPrivate, fund.custodianMemberId);
-    for (const binding of privateState.bankBindings) {
-      await db.query(
-        `INSERT INTO fund_bank_bindings (id, household_id, fund_id, member_id, account_id, provider, status, account_digest, created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-        [binding.id, compiled.householdId, binding.fundId, binding.memberId, binding.accountId, binding.provider, binding.status, binding.accountDigest, binding.createdAt, binding.updatedAt],
-      );
-    }
-    for (const reconciliation of privateState.reconciliations) {
-      await db.query(
-        `INSERT INTO fund_private_reconciliations (id, household_id, fund_id, member_id, date_key, bank_total_cents, operating_fund_cents, kitty_cents, personal_remainder_cents, difference_cents, tied, shared_event_id, created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
-        [reconciliation.id, compiled.householdId, reconciliation.fundId, reconciliation.memberId, reconciliation.date, reconciliation.bankTotalCents, reconciliation.operatingFundCents, reconciliation.kittyCents, reconciliation.personalRemainderCents, reconciliation.differenceCents, reconciliation.differenceCents === 0, reconciliation.sharedEventId, reconciliation.createdAt, reconciliation.updatedAt],
-      );
-    }
+  } else if (options.previous && options.previous.householdId !== household.householdId) {
+    compactionReason = "household-switch";
+  } else if (!options.previous) {
+    compactionReason = "first-ingest";
   }
 
-  await db.query(
-    `INSERT INTO household_snapshots (household_id, invite_phrase, environment, payload, updated_at)
-     VALUES ($1,$2,$3,$4,$5)`,
-    [compiled.householdId, compiled.invitePhrase, compiled.environment, JSON.stringify(household), new Date().toISOString()],
-  );
+  if (writeMode === "full") await writeFullProjection(db, tables);
 
   const unbalanced = await db.query<{ entry_id: string }>("SELECT entry_id FROM v_unbalanced_entries WHERE household_id = $1", [compiled.householdId]);
   if (unbalanced.rows.length) {
@@ -618,21 +854,24 @@ async function writeBooks(db: Queryable, household: Household, compiled: Compile
     throw new UnbalancedBooksError("The accounting equation does not hold after ingest. Nothing was posted.");
   }
 
+  const projectionHash = await actualProjectionHash(db, compiled.householdId);
   await db.query(
-    `INSERT INTO audit_revisions (id, household_id, revision, at, snapshot_hash, entry_count, debit_cents, credit_cents, in_balance)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+    `INSERT INTO audit_revisions (id, household_id, revision, at, snapshot_hash, projection_hash, entry_count, debit_cents, credit_cents, in_balance)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
     [
       `REV-${compiled.householdId}-${compiled.revision}-${compiled.lastCommittedAt ?? "open"}`,
       compiled.householdId,
       compiled.revision,
       compiled.lastCommittedAt ?? new Date().toISOString(),
-      await hashBooksSnapshot(household),
+      options.auditHash ?? await hashBooksSnapshot(household),
+      projectionHash,
       compiled.entries.length,
       tb.totalDebitCents,
       tb.totalCreditCents,
       true,
     ],
   );
+  rememberCompiledBooks(household, compiled);
 
   return {
     ok: true,
@@ -641,15 +880,28 @@ async function writeBooks(db: Queryable, household: Household, compiled: Compile
     entryCount: compiled.entries.length,
     inBalance: true,
     equationHolds: true,
+    writeMode,
+    changedRowCount,
+    compactionReason,
   };
 }
 
 /** Local books only. Never calls hosted REST. */
-export async function ingestHouseholdBooks(household: Household): Promise<{ compiled: CompiledBooks; status: BooksStatus }> {
-  const compiled = compileHousehold(household);
+export async function ingestHouseholdBooks(
+  household: Household,
+  options: BooksIngestOptions & { compiled?: CompiledBooks } = {},
+): Promise<{ compiled: CompiledBooks; status: BooksStatus }> {
+  const compiled = options.compiled ?? compileHousehold(household);
+  const ingestOptions = {
+    ...options,
+    incremental: options.incremental ?? incrementalBooksEnabled(household.environment),
+  };
   try {
     const db = await getBrowserBooks(household.environment);
-    const status = await ingestBooks(db, household, compiled);
+    const status = await measureHearth(
+      "hearth:books:ingest",
+      () => ingestBooks(db, household, compiled, ingestOptions),
+    );
     return { compiled, status };
   } catch (caught) {
     if (!isLeaderChangedError(caught)) throw caught;
@@ -669,8 +921,11 @@ export async function ingestHouseholdBooks(household: Household): Promise<{ comp
   }
 }
 
-export async function inspectBrowserBooks(household: Household): Promise<BooksInspection> {
-  return inspectBrowserBooksAttempt(household, true);
+export async function inspectBrowserBooks(
+  household: Household,
+  options: { compiled?: CompiledBooks; expectedAuditHash?: string } = {},
+): Promise<BooksInspection> {
+  return inspectBrowserBooksAttempt(household, true, options);
 }
 
 export async function restoreHouseholdBooks(household: Household): Promise<void> {

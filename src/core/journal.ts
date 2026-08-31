@@ -272,6 +272,7 @@ function compileDocument(tx: Transaction): JournalEntry | null {
 export function compileHousehold(household: Household): CompiledBooks {
   const chart = buildChart(household);
   const known = new Set(chart.map((account) => account.id));
+  const transactionsById = new Map(household.transactions.map((transaction) => [transaction.id, transaction]));
   const entries: JournalEntry[] = [];
   const seen = new Set<string>();
 
@@ -280,7 +281,7 @@ export function compileHousehold(household: Household): CompiledBooks {
     let entry: JournalEntry | null = null;
     if (tx.type === "transfer") {
       const pair = tx.transferPairId
-        ? household.transactions.find((item) => item.id === tx.transferPairId)
+        ? transactionsById.get(tx.transferPairId)
         : undefined;
       if (pair) seen.add(pair.id);
       seen.add(tx.id);

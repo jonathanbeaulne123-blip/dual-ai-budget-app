@@ -9,7 +9,8 @@ import {
   proposeHouseholdFundContribution,
   recordHouseholdFundReconciliation,
 } from "../src/core/index.ts";
-import { ingestBooks, migrateBooks, openMemoryBooks } from "../src/ledger/engine.ts";
+import { hashBooksSnapshot, ingestBooks, migrateBooks, openMemoryBooks } from "../src/ledger/engine.ts";
+import { compileHousehold } from "../src/core/journal.ts";
 
 describe("Household Fund PGlite projection", () => {
   it("persists constrained shared events and custodian-only reconciliation facts without creating a chart account", async () => {
@@ -48,6 +49,32 @@ describe("Household Fund PGlite projection", () => {
       expect((await db.query("SELECT id FROM chart_accounts WHERE id = 'FUND-HOUSEHOLD'")).rows).toEqual([]);
       expect((await db.query("SELECT scope FROM chart_accounts WHERE bank_account_id = $1", [privateSavings.id])).rows).toEqual([{ scope: "personal" }]);
       expect((await db.query("SELECT id FROM schema_migrations WHERE id = 3")).rows).toEqual([{ id: 3 }]);
+
+      const previous = { ...household, booksAcceptedHash: await hashBooksSnapshot(household) };
+      const proposed = proposeHouseholdFundContribution(previous, {
+        memberId: "MEM-002",
+        contributorMemberId: "MEM-002",
+        amount: "25",
+        date: "2026-09-08",
+      }).household;
+      const nextDraft = { ...proposed, revision: previous.revision + 1 };
+      const next = { ...nextDraft, booksAcceptedHash: await hashBooksSnapshot(nextDraft) };
+      const status = await ingestBooks(db, next, compileHousehold(next), { previous, incremental: true });
+      expect(status.writeMode).toBe("incremental");
+
+      const rebuilt = await openMemoryBooks();
+      try {
+        await ingestBooks(rebuilt, next);
+        for (const table of [
+          "household_funds", "fund_month_plans", "fund_events", "fund_settlement_allocations",
+          "fund_kitty_allocations", "fund_bank_bindings", "fund_private_reconciliations",
+        ]) {
+          expect((await db.query(`SELECT * FROM ${table} ORDER BY 1`)).rows, table)
+            .toEqual((await rebuilt.query(`SELECT * FROM ${table} ORDER BY 1`)).rows);
+        }
+      } finally {
+        await rebuilt.close();
+      }
     } finally {
       await db.close();
     }
@@ -76,7 +103,7 @@ describe("Household Fund PGlite projection", () => {
       `);
       await migrateBooks(db);
       expect((await db.query("SELECT scope FROM chart_accounts WHERE id = 'CA-OLD'")).rows).toEqual([{ scope: "shared" }]);
-      expect((await db.query("SELECT id FROM schema_migrations ORDER BY id")).rows).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
+      expect((await db.query("SELECT id FROM schema_migrations ORDER BY id")).rows).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }]);
       expect((await db.query<{ table_name: string }>("SELECT table_name FROM information_schema.tables WHERE table_name IN ('household_funds','fund_events','fund_settlement_allocations','fund_private_reconciliations') ORDER BY table_name")).rows.map((row) => row.table_name)).toEqual([
         "fund_events", "fund_private_reconciliations", "fund_settlement_allocations", "household_funds",
       ]);

@@ -135,6 +135,23 @@ describe("Hercules rig engine", () => {
     engine.destroy();
   });
 
+  it("uses a quiet compact baseline but still accelerates direct reactions", async () => {
+    vi.useFakeTimers();
+    const engine = createHerculesRigEngine();
+    engine.setVisibilityProfile("compact");
+    engine.start();
+    const started = engine.getDiagnostics().tickCount;
+    await vi.advanceTimersByTimeAsync(1_000);
+    const compactTicks = engine.getDiagnostics().tickCount - started;
+    expect(engine.getDiagnostics().framesPerSecond).toBe(2);
+    expect(compactTicks).toBeGreaterThanOrEqual(1);
+    expect(compactTicks).toBeLessThanOrEqual(3);
+
+    engine.dispatch({ type: "playClip", clipId: IDLE_FLY_POUNCE_CLIP_ID, loop: false });
+    expect(engine.getDiagnostics()).toMatchObject({ motionMode: "reaction", framesPerSecond: 24 });
+    engine.destroy();
+  });
+
   it("accelerates finite reactions then returns to the autonomous baseline", async () => {
     vi.useFakeTimers();
     const engine = createHerculesRigEngine();

@@ -21,6 +21,17 @@ export type HearthAuthConfig = {
   publishableKey: string;
 };
 
+export function supabaseSessionMatchesGoogleIdentity(
+  session: HearthSupabaseSession,
+  identity: { subject: string; email: string },
+): boolean {
+  const expectedSubject = identity.subject.trim();
+  const actualSubject = session.googleSubject.trim();
+  if (expectedSubject && actualSubject) return expectedSubject === actualSubject;
+  return Boolean(identity.email.trim())
+    && session.email.trim().toLowerCase() === identity.email.trim().toLowerCase();
+}
+
 type TokenStore = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
 const SESSION_PREFIX = "hearth:v1:supabase-auth:";
