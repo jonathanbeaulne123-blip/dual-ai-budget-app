@@ -1,13 +1,13 @@
 # Hearth worksession — UI performance P2
 
-- **Status:** COMPLETE
+- **Status:** CLOSED — merged and deployed
 - **Opened:** 2026-08-30 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/performance-p2`
 - **Baseline SHA:** `9376c30ba5db55c920d15ce3feacb65dedae5733` plus the open local D-177 Performance P2 working tree
-- **Head SHA:** working tree
+- **Head SHA:** `29250c73d2af4ca46db97028fd9eaa606fa3aad0`
 - **PR or issue:** none
 - **Risk:** Medium
 - **Decision owner:** Jonathan
@@ -70,6 +70,7 @@ The kitchen remains responsive while a shift clock is open, Home geometry follow
 - 2026-08-30: focused UI/Office/startup gate passed 11 files / 98 tests. `tsc --noEmit`, `pnpm ai:verify`, Vite production build, Hercules companion build, `git diff --check`, and the no-`dist/_redirects` check passed. Independent `pnpm check` completed the full test stage and stopped only at the package build's Unix `rm` command on Windows; the manual build equivalent passed.
 - 2026-08-30: in-app browser checks passed at 320, 390, 720, and 1100 CSS px with the correct phone/wide Office surface, no horizontal overflow, no console errors, and a visible 68×56 px keyboard focus target. The local due-item dialog correctly held Hercules in his blocked profile; component tests independently proved unblock rescheduling and the ten-second litter capture without mutating the local household.
 - 2026-08-30: final independent review found and closed one phone/reduced-motion retry loop in the pounce scheduler. The effect and its recursive schedule now fail quiescent before allocating a timer; a regression test proves neither the ten-second deadline nor one-second retry is scheduled in those profiles.
+- 2026-08-30: rebased with Shared Money `main@f5f0503`, renumbered to D-178, and released at `29250c7`. Branch CI `33344886166`, main CI `33345134140`, and Cloudflare deployment `33345134173` passed. Live wide Office and 390 px `OfficePhone` both rendered Hercules without horizontal overflow or console errors; cached journal validation settled without a blocked state.
 
 ## Decisions
 
@@ -82,4 +83,4 @@ The kitchen remains responsive while a shift clock is open, Home geometry follow
 
 ## Handoff
 
-Complete local worksession. No push, merge, deployment, hosted mutation, secret, or Production action was performed.
+Merged to `main` and deployed to `hearth-books` at `29250c7`. No hosted-data mutation, migration, secret, feature-flag, or Production-data action was performed.

@@ -1,13 +1,13 @@
 # Hearth worksession — Performance P2
 
-- **Status:** CLOSED — implementation verified; Development canary remains default-off
+- **Status:** CLOSED — merged and deployed; Development canary remains default-off
 - **Opened:** 2026-08-30 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/performance-p2`
 - **Baseline SHA:** `9376c30ba5db55c920d15ce3feacb65dedae5733`
-- **Head SHA:** working tree
+- **Head SHA:** `29250c73d2af4ca46db97028fd9eaa606fa3aad0`
 - **PR or issue:** none
 - **Risk:** High
 - **Decision owner:** Jonathan
@@ -74,6 +74,7 @@ Confirm yields a Saving frame, accepts balanced books durably on this phone, and
 - 2026-08-30: `pnpm ai:verify`, `tsc --noEmit`, Vite production build, Hercules Pro UI build, no `dist/_redirects`, and `git diff --check` passed. `pnpm check` cannot invoke its Unix `rm -rf dist` wrapper on this host; manual equivalents passed.
 - 2026-08-30: independent PGlite and continuity trust re-audits passed with no P0/P1 after projection-digest, durability, Auth, acknowledgement-race, and hidden-rAF repairs.
 - 2026-08-30: final verifier caught and rechecked the writer-level Production boundary. An explicit `{ incremental: true }` request now remains full-path in Production; the direct Production and post-delete/upsert rollback proofs passed. Final focused matrix: `84` tests; independent re-verification: PASS.
+- 2026-08-30: rebased cleanly onto Shared Money `main@f5f0503`, with SF-02 retained as D-176 and this packet renumbered D-177. The combined release head `29250c7` passed branch CI run `33344886166`, main CI run `33345134140`, Cloudflare deployment run `33345134173`, and live desktop/phone cached-shell validation. The incremental canary remains unset and off.
 
 ## Decisions
 
@@ -91,4 +92,4 @@ Confirm yields a Saving frame, accepts balanced books durably on this phone, and
 
 ## Handoff
 
-Verified local implementation only. No push, PR, merge, deployment, hosted mutation, canary enablement, or Production activation is authorized by this worksession.
+Merged to `main` and deployed to `hearth-books` at `29250c7`. No migration, hosted-data mutation, secret change, canary enablement, or Production incremental activation occurred.
