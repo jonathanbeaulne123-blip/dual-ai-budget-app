@@ -1,6 +1,6 @@
 # Hearth worksession — Bianca Month mainline catch-up
 
-- **Status:** OPEN — local catch-up verified; server-authority, Gemini, and authenticated-phone gates pending
+- **Status:** OPEN — Development code released; server-authority, Gemini, rehearsal, and authenticated-phone gates pending
 - **Opened:** 2026-08-31 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -35,7 +35,7 @@ Bianca's four-week rehearsal stays inside the Hearth Jonathan and Bianca actuall
 
 ### Out
 
-- Push, merge, deploy, hosted schema or data mutation, secrets, providers, Production, real household entry, Gemini transmission, and authenticated-phone proof.
+- Hosted schema or data mutation, secrets, providers, Production, real household entry, Gemini transmission, and authenticated-phone proof. Jonathan separately authorized the reviewed Git push, fast-forward merge, and Development code deployment on 2026-08-31.
 
 ## Acceptance
 
@@ -63,13 +63,15 @@ Bianca's four-week rehearsal stays inside the Hearth Jonathan and Bianca actuall
 - 2026-08-31: local browser proof exercised the active rehearsal at 320, 390, 720, and 1100 px with ordinary Hearth navigation, no horizontal overflow, preview-only future week, visible keyboard focus, and no browser warnings/errors.
 - 2026-08-31: independent acceptance verification found no P0-P2. Books/trust review found a command-kind/compaction boundary; receiver authority checks, materialization hashing, actual compaction coverage, Personal stripping, and tamper tests were added and re-reviewed. The reviewer confirmed P2 closed and retained the server-authority limitation below.
 - 2026-08-31: post-hardening verification passed **1,319/1,319** product tests outside `test/api.test.ts`; that environment-sensitive file passed **8/8** with the bundled Git/Python paths. Combined result: **1,327 passed / 3 skipped / 0 failed**. Final AI-surface, TypeScript, Vite production, Hercules Pro UI, and no-`dist/_redirects` checks passed.
+- 2026-08-31: exact release head `4af04130507291c8805102dcd1d4b73dd8cdfc0a` passed `pnpm check`: AI-surface verification, **1,335 passed / 3 skipped / 0 failed** across 205 passed / 2 skipped files, TypeScript, Vite production, Hercules Pro UI, and the no-`dist/_redirects` assertion. Known PGlite browser-external/eval and chunk-size warnings remained non-blocking.
+- 2026-08-31: the reviewed branch was pushed and fast-forwarded to `main@4af04130507291c8805102dcd1d4b73dd8cdfc0a`. Cloudflare Workers run [`33425439223`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33425439223) passed. The live origin returned HTTP 200 with `Cache-Control: no-store`, the exact release CSS asset, and a GitHub-configured JavaScript bundle containing the D-183 `updateMonthRehearsal`, Start/Resume, and preview-only markers.
 
 ## Remaining uncertainty
 
 - Local command-log replay proves the current event contract, not authenticated hosted transport on two real phones.
 - The client materialization SHA detects corruption but is not a server authority signature. An authenticated participant with a deliberately compromised client could recompute it; closing that requires separately authorized server-side validation/signing work.
-- The final rebased implementation is committed locally at `bb6fb0c`; release-review documentation follows on the branch. No remote action has occurred.
+- Development code is available from `main@4af0413`. This is not authenticated two-phone continuity, daily-use approval, server authority, Production readiness, or launch approval.
 
 ## Handoff
 
-Keep one writer in the isolated worktree. Do not push, merge, deploy, transmit to Gemini, or touch hosted/Production state without Jonathan's separate action-time approval.
+Keep one writer in the isolated worktree. Do not transmit to Gemini, change hosted schema/data/secrets/providers, or touch Production without Jonathan's separate action-time approval.

@@ -67,7 +67,7 @@ Only the currently open or just-closed worksession belongs here. Durable history
 
 | Worksession | State | Scope | Output |
 |---|---|---|---|
-| [2026-08-31 Bianca Month mainline catch-up](worksessions/2026-08-31-bianca-month-mainline.md) | **LOCAL CATCH-UP; RELEASE REVIEW** | D-183 current App/books/command-sync trial contract | Full-App and two-device command-event regressions; no hosted mutation or Production |
+| [2026-08-31 Bianca Month mainline catch-up](worksessions/2026-08-31-bianca-month-mainline.md) | **DEVELOPMENT CODE RELEASED; REHEARSAL OPEN** | D-183 current App/books/command-sync trial contract | `main@4af0413`; no hosted mutation or Production; two-phone/four-week proof pending |
 | [2026-08-31 Merge FAB + Add slideshow and deploy](worksessions/2026-08-31-merge-deploy-add-slideshow.md) | **OPEN; RELEASE** | Integrate #244 FAB/Add slideshow onto current `main` as D-181, then merge/push/deploy | Jonathan explicit 2026-08-31: merge push deploy |
 | [2026-08-31 Add slideshow](worksessions/2026-08-31-add-slideshow.md) | **OPEN; INTEGRATING** | Unique cashpad prompt slideshows per Add mode | Confirm still posts; numbered D-181 |
 | [2026-08-31 FAB add speed dial](worksessions/2026-08-31-fab-speed-dial.md) | **OPEN; INTEGRATING** | Vertical linear `+` menu → Add shift/income/expense/transfer | Dial never posts |
