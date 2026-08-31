@@ -173,7 +173,7 @@ describe("SF-02 authenticated access client", () => {
 });
 
 describe("migration 017 security contract", () => {
-  const sql = readFileSync("supabase/migrations/017_shared_money_membership_sessions.sql", "utf8");
+  const sql = readFileSync("supabase/migrations/017_shared_money_membership_sessions.sql", "utf8").replace(/\r\n/g, "\n");
 
   it("uses the Supabase session row plus a non-revivable device tombstone", () => {
     expect(sql).toMatch(/auth\.jwt\(\) ->> 'session_id'/);
