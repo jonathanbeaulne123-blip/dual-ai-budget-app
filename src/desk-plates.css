@@ -1,0 +1,185 @@
+/* Desk plates — mosaic grammar. House tokens only. No hex literals. */
+
+.desk-plate {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  min-height: 148px;
+  padding: 12px 12px 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: var(--lift-1);
+  text-align: left;
+  cursor: pointer;
+  color: var(--ink);
+  font-family: var(--font);
+  border-left-width: 3px;
+  border-left-color: var(--line);
+}
+.desk-plate.edge-clear { border-left-color: var(--pine); }
+.desk-plate.edge-attention { border-left-color: var(--copper); }
+.desk-plate.edge-live { border-left-color: var(--gold); }
+.desk-plate.edge-quiet { border-left-color: var(--line); }
+.desk-plate.is-active {
+  box-shadow: var(--lift-2);
+  outline: 2px solid color-mix(in srgb, var(--pine) 55%, transparent);
+  outline-offset: 2px;
+}
+.desk-plate.is-enlarged {
+  min-height: 220px;
+  padding: 18px 20px 14px;
+  cursor: default;
+}
+.desk-plate:hover {
+  transform: translateY(-1px);
+}
+.desk-plate:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
+
+.desk-plate-kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.desk-plate-verdict {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-wrap: balance;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.desk-plate-verdict.is-copper,
+.desk-plate.is-copper .desk-plate-verdict {
+  color: var(--copper);
+}
+.desk-plate-figure {
+  min-height: 44px;
+}
+.desk-plate-empty,
+.desk-plate-empty-figure {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.desk-plate-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.desk-plate-rail,
+.desk-plate-tick,
+.desk-plate-threshold {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.desk-plate-threshold {
+  stroke: var(--copper);
+  stroke-width: 1.5;
+}
+.desk-plate-mark,
+.desk-plate-spark,
+.desk-plate-fill,
+.desk-plate-pair-up {
+  fill: var(--pine);
+}
+.desk-plate-pair-down,
+.desk-plate-spark.is-down,
+.desk-plate-fill.is-over {
+  fill: var(--copper);
+}
+.desk-plate-well {
+  fill: color-mix(in srgb, var(--paper-2) 80%, transparent);
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.desk-plate-tally {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+.desk-plate-caption,
+.desk-plate-caption.is-down {
+  fill: var(--muted);
+  font-size: 8px;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.desk-plate-footing {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+}
+.desk-plate-foot {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.desk-plate-handle {
+  flex: none;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.desk-plate-handle:hover {
+  border-color: var(--pine);
+  color: var(--pine);
+}
+.desk-plate-handle:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
+
+.office-wide-mosaic.office-wide-plates .hearth-story-grid,
+.office-wide.is-shared-home .office-wide-mosaic.office-wide-plates .hearth-story-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 899px) {
+  .office-wide-mosaic.office-wide-plates .hearth-story-grid,
+  .office-wide.is-shared-home .office-wide-mosaic.office-wide-plates .hearth-story-grid {
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desk-plate,
+  .desk-plate:hover {
+    transform: none;
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .desk-plate {
+    border: 2px solid CanvasText;
+  }
+  .desk-plate-handle {
+    border: 2px solid CanvasText;
+  }
+  .desk-plate-mark,
+  .desk-plate-fill,
+  .desk-plate-pair-up,
+  .desk-plate-spark {
+    fill: CanvasText;
+  }
+}

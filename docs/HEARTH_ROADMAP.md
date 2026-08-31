@@ -68,6 +68,7 @@ Only the currently open or just-closed worksession belongs here. Durable history
 
 | Worksession | State | Scope | Output |
 |---|---|---|---|
+| [2026-08-31 Desk plates](worksessions/2026-08-31-desk-plates.md) | **OPEN; IMPLEMENTING** | Twelve Home mosaic plates (six Shared, six Personal) over existing selectors; Spread stays the Shared default stage | branch `cursor/desk-plates-shared-home-021f` from `origin/main@7d4e193`; no merge, deploy, schema, or Production |
 | [2026-08-31 Month Spread](worksessions/2026-08-31-month-spread.md) | **CLOSED; MERGED #259; KITCHEN PUBLISHED** | Shared Home centre instrument (Standing / Course / Docket) plus member contribution bars; F-2/F-3 Fund projection corrections | merge `main@d648258`; canon `main@ed852a8`; Cloudflare `33432832963`; Worker `2488cac3`; live `Office-BBr3Ic0W.js` |
 | [2026-08-31 Bianca Month mainline catch-up](worksessions/2026-08-31-bianca-month-mainline.md) | **DEVELOPMENT CODE RELEASED; REHEARSAL OPEN** | D-183 current App/books/command-sync trial contract | `main@4af0413`; no hosted mutation or Production; two-phone/four-week proof pending |
 | [2026-08-31 Hercules provider fallback release](worksessions/2026-08-31-hercules-provider-fallback-release.md) | **CLOSED; MERGED TO MAIN; GITHUB DEPLOYED** | Ordinary synthetic chat Gemini → Groq → OpenAI → Workers AI; Worker-only Gemini/Groq secrets | D-184; runtime `d131571`; OpenAI paid gate off |

@@ -234,9 +234,9 @@ describe("the Development kitchen can take the picture", () => {
 });
 
 describe("Month Spread fences", () => {
-  it("is the Shared Home centre and does not evict the story panels", () => {
+  it("is the Shared Home centre and yields the mosaic to desk plates", () => {
     expect(officeWide).toContain("<MonthSpread");
-    expect(officeWide).toContain("<SharedLedgerStory");
+    expect(officeWide).toContain("<DeskPlate");
     expect(officeWide).toContain("sharedMonthCourse(booksHousehold, today)");
     expect(officeWide).not.toContain("sharedMonthCourse(household, today)");
     expect(main).toContain('import "./month-spread.css";');

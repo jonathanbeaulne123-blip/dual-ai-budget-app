@@ -40,9 +40,10 @@ describe("D-164 ledger story UI fences", () => {
     expect(office).toContain("sharedStory={sharedStory}");
     expect(office).toContain("personalStory={personalStory}");
     expect(office).not.toContain("Also on this desk");
-    expect(officeWide).toContain("<SharedLedgerStory");
-    expect(officeWide).toContain("<PersonalLedgerFolio");
-    expect(officeWide).toContain("paperHomeMosaic");
+    expect(officeWide).toContain("<DeskPlate");
+    expect(officeWide).toContain("sharedPlates");
+    expect(officeWide).toContain("personalPlates");
+    expect(officeWide).not.toContain("paperHomeMosaic");
     expect(officePhone).not.toContain("SharedLedgerStory");
     expect(officePhone).not.toContain("Fund free-to-spend");
     expect(officePhone).not.toContain("runHealthCheck");

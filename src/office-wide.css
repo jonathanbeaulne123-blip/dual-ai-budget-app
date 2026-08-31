@@ -21,7 +21,7 @@
    Course into a scrolling box — 1100px is an evidence width and the month has
    to be readable there without a sideways drag. */
 .office-wide.is-shared-home .office-wide-desk {
-  grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 460px) minmax(0, 1fr);
   grid-template-areas:
     "seals seals"
     "mosaic stage"
@@ -195,7 +195,7 @@
 
 @media (min-width: 1200px) {
   .office-wide.is-shared-home .office-wide-desk {
-    grid-template-columns: minmax(0, 0.58fr) minmax(0, 2.2fr) minmax(0, 0.78fr);
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.75fr) minmax(0, 0.72fr);
     grid-template-areas:
       "seals seals seals"
       "mosaic stage banks";
