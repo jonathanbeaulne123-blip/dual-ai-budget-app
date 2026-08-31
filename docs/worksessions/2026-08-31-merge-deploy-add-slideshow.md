@@ -7,7 +7,7 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/add-slideshow-main-aef7` (from current `origin/main`; do not rebase `#244`)
 - **Baseline SHA:** `origin/main@e9c5127594a9fd4e6d8b203f19db57cc4b31390a`
-- **Head SHA:** pending integration
+- **Head SHA:** pending unused-`shiftStep` follow-up after `3b0598c`
 - **PR or issue:** new PR against `main`; `#244` stays until this lands. Jonathan 2026-08-31: “perfect merge push deploy”
 - **Risk:** Release (merge to `main` + D-041 kitchen `wrangler deploy`)
 - **Decision owner:** Jonathan
@@ -58,9 +58,9 @@ Inferences:
 
 ## Acceptance evidence
 
-- [ ] Unique living IDs: Add slideshow is D-181; `main` D-174 Shared Money stays.
-- [ ] Confirm is the only money writer in Add; slideshow never `postEntry`.
-- [ ] `pnpm check` green on the integration SHA.
+- [x] Unique living IDs: Add slideshow is D-181; `main` D-174 Shared Money stays.
+- [x] Confirm is the only money writer in Add; slideshow never `postEntry`.
+- [x] `pnpm test` **1297 passed / 3 skipped** at `3b0598c`; `tsc` + Vite build after removing unused `shiftStep`.
 - [ ] Merged to `main` and kitchen `wrangler deploy` verified HTTP 200.
 - [ ] Handoff distinguishes merged / deployed / live verified.
 
