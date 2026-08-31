@@ -945,6 +945,21 @@ export type ConflictRecord = {
   resolved: boolean;
 };
 
+/** Durable disclosure for a generated Development-only showcase. */
+export type SyntheticFixtureProvenance = {
+  kind: "hearth-demo-suite";
+  version: string;
+  seed: number;
+  generatedForDate: string;
+  generatedAt: string;
+  buildSha: string;
+  profile: "investor" | "edge" | "scale";
+  numberStyle: "realistic" | "pretty";
+  coverageDigest: string;
+  /** SHA-256 of generator-owned facts after continuity-only fields are removed. */
+  fixtureHashSha256: string;
+};
+
 export type Household = {
   version: 1;
   householdId: string;
@@ -1003,6 +1018,8 @@ export type Household = {
   commandReceipts: CommandReceipt[];
   sharing: SharingRecord;
   conflicts: ConflictRecord[];
+  /** Present only on an explicitly synthetic Development showcase. */
+  syntheticFixture?: SyntheticFixtureProvenance | null;
   /** Dated shared sync tips for owner Restore (D-124). Hosted inside the household payload. */
   restorePoints?: RestorePoint[];
   /** Local/member overlay only. `splitForSync` removes it from Shared. */
@@ -1063,6 +1080,8 @@ export type SharedEnvelope = {
   conflicts?: ConflictRecord[];
   /** Nested points are stripped when recording a new tip. */
   restorePoints?: RestorePoint[];
+  /** Shared synthetic disclosure; contains no household facts or secrets. */
+  syntheticFixture?: SyntheticFixtureProvenance | null;
 };
 
 export type PersonalEnvelope = {

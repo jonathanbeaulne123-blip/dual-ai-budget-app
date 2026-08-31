@@ -798,17 +798,21 @@ async function rigDispatchResult(env, args) {
 }
 
 function booksIdentity(books, claims, view) {
+  const safeBooks = ensureHouseholdShape(books);
   const ledgerView = view === "household" ? "household" : "personal";
-  const member = books.members?.find((row) => row.id === claims.memberId && row.active);
+  const member = safeBooks.members?.find((row) => row.id === claims.memberId && row.active);
   return {
-    householdName: String(books.name || "").trim() || "Unnamed household",
-    ledgerName: ledgerNameForView(books, claims.memberId, ledgerView),
+    householdName: String(safeBooks.name || "").trim() || "Unnamed household",
+    ledgerName: ledgerNameForView(safeBooks, claims.memberId, ledgerView),
     ledgerView,
     // Keep legacy `ledger` as the machine view enum so older clients still work.
     ledger: ledgerView,
     memberName: member?.name || claims.memberId,
     householdId: claims.householdId,
     memberId: claims.memberId,
+    synthetic: safeBooks.syntheticFixture?.kind === "hearth-demo-suite",
+    syntheticSeed: safeBooks.syntheticFixture?.kind === "hearth-demo-suite" ? safeBooks.syntheticFixture.seed : null,
+    syntheticGeneratorVersion: safeBooks.syntheticFixture?.kind === "hearth-demo-suite" ? safeBooks.syntheticFixture.version : null,
   };
 }
 
@@ -836,6 +840,9 @@ function companionResult(args, identity = null) {
           memberName: identity.memberName,
           householdId: identity.householdId,
           memberId: identity.memberId,
+          synthetic: identity.synthetic,
+          syntheticSeed: identity.syntheticSeed,
+          syntheticGeneratorVersion: identity.syntheticGeneratorVersion,
         }
       : {}),
     readOnly: true,
@@ -1104,8 +1111,8 @@ async function handleMcp(request, env) {
       capabilities: { tools: { listChanged: false }, resources: { listChanged: false } },
       serverInfo: { name: "hearth-hercules-pro", version: "0.3.4" },
       instructions: hasScope(claims, "hearth.write")
-        ? "Hercules is a grounded financial teacher. On the first user turn of every new conversation, your FIRST tool call MUST be summon_hercules before any accounting tool so the living 3D companion auto-loads and requests picture-in-picture. Do not wait for the person to ask to see him. Every tool result includes householdName (the custom household title people entered) and ledgerName (the custom shared or personal ledger label). Always identify the books by those display names, never by householdId or by the machine words Household/Personal alone. Read tools never change state. For a requested transaction, call prepare_transaction, show every preview field and duplicate warning, wait for explicit confirmation, then and only then call confirm_transaction. For imported 7shifts mail, call scrub_my_7shifts_email. Email and schedules are outlook only. For worked evidence, shift_write_options may explain what is ready, but only the visible Shift screen may confirm or correct money. Never call or claim a model-side shift writer. Never infer consent or prepare a delete/payment."
-        : "Hercules is a read-only financial teacher. On the first user turn of every new conversation, your FIRST tool call MUST be summon_hercules before any accounting tool so the living 3D companion auto-loads and requests picture-in-picture. Do not wait for the person to ask to see him. Every tool result includes householdName (the custom household title people entered) and ledgerName (the custom shared or personal ledger label). Always identify the books by those display names, never by householdId or by the machine words Household/Personal alone. Call tools for all current numbers. Never imply a write occurred.",
+        ? "Hercules is a grounded financial teacher. On the first user turn of every new conversation, your FIRST tool call MUST be summon_hercules before any accounting tool so the living 3D companion auto-loads and requests picture-in-picture. Do not wait for the person to ask to see him. Every tool result includes householdName, ledgerName, and synthetic disclosure fields. When synthetic is true, say clearly that all people and financial/work facts are fictional test data before presenting numbers. Always identify the books by their display names, never by householdId or by the machine words Household/Personal alone. Read tools never change state. For a requested transaction, call prepare_transaction, show every preview field and duplicate warning, wait for explicit confirmation, then and only then call confirm_transaction. For imported 7shifts mail, call scrub_my_7shifts_email. Email and schedules are outlook only. For worked evidence, shift_write_options may explain what is ready, but only the visible Shift screen may confirm or correct money. Never call or claim a model-side shift writer. Never infer consent or prepare a delete/payment."
+        : "Hercules is a read-only financial teacher. On the first user turn of every new conversation, your FIRST tool call MUST be summon_hercules before any accounting tool so the living 3D companion auto-loads and requests picture-in-picture. Do not wait for the person to ask to see him. Every tool result includes householdName, ledgerName, and synthetic disclosure fields. When synthetic is true, say clearly that all people and financial/work facts are fictional test data before presenting numbers. Always identify the books by their display names, never by householdId or by the machine words Household/Personal alone. Call tools for all current numbers. Never imply a write occurred.",
     } });
   }
   if (rpc.method === "resources/list") {
@@ -1754,4 +1761,4 @@ export async function handleHerculesPro(request, env) {
   return null;
 }
 
-export const herculesProTest = { seal, unseal, sealPrivate, unsealPrivate, sha256Base64Url, toolDefinitions, overlayPersonalReplica, personalEnvelopeFromPayload };
+export const herculesProTest = { seal, unseal, sealPrivate, unsealPrivate, sha256Base64Url, toolDefinitions, overlayPersonalReplica, personalEnvelopeFromPayload, booksIdentity };

@@ -7,7 +7,6 @@ import {
   householdForView,
   parseVisibility,
 } from "./visibility.ts";
-import { assembleHousehold, splitForSync } from "./sync.ts";
 import { runHealthCheck, type Finding } from "./health.ts";
 
 export const LEDGER_CUSTODY_DISCLOSURE =
@@ -336,17 +335,11 @@ function sanitizeKitchen(household: Household, memberId: string): Household["kit
 }
 
 function sanitizeExport(household: Household, memberId: string, view: LedgerView): Household {
-  const scoped = applyPresentationScope(household, memberId, view);
-  if (view === "household") {
-    const shared = splitForSync(household, memberId).shared;
-    const assembled = assembleHousehold(shared, null, { linked: household.linked });
-    const cleaned = applyPresentationScope(assembled, memberId, "household");
-    return { ...cleaned, kitchen: sanitizeKitchen(cleaned, memberId) };
-  }
+  const scoped = booksPresentationFloor(household, memberId, view);
   return {
     ...scoped,
     kitchen: sanitizeKitchen(scoped, memberId),
-    fundPrivate: household.householdFund?.custodianMemberId === memberId
+    fundPrivate: view === "personal" && household.householdFund?.custodianMemberId === memberId
       ? scoped.fundPrivate
       : { bankBindings: [], reconciliations: [] },
   };

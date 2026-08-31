@@ -24,6 +24,7 @@ import { workScheduleMatches } from "./workSettlement.ts";
 import { bookBalanceAsOf } from "./statements.ts";
 import type { Household, Transaction, TransactionLocation, WorkJob } from "./types.ts";
 import type { WeatherGlass } from "./weather.ts";
+import { createDemoRandom } from "./demoRandom.ts";
 
 export type StressNumberStyle = "realistic" | "pretty";
 
@@ -40,15 +41,6 @@ export type StressSeedOptions = {
   /** Member who receives harbour tip shifts (default MEM-002 / Jonathan). */
   tipMemberId?: string;
 };
-
-function mulberry32(seed: number): () => number {
-  return function random() {
-    let value = (seed += 0x6d2b79f5);
-    value = Math.imul(value ^ (value >>> 15), value | 1);
-    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
-    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 function choose<T>(random: () => number, values: readonly T[]): T {
   return values[Math.min(values.length - 1, Math.floor(random() * values.length))]!;
@@ -103,6 +95,53 @@ const PLACE_PINS = {
 
 /** Weekday tip multipliers for a tipped Toronto dining room (Sun=0 … Sat=6). */
 const WEEKDAY_TIP_WEIGHT = [0.72, 0.78, 0.88, 0.94, 1.05, 1.38, 1.48] as const;
+
+function nthSunday(year: number, monthIndex: number, occurrence: number): number {
+  const firstWeekday = new Date(Date.UTC(year, monthIndex, 1)).getUTCDay();
+  return 1 + ((7 - firstWeekday) % 7) + (occurrence - 1) * 7;
+}
+
+/** Toronto civil offset. DST starts on March's second Sunday and ends on November's first. */
+export function torontoOffsetForDate(date: DateKey): "-04:00" | "-05:00" {
+  const year = Number(date.slice(0, 4));
+  const month = Number(date.slice(5, 7));
+  const day = Number(date.slice(8, 10));
+  if (month < 3 || month > 11) return "-05:00";
+  if (month > 3 && month < 11) return "-04:00";
+  if (month === 3) return day >= nthSunday(year, 2, 2) ? "-04:00" : "-05:00";
+  return day < nthSunday(year, 10, 1) ? "-04:00" : "-05:00";
+}
+
+function torontoOffsetForCivil(date: DateKey, minutesAfterMidnight: number): "-04:00" | "-05:00" {
+  const month = Number(date.slice(5, 7));
+  const day = Number(date.slice(8, 10));
+  const year = Number(date.slice(0, 4));
+  if (month === 3 && day === nthSunday(year, 2, 2)) return minutesAfterMidnight >= 120 ? "-04:00" : "-05:00";
+  if (month === 11 && day === nthSunday(year, 10, 1)) return minutesAfterMidnight >= 120 ? "-05:00" : "-04:00";
+  return torontoOffsetForDate(date);
+}
+
+function civilTime(date: DateKey, minutesAfterMidnight: number): string {
+  const total = Math.max(0, Math.round(minutesAfterMidnight));
+  const dayOffset = Math.floor(total / (24 * 60));
+  const civilDate = dayOffset ? addDays(date, dayOffset) : date;
+  const normalized = total % (24 * 60);
+  const hours = Math.floor(normalized / 60);
+  const minutes = normalized % 60;
+  return `${civilDate}T${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:00${torontoOffsetForCivil(civilDate, normalized)}`;
+}
+
+function torontoInstant(instantMs: number): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TIMEZONE,
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    hourCycle: "h23", timeZoneName: "longOffset",
+  }).formatToParts(new Date(instantMs));
+  const part = (type: string) => parts.find((row) => row.type === type)?.value ?? "";
+  const offset = part("timeZoneName").replace("GMT", "") || "-05:00";
+  return `${part("year")}-${part("month")}-${part("day")}T${part("hour")}:${part("minute")}:${part("second")}${offset}`;
+}
 
 type StressWeather = {
   glass: WeatherGlass;
@@ -299,7 +338,7 @@ function spendStamp(
   hour = 12,
 ): { occurredAt: string; location: TransactionLocation } {
   const minute = Math.floor(random() * 50);
-  const occurredAt = `${date}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00-04:00`;
+  const occurredAt = civilTime(date, hour * 60 + minute);
   return {
     occurredAt,
     location: stampAt(random, placePin(place), new Date(occurredAt).toISOString()),
@@ -335,7 +374,14 @@ export function seedStressHousehold(options: StressSeedOptions): Household {
     throw new Error("Fictional stress data is Development-only and cannot replace Production books.");
   }
   const style = options.numberStyle ?? "realistic";
-  const random = mulberry32(options.seed ?? 20260825);
+  const masterSeed = options.seed ?? 20260825;
+  const random = createDemoRandom(masterSeed, "expenses");
+  const budgetRandom = createDemoRandom(masterSeed, "budgets-and-bills");
+  const incomeRandom = createDemoRandom(masterSeed, "income");
+  const shiftRandom = createDemoRandom(masterSeed, "shifts");
+  const settlementRandom = createDemoRandom(masterSeed, "settlements-and-transfers");
+  const goalRandom = createDemoRandom(masterSeed, "goals-and-investments");
+  const appointmentRandom = createDemoRandom(masterSeed, "appointments-and-claims");
   const today = options.today;
   const tipMemberId = options.tipMemberId
     || options.preserveFrom?.members.find((member) => member.active && member.id === "MEM-002")?.id
@@ -356,8 +402,8 @@ export function seedStressHousehold(options: StressSeedOptions): Household {
   household = upsertWorkJob(household, { job: stressJob(firstDate, tipMemberId) }).household;
   const job = household.workJobs.find((row) => row.name === "Harbour Dining Room")!;
   const role = job.roles[0]!;
-  const annualTarget = money(random, 92_000, 116_000, style, 5_000);
-  const salaryPay = money(random, annualTarget * 0.72 / 24, annualTarget * 0.76 / 24, style, 25);
+  const annualTarget = money(incomeRandom, 92_000, 116_000, style, 5_000);
+  const salaryPay = money(incomeRandom, annualTarget * 0.72 / 24, annualTarget * 0.76 / 24, style, 25);
   const groceries = ["No Frills", "Farm Boy", "Metro", "FreshCo", "Loblaws"] as const;
   const cafes = ["Tim Hortons", "Balzac's Coffee", "Pilot Coffee", "Demo Cafe", "Second Cup"] as const;
   const dining = ["Harbour Bistro", "Pho House", "Pizza Libretto", "Sushi Corner", "Parkdale Diner"] as const;
@@ -370,16 +416,16 @@ export function seedStressHousehold(options: StressSeedOptions): Household {
 
     const budgetRows = [
       ["SUB-INCOME-BIANCA", salaryPay * 2],
-      ["SUB-INCOME-WAGES", money(random, 900, 1_500, style, 50)],
-      ["SUB-INCOME-TIPS", money(random, 1_100, 1_900, style, 50)],
+      ["SUB-INCOME-WAGES", money(budgetRandom, 900, 1_500, style, 50)],
+      ["SUB-INCOME-TIPS", money(budgetRandom, 1_100, 1_900, style, 50)],
       ["SUB-HOUSING-RENT", style === "pretty" ? 2_400 : 2_375],
-      ["SUB-HOUSING-ELECTRIC", money(random, 85, 150, style, 5)],
-      ["SUB-HOUSING-GAS", money(random, 45, 105, style, 5)],
-      ["SUB-FOOD-GROCERIES", money(random, 700, 1_050, style, 25)],
-      ["SUB-FOOD-COFFEE", money(random, 180, 325, style, 25)],
-      ["SUB-TRANSPORT-FUEL", money(random, 220, 380, style, 25)],
+      ["SUB-HOUSING-ELECTRIC", money(budgetRandom, 85, 150, style, 5)],
+      ["SUB-HOUSING-GAS", money(budgetRandom, 45, 105, style, 5)],
+      ["SUB-FOOD-GROCERIES", money(budgetRandom, 700, 1_050, style, 25)],
+      ["SUB-FOOD-COFFEE", money(budgetRandom, 180, 325, style, 25)],
+      ["SUB-TRANSPORT-FUEL", money(budgetRandom, 220, 380, style, 25)],
       ["SUB-LIFE-PHONE", style === "pretty" ? 100 : 96.42],
-      ["SUB-LIFE-FUN", money(random, 450, 850, style, 25)],
+      ["SUB-LIFE-FUN", money(budgetRandom, 450, 850, style, 25)],
     ] as const;
     for (const [subcategoryId, amount] of budgetRows) {
       household = setBudget(household, { monthKey: month, subcategoryId, amount }).household;
@@ -501,64 +547,72 @@ export function seedStressHousehold(options: StressSeedOptions): Household {
       }).household;
     }
 
-    // Dinner and lunch shifts weighted toward Fri/Sat; skip quiet Mondays often.
-    const shiftOffsets = [1, 3, 5, 6, 8, 10, 12, 13, 15, 17, 19, 20, 22, 24, 26, 27];
-    for (const [shiftIndex, offset] of shiftOffsets.entries()) {
+    // Availability is generated day-by-day so a seed yields a plausible roster,
+    // rather than the same sixteen offsets every month.
+    const availability = [0.46, 0.18, 0.42, 0.48, 0.62, 0.82, 0.88] as const;
+    let monthShiftIndex = 0;
+    for (let offset = 0; offset < 31; offset += 1) {
       const date = addDays(monthStart, offset);
       if (monthKeyFromDateKey(date) !== month || !withinToday(date)) continue;
       const weekday = weekdaySunday0(date);
-      // Servers rarely work Monday lunch; skip ~55% of Mondays.
-      if (weekday === 1 && random() < 0.55) continue;
-      // Prefer dinner service; occasional lunch on weekends.
-      const dinner = weekday === 0 || weekday === 6 ? random() > 0.25 : random() > 0.18;
+      if (shiftRandom() > availability[weekday]!) continue;
+      const dinner = weekday === 0 || weekday === 6 ? shiftRandom() > 0.28 : shiftRandom() > 0.16;
       const startHour = dinner ? (weekday >= 5 ? 16 : 17) : 11;
       const baseHours = dinner
-        ? (weekday >= 5 ? 7 + random() * 2.5 : 5.5 + random() * 2)
-        : 4 + random() * 1.5;
+        ? (weekday >= 5 ? 6.5 + shiftRandom() * 2.25 : 5.25 + shiftRandom() * 2)
+        : 4 + shiftRandom() * 1.5;
       const hours = style === "pretty"
-        ? choose(random, dinner ? [6, 7, 8, 8.5] as const : [4, 5, 5.5, 6] as const)
+        ? choose(shiftRandom, dinner ? [6, 7, 7.5, 8] as const : [4, 4.5, 5, 5.5] as const)
         : Math.round(baseHours * 4) / 4;
-      const weather = pickStressWeather(random, date, startHour);
-      const weekdayWeight = WEEKDAY_TIP_WEIGHT[weekday] ?? 1;
-      const seasonBoost = kitchenSeason(date) === "patio" ? 1.12 : kitchenSeason(date) === "ruff" ? 0.9 : 1;
-      const demand = weekdayWeight * weather.tipWeight * seasonBoost;
-      const salesBase = dinner ? money(random, 980, 1_720, style, 25) : money(random, 420, 780, style, 25);
-      const salesRounded = style === "pretty"
-        ? Math.max(25, Math.round((salesBase * demand) / 25) * 25)
-        : Math.round(salesBase * demand * 100) / 100;
-      const foodShare = weather.section === "Bar rail" ? 0.42 : 0.62;
-      const alcoholShare = weather.section === "Bar rail" ? 0.5 : 0.3;
-      const otherShare = Math.max(0, 1 - foodShare - alcoholShare);
-      const includeOther = otherShare > 0.05 && random() > 0.35;
-      const food = Math.round(salesRounded * foodShare);
-      const alcohol = Math.round(salesRounded * (includeOther ? alcoholShare : alcoholShare + otherShare));
-      const other = includeOther ? Math.max(0, Math.round(salesRounded - food - alcohol)) : 0;
-      const tipPool = money(random, 95, 210, style, 5) * demand;
-      const cashTips = style === "pretty"
-        ? Math.max(5, Math.round((tipPool * (0.22 + random() * 0.12)) / 5) * 5)
-        : Math.round(tipPool * (0.22 + random() * 0.12) * 100) / 100;
-      const cardTips = style === "pretty"
-        ? Math.max(5, Math.round((tipPool - cashTips) / 5) * 5)
-        : Math.round(Math.max(15, tipPool - cashTips) * 100) / 100;
-      const paidBreakHours = hours >= 6 && shiftIndex % 3 === 0 ? 0.5 : hours >= 8 && random() > 0.4 ? 0.5 : 0;
-      const endHour = Math.min(23, startHour + Math.ceil(hours + paidBreakHours));
-      const startMinute = dinner ? choose(random, [0, 15, 30] as const) : choose(random, [0, 30] as const);
-      const startedAt = `${date}T${String(startHour).padStart(2, "0")}:${String(startMinute).padStart(2, "0")}:00-04:00`;
-      const endedAt = `${date}T${String(endHour).padStart(2, "0")}:${String(choose(random, [0, 15, 30, 45] as const)).padStart(2, "0")}:00-04:00`;
-      const note = `${weather.word} · ${weather.celsius}°C · ${weather.section}`;
-      const location = stampAt(random, HARBOUR, new Date(startedAt).toISOString(), 0.0008);
-      const salesTotal = food + alcohol + other;
-      const avgCheck = dinner ? 42 + random() * 28 : 26 + random() * 16;
-      const customersServed = Math.max(1, Math.min(5000, Math.round(salesTotal / avgCheck)));
-      const staffingBase = weekday >= 5 ? 6 : weekday === 0 ? 5 : 4;
-      const staffingCount = Math.max(1, Math.min(200, staffingBase + Math.floor(random() * 3) - 1));
+      const weather = pickStressWeather(shiftRandom, date, startHour);
       const monthDay = date.slice(5);
       let eventTag: "regular" | "holiday" | "sports" | "festival" | "short_staffed" | "private_party" = "regular";
       if (monthDay === "07-01" || monthDay === "12-25" || monthDay === "12-26" || monthDay === "01-01") eventTag = "holiday";
-      else if (weekday >= 5 && random() < 0.1) eventTag = "sports";
-      else if (random() < 0.05) eventTag = "short_staffed";
-      else if (random() < 0.04) eventTag = "festival";
-      else if (random() < 0.03) eventTag = "private_party";
+      else if (weekday >= 5 && shiftRandom() < 0.1) eventTag = "sports";
+      else if (shiftRandom() < 0.05) eventTag = "short_staffed";
+      else if (shiftRandom() < 0.04) eventTag = "festival";
+      else if (shiftRandom() < 0.03) eventTag = "private_party";
+
+      // Correlated but noisy latent service demand: covariates inform the result
+      // without making weather or weekday a deterministic tip answer.
+      const weekdaySignal = ((WEEKDAY_TIP_WEIGHT[weekday] ?? 1) - 1) * 0.42;
+      const weatherSignal = (weather.tipWeight - 1) * 0.32;
+      const seasonSignal = kitchenSeason(date) === "patio" ? 0.05 : kitchenSeason(date) === "ruff" ? -0.04 : 0;
+      const eventSignal = eventTag === "holiday" || eventTag === "private_party" ? 0.12
+        : eventTag === "sports" || eventTag === "festival" ? 0.07
+          : eventTag === "short_staffed" ? -0.04 : 0;
+      const demand = Math.max(0.62, Math.min(1.48, 1 + weekdaySignal + weatherSignal + seasonSignal + eventSignal + (shiftRandom() - 0.5) * 0.34));
+      const salesBase = dinner ? money(shiftRandom, 980, 1_720, style, 25) : money(shiftRandom, 420, 780, style, 25);
+      const salesRounded = style === "pretty"
+        ? Math.max(25, Math.round((salesBase * demand) / 25) * 25)
+        : Math.round(salesBase * demand * 100) / 100;
+      const foodShare = Math.max(0.38, Math.min(0.7, (weather.section === "Bar rail" ? 0.46 : 0.61) + (shiftRandom() - 0.5) * 0.1));
+      const alcoholShare = Math.max(0.2, Math.min(0.5, (weather.section === "Bar rail" ? 0.43 : 0.29) + (shiftRandom() - 0.5) * 0.08));
+      const food = Math.round(salesRounded * foodShare);
+      const alcohol = Math.round(salesRounded * alcoholShare);
+      const other = Math.max(0, Math.round(salesRounded - food - alcohol));
+      const effectiveTipRate = Math.max(0.115, Math.min(0.24, 0.17 + eventSignal * 0.18 + (shiftRandom() - 0.5) * 0.055));
+      const tipPool = salesRounded * effectiveTipRate;
+      const cashShare = 0.2 + shiftRandom() * 0.16;
+      const cashTips = style === "pretty"
+        ? Math.max(5, Math.round((tipPool * cashShare) / 5) * 5)
+        : Math.round(tipPool * cashShare * 100) / 100;
+      const cardTips = style === "pretty"
+        ? Math.max(5, Math.round((tipPool - cashTips) / 5) * 5)
+        : Math.round(Math.max(15, tipPool - cashTips) * 100) / 100;
+      const paidBreakHours = hours >= 6 && (monthShiftIndex % 3 === 0 || shiftRandom() > 0.62) ? 0.5 : 0;
+      const unpaidBreakMinutes = hours >= 7.5 && shiftRandom() < 0.22 ? 30 : 0;
+      const startMinute = dinner ? choose(shiftRandom, [0, 15, 30] as const) : choose(shiftRandom, [0, 30] as const);
+      const startMinutes = startHour * 60 + startMinute;
+      const startedAt = civilTime(date, startMinutes);
+      const endedAt = torontoInstant(Date.parse(startedAt) + (hours * 60 + unpaidBreakMinutes) * 60_000);
+      const note = `${weather.word} · ${weather.celsius}°C · ${weather.section}`;
+      const location = stampAt(shiftRandom, HARBOUR, new Date(startedAt).toISOString(), 0.0008);
+      const salesTotal = food + alcohol + other;
+      const avgCheck = dinner ? 42 + shiftRandom() * 28 : 26 + shiftRandom() * 16;
+      const customersServed = Math.max(1, Math.min(5000, Math.round(salesTotal / avgCheck)));
+      const staffingBase = weekday >= 5 ? 6 : weekday === 0 ? 5 : 4;
+      const staffingCount = Math.max(1, Math.min(200, staffingBase + Math.floor(shiftRandom() * 3) - 1));
       household = postWorkShift(household, {
         date,
         memberId: tipMemberId,
@@ -592,6 +646,7 @@ export function seedStressHousehold(options: StressSeedOptions): Household {
         confirmDuplicate: true,
         createdBy: tipMemberId,
       }).household;
+      monthShiftIndex += 1;
     }
 
     // Settle wages on the biweekly schedule and tip envelopes weekly when money is owed.
@@ -628,7 +683,7 @@ export function seedStressHousehold(options: StressSeedOptions): Household {
         const deferredUnpaid = household.shifts
           .filter((shift) => shift.jobId === job.id && shift.memberId === tipMemberId)
           .reduce((sum, shift) => sum + Math.max(0, (shift.deferredTipOutCents ?? 0) - (shift.deferredTipOutPaidCents ?? 0)), 0);
-        if (deferredUnpaid >= 1_000 && random() > 0.35) {
+        if (deferredUnpaid >= 1_000 && settlementRandom() > 0.35) {
           const dollars = deferredUnpaid / 100;
           household = payDeferredWorkTipOut(household, {
             jobId: job.id,
@@ -643,19 +698,19 @@ export function seedStressHousehold(options: StressSeedOptions): Household {
 
     const paymentDate = addDays(monthStart, 24);
     if (monthKeyFromDateKey(paymentDate) === month && withinToday(paymentDate)) {
-      household = postTransfer(household, { date: paymentDate, amount: money(random, 1_250, 2_250, style, 50), fromAccountId: "ACC-CHEQUING", toAccountId: "ACC-VISA", note: "Visa statement payment", confirmDuplicate: true }).household;
-      household = postTransfer(household, { date: paymentDate, amount: money(random, 350, 900, style, 50), fromAccountId: "ACC-CHEQUING", toAccountId: "ACC-MC", note: "Mastercard statement payment", confirmDuplicate: true }).household;
+      household = postTransfer(household, { date: paymentDate, amount: money(settlementRandom, 1_250, 2_250, style, 50), fromAccountId: "ACC-CHEQUING", toAccountId: "ACC-VISA", note: "Visa statement payment", confirmDuplicate: true }).household;
+      household = postTransfer(household, { date: paymentDate, amount: money(settlementRandom, 350, 900, style, 50), fromAccountId: "ACC-CHEQUING", toAccountId: "ACC-MC", note: "Mastercard statement payment", confirmDuplicate: true }).household;
     }
     const savingsDate = addDays(monthStart, 17);
     if (monthKeyFromDateKey(savingsDate) === month && withinToday(savingsDate)) {
-      household = postTransfer(household, { date: savingsDate, amount: money(random, 250, 650, style, 50), fromAccountId: "ACC-CHEQUING", toAccountId: "ACC-SAVINGS", note: "Automatic savings", confirmDuplicate: true }).household;
+      household = postTransfer(household, { date: savingsDate, amount: money(settlementRandom, 250, 650, style, 50), fromAccountId: "ACC-CHEQUING", toAccountId: "ACC-SAVINGS", note: "Automatic savings", confirmDuplicate: true }).household;
     }
   }
 
   household = addGoal(household, { name: "Emergency buffer", target: style === "pretty" ? 10_000 : 9_750, deadline: `${shiftMonthKey(monthKeyFromDateKey(today), 8)}-01`, shared: true }).household;
-  household = fundGoal(household, { goalId: household.goals[0]!.id, amount: style === "pretty" ? 3_000 : money(random, 2_400, 3_800, style, 50), fromAccountId: "ACC-CHEQUING", date: today, createdBy: "MEM-001" }).household;
+  household = fundGoal(household, { goalId: household.goals[0]!.id, amount: style === "pretty" ? 3_000 : money(goalRandom, 2_400, 3_800, style, 50), fromAccountId: "ACC-CHEQUING", date: today, createdBy: "MEM-001" }).household;
   household = addGoal(household, { name: "Weekend in Montréal", target: style === "pretty" ? 2_000 : 2_350, deadline: `${shiftMonthKey(monthKeyFromDateKey(today), 5)}-01`, shared: true }).household;
-  household = fundGoal(household, { goalId: household.goals[1]!.id, amount: style === "pretty" ? 750 : money(random, 575, 925, style, 25), fromAccountId: "ACC-CHEQUING", date: today, createdBy: "MEM-002" }).household;
+  household = fundGoal(household, { goalId: household.goals[1]!.id, amount: style === "pretty" ? 750 : money(goalRandom, 575, 925, style, 25), fromAccountId: "ACC-CHEQUING", date: today, createdBy: "MEM-002" }).household;
   household = addGoal(household, { name: "Bianca's pottery wheel", target: style === "pretty" ? 1_500 : 1_675, deadline: `${shiftMonthKey(monthKeyFromDateKey(today), 6)}-01`, shared: false, ownerMemberId: "MEM-001" }).household;
 
   household = addRecurrence(household, { cadence: "monthly", nextDate: `${shiftMonthKey(monthKeyFromDateKey(today), 1)}-01`, type: "expense", amount: style === "pretty" ? 2_400 : 2_375, accountId: "ACC-CHEQUING", subcategoryId: "SUB-HOUSING-RENT", note: "Rent", splits: equalSplits(["MEM-001", "MEM-002"], (style === "pretty" ? 240_000 : 237_500)) }).household;
@@ -664,23 +719,28 @@ export function seedStressHousehold(options: StressSeedOptions): Household {
   household = addRecurrence(household, { cadence: "biweekly", nextDate: addDays(today, 3), type: "income", amount: salaryPay, accountId: "ACC-CHEQUING", subcategoryId: "SUB-INCOME-BIANCA", note: "Bianca payroll deposit", splits: [{ party: "MEM-001", amountCents: Math.round(salaryPay * 100) }] }).household;
   household = addRecurrence(household, { cadence: "monthly", nextDate: addDays(today, 12), type: "transfer", amount: style === "pretty" ? 500 : 425, accountId: "ACC-CHEQUING", transferToAccountId: "ACC-SAVINGS", note: "Automatic savings" }).household;
 
-  household = addAppointment(household, { title: "Dental cleaning", kind: "dentist", memberId: "joint", place: "Queen West Dental", practitioner: "Dr. Patel", nextDate: addDays(today, 38), cadence: { kind: "monthly", interval: 6 }, typicalCost: 268, typicalRecovery: 200, subcategoryId: "SUB-HEALTH-DENTAL", accountId: "ACC-VISA" }).household;
-  household = addAppointment(household, { title: "Therapy", kind: "therapy", memberId: "MEM-001", place: "The Annex", practitioner: "Dr. Chen", sensitivity: "quiet", nextDate: addDays(today, 6), cadence: { kind: "weekly", interval: 2 }, typicalCost: 165, typicalRecovery: 80, subcategoryId: "SUB-HEALTH-THERAPY", accountId: "ACC-VISA" }).household;
-  household = addAppointment(household, { title: "Hercules annual exam", kind: "vet", memberId: "companion", place: "Annex Cat Clinic", practitioner: "Dr. Ng", nextDate: addDays(today, 84), cadence: { kind: "monthly", interval: 12 }, typicalCost: 215, typicalRecovery: 0, subcategoryId: "SUB-HEALTH-VET", accountId: "ACC-MC" }).household;
-  household = addAppointment(household, { title: "Eye exam", kind: "optometrist", memberId: "MEM-002", place: "College Optical", practitioner: "Dr. Singh", nextDate: addDays(today, 21), cadence: { kind: "monthly", interval: 24 }, typicalCost: 145, typicalRecovery: 110, subcategoryId: "SUB-HEALTH-CARE", accountId: "ACC-VISA" }).household;
+  const dentalCost = money(appointmentRandom, 245, 295, style, 5);
+  const dentalRecovery = Math.min(dentalCost, money(appointmentRandom, 160, 220, style, 5));
+  const therapyCost = money(appointmentRandom, 145, 190, style, 5);
+  const therapyRecovery = Math.min(therapyCost, money(appointmentRandom, 65, 100, style, 5));
+  const vetCost = money(appointmentRandom, 185, 255, style, 5);
+  household = addAppointment(household, { title: "Dental cleaning", kind: "dentist", memberId: "joint", place: "Queen West Dental", practitioner: "Dr. Patel", nextDate: addDays(today, 38), cadence: { kind: "monthly", interval: 6 }, typicalCost: dentalCost, typicalRecovery: dentalRecovery, subcategoryId: "SUB-HEALTH-DENTAL", accountId: "ACC-VISA" }).household;
+  household = addAppointment(household, { title: "Therapy", kind: "therapy", memberId: "MEM-001", place: "The Annex", practitioner: "Dr. Chen", sensitivity: "quiet", nextDate: addDays(today, 6), cadence: { kind: "weekly", interval: 2 }, typicalCost: therapyCost, typicalRecovery: therapyRecovery, subcategoryId: "SUB-HEALTH-THERAPY", accountId: "ACC-VISA" }).household;
+  household = addAppointment(household, { title: "Hercules annual exam", kind: "vet", memberId: "companion", place: "Annex Cat Clinic", practitioner: "Dr. Ng", nextDate: addDays(today, 84), cadence: { kind: "monthly", interval: 12 }, typicalCost: vetCost, typicalRecovery: 0, subcategoryId: "SUB-HEALTH-VET", accountId: "ACC-MC" }).household;
+  household = addAppointment(household, { title: "Eye exam", kind: "optometrist", memberId: "MEM-002", place: "College Optical", practitioner: "Dr. Singh", nextDate: addDays(today, 21), cadence: { kind: "monthly", interval: 24 }, typicalCost: money(appointmentRandom, 125, 175, style, 5), typicalRecovery: money(appointmentRandom, 85, 125, style, 5), subcategoryId: "SUB-HEALTH-CARE", accountId: "ACC-VISA" }).household;
 
   const dental = household.appointments.find((item) => item.kind === "dentist")!;
-  household = postVisit(household, { date: addDays(today, -120), amount: 268, appointmentId: dental.id, accountId: "ACC-VISA", expectedRecovery: 200, claimLabel: "Sun Life dental claim", craEligible: true, lines: [{ code: "01204", description: "Exam", amount: 82 }, { code: "11101", description: "Cleaning", amount: 138 }, { code: "12111", description: "Fluoride", amount: 48 }], confirmDuplicate: true, createdBy: "MEM-002" }).household;
+  household = postVisit(household, { date: addDays(today, -120), amount: dentalCost, appointmentId: dental.id, accountId: "ACC-VISA", expectedRecovery: dentalRecovery, claimLabel: "Synthetic dental benefit", craEligible: true, confirmDuplicate: true, createdBy: "MEM-002" }).household;
   const firstClaim = household.claims.at(-1);
-  if (firstClaim) household = settleClaim(household, { claimId: firstClaim.id, amount: 150, toAccountId: "ACC-CHEQUING", date: addDays(today, -82), confirmDuplicate: true, createdBy: "MEM-002" }).household;
+  if (firstClaim) household = settleClaim(household, { claimId: firstClaim.id, amount: Math.round(dentalRecovery * 0.75 * 100) / 100, toAccountId: "ACC-CHEQUING", date: addDays(today, -82), confirmDuplicate: true, createdBy: "MEM-002" }).household;
   const therapy = household.appointments.find((item) => item.kind === "therapy")!;
-  household = postVisit(household, { date: addDays(today, -18), amount: 165, appointmentId: therapy.id, accountId: "ACC-VISA", expectedRecovery: 80, claimLabel: "Wellness benefit", confirmDuplicate: true, createdBy: "MEM-001", visibility: "personal" }).household;
+  household = postVisit(household, { date: addDays(today, -18), amount: therapyCost, appointmentId: therapy.id, accountId: "ACC-VISA", expectedRecovery: therapyRecovery, claimLabel: "Synthetic wellness benefit", confirmDuplicate: true, createdBy: "MEM-001", visibility: "personal" }).household;
   const vet = household.appointments.find((item) => item.kind === "vet")!;
-  household = postVisit(household, { date: addDays(today, -55), amount: 215, appointmentId: vet.id, accountId: "ACC-MC", expectedRecovery: 0, note: "Hercules annual exam", place: "Annex Cat Clinic", confirmDuplicate: true, createdBy: "MEM-002" }).household;
+  household = postVisit(household, { date: addDays(today, -55), amount: vetCost, appointmentId: vet.id, accountId: "ACC-MC", expectedRecovery: 0, note: "Hercules annual exam", place: "Annex Cat Clinic", confirmDuplicate: true, createdBy: "MEM-002" }).household;
 
   household = addPreset(household, { type: "expense", amount: 0, accountId: "ACC-VISA", subcategoryId: "SUB-FOOD-GROCERIES", note: "Weekly groceries", place: "No Frills", splits: jointSplit(0), visibility: "household" }).household;
   household = addPreset(household, { type: "expense", amount: style === "pretty" ? 10 : 6.25, accountId: "ACC-VISA", subcategoryId: "SUB-FOOD-COFFEE", note: "Coffee", place: "Tim Hortons", splits: [{ party: "MEM-002", amountCents: (style === "pretty" ? 1_000 : 625) }], visibility: "both" }).household;
-  household = markInvestmentValue(household, { accountId: "ACC-TFSA", markedValue: style === "pretty" ? 12_500 : money(random, 11_400, 13_600, style, 50), markedAt: today }).household;
+  household = markInvestmentValue(household, { accountId: "ACC-TFSA", markedValue: style === "pretty" ? 12_500 : money(goalRandom, 11_400, 13_600, style, 50), markedAt: today }).household;
   household = scribbleChalk(household, { text: "Synthetic Development household — safe to erase", author: "MEM-001" }).household;
   household = scribbleChalk(household, {
     text: style === "pretty"

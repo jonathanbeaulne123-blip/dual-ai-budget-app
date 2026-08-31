@@ -14,6 +14,20 @@ function response(body: unknown, status = 200): Response {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("Hercules Pro OAuth and MCP bridge", () => {
+  it("refuses to label any Production snapshot as a synthetic fixture", () => {
+    const household = seedDemoHousehold({ today: "2026-08-25", environment: "production" });
+    household.syntheticFixture = {
+      kind: "hearth-demo-suite", version: "2.0.0", seed: 17,
+      generatedForDate: "2026-08-25", generatedAt: "2026-08-25T12:00:00.000Z",
+      buildSha: "test", profile: "investor", numberStyle: "realistic",
+      coverageDigest: "test-coverage", fixtureHashSha256: "a".repeat(64),
+    };
+    expect(() => herculesProTest.booksIdentity(household, {
+      memberId: "MEM-002",
+      householdId: household.householdId,
+    }, "household")).toThrow(/only in Development/);
+  });
+
   it("advertises OAuth and refuses anonymous ledger tools", async () => {
     const metadata = await worker.fetch(new Request(`${origin}/.well-known/oauth-protected-resource`), env);
     expect(metadata.status).toBe(200);
@@ -29,6 +43,12 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
 
   it("links one Google member with PKCE and executes only read tools", async () => {
     const household = seedDemoHousehold({ today: "2026-08-25", environment: "development" });
+    household.syntheticFixture = {
+      kind: "hearth-demo-suite", version: "2.0.0", seed: 424242,
+      generatedForDate: "2026-08-25", generatedAt: "2026-08-25T12:00:00.000Z",
+      buildSha: "test", profile: "investor", numberStyle: "realistic",
+      coverageDigest: "test-coverage", fixtureHashSha256: "a".repeat(64),
+    };
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes("/auth/v1/user")) return response({ id: "auth-user-1", email: "bianca@example.com" });
@@ -106,6 +126,7 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
     expect(initializedBody.result.instructions).toContain("FIRST tool call MUST be summon_hercules");
     expect(initializedBody.result.instructions).toContain("requests picture-in-picture");
     expect(initializedBody.result.instructions).toContain("householdName");
+    expect(initializedBody.result.instructions).toContain("synthetic");
     expect(initializedBody.result.instructions).toContain("never by householdId");
 
     const tools = await worker.fetch(new Request(`${origin}/mcp`, {
@@ -186,6 +207,9 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       memberName: "Jonathan",
       householdId: household.householdId,
       memberId: "MEM-002",
+      synthetic: true,
+      syntheticSeed: 424242,
+      syntheticGeneratorVersion: "2.0.0",
       readOnly: true,
     } } });
 
@@ -207,6 +231,9 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       currency: "CAD",
       timeZone: "America/Toronto",
       usedTool: "account_balance",
+      synthetic: true,
+      syntheticSeed: 424242,
+      syntheticGeneratorVersion: "2.0.0",
       teachingContract: { writeAuthority: "none", clickableSources: true, announceTool: true },
     });
     expect(called.result.structuredContent.householdName).not.toBe("Household");

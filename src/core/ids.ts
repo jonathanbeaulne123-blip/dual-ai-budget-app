@@ -1,3 +1,5 @@
+import { fillRuntimeRandom, runtimeNowIso } from "./syntheticRuntime.ts";
+
 export function pad(n: number, width: number): string {
   return String(n).padStart(width, "0");
 }
@@ -13,7 +15,7 @@ export function nextId(prefix: string, existingIds: string[], width = 6): string
   void width;
   const bytes = new Uint8Array(5);
   for (let attempt = 0; attempt < 32; attempt += 1) {
-    globalThis.crypto.getRandomValues(bytes);
+    fillRuntimeRandom(bytes);
     const id = `${prefix}${Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
     if (!existingIds.includes(id)) return id;
   }
@@ -38,7 +40,7 @@ export function uniquePrefixedId(prefix: string, existingIds: string[]): string 
 }
 
 export function nowIso(now = new Date()): string {
-  return now.toISOString();
+  return runtimeNowIso(now);
 }
 
 export { randomInvitePhrase as randomInviteCode } from "./invite.ts";
@@ -50,6 +52,6 @@ export {
 
 export function randomHouseholdId(): string {
   const bytes = new Uint8Array(8);
-  globalThis.crypto.getRandomValues(bytes);
+  fillRuntimeRandom(bytes);
   return `HH-${Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
 }
