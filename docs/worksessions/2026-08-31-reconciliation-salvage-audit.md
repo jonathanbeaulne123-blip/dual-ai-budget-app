@@ -1,13 +1,13 @@
 # Hearth worksession — Reconciliation salvage audit
 
-- **Status:** AWAITING REMOVAL CONFIRMATION
+- **Status:** CLOSED
 - **Opened:** 2026-08-31 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/reconciliation-salvage-audit`
 - **Baseline SHA:** `e19acf09c35c26bda1dba9d01e4806a315e223ab`
-- **Head SHA:** `73628d09f7044f50fd6c19afa458a6785f2e47fe` (salvage implementation; this evidence update follows)
+- **Head SHA:** `7fcb9bba4f12c760393709d6d9c6d92a6d5c689b` (pre-cleanup evidence; final cleanup record follows)
 - **PR or issue:** none
 - **Risk:** High
 - **Decision owner:** Jonathan for removal of any feature or user-facing behavior; Codex for duplicate/generated/stale implementation classification
@@ -30,13 +30,13 @@ Jonathan and Bianca keep every current, trustworthy import and reconciliation ca
 - `origin/main` and the isolated branch start at `e19acf09c35c26bda1dba9d01e4806a315e223ab`.
 - The source checkout `codex/import-reconciliation-engine` is at `f9e8170876b2faa233c4be0d838801b156f15645`, 379 commits behind current `origin/main`, with 77 dirty files represented by 76 porcelain-status entries.
 - Current canon already contains D-130 selected intake and D-141 exact statement/receipt reconciliation.
-- No file has been removed from the dirty source checkout.
+- At audit time no source file had been removed; after Jonathan's explicit confirmation, the complete dirty checkout and its exact worktree metadata were moved to Trash.
 
 ## Scope
 
 ### In scope
 
-- Classify all 76 dirty paths against current `origin/main`.
+- Classify all 77 dirty files represented by 76 porcelain-status entries against current `origin/main`.
 - Distinguish shipped/superseded copies, generated artifacts, documentation history, tests, and genuinely unique behavior.
 - Salvage only valuable unique behavior into this current-main worktree.
 - Ask Jonathan before removing any feature or user-facing behavior.
@@ -52,8 +52,8 @@ Jonathan and Bianca keep every current, trustworthy import and reconciliation ca
 - [x] Every dirty file has a recorded classification and evidence.
 - [x] Unique import/reconciliation behavior is either preserved on current main or presented for an explicit decision.
 - [x] Current D-130/D-141 command, privacy, environment, and Confirm boundaries remain green.
-- [ ] No feature or user-facing behavior is removed without Jonathan's confirmation.
-- [ ] Source checkout status remains recoverable until approved cleanup.
+- [x] No feature or user-facing behavior is removed without Jonathan's confirmation.
+- [x] Source checkout status remained recoverable until approved cleanup and is now recoverable from Trash.
 
 ## Plan
 
@@ -61,7 +61,7 @@ Jonathan and Bianca keep every current, trustworthy import and reconciliation ca
 - [x] Compare each cluster with current code, decisions, tests, and shipped history.
 - [x] Port the smallest valuable unique slices, if any.
 - [x] Run focused and repository verification.
-- [ ] Present removal decisions, then close or continue based on Jonathan's confirmation.
+- [x] Present removal decisions, receive Jonathan's confirmation, and close the stale checkout.
 
 ## Evidence log
 
@@ -70,10 +70,12 @@ Jonathan and Bianca keep every current, trustworthy import and reconciliation ca
 - 2026-08-31: selectively ported the still-missing Google prompt/session containment onto current `main`, preserving the later Supabase `session_id` device-revocation contract. Focused Google/Auth proof passes 64 tests across 8 files; TypeScript passes.
 - 2026-08-31: focused import/reconciliation/privacy proof passes 39 tests across 6 files. Production build passes with the repository's existing PGlite externalization/eval and large-chunk warnings.
 - 2026-08-31: full repository run reached 1,264 passed, 3 failed, and 3 skipped tests across 192 files. Two failures are environment-only writes to the hard-coded unwritable `/opt/cursor/artifacts`; the third was the existing 15-second whole-suite timeout in the large stress projection. Its isolated rerun passed in 11.46 seconds. No salvaged Google/Auth/import test failed. Vitest also reported one worker RPC timeout after the long run.
+- 2026-08-31: Jonathan explicitly confirmed removal after receiving the exhaustive disposition and the list of user-facing superseded surfaces.
+- 2026-08-31: moved the dirty checkout to `/Users/jonathanbeaulne/.Trash/dual-ai-budget-app-reconciliation-2026-08-31`, moved only its worktree metadata to `/Users/jonathanbeaulne/.Trash/git-worktree-metadata-dual-ai-budget-app-reconciliation-2026-08-31`, and deleted the already-merged local branch `codex/import-reconciliation-engine` at `f9e8170`. The salvage worktree remains registered, clean, and on `codex/reconciliation-salvage-audit`.
 
 ## Exhaustive dirty-file disposition
 
-The lists below account for all 77 dirty files. Files in the first group were selectively ported; only the named containment behavior was retained from multi-purpose files. No source file has yet been deleted.
+The lists below account for all 77 dirty files. Files in the first group were selectively ported; only the named containment behavior was retained from multi-purpose files. The superseded source checkout was moved to Trash only after explicit confirmation.
 
 ### Keep — selectively ported onto current main (24)
 
@@ -108,10 +110,10 @@ Current main has the later D-156 wide paper office, D-164 kitchen notes and char
 - Preserve current free-first Hercules provider policy; do not revive the stale OpenAI-first experiment.
 - Preserve current office, Flinks, 7shifts, accepted-books import, `session_id`, and device-revocation behavior while porting only the missing containment slice.
 
-## Removal confirmation gate
+## Removal confirmation
 
-Jonathan must confirm before the stale checkout is removed because it still physically contains user-facing alternate implementations: the older Hercules full-screen office and image, OpenAI-first provider order, Flinks scaffold, and older Google/Calendar/desk surfaces. They are superseded and should go, but the checkout remains recoverable until confirmation.
+Jonathan confirmed removal after reviewing the older Hercules full-screen office and image, OpenAI-first provider order, Flinks scaffold, and older Google/Calendar/desk surfaces. The checkout and its exact metadata are in Trash for recoverability; the stale local branch is deleted.
 
 ## Handoff
 
-Codex owns the audit and any non-destructive salvage. Jonathan owns confirmation of feature/user-facing removal and any later push, merge, deployment, or destructive worktree cleanup.
+The audit, salvage, and confirmed local cleanup are complete. No push, merge, deployment, schema, hosted data, secrets, or Production state changed. Jonathan still owns any later push, PR, merge, or deployment decision for `codex/reconciliation-salvage-audit`.
