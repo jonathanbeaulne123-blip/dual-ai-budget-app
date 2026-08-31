@@ -25,6 +25,7 @@ import type {
   Tombstone,
   Transaction,
 } from "./types.ts";
+import { ValidationError } from "./types.ts";
 import { belongsToSharedLedger, isPersonalOnly, parseVisibility } from "./visibility.ts";
 import { shapeLedgerNames } from "./ledgerNames.ts";
 import { shapeWorkJobs } from "./work.ts";
@@ -44,6 +45,27 @@ import {
 } from "./householdFund.ts";
 
 export type { PersonalEnvelope, SharedEnvelope };
+
+function assertSyntheticFixtureEnvironment(value: {
+  environment: Household["environment"];
+  syntheticFixture?: Household["syntheticFixture"];
+}): void {
+  if (value.syntheticFixture && value.environment !== "development") {
+    throw new ValidationError("Synthetic Demo Suite provenance is valid only in Development.");
+  }
+}
+
+function mergeSyntheticFixture(server: SharedEnvelope, client: SharedEnvelope): Household["syntheticFixture"] {
+  assertSyntheticFixtureEnvironment(server);
+  assertSyntheticFixtureEnvironment(client);
+  const left = server.syntheticFixture ?? null;
+  const right = client.syntheticFixture ?? null;
+  if (!left) return right;
+  if (!right) return left;
+  const leftKey = `${left.generatedAt}|${left.version}|${left.seed}`;
+  const rightKey = `${right.generatedAt}|${right.version}|${right.seed}`;
+  return rightKey >= leftKey ? right : left;
+}
 
 function withoutPrivateShiftBible(shift: Shift): Shift {
   if (!shift.shiftBible) return shift;
@@ -198,6 +220,7 @@ function shapePresets(list: Preset[] | undefined, fallbackIso: string): Preset[]
 }
 
 export function ensureHouseholdShape(household: Household): Household {
+  assertSyntheticFixtureEnvironment(household);
   const fallback = household.members.find((member) => member.active)?.id ?? household.members[0]?.id ?? "";
   const fallbackIso = household.lastCommittedAt || MISSING_ISO;
   const progress = shapeGoalProgress(household.goals, household.goalContributions, fallbackIso, fallback);
@@ -282,6 +305,7 @@ export function ensureHouseholdShape(household: Household): Household {
     sharing: shapeSharing(household),
     conflicts: household.conflicts ?? [],
     restorePoints: household.restorePoints ?? [],
+    syntheticFixture: household.syntheticFixture ?? null,
     ...(household.herculesProPermissions
       ? { herculesProPermissions: shapeHerculesProPermissions(household.herculesProPermissions) }
       : {}),
@@ -328,6 +352,17 @@ export function splitForSync(household: Household, memberId: string): { shared: 
   const personalGoalIds = new Set(personalGoals.map((goal) => goal.id));
   const sharedAccounts = shaped.accounts.filter((account) => account.scope !== "personal");
   const personalAccounts = shaped.accounts.filter((account) => account.scope === "personal" && account.ownerMemberId === memberId);
+  const privateActivityTokens = [
+    ...shaped.transactions.filter(isPersonalOnly).map((row) => row.id),
+    ...shaped.accounts.filter((row) => row.scope === "personal").flatMap((row) => [row.id, row.name]),
+    ...shaped.goals.filter((row) => !row.shared).flatMap((row) => [row.id, row.name]),
+    ...(shaped.sevenShiftsSchedules ?? []).flatMap((row) => [row.id, row.provenanceId]),
+    ...(shaped.shiftEnvelopes ?? []).flatMap((row) => [row.id, row.canonicalShiftKey]),
+    ...(shaped.shiftBibles ?? []).map((row) => row.id),
+    ...(shaped.fundPrivate?.bankBindings ?? []).map((row) => row.id),
+    ...(shaped.fundPrivate?.reconciliations ?? []).map((row) => row.id),
+  ].filter((token) => token.length >= 4);
+  const sharedActivity = shaped.activity.filter((row) => !privateActivityTokens.some((token) => row.summary.includes(token)));
   const shared: SharedEnvelope = {
     kind: "shared",
     revision: shaped.revision,
@@ -358,7 +393,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     fundKittyAllocations: shaped.fundKittyAllocations ?? [],
     budgetPlans: shaped.budgetPlans,
     sitDownSessions: shaped.sitDownSessions,
-    activity: shaped.activity,
+    activity: sharedActivity,
     devices: shaped.devices,
     workJobs: shaped.workJobs,
     shiftSettings: shaped.shiftSettings,
@@ -368,6 +403,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     tombstones: shaped.tombstones,
     commandReceipts: shaped.commandReceipts,
     restorePoints: shaped.restorePoints ?? [],
+    syntheticFixture: shaped.syntheticFixture ?? null,
   };
   const personal: PersonalEnvelope = {
     kind: "personal",
@@ -586,6 +622,7 @@ export function assembleHousehold(
     sharing: shapeSharing({ linked: options?.linked === true }),
     conflicts: shared.conflicts ?? [],
     restorePoints: shared.restorePoints ?? [],
+    syntheticFixture: shared.syntheticFixture ?? null,
     tombstones: mergeTombstones(shared.tombstones, personal?.tombstones ?? []),
     name: shared.name,
     ledgerNames: shapeLedgerNames(shared.ledgerNames, shared.members),
@@ -635,6 +672,8 @@ export function assembleHousehold(
 }
 
 export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): SharedEnvelope {
+  assertSyntheticFixtureEnvironment(server);
+  assertSyntheticFixtureEnvironment(client);
   const tombstones = mergeTombstones(server.tombstones, client.tombstones);
   const newer = laterEnvelope(server, client);
   const goalContributions = mergeRecords(server.goalContributions ?? [], client.goalContributions ?? [], tombstones);
@@ -688,6 +727,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     transactions: mergeRecords(server.transactions, client.transactions, tombstones),
     shifts: mergeRecords(server.shifts, client.shifts, tombstones),
     tombstones,
+    syntheticFixture: mergeSyntheticFixture(server, client),
   };
 }
 

@@ -45,6 +45,20 @@ export function visibleForDuplicateScan(
   return parseVisibility(item.visibility) !== "personal" || item.createdBy === memberId;
 }
 
+function activitySafeForMember(household: Household, memberId: string) {
+  const partnerPrivateTokens = [
+    ...household.transactions.filter((row) => row.visibility === "personal" && row.createdBy !== memberId).map((row) => row.id),
+    ...household.accounts.filter((row) => row.scope === "personal" && row.ownerMemberId !== memberId).flatMap((row) => [row.id, row.name]),
+    ...household.goals.filter((row) => !row.shared && row.ownerMemberId !== memberId).flatMap((row) => [row.id, row.name]),
+    ...(household.sevenShiftsSchedules ?? []).filter((row) => row.memberId !== memberId).flatMap((row) => [row.id, row.provenanceId]),
+    ...(household.shiftEnvelopes ?? []).filter((row) => row.memberId !== memberId).flatMap((row) => [row.id, row.canonicalShiftKey]),
+    ...(household.shiftBibles ?? []).filter((row) => row.memberId !== memberId).map((row) => row.id),
+    ...(household.fundPrivate?.bankBindings ?? []).filter((row) => row.memberId !== memberId).map((row) => row.id),
+    ...(household.fundPrivate?.reconciliations ?? []).filter((row) => row.memberId !== memberId).map((row) => row.id),
+  ].filter((token) => token.length >= 4);
+  return (household.activity ?? []).filter((row) => !partnerPrivateTokens.some((token) => row.summary.includes(token)));
+}
+
 /**
  * Member-scoped household for Hercules model payloads (D-115 / D-126 Q6).
  * Partner `personal` money, goals, and kitchen memories never enter aggregates,
@@ -129,6 +143,12 @@ export function householdForHerculesContext(
     : household.kitchen.hercules;
   return {
     ...scoped,
+    activity: activitySafeForMember(household, memberId),
+    commandReceipts: [],
+    conflicts: [],
+    restorePoints: [],
+    tombstones: [],
+    devices: [],
     coworkers: [],
     coworkerAttendance: [],
     coworkerSchedules: [],

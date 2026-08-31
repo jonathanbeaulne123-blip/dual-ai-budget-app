@@ -1,3 +1,5 @@
+import { fillRuntimeRandom } from "./syntheticRuntime.ts";
+
 /** Kitchen-safe words. Distinct enough to say across a table; not a cryptographic secret. */
 export const INVITE_WORDS = [
   "amber", "apron", "aspen", "basin", "birch", "blanket", "bluff", "bramble",
@@ -24,7 +26,7 @@ function cleanWord(word: string): string {
 
 function randomInt(max: number): number {
   const bytes = new Uint8Array(4);
-  globalThis.crypto.getRandomValues(bytes);
+  fillRuntimeRandom(bytes);
   return (bytes[0]! * 0x1000000 + bytes[1]! * 0x10000 + bytes[2]! * 0x100 + bytes[3]!) % max;
 }
 

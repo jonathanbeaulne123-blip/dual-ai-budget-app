@@ -4824,7 +4824,7 @@ function nextFundEventAt(household: Household): string {
     (max, event) => Math.max(max, Date.parse(event.createdAt) || 0),
     0,
   );
-  return new Date(Math.max(Date.now(), latest + 1)).toISOString();
+  return new Date(Math.max(Date.parse(nowIso()), latest + 1)).toISOString();
 }
 
 export function configureHouseholdFund(household: Household, input: {
@@ -5324,6 +5324,7 @@ export function emptyHousehold(environment: Household["environment"] = "developm
       pending: false,
     },
     conflicts: [],
+    syntheticFixture: null,
   };
 }
 

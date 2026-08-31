@@ -39,7 +39,15 @@ describe("Hercules Pro confirmed transaction kernel", () => {
     expect(accepted.accepted.revision).toBe(household.revision + 1);
     expect(accepted.sharedProjection.transactions.some((row) => row.id === prepared.postedIds[0])).toBe(false);
     expect(accepted.sharedProjection.herculesProPermissions).toBeUndefined();
-    expect(accepted.sharedProjection.activity).toEqual(household.activity);
+    expect(accepted.sharedProjection.activity.every((row) => household.activity.some((source) => source.id === row.id))).toBe(true);
+    expect(accepted.sharedProjection.activity.length).toBeLessThan(household.activity.length);
+    expect(accepted.sharedProjection.activity.some((row) => row.summary.includes("Bianca trip fund"))).toBe(false);
+    const privateTransactionIds = household.transactions
+      .filter((row) => row.visibility === "personal")
+      .map((row) => row.id);
+    expect(accepted.sharedProjection.activity.some((row) => (
+      privateTransactionIds.some((transactionId) => row.summary.includes(transactionId))
+    ))).toBe(false);
     expect(accepted.personalProjection?.transactions.some((row) => row.id === prepared.postedIds[0])).toBe(true);
     expect(accepted.receipt).toMatchObject({ confirmationId: "CONFIRM-WRITE-1", commandKind: "hercules-pro-transaction" });
   });

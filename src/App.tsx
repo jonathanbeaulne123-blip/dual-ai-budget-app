@@ -68,7 +68,10 @@ import {
   requestShiftEnvelope,
   requestCalendarPane,
   seedDemoHousehold,
-  seedStressHousehold,
+  generateDemoSuite,
+  verifyDemoSuite,
+  freshDemoSeed,
+  preserveDemoShowcaseContinuity,
   eraseDevelopmentData,
   shiftSettingsFingerprint,
   archiveWorkJob,
@@ -137,6 +140,7 @@ import {
   type VisitPostDraft,
   type TransactionLocation,
   type HerculesNumberSource,
+  type DemoRunReport,
 } from "./core/index.ts";
 import {
   STORAGE_EXPLAINER,
@@ -380,8 +384,7 @@ function loadWelcomeGoogleIntent(): WelcomeGoogleIntent | null {
 }
 type Guard =
   | { kind: "environment"; next: Environment }
-  | { kind: "stress-random" }
-  | { kind: "stress-pretty" }
+  | { kind: "demo-suite"; seed: number }
   | { kind: "erase-development" }
   | { kind: "clear-this-phone" }
   | { kind: "reset-development" }
@@ -486,6 +489,8 @@ export function App() {
   const [history, setHistory] = useState<UndoToken[]>([]);
   const [isHouseholdOwner, setIsHouseholdOwner] = useState(false);
   const [guard, setGuard] = useState<Guard | null>(null);
+  const [demoSeed, setDemoSeed] = useState("");
+  const [demoReport, setDemoReport] = useState<DemoRunReport | null>(null);
   const [saveRepeatingPostFirst, setSaveRepeatingPostFirst] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   const [splitPercents, setSplitPercents] = useState<Record<string, number>>({ "MEM-001": 50, "MEM-002": 50 });
@@ -1896,6 +1901,93 @@ export function App() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function createOrReplayDemoSuite(seed: number): Promise<void> {
+    if (environment !== "development") throw new Error("Demo Suite is Development-only.");
+    const memberId = session?.memberId;
+    const current = householdRef.current;
+    if (!memberId || !current) throw new Error("Choose who is using this ledger before opening Demo Suite.");
+    await gateWithGoogle({ record: false });
+    const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
+    const googleSession = loadGoogleSession(environment, memberId);
+    const currentLink = current.google.links.find((row) => row.memberId === memberId && row.active);
+    const identity: ContinuityIdentity | null = authSession
+      ? { email: authSession.email, subject: authSession.googleSubject }
+      : continuityIdentityFromGoogle(googleSession) ?? (currentLink ? { email: currentLink.email, subject: currentLink.subject } : null);
+    if (!identity || (!identity.email && !identity.subject)) {
+      throw new Error("Sign in with Google first so the dedicated synthetic household can open in Hercules Pro.");
+    }
+
+    const generated = await generateDemoSuite({
+      today,
+      seed,
+      profile: "investor",
+      numberStyle: "realistic",
+      buildSha: import.meta.env.VITE_GIT_SHA || "local-development",
+    });
+    let candidate = generated.household;
+    let accepted: Household;
+    if (current.syntheticFixture?.kind === "hearth-demo-suite") {
+      candidate = preserveDemoShowcaseContinuity(current, candidate);
+      const outcome = await persist(candidate, undefined, memberId, { forceFlush: true });
+      if (!outcome?.ok) throw new Error(outcome?.userMessage || "Demo Suite could not replace its synthetic household.");
+      accepted = outcome.household;
+    } else {
+      candidate = linkGoogleIdentity(candidate, {
+        memberId,
+        email: identity.email,
+        subject: identity.subject,
+        displayName: authSession?.displayName ?? (googleSession ? googleSession.identity.displayName : currentLink?.displayName) ?? "",
+        grantedScopes: googleSession?.grantedScopes ?? currentLink?.grantedScopes ?? ["openid", "email", "profile"],
+      }).household;
+      const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
+      const confirmationId = `demo-suite-${candidate.householdId}-${seed}`;
+      const outcome = await acceptHouseholdWrite({
+        previous: null,
+        candidate,
+        confirmationId,
+        commandKind: "create-demo-suite",
+        postedIds: [],
+        transportRequested: hostedContinuityAllowed(environment),
+        adapters: makeBooksAdapters({
+          environment,
+          memberId,
+          continuityIdentity: identity,
+          transport: hostedContinuityAllowed(environment)
+            ? (next, expectedRevision) => transportHouseholdWithOutbox({
+                household: next,
+                identity,
+                expectedRevision,
+                confirmationId,
+                config: cloudConfig,
+                flush: true,
+              })
+            : undefined,
+        }),
+      });
+      if (!outcome.ok) throw new Error(outcome.userMessage || "Demo Suite could not create its dedicated household.");
+      accepted = outcome.household;
+      closeAdd();
+      const status: BooksStatus = {
+        ok: true,
+        engine: outcome.kind === "synchronized" ? "pglite+supabase" : "pglite",
+        entryCount: accepted.transactions.length,
+        inBalance: true,
+        equationHolds: true,
+      };
+      adoptAcceptedHousehold(accepted, status);
+      rememberSession({ memberId, view: "household", householdId: accepted.householdId });
+      setBooksStatus(status);
+      setReplicas(await listHouseholdReplicas(environment));
+      if (outcome.kind !== "synchronized") {
+        setError("The synthetic household is ready on this phone, but its Hercules Pro cloud copy is still pending. Use Retry share before the investor demo.");
+      }
+    }
+    setDemoSeed(String(seed));
+    setDemoReport(await verifyDemoSuite(accepted, generated.manifest));
+    setHistory([]);
+    setToast(null);
   }
 
   async function openDiscoveredLedger(found: DiscoveredHousehold): Promise<void> {
@@ -4258,10 +4350,63 @@ export function App() {
             }}>
               {view === "personal" ? "Export this Personal folio" : "Export Shared snapshot"}
             </button>
-            {environment === "development" && (<>
-              <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setGuard({ kind: "stress-random" })}>Reload random data</button>
-              <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setGuard({ kind: "stress-pretty" })}>Display pretty numbers</button>
-            </>)}
+            {environment === "development" && (
+              <div className="paper-panel" style={{ marginTop: 12, padding: 12 }} data-testid="demo-suite-panel">
+                <p className="kicker">Synthetic Demo Suite</p>
+                <p className="muted" style={{ marginTop: 4 }}>
+                  A dedicated, visibly fictional household for Hercules Pro. Every run has a replay seed; schedule mail stays proposal-only until Confirm.
+                </p>
+                {household.syntheticFixture?.kind === "hearth-demo-suite" ? (
+                  <p style={{ margin: "8px 0 0" }}><strong>Seed {household.syntheticFixture.seed}</strong> · generator {household.syntheticFixture.version}</p>
+                ) : (
+                  <p className="muted" style={{ margin: "8px 0 0" }}>Your current books will stay here. Demo Suite creates another household.</p>
+                )}
+                <label htmlFor="demo-suite-seed" style={{ marginTop: 10 }}>Replay seed</label>
+                <input
+                  id="demo-suite-seed"
+                  inputMode="numeric"
+                  value={demoSeed}
+                  placeholder="Fresh seed"
+                  onChange={(event) => setDemoSeed(event.target.value.replace(/\D/g, "").slice(0, 10))}
+                />
+                <div className="button-row demo-suite-actions" style={{ marginTop: 8 }}>
+                  <button className="primary" disabled={busy} onClick={() => setGuard({ kind: "demo-suite", seed: freshDemoSeed() })}>Fresh showcase</button>
+                  <button className="ghost" disabled={busy || !demoSeed} onClick={() => setGuard({ kind: "demo-suite", seed: Number(demoSeed) >>> 0 })}>Replay seed</button>
+                  {household.syntheticFixture?.kind === "hearth-demo-suite" && (
+                    <button className="ghost" disabled={busy} onClick={() => {
+                      void (async () => {
+                        setBusy(true);
+                        try {
+                          setDemoReport(await verifyDemoSuite(household));
+                        } catch (caught) {
+                          setError(caught instanceof Error ? caught.message : String(caught));
+                        } finally {
+                          setBusy(false);
+                        }
+                      })();
+                    }}>Verify now</button>
+                  )}
+                </div>
+                {demoReport && (
+                  <div className="muted" style={{ marginTop: 10 }} data-testid="demo-suite-report" role="status" aria-live="polite">
+                    <strong>{demoReport.verifiedRevision !== household.revision ? "Not verified after books changed" : demoReport.status === "ready" ? "Ready" : "Not ready"}</strong> · {demoReport.checks.filter((row) => row.status === "pass").length}/{demoReport.checks.length} gates · {demoReport.tools.filter((row) => row.status !== "unavailable").length}/{demoReport.tools.length} Hercules calculations
+                    <br />Attestation <code>{demoReport.attestationSha256.slice(0, 16)}…</code> · seed {demoReport.seed}
+                    {demoReport.verifiedRevision !== household.revision && (
+                      <ul className="demo-suite-failures">
+                        <li><strong>Books changed:</strong> use Verify now to compare every generated fact with the seed again.</li>
+                      </ul>
+                    )}
+                    {demoReport.checks.some((row) => row.status === "fail") && (
+                      <ul className="demo-suite-failures">
+                        {demoReport.checks.filter((row) => row.status === "fail").map((row) => (
+                          <li key={row.id}><strong>{row.label}:</strong> {row.detail}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => {
               const due = experience && experience.ok
                 ? experience.scopedHousehold.recurrences.filter((item) => item.active && item.nextDate <= today)
@@ -5042,111 +5187,21 @@ export function App() {
           }}
         />
       )}
-      {environment === "development" && guard?.kind === "stress-random" && (
+      {environment === "development" && guard?.kind === "demo-suite" && (
         <ConfirmSheet
-          title="Reload randomized stress data?"
-          body={`This replaces the ${environment} ledger activity with twelve months of fictional CAD covering weighted harbour shifts (weather, location, full tip/sales forms), wages, tips, expenses, bills, imported rows, transfers, appointments, claims, goals, budgets, presets, card balances, and money owed. In Development it keeps this household’s Google link and membership so Hercules Pro can still read the fixture after sync. Tip shifts are posted for the member signed in on this phone.`}
+          title={household.syntheticFixture?.kind === "hearth-demo-suite" ? "Replace this synthetic showcase?" : "Create a dedicated synthetic showcase?"}
+          body={`Seed ${guard.seed} creates twelve months of fictional CAD, shifts, schedules, Evidence envelopes, bills, appointments, claims, goals, Fund plans, reconciliations, and audit coverage. Your ordinary Development household is not replaced. On an existing synthetic showcase, only that showcase is regenerated. Schedule and Evidence rows do not post money.`}
           extra={googleStepUpExtra}
-          confirmLabel="Load random stress data"
-          danger
+          confirmLabel="Generate & verify"
           busy={busy}
           onCancel={() => setGuard(null)}
           onConfirm={() => {
+            const seed = guard.seed;
             void (async () => {
               setBusy(true);
               try {
-                await gateWithGoogle({ record: false });
                 setGuard(null);
-                const seeded = seedStressHousehold({
-                  today,
-                  environment,
-                  seed: Date.now() & 0xffffffff,
-                  numberStyle: "realistic",
-                  preserveFrom: environment === "development" ? household ?? undefined : undefined,
-                  tipMemberId: session?.memberId,
-                });
-                await persist(seeded, undefined, session?.memberId, { forceFlush: true });
-                const who = session?.memberId;
-                if (who && hostedContinuityAllowed(environment)) {
-                  const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
-                  const googleSession = loadGoogleSession(environment, who);
-                  const continuityIdentity: ContinuityIdentity | null = authSession
-                    ? { email: authSession.email, subject: authSession.googleSubject }
-                    : continuityIdentityFromGoogle(googleSession);
-                  if (continuityIdentity) {
-                    const flushed = await flushContinuityOutbox({
-                      environment,
-                      identity: continuityIdentity,
-                      config: authenticatedSupabaseConfig(readSupabaseConfig(), authSession),
-                      requireAuthenticatedSession: supabaseAuthEnabled(),
-                      authenticatedIdentity: authSession
-                        ? { email: authSession.email, subject: authSession.googleSubject }
-                        : null,
-                    });
-                    if (flushed.conflicts[0]) {
-                      setError(flushed.conflicts[0].message);
-                    } else if (flushed.pending > 0) {
-                      setError(`Stress data is on this phone (${seeded.shifts.length} shifts) but ${flushed.pending} cloud push${flushed.pending === 1 ? " is" : "es are"} still pending. Open Pairing / Retry now before asking Hercules Pro.`);
-                    }
-                  }
-                }
-              } catch (caught) {
-                setError(caught instanceof Error ? caught.message : String(caught));
-              } finally {
-                setBusy(false);
-              }
-            })();
-          }}
-        />
-      )}
-      {environment === "development" && guard?.kind === "stress-pretty" && (
-        <ConfirmSheet
-          title="Display a fresh pretty-number household?"
-          body={`This replaces the ${environment} ledger activity with a twelve-month fictional household. Amounts are deliberately rounded into clean, presentation-friendly values while the same weather-weighted harbour shifts, location stamps, bills, imports, appointments, claims, goals, budgets, and owed balances remain testable. In Development it keeps this household’s Google link and membership for Hercules Pro. Tip shifts go to the member signed in on this phone.`}
-          extra={googleStepUpExtra}
-          confirmLabel="Load pretty numbers"
-          danger
-          busy={busy}
-          onCancel={() => setGuard(null)}
-          onConfirm={() => {
-            void (async () => {
-              setBusy(true);
-              try {
-                await gateWithGoogle({ record: false });
-                setGuard(null);
-                const seeded = seedStressHousehold({
-                  today,
-                  environment,
-                  seed: Date.now() & 0xffffffff,
-                  numberStyle: "pretty",
-                  preserveFrom: environment === "development" ? household ?? undefined : undefined,
-                  tipMemberId: session?.memberId,
-                });
-                await persist(seeded, undefined, session?.memberId, { forceFlush: true });
-                const who = session?.memberId;
-                if (who && hostedContinuityAllowed(environment)) {
-                  const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
-                  const googleSession = loadGoogleSession(environment, who);
-                  const continuityIdentity: ContinuityIdentity | null = authSession
-                    ? { email: authSession.email, subject: authSession.googleSubject }
-                    : continuityIdentityFromGoogle(googleSession);
-                  if (continuityIdentity) {
-                    const flushed = await flushContinuityOutbox({
-                      environment,
-                      identity: continuityIdentity,
-                      config: authenticatedSupabaseConfig(readSupabaseConfig(), authSession),
-                      requireAuthenticatedSession: supabaseAuthEnabled(),
-                      authenticatedIdentity: authSession
-                        ? { email: authSession.email, subject: authSession.googleSubject }
-                        : null,
-                    });
-                    if (flushed.conflicts[0]) {
-                      setError(flushed.conflicts[0].message);
-                    } else if (flushed.pending > 0) {
-                      setError(`Pretty numbers are on this phone (${seeded.shifts.length} shifts) but ${flushed.pending} cloud push${flushed.pending === 1 ? " is" : "es are"} still pending. Open Pairing / Retry now before asking Hercules Pro.`);
-                    }
-                  }
-                }
+                await createOrReplayDemoSuite(seed);
               } catch (caught) {
                 setError(caught instanceof Error ? caught.message : String(caught));
               } finally {

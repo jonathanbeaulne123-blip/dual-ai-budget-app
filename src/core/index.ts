@@ -94,6 +94,8 @@ export * from "./sitDown.ts";
 export * from "./sitDownInfographics.ts";
 export * from "./kittyBanks.ts";
 export * from "./stressSeed.ts";
+export * from "./demoSuite.ts";
+export * from "./demoRandom.ts";
 export { createWriteQueue } from "./writeQueue.ts";
 export { formatInviteCode, normalizeInviteCode, randomHouseholdId, randomInviteCode } from "./ids.ts";
 export {

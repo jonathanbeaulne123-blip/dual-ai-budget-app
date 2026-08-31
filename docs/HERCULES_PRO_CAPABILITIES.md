@@ -1,6 +1,6 @@
 # Hercules Pro — calculations and features inventory
 
-Status: living inventory for D-136 / D-137 / D-140 / D-142. Count on `tools/list` is **68** when companion + write-scope tools are listed (64 read catalog + 1 `summon_hercules` + 3 write-path). Free in-app Hercules shares the same read catalog through `herculesTools.ts`.
+Status: living inventory for D-136 / D-137 / D-140 / D-142. The core catalog is **69** tools (65 read calculations + 1 `summon_hercules` + 3 transaction write-path tools). The hosted connector may list additional read-only Evidence/rig helpers. Free in-app Hercules shares the same read catalog through `herculesTools.ts`.
 
 **Announcement rule (D-142):** every successful MCP answer includes `usedTool` and prefixes the answer with `I used \`tool_name\`. …`. The teacher skill must name the tool in ordinary language too.
 
@@ -15,6 +15,7 @@ Status: living inventory for D-136 / D-137 / D-140 / D-142. Count on `tools/list
 | Production gate | Refused unless `HERCULES_PRO_ALLOW_PRODUCTION=true` |
 | Development-data window | Through **2026-09-30**, hosted Development information is disposable and may remain openly readable/writable to accelerate continuity work. Credentials and secrets are never disposable. See `HERCULES_PRO_PRIVACY.md` / `CLOUD_CONTINUITY.md`. |
 | Currency / books civil TZ | CAD integer cents; America/Toronto |
+| Synthetic Demo Suite | Development-only dedicated household; every result returns synthetic disclosure, replay seed, and generator version. Investor walkthrough: `HERCULES_PRO_DEMO_PLAYBOOK.md`. |
 
 ## Write-path tools (3)
 
