@@ -1,5 +1,21 @@
 # AI Task and Handoff Standard
 
+## The Month Spread — Shared Home centre instrument (2026-08-31)
+
+**Status:** On `cursor/month-spread-shared-home-04e5` from exact `origin/main@2a984fd`. Draft PR pending proof. **Not merged, not deployed, not live.** Risk: **High** (presentation, plus two isolated `projectHouseholdFund` figure corrections).
+
+**Household outcome:** Shared Home's centre is the month as one instrument — Standing, Course, Docket — instead of the placeholder sentence. Seals, mosaic, and Kitty Banks keep their words and arithmetic.
+
+**Budget delta (5):** `+3`. **Engagement delta (3):** `+3`. Books won on shared Course scale, empty-staff-on-untied-drawing, and rollover-as-claim (not a second envelope).
+
+**What changed:** Claude's local two-commit packet, applied onto current `main` (kitchen desk already shipped via #252). Presentation commits plus an isolated F-2/F-3 money-projection commit. Worksession: [`worksessions/2026-08-31-month-spread.md`](worksessions/2026-08-31-month-spread.md).
+
+**Verification:** in progress on this branch. Do not treat the originating session's `ba752c2` suite numbers as proof here.
+
+**Environment/data:** fictional Development demo seed only. No Production, network household calls, MCP, hosted schema, secrets, or real household data.
+
+**Next owner:** Jonathan after the draft PR and books review of F-2/F-3. Do not merge unless Jonathan asks.
+
 ## SF-02 Shared Money membership and device access (2026-08-30)
 
 **Status:** Release candidate on `codex/shared-money-program` from exact SF-01 `eceb5ebaeb3db8d8494c0870579cc463859e8619`. Migration **017 is applied to disposable Development** and the hosted authority smoke passed. Merge/deploy and live-client verification remain in progress. Risk: **Release**.
