@@ -11,6 +11,7 @@ import type { DeskPlateModel } from "../src/core/index.ts";
 const plate: DeskPlateModel = {
   id: "due",
   kicker: "What is due next",
+  glance: "Rent · tomorrow",
   verdict: "Rent, tomorrow.",
   footing: "Bills on the 30-day rail.",
   edge: "attention",
@@ -22,7 +23,7 @@ const plate: DeskPlateModel = {
 };
 
 describe("desk plate DOM", () => {
-  it("swaps on click, opens the cabinet from the handle, and keeps the handle keyboard-reachable", () => {
+  it("grows in place on click, keeps the cabinet on the handle, and hides the handle when closed", () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
     const root = createRoot(host);
@@ -30,19 +31,34 @@ describe("desk plate DOM", () => {
     act(() => {
       root.render(createElement(DeskPlate, {
         plate,
+        open: false,
         onSelect: () => seen.push("select"),
         onOpenCabinet: () => seen.push("cabinet"),
       }));
     });
     const article = host.querySelector("[data-plate-id='due']") as HTMLElement;
-    const handle = host.querySelector(".desk-plate-handle") as HTMLButtonElement;
     expect(article).toBeTruthy();
-    expect(handle.getAttribute("aria-label")).toBe("Open the next bill cabinet");
+    expect(article.getAttribute("aria-expanded")).toBe("false");
+    expect(article.textContent).toContain("Rent · tomorrow");
+    expect(article.textContent).not.toContain("Rent, tomorrow.");
+    expect(host.querySelector(".desk-plate-handle")).toBeNull();
     act(() => article.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+    act(() => {
+      root.render(createElement(DeskPlate, {
+        plate,
+        open: true,
+        onSelect: () => seen.push("select"),
+        onOpenCabinet: () => seen.push("cabinet"),
+      }));
+    });
+    const handle = host.querySelector(".desk-plate-handle") as HTMLButtonElement;
+    expect(article.getAttribute("aria-expanded")).toBe("true");
+    expect(handle).toBeTruthy();
+    expect(handle.getAttribute("aria-label")).toBe("Open the next bill cabinet");
+    expect(handle.tabIndex).not.toBe(-1);
     act(() => handle.dispatchEvent(new MouseEvent("click", { bubbles: true })));
     act(() => article.dispatchEvent(new MouseEvent("dblclick", { bubbles: true })));
     expect(seen).toEqual(["select", "cabinet", "cabinet"]);
-    expect(handle.tabIndex).not.toBe(-1);
     expect(article.getAttribute("aria-current")).toBeNull();
     act(() => root.unmount());
     host.remove();

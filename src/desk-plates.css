@@ -4,7 +4,7 @@
   display: grid;
   gap: 6px;
   min-width: 0;
-  min-height: 148px;
+  min-height: 80px;
   padding: 12px 12px 10px;
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -26,10 +26,9 @@
   outline: 2px solid color-mix(in srgb, var(--pine) 55%, transparent);
   outline-offset: 2px;
 }
-.desk-plate.is-enlarged {
+.desk-plate.is-open {
   min-height: 220px;
   padding: 18px 20px 14px;
-  cursor: default;
 }
 .desk-plate:hover {
   transform: translateY(-1px);
@@ -49,11 +48,14 @@
 .desk-plate-verdict {
   margin: 0;
   font-family: var(--display);
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 600;
   line-height: 1.25;
   text-wrap: balance;
   font-variant-numeric: tabular-nums lining-nums;
+}
+.desk-plate.is-open .desk-plate-verdict {
+  font-size: 1.05rem;
 }
 .desk-plate-verdict.is-copper,
 .desk-plate.is-copper .desk-plate-verdict {

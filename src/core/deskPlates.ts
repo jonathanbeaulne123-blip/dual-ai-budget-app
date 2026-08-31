@@ -2,8 +2,9 @@
  * Twelve desk plates — six Shared, six Personal — over existing selectors.
  *
  * Presentation only. Every figure is one of the six primitives in plates.ts.
- * Kickers are household questions. Verdicts are sentences. Footings keep the
- * scope honest. Nothing here posts, settles, or moves a cent.
+ * Kickers are household questions. Glance is the closed-strip line. Verdicts
+ * stay sentences for tests and spoken labels. Footings keep the scope honest.
+ * Nothing here posts, settles, or moves a cent.
  */
 
 import { addDays, calendarDaysBetween, formatDateLabel, monthKeyFromDateKey, monthStartKey, weekdaySunday0, type DateKey } from "./calendar.ts";
@@ -45,6 +46,8 @@ export type PlateFigure =
 export type DeskPlateModel = {
   id: DeskPlateId;
   kicker: string;
+  /** Short closed-strip line. Never a paragraph. */
+  glance: string;
   verdict: string;
   footing: string;
   edge: PlateEdge;
@@ -153,6 +156,9 @@ export function sharedPlates(input: {
     {
       id: "due",
       kicker: "What is due next",
+      glance: nextDue
+        ? `${nextDue.title} · ${plateWhen(nextDue.date, today)}`
+        : "Nothing due in 30 days",
       verdict: nextDue
         ? `${nextDue.title}, ${plateWhen(nextDue.date, today)}.`
         : "Nothing is due in the next 30 days.",
@@ -169,6 +175,9 @@ export function sharedPlates(input: {
     {
       id: "cards",
       kicker: "What the cards are doing",
+      glance: hottest
+        ? `${hottest.account.name} · ${Math.round(cardsPct * 100)}% used`
+        : "No cards yet",
       verdict: hottest
         ? `${hottest.account.name} is at ${Math.round(cardsPct * 100)}% of its limit.`
         : "No cards are carrying a balance.",
@@ -190,6 +199,11 @@ export function sharedPlates(input: {
     {
       id: "owed",
       kicker: "Who owes us",
+      glance: claimCount === 0
+        ? "Nobody owes us"
+        : claimCount === 1
+          ? `${claimPublicLabel(household, claims[0]!, "card")} · ${sentenceAmount(claimTotal)}`
+          : `${claimCount} claims · ${sentenceAmount(claimTotal)}`,
       verdict: claimCount === 0
         ? "Nobody owes the house right now."
         : claimCount === 1
@@ -208,6 +222,11 @@ export function sharedPlates(input: {
     {
       id: "saving",
       kicker: "What we are saving toward",
+      glance: banks.length === 0
+        ? "No shared banks yet"
+        : banks.length === 1
+          ? banks[0]!.name
+          : `${banks.length} shared banks`,
       verdict: banks.length === 0
         ? "No shared banks are open yet."
         : banks.length === 1
@@ -224,6 +243,9 @@ export function sharedPlates(input: {
     {
       id: "coming",
       kicker: "What is coming to the house",
+      glance: nextVisit
+        ? `${appointmentPublicTitle(nextVisit, "card")} · ${plateWhen(nextVisit.nextDate, today)}`
+        : "No visits in 90 days",
       verdict: nextVisit
         ? `${appointmentPublicTitle(nextVisit, "card")}, ${plateWhen(nextVisit.nextDate, today)}.`
         : "No visits are on the 90-day rail.",
@@ -249,6 +271,11 @@ export function sharedPlates(input: {
     {
       id: "trust",
       kicker: "Whether to trust this",
+      glance: findingCount === 0
+        ? "Books look clean"
+        : trustCountable
+          ? `${findingCount} need a look`
+          : "Too many findings to tick",
       verdict: findingCount === 0
         ? "The books have no open findings."
         : trustCountable
@@ -289,6 +316,13 @@ export function personalPlates(input: {
     {
       id: "clock",
       kicker: "Am I on the clock",
+      glance: punch
+        ? "On the clock"
+        : streak.waiting
+          ? "Shift waiting to post"
+          : clockCountable
+            ? `${streakCount}-day streak`
+            : "Not on the clock",
       verdict: punch
         ? "You are on the clock right now."
         : streak.waiting
@@ -307,6 +341,9 @@ export function personalPlates(input: {
     {
       id: "tips",
       kicker: "What a shift is worth",
+      glance: tipPeak > 0
+        ? `${sentenceAmount(dashboard.tipWeather.fourWeekTipsCents)} over 4 weeks`
+        : "No tips yet",
       verdict: tipPeak > 0
         ? `Four-week tips run ${sentenceAmount(dashboard.tipWeather.fourWeekTipsCents)} across the week.`
         : "No tips are on the four-week spark yet.",
@@ -321,6 +358,9 @@ export function personalPlates(input: {
     {
       id: "pay",
       kicker: "When money lands next",
+      glance: nextPay
+        ? `${nextPay.title.replace(" · confirm paycheck", "").replace(" · confirm tip envelope", "")} · ${plateWhen(nextPay.date, today)}`
+        : "No pay in 14 days",
       verdict: nextPay
         ? `${nextPay.title.replace(" · confirm paycheck", "").replace(" · confirm tip envelope", "")} lands ${plateWhen(nextPay.date, today)}.`
         : "No work pay is on the 14-day rail.",
@@ -346,6 +386,9 @@ export function personalPlates(input: {
     {
       id: "wallet",
       kicker: "My cash against my cards",
+      glance: wallet.tiles.length === 0
+        ? "No wallet rooms yet"
+        : `Cash ${sentenceAmount(wallet.cashCents)} · cards ${sentenceAmount(wallet.owedCents)}`,
       verdict: wallet.tiles.length === 0
         ? "This folio has no wallet rooms yet."
         : `Cash ${sentenceAmount(wallet.cashCents)} against cards ${sentenceAmount(wallet.owedCents)}.`,
@@ -367,6 +410,9 @@ export function personalPlates(input: {
     {
       id: "mine-saving",
       kicker: "What I am saving toward",
+      glance: mine.length === 0
+        ? "No personal bank yet"
+        : mine[0]!.name,
       verdict: mine.length === 0
         ? "You have no personal bank open yet."
         : `${mine[0]!.name} is the open personal bank.`,
@@ -381,6 +427,11 @@ export function personalPlates(input: {
     {
       id: "month",
       kicker: "How my month is running",
+      glance: running.every((point) => point === 0)
+        ? "No running net yet"
+        : latestNet >= 0
+          ? `Running ${sentenceAmount(latestNet)} in`
+          : `Running ${sentenceAmount(latestNet)} out`,
       verdict: running.every((point) => point === 0)
         ? "This month has no posted running net yet."
         : latestNet >= 0

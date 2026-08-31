@@ -13,6 +13,7 @@ import {
   gaugeIsOver,
   gaugeThresholdX,
   pairScale,
+  monthPostedRows,
   personalPlates,
   plateWhen,
   postEntry,
@@ -34,6 +35,7 @@ const models = readFileSync(new URL("../src/core/deskPlates.ts", import.meta.url
 const component = readFileSync(new URL("../src/DeskPlates.tsx", import.meta.url), "utf8");
 const css = readFileSync(new URL("../src/desk-plates.css", import.meta.url), "utf8");
 const officeWide = readFileSync(new URL("../src/OfficeWide.tsx", import.meta.url), "utf8");
+const officePhone = readFileSync(new URL("../src/OfficePhone.tsx", import.meta.url), "utf8");
 const officeCss = readFileSync(new URL("../src/office-wide.css", import.meta.url), "utf8");
 const main = readFileSync(new URL("../src/main.tsx", import.meta.url), "utf8");
 
@@ -123,7 +125,7 @@ describe("twelve desk plates", () => {
     for (const id of FORBIDDEN_SHARED_PLATE_IDS) {
       expect(ids).not.toContain(id);
     }
-    const blob = shared.map((plate) => `${plate.kicker} ${plate.verdict} ${plate.footing} ${plate.empty ?? ""}`).join("\n").toLowerCase();
+    const blob = shared.map((plate) => `${plate.kicker} ${plate.glance} ${plate.verdict} ${plate.footing} ${plate.empty ?? ""}`).join("\n").toLowerCase();
     expect(blob).not.toContain("kitty");
     expect(blob).not.toContain("free-to-spend");
     expect(officeWide).not.toContain('id === "now"');
@@ -189,20 +191,35 @@ describe("twelve desk plates", () => {
     }
     expect(shared.find((plate) => plate.id === "due")?.empty).toContain("Nothing is due");
     expect(shared.find((plate) => plate.id === "trust")?.empty).toContain("no open findings");
+    expect(shared.find((plate) => plate.id === "due")?.glance).toBe("Nothing due in 30 days");
+    expect(shared.find((plate) => plate.id === "owed")?.glance).toBe("Nobody owes us");
+    expect(shared.find((plate) => plate.id === "saving")?.glance).toBe("No shared banks yet");
+    expect(shared.find((plate) => plate.id === "coming")?.glance).toBe("No visits in 90 days");
+    expect(shared.find((plate) => plate.id === "trust")?.glance).toBe("Books look clean");
+    expect(personal.find((plate) => plate.id === "tips")?.glance).toBe("No tips yet");
+    expect(personal.find((plate) => plate.id === "pay")?.glance).toBe("No pay in 14 days");
+    expect(personal.find((plate) => plate.id === "mine-saving")?.glance).toBe("No personal bank yet");
+    expect(personal.find((plate) => plate.id === "month")?.glance).toBe("No running net yet");
   });
 });
 
 describe("plate interaction and materials", () => {
-  it("swaps the stage on a single click and opens the cabinet on double-click and the handle", () => {
-    expect(officeWide).toContain("onSelect={() => selectPlate(plate.id)}");
+  it("grows the plate in the mosaic on a single click and opens the cabinet on double-click and the handle", () => {
+    expect(officeWide).toContain("onSelect={() => togglePlate(plate.id)}");
+    expect(officeWide).toContain("open={openPlateIds.has(plate.id)}");
     expect(officeWide).toContain("onOpenCabinet={() => openPlateCabinet(plate.id)}");
     expect(officeWide).toContain("spreadIsStage");
     expect(officeWide).toContain("<DeskPlate");
     expect(officeWide).toContain("<MonthSpread");
+    expect(officeWide).not.toContain("selectPlate");
+    expect(officeWide).not.toContain("activePlateId");
+    expect(officeWide).not.toContain("enlarged");
     expect(component).toContain("onClick={onSelect}");
     expect(component).toContain("onDoubleClick={onOpenCabinet}");
-    expect(component).toContain("aria-current={active ? \"true\" : undefined}");
+    expect(component).toContain("aria-expanded={open}");
+    expect(component).toContain("{plate.glance}");
     expect(component).toContain("event.stopPropagation()");
+    expect(component).not.toContain("aria-current");
   });
 
   it("keeps the cabinet handle as the keyboard and touch path", () => {
@@ -247,10 +264,15 @@ describe("plate interaction and materials", () => {
     expect(officeWide).toContain("office-wide-plates");
   });
 
-  it("returns to the Spread when the stage closes, with no plate active", () => {
+  it("returns to the Spread when the stage closes, with plates still in the mosaic", () => {
     expect(officeWide).toContain("closeStage");
-    expect(officeWide).toContain("setActivePlateId(null)");
-    expect(officeWide).toContain("active={spreadIsStage ? false : activePlateId === plate.id}");
+    expect(officeWide).toContain("setMonthList(null)");
+    expect(officeWide).not.toContain("setActivePlateId");
+    expect(officeWide).toContain("open={openPlateIds.has(plate.id)}");
+    expect(officeCss).toContain("--stories-open-height: calc(3 * 220px + 2 * 10px + 2.2rem)");
+    expect(css).toContain(".desk-plate.is-open");
+    expect(css).toContain("min-height: 80px");
+    expect(css).toContain("min-height: 220px");
   });
 });
 
@@ -281,7 +303,7 @@ describe("shared plates stay on the household projection", () => {
     const dashboard = buildDashboard(household, TODAY, new Date(`${TODAY}T16:00:00Z`));
     const shared = sharedPlates({ household, dashboard, today: TODAY, findings: [] });
     const cards = shared.find((plate) => plate.id === "cards")!;
-    const blob = `${cards.verdict} ${cards.footing} ${cards.empty ?? ""} ${cards.figure.primitive === "gauge" ? cards.figure.label : ""}`;
+    const blob = `${cards.glance} ${cards.verdict} ${cards.footing} ${cards.empty ?? ""} ${cards.figure.primitive === "gauge" ? cards.figure.label : ""}`;
     expect(blob).not.toContain(CANARY);
     expect(blob).not.toContain("Amex");
     expect(blob).not.toContain(amex.id);
@@ -310,5 +332,58 @@ describe("demo figures stay honest", () => {
     expect(coming.figure.primitive).toBe("track");
     if (coming.figure.primitive === "track") expect(coming.figure.days).toBe(90);
     expect(trust.cabinet).toBe("lamp");
+    expect(due.glance).toMatch(/ · /);
+    expect(due.glance.endsWith(".")).toBe(false);
+  });
+});
+
+describe("glance copy and month lists", () => {
+  it("keeps every glance shorter than its verdict and off a closing period", () => {
+    const { shared, personal } = demoPlates();
+    for (const plate of [...shared, ...personal]) {
+      expect(plate.glance.trim().length).toBeGreaterThan(4);
+      expect(plate.glance).not.toBe(plate.verdict);
+      expect(plate.glance.endsWith(".")).toBe(false);
+    }
+    expect(models).toContain("No cards yet");
+    expect(models).toContain("No wallet rooms yet");
+    expect(models).toContain("On the clock");
+    expect(models).toContain("Nothing due in 30 days");
+  });
+
+  it("lists this month's posted income and expenses and keeps refunds out of expenses", () => {
+    const household = demo();
+    const income = monthPostedRows(household, TODAY, "income");
+    const expenses = monthPostedRows(household, TODAY, "expenses");
+    expect(income.length).toBeGreaterThan(0);
+    expect(expenses.length).toBeGreaterThan(0);
+    expect(income.every((row) => row.type === "income" && !row.isDuplicate)).toBe(true);
+    expect(expenses.every((row) => row.type === "expense" && !row.isDuplicate)).toBe(true);
+    const monthRefunds = household.transactions.filter((row) => (
+      row.type === "refund" && row.date.slice(0, 7) === TODAY.slice(0, 7)
+    ));
+    expect(monthRefunds.length).toBeGreaterThan(0);
+    expect(expenses.some((row) => row.type === "refund")).toBe(false);
+    expect(expenses.map((row) => row.id)).not.toEqual(expect.arrayContaining(monthRefunds.map((row) => row.id)));
+    expect(officeWide).toContain("openMonthList(\"income\")");
+    expect(officeWide).toContain("openMonthList(\"expenses\")");
+    expect(officeWide).toContain("<MonthPostedList household={household}");
+    expect(officeWide).toContain('onClick={() => onGo("plan")}');
+    const listSource = officeWide.slice(
+      officeWide.indexOf("function MonthPostedList"),
+      officeWide.indexOf("type Spec"),
+    );
+    expect(listSource).toContain("monthPostedRows");
+    expect(listSource).not.toMatch(/postEntry|onCommand|Reverse/);
+  });
+
+  it("leaves iPhone seals on the blotter", () => {
+    expect(officePhone).toContain('label="Money in"');
+    expect(officePhone).toContain('label="Money out"');
+    expect(officePhone).toMatch(/label="Money in"[\s\S]*?onClick=\{\(\) => tapSeal\("blotter"\)\}/);
+    expect(officePhone).toMatch(/label="Money out"[\s\S]*?onClick=\{\(\) => tapSeal\("blotter"\)\}/);
+    expect(officePhone).not.toContain("openMonthList");
+    expect(officePhone).not.toContain("DeskPlate");
+    expect(officeWide).not.toContain('onClick={() => tapSeal("blotter")}');
   });
 });

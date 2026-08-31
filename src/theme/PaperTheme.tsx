@@ -46,6 +46,7 @@ export function WaxSeal({
   sub,
   pending,
   tone = "tan",
+  pressed,
   onClick,
   ariaLabel,
 }: {
@@ -54,14 +55,16 @@ export function WaxSeal({
   sub: string;
   pending?: boolean;
   tone?: "post" | "due" | "close" | "tan";
+  pressed?: boolean;
   onClick: () => void;
   ariaLabel?: string;
 }) {
   return (
     <button
       type="button"
-      className={`hearth-wax-seal tone-${tone} ${pending ? "is-pending" : "is-clear"}`}
+      className={`hearth-wax-seal tone-${tone} ${pending ? "is-pending" : "is-clear"}${pressed ? " is-pressed" : ""}`}
       onClick={onClick}
+      aria-pressed={pressed}
       aria-label={ariaLabel ?? `${label}. ${value}. ${sub}.`}
     >
       <span className="hearth-seal-label">{label}</span>

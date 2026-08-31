@@ -1,6 +1,7 @@
 /* Wide paper office (D-156) — composed, not a stretched phone. */
 
 .office-wide {
+  --stories-open-height: calc(3 * 220px + 2 * 10px + 2.2rem);
   display: grid;
   gap: 16px;
   margin-top: 8px;
@@ -32,7 +33,10 @@
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 14px;
 }
-.office-wide.is-shared-home .office-wide-stage { overflow: visible; }
+.office-wide.is-shared-home .office-wide-stage {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
 .office-wide.is-shared-home .office-wide-mosaic:not(.office-wide-plates) .hearth-story-grid {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -41,7 +45,15 @@
 .office-wide-seals { grid-area: seals; }
 .office-wide-mosaic-wrap { grid-area: mosaic; min-width: 0; }
 .office-wide-hero-wrap,
-.office-wide-stage { grid-area: stage; min-width: 0; min-height: 0; overflow: auto; }
+.office-wide-stage {
+  grid-area: stage;
+  min-width: 0;
+  min-height: 0;
+  height: var(--stories-open-height);
+  max-height: var(--stories-open-height);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
 .office-wide-notebook { grid-area: banks; min-width: 0; min-height: 0; overflow: auto; }
 .office-wide-seals .hearth-wax-seal {
   min-height: 88px;
@@ -182,6 +194,48 @@
 .office-wide .ph-pin:focus-visible {
   outline: 2px solid var(--pine);
   outline-offset: 2px;
+}
+
+.office-wide-seals .hearth-wax-seal.is-pressed {
+  outline: 2px solid var(--pine);
+  outline-offset: 3px;
+}
+
+.month-posted-list {
+  display: grid;
+  gap: 10px;
+}
+.month-posted-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.month-posted-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: baseline;
+  min-height: 44px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.month-posted-note {
+  min-width: 0;
+  color: var(--ink);
+}
+.month-posted-date {
+  color: var(--muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.month-posted-amount {
+  font-family: var(--display);
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
 }
 
 @media (min-width: 1100px) {

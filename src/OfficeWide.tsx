@@ -6,6 +6,7 @@ import {
   formatCad,
   householdWallet,
   mailOverdue,
+  monthPostedRows,
   personalPlates,
   revealPhoneInstrument,
   shiftPostingStreak,
@@ -13,6 +14,8 @@ import {
   sharedPlates,
   tipWeekdaySpark,
   toggleInstrumentPin,
+  transactionTypeLabel,
+  formatDateLabel,
   walletWarn,
   wideDrawerIds,
   cookOffScore,
@@ -22,7 +25,7 @@ import {
   type PersonalLedgerStory as PersonalLedgerStoryModel,
   type SharedLedgerStory as SharedLedgerStoryModel,
 } from "./core/index.ts";
-import type { Account, Category, CommitResult, Environment, Finding, Household, InstrumentId, OfficeLayout, UndoToken } from "./core/index.ts";
+import type { Account, Category, CommitResult, Environment, Finding, Household, InstrumentId, OfficeLayout, Transaction, UndoToken } from "./core/index.ts";
 import type { Dashboard } from "./core/insights.ts";
 import type { HearthTab } from "./core/hercules.ts";
 import { requestCalendarPane } from "./core/calendarIntent.ts";
@@ -49,6 +52,40 @@ import { DeskPlate } from "./DeskPlates.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { useFurniture } from "./widgets/useFurniture.ts";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
+
+type MonthListKind = "income" | "expenses";
+
+function MonthPostedList({
+  household,
+  today,
+  section,
+}: {
+  household: Household;
+  today: string;
+  section: MonthListKind;
+}) {
+  const rows = monthPostedRows(household, today, section);
+  const title = section === "income" ? "Income this month" : "Expenses this month";
+  const empty = section === "income" ? "No income posted this month." : "No expenses posted this month.";
+  return (
+    <section className="month-posted-list" aria-label={title}>
+      <p className="muted">{title}. Posted rows only. Nothing posts from here.</p>
+      {rows.length === 0 ? (
+        <p className="muted">{empty}</p>
+      ) : (
+        <ul className="month-posted-rows">
+          {rows.map((tx: Transaction) => (
+            <li key={tx.id} className="month-posted-row">
+              <span className="month-posted-note">{tx.note || transactionTypeLabel(tx.type)}</span>
+              <span className="month-posted-date">{formatDateLabel(tx.date)}</span>
+              <span className="month-posted-amount">{formatCad(tx.amountCents)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
 
 type Spec = {
   kind: string;
@@ -118,7 +155,8 @@ export function OfficeWide({
   const heroRef = useFurniture("blotter", "board", true, false);
   const mosaicRef = useFurniture("wide-mosaic", "card", true, false);
   const noteRef = useFurniture("wide-notebook", "pad", true, false);
-  const [activePlateId, setActivePlateId] = useState<DeskPlateId | null>(null);
+  const [openPlateIds, setOpenPlateIds] = useState<Set<DeskPlateId>>(() => new Set());
+  const [monthList, setMonthList] = useState<MonthListKind | null>(null);
 
   const opinion = useMemo(() => auditOpinion(household), [household]);
   const findings = integrityFindings;
@@ -150,29 +188,34 @@ export function OfficeWide({
   const expanded = layout.expanded;
 
   useEffect(() => {
-    setActivePlateId(null);
+    setOpenPlateIds(new Set());
+    setMonthList(null);
   }, [view]);
 
-  function selectPlate(id: DeskPlateId) {
-    setActivePlateId(id);
-    if (layout.expanded && layout.expanded !== "window") {
-      onLayout({ ...layout, expanded: null });
-    }
+  function togglePlate(id: DeskPlateId) {
+    setOpenPlateIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }
 
   function openPlateCabinet(id: DeskPlateId) {
     const plate = plates.find((row) => row.id === id);
     if (!plate) return;
-    setActivePlateId(id);
+    setMonthList(null);
     onLayout({ ...layout, expanded: plate.cabinet });
   }
 
   const spend = categorySpendBars(dashboard.month.categories);
   const tipSpark = tipWeekdaySpark(dashboard.tipWeather);
 
-  function tapSeal(go: InstrumentId) {
-    setActivePlateId(null);
-    onLayout(revealPhoneInstrument(layout, go));
+  function openMonthList(section: MonthListKind) {
+    setMonthList(section);
+    if (layout.expanded && layout.expanded !== "window") {
+      onLayout({ ...layout, expanded: null });
+    }
   }
 
   const seals = deskMonthSeals(dashboard.month);
@@ -368,19 +411,17 @@ export function OfficeWide({
     },
   };
 
-  const activePlate = plates.find((plate) => plate.id === activePlateId) ?? null;
   const openId = expanded && expanded !== "window" ? (expanded as InstrumentId) : null;
   const openSpec = openId ? specs[openId] : null;
-  /** Shared Home's default centre is the Month Spread. A plate click replaces it; close returns. */
-  const spreadIsStage = view === "household" && !openSpec && !activePlate;
-  const plateIsStage = Boolean(activePlate) && !openSpec;
-  const panelId = plateIsStage
-    ? `wide-notebook-plate-${activePlateId}`
+  /** Shared Home's default centre is the Month Spread. Left plates grow in the mosaic. */
+  const spreadIsStage = view === "household" && !openSpec && !monthList;
+  const panelId = monthList
+    ? `wide-notebook-month-${monthList}`
     : `wide-notebook-${openId ?? "blotter"}`;
   const chalkOpen = openId === "chalkboard";
 
   function closeStage() {
-    setActivePlateId(null);
+    setMonthList(null);
     if (layout.expanded && layout.expanded !== "window") {
       onLayout({ ...layout, expanded: null });
     }
@@ -394,17 +435,19 @@ export function OfficeWide({
             label="Money in"
             tone="post"
             pending={seals.inCents === 0}
+            pressed={monthList === "income"}
             value={formatCad(seals.inCents)}
             sub="posted income this month"
-            onClick={() => tapSeal("blotter")}
+            onClick={() => openMonthList("income")}
           />
           <WaxSeal
             label="Money out"
             tone="due"
             pending={seals.outCents === 0}
+            pressed={monthList === "expenses"}
             value={formatCad(seals.outCents)}
             sub="posted expenses only"
-            onClick={() => tapSeal("blotter")}
+            onClick={() => openMonthList("expenses")}
           />
           <WaxSeal
             label="Leftover spend"
@@ -421,8 +464,8 @@ export function OfficeWide({
               <DeskPlate
                 key={plate.id}
                 plate={plate}
-                active={spreadIsStage ? false : activePlateId === plate.id}
-                onSelect={() => selectPlate(plate.id)}
+                open={openPlateIds.has(plate.id)}
+                onSelect={() => togglePlate(plate.id)}
                 onOpenCabinet={() => openPlateCabinet(plate.id)}
               />
             ))}
@@ -440,21 +483,21 @@ export function OfficeWide({
             />
           ) : (
           <NotebookBody
-            title={plateIsStage ? (activePlate?.kicker ?? "Plate") : (openSpec?.name ?? (view === "household" && sharedStory ? "The month" : "Desk"))}
+            title={
+              monthList === "income"
+                ? "Money in"
+                : monthList === "expenses"
+                  ? "Money out"
+                  : (openSpec?.name ?? (view === "household" && sharedStory ? "The month" : "Desk"))
+            }
             open
             bare={chalkOpen}
             panelId={panelId}
             onClose={closeStage}
           >
             <div className="office-wide-notebook-inner">
-              {plateIsStage && activePlate ? (
-                <DeskPlate
-                  plate={activePlate}
-                  active
-                  enlarged
-                  onSelect={() => undefined}
-                  onOpenCabinet={() => openPlateCabinet(activePlate.id)}
-                />
+              {monthList ? (
+                <MonthPostedList household={household} today={today} section={monthList} />
               ) : openSpec ? (
                 <>
                   {!chalkOpen && openId ? (
@@ -505,7 +548,7 @@ export function OfficeWide({
                 type="button"
                 className="ph-chip"
                 onClick={() => {
-                  setActivePlateId(null);
+                  setMonthList(null);
                   onLayout(revealPhoneInstrument(layout, id));
                 }}
               >

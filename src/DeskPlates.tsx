@@ -1,4 +1,4 @@
-import { useEffect, useRef, type KeyboardEvent, type MouseEvent } from "react";
+import { useRef, type KeyboardEvent, type MouseEvent } from "react";
 import {
   fillLevel,
   formatCad,
@@ -16,10 +16,10 @@ import {
 } from "./core/index.ts";
 
 /**
- * One desk plate: kicker, verdict, one primitive, footing, cabinet handle.
- * Display only. Click swaps the stage. Double-click and the handle open the
- * cabinet. Nested buttons are illegal, so the plate is an article and the
- * handle is the only inner button.
+ * One desk plate: kicker, short glance, and when open a drawing plus footing.
+ * Display only. Click grows the card in the mosaic. Double-click and the handle
+ * open the cabinet. Nested buttons are illegal, so the plate is an article and
+ * the handle is the only inner button.
  */
 
 const TRACK_BASELINE = 44;
@@ -181,21 +181,17 @@ export function PlateFigureView({ figure }: { figure: PlateFigure }) {
 export function DeskPlate({
   plate,
   active = false,
-  enlarged = false,
+  open = false,
   onSelect,
   onOpenCabinet,
 }: {
   plate: DeskPlateModel;
   active?: boolean;
-  enlarged?: boolean;
+  open?: boolean;
   onSelect: () => void;
   onOpenCabinet: () => void;
 }) {
   const rootRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    if (enlarged) rootRef.current?.focus();
-  }, [enlarged, plate.id]);
 
   function handleKey(event: KeyboardEvent<HTMLElement>) {
     if (event.key === "Enter" || event.key === " ") {
@@ -213,37 +209,38 @@ export function DeskPlate({
   return (
     <article
       ref={rootRef}
-      className={`desk-plate edge-${plate.edge}${active ? " is-active" : ""}${enlarged ? " is-enlarged" : ""}${plate.copperVerdict ? " is-copper" : ""}`}
+      className={`desk-plate edge-${plate.edge}${open ? " is-open" : ""}${active ? " is-active" : ""}${plate.copperVerdict ? " is-copper" : ""}`}
       tabIndex={0}
       data-plate-id={plate.id}
       data-plate-primitive={plate.figure.primitive}
-      aria-label={`${plate.kicker}. ${plate.verdict} ${plate.footing}`}
-      aria-current={active ? "true" : undefined}
+      aria-label={`${plate.kicker}. ${plate.glance}`}
+      aria-expanded={open}
       onClick={onSelect}
       onDoubleClick={onOpenCabinet}
       onKeyDown={handleKey}
     >
       <p className="desk-plate-kicker">{plate.kicker}</p>
-      <p className={`desk-plate-verdict${plate.copperVerdict ? " is-copper" : ""}`}>{plate.verdict}</p>
-      <div className="desk-plate-figure">
-        {plate.empty && !enlarged ? (
-          <p className="desk-plate-empty">{plate.empty}</p>
-        ) : (
-          <PlateFigureView figure={plate.figure} />
-        )}
-        {plate.empty && enlarged ? <p className="desk-plate-empty">{plate.empty}</p> : null}
-      </div>
-      <div className="desk-plate-footing">
-        <p className="desk-plate-foot">{plate.footing}</p>
-        <button
-          type="button"
-          className="desk-plate-handle"
-          onClick={handleCabinet}
-          aria-label={`Open the ${plate.cabinetName} cabinet`}
-        >
-          Cabinet
-        </button>
-      </div>
+      <p className={`desk-plate-verdict${plate.copperVerdict ? " is-copper" : ""}`}>{plate.glance}</p>
+      {open ? (
+        <>
+          {plate.empty ? null : (
+            <div className="desk-plate-figure">
+              <PlateFigureView figure={plate.figure} />
+            </div>
+          )}
+          <div className="desk-plate-footing">
+            <p className="desk-plate-foot">{plate.footing}</p>
+            <button
+              type="button"
+              className="desk-plate-handle"
+              onClick={handleCabinet}
+              aria-label={`Open the ${plate.cabinetName} cabinet`}
+            >
+              Cabinet
+            </button>
+          </div>
+        </>
+      ) : null}
     </article>
   );
 }

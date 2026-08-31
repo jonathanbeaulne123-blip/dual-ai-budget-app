@@ -1,6 +1,9 @@
 import type { CategoryActual, MonthSummary } from "./budget.ts";
+import { monthEndKey, monthKeyFromDateKey, monthStartKey, type DateKey } from "./calendar.ts";
 import type { TipWeather } from "./insights.ts";
+import { partitionLedger, type LedgerSection } from "./ledgerView.ts";
 import type { InstrumentId, DeskFace } from "./officeLayout.ts";
+import type { Household, Transaction } from "./types.ts";
 
 /** Hero instrument — always visible on the wide paper office. */
 export const WIDE_HERO_ID: InstrumentId = "blotter";
@@ -180,4 +183,19 @@ export function paperBarPercents(rows: PaperBarRow[]): { row: PaperBarRow; pct: 
 
 export function isClassicDesk(face: DeskFace | undefined): boolean {
   return face === "classic";
+}
+
+/** Posted income or expense rows in the civil month of `today`. Refunds are not expenses. */
+export function monthPostedRows(
+  household: Household,
+  today: DateKey,
+  section: Extract<LedgerSection, "income" | "expenses">,
+): Transaction[] {
+  const monthKey = monthKeyFromDateKey(today);
+  const start = monthStartKey(monthKey);
+  const end = monthEndKey(monthKey);
+  const rows = household.transactions.filter((tx) => (
+    !tx.isDuplicate && tx.date >= start && tx.date <= end
+  ));
+  return partitionLedger(rows)[section];
 }
