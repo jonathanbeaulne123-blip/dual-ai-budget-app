@@ -7,7 +7,7 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/founding-household-preflight`
 - **Baseline SHA:** `acf1d6797ed28dc60885f51dc4dbc88d93b5681a`
-- **Head SHA:** refreshed implementation candidate pending final evidence-record commit
+- **Verified candidate SHA:** `e81c208930dff9be00c84c416d6d426b8adf700e`
 - **PR or issue:** Gap-closing Program 1 preparation; no PR yet
 - **Risk:** Release
 - **Decision owner:** Jonathan
@@ -64,7 +64,7 @@ Inference:
 - [x] Production and mismatched-environment files fail closed.
 - [x] Start and both replay routes stay disabled until the fresh recovery proof and every human preparation acknowledgement are current.
 - [x] Existing Month rehearsal, command-sync, and full-App startup contracts remain green.
-- [ ] Focused tests and `pnpm check` pass on the clean exact SHA.
+- [x] Focused tests and the full Windows proof gate pass on the clean exact candidate SHA.
 - [x] Independent trust and UX verification report no open P0/P1/P2.
 
 ## Plan
@@ -72,7 +72,7 @@ Inference:
 - [x] Merge and verify Program 0, refresh `origin/main`, and create one clean writer from the exact merge SHA.
 - [x] Inspect D-183, the continuity pilot, current recovery code, and the existing Start surface.
 - [x] Implement the recovery round-trip contract and preflight UI.
-- [ ] Add focused tests, then run the full local proof gate.
+- [x] Add focused tests, then run the full local proof gate.
 - [x] Obtain independent trust/UX/verification review; close only after exact-SHA aggregate evidence.
 
 ## Evidence log
@@ -85,6 +85,7 @@ Inference:
 - 2026-08-31: repaired interactive UI/recovery proof passed 3 files / 15 tests. The interactive path proves upload-before-download remains blocked, fresh download clears prior proof, exact reselect plus all acknowledgements unlocks Start, revision change relocks it, and a mismatched environment is announced.
 - 2026-08-31: final independent trust/release, UX/accessibility, and verification re-reviews reported no remaining P0, P1, or P2 finding. Independent focused verification passed 7 files / 33 tests plus TypeScript.
 - 2026-08-31: the pre-refresh candidate passed the full Windows gate: AI-surface verification, 211 passed / 2 skipped files, 1,407 passed / 3 skipped tests, TypeScript, the Vite Production build, Hercules Pro UI build, and redirect guard. `origin/main` advanced during the run; the candidate rebased without conflict onto `acf1d6797ed28dc60885f51dc4dbc88d93b5681a`, and its decision number moved from D-186 to D-187 to preserve the newly merged D-186 continuity decision.
+- 2026-08-31: exact refreshed candidate `e81c208930dff9be00c84c416d6d426b8adf700e` passed the repeated full Windows gate: AI-surface verification, 212 passed / 2 skipped files, 1,414 passed / 3 skipped tests, TypeScript, the Vite Production build, Hercules Pro UI build, and redirect guard. Existing non-failing React `act`, PGlite browser-external/eval, and chunk-size warnings were unchanged.
 
 ## Decisions
 
