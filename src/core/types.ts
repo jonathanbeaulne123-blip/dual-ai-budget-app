@@ -1158,7 +1158,7 @@ export type Household = {
   fundKittyAllocations?: HouseholdFundKittyAllocation[];
   /** Active member overlay only. `splitForSync` removes it from Shared. */
   fundPrivate?: HouseholdFundPrivateState;
-  /** D-182 Development-only shared ritual metadata. Never journal or model context. */
+  /** D-183 Development-only shared ritual metadata. Never journal or model context. */
   monthRehearsals?: MonthRehearsal[];
   budgetPlans: BudgetPlan[];
   sitDownSessions: SitDownSession[];
@@ -1216,7 +1216,7 @@ export type SharedEnvelope = {
   fundEvents?: HouseholdFundEvent[];
   fundSettlementAllocations?: HouseholdFundSettlementAllocation[];
   fundKittyAllocations?: HouseholdFundKittyAllocation[];
-  /** D-182 shared ritual metadata; omitted from financial hashes and Personal envelopes. */
+  /** D-183 shared ritual metadata; omitted from financial hashes and Personal envelopes. */
   monthRehearsals?: MonthRehearsal[];
   budgetPlans: BudgetPlan[];
   sitDownSessions: SitDownSession[];

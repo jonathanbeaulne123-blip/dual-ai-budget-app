@@ -86,7 +86,7 @@ Jonathan and Bianca can rehearse one truthful calendar month together, understan
 - 2026-08-28: independent reviews initially blocked repeatable openings, weak receipt semantics, forged practice proof, concurrent-start conflict, participant/report scope, invisible receipt choice, and return friction. All findings were repaired and re-reviewed.
 - 2026-08-28: focused opening/rehearsal/Fund proof passed **39/39**; TypeScript passed; independent books review approved and component-level UX review approved.
 - 2026-08-28: final full repository run produced **1,095 passed / 2 skipped**. Three unrelated failures remained: Git Bash could not find a `python3` alias for `test/api.test.ts`, a rig timing midpoint repeated, and a loaded stress test exceeded 15 seconds. Rig and stress passed on immediate isolated rerun; AI verification, TypeScript, and the Windows-native production build passed.
-- 2026-08-28: independent verifier conditionally passed the isolated Bianca Month core (now D-182); no Worker, hosted migration, provider, Production, or launch scope was added.
+- 2026-08-28: independent verifier conditionally passed the isolated Bianca Month core (now D-183); no Worker, hosted migration, provider, Production, or launch scope was added.
 - 2026-08-30: PR #244 was present in `main`; the branch rebased exactly once onto `e19acf09`, preserving D-176 PGlite receipt migration v4 and adding opening truth as v5.
 - 2026-08-30: `MonthRehearsalPanel` mounted on Household Home and More only, using existing persistence/Confirm routing and adding no navigation item. Personal view remains unmounted.
 - 2026-08-30: reconciliation and month close were hardened to emit stable command kinds and artifact IDs; rehearsal completion now requires matching accepted Confirm receipts and audit hashes. Hostile unaccepted tests pass.
@@ -99,7 +99,7 @@ Jonathan and Bianca can rehearse one truthful calendar month together, understan
 
 ## Decisions
 
-- Decision ID is D-182. The original local D-168 collided with the coworker-attendance decision already on current `main`.
+- Decision ID is D-183. The original local D-168 collided with coworker attendance; D-182 later landed for Google-first household entry.
 - Bianca Month is a projection over the mainline App/commands/books/continuity. It must not become a parallel trial app or financial writer.
 - Live use accepts only user-entered, user-confirmed Development values; all automated examples are fictional.
 - Rehearsal metadata is Shared continuity state but excluded from journals, financial audit hashes, Hercules context, analytics, and Worker requests.

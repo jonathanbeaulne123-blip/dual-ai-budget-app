@@ -1366,9 +1366,9 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 **Still required:** atomic hosted CAS/journal authority and an explicit Jonathan migration decision. Do not apply `002_snapshot_cas.sql` or Auth/RLS, deploy, contact the household project, or delete hosted rows without that approval.
 
-## Bianca Month-One rehearsal (D-182) (2026-08-28; mainline catch-up 2026-08-31)
+## Bianca Month-One rehearsal (D-183) (2026-08-28; mainline catch-up 2026-08-31)
 
-**Status:** High-risk local core and App integration in isolated worktree `codex/bianca-month-one`, caught up to current `origin/main@1d82a57`. The recoverable pre-catch-up head is `codex/bianca-month-one-pre-main-20260831`. Bianca Month is now a mainline projection, not a trial fork: the current App integration test opens the current Add slideshow, and rehearsal progress materializes through the D-180 command-event path. Final current-main verification is in progress. No push, merge, deploy, hosted schema, provider, Production, scaling, shift-intake, or real household entry.
+**Status:** High-risk local core and App integration in isolated worktree `codex/bianca-month-one`, caught up to current `origin/main@244bc67` including Google-first household entry. Recovery refs preserve both former heads. Bianca Month is now D-183 and remains a mainline projection, not a trial fork: the current App integration test opens the current Add slideshow, and rehearsal progress materializes through the D-180 command-event path. Final release verification is in progress. No push, merge, deploy, hosted schema, provider, Production, scaling, shift-intake, or real household entry has occurred yet.
 
 **Household outcome:** Bianca and Jonathan rehearse four Toronto weeks using real Development Confirms, see `Tied` or `Needs attention` before exact proof, record where Bianca pauses or distrusts a number, acknowledge independently, and decide together whether Hearth is wanted next month.
 

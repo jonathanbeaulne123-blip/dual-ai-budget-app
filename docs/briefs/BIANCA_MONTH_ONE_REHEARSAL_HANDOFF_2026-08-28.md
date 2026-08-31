@@ -2,12 +2,12 @@
 
 ## Decision and boundary
 
-- Decision: D-182 (renumbered after current `main` assigned D-168 to coworker attendance).
+- Decision: D-183 (renumbered after current `main` assigned D-168 to coworker attendance and D-182 to Google-first household entry).
 - Risk: High.
 - Dual Course: Budget `+5`; Engagement `+3`.
 - Branch: `codex/bianca-month-one` in the isolated `Budget App - Bianca Month One` worktree.
-- Current mainline baseline: `1d82a57976af006d0fcf8683d6920a6277738e40`; the prior local head is retained on `codex/bianca-month-one-pre-main-20260831` for recovery.
-- Current implementation: `3a5875f` on locally rebased `codex/bianca-month-one`, with full-App and D-180 command-event regressions plus receiver hardening.
+- Current mainline baseline: `244bc67c21df389e22b5aa0dd764c5e1d4bf68c7`; prior heads are retained on `codex/bianca-month-one-pre-main-20260831` and `codex/bianca-month-one-pre-release-20260831`.
+- Current implementation: rebased commit `dc4abd8` on `codex/bianca-month-one`, with full-App and D-180 command-event regressions plus receiver hardening; release-review documentation follows on the branch.
 - No push, merge, deploy, hosted migration, provider, Production, scaling, shift-intake, product launch, or real household values without Jonathan's separate approval.
 
 ## Implemented behavior

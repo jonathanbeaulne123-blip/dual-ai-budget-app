@@ -6,11 +6,11 @@
 - **Assignee or AI:** Codex
 - **Repository:** Hearth
 - **Branch:** `codex/bianca-month-one`
-- **Baseline SHA:** `1d82a57976af006d0fcf8683d6920a6277738e40`
-- **Recovery ref:** `codex/bianca-month-one-pre-main-20260831`
-- **Implementation SHA:** `3a5875f`
+- **Baseline SHA:** current `origin/main` at `244bc67c21df389e22b5aa0dd764c5e1d4bf68c7`
+- **Recovery refs:** `codex/bianca-month-one-pre-main-20260831`; pre-release `codex/bianca-month-one-pre-release-20260831`
+- **Rebased implementation SHA:** `dc4abd8`
 - **Risk:** High
-- **Decision:** D-182
+- **Decision:** D-183
 - **Environment impact:** Development only
 
 ## Household outcome
@@ -30,7 +30,7 @@ Bianca's four-week rehearsal stays inside the Hearth Jonathan and Bianca actuall
 - Keep Bianca Month as a projection over the ordinary `App`, Add/Books/Fund routes, command boundary, PGlite books, and continuity.
 - Carry non-money rehearsal progress through D-180 command-event materialization without adding financial IDs or changing financial hashes.
 - Add permanent full-App and two-device command-sync regressions.
-- Renumber the collided local decision from D-168 to D-182 and update canon.
+- Renumber the collided local decision from D-168, then D-182, to D-183 and update canon.
 - Run focused, full, build, visual, and independent verification.
 
 ### Out
@@ -39,7 +39,7 @@ Bianca's four-week rehearsal stays inside the Hearth Jonathan and Bianca actuall
 
 ## Acceptance
 
-- [x] Branch is based on current `origin/main@1d82a57`; the former head has a recoverable named ref.
+- [x] Branch is based on current `origin/main@244bc67`; both former heads have recoverable named refs.
 - [x] An active Bianca rehearsal mounts inside the actual current `App` and opens the current income Add slideshow.
 - [x] Rehearsal start/progress replays to a partner device through current command events.
 - [x] Rehearsal commits keep `postedIds: []` and do not change the financial audit hash.
@@ -53,6 +53,7 @@ Bianca's four-week rehearsal stays inside the Hearth Jonathan and Bianca actuall
 ## Evidence log
 
 - 2026-08-31: fetched current main at `1d82a57976af006d0fcf8683d6920a6277738e40`, created `codex/bianca-month-one-pre-main-20260831`, and rebased the working branch. The only conflict preserved both current synthetic-fixture merge and rehearsal command-receipt merge.
+- 2026-08-31: release-time fetch found Google-first household entry at `origin/main@244bc67`. A second recovery ref was created and the five Bianca commits rebased cleanly with no conflicts. The combined entry/Bianca focused suite passed **96/96 across 16 files** and TypeScript passed before the decision-collision repair.
 - 2026-08-31: post-rebase focused rehearsal/opening/continuity/App/Add run passed **57/57 across nine files**; TypeScript passed.
 - 2026-08-31: after adding current App and D-180 command-event contracts, the focused materialization/App run passed **30/30 across five files**; TypeScript passed.
 - 2026-08-31: expanded current-main focused verification passed **83/83 across 14 files**; AI-surface verification passed.
@@ -66,7 +67,7 @@ Bianca's four-week rehearsal stays inside the Hearth Jonathan and Bianca actuall
 
 - Local command-log replay proves the current event contract, not authenticated hosted transport on two real phones.
 - The client materialization SHA detects corruption but is not a server authority signature. An authenticated participant with a deliberately compromised client could recompute it; closing that requires separately authorized server-side validation/signing work.
-- Implementation is committed locally at `3a5875f`; no remote action has occurred.
+- The rebased implementation is committed locally at `dc4abd8`; release-review documentation follows on the branch. No remote action has occurred.
 
 ## Handoff
 
