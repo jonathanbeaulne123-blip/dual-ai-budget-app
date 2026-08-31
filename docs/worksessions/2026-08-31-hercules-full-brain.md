@@ -1,13 +1,13 @@
 # Hearth worksession — Hercules full synthetic brain
 
-- **Status:** REOPENED — RELEASE AUTHORIZED; EXACT REBASED-HEAD PROOF PENDING
+- **Status:** RELEASE REVIEW PASS — PUSH AND DEVELOPMENT DEPLOY AUTHORIZED
 - **Opened:** 2026-08-31 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `C:\Users\jonat\OneDrive\Documents\ChatGPT\Budget App - Hercules Full Brain`
 - **Branch:** `codex/hercules-full-brain`
-- **Baseline SHA:** `aa56f373ab62dbfec1dfa744e6c8b3606caee4c7` (`origin/main`)
-- **Head SHA:** `aa56f373ab62dbfec1dfa744e6c8b3606caee4c7`
+- **Baseline SHA:** `97dcba2d7ff18cce97d9e526d194ad9fe9bbdc3a` (`origin/main`)
+- **Head SHA:** `b5bc7ea` (runtime candidate; release-evidence sealing commit follows)
 - **PR or issue:** none
 - **Risk:** High — provider planning, synthetic household disclosure, and CAD-facing answer behavior change
 - **Decision owner:** Jonathan
@@ -48,7 +48,7 @@ Hercules remains the conversational brain. Gemini, then Groq, may plan read-only
 
 ### Out of scope
 
-- Any money write, Command/Confirm authority, SQL, generic code execution, bank action, schema, secret, hosted row, Production data, or deployment.
+- Any money write, Command/Confirm authority, SQL, generic code execution, bank action, schema, secret, hosted row, Production data, or provider-setting change. The already-authorized Development code deployment is in scope.
 - Exposing invite codes, credentials, device/sync internals, provider keys, or operational receipts to a model.
 - Web search or vendor-hosted code execution from Hercules.
 
@@ -61,32 +61,34 @@ Hercules remains the conversational brain. Gemini, then Groq, may plan read-only
 - [x] Gemini, Groq, opted-in OpenAI, and Workers AI receive the same authorized full synthetic context and deterministic tool answer.
 - [x] Unknown/write-shaped tools remain discarded; model text still cannot post, invent CAD, output SQL, or widen Confirm authority.
 - [x] Focused tests, TypeScript, AI-surface verification, production build, diff hygiene, and independent High-risk review pass.
-- [ ] A literal `pnpm check` cannot be green on this Windows host because repository scripts/tests invoke Unix `rm`, `test`, and `bash`; equivalent build steps passed, and the only residual full-suite failure after changed expectations were repaired is `spawnSync bash ENOENT`.
+- [x] `pnpm check:windows` passes on the exact rebased runtime candidate: AI-surface verification, 1,446 passed / 3 skipped / 0 failed tests, TypeScript, production Vite build, Hercules Pro UI build, and no-`_redirects` guard.
 
 ## Plan
 
 - [x] Establish exact clean baseline and reproduce the routing mismatch from current code.
-- [x] Implement the bounded D-187 provider/planner/context change.
+- [x] Implement the bounded D-188 provider/planner/context change.
 - [x] Add focused correctness, provider-order, disclosure, and authority regressions.
 - [x] Run focused and full proof, then independent review.
 - [x] Return a local branch handoff. Push/deploy requires a fresh explicit instruction.
 
 ## Evidence log
 
-- Exact baseline: `origin/main@aa56f373ab62dbfec1dfa744e6c8b3606caee4c7`; clean worktree on `codex/hercules-full-brain`.
+- Original implementation baseline: `origin/main@aa56f373ab62dbfec1dfa744e6c8b3606caee4c7`; clean worktree on `codex/hercules-full-brain`.
+- Exact final release baseline: `origin/main@97dcba2d7ff18cce97d9e526d194ad9fe9bbdc3a`; runtime candidate `b5bc7ea`; merge-base matches the release baseline. The upstream D-187 founding-household preflight was preserved, so this packet is D-188.
 - Official Google documentation confirms Gemini 3.1 Flash-Lite supports `thinkingLevel: "high"` and up to 65,536 output tokens.
 - Official Groq documentation confirms GPT-OSS 120B supports `reasoning_effort: "high"`; Groq recommends larger completion budgets for reasoning but free-tier token limits still apply.
-- Focused D-187 run: 71 passed / 0 failed across bills, tools, provider routing, disclosure, quiet synthetic context, marker truth, and delayed response scope.
+- Focused D-188 run: 71 passed / 0 failed across bills, tools, provider routing, disclosure, quiet synthetic context, marker truth, and delayed response scope.
 - Full repository run before the final two stale expectation repairs: 1,380 passed / 3 skipped / 3 failed. The timeout and quiet-context expectations were repaired and passed in isolation; the remaining `test/api.test.ts` failure is the known Windows `spawnSync bash ENOENT` harness constraint.
 - `pnpm exec tsc --noEmit`: passed after the final config-test type repair.
 - `pnpm ai:verify`: passed (`41` required files and proof gate).
 - Equivalent production build: Vite, Hercules Pro UI, and no-`_redirects` postcheck passed; literal `pnpm build` is blocked only by missing Unix `rm` on this Windows host.
 - `git diff --check`: passed.
 - Independent High-risk review: PASS, no P0–P3. Reviewer verified full-chain intent, flag-off and Production-labelled bounded fallback, fixed-catalog local tools, CAD/write sanitizers, and provider-marker truth.
+- Exact final rebased runtime gate: `pnpm check:windows` passed with AI-surface verification, 214 passed / 2 skipped test files, 1,446 passed / 3 skipped / 0 failed tests, TypeScript, Vite, Hercules Pro UI, and `_redirects` checks green.
 
 ## Decisions
 
-- D-187 will supersede D-105/D-115 only for the explicitly authorized synthetic Development provider payload. Production and secrets remain excluded.
+- D-188 will supersede D-105/D-115 only for the explicitly authorized synthetic Development provider payload. Production and secrets remain excluded.
 - “No limit on thinking” means remove Hearth's tiny artificial reasoning/output caps; vendor context, quota, and safety limits still exist.
 - Tools calculate and source facts; the provider interprets and speaks. Tool failure keeps an honest local fallback.
 
@@ -97,4 +99,4 @@ Hercules remains the conversational brain. Gemini, then Groq, may plan read-only
 
 ## Handoff
 
-Jonathan authorized merge and deployment on 2026-08-31. Upstream assigned D-185 and D-186 while this packet was local, so the Hercules packet is D-187. Rebase onto current `origin/main` and exact-head release proof are in progress. No schema, secret, Production, or household-data mutation is authorized.
+Jonathan authorized merge and deployment on 2026-08-31. Upstream assigned D-185 through D-187 while this packet was local, so the Hercules packet is D-188. Runtime `b5bc7ea` is cleanly rebased onto `origin/main@97dcba2d7ff18cce97d9e526d194ad9fe9bbdc3a`; its complete Windows-native release gate is green, and only the evidence-sealing commit plus exact-head independent review remain before the authorized fast-forward and Development deployment. No schema, secret, Production, or household-data mutation is authorized.

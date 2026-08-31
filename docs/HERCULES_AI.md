@@ -50,9 +50,9 @@ The boundary is deliberately narrow:
 - every displayed amount is a typed `HerculesNumberSource` card that routes to the supplying account, transaction, category, member, recurrence, shift, goal, or claim surface;
 - a missing/failed planner falls through to the existing guarded chat/local answer. Off-topic cat talk does not wait for the planner.
 
-Planning and ordinary voice now share the D-187 order: configured Gemini → configured Groq → opted-in OpenAI → Workers AI. Plans use constrained JSON; all plan output is reduced to the fixed read-only catalog before the phone executes anything. OpenAI remains available only when `HERCULES_ALLOW_PAID_PROVIDERS=true`; the checked-in default is `false`, and Anthropic is no longer a planner or ordinary-chat hop. Every voice attempt receives the same credential-free full synthetic Development context plus the grounded tool result, and all provider output is sanitized again on the Worker and again on the phone. This is model interpretation backed by deterministic calculation and source cards, not model write authority.
+Planning and ordinary voice now share the D-188 order: configured Gemini → configured Groq → opted-in OpenAI → Workers AI. Plans use constrained JSON; all plan output is reduced to the fixed read-only catalog before the phone executes anything. OpenAI remains available only when `HERCULES_ALLOW_PAID_PROVIDERS=true`; the checked-in default is `false`, and Anthropic is no longer a planner or ordinary-chat hop. Every voice attempt receives the same credential-free full synthetic Development context plus the grounded tool result, and all provider output is sanitized again on the Worker and again on the phone. This is model interpretation backed by deterministic calculation and source cards, not model write authority.
 
-### Full synthetic brain, tool calculations, and failover (D-135 / D-184 / D-187)
+### Full synthetic brain, tool calculations, and failover (D-135 / D-184 / D-188)
 
 The free route tries Cloudflare's free-plan eligible `@cf/google/gemma-4-26b-a4b-it`, then the smaller `@cf/meta/llama-3.1-8b-instruct`. The same binding now attempts selected receipt/bill/statement vision before any paid vendor. The Worker never calls OpenAI or Anthropic merely because an old secret happens to exist.
 
