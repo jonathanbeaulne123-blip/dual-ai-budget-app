@@ -1,5 +1,5 @@
 import type { DateKey } from "./calendar.ts";
-import { monthKeyFromDateKey, weekBounds } from "./calendar.ts";
+import { daysInMonthKey, monthEndKey, monthKeyFromDateKey, monthStartKey, weekBounds } from "./calendar.ts";
 import {
   activeHouseholdFundEvents,
   projectHouseholdFund,
@@ -436,5 +436,160 @@ export function buildSharedLedgerStory(
       lastCommittedAt: projectedShared.lastCommittedAt,
       auditLabel: "Open the household table",
     },
+  };
+}
+
+/* ---------------------------------------------------------------------------
+ * The Month Course — presentation only.
+ *
+ * A per-event running series for the Household Fund's operating pool and its
+ * Kitty, so the month can be drawn as one shape instead of listed as six stats.
+ *
+ * This selector invents NO money rule. It re-folds exactly the arithmetic
+ * projectHouseholdFund already performs — contribution-confirmed and
+ * kitty-released add to operating, settlement-confirmed and kitty-allocated
+ * subtract from it; kitty-allocated adds to Kitty and kitty-released subtracts
+ * from it — and folds nothing else. purchase-funded and refund-funded never
+ * touch operating; they are claims, drawn in their own lane.
+ *
+ * `tiesToProjection` is the guardrail. A drawing that disagrees with the
+ * projection is worse than no drawing, so the surface renders its empty state
+ * when this is false rather than showing a picture nobody can trust.
+ * ------------------------------------------------------------------------- */
+
+export type CoursePoint = {
+  date: DateKey;
+  operatingCents: number;
+  kittyCents: number;
+  event: HouseholdFundEvent | null;
+};
+
+export type CourseClaim = {
+  id: string;
+  date: DateKey;
+  kind: "purchase-funded" | "refund-funded";
+  amountCents: number;
+};
+
+export type SharedMonthCourse = {
+  configured: boolean;
+  tiesToProjection: boolean;
+  monthKey: string;
+  monthStart: DateKey;
+  monthEnd: DateKey;
+  daysInMonth: number;
+  today: DateKey;
+  openingOperatingCents: number;
+  openingKittyCents: number;
+  points: CoursePoint[];
+  claims: CourseClaim[];
+  todayIndex: number;
+  peakOperatingCents: number;
+  peakKittyCents: number;
+  operatingCents: number;
+  kittyCents: number;
+  transferDueCents: number;
+  upcomingReserveCents: number;
+  freeToSpendCents: number;
+  topUpNeededCents: number;
+  conservationCents: number;
+  weekStart: DateKey;
+  weekEnd: DateKey;
+};
+
+/** Signed effect of one event on the operating pool. Mirrors projectHouseholdFund exactly. */
+function operatingDelta(event: HouseholdFundEvent): number {
+  if (event.kind === "contribution-confirmed" || event.kind === "kitty-released") return event.amountCents;
+  if (event.kind === "settlement-confirmed" || event.kind === "kitty-allocated") return -event.amountCents;
+  return 0;
+}
+
+/** Signed effect of one event on the Kitty. Mirrors projectHouseholdFund exactly. */
+function kittyDelta(event: HouseholdFundEvent): number {
+  if (event.kind === "kitty-allocated") return event.amountCents;
+  if (event.kind === "kitty-released") return -event.amountCents;
+  return 0;
+}
+
+function byDateThenId(left: HouseholdFundEvent, right: HouseholdFundEvent): number {
+  return left.date.localeCompare(right.date) || left.createdAt.localeCompare(right.createdAt) || left.id.localeCompare(right.id);
+}
+
+export function sharedMonthCourse(household: Household, today: DateKey): SharedMonthCourse {
+  const projection = projectHouseholdFund(household, today);
+  const monthKey = monthKeyFromDateKey(today);
+  const monthStart = monthStartKey(monthKey);
+  const monthEnd = monthEndKey(monthKey);
+  const week = weekBounds(today);
+  const events = activeHouseholdFundEvents(household).slice().sort(byDateThenId);
+
+  const opening = events.filter((event) => event.date < monthStart);
+  const openingOperatingCents = opening.reduce((sum, event) => sum + operatingDelta(event), 0);
+  const openingKittyCents = opening.reduce((sum, event) => sum + kittyDelta(event), 0);
+
+  const inMonth = events.filter((event) => event.date >= monthStart && event.date <= monthEnd);
+  const points: CoursePoint[] = [{
+    date: monthStart,
+    operatingCents: openingOperatingCents,
+    kittyCents: openingKittyCents,
+    event: null,
+  }];
+  let operatingCents = openingOperatingCents;
+  let kittyCents = openingKittyCents;
+  for (const event of inMonth) {
+    const nextOperating = operatingCents + operatingDelta(event);
+    const nextKitty = kittyCents + kittyDelta(event);
+    if (nextOperating === operatingCents && nextKitty === kittyCents) continue;
+    operatingCents = nextOperating;
+    kittyCents = nextKitty;
+    points.push({ date: event.date, operatingCents, kittyCents, event });
+  }
+
+  const claims: CourseClaim[] = inMonth
+    .filter((event) => event.kind === "purchase-funded" || event.kind === "refund-funded")
+    .map((event) => ({
+      id: event.id,
+      date: event.date,
+      kind: event.kind as CourseClaim["kind"],
+      amountCents: event.amountCents,
+    }));
+
+  let todayIndex = 0;
+  for (let index = 0; index < points.length; index += 1) {
+    if (points[index]!.date <= today) todayIndex = index;
+  }
+
+  // The guardrail: fold every active event, whatever its date, and require the
+  // same answer projectHouseholdFund gives. Events dated after this month are
+  // included here precisely because the projection includes them too.
+  const allOperating = events.reduce((sum, event) => sum + operatingDelta(event), 0);
+  const allKitty = events.reduce((sum, event) => sum + kittyDelta(event), 0);
+  const tiesToProjection = !projection.configured
+    || (allOperating === projection.operatingBalanceCents && allKitty === projection.kittyCents);
+
+  return {
+    configured: projection.configured,
+    tiesToProjection,
+    monthKey,
+    monthStart,
+    monthEnd,
+    daysInMonth: daysInMonthKey(monthKey),
+    today,
+    openingOperatingCents,
+    openingKittyCents,
+    points,
+    claims,
+    todayIndex,
+    peakOperatingCents: points.reduce((peak, point) => Math.max(peak, point.operatingCents), 0),
+    peakKittyCents: points.reduce((peak, point) => Math.max(peak, point.kittyCents), 0),
+    operatingCents: projection.operatingBalanceCents,
+    kittyCents: projection.kittyCents,
+    transferDueCents: projection.transferDueCents,
+    upcomingReserveCents: projection.upcomingReserveCents,
+    freeToSpendCents: projection.freeToSpendCents,
+    topUpNeededCents: projection.topUpNeededCents,
+    conservationCents: projection.operatingBalanceCents + projection.kittyCents,
+    weekStart: week.start,
+    weekEnd: week.end,
   };
 }

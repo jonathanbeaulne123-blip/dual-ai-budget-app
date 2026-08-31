@@ -22,6 +22,7 @@ import {
   wideDrawerIds,
   cookOffScore,
   sitDownPostcard,
+  sharedMonthCourse,
   type LedgerStoryTileId,
   type PaperHomeMosaicItem,
   type PersonalLedgerStory as PersonalLedgerStoryModel,
@@ -50,6 +51,7 @@ import { WardrobeBody, wardrobeGlance } from "./widgets/WardrobeDesk.tsx";
 import { HangmanBody, HangmanGlance, TicTacToeBody, TicTacToeGlance } from "./widgets/GamesDesk.tsx";
 import { NotebookBody, PaperBars, PaperSpark, PaperTile, StoryStrip, WaxSeal } from "./theme/PaperTheme.tsx";
 import { SharedLedgerStory } from "./SharedLedgerStory.tsx";
+import { MonthSpread } from "./MonthSpread.tsx";
 import { PersonalLedgerFolio } from "./PersonalLedgerFolio.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { useFurniture } from "./widgets/useFurniture.ts";
@@ -133,6 +135,13 @@ export function OfficeWide({
   const postcard = useMemo(() => sitDownPostcard(booksHousehold), [booksHousehold]);
   const cook = useMemo(() => cookOffScore(household, today), [household, today]);
   const memberName = household.members.find((m) => m.id === memberId)?.name ?? "";
+  const course = useMemo(() => sharedMonthCourse(household, today), [household, today]);
+  const nameOf = (id: string | null | undefined) => (
+    id ? household.members.find((member) => member.id === id)?.name ?? "A member" : "A member"
+  );
+  const custodianName = nameOf(household.householdFund?.custodianMemberId) === "A member"
+    ? "the custodian"
+    : nameOf(household.householdFund?.custodianMemberId);
   const mailWarn = mailOverdue(dashboard, today);
   const walletIsWarn = walletWarn(wallet);
   const claimsWarn = claimsOverdue(household);
@@ -379,6 +388,8 @@ export function OfficeWide({
     ? null
     : (expanded && expanded !== "window" ? (expanded as InstrumentId) : null);
   const openSpec = openId ? specs[openId] : null;
+  /** Shared Home's default centre is the Month Spread itself — not a panel with a Close that closes nothing. */
+  const spreadIsStage = view === "household" && !notebookIsStory && !openSpec;
   const panelId = notebookIsStory ? `wide-notebook-story-${storyPanel}` : `wide-notebook-${openId ?? "blotter"}`;
   const chalkOpen = openId === "chalkboard";
   const storyTitle = storyPanel === "now" ? "Kitty Banks"
@@ -514,8 +525,18 @@ export function OfficeWide({
           </StoryStrip>
         </div>
         <div ref={heroRef} className={`office-wide-stage ${adding ? "is-inert" : ""} ${chalkOpen ? "is-chalk" : ""}`}>
+          {spreadIsStage && sharedStory ? (
+            <MonthSpread
+              story={sharedStory}
+              course={course}
+              nameOf={nameOf}
+              custodianName={custodianName}
+              onOpenFund={() => onGo("ledger")}
+              onOpenHealth={() => onGo("more")}
+            />
+          ) : (
           <NotebookBody
-            title={notebookIsStory ? storyTitle : (openSpec?.name ?? "Desk")}
+            title={notebookIsStory ? storyTitle : (openSpec?.name ?? (view === "household" && sharedStory ? "The month" : "Desk"))}
             open
             bare={chalkOpen}
             panelId={panelId}
@@ -560,6 +581,7 @@ export function OfficeWide({
               )}
             </div>
           </NotebookBody>
+          )}
         </div>
         <div ref={noteRef} className="office-wide-notebook office-wide-banks">
           <KittyBanks

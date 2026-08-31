@@ -62,6 +62,7 @@ export * from "./naming.ts";
 export * from "./ledgerNames.ts";
 export * from "./ledgerExperience.ts";
 export * from "./sharedLedgerStory.ts";
+export * from "./monthSpread.ts";
 export * from "./personalLedgerStory.ts";
 export * from "./herculesChat.ts";
 export * from "./herculesLedger.ts";
