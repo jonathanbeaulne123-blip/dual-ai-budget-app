@@ -1,14 +1,14 @@
 # Hearth worksession — Bianca Month-One Rehearsal
 
-- **Status:** OPEN
+- **Status:** OPEN — Gemini transmission and real authenticated-phone proof pending
 - **Opened:** 2026-08-28 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** Hearth
 - **Branch:** `codex/bianca-month-one`
-- **Baseline SHA:** `c85ed0ca6e6b4f3235a1711381ea323b7927e666`
-- **Head SHA:** `c85ed0ca6e6b4f3235a1711381ea323b7927e666`
-- **PR or issue:** Local-only implementation; Cursor PR #244 is the UI integration boundary
+- **Baseline SHA:** `e19acf09c35c26bda1dba9d01e4806a315e223ab` after the one authorized post-#244 rebase
+- **Implementation SHAs:** core `5c2e697706c358287a0083d7be69552c78462ad8`; App integration and receipt hardening `391b1d650740b9dd7f0c2c9970d889be610b74f4`
+- **PR or issue:** Local-only implementation; Cursor PR #244 landed before the one clean rebase
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** Development
@@ -27,8 +27,8 @@ Jonathan and Bianca can rehearse one truthful calendar month together, understan
 
 ## Verified baseline
 
-- Current `origin/main` and the isolated worktree baseline are `c85ed0ca6e6b4f3235a1711381ea323b7927e666`.
-- Cursor PR #244 remains open and owns overlapping App/Home and shared-story UI work; this packet begins with non-overlapping core code and tests.
+- Current `origin/main` and the rebased isolated-worktree baseline are `e19acf09c35c26bda1dba9d01e4806a315e223ab`.
+- Cursor PR #244 landed. The branch was rebased once, then the rehearsal was mounted without replacing its Shared/Personal ledger grammar.
 - Household Fund, reconciliation, continuity, Confirm, and month-close behavior already exist and remain authoritative.
 - Stale PR #218 contains useful opening-truth ideas but is not current-main-compatible and will not be merged wholesale.
 - Production, provider, scaling, shift-intake, launch, schema, and real household data are outside this worksession.
@@ -62,16 +62,20 @@ Jonathan and Bianca can rehearse one truthful calendar month together, understan
 - [x] Members acknowledge only for themselves; approval requires all core experiences, four current green checkpoints, reconciliation, closed month, Bianca's exact statement, and Jonathan's countersignature.
 - [x] Golden September fixture freezes exact balances, trial balance, equation, Fund projections, receipt identities, entry counts, and audit hashes.
 - [x] Two-client tests prove independent acknowledgement, safe concurrent merge, conflict resolution, stale-checkpoint invalidation, and anti-impersonation.
-- [ ] Development phone-width browser proof covers invitation, resume, Hercules steps, detail disclosure, friction, and joint sign-off.
-- [ ] Focused suites, `pnpm test`, TypeScript, production build, AI-surface verification, books review, UX review, and Gemini review are recorded.
+- [x] Local synthetic Development App proof covers invitation, resume, Hercules steps, evidence disclosure, participant privacy, and responsive 320/390/720/1100 px layout with no console errors. This is visual/layout proof only, not authenticated continuity or joint-signoff proof.
+- [ ] Two real authenticated Development phones prove continuity, independent acknowledgement, friction, and joint sign-off.
+- [x] Focused suites, `pnpm test`, TypeScript, production build, AI-surface verification, and independent books/UX/code review are recorded.
+- [ ] Gemini receives the exact implementation packet only after Jonathan explicitly approves that external transmission; findings are dispositioned afterward.
 
 ## Plan
 
 - [x] Reimplement opening truth against current main.
 - [x] Add rehearsal model, projections, commands, continuity, and practice sandbox.
 - [x] Build golden fixture and focused/two-client tests.
-- [ ] Rebase once after PR #244 lands and integrate App/Home surfaces with one writer.
-- [ ] Verify, review, document, and prepare local-only handoff.
+- [x] Rebase once after PR #244 lands and integrate App/Home surfaces with one writer.
+- [x] Verify, review, document, and prepare the local-only handoff.
+- [ ] Obtain transmission approval, send the exact packet to Gemini, and disposition its review.
+- [ ] Run the real two-authenticated-phone proof when an authorized Development identity and endpoint are available.
 
 ## Evidence log
 
@@ -83,6 +87,12 @@ Jonathan and Bianca can rehearse one truthful calendar month together, understan
 - 2026-08-28: focused opening/rehearsal/Fund proof passed **39/39**; TypeScript passed; independent books review approved and component-level UX review approved.
 - 2026-08-28: final full repository run produced **1,095 passed / 2 skipped**. Three unrelated failures remained: Git Bash could not find a `python3` alias for `test/api.test.ts`, a rig timing midpoint repeated, and a loaded stress test exceeded 15 seconds. Rig and stress passed on immediate isolated rerun; AI verification, TypeScript, and the Windows-native production build passed.
 - 2026-08-28: independent verifier conditionally passed the isolated D-168 core; no Worker, hosted migration, provider, Production, or launch scope was added.
+- 2026-08-30: PR #244 was present in `main`; the branch rebased exactly once onto `e19acf09`, preserving D-176 PGlite receipt migration v4 and adding opening truth as v5.
+- 2026-08-30: `MonthRehearsalPanel` mounted on Household Home and More only, using existing persistence/Confirm routing and adding no navigation item. Personal view remains unmounted.
+- 2026-08-30: reconciliation and month close were hardened to emit stable command kinds and artifact IDs; rehearsal completion now requires matching accepted Confirm receipts and audit hashes. Hostile unaccepted tests pass.
+- 2026-08-30: local in-app browser proof exercised fictional Bianca and Jonathan sessions at 320, 390, 720, and 1100 px with no horizontal overflow or console errors. The harness deliberately uses synthetic local Development sessions and is not evidence of Google Auth or hosted two-phone continuity.
+- 2026-08-30: final books/trust and UX re-reviews report no open P0-P2 findings. Independent focused verification passed 42/42 plus 49/49 command/continuity/visibility checks; the coordinator's final selected seven-file run passed 37/37 and TypeScript passed.
+- 2026-08-30: after the two final hostile/privacy tests, the full repository run reached 1,276 passed / 3 skipped with one environment-only `test/api.test.ts` failure because native Windows lacked `bash`. AI verification, TypeScript, and the Windows-native production build passed.
 
 ## Decisions
 
@@ -92,9 +102,9 @@ Jonathan and Bianca can rehearse one truthful calendar month together, understan
 
 ## Remaining uncertainty
 
-- Cursor PR #244 may change the exact App/Home integration surface before core work finishes.
-- PR #244 remains open, so Home/More mount points, two-authenticated-phone browser proof, final full check/build/AI verification, and Gemini review remain pending.
+- The local synthetic browser harness does not prove Google Auth, hosted two-phone merge, or a real Bianca/Jonathan joint sign-off. That proof needs authorized Development identities and an endpoint.
+- Gemini review remains unsent because the packet contains project code and named product context; the external transmission requires Jonathan's action-time approval.
 
 ## Handoff
 
-Codex owns this isolated local branch. Nothing is pushed, merged, deployed, Production-verified, or manually entered into a real household.
+Codex owns this isolated local branch. Core and App integration are committed locally only. Nothing is pushed, merged, deployed, Production-verified, or manually entered into a real household.

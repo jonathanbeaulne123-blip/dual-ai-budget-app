@@ -6,7 +6,8 @@
 - Risk: High.
 - Dual Course: Budget `+5`; Engagement `+3`.
 - Branch: `codex/bianca-month-one` in the isolated `Budget App - Bianca Month One` worktree.
-- Baseline: `c85ed0ca6e6b4f3235a1711381ea323b7927e666`; rebase once after Cursor PR #244 lands.
+- Rebased baseline: `e19acf09c35c26bda1dba9d01e4806a315e223ab`; the one authorized rebase after Cursor PR #244 is complete.
+- Implementation: core `5c2e697706c358287a0083d7be69552c78462ad8`; App integration and receipt hardening `391b1d650740b9dd7f0c2c9970d889be610b74f4`.
 - No push, merge, deploy, hosted migration, provider, Production, scaling, shift-intake, product launch, or real household values without Jonathan's separate approval.
 
 ## Implemented behavior
@@ -15,9 +16,9 @@
 
 Versioned `MonthRehearsal` Shared metadata holds two named participants, four Toronto weeks, real receipt links/honest skips, friction attempts, exact checkpoints, own-phone acknowledgements, and final signatures. Non-money rehearsal commands return `postedIds: []`. Rehearsal facts are excluded from journal data, financial identity/audit facts, Hercules/model disclosure, analytics, and Worker requests.
 
-Every real financial action links evidence that passes task-specific validation: command kind, week, transaction type/category/account relationship, Fund event kind, accepted receipt, reconciliation tie, or month close. The correction lesson runs the real post/reversal/journal compiler in a fictional discarded household and stores only an exact versioned proof. Equivalent simultaneous starts converge; differing active versions block action/approval but either participant can archive a conflicting version.
+Every real financial action links evidence that passes task-specific validation: command kind, week, transaction type/category/account relationship, Fund event kind, accepted receipt, reconciliation tie, or month close. Account reconciliation and month close each emit a stable artifact ID and command kind; every relevant row must have its own accepted Confirm receipt before the rehearsal counts it. The correction lesson runs the real post/reversal/journal compiler in a fictional discarded household and stores only an exact versioned proof. Equivalent simultaneous starts converge; differing active versions block action/approval but either participant can archive a conflicting version.
 
-The prepared Development UI supplies explicit participant selection, participant-only reports, Start/Resume/Manage/Replay, read-only future weeks, deterministic Hercules copy, evidence preview and alternate choice, Continue versus Stopped on return, the short Bianca ordinary-playtest card, friction outcomes, `Tied`/`Needs attention` first, `See why` proof, exact approval language, and export disclosure. It is not mounted until #244's App/Home ownership boundary lands.
+The Development UI is mounted on Household Home and More only, with no new navigation item. It supplies explicit participant selection, participant-only reports and conflict controls, Start/Resume/Manage/Replay, read-only future weeks, deterministic Hercules copy, evidence preview and alternate choice, Continue versus Stopped on return, the short Bianca ordinary-playtest card, friction outcomes, `Tied`/`Needs attention` first, `See why` proof, exact approval language, and export disclosure. Tasks open ordinary guarded Add/Card/Books surfaces; the rehearsal never confirms money.
 
 ## Golden September 2026
 
@@ -29,20 +30,17 @@ The prepared Development UI supplies explicit participant selection, participant
 
 The golden test freezes balances, journal counts, trial totals, equation, Fund projections, receipt identities, checkpoint hashes, and scoped financial audit hashes after every week.
 
-## Verification so far
+## Verification
 
-- Focused opening/rehearsal/Fund suites: **39/39 passed**.
+- Coordinator's final selected opening/rehearsal/Fund/continuity suites: **37/37 passed across seven files**. Independent verification additionally passed **42/42** focused and **49/49** command/continuity/visibility checks.
 - TypeScript: passed.
-- Independent books/trust review: approved after repeat-opening, receipt, conflict, and non-fixture practice fixes.
-- Independent UX/retention review: component-level approved after explicit participants/read gate, visible evidence choice, return choice, playtest card, and export disclosure.
-- Full repository run after the review fixes: **1,095 passed / 2 skipped**; the three unrelated failures were a missing `python3` Git-Bash alias in one API shell test, one nondeterministic rig timing sample, and one loaded stress timeout. Rig and stress passed in immediate isolated rerun. AI verification, TypeScript, and the Windows-native production build passed.
-- Independent verifier: conditional pass for the isolated D-168 core; only #244 integration/browser/Gemini gates remain.
+- Independent books/trust review: PASS after opening, receipt, conflict, non-fixture practice, and accepted reconciliation/month-close receipt fixes.
+- Independent UX/retention review: PASS after explicit participants/read gate, visible evidence choice, return choice, playtest card, export disclosure, and conflict privacy.
+- Full repository run: **1,276 passed / 3 skipped** with one environment-only `test/api.test.ts` failure because native Windows lacked `bash`. AI verification, TypeScript, and the Windows-native production build passed.
+- Local in-app visual proof: fictional Bianca/Jonathan Development sessions at 320/390/720/1100 px; Home invitation/resume, More management, four-week disclosure, participant-only state, no overflow, and no console errors. The harness is intentionally synthetic and does not prove Google Auth or hosted continuity.
 
 ## Remaining ordered gates
 
-1. Wait for #244 to merge; fetch and rebase this branch once onto the new `main`.
-2. Mount `MonthRehearsalPanel` on Home (`surface="home"`) and More (`surface="manage"`) with existing persistence/Confirm routing and no new bottom navigation item.
-3. Run focused suites, full `pnpm check`, TypeScript, production build, and AI-surface verification.
-4. Prove two authenticated Development sessions at phone widths: invitation, resume, Hercules steps, evidence disclosure, friction, independent acknowledgement, and joint sign-off.
-5. Send this exact packet plus final diff/test evidence to Gemini; disposition every finding.
-6. Request Jonathan's explicit approval before any push. Approval of Month One inside the app still does not authorize launch or Production.
+1. Obtain Jonathan's explicit action-time approval to send this exact packet, implementation diff, and test evidence to Gemini; then disposition every finding.
+2. When authorized Development identities and an endpoint are available, prove two authenticated phones: invitation, resume, Hercules steps, evidence disclosure, friction, independent acknowledgement, hosted continuity, and joint sign-off.
+3. Request Jonathan's separate explicit approval before any push. Approval of Month One inside the app still does not authorize launch or Production.
