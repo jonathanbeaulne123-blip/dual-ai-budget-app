@@ -265,7 +265,7 @@ export async function migrateBooks(db: Queryable): Promise<void> {
     have.add(4);
   }
   if (!have.has(5)) {
-    // D-168: truthful opening rows are a balance-sheet source transaction, not P&L.
+    // D-182: truthful opening rows are a balance-sheet source transaction, not P&L.
     await db.exec(`
       ALTER TABLE source_transactions DROP CONSTRAINT IF EXISTS source_transactions_type_check;
       ALTER TABLE source_transactions ADD CONSTRAINT source_transactions_type_check

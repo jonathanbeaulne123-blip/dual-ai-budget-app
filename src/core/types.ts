@@ -1062,6 +1062,8 @@ export type CommandReceipt = {
     shared: string;
     personal: string;
   };
+  /** Integrity proof for bounded non-financial facts carried by command continuity. */
+  materializationHash?: string;
   commandKind: string;
   postedIds: string[];
   revision: number;
@@ -1156,7 +1158,7 @@ export type Household = {
   fundKittyAllocations?: HouseholdFundKittyAllocation[];
   /** Active member overlay only. `splitForSync` removes it from Shared. */
   fundPrivate?: HouseholdFundPrivateState;
-  /** D-168 Development-only shared ritual metadata. Never journal or model context. */
+  /** D-182 Development-only shared ritual metadata. Never journal or model context. */
   monthRehearsals?: MonthRehearsal[];
   budgetPlans: BudgetPlan[];
   sitDownSessions: SitDownSession[];
@@ -1214,7 +1216,7 @@ export type SharedEnvelope = {
   fundEvents?: HouseholdFundEvent[];
   fundSettlementAllocations?: HouseholdFundSettlementAllocation[];
   fundKittyAllocations?: HouseholdFundKittyAllocation[];
-  /** D-168 shared ritual metadata; omitted from financial hashes and Personal envelopes. */
+  /** D-182 shared ritual metadata; omitted from financial hashes and Personal envelopes. */
   monthRehearsals?: MonthRehearsal[];
   budgetPlans: BudgetPlan[];
   sitDownSessions: SitDownSession[];

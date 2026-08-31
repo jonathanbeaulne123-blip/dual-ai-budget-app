@@ -1,13 +1,13 @@
 # Hearth worksession — Bianca Month-One Rehearsal
 
-- **Status:** OPEN — Gemini transmission and real authenticated-phone proof pending
+- **Status:** OPEN — caught up to current mainline; final verification, Gemini transmission, and real authenticated-phone proof pending
 - **Opened:** 2026-08-28 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** Hearth
 - **Branch:** `codex/bianca-month-one`
-- **Baseline SHA:** `e19acf09c35c26bda1dba9d01e4806a315e223ab` after the one authorized post-#244 rebase
-- **Implementation SHAs:** core `5c2e697706c358287a0083d7be69552c78462ad8`; App integration and receipt hardening `391b1d650740b9dd7f0c2c9970d889be610b74f4`
+- **Baseline SHA:** current `origin/main` at `1d82a57976af006d0fcf8683d6920a6277738e40`; the pre-catch-up head remains at `codex/bianca-month-one-pre-main-20260831`
+- **Implementation SHAs:** historical core/App commits were rebased; exact current final SHA is recorded after verification
 - **PR or issue:** Local-only implementation; Cursor PR #244 landed before the one clean rebase
 - **Risk:** High
 - **Decision owner:** Jonathan
@@ -86,17 +86,21 @@ Jonathan and Bianca can rehearse one truthful calendar month together, understan
 - 2026-08-28: independent reviews initially blocked repeatable openings, weak receipt semantics, forged practice proof, concurrent-start conflict, participant/report scope, invisible receipt choice, and return friction. All findings were repaired and re-reviewed.
 - 2026-08-28: focused opening/rehearsal/Fund proof passed **39/39**; TypeScript passed; independent books review approved and component-level UX review approved.
 - 2026-08-28: final full repository run produced **1,095 passed / 2 skipped**. Three unrelated failures remained: Git Bash could not find a `python3` alias for `test/api.test.ts`, a rig timing midpoint repeated, and a loaded stress test exceeded 15 seconds. Rig and stress passed on immediate isolated rerun; AI verification, TypeScript, and the Windows-native production build passed.
-- 2026-08-28: independent verifier conditionally passed the isolated D-168 core; no Worker, hosted migration, provider, Production, or launch scope was added.
+- 2026-08-28: independent verifier conditionally passed the isolated Bianca Month core (now D-182); no Worker, hosted migration, provider, Production, or launch scope was added.
 - 2026-08-30: PR #244 was present in `main`; the branch rebased exactly once onto `e19acf09`, preserving D-176 PGlite receipt migration v4 and adding opening truth as v5.
 - 2026-08-30: `MonthRehearsalPanel` mounted on Household Home and More only, using existing persistence/Confirm routing and adding no navigation item. Personal view remains unmounted.
 - 2026-08-30: reconciliation and month close were hardened to emit stable command kinds and artifact IDs; rehearsal completion now requires matching accepted Confirm receipts and audit hashes. Hostile unaccepted tests pass.
 - 2026-08-30: local in-app browser proof exercised fictional Bianca and Jonathan sessions at 320, 390, 720, and 1100 px with no horizontal overflow or console errors. The harness deliberately uses synthetic local Development sessions and is not evidence of Google Auth or hosted two-phone continuity.
 - 2026-08-30: final books/trust and UX re-reviews report no open P0-P2 findings. Independent focused verification passed 42/42 plus 49/49 command/continuity/visibility checks; the coordinator's final selected seven-file run passed 37/37 and TypeScript passed.
 - 2026-08-30: after the two final hostile/privacy tests, the full repository run reached 1,276 passed / 3 skipped with one environment-only `test/api.test.ts` failure because native Windows lacked `bash`. AI verification, TypeScript, and the Windows-native production build passed.
+- 2026-08-31: branch caught up to `origin/main@1d82a57`; the only rebase conflict retained both the current synthetic-fixture merge and Bianca rehearsal command-receipt merge.
+- 2026-08-31: a D-180 compatibility gap was fixed: non-money rehearsal updates now identify `updateMonthRehearsal`, carry only shaped Shared rehearsal facts, and merge through command-event replay while leaving the financial audit hash unchanged.
+- 2026-08-31: permanent regressions now mount Bianca Month inside the actual current `App`, open the current income Add slideshow, and replay start/progress to a partner device through the current command-log harness.
 
 ## Decisions
 
-- Decision ID is D-168; D-166 landed on `main` for unrelated 7shifts work after this isolated branch began, and D-167 is already in use by an attendance review branch.
+- Decision ID is D-182. The original local D-168 collided with the coworker-attendance decision already on current `main`.
+- Bianca Month is a projection over the mainline App/commands/books/continuity. It must not become a parallel trial app or financial writer.
 - Live use accepts only user-entered, user-confirmed Development values; all automated examples are fictional.
 - Rehearsal metadata is Shared continuity state but excluded from journals, financial audit hashes, Hercules context, analytics, and Worker requests.
 

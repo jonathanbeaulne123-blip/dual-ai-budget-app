@@ -7,6 +7,7 @@ import {
   findReceipt,
   newConfirmationId,
   rememberReceipt,
+  sha256Hex,
 } from "./commandIdentity.ts";
 import {
   BooksRejectedError,
@@ -190,6 +191,9 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       identityHash,
       auditHash: "",
       commandKind: input.commandKind ?? "commit",
+      materializationHash: input.commandKind === "updateMonthRehearsal"
+        ? await sha256Hex(accepted.monthRehearsals ?? [])
+        : undefined,
       postedIds,
       revision,
       acceptedAt,

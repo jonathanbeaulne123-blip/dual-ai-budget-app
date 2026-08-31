@@ -24,6 +24,7 @@ export type ContinuityCommandRef = {
     auditHash: string;
     revision: number;
     acceptedAt: string;
+    materializationHash?: string;
     materializationFacts?: ContinuityMaterializationFacts;
   };
 };
@@ -79,6 +80,7 @@ export function receiptToCommandRef(input: {
       auditHash: receipt.scopedAuditHashes?.[ledgerScope] ?? receipt.auditHash,
       revision: receipt.revision,
       acceptedAt: receipt.acceptedAt,
+      materializationHash: receipt.materializationHash,
     },
   };
 }
@@ -115,6 +117,9 @@ export function compactedCommandPayload(
   memberId?: string,
 ): Record<string, unknown> {
   const mergedFacts = mergeMaterializationFacts(item.commandRefs, household, primary.ledgerScope, memberId);
+  const latestRehearsalRef = [...item.commandRefs]
+    .filter((ref) => ref.ledgerScope === "shared" && ref.commandType === "updateMonthRehearsal")
+    .sort((left, right) => right.resultRevision - left.resultRevision)[0];
   const scopedPostedIds = [
     ...(mergedFacts?.transactions ?? []).map((row) => row.id),
     ...(mergedFacts?.shifts ?? []).map((row) => row.id),
@@ -131,6 +136,9 @@ export function compactedCommandPayload(
   ].sort();
   return {
     ...primary.commandPayload,
+    materializationHash: mergedFacts?.monthRehearsals?.length
+      ? latestRehearsalRef?.commandPayload.materializationHash
+      : primary.commandPayload.materializationHash,
     postedIds: scopedPostedIds.length ? scopedPostedIds : primary.commandPayload.postedIds.filter((id) => {
       const tx = household.transactions.find((row) => row.id === id);
       const shift = household.shifts.find((row) => row.id === id);
@@ -165,6 +173,7 @@ function mergeMaterializationFacts(
       acceptedAt: ref.commandPayload.acceptedAt,
       ledgerScope,
       memberId,
+      commandKind: ref.commandType,
     });
     if (facts.transactions?.length) {
       merged.transactions = [...(merged.transactions ?? []), ...facts.transactions];
@@ -189,6 +198,7 @@ function mergeMaterializationFacts(
     if (facts.fundEvents?.length) merged.fundEvents = [...(merged.fundEvents ?? []), ...facts.fundEvents];
     if (facts.fundSettlementAllocations?.length) merged.fundSettlementAllocations = [...(merged.fundSettlementAllocations ?? []), ...facts.fundSettlementAllocations];
     if (facts.fundKittyAllocations?.length) merged.fundKittyAllocations = [...(merged.fundKittyAllocations ?? []), ...facts.fundKittyAllocations];
+    if (facts.monthRehearsals?.length) merged.monthRehearsals = facts.monthRehearsals;
     if (facts.tombstones?.length) {
       merged.tombstones = [...(merged.tombstones ?? []), ...facts.tombstones];
     }

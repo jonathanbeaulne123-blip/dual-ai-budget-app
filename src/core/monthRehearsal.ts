@@ -149,7 +149,13 @@ function nonMoneyCommit(previous: Household, next: Household, label: string, at:
     household: next,
     warnings: [],
     postedIds: [],
-    undo: { id: nextId("UNDO-REHEARSAL-", []), label, snapshot: previous, postedIds: [] },
+    undo: {
+      id: nextId("UNDO-REHEARSAL-", []),
+      label,
+      snapshot: previous,
+      postedIds: [],
+      commandKind: "updateMonthRehearsal",
+    },
   };
 }
 

@@ -2,7 +2,7 @@
 import { act, createElement, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { catalogHousehold, type Household } from "../src/core/index.ts";
+import { catalogHousehold, startMonthRehearsal, type Household } from "../src/core/index.ts";
 
 type Inspection = {
   ok: boolean;
@@ -270,5 +270,44 @@ describe("cached-shell startup books gate", () => {
     expect(startup.ingestCalls).toBe(1);
     expect(startup.inspectCalls).toBe(2);
     expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull();
+  });
+
+  it("keeps Bianca Month inside the current App and opens the current income slideshow", async () => {
+    startup.cached = startMonthRehearsal(startup.cached!, {
+      monthKey: "2026-08",
+      biancaParticipantId: "MEM-001",
+      jonathanPartnerId: "MEM-002",
+      startedByMemberId: "MEM-001",
+      now: "2026-08-01T12:00:00.000Z",
+    }).household;
+    startup.inspections.push(Promise.resolve({
+      ok: true,
+      message: "PGlite agrees.",
+      entryCount: startup.cached.transactions.length,
+    }));
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await settleUi();
+
+    const month = container.querySelector("[aria-label='Our month']");
+    expect(month).not.toBeNull();
+    act(() => button("Resume our month").click());
+    const weekOne = [...container.querySelectorAll(".month-week-tabs button")]
+      .find((item) => item.textContent?.includes("Week 1")) as HTMLButtonElement | undefined;
+    if (!weekOne) throw new Error("Missing Bianca Month week one");
+    act(() => weekOne.click());
+    const incomeTask = [...container.querySelectorAll(".month-task-list > li")]
+      .find((item) => item.querySelector("h3")?.textContent === "Add income that arrived");
+    const start = incomeTask?.querySelector("button.primary") as HTMLButtonElement | null;
+    if (!start) throw new Error("Missing Bianca Month income Start");
+    act(() => start.click());
+    await settleUi(180);
+
+    expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).not.toBeNull();
+    expect(container.textContent).toContain("How much came in?");
   });
 });
