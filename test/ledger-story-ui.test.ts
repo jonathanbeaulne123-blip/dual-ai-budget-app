@@ -100,6 +100,9 @@ describe("D-164 ledger story UI fences", () => {
     expect(app).toContain("<FabSpeedDial");
     expect(app).toContain("onPick={(nextMode) => openAddFor(null, nextMode)}");
     expect(styles).toContain("flex-direction: column-reverse");
+    const fab = readFileSync(new URL("../src/FabSpeedDial.tsx", import.meta.url), "utf8");
+    expect(fab).not.toContain("postEntry");
+    expect(fab).not.toContain("postWorkShift");
     expect(books).toContain("accepted-books position");
     expect(books).toContain("not a partner-hidden envelope");
     expect(books).not.toContain("Partner-personal stays out");

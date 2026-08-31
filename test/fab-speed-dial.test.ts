@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { act } from "react";
@@ -11,9 +10,6 @@ import { FAB_ADD_ACTIONS, FabSpeedDial } from "../src/FabSpeedDial.tsx";
 describe("FAB add speed dial", () => {
   it("keeps Shift, Income, Expense, and Transfer in that order from the +", () => {
     expect(FAB_ADD_ACTIONS.map((row) => row.mode)).toEqual(["shift", "income", "expense", "transfer"]);
-    const source = readFileSync(new URL("../src/FabSpeedDial.tsx", import.meta.url), "utf8");
-    expect(source).not.toContain("postEntry");
-    expect(source).not.toContain("postWorkShift");
   });
 
   it("opens a vertical menu from + and picks open Add for that mode without posting", () => {
