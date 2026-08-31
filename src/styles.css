@@ -1703,7 +1703,15 @@ input, select, textarea {
   color: var(--muted);
 }
 .hercules-lesson { margin: 0 0 6px; color: var(--muted); font-size: 12px; }
-.hercules-source { margin: 0 0 6px; color: var(--muted); font-size: 11px; }
+.hercules-source {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
 .hercules-notes { margin: 12px 0; display: grid; gap: 8px; }
 .hercules-fact { margin: 0 0 8px; display: flex; justify-content: space-between; gap: 8px; font-size: 12px; }
 .hercules-grounded-facts {

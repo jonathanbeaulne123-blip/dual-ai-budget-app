@@ -13,6 +13,7 @@ import {
   herculesNeedsCheck,
   herculesPageBrief,
   herculesPageSurface,
+  herculesProviderLabel,
   householdForAiDisclosure,
   hourInToronto,
   isCosmeticUnlocked,
@@ -297,13 +298,15 @@ describe("The Hercules Update", () => {
       { message: "we good?", briefing, grounded, memories: [] },
       {
         fetch: async () =>
-          new Response(JSON.stringify({ ok: true, reply: "mrrp. The books look honest." }), {
+          new Response(JSON.stringify({ ok: true, provider: "gemini", reply: "mrrp. The books look honest." }), {
             status: 200,
             headers: { "Content-Type": "application/json" },
           }),
       },
     );
     expect(ai.source).toBe("ai");
+    expect(ai.provider).toBe("gemini");
+    expect(herculesProviderLabel(ai.provider)).toBe("Gemini");
     expect(ai.text).toMatch(/books look honest/i);
 
     const posted = await chatHercules(
@@ -324,6 +327,8 @@ describe("The Hercules Update", () => {
       { fetch: async () => { throw new Error("offline"); } },
     );
     expect(quiet.source).toBe("local");
+    expect(quiet.provider).toBe("local");
+    expect(herculesProviderLabel(quiet.provider)).toBe("On-device");
     expect(quiet.text.length).toBeGreaterThan(4);
   });
 

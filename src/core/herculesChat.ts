@@ -34,7 +34,19 @@ export type HerculesChatRequest = {
 export type HerculesChatResult = {
   text: string;
   source: "ai" | "local";
+  provider: HerculesChatProvider;
 };
+
+export type HerculesChatProvider = "gemini" | "groq" | "openai" | "workers-ai" | "ai" | "local";
+
+export function herculesProviderLabel(provider: HerculesChatProvider): string {
+  if (provider === "gemini") return "Gemini";
+  if (provider === "groq") return "Groq";
+  if (provider === "openai") return "OpenAI";
+  if (provider === "workers-ai") return "Workers AI";
+  if (provider === "local") return "On-device";
+  return "AI";
+}
 
 export type HerculesReplyContext = {
   environment: Environment;
@@ -73,13 +85,20 @@ function chatUrls(): string[] {
   return urls;
 }
 
-async function readAiReply(res: Response): Promise<string | null> {
+async function readAiReply(res: Response): Promise<{ reply: string; provider: HerculesChatProvider } | null> {
   const type = res.headers.get("content-type") || "";
   if (!res.ok || !type.includes("json")) return null;
-  const data = (await res.json()) as { ok?: boolean; reply?: unknown };
+  const data = (await res.json()) as { ok?: boolean; reply?: unknown; provider?: unknown };
   if (!data?.ok || typeof data.reply !== "string") return null;
   const reply = data.reply.trim();
-  return reply || null;
+  if (!reply) return null;
+  const provider = data.provider === "gemini"
+    || data.provider === "groq"
+    || data.provider === "openai"
+    || data.provider === "workers-ai"
+    ? data.provider
+    : "ai";
+  return { reply, provider };
 }
 
 export function herculesModelPayload(req: HerculesChatRequest): string {
@@ -135,6 +154,7 @@ export async function chatHercules(
   const local = (): HerculesChatResult => ({
     text: localHerculesChat(req.message, req.briefing, req.grounded),
     source: "local",
+    provider: "local",
   });
   const fetchFn = deps?.fetch ?? (typeof fetch === "function" ? fetch : undefined);
   if (!fetchFn || !req.message.trim()) return local();
@@ -153,9 +173,13 @@ export async function chatHercules(
         signal: ctrl.signal,
       });
       clearTimeout(timer);
-      const reply = await readAiReply(res);
-      if (reply) {
-        return { text: sanitizeHerculesReply(reply, req.grounded.spoken, req.figures ?? [], req.message), source: "ai" };
+      const result = await readAiReply(res);
+      if (result) {
+        return {
+          text: sanitizeHerculesReply(result.reply, req.grounded.spoken, req.figures ?? [], req.message),
+          source: "ai",
+          provider: result.provider,
+        };
       }
     } catch {
       continue;

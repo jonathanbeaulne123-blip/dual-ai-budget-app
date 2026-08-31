@@ -17,6 +17,7 @@ import {
   herculesMutters,
   herculesNeedsCheck,
   herculesPageSurface,
+  herculesProviderLabel,
   herculesInstrumentSurface,
   herculesTapIntent,
   herculesUsefulness,
@@ -58,6 +59,7 @@ import {
   type HerculesDraft,
   type HerculesPose,
   type HerculesReplyContext,
+  type HerculesChatProvider,
   type HerculesTalk,
   type Household,
   type LedgerView,
@@ -277,7 +279,7 @@ export function HerculesPresence({
   const [focusedWidget, setFocusedWidget] = useState<InstrumentId | "window" | null>(null);
   const [snippets, setSnippets] = useState<WidgetSnippet[]>([]);
   const [busy, setBusy] = useState(false);
-  const [replySource, setReplySource] = useState<"ai" | "local" | null>(null);
+  const [replyProvider, setReplyProvider] = useState<HerculesChatProvider | null>(null);
   const [fly, setFly] = useState<{ x: number; y: number } | null>(null);
   const flyRef = useRef<{ x: number; y: number } | null>(fly);
   flyRef.current = fly;
@@ -677,7 +679,7 @@ export function HerculesPresence({
     previousChatScope.current = chatScope;
     chatGen.current += 1;
     setBusy(false);
-    setReplySource(null);
+    setReplyProvider(null);
     setQuestion("");
     setTalk(null);
     setTurns(ledgerChats(household).slice(-12).map((row) => ({ role: row.role, text: row.text })));
@@ -739,7 +741,7 @@ export function HerculesPresence({
     setBusy(false);
     setQuestion("");
     setBegging(false);
-    setReplySource(null);
+    setReplyProvider(null);
     setShareWorkplaceRoster(false);
     setEphemeralWorkplaceTurn(false);
     setTurns([]);
@@ -932,7 +934,7 @@ export function HerculesPresence({
     if (plan.skipModel) {
       applyTalk(plan.talk, text);
       keepTalk(text, plan.talk.spoken, plan.source, plan.memory);
-      setReplySource(null);
+      setReplyProvider(null);
       return;
     }
     void sendChat(helpCmd?.prompt ?? text, requestedCoworkerIds);
@@ -964,10 +966,10 @@ export function HerculesPresence({
     if (plan.skipModel) {
       applyTalk(plan.talk, message);
       keepTalk(message, plan.talk.spoken, plan.source, plan.memory);
-      setReplySource(null);
+      setReplyProvider(null);
       return;
     }
-    setReplySource(null);
+    setReplyProvider(null);
     const coworkerIdsForModel = requestedCoworkerIds;
     setEphemeralWorkplaceTurn(coworkerIdsForModel.length > 0);
     const grounded = plan.talk;
@@ -1037,7 +1039,7 @@ export function HerculesPresence({
       }
       setMotion(answer.pose);
       setBusy(false);
-      setReplySource(usedModelVoice ? "ai" : null);
+      setReplyProvider(voiced.source === "ai" ? voiced.provider : null);
       keepTalk(message, answer.spoken, usedModelVoice ? "ai" : "journal", null, coworkerIdsForModel.length > 0);
       return;
     }
@@ -1064,7 +1066,7 @@ export function HerculesPresence({
     }
     setMotion(grounded.pose === "sleep" ? "loaf" : grounded.pose);
     setBusy(false);
-    setReplySource(result.source);
+    setReplyProvider(result.provider);
     keepTalk(message, result.text, result.source === "ai" ? "ai" : "local", null, coworkerIdsForModel.length > 0);
   }
 
@@ -1336,6 +1338,11 @@ export function HerculesPresence({
               <p className="hercules-spoken">{talk.spoken}</p>
             )}
             {!busy && talk.lesson && <p className="hercules-lesson">{talk.lesson}</p>}
+            {!busy && replyProvider && (
+              <p className="hercules-source" aria-label={`Reply source: ${herculesProviderLabel(replyProvider)}`}>
+                {herculesProviderLabel(replyProvider)}
+              </p>
+            )}
             {!busy && groundedFacts.length > 0 && (
               <div className="hercules-grounded-facts" aria-label="Numbers pulled from the books">
                 {groundedFacts.slice(0, 5).map((fact) => (
@@ -1464,10 +1471,12 @@ export function HerculesPresence({
           {open && !busy && ephemeralWorkplaceTurn && (
             <p className="hercules-source">Private workplace roster used for this reply. This turn was not saved.</p>
           )}
-          {open && !busy && !ephemeralWorkplaceTurn && replySource && (
-            <p className="hercules-source">{replySource === "ai" ? "ai" : "on-device"}</p>
+          {open && !busy && replyProvider && (
+            <p className="hercules-source" aria-label={`Reply source: ${herculesProviderLabel(replyProvider)}`}>
+              {herculesProviderLabel(replyProvider)}
+            </p>
           )}
-          {open && !busy && !ephemeralWorkplaceTurn && !replySource && turns.some((turn) => turn.role === "user") && (
+          {open && !busy && !ephemeralWorkplaceTurn && !replyProvider && turns.some((turn) => turn.role === "user") && (
             <p className="hercules-source">Kept in the kitchen ledger. Same door as the books.</p>
           )}
           {open && !busy && groundedFacts.length === 0 && talk.fact && (
