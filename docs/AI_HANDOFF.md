@@ -1,5 +1,35 @@
 # AI Task and Handoff Standard
 
+## Add cashpad prompt slideshows (2026-08-31)
+
+**Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7`. **Not merged, not deployed, not live.** Risk: **Medium** (Add posting UX; Confirm still writes).
+
+**Household outcome:** Speed dial sits slightly higher. Add is four unique prompt slideshows. Expense: how much → category (Add category lives here) → Books-floor account tiles → picture or note → Confirm. Income, transfer, and shift have their own titles. Enter advances. Confirm posts. The slideshow never `postEntry`.
+
+**Budget delta (5):** `+3` — calmer posting, accepted-books account tiles, Confirm remains the write.
+
+**Engagement delta (3):** `+3` — unique ceremonies instead of one dense sheet.
+
+**If they conflicted:** books win. Cut flourish before auto-posting or hiding Confirm. Pictures stay on this phone.
+
+**What changed:** `AddSlideshow` + `addSlideshow.ts` step model. FAB gap `10px` → `22px`. Add category form is inline on the category slide. Account picker uses wallet tiles. Shift clock-in / jobs Confirm kept.
+
+**Verification:** Focused tests in progress; see worksession.
+
+**Data and environment disclosure:**
+- Development impact: none (UI)
+- Production impact: none
+- Network calls or data sent: none
+- MCP access: none
+- Hosted rows/schema/secrets/deployments: none
+- Real household or partner-personal data used: none
+
+**Remaining uncertainty:** Picture is not a journal attachment. Visual proof still required.
+
+**Next owner:** Jonathan — walk Expense from `+`, then Income / Transfer / Shift. Do not merge unless you ask.
+
+**Worksession:** [`worksessions/2026-08-31-add-slideshow.md`](worksessions/2026-08-31-add-slideshow.md)
+
 ## FAB speed dial — Shift, Income, Expense, Transfer (2026-08-31)
 
 **Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7` @ `ba752c2`. **Not merged, not deployed, not live.** Risk: **Low–Medium** (nav chrome; Add routing only; no money write).

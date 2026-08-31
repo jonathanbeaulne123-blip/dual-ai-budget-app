@@ -519,7 +519,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
 .fab-dial-actions {
   position: absolute;
   left: 50%;
-  bottom: calc(100% + 10px);
+  bottom: calc(100% + 22px);
   transform: translateX(-50%);
   display: flex;
   flex-direction: column-reverse;
@@ -2024,6 +2024,98 @@ input, select, textarea {
   font-weight: 700;
 }
 .cad-pad-keys .cad-pad-back { font-size: 20px; }
+
+.cad-pad.is-giant .cad-pad-display {
+  font-size: clamp(56px, 16vw, 88px);
+  margin: 8px 0 18px;
+}
+.cad-pad.is-giant .cad-pad-keys {
+  gap: 10px;
+}
+.cad-pad.is-giant .cad-pad-keys button {
+  min-height: 72px;
+  font-size: 26px;
+}
+.cad-pad-enter {
+  width: 100%;
+}
+
+.add-slideshow .sheet-inner,
+.add-slideshow-inner {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - 32px);
+  padding-bottom: 24px;
+}
+.add-slideshow-title {
+  font-family: var(--display);
+  font-size: clamp(28px, 7vw, 42px);
+  line-height: 1.15;
+  margin: 8px 0 6px;
+}
+.add-slideshow-hint,
+.add-slideshow-progress,
+.add-slideshow-mode {
+  margin: 0 0 8px;
+}
+.add-slideshow-switch {
+  margin: 0 0 12px;
+}
+.add-slideshow-switch summary {
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+}
+.add-slideshow-categories {
+  margin: 8px 0 16px;
+}
+.add-category-inline {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 16px;
+}
+.add-category-inline-form {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+}
+.add-account-floor {
+  display: grid;
+  gap: 14px;
+  margin: 8px 0 16px;
+}
+.add-account-floor .wallet-tiles {
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+}
+.add-picture-label {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 8px;
+}
+.add-picture-preview {
+  width: min(100%, 320px);
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  margin: 8px 0;
+}
+.add-confirm-summary {
+  margin: 8px 0 16px;
+}
+@media (max-width: 389px) {
+  .cad-pad.is-giant .cad-pad-keys button {
+    min-height: 56px;
+    font-size: 22px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .add-slideshow-title {
+    transition: none;
+  }
+}
 
 .post-big {
   font-size: 20px;

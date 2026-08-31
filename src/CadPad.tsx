@@ -8,12 +8,20 @@ export function CadPad({
   label,
   unit = "cad",
   maxCents,
+  giant = false,
+  onEnter,
+  enterLabel = "Enter",
+  enterDisabled = false,
 }: {
   digits: string;
   onDigits: (next: string) => void;
   label: string;
   unit?: "cad" | "hours";
   maxCents?: number;
+  giant?: boolean;
+  onEnter?: () => void;
+  enterLabel?: string;
+  enterDisabled?: boolean;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const cap = maxCents ?? (unit === "hours" ? 2400 : 99_999_999);
@@ -30,8 +38,23 @@ export function CadPad({
     return () => el.removeEventListener("wheel", block);
   }, []);
 
+  useEffect(() => {
+    if (!onEnter) return;
+    const submit = onEnter;
+    function onKey(event: KeyboardEvent) {
+      if (event.key !== "Enter" || event.repeat) return;
+      const target = event.target;
+      if (target instanceof HTMLTextAreaElement || (target instanceof HTMLInputElement && target.type !== "button")) return;
+      if (enterDisabled) return;
+      event.preventDefault();
+      submit();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onEnter, enterDisabled]);
+
   return (
-    <div className="cad-pad" ref={root}>
+    <div className={`cad-pad${giant ? " is-giant" : ""}`} ref={root}>
       <p className="cad-pad-label">{label}</p>
       <p className="cad-pad-display" aria-live="polite">{display}</p>
       <div className="cad-pad-keys">
@@ -47,6 +70,16 @@ export function CadPad({
           </button>
         ))}
       </div>
+      {onEnter ? (
+        <button
+          type="button"
+          className="primary post-big cad-pad-enter"
+          disabled={enterDisabled}
+          onClick={onEnter}
+        >
+          {enterLabel}
+        </button>
+      ) : null}
     </div>
   );
 }
