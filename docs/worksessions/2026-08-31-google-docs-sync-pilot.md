@@ -1,14 +1,14 @@
 # Hearth worksession — ledger-native Google Docs feel pilot
 
-- **Status:** DEVELOPMENT RELEASE AUTHORIZED; PUSH/DEPLOY IN PROGRESS; LIVE PILOT PENDING
+- **Status:** DEVELOPMENT DEPLOYED; LIVE MATRIX AND 14-DAY REHEARSAL PENDING
 - **Opened:** 2026-08-31 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `C:\Users\jonat\OneDrive\Documents\ChatGPT\Budget App-sync-pilot`
-- **Branch:** `codex/google-docs-sync-pilot`
+- **Branch:** `codex/google-docs-sync-pilot` (implementation); `codex/google-docs-sync-pilot-evidence` (release record)
 - **Baseline SHA:** `2a984fd3346dc0b57d0e7b6a17702c18b82596d3`
 - **Implementation SHA:** `c228464c4f4636afc8c39bde5949d6c0650a548a`
-- **PR or issue:** none
+- **PR or issue:** [#256](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/256)
 - **Risk:** Release
 - **Decision owner:** Jonathan
 - **Environment impact:** Development
@@ -61,7 +61,7 @@ Jonathan and Bianca can rehearse ordinary shared and Personal ledger work on two
 - [x] New-device/join storage and failed-persistence proof preserve the last accepted local household; live failed-fetch/recovery remains in the two-device matrix.
 - [x] Focused tests, `pnpm test`, `pnpm ai:verify`, typecheck/build, and `git diff --check` are recorded.
 - [x] Independent books/trust reviews and final Hearth verification/release review complete; no open P0–P2.
-- [ ] Push the exact reviewed branch, merge through GitHub, and verify the deployed SHA and baked Development-only flags.
+- [x] Push the exact reviewed branch, merge through GitHub, and verify the deployed SHA and baked Development-only flags.
 - [ ] Live two-device matrix and 14-day rehearsal remain explicitly pending until Jonathan runs them after an approved deploy.
 
 ## Plan
@@ -87,7 +87,11 @@ Jonathan and Bianca can rehearse ordinary shared and Personal ledger work on two
 - Current-main Google Auth containment integration proof: **15 files / 137 tests**, including Auth session, Google GIS scope, invite/discovery, Production denial, diagnostics, freshness, two-browser, Realtime, materialization, and command runtime.
 - Independent books review **PASS**, trust review **PASS** (independent 5 files / 28 tests), and release code re-review **PASS** (independent 5 files / 39 tests); no open P0–P2. Release review's sole evidence-count note is corrected above.
 - Jonathan explicitly authorized push, merge, and Development deployment after the verified local handoff. The live matrix and daily-use decision remain separately gated.
-- No schema apply, hosted row or provider-setting mutation, household-data mutation, Production action, push, merge, or deployment performed.
+- Reviewed head `0f54fa28e59db6997fa7c96bceb8a51f242c51d3` was pushed, PR [#256](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/256) passed CI run `33373555450` and Cloudflare run `33373555453`, and merged to `main` as `e9c5127594a9fd4e6d8b203f19db57cc4b31390a`.
+- Main CI run [`33403561215`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33403561215) completed successfully at the exact merge SHA.
+- Main Cloudflare run [`33403561188`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33403561188) succeeded at the exact merge SHA. Its Build and Deploy steps passed.
+- Live origin inspection found main asset `/assets/index-H4g5wOkC.js`, Pairing asset `/assets/Pairing-BXhqncC_.js`, and Realtime asset `/assets/continuityRealtime-BLxMTAyn.js`. The reachable asset graph contains the Copy diagnostic, `command-realtime`, diagnostic kind, Production-continuity refusal, and cached-offline-data warning.
+- No schema apply, hosted household row or provider-setting mutation, household-data mutation, Production action, secret change, or daily-use activation was performed. The only external mutations were the approved GitHub push/merge and Development deployment.
 
 ## Decisions
 
@@ -97,9 +101,9 @@ Jonathan and Bianca can rehearse ordinary shared and Personal ledger work on two
 
 ## Remaining uncertainty
 
-- The existing hosted inventory and current-main deployment SHA were rechecked read-only. The unmerged pilot bundle itself cannot have a deployed SHA until a separately approved deployment.
-- Two real devices, two Google principals, 100 latency samples, and the 14-day rehearsal cannot be completed by local automation.
+- The exact pilot runtime is deployed, but two real devices, two Google principals, 100 receiving-device latency samples, and the 14-day rehearsal cannot be completed by local automation.
+- Deployment is not daily-use approval and does not earn the “Docs-like Development sync proven for Jonathan and Bianca” claim.
 
 ## Handoff
 
-Codex owns the authorized Development GitHub release and deployed-SHA verification. Jonathan remains the only owner of hosted household access, the live two-device rehearsal, and the daily-use decision.
+Jonathan owns hosted household access, the live two-device matrix, the fourteen-day disposable rehearsal, and the later daily-use decision. Codex may assist with the runbook and interpret the sanitized diagnostic without receiving household financial facts.

@@ -1,6 +1,6 @@
 # Ledger-native “Google Docs feel” Development pilot
 
-> **Status — 2026-08-31:** the pilot implementation and local proof packet are prepared on `codex/google-docs-sync-pilot` from exact `origin/main@2a984fd3346dc0b57d0e7b6a17702c18b82596d3`. It is **not pushed, merged, deployed, activated for daily use, or proven through the live matrix or fourteen-day rehearsal**.
+> **Status — 2026-08-31:** the pilot implementation is merged through [PR #256](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/256) as exact `main@e9c5127594a9fd4e6d8b203f19db57cc4b31390a` and deployed to the Development kitchen. It is **not activated for daily use or proven through the live matrix or fourteen-day rehearsal**.
 
 ## Claim boundary
 
@@ -49,7 +49,7 @@ Snapshots are reserved for first household creation, initial device catch-up, a 
 5. Read the Realtime publication without changing it. Required continuity tables are `continuity_command_events`, `continuity_personal_snapshots`, and `household_snapshots`.
 6. Use only disposable, non-critical Development rehearsal information. Keep an independent record; Hearth cannot be the sole record during this pilot.
 
-On 2026-08-31, the read-only preflight found GitHub Actions run `33371466781` successfully deployed exact main SHA `2a984fd3346dc0b57d0e7b6a17702c18b82596d3`. The Supabase dashboard showed migrations 001–017 and the three required Realtime tables. This proves current-main inventory only. It does not prove this unmerged pilot build or authorize a hosted change.
+On 2026-08-31, the read-only preflight found migrations 001–017 and the three required Realtime tables. After explicit approval, reviewed head `0f54fa28e59db6997fa7c96bceb8a51f242c51d3` passed PR checks, merged as exact `main@e9c5127594a9fd4e6d8b203f19db57cc4b31390a`, and passed exact-merge main CI run [`33403561215`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33403561215). Cloudflare run [`33403561188`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33403561188) deployed it successfully. Live origin inspection found the pilot diagnostic, command-Realtime, Production-off, cached-offline-data warning, and Realtime module markers. No schema, hosted household row, Production, secret, or provider change accompanied the release.
 
 ## Automated gate
 
