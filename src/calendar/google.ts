@@ -43,15 +43,16 @@ export function accountFromSession(session: GoogleSession): GoogleAccount | null
   };
 }
 
-export function loadGoogleAccount(environment: Environment, memberId: string): GoogleAccount | null {
-  const session = loadGoogleSession(environment, memberId);
+export function loadGoogleAccount(environment: Environment, memberId: string, householdId?: string): GoogleAccount | null {
+  const session = loadGoogleSession(environment, memberId, householdId);
   return session ? accountFromSession(session) : null;
 }
 
-export function saveGoogleAccount(environment: Environment, account: GoogleAccount): void {
-  const previous = loadGoogleSession(environment, account.memberId);
+export function saveGoogleAccount(environment: Environment, account: GoogleAccount, householdId?: string): void {
+  const previous = loadGoogleSession(environment, account.memberId, householdId);
   saveGoogleSession(environment, {
     memberId: account.memberId,
+    householdId,
     accessToken: account.accessToken,
     expiresAt: account.expiresAt,
     grantedScopes: previous?.grantedScopes?.length ? previous.grantedScopes : [...CALENDAR_GOOGLE_SCOPES],
@@ -65,12 +66,12 @@ export function saveGoogleAccount(environment: Environment, account: GoogleAccou
   });
 }
 
-export function clearGoogleAccount(environment: Environment, memberId: string): void {
-  clearGoogleSession(environment, memberId);
+export function clearGoogleAccount(environment: Environment, memberId: string, householdId?: string): void {
+  clearGoogleSession(environment, memberId, householdId);
 }
 
-export function loadGoogleAccounts(environment: Environment, memberIds: string[]): GoogleAccount[] {
-  return memberIds.map((id) => loadGoogleAccount(environment, id)).filter((item): item is GoogleAccount => Boolean(item));
+export function loadGoogleAccounts(environment: Environment, memberIds: string[], householdId?: string): GoogleAccount[] {
+  return memberIds.map((id) => loadGoogleAccount(environment, id, householdId)).filter((item): item is GoogleAccount => Boolean(item));
 }
 
 export function dateFromGoogleEvent(event: {
@@ -122,11 +123,13 @@ export function hearthGoogleEvent(item: Recurrence, titleNote: string): Record<s
 export async function connectGoogleAccount(input: {
   memberId: string;
   environment: Environment;
+  householdId?: string;
   loginHint?: string;
 }): Promise<GoogleAccount> {
   const session = await connectGoogle({
     memberId: input.memberId,
     environment: input.environment,
+    householdId: input.householdId,
     services: ["identity", "calendar"],
     loginHint: input.loginHint,
   });
@@ -135,12 +138,13 @@ export async function connectGoogleAccount(input: {
   return account;
 }
 
-export function disconnectGoogleAccount(environment: Environment, memberId: string): void {
-  disconnectGoogle(environment, memberId);
+export function disconnectGoogleAccount(environment: Environment, memberId: string, householdId?: string): void {
+  disconnectGoogle(environment, memberId, householdId);
 }
 
 export async function listGoogleOverlays(input: {
   environment: Environment;
+  householdId: string;
   accounts: GoogleAccount[];
   memberColor: (memberId: string) => string;
   from: DateKey;
@@ -152,6 +156,7 @@ export async function listGoogleOverlays(input: {
     const items = await withGoogle({
       environment: input.environment,
       memberId: account.memberId,
+      householdId: input.householdId,
       services: ["identity", "calendar"],
       enabledServices: input.enabledServices,
       loginHint: account.email,
@@ -176,6 +181,7 @@ export async function listGoogleOverlays(input: {
 
 export async function upsertHearthReminders(input: {
   environment: Environment;
+  householdId: string;
   account: GoogleAccount;
   recurrences: Recurrence[];
   titleFor: (item: Recurrence) => string;
@@ -184,9 +190,11 @@ export async function upsertHearthReminders(input: {
   return withGoogle({
     environment: input.environment,
     memberId: input.account.memberId,
+    householdId: input.householdId,
     services: ["identity", "calendar"],
     enabledServices: input.enabledServices,
     loginHint: input.account.email,
+    interactive: true,
     fn: async (ctx) => {
       const calendarId = ctx.session.calendarId;
       if (!calendarId) throw new Error("That Google account has no calendars.");

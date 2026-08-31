@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   assertServicesAllowed,
   catalogHousehold,
@@ -15,11 +15,14 @@ import {
 import { ValidationError } from "../src/core/types.ts";
 import { overlayFromGoogleEvent } from "../src/calendar/google.ts";
 import {
+  adoptGoogleSession,
+  clearGoogleSessions,
   connectGoogle,
   createMemoryTokenStore,
   googleTokenKey,
   legacyGcalKey,
   loadGoogleSession,
+  saveGoogleSession,
   resetGoogleEngineForTests,
   scopeString,
   scopesForServices,
@@ -179,12 +182,71 @@ describe("Google token engine", () => {
     const session = await connectGoogle({
       environment: "development",
       memberId: "MEM-002",
+      householdId: "HH-A",
       services: ["identity", "calendar"],
     });
     expect(session.identity.email).toBe("jonathan@example.com");
     expect(session.identity.subject).toBe("sub-jon");
     expect(session.calendarId).toBe("jonathan@example.com");
-    expect(loadGoogleSession("development", "MEM-002")?.accessToken).toBe("access-1");
+    expect(loadGoogleSession("development", "MEM-002", "HH-A")?.accessToken).toBe("access-1");
+    expect(loadGoogleSession("development", "MEM-002", "HH-B")).toBeNull();
+  });
+
+  it("keeps direct Google sessions separate across household-local member ids", () => {
+    const store = createMemoryTokenStore();
+    setGoogleTokenStore(store);
+    const base = {
+      memberId: "MEM-001",
+      accessToken: "token-a",
+      expiresAt: Date.now() + 120_000,
+      grantedScopes: scopesForServices(["identity"]),
+      identity: { email: "a@example.com", subject: "sub-a", displayName: "A" },
+    };
+    saveGoogleSession("development", { ...base, householdId: "HH-A" });
+    saveGoogleSession("development", { ...base, householdId: "HH-B", accessToken: "token-b" });
+
+    expect(loadGoogleSession("development", "MEM-001", "HH-A")?.accessToken).toBe("token-a");
+    expect(loadGoogleSession("development", "MEM-001", "HH-B")?.accessToken).toBe("token-b");
+    expect(loadGoogleSession("development", "MEM-001")).toBeNull();
+  });
+
+  it("purges every member's direct Google bearer when this phone signs out", () => {
+    const store = createMemoryTokenStore();
+    setGoogleTokenStore(store);
+    const base = {
+      memberId: "MEM-001",
+      accessToken: "token",
+      expiresAt: Date.now() + 120_000,
+      grantedScopes: scopesForServices(["identity"]),
+      identity: { email: "a@example.com", subject: "sub-a", displayName: "A" },
+    };
+    saveGoogleSession("development", base);
+    saveGoogleSession("development", { ...base, householdId: "HH-A", accessToken: "token-a" });
+    saveGoogleSession("development", { ...base, memberId: "MEM-002", householdId: "HH-A", accessToken: "partner-token" });
+    store.setItem(legacyGcalKey("development", "MEM-001"), JSON.stringify({ ...base, accessToken: "legacy" }));
+
+    clearGoogleSessions("development");
+    expect(Object.keys(store.snapshot()).filter((key) => key.includes("MEM-001") || key.includes("MEM-002"))).toEqual([]);
+  });
+
+  it("rolls a failed household adoption back from the exact scoped identity", () => {
+    const store = createMemoryTokenStore();
+    setGoogleTokenStore(store);
+    const session = (memberId: string, accessToken: string, email: string, householdId?: string) => ({
+      memberId,
+      householdId,
+      accessToken,
+      expiresAt: Date.now() + 120_000,
+      grantedScopes: scopesForServices(["identity"]),
+      identity: { email, subject: `sub-${email}`, displayName: email },
+    });
+    saveGoogleSession("development", session("__welcome__", "new-welcome", "new@example.com"));
+    expect(adoptGoogleSession("development", "__welcome__", "MEM-001", "HH-NEW")?.accessToken).toBe("new-welcome");
+
+    const restored = adoptGoogleSession("development", "MEM-001", "__welcome__", undefined, "HH-NEW");
+    expect(restored?.identity.email).toBe("new@example.com");
+    expect(loadGoogleSession("development", "__welcome__")?.accessToken).toBe("new-welcome");
+    expect(loadGoogleSession("development", "MEM-001", "HH-NEW")).toBeNull();
   });
 
   it("refuses Gmail through withGoogle until the household enables it", async () => {
@@ -196,6 +258,76 @@ describe("Google token engine", () => {
       enabledServices: ["identity", "calendar"],
       fn: async () => "nope",
     })).rejects.toThrow(/Gmail/);
+  });
+
+  it("never opens Google account UI from a background Google call", async () => {
+    const requester = vi.fn(async () => ({
+      access_token: "must-not-be-used",
+      expires_in: 3600,
+      scope: scopeString(["drive"]),
+    }));
+    setGoogleClientIdForTests("test-client.apps.googleusercontent.com");
+    setGoogleTokenRequester(requester);
+
+    await expect(withGoogle({
+      environment: "development",
+      memberId: "MEM-002",
+      services: ["drive"],
+      fn: async () => "nope",
+    })).rejects.toThrow(/will not open sign-in from the background/i);
+    expect(requester).not.toHaveBeenCalled();
+  });
+
+  it("shares one Google prompt across duplicate requests and refuses a different owner", async () => {
+    setGoogleTokenStore(createMemoryTokenStore());
+    setGoogleClientIdForTests("test-client.apps.googleusercontent.com");
+    let release!: (value: { access_token: string; expires_in: number; scope: string }) => void;
+    const response = new Promise<{ access_token: string; expires_in: number; scope: string }>((resolve) => { release = resolve; });
+    const requester = vi.fn(() => response);
+    setGoogleTokenRequester(requester);
+    setGoogleHttpFetch(async () => jsonResponse({ sub: "sub-jon", email: "jonathan@example.com", name: "Jonathan" }));
+
+    const first = connectGoogle({ environment: "development", memberId: "MEM-002", householdId: "HH-A", services: ["identity"] });
+    const duplicate = connectGoogle({ environment: "development", memberId: "MEM-002", householdId: "HH-A", services: ["identity"] });
+    await expect(connectGoogle({
+      environment: "development",
+      memberId: "MEM-002",
+      householdId: "HH-B",
+      services: ["identity"],
+      selectAccount: true,
+    })).rejects.toThrow(/already open/i);
+    expect(requester).toHaveBeenCalledTimes(1);
+    release({ access_token: "one-window", expires_in: 3600, scope: scopeString(["identity"]) });
+    await expect(Promise.all([first, duplicate])).resolves.toHaveLength(2);
+  });
+
+  it("does not resurrect a token cleared during an open prompt or profile refresh", async () => {
+    const store = createMemoryTokenStore();
+    setGoogleTokenStore(store);
+    setGoogleClientIdForTests("test-client.apps.googleusercontent.com");
+    let releasePrompt!: (value: { access_token: string; expires_in: number; scope: string }) => void;
+    const response = new Promise<{ access_token: string; expires_in: number; scope: string }>((resolve) => { releasePrompt = resolve; });
+    setGoogleTokenRequester(() => response);
+    setGoogleHttpFetch(async () => jsonResponse({ sub: "sub-jon", email: "jonathan@example.com", name: "Jonathan" }));
+
+    const connecting = connectGoogle({ environment: "development", householdId: "HH-A", memberId: "MEM-001", services: ["identity"] });
+    clearGoogleSessions("development");
+    releasePrompt({ access_token: "late-token", expires_in: 3600, scope: scopeString(["identity"]) });
+    await expect(connecting).rejects.toThrow(/cleared while sign-in was open/i);
+
+    saveGoogleSession("development", {
+      memberId: "MEM-001", householdId: "HH-A", accessToken: "cached-token", expiresAt: Date.now() + 120_000,
+      grantedScopes: scopesForServices(["identity"]), identity: { email: "", subject: "", displayName: "" },
+    });
+    let releaseProfile!: (profile: Response) => void;
+    setGoogleHttpFetch(() => new Promise<Response>((resolve) => { releaseProfile = resolve; }));
+    const refreshing = withGoogle({
+      environment: "development", householdId: "HH-A", memberId: "MEM-001", services: ["identity"], fn: async () => "ready",
+    });
+    clearGoogleSessions("development");
+    releaseProfile(jsonResponse({ sub: "sub-jon", email: "jonathan@example.com", name: "Jonathan" }));
+    await expect(refreshing).rejects.toThrow(/cleared while its profile was refreshing/i);
+    expect(loadGoogleSession("development", "MEM-001", "HH-A")).toBeNull();
   });
 
   it("pings enabled Google services and never invents a money post", async () => {
@@ -217,6 +349,7 @@ describe("Google token engine", () => {
     const pings = await syncGoogleSuite({
       environment: "development",
       memberId: "MEM-002",
+      householdId: household.householdId,
       enabledServices: household.google.enabledServices,
     });
     expect(pings.find((ping) => ping.service === "identity")?.ok).toBe(true);

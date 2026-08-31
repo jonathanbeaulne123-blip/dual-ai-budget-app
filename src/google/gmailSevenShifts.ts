@@ -108,9 +108,11 @@ export async function importSevenShiftsFromGmail(input: {
   return withGoogle({
     environment: input.scope.environment,
     memberId: input.scope.memberId,
+    householdId: input.scope.householdId,
     services: requiredServices,
     ...(input.enabledServices ? { enabledServices: input.enabledServices } : {}),
     loginHint: input.loginHint,
+    interactive: true,
     fn: async (google) => {
       const ids: string[] = [];
       let pageToken: string | undefined;

@@ -244,6 +244,7 @@ describe("Google desk appearance payload", () => {
     const result = await pushDeskAppearance({
       environment: "development",
       memberId: "MEM-002",
+      householdId: "HH-TEST",
       payload: buildDeskSyncPayload({ look: { stock: "cream", density: "names" }, phone: defaultLayout(), wide: defaultLayout() }),
     });
     expect(result.ok).toBe(false);
@@ -281,7 +282,9 @@ describe("Google desk appearance payload", () => {
     const pushed = await pushDeskAppearance({
       environment: "development",
       memberId: "MEM-002",
+      householdId: "HH-TEST",
       enabledServices: ["identity", "drive"],
+      interactive: true,
       payload: buildDeskSyncPayload({ look: { stock: "night", density: "names" }, phone: defaultLayout(), wide: defaultLayout() }),
       storage: store,
     });
@@ -289,7 +292,9 @@ describe("Google desk appearance payload", () => {
     const pulled = await pullDeskAppearance({
       environment: "development",
       memberId: "MEM-002",
+      householdId: "HH-TEST",
       enabledServices: ["identity", "drive"],
+      interactive: true,
       storage: store,
     });
     expect(pulled.ok).toBe(true);

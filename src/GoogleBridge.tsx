@@ -27,6 +27,7 @@ import {
   syncGoogleSuite,
   type GoogleSuitePing,
 } from "./google/index.ts";
+import { useAsyncScope } from "./asyncScope.ts";
 
 export function GoogleBridgeCard(props: {
   household: Household;
@@ -43,19 +44,24 @@ export function GoogleBridgeCard(props: {
   const [busy, setBusy] = useState(false);
   const [pings, setPings] = useState<GoogleSuitePing[]>([]);
   const [pendingService, setPendingService] = useState<GoogleService | null>(null);
+  const scopeKey = `${environment}:${household.householdId}:${memberId}`;
+  const asyncScope = useAsyncScope(scopeKey);
   const working = busy || props.busy;
   const linkedCount = google.links.filter((link) => link.active).length;
 
   async function connectMember(who: string) {
+    const startedScope = asyncScope.capture();
     setBusy(true);
     props.onError("");
     try {
       const session = await connectGoogle({
         environment,
         memberId: who,
+        householdId: household.householdId,
         services: google.enabledServices.length ? google.enabledServices : DEFAULT_GOOGLE_SERVICES,
         enabledServices: google.enabledServices,
       });
+      if (!asyncScope.isCurrent(startedScope)) return;
       props.onCommand((current) => linkGoogleIdentity(current, {
         memberId: who,
         email: session.identity.email,
@@ -64,28 +70,31 @@ export function GoogleBridgeCard(props: {
         grantedScopes: session.grantedScopes,
       }));
     } catch (caught) {
-      props.onError(caught instanceof Error ? caught.message : String(caught));
+      if (asyncScope.isCurrent(startedScope)) props.onError(caught instanceof Error ? caught.message : String(caught));
     } finally {
-      setBusy(false);
+      if (asyncScope.isCurrent(startedScope)) setBusy(false);
     }
   }
 
   function disconnectMember(who: string) {
-    disconnectGoogle(environment, who);
+    disconnectGoogle(environment, who, household.householdId);
     props.onCommand((current) => unlinkGoogleIdentity(current, who));
   }
 
   async function confirmMe() {
+    const startedScope = asyncScope.capture();
     setBusy(true);
     props.onError("");
     try {
       const session = await connectGoogle({
         environment,
         memberId,
+        householdId: household.householdId,
         services: ["identity"],
         stepUp: true,
         loginHint: findActiveGoogleLink(household, memberId)?.email,
       });
+      if (!asyncScope.isCurrent(startedScope)) return;
       const link = findActiveGoogleLink(household, memberId);
       if (link && session.identity.email.toLowerCase() !== link.email && session.identity.subject !== link.subject) {
         throw new Error(`Google signed in as ${session.identity.email}, not ${link.email}.`);
@@ -102,29 +111,32 @@ export function GoogleBridgeCard(props: {
         props.onCommand((current) => touchGoogleConfirmation(current, memberId));
       }
     } catch (caught) {
-      props.onError(caught instanceof Error ? caught.message : String(caught));
+      if (asyncScope.isCurrent(startedScope)) props.onError(caught instanceof Error ? caught.message : String(caught));
     } finally {
-      setBusy(false);
+      if (asyncScope.isCurrent(startedScope)) setBusy(false);
     }
   }
 
   async function syncNow() {
+    const startedScope = asyncScope.capture();
     setBusy(true);
     props.onError("");
     try {
       const result = await syncGoogleSuite({
         environment,
         memberId,
+        householdId: household.householdId,
         enabledServices: google.enabledServices,
       });
+      if (!asyncScope.isCurrent(startedScope)) return;
       setPings(result);
       if (findActiveGoogleLink(household, memberId)) {
         props.onCommand((current) => touchGoogleConfirmation(current, memberId));
       }
     } catch (caught) {
-      props.onError(caught instanceof Error ? caught.message : String(caught));
+      if (asyncScope.isCurrent(startedScope)) props.onError(caught instanceof Error ? caught.message : String(caught));
     } finally {
-      setBusy(false);
+      if (asyncScope.isCurrent(startedScope)) setBusy(false);
     }
   }
 
@@ -159,7 +171,7 @@ export function GoogleBridgeCard(props: {
         return left.name.localeCompare(right.name);
       }).map((member) => {
         const link = findActiveGoogleLink(household, member.id);
-        const onPhone = Boolean(loadGoogleSession(environment, member.id));
+        const onPhone = Boolean(loadGoogleSession(environment, member.id, household.householdId));
         return (
           <div className="row" key={member.id}>
             <span>

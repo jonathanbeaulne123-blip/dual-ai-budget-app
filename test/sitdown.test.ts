@@ -281,6 +281,7 @@ describe("Drive sit-down export", () => {
     const result = await uploadSitDownWorkbook({
       environment: "development",
       memberId: "MEM-002",
+      householdId: "HH-TEST",
       name: "Hearth 2026-08",
       csv: sitDownWorkbookCsv(catalogHousehold(), "2026-08"),
     });
@@ -309,6 +310,7 @@ describe("Drive sit-down export", () => {
     const result = await uploadSitDownWorkbook({
       environment: "development",
       memberId: "MEM-002",
+      householdId: "HH-TEST",
       name: "Hearth 2026-08",
       csv: "section,field,value\n",
     });

@@ -108,7 +108,7 @@ Without a client ID, Calendar still works: month board, spotted bills, `.ics` wi
 
 ## What the engine is
 
-Call `withGoogle({ environment, memberId, services, stepUp?, fn })` whenever a Calendar/Drive/Contacts/Gmail/Sheets feature needs Google. Those suite integrations are call-when-needed. Ledger continuity is separate and automatic after sign-in, membership discovery, and local acceptance; it uses a durable outbox rather than Google Drive or Sheets.
+Call `withGoogle({ environment, householdId, memberId, services, stepUp?, interactive?, fn })` whenever a Calendar/Drive/Contacts/Gmail/Sheets feature needs Google. The default is non-interactive: background work may use a fresh cached token but receives a reconnect-needed result instead of opening Google UI. Set `interactive: true` only inside an explicit click or tap flow such as Connect, Sync Google now, Write reminders, Save to Drive, or a sensitive confirmation. Direct suite tokens and prompts are scoped to environment, household, and member. Hearth permits one prompt at a time, shares an identical concurrent request, bounds GIS loading and the full prompt, removes a failed script for retry, and prevents a late result from restoring credentials after sign-out. Ledger continuity is separate and automatic after sign-in, membership discovery, and local acceptance; it uses a single-flight Supabase refresh and durable outbox rather than Google Drive or Sheets.
 
 Commands `linkGoogleIdentity`, `unlinkGoogleIdentity`, `touchGoogleConfirmation`, and `setGoogleServices` update the shared snapshot. They never call `postEntry`.
 

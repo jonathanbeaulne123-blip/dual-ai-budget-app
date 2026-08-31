@@ -32,6 +32,7 @@ import { downloadText } from "./ledger/export.ts";
 import { KitchenNotice } from "./KitchenNotice.tsx";
 import { PaperBars } from "./theme/PaperTheme.tsx";
 import { googleConfigured, uploadSitDownWorkbook } from "./google/index.ts";
+import { useAsyncScope } from "./asyncScope.ts";
 
 export function SitDownGuide({
   household,
@@ -55,6 +56,8 @@ export function SitDownGuide({
   const [openFact, setOpenFact] = useState<string | null>(null);
   const [slices, setSlices] = useState<AllocationSlice[]>(saved?.slices?.length ? saved.slices : proposeAllocation(household, today));
   const [driveNote, setDriveNote] = useState("");
+  const scopeKey = `${household.environment}:${household.householdId}:${memberId ?? ""}`;
+  const asyncScope = useAsyncScope(scopeKey);
   const leftover = useMemo(() => leftoverProjection(household, today), [household, today]);
   const preview = useMemo(() => sitDownPreview(household, monthKey), [household, monthKey]);
   const facts = useMemo(() => sitDownFacts(household, monthKey, today), [household, monthKey, today]);
@@ -284,6 +287,7 @@ export function SitDownGuide({
               type="button"
               onClick={() => {
                 void (async () => {
+                  const startedScope = asyncScope.capture();
                   if (!googleConfigured() || !memberId) {
                     setDriveNote("Google is not linked. Download still works.");
                     return;
@@ -292,10 +296,12 @@ export function SitDownGuide({
                   const uploaded = await uploadSitDownWorkbook({
                     environment: household.environment,
                     memberId,
+                    householdId: household.householdId,
                     enabledServices: household.google.enabledServices,
                     name: `Hearth ${monthKey}`,
                     csv,
                   });
+                  if (!asyncScope.isCurrent(startedScope)) return;
                   setDriveNote(uploaded.ok ? uploaded.detail : `Drive skipped. ${uploaded.detail}`);
                   if (uploaded.ok && saved) {
                     const remembered = recordSitDownDrive(household, saved.id, uploaded.fileId ?? null);

@@ -326,6 +326,7 @@ import { playClink } from "./clink.ts";
 import { GoogleBridgeCard } from "./GoogleBridge.tsx";
 import {
   adoptGoogleSession,
+  clearGoogleSessions,
   confirmWithGoogleIfLinked,
   connectGoogle,
   continuityIdentityFromGoogle,
@@ -719,7 +720,7 @@ export function App() {
     setError("");
     try {
       const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
-      const google = loadGoogleSession(environment, who);
+      const google = loadGoogleSession(environment, who, current.householdId);
       if (supabaseAuthEnabled() && !authSession) {
         setError("Your secure session needs Google sign-in before Hearth can retry sharing.");
         setTab("more");
@@ -1132,7 +1133,7 @@ export function App() {
     const memberId = session?.memberId ?? null;
     const signedIn = Boolean(
       memberId && (
-        loadGoogleSession(environment, memberId)
+        loadGoogleSession(environment, memberId, household.householdId)
         || (supabaseAuthEnabled() && loadSupabaseSession(environment))
       ),
     );
@@ -1208,8 +1209,8 @@ export function App() {
 
   useEffect(() => {
     const memberId = session?.memberId;
-    if (!memberId || !activeBooksGate.ready) return;
-    const googleSession = loadGoogleSession(environment, memberId);
+    if (!memberId || !household || !activeBooksGate.ready) return;
+    const googleSession = loadGoogleSession(environment, memberId, household.householdId);
     const storedAuthSession = loadSupabaseSession(environment);
     if (!storedAuthSession && !continuityIdentityFromGoogle(googleSession)) return;
     let live = true;
@@ -1220,7 +1221,7 @@ export function App() {
 
     const acceptReplayCandidate = async (candidate: Household, confirmationId: string, commandKind: string) => {
       const previous = householdRef.current;
-      const googleSession = loadGoogleSession(environment, memberId);
+      const googleSession = loadGoogleSession(environment, memberId, previous?.householdId);
       const authSession = supabaseAuthEnabled() ? loadSupabaseSession(environment) : null;
       const continuityIdentity: ContinuityIdentity | null = authSession
         ? { email: authSession.email, subject: authSession.googleSubject }
@@ -1704,7 +1705,7 @@ export function App() {
     void (async () => {
       try {
         const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
-        const google = loadGoogleSession(environment, memberId);
+        const google = loadGoogleSession(environment, memberId, householdId);
         const identity = authSession
           ? { email: authSession.email, subject: authSession.googleSubject }
           : continuityIdentityFromGoogle(google);
@@ -1872,7 +1873,9 @@ export function App() {
     setError("");
     try {
       const candidate = await selectHouseholdReplica(environment, householdId, session?.memberId);
-      const currentGoogle = session?.memberId ? loadGoogleSession(environment, session.memberId) : null;
+      const currentGoogle = session?.memberId
+        ? loadGoogleSession(environment, session.memberId, householdRef.current?.householdId)
+        : null;
       const continuityIdentity = continuityIdentityFromGoogle(currentGoogle);
       const googleMember = continuityIdentity ? continuityMemberId(candidate, continuityIdentity) : null;
       const nextMemberId = googleMember
@@ -1995,7 +1998,7 @@ export function App() {
     const candidate = previous?.householdId === found.household.householdId
       ? await reconcileHouseholdSnapshots(previous, found.household, found.memberId)
       : found.household;
-    const googleSession = loadGoogleSession(environment, found.memberId)
+    const googleSession = loadGoogleSession(environment, found.memberId, candidate.householdId)
       ?? loadGoogleSession(environment, "__welcome__");
     const continuityIdentity = continuityIdentityFromGoogle(googleSession);
     const accepted = await acceptHouseholdWrite({
@@ -2011,7 +2014,7 @@ export function App() {
       }),
     });
     if (!accepted.ok) throw new Error(accepted.userMessage || "Those cloud books could not be accepted on this device.");
-    const adopted = adoptGoogleSession(environment, "__welcome__", found.memberId);
+    const adopted = adoptGoogleSession(environment, "__welcome__", found.memberId, accepted.household.householdId);
     if (!adopted && !loadSupabaseSession(environment)) {
       throw new Error("Google signed in, but this device could not keep the session.");
     }
@@ -2216,7 +2219,7 @@ export function App() {
     }
     if (ledgerWrite) await afterNextPaint();
     try {
-      const googleSession = memberId ? loadGoogleSession(environment, memberId) : null;
+      const googleSession = memberId ? loadGoogleSession(environment, memberId, next.householdId) : null;
       const authRequired = supabaseAuthEnabled();
       const cachedAuthSession = authRequired ? loadSupabaseSession(environment) : null;
       const authSession = options?.forceFlush === true && authRequired
@@ -2688,7 +2691,7 @@ export function App() {
   }
 
   function signOutWelcomeGoogle() {
-    disconnectGoogle(environment, "__welcome__");
+    clearGoogleSessions(environment);
     clearSupabaseSession(environment);
     rememberWelcomeGoogleIntent(null);
     setWelcomeIdentity(null);
@@ -2724,9 +2727,9 @@ export function App() {
       }
       clearSyncAnchor(environment, input.householdId);
       clearContinuityOutboxForHousehold(environment, input.householdId);
-      disconnectGoogle(environment, input.memberId);
+      disconnectGoogle(environment, input.memberId, input.householdId);
       if (session?.memberId && session.memberId !== input.memberId) {
-        disconnectGoogle(environment, session.memberId);
+        disconnectGoogle(environment, session.memberId, input.householdId);
       }
       if (session?.memberId) {
         clearUndoHistory(environment, input.householdId, session.memberId);
@@ -2967,6 +2970,7 @@ export function App() {
               event.preventDefault();
               let adoptedWelcomeSession = false;
               let adoptedMemberId = "";
+              let adoptedHouseholdId = "";
               try {
                 if (!welcomeIdentity) throw new Error("Sign in with Google before creating a household.");
                 const memberId = newHouseholdDraft.personalMemberId;
@@ -2979,10 +2983,13 @@ export function App() {
                   displayName: welcomeIdentity.displayName,
                   grantedScopes: welcomeIdentity.grantedScopes,
                 }).household;
-                adoptedWelcomeSession = Boolean(adoptGoogleSession(environment, "__welcome__", memberId));
+                adoptedHouseholdId = next.householdId;
+                adoptedWelcomeSession = Boolean(adoptGoogleSession(environment, "__welcome__", memberId, next.householdId));
                 const outcome = await persist(next, undefined, memberId);
                 if (!outcome?.ok) {
-                  if (adoptedWelcomeSession) adoptGoogleSession(environment, memberId, "__welcome__");
+                  if (adoptedWelcomeSession) {
+                    adoptGoogleSession(environment, memberId, "__welcome__", undefined, next.householdId);
+                  }
                   return;
                 }
                 const nextSession = { memberId, view: "household" as const, householdId: next.householdId };
@@ -2992,8 +2999,8 @@ export function App() {
                 saveSession(environment, nextSession);
                 setWelcomeIdentity(null);
               } catch (caught) {
-                if (adoptedWelcomeSession && adoptedMemberId) {
-                  adoptGoogleSession(environment, adoptedMemberId, "__welcome__");
+                if (adoptedWelcomeSession && adoptedMemberId && adoptedHouseholdId) {
+                  adoptGoogleSession(environment, adoptedMemberId, "__welcome__", undefined, adoptedHouseholdId);
                 }
                 setError(caught instanceof Error ? caught.message : String(caught));
               }
@@ -5121,8 +5128,8 @@ export function App() {
                 const hid = household.householdId;
                 if (who) {
                   clearUndoHistory(environment, hid, who);
-                  disconnectGoogle(environment, who);
                 }
+                clearGoogleSessions(environment);
                 clearSupabaseSession(environment);
                 clearSession(environment);
                 clearPendingAuthInvite();
