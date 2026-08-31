@@ -13,7 +13,9 @@ import {
   dayOfDateKey,
   fundRolloverByGoal,
   projectHouseholdFund,
+  recordHouseholdFundReconciliation,
   seedDemoHousehold,
+  sharedActionQueue,
   sharedMonthCourse,
   HOUSEHOLD_FUND_ID,
 } from "../src/core/index.ts";
@@ -259,6 +261,59 @@ describe("F-1 · a Kitty rollover is visible on the shelf", () => {
     const rollover = fundRolloverByGoal(household);
     expect(rollover.releasedCents).toBe(0);
     expect(kitty).toContain("released back to the pool and is not held against one bank");
+  });
+});
+
+describe("F-2 · a reconciliation is dated by the day it covers", () => {
+  it("reports the event date, not the moment it was typed", () => {
+    let household = demo();
+    const on = "2026-08-23";
+    household = recordHouseholdFundReconciliation(household, {
+      memberId: BIANCA,
+      date: on,
+      bankTotal: "9999",
+      personalRemainder: "0",
+    }).household;
+    const projection = projectHouseholdFund(household, TODAY);
+    expect(projection.lastReconciledAt).toBe(on);
+    expect(projection.lastReconciledAt).not.toContain("T");
+  });
+
+  it("lets the weekly staleness check fire on a check typed today but covering an older week", () => {
+    // The distinguishing case: recorded now, dated for the 10th. Keyed off
+    // createdAt this looked current; keyed off the day it covers, it is stale.
+    let household = configureHouseholdFund(catalogHousehold(), {
+      custodianMemberId: BIANCA,
+      openedOn: "2026-08-01",
+      createdBy: BIANCA,
+    }).household;
+    household = recordHouseholdFundReconciliation(household, {
+      memberId: BIANCA,
+      date: "2026-08-10",
+      bankTotal: "0",
+      personalRemainder: "0",
+    }).household;
+    expect(projectHouseholdFund(household, TODAY).lastReconciledAt).toBe("2026-08-10");
+    const queue = sharedActionQueue(household, TODAY);
+    expect(queue.some((item) => item.kind === "reconciliation")).toBe(true);
+  });
+
+  it("does not nag when the check covers a day inside this week", () => {
+    const household = demo();
+    // The demo records its weekly check four days back — inside this week.
+    expect(projectHouseholdFund(household, TODAY).lastReconciledAt).toBe("2026-08-23");
+    expect(sharedActionQueue(household, TODAY).some((item) => item.kind === "reconciliation")).toBe(false);
+  });
+});
+
+describe("F-3 · a monthly target is measured against this month", () => {
+  it("counts only contributions confirmed in the month, not every one ever made", () => {
+    const household = demo();
+    const projection = projectHouseholdFund(household, TODAY);
+    const monthConfirmed = 160000 + 90000 + 76000; // Aug 1, 8 and 22 on the demo kitchen
+    expect(projection.confirmedContributionsCents).toBeGreaterThan(monthConfirmed);
+    expect(projection.targetProgressCents).toBe(monthConfirmed);
+    expect(projection.targetProgressCents).toBeLessThanOrEqual(projection.monthlyTargetCents);
   });
 });
 

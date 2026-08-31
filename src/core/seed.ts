@@ -853,7 +853,7 @@ function seedHouseholdFund(input: Household, today: DateKey): Household {
   household = setHouseholdFundMonthPlan(household, {
     memberId: BIANCA,
     monthKey,
-    target: 6500,
+    target: 3400,
     buffer: 1500,
   }).household;
 
