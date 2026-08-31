@@ -54,14 +54,9 @@ function MemberContribBars({
 }) {
   if (rows.length === 0) return null;
   const maxCents = Math.max(targetCents, ...rows.map((row) => row.cents), 1);
-  const spoken = rows.map((row) => `${nameOf(row.memberId)} ${formatCad(row.cents)}`).join(". ");
   return (
-    <div
-      className="ms-contrib"
-      role="img"
-      aria-label={`Confirmed contributions this month. ${spoken}. A proposal does not count until the custodian confirms.`}
-    >
-      <span className="ms-key">This month</span>
+    <div className="ms-contrib" role="group" aria-labelledby="ms-contrib-heading">
+      <span className="ms-key" id="ms-contrib-heading">This month</span>
       {rows.map((row) => (
         <div key={row.memberId} className="ms-contrib-row">
           <span className="ms-contrib-name">{nameOf(row.memberId)}</span>

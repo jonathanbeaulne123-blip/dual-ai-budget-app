@@ -409,6 +409,9 @@ describe("Standing contribution bars name each person's confirmed month", () => 
     expect(spread).toContain("MemberContribBars");
     expect(spread).toContain("course.configured");
     expect(spread).toContain("A proposal is not on the bar");
+    expect(spread).toContain('role="group"');
+    expect(spread).toContain('id="ms-contrib-heading"');
+    expect(spread).toContain('aria-labelledby="ms-contrib-heading"');
     expect(spread).not.toContain("PaperTheme");
     expect(css).toContain(".ms-contrib");
     expect(css).toContain("background: var(--pine)");
