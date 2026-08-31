@@ -4,6 +4,7 @@ import { resolve, relative, isAbsolute } from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { inflateSync } from "node:zlib";
+import sharp from "sharp";
 
 export const FIVE_DIMENSIONS = Object.freeze([
   "truth",
@@ -147,6 +148,48 @@ function pngDimensions(path) {
     return null;
   }
   return { width: header.width, height: header.height };
+}
+
+function jpegDimensions(path) {
+  const bytes = readFileSync(path);
+  if (bytes.length < 16 || bytes[0] !== 0xff || bytes[1] !== 0xd8
+    || bytes.at(-2) !== 0xff || bytes.at(-1) !== 0xd9) return null;
+  let offset = 2;
+  while (offset < bytes.length - 2) {
+    while (bytes[offset] === 0xff) offset += 1;
+    const marker = bytes[offset];
+    offset += 1;
+    if (marker === 0xd9) break;
+    if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) continue;
+    if (offset + 2 > bytes.length) return null;
+    const length = bytes.readUInt16BE(offset);
+    if (length < 2 || offset + length > bytes.length) return null;
+    if ([0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf].includes(marker)) {
+      if (length < 7) return null;
+      return { width: bytes.readUInt16BE(offset + 5), height: bytes.readUInt16BE(offset + 3) };
+    }
+    offset += length;
+  }
+  return null;
+}
+
+async function screenshotDimensions(path, mimeType) {
+  const structural = mimeType === "image/png" && path.endsWith(".png")
+    ? pngDimensions(path)
+    : mimeType === "image/jpeg" && /\.jpe?g$/i.test(path)
+      ? jpegDimensions(path)
+      : null;
+  if (!structural) return null;
+  try {
+    const { data, info } = await sharp(path, { failOn: "error", limitInputPixels: 40_000_000 })
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    if (!info.width || !info.height || data.length !== info.width * info.height * info.channels
+      || info.width !== structural.width || info.height !== structural.height) return null;
+    return { width: info.width, height: info.height };
+  } catch {
+    return null;
+  }
 }
 
 function torontoDate(value) {
@@ -367,7 +410,11 @@ export async function evaluateFeatureEvidence({
     if (run?.sourceSha !== expectedSha) issues.push(issue("SHA_MISMATCH", `Browser run ${key} has a different SHA.`, linkedDimensions));
     if (run?.environmentId !== expectedEnvironmentId) issues.push(issue("ENVIRONMENT_MISMATCH", `Browser run ${key} has a different environment.`, linkedDimensions));
     if (!REQUIRED_VIEWPORTS.includes(run?.viewport?.width) || !Number.isInteger(run?.viewport?.height) || run.viewport.height < 480
-      || !Number.isFinite(run?.devicePixelRatio) || run.devicePixelRatio <= 0) {
+      || !Number.isFinite(run?.devicePixelRatio) || run.devicePixelRatio < 0.5 || run.devicePixelRatio > 4
+      || !Number.isInteger(run?.contentViewport?.width) || !Number.isInteger(run?.contentViewport?.height)
+      || run.contentViewport.width <= 0 || run.contentViewport.height <= 0
+      || run.contentViewport.width > run.viewport.width || run.contentViewport.height > run.viewport.height
+      || run.viewport.width - run.contentViewport.width > 32 || run.viewport.height - run.contentViewport.height > 100) {
       issues.push(issue("VIEWPORT_INVALID", `Browser run ${key} has an invalid viewport.`, linkedDimensions));
     }
     if (run?.status !== "pass" || !journey || run?.completedSteps !== journey.steps.length || run?.passedAssertions !== journey.assertions.length) {
@@ -397,11 +444,11 @@ export async function evaluateFeatureEvidence({
     }
     const screenshot = artifacts.get(run?.screenshotArtifactId);
     const screenshotPath = screenshot ? artifactPath(evidenceRoot, screenshot.path) : null;
-    const dimensions = screenshotPath && existsSync(screenshotPath) ? pngDimensions(screenshotPath) : null;
+    const dimensions = screenshotPath && existsSync(screenshotPath) ? await screenshotDimensions(screenshotPath, screenshot?.mimeType) : null;
     if (!screenshot || invalidArtifactIds.has(run?.screenshotArtifactId) || screenshot.kind !== "screenshot"
-      || screenshot.mimeType !== "image/png" || !screenshot.path.endsWith(".png") || !dimensions
-      || dimensions.width !== Math.round(run.viewport.width * run.devicePixelRatio)
-      || dimensions.height !== Math.round(run.viewport.height * run.devicePixelRatio)) {
+      || !dimensions
+      || dimensions.width !== Math.round(run.contentViewport.width * run.devicePixelRatio)
+      || dimensions.height !== Math.round(run.contentViewport.height * run.devicePixelRatio)) {
       issues.push(issue("SCREENSHOT_MISSING", `Browser run ${key} lacks a verified screenshot.`, linkedDimensions));
     } else if (screenshotIds.has(run.screenshotArtifactId) || screenshotPaths.has(screenshot.path) || screenshotHashes.has(screenshot.sha256)) {
       issues.push(issue("SCREENSHOT_REUSED", `Browser run ${key} reuses another viewport screenshot id, path, or hash.`, linkedDimensions));

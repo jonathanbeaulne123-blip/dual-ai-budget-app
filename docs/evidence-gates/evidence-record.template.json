@@ -42,6 +42,7 @@
       "sourceSha": "0000000000000000000000000000000000000000",
       "environmentId": "production|https://example.invalid|replace-with-provider-deployment-id|replace-with-build-or-workflow-id|environment+household+member+view:public-no-household",
       "viewport": { "width": 320, "height": 800 },
+      "contentViewport": { "width": 305, "height": 760 },
       "devicePixelRatio": 1,
       "startedAt": "2026-08-30T12:01:00.000Z",
       "completedAt": "2026-08-30T12:01:01.000Z",

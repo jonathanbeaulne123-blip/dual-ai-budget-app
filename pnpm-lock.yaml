@@ -54,6 +54,9 @@ importers:
       miniflare:
         specifier: 5.20260820.0-alpha
         version: 5.20260820.0-alpha
+      sharp:
+        specifier: 0.35.2
+        version: 0.35.2
       typescript:
         specifier: ^5.9.2
         version: 5.9.3

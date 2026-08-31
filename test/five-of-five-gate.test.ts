@@ -3,6 +3,7 @@ import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSyn
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { deflateSync } from "node:zlib";
+import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createClaimDigest,
@@ -113,6 +114,7 @@ function greenFixture(fixture = true) {
         sourceSha,
         environmentId,
         viewport: { width, height },
+        contentViewport: { width, height },
         devicePixelRatio: 1,
         startedAt: "2026-08-30T12:05:00.000Z",
         completedAt: "2026-08-30T12:05:01.000Z",
@@ -221,6 +223,42 @@ function evaluate(evidence: Fixture, options: Partial<Parameters<typeof evaluate
     allowFixture: true,
     ...options,
   });
+}
+
+function refreshHumanAttestation(evidence: Fixture) {
+  const entry = evidence.artifacts.find((candidate) => candidate.id === "human-attestation")!;
+  const body = JSON.stringify({
+    schemaVersion: 1,
+    type: "hearth-human-acceptance",
+    claimDigest: createClaimDigest(evidence),
+    sourceSha,
+    environmentId,
+    acceptedBy: evidence.humanAcceptance.acceptedBy,
+    acceptedAt: evidence.humanAcceptance.acceptedAt,
+    reviewedEvidenceIds: evidence.humanAcceptance.reviewedEvidenceIds,
+  });
+  writeFileSync(join(evidenceRoot, entry.path), body);
+  entry.sha256 = createHash("sha256").update(body).digest("hex");
+}
+
+async function replaceWithJpeg(evidence: Fixture, runIndex = 0) {
+  const run = evidence.browserRuns[runIndex]!;
+  const entry = evidence.artifacts.find((candidate) => candidate.id === run.screenshotArtifactId)! as ReturnType<typeof screenshotArtifact>;
+  const oldPath = join(evidenceRoot, entry.path);
+  const path = `${entry.id}.jpg`;
+  const absolutePath = join(evidenceRoot, path);
+  const width = Math.round(run.contentViewport.width * run.devicePixelRatio);
+  const height = Math.round(run.contentViewport.height * run.devicePixelRatio);
+  await sharp({
+    create: { width, height, channels: 3, background: { r: 29, g: 42, b: 36 } },
+  }).jpeg({ quality: 80 }).toFile(absolutePath);
+  rmSync(oldPath);
+  const body = readFileSync(absolutePath);
+  entry.path = path;
+  entry.mimeType = "image/jpeg";
+  entry.sha256 = createHash("sha256").update(body).digest("hex");
+  refreshHumanAttestation(evidence);
+  return { entry, absolutePath };
 }
 
 beforeEach(() => {
@@ -368,6 +406,47 @@ describe("P0-03 five-of-five evidence gate", () => {
     expect(codes).toContain("EVIDENCE_REUSED");
     expect(codes).toContain("SCREENSHOT_REUSED");
     expect(codes).toContain("PRODUCTION_EVIDENCE_INVALID");
+  });
+
+  it("accepts a fully decoded JPEG bound to the measured content viewport", async () => {
+    const evidence = greenFixture();
+    await replaceWithJpeg(evidence);
+    const result = await evaluate(evidence);
+    expect(result.issues).toEqual([]);
+    expect(result.fixturePassed).toBe(true);
+  });
+
+  it("rejects corrupt JPEG bytes and MIME or extension mismatches", async () => {
+    const corrupt = greenFixture();
+    const { entry, absolutePath } = await replaceWithJpeg(corrupt);
+    const truncated = readFileSync(absolutePath).subarray(0, 96);
+    writeFileSync(absolutePath, truncated);
+    entry.sha256 = createHash("sha256").update(truncated).digest("hex");
+    refreshHumanAttestation(corrupt);
+    expect((await evaluate(corrupt)).issues.map((issue) => issue.code)).toContain("SCREENSHOT_MISSING");
+
+    const mismatch = greenFixture();
+    const replaced = await replaceWithJpeg(mismatch);
+    replaced.entry.mimeType = "image/png";
+    refreshHumanAttestation(mismatch);
+    expect((await evaluate(mismatch)).issues.map((issue) => issue.code)).toContain("SCREENSHOT_MISSING");
+  });
+
+  it("rejects excessive content insets and screenshot pixels that do not match content viewport times DPR", async () => {
+    const inset = greenFixture();
+    inset.browserRuns[0]!.contentViewport.width = inset.browserRuns[0]!.viewport.width - 33;
+    refreshHumanAttestation(inset);
+    expect((await evaluate(inset)).issues.map((issue) => issue.code)).toContain("VIEWPORT_INVALID");
+
+    const pixels = greenFixture();
+    pixels.browserRuns[0]!.contentViewport.width -= 1;
+    refreshHumanAttestation(pixels);
+    expect((await evaluate(pixels)).issues.map((issue) => issue.code)).toContain("SCREENSHOT_MISSING");
+
+    const dpr = greenFixture();
+    dpr.browserRuns[0]!.devicePixelRatio = 0.1;
+    refreshHumanAttestation(dpr);
+    expect((await evaluate(dpr)).issues.map((issue) => issue.code)).toContain("VIEWPORT_INVALID");
   });
 
   it("keeps the literal feature score out of runtime source", () => {
