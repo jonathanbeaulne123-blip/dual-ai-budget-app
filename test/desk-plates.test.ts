@@ -199,7 +199,7 @@ describe("plate interaction and materials", () => {
     expect(officeWide).toContain("<MonthSpread");
     expect(component).toContain("onClick={onSelect}");
     expect(component).toContain("onDoubleClick={onOpenCabinet}");
-    expect(component).toContain("desk-plate-handle");
+    expect(component).toContain("aria-current={active ? \"true\" : undefined}");
     expect(component).toContain("event.stopPropagation()");
   });
 

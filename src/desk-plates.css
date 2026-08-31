@@ -62,8 +62,7 @@
 .desk-plate-figure {
   min-height: 44px;
 }
-.desk-plate-empty,
-.desk-plate-empty-figure {
+.desk-plate-empty {
   margin: 0;
   font-size: 0.82rem;
   color: var(--muted);

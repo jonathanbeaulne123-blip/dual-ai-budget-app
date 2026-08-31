@@ -1,4 +1,4 @@
-import type { KeyboardEvent, MouseEvent } from "react";
+import { useEffect, useRef, type KeyboardEvent, type MouseEvent } from "react";
 import {
   fillLevel,
   formatCad,
@@ -129,9 +129,7 @@ function SparkFigure({ figure }: { figure: Extract<PlateFigure, { primitive: "sp
 }
 
 function TallyFigure({ figure }: { figure: Extract<PlateFigure, { primitive: "tally" }> }) {
-  if (!tallyIsCountable(figure.count)) {
-    return <p className="desk-plate-empty-figure">No countable ticks on this plate.</p>;
-  }
+  if (!tallyIsCountable(figure.count)) return null;
   const marks = Array.from({ length: figure.count }, (_, index) => index);
   return (
     <svg className="desk-plate-svg" viewBox={`0 0 ${PLATE_VIEW.width} 28`} role="img" aria-hidden="true">
@@ -193,6 +191,12 @@ export function DeskPlate({
   onSelect: () => void;
   onOpenCabinet: () => void;
 }) {
+  const rootRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (enlarged) rootRef.current?.focus();
+  }, [enlarged, plate.id]);
+
   function handleKey(event: KeyboardEvent<HTMLElement>) {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
@@ -208,12 +212,13 @@ export function DeskPlate({
 
   return (
     <article
+      ref={rootRef}
       className={`desk-plate edge-${plate.edge}${active ? " is-active" : ""}${enlarged ? " is-enlarged" : ""}${plate.copperVerdict ? " is-copper" : ""}`}
       tabIndex={0}
       data-plate-id={plate.id}
       data-plate-primitive={plate.figure.primitive}
       aria-label={`${plate.kicker}. ${plate.verdict} ${plate.footing}`}
-      aria-pressed={active}
+      aria-current={active ? "true" : undefined}
       onClick={onSelect}
       onDoubleClick={onOpenCabinet}
       onKeyDown={handleKey}

@@ -470,7 +470,7 @@ export function OfficeWide({
                   {openSpec.body}
                 </>
               ) : (
-                <p className="muted">Touch a plate. Kitty Banks stay on the right.</p>
+                <p className="muted">Touch a plate. Kitty Banks stay on this desk.</p>
               )}
             </div>
           </NotebookBody>
