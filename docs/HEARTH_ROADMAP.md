@@ -66,6 +66,7 @@ Only the currently open or just-closed worksession belongs here. Durable history
 
 | Worksession | State | Scope | Output |
 |---|---|---|---|
+| [2026-08-31 FAB add speed dial](worksessions/2026-08-31-fab-speed-dial.md) | **OPEN; DRAFT PR #244** | Vertical linear `+` menu → Add shift/income/expense/transfer | Dial never posts; visual proof next |
 | [2026-08-31 Shared Home month instrument](worksessions/2026-08-31-shared-home-month-instrument.md) | **OPEN; CLAUDE PROMPT READY** | Grander swipable Fund-month tracker in the selling Home stage | [`briefs/CLAUDE_SHARED_HOME_MONTH_INSTRUMENT_2026-08-31.md`](briefs/CLAUDE_SHARED_HOME_MONTH_INSTRUMENT_2026-08-31.md); no UI until Jonathan confirms |
 | [2026-08-29 Codex UX + main integration](worksessions/2026-08-29-codex-ux-main-integration.md) | **OPEN; PACKET READY** | Merge `#244` kitchen desk onto current `main` without restyling; D-165 → D-173 | [`briefs/CODEX_D165_UX_MAIN_INTEGRATION_HANDOFF_2026-08-29.md`](briefs/CODEX_D165_UX_MAIN_INTEGRATION_HANDOFF_2026-08-29.md); no merge or deploy |
 | [2026-08-29 Kitchen desk, Personal books floor, Kitty Banks](worksessions/2026-08-29-kitchen-desk-banks.md) | **CLOSED; IMPLEMENTATION ON #244; AWAITING INTEGRATION** | D-165 on this branch: one Shared pool, Personal account floor, leftover spend, fat banks | `ed708dc`; Codex must renumber to D-173 on `main` |

@@ -314,6 +314,7 @@ import { LedgerPurposeBanner } from "./LedgerPurposeBanner.tsx";
 import { HerculesPresence } from "./Hercules.tsx";
 import { HerculesProApproval, HerculesProPermissionsCard, herculesProAuthorizationRequest } from "./HerculesPro.tsx";
 import { CadPad } from "./CadPad.tsx";
+import { FabSpeedDial } from "./FabSpeedDial.tsx";
 import { PresetChip } from "./widgets/PresetChip.tsx";
 import { SitDownGuide } from "./SitDownGuide.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
@@ -417,6 +418,7 @@ export function App() {
   const [booting, setBooting] = useState(true);
   const [tab, setTab] = useState<Tab>("home");
   const [adding, setAdding] = useState(false);
+  const [fabOpen, setFabOpen] = useState(false);
   const workShiftInputRef = useRef<ScopedWorkShiftInput | null>(null);
   const shiftScanScopeRef = useRef(createShiftScanScope());
   const confirmPanelRef = useRef<HTMLDivElement | null>(null);
@@ -5199,7 +5201,7 @@ export function App() {
         session={session}
       />
 
-      <nav className="nav" data-ledger-nav={view === "household" ? "shared" : "personal"} aria-label="Hearth">
+      <nav className={`nav${fabOpen ? " is-fab-open" : ""}`} data-ledger-nav={view === "household" ? "shared" : "personal"} aria-label="Hearth">
         {kitchenPrimaryNav(view).includes("home") && (
         <button
           className={tab === "home" && !adding ? "active" : ""}
@@ -5229,7 +5231,11 @@ export function App() {
           Shift
         </button>
         )}
-        <button className="fab" type="button" aria-label="Add money" onClick={() => openAddFor(null)}>+</button>
+        <FabSpeedDial
+          closed={adding}
+          onOpenChange={setFabOpen}
+          onPick={(nextMode) => openAddFor(null, nextMode)}
+        />
         {kitchenPrimaryNav(view).includes("plan") && (
         <button
           className={tab === "plan" ? "active" : ""}

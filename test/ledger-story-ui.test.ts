@@ -97,6 +97,9 @@ describe("D-164 ledger story UI fences", () => {
 
   it("keeps Books off Shared primary nav and doors it from More", () => {
     expect(app).toContain("kitchenPrimaryNav(view)");
+    expect(app).toContain("<FabSpeedDial");
+    expect(app).toContain("onPick={(nextMode) => openAddFor(null, nextMode)}");
+    expect(styles).toContain("flex-direction: column-reverse");
     expect(books).toContain("accepted-books position");
     expect(books).toContain("not a partner-hidden envelope");
     expect(books).not.toContain("Partner-personal stays out");

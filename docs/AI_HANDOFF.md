@@ -1,5 +1,35 @@
 # AI Task and Handoff Standard
 
+## FAB speed dial — Shift, Income, Expense, Transfer (2026-08-31)
+
+**Status:** Draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) on `cursor/shared-ledger-story-aef7`. **Not merged, not deployed, not live.** Risk: **Low–Medium** (nav chrome; Add routing only; no money write).
+
+**Household outcome:** The nav `+` opens a vertical paper speed dial: Shift, Income, Expense, Transfer. Each action opens the existing Add sheet on that mode. Confirm still posts. Shared Home still has no Shift tab; Shift is reachable from `+`.
+
+**Budget delta (5):** `+2` — four writers are one tap from Home without hunting tabs.
+
+**Engagement delta (3):** `+2` — tactile + menu on the selling Home chrome.
+
+**If they conflicted:** books win. The dial never `postEntry`. Extra tap before Add is the cost of teaching the four modes.
+
+**What changed:** `FabSpeedDial` on the existing FAB. First tap opens the dial; a mode tap calls `openAddFor(null, mode)`. Escape / scrim / × close. Add sheet still has the four tabs. Expense is not auto-opened from `+`.
+
+**Verification:** focused `test/fab-speed-dial.test.ts` + nav fence. `pnpm check` next on this SHA.
+
+**Data and environment disclosure:**
+- Development impact: none (UI routing)
+- Production impact: none
+- Network calls or data sent: none
+- MCP access: none
+- Hosted rows/schema/secrets/deployments: none
+- Real household or partner-personal data used: none. Demo kitchen for visual proof.
+
+**Remaining uncertainty:** Phone 320px labels may wrap; visual proof still required. Claude month-instrument prompt is unchanged and still waiting on confirm.
+
+**Next owner:** Jonathan — tap `+` on Shared Home, pick Expense, confirm the Add sheet. Do not merge unless you ask.
+
+**Worksession:** [`worksessions/2026-08-31-fab-speed-dial.md`](worksessions/2026-08-31-fab-speed-dial.md)
+
 ## Claude prompt — grander Shared Home month instrument (2026-08-31)
 
 **Status:** Packet on draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) @ `2daa114` plus this docs commit. **Not merged, not deployed, not live.** Risk: **High** presentation only; no new Fund math. Cursor does **not** execute the widget until Jonathan confirms Claude’s design.
