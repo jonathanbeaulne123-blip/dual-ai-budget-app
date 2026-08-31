@@ -13,8 +13,9 @@
 **What changed:** Claude's local two-commit packet, applied onto `origin/main@2a984fd`. Presentation commits plus an isolated F-2/F-3 money-projection commit. Follow-up: Course now compiles from `booksHousehold` so Standing and Course cannot print two free-to-spend figures. Worksession: [`worksessions/2026-08-31-month-spread.md`](worksessions/2026-08-31-month-spread.md).
 
 **Verification:**
-- Focused: 8 files / **74 passed**.
-- `pnpm check`: AI surface verified; **1311 passed / 3 skipped**; `tsc` + Vite (369 modules) + Hercules Pro UI build green.
+- Focused after trust repair: `test/month-spread.test.ts` (30) plus related Fund/experience files — **61 passed**.
+- `pnpm check` after repair: AI surface verified; **1312 passed / 3 skipped**; `tsc` + Vite + Hercules Pro UI build green.
+- Independent audits: books **PASS WITH NOTES**; privacy **PASS WITH NOTES**; UX **PASS WITH NOTES** (P1s repaired); trust **FAIL** on Course vs Standing household — **repaired**. Verifier: rebase onto current `main` before merge.
 - Live fictional Development demo kitchen at `http://127.0.0.1:5174/` and the trycloudflare tunnel: Month Spread is the centre; Standing `$2,018.60` Fund free-to-spend vs leftover-spend seal `$498.64`; monthly target `$3,260.00 of $3,400.00`; TIED 27 August; reserved `$0.00` because the seeded next-day bill is September; docket click opened Household Fund and did not post; custody disclosure and Development pill on the face; no console errors.
 - Viewport proof this turn: wide Shared Home with Spread; ~1100 F-4 shelf under the stage; 720 OfficeWide Spread after scroll; 390/320 OfficePhone Fund glance with Add unobstructed. Walkthrough video `month_spread_shared_home_demo.mp4` independently reviewed: login → Spread → docket opens Fund, no post.
 
