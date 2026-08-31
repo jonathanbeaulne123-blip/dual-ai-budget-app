@@ -35,6 +35,7 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [HERCULES_PRO_CAPABILITIES.md](HERCULES_PRO_CAPABILITIES.md) | Full inventory of Hercules Pro tools, calculations, and packs |
 | [ONBOARDING_UPDATE.md](ONBOARDING_UPDATE.md) | Four-part Hercules-led onboarding plan, button/feature audit, Bianca journey, scripts, architecture direction, and gates |
 | [ONBOARDING_PART2_STORYBOARD.md](ONBOARDING_PART2_STORYBOARD.md) | Locked phone/desktop routes, focus camera, dialogue, Practice scenarios, failure recovery, implementation slices, and D-129 exception |
+| [briefs/CLAUDE_SHARED_HOME_MONTH_INSTRUMENT_2026-08-31.md](briefs/CLAUDE_SHARED_HOME_MONTH_INSTRUMENT_2026-08-31.md) | **Claude (not implement):** grander swipable Fund-month instrument for the selling Shared Home; Cursor executes after Jonathan confirms |
 | [briefs/CODEX_D165_UX_MAIN_INTEGRATION_HANDOFF_2026-08-29.md](briefs/CODEX_D165_UX_MAIN_INTEGRATION_HANDOFF_2026-08-29.md) | **Codex contract:** merge PR #244 kitchen desk with current `main` (D-166–D-172) without restyling; D-165 ID repair → D-173 |
 | [briefs/CHATGPT_D164_INDEPENDENT_REVIEW_2026-08-29.md](briefs/CHATGPT_D164_INDEPENDENT_REVIEW_2026-08-29.md) | Paste-ready GPT-5 Pro prompt for independent D-164 Shared kitchen / Household table review (draft PR #244; not shipped) |
 | [OFFICE.md](OFFICE.md) | Office direction; reconcile with shipped Office/mobile state when stale |

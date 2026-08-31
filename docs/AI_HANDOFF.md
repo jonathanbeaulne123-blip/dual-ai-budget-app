@@ -1,5 +1,37 @@
 # AI Task and Handoff Standard
 
+## Claude prompt — grander Shared Home month instrument (2026-08-31)
+
+**Status:** Packet on draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) @ `2daa114` plus this docs commit. **Not merged, not deployed, not live.** Risk: **High** presentation only; no new Fund math. Cursor does **not** execute the widget until Jonathan confirms Claude’s design.
+
+**Household outcome:** Shared Home’s center `This month` sheet becomes a selling-screenshot instrument — a fun, swipable paper tracker of the D-161 Fund month — without replacing seals, mosaic, or Kitty Banks. Claude invents the MORE; Cursor executes later.
+
+**Budget delta (5):** `+3` if the eight conservation facts stay readable as one story. `0` until implemented.
+
+**Engagement delta (3):** `+3` target — the laptop open-to frame that sells Hearth.
+
+**If they conflicted:** books win. Cut flourish before mixing leftover spend into the Fund, inventing CAD, ranking partners, or covering `+`.
+
+**What changed:** Paste-ready Claude brief [`briefs/CLAUDE_SHARED_HOME_MONTH_INSTRUMENT_2026-08-31.md`](briefs/CLAUDE_SHARED_HOME_MONTH_INSTRUMENT_2026-08-31.md). No UI in this packet. Cursor’s smart-stack idea is the floor; Claude must go bigger.
+
+**Why Claude, not GPT:** Codex already holds a do-not-restyle merge packet. This job is the selling-desk instrument — Claude’s UX/Hercules lane.
+
+**Verification:** Docs only. Last UX `pnpm check` remains **1116 passed / 2 skipped** at `ed708dc`.
+
+**Data and environment disclosure:**
+- Development impact: none (docs only)
+- Production impact: none
+- Network calls or data sent: none new
+- MCP access: none
+- Hosted rows/schema/secrets/deployments: none
+- Real household or partner-personal data used: none
+
+**Remaining uncertainty:** Claude may refuse the stack mechanic for a grander paper object; Jonathan still confirms before Cursor builds.
+
+**Next owner:** Jonathan — paste the brief into a new Claude chat, attach the listed files + Shared Home screenshot. Then confirm before Cursor executes.
+
+**Worksession:** [`worksessions/2026-08-31-shared-home-month-instrument.md`](worksessions/2026-08-31-shared-home-month-instrument.md)
+
 ## Codex integration packet — kitchen desk UX + current `main` (2026-08-29)
 
 **Status:** Packet on draft PR [#244](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/244) @ `ed708dc`. **Not merged, not deployed, not live.** Risk: **High** (ledger-mode presentation + Shift/Evidence/boot merge + D-165 ID collision).
