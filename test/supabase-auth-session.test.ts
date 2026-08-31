@@ -224,9 +224,28 @@ describe("Supabase Auth browser session", () => {
     expect(startSupabaseGoogleSignIn("development", "https://kitchen.example", config, navigate)).toBe(true);
     expect(startSupabaseGoogleSignIn("development", "https://kitchen.example", config, navigate)).toBe(false);
     expect(navigate).toHaveBeenCalledTimes(1);
+    expect(new URL(String(navigate.mock.calls[0]?.[0])).searchParams.has("prompt")).toBe(false);
     await vi.advanceTimersByTimeAsync(15_001);
     expect(startSupabaseGoogleSignIn("development", "https://kitchen.example", config, navigate)).toBe(true);
     expect(navigate).toHaveBeenCalledTimes(2);
+  });
+
+  it("forces the Google account chooser for QR invitation entry", async () => {
+    vi.useFakeTimers();
+    const navigate = vi.fn();
+
+    expect(startSupabaseGoogleSignIn(
+      "development",
+      "https://kitchen.example/",
+      config,
+      navigate,
+      { selectAccount: true },
+    )).toBe(true);
+
+    const authorize = new URL(String(navigate.mock.calls[0]?.[0]));
+    expect(authorize.pathname).toBe("/auth/v1/authorize");
+    expect(authorize.searchParams.get("provider")).toBe("google");
+    expect(authorize.searchParams.get("prompt")).toBe("select_account");
   });
 
   it("uses the user JWT for REST and refuses secret/service-role keys", () => {

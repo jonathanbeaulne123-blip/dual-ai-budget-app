@@ -6,6 +6,7 @@ import {
   activeHouseholdId,
   clearAllHouseholdReplicas,
   clearHousehold,
+  deactivateHouseholdSelection,
   listHouseholdReplicas,
   loadHousehold,
   loadPersonalReplica,
@@ -109,6 +110,25 @@ describe("multi-ledger replicas", () => {
     expect(selected.name).toBe("Second home");
     expect(activeHouseholdId("development")).toBe("HH-SECOND");
     expect((await loadHousehold("development"))?.householdId).toBe("HH-SECOND");
+  });
+
+  it("returns to account entry without deleting named household replicas", async () => {
+    installMemoryIndexedDb();
+    const first = household("HH-FIRST", "First home");
+    const second = household("HH-SECOND", "Second home");
+    await saveHousehold(first, { memberId: "MEM-001" });
+    await saveHousehold(second, { memberId: "MEM-002", activate: false });
+
+    await deactivateHouseholdSelection("development");
+
+    expect(activeHouseholdId("development")).toBeNull();
+    expect(localStorage.getItem("hearth:v1:development")).toBeNull();
+    expect((await listHouseholdReplicas("development")).map((item) => item.householdId).sort()).toEqual([
+      "HH-FIRST",
+      "HH-SECOND",
+    ]);
+    expect((await selectHouseholdReplica("development", "HH-FIRST", "MEM-001")).householdId)
+      .toBe("HH-FIRST");
   });
 
   it("writes only the signed-in member's personal rows to their replica", async () => {

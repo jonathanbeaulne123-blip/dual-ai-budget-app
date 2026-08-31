@@ -134,6 +134,7 @@ import {
 import {
   STORAGE_EXPLAINER,
   clearHousehold,
+  deactivateHouseholdSelection,
   downloadJson,
   listHouseholdReplicas,
   loadHousehold,
@@ -256,6 +257,7 @@ import { authInviteFromLocation, authInviteTokenFromText, isAuthInviteToken, sav
 import {
   bindGoogleMemberships,
   inviteReasonMessage,
+  isFullHouseInviteReason,
   leaveHousehold,
   leaveOrDeleteHousehold,
   redeemHouseholdInvite,
@@ -525,6 +527,7 @@ export function App() {
   const [supabaseAuthReturned, setSupabaseAuthReturned] = useState(false);
   const [inviteInput, setInviteInput] = useState("");
   const [pendingAuthInvite, setPendingAuthInvite] = useState<string | null>(null);
+  const [fullHouseInvite, setFullHouseInvite] = useState<{ email: string } | null>(null);
   const [inviteFlowState, setInviteFlowState] = useState<InviteFlowState>("idle");
   const [highlightedHouseholdId, setHighlightedHouseholdId] = useState<string | null>(null);
   const [welcomeMode, setWelcomeMode] = useState<"home" | "join" | "qr" | "new">("home");
@@ -954,6 +957,14 @@ export function App() {
       if (url.pathname === "/join") url.pathname = "/";
       const next = url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : "") + url.hash;
       window.history.replaceState({}, "", next);
+      if (supabaseAuthEnabled() && hostedContinuityAllowed(env)) {
+        try {
+          startQrInviteGoogleSignIn(authInvite.token, env);
+        } catch (caught) {
+          setInviteFlowState("error");
+          setError(caught instanceof Error ? caught.message : String(caught));
+        }
+      }
       return;
     }
     const token = inviteFromLocation(window.location.href);
@@ -2149,9 +2160,12 @@ export function App() {
     setToast(null);
   }
 
-  async function openDiscoveredLedger(target: HouseholdEntryTarget): Promise<void> {
+  async function openDiscoveredLedger(
+    target: HouseholdEntryTarget,
+    source: DiscoveredHousehold[] = discoveredLedgers,
+  ): Promise<void> {
     if (openingHouseholdRef.current) return;
-    const found = discoveredHouseholdForTarget(discoveredLedgers, target);
+    const found = discoveredHouseholdForTarget(source, target);
     if (!found) throw new Error("That household card is out of date. Refresh your Google households and try again.");
     const openingKey = `${found.household.householdId}:${found.memberId}`;
     openingHouseholdRef.current = openingKey;
@@ -2209,6 +2223,25 @@ export function App() {
     }
   }
 
+  function startQrInviteGoogleSignIn(token: string, inviteEnvironment: Environment = environment): void {
+    savePendingAuthInvite({ token, environment: inviteEnvironment });
+    setInviteInput(token);
+    setPendingAuthInvite(token);
+    setInviteFlowState("awaiting-google");
+    setWelcomeMode("join");
+    rememberWelcomeGoogleIntent("login");
+    if (inviteEnvironment !== environment) setEnvironment(inviteEnvironment);
+    clearGoogleSessions(inviteEnvironment);
+    clearSupabaseSession(inviteEnvironment);
+    startSupabaseGoogleSignIn(
+      inviteEnvironment,
+      window.location.href,
+      readHearthAuthConfig(),
+      (url) => window.location.assign(url),
+      { selectAccount: true },
+    );
+  }
+
   async function redeemAuthInviteToken(token: string): Promise<void> {
     savePendingAuthInvite({ token, environment });
     setPendingAuthInvite(token);
@@ -2237,6 +2270,12 @@ export function App() {
         config: cloudConfig,
       });
       if (!redeemed.ok) {
+        if (isFullHouseInviteReason(redeemed.reason)) {
+          setInviteFlowState("idle");
+          setError("");
+          setFullHouseInvite({ email: authSession.email });
+          return;
+        }
         throw new Error(inviteReasonMessage(redeemed.reason));
       }
       if (redeemed.environment !== environment) {
@@ -2252,10 +2291,10 @@ export function App() {
       if (!registered.ok) throw new Error(inviteReasonMessage(registered.reason));
       const identity = { email: authSession.email, subject: authSession.googleSubject };
       const found = await discoverContinuityMemberships(identity, environment, cloudConfig);
-      const match = found.find((row) => row.household.householdId === redeemed.householdId)
-        ?? (redeemed.memberId
-          ? found.find((row) => row.memberId === redeemed.memberId)
-          : undefined);
+      const match = discoveredHouseholdForTarget(found, {
+        householdId: redeemed.householdId,
+        memberId: redeemed.memberId ?? null,
+      });
       if (!match) {
         throw new Error("Invitation accepted, but the household list did not refresh. Try the invitation again; redemption is safe to repeat.");
       }
@@ -2265,11 +2304,15 @@ export function App() {
         grantedScopes: ["openid", "email", "profile"],
       });
       setDiscoveredLedgers(found);
-      setHighlightedHouseholdId(match.household.householdId);
+      await openDiscoveredLedger({
+        householdId: match.household.householdId,
+        memberId: match.memberId,
+      }, found);
+      setHighlightedHouseholdId(null);
       setPendingAuthInvite(null);
       clearPendingAuthInvite();
       rememberWelcomeGoogleIntent(null);
-      setInviteFlowState("ready");
+      setInviteFlowState("idle");
       setWelcomeMode("home");
       setError("");
     } catch (caught) {
@@ -3017,7 +3060,47 @@ export function App() {
     setInviteFlowState("awaiting-google");
     setWelcomeMode("join");
     if (token) savePendingAuthInvite({ token, environment });
-    startSupabaseGoogleSignIn(environment);
+    startSupabaseGoogleSignIn(
+      environment,
+      window.location.href,
+      readHearthAuthConfig(),
+      (url) => window.location.assign(url),
+      { selectAccount: true },
+    );
+  }
+
+  async function returnToGoogleEntryAfterFullHouse(): Promise<void> {
+    setBusy(true);
+    try {
+      clearGoogleSessions(environment);
+      clearSupabaseSession(environment);
+      clearSession(environment);
+      clearPendingAuthInvite();
+      rememberWelcomeGoogleIntent(null);
+      startupGenerationRef.current += 1;
+      await deactivateHouseholdSelection(environment);
+      closeAdd();
+      householdRef.current = null;
+      sessionRef.current = null;
+      setHousehold(null);
+      setSession(null);
+      setHistory([]);
+      setPersonalReplica(null);
+      setWelcomeIdentity(null);
+      setDiscoveredLedgers([]);
+      setHighlightedHouseholdId(null);
+      setPendingAuthInvite(null);
+      setInviteInput("");
+      setInviteFlowState("idle");
+      setWelcomeMode("home");
+      setError("");
+      setBooting(false);
+      window.history.replaceState({}, "", "/");
+      setFullHouseInvite(null);
+      window.location.replace("/");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function promptDeleteDiscoveredHousehold(found: DiscoveredHousehold): Promise<void> {
@@ -3219,6 +3302,29 @@ export function App() {
     void session;
   }, [booting, environment, household?.householdId, household?.revision, session?.memberId]);
 
+  if (fullHouseInvite) {
+    return (
+      <div className="welcome">
+        <div className="welcome-card">
+          <p className="kicker">Household access</p>
+          <img src="/hercules-mark.svg" alt="" />
+          <h1>This house is full</h1>
+          <p>Both available seats already have Google accounts assigned to this household.</p>
+          <p className="muted">You signed in as {fullHouseInvite.email}. Nothing was changed in the household or in this phone’s saved ledger.</p>
+          <button
+            className="primary"
+            type="button"
+            autoFocus
+            disabled={busy}
+            onClick={() => void returnToGoogleEntryAfterFullHouse()}
+          >
+            {busy ? "Returning…" : "Back to Google sign-in"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (booting) {
     return (
       <>
@@ -3307,10 +3413,7 @@ export function App() {
               onDetected={async (raw) => {
                 const token = authInviteTokenFromText(raw);
                 if (token) {
-                  setInviteInput(token);
-                  setPendingAuthInvite(token);
-                  setInviteFlowState("awaiting-google");
-                  await redeemAuthInviteToken(token);
+                  startQrInviteGoogleSignIn(token);
                   return;
                 }
                 setInviteInput(raw);

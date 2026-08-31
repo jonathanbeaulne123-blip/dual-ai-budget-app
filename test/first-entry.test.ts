@@ -18,6 +18,17 @@ describe("first-time entry surface", () => {
     expect(app).not.toMatch(/found\.length === 1[\s\S]*openDiscoveredLedger/);
   });
 
+  it("makes QR entry choose Google, auto-open only the redeemed target, and exit a full house safely", () => {
+    expect(app).toContain("startQrInviteGoogleSignIn(authInvite.token, env)");
+    expect(app).toContain("{ selectAccount: true }");
+    expect(app).toMatch(/discoveredHouseholdForTarget\(found, \{[\s\S]*householdId: redeemed\.householdId,[\s\S]*memberId: redeemed\.memberId \?\? null/);
+    expect(app).toMatch(/await openDiscoveredLedger\(\{[\s\S]*householdId: match\.household\.householdId,[\s\S]*memberId: match\.memberId,[\s\S]*\}, found\)/);
+    expect(app).toContain("This house is full");
+    expect(app).toContain("Back to Google sign-in");
+    expect(app).toContain("await deactivateHouseholdSelection(environment)");
+    expect(app).not.toContain("await clearHousehold(environment, fullHouseInvite");
+  });
+
   it("keeps destructive Development reset controls separate from opening households", () => {
     expect(app).toContain("Start from scratch");
     expect(app).toContain("Development reset tools");

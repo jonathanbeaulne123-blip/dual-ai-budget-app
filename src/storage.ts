@@ -139,6 +139,21 @@ export function activeHouseholdId(environment: Environment): string | null {
 }
 
 /**
+ * Return this device to household selection without deleting any named replica.
+ * The environment mirror is only an active-selection cache; keyed replicas and
+ * their catalog remain available after the next authorized Google entry.
+ */
+export async function deactivateHouseholdSelection(environment: Environment): Promise<void> {
+  try {
+    localStorage.removeItem(activeKey(environment));
+    localStorage.removeItem(LEGACY_PREFIX + environment);
+  } catch {
+    // IndexedDB cleanup still prevents the environment mirror from reopening.
+  }
+  try { await idbDelete(environment); } catch { /* keyed replicas remain authoritative */ }
+}
+
+/**
  * Fast, read-only startup candidate. This deliberately avoids IndexedDB and
  * never rewrites storage; loadHousehold remains the durable newest-replica
  * selector. Callers must keep the result read-only until PGlite validation.
