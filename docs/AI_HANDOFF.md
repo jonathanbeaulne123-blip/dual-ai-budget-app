@@ -2,7 +2,7 @@
 
 ## D-187 founding-household rehearsal preflight (2026-08-31)
 
-**Status:** Local Release-risk implementation on `codex/founding-household-preflight`, refreshed onto exact `origin/main@acf1d6797ed28dc60885f51dc4dbc88d93b5681a`. Not pushed, merged, deployed, or used to start the real rehearsal.
+**Status:** Release-ready Development candidate on `codex/founding-household-preflight`, rebased onto exact `origin/main@c75d72eef323f1af211c42da440090730363b6f4`. Jonathan authorized rebase, merge, and deploy on 2026-08-31. The real rehearsal has not started, and Production remains out of scope.
 
 **Household outcome:** Jonathan and Bianca cannot start or replay `Our month` until the current browser has downloaded a private Development backup, selected it again, proven it is the exact current balanced snapshot, and recorded the four named-human preparation acknowledgements. A changed household revision closes the gate again.
 
@@ -10,7 +10,7 @@
 
 **What changed:** `verifyCurrentHouseholdRecovery` reuses the ordinary import validator, requires matching Development wrapper/embedded environments and household id, compares the financial audit hash, and compares a canonical full-snapshot SHA-256. It returns metadata only and performs no persistence or transport. `RehearsalPreflight` holds the proof and acknowledgements in React session state, announces download/error/status changes, and gates initial Start plus both replay routes. An interactive jsdom test proves upload-before-download stays blocked, fresh download/reselection plus all checks unlocks Start, revision change relocks it, and a mismatched wrapper error is announced.
 
-**Verification:** exact refreshed candidate `e81c208930dff9be00c84c416d6d426b8adf700e` passed AI-surface verification, **212 passed / 2 skipped files and 1,414 passed / 3 skipped tests**, TypeScript, the Vite Production build, Hercules Pro UI build, and redirect guard. Focused recovery/Month/mainline/full-App proof passed **5 files / 30 tests**; the repaired interactive recovery/UI gate passed **3 files / 15 tests**. Independent trust/release, UX/accessibility, and verification re-reviews report no remaining P0–P2. Existing React `act`, PGlite browser-external/eval, and chunk-size warnings remain non-failing and unchanged.
+**Verification:** exact rebased runtime candidate `5db7140ee53298efc1de9413f99779a9f77eec5a` passed AI-surface verification, **214 passed / 2 skipped files and 1,442 passed / 3 skipped tests**, TypeScript, the Vite Production build, Hercules Pro UI build, and redirect guard. The combined D-187, D-186 sync, QR/Auth/storage, startup, and Shared Home integration proof passed **16 files / 131 tests**. Independent trust/release, UX/accessibility, and verification re-reviews report no remaining P0–P2. Existing React `act`, PGlite browser-external/eval, and chunk-size warnings remain non-failing and unchanged.
 
 **Environment/data disclosure:** local Development code and fictional tests only. The feature handles a user-selected private household export in browser memory, then discards it; it does not commit the file, send it to an AI/model, upload it, persist it, invoke continuity, access Supabase, alter schema/secrets/providers, touch Production, or create real rehearsal evidence.
 
