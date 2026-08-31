@@ -269,8 +269,10 @@ import type { WorkShiftDraft } from "./WorkShiftFlow.tsx";
 import { resolveDuplicateRetry } from "./shiftDuplicateRetry.ts";
 import {
   HouseholdEntryCard,
+  discoveredHouseholdForTarget,
   discoveredHouseholdCardModels,
   replicaHouseholdCardModels,
+  type HouseholdEntryTarget,
   type InviteFlowState,
 } from "./HouseholdEntryCard.tsx";
 import { createShiftScanScope } from "./shiftScanScope.ts";
@@ -566,6 +568,7 @@ export function App() {
   const enqueueWrite = useMemo(() => createWriteQueue(), []);
   const householdRef = useRef<Household | null>(household);
   householdRef.current = household;
+  const openingHouseholdRef = useRef<string | null>(null);
 
   function adoptAcceptedHousehold(next: Household, statusOverride?: BooksStatus): void {
     householdRef.current = next;
@@ -1962,6 +1965,8 @@ export function App() {
 
   async function switchLedger(householdId: string): Promise<void> {
     if (!householdId || householdId === householdRef.current?.householdId) return;
+    if (openingHouseholdRef.current) return;
+    openingHouseholdRef.current = householdId;
     setBusy(true);
     setError("");
     try {
@@ -1995,6 +2000,7 @@ export function App() {
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
+      if (openingHouseholdRef.current === householdId) openingHouseholdRef.current = null;
       setBusy(false);
     }
   }
@@ -2086,48 +2092,64 @@ export function App() {
     setToast(null);
   }
 
-  async function openDiscoveredLedger(found: DiscoveredHousehold): Promise<void> {
-    const previous = householdRef.current;
-    const candidate = previous?.householdId === found.household.householdId
-      ? await reconcileHouseholdSnapshots(previous, found.household, found.memberId)
-      : found.household;
-    const googleSession = loadGoogleSession(environment, found.memberId, candidate.householdId)
-      ?? loadGoogleSession(environment, "__welcome__");
-    const continuityIdentity = continuityIdentityFromGoogle(googleSession);
-    const accepted = await acceptHouseholdWrite({
-      previous,
-      candidate,
-      confirmationId: `discover-${found.household.householdId}-${found.household.revision}`,
-      commandKind: "google-discovery",
-      postedIds: [],
-      adapters: makeBooksAdapters({
-        environment,
-        memberId: found.memberId,
-        continuityIdentity,
-      }),
-    });
-    if (!accepted.ok) throw new Error(accepted.userMessage || "Those cloud books could not be accepted on this device.");
-    const adopted = adoptGoogleSession(environment, "__welcome__", found.memberId, accepted.household.householdId);
-    if (!adopted && !loadSupabaseSession(environment)) {
-      throw new Error("Google signed in, but this device could not keep the session.");
+  async function openDiscoveredLedger(target: HouseholdEntryTarget): Promise<void> {
+    if (openingHouseholdRef.current) return;
+    const found = discoveredHouseholdForTarget(discoveredLedgers, target);
+    if (!found) throw new Error("That household card is out of date. Refresh your Google households and try again.");
+    const openingKey = `${found.household.householdId}:${found.memberId}`;
+    openingHouseholdRef.current = openingKey;
+    setBusy(true);
+    setError("");
+    try {
+      const previous = householdRef.current;
+      const candidate = previous?.householdId === found.household.householdId
+        ? await reconcileHouseholdSnapshots(previous, found.household, found.memberId)
+        : found.household;
+      const googleSession = loadGoogleSession(environment, found.memberId, candidate.householdId)
+        ?? loadGoogleSession(environment, "__welcome__");
+      const continuityIdentity = continuityIdentityFromGoogle(googleSession);
+      const accepted = await acceptHouseholdWrite({
+        previous,
+        candidate,
+        confirmationId: `discover-${found.household.householdId}-${found.household.revision}`,
+        commandKind: "google-discovery",
+        postedIds: [],
+        adapters: makeBooksAdapters({
+          environment,
+          memberId: found.memberId,
+          continuityIdentity,
+        }),
+      });
+      if (!accepted.ok) throw new Error(accepted.userMessage || "Those cloud books could not be accepted on this device.");
+      if (accepted.household.householdId !== target.householdId) {
+        throw new Error("The accepted books did not match the household card you selected.");
+      }
+      const adopted = adoptGoogleSession(environment, "__welcome__", found.memberId, accepted.household.householdId);
+      if (!adopted && !loadSupabaseSession(environment)) {
+        throw new Error("Google signed in, but this device could not keep the session.");
+      }
+      adoptAcceptedHousehold(accepted.household, {
+        ok: true,
+        engine: "pglite+supabase",
+        entryCount: accepted.household.transactions.length,
+        inBalance: true,
+        equationHolds: true,
+      });
+      rememberSession({ memberId: found.memberId, view: "household", householdId: accepted.household.householdId });
+      setReplicas(await listHouseholdReplicas(environment));
+      setDiscoveredLedgers([]);
+      setSyncState("synced");
+      setBooksStatus({
+        ok: true,
+        engine: "pglite+supabase",
+        entryCount: accepted.household.transactions.length,
+        inBalance: true,
+        equationHolds: true,
+      });
+    } finally {
+      if (openingHouseholdRef.current === openingKey) openingHouseholdRef.current = null;
+      setBusy(false);
     }
-    adoptAcceptedHousehold(accepted.household, {
-      ok: true,
-      engine: "pglite+supabase",
-      entryCount: accepted.household.transactions.length,
-      inBalance: true,
-      equationHolds: true,
-    });
-    rememberSession({ memberId: found.memberId, view: "household", householdId: accepted.household.householdId });
-    setDiscoveredLedgers([]);
-    setSyncState("synced");
-    setBooksStatus({
-      ok: true,
-      engine: "pglite+supabase",
-      entryCount: accepted.household.transactions.length,
-      inBalance: true,
-      equationHolds: true,
-    });
   }
 
   async function redeemAuthInviteToken(token: string): Promise<void> {
@@ -3403,7 +3425,7 @@ export function App() {
                           model={model}
                           busy={busy}
                           highlighted={model.householdId === highlightedHouseholdId}
-                          onOpen={() => void openDiscoveredLedger(found).catch((caught) => {
+                          onOpen={(target) => void openDiscoveredLedger(target).catch((caught) => {
                             setError(caught instanceof Error ? caught.message : String(caught));
                           })}
                           actions={environment === "development" ? (
@@ -3494,7 +3516,7 @@ export function App() {
                   model={model}
                   busy={busy}
                   highlighted={model.householdId === highlightedHouseholdId}
-                  onOpen={() => void openDiscoveredLedger(found).catch((caught) => {
+                  onOpen={(target) => void openDiscoveredLedger(target).catch((caught) => {
                     setError(caught instanceof Error ? caught.message : String(caught));
                   })}
                 />
@@ -4061,7 +4083,7 @@ export function App() {
                 model={model}
                 busy={busy}
                 current={model.householdId === household.householdId}
-                onOpen={() => void switchLedger(model.householdId)}
+                onOpen={(target) => void switchLedger(target.householdId)}
               />
             ))}
           </div>

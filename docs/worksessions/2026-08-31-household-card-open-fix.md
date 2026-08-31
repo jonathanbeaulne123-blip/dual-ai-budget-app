@@ -1,0 +1,88 @@
+# Hearth worksession — household card opening repair
+
+- **Status:** CLOSED — local repair verified; Development release pending
+- **Opened:** 2026-08-31 (`America/Toronto`)
+- **Owner:** Jonathan
+- **Assignee or AI:** Codex
+- **Repository:** `dual-ai-budget-app`
+- **Branch:** `codex/household-card-open-fix`
+- **Baseline SHA:** `da7fe2e2b079d88a8d88e934f0641be932654b86`
+- **Head SHA:** working tree
+- **PR or issue:** none
+- **Risk:** Release
+- **Decision owner:** Jonathan
+- **Environment impact:** Development
+
+## Household outcome
+
+Selecting a household card opens the household and member seat named by that exact card. A second rapid click cannot race the first acceptance and leave a different ledger active.
+
+## Budget delta (5)
+
+`+3` — the household-selection boundary identifies and validates the intended accepted books before making them active.
+
+## Engagement delta (3)
+
+`+1` — the chooser behaves like a dependable front door instead of a decorative list.
+
+## Verified baseline
+
+- `origin/main` and the clean implementation worktree resolve to `da7fe2e2b079d88a8d88e934f0641be932654b86`.
+- D-182 cards render as buttons, but their callback has no target argument; App closes over a discovered row separately.
+- Discovered-card opening does not set the shared busy state or hold an immediate ref lock, so rapid selections can overlap PGlite acceptance.
+- The active-device switcher sets busy state but has the same pre-render rapid-click window.
+- Existing acceptance still routes discovered books through `acceptHouseholdWrite`; replica switching still ingests and inspects PGlite before adoption.
+
+## Scope
+
+### In scope
+
+- Bind every card click to an explicit household id and, where applicable, member id.
+- Resolve discovered membership from that exact target and refuse missing/mismatched targets.
+- Serialize household opening across chooser and local replica cards.
+- Refresh the local replica list after a successful discovered open.
+- Focused click-routing, mismatch, and regression tests plus canon/evidence.
+
+### Out of scope
+
+- Ledger commands, sync transport, schema, hosted rows, secrets, Production continuity, or automatic household opening.
+- Completing live two-account/two-device canary evidence.
+
+## Acceptance evidence
+
+- [x] Clicking each rendered card reports its own household/member target.
+- [x] Discovered opening refuses a stale or mismatched card target, including a missing member id.
+- [x] Overlapping opens cannot adopt two competing households; one shared synchronous gate covers discovered and local-replica opening.
+- [x] The selected candidate still passes PGlite/accounting acceptance before activation.
+- [x] Focused tests, Windows-native type/build checks, and independent review pass. The full wrapper's only failure is its known Unix-`bash` dependency on this Windows host.
+
+## Plan
+
+- [x] Make card target identity explicit and test it in rendered DOM.
+- [x] Serialize App household selection and refresh accepted replicas.
+- [x] Run focused and complete proof gates.
+- [x] Record reviewer and handoff evidence.
+
+## Evidence log
+
+- 2026-08-31: fresh `git fetch origin main`; clean baseline confirmed at `da7fe2e2b079d88a8d88e934f0641be932654b86`.
+- 2026-08-31: live Development session rendered the D-182 identity header; no destructive or hosted action was taken during inspection.
+- 2026-08-31: corrected card target contract renders and reports the exact household/member pair; stale, wrong-member, missing-member, and missing-household targets are refused.
+- 2026-08-31: focused post-correction proof passed 90 tests across card entry, invites, freshness, environment isolation, Production continuity, replicas, and books.
+- 2026-08-31: full Vitest run passed 1,308 tests in 198 files; one test failed only because Windows cannot launch its required Unix `bash` executable. Two live-only files and three tests remained intentionally skipped.
+- 2026-08-31: `tsc --noEmit`, the Vite production build, Hercules Pro UI build, `dist/_redirects` absence, and `git diff --check` passed.
+- 2026-08-31: books audit passed (53 focused tests), trust/privacy audit passed after strict null-member refusal (30 focused tests), and independent release verification passed (57 focused tests plus type check).
+- 2026-08-31: no schema, hosted row, secret, environment flag, Production-continuity, ledger command, or sync transport change was made. No push, merge, or deployment was performed.
+
+## Decisions
+
+- The card owns the target it announces. App must resolve that target at action time instead of trusting an unrelated closure.
+- One household acceptance may run at a time. The first explicit selection holds the gate until it succeeds or fails.
+
+## Remaining uncertainty
+
+- Live Google chooser proof still requires a signed-out/two-account canary after a reviewed Development deployment.
+
+## Handoff
+
+Local repair is complete and independently reviewed. Jonathan retains the next action-time push, merge, and Development deployment decision, plus all Production, schema, secret, and hosted-data decisions.

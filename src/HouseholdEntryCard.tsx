@@ -5,12 +5,26 @@ import type { HouseholdReplicaSummary } from "./storage.ts";
 
 export type HouseholdEntryCardModel = {
   householdId: string;
+  memberId: string | null;
   householdName: string;
   memberName: string | null;
   lastEditedIso: string | null;
   lastEditedRelative: string;
   lastEditedExact: string;
 };
+
+export type HouseholdEntryTarget = Pick<HouseholdEntryCardModel, "householdId" | "memberId">;
+
+export function discoveredHouseholdForTarget(
+  found: DiscoveredHousehold[],
+  target: HouseholdEntryTarget,
+): DiscoveredHousehold | null {
+  if (!target.householdId || !target.memberId) return null;
+  return found.find((row) => (
+    row.household.householdId === target.householdId
+    && row.memberId === target.memberId
+  )) ?? null;
+}
 
 export type InviteFlowState =
   | "idle"
@@ -64,6 +78,7 @@ export function discoveredHouseholdCardModels(
     const member = row.household.members.find((item) => item.id === row.memberId);
     byHousehold.set(row.household.householdId, {
       householdId: row.household.householdId,
+      memberId: row.memberId,
       householdName: row.household.name,
       memberName: member?.name ?? "Member",
       ...formatHouseholdEditedAt(row.household.lastCommittedAt, now, timeZone),
@@ -79,6 +94,7 @@ export function replicaHouseholdCardModels(
 ): HouseholdEntryCardModel[] {
   return replicas.map((replica) => ({
     householdId: replica.householdId,
+    memberId: null,
     householdName: replica.name,
     memberName: null,
     ...formatHouseholdEditedAt(replica.updatedAt, now, timeZone),
@@ -114,7 +130,7 @@ export function HouseholdEntryCard({
   busy: boolean;
   current?: boolean;
   highlighted?: boolean;
-  onOpen: () => void;
+  onOpen: (target: HouseholdEntryTarget) => void;
   actions?: ReactNode;
 }) {
   const safeId = model.householdId.replace(/[^a-zA-Z0-9_-]/g, "-");
@@ -129,7 +145,10 @@ export function HouseholdEntryCard({
         disabled={busy || current}
         autoFocus={highlighted}
         aria-describedby={timeId}
-        onClick={onOpen}
+        aria-label={openLabel}
+        data-household-id={model.householdId}
+        data-member-id={model.memberId ?? undefined}
+        onClick={() => onOpen({ householdId: model.householdId, memberId: model.memberId })}
       >
         <span className="household-entry-card__name">{model.householdName}</span>
         {model.memberName && <span className="household-entry-card__member">{model.memberName}</span>}

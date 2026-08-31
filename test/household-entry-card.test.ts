@@ -1,17 +1,35 @@
-import { createElement } from "react";
+// @vitest-environment jsdom
+import { act, createElement } from "react";
+import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { catalogHousehold } from "../src/core/index.ts";
 import {
   HouseholdEntryCard,
+  discoveredHouseholdForTarget,
   discoveredHouseholdCardModels,
   formatHouseholdEditedAt,
   inviteFlowMessage,
   replicaHouseholdCardModels,
 } from "../src/HouseholdEntryCard.tsx";
 
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
 describe("household entry presentation", () => {
   const now = new Date("2026-08-31T16:30:00.000Z");
+  let root: Root;
+  let container: HTMLDivElement;
+
+  beforeEach(() => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+  });
 
   it("shows relative and exact edit time in the device zone", () => {
     const toronto = formatHouseholdEditedAt("2026-08-31T16:22:00.000Z", now, "America/Toronto");
@@ -65,6 +83,43 @@ describe("household entry presentation", () => {
     expect(html).toContain("2026-08-31T16:22:00.000Z");
     expect(html).toContain("Invitation accepted · ready to open");
     expect(html).toContain("autofocus");
+  });
+
+  it("opens the exact household and member named by each card", () => {
+    const onOpen = vi.fn();
+    const models = discoveredHouseholdCardModels([
+      { household: { ...catalogHousehold("development"), householdId: "HH-A", name: "Household A" }, memberId: "MEM-001" },
+      { household: { ...catalogHousehold("development"), householdId: "HH-B", name: "Household B" }, memberId: "MEM-002" },
+    ], now, "America/Toronto");
+    act(() => root.render(createElement("div", null, models.map((model) => createElement(HouseholdEntryCard, {
+      key: model.householdId,
+      model,
+      busy: false,
+      onOpen,
+    })))));
+
+    const householdA = container.querySelector('[data-household-id="HH-A"]') as HTMLButtonElement;
+    const householdB = container.querySelector('[data-household-id="HH-B"]') as HTMLButtonElement;
+    act(() => householdA.click());
+    act(() => householdB.click());
+
+    expect(onOpen.mock.calls).toEqual([
+      [{ householdId: "HH-A", memberId: "MEM-001" }],
+      [{ householdId: "HH-B", memberId: "MEM-002" }],
+    ]);
+    expect(householdA.getAttribute("aria-label")).toBe("Open Household A");
+    expect(householdB.getAttribute("aria-label")).toBe("Open Household B");
+  });
+
+  it("refuses a stale household/member card target instead of falling back", () => {
+    const rows = [
+      { household: { ...catalogHousehold("development"), householdId: "HH-A" }, memberId: "MEM-001" },
+      { household: { ...catalogHousehold("development"), householdId: "HH-B" }, memberId: "MEM-002" },
+    ];
+    expect(discoveredHouseholdForTarget(rows, { householdId: "HH-B", memberId: "MEM-002" })?.household.householdId).toBe("HH-B");
+    expect(discoveredHouseholdForTarget(rows, { householdId: "HH-B", memberId: "MEM-001" })).toBeNull();
+    expect(discoveredHouseholdForTarget(rows, { householdId: "HH-B", memberId: null })).toBeNull();
+    expect(discoveredHouseholdForTarget(rows, { householdId: "HH-MISSING", memberId: null })).toBeNull();
   });
 
   it("keeps every invitation phase truthful", () => {
