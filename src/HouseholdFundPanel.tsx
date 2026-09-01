@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   activeHouseholdFundEvents,
   allocateHouseholdFundSurplus,
@@ -7,22 +7,183 @@ import {
   confirmHouseholdFundContribution,
   confirmHouseholdFundSettlement,
   formatCad,
+  formatDateLabel,
+  holdHouseholdFundContribution,
+  HOUSEHOLD_FUND_HOLD_COPY,
+  householdFundContributionMotions,
   LEDGER_CUSTODY_DISCLOSURE,
   monthKeyFromDateKey,
   projectHouseholdFund,
   proposeHouseholdFundContribution,
   recordHouseholdFundReconciliation,
+  releaseHouseholdFundHold,
   setHouseholdFundMonthPlan,
   shapeHouseholdFundConfig,
   shapeHouseholdFundEvents,
   shapeHouseholdFundPrivate,
   todayKey,
+  withdrawHouseholdFundContribution,
   type CommitResult,
   type Household,
+  type HouseholdFundContributionMotion,
   type LedgerView,
 } from "./core/index.ts";
 
 type FundCommand = (current: Household) => CommitResult;
+
+const MOTION_ACTION_SIZE = { minHeight: 44, minWidth: 44 } as const;
+const FUND_RECORD_ONLY_KINDS = new Set([
+  "contribution-proposed",
+  "contribution-held",
+  "contribution-hold-released",
+  "contribution-withdrawn",
+]);
+
+function fundEventAmountLabel(kind: string, amountCents: number): string {
+  return FUND_RECORD_ONLY_KINDS.has(kind) ? "record only" : formatCad(amountCents);
+}
+
+function memberName(household: Household, memberId: string | null | undefined): string {
+  return household.members.find((row) => row.id === memberId)?.name ?? "Member";
+}
+
+function FundContributionMotionCard({
+  motion,
+  household,
+  memberId,
+  isCustodian,
+  onCommand,
+}: {
+  motion: HouseholdFundContributionMotion;
+  household: Household;
+  memberId: string;
+  isCustodian: boolean;
+  onCommand: (command: FundCommand) => void;
+}) {
+  const [composingHold, setComposingHold] = useState(false);
+  const [holdNote, setHoldNote] = useState("");
+  const holdNoteRef = useRef("");
+  const holdNoteInputRef = useRef<HTMLInputElement>(null);
+  const proposerId = motion.proposal.createdBy;
+  const proposerName = memberName(household, motion.proposal.contributorMemberId ?? proposerId);
+  const isProposer = memberId === proposerId;
+  const canHold = isCustodian && !isProposer && motion.status === "open";
+  const canConfirm = isCustodian && (motion.status === "open" || motion.status === "held");
+  const canRelease = Boolean(motion.status === "held" && motion.activeHold && motion.activeHold.createdBy === memberId);
+  const canWithdraw = isProposer && (motion.status === "open" || motion.status === "held");
+  const showHoldComposer = canHold && composingHold;
+  const noteFieldId = `fund-hold-note-${motion.proposal.id}`;
+  const composerId = `fund-hold-composer-${motion.proposal.id}`;
+  const holderName = memberName(household, motion.activeHold?.createdBy);
+  const statusLine = motion.status === "held"
+    ? HOUSEHOLD_FUND_HOLD_COPY.status
+    : "A proposal never creates money";
+
+  useEffect(() => {
+    if (showHoldComposer) holdNoteInputRef.current?.focus();
+  }, [showHoldComposer]);
+
+  return (
+    <article
+      className="fund-motion-card"
+      data-fund-motion-status={motion.status}
+      aria-label={`${proposerName} · ${formatCad(motion.proposal.amountCents)}`}
+    >
+      <div className="fund-motion-summary">
+        <span>{proposerName} · {formatCad(motion.proposal.amountCents)}</span>
+        <time dateTime={motion.proposal.date}>{formatDateLabel(motion.proposal.date)}</time>
+      </div>
+      <p className="fund-motion-status" role="status">{statusLine}</p>
+      {motion.status === "held" && motion.activeHold ? (
+        <p className="muted">
+          {holderName} held this on {formatDateLabel(motion.activeHold.date)}.
+          {motion.activeHold.note ? ` ${motion.activeHold.note}` : ""}
+        </p>
+      ) : null}
+      {showHoldComposer ? (
+        <div id={composerId}>
+          <label htmlFor={noteFieldId}>Note</label>
+          <input
+            id={noteFieldId}
+            ref={holdNoteInputRef}
+            value={holdNote}
+            onChange={(event) => {
+              holdNoteRef.current = event.target.value;
+              setHoldNote(event.target.value);
+            }}
+            placeholder={HOUSEHOLD_FUND_HOLD_COPY.notePlaceholder}
+          />
+        </div>
+      ) : null}
+      <div className="fund-motion-actions">
+        {canConfirm ? (
+          <button
+            className="primary"
+            type="button"
+            style={MOTION_ACTION_SIZE}
+            onClick={() => onCommand((current) => confirmHouseholdFundContribution(current, {
+              memberId,
+              proposalEventId: motion.proposal.id,
+            }))}
+          >
+            Confirm received
+          </button>
+        ) : null}
+        {canHold ? (
+          <button
+            className="ghost"
+            type="button"
+            style={MOTION_ACTION_SIZE}
+            aria-expanded={showHoldComposer}
+            aria-controls={showHoldComposer ? composerId : undefined}
+            onClick={() => {
+              if (!composingHold) {
+                setComposingHold(true);
+                return;
+              }
+              const typedNote = holdNoteInputRef.current?.value || holdNoteRef.current || holdNote;
+              onCommand((current) => holdHouseholdFundContribution(current, {
+                memberId,
+                proposalEventId: motion.proposal.id,
+                note: typedNote,
+              }));
+              setComposingHold(false);
+              setHoldNote("");
+            }}
+          >
+            {HOUSEHOLD_FUND_HOLD_COPY.action}
+          </button>
+        ) : null}
+        {canRelease && motion.activeHold ? (
+          <button
+            className="ghost"
+            type="button"
+            style={MOTION_ACTION_SIZE}
+            onClick={() => onCommand((current) => releaseHouseholdFundHold(current, {
+              memberId,
+              holdEventId: motion.activeHold!.id,
+            }))}
+          >
+            Release Hold
+          </button>
+        ) : null}
+        {canWithdraw ? (
+          <button
+            className="ghost"
+            type="button"
+            style={MOTION_ACTION_SIZE}
+            onClick={() => onCommand((current) => withdrawHouseholdFundContribution(current, {
+              memberId,
+              proposalEventId: motion.proposal.id,
+            }))}
+          >
+            Withdraw proposal
+          </button>
+        ) : null}
+      </div>
+    </article>
+  );
+}
 
 export function HouseholdFundPanel({
   household,
@@ -54,8 +215,11 @@ export function HouseholdFundPanel({
   const [kittyGoal, setKittyGoal] = useState(household.goals.find((row) => row.shared && row.status !== "retired")?.id ?? "");
   const [backingAccount, setBackingAccount] = useState("");
 
-  const pending = events.filter((event) => event.kind === "contribution-proposed"
-    && !events.some((confirmed) => confirmed.kind === "contribution-confirmed" && confirmed.relatedEventId === event.id));
+  const waitingMotions = useMemo(
+    () => householdFundContributionMotions(household, fund?.id)
+      .filter((motion) => motion.status === "open" || motion.status === "held"),
+    [household, fund?.id],
+  );
   const sharedDestinations = household.accounts.filter((row) => row.active && row.scope !== "personal");
   const transactionForPosition = (positionId: string) => household.transactions.find((tx) => (
     tx.id === positionId || tx.funding?.positionId === positionId
@@ -130,7 +294,7 @@ export function HouseholdFundPanel({
       </section>
 
       <section className="card">
-        <details open={Boolean(pending.length)}>
+        <details open={waitingMotions.length > 0}>
           <summary>Propose or confirm a contribution</summary>
         <header><h2>Contributions</h2><span className="muted">A proposal never creates money</span></header>
         <label htmlFor="fund-contribution-amount">Amount (CAD)</label>
@@ -138,11 +302,15 @@ export function HouseholdFundPanel({
         <button className="primary" type="button" onClick={() => onCommand((current) => proposeHouseholdFundContribution(current, { memberId, contributorMemberId: memberId, amount: contributionAmount, date: today }))}>
           Propose contribution
         </button>
-        {pending.map((event) => (
-          <div className="row" key={event.id}>
-            <span>{household.members.find((row) => row.id === event.contributorMemberId)?.name ?? "Member"} · {formatCad(event.amountCents)}</span>
-            {isCustodian ? <button className="primary" type="button" onClick={() => onCommand((current) => confirmHouseholdFundContribution(current, { memberId, proposalEventId: event.id }))}>Confirm received</button> : <span className="muted">Waiting for Bianca</span>}
-          </div>
+        {waitingMotions.map((motion) => (
+          <FundContributionMotionCard
+            key={motion.proposal.id}
+            motion={motion}
+            household={household}
+            memberId={memberId}
+            isCustodian={isCustodian}
+            onCommand={onCommand}
+          />
         ))}
         </details>
       </section>
@@ -258,7 +426,7 @@ export function HouseholdFundPanel({
         {events.length ? events.map((event) => (
           <div className="row" key={event.id}>
             <span>{event.date} · {event.kind.replaceAll("-", " ")} · audit {event.id}{event.relatedEventId ? ` → ${event.relatedEventId}` : ""}</span>
-            <strong>{formatCad(event.amountCents)}</strong>
+            <strong>{fundEventAmountLabel(event.kind, event.amountCents)}</strong>
           </div>
         )) : <p className="muted">No Fund events yet.</p>}
       </section>
