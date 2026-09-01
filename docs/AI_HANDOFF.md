@@ -1,5 +1,21 @@
 # AI Task and Handoff Standard
 
+## D-189 Charter integrity repair (2026-09-01)
+
+**Status:** Local High-risk repair verified on `codex/charter-2-integrity-repair` from clean `origin/main@f9958758547e8d2c99733a2f0f44294c003346d5`. Push/PR approval remains pending. No merge, deploy, hosted row, schema, secret, Production, or household-data action.
+
+**Household outcome:** The Charter refuses a later Fund setup with a different custodian, retains independently created signatures/permissions/amendments across device convergence, and changes ceiling units only through one amendment carrying its typed value.
+
+**Budget delta (5):** `+4` — closes silent agreement loss, custody disagreement, and unit reinterpretation without changing money.
+
+**Engagement delta (3):** `0` — trust repair only; Charter UI slices remain separate.
+
+**Implementation:** `HouseholdCharter.termsUpdatedAt` separates scalar-term authority from routine record activity. `mergeHouseholdCharters` merges member signatures and stable-id subrecords, replays resolved amendments deterministically, and applies Fund custody as the final invariant. `proposeCharterCeilingAmendment` carries kind plus integer cents/tenths atomically. `configureHouseholdFund` checks an existing Charter before mutation.
+
+**Verification:** Current-main focused Charter/commands/materialization/outbox/CAS plus new-neighbour proof passed `100/100`. The exact-worktree Windows gate passed: AI-surface verification, `218` test files passed / `2` skipped, `1,499` tests passed / `3` skipped, TypeScript, Vite production build, and Hercules Pro UI build. Two independent final exact-diff audits found no P0–P3. Diff/secret hygiene and local release seal are recorded in the worksession.
+
+**Boundaries:** No money command or accounting formula changed. No UI, Supabase, migration, hosted data, provider, Production flag, secret, merge, or deployment is in scope.
+
 ## D-189 interrupted local PGlite recovery (2026-08-31)
 
 **Status:** Local High-risk release candidate on `codex/pglite-interrupted-recovery` from clean `origin/main@87acccd4f358286693f7a65172aec39d6ca4adbc`. No push, PR, merge, deploy, cloud reset, hosted row, schema, secret, or Production action.

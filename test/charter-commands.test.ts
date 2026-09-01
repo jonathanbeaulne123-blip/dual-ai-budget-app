@@ -9,6 +9,7 @@ import {
   grantCharterPermission,
   holdCharterAmendment,
   proposeCharterAmendment,
+  proposeCharterCeilingAmendment,
   revokeCharterPermission,
   signHouseholdCharter,
 } from "../src/core/index.ts";
@@ -193,6 +194,25 @@ describe("household Charter commands", () => {
     })).toThrow("Custody moves through the Fund, not the charter.");
   });
 
+  it("refuses a conflicting Fund custodian after founding and preserves a matching Charter", () => {
+    const household = found();
+    expect(() => configureHouseholdFund(household, {
+      custodianMemberId: JONATHAN,
+      openedOn: DATE,
+      createdBy: JONATHAN,
+    })).toThrow("Custody moves through the Fund, not the charter.");
+    expect(household.householdFund).toBeNull();
+    expect(household.charter?.custodianMemberId).toBe(BIANCA);
+
+    const configured = configureHouseholdFund(household, {
+      custodianMemberId: BIANCA,
+      openedOn: DATE,
+      createdBy: BIANCA,
+    }).household;
+    expect(configured.householdFund?.custodianMemberId).toBe(BIANCA);
+    expect(configured.charter?.custodianMemberId).toBe(BIANCA);
+  });
+
   it("applies typed cadence and ceiling amendments without creating money", () => {
     let household = found();
     const cadence = proposeCharterAmendment(household, {
@@ -210,6 +230,10 @@ describe("household Charter commands", () => {
       memberId: BIANCA,
       field: "ceilingKind",
       toText: "none",
+    });
+    expect(ceiling.household.charter?.amendments.at(-1)).toMatchObject({
+      field: "ceiling",
+      ceilingChange: { kind: "none", value: 0 },
     });
     household = confirmCharterAmendment(ceiling.household, {
       memberId: JONATHAN,
@@ -242,6 +266,53 @@ describe("household Charter commands", () => {
       field: "ceilingKind",
       toText: "hours-per-week",
     })).toThrow("Change the ceiling value and unit together.");
+  });
+
+  it("changes ceiling unit and value together through a typed amendment", () => {
+    const proposed = proposeCharterCeilingAmendment(found(), {
+      memberId: JONATHAN,
+      ceilingKind: "amount-per-month",
+      ceilingValue: "1250",
+    });
+    expect(proposed.household.charter?.amendments[0]).toMatchObject({
+      field: "ceiling",
+      fromText: "24 hours a week",
+      toText: "$1,250 a month",
+      ceilingChange: { kind: "amount-per-month", value: 125000 },
+    });
+    const amount = confirmCharterAmendment(proposed.household, {
+      memberId: BIANCA,
+      amendmentId: proposed.postedIds[0]!,
+    }).household;
+    expect(amount.charter).toMatchObject({ ceilingKind: "amount-per-month", ceilingValue: 125000 });
+
+    const removed = proposeCharterCeilingAmendment(amount, {
+      memberId: BIANCA,
+      ceilingKind: "none",
+    });
+    const none = confirmCharterAmendment(removed.household, {
+      memberId: JONATHAN,
+      amendmentId: removed.postedIds[0]!,
+    }).household;
+    const restored = proposeCharterCeilingAmendment(none, {
+      memberId: JONATHAN,
+      ceilingKind: "hours-per-week",
+      ceilingValue: "18.5",
+    });
+    const hours = confirmCharterAmendment(restored.household, {
+      memberId: BIANCA,
+      amendmentId: restored.postedIds[0]!,
+    }).household;
+    expect(hours.charter).toMatchObject({ ceilingKind: "hours-per-week", ceilingValue: 185 });
+    expect(hours.transactions).toEqual([]);
+    expect(hours.shifts).toEqual([]);
+  });
+
+  it("requires a positive value for a typed hours or money ceiling", () => {
+    expect(() => proposeCharterCeilingAmendment(found(), {
+      memberId: JONATHAN,
+      ceilingKind: "amount-per-month",
+    })).toThrow("Monthly work ceiling is required.");
   });
 
   it("binds command identity to the Charter material that a command changed", async () => {

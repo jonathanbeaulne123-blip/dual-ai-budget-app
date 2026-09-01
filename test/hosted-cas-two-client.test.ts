@@ -78,6 +78,7 @@ function charter(purpose: string): HouseholdCharter {
     amendments: [],
     foundedOn: "2026-08-24",
     createdAt: at,
+    termsUpdatedAt: at,
     updatedAt: at,
   };
 }
