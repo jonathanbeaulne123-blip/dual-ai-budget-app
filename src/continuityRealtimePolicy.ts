@@ -55,3 +55,15 @@ export function canAttachContinuityRealtime(input: {
 export function continuityRealtimeTransportEnabled(): boolean {
   return continuityRealtimeEnabled() || continuityCommandLogEnabled();
 }
+
+export function continuityRealtimeSelfHealEnabled(input: {
+  environment: Environment;
+  transportEnabled: boolean;
+  authEnabled: boolean;
+  hostedAllowed: boolean;
+}): boolean {
+  return input.transportEnabled
+    && input.authEnabled
+    && input.hostedAllowed
+    && continuityRealtimeAllowed(input.environment);
+}

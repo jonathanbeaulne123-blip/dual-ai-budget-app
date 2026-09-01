@@ -3,6 +3,7 @@ import {
   createContinuityRealtimeRecoveryGate,
   REALTIME_COMMAND_GRACE_MS,
   recoverRealtimeSnapshot,
+  shouldRecoverPollCommandsFirst,
 } from "../src/continuityRealtimeRecovery.ts";
 
 afterEach(() => {
@@ -192,5 +193,47 @@ describe("Realtime command-log-first recovery", () => {
       recoverSnapshot: unknownRecovery,
     })).toBe("snapshot");
     expect(unknownRecovery).toHaveBeenCalledOnce();
+  });
+
+  it("applies missed commands before snapshot reconciliation after a reconnect", async () => {
+    let revision = 3;
+    const order: string[] = [];
+    const result = await recoverRealtimeSnapshot({
+      targetRevision: null,
+      getLocalState: () => ({ revision, hasOpenConflict: false }),
+      fetchCommandEvents: async (afterRevision) => {
+        expect(afterRevision).toBe(3);
+        order.push("fetch-commands");
+        return [4, 5];
+      },
+      applyCommandEvent: async (eventRevision) => {
+        order.push(`accept-command-${eventRevision}`);
+        revision = eventRevision;
+        return "applied";
+      },
+      recoverSnapshot: async () => {
+        order.push("reconcile-snapshot");
+      },
+    });
+
+    expect(result).toBe("snapshot");
+    expect(revision).toBe(5);
+    expect(order).toEqual([
+      "fetch-commands",
+      "accept-command-4",
+      "accept-command-5",
+      "reconcile-snapshot",
+    ]);
+  });
+});
+
+describe("poll recovery priority", () => {
+  it("checks committed command rows before a disconnected Realtime poll snapshot", () => {
+    expect(shouldRecoverPollCommandsFirst({ realtimeEnabled: true, status: "CLOSED" })).toBe(true);
+    expect(shouldRecoverPollCommandsFirst({ realtimeEnabled: true, status: "CHANNEL_ERROR" })).toBe(true);
+    expect(shouldRecoverPollCommandsFirst({ realtimeEnabled: true, status: "TIMED_OUT" })).toBe(true);
+    expect(shouldRecoverPollCommandsFirst({ realtimeEnabled: true, status: null })).toBe(true);
+    expect(shouldRecoverPollCommandsFirst({ realtimeEnabled: true, status: "SUBSCRIBED" })).toBe(false);
+    expect(shouldRecoverPollCommandsFirst({ realtimeEnabled: false, status: "CLOSED" })).toBe(false);
   });
 });

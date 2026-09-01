@@ -1599,6 +1599,22 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 **Still required:** exact-tree full gate, independent books/trust and continuity verification, then separately approved release and a fresh deployed two-account 100-sample p95 run. The historical `<=500 ms` smoke is not evidence for this local repair.
 
+## D-192 Realtime terminal-channel self-heal (2026-09-01)
+
+**Status:** exact application commit `f3ca474` on `codex/realtime-self-heal`, cleanly rebased over `origin/main@8ae8071f16b945fe2a174a4df52e62054e1b63f3`; work originally opened from `8def9bd`, passed its final full application gate as `d477c27` over `86da91c`, then took a documentation-only Charter release advance. Jonathan authorized push, merge, and Development deployment; at this record it is committed locally, not yet pushed, merged, deployed, or live-proven.
+
+**Household outcome:** a visible signed-in Development kitchen that loses its Supabase Realtime socket now recreates one authenticated membership-checked channel instead of remaining indefinitely on backed-off polling. Successful resubscription catches up committed command rows through the ordinary coordinator/PGlite acceptance path before the snapshot fail-safe.
+
+**Budget delta (5):** `+4`. **Engagement delta (3):** `+1`.
+
+**What changed:** worker-backed heartbeat configuration where supported; heartbeat and terminal-channel failure signals; one reconnect timer with 1/2/5/10-second bounded backoff; a 5-second `SUBSCRIBED` acknowledgement deadline; focus/visibility/online acceleration; stale-generation/disposal guards; command-log-first reconnect and unhealthy-poll catch-up; privacy-safe reconnect lifecycle phases. Development/Auth/hosted eligibility is required before the healer starts, and lost eligibility stops automatic retry. Poll fallback, Auth/RLS membership, financial command meaning, PGlite acceptance, and Production refusal remain intact.
+
+**Verification:** the source diagnostic had `realtimeStatus: CLOSED`, zero Realtime receives, 27 poll fallbacks, and 4.5–5.0-second snapshot acceptance after poll scheduling, while the posting device reached cloud acknowledgement in 880 ms. On fully tested application commit `d477c27` over `86da91c`, the combined sync/Charter/Fund interaction gate passed 110 tests plus TypeScript and diff checks. Full application tests passed 1,549 / 3 skipped across 224 passed / 2 skipped files; AI-surface verification passed 41 required files. The exact equivalent TypeScript, Vite production build (396 modules), Hercules Pro UI, and no-`dist/_redirects` checks passed. Final `f3ca474` changes the application SHA only because the new base added Charter release documentation; the application diff is unchanged. Independent books/trust review passed; latency review passed with no code blocker after the release record correction; hygiene/privacy found no P0–P3 issue.
+
+**Environment/data disclosure:** Development client code and synthetic local tests only. No hosted query was executed for this repair; no schema, migration, RLS, provider setting, secret, hosted row, Production-continuity flag, financial fact, or real household record changed. Google identity and Shared/Personal scope rules are unchanged. Offline writes remain durable in the existing outbox and no peer device becomes a host.
+
+**Still required:** a separate release decision, then a fresh deployed signed-in two-device 100-sample run before claiming `<=500 ms p95`. Browser-level App lifecycle integration remains a non-blocking P2 proof gap; the pure lifecycle/policy units and reviewer-run focused suites pass.
+
 ## Auth + membership RLS cutover (D-123)
 
 **Status:** Migration **006 applied** on live shared project (Jonathan paste). Anon REST denial verified. Kitchen Auth door reaches Google OAuth. Docs record of apply: open PR #104. Invite chrome: branch `cursor/auth-invite-chrome-f375`.

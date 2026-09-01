@@ -292,6 +292,7 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 - [x] **T1-S4** Push/pull race coordinator. *([`T1-S4`](briefs/sync/T1-S4-push-pull-coordinator.md). #177.)*
 - [x] **T1-S5** Two-browser E2E + fault harness (p95 ≤ 500 ms). *([`T1-S5`](briefs/sync/T1-S5-two-browser-proof.md). Manual two-phone Realtime smoke passed 2026-08-27 — [`SYNC_REALTIME_SMOKE.md`](SYNC_REALTIME_SMOKE.md); harness #179.)*
 - [x] **T1-S6** Sync freshness UI (actor, revision, Realtime honest). *([`T1-S6`](briefs/sync/T1-S6-sync-freshness-ui.md); current `test/sync-freshness.test.ts` and G6 evidence.)*
+- [x] **D-192 local repair** Recreate a closed Development channel with worker-backed heartbeat visibility, bounded authenticated reconnect, and command-log-first resubscription catch-up. *Local verification/release review required; deployed 100-sample proof remains open.*
 
 #### Tier 2 — Command-log primary — ACTIVE (Jonathan approved same-day land)
 
@@ -325,7 +326,7 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 **Proof:** SYNC_ARCHITECTURE §8 test matrix; Tier 1 gates G1–G6; trust + books auditors on money transport.  
 **Kill criterion:** halt hosted sharing; preserve outbox; never one-device host.
 
-**Progress:** T1-S1…T1-S6 and T2 command-log are merged, and the D-180 pilot plus D-182 Google-first entry repair are deployed to Development but not daily-use proven. **Next continuity work:** the complete two-account matrix with 100 new latency samples and the fourteen-day rehearsal. Production remains a separately approved packet.
+**Progress:** T1-S1…T1-S6 and T2 command-log are merged, and the D-180 pilot plus D-182 Google-first entry repair are deployed to Development but not daily-use proven. D-192's terminal-channel self-heal is implemented locally after a receiving-device diagnostic showed `CLOSED` with poll-only fallback; it is not yet released or live-proven. **Next continuity work:** verify/release D-192, then complete the two-account matrix with 100 new latency samples and the fourteen-day rehearsal. Production remains a separately approved packet.
 
 ### Phase 3 — Late-September Google Auth + membership RLS cutover — DATE-GATED security foundation
 

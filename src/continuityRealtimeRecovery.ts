@@ -18,6 +18,17 @@ export const REALTIME_COMMAND_GRACE_MS = 300;
 
 export type RealtimeCommandApplyOutcome = "applied" | "duplicate" | "ignored" | "fallback";
 
+export function shouldRecoverPollCommandsFirst(input: {
+  realtimeEnabled: boolean;
+  status: ContinuityRealtimeStatus | null;
+}): boolean {
+  if (!input.realtimeEnabled) return false;
+  return input.status === null
+    || input.status === "CLOSED"
+    || input.status === "CHANNEL_ERROR"
+    || input.status === "TIMED_OUT";
+}
+
 /**
  * A snapshot notification proves the atomic cloud transaction committed, so a
  * matching command row is readable even when its websocket notification is
@@ -32,20 +43,30 @@ export async function recoverRealtimeSnapshot<TEvent>(input: {
   recoverSnapshot: () => Promise<void>;
 }): Promise<"command-log" | "snapshot"> {
   const starting = input.getLocalState();
-  if (starting && input.targetRevision !== null && !starting.hasOpenConflict) {
-    if (starting.revision >= input.targetRevision) return "command-log";
+  if (starting && !starting.hasOpenConflict) {
+    if (input.targetRevision !== null && starting.revision >= input.targetRevision) return "command-log";
     try {
       const events = await input.fetchCommandEvents(starting.revision);
       for (const event of events) {
         const outcome = await input.applyCommandEvent(event);
         const current = input.getLocalState();
-        if (current && !current.hasOpenConflict && current.revision >= input.targetRevision) {
+        if (
+          input.targetRevision !== null
+          && current
+          && !current.hasOpenConflict
+          && current.revision >= input.targetRevision
+        ) {
           return "command-log";
         }
         if (outcome !== "applied" && outcome !== "duplicate") break;
       }
       const current = input.getLocalState();
-      if (current && !current.hasOpenConflict && current.revision >= input.targetRevision) {
+      if (
+        input.targetRevision !== null
+        && current
+        && !current.hasOpenConflict
+        && current.revision >= input.targetRevision
+      ) {
         return "command-log";
       }
     } catch {
@@ -138,3 +159,4 @@ export function createContinuityRealtimeRecoveryGate(input: {
     },
   };
 }
+import type { ContinuityRealtimeStatus } from "./continuityRealtimePolicy.ts";
