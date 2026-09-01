@@ -1,5 +1,27 @@
 # AI Task and Handoff Standard
 
+## Clerk Slices 2 + 3 corrected release candidate (2026-09-01)
+
+**Status:** Corrected combined candidate on `codex/clerk-2-3-release`, integrated with current `origin/main@e7d98389be1a4ad831d4d83204061a68955df232` at `008310113e392827718e9013f92d3c4c499b5e15`; this evidence record follows. Source Slice 2 [PR #287](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/287) is integrated. Independent review found two P2 defects, repaired at `4624c31`; exact-head PR review then found a third P2 for long unbroken imported labels, repaired with `overflow-wrap: anywhere` and a regression fixture. Jonathan authorized push, merge, and Development kitchen deployment after exact-candidate verification. Risk: **Medium**.
+
+**Household outcome:** Jonathan or Bianca can focus or tap any Clerk sentence and reveal, directly beneath it, the exact accepted transaction and Household Fund event rows that support that sentence. The explanation stays calm, compact, keyboard- and screen-reader-complete, and never hides the record behind a modal.
+
+**Dual Course:** Slice 2 Budget `+1` / Engagement `+2`; Slice 3 Budget `+1` / Engagement `0`. Books won: a sentence is withheld unless every cited ID resolves in the supplied household, and the source/build fences reject advice, work instructions, and money-writing paths.
+
+**Architecture:** `ClerkReading` remains a display-only leaf over the sealed Slice 1 record. Optional `onOpenRecord` is a passed callback. Same-day duplicates are distinguished by label, Toronto civil date, exact CAD amount, and stable row ID. `scripts/verify-ai-surface.mjs` scans every Clerk-owned source for proposal/work language and money-writer reachability. No `App.tsx` placement.
+
+**Verification:**
+- Combined focused Clerk suite: **3 files / 19 tests**
+- `pnpm ai:verify`: **41 required files / 2 Clerk source fences**
+- `pnpm exec tsc --noEmit`: passed
+- Full Windows fast lane: **217 passed / 1 skipped files; 1,482 passed / 2 skipped tests**
+- Full serial books lane: **18 passed / 1 skipped files; 145 passed / 1 skipped tests**, including a green dated Demo Suite
+- Rendered 320/390/720/1100 proof: no horizontal overflow, all visible controls at least 44px, four unique exact-row names, unsupported sentence absent, ready/integrity/withheld/empty states present
+- Direct Vite/Hercules builds, redirect guard, diff hygiene, and secret-path scan passed. Exact follow-up GitHub CI remains the final release check.
+
+**Boundaries:** Local fictional/catalog fixtures only. Zero model, command, network, storage, hosted-row, schema, secret, Production-continuity, or household-data changes. The component performs zero fetches, so offline equals online.
+
+**Next owner:** Codex re-fetches current `main`, pins and pushes the combined SHA, waits for exact-head CI, merges, then verifies the D-041 main deployment and live HTTP separately. `App.tsx` placement remains a later slice, so this release publishes the reviewed leaf and fences without exposing a new kitchen control.
 ## Charter Slice 5 Held UI (2026-09-01)
 
 **Status:** Draft PR [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286) on `cursor/charter-held-ui-115c` at `e800cede3c9cf249b27b6bfafbf84a01a5f1b629` from `origin/main@ff9d8d8de70c80fd567ba9835b3cc2ffbcd45082`. **Not merged, not kitchen-published, not live, not shipped.** Risk: **High** (consent presentation beside Confirm). Environment: none.
@@ -22,7 +44,6 @@
 **Boundaries:** Local fictional Development data only. No hosted schema/row, Supabase, Auth/RLS, secret, provider, bank action, real household data, Production, merge, or deploy. GitHub push of this branch only.
 
 **Next owner:** Jonathan's merge decision using [`briefs/CHARTER_SLICE_5_HELD_UI_RETURN_HANDOFF_2026-09-01.md`](briefs/CHARTER_SLICE_5_HELD_UI_RETURN_HANDOFF_2026-09-01.md). Draft [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286). Do not call this shipped.
-
 ## Charter Slice 5 Held core (2026-09-01)
 
 **Status:** Core and architecture are implemented on branch `codex/charter-slice-5` at code commit `a7729362e469136636f438313215a3b03ccc570d`, rebased onto clean `origin/main@2879af2153affca10709608acbbd6c6e1b202af2` in [PR #283](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/283). Final High-risk release review passed on the code-equivalent pre-evidence tree; Jonathan explicitly authorized push, merge, and Development kitchen deployment on 2026-09-01. Fresh rebased GitHub and live receipts remain pending at this recorded point. Cursor owns the separate UI/UX implementation from [`briefs/CURSOR_CHARTER_HELD_UI_HANDOFF_2026-09-01.md`](briefs/CURSOR_CHARTER_HELD_UI_HANDOFF_2026-09-01.md).

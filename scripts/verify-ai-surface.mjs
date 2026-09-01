@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -36,6 +36,32 @@ function readJson(path) {
 
 function assert(condition, message) {
   if (!condition) fail(message);
+}
+
+function sourceFilesBelow(directory) {
+  const files = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) files.push(...sourceFilesBelow(path));
+    else files.push(path);
+  }
+  return files;
+}
+
+const clerkAdvice = /\b(?:should|need to|recommend|suggest)\b/i;
+const clerkWorkInstruction = /\b(?:shift|hours|work more)\b/i;
+const clerkMoneyWriter = /(?:from\s+["'][^"']*(?:commands|commandRuntime|core\/index|ledger\/engine|storage|supabase)[^"']*["']|\b(?:postEntry|postTransfer|postWorkShift|confirmHouseholdFundContribution|acceptHouseholdWrite|reversePostedMoney|commit|runKitchen)\s*\()/i;
+const clerkOwned = sourceFilesBelow(join(root, "src"))
+  .filter((path) => /^clerk.*\.(?:ts|tsx)$/i.test(path.split(/[\\/]/).at(-1) ?? ""))
+  .map((path) => relative(root, path).replaceAll("\\", "/"))
+  .sort();
+
+assert(clerkOwned.length >= 2, "Clerk fence must cover the reader module and citation component");
+for (const path of clerkOwned) {
+  const source = read(path);
+  assert(!clerkAdvice.test(source), `${path} contains Clerk proposal or recommendation language`);
+  assert(!clerkWorkInstruction.test(source), `${path} contains a Clerk work instruction`);
+  assert(!clerkMoneyWriter.test(source), `${path} reaches a money-writing code path`);
 }
 
 const required = [
@@ -231,4 +257,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`AI surface verified: ${required.length} required files, docs-only MCP, bounded roles, guards, and proof gate.`);
+console.log(`AI surface verified: ${required.length} required files, ${clerkOwned.length} Clerk fences, docs-only MCP, bounded roles, guards, and proof gate.`);
