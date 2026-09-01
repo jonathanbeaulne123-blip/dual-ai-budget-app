@@ -16,6 +16,36 @@
 
 **Boundaries:** No money command or accounting formula changed. No UI, Supabase, migration, hosted data, provider, Production flag, or secret changed. The only environment action was publishing the reviewed client/Worker bundle to the Development kitchen under D-041.
 
+## Charter founding conversation (2026-09-01)
+
+**Status:** Draft PR on `cursor/charter-founding-flow-021f`. Base `origin/main@effd7b3` (Charter slice 2 sealed). **Not merged, not deployed, not live.** Risk **High** (presentation). Writes only through existing Charter commands. No Production household mutation, hosted schema, or secrets.
+
+**Household outcome:** From an empty household (members, no accounts/Fund/books), Shared Home opens a five-question founding conversation. Skip is a peer of Next. One person can found alone, then Sign it or Later. Catalog/demo kitchens stay on the office until More → the charter.
+
+**Budget delta (5):** `+2` — founding records the Charter; it does not post money or create a second envelope.
+
+**Engagement delta (3):** `+3` — empty house opens on paper questions instead of an unexplained desk.
+
+**If they conflicted:** books won. No ledger dollar figure in the flow. Permissions grant only when the founder can give away their own confirm. Unsigned remains valid. Bianca Month and cached-shell nav stay intact.
+
+**What changed:** `commitCharterFounding`; `CharterFounding` takeover + More → the charter; focused tests. Worksession: [`worksessions/2026-09-01-charter-founding-flow.md`](worksessions/2026-09-01-charter-founding-flow.md).
+
+**Verification:**
+- Focused `test/charter-founding.test.ts` + Charter record/commands + Bianca `app-startup-p1` + `month-rehearsal-mainline`: **32 passed**.
+- `pnpm check` pending on this SHA after push.
+
+**Uncertainty:** Visual 320/390/720/1100 browser pass still in this session. Charter page is slice 4.
+
+**Data and environment disclosure:**
+- Development impact: none (branch/PR only)
+- Production impact: none
+- Network calls or data sent: GitHub push of this branch
+- MCP access: none for household data
+- Hosted rows/schema/secrets/deployments: none
+- Real household or partner-personal data used: none (fictional Development / catalog)
+
+**Next owner:** Jonathan reviews the draft PR. Do not merge unless asked.
+
 ## D-189 interrupted local PGlite recovery (2026-08-31)
 
 **Status:** Local High-risk release candidate on `codex/pglite-interrupted-recovery` from clean `origin/main@87acccd4f358286693f7a65172aec39d6ca4adbc`. No push, PR, merge, deploy, cloud reset, hosted row, schema, secret, or Production action.

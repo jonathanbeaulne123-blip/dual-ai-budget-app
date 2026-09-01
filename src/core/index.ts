@@ -24,6 +24,7 @@ export * from "./goals.ts";
 export * from "./goalVault.ts";
 export * from "./householdFund.ts";
 export * from "./charter.ts";
+export * from "./charterFounding.ts";
 export * from "./monthObligations.ts";
 export { contributionRegister } from "./contributionRegister.ts";
 export type {
