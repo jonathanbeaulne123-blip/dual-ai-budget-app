@@ -23,6 +23,7 @@ import {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 describe("D-110 local-first sharing", () => {
@@ -180,6 +181,70 @@ describe("D-110 local-first sharing", () => {
     const inspection = await inspectBrowserBooks(metadataOnly);
     expect(inspection.ok, inspection.message).toBe(true);
     expect(inspection.entryCount).toBe(accepted.transactions.length);
+  });
+
+  it("posts normally after a metadata-only revision advanced beyond the PGlite receipt", async () => {
+    vi.stubEnv("VITE_PGLITE_INCREMENTAL_DEV", "1");
+    await resetBrowserBooksForTests();
+    const { acceptHouseholdWrite } = await import("../src/core/commandRuntime.ts");
+    const { financialAuditHash } = await import("../src/core/commandIdentity.ts");
+    let anchored = catalogHousehold();
+    anchored = { ...anchored, booksAcceptedHash: await financialAuditHash(anchored) };
+    await ingestHouseholdBooks(anchored);
+    const metadataOnly = {
+      ...anchored,
+      revision: anchored.revision + 1,
+      devices: [{
+        id: "device-command-reanchor",
+        label: "Kitchen tablet",
+        memberId: "MEM-002",
+        environment: "development" as const,
+        seenAt: "2026-09-01T01:00:00.000Z",
+        updatedAt: "2026-09-01T01:00:00.000Z",
+        active: true,
+      }],
+    };
+    const candidate = postEntry(metadataOnly, {
+      date: "2026-09-01",
+      type: "expense",
+      amount: "200.00",
+      accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-HEALTH-DENTAL",
+      note: "Command re-anchor proof",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    }).household;
+    let persisted: unknown = null;
+
+    const outcome = await acceptHouseholdWrite({
+      previous: metadataOnly,
+      candidate,
+      confirmationId: "CONF-METADATA-REANCHOR",
+      commandKind: "postEntry",
+      postedIds: [candidate.transactions.at(-1)!.id],
+      adapters: {
+        persist: async (household) => { persisted = household; },
+        ingest: async (household, artifact) => {
+          const { status } = await ingestHouseholdBooks(household, {
+            compiled: artifact?.compiled,
+            previous: artifact?.previous,
+            auditHash: artifact?.auditHash,
+          });
+          return { ok: status.ok, error: status.error };
+        },
+        verifyBooks: async (household, artifact) => {
+          const inspection = await inspectBrowserBooks(household, { expectedAuditHash: artifact?.auditHash });
+          return { ok: inspection.ok, error: inspection.ok ? undefined : inspection.message };
+        },
+        restoreIngest: async (household) => { await ingestHouseholdBooks(household, { incremental: false }); },
+      },
+    });
+
+    expect(outcome.ok, outcome.userMessage ?? undefined).toBe(true);
+    expect(outcome.postedExactlyOnce).toBe(true);
+    expect(outcome.postedNothing).toBe(false);
+    expect(persisted).toEqual(outcome.household);
+    expect((await inspectBrowserBooks(outcome.household)).ok).toBe(true);
   });
 
   it("acceptHouseholdWrite verifies PGlite against the canonical financial hash; entry count alone never accepts", async () => {

@@ -358,6 +358,92 @@ describe("Postgres books engine", () => {
     }
   }, 30_000);
 
+  it("re-anchors before posting when accepted metadata advanced beyond the PGlite receipt", async () => {
+    let anchored = catalogHousehold();
+    anchored = { ...anchored, booksAcceptedHash: await hashBooksSnapshot(anchored) };
+    const metadataOnly = {
+      ...anchored,
+      revision: anchored.revision + 1,
+      devices: [{
+        id: "device-metadata-gap",
+        label: "Kitchen tablet",
+        memberId: "MEM-002",
+        environment: "development" as const,
+        seenAt: "2026-09-01T01:00:00.000Z",
+        updatedAt: "2026-09-01T01:00:00.000Z",
+        active: true,
+      }],
+    };
+    const postedDraft = postEntry(metadataOnly, {
+      date: "2026-09-01",
+      type: "expense",
+      amount: "200.00",
+      accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-HEALTH-DENTAL",
+      note: "Metadata re-anchor proof",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    }).household;
+    const posted = {
+      ...postedDraft,
+      revision: metadataOnly.revision + 1,
+      booksAcceptedHash: await hashBooksSnapshot(postedDraft),
+    };
+    const incremental = await openMemoryBooks();
+    const rebuilt = await openMemoryBooks();
+    try {
+      await ingestBooks(incremental, anchored);
+      const status = await ingestBooks(incremental, posted, compileHousehold(posted), {
+        previous: metadataOnly,
+        incremental: true,
+        auditHash: posted.booksAcceptedHash!,
+      });
+      await ingestBooks(rebuilt, posted);
+
+      expect(status.writeMode).toBe("full");
+      expect(status.compactionReason).toBe("metadata-reanchor");
+      expect((await incremental.query("SELECT * FROM households ORDER BY id")).rows)
+        .toEqual((await rebuilt.query("SELECT * FROM households ORDER BY id")).rows);
+      expect((await incremental.query("SELECT * FROM journal_entries ORDER BY id")).rows)
+        .toEqual((await rebuilt.query("SELECT * FROM journal_entries ORDER BY id")).rows);
+      expect((await incremental.query("SELECT * FROM journal_lines ORDER BY id")).rows)
+        .toEqual((await rebuilt.query("SELECT * FROM journal_lines ORDER BY id")).rows);
+      expect((await incremental.query<{ revision: number; snapshot_hash: string }>(
+        "SELECT revision, snapshot_hash FROM audit_revisions ORDER BY revision DESC LIMIT 1",
+      )).rows).toEqual([{ revision: posted.revision, snapshot_hash: posted.booksAcceptedHash }]);
+    } finally {
+      await incremental.close();
+      await rebuilt.close();
+    }
+  }, 30_000);
+
+  it("refuses to re-anchor from a previous snapshot older than the PGlite receipt", async () => {
+    const base = catalogHousehold();
+    const pgliteTipDraft = { ...base, revision: base.revision + 2 };
+    const pgliteTip = { ...pgliteTipDraft, booksAcceptedHash: await hashBooksSnapshot(pgliteTipDraft) };
+    const stalePrevious = {
+      ...pgliteTip,
+      revision: pgliteTip.revision - 1,
+    };
+    const candidate = {
+      ...pgliteTip,
+      revision: pgliteTip.revision + 1,
+      name: "Must remain refused",
+    };
+    const db = await openMemoryBooks();
+    try {
+      await ingestBooks(db, pgliteTip);
+      await expect(ingestBooks(db, candidate, compileHousehold(candidate), {
+        previous: stalePrevious,
+        incremental: true,
+      })).rejects.toThrow(/receipt does not match/i);
+      expect((await db.query<{ revision: number; name: string }>("SELECT revision, name FROM households")).rows)
+        .toEqual([{ revision: pgliteTip.revision, name: pgliteTip.name }]);
+    } finally {
+      await db.close();
+    }
+  }, 30_000);
+
   it("rolls back partial incremental deletes and refuses a mismatched previous receipt", async () => {
     let previous = postEntry(catalogHousehold(), {
       date: "2026-08-26",
