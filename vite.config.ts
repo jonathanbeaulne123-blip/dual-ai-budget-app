@@ -69,8 +69,9 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["test/**/*.test.ts"],
-    // PGlite starts a PostgreSQL/WASM runtime per test file. Running those
-    // runtimes concurrently starves otherwise-fast tests on CI and desktop.
+    // Direct Vitest use stays conservative. `pnpm test` splits direct
+    // PGlite-runtime imports into a serial lane and runs all other files with
+    // a bounded four-worker pool; test/test-lanes.test.ts guards that boundary.
     maxWorkers: 1,
     testTimeout: 15_000,
   },

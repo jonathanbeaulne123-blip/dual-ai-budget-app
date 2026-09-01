@@ -1,5 +1,21 @@
 # AI Task and Handoff Standard
 
+## Test runner lanes (D-170) (2026-09-01)
+
+**Status:** Release candidate on `codex/test-runner-lanes`; no deployment. Risk: **Medium** because verification reliability protects the books boundary.
+
+**Household outcome:** The full local verification gate keeps direct PGlite/PostgreSQL-WASM tests serial but gives other Vitest files a bounded four-worker lane. The coordinator always runs the serial books lane, even when unrelated fast-lane failures occur, and returns failure if either lane fails.
+
+**Budget delta (5):** `+1` — faster trustworthy feedback makes ledger and continuity regressions cheaper to catch; no financial rule or command behavior changed.
+
+**Engagement delta (3):** `0` — no household-facing interaction changed.
+
+**What changed:** `pnpm test` now invokes a Windows-safe Node coordinator. `test:fast` runs with four workers and excludes exactly the direct `src/ledger/engine.ts` importers on current `main`; `test:books` runs that exact set with one worker. `test/test-lanes.test.ts` recursively detects direct engine references and fails if either lane's membership or worker cap drifts, including an extra fast-lane exclusion. Direct `vitest run` remains conservative and serial.
+
+**Data/environment:** Local configuration, synthetic tests, and documentation only. No household data, Supabase/hosted row, schema, secret, Production, deployment, or browser interaction.
+
+**Next owner:** Jonathan's authorized merge decision; deployment is intentionally out of scope because this is developer test tooling only.
+
 ## Charter founding conversation and document page (2026-09-01)
 
 **Status:** Independently reviewed, rebased, and merged in stack order: founding PR [#271](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/271) as `4074e657c94d68a4c2ad8cd67a269b8541b7ec90`, then document PR [#275](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/275) as `main@86da91c2fc16912c2f56dcf62d2dd53e2a8429be`. D-041 Cloudflare Workers Action [`33486435990`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33486435990) succeeded and published Worker version `33ce5c14-612c-4c79-87c3-d39219656c84`; the later release-record Action [`33488671926`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33488671926) published Worker version `1eb0b4b6-109f-4e70-b0a9-ed5e945ef541`. **Kitchen live HTTP is verified** at `https://hearth-books.jonathan-beaulne123.workers.dev/`: HTTP `200`, `Cache-Control: no-store`, and the served `index-0symyTI8.js` contained the founding and Charter-page markers at verification. The earlier `NXDOMAIN` finding came from a stale hostname that omitted the hyphen in `jonathan-beaulne123`, not from a disabled Worker route. This is Development kitchen publication, not Production continuity or Production household data.
