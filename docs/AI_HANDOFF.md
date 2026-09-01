@@ -21,9 +21,7 @@
 
 **Boundaries:** Local fictional Development data only. No hosted schema/row, Supabase, Auth/RLS, secret, provider, bank action, real household data, Production, merge, or deploy. GitHub push of this branch only.
 
-**Next owner:** Jonathan's merge decision on draft #286. Do not call this shipped.
-
-## Charter Slice 5 Held core (2026-09-01)
+**Next owner:** Jonathan's merge decision using [`briefs/CHARTER_SLICE_5_HELD_UI_RETURN_HANDOFF_2026-09-01.md`](briefs/CHARTER_SLICE_5_HELD_UI_RETURN_HANDOFF_2026-09-01.md). Draft [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286). Do not call this shipped.
 
 ## Charter Slice 5 Held core (2026-09-01)
 

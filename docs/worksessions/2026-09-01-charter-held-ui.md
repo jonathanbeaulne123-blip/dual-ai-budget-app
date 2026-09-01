@@ -104,4 +104,4 @@ UI uses one sealed `householdFundContributionMotions` fold. Hold is outline/ghos
 
 ## Handoff
 
-Independent High-risk UX/books review of draft [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286). Not shipped, not live. Jonathan decides merge. Do not deploy.
+Independent High-risk UX/books review of draft [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286) using [`docs/briefs/CHARTER_SLICE_5_HELD_UI_RETURN_HANDOFF_2026-09-01.md`](../briefs/CHARTER_SLICE_5_HELD_UI_RETURN_HANDOFF_2026-09-01.md). Not shipped, not live. Jonathan decides merge. Do not deploy.
