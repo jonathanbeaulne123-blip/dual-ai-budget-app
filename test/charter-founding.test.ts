@@ -11,7 +11,9 @@ import {
   CHARTER_FOUNDING_COPY,
   commitCharterFounding,
   emptyCharterFoundingDraft,
+  emptyHousehold,
   householdNeedsCharterFounding,
+  postEntry,
   skipCharterFoundingStep,
 } from "../src/core/index.ts";
 import type { Household } from "../src/core/index.ts";
@@ -90,6 +92,33 @@ describe("charter founding conversation", () => {
     expect(householdNeedsCharterFounding(empty)).toBe(true);
   });
 
+  it("founds an empty household with members and no CAD accounts, and still refuses money posts", () => {
+    const empty = emptyHousehold("development");
+    empty.members = [
+      { id: BIANCA, name: "Bianca", color: "#c45c26", active: true, updatedAt: "2026-09-01T00:00:00.000Z" },
+      { id: JONATHAN, name: "Jonathan", color: "#2f6b4f", active: true, updatedAt: "2026-09-01T00:00:00.000Z" },
+    ];
+    expect(householdNeedsCharterFounding(empty)).toBe(true);
+    let draft = emptyCharterFoundingDraft(empty);
+    for (let step = 0; step < 5; step += 1) draft = skipCharterFoundingStep(draft, step);
+    const result = commitCharterFounding(empty, {
+      memberId: JONATHAN,
+      today: DATE,
+      draft,
+    });
+    expect(result.household.charter?.splitRule).toBe("remainder");
+    expect(result.household.accounts).toHaveLength(0);
+    expect(() => postEntry(result.household, {
+      date: DATE,
+      type: "expense",
+      amount: "12.00",
+      accountId: "ACC-MISSING",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "milk",
+      createdBy: JONATHAN,
+    })).toThrow();
+  });
+
   it("renders the ceiling question and never shows a dollar figure or step count", () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
@@ -156,11 +185,14 @@ describe("charter founding conversation", () => {
   it("keeps the no-ratio fence and the ceiling copy in the flow source", () => {
     const source = readFileSync(join(process.cwd(), "src/CharterFounding.tsx"), "utf8");
     const helper = readFileSync(join(process.cwd(), "src/core/charterFounding.ts"), "utf8");
+    const commands = readFileSync(join(process.cwd(), "src/core/commands.ts"), "utf8");
     expect(helper).toContain("How much work is too much?");
     expect(source).toContain("CHARTER_FOUNDING_COPY.q5");
     expect(source).not.toMatch(/\bpercent\b/i);
     expect(source).not.toMatch(/\bratio\b/i);
     expect(helper).not.toMatch(/\bpercent\b/i);
     expect(helper).not.toMatch(/\bratio\b/i);
+    expect(commands).toContain("if (isLedgerWrite({ postedIds }))");
+    expect(commands).toContain("requireCadAccounts(next);");
   });
 });
