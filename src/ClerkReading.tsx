@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useState } from "react";
 import type { ClerkReading as ClerkReadingRecord, ClerkSentence } from "./core/clerkReading.ts";
 import { formatCad } from "./core/money.ts";
 import type { Household, HouseholdFundEvent, Transaction } from "./core/types.ts";
@@ -31,7 +31,7 @@ function displayCad(cents: number): string {
   const raw = formatCad(cents);
   const negative = raw.startsWith("-");
   const unsigned = negative ? raw.slice(1) : raw;
-  const [dollars, fraction = "00"] = unsigned.replace("$", "").split(".");
+  const [dollars = "0", fraction = "00"] = unsigned.replace("$", "").split(".");
   const grouped = dollars.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   return `${negative ? "-" : ""}$${grouped}.${fraction}`;
 }
@@ -91,12 +91,6 @@ export function ClerkReading({ reading, household, onOpenRecord }: Props) {
     ));
   }
 
-  function onSentenceKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>, id: string) {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    event.preventDefault();
-    toggle(id);
-  }
-
   return (
     <section className="clerk-reading" data-clerk-state="ready">
       <ol className="clerk-sentences">
@@ -114,7 +108,6 @@ export function ClerkReading({ reading, household, onOpenRecord }: Props) {
                 aria-expanded={open}
                 aria-controls={regionId}
                 onClick={() => toggle(sentence.id)}
-                onKeyDown={(event) => onSentenceKeyDown(event, sentence.id)}
               >
                 <span className="clerk-sentence-text">{sentence.text}</span>
                 <span className="clerk-hint" aria-hidden="true">{CITATION_COPY}</span>
@@ -123,7 +116,7 @@ export function ClerkReading({ reading, household, onOpenRecord }: Props) {
                 id={regionId}
                 className="clerk-rows"
                 role="region"
-                aria-label={CITATION_COPY}
+                aria-labelledby={buttonId}
                 hidden={!open}
               >
                 <p className="clerk-rows-label">{CITATION_COPY}</p>
@@ -146,6 +139,7 @@ export function ClerkReading({ reading, household, onOpenRecord }: Props) {
                           <button
                             type="button"
                             className="clerk-open"
+                            aria-label={`open ${transactionLabel(household, row)} ${civilLabel(row.date)}`}
                             onClick={() => onOpenRecord({ kind: "transaction", id })}
                           >
                             open
@@ -172,6 +166,7 @@ export function ClerkReading({ reading, household, onOpenRecord }: Props) {
                           <button
                             type="button"
                             className="clerk-open"
+                            aria-label={`open ${fundEventLabel(row)} ${civilLabel(row.date)}`}
                             onClick={() => onOpenRecord({ kind: "fund-event", id })}
                           >
                             open

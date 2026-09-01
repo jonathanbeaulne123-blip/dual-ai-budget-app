@@ -1,5 +1,29 @@
 # AI Task and Handoff Standard
 
+## Clerk Slice 2 tappable citations (2026-09-01)
+
+**Status:** Implemented on branch `cursor/clerk-2-citations-fdc8` as draft [PR #287](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/287). **Not merged, not kitchen-published, not live.** Risk: **Medium** (read-only money-adjacent UI and accessibility). Independent UX audit: **PASS WITH NOTES** (P2 keyboard double-toggle and duplicate "open" names fixed; remaining P3 uniqueness now includes the civil date). Verifier asked for this handoff and four-width proof; those are included here.
+
+**Household outcome:** Jonathan or Bianca can focus or tap any Clerk sentence and reveal, directly beneath it, the exact accepted transaction and Household Fund event rows that support that sentence. The explanation stays calm, compact, keyboard- and screen-reader-complete, and never hides the record behind a modal.
+
+**Dual Course:** Budget `+1`; Engagement `+2`. Books won: withheld and missing citations stay empty rather than substituting or widening the supplied household; the UI never recalculates a sentence or posts money.
+
+**Architecture:** New leaf `ClerkReading` view over the sealed Slice 1 `ClerkReading` contract. It resolves cited IDs only inside the caller-supplied already-scoped household. Optional `onOpenRecord` is a passed callback, not a new navigation or data path. No `App.tsx` placement.
+
+**Verification:**
+- Focused `test/clerk-reading.test.ts` + `test/clerk-citations.test.ts`: **12/12**
+- `pnpm ai:verify`: AI surface verified
+- `pnpm exec tsc --noEmit`: green after a `displayCad` undefined-split fix
+- `pnpm exec vite build` and `pnpm build:hercules-pro-ui`: green
+- `git diff --check 6f1cb43..` on the implementation commits: green
+- Fast test lane during `pnpm check`: **215 files passed / 1 skipped**, **1456 tests passed / 2 skipped** (from the in-progress check before a11y follow-ups)
+- Books lane: **failed** `test/demo-suite.test.ts` upcoming envelope — the packet named this pre-existing Demo Suite fixture issue and forbade repairing it in this slice
+- Visual: 320 / 390 / 720 / ~1100 plus keyboard focus, mixed-source open, withheld, missing, empty; 390px interaction video. Preview harness was local-only and was deleted before commit.
+
+**Boundaries:** Local fictional/catalog fixtures only. Zero model, command, network, storage, hosted, schema, secret, Production, or household-data changes. The component performs zero fetches, so offline equals online.
+
+**Next owner:** Jonathan reviews draft PR #287. Do not merge until satisfied. Clerk Slice 3 fences remain a later packet. `App.tsx` placement remains out of scope.
+
 ## Charter Slice 5 Held core (2026-09-01)
 
 **Status:** Core and architecture are implemented on branch `codex/charter-slice-5` at code commit `a7729362e469136636f438313215a3b03ccc570d`, rebased onto clean `origin/main@2879af2153affca10709608acbbd6c6e1b202af2` in [PR #283](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/283). Final High-risk release review passed on the code-equivalent pre-evidence tree; Jonathan explicitly authorized push, merge, and Development kitchen deployment on 2026-09-01. Fresh rebased GitHub and live receipts remain pending at this recorded point. Cursor owns the separate UI/UX implementation from [`briefs/CURSOR_CHARTER_HELD_UI_HANDOFF_2026-09-01.md`](briefs/CURSOR_CHARTER_HELD_UI_HANDOFF_2026-09-01.md).

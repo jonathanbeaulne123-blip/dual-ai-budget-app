@@ -1,14 +1,14 @@
 # Hearth worksession — Clerk Slice 2 tappable citations
 
-- **Status:** OPEN
+- **Status:** OPEN FOR REVIEW — local proof recorded; draft PR; not merged
 - **Opened:** 2026-09-01 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/clerk-2-citations-fdc8`
-- **Baseline SHA:** `6f1cb43f793312953fb733d795a0d0439d539f35` (Clerk Slice 1)
-- **Head SHA:** pending implementation
-- **PR or issue:** pending draft PR
+- **Baseline SHA:** `6f1cb43f793312953fb733d795a0d0439d539f35` (Clerk Slice 1, now on `origin/main`)
+- **Head SHA:** pending this commit
+- **PR or issue:** draft [#287](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/287)
 - **Risk:** Medium
 - **Decision owner:** Jonathan
 - **Environment impact:** none
@@ -29,66 +29,63 @@ Jonathan or Bianca can focus or tap any Clerk sentence and reveal, directly bene
 
 Facts:
 
-- Slice 1 commit `6f1cb43f793312953fb733d795a0d0439d539f35` parents current `origin/main@ff9d8d8de70c80fd567ba9835b3cc2ffbcd45082`.
-- `git merge-base --is-ancestor 6f1cb43f793312953fb733d795a0d0439d539f35 HEAD` succeeds on this branch.
-- `ClerkReading` / `ClerkSentence` and `test/clerk-reading.test.ts` canonical-month fixture exist.
-- Slice 1 is not merged to `origin/main` and has no named remote branch; this branch starts from the fetchable SHA.
-
-Inferences to prove:
-
-- A leaf read-only component can resolve cited IDs from a caller-supplied already-scoped household without becoming a visibility projector, money writer, or modal.
+- Packet base `6f1cb43` is now an ancestor of `origin/main@8fb0a5f` (Slice 1 docs + reading).
+- This branch adds only the Slice 2 UI files plus this worksession and the handoff.
+- `ClerkReading` / `ClerkSentence` and the canonical-month fixture in `test/clerk-reading.test.ts` exist.
 
 ## Scope
 
 ### In scope
 
-- `src/ClerkReading.tsx`
-- `src/clerk-reading.css`
-- `test/clerk-citations.test.ts`
-- this worksession, `docs/AI_HANDOFF.md` return, and a draft PR
+- `src/ClerkReading.tsx`, `src/clerk-reading.css`, `test/clerk-citations.test.ts`
+- worksession + `docs/AI_HANDOFF.md` return
+- draft PR
 
 ### Out of scope
 
-- `src/App.tsx` placement or any new Home/Books/Hercules route
-- Clerk Slice 3 fences and Slice 4 weekly
-- commands, Confirm, ledger/Fund mutation, schema, Auth/RLS, hosted I/O, secrets, Production, deployment, real household data
-- merging Slice 1 to `main`
+- `src/App.tsx` placement
+- Clerk slices 3–4
+- repairing `test/demo-suite.test.ts` upcoming-envelope (named pre-existing; packet forbids)
 
 ## Acceptance evidence
 
-- [ ] Each rendered sentence is reachable in DOM order by Tab
-- [ ] Enter and Space activate the same inline disclosure as pointer
-- [ ] Control exposes expanded state and controls an associated inline region
-- [ ] Disclosed transaction and Fund-event IDs match the sentence, in order, with no extras
-- [ ] Empty-citation sentences are omitted
-- [ ] Missing citation fails closed without widening scope
-- [ ] Untied and tied-empty states
-- [ ] No modal at 320/390
-- [ ] Visual evidence at 320, 390, 720, ~1100
-- [ ] Existing `test/clerk-reading.test.ts` remains green
-- [ ] Zero command/network/storage/model imports in the new component
+- [x] Each rendered sentence is a native `type="button"` in DOM order
+- [x] Pointer, Enter, and Space activate through the native button click path
+- [x] `aria-expanded` + `aria-controls`; region `aria-labelledby` the sentence
+- [x] Disclosed transaction and Fund-event IDs match the sentence, in order
+- [x] Empty-citation sentences omitted
+- [x] Missing citation fails closed without widening scope
+- [x] Untied and tied-empty states
+- [x] No modal in jsdom or 390px preview
+- [x] Visual evidence at 320, 390, 720, ~1100
+- [x] Existing `test/clerk-reading.test.ts` remains green (4/4)
+- [x] Zero command/network/storage/model imports in the component
 
 ## Plan
 
-- [ ] Implement the read-only citation component and CSS
-- [ ] Add command-driven plus source-fence tests around the Slice 1 canonical month
-- [ ] Run focused then full local proof
-- [ ] Capture rendered evidence
-- [ ] Independent UX/verifier review
-- [ ] Draft PR; do not merge or deploy
+- [x] Implement the read-only citation component and CSS
+- [x] Add command-driven plus source-fence tests around the Slice 1 canonical month
+- [x] Run focused proof; record the known books-lane Demo Suite failure
+- [x] Capture rendered evidence
+- [x] Independent UX review and verifier notes
+- [x] Draft PR; do not merge or deploy
 
 ## Evidence log
 
-- 2026-09-01: Branched `cursor/clerk-2-citations-fdc8` from Slice 1 `6f1cb43f793312953fb733d795a0d0439d539f35`. Ancestor check passed.
+- 2026-09-01: Branched from Slice 1 `6f1cb43`. Ancestor check passed.
+- 2026-09-01: Focused Clerk tests **12/12**. `pnpm ai:verify` green. `tsc --noEmit` green. Vite production build and Hercules Pro UI green. `git diff --check` green.
+- 2026-09-01: `pnpm check` books lane failed `test/demo-suite.test.ts` upcoming envelope. Packet named this pre-existing fixture issue; not repaired here.
+- 2026-09-01: UX audit PASS WITH NOTES; removed `onKeyDown` toggle; unique `open … {date}` names; region `aria-labelledby`.
+- 2026-09-01: Preview screenshots at 320/390/720/1100 plus 390px interaction video. Local preview files deleted and not committed.
 
 ## Decisions
 
-Cloud Agent git policy requires `cursor/<name>-fdc8`. The packet named `clerk/2-citations`. Jonathan authorized Slice 2 on this Cloud Agent after that default was stated.
+Cloud Agent git policy used `cursor/clerk-2-citations-fdc8` instead of the packet's `clerk/2-citations`. Jonathan authorized Slice 2 on this Cloud Agent after that default was stated. No new D-number: Slice 1 already recorded D-194.
 
 ## Remaining uncertainty
 
-Slice 1 is still a dangling commit, not on `origin/main`. This PR stacks on that SHA.
+`pnpm check` is not fully green because of the named Demo Suite fixture. Fast lane and Clerk tests are green. Component is unwired from `App.tsx` by packet scope, so kitchen placement is a later decision.
 
 ## Handoff
 
-Implementation in progress. Next owner after proof: Jonathan for review. Not merged, not deployed, not live.
+Draft PR #287. Not merged, not deployed, not live. Next owner: Jonathan.

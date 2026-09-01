@@ -120,6 +120,7 @@ describe("clerk citations", () => {
     const view = mount(reading, scenario.household);
     const [pointer, enter, space] = sentenceButtons(view.host);
     expect(pointer && enter && space).toBeTruthy();
+    expect([pointer, enter, space].every((button) => button!.type === "button")).toBe(true);
 
     act(() => { pointer!.click(); });
     expect(pointer!.getAttribute("aria-expanded")).toBe("true");
@@ -128,11 +129,13 @@ describe("clerk citations", () => {
 
     act(() => {
       enter!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", bubbles: true, cancelable: true }));
+      enter!.click();
     });
     expect(enter!.getAttribute("aria-expanded")).toBe("true");
 
     act(() => {
       space!.dispatchEvent(new KeyboardEvent("keydown", { key: " ", code: "Space", bubbles: true, cancelable: true }));
+      space!.click();
     });
     expect(space!.getAttribute("aria-expanded")).toBe("true");
     expect(view.host.querySelectorAll("[data-clerk-sentence][aria-expanded='true']")).toHaveLength(3);
@@ -153,6 +156,11 @@ describe("clerk citations", () => {
         fundEvents: sentence.fundEventIds,
       });
     }
+
+    const openButtons = [...view.host.querySelectorAll<HTMLButtonElement>(".clerk-open")];
+    const names = openButtons.map((button) => button.getAttribute("aria-label"));
+    expect(names.every(Boolean)).toBe(true);
+    expect(new Set(names).size).toBe(names.length);
 
     const expenseOpen = view.host.querySelector<HTMLButtonElement>(`[data-clerk-row="${scenario.expenseId}"] .clerk-open`);
     act(() => { expenseOpen?.click(); });
