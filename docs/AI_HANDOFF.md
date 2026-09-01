@@ -2,7 +2,7 @@
 
 ## Clerk Slices 2 + 3 corrected release candidate (2026-09-01)
 
-**Status:** Corrected combined candidate on `codex/clerk-2-3-release` over `origin/main@09be0dcde24356ede228d136fb8cc26498042697`; code/evidence head `df4bb19ee2951c73ac8dfc019495a27c5ff79557` before this handoff update. Source Slice 2 [PR #287](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/287) is integrated. Independent review found two P2 defects; both are repaired at `4624c31`. Jonathan authorized push, merge, and Development kitchen deployment after exact-candidate verification. Risk: **Medium**.
+**Status:** Corrected combined candidate on `codex/clerk-2-3-release`, integrated with current `origin/main@e7d98389be1a4ad831d4d83204061a68955df232` at `008310113e392827718e9013f92d3c4c499b5e15`; this evidence record follows. Source Slice 2 [PR #287](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/287) is integrated. Independent review found two P2 defects; both are repaired at `4624c31`. Jonathan authorized push, merge, and Development kitchen deployment after exact-candidate verification. Risk: **Medium**.
 
 **Household outcome:** Jonathan or Bianca can focus or tap any Clerk sentence and reveal, directly beneath it, the exact accepted transaction and Household Fund event rows that support that sentence. The explanation stays calm, compact, keyboard- and screen-reader-complete, and never hides the record behind a modal.
 

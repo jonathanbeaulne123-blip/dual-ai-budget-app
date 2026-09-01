@@ -6,8 +6,8 @@
 - **Assignee or AI:** Cursor (implementation); Codex (independent review, repair, and release integration)
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/clerk-2-3-release`
-- **Baseline SHA:** `origin/main@09be0dcde24356ede228d136fb8cc26498042697`
-- **Head SHA:** `df4bb19ee2951c73ac8dfc019495a27c5ff79557` (corrected Slice 2 + Slice 3 code; this evidence record follows)
+- **Baseline SHA:** `origin/main@e7d98389be1a4ad831d4d83204061a68955df232`
+- **Head SHA:** `008310113e392827718e9013f92d3c4c499b5e15` (corrected Slice 2 + Slice 3 integrated with current main; this evidence record follows)
 - **PR or issue:** source [#287](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/287); combined release PR follows
 - **Risk:** Medium
 - **Decision owner:** Jonathan
@@ -29,7 +29,7 @@ Jonathan or Bianca can focus or tap any Clerk sentence and reveal, directly bene
 
 Facts:
 
-- Slice 1 `6f1cb43` is an ancestor of current `origin/main@09be0dc`.
+- Slice 1 `6f1cb43` is an ancestor of current `origin/main@e7d9838`.
 - Cursor's exact review head `fdb9190` is integrated without changes to `App.tsx`, commands, storage, Worker, or schema.
 - Independent review found two P2 defects: unresolved citations left unsupported sentence text visible, and same-day duplicate rows could have indistinguishable accessible names.
 - Commit `4624c31` withholds any sentence whose cited IDs do not all resolve in the supplied scoped household and names each optional record link with label, Toronto civil date, exact CAD amount, and stable row ID.
