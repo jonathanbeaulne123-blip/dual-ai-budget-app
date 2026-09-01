@@ -2,7 +2,7 @@
 
 ## Clerk Slice 2 tappable citations (2026-09-01)
 
-**Status:** Implemented on branch `cursor/clerk-2-citations-fdc8` as draft [PR #287](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/287). **Not merged, not kitchen-published, not live.** Risk: **Medium** (read-only money-adjacent UI and accessibility). Independent UX audit: **PASS WITH NOTES** (P2 keyboard double-toggle and duplicate "open" names fixed; remaining P3 uniqueness now includes the civil date). Verifier asked for this handoff and four-width proof; those are included here.
+**Status:** Implemented on branch `cursor/clerk-2-citations-fdc8` as draft [PR #287](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/287). Code head `0df3959b` over Slice 1 `6f1cb43f793312953fb733d795a0d0439d539f35` / current `origin/main` containing Slice 1. **Not merged, not kitchen-published, not live.** Risk: **Medium** (read-only money-adjacent UI and accessibility). Independent UX audit: **PASS WITH NOTES** (P2 keyboard double-toggle and duplicate "open" names fixed; remaining P3 uniqueness now includes the civil date).
 
 **Household outcome:** Jonathan or Bianca can focus or tap any Clerk sentence and reveal, directly beneath it, the exact accepted transaction and Household Fund event rows that support that sentence. The explanation stays calm, compact, keyboard- and screen-reader-complete, and never hides the record behind a modal.
 

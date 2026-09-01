@@ -7,7 +7,7 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/clerk-2-citations-fdc8`
 - **Baseline SHA:** `6f1cb43f793312953fb733d795a0d0439d539f35` (Clerk Slice 1, now on `origin/main`)
-- **Head SHA:** 
+- **Head SHA:** `95456ee59fad738a6a737305e535402c90486978` (this record follows as the next commit) 
 - **PR or issue:** draft [#287](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/287)
 - **Risk:** Medium
 - **Decision owner:** Jonathan
