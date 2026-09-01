@@ -1,5 +1,5 @@
 import type { Household } from "../core/types.ts";
-import { financialAuditFacts } from "../core/commandIdentity.ts";
+import { financialAuditFacts, financialAuditHash } from "../core/commandIdentity.ts";
 import type { BooksRecoveryIssue, BooksStatus } from "../ledger/engine.ts";
 
 export type BooksReadinessPhase = "loading-cache" | "validating" | "ready" | "blocked";
@@ -19,6 +19,35 @@ export type BooksWriteGate = {
   ready: boolean;
   reason: string | null;
 };
+
+export type AcceptedSnapshotRebuildCheck =
+  | { ok: true; auditHash: string }
+  | { ok: false; message: string };
+
+/**
+ * An interrupted local projection may be rebuilt only from a snapshot that
+ * still proves the canonical posted-money facts covered by the accepted receipt.
+ * This never inspects cloud state and never weakens the normal PGlite gate.
+ */
+export async function acceptedSnapshotRebuildCheck(
+  household: Household,
+): Promise<AcceptedSnapshotRebuildCheck> {
+  const acceptedHash = household.booksAcceptedHash?.trim();
+  if (!acceptedHash) {
+    return {
+      ok: false,
+      message: "The saved snapshot has no accepted-books receipt, so Hearth did not rebuild PGlite automatically. Recovery is available.",
+    };
+  }
+  const actualHash = await financialAuditHash(household);
+  if (actualHash !== acceptedHash) {
+    return {
+      ok: false,
+      message: "The saved snapshot's receipt-covered money facts changed after acceptance, so Hearth did not rebuild PGlite automatically. Recovery is available.",
+    };
+  }
+  return { ok: true, auditHash: acceptedHash };
+}
 
 export function knownMetadataUpdateAllowed(
   current: Household,

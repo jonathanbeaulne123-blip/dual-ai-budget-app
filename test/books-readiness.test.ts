@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { catalogHousehold, seedDemoHousehold } from "../src/core/index.ts";
+import { catalogHousehold, financialAuditHash, seedDemoHousehold } from "../src/core/index.ts";
 import {
+  acceptedSnapshotRebuildCheck,
   booksWriteGate,
   knownMetadataUpdateAllowed,
   readinessForHousehold,
@@ -8,6 +9,32 @@ import {
 } from "../src/startup/booksReadiness.ts";
 
 describe("startup books readiness", () => {
+  it("trusts an interrupted rebuild only when the saved financial receipt still matches", async () => {
+    const household = seedDemoHousehold();
+    await expect(acceptedSnapshotRebuildCheck(household)).resolves.toMatchObject({
+      ok: false,
+      message: expect.stringMatching(/no accepted-books receipt/i),
+    });
+
+    const accepted = { ...household, booksAcceptedHash: await financialAuditHash(household) };
+    await expect(acceptedSnapshotRebuildCheck(accepted)).resolves.toEqual({
+      ok: true,
+      auditHash: accepted.booksAcceptedHash,
+    });
+
+    const first = accepted.transactions[0]!;
+    const altered = {
+      ...accepted,
+      transactions: accepted.transactions.map((row) => row.id === first.id
+        ? { ...row, amountCents: row.amountCents + 1 }
+        : row),
+    };
+    await expect(acceptedSnapshotRebuildCheck(altered)).resolves.toMatchObject({
+      ok: false,
+      message: expect.stringMatching(/money facts changed after/i),
+    });
+  });
+
   it("only opens the write gate for the exact validated replica revision", () => {
     const household = seedDemoHousehold();
     const ready = readinessForHousehold("ready", 3, household);

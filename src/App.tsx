@@ -360,6 +360,7 @@ import {
   loadWorkShiftSurface,
 } from "./deferredSurfaces.tsx";
 import {
+  acceptedSnapshotRebuildCheck,
   booksWriteGate,
   knownMetadataUpdateAllowed,
   readinessForHousehold,
@@ -540,6 +541,7 @@ export function App() {
   });
   const [booksStatus, setBooksStatus] = useState<BooksStatus | null>(null);
   const [validationAttempt, setValidationAttempt] = useState(0);
+  const [resetBusy, setResetBusy] = useState(false);
   const startupGenerationRef = useRef(0);
   const [booksReadiness, setBooksReadiness] = useState<BooksReadiness>(() => (
     initialStartup.household
@@ -1111,10 +1113,25 @@ export function App() {
       try {
         let inspection = await inspectBrowserBooks(candidate);
         if (!stillCurrent(candidate)) return;
-        if (inspection.issue === "missing-schema" || inspection.issue === "incomplete-migration") {
-          await ingestHouseholdBooks(candidate);
+        const schemaRebuild = inspection.issue === "missing-schema" || inspection.issue === "incomplete-migration";
+        let interruptedAuditHash: string | undefined;
+        if (inspection.issue === "interrupted-transaction") {
+          const trusted = await acceptedSnapshotRebuildCheck(candidate);
           if (!stillCurrent(candidate)) return;
-          inspection = await inspectBrowserBooks(candidate);
+          if (!trusted.ok) {
+            publishBlocked(candidate, trusted.message, inspection.entryCount, inspection.issue);
+            return;
+          }
+          interruptedAuditHash = trusted.auditHash;
+        }
+        if (schemaRebuild || interruptedAuditHash) {
+          await ingestHouseholdBooks(candidate, interruptedAuditHash
+            ? { auditHash: interruptedAuditHash, incremental: false }
+            : undefined);
+          if (!stillCurrent(candidate)) return;
+          inspection = await inspectBrowserBooks(candidate, interruptedAuditHash
+            ? { expectedAuditHash: interruptedAuditHash }
+            : undefined);
         }
         if (!inspection.ok) {
           publishBlocked(candidate, inspection.message, inspection.entryCount, inspection.issue);
@@ -3188,6 +3205,7 @@ export function App() {
   }
 
   async function startFromScratch(): Promise<void> {
+    setResetBusy(true);
     setBusy(true);
     try {
       if (environment !== "development") {
@@ -3255,6 +3273,7 @@ export function App() {
       setGuard(null);
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
+      setResetBusy(false);
       setBusy(false);
     }
   }
@@ -3284,7 +3303,7 @@ export function App() {
           extra="Production is not touched. Partner phones keep their own copies until they refresh. Google stays signed in."
           confirmLabel="Delete all Development households"
           danger
-          busy={busy}
+          busy={resetBusy}
           onCancel={() => setGuard(null)}
           onConfirm={() => {
             void startFromScratch();
@@ -3578,8 +3597,8 @@ export function App() {
                     <details className="welcome-danger-zone">
                       <summary>Development reset tools</summary>
                       <p className="muted" id="start-from-scratch-list">This removes disposable Development households. It is not an opening action.</p>
-                      <button className="danger" type="button" aria-describedby="start-from-scratch-list" disabled={busy} onClick={() => setGuard({ kind: "reset-development" })}>
-                        {busy ? "Starting over…" : "Start from scratch"}
+                      <button className="danger" type="button" aria-describedby="start-from-scratch-list" disabled={busyState} onClick={() => setGuard({ kind: "reset-development" })}>
+                        {resetBusy ? "Starting over…" : "Start from scratch"}
                       </button>
                     </details>
                   )}
@@ -3598,8 +3617,8 @@ export function App() {
                 <details className="welcome-danger-zone">
                   <summary>Development reset tools</summary>
                   <p className="muted" id="start-from-scratch-home">Remove leftover disposable test households only.</p>
-                  <button className="danger" type="button" aria-describedby="start-from-scratch-home" disabled={busy} onClick={() => setGuard({ kind: "reset-development" })}>
-                    {busy ? "Starting over…" : "Start from scratch"}
+                  <button className="danger" type="button" aria-describedby="start-from-scratch-home" disabled={busyState} onClick={() => setGuard({ kind: "reset-development" })}>
+                    {resetBusy ? "Starting over…" : "Start from scratch"}
                   </button>
                 </details>
               )}
@@ -4516,10 +4535,10 @@ export function App() {
                 className="danger"
                 type="button"
                 style={{ width: "100%", marginTop: 8 }}
-                disabled={busy}
+                disabled={busyState}
                 onClick={() => setGuard({ kind: "reset-development" })}
               >
-                {busy ? "Starting over…" : "Start from scratch"}
+                {resetBusy ? "Starting over…" : "Start from scratch"}
               </button>
             </section>
           )}
