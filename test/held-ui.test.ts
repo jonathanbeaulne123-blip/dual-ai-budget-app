@@ -156,7 +156,7 @@ describe("Held contribution motion UI", () => {
     expect(panelSource).toContain("releaseHouseholdFundHold");
     expect(panelSource).toContain("withdrawHouseholdFundContribution");
     expect(panelSource).not.toContain("Waiting for Bianca");
-    expect(panelSource.match(/householdFundContributionMotions/g)?.length).toBe(1);
+    expect(panelSource.match(/householdFundContributionMotions\(/g)?.length).toBe(1);
     expect(panelSource).not.toMatch(/event\.kind === "contribution-proposed"/);
   });
 
