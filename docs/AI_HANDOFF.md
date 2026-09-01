@@ -2,7 +2,7 @@
 
 ## Clerk Slice 2 tappable citations (2026-09-01)
 
-**Status:** Implemented on branch `cursor/clerk-2-citations-fdc8` as draft [PR #287](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/287). Code head `0df3959b` over Slice 1 `6f1cb43f793312953fb733d795a0d0439d539f35` / current `origin/main` containing Slice 1. **Not merged, not kitchen-published, not live.** Risk: **Medium** (read-only money-adjacent UI and accessibility). Independent UX audit: **PASS WITH NOTES** (P2 keyboard double-toggle and duplicate "open" names fixed; remaining P3 uniqueness now includes the civil date).
+**Status:** Implemented on branch `cursor/clerk-2-citations-fdc8` as ready-for-review [PR #287](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/287). Code head `0dd64ca46e3670389bc866ad8a9a97cf08f362a9` over Slice 1 `6f1cb43f793312953fb733d795a0d0439d539f35` / `origin/main` containing Slice 1. GPT-5 Pro independent review packet: [`docs/briefs/CHATGPT_CLERK_SLICE_2_REVIEW_2026-09-01.md`](briefs/CHATGPT_CLERK_SLICE_2_REVIEW_2026-09-01.md). **Not merged, not kitchen-published, not live.** Risk: **Medium** (read-only money-adjacent UI and accessibility). Independent UX audit: **PASS WITH NOTES** (P2 keyboard double-toggle and duplicate "open" names fixed; remaining P3 uniqueness now includes the civil date).
 
 **Household outcome:** Jonathan or Bianca can focus or tap any Clerk sentence and reveal, directly beneath it, the exact accepted transaction and Household Fund event rows that support that sentence. The explanation stays calm, compact, keyboard- and screen-reader-complete, and never hides the record behind a modal.
 
@@ -22,7 +22,7 @@
 
 **Boundaries:** Local fictional/catalog fixtures only. Zero model, command, network, storage, hosted, schema, secret, Production, or household-data changes. The component performs zero fetches, so offline equals online.
 
-**Next owner:** Jonathan reviews draft PR #287. Do not merge until satisfied. Clerk Slice 3 fences remain a later packet. `App.tsx` placement remains out of scope.
+**Next owner:** GPT-5 Pro independently reviews PR #287 using [`docs/briefs/CHATGPT_CLERK_SLICE_2_REVIEW_2026-09-01.md`](briefs/CHATGPT_CLERK_SLICE_2_REVIEW_2026-09-01.md). Return PASS, CONDITIONAL, or FAIL. Do not merge, deploy, or start Clerk Slice 3 from that chat. Jonathan decides merge after the review. `App.tsx` placement remains out of scope.
 
 ## Charter Slice 5 Held core (2026-09-01)
 

@@ -1,14 +1,14 @@
 # Hearth worksession — Clerk Slice 2 tappable citations
 
-- **Status:** OPEN FOR REVIEW — local proof recorded; draft PR; not merged
+- **Status:** OPEN FOR REVIEW — local proof recorded; GPT-5 Pro packet sent; not merged
 - **Opened:** 2026-09-01 (`America/Toronto`)
 - **Owner:** Jonathan
-- **Assignee or AI:** Cursor
+- **Assignee or AI:** Cursor (implementation); GPT-5 Pro (independent review)
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/clerk-2-citations-fdc8`
 - **Baseline SHA:** `6f1cb43f793312953fb733d795a0d0439d539f35` (Clerk Slice 1, now on `origin/main`)
-- **Head SHA:** `95456ee59fad738a6a737305e535402c90486978` (this record follows as the next commit) 
-- **PR or issue:** draft [#287](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/287)
+- **Head SHA:** `0dd64ca46e3670389bc866ad8a9a97cf08f362a9` (implementation); this packet commit follows
+- **PR or issue:** ready-for-review [#287](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/287)
 - **Risk:** Medium
 - **Decision owner:** Jonathan
 - **Environment impact:** none
@@ -68,13 +68,15 @@ Facts:
 - [x] Run focused proof; record the known books-lane Demo Suite failure
 - [x] Capture rendered evidence
 - [x] Independent UX review and verifier notes
-- [x] Draft PR; do not merge or deploy
+- [x] Ready PR; do not merge or deploy
+- [x] GPT-5 Pro independent review packet (`docs/briefs/CHATGPT_CLERK_SLICE_2_REVIEW_2026-09-01.md`)
 
 ## Evidence log
 
 - 2026-09-01: Branched from Slice 1 `6f1cb43`. Ancestor check passed.
 - 2026-09-01: Focused Clerk tests **12/12**. `pnpm ai:verify` green. `tsc --noEmit` green. Vite production build and Hercules Pro UI green. `git diff --check` green.
 - 2026-09-01: `pnpm check` books lane failed `test/demo-suite.test.ts` upcoming envelope. Packet named this pre-existing fixture issue; not repaired here.
+- 2026-09-01: Push CI `33547763251` failed that same Demo Suite assertion; pull_request CI `33547768030` on SHA `0dd64ca` reported SUCCESS. GPT-5 Pro review packet written.
 - 2026-09-01: UX audit PASS WITH NOTES; removed `onKeyDown` toggle; unique `open … {date}` names; region `aria-labelledby`.
 - 2026-09-01: Preview screenshots at 320/390/720/1100 plus 390px interaction video. Local preview files deleted and not committed.
 
@@ -88,4 +90,4 @@ Cloud Agent git policy used `cursor/clerk-2-citations-fdc8` instead of the packe
 
 ## Handoff
 
-Draft PR #287. Not merged, not deployed, not live. Next owner: Jonathan.
+PR #287 is ready for review, not merged, not deployed, not live. Next owner: GPT-5 Pro independent review via `docs/briefs/CHATGPT_CLERK_SLICE_2_REVIEW_2026-09-01.md`. Jonathan decides merge after that review.
