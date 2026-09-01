@@ -101,7 +101,7 @@ export function SharedLedgerStory({
                 <li key={event.id}>
                   <time dateTime={event.date}>{event.date}</time>
                   <span>{event.label}</span>
-                  <strong>{formatCad(event.amountCents)}</strong>
+                  <strong>{event.recordOnly ? "record only" : formatCad(event.amountCents)}</strong>
                   <span className="muted">{[event.actorLabel, event.destinationLabel].filter(Boolean).join(" · ")}</span>
                 </li>
               ))}

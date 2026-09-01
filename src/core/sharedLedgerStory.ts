@@ -3,6 +3,8 @@ import { daysInMonthKey, monthEndKey, monthKeyFromDateKey, monthStartKey, weekBo
 import { activeMembers } from "./catalog.ts";
 import {
   activeHouseholdFundEvents,
+  HOUSEHOLD_FUND_HOLD_COPY,
+  householdFundContributionMotions,
   projectHouseholdFund,
   type HouseholdFundProjection,
 } from "./householdFund.ts";
@@ -69,6 +71,7 @@ export type SharedWeekEvent = {
   kind: HouseholdFundEvent["kind"];
   label: string;
   amountCents: number;
+  recordOnly: boolean;
   actorLabel: string | null;
   destinationLabel: string | null;
 };
@@ -204,11 +207,8 @@ export function sharedActionQueue(
   options: { integrityFindingCount?: number } = {},
 ): SharedActionItem[] {
   const projection = projectHouseholdFund(household, today);
-  const events = activeHouseholdFundEvents(household);
-  const pending = events.filter((event) => (
-    event.kind === "contribution-proposed"
-    && !events.some((confirmed) => confirmed.kind === "contribution-confirmed" && confirmed.relatedEventId === event.id)
-  ));
+  const pending = householdFundContributionMotions(household)
+    .filter((motion) => motion.status === "open" || motion.status === "held");
   const custodian = custodianLabel(household);
   const week = weekBounds(today);
   const reconDate = projection.lastReconciledAt?.slice(0, 10) ?? null;
@@ -267,7 +267,8 @@ export function sharedActionQueue(
       sourceTab: "ledger",
     });
   }
-  for (const event of pending) {
+  for (const motion of pending) {
+    const event = motion.proposal;
     const contributor = memberLabel(household, event.contributorMemberId) ?? "A member";
     items.push({
       id: `confirm-${event.id}`,
@@ -327,6 +328,9 @@ export function sharedActionQueue(
 
 function weekEventLabel(kind: HouseholdFundEvent["kind"]): string {
   if (kind === "contribution-proposed") return "Contribution proposed";
+  if (kind === "contribution-held") return HOUSEHOLD_FUND_HOLD_COPY.status;
+  if (kind === "contribution-hold-released") return "Contribution Hold released";
+  if (kind === "contribution-withdrawn") return "Contribution proposal withdrawn";
   if (kind === "contribution-confirmed") return "Contribution confirmed";
   if (kind === "purchase-funded") return "Fund-backed purchase";
   if (kind === "refund-funded") return "Fund-backed refund";
@@ -339,6 +343,22 @@ function weekEventLabel(kind: HouseholdFundEvent["kind"]): string {
   return kind;
 }
 
+function weekEventIsRecordOnly(kind: HouseholdFundEvent["kind"]): boolean {
+  return kind === "contribution-proposed"
+    || kind === "contribution-held"
+    || kind === "contribution-hold-released"
+    || kind === "contribution-withdrawn";
+}
+
+function weekEventActorMemberId(event: HouseholdFundEvent): string {
+  if (event.kind === "contribution-held"
+    || event.kind === "contribution-hold-released"
+    || event.kind === "contribution-withdrawn") {
+    return event.createdBy;
+  }
+  return event.contributorMemberId ?? event.confirmedByMemberId ?? event.createdBy;
+}
+
 export function sharedWeeklyStory(household: Household, today: DateKey): SharedWeekEvent[] {
   const week = weekBounds(today);
   const events = activeHouseholdFundEvents(household).filter((event) => event.date >= week.start && event.date <= week.end);
@@ -348,7 +368,8 @@ export function sharedWeeklyStory(household: Household, today: DateKey): SharedW
     kind: event.kind,
     label: weekEventLabel(event.kind),
     amountCents: event.amountCents,
-    actorLabel: memberLabel(household, event.contributorMemberId ?? event.confirmedByMemberId ?? event.createdBy),
+    recordOnly: weekEventIsRecordOnly(event.kind),
+    actorLabel: memberLabel(household, weekEventActorMemberId(event)),
     destinationLabel: sharedAccountName(household, event.destinationAccountId),
   }));
 }
@@ -387,10 +408,8 @@ export function buildSharedLedgerStory(
   options: { integrityFindingCount?: number } = {},
 ): SharedLedgerStory {
   const projection = projectHouseholdFund(projectedShared, today);
-  const pendingCount = activeHouseholdFundEvents(projectedShared).filter((event) => (
-    event.kind === "contribution-proposed"
-    && !activeHouseholdFundEvents(projectedShared).some((confirmed) => confirmed.kind === "contribution-confirmed" && confirmed.relatedEventId === event.id)
-  )).length;
+  const pendingCount = householdFundContributionMotions(projectedShared)
+    .filter((motion) => motion.status === "open" || motion.status === "held").length;
   const opening: SharedOpening = projection.configured
     ? {
         configured: true,

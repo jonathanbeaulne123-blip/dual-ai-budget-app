@@ -1,6 +1,6 @@
 # Cursor handoff — Charter Slice 5 Held UI/UX
 
-**Consumed 2026-09-01.** Implementation returned on draft [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286). Start SHA below is stale (`a772936` / later `94a9f50`). D-193 core is on `main@ff9d8d8` via #283. Use [`CHARTER_SLICE_5_HELD_UI_RETURN_HANDOFF_2026-09-01.md`](CHARTER_SLICE_5_HELD_UI_RETURN_HANDOFF_2026-09-01.md).
+**Consumed 2026-09-01.** Implementation merged via [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286) as `main@e7d98389be1a4ad831d4d83204061a68955df232`. Start SHA below is historical (`a772936` / later `94a9f50`). D-193 core is on `main@ff9d8d8` via #283. Use [`CHARTER_SLICE_5_HELD_UI_RETURN_HANDOFF_2026-09-01.md`](CHARTER_SLICE_5_HELD_UI_RETURN_HANDOFF_2026-09-01.md) as the consumed evidence packet; kitchen live remains unverified.
 
 ## Assignment
 
