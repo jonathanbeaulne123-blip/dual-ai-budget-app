@@ -335,6 +335,7 @@ import { SitDownGuide } from "./SitDownGuide.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { MonthRehearsalPanel } from "./MonthRehearsalPanel.tsx";
 import { CharterFounding } from "./CharterFounding.tsx";
+import { Charter } from "./Charter.tsx";
 import { playClink } from "./clink.ts";
 import { GoogleBridgeCard } from "./GoogleBridge.tsx";
 import {
@@ -472,6 +473,7 @@ export function App() {
   const pendingDemoFramesRef = useRef<number[]>([]);
   const [tab, setTab] = useState<Tab>("home");
   const [charterFoundingOpen, setCharterFoundingOpen] = useState(false);
+  const [charterPageOpen, setCharterPageOpen] = useState(false);
   const [adding, setAdding] = useState(false);
   const [addSlide, setAddSlide] = useState(0);
   const [fabOpen, setFabOpen] = useState(false);
@@ -1987,6 +1989,8 @@ export function App() {
     if (householdNeedsCharterFounding(household)) setCharterFoundingOpen(true);
   }, [household, view]);
   const charterFoundingVisible = Boolean(household && session && view === "household" && charterFoundingOpen);
+  const charterPageVisible = Boolean(household && session && view === "household" && charterPageOpen && household.charter);
+  const charterTakeoverVisible = charterFoundingVisible || charterPageVisible;
   const personalSource = useMemo(() => (
     household && memberId && personalReplica?.memberId === memberId
       && personalReplica.lastCommittedAt === household.lastCommittedAt
@@ -4180,7 +4184,16 @@ export function App() {
           onDismiss={() => setCharterFoundingOpen(false)}
         />
       ) : null}
-      <div className="app-shell" inert={charterFoundingVisible || undefined}>
+      {charterPageVisible && household && session ? (
+        <Charter
+          household={household}
+          memberId={session.memberId}
+          busy={busy}
+          onCommit={(fn) => { void run(fn); }}
+          onDismiss={() => setCharterPageOpen(false)}
+        />
+      ) : null}
+      <div className="app-shell" inert={charterTakeoverVisible || undefined}>
       <header className="topbar">
         <div className="brand">
           <img src="/hercules-mark.svg" alt="" />
@@ -4607,8 +4620,11 @@ export function App() {
               <button
                 className="primary"
                 type="button"
-                aria-label="Open the charter"
-                onClick={() => setCharterFoundingOpen(true)}
+                aria-label={household.charter ? "Open the charter" : "Found the charter"}
+                onClick={() => {
+                  if (household.charter) setCharterPageOpen(true);
+                  else setCharterFoundingOpen(true);
+                }}
               >
                 the charter
               </button>
@@ -5698,7 +5714,7 @@ export function App() {
         </div>
       )}
 
-      {!charterFoundingVisible ? (
+      {!charterTakeoverVisible ? (
       <HerculesPresence
         household={experience && experience.ok ? experience.herculesHousehold : displayHousehold}
         today={today}
@@ -5762,7 +5778,7 @@ export function App() {
         session={session}
       />
 
-      {!charterFoundingVisible ? (
+      {!charterTakeoverVisible ? (
       <nav className={`nav${fabOpen ? " is-fab-open" : ""}`} data-ledger-nav={view === "household" ? "shared" : "personal"} aria-label="Hearth">
         {kitchenPrimaryNav(view).includes("home") && (
         <button

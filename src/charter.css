@@ -1,0 +1,172 @@
+.charter-page {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  overflow: auto;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  padding: 22px 20px 34px;
+}
+
+.charter-page-inner {
+  max-width: 40rem;
+  margin: 0 auto;
+  position: relative;
+}
+
+.charter-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 13px;
+  color: var(--pine);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  background: none;
+  border: 0;
+  padding: 0;
+  min-height: 44px;
+  min-width: 44px;
+  font-family: inherit;
+}
+
+.charter-purpose {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(27px, 3vw, 38px);
+  line-height: 1.2;
+  letter-spacing: -0.014em;
+  margin: 0 48px 20px 0;
+  max-width: 22em;
+  text-wrap: balance;
+}
+
+.charter-purpose:focus {
+  outline: none;
+}
+
+.charter-purpose:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 4px;
+}
+
+.charter-hr {
+  height: 1px;
+  background: var(--line);
+  border: 0;
+  margin: 20px 0;
+}
+
+.charter-cl {
+  margin: 0 0 16px;
+}
+
+.charter-lab {
+  font-size: 11px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 4px;
+}
+
+.charter-txt {
+  font-size: 15.5px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.charter-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.charter-split {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 19px;
+  line-height: 1.3;
+  margin: 0 0 6px;
+}
+
+.charter-quote {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 17px;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 34em;
+}
+
+.charter-perm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+}
+
+.charter-revoke,
+.charter-signlink {
+  font-size: 13px;
+  color: var(--pine);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  background: none;
+  border: 0;
+  padding: 0;
+  min-height: 44px;
+  font-family: inherit;
+}
+
+.charter-sigblock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 36px;
+  margin-top: 30px;
+}
+
+.charter-sig {
+  min-width: 260px;
+}
+
+.charter-rule {
+  width: 260px;
+  height: 1px;
+  background: var(--line);
+  margin-bottom: 10px;
+}
+
+.charter-who {
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+
+.charter-when {
+  color: var(--muted);
+}
+
+.charter-signlink {
+  margin-left: 10px;
+}
+
+.charter-amends {
+  margin-top: 28px;
+}
+
+.charter-close:focus-visible,
+.charter-revoke:focus-visible,
+.charter-signlink:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .charter-page * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
