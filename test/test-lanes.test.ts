@@ -29,6 +29,7 @@ function directPGliteRuntimeTests() {
 const serialFixtureTests = [
   "demo-shift-statistics.test.ts",
   "demo-suite.test.ts",
+  "scale.test.ts",
   "stress-seed.test.ts",
 ];
 

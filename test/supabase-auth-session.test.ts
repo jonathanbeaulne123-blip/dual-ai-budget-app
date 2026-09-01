@@ -148,7 +148,7 @@ describe("Supabase Auth browser session", () => {
     expect(loadSupabaseSession("development")).toEqual(session);
   });
 
-  it("opens Google after a refused refresh only while the session is still current", async () => {
+  it("clears a refused current refresh without opening Google in the background", async () => {
     setSupabaseSessionStore(memoryStore());
     const session: HearthSupabaseSession = {
       accessToken: "access-old",
@@ -173,7 +173,8 @@ describe("Supabase Auth browser session", () => {
       config,
       vi.fn(async () => new Response("refused", { status: 401 })) as typeof fetch,
     )).rejects.toThrow(/needs Google confirmation/i);
-    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(loadSupabaseSession("development")).toBeNull();
+    expect(navigate).not.toHaveBeenCalled();
 
     resetSupabaseAuthConcurrencyForTests();
     saveSupabaseSession("development", session);
@@ -189,7 +190,7 @@ describe("Supabase Auth browser session", () => {
     release(new Response("refused", { status: 401 }));
 
     await expect(refreshing).rejects.toThrow(/session changed/i);
-    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it("shares one expired-session refresh across concurrent background callers", async () => {

@@ -7,6 +7,8 @@ import {
   seedDemoHousehold,
   splitForSync,
   householdForAiDisclosure,
+  envelopeFromSchedule,
+  mergeScheduleEnvelopes,
   postWorkShiftWithAttendanceReview,
   observeTipShifts,
   statusForEnvelopeAt,
@@ -15,6 +17,8 @@ import {
   workShiftTransactionIds,
   type ShiftEnvelopeEvidenceProposal,
 } from "../src/core/index.ts";
+import type { SevenShiftsScheduledShift } from "../src/core/sevenShiftsCalendar.ts";
+import type { DateKey } from "../src/core/calendar.ts";
 import { evidenceEnvelopeProposals } from "../src/imports/evidenceEnvelopeDraft.ts";
 
 function proposal(overrides: Partial<ShiftEnvelopeEvidenceProposal> = {}): ShiftEnvelopeEvidenceProposal {
@@ -37,6 +41,51 @@ function proposal(overrides: Partial<ShiftEnvelopeEvidenceProposal> = {}): Shift
 }
 
 describe("D-172 autonomous Shift envelope", () => {
+  it("preserves another member's schedule mail and derives status from the observation time", () => {
+    const base = seedDemoHousehold({ today: "2026-08-29", environment: "development" });
+    const biancaJob = base.workJobs.find((row) => row.memberId === "MEM-001")!;
+    const jonathanJob = base.workJobs.find((row) => row.memberId === "MEM-002")!;
+    const schedule = (memberId: string, suffix: string, jobId: string, roleId: string, startedAt: string, endedAt: string): SevenShiftsScheduledShift => ({
+      id: `7SC-${suffix}`,
+      memberId,
+      source: "7shifts-calendar",
+      provenanceId: `7shifts-calendar:${suffix}`,
+      startedAt,
+      endedAt,
+      date: startedAt.slice(0, 10) as DateKey,
+      scheduledMinutes: Math.round((Date.parse(endedAt) - Date.parse(startedAt)) / 60_000),
+      jobId,
+      roleId,
+      eventTag: "regular",
+      staffingCount: null,
+      staffingSource: "unavailable",
+      delivery: "selected-file",
+      selfMatch: "personal-feed-assertion",
+      notesPresent: false,
+      sequence: 0,
+      sourceUpdatedAt: null,
+      createdAt: "2026-08-29T12:00:00.000Z",
+      updatedAt: "2026-08-29T12:00:00.000Z",
+    });
+    const biancaSchedule = schedule("MEM-001", "1111111111111111", biancaJob.id, biancaJob.roles[0]!.id, "2026-08-29T08:00:00.000Z", "2026-08-29T11:00:00.000Z");
+    const jonathanSchedule = schedule("MEM-002", "2222222222222222", jonathanJob.id, jonathanJob.roles[0]!.id, "2026-08-30T20:00:00.000Z", "2026-08-31T02:00:00.000Z");
+    const existing = envelopeFromSchedule({ householdId: base.householdId, environment: base.environment, schedule: biancaSchedule });
+
+    const merged = mergeScheduleEnvelopes({
+      existing: [existing],
+      schedules: [jonathanSchedule],
+      householdId: base.householdId,
+      environment: base.environment,
+      memberId: "MEM-002",
+      jobs: base.workJobs,
+      observedAt: "2026-08-29T12:00:00.000Z",
+    });
+
+    expect(merged.map((row) => row.memberId)).toEqual(["MEM-001", "MEM-002"]);
+    expect(merged.find((row) => row.memberId === "MEM-001")?.status).toBe("awaiting_punch");
+    expect(merged.find((row) => row.memberId === "MEM-002")?.status).toBe("upcoming");
+  });
+
   it("creates schedule mail, advances to awaiting punch, and overlays approved worked facts without posting money", () => {
     const base = seedDemoHousehold({ today: "2026-08-29", environment: "development" });
     const job = base.workJobs.find((row) => row.memberId === "MEM-002")!;
