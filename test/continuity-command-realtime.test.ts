@@ -16,6 +16,7 @@ import {
 } from "../src/ledger/materializeSnapshotFromEvents.ts";
 import { encodeSharedSnapshotPayload } from "../src/ledger/snapshotPayload.ts";
 import { householdCloudProjection } from "../src/ledger/supabase.ts";
+import { markSynchronized } from "../src/core/sharing.ts";
 
 const identity = { memberId: "MEM-001", email: "jonathan@example.com", subject: "google-sub-jonathan" };
 
@@ -86,6 +87,9 @@ describe("T2-S4 command event apply", () => {
     if (applied.ok) {
       expect(applied.duplicate).toBe(false);
       expect(applied.household.transactions.some((row) => row.note === "Realtime milk")).toBe(true);
+      const synchronized = markSynchronized(applied.household, event.payload_json.acceptedAt);
+      expect(synchronized.baseRevision).toBe(event.result_revision);
+      expect(synchronized.sharing?.mode).toBe("synchronized");
     }
   });
 

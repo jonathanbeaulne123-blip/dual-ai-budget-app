@@ -140,6 +140,34 @@ describe("race scenarios (T1-S4 matrix)", () => {
     expect(maxOverlap).toBe(1);
   });
 
+  it("serializes command acceptance behind existing recovery work", async () => {
+    const coordinator = createContinuityCoordinator();
+    let activePgliteAccepts = 0;
+    let maxPgliteAccepts = 0;
+    const order: string[] = [];
+    const accept = async (label: string, waitMs: number) => {
+      activePgliteAccepts += 1;
+      maxPgliteAccepts = Math.max(maxPgliteAccepts, activePgliteAccepts);
+      order.push(`${label}-start`);
+      await new Promise((resolve) => setTimeout(resolve, waitMs));
+      order.push(`${label}-end`);
+      activePgliteAccepts -= 1;
+    };
+
+    await Promise.all([
+      coordinator.run("realtime", () => accept("snapshot", 10)),
+      coordinator.run("realtime", () => accept("command", 0)),
+    ]);
+
+    expect(maxPgliteAccepts).toBe(1);
+    expect(order).toEqual([
+      "snapshot-start",
+      "snapshot-end",
+      "command-start",
+      "command-end",
+    ]);
+  });
+
   it("duplicate Realtime events — stale revision ignored; fresh revision queued once", async () => {
     const merges: number[] = [];
     const coordinator = createContinuityCoordinator();

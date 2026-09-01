@@ -1512,6 +1512,16 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 **Risk:** High residual until Auth/RLS; open Development RLS unchanged through 2026-09-30.
 
+## D-191 live command latency repair (2026-09-01)
+
+**Status:** local High-risk implementation verified on `codex/sync-live-latency-fix`. Focused 38/38, full gate 1,503 passed / 3 skipped, production build, and independent books/trust plus continuity reviews passed. No commit, push, merge, deployment, hosted mutation, or Production change.
+
+**Household outcome:** command-event and snapshot-recovery acceptance now share one receiver coordinator. Snapshot echoes coalesce for 300 ms and, on expiry, check the committed command log before full recovery can occupy PGlite. Only an exact locally accepted hosted revision suppresses recovery, while missing/unknown/hidden/invalid/conflicted/gap paths retain the full pull/reconcile/PGlite route.
+
+**Budget delta (5):** `+4`. **Engagement delta (3):** `+1`.
+
+**Still required:** exact-tree full gate, independent books/trust and continuity verification, then separately approved release and a fresh deployed two-account 100-sample p95 run. The historical `<=500 ms` smoke is not evidence for this local repair.
+
 ## Auth + membership RLS cutover (D-123)
 
 **Status:** Migration **006 applied** on live shared project (Jonathan paste). Anon REST denial verified. Kitchen Auth door reaches Google OAuth. Docs record of apply: open PR #104. Invite chrome: branch `cursor/auth-invite-chrome-f375`.

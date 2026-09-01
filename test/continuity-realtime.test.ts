@@ -104,7 +104,7 @@ describe("attachContinuityRealtime lifecycle", () => {
     vi.stubEnv("VITE_CONTINUITY_COMMAND_LOG", "");
     const onSnapshotSignal = vi.fn();
     const onStatusChange = vi.fn();
-    const postgresHandlers: Array<() => void> = [];
+    const postgresHandlers: Array<(payload?: { new?: unknown }) => void> = [];
     const subscribeCallback: Array<(status: string) => void> = [];
 
     const channel = {
@@ -148,21 +148,24 @@ describe("attachContinuityRealtime lifecycle", () => {
     subscribeCallback[0]?.("SUBSCRIBED");
     expect(onStatusChange).toHaveBeenCalledWith("SUBSCRIBED");
 
-    postgresHandlers[0]?.();
-    expect(onSnapshotSignal).toHaveBeenCalledOnce();
+    postgresHandlers[0]?.({ new: { revision: 7, payload: "ignored" } });
+    expect(onSnapshotSignal).toHaveBeenCalledWith({
+      table: "household_snapshots",
+      revision: 7,
+    });
 
     detach();
     expect(client.removeChannel).toHaveBeenCalledWith(channel);
     expect(client.realtime.setAuth).toHaveBeenCalledWith(null);
 
-    postgresHandlers[0]?.();
+    postgresHandlers[0]?.({ new: { revision: 8 } });
     expect(onSnapshotSignal).toHaveBeenCalledOnce();
   });
 
   it("does not merge websocket payload — only signals pull/reconcile", () => {
     vi.stubEnv("VITE_CONTINUITY_REALTIME", "1");
     const onSnapshotSignal = vi.fn();
-    const postgresHandlers: Array<() => void> = [];
+    const postgresHandlers: Array<(payload?: { new?: unknown }) => void> = [];
     const channel = {
       on: vi.fn((_type: string, _filter: Record<string, string>, handler: () => void) => {
         postgresHandlers.push(handler);
@@ -187,7 +190,10 @@ describe("attachContinuityRealtime lifecycle", () => {
     }, { createClient: vi.fn(() => client) as ContinuityRealtimeDeps["createClient"] });
 
     postgresHandlers[0]?.();
-    expect(onSnapshotSignal).toHaveBeenCalledWith();
+    expect(onSnapshotSignal).toHaveBeenCalledWith({
+      table: "household_snapshots",
+      revision: null,
+    });
   });
 
   it("subscribes to continuity_command_events INSERT when command log is on", () => {

@@ -150,7 +150,7 @@ import { joinSharedHousehold, pullSharedHousehold, reconcileHouseholdSnapshots }
 import { acceptHouseholdWrite, classifyCommandError, newConfirmationId, isLedgerWrite } from "./core/index.ts";
 import type { WriteAdapters } from "./core/commandRuntime.ts";
 import { ingestHouseholdBooks, inspectBrowserBooks, restoreHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
-import { readSupabaseConfig, pullHouseholdSnapshotById, pullPersonalSnapshotById, fetchContinuityMembershipRole, listActiveContinuityMemberships } from "./ledger/supabase.ts";
+import { readSupabaseConfig, pullHouseholdSnapshotById, pullPersonalSnapshotById, fetchContinuityMembershipRole, listActiveContinuityMemberships, fetchContinuityCommandEvents } from "./ledger/supabase.ts";
 import { undoToastSecondaryCopy } from "./core/commandClassification.ts";
 import { livePullIntervalMs, shouldRunLivePull } from "./continuityLivePull.ts";
 import {
@@ -163,6 +163,10 @@ import {
   isUnhealthyRealtimeStatus,
   reconnectPollDelayMs,
 } from "./continuityResume.ts";
+import {
+  createContinuityRealtimeRecoveryGate,
+  recoverRealtimeSnapshot,
+} from "./continuityRealtimeRecovery.ts";
 import {
   canAttachContinuityRealtime,
   shouldUsePollFallback,
@@ -1631,9 +1635,118 @@ export function App() {
       }
     };
 
+    const tryApplyCommandEvent = async (event: ContinuityCommandEvent): Promise<"applied" | "duplicate" | "ignored" | "fallback"> => {
+      const current = householdRef.current;
+      if (!current) return "ignored";
+      traceSyncPilot("realtime-received", {
+        household: current,
+        confirmationId: event.confirmation_id,
+        revision: event.result_revision,
+        transport: "command-realtime",
+      });
+      const applied = await applyCommandEventLocally({ local: current, event, memberId });
+      if (!applied.ok) {
+        if (applied.fallback) {
+          traceSyncPilot("poll-fallback", {
+            household: current,
+            confirmationId: event.confirmation_id,
+            revision: event.result_revision,
+            transport: "poll",
+          });
+        }
+        return applied.fallback ? "fallback" : "ignored";
+      }
+      if (applied.duplicate) {
+        traceSyncPilot("duplicate", {
+          household: current,
+          confirmationId: event.confirmation_id,
+          revision: event.result_revision,
+          transport: "command-realtime",
+        });
+        return "duplicate";
+      }
+      const accepted = await acceptReplayCandidate(
+        markSynchronized(
+          applied.household,
+          event.payload_json.acceptedAt || event.created_at,
+        ),
+        `continuity-cmd-${event.confirmation_id || event.idempotency_key}`,
+        event.command_type,
+      );
+      if (!accepted?.ok) return "fallback";
+      coordinator.recordAccept(accepted.household.householdId, event.result_revision);
+      if (unresolvedConflicts(accepted.household).length > 0) {
+        traceSyncPilot("conflict", {
+          household: accepted.household,
+          confirmationId: event.confirmation_id,
+          revision: event.result_revision,
+          transport: "command-realtime",
+          sourceAcceptedAt: event.payload_json.acceptedAt,
+        });
+        if (live) setSyncState("syncing");
+        return "applied";
+      }
+      traceSyncPilot("remote-accepted", {
+        household: accepted.household,
+        confirmationId: event.confirmation_id,
+        revision: event.result_revision,
+        transport: "command-realtime",
+        sourceAcceptedAt: event.payload_json.acceptedAt,
+      });
+      if (live) setSyncState("synced");
+      return "applied";
+    };
+
     const scheduleReplay = (source: ContinuitySyncSource) => {
       void coordinator.run(source, () => replayWork(source));
     };
+
+    const scheduleRealtimeRecovery = (targetRevision: number | null) => {
+      void coordinator.run("realtime", async () => {
+        await recoverRealtimeSnapshot({
+          targetRevision,
+          getLocalState: () => {
+            const current = householdRef.current;
+            return current
+              ? {
+                  revision: current.revision ?? 0,
+                  hasOpenConflict: unresolvedConflicts(current).length > 0,
+                }
+              : null;
+          },
+          fetchCommandEvents: async (afterRevision) => {
+            const authSession = await ensureSupabaseSession(environment);
+            const current = householdRef.current;
+            if (!authSession || !current) throw new Error("Realtime command catch-up needs an active session.");
+            return fetchContinuityCommandEvents(
+              current.householdId,
+              environment,
+              authenticatedSupabaseConfig(readSupabaseConfig(), authSession),
+              { afterRevision, memberId },
+            );
+          },
+          applyCommandEvent: tryApplyCommandEvent,
+          recoverSnapshot: () => replayWork("realtime"),
+        });
+      });
+    };
+
+    const realtimeRecoveryGate = createContinuityRealtimeRecoveryGate({
+      getLocalState: () => {
+        const current = householdRef.current;
+        return current
+          ? {
+              revision: current.revision ?? 0,
+              hasOpenConflict: unresolvedConflicts(current).length > 0,
+            }
+          : null;
+      },
+      scheduleRecovery: scheduleRealtimeRecovery,
+      defer: (fn, waitMs) => {
+        const id = window.setTimeout(fn, waitMs);
+        return { clear: () => window.clearTimeout(id) };
+      },
+    });
 
     /** T3-S3: coalesce focus+visibility; online/manual/realtime stay immediate. */
     const requestResume = (source: ContinuitySyncSource) => {
@@ -1697,66 +1810,6 @@ export function App() {
       })) return;
       if (!live) return;
 
-      const tryApplyCommandEvent = async (event: ContinuityCommandEvent): Promise<"applied" | "duplicate" | "ignored" | "fallback"> => {
-        const current = householdRef.current;
-        if (!current) return "ignored";
-        traceSyncPilot("realtime-received", {
-          household: current,
-          confirmationId: event.confirmation_id,
-          revision: event.result_revision,
-          transport: "command-realtime",
-        });
-        const applied = await applyCommandEventLocally({ local: current, event, memberId });
-        if (!applied.ok) {
-          if (applied.fallback) {
-            traceSyncPilot("poll-fallback", {
-              household: current,
-              confirmationId: event.confirmation_id,
-              revision: event.result_revision,
-              transport: "poll",
-            });
-          }
-          return applied.fallback ? "fallback" : "ignored";
-        }
-        if (applied.duplicate) {
-          traceSyncPilot("duplicate", {
-            household: current,
-            confirmationId: event.confirmation_id,
-            revision: event.result_revision,
-            transport: "command-realtime",
-          });
-          return "duplicate";
-        }
-        const accepted = await acceptReplayCandidate(
-          applied.household,
-          `continuity-cmd-${event.confirmation_id || event.idempotency_key}`,
-          event.command_type,
-        );
-        if (!accepted?.ok) return "fallback";
-        if (unresolvedConflicts(accepted.household).length > 0) {
-          traceSyncPilot("conflict", {
-            household: accepted.household,
-            confirmationId: event.confirmation_id,
-            revision: event.result_revision,
-            transport: "command-realtime",
-            sourceAcceptedAt: event.payload_json.acceptedAt,
-          });
-          if (live) {
-            setSyncState("syncing");
-          }
-          return "applied";
-        }
-        traceSyncPilot("remote-accepted", {
-          household: accepted.household,
-          confirmationId: event.confirmation_id,
-          revision: event.result_revision,
-          transport: "command-realtime",
-          sourceAcceptedAt: event.payload_json.acceptedAt,
-        });
-        if (live) setSyncState("synced");
-        return "applied";
-      };
-
       const { attachContinuityRealtime } = await import("./continuityRealtime.ts");
       if (!live) return;
       detachRealtime = attachContinuityRealtime({
@@ -1775,20 +1828,28 @@ export function App() {
             hasSession: Boolean(memberId),
             hasHousehold: Boolean(householdRef.current),
           })) return;
-          void (async () => {
-            const outcome = await tryApplyCommandEvent(event);
-            if (outcome === "fallback") scheduleReplay("realtime");
-          })();
+          realtimeRecoveryGate.beginCommand();
+          void coordinator.run("realtime", () => tryApplyCommandEvent(event)).then(
+            (outcome) => {
+              realtimeRecoveryGate.finishCommand(
+                outcome === "applied" || outcome === "duplicate" ? "covered" : "recover",
+              );
+            },
+            () => realtimeRecoveryGate.finishCommand("recover"),
+          );
         },
-        onSnapshotSignal: () => {
+        onSnapshotSignal: (signal) => {
           if (!shouldRunLivePull({
             documentVisible: document.visibilityState === "visible",
             online: typeof navigator === "undefined" ? true : navigator.onLine,
             hasSession: Boolean(memberId),
             hasHousehold: Boolean(householdRef.current),
           })) return;
-          traceSyncPilot("snapshot-signal", { transport: "snapshot-realtime" });
-          scheduleReplay("realtime");
+          traceSyncPilot("snapshot-signal", {
+            revision: signal.revision ?? undefined,
+            transport: "snapshot-realtime",
+          });
+          realtimeRecoveryGate.noteSnapshot(signal);
         },
         onStatusChange: (status) => {
           realtimeStatusRef.current = status;
@@ -1842,6 +1903,7 @@ export function App() {
     return () => {
       live = false;
       resumeGate.dispose();
+      realtimeRecoveryGate.dispose();
       detachRealtime?.();
       window.removeEventListener("online", onOnline);
       window.removeEventListener("focus", onFocus);

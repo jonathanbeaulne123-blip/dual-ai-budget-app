@@ -16,6 +16,7 @@ import {
   parseContinuityCommandEventRow,
   type ContinuityCommandEvent,
 } from "./ledger/materializeSnapshotFromEvents.ts";
+import type { ContinuitySnapshotSignal } from "./continuityRealtimeRecovery.ts";
 
 export type AttachContinuityRealtimeInput = {
   supabaseUrl: string;
@@ -25,7 +26,7 @@ export type AttachContinuityRealtimeInput = {
   memberId: string;
   environment: Environment;
   /** Revision-only trigger — must call existing pull/reconcile, never merge websocket payload. */
-  onSnapshotSignal: () => void;
+  onSnapshotSignal: (signal: ContinuitySnapshotSignal) => void;
   /** Tier 2: apply one command event locally; caller falls back to snapshot pull on failure. */
   onCommandEvent?: (event: ContinuityCommandEvent) => void;
   commandLogEnabled?: boolean;
@@ -85,8 +86,21 @@ export function attachContinuityRealtime(
   const commandLogEnabled = input.commandLogEnabled ?? continuityCommandLogEnabled();
   const snapshotRealtimeEnabled = continuityRealtimeEnabled();
   const channelName = `hearth:${input.environment}:${input.householdId}:${input.memberId}`;
-  const signal = () => {
-    if (!disposed) input.onSnapshotSignal();
+  const signal = (
+    table: ContinuitySnapshotSignal["table"],
+    payload?: { new?: unknown },
+  ) => {
+    if (disposed) return;
+    const row = payload?.new;
+    const rawRevision = row && typeof row === "object"
+      ? (row as Record<string, unknown>).revision
+      : null;
+    const revision = typeof rawRevision === "number"
+      && Number.isSafeInteger(rawRevision)
+      && rawRevision >= 0
+      ? rawRevision
+      : null;
+    input.onSnapshotSignal({ table, revision });
   };
   const handleCommandInsert = (payload?: { new?: unknown }) => {
     if (disposed || !input.onCommandEvent) return;
@@ -105,7 +119,7 @@ export function attachContinuityRealtime(
           table: "household_snapshots",
           filter: `household_id=eq.${input.householdId}`,
         },
-        () => signal(),
+        (payload) => signal("household_snapshots", payload),
       )
       .on(
         "postgres_changes",
@@ -115,7 +129,7 @@ export function attachContinuityRealtime(
           table: "continuity_personal_snapshots",
           filter: `household_id=eq.${input.householdId}`,
         },
-        () => signal(),
+        (payload) => signal("continuity_personal_snapshots", payload),
       );
   }
   if (commandLogEnabled) {
