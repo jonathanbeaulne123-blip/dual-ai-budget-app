@@ -7,7 +7,7 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/charter-held-ui-115c`
 - **Baseline SHA:** `ff9d8d8de70c80fd567ba9835b3cc2ffbcd45082`
-- **Head SHA:** pending this closeout commit
+- **Head SHA:** `e800cede3c9cf249b27b6bfafbf84a01a5f1b629`
 - **PR or issue:** draft [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286)
 - **Risk:** High (consent presentation beside Confirm)
 - **Decision owner:** Jonathan

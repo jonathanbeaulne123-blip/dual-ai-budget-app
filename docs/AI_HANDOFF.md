@@ -2,7 +2,7 @@
 
 ## Charter Slice 5 Held UI (2026-09-01)
 
-**Status:** Draft PR [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286) on `cursor/charter-held-ui-115c` from `origin/main@ff9d8d8de70c80fd567ba9835b3cc2ffbcd45082`. **Not merged, not kitchen-published, not live, not shipped.** Risk: **High** (consent presentation beside Confirm). Environment: none.
+**Status:** Draft PR [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286) on `cursor/charter-held-ui-115c` at `e800cede3c9cf249b27b6bfafbf84a01a5f1b629` from `origin/main@ff9d8d8de70c80fd567ba9835b3cc2ffbcd45082`. **Not merged, not kitchen-published, not live, not shipped.** Risk: **High** (consent presentation beside Confirm). Environment: none.
 
 **Household outcome:** Bianca can pause Jonathan's contribution proposal for a calm conversation without rejecting it or moving money. The proposal stays visible and confirmable. The exact holder releases; the exact proposer withdraws.
 
