@@ -1,6 +1,6 @@
 # Hearth worksession — Charter page and empty signature line
 
-- **Status:** CLOSED; MERGED #275; KITCHEN PUBLISHED; LIVE HTTP UNVERIFIED (DNS NXDOMAIN)
+- **Status:** CLOSED; MERGED #275; KITCHEN PUBLISHED; LIVE HTTP VERIFIED
 - **Opened:** 2026-09-01 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor
@@ -89,8 +89,8 @@ Inferences:
 
 ## Remaining uncertainty
 
-- Live HTTP and dark/forced-colors remain unverified because the canonical kitchen hostname returned DNS `NXDOMAIN` after the successful D-041 publication.
+- Dark/forced-colors remain unverified. Live HTTP is verified at the correct hyphenated Worker hostname.
 
 ## Handoff
 
-Merged #275 after #271, retargeted to `main`, rebased, and verified by Linux `pnpm check` (`1,534` passed / `3` skipped). D-041 Action `33486435990` published Worker version `33ce5c14-612c-4c79-87c3-d39219656c84`; do not call it live until the canonical hostname returns HTTP and the served bundle is inspected.
+Merged #275 after #271, retargeted to `main`, rebased, and verified by Linux `pnpm check` (`1,534` passed / `3` skipped). D-041 Action `33486435990` published Worker version `33ce5c14-612c-4c79-87c3-d39219656c84`. Live `https://hearth-books.jonathan-beaulne123.workers.dev/` returned HTTP `200` with `Cache-Control: no-store`; `index-0symyTI8.js` contains the Charter-page markers. The earlier `NXDOMAIN` used a stale hostname missing the hyphen in `jonathan-beaulne123`.
