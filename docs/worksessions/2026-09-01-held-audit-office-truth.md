@@ -1,14 +1,14 @@
 # Hearth worksession — Held Audit Office truth
 
-- **Status:** VERIFIED; MERGE AUTHORIZED; PR PENDING
+- **Status:** VERIFIED; MERGE AUTHORIZED; PR #290 OPEN
 - **Opened:** 2026-09-01 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/held-audit-office-truth`
 - **Baseline SHA:** `a4e399275121b4ca357c683b6bc42e9ae944104d`
-- **Head SHA:** pending
-- **PR or issue:** follow-up to merged PR [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286)
+- **Head SHA:** `0df5a9418c1d5af9c2f81ed308ce2588541589f0` before this receipt-only closeout commit
+- **PR or issue:** [#290](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/290), follow-up to merged PR [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286)
 - **Risk:** High (Audit Office money presentation beside Confirm authority)
 - **Decision owner:** Jonathan; merge explicitly authorized in chat
 - **Environment impact:** code and docs only; no deploy, hosted row, schema, secret, or Production action
@@ -51,7 +51,8 @@ A withdrawn Fund contribution no longer appears as money awaiting confirmation. 
 - 2026-09-01: `pnpm check:windows` passed: fast lane 217 files/1,484 tests passed with 1 file/2 tests skipped; serial books lane 18 files/145 tests passed with 1 file/1 test skipped; TypeScript, 400-module production build, Hercules Pro UI build, and redirect guard passed. Existing PGlite browser-build and chunk-size warnings remained non-blocking.
 - 2026-09-01: independent books and privacy/trust follow-up audits both returned PASS with no P0-P2 findings. The privacy reviewer found one stale active-looking review prompt; it was explicitly marked historical and the re-review passed.
 - 2026-09-01: final release review passed for code/docs merge only. No deploy, Production, hosted data, schema, secret, or kitchen-live claim is authorized or implied.
+- 2026-09-01: implementation/evidence commit `0df5a9418c1d5af9c2f81ed308ce2588541589f0` pushed and PR [#290](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/290) opened against unchanged `origin/main@a4e399275121b4ca357c683b6bc42e9ae944104d`.
 
 ## Handoff
 
-Implementation and verification are complete. Push, PR, exact-head CI, and the authorized merge remain. Do not deploy; kitchen live remains unproven.
+Implementation, local verification, push, and PR are complete. Exact-head CI and the authorized merge remain. Do not deploy; kitchen live remains unproven.
