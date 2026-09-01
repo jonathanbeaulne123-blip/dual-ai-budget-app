@@ -53,7 +53,7 @@ describe("opening truth PGlite projection", () => {
       await migrateBooks(db);
       await db.query("INSERT INTO source_transactions (id, household_id, date_key, type) VALUES ('TXN-OPEN', 'HH-OLD', '2026-09-01', 'opening')");
       expect((await db.query("SELECT type FROM source_transactions WHERE id = 'TXN-OPEN'")).rows).toEqual([{ type: "opening" }]);
-      expect((await db.query("SELECT id FROM schema_migrations ORDER BY id")).rows).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }]);
+      expect((await db.query("SELECT id FROM schema_migrations ORDER BY id")).rows).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }]);
     } finally {
       await db.close();
     }

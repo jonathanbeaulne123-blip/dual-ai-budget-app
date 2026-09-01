@@ -143,6 +143,7 @@ import {
   HOUSEHOLD_FUND_ID,
   HOUSEHOLD_FUND_DIRECT_DESTINATION,
   HOUSEHOLD_FUND_NAME,
+  householdFundContributionMotions,
   matchHouseholdFundBankEvidence,
   projectHouseholdFund,
   shapeHouseholdFundConfig,
@@ -5497,6 +5498,117 @@ export function proposeHouseholdFundContribution(household: Household, input: {
   return commit(previous, next, "Household Fund", `Proposed $${(amountCents / 100).toFixed(2)} contribution`, [id]);
 }
 
+export function holdHouseholdFundContribution(household: Household, input: {
+  memberId: string;
+  proposalEventId: string;
+  note?: string;
+  date?: string;
+}): CommitResult {
+  const fund = requireFundCustodian(household, input.memberId);
+  const motion = householdFundContributionMotions(household, fund.id)
+    .find((row) => row.proposal.id === input.proposalEventId);
+  if (!motion) throw new ValidationError("That contribution proposal no longer exists.");
+  if (motion.status === "confirmed" || motion.status === "withdrawn") {
+    throw new ValidationError("That contribution motion is no longer open.");
+  }
+  if (motion.proposal.createdBy === input.memberId) {
+    throw new ValidationError("You cannot hold your own contribution motion.");
+  }
+  if (motion.activeHold) throw new ValidationError("That contribution motion is already held.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const events = shapeHouseholdFundEvents(next.fundEvents);
+  const at = nextFundEventAt(next);
+  const id = nextFundEventId(next);
+  next.fundEvents = [...events, {
+    ...motion.proposal,
+    id,
+    kind: "contribution-held",
+    date: parseDate(input.date ?? todayKey()),
+    createdBy: input.memberId,
+    confirmedByMemberId: null,
+    relatedEventId: motion.proposal.id,
+    purpose: "",
+    note: input.note?.trim().slice(0, 180) || "",
+    createdAt: at,
+    updatedAt: at,
+  }];
+  return commit(previous, next, "Household Fund", "Held a contribution motion for conversation", [id], [], "holdHouseholdFundContribution");
+}
+
+export function releaseHouseholdFundHold(household: Household, input: {
+  memberId: string;
+  holdEventId: string;
+  date?: string;
+}): CommitResult {
+  const fund = requireHouseholdFund(household);
+  requireMember(household, input.memberId);
+  const events = shapeHouseholdFundEvents(household.fundEvents);
+  const hold = events.find((row) => row.id === input.holdEventId && row.kind === "contribution-held");
+  if (!hold) throw new ValidationError("That contribution Hold no longer exists.");
+  if (hold.createdBy !== input.memberId) throw new ValidationError("Only the person who held this may release it.");
+  const motion = householdFundContributionMotions(household, fund.id)
+    .find((row) => row.proposal.id === hold.relatedEventId);
+  if (!motion || motion.status === "confirmed" || motion.status === "withdrawn"
+    || !motion.activeHolds.some((row) => row.id === hold.id)) {
+    throw new ValidationError("That contribution Hold is no longer active.");
+  }
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nextFundEventAt(next);
+  const id = nextFundEventId(next);
+  next.fundEvents = [...events, {
+    ...motion.proposal,
+    id,
+    kind: "contribution-hold-released",
+    date: parseDate(input.date ?? todayKey()),
+    createdBy: input.memberId,
+    confirmedByMemberId: null,
+    relatedEventId: hold.id,
+    purpose: "",
+    note: "",
+    createdAt: at,
+    updatedAt: at,
+  }];
+  return commit(previous, next, "Household Fund", "Released a contribution Hold", [id], [], "releaseHouseholdFundHold");
+}
+
+export function withdrawHouseholdFundContribution(household: Household, input: {
+  memberId: string;
+  proposalEventId: string;
+  date?: string;
+}): CommitResult {
+  const fund = requireHouseholdFund(household);
+  requireMember(household, input.memberId);
+  const motion = householdFundContributionMotions(household, fund.id)
+    .find((row) => row.proposal.id === input.proposalEventId);
+  if (!motion) throw new ValidationError("That contribution proposal no longer exists.");
+  if (motion.proposal.createdBy !== input.memberId) {
+    throw new ValidationError("Only the proposer may withdraw this contribution motion.");
+  }
+  if (motion.status === "confirmed") throw new ValidationError("A confirmed contribution cannot be withdrawn. Reverse it instead.");
+  if (motion.status === "withdrawn") throw new ValidationError("That contribution motion was already withdrawn.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const events = shapeHouseholdFundEvents(next.fundEvents);
+  const at = nextFundEventAt(next);
+  const id = nextFundEventId(next);
+  next.fundEvents = [...events, {
+    ...motion.proposal,
+    id,
+    kind: "contribution-withdrawn",
+    date: parseDate(input.date ?? todayKey()),
+    createdBy: input.memberId,
+    confirmedByMemberId: null,
+    relatedEventId: motion.proposal.id,
+    purpose: "",
+    note: "",
+    createdAt: at,
+    updatedAt: at,
+  }];
+  return commit(previous, next, "Household Fund", "Withdrew a contribution motion", [id], [], "withdrawHouseholdFundContribution");
+}
+
 export function confirmHouseholdFundContribution(household: Household, input: {
   memberId: string;
   proposalEventId: string;
@@ -5506,7 +5618,11 @@ export function confirmHouseholdFundContribution(household: Household, input: {
   const events = shapeHouseholdFundEvents(household.fundEvents);
   const proposal = events.find((row) => row.id === input.proposalEventId && row.kind === "contribution-proposed");
   if (!proposal) throw new ValidationError("That contribution proposal no longer exists.");
-  if (events.some((row) => row.kind === "contribution-confirmed" && row.relatedEventId === proposal.id)) {
+  const motion = householdFundContributionMotions(household, fund.id)
+    .find((row) => row.proposal.id === proposal.id);
+  if (!motion) throw new ValidationError("That contribution motion is no longer open.");
+  if (motion.status === "withdrawn") throw new ValidationError("That contribution motion was withdrawn.");
+  if (motion.status === "confirmed") {
     throw new ValidationError("That contribution was already confirmed.");
   }
   const previous = cloneHousehold(household);
@@ -5755,6 +5871,9 @@ export function reverseHouseholdFundEvent(household: Household, input: {
   const events = shapeHouseholdFundEvents(household.fundEvents);
   const target = events.find((row) => row.id === input.eventId);
   if (!target || target.kind === "reversal") throw new ValidationError("Choose an original Household Fund event to reverse.");
+  if (["contribution-proposed", "contribution-held", "contribution-hold-released", "contribution-withdrawn"].includes(target.kind)) {
+    throw new ValidationError("Contribution motion history uses Hold, release, or withdraw instead of reversal.");
+  }
   if (events.some((row) => row.kind === "reversal" && row.relatedEventId === target.id)) throw new ValidationError("That Household Fund event was already reversed.");
   if (!input.reason.trim()) throw new ValidationError("Give the correction a reason.");
   const previous = cloneHousehold(household);

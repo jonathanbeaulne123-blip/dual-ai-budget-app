@@ -5,6 +5,7 @@ import {
   catalogHousehold,
   configureHouseholdFund,
   confirmHouseholdFundContribution,
+  holdHouseholdFundContribution,
   postEntry,
   proposeHouseholdFundContribution,
   recordHouseholdFundReconciliation,
@@ -26,7 +27,13 @@ describe("Household Fund PGlite projection", () => {
       amount: "1000",
       date: "2026-09-01",
     });
-    household = confirmHouseholdFundContribution(proposal.household, { memberId: "MEM-001", proposalEventId: proposal.postedIds[0]! }).household;
+    household = holdHouseholdFundContribution(proposal.household, {
+      memberId: "MEM-001",
+      proposalEventId: proposal.postedIds[0]!,
+      note: "Check the rent total first.",
+      date: "2026-09-01",
+    }).household;
+    household = confirmHouseholdFundContribution(household, { memberId: "MEM-001", proposalEventId: proposal.postedIds[0]! }).household;
     household = postEntry(household, {
       date: "2026-09-02", type: "expense", amount: "40", accountId: "ACC-VISA", subcategoryId: "SUB-FOOD-GROCERIES",
       createdBy: "MEM-002", visibility: "household", confirmDuplicate: true,
@@ -42,14 +49,14 @@ describe("Household Fund PGlite projection", () => {
       expect((await ingestBooks(db, household)).ok).toBe(true);
       expect((await db.query("SELECT id, mode FROM household_funds")).rows).toEqual([{ id: "FUND-HOUSEHOLD", mode: "practice" }]);
       expect((await db.query<{ kind: string }>("SELECT kind FROM fund_events ORDER BY kind")).rows.map((row) => row.kind)).toEqual([
-        "contribution-confirmed", "contribution-proposed", "purchase-funded", "reconciliation-recorded",
+        "contribution-confirmed", "contribution-held", "contribution-proposed", "purchase-funded", "reconciliation-recorded",
       ]);
       expect((await db.query("SELECT bank_total_cents, personal_remainder_cents, tied FROM fund_private_reconciliations")).rows).toEqual([
         { bank_total_cents: 300000, personal_remainder_cents: 200000, tied: true },
       ]);
       expect((await db.query("SELECT id FROM chart_accounts WHERE id = 'FUND-HOUSEHOLD'")).rows).toEqual([]);
       expect((await db.query("SELECT scope FROM chart_accounts WHERE bank_account_id = $1", [privateSavings.id])).rows).toEqual([{ scope: "personal" }]);
-      expect((await db.query("SELECT id FROM schema_migrations WHERE id >= 3 ORDER BY id")).rows).toEqual([{ id: 3 }, { id: 4 }, { id: 5 }]);
+      expect((await db.query("SELECT id FROM schema_migrations WHERE id >= 3 ORDER BY id")).rows).toEqual([{ id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }]);
 
       const previous = { ...household, booksAcceptedHash: await hashBooksSnapshot(household) };
       const proposed = proposeHouseholdFundContribution(previous, {
@@ -104,10 +111,60 @@ describe("Household Fund PGlite projection", () => {
       `);
       await migrateBooks(db);
       expect((await db.query("SELECT scope FROM chart_accounts WHERE id = 'CA-OLD'")).rows).toEqual([{ scope: "shared" }]);
-      expect((await db.query("SELECT id FROM schema_migrations ORDER BY id")).rows).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }]);
+      expect((await db.query("SELECT id FROM schema_migrations ORDER BY id")).rows).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }]);
       expect((await db.query<{ table_name: string }>("SELECT table_name FROM information_schema.tables WHERE table_name IN ('household_funds','fund_events','fund_settlement_allocations','fund_private_reconciliations') ORDER BY table_name")).rows.map((row) => row.table_name)).toEqual([
         "fund_events", "fund_private_reconciliations", "fund_settlement_allocations", "household_funds",
       ]);
+    } finally {
+      await db.close();
+    }
+  }, 30_000);
+
+  it("upgrades a persisted schema-5 Fund constraint before writing a Hold", async () => {
+    const { PGlite } = await import("@electric-sql/pglite");
+    const db = await PGlite.create();
+    const schemaFive = BOOKS_SCHEMA.replace(
+      "'contribution-proposed','contribution-held','contribution-hold-released','contribution-withdrawn','contribution-confirmed'",
+      "'contribution-proposed','contribution-confirmed'",
+    );
+    try {
+      await db.exec(schemaFive);
+      await db.exec(`
+        INSERT INTO schema_migrations (id, applied_at) VALUES
+          (1, '2026-08-01T00:00:00.000Z'),
+          (2, '2026-08-02T00:00:00.000Z'),
+          (3, '2026-08-03T00:00:00.000Z'),
+          (4, '2026-08-04T00:00:00.000Z'),
+          (5, '2026-08-05T00:00:00.000Z');
+        INSERT INTO households (id,name,timezone,currency,environment,invite_phrase)
+          VALUES ('HH-HELD-V5','Held migration','America/Toronto','CAD','development','HELD-V5');
+        INSERT INTO household_funds (id,household_id,name,custodian_member_id,mode,opened_on,created_at,updated_at)
+          VALUES ('FUND-HOUSEHOLD','HH-HELD-V5','Hearth Household Fund','MEM-001','practice','2026-09-01','2026-09-01T12:00:00.000Z','2026-09-01T12:00:00.000Z');
+        INSERT INTO fund_events (
+          id,household_id,fund_id,kind,amount_cents,date_key,created_by,confirmed_by_member_id,
+          contributor_member_id,destination_account_id,related_event_id,related_transaction_ids,
+          evidence_digests,reconciliation_tied,note,created_at,updated_at
+        ) VALUES (
+          'FUND-EVT-PROPOSAL','HH-HELD-V5','FUND-HOUSEHOLD','contribution-proposed',31000,'2026-09-01','MEM-002',NULL,
+          'MEM-002',NULL,NULL,'[]','[]',NULL,'','2026-09-01T12:00:00.000Z','2026-09-01T12:00:00.000Z'
+        );
+      `);
+
+      await migrateBooks(db);
+      await db.exec(`
+        INSERT INTO fund_events (
+          id,household_id,fund_id,kind,amount_cents,date_key,created_by,confirmed_by_member_id,
+          contributor_member_id,destination_account_id,related_event_id,related_transaction_ids,
+          evidence_digests,reconciliation_tied,note,created_at,updated_at
+        ) VALUES (
+          'FUND-EVT-HOLD','HH-HELD-V5','FUND-HOUSEHOLD','contribution-held',31000,'2026-09-02','MEM-001',NULL,
+          'MEM-002',NULL,'FUND-EVT-PROPOSAL','[]','[]',NULL,'Check the rent total first.','2026-09-02T12:00:00.000Z','2026-09-02T12:00:00.000Z'
+        );
+      `);
+      expect((await db.query("SELECT id, kind, note FROM fund_events WHERE id = 'FUND-EVT-HOLD'")).rows)
+        .toEqual([{ id: "FUND-EVT-HOLD", kind: "contribution-held", note: "Check the rent total first." }]);
+      expect((await db.query("SELECT id FROM schema_migrations ORDER BY id")).rows)
+        .toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }]);
     } finally {
       await db.close();
     }
@@ -177,7 +234,7 @@ describe("Household Fund PGlite projection", () => {
         equity_cents: Number(row.equity_cents),
       }))).toEqual([{ net_worth_cents: 12345, net_income_cents: 0, equity_cents: 12345 }]);
       expect((await db.query("SELECT id FROM schema_migrations ORDER BY id")).rows)
-        .toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }]);
+        .toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }]);
     } finally {
       await db.close();
     }
