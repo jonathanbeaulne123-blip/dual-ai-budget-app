@@ -1,5 +1,28 @@
 # AI Task and Handoff Standard
 
+## Register slice 9 — the Ask on the desk (2026-09-01)
+
+**Status:** Implemented on `cursor/register-9-ask-panel-115c`; draft PR [#288](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/288). **Not merged, not kitchen-published, not live.** Risk **High** (financial presentation + work-route options on the desk). Isolated from Register slice 8 (#285) and Charter Held UI (#286).
+
+**Head SHA:** confirm `git rev-parse HEAD` on `cursor/register-9-ask-panel-115c` (a11y `be3d7a8` plus watching-caveat test).
+
+**Remaining uncertainty:** Payday secondary copy appears only when `householdAsk(..., "payday")` actually takes the payday horizon. Provisional run-rate has no extra Ask caveat in core; the panel follows that. Kitchen `Raise it` is a visible no-op until a defer-goal command exists.
+
+**Household outcome:** Jonathan can read this month's Fund Ask on his wide desk: the exact unfunded number, optional conservative routes at one scale, and the other door in the open. Bianca's default surface never receives this panel.
+
+**Budget delta (5):** `+3`. **Engagement delta (3):** `+2`. Books win: routes are options beside a number, never a work instruction; Ask never appears for the custodian; `Raise it` does not write money or move a goal.
+
+**Baseline:** `origin/main@09be0dcde24356ede228d136fb8cc26498042697` (Merge #284). Ask core (slices 5–7) is already on main. Slice 8 drawing is not a dependency and is not stacked.
+
+**What changed:** `askView.ts` (`ROUTE_VIEW`, `routeScale`, `askPanelView`); `Ask` + `ask.css`; `OfficeWide` mounts Ask only when Shared Home is the stage and the viewer is not the Fund custodian; focused `test/ask-panel.test.ts`. Worksession: [`worksessions/2026-09-01-register-9-ask-panel.md`](worksessions/2026-09-01-register-9-ask-panel.md).
+
+**Verification:** Focused `test/ask-panel.test.ts` **8 passed**. Neighbour Ask suites **22 passed**. `pnpm exec tsc --noEmit` passed. `pnpm test:fast` **1,464 passed / 2 skipped**. Bianca Month `app-startup-p1` + `month-rehearsal-mainline` **10 passed**. Books audit PASS. UX PASS WITH NOTES (keyboard routes scroller fixed). Privacy PASS WITH NOTES. Component harness screenshots at 320/390/720/1100 plus focus, night, and reduced-motion. Full `pnpm check` not rerun; serial `demo-suite` remains a known unrelated fail on other branches.
+
+**Data/environment:** Local pure projector/component/CSS/tests only. No hosted row, schema, secret, Production, deploy, or real household data.
+
+**Next owner:** Independent books + UX review, then Jonathan's merge decision. Do not stack the metronome (slice 10) or Till on this PR.
+
+
 ## Charter Slice 5 Held core (2026-09-01)
 
 **Status:** Core and architecture are implemented on branch `codex/charter-slice-5` at code commit `a7729362e469136636f438313215a3b03ccc570d`, rebased onto clean `origin/main@2879af2153affca10709608acbbd6c6e1b202af2` in [PR #283](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/283). Final High-risk release review passed on the code-equivalent pre-evidence tree; Jonathan explicitly authorized push, merge, and Development kitchen deployment on 2026-09-01. Fresh rebased GitHub and live receipts remain pending at this recorded point. Cursor owns the separate UI/UX implementation from [`briefs/CURSOR_CHARTER_HELD_UI_HANDOFF_2026-09-01.md`](briefs/CURSOR_CHARTER_HELD_UI_HANDOFF_2026-09-01.md).

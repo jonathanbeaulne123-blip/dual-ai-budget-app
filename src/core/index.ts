@@ -37,6 +37,7 @@ export type {
 } from "./contributionRegister.ts";
 export * from "./ask.ts";
 export * from "./askRoutes.ts";
+export * from "./askView.ts";
 export * from "./openingTruth.ts";
 export * from "./monthRehearsal.ts";
 export * from "./monthRehearsalPractice.ts";

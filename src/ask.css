@@ -1,0 +1,202 @@
+/* The Ask — Jonathan's desk instrument. House tokens only. */
+
+.ask {
+  --ask-figure: var(--copper);
+
+  position: relative;
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  padding: 18px 20px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper);
+  box-shadow: var(--lift-2);
+  color: var(--ink);
+  font-family: var(--font);
+}
+
+.office-wide-stage:has(.ask) {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-content: start;
+}
+
+.ask-figure {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(2.75rem, 7vw, 4.5rem);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--ask-figure);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+}
+
+.ask-figure.is-covered {
+  color: var(--pine);
+}
+
+.ask-sentence {
+  margin: 4px 0 0;
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.ask-payday,
+.ask-caveat,
+.ask-refusal {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.ask-refusal {
+  margin-top: 16px;
+  max-width: 42em;
+}
+
+.ask-routes-scroll {
+  margin-top: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.ask-routes-scroll:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
+
+.ask-routes-svg {
+  display: block;
+  width: 900px;
+  max-width: none;
+  height: auto;
+}
+
+.ask-routes-header,
+.ask-route-hours,
+.ask-mark-label {
+  font-size: 10.5px;
+  fill: var(--muted);
+  font-family: var(--font);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ask-mark-label {
+  fill: var(--copper);
+  letter-spacing: 0.04em;
+}
+
+.ask-route-name {
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--ink);
+  font-family: var(--font);
+}
+
+.ask-route-status {
+  font-size: 12px;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.ask-route-status-clear {
+  fill: var(--pine);
+}
+
+.ask-route-status-short {
+  fill: var(--copper);
+}
+
+.ask-bar-clear {
+  fill: var(--pine);
+}
+
+.ask-bar-short {
+  fill: var(--copper);
+}
+
+.ask-whisker-clear {
+  stroke: var(--pine);
+  stroke-width: 1px;
+}
+
+.ask-whisker-short {
+  stroke: var(--copper);
+  stroke-width: 1px;
+}
+
+.ask-mark {
+  stroke: var(--copper);
+  stroke-width: 1.5px;
+  stroke-dasharray: 4 3;
+}
+
+.ask-rule {
+  stroke: var(--line);
+  stroke-width: 1px;
+}
+
+.ask-doors {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.ask-door {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--paper) 88%, var(--pine) 12%);
+}
+
+.ask-door p {
+  margin: 0;
+  flex: 1 1 16rem;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.ask-raise {
+  appearance: none;
+  font: inherit;
+  cursor: pointer;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.ask-raise:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
+
+.ask-raise:hover {
+  border-color: var(--pine);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ask-raise {
+    transition: none;
+  }
+}
+
+html[data-theme="night"] .ask-door {
+  background: color-mix(in srgb, var(--paper) 82%, var(--pine) 18%);
+}
