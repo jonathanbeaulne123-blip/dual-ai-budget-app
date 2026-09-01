@@ -1,17 +1,17 @@
 # Hearth worksession — Charter founding conversation
 
-- **Status:** OPEN
+- **Status:** CLOSED; MERGED #271; KITCHEN PUBLISHED; LIVE HTTP UNVERIFIED (DNS NXDOMAIN)
 - **Opened:** 2026-09-01 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/charter-founding-flow-021f`
-- **Baseline SHA:** `effd7b382bde313fc80a0b4aa218322c6052450a` (`origin/main`, Charter slice 2 sealed)
-- **Head SHA:** `7042d7eca20affd6d58ed2face1dab38fce587da`
-- **PR or issue:** draft [#271](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/271)
+- **Baseline SHA:** `8def9bd9ec70fe9c343f5b63880d0c6db2dcffd8` (`origin/main` at review rebase)
+- **Head SHA:** `7a1e6175210eaa83b65778109925113f8addf805` (rebased review head); merge `4074e657c94d68a4c2ad8cd67a269b8541b7ec90`
+- **PR or issue:** merged [#271](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/271)
 - **Risk:** High (presentation; writes only through existing Charter commands)
 - **Decision owner:** Jonathan
-- **Environment impact:** none — fictional Development demo and empty household; no Production, hosted mutation, schema, or secrets
+- **Environment impact:** D-041 Development kitchen publication only; no Production, hosted-row mutation, schema, or secrets
 
 ## Household outcome
 
@@ -91,8 +91,8 @@ Inferences:
 
 ## Remaining uncertainty
 
-- Live forced-colors / reduced-motion DevTools on the kitchen URL (this slice is not merged).
+- Live HTTP and forced-colors / reduced-motion remain unverified because the canonical kitchen hostname returned DNS `NXDOMAIN` after the successful D-041 publication.
 
 ## Handoff
 
-Draft PR against `main`. Jonathan asked GPT to review and merge with slice 4 via [`briefs/CHATGPT_CHARTER_3_4_REVIEW_MERGE.md`](../briefs/CHATGPT_CHARTER_3_4_REVIEW_MERGE.md). Rebase onto current `main` (`450be34`, #274) first. Not kitchen-published, not live until that merge is verified.
+Merged #271 in the required first position after exact-current-main rebase and Linux `pnpm check` (`1,523` passed / `3` skipped). D-041 later published the combined Slice 3+4 main bundle in Action `33486435990`; do not call it live until the Worker hostname returns HTTP and the served bundle is inspected.
