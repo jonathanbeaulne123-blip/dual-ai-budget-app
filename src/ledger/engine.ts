@@ -32,7 +32,7 @@ export type BooksStatus = {
   equationHolds: boolean;
   writeMode?: "full" | "incremental";
   changedRowCount?: number;
-  compactionReason?: "first-ingest" | "household-switch" | "untrusted-previous" | "large-delta" | "periodic-compaction" | "incremental-disabled" | "production-full-path";
+  compactionReason?: "first-ingest" | "household-switch" | "untrusted-previous" | "metadata-reanchor" | "large-delta" | "periodic-compaction" | "incremental-disabled" | "production-full-path";
   error?: string;
   hosted?: {
     provider: "supabase";
@@ -809,10 +809,21 @@ async function writeBooks(db: Queryable, household: Household, compiled: Compile
     );
     const tip = current.rows[0];
     if (tip) {
-      if (Number(tip.revision) !== options.previous.revision || tip.snapshot_hash !== options.previous.booksAcceptedHash) {
+      const tipRevision = Number(tip.revision);
+      if (
+        !Number.isSafeInteger(tipRevision)
+        || tipRevision > options.previous.revision
+        || tip.snapshot_hash !== options.previous.booksAcceptedHash
+      ) {
         throw new Error("The accepted PGlite receipt does not match the previous household revision and hash.");
       }
-      if (tip.projection_hash) {
+      if (tipRevision < options.previous.revision) {
+        // D-175 permits proven non-financial metadata to advance the saved
+        // snapshot without rewriting PGlite. Re-anchor transactionally before
+        // the next books write; never calculate a delta from a projection that
+        // predates the supplied previous snapshot.
+        compactionReason = "metadata-reanchor";
+      } else if (tip.projection_hash) {
         if (tip.projection_hash !== tip.actual_projection_hash) {
           throw new Error("The accepted PGlite projection changed after its receipt. Nothing was posted.");
         }
