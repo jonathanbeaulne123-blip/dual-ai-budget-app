@@ -1,28 +1,27 @@
 # AI Task and Handoff Standard
 
-## Clerk Slice 2 tappable citations (2026-09-01)
+## Clerk Slices 2 + 3 corrected release candidate (2026-09-01)
 
-**Status:** Implemented on branch `cursor/clerk-2-citations-fdc8` as ready-for-review [PR #287](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/287). Code head `0dd64ca46e3670389bc866ad8a9a97cf08f362a9` over Slice 1 `6f1cb43f793312953fb733d795a0d0439d539f35` / `origin/main` containing Slice 1. GPT-5 Pro independent review packet: [`docs/briefs/CHATGPT_CLERK_SLICE_2_REVIEW_2026-09-01.md`](briefs/CHATGPT_CLERK_SLICE_2_REVIEW_2026-09-01.md). **Not merged, not kitchen-published, not live.** Risk: **Medium** (read-only money-adjacent UI and accessibility). Independent UX audit: **PASS WITH NOTES** (P2 keyboard double-toggle and duplicate "open" names fixed; remaining P3 uniqueness now includes the civil date).
+**Status:** Corrected combined candidate on `codex/clerk-2-3-release` over `origin/main@09be0dcde24356ede228d136fb8cc26498042697`; code/evidence head `df4bb19ee2951c73ac8dfc019495a27c5ff79557` before this handoff update. Source Slice 2 [PR #287](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/287) is integrated. Independent review found two P2 defects; both are repaired at `4624c31`. Jonathan authorized push, merge, and Development kitchen deployment after exact-candidate verification. Risk: **Medium**.
 
 **Household outcome:** Jonathan or Bianca can focus or tap any Clerk sentence and reveal, directly beneath it, the exact accepted transaction and Household Fund event rows that support that sentence. The explanation stays calm, compact, keyboard- and screen-reader-complete, and never hides the record behind a modal.
 
-**Dual Course:** Budget `+1`; Engagement `+2`. Books won: withheld and missing citations stay empty rather than substituting or widening the supplied household; the UI never recalculates a sentence or posts money.
+**Dual Course:** Slice 2 Budget `+1` / Engagement `+2`; Slice 3 Budget `+1` / Engagement `0`. Books won: a sentence is withheld unless every cited ID resolves in the supplied household, and the source/build fences reject advice, work instructions, and money-writing paths.
 
-**Architecture:** New leaf `ClerkReading` view over the sealed Slice 1 `ClerkReading` contract. It resolves cited IDs only inside the caller-supplied already-scoped household. Optional `onOpenRecord` is a passed callback, not a new navigation or data path. No `App.tsx` placement.
+**Architecture:** `ClerkReading` remains a display-only leaf over the sealed Slice 1 record. Optional `onOpenRecord` is a passed callback. Same-day duplicates are distinguished by label, Toronto civil date, exact CAD amount, and stable row ID. `scripts/verify-ai-surface.mjs` scans every Clerk-owned source for proposal/work language and money-writer reachability. No `App.tsx` placement.
 
 **Verification:**
-- Focused `test/clerk-reading.test.ts` + `test/clerk-citations.test.ts`: **12/12**
-- `pnpm ai:verify`: AI surface verified
-- `pnpm exec tsc --noEmit`: green after a `displayCad` undefined-split fix
-- `pnpm exec vite build` and `pnpm build:hercules-pro-ui`: green
-- `git diff --check 6f1cb43..` on the implementation commits: green
-- Fast test lane during `pnpm check`: **215 files passed / 1 skipped**, **1456 tests passed / 2 skipped** (from the in-progress check before a11y follow-ups)
-- Books lane: **failed** `test/demo-suite.test.ts` upcoming envelope — the packet named this pre-existing Demo Suite fixture issue and forbade repairing it in this slice
-- Visual: 320 / 390 / 720 / ~1100 plus keyboard focus, mixed-source open, withheld, missing, empty; 390px interaction video. Preview harness was local-only and was deleted before commit.
+- Combined focused Clerk suite: **3 files / 18 tests**
+- `pnpm ai:verify`: **41 required files / 2 Clerk source fences**
+- `pnpm exec tsc --noEmit`: passed
+- Full fast lane: **215 passed / 1 skipped files; 1,469 passed / 2 skipped tests**; only `test/api.test.ts` failed because this Windows host has no `bash`
+- Full serial books lane: **18 passed / 1 skipped files; 145 passed / 1 skipped tests**, including a green dated Demo Suite
+- Rendered 320/390/720/1100 proof: no horizontal overflow, all visible controls at least 44px, four unique exact-row names, unsupported sentence absent, ready/integrity/withheld/empty states present
+- Direct Vite/Hercules builds, redirect guard, diff hygiene, secret-path scan, and GitHub CI remain the final release checks
 
-**Boundaries:** Local fictional/catalog fixtures only. Zero model, command, network, storage, hosted, schema, secret, Production, or household-data changes. The component performs zero fetches, so offline equals online.
+**Boundaries:** Local fictional/catalog fixtures only. Zero model, command, network, storage, hosted-row, schema, secret, Production-continuity, or household-data changes. The component performs zero fetches, so offline equals online.
 
-**Next owner:** GPT-5 Pro independently reviews PR #287 using [`docs/briefs/CHATGPT_CLERK_SLICE_2_REVIEW_2026-09-01.md`](briefs/CHATGPT_CLERK_SLICE_2_REVIEW_2026-09-01.md). Return PASS, CONDITIONAL, or FAIL. Do not merge, deploy, or start Clerk Slice 3 from that chat. Jonathan decides merge after the review. `App.tsx` placement remains out of scope.
+**Next owner:** Codex re-fetches current `main`, pins and pushes the combined SHA, waits for exact-head CI, merges, then verifies the D-041 main deployment and live HTTP separately. `App.tsx` placement remains a later slice, so this release publishes the reviewed leaf and fences without exposing a new kitchen control.
 
 ## Charter Slice 5 Held core (2026-09-01)
 
