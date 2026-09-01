@@ -240,12 +240,43 @@ function signedFundingForTransaction(tx: Transaction, byId: Map<string, Transact
   return tx.type === "refund" ? -tx.funding.fundedCents : tx.type === "expense" ? tx.funding.fundedCents : 0;
 }
 
-function reserveForRecurrence(recurrence: Recurrence, fundId: string, today: DateKey, monthEnd: DateKey): number {
-  if (!recurrence.active || recurrence.type !== "expense" || !recurrence.fundingDefault || recurrence.fundingDefault.fundId !== fundId) return 0;
-  if (recurrence.nextDate > monthEnd) return 0;
-  const amount = recurrence.fundingDefault.fundedCents === "full" ? recurrence.amountCents : recurrence.fundingDefault.fundedCents;
-  const occurrenceCount = projectCadence(recurrence.nextDate, recurrence.cadence, today, monthEnd).length;
-  return Math.min(recurrence.amountCents, amount) * occurrenceCount;
+export type HouseholdFundRecurrenceOccurrence = {
+  recurrenceId: string;
+  date: DateKey;
+  amountCents: number;
+};
+
+export function projectHouseholdFundRecurrenceDates(
+  recurrence: Pick<Recurrence, "nextDate" | "cadence">,
+  from: DateKey,
+  to: DateKey,
+): DateKey[] {
+  return projectCadence(recurrence.nextDate, recurrence.cadence, from, to);
+}
+
+/**
+ * The one Fund-backed recurrence projection used by both the Fund balance and
+ * derived registers. Keeping occurrence rows here prevents a second reserve
+ * formula from drifting away from `projectHouseholdFund`.
+ */
+export function projectHouseholdFundRecurrenceOccurrences(
+  household: Pick<Household, "recurrences">,
+  fundId: string,
+  from: DateKey,
+  to: DateKey,
+): HouseholdFundRecurrenceOccurrence[] {
+  const rows: HouseholdFundRecurrenceOccurrence[] = [];
+  for (const recurrence of household.recurrences ?? []) {
+    if (!recurrence.active || recurrence.type !== "expense" || !recurrence.fundingDefault || recurrence.fundingDefault.fundId !== fundId) continue;
+    const plannedCents = recurrence.fundingDefault.fundedCents === "full"
+      ? recurrence.amountCents
+      : recurrence.fundingDefault.fundedCents;
+    const amountCents = Math.min(recurrence.amountCents, plannedCents);
+    for (const date of projectHouseholdFundRecurrenceDates(recurrence, from, to)) {
+      rows.push({ recurrenceId: recurrence.id, date, amountCents });
+    }
+  }
+  return rows.sort((left, right) => left.date.localeCompare(right.date) || left.recurrenceId.localeCompare(right.recurrenceId));
 }
 
 function monthEnd(date: DateKey): DateKey {
@@ -356,9 +387,8 @@ export function projectHouseholdFund(household: Household, today: DateKey): Hous
   })).sort((left, right) => left.destinationAccountId.localeCompare(right.destinationAccountId));
   const transferDueCents = destinationPositions.reduce((sum, item) => sum + item.dueCents, 0);
   const transferCreditCents = destinationPositions.reduce((sum, item) => sum + item.creditCents, 0);
-  const upcomingReserveCents = (household.recurrences ?? []).reduce((sum, recurrence) => (
-    sum + reserveForRecurrence(recurrence, config.id, today, monthEnd(today))
-  ), 0);
+  const upcomingReserveCents = projectHouseholdFundRecurrenceOccurrences(household, config.id, today, monthEnd(today))
+    .reduce((sum, occurrence) => sum + occurrence.amountCents, 0);
   const plan = shapeHouseholdFundMonthPlans(household.fundMonthPlans)
     .filter((item) => item.fundId === config.id && item.monthKey === monthKeyFromDateKey(today))
     .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0];
