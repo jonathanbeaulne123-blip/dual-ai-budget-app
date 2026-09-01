@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   activeHouseholdFundEvents,
   allocateHouseholdFundSurplus,
@@ -32,6 +32,16 @@ import {
 type FundCommand = (current: Household) => CommitResult;
 
 const MOTION_ACTION_SIZE = { minHeight: 44, minWidth: 44 } as const;
+const FUND_RECORD_ONLY_KINDS = new Set([
+  "contribution-proposed",
+  "contribution-held",
+  "contribution-hold-released",
+  "contribution-withdrawn",
+]);
+
+function fundEventAmountLabel(kind: string, amountCents: number): string {
+  return FUND_RECORD_ONLY_KINDS.has(kind) ? "record only" : formatCad(amountCents);
+}
 
 function memberName(household: Household, memberId: string | null | undefined): string {
   return household.members.find((row) => row.id === memberId)?.name ?? "Member";
@@ -63,18 +73,27 @@ function FundContributionMotionCard({
   const canWithdraw = isProposer && (motion.status === "open" || motion.status === "held");
   const showHoldComposer = canHold && composingHold;
   const noteFieldId = `fund-hold-note-${motion.proposal.id}`;
+  const composerId = `fund-hold-composer-${motion.proposal.id}`;
   const holderName = memberName(household, motion.activeHold?.createdBy);
   const statusLine = motion.status === "held"
     ? HOUSEHOLD_FUND_HOLD_COPY.status
     : "A proposal never creates money";
 
+  useEffect(() => {
+    if (showHoldComposer) holdNoteInputRef.current?.focus();
+  }, [showHoldComposer]);
+
   return (
-    <article className="fund-motion-card" data-fund-motion-status={motion.status}>
+    <article
+      className="fund-motion-card"
+      data-fund-motion-status={motion.status}
+      aria-label={`${proposerName} · ${formatCad(motion.proposal.amountCents)}`}
+    >
       <div className="fund-motion-summary">
         <span>{proposerName} · {formatCad(motion.proposal.amountCents)}</span>
         <time dateTime={motion.proposal.date}>{formatDateLabel(motion.proposal.date)}</time>
       </div>
-      <p className="fund-motion-status" role="status" aria-live="polite">{statusLine}</p>
+      <p className="fund-motion-status" role="status">{statusLine}</p>
       {motion.status === "held" && motion.activeHold ? (
         <p className="muted">
           {holderName} held this on {formatDateLabel(motion.activeHold.date)}.
@@ -82,7 +101,7 @@ function FundContributionMotionCard({
         </p>
       ) : null}
       {showHoldComposer ? (
-        <>
+        <div id={composerId}>
           <label htmlFor={noteFieldId}>Note</label>
           <input
             id={noteFieldId}
@@ -94,7 +113,7 @@ function FundContributionMotionCard({
             }}
             placeholder={HOUSEHOLD_FUND_HOLD_COPY.notePlaceholder}
           />
-        </>
+        </div>
       ) : null}
       <div className="fund-motion-actions">
         {canConfirm ? (
@@ -116,6 +135,7 @@ function FundContributionMotionCard({
             type="button"
             style={MOTION_ACTION_SIZE}
             aria-expanded={showHoldComposer}
+            aria-controls={showHoldComposer ? composerId : undefined}
             onClick={() => {
               if (!composingHold) {
                 setComposingHold(true);
@@ -406,7 +426,7 @@ export function HouseholdFundPanel({
         {events.length ? events.map((event) => (
           <div className="row" key={event.id}>
             <span>{event.date} · {event.kind.replaceAll("-", " ")} · audit {event.id}{event.relatedEventId ? ` → ${event.relatedEventId}` : ""}</span>
-            <strong>{formatCad(event.amountCents)}</strong>
+            <strong>{fundEventAmountLabel(event.kind, event.amountCents)}</strong>
           </div>
         )) : <p className="muted">No Fund events yet.</p>}
       </section>

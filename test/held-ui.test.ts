@@ -297,4 +297,42 @@ describe("Held contribution motion UI", () => {
     expect(container.textContent).not.toMatch(/\bpending\b/i);
     expect(catalogHousehold().members.map((row) => row.name)).toEqual(["Bianca", "Jonathan"]);
   });
+
+  it("moves focus into the Hold note and names the composer", () => {
+    renderPanel(openProposal(), BIANCA);
+    act(() => buttonNamed(HOUSEHOLD_FUND_HOLD_COPY.action, motionCard())!.click());
+    const hold = buttonNamed(HOUSEHOLD_FUND_HOLD_COPY.action, motionCard())!;
+    const note = motionCard().querySelector("input:not(#fund-contribution-amount)") as HTMLInputElement;
+    expect(note).toBeTruthy();
+    expect(document.activeElement).toBe(note);
+    expect(hold.getAttribute("aria-expanded")).toBe("true");
+    expect(hold.getAttribute("aria-controls")).toBe(note.closest("div")?.id);
+    expect(motionCard().querySelector(`label[for="${note.id}"]`)).toBeTruthy();
+  });
+
+  it("prints Hold, release, and withdraw as record-only in Fund books", () => {
+    renderPanel(heldProposal(), BIANCA);
+    const books = Array.from(container.querySelectorAll("section")).find((section) => section.textContent?.includes("Fund books"));
+    expect(books).toBeTruthy();
+    expect(books!.textContent).toContain("contribution held");
+    expect(books!.textContent).toContain("record only");
+    const heldRow = Array.from(books!.querySelectorAll(".row")).find((row) => row.textContent?.includes("contribution held"));
+    expect(heldRow?.textContent).toContain("record only");
+    expect(heldRow?.textContent).not.toContain(formatCad(31_000));
+    expect(books!.textContent).toContain("Contributions");
+    expect(books!.textContent).toContain(formatCad(0));
+  });
+
+  it("does not offer Hold on the custodian's own proposal", () => {
+    const own = proposeHouseholdFundContribution(configuredFund(), {
+      memberId: BIANCA,
+      contributorMemberId: BIANCA,
+      amount: AMOUNT,
+      date: DATE,
+    }).household;
+    renderPanel(own, BIANCA);
+    expect(buttonNamed("Confirm received", motionCard())).toBeTruthy();
+    expect(buttonNamed(HOUSEHOLD_FUND_HOLD_COPY.action, motionCard())).toBeUndefined();
+    expect(buttonNamed("Withdraw proposal", motionCard())).toBeTruthy();
+  });
 });

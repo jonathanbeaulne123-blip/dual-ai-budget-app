@@ -2,25 +2,28 @@
 
 ## Charter Slice 5 Held UI (2026-09-01)
 
-**Status:** Branch `cursor/charter-held-ui-115c` from `origin/main@ff9d8d8de70c80fd567ba9835b3cc2ffbcd45082`. **Not a PR, not merged, not kitchen-published, not live, not shipped.** Risk: **High** (consent presentation beside Confirm). Environment: none.
+**Status:** Draft PR [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286) on `cursor/charter-held-ui-115c` from `origin/main@ff9d8d8de70c80fd567ba9835b3cc2ffbcd45082`. **Not merged, not kitchen-published, not live, not shipped.** Risk: **High** (consent presentation beside Confirm). Environment: none.
 
 **Household outcome:** Bianca can pause Jonathan's contribution proposal for a calm conversation without rejecting it or moving money. The proposal stays visible and confirmable. The exact holder releases; the exact proposer withdraws.
 
-**Dual Course:** Budget `+3`; Engagement `+2`. Books won: the UI uses the sealed D-193 selector and commands only. Hold/release still do not change Fund projection or journal. Confirm remains the only contribution balance increase. No second motion fold.
+**Dual Course:** Budget `+3`; Engagement `+2`. Books won: the UI uses the sealed D-193 selector and commands only. Hold/release still do not change Fund projection or journal. Confirm remains the only contribution balance increase. No second motion fold. Proposed/held/released/withdrawn Fund-book rows print `record only`, not CAD.
 
-**What changed:** `src/HouseholdFundPanel.tsx` waiting queue is `householdFundContributionMotions` filtered to `open` | `held`. Eligible custodian gets equal-weight **Confirm received** and **Hold**. Held uses exact `HOUSEHOLD_FUND_HOLD_COPY.status`. Exact holder **Release Hold**; exact proposer **Withdraw proposal**. Removed `Waiting for Bianca`. Smallest CSS under `.household-fund-panel`. Tests in `test/held-ui.test.ts`. Worksession: [`worksessions/2026-09-01-charter-held-ui.md`](worksessions/2026-09-01-charter-held-ui.md).
+**What changed:** `src/HouseholdFundPanel.tsx` waiting queue is `householdFundContributionMotions` filtered to `open` | `held`. Eligible custodian gets equal-weight **Confirm received** and **Hold**. Held uses exact `HOUSEHOLD_FUND_HOLD_COPY.status`. Exact holder **Release Hold**; exact proposer **Withdraw proposal**. Removed `Waiting for Bianca`. Hold composer focuses the note and exposes `aria-controls`. Smallest CSS under `.household-fund-panel`. Tests in `test/held-ui.test.ts`. Worksession: [`worksessions/2026-09-01-charter-held-ui.md`](worksessions/2026-09-01-charter-held-ui.md).
 
 **Verification:**
-- Focused `pnpm exec vitest run test/held.test.ts test/household-fund-ui.test.ts test/held-ui.test.ts`: **3 files passed, 19 tests passed** (`held-ui` 9, `held` 5, `household-fund-ui` 5).
+- Focused `pnpm exec vitest run test/held.test.ts test/household-fund-ui.test.ts test/held-ui.test.ts`: **3 files passed, 22 tests passed**.
 - `pnpm exec tsc --noEmit` passed. `git diff --check` passed.
-- `pnpm check`: AI surface verified. Fast lane **214 files / 1453 tests passed** (1 file / 2 tests skipped). Books lane failed **1** unrelated `demo-suite.test.ts` assertion (`shiftEnvelopes` `"upcoming"`); that test does not import this UI. Production build did not run because the books lane failed.
+- Independent UX/books/trust review on `39d799f`; this follow-up lands the books P1 (`record only`) and UX P2 focus/`aria-controls`.
+- Component harness screenshots at 320/390/720/~1100 for open, held, released, withdrawn.
 - Core `src/core/householdFund.ts`, `src/core/commands.ts`, PGlite, continuity, schema, workers, App.tsx, Office, Charter amendment authoring, and Register slice 8 were not edited.
 
-**Uncertainty:** No live browser pass at 320/390/720/1100 in this environment. The books-lane demo-suite failure is outside this packet and still fails on retry.
+**Uncertainty:** Audit Office `sharedLedgerStory` still folds a withdrawn proposal as a pending confirm and prints raw hold kinds beside CAD. That is a follow-up packet, not this UI. Serial `demo-suite` failure is outside this packet.
 
 **Boundaries:** Local fictional Development data only. No hosted schema/row, Supabase, Auth/RLS, secret, provider, bank action, real household data, Production, merge, or deploy. GitHub push of this branch only.
 
-**Next owner:** Independent High-risk UX/books review of this UI branch. Jonathan decides PR/merge. Do not call this shipped.
+**Next owner:** Jonathan's merge decision on draft #286. Do not call this shipped.
+
+## Charter Slice 5 Held core (2026-09-01)
 
 ## Charter Slice 5 Held core (2026-09-01)
 
