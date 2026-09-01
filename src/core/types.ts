@@ -712,6 +712,53 @@ export type GoalContribution = {
   updatedAt: string;
 };
 
+export type CharterSplitRule = "even" | "proportional" | "remainder";
+export type CharterCeilingKind = "hours-per-week" | "amount-per-month" | "none";
+
+export type CharterSignature = { memberId: string; signedAt: string | null };
+
+export type CharterPermission = {
+  id: string;
+  label: string;
+  grantedByMemberId: string;
+  actorMemberId: string;
+  revokedAt: string | null;
+};
+
+export type CharterClause = { id: string; heading: string; body: string };
+
+export type CharterAmendment = {
+  id: string;
+  raisedByMemberId: string;
+  field: string;
+  fromText: string;
+  toText: string;
+  confirmedByMemberId: string | null;
+  heldByMemberId: string | null;
+  heldNote: string;
+  raisedAt: string;
+  resolvedAt: string | null;
+};
+
+export type HouseholdCharter = {
+  id: string;
+  purpose: string;
+  custodianMemberId: string;
+  splitRule: CharterSplitRule;
+  splitNote: string;
+  ceilingKind: CharterCeilingKind;
+  ceilingValue: number;
+  cadence: "weekly" | "biweekly" | "monthly" | "none";
+  cadenceWeekday: number;
+  clauses: CharterClause[];
+  permissions: CharterPermission[];
+  signatures: CharterSignature[];
+  amendments: CharterAmendment[];
+  foundedOn: DateKey;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type HouseholdFundMode = "practice" | "connected";
 
 export type HouseholdFundConfig = {
@@ -1151,6 +1198,7 @@ export type Household = {
   goals: Goal[];
   goalContributions: GoalContribution[];
   goalPurchases: GoalPurchase[];
+  charter?: HouseholdCharter | null;
   householdFund?: HouseholdFundConfig | null;
   fundMonthPlans?: HouseholdFundMonthPlan[];
   fundEvents?: HouseholdFundEvent[];
@@ -1211,6 +1259,7 @@ export type SharedEnvelope = {
   goals: Goal[];
   goalContributions: GoalContribution[];
   goalPurchases: GoalPurchase[];
+  charter?: HouseholdCharter | null;
   householdFund?: HouseholdFundConfig | null;
   fundMonthPlans?: HouseholdFundMonthPlan[];
   fundEvents?: HouseholdFundEvent[];
