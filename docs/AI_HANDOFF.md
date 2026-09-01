@@ -1,5 +1,17 @@
 # AI Task and Handoff Standard
 
+## Charter founding conversation and document page (2026-09-01)
+
+**Status:** Independently reviewed, rebased, and merged in stack order: founding PR [#271](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/271) as `4074e657c94d68a4c2ad8cd67a269b8541b7ec90`, then document PR [#275](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/275) as `main@86da91c2fc16912c2f56dcf62d2dd53e2a8429be`. D-041 Cloudflare Workers Action [`33486435990`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33486435990) succeeded and published Worker version `33ce5c14-612c-4c79-87c3-d39219656c84`. **Kitchen live HTTP is not verified:** the canonical `hearth-books.jonathanbeaulne123.workers.dev` hostname returned DNS `NXDOMAIN` through the local resolver, `1.1.1.1`, and the in-app browser after publication. This is Development kitchen publication, not Production continuity or Production household data.
+
+**Household outcome:** An empty shared household can found its Charter through five quiet questions without creating an account or moving money; once founded, More opens the paper agreement with equal signature lines and only the viewer's own blank line offers Sign.
+
+**Dual Course:** founding Budget `+2` / Engagement `+3`; document Budget `+1` / Engagement `+3`. Books won: Charter writes remain non-financial, TXN/SHF still require CAD accounts, unsigned is valid, remainder stays authored rather than computed, and the page adds no nag, badge, or partner-directed prompt.
+
+**Verification:** Slice 3 rebased head `7a1e6175210eaa83b65778109925113f8addf805` passed PR CI `33484036459`: `221` files passed / `2` skipped, `1,523` tests passed / `3` skipped, TypeScript and both builds green. Slice 4 rebased head `e8f6a94fe643922ae7a5a8908c1ba88882ecd195` passed focused `66/66` and PR CI `33485352450`: `223` files passed / `2` skipped, `1,534` tests passed / `3` skipped, TypeScript and both builds green. Final-main CI [`33486436015`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33486436015) passed the same `1,534` / `3` gate. No P0/P1/P2 review finding remained. CI is recorded separately from the D-041 publish because merged, published, and live are distinct states.
+
+**Boundaries:** No hosted schema, secret, provider setting, Supabase row, real household row, Production flag, or Production continuity was touched. The only environment action was the authorized D-041 Worker publication from `main`.
+
 ## D-189 Charter integrity repair (2026-09-01)
 
 **Status:** Merged through [#274](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/274) as `main@450be34b6bc84f5bf5e203154c864cccba198eb5` and published to the Development kitchen. Main CI `33478168942` and Cloudflare Workers `33478168914` passed; Worker version `ae1df573-e6f9-43a2-af78-c67c03d0318e` is live. No hosted row, schema, secret, Production-continuity, or household-data action.

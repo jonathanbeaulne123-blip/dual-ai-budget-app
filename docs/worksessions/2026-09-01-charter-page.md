@@ -1,17 +1,17 @@
 # Hearth worksession — Charter page and empty signature line
 
-- **Status:** OPEN
+- **Status:** CLOSED; MERGED #275; KITCHEN PUBLISHED; LIVE HTTP UNVERIFIED (DNS NXDOMAIN)
 - **Opened:** 2026-09-01 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/charter-page-021f`
-- **Baseline SHA:** `e9b14d907b6e15b7243df97b09c8d964117981a8` (Charter slice 3 founding conversation, draft #271)
-- **Head SHA:** (see latest commit after this update)
-- **PR or issue:** draft [#275](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/275)
+- **Baseline SHA:** `4074e657c94d68a4c2ad8cd67a269b8541b7ec90` (merged Charter slice 3)
+- **Head SHA:** `e8f6a94fe643922ae7a5a8908c1ba88882ecd195` (rebased review head); merge `86da91c2fc16912c2f56dcf62d2dd53e2a8429be`
+- **PR or issue:** merged [#275](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/275)
 - **Risk:** High (presentation; sign/revoke only through existing Charter commands)
 - **Decision owner:** Jonathan
-- **Environment impact:** none — fictional Development demo; no Production, hosted mutation, schema, or secrets
+- **Environment impact:** D-041 Development kitchen publication only; no Production, hosted-row mutation, schema, or secrets
 
 ## Household outcome
 
@@ -89,8 +89,8 @@ Inferences:
 
 ## Remaining uncertainty
 
-- Slice 3 is still an unmerged draft; this branch depends on it. Dark/forced-colors not verified.
+- Live HTTP and dark/forced-colors remain unverified because the canonical kitchen hostname returned DNS `NXDOMAIN` after the successful D-041 publication.
 
 ## Handoff
 
-Draft PR #275 against slice 3. Jonathan asked GPT to review and merge both slices via [`briefs/CHATGPT_CHARTER_3_4_REVIEW_MERGE.md`](../briefs/CHATGPT_CHARTER_3_4_REVIEW_MERGE.md). Rebase onto current `main` (#274) first. Not kitchen-published, not live until that merge is verified.
+Merged #275 after #271, retargeted to `main`, rebased, and verified by Linux `pnpm check` (`1,534` passed / `3` skipped). D-041 Action `33486435990` published Worker version `33ce5c14-612c-4c79-87c3-d39219656c84`; do not call it live until the canonical hostname returns HTTP and the served bundle is inspected.
