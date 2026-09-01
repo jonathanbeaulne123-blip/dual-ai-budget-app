@@ -1,14 +1,14 @@
 # Hearth worksession — continuity Auth reconnect
 
-- **Status:** IMPLEMENTED — focused verification passed; combined release gate pending
+- **Status:** RELEASE AUTHORIZED — exact Clerk-integrated candidate verified; replacement push/merge/Development deploy pending
 - **Opened:** 2026-09-01 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/auth-reconnect-repair`
-- **Baseline SHA:** `4e0515069c14bba6ed31f640735fa48986f6f569` (`origin/main` at open)
-- **Head SHA:** uncommitted work over the baseline
-- **PR or issue:** none
+- **Baseline SHA:** opened at `4e0515069c14bba6ed31f640735fa48986f6f569`; final rebase base `8fb0a5f11a11a4b251bef0eb031940d9c201997b`
+- **Head SHA:** application `a7bd6b8`; tooling `0520c1e`; schedule repair `72bba7d`; final docs commit pending
+- **PR or issue:** PR #284
 - **Risk:** High — Development Auth and Realtime availability/status; no financial meaning change
 - **Decision owner:** Jonathan
 - **Environment impact:** Development client only
@@ -65,7 +65,7 @@ Inference:
 - [x] No Auth-required action appears for local-only, Production-disabled, offline, or healthy subscribed states.
 - [x] Polling/outbox/local accepted books remain unchanged while Auth is unavailable.
 - [x] Focused tests, TypeScript/build, diff hygiene, and independent repair review pass.
-- [ ] One full combined release-gate run exits green; the latest run had only the unrelated demo timeout recorded below.
+- [x] One full combined release-gate run exits green on the exact Clerk-integrated tree.
 
 ## Plan
 
@@ -74,8 +74,8 @@ Inference:
 - [x] Implement the Auth-required state and reconnect action.
 - [x] Add lifecycle/status/UI/OAuth regressions.
 - [x] Run focused verification and aggregate full-suite evidence.
-- [ ] Obtain a green combined release-gate exit before release consideration.
-- [x] Update D-193, AI handoff, and this evidence log.
+- [x] Obtain a green combined release-gate exit before release consideration.
+- [x] Update D-195, AI handoff, and this evidence log.
 - [x] Run independent books/trust and continuity reviews.
 
 ## Evidence log
@@ -90,6 +90,9 @@ Inference:
 - Earlier combined-gate attempts exposed fixed-duration test/tooling limits only: startup, blocked-books, and receipt-recovery waits now follow actual readiness/ingest conditions, and the default 60-second demo ceiling was insufficient under transient machine load.
 - Independent books/trust review: pass; no money, privacy, OAuth-scope, schema, hosted-data, or Production boundary regression. Independent continuity review's polling-only Auth finding was fixed and covered before final proof.
 - `git diff --check`: clean except expected non-mutating CRLF notices.
+- Final Clerk-integrated base is `origin/main@8fb0a5f`; Clerk remains D-194 and this Auth repair is reconciled to D-195. Focused Clerk/Auth/schedule/lane interaction proof passed 38/38.
+- Exact rebased release tree through schedule-preservation repair `72bba7d`, retaining Auth application `a7bd6b8` and lane correction `0520c1e`, passed `pnpm check:windows`. Fast lane: 214 files passed / 1 skipped, 1,456 tests passed / 2 skipped. Serial books lane: 18 files passed / 1 skipped, 145 tests passed / 1 skipped. Total: 1,601 passed / 3 skipped. AI surface, deployment sanitizer, TypeScript, Vite production build (400 modules), Hercules Pro UI, and no `dist/_redirects`: pass.
+- The first exact remote CI run exposed a real D-172 schedule merge defect: refreshing one member discarded another member's Personal shift envelope, and status aging used wall clock instead of the authenticated observation time. Repair `72bba7d` preserves untouched members and passes the observation time into status derivation; its regression and the formerly failing demo assertion pass.
 
 ## Decisions
 
@@ -104,4 +107,4 @@ Inference:
 
 ## Handoff
 
-Local implementation only. The combined release gate remains pending because of the recorded unrelated demo timeout. Jonathan remains the next owner for any later release decision and signed-in two-device timing run.
+Jonathan authorized push, merge, and Development deployment. The exact Clerk-integrated candidate is green; replacement push/merge/deploy are pending. Signed-in account-chooser smoke and fresh two-device timing remain separate live acceptance proof.
