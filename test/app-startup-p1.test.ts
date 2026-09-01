@@ -406,7 +406,7 @@ describe("cached-shell startup books gate", () => {
       await Promise.resolve();
     });
     await startValidation();
-    await act(async () => { await Promise.resolve(); });
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull());
 
     expect(startup.ingestCalls).toBe(1);
     expect(startup.inspectCalls).toBe(2);
