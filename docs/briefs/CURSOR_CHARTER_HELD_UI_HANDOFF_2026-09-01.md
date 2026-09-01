@@ -6,7 +6,7 @@ Implement the visual and interaction layer for Held contribution motions using t
 
 - **Target AI:** Cursor
 - **Repository:** `dual-ai-budget-app`
-- **Start from:** `94a9f50d31bdb95b82e2afab52071809c2edae52`
+- **Start from:** `a7729362e469136636f438313215a3b03ccc570d`
 - **Branch suggestion:** `cursor/charter-held-ui`
 - **Risk:** High (consent presentation beside a financial Confirm)
 - **Decision owner:** Jonathan

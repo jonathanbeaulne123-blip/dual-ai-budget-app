@@ -6,10 +6,10 @@
 - **Assignee or AI:** Codex
 - **Repository:** `C:\Users\jonat\OneDrive\Documents\ChatGPT\Budget App`
 - **Branch:** `codex/charter-slice-5`
-- **Baseline SHA:** `4c5b94324166e655aa77076493b8bdf838c6e2ed`
-- **Core SHA:** `94a9f50d31bdb95b82e2afab52071809c2edae52`
+- **Baseline SHA:** `2879af2153affca10709608acbbd6c6e1b202af2`
+- **Core SHA:** `a7729362e469136636f438313215a3b03ccc570d`
 - **Head SHA:** release-evidence commit is the branch head
-- **PR or issue:** to be created from `codex/charter-slice-5`
+- **PR or issue:** [#283](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/283)
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** Jonathan explicitly authorized push, merge, and Development kitchen deployment on 2026-09-01. The client release upgrades the shared Development/Production on-device PGlite schema from v5 to v6 when a browser opens this build. No hosted schema, hosted row, secret, provider, bank action, or Production household mutation is authorized.
@@ -30,7 +30,7 @@ Either household member can raise a contribution motion; the Fund custodian can 
 
 Facts:
 
-- The isolated branch is rebased onto clean `origin/main@4c5b94324166e655aa77076493b8bdf838c6e2ed`.
+- The isolated branch is rebased onto clean `origin/main@2879af2153affca10709608acbbd6c6e1b202af2`.
 - D-161 makes Fund events immutable Shared operational facts; only the Fund custodian confirms contributions.
 - Charter amendment Holds already remain open and confirmable.
 - Fund command-log materialization and compacted outbox payloads already carry posted Fund events generically.
@@ -83,10 +83,10 @@ Inference to prove:
 - Baseline inspection: `git status --short --branch`, `git rev-parse HEAD`, `git rev-parse origin/main`.
 - Focused core/continuity/PGlite proof: 7 files, **62/62** tests passed; TypeScript passed.
 - Pre-rebase lower-contention Windows gate: `pnpm ai:verify` passed; **225 passed / 2 skipped files, 1,555 passed / 3 skipped tests**. The three skips are the repository's intentional live/benchmark skips.
-- Exact current-main rebase gate: official `pnpm check` passed AI verification, **227 passed / 2 skipped files, 1,565 passed / 3 skipped tests**, TypeScript, Vite production build, Hercules Pro UI, and redirect guard. Existing PGlite browser-external/eval, large-chunk, and React `act(...)` warnings remained non-failing.
+- Complete local gate: AI verification, **228 passed / 2 skipped files, 1,571 passed / 3 skipped tests**, TypeScript, Vite production build, Hercules Pro UI, and redirect guard passed. Existing PGlite browser-external/eval, large-chunk, and React `act(...)` warnings remained non-failing.
 - Earlier direct invocations before the test-runner update exposed missing Git Bash/Python PATH and a 15-second stress-test host limit. Current `origin/main` added the Windows-safe lane runner; the official command is now the final proof and passed without assertion failures.
 - `git diff --check` and the staged secret-pattern scan passed.
-- Final release review on exact pre-evidence head `dfe97413ac2986285bf88c59b397eef49d10c5cc`: **PASS**. `origin/main` remained `4c5b94320bd2d55c6b80411924abb2f0db2296a7`; the tree was clean and exactly two commits ahead. CAD cents, Confirm-only balance authority, no-journal Hold/release, PGlite migration, compacted replay, environment isolation, and private-artifact/secret fences passed. Visual/browser proof is not claimed because the UI is explicitly Cursor's next slice.
+- Final release review on the code-equivalent pre-evidence tree: **PASS**. Subsequent main advances were reconciled without changing the Slice 5 runtime diff; the current core is `a7729362e469136636f438313215a3b03ccc570d` over `origin/main@2879af2153affca10709608acbbd6c6e1b202af2`. CAD cents, Confirm-only balance authority, no-journal Hold/release, PGlite migration, compacted replay, environment isolation, and private-artifact/secret fences passed. Visual/browser proof is not claimed because the UI is explicitly Cursor's next slice.
 - Jonathan's action-time release instruction: “push merge and deploy” on 2026-09-01. Remaining release receipts are branch push, PR/CI, merge SHA, main CI/Cloudflare publication, and live HTTP/bundle proof.
 
 ## Decisions

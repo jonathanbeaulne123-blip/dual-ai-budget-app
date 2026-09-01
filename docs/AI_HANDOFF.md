@@ -2,7 +2,7 @@
 
 ## Charter Slice 5 Held core (2026-09-01)
 
-**Status:** Core and architecture are implemented on local branch `codex/charter-slice-5` at `94a9f50d31bdb95b82e2afab52071809c2edae52`, rebased onto clean `origin/main@4c5b94324166e655aa77076493b8bdf838c6e2ed`. Final High-risk release review passed on pre-evidence head `dfe97413ac2986285bf88c59b397eef49d10c5cc`; Jonathan explicitly authorized push, merge, and Development kitchen deployment on 2026-09-01. GitHub and live receipts remain pending at this recorded point. Cursor owns the separate UI/UX implementation from [`briefs/CURSOR_CHARTER_HELD_UI_HANDOFF_2026-09-01.md`](briefs/CURSOR_CHARTER_HELD_UI_HANDOFF_2026-09-01.md).
+**Status:** Core and architecture are implemented on branch `codex/charter-slice-5` at code commit `a7729362e469136636f438313215a3b03ccc570d`, rebased onto clean `origin/main@2879af2153affca10709608acbbd6c6e1b202af2` in [PR #283](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/283). Final High-risk release review passed on the code-equivalent pre-evidence tree; Jonathan explicitly authorized push, merge, and Development kitchen deployment on 2026-09-01. Fresh rebased GitHub and live receipts remain pending at this recorded point. Cursor owns the separate UI/UX implementation from [`briefs/CURSOR_CHARTER_HELD_UI_HANDOFF_2026-09-01.md`](briefs/CURSOR_CHARTER_HELD_UI_HANDOFF_2026-09-01.md).
 
 **Household outcome:** The Fund custodian can Hold another member's open contribution proposal for a conversation without rejecting it or moving money. The exact holder can release, the exact proposer can withdraw, and a held proposal remains confirmable.
 
@@ -10,7 +10,7 @@
 
 **Architecture:** D-193 adds immutable Shared `contribution-held`, `contribution-hold-released`, and `contribution-withdrawn` facts; one UI-facing `householdFundContributionMotions` fold; three authority-checked commands; ingest-time lineage validation; compacted command replay/audit retention; and a local PGlite v5→v6 constraint upgrade. No hosted migration or second money writer exists.
 
-**Verification:** Focused core/continuity/PGlite proof passed **62/62**. After rebase, the official `pnpm check` passed AI-policy checks, **227 files / 1,565 tests**, the repository's **2 files / 3 tests intentionally skipped**, TypeScript, Vite production build, Hercules Pro UI, and redirect guard. Diff hygiene and staged secret scan passed. Existing PGlite browser-external/eval, large-chunk, and React test `act(...)` warnings remained non-failing.
+**Verification:** Focused core/continuity/PGlite proof passed **62/62**. The complete local proof passed AI-policy checks, **228 files / 1,571 tests**, the repository's **2 files / 3 tests intentionally skipped**, TypeScript, Vite production build, Hercules Pro UI, and redirect guard. Diff hygiene and staged secret scan passed. Existing PGlite browser-external/eval, large-chunk, and React test `act(...)` warnings remained non-failing.
 
 **Boundaries:** Local fictional/catalog data only in verification. No React/CSS UI, browser acceptance proof, hosted schema/row, Supabase, Auth/RLS, secret, provider, bank action, real household data, or Production household mutation. The authorized Development client release makes the local on-device v5→v6 constraint upgrade available; it does not apply a hosted migration.
 
