@@ -14,13 +14,13 @@ The original implementation brief [`CURSOR_CHARTER_HELD_UI_HANDOFF_2026-09-01.md
 - **UI branch:** `cursor/charter-held-ui-115c`
 - **UI base:** `ff9d8d8de70c80fd567ba9835b3cc2ffbcd45082`
 - **UI head:** `ee704ad28f1a1bc476edbdee3e789748244e1679` (this packet). Product closeout `e800cede3c9cf249b27b6bfafbf84a01a5f1b629`.
-- **Draft PR:** [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286) — **draft, not merged, not kitchen-published, not live, not shipped**
+- **Merged PR:** [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286) — merged to `main` as `e7d98389be1a4ad831d4d83204061a68955df232`; D-041 kitchen deployment/live behavior remains unverified
 - **Worksession:** [`docs/worksessions/2026-09-01-charter-held-ui.md`](../worksessions/2026-09-01-charter-held-ui.md)
 - **Risk:** High (consent presentation beside Confirm)
 - **Decision owner:** Jonathan
 - **Environment:** none. No hosted row, schema, secret, Production, or deploy.
 
-Re-fetch `origin/main` before merge. GitHub `main` has moved past `ff9d8d8`. This PR will be dirty against current `main`. If Jonathan authorizes merge, rebase onto the then-current `origin/main` and record the new SHA. Do not force-push. Expect doc conflicts with Register slice 8 draft [#285](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/285) on `docs/DECISIONS.md` and `docs/AI_HANDOFF.md` if both land; rebase the later one.
+The original merge instruction is consumed. PR #286 is on `main`; later follow-ups must start from current `origin/main` and treat this file as historical evidence, not an open merge packet.
 
 ---
 
@@ -53,7 +53,7 @@ Facts:
 Inference:
 
 - App Books wiring still uses the existing `onCommand` path; jsdom covers the panel, not a full App mount of Hold.
-- Audit Office `sharedLedgerStory` / `sharedActionQueue` / `weekEventLabel` were not edited. A withdrawn motion can still appear there as a pending confirm with CAD. That is a follow-up packet, not a merge blocker for this Fund-panel slice unless Jonathan expands scope.
+- Audit Office `sharedLedgerStory` / `sharedActionQueue` / `weekEventLabel` were not edited in #286. Their withdrawn-motion defect is addressed separately on `codex/held-audit-office-truth`.
 
 ---
 
@@ -139,7 +139,7 @@ git diff --check
 # clean
 ```
 
-`pnpm check` is **not** a passing packet proof. Serial `test/demo-suite.test.ts` fails on `shiftEnvelopes` `"upcoming"` for seed 10101. That file does not import this UI. Do not repair demo-suite inside #286.
+**Historical #286 branch evidence:** `pnpm check` was not a passing packet proof because serial `test/demo-suite.test.ts` failed on `shiftEnvelopes` `"upcoming"` for seed 10101. That branch-local result is not a claim about current `main`; current proof belongs to later follow-up worksessions.
 
 `pnpm build` was not re-run on `b37719d` because the books lane fails first in `pnpm check`. Fast-lane plus `tsc` is the local UI proof.
 
@@ -158,7 +158,7 @@ git diff --check
 
 ## Remaining uncertainty (honest)
 
-1. **Audit Office second fold (follow-up packet, not this PR unless Jonathan expands):** `sharedActionQueue` / `buildSharedLedgerStory` / `weekEventLabel` still treat a withdrawn proposal as pending confirm and can print raw `contribution-held` beside CAD. Route those surfaces through `householdFundContributionMotions` in a separate High-risk packet. Do not edit them on #286 by default.
+1. **Audit Office second fold:** addressed by the separate High-risk follow-up `codex/held-audit-office-truth`, which routes pending state through `householdFundContributionMotions` and marks motion lineage `record only`.
 2. **Kitchen:** this is Fund-panel presentation already mounted where `HouseholdFundPanel` is used. There is no separate new route. Live kitchen 320/390/720/1100 after merge/deploy is still unproven.
 3. **Forced-colors / reduced-motion:** CSS has a reduced-motion guard; forced-colors distinctness was not measured in a real browser.
 4. **Record-only coverage:** tests assert the held Fund-books row; released/withdrawn book rows share the same helper but are not separately asserted.
@@ -179,17 +179,13 @@ Do not self-audit a merge you just rebased.
 
 ## Next owner and smallest next action
 
-**Jonathan decides.** Smallest next action is one of:
-
-1. **Review/merge #286** after rebase onto then-current `origin/main` (authorized merge only). Keep draft until that review. Do not call it shipped until `main` + live kitchen are verified.
-2. **Open a follow-up packet** for Audit Office motion kinds (`sharedLedgerStory` / `sharedActionQueue` / `weekEventLabel` / personal contribution bridge) using the same sealed selector.
-3. **Leave #286 draft** if Register #285 should land first; then rebase this PR.
-
-Do not stack Charter amendment authoring, Register slice 8, or Fund core changes on this branch.
+PR #286 and the Audit Office follow-up are separate changes. The remaining product evidence step is D-041 kitchen-live verification after an authorized deployment; neither merge proves live behavior. Do not stack Charter amendment authoring, Register work, or Fund core changes onto the Audit Office follow-up.
 
 ---
 
-## Paste-ready review prompt
+## Historical paste-ready review prompt
+
+The prompt below records the pre-merge review request as it was used. It is not an active instruction; PR #286 is merged.
 
 ```
 Review Hearth Charter Slice 5 Held UI only.

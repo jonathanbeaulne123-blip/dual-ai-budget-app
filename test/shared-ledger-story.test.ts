@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { SharedLedgerStory } from "../src/SharedLedgerStory.tsx";
 import {
   HOUSEHOLD_FUND_ID,
   addAccount,
@@ -12,12 +15,16 @@ import {
   confirmHouseholdFundContribution,
   confirmHouseholdFundSettlement,
   fundFlowDiagram,
+  holdHouseholdFundContribution,
+  HOUSEHOLD_FUND_HOLD_COPY,
   postEntry,
   projectHouseholdFund,
   projectLedgerExperience,
   proposeHouseholdFundContribution,
   recordHouseholdFundReconciliation,
+  releaseHouseholdFundHold,
   sharedActionQueue,
+  withdrawHouseholdFundContribution,
 } from "../src/core/index.ts";
 
 const BIANCA = "MEM-001";
@@ -197,6 +204,72 @@ describe("sharedActionQueue", () => {
     expect(JSON.stringify(queue)).not.toMatch(/failed|should have|who spent more/i);
     expect(queue.find((item) => item.kind === "transfer-due")?.actorLabel).toBe("Bianca");
   });
+
+  it("uses the sealed contribution motion state for Held and withdrawn proposals", () => {
+    const proposal = proposeHouseholdFundContribution(configuredFund(), {
+      memberId: JONATHAN,
+      contributorMemberId: JONATHAN,
+      amount: "25",
+      date: DATE,
+    });
+    const proposalId = proposal.postedIds[0]!;
+    let household = holdHouseholdFundContribution(proposal.household, {
+      memberId: BIANCA,
+      proposalEventId: proposalId,
+      note: "Check the rent total first.",
+      date: DATE,
+    }).household;
+
+    let story = buildSharedLedgerStory(household, "2026-09-02");
+    expect(story.queue.find((item) => item.id === `confirm-${proposalId}`)?.amountCents).toBe(2500);
+    expect(story.trust.pendingProposalCount).toBe(1);
+    expect(story.weekly.find((event) => event.kind === "contribution-proposed")).toMatchObject({
+      label: "Contribution proposed",
+      recordOnly: true,
+    });
+    expect(story.weekly.find((event) => event.kind === "contribution-held")).toMatchObject({
+      label: HOUSEHOLD_FUND_HOLD_COPY.status,
+      recordOnly: true,
+      actorLabel: "Bianca",
+    });
+
+    const activeHoldId = household.fundEvents?.find((event) => event.kind === "contribution-held")?.id;
+    if (!activeHoldId) throw new Error("expected active Hold");
+    household = releaseHouseholdFundHold(household, {
+      memberId: BIANCA,
+      holdEventId: activeHoldId,
+      date: DATE,
+    }).household;
+    household = withdrawHouseholdFundContribution(household, {
+      memberId: JONATHAN,
+      proposalEventId: proposalId,
+      date: DATE,
+    }).household;
+
+    story = buildSharedLedgerStory(household, "2026-09-02");
+    expect(story.queue.some((item) => item.id === `confirm-${proposalId}`)).toBe(false);
+    expect(story.trust.pendingProposalCount).toBe(0);
+    expect(story.weekly.find((event) => event.kind === "contribution-hold-released")).toMatchObject({
+      label: "Contribution Hold released",
+      recordOnly: true,
+      actorLabel: "Bianca",
+    });
+    expect(story.weekly.find((event) => event.kind === "contribution-withdrawn")).toMatchObject({
+      label: "Contribution proposal withdrawn",
+      recordOnly: true,
+      actorLabel: "Jonathan",
+    });
+    const changeHtml = renderToStaticMarkup(createElement(SharedLedgerStory, {
+      story,
+      onOpenFund: () => undefined,
+      onOpenHealth: () => undefined,
+      panel: "change",
+    }));
+    expect(changeHtml).toContain("record only");
+    expect(changeHtml).toContain("Held — let&#x27;s talk about this.");
+    expect(changeHtml).not.toContain("$25.00");
+    expect(changeHtml).not.toContain("contribution-held");
+  });
 });
 
 describe("buildSharedLedgerStory", () => {
@@ -224,7 +297,10 @@ describe("buildSharedLedgerStory", () => {
     expect(story.opening.headline).toBe("Together, right now");
     expect(story.opening.freeToSpendCents).toBe(92000);
     expect(story.trust.custodyDisclosure).toContain("Hearth cannot move it");
-    expect(story.weekly.some((event) => event.kind === "contribution-confirmed")).toBe(true);
+    expect(story.weekly.find((event) => event.kind === "contribution-confirmed")).toMatchObject({
+      label: "Contribution confirmed",
+      recordOnly: false,
+    });
     expect(story.monthly.closingOperatingCents).toBe(94000);
     expect(JSON.stringify(story)).not.toContain("Private bank");
     expect(JSON.stringify(story)).not.toContain("bankTotalCents");

@@ -1,14 +1,14 @@
 # Hearth worksession — Charter Held UI (D-193)
 
-- **Status:** CLOSED ON BRANCH; DRAFT PR; NOT MERGED; NOT DEPLOYED; NOT LIVE
+- **Status:** CLOSED; MERGED VIA PR #286 AS `e7d98389be1a4ad831d4d83204061a68955df232`; KITCHEN LIVE UNVERIFIED
 - **Opened:** 2026-09-01 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/charter-held-ui-115c`
 - **Baseline SHA:** `ff9d8d8de70c80fd567ba9835b3cc2ffbcd45082`
-- **Head SHA:** `e800cede3c9cf249b27b6bfafbf84a01a5f1b629`
-- **PR or issue:** draft [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286)
+- **Head SHA:** merge `e7d98389be1a4ad831d4d83204061a68955df232`
+- **PR or issue:** merged [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286)
 - **Risk:** High (consent presentation beside Confirm)
 - **Decision owner:** Jonathan
 - **Environment impact:** none
@@ -79,7 +79,7 @@ Facts:
 - [x] jsdom tests
 - [x] Focused vitest, tsc, git diff --check
 - [x] Independent High-risk UX/books/trust review
-- [x] Draft PR #286
+- [x] Draft PR #286 opened, then merged as `e7d98389be1a4ad831d4d83204061a68955df232`
 - [x] Commit, push, close worksession
 
 ## Evidence log
@@ -90,18 +90,18 @@ Facts:
 - Independent reviews on `39d799f`: UX merge-ready as draft (P2 focus/`aria-controls` now landed); books FAIL P1 Fund-books CAD (now `record only`); trust PASS on money/authority, with Audit Office second-fold notes left as a follow-up.
 - Component harness screenshots at 320/390/720/1100 for open, held (Bianca/Jonathan), released, withdrawn.
 - Commits: `c1d3908` UI/CSS/tests/docs; `4daf3fa` source-fence call-site count; `39d799f` verification/closeout; this follow-up for books/a11y.
-- Pushed `origin/cursor/charter-held-ui-115c`. Draft PR #286. No merge, no deploy.
+- PR #286 merged to `main` as `e7d98389be1a4ad831d4d83204061a68955df232`. No D-041 deploy or live-kitchen proof is recorded by this merge.
 
 ## Decisions
 
 UI uses one sealed `householdFundContributionMotions` fold. Hold is outline/ghost equal to pine Confirm. Held copy is exactly `HOUSEHOLD_FUND_HOLD_COPY.status`. Commands go only through `onCommand`. Proposed/held/released/withdrawn Fund-book rows are `record only`.
 
-## Remaining uncertainty
+## Post-merge follow-up
 
-- Audit Office `sharedActionQueue` / `weekEventLabel` still treat a withdrawn motion as a pending confirm and print raw `contribution-held` beside CAD. Out of this packet; next owner should route those surfaces through `householdFundContributionMotions`.
-- `pnpm check` books lane failure in `demo-suite.test.ts` is unrelated and still fails on retry.
+- The Audit Office truth defect is addressed on `codex/held-audit-office-truth`; see [`2026-09-01-held-audit-office-truth.md`](2026-09-01-held-audit-office-truth.md).
+- The original branch recorded an unrelated `demo-suite.test.ts` failure; current-main proof belongs to the separate Audit Office follow-up worksession.
 - App Books wiring of the panel was not jsdom-covered beyond the existing source fence.
 
 ## Handoff
 
-Independent High-risk UX/books review of draft [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286) using [`docs/briefs/CHARTER_SLICE_5_HELD_UI_RETURN_HANDOFF_2026-09-01.md`](../briefs/CHARTER_SLICE_5_HELD_UI_RETURN_HANDOFF_2026-09-01.md). Not shipped, not live. Jonathan decides merge. Do not deploy.
+PR [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286) is merged. The consumed review packet remains [`docs/briefs/CHARTER_SLICE_5_HELD_UI_RETURN_HANDOFF_2026-09-01.md`](../briefs/CHARTER_SLICE_5_HELD_UI_RETURN_HANDOFF_2026-09-01.md). Kitchen live is unverified; do not deploy from this historical worksession.

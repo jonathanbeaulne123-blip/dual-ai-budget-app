@@ -20,6 +20,7 @@ const panel = readFileSync(new URL("../src/HouseholdFundPanel.tsx", import.meta.
 const experience = readFileSync(new URL("../src/core/ledgerExperience.ts", import.meta.url), "utf8");
 const accountsUi = readFileSync(new URL("../src/Accounts.tsx", import.meta.url), "utf8");
 const addSlideshow = readFileSync(new URL("../src/AddSlideshow.tsx", import.meta.url), "utf8");
+const sharedStory = readFileSync(new URL("../src/SharedLedgerStory.tsx", import.meta.url), "utf8");
 
 describe("D-164 ledger story UI fences", () => {
   it("routes every tab through projectLedgerExperience and a mode-aware purpose banner", () => {
@@ -54,6 +55,7 @@ describe("D-164 ledger story UI fences", () => {
     expect(css).toContain("max-width: 719px");
     expect(css).toContain("strong.negative");
     expect(css).toContain("grid-template-areas");
+    expect(sharedStory).toContain('event.recordOnly ? "record only" : formatCad(event.amountCents)');
   });
 
   it("keeps writers on the accepted snapshot and Add pickers on the scoped list", () => {

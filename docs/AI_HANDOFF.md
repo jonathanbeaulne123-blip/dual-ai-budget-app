@@ -24,7 +24,7 @@
 **Next owner:** Codex re-fetches current `main`, pins and pushes the combined SHA, waits for exact-head CI, merges, then verifies the D-041 main deployment and live HTTP separately. `App.tsx` placement remains a later slice, so this release publishes the reviewed leaf and fences without exposing a new kitchen control.
 ## Charter Slice 5 Held UI (2026-09-01)
 
-**Status:** Draft PR [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286) on `cursor/charter-held-ui-115c` at `e800cede3c9cf249b27b6bfafbf84a01a5f1b629` from `origin/main@ff9d8d8de70c80fd567ba9835b3cc2ffbcd45082`. **Not merged, not kitchen-published, not live, not shipped.** Risk: **High** (consent presentation beside Confirm). Environment: none.
+**Status:** Merged via [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286) onto `main` as `e7d98389be1a4ad831d4d83204061a68955df232`. Merge is proven; D-041 kitchen deployment and live behavior are not proven by that merge. Risk: **High** (consent presentation beside Confirm). Environment: client presentation only.
 
 **Household outcome:** Bianca can pause Jonathan's contribution proposal for a calm conversation without rejecting it or moving money. The proposal stays visible and confirmable. The exact holder releases; the exact proposer withdraws.
 
@@ -39,11 +39,11 @@
 - Component harness screenshots at 320/390/720/~1100 for open, held, released, withdrawn.
 - Core `src/core/householdFund.ts`, `src/core/commands.ts`, PGlite, continuity, schema, workers, App.tsx, Office, Charter amendment authoring, and Register slice 8 were not edited.
 
-**Uncertainty:** Audit Office `sharedLedgerStory` still folds a withdrawn proposal as a pending confirm and prints raw hold kinds beside CAD. That is a follow-up packet, not this UI. Serial `demo-suite` failure is outside this packet.
+**Post-merge follow-up:** `codex/held-audit-office-truth` routes Audit Office pending actions/counts through `householdFundContributionMotions`, removes withdrawn proposals from the confirm queue, gives Held/released/withdrawn records human labels, and prints proposed/Held/released/withdrawn weekly lineage as `record only`. Worksession: [`worksessions/2026-09-01-held-audit-office-truth.md`](worksessions/2026-09-01-held-audit-office-truth.md).
 
-**Boundaries:** Local fictional Development data only. No hosted schema/row, Supabase, Auth/RLS, secret, provider, bank action, real household data, Production, merge, or deploy. GitHub push of this branch only.
+**Boundaries:** Local fictional/catalog verification only. No hosted schema/row, Supabase, Auth/RLS, secret, provider, bank action, real household data, Production, or deploy.
 
-**Next owner:** Jonathan's merge decision using [`briefs/CHARTER_SLICE_5_HELD_UI_RETURN_HANDOFF_2026-09-01.md`](briefs/CHARTER_SLICE_5_HELD_UI_RETURN_HANDOFF_2026-09-01.md). Draft [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286). Do not call this shipped.
+**Next owner:** Complete the bounded Audit Office follow-up verification/merge. Kitchen live remains a separate D-041 evidence step; do not infer it from either merge.
 ## Charter Slice 5 Held core (2026-09-01)
 
 **Status:** Core and architecture are implemented on branch `codex/charter-slice-5` at code commit `a7729362e469136636f438313215a3b03ccc570d`, rebased onto clean `origin/main@2879af2153affca10709608acbbd6c6e1b202af2` in [PR #283](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/283). Final High-risk release review passed on the code-equivalent pre-evidence tree; Jonathan explicitly authorized push, merge, and Development kitchen deployment on 2026-09-01. Fresh rebased GitHub and live receipts remain pending at this recorded point. Cursor owns the separate UI/UX implementation from [`briefs/CURSOR_CHARTER_HELD_UI_HANDOFF_2026-09-01.md`](briefs/CURSOR_CHARTER_HELD_UI_HANDOFF_2026-09-01.md).
