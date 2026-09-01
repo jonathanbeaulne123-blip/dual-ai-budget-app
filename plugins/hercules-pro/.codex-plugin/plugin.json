@@ -18,7 +18,7 @@
     "developerName": "Hearth",
     "category": "Finance",
     "capabilities": ["Grounded ledger tools", "Animated 3D companion", "Financial education", "Confirmed opt-in transactions"],
-    "websiteURL": "https://hearth-books.jonathanbeaulne123.workers.dev/",
+    "websiteURL": "https://hearth-books.jonathan-beaulne123.workers.dev/",
     "privacyPolicyURL": "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/main/docs/HERCULES_PRO_PRIVACY.md",
     "termsOfServiceURL": "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/main/docs/HERCULES_PRO_TERMS.md",
     "defaultPrompt": [
