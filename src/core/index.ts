@@ -35,6 +35,23 @@ export type {
   RegisterSource,
   RegisterRow as ContributionRegisterRow,
 } from "./contributionRegister.ts";
+export {
+  REGISTER_VIEW,
+  REGISTER_EMPTY_LINE,
+  REGISTER_ERROR_LINE,
+  REGISTER_OFFLINE_LINE,
+  REGISTER_UNTIED_LINE,
+  registerScale,
+  segmentWidth,
+  registerCad,
+  registerDateLabel,
+  registerMaxRowCents,
+} from "./registerView.ts";
+export type {
+  RegisterMemberView,
+  RegisterPresentation,
+  RegisterTone,
+} from "./registerView.ts";
 export * from "./ask.ts";
 export * from "./askRoutes.ts";
 export * from "./openingTruth.ts";

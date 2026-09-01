@@ -1,0 +1,145 @@
+/* The register — one shared Fund provenance drawing. House tokens only. */
+
+.register {
+  --reg-hers: var(--pine);
+  --reg-his: var(--copper);
+  --reg-carried: color-mix(in srgb, var(--felt) 40%, var(--line));
+  --reg-unfunded: var(--copper);
+
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper);
+  padding: 16px;
+  color: var(--ink);
+  font-family: var(--font);
+}
+
+.register-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.register-svg {
+  display: block;
+  width: 900px;
+  max-width: none;
+  height: auto;
+}
+
+.register-title,
+.register-row-label {
+  font-size: 12.5px;
+  fill: var(--ink);
+  font-family: var(--font);
+}
+
+.register-utility,
+.register-date,
+.register-legend-label {
+  font-size: 10.5px;
+  fill: var(--muted);
+  font-family: var(--font);
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.register-date {
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+}
+
+.register-value,
+.register-total {
+  font-size: 12px;
+  fill: var(--ink);
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.register-total-strong {
+  font-weight: 600;
+}
+
+.register-unfunded {
+  fill: none;
+  stroke: var(--reg-unfunded);
+  stroke-width: 1px;
+  stroke-dasharray: 3 2;
+}
+
+.register-rule {
+  stroke: var(--line);
+  stroke-width: 1px;
+}
+
+.register-status,
+.register-offline {
+  margin: 12px 0 0;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.register-list {
+  display: none;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.register-list-item {
+  display: grid;
+  gap: 4px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  font-size: 12.5px;
+}
+
+.register-list-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.register-list-meta {
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.register-skeleton-rule {
+  stroke: var(--line);
+  stroke-width: 1px;
+}
+
+@media (max-width: 719px) {
+  .register-list {
+    display: grid;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .register,
+  .register * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .register {
+    border-color: CanvasText;
+  }
+  .register-unfunded {
+    stroke: CanvasText;
+  }
+  .register:focus-visible,
+  .register-scroll:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+}

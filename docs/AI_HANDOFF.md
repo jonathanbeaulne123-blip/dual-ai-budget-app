@@ -1,5 +1,21 @@
 # AI Task and Handoff Standard
 
+## Register slice 8 — the register, drawn (2026-09-01)
+
+**Status:** Implemented on `cursor/register-8-drawing-115c`; draft PR. **Not merged, not kitchen-published, not live.** Risk **High** (financial presentation). No kitchen placement.
+
+**Household outcome:** Jonathan and Bianca can read the month's Fund obligations as one true-width register: one shared scale, arrival-order segments, unfunded as a dashed outline, and an honest empty staff when the fold does not tie.
+
+**Budget delta (5):** `+3`. **Engagement delta (3):** `+2`. Books win: no ratio, score, or partial drawing.
+
+**Baseline:** `origin/main@ff9d8d8de70c80fd567ba9835b3cc2ffbcd45082` (current main; packet SHA `2879af2` was stale after #283).
+
+**What changed:** `registerView.ts` (`REGISTER_VIEW`, `registerScale`, `segmentWidth`); `Register` presentation component and `register.css`; focused `test/register-view.test.ts`; D-161/D-173 why-note. Worksession: [`worksessions/2026-09-01-register-8-drawing.md`](worksessions/2026-09-01-register-8-drawing.md).
+
+**Data/environment:** Local pure projector/component/CSS/tests only. No hosted row, schema, secret, Production, deploy, or real household data.
+
+**Next owner:** Independent books/UX/privacy review, then Jonathan's merge decision.
+
 ## Charter Slice 5 Held core (2026-09-01)
 
 **Status:** Core and architecture are implemented on branch `codex/charter-slice-5` at code commit `a7729362e469136636f438313215a3b03ccc570d`, rebased onto clean `origin/main@2879af2153affca10709608acbbd6c6e1b202af2` in [PR #283](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/283). Final High-risk release review passed on the code-equivalent pre-evidence tree; Jonathan explicitly authorized push, merge, and Development kitchen deployment on 2026-09-01. Fresh rebased GitHub and live receipts remain pending at this recorded point. Cursor owns the separate UI/UX implementation from [`briefs/CURSOR_CHARTER_HELD_UI_HANDOFF_2026-09-01.md`](briefs/CURSOR_CHARTER_HELD_UI_HANDOFF_2026-09-01.md).
