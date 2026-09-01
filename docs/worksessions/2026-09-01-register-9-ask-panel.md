@@ -7,7 +7,7 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/register-9-ask-panel-115c`
 - **Baseline SHA:** `09be0dcde24356ede228d136fb8cc26498042697`
-- **Head SHA:** _updated after a11y follow-up_
+- **Head SHA:** `be3d7a8` plus watching-caveat follow-up on this branch
 - **PR or issue:** draft [#288](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/288)
 - **Risk:** High
 - **Decision owner:** Jonathan

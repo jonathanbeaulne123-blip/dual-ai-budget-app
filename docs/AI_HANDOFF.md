@@ -4,6 +4,10 @@
 
 **Status:** Implemented on `cursor/register-9-ask-panel-115c`; draft PR [#288](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/288). **Not merged, not kitchen-published, not live.** Risk **High** (financial presentation + work-route options on the desk). Isolated from Register slice 8 (#285) and Charter Held UI (#286).
 
+**Head SHA:** confirm `git rev-parse HEAD` on `cursor/register-9-ask-panel-115c` (a11y `be3d7a8` plus watching-caveat test).
+
+**Remaining uncertainty:** Payday secondary copy appears only when `householdAsk(..., "payday")` actually takes the payday horizon. Provisional run-rate has no extra Ask caveat in core; the panel follows that. Kitchen `Raise it` is a visible no-op until a defer-goal command exists.
+
 **Household outcome:** Jonathan can read this month's Fund Ask on his wide desk: the exact unfunded number, optional conservative routes at one scale, and the other door in the open. Bianca's default surface never receives this panel.
 
 **Budget delta (5):** `+3`. **Engagement delta (3):** `+2`. Books win: routes are options beside a number, never a work instruction; Ask never appears for the custodian; `Raise it` does not write money or move a goal.

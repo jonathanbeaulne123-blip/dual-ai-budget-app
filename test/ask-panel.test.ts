@@ -205,6 +205,9 @@ describe("Ask panel states", () => {
     expect(container.querySelector("[data-ask-door]")?.textContent).toContain("Or move Halifax to next month, and the ask is $40.00.");
     expect(container.querySelector("[data-ask-raise]")?.textContent).toBe("Raise it");
     expect(container.querySelector(".ask-figure")?.classList.contains("is-covered")).toBe(false);
+    expect(view.caveat).toMatch(/though I've only watched \d+ weeks of this house\./);
+    expect(container.querySelector("[data-ask-caveat]")?.textContent).toBe(view.caveat);
+    expect(view.sentence).not.toMatch(/though I've only watched/);
   });
 
   it("covers the month in pine and hides routes and the door", () => {
