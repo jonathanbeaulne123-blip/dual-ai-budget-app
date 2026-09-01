@@ -4180,7 +4180,7 @@ export function App() {
           onDismiss={() => setCharterFoundingOpen(false)}
         />
       ) : null}
-      <header className="topbar">
+      <header className="topbar" inert={charterFoundingVisible || undefined}>
         <div className="brand">
           <img src="/hercules-mark.svg" alt="" />
           <div>
@@ -5757,7 +5757,7 @@ export function App() {
       />
 
       {!charterFoundingVisible ? (
-      <nav className={`nav${fabOpen ? " is-fab-open" : ""}`} data-ledger-nav={view === "household" ? "shared" : "personal"} aria-label="Hearth">
+      <nav className={`nav${fabOpen ? " is-fab-open" : ""}`} data-ledger-nav={view === "household" ? "shared" : "personal"} aria-label="Hearth" inert={charterFoundingVisible || undefined}>
         {kitchenPrimaryNav(view).includes("home") && (
         <button
           className={tab === "home" && !adding ? "active" : ""}

@@ -126,6 +126,33 @@ describe("charter founding conversation", () => {
     host.remove();
   });
 
+  it("marks the selected split card as pressed", () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    const household = catalogHousehold();
+
+    act(() => {
+      root.render(createElement(CharterFounding, {
+        household,
+        memberId: JONATHAN,
+        today: DATE,
+        onCommit: () => {},
+        onDismiss: () => {},
+      }));
+    });
+    const next = [...host.querySelectorAll("button")].find((button) => button.textContent === "Next");
+    act(() => next!.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+    const remainder = [...host.querySelectorAll("button")].find((button) => (
+      button.textContent?.includes("One of us covers what's left")
+    ));
+    expect(remainder?.getAttribute("aria-pressed")).toBe("false");
+    act(() => remainder!.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+    expect(remainder?.getAttribute("aria-pressed")).toBe("true");
+    act(() => root.unmount());
+    host.remove();
+  });
+
   it("keeps the no-ratio fence and the ceiling copy in the flow source", () => {
     const source = readFileSync(join(process.cwd(), "src/CharterFounding.tsx"), "utf8");
     const helper = readFileSync(join(process.cwd(), "src/core/charterFounding.ts"), "utf8");

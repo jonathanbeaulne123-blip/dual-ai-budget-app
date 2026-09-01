@@ -1,4 +1,4 @@
-import { useEffect, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { CommitResult, DateKey, Household } from "./core/index.ts";
 import {
   CHARTER_FOUNDING_COPY,
@@ -22,6 +22,12 @@ const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Frida
 
 function storageKey(householdId: string, memberId: string): string {
   return `${STORAGE_PREFIX}${householdId}:${memberId}`;
+}
+
+function focusableIn(root: HTMLElement): HTMLElement[] {
+  return [...root.querySelectorAll<HTMLElement>(
+    "button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
+  )].filter((node) => !node.hasAttribute("disabled") && node.getClientRects().length > 0);
 }
 
 function readDraft(household: Household, memberId: string): CharterFoundingDraft {
@@ -56,6 +62,7 @@ type Props = {
 };
 
 export function CharterFounding({ household, memberId, today, busy, onCommit, onDismiss }: Props) {
+  const paperRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState<CharterFoundingDraft>(() => (
     household.charter ? { ...emptyCharterFoundingDraft(household), step: 5 } : readDraft(household, memberId)
   ));
@@ -73,6 +80,36 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
     setDraft((current) => current.step === 5 ? current : { ...current, step: 5 });
   }, [household.charter, household.householdId, memberId]);
 
+  const step = household.charter || draft.step === 5 ? 5 : draft.step;
+
+  useEffect(() => {
+    const paper = paperRef.current;
+    const first = paper ? focusableIn(paper)[0] : undefined;
+    first?.focus();
+  }, [step]);
+
+  useEffect(() => {
+    function trap(event: KeyboardEvent) {
+      if (event.key !== "Tab") return;
+      const paper = paperRef.current;
+      if (!paper) return;
+      const focusable = focusableIn(paper);
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (event.shiftKey && (active === first || !paper.contains(active))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (active === last || !paper.contains(active))) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+    window.addEventListener("keydown", trap, true);
+    return () => window.removeEventListener("keydown", trap, true);
+  }, []);
+
   function goNext() {
     if (draft.step >= 4) {
       if (!household.charter) {
@@ -84,7 +121,7 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
     setDraft((current) => ({ ...current, step: current.step + 1 }));
   }
 
-  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+  function onKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
     if (event.key === "Escape") {
       event.preventDefault();
       return;
@@ -96,7 +133,6 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
     goNext();
   }
 
-  const step = household.charter || draft.step === 5 ? 5 : draft.step;
   const title = step === 0 ? CHARTER_FOUNDING_COPY.q1
     : step === 1 ? CHARTER_FOUNDING_COPY.q2
     : step === 2 ? CHARTER_FOUNDING_COPY.q3
@@ -106,6 +142,7 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
 
   return (
     <div
+      ref={paperRef}
       className="charter-founding"
       role="dialog"
       aria-modal="true"
@@ -153,6 +190,7 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
                 key={card.rule}
                 type="button"
                 className={draft.splitRule === card.rule ? "opt sel" : "opt"}
+                aria-pressed={draft.splitRule === card.rule}
                 onClick={() => setDraft((current) => ({ ...current, splitRule: card.rule }))}
               >
                 <h4>{card.heading}</h4>
@@ -179,7 +217,9 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
           <div className="perm">
             {draft.permissionLabels.map((label, index) => (
               <div className="field" key={index}>
-                <label className="lab" htmlFor={`charter-perm-${index}`}>permission</label>
+                <label className="lab" htmlFor={`charter-perm-${index}`}>
+                  {index === 0 ? "permission" : `permission ${index + 1}`}
+                </label>
                 <textarea
                   id={`charter-perm-${index}`}
                   rows={2}
@@ -219,6 +259,7 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
                 key={value}
                 type="button"
                 className={draft.cadence === value ? "opt sel" : "opt"}
+                aria-pressed={draft.cadence === value}
                 onClick={() => setDraft((current) => ({ ...current, cadence: value }))}
               >
                 <h4>{label}</h4>
@@ -231,6 +272,7 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
                     key={label}
                     type="button"
                     className={draft.cadenceWeekday === index ? "sel" : undefined}
+                    aria-pressed={draft.cadenceWeekday === index}
                     onClick={() => setDraft((current) => ({ ...current, cadenceWeekday: index }))}
                   >
                     {WEEKDAY_SHORT[index]}
@@ -247,6 +289,7 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
             <button
               type="button"
               className={draft.ceilingKind === "hours-per-week" ? "opt sel" : "opt"}
+              aria-pressed={draft.ceilingKind === "hours-per-week"}
               onClick={() => setDraft((current) => ({ ...current, ceilingKind: "hours-per-week" }))}
             >
               <h4>{CHARTER_FOUNDING_COPY.hours}</h4>
@@ -266,6 +309,7 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
             <button
               type="button"
               className={draft.ceilingKind === "amount-per-month" ? "opt sel" : "opt"}
+              aria-pressed={draft.ceilingKind === "amount-per-month"}
               onClick={() => setDraft((current) => ({ ...current, ceilingKind: "amount-per-month" }))}
             >
               <h4>{CHARTER_FOUNDING_COPY.dollars}</h4>
@@ -285,6 +329,7 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
             <button
               type="button"
               className={draft.ceilingKind === "none" ? "opt sel" : "opt"}
+              aria-pressed={draft.ceilingKind === "none"}
               onClick={() => setDraft((current) => ({ ...current, ceilingKind: "none" }))}
             >
               <h4>{CHARTER_FOUNDING_COPY.ceilingNone}</h4>
