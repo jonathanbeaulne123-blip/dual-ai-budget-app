@@ -4180,7 +4180,8 @@ export function App() {
           onDismiss={() => setCharterFoundingOpen(false)}
         />
       ) : null}
-      <header className="topbar" inert={charterFoundingVisible || undefined}>
+      <div className="app-shell" inert={charterFoundingVisible || undefined}>
+      <header className="topbar">
         <div className="brand">
           <img src="/hercules-mark.svg" alt="" />
           <div>
@@ -4603,7 +4604,12 @@ export function App() {
                   ? "The household agreement. Sign your own line when you are ready."
                   : "Found the household agreement in a few questions. Skip anything you do not want to decide yet."}
               </p>
-              <button className="primary" type="button" onClick={() => setCharterFoundingOpen(true)}>
+              <button
+                className="primary"
+                type="button"
+                aria-label="Open the charter"
+                onClick={() => setCharterFoundingOpen(true)}
+              >
                 the charter
               </button>
             </section>
@@ -5757,7 +5763,7 @@ export function App() {
       />
 
       {!charterFoundingVisible ? (
-      <nav className={`nav${fabOpen ? " is-fab-open" : ""}`} data-ledger-nav={view === "household" ? "shared" : "personal"} aria-label="Hearth" inert={charterFoundingVisible || undefined}>
+      <nav className={`nav${fabOpen ? " is-fab-open" : ""}`} data-ledger-nav={view === "household" ? "shared" : "personal"} aria-label="Hearth">
         {kitchenPrimaryNav(view).includes("home") && (
         <button
           className={tab === "home" && !adding ? "active" : ""}
@@ -5829,6 +5835,7 @@ export function App() {
         )}
       </nav>
       ) : null}
+      </div>
     </div>
   );
 }

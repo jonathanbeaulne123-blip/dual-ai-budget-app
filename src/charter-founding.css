@@ -42,6 +42,15 @@
   text-wrap: balance;
 }
 
+.charter-founding .q:focus {
+  outline: none;
+}
+
+.charter-founding .q:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 4px;
+}
+
 .charter-founding .qsub {
   font-size: 14.5px;
   line-height: 1.5;
@@ -65,20 +74,22 @@
   box-shadow: none;
 }
 
-.charter-founding .opt h4 {
+.charter-founding .opt .opt-heading {
   font-family: var(--display);
   font-weight: 600;
   font-size: 17px;
   margin: 0 0 4px;
   line-height: 1.25;
+  display: block;
 }
 
-.charter-founding .opt p {
+.charter-founding .opt .opt-body {
   font-size: 13.5px;
   line-height: 1.45;
   color: var(--muted);
   margin: 0;
   max-width: 30em;
+  display: block;
 }
 
 .charter-founding .opt.sel {

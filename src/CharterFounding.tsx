@@ -63,6 +63,7 @@ type Props = {
 
 export function CharterFounding({ household, memberId, today, busy, onCommit, onDismiss }: Props) {
   const paperRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const [draft, setDraft] = useState<CharterFoundingDraft>(() => (
     household.charter ? { ...emptyCharterFoundingDraft(household), step: 5 } : readDraft(household, memberId)
   ));
@@ -83,9 +84,7 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
   const step = household.charter || draft.step === 5 ? 5 : draft.step;
 
   useEffect(() => {
-    const paper = paperRef.current;
-    const first = paper ? focusableIn(paper)[0] : undefined;
-    first?.focus();
+    titleRef.current?.focus();
   }, [step]);
 
   useEffect(() => {
@@ -158,7 +157,7 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
           </div>
         ) : null}
 
-        <h1 className="q" id="charter-founding-title">{title}</h1>
+        <h1 className="q" id="charter-founding-title" ref={titleRef} tabIndex={-1}>{title}</h1>
 
         {step === 0 ? (
           <>
@@ -176,7 +175,7 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
                 }))}
               />
               {draft.purpose.length >= CHARTER_FOUNDING_COUNTER_AT ? (
-                <p className="count">{draft.purpose.length} / {CHARTER_FOUNDING_PURPOSE_MAX}</p>
+                <p className="count" aria-live="polite">{draft.purpose.length} / {CHARTER_FOUNDING_PURPOSE_MAX}</p>
               ) : null}
             </div>
           </>
@@ -193,8 +192,8 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
                 aria-pressed={draft.splitRule === card.rule}
                 onClick={() => setDraft((current) => ({ ...current, splitRule: card.rule }))}
               >
-                <h4>{card.heading}</h4>
-                <p>{card.body}</p>
+                <span className="opt-heading">{card.heading}</span>
+                <span className="opt-body">{card.body}</span>
               </button>
             ))}
             <div className="field">
@@ -260,9 +259,10 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
                 type="button"
                 className={draft.cadence === value ? "opt sel" : "opt"}
                 aria-pressed={draft.cadence === value}
+                aria-expanded={value === "weekly" || value === "biweekly" ? draft.cadence === value : undefined}
                 onClick={() => setDraft((current) => ({ ...current, cadence: value }))}
               >
-                <h4>{label}</h4>
+                <span className="opt-heading">{label}</span>
               </button>
             ))}
             {draft.cadence === "weekly" || draft.cadence === "biweekly" ? (
@@ -273,6 +273,7 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
                     type="button"
                     className={draft.cadenceWeekday === index ? "sel" : undefined}
                     aria-pressed={draft.cadenceWeekday === index}
+                    aria-label={label}
                     onClick={() => setDraft((current) => ({ ...current, cadenceWeekday: index }))}
                   >
                     {WEEKDAY_SHORT[index]}
@@ -290,9 +291,10 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
               type="button"
               className={draft.ceilingKind === "hours-per-week" ? "opt sel" : "opt"}
               aria-pressed={draft.ceilingKind === "hours-per-week"}
+              aria-expanded={draft.ceilingKind === "hours-per-week"}
               onClick={() => setDraft((current) => ({ ...current, ceilingKind: "hours-per-week" }))}
             >
-              <h4>{CHARTER_FOUNDING_COPY.hours}</h4>
+              <span className="opt-heading">{CHARTER_FOUNDING_COPY.hours}</span>
             </button>
             {draft.ceilingKind === "hours-per-week" ? (
               <div className="field">
@@ -310,9 +312,10 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
               type="button"
               className={draft.ceilingKind === "amount-per-month" ? "opt sel" : "opt"}
               aria-pressed={draft.ceilingKind === "amount-per-month"}
+              aria-expanded={draft.ceilingKind === "amount-per-month"}
               onClick={() => setDraft((current) => ({ ...current, ceilingKind: "amount-per-month" }))}
             >
-              <h4>{CHARTER_FOUNDING_COPY.dollars}</h4>
+              <span className="opt-heading">{CHARTER_FOUNDING_COPY.dollars}</span>
             </button>
             {draft.ceilingKind === "amount-per-month" ? (
               <div className="field">
@@ -332,7 +335,7 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
               aria-pressed={draft.ceilingKind === "none"}
               onClick={() => setDraft((current) => ({ ...current, ceilingKind: "none" }))}
             >
-              <h4>{CHARTER_FOUNDING_COPY.ceilingNone}</h4>
+              <span className="opt-heading">{CHARTER_FOUNDING_COPY.ceilingNone}</span>
             </button>
           </>
         ) : null}
