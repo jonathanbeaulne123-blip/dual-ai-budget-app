@@ -1,6 +1,6 @@
 # Hearth worksession — Clerk Slice 1 cited reading
 
-- **Status:** CLOSED — LOCAL IMPLEMENTATION SEALED; LOCAL MERGE AUTHORIZED
+- **Status:** CLOSED — MERGED TO LOCAL `main`
 - **Opened:** 2026-09-01 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -79,4 +79,4 @@ Inference to prove:
 
 ## Handoff
 
-Jonathan authorized commit and local merge on 2026-09-01. No push, PR, deployment, hosted action, household-data mutation, or Production action is authorized. Clerk Slice 2 may consume the sealed `ClerkReading` contract after this branch is integrated. Its durable Cursor packet is `docs/briefs/CURSOR_CLERK_SLICE_2_CITATIONS_2026-09-01.md`.
+Jonathan authorized commit and local merge on 2026-09-01. `clerk/1-reading` was fast-forwarded into local `main`; `origin/main` was not changed. No push, PR, deployment, hosted action, household-data mutation, or Production action is authorized. Clerk Slice 2 may consume the sealed `ClerkReading` contract. Its durable Cursor packet is `docs/briefs/CURSOR_CLERK_SLICE_2_CITATIONS_2026-09-01.md`.
