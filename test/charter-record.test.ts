@@ -79,6 +79,34 @@ describe("household charter record", () => {
     expect(charterIsSigned(oneSigned)).toBe(false);
   });
 
+  it("normalizes one signature line per real member and fails duplicate rows closed", () => {
+    const context = {
+      members: [{ id: BIANCA }, { id: JONATHAN }],
+      householdFund: { custodianMemberId: BIANCA },
+    };
+    const malformed = shapeHouseholdCharter(record({
+      signatures: [
+        { memberId: BIANCA, signedAt: "2026-09-01T12:30:00-04:00" },
+        { memberId: BIANCA, signedAt: "2026-09-01T12:31:00-04:00" },
+        { memberId: "MEM-NOT-HERE", signedAt: "2026-09-01T12:32:00-04:00" },
+      ],
+    }), context)!;
+
+    expect(malformed.signatures).toEqual([
+      { memberId: BIANCA, signedAt: null },
+      { memberId: JONATHAN, signedAt: null },
+    ]);
+    expect(charterIsSigned(malformed)).toBe(false);
+
+    const complete = shapeHouseholdCharter(record({
+      signatures: [
+        { memberId: BIANCA, signedAt: "2026-09-01T12:30:00-04:00" },
+        { memberId: JONATHAN, signedAt: "2026-09-01T12:31:00-04:00" },
+      ],
+    }), context)!;
+    expect(charterIsSigned(complete)).toBe(true);
+  });
+
   it("labels all three ceiling kinds", () => {
     expect(charterCeilingLabel(record({ ceilingKind: "hours-per-week", ceilingValue: 240 }))).toBe("24 hours a week");
     expect(charterCeilingLabel(record({ ceilingKind: "amount-per-month", ceilingValue: 40000 }))).toBe("$400 a month");

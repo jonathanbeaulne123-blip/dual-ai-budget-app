@@ -10,7 +10,7 @@ import {
 } from "../src/continuity.ts";
 import { financialAuditHash } from "../src/core/commandIdentity.ts";
 import { catalogHousehold, linkGoogleIdentity, postEntry } from "../src/core/index.ts";
-import type { Household } from "../src/core/types.ts";
+import type { Household, HouseholdCharter } from "../src/core/types.ts";
 import {
   applyPublishHouseholdSnapshotCas,
   createMemoryHostedCas,
@@ -55,6 +55,31 @@ function expense(household: Household, note: string, amount: string, createdBy =
     createdBy,
     confirmDuplicate: true,
   }).household;
+}
+
+function charter(purpose: string): HouseholdCharter {
+  const at = "2026-08-24T12:00:00.000Z";
+  return {
+    id: "CHARTER-001",
+    purpose,
+    custodianMemberId: "MEM-001",
+    splitRule: "remainder",
+    splitNote: "One income covers what it covers and the other closes the rest.",
+    ceilingKind: "none",
+    ceilingValue: 0,
+    cadence: "none",
+    cadenceWeekday: 0,
+    clauses: [],
+    permissions: [],
+    signatures: [
+      { memberId: "MEM-001", signedAt: null },
+      { memberId: "MEM-002", signedAt: null },
+    ],
+    amendments: [],
+    foundedOn: "2026-08-24",
+    createdAt: at,
+    updatedAt: at,
+  };
 }
 
 async function casRequest(household: Household, expectedRevision: number): Promise<SnapshotCasRequest> {
@@ -191,6 +216,23 @@ describe("publish_household_snapshot CAS contract", () => {
     const dup = applyPublishHouseholdSnapshotCas(store, reqA, "2026-08-24T12:00:02.000Z");
     expect(dup.result).toMatchObject({ ok: true, conflict: false, duplicate: true, revision: 1 });
     expect(dup.store.snapshot?.payload).toBe(store.snapshot?.payload);
+  });
+
+  it("rejects a same-revision charter-only edit instead of acknowledging it as a duplicate", async () => {
+    let store: SnapshotCasStore = { household: null, snapshot: null };
+    const base = googleHousehold();
+    const firstCharter = { ...base, revision: 1, baseRevision: 0, charter: charter("Keep the household steady.") };
+    const otherCharter = { ...base, revision: 1, baseRevision: 0, charter: charter("Keep a shared home without overwork.") };
+    const firstRequest = await casRequest(firstCharter, 0);
+    const otherRequest = await casRequest(otherCharter, 0);
+
+    expect(otherRequest.snapshotHash).not.toBe(firstRequest.snapshotHash);
+    const first = applyPublishHouseholdSnapshotCas(store, firstRequest, "2026-08-24T12:00:00.000Z");
+    store = first.store;
+    const loser = applyPublishHouseholdSnapshotCas(store, otherRequest, "2026-08-24T12:00:01.000Z");
+
+    expect(loser.result).toMatchObject({ ok: false, conflict: true, reason: "revision-hash-mismatch" });
+    expect((JSON.parse(String(store.snapshot?.payload)) as Household).charter?.purpose).toBe("Keep the household steady.");
   });
 
   it("accepts compacted offline revision jumps but never accepts a non-advancing revision", async () => {

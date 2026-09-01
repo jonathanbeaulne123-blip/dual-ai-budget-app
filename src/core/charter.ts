@@ -85,15 +85,31 @@ function shapePermissions(value: unknown): CharterPermission[] {
   }).sort(byId);
 }
 
-function shapeSignatures(value: unknown): CharterSignature[] {
-  if (!Array.isArray(value)) return [];
-  return value.flatMap((raw) => {
-    if (!raw || typeof raw !== "object") return [];
+function shapeSignatures(
+  value: unknown,
+  requiredMemberIds?: readonly string[],
+): CharterSignature[] {
+  const allowedMemberIds = requiredMemberIds
+    ? new Set(requiredMemberIds.filter(Boolean))
+    : null;
+  const signatures = new Map<string, CharterSignature>();
+  const duplicates = new Set<string>();
+  if (Array.isArray(value)) value.forEach((raw) => {
+    if (!raw || typeof raw !== "object") return;
     const row = raw as Partial<CharterSignature>;
     const memberId = text(row.memberId);
-    if (!memberId) return [];
-    return [{ memberId, signedAt: isoOrFallback(row.signedAt, null) }];
-  }).sort((left, right) => left.memberId < right.memberId ? -1 : left.memberId > right.memberId ? 1 : 0);
+    if (!memberId || (allowedMemberIds && !allowedMemberIds.has(memberId))) return;
+    if (signatures.has(memberId)) duplicates.add(memberId);
+    else signatures.set(memberId, { memberId, signedAt: isoOrFallback(row.signedAt, null) });
+  });
+  duplicates.forEach((memberId) => signatures.set(memberId, { memberId, signedAt: null }));
+
+  const memberIds = allowedMemberIds
+    ? [...allowedMemberIds]
+    : [...signatures.keys()];
+  return memberIds
+    .sort()
+    .map((memberId) => signatures.get(memberId) ?? { memberId, signedAt: null });
 }
 
 function shapeAmendments(value: unknown): CharterAmendment[] {
@@ -160,7 +176,7 @@ export function shapeHouseholdCharter(
       : 0,
     clauses: shapeClauses(row.clauses),
     permissions: shapePermissions(row.permissions),
-    signatures: shapeSignatures(row.signatures),
+    signatures: shapeSignatures(row.signatures, context?.members.map((member) => member.id)),
     amendments: shapeAmendments(row.amendments),
     foundedOn: foundedOn as HouseholdCharter["foundedOn"],
     createdAt,
