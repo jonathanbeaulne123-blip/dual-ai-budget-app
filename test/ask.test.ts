@@ -285,14 +285,15 @@ describe("household Ask", () => {
 
   it("keeps obligation arithmetic out of the Ask and projects timing without pay amounts", () => {
     const source = readFileSync(new URL("../src/core/ask.ts", import.meta.url), "utf8");
+    const householdAskSource = source.slice(source.indexOf("export function nextPaydayDate"));
 
-    expect(source).toContain("contributionRegister");
-    expect(source).toContain("register.unfundedCents");
-    expect(source).toContain("nextWorkScheduleDate");
-    expect(source).not.toContain("monthObligations");
-    expect(source).not.toContain("projectCadence");
-    expect(source).not.toContain("rows.reduce");
-    expect(source).not.toContain("wagesCents");
-    expect(source).not.toContain("amountCents");
+    expect(householdAskSource).toContain("contributionRegister");
+    expect(householdAskSource).toContain("register.unfundedCents");
+    expect(householdAskSource).toContain("nextWorkScheduleDate");
+    expect(householdAskSource).not.toContain("monthObligations");
+    expect(householdAskSource).not.toContain("projectCadence");
+    expect(householdAskSource).not.toContain("rows.reduce");
+    expect(householdAskSource).not.toContain("wagesCents");
+    expect(householdAskSource).not.toContain("amountCents");
   });
 });

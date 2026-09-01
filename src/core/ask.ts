@@ -27,6 +27,53 @@ export type HouseholdAsk = {
   copy: string;
 };
 
+export type AskAlternative = {
+  goalId: string;
+  label: string;
+  claimCents: number;
+  askIfDeferredCents: number;
+  copy: string;
+};
+
+const GOAL_CLAIM_PREFIX = "goal-claim:";
+
+function goalClaimIdentity(obligationId: string, date: DateKey): string | null {
+  const suffix = `:${date}`;
+  if (!obligationId.startsWith(GOAL_CLAIM_PREFIX) || !obligationId.endsWith(suffix)) return null;
+  const goalId = obligationId.slice(GOAL_CLAIM_PREFIX.length, -suffix.length);
+  return goalId || null;
+}
+
+function goalClaimLabel(label: string): string {
+  return label.replace(/ · goal claim$/, "");
+}
+
+/** Offer proposal-only goal deferrals from the exact register attached to an Ask. */
+export function askAlternatives(ask: HouseholdAsk): AskAlternative[] {
+  const registerAskCents = ask.register.unfundedCents;
+  if (!ask.register.tiesToProjection
+    || !Number.isSafeInteger(ask.askCents)
+    || ask.askCents < 0
+    || ask.askCents !== registerAskCents) return [];
+  return ask.register.rows
+    .flatMap((row): AskAlternative[] => {
+      const goalId = goalClaimIdentity(row.obligationId, row.date);
+      if (!goalId || row.unfundedCents <= 0) return [];
+      const label = goalClaimLabel(row.label);
+      const askIfDeferredCents = Math.max(0, registerAskCents - row.amountCents);
+      return [{
+        goalId,
+        label,
+        claimCents: row.amountCents,
+        askIfDeferredCents,
+        copy: `Or move ${label} to next month, and the ask is ${formatCad(askIfDeferredCents)}.`,
+      }];
+    })
+    .sort((left, right) => right.claimCents - left.claimCents
+      || left.label.localeCompare(right.label)
+      || left.goalId.localeCompare(right.goalId));
+}
+
 /** Earliest active-work payday for a member, projected from timing only. */
 export function nextPaydayDate(household: Household, memberId: string, today: DateKey): DateKey | null {
   return (household.workJobs ?? [])
