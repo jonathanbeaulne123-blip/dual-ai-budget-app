@@ -120,6 +120,12 @@ export function compactedCommandPayload(
   const latestRehearsalRef = [...item.commandRefs]
     .filter((ref) => ref.ledgerScope === "shared" && ref.commandType === "updateMonthRehearsal")
     .sort((left, right) => right.resultRevision - left.resultRevision)[0];
+  const charterPostedIds = mergedFacts?.charter
+    ? [...new Set(item.commandRefs
+      .filter((ref) => ref.ledgerScope === "shared")
+      .flatMap((ref) => ref.commandPayload.postedIds)
+      .filter((id) => id.startsWith("CHARTER-")))]
+    : [];
   const scopedPostedIds = [
     ...(mergedFacts?.transactions ?? []).map((row) => row.id),
     ...(mergedFacts?.shifts ?? []).map((row) => row.id),
@@ -127,6 +133,7 @@ export function compactedCommandPayload(
     ...(mergedFacts?.sitDownSessions ?? []).map((row) => row.id),
     ...(mergedFacts?.goalContributions ?? []).map((row) => row.id),
     ...(mergedFacts?.goalPurchases ?? []).map((row) => row.id),
+    ...charterPostedIds,
     ...(mergedFacts?.householdFund ? [mergedFacts.householdFund.id] : []),
     ...(mergedFacts?.fundMonthPlans ?? []).map((row) => row.id),
     ...(mergedFacts?.fundEvents ?? []).map((row) => row.id),
@@ -193,6 +200,7 @@ function mergeMaterializationFacts(
     if (facts.goalPurchases?.length) {
       merged.goalPurchases = [...(merged.goalPurchases ?? []), ...facts.goalPurchases];
     }
+    if (facts.charter) merged.charter = facts.charter;
     if (facts.householdFund) merged.householdFund = facts.householdFund;
     if (facts.fundMonthPlans?.length) merged.fundMonthPlans = [...(merged.fundMonthPlans ?? []), ...facts.fundMonthPlans];
     if (facts.fundEvents?.length) merged.fundEvents = [...(merged.fundEvents ?? []), ...facts.fundEvents];

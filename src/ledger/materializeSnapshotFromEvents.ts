@@ -1,5 +1,6 @@
 import { financialAuditHash, financialAuditHashForScope, sha256Hex } from "../core/commandIdentity.ts";
 import { rememberReceipt } from "../core/commandIdentity.ts";
+import { shapeHouseholdCharter } from "../core/charter.ts";
 import { mergeMonthRehearsals, shapeMonthRehearsals } from "../core/monthRehearsal.ts";
 import { ensureHouseholdShape, mergeTombstones } from "../core/sync.ts";
 import type {
@@ -8,6 +9,7 @@ import type {
   GoalContribution,
   GoalPurchase,
   Household,
+  HouseholdCharter,
   HouseholdFundConfig,
   HouseholdFundEvent,
   HouseholdFundKittyAllocation,
@@ -45,6 +47,7 @@ export type ContinuityMaterializationFacts = {
   sitDownSessions?: SitDownSession[];
   goalContributions?: GoalContribution[];
   goalPurchases?: GoalPurchase[];
+  charter?: HouseholdCharter;
   householdFund?: HouseholdFundConfig;
   fundMonthPlans?: HouseholdFundMonthPlan[];
   fundEvents?: HouseholdFundEvent[];
@@ -236,6 +239,7 @@ function filterFactsForScope(
     scoped.goalPurchases = facts.goalPurchases.filter((row) => scopeAllowsRow(event, row));
   }
   if (event.ledger_scope === "shared") {
+    if (facts.charter) scoped.charter = facts.charter;
     if (facts.householdFund) scoped.householdFund = facts.householdFund;
     if (facts.fundMonthPlans?.length) scoped.fundMonthPlans = facts.fundMonthPlans;
     if (facts.fundEvents?.length) scoped.fundEvents = facts.fundEvents;
@@ -287,6 +291,9 @@ export function extractMaterializationFacts(
   const goalPurchases = (household.goalPurchases ?? []).filter((row) => posted.has(row.id) && allows(row));
   if (goalPurchases.length) facts.goalPurchases = goalPurchases;
   if (scope !== "personal") {
+    if (household.charter && postedIds.some((id) => id.startsWith("CHARTER-"))) {
+      facts.charter = household.charter;
+    }
     if (household.householdFund && posted.has(household.householdFund.id)) facts.householdFund = household.householdFund;
     const fundMonthPlans = (household.fundMonthPlans ?? []).filter((row) => posted.has(row.id));
     if (fundMonthPlans.length) facts.fundMonthPlans = fundMonthPlans;
@@ -340,6 +347,10 @@ async function applyEvent(
   const fundKittyAllocations = applyAppendOnlyCollection(snapshot.fundKittyAllocations ?? [], facts.fundKittyAllocations, mergedTombstones);
   const planMap = rowMapsTo(snapshot.fundMonthPlans ?? []);
   for (const plan of facts.fundMonthPlans ?? []) planMap.set(plan.id, plan);
+  const householdFund = facts.householdFund ?? snapshot.householdFund;
+  const charter = facts.charter
+    ? shapeHouseholdCharter(facts.charter, { members: snapshot.members, householdFund })
+    : snapshot.charter;
 
   let next: Household = {
     ...snapshot,
@@ -352,7 +363,8 @@ async function applyEvent(
     sitDownSessions: sitDownSessions.filter((row) => !dead.has(row.id)),
     goalContributions: goalContributions.filter((row) => !dead.has(row.id)),
     goalPurchases: goalPurchases.filter((row) => !dead.has(row.id)),
-    householdFund: facts.householdFund ?? snapshot.householdFund,
+    charter,
+    householdFund,
     fundMonthPlans: [...planMap.values()],
     fundEvents: fundEvents.filter((row) => !dead.has(row.id)),
     fundSettlementAllocations: fundSettlementAllocations.filter((row) => !dead.has(row.id)),
@@ -385,6 +397,7 @@ export function catalogBaseFromSnapshot(tip: Household): Household {
     sitDownSessions: [],
     goalContributions: [],
     goalPurchases: [],
+    charter: null,
     householdFund: null,
     fundMonthPlans: [],
     fundEvents: [],

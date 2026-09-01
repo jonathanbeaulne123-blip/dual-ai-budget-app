@@ -130,6 +130,9 @@ import type {
   Visibility,
   WorkJob,
   AccountScope,
+  CharterCeilingKind,
+  CharterSplitRule,
+  HouseholdCharter,
 } from "./types.ts";
 import { COMPANION, JOINT, NeedsConfirmationError, ValidationError, isShiftEventTag } from "./types.ts";
 import {
@@ -146,6 +149,7 @@ import {
   shapeHouseholdFundSettlementAllocations,
   type HouseholdFundBankEvidence,
 } from "./householdFund.ts";
+import { shapeHouseholdCharter } from "./charter.ts";
 import {
   buildOpeningTruthDraft,
   hasOnlyOpeningCorrectionHistory,
@@ -4921,6 +4925,344 @@ export function touchHouseholdDevice(household: Household, input: {
     postedIds: [],
     undo: { id: `presence-${input.deviceId}`, label: `Saw ${input.label}`, snapshot: previous, postedIds: [] },
   };
+}
+
+const CHARTER_SPLIT_RULES = new Set<CharterSplitRule>(["even", "proportional", "remainder"]);
+const CHARTER_CEILING_KINDS = new Set<CharterCeilingKind>(["hours-per-week", "amount-per-month", "none"]);
+const CHARTER_CADENCES = new Set<HouseholdCharter["cadence"]>(["weekly", "biweekly", "monthly", "none"]);
+const CHARTER_AMENDABLE_FIELDS = new Set([
+  "purpose",
+  "custodianMemberId",
+  "splitRule",
+  "splitNote",
+  "ceilingKind",
+  "ceilingValue",
+  "cadence",
+  "cadenceWeekday",
+]);
+
+function requireHouseholdCharter(household: Household): HouseholdCharter {
+  const charter = shapeHouseholdCharter(household.charter, {
+    members: household.members,
+    householdFund: household.householdFund,
+  });
+  if (!charter) throw new ValidationError("Found the household charter first.");
+  return charter;
+}
+
+function charterIso(value?: string): string {
+  if (value === undefined) return nowIso();
+  const parsed = Date.parse(value);
+  if (!Number.isFinite(parsed)) throw new ValidationError("Choose a valid signing time.");
+  return new Date(parsed).toISOString();
+}
+
+function charterCeilingValue(kind: CharterCeilingKind, value?: string | number): number {
+  if (kind === "none") return 0;
+  if (kind === "amount-per-month") return parseAmount(value ?? "", "Monthly work ceiling");
+  const text = typeof value === "number" ? String(value) : value?.trim() ?? "";
+  if (!/^(?:\d+(?:\.\d)?|\.\d)$/.test(text)) {
+    throw new ValidationError("Weekly work ceiling must be a positive number with no more than one decimal place.");
+  }
+  const tenths = Number(text) * 10;
+  if (!Number.isSafeInteger(tenths) || tenths <= 0) {
+    throw new ValidationError("Weekly work ceiling must be greater than zero.");
+  }
+  return tenths;
+}
+
+function charterWeekday(cadence: HouseholdCharter["cadence"], value?: number): number {
+  if (cadence === "none" || cadence === "monthly") return 0;
+  const weekday = value ?? 0;
+  if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) {
+    throw new ValidationError("Charter weekday must be between 0 and 6.");
+  }
+  return weekday;
+}
+
+function charterFieldText(charter: HouseholdCharter, field: string): string {
+  switch (field) {
+    case "purpose": return charter.purpose;
+    case "custodianMemberId": return charter.custodianMemberId;
+    case "splitRule": return charter.splitRule;
+    case "splitNote": return charter.splitNote;
+    case "ceilingKind": return charter.ceilingKind;
+    case "ceilingValue": return charter.ceilingKind === "amount-per-month"
+      ? String(charter.ceilingValue / 100)
+      : charter.ceilingKind === "hours-per-week"
+        ? String(charter.ceilingValue / 10)
+        : "0";
+    case "cadence": return charter.cadence;
+    case "cadenceWeekday": return String(charter.cadenceWeekday);
+    default: throw new ValidationError("That charter field cannot be amended.");
+  }
+}
+
+function normalizedCharterAmendmentText(household: Household, charter: HouseholdCharter, field: string, value: string): string {
+  if (!CHARTER_AMENDABLE_FIELDS.has(field)) throw new ValidationError("That charter field cannot be amended.");
+  const text = value.trim();
+  switch (field) {
+    case "purpose": return text.slice(0, 240);
+    case "splitNote": return text.slice(0, 240);
+    case "custodianMemberId": {
+      requireMember(household, text);
+      if (household.householdFund && text !== charter.custodianMemberId) {
+        throw new ValidationError("Custody moves through the Fund, not the charter.");
+      }
+      return text;
+    }
+    case "splitRule":
+      if (!CHARTER_SPLIT_RULES.has(text as CharterSplitRule)) throw new ValidationError("Choose a valid charter split rule.");
+      return text;
+    case "ceilingKind":
+      if (!CHARTER_CEILING_KINDS.has(text as CharterCeilingKind)) throw new ValidationError("Choose a valid charter ceiling.");
+      if (text !== charter.ceilingKind && text !== "none") {
+        throw new ValidationError("Change the ceiling value and unit together.");
+      }
+      return text;
+    case "ceilingValue": {
+      const stored = charterCeilingValue(charter.ceilingKind, text);
+      return charter.ceilingKind === "amount-per-month" ? String(stored / 100) : String(stored / 10);
+    }
+    case "cadence":
+      if (!CHARTER_CADENCES.has(text as HouseholdCharter["cadence"])) throw new ValidationError("Choose a valid charter cadence.");
+      return text;
+    case "cadenceWeekday": {
+      const weekday = Number(text);
+      if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) throw new ValidationError("Charter weekday must be between 0 and 6.");
+      return String(weekday);
+    }
+    default: throw new ValidationError("That charter field cannot be amended.");
+  }
+}
+
+function applyCharterAmendment(household: Household, charter: HouseholdCharter, field: string, toText: string): HouseholdCharter {
+  const normalized = normalizedCharterAmendmentText(household, charter, field, toText);
+  switch (field) {
+    case "purpose": return { ...charter, purpose: normalized };
+    case "custodianMemberId": return { ...charter, custodianMemberId: normalized };
+    case "splitRule": return { ...charter, splitRule: normalized as CharterSplitRule };
+    case "splitNote": return { ...charter, splitNote: normalized };
+    case "ceilingKind": {
+      const ceilingKind = normalized as CharterCeilingKind;
+      return { ...charter, ceilingKind, ...(ceilingKind === "none" ? { ceilingValue: 0 } : {}) };
+    }
+    case "ceilingValue": return { ...charter, ceilingValue: charterCeilingValue(charter.ceilingKind, normalized) };
+    case "cadence": {
+      const cadence = normalized as HouseholdCharter["cadence"];
+      return { ...charter, cadence, ...(cadence === "none" || cadence === "monthly" ? { cadenceWeekday: 0 } : {}) };
+    }
+    case "cadenceWeekday": return { ...charter, cadenceWeekday: Number(normalized) };
+    default: throw new ValidationError("That charter field cannot be amended.");
+  }
+}
+
+export function foundHouseholdCharter(household: Household, input: {
+  memberId: string;
+  custodianMemberId: string;
+  purpose: string;
+  splitRule: CharterSplitRule;
+  splitNote: string;
+  ceilingKind: CharterCeilingKind;
+  ceilingValue?: string | number;
+  cadence: HouseholdCharter["cadence"];
+  cadenceWeekday?: number;
+  clauses?: Array<{ heading: string; body: string }>;
+  date: string;
+}): CommitResult {
+  if (household.charter) throw new ValidationError("That charter already exists. Raise an amendment instead.");
+  requireMember(household, input.memberId);
+  requireMember(household, input.custodianMemberId);
+  if (household.householdFund?.custodianMemberId !== undefined
+    && household.householdFund.custodianMemberId !== input.custodianMemberId) {
+    throw new ValidationError("Custody moves through the Fund, not the charter.");
+  }
+  if (!CHARTER_SPLIT_RULES.has(input.splitRule)) throw new ValidationError("Choose a valid charter split rule.");
+  if (!CHARTER_CEILING_KINDS.has(input.ceilingKind)) throw new ValidationError("Choose a valid charter ceiling.");
+  if (!CHARTER_CADENCES.has(input.cadence)) throw new ValidationError("Choose a valid charter cadence.");
+
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nowIso();
+  const charter: HouseholdCharter = {
+    id: nextId("CHARTER-", [], 4),
+    purpose: input.purpose.trim().slice(0, 240),
+    custodianMemberId: input.custodianMemberId,
+    splitRule: input.splitRule,
+    splitNote: input.splitNote.trim().slice(0, 240),
+    ceilingKind: input.ceilingKind,
+    ceilingValue: charterCeilingValue(input.ceilingKind, input.ceilingValue),
+    cadence: input.cadence,
+    cadenceWeekday: charterWeekday(input.cadence, input.cadenceWeekday),
+    clauses: (input.clauses ?? []).map((clause, index) => ({
+      id: `CHARTER-CLAUSE-${String(index + 1).padStart(3, "0")}`,
+      heading: clause.heading.trim().slice(0, 60),
+      body: clause.body.trim().slice(0, 400),
+    })).filter((clause) => clause.heading.length > 0),
+    permissions: [],
+    signatures: next.members.map((member) => ({ memberId: member.id, signedAt: null })),
+    amendments: [],
+    foundedOn: parseDate(input.date),
+    createdAt: at,
+    updatedAt: at,
+  };
+  next.charter = shapeHouseholdCharter(charter, { members: next.members, householdFund: next.householdFund });
+  if (!next.charter) throw new ValidationError("The household charter could not be founded.");
+  return commit(previous, next, "Charter", "Founded the household charter", [next.charter.id]);
+}
+
+export function signHouseholdCharter(household: Household, input: { memberId: string; at?: string }): CommitResult {
+  requireMember(household, input.memberId);
+  if (!household.charter?.signatures.some((row) => row.memberId === input.memberId)) {
+    throw new ValidationError("You can only sign your own line.");
+  }
+  const charter = requireHouseholdCharter(household);
+  const signature = charter.signatures.find((row) => row.memberId === input.memberId);
+  if (!signature || signature.memberId !== input.memberId) throw new ValidationError("You can only sign your own line.");
+  if (signature.signedAt) throw new ValidationError("That charter line is already signed.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const signedAt = charterIso(input.at);
+  const updatedAt = nowIso();
+  next.charter = {
+    ...charter,
+    signatures: charter.signatures.map((row) => row.memberId === input.memberId ? { ...row, signedAt } : row),
+    updatedAt,
+  };
+  return commit(previous, next, "Charter", "Signed the household charter", [`CHARTER-SIGN-${input.memberId}`]);
+}
+
+export function grantCharterPermission(household: Household, input: {
+  memberId: string;
+  actorMemberId: string;
+  label: string;
+}): CommitResult {
+  requireMember(household, input.memberId);
+  requireMember(household, input.actorMemberId);
+  if (input.actorMemberId === input.memberId) throw new ValidationError("You can only give away your own confirm.");
+  const charter = requireHouseholdCharter(household);
+  const label = input.label.trim().slice(0, 90);
+  if (!label) throw new ValidationError("Describe the charter permission first.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const id = nextId("CHARTER-PERM-", charter.permissions.map((row) => row.id), 4);
+  const at = nowIso();
+  next.charter = {
+    ...charter,
+    permissions: [...charter.permissions, {
+      id,
+      label,
+      grantedByMemberId: input.memberId,
+      actorMemberId: input.actorMemberId,
+      revokedAt: null,
+    }],
+    updatedAt: at,
+  };
+  return commit(previous, next, "Charter", `Granted ${label}`, [id]);
+}
+
+export function revokeCharterPermission(household: Household, input: {
+  memberId: string;
+  permissionId: string;
+}): CommitResult {
+  requireMember(household, input.memberId);
+  const charter = requireHouseholdCharter(household);
+  const permission = charter.permissions.find((row) => row.id === input.permissionId);
+  if (!permission || permission.revokedAt) throw new ValidationError("That charter permission is not active.");
+  if (permission.grantedByMemberId !== input.memberId) throw new ValidationError("Only the person who granted that permission can revoke it.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nowIso();
+  next.charter = {
+    ...charter,
+    permissions: charter.permissions.map((row) => row.id === permission.id ? { ...row, revokedAt: at } : row),
+    updatedAt: at,
+  };
+  return commit(previous, next, "Charter", `Revoked ${permission.label}`, [permission.id]);
+}
+
+export function proposeCharterAmendment(household: Household, input: {
+  memberId: string;
+  field: string;
+  toText: string;
+}): CommitResult {
+  requireMember(household, input.memberId);
+  const charter = requireHouseholdCharter(household);
+  const field = input.field.trim();
+  const toText = normalizedCharterAmendmentText(household, charter, field, input.toText);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nowIso();
+  const id = nextId("CHARTER-AMEND-", charter.amendments.map((row) => row.id), 4);
+  next.charter = {
+    ...charter,
+    amendments: [...charter.amendments, {
+      id,
+      raisedByMemberId: input.memberId,
+      field,
+      fromText: charterFieldText(charter, field),
+      toText,
+      confirmedByMemberId: null,
+      heldByMemberId: null,
+      heldNote: "",
+      raisedAt: at,
+      resolvedAt: null,
+    }],
+    updatedAt: at,
+  };
+  return commit(previous, next, "Charter", `Raised a charter amendment to ${field}`, [id]);
+}
+
+export function confirmCharterAmendment(household: Household, input: {
+  memberId: string;
+  amendmentId: string;
+}): CommitResult {
+  requireMember(household, input.memberId);
+  const charter = requireHouseholdCharter(household);
+  const amendment = charter.amendments.find((row) => row.id === input.amendmentId);
+  if (!amendment || amendment.resolvedAt || amendment.confirmedByMemberId) throw new ValidationError("That charter amendment is no longer open.");
+  if (amendment.raisedByMemberId === input.memberId) throw new ValidationError("An amendment needs the other person to agree.");
+  if (charterFieldText(charter, amendment.field) !== amendment.fromText) {
+    throw new ValidationError("That charter field changed after this amendment was raised.");
+  }
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nowIso();
+  const applied = applyCharterAmendment(household, charter, amendment.field, amendment.toText);
+  next.charter = {
+    ...applied,
+    amendments: applied.amendments.map((row) => row.id === amendment.id ? {
+      ...row,
+      confirmedByMemberId: input.memberId,
+      resolvedAt: at,
+    } : row),
+    updatedAt: at,
+  };
+  return commit(previous, next, "Charter", `Confirmed the charter amendment to ${amendment.field}`, [amendment.id]);
+}
+
+export function holdCharterAmendment(household: Household, input: {
+  memberId: string;
+  amendmentId: string;
+  note?: string;
+}): CommitResult {
+  requireMember(household, input.memberId);
+  const charter = requireHouseholdCharter(household);
+  const amendment = charter.amendments.find((row) => row.id === input.amendmentId);
+  if (!amendment || amendment.resolvedAt || amendment.confirmedByMemberId) throw new ValidationError("That charter amendment is no longer open.");
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nowIso();
+  next.charter = {
+    ...charter,
+    amendments: charter.amendments.map((row) => row.id === amendment.id ? {
+      ...row,
+      heldByMemberId: input.memberId,
+      heldNote: input.note?.trim().slice(0, 240) || "",
+    } : row),
+    updatedAt: at,
+  };
+  return commit(previous, next, "Charter", "Held the charter amendment for conversation", [amendment.id]);
 }
 
 function requireHouseholdFund(household: Household) {

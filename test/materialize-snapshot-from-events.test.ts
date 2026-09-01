@@ -2,13 +2,22 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   acceptHouseholdWrite,
   catalogHousehold,
+  confirmCharterAmendment,
   financialAuditHash,
+  foundHouseholdCharter,
   linkGoogleIdentity,
   postEntry,
+  proposeCharterAmendment,
+  signHouseholdCharter,
 } from "../src/core/index.ts";
 import { undoLedgerConfirm } from "../src/core/confirmationUndo.ts";
 import { financialAuditHashForScope } from "../src/core/commandIdentity.ts";
-import { receiptToCommandRef } from "../src/ledger/continuityCommandLog.ts";
+import {
+  compactedCommandPayload,
+  primaryCommandRef,
+  receiptToCommandRef,
+  type ContinuityCommandRef,
+} from "../src/ledger/continuityCommandLog.ts";
 import {
   applyCommandEventLocally,
   buildSnapshotFromEvents,
@@ -16,8 +25,10 @@ import {
   extractMaterializationFacts,
   materializedHashMatchesSnapshot,
   type ContinuityCommandEvent,
+  type ContinuityCommandEventPayload,
 } from "../src/ledger/materializeSnapshotFromEvents.ts";
 import { householdCloudProjection } from "../src/ledger/supabase.ts";
+import type { CommitResult, Household } from "../src/core/types.ts";
 
 const identity = { memberId: "MEM-001", email: "jonathan@example.com", subject: "google-sub-jonathan" };
 
@@ -77,6 +88,61 @@ function eventFromPost(input: {
       materializationFacts: extractMaterializationFacts(input.posted.household, receipt.postedIds),
     },
     created_at: new Date(Date.parse("2026-08-26T12:00:00.000Z") + input.index * 1000).toISOString(),
+  };
+}
+
+async function acceptedCharterEvent(input: {
+  previous: Household;
+  committed: CommitResult;
+  confirmationId: string;
+  commandKind: string;
+  memberId: string;
+  index: number;
+}): Promise<{ household: Household; event: ContinuityCommandEvent; ref: ContinuityCommandRef }> {
+  const accepted = await acceptHouseholdWrite({
+    previous: input.previous,
+    candidate: input.committed.household,
+    confirmationId: input.confirmationId,
+    postedIds: input.committed.postedIds,
+    commandKind: input.commandKind,
+    adapters: { persist: async () => {}, ingest: async () => ({ ok: true }) },
+  });
+  if (!accepted.ok) throw new Error(`Charter command was not accepted: ${accepted.kind}`);
+  const receipt = accepted.household.commandReceipts?.find(
+    (row) => row.confirmationId === input.confirmationId,
+  );
+  if (!receipt) throw new Error("missing charter receipt");
+  const ref = receiptToCommandRef({
+    household: accepted.household,
+    receipt,
+    baseRevision: input.previous.revision,
+  });
+  return {
+    household: accepted.household,
+    ref,
+    event: {
+      id: `evt-charter-${input.index}`,
+      environment: accepted.household.environment,
+      household_id: accepted.household.householdId,
+      member_id: input.memberId,
+      idempotency_key: input.confirmationId,
+      confirmation_id: input.confirmationId,
+      identity_hash: receipt.identityHash,
+      base_revision: input.previous.revision,
+      result_revision: accepted.household.revision,
+      ledger_scope: ref.ledgerScope,
+      command_type: ref.commandType,
+      payload_json: {
+        ...ref.commandPayload,
+        materializationFacts: extractMaterializationFacts(accepted.household, receipt.postedIds, {
+          acceptedAt: receipt.acceptedAt,
+          ledgerScope: ref.ledgerScope,
+          memberId: input.memberId,
+          commandKind: ref.commandType,
+        }),
+      },
+      created_at: new Date(Date.parse("2026-09-01T12:00:00.000Z") + input.index * 1000).toISOString(),
+    },
   };
 }
 
@@ -334,5 +400,113 @@ describe("T2-S3 materialized snapshot builder", () => {
     expect(facts.transactions).toHaveLength(1);
     expect(facts.transactions?.[0]?.id).toBe(postedId);
     expect(JSON.stringify(facts)).not.toMatch(/extra 0/);
+  });
+
+  it("rebuilds founding, signing, and amendment commands from the shared command log", async () => {
+    const events: ContinuityCommandEvent[] = [];
+    const refs: ContinuityCommandRef[] = [];
+    let previous = googleHousehold();
+
+    const founded = await acceptedCharterEvent({
+      previous,
+      committed: foundHouseholdCharter(previous, {
+        memberId: "MEM-002",
+        custodianMemberId: "MEM-001",
+        purpose: "Keep the household steady without overwork.",
+        splitRule: "remainder",
+        splitNote: "One income covers what it covers; the other closes the rest.",
+        ceilingKind: "hours-per-week",
+        ceilingValue: "24",
+        cadence: "weekly",
+        cadenceWeekday: 0,
+        date: "2026-09-01",
+      }),
+      confirmationId: "charter-found",
+      commandKind: "foundHouseholdCharter",
+      memberId: "MEM-002",
+      index: 0,
+    });
+    previous = founded.household;
+    events.push(founded.event);
+    refs.push(founded.ref);
+
+    const signed = await acceptedCharterEvent({
+      previous,
+      committed: signHouseholdCharter(previous, { memberId: "MEM-001", at: "2026-09-01T12:01:00.000Z" }),
+      confirmationId: "charter-sign",
+      commandKind: "signHouseholdCharter",
+      memberId: "MEM-001",
+      index: 1,
+    });
+    previous = signed.household;
+    events.push(signed.event);
+    refs.push(signed.ref);
+
+    const proposedCommit = proposeCharterAmendment(previous, {
+      memberId: "MEM-002",
+      field: "purpose",
+      toText: "Keep a shared home and protect both people's time.",
+    });
+    const proposed = await acceptedCharterEvent({
+      previous,
+      committed: proposedCommit,
+      confirmationId: "charter-propose",
+      commandKind: "proposeCharterAmendment",
+      memberId: "MEM-002",
+      index: 2,
+    });
+    previous = proposed.household;
+    events.push(proposed.event);
+    refs.push(proposed.ref);
+
+    const confirmed = await acceptedCharterEvent({
+      previous,
+      committed: confirmCharterAmendment(previous, {
+        memberId: "MEM-001",
+        amendmentId: proposedCommit.postedIds[0]!,
+      }),
+      confirmationId: "charter-confirm",
+      commandKind: "confirmCharterAmendment",
+      memberId: "MEM-001",
+      index: 3,
+    });
+    const tip = confirmed.household;
+    events.push(confirmed.event);
+    refs.push(confirmed.ref);
+
+    expect(events.every((event) => event.ledger_scope === "shared")).toBe(true);
+    expect(events.every((event) => event.payload_json.materializationFacts?.charter)).toBe(true);
+    const materialized = await buildSnapshotFromEvents(events, catalogBaseFromSnapshot(tip));
+    expect(materialized.charter).toEqual(tip.charter);
+    expect(await financialAuditHashForScope(materialized, "shared", "MEM-001"))
+      .toBe(await financialAuditHashForScope(tip, "shared", "MEM-001"));
+
+    const primary = primaryCommandRef(refs);
+    const compactedPayload = compactedCommandPayload(
+      { confirmationIds: refs.map((ref) => ref.confirmationId), commandRefs: refs },
+      primary,
+      tip,
+      "MEM-001",
+    ) as ContinuityCommandEventPayload;
+    expect(compactedPayload.materializationFacts?.charter).toEqual(tip.charter);
+    expect(compactedPayload.postedIds).toEqual(expect.arrayContaining([
+      tip.charter!.id,
+      "CHARTER-SIGN-MEM-001",
+      proposedCommit.postedIds[0]!,
+    ]));
+    const compactedReplay = await applyCommandEventLocally({
+      local: catalogBaseFromSnapshot(tip),
+      event: {
+        ...confirmed.event,
+        base_revision: 0,
+        result_revision: tip.revision,
+        command_type: primary.commandType,
+        payload_json: compactedPayload,
+      },
+      memberId: "MEM-001",
+    });
+    expect(compactedReplay.ok).toBe(true);
+    if (!compactedReplay.ok) throw new Error(compactedReplay.reason);
+    expect(compactedReplay.household.charter).toEqual(tip.charter);
   });
 });

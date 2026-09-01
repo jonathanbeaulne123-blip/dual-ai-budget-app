@@ -176,6 +176,7 @@ export function commandIdentityFacts(previous: Household | null, next: Household
   const shiftEnvelopes = (next.shiftEnvelopes ?? []).filter((row) => posted.has(row.id));
   const shiftBibles = (next.shiftBibles ?? []).filter((row) => posted.has(row.id));
   const tombstones = (next.tombstones ?? []).filter((row) => posted.has(row.id));
+  const charterPosted = postedIds.some((id) => id.startsWith("CHARTER-"));
   return stable({
     householdId: next.householdId,
     environment: next.environment,
@@ -227,6 +228,7 @@ export function commandIdentityFacts(previous: Household | null, next: Household
     shiftEnvelopes,
     shiftBibles,
     tombstones,
+    charter: charterPosted ? next.charter ?? null : null,
     // Private reconciliation and binding details never affect a shared command identity.
     fundPrivate: null,
   });
