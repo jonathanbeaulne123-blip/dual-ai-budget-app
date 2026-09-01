@@ -25,6 +25,13 @@ export * from "./goalVault.ts";
 export * from "./householdFund.ts";
 export * from "./charter.ts";
 export * from "./monthObligations.ts";
+export { contributionRegister } from "./contributionRegister.ts";
+export type {
+  ContributionRegister,
+  RegisterSegment,
+  RegisterSource,
+  RegisterRow as ContributionRegisterRow,
+} from "./contributionRegister.ts";
 export * from "./openingTruth.ts";
 export * from "./monthRehearsal.ts";
 export * from "./monthRehearsalPractice.ts";

@@ -230,6 +230,23 @@ export function activeHouseholdFundEvents(household: Pick<Household, "fundEvents
   return events.filter((event) => event.kind !== "reversal" && eventIsActive(event, events));
 }
 
+function householdFundOperatingDelta(event: HouseholdFundEvent): number {
+  if (event.kind === "contribution-confirmed" || event.kind === "kitty-released") return event.amountCents;
+  if (event.kind === "settlement-confirmed" || event.kind === "kitty-allocated") return -event.amountCents;
+  return 0;
+}
+
+/** Active operating Fund cents strictly before a civil date. */
+export function projectHouseholdFundOperatingBalanceBefore(
+  household: Pick<Household, "fundEvents">,
+  before: DateKey,
+  fundId = HOUSEHOLD_FUND_ID,
+): number {
+  return activeHouseholdFundEvents(household, fundId)
+    .filter((event) => event.date < before)
+    .reduce((sum, event) => sum + householdFundOperatingDelta(event), 0);
+}
+
 function signedFundingForTransaction(tx: Transaction, byId: Map<string, Transaction>, stack = new Set<string>()): number {
   if (stack.has(tx.id)) return 0;
   if (tx.reversalOfId) {
@@ -315,7 +332,7 @@ export function projectHouseholdFund(household: Household, today: DateKey): Hous
   const kittyAllocated = events.filter((event) => event.kind === "kitty-allocated").reduce((sum, event) => sum + event.amountCents, 0);
   const kittyReleased = events.filter((event) => event.kind === "kitty-released").reduce((sum, event) => sum + event.amountCents, 0);
   const kittyCents = kittyAllocated - kittyReleased;
-  const operatingBalanceCents = confirmedContributionsCents - settledCents - kittyAllocated + kittyReleased;
+  const operatingBalanceCents = events.reduce((sum, event) => sum + householdFundOperatingDelta(event), 0);
 
   const txById = new Map(household.transactions.map((tx) => [tx.id, tx]));
   const positions = new Map<string, HouseholdFundTransactionPosition>();
@@ -518,6 +535,10 @@ export function assertHouseholdFundIntegrity(household: Household): void {
     eventIds.add(event.id);
     if (event.fundId !== config.id || !household.members.some((member) => member.id === event.createdBy)) {
       throw new ValidationError("A Household Fund event is bound to the wrong fund or member.");
+    }
+    if ((event.kind === "contribution-proposed" || event.kind === "contribution-confirmed")
+      && (!event.contributorMemberId || !household.members.some((member) => member.id === event.contributorMemberId))) {
+      throw new ValidationError("A Household Fund contribution must belong to a household member.");
     }
     const custodianKinds = new Set<HouseholdFundEvent["kind"]>([
       "contribution-confirmed", "settlement-confirmed", "kitty-allocated", "kitty-released",
