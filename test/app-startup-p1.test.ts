@@ -3,6 +3,7 @@ import { act, createElement, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { catalogHousehold, financialAuditHash, seedDemoHousehold, startMonthRehearsal, type Household } from "../src/core/index.ts";
+import { markSynchronized } from "../src/core/sharing.ts";
 
 type Inspection = {
   ok: boolean;
@@ -147,6 +148,23 @@ async function settleUi(ms = 100): Promise<void> {
   });
 }
 
+async function waitForUi(assertion: () => void, timeout = 5_000): Promise<void> {
+  const deadline = Date.now() + timeout;
+  let lastError: unknown = new Error("UI condition was not met.");
+  while (Date.now() < deadline) {
+    try {
+      assertion();
+      return;
+    } catch (caught) {
+      lastError = caught;
+    }
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+  }
+  throw lastError;
+}
+
 describe("cached-shell startup books gate", () => {
   let root: Root;
   let container: HTMLDivElement;
@@ -195,6 +213,122 @@ describe("cached-shell startup books gate", () => {
     act(() => root.unmount());
     container.remove();
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
+
+  it("names a missing secure cloud session and offers Google reconnect", async () => {
+    vi.stubEnv("VITE_SUPABASE_AUTH_ENABLED", "1");
+    vi.stubEnv("VITE_CONTINUITY_REALTIME", "1");
+    vi.stubEnv("VITE_CONTINUITY_COMMAND_LOG", "1");
+    startup.cached = markSynchronized({ ...catalogHousehold(), linked: true, revision: 67 });
+    startup.inspections.push(Promise.resolve({
+      ok: true,
+      message: "PGlite agrees.",
+      entryCount: startup.cached.transactions.length,
+    }));
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull());
+
+    const status = container.querySelector(".sync-freshness") as HTMLElement | null;
+    expect(status?.textContent).toContain("Google sign-in needed");
+    expect(status?.textContent).toContain("Continue with Google");
+    expect(status?.textContent).not.toContain("Checking every 4 s");
+    expect(button("Continue with Google")).not.toBeNull();
+    expect(localStorage.getItem("hearth:v1:supabase-auth:development")).toBeNull();
+
+    const sessionKey = "hearth:v1:supabase-auth:development";
+    const restoredSession = JSON.stringify({
+      accessToken: "restored-access",
+      refreshToken: "restored-refresh",
+      userId: "auth-user",
+      sessionId: "11111111-1111-4111-8111-111111111111",
+      email: "jonathan@example.com",
+      expiresAt: Date.now() + 60_000,
+    });
+    localStorage.setItem(sessionKey, restoredSession);
+    await act(async () => {
+      window.dispatchEvent(new StorageEvent("storage", {
+        key: sessionKey,
+        oldValue: null,
+        newValue: restoredSession,
+      }));
+      await Promise.resolve();
+    });
+    expect(container.querySelector(".sync-freshness")?.textContent).not.toContain("Google sign-in needed");
+
+    localStorage.removeItem(sessionKey);
+    await act(async () => {
+      window.dispatchEvent(new StorageEvent("storage", {
+        key: sessionKey,
+        oldValue: restoredSession,
+        newValue: null,
+      }));
+      await Promise.resolve();
+    });
+    expect(container.querySelector(".sync-freshness")?.textContent).toContain("Google sign-in needed");
+
+    localStorage.setItem(sessionKey, restoredSession);
+    await act(async () => {
+      window.dispatchEvent(new StorageEvent("storage", {
+        key: sessionKey,
+        oldValue: null,
+        newValue: restoredSession,
+        storageArea: localStorage,
+      }));
+      await Promise.resolve();
+    });
+    expect(container.querySelector(".sync-freshness")?.textContent).not.toContain("Google sign-in needed");
+
+    localStorage.clear();
+    await act(async () => {
+      window.dispatchEvent(new StorageEvent("storage", {
+        key: null,
+        oldValue: null,
+        newValue: null,
+        storageArea: localStorage,
+      }));
+      await Promise.resolve();
+    });
+    expect(container.querySelector(".sync-freshness")?.textContent).toContain("Google sign-in needed");
+  });
+
+  it("turns a refused session refresh into the same explicit reconnect state", async () => {
+    vi.stubEnv("VITE_SUPABASE_AUTH_ENABLED", "1");
+    vi.stubEnv("VITE_CONTINUITY_REALTIME", "1");
+    vi.stubEnv("VITE_CONTINUITY_COMMAND_LOG", "1");
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("expired", { status: 401 }));
+    startup.cached = markSynchronized({ ...catalogHousehold(), linked: true, revision: 67 });
+    startup.inspections.push(Promise.resolve({
+      ok: true,
+      message: "PGlite agrees.",
+      entryCount: startup.cached.transactions.length,
+    }));
+    localStorage.setItem("hearth:v1:supabase-auth:development", JSON.stringify({
+      accessToken: "expired-access",
+      refreshToken: "expired-refresh",
+      userId: "auth-user",
+      sessionId: "11111111-1111-4111-8111-111111111111",
+      email: "jonathan@example.com",
+      googleSubject: "google-sub",
+      displayName: "Jonathan",
+      expiresAt: 1,
+    }));
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await settleUi(200);
+
+    expect(localStorage.getItem("hearth:v1:supabase-auth:development")).toBeNull();
+    expect(container.querySelector(".sync-freshness")?.textContent).toContain("Google sign-in needed");
+    expect(button("Continue with Google")).not.toBeNull();
   });
 
   it("paints the cached kitchen immediately, locks Post, then unlocks before remote reconcile finishes", async () => {
@@ -232,7 +366,7 @@ describe("cached-shell startup books gate", () => {
 
     const savesBeforePost = startup.saveCalls;
     act(() => { confirmReady.click(); });
-    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 100)); });
+    await waitForUi(() => expect(startup.saveCalls).toBeGreaterThan(savesBeforePost));
     expect(startup.saveCalls).toBeGreaterThan(savesBeforePost);
     expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).toBeNull();
   });
@@ -250,7 +384,7 @@ describe("cached-shell startup books gate", () => {
       await Promise.resolve();
     });
     await startValidation();
-    await settleUi();
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='blocked']")).not.toBeNull());
 
     expect(container.querySelector("[data-books-readiness='blocked']")).not.toBeNull();
     expect(container.textContent).toContain("Books need attention");
@@ -272,7 +406,7 @@ describe("cached-shell startup books gate", () => {
       await Promise.resolve();
     });
     await startValidation();
-    await act(async () => { await Promise.resolve(); });
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull());
 
     expect(startup.ingestCalls).toBe(1);
     expect(startup.inspectCalls).toBe(2);
@@ -297,7 +431,7 @@ describe("cached-shell startup books gate", () => {
       await Promise.resolve();
     });
     await startValidation();
-    await settleUi();
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull());
 
     expect(startup.ingestCalls).toBe(1);
     expect(startup.inspectCalls).toBe(2);
@@ -325,11 +459,11 @@ describe("cached-shell startup books gate", () => {
       await Promise.resolve();
     });
     await startValidation();
-    await settleUi();
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='blocked']")).not.toBeNull());
     expect(container.querySelector("[data-books-readiness='blocked']")).not.toBeNull();
 
     act(() => button("Retry validation").click());
-    await settleUi();
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull());
 
     expect(startup.ingestCalls).toBe(1);
     expect(startup.inspectCalls).toBe(3);
@@ -352,7 +486,7 @@ describe("cached-shell startup books gate", () => {
       await Promise.resolve();
     });
     await startValidation();
-    await settleUi();
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='blocked']")).not.toBeNull());
 
     expect(startup.ingestCalls).toBe(0);
     expect(container.querySelector("[data-books-readiness='blocked']")).not.toBeNull();

@@ -195,6 +195,8 @@ import {
   loadSupabaseSession,
   readHearthAuthConfig,
   startSupabaseGoogleSignIn,
+  SUPABASE_SESSION_CHANGED_EVENT,
+  supabaseSessionKey,
   supabaseAuthEnabled,
   supabaseSessionMatchesGoogleIdentity,
 } from "./auth/supabaseSession.ts";
@@ -323,6 +325,10 @@ import {
   type SoftPresenceLiveRow,
 } from "./softPresence.ts";
 import { buildSyncFreshness, sharedHouseholdFreshnessCopy, suppressesCommandSyncChrome } from "./syncFreshness.ts";
+import {
+  beginContinuityAuthReconnect,
+  continuityAuthReconnectRequired,
+} from "./continuityAuthReconnect.ts";
 import {
   recentChangesEmptyCopy,
   recentChangesHeaderPill,
@@ -471,6 +477,9 @@ export function App() {
     };
   });
   const [environment, setEnvironment] = useState<Environment>(initialStartup.environment);
+  const [supabaseSessionPresent, setSupabaseSessionPresent] = useState(() => (
+    Boolean(loadSupabaseSession(initialStartup.environment))
+  ));
   const [herculesProRequest] = useState(() => herculesProAuthorizationRequest());
   const [household, setHousehold] = useState<Household | null>(initialStartup.household);
   const [booting, setBooting] = useState(!initialStartup.household);
@@ -880,6 +889,15 @@ export function App() {
     }
   }
 
+  function reconnectContinuityAuth() {
+    setError("");
+    try {
+      beginContinuityAuthReconnect(environment, window.location.href);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }
+
   useEffect(() => {
     const onOnline = () => setOffline(false);
     const onOffline = () => setOffline(true);
@@ -890,6 +908,25 @@ export function App() {
       window.removeEventListener("offline", onOffline);
     };
   }, []);
+
+  useEffect(() => {
+    const refreshPresence = () => setSupabaseSessionPresent(Boolean(loadSupabaseSession(environment)));
+    const onSessionChanged = (event: Event) => {
+      const changedEnvironment = (event as CustomEvent<{ environment?: Environment }>).detail?.environment;
+      if (!changedEnvironment || changedEnvironment === environment) refreshPresence();
+    };
+    const onStorage = (event: StorageEvent) => {
+      const clearedLocalStorage = event.key === null && event.storageArea === window.localStorage;
+      if (event.key === supabaseSessionKey(environment) || clearedLocalStorage) refreshPresence();
+    };
+    refreshPresence();
+    window.addEventListener(SUPABASE_SESSION_CHANGED_EVENT, onSessionChanged);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener(SUPABASE_SESSION_CHANGED_EVENT, onSessionChanged);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [environment]);
 
   useEffect(() => {
     const refreshClock = () => setNow(new Date());
@@ -2120,12 +2157,27 @@ export function App() {
     [scopedHousehold, today, now, experience],
   );
   const syncFreshnessDisplay = useMemo(() => {
+    const continuityActive = Boolean(
+      household
+      && household.sharing?.mode !== "local"
+      && household.sharing?.mode !== "invite-draft"
+    );
+    const authRequired = continuityAuthReconnectRequired({
+      environment,
+      authEnabled: supabaseAuthEnabled(),
+      hostedAllowed: hostedContinuityAllowed(environment),
+      continuityActive,
+      hasHousehold: Boolean(household),
+      hasMember: Boolean(memberId),
+      authSessionPresent: supabaseSessionPresent,
+    });
     if (!household || !memberId) {
       return buildSyncFreshness({
         household: null,
         viewerMemberId: null,
         realtimeEnabled: continuityRealtimeTransportEnabled(),
         realtimeStatus,
+        authRequired,
         offline,
         pendingOutboxCount: 0,
         hasOpenConflict: false,
@@ -2139,6 +2191,7 @@ export function App() {
       viewerMemberId: memberId,
       realtimeEnabled: continuityRealtimeTransportEnabled(),
       realtimeStatus,
+      authRequired,
       offline,
       pendingOutboxCount: listContinuityOutbox(environment).filter((item) => item.householdId === household.householdId).length,
       hasOpenConflict: unresolvedConflicts(household).length > 0,
@@ -2146,7 +2199,7 @@ export function App() {
       lastReconcileSource: lastReconcile?.source ?? null,
       pollIntervalMs: livePullIntervalMs(activeMembers),
     });
-  }, [household, memberId, realtimeStatus, lastReconcile, environment, offline]);
+  }, [household, memberId, realtimeStatus, lastReconcile, environment, offline, supabaseSessionPresent]);
   const syncFreshnessLine = useMemo(
     () => sharedHouseholdFreshnessCopy(syncFreshnessDisplay, syncState),
     [syncFreshnessDisplay, syncState],
@@ -4406,7 +4459,10 @@ export function App() {
       <SyncFreshnessStatus
         display={syncFreshnessDisplay}
         busy={busy}
-        onAction={() => void retryShareNow()}
+        onAction={() => {
+          if (syncFreshnessDisplay.actionKind === "reconnect-auth") reconnectContinuityAuth();
+          else void retryShareNow();
+        }}
       />
       {!activeBooksGate.ready && (
         <div

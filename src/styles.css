@@ -820,6 +820,12 @@ input, select, textarea {
   opacity: 0.55;
   cursor: wait;
 }
+.sync-freshness__action--label {
+  padding-inline: 14px;
+  font: inherit;
+  font-weight: 700;
+  white-space: nowrap;
+}
 .sync-freshness__action:focus-visible {
   outline: 2px solid var(--pine-2);
   outline-offset: 2px;
@@ -838,6 +844,10 @@ input, select, textarea {
 .sync-freshness--poll .sync-freshness__transport::before,
 .sync-freshness--connecting .sync-freshness__transport::before {
   content: "◌ ";
+}
+.sync-freshness--auth-required .sync-freshness__transport::before {
+  content: "! ";
+  font-weight: 700;
 }
 .sync-freshness--offline .sync-freshness__transport::before,
 .sync-freshness--warning .sync-freshness__transport::before {

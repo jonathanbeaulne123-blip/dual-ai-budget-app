@@ -63,7 +63,7 @@ export type SyncPilotDiagnosticState = {
   syncState: "idle" | "syncing" | "synced" | "error";
   realtimeStatus: ContinuityRealtimeStatus | null;
   offline: boolean;
-  freshnessMode: "live" | "poll" | "connecting" | "offline" | "local" | "hidden";
+  freshnessMode: "live" | "poll" | "connecting" | "auth-required" | "offline" | "local" | "hidden";
 };
 
 export type SyncPilotDiagnosticBundle = {
