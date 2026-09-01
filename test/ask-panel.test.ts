@@ -281,6 +281,8 @@ describe("Ask placement and copy fences", () => {
     expect(componentSource).not.toMatch(/goal met/i);
     expect(componentSource).not.toContain("%");
     expect(componentSource).not.toMatch(/postEntry/);
+    expect(componentSource).toContain("tabIndex={0}");
+    expect(componentSource).toContain('role="img"');
     expect(viewSource).not.toMatch(/you should/i);
     expect(viewSource).not.toMatch(/pick up a shift/i);
     expect(viewSource).not.toMatch(/postEntry/);

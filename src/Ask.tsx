@@ -79,15 +79,20 @@ function RoutesDrawing({ drawing }: { drawing: AskRoutesDrawing }) {
   const markBottom = drawing.height - ROUTE_VIEW.footer + 4;
 
   return (
-    <div className="ask-routes-scroll">
+    <div
+        className="ask-routes-scroll"
+        tabIndex={0}
+        role="img"
+        aria-label={drawing.ariaLabel}
+        data-ask-routes=""
+      >
       <svg
         className="ask-routes-svg"
         viewBox={`0 0 ${drawing.width} ${drawing.height}`}
         width={drawing.width}
         height={drawing.height}
-        role="img"
-        aria-label={drawing.ariaLabel}
-        data-ask-routes=""
+        aria-hidden="true"
+        focusable="false"
       >
         <text className="ask-routes-header" x={ROUTE_VIEW.labelLeft} y="12">
           {drawing.header}

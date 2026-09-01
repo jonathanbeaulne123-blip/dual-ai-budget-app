@@ -7,8 +7,8 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/register-9-ask-panel-115c`
 - **Baseline SHA:** `09be0dcde24356ede228d136fb8cc26498042697`
-- **Head SHA:** _pending_
-- **PR or issue:** _pending draft_
+- **Head SHA:** _updated after a11y follow-up_
+- **PR or issue:** draft [#288](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/288)
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** none
@@ -58,26 +58,33 @@ Inference:
 
 ## Acceptance evidence
 
-- [ ] Figure, sentence, payday line, routes, other door, watching caveat in that order
-- [ ] Covered `$0.00` pine; routes and door hidden
-- [ ] `not-enough-data` still shows the amount; panel stays
-- [ ] Other door visible whenever alternatives exist; never behind a toggle
-- [ ] Custodian `OfficeWide` does not mount Ask; `OfficePhone` does not import it
-- [ ] Fence: no `you should` / `you need to` / `pick up a shift`; no `%` score; no `postEntry`
-- [ ] `Raise it` does not change the household
-- [ ] Focused tests plus `pnpm exec tsc --noEmit` and `pnpm test:fast`
-- [ ] Visual proof at 320 / 390 / 720 / ~1100
+- [x] Figure, sentence, payday line, routes, other door, watching caveat in that order
+- [x] Covered `$0.00` pine; routes and door hidden
+- [x] `not-enough-data` still shows the amount; panel stays
+- [x] Other door visible whenever alternatives exist; never behind a toggle
+- [x] Custodian `OfficeWide` does not mount Ask; `OfficePhone` does not import it
+- [x] Fence: no `you should` / `you need to` / `pick up a shift`; no `%` score; no `postEntry`
+- [x] `Raise it` does not change the household
+- [x] Focused tests plus `pnpm exec tsc --noEmit` and `pnpm test:fast`
+- [x] Visual proof at 320 / 390 / 720 / ~1100
 
 ## Plan
 
-- [ ] Implement `askView` scale and drawing model
-- [ ] Implement `Ask` + CSS
-- [ ] Gate `OfficeWide` to non-custodian Shared Home
-- [ ] Tests, why-note, handoff, draft PR
+- [x] Implement `askView` scale and drawing model
+- [x] Implement `Ask` + CSS
+- [x] Gate `OfficeWide` to non-custodian Shared Home
+- [x] Tests, why-note, handoff, draft PR
 
 ## Evidence log
 
-Record exact commands, results, visual widths, links, and current SHAs. Do not copy evidence from another branch.
+- Baseline `origin/main@09be0dc`. Isolated from #285 and #286.
+- Focused `pnpm exec vitest run test/ask-panel.test.ts`: **8 passed**. Neighbours ask/ask-alternatives/ask-routes: **22 passed**.
+- `pnpm exec tsc --noEmit` passed.
+- `pnpm test:fast`: **215 files passed / 1 skipped**, **1464 tests passed / 2 skipped**.
+- Bianca Month: `test/app-startup-p1.test.ts` + `test/month-rehearsal-mainline.test.ts`: **10 passed**.
+- Independent books audit: PASS. UX: PASS WITH NOTES (routes scroller now `tabIndex={0}` + `role="img"`). Privacy: PASS WITH NOTES (no painted partner-personal leak).
+- Visual harness screenshots at 320 / 390 / 720 / 1100, Raise-it focus, routes focus, night, reduced-motion. Fictional Development copy only.
+- Draft PR #288. Not merged, not deployed, not live.
 
 ## Decisions
 
@@ -89,4 +96,4 @@ Payday secondary copy only appears when `householdAsk(..., "payday")` actually t
 
 ## Handoff
 
-Name the next owner and distinguish local, branch, PR, merged, deployed, and manually verified state.
+Draft PR #288 on `cursor/register-9-ask-panel-115c`. Local + branch + draft PR. Not merged, not deployed, not live. Next owner: Jonathan after independent review. Do not stack metronome or Till.

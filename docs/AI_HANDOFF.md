@@ -2,7 +2,7 @@
 
 ## Register slice 9 — the Ask on the desk (2026-09-01)
 
-**Status:** Implemented on `cursor/register-9-ask-panel-115c`; draft PR pending. **Not merged, not kitchen-published, not live.** Risk **High** (financial presentation + work-route options on the desk). Isolated from Register slice 8 (#285) and Charter Held UI (#286).
+**Status:** Implemented on `cursor/register-9-ask-panel-115c`; draft PR [#288](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/288). **Not merged, not kitchen-published, not live.** Risk **High** (financial presentation + work-route options on the desk). Isolated from Register slice 8 (#285) and Charter Held UI (#286).
 
 **Household outcome:** Jonathan can read this month's Fund Ask on his wide desk: the exact unfunded number, optional conservative routes at one scale, and the other door in the open. Bianca's default surface never receives this panel.
 
@@ -12,7 +12,7 @@
 
 **What changed:** `askView.ts` (`ROUTE_VIEW`, `routeScale`, `askPanelView`); `Ask` + `ask.css`; `OfficeWide` mounts Ask only when Shared Home is the stage and the viewer is not the Fund custodian; focused `test/ask-panel.test.ts`. Worksession: [`worksessions/2026-09-01-register-9-ask-panel.md`](worksessions/2026-09-01-register-9-ask-panel.md).
 
-**Verification:** _pending on this head after the product commit._
+**Verification:** Focused `test/ask-panel.test.ts` **8 passed**. Neighbour Ask suites **22 passed**. `pnpm exec tsc --noEmit` passed. `pnpm test:fast` **1,464 passed / 2 skipped**. Bianca Month `app-startup-p1` + `month-rehearsal-mainline` **10 passed**. Books audit PASS. UX PASS WITH NOTES (keyboard routes scroller fixed). Privacy PASS WITH NOTES. Component harness screenshots at 320/390/720/1100 plus focus, night, and reduced-motion. Full `pnpm check` not rerun; serial `demo-suite` remains a known unrelated fail on other branches.
 
 **Data/environment:** Local pure projector/component/CSS/tests only. No hosted row, schema, secret, Production, deploy, or real household data.
 
