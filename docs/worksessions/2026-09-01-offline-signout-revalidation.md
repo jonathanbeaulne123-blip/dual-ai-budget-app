@@ -51,7 +51,7 @@ A person can always sign this phone out, even while background continuity or Goo
 - [x] Intentional sign-out cannot trigger a late automatic OAuth redirect from an in-flight refresh.
 - [x] 400/401 refresh rejection clears this phone’s token and starts one Google revalidation redirect when configured in a browser.
 - [x] Network/5xx refresh failures preserve the local session and do not redirect.
-- [x] Full `pnpm check` passes. Two heavyweight synthetic fixtures now run in the existing serial lane; every test still runs.
+- [ ] Re-run the remote safety gate after placing the third heavyweight synthetic fixture in the serial lane; every test remains required.
 
 ## Plan
 
@@ -63,7 +63,7 @@ A person can always sign this phone out, even while background continuity or Goo
 
 - Baseline inspected from `origin/main@4c5b94320bd2d55c6b80411924abb2f0db2296a7`.
 - Focused Auth/entry verification: 5 files, 37 tests passed (`auth-account-flow`, `supabase-auth-session`, `first-entry`, `storage-replicas`, `test-lanes`); TypeScript passed.
-- Final `pnpm check` passed after moving the two contended synthetic fixtures into the serial lane: fast lane 211 files / 1,434 tests passed (2 skipped); serial lane 16 files / 131 tests passed (1 skipped); TypeScript, Vite production build, and Hercules Pro UI build passed.
+- Local `pnpm check` passed with two contended synthetic fixtures in the serial lane: fast lane 211 files / 1,434 tests passed (2 skipped); serial lane 16 files / 131 tests passed (1 skipped); TypeScript, Vite production build, and Hercules Pro UI build passed. The remote four-worker runner then timed out `demo-suite` at its fixed 60-second test limit, so it joins that guarded serial lane for the follow-up release.
 - Independent Auth review identified and then verified the cancellation race closure; no remaining Auth/session safety finding after the follow-up.
 
 ## Decisions
