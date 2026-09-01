@@ -1,13 +1,13 @@
 # Hearth worksession — Clerk Slice 1 cited reading
 
-- **Status:** CLOSED — LOCAL IMPLEMENTATION VERIFIED
+- **Status:** CLOSED — LOCAL IMPLEMENTATION SEALED; LOCAL MERGE AUTHORIZED
 - **Opened:** 2026-09-01 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `C:\Users\jonat\OneDrive\Documents\ChatGPT\Budget App`
 - **Branch:** `clerk/1-reading`
 - **Baseline SHA:** `ff9d8d8de70c80fd567ba9835b3cc2ffbcd45082`
-- **Head SHA:** local uncommitted implementation over `ff9d8d8de70c80fd567ba9835b3cc2ffbcd45082`
+- **Head SHA:** `6f1cb43f793312953fb733d795a0d0439d539f35`
 - **PR or issue:** none
 - **Risk:** Medium
 - **Decision owner:** Jonathan
@@ -67,6 +67,7 @@ Inference to prove:
 - 2026-09-01: Focused `test/clerk-reading.test.ts` passed 3/3; `tsc --noEmit` and `git diff --check` passed.
 - 2026-09-01: Full `pnpm test` passed: ordinary lane `214 passed / 1 skipped` test files and serial books lane `17 passed / 1 skipped` test files. The package's literal `pnpm build` command is Windows-shell-incompatible because its `rm -rf` runs through `cmd`; the equivalent `tsc --noEmit`, `vite build`, Hercules Pro bundle, and no-`dist/_redirects` checks passed. Existing PGlite browser-external/eval, large-chunk, and React `act(...)` warnings were non-failing.
 - 2026-09-01: Independent focused verifier rerun passed `4/4`, including the conservation-withheld case; diff hygiene passed for all new files.
+- 2026-09-01: Pre-merge rerun passed the focused Clerk suite `4/4` and AI-surface verification. The aggregate Windows gate reached `1,447 passed / 2 skipped` ordinary tests and `139 passed / 1 skipped` serial tests, but remained non-green because `test/api.test.ts` requires unavailable `bash` and the unrelated dated Demo Suite fixture no longer produced an `upcoming` shift envelope. The Demo assertion failed again alone; Clerk changes do not touch Demo generation, Shift envelopes, or the host test. The earlier exact-tree full run remains green apart from the known Windows build-shell incompatibility.
 
 ## Decisions
 
@@ -78,4 +79,4 @@ Inference to prove:
 
 ## Handoff
 
-Local branch only. No PR, merge, deployment, hosted action, or Production action has occurred. Next owner: Jonathan for review/commit authorization; Clerk Slice 2 may consume the sealed `ClerkReading` contract after this branch is integrated.
+Jonathan authorized commit and local merge on 2026-09-01. No push, PR, deployment, hosted action, household-data mutation, or Production action is authorized. Clerk Slice 2 may consume the sealed `ClerkReading` contract after this branch is integrated. Its durable Cursor packet is `docs/briefs/CURSOR_CLERK_SLICE_2_CITATIONS_2026-09-01.md`.
