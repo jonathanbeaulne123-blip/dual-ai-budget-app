@@ -164,4 +164,30 @@ describe("Development sync pilot diagnostics", () => {
     expect(bundle?.traces[0]?.revision).toBe(6);
     expect(bundle?.traces.at(-1)?.revision).toBe(505);
   });
+
+  it("retains privacy-safe Realtime lifecycle evidence", async () => {
+    const storage = memoryStorage();
+    for (const phase of ["realtime-disconnected", "realtime-reconnect", "realtime-subscribed"] as const) {
+      await recordSyncPilotTrace({
+        ...identity,
+        phase,
+        revision: 12,
+        transport: "command-realtime",
+      }, { flag: "1", storage });
+    }
+    const bundle = await buildSyncPilotDiagnosticBundle({
+      ...identity,
+      revision: 12,
+      pendingCount: 0,
+      syncState: "synced",
+      realtimeStatus: "SUBSCRIBED",
+      offline: false,
+      freshnessMode: "live",
+    }, { flag: "1", storage });
+    expect(bundle?.traces.map((row) => row.phase)).toEqual([
+      "realtime-disconnected",
+      "realtime-reconnect",
+      "realtime-subscribed",
+    ]);
+  });
 });

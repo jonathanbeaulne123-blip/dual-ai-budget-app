@@ -9,6 +9,7 @@ export {
   canAttachContinuityRealtime,
   continuityRealtimeAllowed,
   continuityRealtimeEnabled,
+  continuityRealtimeSelfHealEnabled,
   shouldUsePollFallback,
   type ContinuityRealtimeStatus,
 } from "./continuityRealtimePolicy.ts";
@@ -17,6 +18,7 @@ import {
   type ContinuityCommandEvent,
 } from "./ledger/materializeSnapshotFromEvents.ts";
 import type { ContinuitySnapshotSignal } from "./continuityRealtimeRecovery.ts";
+import type { ContinuityHeartbeatStatus } from "./continuityRealtimeReconnect.ts";
 
 export type AttachContinuityRealtimeInput = {
   supabaseUrl: string;
@@ -31,6 +33,7 @@ export type AttachContinuityRealtimeInput = {
   onCommandEvent?: (event: ContinuityCommandEvent) => void;
   commandLogEnabled?: boolean;
   onStatusChange?: (status: ContinuityRealtimeStatus) => void;
+  onHeartbeatStatus?: (status: ContinuityHeartbeatStatus, latencyMs?: number) => void;
 };
 
 type RealtimeChannelHandle = {
@@ -56,6 +59,10 @@ export type ContinuityRealtimeDeps = {
   ) => RealtimeClientHandle;
 };
 
+export function continuityRealtimeWorkerSupported(): boolean {
+  return typeof window !== "undefined" && typeof window.Worker === "function";
+}
+
 /**
  * Subscribe to hosted snapshot row changes for the active household.
  * RLS-respecting JWT is required; caller must verify membership before attach.
@@ -64,6 +71,7 @@ export function attachContinuityRealtime(
   input: AttachContinuityRealtimeInput,
   deps: ContinuityRealtimeDeps = {},
 ): () => void {
+  let disposed = false;
   const create: NonNullable<ContinuityRealtimeDeps["createClient"]> = deps.createClient
     ?? (createClient as unknown as NonNullable<ContinuityRealtimeDeps["createClient"]>);
   const client = create(input.supabaseUrl, input.publishableKey, {
@@ -78,11 +86,17 @@ export function attachContinuityRealtime(
         Authorization: `Bearer ${input.accessToken}`,
       },
     },
+    realtime: {
+      worker: continuityRealtimeWorkerSupported(),
+      heartbeatCallback: (status, latencyMs) => {
+        if (disposed) return;
+        input.onHeartbeatStatus?.(status as ContinuityHeartbeatStatus, latencyMs);
+      },
+    },
   });
 
   client.realtime.setAuth(input.accessToken);
 
-  let disposed = false;
   const commandLogEnabled = input.commandLogEnabled ?? continuityCommandLogEnabled();
   const snapshotRealtimeEnabled = continuityRealtimeEnabled();
   const channelName = `hearth:${input.environment}:${input.householdId}:${input.memberId}`;

@@ -18,6 +18,9 @@ export type SyncPilotTracePhase =
   | "snapshot-signal"
   | "snapshot-applied"
   | "poll-fallback"
+  | "realtime-disconnected"
+  | "realtime-reconnect"
+  | "realtime-subscribed"
   | "conflict"
   | "auth-blocked";
 
@@ -102,6 +105,9 @@ const TRACE_PHASES = new Set<SyncPilotTracePhase>([
   "snapshot-signal",
   "snapshot-applied",
   "poll-fallback",
+  "realtime-disconnected",
+  "realtime-reconnect",
+  "realtime-subscribed",
   "conflict",
   "auth-blocked",
 ]);

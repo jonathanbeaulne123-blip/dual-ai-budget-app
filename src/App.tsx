@@ -167,9 +167,15 @@ import {
 import {
   createContinuityRealtimeRecoveryGate,
   recoverRealtimeSnapshot,
+  shouldRecoverPollCommandsFirst,
 } from "./continuityRealtimeRecovery.ts";
 import {
+  createContinuityRealtimeReconnectGate,
+  shouldDeferResumeForRealtimeReconnect,
+} from "./continuityRealtimeReconnect.ts";
+import {
   canAttachContinuityRealtime,
+  continuityRealtimeSelfHealEnabled,
   shouldUsePollFallback,
   softPresenceRealtimeEnabled,
   type ContinuityRealtimeStatus,
@@ -1706,8 +1712,11 @@ export function App() {
       void coordinator.run(source, () => replayWork(source));
     };
 
-    const scheduleRealtimeRecovery = (targetRevision: number | null) => {
-      void coordinator.run("realtime", async () => {
+    const scheduleRealtimeRecovery = (
+      targetRevision: number | null,
+      source: "realtime" | "poll" = "realtime",
+    ) => {
+      void coordinator.run(source, async () => {
         await recoverRealtimeSnapshot({
           targetRevision,
           getLocalState: () => {
@@ -1731,7 +1740,7 @@ export function App() {
             );
           },
           applyCommandEvent: tryApplyCommandEvent,
-          recoverSnapshot: () => replayWork("realtime"),
+          recoverSnapshot: () => replayWork(source),
         });
       });
     };
@@ -1753,43 +1762,32 @@ export function App() {
       },
     });
 
-    /** T3-S3: coalesce focus+visibility; online/manual/realtime stay immediate. */
-    const requestResume = (source: ContinuitySyncSource) => {
-      resumeGate.request({
-        source,
-        nowMs: Date.now(),
-        schedule: (resolved) => {
-          if (resolved === "focus" || resolved === "visibility" || resolved === "online") {
-            resumeGate.markResumed(Date.now());
-          }
-          scheduleReplay(resolved);
-        },
-        defer: (fn, waitMs) => {
-          const id = window.setTimeout(fn, waitMs);
-          return { clear: () => window.clearTimeout(id) };
-        },
-      });
-    };
-
-    const onOnline = () => requestResume("online");
-    const onFocus = () => requestResume("focus");
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") requestResume("visibility");
-    };
-    window.addEventListener("online", onOnline);
-    window.addEventListener("focus", onFocus);
-    document.addEventListener("visibilitychange", onVisibility);
-    requestResume("manual");
-
     let detachRealtime: (() => void) | null = null;
+    let realtimeGeneration = 0;
+    const realtimeOn = continuityRealtimeSelfHealEnabled({
+      environment,
+      transportEnabled: continuityRealtimeTransportEnabled(),
+      authEnabled: supabaseAuthEnabled(),
+      hostedAllowed: hostedContinuityAllowed(environment),
+    });
     const realtimeStatusRef: { current: ContinuityRealtimeStatus | null } = { current: null };
+    const deferPollForRealtimeReconnect = () => {
+      const memberCount = householdRef.current?.members.filter((row) => row.active).length ?? 2;
+      nextPollAllowedAtMs = Math.max(
+        nextPollAllowedAtMs,
+        Date.now() + livePullIntervalMs(memberCount),
+      );
+    };
 
-    const setupRealtime = async () => {
-      if (!continuityRealtimeTransportEnabled() || !supabaseAuthEnabled()) return;
+    const setupRealtime = async (): Promise<boolean> => {
+      const generation = ++realtimeGeneration;
+      detachRealtime?.();
+      detachRealtime = null;
+      if (!continuityRealtimeTransportEnabled() || !supabaseAuthEnabled()) return false;
       const authSession = await ensureSupabaseSession(environment);
-      if (!live || !authSession) return;
+      if (!live || generation !== realtimeGeneration || !authSession) return false;
       const currentHouseholdId = householdRef.current?.householdId;
-      if (!currentHouseholdId) return;
+      if (!currentHouseholdId) return false;
       const identity: ContinuityIdentity = {
         email: authSession.email,
         subject: authSession.googleSubject,
@@ -1802,9 +1800,9 @@ export function App() {
         environment,
         config: cloudConfig,
       });
-      if (!live || !role) return;
+      if (!live || generation !== realtimeGeneration || !role) return false;
       const authConfig = readHearthAuthConfig();
-      if (!authConfig) return;
+      if (!authConfig) return false;
       if (!canAttachContinuityRealtime({
         authSessionPresent: true,
         membershipResolved: true,
@@ -1812,12 +1810,12 @@ export function App() {
         hasHousehold: true,
         environment,
         commandLogEnabled: continuityCommandLogEnabled(),
-      })) return;
-      if (!live) return;
+      })) return false;
+      if (!live || generation !== realtimeGeneration) return false;
 
       const { attachContinuityRealtime } = await import("./continuityRealtime.ts");
-      if (!live) return;
-      detachRealtime = attachContinuityRealtime({
+      if (!live || generation !== realtimeGeneration) return false;
+      const detach = attachContinuityRealtime({
         supabaseUrl: authConfig.supabaseUrl,
         publishableKey: authConfig.publishableKey,
         accessToken: authSession.accessToken,
@@ -1857,22 +1855,121 @@ export function App() {
           realtimeRecoveryGate.noteSnapshot(signal);
         },
         onStatusChange: (status) => {
+          if (!live || generation !== realtimeGeneration) return;
           realtimeStatusRef.current = status;
           if (status === "SUBSCRIBED") {
             consecutiveUnhealthyPolls = 0;
             nextPollAllowedAtMs = 0;
+            traceSyncPilot("realtime-subscribed", { transport: "command-realtime" });
+          } else if (status === "CLOSED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            traceSyncPilot("realtime-disconnected", { transport: "command-realtime" });
           }
-          if (live) setRealtimeStatus(status);
+          setRealtimeStatus(status);
+          realtimeReconnectGate.noteStatus(status);
+        },
+        onHeartbeatStatus: (status) => {
+          if (!live || generation !== realtimeGeneration) return;
+          if (status === "error" || status === "timeout" || status === "disconnected") {
+            realtimeStatusRef.current = "CHANNEL_ERROR";
+            setRealtimeStatus("CHANNEL_ERROR");
+            traceSyncPilot("realtime-disconnected", { transport: "command-realtime" });
+          }
+          realtimeReconnectGate.noteHeartbeat(status);
+        },
+      });
+      if (!live || generation !== realtimeGeneration) {
+        detach();
+        return false;
+      }
+      detachRealtime = detach;
+      return true;
+    };
+
+    const realtimeReconnectGate = createContinuityRealtimeReconnectGate({
+      reconnect: async () => {
+        if (!live) return;
+        traceSyncPilot("realtime-reconnect", { transport: "command-realtime" });
+        realtimeStatusRef.current = "JOINING";
+        setRealtimeStatus("JOINING");
+        const attached = await setupRealtime();
+        if (!attached && live) {
+          realtimeStatusRef.current = null;
+          setRealtimeStatus(null);
+        }
+        return attached;
+      },
+      onSubscribed: (afterReconnect) => {
+        if (!live || !afterReconnect) return;
+        scheduleRealtimeRecovery(null);
+      },
+      onReconnectScheduled: deferPollForRealtimeReconnect,
+      defer: (fn, waitMs) => {
+        const id = window.setTimeout(fn, waitMs);
+        return { clear: () => window.clearTimeout(id) };
+      },
+    });
+
+    /** T3-S3: coalesce focus+visibility; online/manual/realtime stay immediate. */
+    const requestResume = (source: ContinuitySyncSource) => {
+      resumeGate.request({
+        source,
+        nowMs: Date.now(),
+        schedule: (resolved) => {
+          if (resolved === "focus" || resolved === "visibility" || resolved === "online") {
+            resumeGate.markResumed(Date.now());
+          }
+          scheduleReplay(resolved);
+        },
+        defer: (fn, waitMs) => {
+          const id = window.setTimeout(fn, waitMs);
+          return { clear: () => window.clearTimeout(id) };
         },
       });
     };
-    void setupRealtime().catch(() => {
-      if (!live) return;
-      realtimeStatusRef.current = null;
-      setRealtimeStatus(null);
-    });
 
-    const realtimeOn = continuityRealtimeTransportEnabled();
+    const onOnline = () => {
+      const healingRealtime = shouldDeferResumeForRealtimeReconnect({
+        realtimeEnabled: realtimeOn,
+        status: realtimeStatusRef.current,
+      });
+      if (healingRealtime) realtimeReconnectGate.requestReconnect("online");
+      else requestResume("online");
+    };
+    const onFocus = () => {
+      const healingRealtime = shouldDeferResumeForRealtimeReconnect({
+        realtimeEnabled: realtimeOn,
+        status: realtimeStatusRef.current,
+      });
+      if (healingRealtime) realtimeReconnectGate.requestReconnect("focus");
+      else requestResume("focus");
+    };
+    const onVisibility = () => {
+      if (document.visibilityState !== "visible") return;
+      const healingRealtime = shouldDeferResumeForRealtimeReconnect({
+        realtimeEnabled: realtimeOn,
+        status: realtimeStatusRef.current,
+      });
+      if (healingRealtime) realtimeReconnectGate.requestReconnect("visibility");
+      else requestResume("visibility");
+    };
+    window.addEventListener("online", onOnline);
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    requestResume("manual");
+
+    if (realtimeOn) {
+      const initialRealtimeGeneration = realtimeGeneration + 1;
+      void setupRealtime().then((attached) => {
+        if (!live || realtimeGeneration !== initialRealtimeGeneration || attached) return;
+        realtimeStatusRef.current = null;
+        setRealtimeStatus(null);
+      }).catch(() => {
+        if (!live || realtimeGeneration !== initialRealtimeGeneration) return;
+        realtimeStatusRef.current = "CHANNEL_ERROR";
+        setRealtimeStatus("CHANNEL_ERROR");
+        realtimeReconnectGate.noteStatus("CHANNEL_ERROR");
+      });
+    }
     // Tick often enough to honor backoff without a fixed 4s heartbeat when unhealthy.
     // T3-S4: recompute member-scaled base each tick so roster changes refresh the envelope.
     const timer = window.setInterval(() => {
@@ -1903,12 +2000,21 @@ export function App() {
         consecutiveUnhealthyPolls = 0;
       }
       traceSyncPilot("poll-fallback", { transport: "poll" });
-      scheduleReplay("poll");
+      if (shouldRecoverPollCommandsFirst({
+        realtimeEnabled: realtimeOn,
+        status: realtimeStatusRef.current,
+      })) {
+        scheduleRealtimeRecovery(null, "poll");
+      } else {
+        scheduleReplay("poll");
+      }
     }, 1_000);
     return () => {
       live = false;
+      realtimeGeneration += 1;
       resumeGate.dispose();
       realtimeRecoveryGate.dispose();
+      realtimeReconnectGate.dispose();
       detachRealtime?.();
       window.removeEventListener("online", onOnline);
       window.removeEventListener("focus", onFocus);

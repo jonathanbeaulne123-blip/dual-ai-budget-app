@@ -1599,6 +1599,22 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 **Still required:** exact-tree full gate, independent books/trust and continuity verification, then separately approved release and a fresh deployed two-account 100-sample p95 run. The historical `<=500 ms` smoke is not evidence for this local repair.
 
+## D-192 Realtime terminal-channel self-heal (2026-09-01)
+
+**Status:** locally verified High-risk candidate on `codex/realtime-self-heal` over exact `origin/main@8def9bd9ec70fe9c343f5b63880d0c6db2dcffd8`; not pushed, merged, deployed, or live-proven.
+
+**Household outcome:** a visible signed-in Development kitchen that loses its Supabase Realtime socket now recreates one authenticated membership-checked channel instead of remaining indefinitely on backed-off polling. Successful resubscription catches up committed command rows through the ordinary coordinator/PGlite acceptance path before the snapshot fail-safe.
+
+**Budget delta (5):** `+4`. **Engagement delta (3):** `+1`.
+
+**What changed:** worker-backed heartbeat configuration where supported; heartbeat and terminal-channel failure signals; one reconnect timer with 1/2/5/10-second bounded backoff; a 5-second `SUBSCRIBED` acknowledgement deadline; focus/visibility/online acceleration; stale-generation/disposal guards; command-log-first reconnect and unhealthy-poll catch-up; privacy-safe reconnect lifecycle phases. Development/Auth/hosted eligibility is required before the healer starts, and lost eligibility stops automatic retry. Poll fallback, Auth/RLS membership, financial command meaning, PGlite acceptance, and Production refusal remain intact.
+
+**Verification:** the source diagnostic had `realtimeStatus: CLOSED`, zero Realtime receives, 27 poll fallbacks, and 4.5–5.0-second snapshot acceptance after poll scheduling, while the posting device reached cloud acknowledgement in 880 ms. Exact-tree focused sync proof passed 85 tests plus TypeScript and diff checks. Full application tests passed 1,531 / 3 skipped across 221 passed / 2 skipped files; AI-surface verification passed 41 required files. The Windows shell cannot execute the repository's Unix `rm` build wrapper, so the exact equivalent TypeScript, Vite production build (389 modules), Hercules Pro UI, and no-`dist/_redirects` checks were run separately and passed. Independent books/trust review passed; latency review conditionally passed with no code blocker; hygiene/privacy found no P0–P3 issue.
+
+**Environment/data disclosure:** Development client code and synthetic local tests only. No hosted query was executed for this repair; no schema, migration, RLS, provider setting, secret, hosted row, Production-continuity flag, financial fact, or real household record changed. Google identity and Shared/Personal scope rules are unchanged. Offline writes remain durable in the existing outbox and no peer device becomes a host.
+
+**Still required:** a separate release decision, then a fresh deployed signed-in two-device 100-sample run before claiming `<=500 ms p95`. Browser-level App lifecycle integration remains a non-blocking P2 proof gap; the pure lifecycle/policy units and reviewer-run focused suites pass.
+
 ## Auth + membership RLS cutover (D-123)
 
 **Status:** Migration **006 applied** on live shared project (Jonathan paste). Anon REST denial verified. Kitchen Auth door reaches Google OAuth. Docs record of apply: open PR #104. Invite chrome: branch `cursor/auth-invite-chrome-f375`.

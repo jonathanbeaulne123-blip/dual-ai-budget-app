@@ -4,13 +4,25 @@ import {
   canAttachContinuityRealtime,
   continuityRealtimeAllowed,
   continuityRealtimeEnabled,
+  continuityRealtimeSelfHealEnabled,
+  continuityRealtimeWorkerSupported,
   shouldUsePollFallback,
   type ContinuityRealtimeDeps,
 } from "../src/continuityRealtime.ts";
 
 afterEach(() => {
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
+});
+
+describe("continuityRealtimeWorkerSupported", () => {
+  it("enables background heartbeats only when the browser supports workers", () => {
+    vi.stubGlobal("window", {});
+    expect(continuityRealtimeWorkerSupported()).toBe(false);
+    vi.stubGlobal("window", { Worker: class Worker {} });
+    expect(continuityRealtimeWorkerSupported()).toBe(true);
+  });
 });
 
 describe("continuityRealtimeEnabled", () => {
@@ -98,12 +110,30 @@ describe("continuityRealtimeAllowed", () => {
   });
 });
 
+describe("continuityRealtimeSelfHealEnabled", () => {
+  const base = {
+    environment: "development" as const,
+    transportEnabled: true,
+    authEnabled: true,
+    hostedAllowed: true,
+  };
+
+  it("starts only for an authenticated, hosted Development transport", () => {
+    expect(continuityRealtimeSelfHealEnabled(base)).toBe(true);
+    expect(continuityRealtimeSelfHealEnabled({ ...base, environment: "production" })).toBe(false);
+    expect(continuityRealtimeSelfHealEnabled({ ...base, authEnabled: false })).toBe(false);
+    expect(continuityRealtimeSelfHealEnabled({ ...base, hostedAllowed: false })).toBe(false);
+    expect(continuityRealtimeSelfHealEnabled({ ...base, transportEnabled: false })).toBe(false);
+  });
+});
+
 describe("attachContinuityRealtime lifecycle", () => {
   it("subscribes to shared and personal snapshot channels and cleans up", () => {
     vi.stubEnv("VITE_CONTINUITY_REALTIME", "1");
     vi.stubEnv("VITE_CONTINUITY_COMMAND_LOG", "");
     const onSnapshotSignal = vi.fn();
     const onStatusChange = vi.fn();
+    const onHeartbeatStatus = vi.fn();
     const postgresHandlers: Array<(payload?: { new?: unknown }) => void> = [];
     const subscribeCallback: Array<(status: string) => void> = [];
 
@@ -125,7 +155,8 @@ describe("attachContinuityRealtime lifecycle", () => {
       removeChannel: vi.fn(),
       realtime: { setAuth: vi.fn() },
     };
-    const createClient = vi.fn(() => client) as ContinuityRealtimeDeps["createClient"];
+    const createClientMock = vi.fn((..._args: Parameters<NonNullable<ContinuityRealtimeDeps["createClient"]>>) => client);
+    const createClient = createClientMock as ContinuityRealtimeDeps["createClient"];
 
     const detach = attachContinuityRealtime({
       supabaseUrl: "https://example.supabase.co",
@@ -136,6 +167,7 @@ describe("attachContinuityRealtime lifecycle", () => {
       environment: "development",
       onSnapshotSignal,
       onStatusChange,
+      onHeartbeatStatus,
     }, { createClient });
 
     expect(createClient).toHaveBeenCalledOnce();
@@ -144,6 +176,12 @@ describe("attachContinuityRealtime lifecycle", () => {
     expect(channel.on.mock.calls[0]?.[1]?.table).toBe("household_snapshots");
     expect(channel.on.mock.calls[1]?.[1]?.table).toBe("continuity_personal_snapshots");
     expect(channel.subscribe).toHaveBeenCalledOnce();
+    const realtimeOptions = createClientMock.mock.calls[0]?.[2]?.realtime;
+    expect(typeof realtimeOptions?.worker).toBe("boolean");
+    expect(realtimeOptions?.heartbeatCallback).toBeTypeOf("function");
+
+    realtimeOptions?.heartbeatCallback?.("timeout", 321);
+    expect(onHeartbeatStatus).toHaveBeenCalledWith("timeout", 321);
 
     subscribeCallback[0]?.("SUBSCRIBED");
     expect(onStatusChange).toHaveBeenCalledWith("SUBSCRIBED");
@@ -160,6 +198,8 @@ describe("attachContinuityRealtime lifecycle", () => {
 
     postgresHandlers[0]?.({ new: { revision: 8 } });
     expect(onSnapshotSignal).toHaveBeenCalledOnce();
+    realtimeOptions?.heartbeatCallback?.("timeout", 654);
+    expect(onHeartbeatStatus).toHaveBeenCalledOnce();
   });
 
   it("does not merge websocket payload — only signals pull/reconcile", () => {
