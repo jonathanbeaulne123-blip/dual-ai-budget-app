@@ -10,9 +10,15 @@
 
 **What changed:** `src/HouseholdFundPanel.tsx` waiting queue is `householdFundContributionMotions` filtered to `open` | `held`. Eligible custodian gets equal-weight **Confirm received** and **Hold**. Held uses exact `HOUSEHOLD_FUND_HOLD_COPY.status`. Exact holder **Release Hold**; exact proposer **Withdraw proposal**. Removed `Waiting for Bianca`. Smallest CSS under `.household-fund-panel`. Tests in `test/held-ui.test.ts`. Worksession: [`worksessions/2026-09-01-charter-held-ui.md`](worksessions/2026-09-01-charter-held-ui.md).
 
-**Verification:** Focused `pnpm exec vitest run test/held.test.ts test/household-fund-ui.test.ts test/held-ui.test.ts`, `pnpm exec tsc --noEmit`, and `git diff --check` recorded after this slice. Core `src/core/householdFund.ts`, `src/core/commands.ts`, PGlite, continuity, schema, workers, App.tsx, Office, Charter amendment authoring, and Register slice 8 were not edited.
+**Verification:**
+- Focused `pnpm exec vitest run test/held.test.ts test/household-fund-ui.test.ts test/held-ui.test.ts`: **3 files passed, 19 tests passed** (`held-ui` 9, `held` 5, `household-fund-ui` 5).
+- `pnpm exec tsc --noEmit` passed. `git diff --check` passed.
+- `pnpm check`: AI surface verified. Fast lane **214 files / 1453 tests passed** (1 file / 2 tests skipped). Books lane failed **1** unrelated `demo-suite.test.ts` assertion (`shiftEnvelopes` `"upcoming"`); that test does not import this UI. Production build did not run because the books lane failed.
+- Core `src/core/householdFund.ts`, `src/core/commands.ts`, PGlite, continuity, schema, workers, App.tsx, Office, Charter amendment authoring, and Register slice 8 were not edited.
 
-**Boundaries:** Local fictional Development data only. No hosted schema/row, Supabase, Auth/RLS, secret, provider, bank action, real household data, Production, merge, or deploy.
+**Uncertainty:** No live browser pass at 320/390/720/1100 in this environment. The books-lane demo-suite failure is outside this packet and still fails on retry.
+
+**Boundaries:** Local fictional Development data only. No hosted schema/row, Supabase, Auth/RLS, secret, provider, bank action, real household data, Production, merge, or deploy. GitHub push of this branch only.
 
 **Next owner:** Independent High-risk UX/books review of this UI branch. Jonathan decides PR/merge. Do not call this shipped.
 
