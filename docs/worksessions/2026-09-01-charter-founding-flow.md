@@ -95,4 +95,4 @@ Inferences:
 
 ## Handoff
 
-Draft PR against `main`. Not merged, not kitchen-published, not live.
+Draft PR against `main`. Jonathan asked GPT to review and merge with slice 4 via [`briefs/CHATGPT_CHARTER_3_4_REVIEW_MERGE.md`](../briefs/CHATGPT_CHARTER_3_4_REVIEW_MERGE.md). Rebase onto current `main` (`450be34`, #274) first. Not kitchen-published, not live until that merge is verified.

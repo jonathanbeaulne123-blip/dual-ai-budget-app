@@ -36,7 +36,7 @@
 - Independent books audit: **PASS**. Independent UX audit: **PASS WITH NOTES**; P1 sign/revoke `min-width: 44px` fixed after the audit.
 - Browser, fictional Development demo: More → the charter document; Jonathan signed only his line (`1 Sept 2026`); Bianca unsigned with no pending copy; close; viewports 320 / 390 / 720 / ~1100.
 
-**Uncertainty:** Stacked on unmerged slice 3. Dark/forced-colors not verified. App More wiring is not jsdom-covered. Do not merge to `main` until #271 lands and this PR is retargeted.
+**Uncertainty:** Stacked on unmerged slice 3. Dark/forced-colors not verified. App More wiring is not jsdom-covered. `origin/main` has moved to `450be34` (#274 integrity). GPT merge packet requires rebase before land.
 
 **Data and environment disclosure:**
 - Development impact: none (branch/PR only)
@@ -46,7 +46,7 @@
 - Hosted rows/schema/secrets/deployments: none (Worker preview is not the kitchen URL)
 - Real household or partner-personal data used: none (fictional Development / catalog)
 
-**Next owner:** Jonathan reviews draft #275 after or with #271. Do not merge unless asked. Next product slice is Charter 5 (Held).
+**Next owner:** Jonathan asked GPT to review and merge slices 3 and 4. Paste-ready packet: [`briefs/CHATGPT_CHARTER_3_4_REVIEW_MERGE.md`](briefs/CHATGPT_CHARTER_3_4_REVIEW_MERGE.md). Rebase onto current `origin/main` (`450be34`, includes #274 charter integrity) before merge. Merging `main` queues D-041 kitchen publish. Do not apply schema or touch Production.
 
 ## Charter founding conversation (2026-09-01)
 
@@ -79,7 +79,7 @@
 - Hosted rows/schema/secrets/deployments: none
 - Real household or partner-personal data used: none (fictional Development / catalog)
 
-**Next owner:** Jonathan reviews draft PR #271. Do not merge unless asked. Next product slice is Charter 4 (page + empty signature).
+**Next owner:** Jonathan asked GPT to review and merge with slice 4. Packet: [`briefs/CHATGPT_CHARTER_3_4_REVIEW_MERGE.md`](briefs/CHATGPT_CHARTER_3_4_REVIEW_MERGE.md). Rebase onto `origin/main@450be34` (#274) before merge. Kitchen publish follows merge to `main` (D-041).
 
 ## D-189 interrupted local PGlite recovery (2026-08-31)
 
