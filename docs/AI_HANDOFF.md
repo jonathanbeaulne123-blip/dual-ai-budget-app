@@ -2,7 +2,7 @@
 
 ## Glance plates, seal lists, scrolling month sheet (2026-08-31)
 
-**Status:** Draft [#265](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/265) on `cursor/desk-glance-seals-021f`. Base `main@2690c57`. **Not merged, not deployed, not live.** Risk **High** (presentation). No Production household mutation, hosted schema, or secrets.
+**Status:** Merged [#265](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/265) as `main@7d01b62`. Kitchen Cloudflare Workers [`33460617226`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33460617226) **success**. Worker version `0a9ceae5-6227-409c-8121-dc964631b1e5`. Live `index-Cdc4gCTV.js` → lazy `Office-BC-mxQLw.js` with `desk-plate`, `aria-expanded`, “Income this month”, “Expenses this month”, `month-posted-list`, leftover-spend footing, and no `selectPlate` / `plate-on-stage`. CSS `index-CEcjvoXs.css` has `--stories-open-height: calc(680px + 2.2rem)`, `.desk-plate.is-open`, collapsed `min-height:80px`. HTML `Cache-Control: no-store`. **Merged and kitchen-published.** Risk was **High** presentation, then Release because Jonathan ordered merge/deploy. No Production household mutation, hosted schema, or secrets.
 
 **Household outcome:** On wide Shared and Personal Home, the six left stories sit as short glance lines and grow in the mosaic for the drawing, footing, and Cabinet handle. They no longer replace the month sheet. Money in opens this month’s posted income rows. Money out opens this month’s posted expense rows. Leftover spend still goes to Plan. The centre stage is a six-open-card height with inner vertical scroll. iPhone `OfficePhone` still sends the two money seals to the blotter.
 
@@ -12,25 +12,26 @@
 
 **If they conflicted:** books won. Lists are display only. Refunds stay in `partitionLedger` `other`, not expenses. Shared lists use the floor’s visible `household`, not partner-personal rooms. No `goal.savedCents` writes. Phone seals stay on the blotter.
 
-**What changed:** `DeskPlateModel.glance`; plates grow via `openPlateIds` instead of staging; `monthPostedRows`; Money in/out → `MonthPostedList`; leftover spend still `onGo("plan")`; `--stories-open-height` plus stage `overflow-y: auto`; a second tap on an open money seal closes the list. Worksession: [`worksessions/2026-08-31-desk-glance-seals.md`](worksessions/2026-08-31-desk-glance-seals.md).
+**What changed:** `DeskPlateModel.glance`; plates grow via `openPlateIds` instead of staging; `monthPostedRows`; Money in/out → `MonthPostedList`; leftover spend still `onGo("plan")`; `--stories-open-height` plus stage `overflow-y: auto`; a second tap on an open money seal closes the list. Integrated `origin/main@d29d2d6` (D-187/D-188) before publish. Worksession: [`worksessions/2026-08-31-desk-glance-seals.md`](worksessions/2026-08-31-desk-glance-seals.md).
 
 **Verification:**
-- Focused `test/desk-plates.test.ts` + `test/desk-plates-dom.test.ts`: **25 passed** (glance copy, mosaic toggle, refund-out-of-expenses, iPhone blotter fence, Bianca private Amex canary).
-- `pnpm check` on `3e1398e`: AI surface verified; **1441 passed / 3 skipped / 0 failed**; TypeScript clean; Vite 384 modules; Hercules Pro UI green; no `dist/_redirects`.
+- Focused `test/desk-plates.test.ts` + `test/desk-plates-dom.test.ts` + Bianca `test/app-startup-p1.test.ts` + `test/month-rehearsal-mainline.test.ts` on `7d01b62`: **30 passed**.
+- `pnpm check` on `7d01b62`: **1449 passed / 3 skipped / 0 failed**; TypeScript clean; Vite 384 modules; Hercules Pro UI green.
 - Independent UX audit: keep; seal `aria-pressed` now toggles off on a second click.
-- Browser, fictional Development demo: 1100 open plate with Month Spread still centre; Money in posted list; 720 stacked open plate; 390 phone still has wax seals and phone story tiles (not desk-plate Cabinets); leftover spend → Plan.
+- Browser, fictional Development demo (pre-merge): 1100 open plate with Month Spread still centre; Money in posted list; 720 stacked open plate; 390 phone still has wax seals and phone story tiles (not desk-plate Cabinets); leftover spend → Plan.
+- Live kitchen HTML after merge deploy: `https://hearth-books.jonathan-beaulne123.workers.dev/` serves `Office-BC-mxQLw.js` with glance expand and this-month posted lists.
 
-**Uncertainty:** Live forced-colors / reduced-motion DevTools. Phone blotter body is below the story strip, so a seal click can look like a no-op until you scroll. Video review noted possible plate-footing overlap while shrinking toward phone; `OfficePhone` does not render `DeskPlate`.
+**Uncertainty:** Live forced-colors / reduced-motion DevTools. Phone blotter body is below the story strip, so a seal click can look like a no-op until you scroll. Video review noted possible plate-footing overlap while shrinking toward phone; `OfficePhone` does not render `DeskPlate`. Main CI `33460617301` was still running at kitchen-proof time.
 
 **Data and environment disclosure:**
-- Development impact: none (branch/PR only)
-- Production impact: none
-- Network calls or data sent: GitHub push of this branch
+- Development impact: kitchen URL published via D-041 `wrangler deploy`
+- Production impact: none (no Production household mutation, schema, or secrets)
+- Network calls or data sent: GitHub push of `main`; Cloudflare `wrangler deploy` via Actions
 - MCP access: none for household data
-- Hosted rows/schema/secrets/deployments: none
+- Hosted rows/schema/secrets/deployments: Cloudflare Workers `33460617226` success; Worker `0a9ceae5-6227-409c-8121-dc964631b1e5`; no schema apply, no secrets change
 - Real household or partner-personal data used: none (fictional Development demo)
 
-**Next owner:** Cursor completes Jonathan's merge/push/deploy order, then records live kitchen proof.
+**Next owner:** Jonathan. Hard-refresh the kitchen URL on wide Paper office Home. Leftover spend still Plan. Phone seals still blotter. **Merged and kitchen-published.** Not Production.
 
 ## D-187 founding-household rehearsal preflight (2026-08-31)
 
