@@ -4614,7 +4614,7 @@ export function App() {
               <header><h2>the charter</h2></header>
               <p className="muted">
                 {household.charter
-                  ? "The household agreement. Sign your own line when you are ready."
+                  ? "The household agreement."
                   : "Found the household agreement in a few questions. Skip anything you do not want to decide yet."}
               </p>
               <button

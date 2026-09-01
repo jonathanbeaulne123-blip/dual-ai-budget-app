@@ -7,8 +7,8 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/charter-page-021f`
 - **Baseline SHA:** `e9b14d907b6e15b7243df97b09c8d964117981a8` (Charter slice 3 founding conversation, draft #271)
-- **Head SHA:** (see latest commit on the branch)
-- **PR or issue:** (opens with this slice)
+- **Head SHA:** (see latest commit after this update)
+- **PR or issue:** draft [#275](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/275)
 - **Risk:** High (presentation; sign/revoke only through existing Charter commands)
 - **Decision owner:** Jonathan
 - **Environment impact:** none — fictional Development demo; no Production, hosted mutation, schema, or secrets
@@ -60,33 +60,37 @@ Inferences:
 
 ## Acceptance evidence
 
-- [ ] `signatureLines` returns both members in stable order
-- [ ] Source fence: no pending / required / reminder / badge `!`
-- [ ] Viewer A sees no prompt aimed at unsigned member B
-- [ ] Focused tests + `pnpm check`
-- [ ] Visual 320 / 390 / 720 / ~1100
+- [x] `signatureLines` returns both members in stable order
+- [x] Source fence: no pending / required / reminder / badge
+- [x] Viewer A sees no prompt aimed at unsigned member B
+- [x] Focused tests 39 passed; `pnpm check` on `53c0bcc` 1486 passed / 3 skipped
+- [x] Visual 320 / 390 / 720 / ~1100
 
 ## Plan
 
-- [ ] View module
-- [ ] Document UI
-- [ ] App entry
-- [ ] Tests, check, PR
+- [x] View module
+- [x] Document UI
+- [x] App entry
+- [x] Tests, check, PR
 
 ## Evidence log
 
 - 2026-09-01: Jonathan ordered Charter slice 4. Branch from slice 3 `e9b14d9`.
+- Focused 39 passed. `pnpm check` on `53c0bcc`: 1486 passed / 3 skipped; Vite 391 modules; Hercules Pro UI green.
+- Books audit PASS. UX audit PASS WITH NOTES; sign/revoke min-width 44px after.
+- Browser: More → document; Jonathan signed only his line; Bianca unsigned silent; viewports 320/390/720/~1100.
 
 ## Decisions
 
 - Plate 2 copy for the custodian line.
 - Escape closes the document (unlike founding).
 - Sign link is only on the viewer's own unsigned line.
+- More card after founding is only “The household agreement.” — no sign nudge.
 
 ## Remaining uncertainty
 
-- Slice 3 is still an unmerged draft; this branch depends on it.
+- Slice 3 is still an unmerged draft; this branch depends on it. Dark/forced-colors not verified.
 
 ## Handoff
 
-Draft PR. Not merged, not kitchen-published, not live.
+Draft PR #275 against slice 3. Not merged, not kitchen-published, not live. Retarget to `main` after #271 merges.
