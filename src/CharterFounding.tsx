@@ -95,8 +95,8 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
       if (!paper) return;
       const focusable = focusableIn(paper);
       if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
       const active = document.activeElement as HTMLElement | null;
       if (event.shiftKey && (active === first || !paper.contains(active))) {
         event.preventDefault();
