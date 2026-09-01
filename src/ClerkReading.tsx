@@ -65,6 +65,24 @@ function findFundEvent(household: Household, id: string): HouseholdFundEvent | u
   return (household.fundEvents ?? []).find((row) => row.id === id);
 }
 
+type ResolvedSentence = {
+  sentence: ClerkSentence;
+  transactions: Transaction[];
+  fundEvents: HouseholdFundEvent[];
+};
+
+function resolveSentence(household: Household, sentence: ClerkSentence): ResolvedSentence | null {
+  if (!hasCitation(sentence)) return null;
+  const transactions = sentence.transactionIds.map((id) => findTransaction(household, id));
+  const fundEvents = sentence.fundEventIds.map((id) => findFundEvent(household, id));
+  if (transactions.some((row) => !row) || fundEvents.some((row) => !row)) return null;
+  return {
+    sentence,
+    transactions: transactions as Transaction[],
+    fundEvents: fundEvents as HouseholdFundEvent[],
+  };
+}
+
 export function ClerkReading({ reading, household, onOpenRecord }: Props) {
   const [openIds, setOpenIds] = useState<string[]>([]);
 
@@ -76,11 +94,17 @@ export function ClerkReading({ reading, household, onOpenRecord }: Props) {
     );
   }
 
-  const sentences = reading.sentences.filter(hasCitation);
-  if (sentences.length === 0) {
+  const citedSentences = reading.sentences.filter(hasCitation);
+  const resolvedSentences = citedSentences
+    .map((sentence) => resolveSentence(household, sentence))
+    .filter((item): item is ResolvedSentence => item !== null);
+  const hasUnresolvedCitation = resolvedSentences.length !== citedSentences.length;
+  if (resolvedSentences.length === 0) {
     return (
-      <section className="clerk-reading" data-clerk-state="empty">
-        <p className="clerk-status">{EMPTY_COPY}</p>
+      <section className="clerk-reading" data-clerk-state={hasUnresolvedCitation ? "integrity" : "empty"}>
+        <p className="clerk-status" data-clerk-integrity={hasUnresolvedCitation || undefined}>
+          {hasUnresolvedCitation ? MISSING_COPY : EMPTY_COPY}
+        </p>
       </section>
     );
   }
@@ -93,8 +117,11 @@ export function ClerkReading({ reading, household, onOpenRecord }: Props) {
 
   return (
     <section className="clerk-reading" data-clerk-state="ready">
+      {hasUnresolvedCitation ? (
+        <p className="clerk-status" data-clerk-integrity="true">{MISSING_COPY}</p>
+      ) : null}
       <ol className="clerk-sentences">
-        {sentences.map((sentence) => {
+        {resolvedSentences.map(({ sentence, transactions, fundEvents }) => {
           const open = openIds.includes(sentence.id);
           const buttonId = `clerk-sentence-${sentence.id}`;
           const regionId = `clerk-rows-${sentence.id}`;
@@ -121,15 +148,8 @@ export function ClerkReading({ reading, household, onOpenRecord }: Props) {
               >
                 <p className="clerk-rows-label">{CITATION_COPY}</p>
                 <ul className="clerk-row-list">
-                  {sentence.transactionIds.map((id) => {
-                    const row = findTransaction(household, id);
-                    if (!row) {
-                      return (
-                        <li key={`missing-txn-${id}`} className="clerk-row is-missing" data-clerk-missing={id}>
-                          <span className="clerk-row-label">{MISSING_COPY}</span>
-                        </li>
-                      );
-                    }
+                  {transactions.map((row) => {
+                    const id = row.id;
                     return (
                       <li key={id} className="clerk-row" data-clerk-row={id} data-clerk-kind="transaction">
                         <span className="clerk-row-date">{civilLabel(row.date)}</span>
@@ -139,7 +159,7 @@ export function ClerkReading({ reading, household, onOpenRecord }: Props) {
                           <button
                             type="button"
                             className="clerk-open"
-                            aria-label={`open ${transactionLabel(household, row)} ${civilLabel(row.date)}`}
+                            aria-label={`open ${transactionLabel(household, row)} ${civilLabel(row.date)} ${displayCad(row.amountCents)}, record ${id}`}
                             onClick={() => onOpenRecord({ kind: "transaction", id })}
                           >
                             open
@@ -148,15 +168,8 @@ export function ClerkReading({ reading, household, onOpenRecord }: Props) {
                       </li>
                     );
                   })}
-                  {sentence.fundEventIds.map((id) => {
-                    const row = findFundEvent(household, id);
-                    if (!row) {
-                      return (
-                        <li key={`missing-fund-${id}`} className="clerk-row is-missing" data-clerk-missing={id}>
-                          <span className="clerk-row-label">{MISSING_COPY}</span>
-                        </li>
-                      );
-                    }
+                  {fundEvents.map((row) => {
+                    const id = row.id;
                     return (
                       <li key={id} className="clerk-row" data-clerk-row={id} data-clerk-kind="fund-event">
                         <span className="clerk-row-date">{civilLabel(row.date)}</span>
@@ -166,7 +179,7 @@ export function ClerkReading({ reading, household, onOpenRecord }: Props) {
                           <button
                             type="button"
                             className="clerk-open"
-                            aria-label={`open ${fundEventLabel(row)} ${civilLabel(row.date)}`}
+                            aria-label={`open ${fundEventLabel(row)} ${civilLabel(row.date)} ${displayCad(row.amountCents)}, record ${id}`}
                             onClick={() => onOpenRecord({ kind: "fund-event", id })}
                           >
                             open

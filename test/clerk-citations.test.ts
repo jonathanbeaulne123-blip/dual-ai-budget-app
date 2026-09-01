@@ -204,33 +204,74 @@ describe("clerk citations", () => {
     view.unmount();
   });
 
-  it("fails closed on a missing citation without widening the supplied household", () => {
+  it("withholds a sentence with a missing citation without widening the supplied household", () => {
     const scenario = canonicalMonth();
     const reading = clerkReading(scenario.household, SINCE, TODAY);
     const expenses = reading.sentences.find((row) => row.id === "expenses")!;
+    const supported = reading.sentences.find((row) => row.id !== "expenses")!;
     const view = mount({
       ...reading,
-      sentences: [{ ...expenses, transactionIds: ["TXN-NOT-IN-SCOPE"] }],
+      sentences: [supported, { ...expenses, transactionIds: ["TXN-NOT-IN-SCOPE"] }],
     }, scenario.household);
-    const button = sentenceButtons(view.host)[0]!;
-    act(() => { button.click(); });
-    expect(view.host.querySelector("[data-clerk-row]")).toBeNull();
-    expect(view.host.querySelector("[data-clerk-missing='TXN-NOT-IN-SCOPE']")?.textContent).toContain(
+    expect(sentenceButtons(view.host).map((button) => button.dataset.clerkSentence)).toEqual([supported.id]);
+    expect(view.host.querySelector("[data-clerk-integrity]")?.textContent).toContain(
       "This citation isn't in the record I was given.",
     );
-    expect(view.host.textContent).not.toContain(scenario.expenseId);
+    expect(view.host.textContent).not.toContain(expenses.text);
     const narrower = { ...scenario.household, transactions: [], fundEvents: [] };
     const again = mount(reading, narrower);
-    for (const sentence of reading.sentences) {
-      const control = again.host.querySelector<HTMLButtonElement>(`[data-clerk-sentence="${sentence.id}"]`)!;
-      act(() => { control.click(); });
-    }
+    expect(sentenceButtons(again.host)).toEqual([]);
     expect(again.host.querySelector("[data-clerk-row]")).toBeNull();
-    expect(again.host.querySelectorAll("[data-clerk-missing]").length).toBe(
-      reading.sentences.reduce((sum, row) => sum + row.transactionIds.length + row.fundEventIds.length, 0),
-    );
+    expect(again.host.querySelector("[data-clerk-state='integrity']")).not.toBeNull();
+    expect(again.host.querySelectorAll("[data-clerk-integrity]")).toHaveLength(1);
+    for (const sentence of reading.sentences) expect(again.host.textContent).not.toContain(sentence.text);
     view.unmount();
     again.unmount();
+  });
+
+  it("gives same-day duplicate transaction and Fund controls unique exact-row names", () => {
+    const scenario = canonicalMonth();
+    const duplicateExpense = postEntry(scenario.household, {
+      date: "2026-09-03",
+      type: "expense",
+      amount: "120",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      createdBy: JONATHAN,
+      visibility: "household",
+      confirmDuplicate: true,
+      funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 12000, destinationAccountId: "ACC-VISA" },
+    });
+    const duplicateProposal = proposeHouseholdFundContribution(duplicateExpense.household, {
+      memberId: JONATHAN,
+      contributorMemberId: JONATHAN,
+      amount: "40",
+      date: TODAY,
+    });
+    const duplicateExpenseId = duplicateExpense.postedIds[0]!;
+    const duplicateProposalId = duplicateProposal.postedIds[0]!;
+    const reading: ClerkReadingRecord = {
+      since: SINCE,
+      through: TODAY,
+      tiesToProjection: true,
+      sentences: [{
+        id: "same-day-records",
+        text: "Two exact pairs of accepted rows are cited.",
+        transactionIds: [scenario.expenseId, duplicateExpenseId],
+        fundEventIds: [scenario.waitingId, duplicateProposalId],
+      }],
+    };
+    const view = mount(reading, duplicateProposal.household, () => undefined);
+    act(() => { sentenceButtons(view.host)[0]!.click(); });
+    const openButtons = [...view.host.querySelectorAll<HTMLButtonElement>(".clerk-open")];
+    const names = openButtons.map((button) => button.getAttribute("aria-label") ?? "");
+    expect(openButtons).toHaveLength(4);
+    expect(new Set(names).size).toBe(4);
+    for (const id of [scenario.expenseId, duplicateExpenseId, scenario.waitingId, duplicateProposalId]) {
+      expect(names.some((name) => name.includes(`record ${id}`))).toBe(true);
+    }
+    expect(names.every((name) => name.includes("$"))).toBe(true);
+    view.unmount();
   });
 
   it("withholds an untied reading and keeps a tied empty reading calm", () => {
