@@ -50,7 +50,7 @@ function sourceFilesBelow(directory) {
 
 const clerkAdvice = /\b(?:should|need to|recommend|suggest)\b/i;
 const clerkWorkInstruction = /\b(?:shift|hours|work more)\b/i;
-const clerkMoneyWriter = /(?:from\s+["'][^"']*(?:commands|commandRuntime|ledger\/engine|storage|supabase)[^"']*["']|\b(?:postEntry|acceptHouseholdWrite|commit|runKitchen)\s*\()/i;
+const clerkMoneyWriter = /(?:from\s+["'][^"']*(?:commands|commandRuntime|core\/index|ledger\/engine|storage|supabase)[^"']*["']|\b(?:postEntry|postTransfer|postWorkShift|confirmHouseholdFundContribution|acceptHouseholdWrite|reversePostedMoney|commit|runKitchen)\s*\()/i;
 const clerkOwned = sourceFilesBelow(join(root, "src"))
   .filter((path) => /^clerk.*\.(?:ts|tsx)$/i.test(path.split(/[\\/]/).at(-1) ?? ""))
   .map((path) => relative(root, path).replaceAll("\\", "/"))

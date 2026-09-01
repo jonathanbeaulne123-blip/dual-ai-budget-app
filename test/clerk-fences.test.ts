@@ -18,7 +18,7 @@ const SINCE = "2026-09-01";
 const TODAY = "2026-09-12";
 const PROPOSAL_LANGUAGE = /\b(should|need to|recommend|suggest)\b/i;
 const WORK_INSTRUCTION = /\b(shift|hours|work more)\b/i;
-const MONEY_WRITER = /(?:from\s+["'][^"']*(?:commands|commandRuntime|ledger\/engine|storage|supabase)[^"']*["']|\b(?:postEntry|acceptHouseholdWrite|commit|runKitchen)\s*\()/i;
+const MONEY_WRITER = /(?:from\s+["'][^"']*(?:commands|commandRuntime|core\/index|ledger\/engine|storage|supabase)[^"']*["']|\b(?:postEntry|postTransfer|postWorkShift|confirmHouseholdFundContribution|acceptHouseholdWrite|reversePostedMoney|commit|runKitchen)\s*\()/i;
 
 function postSyntheticActivity(): Household {
   let household = catalogHousehold();
