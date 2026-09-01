@@ -2,7 +2,7 @@
 
 ## Clerk Slices 2 + 3 corrected release candidate (2026-09-01)
 
-**Status:** Corrected combined candidate on `codex/clerk-2-3-release`, integrated with current `origin/main@e7d98389be1a4ad831d4d83204061a68955df232` at `008310113e392827718e9013f92d3c4c499b5e15`; this evidence record follows. Source Slice 2 [PR #287](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/287) is integrated. Independent review found two P2 defects; both are repaired at `4624c31`. Jonathan authorized push, merge, and Development kitchen deployment after exact-candidate verification. Risk: **Medium**.
+**Status:** Corrected combined candidate on `codex/clerk-2-3-release`, integrated with current `origin/main@e7d98389be1a4ad831d4d83204061a68955df232` at `008310113e392827718e9013f92d3c4c499b5e15`; this evidence record follows. Source Slice 2 [PR #287](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/287) is integrated. Independent review found two P2 defects, repaired at `4624c31`; exact-head PR review then found a third P2 for long unbroken imported labels, repaired with `overflow-wrap: anywhere` and a regression fixture. Jonathan authorized push, merge, and Development kitchen deployment after exact-candidate verification. Risk: **Medium**.
 
 **Household outcome:** Jonathan or Bianca can focus or tap any Clerk sentence and reveal, directly beneath it, the exact accepted transaction and Household Fund event rows that support that sentence. The explanation stays calm, compact, keyboard- and screen-reader-complete, and never hides the record behind a modal.
 
@@ -11,13 +11,13 @@
 **Architecture:** `ClerkReading` remains a display-only leaf over the sealed Slice 1 record. Optional `onOpenRecord` is a passed callback. Same-day duplicates are distinguished by label, Toronto civil date, exact CAD amount, and stable row ID. `scripts/verify-ai-surface.mjs` scans every Clerk-owned source for proposal/work language and money-writer reachability. No `App.tsx` placement.
 
 **Verification:**
-- Combined focused Clerk suite: **3 files / 18 tests**
+- Combined focused Clerk suite: **3 files / 19 tests**
 - `pnpm ai:verify`: **41 required files / 2 Clerk source fences**
 - `pnpm exec tsc --noEmit`: passed
-- Full fast lane: **215 passed / 1 skipped files; 1,469 passed / 2 skipped tests**; only `test/api.test.ts` failed because this Windows host has no `bash`
+- Full Windows fast lane: **217 passed / 1 skipped files; 1,482 passed / 2 skipped tests**
 - Full serial books lane: **18 passed / 1 skipped files; 145 passed / 1 skipped tests**, including a green dated Demo Suite
 - Rendered 320/390/720/1100 proof: no horizontal overflow, all visible controls at least 44px, four unique exact-row names, unsupported sentence absent, ready/integrity/withheld/empty states present
-- Direct Vite/Hercules builds, redirect guard, diff hygiene, secret-path scan, and GitHub CI remain the final release checks
+- Direct Vite/Hercules builds, redirect guard, diff hygiene, and secret-path scan passed. Exact follow-up GitHub CI remains the final release check.
 
 **Boundaries:** Local fictional/catalog fixtures only. Zero model, command, network, storage, hosted-row, schema, secret, Production-continuity, or household-data changes. The component performs zero fetches, so offline equals online.
 

@@ -274,6 +274,40 @@ describe("clerk citations", () => {
     view.unmount();
   });
 
+  it("wraps a long unbroken imported record label on a narrow citation row", () => {
+    const scenario = canonicalMonth();
+    const longLabel = `https://imports.example/${"record".repeat(40)}`;
+    const posted = postEntry(scenario.household, {
+      date: TODAY,
+      type: "expense",
+      amount: "13.25",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      createdBy: JONATHAN,
+      visibility: "household",
+      confirmDuplicate: true,
+      note: longLabel,
+    });
+    const id = posted.postedIds[0]!;
+    const reading: ClerkReadingRecord = {
+      since: SINCE,
+      today: TODAY,
+      tiesToProjection: true,
+      sentences: [{
+        id: "long-import-label",
+        text: "One imported row is cited.",
+        transactionIds: [id],
+        fundEventIds: [],
+      }],
+    };
+    const view = mount(reading, posted.household);
+    act(() => { sentenceButtons(view.host)[0]!.click(); });
+    expect(view.host.querySelector(".clerk-row-label")?.textContent).toBe(longLabel);
+    const styles = readFileSync(join(process.cwd(), "src/clerk-reading.css"), "utf8");
+    expect(styles).toMatch(/\.clerk-row-label\s*\{[^}]*overflow-wrap:\s*anywhere;/s);
+    view.unmount();
+  });
+
   it("withholds an untied reading and keeps a tied empty reading calm", () => {
     const scenario = canonicalMonth();
     const guard = vi.spyOn(sharedLedgerStory, "sharedMonthCourse").mockReturnValue({

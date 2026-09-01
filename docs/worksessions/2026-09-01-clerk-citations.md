@@ -31,7 +31,7 @@ Facts:
 
 - Slice 1 `6f1cb43` is an ancestor of current `origin/main@e7d9838`.
 - Cursor's exact review head `fdb9190` is integrated without changes to `App.tsx`, commands, storage, Worker, or schema.
-- Independent review found two P2 defects: unresolved citations left unsupported sentence text visible, and same-day duplicate rows could have indistinguishable accessible names.
+- Independent review found two P2 defects: unresolved citations left unsupported sentence text visible, and same-day duplicate rows could have indistinguishable accessible names. Exact-head PR review found a third P2: a long unbroken imported label could clip on a phone-width row. The CSS now permits breaks anywhere, with a long-label fixture.
 - Commit `4624c31` withholds any sentence whose cited IDs do not all resolve in the supplied scoped household and names each optional record link with label, Toronto civil date, exact CAD amount, and stable row ID.
 
 ## Scope
@@ -85,9 +85,9 @@ Facts:
 - 2026-09-01: Preview screenshots at 320/390/720/1100 plus 390px interaction video. Local preview files deleted and not committed.
 - 2026-09-01: Independent review returned FAIL on `fdb9190`: unsupported sentence text remained visible when the scoped household could not resolve a citation, and same-label/date rows could share one accessible name.
 - 2026-09-01: `4624c31` repaired both findings. Command-created same-day duplicate transaction and Fund rows now prove four unique names; unresolved sentence text is absent while the integrity line remains.
-- 2026-09-01: Corrected combined Slice 1–3 proof passed 3 files / 18 tests, `pnpm ai:verify` passed with 2 Clerk source fences, and TypeScript passed.
+- 2026-09-01: Corrected combined Slice 1–3 proof passed 3 files / 19 tests, `pnpm ai:verify` passed with 2 Clerk source fences, and TypeScript passed.
 - 2026-09-01: Fresh rendered proof at 320/390/720/1100 showed zero horizontal overflow, all visible controls at least 44px, four unique record names, absent unsupported copy, and honest ready/integrity/withheld/empty states. The ignored preview harness was removed.
-- 2026-09-01: Full test lanes reached 215 passed / 1 skipped fast files (1,469 passed / 2 skipped tests) and 18 passed / 1 skipped serial files (145 passed / 1 skipped tests). Serial books, including the dated Demo Suite assertion, passed. The only failure was the known Windows host constraint `spawnSync bash ENOENT` in `test/api.test.ts`.
+- 2026-09-01: Full Windows-aware test lanes passed 217 fast files / 1,482 tests and 18 serial files / 145 tests, with the repository's intended skips only. Serial books included the dated Demo Suite assertion.
 
 ## Decisions
 
@@ -95,7 +95,7 @@ Cloud Agent git policy used `cursor/clerk-2-citations-fdc8` instead of the packe
 
 ## Remaining uncertainty
 
-The literal Windows `pnpm check` remains non-green only because this bundled host has no `bash`; direct TypeScript/build proof and GitHub CI remain required release gates. The component is intentionally unwired from `App.tsx`, so publication lands the reviewed leaf and fences but does not make a visible kitchen surface.
+The Windows-aware `pnpm check:windows` gate, direct TypeScript/build proof, and pre-follow-up GitHub CI passed. Exact follow-up GitHub CI remains required. The component is intentionally unwired from `App.tsx`, so publication lands the reviewed leaf and fences but does not make a visible kitchen surface.
 
 ## Handoff
 
