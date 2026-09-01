@@ -1514,7 +1514,7 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 ## D-191 live command latency repair (2026-09-01)
 
-**Status:** local High-risk implementation verified on `codex/sync-live-latency-fix`. Focused 38/38, full gate 1,503 passed / 3 skipped, production build, and independent books/trust plus continuity reviews passed. No commit, push, merge, deployment, hosted mutation, or Production change.
+**Status:** exact rebased High-risk candidate `351983fa225fdeeac9f23f54498ee78c4574a03d` over `origin/main@450be34b6bc84f5bf5e203154c864cccba198eb5` passed focused 64/64, full gate 1,510 passed / 3 skipped, production build, and independent books/trust plus continuity release review. Jonathan authorized push, fast-forward merge, and Development deployment on 2026-09-01. At this record, no push, merge, deployment, hosted mutation, or Production change had occurred.
 
 **Household outcome:** command-event and snapshot-recovery acceptance now share one receiver coordinator. Snapshot echoes coalesce for 300 ms and, on expiry, check the committed command log before full recovery can occupy PGlite. Only an exact locally accepted hosted revision suppresses recovery, while missing/unknown/hidden/invalid/conflicted/gap paths retain the full pull/reconcile/PGlite route.
 

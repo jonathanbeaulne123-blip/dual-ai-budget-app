@@ -1,13 +1,13 @@
 # Hearth worksession — Live command latency recovery
 
-- **Status:** CLOSED — LOCAL IMPLEMENTATION VERIFIED; RELEASE NOT STARTED
+- **Status:** CLOSED — RELEASE REVIEW PASS; PUSH/MERGE/DEPLOY AUTHORIZED
 - **Opened:** 2026-09-01 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `codex/sync-live-latency-fix`
-- **Baseline SHA:** `f9958758547e8d2c99733a2f0f44294c003346d5`
-- **Head SHA:** uncommitted verified local worktree over the exact baseline
+- **Baseline SHA:** `450be34b6bc84f5bf5e203154c864cccba198eb5`
+- **Head SHA:** `351983fa225fdeeac9f23f54498ee78c4574a03d` (rebased application candidate before this release-record commit)
 - **PR or issue:** none
 - **Risk:** High
 - **Decision owner:** Jonathan
@@ -28,6 +28,7 @@ A confirmed shared command received on the partner device crosses one serialized
 ## Verified baseline
 
 - Exact clean baseline was `main@f9958758547e8d2c99733a2f0f44294c003346d5`.
+- Before release, the committed candidate rebased cleanly onto current `origin/main@450be34b6bc84f5bf5e203154c864cccba198eb5` (Charter integrity) as `351983fa225fdeeac9f23f54498ee78c4574a03d`.
 - The supplied Development diagnostic reported Realtime `SUBSCRIBED`, 15 command events, 47 snapshot signals, 8 snapshot accepts, and 4 command accepts. Same-device `realtime-received` to `remote-accepted` samples were about 7–15 seconds, so phone/desktop clock skew cannot explain the receiver delay.
 - `onSnapshotSignal` started a full coordinated replay immediately while `onCommandEvent` ran outside that coordinator. Both paths could enter PGlite concurrently.
 - A successfully applied hosted command retained its old `baseRevision`, causing its matching snapshot to look newer and invite another recovery acceptance.
@@ -72,7 +73,7 @@ A confirmed shared command received on the partner device crosses one serialized
 ## Evidence log
 
 - Final focused continuity gate: 4 files, 38 tests passed, 0 failed (`continuity-realtime-recovery`, `continuity-realtime`, `continuity-coordinator`, `continuity-command-realtime`); TypeScript passed.
-- Exact final-code `pnpm check`: AI surface passed; 219 test files passed, 2 skipped; 1,503 tests passed, 3 skipped, 0 failed; TypeScript, Vite production build, Hercules Pro UI build, and `_redirects` refusal passed. Existing React `act`, PGlite browser-external/eval, and large-chunk warnings remained non-failing.
+- Exact rebased-code `351983f` `pnpm check`: AI surface passed; 219 test files passed, 2 skipped; 1,510 tests passed, 3 skipped, 0 failed; TypeScript, Vite production build, Hercules Pro UI build, and `_redirects` refusal passed. Existing React `act`, PGlite browser-external/eval, and large-chunk warnings remained non-failing.
 - Independent books/trust review: PASS after the recovery loop was tightened to stop exactly at the signalled revision. PGlite, authenticated RLS, Personal visibility, and fail-closed snapshot recovery remained intact.
 - Independent latency verification: PASS after command-log-first recovery removed the delayed-websocket queue assumption. Fresh deployed two-account timing remains explicitly unproved.
 
@@ -89,4 +90,4 @@ A confirmed shared command received on the partner device crosses one serialized
 
 ## Handoff
 
-Local implementation and exact-code verification are complete. No commit, push, PR, merge, deployment, hosted mutation, or live-client proof occurred. Next owner is Jonathan for a separate release decision; after deployment, rerun the signed-in two-account 100-sample latency matrix before claiming `<=500 ms p95`.
+Local implementation is committed and exact rebased-code verification is complete. Jonathan authorized push, fast-forward merge, and Development deployment on 2026-09-01. At this release-record commit, no push, merge, deployment, hosted mutation, or live-client proof had occurred. After deployment, rerun the signed-in two-account 100-sample latency matrix before claiming `<=500 ms p95`.
