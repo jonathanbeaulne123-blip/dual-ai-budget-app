@@ -7,8 +7,8 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/charter-founding-flow-021f`
 - **Baseline SHA:** `effd7b382bde313fc80a0b4aa218322c6052450a` (`origin/main`, Charter slice 2 sealed)
-- **Head SHA:** (see latest commit on the branch)
-- **PR or issue:** (opens with this slice)
+- **Head SHA:** `7042d7eca20affd6d58ed2face1dab38fce587da`
+- **PR or issue:** draft [#271](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/271)
 - **Risk:** High (presentation; writes only through existing Charter commands)
 - **Decision owner:** Jonathan
 - **Environment impact:** none — fictional Development demo and empty household; no Production, hosted mutation, schema, or secrets
@@ -61,27 +61,33 @@ Inferences:
 
 ## Acceptance evidence
 
-- [ ] Walk answers through to `foundHouseholdCharter`
-- [ ] Skip every step still founds
-- [ ] Fence: `"How much work is too much?"`
-- [ ] Focused tests + `pnpm check`
-- [ ] Visual 320 / 390 / 720 / ~1100
+- [x] Walk answers through to `foundHouseholdCharter`
+- [x] Skip every step still founds
+- [x] Fence: `"How much work is too much?"`
+- [x] Focused tests 34 passed; `pnpm check` on `7042d7e` 1481 passed / 3 skipped
+- [x] Visual 320 / 390 / 720 / ~1100 (close screen + founding video on fictional Development demo)
 
 ## Plan
 
-- [ ] Core draft helper
-- [ ] Founding UI
-- [ ] App entry + More
-- [ ] Tests, check, PR
+- [x] Core draft helper
+- [x] Founding UI
+- [x] App entry + More
+- [x] Tests, PR; `pnpm check` 1481 passed / 3 skipped on `7042d7e`
 
 ## Evidence log
 
 - 2026-09-01: Jonathan confirmed slice 2 on `main` and ordered slice 3. Baseline `origin/main@effd7b3`.
+- Focused tests 34 passed including empty household with no CAD accounts.
+- Browser: More → the charter, five questions, Later; Escape does nothing; viewports 320/390/720/~1100 on the close screen.
+- Books audit P1 (empty persist) fixed: `requireCadAccounts` only on TXN/SHF. Re-audit PASS.
+- `pnpm check` on `7042d7e`: 1481 passed / 3 skipped; Vite 388 modules; Hercules Pro UI green.
+- UX audit P1s: inert `app-shell`, heading focus, option cards without nested headings.
 
 ## Decisions
 
 - Skip defaults: remainder with empty note; cadence none; ceiling none; no permission grants.
 - No `$` in founding chrome (hours and dollars-a-month are number fields, not a CAD pad) so the slice’s no-figure rule holds.
+- Empty founding is a kitchen-local write: it may persist with zero accounts. Posting still requires an active CAD account.
 
 ## Remaining uncertainty
 

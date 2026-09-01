@@ -18,33 +18,36 @@
 
 ## Charter founding conversation (2026-09-01)
 
-**Status:** Draft PR on `cursor/charter-founding-flow-021f`. Base `origin/main@effd7b3` (Charter slice 2 sealed). **Not merged, not deployed, not live.** Risk **High** (presentation). Writes only through existing Charter commands. No Production household mutation, hosted schema, or secrets.
+**Status:** Draft PR [#271](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/271) on `cursor/charter-founding-flow-021f` at `7042d7eca20affd6d58ed2face1dab38fce587da`. Base Charter slice 2 sealed `origin/main@effd7b3` (local branch). **Not merged, not kitchen-published, not live.** Risk **High** (presentation). Writes only through existing Charter commands. No Production household mutation, hosted schema, or secrets.
 
-**Household outcome:** From an empty household (members, no accounts/Fund/books), Shared Home opens a five-question founding conversation. Skip is a peer of Next. One person can found alone, then Sign it or Later. Catalog/demo kitchens stay on the office until More → the charter.
+**Household outcome:** From an empty household (members, no accounts/Fund/books), Shared Home opens a five-question founding conversation. Skip is a peer of Next. One person can found alone, then Sign it or Later. Catalog/demo kitchens stay on the office until More → the charter. Founding no longer requires a CAD account; posting still does.
 
 **Budget delta (5):** `+2` — founding records the Charter; it does not post money or create a second envelope.
 
 **Engagement delta (3):** `+3` — empty house opens on paper questions instead of an unexplained desk.
 
-**If they conflicted:** books won. No ledger dollar figure in the flow. Permissions grant only when the founder can give away their own confirm. Unsigned remains valid. Bianca Month and cached-shell nav stay intact.
+**If they conflicted:** books won. No ledger dollar figure in the flow. Kitchen-local Charter writes skip `requireCadAccounts`; TXN/SHF still require an active CAD account. Permissions grant only when the founder can give away their own confirm. Unsigned remains valid.
 
-**What changed:** `commitCharterFounding`; `CharterFounding` takeover + More → the charter; focused tests. Worksession: [`worksessions/2026-09-01-charter-founding-flow.md`](worksessions/2026-09-01-charter-founding-flow.md).
+**What changed:** `commitCharterFounding`; `CharterFounding` takeover + More → the charter; `commit()` posting gate; focus trap / inert shell / heading announcement. Worksession: [`worksessions/2026-09-01-charter-founding-flow.md`](worksessions/2026-09-01-charter-founding-flow.md).
 
 **Verification:**
-- Focused `test/charter-founding.test.ts` + Charter record/commands + Bianca `app-startup-p1` + `month-rehearsal-mainline`: **32 passed**.
-- `pnpm check` pending on this SHA after push.
+- Focused founding + Charter record/commands + Bianca `app-startup-p1` + `month-rehearsal-mainline` on this tree: **34 passed**.
+- `pnpm check` on `7042d7e` (pre-docs): AI surface verified; **1481 passed / 3 skipped**; `tsc --noEmit` + Vite **388 modules**; Hercules Pro UI green. Pre-existing 3 skipped unchanged.
+- Independent books audit: first FAIL (P1 empty persist); re-audit **PASS** after `isLedgerWrite` gate.
+- Independent UX audit: **PASS WITH NOTES**, then inert shell / heading focus / no nested headings in follow-up commits.
+- Browser, fictional Development demo: More → the charter through five questions, Later, Escape does not dismiss; close screen at 320 / 390 / 720 / ~1100.
 
-**Uncertainty:** Visual 320/390/720/1100 browser pass still in this session. Charter page is slice 4.
+**Uncertainty:** Charter page is slice 4. Dark/forced-colors not verified. Empty-house auto-open is unit-tested; App wiring is not jsdom-covered.
 
 **Data and environment disclosure:**
-- Development impact: none (branch/PR only)
+- Development impact: none (branch/PR only; Worker preview of a branch is not the kitchen URL)
 - Production impact: none
 - Network calls or data sent: GitHub push of this branch
 - MCP access: none for household data
 - Hosted rows/schema/secrets/deployments: none
 - Real household or partner-personal data used: none (fictional Development / catalog)
 
-**Next owner:** Jonathan reviews the draft PR. Do not merge unless asked.
+**Next owner:** Jonathan reviews draft PR #271. Do not merge unless asked. Next product slice is Charter 4 (page + empty signature).
 
 ## D-189 interrupted local PGlite recovery (2026-08-31)
 
