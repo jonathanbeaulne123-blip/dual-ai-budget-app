@@ -7,7 +7,7 @@
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `cursor/register-8-drawing-115c`
 - **Baseline SHA:** `ff9d8d8de70c80fd567ba9835b3cc2ffbcd45082`
-- **Head SHA:** pending this closeout commit
+- **Head SHA:** `3053da379f6b7bbae969aa49b604768a8f465e69`
 - **PR or issue:** draft [#285](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/285)
 - **Risk:** High
 - **Decision owner:** Jonathan
