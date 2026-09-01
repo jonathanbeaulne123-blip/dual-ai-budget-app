@@ -7,8 +7,8 @@
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `charter/2-commands`
 - **Baseline SHA:** `db0a0a2ae84e490700eaa742bba89a37573c40cc`
-- **Head SHA:** pending
-- **PR or issue:** pending
+- **Verified implementation SHA:** `ec57e38eca30d33a2c7c9633c18b072c54ce8481`
+- **PR or issue:** [#269](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/269)
 - **Risk:** Medium
 - **Decision owner:** Jonathan
 - **Environment impact:** none
@@ -86,8 +86,8 @@ The household can found one Charter, sign only its own lines, grant and revoke b
 
 ## Remaining uncertainty
 
-- GitHub PR checks remain pending until the branch is pushed and the review PR is opened.
+- GitHub CI and the Cloudflare branch-preview workflow were in progress when this handoff was sealed.
 
 ## Handoff
 
-Implementation and local verification are complete. No Slice 2 merge, deployment, hosted mutation, or household-data action has occurred; stop at an open review PR.
+Implementation and local verification are complete on PR #269. No Slice 2 merge, deployment, hosted mutation, or household-data action has occurred; stop at the open review PR.
