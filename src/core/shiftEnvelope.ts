@@ -489,7 +489,9 @@ export function mergeScheduleEnvelopes(input: {
   observedAt: string;
   completeRange?: { startDate: DateKey; endDate: DateKey } | null;
 }): ShiftEnvelope[] {
-  const existing = shapeShiftEnvelopes(input.existing, input.memberId);
+  const allExisting = shapeShiftEnvelopes(input.existing);
+  const untouched = allExisting.filter((row) => row.memberId !== input.memberId);
+  const existing = allExisting.filter((row) => row.memberId === input.memberId);
   const byCanonical = new Map(existing.map((row) => [row.canonicalShiftKey, row]));
   const captured = new Set<string>();
   for (const schedule of input.schedules.filter((row) => row.memberId === input.memberId)) {
@@ -530,7 +532,8 @@ export function mergeScheduleEnvelopes(input: {
       });
     }
   }
-  return [...byCanonical.values()].map((row) => ({ ...row, status: statusForEnvelopeAt(row) }))
+  const observedAt = new Date(input.observedAt);
+  return [...untouched, ...byCanonical.values()].map((row) => ({ ...row, status: statusForEnvelopeAt(row, observedAt) }))
     .sort((a, b) => a.scheduledStart.localeCompare(b.scheduledStart) || a.id.localeCompare(b.id));
 }
 
