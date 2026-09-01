@@ -8,11 +8,12 @@ export type SyncFreshnessTransportMode =
   | "live"
   | "poll"
   | "connecting"
+  | "auth-required"
   | "offline"
   | "local"
   | "hidden";
 
-export type SyncFreshnessActionKind = "retry";
+export type SyncFreshnessActionKind = "retry" | "reconnect-auth";
 
 export type SyncFreshnessDisplay = {
   visible: boolean;
@@ -37,6 +38,7 @@ export type SyncFreshnessInput = {
   viewerMemberId: string | null;
   realtimeEnabled: boolean;
   realtimeStatus: ContinuityRealtimeStatus | null;
+  authRequired?: boolean;
   offline: boolean;
   pendingOutboxCount: number;
   hasOpenConflict: boolean;
@@ -81,10 +83,12 @@ export function inferLastSharedActor(
 export function continuityTransportLabel(input: {
   realtimeEnabled: boolean;
   realtimeStatus: ContinuityRealtimeStatus | null;
+  authRequired?: boolean;
   offline: boolean;
   pollIntervalMs?: number;
 }): { primary: string; mode: SyncFreshnessTransportMode } {
   if (input.offline) return { primary: "Offline · will sync when you're back", mode: "offline" };
+  if (input.authRequired) return { primary: "Google sign-in needed", mode: "auth-required" };
   if (!input.realtimeEnabled) {
     const seconds = Math.round((input.pollIntervalMs ?? LIVE_PULL_INTERVAL_MS) / 1000);
     return { primary: `Checking every ${seconds} s`, mode: "poll" };
@@ -144,6 +148,7 @@ export function buildSyncFreshness(input: SyncFreshnessInput): SyncFreshnessDisp
   const transport = continuityTransportLabel({
     realtimeEnabled: input.realtimeEnabled,
     realtimeStatus: input.realtimeStatus,
+    authRequired: input.authRequired,
     offline: input.offline,
     pollIntervalMs: input.pollIntervalMs,
   });
@@ -156,14 +161,19 @@ export function buildSyncFreshness(input: SyncFreshnessInput): SyncFreshnessDisp
   const actorLine = actor.label === "Household" ? null : `Last by ${actor.label}`;
   const sourceLine = reconcileSourceLabel(input.lastReconcileSource);
 
-  const blocksSyncedLabel = mode === "pending-transport"
+  const authRequired = Boolean(input.authRequired && !input.offline);
+  const blocksSyncedLabel = authRequired
+    || mode === "pending-transport"
     || mode === "conflicted"
     || mode === "disconnected"
     || mode === "transport-error"
     || input.pendingOutboxCount > 0
     || input.hasOpenConflict;
 
-  const showPendingHint = mode === "pending-transport" && !input.offline && !household.sharing?.lastError;
+  const showPendingHint = mode === "pending-transport"
+    && !authRequired
+    && !input.offline
+    && !household.sharing?.lastError;
 
   let transportPrimary = transport.primary;
   let tone: SyncFreshnessDisplay["tone"] = "neutral";
@@ -182,6 +192,10 @@ export function buildSyncFreshness(input: SyncFreshnessInput): SyncFreshnessDisp
     transportPrimary = input.offline ? "Offline · will sync when you're back" : "Share paused";
     tone = "warning";
   }
+  if (authRequired) {
+    transportPrimary = "Google sign-in needed";
+    tone = "warning";
+  }
 
   const parts = [
     transportPrimary,
@@ -194,7 +208,10 @@ export function buildSyncFreshness(input: SyncFreshnessInput): SyncFreshnessDisp
   // Legacy conflict markers are a retry state, never a request to choose a copy.
   let actionLabel: string | null = null;
   let actionKind: SyncFreshnessActionKind | null = null;
-  if (
+  if (authRequired) {
+    actionLabel = "Continue with Google";
+    actionKind = "reconnect-auth";
+  } else if (
     input.hasOpenConflict
     || mode === "conflicted"
     || mode === "transport-error"

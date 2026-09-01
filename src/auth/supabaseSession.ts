@@ -35,6 +35,7 @@ export function supabaseSessionMatchesGoogleIdentity(
 type TokenStore = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
 const SESSION_PREFIX = "hearth:v1:supabase-auth:";
+export const SUPABASE_SESSION_CHANGED_EVENT = "hearth:supabase-session-changed";
 const REQUIRED_GOOGLE_ACCOUNT_SCOPES = "https://www.googleapis.com/auth/drive.file";
 let storeOverride: TokenStore | null = null;
 const refreshFlights = new Map<Environment, Promise<HearthSupabaseSession>>();
@@ -116,13 +117,22 @@ export function loadSupabaseSession(environment: Environment): HearthSupabaseSes
   }
 }
 
+function notifySupabaseSessionChanged(environment: Environment): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(SUPABASE_SESSION_CHANGED_EVENT, {
+    detail: { environment },
+  }));
+}
+
 export function saveSupabaseSession(environment: Environment, session: HearthSupabaseSession): void {
   browserStore()?.setItem(supabaseSessionKey(environment), JSON.stringify(session));
+  notifySupabaseSessionChanged(environment);
 }
 
 export function clearSupabaseSession(environment: Environment): void {
   sessionGenerations.set(environment, (sessionGenerations.get(environment) ?? 0) + 1);
   browserStore()?.removeItem(supabaseSessionKey(environment));
+  notifySupabaseSessionChanged(environment);
 }
 
 function sessionGeneration(environment: Environment): number {

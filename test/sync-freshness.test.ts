@@ -65,6 +65,24 @@ describe("continuityTransportLabel", () => {
       offline: false,
     })).toEqual({ primary: "Connecting…", mode: "connecting" });
   });
+
+  it("names missing Auth instead of claiming an active poll", () => {
+    expect(continuityTransportLabel({
+      realtimeEnabled: true,
+      realtimeStatus: null,
+      authRequired: true,
+      offline: false,
+    })).toEqual({ primary: "Google sign-in needed", mode: "auth-required" });
+  });
+
+  it("keeps offline truth ahead of Auth recovery", () => {
+    expect(continuityTransportLabel({
+      realtimeEnabled: true,
+      realtimeStatus: null,
+      authRequired: true,
+      offline: true,
+    })).toEqual({ primary: "Offline · will sync when you're back", mode: "offline" });
+  });
 });
 
 describe("inferLastSharedActor", () => {
@@ -171,6 +189,51 @@ describe("buildSyncFreshness", () => {
 
     expect(display.transportPrimary).toMatch(/Checking every 4 s/);
     expect(display.transportMode).toBe("poll");
+  });
+
+  it("offers Google reconnect when Auth is required and blocks synced copy", () => {
+    const household = baseHousehold();
+    const display = buildSyncFreshness({
+      household,
+      viewerMemberId: household.members[0]!.id,
+      realtimeEnabled: true,
+      realtimeStatus: null,
+      authRequired: true,
+      offline: false,
+      pendingOutboxCount: 0,
+      hasOpenConflict: false,
+      lastReconcileAt: null,
+      lastReconcileSource: null,
+      now: NOW,
+    });
+
+    expect(display.transportPrimary).toBe("Google sign-in needed");
+    expect(display.transportMode).toBe("auth-required");
+    expect(display.tone).toBe("warning");
+    expect(display.blocksSyncedLabel).toBe(true);
+    expect(display.actionKind).toBe("reconnect-auth");
+    expect(display.actionLabel).toBe("Continue with Google");
+    expect(sharedHouseholdFreshnessCopy(display, "synced")).not.toMatch(/up to date/i);
+  });
+
+  it("does not offer Google reconnect while offline", () => {
+    const household = baseHousehold();
+    const display = buildSyncFreshness({
+      household,
+      viewerMemberId: household.members[0]!.id,
+      realtimeEnabled: true,
+      realtimeStatus: null,
+      authRequired: true,
+      offline: true,
+      pendingOutboxCount: 0,
+      hasOpenConflict: false,
+      lastReconcileAt: null,
+      lastReconcileSource: null,
+      now: NOW,
+    });
+
+    expect(display.transportPrimary).toBe("Offline · will sync when you're back");
+    expect(display.actionKind).toBeNull();
   });
 
   it("hides for local-only households", () => {

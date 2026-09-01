@@ -71,12 +71,12 @@ export function SyncFreshnessStatus({ display, busy = false, onAction }: Props) 
       {showAction && (
         <button
           type="button"
-          className="sync-freshness__action"
+          className={`sync-freshness__action${display.actionKind === "reconnect-auth" ? " sync-freshness__action--label" : ""}`}
           disabled={busy}
           aria-label={display.actionLabel ?? "Retry now"}
           onClick={() => onAction?.()}
         >
-          <RefreshIcon />
+          {display.actionKind === "reconnect-auth" ? display.actionLabel : <RefreshIcon />}
         </button>
       )}
     </div>

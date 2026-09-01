@@ -1647,6 +1647,22 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 **Still required:** a separate release decision, then a fresh deployed signed-in two-device 100-sample run before claiming `<=500 ms p95`. Browser-level App lifecycle integration remains a non-blocking P2 proof gap; the pure lifecycle/policy units and reviewer-run focused suites pass.
 
+## D-193 continuity Auth reconnect (2026-09-01)
+
+**Status:** implemented locally on `codex/auth-reconnect-repair` over exact clean `origin/main@4e0515069c14bba6ed31f640735fa48986f6f569`; not committed, pushed, merged, deployed, or live-proven. Jonathan authorized the repair, not release actions.
+
+**Household outcome:** a Development household whose secure Supabase/Google session is missing or whose expired refresh is refused no longer appears to be checking the cloud every four seconds. The shared freshness row says **Google sign-in needed** and shows **Continue with Google**. The local accepted replica remains readable; no outbox item or household is removed. The user chooses a Google account, then the existing Auth membership and PGlite-gated continuity lifecycle resumes after OAuth return.
+
+**Budget delta (5):** `+4` — honest, recoverable authenticated continuity for accepted Shared/Personal books without a new writer. **Engagement delta (3):** `+1` — one calm visible recovery action replaces an indefinite false fallback label.
+
+**What changed:** a pure Development eligibility rule distinguishes Auth loss from transport choice, so polling-only and Realtime builds recover the same way; freshness has an `auth-required` mode and visible action; App observes same-window Supabase session save/clear plus cross-window storage changes, including the keyless event emitted by `localStorage.clear()`; the same-window event contains only the environment, never token or identity; OAuth starts only from the explicit button and forces account selection. Missing, refresh-refused, remove-item, and full-storage-clear sessions have App-shell regressions. Offline copy remains primary, and local-only, Auth-disabled, hosted-disabled, and Production states cannot offer the action.
+
+**Verification:** focused Auth/status/App/Realtime/diagnostic suites passed **75/75** plus TypeScript; the final three-file App/Auth/books-readiness subset passed 36/36 without timing warnings. The exact final combined run passed **1,560 application assertions / 3 skipped** across **224 passed / 2 skipped files** but did not exit green: one unrelated demo replay hit its own hard-coded 60-second limit at 60.18 seconds. That exact assertion then passed alone in **45 seconds**, yielding **1,561 passing / 3 skipped** across **225 passed / 2 skipped files** in aggregate, but the aggregate evidence does not replace a green combined release gate. The deployment sanitizer passed inside the combined run with bundled Git Bash/Python. AI-surface verification, TypeScript, the **397-module** Vite production build, Hercules Pro UI, and no `dist/_redirects` all passed. `git diff --check` is clean apart from non-mutating Windows line-ending warnings. Startup and financial-recovery regressions now wait on their actual readiness/ingest conditions, not wall-clock guesses.
+
+**Continuity and privacy boundary:** existing Google OAuth scopes are unchanged. Supabase Auth membership remains the automatic cloud authority; Shared and Personal filtering, RLS, registered-device checks, command-log recovery, one receiver coordinator, PGlite acceptance, durable outbox, and polling fail-safe are unchanged. No peer device must stay online. Offline writes remain local/outboxed. Development client and local synthetic tests only: no Supabase query, hosted mutation, schema/migration/RLS, secret, provider, Production flag/data, or real household entry changed.
+
+**Still required:** one green combined release gate and a separate Jonathan release decision. A deployed signed-in account chooser/reconnect smoke and fresh two-device 100-sample timing run remain necessary before any live OAuth or `<=500 ms p95` claim.
+
 ## Auth + membership RLS cutover (D-123)
 
 **Status:** Migration **006 applied** on live shared project (Jonathan paste). Anon REST denial verified. Kitchen Auth door reaches Google OAuth. Docs record of apply: open PR #104. Invite chrome: branch `cursor/auth-invite-chrome-f375`.
