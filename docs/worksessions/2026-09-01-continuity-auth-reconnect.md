@@ -7,7 +7,7 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/auth-reconnect-repair`
 - **Baseline SHA:** opened at `4e0515069c14bba6ed31f640735fa48986f6f569`; final rebase base `8fb0a5f11a11a4b251bef0eb031940d9c201997b`
-- **Head SHA:** application `a7bd6b8`; tooling `0520c1e`; schedule repair `72bba7d`; final docs commit pending
+- **Head SHA:** application `a7bd6b8`; tooling `0520c1e`; schedule repair `72bba7d`; final release-record reconciliation `d9a51c0`
 - **PR or issue:** PR #284
 - **Risk:** High — Development Auth and Realtime availability/status; no financial meaning change
 - **Decision owner:** Jonathan
