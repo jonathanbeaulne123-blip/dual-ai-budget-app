@@ -727,6 +727,11 @@ export type CharterPermission = {
 
 export type CharterClause = { id: string; heading: string; body: string };
 
+export type CharterCeilingChange = {
+  kind: CharterCeilingKind;
+  value: number;
+};
+
 export type CharterAmendment = {
   id: string;
   raisedByMemberId: string;
@@ -738,6 +743,7 @@ export type CharterAmendment = {
   heldNote: string;
   raisedAt: string;
   resolvedAt: string | null;
+  ceilingChange: CharterCeilingChange | null;
 };
 
 export type HouseholdCharter = {
@@ -756,6 +762,8 @@ export type HouseholdCharter = {
   amendments: CharterAmendment[];
   foundedOn: DateKey;
   createdAt: string;
+  /** Changes only when the agreement's scalar terms change, not for signatures or other subrecords. */
+  termsUpdatedAt: string;
   updatedAt: string;
 };
 

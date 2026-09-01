@@ -45,7 +45,7 @@ import {
   shapeHouseholdFundSettlementAllocations,
 } from "./householdFund.ts";
 import { mergeMonthRehearsals, shapeMonthRehearsals } from "./monthRehearsal.ts";
-import { shapeHouseholdCharter } from "./charter.ts";
+import { mergeHouseholdCharters, shapeHouseholdCharter } from "./charter.ts";
 
 export type { PersonalEnvelope, SharedEnvelope };
 
@@ -712,13 +712,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     if (!right) return left;
     return right.updatedAt >= left.updatedAt ? right : left;
   })();
-  const leftCharter = shapeHouseholdCharter(server.charter, { members, householdFund });
-  const rightCharter = shapeHouseholdCharter(client.charter, { members, householdFund });
-  const charter = !leftCharter
-    ? rightCharter
-    : !rightCharter
-      ? leftCharter
-      : rightCharter.updatedAt >= leftCharter.updatedAt ? rightCharter : leftCharter;
+  const charter = mergeHouseholdCharters(server.charter, client.charter, { members, householdFund });
   return {
     kind: "shared",
     revision: Math.max(server.revision ?? 0, client.revision ?? 0) + 1,

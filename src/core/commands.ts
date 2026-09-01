@@ -130,8 +130,10 @@ import type {
   Visibility,
   WorkJob,
   AccountScope,
+  CharterCeilingChange,
   CharterCeilingKind,
   CharterSplitRule,
+  CharterAmendment,
   HouseholdCharter,
 } from "./types.ts";
 import { COMPANION, JOINT, NeedsConfirmationError, ValidationError, isShiftEventTag } from "./types.ts";
@@ -149,7 +151,7 @@ import {
   shapeHouseholdFundSettlementAllocations,
   type HouseholdFundBankEvidence,
 } from "./householdFund.ts";
-import { shapeHouseholdCharter } from "./charter.ts";
+import { charterCeilingLabel, shapeHouseholdCharter } from "./charter.ts";
 import {
   buildOpeningTruthDraft,
   hasOnlyOpeningCorrectionHistory,
@@ -4987,6 +4989,7 @@ function charterFieldText(charter: HouseholdCharter, field: string): string {
     case "splitRule": return charter.splitRule;
     case "splitNote": return charter.splitNote;
     case "ceilingKind": return charter.ceilingKind;
+    case "ceiling": return charterCeilingLabel(charter);
     case "ceilingValue": return charter.ceilingKind === "amount-per-month"
       ? String(charter.ceilingValue / 100)
       : charter.ceilingKind === "hours-per-week"
@@ -5036,9 +5039,17 @@ function normalizedCharterAmendmentText(household: Household, charter: Household
   }
 }
 
-function applyCharterAmendment(household: Household, charter: HouseholdCharter, field: string, toText: string): HouseholdCharter {
-  const normalized = normalizedCharterAmendmentText(household, charter, field, toText);
-  switch (field) {
+function applyCharterAmendment(household: Household, charter: HouseholdCharter, amendment: CharterAmendment): HouseholdCharter {
+  if (amendment.field === "ceiling") {
+    if (!amendment.ceilingChange) throw new ValidationError("That ceiling amendment needs a unit and value together.");
+    return {
+      ...charter,
+      ceilingKind: amendment.ceilingChange.kind,
+      ceilingValue: amendment.ceilingChange.value,
+    };
+  }
+  const normalized = normalizedCharterAmendmentText(household, charter, amendment.field, amendment.toText);
+  switch (amendment.field) {
     case "purpose": return { ...charter, purpose: normalized };
     case "custodianMemberId": return { ...charter, custodianMemberId: normalized };
     case "splitRule": return { ...charter, splitRule: normalized as CharterSplitRule };
@@ -5104,6 +5115,7 @@ export function foundHouseholdCharter(household: Household, input: {
     amendments: [],
     foundedOn: parseDate(input.date),
     createdAt: at,
+    termsUpdatedAt: at,
     updatedAt: at,
   };
   next.charter = shapeHouseholdCharter(charter, { members: next.members, householdFund: next.householdFund });
@@ -5188,8 +5200,27 @@ export function proposeCharterAmendment(household: Household, input: {
 }): CommitResult {
   requireMember(household, input.memberId);
   const charter = requireHouseholdCharter(household);
-  const field = input.field.trim();
-  const toText = normalizedCharterAmendmentText(household, charter, field, input.toText);
+  const requestedField = input.field.trim();
+  const normalizedToText = normalizedCharterAmendmentText(household, charter, requestedField, input.toText);
+  let field = requestedField;
+  let fromText = charterFieldText(charter, requestedField);
+  let toText = normalizedToText;
+  let ceilingChange: CharterCeilingChange | null = null;
+  if (requestedField === "ceilingKind" || requestedField === "ceilingValue") {
+    const kind = requestedField === "ceilingKind"
+      ? normalizedToText as CharterCeilingKind
+      : charter.ceilingKind;
+    const value = kind === "none"
+      ? 0
+      : requestedField === "ceilingValue"
+        ? charterCeilingValue(kind, normalizedToText)
+        : charter.ceilingValue;
+    const target = { ...charter, ceilingKind: kind, ceilingValue: value };
+    field = "ceiling";
+    fromText = charterCeilingLabel(charter);
+    toText = charterCeilingLabel(target);
+    ceilingChange = { kind, value };
+  }
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const at = nowIso();
@@ -5200,17 +5231,52 @@ export function proposeCharterAmendment(household: Household, input: {
       id,
       raisedByMemberId: input.memberId,
       field,
-      fromText: charterFieldText(charter, field),
+      fromText,
       toText,
       confirmedByMemberId: null,
       heldByMemberId: null,
       heldNote: "",
       raisedAt: at,
       resolvedAt: null,
+      ceilingChange,
     }],
     updatedAt: at,
   };
   return commit(previous, next, "Charter", `Raised a charter amendment to ${field}`, [id]);
+}
+
+export function proposeCharterCeilingAmendment(household: Household, input: {
+  memberId: string;
+  ceilingKind: CharterCeilingKind;
+  ceilingValue?: string | number;
+}): CommitResult {
+  requireMember(household, input.memberId);
+  if (!CHARTER_CEILING_KINDS.has(input.ceilingKind)) throw new ValidationError("Choose a valid charter ceiling.");
+  const charter = requireHouseholdCharter(household);
+  const ceilingValue = charterCeilingValue(input.ceilingKind, input.ceilingValue);
+  const target = { ...charter, ceilingKind: input.ceilingKind, ceilingValue };
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nowIso();
+  const id = nextId("CHARTER-AMEND-", charter.amendments.map((row) => row.id), 4);
+  next.charter = {
+    ...charter,
+    amendments: [...charter.amendments, {
+      id,
+      raisedByMemberId: input.memberId,
+      field: "ceiling",
+      fromText: charterCeilingLabel(charter),
+      toText: charterCeilingLabel(target),
+      confirmedByMemberId: null,
+      heldByMemberId: null,
+      heldNote: "",
+      raisedAt: at,
+      resolvedAt: null,
+      ceilingChange: { kind: input.ceilingKind, value: ceilingValue },
+    }],
+    updatedAt: at,
+  };
+  return commit(previous, next, "Charter", "Raised a charter ceiling amendment", [id], [], "proposeCharterCeilingAmendment");
 }
 
 export function confirmCharterAmendment(household: Household, input: {
@@ -5228,7 +5294,7 @@ export function confirmCharterAmendment(household: Household, input: {
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const at = nowIso();
-  const applied = applyCharterAmendment(household, charter, amendment.field, amendment.toText);
+  const applied = applyCharterAmendment(household, charter, amendment);
   next.charter = {
     ...applied,
     amendments: applied.amendments.map((row) => row.id === amendment.id ? {
@@ -5236,6 +5302,7 @@ export function confirmCharterAmendment(household: Household, input: {
       confirmedByMemberId: input.memberId,
       resolvedAt: at,
     } : row),
+    termsUpdatedAt: at,
     updatedAt: at,
   };
   return commit(previous, next, "Charter", `Confirmed the charter amendment to ${amendment.field}`, [amendment.id]);
@@ -5302,6 +5369,11 @@ export function configureHouseholdFund(household: Household, input: {
   requireMember(household, input.custodianMemberId);
   requireMember(household, input.createdBy);
   if (input.createdBy !== input.custodianMemberId) throw new ValidationError("The custodian must confirm the Household Fund setup.");
+  const charter = shapeHouseholdCharter(household.charter, { members: household.members, householdFund: null });
+  if (household.charter && !charter) throw new ValidationError("Repair the household charter before setting up the Fund.");
+  if (charter && charter.custodianMemberId !== input.custodianMemberId) {
+    throw new ValidationError("Custody moves through the Fund, not the charter.");
+  }
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const at = nowIso();

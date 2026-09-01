@@ -1,5 +1,6 @@
 import type {
   CharterAmendment,
+  CharterCeilingChange,
   CharterCeilingKind,
   CharterClause,
   CharterPermission,
@@ -112,28 +113,53 @@ function shapeSignatures(
     .map((memberId) => signatures.get(memberId) ?? { memberId, signedAt: null });
 }
 
-function shapeAmendments(value: unknown): CharterAmendment[] {
+function shapeAmendments(value: unknown, requiredMemberIds?: readonly string[]): CharterAmendment[] {
   if (!Array.isArray(value)) return [];
+  const allowedMemberIds = requiredMemberIds
+    ? new Set(requiredMemberIds.filter(Boolean))
+    : null;
   return value.flatMap((raw) => {
     if (!raw || typeof raw !== "object") return [];
     const row = raw as Partial<CharterAmendment>;
     const id = text(row.id);
     const raisedByMemberId = text(row.raisedByMemberId);
     const field = text(row.field);
-    if (!id || !raisedByMemberId || !field) return [];
+    if (!id || !raisedByMemberId || !field || (allowedMemberIds && !allowedMemberIds.has(raisedByMemberId))) return [];
+    const proposedConfirmer = nullableText(row.confirmedByMemberId);
+    const confirmedByMemberId = proposedConfirmer
+      && proposedConfirmer !== raisedByMemberId
+      && (!allowedMemberIds || allowedMemberIds.has(proposedConfirmer))
+      ? proposedConfirmer
+      : null;
+    const proposedHolder = nullableText(row.heldByMemberId);
+    const heldByMemberId = proposedHolder && (!allowedMemberIds || allowedMemberIds.has(proposedHolder))
+      ? proposedHolder
+      : null;
+    const ceilingChange = shapeCeilingChange(row.ceilingChange);
     return [{
       id,
       raisedByMemberId,
       field,
-      fromText: text(row.fromText),
-      toText: text(row.toText),
-      confirmedByMemberId: nullableText(row.confirmedByMemberId),
-      heldByMemberId: nullableText(row.heldByMemberId),
-      heldNote: text(row.heldNote),
+      fromText: text(row.fromText, 240),
+      toText: text(row.toText, 240),
+      confirmedByMemberId,
+      heldByMemberId,
+      heldNote: heldByMemberId ? text(row.heldNote, 240) : "",
       raisedAt: isoOrFallback(row.raisedAt, EPOCH),
-      resolvedAt: isoOrFallback(row.resolvedAt, null),
+      resolvedAt: confirmedByMemberId ? isoOrFallback(row.resolvedAt, null) : null,
+      ceilingChange,
     }];
   }).sort(byId);
+}
+
+function shapeCeilingChange(value: unknown): CharterCeilingChange | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Partial<CharterCeilingChange>;
+  if (!CEILING_KINDS.has(row.kind as CharterCeilingKind)) return null;
+  const kind = row.kind as CharterCeilingKind;
+  if (kind === "none") return { kind, value: 0 };
+  const shapedValue = nonNegativeInteger(row.value);
+  return shapedValue > 0 ? { kind, value: shapedValue } : null;
 }
 
 export function shapeHouseholdCharter(
@@ -158,6 +184,7 @@ export function shapeHouseholdCharter(
     ? row.ceilingKind as CharterCeilingKind
     : "none";
   const createdAt = isoOrFallback(row.createdAt, EPOCH);
+  const termsUpdatedAt = isoOrFallback(row.termsUpdatedAt, createdAt);
   const cadence = row.cadence === "weekly" || row.cadence === "biweekly" || row.cadence === "monthly"
     ? row.cadence
     : "none";
@@ -177,11 +204,250 @@ export function shapeHouseholdCharter(
     clauses: shapeClauses(row.clauses),
     permissions: shapePermissions(row.permissions),
     signatures: shapeSignatures(row.signatures, context?.members.map((member) => member.id)),
-    amendments: shapeAmendments(row.amendments),
+    amendments: shapeAmendments(row.amendments, context?.members.map((member) => member.id)),
     foundedOn: foundedOn as HouseholdCharter["foundedOn"],
     createdAt,
+    termsUpdatedAt,
     updatedAt: isoOrFallback(row.updatedAt, createdAt),
   };
+}
+
+function latestIso(values: Array<string | null | undefined>, fallback: string): string {
+  return values.filter((value): value is string => Boolean(value)).sort().at(-1) ?? fallback;
+}
+
+function earliestIso(values: Array<string | null | undefined>): string | null {
+  return values.filter((value): value is string => Boolean(value)).sort()[0] ?? null;
+}
+
+function charterTermsKey(charter: HouseholdCharter): string {
+  return JSON.stringify([
+    charter.purpose,
+    charter.custodianMemberId,
+    charter.splitRule,
+    charter.splitNote,
+    charter.ceilingKind,
+    charter.ceilingValue,
+    charter.cadence,
+    charter.cadenceWeekday,
+    charter.clauses,
+  ]);
+}
+
+function chooseTerms(left: HouseholdCharter, right: HouseholdCharter): HouseholdCharter {
+  if (left.termsUpdatedAt !== right.termsUpdatedAt) {
+    return left.termsUpdatedAt > right.termsUpdatedAt ? left : right;
+  }
+  return charterTermsKey(left) >= charterTermsKey(right) ? left : right;
+}
+
+function mergeSignatures(left: HouseholdCharter, right: HouseholdCharter): CharterSignature[] {
+  const rows = new Map<string, CharterSignature>();
+  for (const signature of [...left.signatures, ...right.signatures]) {
+    const existing = rows.get(signature.memberId);
+    if (!existing) {
+      rows.set(signature.memberId, signature);
+      continue;
+    }
+    rows.set(signature.memberId, {
+      memberId: signature.memberId,
+      signedAt: earliestIso([existing.signedAt, signature.signedAt]),
+    });
+  }
+  return [...rows.values()].sort((a, b) => a.memberId.localeCompare(b.memberId));
+}
+
+function permissionIdentity(permission: CharterPermission): string {
+  return JSON.stringify([
+    permission.label,
+    permission.grantedByMemberId,
+    permission.actorMemberId,
+  ]);
+}
+
+function collisionId(id: string, identity: string): string {
+  const encodedIdentity = [...new TextEncoder().encode(identity)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+  return `${id}~conflict-${encodedIdentity}`;
+}
+
+function mergedPermissionState(left: CharterPermission, right: CharterPermission): CharterPermission {
+  return {
+    ...left,
+    revokedAt: earliestIso([left.revokedAt, right.revokedAt]),
+  };
+}
+
+function insertPermission(rows: Map<string, CharterPermission>, initial: CharterPermission): void {
+  let permission = initial;
+  while (true) {
+    const existing = rows.get(permission.id);
+    if (!existing) {
+      rows.set(permission.id, permission);
+      return;
+    }
+    const existingIdentity = permissionIdentity(existing);
+    const incomingIdentity = permissionIdentity(permission);
+    if (existingIdentity === incomingIdentity) {
+      rows.set(permission.id, mergedPermissionState(existing, permission));
+      return;
+    }
+
+    const winner = existingIdentity >= incomingIdentity ? existing : permission;
+    const loser = winner === existing ? permission : existing;
+    rows.set(permission.id, { ...winner, id: permission.id });
+    permission = { ...loser, id: collisionId(permission.id, permissionIdentity(loser)) };
+  }
+}
+
+function mergePermissions(left: HouseholdCharter, right: HouseholdCharter): CharterPermission[] {
+  const rows = new Map<string, CharterPermission>();
+  for (const permission of [...left.permissions, ...right.permissions]) {
+    insertPermission(rows, permission);
+  }
+  return [...rows.values()].sort(byId);
+}
+
+function amendmentIdentity(amendment: CharterAmendment): string {
+  return JSON.stringify([
+    amendment.raisedByMemberId,
+    amendment.field,
+    amendment.fromText,
+    amendment.toText,
+    amendment.raisedAt,
+    amendment.ceilingChange,
+  ]);
+}
+
+function mergedAmendmentState(left: CharterAmendment, right: CharterAmendment): CharterAmendment {
+  const held = [left, right]
+    .filter((row) => row.heldByMemberId)
+    .sort((a, b) => `${a.heldByMemberId}\u0000${a.heldNote}`.localeCompare(`${b.heldByMemberId}\u0000${b.heldNote}`))
+    .at(-1);
+  return {
+    ...left,
+    confirmedByMemberId: [left.confirmedByMemberId, right.confirmedByMemberId]
+      .filter((value): value is string => Boolean(value))
+      .sort()[0] ?? null,
+    heldByMemberId: held?.heldByMemberId ?? null,
+    heldNote: held?.heldNote ?? "",
+    resolvedAt: earliestIso([left.resolvedAt, right.resolvedAt]),
+  };
+}
+
+function insertAmendment(rows: Map<string, CharterAmendment>, initial: CharterAmendment): void {
+  let amendment = initial;
+  while (true) {
+    const existing = rows.get(amendment.id);
+    if (!existing) {
+      rows.set(amendment.id, amendment);
+      return;
+    }
+    const existingIdentity = amendmentIdentity(existing);
+    const incomingIdentity = amendmentIdentity(amendment);
+    if (existingIdentity === incomingIdentity) {
+      rows.set(amendment.id, mergedAmendmentState(existing, amendment));
+      return;
+    }
+
+    const winner = existingIdentity >= incomingIdentity ? existing : amendment;
+    const loser = winner === existing ? amendment : existing;
+    rows.set(amendment.id, { ...winner, id: amendment.id });
+    amendment = { ...loser, id: collisionId(amendment.id, amendmentIdentity(loser)) };
+  }
+}
+
+function mergeAmendments(left: HouseholdCharter, right: HouseholdCharter): CharterAmendment[] {
+  const rows = new Map<string, CharterAmendment>();
+  for (const amendment of [...left.amendments, ...right.amendments]) {
+    insertAmendment(rows, amendment);
+  }
+  return [...rows.values()].sort(byId);
+}
+
+function applyResolvedAmendments(
+  charter: HouseholdCharter,
+  amendments: CharterAmendment[],
+  memberIds: readonly string[],
+): HouseholdCharter {
+  const validMemberIds = new Set(memberIds);
+  return amendments
+    .filter((amendment) => amendment.confirmedByMemberId && amendment.resolvedAt)
+    .sort((left, right) => left.resolvedAt!.localeCompare(right.resolvedAt!) || left.id.localeCompare(right.id))
+    .reduce((next, amendment) => {
+      switch (amendment.field) {
+        case "purpose": return { ...next, purpose: amendment.toText.slice(0, 240) };
+        case "custodianMemberId": return validMemberIds.has(amendment.toText)
+          ? { ...next, custodianMemberId: amendment.toText }
+          : next;
+        case "splitRule": return SPLIT_RULES.has(amendment.toText as CharterSplitRule)
+          ? { ...next, splitRule: amendment.toText as CharterSplitRule }
+          : next;
+        case "splitNote": return { ...next, splitNote: amendment.toText.slice(0, 240) };
+        case "ceiling": return amendment.ceilingChange
+          ? { ...next, ceilingKind: amendment.ceilingChange.kind, ceilingValue: amendment.ceilingChange.value }
+          : next;
+        // Legacy separate-unit rows are not replayed across replicas because their value has no bound unit.
+        // The term winner still retains an already-applied legacy change; all new ceiling motions use `ceiling`.
+        case "ceilingKind": return amendment.toText === "none" ? { ...next, ceilingKind: "none", ceilingValue: 0 } : next;
+        case "ceilingValue": return next;
+        case "cadence": return amendment.toText === "weekly" || amendment.toText === "biweekly"
+          || amendment.toText === "monthly" || amendment.toText === "none"
+          ? {
+            ...next,
+            cadence: amendment.toText,
+            ...(amendment.toText === "none" || amendment.toText === "monthly" ? { cadenceWeekday: 0 } : {}),
+          }
+          : next;
+        case "cadenceWeekday": {
+          const weekday = Number(amendment.toText);
+          return Number.isInteger(weekday) && weekday >= 0 && weekday <= 6
+            ? { ...next, cadenceWeekday: weekday }
+            : next;
+        }
+        default: return next;
+      }
+    }, charter);
+}
+
+/** Merge one Charter's independent subrecords without letting routine activity overwrite its terms. */
+export function mergeHouseholdCharters(
+  leftValue: unknown,
+  rightValue: unknown,
+  context: CharterHouseholdContext,
+): HouseholdCharter | null {
+  const memberContext = { members: context.members, householdFund: null };
+  const left = shapeHouseholdCharter(leftValue, memberContext);
+  const right = shapeHouseholdCharter(rightValue, memberContext);
+  if (!left && !right) return null;
+  if (!left || !right || left.id !== right.id) {
+    const candidate = !left ? right : !right ? left : chooseTerms(left, right);
+    if (!candidate) return null;
+    const withFundCustody = context.householdFund
+      ? { ...candidate, custodianMemberId: context.householdFund.custodianMemberId }
+      : candidate;
+    return shapeHouseholdCharter(withFundCustody, context);
+  }
+
+  const terms = chooseTerms(left, right);
+  const amendments = mergeAmendments(left, right);
+  const resolved = applyResolvedAmendments({
+    ...terms,
+    signatures: mergeSignatures(left, right),
+    permissions: mergePermissions(left, right),
+    amendments,
+    termsUpdatedAt: latestIso([
+      left.termsUpdatedAt,
+      right.termsUpdatedAt,
+      ...amendments.map((amendment) => amendment.resolvedAt),
+    ], terms.termsUpdatedAt),
+    updatedAt: latestIso([left.updatedAt, right.updatedAt], terms.updatedAt),
+  }, amendments, context.members.map((member) => member.id));
+  const withFundCustody = context.householdFund
+    ? { ...resolved, custodianMemberId: context.householdFund.custodianMemberId }
+    : resolved;
+  return shapeHouseholdCharter(withFundCustody, context);
 }
 
 export function charterIsSigned(charter: HouseholdCharter): boolean {
