@@ -252,7 +252,7 @@ describe("clerk citations", () => {
     const duplicateProposalId = duplicateProposal.postedIds[0]!;
     const reading: ClerkReadingRecord = {
       since: SINCE,
-      through: TODAY,
+      today: TODAY,
       tiesToProjection: true,
       sentences: [{
         id: "same-day-records",
