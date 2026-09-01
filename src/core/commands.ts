@@ -4,6 +4,7 @@ import { detectHabits, detectRhythms } from "./rhythm.ts";
 import { CURRENCY, parseWholeCents } from "./money.ts";
 import { nextId, nowIso, randomHouseholdId, randomInviteCode, slug, uniquePrefixedId } from "./ids.ts";
 import { cloneHousehold } from "./household.ts";
+import { isLedgerWrite } from "./writeKind.ts";
 import { duplicateKey, describeSimilarMatches, findSimilarTransactions, refreshDuplicateFlags } from "./duplicate.ts";
 import { jointSplit } from "./splits.ts";
 import { calcShiftAmounts, parseShiftInput, shiftSettingsFingerprint, DEFAULT_SHIFT_SETTINGS } from "./shift.ts";
@@ -14,6 +15,7 @@ import {
   parseDate,
   requireAccount,
   requireCadAccounts,
+  activeAccounts,
   requireIanaTimeZone,
   requireMember,
   requireSubcategory,
@@ -256,7 +258,12 @@ function signedHouseholdFundDirection(household: Household, transactionId: strin
 
 function commit(previous: Household, next: Household, action: string, summary: string, postedIds: string[], warnings: string[] = [], commandKind?: string): CommitResult {
   requireTimezone(next);
-  requireCadAccounts(next);
+  if (isLedgerWrite({ postedIds })) {
+    requireCadAccounts(next);
+  } else {
+    const bad = activeAccounts(next).filter((account) => account.currency !== CURRENCY);
+    if (bad.length) throw new ValidationError("Every active account must use CAD.");
+  }
   next.transactions = refreshDuplicateFlags(next.transactions);
   next.lastCommittedAt = nowIso();
   const activity: Activity = {

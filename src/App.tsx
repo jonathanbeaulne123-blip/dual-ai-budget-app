@@ -20,6 +20,7 @@ import {
   ledgerNameForView,
   ledgerRouteContract,
   kitchenPrimaryNav,
+  householdNeedsCharterFounding,
   showsLedgerPurposeBanner,
   projectLedgerExperience,
   restoreAcceptedSnapshot,
@@ -333,6 +334,7 @@ import { FabSpeedDial } from "./FabSpeedDial.tsx";
 import { SitDownGuide } from "./SitDownGuide.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { MonthRehearsalPanel } from "./MonthRehearsalPanel.tsx";
+import { CharterFounding } from "./CharterFounding.tsx";
 import { playClink } from "./clink.ts";
 import { GoogleBridgeCard } from "./GoogleBridge.tsx";
 import {
@@ -469,6 +471,7 @@ export function App() {
   const pendingDemoAcceptanceRef = useRef<Promise<CommandOutcome | null> | null>(null);
   const pendingDemoFramesRef = useRef<number[]>([]);
   const [tab, setTab] = useState<Tab>("home");
+  const [charterFoundingOpen, setCharterFoundingOpen] = useState(false);
   const [adding, setAdding] = useState(false);
   const [addSlide, setAddSlide] = useState(0);
   const [fabOpen, setFabOpen] = useState(false);
@@ -1979,6 +1982,11 @@ export function App() {
   const googleEntryAvailable = googleConfigured() || supabaseAuthEnabled();
   const memberId = session?.memberId ?? household?.members.find((member) => member.active)?.id ?? "";
   const view: LedgerView = session?.view ?? "household";
+  useEffect(() => {
+    if (!household || view !== "household") return;
+    if (householdNeedsCharterFounding(household)) setCharterFoundingOpen(true);
+  }, [household, view]);
+  const charterFoundingVisible = Boolean(household && session && view === "household" && charterFoundingOpen);
   const personalSource = useMemo(() => (
     household && memberId && personalReplica?.memberId === memberId
       && personalReplica.lastCommittedAt === household.lastCommittedAt
@@ -4162,6 +4170,17 @@ export function App() {
 
   return (
     <div className="app" data-ledger-mode={view} data-ledger-tab={tab} data-books-readiness={booksReadiness.phase}>
+      {charterFoundingVisible && household && session ? (
+        <CharterFounding
+          household={household}
+          memberId={session.memberId}
+          today={today}
+          busy={busy}
+          onCommit={(fn) => { void run(fn); }}
+          onDismiss={() => setCharterFoundingOpen(false)}
+        />
+      ) : null}
+      <div className="app-shell" inert={charterFoundingVisible || undefined}>
       <header className="topbar">
         <div className="brand">
           <img src="/hercules-mark.svg" alt="" />
@@ -4577,6 +4596,24 @@ export function App() {
 
       {tab === "more" && (
         <>
+          {view === "household" ? (
+            <section className="card">
+              <header><h2>the charter</h2></header>
+              <p className="muted">
+                {household.charter
+                  ? "The household agreement. Sign your own line when you are ready."
+                  : "Found the household agreement in a few questions. Skip anything you do not want to decide yet."}
+              </p>
+              <button
+                className="primary"
+                type="button"
+                aria-label="Open the charter"
+                onClick={() => setCharterFoundingOpen(true)}
+              >
+                the charter
+              </button>
+            </section>
+          ) : null}
           {view === "household" ? (
             <MonthRehearsalPanel
               household={household}
@@ -5661,6 +5698,7 @@ export function App() {
         </div>
       )}
 
+      {!charterFoundingVisible ? (
       <HerculesPresence
         household={experience && experience.ok ? experience.herculesHousehold : displayHousehold}
         today={today}
@@ -5715,6 +5753,7 @@ export function App() {
           }));
         }}
       />
+      ) : null}
 
       <HerculesProApproval
         authorizationRequest={herculesProRequest}
@@ -5723,6 +5762,7 @@ export function App() {
         session={session}
       />
 
+      {!charterFoundingVisible ? (
       <nav className={`nav${fabOpen ? " is-fab-open" : ""}`} data-ledger-nav={view === "household" ? "shared" : "personal"} aria-label="Hearth">
         {kitchenPrimaryNav(view).includes("home") && (
         <button
@@ -5794,6 +5834,8 @@ export function App() {
         </button>
         )}
       </nav>
+      ) : null}
+      </div>
     </div>
   );
 }
