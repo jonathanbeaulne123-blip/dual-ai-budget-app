@@ -1,4 +1,4 @@
-export const BOOKS_SCHEMA_VERSION = 5;
+export const BOOKS_SCHEMA_VERSION = 6;
 
 export const BOOKS_SCHEMA = `
 CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -218,7 +218,7 @@ CREATE TABLE IF NOT EXISTS fund_events (
   id TEXT PRIMARY KEY,
   household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
   fund_id TEXT NOT NULL REFERENCES household_funds(id) ON DELETE CASCADE,
-  kind TEXT NOT NULL CHECK (kind IN ('contribution-proposed','contribution-confirmed','purchase-funded','refund-funded','settlement-confirmed','kitty-allocated','kitty-released','reconciliation-recorded','bank-verified','reversal')),
+  kind TEXT NOT NULL CHECK (kind IN ('contribution-proposed','contribution-held','contribution-hold-released','contribution-withdrawn','contribution-confirmed','purchase-funded','refund-funded','settlement-confirmed','kitty-allocated','kitty-released','reconciliation-recorded','bank-verified','reversal')),
   amount_cents INTEGER NOT NULL CHECK (amount_cents >= 0),
   date_key TEXT NOT NULL CHECK (date_key ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'),
   created_by TEXT NOT NULL,

@@ -808,6 +808,9 @@ export type HouseholdFundMonthPlan = {
 
 export type HouseholdFundEventKind =
   | "contribution-proposed"
+  | "contribution-held"
+  | "contribution-hold-released"
+  | "contribution-withdrawn"
   | "contribution-confirmed"
   | "purchase-funded"
   | "refund-funded"

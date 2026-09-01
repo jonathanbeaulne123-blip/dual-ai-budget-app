@@ -272,6 +272,16 @@ export async function migrateBooks(db: Queryable): Promise<void> {
         CHECK (type IN ('expense', 'income', 'transfer', 'refund', 'opening'));
     `);
     await db.query("INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)", [5, new Date().toISOString()]);
+    have.add(5);
+  }
+  if (!have.has(6)) {
+    // D-193: Held/released/withdrawn are immutable Fund motion facts, not journal lines.
+    await db.exec(`
+      ALTER TABLE fund_events DROP CONSTRAINT IF EXISTS fund_events_kind_check;
+      ALTER TABLE fund_events ADD CONSTRAINT fund_events_kind_check
+        CHECK (kind IN ('contribution-proposed','contribution-held','contribution-hold-released','contribution-withdrawn','contribution-confirmed','purchase-funded','refund-funded','settlement-confirmed','kitty-allocated','kitty-released','reconciliation-recorded','bank-verified','reversal'));
+    `);
+    await db.query("INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)", [6, new Date().toISOString()]);
   }
 }
 

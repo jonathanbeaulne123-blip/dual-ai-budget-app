@@ -18,6 +18,25 @@ export const HOUSEHOLD_FUND_NAME = "Hearth Household Fund";
 /** Shared clearing label for a debit whose real savings account stays in the custodian's Personal envelope. */
 export const HOUSEHOLD_FUND_DIRECT_DESTINATION = "FUND-DIRECT-DEBIT";
 
+/** Exact language for every visual treatment of a Fund contribution Hold. */
+export const HOUSEHOLD_FUND_HOLD_COPY = {
+  action: "Hold",
+  status: "Held — let's talk about this.",
+  notePlaceholder: "What would you want to know first?",
+} as const;
+
+export type HouseholdFundContributionMotionStatus = "open" | "held" | "confirmed" | "withdrawn";
+
+/** Pure motion state for UI consumers; Fund arithmetic remains in `projectHouseholdFund`. */
+export type HouseholdFundContributionMotion = {
+  proposal: HouseholdFundEvent;
+  status: HouseholdFundContributionMotionStatus;
+  activeHold: HouseholdFundEvent | null;
+  activeHolds: HouseholdFundEvent[];
+  confirmation: HouseholdFundEvent | null;
+  withdrawal: HouseholdFundEvent | null;
+};
+
 export type HouseholdFundTransactionPosition = {
   transactionId: string;
   destinationAccountId: string;
@@ -119,6 +138,9 @@ export function shapeHouseholdFundMonthPlans(value: unknown): HouseholdFundMonth
 
 const EVENT_KINDS = new Set<HouseholdFundEvent["kind"]>([
   "contribution-proposed",
+  "contribution-held",
+  "contribution-hold-released",
+  "contribution-withdrawn",
   "contribution-confirmed",
   "purchase-funded",
   "refund-funded",
@@ -231,6 +253,48 @@ export function activeHouseholdFundEvents(household: Pick<Household, "fundEvents
   return events.filter((event) => event.kind !== "reversal" && eventIsActive(event, events));
 }
 
+/**
+ * Fold immutable contribution motion facts without interpreting a Hold as a refusal.
+ * Newest proposals come first for the consent queue; every tie is deterministic.
+ */
+export function householdFundContributionMotions(
+  household: Pick<Household, "fundEvents">,
+  fundId = HOUSEHOLD_FUND_ID,
+): HouseholdFundContributionMotion[] {
+  const events = activeHouseholdFundEvents(household, fundId);
+  const releases = new Set(events
+    .filter((event) => event.kind === "contribution-hold-released" && event.relatedEventId)
+    .map((event) => event.relatedEventId!));
+  return events
+    .filter((event) => event.kind === "contribution-proposed")
+    .map((proposal) => {
+      const confirmation = events.find((event) => (
+        event.kind === "contribution-confirmed" && event.relatedEventId === proposal.id
+      )) ?? null;
+      const withdrawal = events.find((event) => (
+        event.kind === "contribution-withdrawn" && event.relatedEventId === proposal.id
+      )) ?? null;
+      const activeHolds = events.filter((event) => (
+        event.kind === "contribution-held"
+        && event.relatedEventId === proposal.id
+        && !releases.has(event.id)
+      ));
+      const activeHold = activeHolds.at(-1) ?? null;
+      const status: HouseholdFundContributionMotionStatus = confirmation
+        ? "confirmed"
+        : withdrawal
+          ? "withdrawn"
+          : activeHold
+            ? "held"
+            : "open";
+      return { proposal, status, activeHold, activeHolds, confirmation, withdrawal };
+    })
+    .sort((left, right) => (
+      right.proposal.createdAt.localeCompare(left.proposal.createdAt)
+      || right.proposal.id.localeCompare(left.proposal.id)
+    ));
+}
+
 function householdFundOperatingDelta(event: HouseholdFundEvent): number {
   if (event.kind === "contribution-confirmed" || event.kind === "kitty-released") return event.amountCents;
   if (event.kind === "settlement-confirmed" || event.kind === "kitty-allocated") return -event.amountCents;
@@ -328,7 +392,9 @@ export function projectHouseholdFund(household: Household, today: DateKey): Hous
   };
   const events = activeHouseholdFundEvents(household, config.id);
   const confirmedContributionsCents = events.filter((event) => event.kind === "contribution-confirmed").reduce((sum, event) => sum + event.amountCents, 0);
-  const pendingContributionsCents = events.filter((event) => event.kind === "contribution-proposed" && !events.some((confirmed) => confirmed.kind === "contribution-confirmed" && confirmed.relatedEventId === event.id)).reduce((sum, event) => sum + event.amountCents, 0);
+  const pendingContributionsCents = householdFundContributionMotions(household, config.id)
+    .filter((motion) => motion.status === "open" || motion.status === "held")
+    .reduce((sum, motion) => sum + motion.proposal.amountCents, 0);
   const settledCents = events.filter((event) => event.kind === "settlement-confirmed").reduce((sum, event) => sum + event.amountCents, 0);
   const kittyAllocated = events.filter((event) => event.kind === "kitty-allocated").reduce((sum, event) => sum + event.amountCents, 0);
   const kittyReleased = events.filter((event) => event.kind === "kitty-released").reduce((sum, event) => sum + event.amountCents, 0);
@@ -537,7 +603,11 @@ export function assertHouseholdFundIntegrity(household: Household): void {
     if (event.fundId !== config.id || !household.members.some((member) => member.id === event.createdBy)) {
       throw new ValidationError("A Household Fund event is bound to the wrong fund or member.");
     }
-    if ((event.kind === "contribution-proposed" || event.kind === "contribution-confirmed")
+    if ((event.kind === "contribution-proposed"
+      || event.kind === "contribution-held"
+      || event.kind === "contribution-hold-released"
+      || event.kind === "contribution-withdrawn"
+      || event.kind === "contribution-confirmed")
       && (!event.contributorMemberId || !household.members.some((member) => member.id === event.contributorMemberId))) {
       throw new ValidationError("A Household Fund contribution must belong to a household member.");
     }
@@ -548,8 +618,12 @@ export function assertHouseholdFundIntegrity(household: Household): void {
     if (custodianKinds.has(event.kind) && event.confirmedByMemberId !== config.custodianMemberId) {
       throw new ValidationError("Only the Household Fund custodian can confirm that action.");
     }
-    if (event.kind === "contribution-proposed" && event.confirmedByMemberId) {
-      throw new ValidationError("A contribution proposal cannot increase the fund balance.");
+    if ((event.kind === "contribution-proposed"
+      || event.kind === "contribution-held"
+      || event.kind === "contribution-hold-released"
+      || event.kind === "contribution-withdrawn")
+      && event.confirmedByMemberId) {
+      throw new ValidationError("A contribution motion cannot increase the fund balance.");
     }
     if ((event.kind === "purchase-funded" || event.kind === "refund-funded")
       && (event.confirmedByMemberId || !event.destinationAccountId || event.relatedTransactionIds.length === 0)) {
@@ -557,6 +631,64 @@ export function assertHouseholdFundIntegrity(household: Household): void {
     }
     if (event.kind === "reversal" && (!event.relatedEventId || !events.some((row) => row.id === event.relatedEventId && row.id !== event.id))) {
       throw new ValidationError("A Household Fund reversal must reference an existing event.");
+    }
+  }
+  const eventById = new Map(events.map((event) => [event.id, event]));
+  const sameContribution = (event: HouseholdFundEvent, proposal: HouseholdFundEvent): boolean => (
+    event.fundId === proposal.fundId
+    && event.amountCents === proposal.amountCents
+    && event.contributorMemberId === proposal.contributorMemberId
+  );
+  for (const event of events) {
+    if (event.kind === "contribution-confirmed") {
+      const proposal = event.relatedEventId ? eventById.get(event.relatedEventId) : null;
+      if (!proposal || proposal.kind !== "contribution-proposed" || event.createdBy !== config.custodianMemberId
+        || !sameContribution(event, proposal)) {
+        throw new ValidationError("A confirmed contribution must preserve its custodian-approved proposal.");
+      }
+    }
+    if (event.kind === "contribution-held") {
+      const proposal = event.relatedEventId ? eventById.get(event.relatedEventId) : null;
+      if (!proposal || proposal.kind !== "contribution-proposed" || !sameContribution(event, proposal)) {
+        throw new ValidationError("A contribution Hold must reference its unchanged proposal.");
+      }
+      if (event.createdBy !== config.custodianMemberId || event.createdBy === proposal.createdBy) {
+        throw new ValidationError("Only the other-person Fund custodian may hold a contribution motion.");
+      }
+    }
+    if (event.kind === "contribution-hold-released") {
+      const hold = event.relatedEventId ? eventById.get(event.relatedEventId) : null;
+      const proposal = hold?.relatedEventId ? eventById.get(hold.relatedEventId) : null;
+      if (!hold || hold.kind !== "contribution-held" || !proposal || proposal.kind !== "contribution-proposed"
+        || event.createdBy !== hold.createdBy || !sameContribution(event, proposal)) {
+        throw new ValidationError("Only the holder may release an unchanged contribution Hold.");
+      }
+      if (events.filter((row) => row.kind === "contribution-hold-released" && row.relatedEventId === hold.id).length > 1) {
+        throw new ValidationError("A contribution Hold may be released only once.");
+      }
+    }
+    if (event.kind === "contribution-withdrawn") {
+      const proposal = event.relatedEventId ? eventById.get(event.relatedEventId) : null;
+      if (!proposal || proposal.kind !== "contribution-proposed" || event.createdBy !== proposal.createdBy
+        || !sameContribution(event, proposal)) {
+        throw new ValidationError("Only the proposer may withdraw their unchanged contribution motion.");
+      }
+    }
+    if (event.kind === "reversal") {
+      const target = event.relatedEventId ? eventById.get(event.relatedEventId) : null;
+      if (target && ["contribution-proposed", "contribution-held", "contribution-hold-released", "contribution-withdrawn"].includes(target.kind)) {
+        throw new ValidationError("Contribution motion history uses Hold, release, or withdraw instead of reversal.");
+      }
+    }
+  }
+  const activeMotionEvents = activeHouseholdFundEvents(household, config.id);
+  for (const proposal of activeMotionEvents.filter((event) => event.kind === "contribution-proposed")) {
+    const confirmations = activeMotionEvents.filter((event) => event.kind === "contribution-confirmed" && event.relatedEventId === proposal.id);
+    const withdrawals = activeMotionEvents.filter((event) => event.kind === "contribution-withdrawn" && event.relatedEventId === proposal.id);
+    if (confirmations.length > 1) throw new ValidationError("A contribution proposal may be confirmed only once.");
+    if (withdrawals.length > 1) throw new ValidationError("A contribution proposal may be withdrawn only once.");
+    if (confirmations.length && withdrawals.length) {
+      throw new ValidationError("A contribution motion cannot be both confirmed and withdrawn.");
     }
   }
   const transactionById = new Map(household.transactions.map((row) => [row.id, row]));
