@@ -10,7 +10,7 @@ Use this as the complete contract for one Cursor writer. Start from current Hear
 - **Required branch:** `clerk/2-citations`.
 - **Suggested PR title:** `feat(clerk): tap a sentence, see its rows`.
 - **Dependency:** Clerk Slice 1 must remain in the branch history. Before editing, verify that `git merge-base --is-ancestor 6f1cb43f793312953fb733d795a0d0439d539f35 HEAD` succeeds and record the actual `HEAD` SHA.
-- **Current state at packet close:** Slice 1 is committed and fast-forwarded into local `main`; `origin/main` remains unchanged. Start from the local merged `clerk/2-citations` branch and record its exact initial `HEAD`. No push, PR, deployment, hosted mutation, or Production action is included.
+- **Current state at packet close:** Slice 1 is committed and fast-forwarded into local `main`; a local `clerk/2-citations` branch is prepared from that lineage. Jonathan subsequently authorized the Slice 1 push and Development deployment. Cursor must record its actual initial `HEAD`; its Slice 2 task includes no push, PR, deployment, hosted mutation, or Production action.
 - **Risk:** **Medium** — read-only money-adjacent UI and accessibility; no financial writer or arithmetic change.
 - **Decision owner:** Jonathan.
 - **Independent proof:** targeted accessibility/behavior review, then verifier. Books/trust auditors are required only if implementation expands into financial meaning, visibility projection, navigation authority, or write paths.
